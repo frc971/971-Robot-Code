@@ -4,6 +4,7 @@ load(
     ":mpn.bzl",
     "architecture_includes",
     "config_include_from_architecture",
+    "current_directory",
     "file_from_architecture",
     "mparam_path",
     "mpn_cc_library",
@@ -66,10 +67,10 @@ copts_common = [
     "-Wno-unused-parameter",
     "-Wno-missing-field-initializers",
     "-DHAVE_CONFIG_H",
-    "-Ithird_party/gmp",
-    "-I$(GENDIR)/third_party/gmp",
-    "-Ithird_party/gmp/mpn",
-    "-I$(GENDIR)/third_party/gmp/mpn",
+    "-I" + current_directory(),
+    "-I$(GENDIR)/" + current_directory(),
+    "-I" + current_directory() + "/mpn",
+    "-I$(GENDIR)/" + current_directory() + "/mpn",
     "-Wno-cast-align",
     "-Wno-dangling-else",
     "-Wno-cast-qual",
@@ -926,7 +927,7 @@ cc_library(
 
 genrule(
     name = "call_m4",
-    srcs = native.glob([
+    srcs = glob([
         "**/*.m4",
         "**/*.asm",
     ]) + ["config.m4"],

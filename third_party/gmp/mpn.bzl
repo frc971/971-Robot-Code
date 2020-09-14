@@ -48,6 +48,9 @@ alternatives = {
     "sec_pi1_div_r": ["sec_pi1_div"],
 }
 
+def current_directory():
+    return native.package_name()
+
 def mpn_cc_library(
         name,
         srcs,
@@ -60,9 +63,9 @@ def mpn_cc_library(
         hdrs = hdrs,
         copts = copts + [
             "-DHAVE_CONFIG_H",
-            "-Ithird_party/gmp/mpn",
-            "-Ithird_party/gmp",
-            "-I$(GENDIR)/third_party/gmp",
+            "-I" + current_directory() + "/mpn",
+            "-I" + current_directory(),
+            "-I$(GENDIR)/" + current_directory(),
             "-D__GMP_WITHIN_GMP",
             "-DOPERATION_" + name,
         ],
@@ -87,17 +90,19 @@ def _m4_mpn_function_impl(ctx):
 
     out = ctx.actions.declare_file("mpn/" + ctx.attr.operation + ".s")
 
+    ruledir = ctx.label.workspace_root + "/" + ctx.label.package
     ctx.actions.run_shell(
         inputs = [ctx.files.files[0]] + ctx.files.deps,
         outputs = [out],
         progress_message = "Generating " + out.short_path,
         tools = [ctx.executable._m4],
-        command = "&&".join([
-            "cd third_party/gmp/mpn",
-            "echo '#define OPERATION_" + ctx.attr.operation + " 1' > ../../../" + out.path,
-            "../../../" + ctx.executable._m4.path + " -I ../../../" + ctx.var["GENDIR"] + "/third_party/gmp/mpn/ " +
+        command = " && ".join([
+            "ROOT=$(pwd)",
+            "cd ./" + ruledir + "/mpn",
+            "echo '#define OPERATION_" + ctx.attr.operation + " 1' > ${ROOT}/" + out.path,
+            "${ROOT}/" + ctx.executable._m4.path + " -I ${ROOT}/" + ctx.var["GENDIR"] + "/" + ruledir + "/mpn" +
             " -DHAVE_CONFIG_H -D__GMP_WITHIN_GMP -DOPERATION_" + ctx.attr.operation +
-            " -DPIC ../../../" + ctx.files.files[0].path + " >> ../../../" + out.path,
+            " -DPIC ${ROOT}/" + ctx.files.files[0].path + " >> ${ROOT}/" + out.path,
         ]),
     )
 
@@ -140,7 +145,7 @@ def mparam_path(architecture_paths):
 def architecture_includes(architecture_paths):
     result = dict()
     for key in architecture_paths:
-        result[key] = ["-Ithird_party/gmp/mpn/" + p for p in architecture_paths[key]]
+        result[key] = ["-I" + current_directory() + "/mpn/" + p for p in architecture_paths[key]]
     return select(result)
 
 def file_from_architecture(architecture_paths, f):
@@ -152,7 +157,7 @@ def file_from_architecture(architecture_paths, f):
 def config_include_from_architecture(architecture_paths):
     result = dict()
     for key in architecture_paths:
-        result[key] = ["-Ithird_party/gmp/config/" + architecture_paths[key][0] + "/"]
+        result[key] = ["-I" + current_directory() + "/config/" + architecture_paths[key][0] + "/"]
     return select(result)
 
 def mpn_m4_cc_library(name, architecture_paths):
