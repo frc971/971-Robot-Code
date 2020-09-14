@@ -17,6 +17,9 @@ DEFINE_bool(pretty, false,
 DEFINE_bool(print_timestamps, true, "If true, timestamps are printed.");
 DEFINE_uint64(count, 0,
               "If >0, aos_dump will exit after printing this many messages.");
+DEFINE_int32(rate_limit, 0,
+             "The minimum amount of time to wait in milliseconds before "
+             "sending another message");
 
 namespace {
 
@@ -109,6 +112,8 @@ int main(int argc, char **argv) {
 
   aos::FastStringBuilder str_builder;
 
+  aos::monotonic_clock::time_point next_send_time =
+      aos::monotonic_clock::min_time;
   for (const aos::Channel *channel : found_channels) {
     if (FLAGS_fetch) {
       const std::unique_ptr<aos::RawFetcher> fetcher =
@@ -124,12 +129,16 @@ int main(int argc, char **argv) {
     }
 
     event_loop.MakeRawWatcher(
-        channel, [channel, &str_builder, &event_loop, &message_count](
-                     const aos::Context &context, const void * /*message*/) {
-          PrintMessage(channel, context, &str_builder);
-          ++message_count;
-          if (FLAGS_count > 0 && message_count >= FLAGS_count) {
-            event_loop.Exit();
+        channel,
+        [channel, &str_builder, &event_loop, &message_count, &next_send_time](
+            const aos::Context &context, const void * /*message*/) {
+          if (context.monotonic_event_time > next_send_time) {
+            PrintMessage(channel, context, &str_builder);
+            next_send_time = context.monotonic_event_time +
+                             std::chrono::milliseconds(FLAGS_rate_limit);
+            if (FLAGS_count > 0 && message_count >= FLAGS_count) {
+              event_loop.Exit();
+            }
           }
         });
   }
