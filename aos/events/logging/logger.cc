@@ -35,56 +35,6 @@ namespace aos {
 namespace logger {
 namespace chrono = std::chrono;
 
-void LogNamer::UpdateHeader(
-    aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header,
-    const UUID &uuid, int parts_index) {
-  header->mutable_message()->mutate_parts_index(parts_index);
-  CHECK_EQ(uuid.string_view().size(),
-           header->mutable_message()->mutable_parts_uuid()->size());
-  std::copy(uuid.string_view().begin(), uuid.string_view().end(),
-            reinterpret_cast<char *>(
-                header->mutable_message()->mutable_parts_uuid()->Data()));
-}
-
-void MultiNodeLogNamer::WriteHeader(
-    aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header,
-    const Node *node) {
-  if (node == this->node()) {
-    UpdateHeader(header, uuid_, part_number_);
-    data_writer_->WriteSizedFlatbuffer(header->full_span());
-  } else {
-    for (std::pair<const Channel *const, DataWriter> &data_writer :
-         data_writers_) {
-      if (node == data_writer.second.node) {
-        UpdateHeader(header, data_writer.second.uuid,
-                     data_writer.second.part_number);
-        data_writer.second.writer->WriteSizedFlatbuffer(header->full_span());
-      }
-    }
-  }
-}
-
-void MultiNodeLogNamer::Rotate(
-    const Node *node,
-    aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header) {
-  if (node == this->node()) {
-    ++part_number_;
-    *data_writer_ = std::move(*OpenDataWriter());
-    UpdateHeader(header, uuid_, part_number_);
-    data_writer_->WriteSizedFlatbuffer(header->full_span());
-  } else {
-    for (std::pair<const Channel *const, DataWriter> &data_writer :
-         data_writers_) {
-      if (node == data_writer.second.node) {
-        ++data_writer.second.part_number;
-        data_writer.second.rotate(data_writer.first, &data_writer.second);
-        UpdateHeader(header, data_writer.second.uuid,
-                     data_writer.second.part_number);
-        data_writer.second.writer->WriteSizedFlatbuffer(header->full_span());
-      }
-    }
-  }
-}
 
 Logger::Logger(std::string_view base_name, EventLoop *event_loop,
                std::chrono::milliseconds polling_period)
