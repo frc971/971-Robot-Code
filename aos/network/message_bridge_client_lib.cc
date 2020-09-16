@@ -78,6 +78,8 @@ MakeMessageHeaderReply() {
   logger::MessageHeader::Builder message_header_builder(fbb);
   message_header_builder.add_channel_index(0);
   message_header_builder.add_monotonic_sent_time(0);
+  message_header_builder.add_realtime_sent_time(0);
+  message_header_builder.add_queue_index(0);
   message_header_builder.add_monotonic_remote_time(0);
   message_header_builder.add_realtime_remote_time(0);
   message_header_builder.add_remote_queue_index(0);
@@ -250,6 +252,10 @@ void SctpClientConnection::HandleData(const Message *message) {
         message_header->channel_index());
     message_reception_reply_.mutable_message()->mutate_monotonic_sent_time(
         message_header->monotonic_sent_time());
+    message_reception_reply_.mutable_message()->mutate_realtime_sent_time(
+        message_header->realtime_sent_time());
+    message_reception_reply_.mutable_message()->mutate_queue_index(
+        message_header->queue_index());
 
     // And capture the relevant data needed to generate the forwarding
     // MessageHeader.

@@ -527,7 +527,10 @@ class EventLoop {
     CHECK(channel != nullptr)
         << ": Channel { \"name\": \"" << channel_name << "\", \"type\": \""
         << T::GetFullyQualifiedName() << "\" } not found in config for "
-        << name() << ".";
+        << name()
+        << (configuration::MultiNode(configuration_)
+                ? absl::StrCat(" on node ", node()->name()->string_view())
+                : ".");
 
     if (!configuration::ChannelIsSendableOnNode(channel, node())) {
       LOG(FATAL) << "Channel { \"name\": \"" << channel_name

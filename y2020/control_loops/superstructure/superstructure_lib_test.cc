@@ -439,10 +439,8 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
 
     if (!FLAGS_output_file.empty()) {
       unlink(FLAGS_output_file.c_str());
-      log_buffer_writer_ = std::make_unique<aos::logger::DetachedBufferWriter>(
-          FLAGS_output_file);
       logger_event_loop_ = MakeEventLoop("logger", roborio_);
-      logger_ = std::make_unique<aos::logger::Logger>(log_buffer_writer_.get(),
+      logger_ = std::make_unique<aos::logger::Logger>(FLAGS_output_file,
                                                       logger_event_loop_.get());
     }
   }
@@ -550,7 +548,6 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
   SuperstructureSimulation superstructure_plant_;
 
   std::unique_ptr<aos::EventLoop> logger_event_loop_;
-  std::unique_ptr<aos::logger::DetachedBufferWriter> log_buffer_writer_;
   std::unique_ptr<aos::logger::Logger> logger_;
 };
 

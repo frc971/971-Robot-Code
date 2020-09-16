@@ -35,7 +35,9 @@
         {
           "name": "pi2",
           "priority": 1,
-          "time_to_live": 5000000
+          "time_to_live": 5000000,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": ["pi1"]
         },
         {
           "name": "pi3",
@@ -55,7 +57,9 @@
         {
           "name": "pi1",
           "priority": 1,
-          "time_to_live": 5000000
+          "time_to_live": 5000000,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": ["pi2"]
         }
       ]
     },
@@ -109,6 +113,18 @@
       "type": "aos.message_bridge.ClientStatistics",
       "source_node": "pi3",
       "frequency": 2
+    },
+    {
+      "name": "/pi1/aos/remote_timestamps/pi2",
+      "type": "aos.logger.MessageHeader",
+      "logger": "NOT_LOGGED",
+      "source_node": "pi1"
+    },
+    {
+      "name": "/pi2/aos/remote_timestamps/pi1",
+      "type": "aos.logger.MessageHeader",
+      "logger": "NOT_LOGGED",
+      "source_node": "pi2"
     },
     {
       "name": "/pi1/aos",
@@ -142,8 +158,9 @@
         {
           "name": "pi2",
           "priority": 1,
-          "timestamp_logger": "LOCAL_LOGGER",
-          "time_to_live": 5000000
+          "time_to_live": 5000000,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": ["pi1"]
         }
       ]
     },
@@ -155,8 +172,9 @@
         {
           "name": "pi1",
           "priority": 1,
-          "timestamp_logger": "LOCAL_LOGGER",
-          "time_to_live": 5000000
+          "time_to_live": 5000000,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": ["pi2"]
         }
       ]
     },

@@ -408,6 +408,9 @@ class NoncausalOffsetEstimator {
   void set_slope_pointer(mpq_class *slope_pointer) {
     slope_pointer_ = slope_pointer;
   }
+  void set_valid_pointer(bool *valid_pointer) {
+    valid_pointer_ = valid_pointer;
+  }
 
   // Returns the data points from each filter.
   const std::deque<
@@ -441,6 +444,7 @@ class NoncausalOffsetEstimator {
 
   mpq_class *offset_pointer_ = nullptr;
   mpq_class *slope_pointer_ = nullptr;
+  bool *valid_pointer_ = nullptr;
 
   Line fit_{std::chrono::nanoseconds(0), 0.0};
 

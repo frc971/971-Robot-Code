@@ -118,10 +118,10 @@ ipc_lib::LocklessQueueConfiguration MakeQueueConfiguration(
   return config;
 }
 
-class MMapedQueue {
+class MMappedQueue {
  public:
-  MMapedQueue(std::string_view shm_base, const Channel *channel,
-              std::chrono::seconds channel_storage_duration)
+  MMappedQueue(std::string_view shm_base, const Channel *channel,
+               std::chrono::seconds channel_storage_duration)
       : config_(MakeQueueConfiguration(channel, channel_storage_duration)) {
     std::string path = ShmPath(shm_base, channel);
 
@@ -172,7 +172,7 @@ class MMapedQueue {
     ipc_lib::InitializeLocklessQueueMemory(memory(), config_);
   }
 
-  ~MMapedQueue() {
+  ~MMappedQueue() {
     PCHECK(munmap(data_, size_) == 0);
     PCHECK(munmap(const_cast<void *>(const_data_), size_) == 0);
   }
@@ -450,7 +450,7 @@ class SimpleShmFetcher {
 
   aos::ShmEventLoop *event_loop_;
   const Channel *const channel_;
-  MMapedQueue lockless_queue_memory_;
+  MMappedQueue lockless_queue_memory_;
   ipc_lib::LocklessQueueReader reader_;
   // This being nullopt indicates we're not looking for wakeups right now.
   std::optional<ipc_lib::LocklessQueueWatcher> watcher_;
@@ -567,7 +567,7 @@ class ShmSender : public RawSender {
   int buffer_index() override { return lockless_queue_sender_.buffer_index(); }
 
  private:
-  MMapedQueue lockless_queue_memory_;
+  MMappedQueue lockless_queue_memory_;
   ipc_lib::LocklessQueueSender lockless_queue_sender_;
   ipc_lib::LocklessQueueWakeUpper wake_upper_;
 };

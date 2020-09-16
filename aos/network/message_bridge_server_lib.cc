@@ -1,5 +1,6 @@
 #include "aos/network/message_bridge_server_lib.h"
 
+#include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "aos/events/logging/logger.h"
 #include "aos/events/logging/logger_generated.h"
@@ -85,14 +86,55 @@ void ChannelState::SendData(SctpServer *server, const Context &context) {
   // and flushes.  Whee.
 }
 
-void ChannelState::HandleDelivery(sctp_assoc_t /*rcv_assoc_id*/,
-                                  uint16_t /*ssn*/,
+void ChannelState::HandleDelivery(sctp_assoc_t rcv_assoc_id, uint16_t /*ssn*/,
                                   absl::Span<const uint8_t> data) {
   const logger::MessageHeader *message_header =
       flatbuffers::GetRoot<logger::MessageHeader>(data.data());
+  for (Peer &peer : peers_) {
+    if (peer.sac_assoc_id == rcv_assoc_id) {
+      if (peer.timestamp_logger != nullptr) {
+        // TODO(austin): Need to implement reliable sending of the delivery
+        // timestamps.  Track what made it, and retry what didn't.
+        //
+        // This needs to be munged and cleaned up to match the timestamp
+        // standard.
+
+        aos::Sender<logger::MessageHeader>::Builder builder =
+            peer.timestamp_logger->MakeBuilder();
+
+        logger::MessageHeader::Builder message_header_builder =
+            builder.MakeBuilder<logger::MessageHeader>();
+
+        message_header_builder.add_channel_index(
+            message_header->channel_index());
+
+        message_header_builder.add_queue_index(
+            message_header->remote_queue_index());
+        message_header_builder.add_monotonic_sent_time(
+            message_header->monotonic_remote_time());
+        message_header_builder.add_realtime_sent_time(
+            message_header->realtime_remote_time());
+
+        // Swap the remote and sent metrics.  They are from the sender's
+        // perspective, not the receiver's perspective.
+        message_header_builder.add_monotonic_remote_time(
+            message_header->monotonic_sent_time());
+        message_header_builder.add_realtime_remote_time(
+            message_header->realtime_sent_time());
+        message_header_builder.add_remote_queue_index(
+            message_header->queue_index());
+
+        builder.Send(message_header_builder.Finish());
+      }
+      break;
+    }
+  }
+
   while (sent_messages_.size() > 0u) {
     if (sent_messages_.begin()->message().monotonic_sent_time() ==
-        message_header->monotonic_sent_time()) {
+            message_header->monotonic_sent_time() &&
+        sent_messages_.begin()->message().queue_index() ==
+            message_header->queue_index()) {
       sent_messages_.pop_front();
       continue;
     }
@@ -124,11 +166,12 @@ void ChannelState::HandleFailure(
   // time out eventually.  Need to sort that out.
 }
 
-void ChannelState::AddPeer(const Connection *connection, int node_index,
-                           ServerConnection *server_connection_statistics,
-                           bool logged_remotely) {
+void ChannelState::AddPeer(
+    const Connection *connection, int node_index,
+    ServerConnection *server_connection_statistics, bool logged_remotely,
+    aos::Sender<logger::MessageHeader> *timestamp_logger) {
   peers_.emplace_back(connection, node_index, server_connection_statistics,
-                      logged_remotely);
+                      logged_remotely, timestamp_logger);
 }
 
 int ChannelState::NodeDisconnected(sctp_assoc_t assoc_id) {
@@ -168,6 +211,7 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop)
   CHECK(event_loop_->node() != nullptr) << ": No nodes configured.";
 
   int32_t max_size = 0;
+  timestamp_loggers_.resize(event_loop->configuration()->nodes()->size());
 
   // Seed up all the per-node connection state.
   // We are making the assumption here that every connection is bidirectional
@@ -217,13 +261,30 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop)
       for (const Connection *connection : *channel->destination_nodes()) {
         const Node *other_node = configuration::GetNode(
             event_loop_->configuration(), connection->name()->string_view());
+        const size_t other_node_index = configuration::GetNodeIndex(
+            event_loop_->configuration(), other_node);
+
+        const bool delivery_time_is_logged =
+            configuration::ConnectionDeliveryTimeIsLoggedOnNode(
+                connection, event_loop_->node());
+
+        // Conditionally create the timestamp logger if we are supposed to log
+        // timestamps from it.
+        if (delivery_time_is_logged && !timestamp_loggers_[other_node_index]) {
+          timestamp_loggers_[other_node_index] =
+              event_loop_->MakeSender<logger::MessageHeader>(
+                  absl::StrCat("/aos/remote_timestamps/",
+                               connection->name()->string_view()));
+        }
         state->AddPeer(
             connection,
             configuration::GetNodeIndex(event_loop_->configuration(),
                                         connection->name()->string_view()),
             server_status_.FindServerConnection(
                 connection->name()->string_view()),
-            configuration::ChannelMessageIsLoggedOnNode(channel, other_node));
+            configuration::ChannelMessageIsLoggedOnNode(channel, other_node),
+            delivery_time_is_logged ? &timestamp_loggers_[other_node_index]
+                                    : nullptr);
       }
 
       // Don't subscribe to timestamps on the timestamp channel.  Those get

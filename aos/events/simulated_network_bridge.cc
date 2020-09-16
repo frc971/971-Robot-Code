@@ -19,7 +19,9 @@ class RawMessageDelayer {
                     std::unique_ptr<aos::RawFetcher> fetcher,
                     std::unique_ptr<aos::RawSender> sender,
                     ServerConnection *server_connection, int client_index,
-                    MessageBridgeClientStatus *client_status)
+                    MessageBridgeClientStatus *client_status,
+                    size_t channel_index,
+                    aos::Sender<logger::MessageHeader> *timestamp_logger)
       : fetch_node_factory_(fetch_node_factory),
         send_node_factory_(send_node_factory),
         send_event_loop_(send_event_loop),
@@ -28,7 +30,9 @@ class RawMessageDelayer {
         server_connection_(server_connection),
         client_status_(client_status),
         client_index_(client_index),
-        client_connection_(client_status_->GetClientConnection(client_index)) {
+        client_connection_(client_status_->GetClientConnection(client_index)),
+        channel_index_(channel_index),
+        timestamp_logger_(timestamp_logger) {
     timer_ = send_event_loop_->AddTimer([this]() { Send(); });
 
     Schedule();
@@ -101,6 +105,34 @@ class RawMessageDelayer {
 
     client_connection_->mutate_received_packets(
         client_connection_->received_packets() + 1);
+
+    if (timestamp_logger_) {
+      aos::Sender<logger::MessageHeader>::Builder builder =
+          timestamp_logger_->MakeBuilder();
+
+      logger::MessageHeader::Builder message_header_builder =
+          builder.MakeBuilder<logger::MessageHeader>();
+
+      message_header_builder.add_channel_index(channel_index_);
+
+      // Swap the remote and sent metrics.  They are from the sender's
+      // perspective, not the receiver's perspective.
+      message_header_builder.add_monotonic_remote_time(
+          fetcher_->context().monotonic_event_time.time_since_epoch().count());
+      message_header_builder.add_realtime_remote_time(
+          fetcher_->context().realtime_event_time.time_since_epoch().count());
+      message_header_builder.add_remote_queue_index(
+          fetcher_->context().queue_index);
+
+      message_header_builder.add_monotonic_sent_time(
+          sender_->monotonic_sent_time().time_since_epoch().count());
+      message_header_builder.add_realtime_sent_time(
+          sender_->realtime_sent_time().time_since_epoch().count());
+      message_header_builder.add_queue_index(sender_->sent_queue_index());
+
+      builder.Send(message_header_builder.Finish());
+    }
+
     sent_ = true;
     Schedule();
   }
@@ -136,6 +168,9 @@ class RawMessageDelayer {
   MessageBridgeClientStatus *client_status_ = nullptr;
   int client_index_;
   ClientConnection *client_connection_ = nullptr;
+
+  size_t channel_index_;
+  aos::Sender<logger::MessageHeader> *timestamp_logger_ = nullptr;
 };
 
 SimulatedMessageBridge::SimulatedMessageBridge(
@@ -208,6 +243,13 @@ SimulatedMessageBridge::SimulatedMessageBridge(
           destination_event_loop->second.client_status.FindClientIndex(
               channel->source_node()->string_view());
 
+      const size_t destination_node_index = configuration::GetNodeIndex(
+          simulated_event_loop_factory->configuration(), destination_node);
+
+      const bool delivery_time_is_logged =
+          configuration::ConnectionDeliveryTimeIsLoggedOnNode(
+              connection, source_event_loop->second.event_loop->node());
+
       delayers->emplace_back(std::make_unique<RawMessageDelayer>(
           simulated_event_loop_factory->GetNodeEventLoopFactory(node),
           simulated_event_loop_factory->GetNodeEventLoopFactory(
@@ -216,7 +258,13 @@ SimulatedMessageBridge::SimulatedMessageBridge(
           source_event_loop->second.event_loop->MakeRawFetcher(channel),
           destination_event_loop->second.event_loop->MakeRawSender(channel),
           server_connection, client_index,
-          &destination_event_loop->second.client_status));
+          &destination_event_loop->second.client_status,
+          configuration::ChannelIndex(
+              source_event_loop->second.event_loop->configuration(), channel),
+          delivery_time_is_logged
+              ? &source_event_loop->second
+                     .timestamp_loggers[destination_node_index]
+              : nullptr));
     }
 
     const Channel *const timestamp_channel = configuration::GetChannel(
@@ -269,6 +317,47 @@ void SimulatedMessageBridge::DisableStatistics() {
   for (std::pair<const Node *const, State> &state : event_loop_map_) {
     state.second.server_status.DisableStatistics();
     state.second.client_status.DisableStatistics();
+  }
+}
+
+SimulatedMessageBridge::State::State(
+    std::unique_ptr<aos::EventLoop> &&new_event_loop)
+    : event_loop(std::move(new_event_loop)),
+      server_status(event_loop.get()),
+      client_status(event_loop.get()) {
+  timestamp_loggers.resize(event_loop->configuration()->nodes()->size());
+
+  // Find all nodes which log timestamps back to us (from us).
+  for (const Channel *channel : *event_loop->configuration()->channels()) {
+    CHECK(channel->has_source_node());
+
+    // Sent by us.
+    if (configuration::ChannelIsSendableOnNode(channel, event_loop->node()) &&
+        channel->has_destination_nodes()) {
+      for (const Connection *connection : *channel->destination_nodes()) {
+        const bool delivery_time_is_logged =
+            configuration::ConnectionDeliveryTimeIsLoggedOnNode(
+                connection, event_loop->node());
+
+        // And the timestamps are then logged back by us again.
+        if (!delivery_time_is_logged) {
+          continue;
+        }
+
+        // (And only construct the sender if it hasn't been constructed)
+        const Node *other_node = configuration::GetNode(
+            event_loop->configuration(), connection->name()->string_view());
+        const size_t other_node_index = configuration::GetNodeIndex(
+            event_loop->configuration(), other_node);
+
+        if (!timestamp_loggers[other_node_index]) {
+          timestamp_loggers[other_node_index] =
+              event_loop->MakeSender<logger::MessageHeader>(
+                  absl::StrCat("/aos/remote_timestamps/",
+                               connection->name()->string_view()));
+        }
+      }
+    }
   }
 }
 

@@ -175,6 +175,51 @@
       ]
     },
     {
+      "name": "/laptop/aos/remote_timestamps/roborio",
+      "type": "aos.logger.MessageHeader",
+      "source_node": "laptop",
+      "logger": "NOT_LOGGED",
+      "frequency": 20,
+      "num_senders": 2,
+      "max_size": 300
+    },
+    {
+      "name": "/laptop/aos/remote_timestamps/pi1",
+      "type": "aos.logger.MessageHeader",
+      "source_node": "laptop",
+      "logger": "NOT_LOGGED",
+      "frequency": 20,
+      "num_senders": 2,
+      "max_size": 300
+    },
+    {
+      "name": "/laptop/aos/remote_timestamps/pi2",
+      "type": "aos.logger.MessageHeader",
+      "source_node": "laptop",
+      "logger": "NOT_LOGGED",
+      "frequency": 20,
+      "num_senders": 2,
+      "max_size": 300
+    },
+    {
+      "name": "/laptop/aos/remote_timestamps/pi3",
+      "type": "aos.logger.MessageHeader",
+      "source_node": "laptop",
+      "logger": "NOT_LOGGED",
+      "frequency": 20,
+      "num_senders": 2,
+      "max_size": 300
+    },
+    {
+      "name": "/laptop/aos/remote_timestamps/pi4",
+      "type": "aos.logger.MessageHeader",
+      "source_node": "laptop",
+      "logger": "NOT_LOGGED",
+      "frequency": 20,
+      "num_senders": 2,
+      "max_size": 300
+    },
+    {
       "name": "/pi1/camera",
       "type": "frc971.vision.CameraImage",
       "source_node": "pi1",

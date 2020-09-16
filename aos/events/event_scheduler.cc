@@ -94,9 +94,12 @@ void EventSchedulerScheduler::RunFor(distributed_clock::duration duration) {
 
     // We get to pick our tradeoffs here.  Either we assume that there are no
     // backward step changes in our time function for each node, or we have to
-    // let time go backwards.  This backwards time jump should be small, so we
-    // can check for it and bound it.
-    CHECK_LE(now_, std::get<0>(oldest_event) + std::chrono::milliseconds(100))
+    // let time go backwards.  We currently only really see this happen when 2
+    // events are scheduled for "now", time changes, and there is a nanosecond
+    // or two of rounding due to integer math.
+    //
+    // //aos/events/logging:logger_test triggers this.
+    CHECK_LE(now_, std::get<0>(oldest_event) + std::chrono::nanoseconds(1))
         << ": Simulated time went backwards by too much.  Please investigate.";
     now_ = std::get<0>(oldest_event);
 
@@ -120,9 +123,12 @@ void EventSchedulerScheduler::Run() {
 
     // We get to pick our tradeoffs here.  Either we assume that there are no
     // backward step changes in our time function for each node, or we have to
-    // let time go backwards.  This backwards time jump should be small, so we
-    // can check for it and bound it.
-    CHECK_LE(now_, std::get<0>(oldest_event) + std::chrono::milliseconds(100))
+    // let time go backwards.  We currently only really see this happen when 2
+    // events are scheduled for "now", time changes, and there is a nanosecond
+    // or two of rounding due to integer math.
+    //
+    // //aos/events/logging:logger_test triggers this.
+    CHECK_LE(now_, std::get<0>(oldest_event) + std::chrono::nanoseconds(1))
         << ": Simulated time went backwards by too much.  Please investigate.";
     now_ = std::get<0>(oldest_event);
 

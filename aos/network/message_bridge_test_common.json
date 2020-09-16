@@ -25,7 +25,9 @@
       "destination_nodes": [
         {
           "name": "pi2",
-          "priority": 1
+          "priority": 1,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": ["pi1"]
         }
       ]
     },
@@ -38,25 +40,13 @@
       "destination_nodes": [
         {
           "name": "pi1",
-          "priority": 1
+          "priority": 1,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": ["pi2"]
         }
       ]
     },
     {
-      "name": "/pi1_forwarded/aos",
-      "type": "aos.message_bridge.Timestamp",
-      "source_node": "pi2",
-      "frequency": 10,
-      "max_size": 200
-    },
-    {
-      "name": "/pi2_forwarded/aos",
-      "type": "aos.message_bridge.Timestamp",
-      "source_node": "pi1",
-      "frequency": 10,
-      "max_size": 200
-    },
-    {
       "name": "/pi1/aos",
       "type": "aos.message_bridge.ServerStatistics",
       "source_node": "pi1",
@@ -79,6 +69,18 @@
       "type": "aos.message_bridge.ClientStatistics",
       "source_node": "pi2",
       "frequency": 2
+    },
+    {
+      "name": "/pi1/aos/remote_timestamps/pi2",
+      "type": "aos.logger.MessageHeader",
+      "source_node": "pi1",
+      "frequency": 10
+    },
+    {
+      "name": "/pi2/aos/remote_timestamps/pi1",
+      "type": "aos.logger.MessageHeader",
+      "source_node": "pi2",
+      "frequency": 10
     },
     {
       "name": "/pi1/aos",
@@ -108,11 +110,6 @@
           "timestamp_logger_nodes": ["pi1"]
         }
       ]
-    },
-    {
-      "name": "/test2",
-      "type": "aos.examples.Ping",
-      "source_node": "pi2"
     },
     {
       "name": "/test",
@@ -147,34 +144,6 @@
       },
       "rename": {
         "name": "/pi2/aos"
-      }
-    },
-    {
-      "match": {
-        "name": "/test",
-        "type": "aos.examples.Ping",
-        "source_node": "pi2"
-      },
-      "rename": {
-        "name": "/test2"
-      }
-    },
-    {
-      "match": {
-        "name": "/pi1/aos*",
-        "source_node": "pi2"
-      },
-      "rename": {
-        "name": "/pi1_forwarded/aos"
-      }
-    },
-    {
-      "match": {
-        "name": "/pi2/aos*",
-        "source_node": "pi1"
-      },
-      "rename": {
-        "name": "/pi2_forwarded/aos"
       }
     }
   ]

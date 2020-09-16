@@ -328,6 +328,14 @@ class SizePrefixedFlatbufferDetachedBuffer final : public Flatbuffer<T> {
 
   virtual ~SizePrefixedFlatbufferDetachedBuffer() override {}
 
+  static SizePrefixedFlatbufferDetachedBuffer<T> Empty() {
+    flatbuffers::FlatBufferBuilder fbb;
+    fbb.ForceDefaults(true);
+    const auto end = fbb.EndTable(fbb.StartTable());
+    fbb.FinishSizePrefixed(flatbuffers::Offset<flatbuffers::Table>(end));
+    return SizePrefixedFlatbufferDetachedBuffer<T>(fbb.Release());
+  }
+
   // Returns references to the buffer, and the data.
   const flatbuffers::DetachedBuffer &buffer() const { return buffer_; }
   const uint8_t *data() const override {
@@ -338,6 +346,13 @@ class SizePrefixedFlatbufferDetachedBuffer final : public Flatbuffer<T> {
   }
   size_t size() const override {
     return buffer_.size() - sizeof(flatbuffers::uoffset_t);
+  }
+
+  absl::Span<uint8_t> full_span() {
+    return absl::Span<uint8_t>(buffer_.data(), buffer_.size());
+  }
+  absl::Span<const uint8_t> full_span() const {
+    return absl::Span<const uint8_t>(buffer_.data(), buffer_.size());
   }
 
  private:

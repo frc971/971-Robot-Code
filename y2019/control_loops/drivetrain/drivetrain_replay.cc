@@ -15,7 +15,7 @@ DEFINE_string(logfile, "/tmp/logfile.bfbs",
               "Name of the logfile to read from.");
 DEFINE_string(config, "y2019/config.json",
               "Name of the config file to replay using.");
-DEFINE_string(output_file, "/tmp/replayed.bfbs",
+DEFINE_string(output_file, "/tmp/replayed",
               "Name of the logfile to write replayed data to.");
 DEFINE_int32(team, 971, "Team number to use for logfile replay.");
 int main(int argc, char **argv) {
@@ -37,13 +37,12 @@ int main(int argc, char **argv) {
                             "frc971.control_loops.drivetrain.Output");
   reader.Register();
 
-  aos::logger::DetachedBufferWriter file_writer(FLAGS_output_file);
   std::unique_ptr<aos::EventLoop> log_writer_event_loop =
       reader.event_loop_factory()->MakeEventLoop("log_writer");
   log_writer_event_loop->SkipTimingReport();
   log_writer_event_loop->SkipAosLog();
   CHECK(nullptr == log_writer_event_loop->node());
-  aos::logger::Logger writer(&file_writer, log_writer_event_loop.get());
+  aos::logger::Logger writer(FLAGS_output_file, log_writer_event_loop.get());
 
   std::unique_ptr<aos::EventLoop> drivetrain_event_loop =
       reader.event_loop_factory()->MakeEventLoop("drivetrain");

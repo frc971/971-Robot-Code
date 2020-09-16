@@ -15,9 +15,9 @@ namespace aos.logger;
 
 table LogFileHeader {
   // Time this log file started on the monotonic clock in nanoseconds.
-  monotonic_start_time:long;
+  monotonic_start_time:long = -9223372036854775808;
   // Time this log file started on the realtime clock in nanoseconds.
-  realtime_start_time:long;
+  realtime_start_time:long = -9223372036854775808;
 
   // Messages are not written in order to disk.  They will be out of order by
   // at most this duration (in nanoseconds).  If the log reader buffers until
@@ -65,3 +65,5 @@ table MessageHeader {
   // Queue index of this message on the remote node.
   remote_queue_index:uint = 4294967295;
 }
+
+root_type MessageHeader;
