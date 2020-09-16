@@ -2,7 +2,7 @@ load("//frc971:downloader.bzl", "robot_downloader")
 load("//aos:config.bzl", "aos_config")
 load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library")
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
-load("//y2020:config_gen.bzl", "generate_pi_config")
+load("//tools/build_rules:template.bzl", "jinja2_template")
 
 robot_downloader(
     binaries = [
@@ -182,9 +182,28 @@ aos_config(
         "pi2",
         "pi3",
         "pi4",
-        "laptop",
     ]
 ]
+
+aos_config(
+    name = "config_laptop",
+    src = "y2020_laptop.json",
+    flatbuffers = [
+        "//aos/network:message_bridge_client_fbs",
+        "//aos/network:message_bridge_server_fbs",
+        "//aos/network:timestamp_fbs",
+        "//y2020/vision/sift:sift_fbs",
+        "//y2020/vision/sift:sift_training_fbs",
+        "//y2020/vision:vision_fbs",
+        "//aos/events/logging:logger_fbs",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aos/events:config",
+        "//aos/robot_state:config",
+        "//frc971/control_loops/drivetrain:config",
+    ],
+)
 
 aos_config(
     name = "config_roborio",
@@ -248,10 +267,11 @@ cc_binary(
     ],
 )
 
-py_binary(
-    name = "generate_pi_config",
-    srcs = ["generate_pi_config.py"],
-    deps = ["@python_jinja2"],
-)
-
-[generate_pi_config(num) for num in range(1, 5)]
+[
+    jinja2_template(
+        name = "y2020_pi" + str(num) + ".json",
+        src = "y2020_pi_template.json",
+        parameters = {"NUM": str(num)},
+    )
+    for num in range(1, 5)
+]
