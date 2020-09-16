@@ -33,7 +33,12 @@ def _aos_config_impl(ctx):
     ctx.actions.run(
         outputs = [config, stripped_config],
         inputs = all_files,
-        arguments = [config.path, stripped_config.path, ctx.files.src[0].short_path, ctx.bin_dir.path] + [f.path for f in flatbuffers_depset.to_list()],
+        arguments = [
+            config.path,
+            stripped_config.path,
+            (ctx.label.workspace_root or ".") + "/" + ctx.files.src[0].short_path,
+            ctx.bin_dir.path,
+        ] + [f.path for f in flatbuffers_depset.to_list()],
         progress_message = "Flattening config",
         executable = ctx.executable._config_flattener,
     )
