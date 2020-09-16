@@ -932,12 +932,15 @@ genrule(
         "**/*.asm",
     ]) + ["config.m4"],
     outs = ["tests/call.s"],
-    cmd = "cd third_party/gmp/tests; ../../../$(location @m4_v1.4.18//:bin) -I ../../../$(GENDIR)/third_party/gmp/tests -DHAVE_CONFIG_H  -DPIC " + cpu_select({
+    cmd = "ROOT=$$(pwd); cd ./" + current_directory() + "/tests; LD_LIBRARY_PATH=$${ROOT}/external/m4_v1.4.18/usr/lib/x86_64-linux-gnu/ $${ROOT}/$(location @m4_v1.4.18//:bin) -I $${ROOT}/$(GENDIR)/" + current_directory() + "/tests -DHAVE_CONFIG_H -DPIC " + cpu_select({
               "arm": "arm32call.asm",
               "amd64": "amd64call.asm",
           }) +
-          " > ../../../$@",
-    tools = ["@m4_v1.4.18//:bin"],
+          " > $${ROOT}/$@",
+    tools = [
+        "@m4_v1.4.18//:bin",
+        "@m4_v1.4.18//:lib",
+    ],
 )
 
 cc_library(

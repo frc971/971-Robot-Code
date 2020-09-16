@@ -95,12 +95,12 @@ def _m4_mpn_function_impl(ctx):
         inputs = [ctx.files.files[0]] + ctx.files.deps,
         outputs = [out],
         progress_message = "Generating " + out.short_path,
-        tools = [ctx.executable._m4],
+        tools = [ctx.executable._m4] + ctx.attr._m4_lib.files.to_list(),
         command = " && ".join([
             "ROOT=$(pwd)",
             "cd ./" + ruledir + "/mpn",
             "echo '#define OPERATION_" + ctx.attr.operation + " 1' > ${ROOT}/" + out.path,
-            "${ROOT}/" + ctx.executable._m4.path + " -I ${ROOT}/" + ctx.var["GENDIR"] + "/" + ruledir + "/mpn" +
+            "LD_LIBRARY_PATH=${ROOT}/external/m4_v1.4.18/usr/lib/x86_64-linux-gnu/ ${ROOT}/" + ctx.executable._m4.path + " -I ${ROOT}/" + ctx.var["GENDIR"] + "/" + ruledir + "/mpn" +
             " -DHAVE_CONFIG_H -D__GMP_WITHIN_GMP -DOPERATION_" + ctx.attr.operation +
             " -DPIC ${ROOT}/" + ctx.files.files[0].path + " >> ${ROOT}/" + out.path,
         ]),
@@ -124,6 +124,10 @@ _m4_mpn_function = rule(
             default = "@m4_v1.4.18//:bin",
             cfg = "host",
             executable = True,
+        ),
+        "_m4_lib": attr.label(
+            default = "@m4_v1.4.18//:lib",
+            cfg = "host",
         ),
     },
     implementation = _m4_mpn_function_impl,
