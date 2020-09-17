@@ -285,12 +285,33 @@ class MultiNodeLogNamer : public LogNamer {
 // configuration that is sent rately on a channel and would affect execution.
 class Logger {
  public:
+  // Constructs a logger.
+  //   base_name/log_namer: Object used to write data to disk in one or more log
+  //     files.  If a base_name is passed in, a LocalLogNamer is wrapped
+  //     around it.
+  //   event_loop: The event loop used to read the messages.
+  //   polling_period: The period used to poll the data.
+  //   configuration: When provided, this is the configuration to log, and the
+  //     configuration to use for the channel list to log.  If not provided,
+  //     this becomes the configuration from the event loop.
   Logger(std::string_view base_name, EventLoop *event_loop,
+         std::chrono::milliseconds polling_period =
+             std::chrono::milliseconds(100));
+  Logger(std::string_view base_name, EventLoop *event_loop,
+         const Configuration *configuration,
          std::chrono::milliseconds polling_period =
              std::chrono::milliseconds(100));
   Logger(std::unique_ptr<LogNamer> log_namer, EventLoop *event_loop,
          std::chrono::milliseconds polling_period =
              std::chrono::milliseconds(100));
+  Logger(std::unique_ptr<LogNamer> log_namer, EventLoop *event_loop,
+         const Configuration *configuration,
+         std::chrono::milliseconds polling_period =
+             std::chrono::milliseconds(100));
+  ~Logger();
+
+  // Overrides the name in the log file header.
+  void set_name(std::string_view name) { name_ = name; }
 
   // Rotates the log file(s), triggering new part files to be written for each
   // log file.
@@ -318,6 +339,12 @@ class Logger {
   EventLoop *event_loop_;
   const UUID uuid_;
   std::unique_ptr<LogNamer> log_namer_;
+
+  // The configuration to place at the top of the log file.
+  const Configuration *configuration_;
+
+  // Name to save in the log file.  Defaults to hostname.
+  std::string name_;
 
   // Structure to track both a fetcher, and if the data fetched has been
   // written.  We may want to delay writing data to disk so that we don't let
@@ -450,7 +477,11 @@ class LogReader {
   // gets called.
   void Deregister();
 
-  // Returns the configuration from the log file.
+  // Returns the configuration being used for replay from the log file.
+  // Note that this may be different from the configuration actually used for
+  // handling events. You should generally only use this to create a
+  // SimulatedEventLoopFactory, and then get the configuration from there for
+  // everything else.
   const Configuration *logged_configuration() const;
   // Returns the configuration being used for replay.
   // The pointer is invalidated whenever RemapLoggedChannel is called.
@@ -490,6 +521,10 @@ class LogReader {
 
   const LogFileHeader *log_file_header() const {
     return &log_file_header_.message();
+  }
+
+  std::string_view name() const {
+    return log_file_header()->name()->string_view();
   }
 
  private:

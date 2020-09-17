@@ -88,14 +88,26 @@ void MultiNodeLogNamer::Rotate(
 
 Logger::Logger(std::string_view base_name, EventLoop *event_loop,
                std::chrono::milliseconds polling_period)
+    : Logger(base_name, event_loop, event_loop->configuration(),
+             polling_period) {}
+Logger::Logger(std::string_view base_name, EventLoop *event_loop,
+               const Configuration *configuration,
+               std::chrono::milliseconds polling_period)
     : Logger(std::make_unique<LocalLogNamer>(base_name, event_loop->node()),
-             event_loop, polling_period) {}
+             event_loop, configuration, polling_period) {}
+Logger::Logger(std::unique_ptr<LogNamer> log_namer, EventLoop *event_loop,
+               std::chrono::milliseconds polling_period)
+    : Logger(std::move(log_namer), event_loop, event_loop->configuration(),
+             polling_period) {}
 
 Logger::Logger(std::unique_ptr<LogNamer> log_namer, EventLoop *event_loop,
+               const Configuration *configuration,
                std::chrono::milliseconds polling_period)
     : event_loop_(event_loop),
       uuid_(UUID::Random()),
       log_namer_(std::move(log_namer)),
+      configuration_(configuration),
+      name_(network::GetHostname()),
       timer_handler_(event_loop_->AddTimer([this]() { DoLogData(); })),
       polling_period_(polling_period),
       server_statistics_fetcher_(
@@ -108,14 +120,14 @@ Logger::Logger(std::unique_ptr<LogNamer> log_namer, EventLoop *event_loop,
 
   // Find all the nodes which are logging timestamps on our node.
   std::set<const Node *> timestamp_logger_nodes;
-  for (const Channel *channel : *event_loop_->configuration()->channels()) {
+  for (const Channel *channel : *configuration_->channels()) {
     if (!configuration::ChannelIsSendableOnNode(channel, event_loop_->node()) ||
         !channel->has_destination_nodes()) {
       continue;
     }
     for (const Connection *connection : *channel->destination_nodes()) {
       const Node *other_node = configuration::GetNode(
-          event_loop_->configuration(), connection->name()->string_view());
+          configuration_, connection->name()->string_view());
 
       if (configuration::ConnectionDeliveryTimeIsLoggedOnNode(
               connection, event_loop_->node())) {
@@ -132,7 +144,7 @@ Logger::Logger(std::unique_ptr<LogNamer> log_namer, EventLoop *event_loop,
   // for them.
   for (const Node *node : timestamp_logger_nodes) {
     const Channel *channel = configuration::GetChannel(
-        event_loop_->configuration(),
+        configuration_,
         absl::StrCat("/aos/remote_timestamps/", node->name()->string_view()),
         logger::MessageHeader::GetFullyQualifiedName(), event_loop_->name(),
         event_loop_->node());
@@ -146,9 +158,16 @@ Logger::Logger(std::unique_ptr<LogNamer> log_namer, EventLoop *event_loop,
   }
 
   const size_t our_node_index = configuration::GetNodeIndex(
-      event_loop_->configuration(), event_loop_->node());
+      configuration_, event_loop_->node());
 
-  for (const Channel *channel : *event_loop_->configuration()->channels()) {
+  for (const Channel *config_channel : *configuration_->channels()) {
+    // The MakeRawFetcher method needs a channel which is in the event loop
+    // configuration() object, not the configuration_ object.  Go look that up
+    // from the config.
+    const Channel *channel = aos::configuration::GetChannel(
+        event_loop_->configuration(), config_channel->name()->string_view(),
+        config_channel->type()->string_view(), "", event_loop_->node());
+
     FetcherStruct fs;
     fs.node_index = our_node_index;
     const bool is_local =
@@ -195,8 +214,8 @@ Logger::Logger(std::unique_ptr<LogNamer> log_namer, EventLoop *event_loop,
                 << configuration::CleanedChannelToString(channel);
         fs.contents_writer =
             log_namer_->MakeForwardedTimestampWriter(channel, timestamp_node);
-        fs.node_index = configuration::GetNodeIndex(
-            event_loop_->configuration(), timestamp_node);
+        fs.node_index =
+            configuration::GetNodeIndex(configuration_, timestamp_node);
       }
       fs.channel_index = channel_index;
       fs.written = false;
@@ -205,13 +224,13 @@ Logger::Logger(std::unique_ptr<LogNamer> log_namer, EventLoop *event_loop,
     ++channel_index;
   }
 
-  node_state_.resize(configuration::MultiNode(event_loop_->configuration())
-                         ? event_loop_->configuration()->nodes()->size()
+  node_state_.resize(configuration::MultiNode(configuration_)
+                         ? configuration_->nodes()->size()
                          : 1u);
 
   for (const Node *node : log_namer_->nodes()) {
     const int node_index =
-        configuration::GetNodeIndex(event_loop_->configuration(), node);
+        configuration::GetNodeIndex(configuration_, node);
 
     node_state_[node_index].log_file_header = MakeHeader(node);
   }
@@ -220,6 +239,14 @@ Logger::Logger(std::unique_ptr<LogNamer> log_namer, EventLoop *event_loop,
   // messages available on each fetcher to capture the previous state, then
   // start polling.
   event_loop_->OnRun([this]() { StartLogging(); });
+}
+
+Logger::~Logger() {
+  // If we are replaying a log file, or in simulation, we want to force the last
+  // bit of data to be logged.  The easiest way to deal with this is to poll
+  // everything as we go to destroy the class, ie, shut down the logger, and
+  // write it to disk.
+  DoLogData();
 }
 
 void Logger::StartLogging() {
@@ -245,7 +272,7 @@ void Logger::StartLogging() {
 }
 
 void Logger::WriteHeader() {
-  if (configuration::MultiNode(event_loop_->configuration())) {
+  if (configuration::MultiNode(configuration_)) {
     server_statistics_fetcher_.Fetch();
   }
 
@@ -262,7 +289,7 @@ void Logger::WriteHeader() {
 
   for (const Node *node : log_namer_->nodes()) {
     const int node_index =
-        configuration::GetNodeIndex(event_loop_->configuration(), node);
+        configuration::GetNodeIndex(configuration_, node);
     MaybeUpdateTimestamp(node, node_index, monotonic_start_time,
                          realtime_start_time);
     log_namer_->WriteHeader(&node_state_[node_index].log_file_header, node);
@@ -270,7 +297,7 @@ void Logger::WriteHeader() {
 }
 
 void Logger::WriteMissingTimestamps() {
-  if (configuration::MultiNode(event_loop_->configuration())) {
+  if (configuration::MultiNode(configuration_)) {
     server_statistics_fetcher_.Fetch();
   } else {
     return;
@@ -282,7 +309,7 @@ void Logger::WriteMissingTimestamps() {
 
   for (const Node *node : log_namer_->nodes()) {
     const int node_index =
-        configuration::GetNodeIndex(event_loop_->configuration(), node);
+        configuration::GetNodeIndex(configuration_, node);
     if (MaybeUpdateTimestamp(
             node, node_index,
             server_statistics_fetcher_.context().monotonic_event_time,
@@ -324,7 +351,7 @@ bool Logger::MaybeUpdateTimestamp(
       monotonic_clock::min_time) {
     return false;
   }
-  if (configuration::MultiNode(event_loop_->configuration())) {
+  if (configuration::MultiNode(configuration_)) {
     if (event_loop_->node() == node) {
       // There are no offsets to compute for ourself, so always succeed.
       SetStartTime(node_index, monotonic_start_time, realtime_start_time);
@@ -378,10 +405,10 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> Logger::MakeHeader(
   // TODO(austin): Compress this much more efficiently.  There are a bunch of
   // duplicated schemas.
   flatbuffers::Offset<aos::Configuration> configuration_offset =
-      CopyFlatBuffer(event_loop_->configuration(), &fbb);
+      CopyFlatBuffer(configuration_, &fbb);
 
   flatbuffers::Offset<flatbuffers::String> name_offset =
-      fbb.CreateString(network::GetHostname());
+      fbb.CreateString(name_);
 
   flatbuffers::Offset<flatbuffers::String> logger_uuid_offset =
       fbb.CreateString(uuid_.string_view());
@@ -391,7 +418,7 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> Logger::MakeHeader(
 
   flatbuffers::Offset<Node> node_offset;
 
-  if (configuration::MultiNode(event_loop_->configuration())) {
+  if (configuration::MultiNode(configuration_)) {
     node_offset = CopyFlatBuffer(node, &fbb);
   }
 
@@ -437,7 +464,7 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> Logger::MakeHeader(
 void Logger::Rotate() {
   for (const Node *node : log_namer_->nodes()) {
     const int node_index =
-        configuration::GetNodeIndex(event_loop_->configuration(), node);
+        configuration::GetNodeIndex(configuration_, node);
     log_namer_->Rotate(node, &node_state_[node_index].log_file_header);
   }
 }
