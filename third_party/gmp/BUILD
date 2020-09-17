@@ -85,6 +85,7 @@ copts_common = [
         "-Wno-maybe-uninitialized",
         "-Wno-empty-body",
         "-Wno-unused-but-set-variable",
+        "-Wno-implicit-fallthrough",
     ],
     "amd64": [],
 }) + config_include_from_architecture(architecture_paths)
