@@ -964,9 +964,11 @@ void ShmEventLoop::Run() {
   ReserveEvents();
 
   {
+    logging::ScopedLogRestorer prev_logger;
     AosLogToFbs aos_logger;
     if (!skip_logger_) {
       aos_logger.Initialize(MakeSender<logging::LogMessageFbs>("/aos"));
+      prev_logger.Swap(aos_logger.implementation());
     }
 
     aos::SetCurrentThreadName(name_.substr(0, 16));

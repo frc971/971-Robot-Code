@@ -19,7 +19,8 @@
 // pipe.
 
 DEFINE_bool(sender, true, "If true, send signals to the other process.");
-DEFINE_string(fifo, "/dev/shm/aos/named_pipe_latency", "FIFO to use for the test.");
+DEFINE_string(fifo, "/dev/shm/aos/named_pipe_latency",
+              "FIFO to use for the test.");
 DEFINE_int32(seconds, 10, "Duration of the test to run");
 DEFINE_int32(
     latency_threshold, 1000,
@@ -36,7 +37,8 @@ namespace chrono = ::std::chrono;
 namespace aos {
 
 void SenderThread() {
-  int pipefd = open(FLAGS_fifo.c_str(), FD_CLOEXEC | O_NONBLOCK | O_WRONLY | O_NOATIME);
+  int pipefd =
+      open(FLAGS_fifo.c_str(), FD_CLOEXEC | O_NONBLOCK | O_WRONLY | O_NOATIME);
   const monotonic_clock::time_point end_time =
       monotonic_clock::now() + chrono::seconds(FLAGS_seconds);
   // Standard mersenne_twister_engine seeded with 0
@@ -75,7 +77,8 @@ void SenderThread() {
 }
 
 void ReceiverThread() {
-  int pipefd = open(FLAGS_fifo.c_str(), O_CLOEXEC | O_NONBLOCK | O_RDONLY | O_NOATIME);
+  int pipefd =
+      open(FLAGS_fifo.c_str(), O_CLOEXEC | O_NONBLOCK | O_RDONLY | O_NOATIME);
   Tracing t;
   t.Start();
 
@@ -151,8 +154,7 @@ int Main(int /*argc*/, char ** /*argv*/) {
                 FLAGS_timer_priority);
   });
 
-  ::std::thread st(
-      []() { SenderThread(); });
+  ::std::thread st([]() { SenderThread(); });
 
   ReceiverThread();
   st.join();
@@ -167,8 +169,6 @@ int main(int argc, char **argv) {
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);
 
   ::aos::logging::Init();
-  ::aos::logging::SetImplementation(
-      new ::aos::logging::StreamLogImplementation(stdout));
 
   return ::aos::Main(argc, argv);
 }

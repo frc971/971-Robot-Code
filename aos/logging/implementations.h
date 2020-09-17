@@ -11,6 +11,7 @@
 
 #include <atomic>
 #include <functional>
+#include <memory>
 #include <string>
 
 #include "aos/logging/context.h"
@@ -118,31 +119,31 @@ class StreamLogImplementation : public HandleMessageLogImplementation {
   FILE *const stream_;
 };
 
-// Adds another implementation to the stack of implementations in this
-// task/thread.
-// Any tasks/threads created after this call will also use this implementation.
-// The cutoff is when the state in a given task/thread is created (either lazily
-// when needed or by calling Load()).
-// The logging system takes ownership of implementation. It will delete it if
-// necessary, so it must be created with new.
-// TODO: Log implementations are never deleted. Need means to safely deregister.
-void SetImplementation(LogImplementation *implementation,
-                       bool update_global = true);
+std::shared_ptr<LogImplementation> GetImplementation();
 
-// Updates the log implementation for the current thread, returning the current
-// implementation.
-LogImplementation *SwapImplementation(LogImplementation *implementation);
+// Sets the current implementation.
+void SetImplementation(std::shared_ptr<LogImplementation> implementation);
 
-LogImplementation *GetImplementation();
+// Updates the log implementation, returning the current implementation.
+std::shared_ptr<LogImplementation> SwapImplementation(
+    std::shared_ptr<LogImplementation> implementation);
 
 // Must be called at least once per process/load before anything else is
 // called. This function is safe to call multiple times from multiple
 // tasks/threads.
 void Init();
 
-// Forces all of the state that is usually lazily created when first needed to
-// be created when called. Cleanup() will delete it.
-void Load();
+class CallbackLogImplementation : public HandleMessageLogImplementation {
+ public:
+  CallbackLogImplementation(
+      const ::std::function<void(const LogMessage &)> &callback)
+      : callback_(callback) {}
+
+ private:
+  void HandleMessage(const LogMessage &message) override { callback_(message); }
+
+  ::std::function<void(const LogMessage &)> callback_;
+};
 
 // Resets all information in this task/thread to its initial state.
 // NOTE: This is not the opposite of Init(). The state that this deletes is
@@ -150,17 +151,25 @@ void Load();
 void Cleanup();
 
 void RegisterCallbackImplementation(
-    const ::std::function<void(const LogMessage &)> &callback,
-    bool update_global = true);
+    const ::std::function<void(const LogMessage &)> &callback);
 
 class ScopedLogRestorer {
  public:
-  ScopedLogRestorer() { prev_impl_ = GetImplementation(); }
+  ScopedLogRestorer() = default;
 
-  ~ScopedLogRestorer() { SetImplementation(prev_impl_); }
+  ~ScopedLogRestorer() {
+    if (prev_impl_) {
+      SetImplementation(std::move(prev_impl_));
+    }
+    Cleanup();
+  }
+
+  void Swap(std::shared_ptr<LogImplementation> new_impl) {
+    prev_impl_ = SwapImplementation(std::move(new_impl));
+  }
 
  private:
-  LogImplementation *prev_impl_;
+  std::shared_ptr<LogImplementation> prev_impl_;
 };
 
 // This is where all of the code that is only used by actual LogImplementations

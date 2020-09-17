@@ -21,9 +21,7 @@ class WorkStackTest : public ::testing::Test {
       i_ = i;
       test_ = test;
     }
-    void DoWork() {
-      test_->invoked_works()->push_back(i_);
-    }
+    void DoWork() { test_->invoked_works()->push_back(i_); }
 
     int i() const { return i_; }
 
@@ -37,9 +35,7 @@ class WorkStackTest : public ::testing::Test {
   WorkStack<TestWork, 20> *work_stack() { return &work_stack_; }
 
   // Creates a TestWork with index i and adds it to work_stack().
-  void CreateWork(int i) {
-    work_stack_.AddWork(this, i);
-  }
+  void CreateWork(int i) { work_stack_.AddWork(this, i); }
 
  private:
   ::std::vector<int> created_works_, invoked_works_;
@@ -93,7 +89,8 @@ TEST_F(WorkStackDeathTest, TooManyWorks) {
   logging::Init();
   EXPECT_DEATH(
       {
-        logging::SetImplementation(new util::DeathTestLogImplementation());
+        logging::SetImplementation(
+            std::make_shared<util::DeathTestLogImplementation>());
         for (int i = 0; i < 1000; ++i) {
           CreateWork(i);
         }

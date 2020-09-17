@@ -35,11 +35,12 @@ void RunWithCurrentImplementation(
     ::std::function<void(LogImplementation *)> function) {
   Context *context = Context::Get();
 
-  LogImplementation *const implementation = context->implementation;
+  const std::shared_ptr<LogImplementation> implementation =
+      context->implementation;
   if (implementation == NULL) {
     Die("no logging implementation to use\n");
   }
-  function(implementation);
+  function(implementation.get());
 }
 
 }  // namespace internal

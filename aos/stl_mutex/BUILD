@@ -7,7 +7,7 @@ cc_library(
     ],
     deps = [
         "//aos/ipc_lib:aos_sync",
-        "//aos/logging",
+        "@com_github_google_glog//:glog",
     ],
 )
 
@@ -20,6 +20,5 @@ cc_test(
         ":stl_mutex",
         "//aos:die",
         "//aos/testing:googletest",
-        "//aos/testing:test_logging",
     ],
 )

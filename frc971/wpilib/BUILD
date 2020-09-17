@@ -370,6 +370,7 @@ cc_library(
         "//aos:init",
         "//aos/events:event_loop",
         "//aos/events:shm_event_loop",
+        "//aos/logging",
         "//aos/stl_mutex",
         "//aos/time",
         "//aos/util:phased_loop",

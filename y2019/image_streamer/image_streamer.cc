@@ -309,7 +309,7 @@ int main(int argc, char **argv) {
   gflags::ParseCommandLineFlags(&argc, &argv, false);
   ::aos::logging::Init();
   ::aos::logging::SetImplementation(
-      new ::aos::logging::StreamLogImplementation(stderr));
+      std::make_shared<::aos::logging::StreamLogImplementation>(stderr));
   TCPServer<MjpegDataSocket> tcp_server_(80);
   aos::vision::CameraParams params0;
   params0.set_exposure(FLAGS_camera0_exposure);

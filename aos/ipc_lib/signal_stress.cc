@@ -192,8 +192,6 @@ int main(int argc, char **argv) {
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);
 
   ::aos::logging::Init();
-  ::aos::logging::SetImplementation(
-      new ::aos::logging::StreamLogImplementation(stdout));
 
   return ::aos::Main(argc, argv);
 }

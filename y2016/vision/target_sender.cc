@@ -226,8 +226,6 @@ int main(int, char **) {
   using namespace y2016::vision;
   StereoGeometry stereo("./stereo_rig.calib");
   ::aos::logging::Init();
-  ::aos::logging::SetImplementation(
-      new ::aos::logging::StreamLogImplementation(stdout));
   std::thread cam0([stereo]() {
     RunCamera(0, GetCameraParams(stereo.calibration()),
               stereo.calibration().right_camera_name(),

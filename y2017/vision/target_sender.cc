@@ -220,8 +220,6 @@ int main(int, char **) {
   using namespace y2017::vision;
 
   ::aos::logging::Init();
-  ::aos::logging::SetImplementation(
-      new ::aos::logging::StreamLogImplementation(stdout));
   VisionConfig cfg;
   if (ReadConfiguration("ConfigFile.pb.ascii", &cfg)) {
     if (cfg.robot_configs().count("Laptop") != 1) {

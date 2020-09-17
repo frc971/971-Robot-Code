@@ -4,9 +4,8 @@
 #include <mutex>
 
 #include "aos/ipc_lib/aos_sync.h"
-#include "aos/logging/logging.h"
-#include "aos/type_traits/type_traits.h"
 #include "aos/macros.h"
+#include "glog/logging.h"
 
 namespace aos {
 
@@ -31,7 +30,7 @@ class stl_mutex {
         owner_died_ = true;
         break;
       default:
-        AOS_LOG(FATAL, "mutex_grab(%p) failed with %d\n", &native_handle_, ret);
+        LOG(FATAL) << "mutex_grab(" << &native_handle_ << ") failed: " << ret;
     }
   }
 
@@ -46,13 +45,13 @@ class stl_mutex {
       case 4:
         return false;
       default:
-        AOS_LOG(FATAL, "mutex_trylock(%p) failed with %d\n", &native_handle_,
-                ret);
+        LOG(FATAL) << "mutex_trylock(" << &native_handle_
+                   << ") failed: " << ret;
     }
   }
 
   void unlock() {
-    AOS_CHECK(!owner_died_);
+    CHECK(!owner_died_);
     mutex_unlock(&native_handle_);
   }
 
@@ -84,20 +83,20 @@ class stl_recursive_mutex {
 
   void lock() {
     if (mutex_islocked(mutex_.native_handle())) {
-      AOS_CHECK(!owner_died());
+      CHECK(!owner_died());
       ++recursive_locks_;
     } else {
       mutex_.lock();
       if (mutex_.owner_died()) {
         recursive_locks_ = 0;
       } else {
-        AOS_CHECK_EQ(0, recursive_locks_);
+        CHECK_EQ(0, recursive_locks_);
       }
     }
   }
   bool try_lock() {
     if (mutex_islocked(mutex_.native_handle())) {
-      AOS_CHECK(!owner_died());
+      CHECK(!owner_died());
       ++recursive_locks_;
       return true;
     } else {
@@ -105,7 +104,7 @@ class stl_recursive_mutex {
         if (mutex_.owner_died()) {
           recursive_locks_ = 0;
         } else {
-          AOS_CHECK_EQ(0, recursive_locks_);
+          CHECK_EQ(0, recursive_locks_);
         }
         return true;
       } else {

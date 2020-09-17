@@ -71,7 +71,8 @@ TEST_F(MutexDeathTest, RepeatUnlock) {
   test_mutex_.Unlock();
   EXPECT_DEATH(
       {
-        logging::SetImplementation(new util::DeathTestLogImplementation());
+        logging::SetImplementation(
+            std::make_shared<util::DeathTestLogImplementation>());
         test_mutex_.Unlock();
       },
       ".*multiple unlock.*");
@@ -82,7 +83,8 @@ TEST_F(MutexDeathTest, NeverLock) {
   logging::Init();
   EXPECT_DEATH(
       {
-        logging::SetImplementation(new util::DeathTestLogImplementation());
+        logging::SetImplementation(
+            std::make_shared<util::DeathTestLogImplementation>());
         test_mutex_.Unlock();
       },
       ".*multiple unlock.*");
@@ -92,7 +94,8 @@ TEST_F(MutexDeathTest, NeverLock) {
 TEST_F(MutexDeathTest, RepeatLock) {
   EXPECT_DEATH(
       {
-        logging::SetImplementation(new util::DeathTestLogImplementation());
+        logging::SetImplementation(
+            std::make_shared<util::DeathTestLogImplementation>());
         ASSERT_FALSE(test_mutex_.Lock());
         ASSERT_FALSE(test_mutex_.Lock());
       },
@@ -107,9 +110,7 @@ TEST_F(MutexTest, OwnerDiedDeathLock) {
       static_cast<Mutex *>(shm_malloc_aligned(sizeof(Mutex), alignof(Mutex)));
   new (mutex) Mutex();
 
-  std::thread thread([&]() {
-    ASSERT_FALSE(mutex->Lock());
-  });
+  std::thread thread([&]() { ASSERT_FALSE(mutex->Lock()); });
   thread.join();
   EXPECT_TRUE(mutex->Lock());
 
@@ -124,9 +125,7 @@ TEST_F(MutexTest, OwnerDiedDeathTryLock) {
       static_cast<Mutex *>(shm_malloc_aligned(sizeof(Mutex), alignof(Mutex)));
   new (mutex) Mutex();
 
-  std::thread thread([&]() {
-    ASSERT_FALSE(mutex->Lock());
-  });
+  std::thread thread([&]() { ASSERT_FALSE(mutex->Lock()); });
   thread.join();
   EXPECT_EQ(Mutex::State::kOwnerDied, mutex->TryLock());
 
@@ -245,13 +244,12 @@ TEST_F(MutexLockerDeathTest, OwnerDied) {
       static_cast<Mutex *>(shm_malloc_aligned(sizeof(Mutex), alignof(Mutex)));
   new (mutex) Mutex();
 
-  std::thread thread([&]() {
-    ASSERT_FALSE(mutex->Lock());
-  });
+  std::thread thread([&]() { ASSERT_FALSE(mutex->Lock()); });
   thread.join();
   EXPECT_DEATH(
       {
-        logging::SetImplementation(new util::DeathTestLogImplementation());
+        logging::SetImplementation(
+            std::make_shared<util::DeathTestLogImplementation>());
         MutexLocker locker(mutex);
       },
       ".*previous owner of mutex [^ ]+ died.*");
@@ -313,9 +311,7 @@ TEST_F(IPCMutexLockerTest, OwnerDied) {
       static_cast<Mutex *>(shm_malloc_aligned(sizeof(Mutex), alignof(Mutex)));
   new (mutex) Mutex();
 
-  std::thread thread([&]() {
-    ASSERT_FALSE(mutex->Lock());
-  });
+  std::thread thread([&]() { ASSERT_FALSE(mutex->Lock()); });
   thread.join();
   {
     aos::IPCMutexLocker locker(mutex);

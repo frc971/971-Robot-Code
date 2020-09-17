@@ -6,9 +6,9 @@
 
 #include "gtest/gtest.h"
 
+#include "absl/base/call_once.h"
 #include "aos/logging/implementations.h"
 #include "aos/mutex/mutex.h"
-#include "absl/base/call_once.h"
 
 using ::aos::logging::LogMessage;
 
@@ -38,9 +38,9 @@ class TestLogImplementation : public logging::HandleMessageLogImplementation {
 
   // This class has to be a singleton so that everybody can get access to the
   // same instance to read out the messages etc.
-  static TestLogImplementation *GetInstance() {
-    static absl::once_flag once;
-    absl::call_once(once, CreateInstance);
+  static std::shared_ptr<TestLogImplementation> GetInstance() {
+    static std::shared_ptr<TestLogImplementation> instance =
+        std::make_unique<TestLogImplementation>();
     return instance;
   }
 
@@ -72,19 +72,14 @@ class TestLogImplementation : public logging::HandleMessageLogImplementation {
 
   void PrintMessagesAsTheyComeIn() { print_as_messages_come_in_ = true; }
 
- private:
-  static TestLogImplementation *instance;
-  TestLogImplementation() {}
+  // Don't call these from outside this class.
   ~TestLogImplementation() {
     if (output_file_ != stdout) {
       fclose(output_file_);
     }
   }
 
-    static void CreateInstance() {
-      instance = new TestLogImplementation();
-  }
-
+ private:
   virtual void HandleMessage(const LogMessage &message) override {
     ::aos::MutexLocker locker(&messages_mutex_);
     if (message.level == FATAL || print_as_messages_come_in_) {
@@ -106,8 +101,6 @@ class TestLogImplementation : public logging::HandleMessageLogImplementation {
   static thread_local ::aos::monotonic_clock::time_point monotonic_now_;
 };
 
-TestLogImplementation *TestLogImplementation::instance;
-
 thread_local bool TestLogImplementation::mock_time_ = false;
 thread_local ::aos::monotonic_clock::time_point
     TestLogImplementation::monotonic_now_ = ::aos::monotonic_clock::min_time;
@@ -123,7 +116,7 @@ class MyTestEventListener : public ::testing::EmptyTestEventListener {
     }
   }
 
-  virtual void OnTestPartResult( const ::testing::TestPartResult &result) {
+  virtual void OnTestPartResult(const ::testing::TestPartResult &result) {
     if (result.failed()) {
       const char *failure_type = "unknown";
       switch (result.type()) {
@@ -136,11 +129,8 @@ class MyTestEventListener : public ::testing::EmptyTestEventListener {
         case ::testing::TestPartResult::Type::kSuccess:
           break;
       }
-      log_do(ERROR, "%s: %d: gtest %s failure\n%s\n",
-             result.file_name(),
-             result.line_number(),
-             failure_type,
-             result.message());
+      log_do(ERROR, "%s: %d: gtest %s failure\n%s\n", result.file_name(),
+             result.line_number(), failure_type, result.message());
     }
   }
 };
@@ -163,7 +153,7 @@ void EnableTestLogging() {
   absl::call_once(enable_test_logging_once, DoEnableTestLogging);
 }
 
-void SetLogFileName(const char* filename) {
+void SetLogFileName(const char *filename) {
   TestLogImplementation::GetInstance()->SetOutputFile(filename);
 }
 
@@ -174,9 +164,7 @@ void ForcePrintLogsDuringTests() {
 void MockTime(::aos::monotonic_clock::time_point monotonic_now) {
   TestLogImplementation::GetInstance()->MockTime(monotonic_now);
 }
-void UnMockTime() {
-  TestLogImplementation::GetInstance()->UnMockTime();
-}
+void UnMockTime() { TestLogImplementation::GetInstance()->UnMockTime(); }
 
 }  // namespace testing
 }  // namespace aos

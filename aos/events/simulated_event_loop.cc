@@ -570,9 +570,8 @@ class SimulatedEventLoop : public EventLoop {
   void Setup() {
     MaybeScheduleTimingReports();
     if (!skip_logger_) {
-      logging::ScopedLogRestorer prev_logger;
       log_sender_.Initialize(MakeSender<logging::LogMessageFbs>("/aos"));
-      log_impl_ = logging::GetImplementation();
+      log_impl_ = log_sender_.implementation();
     }
   }
 
@@ -614,7 +613,7 @@ class SimulatedEventLoop : public EventLoop {
   const pid_t tid_;
 
   AosLogToFbs log_sender_;
-  logging::LogImplementation *log_impl_ = nullptr;
+  std::shared_ptr<logging::LogImplementation> log_impl_ = nullptr;
 };
 
 void SimulatedEventLoopFactory::set_send_delay(
@@ -720,8 +719,8 @@ void SimulatedWatcher::HandleEvent() {
   const monotonic_clock::time_point monotonic_now =
       simulated_event_loop_->monotonic_now();
   logging::ScopedLogRestorer prev_logger;
-  if (simulated_event_loop_->log_impl_ != nullptr) {
-    logging::SetImplementation(simulated_event_loop_->log_impl_);
+  if (simulated_event_loop_->log_impl_) {
+    prev_logger.Swap(simulated_event_loop_->log_impl_);
   }
   Context context = msgs_.front()->context;
 
@@ -837,8 +836,8 @@ void SimulatedTimerHandler::HandleEvent() {
   const ::aos::monotonic_clock::time_point monotonic_now =
       simulated_event_loop_->monotonic_now();
   logging::ScopedLogRestorer prev_logger;
-  if (simulated_event_loop_->log_impl_ != nullptr) {
-    logging::SetImplementation(simulated_event_loop_->log_impl_);
+  if (simulated_event_loop_->log_impl_) {
+    prev_logger.Swap(simulated_event_loop_->log_impl_);
   }
   if (token_ != scheduler_->InvalidToken()) {
     scheduler_->Deschedule(token_);
@@ -889,8 +888,8 @@ void SimulatedPhasedLoopHandler::HandleEvent() {
   monotonic_clock::time_point monotonic_now =
       simulated_event_loop_->monotonic_now();
   logging::ScopedLogRestorer prev_logger;
-  if (simulated_event_loop_->log_impl_ != nullptr) {
-    logging::SetImplementation(simulated_event_loop_->log_impl_);
+  if (simulated_event_loop_->log_impl_) {
+    prev_logger.Swap(simulated_event_loop_->log_impl_);
   }
   Call(
       [monotonic_now]() { return monotonic_now; },
