@@ -130,7 +130,7 @@ SctpClientConnection::SctpClientConnection(
 
     if (configuration::ChannelIsSendableOnNode(channel, remote_node_) &&
         configuration::ChannelIsReadableOnNode(channel, event_loop_->node())) {
-      LOG(INFO) << "Reeiving channel "
+      LOG(INFO) << "Receiving channel "
                 << configuration::CleanedChannelToString(channel);
       max_size = std::max(channel->max_size(), max_size);
     }
