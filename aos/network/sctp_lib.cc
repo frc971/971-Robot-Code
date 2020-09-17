@@ -133,6 +133,15 @@ void PrintNotification(const Message *msg) {
       LOG(INFO) << " SCTP_REMOTE_ERROR";
       VLOG(1) << "\t\t(remote_error: err=" << ntohs(sre->sre_error) << ")";
     } break;
+    case SCTP_STREAM_CHANGE_EVENT: {
+      const struct sctp_stream_change_event *sce =
+          &snp->sn_strchange_event;
+      LOG(INFO) << " SCTP_STREAM_CHANGE_EVENT";
+      VLOG(1) << "\t\t(stream_change_event: flags=" << sce->strchange_flags
+              << ", assoc_id=" << sce->strchange_assoc_id
+              << ", instrms=" << sce->strchange_instrms
+              << ", outstrms=" << sce->strchange_outstrms << " )";
+    } break;
     case SCTP_SHUTDOWN_EVENT: {
       LOG(INFO) << " SCTP_SHUTDOWN_EVENT";
     } break;
