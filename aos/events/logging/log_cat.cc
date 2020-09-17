@@ -122,11 +122,13 @@ int main(int argc, char **argv) {
     LOG(FATAL) << "Expected at least 1 logfile as an argument.";
   }
 
-  std::vector<std::vector<std::string>> logfiles;
-
+  std::vector<std::string> unsorted_logfiles;
   for (int i = 1; i < argc; ++i) {
-    logfiles.emplace_back(std::vector<std::string>{std::string(argv[i])});
+    unsorted_logfiles.emplace_back(std::string(argv[i]));
   }
+
+  std::vector<std::vector<std::string>> logfiles =
+      aos::logger::SortParts(unsorted_logfiles);
 
   aos::logger::LogReader reader(logfiles);
 
