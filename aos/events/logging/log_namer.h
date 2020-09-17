@@ -33,17 +33,26 @@ class LogNamer {
       aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header,
       const Node *node) = 0;
 
-  // Returns a writer for writing data logged on this channel (on the node
-  // provided in the constructor).
+  // Returns a writer for writing data from messages on this channel (on the
+  // primary node).
+  //
+  // The returned pointer will stay valid across rotations, but the object it
+  // points to will be assigned to.
   virtual DetachedBufferWriter *MakeWriter(const Channel *channel) = 0;
 
-  // Returns a writer for writing timestamps logged on this channel (on the node
-  // provided in the constructor).
+  // Returns a writer for writing timestamps from messages on this channel (on
+  // the primary node).
+  //
+  // The returned pointer will stay valid across rotations, but the object it
+  // points to will be assigned to.
   virtual DetachedBufferWriter *MakeTimestampWriter(const Channel *channel) = 0;
 
   // Returns a writer for writing timestamps delivered over the special
   // /aos/remote_timestamps/* channels.  node is the node that the timestamps
-  // are forwarded back from.
+  // are forwarded back from (to the primary node).
+  //
+  // The returned pointer will stay valid across rotations, but the object it
+  // points to will be assigned to.
   virtual DetachedBufferWriter *MakeForwardedTimestampWriter(
       const Channel *channel, const Node *node) = 0;
 

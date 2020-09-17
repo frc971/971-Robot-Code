@@ -296,7 +296,7 @@ bool Logger::MaybeUpdateTimestamp(
     const Node *node, int node_index,
     aos::monotonic_clock::time_point monotonic_start_time,
     aos::realtime_clock::time_point realtime_start_time) {
-  // Bail early if there the start times are already set.
+  // Bail early if the start times are already set.
   if (node_state_[node_index].monotonic_start_time !=
       monotonic_clock::min_time) {
     return false;
@@ -1194,8 +1194,7 @@ void LogReader::Register(EventLoop *event_loop) {
         CHECK(channel_data.message().data() != nullptr)
             << ": Got a message without data.  Forwarding entry which was "
                "not matched?  Use --skip_missing_forwarding_entries to "
-               "ignore "
-               "this.";
+               "ignore this.";
 
         if (update_time) {
           // Confirm that the message was sent on the sending node before the

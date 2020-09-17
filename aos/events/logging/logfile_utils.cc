@@ -45,9 +45,11 @@ DetachedBufferWriter::DetachedBufferWriter(
   *this = std::move(other);
 }
 
+// When other is destroyed "soon" (which it should be because we're getting an
+// rvalue reference to it), it will flush etc all the data we have queued up
+// (because that data will then be its data).
 DetachedBufferWriter &DetachedBufferWriter::operator=(
     DetachedBufferWriter &&other) {
-  Flush();
   std::swap(filename_, other.filename_);
   std::swap(fd_, other.fd_);
   std::swap(queued_size_, other.queued_size_);
@@ -378,7 +380,7 @@ SplitMessageReader::SplitMessageReader(
     if (monotonic_start_time() == monotonic_clock::min_time) {
       CHECK_EQ(realtime_start_time(), realtime_clock::min_time);
       // We should only be missing the monotonic start time when logging data
-      // for remote nodes.  We don't have a good way to deteremine the remote
+      // for remote nodes.  We don't have a good way to determine the remote
       // realtime offset, so it shouldn't be filled out.
       // TODO(austin): If we have a good way, feel free to fill it out.  It
       // probably won't be better than we could do in post though with the same

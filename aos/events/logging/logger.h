@@ -524,7 +524,7 @@ class LogReader {
   // constrain our time function.
   //
   // One is simple.  The distributed clock is the average of all the clocks.
-  //   (ta + tb + tc + td) / num_nodex = t_distributed
+  //   (ta + tb + tc + td) / num_nodes = t_distributed
   //
   // The second is a bit more complicated.  Our basic time conversion function
   // is:
@@ -540,7 +540,7 @@ class LogReader {
   // per-node times at two set distributed clock times, we will be able to
   // recreate the linear function (we know it is linear).  We can do a similar
   // thing by breaking our equation up into:
-  // 
+  //
   // [1/3  1/3  1/3  ] [ta]   [t_distributed]
   // [ 1  -1-m1  0   ] [tb] = [oab]
   // [ 1    0  -1-m2 ] [tc]   [oac]
