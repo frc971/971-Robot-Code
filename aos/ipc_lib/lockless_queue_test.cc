@@ -317,8 +317,32 @@ TEST_F(LocklessQueueTest, SendRace) {
   }
 }
 
+namespace {
+
+// Temporarily pins the current thread to CPUs 0 and 1.
+// This speeds up the test on some machines a lot (~4x). It also preserves
+// opportunities for the 2 threads to race each other.
+class PinForTest {
+ public:
+  PinForTest() {
+    PCHECK(sched_getaffinity(0, sizeof(old_), &old_) == 0);
+    cpu_set_t new_set;
+    CPU_ZERO(&new_set);
+    CPU_SET(0, &new_set);
+    CPU_SET(1, &new_set);
+    PCHECK(sched_setaffinity(0, sizeof(new_set), &new_set) == 0);
+  }
+  ~PinForTest() { PCHECK(sched_setaffinity(0, sizeof(old_), &old_) == 0); }
+
+ private:
+  cpu_set_t old_;
+};
+
+}  // namespace
+
 // Send enough messages to wrap the 32 bit send counter.
 TEST_F(LocklessQueueTest, WrappedSend) {
+  PinForTest pin_cpu;
   uint64_t kNumMessages = 0x100010000ul;
   QueueRacer racer(queue(), 1, kNumMessages);
 

@@ -435,7 +435,11 @@ QueueIndex ZeroOrValid(QueueIndex index) {
 
 size_t LocklessQueueConfiguration::message_size() const {
   // Round up the message size so following data is aligned appropriately.
+  // Make sure to leave space to align the message data. It will be aligned
+  // relative to the start of the shared memory region, but that might not be
+  // aligned for some use cases.
   return LocklessQueueMemory::AlignmentRoundUp(message_data_size +
+                                               kChannelDataRedzone * 2 +
                                                (kChannelDataAlignment - 1)) +
          sizeof(Message);
 }
@@ -466,6 +470,67 @@ size_t LocklessQueueMemorySize(LocklessQueueConfiguration config) {
   size += LocklessQueueMemory::SizeOfPinners(config);
 
   return size;
+}
+
+// Calculates the starting byte for a redzone in shared memory. This starting
+// value is simply incremented for subsequent bytes.
+//
+// The result is based on the offset of the region in shared memor, to ensure it
+// is the same for each region when we generate and verify, but different for
+// each region to help catch forms of corruption like copying out-of-bounds data
+// from one place to another.
+//
+// memory is the base pointer to the shared memory. It is used to calculated
+// offsets. starting_data is the start of the redzone's data. Each one will
+// get a unique pattern.
+uint8_t RedzoneStart(const LocklessQueueMemory *memory,
+                     const char *starting_data) {
+  const auto memory_int = reinterpret_cast<uintptr_t>(memory);
+  const auto starting_int = reinterpret_cast<uintptr_t>(starting_data);
+  DCHECK(starting_int >= memory_int);
+  DCHECK(starting_int < memory_int + LocklessQueueMemorySize(memory->config));
+  const uintptr_t starting_offset = starting_int - memory_int;
+  // Just XOR the lower 2 bytes. They higher-order bytes are probably 0
+  // anyways.
+  return (starting_offset & 0xFF) ^ ((starting_offset >> 8) & 0xFF);
+}
+
+// Returns true if the given redzone has invalid data.
+bool CheckRedzone(const LocklessQueueMemory *memory,
+                  absl::Span<const char> redzone) {
+  uint8_t redzone_value = RedzoneStart(memory, redzone.data());
+
+  bool bad = false;
+
+  for (size_t i = 0; i < redzone.size(); ++i) {
+    if (memcmp(&redzone[i], &redzone_value, 1)) {
+      bad = true;
+    }
+    ++redzone_value;
+  }
+
+  return bad;
+}
+
+// Returns true if either of message's redzones has invalid data.
+bool CheckBothRedzones(const LocklessQueueMemory *memory,
+                       const Message *message) {
+  return CheckRedzone(memory,
+                      message->PreRedzone(memory->message_data_size())) ||
+         CheckRedzone(memory, message->PostRedzone(memory->message_data_size(),
+                                                   memory->message_size()));
+}
+
+// Fills the given redzone with the expected data.
+void FillRedzone(LocklessQueueMemory *memory, absl::Span<char> redzone) {
+  uint8_t redzone_value = RedzoneStart(memory, redzone.data());
+  for (size_t i = 0; i < redzone.size(); ++i) {
+    memcpy(&redzone[i], &redzone_value, 1);
+    ++redzone_value;
+  }
+
+  // Just double check that the implementations match.
+  CHECK(!CheckRedzone(memory, redzone));
 }
 
 LocklessQueueMemory *InitializeLocklessQueueMemory(
@@ -534,8 +599,12 @@ LocklessQueueMemory *InitializeLocklessQueueMemory(
     CHECK_LE(num_messages, Index::MaxMessages());
 
     for (size_t i = 0; i < num_messages; ++i) {
-      memory->GetMessage(Index(QueueIndex::Zero(memory->queue_size()), i))
-          ->header.queue_index.Invalidate();
+      Message *const message =
+          memory->GetMessage(Index(QueueIndex::Zero(memory->queue_size()), i));
+      message->header.queue_index.Invalidate();
+      FillRedzone(memory, message->PreRedzone(memory->message_data_size()));
+      FillRedzone(memory, message->PostRedzone(memory->message_data_size(),
+                                               memory->message_size()));
     }
 
     for (size_t i = 0; i < memory->queue_size(); ++i) {
@@ -866,6 +935,8 @@ void LocklessQueueSender::Send(
   // modifying it right now.
   const Index scratch_index = sender->scratch_index.RelaxedLoad();
   Message *const message = memory_->GetMessage(scratch_index);
+  CHECK(!CheckBothRedzones(memory_, message))
+      << ": Somebody wrote outside the buffer of their message";
 
   // We should have invalidated this when we first got the buffer. Verify that
   // in debug mode.
@@ -995,6 +1066,8 @@ void LocklessQueueSender::Send(
     break;
   }
 
+  DCHECK(!CheckBothRedzones(memory_, memory_->GetMessage(to_replace)))
+      << ": Invalid message found in shared memory";
   // to_replace is our current scratch_index. It isn't in the queue, which means
   // nobody new can pin it. They can set their `pinned` to it, but they will
   // back it out, so they don't count. This means that we just need to find a
@@ -1003,6 +1076,9 @@ void LocklessQueueSender::Send(
   // pinned then we'll look for a new one to use instead.
   const Index new_scratch =
       SwapPinnedSenderScratch(memory_, sender, to_replace);
+  DCHECK(!CheckBothRedzones(
+      memory_, memory_->GetMessage(sender->scratch_index.RelaxedLoad())))
+      << ": Invalid message found in shared memory";
 
   // If anybody is looking at this message (they shouldn't be), then try telling
   // them about it (best-effort).
@@ -1089,6 +1165,8 @@ int LocklessQueuePinner::PinIndex(uint32_t uint32_queue_index) {
   {
     const Index message_index = queue_slot->Load();
     Message *const message = memory_->GetMessage(message_index);
+    DCHECK(!CheckBothRedzones(memory_, message))
+        << ": Invalid message found in shared memory";
 
     const QueueIndex message_queue_index =
         message->header.queue_index.Load(queue_size);
@@ -1141,6 +1219,8 @@ LocklessQueueReader::Result LocklessQueueReader::Read(
   const Message *m = memory_->GetMessage(mi);
 
   while (true) {
+    DCHECK(!CheckBothRedzones(memory_, m))
+        << ": Invalid message found in shared memory";
     // We need to confirm that the data doesn't change while we are reading it.
     // Do that by first confirming that the message points to the queue index we
     // want.
@@ -1341,6 +1421,10 @@ void PrintLocklessQueueMemory(LocklessQueueMemory *memory) {
     ::std::cout << "        size_t length = " << m->header.length
                 << ::std::endl;
     ::std::cout << "      }" << ::std::endl;
+    if (!CheckBothRedzones(memory, m)) {
+      ::std::cout << "      // *** DATA REDZONES ARE CORRUPTED ***"
+                  << ::std::endl;
+    }
     ::std::cout << "      data: {";
 
     if (FLAGS_dump_lockless_queue_data) {

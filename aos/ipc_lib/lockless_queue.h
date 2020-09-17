@@ -7,6 +7,8 @@
 #include <optional>
 #include <vector>
 
+#include "absl/types/span.h"
+
 #include "aos/ipc_lib/aos_sync.h"
 #include "aos/ipc_lib/data_alignment.h"
 #include "aos/ipc_lib/index.h"
@@ -93,16 +95,64 @@ struct Message {
     size_t length;
   } header;
 
-  char *data(size_t message_size) { return RoundedData(message_size); }
-  const char *data(size_t message_size) const {
-    return RoundedData(message_size);
+  // Returns the start of the data buffer, given that message_data_size is
+  // the same one used to allocate this message's memory.
+  char *data(size_t message_data_size) {
+    return RoundedData(message_data_size);
+  }
+  const char *data(size_t message_data_size) const {
+    return RoundedData(message_data_size);
+  }
+
+  // Returns the pre-buffer redzone, given that message_data_size is the same
+  // one used to allocate this message's memory.
+  absl::Span<char> PreRedzone(size_t message_data_size) {
+    char *const end = data(message_data_size);
+    const auto result =
+        absl::Span<char>(&data_pointer[0], end - &data_pointer[0]);
+    DCHECK_LT(result.size(), kChannelDataRedzone + kChannelDataAlignment);
+    return result;
+  }
+  absl::Span<const char> PreRedzone(size_t message_data_size) const {
+    const char *const end = data(message_data_size);
+    const auto result =
+        absl::Span<const char>(&data_pointer[0], end - &data_pointer[0]);
+    DCHECK_LT(result.size(), kChannelDataRedzone + kChannelDataAlignment);
+    return result;
+  }
+
+  // Returns the post-buffer redzone, given that message_data_size is the same
+  // one used to allocate this message's memory.
+  absl::Span<char> PostRedzone(size_t message_data_size, size_t message_size) {
+    DCHECK_LT(message_data_size, message_size);
+    char *const redzone_end = reinterpret_cast<char *>(this) + message_size;
+    char *const data_end = data(message_data_size) + message_data_size;
+    DCHECK_GT(static_cast<void *>(redzone_end), static_cast<void *>(data_end));
+    const auto result = absl::Span<char>(data_end, redzone_end - data_end);
+    DCHECK_LT(result.size(), kChannelDataRedzone + kChannelDataAlignment * 2);
+    return result;
+  }
+  absl::Span<const char> PostRedzone(size_t message_data_size,
+                                     size_t message_size) const {
+    DCHECK_LT(message_data_size, message_size);
+    const char *const redzone_end =
+        reinterpret_cast<const char *>(this) + message_size;
+    const char *const data_end = data(message_data_size) + message_data_size;
+    DCHECK_GT(static_cast<const void *>(redzone_end),
+              static_cast<const void *>(data_end));
+    const auto result =
+        absl::Span<const char>(data_end, redzone_end - data_end);
+    DCHECK_LT(result.size(), kChannelDataRedzone + kChannelDataAlignment * 2);
+    return result;
   }
 
  private:
-  // This returns a non-const pointer into a const object. Be very careful about
-  // const correctness in publicly accessible APIs using it.
-  char *RoundedData(size_t message_size) const {
-    return RoundChannelData(const_cast<char *>(&data_pointer[0]), message_size);
+  // This returns a non-const pointer into a const object. Be very careful
+  // about const correctness in publicly accessible APIs using it.
+  char *RoundedData(size_t message_data_size) const {
+    return RoundChannelData(
+        const_cast<char *>(&data_pointer[0] + kChannelDataRedzone),
+        message_data_size);
   }
 
   char data_pointer[];
