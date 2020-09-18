@@ -14,6 +14,11 @@
 
 namespace aos {
 namespace testing {
+namespace {
+
+std::string ConfigPrefix() { return "aos/"; }
+
+}  // namespace
 
 namespace chrono = ::std::chrono;
 
@@ -271,8 +276,8 @@ class MessageCounter {
 // gateway messages are sent out as expected.
 TEST(SimulatedEventLoopTest, MultinodePingPong) {
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
-      aos::configuration::ReadConfig(
-          "aos/events/multinode_pingpong_config.json");
+      aos::configuration::ReadConfig(ConfigPrefix() +
+                                     "events/multinode_pingpong_config.json");
   const Node *pi1 = configuration::GetNode(&config.message(), "pi1");
   const Node *pi2 = configuration::GetNode(&config.message(), "pi2");
   const Node *pi3 = configuration::GetNode(&config.message(), "pi3");
@@ -573,8 +578,8 @@ TEST(SimulatedEventLoopTest, MultinodePingPong) {
 // ServerStatistics correctly.
 TEST(SimulatedEventLoopTest, MultinodePingPongWithOffset) {
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
-      aos::configuration::ReadConfig(
-          "aos/events/multinode_pingpong_config.json");
+      aos::configuration::ReadConfig(ConfigPrefix() +
+                                     "events/multinode_pingpong_config.json");
   const Node *pi1 = configuration::GetNode(&config.message(), "pi1");
   const Node *pi2 = configuration::GetNode(&config.message(), "pi2");
   const Node *pi3 = configuration::GetNode(&config.message(), "pi3");
@@ -673,8 +678,8 @@ TEST(SimulatedEventLoopTest, MultinodePingPongWithOffset) {
 // Test that disabling statistics actually disables them.
 TEST(SimulatedEventLoopTest, MultinodeWithoutStatistics) {
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
-      aos::configuration::ReadConfig(
-          "aos/events/multinode_pingpong_config.json");
+      aos::configuration::ReadConfig(ConfigPrefix() +
+                                     "events/multinode_pingpong_config.json");
   const Node *pi1 = configuration::GetNode(&config.message(), "pi1");
   const Node *pi2 = configuration::GetNode(&config.message(), "pi2");
   const Node *pi3 = configuration::GetNode(&config.message(), "pi3");
