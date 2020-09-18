@@ -295,10 +295,10 @@ cc_binary(
 
 cc_binary(
     name = "print_lockless_queue_memory",
-    visibility = ["//visibility:public"],
     srcs = [
         "print_lockless_queue_memory.cc",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         ":lockless_queue",
     ],
