@@ -1,5 +1,5 @@
 {
-  "channel_storage_duration": 5000000000,
+  "channel_storage_duration": 2000000000,
   "maps": [
     {
       "match": {
