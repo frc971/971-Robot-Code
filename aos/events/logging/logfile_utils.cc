@@ -17,7 +17,7 @@
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 
-DEFINE_int32(flush_size, 1000000,
+DEFINE_int32(flush_size, 128000,
              "Number of outstanding bytes to allow before flushing to disk.");
 
 namespace aos {
