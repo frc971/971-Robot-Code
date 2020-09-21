@@ -32,7 +32,7 @@ void LocalLogNamer::WriteHeader(
     const Node *node) {
   CHECK_EQ(node, this->node());
   UpdateHeader(header, uuid_, part_number_);
-  data_writer_->WriteSizedFlatbuffer(header->full_span());
+  data_writer_->QueueSpan(header->full_span());
 }
 
 DetachedBufferWriter *LocalLogNamer::MakeWriter(const Channel *channel) {
@@ -47,7 +47,7 @@ void LocalLogNamer::Rotate(
   ++part_number_;
   *data_writer_ = std::move(*OpenDataWriter());
   UpdateHeader(header, uuid_, part_number_);
-  data_writer_->WriteSizedFlatbuffer(header->full_span());
+  data_writer_->QueueSpan(header->full_span());
 }
 
 DetachedBufferWriter *LocalLogNamer::MakeTimestampWriter(
@@ -81,14 +81,14 @@ void MultiNodeLogNamer::WriteHeader(
     const Node *node) {
   if (node == this->node()) {
     UpdateHeader(header, uuid_, part_number_);
-    data_writer_->WriteSizedFlatbuffer(header->full_span());
+    data_writer_->QueueSpan(header->full_span());
   } else {
     for (std::pair<const Channel *const, DataWriter> &data_writer :
          data_writers_) {
       if (node == data_writer.second.node) {
         UpdateHeader(header, data_writer.second.uuid,
                      data_writer.second.part_number);
-        data_writer.second.writer->WriteSizedFlatbuffer(header->full_span());
+        data_writer.second.writer->QueueSpan(header->full_span());
       }
     }
   }
@@ -101,7 +101,7 @@ void MultiNodeLogNamer::Rotate(
     ++part_number_;
     *data_writer_ = std::move(*OpenDataWriter());
     UpdateHeader(header, uuid_, part_number_);
-    data_writer_->WriteSizedFlatbuffer(header->full_span());
+    data_writer_->QueueSpan(header->full_span());
   } else {
     for (std::pair<const Channel *const, DataWriter> &data_writer :
          data_writers_) {
@@ -110,7 +110,7 @@ void MultiNodeLogNamer::Rotate(
         data_writer.second.rotate(data_writer.first, &data_writer.second);
         UpdateHeader(header, data_writer.second.uuid,
                      data_writer.second.part_number);
-        data_writer.second.writer->WriteSizedFlatbuffer(header->full_span());
+        data_writer.second.writer->QueueSpan(header->full_span());
       }
     }
   }
@@ -208,9 +208,11 @@ void MultiNodeLogNamer::OpenForwardedTimestampWriter(const Channel *channel,
                    data_writer->part_number, ".bfbs");
 
   if (!data_writer->writer) {
-    data_writer->writer = std::make_unique<DetachedBufferWriter>(filename);
+    data_writer->writer = std::make_unique<DetachedBufferWriter>(
+        filename, std::make_unique<DummyEncoder>());
   } else {
-    *data_writer->writer = DetachedBufferWriter(filename);
+    *data_writer->writer =
+        DetachedBufferWriter(filename, std::make_unique<DummyEncoder>());
   }
 }
 
@@ -221,16 +223,19 @@ void MultiNodeLogNamer::OpenWriter(const Channel *channel,
       channel->name()->string_view(), "/", channel->type()->string_view(),
       ".part", data_writer->part_number, ".bfbs");
   if (!data_writer->writer) {
-    data_writer->writer = std::make_unique<DetachedBufferWriter>(filename);
+    data_writer->writer = std::make_unique<DetachedBufferWriter>(
+        filename, std::make_unique<DummyEncoder>());
   } else {
-    *data_writer->writer = DetachedBufferWriter(filename);
+    *data_writer->writer =
+        DetachedBufferWriter(filename, std::make_unique<DummyEncoder>());
   }
 }
 
 std::unique_ptr<DetachedBufferWriter> MultiNodeLogNamer::OpenDataWriter() {
   return std::make_unique<DetachedBufferWriter>(
       absl::StrCat(base_name_, "_", node()->name()->string_view(), "_data.part",
-                   part_number_, ".bfbs"));
+                   part_number_, ".bfbs"),
+      std::make_unique<DummyEncoder>());
 }
 
 }  // namespace logger

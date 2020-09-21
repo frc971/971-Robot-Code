@@ -21,15 +21,68 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
+        ":buffer_encoder",
         ":logger_fbs",
         "//aos:configuration",
         "//aos:flatbuffer_merge",
+        "//aos:flatbuffers",
+        "//aos/containers:resizeable_buffer",
         "//aos/events:event_loop",
         "//aos/util:file",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_flatbuffers//:flatbuffers",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "buffer_encoder",
+    srcs = [
+        "buffer_encoder.cc",
+    ],
+    hdrs = [
+        "buffer_encoder.h",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":logger_fbs",
+        "//aos:configuration_fbs",
+        "@com_github_google_flatbuffers//:flatbuffers",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "buffer_encoder_test",
+    srcs = [
+        "buffer_encoder_test.cc",
+    ],
+    shard_count = 4,
+    deps = [
+        ":buffer_encoder",
+        ":buffer_encoder_param_test",
+        "//aos/testing:googletest",
+        "@com_github_google_glog//:glog",
+    ],
+)
+
+cc_library(
+    name = "buffer_encoder_param_test",
+    testonly = True,
+    srcs = [
+        "buffer_encoder_param_test.cc",
+    ],
+    hdrs = [
+        "buffer_encoder_param_test.h",
+    ],
+    deps = [
+        ":logfile_utils",
+        ":logger_fbs",
+        "//aos/testing:googletest",
+        "//aos/testing:random_seed",
+        "@com_github_google_glog//:glog",
     ],
 )
 

@@ -359,6 +359,16 @@ class SizePrefixedFlatbufferDetachedBuffer final : public Flatbuffer<T> {
   flatbuffers::DetachedBuffer buffer_;
 };
 
+inline flatbuffers::DetachedBuffer CopySpanAsDetachedBuffer(
+    absl::Span<const uint8_t> span) {
+  // Copy the data from the span.
+  uint8_t *buf = flatbuffers::DefaultAllocator().allocate(span.size());
+  memcpy(buf, span.data(), span.size());
+  // Then give it to a DetachedBuffer to manage.
+  return flatbuffers::DetachedBuffer(nullptr, false, buf, span.size(), buf,
+                                     span.size());
+}
+
 }  // namespace aos
 
 #endif  // AOS_FLATBUFFERS_H_

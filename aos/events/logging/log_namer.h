@@ -108,7 +108,8 @@ class LocalLogNamer : public LogNamer {
   // Creates a new data writer with the new part number.
   std::unique_ptr<DetachedBufferWriter> OpenDataWriter() {
     return std::make_unique<DetachedBufferWriter>(
-        absl::StrCat(base_name_, ".part", part_number_, ".bfbs"));
+        absl::StrCat(base_name_, ".part", part_number_, ".bfbs"),
+        std::make_unique<aos::logger::DummyEncoder>());
   }
 
   const std::string base_name_;
