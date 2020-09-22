@@ -779,5 +779,104 @@ TEST(SimulatedEventLoopTest, MultinodeWithoutStatistics) {
   EXPECT_EQ(remote_timestamps_pi1_on_pi2.count(), 1001);
 }
 
+// Tests that the time offset having a slope doesn't break the world.
+// SimulatedMessageBridge has enough self consistency CHECK statements to
+// confirm, and we can can also check a message in each direction to make sure
+// it gets delivered as expected.
+TEST(SimulatedEventLoopTest, MultinodePingPongWithOffsetAndSlope) {
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+      aos::configuration::ReadConfig(ConfigPrefix() +
+                                     "events/multinode_pingpong_config.json");
+  const Node *pi1 = configuration::GetNode(&config.message(), "pi1");
+  const Node *pi2 = configuration::GetNode(&config.message(), "pi2");
+
+  SimulatedEventLoopFactory simulated_event_loop_factory(&config.message());
+  NodeEventLoopFactory *pi2_factory =
+      simulated_event_loop_factory.GetNodeEventLoopFactory(pi2);
+
+  // Move the pi far into the future so the slope is significant.  And set it to
+  // something reasonable.
+  constexpr chrono::milliseconds kOffset{150100};
+  pi2_factory->SetDistributedOffset(kOffset, 1.0001);
+
+  std::unique_ptr<EventLoop> ping_event_loop =
+      simulated_event_loop_factory.MakeEventLoop("ping", pi1);
+  Ping ping(ping_event_loop.get());
+
+  std::unique_ptr<EventLoop> pong_event_loop =
+      simulated_event_loop_factory.MakeEventLoop("pong", pi2);
+  Pong pong(pong_event_loop.get());
+
+  std::unique_ptr<EventLoop> pi1_counter_event_loop =
+      simulated_event_loop_factory.MakeEventLoop("pi1_counter", pi1);
+  std::unique_ptr<EventLoop> pi2_counter_event_loop =
+      simulated_event_loop_factory.MakeEventLoop("pi2_counter", pi2);
+
+  aos::Fetcher<examples::Ping> ping_on_pi1_fetcher =
+      pi1_counter_event_loop->MakeFetcher<examples::Ping>("/test");
+  aos::Fetcher<examples::Ping> ping_on_pi2_fetcher =
+      pi2_counter_event_loop->MakeFetcher<examples::Ping>("/test");
+
+  aos::Fetcher<examples::Pong> pong_on_pi2_fetcher =
+      pi2_counter_event_loop->MakeFetcher<examples::Pong>("/test");
+  aos::Fetcher<examples::Pong> pong_on_pi1_fetcher =
+      pi1_counter_event_loop->MakeFetcher<examples::Pong>("/test");
+
+  // End after a pong message comes back.  This will leave the latest messages
+  // on all channels so we can look at timestamps easily and check they make
+  // sense.
+  std::unique_ptr<EventLoop> pi1_pong_ender =
+      simulated_event_loop_factory.MakeEventLoop("pi2_counter", pi1);
+  int count = 0;
+  pi1_pong_ender->MakeWatcher(
+      "/test", [&simulated_event_loop_factory, &count](const examples::Pong &) {
+        if (++count == 100) {
+          simulated_event_loop_factory.Exit();
+        }
+      });
+
+  // Run enough that messages should be delivered.
+  simulated_event_loop_factory.Run();
+
+  // Grab the latest messages.
+  EXPECT_TRUE(ping_on_pi1_fetcher.Fetch());
+  EXPECT_TRUE(ping_on_pi2_fetcher.Fetch());
+  EXPECT_TRUE(pong_on_pi1_fetcher.Fetch());
+  EXPECT_TRUE(pong_on_pi2_fetcher.Fetch());
+
+  // Compute their time on the global distributed clock so we can compute
+  // distance betwen them.
+  const distributed_clock::time_point pi1_ping_time =
+      simulated_event_loop_factory.GetNodeEventLoopFactory(pi1)
+          ->ToDistributedClock(
+              ping_on_pi1_fetcher.context().monotonic_event_time);
+  const distributed_clock::time_point pi2_ping_time =
+      simulated_event_loop_factory.GetNodeEventLoopFactory(pi2)
+          ->ToDistributedClock(
+              ping_on_pi2_fetcher.context().monotonic_event_time);
+  const distributed_clock::time_point pi1_pong_time =
+      simulated_event_loop_factory.GetNodeEventLoopFactory(pi1)
+          ->ToDistributedClock(
+              pong_on_pi1_fetcher.context().monotonic_event_time);
+  const distributed_clock::time_point pi2_pong_time =
+      simulated_event_loop_factory.GetNodeEventLoopFactory(pi2)
+          ->ToDistributedClock(
+              pong_on_pi2_fetcher.context().monotonic_event_time);
+
+  // And confirm the delivery delay is just about exactly 150 uS for both
+  // directions like expected.  There will be a couple ns of rounding errors in
+  // the conversion functions that aren't worth accounting for right now.  This
+  // will either be really close, or really far.
+  EXPECT_GE(pi2_ping_time, chrono::microseconds(150) - chrono::nanoseconds(10) +
+                               pi1_ping_time);
+  EXPECT_LE(pi2_ping_time, chrono::microseconds(150) + chrono::nanoseconds(10) +
+                               pi1_ping_time);
+
+  EXPECT_GE(pi1_pong_time, chrono::microseconds(150) - chrono::nanoseconds(10) +
+                               pi2_pong_time);
+  EXPECT_LE(pi1_pong_time, chrono::microseconds(150) + chrono::nanoseconds(10) +
+                               pi2_pong_time);
+}
+
 }  // namespace testing
 }  // namespace aos
