@@ -82,7 +82,11 @@ class RawMessageDelayer {
         DeliveredTime(fetcher_->context());
 
     CHECK_GE(monotonic_delivered_time, send_node_factory_->monotonic_now())
-        << ": Trying to deliver message in the past...";
+        << ": Trying to deliver message in the past on channel "
+        << configuration::StrippedChannelToString(fetcher_->channel())
+        << " to node " << send_event_loop_->node()->name()->string_view()
+        << " sent from " << fetcher_->channel()->source_node()->string_view()
+        << " at " << fetch_node_factory_->monotonic_now();
 
     server_connection_->mutate_sent_packets(server_connection_->sent_packets() +
                                             1);
@@ -142,11 +146,9 @@ class RawMessageDelayer {
     const distributed_clock::time_point distributed_sent_time =
         fetch_node_factory_->ToDistributedClock(context.monotonic_event_time);
 
-    return aos::monotonic_clock::epoch() +
-           (distributed_sent_time - send_node_factory_->ToDistributedClock(
-                                        aos::monotonic_clock::epoch())) +
-           send_node_factory_->network_delay() +
-           send_node_factory_->send_delay();
+    return send_node_factory_->FromDistributedClock(
+        distributed_sent_time + send_node_factory_->network_delay() +
+        send_node_factory_->send_delay());
   }
 
   // Factories used for time conversion.
