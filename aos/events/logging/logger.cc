@@ -545,23 +545,54 @@ void Logger::DoLogData() {
   } while (last_synchronized_time_ + polling_period_ < monotonic_now);
 }
 
-std::vector<std::vector<std::string>> SortParts(
-    const std::vector<std::string> &parts) {
+std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
   // Start by grouping all parts by UUID, and extracting the part index.
-  std::map<std::string, std::vector<std::pair<std::string, int>>> parts_list;
+  // Datastructure to hold all the info extracted from a set of parts which go
+  // together so we can sort them afterwords.
+  struct UnsortedLogParts {
+    // Start times.
+    aos::monotonic_clock::time_point monotonic_start_time;
+    aos::realtime_clock::time_point realtime_start_time;
+
+    // Node to save.
+    std::string node;
+
+    // Pairs of the filename and the part index for sorting.
+    std::vector<std::pair<std::string, int>> parts;
+  };
+
+  // Map holding the logger_uuid -> second map.  The second map holds the
+  // parts_uuid -> list of parts for sorting.
+  std::map<std::string, std::map<std::string, UnsortedLogParts>> parts_list;
 
   // Sort part files without UUIDs and part indexes as well.  Extract everything
   // useful from the log in the first pass, then sort later.
-  struct LogPart {
-    std::string filename;
-    monotonic_clock::time_point start_time;
-    monotonic_clock::time_point first_message_time;
+  struct UnsortedOldParts {
+    // Part information with everything but the list of parts.
+    LogParts parts;
+
+    // Tuple of time for the data and filename needed for sorting after
+    // extracting.
+    std::vector<std::pair<monotonic_clock::time_point, std::string>> unsorted_parts;
   };
 
-  std::vector<LogPart> old_parts;
+  // A list of all the old parts which we don't know how to sort using uuids.
+  // There are enough of these in the wild that this is worth supporting.
+  std::vector<UnsortedOldParts> old_parts;
 
+  // Now extract everything into our datastructures above for sorting.
   for (const std::string &part : parts) {
     FlatbufferVector<LogFileHeader> log_header = ReadHeader(part);
+
+    const monotonic_clock::time_point monotonic_start_time(
+        chrono::nanoseconds(log_header.message().monotonic_start_time()));
+    const realtime_clock::time_point realtime_start_time(
+        chrono::nanoseconds(log_header.message().realtime_start_time()));
+
+    const std::string_view node =
+        log_header.message().has_node()
+            ? log_header.message().node()->name()->string_view()
+            : "";
 
     // Looks like an old log.  No UUID, index, and also single node.  We have
     // little to no multi-node log files in the wild without part UUIDs and
@@ -569,71 +600,178 @@ std::vector<std::vector<std::string>> SortParts(
     if (!log_header.message().has_parts_uuid() &&
         !log_header.message().has_parts_index() &&
         !log_header.message().has_node()) {
-      LogPart log_part;
-      log_part.filename = part;
-      log_part.start_time = monotonic_clock::time_point(
-          chrono::nanoseconds(log_header.message().monotonic_start_time()));
       FlatbufferVector<MessageHeader> first_message = ReadNthMessage(part, 0);
-      log_part.first_message_time = monotonic_clock::time_point(
+      const monotonic_clock::time_point first_message_time(
           chrono::nanoseconds(first_message.message().monotonic_sent_time()));
-      old_parts.emplace_back(std::move(log_part));
+
+      // Find anything with a matching start time.  They all go together.
+      auto result = std::find_if(
+          old_parts.begin(), old_parts.end(),
+          [&](const UnsortedOldParts &parts) {
+            return parts.parts.monotonic_start_time == monotonic_start_time &&
+                   parts.parts.realtime_start_time == realtime_start_time;
+          });
+
+      if (result == old_parts.end()) {
+        old_parts.emplace_back();
+        old_parts.back().parts.monotonic_start_time = monotonic_start_time;
+        old_parts.back().parts.realtime_start_time = realtime_start_time;
+        old_parts.back().unsorted_parts.emplace_back(
+            std::make_pair(first_message_time, part));
+      } else {
+        result->unsorted_parts.emplace_back(
+            std::make_pair(first_message_time, part));
+      }
       continue;
     }
 
+    CHECK(log_header.message().has_logger_uuid());
     CHECK(log_header.message().has_parts_uuid());
     CHECK(log_header.message().has_parts_index());
 
+    const std::string logger_uuid = log_header.message().logger_uuid()->str();
     const std::string parts_uuid = log_header.message().parts_uuid()->str();
-    auto it = parts_list.find(parts_uuid);
-    if (it == parts_list.end()) {
-      it = parts_list
+    int32_t parts_index = log_header.message().parts_index();
+
+    auto log_it = parts_list.find(logger_uuid);
+    if (log_it == parts_list.end()) {
+      log_it = parts_list
                .insert(std::make_pair(
-                   parts_uuid, std::vector<std::pair<std::string, int>>{}))
+                   logger_uuid, std::map<std::string, UnsortedLogParts>()))
                .first;
     }
-    it->second.emplace_back(
-        std::make_pair(part, log_header.message().parts_index()));
+
+    auto it = log_it->second.find(parts_uuid);
+    if (it == log_it->second.end()) {
+      it = log_it->second.insert(std::make_pair(parts_uuid, UnsortedLogParts()))
+               .first;
+      it->second.monotonic_start_time = monotonic_start_time;
+      it->second.realtime_start_time = realtime_start_time;
+      it->second.node = std::string(node);
+    }
+
+    // First part might be min_time.  If it is, try to put a better time on it.
+    if (it->second.monotonic_start_time == monotonic_clock::min_time) {
+      it->second.monotonic_start_time = monotonic_start_time;
+    } else if (monotonic_start_time != monotonic_clock::min_time) {
+      CHECK_EQ(it->second.monotonic_start_time, monotonic_start_time);
+    }
+    if (it->second.realtime_start_time == realtime_clock::min_time) {
+      it->second.realtime_start_time = realtime_start_time;
+    } else if (realtime_start_time != realtime_clock::min_time) {
+      CHECK_EQ(it->second.realtime_start_time, realtime_start_time);
+    }
+
+    it->second.parts.emplace_back(std::make_pair(part, parts_index));
   }
 
   CHECK_NE(old_parts.empty(), parts_list.empty())
       << ": Can't have a mix of old and new parts.";
 
+  // Now reformat old_parts to be in the right datastructure to report.
   if (!old_parts.empty()) {
-    // Confirm they all have the same start time.  Old loggers always used the
-    // same start time.
-    for (const LogPart &p : old_parts) {
-      CHECK_EQ(old_parts[0].start_time, p.start_time);
+    std::vector<LogFile> result;
+    for (UnsortedOldParts &p : old_parts) {
+      // Sort by the oldest message in each file.
+      std::sort(
+          p.unsorted_parts.begin(), p.unsorted_parts.end(),
+          [](const std::pair<monotonic_clock::time_point, std::string> &a,
+             const std::pair<monotonic_clock::time_point, std::string> &b) {
+            return a.first < b.first;
+          });
+      LogFile log_file;
+      for (std::pair<monotonic_clock::time_point, std::string> &f :
+           p.unsorted_parts) {
+        p.parts.parts.emplace_back(std::move(f.second));
+      }
+      log_file.parts.emplace_back(std::move(p.parts));
+      result.emplace_back(std::move(log_file));
     }
-    // Sort by the oldest message in each file.
-    std::sort(old_parts.begin(), old_parts.end(),
-              [](const LogPart &a, const LogPart &b) {
-                return a.first_message_time < b.first_message_time;
-              });
 
-    // Produce the final form.
-    std::vector<std::string> sorted_old_parts;
-    sorted_old_parts.reserve(old_parts.size());
-    for (LogPart &p : old_parts) {
-      sorted_old_parts.emplace_back(std::move(p.filename));
-    }
-    return std::vector<std::vector<std::string>>{std::move(sorted_old_parts)};
+    return result;
   }
 
   // Now, sort them and produce the final vector form.
-  std::vector<std::vector<std::string>> result;
+  std::vector<LogFile> result;
   result.reserve(parts_list.size());
-  for (auto &part : parts_list) {
-    std::sort(part.second.begin(), part.second.end(),
-              [](const std::pair<std::string, int> &a,
-                 const std::pair<std::string, int> &b) {
-                return a.second < b.second;
-              });
-    std::vector<std::string> result_line;
-    result_line.reserve(part.second.size());
-    for (std::pair<std::string, int> &p : part.second) {
-      result_line.emplace_back(std::move(p.first));
+  for (std::pair<const std::string, std::map<std::string, UnsortedLogParts>> &logs : parts_list) {
+    LogFile new_file;
+    new_file.logger_uuid = logs.first;
+    for (std::pair<const std::string, UnsortedLogParts> &parts : logs.second) {
+      LogParts new_parts;
+      new_parts.monotonic_start_time = parts.second.monotonic_start_time;
+      new_parts.realtime_start_time = parts.second.realtime_start_time;
+      new_parts.logger_uuid = logs.first;
+      new_parts.parts_uuid = parts.first;
+      new_parts.node = std::move(parts.second.node);
+
+      std::sort(parts.second.parts.begin(), parts.second.parts.end(),
+                [](const std::pair<std::string, int> &a,
+                   const std::pair<std::string, int> &b) {
+                  return a.second < b.second;
+                });
+      new_parts.parts.reserve(parts.second.parts.size());
+      for (std::pair<std::string, int> &p : parts.second.parts) {
+        new_parts.parts.emplace_back(std::move(p.first));
+      }
+      new_file.parts.emplace_back(std::move(new_parts));
     }
-    result.emplace_back(std::move(result_line));
+    result.emplace_back(std::move(new_file));
+  }
+  return result;
+}
+
+std::ostream &operator<<(std::ostream &stream, const LogFile &file) {
+  stream << "{";
+  if (!file.logger_uuid.empty()) {
+    stream << "\"logger_uuid\": \"" << file.logger_uuid << "\", ";
+  }
+  stream << "\"parts\": [";
+  for (size_t i = 0; i < file.parts.size(); ++i) {
+    if (i != 0u) {
+      stream << ", ";
+    }
+    stream << file.parts[i];
+  }
+  stream << "]}";
+  return stream;
+}
+std::ostream &operator<<(std::ostream &stream, const LogParts &parts) {
+  stream << "{";
+  if (!parts.logger_uuid.empty()) {
+    stream << "\"logger_uuid\": \"" << parts.logger_uuid << "\", ";
+  }
+  if (!parts.parts_uuid.empty()) {
+    stream << "\"parts_uuid\": \"" << parts.parts_uuid << "\", ";
+  }
+  if (!parts.node.empty()) {
+    stream << "\"node\": \"" << parts.node << "\", ";
+  }
+  stream << "\"monotonic_start_time\": " << parts.monotonic_start_time
+         << ", \"realtime_start_time\": " << parts.realtime_start_time << ", [";
+
+  for (size_t i = 0; i < parts.parts.size(); ++i) {
+    if (i != 0u) {
+      stream << ", ";
+    }
+    stream << parts.parts[i];
+  }
+
+  stream << "]}";
+  return stream;
+}
+
+std::vector<std::vector<std::string>> ToLogReaderVector(
+    const std::vector<LogFile> &log_files) {
+  std::vector<std::vector<std::string>> result;
+  for (const LogFile &log_file : log_files) {
+    for (const LogParts &log_parts : log_file.parts) {
+      std::vector<std::string> parts;
+      for (const std::string &part : log_parts.parts) {
+        parts.emplace_back(part);
+      }
+      result.emplace_back(std::move(parts));
+    }
   }
   return result;
 }
@@ -647,6 +785,12 @@ LogReader::LogReader(const std::vector<std::string> &filenames,
                      const Configuration *replay_configuration)
     : LogReader(std::vector<std::vector<std::string>>{filenames},
                 replay_configuration) {}
+
+// TODO(austin): Make this the base and kill the others.  This has much better
+// context for sorting.
+LogReader::LogReader(const std::vector<LogFile> &log_files,
+                     const Configuration *replay_configuration)
+    : LogReader(ToLogReaderVector(log_files), replay_configuration) {}
 
 LogReader::LogReader(const std::vector<std::vector<std::string>> &filenames,
                      const Configuration *replay_configuration)
@@ -721,7 +865,8 @@ std::vector<const Node *> LogReader::Nodes() const {
   return configuration::GetNodes(remapped_configuration_);
 }
 
-monotonic_clock::time_point LogReader::monotonic_start_time(const Node *node) {
+monotonic_clock::time_point LogReader::monotonic_start_time(
+    const Node *node) const {
   State *state =
       states_[configuration::GetNodeIndex(configuration(), node)].get();
   CHECK(state != nullptr) << ": Unknown node " << FlatbufferToJson(node);
@@ -729,7 +874,8 @@ monotonic_clock::time_point LogReader::monotonic_start_time(const Node *node) {
   return state->monotonic_start_time();
 }
 
-realtime_clock::time_point LogReader::realtime_start_time(const Node *node) {
+realtime_clock::time_point LogReader::realtime_start_time(
+    const Node *node) const {
   State *state =
       states_[configuration::GetNodeIndex(configuration(), node)].get();
   CHECK(state != nullptr) << ": Unknown node " << FlatbufferToJson(node);

@@ -973,13 +973,48 @@ TEST_F(MultinodeLoggerTest, SortParts) {
     event_loop_factory_.RunFor(chrono::milliseconds(2000));
   }
 
-  const std::vector<std::vector<std::string>> sorted_parts =
-      SortParts(logfiles_);
+  const std::vector<LogFile> sorted_parts = SortParts(logfiles_);
+
+  EXPECT_EQ(sorted_parts.size(), 2u);
+
+  // Count up the number of UUIDs and make sure they are what we expect as a
+  // sanity check.
+  std::set<std::string> logger_uuids;
+  std::set<std::string> parts_uuids;
+  std::set<std::string> both_uuids;
+
+  size_t missing_rt_count = 0;
+
+  for (const LogFile &log_file : sorted_parts) {
+    EXPECT_FALSE(log_file.logger_uuid.empty());
+    logger_uuids.insert(log_file.logger_uuid);
+    both_uuids.insert(log_file.logger_uuid);
+
+    for (const LogParts &part : log_file.parts) {
+      EXPECT_NE(part.monotonic_start_time, aos::monotonic_clock::min_time)
+          << ": " << part;
+      missing_rt_count += part.realtime_start_time == aos::realtime_clock::min_time;
+
+      EXPECT_TRUE(logger_uuids.find(part.logger_uuid) != logger_uuids.end());
+      EXPECT_NE(part.node, "");
+      parts_uuids.insert(part.parts_uuid);
+      both_uuids.insert(part.parts_uuid);
+    }
+  }
+
+  // We won't have RT timestamps for 5 log files.  We don't log the RT start
+  // time on remote nodes because we don't know it and would be guessing.  And
+  // the log reader can actually do a better job.
+  EXPECT_EQ(missing_rt_count, 5u);
+
+  EXPECT_EQ(logger_uuids.size(), 2u);
+  EXPECT_EQ(parts_uuids.size(), ToLogReaderVector(sorted_parts).size());
+  EXPECT_EQ(logger_uuids.size() + parts_uuids.size(), both_uuids.size());
 
   // Test that each list of parts is in order.  Don't worry about the ordering
   // between part file lists though.
   // (inner vectors all need to be in order, but outer one doesn't matter).
-  EXPECT_THAT(sorted_parts,
+  EXPECT_THAT(ToLogReaderVector(sorted_parts),
               ::testing::UnorderedElementsAreArray(structured_logfiles_));
 }
 

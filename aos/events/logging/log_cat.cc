@@ -127,7 +127,7 @@ int main(int argc, char **argv) {
     unsorted_logfiles.emplace_back(std::string(argv[i]));
   }
 
-  std::vector<std::vector<std::string>> logfiles =
+  const std::vector<aos::logger::LogFile> logfiles =
       aos::logger::SortParts(unsorted_logfiles);
 
   aos::logger::LogReader reader(logfiles);

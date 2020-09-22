@@ -148,9 +148,43 @@ class Logger {
   std::vector<NodeState> node_state_;
 };
 
+// Datastructure to hold ordered parts.
+struct LogParts {
+  // Monotonic and realtime start times for this set of log files.  For log
+  // files which started out unknown and then became known, this is the known
+  // start time.
+  aos::monotonic_clock::time_point monotonic_start_time;
+  aos::realtime_clock::time_point realtime_start_time;
+
+  // UUIDs if available.
+  std::string logger_uuid;
+  std::string parts_uuid;
+
+  // The node this represents, or empty if we are in a single node world.
+  std::string node;
+
+  // Pre-sorted list of parts.
+  std::vector<std::string> parts;
+};
+
+// Datastructure to hold parts from the same run of the logger which have no
+// ordering constraints relative to each other.
+struct LogFile {
+  // The UUID tying them all together (if available)
+  std::string logger_uuid;
+
+  // All the parts, unsorted.
+  std::vector<LogParts> parts;
+};
+
+std::ostream &operator<<(std::ostream &stream, const LogFile &file);
+std::ostream &operator<<(std::ostream &stream, const LogParts &parts);
+
 // Takes a bunch of parts and sorts them based on part_uuid and part_index.
-std::vector<std::vector<std::string>> SortParts(
-    const std::vector<std::string> &parts);
+std::vector<LogFile> SortParts(const std::vector<std::string> &parts);
+
+std::vector<std::vector<std::string>> ToLogReaderVector(
+    const std::vector<LogFile> &log_files);
 
 // We end up with one of the following 3 log file types.
 //
@@ -205,6 +239,8 @@ class LogReader {
             const Configuration *replay_configuration = nullptr);
   LogReader(const std::vector<std::vector<std::string>> &filenames,
             const Configuration *replay_configuration = nullptr);
+  LogReader(const std::vector<LogFile> &log_files,
+            const Configuration *replay_configuration = nullptr);
   ~LogReader();
 
   // Registers all the callbacks to send the log file data out on an event loop
@@ -233,7 +269,11 @@ class LogReader {
   // SimulatedEventLoopFactory, and then get the configuration from there for
   // everything else.
   const Configuration *logged_configuration() const;
-  // Returns the configuration being used for replay.
+  // Returns the configuration being used for replay from the log file.
+  // Note that this may be different from the configuration actually used for
+  // handling events. You should generally only use this to create a
+  // SimulatedEventLoopFactory, and then get the configuration from there for
+  // everything else.
   // The pointer is invalidated whenever RemapLoggedChannel is called.
   const Configuration *configuration() const;
 
@@ -243,8 +283,10 @@ class LogReader {
   std::vector<const Node *> Nodes() const;
 
   // Returns the starting timestamp for the log file.
-  monotonic_clock::time_point monotonic_start_time(const Node *node = nullptr);
-  realtime_clock::time_point realtime_start_time(const Node *node = nullptr);
+  monotonic_clock::time_point monotonic_start_time(
+      const Node *node = nullptr) const;
+  realtime_clock::time_point realtime_start_time(
+      const Node *node = nullptr) const;
 
   // Causes the logger to publish the provided channel on a different name so
   // that replayed applications can publish on the proper channel name without
