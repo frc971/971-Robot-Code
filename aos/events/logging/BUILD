@@ -155,6 +155,7 @@ cc_test(
     ],
     deps = [
         ":logger",
+        "//aos/events:message_counter",
         "//aos/events:ping_lib",
         "//aos/events:pong_lib",
         "//aos/events:simulated_event_loop",

@@ -1,6 +1,7 @@
 #include "aos/events/logging/logger.h"
 
 #include "aos/events/event_loop.h"
+#include "aos/events/message_counter.h"
 #include "aos/events/ping_lib.h"
 #include "aos/events/pong_lib.h"
 #include "aos/events/simulated_event_loop.h"
@@ -14,6 +15,7 @@ namespace logger {
 namespace testing {
 
 namespace chrono = std::chrono;
+using aos::testing::MessageCounter;
 
 class LoggerTest : public ::testing::Test {
  public:
@@ -1016,6 +1018,70 @@ TEST_F(MultinodeLoggerTest, SortParts) {
   // (inner vectors all need to be in order, but outer one doesn't matter).
   EXPECT_THAT(ToLogReaderVector(sorted_parts),
               ::testing::UnorderedElementsAreArray(structured_logfiles_));
+}
+
+// Tests that if we remap a remapped channel, it shows up correctly.
+TEST_F(MultinodeLoggerTest, RemapLoggedChannel) {
+  {
+    LoggerState pi1_logger = MakeLogger(pi1_);
+    LoggerState pi2_logger = MakeLogger(pi2_);
+
+    event_loop_factory_.RunFor(chrono::milliseconds(95));
+
+    StartLogger(&pi1_logger);
+    StartLogger(&pi2_logger);
+
+    event_loop_factory_.RunFor(chrono::milliseconds(20000));
+  }
+
+  LogReader reader(structured_logfiles_);
+
+  // Remap just on pi1.
+  reader.RemapLoggedChannel<aos::timing::Report>(
+      "/aos", configuration::GetNode(reader.configuration(), "pi1"));
+
+  SimulatedEventLoopFactory log_reader_factory(reader.configuration());
+  log_reader_factory.set_send_delay(chrono::microseconds(0));
+
+  reader.Register(&log_reader_factory);
+
+  const Node *pi1 =
+      configuration::GetNode(log_reader_factory.configuration(), "pi1");
+  const Node *pi2 =
+      configuration::GetNode(log_reader_factory.configuration(), "pi2");
+
+  // Confirm we can read the data on the remapped channel, just for pi1. Nothing
+  // else should have moved.
+  std::unique_ptr<EventLoop> pi1_event_loop =
+      log_reader_factory.MakeEventLoop("test", pi1);
+  pi1_event_loop->SkipTimingReport();
+  std::unique_ptr<EventLoop> full_pi1_event_loop =
+      log_reader_factory.MakeEventLoop("test", pi1);
+  full_pi1_event_loop->SkipTimingReport();
+  std::unique_ptr<EventLoop> pi2_event_loop =
+      log_reader_factory.MakeEventLoop("test", pi2);
+  pi2_event_loop->SkipTimingReport();
+
+  MessageCounter<aos::timing::Report> pi1_timing_report(pi1_event_loop.get(),
+                                                        "/aos");
+  MessageCounter<aos::timing::Report> full_pi1_timing_report(
+      full_pi1_event_loop.get(), "/pi1/aos");
+  MessageCounter<aos::timing::Report> pi1_original_timing_report(
+      pi1_event_loop.get(), "/original/aos");
+  MessageCounter<aos::timing::Report> full_pi1_original_timing_report(
+      full_pi1_event_loop.get(), "/original/pi1/aos");
+  MessageCounter<aos::timing::Report> pi2_timing_report(pi2_event_loop.get(),
+                                                        "/aos");
+
+  log_reader_factory.Run();
+
+  EXPECT_EQ(pi1_timing_report.count(), 0u);
+  EXPECT_EQ(full_pi1_timing_report.count(), 0u);
+  EXPECT_NE(pi1_original_timing_report.count(), 0u);
+  EXPECT_NE(full_pi1_original_timing_report.count(), 0u);
+  EXPECT_NE(pi2_timing_report.count(), 0u);
+
+  reader.Deregister();
 }
 
 // TODO(austin): We can write a test which recreates a logfile and confirms that

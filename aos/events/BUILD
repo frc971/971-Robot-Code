@@ -271,6 +271,7 @@ cc_test(
     shard_count = 4,
     deps = [
         ":event_loop_param_test",
+        ":message_counter",
         ":ping_lib",
         ":pong_lib",
         ":simulated_event_loop",
@@ -339,5 +340,14 @@ cc_library(
         ":event_loop",
         "//aos/logging:implementations",
         "//aos/logging:log_message_fbs",
+    ],
+)
+
+cc_library(
+    name = "message_counter",
+    hdrs = ["message_counter.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":event_loop",
     ],
 )

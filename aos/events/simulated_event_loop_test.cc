@@ -4,6 +4,7 @@
 
 #include "aos/events/event_loop_param_test.h"
 #include "aos/events/logging/logger_generated.h"
+#include "aos/events/message_counter.h"
 #include "aos/events/ping_lib.h"
 #include "aos/events/pong_lib.h"
 #include "aos/events/test_message_generated.h"
@@ -258,19 +259,6 @@ TEST(SimulatedEventLoopTest, WatcherTimingReport) {
                 ->standard_deviation(),
             0.0);
 }
-
-template <typename T>
-class MessageCounter {
- public:
-  MessageCounter(aos::EventLoop *event_loop, std::string_view name) {
-    event_loop->MakeNoArgWatcher<T>(name, [this]() { ++count_; });
-  }
-
-  size_t count() const { return count_; }
-
- private:
-  size_t count_ = 0;
-};
 
 // Tests that ping and pong work when on 2 different nodes, and the message
 // gateway messages are sent out as expected.

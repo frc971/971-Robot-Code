@@ -300,11 +300,28 @@ class LogReader {
     RemapLoggedChannel(name, T::GetFullyQualifiedName(), add_prefix);
   }
 
+  // Remaps the provided channel, though this respects node mappings, and
+  // preserves them too.  This makes it so if /aos -> /pi1/aos on one node,
+  // /original/aos -> /original/pi1/aos on the same node after renaming, just
+  // like you would hope.
+  //
+  // TODO(austin): If you have 2 nodes remapping something to the same channel,
+  // this doesn't handle that.  No use cases exist yet for that, so it isn't
+  // being done yet.
+  void RemapLoggedChannel(std::string_view name, std::string_view type,
+                          const Node *node,
+                          std::string_view add_prefix = "/original");
   template <typename T>
-  bool HasChannel(std::string_view name) {
+  void RemapLoggedChannel(std::string_view name, const Node *node,
+                          std::string_view add_prefix = "/original") {
+    RemapLoggedChannel(name, T::GetFullyQualifiedName(), node, add_prefix);
+  }
+
+  template <typename T>
+  bool HasChannel(std::string_view name, const Node *node = nullptr) {
     return configuration::GetChannel(log_file_header()->configuration(), name,
                                      T::GetFullyQualifiedName(), "",
-                                     nullptr) != nullptr;
+                                     node) != nullptr;
   }
 
   SimulatedEventLoopFactory *event_loop_factory() {
@@ -625,6 +642,7 @@ class LogReader {
   // logged_configuration(), and the string key will be the name of the channel
   // to send on instead of the logged channel name.
   std::map<size_t, std::string> remapped_channels_;
+  std::vector<MapT> maps_;
 
   // Number of nodes which still have data to send.  This is used to figure out
   // when to exit.
