@@ -891,8 +891,10 @@ void LogReader::Register() {
 
 void LogReader::Register(SimulatedEventLoopFactory *event_loop_factory) {
   event_loop_factory_ = event_loop_factory;
+  remapped_configuration_ = event_loop_factory_->configuration();
 
-  for (const Node *node : configuration::GetNodes(configuration())) {
+  for (const Node *node :
+       configuration::GetNodes(configuration())) {
     const size_t node_index =
         configuration::GetNodeIndex(configuration(), node);
     states_[node_index] =
