@@ -1421,6 +1421,50 @@ void LogReader::RemapLoggedChannel(std::string_view name, std::string_view type,
              << type;
 }
 
+void LogReader::RemapLoggedChannel(std::string_view name, std::string_view type,
+                                   const Node *node,
+                                   std::string_view add_prefix) {
+  VLOG(1) << "Node is " << aos::FlatbufferToJson(node);
+  const Channel *remapped_channel =
+      configuration::GetChannel(logged_configuration(), name, type, "", node);
+  CHECK(remapped_channel != nullptr) << ": Failed to find {\"name\": \"" << name
+                                     << "\", \"type\": \"" << type << "\"}";
+  VLOG(1) << "Original {\"name\": \"" << name << "\", \"type\": \"" << type
+          << "\"}";
+  VLOG(1) << "Remapped "
+          << aos::configuration::StrippedChannelToString(remapped_channel);
+
+  // We want to make /spray on node 0 go to /0/spray by snooping the maps.  And
+  // we want it to degrade if the heuristics fail to just work.
+  //
+  // The easiest way to do this is going to be incredibly specific and verbose.
+  // Look up /spray, to /0/spray.  Then, prefix the result with /original to get
+  // /original/0/spray.  Then, create a map from /original/spray to
+  // /original/0/spray for just the type we were asked for.
+  if (name != remapped_channel->name()->string_view()) {
+    MapT new_map;
+    new_map.match = std::make_unique<ChannelT>();
+    new_map.match->name = absl::StrCat(add_prefix, name);
+    new_map.match->type = type;
+    if (node != nullptr) {
+      new_map.match->source_node = node->name()->str();
+    }
+    new_map.rename = std::make_unique<ChannelT>();
+    new_map.rename->name =
+        absl::StrCat(add_prefix, remapped_channel->name()->string_view());
+    maps_.emplace_back(std::move(new_map));
+  }
+
+  const size_t channel_index =
+      configuration::ChannelIndex(logged_configuration(), remapped_channel);
+  CHECK_EQ(0u, remapped_channels_.count(channel_index))
+      << "Already remapped channel "
+      << configuration::CleanedChannelToString(remapped_channel);
+  remapped_channels_[channel_index] =
+      absl::StrCat(add_prefix, remapped_channel->name()->string_view());
+  MakeRemappedConfig();
+}
+
 void LogReader::MakeRemappedConfig() {
   for (std::unique_ptr<State> &state : states_) {
     if (state) {
@@ -1489,10 +1533,46 @@ void LogReader::MakeRemappedConfig() {
         &new_config_fbb));
   }
   // Create the Configuration containing the new channels that we want to add.
-  const auto new_name_vector_offsets =
+  const auto new_channel_vector_offsets =
       new_config_fbb.CreateVector(channel_offsets);
+
+  // Now create the new maps.
+  std::vector<flatbuffers::Offset<Map>> map_offsets;
+  for (const MapT &map : maps_) {
+    const flatbuffers::Offset<flatbuffers::String> match_name_offset =
+        new_config_fbb.CreateString(map.match->name);
+    const flatbuffers::Offset<flatbuffers::String> match_type_offset =
+        new_config_fbb.CreateString(map.match->type);
+    const flatbuffers::Offset<flatbuffers::String> rename_name_offset =
+        new_config_fbb.CreateString(map.rename->name);
+    flatbuffers::Offset<flatbuffers::String> match_source_node_offset;
+    if (!map.match->source_node.empty()) {
+      match_source_node_offset =
+          new_config_fbb.CreateString(map.match->source_node);
+    }
+    Channel::Builder match_builder(new_config_fbb);
+    match_builder.add_name(match_name_offset);
+    match_builder.add_type(match_type_offset);
+    if (!map.match->source_node.empty()) {
+      match_builder.add_source_node(match_source_node_offset);
+    }
+    const flatbuffers::Offset<Channel> match_offset = match_builder.Finish();
+
+    Channel::Builder rename_builder(new_config_fbb);
+    rename_builder.add_name(rename_name_offset);
+    const flatbuffers::Offset<Channel> rename_offset = rename_builder.Finish();
+
+    Map::Builder map_builder(new_config_fbb);
+    map_builder.add_match(match_offset);
+    map_builder.add_rename(rename_offset);
+    map_offsets.emplace_back(map_builder.Finish());
+  }
+
+  const auto new_maps_offsets = new_config_fbb.CreateVector(map_offsets);
+
   ConfigurationBuilder new_config_builder(new_config_fbb);
-  new_config_builder.add_channels(new_name_vector_offsets);
+  new_config_builder.add_channels(new_channel_vector_offsets);
+  new_config_builder.add_maps(new_maps_offsets);
   new_config_fbb.Finish(new_config_builder.Finish());
   const FlatbufferDetachedBuffer<Configuration> new_name_config =
       new_config_fbb.Release();
