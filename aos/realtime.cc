@@ -74,7 +74,7 @@ void LockAllMemory() {
   WriteCoreDumps();
   PCHECK(mlockall(MCL_CURRENT | MCL_FUTURE) == 0);
 
-#if !__has_feature(address_sanitizer)
+#if !__has_feature(address_sanitizer) && !__has_feature(memory_sanitizer)
   // Don't give freed memory back to the OS.
   CHECK_EQ(1, mallopt(M_TRIM_THRESHOLD, -1));
   // Don't use mmap for large malloc chunks.
