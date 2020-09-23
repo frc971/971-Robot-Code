@@ -300,8 +300,10 @@ FlatbufferVector<LogFileHeader> ReadHeader(std::string_view filename) {
       << ": Failed to read header from: " << filename;
 
   // And copy the config so we have it forever, removing the size prefix.
-  std::vector<uint8_t> data(
-      config_data.begin() + sizeof(flatbuffers::uoffset_t), config_data.end());
+  ResizeableBuffer data;
+  data.resize(config_data.size() - sizeof(flatbuffers::uoffset_t));
+  memcpy(data.data(), config_data.begin() + sizeof(flatbuffers::uoffset_t),
+         data.size());
   return FlatbufferVector<LogFileHeader>(std::move(data));
 }
 
@@ -317,9 +319,11 @@ FlatbufferVector<MessageHeader> ReadNthMessage(std::string_view filename,
         << ": Failed to read data from: " << filename;
   }
 
-  // And copy the data so we have it forever.
-  std::vector<uint8_t> data(data_span.begin() + sizeof(flatbuffers::uoffset_t),
-                            data_span.end());
+  // And copy the config so we have it forever, removing the size prefix.
+  ResizeableBuffer data;
+  data.resize(data_span.size() - sizeof(flatbuffers::uoffset_t));
+  memcpy(data.data(), data_span.begin() + sizeof(flatbuffers::uoffset_t),
+         data.size());
   return FlatbufferVector<MessageHeader>(std::move(data));
 }
 
@@ -334,8 +338,11 @@ MessageReader::MessageReader(std::string_view filename)
       << ": Failed to read header from: " << filename;
 
   // And copy the header data so we have it forever.
-  std::vector<uint8_t> header_data_copy(
-      header_data.begin() + sizeof(flatbuffers::uoffset_t), header_data.end());
+  ResizeableBuffer header_data_copy;
+  header_data_copy.resize(header_data.size() - sizeof(flatbuffers::uoffset_t));
+  memcpy(header_data_copy.data(),
+         header_data.begin() + sizeof(flatbuffers::uoffset_t),
+         header_data_copy.size());
   raw_log_file_header_ =
       FlatbufferVector<LogFileHeader>(std::move(header_data_copy));
 
@@ -352,8 +359,12 @@ std::optional<FlatbufferVector<MessageHeader>> MessageReader::ReadMessage() {
     return std::nullopt;
   }
 
-  FlatbufferVector<MessageHeader> result{std::vector<uint8_t>(
-      msg_data.begin() + sizeof(flatbuffers::uoffset_t), msg_data.end())};
+  ResizeableBuffer result_buffer;
+  result_buffer.resize(msg_data.size() - sizeof(flatbuffers::uoffset_t));
+  memcpy(result_buffer.data(),
+         msg_data.begin() + sizeof(flatbuffers::uoffset_t),
+         result_buffer.size());
+  FlatbufferVector<MessageHeader> result(std::move(result_buffer));
 
   const monotonic_clock::time_point timestamp = monotonic_clock::time_point(
       chrono::nanoseconds(result.message().monotonic_sent_time()));

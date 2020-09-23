@@ -5,6 +5,7 @@
 #include <string_view>
 
 #include "absl/types/span.h"
+#include "aos/containers/resizeable_buffer.h"
 #include "aos/macros.h"
 #include "flatbuffers/flatbuffers.h"
 #include "glog/logging.h"
@@ -164,15 +165,16 @@ template <typename T>
 class FlatbufferVector : public Flatbuffer<T> {
  public:
   // Builds a Flatbuffer around a vector.
-  FlatbufferVector(std::vector<uint8_t> &&data) : data_(std::move(data)) {}
+  FlatbufferVector(ResizeableBuffer &&data) : data_(std::move(data)) {}
 
   // Builds a Flatbuffer by copying the data from the other flatbuffer.
-  FlatbufferVector(const Flatbuffer<T> &other)
-      : data_(other.data(), other.data() + other.size()) {}
+  FlatbufferVector(const Flatbuffer<T> &other) {
+    data_.resize(other.size());
+    memcpy(data_.data(), other.data(), data_.size());
+  }
 
   // Copy constructor.
-  FlatbufferVector(const FlatbufferVector<T> &other)
-      : data_(other.data(), other.data() + other.size()) {}
+  FlatbufferVector(const FlatbufferVector<T> &other) : data_(other.data_) {}
 
   // Move constructor.
   FlatbufferVector(FlatbufferVector<T> &&other)
@@ -180,7 +182,7 @@ class FlatbufferVector : public Flatbuffer<T> {
 
   // Copies the data from the other flatbuffer.
   FlatbufferVector &operator=(const FlatbufferVector<T> &other) {
-    data_ = std::vector<uint8_t>(other.data(), other.data() + other.size());
+    data_ = other.data_;
     return *this;
   }
   FlatbufferVector &operator=(FlatbufferVector<T> &&other) {
@@ -190,7 +192,7 @@ class FlatbufferVector : public Flatbuffer<T> {
 
   // Constructs an empty flatbuffer of type T.
   static FlatbufferVector<T> Empty() {
-    return FlatbufferVector<T>(std::vector<uint8_t>{});
+    return FlatbufferVector<T>(ResizeableBuffer());
   }
 
   virtual ~FlatbufferVector() override {}
@@ -200,7 +202,7 @@ class FlatbufferVector : public Flatbuffer<T> {
   size_t size() const override { return data_.size(); }
 
  private:
-  std::vector<uint8_t> data_;
+  ResizeableBuffer data_;
 };
 
 // This object associates the message type with the memory storing the

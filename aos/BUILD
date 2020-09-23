@@ -453,6 +453,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//aos:macros",
+        "//aos/containers:resizeable_buffer",
         "@com_github_google_flatbuffers//:flatbuffers",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/strings",
