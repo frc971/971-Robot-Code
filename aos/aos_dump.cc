@@ -14,6 +14,9 @@ DEFINE_bool(fetch, false,
             "If true, fetch the current message on the channel first");
 DEFINE_bool(pretty, false,
             "If true, pretty print the messages on multiple lines");
+DEFINE_bool(all, false,
+            "If true, print out the channels for all nodes, not just the "
+            "channels which are visible on this node.");
 DEFINE_bool(print_timestamps, true, "If true, timestamps are printed.");
 DEFINE_uint64(count, 0,
               "If >0, aos_dump will exit after printing this many messages.");
@@ -75,8 +78,11 @@ int main(int argc, char **argv) {
   if (argc == 1) {
     std::cout << "Channels:\n";
     for (const aos::Channel *channel : *config_msg->channels()) {
-      std::cout << channel->name()->c_str() << ' ' << channel->type()->c_str()
-                << '\n';
+      if (FLAGS_all || aos::configuration::ChannelIsReadableOnNode(
+                           channel, event_loop.node())) {
+        std::cout << channel->name()->c_str() << ' ' << channel->type()->c_str()
+                  << '\n';
+      }
     }
     return 0;
   }
@@ -86,6 +92,10 @@ int main(int argc, char **argv) {
       config_msg->channels();
   bool found_exact = false;
   for (const aos::Channel *channel : *channels) {
+    if (!FLAGS_all && !aos::configuration::ChannelIsReadableOnNode(
+                          channel, event_loop.node())) {
+      continue;
+    }
     if (channel->name()->c_str() != channel_name) {
       continue;
     }
