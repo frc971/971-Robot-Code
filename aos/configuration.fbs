@@ -131,6 +131,10 @@ table Application {
   // The node that this application will be started on.
   // TODO(austin): Teach starter how to use this for starting applications.
   node:string;
+
+  // The user to run this application as. If this field is unset, run it as
+  // the current user of the application starter.
+  user:string;
 }
 
 // Per node data and connection information.
