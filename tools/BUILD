@@ -49,6 +49,11 @@ config_setting(
 )
 
 config_setting(
+    name = "cpu_arm64",
+    values = {"cpu": "arm64"},
+)
+
+config_setting(
     name = "has_asan",
     values = {"define": "have_asan=true"},
 )
@@ -75,11 +80,14 @@ environment(name = "cortex-m4f")
 
 environment(name = "cortex-m4f-k22")
 
+environment(name = "arm64")
+
 environment_group(
     name = "cpus",
     defaults = [
         ":k8",
         ":roborio",
+        ":arm64",
         ":armhf-debian",
     ],
     environments = [
@@ -89,5 +97,6 @@ environment_group(
         ":armhf-debian",
         ":cortex-m4f",
         ":cortex-m4f-k22",
+        ":arm64",
     ],
 )

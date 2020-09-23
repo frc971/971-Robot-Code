@@ -33,7 +33,11 @@ cc_library(
         "@com_github_google_flatbuffers//:flatbuffers",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/types:span",
-    ],
+    ] + select({
+        "//tools:cpu_k8": [":lzma_encoder"],
+        "//tools:cpu_arm64": [":lzma_encoder"],
+        "//conditions:default": [],
+    }),
 )
 
 cc_library(
@@ -63,6 +67,60 @@ cc_test(
     deps = [
         ":buffer_encoder",
         ":buffer_encoder_param_test",
+        "//aos/testing:googletest",
+        "@com_github_google_glog//:glog",
+    ],
+)
+
+# TODO(Brian): Properly restrict this to specific platforms and
+# un-conditionalize the srcs and hdrs once we have support for that which
+# interacts with select properly.
+cc_library(
+    name = "lzma_encoder",
+    srcs = select({
+        "//tools:cpu_k8": [
+            "lzma_encoder.cc",
+        ],
+        "//tools:cpu_arm64": [
+            "lzma_encoder.cc",
+        ],
+        "//conditions:default": [],
+    }),
+    hdrs = select({
+        "//tools:cpu_k8": [
+            "lzma_encoder.h",
+        ],
+        "//tools:cpu_arm64": [
+            "lzma_encoder.h",
+        ],
+        "//conditions:default": [],
+    }),
+    visibility = ["//visibility:public"],
+    deps = [
+        ":buffer_encoder",
+        ":logger_fbs",
+        "//aos:configuration_fbs",
+        "//aos/containers:resizeable_buffer",
+        "//third_party:lzma",
+        "@com_github_google_flatbuffers//:flatbuffers",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "lzma_encoder_test",
+    srcs = [
+        "lzma_encoder_test.cc",
+    ],
+    restricted_to = [
+        "//tools:k8",
+        "//tools:arm64",
+    ],
+    shard_count = 4,
+    deps = [
+        ":buffer_encoder_param_test",
+        ":lzma_encoder",
         "//aos/testing:googletest",
         "@com_github_google_glog//:glog",
     ],

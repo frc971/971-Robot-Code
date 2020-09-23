@@ -16,6 +16,18 @@
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 
+#if defined(__x86_64__)
+#define ENABLE_LZMA 1
+#elif defined(__aarch64__)
+#define ENABLE_LZMA 1
+#else
+#define ENABLE_LZMA 0
+#endif
+
+#if ENABLE_LZMA
+#include "aos/events/logging/lzma_encoder.h"
+#endif
+
 DEFINE_int32(flush_size, 128000,
              "Number of outstanding bytes to allow before flushing to disk.");
 
@@ -206,9 +218,16 @@ flatbuffers::Offset<MessageHeader> PackMessage(
 }
 
 SpanReader::SpanReader(std::string_view filename) : filename_(filename) {
-  // Support for other kinds of decoders based on the filename should be added
-  // here.
-  decoder_ = std::make_unique<DummyDecoder>(filename);
+  static const std::string_view kXz = ".xz";
+  if (filename.substr(filename.size() - kXz.size()) == kXz) {
+#if ENABLE_LZMA
+    decoder_ = std::make_unique<LzmaDecoder>(filename);
+#else
+    LOG(FATAL) << "Reading xz-compressed files not supported on this platform";
+#endif
+  } else {
+    decoder_ = std::make_unique<DummyDecoder>(filename);
+  }
 }
 
 absl::Span<const uint8_t> SpanReader::ReadMessage() {

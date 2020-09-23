@@ -65,10 +65,18 @@ load(
     gstreamer_armhf_debs = "files",
 )
 load(
-    "//debian:m4.bzl",
+    ":m4.bzl",
     m4_debs = "files",
 )
-load("//debian:packages.bzl", "download_packages", "generate_deb_tarball")
+load(
+    ":lzma_amd64.bzl",
+    lzma_amd64_debs = "files",
+)
+load(
+    ":lzma_arm64.bzl",
+    lzma_arm64_debs = "files",
+)
+load(":packages.bzl", "download_packages", "generate_deb_tarball")
 
 filegroup(
     name = "matplotlib_patches",
@@ -338,6 +346,23 @@ generate_deb_tarball(
 generate_deb_tarball(
     name = "m4",
     files = m4_debs,
+)
+
+download_packages(
+    name = "download_lzma",
+    packages = [
+        "liblzma-dev",
+    ],
+)
+
+generate_deb_tarball(
+    name = "lzma_amd64",
+    files = lzma_amd64_debs,
+)
+
+generate_deb_tarball(
+    name = "lzma_arm64",
+    files = lzma_arm64_debs,
 )
 
 exports_files([
