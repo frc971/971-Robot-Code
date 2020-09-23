@@ -8,8 +8,7 @@ namespace Eigen {
 
 // TypeTraits for mpq_class.  This is only really enough to use inverse().
 template <>
-struct NumTraits<mpq_class>
-    : GenericNumTraits<mpq_class> {
+struct NumTraits<mpq_class> : GenericNumTraits<mpq_class> {
   typedef mpq_class Real;
   typedef mpq_class Literal;
   typedef mpq_class NonInteger;

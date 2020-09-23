@@ -995,7 +995,8 @@ TEST_F(MultinodeLoggerTest, SortParts) {
     for (const LogParts &part : log_file.parts) {
       EXPECT_NE(part.monotonic_start_time, aos::monotonic_clock::min_time)
           << ": " << part;
-      missing_rt_count += part.realtime_start_time == aos::realtime_clock::min_time;
+      missing_rt_count +=
+          part.realtime_start_time == aos::realtime_clock::min_time;
 
       EXPECT_TRUE(logger_uuids.find(part.logger_uuid) != logger_uuids.end());
       EXPECT_NE(part.node, "");

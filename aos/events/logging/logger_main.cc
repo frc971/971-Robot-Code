@@ -1,8 +1,8 @@
 #include "aos/configuration.h"
 #include "aos/events/logging/logger.h"
 #include "aos/events/shm_event_loop.h"
-#include "aos/logging/log_namer.h"
 #include "aos/init.h"
+#include "aos/logging/log_namer.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 

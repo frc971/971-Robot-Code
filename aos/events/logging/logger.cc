@@ -35,7 +35,6 @@ namespace aos {
 namespace logger {
 namespace chrono = std::chrono;
 
-
 Logger::Logger(std::string_view base_name, EventLoop *event_loop,
                std::chrono::milliseconds polling_period)
     : Logger(base_name, event_loop, event_loop->configuration(),
@@ -107,8 +106,8 @@ Logger::Logger(std::unique_ptr<LogNamer> log_namer, EventLoop *event_loop,
     timestamp_logger_channels.insert(std::make_pair(channel, node));
   }
 
-  const size_t our_node_index = configuration::GetNodeIndex(
-      configuration_, event_loop_->node());
+  const size_t our_node_index =
+      configuration::GetNodeIndex(configuration_, event_loop_->node());
 
   for (const Channel *config_channel : *configuration_->channels()) {
     // The MakeRawFetcher method needs a channel which is in the event loop
@@ -179,8 +178,7 @@ Logger::Logger(std::unique_ptr<LogNamer> log_namer, EventLoop *event_loop,
                          : 1u);
 
   for (const Node *node : log_namer_->nodes()) {
-    const int node_index =
-        configuration::GetNodeIndex(configuration_, node);
+    const int node_index = configuration::GetNodeIndex(configuration_, node);
 
     node_state_[node_index].log_file_header = MakeHeader(node);
   }
@@ -238,8 +236,7 @@ void Logger::WriteHeader() {
   last_synchronized_time_ = monotonic_start_time;
 
   for (const Node *node : log_namer_->nodes()) {
-    const int node_index =
-        configuration::GetNodeIndex(configuration_, node);
+    const int node_index = configuration::GetNodeIndex(configuration_, node);
     MaybeUpdateTimestamp(node, node_index, monotonic_start_time,
                          realtime_start_time);
     log_namer_->WriteHeader(&node_state_[node_index].log_file_header, node);
@@ -258,8 +255,7 @@ void Logger::WriteMissingTimestamps() {
   }
 
   for (const Node *node : log_namer_->nodes()) {
-    const int node_index =
-        configuration::GetNodeIndex(configuration_, node);
+    const int node_index = configuration::GetNodeIndex(configuration_, node);
     if (MaybeUpdateTimestamp(
             node, node_index,
             server_statistics_fetcher_.context().monotonic_event_time,
@@ -413,8 +409,7 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> Logger::MakeHeader(
 
 void Logger::Rotate() {
   for (const Node *node : log_namer_->nodes()) {
-    const int node_index =
-        configuration::GetNodeIndex(configuration_, node);
+    const int node_index = configuration::GetNodeIndex(configuration_, node);
     log_namer_->Rotate(node, &node_state_[node_index].log_file_header);
   }
 }
@@ -573,7 +568,8 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
 
     // Tuple of time for the data and filename needed for sorting after
     // extracting.
-    std::vector<std::pair<monotonic_clock::time_point, std::string>> unsorted_parts;
+    std::vector<std::pair<monotonic_clock::time_point, std::string>>
+        unsorted_parts;
   };
 
   // A list of all the old parts which we don't know how to sort using uuids.
@@ -636,9 +632,9 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
     auto log_it = parts_list.find(logger_uuid);
     if (log_it == parts_list.end()) {
       log_it = parts_list
-               .insert(std::make_pair(
-                   logger_uuid, std::map<std::string, UnsortedLogParts>()))
-               .first;
+                   .insert(std::make_pair(
+                       logger_uuid, std::map<std::string, UnsortedLogParts>()))
+                   .first;
     }
 
     auto it = log_it->second.find(parts_uuid);
@@ -694,7 +690,8 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
   // Now, sort them and produce the final vector form.
   std::vector<LogFile> result;
   result.reserve(parts_list.size());
-  for (std::pair<const std::string, std::map<std::string, UnsortedLogParts>> &logs : parts_list) {
+  for (std::pair<const std::string, std::map<std::string, UnsortedLogParts>>
+           &logs : parts_list) {
     LogFile new_file;
     new_file.logger_uuid = logs.first;
     for (std::pair<const std::string, UnsortedLogParts> &parts : logs.second) {
@@ -893,8 +890,7 @@ void LogReader::Register(SimulatedEventLoopFactory *event_loop_factory) {
   event_loop_factory_ = event_loop_factory;
   remapped_configuration_ = event_loop_factory_->configuration();
 
-  for (const Node *node :
-       configuration::GetNodes(configuration())) {
+  for (const Node *node : configuration::GetNodes(configuration())) {
     const size_t node_index =
         configuration::GetNodeIndex(configuration(), node);
     states_[node_index] =
@@ -1242,7 +1238,6 @@ message_bridge::NoncausalOffsetEstimator *LogReader::GetFilter(
   }
 }
 
-
 void LogReader::Register(EventLoop *event_loop) {
   State *state =
       states_[configuration::GetNodeIndex(configuration(), event_loop->node())]
@@ -1466,9 +1461,8 @@ void LogReader::Register(EventLoop *event_loop) {
                      });
 
       for (size_t i = 0; i < states_.size(); ++i) {
-        VLOG(1) << MaybeNodeName(
-                       states_[i]->event_loop()->node())
-                << "before " << states_[i]->monotonic_now();
+        VLOG(1) << MaybeNodeName(states_[i]->event_loop()->node()) << "before "
+                << states_[i]->monotonic_now();
       }
 
       UpdateOffsets();
@@ -1476,9 +1470,8 @@ void LogReader::Register(EventLoop *event_loop) {
               << state->monotonic_now();
 
       for (size_t i = 0; i < states_.size(); ++i) {
-        VLOG(1) << MaybeNodeName(
-                       states_[i]->event_loop()->node())
-                << "after " << states_[i]->monotonic_now();
+        VLOG(1) << MaybeNodeName(states_[i]->event_loop()->node()) << "after "
+                << states_[i]->monotonic_now();
       }
 
       // TODO(austin): We should be perfect.

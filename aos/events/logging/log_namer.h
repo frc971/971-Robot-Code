@@ -133,8 +133,8 @@ class MultiNodeLogNamer : public LogNamer {
 
   DetachedBufferWriter *MakeWriter(const Channel *channel) override;
 
-  DetachedBufferWriter *MakeForwardedTimestampWriter(
-      const Channel *channel, const Node *node) override;
+  DetachedBufferWriter *MakeForwardedTimestampWriter(const Channel *channel,
+                                                     const Node *node) override;
 
   DetachedBufferWriter *MakeTimestampWriter(const Channel *channel) override;
 

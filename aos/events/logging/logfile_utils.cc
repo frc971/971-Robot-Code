@@ -40,8 +40,7 @@ DetachedBufferWriter::~DetachedBufferWriter() {
   VLOG(1) << "Closed " << filename_;
 }
 
-DetachedBufferWriter::DetachedBufferWriter(
-    DetachedBufferWriter &&other) {
+DetachedBufferWriter::DetachedBufferWriter(DetachedBufferWriter &&other) {
   *this = std::move(other);
 }
 
@@ -566,8 +565,8 @@ bool SplitMessageReader::QueueMessages(
           chrono::nanoseconds(header.monotonic_sent_time()));
 
       if (VLOG_IS_ON(2)) {
-        LOG(INFO) << MaybeNodeName(target_node_) << "Queued " << this
-                  << " " << filename() << " ttq: " << time_to_queue_ << " now "
+        LOG(INFO) << MaybeNodeName(target_node_) << "Queued " << this << " "
+                  << filename() << " ttq: " << time_to_queue_ << " now "
                   << newest_timestamp() << " start time "
                   << monotonic_start_time() << " " << FlatbufferToJson(&header);
       } else if (VLOG_IS_ON(1)) {
@@ -1230,9 +1229,8 @@ bool ChannelMerger::SetNode(const Node *target_node) {
           (reader->node() != nullptr) && (target_node != nullptr) &&
           (reader->node()->has_name() && target_node->has_name());
       const bool node_names_identical =
-          both_have_name &&
-          (reader->node()->name()->string_view() ==
-           target_node->name()->string_view());
+          both_have_name && (reader->node()->name()->string_view() ==
+                             target_node->name()->string_view());
       if (both_null || node_names_identical) {
         if (!found_node) {
           found_node = true;
