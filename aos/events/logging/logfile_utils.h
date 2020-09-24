@@ -54,10 +54,6 @@ class DetachedBufferWriter {
 
   std::string_view filename() const { return filename_; }
 
-  // Rewrites a location in a file (relative to the start) to have new data in
-  // it.  The main use case is updating start times after a log file starts.
-  void RewriteLocation(off64_t offset, absl::Span<const uint8_t> data);
-
   // Queues up a finished FlatBufferBuilder to be encoded and written.
   //
   // Triggers a flush if there's enough data queued up.
