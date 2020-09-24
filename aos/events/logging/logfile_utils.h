@@ -75,6 +75,26 @@ class DetachedBufferWriter {
   // Queues up data in span. May copy or may write it to disk immediately.
   void QueueSpan(absl::Span<const uint8_t> span);
 
+  // Indicates we got ENOSPC when trying to write. After this returns true, no
+  // further data is written.
+  bool ran_out_of_space() const { return ran_out_of_space_; }
+
+  // To avoid silently failing to write logfiles, you must call this before
+  // destruction if ran_out_of_space() is true and the situation has been
+  // handled.
+  void acknowledge_out_of_space() {
+    CHECK(ran_out_of_space_);
+    acknowledge_ran_out_of_space_ = true;
+  }
+
+  // Fully flushes and closes the underlying file now. No additional data may be
+  // enqueued after calling this.
+  //
+  // This will be performed in the destructor automatically.
+  //
+  // Note that this may set ran_out_of_space().
+  void Close();
+
   // Returns the total number of bytes written and currently queued.
   size_t total_bytes() const { return encoder_->total_bytes(); }
 
@@ -115,6 +135,10 @@ class DetachedBufferWriter {
   // all of it.
   void Flush();
 
+  // write_return is what write(2) or writev(2) returned. write_size is the
+  // number of bytes we expected it to write.
+  void HandleWriteReturn(ssize_t write_return, size_t write_size);
+
   void UpdateStatsForWrite(aos::monotonic_clock::duration duration,
                            ssize_t written, int iovec_size);
 
@@ -126,6 +150,8 @@ class DetachedBufferWriter {
   std::unique_ptr<DetachedBufferEncoder> encoder_;
 
   int fd_ = -1;
+  bool ran_out_of_space_ = false;
+  bool acknowledge_ran_out_of_space_ = false;
 
   // List of iovecs to use with writev.  This is a member variable to avoid
   // churn.

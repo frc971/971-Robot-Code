@@ -88,6 +88,7 @@ class LocalLogNamer : public LogNamer {
         base_name_(base_name),
         uuid_(UUID::Random()),
         data_writer_(OpenDataWriter()) {}
+  ~LocalLogNamer() override = default;
 
   void WriteHeader(
       aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header,
@@ -123,6 +124,7 @@ class MultiNodeLogNamer : public LogNamer {
  public:
   MultiNodeLogNamer(std::string_view base_name,
                     const Configuration *configuration, const Node *node);
+  ~MultiNodeLogNamer() override = default;
 
   void WriteHeader(
       aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header,
@@ -138,6 +140,20 @@ class MultiNodeLogNamer : public LogNamer {
                                                      const Node *node) override;
 
   DetachedBufferWriter *MakeTimestampWriter(const Channel *channel) override;
+
+  // Indicates that at least one file ran out of space. Once this happens, we
+  // stop trying to open new files, to avoid writing any files with holes from
+  // previous parts.
+  //
+  // Besides this function, this object will silently stop logging data when
+  // this occurs. If you want to ensure log files are complete, you must call
+  // this method.
+  bool ran_out_of_space() const { return ran_out_of_space_; }
+
+  // Closes all existing log files. No more data may be written after this.
+  //
+  // This may set ran_out_of_space().
+  void Close();
 
  private:
   // Files to write remote data to.  We want one per channel.  Maps the channel
@@ -160,11 +176,16 @@ class MultiNodeLogNamer : public LogNamer {
   // Opens the main data writer file for this node responsible for data_writer_.
   std::unique_ptr<DetachedBufferWriter> OpenDataWriter();
 
+  void CreateBufferWriter(std::string_view filename,
+                          std::unique_ptr<DetachedBufferWriter> *destination);
+
   const std::string base_name_;
   const Configuration *const configuration_;
   const UUID uuid_;
 
   size_t part_number_ = 0;
+
+  bool ran_out_of_space_ = false;
 
   // File to write both delivery timestamps and local data to.
   std::unique_ptr<DetachedBufferWriter> data_writer_;

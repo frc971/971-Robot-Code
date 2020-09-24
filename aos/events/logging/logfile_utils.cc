@@ -46,12 +46,11 @@ DetachedBufferWriter::DetachedBufferWriter(
 }
 
 DetachedBufferWriter::~DetachedBufferWriter() {
-  encoder_->Finish();
-  while (encoder_->queue_size() > 0) {
-    Flush();
+  Close();
+  if (ran_out_of_space_) {
+    CHECK(acknowledge_ran_out_of_space_)
+        << ": Unacknowledged out of disk space, log file was not completed";
   }
-  PLOG_IF(ERROR, close(fd_) == -1) << " Failed to close logfile";
-  VLOG(1) << "Closed " << filename_;
 }
 
 DetachedBufferWriter::DetachedBufferWriter(DetachedBufferWriter &&other) {
@@ -66,6 +65,8 @@ DetachedBufferWriter &DetachedBufferWriter::operator=(
   std::swap(filename_, other.filename_);
   std::swap(encoder_, other.encoder_);
   std::swap(fd_, other.fd_);
+  std::swap(ran_out_of_space_, other.ran_out_of_space_);
+  std::swap(acknowledge_ran_out_of_space_, other.acknowledge_ran_out_of_space_);
   std::swap(iovec_, other.iovec_);
   std::swap(max_write_time_, other.max_write_time_);
   std::swap(max_write_time_bytes_, other.max_write_time_bytes_);
@@ -83,6 +84,14 @@ void DetachedBufferWriter::QueueSpan(absl::Span<const uint8_t> span) {
     // syscall to write the data immediately instead of copying it to
     // enqueue.
 
+    if (ran_out_of_space_) {
+      // We don't want any later data to be written after space becomes
+      // available, so refuse to write anything more once we've dropped data
+      // because we ran out of space.
+      VLOG(1) << "Ignoring span: " << span.size();
+      return;
+    }
+
     // First, flush everything.
     while (encoder_->queue_size() > 0u) {
       Flush();
@@ -92,9 +101,7 @@ void DetachedBufferWriter::QueueSpan(absl::Span<const uint8_t> span) {
     const auto start = aos::monotonic_clock::now();
     const ssize_t written = write(fd_, span.data(), span.size());
     const auto end = aos::monotonic_clock::now();
-    PCHECK(written >= 0) << ": write failed";
-    CHECK_EQ(written, static_cast<ssize_t>(span.size()))
-        << ": Wrote " << written << " expected " << span.size();
+    HandleWriteReturn(written, span.size());
     UpdateStatsForWrite(end - start, written, 1);
   } else {
     encoder_->Encode(CopySpanAsDetachedBuffer(span));
@@ -103,9 +110,36 @@ void DetachedBufferWriter::QueueSpan(absl::Span<const uint8_t> span) {
   FlushAtThreshold();
 }
 
+void DetachedBufferWriter::Close() {
+  if (fd_ == -1) {
+    return;
+  }
+  encoder_->Finish();
+  while (encoder_->queue_size() > 0) {
+    Flush();
+  }
+  if (close(fd_) == -1) {
+    if (errno == ENOSPC) {
+      ran_out_of_space_ = true;
+    } else {
+      PLOG(ERROR) << "Closing log file failed";
+    }
+  }
+  fd_ = -1;
+  VLOG(1) << "Closed " << filename_;
+}
+
 void DetachedBufferWriter::Flush() {
   const auto queue = encoder_->queue();
   if (queue.empty()) {
+    return;
+  }
+  if (ran_out_of_space_) {
+    // We don't want any later data to be written after space becomes available,
+    // so refuse to write anything more once we've dropped data because we ran
+    // out of space.
+    VLOG(1) << "Ignoring queue: " << queue.size();
+    encoder_->Clear(queue.size());
     return;
   }
 
@@ -122,14 +156,28 @@ void DetachedBufferWriter::Flush() {
   const auto start = aos::monotonic_clock::now();
   const ssize_t written = writev(fd_, iovec_.data(), iovec_.size());
   const auto end = aos::monotonic_clock::now();
-  PCHECK(written >= 0) << ": writev failed";
-  // TODO(austin): Handle partial writes in some way other than crashing...
-  CHECK_EQ(written, static_cast<ssize_t>(counted_size))
-      << ": Wrote " << written << " expected " << counted_size;
+  HandleWriteReturn(written, counted_size);
 
   encoder_->Clear(iovec_size);
 
   UpdateStatsForWrite(end - start, written, iovec_size);
+}
+
+void DetachedBufferWriter::HandleWriteReturn(ssize_t write_return,
+                                             size_t write_size) {
+  if (write_return == -1 && errno == ENOSPC) {
+    ran_out_of_space_ = true;
+    return;
+  }
+  PCHECK(write_return >= 0) << ": write failed";
+  if (write_return < static_cast<ssize_t>(write_size)) {
+    // Sometimes this happens instead of ENOSPC. On a real filesystem, this
+    // never seems to happen in any other case. If we ever want to log to a
+    // socket, this will happen more often. However, until we get there, we'll
+    // just assume it means we ran out of space.
+    ran_out_of_space_ = true;
+    return;
+  }
 }
 
 void DetachedBufferWriter::UpdateStatsForWrite(

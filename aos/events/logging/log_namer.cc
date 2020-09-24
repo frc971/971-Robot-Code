@@ -188,16 +188,36 @@ DetachedBufferWriter *MultiNodeLogNamer::MakeForwardedTimestampWriter(
 
 DetachedBufferWriter *MultiNodeLogNamer::MakeTimestampWriter(
     const Channel *channel) {
-  const bool log_delivery_times =
-      (this->node() == nullptr)
-          ? false
-          : configuration::ConnectionDeliveryTimeIsLoggedOnNode(
-                channel, this->node(), this->node());
+  bool log_delivery_times = false;
+  if (this->node() != nullptr) {
+    log_delivery_times = configuration::ConnectionDeliveryTimeIsLoggedOnNode(
+        channel, this->node(), this->node());
+  }
   if (!log_delivery_times) {
     return nullptr;
   }
 
   return data_writer_.get();
+}
+
+void MultiNodeLogNamer::Close() {
+  for (std::pair<const Channel *const, DataWriter> &data_writer :
+       data_writers_) {
+    if (data_writer.second.writer) {
+      data_writer.second.writer->Close();
+      if (data_writer.second.writer->ran_out_of_space()) {
+        ran_out_of_space_ = true;
+        data_writer.second.writer->acknowledge_out_of_space();
+      }
+    }
+  }
+  if (data_writer_) {
+    data_writer_->Close();
+    if (data_writer_->ran_out_of_space()) {
+      ran_out_of_space_ = true;
+      data_writer_->acknowledge_out_of_space();
+    }
+  }
 }
 
 void MultiNodeLogNamer::OpenForwardedTimestampWriter(const Channel *channel,
@@ -206,14 +226,7 @@ void MultiNodeLogNamer::OpenForwardedTimestampWriter(const Channel *channel,
       absl::StrCat(base_name_, "_timestamps", channel->name()->string_view(),
                    "/", channel->type()->string_view(), ".part",
                    data_writer->part_number, ".bfbs");
-
-  if (!data_writer->writer) {
-    data_writer->writer = std::make_unique<DetachedBufferWriter>(
-        filename, std::make_unique<DummyEncoder>());
-  } else {
-    *data_writer->writer =
-        DetachedBufferWriter(filename, std::make_unique<DummyEncoder>());
-  }
+  CreateBufferWriter(filename, &data_writer->writer);
 }
 
 void MultiNodeLogNamer::OpenWriter(const Channel *channel,
@@ -222,13 +235,7 @@ void MultiNodeLogNamer::OpenWriter(const Channel *channel,
       base_name_, "_", channel->source_node()->string_view(), "_data",
       channel->name()->string_view(), "/", channel->type()->string_view(),
       ".part", data_writer->part_number, ".bfbs");
-  if (!data_writer->writer) {
-    data_writer->writer = std::make_unique<DetachedBufferWriter>(
-        filename, std::make_unique<DummyEncoder>());
-  } else {
-    *data_writer->writer =
-        DetachedBufferWriter(filename, std::make_unique<DummyEncoder>());
-  }
+  CreateBufferWriter(filename, &data_writer->writer);
 }
 
 std::unique_ptr<DetachedBufferWriter> MultiNodeLogNamer::OpenDataWriter() {
@@ -236,6 +243,29 @@ std::unique_ptr<DetachedBufferWriter> MultiNodeLogNamer::OpenDataWriter() {
       absl::StrCat(base_name_, "_", node()->name()->string_view(), "_data.part",
                    part_number_, ".bfbs"),
       std::make_unique<DummyEncoder>());
+}
+
+void MultiNodeLogNamer::CreateBufferWriter(
+    std::string_view filename,
+    std::unique_ptr<DetachedBufferWriter> *destination) {
+  if (ran_out_of_space_) {
+    // Refuse to open any new files, which might skip data. Any existing files
+    // are in the same folder, which means they're on the same filesystem, which
+    // means they're probably going to run out of space and get stuck too.
+    return;
+  }
+  if (!destination->get()) {
+    *destination = std::make_unique<DetachedBufferWriter>(
+        filename, std::make_unique<DummyEncoder>());
+    return;
+  }
+  destination->get()->Close();
+  if (destination->get()->ran_out_of_space()) {
+    ran_out_of_space_ = true;
+    return;
+  }
+  *destination->get() =
+      DetachedBufferWriter(filename, std::make_unique<DummyEncoder>());
 }
 
 }  // namespace logger
