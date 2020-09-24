@@ -15,6 +15,9 @@ namespace codelab {
 // This codelab helps build basic knowledge of how to use 971 control loop
 // primatives.
 //
+// For flatbuffers background, we recommend checking out
+// https://google.github.io/flatbuffers/flatbuffers_guide_tutorial.html
+//
 // The meat of the task is to make the tests pass.
 //
 // Run the tests with:

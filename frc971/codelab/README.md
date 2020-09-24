@@ -1,5 +1,12 @@
 # FRC971 "Codelab"
 
+## Flatbuffers tutorial
+
+Flatbuffers has pretty good [tutorials](https://google.github.io/flatbuffers/flatbuffers_guide_tutorial.html) for how to use them.  We recommend
+going through them for more information.
+
+## Basic control loop
+
 Welcome! This folder contains a "codelab" where you can go through the process
 of fleshing out a basic control-loop using the same infrastructure as we do for
 the control loops that normally run on our robots. Currently, this just consists
