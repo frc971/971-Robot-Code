@@ -440,8 +440,8 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
     if (!FLAGS_output_file.empty()) {
       unlink(FLAGS_output_file.c_str());
       logger_event_loop_ = MakeEventLoop("logger", roborio_);
-      logger_ = std::make_unique<aos::logger::Logger>(FLAGS_output_file,
-                                                      logger_event_loop_.get());
+      logger_ = std::make_unique<aos::logger::Logger>(logger_event_loop_.get());
+      logger_->StartLoggingLocalNamerOnRun(FLAGS_output_file);
     }
   }
 

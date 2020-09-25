@@ -126,6 +126,8 @@ class MultiNodeLogNamer : public LogNamer {
                     const Configuration *configuration, const Node *node);
   ~MultiNodeLogNamer() override = default;
 
+  std::string_view base_name() const { return base_name_; }
+
   void WriteHeader(
       aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header,
       const Node *node) override;
@@ -149,6 +151,22 @@ class MultiNodeLogNamer : public LogNamer {
   // this occurs. If you want to ensure log files are complete, you must call
   // this method.
   bool ran_out_of_space() const { return ran_out_of_space_; }
+
+  // Returns the maximum total_bytes() value for all existing
+  // DetachedBufferWriters.
+  //
+  // Returns 0 if no files are open.
+  size_t maximum_total_bytes() const {
+    size_t result = 0;
+    for (const std::pair<const Channel *const, DataWriter> &data_writer :
+         data_writers_) {
+      result = std::max(result, data_writer.second.writer->total_bytes());
+    }
+    if (data_writer_) {
+      result = std::max(result, data_writer_->total_bytes());
+    }
+    return result;
+  }
 
   // Closes all existing log files. No more data may be written after this.
   //

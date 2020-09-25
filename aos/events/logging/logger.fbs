@@ -45,7 +45,7 @@ table LogFileHeader {
   // ---- basename_timestamps/pi1/aos/remote_timestamps/pi2/aos.logger.MessageHeader.part0.bfbs, etc.
   //  \-- basename_pi2_data/pi2/aos/aos.message_bridge.Timestamp.part0.bfbs, etc.
 
-  // All log files and parts from a single run of a logger executable will have
+  // All log files and parts from a single logging event will have
   // the same uuid.  This should be all the files generated on a single node.
   // Used to correlate files recorded together.
   logger_uuid:string;

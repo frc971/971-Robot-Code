@@ -64,8 +64,8 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
     if (!FLAGS_output_file.empty()) {
       unlink(FLAGS_output_file.c_str());
       logger_event_loop_ = MakeEventLoop("logger");
-      logger_ = std::make_unique<aos::logger::Logger>(FLAGS_output_file,
-                                                      logger_event_loop_.get());
+      logger_ = std::make_unique<aos::logger::Logger>(logger_event_loop_.get());
+      logger_->StartLoggingLocalNamerOnRun(FLAGS_output_file);
     }
 
     // Run for enough time to allow the gyro/imu zeroing code to run.
@@ -125,11 +125,9 @@ class DrivetrainTest : public ::aos::testing::ControlLoopTest {
     // TODO(james): Handle Euler angle singularities...
     const double down_estimator_yaw =
         CHECK_NOTNULL(drivetrain_status_fetcher_->down_estimator())->yaw();
-    const double localizer_yaw =
-        drivetrain_status_fetcher_->theta();
-    EXPECT_LT(
-        std::abs(aos::math::DiffAngle(down_estimator_yaw, localizer_yaw)),
-        1e-2);
+    const double localizer_yaw = drivetrain_status_fetcher_->theta();
+    EXPECT_LT(std::abs(aos::math::DiffAngle(down_estimator_yaw, localizer_yaw)),
+              1e-2);
     const double true_yaw = (drivetrain_plant_.GetRightPosition() -
                              drivetrain_plant_.GetLeftPosition()) /
                             (dt_config_.robot_radius * 2.0);
@@ -558,9 +556,11 @@ TEST_F(DrivetrainTest, SplineSimpleBackwards) {
     auto builder = drivetrain_goal_sender_.MakeBuilder();
 
     flatbuffers::Offset<flatbuffers::Vector<float>> spline_x_offset =
-        builder.fbb()->CreateVector<float>({0.0, -0.25, -0.5, -0.5, -0.75, -1.0});
+        builder.fbb()->CreateVector<float>(
+            {0.0, -0.25, -0.5, -0.5, -0.75, -1.0});
     flatbuffers::Offset<flatbuffers::Vector<float>> spline_y_offset =
-        builder.fbb()->CreateVector<float>({0.0, 0.0, -0.25, -0.75, -1.0, -1.0});
+        builder.fbb()->CreateVector<float>(
+            {0.0, 0.0, -0.25, -0.75, -1.0, -1.0});
 
     MultiSpline::Builder multispline_builder =
         builder.MakeBuilder<MultiSpline>();

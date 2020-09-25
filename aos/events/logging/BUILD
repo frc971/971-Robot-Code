@@ -291,6 +291,7 @@ cc_test(
         ":multinode_pingpong_config",
         "//aos/events:pingpong_config",
     ],
+    shard_count = 5,
     deps = [
         ":logger",
         "//aos/events:message_counter",

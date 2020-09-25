@@ -13,6 +13,8 @@ class UUID {
   // Returns a randomly generated UUID.  This is known as a UUID4.
   static UUID Random();
 
+  static UUID Zero();
+
   std::string_view string_view() const {
     return std::string_view(data_.data(), data_.size());
   }

@@ -12,6 +12,8 @@ TEST(UUIDTest, GetOne) {
   LOG(INFO) << UUID::Random().string_view();
 
   EXPECT_NE(UUID::Random(), UUID::Random());
+  EXPECT_NE(UUID::Random(), UUID::Zero());
+  EXPECT_EQ(UUID::Zero(), UUID::Zero());
 }
 
 }  // namespace testing

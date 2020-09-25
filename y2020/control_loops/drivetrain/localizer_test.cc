@@ -26,10 +26,10 @@ namespace testing {
 using frc971::control_loops::drivetrain::DrivetrainConfig;
 using frc971::control_loops::drivetrain::Goal;
 using frc971::control_loops::drivetrain::LocalizerControl;
+using frc971::vision::sift::CameraCalibrationT;
+using frc971::vision::sift::CameraPoseT;
 using frc971::vision::sift::ImageMatchResult;
 using frc971::vision::sift::ImageMatchResultT;
-using frc971::vision::sift::CameraPoseT;
-using frc971::vision::sift::CameraCalibrationT;
 using frc971::vision::sift::TransformationMatrixT;
 
 namespace {
@@ -90,9 +90,9 @@ constexpr std::chrono::seconds kPiTimeOffset(-10);
 }  // namespace
 
 namespace chrono = std::chrono;
-using frc971::control_loops::drivetrain::testing::DrivetrainSimulation;
-using frc971::control_loops::drivetrain::DrivetrainLoop;
 using aos::monotonic_clock;
+using frc971::control_loops::drivetrain::DrivetrainLoop;
+using frc971::control_loops::drivetrain::testing::DrivetrainSimulation;
 
 class LocalizedDrivetrainTest : public aos::testing::ControlLoopTest {
  protected:
@@ -136,8 +136,8 @@ class LocalizedDrivetrainTest : public aos::testing::ControlLoopTest {
 
     if (!FLAGS_output_file.empty()) {
       logger_event_loop_ = MakeEventLoop("logger", roborio_);
-      logger_ = std::make_unique<aos::logger::Logger>(FLAGS_output_file,
-                                                      logger_event_loop_.get());
+      logger_ = std::make_unique<aos::logger::Logger>(logger_event_loop_.get());
+      logger_->StartLoggingLocalNamerOnRun(FLAGS_output_file);
     }
 
     test_event_loop_->MakeWatcher(
@@ -152,7 +152,7 @@ class LocalizedDrivetrainTest : public aos::testing::ControlLoopTest {
               last_frame_ = monotonic_now();
             }
           }
-          });
+        });
 
     test_event_loop_->AddPhasedLoop(
         [this](int) {
@@ -337,8 +337,7 @@ class LocalizedDrivetrainTest : public aos::testing::ControlLoopTest {
   aos::Sender<aos::message_bridge::ServerStatistics> server_statistics_sender_;
 
   std::unique_ptr<aos::EventLoop> drivetrain_event_loop_;
-  const frc971::control_loops::drivetrain::DrivetrainConfig<double>
-      dt_config_;
+  const frc971::control_loops::drivetrain::DrivetrainConfig<double> dt_config_;
 
   std::unique_ptr<aos::EventLoop> pi1_event_loop_;
   aos::Sender<ImageMatchResult> camera_sender_;
