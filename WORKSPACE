@@ -70,6 +70,14 @@ load(
     "//debian:m4.bzl",
     m4_debs = "files",
 )
+load(
+    "//debian:lzma_amd64.bzl",
+    lzma_amd64_debs = "files",
+)
+load(
+    "//debian:lzma_arm64.bzl",
+    lzma_arm64_debs = "files",
+)
 load("//debian:packages.bzl", "generate_repositories_for_debs")
 
 generate_repositories_for_debs(python_debs)
@@ -105,6 +113,10 @@ generate_repositories_for_debs(gstreamer_amd64_debs)
 generate_repositories_for_debs(gstreamer_armhf_debs)
 
 generate_repositories_for_debs(m4_debs)
+
+generate_repositories_for_debs(lzma_amd64_debs)
+
+generate_repositories_for_debs(lzma_arm64_debs)
 
 http_archive(
     name = "python_repo",
@@ -752,4 +764,46 @@ http_archive(
     build_file = "@//debian:m4.BUILD",
     sha256 = "ee8dfe664ac8c1d066bab64f71bd076a021875581b3cc47dac4a14a475f50b15",
     url = "http://www.frc971.org/Build-Dependencies/m4.tar.gz",
+)
+
+# //debian:lzma_amd64
+http_archive(
+    name = "lzma_amd64",
+    build_file_content = """
+cc_library(
+    name = "lib",
+    srcs = [
+        "usr/lib/x86_64-linux-gnu/liblzma.a",
+    ],
+    hdrs = glob([
+        "usr/include/lzma/*.h",
+        "usr/include/*.h",
+    ]),
+    strip_include_prefix = "usr/include",
+    visibility = ["//visibility:public"],
+)
+""",
+    sha256 = "e0ccaa7f793e44638e9f89570e00f146073a98a5928e0b547146c8184488bb19",
+    urls = ["http://www.frc971.org/Build-Dependencies/lzma_amd64.tar.gz"],
+)
+
+# //debian:lzma_arm64
+http_archive(
+    name = "lzma_arm64",
+    build_file_content = """
+cc_library(
+    name = "lib",
+    srcs = [
+        "usr/lib/aarch64-linux-gnu/liblzma.a",
+    ],
+    hdrs = glob([
+        "usr/include/lzma/*.h",
+        "usr/include/*.h",
+    ]),
+    strip_include_prefix = "usr/include",
+    visibility = ["//visibility:public"],
+)
+""",
+    sha256 = "18db35669ee49a5f8324a344071dd4ab553e716f385fb75747b909bd1de959f5",
+    urls = ["http://www.frc971.org/Build-Dependencies/lzma_arm64.tar.gz"],
 )

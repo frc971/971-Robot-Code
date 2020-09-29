@@ -56,3 +56,13 @@ cc_test(
         "//aos/testing:googletest",
     ],
 )
+
+cc_library(
+    name = "resizeable_buffer",
+    hdrs = [
+        "resizeable_buffer.h",
+    ],
+    deps = [
+        "@com_github_google_glog//:glog",
+    ],
+)

@@ -122,8 +122,12 @@ inline FlatbufferDetachedBuffer<T> JsonFileToFlatbuffer(
 template <typename T>
 inline FlatbufferVector<T> FileToFlatbuffer(const std::string_view path) {
   std::ifstream instream(std::string(path), std::ios::in | std::ios::binary);
-  std::vector<uint8_t> data((std::istreambuf_iterator<char>(instream)),
-                            std::istreambuf_iterator<char>());
+  ResizeableBuffer data;
+  std::istreambuf_iterator<char> it(instream);
+  while (it != std::istreambuf_iterator<char>()) {
+    data.push_back(*it);
+    ++it;
+  }
   return FlatbufferVector<T>(std::move(data));
 }
 

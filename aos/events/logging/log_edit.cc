@@ -38,7 +38,8 @@ int main(int argc, char **argv) {
       aos::logger::SpanReader span_reader(orig_path);
       CHECK(!span_reader.ReadMessage().empty()) << ": Empty header, aborting";
 
-      aos::logger::DetachedBufferWriter buffer_writer(FLAGS_logfile);
+      aos::logger::DetachedBufferWriter buffer_writer(
+          FLAGS_logfile, std::make_unique<aos::logger::DummyEncoder>());
       buffer_writer.QueueSizedFlatbuffer(&fbb);
 
       while (true) {
@@ -47,7 +48,7 @@ int main(int argc, char **argv) {
           break;
         }
 
-        buffer_writer.WriteSizedFlatbuffer(msg_data);
+        buffer_writer.QueueSpan(msg_data);
       }
     } else {
       aos::logger::MessageReader reader(FLAGS_logfile);

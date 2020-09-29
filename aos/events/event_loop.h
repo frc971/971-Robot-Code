@@ -79,9 +79,10 @@ struct Context {
   // underlying flatbuffer.
   template <typename T>
   FlatbufferVector<T> CopyFlatBuffer() const {
-    return FlatbufferVector<T>(
-        std::vector<uint8_t>(reinterpret_cast<const uint8_t *>(data),
-                             reinterpret_cast<const uint8_t *>(data) + size));
+    ResizeableBuffer buffer;
+    buffer.resize(size);
+    memcpy(buffer.data(), data, size);
+    return FlatbufferVector<T>(std::move(buffer));
   }
 };
 

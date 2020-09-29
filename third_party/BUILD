@@ -113,3 +113,15 @@ cc_library(
         "roborio": ["@webrtc_rio//:webrtc"],
     }),
 )
+
+# TODO(Brian): Properly restrict this to specific platforms and remove the
+# default deps once we have support for that which interacts with select properly.
+cc_library(
+    name = "lzma",
+    visibility = ["//visibility:public"],
+    deps = select({
+        "//tools:cpu_k8": ["@lzma_amd64//:lib"],
+        "//tools:cpu_arm64": ["@lzma_arm64//:lib"],
+        "//conditions:default": [],
+    }),
+)
