@@ -232,16 +232,20 @@ void MultiNodeLogNamer::OpenForwardedTimestampWriter(const Channel *channel,
 void MultiNodeLogNamer::OpenWriter(const Channel *channel,
                                    DataWriter *data_writer) {
   const std::string filename = absl::StrCat(
-      base_name_, "_", channel->source_node()->string_view(), "_data",
-      channel->name()->string_view(), "/", channel->type()->string_view(),
-      ".part", data_writer->part_number, ".bfbs");
+      base_name_, "_", CHECK_NOTNULL(channel->source_node())->string_view(),
+      "_data", channel->name()->string_view(), "/",
+      channel->type()->string_view(), ".part", data_writer->part_number,
+      ".bfbs");
   CreateBufferWriter(filename, &data_writer->writer);
 }
 
 std::unique_ptr<DetachedBufferWriter> MultiNodeLogNamer::OpenDataWriter() {
+  std::string name = base_name_;
+  if (node() != nullptr) {
+    name = absl::StrCat(name, "_", node()->name()->string_view());
+  }
   return std::make_unique<DetachedBufferWriter>(
-      absl::StrCat(base_name_, "_", node()->name()->string_view(), "_data.part",
-                   part_number_, ".bfbs"),
+      absl::StrCat(name, "_data.part", part_number_, ".bfbs"),
       std::make_unique<DummyEncoder>());
 }
 
