@@ -296,8 +296,9 @@ void ADIS16470::DoInitializeStep() {
                   (0 << 2) /* internal clock mode */ |
                   (0 << 1) /* sync polarity, doesn't matter */ |
                   (1 << 0) /* data ready is active high */);
+          // Rate of the output will be 2000 / (DEC_RATE + 1) Hz.
           WriteRegister(registers::DEC_RATE,
-                        0 /* no internal decimation (averaging) */);
+                        1 /* Average every pair of values. */);
 
           // Start a sensor self test.
           WriteRegister(registers::GLOB_CMD, 1 << 2);
