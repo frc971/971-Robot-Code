@@ -17,24 +17,24 @@ table LogFileHeader {
   // Time this log file started on the monotonic clock in nanoseconds.
   // If this isn't known (the log file is being recorded from another node
   // where we don't know the time offset), both timestamps will be min_time.
-  monotonic_start_time:int64 = -9223372036854775808;
+  monotonic_start_time:int64 = -9223372036854775808 (id: 0);
   // Time this log file started on the realtime clock in nanoseconds.
-  realtime_start_time:int64 = -9223372036854775808;
+  realtime_start_time:int64 = -9223372036854775808 (id: 1);
 
   // Messages are not written in order to disk.  They will be out of order by
   // at most this duration (in nanoseconds).  If the log reader buffers until
   // it finds messages this much newer than it's simulation time, it will never
   // find a message out of order.
-  max_out_of_order_duration:long;
+  max_out_of_order_duration:long (id: 2);
 
   // The configuration of the channels.
-  configuration:aos.Configuration;
+  configuration:aos.Configuration (id: 3);
 
   // Name of the device which this log file is for.
-  name:string;
+  name:string (id: 4);
 
   // The current node, if known and running in a multi-node configuration.
-  node:Node;
+  node:Node (id: 5);
 
   // All UUIDs are uuid4.
 
@@ -48,7 +48,7 @@ table LogFileHeader {
   // All log files and parts from a single run of a logger executable will have
   // the same uuid.  This should be all the files generated on a single node.
   // Used to correlate files recorded together.
-  logger_uuid:string;
+  logger_uuid:string (id: 6);
 
   // Part files which go together all have headers.  When creating a log file
   // with multiple parts, the logger should stop writing to part n-1 as soon
@@ -61,41 +61,41 @@ table LogFileHeader {
   // will be created when the start time is known.
 
   // All the parts which go together have the same uuid.
-  parts_uuid:string;
+  parts_uuid:string (id: 7);
   // And the parts_index corresponds to which part this is in the sequence.  The
   // index should start at 0.
-  parts_index:int32;
+  parts_index:int32 (id: 8);
 }
 
 // Table holding a message.
 table MessageHeader {
   // Index into the channel datastructure in the log file header.  This
   // provides the data type.
-  channel_index:uint;
+  channel_index:uint (id: 0);
   // Time this message was sent on the monotonic clock in nanoseconds on this
   // node.
-  monotonic_sent_time:long;
+  monotonic_sent_time:long (id: 1);
   // Time this message was sent on the realtime clock in nanoseconds on this
   // node.
-  realtime_sent_time:long;
+  realtime_sent_time:long (id: 2);
   // Index into the ipc queue of this message.  This should start with 0 and
   // always monotonically increment if no messages were ever lost.  It will
   // wrap at a multiple of the queue size.
-  queue_index:uint;
+  queue_index:uint (id: 3);
 
   // TODO(austin): Format?  Compressed?
 
   // The nested flatbuffer.
-  data:[ubyte];
+  data:[ubyte] (id: 4);
 
   // Time this message was sent on the monotonic clock of the remote node in
   // nanoseconds.
-  monotonic_remote_time:int64 = -9223372036854775808;
+  monotonic_remote_time:int64 = -9223372036854775808 (id: 5);
   // Time this message was sent on the realtime clock of the remote node in
   // nanoseconds.
-  realtime_remote_time:int64 = -9223372036854775808;
+  realtime_remote_time:int64 = -9223372036854775808 (id: 6);
   // Queue index of this message on the remote node.
-  remote_queue_index:uint32 = 4294967295;
+  remote_queue_index:uint32 = 4294967295 (id: 7);
 }
 
 root_type MessageHeader;
