@@ -16,6 +16,7 @@
 #include "aos/flatbuffer_merge.h"
 #include "aos/network/team_number.h"
 #include "aos/time/time.h"
+#include "aos/util/file.h"
 #include "flatbuffers/flatbuffers.h"
 #include "third_party/gmp/gmpxx.h"
 
@@ -39,6 +40,8 @@ Logger::Logger(EventLoop *event_loop, const Configuration *configuration,
                std::function<bool(const Channel *)> should_log)
     : event_loop_(event_loop),
       configuration_(configuration),
+      boot_uuid_(
+          util::ReadFileToStringOrDie("/proc/sys/kernel/random/boot_id")),
       name_(network::GetHostname()),
       timer_handler_(event_loop_->AddTimer(
           [this]() { DoLogData(event_loop_->monotonic_now()); })),
@@ -177,10 +180,12 @@ Logger::~Logger() {
   }
 }
 
-void Logger::StartLogging(std::unique_ptr<LogNamer> log_namer) {
+void Logger::StartLogging(std::unique_ptr<LogNamer> log_namer,
+                          std::string_view log_start_uuid) {
   CHECK(!log_namer_) << ": Already logging";
   log_namer_ = std::move(log_namer);
-  uuid_ = UUID::Random();
+  log_event_uuid_ = UUID::Random();
+  log_start_uuid_ = log_start_uuid;
   VLOG(1) << "Starting logger for " << FlatbufferToJson(event_loop_->node());
 
   // We want to do as much work as possible before the initial Fetch. Time
@@ -247,6 +252,9 @@ std::unique_ptr<LogNamer> Logger::StopLogging(
     f.contents_writer = nullptr;
   }
   node_state_.clear();
+
+  log_event_uuid_ = UUID::Zero();
+  log_start_uuid_ = std::string();
 
   return std::move(log_namer_);
 }
@@ -382,17 +390,28 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> Logger::MakeHeader(
 
   // TODO(austin): Compress this much more efficiently.  There are a bunch of
   // duplicated schemas.
-  flatbuffers::Offset<aos::Configuration> configuration_offset =
+  const flatbuffers::Offset<aos::Configuration> configuration_offset =
       CopyFlatBuffer(configuration_, &fbb);
 
-  flatbuffers::Offset<flatbuffers::String> name_offset =
+  const flatbuffers::Offset<flatbuffers::String> name_offset =
       fbb.CreateString(name_);
 
-  CHECK(uuid_ != UUID::Zero());
-  flatbuffers::Offset<flatbuffers::String> logger_uuid_offset =
-      fbb.CreateString(uuid_.string_view());
+  CHECK(log_event_uuid_ != UUID::Zero());
+  const flatbuffers::Offset<flatbuffers::String> log_event_uuid_offset =
+      fbb.CreateString(log_event_uuid_.string_view());
 
-  flatbuffers::Offset<flatbuffers::String> parts_uuid_offset =
+  const flatbuffers::Offset<flatbuffers::String> logger_instance_uuid_offset =
+      fbb.CreateString(logger_instance_uuid_.string_view());
+
+  flatbuffers::Offset<flatbuffers::String> log_start_uuid_offset;
+  if (!log_start_uuid_.empty()) {
+    log_start_uuid_offset = fbb.CreateString(log_start_uuid_);
+  }
+
+  const flatbuffers::Offset<flatbuffers::String> boot_uuid_offset =
+      fbb.CreateString(boot_uuid_);
+
+  const flatbuffers::Offset<flatbuffers::String> parts_uuid_offset =
       fbb.CreateString("00000000-0000-4000-8000-000000000000");
 
   flatbuffers::Offset<Node> node_offset;
@@ -430,7 +449,12 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> Logger::MakeHeader(
             .count());
   }
 
-  log_file_header_builder.add_logger_uuid(logger_uuid_offset);
+  log_file_header_builder.add_log_event_uuid(log_event_uuid_offset);
+  log_file_header_builder.add_logger_instance_uuid(logger_instance_uuid_offset);
+  if (!log_start_uuid_offset.IsNull()) {
+    log_file_header_builder.add_log_start_uuid(log_start_uuid_offset);
+  }
+  log_file_header_builder.add_boot_uuid(boot_uuid_offset);
 
   log_file_header_builder.add_parts_uuid(parts_uuid_offset);
   log_file_header_builder.add_parts_index(0);
@@ -587,7 +611,7 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
     std::vector<std::pair<std::string, int>> parts;
   };
 
-  // Map holding the logger_uuid -> second map.  The second map holds the
+  // Map holding the log_event_uuid -> second map.  The second map holds the
   // parts_uuid -> list of parts for sorting.
   std::map<std::string, std::map<std::string, UnsortedLogParts>> parts_list;
 
@@ -652,20 +676,22 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
       continue;
     }
 
-    CHECK(log_header.message().has_logger_uuid());
+    CHECK(log_header.message().has_log_event_uuid());
     CHECK(log_header.message().has_parts_uuid());
     CHECK(log_header.message().has_parts_index());
 
-    const std::string logger_uuid = log_header.message().logger_uuid()->str();
+    const std::string log_event_uuid =
+        log_header.message().log_event_uuid()->str();
     const std::string parts_uuid = log_header.message().parts_uuid()->str();
     int32_t parts_index = log_header.message().parts_index();
 
-    auto log_it = parts_list.find(logger_uuid);
+    auto log_it = parts_list.find(log_event_uuid);
     if (log_it == parts_list.end()) {
-      log_it = parts_list
-                   .insert(std::make_pair(
-                       logger_uuid, std::map<std::string, UnsortedLogParts>()))
-                   .first;
+      log_it =
+          parts_list
+              .insert(std::make_pair(log_event_uuid,
+                                     std::map<std::string, UnsortedLogParts>()))
+              .first;
     }
 
     auto it = log_it->second.find(parts_uuid);
@@ -724,12 +750,12 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
   for (std::pair<const std::string, std::map<std::string, UnsortedLogParts>>
            &logs : parts_list) {
     LogFile new_file;
-    new_file.logger_uuid = logs.first;
+    new_file.log_event_uuid = logs.first;
     for (std::pair<const std::string, UnsortedLogParts> &parts : logs.second) {
       LogParts new_parts;
       new_parts.monotonic_start_time = parts.second.monotonic_start_time;
       new_parts.realtime_start_time = parts.second.realtime_start_time;
-      new_parts.logger_uuid = logs.first;
+      new_parts.log_event_uuid = logs.first;
       new_parts.parts_uuid = parts.first;
       new_parts.node = std::move(parts.second.node);
 
@@ -751,8 +777,8 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
 
 std::ostream &operator<<(std::ostream &stream, const LogFile &file) {
   stream << "{";
-  if (!file.logger_uuid.empty()) {
-    stream << "\"logger_uuid\": \"" << file.logger_uuid << "\", ";
+  if (!file.log_event_uuid.empty()) {
+    stream << "\"log_event_uuid\": \"" << file.log_event_uuid << "\", ";
   }
   stream << "\"parts\": [";
   for (size_t i = 0; i < file.parts.size(); ++i) {
@@ -766,8 +792,8 @@ std::ostream &operator<<(std::ostream &stream, const LogFile &file) {
 }
 std::ostream &operator<<(std::ostream &stream, const LogParts &parts) {
   stream << "{";
-  if (!parts.logger_uuid.empty()) {
-    stream << "\"logger_uuid\": \"" << parts.logger_uuid << "\", ";
+  if (!parts.log_event_uuid.empty()) {
+    stream << "\"log_event_uuid\": \"" << parts.log_event_uuid << "\", ";
   }
   if (!parts.parts_uuid.empty()) {
     stream << "\"parts_uuid\": \"" << parts.parts_uuid << "\", ";

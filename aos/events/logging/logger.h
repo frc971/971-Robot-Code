@@ -66,12 +66,19 @@ class Logger {
     polling_period_ = polling_period;
   }
 
+  std::string_view log_start_uuid() const { return log_start_uuid_; }
+
   // Rotates the log file(s), triggering new part files to be written for each
   // log file.
   void Rotate();
 
   // Starts logging to files with the given naming scheme.
-  void StartLogging(std::unique_ptr<LogNamer> log_namer);
+  //
+  // log_start_uuid may be used to tie this log event to other log events across
+  // multiple nodes. The default (empty string) indicates there isn't one
+  // available.
+  void StartLogging(std::unique_ptr<LogNamer> log_namer,
+                    std::string_view log_start_uuid = "");
 
   // Stops logging. Ensures any messages through end_time make it into the log.
   //
@@ -154,12 +161,16 @@ class Logger {
                     aos::monotonic_clock::time_point monotonic_start_time,
                     aos::realtime_clock::time_point realtime_start_time);
 
-  EventLoop *event_loop_;
-  UUID uuid_ = UUID::Zero();
-  std::unique_ptr<LogNamer> log_namer_;
-
+  EventLoop *const event_loop_;
   // The configuration to place at the top of the log file.
   const Configuration *const configuration_;
+
+  UUID log_event_uuid_ = UUID::Zero();
+  const UUID logger_instance_uuid_ = UUID::Random();
+  std::unique_ptr<LogNamer> log_namer_;
+  // Empty indicates there isn't one.
+  std::string log_start_uuid_;
+  const std::string boot_uuid_;
 
   // Name to save in the log file.  Defaults to hostname.
   std::string name_;
@@ -194,7 +205,7 @@ struct LogParts {
   aos::realtime_clock::time_point realtime_start_time;
 
   // UUIDs if available.
-  std::string logger_uuid;
+  std::string log_event_uuid;
   std::string parts_uuid;
 
   // The node this represents, or empty if we are in a single node world.
@@ -208,7 +219,7 @@ struct LogParts {
 // ordering constraints relative to each other.
 struct LogFile {
   // The UUID tying them all together (if available)
-  std::string logger_uuid;
+  std::string log_event_uuid;
 
   // All the parts, unsorted.
   std::vector<LogParts> parts;

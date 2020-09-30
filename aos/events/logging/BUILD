@@ -194,6 +194,7 @@ cc_library(
         "//aos/network:team_number",
         "//aos/network:timestamp_filter",
         "//aos/time",
+        "//aos/util:file",
         "//third_party/gmp",
         "@com_github_google_flatbuffers//:flatbuffers",
         "@com_google_absl//absl/strings",
