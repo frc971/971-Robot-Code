@@ -73,8 +73,9 @@ MultiNodeLogNamer::MultiNodeLogNamer(std::string_view base_name,
     : LogNamer(node),
       base_name_(base_name),
       configuration_(configuration),
-      uuid_(UUID::Random()),
-      data_writer_(OpenDataWriter()) {}
+      uuid_(UUID::Random()) {
+  OpenDataWriter();
+}
 
 void MultiNodeLogNamer::WriteHeader(
     aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header,
@@ -99,7 +100,7 @@ void MultiNodeLogNamer::Rotate(
     aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header) {
   if (node == this->node()) {
     ++part_number_;
-    *data_writer_ = std::move(*OpenDataWriter());
+    OpenDataWriter();
     UpdateHeader(header, uuid_, part_number_);
     data_writer_->QueueSpan(header->full_span());
   } else {
@@ -223,8 +224,8 @@ void MultiNodeLogNamer::Close() {
 void MultiNodeLogNamer::OpenForwardedTimestampWriter(const Channel *channel,
                                                      DataWriter *data_writer) {
   std::string filename =
-      absl::StrCat(base_name_, "_timestamps", channel->name()->string_view(),
-                   "/", channel->type()->string_view(), ".part",
+      absl::StrCat("_timestamps", channel->name()->string_view(), "/",
+                   channel->type()->string_view(), ".part",
                    data_writer->part_number, ".bfbs");
   CreateBufferWriter(filename, &data_writer->writer);
 }
@@ -232,33 +233,32 @@ void MultiNodeLogNamer::OpenForwardedTimestampWriter(const Channel *channel,
 void MultiNodeLogNamer::OpenWriter(const Channel *channel,
                                    DataWriter *data_writer) {
   const std::string filename = absl::StrCat(
-      base_name_, "_", CHECK_NOTNULL(channel->source_node())->string_view(),
-      "_data", channel->name()->string_view(), "/",
-      channel->type()->string_view(), ".part", data_writer->part_number,
-      ".bfbs");
+      "_", CHECK_NOTNULL(channel->source_node())->string_view(), "_data",
+      channel->name()->string_view(), "/", channel->type()->string_view(),
+      ".part", data_writer->part_number, ".bfbs");
   CreateBufferWriter(filename, &data_writer->writer);
 }
 
-std::unique_ptr<DetachedBufferWriter> MultiNodeLogNamer::OpenDataWriter() {
-  std::string name = base_name_;
+void MultiNodeLogNamer::OpenDataWriter() {
+  std::string name;
   if (node() != nullptr) {
     name = absl::StrCat(name, "_", node()->name()->string_view());
   }
-  return std::make_unique<DetachedBufferWriter>(
-      absl::StrCat(name, "_data.part", part_number_, ".bfbs"),
-      std::make_unique<DummyEncoder>());
+  absl::StrAppend(&name, "_data.part", part_number_, ".bfbs");
+  CreateBufferWriter(name, &data_writer_);
 }
 
 void MultiNodeLogNamer::CreateBufferWriter(
-    std::string_view filename,
-    std::unique_ptr<DetachedBufferWriter> *destination) {
+    std::string_view path, std::unique_ptr<DetachedBufferWriter> *destination) {
   if (ran_out_of_space_) {
     // Refuse to open any new files, which might skip data. Any existing files
     // are in the same folder, which means they're on the same filesystem, which
     // means they're probably going to run out of space and get stuck too.
     return;
   }
+  const std::string filename = absl::StrCat(base_name_, path);
   if (!destination->get()) {
+    all_filenames_.emplace_back(path);
     *destination = std::make_unique<DetachedBufferWriter>(
         filename, std::make_unique<DummyEncoder>());
     return;
@@ -268,6 +268,7 @@ void MultiNodeLogNamer::CreateBufferWriter(
     ran_out_of_space_ = true;
     return;
   }
+  all_filenames_.emplace_back(path);
   *destination->get() =
       DetachedBufferWriter(filename, std::make_unique<DummyEncoder>());
 }

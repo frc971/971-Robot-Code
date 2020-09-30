@@ -128,6 +128,13 @@ class MultiNodeLogNamer : public LogNamer {
 
   std::string_view base_name() const { return base_name_; }
 
+  // A list of all the filenames we've written.
+  //
+  // This only includes the part after base_name().
+  const std::vector<std::string> &all_filenames() const {
+    return all_filenames_;
+  }
+
   void WriteHeader(
       aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header,
       const Node *node) override;
@@ -192,9 +199,9 @@ class MultiNodeLogNamer : public LogNamer {
   void OpenWriter(const Channel *channel, DataWriter *data_writer);
 
   // Opens the main data writer file for this node responsible for data_writer_.
-  std::unique_ptr<DetachedBufferWriter> OpenDataWriter();
+  void OpenDataWriter();
 
-  void CreateBufferWriter(std::string_view filename,
+  void CreateBufferWriter(std::string_view path,
                           std::unique_ptr<DetachedBufferWriter> *destination);
 
   const std::string base_name_;
@@ -204,6 +211,7 @@ class MultiNodeLogNamer : public LogNamer {
   size_t part_number_ = 0;
 
   bool ran_out_of_space_ = false;
+  std::vector<std::string> all_filenames_;
 
   // File to write both delivery timestamps and local data to.
   std::unique_ptr<DetachedBufferWriter> data_writer_;
