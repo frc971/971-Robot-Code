@@ -500,10 +500,10 @@ SplitMessageReader::SplitMessageReader(
     // Now compare that the headers match.
     if (!CompareFlatBuffer(message_reader.raw_log_file_header(),
                            log_file_header_)) {
-      if (message_reader.log_file_header()->has_logger_uuid() &&
-          log_file_header_.message().has_logger_uuid() &&
-          message_reader.log_file_header()->logger_uuid()->string_view() !=
-              log_file_header_.message().logger_uuid()->string_view()) {
+      if (message_reader.log_file_header()->has_log_event_uuid() &&
+          log_file_header_.message().has_log_event_uuid() &&
+          message_reader.log_file_header()->log_event_uuid()->string_view() !=
+              log_file_header_.message().log_event_uuid()->string_view()) {
         LOG(FATAL) << "Logger UUIDs don't match between log file chunks "
                    << filenames_[0] << " and " << filenames_[i]
                    << ", this is not supported.";

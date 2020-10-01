@@ -262,8 +262,8 @@ TEST_F(LoggerTest, RotatedLogFile) {
       log_header.emplace_back(ReadHeader(f));
     }
 
-    EXPECT_EQ(log_header[0].message().logger_uuid()->string_view(),
-              log_header[1].message().logger_uuid()->string_view());
+    EXPECT_EQ(log_header[0].message().log_event_uuid()->string_view(),
+              log_header[1].message().log_event_uuid()->string_view());
     EXPECT_EQ(log_header[0].message().parts_uuid()->string_view(),
               log_header[1].message().parts_uuid()->string_view());
 
@@ -531,7 +531,7 @@ TEST_F(MultinodeLoggerTest, SimpleMultiNode) {
     std::vector<FlatbufferVector<LogFileHeader>> log_header;
     for (std::string_view f : logfiles_) {
       log_header.emplace_back(ReadHeader(f));
-      logfile_uuids.insert(log_header.back().message().logger_uuid()->str());
+      logfile_uuids.insert(log_header.back().message().log_event_uuid()->str());
       parts_uuids.insert(log_header.back().message().parts_uuid()->str());
     }
 
@@ -1111,16 +1111,16 @@ TEST_F(MultinodeLoggerTest, SortParts) {
 
   // Count up the number of UUIDs and make sure they are what we expect as a
   // sanity check.
-  std::set<std::string> logger_uuids;
+  std::set<std::string> log_event_uuids;
   std::set<std::string> parts_uuids;
   std::set<std::string> both_uuids;
 
   size_t missing_rt_count = 0;
 
   for (const LogFile &log_file : sorted_parts) {
-    EXPECT_FALSE(log_file.logger_uuid.empty());
-    logger_uuids.insert(log_file.logger_uuid);
-    both_uuids.insert(log_file.logger_uuid);
+    EXPECT_FALSE(log_file.log_event_uuid.empty());
+    log_event_uuids.insert(log_file.log_event_uuid);
+    both_uuids.insert(log_file.log_event_uuid);
 
     for (const LogParts &part : log_file.parts) {
       EXPECT_NE(part.monotonic_start_time, aos::monotonic_clock::min_time)
@@ -1128,7 +1128,8 @@ TEST_F(MultinodeLoggerTest, SortParts) {
       missing_rt_count +=
           part.realtime_start_time == aos::realtime_clock::min_time;
 
-      EXPECT_TRUE(logger_uuids.find(part.logger_uuid) != logger_uuids.end());
+      EXPECT_TRUE(log_event_uuids.find(part.log_event_uuid) !=
+                  log_event_uuids.end());
       EXPECT_NE(part.node, "");
       parts_uuids.insert(part.parts_uuid);
       both_uuids.insert(part.parts_uuid);
@@ -1140,9 +1141,9 @@ TEST_F(MultinodeLoggerTest, SortParts) {
   // the log reader can actually do a better job.
   EXPECT_EQ(missing_rt_count, 5u);
 
-  EXPECT_EQ(logger_uuids.size(), 2u);
+  EXPECT_EQ(log_event_uuids.size(), 2u);
   EXPECT_EQ(parts_uuids.size(), ToLogReaderVector(sorted_parts).size());
-  EXPECT_EQ(logger_uuids.size() + parts_uuids.size(), both_uuids.size());
+  EXPECT_EQ(log_event_uuids.size() + parts_uuids.size(), both_uuids.size());
 
   // Test that each list of parts is in order.  Don't worry about the ordering
   // between part file lists though.
