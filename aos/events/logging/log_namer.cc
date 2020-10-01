@@ -69,12 +69,22 @@ DetachedBufferWriter *LocalLogNamer::MakeForwardedTimestampWriter(
 
 MultiNodeLogNamer::MultiNodeLogNamer(std::string_view base_name,
                                      const Configuration *configuration,
-                                     const Node *node)
+                                     const Node *node,
+                                     std::string_view temp_suffix)
     : LogNamer(node),
       base_name_(base_name),
+      temp_suffix_(temp_suffix),
       configuration_(configuration),
-      uuid_(UUID::Random()),
-      data_writer_(OpenDataWriter()) {}
+      uuid_(UUID::Random()) {
+  OpenDataWriter();
+}
+
+MultiNodeLogNamer::~MultiNodeLogNamer() {
+  if (!ran_out_of_space_) {
+    // This handles renaming temporary files etc.
+    Close();
+  }
+}
 
 void MultiNodeLogNamer::WriteHeader(
     aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header,
@@ -99,7 +109,7 @@ void MultiNodeLogNamer::Rotate(
     aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header) {
   if (node == this->node()) {
     ++part_number_;
-    *data_writer_ = std::move(*OpenDataWriter());
+    OpenDataWriter();
     UpdateHeader(header, uuid_, part_number_);
     data_writer_->QueueSpan(header->full_span());
   } else {
@@ -209,6 +219,8 @@ void MultiNodeLogNamer::Close() {
         ran_out_of_space_ = true;
         data_writer.second.writer->acknowledge_out_of_space();
       }
+      RenameTempFile(data_writer.second.writer.get());
+      data_writer.second.writer.reset();
     }
   }
   if (data_writer_) {
@@ -217,14 +229,16 @@ void MultiNodeLogNamer::Close() {
       ran_out_of_space_ = true;
       data_writer_->acknowledge_out_of_space();
     }
+    RenameTempFile(data_writer_.get());
+    data_writer_.reset();
   }
 }
 
 void MultiNodeLogNamer::OpenForwardedTimestampWriter(const Channel *channel,
                                                      DataWriter *data_writer) {
   std::string filename =
-      absl::StrCat(base_name_, "_timestamps", channel->name()->string_view(),
-                   "/", channel->type()->string_view(), ".part",
+      absl::StrCat("_timestamps", channel->name()->string_view(), "/",
+                   channel->type()->string_view(), ".part",
                    data_writer->part_number, ".bfbs");
   CreateBufferWriter(filename, &data_writer->writer);
 }
@@ -232,33 +246,32 @@ void MultiNodeLogNamer::OpenForwardedTimestampWriter(const Channel *channel,
 void MultiNodeLogNamer::OpenWriter(const Channel *channel,
                                    DataWriter *data_writer) {
   const std::string filename = absl::StrCat(
-      base_name_, "_", CHECK_NOTNULL(channel->source_node())->string_view(),
-      "_data", channel->name()->string_view(), "/",
-      channel->type()->string_view(), ".part", data_writer->part_number,
-      ".bfbs");
+      "_", CHECK_NOTNULL(channel->source_node())->string_view(), "_data",
+      channel->name()->string_view(), "/", channel->type()->string_view(),
+      ".part", data_writer->part_number, ".bfbs");
   CreateBufferWriter(filename, &data_writer->writer);
 }
 
-std::unique_ptr<DetachedBufferWriter> MultiNodeLogNamer::OpenDataWriter() {
-  std::string name = base_name_;
+void MultiNodeLogNamer::OpenDataWriter() {
+  std::string name;
   if (node() != nullptr) {
     name = absl::StrCat(name, "_", node()->name()->string_view());
   }
-  return std::make_unique<DetachedBufferWriter>(
-      absl::StrCat(name, "_data.part", part_number_, ".bfbs"),
-      std::make_unique<DummyEncoder>());
+  absl::StrAppend(&name, "_data.part", part_number_, ".bfbs");
+  CreateBufferWriter(name, &data_writer_);
 }
 
 void MultiNodeLogNamer::CreateBufferWriter(
-    std::string_view filename,
-    std::unique_ptr<DetachedBufferWriter> *destination) {
+    std::string_view path, std::unique_ptr<DetachedBufferWriter> *destination) {
   if (ran_out_of_space_) {
     // Refuse to open any new files, which might skip data. Any existing files
     // are in the same folder, which means they're on the same filesystem, which
     // means they're probably going to run out of space and get stuck too.
     return;
   }
+  const std::string filename = absl::StrCat(base_name_, path, temp_suffix_);
   if (!destination->get()) {
+    all_filenames_.emplace_back(path);
     *destination = std::make_unique<DetachedBufferWriter>(
         filename, std::make_unique<DummyEncoder>());
     return;
@@ -268,8 +281,30 @@ void MultiNodeLogNamer::CreateBufferWriter(
     ran_out_of_space_ = true;
     return;
   }
+  RenameTempFile(destination->get());
+  all_filenames_.emplace_back(path);
   *destination->get() =
       DetachedBufferWriter(filename, std::make_unique<DummyEncoder>());
+}
+
+void MultiNodeLogNamer::RenameTempFile(DetachedBufferWriter *destination) {
+  if (temp_suffix_.empty()) {
+    return;
+  }
+  const std::string current_filename = std::string(destination->filename());
+  CHECK(current_filename.size() > temp_suffix_.size());
+  const std::string final_filename =
+      current_filename.substr(0, current_filename.size() - temp_suffix_.size());
+  const int result = rename(current_filename.c_str(), final_filename.c_str());
+  if (result != 0) {
+    if (errno == ENOSPC) {
+      ran_out_of_space_ = true;
+      return;
+    } else {
+      PLOG(FATAL) << "Renaming " << current_filename << " to " << final_filename
+                  << " failed";
+    }
+  }
 }
 
 }  // namespace logger
