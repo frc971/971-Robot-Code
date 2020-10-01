@@ -66,3 +66,15 @@ cc_library(
         "@com_github_google_glog//:glog",
     ],
 )
+
+cc_test(
+    name = "resizeable_buffer_test",
+    srcs = [
+        "resizeable_buffer_test.cc",
+    ],
+    deps = [
+        ":resizeable_buffer",
+        "//aos/testing:googletest",
+        "@com_google_absl//absl/types:span",
+    ],
+)
