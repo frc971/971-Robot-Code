@@ -69,12 +69,21 @@ DetachedBufferWriter *LocalLogNamer::MakeForwardedTimestampWriter(
 
 MultiNodeLogNamer::MultiNodeLogNamer(std::string_view base_name,
                                      const Configuration *configuration,
-                                     const Node *node)
+                                     const Node *node,
+                                     std::string_view temp_suffix)
     : LogNamer(node),
       base_name_(base_name),
+      temp_suffix_(temp_suffix),
       configuration_(configuration),
       uuid_(UUID::Random()) {
   OpenDataWriter();
+}
+
+MultiNodeLogNamer::~MultiNodeLogNamer() {
+  if (!ran_out_of_space_) {
+    // This handles renaming temporary files etc.
+    Close();
+  }
 }
 
 void MultiNodeLogNamer::WriteHeader(
@@ -210,6 +219,8 @@ void MultiNodeLogNamer::Close() {
         ran_out_of_space_ = true;
         data_writer.second.writer->acknowledge_out_of_space();
       }
+      RenameTempFile(data_writer.second.writer.get());
+      data_writer.second.writer.reset();
     }
   }
   if (data_writer_) {
@@ -218,6 +229,8 @@ void MultiNodeLogNamer::Close() {
       ran_out_of_space_ = true;
       data_writer_->acknowledge_out_of_space();
     }
+    RenameTempFile(data_writer_.get());
+    data_writer_.reset();
   }
 }
 
@@ -256,7 +269,7 @@ void MultiNodeLogNamer::CreateBufferWriter(
     // means they're probably going to run out of space and get stuck too.
     return;
   }
-  const std::string filename = absl::StrCat(base_name_, path);
+  const std::string filename = absl::StrCat(base_name_, path, temp_suffix_);
   if (!destination->get()) {
     all_filenames_.emplace_back(path);
     *destination = std::make_unique<DetachedBufferWriter>(
@@ -268,9 +281,30 @@ void MultiNodeLogNamer::CreateBufferWriter(
     ran_out_of_space_ = true;
     return;
   }
+  RenameTempFile(destination->get());
   all_filenames_.emplace_back(path);
   *destination->get() =
       DetachedBufferWriter(filename, std::make_unique<DummyEncoder>());
+}
+
+void MultiNodeLogNamer::RenameTempFile(DetachedBufferWriter *destination) {
+  if (temp_suffix_.empty()) {
+    return;
+  }
+  const std::string current_filename = std::string(destination->filename());
+  CHECK(current_filename.size() > temp_suffix_.size());
+  const std::string final_filename =
+      current_filename.substr(0, current_filename.size() - temp_suffix_.size());
+  const int result = rename(current_filename.c_str(), final_filename.c_str());
+  if (result != 0) {
+    if (errno == ENOSPC) {
+      ran_out_of_space_ = true;
+      return;
+    } else {
+      PLOG(FATAL) << "Renaming " << current_filename << " to " << final_filename
+                  << " failed";
+    }
+  }
 }
 
 }  // namespace logger

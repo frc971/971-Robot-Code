@@ -122,9 +122,17 @@ class LocalLogNamer : public LogNamer {
 // Log namer which uses a config and a base name to name a bunch of files.
 class MultiNodeLogNamer : public LogNamer {
  public:
+  // If temp_suffix is set, then this will write files under names beginning
+  // with the specified suffix, and then rename them to the desired name after
+  // they are fully written.
+  //
+  // This is useful to enable incremental copying of the log files.
+  //
+  // Defaults to writing directly to the final filename.
   MultiNodeLogNamer(std::string_view base_name,
-                    const Configuration *configuration, const Node *node);
-  ~MultiNodeLogNamer() override = default;
+                    const Configuration *configuration, const Node *node,
+                    std::string_view temp_suffix = "");
+  ~MultiNodeLogNamer() override;
 
   std::string_view base_name() const { return base_name_; }
 
@@ -204,7 +212,10 @@ class MultiNodeLogNamer : public LogNamer {
   void CreateBufferWriter(std::string_view path,
                           std::unique_ptr<DetachedBufferWriter> *destination);
 
+  void RenameTempFile(DetachedBufferWriter *destination);
+
   const std::string base_name_;
+  const std::string temp_suffix_;
   const Configuration *const configuration_;
   const UUID uuid_;
 
