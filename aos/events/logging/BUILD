@@ -35,7 +35,7 @@ cc_library(
         "@com_google_absl//absl/types:span",
     ] + select({
         "//tools:cpu_k8": [":lzma_encoder"],
-        "//tools:cpu_arm64": [":lzma_encoder"],
+        "//tools:cpu_aarch64": [":lzma_encoder"],
         "//conditions:default": [],
     }),
 )
@@ -108,7 +108,7 @@ cc_library(
         "//tools:cpu_k8": [
             "lzma_encoder.cc",
         ],
-        "//tools:cpu_arm64": [
+        "//tools:cpu_aarch64": [
             "lzma_encoder.cc",
         ],
         "//conditions:default": [],
@@ -117,7 +117,7 @@ cc_library(
         "//tools:cpu_k8": [
             "lzma_encoder.h",
         ],
-        "//tools:cpu_arm64": [
+        "//tools:cpu_aarch64": [
             "lzma_encoder.h",
         ],
         "//conditions:default": [],
@@ -142,7 +142,7 @@ cc_test(
     ],
     restricted_to = [
         "//tools:k8",
-        "//tools:arm64",
+        "//tools:aarch64",
     ],
     shard_count = 4,
     deps = [
