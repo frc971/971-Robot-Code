@@ -76,12 +76,8 @@ std::string_view EnumToString(
     int64_t enum_value,
     const flatbuffers::Vector<flatbuffers::Offset<reflection::EnumVal>>
         *values) {
-  auto result = std::find_if(values->begin(), values->end(),
-                             [enum_value](const reflection::EnumVal *a) {
-                               return a->value() == enum_value;
-                             });
-  return result != values->end() ? result->name()->string_view()
-                                 : std::string_view();
+  auto search = values->LookupByKey(enum_value);
+  return search != nullptr ? search->name()->string_view() : std::string_view();
 }
 
 // Convert integer to string, checking if it is an enum.
