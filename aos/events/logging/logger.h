@@ -32,66 +32,69 @@ namespace logger {
 class Logger {
  public:
   // Constructs a logger.
-  //   base_name/log_namer: Object used to write data to disk in one or more log
-  //     files.  If a base_name is passed in, a LocalLogNamer is wrapped
-  //     around it.
   //   event_loop: The event loop used to read the messages.
-  //   polling_period: The period used to poll the data.
   //   configuration: When provided, this is the configuration to log, and the
   //     configuration to use for the channel list to log.  If not provided,
   //     this becomes the configuration from the event loop.
-  Logger(std::string_view base_name, EventLoop *event_loop,
-         std::chrono::milliseconds polling_period =
-             std::chrono::milliseconds(100));
-  Logger(std::string_view base_name, EventLoop *event_loop,
-         const Configuration *configuration,
-         std::chrono::milliseconds polling_period =
-             std::chrono::milliseconds(100));
-  Logger(std::unique_ptr<LogNamer> log_namer, EventLoop *event_loop,
-         std::chrono::milliseconds polling_period =
-             std::chrono::milliseconds(100));
-  Logger(std::unique_ptr<LogNamer> log_namer, EventLoop *event_loop,
-         const Configuration *configuration,
-         std::chrono::milliseconds polling_period =
-             std::chrono::milliseconds(100));
+  //   should_log: When provided, a filter for channels to log. If not provided,
+  //     all available channels are logged.
+  Logger(EventLoop *event_loop)
+      : Logger(event_loop, event_loop->configuration()) {}
+  Logger(EventLoop *event_loop, const Configuration *configuration)
+      : Logger(event_loop, configuration,
+               [](const Channel *) { return true; }) {}
+  Logger(EventLoop *event_loop, const Configuration *configuration,
+         std::function<bool(const Channel *)> should_log);
   ~Logger();
 
   // Overrides the name in the log file header.
   void set_name(std::string_view name) { name_ = name; }
 
+  // Sets the callback to run after each period of data is logged. Defaults to
+  // doing nothing.
+  //
+  // This callback may safely do things like call Rotate().
+  void set_on_logged_period(std::function<void()> on_logged_period) {
+    on_logged_period_ = std::move(on_logged_period);
+  }
+
+  // Sets the period between polling the data. Defaults to 100ms.
+  //
+  // Changing this while a set of files is being written may result in
+  // unreadable files.
+  void set_polling_period(std::chrono::nanoseconds polling_period) {
+    polling_period_ = polling_period;
+  }
+
   // Rotates the log file(s), triggering new part files to be written for each
   // log file.
   void Rotate();
 
+  // Starts logging to files with the given naming scheme.
+  void StartLogging(std::unique_ptr<LogNamer> log_namer);
+
+  // Stops logging. Ensures any messages through end_time make it into the log.
+  //
+  // If you want to stop ASAP, pass min_time to avoid reading any more messages.
+  //
+  // Returns the LogNamer in case the caller wants to do anything else with it
+  // before destroying it.
+  std::unique_ptr<LogNamer> StopLogging(
+      aos::monotonic_clock::time_point end_time);
+
+  // Returns whether a log is currently being written.
+  bool is_started() const { return static_cast<bool>(log_namer_); }
+
+  // Shortcut to call StartLogging with a LocalLogNamer when event processing
+  // starts.
+  void StartLoggingLocalNamerOnRun(std::string base_name) {
+    event_loop_->OnRun([this, base_name]() {
+      StartLogging(
+          std::make_unique<LocalLogNamer>(base_name, event_loop_->node()));
+    });
+  }
+
  private:
-  void WriteHeader();
-  aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> MakeHeader(
-      const Node *node);
-
-  bool MaybeUpdateTimestamp(
-      const Node *node, int node_index,
-      aos::monotonic_clock::time_point monotonic_start_time,
-      aos::realtime_clock::time_point realtime_start_time);
-
-  void DoLogData();
-
-  void WriteMissingTimestamps();
-
-  void StartLogging();
-
-  // Fetches from each channel until all the data is logged.
-  void LogUntil(monotonic_clock::time_point t);
-
-  EventLoop *event_loop_;
-  const UUID uuid_;
-  std::unique_ptr<LogNamer> log_namer_;
-
-  // The configuration to place at the top of the log file.
-  const Configuration *configuration_;
-
-  // Name to save in the log file.  Defaults to hostname.
-  std::string name_;
-
   // Structure to track both a fetcher, and if the data fetched has been
   // written.  We may want to delay writing data to disk so that we don't let
   // data get too far out of order when written to disk so we can avoid making
@@ -101,40 +104,24 @@ class Logger {
     bool written = false;
 
     int channel_index = -1;
+    const Channel *channel = nullptr;
+    const Node *timestamp_node = nullptr;
 
     LogType log_type = LogType::kLogMessage;
 
+    // We fill out the metadata at construction, but the actual writers have to
+    // be updated each time we start logging. To avoid duplicating the complex
+    // logic determining whether each writer should be initialized, we just
+    // stash the answer in separate member variables.
+    bool wants_writer = false;
     DetachedBufferWriter *writer = nullptr;
+    bool wants_timestamp_writer = false;
     DetachedBufferWriter *timestamp_writer = nullptr;
+    bool wants_contents_writer = false;
     DetachedBufferWriter *contents_writer = nullptr;
-    const Node *writer_node = nullptr;
-    const Node *timestamp_node = nullptr;
+
     int node_index = 0;
   };
-
-  std::vector<FetcherStruct> fetchers_;
-  TimerHandler *timer_handler_;
-
-  // Period to poll the channels.
-  const std::chrono::milliseconds polling_period_;
-
-  // Last time that data was written for all channels to disk.
-  monotonic_clock::time_point last_synchronized_time_;
-
-  monotonic_clock::time_point monotonic_start_time_;
-  realtime_clock::time_point realtime_start_time_;
-
-  // Max size that the header has consumed.  This much extra data will be
-  // reserved in the builder to avoid reallocating.
-  size_t max_header_size_ = 0;
-
-  // Fetcher for all the statistics from all the nodes.
-  aos::Fetcher<message_bridge::ServerStatistics> server_statistics_fetcher_;
-
-  // Sets the start time for a specific node.
-  void SetStartTime(size_t node_index,
-                    aos::monotonic_clock::time_point monotonic_start_time,
-                    aos::realtime_clock::time_point realtime_start_time);
 
   struct NodeState {
     aos::monotonic_clock::time_point monotonic_start_time =
@@ -145,6 +132,56 @@ class Logger {
     aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> log_file_header =
         aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader>::Empty();
   };
+
+  void WriteHeader();
+  aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> MakeHeader(
+      const Node *node);
+
+  bool MaybeUpdateTimestamp(
+      const Node *node, int node_index,
+      aos::monotonic_clock::time_point monotonic_start_time,
+      aos::realtime_clock::time_point realtime_start_time);
+
+  void DoLogData(const monotonic_clock::time_point end_time);
+
+  void WriteMissingTimestamps();
+
+  // Fetches from each channel until all the data is logged.
+  void LogUntil(monotonic_clock::time_point t);
+
+  // Sets the start time for a specific node.
+  void SetStartTime(size_t node_index,
+                    aos::monotonic_clock::time_point monotonic_start_time,
+                    aos::realtime_clock::time_point realtime_start_time);
+
+  EventLoop *event_loop_;
+  UUID uuid_ = UUID::Zero();
+  std::unique_ptr<LogNamer> log_namer_;
+
+  // The configuration to place at the top of the log file.
+  const Configuration *const configuration_;
+
+  // Name to save in the log file.  Defaults to hostname.
+  std::string name_;
+
+  std::function<void()> on_logged_period_ = []() {};
+
+  std::vector<FetcherStruct> fetchers_;
+  TimerHandler *timer_handler_;
+
+  // Period to poll the channels.
+  std::chrono::nanoseconds polling_period_ = std::chrono::milliseconds(100);
+
+  // Last time that data was written for all channels to disk.
+  monotonic_clock::time_point last_synchronized_time_;
+
+  // Max size that the header has consumed.  This much extra data will be
+  // reserved in the builder to avoid reallocating.
+  size_t max_header_size_ = 0;
+
+  // Fetcher for all the statistics from all the nodes.
+  aos::Fetcher<message_bridge::ServerStatistics> server_statistics_fetcher_;
+
   std::vector<NodeState> node_state_;
 };
 

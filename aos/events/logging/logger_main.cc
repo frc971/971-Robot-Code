@@ -33,8 +33,9 @@ int main(int argc, char *argv[]) {
         event_loop.node());
   }
 
-  aos::logger::Logger logger(std::move(log_namer), &event_loop,
-                             std::chrono::milliseconds(100));
+  aos::logger::Logger logger(&event_loop);
+  event_loop.OnRun(
+      [&log_namer, &logger]() { logger.StartLogging(std::move(log_namer)); });
 
   event_loop.Run();
 

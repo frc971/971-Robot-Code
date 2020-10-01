@@ -42,7 +42,8 @@ int main(int argc, char **argv) {
   log_writer_event_loop->SkipTimingReport();
   log_writer_event_loop->SkipAosLog();
   CHECK(nullptr == log_writer_event_loop->node());
-  aos::logger::Logger writer(FLAGS_output_file, log_writer_event_loop.get());
+  aos::logger::Logger writer(log_writer_event_loop.get());
+  writer.StartLoggingLocalNamerOnRun(FLAGS_output_file);
 
   std::unique_ptr<aos::EventLoop> drivetrain_event_loop =
       reader.event_loop_factory()->MakeEventLoop("drivetrain");

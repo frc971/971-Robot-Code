@@ -40,6 +40,33 @@ cc_library(
     }),
 )
 
+cc_binary(
+    name = "logfile_utils_out_of_space_test_runner",
+    testonly = True,
+    srcs = [
+        "logfile_utils_out_of_space_test_runner.cc",
+    ],
+    deps = [
+        ":logfile_utils",
+        "//aos:init",
+        "@com_github_gflags_gflags//:gflags",
+        "@com_github_google_glog//:glog",
+    ],
+)
+
+sh_test(
+    name = "logfile_utils_out_of_space_test",
+    srcs = [
+        "logfile_utils_out_of_space_test.sh",
+    ],
+    data = [
+        ":logfile_utils_out_of_space_test_runner",
+    ],
+    deps = [
+        "@bazel_tools//tools/bash/runfiles",
+    ],
+)
+
 cc_library(
     name = "buffer_encoder",
     srcs = [
@@ -264,6 +291,7 @@ cc_test(
         ":multinode_pingpong_config",
         "//aos/events:pingpong_config",
     ],
+    shard_count = 5,
     deps = [
         ":logger",
         "//aos/events:message_counter",

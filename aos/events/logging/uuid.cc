@@ -57,4 +57,10 @@ UUID UUID::Random() {
   return result;
 }
 
+UUID UUID::Zero() {
+  UUID result;
+  result.data_.fill(0);
+  return result;
+}
+
 }  // namespace aos

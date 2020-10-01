@@ -41,6 +41,8 @@ class LoggerTest : public ::testing::Test {
   Pong pong_;
 };
 
+using LoggerDeathTest = LoggerTest;
+
 // Tests that we can startup at all.  This confirms that the channels are all in
 // the config.
 TEST_F(LoggerTest, Starts) {
@@ -58,8 +60,9 @@ TEST_F(LoggerTest, Starts) {
 
     event_loop_factory_.RunFor(chrono::milliseconds(95));
 
-    Logger logger(base_name, logger_event_loop.get(),
-                  std::chrono::milliseconds(100));
+    Logger logger(logger_event_loop.get());
+    logger.set_polling_period(std::chrono::milliseconds(100));
+    logger.StartLoggingLocalNamerOnRun(base_name);
     event_loop_factory_.RunFor(chrono::milliseconds(20000));
   }
 
@@ -101,6 +104,130 @@ TEST_F(LoggerTest, Starts) {
   EXPECT_EQ(ping_count, 2010);
 }
 
+// Tests calling StartLogging twice.
+TEST_F(LoggerDeathTest, ExtraStart) {
+  const ::std::string tmpdir(getenv("TEST_TMPDIR"));
+  const ::std::string base_name1 = tmpdir + "/logfile1";
+  const ::std::string logfile1 = base_name1 + ".part0.bfbs";
+  const ::std::string base_name2 = tmpdir + "/logfile2";
+  const ::std::string logfile2 = base_name2 + ".part0.bfbs";
+  unlink(logfile1.c_str());
+  unlink(logfile2.c_str());
+
+  LOG(INFO) << "Logging data to " << logfile1 << " then " << logfile2;
+
+  {
+    std::unique_ptr<EventLoop> logger_event_loop =
+        event_loop_factory_.MakeEventLoop("logger");
+
+    event_loop_factory_.RunFor(chrono::milliseconds(95));
+
+    Logger logger(logger_event_loop.get());
+    logger.set_polling_period(std::chrono::milliseconds(100));
+    logger_event_loop->OnRun(
+        [base_name1, base_name2, &logger_event_loop, &logger]() {
+          logger.StartLogging(std::make_unique<LocalLogNamer>(
+              base_name1, logger_event_loop->node()));
+          EXPECT_DEATH(logger.StartLogging(std::make_unique<LocalLogNamer>(
+                           base_name2, logger_event_loop->node())),
+                       "Already logging");
+        });
+    event_loop_factory_.RunFor(chrono::milliseconds(20000));
+  }
+}
+
+// Tests calling StopLogging twice.
+TEST_F(LoggerDeathTest, ExtraStop) {
+  const ::std::string tmpdir(getenv("TEST_TMPDIR"));
+  const ::std::string base_name = tmpdir + "/logfile";
+  const ::std::string logfile = base_name + ".part0.bfbs";
+  // Remove it.
+  unlink(logfile.c_str());
+
+  LOG(INFO) << "Logging data to " << logfile;
+
+  {
+    std::unique_ptr<EventLoop> logger_event_loop =
+        event_loop_factory_.MakeEventLoop("logger");
+
+    event_loop_factory_.RunFor(chrono::milliseconds(95));
+
+    Logger logger(logger_event_loop.get());
+    logger.set_polling_period(std::chrono::milliseconds(100));
+    logger_event_loop->OnRun([base_name, &logger_event_loop, &logger]() {
+      logger.StartLogging(std::make_unique<LocalLogNamer>(
+          base_name, logger_event_loop->node()));
+      logger.StopLogging(aos::monotonic_clock::min_time);
+      EXPECT_DEATH(logger.StopLogging(aos::monotonic_clock::min_time),
+                   "Not logging right now");
+    });
+    event_loop_factory_.RunFor(chrono::milliseconds(20000));
+  }
+}
+
+// Tests that we can startup twice.
+TEST_F(LoggerTest, StartsTwice) {
+  const ::std::string tmpdir(getenv("TEST_TMPDIR"));
+  const ::std::string base_name1 = tmpdir + "/logfile1";
+  const ::std::string logfile1 = base_name1 + ".part0.bfbs";
+  const ::std::string base_name2 = tmpdir + "/logfile2";
+  const ::std::string logfile2 = base_name2 + ".part0.bfbs";
+  unlink(logfile1.c_str());
+  unlink(logfile2.c_str());
+
+  LOG(INFO) << "Logging data to " << logfile1 << " then " << logfile2;
+
+  {
+    std::unique_ptr<EventLoop> logger_event_loop =
+        event_loop_factory_.MakeEventLoop("logger");
+
+    event_loop_factory_.RunFor(chrono::milliseconds(95));
+
+    Logger logger(logger_event_loop.get());
+    logger.set_polling_period(std::chrono::milliseconds(100));
+    logger.StartLogging(
+        std::make_unique<LocalLogNamer>(base_name1, logger_event_loop->node()));
+    event_loop_factory_.RunFor(chrono::milliseconds(10000));
+    logger.StopLogging(logger_event_loop->monotonic_now());
+    event_loop_factory_.RunFor(chrono::milliseconds(10000));
+    logger.StartLogging(
+        std::make_unique<LocalLogNamer>(base_name2, logger_event_loop->node()));
+    event_loop_factory_.RunFor(chrono::milliseconds(10000));
+  }
+
+  for (const auto &logfile :
+       {std::make_tuple(logfile1, 10), std::make_tuple(logfile2, 2010)}) {
+    SCOPED_TRACE(std::get<0>(logfile));
+    LogReader reader(std::get<0>(logfile));
+    reader.Register();
+
+    EXPECT_THAT(reader.Nodes(), ::testing::ElementsAre(nullptr));
+
+    std::unique_ptr<EventLoop> test_event_loop =
+        reader.event_loop_factory()->MakeEventLoop("log_reader");
+
+    int ping_count = std::get<1>(logfile);
+    int pong_count = std::get<1>(logfile);
+
+    // Confirm that the ping and pong counts both match, and the value also
+    // matches.
+    test_event_loop->MakeWatcher("/test",
+                                 [&ping_count](const examples::Ping &ping) {
+                                   EXPECT_EQ(ping.value(), ping_count + 1);
+                                   ++ping_count;
+                                 });
+    test_event_loop->MakeWatcher(
+        "/test", [&pong_count, &ping_count](const examples::Pong &pong) {
+          EXPECT_EQ(pong.value(), pong_count + 1);
+          ++pong_count;
+          EXPECT_EQ(ping_count, pong_count);
+        });
+
+    reader.event_loop_factory()->RunFor(std::chrono::seconds(100));
+    EXPECT_EQ(ping_count, std::get<1>(logfile) + 1000);
+  }
+}
+
 // Tests that we can read and write rotated log files.
 TEST_F(LoggerTest, RotatedLogFile) {
   const ::std::string tmpdir(getenv("TEST_TMPDIR"));
@@ -119,9 +246,9 @@ TEST_F(LoggerTest, RotatedLogFile) {
 
     event_loop_factory_.RunFor(chrono::milliseconds(95));
 
-    Logger logger(
-        std::make_unique<LocalLogNamer>(base_name, logger_event_loop->node()),
-        logger_event_loop.get(), std::chrono::milliseconds(100));
+    Logger logger(logger_event_loop.get());
+    logger.set_polling_period(std::chrono::milliseconds(100));
+    logger.StartLoggingLocalNamerOnRun(base_name);
     event_loop_factory_.RunFor(chrono::milliseconds(10000));
     logger.Rotate();
     event_loop_factory_.RunFor(chrono::milliseconds(10000));
@@ -218,8 +345,9 @@ TEST_F(LoggerTest, ManyMessages) {
                            chrono::microseconds(50));
     });
 
-    Logger logger(base_name, logger_event_loop.get(),
-                  std::chrono::milliseconds(100));
+    Logger logger(logger_event_loop.get());
+    logger.set_polling_period(std::chrono::milliseconds(100));
+    logger.StartLoggingLocalNamerOnRun(base_name);
 
     event_loop_factory_.RunFor(chrono::milliseconds(1000));
   }
@@ -289,11 +417,13 @@ class MultinodeLoggerTest : public ::testing::Test {
   }
 
   void StartLogger(LoggerState *logger) {
-    logger->logger = std::make_unique<Logger>(
-        std::make_unique<MultiNodeLogNamer>(logfile_base_,
-                                            logger->event_loop->configuration(),
-                                            logger->event_loop->node()),
-        logger->event_loop.get(), chrono::milliseconds(100));
+    logger->logger = std::make_unique<Logger>(logger->event_loop.get());
+    logger->logger->set_polling_period(std::chrono::milliseconds(100));
+    logger->event_loop->OnRun([this, logger]() {
+      logger->logger->StartLogging(std::make_unique<MultiNodeLogNamer>(
+          logfile_base_, logger->event_loop->configuration(),
+          logger->event_loop->node()));
+    });
   }
 
   // Config and factory.
