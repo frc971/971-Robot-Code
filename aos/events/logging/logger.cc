@@ -415,9 +415,11 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> Logger::MakeHeader(
       fbb.CreateString("00000000-0000-4000-8000-000000000000");
 
   flatbuffers::Offset<Node> node_offset;
+  flatbuffers::Offset<Node> logger_node_offset;
 
   if (configuration::MultiNode(configuration_)) {
     node_offset = CopyFlatBuffer(node, &fbb);
+    logger_node_offset = CopyFlatBuffer(event_loop_->node(), &fbb);
   }
 
   aos::logger::LogFileHeader::Builder log_file_header_builder(fbb);
@@ -427,6 +429,7 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> Logger::MakeHeader(
   // Only add the node if we are running in a multinode configuration.
   if (node != nullptr) {
     log_file_header_builder.add_node(node_offset);
+    log_file_header_builder.add_logger_node(logger_node_offset);
   }
 
   log_file_header_builder.add_configuration(configuration_offset);
