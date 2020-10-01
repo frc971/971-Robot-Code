@@ -30,7 +30,8 @@ void Basic::RunIteration(const Goal *goal, const Position *position,
     Status::Builder builder = status->MakeBuilder<Status>();
     // TODO(you): Fill out the Status message! In order to populate fields, use
     // the add_field_name() method on the builder, just like we do with the
-    // Output message above.
+    // Output message above.  Look at the definition of Status in
+    // basic_status.fbs and populate the field according to the comments there.
 
     status->Send(builder.Finish());
   }
