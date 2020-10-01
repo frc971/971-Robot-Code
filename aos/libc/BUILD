@@ -9,6 +9,7 @@ cc_library(
         "aos_strsignal.h",
     ],
     deps = [
+        "//aos:thread_local",
         "@com_github_google_glog//:glog",
     ],
 )
@@ -52,6 +53,9 @@ cc_library(
     ],
     hdrs = [
         "aos_strerror.h",
+    ],
+    deps = [
+        "//aos:thread_local",
     ],
 )
 

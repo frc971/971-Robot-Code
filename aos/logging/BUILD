@@ -21,6 +21,7 @@ cc_library(
         "//aos:complex_thread_local",
         "//aos:die",
         "//aos:macros",
+        "//aos:thread_local",
         "//aos/libc:aos_strerror",
         "//aos/mutex",
         "//aos/stl_mutex",

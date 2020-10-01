@@ -535,3 +535,11 @@ cc_library(
         "@com_google_absl//absl/strings:str_format",
     ],
 )
+
+cc_library(
+    name = "thread_local",
+    hdrs = [
+        "thread_local.h",
+    ],
+    visibility = ["//visibility:public"],
+)

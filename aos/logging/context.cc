@@ -22,6 +22,7 @@ extern char *program_invocation_short_name;
 #include "aos/complex_thread_local.h"
 #include "aos/die.h"
 #include "aos/logging/implementations.h"
+#include "aos/thread_local.h"
 
 namespace aos {
 namespace logging {
@@ -68,7 +69,7 @@ namespace {
 // reason for doing this instead of just deleting them is that tsan (at least)
 // doesn't like it when pthread_atfork handlers do complicated stuff and it's
 // not a great idea anyways.
-thread_local bool delete_current_context(false);
+AOS_THREAD_LOCAL bool delete_current_context(false);
 
 }  // namespace
 

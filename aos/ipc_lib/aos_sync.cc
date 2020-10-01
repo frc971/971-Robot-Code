@@ -27,9 +27,11 @@
 #include <type_traits>
 
 #include "absl/base/call_once.h"
-#include "aos/macros.h"
-#include "aos/util/compiler_memory_barrier.h"
 #include "glog/logging.h"
+
+#include "aos/macros.h"
+#include "aos/thread_local.h"
+#include "aos/util/compiler_memory_barrier.h"
 
 using ::aos::linux_code::ipc_lib::FutexAccessorObserver;
 
@@ -369,7 +371,7 @@ void check_cached_tid(pid_t tid) {
 
 // Starts off at 0 in each new thread (because that's what it gets initialized
 // to in most of them or it gets to reset to 0 after a fork by atfork_child()).
-thread_local pid_t my_tid = 0;
+AOS_THREAD_LOCAL pid_t my_tid = 0;
 
 // Gets called before the fork(2) wrapper function returns in the child.
 void atfork_child() {
@@ -428,7 +430,7 @@ static_assert(offsetof(aos_robust_list_head, pending_next) ==
 static_assert(sizeof(aos_robust_list_head) == sizeof(robust_list_head),
               "Our aos_robust_list_head doesn't match the kernel's");
 
-thread_local aos_robust_list_head robust_head;
+AOS_THREAD_LOCAL aos_robust_list_head robust_head;
 
 // Extra offset between mutex values and where we point to for their robust list
 // entries (from SetRobustListOffset).

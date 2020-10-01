@@ -7,8 +7,10 @@
 #include "gtest/gtest.h"
 
 #include "absl/base/call_once.h"
+
 #include "aos/logging/implementations.h"
 #include "aos/mutex/mutex.h"
+#include "aos/thread_local.h"
 
 using ::aos::logging::LogMessage;
 
@@ -97,12 +99,12 @@ class TestLogImplementation : public logging::HandleMessageLogImplementation {
   // Thread local storage for mock time.  This is thread local because if
   // someone spawns a thread and goes to town in parallel with a simulated event
   // loop, we want to just print the actual monotonic clock out.
-  static thread_local bool mock_time_;
-  static thread_local ::aos::monotonic_clock::time_point monotonic_now_;
+  static AOS_THREAD_LOCAL bool mock_time_;
+  static AOS_THREAD_LOCAL ::aos::monotonic_clock::time_point monotonic_now_;
 };
 
-thread_local bool TestLogImplementation::mock_time_ = false;
-thread_local ::aos::monotonic_clock::time_point
+AOS_THREAD_LOCAL bool TestLogImplementation::mock_time_ = false;
+AOS_THREAD_LOCAL ::aos::monotonic_clock::time_point
     TestLogImplementation::monotonic_now_ = ::aos::monotonic_clock::min_time;
 
 class MyTestEventListener : public ::testing::EmptyTestEventListener {
