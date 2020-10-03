@@ -167,13 +167,64 @@ LogReader::SolveOffsets() {
       return std::make_tuple(
           Eigen::Matrix<double, Eigen::Dynamic, 1>::Ones(nodes_count()),
           Eigen::Matrix<double, Eigen::Dynamic, 1>::Zero(nodes_count()));
-    } else {
-      // TODO(austin): Solve just the nodes we know about.  This is harder and
-      // there are no logs which require this yet to test on.
-      CHECK_EQ(cached_valid_node_count_, nodes_count())
-          << ": TODO(austin): Handle partial valid nodes";
-
+    } else if (cached_valid_node_count_ == nodes_count()) {
       return Solve(mpq_map, mpq_offsets);
+    } else {
+      // Strip out any columns (nodes) which aren't relevant.  Solve the
+      // simplified problem, then set any nodes which were missing back to slope
+      // 1, offset 0 (ie the distributed clock).
+      Eigen::Matrix<mpq_class, Eigen::Dynamic, Eigen::Dynamic>
+          valid_node_mpq_map =
+              Eigen::Matrix<mpq_class, Eigen::Dynamic, Eigen::Dynamic>::Zero(
+                  nonzero_offset_count, cached_valid_node_count_);
+
+      {
+        // Only copy over the columns with valid nodes in them.
+        size_t column = 0;
+        for (size_t i = 0; i < valid_nodes.size(); ++i) {
+          if (valid_nodes[i]) {
+            valid_node_mpq_map.col(column) = mpq_map.col(i);
+
+            ++column;
+          }
+        }
+        // The 1/n needs to be based on the number of nodes being solved.
+        // Recreate it here.
+        for (int j = 0; j < valid_node_mpq_map.cols(); ++j) {
+          valid_node_mpq_map(0, j) = mpq_class(1, cached_valid_node_count_);
+        }
+      }
+
+      VLOG(1) << "Reduced node filtered map "
+              << ToDouble(valid_node_mpq_map).format(HeavyFmt);
+      VLOG(1) << "Reduced node filtered offsets "
+              << ToDouble(mpq_offsets).format(HeavyFmt);
+
+      // Solve the simplified problem now.
+      std::tuple<Eigen::Matrix<double, Eigen::Dynamic, 1>,
+                 Eigen::Matrix<double, Eigen::Dynamic, 1>>
+          valid_result = Solve(valid_node_mpq_map, mpq_offsets);
+
+      // And expand the results back into a solution matrix.
+      std::tuple<Eigen::Matrix<double, Eigen::Dynamic, 1>,
+                 Eigen::Matrix<double, Eigen::Dynamic, 1>>
+          result = std::make_tuple(
+              Eigen::Matrix<double, Eigen::Dynamic, 1>::Ones(nodes_count()),
+              Eigen::Matrix<double, Eigen::Dynamic, 1>::Zero(nodes_count()));
+
+      {
+        size_t column = 0;
+        for (size_t i = 0; i < valid_nodes.size(); ++i) {
+          if (valid_nodes[i]) {
+            std::get<0>(result)(i) = std::get<0>(valid_result)(column);
+            std::get<1>(result)(i) = std::get<1>(valid_result)(column);
+
+            ++column;
+          }
+        }
+      }
+
+      return result;
     }
   } else {
     const Eigen::Matrix<mpq_class, Eigen::Dynamic, Eigen::Dynamic> mpq_map =
