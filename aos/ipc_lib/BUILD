@@ -12,6 +12,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//aos:macros",
+        "//aos:thread_local",
         "//aos/util:compiler_memory_barrier",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/base",

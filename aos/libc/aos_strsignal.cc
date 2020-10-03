@@ -4,8 +4,10 @@
 
 #include "glog/logging.h"
 
+#include "aos/thread_local.h"
+
 const char *aos_strsignal(int signal) {
-  static thread_local char buffer[512];
+  AOS_THREAD_LOCAL char buffer[512];
 
   if (signal >= SIGRTMIN && signal <= SIGRTMAX) {
     CHECK_GT(snprintf(buffer, sizeof(buffer), "Real-time signal %d",
