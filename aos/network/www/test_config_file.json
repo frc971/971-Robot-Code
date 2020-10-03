@@ -10,7 +10,7 @@
       "name": "/test",
       "type": "aos.Configuration",
       "source_node": "roborio",
-      "max_size": 1678,
+      "max_size": 2056,
       "frequency": 200
     }
   ],

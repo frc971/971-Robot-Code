@@ -1158,6 +1158,35 @@ TEST_P(AbstractEventLoopDeathTest, InvalidChannel) {
       "Channel pointer not found in configuration\\(\\)->channels\\(\\)");
 }
 
+// Verifies that the event loop implementations detect when Channel has an
+// invalid alignment.
+TEST_P(AbstractEventLoopDeathTest, InvalidChannelAlignment) {
+  const char *const kError = "multiple of alignment";
+  InvalidChannelAlignment();
+
+  auto loop = MakePrimary();
+
+  const Channel *channel = configuration::GetChannel(
+      loop->configuration(), "/test", "aos.TestMessage", "", nullptr);
+
+  EXPECT_DEATH({ loop->MakeRawSender(channel); }, kError);
+  EXPECT_DEATH({ loop->MakeSender<TestMessage>("/test"); }, kError);
+
+  EXPECT_DEATH({ loop->MakeRawFetcher(channel); }, kError);
+  EXPECT_DEATH({ loop->MakeFetcher<TestMessage>("/test"); }, kError);
+
+  EXPECT_DEATH(
+      { loop->MakeRawWatcher(channel, [](const Context &, const void *) {}); },
+      kError);
+  EXPECT_DEATH({ loop->MakeRawNoArgWatcher(channel, [](const Context &) {}); },
+               kError);
+
+  EXPECT_DEATH({ loop->MakeNoArgWatcher<TestMessage>("/test", []() {}); },
+               kError);
+  EXPECT_DEATH({ loop->MakeWatcher("/test", [](const TestMessage &) {}); },
+               kError);
+}
+
 // Verify that the send time on a message is roughly right when using a watcher.
 TEST_P(AbstractEventLoopTest, MessageSendTime) {
   auto loop1 = MakePrimary();

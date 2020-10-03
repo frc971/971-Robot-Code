@@ -34,17 +34,30 @@ class ChannelPreallocatedAllocator : public flatbuffers::Allocator {
   ~ChannelPreallocatedAllocator() override { CHECK(!is_allocated_); }
 
   // TODO(austin): Read the contract for these.
-  uint8_t *allocate(size_t /*size*/) override {
+  uint8_t *allocate(size_t size) override {
     if (is_allocated_) {
-      LOG(FATAL) << "Can't allocate more memory with a fixed size allocator.  "
-                    "Increase the memory reserved.";
+      LOG(FATAL) << "Can't allocate more memory with a fixed size allocator on "
+                    "channel "
+                 << configuration::CleanedChannelToString(channel_);
     }
+
+    CHECK_LE(size, size_)
+        << ": Tried to allocate more space than available on channel "
+        << configuration::CleanedChannelToString(channel_);
 
     is_allocated_ = true;
     return data_;
   }
 
-  void deallocate(uint8_t *, size_t) override { is_allocated_ = false; }
+  void deallocate(uint8_t *data, size_t size) override {
+    CHECK_EQ(data, data_)
+        << ": Deallocating data not allocated here on channel "
+        << configuration::CleanedChannelToString(channel_);
+    CHECK_LE(size, size_)
+        << ": Tried to deallocate more space than available on channel "
+        << configuration::CleanedChannelToString(channel_);
+    is_allocated_ = false;
+  }
 
   uint8_t *reallocate_downward(uint8_t * /*old_p*/, size_t /*old_size*/,
                                size_t new_size, size_t /*in_use_back*/,
