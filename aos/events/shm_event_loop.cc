@@ -537,9 +537,12 @@ class ShmSender : public RawSender {
     CHECK_LE(length, static_cast<size_t>(channel()->max_size()))
         << ": Sent too big a message on "
         << configuration::CleanedChannelToString(channel());
-    lockless_queue_sender_.Send(
+    CHECK(lockless_queue_sender_.Send(
         length, monotonic_remote_time, realtime_remote_time, remote_queue_index,
-        &monotonic_sent_time_, &realtime_sent_time_, &sent_queue_index_);
+        &monotonic_sent_time_, &realtime_sent_time_, &sent_queue_index_))
+        << ": Somebody wrote outside the buffer of their message on channel "
+        << configuration::CleanedChannelToString(channel());
+
     wake_upper_.Wakeup(event_loop()->priority());
     return true;
   }
@@ -551,10 +554,12 @@ class ShmSender : public RawSender {
     CHECK_LE(length, static_cast<size_t>(channel()->max_size()))
         << ": Sent too big a message on "
         << configuration::CleanedChannelToString(channel());
-    lockless_queue_sender_.Send(reinterpret_cast<const char *>(msg), length,
+    CHECK(lockless_queue_sender_.Send(reinterpret_cast<const char *>(msg), length,
                                 monotonic_remote_time, realtime_remote_time,
                                 remote_queue_index, &monotonic_sent_time_,
-                                &realtime_sent_time_, &sent_queue_index_);
+                                &realtime_sent_time_, &sent_queue_index_))
+        << ": Somebody wrote outside the buffer of their message on channel "
+        << configuration::CleanedChannelToString(channel());
     wake_upper_.Wakeup(event_loop()->priority());
     // TODO(austin): Return an error if we send too fast.
     return true;
