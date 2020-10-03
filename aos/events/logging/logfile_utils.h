@@ -492,6 +492,7 @@ class TimestampMerger {
     monotonic_clock::time_point monotonic_event_time =
         monotonic_clock::min_time;
     realtime_clock::time_point realtime_event_time = realtime_clock::min_time;
+    uint32_t queue_index = 0xffffffff;
 
     monotonic_clock::time_point monotonic_remote_time =
         monotonic_clock::min_time;

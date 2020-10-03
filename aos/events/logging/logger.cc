@@ -52,38 +52,22 @@ Logger::Logger(EventLoop *event_loop, const Configuration *configuration,
               : aos::Fetcher<message_bridge::ServerStatistics>()) {
   VLOG(1) << "Creating logger for " << FlatbufferToJson(event_loop_->node());
 
-  // Find all the nodes which are logging timestamps on our node.
-  std::set<const Node *> timestamp_logger_nodes;
-  for (const Channel *channel : *configuration_->channels()) {
-    if (!configuration::ChannelIsSendableOnNode(channel, event_loop_->node())) {
-      continue;
-    }
-    if (!channel->has_destination_nodes()) {
-      continue;
-    }
-    if (!should_log(channel)) {
-      continue;
-    }
-    for (const Connection *connection : *channel->destination_nodes()) {
-      const Node *other_node = configuration::GetNode(
-          configuration_, connection->name()->string_view());
-
-      if (configuration::ConnectionDeliveryTimeIsLoggedOnNode(
-              connection, event_loop_->node())) {
-        VLOG(1) << "Timestamps are logged from "
-                << FlatbufferToJson(other_node);
-        timestamp_logger_nodes.insert(other_node);
-      }
-    }
-  }
+  // Find all the nodes which are logging timestamps on our node.  This may
+  // over-estimate if should_log is specified.
+  std::vector<const Node *> timestamp_logger_nodes =
+      configuration::TimestampNodes(configuration_, event_loop_->node());
 
   std::map<const Channel *, const Node *> timestamp_logger_channels;
 
   // Now that we have all the nodes accumulated, make remote timestamp loggers
   // for them.
   for (const Node *node : timestamp_logger_nodes) {
+    // Note: since we are doing a find using the event loop channel, we need to
+    // make sure this channel pointer is part of the event loop configuration,
+    // not configuration_.  This only matters when configuration_ !=
+    // event_loop->configuration();
     const Channel *channel = configuration::GetChannel(
-        configuration_,
+        event_loop->configuration(),
         absl::StrCat("/aos/remote_timestamps/", node->name()->string_view()),
         logger::MessageHeader::GetFullyQualifiedName(), event_loop_->name(),
         event_loop_->node());
@@ -112,6 +96,9 @@ Logger::Logger(EventLoop *event_loop, const Configuration *configuration,
     const Channel *channel = aos::configuration::GetChannel(
         event_loop_->configuration(), config_channel->name()->string_view(),
         config_channel->type()->string_view(), "", event_loop_->node());
+    CHECK(channel != nullptr)
+        << ": Failed to look up channel "
+        << aos::configuration::CleanedChannelToString(config_channel);
     if (!should_log(channel)) {
       continue;
     }
@@ -166,6 +153,29 @@ Logger::Logger(EventLoop *event_loop, const Configuration *configuration,
             configuration::GetNodeIndex(configuration_, fs.timestamp_node);
       }
       fetchers_.emplace_back(std::move(fs));
+    }
+  }
+
+  // When we are logging remote timestamps, we need to be able to translate from
+  // the channel index that the event loop uses to the channel index in the
+  // config in the log file.
+  event_loop_to_logged_channel_index_.resize(
+      event_loop->configuration()->channels()->size(), -1);
+  for (size_t event_loop_channel_index = 0;
+       event_loop_channel_index <
+       event_loop->configuration()->channels()->size();
+       ++event_loop_channel_index) {
+    const Channel *event_loop_channel =
+        event_loop->configuration()->channels()->Get(event_loop_channel_index);
+
+    const Channel *logged_channel = aos::configuration::GetChannel(
+        configuration_, event_loop_channel->name()->string_view(),
+        event_loop_channel->type()->string_view(), "",
+        configuration::GetNode(configuration_, event_loop_->node()));
+
+    if (logged_channel != nullptr) {
+      event_loop_to_logged_channel_index_[event_loop_channel_index] =
+          configuration::ChannelIndex(configuration_, logged_channel);
     }
   }
 }
@@ -549,10 +559,18 @@ void Logger::LogUntil(monotonic_clock::time_point t) {
 
           logger::MessageHeader::Builder message_header_builder(fbb);
 
+          // TODO(austin): This needs to check the channel_index and confirm
+          // that it should be logged before squirreling away the timestamp to
+          // disk.  We don't want to log irrelevant timestamps.
+
           // Note: this must match the same order as MessageBridgeServer and
           // PackMessage.  We want identical headers to have identical
           // on-the-wire formats to make comparing them easier.
-          message_header_builder.add_channel_index(msg->channel_index());
+
+          // Translate from the channel index that the event loop uses to the
+          // channel index in the log file.
+          message_header_builder.add_channel_index(
+              event_loop_to_logged_channel_index_[msg->channel_index()]);
 
           message_header_builder.add_queue_index(msg->queue_index());
           message_header_builder.add_monotonic_sent_time(
@@ -856,6 +874,22 @@ LogReader::LogReader(const std::vector<std::vector<std::string>> &filenames,
       replay_configuration_(replay_configuration) {
   MakeRemappedConfig();
 
+  // Remap all existing remote timestamp channels.  They will be recreated, and
+  // the data logged isn't relevant anymore.
+  for (const Node *node : Nodes()) {
+    std::vector<const Node *> timestamp_logger_nodes =
+        configuration::TimestampNodes(logged_configuration(), node);
+    for (const Node *remote_node : timestamp_logger_nodes) {
+      const std::string channel = absl::StrCat(
+          "/aos/remote_timestamps/", remote_node->name()->string_view());
+      CHECK(HasChannel<logger::MessageHeader>(channel, node))
+          << ": Failed to find {\"name\": \"" << channel << "\", \"type\": \""
+          << logger::MessageHeader::GetFullyQualifiedName() << "\"} for node "
+          << node->name()->string_view();
+      RemapLoggedChannel<logger::MessageHeader>(channel, node);
+    }
+  }
+
   if (replay_configuration) {
     CHECK_EQ(configuration::MultiNode(configuration()),
              configuration::MultiNode(replay_configuration))
@@ -956,10 +990,22 @@ void LogReader::Register(SimulatedEventLoopFactory *event_loop_factory) {
     states_[node_index] =
         std::make_unique<State>(std::make_unique<ChannelMerger>(filenames_));
     State *state = states_[node_index].get();
-
-    Register(state->SetNodeEventLoopFactory(
+    state->set_event_loop(state->SetNodeEventLoopFactory(
         event_loop_factory_->GetNodeEventLoopFactory(node)));
+
+    state->SetChannelCount(logged_configuration()->channels()->size());
   }
+
+  // Register after making all the State objects so we can build references
+  // between them.
+  for (const Node *node : configuration::GetNodes(configuration())) {
+    const size_t node_index =
+        configuration::GetNodeIndex(configuration(), node);
+    State *state = states_[node_index].get();
+
+    Register(state->event_loop());
+  }
+
   if (live_nodes_ == 0) {
     LOG(FATAL)
         << "Don't have logs from any of the nodes in the replay config--are "
@@ -1313,29 +1359,46 @@ void LogReader::Register(EventLoop *event_loop) {
 
   const bool has_data = state->SetNode();
 
-  state->SetChannelCount(logged_configuration()->channels()->size());
+  for (size_t logged_channel_index = 0;
+       logged_channel_index < logged_configuration()->channels()->size();
+       ++logged_channel_index) {
+    const Channel *channel = RemapChannel(
+        event_loop,
+        logged_configuration()->channels()->Get(logged_channel_index));
 
-  for (size_t i = 0; i < logged_configuration()->channels()->size(); ++i) {
-    const Channel *channel =
-        RemapChannel(event_loop, logged_configuration()->channels()->Get(i));
-
-    NodeEventLoopFactory *channel_target_event_loop_factory = nullptr;
     message_bridge::NoncausalOffsetEstimator *filter = nullptr;
+    aos::Sender<MessageHeader> *remote_timestamp_sender = nullptr;
+
+    State *source_state = nullptr;
 
     if (!configuration::ChannelIsSendableOnNode(channel, event_loop->node()) &&
         configuration::ChannelIsReadableOnNode(channel, event_loop->node())) {
-      const Node *target_node = configuration::GetNode(
+      // We've got a message which is being forwarded to this node.
+      const Node *source_node = configuration::GetNode(
           event_loop->configuration(), channel->source_node()->string_view());
-      filter = GetFilter(event_loop->node(), target_node);
+      filter = GetFilter(event_loop->node(), source_node);
 
-      if (event_loop_factory_ != nullptr) {
-        channel_target_event_loop_factory =
-            event_loop_factory_->GetNodeEventLoopFactory(target_node);
+      // Delivery timestamps are supposed to be logged back on the source node.
+      // Configure remote timestamps to be sent.
+      const bool delivery_time_is_logged =
+          configuration::ConnectionDeliveryTimeIsLoggedOnNode(
+              channel, event_loop->node(), source_node);
+
+      source_state =
+          states_[configuration::GetNodeIndex(configuration(), source_node)]
+              .get();
+
+      if (delivery_time_is_logged) {
+        remote_timestamp_sender =
+            source_state->RemoteTimestampSender(event_loop->node());
       }
     }
 
-    state->SetChannel(i, event_loop->MakeRawSender(channel), filter,
-                      channel_target_event_loop_factory);
+    state->SetChannel(
+        logged_channel_index,
+        configuration::ChannelIndex(event_loop->configuration(), channel),
+        event_loop->MakeRawSender(channel), filter, remote_timestamp_sender,
+        source_state);
   }
 
   // If we didn't find any log files with data in them, we won't ever get a
@@ -1464,10 +1527,7 @@ void LogReader::Register(EventLoop *event_loop) {
         // TODO(austin): std::move channel_data in and make that efficient in
         // simulation.
         state->Send(channel_index, channel_data.message().data()->Data(),
-                    channel_data.message().data()->size(),
-                    channel_timestamp.monotonic_remote_time,
-                    channel_timestamp.realtime_remote_time,
-                    channel_timestamp.remote_queue_index);
+                    channel_data.message().data()->size(), channel_timestamp);
       } else if (state->at_end() && !ignore_missing_data_) {
         // We are at the end of the log file and found missing data.  Finish
         // reading the rest of the log file and call it quits.  We don't want
@@ -1829,18 +1889,148 @@ EventLoop *LogReader::State::SetNodeEventLoopFactory(
 
 void LogReader::State::SetChannelCount(size_t count) {
   channels_.resize(count);
+  remote_timestamp_senders_.resize(count);
   filters_.resize(count);
-  channel_target_event_loop_factory_.resize(count);
+  channel_source_state_.resize(count);
+  factory_channel_index_.resize(count);
+  queue_index_map_.resize(count);
 }
 
 void LogReader::State::SetChannel(
-    size_t channel, std::unique_ptr<RawSender> sender,
+    size_t logged_channel_index, size_t factory_channel_index,
+    std::unique_ptr<RawSender> sender,
     message_bridge::NoncausalOffsetEstimator *filter,
-    NodeEventLoopFactory *channel_target_event_loop_factory) {
-  channels_[channel] = std::move(sender);
-  filters_[channel] = filter;
-  channel_target_event_loop_factory_[channel] =
-      channel_target_event_loop_factory;
+    aos::Sender<MessageHeader> *remote_timestamp_sender, State *source_state) {
+  channels_[logged_channel_index] = std::move(sender);
+  filters_[logged_channel_index] = filter;
+  remote_timestamp_senders_[logged_channel_index] = remote_timestamp_sender;
+
+  if (source_state) {
+    channel_source_state_[logged_channel_index] = source_state;
+
+    if (remote_timestamp_sender != nullptr) {
+      source_state->queue_index_map_[logged_channel_index] =
+          std::make_unique<std::vector<State::SentTimestamp>>();
+    }
+  }
+
+  factory_channel_index_[logged_channel_index] = factory_channel_index;
+}
+
+bool LogReader::State::Send(
+    size_t channel_index, const void *data, size_t size,
+    const TimestampMerger::DeliveryTimestamp &delivery_timestamp) {
+  aos::RawSender *sender = channels_[channel_index].get();
+  uint32_t remote_queue_index = 0xffffffff;
+
+  if (remote_timestamp_senders_[channel_index] != nullptr) {
+    std::vector<SentTimestamp> *queue_index_map =
+        CHECK_NOTNULL(CHECK_NOTNULL(channel_source_state_[channel_index])
+                          ->queue_index_map_[channel_index]
+                          .get());
+
+    SentTimestamp search;
+    search.monotonic_event_time = delivery_timestamp.monotonic_remote_time;
+    search.realtime_event_time = delivery_timestamp.realtime_remote_time;
+    search.queue_index = delivery_timestamp.remote_queue_index;
+
+    // Find the sent time if available.
+    auto element = std::lower_bound(
+        queue_index_map->begin(), queue_index_map->end(), search,
+        [](SentTimestamp a, SentTimestamp b) {
+          if (b.monotonic_event_time < a.monotonic_event_time) {
+            return false;
+          }
+          if (b.monotonic_event_time > a.monotonic_event_time) {
+            return true;
+          }
+
+          if (b.queue_index < a.queue_index) {
+            return false;
+          }
+          if (b.queue_index > a.queue_index) {
+            return true;
+          }
+
+          CHECK_EQ(a.realtime_event_time, b.realtime_event_time);
+          return false;
+        });
+
+    // TODO(austin): Be a bit more principled here, but we will want to do that
+    // after the logger rewrite.  We hit this when one node finishes, but the
+    // other node isn't done yet.  So there is no send time, but there is a
+    // receive time.
+    if (element != queue_index_map->end()) {
+      CHECK_EQ(element->monotonic_event_time,
+               delivery_timestamp.monotonic_remote_time);
+      CHECK_EQ(element->realtime_event_time,
+               delivery_timestamp.realtime_remote_time);
+      CHECK_EQ(element->queue_index, delivery_timestamp.remote_queue_index);
+
+      remote_queue_index = element->actual_queue_index;
+    }
+  }
+
+  // Send!  Use the replayed queue index here instead of the logged queue index
+  // for the remote queue index.  This makes re-logging work.
+  const bool sent =
+      sender->Send(data, size, delivery_timestamp.monotonic_remote_time,
+                   delivery_timestamp.realtime_remote_time, remote_queue_index);
+  if (!sent) return false;
+
+  if (queue_index_map_[channel_index]) {
+    SentTimestamp timestamp;
+    timestamp.monotonic_event_time = delivery_timestamp.monotonic_event_time;
+    timestamp.realtime_event_time = delivery_timestamp.realtime_event_time;
+    timestamp.queue_index = delivery_timestamp.queue_index;
+    timestamp.actual_queue_index = sender->sent_queue_index();
+    queue_index_map_[channel_index]->emplace_back(timestamp);
+  } else if (remote_timestamp_senders_[channel_index] != nullptr) {
+    aos::Sender<MessageHeader>::Builder builder =
+        remote_timestamp_senders_[channel_index]->MakeBuilder();
+
+    logger::MessageHeader::Builder message_header_builder =
+        builder.MakeBuilder<logger::MessageHeader>();
+
+    message_header_builder.add_channel_index(
+        factory_channel_index_[channel_index]);
+
+    // Swap the remote and sent metrics.  They are from the sender's
+    // perspective, not the receiver's perspective.
+    message_header_builder.add_monotonic_sent_time(
+        sender->monotonic_sent_time().time_since_epoch().count());
+    message_header_builder.add_realtime_sent_time(
+        sender->realtime_sent_time().time_since_epoch().count());
+    message_header_builder.add_queue_index(sender->sent_queue_index());
+
+    message_header_builder.add_monotonic_remote_time(
+        delivery_timestamp.monotonic_remote_time.time_since_epoch().count());
+    message_header_builder.add_realtime_remote_time(
+        delivery_timestamp.realtime_remote_time.time_since_epoch().count());
+
+    message_header_builder.add_remote_queue_index(remote_queue_index);
+
+    builder.Send(message_header_builder.Finish());
+  }
+
+  return true;
+}
+
+aos::Sender<MessageHeader> *LogReader::State::RemoteTimestampSender(
+    const Node *delivered_node) {
+  auto sender = remote_timestamp_senders_map_.find(delivered_node);
+
+  if (sender == remote_timestamp_senders_map_.end()) {
+    sender = remote_timestamp_senders_map_
+                 .emplace(std::make_pair(
+                     delivered_node,
+                     event_loop()->MakeSender<MessageHeader>(
+                         absl::StrCat("/aos/remote_timestamps/",
+                                      delivered_node->name()->string_view()))))
+                 .first;
+  }
+
+  return &(sender->second);
 }
 
 std::tuple<TimestampMerger::DeliveryTimestamp, int,
@@ -1929,6 +2119,7 @@ void LogReader::State::Deregister() {
   for (size_t i = 0; i < channels_.size(); ++i) {
     channels_[i].reset();
   }
+  remote_timestamp_senders_map_.clear();
   event_loop_unique_ptr_.reset();
   event_loop_ = nullptr;
   timer_handler_ = nullptr;

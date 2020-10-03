@@ -135,6 +135,10 @@ std::vector<std::string_view> DestinationNodeNames(const Configuration *config,
 std::vector<std::string_view> SourceNodeNames(const Configuration *config,
                                               const Node *my_node);
 
+// Returns the all nodes that are logging timestamps on our node.
+std::vector<const Node *> TimestampNodes(const Configuration *config,
+                                         const Node *my_node);
+
 // TODO(austin): GetSchema<T>(const Flatbuffer<Configuration> &config);
 
 }  // namespace configuration

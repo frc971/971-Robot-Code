@@ -1153,6 +1153,8 @@ TimestampMerger::PopOldest() {
     timestamp.realtime_event_time =
         realtime_clock::time_point(chrono::nanoseconds(
             std::get<2>(oldest_timestamp).message().realtime_sent_time()));
+    timestamp.queue_index =
+        std::get<2>(oldest_timestamp).message().queue_index();
 
     // Consistency check.
     CHECK_EQ(timestamp.monotonic_event_time, std::get<0>(oldest_timestamp));
@@ -1255,6 +1257,7 @@ TimestampMerger::PopOldest() {
     timestamp.realtime_event_time =
         realtime_clock::time_point(chrono::nanoseconds(
             std::get<2>(oldest_message).message().realtime_sent_time()));
+    timestamp.queue_index = std::get<2>(oldest_message).message().queue_index();
     timestamp.remote_queue_index = 0xffffffff;
 
     CHECK_EQ(std::get<0>(oldest_message), timestamp.monotonic_event_time);
