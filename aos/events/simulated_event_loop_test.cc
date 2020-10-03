@@ -518,6 +518,7 @@ TEST(SimulatedEventLoopTest, MultinodePingPong) {
         // Confirm the forwarded message has matching timestamps to the
         // timestamps we got back.
         EXPECT_EQ(pi2_context->queue_index, header.queue_index());
+        EXPECT_EQ(pi2_context->remote_queue_index, header.remote_queue_index());
         EXPECT_EQ(pi2_context->monotonic_event_time,
                   header_monotonic_sent_time);
         EXPECT_EQ(pi2_context->realtime_event_time, header_realtime_sent_time);
@@ -527,7 +528,7 @@ TEST(SimulatedEventLoopTest, MultinodePingPong) {
                   header_monotonic_remote_time);
 
         // Confirm the forwarded message also matches the source message.
-        EXPECT_EQ(pi1_context->queue_index, header.queue_index());
+        EXPECT_EQ(pi1_context->queue_index, header.remote_queue_index());
         EXPECT_EQ(pi1_context->monotonic_event_time,
                   header_monotonic_remote_time);
         EXPECT_EQ(pi1_context->realtime_event_time,

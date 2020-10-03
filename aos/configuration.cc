@@ -975,5 +975,40 @@ std::vector<std::string_view> DestinationNodeNames(const Configuration *config,
   return result;
 }
 
+std::vector<const Node *> TimestampNodes(const Configuration *config,
+                                         const Node *my_node) {
+  if (!configuration::MultiNode(config)) {
+    CHECK(my_node == nullptr);
+    return std::vector<const Node *>{};
+  }
+
+  std::set<const Node *> timestamp_logger_nodes;
+  for (const Channel *channel : *config->channels()) {
+    if (!configuration::ChannelIsSendableOnNode(channel, my_node)) {
+      continue;
+    }
+    if (!channel->has_destination_nodes()) {
+      continue;
+    }
+    for (const Connection *connection : *channel->destination_nodes()) {
+      const Node *other_node =
+          configuration::GetNode(config, connection->name()->string_view());
+
+      if (configuration::ConnectionDeliveryTimeIsLoggedOnNode(connection,
+                                                              my_node)) {
+        VLOG(1) << "Timestamps are logged from "
+                << FlatbufferToJson(other_node);
+        timestamp_logger_nodes.insert(other_node);
+      }
+    }
+  }
+
+  std::vector<const Node *> result;
+  for (const Node *node : timestamp_logger_nodes) {
+    result.emplace_back(node);
+  }
+  return result;
+}
+
 }  // namespace configuration
 }  // namespace aos
