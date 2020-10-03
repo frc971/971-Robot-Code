@@ -303,7 +303,7 @@ class LocklessQueueSender {
   // Note: calls to Data() are expensive enough that you should cache it.
   size_t size() const;
   void *Data();
-  void Send(size_t length,
+  bool Send(size_t length,
             aos::monotonic_clock::time_point monotonic_remote_time =
                 aos::monotonic_clock::min_time,
             aos::realtime_clock::time_point realtime_remote_time =
@@ -314,7 +314,7 @@ class LocklessQueueSender {
             uint32_t *queue_index = nullptr);
 
   // Sends up to length data.  Does not wakeup the target.
-  void Send(const char *data, size_t length,
+  bool Send(const char *data, size_t length,
             aos::monotonic_clock::time_point monotonic_remote_time =
                 aos::monotonic_clock::min_time,
             aos::realtime_clock::time_point realtime_remote_time =

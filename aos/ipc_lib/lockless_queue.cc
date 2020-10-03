@@ -903,7 +903,7 @@ void *LocklessQueueSender::Data() {
   return message->data(memory_->message_data_size());
 }
 
-void LocklessQueueSender::Send(
+bool LocklessQueueSender::Send(
     const char *data, size_t length,
     aos::monotonic_clock::time_point monotonic_remote_time,
     aos::realtime_clock::time_point realtime_remote_time,
@@ -916,11 +916,12 @@ void LocklessQueueSender::Send(
   // going to write an explicit chunk of memory into the buffer, we need to
   // adhere to this convention and place it at the end.
   memcpy((reinterpret_cast<char *>(Data()) + size() - length), data, length);
-  Send(length, monotonic_remote_time, realtime_remote_time, remote_queue_index,
-       monotonic_sent_time, realtime_sent_time, queue_index);
+  return Send(length, monotonic_remote_time, realtime_remote_time,
+              remote_queue_index, monotonic_sent_time, realtime_sent_time,
+              queue_index);
 }
 
-void LocklessQueueSender::Send(
+bool LocklessQueueSender::Send(
     size_t length, aos::monotonic_clock::time_point monotonic_remote_time,
     aos::realtime_clock::time_point realtime_remote_time,
     uint32_t remote_queue_index,
@@ -935,8 +936,9 @@ void LocklessQueueSender::Send(
   // modifying it right now.
   const Index scratch_index = sender->scratch_index.RelaxedLoad();
   Message *const message = memory_->GetMessage(scratch_index);
-  CHECK(!CheckBothRedzones(memory_, message))
-      << ": Somebody wrote outside the buffer of their message";
+  if (CheckBothRedzones(memory_, message)) {
+    return false;
+  }
 
   // We should have invalidated this when we first got the buffer. Verify that
   // in debug mode.
@@ -1083,6 +1085,7 @@ void LocklessQueueSender::Send(
   // If anybody is looking at this message (they shouldn't be), then try telling
   // them about it (best-effort).
   memory_->GetMessage(new_scratch)->header.queue_index.RelaxedInvalidate();
+  return true;
 }
 
 int LocklessQueueSender::buffer_index() const {
