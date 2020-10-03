@@ -72,9 +72,9 @@ def main(argv):
 
     if user is None:
         if args.type == "pi":
-          user = "pi"
+            user = "pi"
         elif args.type == "roborio":
-          user = "admin"
+            user = "admin"
     target_dir = "/home/" + user + "/robot_code"
 
     ssh_target = "%s@%s" % (user, hostname)
@@ -86,7 +86,7 @@ def main(argv):
 
     rsync_cmd = ([
         "external/rsync/usr/bin/rsync", "-e", ssh_path, "-c", "-v", "-z",
-        "--copy-links"
+        "--perms", "--copy-links"
     ] + srcs + ["%s:%s/%s" % (ssh_target, target_dir, relative_dir)])
     try:
         subprocess.check_call(rsync_cmd)
