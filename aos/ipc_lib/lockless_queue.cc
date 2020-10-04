@@ -9,6 +9,7 @@
 #include <iostream>
 #include <sstream>
 
+#include "absl/strings/escaping.h"
 #include "aos/ipc_lib/lockless_queue_memory.h"
 #include "aos/realtime.h"
 #include "aos/util/compiler_memory_barrier.h"
@@ -1424,27 +1425,29 @@ void PrintLocklessQueueMemory(LocklessQueueMemory *memory) {
     ::std::cout << "        size_t length = " << m->header.length
                 << ::std::endl;
     ::std::cout << "      }" << ::std::endl;
-    if (!CheckBothRedzones(memory, m)) {
+    const bool corrupt = CheckBothRedzones(memory, m);
+    if (corrupt) {
+      absl::Span<char> pre_redzone = m->PreRedzone(memory->message_data_size());
+      absl::Span<char> post_redzone =
+          m->PostRedzone(memory->message_data_size(), memory->message_size());
+
+      ::std::cout << "      pre-redzone: \""
+                  << absl::BytesToHexString(std::string_view(
+                         pre_redzone.data(), pre_redzone.size()))
+                  << std::endl;
       ::std::cout << "      // *** DATA REDZONES ARE CORRUPTED ***"
                   << ::std::endl;
+      ::std::cout << "      post-redzone: \""
+                  << absl::BytesToHexString(std::string_view(
+                         post_redzone.data(), post_redzone.size()))
+                  << std::endl;
     }
     ::std::cout << "      data: {";
 
     if (FLAGS_dump_lockless_queue_data) {
       const char *const m_data = m->data(memory->message_data_size());
-      for (size_t j = 0; j < m->header.length; ++j) {
-        char data = m_data[j];
-        if (j != 0) {
-          ::std::cout << " ";
-        }
-        if (::std::isprint(data)) {
-          ::std::cout << ::std::setfill(' ') << ::std::setw(2) << ::std::hex
-                      << data;
-        } else {
-          ::std::cout << "0x" << ::std::setfill('0') << ::std::setw(2)
-                      << ::std::hex << (static_cast<unsigned>(data) & 0xff);
-        }
-      }
+      std::cout << absl::BytesToHexString(std::string_view(
+          m_data, corrupt ? memory->message_data_size() : m->header.length));
     }
     ::std::cout << ::std::setfill(' ') << ::std::dec << "}" << ::std::endl;
     ::std::cout << "    }," << ::std::endl;
