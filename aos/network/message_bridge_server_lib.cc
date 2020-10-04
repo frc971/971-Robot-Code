@@ -422,9 +422,12 @@ void MessageBridgeServer::HandleData(const Message *message) {
     const logger::MessageHeader *message_header =
         flatbuffers::GetRoot<logger::MessageHeader>(message->data());
 
-    channels_[message_header->channel_index()]->HandleDelivery(
-        message->header.rcvinfo.rcv_assoc_id, message->header.rcvinfo.rcv_ssn,
-        absl::Span<const uint8_t>(message->data(), message->size));
+    CHECK_LT(message_header->channel_index(), channels_.size());
+    CHECK_NOTNULL(channels_[message_header->channel_index()])
+        ->HandleDelivery(
+            message->header.rcvinfo.rcv_assoc_id,
+            message->header.rcvinfo.rcv_ssn,
+            absl::Span<const uint8_t>(message->data(), message->size));
   }
 
   if (VLOG_IS_ON(1)) {
