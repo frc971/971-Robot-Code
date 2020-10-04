@@ -44,6 +44,7 @@
 #ifdef HAVE_SYS_UTSNAME_H
 # include <sys/utsname.h>  // For uname.
 #endif
+#include <dirent.h>
 #include <fcntl.h>
 #include <cstdio>
 #include <iostream>
@@ -1461,9 +1462,26 @@ void LogMessage::SendToLog() EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
     if (data_->first_fatal_) {
       {
         // Put this back on SCHED_OTHER by default.
-        struct sched_param param;
-        param.sched_priority = 0;
-        sched_setscheduler(0, SCHED_OTHER, &param);
+        DIR *dirp = opendir("/proc/self/task");
+        if (dirp) {
+          struct dirent *directory_entry;
+          while ((directory_entry = readdir(dirp)) != NULL) {
+            int thread_id = std::atoi(directory_entry->d_name);
+
+            // ignore . and .. which are zeroes for some reason
+            if (thread_id != 0) {
+              struct sched_param param;
+              param.sched_priority = 20;
+              sched_setscheduler(thread_id, SCHED_OTHER, &param);
+            }
+          }
+          closedir(dirp);
+        } else {
+          // Can't get other threads; just lower own priority.
+          struct sched_param param;
+          param.sched_priority = 20;
+          sched_setscheduler(0, SCHED_OTHER, &param);
+        }
       }
 
       // Store crash information so that it is accessible from within signal
