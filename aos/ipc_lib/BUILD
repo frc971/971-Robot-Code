@@ -92,6 +92,7 @@ cc_binary(
     srcs = [
         "ipc_comparison.cc",
     ],
+    linkopts = ["-lrt"],
     deps = [
         "//aos:condition",
         "//aos:event",
