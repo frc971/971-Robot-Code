@@ -121,7 +121,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = select({
         "//tools:cpu_k8": ["@lzma_amd64//:lib"],
-        "//tools:cpu_arm64": ["@lzma_arm64//:lib"],
+        "//tools:cpu_aarch64": ["@lzma_arm64//:lib"],
         "//conditions:default": [],
     }),
 )
