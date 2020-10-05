@@ -17,29 +17,29 @@ enum LoggerConfig : ubyte {
 
 table Connection {
   // Node name to forward to.
-  name:string;
+  name:string (id: 0);
 
   // How the delivery timestamps for this connection should be logged.  Do we
   // log them with the local logger (i.e. the logger running on the node that
   // this message is delivered to)?  Do we log them on another node (a central
   // logging node)?  Do we log them in both places redundantly?
-  timestamp_logger:LoggerConfig = LOCAL_LOGGER;
+  timestamp_logger:LoggerConfig = LOCAL_LOGGER (id: 1);
 
   // If the corresponding delivery timestamps for this channel are logged
   // remotely, which node should be responsible for logging the data.  Note:
   // for now, this can only be the source node.  Empty implies the node this
   // connection is connecting to (i.e. name).
-  timestamp_logger_nodes:[string];
+  timestamp_logger_nodes:[string] (id: 2);
 
   // Priority to forward data with.
-  priority:ushort = 100;
+  priority:ushort = 100 (id: 3);
 
   // Time to live in nanoseconds before the message is dropped.
   // A value of 0 means no timeout, i.e. reliable.  When a client connects, the
   // latest message from this channel will be sent regardless.
   // TODO(austin): We can retry more than just the last message on reconnect
   //   if we want.  This is an unlikely scenario though.
-  time_to_live:uint = 0;
+  time_to_live:uint = 0 (id: 4);
 }
 
 enum ReadMethod : ubyte {
@@ -53,46 +53,46 @@ enum ReadMethod : ubyte {
 // subscribed from.  The tuple of name, type is the identifying information.
 table Channel {
   // Name of the channel.
-  name:string;
+  name:string (id: 0);
   // Type name of the flatbuffer.
-  type:string;
+  type:string (id: 1);
   // Max frequency in messages/sec of the data published on this channel.
-  frequency:int = 100;
+  frequency:int = 100 (id: 2);
   // Max size of the data being published.  (This will hopefully be
   // automatically computed in the future.)
-  max_size:int = 1000;
+  max_size:int = 1000 (id: 3);
 
   // Sets the maximum number of senders on a channel.
-  num_senders:int = 10;
+  num_senders:int = 10 (id: 4);
   // Sets the maximum number of watchers on a channel.
-  num_watchers:int = 10;
+  num_watchers:int = 10 (id: 5);
 
   // The schema for the data sent on this channel.
-  schema:reflection.Schema;
+  schema:reflection.Schema (id: 6);
 
   // The source node name for the data sent on this channel.
   // If nodes is populated below, this needs to also be populated.
-  source_node:string;
+  source_node:string (id: 7);
 
   // The destination nodes for data sent on this channel.
   // This only needs to be populated if this message is getting forwarded.
-  destination_nodes:[Connection];
+  destination_nodes:[Connection] (id: 8);
 
   // What service is responsible for logging this channel:
-  logger:LoggerConfig = LOCAL_LOGGER;
+  logger:LoggerConfig = LOCAL_LOGGER (id: 9);
   // If the channel is logged remotely, which node should be responsible for
   // logging the data.  Note: this requires that the data is forwarded to the
   // node responsible for logging it.  Empty implies the node this connection
   // is connecting to (i.e. name).
-  logger_nodes:[string];
+  logger_nodes:[string] (id: 10);
 
   // The way messages are read from shared memory for this channel.
-  read_method:ReadMethod = COPY;
+  read_method:ReadMethod = COPY (id: 11);
 
   // Sets the maximum number of senders on a channel.
   //
   // Currently, this must be set if and only if read_method is PIN.
-  num_readers:int;
+  num_readers:int (id: 12);
 }
 
 // Table to support renaming channel names.
@@ -102,15 +102,15 @@ table Map {
   // wildcard.  Anything with the same prefix will match, and anything matching
   // the * will get preserved on rename.  This supports moving subfolders.
   // Node specific matches are also supported.
-  match:Channel;
+  match:Channel (id: 0);
   // The channel to merge in.
-  rename:Channel;
+  rename:Channel (id: 1);
 }
 
 // Application specific information.
 table Application {
   // Name of the application.
-  name:string;
+  name:string (id: 0);
   // List of maps to apply for this specific application.  Application specific
   // maps are applied in reverse order, and before the global maps.
   // For example
@@ -126,33 +126,33 @@ table Application {
   //   ]
   //
   // will map "/foo" to "/baz", even if there is a global list of maps.
-  maps:[Map];
+  maps:[Map] (id: 1);
 
   // The node that this application will be started on.
   // TODO(austin): Teach starter how to use this for starting applications.
-  node:string;
+  nodes:[string] (id: 2);
 
   // The user to run this application as. If this field is unset, run it as
   // the current user of the application starter.
-  user:string;
+  user:string (id: 3);
 }
 
 // Per node data and connection information.
 table Node {
   // Short name for the node.  This provides a short hand to make it easy to
   // setup forwarding rules as part of the channel setup.
-  name:string;
+  name:string (id: 0);
 
   // Hostname used to identify and connect to the node.
-  hostname:string;
+  hostname:string (id: 1);
   // Port to serve forwarded data from.
-  port:ushort = 9971;
+  port:ushort = 9971 (id: 2);
 
   // An alternative to hostname which allows specifying multiple hostnames,
   // any of which will match this node.
   //
   // Don't specify a hostname in multiple nodes in the same configuration.
-  hostnames:[string];
+  hostnames:[string] (id: 3);
 }
 
 // Overall configuration datastructure for the pubsub.
