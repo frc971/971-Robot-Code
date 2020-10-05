@@ -25,6 +25,15 @@ int Main(int argc, char **argv) {
   FlatbufferDetachedBuffer<Configuration> config =
       configuration::ReadConfig(config_path, {bazel_outs_directory});
 
+  for (const Channel *channel : *config.message().channels()) {
+    if (channel->max_size() % alignof(flatbuffers::largest_scalar_t) != 0) {
+      LOG(FATAL) << "max_size() (" << channel->max_size()
+                 << ") is not a multiple of alignment ("
+                 << alignof(flatbuffers::largest_scalar_t) << ") for channel "
+                 << configuration::CleanedChannelToString(channel) << ".";
+    }
+  }
+
   std::vector<aos::FlatbufferString<reflection::Schema>> schemas;
 
   for (int i = 5; i < argc; ++i) {

@@ -59,6 +59,35 @@ class EventLoopTestFactory {
   // Advances time by sleeping.  Can't be called from inside a loop.
   virtual void SleepFor(::std::chrono::nanoseconds duration) = 0;
 
+  // Sets the config to a config with a max size with an invalid alignment.
+  void InvalidChannelAlignment() {
+    flatbuffer_ = JsonToFlatbuffer<Configuration>(R"config({
+  "channels": [
+    {
+      "name": "/aos",
+      "type": "aos.logging.LogMessageFbs"
+    },
+    {
+      "name": "/aos",
+      "type": "aos.timing.Report"
+    },
+    {
+      "name": "/test",
+      "type": "aos.TestMessage",
+      "max_size": 13
+    },
+    {
+      "name": "/test1",
+      "type": "aos.TestMessage"
+    },
+    {
+      "name": "/test2",
+      "type": "aos.TestMessage"
+    }
+  ]
+})config");
+  }
+
   void PinReads() {
     static const std::string kJson = R"config({
   "channels": [
@@ -244,6 +273,8 @@ class AbstractEventLoopTest
     ++event_loop_count_;
     return factory_->MakePrimary(name);
   }
+
+  void InvalidChannelAlignment() { factory_->InvalidChannelAlignment(); }
 
   void EnableNodes(std::string_view my_node) { factory_->EnableNodes(my_node); }
 

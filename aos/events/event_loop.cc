@@ -10,6 +10,16 @@ DEFINE_int32(timing_report_ms, 1000,
              "Period in milliseconds to publish timing reports at.");
 
 namespace aos {
+namespace {
+void CheckAlignment(const Channel *channel) {
+  if (channel->max_size() % alignof(flatbuffers::largest_scalar_t) != 0) {
+    LOG(FATAL) << "max_size() (" << channel->max_size()
+               << ") is not a multiple of alignment ("
+               << alignof(flatbuffers::largest_scalar_t) << ") for channel "
+               << configuration::CleanedChannelToString(channel) << ".";
+  }
+}
+}  // namespace
 
 RawSender::RawSender(EventLoop *event_loop, const Channel *channel)
     : event_loop_(event_loop),
@@ -120,6 +130,8 @@ PhasedLoopHandler *EventLoop::NewPhasedLoop(
 }
 
 void EventLoop::NewFetcher(RawFetcher *fetcher) {
+  CheckAlignment(fetcher->channel());
+
   fetchers_.emplace_back(fetcher);
   UpdateTimingReport();
 }
@@ -144,6 +156,8 @@ void EventLoop::TakeWatcher(const Channel *channel) {
   CHECK(!is_running()) << ": Cannot add new objects while running.";
   ChannelIndex(channel);
 
+  CheckAlignment(channel);
+
   CHECK(taken_senders_.find(channel) == taken_senders_.end())
       << ": " << configuration::CleanedChannelToString(channel)
       << " is already being used.";
@@ -162,6 +176,8 @@ void EventLoop::TakeWatcher(const Channel *channel) {
 void EventLoop::TakeSender(const Channel *channel) {
   CHECK(!is_running()) << ": Cannot add new objects while running.";
   ChannelIndex(channel);
+
+  CheckAlignment(channel);
 
   CHECK(taken_watchers_.find(channel) == taken_watchers_.end())
       << ": Channel " << configuration::CleanedChannelToString(channel)

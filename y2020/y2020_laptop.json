@@ -135,7 +135,7 @@
       "source_node": "laptop",
       "frequency": 10,
       "num_senders": 2,
-      "max_size": 300,
+      "max_size": 400,
       "destination_nodes": [
         {
           "name": "pi1",
@@ -181,7 +181,7 @@
       "logger": "NOT_LOGGED",
       "frequency": 20,
       "num_senders": 2,
-      "max_size": 300
+      "max_size": 200
     },
     {
       "name": "/laptop/aos/remote_timestamps/pi1",
@@ -190,7 +190,7 @@
       "logger": "NOT_LOGGED",
       "frequency": 20,
       "num_senders": 2,
-      "max_size": 300
+      "max_size": 200
     },
     {
       "name": "/laptop/aos/remote_timestamps/pi2",
@@ -199,7 +199,7 @@
       "logger": "NOT_LOGGED",
       "frequency": 20,
       "num_senders": 2,
-      "max_size": 300
+      "max_size": 200
     },
     {
       "name": "/laptop/aos/remote_timestamps/pi3",
@@ -208,7 +208,7 @@
       "logger": "NOT_LOGGED",
       "frequency": 20,
       "num_senders": 2,
-      "max_size": 300
+      "max_size": 200
     },
     {
       "name": "/laptop/aos/remote_timestamps/pi4",
@@ -217,7 +217,7 @@
       "logger": "NOT_LOGGED",
       "frequency": 20,
       "num_senders": 2,
-      "max_size": 300
+      "max_size": 200
     },
     {
       "name": "/pi1/camera",
