@@ -1090,6 +1090,28 @@ TEST_P(AbstractEventLoopTest, TimerDisable) {
   EXPECT_EQ(iteration_list.size(), 3);
 }
 
+// Verify that a timer can disable itself.
+//
+// TODO(Brian): Do something similar with phased loops, both with a quick
+// handler and a handler that would miss a cycle except it got deferred. Current
+// behavior doing that is a mess.
+TEST_P(AbstractEventLoopTest, TimerDisableSelf) {
+  auto loop = MakePrimary();
+
+  int count = 0;
+  aos::TimerHandler *test_timer;
+  test_timer = loop->AddTimer([&count, &test_timer]() {
+    ++count;
+    test_timer->Disable();
+  });
+
+  test_timer->Setup(loop->monotonic_now(), ::std::chrono::milliseconds(20));
+  EndEventLoop(loop.get(), ::std::chrono::milliseconds(80));
+  Run();
+
+  EXPECT_EQ(count, 1);
+}
+
 // Verify that we can disable a timer during execution of another timer
 // scheduled for the same time, with one ordering of creation for the timers.
 //

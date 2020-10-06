@@ -554,10 +554,10 @@ class ShmSender : public RawSender {
     CHECK_LE(length, static_cast<size_t>(channel()->max_size()))
         << ": Sent too big a message on "
         << configuration::CleanedChannelToString(channel());
-    CHECK(lockless_queue_sender_.Send(reinterpret_cast<const char *>(msg), length,
-                                monotonic_remote_time, realtime_remote_time,
-                                remote_queue_index, &monotonic_sent_time_,
-                                &realtime_sent_time_, &sent_queue_index_))
+    CHECK(lockless_queue_sender_.Send(
+        reinterpret_cast<const char *>(msg), length, monotonic_remote_time,
+        realtime_remote_time, remote_queue_index, &monotonic_sent_time_,
+        &realtime_sent_time_, &sent_queue_index_))
         << ": Somebody wrote outside the buffer of their message on channel "
         << configuration::CleanedChannelToString(channel());
     wake_upper_.Wakeup(event_loop()->priority());
@@ -667,10 +667,16 @@ class ShmTimerHandler final : public TimerHandler {
 
   void HandleEvent() {
     CHECK(!event_.valid());
+    disabled_ = false;
     const auto monotonic_now = Call(monotonic_clock::now, base_);
     if (event_.valid()) {
       // If someone called Setup inside Call, rescheduling is already taken care
       // of.  Bail.
+      return;
+    }
+    if (disabled_) {
+      // Somebody called Disable inside Call, so we don't want to reschedule.
+      // Bail.
       return;
     }
 
@@ -708,6 +714,7 @@ class ShmTimerHandler final : public TimerHandler {
   void Disable() override {
     shm_event_loop_->RemoveEvent(&event_);
     timerfd_.Disable();
+    disabled_ = true;
   }
 
  private:
@@ -718,6 +725,10 @@ class ShmTimerHandler final : public TimerHandler {
 
   monotonic_clock::time_point base_;
   monotonic_clock::duration repeat_offset_;
+
+  // Used to track if Disable() was called during the callback, so we know not
+  // to reschedule.
+  bool disabled_ = false;
 };
 
 // Adapter class to the timerfd and PhasedLoop.

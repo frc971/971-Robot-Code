@@ -259,7 +259,7 @@ inline void PhasedLoopHandler::Call(
           .count();
   timing_.handler_time.Add(handler_latency);
 
-  // If the handler too too long so we blew by the previous deadline, we
+  // If the handler took too long so we blew by the previous deadline, we
   // want to just try for the next deadline.  Reschedule.
   if (monotonic_end_time > phased_loop_.sleep_time()) {
     Reschedule(schedule, monotonic_end_time);
