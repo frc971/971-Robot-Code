@@ -4,6 +4,8 @@
 #include <string>
 #include <string_view>
 
+#include "glog/logging.h"
+
 namespace aos {
 namespace util {
 
@@ -15,7 +17,12 @@ namespace util {
 void WriteStringToFileOrDie(const std::string_view filename,
                             const std::string_view contents);
 
-void MkdirP(std::string_view path, mode_t mode);
+// Returns true if it succeeds or false if the filesystem is full.
+bool MkdirPIfSpace(std::string_view path, mode_t mode);
+
+inline void MkdirP(std::string_view path, mode_t mode) {
+  CHECK(MkdirPIfSpace(path, mode));
+}
 
 bool PathExists(std::string_view path);
 

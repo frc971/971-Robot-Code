@@ -8,7 +8,6 @@
 #include <string_view>
 
 #include "aos/scoped/scoped_fd.h"
-#include "glog/logging.h"
 
 namespace aos {
 namespace util {
@@ -48,22 +47,30 @@ void WriteStringToFileOrDie(const std::string_view filename,
   }
 }
 
-void MkdirP(std::string_view path, mode_t mode) {
+bool MkdirPIfSpace(std::string_view path, mode_t mode) {
   auto last_slash_pos = path.find_last_of("/");
 
   std::string folder(last_slash_pos == std::string_view::npos
                          ? std::string_view("")
                          : path.substr(0, last_slash_pos));
-  if (folder.empty()) return;
-  MkdirP(folder, mode);
+  if (folder.empty()) {
+    return true;
+  }
+  if (!MkdirPIfSpace(folder, mode)) {
+    return false;
+  }
   const int result = mkdir(folder.c_str(), mode);
   if (result == -1 && errno == EEXIST) {
     VLOG(2) << folder << " already exists";
-    return;
+    return true;
+  } else if (result == -1 && errno == ENOSPC) {
+    VLOG(2) << "Out of space";
+    return false;
   } else {
     VLOG(1) << "Created " << folder;
   }
   PCHECK(result == 0) << ": Error creating " << folder;
+  return true;
 }
 
 bool PathExists(std::string_view path) {

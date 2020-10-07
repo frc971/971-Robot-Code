@@ -42,8 +42,14 @@ enum class LogType : uint8_t {
 // file.  It encodes them, queues them up, and batches the write operation.
 class DetachedBufferWriter {
  public:
+  // Marker struct for one of our constructor overloads.
+  struct already_out_of_space_t {};
+
   DetachedBufferWriter(std::string_view filename,
                        std::unique_ptr<DetachedBufferEncoder> encoder);
+  // Creates a dummy instance which won't even open a file. It will act as if
+  // opening the file ran out of space immediately.
+  DetachedBufferWriter(already_out_of_space_t) : ran_out_of_space_(true) {}
   DetachedBufferWriter(DetachedBufferWriter &&other);
   DetachedBufferWriter(const DetachedBufferWriter &) = delete;
 
@@ -53,6 +59,10 @@ class DetachedBufferWriter {
   DetachedBufferWriter &operator=(const DetachedBufferWriter &) = delete;
 
   std::string_view filename() const { return filename_; }
+
+  // This will be true until Close() is called, unless the file couldn't be
+  // created due to running out of space.
+  bool is_open() const { return fd_ != -1; }
 
   // Queues up a finished FlatBufferBuilder to be encoded and written.
   //
@@ -64,6 +74,9 @@ class DetachedBufferWriter {
   }
   // May steal the backing storage of buffer, or may leave it alone.
   void QueueSizedFlatbuffer(flatbuffers::DetachedBuffer &&buffer) {
+    if (ran_out_of_space_) {
+      return;
+    }
     encoder_->Encode(std::move(buffer));
     FlushAtThreshold();
   }

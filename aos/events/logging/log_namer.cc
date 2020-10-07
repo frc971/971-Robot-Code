@@ -279,18 +279,30 @@ void MultiNodeLogNamer::CreateBufferWriter(
   }
   const std::string filename = absl::StrCat(base_name_, path, temp_suffix_);
   if (!destination->get()) {
-    all_filenames_.emplace_back(path);
+    if (ran_out_of_space_) {
+      *destination = std::make_unique<DetachedBufferWriter>(
+          DetachedBufferWriter::already_out_of_space_t());
+      return;
+    }
     *destination =
         std::make_unique<DetachedBufferWriter>(filename, encoder_factory_());
+    if (!destination->get()->ran_out_of_space()) {
+      all_filenames_.emplace_back(path);
+    }
     return;
   }
 
   CloseWriter(destination);
   if (ran_out_of_space_) {
+    *destination->get() =
+        DetachedBufferWriter(DetachedBufferWriter::already_out_of_space_t());
     return;
   }
-  all_filenames_.emplace_back(path);
+
   *destination->get() = DetachedBufferWriter(filename, encoder_factory_());
+  if (!destination->get()->ran_out_of_space()) {
+    all_filenames_.emplace_back(path);
+  }
 }
 
 void MultiNodeLogNamer::RenameTempFile(DetachedBufferWriter *destination) {
@@ -319,6 +331,7 @@ void MultiNodeLogNamer::CloseWriter(
   if (!writer) {
     return;
   }
+  const bool was_open = writer->is_open();
   writer->Close();
 
   if (writer->max_write_time() > max_write_time_) {
@@ -335,7 +348,12 @@ void MultiNodeLogNamer::CloseWriter(
     ran_out_of_space_ = true;
     writer->acknowledge_out_of_space();
   }
-  RenameTempFile(writer);
+  if (was_open) {
+    RenameTempFile(writer);
+  } else {
+    CHECK(access(std::string(writer->filename()).c_str(), F_OK) == -1)
+        << ": File should not exist: " << writer->filename();
+  }
 }
 
 }  // namespace logger

@@ -181,7 +181,13 @@ class MultiNodeLogNamer : public LogNamer {
   // Besides this function, this object will silently stop logging data when
   // this occurs. If you want to ensure log files are complete, you must call
   // this method.
-  bool ran_out_of_space() const { return ran_out_of_space_; }
+  bool ran_out_of_space() const {
+    return accumulate_data_writers<bool>(
+        ran_out_of_space_, [](bool x, const DataWriter &data_writer) {
+          return x ||
+                 (data_writer.writer && data_writer.writer->ran_out_of_space());
+        });
+  }
 
   // Returns the maximum total_bytes() value for all existing
   // DetachedBufferWriters.

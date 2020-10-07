@@ -38,11 +38,18 @@ namespace chrono = std::chrono;
 DetachedBufferWriter::DetachedBufferWriter(
     std::string_view filename, std::unique_ptr<DetachedBufferEncoder> encoder)
     : filename_(filename), encoder_(std::move(encoder)) {
-  util::MkdirP(filename, 0777);
-  fd_ = open(std::string(filename).c_str(),
-             O_RDWR | O_CLOEXEC | O_CREAT | O_EXCL, 0774);
-  VLOG(1) << "Opened " << filename << " for writing";
-  PCHECK(fd_ != -1) << ": Failed to open " << filename << " for writing";
+  if (!util::MkdirPIfSpace(filename, 0777)) {
+    ran_out_of_space_ = true;
+  } else {
+    fd_ = open(std::string(filename).c_str(),
+               O_RDWR | O_CLOEXEC | O_CREAT | O_EXCL, 0774);
+    if (fd_ == -1 && errno == ENOSPC) {
+      ran_out_of_space_ = true;
+    } else {
+      PCHECK(fd_ != -1) << ": Failed to open " << filename << " for writing";
+      VLOG(1) << "Opened " << filename << " for writing";
+    }
+  }
 }
 
 DetachedBufferWriter::~DetachedBufferWriter() {
@@ -79,18 +86,18 @@ DetachedBufferWriter &DetachedBufferWriter::operator=(
 }
 
 void DetachedBufferWriter::QueueSpan(absl::Span<const uint8_t> span) {
+  if (ran_out_of_space_) {
+    // We don't want any later data to be written after space becomes
+    // available, so refuse to write anything more once we've dropped data
+    // because we ran out of space.
+    VLOG(1) << "Ignoring span: " << span.size();
+    return;
+  }
+
   if (encoder_->may_bypass() && span.size() > 4096u) {
     // Over this threshold, we'll assume it's cheaper to add an extra
     // syscall to write the data immediately instead of copying it to
     // enqueue.
-
-    if (ran_out_of_space_) {
-      // We don't want any later data to be written after space becomes
-      // available, so refuse to write anything more once we've dropped data
-      // because we ran out of space.
-      VLOG(1) << "Ignoring span: " << span.size();
-      return;
-    }
 
     // First, flush everything.
     while (encoder_->queue_size() > 0u) {
