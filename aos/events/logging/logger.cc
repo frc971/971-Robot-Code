@@ -876,7 +876,7 @@ LogReader::LogReader(const std::vector<std::vector<std::string>> &filenames,
 
   // Remap all existing remote timestamp channels.  They will be recreated, and
   // the data logged isn't relevant anymore.
-  for (const Node *node : Nodes()) {
+  for (const Node *node : configuration::GetNodes(logged_configuration())) {
     std::vector<const Node *> timestamp_logger_nodes =
         configuration::TimestampNodes(logged_configuration(), node);
     for (const Node *remote_node : timestamp_logger_nodes) {

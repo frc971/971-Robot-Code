@@ -803,6 +803,8 @@ bool ChannelIsSendableOnNode(const Channel *channel, const Node *node) {
   if (node == nullptr) {
     return true;
   }
+  CHECK(channel->has_source_node()) << FlatbufferToJson(channel);
+  CHECK(node->has_name()) << FlatbufferToJson(node);
   return (CHECK_NOTNULL(channel)->source_node()->string_view() ==
           node->name()->string_view());
 }
