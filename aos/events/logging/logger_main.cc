@@ -22,7 +22,6 @@ int main(int argc, char *argv[]) {
 
   aos::ShmEventLoop event_loop(&config.message());
 
-  std::unique_ptr<aos::logger::DetachedBufferWriter> writer;
   std::unique_ptr<aos::logger::LogNamer> log_namer;
   if (event_loop.node() == nullptr) {
     log_namer = std::make_unique<aos::logger::LocalLogNamer>(
