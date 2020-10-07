@@ -69,15 +69,8 @@ DetachedBufferWriter *LocalLogNamer::MakeForwardedTimestampWriter(
 
 MultiNodeLogNamer::MultiNodeLogNamer(std::string_view base_name,
                                      const Configuration *configuration,
-                                     const Node *node,
-                                     std::string_view temp_suffix)
-    : LogNamer(node),
-      base_name_(base_name),
-      temp_suffix_(temp_suffix),
-      configuration_(configuration),
-      uuid_(UUID::Random()) {
-  OpenDataWriter();
-}
+                                     const Node *node)
+    : LogNamer(node), base_name_(base_name), configuration_(configuration) {}
 
 MultiNodeLogNamer::~MultiNodeLogNamer() {
   if (!ran_out_of_space_) {
@@ -90,8 +83,11 @@ void MultiNodeLogNamer::WriteHeader(
     aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header,
     const Node *node) {
   if (node == this->node()) {
-    UpdateHeader(header, uuid_, part_number_);
-    data_writer_->QueueSpan(header->full_span());
+    if (!data_writer_.writer) {
+      OpenDataWriter();
+    }
+    UpdateHeader(header, data_writer_.uuid, data_writer_.part_number);
+    data_writer_.writer->QueueSpan(header->full_span());
   } else {
     for (std::pair<const Channel *const, DataWriter> &data_writer :
          data_writers_) {
@@ -108,10 +104,12 @@ void MultiNodeLogNamer::Rotate(
     const Node *node,
     aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header) {
   if (node == this->node()) {
-    ++part_number_;
+    if (data_writer_.writer) {
+      ++data_writer_.part_number;
+    }
     OpenDataWriter();
-    UpdateHeader(header, uuid_, part_number_);
-    data_writer_->QueueSpan(header->full_span());
+    UpdateHeader(header, data_writer_.uuid, data_writer_.part_number);
+    data_writer_.writer->QueueSpan(header->full_span());
   } else {
     for (std::pair<const Channel *const, DataWriter> &data_writer :
          data_writers_) {
@@ -145,7 +143,10 @@ DetachedBufferWriter *MultiNodeLogNamer::MakeWriter(const Channel *channel) {
   // Now, sort out if this is data generated on this node, or not.  It is
   // generated if it is sendable on this node.
   if (configuration::ChannelIsSendableOnNode(channel, this->node())) {
-    return data_writer_.get();
+    if (!data_writer_.writer) {
+      OpenDataWriter();
+    }
+    return data_writer_.writer.get();
   }
 
   // Ok, we have data that is being forwarded to us that we are supposed to
@@ -207,31 +208,37 @@ DetachedBufferWriter *MultiNodeLogNamer::MakeTimestampWriter(
     return nullptr;
   }
 
-  return data_writer_.get();
+  if (!data_writer_.writer) {
+    OpenDataWriter();
+  }
+  return data_writer_.writer.get();
 }
 
 void MultiNodeLogNamer::Close() {
   for (std::pair<const Channel *const, DataWriter> &data_writer :
        data_writers_) {
-    if (data_writer.second.writer) {
-      data_writer.second.writer->Close();
-      if (data_writer.second.writer->ran_out_of_space()) {
-        ran_out_of_space_ = true;
-        data_writer.second.writer->acknowledge_out_of_space();
-      }
-      RenameTempFile(data_writer.second.writer.get());
-      data_writer.second.writer.reset();
-    }
+    CloseWriter(&data_writer.second.writer);
+    data_writer.second.writer.reset();
   }
-  if (data_writer_) {
-    data_writer_->Close();
-    if (data_writer_->ran_out_of_space()) {
-      ran_out_of_space_ = true;
-      data_writer_->acknowledge_out_of_space();
-    }
-    RenameTempFile(data_writer_.get());
-    data_writer_.reset();
+  CloseWriter(&data_writer_.writer);
+  data_writer_.writer.reset();
+}
+
+void MultiNodeLogNamer::ResetStatistics() {
+  for (std::pair<const Channel *const, DataWriter> &data_writer :
+       data_writers_) {
+    data_writer.second.writer->ResetStatistics();
   }
+  if (data_writer_.writer) {
+    data_writer_.writer->ResetStatistics();
+  }
+  max_write_time_ = std::chrono::nanoseconds::zero();
+  max_write_time_bytes_ = -1;
+  max_write_time_messages_ = -1;
+  total_write_time_ = std::chrono::nanoseconds::zero();
+  total_write_count_ = 0;
+  total_write_messages_ = 0;
+  total_write_bytes_ = 0;
 }
 
 void MultiNodeLogNamer::OpenForwardedTimestampWriter(const Channel *channel,
@@ -248,7 +255,7 @@ void MultiNodeLogNamer::OpenWriter(const Channel *channel,
   const std::string filename = absl::StrCat(
       "_", CHECK_NOTNULL(channel->source_node())->string_view(), "_data",
       channel->name()->string_view(), "/", channel->type()->string_view(),
-      ".part", data_writer->part_number, ".bfbs");
+      ".part", data_writer->part_number, ".bfbs", extension_);
   CreateBufferWriter(filename, &data_writer->writer);
 }
 
@@ -257,8 +264,9 @@ void MultiNodeLogNamer::OpenDataWriter() {
   if (node() != nullptr) {
     name = absl::StrCat(name, "_", node()->name()->string_view());
   }
-  absl::StrAppend(&name, "_data.part", part_number_, ".bfbs");
-  CreateBufferWriter(name, &data_writer_);
+  absl::StrAppend(&name, "_data.part", data_writer_.part_number, ".bfbs",
+                  extension_);
+  CreateBufferWriter(name, &data_writer_.writer);
 }
 
 void MultiNodeLogNamer::CreateBufferWriter(
@@ -272,19 +280,17 @@ void MultiNodeLogNamer::CreateBufferWriter(
   const std::string filename = absl::StrCat(base_name_, path, temp_suffix_);
   if (!destination->get()) {
     all_filenames_.emplace_back(path);
-    *destination = std::make_unique<DetachedBufferWriter>(
-        filename, std::make_unique<DummyEncoder>());
+    *destination =
+        std::make_unique<DetachedBufferWriter>(filename, encoder_factory_());
     return;
   }
-  destination->get()->Close();
-  if (destination->get()->ran_out_of_space()) {
-    ran_out_of_space_ = true;
+
+  CloseWriter(destination);
+  if (ran_out_of_space_) {
     return;
   }
-  RenameTempFile(destination->get());
   all_filenames_.emplace_back(path);
-  *destination->get() =
-      DetachedBufferWriter(filename, std::make_unique<DummyEncoder>());
+  *destination->get() = DetachedBufferWriter(filename, encoder_factory_());
 }
 
 void MultiNodeLogNamer::RenameTempFile(DetachedBufferWriter *destination) {
@@ -305,6 +311,31 @@ void MultiNodeLogNamer::RenameTempFile(DetachedBufferWriter *destination) {
                   << " failed";
     }
   }
+}
+
+void MultiNodeLogNamer::CloseWriter(
+    std::unique_ptr<DetachedBufferWriter> *writer_pointer) {
+  DetachedBufferWriter *const writer = writer_pointer->get();
+  if (!writer) {
+    return;
+  }
+  writer->Close();
+
+  if (writer->max_write_time() > max_write_time_) {
+    max_write_time_ = writer->max_write_time();
+    max_write_time_bytes_ = writer->max_write_time_bytes();
+    max_write_time_messages_ = writer->max_write_time_messages();
+  }
+  total_write_time_ += writer->total_write_time();
+  total_write_count_ += writer->total_write_count();
+  total_write_messages_ += writer->total_write_messages();
+  total_write_bytes_ += writer->total_write_bytes();
+
+  if (writer->ran_out_of_space()) {
+    ran_out_of_space_ = true;
+    writer->acknowledge_out_of_space();
+  }
+  RenameTempFile(writer);
 }
 
 }  // namespace logger

@@ -230,7 +230,13 @@ void Logger::StartLogging(std::unique_ptr<LogNamer> log_namer,
   // so we can capture the latest message on each channel.  This lets us have
   // non periodic messages with configuration that now get logged.
   for (FetcherStruct &f : fetchers_) {
-    f.written = !f.fetcher->Fetch();
+    const auto start = event_loop_->monotonic_now();
+    const bool got_new = f.fetcher->Fetch();
+    const auto end = event_loop_->monotonic_now();
+    RecordFetchResult(start, end, got_new, &f);
+
+    // If there is a message, we want to write it.
+    f.written = f.fetcher->context().data == nullptr;
   }
 
   // Clear out any old timestamps in case we are re-starting logging.
@@ -476,6 +482,23 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> Logger::MakeHeader(
   return fbb.Release();
 }
 
+void Logger::ResetStatisics() {
+  max_message_fetch_time_ = std::chrono::nanoseconds::zero();
+  max_message_fetch_time_channel_ = -1;
+  max_message_fetch_time_size_ = -1;
+  total_message_fetch_time_ = std::chrono::nanoseconds::zero();
+  total_message_fetch_count_ = 0;
+  total_message_fetch_bytes_ = 0;
+  total_nop_fetch_time_ = std::chrono::nanoseconds::zero();
+  total_nop_fetch_count_ = 0;
+  max_copy_time_ = std::chrono::nanoseconds::zero();
+  max_copy_time_channel_ = -1;
+  max_copy_time_size_ = -1;
+  total_copy_time_ = std::chrono::nanoseconds::zero();
+  total_copy_count_ = 0;
+  total_copy_bytes_ = 0;
+}
+
 void Logger::Rotate() {
   for (const Node *node : log_namer_->nodes()) {
     const int node_index = configuration::GetNodeIndex(configuration_, node);
@@ -490,110 +513,119 @@ void Logger::LogUntil(monotonic_clock::time_point t) {
   for (FetcherStruct &f : fetchers_) {
     while (true) {
       if (f.written) {
-        if (!f.fetcher->FetchNext()) {
+        const auto start = event_loop_->monotonic_now();
+        const bool got_new = f.fetcher->FetchNext();
+        const auto end = event_loop_->monotonic_now();
+        RecordFetchResult(start, end, got_new, &f);
+        if (!got_new) {
           VLOG(2) << "No new data on "
                   << configuration::CleanedChannelToString(
                          f.fetcher->channel());
           break;
-        } else {
-          f.written = false;
         }
+        f.written = false;
       }
-
-      CHECK(!f.written);
 
       // TODO(james): Write tests to exercise this logic.
-      if (f.fetcher->context().monotonic_event_time < t) {
-        if (f.writer != nullptr) {
-          // Write!
-          flatbuffers::FlatBufferBuilder fbb(f.fetcher->context().size +
-                                             max_header_size_);
-          fbb.ForceDefaults(true);
-
-          fbb.FinishSizePrefixed(PackMessage(&fbb, f.fetcher->context(),
-                                             f.channel_index, f.log_type));
-
-          VLOG(2) << "Writing data as node "
-                  << FlatbufferToJson(event_loop_->node()) << " for channel "
-                  << configuration::CleanedChannelToString(f.fetcher->channel())
-                  << " to " << f.writer->filename() << " data "
-                  << FlatbufferToJson(
-                         flatbuffers::GetSizePrefixedRoot<MessageHeader>(
-                             fbb.GetBufferPointer()));
-
-          max_header_size_ = std::max(
-              max_header_size_, fbb.GetSize() - f.fetcher->context().size);
-          f.writer->QueueSizedFlatbuffer(&fbb);
-        }
-
-        if (f.timestamp_writer != nullptr) {
-          // And now handle timestamps.
-          flatbuffers::FlatBufferBuilder fbb;
-          fbb.ForceDefaults(true);
-
-          fbb.FinishSizePrefixed(PackMessage(&fbb, f.fetcher->context(),
-                                             f.channel_index,
-                                             LogType::kLogDeliveryTimeOnly));
-
-          VLOG(2) << "Writing timestamps as node "
-                  << FlatbufferToJson(event_loop_->node()) << " for channel "
-                  << configuration::CleanedChannelToString(f.fetcher->channel())
-                  << " to " << f.timestamp_writer->filename() << " timestamp "
-                  << FlatbufferToJson(
-                         flatbuffers::GetSizePrefixedRoot<MessageHeader>(
-                             fbb.GetBufferPointer()));
-
-          f.timestamp_writer->QueueSizedFlatbuffer(&fbb);
-        }
-
-        if (f.contents_writer != nullptr) {
-          // And now handle the special message contents channel.  Copy the
-          // message into a FlatBufferBuilder and save it to disk.
-          // TODO(austin): We can be more efficient here when we start to
-          // care...
-          flatbuffers::FlatBufferBuilder fbb;
-          fbb.ForceDefaults(true);
-
-          const MessageHeader *msg =
-              flatbuffers::GetRoot<MessageHeader>(f.fetcher->context().data);
-
-          logger::MessageHeader::Builder message_header_builder(fbb);
-
-          // TODO(austin): This needs to check the channel_index and confirm
-          // that it should be logged before squirreling away the timestamp to
-          // disk.  We don't want to log irrelevant timestamps.
-
-          // Note: this must match the same order as MessageBridgeServer and
-          // PackMessage.  We want identical headers to have identical
-          // on-the-wire formats to make comparing them easier.
-
-          // Translate from the channel index that the event loop uses to the
-          // channel index in the log file.
-          message_header_builder.add_channel_index(
-              event_loop_to_logged_channel_index_[msg->channel_index()]);
-
-          message_header_builder.add_queue_index(msg->queue_index());
-          message_header_builder.add_monotonic_sent_time(
-              msg->monotonic_sent_time());
-          message_header_builder.add_realtime_sent_time(
-              msg->realtime_sent_time());
-
-          message_header_builder.add_monotonic_remote_time(
-              msg->monotonic_remote_time());
-          message_header_builder.add_realtime_remote_time(
-              msg->realtime_remote_time());
-          message_header_builder.add_remote_queue_index(
-              msg->remote_queue_index());
-
-          fbb.FinishSizePrefixed(message_header_builder.Finish());
-
-          f.contents_writer->QueueSizedFlatbuffer(&fbb);
-        }
-
-        f.written = true;
-      } else {
+      if (f.fetcher->context().monotonic_event_time >= t) {
         break;
       }
+      if (f.writer != nullptr) {
+        // Write!
+        const auto start = event_loop_->monotonic_now();
+        flatbuffers::FlatBufferBuilder fbb(f.fetcher->context().size +
+                                           max_header_size_);
+        fbb.ForceDefaults(true);
+
+        fbb.FinishSizePrefixed(PackMessage(&fbb, f.fetcher->context(),
+                                           f.channel_index, f.log_type));
+        const auto end = event_loop_->monotonic_now();
+        RecordCreateMessageTime(start, end, &f);
+
+        VLOG(2) << "Writing data as node "
+                << FlatbufferToJson(event_loop_->node()) << " for channel "
+                << configuration::CleanedChannelToString(f.fetcher->channel())
+                << " to " << f.writer->filename() << " data "
+                << FlatbufferToJson(
+                       flatbuffers::GetSizePrefixedRoot<MessageHeader>(
+                           fbb.GetBufferPointer()));
+
+        max_header_size_ = std::max(max_header_size_,
+                                    fbb.GetSize() - f.fetcher->context().size);
+        f.writer->QueueSizedFlatbuffer(&fbb);
+      }
+
+      if (f.timestamp_writer != nullptr) {
+        // And now handle timestamps.
+        const auto start = event_loop_->monotonic_now();
+        flatbuffers::FlatBufferBuilder fbb;
+        fbb.ForceDefaults(true);
+
+        fbb.FinishSizePrefixed(PackMessage(&fbb, f.fetcher->context(),
+                                           f.channel_index,
+                                           LogType::kLogDeliveryTimeOnly));
+        const auto end = event_loop_->monotonic_now();
+        RecordCreateMessageTime(start, end, &f);
+
+        VLOG(2) << "Writing timestamps as node "
+                << FlatbufferToJson(event_loop_->node()) << " for channel "
+                << configuration::CleanedChannelToString(f.fetcher->channel())
+                << " to " << f.timestamp_writer->filename() << " timestamp "
+                << FlatbufferToJson(
+                       flatbuffers::GetSizePrefixedRoot<MessageHeader>(
+                           fbb.GetBufferPointer()));
+
+        f.timestamp_writer->QueueSizedFlatbuffer(&fbb);
+      }
+
+      if (f.contents_writer != nullptr) {
+        const auto start = event_loop_->monotonic_now();
+        // And now handle the special message contents channel.  Copy the
+        // message into a FlatBufferBuilder and save it to disk.
+        // TODO(austin): We can be more efficient here when we start to
+        // care...
+        flatbuffers::FlatBufferBuilder fbb;
+        fbb.ForceDefaults(true);
+
+        const MessageHeader *msg =
+            flatbuffers::GetRoot<MessageHeader>(f.fetcher->context().data);
+
+        logger::MessageHeader::Builder message_header_builder(fbb);
+
+        // TODO(austin): This needs to check the channel_index and confirm
+        // that it should be logged before squirreling away the timestamp to
+        // disk.  We don't want to log irrelevant timestamps.
+
+        // Note: this must match the same order as MessageBridgeServer and
+        // PackMessage.  We want identical headers to have identical
+        // on-the-wire formats to make comparing them easier.
+
+        // Translate from the channel index that the event loop uses to the
+        // channel index in the log file.
+        message_header_builder.add_channel_index(
+            event_loop_to_logged_channel_index_[msg->channel_index()]);
+
+        message_header_builder.add_queue_index(msg->queue_index());
+        message_header_builder.add_monotonic_sent_time(
+            msg->monotonic_sent_time());
+        message_header_builder.add_realtime_sent_time(
+            msg->realtime_sent_time());
+
+        message_header_builder.add_monotonic_remote_time(
+            msg->monotonic_remote_time());
+        message_header_builder.add_realtime_remote_time(
+            msg->realtime_remote_time());
+        message_header_builder.add_remote_queue_index(
+            msg->remote_queue_index());
+
+        fbb.FinishSizePrefixed(message_header_builder.Finish());
+        const auto end = event_loop_->monotonic_now();
+        RecordCreateMessageTime(start, end, &f);
+
+        f.contents_writer->QueueSizedFlatbuffer(&fbb);
+      }
+
+      f.written = true;
     }
   }
   last_synchronized_time_ = t;
@@ -614,6 +646,39 @@ void Logger::DoLogData(const monotonic_clock::time_point end_time) {
     // If we missed cycles, we could be pretty far behind.  Spin until we are
     // caught up.
   } while (last_synchronized_time_ + polling_period_ < end_time);
+}
+
+void Logger::RecordFetchResult(aos::monotonic_clock::time_point start,
+                               aos::monotonic_clock::time_point end,
+                               bool got_new, FetcherStruct *fetcher) {
+  const auto duration = end - start;
+  if (!got_new) {
+    ++total_nop_fetch_count_;
+    total_nop_fetch_time_ += duration;
+    return;
+  }
+  ++total_message_fetch_count_;
+  total_message_fetch_bytes_ += fetcher->fetcher->context().size;
+  total_message_fetch_time_ += duration;
+  if (duration > max_message_fetch_time_) {
+    max_message_fetch_time_ = duration;
+    max_message_fetch_time_channel_ = fetcher->channel_index;
+    max_message_fetch_time_size_ = fetcher->fetcher->context().size;
+  }
+}
+
+void Logger::RecordCreateMessageTime(aos::monotonic_clock::time_point start,
+                                     aos::monotonic_clock::time_point end,
+                                     FetcherStruct *fetcher) {
+  const auto duration = end - start;
+  total_copy_time_ += duration;
+  ++total_copy_count_;
+  total_copy_bytes_ += fetcher->fetcher->context().size;
+  if (duration > max_copy_time_) {
+    max_copy_time_ = duration;
+    max_copy_time_channel_ = fetcher->channel_index;
+    max_copy_time_size_ = fetcher->fetcher->context().size;
+  }
 }
 
 std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {

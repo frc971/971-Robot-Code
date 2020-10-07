@@ -122,6 +122,12 @@ class LocalLogNamer : public LogNamer {
 // Log namer which uses a config and a base name to name a bunch of files.
 class MultiNodeLogNamer : public LogNamer {
  public:
+  MultiNodeLogNamer(std::string_view base_name,
+                    const Configuration *configuration, const Node *node);
+  ~MultiNodeLogNamer() override;
+
+  std::string_view base_name() const { return base_name_; }
+
   // If temp_suffix is set, then this will write files under names beginning
   // with the specified suffix, and then rename them to the desired name after
   // they are fully written.
@@ -129,12 +135,22 @@ class MultiNodeLogNamer : public LogNamer {
   // This is useful to enable incremental copying of the log files.
   //
   // Defaults to writing directly to the final filename.
-  MultiNodeLogNamer(std::string_view base_name,
-                    const Configuration *configuration, const Node *node,
-                    std::string_view temp_suffix = "");
-  ~MultiNodeLogNamer() override;
+  void set_temp_suffix(std::string_view temp_suffix) {
+    temp_suffix_ = temp_suffix;
+  }
 
-  std::string_view base_name() const { return base_name_; }
+  // Sets the function for creating encoders.
+  //
+  // Defaults to just creating DummyEncoders.
+  void set_encoder_factory(
+      std::function<std::unique_ptr<DetachedBufferEncoder>()> encoder_factory) {
+    encoder_factory_ = std::move(encoder_factory);
+  }
+
+  // Sets an additional file extension.
+  //
+  // Defaults to nothing.
+  void set_extension(std::string_view extension) { extension_ = extension; }
 
   // A list of all the filenames we've written.
   //
@@ -172,21 +188,79 @@ class MultiNodeLogNamer : public LogNamer {
   //
   // Returns 0 if no files are open.
   size_t maximum_total_bytes() const {
-    size_t result = 0;
-    for (const std::pair<const Channel *const, DataWriter> &data_writer :
-         data_writers_) {
-      result = std::max(result, data_writer.second.writer->total_bytes());
-    }
-    if (data_writer_) {
-      result = std::max(result, data_writer_->total_bytes());
-    }
-    return result;
+    return accumulate_data_writers<size_t>(
+        0, [](size_t x, const DataWriter &data_writer) {
+          return std::max(x, data_writer.writer->total_bytes());
+        });
   }
 
   // Closes all existing log files. No more data may be written after this.
   //
   // This may set ran_out_of_space().
   void Close();
+
+  // Accessors for various statistics. See the identically-named methods in
+  // DetachedBufferWriter for documentation. These are aggregated across all
+  // past and present DetachedBufferWriters.
+  std::chrono::nanoseconds max_write_time() const {
+    return accumulate_data_writers(
+        max_write_time_,
+        [](std::chrono::nanoseconds x, const DataWriter &data_writer) {
+          return std::max(x, data_writer.writer->max_write_time());
+        });
+  }
+  int max_write_time_bytes() const {
+    return std::get<0>(accumulate_data_writers(
+        std::make_tuple(max_write_time_bytes_, max_write_time_),
+        [](std::tuple<int, std::chrono::nanoseconds> x,
+           const DataWriter &data_writer) {
+          if (data_writer.writer->max_write_time() > std::get<1>(x)) {
+            return std::make_tuple(data_writer.writer->max_write_time_bytes(),
+                                   data_writer.writer->max_write_time());
+          }
+          return x;
+        }));
+  }
+  int max_write_time_messages() const {
+    return std::get<0>(accumulate_data_writers(
+        std::make_tuple(max_write_time_messages_, max_write_time_),
+        [](std::tuple<int, std::chrono::nanoseconds> x,
+           const DataWriter &data_writer) {
+          if (data_writer.writer->max_write_time() > std::get<1>(x)) {
+            return std::make_tuple(
+                data_writer.writer->max_write_time_messages(),
+                data_writer.writer->max_write_time());
+          }
+          return x;
+        }));
+  }
+  std::chrono::nanoseconds total_write_time() const {
+    return accumulate_data_writers(
+        total_write_time_,
+        [](std::chrono::nanoseconds x, const DataWriter &data_writer) {
+          return x + data_writer.writer->total_write_time();
+        });
+  }
+  int total_write_count() const {
+    return accumulate_data_writers(
+        total_write_count_, [](int x, const DataWriter &data_writer) {
+          return x + data_writer.writer->total_write_count();
+        });
+  }
+  int total_write_messages() const {
+    return accumulate_data_writers(
+        total_write_messages_, [](int x, const DataWriter &data_writer) {
+          return x + data_writer.writer->total_write_messages();
+        });
+  }
+  int total_write_bytes() const {
+    return accumulate_data_writers(
+        total_write_bytes_, [](int x, const DataWriter &data_writer) {
+          return x + data_writer.writer->total_write_bytes();
+        });
+  }
+
+  void ResetStatistics();
 
  private:
   // Files to write remote data to.  We want one per channel.  Maps the channel
@@ -195,7 +269,7 @@ class MultiNodeLogNamer : public LogNamer {
     std::unique_ptr<DetachedBufferWriter> writer = nullptr;
     const Node *node;
     size_t part_number = 0;
-    UUID uuid = UUID::Random();
+    const UUID uuid = UUID::Random();
     std::function<void(const Channel *, DataWriter *)> rotate;
   };
 
@@ -214,18 +288,43 @@ class MultiNodeLogNamer : public LogNamer {
 
   void RenameTempFile(DetachedBufferWriter *destination);
 
-  const std::string base_name_;
-  const std::string temp_suffix_;
-  const Configuration *const configuration_;
-  const UUID uuid_;
+  void CloseWriter(std::unique_ptr<DetachedBufferWriter> *writer_pointer);
 
-  size_t part_number_ = 0;
+  // A version of std::accumulate which operates over all of our DataWriters.
+  template <typename T, typename BinaryOperation>
+  T accumulate_data_writers(T t, BinaryOperation op) const {
+    for (const std::pair<const Channel *const, DataWriter> &data_writer :
+         data_writers_) {
+      t = op(std::move(t), data_writer.second);
+    }
+    if (data_writer_.writer) {
+      t = op(std::move(t), data_writer_);
+    }
+    return t;
+  }
+
+  const std::string base_name_;
+  const Configuration *const configuration_;
 
   bool ran_out_of_space_ = false;
   std::vector<std::string> all_filenames_;
 
+  std::string temp_suffix_;
+  std::function<std::unique_ptr<DetachedBufferEncoder>()> encoder_factory_ =
+      []() { return std::make_unique<DummyEncoder>(); };
+  std::string extension_;
+
+  // Storage for statistics from previously-rotated DetachedBufferWriters.
+  std::chrono::nanoseconds max_write_time_ = std::chrono::nanoseconds::zero();
+  int max_write_time_bytes_ = -1;
+  int max_write_time_messages_ = -1;
+  std::chrono::nanoseconds total_write_time_ = std::chrono::nanoseconds::zero();
+  int total_write_count_ = 0;
+  int total_write_messages_ = 0;
+  int total_write_bytes_ = 0;
+
   // File to write both delivery timestamps and local data to.
-  std::unique_ptr<DetachedBufferWriter> data_writer_;
+  DataWriter data_writer_;
 
   std::map<const Channel *, DataWriter> data_writers_;
 };

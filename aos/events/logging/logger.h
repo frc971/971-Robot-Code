@@ -69,6 +69,55 @@ class Logger {
   std::string_view log_start_uuid() const { return log_start_uuid_; }
   UUID logger_instance_uuid() const { return logger_instance_uuid_; }
 
+  // The maximum time for a single fetch which returned a message, or 0 if none
+  // of those have happened.
+  std::chrono::nanoseconds max_message_fetch_time() const {
+    return max_message_fetch_time_;
+  }
+  // The channel for that longest fetch which returned a message, or -1 if none
+  // of those have happened.
+  int max_message_fetch_time_channel() const {
+    return max_message_fetch_time_channel_;
+  }
+  // The size of the message returned by that longest fetch, or -1 if none of
+  // those have happened.
+  int max_message_fetch_time_size() const {
+    return max_message_fetch_time_size_;
+  }
+  // The total time spent fetching messages.
+  std::chrono::nanoseconds total_message_fetch_time() const {
+    return total_message_fetch_time_;
+  }
+  // The total number of fetch calls which returned messages.
+  int total_message_fetch_count() const { return total_message_fetch_count_; }
+  // The total number of bytes fetched.
+  int64_t total_message_fetch_bytes() const {
+    return total_message_fetch_bytes_;
+  }
+
+  // The total time spent in fetches which did not return a message.
+  std::chrono::nanoseconds total_nop_fetch_time() const {
+    return total_nop_fetch_time_;
+  }
+  // The total number of fetches which did not return a message.
+  int total_nop_fetch_count() const { return total_nop_fetch_count_; }
+
+  // The maximum time for a single copy, or 0 if none of those have happened.
+  std::chrono::nanoseconds max_copy_time() const { return max_copy_time_; }
+  // The channel for that longest copy, or -1 if none of those have happened.
+  int max_copy_time_channel() const { return max_copy_time_channel_; }
+  // The size of the message for that longest copy, or -1 if none of those have
+  // happened.
+  int max_copy_time_size() const { return max_copy_time_size_; }
+  // The total time spent copying messages.
+  std::chrono::nanoseconds total_copy_time() const { return total_copy_time_; }
+  // The total number of messages copied.
+  int total_copy_count() const { return total_copy_count_; }
+  // The total number of bytes copied.
+  int64_t total_copy_bytes() const { return total_copy_bytes_; }
+
+  void ResetStatisics();
+
   // Rotates the log file(s), triggering new part files to be written for each
   // log file.
   void Rotate();
@@ -162,6 +211,14 @@ class Logger {
   // Fetches from each channel until all the data is logged.
   void LogUntil(monotonic_clock::time_point t);
 
+  void RecordFetchResult(aos::monotonic_clock::time_point start,
+                         aos::monotonic_clock::time_point end, bool got_new,
+                         FetcherStruct *fetcher);
+
+  void RecordCreateMessageTime(aos::monotonic_clock::time_point start,
+                               aos::monotonic_clock::time_point end,
+                               FetcherStruct *fetcher);
+
   // Sets the start time for a specific node.
   void SetStartTime(size_t node_index,
                     aos::monotonic_clock::time_point monotonic_start_time,
@@ -182,6 +239,26 @@ class Logger {
   std::string name_;
 
   std::function<void()> on_logged_period_ = []() {};
+
+  std::chrono::nanoseconds max_message_fetch_time_ =
+      std::chrono::nanoseconds::zero();
+  int max_message_fetch_time_channel_ = -1;
+  int max_message_fetch_time_size_ = -1;
+  std::chrono::nanoseconds total_message_fetch_time_ =
+      std::chrono::nanoseconds::zero();
+  int total_message_fetch_count_ = 0;
+  int64_t total_message_fetch_bytes_ = 0;
+
+  std::chrono::nanoseconds total_nop_fetch_time_ =
+      std::chrono::nanoseconds::zero();
+  int total_nop_fetch_count_ = 0;
+
+  std::chrono::nanoseconds max_copy_time_ = std::chrono::nanoseconds::zero();
+  int max_copy_time_channel_ = -1;
+  int max_copy_time_size_ = -1;
+  std::chrono::nanoseconds total_copy_time_ = std::chrono::nanoseconds::zero();
+  int total_copy_count_ = 0;
+  int64_t total_copy_bytes_ = 0;
 
   std::vector<FetcherStruct> fetchers_;
   TimerHandler *timer_handler_;
