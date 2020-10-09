@@ -246,7 +246,7 @@ void MultiNodeLogNamer::OpenForwardedTimestampWriter(const Channel *channel,
   std::string filename =
       absl::StrCat("_timestamps", channel->name()->string_view(), "/",
                    channel->type()->string_view(), ".part",
-                   data_writer->part_number, ".bfbs");
+                   data_writer->part_number, ".bfbs", extension_);
   CreateBufferWriter(filename, &data_writer->writer);
 }
 
