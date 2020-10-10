@@ -23,6 +23,44 @@
 #include "glog/logging.h"
 
 namespace aos {
+namespace {
+bool EndsWith(std::string_view str, std::string_view end) {
+  if (str.size() < end.size()) {
+    return false;
+  }
+  if (str.substr(str.size() - end.size(), end.size()) != end) {
+    return false;
+  }
+  return true;
+}
+
+std::string MaybeReplaceExtension(std::string_view filename,
+                                  std::string_view extension,
+                                  std::string_view replacement) {
+  if (!EndsWith(filename, extension)) {
+    return std::string(filename);
+  }
+  filename.remove_suffix(extension.size());
+  return absl::StrCat(filename, replacement);
+}
+
+FlatbufferDetachedBuffer<Configuration> ReadConfigFile(std::string_view path,
+                                                       bool binary) {
+  if (binary) {
+    FlatbufferVector<Configuration> config =
+        FileToFlatbuffer<Configuration>(path);
+    return CopySpanAsDetachedBuffer(config.span());
+  }
+
+  flatbuffers::DetachedBuffer buffer = JsonToFlatbuffer(
+      util::ReadFileToStringOrDie(path), ConfigurationTypeTable());
+
+  CHECK_GT(buffer.size(), 0u) << ": Failed to parse JSON file";
+
+  return FlatbufferDetachedBuffer<Configuration>(std::move(buffer));
+}
+
+}  // namespace
 
 // Define the compare and equal operators for Channel and Application so we can
 // insert them in the btree below.
@@ -95,19 +133,30 @@ std::string AbsolutePath(const std::string_view filename) {
 FlatbufferDetachedBuffer<Configuration> ReadConfig(
     const std::string_view path, absl::btree_set<std::string> *visited_paths,
     const std::vector<std::string_view> &extra_import_paths) {
+  std::string binary_path = MaybeReplaceExtension(path, ".json", ".bfbs");
+  bool binary_path_exists = util::PathExists(binary_path);
   std::string raw_path(path);
-  if (!util::PathExists(path)) {
-    const bool path_is_absolute = path.size() > 0 && path[0] == '/';
+  // For each .json file, look and see if we can find a .bfbs file next to it
+  // with the same base name.  If we can, assume it is the same and use it
+  // instead.  It is much faster to load .bfbs files than .json files.
+  if (!binary_path_exists && !util::PathExists(raw_path)) {
+    const bool path_is_absolute = raw_path.size() > 0 && raw_path[0] == '/';
     if (path_is_absolute) {
       CHECK(extra_import_paths.empty())
           << "Can't specify extra import paths if attempting to read a config "
              "file from an absolute path (path is "
-          << path << ").";
+          << raw_path << ").";
     }
 
     bool found_path = false;
     for (const auto &import_path : extra_import_paths) {
       raw_path = std::string(import_path) + "/" + std::string(path);
+      binary_path = MaybeReplaceExtension(raw_path, ".json", ".bfbs");
+      binary_path_exists = util::PathExists(binary_path);
+      if (binary_path_exists) {
+        found_path = true;
+        break;
+      }
       if (util::PathExists(raw_path)) {
         found_path = true;
         break;
@@ -115,12 +164,9 @@ FlatbufferDetachedBuffer<Configuration> ReadConfig(
     }
     CHECK(found_path) << ": Failed to find file " << path << ".";
   }
-  flatbuffers::DetachedBuffer buffer = JsonToFlatbuffer(
-      util::ReadFileToStringOrDie(raw_path), ConfigurationTypeTable());
 
-  CHECK_GT(buffer.size(), 0u) << ": Failed to parse JSON file";
-
-  FlatbufferDetachedBuffer<Configuration> config(std::move(buffer));
+  FlatbufferDetachedBuffer<Configuration> config = ReadConfigFile(
+      binary_path_exists ? binary_path : raw_path, binary_path_exists);
 
   // Depth first.  Take the following example:
   //
@@ -153,8 +199,10 @@ FlatbufferDetachedBuffer<Configuration> ReadConfig(
   // config.  That means that it needs to be merged into the imported configs,
   // not the other way around.
 
-  const std::string absolute_path = AbsolutePath(raw_path);
-  // Track that we have seen this file before recursing.
+  const std::string absolute_path =
+      AbsolutePath(binary_path_exists ? binary_path : raw_path);
+  // Track that we have seen this file before recursing.  Track the path we
+  // actually loaded (which should be consistent if imported twice).
   if (!visited_paths->insert(absolute_path).second) {
     for (const auto &visited_path : *visited_paths) {
       LOG(INFO) << "Already visited: " << visited_path;
@@ -269,6 +317,102 @@ void HandleMaps(const flatbuffers::Vector<flatbuffers::Offset<aos::Map>> *maps,
     }
     VLOG(1) << "Renamed \"" << *name << "\" to \"" << new_name << "\"";
     *name = std::move(new_name);
+  }
+}
+
+void ValidateConfiguration(const Flatbuffer<Configuration> &config) {
+  // No imports should be left.
+  CHECK(!config.message().has_imports());
+
+  // Check that if there is a node list, all the source nodes are filled out and
+  // valid, and all the destination nodes are valid (and not the source).  This
+  // is a basic consistency check.
+  if (config.message().has_channels()) {
+    const Channel *last_channel = nullptr;
+    for (const Channel *c : *config.message().channels()) {
+      CHECK(c->has_name());
+      CHECK(c->has_type());
+      if (c->name()->string_view().back() == '/') {
+        LOG(FATAL) << "Channel names can't end with '/'";
+      }
+      if (c->name()->string_view().find("//") != std::string_view::npos) {
+        LOG(FATAL) << ": Invalid channel name " << c->name()->string_view()
+                   << ", can't use //.";
+      }
+      for (const char data : c->name()->string_view()) {
+        if (data >= '0' && data <= '9') {
+          continue;
+        }
+        if (data >= 'a' && data <= 'z') {
+          continue;
+        }
+        if (data >= 'A' && data <= 'Z') {
+          continue;
+        }
+        if (data == '-' || data == '_' || data == '/') {
+          continue;
+        }
+        LOG(FATAL) << "Invalid channel name " << c->name()->string_view()
+                   << ", can only use [-a-zA-Z0-9_/]";
+      }
+
+      // Make sure everything is sorted while we are here...  If this fails,
+      // there will be a bunch of weird errors.
+      if (last_channel != nullptr) {
+        CHECK(CompareChannels(
+            last_channel,
+            std::make_pair(c->name()->string_view(), c->type()->string_view())))
+            << ": Channels not sorted!";
+      }
+      last_channel = c;
+    }
+  }
+
+  if (config.message().has_nodes() && config.message().has_channels()) {
+    for (const Channel *c : *config.message().channels()) {
+      CHECK(c->has_source_node()) << ": Channel " << FlatbufferToJson(c)
+                                  << " is missing \"source_node\"";
+      CHECK(GetNode(&config.message(), c->source_node()->string_view()) !=
+            nullptr)
+          << ": Channel " << FlatbufferToJson(c)
+          << " has an unknown \"source_node\"";
+
+      if (c->has_destination_nodes()) {
+        for (const Connection *connection : *c->destination_nodes()) {
+          CHECK(connection->has_name());
+          CHECK(GetNode(&config.message(), connection->name()->string_view()) !=
+                nullptr)
+              << ": Channel " << FlatbufferToJson(c)
+              << " has an unknown \"destination_nodes\" "
+              << connection->name()->string_view();
+
+          switch (connection->timestamp_logger()) {
+            case LoggerConfig::LOCAL_LOGGER:
+            case LoggerConfig::NOT_LOGGED:
+              CHECK(!connection->has_timestamp_logger_nodes());
+              break;
+            case LoggerConfig::REMOTE_LOGGER:
+            case LoggerConfig::LOCAL_AND_REMOTE_LOGGER:
+              CHECK(connection->has_timestamp_logger_nodes());
+              CHECK_GT(connection->timestamp_logger_nodes()->size(), 0u);
+              for (const flatbuffers::String *timestamp_logger_node :
+                   *connection->timestamp_logger_nodes()) {
+                CHECK(GetNode(&config.message(),
+                              timestamp_logger_node->string_view()) != nullptr)
+                    << ": Channel " << FlatbufferToJson(c)
+                    << " has an unknown \"timestamp_logger_node\""
+                    << connection->name()->string_view();
+              }
+              break;
+          }
+
+          CHECK_NE(connection->name()->string_view(),
+                   c->source_node()->string_view())
+              << ": Channel " << FlatbufferToJson(c)
+              << " is forwarding data to itself";
+        }
+      }
+    }
   }
 }
 
@@ -403,83 +547,7 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
   FlatbufferDetachedBuffer<Configuration> result =
       MergeFlatBuffers(modified_config, auto_merge_config);
 
-  // Check that if there is a node list, all the source nodes are filled out and
-  // valid, and all the destination nodes are valid (and not the source).  This
-  // is a basic consistency check.
-  if (result.message().has_channels()) {
-    for (const Channel *c : *result.message().channels()) {
-      if (c->name()->string_view().back() == '/') {
-        LOG(FATAL) << "Channel names can't end with '/'";
-      }
-      if(c->name()->string_view().find("//")!= std::string_view::npos) {
-        LOG(FATAL) << ": Invalid channel name " << c->name()->string_view()
-                   << ", can't use //.";
-      }
-      for (const char data : c->name()->string_view()) {
-        if (data >= '0' && data <= '9') {
-          continue;
-        }
-        if (data >= 'a' && data <= 'z') {
-          continue;
-        }
-        if (data >= 'A' && data <= 'Z') {
-          continue;
-        }
-        if (data == '-' || data == '_' || data == '/') {
-          continue;
-        }
-        LOG(FATAL) << "Invalid channel name " << c->name()->string_view()
-                   << ", can only use [-a-zA-Z0-9_/]";
-      }
-    }
-  }
-
-  if (result.message().has_nodes() && result.message().has_channels()) {
-    for (const Channel *c : *result.message().channels()) {
-      CHECK(c->has_source_node()) << ": Channel " << FlatbufferToJson(c)
-                                  << " is missing \"source_node\"";
-      CHECK(GetNode(&result.message(), c->source_node()->string_view()) !=
-            nullptr)
-          << ": Channel " << FlatbufferToJson(c)
-          << " has an unknown \"source_node\"";
-
-      if (c->has_destination_nodes()) {
-        for (const Connection *connection : *c->destination_nodes()) {
-          CHECK(connection->has_name());
-          CHECK(GetNode(&result.message(), connection->name()->string_view()) !=
-                nullptr)
-              << ": Channel " << FlatbufferToJson(c)
-              << " has an unknown \"destination_nodes\" "
-              << connection->name()->string_view();
-
-          switch (connection->timestamp_logger()) {
-            case LoggerConfig::LOCAL_LOGGER:
-            case LoggerConfig::NOT_LOGGED:
-              CHECK(!connection->has_timestamp_logger_nodes());
-              break;
-            case LoggerConfig::REMOTE_LOGGER:
-            case LoggerConfig::LOCAL_AND_REMOTE_LOGGER:
-              CHECK(connection->has_timestamp_logger_nodes());
-              CHECK_GT(connection->timestamp_logger_nodes()->size(), 0u);
-              for (const flatbuffers::String *timestamp_logger_node :
-                   *connection->timestamp_logger_nodes()) {
-                CHECK(GetNode(&result.message(),
-                              timestamp_logger_node->string_view()) != nullptr)
-                    << ": Channel " << FlatbufferToJson(c)
-                    << " has an unknown \"timestamp_logger_node\""
-                    << connection->name()->string_view();
-              }
-              break;
-          }
-
-          CHECK_NE(connection->name()->string_view(),
-                   c->source_node()->string_view())
-              << ": Channel " << FlatbufferToJson(c)
-              << " is forwarding data to itself";
-        }
-      }
-    }
-  }
+  ValidateConfiguration(result);
 
   return result;
 }
@@ -489,7 +557,17 @@ FlatbufferDetachedBuffer<Configuration> ReadConfig(
     const std::vector<std::string_view> &import_paths) {
   // We only want to read a file once.  So track the visited files in a set.
   absl::btree_set<std::string> visited_paths;
-  return MergeConfiguration(ReadConfig(path, &visited_paths, import_paths));
+  FlatbufferDetachedBuffer<Configuration> read_config =
+      ReadConfig(path, &visited_paths, import_paths);
+
+  // If we only read one file, and it had a .bfbs extension, it has to be a
+  // fully formatted config.  Do a quick verification and return it.
+  if (visited_paths.size() == 1 && EndsWith(*visited_paths.begin(), ".bfbs")) {
+    ValidateConfiguration(read_config);
+    return read_config;
+  }
+
+  return MergeConfiguration(read_config);
 }
 
 FlatbufferDetachedBuffer<Configuration> MergeWithConfig(
