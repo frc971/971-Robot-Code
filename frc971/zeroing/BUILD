@@ -64,6 +64,7 @@ cc_library(
         "pot_and_absolute_encoder.cc",
         "pot_and_index.cc",
         "pulse_index.cc",
+        "absolute_and_absolute_encoder.cc",
     ],
     hdrs = [
         "absolute_encoder.h",
@@ -72,6 +73,7 @@ cc_library(
         "pot_and_index.h",
         "pulse_index.h",
         "zeroing.h",
+        "absolute_and_absolute_encoder.h",
     ],
     deps = [
         ":wrap",
@@ -91,6 +93,7 @@ cc_test(
         "pot_and_index_test.cc",
         "pulse_index_test.cc",
         "relative_encoder_test.cc",
+        "absolute_and_absolute_encoder_test.cc",
         "zeroing_test.h",
     ],
     deps = [
