@@ -44,6 +44,7 @@
 #ifdef HAVE_SYS_UCONTEXT_H
 # include <sys/ucontext.h>
 #endif
+#include <dirent.h>
 #include <algorithm>
 
 _START_GOOGLE_NAMESPACE_
@@ -311,9 +312,26 @@ void FailureSignalHandler(int signal_number,
 
   {
     // Put this back on SCHED_OTHER by default.
-    struct sched_param param;
-    param.sched_priority = 0;
-    sched_setscheduler(0, SCHED_OTHER, &param);
+    DIR *dirp = opendir("/proc/self/task");
+    if (dirp) {
+      struct dirent *directory_entry;
+      while ((directory_entry = readdir(dirp)) != NULL) {
+        int thread_id = std::atoi(directory_entry->d_name);
+
+        // ignore . and .. which are zeroes for some reason
+        if (thread_id != 0) {
+          struct sched_param param;
+          param.sched_priority = 20;
+          sched_setscheduler(thread_id, SCHED_OTHER, &param);
+        }
+      }
+      closedir(dirp);
+    } else {
+      // Can't get other threads; just lower own priority.
+      struct sched_param param;
+      param.sched_priority = 20;
+      sched_setscheduler(0, SCHED_OTHER, &param);
+    }
   }
 
   // This is the first time we enter the signal handler.  We are going to
