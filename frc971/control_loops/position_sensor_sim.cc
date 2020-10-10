@@ -73,8 +73,10 @@ void PositionSensorSimulator::Initialize(
 
   known_absolute_encoder_ = known_absolute_encoder_pos;
 
-  lower_index_edge_.mutable_pot_noise()->set_standard_deviation(pot_noise_stddev);
-  upper_index_edge_.mutable_pot_noise()->set_standard_deviation(pot_noise_stddev);
+  lower_index_edge_.mutable_pot_noise()->set_standard_deviation(
+      pot_noise_stddev);
+  upper_index_edge_.mutable_pot_noise()->set_standard_deviation(
+      pot_noise_stddev);
 }
 
 void PositionSensorSimulator::InitializeHallEffectAndPosition(
@@ -229,7 +231,6 @@ PositionSensorSimulator::GetSensorValues<RelativePositionBuilder>(
   builder->add_encoder(current_position_);
   return builder->Finish();
 }
-
 
 }  // namespace control_loops
 }  // namespace frc971
