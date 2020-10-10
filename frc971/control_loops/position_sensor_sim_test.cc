@@ -409,5 +409,56 @@ TEST_F(PositionSensorSimTest, HallEffectAndPosition) {
   }
 }
 
+TEST_F(PositionSensorSimTest, AbsoluteAndAbsoluteEncoderTest) {
+  const double full_range = 4.0;
+
+  const double distance_per_revolution = 1.0;
+  const double single_turn_distance_per_revolution = full_range;
+
+  const double start_pos = 2.1;
+
+  const double measured_absolute_position = 0.3 * distance_per_revolution;
+  const double single_turn_measured_absolute_position =
+      0.4 * single_turn_distance_per_revolution;
+
+  PositionSensorSimulator sim(distance_per_revolution,
+                              single_turn_distance_per_revolution);
+  sim.Initialize(start_pos, 0 /* Pot noise N/A */, 0.0,
+                 measured_absolute_position,
+                 single_turn_measured_absolute_position);
+
+  flatbuffers::FlatBufferBuilder fbb;
+
+  sim.MoveTo(0.0);
+  const AbsoluteAndAbsolutePosition *position =
+      sim.FillSensorValues<AbsoluteAndAbsolutePosition>(&fbb);
+
+  EXPECT_NEAR(position->encoder(), -start_pos, 1e-10);
+  EXPECT_NEAR(position->absolute_encoder(), measured_absolute_position, 1e-10);
+  EXPECT_NEAR(position->single_turn_absolute_encoder(),
+              single_turn_measured_absolute_position, 1e-10);
+
+  sim.MoveTo(1.0);
+  position = sim.FillSensorValues<AbsoluteAndAbsolutePosition>(&fbb);
+
+  EXPECT_NEAR(position->encoder(), 1.0 - start_pos, 1e-10);
+
+  // because it has moved to exactly distance_per_revolution, it will wrap,
+  // and come back to measured_absolute_position.
+  EXPECT_NEAR(position->absolute_encoder(), measured_absolute_position, 1e-10);
+  EXPECT_NEAR(position->single_turn_absolute_encoder(), 2.6, 1e-10);
+
+  sim.MoveTo(2.5);
+  position = sim.FillSensorValues<AbsoluteAndAbsolutePosition>(&fbb);
+
+  EXPECT_NEAR(position->encoder(), 2.5 - start_pos, 1e-10);
+
+  // (position + measured_absolute_position) % distance_per_revolution,
+  EXPECT_NEAR(position->absolute_encoder(), 0.8, 1e-10);
+  // (position + single_turn_measured_absolute_position) %
+  // single_turn_distance_per_revolution,
+  EXPECT_NEAR(position->single_turn_absolute_encoder(), 0.1, 1e-10);
+}
+
 }  // namespace control_loops
 }  // namespace frc971

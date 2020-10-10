@@ -56,22 +56,26 @@ namespace control_loops {
  * remainder of the graph.
  */
 
-PositionSensorSimulator::PositionSensorSimulator(double distance_per_revolution,
-                                                 unsigned int noise_seed)
+PositionSensorSimulator::PositionSensorSimulator(
+    double distance_per_revolution, double single_turn_distance_per_revolution,
+    unsigned int noise_seed)
     : lower_index_edge_(distance_per_revolution, noise_seed),
       upper_index_edge_(distance_per_revolution, noise_seed),
-      distance_per_revolution_(distance_per_revolution) {
+      distance_per_revolution_(distance_per_revolution),
+      single_turn_distance_per_revolution_(
+          single_turn_distance_per_revolution) {
   Initialize(0.0, 0.0);
 }
 
 void PositionSensorSimulator::Initialize(
-    double start_position, double pot_noise_stddev,
-    double known_index_position /* = 0*/,
-    double known_absolute_encoder_pos /* = 0*/) {
+    double start_position, double pot_noise_stddev, double known_index_position,
+    double known_absolute_encoder_pos,
+    double single_turn_known_absolute_encoder_pos) {
   InitializeHallEffectAndPosition(start_position, known_index_position,
                                   known_index_position);
 
   known_absolute_encoder_ = known_absolute_encoder_pos;
+  single_turn_known_absolute_encoder_ = single_turn_known_absolute_encoder_pos;
 
   lower_index_edge_.mutable_pot_noise()->set_standard_deviation(
       pot_noise_stddev);
@@ -180,15 +184,7 @@ PositionSensorSimulator::GetSensorValues<PotAndAbsolutePositionBuilder>(
   builder->add_pot(lower_index_edge_.mutable_pot_noise()->AddNoiseToSample(
       current_position_));
   builder->add_encoder(current_position_ - start_position_);
-  // TODO(phil): Create some lag here since this is a PWM signal it won't be
-  // instantaneous like the other signals. Better yet, its lag varies
-  // randomly with the distribution varying depending on the reading.
-  double absolute_encoder = ::std::remainder(
-      current_position_ + known_absolute_encoder_, distance_per_revolution_);
-  if (absolute_encoder < 0) {
-    absolute_encoder += distance_per_revolution_;
-  }
-  builder->add_absolute_encoder(absolute_encoder);
+  builder->add_absolute_encoder(WrapAbsoluteEncoder());
   return builder->Finish();
 }
 
@@ -197,15 +193,24 @@ flatbuffers::Offset<AbsolutePosition>
 PositionSensorSimulator::GetSensorValues<AbsolutePositionBuilder>(
     AbsolutePositionBuilder *builder) {
   builder->add_encoder(current_position_ - start_position_);
-  // TODO(phil): Create some lag here since this is a PWM signal it won't be
-  // instantaneous like the other signals. Better yet, its lag varies
-  // randomly with the distribution varying depending on the reading.
-  double absolute_encoder = ::std::remainder(
-      current_position_ + known_absolute_encoder_, distance_per_revolution_);
-  if (absolute_encoder < 0) {
-    absolute_encoder += distance_per_revolution_;
+  builder->add_absolute_encoder(WrapAbsoluteEncoder());
+  return builder->Finish();
+}
+
+template <>
+flatbuffers::Offset<AbsoluteAndAbsolutePosition>
+PositionSensorSimulator::GetSensorValues<AbsoluteAndAbsolutePositionBuilder>(
+    AbsoluteAndAbsolutePositionBuilder *builder) {
+  builder->add_encoder(current_position_ - start_position_);
+  builder->add_absolute_encoder(WrapAbsoluteEncoder());
+
+  double single_turn_absolute_encoder =
+      ::std::remainder(current_position_ + single_turn_known_absolute_encoder_,
+                       single_turn_distance_per_revolution_);
+  if (single_turn_absolute_encoder < 0) {
+    single_turn_absolute_encoder += single_turn_distance_per_revolution_;
   }
-  builder->add_absolute_encoder(absolute_encoder);
+  builder->add_single_turn_absolute_encoder(single_turn_absolute_encoder);
   return builder->Finish();
 }
 
