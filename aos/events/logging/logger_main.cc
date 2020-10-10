@@ -28,8 +28,8 @@ int main(int argc, char *argv[]) {
         aos::logging::GetLogName("fbs_log"), event_loop.node());
   } else {
     log_namer = std::make_unique<aos::logger::MultiNodeLogNamer>(
-        aos::logging::GetLogName("fbs_log"), event_loop.configuration(),
-        event_loop.node());
+        absl::StrCat(aos::logging::GetLogName("fbs_log"), "/"),
+        event_loop.configuration(), event_loop.node());
   }
 
   aos::logger::Logger logger(&event_loop);

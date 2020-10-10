@@ -244,7 +244,7 @@ void MultiNodeLogNamer::ResetStatistics() {
 void MultiNodeLogNamer::OpenForwardedTimestampWriter(const Channel *channel,
                                                      DataWriter *data_writer) {
   std::string filename =
-      absl::StrCat("_timestamps", channel->name()->string_view(), "/",
+      absl::StrCat("timestamps", channel->name()->string_view(), "/",
                    channel->type()->string_view(), ".part",
                    data_writer->part_number, ".bfbs", extension_);
   CreateBufferWriter(filename, &data_writer->writer);
@@ -253,7 +253,7 @@ void MultiNodeLogNamer::OpenForwardedTimestampWriter(const Channel *channel,
 void MultiNodeLogNamer::OpenWriter(const Channel *channel,
                                    DataWriter *data_writer) {
   const std::string filename = absl::StrCat(
-      "_", CHECK_NOTNULL(channel->source_node())->string_view(), "_data",
+      CHECK_NOTNULL(channel->source_node())->string_view(), "_data",
       channel->name()->string_view(), "/", channel->type()->string_view(),
       ".part", data_writer->part_number, ".bfbs", extension_);
   CreateBufferWriter(filename, &data_writer->writer);
@@ -262,9 +262,9 @@ void MultiNodeLogNamer::OpenWriter(const Channel *channel,
 void MultiNodeLogNamer::OpenDataWriter() {
   std::string name;
   if (node() != nullptr) {
-    name = absl::StrCat(name, "_", node()->name()->string_view());
+    name = absl::StrCat(name, node()->name()->string_view(), "_");
   }
-  absl::StrAppend(&name, "_data.part", data_writer_.part_number, ".bfbs",
+  absl::StrAppend(&name, "data.part", data_writer_.part_number, ".bfbs",
                   extension_);
   CreateBufferWriter(name, &data_writer_.writer);
 }
@@ -277,7 +277,9 @@ void MultiNodeLogNamer::CreateBufferWriter(
     // means they're probably going to run out of space and get stuck too.
     return;
   }
-  const std::string filename = absl::StrCat(base_name_, path, temp_suffix_);
+  const std::string_view separator = base_name_.back() == '/' ? "" : "_";
+  const std::string filename =
+      absl::StrCat(base_name_, separator, path, temp_suffix_);
   if (!destination->get()) {
     if (ran_out_of_space_) {
       *destination = std::make_unique<DetachedBufferWriter>(
