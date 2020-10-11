@@ -195,10 +195,6 @@ class SpanReader {
   // the size.
   absl::Span<const uint8_t> ReadMessage();
 
-  // Returns true if there is a full message available in the buffer, or if we
-  // will have to read more data from disk.
-  bool MessageAvailable();
-
  private:
   // TODO(austin): Optimization:
   //   Allocate the 256k blocks like we do today.  But, refcount them with

@@ -6,6 +6,7 @@
 #include "aos/events/pong_lib.h"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/network/timestamp_generated.h"
+#include "aos/testing/tmpdir.h"
 #include "aos/util/file.h"
 #include "glog/logging.h"
 #include "gmock/gmock.h"
@@ -47,7 +48,7 @@ using LoggerDeathTest = LoggerTest;
 // Tests that we can startup at all.  This confirms that the channels are all in
 // the config.
 TEST_F(LoggerTest, Starts) {
-  const ::std::string tmpdir(getenv("TEST_TMPDIR"));
+  const ::std::string tmpdir = aos::testing::TestTmpDir();
   const ::std::string base_name = tmpdir + "/logfile";
   const ::std::string logfile = base_name + ".part0.bfbs";
   // Remove it.

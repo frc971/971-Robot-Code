@@ -320,23 +320,6 @@ absl::Span<const uint8_t> SpanReader::ReadMessage() {
   return absl::Span<const uint8_t>(data_ptr, data_size);
 }
 
-bool SpanReader::MessageAvailable() {
-  // Are we big enough to read the size?
-  if (data_.size() - consumed_data_ < sizeof(flatbuffers::uoffset_t)) {
-    return false;
-  }
-
-  // Then, are we big enough to read the full message?
-  const size_t data_size =
-      flatbuffers::GetPrefixedSize(data_.data() + consumed_data_) +
-      sizeof(flatbuffers::uoffset_t);
-  if (data_.size() < consumed_data_ + data_size) {
-    return false;
-  }
-
-  return true;
-}
-
 bool SpanReader::ReadBlock() {
   // This is the amount of data we grab at a time. Doing larger chunks minimizes
   // syscalls and helps decompressors batch things more efficiently.

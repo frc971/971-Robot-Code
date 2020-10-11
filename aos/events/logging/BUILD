@@ -303,6 +303,7 @@ cc_test(
         "//aos/events:pong_lib",
         "//aos/events:simulated_event_loop",
         "//aos/testing:googletest",
+        "//aos/testing:tmpdir",
     ],
 )
 
@@ -319,4 +320,21 @@ cc_test(
         ":uuid",
         "//aos/testing:googletest",
     ],
+)
+
+cc_test(
+    name = "logfile_utils_test",
+    srcs = ["logfile_utils_test.cc"],
+    deps = [
+        ":logfile_utils",
+        ":test_message_fbs",
+        "//aos/testing:googletest",
+        "//aos/testing:tmpdir",
+    ],
+)
+
+flatbuffer_cc_library(
+    name = "test_message_fbs",
+    srcs = ["test_message.fbs"],
+    gen_reflections = 1,
 )

@@ -86,3 +86,11 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
 )
+
+cc_library(
+    name = "tmpdir",
+    testonly = True,
+    srcs = ["tmpdir.cc"],
+    hdrs = ["tmpdir.h"],
+    visibility = ["//visibility:public"],
+)
