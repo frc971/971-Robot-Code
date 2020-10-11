@@ -260,6 +260,7 @@ cc_library(
     deps = [
         ":event_loop",
         ":test_message_fbs",
+        "//aos:realtime",
         "//aos/testing:googletest",
     ],
 )
@@ -308,6 +309,7 @@ cc_library(
         ":aos_logging",
         ":event_loop",
         ":simple_channel",
+        "//aos:realtime",
         "//aos/events/logging:logger_fbs",
         "//aos/ipc_lib:index",
         "//aos/network:message_bridge_client_status",

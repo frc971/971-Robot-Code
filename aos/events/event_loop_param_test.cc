@@ -5,6 +5,7 @@
 #include <unordered_set>
 
 #include "aos/flatbuffer_merge.h"
+#include "aos/realtime.h"
 #include "glog/logging.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
@@ -1947,6 +1948,120 @@ TEST_P(AbstractEventLoopTest, NodeSender) {
   auto loop1 = Make();
 
   aos::Sender<TestMessage> sender = loop1->MakeSender<TestMessage>("/test");
+}
+
+// Tests that a non-realtime event loop timer is marked non-realtime.
+TEST_P(AbstractEventLoopTest, NonRealtimeEventLoopTimer) {
+  auto loop1 = MakePrimary();
+
+  // Add a timer to actually quit.
+  auto test_timer = loop1->AddTimer([this]() {
+    CheckNotRealtime();
+    this->Exit();
+  });
+
+  loop1->OnRun([&test_timer, &loop1]() {
+    CheckNotRealtime();
+    test_timer->Setup(loop1->monotonic_now(), ::std::chrono::milliseconds(100));
+  });
+
+  Run();
+}
+
+// Tests that a realtime event loop timer is marked realtime.
+TEST_P(AbstractEventLoopTest, RealtimeEventLoopTimer) {
+  auto loop1 = MakePrimary();
+
+  loop1->SetRuntimeRealtimePriority(1);
+
+  // Add a timer to actually quit.
+  auto test_timer = loop1->AddTimer([this]() {
+    CheckRealtime();
+    this->Exit();
+  });
+
+  loop1->OnRun([&test_timer, &loop1]() {
+    CheckRealtime();
+    test_timer->Setup(loop1->monotonic_now(), ::std::chrono::milliseconds(100));
+  });
+
+  Run();
+}
+
+// Tests that a non-realtime event loop phased loop is marked non-realtime.
+TEST_P(AbstractEventLoopTest, NonRealtimeEventLoopPhasedLoop) {
+  auto loop1 = MakePrimary();
+
+  // Add a timer to actually quit.
+  loop1->AddPhasedLoop(
+      [this](int) {
+        CheckNotRealtime();
+        this->Exit();
+      },
+      chrono::seconds(1), chrono::seconds(0));
+
+  Run();
+}
+
+// Tests that a realtime event loop phased loop is marked realtime.
+TEST_P(AbstractEventLoopTest, RealtimeEventLoopPhasedLoop) {
+  auto loop1 = MakePrimary();
+
+  loop1->SetRuntimeRealtimePriority(1);
+
+  // Add a timer to actually quit.
+  loop1->AddPhasedLoop(
+      [this](int) {
+        CheckRealtime();
+        this->Exit();
+      },
+      chrono::seconds(1), chrono::seconds(0));
+
+  Run();
+}
+
+// Tests that a non-realtime event loop watcher is marked non-realtime.
+TEST_P(AbstractEventLoopTest, NonRealtimeEventLoopWatcher) {
+  auto loop1 = MakePrimary();
+  auto loop2 = Make();
+
+  aos::Sender<TestMessage> sender = loop2->MakeSender<TestMessage>("/test");
+
+  loop1->OnRun([&]() {
+    aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
+    TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
+    ASSERT_TRUE(msg.Send(builder.Finish()));
+  });
+
+  loop1->MakeWatcher("/test", [&](const TestMessage &) {
+    CheckNotRealtime();
+    this->Exit();
+  });
+
+  Run();
+}
+
+// Tests that a realtime event loop watcher is marked realtime.
+TEST_P(AbstractEventLoopTest, RealtimeEventLoopWatcher) {
+  auto loop1 = MakePrimary();
+  auto loop2 = Make();
+
+  loop1->SetRuntimeRealtimePriority(1);
+
+  aos::Sender<TestMessage> sender = loop2->MakeSender<TestMessage>("/test");
+
+  loop1->OnRun([&]() {
+    aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
+    TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
+    ASSERT_TRUE(msg.Send(builder.Finish()));
+  });
+
+  loop1->MakeWatcher("/test", [&](const TestMessage &) {
+    CheckRealtime();
+    this->Exit();
+  });
+
+  Run();
 }
 
 // Tests that watchers fail when created on the wrong node.

@@ -1,18 +1,19 @@
 #include "aos/realtime.h"
 
+#include <errno.h>
+#include <malloc.h>
+#include <sched.h>
+#include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
-#include <errno.h>
-#include <sched.h>
+#include <sys/prctl.h>
 #include <sys/resource.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <sys/prctl.h>
-#include <malloc.h>
 
+#include "aos/thread_local.h"
 #include "glog/logging.h"
 
 namespace FLAG__namespace_do_not_use_directly_use_DECLARE_double_instead {
@@ -68,6 +69,7 @@ void SetSoftRLimit(
 }  // namespace
 
 void LockAllMemory() {
+  CheckNotRealtime();
   // Allow locking as much as we want into RAM.
   SetSoftRLimit(RLIMIT_MEMLOCK, RLIM_INFINITY, SetLimitForRoot::kNo);
 
@@ -101,6 +103,7 @@ void LockAllMemory() {
 }
 
 void InitRT() {
+  CheckNotRealtime();
   LockAllMemory();
 
   // Only let rt processes run for 3 seconds straight.
@@ -114,6 +117,7 @@ void UnsetCurrentThreadRealtimePriority() {
   struct sched_param param;
   param.sched_priority = 0;
   PCHECK(sched_setscheduler(0, SCHED_OTHER, &param) == 0);
+  MarkRealtime(false);
 }
 
 void SetCurrentThreadAffinity(const cpu_set_t &cpuset) {
@@ -141,6 +145,7 @@ void SetCurrentThreadRealtimePriority(int priority) {
 
   struct sched_param param;
   param.sched_priority = priority;
+  MarkRealtime(true);
   PCHECK(sched_setscheduler(0, SCHED_FIFO, &param) == 0)
       << ": changing to SCHED_FIFO with " << priority;
 }
@@ -154,5 +159,21 @@ void ExpandStackSize() {
   SetSoftRLimit(RLIMIT_STACK, 1000000, SetLimitForRoot::kYes,
                 AllowSoftLimitDecrease::kNo);
 }
+
+namespace {
+AOS_THREAD_LOCAL bool is_realtime = false;
+}
+
+bool MarkRealtime(bool realtime) {
+  const bool prior = is_realtime;
+  is_realtime = realtime;
+  return prior;
+}
+
+void CheckRealtime() { CHECK(is_realtime); }
+
+void CheckNotRealtime() { CHECK(!is_realtime); }
+
+ScopedRealtimeRestorer::ScopedRealtimeRestorer() : prior_(is_realtime) {}
 
 }  // namespace aos

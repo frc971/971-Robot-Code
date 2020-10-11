@@ -9,6 +9,7 @@
 #include "aos/events/aos_logging.h"
 #include "aos/events/simulated_network_bridge.h"
 #include "aos/json_to_flatbuffer.h"
+#include "aos/realtime.h"
 #include "aos/util/phased_loop.h"
 
 namespace aos {
@@ -18,6 +19,16 @@ class SimulatedFetcher;
 class SimulatedChannel;
 
 namespace {
+
+class ScopedMarkRealtimeRestorer {
+ public:
+  ScopedMarkRealtimeRestorer(bool rt) : rt_(rt), prior_(MarkRealtime(rt)) {}
+  ~ScopedMarkRealtimeRestorer() { CHECK_EQ(rt_, MarkRealtime(prior_)); }
+
+ private:
+  const bool rt_;
+  const bool prior_;
+};
 
 // Container for both a message, and the context for it for simulation.  This
 // makes tracking the timestamps associated with the data easy.
@@ -544,7 +555,10 @@ class SimulatedEventLoop : public EventLoop {
   }
 
   void OnRun(::std::function<void()> on_run) override {
-    scheduler_->ScheduleOnRun(on_run);
+    scheduler_->ScheduleOnRun([this, on_run = std::move(on_run)]() {
+      ScopedMarkRealtimeRestorer rt(priority() > 0);
+      on_run();
+    });
   }
 
   const Node *node() const override { return node_; }
@@ -737,7 +751,10 @@ void SimulatedWatcher::HandleEvent() {
     context.realtime_remote_time = context.realtime_event_time;
   }
 
-  DoCallCallback([monotonic_now]() { return monotonic_now; }, context);
+  {
+    ScopedMarkRealtimeRestorer rt(simulated_event_loop_->priority() > 0);
+    DoCallCallback([monotonic_now]() { return monotonic_now; }, context);
+  }
 
   msgs_.pop_front();
   if (token_ != scheduler_->InvalidToken()) {
@@ -855,7 +872,10 @@ void SimulatedTimerHandler::HandleEvent() {
     simulated_event_loop_->AddEvent(&event_);
   }
 
-  Call([monotonic_now]() { return monotonic_now; }, monotonic_now);
+  {
+    ScopedMarkRealtimeRestorer rt(simulated_event_loop_->priority() > 0);
+    Call([monotonic_now]() { return monotonic_now; }, monotonic_now);
+  }
 }
 
 void SimulatedTimerHandler::Disable() {
@@ -891,9 +911,14 @@ void SimulatedPhasedLoopHandler::HandleEvent() {
   if (simulated_event_loop_->log_impl_) {
     prev_logger.Swap(simulated_event_loop_->log_impl_);
   }
-  Call(
-      [monotonic_now]() { return monotonic_now; },
-      [this](monotonic_clock::time_point sleep_time) { Schedule(sleep_time); });
+
+  {
+    ScopedMarkRealtimeRestorer rt(simulated_event_loop_->priority() > 0);
+    Call([monotonic_now]() { return monotonic_now; },
+         [this](monotonic_clock::time_point sleep_time) {
+           Schedule(sleep_time);
+         });
+  }
 }
 
 void SimulatedPhasedLoopHandler::Schedule(
