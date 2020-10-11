@@ -1,3 +1,6 @@
+#include <sys/resource.h>
+#include <sys/time.h>
+
 #include "aos/configuration.h"
 #include "aos/events/logging/logger.h"
 #include "aos/events/shm_event_loop.h"
@@ -33,8 +36,12 @@ int main(int argc, char *argv[]) {
   }
 
   aos::logger::Logger logger(&event_loop);
-  event_loop.OnRun(
-      [&log_namer, &logger]() { logger.StartLogging(std::move(log_namer)); });
+  event_loop.OnRun([&log_namer, &logger]() {
+    errno = 0;
+    setpriority(PRIO_PROCESS, 0, -20);
+    PCHECK(errno == 0) << ": Renicing to -20 failed";
+    logger.StartLogging(std::move(log_namer));
+  });
 
   event_loop.Run();
 
