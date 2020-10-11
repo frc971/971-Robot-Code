@@ -18,6 +18,7 @@
 #include "aos/containers/resizeable_buffer.h"
 #include "aos/events/event_loop.h"
 #include "aos/events/logging/buffer_encoder.h"
+#include "aos/events/logging/logfile_sorting.h"
 #include "aos/events/logging/logger_generated.h"
 #include "aos/flatbuffers.h"
 #include "flatbuffers/flatbuffers.h"
@@ -206,7 +207,7 @@ class SpanReader {
   // Reads a chunk of data into data_.  Returns false if no data was read.
   bool ReadBlock();
 
-  const std::string filename_;
+  std::string filename_;
 
   // File reader and data decoder.
   std::unique_ptr<DataDecoder> decoder_;
@@ -267,6 +268,42 @@ class MessageReader {
   std::chrono::nanoseconds max_out_of_order_duration_;
 
   // Timestamp of the newest message in a channel queue.
+  monotonic_clock::time_point newest_timestamp_ = monotonic_clock::min_time;
+};
+
+// A class to seamlessly read messages from a list of part files.
+class PartsMessageReader {
+ public:
+  PartsMessageReader(LogParts log_parts);
+
+  std::string_view filename() const { return message_reader_.filename(); }
+
+  // Returns the minimum amount of data needed to queue up for sorting before
+  // we are guarenteed to not see data out of order.
+  std::chrono::nanoseconds max_out_of_order_duration() const {
+    return message_reader_.max_out_of_order_duration();
+  }
+
+  // Returns the newest timestamp read out of the log file.
+  monotonic_clock::time_point newest_timestamp() const {
+    return newest_timestamp_;
+  }
+
+  // Returns the next message if there is one, or nullopt if we have reached the
+  // end of all the files.
+  // Note: reading the next message may change the max_out_of_order_duration().
+  std::optional<FlatbufferVector<MessageHeader>> ReadMessage();
+
+ private:
+  // Opens the next log and updates message_reader_.  Sets done_ if there is
+  // nothing more to do.
+  void NextLog();
+
+  const LogParts parts_;
+  size_t next_part_index_ = 1u;
+  bool done_ = false;
+  MessageReader message_reader_;
+
   monotonic_clock::time_point newest_timestamp_ = monotonic_clock::min_time;
 };
 
@@ -369,7 +406,7 @@ class SplitMessageReader {
   monotonic_clock::time_point time_to_queue() const { return time_to_queue_; }
 
   // Returns the minimum amount of data needed to queue up for sorting before
-  // ware guarenteed to not see data out of order.
+  // we are guarenteed to not see data out of order.
   std::chrono::nanoseconds max_out_of_order_duration() const {
     return message_reader_->max_out_of_order_duration();
   }

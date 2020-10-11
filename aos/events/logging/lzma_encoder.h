@@ -16,6 +16,10 @@ class LzmaEncoder final : public DetachedBufferEncoder {
  public:
   // Initializes the LZMA stream and encoder.
   explicit LzmaEncoder(uint32_t compression_preset);
+  LzmaEncoder(const LzmaEncoder &) = delete;
+  LzmaEncoder(LzmaEncoder &&other) = delete;
+  LzmaEncoder &operator=(const LzmaEncoder &) = delete;
+  LzmaEncoder &operator=(LzmaEncoder &&other) = delete;
   // Gracefully shuts down the encoder.
   ~LzmaEncoder() final;
 
@@ -45,6 +49,10 @@ class LzmaEncoder final : public DetachedBufferEncoder {
 class LzmaDecoder final : public DataDecoder {
  public:
   explicit LzmaDecoder(std::string_view filename);
+  LzmaDecoder(const LzmaDecoder &) = delete;
+  LzmaDecoder(LzmaDecoder &&other) = delete;
+  LzmaDecoder &operator=(const LzmaDecoder &) = delete;
+  LzmaDecoder &operator=(LzmaDecoder &&other) = delete;
   ~LzmaDecoder();
 
   size_t Read(uint8_t *begin, uint8_t *end) final;
