@@ -14,14 +14,17 @@ flatbuffer_cc_library(
 cc_library(
     name = "logfile_utils",
     srcs = [
+        "logfile_sorting.cc",
         "logfile_utils.cc",
     ],
     hdrs = [
+        "logfile_sorting.h",
         "logfile_utils.h",
     ],
     visibility = ["//visibility:public"],
     deps = [
         ":buffer_encoder",
+        ":uuid",
         ":logger_fbs",
         "//aos:configuration",
         "//aos:flatbuffer_merge",

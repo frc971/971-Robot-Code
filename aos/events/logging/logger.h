@@ -13,6 +13,7 @@
 #include "aos/events/event_loop.h"
 #include "aos/events/logging/eigen_mpq.h"
 #include "aos/events/logging/log_namer.h"
+#include "aos/events/logging/logfile_sorting.h"
 #include "aos/events/logging/logfile_utils.h"
 #include "aos/events/logging/logger_generated.h"
 #include "aos/events/logging/uuid.h"
@@ -278,41 +279,6 @@ class Logger {
 
   std::vector<NodeState> node_state_;
 };
-
-// Datastructure to hold ordered parts.
-struct LogParts {
-  // Monotonic and realtime start times for this set of log files.  For log
-  // files which started out unknown and then became known, this is the known
-  // start time.
-  aos::monotonic_clock::time_point monotonic_start_time;
-  aos::realtime_clock::time_point realtime_start_time;
-
-  // UUIDs if available.
-  std::string log_event_uuid;
-  std::string parts_uuid;
-
-  // The node this represents, or empty if we are in a single node world.
-  std::string node;
-
-  // Pre-sorted list of parts.
-  std::vector<std::string> parts;
-};
-
-// Datastructure to hold parts from the same run of the logger which have no
-// ordering constraints relative to each other.
-struct LogFile {
-  // The UUID tying them all together (if available)
-  std::string log_event_uuid;
-
-  // All the parts, unsorted.
-  std::vector<LogParts> parts;
-};
-
-std::ostream &operator<<(std::ostream &stream, const LogFile &file);
-std::ostream &operator<<(std::ostream &stream, const LogParts &parts);
-
-// Takes a bunch of parts and sorts them based on part_uuid and part_index.
-std::vector<LogFile> SortParts(const std::vector<std::string> &parts);
 
 std::vector<std::vector<std::string>> ToLogReaderVector(
     const std::vector<LogFile> &log_files);
