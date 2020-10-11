@@ -4,10 +4,10 @@
 
 #include <random>
 
-#include "gtest/gtest.h"
+#include "aos/die.h"
 #include "frc971/control_loops/control_loops_generated.h"
 #include "frc971/control_loops/position_sensor_sim.h"
-#include "aos/die.h"
+#include "gtest/gtest.h"
 
 #include "flatbuffers/flatbuffers.h"
 
@@ -33,7 +33,8 @@ TEST_F(PositionSensorSimTest, NoIndices) {
   // Make sure that we don't accidentally hit an index pulse.
   for (int i = 0; i < 30; i++) {
     sim.MoveTo(3.6 * index_diff);
-    const IndexPosition *index_position = sim.FillSensorValues<IndexPosition>(&fbb);
+    const IndexPosition *index_position =
+        sim.FillSensorValues<IndexPosition>(&fbb);
     const PotAndIndexPosition *pot_and_index_position =
         sim.FillSensorValues<PotAndIndexPosition>(&pot_fbb);
     ASSERT_DOUBLE_EQ(3.6 * index_diff, pot_and_index_position->pot());
@@ -44,7 +45,8 @@ TEST_F(PositionSensorSimTest, NoIndices) {
 
   for (int i = 0; i < 30; i++) {
     sim.MoveTo(3.0 * index_diff);
-    const IndexPosition *index_position = sim.FillSensorValues<IndexPosition>(&fbb);
+    const IndexPosition *index_position =
+        sim.FillSensorValues<IndexPosition>(&fbb);
     const PotAndIndexPosition *pot_and_index_position =
         sim.FillSensorValues<PotAndIndexPosition>(&pot_fbb);
     ASSERT_DOUBLE_EQ(3.0 * index_diff, pot_and_index_position->pot());
@@ -54,7 +56,8 @@ TEST_F(PositionSensorSimTest, NoIndices) {
 
   for (int i = 0; i < 30; i++) {
     sim.MoveTo(3.99 * index_diff);
-    const IndexPosition *index_position = sim.FillSensorValues<IndexPosition>(&fbb);
+    const IndexPosition *index_position =
+        sim.FillSensorValues<IndexPosition>(&fbb);
     const PotAndIndexPosition *pot_and_index_position =
         sim.FillSensorValues<PotAndIndexPosition>(&pot_fbb);
     ASSERT_DOUBLE_EQ(3.99 * index_diff, pot_and_index_position->pot());
@@ -64,7 +67,8 @@ TEST_F(PositionSensorSimTest, NoIndices) {
 
   for (int i = 0; i < 30; i++) {
     sim.MoveTo(3.0 * index_diff);
-    const IndexPosition *index_position = sim.FillSensorValues<IndexPosition>(&fbb);
+    const IndexPosition *index_position =
+        sim.FillSensorValues<IndexPosition>(&fbb);
     const PotAndIndexPosition *pot_and_index_position =
         sim.FillSensorValues<PotAndIndexPosition>(&pot_fbb);
     ASSERT_DOUBLE_EQ(3.0 * index_diff, pot_and_index_position->pot());
@@ -85,7 +89,8 @@ TEST_F(PositionSensorSimTest, CountIndices) {
   sim.Initialize(4.6 * index_diff, 0);
 
   // Make sure that we get an index pulse on every transition.
-  const IndexPosition *index_position = sim.FillSensorValues<IndexPosition>(&fbb);
+  const IndexPosition *index_position =
+      sim.FillSensorValues<IndexPosition>(&fbb);
   const PotAndIndexPosition *pot_and_index_position =
       sim.FillSensorValues<PotAndIndexPosition>(&pot_fbb);
   ASSERT_EQ(0u, index_position->index_pulses());
@@ -144,14 +149,16 @@ TEST_F(PositionSensorSimTest, NonZeroIndexLocation) {
   flatbuffers::FlatBufferBuilder pot_fbb;
 
   sim.MoveTo(0.75 * index_diff);
-  const IndexPosition *index_position = sim.FillSensorValues<IndexPosition>(&fbb);
+  const IndexPosition *index_position =
+      sim.FillSensorValues<IndexPosition>(&fbb);
   const PotAndIndexPosition *pot_and_index_position =
       sim.FillSensorValues<PotAndIndexPosition>(&pot_fbb);
   EXPECT_EQ(1u, index_position->index_pulses());
   EXPECT_EQ(1u, pot_and_index_position->index_pulses());
   EXPECT_DOUBLE_EQ(index_diff * 0.5, pot_and_index_position->latched_pot());
   EXPECT_DOUBLE_EQ(index_diff * 0.25, index_position->latched_encoder());
-  EXPECT_DOUBLE_EQ(index_diff * 0.25, pot_and_index_position->latched_encoder());
+  EXPECT_DOUBLE_EQ(index_diff * 0.25,
+                   pot_and_index_position->latched_encoder());
 
   sim.MoveTo(index_diff);
   index_position = sim.FillSensorValues<IndexPosition>(&fbb);
@@ -160,7 +167,8 @@ TEST_F(PositionSensorSimTest, NonZeroIndexLocation) {
   EXPECT_EQ(1u, pot_and_index_position->index_pulses());
   EXPECT_DOUBLE_EQ(index_diff * 0.5, pot_and_index_position->latched_pot());
   EXPECT_DOUBLE_EQ(index_diff * 0.25, index_position->latched_encoder());
-  EXPECT_DOUBLE_EQ(index_diff * 0.25, pot_and_index_position->latched_encoder());
+  EXPECT_DOUBLE_EQ(index_diff * 0.25,
+                   pot_and_index_position->latched_encoder());
 
   sim.MoveTo(1.75 * index_diff);
   index_position = sim.FillSensorValues<IndexPosition>(&fbb);
@@ -169,7 +177,8 @@ TEST_F(PositionSensorSimTest, NonZeroIndexLocation) {
   EXPECT_EQ(2u, pot_and_index_position->index_pulses());
   EXPECT_DOUBLE_EQ(index_diff * 1.5, pot_and_index_position->latched_pot());
   EXPECT_DOUBLE_EQ(index_diff * 1.25, index_position->latched_encoder());
-  EXPECT_DOUBLE_EQ(index_diff * 1.25, pot_and_index_position->latched_encoder());
+  EXPECT_DOUBLE_EQ(index_diff * 1.25,
+                   pot_and_index_position->latched_encoder());
 
   // Try it with our known index pulse not being our first one.
   sim.Initialize(index_diff * 0.25, 0.0, index_diff * 1.5);
@@ -181,7 +190,8 @@ TEST_F(PositionSensorSimTest, NonZeroIndexLocation) {
   EXPECT_EQ(1u, pot_and_index_position->index_pulses());
   EXPECT_DOUBLE_EQ(index_diff * 0.5, pot_and_index_position->latched_pot());
   EXPECT_DOUBLE_EQ(index_diff * 0.25, index_position->latched_encoder());
-  EXPECT_DOUBLE_EQ(index_diff * 0.25, pot_and_index_position->latched_encoder());
+  EXPECT_DOUBLE_EQ(index_diff * 0.25,
+                   pot_and_index_position->latched_encoder());
 
   sim.MoveTo(index_diff);
   index_position = sim.FillSensorValues<IndexPosition>(&fbb);
@@ -190,7 +200,8 @@ TEST_F(PositionSensorSimTest, NonZeroIndexLocation) {
   EXPECT_EQ(1u, pot_and_index_position->index_pulses());
   EXPECT_DOUBLE_EQ(index_diff * 0.5, pot_and_index_position->latched_pot());
   EXPECT_DOUBLE_EQ(index_diff * 0.25, index_position->latched_encoder());
-  EXPECT_DOUBLE_EQ(index_diff * 0.25, pot_and_index_position->latched_encoder());
+  EXPECT_DOUBLE_EQ(index_diff * 0.25,
+                   pot_and_index_position->latched_encoder());
 
   sim.MoveTo(1.75 * index_diff);
   index_position = sim.FillSensorValues<IndexPosition>(&fbb);
@@ -199,7 +210,8 @@ TEST_F(PositionSensorSimTest, NonZeroIndexLocation) {
   EXPECT_EQ(2u, pot_and_index_position->index_pulses());
   EXPECT_DOUBLE_EQ(index_diff * 1.5, pot_and_index_position->latched_pot());
   EXPECT_DOUBLE_EQ(index_diff * 1.25, index_position->latched_encoder());
-  EXPECT_DOUBLE_EQ(index_diff * 1.25, pot_and_index_position->latched_encoder());
+  EXPECT_DOUBLE_EQ(index_diff * 1.25,
+                   pot_and_index_position->latched_encoder());
 }
 
 // Tests that the latched values update correctly.
@@ -320,7 +332,7 @@ TEST_F(PositionSensorSimTest, HallEffectAndPosition) {
   const double index_diff = 1.0;
   PositionSensorSimulator sim(index_diff);
   sim.InitializeHallEffectAndPosition(-0.25, 0.0, 0.5);
-  //HallEffectAndPosition position;
+  // HallEffectAndPosition position;
   flatbuffers::FlatBufferBuilder fbb;
 
   // Go over only the lower edge rising.
@@ -396,7 +408,6 @@ TEST_F(PositionSensorSimTest, HallEffectAndPosition) {
     EXPECT_DOUBLE_EQ(0.25, position->negedge_value());
   }
 }
-
 
 }  // namespace control_loops
 }  // namespace frc971
