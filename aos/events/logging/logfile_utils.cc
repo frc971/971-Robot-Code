@@ -613,6 +613,7 @@ bool SplitMessageReader::QueueMessages(
     // but we then want to find the next message to read.  The conservative
     // answer is to immediately trigger a second requeue to get things moving.
     time_to_queue_ = monotonic_start_time();
+    CHECK_NE(time_to_queue_, monotonic_clock::min_time);
     QueueMessages(time_to_queue_);
   }
 
