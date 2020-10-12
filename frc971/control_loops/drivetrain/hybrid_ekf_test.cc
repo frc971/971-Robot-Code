@@ -406,6 +406,19 @@ TEST_F(HybridEkfTest, PerfectEncoderUpdate) {
   }
 }
 
+// Tests that if we have an unusually large gap between measurement updates that
+// nothing crazy happens (a previous implementation had a bug where large
+// time-steps would mess up the prediction step due to how we approximated
+// things).
+TEST_F(HybridEkfTest, ExtraLongUpdateTime) {
+  Input U;
+  U << 0.0, 0.0, 0.1, 0.1;
+  ekf_.RawUpdateEncodersAndGyro(0.0, 0.0, 0.0, U, t0_ + dt_config_.dt);
+  ekf_.RawUpdateEncodersAndGyro(0.0, 0.0, 0.0, U,
+                                t0_ + std::chrono::seconds(1000));
+  EXPECT_LT(ekf_.X_hat().norm(), 10.0) << ekf_.X_hat();
+}
+
 // Tests encoder/gyro updates when we have some errors in our estimate.
 TEST_F(HybridEkfTest, PerfectEncoderUpdateConverges) {
   // In order to simulate modelling errors, we add an angular_error and start

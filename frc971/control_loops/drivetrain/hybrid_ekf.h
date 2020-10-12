@@ -160,6 +160,11 @@ class HybridEkf {
   // offsets decay, in seconds.
   static constexpr double kVelocityOffsetTimeConstant = 1.0;
   static constexpr double kLateralVelocityTimeConstant = 1.0;
+  // The maximum allowable timestep--we use this to check for situations where
+  // measurement updates come in too infrequently and this might cause the
+  // integrator and discretization in the prediction step to be overly
+  // aggressive.
+  static constexpr std::chrono::milliseconds kMaxTimestep{20};
   // Inputs are [left_volts, right_volts]
   typedef Eigen::Matrix<Scalar, kNInputs, 1> Input;
   // Outputs are either:
@@ -559,7 +564,7 @@ class HybridEkf {
                           State *state, StateSquare *P) {
     *state = obs->X_hat;
     *P = obs->P;
-    if (dt.count() != 0) {
+    if (dt.count() != 0 && dt < kMaxTimestep) {
       PredictImpl(obs, dt, state, P);
     }
     if (!(obs->h && obs->dhdx)) {
