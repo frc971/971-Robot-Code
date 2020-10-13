@@ -51,9 +51,9 @@ class Localizer : public frc971::control_loops::drivetrain::LocalizerInterface {
               double right_encoder, double gyro_rate,
               const Eigen::Vector3d &accel) override;
 
-  void Reset(aos::monotonic_clock::time_point t, const State &state) {
-    ekf_.ResetInitialState(t, state, ekf_.P());
-  }
+  void Reset(aos::monotonic_clock::time_point t,
+             const frc971::control_loops::drivetrain::HybridEkf<double>::State
+                 &state) override;
 
   void ResetPosition(aos::monotonic_clock::time_point t, double x, double y,
                      double theta, double /*theta_override*/,

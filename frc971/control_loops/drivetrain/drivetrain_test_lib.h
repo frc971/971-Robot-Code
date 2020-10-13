@@ -73,6 +73,12 @@ class DrivetrainSimulation {
 
   void MaybePlot();
 
+  // Set whether we should send out the drivetrain Position and IMU messages
+  // (this will keep sending the "truth" message).
+  void set_send_messages(const bool send_messages) {
+    send_messages_ = send_messages;
+  }
+
  private:
   // Sends out the position queue messages.
   void SendPositionMessage();
@@ -123,6 +129,8 @@ class DrivetrainSimulation {
   ::std::vector<double> actual_y_;
   ::std::vector<double> trajectory_x_;
   ::std::vector<double> trajectory_y_;
+
+  bool send_messages_ = true;
 };
 
 }  // namespace testing

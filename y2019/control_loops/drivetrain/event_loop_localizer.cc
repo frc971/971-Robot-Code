@@ -49,6 +49,11 @@ EventLoopLocalizer::EventLoopLocalizer(
 }
 
 void EventLoopLocalizer::Reset(::aos::monotonic_clock::time_point now,
+                               const Localizer::State &state) {
+  localizer_.ResetInitialState(now, state, localizer_.P());
+}
+
+void EventLoopLocalizer::Reset(::aos::monotonic_clock::time_point now,
                                const Localizer::State &state,
                                double theta_uncertainty) {
   Localizer::StateSquare newP = localizer_.P();

@@ -55,6 +55,8 @@ class LocalizerInterface {
                       ::aos::monotonic_clock::time_point now,
                       double left_encoder, double right_encoder,
                       double gyro_rate, const Eigen::Vector3d &accel) = 0;
+  virtual void Reset(aos::monotonic_clock::time_point t,
+                     const Ekf::State &state) = 0;
   // Reset the absolute position of the estimator.
   virtual void ResetPosition(::aos::monotonic_clock::time_point t, double x,
                              double y, double theta, double theta_uncertainty,
@@ -146,6 +148,11 @@ class DeadReckonEkf : public LocalizerInterface {
               const Eigen::Vector3d &accel) override {
     ekf_.UpdateEncodersAndGyro(left_encoder, right_encoder, gyro_rate, U, accel,
                                now);
+  }
+
+  void Reset(aos::monotonic_clock::time_point t,
+             const HybridEkf<double>::State &state) override {
+    ekf_.ResetInitialState(t, state, ekf_.P());
   }
 
   void ResetPosition(::aos::monotonic_clock::time_point t, double x, double y,

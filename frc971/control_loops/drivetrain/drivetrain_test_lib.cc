@@ -174,7 +174,7 @@ void DrivetrainSimulation::SendPositionMessage() {
   const double left_encoder = GetLeftPosition();
   const double right_encoder = GetRightPosition();
 
-  {
+  if (send_messages_) {
     ::aos::Sender<::frc971::control_loops::drivetrain::Position>::Builder
         builder = drivetrain_position_sender_.MakeBuilder();
     frc971::control_loops::drivetrain::Position::Builder position_builder =
@@ -188,6 +188,9 @@ void DrivetrainSimulation::SendPositionMessage() {
 }
 
 void DrivetrainSimulation::SendImuMessage() {
+  if (!send_messages_) {
+    return;
+  }
   auto builder = imu_sender_.MakeBuilder();
   frc971::IMUValues::Builder imu_builder =
       builder.MakeBuilder<frc971::IMUValues>();
@@ -228,10 +231,16 @@ void DrivetrainSimulation::SendImuMessage() {
 void DrivetrainSimulation::Simulate() {
   last_left_position_ = drivetrain_plant_.Y(0, 0);
   last_right_position_ = drivetrain_plant_.Y(1, 0);
-  EXPECT_TRUE(drivetrain_output_fetcher_.Fetch());
   ::Eigen::Matrix<double, 2, 1> U = last_U_;
-  last_U_ << drivetrain_output_fetcher_->left_voltage(),
-      drivetrain_output_fetcher_->right_voltage();
+  if (send_messages_) {
+    EXPECT_TRUE(drivetrain_output_fetcher_.Fetch());
+    last_U_ << drivetrain_output_fetcher_->left_voltage(),
+        drivetrain_output_fetcher_->right_voltage();
+    left_gear_high_ = drivetrain_output_fetcher_->left_high();
+    right_gear_high_ = drivetrain_output_fetcher_->right_high();
+  } else {
+    U = U.Zero();
+  }
   {
     robot_state_fetcher_.Fetch();
     const double scalar = robot_state_fetcher_.get()
@@ -239,8 +248,6 @@ void DrivetrainSimulation::Simulate() {
                               : 1.0;
     last_U_ *= scalar;
   }
-  left_gear_high_ = drivetrain_output_fetcher_->left_high();
-  right_gear_high_ = drivetrain_output_fetcher_->right_high();
 
   if (left_gear_high_) {
     if (right_gear_high_) {

@@ -1463,6 +1463,47 @@ TEST_F(DrivetrainTest, ResetLocalizer) {
   EXPECT_EQ(1.0, localizer_.theta());
 }
 
+// Tests that if wpilib_interface restarts, the drivetrain handles it.
+TEST_F(DrivetrainTest, ResetDrivetrain) {
+  SetEnabled(true);
+  EXPECT_EQ(0.0, localizer_.x());
+  EXPECT_EQ(0.0, localizer_.y());
+  EXPECT_EQ(0.0, localizer_.theta());
+
+  {
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType::MOTION_PROFILE);
+    goal_builder.add_left_goal(4.0);
+    goal_builder.add_right_goal(4.0);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
+  }
+
+  RunFor(chrono::seconds(2));
+
+  const double x_pos = localizer_.x();
+  // The dead-reckoned X position in these sorts of situations tends to be
+  // relatively poor with the current localizer, since it ignores voltage inputs
+  // and models the robot's speed as always decaying towards zero, hence the
+  // large tolerances on the x position.
+  EXPECT_NEAR(4.0, x_pos, 2.0);
+  EXPECT_NEAR(0.0, localizer_.y(), 1e-5);
+  EXPECT_NEAR(0.0, localizer_.theta(), 1e-5);
+  EXPECT_NEAR(4.0, localizer_.left_encoder(), 1e-3);
+  EXPECT_NEAR(4.0, localizer_.right_encoder(), 1e-3);
+
+  SimulateSensorReset();
+  drivetrain_plant_.Reinitialize();
+
+  RunFor(dt());
+
+  EXPECT_EQ(x_pos, localizer_.x());
+  EXPECT_NEAR(0.0, localizer_.y(), 1e-5);
+  EXPECT_NEAR(0.0, localizer_.theta(), 1e-5);
+  EXPECT_NEAR(0.0, localizer_.left_encoder(), 1e-5);
+  EXPECT_NEAR(0.0, localizer_.right_encoder(), 1e-5);
+}
+
 // TODO(austin): Make sure the profile reset code when we disable works.
 
 }  // namespace testing

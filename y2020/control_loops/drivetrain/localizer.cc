@@ -95,6 +95,16 @@ Localizer::Localizer(
   target_selector_.set_has_target(false);
 }
 
+void Localizer::Reset(
+    aos::monotonic_clock::time_point t,
+    const frc971::control_loops::drivetrain::HybridEkf<double>::State &state) {
+  // Go through and clear out all of the fetchers so that we don't get behind.
+  for (auto &fetcher : image_fetchers_) {
+    fetcher.Fetch();
+  }
+  ekf_.ResetInitialState(t, state.cast<float>(), ekf_.P());
+}
+
 void Localizer::HandleSuperstructureStatus(
     const y2020::control_loops::superstructure::Status &status) {
   CHECK(status.has_turret());
@@ -162,7 +172,10 @@ void Localizer::HandleImageMatch(
     LOG(WARNING) << "Got camera frame from the future.";
     return;
   }
-  CHECK(result.has_camera_calibration());
+  if (!result.has_camera_calibration()) {
+    LOG(WARNING) << "Got camera frame without calibration data.";
+    return;
+  }
   // Per the ImageMatchResult specification, we can actually determine whether
   // the camera is the turret camera just from the presence of the
   // turret_extrinsics member.

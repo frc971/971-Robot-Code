@@ -703,7 +703,7 @@ void HybridEkf<Scalar>::InitializeMatrices() {
   // Pull velocity derivatives from velocity matrices.
   // Note that this looks really awkward (doesn't use
   // Eigen blocks) because someone decided that the full
-  // drivetrain Kalman Filter should half a weird convention.
+  // drivetrain Kalman Filter should have a weird convention.
   // TODO(james): Support shifting drivetrains with changing A_continuous
   const auto &vel_coefs = velocity_drivetrain_coefficients_;
   A_continuous_(kLeftVelocity, kLeftVelocity) = vel_coefs.A_continuous(0, 0);
