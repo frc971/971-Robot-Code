@@ -14,40 +14,43 @@ table ShooterGoal {
 table Goal {
   // Zero is at the horizontal, positive towards the front (meters on the lead screw).
   // Only applies if hood_tracking = false.
-  hood:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal;
+  hood:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal (id: 0);
 
   // Positive = counterclockwise from above; rotates Wheel of Fortune clockwise
   // Zero is relative to start.
-  control_panel:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal;
+  control_panel:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal (id: 1);
 
   // 0 = Linkage on sprocket is pointing straight up
   // Positive = forward
-  intake:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal;
+  intake:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal (id: 2);
 
   // Positive is rollers intaking to Washing Machine.
-  roller_voltage:float;
+  roller_voltage:float (id: 3);
+
+  // Factor to multiply robot velocity by and add to roller voltage.
+  roller_speed_compensation:float (id: 11);
 
   // 0 = facing the back of the robot. Positive rotates counterclockwise.
-  turret:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal;
+  turret:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal (id: 4);
 
   // Only applies if shooter_tracking = false.
-  shooter:ShooterGoal;
+  shooter:ShooterGoal (id: 5);
 
   // Whether the robot should be shooting balls. Waits until hood, turret, and
   // shooter are at goal (as determined by auto-tracking or override).
-  shooting:bool;
+  shooting:bool (id: 6);
 
   // Whether the hood should adjust its position automatically.
-  hood_tracking:bool;
+  hood_tracking:bool (id: 7);
 
   // Whether the turret should follow the target automatically.
-  turret_tracking:bool;
+  turret_tracking:bool (id: 8);
 
   // Whether the kicker and flywheel should choose a velocity automatically.
-  shooter_tracking:bool;
+  shooter_tracking:bool (id: 9);
 
   // Positive is deploying climber and to climb; cannot run in reverse
-  climber_voltage:float;
+  climber_voltage:float (id: 10);
 }
 
 root_type Goal;

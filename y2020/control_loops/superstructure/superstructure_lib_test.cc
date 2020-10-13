@@ -528,6 +528,27 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
              !superstructure_status_fetcher_.get()->zeroed());
   }
 
+  // Method for testing the intake_roller_voltage
+  void TestIntakeRollerVoltage(const float roller_voltage,
+                               const float roller_speed_compensation,
+                               const bool shooting,
+                               const double expected_voltage) {
+    SetEnabled(true);
+    {
+      auto builder = superstructure_goal_sender_.MakeBuilder();
+      Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+      goal_builder.add_roller_voltage(roller_voltage);
+      goal_builder.add_roller_speed_compensation(roller_speed_compensation);
+      goal_builder.add_shooting(shooting);
+      ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    }
+    RunFor(chrono::seconds(1));
+    superstructure_output_fetcher_.Fetch();
+    ASSERT_TRUE(superstructure_output_fetcher_.get() != nullptr);
+    EXPECT_EQ(superstructure_output_fetcher_->intake_roller_voltage(),
+              expected_voltage);
+  }
+
   const aos::Node *const roborio_;
 
   ::std::unique_ptr<::aos::EventLoop> test_event_loop_;
@@ -857,6 +878,30 @@ TEST_F(SuperstructureTest, Climber) {
   EXPECT_EQ(superstructure_plant_.climber_voltage(), 10.0);
 
   VerifyNearGoal();
+}
+
+// Makes sure that a negative number is not added to the to the
+// roller_voltage
+TEST_F(SuperstructureTest, NegativeRollerSpeedCompensation) {
+  constexpr float kRollerVoltage = 12.0f;
+  TestIntakeRollerVoltage(kRollerVoltage, -10.0f, false, kRollerVoltage);
+}
+
+// Makes sure that intake_roller_voltage is correctly being calculated
+// based on the velocity when the roller_speed_compensation is positive
+TEST_F(SuperstructureTest, PositiveRollerSpeedCompensation) {
+  constexpr float kRollerVoltage = 12.0f;
+  constexpr float kRollerSpeedCompensation = 10.0f;
+  TestIntakeRollerVoltage(kRollerVoltage, kRollerSpeedCompensation, false,
+                          kRollerVoltage + (superstructure_.robot_speed() *
+                                            kRollerSpeedCompensation));
+}
+
+// Makes sure that the intake_roller_voltage is 3.0
+// when the robot should be shooting balls (after the hood, turret, and
+// shooter at at the goal)
+TEST_F(SuperstructureTest, WhenShooting) {
+  TestIntakeRollerVoltage(0.0f, 0.0f, true, 3.0);
 }
 
 class SuperstructureAllianceTest

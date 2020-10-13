@@ -79,6 +79,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
     double intake_pos = -0.89;
     double turret_pos = 0.0;
     float roller_speed = 0.0f;
+    float roller_speed_compensation = 0.0f;
     double accelerator_speed = 0.0;
     double finisher_speed = 0.0;
     double climber_speed = 0.0;
@@ -107,24 +108,24 @@ class Reader : public ::aos::input::ActionJoystickInput {
       }
     } else if (data.IsPressed(kShootSlow)) {
       accelerator_speed = 180.0;
-      finisher_speed = 375.0;
+      finisher_speed = 300.0;
     }
 
     if (data.IsPressed(kIntakeExtend)) {
       intake_pos = 1.2;
-      roller_speed = 9.0f;
+      roller_speed = 7.0f;
+      roller_speed_compensation = 2.0f;
     }
 
     if (superstructure_status_fetcher_.get() &&
         superstructure_status_fetcher_->intake()->position() > -0.5) {
       roller_speed = std::max(roller_speed, 6.0f);
-    }
-
-    if (data.IsPressed(kFeed)) {
+      roller_speed_compensation = 2.0f;
     }
 
     if (data.IsPressed(kIntakeIn)) {
       roller_speed = 6.0f;
+      roller_speed_compensation = 2.0f;
     } else if (data.IsPressed(kSpit)) {
       roller_speed = -6.0f;
     }
@@ -163,6 +164,8 @@ class Reader : public ::aos::input::ActionJoystickInput {
       superstructure_goal_builder.add_intake(intake_offset);
       superstructure_goal_builder.add_turret(turret_offset);
       superstructure_goal_builder.add_roller_voltage(roller_speed);
+      superstructure_goal_builder.add_roller_speed_compensation(
+          roller_speed_compensation);
       superstructure_goal_builder.add_shooter(shooter_offset);
       superstructure_goal_builder.add_shooting(data.IsPressed(kFeed));
       superstructure_goal_builder.add_climber_voltage(climber_speed);

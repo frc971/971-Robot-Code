@@ -45,6 +45,7 @@ class Superstructure
   const AbsoluteEncoderSubsystem &intake_joint() const { return intake_joint_; }
   const PotAndAbsoluteEncoderSubsystem &turret() const { return turret_; }
   const shooter::Shooter &shooter() const { return shooter_; }
+  double robot_speed() const;
 
  protected:
   virtual void RunIteration(const Goal *unsafe_goal, const Position *position,

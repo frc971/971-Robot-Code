@@ -24,6 +24,12 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
   event_loop->SetRuntimeRealtimePriority(30);
 }
 
+double Superstructure::robot_speed() const {
+  return (drivetrain_status_fetcher_.get() != nullptr
+              ? drivetrain_status_fetcher_->robot_speed()
+              : 0.0);
+}
+
 void Superstructure::RunIteration(const Goal *unsafe_goal,
                                   const Position *position,
                                   aos::Sender<Output>::Builder *output,
@@ -51,6 +57,8 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
     aimer_.Update(drivetrain_status_fetcher_.get(), alliance, mode,
                   turret::Aimer::ShotMode::kShootOnTheFly);
   }
+
+  const float velocity = robot_speed();
 
   const flatbuffers::Offset<AimerStatus> aimer_status_offset =
       aimer_.PopulateStatus(status->fbb());
@@ -131,7 +139,8 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
                    turret_.operating_voltage());
 
     // Friction is a pain and putting a really high burden on the integrator.
-    const double hood_velocity_sign = hood_status->velocity() * kHoodFrictionGain;
+    const double hood_velocity_sign =
+        hood_status->velocity() * kHoodFrictionGain;
     output_struct.hood_voltage +=
         std::clamp(hood_velocity_sign, -kHoodFrictionVoltageLimit,
                    kHoodFrictionVoltageLimit);
@@ -182,7 +191,9 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
         output_struct.intake_roller_voltage = 3.0;
       } else {
         output_struct.feeder_voltage = 0.0;
-        output_struct.intake_roller_voltage = unsafe_goal->roller_voltage();
+        output_struct.intake_roller_voltage =
+            unsafe_goal->roller_voltage() +
+            std::max(velocity * unsafe_goal->roller_speed_compensation(), 0.0f);
       }
     } else {
       output_struct.intake_roller_voltage = 0.0;
