@@ -146,11 +146,11 @@ std::string GetLogName(const char *basename) {
   AllocateLogName(&tmp, folder, basename);
 
   std::string log_base_name = tmp;
-  std::string log_roborio_name = log_base_name + "_roborio_data.bfbs";
+  std::string log_roborio_name = log_base_name + "/";
   free(tmp);
 
   char *tmp2;
-  if (asprintf(&tmp2, "%s/%s-current.bfbs", folder, basename) == -1) {
+  if (asprintf(&tmp2, "%s/%s-current", folder, basename) == -1) {
     PLOG(WARNING) << "couldn't create current symlink name";
   } else {
     if (unlink(tmp2) == -1 && (errno != EROFS && errno != ENOENT)) {
