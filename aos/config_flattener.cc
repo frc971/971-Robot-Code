@@ -11,15 +11,16 @@
 namespace aos {
 
 int Main(int argc, char **argv) {
-  CHECK_GE(argc, 5) << ": Too few arguments";
+  CHECK_GE(argc, 6) << ": Too few arguments";
 
   const char *full_output = argv[1];
   const char *stripped_output = argv[2];
-  const char *config_path = argv[3];
+  const char *binary_output = argv[3];
+  const char *config_path = argv[4];
   // In order to support not only importing things by absolute path, but also
   // importing the outputs of genrules (rather than just manually written
   // files), we need to tell ReadConfig where the generated files directory is.
-  const char *bazel_outs_directory = argv[4];
+  const char *bazel_outs_directory = argv[5];
 
   VLOG(1) << "Reading " << config_path;
   FlatbufferDetachedBuffer<Configuration> config =
@@ -36,21 +37,24 @@ int Main(int argc, char **argv) {
 
   std::vector<aos::FlatbufferString<reflection::Schema>> schemas;
 
-  for (int i = 5; i < argc; ++i) {
+  for (int i = 6; i < argc; ++i) {
     schemas.emplace_back(util::ReadFileToStringOrDie(argv[i]));
   }
 
-  const std::string merged_config = FlatbufferToJson(
-      &configuration::MergeConfiguration(config, schemas).message(),
-      {.multi_line = true});
+  aos::FlatbufferDetachedBuffer<Configuration> merged_config =
+      configuration::MergeConfiguration(config, schemas);
+
+  const std::string merged_config_json =
+      FlatbufferToJson(&merged_config.message(), {.multi_line = true});
 
   // TODO(austin): Figure out how to squash the schemas onto 1 line so it is
   // easier to read?
-  VLOG(1) << "Flattened config is " << merged_config;
-  util::WriteStringToFileOrDie(full_output, merged_config);
+  VLOG(1) << "Flattened config is " << merged_config_json;
+  util::WriteStringToFileOrDie(full_output, merged_config_json);
   util::WriteStringToFileOrDie(
       stripped_output,
       FlatbufferToJson(&config.message(), {.multi_line = true}));
+  aos::WriteFlatbufferToFile(binary_output, merged_config);
   return 0;
 }
 

@@ -18,6 +18,7 @@ def aos_config(name, src, flatbuffers = [], deps = [], visibility = None, teston
 def _aos_config_impl(ctx):
     config = ctx.actions.declare_file(ctx.label.name + ".json")
     stripped_config = ctx.actions.declare_file(ctx.label.name + ".stripped.json")
+    binary_config = ctx.actions.declare_file(ctx.label.name + ".bfbs")
 
     flatbuffers_depset = depset(
         ctx.files.flatbuffers,
@@ -31,21 +32,22 @@ def _aos_config_impl(ctx):
 
     all_files = flatbuffers_depset.to_list() + src_depset.to_list()
     ctx.actions.run(
-        outputs = [config, stripped_config],
+        outputs = [config, stripped_config, binary_config],
         inputs = all_files,
         arguments = [
             config.path,
             stripped_config.path,
+            binary_config.path,
             (ctx.label.workspace_root or ".") + "/" + ctx.files.src[0].short_path,
             ctx.bin_dir.path,
         ] + [f.path for f in flatbuffers_depset.to_list()],
         progress_message = "Flattening config",
         executable = ctx.executable._config_flattener,
     )
-    runfiles = ctx.runfiles(files = [config, stripped_config])
+    runfiles = ctx.runfiles(files = [config, stripped_config, binary_config])
     return [
         DefaultInfo(
-            files = depset([config, stripped_config]),
+            files = depset([config, stripped_config, binary_config]),
             runfiles = runfiles,
         ),
         AosConfigInfo(
