@@ -753,6 +753,6 @@ class EventLoop {
 
 }  // namespace aos
 
-#include "aos/events/event_loop_tmpl.h"
+#include "aos/events/event_loop_tmpl.h"  // IWYU pragma: export
 
 #endif  // AOS_EVENTS_EVENT_LOOP_H
