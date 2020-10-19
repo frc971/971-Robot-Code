@@ -8,7 +8,7 @@
 
 #include <string_view>
 
-#include "aos/configuration_generated.h"
+#include "aos/configuration_generated.h"  // IWYU pragma: export
 #include "aos/flatbuffers.h"
 
 namespace aos {

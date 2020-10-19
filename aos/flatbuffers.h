@@ -7,7 +7,7 @@
 #include "absl/types/span.h"
 #include "aos/containers/resizeable_buffer.h"
 #include "aos/macros.h"
-#include "flatbuffers/flatbuffers.h"
+#include "flatbuffers/flatbuffers.h"  // IWYU pragma: export
 #include "glog/logging.h"
 
 namespace aos {
