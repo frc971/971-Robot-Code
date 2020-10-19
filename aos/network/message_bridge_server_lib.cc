@@ -248,6 +248,12 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop)
   const Channel *const timestamp_channel = configuration::GetChannel(
       event_loop_->configuration(), "/aos", Timestamp::GetFullyQualifiedName(),
       event_loop_->name(), event_loop_->node());
+  CHECK(timestamp_channel != nullptr)
+      << ": Failed to find timestamp channel {\"name\": \"/aos\", \"type\": \""
+      << Timestamp::GetFullyQualifiedName() << "\"}";
+  CHECK(configuration::ChannelIsSendableOnNode(timestamp_channel,
+                                               event_loop_->node()))
+      << ": Timestamp channel is not sendable on this node.";
 
   for (const Channel *channel : *event_loop_->configuration()->channels()) {
     CHECK(channel->has_source_node());
@@ -302,11 +308,17 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop)
         timestamp_state_ = state.get();
       }
       channels_.emplace_back(std::move(state));
+    } else if (channel == timestamp_channel) {
+      std::unique_ptr<ChannelState> state(
+          new ChannelState{channel, channel_index});
+      timestamp_state_ = state.get();
+      channels_.emplace_back(std::move(state));
     } else {
       channels_.emplace_back(nullptr);
     }
     ++channel_index;
   }
+  CHECK(timestamp_state_ != nullptr);
 
   // Buffer up the max size a bit so everything fits nicely.
   LOG(INFO) << "Max message size for all clients is " << max_size;
