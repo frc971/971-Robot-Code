@@ -47,6 +47,9 @@ architecture_paths = {
     ],
 }
 
+# gmp's tools leak memory on purpose. Just skip asan for them.
+tool_features = ["-asan"]
+
 genrule(
     name = "gmp_h_copy",
     srcs = file_from_architecture(architecture_paths, "gmp.h"),
@@ -112,6 +115,7 @@ cc_binary(
     name = "gen-fac",
     srcs = ["gen-fac.c"],
     copts = copts,
+    features = tool_features,
     deps = [":bootstrap"],
 )
 
@@ -133,6 +137,7 @@ cc_binary(
     name = "gen-fib",
     srcs = ["gen-fib.c"],
     copts = copts,
+    features = tool_features,
     deps = [":bootstrap"],
 )
 
@@ -154,6 +159,7 @@ cc_binary(
     name = "gen-bases",
     srcs = ["gen-bases.c"],
     copts = copts,
+    features = tool_features,
     deps = [":bootstrap"],
 )
 
@@ -175,6 +181,7 @@ cc_binary(
     name = "gen-trialdivtab",
     srcs = ["gen-trialdivtab.c"],
     copts = copts,
+    features = tool_features,
     deps = [":bootstrap"],
 )
 
