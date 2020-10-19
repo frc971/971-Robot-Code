@@ -1390,7 +1390,9 @@ void LogReader::Register(EventLoop *event_loop) {
           << "Not sending data from before the start of the log file. "
           << channel_timestamp.monotonic_event_time.time_since_epoch().count()
           << " start " << monotonic_start_time().time_since_epoch().count()
-          << " " << FlatbufferToJson(channel_data);
+          << " "
+          << FlatbufferToJson(channel_data,
+                              {.multi_line = false, .max_vector_size = 100});
     }
 
     const monotonic_clock::time_point next_time = state->OldestMessageTime();
