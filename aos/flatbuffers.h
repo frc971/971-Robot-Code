@@ -264,9 +264,12 @@ class FlatbufferFixedAllocatorArray final : public Flatbuffer<T> {
   }
 
   void Reset() {
-    CHECK(!allocator_.is_allocated()) << ": May not reset while building";
+    CHECK(!allocator_.is_allocated() || data_ != nullptr)
+        << ": May not reset while building";
     fbb_ = flatbuffers::FlatBufferBuilder(Size, &allocator_);
     fbb_.ForceDefaults(true);
+    data_ = nullptr;
+    size_ = 0;
   }
 
   flatbuffers::FlatBufferBuilder *fbb() {
