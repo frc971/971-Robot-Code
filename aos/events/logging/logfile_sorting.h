@@ -36,6 +36,13 @@ struct LogFile {
   // The UUID tying them all together (if available)
   std::string log_event_uuid;
 
+  // The node the logger was running on (if available)
+  std::string logger_node;
+
+  // The start time on the logger node.
+  aos::monotonic_clock::time_point monotonic_start_time;
+  aos::realtime_clock::time_point realtime_start_time;
+
   // All the parts, unsorted.
   std::vector<LogParts> parts;
 };

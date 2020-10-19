@@ -1127,9 +1127,11 @@ TEST_F(MultinodeLoggerTest, SortParts) {
 
   size_t missing_rt_count = 0;
 
+  std::vector<std::string> logger_nodes;
   for (const LogFile &log_file : sorted_parts) {
     EXPECT_FALSE(log_file.log_event_uuid.empty());
     log_event_uuids.insert(log_file.log_event_uuid);
+    logger_nodes.emplace_back(log_file.logger_node);
     both_uuids.insert(log_file.log_event_uuid);
 
     for (const LogParts &part : log_file.parts) {
@@ -1160,6 +1162,16 @@ TEST_F(MultinodeLoggerTest, SortParts) {
   // (inner vectors all need to be in order, but outer one doesn't matter).
   EXPECT_THAT(ToLogReaderVector(sorted_parts),
               ::testing::UnorderedElementsAreArray(structured_logfiles_));
+
+  EXPECT_THAT(logger_nodes, ::testing::UnorderedElementsAre("pi1", "pi2"));
+
+  EXPECT_NE(sorted_parts[0].realtime_start_time, aos::realtime_clock::min_time);
+  EXPECT_NE(sorted_parts[1].realtime_start_time, aos::realtime_clock::min_time);
+
+  EXPECT_NE(sorted_parts[0].monotonic_start_time,
+            aos::monotonic_clock::min_time);
+  EXPECT_NE(sorted_parts[1].monotonic_start_time,
+            aos::monotonic_clock::min_time);
 }
 
 // Tests that if we remap a remapped channel, it shows up correctly.

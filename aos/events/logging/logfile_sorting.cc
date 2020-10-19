@@ -30,9 +30,20 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
     std::vector<std::pair<std::string, int>> parts;
   };
 
+  // Struct to hold both the node, and the parts associated with it.
+  struct UnsortedLogPartsMap {
+    std::string logger_node;
+    aos::monotonic_clock::time_point monotonic_start_time =
+        aos::monotonic_clock::min_time;
+    aos::realtime_clock::time_point realtime_start_time =
+        aos::realtime_clock::min_time;
+
+    std::map<std::string, UnsortedLogParts> unsorted_parts;
+  };
+
   // Map holding the log_event_uuid -> second map.  The second map holds the
   // parts_uuid -> list of parts for sorting.
-  std::map<std::string, std::map<std::string, UnsortedLogParts>> parts_list;
+  std::map<std::string, UnsortedLogPartsMap> parts_list;
 
   // Sort part files without UUIDs and part indexes as well.  Extract everything
   // useful from the log in the first pass, then sort later.
@@ -62,6 +73,11 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
     const std::string_view node =
         log_header.message().has_node()
             ? log_header.message().node()->name()->string_view()
+            : "";
+
+    const std::string_view logger_node =
+        log_header.message().has_logger_node()
+            ? log_header.message().logger_node()->name()->string_view()
             : "";
 
     // Looks like an old log.  No UUID, index, and also single node.  We have
@@ -99,6 +115,9 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
     CHECK(log_header.message().has_parts_uuid());
     CHECK(log_header.message().has_parts_index());
 
+    CHECK_EQ(log_header.message().has_logger_node(),
+             log_header.message().has_node());
+
     const std::string log_event_uuid =
         log_header.message().log_event_uuid()->str();
     const std::string parts_uuid = log_header.message().parts_uuid()->str();
@@ -108,14 +127,28 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
     if (log_it == parts_list.end()) {
       log_it =
           parts_list
-              .insert(std::make_pair(log_event_uuid,
-                                     std::map<std::string, UnsortedLogParts>()))
+              .insert(std::make_pair(log_event_uuid, UnsortedLogPartsMap()))
               .first;
+      log_it->second.logger_node = logger_node;
+    } else {
+      CHECK_EQ(log_it->second.logger_node, logger_node);
     }
 
-    auto it = log_it->second.find(parts_uuid);
-    if (it == log_it->second.end()) {
-      it = log_it->second.insert(std::make_pair(parts_uuid, UnsortedLogParts()))
+    if (node == log_it->second.logger_node) {
+      if (log_it->second.monotonic_start_time ==
+          aos::monotonic_clock::min_time) {
+        log_it->second.monotonic_start_time = monotonic_start_time;
+        log_it->second.realtime_start_time = realtime_start_time;
+      } else {
+        CHECK_EQ(log_it->second.monotonic_start_time, monotonic_start_time);
+        CHECK_EQ(log_it->second.realtime_start_time, realtime_start_time);
+      }
+    }
+
+    auto it = log_it->second.unsorted_parts.find(parts_uuid);
+    if (it == log_it->second.unsorted_parts.end()) {
+      it = log_it->second.unsorted_parts
+               .insert(std::make_pair(parts_uuid, UnsortedLogParts()))
                .first;
       it->second.monotonic_start_time = monotonic_start_time;
       it->second.realtime_start_time = realtime_start_time;
@@ -157,6 +190,8 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
         p.parts.parts.emplace_back(std::move(f.second));
       }
       log_file.parts.emplace_back(std::move(p.parts));
+      log_file.monotonic_start_time = log_file.parts[0].monotonic_start_time;
+      log_file.realtime_start_time = log_file.parts[0].realtime_start_time;
       result.emplace_back(std::move(log_file));
     }
 
@@ -166,11 +201,14 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
   // Now, sort them and produce the final vector form.
   std::vector<LogFile> result;
   result.reserve(parts_list.size());
-  for (std::pair<const std::string, std::map<std::string, UnsortedLogParts>>
-           &logs : parts_list) {
+  for (std::pair<const std::string, UnsortedLogPartsMap> &logs : parts_list) {
     LogFile new_file;
     new_file.log_event_uuid = logs.first;
-    for (std::pair<const std::string, UnsortedLogParts> &parts : logs.second) {
+    new_file.logger_node = logs.second.logger_node;
+    new_file.monotonic_start_time = logs.second.monotonic_start_time;
+    new_file.realtime_start_time = logs.second.realtime_start_time;
+    for (std::pair<const std::string, UnsortedLogParts> &parts :
+         logs.second.unsorted_parts) {
       LogParts new_parts;
       new_parts.monotonic_start_time = parts.second.monotonic_start_time;
       new_parts.realtime_start_time = parts.second.realtime_start_time;
@@ -199,6 +237,11 @@ std::ostream &operator<<(std::ostream &stream, const LogFile &file) {
   if (!file.log_event_uuid.empty()) {
     stream << "\"log_event_uuid\": \"" << file.log_event_uuid << "\", ";
   }
+  if (!file.logger_node.empty()) {
+    stream << "\"logger_node\": \"" << file.logger_node << "\", ";
+  }
+  stream << "\"monotonic_start_time\": " << file.monotonic_start_time
+         << ", \"realtime_start_time\": " << file.realtime_start_time << ", [";
   stream << "\"parts\": [";
   for (size_t i = 0; i < file.parts.size(); ++i) {
     if (i != 0u) {
