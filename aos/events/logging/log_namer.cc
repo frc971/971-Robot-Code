@@ -36,7 +36,8 @@ void LocalLogNamer::WriteHeader(
 }
 
 DetachedBufferWriter *LocalLogNamer::MakeWriter(const Channel *channel) {
-  CHECK(configuration::ChannelIsSendableOnNode(channel, node()));
+  CHECK(configuration::ChannelIsSendableOnNode(channel, node()))
+      << ": " << configuration::CleanedChannelToString(channel);
   return data_writer_.get();
 }
 
