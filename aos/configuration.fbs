@@ -153,6 +153,10 @@ table Node {
   //
   // Don't specify a hostname in multiple nodes in the same configuration.
   hostnames:[string] (id: 3);
+
+  // An arbitrary list of strings representing properties of each node.  These
+  // can be used to store information about roles.
+  tags:[string] (id: 4);
 }
 
 // Overall configuration datastructure for the pubsub.
