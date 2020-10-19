@@ -274,6 +274,7 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
+        ":thread_local",
         "@com_github_google_glog//:glog",
     ],
 )
@@ -542,4 +543,16 @@ cc_library(
         "thread_local.h",
     ],
     visibility = ["//visibility:public"],
+)
+
+cc_test(
+    name = "realtime_test",
+    srcs = [
+        "realtime_test.cc",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":realtime",
+        "//aos/testing:googletest",
+    ],
 )
