@@ -357,7 +357,9 @@ class SimulatedFetcher : public RawFetcher {
       return std::make_pair(false, monotonic_clock::min_time);
     }
 
-    CHECK(!fell_behind_) << ": Got behind";
+    CHECK(!fell_behind_) << ": Got behind on "
+                         << configuration::StrippedChannelToString(
+                                simulated_channel_->channel());
 
     SetMsg(msgs_.front());
     msgs_.pop_front();

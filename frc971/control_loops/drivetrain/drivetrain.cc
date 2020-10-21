@@ -107,6 +107,19 @@ void DrivetrainLoop::RunIteration(
     has_been_enabled_ = true;
   }
 
+  if (WasReset()) {
+    // If all the sensors got reset (e.g., due to wpilib_interface restarting),
+    // reset the localizer and down estimator to avoid weird jumps in the
+    // filters.
+    down_estimator_.Reset();
+    // Just reset the localizer to the current state, except for the encoders.
+    LocalizerInterface::Ekf::State X_hat = localizer_->Xhat();
+    X_hat(LocalizerInterface::StateIdx::kLeftEncoder) = position->left_encoder();
+    X_hat(LocalizerInterface::StateIdx::kRightEncoder) =
+        position->right_encoder();
+    localizer_->Reset(monotonic_now, X_hat);
+  }
+
   // TODO(austin): Put gear detection logic here.
   switch (dt_config_.shifter_type) {
     case ShifterType::SIMPLE_SHIFTER:

@@ -34,6 +34,8 @@ class EventLoopLocalizer
           &dt_config);
 
   void Reset(::aos::monotonic_clock::time_point t,
+             const Localizer::State &state) override;
+  void Reset(::aos::monotonic_clock::time_point t,
              const Localizer::State &state, double theta_uncertainty);
   void ResetPosition(::aos::monotonic_clock::time_point t, double x, double y,
                      double theta, double theta_uncertainty,

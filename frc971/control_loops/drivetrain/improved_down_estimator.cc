@@ -9,6 +9,30 @@ namespace frc971 {
 namespace control_loops {
 namespace drivetrain {
 
+void QuaternionUkf::Reset() {
+  // The various noise matrices are tuned to provide values that seem
+  // reasonable given our current setup (using the ADIS16470 for
+  // measurements).
+  R_.setIdentity();
+  R_ /= std::pow(1000.0, 2);
+
+  Q_.setIdentity();
+  Q_ /= std::pow(2000.0 * 500.0, 2);
+
+  // Assume that the robot starts flat on the ground pointed straight forward.
+  X_hat_ = Eigen::Quaternion<double>(1.0, 0.0, 0.0, 0.0);
+
+  P_.setIdentity();
+  P_ /= 1000.0;
+
+  pos_vel_.setZero();
+  for (auto &last_accel : last_accels_) {
+    last_accel.setZero();
+  }
+
+  last_yaw_rates_.fill(0);
+}
+
 void QuaternionUkf::Predict(const Eigen::Matrix<double, 3, 1> &U,
                             const Eigen::Matrix<double, 3, 1> &measurement,
                             const aos::monotonic_clock::duration dt) {

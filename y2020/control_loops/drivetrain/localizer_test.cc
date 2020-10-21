@@ -206,9 +206,9 @@ class LocalizedDrivetrainTest : public aos::testing::ControlLoopTest {
   void SetStartingPosition(const Eigen::Matrix<double, 3, 1> &xytheta) {
     *drivetrain_plant_.mutable_state() << xytheta.x(), xytheta.y(),
         xytheta(2, 0), 0.0, 0.0;
-    Eigen::Matrix<float, Localizer::HybridEkf::kNStates, 1> localizer_state;
+    Eigen::Matrix<double, Localizer::HybridEkf::kNStates, 1> localizer_state;
     localizer_state.setZero();
-    localizer_state.block<3, 1>(0, 0) = xytheta.cast<float>();
+    localizer_state.block<3, 1>(0, 0) = xytheta;
     localizer_.Reset(monotonic_now(), localizer_state);
   }
 
@@ -545,6 +545,33 @@ TEST_F(LocalizedDrivetrainTest, TooFastTurretDoesntAffectFixedCamera) {
   RunFor(chrono::seconds(10));
   VerifyNearGoal(5e-3);
   EXPECT_TRUE(VerifyEstimatorAccurate(1e-2));
+}
+
+// Tests that we don't blow up if we stop getting updates for an extended period
+// of time and fall behind on fetching fron the cameras.
+TEST_F(LocalizedDrivetrainTest, FetchersHandleTimeGap) {
+  set_enable_cameras(true);
+  set_send_delay(std::chrono::seconds(0));
+  event_loop_factory()->set_network_delay(std::chrono::nanoseconds(1));
+  test_event_loop_
+      ->AddTimer([this]() { drivetrain_plant_.set_send_messages(false); })
+      ->Setup(test_event_loop_->monotonic_now());
+  test_event_loop_->AddPhasedLoop(
+      [this](int) {
+        auto builder = camera_sender_.MakeBuilder();
+        ImageMatchResultT image;
+        ASSERT_TRUE(
+            builder.Send(ImageMatchResult::Pack(*builder.fbb(), &image)));
+      },
+      std::chrono::milliseconds(20));
+  test_event_loop_
+      ->AddTimer([this]() {
+        drivetrain_plant_.set_send_messages(true);
+        SimulateSensorReset();
+      })
+      ->Setup(test_event_loop_->monotonic_now() + std::chrono::seconds(10));
+
+  RunFor(chrono::seconds(20));
 }
 
 }  // namespace testing
