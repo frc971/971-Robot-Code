@@ -35,7 +35,16 @@ DEFINE_bool(skip_order_validation, false,
 
 namespace aos {
 namespace logger {
+namespace {
+// Helper to safely read a header, or CHECK.
+FlatbufferVector<LogFileHeader> MaybeReadHeaderOrDie(
+    const std::vector<std::vector<std::string>> &filenames) {
+  CHECK_GE(filenames.size(), 1u) << ": Empty filenames list";
+  CHECK_GE(filenames[0].size(), 1u) << ": Empty filenames list";
+  return ReadHeader(filenames[0][0]);
+}
 namespace chrono = std::chrono;
+}  // namespace
 
 Logger::Logger(EventLoop *event_loop, const Configuration *configuration,
                std::function<bool(const Channel *)> should_log)
@@ -716,7 +725,7 @@ LogReader::LogReader(const std::vector<LogFile> &log_files,
 LogReader::LogReader(const std::vector<std::vector<std::string>> &filenames,
                      const Configuration *replay_configuration)
     : filenames_(filenames),
-      log_file_header_(ReadHeader(filenames[0][0])),
+      log_file_header_(MaybeReadHeaderOrDie(filenames)),
       replay_configuration_(replay_configuration) {
   MakeRemappedConfig();
 
