@@ -87,7 +87,7 @@ common_copts = [
     "-DSTDC_HEADERS=1",
     "-DSTL_NAMESPACE=std",
     "-DPACKAGE_STRING=\\\"gperftools\\ 2.4\\\"",
-    "-DPACKAGE_BUGREPORT=\\\"http://www.frc971.org/contact\\\"",
+    "-DPACKAGE_BUGREPORT=\\\"https://frc971.org/contact\\\"",
     "-DPACKAGE_VERSION=\\\"2.4\\\"",
 ] + cpu_select({
     "amd64": [
