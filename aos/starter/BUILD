@@ -23,5 +23,6 @@ cc_binary(
         "//aos/time",
         "//aos/util:run_command",
         "//third_party/libevent",
+        "@com_google_absl//absl/base",
     ],
 )
