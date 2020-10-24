@@ -3,7 +3,7 @@
 #include <pthread.h>
 
 #include "aos/die.h"
-#include "aos/once.h"
+#include "absl/base/call_once.h"
 
 #define SIMPLE_CHECK(call)              \
   do {                                  \
@@ -24,28 +24,33 @@ void ExecuteDestructorList(void *v) {
   }
 }
 
-pthread_key_t *CreateKey() {
-  static pthread_key_t r;
-  SIMPLE_CHECK(pthread_key_create(&r, ExecuteDestructorList));
-  return &r;
+void CreateKey(pthread_key_t **r) {
+  static pthread_key_t hr;
+  SIMPLE_CHECK(pthread_key_create(&hr, ExecuteDestructorList));
+  *r = &hr;
 }
 
-::aos::Once<pthread_key_t> key_once(CreateKey);
+absl::once_flag key_once;
 
+pthread_key_t *GetKey() {
+  static pthread_key_t *key = nullptr;
+  absl::call_once(key_once, CreateKey, &key);
+  return key;
+}
 } // namespace
 
 void ComplexThreadLocalDestructor::Add() {
   static_assert(
       ::std::is_pod<ComplexThreadLocalDestructor>::value,
       "ComplexThreadLocalDestructor might not be safe to pass through void*");
-  pthread_key_t *const key = key_once.Get();
+  pthread_key_t *key = GetKey();
 
   next = static_cast<ComplexThreadLocalDestructor *>(pthread_getspecific(*key));
   SIMPLE_CHECK(pthread_setspecific(*key, this));
 }
 
 void ComplexThreadLocalDestructor::Remove() {
-  pthread_key_t *const key = key_once.Get();
+  pthread_key_t *key = GetKey();
 
   ComplexThreadLocalDestructor *previous = nullptr;
   for (ComplexThreadLocalDestructor *c =

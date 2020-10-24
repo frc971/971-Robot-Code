@@ -15,7 +15,6 @@ cc_binary(
     ],
     deps = [
         "//aos:init",
-        "//aos:once",
         "//aos:unique_malloc_ptr",
         "//aos/libc:aos_strsignal",
         "//aos/logging",
