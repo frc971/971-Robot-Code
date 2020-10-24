@@ -5,6 +5,7 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include "dirent.h"
 
 #include "aos/configuration.h"
 #include "aos/events/logging/logger.h"
@@ -56,6 +57,31 @@ void PrintMessage(const std::string_view node_name, const aos::Channel *channel,
               << channel->name()->c_str() << ' ' << channel->type()->c_str()
               << ": " << *builder << std::endl;
   }
+}
+
+void SearchDirectory(std::vector<std::string> *files, std::string filename) {
+  DIR *directory = opendir(filename.c_str());
+
+  if (directory == nullptr) {
+    // its not a directory
+    // it could be a file
+    // or it could not exist
+    files->emplace_back(filename);
+    return;
+  }
+
+  struct dirent *directory_entry;
+  while ((directory_entry = readdir(directory)) != nullptr) {
+    std::string next_filename = directory_entry->d_name;
+    if (next_filename == "." || next_filename == "..") {
+      continue;
+    }
+
+    std::string path = filename + "/" + next_filename;
+    SearchDirectory(files, path);
+  }
+
+  closedir(directory);
 }
 
 int main(int argc, char **argv) {
@@ -124,7 +150,7 @@ int main(int argc, char **argv) {
 
   std::vector<std::string> unsorted_logfiles;
   for (int i = 1; i < argc; ++i) {
-    unsorted_logfiles.emplace_back(std::string(argv[i]));
+    SearchDirectory(&unsorted_logfiles, argv[i]);
   }
 
   const std::vector<aos::logger::LogFile> logfiles =
