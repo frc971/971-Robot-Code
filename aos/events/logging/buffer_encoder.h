@@ -56,6 +56,11 @@ class DetachedBufferEncoder {
 // and queues it up as is.
 class DummyEncoder final : public DetachedBufferEncoder {
  public:
+  DummyEncoder() {}
+  DummyEncoder(const DummyEncoder &) = delete;
+  DummyEncoder(DummyEncoder &&other) = delete;
+  DummyEncoder &operator=(const DummyEncoder &) = delete;
+  DummyEncoder &operator=(DummyEncoder &&other) = delete;
   ~DummyEncoder() override = default;
 
   // No encoding happens, the raw data is queued up as is.
@@ -90,6 +95,10 @@ class DataDecoder {
 class DummyDecoder final : public DataDecoder {
  public:
   explicit DummyDecoder(std::string_view filename);
+  DummyDecoder(const DummyDecoder &) = delete;
+  DummyDecoder(DummyDecoder &&other) = delete;
+  DummyDecoder &operator=(const DummyDecoder &) = delete;
+  DummyDecoder &operator=(DummyDecoder &&other) = delete;
   ~DummyDecoder() override;
 
   size_t Read(uint8_t *begin, uint8_t *end) final;

@@ -431,6 +431,32 @@ std::optional<FlatbufferVector<MessageHeader>> MessageReader::ReadMessage() {
   return std::move(result);
 }
 
+PartsMessageReader::PartsMessageReader(LogParts log_parts)
+    : parts_(std::move(log_parts)), message_reader_(parts_.parts[0]) {}
+
+std::optional<FlatbufferVector<MessageHeader>>
+PartsMessageReader::ReadMessage() {
+  while (!done_) {
+    std::optional<FlatbufferVector<MessageHeader>> message =
+        message_reader_.ReadMessage();
+    if (message) {
+      newest_timestamp_ = message_reader_.newest_timestamp();
+      return message;
+    }
+    NextLog();
+  }
+  return std::nullopt;
+}
+
+void PartsMessageReader::NextLog() {
+  if (next_part_index_ == parts_.parts.size()) {
+    done_ = true;
+    return;
+  }
+  message_reader_ = MessageReader(parts_.parts[next_part_index_]);
+  ++next_part_index_;
+}
+
 SplitMessageReader::SplitMessageReader(
     const std::vector<std::string> &filenames)
     : filenames_(filenames),
