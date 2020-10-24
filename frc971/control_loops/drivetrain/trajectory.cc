@@ -18,20 +18,23 @@ Trajectory::Trajectory(const DistanceSpline *spline,
                        const DrivetrainConfig<double> &config, double vmax,
                        int num_distance)
     : spline_(spline),
-      velocity_drivetrain_(::std::unique_ptr<
-          StateFeedbackLoop<2, 2, 2, double, StateFeedbackHybridPlant<2, 2, 2>,
-                            HybridKalman<2, 2, 2>>>(
-          new StateFeedbackLoop<2, 2, 2, double,
-                                StateFeedbackHybridPlant<2, 2, 2>,
-                                HybridKalman<2, 2, 2>>(
-              config.make_hybrid_drivetrain_velocity_loop()))),
+      velocity_drivetrain_(
+          ::std::unique_ptr<StateFeedbackLoop<2, 2, 2, double,
+                                              StateFeedbackHybridPlant<2, 2, 2>,
+                                              HybridKalman<2, 2, 2>>>(
+              new StateFeedbackLoop<2, 2, 2, double,
+                                    StateFeedbackHybridPlant<2, 2, 2>,
+                                    HybridKalman<2, 2, 2>>(
+                  config.make_hybrid_drivetrain_velocity_loop()))),
+      config_(config),
       robot_radius_l_(config.robot_radius),
       robot_radius_r_(config.robot_radius),
       longitudinal_acceleration_(3.0),
       lateral_acceleration_(2.0),
       Tlr_to_la_((::Eigen::Matrix<double, 2, 2>() << 0.5, 0.5,
                   -1.0 / (robot_radius_l_ + robot_radius_r_),
-                  1.0 / (robot_radius_l_ + robot_radius_r_)).finished()),
+                  1.0 / (robot_radius_l_ + robot_radius_r_))
+                     .finished()),
       Tla_to_lr_(Tlr_to_la_.inverse()),
       plan_(num_distance == 0
                 ? ::std::max(100, static_cast<int>(spline_->length() / 0.0025))
@@ -381,7 +384,7 @@ void Trajectory::BackwardPass() {
     distance = length();
   }
   const size_t before_index = DistanceToSegment(distance);
-  const size_t after_index = before_index + 1;
+  const size_t after_index = std::min(before_index + 1, plan_.size() - 1);
 
   const double before_distance = Distance(before_index);
   const double after_distance = Distance(after_index);
@@ -632,6 +635,173 @@ void Trajectory::LimitVelocity(double starting_distance, double ending_distance,
       }
     }
   }
+}
+
+void Trajectory::PathRelativeContinuousSystem(double distance,
+                                              Eigen::Matrix<double, 5, 5> *A,
+                                              Eigen::Matrix<double, 5, 2> *B) {
+  const double nominal_velocity = FFAcceleration(distance)(1);
+  const double dtheta_dt = spline_->DThetaDt(distance, nominal_velocity);
+  // Calculate the "path-relative" coordinates, which are:
+  // [[distance along the path],
+  //  [lateral position along path],
+  //  [theta],
+  //  [left wheel velocity],
+  //  [right wheel velocity]]
+  Eigen::Matrix<double, 5, 1> nominal_X;
+  nominal_X << distance, 0.0, 0.0,
+      nominal_velocity - dtheta_dt * robot_radius_l_,
+      nominal_velocity + dtheta_dt * robot_radius_r_;
+  PathRelativeContinuousSystem(nominal_X, A, B);
+}
+
+void Trajectory::PathRelativeContinuousSystem(
+    const Eigen::Matrix<double, 5, 1> &X, Eigen::Matrix<double, 5, 5> *A,
+    Eigen::Matrix<double, 5, 2> *B) {
+  A->setZero();
+  B->setZero();
+  const double theta = X(2);
+  const double ctheta = std::cos(theta);
+  const double stheta = std::sin(theta);
+  const double curvature = spline_->DTheta(X(0));
+  const double longitudinal_velocity = (X(3) + X(4)) / 2.0;
+  const double diameter = robot_radius_l_ + robot_radius_r_;
+  // d_dpath / dt = (v_left + v_right) / 2.0 * cos(theta)
+  // (d_dpath / dt) / dv_left = cos(theta) / 2.0
+  (*A)(0, 3) = ctheta / 2.0;
+  // (d_dpath / dt) / dv_right = cos(theta) / 2.0
+  (*A)(0, 4) = ctheta / 2.0;
+  // (d_dpath / dt) / dtheta = -(v_left + v_right) / 2.0 * sin(theta)
+  (*A)(0, 2) = -longitudinal_velocity * stheta;
+  // d_dlat / dt = (v_left + v_right) / 2.0 * sin(theta)
+  // (d_dlat / dt) / dv_left = sin(theta) / 2.0
+  (*A)(1, 3) = stheta / 2.0;
+  // (d_dlat / dt) / dv_right = sin(theta) / 2.0
+  (*A)(1, 4) = stheta / 2.0;
+  // (d_dlat / dt) / dtheta = (v_left + v_right) / 2.0 * cos(theta)
+  (*A)(1, 2) = longitudinal_velocity * ctheta;
+  // dtheta / dt = (v_right - v_left) / diameter - curvature * (v_left +
+  //                v_right) / 2.0
+  // (dtheta / dt) / dv_left = -1.0 / diameter - curvature / 2.0
+  (*A)(2, 3) = -1.0 / diameter - curvature / 2.0;
+  // (dtheta / dt) / dv_right = 1.0 / diameter - curvature / 2.0
+  (*A)(2, 4) = 1.0 / diameter - curvature / 2.0;
+  // v_{left,right} / dt = the normal LTI system.
+  A->block<2, 2>(3, 3) =
+      velocity_drivetrain_->plant().coefficients().A_continuous;
+  B->block<2, 2>(3, 0) =
+      velocity_drivetrain_->plant().coefficients().B_continuous;
+}
+
+double Trajectory::EstimateDistanceAlongPath(
+    double nominal_distance, const Eigen::Matrix<double, 5, 1> &state) {
+  const double nominal_theta = spline_->Theta(nominal_distance);
+  const Eigen::Matrix<double, 2, 1> xy_err =
+      state.block<2, 1>(0, 0) - spline_->XY(nominal_distance);
+  return nominal_distance + xy_err.x() * std::cos(nominal_theta) +
+         xy_err.y() * std::sin(nominal_theta);
+}
+
+Eigen::Matrix<double, 5, 1> Trajectory::StateToPathRelativeState(
+    double distance, const Eigen::Matrix<double, 5, 1> &state) {
+  const double nominal_theta = spline_->Theta(distance);
+  const Eigen::Matrix<double, 2, 1> nominal_xy = spline_->XY(distance);
+  const Eigen::Matrix<double, 2, 1> xy_err =
+      state.block<2, 1>(0, 0) - nominal_xy;
+  const double ctheta = std::cos(nominal_theta);
+  const double stheta = std::sin(nominal_theta);
+  Eigen::Matrix<double, 5, 1> path_state;
+  path_state(0) = distance + xy_err.x() * ctheta + xy_err.y() * stheta;
+  path_state(1) = -xy_err.x() * stheta + xy_err.y() * ctheta;
+  path_state(2) = state(2) - nominal_theta;
+  path_state(3) = state(3);
+  path_state(4) = state(4);
+  return path_state;
+}
+
+// Path-relative controller method:
+// For the path relative controller, we use a non-standard version of LQR to
+// perform the control. Essentially, we first transform the system into
+// a set of path-relative coordinates (where the reference that we use is the
+// desired path reference). This gives us a system that is linear and
+// time-varying, i.e. the system is a set of A_k, B_k matrices for each
+// timestep k.
+// In order to control this, we use a discrete-time finite-horizon LQR, using
+// the appropraite [AB]_k for the given timestep. Note that the finite-horizon
+// LQR requires choosing a terminal cost (i.e., what the cost should be
+// for if we have not precisely reached the goal at the end of the time-period).
+// For this, I approximate the infinite-horizon LQR solution by extending the
+// finite-horizon much longer (albeit with the extension just using the
+// linearization for the infal point).
+void Trajectory::CalculatePathGains() {
+  const std::vector<Eigen::Matrix<double, 3, 1>> xva_plan = PlanXVA(config_.dt);
+  plan_gains_.resize(xva_plan.size());
+
+  // Set up reasonable gain matrices. Current choices of gains are arbitrary
+  // and just setup to work well enough for the simulation tests.
+  // TODO(james): Tune this on a real robot.
+  // TODO(james): Pull these out into a config.
+  Eigen::Matrix<double, 5, 5> Q;
+  Q.setIdentity();
+  Q.diagonal() << 20.0, 20.0, 20.0, 10.0, 10.0;
+  Q *= 2.0;
+  Q = (Q * Q).eval();
+
+  Eigen::Matrix<double, 2, 2> R;
+  R.setIdentity();
+  R *= 5.0;
+
+  Eigen::Matrix<double, 5, 5> P = Q;
+
+  CHECK_LT(0u, xva_plan.size());
+  const int max_index = static_cast<int>(xva_plan.size()) - 1;
+  for (int i = max_index; i >= 0; --i) {
+    const double distance = xva_plan[i](0);
+    Eigen::Matrix<double, 5, 5> A_continuous;
+    Eigen::Matrix<double, 5, 2> B_continuous;
+    PathRelativeContinuousSystem(distance, &A_continuous, &B_continuous);
+    Eigen::Matrix<double, 5, 5> A_discrete;
+    Eigen::Matrix<double, 5, 2> B_discrete;
+    controls::C2D(A_continuous, B_continuous, config_.dt, &A_discrete,
+                  &B_discrete);
+
+    if (i == max_index) {
+      // At the final timestep, approximate P by iterating a bunch of times.
+      // This is terminal cost mentioned in function-level comments.
+      // This does a very loose job of solving the DARE. Ideally, we would
+      // actually use a DARE solver directly, but based on some initial testing,
+      // this method is a bit more robust (or, at least, it is a bit more robust
+      // if we don't want to spend more time handling the potential error
+      // cases the DARE solver can encounter).
+      constexpr int kExtraIters = 100;
+      for (int jj = 0; jj < kExtraIters; ++jj) {
+        const Eigen::Matrix<double, 5, 5> AP = A_discrete.transpose() * P;
+        const Eigen::Matrix<double, 5, 2> APB = AP * B_discrete;
+        const Eigen::Matrix<double, 2, 2> RBPBinv =
+            (R + B_discrete.transpose() * P * B_discrete).inverse();
+        P = AP * A_discrete - APB * RBPBinv * APB.transpose() + Q;
+      }
+    }
+
+    const Eigen::Matrix<double, 5, 5> AP = A_discrete.transpose() * P;
+    const Eigen::Matrix<double, 5, 2> APB = AP * B_discrete;
+    const Eigen::Matrix<double, 2, 2> RBPBinv =
+        (R + B_discrete.transpose() * P * B_discrete).inverse();
+    plan_gains_[i].first = distance;
+    plan_gains_[i].second = RBPBinv * APB.transpose();
+    P = AP * A_discrete - APB * plan_gains_[i].second + Q;
+  }
+}
+
+Eigen::Matrix<double, 2, 5> Trajectory::GainForDistance(double distance) {
+  CHECK(!plan_gains_.empty());
+  size_t index = 0;
+  for (index = 0; index < plan_gains_.size() - 1; ++index) {
+    if (plan_gains_[index + 1].first > distance) {
+      break;
+    }
+  }
+  return plan_gains_[index].second;
 }
 
 }  // namespace drivetrain

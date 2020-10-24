@@ -176,8 +176,9 @@ void SplineDrivetrain::SetGoal(
 }
 
 // TODO(alex): Hold position when done following the spline.
-// TODO(Austin): Compensate for voltage error.
-void SplineDrivetrain::Update(bool enable, const ::Eigen::Matrix<double, 5, 1> &state) {
+void SplineDrivetrain::Update(
+    bool enable, const ::Eigen::Matrix<double, 5, 1> &state,
+    const ::Eigen::Matrix<double, 2, 1> &voltage_error) {
   next_U_ = ::Eigen::Matrix<double, 2, 1>::Zero();
   enable_ = enable;
   if (enable && current_trajectory_) {
@@ -190,8 +191,9 @@ void SplineDrivetrain::Update(bool enable, const ::Eigen::Matrix<double, 5, 1> &
       U_ff = current_trajectory_->FFVoltage(current_xva_(0));
     }
 
+    const double current_distance = current_xva_(0);
     ::Eigen::Matrix<double, 2, 5> K =
-        current_trajectory_->KForState(state, dt_config_.dt, Q, R);
+        current_trajectory_->GainForDistance(current_distance);
     ::Eigen::Matrix<double, 5, 1> goal_state = CurrentGoalState();
     if (current_drive_spline_backwards_) {
       ::Eigen::Matrix<double, 2, 1> swapU(U_ff(1, 0), U_ff(0, 0));
@@ -202,13 +204,18 @@ void SplineDrivetrain::Update(bool enable, const ::Eigen::Matrix<double, 5, 1> &
       goal_state(3, 0) = -right_goal;
       goal_state(4, 0) = -left_goal;
     }
-    ::Eigen::Matrix<double, 5, 1> state_error = goal_state - state;
+    const Eigen::Matrix<double, 5, 1> relative_goal =
+        current_trajectory_->StateToPathRelativeState(current_distance,
+                                                      goal_state);
+    const Eigen::Matrix<double, 5, 1> relative_state =
+        current_trajectory_->StateToPathRelativeState(current_distance, state);
+    Eigen::Matrix<double, 5, 1> state_error = relative_goal - relative_state;
     state_error(2, 0) = ::aos::math::NormalizeAngle(state_error(2, 0));
     ::Eigen::Matrix<double, 2, 1> U_fb = K * state_error;
 
     ::Eigen::Matrix<double, 2, 1> xv_state = current_xva_.block<2,1>(0,0);
     next_xva_ = current_trajectory_->GetNextXVA(dt_config_.dt, &xv_state);
-    next_U_ = U_ff + U_fb;
+    next_U_ = U_ff + U_fb - voltage_error;
     uncapped_U_ = next_U_;
     ScaleCapU(&next_U_);
   }
