@@ -72,11 +72,40 @@ ts_library(
 ts_library(
     name = "reflection_ts",
     srcs = ["reflection.ts"],
+    visibility = ["//visibility:public"],
     deps =
         [
             "//aos:configuration_ts_fbs",
             "//aos:json_to_flatbuffer_flatbuffer_ts",
         ],
+)
+
+ts_library(
+    name = "plotter",
+    srcs = [
+        "plotter.ts",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+ts_library(
+    name = "graph_main",
+    srcs = [
+        "graph_main.ts",
+    ],
+    deps = [
+        ":plotter",
+        ":proxy",
+        ":reflection_ts",
+    ],
+)
+
+rollup_bundle(
+    name = "graph_main_bundle",
+    entry_point = "aos/network/www/graph_main",
+    deps = [
+        ":graph_main",
+    ],
 )
 
 aos_config(
@@ -104,6 +133,8 @@ sh_binary(
     srcs = ["web_proxy_demo.sh"],
     data = [
         ":flatbuffers",
+        ":graph.html",
+        ":graph_main_bundle",
         ":reflection_test.html",
         ":reflection_test_bundle",
         ":test_config",
