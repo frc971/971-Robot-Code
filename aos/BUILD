@@ -46,38 +46,11 @@ cc_library(
 )
 
 cc_library(
-    name = "once",
-    srcs = [
-        "once-tmpl.h",
-    ],
-    hdrs = [
-        "once.h",
-    ],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//aos:gtest_prod",
-        "//aos/type_traits",
-    ],
-)
-
-cc_library(
     name = "byteorder",
     hdrs = [
         "byteorder.h",
     ],
     visibility = ["//visibility:public"],
-)
-
-cc_test(
-    name = "once_test",
-    srcs = [
-        "once_test.cc",
-    ],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//aos:once",
-        "//aos/testing:googletest",
-    ],
 )
 
 py_library(
