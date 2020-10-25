@@ -35,8 +35,6 @@ namespace logging {
 
 // Contains all of the information about a given logging call.
 struct LogMessage {
-  enum class Type : uint8_t { kString };
-
   int32_t seconds, nseconds;
   // message_length is just the length of the actual data (which member depends
   // on the type).
@@ -45,26 +43,9 @@ struct LogMessage {
   static_assert(sizeof(source) == 4, "that's how they get printed");
   // Per task/thread.
   uint16_t sequence;
-  Type type;
   log_level level;
   char name[LOG_MESSAGE_NAME_LEN];
-  union {
-    char message[LOG_MESSAGE_LEN];
-    struct {
-      uint32_t type_id;
-      size_t string_length;
-      // The message string and then the serialized structure.
-      char serialized[LOG_MESSAGE_LEN - sizeof(type) - sizeof(string_length)];
-    } structure;
-    struct {
-      // The type ID of the element type.
-      uint32_t type;
-      int rows, cols;
-      size_t string_length;
-      // The message string and then the serialized matrix.
-      char data[LOG_MESSAGE_LEN - sizeof(type) - sizeof(rows) - sizeof(cols)];
-    } matrix;
-  };
+  char message[LOG_MESSAGE_LEN];
 };
 static_assert(shm_ok<LogMessage>::value, "it's going in a queue");
 
@@ -118,20 +99,13 @@ class StreamLogImplementation : public HandleMessageLogImplementation {
   FILE *const stream_;
 };
 
+// Returns the current implementation.
 std::shared_ptr<LogImplementation> GetImplementation();
 
 // Sets the current implementation.
 void SetImplementation(std::shared_ptr<LogImplementation> implementation);
 
-// Updates the log implementation, returning the current implementation.
-std::shared_ptr<LogImplementation> SwapImplementation(
-    std::shared_ptr<LogImplementation> implementation);
-
-// Must be called at least once per process/load before anything else is
-// called. This function is safe to call multiple times from multiple
-// tasks/threads.
-void Init();
-
+// A logging implementation which just uses a callback.
 class CallbackLogImplementation : public HandleMessageLogImplementation {
  public:
   CallbackLogImplementation(
@@ -144,27 +118,13 @@ class CallbackLogImplementation : public HandleMessageLogImplementation {
   ::std::function<void(const LogMessage &)> callback_;
 };
 
-// Resets all information in this task/thread to its initial state.
-// NOTE: This is not the opposite of Init(). The state that this deletes is
-// lazily created when needed. It is actually the opposite of Load().
-void Cleanup();
-
-void RegisterCallbackImplementation(
-    const ::std::function<void(const LogMessage &)> &callback);
-
 class ScopedLogRestorer {
  public:
-  ScopedLogRestorer() = default;
-
-  ~ScopedLogRestorer() {
-    if (prev_impl_) {
-      SetImplementation(std::move(prev_impl_));
-    }
-    Cleanup();
-  }
+  ScopedLogRestorer() : prev_impl_(GetImplementation()) {}
+  ~ScopedLogRestorer() { SetImplementation(std::move(prev_impl_)); }
 
   void Swap(std::shared_ptr<LogImplementation> new_impl) {
-    prev_impl_ = SwapImplementation(std::move(new_impl));
+    SetImplementation(std::move(new_impl));
   }
 
  private:

@@ -42,7 +42,7 @@ namespace {
 
   char thread_name_array[kThreadNameLength + 1];
   if (prctl(PR_GET_NAME, thread_name_array) != 0) {
-    PDie("prctl(PR_GET_NAME, %p) failed", thread_name_array);
+    PLOG(FATAL) << "prctl(PR_GET_NAME, " << thread_name_array << ") failed";
   }
 #if __has_feature(memory_sanitizer)
   // msan doesn't understand PR_GET_NAME, so help it along.
@@ -73,7 +73,7 @@ AOS_THREAD_LOCAL bool delete_current_context(false);
 
 }  // namespace
 
-Context::Context() : implementation(GetImplementation()), sequence(0) {}
+Context::Context() : sequence(0) {}
 
 // Used in aos/linux_code/init.cc when a thread's name is changed.
 void ReloadThreadName() {

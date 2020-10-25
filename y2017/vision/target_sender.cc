@@ -219,7 +219,6 @@ bool ReadConfiguration(const std::string &file_name, VisionConfig *cfg) {
 int main(int, char **) {
   using namespace y2017::vision;
 
-  ::aos::logging::Init();
   VisionConfig cfg;
   if (ReadConfiguration("ConfigFile.pb.ascii", &cfg)) {
     if (cfg.robot_configs().count("Laptop") != 1) {

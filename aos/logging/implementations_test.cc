@@ -92,7 +92,6 @@ class LoggingTest : public ::testing::Test {
   }
   void TearDown() override {
     SetImplementation(nullptr);
-    Cleanup();
     internal::Context::DeleteNow();
     CHECK_EQ(log_implementation.use_count(), 1);
     log_implementation.reset();

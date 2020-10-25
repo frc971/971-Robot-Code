@@ -23,9 +23,6 @@ void main(int argc, char **argv) {
   using namespace y2019::vision;
   using namespace frc971::jevois;
   // gflags::ParseCommandLineFlags(&argc, &argv, false);
-  ::aos::logging::Init();
-  ::aos::logging::SetImplementation(
-      std::make_shared<::aos::logging::StreamLogImplementation>(stderr));
 
   int flags = fcntl(0, F_GETFL, 0);
   fcntl(0, F_SETFL, flags | O_NONBLOCK);

@@ -7,8 +7,6 @@
 #include <thread>
 #include <vector>
 
-#include "aos/logging/implementations.h"
-#include "aos/logging/logging.h"
 #include "aos/time/time.h"
 #include "aos/vision/events/socket_types.h"
 #include "aos/vision/events/udp.h"
@@ -225,7 +223,6 @@ void RunCamera(int camera_index, aos::vision::CameraParams params,
 int main(int, char **) {
   using namespace y2016::vision;
   StereoGeometry stereo("./stereo_rig.calib");
-  ::aos::logging::Init();
   std::thread cam0([stereo]() {
     RunCamera(0, GetCameraParams(stereo.calibration()),
               stereo.calibration().right_camera_name(),

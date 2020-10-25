@@ -288,9 +288,6 @@ class CameraStream : public ::aos::vision::ImageStreamEvent {
 
 int main(int argc, char ** argv) {
   gflags::ParseCommandLineFlags(&argc, &argv, false);
-  ::aos::logging::Init();
-  ::aos::logging::SetImplementation(
-      std::make_shared<::aos::logging::StreamLogImplementation>(stderr));
 
   TCPServer<MjpegDataSocket> tcp_server_(80);
   aos::vision::CameraParams params0;

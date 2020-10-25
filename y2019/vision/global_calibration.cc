@@ -102,10 +102,6 @@ void main(int argc, char **argv) {
       FLAGS_image_count,
   };
 
-  ::aos::logging::Init();
-  ::aos::logging::SetImplementation(
-      std::make_shared<::aos::logging::StreamLogImplementation>(stderr));
-
   TargetFinder target_finder;
 
   ceres::Problem problem;

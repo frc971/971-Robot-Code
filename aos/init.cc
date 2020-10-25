@@ -39,7 +39,6 @@ namespace {
 // Common stuff that needs to happen at the beginning of both the realtime and
 // non-realtime initialization sequences. May be called twice.
 void InitStart() {
-  ::aos::logging::Init();
   if (FLAGS_coredump) {
     WriteCoreDumps();
   }
