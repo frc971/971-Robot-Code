@@ -481,6 +481,21 @@ cc_binary(
     ],
 )
 
+cc_binary(
+    name = "aos_graph_nodes",
+    srcs = [
+        "aos_graph_nodes.cc",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":configuration",
+        ":json_to_flatbuffer",
+        "//aos:init",
+        "//aos/events:shm_event_loop",
+        "@com_github_google_glog//:glog",
+    ],
+)
+
 cc_library(
     name = "ftrace",
     srcs = [
