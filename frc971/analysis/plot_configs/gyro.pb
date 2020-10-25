@@ -1,6 +1,6 @@
 channel {
   name: "/drivetrain"
-  type: "frc971.IMUValues"
+  type: "frc971.IMUValuesBatch"
   alias: "IMU"
 }
 
@@ -8,7 +8,7 @@ figure {
   axes {
     line {
       y_signal {
-        channel: "IMU"
+        channel: "CalcIMU"
         field: "gyro_x"
       }
       x_signal {
@@ -18,7 +18,7 @@ figure {
     }
     line {
       y_signal {
-        channel: "IMU"
+        channel: "CalcIMU"
         field: "gyro_y"
       }
       x_signal {
@@ -28,7 +28,7 @@ figure {
     }
     line {
       y_signal {
-        channel: "IMU"
+        channel: "CalcIMU"
         field: "gyro_z"
       }
       x_signal {
@@ -51,7 +51,7 @@ figure {
     }
     line {
       y_signal {
-        channel: "IMU"
+        channel: "CalcIMU"
         field: "accelerometer_x"
       }
       x_signal {
@@ -61,7 +61,7 @@ figure {
     }
     line {
       y_signal {
-        channel: "IMU"
+        channel: "CalcIMU"
         field: "accelerometer_y"
       }
       x_signal {
@@ -71,7 +71,7 @@ figure {
     }
     line {
       y_signal {
-        channel: "IMU"
+        channel: "CalcIMU"
         field: "accelerometer_z"
       }
       x_signal {
@@ -225,7 +225,7 @@ figure {
   axes {
     line {
       y_signal {
-        channel: "IMU"
+        channel: "CalcIMU"
         field: "temperature"
       }
       x_signal {
