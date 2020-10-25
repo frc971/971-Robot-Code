@@ -57,25 +57,6 @@ struct Context {
 
   // The sequence value to send out with the next message.
   uint16_t sequence;
-
-  // Contains all of the information related to implementing LOG_CORK and
-  // LOG_UNCORK.
-  struct {
-    char message[LOG_MESSAGE_LEN];
-    int line_min, line_max;
-    // Sets the data up to record a new series of corked logs.
-    void Reset() {
-      message[0] = '\0';  // make strlen of it 0
-      line_min = INT_MAX;
-      line_max = -1;
-      function = NULL;
-    }
-    // The function that the calls are in.
-    // REMEMBER: While the compiler/linker will probably optimize all of the
-    // identical strings to point to the same data, it might not, so using == to
-    // compare this with another value is a bad idea.
-    const char *function;
-  } cork_data;
 };
 
 }  // namespace internal

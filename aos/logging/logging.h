@@ -42,13 +42,6 @@ extern "C" {
 void log_do(log_level level, const char *format, ...)
     __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 2, 3)));
 
-void log_cork(int line, const char *function, const char *format, ...)
-    __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 4)));
-// Implements the uncork logging call.
-void log_uncork(int line, const char *function, log_level level,
-                const char *file, const char *format, ...)
-    __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 5, 6)));
-
 #ifdef __cplusplus
 }
 #endif
@@ -101,21 +94,6 @@ void log_uncork(int line, const char *function, log_level level,
     }                                                                       \
   } while (0)
 
-// Allows "bottling up" multiple log fragments which can then all be logged in
-// one message with LOG_UNCORK.
-// Calls from a given thread/task will be grouped together.
-#define AOS_LOG_CORK(format, args...)                         \
-  do {                                                        \
-    log_cork(__LINE__, LOG_CURRENT_FUNCTION, format, ##args); \
-  } while (0)
-// Actually logs all of the saved up log fragments (including format and args on
-// the end).
-#define AOS_LOG_UNCORK(level, format, args...)                                \
-  do {                                                                        \
-    log_uncork(__LINE__, LOG_CURRENT_FUNCTION, level, LOG_SOURCENAME, format, \
-               ##args);                                                       \
-  } while (0)
-
 #ifdef __cplusplus
 }
 #endif
@@ -162,6 +140,9 @@ namespace aos {
 // controlled by NDEBUG, so the check will be executed regardless of
 // compilation mode.  Therefore, it is safe to do things like:
 //    CHECK(fp->Write(x) == 4)
+// TODO(austin): We want to be pushing people to glog instead of AOS_CHECK here.
+// You are crashing anyways.  If we want glog to tee to AOS_LOG as well, we'll
+// implement that through that path.
 #define AOS_CHECK(condition)                          \
   if (__builtin_expect(!(condition), 0)) {            \
     AOS_LOG(FATAL, "CHECK(%s) failed\n", #condition); \
