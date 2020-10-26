@@ -106,51 +106,60 @@ class Plotter:
             last_1000_gyros = np.zeros((buffer_len, 3))
             gyros_next_row = 0
             for entry in self.data['IMU']:
-                accel_x = 'accelerometer_x'
-                accel_y = 'accelerometer_y'
-                accel_z = 'accelerometer_z'
-                gyro_x = 'gyro_x'
-                gyro_y = 'gyro_y'
-                gyro_z = 'gyro_z'
-                msg = entry[2]
-                new_msg = {}
-                if accel_x in msg and accel_y in msg and accel_x in msg:
-                    last_1000_accels[accels_next_row, :] = [
-                        msg[accel_x], msg[accel_y], msg[accel_z]
-                    ]
-                    total_acceleration = np.linalg.norm(
-                        last_1000_accels[accels_next_row, :])
-                    new_msg['total_acceleration'] = total_acceleration
+                for msg in entry[2]['readings']:
+                    accel_x = 'accelerometer_x'
+                    accel_y = 'accelerometer_y'
+                    accel_z = 'accelerometer_z'
+                    gyro_x = 'gyro_x'
+                    gyro_y = 'gyro_y'
+                    gyro_z = 'gyro_z'
+                    temp = 'temperature'
+                    new_msg = {}
+                    if temp in msg:
+                        new_msg[temp] = msg[temp]
+                    if accel_x in msg and accel_y in msg and accel_x in msg:
+                        last_1000_accels[accels_next_row, :] = [
+                            msg[accel_x], msg[accel_y], msg[accel_z]
+                        ]
+                        total_acceleration = np.linalg.norm(
+                            last_1000_accels[accels_next_row, :])
+                        new_msg['total_acceleration'] = total_acceleration
 
-                    accels_next_row += 1
-                    accels_next_row = accels_next_row % buffer_len
-                    std_accels = np.std(last_1000_accels, axis=0)
-                    new_msg['accel_x_rolling_std'] = std_accels[0]
-                    new_msg['accel_y_rolling_std'] = std_accels[1]
-                    new_msg['accel_z_rolling_std'] = std_accels[2]
-                    mean_accels = np.mean(last_1000_accels, axis=0)
-                    new_msg['accel_x_rolling_mean'] = mean_accels[0]
-                    new_msg['accel_y_rolling_mean'] = mean_accels[1]
-                    new_msg['accel_z_rolling_mean'] = mean_accels[2]
-                if gyro_x in msg and gyro_y in msg and gyro_z in msg:
-                    last_1000_gyros[gyros_next_row, :] = [
-                        msg[gyro_x], msg[gyro_y], msg[gyro_z]
-                    ]
-                    gyros_next_row += 1
-                    gyros_next_row = gyros_next_row % buffer_len
-                    std_gyros = np.std(last_1000_gyros, axis=0)
-                    new_msg['gyro_x_rolling_std'] = std_gyros[0]
-                    new_msg['gyro_y_rolling_std'] = std_gyros[1]
-                    new_msg['gyro_z_rolling_std'] = std_gyros[2]
-                    mean_gyros = np.mean(last_1000_gyros, axis=0)
-                    new_msg['gyro_x_rolling_mean'] = mean_gyros[0]
-                    new_msg['gyro_y_rolling_mean'] = mean_gyros[1]
-                    new_msg['gyro_z_rolling_mean'] = mean_gyros[2]
-                timestamp = 'monotonic_timestamp_ns'
-                if timestamp in msg:
-                    timestamp_sec = msg[timestamp] * 1e-9
-                    new_msg['monotonic_timestamp_sec'] = timestamp_sec
-                entries.append((entry[0], entry[1], new_msg))
+                        accels_next_row += 1
+                        accels_next_row = accels_next_row % buffer_len
+                        std_accels = np.std(last_1000_accels, axis=0)
+                        new_msg['accel_x_rolling_std'] = std_accels[0]
+                        new_msg['accel_y_rolling_std'] = std_accels[1]
+                        new_msg['accel_z_rolling_std'] = std_accels[2]
+                        mean_accels = np.mean(last_1000_accels, axis=0)
+                        new_msg['accel_x_rolling_mean'] = mean_accels[0]
+                        new_msg['accel_y_rolling_mean'] = mean_accels[1]
+                        new_msg['accel_z_rolling_mean'] = mean_accels[2]
+                        new_msg[accel_x] = msg[accel_x]
+                        new_msg[accel_y] = msg[accel_y]
+                        new_msg[accel_z] = msg[accel_z]
+                    if gyro_x in msg and gyro_y in msg and gyro_z in msg:
+                        last_1000_gyros[gyros_next_row, :] = [
+                            msg[gyro_x], msg[gyro_y], msg[gyro_z]
+                        ]
+                        gyros_next_row += 1
+                        gyros_next_row = gyros_next_row % buffer_len
+                        std_gyros = np.std(last_1000_gyros, axis=0)
+                        new_msg['gyro_x_rolling_std'] = std_gyros[0]
+                        new_msg['gyro_y_rolling_std'] = std_gyros[1]
+                        new_msg['gyro_z_rolling_std'] = std_gyros[2]
+                        mean_gyros = np.mean(last_1000_gyros, axis=0)
+                        new_msg['gyro_x_rolling_mean'] = mean_gyros[0]
+                        new_msg['gyro_y_rolling_mean'] = mean_gyros[1]
+                        new_msg['gyro_z_rolling_mean'] = mean_gyros[2]
+                        new_msg[gyro_x] = msg[gyro_x]
+                        new_msg[gyro_y] = msg[gyro_y]
+                        new_msg[gyro_z] = msg[gyro_z]
+                    timestamp = 'monotonic_timestamp_ns'
+                    if timestamp in msg:
+                        timestamp_sec = msg[timestamp] * 1e-9
+                        new_msg['monotonic_timestamp_sec'] = timestamp_sec
+                    entries.append((entry[0], entry[1], new_msg))
             if 'CalcIMU' in self.data:
                 raise RuntimeError('CalcIMU is already a member of data.')
             self.data['CalcIMU'] = entries

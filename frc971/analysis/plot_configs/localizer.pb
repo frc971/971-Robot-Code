@@ -137,6 +137,18 @@ figure {
     line {
       y_signal {
         channel: "DrivetrainStatus"
+        field: "trajectory_logging.x"
+      }
+    }
+    line {
+      y_signal {
+        channel: "DrivetrainStatus"
+        field: "trajectory_logging.y"
+      }
+    }
+    line {
+      y_signal {
+        channel: "DrivetrainStatus"
         field: "localizer.x"
       }
     }
@@ -281,6 +293,18 @@ figure {
     ylabel: "V"
   }
   axes {
+    line {
+      y_signal {
+        channel: "DrivetrainStatus"
+        field: "left_voltage_error"
+      }
+    }
+    line {
+      y_signal {
+        channel: "DrivetrainStatus"
+        field: "right_voltage_error"
+      }
+    }
     line {
       y_signal {
         channel: "DrivetrainStatus"
