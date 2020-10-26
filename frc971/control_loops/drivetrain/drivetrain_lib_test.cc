@@ -901,6 +901,8 @@ TEST_F(DrivetrainTest, SplineSideOffset) {
 
 // Tests that simple spline converges when we introduce a straight voltage
 // error.
+// TODO(james): Reenable this once we decide what to do with the voltage error
+// terms.
 TEST_F(DrivetrainTest, SplineVoltageError) {
   SetEnabled(true);
   drivetrain_plant_.set_left_voltage_offset(1.0);
@@ -947,7 +949,21 @@ TEST_F(DrivetrainTest, SplineVoltageError) {
   WaitForTrajectoryPlan();
 
   RunFor(chrono::milliseconds(5000));
-  VerifyNearSplineGoal();
+  // Since the voltage error compensation is disabled, expect that we will have
+  // *failed* to reach our goal.
+  drivetrain_status_fetcher_.Fetch();
+  const double expected_x =
+      CHECK_NOTNULL(drivetrain_status_fetcher_->trajectory_logging())->x();
+  const double expected_y =
+      CHECK_NOTNULL(drivetrain_status_fetcher_->trajectory_logging())->y();
+  const double estimated_x = drivetrain_status_fetcher_->x();
+  const double estimated_y = drivetrain_status_fetcher_->y();
+  const ::Eigen::Vector2d actual = drivetrain_plant_.GetPosition();
+  // Expect the x position comparison to fail; everything else to succeed.
+  EXPECT_GT(std::abs(estimated_x - expected_x), spline_control_tolerance_);
+  EXPECT_NEAR(estimated_y, expected_y, spline_control_tolerance_);
+  EXPECT_NEAR(actual(0), estimated_x, spline_estimate_tolerance_);
+  EXPECT_NEAR(actual(1), estimated_y, spline_estimate_tolerance_);
 }
 
 // Tests that a multispline converges on a goal.

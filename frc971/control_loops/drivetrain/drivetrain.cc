@@ -297,9 +297,16 @@ void DrivetrainLoop::RunIteration(
        localizer_->right_velocity())
           .finished();
 
-  dt_spline_.Update(
-      output != nullptr && controller_type == ControllerType::SPLINE_FOLLOWER,
-      trajectory_state, kf_.X_hat().block<2, 1>(4, 0));
+  {
+    // TODO(james): The regular Kalman Filter's voltage error terms are
+    // currently unusable--either don't use voltage error at all for the spline
+    // following code, or use the EKF's voltage error estimates.
+    const Eigen::Matrix<double, 2, 1> voltage_error =
+        0 * kf_.X_hat().block<2, 1>(4, 0);
+    dt_spline_.Update(
+        output != nullptr && controller_type == ControllerType::SPLINE_FOLLOWER,
+        trajectory_state, voltage_error);
+  }
 
   dt_line_follow_.Update(monotonic_now, trajectory_state);
 
