@@ -118,24 +118,6 @@ TEST_F(LoggingTest, Basic) {
   AOS_LOG(WARNING, "test log 4\n");
   EXPECT_TRUE(WasAnythingLogged());
 }
-TEST_F(LoggingTest, Cork) {
-  static const int begin_line = __LINE__;
-  AOS_LOG_CORK("first part ");
-  AOS_LOG_CORK("second part (=%d) ", 19);
-  EXPECT_FALSE(WasAnythingLogged());
-  AOS_LOG_CORK("third part ");
-  static const int end_line = __LINE__;
-  AOS_LOG_UNCORK(WARNING, "last part %d\n", 5);
-  std::stringstream expected;
-  expected << "implementations_test.cc: ";
-  expected << (begin_line + 1);
-  expected << "-";
-  expected << (end_line + 1);
-  expected << ": ";
-  expected << __func__;
-  expected << ": first part second part (=19) third part last part 5\n";
-  EXPECT_TRUE(WasLogged(WARNING, expected.str()));
-}
 
 TEST_F(LoggingDeathTest, Fatal) {
   ASSERT_EXIT(AOS_LOG(FATAL, "this should crash it\n"),
@@ -154,9 +136,6 @@ TEST_F(LoggingTest, PrintfDirectives) {
   EXPECT_TRUE(WasLogged(INFO, "test log %1 %d\n"));
   AOS_LOG_DYNAMIC(WARNING, "test log %%2 %%f\n");
   EXPECT_TRUE(WasLogged(WARNING, "test log %2 %f\n"));
-  AOS_LOG_CORK("log 3 part %%1 %%d ");
-  AOS_LOG_UNCORK(DEBUG, "log 3 part %%2 %%f\n");
-  EXPECT_TRUE(WasLogged(DEBUG, "log 3 part %1 %d log 3 part %2 %f\n"));
 }
 
 TEST_F(LoggingTest, Timing) {

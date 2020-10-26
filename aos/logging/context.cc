@@ -73,9 +73,7 @@ AOS_THREAD_LOCAL bool delete_current_context(false);
 
 }  // namespace
 
-Context::Context() : implementation(GetImplementation()), sequence(0) {
-  cork_data.Reset();
-}
+Context::Context() : implementation(GetImplementation()), sequence(0) {}
 
 // Used in aos/linux_code/init.cc when a thread's name is changed.
 void ReloadThreadName() {
