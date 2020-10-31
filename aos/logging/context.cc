@@ -11,13 +11,14 @@
 #include <sys/prctl.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include <string>
 
-#include <errno.h>
-
 extern char *program_invocation_name;
 extern char *program_invocation_short_name;
+
+#include "glog/logging.h"
 
 #include "aos/complex_thread_local.h"
 #include "aos/die.h"

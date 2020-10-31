@@ -26,7 +26,7 @@ cc_library(
         ":googletest",
         "//aos:thread_local",
         "//aos/logging:implementations",
-        "//aos/mutex",
+        "//aos/stl_mutex",
         "@com_google_absl//absl/base",
     ],
 )

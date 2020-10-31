@@ -25,7 +25,6 @@ cc_library(
         ":dma_edge_counting",
         "//aos:init",
         "//aos/logging",
-        "//aos/mutex",
         "//third_party:wpilib",
     ],
 )

@@ -1,8 +1,8 @@
 #include "y2014/constants.h"
 
+#include <inttypes.h>
 #include <math.h>
 #include <stdint.h>
-#include <inttypes.h>
 
 #include <map>
 
@@ -10,13 +10,13 @@
 #include "sanitizer/lsan_interface.h"
 #endif
 
-#include "aos/logging/logging.h"
-#include "aos/mutex/mutex.h"
-#include "aos/network/team_number.h"
 #include "absl/base/call_once.h"
+#include "aos/logging/logging.h"
+#include "aos/network/team_number.h"
+#include "aos/stl_mutex/stl_mutex.h"
 
-#include "y2014/control_loops/drivetrain/polydrivetrain_dog_motor_plant.h"
 #include "y2014/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
+#include "y2014/control_loops/drivetrain/polydrivetrain_dog_motor_plant.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -39,11 +39,15 @@ const double kPracticeDrivetrainEncoderRatio = kCompDrivetrainEncoderRatio;
 const double kPracticeLowGearRatio = kCompLowGearRatio;
 const double kPracticeHighGearRatio = kCompHighGearRatio;
 
-const DualHallShifterHallEffect kCompLeftDriveShifter{{2.33, 4.25, 0.2, 0.7}, 2.61, 3.28};
-const DualHallShifterHallEffect kCompRightDriveShifter{{4.31, 4.32, 0.2, 0.7}, 2.94, 3.25};
+const DualHallShifterHallEffect kCompLeftDriveShifter{
+    {2.33, 4.25, 0.2, 0.7}, 2.61, 3.28};
+const DualHallShifterHallEffect kCompRightDriveShifter{
+    {4.31, 4.32, 0.2, 0.7}, 2.94, 3.25};
 
-const DualHallShifterHallEffect kPracticeLeftDriveShifter{{3.05, 4.15, 0.2, 0.7}, 2.80, 3.2};
-const DualHallShifterHallEffect kPracticeRightDriveShifter{{3.75, 3.80, 0.2, 0.7}, 2.90, 2.98};
+const DualHallShifterHallEffect kPracticeLeftDriveShifter{
+    {3.05, 4.15, 0.2, 0.7}, 2.80, 3.2};
+const DualHallShifterHallEffect kPracticeRightDriveShifter{
+    {3.75, 3.80, 0.2, 0.7}, 2.90, 2.98};
 
 const double shooter_zeroing_speed = 0.05;
 const double shooter_unload_speed = 0.08;
@@ -63,30 +67,46 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           false,
           ::y2014::control_loops::drivetrain::MakeVelocityDrivetrainLoop,
           ::y2014::control_loops::drivetrain::MakeDrivetrainLoop,
-          5.0, // drivetrain max speed
+          5.0,  // drivetrain max speed
 
           // ShooterLimits
-          {-0.00127, 0.298196, -0.0017, 0.305054, 0.0149098,
+          {-0.00127,
+           0.298196,
+           -0.0017,
+           0.305054,
+           0.0149098,
            {-0.001778, 0.000762, 0, 0},
            {-0.001778, 0.008906, 0, 0},
            {0.006096, 0.026416, 0, 0},
            shooter_zeroing_speed,
-           shooter_unload_speed
+           shooter_unload_speed},
+          {
+              0.5,
+              0.1,
+              0.1,
+              0.0,
+              1.57,
+              0.05,
+              1.5,
+              {0.0,
+               2.05,
+               0.02,
+               2.02,
+               {-0.1, 0.05, -0.1, 0.05},
+               {1.0, 1.1, 1.0, 1.1},
+               {2.0, 2.1, 2.0, 2.1}},
+              {0.0,
+               2.05,
+               0.02,
+               2.02,
+               {-0.1, 0.05, -0.1, 0.05},
+               {1.0, 1.1, 1.0, 1.1},
+               {2.0, 2.1, 2.0, 2.1}},
+              0.01,  // claw_unimportant_epsilon
+              0.9,   // start_fine_tune_pos
+              4.0,
           },
-          {0.5,
-           0.1,
-           0.1,
-           0.0,
-           1.57,
-           0.05,
-           1.5,
-           {0.0, 2.05, 0.02, 2.02, {-0.1, 0.05, -0.1, 0.05}, {1.0, 1.1, 1.0, 1.1}, {2.0, 2.1, 2.0, 2.1}},
-           {0.0, 2.05, 0.02, 2.02, {-0.1, 0.05, -0.1, 0.05}, {1.0, 1.1, 1.0, 1.1}, {2.0, 2.1, 2.0, 2.1}},
-           0.01,  // claw_unimportant_epsilon
-           0.9,   // start_fine_tune_pos
-           4.0,
-          },
-          {0.07, 0.15}, // shooter_action
+          {0.07, 0.15},  // shooter_action
       };
       break;
     case kCompTeamNumber:
@@ -99,38 +119,51 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           false,
           ::y2014::control_loops::drivetrain::MakeVelocityDrivetrainLoop,
           ::y2014::control_loops::drivetrain::MakeDrivetrainLoop,
-          5.0, // drivetrain max speed
+          5.0,  // drivetrain max speed
 
           // ShooterLimits
-          {-0.001041, 0.296019, -0.001488, 0.302717, 0.0149098,
+          {-0.001041,
+           0.296019,
+           -0.001488,
+           0.302717,
+           0.0149098,
            {-0.002, 0.000446, -0.002, 0.000446},
            {-0.002, 0.009078, -0.002, 0.009078},
            {0.003870, 0.026194, 0.003869, 0.026343},
            shooter_zeroing_speed,
-           shooter_unload_speed
+           shooter_unload_speed},
+          {
+              0.800000,
+              0.400000,
+              0.000000,
+              -1.220821,
+              1.822142,
+              -0.849484,
+              1.42309,
+              // 0.0371
+              {-3.3284,
+               2.0917,
+               -3.1661,
+               1.95,
+               {-3.4, -3.02 + kCompTopClawOffset, -3.4,
+                -2.9876 + kCompTopClawOffset},
+               {-0.1433 + kCompTopClawOffset, 0.0670 + kCompTopClawOffset,
+                -0.1460 + kCompTopClawOffset, 0.0648 + kCompTopClawOffset},
+               {1.9952 + kCompTopClawOffset, 2.2, 1.9898 + kCompTopClawOffset,
+                2.2}},
+              {-2.453460,
+               3.082960,
+               -2.453460,
+               3.082960,
+               {-2.6, -2.185752, -2.6, -2.184843},
+               {-0.322249, -0.053177, -0.332248, -0.059086},
+               {2.892065, 3.2, 2.888429, 3.2}},
+              0.040000,   // claw_unimportant_epsilon
+              -0.400000,  // start_fine_tune_pos
+              4.000000,
           },
-          {0.800000,
-           0.400000,
-           0.000000,
-           -1.220821,
-           1.822142,
-           -0.849484,
-           1.42309,
-           // 0.0371
-           {-3.3284, 2.0917, -3.1661, 1.95,
-             {-3.4, -3.02 + kCompTopClawOffset, -3.4, -2.9876 + kCompTopClawOffset},
-             {-0.1433 + kCompTopClawOffset, 0.0670 + kCompTopClawOffset, -0.1460 + kCompTopClawOffset, 0.0648 + kCompTopClawOffset},
-             {1.9952 + kCompTopClawOffset, 2.2, 1.9898 + kCompTopClawOffset, 2.2}},
-           {-2.453460, 3.082960, -2.453460, 3.082960,
-             {-2.6, -2.185752, -2.6, -2.184843},
-             {-0.322249, -0.053177, -0.332248, -0.059086},
-             {2.892065, 3.2, 2.888429, 3.2}},
-           0.040000,  // claw_unimportant_epsilon
-           -0.400000,   // start_fine_tune_pos
-           4.000000,
-          },
-          //TODO(james): Get realer numbers for shooter_action.
-          {0.07, 0.15}, // shooter_action
+          // TODO(james): Get realer numbers for shooter_action.
+          {0.07, 0.15},  // shooter_action
       };
       break;
     case kPracticeTeamNumber:
@@ -144,37 +177,51 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           false,
           ::y2014::control_loops::drivetrain::MakeVelocityDrivetrainLoop,
           ::y2014::control_loops::drivetrain::MakeDrivetrainLoop,
-          5.0, // drivetrain max speed
+          5.0,  // drivetrain max speed
 
           // ShooterLimits
-          {-0.001042, 0.294084, -0.001935, 0.303460, 0.0138401,
+          {-0.001042,
+           0.294084,
+           -0.001935,
+           0.303460,
+           0.0138401,
            {-0.002, 0.000446, -0.002, 0.000446},
            {-0.002 + 0.001, 0.009078 + 0.001, -0.002 + 0.001, 0.009078 + 0.001},
-           {0.003869 + 0.001, 0.026194 + 0.001, 0.003869 + 0.001, 0.026194 + 0.001},
+           {0.003869 + 0.001, 0.026194 + 0.001, 0.003869 + 0.001,
+            0.026194 + 0.001},
            shooter_zeroing_speed,
-           shooter_unload_speed
+           shooter_unload_speed},
+          {
+              0.400000 * 2.0,
+              0.200000 * 2.0,
+              0.000000 * 2.0,
+              -0.762218 * 2.0,
+              1.767146,
+              -0.849484,
+              1.42308,
+              {-3.364758,
+               2.086668,
+               -3.166136,
+               1.95,
+               {-1.7 * 2.0, -1.544662 * 2.0 + 0.139081, -1.7 * 2.0,
+                -1.547616 * 2.0 + 0.139081 + 0.013636},
+               {-0.115446 * 2.0, 0.030452 * 2.0, -0.120900 * 2.0,
+                0.023862 * 2.0},
+               {0.977884 * 2.0, 1.4 * 2.0, 0.963113 * 2.0, 1.4 * 2.0}},
+              {-2.451642,
+               3.107504,
+               -2.273474,
+               2.750,
+               {-1.5 * 2.0, -1.027199 * 2.0, -1.5 * 2.0, -1.037880 * 2.0},
+               {-0.116355 * 2.0, 0.017726 * 2.0, -0.125673 * 2.0,
+                0.008636 * 2.0},
+               {2.894792 + 0.122719, 3.2, 2.887974 + 0.122719 - 0.029088, 3.2}},
+              0.040000,   // claw_unimportant_epsilon
+              -0.400000,  // start_fine_tune_pos
+              4.000000,
           },
-          {0.400000 * 2.0,
-          0.200000 * 2.0,
-          0.000000 * 2.0,
-          -0.762218 * 2.0,
-          1.767146,
-          -0.849484,
-          1.42308,
-          {-3.364758, 2.086668, -3.166136, 1.95,
-            {-1.7 * 2.0, -1.544662 * 2.0 + 0.139081, -1.7 * 2.0, -1.547616 * 2.0 + 0.139081+ 0.013636},
-            {-0.115446 * 2.0, 0.030452 * 2.0, -0.120900 * 2.0, 0.023862 * 2.0},
-            {0.977884 * 2.0, 1.4 * 2.0, 0.963113 * 2.0, 1.4 * 2.0}},
-          {-2.451642, 3.107504, -2.273474, 2.750,
-            {-1.5 * 2.0, -1.027199 * 2.0, -1.5 * 2.0, -1.037880 * 2.0},
-            {-0.116355 * 2.0, 0.017726 * 2.0, -0.125673 * 2.0, 0.008636 * 2.0},
-            {2.894792 + 0.122719, 3.2, 2.887974 + 0.122719 - 0.029088, 3.2}},
-          0.040000,  // claw_unimportant_epsilon
-          -0.400000,   // start_fine_tune_pos
-          4.000000,
-          },
-          //TODO(james): Get realer numbers for shooter_action.
-          {0.07, 0.15}, // shooter_action
+          // TODO(james): Get realer numbers for shooter_action.
+          {0.07, 0.15},  // shooter_action
       };
       break;
     default:
@@ -199,8 +246,8 @@ const Values &GetValues() {
 }
 
 const Values &GetValuesForTeam(uint16_t team_number) {
-  static ::aos::Mutex mutex;
-  ::aos::MutexLocker locker(&mutex);
+  static aos::stl_mutex mutex;
+  std::unique_lock<aos::stl_mutex> locker(mutex);
 
   // IMPORTANT: This declaration has to stay after the mutex is locked to avoid
   // race conditions.

@@ -1,12 +1,12 @@
 #ifndef Y2016_DASHBOARD_DASHBOARD_H_
 #define Y2016_DASHBOARD_DASHBOARD_H_
 
+#include <atomic>
 #include <iostream>
 #include <memory>
 #include <sstream>
 #include <string>
 #include <thread>
-#include <atomic>
 #include <vector>
 
 #include "seasocks/PageHandler.h"
@@ -15,7 +15,7 @@
 #include "seasocks/WebSocket.h"
 
 #include "aos/events/event_loop.h"
-#include "aos/mutex/mutex.h"
+#include "aos/stl_mutex/stl_mutex.h"
 #include "aos/time/time.h"
 #include "frc971/autonomous/auto_mode_generated.h"
 #include "y2016/control_loops/superstructure/superstructure_status_generated.h"
@@ -79,23 +79,23 @@ class DataCollector {
 
   ::std::string cur_raw_data_;
   int32_t sample_id_;          // Last sample id used.
-  size_t measure_index_;      // Last measure index used.
+  size_t measure_index_;       // Last measure index used.
   const int32_t overflow_id_;  // Vector wrapping size.
 
   ::std::atomic<bool> run_{true};
-  ::aos::Mutex mutex_;
+  aos::stl_mutex mutex_;
 };
 
 class SocketHandler : public seasocks::WebSocket::Handler {
  public:
   SocketHandler(::aos::EventLoop *event_loop);
-  void onConnect(seasocks::WebSocket* connection) override;
-  void onData(seasocks::WebSocket* connection, const char* data) override;
-  void onDisconnect(seasocks::WebSocket* connection) override;
+  void onConnect(seasocks::WebSocket *connection) override;
+  void onData(seasocks::WebSocket *connection, const char *data) override;
+  void onDisconnect(seasocks::WebSocket *connection) override;
   void Quit();
 
  private:
-  ::std::set<seasocks::WebSocket*> connections_;
+  ::std::set<seasocks::WebSocket *> connections_;
   DataCollector data_collector_;
   ::std::thread data_collector_thread_;
 };
@@ -103,7 +103,7 @@ class SocketHandler : public seasocks::WebSocket::Handler {
 class SeasocksLogger : public seasocks::PrintfLogger {
  public:
   SeasocksLogger(Level min_level_to_log);
-  void log(Level level, const char* message) override;
+  void log(Level level, const char *message) override;
 };
 
 }  // namespace dashboard

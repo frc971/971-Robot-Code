@@ -14,9 +14,9 @@
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 #include "aos/logging/logging.h"
-#include "aos/mutex/mutex.h"
 #include "aos/realtime.h"
 #include "aos/seasocks/seasocks_logger.h"
+#include "aos/stl_mutex/stl_mutex.h"
 #include "aos/time/time.h"
 #include "aos/util/phased_loop.h"
 #include "frc971/autonomous/auto_mode_generated.h"
@@ -52,8 +52,7 @@ constexpr int kEstopped = 2;
 DataCollector::DataCollector(::aos::EventLoop *event_loop)
     : event_loop_(event_loop),
       vision_status_fetcher_(
-          event_loop->MakeFetcher<::y2016::vision::VisionStatus>(
-              "/vision")),
+          event_loop->MakeFetcher<::y2016::vision::VisionStatus>("/vision")),
       ball_detector_fetcher_(
           event_loop->MakeFetcher<::y2016::sensors::BallDetector>(
               "/superstructure")),
@@ -70,7 +69,7 @@ DataCollector::DataCollector(::aos::EventLoop *event_loop)
       overflow_id_(1) {}
 
 void DataCollector::RunIteration() {
-  ::aos::MutexLocker locker(&mutex_);
+  std::unique_lock<aos::stl_mutex> locker(mutex_);
   measure_index_ = 0;
 
 // Add recorded data here. /////
@@ -153,7 +152,7 @@ void DataCollector::RunIteration() {
 
 void DataCollector::AddPoint(const ::std::string &name, double value) {
   // Mutex should be locked when this method is called to synchronize packets.
-  AOS_CHECK(mutex_.OwnedBySelf());
+  AOS_CHECK(mutex_islocked(mutex_.native_handle()));
 
   size_t index = GetIndex(sample_id_);
 
@@ -175,7 +174,7 @@ void DataCollector::AddPoint(const ::std::string &name, double value) {
 }
 
 ::std::string DataCollector::Fetch(int32_t from_sample) {
-  ::aos::MutexLocker locker(&mutex_);
+  std::unique_lock<aos::stl_mutex> locker(mutex_);
 
   ::std::stringstream message;
   message.precision(10);

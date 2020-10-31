@@ -22,6 +22,7 @@ cc_binary(
         "//aos/time",
         "//aos/util:run_command",
         "//third_party/libevent",
+        "@com_github_google_glog//:glog",
         "@com_google_absl//absl/base",
     ],
 )

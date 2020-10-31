@@ -10,10 +10,10 @@
 #include "sanitizer/lsan_interface.h"
 #endif
 
-#include "aos/logging/logging.h"
-#include "aos/mutex/mutex.h"
-#include "aos/network/team_number.h"
 #include "absl/base/call_once.h"
+#include "aos/logging/logging.h"
+#include "aos/network/team_number.h"
+#include "aos/stl_mutex/stl_mutex.h"
 
 #include "y2017/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "y2017/control_loops/drivetrain/polydrivetrain_dog_motor_plant.h"
@@ -68,7 +68,8 @@ const Values *DoGetValuesForTeam(uint16_t team) {
   r->drivetrain_max_speed = 5;
 
   intake->zeroing.average_filter_size = Values::kZeroingSampleSize;
-  intake->zeroing.one_revolution_distance = Values::kIntakeEncoderIndexDifference;
+  intake->zeroing.one_revolution_distance =
+      Values::kIntakeEncoderIndexDifference;
   intake->zeroing.zeroing_threshold = 0.0005;
   intake->zeroing.moving_buffer_size = 20;
   intake->zeroing.allowable_encoder_error = 1.9;
@@ -152,7 +153,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
   return r;
 }
 
-void DoGetValues(const Values** result) {
+void DoGetValues(const Values **result) {
   uint16_t team = ::aos::network::GetTeamNumber();
   AOS_LOG(INFO, "creating a Constants for team %" PRIu16 "\n", team);
   *result = DoGetValuesForTeam(team);
@@ -162,14 +163,14 @@ void DoGetValues(const Values** result) {
 
 const Values &GetValues() {
   static absl::once_flag once;
-  static const Values* result;
+  static const Values *result;
   absl::call_once(once, DoGetValues, &result);
   return *result;
 }
 
 const Values &GetValuesForTeam(uint16_t team_number) {
-  static ::aos::Mutex mutex;
-  ::aos::MutexLocker locker(&mutex);
+  static aos::stl_mutex mutex;
+  std::unique_lock<aos::stl_mutex> locker(mutex);
 
   // IMPORTANT: This declaration has to stay after the mutex is locked to avoid
   // race conditions.
@@ -184,11 +185,14 @@ const Values &GetValuesForTeam(uint16_t team_number) {
   return *values[team_number];
 }
 
-Values::ShotParams Values::ShotParams::BlendY(double coefficient, Values::ShotParams a1, Values::ShotParams a2) {
+Values::ShotParams Values::ShotParams::BlendY(double coefficient,
+                                              Values::ShotParams a1,
+                                              Values::ShotParams a2) {
   using ::frc971::shooter_interpolation::Blend;
-  return Values::ShotParams{Blend(coefficient, a1.angle, a2.angle),
-                    Blend(coefficient, a1.power, a2.power),
-                    Blend(coefficient, a1.indexer_velocity, a2.indexer_velocity)};
+  return Values::ShotParams{
+      Blend(coefficient, a1.angle, a2.angle),
+      Blend(coefficient, a1.power, a2.power),
+      Blend(coefficient, a1.indexer_velocity, a2.indexer_velocity)};
 }
 
 }  // namespace constants
