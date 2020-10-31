@@ -165,6 +165,8 @@ int main(int argc, char **argv) {
 
   std::vector<std::unique_ptr<aos::EventLoop>> printer_event_loops;
 
+  bool found_channel = false;
+
   for (const aos::Node *node : reader.Nodes()) {
     std::unique_ptr<aos::EventLoop> printer_event_loop =
         event_loop_factory.MakeEventLoop("printer", node);
@@ -177,7 +179,6 @@ int main(int argc, char **argv) {
     };
     std::vector<MessageInfo> messages_before_start;
 
-    bool found_channel = false;
     const flatbuffers::Vector<flatbuffers::Offset<aos::Channel>> *channels =
         printer_event_loop->configuration()->channels();
 
@@ -235,10 +236,6 @@ int main(int argc, char **argv) {
       }
     }
 
-    if (!found_channel) {
-      LOG(FATAL) << "Could not find any channels";
-    }
-
     // Print the messages from before the log start time.
     // TODO(austin): Sort between nodes too when it becomes annoying enough.
     for (const MessageInfo &message : messages_before_start) {
@@ -252,6 +249,10 @@ int main(int argc, char **argv) {
               << "Log starting at " << reader.realtime_start_time(node) << " ("
               << reader.monotonic_start_time(node) << ")";
     std::cout << std::endl << std::endl;
+  }
+
+  if (!found_channel) {
+    LOG(FATAL) << "Could not find any channels";
   }
 
   if (FLAGS_fetch) {
