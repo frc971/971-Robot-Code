@@ -29,7 +29,7 @@ DEFINE_bool(
     _bash_autocomplete, false,
     "Internal use: Outputs channel list for use with autocomplete script.");
 DEFINE_string(_bash_autocomplete_word, "",
-              "Intenal use: Index of current word being autocompleted");
+              "Intenal use: Current word being autocompleted");
 
 namespace {
 
@@ -70,15 +70,17 @@ void Autocomplete(const aos::Configuration *config_msg,
                   std::string_view channel_name,
                   std::string_view message_type) {
   const bool unique_match =
-      std::count_if(
-          config_msg->channels()->begin(), config_msg->channels()->end(),
-          [channel_name, message_type](const aos::Channel *channel) {
-            return channel->name()->string_view() == channel_name &&
-                   channel->type()->string_view() == message_type;
-          }) == 1;
+      std::count_if(config_msg->channels()->begin(),
+                    config_msg->channels()->end(),
+                    [channel_name, message_type](const aos::Channel *channel) {
+                      return channel->name()->string_view() == channel_name &&
+                             channel->type()->string_view() == message_type;
+                    }) == 1;
 
-  const bool editing_message = !channel_name.empty() && FLAGS__bash_autocomplete_word == message_type;
-  const bool editing_channel = !editing_message && FLAGS__bash_autocomplete_word == channel_name;
+  const bool editing_message =
+      !channel_name.empty() && FLAGS__bash_autocomplete_word == message_type;
+  const bool editing_channel =
+      !editing_message && FLAGS__bash_autocomplete_word == channel_name;
 
   std::cout << "COMPREPLY=(";
 
@@ -117,8 +119,9 @@ void Autocomplete(const aos::Configuration *config_msg,
 
 bool EndsWith(std::string_view str, std::string_view ending) {
   const std::size_t offset = str.size() - ending.size();
-  return str.size() >= ending.size() && std::equal(str.begin() + offset, str.end(),
-                                   ending.begin(), ending.end());
+  return str.size() >= ending.size() &&
+         std::equal(str.begin() + offset, str.end(), ending.begin(),
+                    ending.end());
 }
 
 }  // namespace
