@@ -1,3 +1,5 @@
+#include <unistd.h>
+
 #include <iostream>
 #include <map>
 
@@ -23,6 +25,11 @@ DEFINE_uint64(count, 0,
 DEFINE_int32(rate_limit, 0,
              "The minimum amount of time to wait in milliseconds before "
              "sending another message");
+DEFINE_bool(
+    _bash_autocomplete, false,
+    "Internal use: Outputs channel list for use with autocomplete script.");
+DEFINE_string(_bash_autocomplete_word, "",
+              "Intenal use: Index of current word being autocompleted");
 
 namespace {
 
@@ -53,10 +60,88 @@ void PrintMessage(const aos::Channel *channel, const aos::Context &context,
   }
 }
 
+// Generate eval command to populate autocomplete responses. Eval escapes spaces
+// so channels are paired with their types. If a complete channel name is found,
+// only autocompletes the type to avoid repeating arguments. Returns no
+// autocomplete suggestions if a channel and type is found with the current
+// arguments.
+void Autocomplete(const aos::Configuration *config_msg,
+                  const aos::ShmEventLoop &event_loop,
+                  std::string_view channel_name,
+                  std::string_view message_type) {
+  const bool unique_match =
+      std::count_if(
+          config_msg->channels()->begin(), config_msg->channels()->end(),
+          [channel_name, message_type](const aos::Channel *channel) {
+            return channel->name()->string_view() == channel_name &&
+                   channel->type()->string_view() == message_type;
+          }) == 1;
+
+  const bool editing_message = !channel_name.empty() && FLAGS__bash_autocomplete_word == message_type;
+  const bool editing_channel = !editing_message && FLAGS__bash_autocomplete_word == channel_name;
+
+  std::cout << "COMPREPLY=(";
+
+  // If we have a unique match, don't provide any suggestions. Otherwise, check
+  // that were're editing one of the two positional arguments.
+  if (!unique_match && (editing_message || editing_channel)) {
+    for (const aos::Channel *channel : *config_msg->channels()) {
+      if (FLAGS_all || aos::configuration::ChannelIsReadableOnNode(
+                           channel, event_loop.node())) {
+        // Suggest only message types if the message type argument is being
+        // entered.
+        if (editing_message) {
+          // Then, filter for only channel names that match exactly and types
+          // that begin with message_type.
+          if (channel->name()->string_view() == channel_name &&
+              channel->type()->string_view().find(message_type) == 0) {
+            std::cout << '\'' << channel->type()->c_str() << "' ";
+          }
+        } else if (channel->name()->string_view().find(channel_name) == 0) {
+          // If the message type empty, then return full autocomplete.
+          // Otherwise, since the message type is poulated yet not being edited,
+          // the user must be editing the channel name alone, in which case only
+          // suggest channel names, not pairs.
+          if (message_type.empty()) {
+            std::cout << '\'' << channel->name()->c_str() << ' '
+                      << channel->type()->c_str() << "' ";
+          } else {
+            std::cout << '\'' << channel->name()->c_str() << "' ";
+          }
+        }
+      }
+    }
+  }
+  std::cout << ')';
+}
+
+bool EndsWith(std::string_view str, std::string_view ending) {
+  const std::size_t offset = str.size() - ending.size();
+  return str.size() >= ending.size() && std::equal(str.begin() + offset, str.end(),
+                                   ending.begin(), ending.end());
+}
+
 }  // namespace
 
 int main(int argc, char **argv) {
+  gflags::SetUsageMessage(
+      "Prints messages from arbitrary channels as they are received given a "
+      "configuration file describing the channels to listen on.\nTypical "
+      "Usage: aos_dump [--config path_to_config.json] channel_name "
+      "message_type\nExample Usage: aos_dump --config pingpong_config.json "
+      "/test aos.examples.Ping");
   aos::InitGoogle(&argc, &argv);
+
+  // Don't generate failure output if the config doesn't exist while attempting
+  // to autocomplete.
+  if (struct stat file_stat;
+      FLAGS__bash_autocomplete &&
+      (!(EndsWith(FLAGS_config, ".json") || EndsWith(FLAGS_config, ".bfbs")) ||
+       stat(FLAGS_config.c_str(), &file_stat) != 0 ||
+       (file_stat.st_mode & S_IFMT) != S_IFREG)) {
+    std::cout << "COMPREPLY=()";
+    return 0;
+  }
 
   std::string channel_name;
   std::string message_type;
@@ -74,6 +159,11 @@ int main(int argc, char **argv) {
   aos::ShmEventLoop event_loop(config_msg);
   event_loop.SkipTimingReport();
   event_loop.SkipAosLog();
+
+  if (FLAGS__bash_autocomplete) {
+    Autocomplete(config_msg, event_loop, channel_name, message_type);
+    return 0;
+  }
 
   if (argc == 1) {
     std::cout << "Channels:\n";

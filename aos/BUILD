@@ -6,6 +6,7 @@ filegroup(
     srcs = [
         "//aos:aos_dump",
         "//aos/starter",
+        "//aos:aos_dump_autocomplete.sh",
     ],
     visibility = ["//visibility:public"],
 )
@@ -24,6 +25,7 @@ filegroup(
         # starter is hard coded to look for a non-stripped core...
         "//aos:aos_dump.stripped",
         "//aos/starter",
+        "//aos:aos_dump_autocomplete.sh",
     ],
     visibility = ["//visibility:public"],
 )
