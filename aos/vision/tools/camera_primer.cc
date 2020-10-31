@@ -26,8 +26,6 @@ class ImageStream : public aos::vision::ImageStreamEvent {
 // camera_primer
 // target_sender
 int main(int argc, char **argv) {
-  ::aos::logging::Init();
-
   aos::vision::CameraParams params;
 
   if (argc != 2) {

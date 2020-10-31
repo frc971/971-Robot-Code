@@ -5,32 +5,16 @@
 
 #include <algorithm>
 #include <chrono>
-#include <mutex>
 
-#include "absl/base/call_once.h"
-#include "aos/die.h"
 #include "aos/logging/printf_formats.h"
-#include "aos/stl_mutex/stl_mutex.h"
 #include "aos/time/time.h"
 
 namespace aos {
 namespace logging {
+namespace internal {
 namespace {
 
 namespace chrono = ::std::chrono;
-
-struct GlobalState {
-  std::shared_ptr<LogImplementation> implementation;
-  aos::stl_mutex lock;
-  static GlobalState *Get() {
-    static GlobalState r;
-    return &r;
-  }
-};
-
-}  // namespace
-namespace internal {
-namespace {
 
 void FillInMessageBase(log_level level,
                        monotonic_clock::time_point monotonic_now,
@@ -61,21 +45,15 @@ void FillInMessage(log_level level, monotonic_clock::time_point monotonic_now,
 
   message->message_length =
       ExecuteFormat(message->message, sizeof(message->message), format, ap);
-  message->type = LogMessage::Type::kString;
 }
 
 void PrintMessage(FILE *output, const LogMessage &message) {
-#define BASE_ARGS                                                              \
-  AOS_LOGGING_BASE_ARGS(                                                       \
-      message.name_length, message.name, static_cast<int32_t>(message.source), \
-      message.sequence, message.level, message.seconds, message.nseconds)
-  switch (message.type) {
-    case LogMessage::Type::kString:
-      fprintf(output, AOS_LOGGING_BASE_FORMAT "%.*s", BASE_ARGS,
-              static_cast<int>(message.message_length), message.message);
-      break;
-  }
-#undef BASE_ARGS
+  fprintf(output, AOS_LOGGING_BASE_FORMAT "%.*s",
+          AOS_LOGGING_BASE_ARGS(message.name_length, message.name,
+                                static_cast<int32_t>(message.source),
+                                message.sequence, message.level,
+                                message.seconds, message.nseconds),
+          static_cast<int>(message.message_length), message.message);
 }
 
 }  // namespace internal
@@ -95,55 +73,13 @@ void StreamLogImplementation::HandleMessage(const LogMessage &message) {
 }
 
 void SetImplementation(std::shared_ptr<LogImplementation> implementation) {
-  Init();
-  GlobalState *const global = GlobalState::Get();
-  std::unique_lock<aos::stl_mutex> locker(global->lock);
-  global->implementation = std::move(implementation);
-}
-
-std::shared_ptr<LogImplementation> SwapImplementation(
-    std::shared_ptr<LogImplementation> implementation) {
-  std::shared_ptr<LogImplementation> result;
-  {
-    GlobalState *const global = GlobalState::Get();
-    std::unique_lock<aos::stl_mutex> locker(global->lock);
-    result = std::move(global->implementation);
-    global->implementation = std::move(implementation);
-  }
-  Cleanup();
-  return result;
+  internal::Context *context = internal::Context::Get();
+  context->implementation = std::move(implementation);
 }
 
 std::shared_ptr<LogImplementation> GetImplementation() {
-  GlobalState *const global = GlobalState::Get();
-  std::unique_lock<aos::stl_mutex> locker(global->lock);
-  CHECK(global->implementation);
-  return global->implementation;
-}
-
-namespace {
-
-struct DoInit {
-  DoInit() {
-    GlobalState *const global = GlobalState::Get();
-    std::unique_lock<aos::stl_mutex> locker(global->lock);
-    CHECK(!global->implementation);
-    global->implementation = std::make_shared<StreamLogImplementation>(stdout);
-  }
-};
-
-}  // namespace
-
-void Init() { static DoInit do_init; }
-
-void Load() { internal::Context::Get(); }
-
-void Cleanup() { internal::Context::Delete(); }
-
-void RegisterCallbackImplementation(
-    const ::std::function<void(const LogMessage &)> &callback) {
-  Init();
-  SetImplementation(std::make_shared<CallbackLogImplementation>(callback));
+  internal::Context *context = internal::Context::Get();
+  return context->implementation;
 }
 
 }  // namespace logging

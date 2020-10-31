@@ -23,13 +23,6 @@ void SetLogFileName(const char* filename);
 // we want to use graphing tools to verify what's happening.
 void ForcePrintLogsDuringTests();
 
-// Sets the current mock logging time to monotonic_now.  This only applies to
-// the current thread.
-void MockTime(::aos::monotonic_clock::time_point monotonic_now);
-// Clears the mock logging time for the current thread and goes back to using
-// monotonic_clock::now().
-void UnMockTime();
-
 }  // namespace testing
 }  // namespace aos
 

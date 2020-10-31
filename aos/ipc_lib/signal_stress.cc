@@ -191,7 +191,5 @@ int Main(int /*argc*/, char ** /*argv*/) {
 int main(int argc, char **argv) {
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);
 
-  ::aos::logging::Init();
-
   return ::aos::Main(argc, argv);
 }

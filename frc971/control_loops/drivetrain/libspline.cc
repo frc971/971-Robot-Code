@@ -205,7 +205,6 @@ extern "C" {
 
   // Util
   void SetUpLogging() {
-    ::aos::logging::Init();
     ::aos::network::OverrideTeamNumber(971);
   }
 }

@@ -45,7 +45,8 @@ struct Context {
   static void DeleteNow();
 
   // Which one to log to right now.
-  // Will be NULL if there is no logging implementation to use right now.
+  // Will be NULL if there is no logging implementation to use right now and we
+  // should use stderr instead.
   std::shared_ptr<LogImplementation> implementation;
 
   // A name representing this task/(process and thread).

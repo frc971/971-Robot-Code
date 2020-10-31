@@ -247,8 +247,6 @@ void read_status(int process, int ppid, int *pgrp, ::std::string *name,
 }  // namespace
 
 int main() {
-  ::aos::logging::Init();
-
   const int pid_max = find_pid_max();
   const cpu_set_t all_cpus = find_all_cpus();
 

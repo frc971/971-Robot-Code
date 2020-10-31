@@ -81,9 +81,7 @@ PhasedLoopHandler::~PhasedLoopHandler() {}
 
 EventLoop::EventLoop(const Configuration *configuration)
     : timing_report_(flatbuffers::DetachedBuffer()),
-      configuration_(configuration) {
-  logging::Init();
-}
+      configuration_(configuration) {}
 
 EventLoop::~EventLoop() {
   CHECK_EQ(senders_.size(), 0u) << ": Not all senders destroyed";

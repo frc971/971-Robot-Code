@@ -22,19 +22,7 @@ class TestLogImplementation : public logging::HandleMessageLogImplementation {
  public:
   const ::std::vector<LogMessage> &messages() { return messages_; }
 
-  // Sets the current thread's time to be monotonic_now for logging.
-  void MockTime(::aos::monotonic_clock::time_point monotonic_now) {
-    mock_time_ = true;
-    monotonic_now_ = monotonic_now;
-  }
-
-  // Clears any mock time for the current thread.
-  void UnMockTime() { mock_time_ = false; }
-
   ::aos::monotonic_clock::time_point monotonic_now() const override {
-    if (mock_time_) {
-      return monotonic_now_;
-    }
     return ::aos::monotonic_clock::now();
   }
 
@@ -70,8 +58,6 @@ class TestLogImplementation : public logging::HandleMessageLogImplementation {
     }
   }
 
-  bool fill_type_cache() override { return false; }
-
   void PrintMessagesAsTheyComeIn() { print_as_messages_come_in_ = true; }
 
   // Don't call these from outside this class.
@@ -95,17 +81,7 @@ class TestLogImplementation : public logging::HandleMessageLogImplementation {
   bool print_as_messages_come_in_ = false;
   FILE *output_file_ = stdout;
   ::aos::Mutex messages_mutex_;
-
-  // Thread local storage for mock time.  This is thread local because if
-  // someone spawns a thread and goes to town in parallel with a simulated event
-  // loop, we want to just print the actual monotonic clock out.
-  static AOS_THREAD_LOCAL bool mock_time_;
-  static AOS_THREAD_LOCAL ::aos::monotonic_clock::time_point monotonic_now_;
 };
-
-AOS_THREAD_LOCAL bool TestLogImplementation::mock_time_ = false;
-AOS_THREAD_LOCAL ::aos::monotonic_clock::time_point
-    TestLogImplementation::monotonic_now_ = ::aos::monotonic_clock::min_time;
 
 class MyTestEventListener : public ::testing::EmptyTestEventListener {
   virtual void OnTestStart(const ::testing::TestInfo & /*test_info*/) {
@@ -138,7 +114,6 @@ class MyTestEventListener : public ::testing::EmptyTestEventListener {
 };
 
 void *DoEnableTestLogging() {
-  logging::Init();
   logging::SetImplementation(TestLogImplementation::GetInstance());
 
   ::testing::UnitTest::GetInstance()->listeners().Append(
@@ -162,11 +137,6 @@ void SetLogFileName(const char *filename) {
 void ForcePrintLogsDuringTests() {
   TestLogImplementation::GetInstance()->PrintMessagesAsTheyComeIn();
 }
-
-void MockTime(::aos::monotonic_clock::time_point monotonic_now) {
-  TestLogImplementation::GetInstance()->MockTime(monotonic_now);
-}
-void UnMockTime() { TestLogImplementation::GetInstance()->UnMockTime(); }
 
 }  // namespace testing
 }  // namespace aos

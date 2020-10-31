@@ -247,7 +247,6 @@ void Main() {
 
 int main(int argc, char **argv) {
   ::gflags::ParseCommandLineFlags(&argc, &argv, false);
-  ::aos::logging::Init();
   ::aos::network::OverrideTeamNumber(971);
   ::frc971::control_loops::drivetrain::Main();
   return 0;

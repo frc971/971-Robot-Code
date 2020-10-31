@@ -714,8 +714,6 @@ const char *child_list_file;
 
 void Run();
 void Main() {
-  logging::Init();
-
   // Set UID to 0 so we can run things as root down below. Since the starter
   // program on the roborio runs starter.sh under "lvuser", it will continuously
   // fail due to lack of permissions if we do not manually set the UID to admin.

@@ -86,7 +86,6 @@ TEST_F(WorkStackTest, InvocationOrder) {
 
 // Tests that it handles adding too many works intelligently.
 TEST_F(WorkStackDeathTest, TooManyWorks) {
-  logging::Init();
   EXPECT_DEATH(
       {
         logging::SetImplementation(
