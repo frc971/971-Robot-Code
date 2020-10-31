@@ -237,28 +237,6 @@ cc_test(
     ],
 )
 
-cc_library(
-    name = "linked_list",
-    hdrs = [
-        "linked_list.h",
-    ],
-    deps = [
-        "//aos/transaction",
-    ],
-)
-
-cc_test(
-    name = "linked_list_test",
-    srcs = [
-        "linked_list_test.cc",
-    ],
-    deps = [
-        ":linked_list",
-        "//aos/logging",
-        "//aos/testing:googletest",
-    ],
-)
-
 cc_test(
     name = "phased_loop_test",
     srcs = [
