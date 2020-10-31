@@ -234,6 +234,7 @@ int main(int argc, char **argv) {
             const aos::Context &context, const void * /*message*/) {
           if (context.monotonic_event_time > next_send_time) {
             PrintMessage(channel, context, &str_builder);
+            ++message_count;
             next_send_time = context.monotonic_event_time +
                              std::chrono::milliseconds(FLAGS_rate_limit);
             if (FLAGS_count > 0 && message_count >= FLAGS_count) {
