@@ -253,24 +253,23 @@ void DrivetrainLoop::RunIteration(
     Y << position->left_encoder(), position->right_encoder(), last_gyro_rate_,
         last_accel_;
     kf_.Correct(Y);
-    // If we get a new message setting the absolute position, then reset the
-    // localizer.
-    // TODO(james): Use a watcher (instead of a fetcher) once we support it in
-    // simulation.
-    if (localizer_control_fetcher_.Fetch()) {
-      VLOG(1) << "localizer_control "
-              << aos::FlatbufferToJson(localizer_control_fetcher_.get());
-      localizer_->ResetPosition(
-          monotonic_now, localizer_control_fetcher_->x(),
-          localizer_control_fetcher_->y(), localizer_control_fetcher_->theta(),
-          localizer_control_fetcher_->theta_uncertainty(),
-          !localizer_control_fetcher_->keep_current_theta());
-    }
     localizer_->Update({last_last_left_voltage_, last_last_right_voltage_},
                        monotonic_now, position->left_encoder(),
                        position->right_encoder(),
                        down_estimator_.avg_recent_yaw_rates(),
                        down_estimator_.avg_recent_accel());
+    // If we get a new message setting the absolute position, then reset the
+    // localizer.
+    if (localizer_control_fetcher_.Fetch()) {
+      VLOG(1) << "localizer_control "
+              << aos::FlatbufferToJson(localizer_control_fetcher_.get());
+      localizer_->ResetPosition(
+          monotonic_now,
+          localizer_control_fetcher_->x(), localizer_control_fetcher_->y(),
+          localizer_control_fetcher_->theta(),
+          localizer_control_fetcher_->theta_uncertainty(),
+          !localizer_control_fetcher_->keep_current_theta());
+    }
   }
 
   dt_openloop_.SetPosition(position, left_gear_, right_gear_);

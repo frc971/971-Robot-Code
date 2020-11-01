@@ -672,6 +672,10 @@ void HybridEkf<Scalar>::Correct(
     // We use X_hat_ and P_ to store the intermediate states, and then
     // once we reach the end they will all be up-to-date.
     ProcessObservation(&*cur_it, cur_it->t - cur_it->prev_t, &X_hat_, &P_);
+    // TOOD(james): Note that this can be triggered when there are extremely
+    // small values in P_. This is particularly likely if Scalar is just float
+    // and we are performing zero-time updates where the predict step never
+    // runs.
     CHECK(X_hat_.allFinite());
     if (next_it != observations_.end()) {
       next_it->X_hat = X_hat_;
