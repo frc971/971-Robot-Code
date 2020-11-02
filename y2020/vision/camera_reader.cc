@@ -244,7 +244,7 @@ void CameraReader::SendImageMatchResult(
 
     const flatbuffers::Offset<sift::TransformationMatrix>
         field_to_target_offset =
-            aos::CopyFlatBuffer(FieldToTarget(i), builder.fbb());
+            aos::RecursiveCopyFlatBuffer(FieldToTarget(i), builder.fbb());
 
     sift::CameraPose::Builder pose_builder(*builder.fbb());
     pose_builder.add_camera_to_target(transform_offset);

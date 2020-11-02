@@ -43,6 +43,8 @@ int Main(int argc, char **argv) {
 
   aos::FlatbufferDetachedBuffer<Configuration> merged_config =
       configuration::MergeConfiguration(config, schemas);
+  // In case we've done something overly weird to the flatbuffer...
+  CHECK(merged_config.Verify());
 
   const std::string merged_config_json =
       FlatbufferToJson(&merged_config.message(), {.multi_line = true});

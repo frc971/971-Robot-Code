@@ -444,8 +444,9 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> Logger::MakeHeader(
   flatbuffers::Offset<Node> logger_node_offset;
 
   if (configuration::MultiNode(configuration_)) {
-    node_offset = CopyFlatBuffer(node, &fbb);
-    logger_node_offset = CopyFlatBuffer(event_loop_->node(), &fbb);
+    // TODO(austin): Reuse the node we just copied in above.
+    node_offset = RecursiveCopyFlatBuffer(node, &fbb);
+    logger_node_offset = RecursiveCopyFlatBuffer(event_loop_->node(), &fbb);
   }
 
   aos::logger::LogFileHeader::Builder log_file_header_builder(fbb);
@@ -489,7 +490,12 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> Logger::MakeHeader(
   log_file_header_builder.add_parts_index(0);
 
   fbb.FinishSizePrefixed(log_file_header_builder.Finish());
-  return fbb.Release();
+  aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> result(
+      fbb.Release());
+
+  CHECK(result.Verify()) << ": Built a corrupted header.";
+
+  return result;
 }
 
 void Logger::ResetStatisics() {

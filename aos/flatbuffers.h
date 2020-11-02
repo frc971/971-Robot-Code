@@ -128,6 +128,38 @@ class Flatbuffer {
   // Wipes out the data buffer. This is handy to mark an instance as freed, and
   // make attempts to use it fail more obviously.
   void Wipe() { memset(data(), 0, size()); }
+
+  virtual bool Verify() const {
+    flatbuffers::Verifier v(data(), size());
+    return v.VerifyTable(&message());
+  }
+};
+
+// Non-owning Span backed flatbuffer.
+template <typename T>
+class FlatbufferSpan : public Flatbuffer<T> {
+ public:
+  // Builds a flatbuffer pointing to the contents of a span.
+  FlatbufferSpan(const absl::Span<const uint8_t> data) : data_(data) {}
+  // Builds a Flatbuffer pointing to the contents of another flatbuffer.
+  FlatbufferSpan(const Flatbuffer<T> &other) { data_ = other.span(); }
+
+  // Copies the data from the other flatbuffer.
+  FlatbufferSpan &operator=(const Flatbuffer<T> &other) {
+    data_ = other.span();
+    return *this;
+  }
+
+  virtual ~FlatbufferSpan() override {}
+
+  const uint8_t *data() const override {
+    return data_.data();
+  }
+  uint8_t *data() override { return CHECK_NOTNULL(nullptr); }
+  size_t size() const override { return data_.size(); }
+
+ private:
+  absl::Span<const uint8_t> data_;
 };
 
 // String backed flatbuffer.
@@ -358,6 +390,13 @@ class SizePrefixedFlatbufferDetachedBuffer final : public Flatbuffer<T> {
   }
   absl::Span<const uint8_t> full_span() const {
     return absl::Span<const uint8_t>(buffer_.data(), buffer_.size());
+  }
+
+  bool Verify() const override {
+    // TODO(austin): Should we push full_span up to Flatbuffer<> class?
+    // The base pointer has the wrong alignment if we strip off the size.
+    flatbuffers::Verifier v(full_span().data(), full_span().size());
+    return v.VerifyTable(&this->message());
   }
 
  private:

@@ -427,7 +427,7 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
   // which we do need to alter (hence why we can't use the input config
   // directly), and then merge auto_merge_config back in at the end.
   aos::FlatbufferDetachedBuffer<aos::Configuration> auto_merge_config =
-      aos::CopyFlatBuffer(&config.message());
+      aos::RecursiveCopyFlatBuffer(&config.message());
 
   // Store all the channels in a sorted set.  This lets us track channels we
   // have seen before and merge the updates in.
@@ -450,10 +450,11 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
           << CleanedChannelToString(c);
 
       // Attempt to insert the channel.
-      auto result = channels.insert(CopyFlatBuffer(c));
+      auto result = channels.insert(RecursiveCopyFlatBuffer(c));
       if (!result.second) {
         // Already there, so merge the new table into the original.
-        *result.first = MergeFlatBuffers(*result.first, CopyFlatBuffer(c));
+        *result.first =
+            MergeFlatBuffers(*result.first, RecursiveCopyFlatBuffer(c));
       }
     }
   }
@@ -467,9 +468,10 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
         continue;
       }
 
-      auto result = applications.insert(CopyFlatBuffer(a));
+      auto result = applications.insert(RecursiveCopyFlatBuffer(a));
       if (!result.second) {
-        *result.first = MergeFlatBuffers(*result.first, CopyFlatBuffer(a));
+        *result.first =
+            MergeFlatBuffers(*result.first, RecursiveCopyFlatBuffer(a));
       }
     }
   }
@@ -483,9 +485,10 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
         continue;
       }
 
-      auto result = nodes.insert(CopyFlatBuffer(n));
+      auto result = nodes.insert(RecursiveCopyFlatBuffer(n));
       if (!result.second) {
-        *result.first = MergeFlatBuffers(*result.first, CopyFlatBuffer(n));
+        *result.first =
+            MergeFlatBuffers(*result.first, RecursiveCopyFlatBuffer(n));
       }
     }
   }
@@ -500,7 +503,8 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
   {
     ::std::vector<flatbuffers::Offset<Channel>> channel_offsets;
     for (const FlatbufferDetachedBuffer<Channel> &c : channels) {
-      channel_offsets.emplace_back(CopyFlatBuffer<Channel>(&c.message(), &fbb));
+      channel_offsets.emplace_back(
+          RecursiveCopyFlatBuffer<Channel>(&c.message(), &fbb));
     }
     channels_offset = fbb.CreateVector(channel_offsets);
   }
@@ -512,7 +516,7 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
     ::std::vector<flatbuffers::Offset<Application>> applications_offsets;
     for (const FlatbufferDetachedBuffer<Application> &a : applications) {
       applications_offsets.emplace_back(
-          CopyFlatBuffer<Application>(&a.message(), &fbb));
+          RecursiveCopyFlatBuffer<Application>(&a.message(), &fbb));
     }
     applications_offset = fbb.CreateVector(applications_offsets);
   }
@@ -523,7 +527,8 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
   {
     ::std::vector<flatbuffers::Offset<Node>> node_offsets;
     for (const FlatbufferDetachedBuffer<Node> &n : nodes) {
-      node_offsets.emplace_back(CopyFlatBuffer<Node>(&n.message(), &fbb));
+      node_offsets.emplace_back(
+          RecursiveCopyFlatBuffer<Node>(&n.message(), &fbb));
     }
     nodes_offset = fbb.CreateVector(node_offsets);
   }
@@ -715,8 +720,8 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
       if (cached_schema != schema_cache.end()) {
         schema_offset = cached_schema->second;
       } else {
-        schema_offset =
-            CopyFlatBuffer<reflection::Schema>(&found_schema->message(), &fbb);
+        schema_offset = RecursiveCopyFlatBuffer<reflection::Schema>(
+            &found_schema->message(), &fbb);
         schema_cache.emplace(c->type()->string_view(), schema_offset);
       }
 
@@ -725,9 +730,8 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
       flatbuffers::Offset<flatbuffers::String> type_offset =
           fbb.CreateSharedString(c->type()->str());
       flatbuffers::Offset<flatbuffers::String> source_node_offset =
-          c->has_source_node()
-              ? fbb.CreateSharedString(c->source_node()->str())
-              : 0;
+          c->has_source_node() ? fbb.CreateSharedString(c->source_node()->str())
+                               : 0;
 
       flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Connection>>>
           destination_nodes_offset =
@@ -773,7 +777,6 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
         channel_builder.add_num_readers(c->num_readers());
       }
       channel_offsets.emplace_back(channel_builder.Finish());
-
     }
     channels_offset = fbb.CreateVector(channel_offsets);
   }
