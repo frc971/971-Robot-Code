@@ -78,6 +78,35 @@ inline flatbuffers::Offset<T> CopyFlatBuffer(
 }
 
 template <class T>
+inline flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<T>>>
+CopyVectorTable(const flatbuffers::Vector<flatbuffers::Offset<T>> *t1,
+                flatbuffers::FlatBufferBuilder *fbb) {
+  if (t1 == nullptr) {
+    return 0;
+  }
+  std::vector<flatbuffers::Offset<T>> v;
+  for (const T *t : *t1) {
+    v.emplace_back(CopyFlatBuffer(t, fbb));
+  }
+  return fbb->CreateVector(v);
+}
+
+inline flatbuffers::Offset<
+    flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>>
+CopyVectorSharedString(
+    const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *t1,
+    flatbuffers::FlatBufferBuilder *fbb) {
+  if (t1 == nullptr) {
+    return 0;
+  }
+  std::vector<flatbuffers::Offset<flatbuffers::String>> v;
+  for (const flatbuffers::String *t : *t1) {
+    v.emplace_back(fbb->CreateSharedString(t));
+  }
+  return fbb->CreateVector(v);
+}
+
+template <class T>
 inline FlatbufferDetachedBuffer<T> CopyFlatBuffer(const T *t) {
   flatbuffers::FlatBufferBuilder fbb;
   fbb.ForceDefaults(true);
