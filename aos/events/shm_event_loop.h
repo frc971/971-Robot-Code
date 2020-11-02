@@ -34,6 +34,8 @@ class ShmFetcher;
 // destructors are called back in one thread again)
 class ShmEventLoop : public EventLoop {
  public:
+  ShmEventLoop(const Flatbuffer<Configuration> &configuration)
+      : ShmEventLoop(&configuration.message()) {}
   ShmEventLoop(const Configuration *configuration);
   ~ShmEventLoop() override;
 

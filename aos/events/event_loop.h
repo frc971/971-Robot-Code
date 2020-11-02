@@ -488,7 +488,7 @@ class EventLoop {
   // Returns true if the channel exists in the configuration.
   template <typename T>
   bool HasChannel(const std::string_view channel_name) {
-    return configuration::GetChannel(configuration_, channel_name,
+    return configuration::GetChannel(configuration(), channel_name,
                                      T::GetFullyQualifiedName(), name(),
                                      node()) != nullptr;
   }
@@ -502,7 +502,7 @@ class EventLoop {
   template <typename T>
   Fetcher<T> MakeFetcher(const std::string_view channel_name) {
     const Channel *channel =
-        configuration::GetChannel(configuration_, channel_name,
+        configuration::GetChannel(configuration(), channel_name,
                                   T::GetFullyQualifiedName(), name(), node());
     CHECK(channel != nullptr)
         << ": Channel { \"name\": \"" << channel_name << "\", \"type\": \""
@@ -523,13 +523,13 @@ class EventLoop {
   template <typename T>
   Sender<T> MakeSender(const std::string_view channel_name) {
     const Channel *channel =
-        configuration::GetChannel(configuration_, channel_name,
+        configuration::GetChannel(configuration(), channel_name,
                                   T::GetFullyQualifiedName(), name(), node());
     CHECK(channel != nullptr)
         << ": Channel { \"name\": \"" << channel_name << "\", \"type\": \""
         << T::GetFullyQualifiedName() << "\" } not found in config for "
         << name()
-        << (configuration::MultiNode(configuration_)
+        << (configuration::MultiNode(configuration())
                 ? absl::StrCat(" on node ", node()->name()->string_view())
                 : ".");
 
