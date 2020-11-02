@@ -8,6 +8,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <map>
 #include <set>
 #include <string_view>
 
@@ -681,23 +682,19 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
   flatbuffers::FlatBufferBuilder fbb;
   fbb.ForceDefaults(true);
 
-  // auto_merge_config will contain all the fields of the Configuration that are
-  // to be passed through unmodified to the result of MergeConfiguration().
-  // In the processing below, we mutate auto_merge_config to remove any fields
-  // which we do need to alter (hence why we can't use the input config
-  // directly), and then merge auto_merge_config back in at the end.
-  aos::FlatbufferDetachedBuffer<aos::Configuration> auto_merge_config =
-      aos::CopyFlatBuffer(&config.message());
+  // Cache for holding already inserted schemas.
+  std::map<std::string_view, flatbuffers::Offset<reflection::Schema>>
+      schema_cache;
+
+  CHECK_EQ(Channel::MiniReflectTypeTable()->num_elems, 13u)
+      << ": Merging logic needs to be updated when the number of channel "
+         "fields changes.";
 
   flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Channel>>>
       channels_offset;
   if (config.message().has_channels()) {
-    auto_merge_config.mutable_message()->clear_channels();
     std::vector<flatbuffers::Offset<Channel>> channel_offsets;
     for (const Channel *c : *config.message().channels()) {
-      flatbuffers::FlatBufferBuilder channel_fbb;
-      channel_fbb.ForceDefaults(true);
-
       // Search for a schema with a matching type.
       const aos::FlatbufferString<reflection::Schema> *found_schema = nullptr;
       for (const aos::FlatbufferString<reflection::Schema> &schema : schemas) {
@@ -712,39 +709,114 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
       CHECK(found_schema != nullptr)
           << ": Failed to find schema for " << FlatbufferToJson(c);
 
-      // The following is wasteful, but works.
-      //
-      // Copy it into a Channel object by creating an object with only the
-      // schema populated and merge that into the current channel.
-      flatbuffers::Offset<reflection::Schema> schema_offset =
-          CopyFlatBuffer<reflection::Schema>(&found_schema->message(),
-                                             &channel_fbb);
-      Channel::Builder channel_builder(channel_fbb);
+      // Now copy the message manually.
+      auto cached_schema = schema_cache.find(c->type()->string_view());
+      flatbuffers::Offset<reflection::Schema> schema_offset;
+      if (cached_schema != schema_cache.end()) {
+        schema_offset = cached_schema->second;
+      } else {
+        schema_offset =
+            CopyFlatBuffer<reflection::Schema>(&found_schema->message(), &fbb);
+        schema_cache.emplace(c->type()->string_view(), schema_offset);
+      }
+
+      flatbuffers::Offset<flatbuffers::String> name_offset =
+          fbb.CreateSharedString(c->name()->str());
+      flatbuffers::Offset<flatbuffers::String> type_offset =
+          fbb.CreateSharedString(c->type()->str());
+      flatbuffers::Offset<flatbuffers::String> source_node_offset =
+          c->has_source_node()
+              ? fbb.CreateSharedString(c->source_node()->str())
+              : 0;
+
+      flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Connection>>>
+          destination_nodes_offset =
+              aos::CopyVectorTable(c->destination_nodes(), &fbb);
+
+      flatbuffers::Offset<
+          flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>>
+          logger_nodes_offset =
+              aos::CopyVectorSharedString(c->logger_nodes(), &fbb);
+
+      Channel::Builder channel_builder(fbb);
+      channel_builder.add_name(name_offset);
+      channel_builder.add_type(type_offset);
+      if (c->has_frequency()) {
+        channel_builder.add_frequency(c->frequency());
+      }
+      if (c->has_max_size()) {
+        channel_builder.add_max_size(c->max_size());
+      }
+      if (c->has_num_senders()) {
+        channel_builder.add_num_senders(c->num_senders());
+      }
+      if (c->has_num_watchers()) {
+        channel_builder.add_num_watchers(c->num_watchers());
+      }
       channel_builder.add_schema(schema_offset);
-      channel_fbb.Finish(channel_builder.Finish());
-      FlatbufferDetachedBuffer<Channel> channel_schema_flatbuffer(
-          channel_fbb.Release());
+      if (!source_node_offset.IsNull()) {
+        channel_builder.add_source_node(source_node_offset);
+      }
+      if (!destination_nodes_offset.IsNull()) {
+        channel_builder.add_destination_nodes(destination_nodes_offset);
+      }
+      if (c->has_logger()) {
+        channel_builder.add_logger(c->logger());
+      }
+      if (!logger_nodes_offset.IsNull()) {
+        channel_builder.add_logger_nodes(logger_nodes_offset);
+      }
+      if (c->has_read_method()) {
+        channel_builder.add_read_method(c->read_method());
+      }
+      if (c->has_num_readers()) {
+        channel_builder.add_num_readers(c->num_readers());
+      }
+      channel_offsets.emplace_back(channel_builder.Finish());
 
-      FlatbufferDetachedBuffer<Channel> merged_channel(
-          MergeFlatBuffers(channel_schema_flatbuffer, CopyFlatBuffer(c)));
-
-      channel_offsets.emplace_back(
-          CopyFlatBuffer<Channel>(&merged_channel.message(), &fbb));
     }
     channels_offset = fbb.CreateVector(channel_offsets);
   }
 
+  flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Map>>>
+      maps_offset = aos::CopyVectorTable(config.message().maps(), &fbb);
+
+  flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Node>>>
+      nodes_offset = aos::CopyVectorTable(config.message().nodes(), &fbb);
+
+  flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Application>>>
+      applications_offset =
+          aos::CopyVectorTable(config.message().applications(), &fbb);
 
   // Now insert everything else in unmodified.
   ConfigurationBuilder configuration_builder(fbb);
   if (config.message().has_channels()) {
     configuration_builder.add_channels(channels_offset);
   }
+  if (!maps_offset.IsNull()) {
+    configuration_builder.add_maps(maps_offset);
+  }
+  if (!nodes_offset.IsNull()) {
+    configuration_builder.add_nodes(nodes_offset);
+  }
+  if (!applications_offset.IsNull()) {
+    configuration_builder.add_applications(applications_offset);
+  }
+
+  if (config.message().has_channel_storage_duration()) {
+    configuration_builder.add_channel_storage_duration(
+        config.message().channel_storage_duration());
+  }
+
+  CHECK_EQ(Configuration::MiniReflectTypeTable()->num_elems, 6u)
+      << ": Merging logic needs to be updated when the number of configuration "
+         "fields changes.";
+
   fbb.Finish(configuration_builder.Finish());
   aos::FlatbufferDetachedBuffer<aos::Configuration> modified_config(
       fbb.Release());
 
-  return MergeFlatBuffers(modified_config, auto_merge_config);
+  return modified_config;
 }
 
 const Node *GetNodeFromHostname(const Configuration *config,
