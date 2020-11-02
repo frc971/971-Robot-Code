@@ -8,10 +8,10 @@
 #include "sanitizer/lsan_interface.h"
 #endif
 
-#include "aos/logging/logging.h"
-#include "aos/mutex/mutex.h"
-#include "aos/network/team_number.h"
 #include "absl/base/call_once.h"
+#include "aos/logging/logging.h"
+#include "aos/network/team_number.h"
+#include "aos/stl_mutex/stl_mutex.h"
 #include "y2019/control_loops/superstructure/elevator/integral_elevator_plant.h"
 #include "y2019/control_loops/superstructure/intake/integral_intake_plant.h"
 #include "y2019/control_loops/superstructure/stilts/integral_stilts_plant.h"
@@ -230,7 +230,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
   return r;
 }
 
-void DoGetValues(const Values** result) {
+void DoGetValues(const Values **result) {
   uint16_t team = ::aos::network::GetTeamNumber();
   AOS_LOG(INFO, "creating a Constants for team %" PRIu16 "\n", team);
   *result = DoGetValuesForTeam(team);
@@ -240,14 +240,14 @@ void DoGetValues(const Values** result) {
 
 const Values &GetValues() {
   static absl::once_flag once;
-  static const Values* result;
+  static const Values *result;
   absl::call_once(once, DoGetValues, &result);
   return *result;
 }
 
 const Values &GetValuesForTeam(uint16_t team_number) {
-  static ::aos::Mutex mutex;
-  ::aos::MutexLocker locker(&mutex);
+  static aos::stl_mutex mutex;
+  std::unique_lock<aos::stl_mutex> locker(mutex);
 
   // IMPORTANT: This declaration has to stay after the mutex is locked to avoid
   // race conditions.

@@ -23,10 +23,10 @@ cc_library(
         "//aos:macros",
         "//aos:thread_local",
         "//aos/libc:aos_strerror",
-        "//aos/mutex",
         "//aos/stl_mutex",
         "//aos/time",
         "//aos/type_traits",
+        "@com_github_google_glog//:glog",
         "@com_google_absl//absl/base",
     ],
 )
@@ -59,6 +59,7 @@ cc_test(
         ":implementations",
         ":logging",
         "//aos/testing:googletest",
+        "@com_github_google_glog//:glog",
     ],
 )
 

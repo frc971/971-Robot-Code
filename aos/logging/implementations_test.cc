@@ -7,6 +7,8 @@
 
 #include "aos/logging/printf_formats.h"
 #include "aos/time/time.h"
+
+#include "glog/logging.h"
 #include "gtest/gtest.h"
 
 using ::testing::AssertionFailure;

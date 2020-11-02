@@ -31,8 +31,8 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//aos/logging",
-        "//aos/mutex",
         "//aos/network:team_number",
+        "//aos/stl_mutex",
         "//frc971:constants",
         "//frc971/control_loops:pose",
         "//frc971/control_loops:static_zeroing_single_dof_profiled_subsystem",

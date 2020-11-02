@@ -11,7 +11,6 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//aos:macros",
-        "//aos/mutex",
         "//aos/type_traits",
         "@com_github_google_glog//:glog",
     ],

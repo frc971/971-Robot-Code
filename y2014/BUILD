@@ -12,8 +12,8 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//aos/logging",
-        "//aos/mutex",
         "//aos/network:team_number",
+        "//aos/stl_mutex",
         "//frc971:shifter_hall_effect",
         "//frc971/control_loops:state_feedback_loop",
         "//y2014/control_loops/drivetrain:polydrivetrain_plants",

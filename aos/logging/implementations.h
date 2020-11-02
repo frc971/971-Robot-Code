@@ -19,7 +19,6 @@
 #include "aos/logging/logging.h"
 #include "aos/logging/sizes.h"
 #include "aos/macros.h"
-#include "aos/mutex/mutex.h"
 #include "aos/time/time.h"
 #include "aos/type_traits/type_traits.h"
 

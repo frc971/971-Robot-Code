@@ -135,7 +135,6 @@ cc_binary(
         "//aos:init",
         "//aos/events:shm_event_loop",
         "//aos/logging",
-        "//aos/mutex",
         "//aos/time",
         "//aos/vision/events:udp",
         "//frc971/control_loops:control_loops_fbs",

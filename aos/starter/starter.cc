@@ -27,6 +27,8 @@
 #include <memory>
 #include <set>
 
+#include "absl/base/call_once.h"
+#include "glog/logging.h"
 #include "third_party/libevent/event.h"
 
 #include "aos/libc/aos_strsignal.h"
@@ -36,7 +38,6 @@
 #include "aos/unique_malloc_ptr.h"
 #include "aos/util/run_command.h"
 #include "aos/init.h"
-#include "absl/base/call_once.h"
 
 // This is the main piece of code that starts all of the rest of the code and
 // restarts it when the binaries are modified.

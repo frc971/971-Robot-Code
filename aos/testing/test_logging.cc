@@ -9,7 +9,7 @@
 #include "absl/base/call_once.h"
 
 #include "aos/logging/implementations.h"
-#include "aos/mutex/mutex.h"
+#include "aos/stl_mutex/stl_mutex.h"
 #include "aos/thread_local.h"
 
 using ::aos::logging::LogMessage;
@@ -36,13 +36,13 @@ class TestLogImplementation : public logging::HandleMessageLogImplementation {
 
   // Clears out all of the messages already recorded.
   void ClearMessages() {
-    ::aos::MutexLocker locker(&messages_mutex_);
+    std::unique_lock<aos::stl_mutex> locker(messages_mutex_);
     messages_.clear();
   }
 
   // Prints out all of the messages (like when a test fails).
   void PrintAllMessages() {
-    ::aos::MutexLocker locker(&messages_mutex_);
+    std::unique_lock<aos::stl_mutex> locker(messages_mutex_);
     for (auto it = messages_.begin(); it != messages_.end(); ++it) {
       logging::internal::PrintMessage(stdout, *it);
     }
@@ -69,7 +69,7 @@ class TestLogImplementation : public logging::HandleMessageLogImplementation {
 
  private:
   virtual void HandleMessage(const LogMessage &message) override {
-    ::aos::MutexLocker locker(&messages_mutex_);
+    std::unique_lock<aos::stl_mutex> locker(messages_mutex_);
     if (message.level == FATAL || print_as_messages_come_in_) {
       logging::internal::PrintMessage(output_file_, message);
     }
@@ -80,7 +80,7 @@ class TestLogImplementation : public logging::HandleMessageLogImplementation {
   ::std::vector<LogMessage> messages_;
   bool print_as_messages_come_in_ = false;
   FILE *output_file_ = stdout;
-  ::aos::Mutex messages_mutex_;
+  aos::stl_mutex messages_mutex_;
 };
 
 class MyTestEventListener : public ::testing::EmptyTestEventListener {

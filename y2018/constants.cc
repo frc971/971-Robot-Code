@@ -11,8 +11,8 @@
 #endif
 
 #include "aos/logging/logging.h"
-#include "aos/mutex/mutex.h"
 #include "aos/network/team_number.h"
+#include "aos/stl_mutex/stl_mutex.h"
 
 #include "y2018/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "y2018/control_loops/drivetrain/polydrivetrain_dog_motor_plant.h"
@@ -102,7 +102,8 @@ const Values *DoGetValuesForTeam(uint16_t team) {
 
       arm_distal->zeroing.measured_absolute_position =
           -0.870445 + 5.209807817203074 + 0.118 - 0.004 + 0.407 - 0.53;
-      arm_distal->potentiometer_offset = 5.209807817203074 + 1.250476 + 0.110 + 0.52;
+      arm_distal->potentiometer_offset =
+          5.209807817203074 + 1.250476 + 0.110 + 0.52;
       break;
 
     case kPracticeTeamNumber:
@@ -117,13 +118,15 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       right_intake->potentiometer_offset = 9.59 + 1.530320 - 3.620648;
       right_intake->spring_offset = 0.255 + 0.008 - 0.09;
 
-      arm_proximal->zeroing.measured_absolute_position = -0.253183 + 1.0652774488034022 + 0.009566448803402405;
+      arm_proximal->zeroing.measured_absolute_position =
+          -0.253183 + 1.0652774488034022 + 0.009566448803402405;
       arm_proximal->potentiometer_offset = -1.242 - 0.03 - 0.1 - 1.0652;
 
       arm_distal->zeroing.measured_absolute_position =
-          1.102987 - kDistalZeroingPosition + 0.12 + 0.0095 + 0.22300918279692628;
-      arm_distal->potentiometer_offset =
-          2.772210 + M_PI + 0.434 - 0.12 + 1.25 - 0.226 + 0.862067 - 0.121925182796926;
+          1.102987 - kDistalZeroingPosition + 0.12 + 0.0095 +
+          0.22300918279692628;
+      arm_distal->potentiometer_offset = 2.772210 + M_PI + 0.434 - 0.12 + 1.25 -
+                                         0.226 + 0.862067 - 0.121925182796926;
       break;
 
     default:
@@ -147,8 +150,8 @@ const Values &GetValues() {
 }
 
 const Values &GetValuesForTeam(uint16_t team_number) {
-  static ::aos::Mutex mutex;
-  ::aos::MutexLocker locker(&mutex);
+  static aos::stl_mutex mutex;
+  std::unique_lock<aos::stl_mutex> locker(mutex);
 
   static ::std::map<uint16_t, const Values *> values;
 

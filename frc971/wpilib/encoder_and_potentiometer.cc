@@ -20,40 +20,5 @@ bool DMAEncoder::DoUpdateFromSample(const DMASample &sample) {
   return false;
 }
 
-void InterruptEncoderAndPotentiometer::Start() {
-  AOS_CHECK_NE(nullptr, encoder_);
-  AOS_CHECK_NE(nullptr, index_);
-  AOS_CHECK_NE(nullptr, potentiometer_);
-  AOS_CHECK_NE(0, priority_);
-  thread_ = ::std::thread(::std::ref(*this));
-}
-
-void InterruptEncoderAndPotentiometer::operator()() {
-  ::aos::SetCurrentThreadName("IntEncPot_" +
-                              ::std::to_string(potentiometer_->GetChannel()));
-
-  index_->RequestInterrupts();
-  index_->SetUpSourceEdge(true, false);
-
-  ::aos::SetCurrentThreadRealtimePriority(priority_);
-
-  frc::InterruptableSensorBase::WaitResult result =
-      frc::InterruptableSensorBase::kBoth;
-  while (run_) {
-    result = index_->WaitForInterrupt(
-        0.1, result != frc::InterruptableSensorBase::kTimeout);
-    if (result == frc::InterruptableSensorBase::kTimeout) {
-      continue;
-    }
-
-    {
-      ::aos::MutexLocker locker(&mutex_);
-      last_potentiometer_voltage_ = potentiometer_->GetVoltage();
-      last_encoder_value_ = encoder_->GetRaw();
-      ++index_posedge_count_;
-    }
-  }
-}
-
 }  // namespace wpilib
 }  // namespace frc971

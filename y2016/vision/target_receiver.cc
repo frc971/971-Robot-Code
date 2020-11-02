@@ -14,7 +14,6 @@
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 #include "aos/logging/logging.h"
-#include "aos/mutex/mutex.h"
 #include "aos/time/time.h"
 #include "aos/vision/events/udp.h"
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
