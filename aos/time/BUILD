@@ -10,8 +10,6 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
-        "//aos:macros",
-        "//aos/type_traits",
         "@com_github_google_glog//:glog",
     ],
 )
@@ -28,8 +26,6 @@ cc_library(
     restricted_to = mcu_cpus,
     visibility = ["//visibility:public"],
     deps = [
-        "//aos:macros",
-        "//aos/type_traits",
         "//motors/core",
     ],
 )

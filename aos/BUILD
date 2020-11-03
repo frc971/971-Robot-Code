@@ -5,8 +5,8 @@ filegroup(
     name = "prime_binaries",
     srcs = [
         "//aos:aos_dump",
-        "//aos/starter",
         "//aos:aos_dump_autocomplete.sh",
+        "//aos/starter",
     ],
     visibility = ["//visibility:public"],
 )
@@ -167,6 +167,7 @@ cc_library(
     deps = [
         "//aos/ipc_lib:aos_sync",
         "//aos/time",
+        "//aos/type_traits",
         "@com_github_google_glog//:glog",
     ],
 )

@@ -198,7 +198,6 @@ cc_test(
         ":signalfd",
         "//aos:event",
         "//aos/events:epoll",
-        "//aos/libc:aos_strsignal",
         "//aos/testing:googletest",
         "//aos/testing:prevent_exit",
     ],

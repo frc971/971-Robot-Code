@@ -9,10 +9,6 @@
 #include <optional>
 #include <ostream>
 #include <thread>
-#include <type_traits>
-
-#include "aos/macros.h"
-#include "aos/type_traits/type_traits.h"
 
 namespace aos {
 
