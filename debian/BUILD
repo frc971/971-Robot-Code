@@ -320,6 +320,51 @@ generate_deb_tarball(
     files = python_gtk_debs,
 )
 
+# Starting point for opencv package list below.
+download_packages(
+    name = "download_opencv",
+    packages = [
+        "libopencv-calib3d-dev",
+        "libopencv-calib3d3.2",
+        "libopencv-contrib-dev",
+        "libopencv-contrib3.2",
+        "libopencv-core-dev",
+        "libopencv-core3.2",
+        "libopencv-dev",
+        "libopencv-features2d-dev",
+        "libopencv-features2d3.2",
+        "libopencv-flann-dev",
+        "libopencv-flann3.2",
+        "libopencv-highgui-dev",
+        "libopencv-highgui3.2",
+        "libopencv-imgcodecs-dev",
+        "libopencv-imgcodecs3.2",
+        "libopencv-imgproc-dev",
+        "libopencv-imgproc3.2",
+        "libopencv-ml-dev",
+        "libopencv-ml3.2",
+        "libopencv-objdetect-dev",
+        "libopencv-objdetect3.2",
+        "libopencv-photo-dev",
+        "libopencv-photo3.2",
+        "libopencv-shape-dev",
+        "libopencv-shape3.2",
+        "libopencv-stitching-dev",
+        "libopencv-stitching3.2",
+        "libopencv-superres-dev",
+        "libopencv-superres3.2",
+        "libopencv-ts-dev",
+        "libopencv-video-dev",
+        "libopencv-video3.2",
+        "libopencv-videoio-dev",
+        "libopencv-videoio3.2",
+        "libopencv-videostab-dev",
+        "libopencv-videostab3.2",
+        "libopencv-viz-dev",
+        "libopencv-viz3.2",
+    ],
+)
+
 # This list was generated with download_packages.py on armhf and then
 # hand-tweaked to get everything it needs.
 generate_deb_tarball(
