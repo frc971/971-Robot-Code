@@ -28,8 +28,8 @@ FlatbufferDetachedBuffer<ServerStatistics> MakeServerStatistics(
 
   std::vector<flatbuffers::Offset<ServerConnection>> connection_offsets;
   for (const std::string_view node_name : source_node_names) {
-    flatbuffers::Offset<Node> node_offset =
-        CopyFlatBuffer(configuration::GetNode(configuration, node_name), &fbb);
+    flatbuffers::Offset<Node> node_offset = RecursiveCopyFlatBuffer(
+        configuration::GetNode(configuration, node_name), &fbb);
     ServerConnection::Builder connection_builder(fbb);
     connection_builder.add_node(node_offset);
     connection_builder.add_state(State::DISCONNECTED);

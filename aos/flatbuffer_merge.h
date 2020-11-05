@@ -70,11 +70,55 @@ inline flatbuffers::Offset<T> MergeFlatBuffers(
                              fbb);
 }
 
+// Copies a flatbuffer by walking the tree and copying all the pieces.  This
+// converts DAGs to trees.
 template <class T>
-inline flatbuffers::Offset<T> CopyFlatBuffer(
+inline flatbuffers::Offset<T> RecursiveCopyFlatBuffer(
     const T *t1, flatbuffers::FlatBufferBuilder *fbb) {
   return MergeFlatBuffers<T>(reinterpret_cast<const flatbuffers::Table *>(t1),
                              nullptr, fbb);
+}
+
+// Copies a flatbuffer by finding the extents of the memory using the typetable
+// and copying the containing memory.  This doesn't allocate memory, and
+// preserves DAGs.
+flatbuffers::Offset<flatbuffers::Table> CopyFlatBuffer(
+    const flatbuffers::Table *t1, const flatbuffers::TypeTable *typetable,
+    flatbuffers::FlatBufferBuilder *fbb);
+
+template <class T>
+inline flatbuffers::Offset<T> CopyFlatBuffer(
+    const T *t1, flatbuffers::FlatBufferBuilder *fbb) {
+  return flatbuffers::Offset<T>(
+      CopyFlatBuffer(reinterpret_cast<const flatbuffers::Table *>(t1),
+                     T::MiniReflectTypeTable(), fbb)
+          .o);
+}
+
+template <class T>
+inline flatbuffers::Offset<T> CopyFlatBuffer(
+    const Flatbuffer<T> &t1, flatbuffers::FlatBufferBuilder *fbb) {
+  return flatbuffers::Offset<T>(
+      CopyFlatBuffer(
+          reinterpret_cast<const flatbuffers::Table *>(&t1.message()),
+          T::MiniReflectTypeTable(), fbb)
+          .o);
+}
+
+// Copies a flatbuffer by copying all the data without looking inside and
+// pointing inside it.
+template <class T>
+inline flatbuffers::Offset<T> BlindCopyFlatBuffer(
+    const Flatbuffer<T> &t, flatbuffers::FlatBufferBuilder *fbb) {
+  // Enforce 8 byte alignment so anything inside the flatbuffer can be read.
+  fbb->Align(sizeof(flatbuffers::largest_scalar_t));
+
+  // We don't know how much of the start of the flatbuffer is padding.  The
+  // safest thing to do from an alignment point of view (without looking inside)
+  // is to copy the initial offset and leave it as dead space.
+  fbb->PushBytes(t.data(), t.size());
+  return fbb->GetSize() -
+         flatbuffers::ReadScalar<flatbuffers::uoffset_t>(t.data());
 }
 
 template <class T>
@@ -111,6 +155,14 @@ inline FlatbufferDetachedBuffer<T> CopyFlatBuffer(const T *t) {
   flatbuffers::FlatBufferBuilder fbb;
   fbb.ForceDefaults(true);
   fbb.Finish(CopyFlatBuffer<T>(t, &fbb));
+  return FlatbufferDetachedBuffer<T>(fbb.Release());
+}
+
+template <class T>
+inline FlatbufferDetachedBuffer<T> RecursiveCopyFlatBuffer(const T *t) {
+  flatbuffers::FlatBufferBuilder fbb;
+  fbb.ForceDefaults(true);
+  fbb.Finish(RecursiveCopyFlatBuffer<T>(t, &fbb));
   return FlatbufferDetachedBuffer<T>(fbb.Release());
 }
 

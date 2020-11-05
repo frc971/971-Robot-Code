@@ -37,6 +37,7 @@ table Application {
   name:string;
   priority:int;
   maps:[Map];
+  long_thingy:uint64;
 }
 
 table VectorOfStrings {

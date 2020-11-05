@@ -100,8 +100,8 @@ void MergeTables(flatbuffers::voffset_t field_offset,
     const flatbuffers::Table *sub_t2 =
         reinterpret_cast<const flatbuffers::Table *>(val2);
 
-    elements->emplace_back(field_offset,
-                          MergeFlatBuffers(sub_typetable, sub_t1, sub_t2, fbb));
+    elements->emplace_back(
+        field_offset, MergeFlatBuffers(sub_typetable, sub_t1, sub_t2, fbb));
   }
 }
 
@@ -547,6 +547,222 @@ bool CompareFlatBuffer(const flatbuffers::TypeTable *typetable,
 
   return memcmp(fbb1.GetBufferPointer(), fbb2.GetBufferPointer(),
                 fbb1.GetSize()) == 0;
+}
+
+// Struct to track a range of memory.
+struct Bounds {
+  const uint8_t *min;
+  const uint8_t *max;
+
+  absl::Span<const uint8_t> span() {
+    return {min, static_cast<size_t>(max - min)};
+  }
+};
+
+// Grows the range of memory to contain the pointer.
+void Extend(Bounds *b, const uint8_t *ptr) {
+  b->min = std::min(ptr, b->min);
+  b->max = std::max(ptr, b->max);
+}
+
+// Grows the range of memory to contain the span.
+void Extend(Bounds *b, absl::Span<const uint8_t> data) {
+  b->min = std::min(data.data(), b->min);
+  b->max = std::max(data.data() + data.size(), b->max);
+}
+
+// Finds the extents of the provided string.  Returns the containing span and
+// required alignment.
+std::pair<absl::Span<const uint8_t>, size_t> ExtentsString(
+    const flatbuffers::String *s) {
+  const uint8_t *s_uint8 = reinterpret_cast<const uint8_t *>(s);
+  // Strings are null terminated.
+  Bounds b{.min = s_uint8,
+           .max = s_uint8 + sizeof(flatbuffers::uoffset_t) + s->size() + 1};
+  return std::make_pair(b.span(), sizeof(flatbuffers::uoffset_t));
+}
+
+// Finds the extents of the provided table.  Returns the containing span and the
+// required alignment.
+std::pair<absl::Span<const uint8_t>, size_t> ExtentsTable(
+    const flatbuffers::TypeTable *type_table, const flatbuffers::Table *t1) {
+  const uint8_t *t1_uint8 = reinterpret_cast<const uint8_t *>(t1);
+  // Count the offset to the vtable.
+  Bounds b{.min = t1_uint8, .max = t1_uint8 + sizeof(flatbuffers::soffset_t)};
+  // Find the limits of the vtable and start of table.
+  const uint8_t *vt = t1->GetVTable();
+  Extend(&b, vt);
+  Extend(&b, vt + flatbuffers::ReadScalar<flatbuffers::voffset_t>(vt));
+  // We need to be at least as aligned as the vtable pointer.  Start there.
+  size_t alignment = sizeof(flatbuffers::uoffset_t);
+
+  // Now do all our fields.
+  for (size_t field_index = 0; field_index < type_table->num_elems;
+       ++field_index) {
+    const flatbuffers::TypeCode type_code = type_table->type_codes[field_index];
+    const flatbuffers::ElementaryType elementary_type =
+        static_cast<flatbuffers::ElementaryType>(type_code.base_type);
+    const flatbuffers::TypeTable *field_type_table =
+        type_code.sequence_ref >= 0
+            ? type_table->type_refs[type_code.sequence_ref]()
+            : nullptr;
+
+    // Note: we don't yet support enums, structs, or unions.  That is mostly
+    // because we haven't had a use case yet.
+
+    // Compute the pointer to our field.
+    const uint8_t *val = nullptr;
+    if (type_table->st == flatbuffers::ST_TABLE) {
+      val = t1->GetAddressOf(flatbuffers::FieldIndexToOffset(
+          static_cast<flatbuffers::voffset_t>(field_index)));
+      // Bail on non-populated fields.
+      if (val == nullptr) continue;
+    } else {
+      val = t1_uint8 + type_table->values[field_index];
+    }
+
+    // Now make sure the field is aligned properly.
+    const size_t field_size =
+        flatbuffers::InlineSize(elementary_type, field_type_table);
+    alignment = std::max(
+        alignment, std::min(sizeof(flatbuffers::largest_scalar_t), field_size));
+
+    absl::Span<const uint8_t> field_span(val, field_size);
+
+    Extend(&b, field_span);
+
+    if (type_code.is_vector) {
+      // Go look inside the vector and track the base size.
+      val += flatbuffers::ReadScalar<flatbuffers::uoffset_t>(val);
+      const flatbuffers::Vector<uint8_t> *vec =
+          reinterpret_cast<const flatbuffers::Vector<uint8_t> *>(val);
+      absl::Span<const uint8_t> vec_span(
+          val, sizeof(flatbuffers::uoffset_t) +
+                   vec->size() * flatbuffers::InlineSize(elementary_type,
+                                                         field_type_table));
+      Extend(&b, vec_span);
+      // Non-scalar vectors need their pointers followed.
+      if (elementary_type == flatbuffers::ElementaryType::ET_STRING) {
+        for (size_t i = 0; i < vec->size(); ++i) {
+          const uint8_t *field_ptr =
+              vec->Data() + i * InlineSize(elementary_type, field_type_table);
+          std::pair<absl::Span<const uint8_t>, size_t> str_data =
+              ExtentsString(reinterpret_cast<const flatbuffers::String *>(
+                  field_ptr +
+                  flatbuffers::ReadScalar<flatbuffers::uoffset_t>(field_ptr)));
+          Extend(&b, str_data.first);
+          alignment = std::max(alignment, str_data.second);
+        }
+      } else if (elementary_type == flatbuffers::ElementaryType::ET_SEQUENCE) {
+        for (size_t i = 0; i < vec->size(); ++i) {
+          const uint8_t *field_ptr =
+              vec->Data() + i * InlineSize(elementary_type, field_type_table);
+          CHECK(type_table->st == flatbuffers::ST_TABLE)
+              << ": Only tables are supported right now.  Patches welcome.";
+
+          std::pair<absl::Span<const uint8_t>, size_t> sub_data = ExtentsTable(
+              field_type_table,
+              reinterpret_cast<const flatbuffers::Table *>(
+                  field_ptr +
+                  flatbuffers::ReadScalar<flatbuffers::uoffset_t>(field_ptr)));
+          alignment = std::max(alignment, sub_data.second);
+          Extend(&b, sub_data.first);
+        }
+      }
+
+      continue;
+    }
+
+    switch (elementary_type) {
+      case flatbuffers::ElementaryType::ET_UTYPE:
+      case flatbuffers::ElementaryType::ET_BOOL:
+      case flatbuffers::ElementaryType::ET_CHAR:
+      case flatbuffers::ElementaryType::ET_UCHAR:
+      case flatbuffers::ElementaryType::ET_SHORT:
+      case flatbuffers::ElementaryType::ET_USHORT:
+      case flatbuffers::ElementaryType::ET_INT:
+      case flatbuffers::ElementaryType::ET_UINT:
+      case flatbuffers::ElementaryType::ET_LONG:
+      case flatbuffers::ElementaryType::ET_ULONG:
+      case flatbuffers::ElementaryType::ET_FLOAT:
+      case flatbuffers::ElementaryType::ET_DOUBLE:
+        // This is covered by the field and size above.
+        break;
+      case flatbuffers::ElementaryType::ET_STRING: {
+        std::pair<absl::Span<const uint8_t>, size_t> str_data =
+            ExtentsString(reinterpret_cast<const flatbuffers::String *>(
+                val + flatbuffers::ReadScalar<flatbuffers::uoffset_t>(val)));
+        alignment = std::max(alignment, str_data.second);
+        Extend(&b, str_data.first);
+      } break;
+      case flatbuffers::ElementaryType::ET_SEQUENCE: {
+        switch (type_table->st) {
+          case flatbuffers::ST_TABLE: {
+            const flatbuffers::Table *sub_table =
+                reinterpret_cast<const flatbuffers::Table *>(
+                    val + flatbuffers::ReadScalar<flatbuffers::uoffset_t>(val));
+            std::pair<absl::Span<const uint8_t>, size_t> sub_data =
+                ExtentsTable(field_type_table, sub_table);
+            alignment = std::max(alignment, sub_data.second);
+            Extend(&b, sub_data.first);
+          } break;
+          case flatbuffers::ST_ENUM:
+            LOG(FATAL) << "Copying enums not implemented yet";
+          case flatbuffers::ST_STRUCT:
+            LOG(FATAL) << "Copying structs not implemented yet";
+          case flatbuffers::ST_UNION:
+            LOG(FATAL) << "Copying unions not implemented yet";
+        }
+      }
+    }
+  }
+
+  // To be a parsable flatbuffer, the flatbuffer needs to be aligned up to the
+  // maximum internal alignment.  Both in length and starting point.  We know
+  // that for this to be actually true, the start and end pointers will need to
+  // be aligned to the required alignment.
+  CHECK((alignment & (alignment - 1)) == 0)
+      << ": Invalid alignment: " << alignment << ", needs to be a power of 2.";
+  while (reinterpret_cast<uintptr_t>(b.min) & (alignment - 1)) {
+    --b.min;
+  }
+  while (reinterpret_cast<uintptr_t>(b.max) & (alignment - 1)) {
+    ++b.max;
+  }
+
+  return std::make_pair(b.span(), alignment);
+}
+
+// Computes the offset, containing span, and alignment of the provided
+// flatbuffer.
+std::tuple<flatbuffers::Offset<flatbuffers::Table>, absl::Span<const uint8_t>,
+           size_t>
+Extents(const flatbuffers::TypeTable *type_table,
+        const flatbuffers::Table *t1) {
+  std::pair<absl::Span<const uint8_t>, size_t> data =
+      ExtentsTable(type_table, t1);
+
+  return std::make_tuple(flatbuffers::Offset<flatbuffers::Table>(
+                             static_cast<flatbuffers::uoffset_t>(
+                                 data.first.data() + data.first.size() -
+                                 reinterpret_cast<const uint8_t *>(t1))),
+                         data.first, data.second);
+}
+
+flatbuffers::Offset<flatbuffers::Table> CopyFlatBuffer(
+    const flatbuffers::Table *t1, const flatbuffers::TypeTable *typetable,
+    flatbuffers::FlatBufferBuilder *fbb) {
+  std::tuple<flatbuffers::Offset<flatbuffers::Table>, absl::Span<const uint8_t>,
+             size_t>
+      r = Extents(typetable, t1);
+
+  // Pad out enough so that the flatbuffer alignment is preserved.
+  fbb->Align(std::get<2>(r));
+
+  // Now push everything we found.  And offsets are tracked from the end of the
+  // buffer while building, so recompute the offset returned from the back.
+  fbb->PushBytes(std::get<1>(r).data(), std::get<1>(r).size());
+  return fbb->GetSize() + std::get<0>(r).o - std::get<1>(r).size();
 }
 
 }  // namespace aos

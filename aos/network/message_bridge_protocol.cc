@@ -19,7 +19,8 @@ aos::FlatbufferDetachedBuffer<aos::message_bridge::Connect> MakeConnectMessage(
   flatbuffers::FlatBufferBuilder fbb;
   fbb.ForceDefaults(true);
 
-  flatbuffers::Offset<Node> node_offset = CopyFlatBuffer<Node>(my_node, &fbb);
+  flatbuffers::Offset<Node> node_offset =
+      RecursiveCopyFlatBuffer<Node>(my_node, &fbb);
   const std::string_view node_name = my_node->name()->string_view();
 
   std::vector<flatbuffers::Offset<Channel>> channel_offsets;
@@ -30,7 +31,7 @@ aos::FlatbufferDetachedBuffer<aos::message_bridge::Connect> MakeConnectMessage(
             channel->source_node()->string_view() == remote_name) {
           // Remove the schema to save some space on the wire.
           aos::FlatbufferDetachedBuffer<Channel> cleaned_channel =
-              CopyFlatBuffer<Channel>(channel);
+              RecursiveCopyFlatBuffer<Channel>(channel);
           cleaned_channel.mutable_message()->clear_schema();
           channel_offsets.emplace_back(
               CopyFlatBuffer<Channel>(&cleaned_channel.message(), &fbb));
