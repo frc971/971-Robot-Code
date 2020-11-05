@@ -61,6 +61,23 @@ table AbsolutePosition {
   absolute_encoder:double;
 }
 
+// Represents all of the data for an absolute and relative encoder pair,
+// along with an absolute encoder.
+// They operate similarly to a pot and absolute encoder, but another absolute
+// encoder is used in place of the potentiometer.
+// The units on all of the positions are the same.
+// The relative encoder values are relative to where the encoder was at some
+// arbitrary point in time.
+table AbsoluteAndAbsolutePosition {
+  // Current position read from each encoder.
+  encoder:double;
+  absolute_encoder:double;
+
+  // Current position read from the single turn absolute encoder.
+  // This can not turn more than one rotation.
+  single_turn_absolute_encoder:double;
+}
+
 // Represents all of the data for a single encoder.
 // The relative encoder values are relative to where the encoder was at some
 // arbitrary point in time.

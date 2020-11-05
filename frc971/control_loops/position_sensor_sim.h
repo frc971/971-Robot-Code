@@ -21,11 +21,18 @@ class PositionSensorSimulator {
   //     NOTE: When retrieving the sensor values for a PotAndAbsolutePosition
   //     message this field represents the interval between when the absolute
   //     encoder reads 0.
+  // single_turn_distance_per_revolution:
+  //    This is only used when retrieving
+  //    sensor values for an AbsoluteAndAbsolutePosition.
+  //    The interval between when the single turn abosolute encoder reads 0.
+  //    This will be the whole range of the single turn absolute encoder
+  //    as it cannot turn more than once.
   // noise_seed:
   //     The seed to feed into the random number generator for the potentiometer
   //     values.
   PositionSensorSimulator(
       double distance_per_revolution,
+      double single_turn_distance_per_revolution = 0.0,
       unsigned int noise_seed = ::aos::testing::RandomSeed());
 
   // Set new parameters for the sensors. This is useful for unit tests to change
@@ -37,9 +44,15 @@ class PositionSensorSimulator {
   //                   This specifies the standard deviation of that
   //                   distribution.
   // known_index_pos: The absolute position of an index pulse.
+  // known_absolute_encoder_pos: The readout of the absolute encoder when the
+  //                             robot's mechanism is at zero.
+  // single_turn_known_absolute_encoder_pos: The readout of the single turn
+  //                                         absolute encoder when the robot's
+  //                                         mechanism is at zero.
   void Initialize(double start_position, double pot_noise_stddev,
                   double known_index_pos = 0.0,
-                  double known_absolute_encoder_pos = 0.0);
+                  double known_absolute_encoder_pos = 0.0,
+                  double single_turn_known_absolute_encoder_pos = 0.0);
 
   // Initializes a sensor simulation which is pretending to be a hall effect +
   // encoder setup.  This is assuming that the hall effect sensor triggers once
@@ -158,15 +171,33 @@ class PositionSensorSimulator {
     GaussianNoise pot_noise_;
   };
 
+  double WrapAbsoluteEncoder() {
+    // TODO(phil): Create some lag here since this is a PWM signal it won't be
+    // instantaneous like the other signals. Better yet, its lag varies
+    // randomly with the distribution varying depending on the reading.
+    double absolute_encoder = ::std::remainder(
+        current_position_ + known_absolute_encoder_, distance_per_revolution_);
+    if (absolute_encoder < 0) {
+      absolute_encoder += distance_per_revolution_;
+    }
+    return absolute_encoder;
+  }
+
   IndexEdge lower_index_edge_;
   IndexEdge upper_index_edge_;
 
   // Distance between index pulses on the mechanism.
   double distance_per_revolution_;
 
+  // The distance that the mechanism travels for one revolution of the single
+  // turn absolue encoder
+  double single_turn_distance_per_revolution_;
+
   // The readout of the absolute encoder when the robot's mechanism is at
   // zero.
   double known_absolute_encoder_;
+  // The other absolute encoder's value when the mechanism is at zero.
+  double single_turn_known_absolute_encoder_;
   // Current position of the mechanism relative to absolute zero.
   double current_position_;
   // Starting position of the mechanism relative to absolute zero. See the
