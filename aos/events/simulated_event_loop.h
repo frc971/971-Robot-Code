@@ -147,6 +147,10 @@ class NodeEventLoopFactory {
   inline monotonic_clock::time_point monotonic_now() const;
   inline realtime_clock::time_point realtime_now() const;
 
+  const Configuration *configuration() const {
+    return factory_->configuration();
+  }
+
   // Returns the simulated network delay for messages forwarded between nodes.
   std::chrono::nanoseconds network_delay() const {
     return factory_->network_delay();
