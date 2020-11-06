@@ -1,4 +1,4 @@
-load("@//tools/build_rules:select.bzl", "cpu_select")
+load("//tools/build_rules:select.bzl", "cpu_select")
 
 cc_library(
     name = "wpilib",
