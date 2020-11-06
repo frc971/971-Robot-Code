@@ -123,14 +123,14 @@ inline flatbuffers::Offset<T> BlindCopyFlatBuffer(
 
 template <class T>
 inline flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<T>>>
-CopyVectorTable(const flatbuffers::Vector<flatbuffers::Offset<T>> *t1,
-                flatbuffers::FlatBufferBuilder *fbb) {
+RecursiveCopyVectorTable(const flatbuffers::Vector<flatbuffers::Offset<T>> *t1,
+                         flatbuffers::FlatBufferBuilder *fbb) {
   if (t1 == nullptr) {
     return 0;
   }
   std::vector<flatbuffers::Offset<T>> v;
   for (const T *t : *t1) {
-    v.emplace_back(CopyFlatBuffer(t, fbb));
+    v.emplace_back(RecursiveCopyFlatBuffer(t, fbb));
   }
   return fbb->CreateVector(v);
 }

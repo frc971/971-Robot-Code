@@ -735,7 +735,7 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
 
       flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Connection>>>
           destination_nodes_offset =
-              aos::CopyVectorTable(c->destination_nodes(), &fbb);
+              aos::RecursiveCopyVectorTable(c->destination_nodes(), &fbb);
 
       flatbuffers::Offset<
           flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>>
@@ -782,14 +782,16 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
   }
 
   flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Map>>>
-      maps_offset = aos::CopyVectorTable(config.message().maps(), &fbb);
+      maps_offset =
+          aos::RecursiveCopyVectorTable(config.message().maps(), &fbb);
 
   flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Node>>>
-      nodes_offset = aos::CopyVectorTable(config.message().nodes(), &fbb);
+      nodes_offset =
+          aos::RecursiveCopyVectorTable(config.message().nodes(), &fbb);
 
   flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Application>>>
       applications_offset =
-          aos::CopyVectorTable(config.message().applications(), &fbb);
+          aos::RecursiveCopyVectorTable(config.message().applications(), &fbb);
 
   // Now insert everything else in unmodified.
   ConfigurationBuilder configuration_builder(fbb);
