@@ -70,11 +70,13 @@
   "nodes": [
     {
       "name": "pi1",
-      "hostname": "raspberrypi"
+      "hostname": "raspberrypi",
+      "tags": ["a", "c"]
     },
     {
       "name": "pi2",
-      "hostname": "raspberrypi2"
+      "hostname": "raspberrypi2",
+      "tags": ["b", "c"]
     }
   ]
 }

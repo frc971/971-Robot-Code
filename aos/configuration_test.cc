@@ -700,6 +700,30 @@ TEST_F(ConfigurationTest, GetNodes) {
   }
 }
 
+// Tests that we can pull out all the nodes with a tag.
+TEST_F(ConfigurationTest, GetNodesWithTag) {
+  {
+    FlatbufferDetachedBuffer<Configuration> config =
+        ReadConfig(kConfigPrefix + "good_multinode.json");
+    const Node *pi1 = GetNode(&config.message(), "pi1");
+    const Node *pi2 = GetNode(&config.message(), "pi2");
+
+    EXPECT_THAT(GetNodesWithTag(&config.message(), "a"),
+                ::testing::ElementsAre(pi1));
+    EXPECT_THAT(GetNodesWithTag(&config.message(), "b"),
+                ::testing::ElementsAre(pi2));
+    EXPECT_THAT(GetNodesWithTag(&config.message(), "c"),
+                ::testing::ElementsAre(pi1, pi2));
+  }
+
+  {
+    FlatbufferDetachedBuffer<Configuration> config =
+        ReadConfig(kConfigPrefix + "config1.json");
+    EXPECT_THAT(GetNodesWithTag(&config.message(), "arglfish"),
+                ::testing::ElementsAre(nullptr));
+  }
+}
+
 // Tests that we can extract a node index from a config.
 TEST_F(ConfigurationTest, GetNodeIndex) {
   FlatbufferDetachedBuffer<Configuration> config =

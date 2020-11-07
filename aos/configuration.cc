@@ -958,6 +958,31 @@ std::vector<const Node *> GetNodes(const Configuration *config) {
   return nodes;
 }
 
+std::vector<const Node *> GetNodesWithTag(const Configuration *config,
+                                          std::string_view tag) {
+  std::vector<const Node *> nodes;
+  if (!MultiNode(config)) {
+    nodes.emplace_back(nullptr);
+  } else {
+    for (const Node *node : *config->nodes()) {
+      if (!node->has_tags()) {
+        continue;
+      }
+      bool did_found_tag = false;
+      for (const flatbuffers::String *found_tag : *node->tags()) {
+        if (found_tag->string_view() == tag) {
+          did_found_tag = true;
+          break;
+        }
+      }
+      if (did_found_tag) {
+        nodes.emplace_back(node);
+      }
+    }
+  }
+  return nodes;
+}
+
 bool MultiNode(const Configuration *config) { return config->has_nodes(); }
 
 bool ChannelIsSendableOnNode(const Channel *channel, const Node *node) {
