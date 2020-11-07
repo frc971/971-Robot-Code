@@ -5,13 +5,13 @@
 namespace aos::logger {
 namespace {
 
-// Returns if `status` is not an error code, otherwise logs the appropriate
-// error message and crashes.
-void CheckLzmaCodeIsOk(lzma_ret status) {
+// Returns true if `status` is not an error code, false if it is recoverable, or
+// otherwise logs the appropriate error message and crashes.
+bool LzmaCodeIsOk(lzma_ret status) {
   switch (status) {
     case LZMA_OK:
     case LZMA_STREAM_END:
-      return;
+      return true;
     case LZMA_MEM_ERROR:
       LOG(FATAL) << "Memory allocation failed:" << status;
     case LZMA_OPTIONS_ERROR:
@@ -31,9 +31,11 @@ void CheckLzmaCodeIsOk(lzma_ret status) {
     case LZMA_FORMAT_ERROR:
       LOG(FATAL) << "File format not recognized: " << status;
     case LZMA_DATA_ERROR:
-      LOG(FATAL) << "Compressed file is corrupt: " << status;
+      LOG(WARNING) << "Compressed file is corrupt: " << status;
+      return false;
     case LZMA_BUF_ERROR:
-      LOG(FATAL) << "Compressed file is truncated or corrupt: " << status;
+      LOG(WARNING) << "Compressed file is truncated or corrupt: " << status;
+      return false;
     default:
       LOG(FATAL) << "Unexpected return value: " << status;
   }
@@ -50,7 +52,7 @@ LzmaEncoder::LzmaEncoder(const uint32_t compression_preset)
 
   lzma_ret status =
       lzma_easy_encoder(&stream_, compression_preset_, LZMA_CHECK_CRC64);
-  CheckLzmaCodeIsOk(status);
+  CHECK(LzmaCodeIsOk(status));
   stream_.avail_out = 0;
   VLOG(2) << "LzmaEncoder: Initialization succeeded.";
 }
@@ -125,7 +127,7 @@ void LzmaEncoder::RunLzmaCode(lzma_action action) {
 
     // Encode the data.
     lzma_ret status = lzma_code(&stream_, action);
-    CheckLzmaCodeIsOk(status);
+    CHECK(LzmaCodeIsOk(status));
     if (action == LZMA_FINISH) {
       if (status == LZMA_STREAM_END) {
         // This is returned when lzma_code is all done.
@@ -143,12 +145,12 @@ void LzmaEncoder::RunLzmaCode(lzma_action action) {
 }
 
 LzmaDecoder::LzmaDecoder(std::string_view filename)
-    : dummy_decoder_(filename), stream_(LZMA_STREAM_INIT) {
+    : dummy_decoder_(filename), stream_(LZMA_STREAM_INIT), filename_(filename) {
   compressed_data_.resize(kBufSize);
 
   lzma_ret status =
       lzma_stream_decoder(&stream_, UINT64_MAX, LZMA_CONCATENATED);
-  CheckLzmaCodeIsOk(status);
+  CHECK(LzmaCodeIsOk(status)) << "Failed initializing LZMA stream decoder.";
   stream_.avail_out = 0;
   VLOG(2) << "LzmaDecoder: Initialization succeeded.";
 }
@@ -186,7 +188,14 @@ size_t LzmaDecoder::Read(uint8_t *begin, uint8_t *end) {
       finished_ = true;
       return (end - begin) - stream_.avail_out;
     }
-    CheckLzmaCodeIsOk(status);
+
+    // If we fail to decompress, give up.  Return everything that has been
+    // produced so far.
+    if (!LzmaCodeIsOk(status)) {
+      finished_ = true;
+      LOG(WARNING) << filename_ << " is truncated or corrupted.";
+      return (end - begin) - stream_.avail_out;
+    }
   }
   return end - begin;
 }

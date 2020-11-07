@@ -41,7 +41,10 @@ FlatbufferVector<LogFileHeader> MaybeReadHeaderOrDie(
     const std::vector<std::vector<std::string>> &filenames) {
   CHECK_GE(filenames.size(), 1u) << ": Empty filenames list";
   CHECK_GE(filenames[0].size(), 1u) << ": Empty filenames list";
-  return ReadHeader(filenames[0][0]);
+  std::optional<FlatbufferVector<LogFileHeader>> result =
+      ReadHeader(filenames[0][0]);
+  CHECK(result);
+  return result.value();
 }
 namespace chrono = std::chrono;
 }  // namespace

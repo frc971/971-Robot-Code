@@ -15,6 +15,8 @@ namespace logger {
 namespace chrono = std::chrono;
 
 std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
+  std::vector<std::string> corrupted;
+
   // Start by grouping all parts by UUID, and extracting the part index.
   // Datastructure to hold all the info extracted from a set of parts which go
   // together so we can sort them afterwords.
@@ -63,32 +65,44 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
 
   // Now extract everything into our datastructures above for sorting.
   for (const std::string &part : parts) {
-    FlatbufferVector<LogFileHeader> log_header = ReadHeader(part);
+    std::optional<FlatbufferVector<LogFileHeader>> log_header =
+        ReadHeader(part);
+    if (!log_header) {
+      LOG(WARNING) << "Skipping " << part << " without a header";
+      corrupted.emplace_back(part);
+      continue;
+    }
 
     const monotonic_clock::time_point monotonic_start_time(
-        chrono::nanoseconds(log_header.message().monotonic_start_time()));
+        chrono::nanoseconds(log_header->message().monotonic_start_time()));
     const realtime_clock::time_point realtime_start_time(
-        chrono::nanoseconds(log_header.message().realtime_start_time()));
+        chrono::nanoseconds(log_header->message().realtime_start_time()));
 
     const std::string_view node =
-        log_header.message().has_node()
-            ? log_header.message().node()->name()->string_view()
+        log_header->message().has_node()
+            ? log_header->message().node()->name()->string_view()
             : "";
 
     const std::string_view logger_node =
-        log_header.message().has_logger_node()
-            ? log_header.message().logger_node()->name()->string_view()
+        log_header->message().has_logger_node()
+            ? log_header->message().logger_node()->name()->string_view()
             : "";
 
     // Looks like an old log.  No UUID, index, and also single node.  We have
     // little to no multi-node log files in the wild without part UUIDs and
     // indexes which we care much about.
-    if (!log_header.message().has_parts_uuid() &&
-        !log_header.message().has_parts_index() &&
-        !log_header.message().has_node()) {
-      FlatbufferVector<MessageHeader> first_message = ReadNthMessage(part, 0);
+    if (!log_header->message().has_parts_uuid() &&
+        !log_header->message().has_parts_index() &&
+        !log_header->message().has_node()) {
+      std::optional<FlatbufferVector<MessageHeader>> first_message =
+          ReadNthMessage(part, 0);
+      if (!first_message) {
+        LOG(WARNING) << "Skipping " << part << " without any messages";
+        corrupted.emplace_back(part);
+        continue;
+      }
       const monotonic_clock::time_point first_message_time(
-          chrono::nanoseconds(first_message.message().monotonic_sent_time()));
+          chrono::nanoseconds(first_message->message().monotonic_sent_time()));
 
       // Find anything with a matching start time.  They all go together.
       auto result = std::find_if(
@@ -111,17 +125,17 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
       continue;
     }
 
-    CHECK(log_header.message().has_log_event_uuid());
-    CHECK(log_header.message().has_parts_uuid());
-    CHECK(log_header.message().has_parts_index());
+    CHECK(log_header->message().has_log_event_uuid());
+    CHECK(log_header->message().has_parts_uuid());
+    CHECK(log_header->message().has_parts_index());
 
-    CHECK_EQ(log_header.message().has_logger_node(),
-             log_header.message().has_node());
+    CHECK_EQ(log_header->message().has_logger_node(),
+             log_header->message().has_node());
 
     const std::string log_event_uuid =
-        log_header.message().log_event_uuid()->str();
-    const std::string parts_uuid = log_header.message().parts_uuid()->str();
-    int32_t parts_index = log_header.message().parts_index();
+        log_header->message().log_event_uuid()->str();
+    const std::string parts_uuid = log_header->message().parts_uuid()->str();
+    int32_t parts_index = log_header->message().parts_index();
 
     auto log_it = parts_list.find(log_event_uuid);
     if (log_it == parts_list.end()) {
@@ -170,6 +184,15 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
     it->second.parts.emplace_back(std::make_pair(part, parts_index));
   }
 
+  if (old_parts.empty() && parts_list.empty()) {
+    if (parts.empty()) {
+      return std::vector<LogFile>{};
+    } else {
+      LogFile log_file;
+      log_file.corrupted = std::move(corrupted);
+      return std::vector<LogFile>{log_file};
+    }
+  }
   CHECK_NE(old_parts.empty(), parts_list.empty())
       << ": Can't have a mix of old and new parts.";
 
@@ -192,6 +215,7 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
       log_file.parts.emplace_back(std::move(p.parts));
       log_file.monotonic_start_time = log_file.parts[0].monotonic_start_time;
       log_file.realtime_start_time = log_file.parts[0].realtime_start_time;
+      log_file.corrupted = corrupted;
       result.emplace_back(std::move(log_file));
     }
 
@@ -207,6 +231,7 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
     new_file.logger_node = logs.second.logger_node;
     new_file.monotonic_start_time = logs.second.monotonic_start_time;
     new_file.realtime_start_time = logs.second.realtime_start_time;
+    new_file.corrupted = corrupted;
     for (std::pair<const std::string, UnsortedLogParts> &parts :
          logs.second.unsorted_parts) {
       LogParts new_parts;

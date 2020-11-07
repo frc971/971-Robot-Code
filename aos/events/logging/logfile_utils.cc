@@ -348,13 +348,15 @@ bool SpanReader::ReadBlock() {
   return true;
 }
 
-FlatbufferVector<LogFileHeader> ReadHeader(std::string_view filename) {
+std::optional<FlatbufferVector<LogFileHeader>> ReadHeader(
+    std::string_view filename) {
   SpanReader span_reader(filename);
   absl::Span<const uint8_t> config_data = span_reader.ReadMessage();
 
   // Make sure something was read.
-  CHECK(config_data != absl::Span<const uint8_t>())
-      << ": Failed to read header from: " << filename;
+  if (config_data == absl::Span<const uint8_t>()) {
+    return std::nullopt;
+  }
 
   // And copy the config so we have it forever, removing the size prefix.
   ResizeableBuffer data;
@@ -364,16 +366,17 @@ FlatbufferVector<LogFileHeader> ReadHeader(std::string_view filename) {
   return FlatbufferVector<LogFileHeader>(std::move(data));
 }
 
-FlatbufferVector<MessageHeader> ReadNthMessage(std::string_view filename,
-                                               size_t n) {
+std::optional<FlatbufferVector<MessageHeader>> ReadNthMessage(
+    std::string_view filename, size_t n) {
   SpanReader span_reader(filename);
   absl::Span<const uint8_t> data_span = span_reader.ReadMessage();
   for (size_t i = 0; i < n + 1; ++i) {
     data_span = span_reader.ReadMessage();
 
     // Make sure something was read.
-    CHECK(data_span != absl::Span<const uint8_t>())
-        << ": Failed to read data from: " << filename;
+    if (data_span == absl::Span<const uint8_t>()) {
+      return std::nullopt;
+    }
   }
 
   // And copy the config so we have it forever, removing the size prefix.

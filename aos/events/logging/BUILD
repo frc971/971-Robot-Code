@@ -291,6 +291,11 @@ aos_config(
 cc_test(
     name = "logger_test",
     srcs = ["logger_test.cc"],
+    copts = select({
+        "//tools:cpu_k8": ["-DLZMA=1"],
+        "//tools:cpu_aarch64": ["-DLZMA=1"],
+        "//conditions:default": [],
+    }),
     data = [
         ":multinode_pingpong_config",
         "//aos/events:pingpong_config",
