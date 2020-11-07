@@ -689,8 +689,8 @@ http_archive(
 http_archive(
     name = "opencv_k8",
     build_file = "@//debian:opencv.BUILD",
-    sha256 = "4b438c5bb123b2ed95db959fcfdefc833e8e5eee5778c0fbecbb62a94df0079e",
-    url = "https://www.frc971.org/Build-Dependencies/opencv_amd64.tar.gz",
+    sha256 = "5ae1b473c2d47576d6cbea61d46423d8782936c057b578f1236809e43d0a62d1",
+    url = "https://www.frc971.org/Build-Dependencies/opencv_amd64_v2.tar.gz",
 )
 
 # Downloaded from:
