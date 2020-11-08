@@ -1,8 +1,8 @@
 def _aos_vision_downloader_impl(ctx):
     all_files = ctx.files.srcs
-    ctx.file_action(
+    ctx.actions.write(
         output = ctx.outputs.executable,
-        executable = True,
+        is_executable = True,
         content = "\n".join([
             "#!/bin/bash",
             "set -e",
