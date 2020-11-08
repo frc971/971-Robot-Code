@@ -596,6 +596,7 @@ filegroup(
     # TODO(james): Once a functioning release contains this patch, convert
     # to that. See https://github.com/emscripten-core/emscripten/pull/9048
     patches = ["@//debian:emscripten_toolchain.patch"],
+    patch_args = ["-p1"],
     sha256 = "c87e42cb6a104094e7daf2b7e61ac835f83674ac0168f533455838a1129cc764",
     strip_prefix = "emscripten-" + emscripten_version,
     urls = ["https://github.com/emscripten-core/emscripten/archive/" + emscripten_version + ".tar.gz"],
