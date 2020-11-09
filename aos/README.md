@@ -5,6 +5,15 @@ See [Top level README](../README.md) for overall information
 For examples on viewing events and logging, see the [README.md](./events/README.md) file in `aos/events`
 
 
+### `aos_graph_nodes`
+
+This provides an easy way to visualize the connections and messages being passed between nodes in our system.
+
+Run with `--help` for more on usage.  To see a graphical visualization, pipe the output through `dot` using an X11 display window:
+```
+aos_graph_nodes | dot -Tx11
+```
+
 ### NOTES
 
 Some functions need to be in separate translation units in order for them to be guaranteed to work. As the C standard says,
