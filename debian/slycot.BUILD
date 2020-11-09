@@ -87,6 +87,8 @@ cc_library(
         "@python_repo//:python2.7_f2py",
         "@python_repo//:python2.7_lib",
     ],
+    # Make sure this gets included in the .so.
+    alwayslink = True,
 )
 
 # Link it all together.  Make sure all the deps get static linked into a single

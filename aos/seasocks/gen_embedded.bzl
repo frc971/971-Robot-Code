@@ -1,5 +1,5 @@
 def _gen_embedded_impl(ctx):
-    ctx.action(
+    ctx.actions.run(
         inputs = ctx.files.srcs,
         outputs = [ctx.outputs.source],
         executable = ctx.executable._gen_embedded,

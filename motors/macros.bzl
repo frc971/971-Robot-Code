@@ -7,4 +7,5 @@ def hex_from_elf(name, restricted_to = None):
         executable = True,
         output_to_bindir = True,
         restricted_to = restricted_to,
+        toolchains = ["@bazel_tools//tools/cpp:current_cc_toolchain"],
     )

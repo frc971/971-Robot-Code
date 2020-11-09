@@ -59,8 +59,7 @@ def _define_fortran_output(src):
 _single_fortran_object = rule(
     attrs = {
         "src": attr.label(
-            single_file = True,
-            allow_files = FileType([".f"]),
+            allow_single_file = [".f"],
         ),
         "cc_libs": attr.label_list(providers = ["cc"]),
         # TODO(Brian): Replace this with something more fine-grained from the

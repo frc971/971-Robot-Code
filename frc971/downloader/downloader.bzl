@@ -1,8 +1,8 @@
 def _aos_downloader_impl(ctx):
     all_files = ctx.files.srcs + ctx.files.start_srcs + [ctx.outputs._startlist]
-    ctx.file_action(
+    ctx.actions.write(
         output = ctx.outputs.executable,
-        executable = True,
+        is_executable = True,
         content = "\n".join([
             "#!/bin/bash",
             "set -e",
@@ -21,7 +21,7 @@ def _aos_downloader_impl(ctx):
         ]),
     )
 
-    ctx.file_action(
+    ctx.actions.write(
         output = ctx.outputs._startlist,
         content = "\n".join([f.basename for f in ctx.files.start_srcs]) + "\n",
     )

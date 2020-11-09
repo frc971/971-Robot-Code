@@ -1,3 +1,5 @@
+load("@//tools/build_rules:select.bzl", "compiler_select")
+
 def _GetPath(ctx, path):
   if ctx.label.workspace_root:
     return ctx.label.workspace_root + '/' + path
@@ -105,7 +107,7 @@ def _proto_gen_impl(ctx):
     inputs += [plugin]
 
   if args:
-    ctx.action(
+    ctx.actions.run(
         inputs=inputs,
         outputs=ctx.outputs.outs,
         arguments=args + import_flags + [s.path for s in srcs],
@@ -130,7 +132,7 @@ proto_gen = rule(
         "protoc": attr.label(
             cfg = "host",
             executable = True,
-            single_file = True,
+            allow_single_file = True,
             mandatory = True,
         ),
         "plugin": attr.label(
@@ -173,8 +175,6 @@ MSVC_COPTS = [
     "/wd4018", # -Wno-sign-compare
     "/wd4514", # -Wno-unused-function
 ]
-
-load("@//tools/build_rules:select.bzl", "compiler_select")
 
 COPTS = [
         "-DHAVE_PTHREAD",
@@ -302,8 +302,8 @@ def internal_gen_well_known_protos_java(srcs):
   Args:
     srcs: the well known protos
   """
-  root = Label("%s//protobuf_java" % (REPOSITORY_NAME)).workspace_root
-  pkg = PACKAGE_NAME + "/" if PACKAGE_NAME else ""
+  root = Label("%s//protobuf_java" % (native.repository_name())).workspace_root
+  pkg = native.package_name() + "/" if native.package_name() else ""
   if root == "":
     include = " -I%ssrc " % pkg
   else:
