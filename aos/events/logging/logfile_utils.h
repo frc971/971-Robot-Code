@@ -181,9 +181,10 @@ flatbuffers::Offset<MessageHeader> PackMessage(
     flatbuffers::FlatBufferBuilder *fbb, const Context &context,
     int channel_index, LogType log_type);
 
-FlatbufferVector<LogFileHeader> ReadHeader(std::string_view filename);
-FlatbufferVector<MessageHeader> ReadNthMessage(std::string_view filename,
-                                               size_t n);
+std::optional<FlatbufferVector<LogFileHeader>> ReadHeader(
+    std::string_view filename);
+std::optional<FlatbufferVector<MessageHeader>> ReadNthMessage(
+    std::string_view filename, size_t n);
 
 // Class to read chunks out of a log file.
 class SpanReader {

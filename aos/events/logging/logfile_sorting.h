@@ -45,6 +45,9 @@ struct LogFile {
 
   // All the parts, unsorted.
   std::vector<LogParts> parts;
+
+  // A list of parts which were corrupted and are unknown where they should go.
+  std::vector<std::string> corrupted;
 };
 
 std::ostream &operator<<(std::ostream &stream, const LogFile &file);

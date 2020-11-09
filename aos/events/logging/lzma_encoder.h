@@ -73,6 +73,9 @@ class LzmaDecoder final : public DataDecoder {
   // Flag that represents whether or not all the data from the file has been
   // successfully decoded.
   bool finished_ = false;
+
+  // Filename we are decompressing.
+  std::string filename_;
 };
 
 }  // namespace aos::logger
