@@ -441,10 +441,15 @@ PartsMessageReader::ReadMessage() {
         message_reader_.ReadMessage();
     if (message) {
       newest_timestamp_ = message_reader_.newest_timestamp();
+      const monotonic_clock::time_point monotonic_sent_time(
+          chrono::nanoseconds(message->message().monotonic_sent_time()));
+      CHECK_GE(monotonic_sent_time,
+               newest_timestamp_ - max_out_of_order_duration());
       return message;
     }
     NextLog();
   }
+  newest_timestamp_ = monotonic_clock::max_time;
   return std::nullopt;
 }
 
