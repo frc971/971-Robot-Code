@@ -91,6 +91,47 @@ TEST(MessageReaderTest, ReadWrite) {
   EXPECT_FALSE(reader.ReadMessage());
 }
 
+// Tests that we explode when messages are too far out of order.
+TEST(PartsMessageReaderDeathTest, TooFarOutOfOrder) {
+  const std::string logfile0 = aos::testing::TestTmpDir() + "/log0.bfbs";
+  unlink(logfile0.c_str());
+
+  const aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> config0 =
+      JsonToSizedFlatbuffer<LogFileHeader>(
+          R"({
+  "max_out_of_order_duration": 100000000,
+  "log_event_uuid": "30ef1283-81d7-4004-8c36-1c162dbcb2b2",
+  "parts_uuid": "2a05d725-5d5c-4c0b-af42-88de2f3c3876",
+  "parts_index": 0
+})");
+
+  const aos::SizePrefixedFlatbufferDetachedBuffer<MessageHeader> m1 =
+      JsonToSizedFlatbuffer<MessageHeader>(
+          R"({ "channel_index": 0, "monotonic_sent_time": 100000000 })");
+  const aos::SizePrefixedFlatbufferDetachedBuffer<MessageHeader> m2 =
+      JsonToSizedFlatbuffer<MessageHeader>(
+          R"({ "channel_index": 0, "monotonic_sent_time": 0 })");
+  const aos::SizePrefixedFlatbufferDetachedBuffer<MessageHeader> m3 =
+      JsonToSizedFlatbuffer<MessageHeader>(
+          R"({ "channel_index": 0, "monotonic_sent_time": -1 })");
+
+  {
+    DetachedBufferWriter writer(logfile0, std::make_unique<DummyEncoder>());
+    writer.QueueSpan(config0.full_span());
+    writer.QueueSpan(m1.full_span());
+    writer.QueueSpan(m2.full_span());
+    writer.QueueSpan(m3.full_span());
+  }
+
+  const std::vector<LogFile> parts = SortParts({logfile0});
+
+  PartsMessageReader reader(parts[0].parts[0]);
+
+  EXPECT_TRUE(reader.ReadMessage());
+  EXPECT_TRUE(reader.ReadMessage());
+  EXPECT_DEATH({ reader.ReadMessage(); }, "-0.000000001sec vs. 0.000000000sec");
+}
+
 // Tests that we can transparently re-assemble part files with a
 // PartsMessageReader.
 TEST(PartsMessageReaderTest, ReadWrite) {
@@ -171,7 +212,9 @@ TEST(PartsMessageReaderTest, ReadWrite) {
   EXPECT_EQ(
       reader.max_out_of_order_duration(),
       std::chrono::nanoseconds(config1.message().max_out_of_order_duration()));
+  EXPECT_EQ(reader.newest_timestamp(), monotonic_clock::max_time);
 }
+
 }  // namespace testing
 }  // namespace logger
 }  // namespace aos
