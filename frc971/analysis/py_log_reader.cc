@@ -218,7 +218,8 @@ static PyObject *LogReader_configuration(LogReaderType *self,
       aos::CopyFlatBuffer(tools->reader->configuration());
 
   return PyBytes_FromStringAndSize(
-      reinterpret_cast<const char *>(buffer.data()), buffer.size());
+      reinterpret_cast<const char *>(buffer.span().data()),
+      buffer.span().size());
 }
 
 static PyMethodDef LogReader_methods[] = {

@@ -496,36 +496,6 @@ flatbuffers::Offset<flatbuffers::Table> MergeFlatBuffers(
   return fbb->EndTable(start);
 }
 
-flatbuffers::Offset<flatbuffers::Table> MergeFlatBuffers(
-    const flatbuffers::TypeTable *typetable, const uint8_t *data1,
-    const uint8_t *data2, flatbuffers::FlatBufferBuilder *fbb) {
-  // Grab the 2 tables.
-  const flatbuffers::Table *t1 =
-      data1 != nullptr ? flatbuffers::GetRoot<flatbuffers::Table>(data1)
-                       : nullptr;
-  const flatbuffers::Table *t2 =
-      data2 != nullptr ? flatbuffers::GetRoot<flatbuffers::Table>(data2)
-                       : nullptr;
-
-  // And then do the actual build.  This doesn't contain finish so we can nest
-  // them nicely.
-  return flatbuffers::Offset<flatbuffers::Table>(
-      MergeFlatBuffers(typetable, t1, t2, fbb));
-}
-
-flatbuffers::DetachedBuffer MergeFlatBuffers(
-    const flatbuffers::TypeTable *typetable, const uint8_t *data1,
-    const uint8_t *data2) {
-  // Build up a builder.
-  flatbuffers::FlatBufferBuilder fbb;
-  fbb.ForceDefaults(true);
-
-  // Finish up the buffer and return it.
-  fbb.Finish(MergeFlatBuffers(typetable, data1, data2, &fbb));
-
-  return fbb.Release();
-}
-
 bool CompareFlatBuffer(const flatbuffers::TypeTable *typetable,
                        const flatbuffers::Table *t1,
                        const flatbuffers::Table *t2) {

@@ -228,6 +228,7 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop)
                            configuration::GetNode(event_loop->configuration(),
                                                   destination_node_name),
                            event_loop->node()->name()->string_view())
+            .span()
             .size());
     VLOG(1) << "Connection to " << destination_node_name << " has size "
             << connect_size;

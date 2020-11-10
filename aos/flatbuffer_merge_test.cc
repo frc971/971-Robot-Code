@@ -18,63 +18,59 @@ std::string_view FromFbb(const flatbuffers::FlatBufferBuilder &fbb) {
       fbb.GetSize());
 }
 
-std::string_view FromFbb(const flatbuffers::DetachedBuffer &b) {
-  return std::string_view(reinterpret_cast<const char *>(b.data()), b.size());
-}
-
-absl::Span<const uint8_t> ToSpan(const flatbuffers::DetachedBuffer &b) {
-  return absl::Span<const uint8_t>(b.data(), b.size());
+std::string_view FromFbb(const FlatbufferDetachedBuffer<Configuration> &b) {
+  return std::string_view(reinterpret_cast<const char *>(b.span().data()),
+                          b.span().size());
 }
 
 class FlatbufferMerge : public ::testing::Test {
  public:
   FlatbufferMerge() {}
 
-  void ExpectMergedOutput(const flatbuffers::DetachedBuffer &fb_merged,
-                          std::string_view expected_output) {
-    ASSERT_NE(fb_merged.size(), 0u);
+  void ExpectMergedOutput(
+      const NonSizePrefixedFlatbuffer<Configuration> &fb_merged,
+      std::string_view expected_output) {
+    ASSERT_NE(fb_merged.span().size(), 0u);
 
-    const ::std::string merged_output =
-        FlatbufferToJson(fb_merged, ConfigurationTypeTable());
+    const ::std::string merged_output = FlatbufferToJson(fb_merged);
     EXPECT_EQ(expected_output, merged_output);
 
     aos::FlatbufferDetachedBuffer<Configuration> expected_message(
         JsonToFlatbuffer(std::string(expected_output).c_str(),
                          ConfigurationTypeTable()));
     EXPECT_TRUE(
-        CompareFlatBuffer(flatbuffers::GetRoot<Configuration>(fb_merged.data()),
-                          &expected_message.message()));
+        CompareFlatBuffer(&fb_merged.message(), &expected_message.message()));
   }
 
   void JsonMerge(const ::std::string in1, const ::std::string in2,
                  const ::std::string out) {
-    printf("Merging: %s\n", in1.c_str());
-    printf("Merging: %s\n", in2.c_str());
-    const flatbuffers::DetachedBuffer fb1 = JsonToFlatbuffer(
+    LOG(INFO) << "Merging: " << in1.c_str();
+    LOG(INFO) << "Merging: " << in2.c_str();
+    const FlatbufferDetachedBuffer<Configuration> fb1 = JsonToFlatbuffer(
         static_cast<const char *>(in1.c_str()), ConfigurationTypeTable());
 
     const ::std::string in1_nested = "{ \"nested_config\": " + in1 + " }";
-    const flatbuffers::DetachedBuffer fb1_nested =
+    const FlatbufferDetachedBuffer<Configuration> fb1_nested =
         JsonToFlatbuffer(static_cast<const char *>(in1_nested.c_str()),
                          ConfigurationTypeTable());
 
-    const flatbuffers::DetachedBuffer fb2 = JsonToFlatbuffer(
+    const FlatbufferDetachedBuffer<Configuration> fb2 = JsonToFlatbuffer(
         static_cast<const char *>(in2.c_str()), ConfigurationTypeTable());
 
     const ::std::string in2_nested = "{ \"nested_config\": " + in2 + " }";
-    const flatbuffers::DetachedBuffer fb2_nested =
+    const FlatbufferDetachedBuffer<Configuration> fb2_nested =
         JsonToFlatbuffer(static_cast<const char *>(in2_nested.c_str()),
                          ConfigurationTypeTable());
 
     const ::std::string out_nested = "{ \"nested_config\": " + out + " }";
 
-    const flatbuffers::DetachedBuffer empty =
+    const FlatbufferDetachedBuffer<Configuration> empty =
         JsonToFlatbuffer("{ }", ConfigurationTypeTable());
 
-    ASSERT_NE(fb1.size(), 0u);
-    ASSERT_NE(fb2.size(), 0u);
-    ASSERT_NE(fb1_nested.size(), 0u);
-    ASSERT_NE(fb2_nested.size(), 0u);
+    ASSERT_NE(fb1.span().size(), 0u);
+    ASSERT_NE(fb2.span().size(), 0u);
+    ASSERT_NE(fb1_nested.span().size(), 0u);
+    ASSERT_NE(fb2_nested.span().size(), 0u);
 
     // We now want to run 7 tests.
     //  in1 merged "" -> in1.
@@ -87,167 +83,154 @@ class FlatbufferMerge : public ::testing::Test {
 
     {
       // in1 merged with "" => in1.
-      flatbuffers::DetachedBuffer fb_merged =
-          MergeFlatBuffers<Configuration>(fb1.data(), empty.data());
-      ASSERT_NE(fb_merged.size(), 0u);
+      FlatbufferDetachedBuffer<Configuration> fb_merged =
+          MergeFlatBuffers<Configuration>(fb1, empty);
+      ASSERT_NE(fb_merged.span().size(), 0u);
 
-      EXPECT_EQ(in1, FlatbufferToJson(fb_merged, ConfigurationTypeTable()));
+      EXPECT_EQ(in1, FlatbufferToJson(fb_merged));
     }
 
     {
       // in2 merged with "" => in2.
-      flatbuffers::DetachedBuffer fb_merged =
-          MergeFlatBuffers<Configuration>(fb2.data(), empty.data());
-      ASSERT_NE(fb_merged.size(), 0u);
+      FlatbufferDetachedBuffer<Configuration> fb_merged =
+          MergeFlatBuffers<Configuration>(fb2, empty);
+      ASSERT_NE(fb_merged.span().size(), 0u);
 
-      EXPECT_EQ(in2, FlatbufferToJson(fb_merged, ConfigurationTypeTable()));
+      EXPECT_EQ(in2, FlatbufferToJson(fb_merged));
     }
 
     {
       // "" merged with in1 => in1.
-      flatbuffers::DetachedBuffer fb_merged =
-          MergeFlatBuffers<Configuration>(empty.data(), fb1.data());
-      ASSERT_NE(fb_merged.size(), 0u);
+      FlatbufferDetachedBuffer<Configuration> fb_merged =
+          MergeFlatBuffers<Configuration>(empty, fb1);
+      ASSERT_NE(fb_merged.span().size(), 0u);
 
-      EXPECT_EQ(in1, FlatbufferToJson(fb_merged, ConfigurationTypeTable()));
+      EXPECT_EQ(in1, FlatbufferToJson(fb_merged));
     }
 
     {
       // "" merged with in2 => in2.
-      flatbuffers::DetachedBuffer fb_merged =
-          MergeFlatBuffers<Configuration>(empty.data(), fb2.data());
-      ASSERT_NE(fb_merged.size(), 0u);
+      FlatbufferDetachedBuffer<Configuration> fb_merged =
+          MergeFlatBuffers<Configuration>(empty, fb2);
+      ASSERT_NE(fb_merged.span().size(), 0u);
 
-      EXPECT_EQ(in2, FlatbufferToJson(fb_merged, ConfigurationTypeTable()));
+      EXPECT_EQ(in2, FlatbufferToJson(fb_merged));
     }
 
     {
       // nullptr merged with in1 => in1.
-      flatbuffers::DetachedBuffer fb_merged =
-          MergeFlatBuffers<Configuration>(nullptr, fb1.data());
-      ASSERT_NE(fb_merged.size(), 0u);
+      FlatbufferDetachedBuffer<Configuration> fb_merged =
+          MergeFlatBuffers<Configuration>(nullptr, &fb1.message());
+      ASSERT_NE(fb_merged.span().size(), 0u);
 
-      EXPECT_EQ(in1, FlatbufferToJson(fb_merged, ConfigurationTypeTable()));
+      EXPECT_EQ(in1, FlatbufferToJson(fb_merged));
     }
 
     {
       // in1 merged with nullptr => in1.
-      flatbuffers::DetachedBuffer fb_merged =
-          MergeFlatBuffers<Configuration>(fb1.data(), nullptr);
-      ASSERT_NE(fb_merged.size(), 0u);
+      FlatbufferDetachedBuffer<Configuration> fb_merged =
+          MergeFlatBuffers<Configuration>(&fb1.message(), nullptr);
+      ASSERT_NE(fb_merged.span().size(), 0u);
 
-      EXPECT_EQ(in1, FlatbufferToJson(fb_merged, ConfigurationTypeTable()));
+      EXPECT_EQ(in1, FlatbufferToJson(fb_merged));
     }
 
     {
       // in1 merged with in2 => out.
-      flatbuffers::DetachedBuffer fb_merged =
-          MergeFlatBuffers<Configuration>(fb1.data(), fb2.data());
+      FlatbufferDetachedBuffer<Configuration> fb_merged =
+          MergeFlatBuffers<Configuration>(fb1, fb2);
 
       ExpectMergedOutput(fb_merged, out);
     }
 
     // Test all the different merge methods:
-    ExpectMergedOutput(
-        MergeFlatBuffers(ConfigurationTypeTable(), fb1.data(), fb2.data()),
-        out);
+    ExpectMergedOutput(MergeFlatBuffers<Configuration>(fb1, fb2), out);
     {
       flatbuffers::FlatBufferBuilder fbb;
       fbb.ForceDefaults(true);
       fbb.Finish(MergeFlatBuffers(
           ConfigurationTypeTable(),
-          flatbuffers::GetRoot<flatbuffers::Table>(fb1.data()),
-          flatbuffers::GetRoot<flatbuffers::Table>(fb2.data()), &fbb));
-      ExpectMergedOutput(fbb.Release(), out);
+          reinterpret_cast<const flatbuffers::Table *>(&fb1.message()),
+          reinterpret_cast<const flatbuffers::Table *>(&fb2.message()), &fbb));
+      FlatbufferDetachedBuffer<Configuration> fb(fbb.Release());
+      ExpectMergedOutput(fb, out);
     }
     {
       flatbuffers::FlatBufferBuilder fbb;
       fbb.ForceDefaults(true);
-      fbb.Finish(MergeFlatBuffers<Configuration>(
-          flatbuffers::GetRoot<flatbuffers::Table>(fb1.data()),
-          flatbuffers::GetRoot<flatbuffers::Table>(fb2.data()), &fbb));
-      ExpectMergedOutput(fbb.Release(), out);
+      fbb.Finish(MergeFlatBuffers<Configuration>(&fb1.message(), &fb2.message(),
+                                                 &fbb));
+      FlatbufferDetachedBuffer<Configuration> fb(fbb.Release());
+      ExpectMergedOutput(fb, out);
     }
-    ExpectMergedOutput(MergeFlatBuffers<Configuration>(fb1.data(), fb2.data()),
-                       out);
+    ExpectMergedOutput(
+        MergeFlatBuffers<Configuration>(&fb1.message(), &fb2.message()), out);
     ExpectMergedOutput(MergeFlatBuffers<Configuration>(fb1, fb2), out);
-    ExpectMergedOutput(MergeFlatBuffers<Configuration>(
-                           flatbuffers::GetRoot<Configuration>(fb1.data()),
-                           flatbuffers::GetRoot<Configuration>(fb2.data()))
-                           .buffer(),
-                       out);
 
     // Now, to make things extra exciting, nest a config inside a config.  And
     // run all the tests.  This will exercise some fun nested merges and copies.
 
     {
       // in1_nested merged with "" => in1.
-      flatbuffers::DetachedBuffer fb_merged =
-          MergeFlatBuffers<Configuration>(fb1_nested.data(), empty.data());
-      ASSERT_NE(fb_merged.size(), 0u);
+      FlatbufferDetachedBuffer<Configuration> fb_merged =
+          MergeFlatBuffers<Configuration>(fb1_nested, empty);
+      ASSERT_NE(fb_merged.span().size(), 0u);
 
-      EXPECT_EQ(in1_nested,
-                FlatbufferToJson(fb_merged, ConfigurationTypeTable()));
+      EXPECT_EQ(in1_nested, FlatbufferToJson(fb_merged));
     }
 
     {
       // in2_nested merged with "" => in2_nested.
-      flatbuffers::DetachedBuffer fb_merged =
-          MergeFlatBuffers<Configuration>(fb2_nested.data(), empty.data());
-      ASSERT_NE(fb_merged.size(), 0u);
+      FlatbufferDetachedBuffer<Configuration> fb_merged =
+          MergeFlatBuffers<Configuration>(fb2_nested, empty);
+      ASSERT_NE(fb_merged.span().size(), 0u);
 
-      EXPECT_EQ(in2_nested,
-                FlatbufferToJson(fb_merged, ConfigurationTypeTable()));
+      EXPECT_EQ(in2_nested, FlatbufferToJson(fb_merged));
     }
 
     {
       // "" merged with in1_nested => in1_nested.
-      flatbuffers::DetachedBuffer fb_merged =
-          MergeFlatBuffers<Configuration>(empty.data(), fb1_nested.data());
-      ASSERT_NE(fb_merged.size(), 0u);
+      FlatbufferDetachedBuffer<Configuration> fb_merged =
+          MergeFlatBuffers<Configuration>(empty, fb1_nested);
+      ASSERT_NE(fb_merged.span().size(), 0u);
 
-      EXPECT_EQ(in1_nested,
-                FlatbufferToJson(fb_merged, ConfigurationTypeTable()));
+      EXPECT_EQ(in1_nested, FlatbufferToJson(fb_merged));
     }
 
     {
       // "" merged with in2_nested => in2_nested.
-      flatbuffers::DetachedBuffer fb_merged =
-          MergeFlatBuffers<Configuration>(empty.data(), fb2_nested.data());
-      ASSERT_NE(fb_merged.size(), 0u);
+      FlatbufferDetachedBuffer<Configuration> fb_merged =
+          MergeFlatBuffers<Configuration>(empty, fb2_nested);
+      ASSERT_NE(fb_merged.span().size(), 0u);
 
-      EXPECT_EQ(in2_nested,
-                FlatbufferToJson(fb_merged, ConfigurationTypeTable()));
+      EXPECT_EQ(in2_nested, FlatbufferToJson(fb_merged));
     }
 
     {
       // nullptr merged with in1_nested => in1_nested.
-      flatbuffers::DetachedBuffer fb_merged =
-          MergeFlatBuffers<Configuration>(nullptr, fb1_nested.data());
-      ASSERT_NE(fb_merged.size(), 0u);
+      FlatbufferDetachedBuffer<Configuration> fb_merged =
+          MergeFlatBuffers<Configuration>(nullptr, &fb1_nested.message());
+      ASSERT_NE(fb_merged.span().size(), 0u);
 
-      EXPECT_EQ(in1_nested,
-                FlatbufferToJson(fb_merged, ConfigurationTypeTable()));
+      EXPECT_EQ(in1_nested, FlatbufferToJson(fb_merged));
     }
 
     {
       // nullptr merged with in1_nested => in1_nested.
-      flatbuffers::DetachedBuffer fb_merged =
-          MergeFlatBuffers<Configuration>(fb1_nested.data(), nullptr);
-      ASSERT_NE(fb_merged.size(), 0u);
+      FlatbufferDetachedBuffer<Configuration> fb_merged(
+          MergeFlatBuffers<Configuration>(&fb1_nested.message(), nullptr));
+      ASSERT_NE(fb_merged.span().size(), 0u);
 
-      EXPECT_EQ(in1_nested,
-                FlatbufferToJson(fb_merged, ConfigurationTypeTable()));
+      EXPECT_EQ(in1_nested, FlatbufferToJson(fb_merged));
     }
 
     {
       // in1_nested merged with in2_nested => out_nested.
-      flatbuffers::DetachedBuffer fb_merged =
-          MergeFlatBuffers<Configuration>(fb1_nested, fb2_nested);
-      ASSERT_NE(fb_merged.size(), 0u);
+      FlatbufferDetachedBuffer<Configuration> fb_merged(
+          MergeFlatBuffers<Configuration>(fb1_nested, fb2_nested));
+      ASSERT_NE(fb_merged.span().size(), 0u);
 
-      EXPECT_EQ(out_nested,
-                FlatbufferToJson(fb_merged, ConfigurationTypeTable()));
+      EXPECT_EQ(out_nested, FlatbufferToJson(fb_merged));
     }
 
     // TODO(austin): Try more flatbuffers...
@@ -258,19 +241,16 @@ class FlatbufferMerge : public ::testing::Test {
 
       LOG(INFO) << "Copying " << in1 << " "
                 << absl::BytesToHexString(FromFbb(fb1)) << " at "
-                << reinterpret_cast<const void *>(fb1.data()) << " size "
-                << fb1.size();
+                << reinterpret_cast<const void *>(fb1.span().data()) << " size "
+                << fb1.span().size();
       aos_flatbuffer_copy_fbb.Finish(CopyFlatBuffer<Configuration>(
-          flatbuffers::GetRoot<Configuration>(fb1.data()),
-          &aos_flatbuffer_copy_fbb));
+          &fb1.message(), &aos_flatbuffer_copy_fbb));
 
-      aos::FlatbufferDetachedBuffer<Configuration> fb_copy(
+      const aos::FlatbufferDetachedBuffer<Configuration> fb_copy(
           aos_flatbuffer_copy_fbb.Release());
-      ASSERT_NE(fb_copy.size(), 0u);
+      ASSERT_NE(fb_copy.span().size(), 0u);
 
-      flatbuffers::Verifier v(fb1.data(), fb1.size());
-      EXPECT_TRUE(
-          v.VerifyTable(flatbuffers::GetRoot<Configuration>(fb1.data())));
+      EXPECT_TRUE(fb1.Verify());
 
       ASSERT_TRUE(fb_copy.Verify()) << in1;
 
@@ -282,27 +262,24 @@ class FlatbufferMerge : public ::testing::Test {
       aos_flatbuffer_copy_message_ptr_fbb.ForceDefaults(true);
 
       aos_flatbuffer_copy_message_ptr_fbb.Finish(CopyFlatBuffer<Configuration>(
-          flatbuffers::GetRoot<Configuration>(fb2.data()),
-          &aos_flatbuffer_copy_message_ptr_fbb));
+          &fb2.message(), &aos_flatbuffer_copy_message_ptr_fbb));
 
       aos::FlatbufferDetachedBuffer<Configuration> fb_copy_message_ptr(
           aos_flatbuffer_copy_message_ptr_fbb.Release());
-      ASSERT_NE(fb_copy_message_ptr.size(), 0u);
+      ASSERT_NE(fb_copy_message_ptr.span().size(), 0u);
 
       flatbuffers::FlatBufferBuilder aos_flatbuffer_copy_full_fbb;
       aos_flatbuffer_copy_full_fbb.ForceDefaults(true);
 
       aos_flatbuffer_copy_full_fbb.Finish(BlindCopyFlatBuffer<Configuration>(
-          aos::FlatbufferSpan<Configuration>(ToSpan(fb2)),
+          aos::FlatbufferSpan<Configuration>(fb2.span()),
           &aos_flatbuffer_copy_full_fbb));
 
       aos::FlatbufferDetachedBuffer<Configuration> fb_copy_full(
           aos_flatbuffer_copy_full_fbb.Release());
-      ASSERT_NE(fb_copy_full.size(), 0u);
+      ASSERT_NE(fb_copy_full.span().size(), 0u);
 
-      flatbuffers::Verifier v(fb2.data(), fb2.size());
-      EXPECT_TRUE(
-          v.VerifyTable(flatbuffers::GetRoot<Configuration>(fb2.data())));
+      EXPECT_TRUE(fb2.Verify());
 
       LOG(INFO) << "Verifying copy of " << in2;
       ASSERT_TRUE(fb_copy_message_ptr.Verify()) << in2;
@@ -318,12 +295,11 @@ class FlatbufferMerge : public ::testing::Test {
       aos_flatbuffer_copy_fbb.ForceDefaults(true);
 
       aos_flatbuffer_copy_fbb.Finish(CopyFlatBuffer<Configuration>(
-          flatbuffers::GetRoot<Configuration>(fb1_nested.data()),
-          &aos_flatbuffer_copy_fbb));
+          &fb1_nested.message(), &aos_flatbuffer_copy_fbb));
 
       aos::FlatbufferDetachedBuffer<Configuration> fb_copy(
           aos_flatbuffer_copy_fbb.Release());
-      ASSERT_NE(fb_copy.size(), 0u);
+      ASSERT_NE(fb_copy.span().size(), 0u);
 
       ASSERT_TRUE(fb_copy.Verify());
 
@@ -335,12 +311,11 @@ class FlatbufferMerge : public ::testing::Test {
       aos_flatbuffer_copy_fbb.ForceDefaults(true);
 
       aos_flatbuffer_copy_fbb.Finish(CopyFlatBuffer<Configuration>(
-          flatbuffers::GetRoot<Configuration>(fb2_nested.data()),
-          &aos_flatbuffer_copy_fbb));
+          &fb2_nested.message(), &aos_flatbuffer_copy_fbb));
 
       aos::FlatbufferDetachedBuffer<Configuration> fb_copy(
           aos_flatbuffer_copy_fbb.Release());
-      ASSERT_NE(fb_copy.size(), 0u);
+      ASSERT_NE(fb_copy.span().size(), 0u);
 
       ASSERT_TRUE(fb_copy.Verify());
 

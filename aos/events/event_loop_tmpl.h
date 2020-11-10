@@ -337,17 +337,17 @@ class WatcherState {
 };
 
 template <typename T>
-bool Sender<T>::Send(const Flatbuffer<T> &flatbuffer) {
-  return sender_->Send(flatbuffer.data(), flatbuffer.size());
+bool Sender<T>::Send(const NonSizePrefixedFlatbuffer<T> &flatbuffer) {
+  return sender_->Send(flatbuffer.span().data(), flatbuffer.span().size());
 }
 
 template <typename T>
 bool Sender<T>::SendDetached(FlatbufferDetachedBuffer<T> detached) {
-  CHECK_EQ(
-      static_cast<void *>(detached.data() + detached.size() - sender_->size()),
-      sender_->data())
+  CHECK_EQ(static_cast<void *>(detached.span().data() + detached.span().size() -
+                               sender_->size()),
+           sender_->data())
       << ": May only send the buffer detached from this Sender";
-  return sender_->Send(detached.size());
+  return sender_->Send(detached.span().size());
 }
 
 }  // namespace aos

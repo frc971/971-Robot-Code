@@ -111,8 +111,9 @@ int main(int argc, char **argv) {
               << std::endl;
 
     while (true) {
-      std::optional<aos::FlatbufferVector<aos::logger::MessageHeader>> message =
-          reader.ReadMessage();
+      std::optional<
+          aos::SizePrefixedFlatbufferVector<aos::logger::MessageHeader>>
+          message = reader.ReadMessage();
       if (!message) {
         break;
       }

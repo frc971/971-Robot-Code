@@ -65,7 +65,7 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
 
   // Now extract everything into our datastructures above for sorting.
   for (const std::string &part : parts) {
-    std::optional<FlatbufferVector<LogFileHeader>> log_header =
+    std::optional<SizePrefixedFlatbufferVector<LogFileHeader>> log_header =
         ReadHeader(part);
     if (!log_header) {
       LOG(WARNING) << "Skipping " << part << " without a header";
@@ -94,7 +94,7 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
     if (!log_header->message().has_parts_uuid() &&
         !log_header->message().has_parts_index() &&
         !log_header->message().has_node()) {
-      std::optional<FlatbufferVector<MessageHeader>> first_message =
+      std::optional<SizePrefixedFlatbufferVector<MessageHeader>> first_message =
           ReadNthMessage(part, 0);
       if (!first_message) {
         LOG(WARNING) << "Skipping " << part << " without any messages";

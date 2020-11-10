@@ -108,55 +108,66 @@ class Flatbuffer {
   }
 
   // Returns a message from the buffer.
-  const T &message() const {
-    return *flatbuffers::GetRoot<T>(reinterpret_cast<const void *>(data()));
-  }
+  virtual const T &message() const = 0;
   // Returns a mutable message.  It can be mutated via the flatbuffer rules.
-  T *mutable_message() {
-    return flatbuffers::GetMutableRoot<T>(reinterpret_cast<void *>(data()));
-  }
-
-  virtual const uint8_t *data() const = 0;
-  virtual uint8_t *data() = 0;
-  virtual size_t size() const = 0;
-
-  absl::Span<uint8_t> span() { return absl::Span<uint8_t>(data(), size()); }
-  absl::Span<const uint8_t> span() const {
-    return absl::Span<const uint8_t>(data(), size());
-  }
+  virtual T *mutable_message() = 0;
 
   // Wipes out the data buffer. This is handy to mark an instance as freed, and
   // make attempts to use it fail more obviously.
-  void Wipe() { memset(data(), 0, size()); }
+  void Wipe() { memset(span().data(), 0, span().size()); }
 
-  virtual bool Verify() const {
-    flatbuffers::Verifier v(data(), size());
+  bool Verify() const {
+    flatbuffers::Verifier v(span().data(), span().size());
     return v.VerifyTable(&message());
   }
+
+ protected:
+  virtual absl::Span<uint8_t> span() = 0;
+  virtual absl::Span<const uint8_t> span() const = 0;
+};
+
+// Base class for non-size prefixed flatbuffers.  span() means different things
+// across the 2 types, so you end up with a different GetRoot.
+template <typename T>
+class NonSizePrefixedFlatbuffer : public Flatbuffer<T> {
+ public:
+  const T &message() const override {
+    return *flatbuffers::GetRoot<T>(
+        reinterpret_cast<const void *>(this->span().data()));
+  }
+  T *mutable_message() override {
+    return flatbuffers::GetMutableRoot<T>(
+        reinterpret_cast<void *>(this->span().data()));
+  }
+
+  absl::Span<uint8_t> span() override = 0;
+  absl::Span<const uint8_t> span() const override = 0;
 };
 
 // Non-owning Span backed flatbuffer.
 template <typename T>
-class FlatbufferSpan : public Flatbuffer<T> {
+class FlatbufferSpan : public NonSizePrefixedFlatbuffer<T> {
  public:
   // Builds a flatbuffer pointing to the contents of a span.
   FlatbufferSpan(const absl::Span<const uint8_t> data) : data_(data) {}
   // Builds a Flatbuffer pointing to the contents of another flatbuffer.
-  FlatbufferSpan(const Flatbuffer<T> &other) { data_ = other.span(); }
+  FlatbufferSpan(const NonSizePrefixedFlatbuffer<T> &other) {
+    data_ = other.span();
+  }
 
   // Copies the data from the other flatbuffer.
-  FlatbufferSpan &operator=(const Flatbuffer<T> &other) {
+  FlatbufferSpan &operator=(const NonSizePrefixedFlatbuffer<T> &other) {
     data_ = other.span();
     return *this;
   }
 
   virtual ~FlatbufferSpan() override {}
 
-  const uint8_t *data() const override {
-    return data_.data();
+  absl::Span<uint8_t> span() override {
+    LOG(FATAL) << "Unimplemented";
+    return absl::Span<uint8_t>(nullptr, 0);
   }
-  uint8_t *data() override { return CHECK_NOTNULL(nullptr); }
-  size_t size() const override { return data_.size(); }
+  absl::Span<const uint8_t> span() const override { return data_; }
 
  private:
   absl::Span<const uint8_t> data_;
@@ -164,45 +175,49 @@ class FlatbufferSpan : public Flatbuffer<T> {
 
 // String backed flatbuffer.
 template <typename T>
-class FlatbufferString : public Flatbuffer<T> {
+class FlatbufferString : public NonSizePrefixedFlatbuffer<T> {
  public:
   // Builds a flatbuffer using the contents of the string.
   FlatbufferString(const std::string_view data) : data_(data) {}
   // Builds a Flatbuffer by copying the data from the other flatbuffer.
-  FlatbufferString(const Flatbuffer<T> &other) {
-    data_ =
-        std::string(reinterpret_cast<const char *>(other.data()), other.size());
+  FlatbufferString(const NonSizePrefixedFlatbuffer<T> &other) {
+    absl::Span<const uint8_t> d = other.span();
+    data_ = std::string(reinterpret_cast<const char *>(d.data()), d.size());
   }
 
   // Copies the data from the other flatbuffer.
-  FlatbufferString &operator=(const Flatbuffer<T> &other) {
-    data_ = std::string(other.data(), other.size());
+  FlatbufferString &operator=(const NonSizePrefixedFlatbuffer<T> &other) {
+    absl::Span<const uint8_t> d = other.span();
+    data_ = std::string(reinterpret_cast<const char *>(d.data()), d.size());
     return *this;
   }
 
   virtual ~FlatbufferString() override {}
 
-  const uint8_t *data() const override {
-    return reinterpret_cast<const uint8_t *>(data_.data());
+  absl::Span<uint8_t> span() override {
+    return absl::Span<uint8_t>(reinterpret_cast<uint8_t *>(data_.data()),
+                               data_.size());
   }
-  uint8_t *data() override { return reinterpret_cast<uint8_t *>(data_.data()); }
-  size_t size() const override { return data_.size(); }
+  absl::Span<const uint8_t> span() const override {
+    return absl::Span<const uint8_t>(
+        reinterpret_cast<const uint8_t *>(data_.data()), data_.size());
+  }
 
  private:
   std::string data_;
 };
 
-// Vector backed flatbuffer.
+// ResizeableBuffer backed flatbuffer.
 template <typename T>
-class FlatbufferVector : public Flatbuffer<T> {
+class FlatbufferVector : public NonSizePrefixedFlatbuffer<T> {
  public:
-  // Builds a Flatbuffer around a vector.
+  // Builds a Flatbuffer around a ResizeableBuffer.
   FlatbufferVector(ResizeableBuffer &&data) : data_(std::move(data)) {}
 
   // Builds a Flatbuffer by copying the data from the other flatbuffer.
-  FlatbufferVector(const Flatbuffer<T> &other) {
-    data_.resize(other.size());
-    memcpy(data_.data(), other.data(), data_.size());
+  FlatbufferVector(const NonSizePrefixedFlatbuffer<T> &other) {
+    data_.resize(other.span().size());
+    memcpy(data_.data(), other.span().data(), data_.size());
   }
 
   // Copy constructor.
@@ -229,9 +244,12 @@ class FlatbufferVector : public Flatbuffer<T> {
 
   virtual ~FlatbufferVector() override {}
 
-  const uint8_t *data() const override { return data_.data(); }
-  uint8_t *data() override { return data_.data(); }
-  size_t size() const override { return data_.size(); }
+  absl::Span<uint8_t> span() override {
+    return absl::Span<uint8_t>(data_.data(), data_.size());
+  }
+  absl::Span<const uint8_t> span() const override {
+    return absl::Span<const uint8_t>(data_.data(), data_.size());
+  }
 
  private:
   ResizeableBuffer data_;
@@ -243,7 +261,7 @@ class FlatbufferVector : public Flatbuffer<T> {
 // From a usage point of view, pointers to the data are very different than
 // pointers to the tables.
 template <typename T>
-class FlatbufferDetachedBuffer final : public Flatbuffer<T> {
+class FlatbufferDetachedBuffer final : public NonSizePrefixedFlatbuffer<T> {
  public:
   // Builds a Flatbuffer by taking ownership of the buffer.
   FlatbufferDetachedBuffer(flatbuffers::DetachedBuffer &&buffer)
@@ -271,9 +289,13 @@ class FlatbufferDetachedBuffer final : public Flatbuffer<T> {
 
   // Returns references to the buffer, and the data.
   const flatbuffers::DetachedBuffer &buffer() const { return buffer_; }
-  const uint8_t *data() const override { return buffer_.data(); }
-  uint8_t *data() override { return buffer_.data(); }
-  size_t size() const override { return buffer_.size(); }
+
+  absl::Span<uint8_t> span() override {
+    return absl::Span<uint8_t>(buffer_.data(), buffer_.size());
+  }
+  absl::Span<const uint8_t> span() const override {
+    return absl::Span<const uint8_t>(buffer_.data(), buffer_.size());
+  }
 
  private:
   flatbuffers::DetachedBuffer buffer_;
@@ -281,14 +303,15 @@ class FlatbufferDetachedBuffer final : public Flatbuffer<T> {
 
 // Array backed flatbuffer which manages building of the flatbuffer.
 template <typename T, size_t Size>
-class FlatbufferFixedAllocatorArray final : public Flatbuffer<T> {
+class FlatbufferFixedAllocatorArray final
+    : public NonSizePrefixedFlatbuffer<T> {
  public:
   FlatbufferFixedAllocatorArray() : buffer_(), allocator_(&buffer_[0], Size) {}
 
   FlatbufferFixedAllocatorArray(const FlatbufferFixedAllocatorArray &) = delete;
-  void operator=(const Flatbuffer<T> &) = delete;
+  void operator=(const NonSizePrefixedFlatbuffer<T> &) = delete;
 
-  void CopyFrom(const Flatbuffer<T> &other) {
+  void CopyFrom(const NonSizePrefixedFlatbuffer<T> &other) {
     CHECK(!allocator_.is_allocated()) << ": May not overwrite while building";
     memcpy(buffer_.begin(), other.data(), other.size());
     data_ = buffer_.begin();
@@ -320,15 +343,12 @@ class FlatbufferFixedAllocatorArray final : public Flatbuffer<T> {
     DCHECK_LE(size_, Size);
   }
 
-  const uint8_t *data() const override {
-    CHECK_NOTNULL(data_);
-    return data_;
+  absl::Span<uint8_t> span() override {
+    return absl::Span<uint8_t>(data_, size_);
   }
-  uint8_t *data() override {
-    CHECK_NOTNULL(data_);
-    return data_;
+  absl::Span<const uint8_t> span() const override {
+    return absl::Span<const uint8_t>(data_, size_);
   }
-  size_t size() const override { return size_; }
 
  private:
   std::array<uint8_t, Size> buffer_;
@@ -338,13 +358,31 @@ class FlatbufferFixedAllocatorArray final : public Flatbuffer<T> {
   size_t size_ = 0;
 };
 
+template <typename T>
+class SizePrefixedFlatbuffer : public Flatbuffer<T> {
+ public:
+  const T &message() const override {
+    return *flatbuffers::GetSizePrefixedRoot<T>(
+        reinterpret_cast<const void *>(this->span().data()));
+  }
+
+  T *mutable_message() override {
+    return flatbuffers::GetMutableSizePrefixedRoot<T>(
+        reinterpret_cast<void *>(this->span().data()));
+  }
+
+  absl::Span<uint8_t> span() override = 0;
+  absl::Span<const uint8_t> span() const override = 0;
+};
+
 // This object associates the message type with the memory storing the
 // flatbuffer.  This only stores root tables.
 //
 // From a usage point of view, pointers to the data are very different than
 // pointers to the tables.
 template <typename T>
-class SizePrefixedFlatbufferDetachedBuffer final : public Flatbuffer<T> {
+class SizePrefixedFlatbufferDetachedBuffer final
+    : public SizePrefixedFlatbuffer<T> {
  public:
   // Builds a Flatbuffer by taking ownership of the buffer.
   SizePrefixedFlatbufferDetachedBuffer(flatbuffers::DetachedBuffer &&buffer)
@@ -374,33 +412,67 @@ class SizePrefixedFlatbufferDetachedBuffer final : public Flatbuffer<T> {
   }
 
   // Returns references to the buffer, and the data.
-  const flatbuffers::DetachedBuffer &buffer() const { return buffer_; }
-  const uint8_t *data() const override {
-    return buffer_.data() + sizeof(flatbuffers::uoffset_t);
-  }
-  uint8_t *data() override {
-    return buffer_.data() + sizeof(flatbuffers::uoffset_t);
-  }
-  size_t size() const override {
-    return buffer_.size() - sizeof(flatbuffers::uoffset_t);
-  }
-
-  absl::Span<uint8_t> full_span() {
+  absl::Span<uint8_t> span() override {
     return absl::Span<uint8_t>(buffer_.data(), buffer_.size());
   }
-  absl::Span<const uint8_t> full_span() const {
+  absl::Span<const uint8_t> span() const override {
     return absl::Span<const uint8_t>(buffer_.data(), buffer_.size());
-  }
-
-  bool Verify() const override {
-    // TODO(austin): Should we push full_span up to Flatbuffer<> class?
-    // The base pointer has the wrong alignment if we strip off the size.
-    flatbuffers::Verifier v(full_span().data(), full_span().size());
-    return v.VerifyTable(&this->message());
   }
 
  private:
   flatbuffers::DetachedBuffer buffer_;
+};
+
+// ResizeableBuffer backed flatbuffer.
+template <typename T>
+class SizePrefixedFlatbufferVector : public SizePrefixedFlatbuffer<T> {
+ public:
+  // Builds a Flatbuffer around a ResizeableBuffer.
+  SizePrefixedFlatbufferVector(ResizeableBuffer &&data)
+      : data_(std::move(data)) {}
+
+  // Builds a Flatbuffer by copying the data from the other flatbuffer.
+  SizePrefixedFlatbufferVector(const SizePrefixedFlatbuffer<T> &other) {
+    data_.resize(other.span().size());
+    memcpy(data_.data(), other.span().data(), data_.size());
+  }
+
+  // Copy constructor.
+  SizePrefixedFlatbufferVector(const SizePrefixedFlatbufferVector<T> &other)
+      : data_(other.data_) {}
+
+  // Move constructor.
+  SizePrefixedFlatbufferVector(SizePrefixedFlatbufferVector<T> &&other)
+      : data_(std::move(other.data_)) {}
+
+  // Copies the data from the other flatbuffer.
+  SizePrefixedFlatbufferVector &operator=(
+      const SizePrefixedFlatbufferVector<T> &other) {
+    data_ = other.data_;
+    return *this;
+  }
+  SizePrefixedFlatbufferVector &operator=(
+      SizePrefixedFlatbufferVector<T> &&other) {
+    data_ = std::move(other.data_);
+    return *this;
+  }
+
+  // Constructs an empty flatbuffer of type T.
+  static SizePrefixedFlatbufferVector<T> Empty() {
+    return SizePrefixedFlatbufferVector<T>(ResizeableBuffer());
+  }
+
+  virtual ~SizePrefixedFlatbufferVector() override {}
+
+  absl::Span<uint8_t> span() override {
+    return absl::Span<uint8_t>(data_.data(), data_.size());
+  }
+  absl::Span<const uint8_t> span() const override {
+    return absl::Span<const uint8_t>(data_.data(), data_.size());
+  }
+
+ private:
+  ResizeableBuffer data_;
 };
 
 inline flatbuffers::DetachedBuffer CopySpanAsDetachedBuffer(

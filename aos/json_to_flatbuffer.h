@@ -43,29 +43,18 @@ struct JsonOptions {
 };
 
 // Converts a flatbuffer into a Json string.
-// The methods below are generally more useful than BufferFlatbufferToJson and
-// TableFlatbufferToJson.
-::std::string BufferFlatbufferToJson(const uint8_t *buffer,
-                                     const flatbuffers::TypeTable *typetable,
-                                     JsonOptions json_options = {});
-
+// The methods below are generally more useful than TableFlatbufferToJson.
 ::std::string TableFlatbufferToJson(const flatbuffers::Table *t,
                                     const ::flatbuffers::TypeTable *typetable,
                                     JsonOptions json_options = {});
-
-// Converts a DetachedBuffer holding a flatbuffer to JSON.
-inline ::std::string FlatbufferToJson(const flatbuffers::DetachedBuffer &buffer,
-                                      const flatbuffers::TypeTable *typetable,
-                                      JsonOptions json_options = {}) {
-  return BufferFlatbufferToJson(buffer.data(), typetable, json_options);
-}
 
 // Converts a Flatbuffer<T> holding a flatbuffer to JSON.
 template <typename T>
 inline ::std::string FlatbufferToJson(const Flatbuffer<T> &flatbuffer,
                                       JsonOptions json_options = {}) {
-  return BufferFlatbufferToJson(
-      flatbuffer.data(), Flatbuffer<T>::MiniReflectTypeTable(), json_options);
+  return TableFlatbufferToJson(
+      reinterpret_cast<const flatbuffers::Table *>(&flatbuffer.message()),
+      Flatbuffer<T>::MiniReflectTypeTable(), json_options);
 }
 
 // Converts a flatbuffer::Table to JSON.
@@ -97,10 +86,10 @@ inline void WriteFlatbufferToJson(const std::string_view filename,
   json_file.close();
 }
 
-// Writes a Flatbuffer to a binary file, or dies.
+// Writes a NonSizePrefixedFlatbuffer to a binary file, or dies.
 template <typename T>
 inline void WriteFlatbufferToFile(const std::string_view filename,
-                                  const Flatbuffer<T> &msg) {
+                                  const NonSizePrefixedFlatbuffer<T> &msg) {
   std::ofstream file(std::string(filename),
                      std::ios::out | std::ofstream::binary);
   CHECK(file) << ": Couldn't open " << filename;

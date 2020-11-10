@@ -2048,8 +2048,13 @@ template<typename T> const T *GetRoot(const void *buf) {
   return GetMutableRoot<T>(const_cast<void *>(buf));
 }
 
+template<typename T> T *GetMutableSizePrefixedRoot(void *buf) {
+  return GetMutableRoot<T>(reinterpret_cast<uint8_t *>(buf) +
+                           sizeof(uoffset_t));
+}
+
 template<typename T> const T *GetSizePrefixedRoot(const void *buf) {
-  return GetRoot<T>(reinterpret_cast<const uint8_t *>(buf) + sizeof(uoffset_t));
+  return GetMutableSizePrefixedRoot<T>(const_cast<void *>(buf));
 }
 
 /// Helpers to get a typed pointer to objects that are currently being built.

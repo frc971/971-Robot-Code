@@ -319,8 +319,8 @@ void MessageBridgeServerStatus::Tick() {
   context.monotonic_event_time = timestamp_sender_.monotonic_sent_time();
   context.realtime_event_time = timestamp_sender_.realtime_sent_time();
   context.queue_index = timestamp_sender_.sent_queue_index();
-  context.size = timestamp_copy.size();
-  context.data = timestamp_copy.data();
+  context.size = timestamp_copy.span().size();
+  context.data = timestamp_copy.span().data();
 
   // Since we are building up the timestamp to send here, we need to trigger the
   // SendData call ourselves.

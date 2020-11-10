@@ -263,7 +263,7 @@ TEST_F(LoggerTest, RotatedLogFile) {
   {
     // Confirm that the UUIDs match for both the parts and the logger, and the
     // parts_index increments.
-    std::vector<FlatbufferVector<LogFileHeader>> log_header;
+    std::vector<SizePrefixedFlatbufferVector<LogFileHeader>> log_header;
     for (std::string_view f : {logfile0, logfile1}) {
       log_header.emplace_back(ReadHeader(f).value());
     }
@@ -563,7 +563,7 @@ std::vector<std::tuple<std::string, std::string, int>> CountChannelsMatching(
       message_reader.log_file_header()->configuration()->channels()->size(), 0);
 
   while (true) {
-    std::optional<FlatbufferVector<MessageHeader>> msg =
+    std::optional<SizePrefixedFlatbufferVector<MessageHeader>> msg =
         message_reader.ReadMessage();
     if (!msg) {
       break;
@@ -636,7 +636,7 @@ TEST_F(MultinodeLoggerTest, SimpleMultiNode) {
     std::set<std::string> parts_uuids;
     // Confirm that we have the expected number of UUIDs for both the logfile
     // UUIDs and parts UUIDs.
-    std::vector<FlatbufferVector<LogFileHeader>> log_header;
+    std::vector<SizePrefixedFlatbufferVector<LogFileHeader>> log_header;
     for (std::string_view f : logfiles_) {
       log_header.emplace_back(ReadHeader(f).value());
       logfile_uuids.insert(log_header.back().message().log_event_uuid()->str());

@@ -123,7 +123,7 @@ SctpClientConnection::SctpClientConnection(
   event_loop_->OnRun(
       [this]() { connect_timer_->Setup(event_loop_->monotonic_now()); });
 
-  int max_size = connect_message_.size();
+  int max_size = connect_message_.span().size();
 
   for (const Channel *channel : *event_loop_->configuration()->channels()) {
     CHECK(channel->has_source_node());
@@ -185,9 +185,9 @@ void SctpClientConnection::MessageReceived() {
 void SctpClientConnection::SendConnect() {
   // Try to send the connect message.  If that fails, retry.
   if (!client_.Send(kConnectStream(),
-                    std::string_view(
-                        reinterpret_cast<const char *>(connect_message_.data()),
-                        connect_message_.size()),
+                    std::string_view(reinterpret_cast<const char *>(
+                                         connect_message_.span().data()),
+                                     connect_message_.span().size()),
                     0)) {
     NodeDisconnected();
   }
@@ -271,8 +271,8 @@ void SctpClientConnection::HandleData(const Message *message) {
     // guarentee that this ack gets received too...  Same path as the logger.
     client_.Send(kTimestampStream(),
                  std::string_view(reinterpret_cast<const char *>(
-                                      message_reception_reply_.data()),
-                                  message_reception_reply_.size()),
+                                      message_reception_reply_.span().data()),
+                                  message_reception_reply_.span().size()),
                  0);
   }
 

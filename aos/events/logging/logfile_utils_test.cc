@@ -39,15 +39,15 @@ TEST(SpanReaderTest, ReadWrite) {
 
   {
     DetachedBufferWriter writer(logfile, std::make_unique<DummyEncoder>());
-    writer.QueueSpan(m1.full_span());
-    writer.QueueSpan(m2.full_span());
+    writer.QueueSpan(m1.span());
+    writer.QueueSpan(m2.span());
   }
 
   SpanReader reader(logfile);
 
   EXPECT_EQ(reader.filename(), logfile);
-  EXPECT_EQ(reader.ReadMessage(), m1.full_span());
-  EXPECT_EQ(reader.ReadMessage(), m2.full_span());
+  EXPECT_EQ(reader.ReadMessage(), m1.span());
+  EXPECT_EQ(reader.ReadMessage(), m2.span());
   EXPECT_EQ(reader.ReadMessage(), absl::Span<const uint8_t>());
 }
 
@@ -69,9 +69,9 @@ TEST(MessageReaderTest, ReadWrite) {
 
   {
     DetachedBufferWriter writer(logfile, std::make_unique<DummyEncoder>());
-    writer.QueueSpan(config.full_span());
-    writer.QueueSpan(m1.full_span());
-    writer.QueueSpan(m2.full_span());
+    writer.QueueSpan(config.span());
+    writer.QueueSpan(m1.span());
+    writer.QueueSpan(m2.span());
   }
 
   MessageReader reader(logfile);
@@ -117,10 +117,10 @@ TEST(PartsMessageReaderDeathTest, TooFarOutOfOrder) {
 
   {
     DetachedBufferWriter writer(logfile0, std::make_unique<DummyEncoder>());
-    writer.QueueSpan(config0.full_span());
-    writer.QueueSpan(m1.full_span());
-    writer.QueueSpan(m2.full_span());
-    writer.QueueSpan(m3.full_span());
+    writer.QueueSpan(config0.span());
+    writer.QueueSpan(m1.span());
+    writer.QueueSpan(m2.span());
+    writer.QueueSpan(m3.span());
   }
 
   const std::vector<LogFile> parts = SortParts({logfile0});
@@ -168,13 +168,13 @@ TEST(PartsMessageReaderTest, ReadWrite) {
 
   {
     DetachedBufferWriter writer(logfile0, std::make_unique<DummyEncoder>());
-    writer.QueueSpan(config0.full_span());
-    writer.QueueSpan(m1.full_span());
+    writer.QueueSpan(config0.span());
+    writer.QueueSpan(m1.span());
   }
   {
     DetachedBufferWriter writer(logfile1, std::make_unique<DummyEncoder>());
-    writer.QueueSpan(config1.full_span());
-    writer.QueueSpan(m2.full_span());
+    writer.QueueSpan(config1.span());
+    writer.QueueSpan(m2.span());
   }
 
   const std::vector<LogFile> parts = SortParts({logfile0, logfile1});

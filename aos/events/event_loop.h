@@ -350,7 +350,7 @@ class Sender {
   Builder MakeBuilder();
 
   // Sends a prebuilt flatbuffer.
-  bool Send(const Flatbuffer<T> &flatbuffer);
+  bool Send(const NonSizePrefixedFlatbuffer<T> &flatbuffer);
 
   // Sends a prebuilt flatbuffer which was detached from a Builder created via
   // MakeBuilder() on this object.

@@ -454,7 +454,7 @@ class LogReader {
 
   // This is *a* log file header used to provide the logged config.  The rest of
   // the header is likely distracting.
-  FlatbufferVector<LogFileHeader> log_file_header_;
+  SizePrefixedFlatbufferVector<LogFileHeader> log_file_header_;
 
   // Returns [ta; tb; ...] = tuple[0] * t + tuple[1]
   std::tuple<Eigen::Matrix<double, Eigen::Dynamic, 1>,
@@ -472,7 +472,7 @@ class LogReader {
     // update_time (will be) set to true when popping this message causes the
     // filter to change the time offset estimation function.
     std::tuple<TimestampMerger::DeliveryTimestamp, int,
-               FlatbufferVector<MessageHeader>>
+               SizePrefixedFlatbufferVector<MessageHeader>>
     PopOldest(bool *update_time);
 
     // Returns the monotonic time of the oldest message.
@@ -614,7 +614,7 @@ class LogReader {
     std::unique_ptr<ChannelMerger> channel_merger_;
 
     std::deque<std::tuple<TimestampMerger::DeliveryTimestamp, int,
-                          FlatbufferVector<MessageHeader>,
+                          SizePrefixedFlatbufferVector<MessageHeader>,
                           message_bridge::NoncausalOffsetEstimator *>>
         sorted_messages_;
 

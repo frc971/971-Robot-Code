@@ -12,7 +12,7 @@ class FlatbufferIntrospectionTest : public ::testing::Test {
   FlatbufferIntrospectionTest()
       : schema_data_(
             util::ReadFileToStringOrDie("aos/json_to_flatbuffer.bfbs")) {
-    schema_ = reflection::GetSchema(schema_data_.data());
+    schema_ = reflection::GetSchema(schema_data_.span().data());
   }
 
  protected:

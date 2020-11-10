@@ -9,10 +9,6 @@
 
 namespace aos {
 
-flatbuffers::DetachedBuffer MergeFlatBuffers(
-    const flatbuffers::TypeTable *typetable, const uint8_t *data1,
-    const uint8_t *data2);
-
 // Merges 2 flat buffers with the provided type table into the builder.  Returns
 // the offset to the flatbuffers.
 // One or both of t1 and t2 must be non-null.  If one is null, this method
@@ -23,32 +19,9 @@ flatbuffers::Offset<flatbuffers::Table> MergeFlatBuffers(
 
 template <class T>
 inline flatbuffers::Offset<T> MergeFlatBuffers(
-    const flatbuffers::Table *t1,
-    const flatbuffers::Table *t2, flatbuffers::FlatBufferBuilder *fbb) {
+    const flatbuffers::Table *t1, const flatbuffers::Table *t2,
+    flatbuffers::FlatBufferBuilder *fbb) {
   return MergeFlatBuffers(T::MiniReflectTypeTable(), t1, t2, fbb).o;
-}
-
-template <class T>
-inline flatbuffers::DetachedBuffer MergeFlatBuffers(const uint8_t *data1,
-                                                    const uint8_t *data2) {
-  return MergeFlatBuffers(T::MiniReflectTypeTable(), data1, data2);
-}
-
-template <class T>
-inline flatbuffers::DetachedBuffer MergeFlatBuffers(
-    const flatbuffers::DetachedBuffer &data1,
-    const flatbuffers::DetachedBuffer &data2) {
-  return MergeFlatBuffers(T::MiniReflectTypeTable(), data1.data(),
-                          data2.data());
-}
-
-template <class T>
-inline aos::FlatbufferDetachedBuffer<T> MergeFlatBuffers(
-    const aos::Flatbuffer<T> &fb1, const aos::Flatbuffer<T> &fb2) {
-const uint8_t *data1 = fb1.data();
-const uint8_t *data2 = fb2.data();
-  return aos::FlatbufferDetachedBuffer<T>(
-      MergeFlatBuffers(T::MiniReflectTypeTable(), data1, data2));
 }
 
 template <class T>
@@ -68,6 +41,13 @@ inline flatbuffers::Offset<T> MergeFlatBuffers(
   return MergeFlatBuffers<T>(reinterpret_cast<const flatbuffers::Table *>(fb1),
                              reinterpret_cast<const flatbuffers::Table *>(fb2),
                              fbb);
+}
+
+template <class T>
+inline aos::FlatbufferDetachedBuffer<T> MergeFlatBuffers(
+    const aos::Flatbuffer<T> &fb1, const aos::Flatbuffer<T> &fb2) {
+  return aos::FlatbufferDetachedBuffer<T>(
+      MergeFlatBuffers<T>(&fb1.message(), &fb2.message()));
 }
 
 // Copies a flatbuffer by walking the tree and copying all the pieces.  This
@@ -105,20 +85,44 @@ inline flatbuffers::Offset<T> CopyFlatBuffer(
           .o);
 }
 
-// Copies a flatbuffer by copying all the data without looking inside and
-// pointing inside it.
-template <class T>
-inline flatbuffers::Offset<T> BlindCopyFlatBuffer(
-    const Flatbuffer<T> &t, flatbuffers::FlatBufferBuilder *fbb) {
+namespace flatbuffer_merge_internal {
+
+inline flatbuffers::uoffset_t DoBlindCopyFlatBuffer(
+    const void *message, absl::Span<const uint8_t> span,
+    flatbuffers::FlatBufferBuilder *fbb) {
   // Enforce 8 byte alignment so anything inside the flatbuffer can be read.
   fbb->Align(sizeof(flatbuffers::largest_scalar_t));
 
   // We don't know how much of the start of the flatbuffer is padding.  The
   // safest thing to do from an alignment point of view (without looking inside)
   // is to copy the initial offset and leave it as dead space.
-  fbb->PushBytes(t.data(), t.size());
+  fbb->PushBytes(span.data(), span.size());
+  // Then, compute the offset from the back by computing the distance from the
+  // front to the start of the message.
   return fbb->GetSize() -
-         flatbuffers::ReadScalar<flatbuffers::uoffset_t>(t.data());
+         static_cast<flatbuffers::uoffset_t>(
+             reinterpret_cast<const uint8_t *>(message) - span.data());
+}
+
+}  // namespace flatbuffer_merge_internal
+
+// Copies a flatbuffer by copying all the data without looking inside and
+// pointing inside it.
+template <class T>
+inline flatbuffers::Offset<T> BlindCopyFlatBuffer(
+    const NonSizePrefixedFlatbuffer<T> &t,
+    flatbuffers::FlatBufferBuilder *fbb) {
+  return flatbuffer_merge_internal::DoBlindCopyFlatBuffer(&t.message(),
+                                                          t.span(), fbb);
+}
+
+// Copies a flatbuffer by copying all the data without looking inside and
+// pointing inside it.
+template <class T>
+inline flatbuffers::Offset<T> BlindCopyFlatBuffer(
+    const SizePrefixedFlatbuffer<T> &t, flatbuffers::FlatBufferBuilder *fbb) {
+  return flatbuffer_merge_internal::DoBlindCopyFlatBuffer(&t.message(),
+                                                          t.span(), fbb);
 }
 
 template <class T>
@@ -179,8 +183,14 @@ inline bool CompareFlatBuffer(const T *t1, const T *t2) {
 }
 
 template <class T>
-inline bool CompareFlatBuffer(const aos::Flatbuffer<T> &t1,
-                              const aos::Flatbuffer<T> &t2) {
+inline bool CompareFlatBuffer(const aos::NonSizePrefixedFlatbuffer<T> &t1,
+                              const aos::NonSizePrefixedFlatbuffer<T> &t2) {
+  return t1.span() == t2.span();
+}
+
+template <class T>
+inline bool CompareFlatBuffer(const aos::SizePrefixedFlatbuffer<T> &t1,
+                              const aos::SizePrefixedFlatbuffer<T> &t2) {
   return t1.span() == t2.span();
 }
 

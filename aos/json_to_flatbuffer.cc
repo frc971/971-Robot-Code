@@ -788,19 +788,6 @@ flatbuffers::DetachedBuffer JsonToFlatbuffer(
   }
 }
 
-::std::string BufferFlatbufferToJson(const uint8_t *buffer,
-                                     const ::flatbuffers::TypeTable *typetable,
-                                     JsonOptions json_options) {
-  // It is pretty common to get passed in a nullptr when a test fails.  Rather
-  // than CHECK, return a more user friendly result.
-  if (buffer == nullptr) {
-    return "null";
-  }
-  return TableFlatbufferToJson(reinterpret_cast<const flatbuffers::Table *>(
-                                   flatbuffers::GetRoot<uint8_t>(buffer)),
-                               typetable, json_options);
-}
-
 namespace {
 
 // A visitor which manages skipping the contents of vectors that are longer than

@@ -193,12 +193,12 @@ void EventLoop::SendTimingReport() {
   // Also, flatbuffers build from the back end.  So place this at the back end
   // of the buffer.  We only have to care because we are using this in a very
   // raw fashion.
-  CHECK_LE(timing_report_.size(), timing_report_sender_->size())
+  CHECK_LE(timing_report_.span().size(), timing_report_sender_->size())
       << ": Timing report bigger than the sender size.";
-  std::copy(timing_report_.data(),
-            timing_report_.data() + timing_report_.size(),
+  std::copy(timing_report_.span().data(),
+            timing_report_.span().data() + timing_report_.span().size(),
             reinterpret_cast<uint8_t *>(timing_report_sender_->data()) +
-                timing_report_sender_->size() - timing_report_.size());
+                timing_report_sender_->size() - timing_report_.span().size());
 
   for (const std::unique_ptr<TimerHandler> &timer : timers_) {
     timer->timing_.ResetTimingReport();
@@ -215,7 +215,7 @@ void EventLoop::SendTimingReport() {
   for (RawFetcher *fetcher : fetchers_) {
     fetcher->timing_.ResetTimingReport();
   }
-  timing_report_sender_->Send(timing_report_.size());
+  timing_report_sender_->Send(timing_report_.span().size());
 }
 
 void EventLoop::UpdateTimingReport() {

@@ -16,14 +16,14 @@ class JsonToFlatbufferTest : public ::testing::Test {
 
   bool JsonAndBack(const ::std::string in, const ::std::string out) {
     printf("Testing: %s\n", in.c_str());
-    const flatbuffers::DetachedBuffer fb =
-        JsonToFlatbuffer(in.data(), ConfigurationTypeTable());
+    FlatbufferDetachedBuffer<Configuration> fb =
+        JsonToFlatbuffer<Configuration>(in.data());
 
-    if (fb.size() == 0) {
+    if (fb.span().size() == 0) {
       return false;
     }
 
-    const ::std::string back = FlatbufferToJson(fb, ConfigurationTypeTable());
+    const ::std::string back = FlatbufferToJson(fb);
 
     printf("Back to string: %s\n", back.c_str());
 
@@ -215,17 +215,17 @@ TEST_F(JsonToFlatbufferTest, TrimmedVector) {
   json_short += " ] }";
   json_long += ", 101 ] }";
 
-  const flatbuffers::DetachedBuffer fb_short =
-      JsonToFlatbuffer(json_short.data(), ConfigurationTypeTable());
-  ASSERT_GT(fb_short.size(), 0);
-  const flatbuffers::DetachedBuffer fb_long =
-      JsonToFlatbuffer(json_long.data(), ConfigurationTypeTable());
-  ASSERT_GT(fb_long.size(), 0);
+  const FlatbufferDetachedBuffer<Configuration> fb_short(
+      JsonToFlatbuffer<Configuration>(json_short));
+  ASSERT_GT(fb_short.span().size(), 0);
+  const FlatbufferDetachedBuffer<Configuration> fb_long(
+      JsonToFlatbuffer<Configuration>(json_long));
+  ASSERT_GT(fb_long.span().size(), 0);
 
-  const std::string back_json_short = FlatbufferToJson(
-      fb_short, ConfigurationTypeTable(), {.multi_line = false, .max_vector_size = 100});
-  const std::string back_json_long = FlatbufferToJson(
-      fb_long, ConfigurationTypeTable(), {.multi_line = false, .max_vector_size = 100});
+  const std::string back_json_short = FlatbufferToJson<Configuration>(
+      fb_short, {.multi_line = false, .max_vector_size = 100});
+  const std::string back_json_long = FlatbufferToJson<Configuration>(
+      fb_long, {.multi_line = false, .max_vector_size = 100});
 
   EXPECT_EQ(json_short, back_json_short);
   EXPECT_EQ("{ \"vector_foo_int\": [ ... 101 elements ... ] }", back_json_long);

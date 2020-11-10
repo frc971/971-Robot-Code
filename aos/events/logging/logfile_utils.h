@@ -181,9 +181,9 @@ flatbuffers::Offset<MessageHeader> PackMessage(
     flatbuffers::FlatBufferBuilder *fbb, const Context &context,
     int channel_index, LogType log_type);
 
-std::optional<FlatbufferVector<LogFileHeader>> ReadHeader(
+std::optional<SizePrefixedFlatbufferVector<LogFileHeader>> ReadHeader(
     std::string_view filename);
-std::optional<FlatbufferVector<MessageHeader>> ReadNthMessage(
+std::optional<SizePrefixedFlatbufferVector<MessageHeader>> ReadNthMessage(
     std::string_view filename, size_t n);
 
 // Class to read chunks out of a log file.
@@ -234,7 +234,8 @@ class MessageReader {
   }
 
   // Returns the raw data of the header from the log file.
-  const FlatbufferVector<LogFileHeader> &raw_log_file_header() const {
+  const SizePrefixedFlatbufferVector<LogFileHeader> &raw_log_file_header()
+      const {
     return raw_log_file_header_;
   }
 
@@ -250,7 +251,7 @@ class MessageReader {
   }
 
   // Returns the next message if there is one.
-  std::optional<FlatbufferVector<MessageHeader>> ReadMessage();
+  std::optional<SizePrefixedFlatbufferVector<MessageHeader>> ReadMessage();
 
   // The time at which we need to read another chunk from the logfile.
   monotonic_clock::time_point queue_data_time() const {
@@ -262,7 +263,7 @@ class MessageReader {
   SpanReader span_reader_;
 
   // Vector holding the raw data for the log file header.
-  FlatbufferVector<LogFileHeader> raw_log_file_header_;
+  SizePrefixedFlatbufferVector<LogFileHeader> raw_log_file_header_;
 
   // Minimum amount of data to queue up for sorting before we are guarenteed
   // to not see data out of order.
@@ -293,7 +294,7 @@ class PartsMessageReader {
   // Returns the next message if there is one, or nullopt if we have reached the
   // end of all the files.
   // Note: reading the next message may change the max_out_of_order_duration().
-  std::optional<FlatbufferVector<MessageHeader>> ReadMessage();
+  std::optional<SizePrefixedFlatbufferVector<MessageHeader>> ReadMessage();
 
  private:
   // Opens the next log and updates message_reader_.  Sets done_ if there is
@@ -351,13 +352,13 @@ class SplitMessageReader {
   // Returns the timestamp, queue_index, and message for the oldest data on a
   // channel.  Requeues data as needed.
   std::tuple<monotonic_clock::time_point, uint32_t,
-             FlatbufferVector<MessageHeader>>
+             SizePrefixedFlatbufferVector<MessageHeader>>
   PopOldest(int channel_index);
 
   // Returns the timestamp, queue_index, and message for the oldest timestamp on
   // a channel delivered to a node.  Requeues data as needed.
   std::tuple<monotonic_clock::time_point, uint32_t,
-             FlatbufferVector<MessageHeader>>
+             SizePrefixedFlatbufferVector<MessageHeader>>
   PopOldestTimestamp(int channel, int node_index);
 
   // Returns the header for the log files.
@@ -365,7 +366,8 @@ class SplitMessageReader {
     return &log_file_header_.message();
   }
 
-  const FlatbufferVector<LogFileHeader> &raw_log_file_header() const {
+  const SizePrefixedFlatbufferVector<LogFileHeader> &raw_log_file_header()
+      const {
     return log_file_header_;
   }
 
@@ -444,7 +446,7 @@ class SplitMessageReader {
   const Node *target_node_ = nullptr;
 
   // Log file header to report.  This is a copy.
-  FlatbufferVector<LogFileHeader> log_file_header_;
+  SizePrefixedFlatbufferVector<LogFileHeader> log_file_header_;
   // Current log file being read.
   std::unique_ptr<MessageReader> message_reader_;
 
@@ -455,14 +457,14 @@ class SplitMessageReader {
     bool timestamps = false;
 
     // Returns a reference to the the oldest message.
-    FlatbufferVector<MessageHeader> &front() {
+    SizePrefixedFlatbufferVector<MessageHeader> &front() {
       CHECK_GT(data_.size(), 0u);
       return data_.front();
     }
 
     // Adds a message to the back of the queue. Returns true if it was actually
     // emplaced.
-    bool emplace_back(FlatbufferVector<MessageHeader> &&msg);
+    bool emplace_back(SizePrefixedFlatbufferVector<MessageHeader> &&msg);
 
     // Drops the front message.  Invalidates the front() reference.
     void PopFront();
@@ -492,7 +494,7 @@ class SplitMessageReader {
 
    private:
     // The data.
-    std::deque<FlatbufferVector<MessageHeader>> data_;
+    std::deque<SizePrefixedFlatbufferVector<MessageHeader>> data_;
   };
 
   // All the queues needed for a channel.  There isn't going to be data in all
@@ -569,7 +571,8 @@ class TimestampMerger {
   // Returns the oldest combined timestamp and data for this channel.  If there
   // isn't a matching piece of data, returns only the timestamp with no data.
   // The caller can determine what the appropriate action is to recover.
-  std::tuple<DeliveryTimestamp, FlatbufferVector<MessageHeader>> PopOldest();
+  std::tuple<DeliveryTimestamp, SizePrefixedFlatbufferVector<MessageHeader>>
+  PopOldest();
 
   // Tracks if the channel merger has pushed this onto it's heap or not.
   bool pushed() { return pushed_; }
@@ -609,7 +612,7 @@ class TimestampMerger {
   // Pops a message from the message heap.  This automatically triggers the
   // split message reader to re-fetch any new data.
   std::tuple<monotonic_clock::time_point, uint32_t,
-             FlatbufferVector<MessageHeader>>
+             SizePrefixedFlatbufferVector<MessageHeader>>
   PopMessageHeap();
 
   std::tuple<monotonic_clock::time_point, uint32_t, const MessageHeader *>
@@ -619,7 +622,7 @@ class TimestampMerger {
   // Pops a message from the timestamp heap.  This automatically triggers the
   // split message reader to re-fetch any new data.
   std::tuple<monotonic_clock::time_point, uint32_t,
-             FlatbufferVector<MessageHeader>>
+             SizePrefixedFlatbufferVector<MessageHeader>>
   PopTimestampHeap();
 
   const Configuration *configuration_;
@@ -678,7 +681,7 @@ class ChannelMerger {
   monotonic_clock::time_point OldestMessageTime() const;
   // Pops the oldest message.
   std::tuple<TimestampMerger::DeliveryTimestamp, int,
-             FlatbufferVector<MessageHeader>>
+             SizePrefixedFlatbufferVector<MessageHeader>>
   PopOldest();
 
   // Returns the config for this set of log files.
@@ -734,7 +737,7 @@ class ChannelMerger {
   std::vector<std::unique_ptr<SplitMessageReader>> split_message_readers_;
 
   // The log header we are claiming to be.
-  FlatbufferVector<LogFileHeader> log_file_header_;
+  SizePrefixedFlatbufferVector<LogFileHeader> log_file_header_;
 
   // The timestamp mergers which combine data from the split message readers.
   std::vector<TimestampMerger> timestamp_mergers_;

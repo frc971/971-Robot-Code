@@ -37,11 +37,11 @@ namespace aos {
 namespace logger {
 namespace {
 // Helper to safely read a header, or CHECK.
-FlatbufferVector<LogFileHeader> MaybeReadHeaderOrDie(
+SizePrefixedFlatbufferVector<LogFileHeader> MaybeReadHeaderOrDie(
     const std::vector<std::vector<std::string>> &filenames) {
   CHECK_GE(filenames.size(), 1u) << ": Empty filenames list";
   CHECK_GE(filenames[0].size(), 1u) << ": Empty filenames list";
-  std::optional<FlatbufferVector<LogFileHeader>> result =
+  std::optional<SizePrefixedFlatbufferVector<LogFileHeader>> result =
       ReadHeader(filenames[0][0]);
   CHECK(result);
   return result.value();
@@ -1285,8 +1285,8 @@ void LogReader::Register(EventLoop *event_loop) {
     }
     TimestampMerger::DeliveryTimestamp channel_timestamp;
     int channel_index;
-    FlatbufferVector<MessageHeader> channel_data =
-        FlatbufferVector<MessageHeader>::Empty();
+    SizePrefixedFlatbufferVector<MessageHeader> channel_data =
+        SizePrefixedFlatbufferVector<MessageHeader>::Empty();
 
     if (VLOG_IS_ON(1)) {
       LogFit("Offset was");
@@ -1900,12 +1900,12 @@ aos::Sender<MessageHeader> *LogReader::State::RemoteTimestampSender(
 }
 
 std::tuple<TimestampMerger::DeliveryTimestamp, int,
-           FlatbufferVector<MessageHeader>>
+           SizePrefixedFlatbufferVector<MessageHeader>>
 LogReader::State::PopOldest(bool *update_time) {
   CHECK_GT(sorted_messages_.size(), 0u);
 
   std::tuple<TimestampMerger::DeliveryTimestamp, int,
-             FlatbufferVector<MessageHeader>,
+             SizePrefixedFlatbufferVector<MessageHeader>,
              message_bridge::NoncausalOffsetEstimator *>
       result = std::move(sorted_messages_.front());
   VLOG(2) << MaybeNodeName(event_loop_->node()) << "PopOldest Popping "
@@ -1955,8 +1955,8 @@ void LogReader::State::SeedSortedMessages() {
 
     TimestampMerger::DeliveryTimestamp channel_timestamp;
     int channel_index;
-    FlatbufferVector<MessageHeader> channel_data =
-        FlatbufferVector<MessageHeader>::Empty();
+    SizePrefixedFlatbufferVector<MessageHeader> channel_data =
+        SizePrefixedFlatbufferVector<MessageHeader>::Empty();
 
     message_bridge::NoncausalOffsetEstimator *filter = nullptr;
 

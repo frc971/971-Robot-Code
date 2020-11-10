@@ -32,7 +32,7 @@ void LocalLogNamer::WriteHeader(
     const Node *node) {
   CHECK_EQ(node, this->node());
   UpdateHeader(header, uuid_, part_number_);
-  data_writer_->QueueSpan(header->full_span());
+  data_writer_->QueueSpan(header->span());
 }
 
 DetachedBufferWriter *LocalLogNamer::MakeWriter(const Channel *channel) {
@@ -48,7 +48,7 @@ void LocalLogNamer::Rotate(
   ++part_number_;
   *data_writer_ = std::move(*OpenDataWriter());
   UpdateHeader(header, uuid_, part_number_);
-  data_writer_->QueueSpan(header->full_span());
+  data_writer_->QueueSpan(header->span());
 }
 
 DetachedBufferWriter *LocalLogNamer::MakeTimestampWriter(
@@ -88,14 +88,14 @@ void MultiNodeLogNamer::WriteHeader(
       OpenDataWriter();
     }
     UpdateHeader(header, data_writer_.uuid, data_writer_.part_number);
-    data_writer_.writer->QueueSpan(header->full_span());
+    data_writer_.writer->QueueSpan(header->span());
   } else {
     for (std::pair<const Channel *const, DataWriter> &data_writer :
          data_writers_) {
       if (node == data_writer.second.node) {
         UpdateHeader(header, data_writer.second.uuid,
                      data_writer.second.part_number);
-        data_writer.second.writer->QueueSpan(header->full_span());
+        data_writer.second.writer->QueueSpan(header->span());
       }
     }
   }
@@ -110,7 +110,7 @@ void MultiNodeLogNamer::Rotate(
     }
     OpenDataWriter();
     UpdateHeader(header, data_writer_.uuid, data_writer_.part_number);
-    data_writer_.writer->QueueSpan(header->full_span());
+    data_writer_.writer->QueueSpan(header->span());
   } else {
     for (std::pair<const Channel *const, DataWriter> &data_writer :
          data_writers_) {
@@ -119,7 +119,7 @@ void MultiNodeLogNamer::Rotate(
         data_writer.second.rotate(data_writer.first, &data_writer.second);
         UpdateHeader(header, data_writer.second.uuid,
                      data_writer.second.part_number);
-        data_writer.second.writer->QueueSpan(header->full_span());
+        data_writer.second.writer->QueueSpan(header->span());
       }
     }
   }
