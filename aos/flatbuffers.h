@@ -313,9 +313,11 @@ class FlatbufferFixedAllocatorArray final
 
   void CopyFrom(const NonSizePrefixedFlatbuffer<T> &other) {
     CHECK(!allocator_.is_allocated()) << ": May not overwrite while building";
-    memcpy(buffer_.begin(), other.data(), other.size());
+    CHECK_LE(other.span().size(), Size)
+        << ": Source flatbuffer is larger than the target.";
+    memcpy(buffer_.begin(), other.span().data(), other.span().size());
     data_ = buffer_.begin();
-    size_ = other.size();
+    size_ = other.span().size();
   }
 
   void Reset() {
