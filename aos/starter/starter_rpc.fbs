@@ -1,0 +1,27 @@
+namespace aos.starter;
+
+enum Command : short {
+  // Requests that the application move into the RUNNING state. Skips delay if
+  // WAITING, starts if STOPPED, no-op if STARTING or RUNNING.
+  START,
+
+  // Requests that the application shut down and become STOPPED. Application
+  // will not automatically restart unless a START command is sent. Cancels
+  // start if WAITING, kills application gracefully with timeout if STARTING or
+  // RUNNING, no-op if STOPPING or STOPPED.
+  STOP,
+
+  // Performs the equivalent of a STOP, followed by a START operation.
+  // Application restarts immediately (no WAITING delay).
+  RESTART,
+}
+
+table StarterRpc {
+  command : Command;
+
+  // The name of the application to send the command to. Command is ignored if
+  // the given application does not exist.
+  name: string;
+}
+
+root_type StarterRpc;
