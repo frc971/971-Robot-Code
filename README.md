@@ -36,29 +36,29 @@ We use [Bazel](http://bazel.io) to build the code. Bazel has [extensive docs](ht
 There are a couple options for building code that are given here-- setting up either your own computer, or using the frc971 build server.
 
 ### Steps to set up a computer to build the code:
-  1. Install any Bazel version.
-    1. Check to see if the version of Linux you're running has an apt package for Bazel: `apt-cache search bazel` or just try `sudo apt install bazel`
-    2. More likely, you'll need to install manually-- see [here](https://docs.bazel.build/versions/master/install-ubuntu.html).  We recommend using `apt-key` instead of `gnupg` in setting up the key:
-      1. Step 1: Add Bazel distribution URI as a package source
-         ```
-         sudo apt install curl apt-key
-         curl -fsSL https://bazel.build/bazel-release.pub.gpg | apt-key add -
-         echo "deb [arch=amd64] https://storage.googleapis.com/bazel-apt stable jdk1.8" | sudo tee /etc/apt/sources.list.d/bazel.list
-         ```
-      2. Step 2: Install Bazel
-         ```
-         sudo apt update && sudo apt install bazel
-         ```
+  1. Install any Bazel version:
+     1. Check to see if the version of Linux you're running has an apt package for Bazel: `apt-cache search bazel` or just try `sudo apt install bazel`
+     2. More likely, you'll need to install manually-- see [here](https://docs.bazel.build/versions/master/install-ubuntu.html).  We recommend using `apt-key` instead of `gnupg` in setting up the key:
+        1. Step 1: Add Bazel distribution URI as a package source
+           ```
+           sudo apt install curl
+           curl -fsSL https://bazel.build/bazel-release.pub.gpg | apt-key add -
+           echo "deb [arch=amd64] https://storage.googleapis.com/bazel-apt stable jdk1.8" | sudo tee /etc/apt/sources.list.d/bazel.list
+           ```
+        2. Step 2: Install Bazel
+           ```
+           sudo apt update && sudo apt install bazel
+           ```
 
   2. Install the required packages:
-```sh
-sudo apt-get update
-# TODO(james): Ideally, we shouldn't need to be installing libtinfo5...
-sudo apt-get install python libtinfo5
-```
+     ```sh
+     sudo apt-get update
+     # TODO(james): Ideally, we shouldn't need to be installing libtinfo5...
+     sudo apt-get install python libtinfo5
+     ```
   3. Change settings to allow Bazel's sandboxing to work-- follow the directions in `doc/frc971.conf`.  For example, the commands to do this would be:
-    1. `sudo cp doc/frc971.conf /etc/sysctl.d/`
-    2. `sudo sysctl --system`
+     1. `sudo cp doc/frc971.conf /etc/sysctl.d/`
+     2. `sudo sysctl --system`
 
 ### Setting up access to a workspace on the build server
 In order to use the build server, you'll first need to get ssh access set up.  (NOTE: you don't need to do any of the other setup steps done for your own computer, since things like `bazel`, `python`, etc. are already installed on the build server)
@@ -164,10 +164,10 @@ the code on May 13, 2018.
 ```console
 # Get some useful packages including git and subversion.
    apt-get update
-   apt-get install git git-gui vim-gtk3 
+   apt-get install git git-gui vim-gtk3
    apt-get install vim-doc git-doc exim4-doc-html yapf
    apt-get install bazel clang-format
-   apt-get install python avahi-daemon 
+   apt-get install python avahi-daemon
 # Install apt-file so that packages can be searched
    apt-get install apt-file
    apt-file update
