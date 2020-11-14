@@ -1,11 +1,11 @@
 namespace y2014.control_loops.shooter;
 
 table Output {
-  voltage:double;
+  voltage:double (id: 0);
   // true: latch engaged, false: latch open
-  latch_piston:bool;
+  latch_piston:bool (id: 1);
   // true: brake engaged false: brake released
-  brake_piston:bool;
+  brake_piston:bool (id: 2);
 }
 
 root_type Output;

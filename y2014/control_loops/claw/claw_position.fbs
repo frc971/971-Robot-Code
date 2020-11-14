@@ -5,21 +5,21 @@ namespace y2014.control_loops.claw;
 // All angles here are 0 vertical, positive "up" (aka backwards).
 table HalfClawPosition {
   // The current position of this half of the claw.
-  position:double;
+  position:double (id: 0);
 
   // The hall effect sensor at the front limit.
-  front:frc971.HallEffectStruct;
+  front:frc971.HallEffectStruct (id: 1);
   // The hall effect sensor in the middle to use for real calibration.
-  calibration:frc971.HallEffectStruct;
+  calibration:frc971.HallEffectStruct (id: 2);
   // The hall effect at the back limit.
-  back:frc971.HallEffectStruct;
+  back:frc971.HallEffectStruct (id: 3);
 }
 
 table Position {
   // All the top claw information.
-  top:HalfClawPosition;
+  top:HalfClawPosition (id: 0);
   // All the bottom claw information.
-  bottom:HalfClawPosition;
+  bottom:HalfClawPosition (id: 1);
 }
 
 root_type Position;

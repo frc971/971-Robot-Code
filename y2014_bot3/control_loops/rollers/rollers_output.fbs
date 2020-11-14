@@ -2,15 +2,15 @@ namespace y2014_bot3.control_loops.rollers;
 
 table Output {
   // Positive voltage = intaking, Negative = spitting.
-  front_intake_voltage:double;
-  back_intake_voltage:double;
+  front_intake_voltage:double (id: 0);
+  back_intake_voltage:double (id: 1);
   // Voltage for the low goal rollers.
   // Positive voltage = ball towards back, Negative = ball towards front.
-  low_goal_voltage:double;
+  low_goal_voltage:double (id: 2);
 
   // Whether the front and back intake pistons are extended.
-  front_extended:bool;
-  back_extended:bool;
+  front_extended:bool (id: 3);
+  back_extended:bool (id: 4);
 }
 
 root_type Output;
