@@ -6,124 +6,124 @@ namespace y2017.control_loops.superstructure;
 table IndexerStatus {
   // The current average velocity in radians/second. Positive is moving balls up
   // towards the shooter. This is the angular velocity of the inner piece.
-  avg_angular_velocity:double;
+  avg_angular_velocity:double (id: 0);
 
   // The current instantaneous filtered velocity in radians/second.
-  angular_velocity:double;
+  angular_velocity:double (id: 1);
 
   // True if the indexer is ready.  It is better to compare the velocities
   // directly so there isn't confusion on if the goal is up to date.
-  ready:bool;
+  ready:bool (id: 2);
 
   // True if the indexer is stuck.
-  stuck:bool;
-  stuck_voltage:float;
+  stuck:bool (id: 3);
+  stuck_voltage:float (id: 4);
 
   // The state of the indexer state machine.
-  state:int;
+  state:int32 (id: 5);
 
   // The estimated voltage error from the kalman filter in volts.
-  voltage_error:double;
+  voltage_error:double (id: 6);
   // The estimated voltage error from the stuck indexer kalman filter.
-  stuck_voltage_error:double;
+  stuck_voltage_error:double (id: 7);
 
   // The current velocity measured as delta x / delta t in radians/sec.
-  instantaneous_velocity:double;
+  instantaneous_velocity:double (id: 8);
 
   // The error between our measurement and expected measurement in radians.
-  position_error:double;
+  position_error:double (id: 9);
 }
 
 table ShooterStatus {
   // The current average velocity in radians/second.
-  avg_angular_velocity:double;
+  avg_angular_velocity:double (id: 0);
 
   // The current instantaneous filtered velocity in radians/second.
-  angular_velocity:double;
+  angular_velocity:double (id: 1);
 
   // True if the shooter is ready.  It is better to compare the velocities
   // directly so there isn't confusion on if the goal is up to date.
-  ready:bool;
+  ready:bool (id: 2);
 
   // The estimated voltage error from the kalman filter in volts.
-  voltage_error:double;
+  voltage_error:double (id: 3);
 
   // The current velocity measured as delta x / delta t in radians/sec.
-  instantaneous_velocity:double;
-  filtered_velocity:double;
-  fixed_instantaneous_velocity:double;
+  instantaneous_velocity:double (id: 4);
+  filtered_velocity:double (id: 5);
+  fixed_instantaneous_velocity:double (id: 6);
 
   // The error between our measurement and expected measurement in radians.
-  position_error:double;
+  position_error:double (id: 7);
 }
 
 table ColumnEstimatorState {
-  error:bool;
-  zeroed:bool;
-  indexer:frc971.HallEffectAndPositionEstimatorState;
-  turret:frc971.HallEffectAndPositionEstimatorState;
+  error:bool (id: 0);
+  zeroed:bool (id: 1);
+  indexer:frc971.HallEffectAndPositionEstimatorState (id: 2);
+  turret:frc971.HallEffectAndPositionEstimatorState (id: 3);
 }
 
-table TurretProfiledSubsystemStatus {
+table TurretProfiledSubsystemStatus  {
   // Is the subsystem zeroed?
-  zeroed:bool;
+  zeroed:bool (id: 0);
 
   // The state of the subsystem, if applicable.  -1 otherwise.
-  state:int;
+  state:int (id: 1);
 
   // If true, we have aborted.
-  estopped:bool;
+  estopped:bool (id: 2);
 
   // Position of the joint.
-  position:float;
+  position:float (id: 3);
   // Velocity of the joint in units/second.
-  velocity:float;
+  velocity:float (id: 4);
   // Profiled goal position of the joint.
-  goal_position:float;
+  goal_position:float (id: 5);
   // Profiled goal velocity of the joint in units/second.
-  goal_velocity:float;
+  goal_velocity:float (id: 6);
   // Unprofiled goal position from absoulte zero of the joint.
-  unprofiled_goal_position:float;
+  unprofiled_goal_position:float (id: 7);
   // Unprofiled goal velocity of the joint in units/second.
-  unprofiled_goal_velocity:float;
+  unprofiled_goal_velocity:float (id: 8);
 
   // The estimated voltage error.
-  voltage_error:float;
+  voltage_error:float (id: 9);
 
   // The calculated velocity with delta x/delta t
-  calculated_velocity:float;
+  calculated_velocity:float (id: 10);
 
   // Components of the control loop output
-  position_power:float;
-  velocity_power:float;
-  feedforwards_power:float;
+  position_power:float (id: 11);
+  velocity_power:float (id: 12);
+  feedforwards_power:float (id: 13);
 
   // State of the estimator.
-  estimator_state:ColumnEstimatorState;
+  estimator_state:ColumnEstimatorState (id: 14);
 
-  raw_vision_angle:double;
-  vision_angle:double;
-  vision_tracking:bool;
+  raw_vision_angle:double (id: 15);
+  vision_angle:double (id: 16);
+  vision_tracking:bool (id: 17);
 
-  turret_encoder_angle:double;
+  turret_encoder_angle:double (id: 18);
 }
 
 table Status {
   // Are all the subsystems zeroed?
-  zeroed:bool;
+  zeroed:bool (id: 0);
 
   // If true, we have aborted. This is the or of all subsystem estops.
-  estopped:bool;
+  estopped:bool (id: 1);
 
   // Each subsystems status.
-  intake:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus;
-  hood:frc971.control_loops.IndexProfiledJointStatus;
-  shooter:ShooterStatus;
+  intake:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 2);
+  hood:frc971.control_loops.IndexProfiledJointStatus (id: 3);
+  shooter:ShooterStatus (id: 4);
 
-  turret:TurretProfiledSubsystemStatus;
-  indexer:IndexerStatus;
+  turret:TurretProfiledSubsystemStatus (id: 5);
+  indexer:IndexerStatus (id: 6);
 
-  vision_distance:float;
+  vision_distance:float (id: 7);
 }
 
 root_type Status;

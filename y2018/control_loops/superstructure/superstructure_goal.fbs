@@ -3,37 +3,37 @@ include "frc971/control_loops/control_loops.fbs";
 namespace y2018.control_loops.superstructure;
 
 table IntakeGoal {
-  roller_voltage:double;
+  roller_voltage:double (id: 0);
 
   // Goal angle in radians of the intake.
   // Zero radians is where the intake is pointing straight out, with positive
   // radians inward towards the cube.
-  left_intake_angle:double;
-  right_intake_angle:double;
+  left_intake_angle:double (id: 1);
+  right_intake_angle:double (id: 2);
 }
 
 table Goal {
-  intake:IntakeGoal;
+  intake:IntakeGoal (id: 0);
 
   // Used to identiy a position in the planned set of positions on the arm.
-  arm_goal_position:uint;
+  arm_goal_position:uint32 (id: 1);
   // If true, start the grab box sequence.
-  grab_box:bool;
+  grab_box:bool (id: 2);
 
-  open_claw:bool;
-  close_claw:bool;
+  open_claw:bool (id: 3);
+  close_claw:bool (id: 4);
 
-  deploy_fork:bool;
+  deploy_fork:bool (id: 5);
 
-  hook_release:bool;
+  hook_release:bool (id: 6);
 
-  voltage_winch:double;
+  voltage_winch:double (id: 7);
 
-  open_threshold:double;
+  open_threshold:double (id: 8);
 
-  disable_box_correct:bool;
+  disable_box_correct:bool (id: 9);
 
-  trajectory_override:bool;
+  trajectory_override:bool (id: 10);
 }
 
 root_type Goal;

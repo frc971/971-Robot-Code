@@ -2,29 +2,29 @@ namespace y2019.control_loops.superstructure;
 
 table Output {
   // Voltage sent to motors moving elevator up/down. Positive is up.
-  elevator_voltage:double;
+  elevator_voltage:double (id: 0);
 
   // Voltage sent to wrist motors on elevator to rotate.
   // Positive rotates over the top towards the front of the robot.
-  wrist_voltage:double;
+  wrist_voltage:double (id: 1);
 
   // Voltage sent to motors on intake joint. Positive extends rollers.
-  intake_joint_voltage:double;
+  intake_joint_voltage:double (id: 2);
 
   // Voltage sent to rollers on intake. Positive rolls inward.
-  intake_roller_voltage:double;
+  intake_roller_voltage:double (id: 3);
 
   // Voltage sent to motors to move stilts height. Positive moves robot
   // upward.
-  stilts_voltage:double;
+  stilts_voltage:double (id: 4);
 
   // True opens solenoid (applies suction)
   // Top/bottom are when wrist is toward the front of the robot
-  intake_suction_top:bool;
-  intake_suction_bottom:bool;
+  intake_suction_top:bool (id: 5);
+  intake_suction_bottom:bool (id: 6);
 
   // Voltage sent to the vacuum pump motors.
-  pump_voltage:double;
+  pump_voltage:double (id: 7);
 }
 
 root_type Output;

@@ -2,23 +2,23 @@ namespace y2019.control_loops.drivetrain;
 
 // See the Target structure in //y2019/jevois:structures.h for documentation.
 table CameraTarget {
-  distance:float;
-  height:float;
-  heading:float;
-  skew:float;
+  distance:float (id: 0);
+  height:float (id: 1);
+  heading:float (id: 2);
+  skew:float (id: 3);
 }
 
 // Frames from a camera.
 table CameraFrame {
   // Number of nanoseconds since the aos::monotonic_clock epoch at which this
   // frame was captured.
-  timestamp:long;
+  timestamp:long (id: 0);
 
   // Buffer for the 3 targets.
-  targets:[CameraTarget];
+  targets:[CameraTarget] (id: 1);
 
   // Index of the camera position (not serial number) which this frame is from.
-  camera:ubyte;
+  camera:ubyte (id: 2);
 }
 
 root_type CameraFrame;

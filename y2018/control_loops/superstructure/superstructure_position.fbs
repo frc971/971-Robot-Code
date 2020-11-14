@@ -4,47 +4,47 @@ namespace y2018.control_loops.superstructure;
 
 table IntakeElasticSensors {
   // Position of the motor end of the series elastic in radians.
-  motor_position:frc971.PotAndAbsolutePosition;
+  motor_position:frc971.PotAndAbsolutePosition (id: 0);
 
   // Displacement of the spring in radians.
-  spring_angle:double;
+  spring_angle:double (id: 1);
 
   // False if the beam break sensor isn't triggered, true if the beam breaker is
   // triggered.
-  beam_break:bool;
+  beam_break:bool (id: 2);
 }
 
 table ArmPosition {
   // Values of the encoder and potentiometer at the base of the proximal
   // (connected to drivebase) arm in radians.
-  proximal:frc971.PotAndAbsolutePosition;
+  proximal:frc971.PotAndAbsolutePosition (id: 0);
 
   // Values of the encoder and potentiometer at the base of the distal
   // (connected to proximal) arm in radians.
-  distal:frc971.PotAndAbsolutePosition;
+  distal:frc971.PotAndAbsolutePosition (id: 1);
 }
 
 
 table Position {
   // Values of the series elastic encoders on the left side of the robot from
   // the rear perspective in radians.
-  left_intake:IntakeElasticSensors;
+  left_intake:IntakeElasticSensors (id: 0);
 
   // Values of the series elastic encoders on the right side of the robot from
   // the rear perspective in radians.
-  right_intake:IntakeElasticSensors;
+  right_intake:IntakeElasticSensors (id: 1);
 
-  arm:ArmPosition;
+  arm:ArmPosition (id: 2);
 
   // Value of the beam breaker sensor. This value is true if the beam is
   // broken, false if the beam isn't broken.
-  claw_beambreak_triggered:bool;
+  claw_beambreak_triggered:bool (id: 3);
   // Value of the beambreak sensor detecting when the box has hit the frame
   // cutout.
-  box_back_beambreak_triggered:bool;
+  box_back_beambreak_triggered:bool (id: 4);
 
   // Distance to the box in meters.
-  box_distance:double;
+  box_distance:double (id: 5);
 }
 
 root_type Position;

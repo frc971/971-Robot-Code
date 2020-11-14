@@ -4,34 +4,34 @@ namespace y2019.control_loops.superstructure;
 
 table SuctionGoal {
   // True = apply suction
-  grab_piece:bool;
+  grab_piece:bool (id: 0);
 
   // 0 = ball mode
   // 1 = disk mode
 
-  gamepiece_mode:int;
+  gamepiece_mode:int (id: 1);
 }
 
 table Goal {
   // Meters, 0 = lowest position - mechanical hard stop,
   // positive = upward
-  elevator:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal;
+  elevator:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal (id: 0);
   // 0 = linkage on the sprocket is pointing straight up,
   // positive = forward
-  intake:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal;
+  intake:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal (id: 1);
   // 0 = Straight up parallel to elevator
   // Positive rotates toward intake from 0
-  wrist:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal;
+  wrist:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal (id: 2);
 
   // Distance stilts extended out of the bottom of the robot. Positive = down.
   // 0 is the height such that the bottom of the stilts is tangent to the
   // bottom of the middle wheels.
-  stilts:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal;
+  stilts:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal (id: 3);
 
   // Positive is rollers intaking inward.
-  roller_voltage:float;
+  roller_voltage:float (id: 4);
 
-  suction:SuctionGoal;
+  suction:SuctionGoal (id: 5);
 }
 
 root_type Goal;

@@ -10,13 +10,13 @@ namespace frc971.vision;
 //   * Order: row major (index 0 is upper left, index 1 is to its right)
 table CameraImage {
   // The number of rows in the image.
-  rows:int;
+  rows:int32 (id: 0);
   // The number of columns in the image.
-  cols:int;
+  cols:int32 (id: 1);
   // The image data.
-  data:[ubyte];
+  data:[ubyte] (id: 2);
   // Timestamp when the frame was captured. This is the end-of-frame timestamp.
-  monotonic_timestamp_ns:long;
+  monotonic_timestamp_ns:int64 (id: 3);
 }
 
 root_type CameraImage;

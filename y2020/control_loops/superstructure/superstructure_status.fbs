@@ -6,63 +6,63 @@ namespace y2020.control_loops.superstructure;
 table FlywheelControllerStatus {
   // The current average velocity in radians/second over the last kHistoryLength
   // in shooter.h
-  avg_angular_velocity:double;
+  avg_angular_velocity:double (id: 0);
 
   // The current instantaneous filtered velocity in radians/second.
-  angular_velocity:double;
+  angular_velocity:double (id: 1);
 
   // The target speed selected by the lookup table or from manual override
   // Can be compared to velocity to determine if ready.
-  angular_velocity_goal:double;
+  angular_velocity_goal:double (id: 2);
 
   // Voltage error.
-  voltage_error:double;
+  voltage_error:double (id: 3);
 }
 
 table ShooterStatus {
   // The final wheel shooting the ball
-  finisher:FlywheelControllerStatus;
+  finisher:FlywheelControllerStatus (id: 0);
 
   // The subsystem to accelerate the ball before the finisher
   // Velocity is the fastest (top) wheel
-  accelerator_left:FlywheelControllerStatus;
-  accelerator_right:FlywheelControllerStatus;
+  accelerator_left:FlywheelControllerStatus (id: 1);
+  accelerator_right:FlywheelControllerStatus (id: 2);
 }
 
 table AimerStatus {
   // The current goal angle for the turret auto-tracking, in radians.
-  turret_position:double;
+  turret_position:double (id: 0);
   // The current goal velocity for the turret, in radians / sec.
-  turret_velocity:double;
+  turret_velocity:double (id: 1);
   // Whether we are currently aiming for the inner port.
-  aiming_for_inner_port:bool;
+  aiming_for_inner_port:bool (id: 2);
   // The current distance to the target, in meters.
-  target_distance:double;
+  target_distance:double (id: 3);
   // The current "shot distance." When shooting on the fly, this may be
   // different from the static distance to the target.
-  shot_distance:double;
+  shot_distance:double (id: 4);
 }
 
 table Status {
   // All subsystems know their location.
-  zeroed:bool;
+  zeroed:bool (id: 0);
 
   // If true, we have aborted. This is if one or all subsystem estops.
-  estopped:bool;
+  estopped:bool (id: 1);
 
   // Subsystem status.
-  hood:frc971.control_loops.AbsoluteEncoderProfiledJointStatus;
-  intake:frc971.control_loops.AbsoluteEncoderProfiledJointStatus;
-  turret:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus;
+  hood:frc971.control_loops.AbsoluteEncoderProfiledJointStatus (id: 2);
+  intake:frc971.control_loops.AbsoluteEncoderProfiledJointStatus (id: 3);
+  turret:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 4);
 
   // Shooter subsystem status.
-  shooter:ShooterStatus;
+  shooter:ShooterStatus (id: 5);
 
   // Status of the control_panel
-  control_panel:frc971.control_loops.RelativeEncoderProfiledJointStatus;
+  control_panel:frc971.control_loops.RelativeEncoderProfiledJointStatus (id: 6);
 
   // Status of the vision auto-tracking.
-  aimer:AimerStatus;
+  aimer:AimerStatus (id: 7);
 }
 
 root_type Status;
