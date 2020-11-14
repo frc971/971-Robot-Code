@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019 FIRST. All Rights Reserved.                             */
+/* Copyright (c) 2019-2020 FIRST. All Rights Reserved.                        */
 /* Open Source Software - may be modified and shared by FRC teams. The code   */
 /* must be accompanied by the FIRST BSD license file in the root directory of */
 /* the project.                                                               */
@@ -11,7 +11,7 @@
 
 #include <hal/SimDevice.h>
 #include <hal/Types.h>
-#include <units/units.h>
+#include <units/angle.h>
 
 #include "frc/AnalogTrigger.h"
 #include "frc/Counter.h"
@@ -154,14 +154,28 @@ class DutyCycleEncoder : public ErrorBase,
    */
   double GetDistance() const;
 
+  /**
+   * Get the FPGA index for the DutyCycleEncoder.
+   *
+   * @return the FPGA index
+   */
+  int GetFPGAIndex() const;
+
+  /**
+   * Get the channel of the source.
+   *
+   * @return the source channel
+   */
+  int GetSourceChannel() const;
+
   void InitSendable(SendableBuilder& builder) override;
 
  private:
   void Init();
 
   std::shared_ptr<DutyCycle> m_dutyCycle;
-  AnalogTrigger m_analogTrigger;
-  Counter m_counter;
+  std::unique_ptr<AnalogTrigger> m_analogTrigger;
+  std::unique_ptr<Counter> m_counter;
   int m_frequencyThreshold = 100;
   double m_positionOffset = 0;
   double m_distancePerRotation = 1.0;
@@ -169,6 +183,7 @@ class DutyCycleEncoder : public ErrorBase,
 
   hal::SimDevice m_simDevice;
   hal::SimDouble m_simPosition;
+  hal::SimDouble m_simDistancePerRotation;
   hal::SimBoolean m_simIsConnected;
 };
 }  // namespace frc

@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019 FIRST. All Rights Reserved.                             */
+/* Copyright (c) 2019-2020 FIRST. All Rights Reserved.                        */
 /* Open Source Software - may be modified and shared by FRC teams. The code   */
 /* must be accompanied by the FIRST BSD license file in the root directory of */
 /* the project.                                                               */
@@ -7,21 +7,26 @@
 
 #include "DriverStationGui.h"
 
+#include <atomic>
 #include <cstring>
+#include <memory>
 #include <string>
+#include <vector>
 
 #include <GLFW/glfw3.h>
+#include <hal/simulation/DriverStationData.h>
+#include <hal/simulation/MockHooks.h>
 #include <imgui.h>
 #include <imgui_internal.h>
-#include <mockdata/DriverStationData.h>
-#include <mockdata/MockHooks.h>
 #include <wpi/Format.h>
 #include <wpi/SmallString.h>
 #include <wpi/StringRef.h>
 #include <wpi/raw_ostream.h>
 
 #include "ExtraGuiWidgets.h"
+#include "GuiDataSource.h"
 #include "HALSimGui.h"
+#include "IniSaverInfo.h"
 
 using namespace halsimgui;
 
@@ -45,6 +50,7 @@ struct SystemJoystick {
 };
 
 struct RobotJoystick {
+  NameInfo name;
   std::string guid;
   const SystemJoystick* sys = nullptr;
   bool useGamepad = false;
@@ -54,11 +60,38 @@ struct RobotJoystick {
   HAL_JoystickButtons buttons;
   HAL_JoystickPOVs povs;
 
+  void Clear();
   void Update();
   void SetHAL(int i);
+  void GetHAL(int i);
   bool IsButtonPressed(int i) { return (buttons.buttons & (1u << i)) != 0; }
 };
 
+class JoystickSource {
+ public:
+  explicit JoystickSource(int index);
+  ~JoystickSource() {
+    HALSIM_CancelDriverStationNewDataCallback(m_callback);
+    for (int i = 0; i < buttonCount; ++i) delete buttons[i];
+  }
+  JoystickSource(const JoystickSource&) = delete;
+  JoystickSource& operator=(const JoystickSource&) = delete;
+
+  int axisCount;
+  int buttonCount;
+  int povCount;
+  std::unique_ptr<GuiDataSource> axes[HAL_kMaxJoystickAxes];
+  // use pointer instead of unique_ptr to allow it to be passed directly
+  // to DrawLEDSources()
+  GuiDataSource* buttons[32];
+  std::unique_ptr<GuiDataSource> povs[HAL_kMaxJoystickPOVs];
+
+ private:
+  static void CallbackFunc(const char*, void* param, const HAL_Value*);
+
+  int m_index;
+  int32_t m_callback;
+};
 }  // namespace
 
 // system joysticks
@@ -67,8 +100,71 @@ static int gNumSystemJoysticks = 0;
 
 // robot joysticks
 static RobotJoystick gRobotJoysticks[HAL_kMaxJoysticks];
+static std::unique_ptr<JoystickSource> gJoystickSources[HAL_kMaxJoysticks];
 
 static bool gDisableDS = false;
+static std::atomic<bool>* gDSSocketConnected = nullptr;
+
+static inline bool IsDSDisabled() {
+  return gDisableDS || (gDSSocketConnected && *gDSSocketConnected);
+}
+
+JoystickSource::JoystickSource(int index) : m_index{index} {
+  HAL_JoystickAxes halAxes;
+  HALSIM_GetJoystickAxes(index, &halAxes);
+  axisCount = halAxes.count;
+  for (int i = 0; i < axisCount; ++i) {
+    axes[i] = std::make_unique<GuiDataSource>("Joystick[" + wpi::Twine{index} +
+                                              "] Axis[" + wpi::Twine{i} +
+                                              wpi::Twine{']'});
+  }
+
+  HAL_JoystickButtons halButtons;
+  HALSIM_GetJoystickButtons(index, &halButtons);
+  buttonCount = halButtons.count;
+  for (int i = 0; i < buttonCount; ++i) {
+    buttons[i] =
+        new GuiDataSource("Joystick[" + wpi::Twine{index} + "] Button[" +
+                          wpi::Twine{i + 1} + wpi::Twine{']'});
+    buttons[i]->SetDigital(true);
+  }
+  for (int i = buttonCount; i < 32; ++i) buttons[i] = nullptr;
+
+  HAL_JoystickPOVs halPOVs;
+  HALSIM_GetJoystickPOVs(index, &halPOVs);
+  povCount = halPOVs.count;
+  for (int i = 0; i < povCount; ++i) {
+    povs[i] = std::make_unique<GuiDataSource>("Joystick[" + wpi::Twine{index} +
+                                              "] POV[" + wpi::Twine{i} +
+                                              wpi::Twine{']'});
+  }
+
+  m_callback =
+      HALSIM_RegisterDriverStationNewDataCallback(CallbackFunc, this, true);
+}
+
+void JoystickSource::CallbackFunc(const char*, void* param, const HAL_Value*) {
+  auto self = static_cast<JoystickSource*>(param);
+
+  HAL_JoystickAxes halAxes;
+  HALSIM_GetJoystickAxes(self->m_index, &halAxes);
+  for (int i = 0; i < halAxes.count; ++i) {
+    if (auto axis = self->axes[i].get()) axis->SetValue(halAxes.axes[i]);
+  }
+
+  HAL_JoystickButtons halButtons;
+  HALSIM_GetJoystickButtons(self->m_index, &halButtons);
+  for (int i = 0; i < halButtons.count; ++i) {
+    if (auto button = self->buttons[i])
+      button->SetValue((halButtons.buttons & (1u << i)) != 0 ? 1 : 0);
+  }
+
+  HAL_JoystickPOVs halPOVs;
+  HALSIM_GetJoystickPOVs(self->m_index, &halPOVs);
+  for (int i = 0; i < halPOVs.count; ++i) {
+    if (auto pov = self->povs[i].get()) pov->SetValue(halPOVs.povs[i]);
+  }
+}
 
 // read/write joystick mapping to ini file
 static void* JoystickReadOpen(ImGuiContext* ctx, ImGuiSettingsHandler* handler,
@@ -93,6 +189,8 @@ static void JoystickReadLine(ImGuiContext* ctx, ImGuiSettingsHandler* handler,
     int num;
     if (value.getAsInteger(10, num)) return;
     joy->useGamepad = num;
+  } else {
+    joy->name.ReadIni(name, value);
   }
 }
 
@@ -100,11 +198,15 @@ static void JoystickWriteAll(ImGuiContext* ctx, ImGuiSettingsHandler* handler,
                              ImGuiTextBuffer* out_buf) {
   for (int i = 0; i < HAL_kMaxJoysticks; ++i) {
     auto& joy = gRobotJoysticks[i];
-    if (!joy.sys) continue;
-    const char* guid = glfwGetJoystickGUID(joy.sys - gSystemJoysticks);
-    if (!guid) continue;
-    out_buf->appendf("[Joystick][%d]\nguid=%s\nuseGamepad=%d\n\n", i, guid,
+    if (!joy.name.HasName() && !joy.sys) continue;
+    out_buf->appendf("[Joystick][%d]\nuseGamepad=%d\n", i,
                      joy.useGamepad ? 1 : 0);
+    if (joy.name.HasName()) joy.name.WriteIni(out_buf);
+    if (joy.sys) {
+      const char* guid = glfwGetJoystickGUID(joy.sys - gSystemJoysticks);
+      if (guid) out_buf->appendf("guid=%s\n", guid);
+    }
+    out_buf->append("\n");
   }
 }
 
@@ -198,12 +300,16 @@ static int HatToAngle(unsigned char hat) {
   }
 }
 
-void RobotJoystick::Update() {
+void RobotJoystick::Clear() {
   std::memset(&desc, 0, sizeof(desc));
   desc.type = -1;
   std::memset(&axes, 0, sizeof(axes));
   std::memset(&buttons, 0, sizeof(buttons));
   std::memset(&povs, 0, sizeof(povs));
+}
+
+void RobotJoystick::Update() {
+  Clear();
 
   if (!sys || !sys->present) return;
 
@@ -271,19 +377,40 @@ void RobotJoystick::SetHAL(int i) {
   HALSIM_SetJoystickPOVs(i, &povs);
 }
 
+void RobotJoystick::GetHAL(int i) {
+  HALSIM_GetJoystickDescriptor(i, &desc);
+  HALSIM_GetJoystickAxes(i, &axes);
+  HALSIM_GetJoystickButtons(i, &buttons);
+  HALSIM_GetJoystickPOVs(i, &povs);
+}
+
 static void DriverStationExecute() {
-  static bool prevDisableDS = false;
-  if (gDisableDS && !prevDisableDS) {
-    HALSimGui::SetWindowVisibility("FMS", HALSimGui::kDisabled);
-    HALSimGui::SetWindowVisibility("System Joysticks", HALSimGui::kDisabled);
-    HALSimGui::SetWindowVisibility("Joysticks", HALSimGui::kDisabled);
-  } else if (!gDisableDS && prevDisableDS) {
-    HALSimGui::SetWindowVisibility("FMS", HALSimGui::kShow);
-    HALSimGui::SetWindowVisibility("System Joysticks", HALSimGui::kShow);
-    HALSimGui::SetWindowVisibility("Joysticks", HALSimGui::kShow);
+  // update sources
+  for (int i = 0; i < HAL_kMaxJoysticks; ++i) {
+    auto& source = gJoystickSources[i];
+    int32_t axisCount, buttonCount, povCount;
+    HALSIM_GetJoystickCounts(i, &axisCount, &buttonCount, &povCount);
+    if (axisCount != 0 || buttonCount != 0 || povCount != 0) {
+      if (!source || source->axisCount != axisCount ||
+          source->buttonCount != buttonCount || source->povCount != povCount) {
+        source.reset();
+        source = std::make_unique<JoystickSource>(i);
+      }
+    } else {
+      source.reset();
+    }
   }
-  prevDisableDS = gDisableDS;
-  if (gDisableDS) return;
+
+  static bool prevDisableDS = false;
+
+  bool disableDS = IsDSDisabled();
+  if (disableDS && !prevDisableDS) {
+    HALSimGui::SetWindowVisibility("System Joysticks", HALSimGui::kDisabled);
+  } else if (!disableDS && prevDisableDS) {
+    HALSimGui::SetWindowVisibility("System Joysticks", HALSimGui::kShow);
+  }
+  prevDisableDS = disableDS;
+  if (disableDS) return;
 
   double curTime = glfwGetTime();
 
@@ -336,22 +463,44 @@ static void DriverStationExecute() {
 }
 
 static void DisplayFMS() {
+  bool fmsAttached = HALSIM_GetDriverStationFmsAttached();
+  bool dsAttached = HALSIM_GetDriverStationDsAttached();
+  static const char* stations[] = {"Red 1",  "Red 2",  "Red 3",
+                                   "Blue 1", "Blue 2", "Blue 3"};
+  int allianceStationId = HALSIM_GetDriverStationAllianceStationId();
+  double matchTime = HALSIM_GetDriverStationMatchTime();
+  HAL_MatchInfo matchInfo;
+  HALSIM_GetMatchInfo(&matchInfo);
+
+  if (IsDSDisabled()) {
+    if (!HALSIM_GetDriverStationEnabled())
+      ImGui::Text("Robot State: Disabled");
+    else if (HALSIM_GetDriverStationTest())
+      ImGui::Text("Robot State: Test");
+    else if (HALSIM_GetDriverStationAutonomous())
+      ImGui::Text("Robot State: Autonomous");
+    else
+      ImGui::Text("Robot State: Teleoperated");
+
+    ImGui::Text("FMS Attached: %s", fmsAttached ? "Yes" : "No");
+    ImGui::Text("DS Attached: %s", dsAttached ? "Yes" : "No");
+    ImGui::Text("Alliance Station: %s", stations[allianceStationId]);
+    ImGui::Text("Match Time: %.1f", matchTime);
+    ImGui::Text("Game Specific: %s", matchInfo.gameSpecificMessage);
+    return;
+  }
+
   double curTime = glfwGetTime();
 
   // FMS Attached
-  bool fmsAttached = HALSIM_GetDriverStationFmsAttached();
   if (ImGui::Checkbox("FMS Attached", &fmsAttached))
     HALSIM_SetDriverStationFmsAttached(fmsAttached);
 
   // DS Attached
-  bool dsAttached = HALSIM_GetDriverStationDsAttached();
   if (ImGui::Checkbox("DS Attached", &dsAttached))
     HALSIM_SetDriverStationDsAttached(dsAttached);
 
   // Alliance Station
-  static const char* stations[] = {"Red 1",  "Red 2",  "Red 3",
-                                   "Blue 1", "Blue 2", "Blue 3"};
-  int allianceStationId = HALSIM_GetDriverStationAllianceStationId();
   ImGui::SetNextItemWidth(ImGui::GetFontSize() * 8);
   if (ImGui::Combo("Alliance Station", &allianceStationId, stations, 6))
     HALSIM_SetDriverStationAllianceStationId(
@@ -362,7 +511,6 @@ static void DisplayFMS() {
   ImGui::Checkbox("Match Time Enabled", &matchTimeEnabled);
 
   static double startMatchTime = 0.0;
-  double matchTime = HALSIM_GetDriverStationMatchTime();
   ImGui::SetNextItemWidth(ImGui::GetFontSize() * 8);
   if (ImGui::InputDouble("Match Time", &matchTime, 0, 0, "%.1f",
                          ImGuiInputTextFlags_EnterReturnsTrue)) {
@@ -380,7 +528,6 @@ static void DisplayFMS() {
   }
 
   // Game Specific Message
-  static HAL_MatchInfo matchInfo;
   ImGui::SetNextItemWidth(ImGui::GetFontSize() * 8);
   if (ImGui::InputText("Game Specific",
                        reinterpret_cast<char*>(matchInfo.gameSpecificMessage),
@@ -420,15 +567,16 @@ static void DisplaySystemJoysticks() {
 }
 
 static void DisplayJoysticks() {
+  bool disableDS = IsDSDisabled();
   // imgui doesn't size columns properly with autoresize, so force it
   ImGui::Dummy(ImVec2(ImGui::GetFontSize() * 10 * HAL_kMaxJoysticks, 0));
 
   ImGui::Columns(HAL_kMaxJoysticks, "Joysticks", false);
   for (int i = 0; i < HAL_kMaxJoysticks; ++i) {
     auto& joy = gRobotJoysticks[i];
-    char label[30];
-    std::snprintf(label, sizeof(label), "Joystick %d", i);
-    if (joy.sys) {
+    char label[128];
+    joy.name.GetLabel(label, sizeof(label), "Joystick", i);
+    if (!disableDS && joy.sys) {
       ImGui::Selectable(label, false);
       if (ImGui::BeginDragDropSource()) {
         ImGui::SetDragDropPayload("Joystick", &joy.sys, sizeof(joy.sys));
@@ -439,7 +587,7 @@ static void DisplayJoysticks() {
     } else {
       ImGui::Selectable(label, false, ImGuiSelectableFlags_Disabled);
     }
-    if (ImGui::BeginDragDropTarget()) {
+    if (!disableDS && ImGui::BeginDragDropTarget()) {
       if (const ImGuiPayload* payload =
               ImGui::AcceptDragDropPayload("Joystick")) {
         IM_ASSERT(payload->DataSize == sizeof(SystemJoystick*));
@@ -455,26 +603,55 @@ static void DisplayJoysticks() {
       }
       ImGui::EndDragDropTarget();
     }
+    joy.name.PopupEditName(i);
     ImGui::NextColumn();
   }
   ImGui::Separator();
 
   for (int i = 0; i < HAL_kMaxJoysticks; ++i) {
     auto& joy = gRobotJoysticks[i];
+    auto source = gJoystickSources[i].get();
 
-    if (joy.sys && joy.sys->present) {
+    if (disableDS) joy.GetHAL(i);
+
+    if ((disableDS && joy.desc.type != 0) || (joy.sys && joy.sys->present)) {
       // update GUI display
       ImGui::PushID(i);
-      ImGui::Text("%d: %s", static_cast<int>(joy.sys - gSystemJoysticks),
-                  joy.sys->name);
+      if (disableDS) {
+        ImGui::Text("%s", joy.desc.name);
+        ImGui::Text("Gamepad: %s", joy.desc.isXbox ? "Yes" : "No");
+      } else {
+        ImGui::Text("%d: %s", static_cast<int>(joy.sys - gSystemJoysticks),
+                    joy.sys->name);
 
-      if (joy.sys->isGamepad) ImGui::Checkbox("Map gamepad", &joy.useGamepad);
+        if (joy.sys->isGamepad) ImGui::Checkbox("Map gamepad", &joy.useGamepad);
+      }
 
-      for (int j = 0; j < joy.axes.count; ++j)
-        ImGui::Text("Axis[%d]: %.3f", j, joy.axes.axes[j]);
+      for (int j = 0; j < joy.axes.count; ++j) {
+        if (source && source->axes[j]) {
+          char label[64];
+          std::snprintf(label, sizeof(label), "Axis[%d]", j);
+          ImGui::Selectable(label);
+          source->axes[j]->EmitDrag();
+          ImGui::SameLine();
+          ImGui::Text(": %.3f", joy.axes.axes[j]);
+        } else {
+          ImGui::Text("Axis[%d]: %.3f", j, joy.axes.axes[j]);
+        }
+      }
 
-      for (int j = 0; j < joy.povs.count; ++j)
-        ImGui::Text("POVs[%d]: %d", j, joy.povs.povs[j]);
+      for (int j = 0; j < joy.povs.count; ++j) {
+        if (source && source->povs[j]) {
+          char label[64];
+          std::snprintf(label, sizeof(label), "POVs[%d]", j);
+          ImGui::Selectable(label);
+          source->povs[j]->EmitDrag();
+          ImGui::SameLine();
+          ImGui::Text(": %d", joy.povs.povs[j]);
+        } else {
+          ImGui::Text("POVs[%d]: %d", j, joy.povs.povs[j]);
+        }
+      }
 
       // show buttons as multiple lines of LED indicators, 8 per line
       static const ImU32 color = IM_COL32(255, 255, 102, 255);
@@ -482,7 +659,8 @@ static void DisplayJoysticks() {
       buttons.resize(joy.buttons.count);
       for (int j = 0; j < joy.buttons.count; ++j)
         buttons[j] = joy.IsButtonPressed(j) ? 1 : -1;
-      DrawLEDs(buttons.data(), buttons.size(), 8, &color);
+      DrawLEDSources(buttons.data(), source ? source->buttons : nullptr,
+                     buttons.size(), 8, &color);
       ImGui::PopID();
     } else {
       ImGui::Text("Unassigned");
@@ -493,7 +671,11 @@ static void DisplayJoysticks() {
 }
 
 static void DriverStationOptionMenu() {
-  ImGui::MenuItem("Turn off DS", nullptr, &gDisableDS);
+  if (gDSSocketConnected && *gDSSocketConnected) {
+    ImGui::MenuItem("Turn off DS (real DS connected)", nullptr, true, false);
+  } else {
+    ImGui::MenuItem("Turn off DS", nullptr, &gDisableDS);
+  }
 }
 
 void DriverStationGui::Initialize() {
@@ -525,4 +707,8 @@ void DriverStationGui::Initialize() {
   HALSimGui::SetDefaultWindowPos("FMS", 5, 540);
   HALSimGui::SetDefaultWindowPos("System Joysticks", 5, 385);
   HALSimGui::SetDefaultWindowPos("Joysticks", 250, 465);
+}
+
+void DriverStationGui::SetDSSocketExtension(void* data) {
+  gDSSocketConnected = static_cast<std::atomic<bool>*>(data);
 }
