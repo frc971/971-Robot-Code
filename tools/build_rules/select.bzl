@@ -3,11 +3,6 @@
 # quickly find issues where something new isn't handled.
 # It will also make adding ORs when it makes sense easy to do nicely.
 
-# TODO(james): Decide what to do about webassembly/emscripten CPU and
-# compiler configurations. Bazel does not seem to handle the fact that a select
-# statement may not logically need to be evaluated for certain configurations
-# (e.g., most targets can't be build for --cpu=web, so handling "web" in the
-# cpu_select should notionally be unnecessary).
 all_cpus = [
     "amd64",
     "roborio",
@@ -52,7 +47,6 @@ def cpu_select(values):
         "@//tools:cpu_armhf": values["armhf"],
         "@//tools:cpu_cortex_m4f": values["cortex-m"],
         "@//tools:cpu_cortex_m4f_k22": values["cortex-m"],
-        "@//tools:cpu_web": None,
     })
 
 """A select wrapper for address space sizes.
@@ -73,7 +67,6 @@ def address_size_select(values):
         "@//tools:cpu_armhf": values["32"],
         "@//tools:cpu_cortex_m4f": values["32"],
         "@//tools:cpu_cortex_m4f_k22": values["32"],
-        "@//tools:cpu_web": None,
     })
 
 """A select wrapper for compilers.
@@ -92,5 +85,4 @@ def compiler_select(values):
     return select({
         "@//tools:compiler_gcc": values["gcc"],
         "@//tools:compiler_clang": values["clang"],
-        "@//tools:compiler_emscripten": None,
     })

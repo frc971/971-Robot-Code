@@ -14,18 +14,8 @@ config_setting(
 )
 
 config_setting(
-    name = "compiler_emscripten",
-    values = {"compiler": "emscripten"},
-)
-
-config_setting(
     name = "cpu_k8",
     values = {"cpu": "k8"},
-)
-
-config_setting(
-    name = "cpu_web",
-    values = {"cpu": "web"},
 )
 
 config_setting(
@@ -74,8 +64,6 @@ environment(name = "armhf-debian")
 
 environment(name = "roborio")
 
-environment(name = "web")
-
 environment(name = "cortex-m4f")
 
 environment(name = "cortex-m4f-k22")
@@ -93,7 +81,6 @@ environment_group(
     environments = [
         ":k8",
         ":roborio",
-        ":web",
         ":armhf-debian",
         ":cortex-m4f",
         ":cortex-m4f-k22",

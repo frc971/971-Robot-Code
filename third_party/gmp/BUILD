@@ -17,10 +17,6 @@ architecture_paths = {
         "x86_64",
         "generic",
     ],
-    "@//tools:cpu_web": [
-        "x86_64",
-        "generic",
-    ],
     "@//tools:cpu_roborio": [
         "arm/v7a/cora9",
         "arm/v6t2",

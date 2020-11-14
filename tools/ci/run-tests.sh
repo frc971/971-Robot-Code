@@ -34,8 +34,3 @@ bazel --output_base=../cortex-m4f_output_base build \
     ${COMMON} \
     --cpu=cortex-m4f \
     ${M4F_TARGETS}
-
-bazel --output_base=../web_output_base build \
-    ${COMMON} \
-    --cpu=web \
-    ${TARGETS}

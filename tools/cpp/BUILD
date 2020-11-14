@@ -12,7 +12,6 @@ cc_library(
         "//tools:has_tsan": [],
         "//tools:cpu_cortex_m4f": [],
         "//tools:cpu_cortex_m4f_k22": [],
-        "//tools:cpu_web": [],
         "//conditions:default": ["//third_party/gperftools:tcmalloc"],
     }),
 )
@@ -35,7 +34,6 @@ cc_toolchain_suite(
         "armhf-debian|clang": "cc-compiler-armhf-debian",
         "cortex-m4f|gcc": "cc-compiler-cortex-m4f",
         "cortex-m4f-k22|gcc": "cc-compiler-cortex-m4f-k22",
-        "web|emscripten": "//tools/cpp/emscripten:cc_emscripten",
     },
 )
 

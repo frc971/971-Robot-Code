@@ -582,40 +582,6 @@ http_archive(
     url = "https://github.com/bazelbuild/rules_typescript/archive/0.21.0.zip",
 )
 
-emscripten_version = "1.38.31"
-
-http_archive(
-    name = "emscripten_toolchain",
-    build_file_content = """
-filegroup(
-    name = 'all',
-    visibility = ['//visibility:public'],
-    srcs = glob(['**']),
-)
-""",
-    # TODO(james): Once a functioning release contains this patch, convert
-    # to that. See https://github.com/emscripten-core/emscripten/pull/9048
-    patches = ["@//debian:emscripten_toolchain.patch"],
-    patch_args = ["-p1"],
-    sha256 = "c87e42cb6a104094e7daf2b7e61ac835f83674ac0168f533455838a1129cc764",
-    strip_prefix = "emscripten-" + emscripten_version,
-    urls = ["https://github.com/emscripten-core/emscripten/archive/" + emscripten_version + ".tar.gz"],
-)
-
-http_archive(
-    name = "emscripten_clang",
-    build_file_content = """
-filegroup(
-    name = 'all',
-    visibility = ['//visibility:public'],
-    srcs = glob(['**']),
-)
-""",
-    sha256 = "a0c2f2c5a897577f40af0fdf68dcf3cf65557ff20c081df26678c066a4fed4b1",
-    strip_prefix = "emscripten-llvm-e" + emscripten_version,
-    url = "https://www.frc971.org/Build-Dependencies/emscripten-llvm-e" + emscripten_version + ".tar.gz",
-)
-
 http_archive(
     name = "webrtc_x64",
     build_file = "@//debian:webrtc.BUILD",
