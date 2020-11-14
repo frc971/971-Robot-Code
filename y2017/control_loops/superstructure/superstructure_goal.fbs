@@ -7,27 +7,27 @@ table IntakeGoal {
   // frame. Positive is out.
 
   // Goal distance of the intake.
-  distance:double;
+  distance:double (id: 0);
 
   // Caps on velocity/acceleration for profiling. 0 for the default.
-  profile_params:frc971.ProfileParameters;
+  profile_params:frc971.ProfileParameters (id: 1);
 
   // Voltage to send to the rollers. Positive is sucking in.
-  voltage_rollers:double;
+  voltage_rollers:double (id: 2);
 
   // If true, disable the intake so we can hang.
-  disable_intake:bool;
+  disable_intake:bool (id: 3);
 
   // The gear servo value.
-  gear_servo:double;
+  gear_servo:double (id: 4);
 }
 
 table IndexerGoal {
   // Indexer angular velocity goals in radians/second.
-  angular_velocity:double;
+  angular_velocity:double (id: 0);
 
   // Roller voltage. Positive is sucking in.
-  voltage_rollers:double;
+  voltage_rollers:double (id: 1);
 }
 
 table TurretGoal {
@@ -36,39 +36,39 @@ table TurretGoal {
   // turns clockwise (towards right from the front), and decreases when
   // the turrent turns counter-clockwise (towards left from the front).
   // These are from a top view above the robot.
-  angle:double;
+  angle:double (id: 0);
 
   // If true, ignore the angle and track using vision.  If we don't see
   // anything, we'll use the turret goal above.
-  track:bool;
+  track:bool (id: 1);
 
   // Caps on velocity/acceleration for profiling. 0 for the default.
-  profile_params:frc971.ProfileParameters;
+  profile_params:frc971.ProfileParameters (id: 2);
 }
 
 table HoodGoal {
   // Angle the hood is currently at. An angle of zero is at the lower hard
   // stop, angle increases as hood rises.
-  angle:double;
+  angle:double (id: 0);
 
   // Caps on velocity/acceleration for profiling. 0 for the default.
-  profile_params:frc971.ProfileParameters;
+  profile_params:frc971.ProfileParameters (id: 1);
 }
 
 table ShooterGoal {
   // Angular velocity goals in radians/second. Positive is shooting out of the
   // robot.
-  angular_velocity:double;
+  angular_velocity:double (id: 0);
 }
 
 table Goal {
-  intake:IntakeGoal;
-  indexer:IndexerGoal;
-  turret:TurretGoal;
-  hood:HoodGoal;
-  shooter:ShooterGoal;
-  lights_on:bool;
-  use_vision_for_shots:bool;
+  intake:IntakeGoal (id: 0);
+  indexer:IndexerGoal (id: 1);
+  turret:TurretGoal (id: 2);
+  hood:HoodGoal (id: 3);
+  shooter:ShooterGoal (id: 4);
+  lights_on:bool (id: 5);
+  use_vision_for_shots:bool (id: 6);
 }
 
 root_type Goal;

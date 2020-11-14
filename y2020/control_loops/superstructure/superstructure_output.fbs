@@ -2,35 +2,35 @@ namespace y2020.control_loops.superstructure;
 
 table Output {
   // Votage sent to the hood. Positive moves up.
-  hood_voltage:double;
+  hood_voltage:double (id: 0);
 
   // Voltage sent to motors on intake joint. Positive extends rollers.
-  intake_joint_voltage:double;
+  intake_joint_voltage:double (id: 1);
 
   // Voltage sent to rollers on intake. Positive rolls inward.
-  intake_roller_voltage:double;
+  intake_roller_voltage:double (id: 2);
 
-  //Voltage sent to the motors.
-  //Positive rotates counterclockwise from a birds eye view.
-  turret_voltage:double;
+  // Voltage sent to the motors.
+  // Positive rotates counterclockwise from a birds eye view.
+  turret_voltage:double (id: 3);
 
   // Voltage sent to the feeder belt. Positive is feeding.
-  feeder_voltage:double;
+  feeder_voltage:double (id: 4);
 
   // Voltage sent to the washing_machine and control panel spinner.
   // Positive runs the washing machine CCW facing the front of the robot, and
   // the spinner runs CCW from a top down view.
-  washing_machine_spinner_voltage:double;
+  washing_machine_spinner_voltage:double (id: 5);
 
   // Voltage sent to the kicker. Positive is shooting.
-  accelerator_left_voltage:double;
-  accelerator_right_voltage:double;
+  accelerator_left_voltage:double (id: 6);
+  accelerator_right_voltage:double (id: 7);
 
   // Voltage sent to the flywheel. Positive is shooting.
-  finisher_voltage:double;
+  finisher_voltage:double (id: 8);
 
   // Positive is deploying climber and to climb; cannot run in reverse
-  climber_voltage:double;
+  climber_voltage:double (id: 9);
 }
 
 root_type Output;

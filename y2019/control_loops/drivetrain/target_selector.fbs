@@ -17,7 +17,7 @@ enum SelectionHint : ubyte {
 // The drivetrain listens on ".y2019.control_loops.drivetrain.target_selector_hint"
 table TargetSelectorHint {
   // Which target we should go for:
-  suggested_target:SelectionHint;
+  suggested_target:SelectionHint (id: 0);
 }
 
 root_type TargetSelectorHint;

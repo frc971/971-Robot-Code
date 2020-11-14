@@ -4,29 +4,29 @@ namespace y2020.control_loops.superstructure;
 
 table ShooterPosition {
   // Flywheel angle in radians, positive is shooting.
-  theta_finisher:double;
+  theta_finisher:double (id: 0);
 
   // Kicker angle in radians of the slowest (lowest) wheel, positive is
   // accelerating the ball toward the shooter.
-  theta_accelerator_left:double;
-  theta_accelerator_right:double;
+  theta_accelerator_left:double (id: 1);
+  theta_accelerator_right:double (id: 2);
 }
 
 table Position {
   // Zero is at the horizontal, positive towards the front (radians).
-  hood:frc971.AbsolutePosition;
+  hood:frc971.AbsolutePosition (id: 0);
 
   // Position of the intake. 0 when four-bar is vertical, positive extended.
-  intake_joint:frc971.AbsolutePosition;
+  intake_joint:frc971.AbsolutePosition (id: 1);
 
   // See goal for definition of 0
-  turret:frc971.PotAndAbsolutePosition;
+  turret:frc971.PotAndAbsolutePosition (id: 2);
 
   // Position of the kicker and flywheel
-  shooter:ShooterPosition;
+  shooter:ShooterPosition (id: 3);
 
    // Position of the control panel, relative to start, positive counterclockwise from above.
-  control_panel:frc971.RelativePosition;
+  control_panel:frc971.RelativePosition (id: 4);
 }
 
 root_type Position;

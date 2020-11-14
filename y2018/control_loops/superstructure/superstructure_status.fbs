@@ -4,97 +4,97 @@ namespace y2018.control_loops.superstructure;
 
 table IntakeSideStatus {
   // Is the subsystem zeroed?
-  zeroed:bool;
+  zeroed:bool (id: 0);
 
   // The state of the subsystem, if applicable.
-  state:int;
+  state:int32 (id: 1);
 
   // If true, we have aborted.
-  estopped:bool;
+  estopped:bool (id: 2);
 
   // Estimated position of the spring.
-  spring_position:float;
+  spring_position:float (id: 3);
   // Estimated velocity of the spring in units/second.
-  spring_velocity:float;
+  spring_velocity:float (id: 4);
   // Reported wrapping of the spring
-  spring_wrapped:int;
+  spring_wrapped:int (id: 5);
 
   // Estimated position of the joint.
-  motor_position:float;
+  motor_position:float (id: 6);
   // Estimated velocity of the joint in units/second.
-  motor_velocity:float;
+  motor_velocity:float (id: 7);
 
   // Goal position of the joint.
-  goal_position:float;
+  goal_position:float (id: 8);
   // Goal velocity of the joint in units/second.
-  goal_velocity:float;
+  goal_velocity:float (id: 9);
 
   // The calculated velocity with delta x/delta t
-  calculated_velocity:float;
+  calculated_velocity:float (id: 10);
 
   // The voltage given last cycle;
-  delayed_voltage:float;
+  delayed_voltage:float (id: 11);
 
   // State of the estimator.
-  estimator_state:frc971.PotAndAbsoluteEncoderEstimatorState;
+  estimator_state:frc971.PotAndAbsoluteEncoderEstimatorState (id: 12);
 }
 
 table ArmStatus {
   // State of the estimators.
-  proximal_estimator_state:frc971.PotAndAbsoluteEncoderEstimatorState;
-  distal_estimator_state:frc971.PotAndAbsoluteEncoderEstimatorState;
+  proximal_estimator_state:frc971.PotAndAbsoluteEncoderEstimatorState (id: 0);
+  distal_estimator_state:frc971.PotAndAbsoluteEncoderEstimatorState (id: 1);
 
   // The node we are currently going to.
-  current_node:uint;
+  current_node:uint32 (id: 2);
   // Distance (in radians) to the end of the path.
-  path_distance_to_go:float;
+  path_distance_to_go:float (id: 3);
   // Goal position and velocity (radians)
-  goal_theta0:float;
-  goal_theta1:float;
-  goal_omega0:float;
-  goal_omega1:float;
+  goal_theta0:float (id: 4);
+  goal_theta1:float (id: 5);
+  goal_omega0:float (id: 6);
+  goal_omega1:float (id: 7);
 
   // Current position and velocity (radians)
-  theta0:float;
-  theta1:float;
+  theta0:float (id: 8);
+  theta1:float (id: 9);
 
-  omega0:float;
-  omega1:float;
+  omega0:float (id: 10);
+  omega1:float (id: 11);
 
   // Estimated voltage error for the two joints.
-  voltage_error0:float;
-  voltage_error1:float;
+  voltage_error0:float (id: 12);
+  voltage_error1:float (id: 13);
 
   // True if we are zeroed.
-  zeroed:bool;
+  zeroed:bool (id: 14);
 
   // True if the arm is zeroed.
-  estopped:bool;
+  estopped:bool (id: 15);
 
   // The current state machine state.
-  state:uint;
+  state:uint32 (id: 16);
 
-  grab_state:uint;
+  grab_state:uint32 (id: 17);
 
   // The number of times the LQR solver failed.
-  failed_solutions:uint;
+  failed_solutions:uint32 (id: 18);
 }
 
 table Status {
   // Are all the subsystems zeroed?
-  zeroed:bool;
+  zeroed:bool (id: 0);
 
   // If true, any of the subsystems have aborted.
-  estopped:bool;
+  estopped:bool (id: 1);
 
   // Status of both intake sides.
-  left_intake:IntakeSideStatus;
-  right_intake:IntakeSideStatus;
+  left_intake:IntakeSideStatus (id: 2);
+  right_intake:IntakeSideStatus (id: 3);
 
-  arm:ArmStatus;
+  arm:ArmStatus (id: 4);
 
-  filtered_box_velocity:double;
-  rotation_state:uint;
+  filtered_box_velocity:double (id: 5);
+  rotation_state:uint (id: 6);
 }
 
 root_type Status;

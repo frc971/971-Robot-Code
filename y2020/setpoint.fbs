@@ -1,11 +1,11 @@
 namespace y2020.joysticks;
 
 table Setpoint {
-  accelerator:double;
+  accelerator:double (id: 0);
 
-  finisher:double;
+  finisher:double (id: 1);
 
-  hood:double;
+  hood:double (id: 2);
 }
 
 root_type Setpoint;

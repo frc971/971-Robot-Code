@@ -4,26 +4,26 @@ namespace frc971.vision.sift;
 
 // Represents a single image we train against.
 table TrainingImage {
-  features:[Feature];
+  features:[Feature] (id: 0);
 
   // Field coordinates of the target, represented as a transformation matrix
   // from the target to the field. See CameraPose in :sift_fbs for details of
   // the conventions of this.
-  field_to_target:TransformationMatrix;
+  field_to_target:TransformationMatrix (id: 1);
 
   // 2D image coordinate representing target location on the training image
-  target_point_x:float;
-  target_point_y:float;
+  target_point_x:float (id: 2);
+  target_point_y:float (id: 3);
   // Radius of target circle
-  target_point_radius:float;
+  target_point_radius:float (id: 4);
 }
 
 // Represents the information used to match incoming images against.
 table TrainingData {
-  images:[TrainingImage];
+  images:[TrainingImage] (id: 0);
 
   // Calibration information for all the cameras we know about.
-  camera_calibrations:[CameraCalibration];
+  camera_calibrations:[CameraCalibration] (id: 1);
 }
 
 root_type TrainingData;
