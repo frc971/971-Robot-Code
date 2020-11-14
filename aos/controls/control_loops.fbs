@@ -3,19 +3,19 @@ namespace aos.control_loops;
 // control loop.
 
 table Goal {
-  goal:double;
+  goal:double (id: 0);
 }
 
 table Position {
-  position:double;
+  position:double (id: 0);
 }
 
 table Output {
-  voltage:double;
+  voltage:double (id: 0);
 }
 
 table Status {
-  done:bool;
+  done:bool (id: 0);
 }
 
 root_type Goal;

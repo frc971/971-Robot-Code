@@ -7,7 +7,7 @@ table ADIS16470DiagStat {
   // applies when using scale sync mode (Register MSC_CTRL, Bits[4:2] = 010, see
   // Table 101). When this occurs, adjust the frequency of the clock signal on
   // the SYNC pin to operate within the appropriate range.
-  clock_error:bool;
+  clock_error:bool (id: 0);
 
   // True indicates a failure in the flash memory test (Register GLOB_CMD, Bit
   // 4, see Table 109), which involves a comparison between a cyclic redundancy
@@ -15,36 +15,36 @@ table ADIS16470DiagStat {
   // from the same memory locations at the time of initial programming (during
   // production process). If this occurs, repeat the same test.  If this error
   // persists, replace the ADIS16470 device.
-  memory_failure:bool;
+  memory_failure:bool (id: 1);
 
   // True indicates failure of at least one sensor, at the conclusion of the
   // self test (Register GLOB_CMD, Bit 2, see Table 109). If this occurs, repeat
   // the same test.  If this error persists, replace the ADIS16470. Motion,
   // during the execution of this test, can cause a false failure.
-  sensor_failure:bool;
+  sensor_failure:bool (id: 2);
 
   // True indicates that the voltage across VDD and GND is <2.8 V, which causes
   // data processing to stop. When VDD ≥ 2.8 V for 250 ms, the ADIS16470
   // reinitializes itself and starts producing data again.
-  standby_mode:bool;
+  standby_mode:bool (id: 3);
 
   // True indicates that the total number of SCLK cycles is not equal to an
   // integer multiple of 16. When this occurs, repeat the previous communication
   // sequence. Persistence in this error may indicate a weakness in the SPI
   // service that the ADIS16470 is receiving from the system it is supporting.
-  spi_communication_error:bool;
+  spi_communication_error:bool (id: 4);
 
   // True indicates that the most recent flash memory update (Register GLOB_CMD,
   // Bit 3, see Table 109) failed. If this occurs, ensure that VDD ≥ 3 V and
   // repeat the update attempt. If this error persists, replace the ADIS16470.
-  flash_memory_update_error:bool;
+  flash_memory_update_error:bool (id: 5);
 
   // True indicates that one of the data paths have experienced an overrun
   // condition. If this occurs, initiate a reset, using the RST pin (see Table
   // 5, Pin F3) or Register GLOB_CMD, Bit 7 (see Table 109). See the Serial Port
   // Operation section for more details on conditions that may cause this bit to
   // be set to 1.
-  data_path_overrun:bool;
+  data_path_overrun:bool (id: 6);
 }
 
 // Values returned from an IMU.
@@ -53,52 +53,52 @@ table ADIS16470DiagStat {
 table IMUValues {
   // Gyro readings in radians/second.
   // Positive is clockwise looking at the connector.
-  gyro_x:float;
+  gyro_x:float (id: 0);
   // Positive is clockwise looking at the right side (from the connector).
-  gyro_y:float;
+  gyro_y:float (id: 1);
   // Positive is counterclockwise looking at the top.
-  gyro_z:float;
+  gyro_z:float (id: 2);
 
   // Accelerometer readings in Gs.
   // Positive is up.
-  accelerometer_x:float;
+  accelerometer_x:float (id: 3);
   // Positive is away from the right side (from the connector).
-  accelerometer_y:float;
+  accelerometer_y:float (id: 4);
   // Positive is away from the connector.
-  accelerometer_z:float;
+  accelerometer_z:float (id: 5);
 
   // Magnetometer readings in gauss.
   // Positive is up.
-  magnetometer_x:float;
+  magnetometer_x:float (id: 6);
   // Positive is away from the right side (from the connector).
-  magnetometer_y:float;
+  magnetometer_y:float (id: 7);
   // Positive is away from the connector.
-  magnetometer_z:float;
+  magnetometer_z:float (id: 8);
 
   // Barometer readings in pascals.
-  barometer:float;
+  barometer:float (id: 9);
 
   // Temperature readings in degrees Celsius.
-  temperature:float;
+  temperature:float (id: 10);
 
   // FPGA timestamp when the values were captured.
-  fpga_timestamp:double;
+  fpga_timestamp:double (id: 11);
   // CLOCK_MONOTONIC time in nanoseconds when the values were captured,
   // converted from fpga_timestamp.
-  monotonic_timestamp_ns:long;
+  monotonic_timestamp_ns:long (id: 12);
 
   // For an ADIS16470, the DIAG_STAT value immediately after reset.
-  start_diag_stat:ADIS16470DiagStat;
+  start_diag_stat:ADIS16470DiagStat (id: 13);
   // For an ADIS16470, the DIAG_STAT value after the initial sensor self test we
   // trigger is finished.
-  self_test_diag_stat:ADIS16470DiagStat;
+  self_test_diag_stat:ADIS16470DiagStat (id: 14);
   // For an ADIS16470, the DIAG_STAT value associated with the previous set of
   // readings. This will never change during normal operation, so being 1 cycle
   // state is OK.
-  previous_reading_diag_stat:ADIS16470DiagStat;
+  previous_reading_diag_stat:ADIS16470DiagStat (id: 15);
 
   // The value read from the PROD_ID register.
-  product_id:uint16;
+  product_id:uint16 (id: 16);
 }
 
 root_type IMUValues;

@@ -5,9 +5,9 @@ table GyroReading {
   // Positive is counter-clockwise (Austin says "it's Positive").
   // Right-hand coordinate system around the Z-axis going up.
   // The angle is measured in radians.
-  angle:double;
+  angle:double (id: 0);
   // The angular velocity in radians/sec
-  velocity:double;
+  velocity:double (id: 1);
 }
 
 root_type GyroReading;

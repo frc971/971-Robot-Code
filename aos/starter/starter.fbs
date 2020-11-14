@@ -46,30 +46,30 @@ enum LastStopReason : uint {
 }
 
 table Status {
-  statuses: [ApplicationStatus];
+  statuses: [ApplicationStatus] (id: 0);
 }
 
 table ApplicationStatus {
-  name: string;
+  name: string (id: 0);
 
-  state: State;
+  state: State (id: 1);
 
   // Last exit code of the process. Has a value of 0 if not started.
-  last_exit_code: ubyte;
+  last_exit_code: ubyte (id: 2);
 
   // Last pid of the process. Could be associated with a different process
   // unless status == RUNNING. Not present if the process has not started.
-  pid: uint;
+  pid: uint (id: 3);
 
   // Unique id of this application and process
-  id: uint64;
+  id: uint64 (id: 4);
 
   // Start time in nanoseconds relative to monotonic clock
-  last_start_time: int64;
+  last_start_time: int64 (id: 5);
 
   // Indicates the reason the application is not running. Only valid if
   // application is STOPPED.
-  last_stop_reason: LastStopReason;
+  last_stop_reason: LastStopReason (id: 6);
 }
 
 root_type Status;

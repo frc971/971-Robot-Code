@@ -1,13 +1,13 @@
 namespace aos.common.actions;
 
 table MyParams {
-  param1:double;
-  param2:int;
+  param1:double (id: 0);
+  param2:int (id: 1);
 }
 
 table TestAction2Goal {
-  run:uint;
-  params:MyParams;
+  run:uint (id: 0);
+  params:MyParams (id: 1);
 }
 
 root_type TestAction2Goal;

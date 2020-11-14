@@ -1,22 +1,22 @@
 namespace y2016.control_loops.superstructure;
 
 table Output {
-  voltage_intake:float;
-  voltage_shoulder:float;
-  voltage_wrist:float;
+  voltage_intake:float (id: 0);
+  voltage_shoulder:float (id: 1);
+  voltage_wrist:float (id: 2);
 
-  voltage_top_rollers:float;
-  voltage_bottom_rollers:float;
+  voltage_top_rollers:float (id: 3);
+  voltage_bottom_rollers:float (id: 4);
 
   // Voltage to sent to the climber. Positive is pulling the robot up.
-  voltage_climber:float;
+  voltage_climber:float (id: 5);
   // If true, release the latch to trigger the climber to unfold.
-  unfold_climber:bool;
+  unfold_climber:bool (id: 6);
 
   // If true, release the latch to hold the traverse mechanism in the middle.
-  traverse_unlatched:bool;
+  traverse_unlatched:bool (id: 7);
   // If true, fire the traverse mechanism down.
-  traverse_down:bool;
+  traverse_down:bool (id: 8);
 }
 
 root_type Output;

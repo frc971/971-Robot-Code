@@ -2,12 +2,12 @@ namespace frc971.control_loops.drivetrain;
 
 table Output {
   // Voltage to send to motor(s) on either side of the drivetrain.
-  left_voltage:double;
-  right_voltage:double;
+  left_voltage:double (id: 0);
+  right_voltage:double (id: 1);
 
   // Whether to set each shifter piston to high gear.
-  left_high:bool;
-  right_high:bool;
+  left_high:bool (id: 2);
+  right_high:bool (id: 3);
 }
 
 root_type Output;

@@ -4,53 +4,53 @@ namespace y2016.control_loops.superstructure;
 
 table JointState {
   // Angle of the joint in radians.
-  angle:float;
+  angle:float (id: 0);
   // Angular velocity of the joint in radians/second.
-  angular_velocity:float;
+  angular_velocity:float (id: 1);
   // Profiled goal angle of the joint in radians.
-  goal_angle:float;
+  goal_angle:float (id: 2);
   // Profiled goal angular velocity of the joint in radians/second.
-  goal_angular_velocity:float;
+  goal_angular_velocity:float (id: 3);
   // Unprofiled goal angle of the joint in radians.
-  unprofiled_goal_angle:float;
+  unprofiled_goal_angle:float (id: 4);
   // Unprofiled goal angular velocity of the joint in radians/second.
-  unprofiled_goal_angular_velocity:float;
+  unprofiled_goal_angular_velocity:float (id: 5);
 
   // The estimated voltage error.
-  voltage_error:float;
+  voltage_error:float (id: 6);
 
   // The calculated velocity with delta x/delta t
-  calculated_velocity:float;
+  calculated_velocity:float (id: 7);
 
   // Components of the control loop output
-  position_power:float;
-  velocity_power:float;
-  feedforwards_power:float;
+  position_power:float (id: 8);
+  velocity_power:float (id: 9);
+  feedforwards_power:float (id: 10);
 
   // State of the estimator.
-  estimator_state:frc971.EstimatorState;
+  estimator_state:frc971.EstimatorState (id: 11);
 }
 
 table Status {
   // Are the superstructure subsystems zeroed?
-  zeroed:bool;
+  zeroed:bool (id: 0);
 
   // If true, we have aborted.
-  estopped:bool;
+  estopped:bool (id: 1);
 
   // The internal state of the state machine.
-  state:int;
+  state:int (id: 2);
 
 
   // Estimated angles and angular velocities of the superstructure subsystems.
-  intake:JointState;
-  shoulder:JointState;
-  wrist:JointState;
+  intake:JointState (id: 3);
+  shoulder:JointState (id: 4);
+  wrist:JointState (id: 5);
 
-  shoulder_controller_index:int;
+  shoulder_controller_index:int (id: 6);
 
   // Is the superstructure collided?
-  is_collided:bool;
+  is_collided:bool (id: 7);
 }
 
 root_type Status;

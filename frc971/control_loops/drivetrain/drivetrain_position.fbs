@@ -2,24 +2,24 @@ namespace frc971.control_loops.drivetrain;
 
 table Position {
   // Relative position of each drivetrain side (in meters).
-  left_encoder:double;
-  right_encoder:double;
+  left_encoder:double (id: 0);
+  right_encoder:double (id: 1);
 
   // The speed in m/s of each drivetrain side from the most recent encoder
   // pulse, or 0 if there was no edge within the last 5ms.
-  left_speed:double;
-  right_speed:double;
+  left_speed:double (id: 2);
+  right_speed:double (id: 3);
 
   // Position of each drivetrain shifter, scaled from 0.0 to 1.0 where smaller
   // is towards low gear.
-  left_shifter_position:double;
-  right_shifter_position:double;
+  left_shifter_position:double (id: 4);
+  right_shifter_position:double (id: 5);
 
   // Raw analog voltages of each shifter hall effect for logging purposes.
-  low_left_hall:double;
-  high_left_hall:double;
-  low_right_hall:double;
-  high_right_hall:double;
+  low_left_hall:double (id: 6);
+  high_left_hall:double (id: 7);
+  low_right_hall:double (id: 8);
+  high_right_hall:double (id: 9);
 }
 
 root_type Position;

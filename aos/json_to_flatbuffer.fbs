@@ -22,30 +22,30 @@ enum BaseType : byte {
 }
 
 table Location {
-  name:string;
-  type:string;
-  frequency:int;
-  max_size:int;
+  name:string (id: 0);
+  type:string (id: 1);
+  frequency:int (id: 2);
+  max_size:int (id: 3);
 }
 
 table Map {
-  match:Location;
-  rename:Location;
+  match:Location (id: 0);
+  rename:Location (id: 1);
 }
 
 table Application {
-  name:string;
-  priority:int;
-  maps:[Map];
-  long_thingy:uint64;
+  name:string (id: 0);
+  priority:int (id: 1);
+  maps:[Map] (id: 2);
+  long_thingy:uint64 (id: 3);
 }
 
 table VectorOfStrings {
-  str:[string];
+  str:[string] (id: 0);
 }
 
 table VectorOfVectorOfString {
-  v:[VectorOfStrings];
+  v:[VectorOfStrings] (id: 0);
 }
 
 struct FooStructNested {

@@ -9,7 +9,7 @@ table BallDetector {
   // TODO(comran): Check to see if our sensor's output corresponds with the
   // comment above.
 
-  voltage:double;
+  voltage:double (id: 0);
 }
 
 root_type BallDetector;

@@ -11,9 +11,9 @@ table Position {
   // the shooter wheels pointed towards the shoulder joint.  This is measured
   // relative to the arm, not the ground, not like the world we actually
   // present to users.
-  intake:frc971.PotAndIndexPosition;
-  shoulder:frc971.PotAndIndexPosition;
-  wrist:frc971.PotAndIndexPosition;
+  intake:frc971.PotAndIndexPosition (id: 0);
+  shoulder:frc971.PotAndIndexPosition (id: 1);
+  wrist:frc971.PotAndIndexPosition (id: 2);
 }
 
 root_type Position;

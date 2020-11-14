@@ -1,7 +1,7 @@
 namespace aos.logger.testing;
 
 table TestMessage {
-  value:int;
+  value:int (id: 0);
 }
 
 root_type TestMessage;

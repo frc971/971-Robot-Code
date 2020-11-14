@@ -2,18 +2,18 @@ namespace y2016.control_loops.shooter;
 
 table Output {
   // Voltage in volts of the left and right shooter motors.
-  voltage_left:double;
-  voltage_right:double;
+  voltage_left:double (id: 0);
+  voltage_right:double (id: 1);
 
   // See comments on the identical fields in Goal for details.
-  clamp_open:bool;
-  push_to_shooter:bool;
+  clamp_open:bool (id: 2);
+  push_to_shooter:bool (id: 3);
 
   // If true, the lights are on.
-  lights_on:bool;
+  lights_on:bool (id: 4);
 
-  forwards_flashlight:bool;
-  backwards_flashlight:bool;
+  forwards_flashlight:bool (id: 5);
+  backwards_flashlight:bool (id: 6);
 }
 
 root_type Output;

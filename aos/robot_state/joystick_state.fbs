@@ -2,14 +2,14 @@ namespace aos;
 
 table Joystick {
   // A bitmask of the butotn state.
-  buttons:ushort;
+  buttons:ushort (id: 0);
 
   // The 6 joystick axes.
   // TODO: Should have size of 6
-  axis:[double];
+  axis:[double] (id: 1);
 
   // The POV axis.
-  pov:int;
+  pov:int (id: 2);
 }
 
 enum Alliance : byte { kRed, kBlue, kInvalid }
@@ -18,18 +18,18 @@ enum Alliance : byte { kRed, kBlue, kInvalid }
 // joystick code hasn't died.  It is published on "/aos"
 table JoystickState {
   //TODO: should have fixed size.
-  joysticks:[Joystick];
+  joysticks:[Joystick] (id: 0);
 
-  test_mode:bool;
-  fms_attached:bool;
-  enabled:bool;
-  autonomous:bool;
-  team_id:ushort;
+  test_mode:bool (id: 1);
+  fms_attached:bool (id: 2);
+  enabled:bool (id: 3);
+  autonomous:bool (id: 4);
+  team_id:ushort (id: 5);
 
   // 2018 scale and switch positions.
   // TODO(austin): Push these out to a new message?
-  switch_left:bool;
-  scale_left:bool;
+  switch_left:bool (id: 6);
+  scale_left:bool (id: 7);
 
   // If this is true, then this message isn't actually from the control
   // system and so should not be trusted as evidence that the button inputs
@@ -37,13 +37,13 @@ table JoystickState {
   // However, most things should ignore this so that sending fake messages is
   // useful for testing. The only difference in behavior should be motors not
   // actually turning on.
-  fake:bool;
+  fake:bool (id: 8);
 
   // Color of our current alliance.
-  alliance:Alliance;
+  alliance:Alliance (id: 9);
 
   // String corresponding to the game data string
-  game_data:string;
+  game_data:string (id: 10);
 }
 
 root_type JoystickState;

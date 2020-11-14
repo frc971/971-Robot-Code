@@ -6,7 +6,7 @@ table Position {
   // ball in, and the ball then hits a limit sensor when it is fully contained.
   // We would then want to stop running the intake to avoid spinning the intake
   // against the ball.
-  limit_sensor: bool;
+  limit_sensor: bool (id: 0);
 }
 
 root_type Position;

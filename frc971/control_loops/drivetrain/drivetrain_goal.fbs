@@ -11,55 +11,55 @@ enum ControllerType : byte {
 
 table SplineGoal {
   // index of the spline. Zero indicates the spline should not be computed.
-  spline_idx:int;
+  spline_idx:int (id: 0);
 
   // Acutal spline.
-  spline:frc971.MultiSpline;
+  spline:frc971.MultiSpline (id: 1);
 
   // Whether to follow the spline driving forwards or backwards.
-  drive_spline_backwards:bool;
+  drive_spline_backwards:bool (id: 2);
 }
 
 table Goal {
   // Position of the steering wheel (positive = turning left when going
   // forwards).
-  wheel:float;
-  wheel_velocity:float;
-  wheel_torque:float;
+  wheel:float (id: 0);
+  wheel_velocity:float (id: 1);
+  wheel_torque:float (id: 2);
 
   // Position of the throttle (positive forwards).
-  throttle:float;
-  throttle_velocity:float;
-  throttle_torque:float;
+  throttle:float (id: 3);
+  throttle_velocity:float (id: 4);
+  throttle_torque:float (id: 5);
 
   // True to shift into high, false to shift into low.
-  highgear:bool;
+  highgear:bool (id: 6);
 
   // True to activate quickturn.
-  quickturn:bool;
+  quickturn:bool (id: 7);
 
   // Type of controller in charge of the drivetrain.
-  controller_type:ControllerType;
+  controller_type:ControllerType (id: 8);
 
   // Position goals for each drivetrain side (in meters) when the
   // closed-loop controller is active.
-  left_goal:double;
-  right_goal:double;
+  left_goal:double (id: 9);
+  right_goal:double (id: 10);
 
-  max_ss_voltage:float;
+  max_ss_voltage:float (id: 11);
 
   // Motion profile parameters.
   // The control loop will profile if these are all non-zero.
-  linear:ProfileParameters;
-  angular:ProfileParameters;
+  linear:ProfileParameters (id: 12);
+  angular:ProfileParameters (id: 13);
 
   // Parameters for a spline to follow. This just contains info on a spline to
   // compute. Each time this is sent, spline drivetrain will compute a new
   // spline.
-  spline:SplineGoal;
+  spline:SplineGoal (id: 14);
 
   // Which spline to follow.
-  spline_handle:int;
+  spline_handle:int (id: 15);
 }
 
 root_type Goal;

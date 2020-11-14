@@ -4,8 +4,8 @@ namespace y2016.control_loops.shooter;
 // For all angular velocities, positive is shooting the ball out of the robot.
 table Position {
   // Wheel angle in radians/second.
-  theta_left:double;
-  theta_right:double;
+  theta_left:double (id: 0);
+  theta_right:double (id: 1);
 }
 
 root_type Position;

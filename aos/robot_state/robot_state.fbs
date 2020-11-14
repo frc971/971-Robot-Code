@@ -7,29 +7,29 @@ namespace aos;
 table RobotState {
   // The PID of the process reading sensors.
   // This is here so control loops can tell when it changes.
-  reader_pid:int;
+  reader_pid:int (id: 0);
 
   // True when outputs are enabled.
   // Motor controllers keep going for a bit after this goes to false.
-  outputs_enabled:bool;
+  outputs_enabled:bool (id: 1);
   // Indicates whether something is browned out (I think motor controller
   // outputs). IMPORTANT: This is NOT !outputs_enabled. outputs_enabled goes to
   // false for other reasons too (disabled, e-stopped, maybe more).
-  browned_out:bool;
+  browned_out:bool (id: 2);
 
   // Whether the two sensor rails are currently working.
-  is_3v3_active:bool;
-  is_5v_active:bool;
+  is_3v3_active:bool (id: 3);
+  is_5v_active:bool (id: 4);
   // The current voltages measured on the two sensor rails.
-  voltage_3v3:double;
-  voltage_5v:double;
+  voltage_3v3:double (id: 5);
+  voltage_5v:double (id: 6);
 
   // The input voltage to the roboRIO.
-  voltage_roborio_in:double;
+  voltage_roborio_in:double (id: 7);
 
   // From the DriverStation object, aka what FMS sees and what shows up on the
   // actual driver's station.
-  voltage_battery:double;
+  voltage_battery:double (id: 8);
 }
 
 root_type RobotState;

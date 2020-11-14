@@ -2,12 +2,12 @@ namespace y2016.actors.vision_align_action;
 
 // Parameters to send with start.
 table VisionAlignActionParams {
-  run:int;
+  run:int (id: 0);
 }
 
 table Goal {
-  run:uint;
-  params:VisionAlignActionParams;
+  run:uint (id: 0);
+  params:VisionAlignActionParams (id: 1);
 }
 
 root_type Goal;

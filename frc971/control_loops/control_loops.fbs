@@ -8,11 +8,11 @@ namespace frc971;
 // position which varies with each robot.
 table IndexPosition {
   // Current position read from the encoder.
-  encoder:double;
+  encoder:double (id: 0);
   // Position from the encoder latched at the last index pulse.
-  latched_encoder:double;
+  latched_encoder:double (id: 1);
   // How many index pulses we've seen since startup. Starts at 0.
-  index_pulses:uint;
+  index_pulses:uint (id: 2);
 }
 
 // Represents all of the data for a single potentiometer and indexed encoder
@@ -23,17 +23,17 @@ table IndexPosition {
 // position which varies with each robot.
 table PotAndIndexPosition {
   // Current position read from the encoder.
-  encoder:double;
+  encoder:double (id: 0);
   // Current position read from the potentiometer.
-  pot:double;
+  pot:double (id: 1);
 
   // Position from the encoder latched at the last index pulse.
-  latched_encoder:double;
+  latched_encoder:double (id: 2);
   // Position from the potentiometer latched at the last index pulse.
-  latched_pot:double;
+  latched_pot:double (id: 3);
 
   // How many index pulses we've seen since startup. Starts at 0.
-  index_pulses:uint;
+  index_pulses:uint (id: 4);
 }
 
 // Represents all of the data for a single potentiometer with an absolute and
@@ -44,11 +44,11 @@ table PotAndIndexPosition {
 // arbitrary 0 position which varies with each robot.
 table PotAndAbsolutePosition {
   // Current position read from each encoder.
-  encoder:double;
-  absolute_encoder:double;
+  encoder:double (id: 0);
+  absolute_encoder:double (id: 1);
 
   // Current position read from the potentiometer.
-  pot:double;
+  pot:double (id: 2);
 }
 
 // Represents all of the data for an absolute and relative encoder pair.
@@ -57,8 +57,8 @@ table PotAndAbsolutePosition {
 // arbitrary point in time.
 table AbsolutePosition {
   // Current position read from each encoder.
-  encoder:double;
-  absolute_encoder:double;
+  encoder:double (id: 0);
+  absolute_encoder:double (id: 1);
 }
 
 // Represents all of the data for an absolute and relative encoder pair,
@@ -70,12 +70,12 @@ table AbsolutePosition {
 // arbitrary point in time.
 table AbsoluteAndAbsolutePosition {
   // Current position read from each encoder.
-  encoder:double;
-  absolute_encoder:double;
+  encoder:double (id: 0);
+  absolute_encoder:double (id: 1);
 
   // Current position read from the single turn absolute encoder.
   // This can not turn more than one rotation.
-  single_turn_absolute_encoder:double;
+  single_turn_absolute_encoder:double (id: 2);
 }
 
 // Represents all of the data for a single encoder.
@@ -83,51 +83,51 @@ table AbsoluteAndAbsolutePosition {
 // arbitrary point in time.
 table RelativePosition {
   // Current position read from the encoder.
-  encoder:double;
+  encoder:double (id: 0);
 }
 
 // The internal state of a zeroing estimator.
 table EstimatorState {
   // If true, there has been a fatal error for the estimator.
-  error:bool;
+  error:bool (id: 0);
   // If the joint has seen an index pulse and is zeroed.
-  zeroed:bool;
+  zeroed:bool (id: 1);
   // The estimated position of the joint.
-  position:double;
+  position:double (id: 2);
 
   // The estimated position not using the index pulse.
-  pot_position:double;
+  pot_position:double (id: 3);
 }
 
 // The internal state of a zeroing estimator.
 table PotAndAbsoluteEncoderEstimatorState {
   // If true, there has been a fatal error for the estimator.
-  error:bool;
+  error:bool (id: 0);
   // If the joint has seen an index pulse and is zeroed.
-  zeroed:bool;
+  zeroed:bool (id: 1);
   // The estimated position of the joint.
-  position:double;
+  position:double (id: 2);
 
   // The estimated position not using the index pulse.
-  pot_position:double;
+  pot_position:double (id: 3);
 
   // The estimated absolute position of the encoder.  This is filtered, so it
   // can be easily used when zeroing.
-  absolute_position:double;
+  absolute_position:double (id: 4);
 }
 
 // The internal state of a zeroing estimator.
 table AbsoluteEncoderEstimatorState {
   // If true, there has been a fatal error for the estimator.
-  error:bool;
+  error:bool (id: 0);
   // If the joint has seen an index pulse and is zeroed.
-  zeroed:bool;
+  zeroed:bool (id: 1);
   // The estimated position of the joint.
-  position:double;
+  position:double (id: 2);
 
   // The estimated absolute position of the encoder.  This is filtered, so it
   // can be easily used when zeroing.
-  absolute_position:double;
+  absolute_position:double (id: 3);
 }
 
 // The internal state of a zeroing estimator.
@@ -149,94 +149,94 @@ table AbsoluteAndAbsoluteEncoderEstimatorState {
 
 table RelativeEncoderEstimatorState {
   // If true, there has been a fatal error for the estimator.
-  error:bool;
+  error:bool (id: 0);
 
   // The estimated position of the joint.
-  position:double;
+  position:double (id: 1);
 }
 
 // The internal state of a zeroing estimator.
 table IndexEstimatorState {
   // If true, there has been a fatal error for the estimator.
-  error:bool;
+  error:bool (id: 0);
   // If the joint has seen an index pulse and is zeroed.
-  zeroed:bool;
+  zeroed:bool (id: 1);
   // The estimated position of the joint. This is just the position relative to
   // where we started if we're not zeroed yet.
-  position:double;
+  position:double (id: 2);
 
   // The positions of the extreme index pulses we've seen.
-  min_index_position:double;
-  max_index_position:double;
+  min_index_position:double (id: 3);
+  max_index_position:double (id: 4);
   // The number of index pulses we've seen.
-  index_pulses_seen:int;
+  index_pulses_seen:int (id: 5);
 }
 
 table HallEffectAndPositionEstimatorState {
   // If error.
-  error:bool;
+  error:bool (id: 0);
   // If we've found a positive edge while moving backwards and is zeroed.
-  zeroed:bool;
+  zeroed:bool (id: 1);
   // Encoder angle relative to where we started.
-  encoder:double;
+  encoder:double (id: 2);
   // The positions of the extreme posedges we've seen.
   // If we've gotten enough samples where the hall effect is high before can be
   // certain it is not a false positive.
-  high_long_enough:bool;
-  offset:double;
+  high_long_enough:bool (id: 3);
+  offset:double (id: 4);
 }
 
 // A left/right pair of PotAndIndexPositions.
 table PotAndIndexPair {
-  left:PotAndIndexPosition;
-  right:PotAndIndexPosition;
+  left:PotAndIndexPosition (id: 0);
+  right:PotAndIndexPosition (id: 1);
 }
 
 // Records edges captured on a single hall effect sensor.
 table HallEffectStruct {
-  current:bool;
-  posedge_count:int;
-  negedge_count:int;
-  posedge_value:double;
-  negedge_value:double;
+  current:bool (id: 0);
+  posedge_count:int (id: 1);
+  negedge_count:int (id: 2);
+  posedge_value:double (id: 3);
+  negedge_value:double (id: 4);
 }
 
 // Records the hall effect sensor and encoder values.
 table HallEffectAndPosition {
   // The current hall effect state.
-  current:bool;
+  current:bool (id: 0);
   // The current encoder position.
-  encoder:double;
+  encoder:double (id: 1);
   // The number of positive and negative edges we've seen on the hall effect
   // sensor.
-  posedge_count:int;
-  negedge_count:int;
+  posedge_count:int (id: 2);
+  negedge_count:int (id: 3);
   // The values corresponding to the last hall effect sensor reading.
-  posedge_value:double;
-  negedge_value:double;
+  posedge_value:double (id: 4);
+  negedge_value:double (id: 5);
 }
 
 // Records the positions for a mechanism with edge-capturing sensors on it.
 table HallEventPositions {
-  current:double;
-  posedge:double;
-  negedge:double;
+  current:double (id: 0);
+  posedge:double (id: 1);
+  negedge:double (id: 2);
 }
 
 // Records edges captured on a single hall effect sensor.
 table PosedgeOnlyCountedHallEffectStruct {
-  current:bool;
-  posedge_count:int;
-  negedge_count:int;
-  posedge_value:double;
+  current:bool (id: 0);
+  posedge_count:int (id: 1);
+  negedge_count:int (id: 2);
+  posedge_value:double (id: 3);
 }
 
 // Parameters for the motion profiles.
 table ProfileParameters {
   // Maximum velocity for the profile.
-  max_velocity:float;
+  max_velocity:float (id: 0);
   // Maximum acceleration for the profile.
-  max_acceleration:float;
+  max_acceleration:float (id: 1);
 }
 
 enum ConstraintType : byte {
@@ -249,13 +249,13 @@ enum ConstraintType : byte {
 
 // Definition of a constraint on a trajectory
 table Constraint {
-  constraint_type:ConstraintType;
+  constraint_type:ConstraintType (id: 0);
 
-  value:float;
+  value:float (id: 1);
 
   // start and end distance are only checked for velocity limits.
-  start_distance:float;
-  end_distance:float;
+  start_distance:float (id: 2);
+  end_distance:float (id: 3);
 }
 
 // Parameters for computing a trajectory using a chain of splines and
@@ -264,11 +264,11 @@ table MultiSpline {
   // Number of splines. The spline point arrays will be expected to have
   // 6 + 5 * (n - 1) points in them. The endpoints are shared between
   // neighboring splines.
-  spline_count:byte;
+  spline_count:byte (id: 0);
   // Maximum of 36 spline points (7 splines).
-  spline_x:[float];
-  spline_y:[float];
+  spline_x:[float] (id: 1);
+  spline_y:[float] (id: 2);
 
   // Maximum of 6 constraints;
-  constraints:[Constraint];
+  constraints:[Constraint] (id: 3);
 }

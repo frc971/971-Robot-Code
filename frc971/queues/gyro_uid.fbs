@@ -2,7 +2,7 @@ namespace frc971.sensors;
 
 // Published on "/drivetrain"
 table Uid {
-  uid:uint;
+  uid:uint (id: 0);
 }
 
 root_type Uid;

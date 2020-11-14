@@ -2,25 +2,25 @@ namespace aos.common.actions;
 
 table Status {
   // The run value of the instance we're currently running or 0.
-  running:uint;
+  running:uint (id: 0);
   // A run value we were previously running or 0.
-  last_running:uint;
+  last_running:uint (id: 1);
   // If false the action failed to complete and may be in a bad state,
   // this is a critical problem not a cancellation.
-  success:bool;
+  success:bool (id: 2);
 }
 
 table DoubleParam {
-  val:double;
+  val:double (id: 0);
 }
 
 table Goal {
   // The unique value to put into status.running while running this instance or
   // 0 to cancel.
-  run:uint;
+  run:uint (id: 0);
   // Default parameter.  The more useful thing to do would be to define your own
   // goal type to change param to a useful structure.
-  params:DoubleParam;
+  params:DoubleParam (id: 1);
 }
 
 root_type Status;

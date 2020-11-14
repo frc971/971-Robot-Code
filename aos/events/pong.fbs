@@ -1,8 +1,8 @@
 namespace aos.examples;
 
 table Pong {
-  value:int;
-  initial_send_time:long;
+  value:int (id: 0);
+  initial_send_time:long (id: 1);
 }
 
 root_type Pong;

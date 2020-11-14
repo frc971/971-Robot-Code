@@ -15,36 +15,36 @@ table Goal {
   // to the big frame supporting the shooter.
 
   // Goal angles and angular velocities of the superstructure subsystems.
-  angle_intake:double;
-  angle_shoulder:double;
+  angle_intake:double (id: 0);
+  angle_shoulder:double (id: 1);
   // In relation to the ground plane.
-  angle_wrist:double;
+  angle_wrist:double (id: 2);
 
   // Caps on velocity/acceleration for profiling. 0 for the default.
-  max_angular_velocity_intake:float;
-  max_angular_velocity_shoulder:float;
-  max_angular_velocity_wrist:float;
+  max_angular_velocity_intake:float (id: 3);
+  max_angular_velocity_shoulder:float (id: 4);
+  max_angular_velocity_wrist:float (id: 5);
 
-  max_angular_acceleration_intake:float;
-  max_angular_acceleration_shoulder:float;
-  max_angular_acceleration_wrist:float;
+  max_angular_acceleration_intake:float (id: 6);
+  max_angular_acceleration_shoulder:float (id: 7);
+  max_angular_acceleration_wrist:float (id: 8);
 
   // Voltage to send to the rollers. Positive is sucking in.
-  voltage_top_rollers:float;
-  voltage_bottom_rollers:float;
+  voltage_top_rollers:float (id: 9);
+  voltage_bottom_rollers:float (id: 10);
 
   // Voltage to sent to the climber. Positive is pulling the robot up.
-  voltage_climber:float;
+  voltage_climber:float (id: 11);
   // If true, unlatch the climber and allow it to unfold.
-  unfold_climber:bool;
+  unfold_climber:bool (id: 12);
 
-  force_intake:bool;
+  force_intake:bool (id: 13);
 
   // If true, release the latch which holds the traverse mechanism in the
   // middle.
-  traverse_unlatched:bool;
+  traverse_unlatched:bool (id: 14);
   // If true, fire the traverse mechanism down.
-  traverse_down:bool;
+  traverse_down:bool (id: 15);
 }
 
 root_type Goal;
