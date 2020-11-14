@@ -13,7 +13,7 @@
 using namespace frc2;
 
 CommandBase::CommandBase() {
-  frc::SendableRegistry::GetInstance().AddLW(this, GetTypeName(*this));
+  frc::SendableRegistry::GetInstance().Add(this, GetTypeName(*this));
 }
 
 void CommandBase::AddRequirements(
@@ -51,14 +51,16 @@ void CommandBase::SetSubsystem(const wpi::Twine& subsystem) {
 
 void CommandBase::InitSendable(frc::SendableBuilder& builder) {
   builder.SetSmartDashboardType("Command");
-  builder.AddStringProperty(".name", [this] { return GetName(); }, nullptr);
-  builder.AddBooleanProperty("running", [this] { return IsScheduled(); },
-                             [this](bool value) {
-                               bool isScheduled = IsScheduled();
-                               if (value && !isScheduled) {
-                                 Schedule();
-                               } else if (!value && isScheduled) {
-                                 Cancel();
-                               }
-                             });
+  builder.AddStringProperty(
+      ".name", [this] { return GetName(); }, nullptr);
+  builder.AddBooleanProperty(
+      "running", [this] { return IsScheduled(); },
+      [this](bool value) {
+        bool isScheduled = IsScheduled();
+        if (value && !isScheduled) {
+          Schedule();
+        } else if (!value && isScheduled) {
+          Cancel();
+        }
+      });
 }

@@ -565,18 +565,12 @@ void HAL_StopSPIAuto(HAL_SPIPort port, int32_t* status) {
 void HAL_SetSPIAutoTransmitData(HAL_SPIPort port, const uint8_t* dataToSend,
                                 int32_t dataSize, int32_t zeroSize,
                                 int32_t* status) {
-  static_assert(tSPI::kNumAutoTxRegisters >= 6,
-                "FPGA does not have enough tx registers");
-  static_assert(tSPI::kNumAutoTxElements == 4,
-                "FPGA has the wrong number of tx elements");
-  // 24 = 6 * 4, but the documentation needs updating if it ever changes, so
-  // just hard-code it here.
-  if (dataSize < 0 || dataSize > 23) {
+  if (dataSize < 0 || dataSize > 32) {
     *status = PARAMETER_OUT_OF_RANGE;
     return;
   }
 
-  if (zeroSize < 0 || zeroSize >= 128) {
+  if (zeroSize < 0 || zeroSize > 127) {
     *status = PARAMETER_OUT_OF_RANGE;
     return;
   }

@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------------*/
-/* Copyright (c) 2016-2019 FIRST. All Rights Reserved.                        */
+/* Copyright (c) 2016-2020 FIRST. All Rights Reserved.                        */
 /* Open Source Software - may be modified and shared by FRC teams. The code   */
 /* must be accompanied by the FIRST BSD license file in the root directory of */
 /* the project.                                                               */
@@ -24,12 +24,14 @@
 #include <wpi/timestamp.h>
 
 #include "HALInitializer.h"
+#include "HALInternal.h"
 #include "ctre/ctre.h"
 #include "hal/ChipObject.h"
 #include "hal/DriverStation.h"
 #include "hal/Errors.h"
 #include "hal/Notifier.h"
 #include "hal/handles/HandlesInternal.h"
+#include "visa/visa.h"
 
 using namespace hal;
 
@@ -44,6 +46,7 @@ void InitializeHAL() {
   InitializeAddressableLED();
   InitializeAccelerometer();
   InitializeAnalogAccumulator();
+  InitializeAnalogGyro();
   InitializeAnalogInput();
   InitializeAnalogInternal();
   InitializeAnalogOutput();
@@ -61,7 +64,7 @@ void InitializeHAL() {
   InitializeFPGAEncoder();
   InitializeFRCDriverStation();
   InitializeI2C();
-  InitialzeInterrupts();
+  InitializeInterrupts();
   InitializeMain();
   InitializeNotifier();
   InitializePCMInternal();
@@ -70,11 +73,22 @@ void InitializeHAL() {
   InitializePower();
   InitializePWM();
   InitializeRelay();
+  InitializeSerialPort();
   InitializeSolenoid();
   InitializeSPI();
   InitializeThreads();
 }
 }  // namespace init
+
+void ReleaseFPGAInterrupt(int32_t interruptNumber) {
+  if (!global) {
+    return;
+  }
+  int32_t status = 0;
+  global->writeInterruptForceNumber(static_cast<unsigned char>(interruptNumber),
+                                    &status);
+  global->strobeInterruptForceOnce(&status);
+}
 }  // namespace hal
 
 extern "C" {
@@ -170,6 +184,30 @@ const char* HAL_GetErrorMessage(int32_t code) {
       return ERR_CANSessionMux_NotAllowed_MESSAGE;
     case HAL_ERR_CANSessionMux_NotInitialized:
       return ERR_CANSessionMux_NotInitialized_MESSAGE;
+    case VI_ERROR_SYSTEM_ERROR:
+      return VI_ERROR_SYSTEM_ERROR_MESSAGE;
+    case VI_ERROR_INV_OBJECT:
+      return VI_ERROR_INV_OBJECT_MESSAGE;
+    case VI_ERROR_RSRC_LOCKED:
+      return VI_ERROR_RSRC_LOCKED_MESSAGE;
+    case VI_ERROR_RSRC_NFOUND:
+      return VI_ERROR_RSRC_NFOUND_MESSAGE;
+    case VI_ERROR_INV_RSRC_NAME:
+      return VI_ERROR_INV_RSRC_NAME_MESSAGE;
+    case VI_ERROR_QUEUE_OVERFLOW:
+      return VI_ERROR_QUEUE_OVERFLOW_MESSAGE;
+    case VI_ERROR_IO:
+      return VI_ERROR_IO_MESSAGE;
+    case VI_ERROR_ASRL_PARITY:
+      return VI_ERROR_ASRL_PARITY_MESSAGE;
+    case VI_ERROR_ASRL_FRAMING:
+      return VI_ERROR_ASRL_FRAMING_MESSAGE;
+    case VI_ERROR_ASRL_OVERRUN:
+      return VI_ERROR_ASRL_OVERRUN_MESSAGE;
+    case VI_ERROR_RSRC_BUSY:
+      return VI_ERROR_RSRC_BUSY_MESSAGE;
+    case VI_ERROR_INV_PARAMETER:
+      return VI_ERROR_INV_PARAMETER_MESSAGE;
     case HAL_PWM_SCALE_ERROR:
       return HAL_PWM_SCALE_ERROR_MESSAGE;
     case HAL_SERIAL_PORT_NOT_FOUND:
@@ -296,7 +334,7 @@ static bool killExistingProgram(int timeout, int mode) {
       kill(pid, SIGTERM);  // try to kill it
       std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
       if (kill(pid, 0) == 0) {
-        // still not successfull
+        // still not successful
         wpi::outs() << "FRC pid " << pid << " did not die within " << timeout
                     << "ms. Force killing with kill -9\n";
         // Force kill -9
@@ -352,9 +390,8 @@ HAL_Bool HAL_Initialize(int32_t timeout, int32_t mode) {
     setNewDataSem(nullptr);
   });
 
-  // image 4; Fixes errors caused by multiple processes. Talk to NI about this
   nFPGA::nRoboRIO_FPGANamespace::g_currentTargetClass =
-      nLoadOut::kTargetClass_RoboRIO;
+      nLoadOut::getTargetClass();
 
   int32_t status = 0;
   global.reset(tGlobal::create(&status));
@@ -382,6 +419,8 @@ HAL_Bool HAL_Initialize(int32_t timeout, int32_t mode) {
   initialized = true;
   return true;
 }
+
+void HAL_Shutdown(void) {}
 
 int64_t HAL_Report(int32_t resource, int32_t instanceNumber, int32_t context,
                    const char* feature) {

@@ -18,7 +18,7 @@
 #include "EncoderInternal.h"
 #include "PortsInternal.h"
 #include "hal/AnalogAccumulator.h"
-//#include "hal/AnalogGyro.h"
+#include "hal/AnalogGyro.h"
 #include "hal/AnalogInput.h"
 #include "hal/ChipObject.h"
 #include "hal/Errors.h"
