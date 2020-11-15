@@ -130,6 +130,23 @@ table AbsoluteEncoderEstimatorState {
   absolute_position:double;
 }
 
+// The internal state of a zeroing estimator.
+table AbsoluteAndAbsoluteEncoderEstimatorState {
+  // If true, there has been a fatal error for the estimator.
+  error:bool (id: 0);
+  // If the joint has seen an index pulse and is zeroed.
+  zeroed:bool (id: 1);
+  // The estimated position of the joint.
+  position:double (id: 2);
+
+  // The estimated absolute position of the encoder.  This is filtered, so it
+  // can be easily used when zeroing.
+  absolute_position:double (id: 3);
+
+  // Estimated absolute position of the single turn absolute encoder.
+  single_turn_absolute_position:double (id: 4);
+}
+
 table RelativeEncoderEstimatorState {
   // If true, there has been a fatal error for the estimator.
   error:bool;

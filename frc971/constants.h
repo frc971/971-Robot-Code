@@ -89,6 +89,33 @@ struct AbsoluteEncoderZeroingConstants {
   double allowable_encoder_error;
 };
 
+struct AbsoluteAndAbsoluteEncoderZeroingConstants {
+  // The number of samples in the moving average filter.
+  size_t average_filter_size;
+  // The distance that the absolute encoder needs to complete a full rotation.
+  double one_revolution_distance;
+  // Measured absolute position of the encoder when at zero.
+  double measured_absolute_position;
+
+  // The distance that the single turn absolute encoder needs to complete a full
+  // rotation.
+  double single_turn_one_revolution_distance;
+  // Measured absolute position of the single turn encoder when at zero.
+  double single_turn_measured_absolute_position;
+  // Position of the middle of the range of motion in output coordinates.
+  double single_turn_middle_position;
+
+  // Threshold for deciding if we are moving. moving_buffer_size samples need to
+  // be within this distance of each other before we use the middle one to zero.
+  double zeroing_threshold;
+  // Buffer size for deciding if we are moving.
+  size_t moving_buffer_size;
+
+  // Value between 0 and 1 indicating what fraction of one_revolution_distance
+  // it is acceptable for the offset to move.
+  double allowable_encoder_error;
+};
+
 // Defines a range of motion for a subsystem.
 // These are all absolute positions in scaled units.
 struct Range {
