@@ -84,7 +84,7 @@ const REQUIRED_CHANNELS = [
 export class FieldHandler {
   private canvas = document.createElement('canvas');
   private imageMatchResult: frc971.vision.sift.ImageMatchResult|null = null;
-  private drivetrainStatus: DrivetrianStatus|null = null;
+  private drivetrainStatus: DrivetrainStatus|null = null;
 
   constructor(private readonly connection: Connection) {
     document.body.appendChild(this.canvas);
@@ -238,7 +238,7 @@ export class FieldHandler {
     this.drawField();
     //draw cameras
     if (this.imageMatchResult) {
-      for (const i = 0; i < this.imageMatchResult.cameraPosesLength(); i++) {
+      for (let i = 0; i < this.imageMatchResult.cameraPosesLength(); i++) {
         const pose = this.imageMatchResult.cameraPoses(i);
         const mat = pose.fieldToCamera();
         const x = mat.data(3);

@@ -108,7 +108,7 @@ export class ImageHandler {
   }
 
   handleSelect(ev: Event) {
-    this.selectedIndex = ev.target.selectedIndex;
+    this.selectedIndex = (ev.target as HTMLSelectElement).selectedIndex;
   }
 
   handleImage(data: Uint8Array): void {
@@ -137,8 +137,8 @@ export class ImageHandler {
     this.imageBuffer = new Uint8ClampedArray(this.width * this.height * 4); // RGBA
     // Read four bytes (YUYV) from the data and transform into two pixels of
     // RGBA for canvas
-    for (const j = 0; j < this.height; j++) {
-      for (const i = 0; i < this.width; i += 2) {
+    for (let j = 0; j < this.height; j++) {
+      for (let i = 0; i < this.width; i += 2) {
         const y1 = this.image.data((j * this.width + i) * 2);
         const u = this.image.data((j * this.width + i) * 2 + 1);
         const y2 = this.image.data((j * this.width + i + 1) * 2);
@@ -194,21 +194,21 @@ export class ImageHandler {
     const idata = ctx.createImageData(this.width, this.height);
     idata.data.set(this.imageBuffer);
     ctx.putImageData(idata, 0, 0);
-    console.log('features: ', this.result.featuresLength();
+    console.log('features: ', this.result.featuresLength());
     if (this.selectedIndex === 0) {
-      for (const i = 0; i < this.result.featuresLength(); i++) {
+      for (let i = 0; i < this.result.featuresLength(); i++) {
         const feature = this.result.features(i);
         this.drawFeature(feature);
       }
     } else {
       console.log(this.result.imageMatchesLength(), this.result.cameraPosesLength());
       const imageMatch = this.result.imageMatches(this.selectedIndex - 1);
-      for (const i = 0; i < imageMatch.matchesLength(); i++) {
+      for (let i = 0; i < imageMatch.matchesLength(); i++) {
         const featureIndex = imageMatch.matches(i).queryFeature();
         this.drawFeature(this.result.features(featureIndex));
       }
       // Draw center of target.
-      const cameraPose = this.result.cameraPoses(this.selctedIndex - 1);
+      const cameraPose = this.result.cameraPoses(this.selectedIndex - 1);
       ctx.strokeStyle = 'red';
       ctx.beginPath();
       ctx.arc(
@@ -223,12 +223,12 @@ export class ImageHandler {
     }
     const defaultOption = document.createElement('option');
     defaultOption.innerText = 'Show all features';
-    defaultOption.setAttribute('value', 0);
+    defaultOption.setAttribute('value', '0');
     this.select.appendChild(defaultOption);
-    for (const i = 0; i < this.result.imageMatchesLength(); i++) {
+    for (let i = 0; i < this.result.imageMatchesLength(); i++) {
       const imageMatch = this.result.imageMatches(i);
       const option = document.createElement('option');
-      option.setAttribute('value', i + 1);
+      option.setAttribute('value', (i + 1).toString());
       option.innerText =
           `Show image ${i} features (${imageMatch.matchesLength()})`;
       this.select.appendChild(option);
