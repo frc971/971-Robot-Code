@@ -2,7 +2,13 @@
 
 package Example
 
-import "strconv"
+import (
+	"strconv"
+
+	flatbuffers "github.com/google/flatbuffers/go"
+
+	MyGame__Example2 "MyGame/Example2"
+)
 
 type AnyUniqueAliases byte
 
@@ -32,4 +38,39 @@ func (v AnyUniqueAliases) String() string {
 		return s
 	}
 	return "AnyUniqueAliases(" + strconv.FormatInt(int64(v), 10) + ")"
+}
+
+type AnyUniqueAliasesT struct {
+	Type AnyUniqueAliases
+	Value interface{}
+}
+
+func (t *AnyUniqueAliasesT) Pack(builder *flatbuffers.Builder) flatbuffers.UOffsetT {
+	if t == nil {
+		return 0
+	}
+	switch t.Type {
+	case AnyUniqueAliasesM:
+		return t.Value.(*MonsterT).Pack(builder)
+	case AnyUniqueAliasesTS:
+		return t.Value.(*TestSimpleTableWithEnumT).Pack(builder)
+	case AnyUniqueAliasesM2:
+		return t.Value.(*MyGame__Example2.MonsterT).Pack(builder)
+	}
+	return 0
+}
+
+func (rcv AnyUniqueAliases) UnPack(table flatbuffers.Table) *AnyUniqueAliasesT {
+	switch rcv {
+	case AnyUniqueAliasesM:
+		x := Monster{_tab: table}
+		return &AnyUniqueAliasesT{ Type: AnyUniqueAliasesM, Value: x.UnPack() }
+	case AnyUniqueAliasesTS:
+		x := TestSimpleTableWithEnum{_tab: table}
+		return &AnyUniqueAliasesT{ Type: AnyUniqueAliasesTS, Value: x.UnPack() }
+	case AnyUniqueAliasesM2:
+		x := Monster{_tab: table}
+		return &AnyUniqueAliasesT{ Type: AnyUniqueAliasesM2, Value: x.UnPack() }
+	}
+	return nil
 }

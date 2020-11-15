@@ -12,6 +12,12 @@ enum Color:
     /// \brief color Blue (1u << 3)
     Color_Blue = 8
 
+enum Race:
+    Race_None = -1
+    Race_Human = 0
+    Race_Dwarf = 1
+    Race_Elf = 2
+
 enum Any:
     Any_NONE = 0
     Any_Monster = 1
@@ -202,7 +208,7 @@ struct ReferrableBuilder:
     def end():
         return b_.EndObject()
 
-/// an example documentation comment: monster object
+/// an example documentation comment: "monster object"
 class Monster : flatbuffers_handle
     def pos():
         let o = buf_.flatbuffers_field_struct(pos_, 4)
@@ -352,13 +358,19 @@ class Monster : flatbuffers_handle
         return buf_.read_int8_le(buf_.flatbuffers_field_vector(pos_, 98) + i * 1)
     def vector_of_enums_length():
         return buf_.flatbuffers_field_vector_len(pos_, 98)
+    def signed_enum():
+        return Race(buf_.flatbuffers_field_int8(pos_, 100, -1))
+    def testrequirednestedflatbuffer(i:int):
+        return buf_.read_int8_le(buf_.flatbuffers_field_vector(pos_, 102) + i * 1)
+    def testrequirednestedflatbuffer_length():
+        return buf_.flatbuffers_field_vector_len(pos_, 102)
 
 def GetRootAsMonster(buf:string): return Monster { buf, buf.flatbuffers_indirect(0) }
 
 struct MonsterBuilder:
     b_:flatbuffers_builder
     def start():
-        b_.StartObject(48)
+        b_.StartObject(50)
         return this
     def add_pos(pos:flatbuffers_offset):
         b_.PrependStructSlot(0, pos)
@@ -501,6 +513,12 @@ struct MonsterBuilder:
     def add_vector_of_enums(vector_of_enums:flatbuffers_offset):
         b_.PrependUOffsetTRelativeSlot(47, vector_of_enums)
         return this
+    def add_signed_enum(signed_enum:Race):
+        b_.PrependInt8Slot(48, signed_enum, -1)
+        return this
+    def add_testrequirednestedflatbuffer(testrequirednestedflatbuffer:flatbuffers_offset):
+        b_.PrependUOffsetTRelativeSlot(49, testrequirednestedflatbuffer)
+        return this
     def end():
         return b_.EndObject()
 
@@ -614,6 +632,13 @@ def MonsterCreateVectorOfNonOwningReferencesVector(b_:flatbuffers_builder, v_:[i
 def MonsterStartVectorOfEnumsVector(b_:flatbuffers_builder, n_:int):
     b_.StartVector(1, n_, 1)
 def MonsterCreateVectorOfEnumsVector(b_:flatbuffers_builder, v_:[Color]):
+    b_.StartVector(1, v_.length, 1)
+    reverse(v_) e_: b_.PrependUint8(e_)
+    return b_.EndVector(v_.length)
+
+def MonsterStartTestrequirednestedflatbufferVector(b_:flatbuffers_builder, n_:int):
+    b_.StartVector(1, n_, 1)
+def MonsterCreateTestrequirednestedflatbufferVector(b_:flatbuffers_builder, v_:[int]):
     b_.StartVector(1, v_.length, 1)
     reverse(v_) e_: b_.PrependUint8(e_)
     return b_.EndVector(v_.length)

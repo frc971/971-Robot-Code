@@ -9,7 +9,7 @@ import com.google.flatbuffers.*;
 
 @SuppressWarnings("unused")
 public final class ArrayTable extends Table {
-  public static void ValidateVersion() { Constants.FLATBUFFERS_1_11_1(); }
+  public static void ValidateVersion() { Constants.FLATBUFFERS_1_12_0(); }
   public static ArrayTable getRootAsArrayTable(ByteBuffer _bb) { return getRootAsArrayTable(_bb, new ArrayTable()); }
   public static ArrayTable getRootAsArrayTable(ByteBuffer _bb, ArrayTable obj) { _bb.order(ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
   public static boolean ArrayTableBufferHasIdentifier(ByteBuffer _bb) { return __has_identifier(_bb, "ARRT"); }
@@ -27,5 +27,12 @@ public final class ArrayTable extends Table {
   }
   public static void finishArrayTableBuffer(FlatBufferBuilder builder, int offset) { builder.finish(offset, "ARRT"); }
   public static void finishSizePrefixedArrayTableBuffer(FlatBufferBuilder builder, int offset) { builder.finishSizePrefixed(offset, "ARRT"); }
+
+  public static final class Vector extends BaseVector {
+    public Vector __assign(int _vector, int _element_size, ByteBuffer _bb) { __reset(_vector, _element_size, _bb); return this; }
+
+    public ArrayTable get(int j) { return get(new ArrayTable(), j); }
+    public ArrayTable get(ArrayTable obj, int j) {  return obj.__assign(__indirect(__element(j), bb), bb); }
+  }
 }
 

@@ -15,11 +15,10 @@
  */
 
 #include <algorithm>
+#include <cmath>
 #include <list>
 #include <string>
 #include <utility>
-
-#include <cmath>
 
 #include "flatbuffers/idl.h"
 #include "flatbuffers/util.h"
@@ -38,26 +37,22 @@ const char *FLATBUFFERS_VERSION() {
 
 const double kPi = 3.14159265358979323846;
 
-const char *const kTypeNames[] = {
 // clang-format off
-  #define FLATBUFFERS_TD(ENUM, IDLTYPE, \
-    CTYPE, JTYPE, GTYPE, NTYPE, PTYPE, RTYPE, KTYPE) \
+const char *const kTypeNames[] = {
+  #define FLATBUFFERS_TD(ENUM, IDLTYPE, ...) \
     IDLTYPE,
     FLATBUFFERS_GEN_TYPES(FLATBUFFERS_TD)
   #undef FLATBUFFERS_TD
-  // clang-format on
   nullptr
 };
 
 const char kTypeSizes[] = {
-// clang-format off
-  #define FLATBUFFERS_TD(ENUM, IDLTYPE, \
-      CTYPE, JTYPE, GTYPE, NTYPE, PTYPE, RTYPE, KTYPE) \
-      sizeof(CTYPE),
+  #define FLATBUFFERS_TD(ENUM, IDLTYPE, CTYPE, ...) \
+    sizeof(CTYPE),
     FLATBUFFERS_GEN_TYPES(FLATBUFFERS_TD)
   #undef FLATBUFFERS_TD
-  // clang-format on
 };
+// clang-format on
 
 // The enums in the reflection schema should match the ones we use internally.
 // Compare the last element to check if these go out of sync.
@@ -87,23 +82,45 @@ static bool ValidateUTF8(const std::string &str) {
   return true;
 }
 
+static bool IsLowerSnakeCase(const std::string &str) {
+  for (size_t i = 0; i < str.length(); i++) {
+    char c = str[i];
+    if (!check_ascii_range(c, 'a', 'z') && !is_digit(c) && c != '_') {
+      return false;
+    }
+  }
+  return true;
+}
+
 // Convert an underscore_based_indentifier in to camelCase.
 // Also uppercases the first character if first is true.
 std::string MakeCamel(const std::string &in, bool first) {
   std::string s;
   for (size_t i = 0; i < in.length(); i++) {
     if (!i && first)
-      s += static_cast<char>(toupper(in[0]));
+      s += CharToUpper(in[0]);
     else if (in[i] == '_' && i + 1 < in.length())
-      s += static_cast<char>(toupper(in[++i]));
+      s += CharToUpper(in[++i]);
     else
       s += in[i];
   }
   return s;
 }
 
-void DeserializeDoc( std::vector<std::string> &doc,
-                     const Vector<Offset<String>> *documentation) {
+// Convert an underscore_based_identifier in to screaming snake case.
+std::string MakeScreamingCamel(const std::string &in) {
+  std::string s;
+  for (size_t i = 0; i < in.length(); i++) {
+    if (in[i] != '_')
+      s += CharToUpper(in[i]);
+    else
+      s += in[i];
+  }
+  return s;
+}
+
+void DeserializeDoc(std::vector<std::string> &doc,
+                    const Vector<Offset<String>> *documentation) {
   if (documentation == nullptr) return;
   for (uoffset_t index = 0; index < documentation->size(); index++)
     doc.push_back(documentation->Get(index)->str());
@@ -211,8 +228,7 @@ static std::string TokenToString(int t) {
     #define FLATBUFFERS_TOKEN(NAME, VALUE, STRING) STRING,
       FLATBUFFERS_GEN_TOKENS(FLATBUFFERS_TOKEN)
     #undef FLATBUFFERS_TOKEN
-    #define FLATBUFFERS_TD(ENUM, IDLTYPE, \
-      CTYPE, JTYPE, GTYPE, NTYPE, PTYPE, RTYPE, KTYPE) \
+    #define FLATBUFFERS_TD(ENUM, IDLTYPE, ...) \
       IDLTYPE,
       FLATBUFFERS_GEN_TYPES(FLATBUFFERS_TD)
     #undef FLATBUFFERS_TD
@@ -387,7 +403,8 @@ CheckedError Parser::Next() {
                   "illegal Unicode sequence (unpaired high surrogate)");
             }
             // reset if non-printable
-            attr_is_trivial_ascii_string_ &= check_ascii_range(*cursor_, ' ', '~');
+            attr_is_trivial_ascii_string_ &=
+                check_ascii_range(*cursor_, ' ', '~');
 
             attribute_ += *cursor_++;
           }
@@ -425,11 +442,11 @@ CheckedError Parser::Next() {
           cursor_ += 2;
           break;
         }
-        FLATBUFFERS_FALLTHROUGH(); // else fall thru
+        FLATBUFFERS_FALLTHROUGH();  // else fall thru
       default:
         const auto has_sign = (c == '+') || (c == '-');
         // '-'/'+' and following identifier - can be a predefined constant like:
-        // NAN, INF, PI, etc.
+        // NAN, INF, PI, etc or it can be a function name like cos/sin/deg.
         if (IsIdentifierStart(c) || (has_sign && IsIdentifierStart(*cursor_))) {
           // Collect all chars of an identifier:
           const char *start = cursor_ - 1;
@@ -439,14 +456,15 @@ CheckedError Parser::Next() {
           return NoError();
         }
 
-        auto dot_lvl = (c == '.') ? 0 : 1;  // dot_lvl==0 <=> exactly one '.' seen
-        if (!dot_lvl && !is_digit(*cursor_)) return NoError(); // enum?
+        auto dot_lvl =
+            (c == '.') ? 0 : 1;  // dot_lvl==0 <=> exactly one '.' seen
+        if (!dot_lvl && !is_digit(*cursor_)) return NoError();  // enum?
         // Parser accepts hexadecimal-floating-literal (see C++ 5.13.4).
         if (is_digit(c) || has_sign || !dot_lvl) {
           const auto start = cursor_ - 1;
           auto start_digits = !is_digit(c) ? cursor_ : cursor_ - 1;
-          if (!is_digit(c) && is_digit(*cursor_)){
-            start_digits = cursor_; // see digit in cursor_ position
+          if (!is_digit(c) && is_digit(*cursor_)) {
+            start_digits = cursor_;  // see digit in cursor_ position
             c = *cursor_++;
           }
           // hex-float can't begind with '.'
@@ -489,7 +507,8 @@ CheckedError Parser::Next() {
         }
         std::string ch;
         ch = c;
-        if (false == check_ascii_range(c, ' ', '~')) ch = "code: " + NumToString(c);
+        if (false == check_ascii_range(c, ' ', '~'))
+          ch = "code: " + NumToString(c);
         return Error("illegal character: " + ch);
     }
   }
@@ -618,12 +637,6 @@ CheckedError Parser::ParseType(Type &type) {
             "length of fixed-length array must be positive and fit to "
             "uint16_t type");
       }
-      // Check if enum arrays are used in C++ without specifying --scoped-enums
-      if ((opts.lang_to_generate & IDLOptions::kCpp) && !opts.scoped_enums &&
-          IsEnum(subtype)) {
-        return Error(
-            "--scoped-enums must be enabled to use enum arrays in C++\n");
-      }
       type = Type(BASE_TYPE_ARRAY, subtype.struct_def, subtype.enum_def,
                   fixed_length);
       NEXT();
@@ -665,8 +678,12 @@ CheckedError Parser::AddField(StructDef &struct_def, const std::string &name,
 CheckedError Parser::ParseField(StructDef &struct_def) {
   std::string name = attribute_;
 
-  if (LookupStruct(name))
+  if (LookupCreateStruct(name, false, false))
     return Error("field name can not be the same as table/struct name");
+
+  if (!IsLowerSnakeCase(name)) {
+    Warning("field names should be lowercase snake_case, got: " + name);
+  }
 
   std::vector<std::string> dc = doc_comment_;
   EXPECT(kTokenIdentifier);
@@ -674,9 +691,15 @@ CheckedError Parser::ParseField(StructDef &struct_def) {
   Type type;
   ECHECK(ParseType(type));
 
-  if (struct_def.fixed && !IsScalar(type.base_type) && !IsStruct(type) &&
-      !IsArray(type))
-    return Error("structs_ may contain only scalar or struct fields");
+  if (struct_def.fixed) {
+    auto valid = IsScalar(type.base_type) || IsStruct(type);
+    if (!valid && IsArray(type)) {
+      const auto &elem_type = type.VectorType();
+      valid |= IsScalar(elem_type.base_type) || IsStruct(elem_type);
+    }
+    if (!valid)
+      return Error("structs may contain only scalar or struct fields");
+  }
 
   if (!struct_def.fixed && IsArray(type))
     return Error("fixed-length array in table must be wrapped in struct");
@@ -693,12 +716,11 @@ CheckedError Parser::ParseField(StructDef &struct_def) {
     // with a special suffix.
     ECHECK(AddField(struct_def, name + UnionTypeFieldSuffix(),
                     type.enum_def->underlying_type, &typefield));
-  } else if (type.base_type == BASE_TYPE_VECTOR &&
-             type.element == BASE_TYPE_UNION) {
+  } else if (IsVector(type) && type.element == BASE_TYPE_UNION) {
     // Only cpp, js and ts supports the union vector feature so far.
     if (!SupportsAdvancedUnionFeatures()) {
       return Error(
-          "Vectors of unions are not yet supported in all "
+          "Vectors of unions are not yet supported in at least one of "
           "the specified programming languages.");
     }
     // For vector of union fields, add a second auto-generated vector field to
@@ -718,15 +740,44 @@ CheckedError Parser::ParseField(StructDef &struct_def) {
     if (!IsScalar(type.base_type) ||
         (struct_def.fixed && field->value.constant != "0"))
       return Error(
-            "default values currently only supported for scalars in tables");
+          "default values currently only supported for scalars in tables");
   }
+
+  // Mark the optional scalars. Note that a side effect of ParseSingleValue is
+  // fixing field->value.constant to null.
+  if (IsScalar(type.base_type)) {
+    field->optional = (field->value.constant == "null");
+    if (field->optional) {
+      if (type.enum_def && type.enum_def->Lookup("null")) {
+        FLATBUFFERS_ASSERT(IsInteger(type.base_type));
+        return Error(
+            "the default 'null' is reserved for declaring optional scalar "
+            "fields, it conflicts with declaration of enum '" +
+            type.enum_def->name + "'.");
+      }
+      if (field->attributes.Lookup("key")) {
+        return Error(
+            "only a non-optional scalar field can be used as a 'key' field");
+      }
+      if (!SupportsOptionalScalars()) {
+        return Error(
+            "Optional scalars are not yet supported in at least one the of "
+            "the specified programming languages.");
+      }
+    }
+  } else {
+    // For nonscalars, only required fields are non-optional.
+    // At least until https://github.com/google/flatbuffers/issues/6053
+    field->optional = !field->required;
+  }
+
   // Append .0 if the value has not it (skip hex and scientific floats).
   // This suffix needed for generated C++ code.
   if (IsFloat(type.base_type)) {
     auto &text = field->value.constant;
     FLATBUFFERS_ASSERT(false == text.empty());
     auto s = text.c_str();
-    while(*s == ' ') s++;
+    while (*s == ' ') s++;
     if (*s == '-' || *s == '+') s++;
     // 1) A float constants (nan, inf, pi, etc) is a kind of identifier.
     // 2) A float number needn't ".0" at the end if it has exponent.
@@ -740,15 +791,15 @@ CheckedError Parser::ParseField(StructDef &struct_def) {
     // Table, struct or string can't have enum_def.
     // Default value of union and vector in NONE, NULL translated to "0".
     FLATBUFFERS_ASSERT(IsInteger(type.base_type) ||
-                       (type.base_type == BASE_TYPE_UNION) ||
-                       (type.base_type == BASE_TYPE_VECTOR) ||
-                       (type.base_type == BASE_TYPE_ARRAY));
-    if (type.base_type == BASE_TYPE_VECTOR) {
+                       (type.base_type == BASE_TYPE_UNION) || IsVector(type) ||
+                       IsArray(type));
+    if (IsVector(type)) {
       // Vector can't use initialization list.
       FLATBUFFERS_ASSERT(field->value.constant == "0");
     } else {
       // All unions should have the NONE ("0") enum value.
       auto in_enum = type.enum_def->attributes.Lookup("bit_flags") ||
+                     field->IsScalarOptional() ||
                      type.enum_def->FindByValue(field->value.constant);
       if (false == in_enum)
         return Error("default value of " + field->value.constant +
@@ -762,7 +813,7 @@ CheckedError Parser::ParseField(StructDef &struct_def) {
   field->deprecated = field->attributes.Lookup("deprecated") != nullptr;
   auto hash_name = field->attributes.Lookup("hash");
   if (hash_name) {
-    switch ((type.base_type == BASE_TYPE_VECTOR) ? type.element : type.base_type) {
+    switch ((IsVector(type)) ? type.element : type.base_type) {
       case BASE_TYPE_SHORT:
       case BASE_TYPE_USHORT: {
         if (FindHashFunction16(hash_name->constant.c_str()) == nullptr)
@@ -786,7 +837,8 @@ CheckedError Parser::ParseField(StructDef &struct_def) {
       }
       default:
         return Error(
-            "only short, ushort, int, uint, long and ulong data types support hashing.");
+            "only short, ushort, int, uint, long and ulong data types support "
+            "hashing.");
     }
   }
   auto cpp_type = field->attributes.Lookup("cpp_type");
@@ -805,9 +857,15 @@ CheckedError Parser::ParseField(StructDef &struct_def) {
   if (field->deprecated && struct_def.fixed)
     return Error("can't deprecate fields in a struct");
   field->required = field->attributes.Lookup("required") != nullptr;
-  if (field->required &&
-      (struct_def.fixed || IsScalar(type.base_type)))
+  if (field->required && (struct_def.fixed || IsScalar(type.base_type)))
     return Error("only non-scalar fields in tables may be 'required'");
+
+  if (!IsScalar(type.base_type)) {
+    // For nonscalars, only required fields are non-optional.
+    // At least until https://github.com/google/flatbuffers/issues/6053
+    field->optional = !field->required;
+  }
+
   field->key = field->attributes.Lookup("key") != nullptr;
   if (field->key) {
     if (struct_def.has_key) return Error("only one field may be set as 'key'");
@@ -849,8 +907,7 @@ CheckedError Parser::ParseField(StructDef &struct_def) {
   if (field->attributes.Lookup("flexbuffer")) {
     field->flexbuffer = true;
     uses_flexbuffers_ = true;
-    if (type.base_type != BASE_TYPE_VECTOR ||
-        type.element != BASE_TYPE_UCHAR)
+    if (type.base_type != BASE_TYPE_VECTOR || type.element != BASE_TYPE_UCHAR)
       return Error("flexbuffer attribute may only apply to a vector of ubyte");
   }
 
@@ -869,16 +926,23 @@ CheckedError Parser::ParseField(StructDef &struct_def) {
       val->constant = NumToString(id - 1);
       typefield->attributes.Add("id", val);
     }
+    // if this field is a union that is deprecated,
+    // the automatically added type field should be deprecated as well
+    if (field->deprecated) { typefield->deprecated = true; }
   }
 
   EXPECT(';');
   return NoError();
 }
 
-CheckedError Parser::ParseString(Value &val) {
+CheckedError Parser::ParseString(Value &val, bool use_string_pooling) {
   auto s = attribute_;
   EXPECT(kTokenStringConstant);
-  val.constant = NumToString(builder_.CreateString(s).o);
+  if (use_string_pooling) {
+    val.constant = NumToString(builder_.CreateSharedString(s).o);
+  } else {
+    val.constant = NumToString(builder_.CreateString(s).o);
+  }
   return NoError();
 }
 
@@ -890,8 +954,7 @@ CheckedError Parser::ParseComma() {
 CheckedError Parser::ParseAnyValue(Value &val, FieldDef *field,
                                    size_t parent_fieldn,
                                    const StructDef *parent_struct_def,
-                                   uoffset_t count,
-                                   bool inside_vector) {
+                                   uoffset_t count, bool inside_vector) {
   switch (val.type.base_type) {
     case BASE_TYPE_UNION: {
       FLATBUFFERS_ASSERT(field);
@@ -903,14 +966,13 @@ CheckedError Parser::ParseAnyValue(Value &val, FieldDef *field,
         auto &type = elem->second->value.type;
         if (type.enum_def == val.type.enum_def) {
           if (inside_vector) {
-            if (type.base_type == BASE_TYPE_VECTOR &&
-                type.element == BASE_TYPE_UTYPE) {
+            if (IsVector(type) && type.element == BASE_TYPE_UTYPE) {
               // Vector of union type field.
               uoffset_t offset;
               ECHECK(atot(elem->first.constant.c_str(), *this, &offset));
               vector_of_union_types = reinterpret_cast<Vector<uint8_t> *>(
-                                        builder_.GetCurrentBufferPointer() +
-                                        builder_.GetSize() - offset);
+                  builder_.GetCurrentBufferPointer() + builder_.GetSize() -
+                  offset);
               break;
             }
           } else {
@@ -952,8 +1014,7 @@ CheckedError Parser::ParseAnyValue(Value &val, FieldDef *field,
         }
       }
       if (constant.empty() && !vector_of_union_types) {
-        return Error("missing type field for this union value: " +
-                     field->name);
+        return Error("missing type field for this union value: " + field->name);
       }
       uint8_t enum_idx;
       if (vector_of_union_types) {
@@ -972,8 +1033,8 @@ CheckedError Parser::ParseAnyValue(Value &val, FieldDef *field,
           builder_.ClearOffsets();
           val.constant = NumToString(builder_.GetSize());
         }
-      } else if (enum_val->union_type.base_type == BASE_TYPE_STRING) {
-        ECHECK(ParseString(val));
+      } else if (IsString(enum_val->union_type)) {
+        ECHECK(ParseString(val, field->shared));
       } else {
         FLATBUFFERS_ASSERT(false);
       }
@@ -983,7 +1044,7 @@ CheckedError Parser::ParseAnyValue(Value &val, FieldDef *field,
       ECHECK(ParseTable(*val.type.struct_def, &val.constant, nullptr));
       break;
     case BASE_TYPE_STRING: {
-      ECHECK(ParseString(val));
+      ECHECK(ParseString(val, field->shared));
       break;
     }
     case BASE_TYPE_VECTOR: {
@@ -1028,10 +1089,9 @@ void Parser::SerializeStruct(FlatBufferBuilder &builder,
   builder.AddStructOffset(val.offset, builder.GetSize());
 }
 
-template <typename F>
+template<typename F>
 CheckedError Parser::ParseTableDelimiters(size_t &fieldn,
-                                          const StructDef *struct_def,
-                                          F body) {
+                                          const StructDef *struct_def, F body) {
   // We allow tables both as JSON object{ .. } with field names
   // or vector[..] with all fields in order
   char terminator = '}';
@@ -1167,9 +1227,8 @@ CheckedError Parser::ParseTable(const StructDef &struct_def, std::string *value,
       if (!struct_def.sortbysize ||
           size == SizeOf(field_value.type.base_type)) {
         switch (field_value.type.base_type) {
-          // clang-format off
-          #define FLATBUFFERS_TD(ENUM, IDLTYPE, \
-            CTYPE, JTYPE, GTYPE, NTYPE, PTYPE, RTYPE, KTYPE) \
+// clang-format off
+          #define FLATBUFFERS_TD(ENUM, IDLTYPE, CTYPE, ...) \
             case BASE_TYPE_ ## ENUM: \
               builder_.Pad(field->padding); \
               if (struct_def.fixed) { \
@@ -1183,10 +1242,9 @@ CheckedError Parser::ParseTable(const StructDef &struct_def, std::string *value,
                 builder_.AddElement(field_value.offset, val, valdef); \
               } \
               break;
-            FLATBUFFERS_GEN_TYPES_SCALAR(FLATBUFFERS_TD);
+            FLATBUFFERS_GEN_TYPES_SCALAR(FLATBUFFERS_TD)
           #undef FLATBUFFERS_TD
-          #define FLATBUFFERS_TD(ENUM, IDLTYPE, \
-            CTYPE, JTYPE, GTYPE, NTYPE, PTYPE, RTYPE, KTYPE) \
+          #define FLATBUFFERS_TD(ENUM, IDLTYPE, CTYPE, ...) \
             case BASE_TYPE_ ## ENUM: \
               builder_.Pad(field->padding); \
               if (IsStruct(field->value.type)) { \
@@ -1197,7 +1255,7 @@ CheckedError Parser::ParseTable(const StructDef &struct_def, std::string *value,
                 builder_.AddOffset(field_value.offset, val); \
               } \
               break;
-            FLATBUFFERS_GEN_TYPES_POINTER(FLATBUFFERS_TD);
+            FLATBUFFERS_GEN_TYPES_POINTER(FLATBUFFERS_TD)
           #undef FLATBUFFERS_TD
             case BASE_TYPE_ARRAY:
               builder_.Pad(field->padding);
@@ -1205,7 +1263,7 @@ CheckedError Parser::ParseTable(const StructDef &struct_def, std::string *value,
                 reinterpret_cast<const uint8_t*>(field_value.constant.c_str()),
                 InlineSize(field_value.type));
               break;
-              // clang-format on
+            // clang-format on
         }
       }
     }
@@ -1231,7 +1289,7 @@ CheckedError Parser::ParseTable(const StructDef &struct_def, std::string *value,
   return NoError();
 }
 
-template <typename F>
+template<typename F>
 CheckedError Parser::ParseVectorDelimiters(uoffset_t &count, F body) {
   EXPECT('[');
   for (;;) {
@@ -1243,6 +1301,42 @@ CheckedError Parser::ParseVectorDelimiters(uoffset_t &count, F body) {
   }
   NEXT();
   return NoError();
+}
+
+static bool CompareType(const uint8_t *a, const uint8_t *b, BaseType ftype) {
+  switch (ftype) {
+#define FLATBUFFERS_TD(ENUM, IDLTYPE, CTYPE, ...) \
+  case BASE_TYPE_##ENUM: return ReadScalar<CTYPE>(a) < ReadScalar<CTYPE>(b);
+    FLATBUFFERS_GEN_TYPES_SCALAR(FLATBUFFERS_TD)
+#undef FLATBUFFERS_TD
+    case BASE_TYPE_STRING:
+      // Indirect offset pointer to string pointer.
+      a += ReadScalar<uoffset_t>(a);
+      b += ReadScalar<uoffset_t>(b);
+      return *reinterpret_cast<const String *>(a) <
+             *reinterpret_cast<const String *>(b);
+    default: return false;
+  }
+}
+
+// See below for why we need our own sort :(
+template<typename T, typename F, typename S>
+void SimpleQsort(T *begin, T *end, size_t width, F comparator, S swapper) {
+  if (end - begin <= static_cast<ptrdiff_t>(width)) return;
+  auto l = begin + width;
+  auto r = end;
+  while (l < r) {
+    if (comparator(begin, l)) {
+      r -= width;
+      swapper(l, r);
+    } else {
+      l += width;
+    }
+  }
+  l -= width;
+  swapper(begin, l);
+  SimpleQsort(begin, l, width, comparator, swapper);
+  SimpleQsort(r, end, width, comparator, swapper);
 }
 
 CheckedError Parser::ParseVector(const Type &type, uoffset_t *ovalue,
@@ -1259,15 +1353,21 @@ CheckedError Parser::ParseVector(const Type &type, uoffset_t *ovalue,
   });
   ECHECK(err);
 
-  builder_.StartVector(count * InlineSize(type) / InlineAlignment(type),
-                       InlineAlignment(type));
+  const auto *force_align = field->attributes.Lookup("force_align");
+  const size_t align =
+      force_align ? static_cast<size_t>(atoi(force_align->constant.c_str()))
+                  : 1;
+  const size_t len = count * InlineSize(type) / InlineAlignment(type);
+  const size_t elemsize = InlineAlignment(type);
+  if (align > 1) { builder_.ForceVectorAlignment(len, elemsize, align); }
+
+  builder_.StartVector(len, elemsize);
   for (uoffset_t i = 0; i < count; i++) {
     // start at the back, since we're building the data backwards.
     auto &val = field_stack_.back().first;
     switch (val.type.base_type) {
-      // clang-format off
-      #define FLATBUFFERS_TD(ENUM, IDLTYPE, \
-        CTYPE, JTYPE, GTYPE, NTYPE, PTYPE, RTYPE, KTYPE) \
+// clang-format off
+      #define FLATBUFFERS_TD(ENUM, IDLTYPE, CTYPE,...) \
         case BASE_TYPE_ ## ENUM: \
           if (IsStruct(val.type)) SerializeStruct(*val.type.struct_def, val); \
           else { \
@@ -1285,6 +1385,75 @@ CheckedError Parser::ParseVector(const Type &type, uoffset_t *ovalue,
 
   builder_.ClearOffsets();
   *ovalue = builder_.EndVector(count);
+
+  if (type.base_type == BASE_TYPE_STRUCT && type.struct_def->has_key) {
+    // We should sort this vector. Find the key first.
+    const FieldDef *key = nullptr;
+    for (auto it = type.struct_def->fields.vec.begin();
+         it != type.struct_def->fields.vec.end(); ++it) {
+      if ((*it)->key) {
+        key = (*it);
+        break;
+      }
+    }
+    FLATBUFFERS_ASSERT(key);
+    // Now sort it.
+    // We can't use std::sort because for structs the size is not known at
+    // compile time, and for tables our iterators dereference offsets, so can't
+    // be used to swap elements.
+    // And we can't use C qsort either, since that would force use to use
+    // globals, making parsing thread-unsafe.
+    // So for now, we use SimpleQsort above.
+    // TODO: replace with something better, preferably not recursive.
+    voffset_t offset = key->value.offset;
+    BaseType ftype = key->value.type.base_type;
+
+    if (type.struct_def->fixed) {
+      auto v =
+          reinterpret_cast<VectorOfAny *>(builder_.GetCurrentBufferPointer());
+      SimpleQsort<uint8_t>(
+          v->Data(), v->Data() + v->size() * type.struct_def->bytesize,
+          type.struct_def->bytesize,
+          [&](const uint8_t *a, const uint8_t *b) -> bool {
+            return CompareType(a + offset, b + offset, ftype);
+          },
+          [&](uint8_t *a, uint8_t *b) {
+            // FIXME: faster?
+            for (size_t i = 0; i < type.struct_def->bytesize; i++) {
+              std::swap(a[i], b[i]);
+            }
+          });
+    } else {
+      auto v = reinterpret_cast<Vector<Offset<Table>> *>(
+          builder_.GetCurrentBufferPointer());
+      // Here also can't use std::sort. We do have an iterator type for it,
+      // but it is non-standard as it will dereference the offsets, and thus
+      // can't be used to swap elements.
+      SimpleQsort<Offset<Table>>(
+          v->data(), v->data() + v->size(), 1,
+          [&](const Offset<Table> *_a, const Offset<Table> *_b) -> bool {
+            // Indirect offset pointer to table pointer.
+            auto a = reinterpret_cast<const uint8_t *>(_a) +
+                     ReadScalar<uoffset_t>(_a);
+            auto b = reinterpret_cast<const uint8_t *>(_b) +
+                     ReadScalar<uoffset_t>(_b);
+            // Fetch field address from table.
+            a = reinterpret_cast<const Table *>(a)->GetAddressOf(offset);
+            b = reinterpret_cast<const Table *>(b)->GetAddressOf(offset);
+            return CompareType(a, b, ftype);
+          },
+          [&](Offset<Table> *a, Offset<Table> *b) {
+            // These are serialized offsets, so are relative where they are
+            // stored in memory, so compute the distance between these pointers:
+            ptrdiff_t diff = (b - a) * sizeof(Offset<Table>);
+            FLATBUFFERS_ASSERT(diff >= 0);  // Guaranteed by SimpleQsort.
+            auto udiff = static_cast<uoffset_t>(diff);
+            a->o = EndianScalar(ReadScalar<uoffset_t>(a) - udiff);
+            b->o = EndianScalar(ReadScalar<uoffset_t>(b) + udiff);
+            std::swap(*a, *b);
+          });
+    }
+  }
   return NoError();
 }
 
@@ -1312,8 +1481,7 @@ CheckedError Parser::ParseArray(Value &array) {
     auto &val = *it;
     // clang-format off
     switch (val.type.base_type) {
-      #define FLATBUFFERS_TD(ENUM, IDLTYPE, \
-        CTYPE, JTYPE, GTYPE, NTYPE, PTYPE, RTYPE, KTYPE) \
+      #define FLATBUFFERS_TD(ENUM, IDLTYPE, CTYPE, ...) \
         case BASE_TYPE_ ## ENUM: \
           if (IsStruct(val.type)) { \
             SerializeStruct(builder, *val.type.struct_def, val); \
@@ -1362,12 +1530,11 @@ CheckedError Parser::ParseNestedFlatbuffer(Value &val, FieldDef *field,
     nested_parser.enums_.dict.clear();
     nested_parser.enums_.vec.clear();
 
-    if (!ok) {
-      ECHECK(Error(nested_parser.error_));
-    }
+    if (!ok) { ECHECK(Error(nested_parser.error_)); }
     // Force alignment for nested flatbuffer
-    builder_.ForceVectorAlignment(nested_parser.builder_.GetSize(), sizeof(uint8_t),
-                                  nested_parser.builder_.GetBufferMinAlignment());
+    builder_.ForceVectorAlignment(
+        nested_parser.builder_.GetSize(), sizeof(uint8_t),
+        nested_parser.builder_.GetBufferMinAlignment());
 
     auto off = builder_.CreateVector(nested_parser.builder_.GetBufferPointer(),
                                      nested_parser.builder_.GetSize());
@@ -1383,13 +1550,13 @@ CheckedError Parser::ParseMetaData(SymbolTable<Value> *attributes) {
       auto name = attribute_;
       if (false == (Is(kTokenIdentifier) || Is(kTokenStringConstant)))
         return Error("attribute name must be either identifier or string: " +
-          name);
+                     name);
       if (known_attributes_.find(name) == known_attributes_.end())
         return Error("user define attributes must be declared before use: " +
                      name);
       NEXT();
       auto e = new Value();
-      attributes->Add(name, e);
+      if (attributes->Add(name, e)) Warning("attribute already found: " + name);
       if (Is(':')) {
         NEXT();
         ECHECK(ParseSingleValue(&name, *e, true));
@@ -1400,45 +1567,6 @@ CheckedError Parser::ParseMetaData(SymbolTable<Value> *attributes) {
       }
       EXPECT(',');
     }
-  }
-  return NoError();
-}
-
-CheckedError Parser::TryTypedValue(const std::string *name, int dtoken,
-                                   bool check, Value &e, BaseType req,
-                                   bool *destmatch) {
-  bool match = dtoken == token_;
-  if (match) {
-    FLATBUFFERS_ASSERT(*destmatch == false);
-    *destmatch = true;
-    e.constant = attribute_;
-    // Check token match
-    if (!check) {
-      if (e.type.base_type == BASE_TYPE_NONE) {
-        e.type.base_type = req;
-      } else {
-        return Error(
-            std::string("type mismatch: expecting: ") +
-            kTypeNames[e.type.base_type] + ", found: " + kTypeNames[req] +
-            ", name: " + (name ? *name : "") + ", value: " + e.constant);
-      }
-    }
-    // The exponent suffix of hexadecimal float-point number is mandatory.
-    // A hex-integer constant is forbidden as an initializer of float number.
-    if ((kTokenFloatConstant != dtoken) && IsFloat(e.type.base_type)) {
-      const auto &s = e.constant;
-      const auto k = s.find_first_of("0123456789.");
-      if ((std::string::npos != k) && (s.length() > (k + 1)) &&
-          (s[k] == '0' && is_alpha_char(s[k + 1], 'X')) &&
-          (std::string::npos == s.find_first_of("pP", k + 2))) {
-        return Error(
-            "invalid number, the exponent suffix of hexadecimal "
-            "floating-point literals is mandatory: \"" +
-            s + "\"");
-      }
-    }
-
-    NEXT();
   }
   return NoError();
 }
@@ -1531,61 +1659,106 @@ template<typename T> inline void SingleValueRepack(Value &e, T val) {
   if (IsInteger(e.type.base_type)) { e.constant = NumToString(val); }
 }
 #if defined(FLATBUFFERS_HAS_NEW_STRTOD) && (FLATBUFFERS_HAS_NEW_STRTOD > 0)
-// Normilaze defaults NaN to unsigned quiet-NaN(0).
-static inline void SingleValueRepack(Value& e, float val) {
+// Normalize defaults NaN to unsigned quiet-NaN(0) if value was parsed from
+// hex-float literal.
+static inline void SingleValueRepack(Value &e, float val) {
   if (val != val) e.constant = "nan";
 }
-static inline void SingleValueRepack(Value& e, double val) {
+static inline void SingleValueRepack(Value &e, double val) {
   if (val != val) e.constant = "nan";
 }
 #endif
 
-CheckedError Parser::ParseSingleValue(const std::string *name, Value &e,
-                                      bool check_now) {
-  // First see if this could be a conversion function:
-  if (token_ == kTokenIdentifier && *cursor_ == '(') {
-    // todo: Extract processing of conversion functions to ParseFunction.
-    const auto functionname = attribute_;
-    if (!IsFloat(e.type.base_type)) {
-      return Error(functionname + ": type of argument mismatch, expecting: " +
-                   kTypeNames[BASE_TYPE_DOUBLE] +
-                   ", found: " + kTypeNames[e.type.base_type] +
-                   ", name: " + (name ? *name : "") + ", value: " + e.constant);
+CheckedError Parser::ParseFunction(const std::string *name, Value &e) {
+  // Copy name, attribute will be changed on NEXT().
+  const auto functionname = attribute_;
+  if (!IsFloat(e.type.base_type)) {
+    return Error(functionname + ": type of argument mismatch, expecting: " +
+                 kTypeNames[BASE_TYPE_DOUBLE] +
+                 ", found: " + kTypeNames[e.type.base_type] +
+                 ", name: " + (name ? *name : "") + ", value: " + e.constant);
+  }
+  NEXT();
+  EXPECT('(');
+  ECHECK(Recurse([&]() { return ParseSingleValue(name, e, false); }));
+  EXPECT(')');
+  // calculate with double precision
+  double x, y = 0.0;
+  ECHECK(atot(e.constant.c_str(), *this, &x));
+  // clang-format off
+  auto func_match = false;
+  #define FLATBUFFERS_FN_DOUBLE(name, op) \
+    if (!func_match && functionname == name) { y = op; func_match = true; }
+  FLATBUFFERS_FN_DOUBLE("deg", x / kPi * 180);
+  FLATBUFFERS_FN_DOUBLE("rad", x * kPi / 180);
+  FLATBUFFERS_FN_DOUBLE("sin", sin(x));
+  FLATBUFFERS_FN_DOUBLE("cos", cos(x));
+  FLATBUFFERS_FN_DOUBLE("tan", tan(x));
+  FLATBUFFERS_FN_DOUBLE("asin", asin(x));
+  FLATBUFFERS_FN_DOUBLE("acos", acos(x));
+  FLATBUFFERS_FN_DOUBLE("atan", atan(x));
+  // TODO(wvo): add more useful conversion functions here.
+  #undef FLATBUFFERS_FN_DOUBLE
+  // clang-format on
+  if (true != func_match) {
+    return Error(std::string("Unknown conversion function: ") + functionname +
+                 ", field name: " + (name ? *name : "") +
+                 ", value: " + e.constant);
+  }
+  e.constant = NumToString(y);
+  return NoError();
+}
+
+CheckedError Parser::TryTypedValue(const std::string *name, int dtoken,
+                                   bool check, Value &e, BaseType req,
+                                   bool *destmatch) {
+  bool match = dtoken == token_;
+  if (match) {
+    FLATBUFFERS_ASSERT(*destmatch == false);
+    *destmatch = true;
+    e.constant = attribute_;
+    // Check token match
+    if (!check) {
+      if (e.type.base_type == BASE_TYPE_NONE) {
+        e.type.base_type = req;
+      } else {
+        return Error(
+            std::string("type mismatch: expecting: ") +
+            kTypeNames[e.type.base_type] + ", found: " + kTypeNames[req] +
+            ", name: " + (name ? *name : "") + ", value: " + e.constant);
+      }
+    }
+    // The exponent suffix of hexadecimal float-point number is mandatory.
+    // A hex-integer constant is forbidden as an initializer of float number.
+    if ((kTokenFloatConstant != dtoken) && IsFloat(e.type.base_type)) {
+      const auto &s = e.constant;
+      const auto k = s.find_first_of("0123456789.");
+      if ((std::string::npos != k) && (s.length() > (k + 1)) &&
+          (s[k] == '0' && is_alpha_char(s[k + 1], 'X')) &&
+          (std::string::npos == s.find_first_of("pP", k + 2))) {
+        return Error(
+            "invalid number, the exponent suffix of hexadecimal "
+            "floating-point literals is mandatory: \"" +
+            s + "\"");
+      }
     }
     NEXT();
-    EXPECT('(');
-    ECHECK(Recurse([&]() { return ParseSingleValue(name, e, false); }));
-    EXPECT(')');
-    // calculate with double precision
-    double x, y = 0.0;
-    ECHECK(atot(e.constant.c_str(), *this, &x));
-    auto func_match = false;
-    // clang-format off
-    #define FLATBUFFERS_FN_DOUBLE(name, op) \
-      if (!func_match && functionname == name) { y = op; func_match = true; }
-    FLATBUFFERS_FN_DOUBLE("deg", x / kPi * 180);
-    FLATBUFFERS_FN_DOUBLE("rad", x * kPi / 180);
-    FLATBUFFERS_FN_DOUBLE("sin", sin(x));
-    FLATBUFFERS_FN_DOUBLE("cos", cos(x));
-    FLATBUFFERS_FN_DOUBLE("tan", tan(x));
-    FLATBUFFERS_FN_DOUBLE("asin", asin(x));
-    FLATBUFFERS_FN_DOUBLE("acos", acos(x));
-    FLATBUFFERS_FN_DOUBLE("atan", atan(x));
-    // TODO(wvo): add more useful conversion functions here.
-    #undef FLATBUFFERS_FN_DOUBLE
-    // clang-format on
-    if (true != func_match) {
-      return Error(std::string("Unknown conversion function: ") + functionname +
-                   ", field name: " + (name ? *name : "") +
-                   ", value: " + e.constant);
-    }
-    e.constant = NumToString(y);
-    return NoError();
   }
+  return NoError();
+}
 
-  auto match = false;
+CheckedError Parser::ParseSingleValue(const std::string *name, Value &e,
+                                      bool check_now) {
   const auto in_type = e.type.base_type;
+  const auto is_tok_ident = (token_ == kTokenIdentifier);
+  const auto is_tok_string = (token_ == kTokenStringConstant);
+
+  // First see if this could be a conversion function:
+  if (is_tok_ident && *cursor_ == '(') { return ParseFunction(name, e); }
+
   // clang-format off
+  auto match = false;
+
   #define IF_ECHECK_(force, dtoken, check, req)    \
     if (!match && ((check) || IsConstTrue(force))) \
     ECHECK(TryTypedValue(name, dtoken, check, e, req, &match))
@@ -1593,14 +1766,14 @@ CheckedError Parser::ParseSingleValue(const std::string *name, Value &e,
   #define FORCE_ECHECK(dtoken, check, req) IF_ECHECK_(true, dtoken, check, req)
   // clang-format on
 
-  if (token_ == kTokenStringConstant || token_ == kTokenIdentifier) {
+  if (is_tok_ident || is_tok_string) {
     const auto kTokenStringOrIdent = token_;
     // The string type is a most probable type, check it first.
     TRY_ECHECK(kTokenStringConstant, in_type == BASE_TYPE_STRING,
                BASE_TYPE_STRING);
 
     // avoid escaped and non-ascii in the string
-    if (!match && (token_ == kTokenStringConstant) && IsScalar(in_type) &&
+    if (!match && is_tok_string && IsScalar(in_type) &&
         !attr_is_trivial_ascii_string_) {
       return Error(
           std::string("type mismatch or invalid value, an initializer of "
@@ -1618,6 +1791,12 @@ CheckedError Parser::ParseSingleValue(const std::string *name, Value &e,
         TRY_ECHECK(kTokenStringOrIdent, IsBool(in_type), BASE_TYPE_BOOL);
       }
     }
+    // Check for optional scalars.
+    if (!match && IsScalar(in_type) && attribute_ == "null") {
+      e.constant = "null";
+      NEXT();
+      match = true;
+    }
     // Check if this could be a string/identifier enum value.
     // Enum can have only true integer base type.
     if (!match && IsInteger(in_type) && !IsBool(in_type) &&
@@ -1628,11 +1807,19 @@ CheckedError Parser::ParseSingleValue(const std::string *name, Value &e,
     }
     // Parse a float/integer number from the string.
     if (!match) check_now = true;  // Re-pack if parsed from string literal.
-    if (!match && (token_ == kTokenStringConstant) && IsScalar(in_type)) {
-      // remove trailing whitespaces from attribute_
-      auto last = attribute_.find_last_not_of(' ');
-      if (std::string::npos != last)  // has non-whitespace
-        attribute_.resize(last + 1);
+    // A "scalar-in-string" value needs extra checks.
+    if (!match && is_tok_string && IsScalar(in_type)) {
+      // Strip trailing whitespaces from attribute_.
+      auto last_non_ws = attribute_.find_last_not_of(' ');
+      if (std::string::npos != last_non_ws) attribute_.resize(last_non_ws + 1);
+      if (IsFloat(e.type.base_type)) {
+        // The functions strtod() and strtof() accept both 'nan' and
+        // 'nan(number)' literals. While 'nan(number)' is rejected by the parser
+        // as an unsupported function if is_tok_ident is true.
+        if (attribute_.find_last_of(')') != std::string::npos) {
+          return Error("invalid number: " + attribute_);
+        }
+      }
     }
     // Float numbers or nan, inf, pi, etc.
     TRY_ECHECK(kTokenStringOrIdent, IsFloat(in_type), BASE_TYPE_FLOAT);
@@ -1658,22 +1845,22 @@ CheckedError Parser::ParseSingleValue(const std::string *name, Value &e,
            "' to value of <" + std::string(kTypeNames[in_type]) + "> type.";
     return Error(msg);
   }
-  const auto match_type = e.type.base_type; // may differ from in_type
+  const auto match_type = e.type.base_type;  // may differ from in_type
   // The check_now flag must be true when parse a fbs-schema.
   // This flag forces to check default scalar values or metadata of field.
   // For JSON parser the flag should be false.
   // If it is set for JSON each value will be checked twice (see ParseTable).
-  if (check_now && IsScalar(match_type)) {
+  // Special case 'null' since atot can't handle that.
+  if (check_now && IsScalar(match_type) && e.constant != "null") {
     // clang-format off
     switch (match_type) {
-    #define FLATBUFFERS_TD(ENUM, IDLTYPE, \
-            CTYPE, JTYPE, GTYPE, NTYPE, PTYPE, RTYPE, KTYPE) \
-            case BASE_TYPE_ ## ENUM: {\
-                CTYPE val; \
-                ECHECK(atot(e.constant.c_str(), *this, &val)); \
-                SingleValueRepack(e, val); \
-              break; }
-    FLATBUFFERS_GEN_TYPES_SCALAR(FLATBUFFERS_TD);
+    #define FLATBUFFERS_TD(ENUM, IDLTYPE, CTYPE, ...) \
+      case BASE_TYPE_ ## ENUM: {\
+          CTYPE val; \
+          ECHECK(atot(e.constant.c_str(), *this, &val)); \
+          SingleValueRepack(e, val); \
+        break; }
+    FLATBUFFERS_GEN_TYPES_SCALAR(FLATBUFFERS_TD)
     #undef FLATBUFFERS_TD
     default: break;
     }
@@ -1865,21 +2052,16 @@ struct EnumValBuilder {
   FLATBUFFERS_CHECKED_ERROR AssignEnumeratorValue(const std::string &value) {
     user_value = true;
     auto fit = false;
-    auto ascending = false;
     if (enum_def.IsUInt64()) {
       uint64_t u64;
       fit = StringToNumber(value.c_str(), &u64);
-      ascending = u64 > temp->GetAsUInt64();
       temp->value = static_cast<int64_t>(u64);  // well-defined since C++20.
     } else {
       int64_t i64;
       fit = StringToNumber(value.c_str(), &i64);
-      ascending = i64 > temp->GetAsInt64();
       temp->value = i64;
     }
     if (!fit) return parser.Error("enum value does not fit, \"" + value + "\"");
-    if (!ascending && strict_ascending && !enum_def.vals.vec.empty())
-      return parser.Error("enum values must be specified in ascending order");
     return NoError();
   }
 
@@ -1902,13 +2084,12 @@ struct EnumValBuilder {
   FLATBUFFERS_CHECKED_ERROR ValidateValue(int64_t *ev, bool next) {
     // clang-format off
     switch (enum_def.underlying_type.base_type) {
-    #define FLATBUFFERS_TD(ENUM, IDLTYPE, CTYPE, JTYPE, GTYPE, NTYPE,   \
-                           PTYPE, RTYPE, KTYPE)                         \
+    #define FLATBUFFERS_TD(ENUM, IDLTYPE, CTYPE, ...)                   \
       case BASE_TYPE_##ENUM: {                                          \
         if (!IsInteger(BASE_TYPE_##ENUM)) break;                        \
         return ValidateImpl<BASE_TYPE_##ENUM, CTYPE>(ev, next ? 1 : 0); \
       }
-      FLATBUFFERS_GEN_TYPES_SCALAR(FLATBUFFERS_TD);
+      FLATBUFFERS_GEN_TYPES_SCALAR(FLATBUFFERS_TD)
     #undef FLATBUFFERS_TD
     default: break;
     }
@@ -1916,11 +2097,10 @@ struct EnumValBuilder {
     return parser.Error("fatal: invalid enum underlying type");
   }
 
-  EnumValBuilder(Parser &_parser, EnumDef &_enum_def, bool strict_order = true)
+  EnumValBuilder(Parser &_parser, EnumDef &_enum_def)
       : parser(_parser),
         enum_def(_enum_def),
         temp(nullptr),
-        strict_ascending(strict_order),
         user_value(false) {}
 
   ~EnumValBuilder() { delete temp; }
@@ -1928,7 +2108,6 @@ struct EnumValBuilder {
   Parser &parser;
   EnumDef &enum_def;
   EnumVal *temp;
-  const bool strict_ascending;
   bool user_value;
 };
 
@@ -1965,9 +2144,7 @@ CheckedError Parser::ParseEnum(const bool is_union, EnumDef **dest) {
     // todo: Convert to the Error in the future?
     Warning("underlying type of bit_flags enum must be unsigned");
   }
-  // Protobuf allows them to be specified in any order, so sort afterwards.
-  const auto strict_ascending = (false == opts.proto_mode);
-  EnumValBuilder evb(*this, *enum_def, strict_ascending);
+  EnumValBuilder evb(*this, *enum_def);
   EXPECT('{');
   // A lot of code generatos expect that an enum is not-empty.
   if ((is_union || Is('}')) && !opts.proto_mode) {
@@ -2011,9 +2188,6 @@ CheckedError Parser::ParseEnum(const bool is_union, EnumDef **dest) {
         NEXT();
         ECHECK(evb.AssignEnumeratorValue(attribute_));
         EXPECT(kTokenIntegerConstant);
-      } else if (false == strict_ascending) {
-        // The opts.proto_mode flag is active.
-        return Error("Protobuf mode doesn't allow implicit enum values.");
       }
 
       ECHECK(evb.AcceptEnumerator());
@@ -2049,8 +2223,18 @@ CheckedError Parser::ParseEnum(const bool is_union, EnumDef **dest) {
     }
   }
 
-  if (false == strict_ascending)
-    enum_def->SortByValue();  // Must be sorted to use MinValue/MaxValue.
+  enum_def->SortByValue();  // Must be sorted to use MinValue/MaxValue.
+
+  // Ensure enum value uniqueness.
+  auto prev_it = enum_def->Vals().begin();
+  for (auto it = prev_it + 1; it != enum_def->Vals().end(); ++it) {
+    auto prev_ev = *prev_it;
+    auto ev = *it;
+    if (prev_ev->GetAsUInt64() == ev->GetAsUInt64())
+      return Error("all enum values must be unique: " + prev_ev->name +
+                   " and " + ev->name + " are both " +
+                   NumToString(ev->GetAsInt64()));
+  }
 
   if (dest) *dest = enum_def;
   types_.Add(current_namespace_->GetFullyQualifiedName(enum_def->name),
@@ -2092,13 +2276,28 @@ CheckedError Parser::CheckClash(std::vector<FieldDef *> &fields,
   return NoError();
 }
 
+bool Parser::SupportsOptionalScalars(const flatbuffers::IDLOptions &opts) {
+  static FLATBUFFERS_CONSTEXPR unsigned long supported_langs =
+      IDLOptions::kRust | IDLOptions::kSwift | IDLOptions::kLobster |
+      IDLOptions::kKotlin | IDLOptions::kCpp | IDLOptions::kJava |
+      IDLOptions::kCSharp | IDLOptions::kTs | IDLOptions::kJs |
+      IDLOptions::kBinary;
+  unsigned long langs = opts.lang_to_generate;
+  return (langs > 0 && langs < IDLOptions::kMAX) && !(langs & ~supported_langs);
+}
+
+bool Parser::SupportsOptionalScalars() const {
+  // Check in general if a language isn't specified.
+  return opts.lang_to_generate == 0 || SupportsOptionalScalars(opts);
+}
+
 bool Parser::SupportsAdvancedUnionFeatures() const {
   return opts.lang_to_generate != 0 &&
-         (opts.lang_to_generate & ~(IDLOptions::kCpp | IDLOptions::kJs |
-                                    IDLOptions::kTs | IDLOptions::kPhp |
-                                    IDLOptions::kJava | IDLOptions::kCSharp |
-                                    IDLOptions::kKotlin |
-                                    IDLOptions::kBinary)) == 0;
+         (opts.lang_to_generate &
+          ~(IDLOptions::kCpp | IDLOptions::kJs | IDLOptions::kTs |
+            IDLOptions::kPhp | IDLOptions::kJava | IDLOptions::kCSharp |
+            IDLOptions::kKotlin | IDLOptions::kBinary | IDLOptions::kSwift)) ==
+             0;
 }
 
 bool Parser::SupportsAdvancedArrayFeatures() const {
@@ -2370,8 +2569,8 @@ CheckedError Parser::StartEnum(const std::string &enum_name, bool is_union,
   if (enums_.Add(current_namespace_->GetFullyQualifiedName(enum_name),
                  &enum_def))
     return Error("enum already exists: " + enum_name);
-  enum_def.underlying_type.base_type = is_union ? BASE_TYPE_UTYPE
-                                                : BASE_TYPE_INT;
+  enum_def.underlying_type.base_type =
+      is_union ? BASE_TYPE_UTYPE : BASE_TYPE_INT;
   enum_def.underlying_type.enum_def = &enum_def;
   if (dest) *dest = &enum_def;
   return NoError();
@@ -2479,10 +2678,13 @@ CheckedError Parser::ParseProtoFields(StructDef *struct_def, bool isextend,
           auto val = attribute_;
           ECHECK(ParseProtoCurliesOrIdent());
           if (key == "default") {
-            // Temp: skip non-numeric defaults (enums).
+            // Temp: skip non-numeric and non-boolean defaults (enums).
             auto numeric = strpbrk(val.c_str(), "0123456789-+.");
-            if (IsScalar(type.base_type) && numeric == val.c_str())
+            if (IsScalar(type.base_type) && numeric == val.c_str()) {
               field->value.constant = val;
+            } else if (val == "true") {
+              field->value.constant = val;
+            }  // "false" is default, no need to handle explicitly.
           } else if (key == "deprecated") {
             field->deprecated = val == "true";
           }
@@ -2507,8 +2709,8 @@ CheckedError Parser::ParseProtoFields(StructDef *struct_def, bool isextend,
           if (oneof_type.base_type != BASE_TYPE_STRUCT ||
               !oneof_type.struct_def || oneof_type.struct_def->fixed)
             return Error("oneof '" + name +
-                "' cannot be mapped to a union because member '" +
-                oneof_field.name + "' is not a table type.");
+                         "' cannot be mapped to a union because member '" +
+                         oneof_field.name + "' is not a table type.");
           EnumValBuilder evb(*this, *oneof_union);
           auto ev = evb.CreateEnumerator(oneof_type.struct_def->name);
           ev->union_type = oneof_type;
@@ -2667,10 +2869,13 @@ CheckedError Parser::ParseFlexBufferValue(flexbuffers::Builder *builder) {
       builder->Int(StringToInt(attribute_.c_str()));
       EXPECT(kTokenIntegerConstant);
       break;
-    case kTokenFloatConstant:
-      builder->Double(strtod(attribute_.c_str(), nullptr));
+    case kTokenFloatConstant: {
+      double d;
+      StringToNumber(attribute_.c_str(), &d);
+      builder->Double(d);
       EXPECT(kTokenFloatConstant);
       break;
+    }
     default:
       if (IsIdent("true")) {
         builder->Bool(true);
@@ -2698,7 +2903,13 @@ bool Parser::ParseFlexBuffer(const char *source, const char *source_filename,
 bool Parser::Parse(const char *source, const char **include_paths,
                    const char *source_filename) {
   FLATBUFFERS_ASSERT(0 == recurse_protection_counter);
-  auto r = !ParseRoot(source, include_paths, source_filename).Check();
+  bool r;
+
+  if (opts.use_flexbuffers) {
+    r = ParseFlexBuffer(source, source_filename, &flex_builder_);
+  } else {
+    r = !ParseRoot(source, include_paths, source_filename).Check();
+  }
   FLATBUFFERS_ASSERT(0 == recurse_protection_counter);
   return r;
 }
@@ -2747,7 +2958,7 @@ CheckedError Parser::ParseRoot(const char *source, const char **include_paths,
               if (field.value.type.struct_def == &struct_def) {
                 field.value.type.struct_def = nullptr;
                 field.value.type.enum_def = enum_def;
-                auto &bt = field.value.type.base_type == BASE_TYPE_VECTOR
+                auto &bt = IsVector(field.value.type)
                                ? field.value.type.element
                                : field.value.type.base_type;
                 FLATBUFFERS_ASSERT(bt == BASE_TYPE_STRUCT);
@@ -2785,8 +2996,8 @@ CheckedError Parser::ParseRoot(const char *source, const char **include_paths,
       for (auto val_it = enum_def.Vals().begin();
            val_it != enum_def.Vals().end(); ++val_it) {
         auto &val = **val_it;
-        if (!SupportsAdvancedUnionFeatures() && val.union_type.struct_def &&
-            val.union_type.struct_def->fixed)
+        if (!SupportsAdvancedUnionFeatures() &&
+            (IsStruct(val.union_type) || IsString(val.union_type)))
           return Error(
               "only tables can be union elements in the generated language: " +
               val.name);
@@ -2867,9 +3078,7 @@ CheckedError Parser::DoParse(const char *source, const char **include_paths,
         // entered into included_files_.
         // This is recursive, but only go as deep as the number of include
         // statements.
-        if (source_filename) {
-          included_files_.erase(source_filename);
-        }
+        if (source_filename) { included_files_.erase(source_filename); }
         return DoParse(source, include_paths, source_filename,
                        include_filename);
       }
@@ -2893,9 +3102,9 @@ CheckedError Parser::DoParse(const char *source, const char **include_paths,
       uoffset_t toff;
       ECHECK(ParseTable(*root_struct_def_, nullptr, &toff));
       if (opts.size_prefixed) {
-        builder_.FinishSizePrefixed(Offset<Table>(toff), file_identifier_.length()
-                                                             ? file_identifier_.c_str()
-                                                             : nullptr);
+        builder_.FinishSizePrefixed(
+            Offset<Table>(toff),
+            file_identifier_.length() ? file_identifier_.c_str() : nullptr);
       } else {
         builder_.Finish(Offset<Table>(toff), file_identifier_.length()
                                                  ? file_identifier_.c_str()
@@ -2916,8 +3125,7 @@ CheckedError Parser::DoParse(const char *source, const char **include_paths,
       if (opts.root_type.empty()) {
         if (!SetRootType(root_type.c_str()))
           return Error("unknown root type: " + root_type);
-        if (root_struct_def_->fixed)
-          return Error("root type must be a table");
+        if (root_struct_def_->fixed) return Error("root type must be a table");
       }
       EXPECT(';');
     } else if (IsIdent("file_identifier")) {
@@ -3022,10 +3230,9 @@ void Parser::Serialize() {
   auto fiid__ = builder_.CreateString(file_identifier_);
   auto fext__ = builder_.CreateString(file_extension_);
   auto serv__ = builder_.CreateVectorOfSortedTables(&service_offsets);
-  auto schema_offset =
-      reflection::CreateSchema(builder_, objs__, enum__, fiid__, fext__,
-        (root_struct_def_ ? root_struct_def_->serialized_location : 0),
-        serv__);
+  auto schema_offset = reflection::CreateSchema(
+      builder_, objs__, enum__, fiid__, fext__,
+      (root_struct_def_ ? root_struct_def_->serialized_location : 0), serv__);
   if (opts.size_prefixed) {
     builder_.FinishSizePrefixed(schema_offset, reflection::SchemaIdentifier());
   } else {
@@ -3071,22 +3278,20 @@ Offset<reflection::Object> StructDef::Serialize(FlatBufferBuilder *builder,
   auto flds__ = builder->CreateVectorOfSortedTables(&field_offsets);
   auto attr__ = SerializeAttributes(builder, parser);
   auto docs__ = parser.opts.binary_schema_comments
-                ? builder->CreateVectorOfStrings(doc_comment)
-                : 0;
+                    ? builder->CreateVectorOfStrings(doc_comment)
+                    : 0;
   return reflection::CreateObject(*builder, name__, flds__, fixed,
                                   static_cast<int>(minalign),
-                                  static_cast<int>(bytesize),
-                                  attr__, docs__);
+                                  static_cast<int>(bytesize), attr__, docs__);
 }
 
 bool StructDef::Deserialize(Parser &parser, const reflection::Object *object) {
-  if (!DeserializeAttributes(parser, object->attributes()))
-    return false;
+  if (!DeserializeAttributes(parser, object->attributes())) return false;
   DeserializeDoc(doc_comment, object->documentation());
   name = parser.UnqualifiedName(object->name()->str());
   predecl = false;
   sortbysize = attributes.Lookup("original_order") == nullptr && !fixed;
-  const auto& of = *(object->fields());
+  const auto &of = *(object->fields());
   auto indexes = std::vector<uoffset_t>(of.size());
   for (uoffset_t i = 0; i < of.size(); i++) indexes[of.Get(i)->id()] = i;
   size_t tmp_struct_size = 0;
@@ -3102,9 +3307,7 @@ bool StructDef::Deserialize(Parser &parser, const reflection::Object *object) {
       // Recompute padding since that's currently not serialized.
       auto size = InlineSize(field_def->value.type);
       auto next_field =
-          i + 1 < indexes.size()
-          ? of.Get(indexes[i+1])
-          : nullptr;
+          i + 1 < indexes.size() ? of.Get(indexes[i + 1]) : nullptr;
       tmp_struct_size += size;
       field_def->padding =
           next_field ? (next_field->offset() - field_def->value.offset) - size
@@ -3123,15 +3326,17 @@ Offset<reflection::Field> FieldDef::Serialize(FlatBufferBuilder *builder,
   auto type__ = value.type.Serialize(builder);
   auto attr__ = SerializeAttributes(builder, parser);
   auto docs__ = parser.opts.binary_schema_comments
-                ? builder->CreateVectorOfStrings(doc_comment)
-                : 0;
-  return reflection::CreateField(*builder, name__, type__, id, value.offset,
+                    ? builder->CreateVectorOfStrings(doc_comment)
+                    : 0;
+  double d;
+  StringToNumber(value.constant.c_str(), &d);
+  return reflection::CreateField(
+      *builder, name__, type__, id, value.offset,
       // Is uint64>max(int64) tested?
       IsInteger(value.type.base_type) ? StringToInt(value.constant.c_str()) : 0,
       // result may be platform-dependent if underlying is float (not double)
-      IsFloat(value.type.base_type) ? strtod(value.constant.c_str(), nullptr)
-                                    : 0.0,
-      deprecated, required, key, attr__, docs__);
+      IsFloat(value.type.base_type) ? d : 0.0, deprecated, required, key,
+      attr__, docs__, optional);
   // TODO: value.constant is almost always "0", we could save quite a bit of
   // space by sharing it. Same for common values of value.type.
 }
@@ -3139,23 +3344,17 @@ Offset<reflection::Field> FieldDef::Serialize(FlatBufferBuilder *builder,
 bool FieldDef::Deserialize(Parser &parser, const reflection::Field *field) {
   name = field->name()->str();
   defined_namespace = parser.current_namespace_;
-  if (!value.type.Deserialize(parser, field->type()))
-    return false;
+  if (!value.type.Deserialize(parser, field->type())) return false;
   value.offset = field->offset();
   if (IsInteger(value.type.base_type)) {
     value.constant = NumToString(field->default_integer());
   } else if (IsFloat(value.type.base_type)) {
     value.constant = FloatToString(field->default_real(), 16);
-    size_t last_zero = value.constant.find_last_not_of('0');
-    if (last_zero != std::string::npos && last_zero != 0) {
-      value.constant.erase(last_zero, std::string::npos);
-    }
   }
   deprecated = field->deprecated();
   required = field->required();
   key = field->key();
-  if (!DeserializeAttributes(parser, field->attributes()))
-    return false;
+  if (!DeserializeAttributes(parser, field->attributes())) return false;
   // TODO: this should probably be handled by a separate attribute
   if (attributes.Lookup("flexbuffer")) {
     flexbuffer = true;
@@ -3170,6 +3369,7 @@ bool FieldDef::Deserialize(Parser &parser, const reflection::Field *field) {
     nested_flatbuffer = parser.LookupStruct(nested_qualified_name);
     if (!nested_flatbuffer) return false;
   }
+  shared = attributes.Lookup("shared") != nullptr;
   DeserializeDoc(doc_comment, field->documentation());
   return true;
 }
@@ -3179,18 +3379,16 @@ Offset<reflection::RPCCall> RPCCall::Serialize(FlatBufferBuilder *builder,
   auto name__ = builder->CreateString(name);
   auto attr__ = SerializeAttributes(builder, parser);
   auto docs__ = parser.opts.binary_schema_comments
-                ? builder->CreateVectorOfStrings(doc_comment)
-                : 0;
-  return reflection::CreateRPCCall(*builder, name__,
-                                   request->serialized_location,
-                                   response->serialized_location,
-                                   attr__, docs__);
+                    ? builder->CreateVectorOfStrings(doc_comment)
+                    : 0;
+  return reflection::CreateRPCCall(
+      *builder, name__, request->serialized_location,
+      response->serialized_location, attr__, docs__);
 }
 
 bool RPCCall::Deserialize(Parser &parser, const reflection::RPCCall *call) {
   name = call->name()->str();
-  if (!DeserializeAttributes(parser, call->attributes()))
-    return false;
+  if (!DeserializeAttributes(parser, call->attributes())) return false;
   DeserializeDoc(doc_comment, call->documentation());
   request = parser.structs_.Lookup(call->request()->name()->str());
   response = parser.structs_.Lookup(call->response()->name()->str());
@@ -3209,8 +3407,8 @@ Offset<reflection::Service> ServiceDef::Serialize(FlatBufferBuilder *builder,
   auto call__ = builder->CreateVector(servicecall_offsets);
   auto attr__ = SerializeAttributes(builder, parser);
   auto docs__ = parser.opts.binary_schema_comments
-                ? builder->CreateVectorOfStrings(doc_comment)
-                : 0;
+                    ? builder->CreateVectorOfStrings(doc_comment)
+                    : 0;
   return reflection::CreateService(*builder, name__, call__, attr__, docs__);
 }
 
@@ -3227,8 +3425,7 @@ bool ServiceDef::Deserialize(Parser &parser,
       }
     }
   }
-  if (!DeserializeAttributes(parser, service->attributes()))
-    return false;
+  if (!DeserializeAttributes(parser, service->attributes())) return false;
   DeserializeDoc(doc_comment, service->documentation());
   return true;
 }
@@ -3245,8 +3442,8 @@ Offset<reflection::Enum> EnumDef::Serialize(FlatBufferBuilder *builder,
   auto type__ = underlying_type.Serialize(builder);
   auto attr__ = SerializeAttributes(builder, parser);
   auto docs__ = parser.opts.binary_schema_comments
-                ? builder->CreateVectorOfStrings(doc_comment)
-                : 0;
+                    ? builder->CreateVectorOfStrings(doc_comment)
+                    : 0;
   return reflection::CreateEnum(*builder, name__, vals__, is_union, type__,
                                 attr__, docs__);
 }
@@ -3265,8 +3462,7 @@ bool EnumDef::Deserialize(Parser &parser, const reflection::Enum *_enum) {
   if (!underlying_type.Deserialize(parser, _enum->underlying_type())) {
     return false;
   }
-  if (!DeserializeAttributes(parser, _enum->attributes()))
-    return false;
+  if (!DeserializeAttributes(parser, _enum->attributes())) return false;
   DeserializeDoc(doc_comment, _enum->documentation());
   return true;
 }
@@ -3276,9 +3472,10 @@ Offset<reflection::EnumVal> EnumVal::Serialize(FlatBufferBuilder *builder,
   auto name__ = builder->CreateString(name);
   auto type__ = union_type.Serialize(builder);
   auto docs__ = parser.opts.binary_schema_comments
-                ? builder->CreateVectorOfStrings(doc_comment)
-                : 0;
-  return reflection::CreateEnumVal(*builder, name__, value,
+                    ? builder->CreateVectorOfStrings(doc_comment)
+                    : 0;
+  return reflection::CreateEnumVal(
+      *builder, name__, value,
       union_type.struct_def ? union_type.struct_def->serialized_location : 0,
       type__, docs__);
 }
@@ -3287,8 +3484,7 @@ bool EnumVal::Deserialize(const Parser &parser,
                           const reflection::EnumVal *val) {
   name = val->name()->str();
   value = val->value();
-  if (!union_type.Deserialize(parser, val->union_type()))
-    return false;
+  if (!union_type.Deserialize(parser, val->union_type())) return false;
   DeserializeDoc(doc_comment, val->documentation());
   return true;
 }
@@ -3310,8 +3506,7 @@ bool Type::Deserialize(const Parser &parser, const reflection::Type *type) {
     bool is_series = type->base_type() == reflection::Vector ||
                      type->base_type() == reflection::Array;
     if (type->base_type() == reflection::Obj ||
-        (is_series &&
-         type->element() == reflection::Obj)) {
+        (is_series && type->element() == reflection::Obj)) {
       if (static_cast<size_t>(type->index()) < parser.structs_.vec.size()) {
         struct_def = parser.structs_.vec[type->index()];
         struct_def->refcount++;
@@ -3352,8 +3547,7 @@ Definition::SerializeAttributes(FlatBufferBuilder *builder,
 
 bool Definition::DeserializeAttributes(
     Parser &parser, const Vector<Offset<reflection::KeyValue>> *attrs) {
-  if (attrs == nullptr)
-    return true;
+  if (attrs == nullptr) return true;
   for (uoffset_t i = 0; i < attrs->size(); ++i) {
     auto kv = attrs->Get(i);
     auto value = new Value();
@@ -3373,7 +3567,7 @@ bool Definition::DeserializeAttributes(
 bool Parser::Deserialize(const uint8_t *buf, const size_t size) {
   flatbuffers::Verifier verifier(reinterpret_cast<const uint8_t *>(buf), size);
   bool size_prefixed = false;
-  if(!reflection::SchemaBufferHasIdentifier(buf)) {
+  if (!reflection::SchemaBufferHasIdentifier(buf)) {
     if (!flatbuffers::BufferHasIdentifier(buf, reflection::SchemaIdentifier(),
                                           true))
       return false;
@@ -3382,9 +3576,7 @@ bool Parser::Deserialize(const uint8_t *buf, const size_t size) {
   }
   auto verify_fn = size_prefixed ? &reflection::VerifySizePrefixedSchemaBuffer
                                  : &reflection::VerifySchemaBuffer;
-  if (!verify_fn(verifier)) {
-    return false;
-  }
+  if (!verify_fn(verifier)) { return false; }
   auto schema = size_prefixed ? reflection::GetSizePrefixedSchema(buf)
                               : reflection::GetSchema(buf);
   return Deserialize(schema);
@@ -3433,7 +3625,7 @@ bool Parser::Deserialize(const reflection::Schema *schema) {
     auto struct_def = structs_.Lookup(qualified_name);
     struct_def->defined_namespace =
         GetNamespace(qualified_name, namespaces_, namespaces_index);
-    if (!struct_def->Deserialize(*this, * it)) { return false; }
+    if (!struct_def->Deserialize(*this, *it)) { return false; }
     if (schema->root_table() == *it) { root_struct_def_ = struct_def; }
   }
   for (auto it = schema->enums()->begin(); it != schema->enums()->end(); ++it) {

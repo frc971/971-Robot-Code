@@ -6,6 +6,35 @@ import (
 	flatbuffers "github.com/google/flatbuffers/go"
 )
 
+type StatT struct {
+	Id string
+	Val int64
+	Count uint16
+}
+
+func (t *StatT) Pack(builder *flatbuffers.Builder) flatbuffers.UOffsetT {
+	if t == nil { return 0 }
+	idOffset := builder.CreateString(t.Id)
+	StatStart(builder)
+	StatAddId(builder, idOffset)
+	StatAddVal(builder, t.Val)
+	StatAddCount(builder, t.Count)
+	return StatEnd(builder)
+}
+
+func (rcv *Stat) UnPackTo(t *StatT) {
+	t.Id = string(rcv.Id())
+	t.Val = rcv.Val()
+	t.Count = rcv.Count()
+}
+
+func (rcv *Stat) UnPack() *StatT {
+	if rcv == nil { return nil }
+	t := &StatT{}
+	rcv.UnPackTo(t)
+	return t
+}
+
 type Stat struct {
 	_tab flatbuffers.Table
 }
@@ -14,6 +43,13 @@ func GetRootAsStat(buf []byte, offset flatbuffers.UOffsetT) *Stat {
 	n := flatbuffers.GetUOffsetT(buf[offset:])
 	x := &Stat{}
 	x.Init(buf, n+offset)
+	return x
+}
+
+func GetSizePrefixedRootAsStat(buf []byte, offset flatbuffers.UOffsetT) *Stat {
+	n := flatbuffers.GetUOffsetT(buf[offset+flatbuffers.SizeUint32:])
+	x := &Stat{}
+	x.Init(buf, n+offset+flatbuffers.SizeUint32)
 	return x
 }
 

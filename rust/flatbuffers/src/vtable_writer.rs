@@ -16,8 +16,8 @@
 
 use std::ptr::write_bytes;
 
-use endian_scalar::{emplace_scalar, read_scalar_at};
-use primitives::*;
+use crate::endian_scalar::{emplace_scalar, read_scalar_at};
+use crate::primitives::*;
 
 /// VTableWriter compartmentalizes actions needed to create a vtable.
 #[derive(Debug)]
@@ -28,7 +28,7 @@ pub struct VTableWriter<'a> {
 impl<'a> VTableWriter<'a> {
     #[inline(always)]
     pub fn init(buf: &'a mut [u8]) -> Self {
-        VTableWriter { buf: buf }
+        VTableWriter { buf }
     }
 
     /// Writes the vtable length (in bytes) into the vtable.
