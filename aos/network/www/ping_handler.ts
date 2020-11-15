@@ -4,8 +4,8 @@ export function HandlePing(data: Uint8Array) {
   const fbBuffer = new flatbuffers.ByteBuffer(data);
   const ping = aos.examples.Ping.getRootAsPing(fbBuffer);
 
-  document.getElementById('val').innerHTML = ping.value();
-  document.getElementById('time').innerHTML = ping.sendTime().low;
+  document.getElementById('val').innerHTML = ping.value().toString();
+  document.getElementById('time').innerHTML = ping.sendTime().low.toString();
 }
 
 export function SetupDom() {

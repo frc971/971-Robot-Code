@@ -33,7 +33,7 @@ export class ConfigHandler {
       this.tree_div.appendChild(channel_div);
 
       const input_el = document.createElement('input');
-      input_el.setAttribute('data-index', i);
+      input_el.setAttribute('data-index', i.toString());
       input_el.setAttribute('type', 'checkbox');
       input_el.addEventListener('click', () => this.handleChange());
       channel_div.appendChild(input_el);
@@ -62,7 +62,7 @@ export class ConfigHandler {
         continue;
       }
       const index = toggle.getAttribute('data-index');
-      const channel = this.config.channels(index);
+      const channel = this.config.channels(Number(index));
       const namefb = builder.createString(channel.name());
       const typefb = builder.createString(channel.type());
       Channel.startChannel(builder);

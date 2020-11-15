@@ -11,7 +11,7 @@ export class Handler {
   constructor(
       private readonly handlerFunc:
           (data: Uint8Array, sentTime: number) => void,
-      private readonly channel: RTCPeerConnection) {
+      private readonly channel: RTCDataChannel) {
     channel.addEventListener('message', (e) => this.handleMessage(e));
   }
 
@@ -49,7 +49,7 @@ export class Handler {
 export class Connection {
   private webSocketConnection: WebSocket|null = null;
   private rtcPeerConnection: RTCPeerConnection|null = null;
-  private dataChannel: DataChannel|null = null;
+  private dataChannel: RTCDataChannel|null = null;
   private webSocketUrl: string;
 
   private configInternal: aos.Configuration|null = null;
@@ -88,7 +88,7 @@ export class Connection {
   }
 
   getConfig() {
-    return this.config_internal;
+    return this.configInternal;
   }
 
   // Handle messages on the DataChannel. Handles the Configuration message as
@@ -128,7 +128,7 @@ export class Connection {
   }
 
   // Called for new SDPs. Make sure to set it locally and remotely.
-  onOfferCreated(description: RTCSessionDescription): void {
+  onOfferCreated(description: RTCSessionDescriptionInit): void {
     this.rtcPeerConnection.setLocalDescription(description);
     const builder = new flatbuffers.Builder(512);
     const offerString = builder.createString(description.sdp);
@@ -151,7 +151,8 @@ export class Connection {
     this.dataChannel = this.rtcPeerConnection.createDataChannel('signalling');
     this.handlers.add(
         new Handler((data) => this.onConfigMessage(data), this.dataChannel));
-    window.dc = this.dataChannel;
+    // TODO(james): Is this used? Can we delete it?
+    // window.dc = this.dataChannel;
     this.rtcPeerConnection.addEventListener(
         'icecandidate', (e) => this.onIceCandidate(e));
     this.rtcPeerConnection.createOffer().then(

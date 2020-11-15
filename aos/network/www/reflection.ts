@@ -150,7 +150,7 @@ export class Table {
       case reflection.BaseType.Double:
         return this.bb.readFloat64(offset);
     }
-    throw new Error('Unsupported message type ' + baseType);
+    throw new Error('Unsupported message type ' + fieldType);
   }
 };
 
@@ -239,8 +239,7 @@ export class Parser {
         return field;
       }
     }
-    throw new Error(
-        'Couldn\'t find field ' + fieldName + ' options are ' + fields);
+    throw new Error('Couldn\'t find field ' + fieldName + '.');
   }
 
   // Reads a scalar with the given field name from a Table. If readDefaults
