@@ -1,11 +1,11 @@
 namespace aos.examples;
 
 table Foo {
-  value:int;
+  value:int32 (id: 0);
 }
 
 table Bar {
-  value:int;
+  value:int32 (id: 0);
 }
 
 root_type Foo;

@@ -2,10 +2,10 @@ namespace y2014.control_loops.claw;
 
 // All angles here are 0 vertical, positive "up" (aka backwards).
 table Output {
-  intake_voltage:double;
-  top_claw_voltage:double;
-  bottom_claw_voltage:double;
-  tusk_voltage:double;
+  intake_voltage:double (id: 0);
+  top_claw_voltage:double (id: 1);
+  bottom_claw_voltage:double (id: 2);
+  tusk_voltage:double (id: 3);
 }
 
 root_type Output;

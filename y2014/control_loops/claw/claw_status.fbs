@@ -3,19 +3,19 @@ namespace y2014.control_loops.claw;
 // All angles here are 0 vertical, positive "up" (aka backwards).
 table Status {
   // True if zeroed enough for the current period (autonomous or teleop).
-  zeroed:bool;
+  zeroed:bool (id: 0);
   // True if zeroed as much as we will force during autonomous.
-  zeroed_for_auto:bool;
+  zeroed_for_auto:bool (id: 1);
   // True if zeroed and within tolerance for separation and bottom angle.
-  done:bool;
+  done:bool (id: 2);
   // True if zeroed and within tolerance for separation and bottom angle.
   // seperation allowance much wider as a ball may be included
-  done_with_ball:bool;
+  done_with_ball:bool (id: 3);
   // Dump the values of the state matrix.
-  bottom:double;
-  bottom_velocity:double;
-  separation:double;
-  separation_velocity:double;
+  bottom:double (id: 4);
+  bottom_velocity:double (id: 5);
+  separation:double (id: 6);
+  separation_velocity:double (id: 7);
 }
 
 root_type Status;
