@@ -354,7 +354,7 @@ bool JsonParser::AddElement(int field_index, int64_t int_value) {
   flatbuffers::TypeCode type_code =
       stack_.back().typetable->type_codes[field_index];
 
-  if (type_code.is_vector != in_vector()) {
+  if (type_code.is_repeating != in_vector()) {
     fprintf(stderr, "Type and json disagree on if we are in a vector or not\n");
     return false;
   }
@@ -371,7 +371,7 @@ bool JsonParser::AddElement(int field_index, double double_value) {
   flatbuffers::TypeCode type_code =
       stack_.back().typetable->type_codes[field_index];
 
-  if (type_code.is_vector != in_vector()) {
+  if (type_code.is_repeating != in_vector()) {
     fprintf(stderr, "Type and json disagree on if we are in a vector or not\n");
     return false;
   }
@@ -388,7 +388,7 @@ bool JsonParser::AddElement(int field_index, const ::std::string &data) {
   flatbuffers::TypeCode type_code =
       stack_.back().typetable->type_codes[field_index];
 
-  if (type_code.is_vector != in_vector()) {
+  if (type_code.is_repeating != in_vector()) {
     fprintf(stderr, "Type and json disagree on if we are in a vector or not\n");
     return false;
   }
@@ -581,7 +581,7 @@ bool AddSingleElement(const flatbuffers::TypeTable *typetable, int field_index,
       static_cast<flatbuffers::voffset_t>(field_index));
 
   // Vectors will always be Offset<>'s.
-  if (type_code.is_vector) {
+  if (type_code.is_repeating) {
     fbb->AddOffset(field_offset, offset_element);
     return true;
   }
@@ -809,10 +809,10 @@ class TruncatingStringVisitor : public flatbuffers::IterationVisitor {
     to_string_.EndSequence();
   }
   void Field(size_t field_idx, size_t set_idx, flatbuffers::ElementaryType type,
-             bool is_vector, const flatbuffers::TypeTable *type_table,
+             bool is_repeating, const flatbuffers::TypeTable *type_table,
              const char *name, const uint8_t *val) override {
     if (should_skip()) return;
-    to_string_.Field(field_idx, set_idx, type, is_vector, type_table, name,
+    to_string_.Field(field_idx, set_idx, type, is_repeating, type_table, name,
                      val);
   }
   void UType(uint8_t value, const char *name) override {

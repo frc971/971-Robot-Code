@@ -8,11 +8,11 @@
 // timer in the the /aos timing report message (this message was chosen because
 // it is already being published by the web proxy process, so the demo requires
 // very little setup).
-import {Plot, Line} from 'aos/network/www/plotter';
-import {Channel, Configuration} from 'aos/configuration_generated';
-import {Connect} from 'aos/network/connect_generated';
-import {Connection} from 'aos/network/www/proxy';
-import {Parser, Table} from 'aos/network/www/reflection'
+import {Line, Plot} from 'aos/network/www/plotter';
+import {aos} from 'aos/configuration_generated';
+import {aos} from 'aos/network/connect_generated';
+import {aos} from 'aos/network/www/proxy';
+import {aos} from 'aos/network/www/reflection'
 
 const width = 900;
 const height = 400;
@@ -110,7 +110,7 @@ const timingReport = {
 
 let reportParser = null;
 
-conn.addConfigHandler((config: Configuration) => {
+conn.addConfigHandler((config: aos.Configuration) => {
   // Locate the timing report schema so that we can read the received messages.
   let reportSchema = null;
   for (let ii = 0; ii < config.channelsLength(); ++ii) {
@@ -129,17 +129,17 @@ conn.addConfigHandler((config: Configuration) => {
   for (const channel of [timingReport]) {
     const nameFb = builder.createString(channel.name);
     const typeFb = builder.createString(channel.type);
-    Channel.startChannel(builder);
-    Channel.addName(builder, nameFb);
-    Channel.addType(builder, typeFb);
-    const channelFb = Channel.endChannel(builder);
+    aos.Channel.startChannel(builder);
+    aos.Channel.addName(builder, nameFb);
+    aos.Channel.addType(builder, typeFb);
+    const channelFb = aos.Channel.endChannel(builder);
     channels.push(channelFb);
   }
 
-  const channelsFb = Connect.createChannelsToTransferVector(builder, channels);
-  Connect.startConnect(builder);
-  Connect.addChannelsToTransfer(builder, channelsFb);
-  const connect = Connect.endConnect(builder);
+  const channelsFb = aos.message_bridge.Connect.createChannelsToTransferVector(builder, channels);
+  aos.message_bridge.Connect.startConnect(builder);
+  aos.message_bridge.Connect.addChannelsToTransfer(builder, channelsFb);
+  const connect = aos.message_bridge.Connect.endConnect(builder);
   builder.finish(connect);
   conn.sendConnectMessage(builder);
 });

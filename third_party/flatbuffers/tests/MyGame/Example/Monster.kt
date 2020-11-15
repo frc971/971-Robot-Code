@@ -7,7 +7,7 @@ import kotlin.math.sign
 import com.google.flatbuffers.*
 
 /**
- * an example documentation comment: monster object
+ * an example documentation comment: "monster object"
  */
 @Suppress("unused")
 @ExperimentalUnsignedTypes
@@ -116,7 +116,7 @@ class Monster : Table() {
         }
     }
     fun test(obj: Table) : Table? {
-        val o = __offset(20); return if (o != 0) __union(obj, o) else null
+        val o = __offset(20); return if (o != 0) __union(obj, o + bb_pos) else null
     }
     fun test4(j: Int) : MyGame.Example.Test? = test4(MyGame.Example.Test(), j)
     fun test4(obj: MyGame.Example.Test, j: Int) : MyGame.Example.Test? {
@@ -717,7 +717,7 @@ class Monster : Table() {
         }
     }
     fun anyUnique(obj: Table) : Table? {
-        val o = __offset(92); return if (o != 0) __union(obj, o) else null
+        val o = __offset(92); return if (o != 0) __union(obj, o + bb_pos) else null
     }
     val anyAmbiguousType : UByte
         get() {
@@ -734,7 +734,7 @@ class Monster : Table() {
         }
     }
     fun anyAmbiguous(obj: Table) : Table? {
-        val o = __offset(96); return if (o != 0) __union(obj, o) else null
+        val o = __offset(96); return if (o != 0) __union(obj, o + bb_pos) else null
     }
     fun vectorOfEnums(j: Int) : UByte {
         val o = __offset(98)
@@ -759,18 +759,64 @@ class Monster : Table() {
             false
         }
     }
+    val signedEnum : Byte
+        get() {
+            val o = __offset(100)
+            return if(o != 0) bb.get(o + bb_pos) else -1
+        }
+    fun mutateSignedEnum(signedEnum: Byte) : Boolean {
+        val o = __offset(100)
+        return if (o != 0) {
+            bb.put(o + bb_pos, signedEnum)
+            true
+        } else {
+            false
+        }
+    }
+    fun testrequirednestedflatbuffer(j: Int) : UByte {
+        val o = __offset(102)
+        return if (o != 0) {
+            bb.get(__vector(o) + j * 1).toUByte()
+        } else {
+            0u
+        }
+    }
+    val testrequirednestedflatbufferLength : Int
+        get() {
+            val o = __offset(102); return if (o != 0) __vector_len(o) else 0
+        }
+    val testrequirednestedflatbufferAsByteBuffer : ByteBuffer get() = __vector_as_bytebuffer(102, 1)
+    fun testrequirednestedflatbufferInByteBuffer(_bb: ByteBuffer) : ByteBuffer = __vector_in_bytebuffer(_bb, 102, 1)
+    val testrequirednestedflatbufferAsMonster : MyGame.Example.Monster? get() = testrequirednestedflatbufferAsMonster(MyGame.Example.Monster())
+    fun testrequirednestedflatbufferAsMonster(obj: MyGame.Example.Monster) : MyGame.Example.Monster? {
+        val o = __offset(102)
+        return if (o != 0) {
+            obj.__assign(__indirect(__vector(o)), bb)
+        } else {
+            null
+        }
+    }
+    fun mutateTestrequirednestedflatbuffer(j: Int, testrequirednestedflatbuffer: UByte) : Boolean {
+        val o = __offset(102)
+        return if (o != 0) {
+            bb.put(__vector(o) + j * 1, testrequirednestedflatbuffer.toByte())
+            true
+        } else {
+            false
+        }
+    }
     override fun keysCompare(o1: Int, o2: Int, _bb: ByteBuffer) : Int {
          return compareStrings(__offset(10, o1, _bb), __offset(10, o2, _bb), _bb)
     }
     companion object {
-        fun validateVersion() = Constants.FLATBUFFERS_1_11_1()
+        fun validateVersion() = Constants.FLATBUFFERS_1_12_0()
         fun getRootAsMonster(_bb: ByteBuffer): Monster = getRootAsMonster(_bb, Monster())
         fun getRootAsMonster(_bb: ByteBuffer, obj: Monster): Monster {
             _bb.order(ByteOrder.LITTLE_ENDIAN)
             return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb))
         }
         fun MonsterBufferHasIdentifier(_bb: ByteBuffer) : Boolean = __has_identifier(_bb, "MONS")
-        fun startMonster(builder: FlatBufferBuilder) = builder.startTable(48)
+        fun startMonster(builder: FlatBufferBuilder) = builder.startTable(50)
         fun addPos(builder: FlatBufferBuilder, pos: Int) = builder.addStruct(0, pos, 0)
         fun addMana(builder: FlatBufferBuilder, mana: Short) = builder.addShort(1, mana, 150)
         fun addHp(builder: FlatBufferBuilder, hp: Short) = builder.addShort(2, hp, 100)
@@ -941,6 +987,16 @@ class Monster : Table() {
             return builder.endVector()
         }
         fun startVectorOfEnumsVector(builder: FlatBufferBuilder, numElems: Int) = builder.startVector(1, numElems, 1)
+        fun addSignedEnum(builder: FlatBufferBuilder, signedEnum: Byte) = builder.addByte(48, signedEnum, -1)
+        fun addTestrequirednestedflatbuffer(builder: FlatBufferBuilder, testrequirednestedflatbuffer: Int) = builder.addOffset(49, testrequirednestedflatbuffer, 0)
+        fun createTestrequirednestedflatbufferVector(builder: FlatBufferBuilder, data: UByteArray) : Int {
+            builder.startVector(1, data.size, 1)
+            for (i in data.size - 1 downTo 0) {
+                builder.addByte(data[i].toByte())
+            }
+            return builder.endVector()
+        }
+        fun startTestrequirednestedflatbufferVector(builder: FlatBufferBuilder, numElems: Int) = builder.startVector(1, numElems, 1)
         fun endMonster(builder: FlatBufferBuilder) : Int {
             val o = builder.endTable()
                 builder.required(o, 10)
@@ -949,7 +1005,7 @@ class Monster : Table() {
         fun finishMonsterBuffer(builder: FlatBufferBuilder, offset: Int) = builder.finish(offset, "MONS")
         fun finishSizePrefixedMonsterBuffer(builder: FlatBufferBuilder, offset: Int) = builder.finishSizePrefixed(offset, "MONS")
         fun __lookup_by_key(obj: Monster?, vectorLocation: Int, key: String, bb: ByteBuffer) : Monster? {
-            val byteKey = key.toByteArray(Table.UTF8_CHARSET.get()!!)
+            val byteKey = key.toByteArray(java.nio.charset.StandardCharsets.UTF_8)
             var span = bb.getInt(vectorLocation - 4)
             var start = 0
             while (span != 0) {

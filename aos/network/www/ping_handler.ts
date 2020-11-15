@@ -1,8 +1,8 @@
-import {Ping} from 'aos/events/ping_generated';
+import {aos} from 'aos/events/ping_generated';
 
 export function HandlePing(data: Uint8Array) {
   const fbBuffer = new flatbuffers.ByteBuffer(data);
-  const ping = Ping.getRootAsPing(fbBuffer);
+  const ping = aos.examples.Ping.getRootAsPing(fbBuffer);
 
   document.getElementById('val').innerHTML = ping.value();
   document.getElementById('time').innerHTML = ping.sendTime().low;

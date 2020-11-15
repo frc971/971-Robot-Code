@@ -6,6 +6,28 @@ import (
 	flatbuffers "github.com/google/flatbuffers/go"
 )
 
+type TestSimpleTableWithEnumT struct {
+	Color Color
+}
+
+func (t *TestSimpleTableWithEnumT) Pack(builder *flatbuffers.Builder) flatbuffers.UOffsetT {
+	if t == nil { return 0 }
+	TestSimpleTableWithEnumStart(builder)
+	TestSimpleTableWithEnumAddColor(builder, t.Color)
+	return TestSimpleTableWithEnumEnd(builder)
+}
+
+func (rcv *TestSimpleTableWithEnum) UnPackTo(t *TestSimpleTableWithEnumT) {
+	t.Color = rcv.Color()
+}
+
+func (rcv *TestSimpleTableWithEnum) UnPack() *TestSimpleTableWithEnumT {
+	if rcv == nil { return nil }
+	t := &TestSimpleTableWithEnumT{}
+	rcv.UnPackTo(t)
+	return t
+}
+
 type TestSimpleTableWithEnum struct {
 	_tab flatbuffers.Table
 }
@@ -14,6 +36,13 @@ func GetRootAsTestSimpleTableWithEnum(buf []byte, offset flatbuffers.UOffsetT) *
 	n := flatbuffers.GetUOffsetT(buf[offset:])
 	x := &TestSimpleTableWithEnum{}
 	x.Init(buf, n+offset)
+	return x
+}
+
+func GetSizePrefixedRootAsTestSimpleTableWithEnum(buf []byte, offset flatbuffers.UOffsetT) *TestSimpleTableWithEnum {
+	n := flatbuffers.GetUOffsetT(buf[offset+flatbuffers.SizeUint32:])
+	x := &TestSimpleTableWithEnum{}
+	x.Init(buf, n+offset+flatbuffers.SizeUint32)
 	return x
 }
 

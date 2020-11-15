@@ -1,4 +1,4 @@
-import {Configuration, Channel} from 'aos/configuration_generated';
+import {aos.Configuration as Configuration, aos.Channel as Channel} from 'aos/configuration_generated';
 import {Connect} from 'aos/network/connect_generated';
 import {Connection} from './proxy';
 

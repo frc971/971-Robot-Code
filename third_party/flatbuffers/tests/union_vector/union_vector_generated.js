@@ -17,13 +17,13 @@ var Character = {
  * @enum {string}
  */
 var CharacterName = {
-  0: 'NONE',
-  1: 'MuLan',
-  2: 'Rapunzel',
-  3: 'Belle',
-  4: 'BookFan',
-  5: 'Other',
-  6: 'Unused'
+  '0': 'NONE',
+  '1': 'MuLan',
+  '2': 'Rapunzel',
+  '3': 'Belle',
+  '4': 'BookFan',
+  '5': 'Other',
+  '6': 'Unused'
 };
 
 /**
@@ -67,6 +67,7 @@ Attacker.getRootAsAttacker = function(bb, obj) {
  * @returns {Attacker}
  */
 Attacker.getSizePrefixedRootAsAttacker = function(bb, obj) {
+  bb.setPosition(bb.position() + flatbuffers.SIZE_PREFIX_LENGTH);
   return (obj || new Attacker).__init(bb.readInt32(bb.position()) + bb.position(), bb);
 };
 
@@ -92,6 +93,13 @@ Attacker.prototype.mutate_sword_attack_damage = function(value) {
   this.bb.writeInt32(this.bb_pos + offset, value);
   return true;
 };
+
+/**
+ * @returns {string}
+ */
+Attacker.getFullyQualifiedName = function() {
+  return 'Attacker';
+}
 
 /**
  * @param {flatbuffers.Builder} builder
@@ -166,15 +174,23 @@ Rapunzel.prototype.hairLength = function() {
  * @returns {boolean}
  */
 Rapunzel.prototype.mutate_hair_length = function(value) {
-  var offset = this.bb.__offset(this.bb_pos, 0);
-
-  if (offset === 0) {
-    return false;
-  }
-
-  this.bb.writeInt32(this.bb_pos + offset, value);
+  this.bb.writeInt32(this.bb_pos + 0, value);
   return true;
 };
+
+/**
+ * @returns {string}
+ */
+Rapunzel.getFullyQualifiedName = function() {
+  return 'Rapunzel';
+}
+
+/**
+ * @returns {number}
+ */
+Rapunzel.sizeOf = function() {
+  return 4;
+}
 
 /**
  * @param {flatbuffers.Builder} builder
@@ -225,15 +241,23 @@ BookReader.prototype.booksRead = function() {
  * @returns {boolean}
  */
 BookReader.prototype.mutate_books_read = function(value) {
-  var offset = this.bb.__offset(this.bb_pos, 0);
-
-  if (offset === 0) {
-    return false;
-  }
-
-  this.bb.writeInt32(this.bb_pos + offset, value);
+  this.bb.writeInt32(this.bb_pos + 0, value);
   return true;
 };
+
+/**
+ * @returns {string}
+ */
+BookReader.getFullyQualifiedName = function() {
+  return 'BookReader';
+}
+
+/**
+ * @returns {number}
+ */
+BookReader.sizeOf = function() {
+  return 4;
+}
 
 /**
  * @param {flatbuffers.Builder} builder
@@ -287,6 +311,7 @@ Movie.getRootAsMovie = function(bb, obj) {
  * @returns {Movie}
  */
 Movie.getSizePrefixedRootAsMovie = function(bb, obj) {
+  bb.setPosition(bb.position() + flatbuffers.SIZE_PREFIX_LENGTH);
   return (obj || new Movie).__init(bb.readInt32(bb.position()) + bb.position(), bb);
 };
 
@@ -304,21 +329,6 @@ Movie.bufferHasIdentifier = function(bb) {
 Movie.prototype.mainCharacterType = function() {
   var offset = this.bb.__offset(this.bb_pos, 4);
   return offset ? /** @type {Character} */ (this.bb.readUint8(this.bb_pos + offset)) : Character.NONE;
-};
-
-/**
- * @param {Character} value
- * @returns {boolean}
- */
-Movie.prototype.mutate_main_character_type = function(value) {
-  var offset = this.bb.__offset(this.bb_pos, 4);
-
-  if (offset === 0) {
-    return false;
-  }
-
-  this.bb.writeUint8(this.bb_pos + offset, value);
-  return true;
 };
 
 /**
@@ -372,6 +382,13 @@ Movie.prototype.charactersLength = function() {
   var offset = this.bb.__offset(this.bb_pos, 10);
   return offset ? this.bb.__vector_len(this.bb_pos + offset) : 0;
 };
+
+/**
+ * @returns {string}
+ */
+Movie.getFullyQualifiedName = function() {
+  return 'Movie';
+}
 
 /**
  * @param {flatbuffers.Builder} builder

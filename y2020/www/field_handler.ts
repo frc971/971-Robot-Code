@@ -1,8 +1,8 @@
-import {Channel, Configuration} from 'aos/configuration_generated';
-import {Connect} from 'aos/network/connect_generated';
+import {aos} from 'aos/configuration_generated';
+import {aos} from 'aos/network/connect_generated';
 import {Connection} from 'aos/network/www/proxy';
-import {Status as DrivetrainStatus} from 'frc971/control_loops/drivetrain/drivetrain_status_generated';
-import {ImageMatchResult} from 'y2020/vision/sift/sift_generated'
+import {frc971} from 'frc971/control_loops/drivetrain/drivetrain_status_generated';
+import {frc971} from 'y2020/vision/sift/sift_generated';
 
 import {FIELD_LENGTH, FIELD_WIDTH, FT_TO_M, IN_TO_M} from './constants';
 
@@ -83,7 +83,7 @@ const REQUIRED_CHANNELS = [
 
 export class FieldHandler {
   private canvas = document.createElement('canvas');
-  private imageMatchResult: ImageMatchResult|null = null;
+  private imageMatchResult: frc971.vision.sift.ImageMatchResult|null = null;
   private drivetrainStatus: DrivetrianStatus|null = null;
 
   constructor(private readonly connection: Connection) {
@@ -92,22 +92,24 @@ export class FieldHandler {
     this.connection.addConfigHandler(() => {
       this.sendConnect();
     });
-    this.connection.addHandler(ImageMatchResult.getFullyQualifiedName(), (res) => {
-      this.handleImageMatchResult(res);
-    });
-    this.connection.addHandler(DrivetrainStatus.getFullyQualifiedName(), (data) => {
+    this.connection.addHandler(
+        frc971.vision.sift.ImageMatchResult.getFullyQualifiedName(), (res) => {
+          this.handleImageMatchResult(res);
+        });
+    this.connection.addHandler(frc971.control_loops.drivetrain.Status.getFullyQualifiedName(), (data) => {
       this.handleDrivetrainStatus(data);
     });
   }
 
   private handleImageMatchResult(data: Uint8Array): void {
     const fbBuffer = new flatbuffers.ByteBuffer(data);
-    this.imageMatchResult = ImageMatchResult.getRootAsImageMatchResult(fbBuffer);
+    this.imageMatchResult =
+        frc971.vision.sift.ImageMatchResult.getRootAsImageMatchResult(fbBuffer);
   }
 
   private handleDrivetrainStatus(data: Uint8Array): void {
     const fbBuffer = new flatbuffers.ByteBuffer(data);
-    this.drivetrainStatus = DrivetrainStatus.getRootAsStatus(fbBuffer);
+    this.drivetrainStatus = frc971.control_loops.drivetrain.Status.getRootAsStatus(fbBuffer);
   }
 
   private sendConnect(): void {
@@ -116,17 +118,17 @@ export class FieldHandler {
     for (const channel of REQUIRED_CHANNELS) {
       const nameFb = builder.createString(channel.name);
       const typeFb = builder.createString(channel.type);
-      Channel.startChannel(builder);
-      Channel.addName(builder, nameFb);
-      Channel.addType(builder, typeFb);
-      const channelFb = Channel.endChannel(builder);
+      aos.Channel.startChannel(builder);
+      aos.Channel.addName(builder, nameFb);
+      aos.Channel.addType(builder, typeFb);
+      const channelFb = aos.Channel.endChannel(builder);
       channels.push(channelFb);
     }
 
-    const channelsFb = Connect.createChannelsToTransferVector(builder, channels);
-    Connect.startConnect(builder);
-    Connect.addChannelsToTransfer(builder, channelsFb);
-    const connect = Connect.endConnect(builder);
+    const channelsFb = aos.message_bridge.Connect.createChannelsToTransferVector(builder, channels);
+    aos.message_bridge.Connect.startConnect(builder);
+    aos.message_bridge.Connect.addChannelsToTransfer(builder, channelsFb);
+    const connect = aos.message_bridge.Connect.endConnect(builder);
     builder.finish(connect);
     this.connection.sendConnectMessage(builder);
   }
