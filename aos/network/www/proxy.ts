@@ -1,5 +1,5 @@
 import {ConfigHandler} from './config_handler';
-import {Configuration} from 'aos/configuration_generated';
+import {aos} from 'aos/configuration_generated';
 import * as WebProxy from 'aos/network/web_proxy_generated';
 
 // There is one handler for each DataChannel, it maintains the state of
@@ -52,9 +52,9 @@ export class Connection {
   private dataChannel: DataChannel|null = null;
   private webSocketUrl: string;
 
-  private configInternal: Configuration|null = null;
+  private configInternal: aos.Configuration|null = null;
   // A set of functions that accept the config to handle.
-  private readonly configHandlers = new Set<(config: Configuration) => void>();
+  private readonly configHandlers = new Set<(config: aos.Configuration) => void>();
 
   private readonly handlerFuncs =
       new Map<string, (data: Uint8Array, sentTime: number) => void>();
@@ -65,7 +65,7 @@ export class Connection {
     this.webSocketUrl = `ws://${server}/ws`;
   }
 
-  addConfigHandler(handler: (config: Configuration) => void): void {
+  addConfigHandler(handler: (config: aos.Configuration) => void): void {
     this.configHandlers.add(handler);
   }
 
@@ -95,7 +95,7 @@ export class Connection {
   // all other messages are sent on specific DataChannels.
   onConfigMessage(data: Uint8Array): void {
     const fbBuffer = new flatbuffers.ByteBuffer(data);
-    this.configInternal = Configuration.getRootAsConfiguration(fbBuffer);
+    this.configInternal = aos.Configuration.getRootAsConfiguration(fbBuffer);
     for (const handler of Array.from(this.configHandlers)) {
       handler(this.configInternal);
     }

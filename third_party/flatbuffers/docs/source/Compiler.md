@@ -47,6 +47,8 @@ For any schema input files, one or more generators can be specified:
 
 -   `--rust`, `-r` : Generate Rust code.
 
+-   `--swift`: Generate Swift code.
+
 For any data input files:
 
 -   `--binary`, `-b` : If data is contained in this file, generate a
@@ -94,7 +96,7 @@ Additional options:
 	                   statements) use `--no-includes.`
 
 -   `--no-includes` : Don't generate include statements for included schemas the
-    generated file depends on (C++).
+    generated file depends on (C++ / Python).
 
 -   `--gen-mutable` : Generate additional non-const accessors for mutating
     FlatBuffers in-place.
@@ -114,6 +116,9 @@ Additional options:
 
 -   `--gen-generated` : Add @Generated annotation for Java.
 
+-   `--gen-jvmstatic` : Add @JvmStatic annotation for Kotlin methods
+    in companion object for interop from Java to Kotlin.
+
 -   `--gen-all` : Generate not just code for the current schema files, but
     for all files it includes as well. If the language uses a single file for
     output (by default the case for C++ and JS), all code will end up in
@@ -131,6 +136,14 @@ Additional options:
 -   `--cpp-str-flex-ctor` : Don't construct custom string types by passing
     std::string from Flatbuffers, but (char* + length). This allows efficient
 	construction of custom string types, including zero-copy construction.
+
+-   `--no-cpp-direct-copy` : Don't generate direct copy methods for C++
+    object-based API.
+
+-   `--cpp-std CPP_STD` : Generate a C++ code using features of selected C++ standard.
+     Supported `CPP_STD` values:
+    * `c++0x` - generate code compatible with old compilers (VS2010).
+    * `c++11` - use C++11 code generator (default);
 
 -   `--object-prefix` : Customise class prefix for C++ object-based API.
 
@@ -181,16 +194,23 @@ Additional options:
 -   `--conform-includes PATH` : Include path for the schema given with
     `--conform PATH`.
 
+-   `--filename-suffix SUFFIX` : The suffix appended to the generated
+    file names. Default is '_generated'.
+
+-   `--filename-ext EXTENSION` : The extension appended to the generated
+    file names. Default is language-specific (e.g. "h" for C++). This
+    should not be used when multiple languages are specified.
+
 -   `--include-prefix PATH` : Prefix this path to any generated include
     statements.
 
 -   `--keep-prefix` : Keep original prefix of schema include statement.
 
--   `--no-fb-impor` : Don't include flatbuffers import statement for TypeScript.
+-   `--no-fb-import` : Don't include flatbuffers import statement for TypeScript.
 
--   `--no-ts-reexpor` : Don't re-export imported dependencies for TypeScript.
+-   `--no-ts-reexport` : Don't re-export imported dependencies for TypeScript.
 
--   `--short-name` : Use short function names for JS and TypeScript.
+-   `--short-names` : Use short function names for JS and TypeScript.
 
 -   `--reflect-types` : Add minimal type reflection to code generation.
 
@@ -202,6 +222,9 @@ Additional options:
 
 -   `--force-empty` : When serializing from object API representation, force
      strings and vectors to empty rather than null.
+
+-   `--force-empty-vectors` : When serializing from object API representation, force
+     vectors to empty rather than null.
 
 NOTE: short-form options for generators are deprecated, use the long form
 whenever possible.

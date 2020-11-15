@@ -6,88 +6,88 @@
 // constructed flatbuffers.
 // See reflection_test_main.ts for sample usage.
 
-import {BaseType, Schema, Object, Field} from 'aos/configuration_generated';
+import {reflection, aos} from 'aos/configuration_generated';
 
 // Returns the size, in bytes, of the given type. For vectors/strings/etc.
 // returns the size of the offset.
-function typeSize(baseType: BaseType): number {
+function typeSize(baseType: reflection.BaseType): number {
   switch (baseType) {
-    case BaseType.None:
-    case BaseType.UType:
-    case BaseType.Bool:
-    case BaseType.Byte:
-    case BaseType.UByte:
+    case reflection.BaseType.None:
+    case reflection.BaseType.UType:
+    case reflection.BaseType.Bool:
+    case reflection.BaseType.Byte:
+    case reflection.BaseType.UByte:
       return 1;
-    case BaseType.Short:
-    case BaseType.UShort:
+    case reflection.BaseType.Short:
+    case reflection.BaseType.UShort:
       return 2;
-    case BaseType.Int:
-    case BaseType.UInt:
+    case reflection.BaseType.Int:
+    case reflection.BaseType.UInt:
       return 4;
-    case BaseType.Long:
-    case BaseType.ULong:
+    case reflection.BaseType.Long:
+    case reflection.BaseType.ULong:
       return 8;
-    case BaseType.Float:
+    case reflection.BaseType.Float:
       return 4;
-    case BaseType.Double:
+    case reflection.BaseType.Double:
       return 8;
-    case BaseType.String:
-    case BaseType.Vector:
-    case BaseType.Obj:
-    case BaseType.Union:
-    case BaseType.Array:
+    case reflection.BaseType.String:
+    case reflection.BaseType.Vector:
+    case reflection.BaseType.Obj:
+    case reflection.BaseType.Union:
+    case reflection.BaseType.Array:
       return 4;
   }
 }
 
 // Returns whether the given type is a scalar type.
-function isScalar(baseType: BaseType): boolean {
+function isScalar(baseType: reflection.BaseType): boolean {
   switch (baseType) {
-    case BaseType.UType:
-    case BaseType.Bool:
-    case BaseType.Byte:
-    case BaseType.UByte:
-    case BaseType.Short:
-    case BaseType.UShort:
-    case BaseType.Int:
-    case BaseType.UInt:
-    case BaseType.Long:
-    case BaseType.ULong:
-    case BaseType.Float:
-    case BaseType.Double:
+    case reflection.BaseType.UType:
+    case reflection.BaseType.Bool:
+    case reflection.BaseType.Byte:
+    case reflection.BaseType.UByte:
+    case reflection.BaseType.Short:
+    case reflection.BaseType.UShort:
+    case reflection.BaseType.Int:
+    case reflection.BaseType.UInt:
+    case reflection.BaseType.Long:
+    case reflection.BaseType.ULong:
+    case reflection.BaseType.Float:
+    case reflection.BaseType.Double:
       return true;
-    case BaseType.None:
-    case BaseType.String:
-    case BaseType.Vector:
-    case BaseType.Obj:
-    case BaseType.Union:
-    case BaseType.Array:
+    case reflection.BaseType.None:
+    case reflection.BaseType.String:
+    case reflection.BaseType.Vector:
+    case reflection.BaseType.Obj:
+    case reflection.BaseType.Union:
+    case reflection.BaseType.Array:
       return false;
   }
 }
 
 // Returns whether the given type is integer or not.
-function isInteger(baseType: BaseType): boolean {
+function isInteger(baseType: reflection.BaseType): boolean {
   switch (baseType) {
-    case BaseType.UType:
-    case BaseType.Bool:
-    case BaseType.Byte:
-    case BaseType.UByte:
-    case BaseType.Short:
-    case BaseType.UShort:
-    case BaseType.Int:
-    case BaseType.UInt:
-    case BaseType.Long:
-    case BaseType.ULong:
+    case reflection.BaseType.UType:
+    case reflection.BaseType.Bool:
+    case reflection.BaseType.Byte:
+    case reflection.BaseType.UByte:
+    case reflection.BaseType.Short:
+    case reflection.BaseType.UShort:
+    case reflection.BaseType.Int:
+    case reflection.BaseType.UInt:
+    case reflection.BaseType.Long:
+    case reflection.BaseType.ULong:
       return true;
-    case BaseType.Float:
-    case BaseType.Double:
-    case BaseType.None:
-    case BaseType.String:
-    case BaseType.Vector:
-    case BaseType.Obj:
-    case BaseType.Union:
-    case BaseType.Array:
+    case reflection.BaseType.Float:
+    case reflection.BaseType.Double:
+    case reflection.BaseType.None:
+    case reflection.BaseType.String:
+    case reflection.BaseType.Vector:
+    case reflection.BaseType.Obj:
+    case reflection.BaseType.Union:
+    case reflection.BaseType.Array:
       return false;
   }
 }
@@ -96,7 +96,7 @@ function isInteger(baseType: BaseType): boolean {
 // can be represented by the normal javascript number (8-byte integers require a
 // special type, since the native number type is an 8-byte double, which won't
 // represent 8-byte integers to full precision).
-function isLong(baseType: BaseType): boolean {
+function isLong(baseType: reflection.BaseType): boolean {
   return isInteger(baseType) && (typeSize(baseType) > 4);
 }
 
@@ -124,30 +124,30 @@ export class Table {
     return new Table(bb, -1, bb.readInt32(bb.position()) + bb.position());
   }
   // Reads a scalar of a given type at a given offset.
-  readScalar(fieldType: BaseType, offset: number) {
+  readScalar(fieldType: reflection.BaseType, offset: number) {
     switch (fieldType) {
-      case BaseType.UType:
-      case BaseType.Bool:
+      case reflection.BaseType.UType:
+      case reflection.BaseType.Bool:
         return this.bb.readUint8(offset);
-      case BaseType.Byte:
+      case reflection.BaseType.Byte:
         return this.bb.readInt8(offset);
-      case BaseType.UByte:
+      case reflection.BaseType.UByte:
         return this.bb.readUint8(offset);
-      case BaseType.Short:
+      case reflection.BaseType.Short:
         return this.bb.readInt16(offset);
-      case BaseType.UShort:
+      case reflection.BaseType.UShort:
         return this.bb.readUint16(offset);
-      case BaseType.Int:
+      case reflection.BaseType.Int:
         return this.bb.readInt32(offset);
-      case BaseType.UInt:
+      case reflection.BaseType.UInt:
         return this.bb.readUint32(offset);
-      case BaseType.Long:
+      case reflection.BaseType.Long:
         return this.bb.readInt64(offset);
-      case BaseType.ULong:
+      case reflection.BaseType.ULong:
         return this.bb.readUint64(offset);
-      case BaseType.Float:
+      case reflection.BaseType.Float:
         return this.bb.readFloat32(offset);
-      case BaseType.Double:
+      case reflection.BaseType.Double:
         return this.bb.readFloat64(offset);
     }
     throw new Error('Unsupported message type ' + baseType);
@@ -164,7 +164,7 @@ export class Table {
 // then access the members using the various methods of the Parser (or just
 // convert the entire object to a javascript Object/JSON using toObject()).
 export class Parser {
-  constructor(private readonly schema: Schema) {}
+  constructor(private readonly schema: reflection.Schema) {}
 
   // Parse a Table to a javascript object. This is can be used, e.g., to convert
   // a flatbuffer Table to JSON.
@@ -181,20 +181,20 @@ export class Parser {
       let fieldValue = null;
       if (isScalar(baseType)) {
         fieldValue = this.readScalar(table, field.name(), readDefaults);
-      } else if (baseType === BaseType.String) {
+      } else if (baseType === reflection.BaseType.String) {
         fieldValue = this.readString(table, field.name());
-      } else if (baseType === BaseType.Obj) {
+      } else if (baseType === reflection.BaseType.Obj) {
         const subTable = this.readTable(table, field.name());
         if (subTable !== null) {
           fieldValue = this.toObject(subTable, readDefaults);
         }
-      } else if (baseType === BaseType.Vector) {
+      } else if (baseType === reflection.BaseType.Vector) {
         const elementType = field.type().element();
         if (isScalar(elementType)) {
           fieldValue = this.readVectorOfScalars(table, field.name());
-        } else if (elementType === BaseType.String) {
+        } else if (elementType === reflection.BaseType.String) {
           fieldValue = this.readVectorOfStrings(table, field.name());
-        } else if (elementType === BaseType.Obj) {
+        } else if (elementType === reflection.BaseType.Obj) {
           const tables = this.readVectorOfTables(table, field.name());
           if (tables !== null) {
             fieldValue = [];
@@ -229,7 +229,7 @@ export class Parser {
 
   // Retrieves the Field schema for the given field name within a given
   // type index.
-  getField(fieldName: string, typeIndex: number): Field {
+  getField(fieldName: string, typeIndex: number): reflection.Field {
     const schema: Object = this.getType(typeIndex);
     const numFields = schema.fieldsLength();
     for (let ii = 0; ii < numFields; ++ii) {
@@ -292,7 +292,7 @@ export class Parser {
   readString(table: Table, fieldName: string): string|null {
     const field = this.getField(fieldName, table.typeIndex);
     const fieldType = field.type();
-    if (fieldType.baseType() !== BaseType.String) {
+    if (fieldType.baseType() !== reflection.BaseType.String) {
       throw new Error('Field ' + fieldName + ' is not a string.');
     }
 
@@ -309,7 +309,7 @@ export class Parser {
     const field = this.getField(fieldName, table.typeIndex);
     const fieldType = field.type();
     const parentIsStruct = this.getType(table.typeIndex).isStruct();
-    if (fieldType.baseType() !== BaseType.Obj) {
+    if (fieldType.baseType() !== reflection.BaseType.Obj) {
       throw new Error('Field ' + fieldName + ' is not an object type.');
     }
 
@@ -335,7 +335,7 @@ export class Parser {
   readVectorOfScalars(table: Table, fieldName: string): number[]|null {
     const field = this.getField(fieldName, table.typeIndex);
     const fieldType = field.type();
-    if (fieldType.baseType() !== BaseType.Vector) {
+    if (fieldType.baseType() !== reflection.BaseType.Vector) {
       throw new Error('Field ' + fieldName + ' is not an vector.');
     }
     if (!isScalar(fieldType.element())) {
@@ -361,10 +361,10 @@ export class Parser {
   readVectorOfTables(table: Table, fieldName: string) {
     const field = this.getField(fieldName, table.typeIndex);
     const fieldType = field.type();
-    if (fieldType.baseType() !== BaseType.Vector) {
+    if (fieldType.baseType() !== reflection.BaseType.Vector) {
       throw new Error('Field ' + fieldName + ' is not an vector.');
     }
-    if (fieldType.element() !== BaseType.Obj) {
+    if (fieldType.element() !== reflection.BaseType.Obj) {
       throw new Error('Field ' + fieldName + ' is not an vector of objects.');
     }
 
@@ -393,10 +393,10 @@ export class Parser {
   readVectorOfStrings(table: Table, fieldName: string): string[]|null {
     const field = this.getField(fieldName, table.typeIndex);
     const fieldType = field.type();
-    if (fieldType.baseType() !== BaseType.Vector) {
+    if (fieldType.baseType() !== reflection.BaseType.Vector) {
       throw new Error('Field ' + fieldName + ' is not an vector.');
     }
-    if (fieldType.element() !== BaseType.String) {
+    if (fieldType.element() !== reflection.BaseType.String) {
       throw new Error('Field ' + fieldName + ' is not an vector of strings.');
     }
 

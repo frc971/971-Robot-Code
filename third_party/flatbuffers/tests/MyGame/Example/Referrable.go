@@ -6,6 +6,28 @@ import (
 	flatbuffers "github.com/google/flatbuffers/go"
 )
 
+type ReferrableT struct {
+	Id uint64
+}
+
+func (t *ReferrableT) Pack(builder *flatbuffers.Builder) flatbuffers.UOffsetT {
+	if t == nil { return 0 }
+	ReferrableStart(builder)
+	ReferrableAddId(builder, t.Id)
+	return ReferrableEnd(builder)
+}
+
+func (rcv *Referrable) UnPackTo(t *ReferrableT) {
+	t.Id = rcv.Id()
+}
+
+func (rcv *Referrable) UnPack() *ReferrableT {
+	if rcv == nil { return nil }
+	t := &ReferrableT{}
+	rcv.UnPackTo(t)
+	return t
+}
+
 type Referrable struct {
 	_tab flatbuffers.Table
 }
@@ -14,6 +36,13 @@ func GetRootAsReferrable(buf []byte, offset flatbuffers.UOffsetT) *Referrable {
 	n := flatbuffers.GetUOffsetT(buf[offset:])
 	x := &Referrable{}
 	x.Init(buf, n+offset)
+	return x
+}
+
+func GetSizePrefixedRootAsReferrable(buf []byte, offset flatbuffers.UOffsetT) *Referrable {
+	n := flatbuffers.GetUOffsetT(buf[offset+flatbuffers.SizeUint32:])
+	x := &Referrable{}
+	x.Init(buf, n+offset+flatbuffers.SizeUint32)
 	return x
 }
 

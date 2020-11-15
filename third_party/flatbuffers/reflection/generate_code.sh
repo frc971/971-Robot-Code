@@ -15,4 +15,18 @@
 # limitations under the License.
 set -e
 
-../../../bazel-out/host/bin/external/com_github_google_flatbuffers/flatc -c --gen-object-api --reflect-names --no-prefix -o ../include/flatbuffers reflection.fbs
+tempDir="../include/flatbuffers/.tmp"
+originalFile="../include/flatbuffers/reflection_generated.h"
+newFile="$tempDir/reflection_generated.h"
+
+../../../bazel-bin/external/com_github_google_flatbuffers/flatc -c --gen-object-api --reflect-names  --cpp-std c++0x --no-prefix -o $tempDir reflection.fbs
+
+if [ -f "$newFile" ]; then
+  if ! cmp -s "$originalFile" "$newFile"; then
+    mv $newFile $originalFile
+  else
+    rm $newFile
+  fi
+  rmdir $tempDir
+fi
+

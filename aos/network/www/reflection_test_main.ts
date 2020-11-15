@@ -1,12 +1,6 @@
-import {Configuration, Schema} from 'aos/configuration_generated'
-import {BaseType,
-        Configuration as TestTable,
-        FooStruct,
-        FooStructNested,
-        Location,
-        Map,
-        VectorOfStrings,
-        VectorOfVectorOfString} from 'aos/json_to_flatbuffer_generated'
+import {aos} from 'aos/configuration_generated'
+// TODO(james): Fix all the things imported from here to actually run.
+import {aos} from 'aos/json_to_flatbuffer_generated'
 
 import {Connection} from './proxy';
 import {Parser, Table} from './reflection'
@@ -29,7 +23,7 @@ function assertEqual(a: any, b: any, msg?: string): void {
 // Constructs a flatbuffer and then uses Parser.toObject to parse it and confirm
 // that the start/end results are the same. This is largely meant to ensure
 // that we are exercising most of the logic associated with parsing flatbuffers.
-function DoTest(config: Configuration): void {
+function DoTest(config: aos.Configuration): void {
   const builder = new flatbuffers.Builder();
   {
     TestTable.startVectorFooStructVector(builder, 3);
@@ -70,7 +64,7 @@ function DoTest(config: Configuration): void {
     TestTable.addFooEnum(builder, BaseType.Array);
   }
 
-  builder.finish(Configuration.endConfiguration(builder));
+  builder.finish(aos.Configuration.endConfiguration(builder));
   const array = builder.asUint8Array();
   const fbBuffer = new flatbuffers.ByteBuffer(array);
 

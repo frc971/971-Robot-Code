@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-use endian_scalar::read_scalar_at;
-use follow::Follow;
-use primitives::*;
+use crate::endian_scalar::read_scalar_at;
+use crate::follow::Follow;
+use crate::primitives::*;
 
 /// VTable encapsulates read-only usage of a vtable. It is only to be used
 /// by generated code.
@@ -34,7 +34,7 @@ impl<'a> PartialEq for VTable<'a> {
 
 impl<'a> VTable<'a> {
     pub fn init(buf: &'a [u8], loc: usize) -> Self {
-        VTable { buf: buf, loc: loc }
+        VTable { buf, loc }
     }
     pub fn num_fields(&self) -> usize {
         (self.num_bytes() / SIZE_VOFFSET) - 2

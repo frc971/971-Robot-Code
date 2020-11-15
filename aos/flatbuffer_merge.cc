@@ -344,65 +344,65 @@ flatbuffers::Offset<flatbuffers::Table> MergeFlatBuffers(
 
     switch (elementary_type) {
       case flatbuffers::ElementaryType::ET_UTYPE:
-        if (!type_code.is_vector) continue;
+        if (!type_code.is_repeating) continue;
         printf("ET_UTYPE, %s\n", typetable->names[field_index]);
         break;
       case flatbuffers::ElementaryType::ET_BOOL:
-        if (!type_code.is_vector) continue;
+        if (!type_code.is_repeating) continue;
         AddVector<uint8_t>(elementary_type, field_offset, t1, t2, fbb,
                            &elements);
         break;
       case flatbuffers::ElementaryType::ET_CHAR:
-        if (!type_code.is_vector) continue;
+        if (!type_code.is_repeating) continue;
         AddVector<int8_t>(elementary_type, field_offset, t1, t2, fbb,
                           &elements);
         break;
       case flatbuffers::ElementaryType::ET_UCHAR:
-        if (!type_code.is_vector) continue;
+        if (!type_code.is_repeating) continue;
         AddVector<uint8_t>(elementary_type, field_offset, t1, t2, fbb,
                            &elements);
         break;
       case flatbuffers::ElementaryType::ET_SHORT:
-        if (!type_code.is_vector) continue;
+        if (!type_code.is_repeating) continue;
         AddVector<int16_t>(elementary_type, field_offset, t1, t2, fbb,
                            &elements);
         break;
       case flatbuffers::ElementaryType::ET_USHORT:
-        if (!type_code.is_vector) continue;
+        if (!type_code.is_repeating) continue;
         AddVector<uint16_t>(elementary_type, field_offset, t1, t2, fbb,
                             &elements);
         break;
       case flatbuffers::ElementaryType::ET_INT:
-        if (!type_code.is_vector) continue;
+        if (!type_code.is_repeating) continue;
         AddVector<int32_t>(elementary_type, field_offset, t1, t2, fbb,
                            &elements);
         break;
       case flatbuffers::ElementaryType::ET_UINT:
-        if (!type_code.is_vector) continue;
+        if (!type_code.is_repeating) continue;
         AddVector<uint32_t>(elementary_type, field_offset, t1, t2, fbb,
                             &elements);
         break;
       case flatbuffers::ElementaryType::ET_LONG:
-        if (!type_code.is_vector) continue;
+        if (!type_code.is_repeating) continue;
         AddVector<int64_t>(elementary_type, field_offset, t1, t2, fbb,
                            &elements);
         break;
       case flatbuffers::ElementaryType::ET_ULONG:
-        if (!type_code.is_vector) continue;
+        if (!type_code.is_repeating) continue;
         AddVector<uint64_t>(elementary_type, field_offset, t1, t2, fbb,
                             &elements);
         break;
       case flatbuffers::ElementaryType::ET_FLOAT:
-        if (!type_code.is_vector) continue;
+        if (!type_code.is_repeating) continue;
         AddVector<float>(elementary_type, field_offset, t1, t2, fbb, &elements);
         break;
       case flatbuffers::ElementaryType::ET_DOUBLE:
-        if (!type_code.is_vector) continue;
+        if (!type_code.is_repeating) continue;
         AddVector<double>(elementary_type, field_offset, t1, t2, fbb,
                           &elements);
         break;
       case flatbuffers::ElementaryType::ET_STRING:
-        if (!type_code.is_vector) {
+        if (!type_code.is_repeating) {
           MergeString(field_offset, t1, t2, fbb, &elements);
         } else {
           AddVectorOfStrings(elementary_type, field_offset, t1, t2, fbb,
@@ -412,7 +412,7 @@ flatbuffers::Offset<flatbuffers::Table> MergeFlatBuffers(
       case flatbuffers::ElementaryType::ET_SEQUENCE: {
         const flatbuffers::TypeTable *sub_typetable =
             typetable->type_refs[type_code.sequence_ref]();
-        if (!type_code.is_vector) {
+        if (!type_code.is_repeating) {
           MergeTables(field_offset, t1, t2, sub_typetable, fbb, &elements);
         } else {
           const flatbuffers::TypeTable *sub_typetable =
@@ -433,7 +433,7 @@ flatbuffers::Offset<flatbuffers::Table> MergeFlatBuffers(
   for (size_t field_index = 0; field_index < typetable->num_elems;
        ++field_index) {
     const flatbuffers::TypeCode type_code = typetable->type_codes[field_index];
-    if (type_code.is_vector) {
+    if (type_code.is_repeating) {
       continue;
     }
     const flatbuffers::ElementaryType elementary_type =
@@ -601,7 +601,7 @@ std::pair<absl::Span<const uint8_t>, size_t> ExtentsTable(
 
     Extend(&b, field_span);
 
-    if (type_code.is_vector) {
+    if (type_code.is_repeating) {
       // Go look inside the vector and track the base size.
       val += flatbuffers::ReadScalar<flatbuffers::uoffset_t>(val);
       const flatbuffers::Vector<uint8_t> *vec =
