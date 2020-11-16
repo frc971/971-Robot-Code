@@ -4,85 +4,85 @@ namespace aos.timing;
 
 // Holds statistics for a time or size sample.
 table Statistic {
-  average:float = nan;
-  min:float = nan;
-  max:float = nan;
-  standard_deviation:float = nan;
+  average:float = nan (id: 0);
+  min:float = nan (id: 1);
+  max:float = nan (id: 2);
+  standard_deviation:float = nan (id: 3);
 }
 
 table Sender {
   // Index into the channel config for this event loop.
-  channel_index:int = -1;
+  channel_index:int = -1 (id: 0);
 
   // Number of messages published.
-  count:uint;
+  count:uint (id: 1);
   // Statistics on the size of messages published.
-  size:Statistic;
+  size:Statistic (id: 2);
 
   // Channel for this sender.  Not filled out by default.
-  channel:Channel;
+  channel:Channel (id: 3);
 }
 
 table Watcher {
   // Index into the channel config for this event loop.
-  channel_index:int = -1;
+  channel_index:int = -1 (id: 0);
 
   // Number of messages received since the last report.
-  count:uint;
+  count:uint (id: 1);
 
   // Latency measurement from when the event was generated (send time), and when
   // the handler was started.
-  wakeup_latency:Statistic;
+  wakeup_latency:Statistic (id: 2);
   // Statistics on the execution time of the handler.
-  handler_time:Statistic;
+  handler_time:Statistic (id: 3);
 
   // Channel for this watcher.  Not filled out by default.
-  channel:Channel;
+  channel:Channel (id: 4);
 }
 
 table Fetcher {
   // Index into the channel config for this event loop.
-  channel_index:int = -1;
+  channel_index:int = -1 (id: 0);
 
   // Number of messages fetched since the last time this was published.
-  count:uint;
+  count:uint (id: 1);
   // Latency measurement from when the event was generated (send time), and when
   // the message was fetched.
-  latency:Statistic;
+  latency:Statistic (id: 2);
 
   // Channel for this fetcher.  Not filled out by default.
-  channel:Channel;
+  channel:Channel (id: 3);
 }
 
 table Timer {
-  name:string;
+  name:string (id: 0);
 
   // Number of wakeups since the last report.
-  count:uint;
+  count:uint (id: 1);
 
   // Latency measurement from when the event was generated (send time), and when
   // the handler was started.
-  wakeup_latency:Statistic;
+  wakeup_latency:Statistic (id: 2);
   // Statistics on the execution time of the handler.
-  handler_time:Statistic;
+  handler_time:Statistic (id: 3);
 
   // Maximum number of cycles missed.
 }
 
 table Report {
   // Name of the event loop which is publishing this report.
-  name:string;
+  name:string (id: 0);
   // Identifier for the event loop.  This should change every time a process
   // gets restarted.
-  pid:int;
+  pid:int (id: 1);
 
   // List of statistics for each watcher, sender, fetcher, timer, and
   // phased loop.
-  watchers:[Watcher];
-  senders:[Sender];
-  fetchers:[Fetcher];
-  timers:[Timer];
-  phased_loops:[Timer];
+  watchers:[Watcher] (id: 2);
+  senders:[Sender] (id: 3);
+  fetchers:[Fetcher] (id: 4);
+  timers:[Timer] (id: 5);
+  phased_loops:[Timer] (id: 6);
 }
 
 root_type Report;

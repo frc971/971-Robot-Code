@@ -17,11 +17,11 @@ enum Command : short {
 }
 
 table StarterRpc {
-  command : Command;
+  command : Command (id: 0);
 
   // The name of the application to send the command to. Command is ignored if
   // the given application does not exist.
-  name: string;
+  name: string (id: 1);
 }
 
 root_type StarterRpc;

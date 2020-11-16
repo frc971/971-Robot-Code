@@ -3,13 +3,13 @@ include "aos/configuration.fbs";
 namespace aos.message_bridge;
 
 table ClientOffset {
-  node:Node;
+  node:Node (id: 0);
 
-  monotonic_offset:int64;
+  monotonic_offset:int64 (id: 1);
 }
 
 table Timestamp {
-  offsets:[ClientOffset];
+  offsets:[ClientOffset] (id: 0);
 }
 
 root_type Timestamp;

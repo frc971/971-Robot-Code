@@ -1,8 +1,8 @@
 namespace aos.examples;
 
 table Ping {
-  value:int;
-  send_time:long;
+  value:int (id: 0);
+  send_time:long (id: 1);
 }
 
 root_type Ping;

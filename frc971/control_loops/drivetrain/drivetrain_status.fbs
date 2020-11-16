@@ -5,43 +5,43 @@ namespace frc971.control_loops.drivetrain;
 // For logging information about what the code is doing with the shifters.
 table GearLogging {
   // Which controller is being used.
-  controller_index:byte;
+  controller_index:byte (id: 0);
 
   // Whether each loop for the drivetrain sides is the high-gear one.
-  left_loop_high:bool;
-  right_loop_high:bool;
+  left_loop_high:bool (id: 1);
+  right_loop_high:bool (id: 2);
 
   // The states of each drivetrain shifter.
-  left_state:byte;
-  right_state:byte;
+  left_state:byte (id: 3);
+  right_state:byte (id: 4);
 }
 
 // For logging information about the state of the shifters.
 table CIMLogging {
   // Whether the code thinks each drivetrain side is currently in gear.
-  left_in_gear:bool;
-  right_in_gear:bool;
+  left_in_gear:bool (id: 0);
+  right_in_gear:bool (id: 1);
 
   // The angular velocities (in rad/s, positive forward) the code thinks motors
   // on each side of the drivetrain are moving at.
-  left_motor_speed:double;
-  right_motor_speed:double;
+  left_motor_speed:double (id: 2);
+  right_motor_speed:double (id: 3);
 
   // The velocity estimates for each drivetrain side of the robot (in m/s,
   // positive forward) that can be used for shifting.
-  left_velocity:double;
-  right_velocity:double;
+  left_velocity:double (id: 4);
+  right_velocity:double (id: 5);
 }
 
 // Logging information for the polydrivetrain implementation.
 table PolyDriveLogging {
   // Calculated velocity goals for the left/right sides of the drivetrain, in
   // m/s.
-  goal_left_velocity:float;
-  goal_right_velocity:float;
+  goal_left_velocity:float (id: 0);
+  goal_right_velocity:float (id: 1);
   // Feedforward components of the left/right voltages.
-  ff_left_voltage:float;
-  ff_right_voltage:float;
+  ff_left_voltage:float (id: 2);
+  ff_right_voltage:float (id: 3);
 }
 
 enum PlanningState : byte {
@@ -54,84 +54,84 @@ enum PlanningState : byte {
 // For logging information about the state of the trajectory planning.
 table TrajectoryLogging {
   // state of planning the trajectory.
-  planning_state:PlanningState;
+  planning_state:PlanningState (id: 0);
 
   // State of the spline execution.
-  is_executing:bool;
+  is_executing:bool (id: 1);
   // Whether we have finished the spline specified by current_spline_idx.
-  is_executed:bool;
+  is_executed:bool (id: 2);
 
   // The handle of the goal spline.  0 means stop requested.
-  goal_spline_handle:int;
+  goal_spline_handle:int (id: 3);
   // Handle of the executing spline.  -1 means none requested.  If there was no
   // spline executing when a spline finished optimizing, it will become the
   // current spline even if we aren't ready to start yet.
-  current_spline_idx:int;
+  current_spline_idx:int (id: 4);
   // Handle of the spline that is being optimized and staged.
-  planning_spline_idx:int;
+  planning_spline_idx:int (id: 5);
 
   // Expected position and velocity on the spline
-  x:float;
-  y:float;
-  theta:float;
-  left_velocity:float;
-  right_velocity:float;
-  distance_remaining:float;
+  x:float (id: 6);
+  y:float (id: 7);
+  theta:float (id: 8);
+  left_velocity:float (id: 9);
+  right_velocity:float (id: 10);
+  distance_remaining:float (id: 11);
 }
 
 // For logging state of the line follower.
 table LineFollowLogging {
   // Whether we are currently freezing target choice.
-  frozen:bool;
+  frozen:bool (id: 0);
   // Whether we currently have a target.
-  have_target:bool;
+  have_target:bool (id: 1);
   // Absolute position of the current goal.
-  x:float;
-  y:float;
-  theta:float;
+  x:float (id: 2);
+  y:float (id: 3);
+  theta:float (id: 4);
   // Current lateral offset from line pointing straight out of the target.
-  offset:float;
+  offset:float (id: 5);
   // Current distance from the plane of the target, in meters.
-  distance_to_target:float;
+  distance_to_target:float (id: 6);
   // Current goal heading.
-  goal_theta:float;
+  goal_theta:float (id: 7);
   // Current relative heading.
-  rel_theta:float;
+  rel_theta:float (id: 8);
 }
 
 // Current states of the EKF. See hybrid_ekf.h for detailed comments.
 table LocalizerState {
   // X/Y field position, in meters.
-  x:float;
-  y:float;
+  x:float (id: 0);
+  y:float (id: 1);
   // Current heading, in radians.
-  theta:float;
+  theta:float (id: 2);
   // Current estimate of the left encoder position, in meters.
-  left_encoder:float;
+  left_encoder:float (id: 3);
   // Velocity of the left side of the robot.
-  left_velocity:float;
+  left_velocity:float (id: 4);
   // Current estimate of the right encoder position, in meters.
-  right_encoder:float;
+  right_encoder:float (id: 5);
   // Velocity of the right side of the robot.
-  right_velocity:float;
+  right_velocity:float (id: 6);
   // Current "voltage error" terms, in V.
-  left_voltage_error:float;
-  right_voltage_error:float;
+  left_voltage_error:float (id: 7);
+  right_voltage_error:float (id: 8);
   // Estimate of the offset between the encoder readings and true rotation of
   // the robot, in rad/sec.
-  angular_error:float;
+  angular_error:float (id: 9);
   // Current difference between the estimated longitudinal velocity of the robot
   // and that experienced by the wheels, in m/s.
-  longitudinal_velocity_offset:float;
+  longitudinal_velocity_offset:float (id: 10);
   // Lateral velocity of the robot, in m/s.
-  lateral_velocity:float;
+  lateral_velocity:float (id: 11);
 }
 
 table DownEstimatorState {
-  quaternion_x:double;
-  quaternion_y:double;
-  quaternion_z:double;
-  quaternion_w:double;
+  quaternion_x:double (id: 0);
+  quaternion_y:double (id: 1);
+  quaternion_z:double (id: 2);
+  quaternion_w:double (id: 3);
 
   // Side-to-side and forwards/backwards pitch numbers. Note that we do this
   // instead of standard roll/pitch/yaw euler angles because it was a pain to
@@ -141,116 +141,116 @@ table DownEstimatorState {
   // the forwards to backwards pitch of the robot; longitudinal_pitch
   // corresponds with the traditional usage of "pitch".
   // All angles in radians.
-  lateral_pitch:float;
-  longitudinal_pitch:float;
+  lateral_pitch:float (id: 4);
+  longitudinal_pitch:float (id: 5);
   // Current yaw angle (heading) of the robot, as estimated solely by
   // integrating the Z-axis of the gyro (in rad).
-  yaw:float;
+  yaw:float (id: 6);
 
   // Current position of the robot, as determined solely from the
   // IMU/down-estimator, in meters.
-  position_x:float;
-  position_y:float;
-  position_z:float;
+  position_x:float (id: 7);
+  position_y:float (id: 8);
+  position_z:float (id: 9);
 
   // Current velocity of the robot, as determined solely from the
   // IMU/down-estimator, in meters / sec.
-  velocity_x:float;
-  velocity_y:float;
-  velocity_z:float;
+  velocity_x:float (id: 10);
+  velocity_y:float (id: 11);
+  velocity_z:float (id: 12);
 
   // Current acceleration of the robot, with pitch/roll (but not yaw)
   // compensated out, in meters / sec / sec.
-  accel_x:float;
-  accel_y:float;
-  accel_z:float;
+  accel_x:float (id: 13);
+  accel_y:float (id: 14);
+  accel_z:float (id: 15);
 
   // Current acceleration that we expect to see from the accelerometer, assuming
   // no acceleration other than that due to gravity, in g's.
-  expected_accel_x:float;
-  expected_accel_y:float;
-  expected_accel_z:float;
+  expected_accel_x:float (id: 16);
+  expected_accel_y:float (id: 17);
+  expected_accel_z:float (id: 18);
 
   // Current estimate of the overall acceleration due to gravity, in g's. Should
   // generally be within ~0.003 g's of 1.0.
-  gravity_magnitude:float;
+  gravity_magnitude:float (id: 19);
 
-  consecutive_still:int;
+  consecutive_still:int (id: 20);
 }
 
 table ImuZeroerState {
   // True if we have successfully zeroed the IMU.
-  zeroed:bool;
+  zeroed:bool (id: 0);
   // True if the zeroing code has observed some inconsistency in the IMU.
-  faulted:bool;
+  faulted:bool (id: 1);
   // Number of continuous zeroing measurements that we have accumulated for use
   // in the zeroing.
-  number_of_zeroes:int;
+  number_of_zeroes:int (id: 2);
 
   // Current zeroing values beind used for each gyro axis, in rad / sec.
-  gyro_x_average:float;
-  gyro_y_average:float;
-  gyro_z_average:float;
+  gyro_x_average:float (id: 3);
+  gyro_y_average:float (id: 4);
+  gyro_z_average:float (id: 5);
 }
 
 table Status {
   // Estimated speed of the center of the robot in m/s (positive forwards).
-  robot_speed:double;
+  robot_speed:double (id: 0);
 
   // Estimated relative position of each drivetrain side (in meters).
-  estimated_left_position:double;
-  estimated_right_position:double;
+  estimated_left_position:double (id: 1);
+  estimated_right_position:double (id: 2);
 
   // Estimated velocity of each drivetrain side (in m/s).
-  estimated_left_velocity:double;
-  estimated_right_velocity:double;
+  estimated_left_velocity:double (id: 3);
+  estimated_right_velocity:double (id: 4);
 
   // The voltage we wanted to send to each drivetrain side last cycle.
-  uncapped_left_voltage:double;
-  uncapped_right_voltage:double;
+  uncapped_left_voltage:double (id: 5);
+  uncapped_right_voltage:double (id: 6);
 
   // The voltage error for the left and right sides.
-  left_voltage_error:double;
-  right_voltage_error:double;
+  left_voltage_error:double (id: 7);
+  right_voltage_error:double (id: 8);
 
   // The profiled goal states.
-  profiled_left_position_goal:double;
-  profiled_right_position_goal:double;
-  profiled_left_velocity_goal:double;
-  profiled_right_velocity_goal:double;
+  profiled_left_position_goal:double (id: 9);
+  profiled_right_position_goal:double (id: 10);
+  profiled_left_velocity_goal:double (id: 11);
+  profiled_right_velocity_goal:double (id: 12);
 
   // The KF offset
-  estimated_angular_velocity_error:double;
+  estimated_angular_velocity_error:double (id: 13);
   // The KF estimated heading.
-  estimated_heading:double;
+  estimated_heading:double (id: 14);
 
   // xytheta of the robot.
-  x:double;
-  y:double;
-  theta:double;
+  x:double (id: 15);
+  y:double (id: 16);
+  theta:double (id: 17);
 
   // True if the output voltage was capped last cycle.
-  output_was_capped:bool;
+  output_was_capped:bool (id: 18);
 
   // The pitch of the robot relative to the ground--only includes
   // forwards/backwards rotation.
-  ground_angle:double;
+  ground_angle:double (id: 19);
 
   // Information about shifting logic and curent gear, for logging purposes
-  gear_logging:GearLogging;
-  cim_logging:CIMLogging;
+  gear_logging:GearLogging (id: 20);
+  cim_logging:CIMLogging (id: 21);
 
-  trajectory_logging:TrajectoryLogging;
+  trajectory_logging:TrajectoryLogging (id: 22);
 
-  line_follow_logging:LineFollowLogging;
+  line_follow_logging:LineFollowLogging (id: 23);
 
-  poly_drive_logging:PolyDriveLogging;
+  poly_drive_logging:PolyDriveLogging (id: 24);
 
-  down_estimator:DownEstimatorState;
+  down_estimator:DownEstimatorState (id: 25);
 
-  localizer:LocalizerState;
+  localizer:LocalizerState (id: 26);
 
-  zeroing:ImuZeroerState;
+  zeroing:ImuZeroerState (id: 27);
 }
 
 root_type Status;

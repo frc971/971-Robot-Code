@@ -4,12 +4,12 @@ include "frc971/control_loops/control_loops.fbs";
 namespace frc971.control_loops.zeroing.testing;
 
 table SubsystemGoal {
-  unsafe_goal:double;
-  profile_params:frc971.ProfileParameters;
-  goal_velocity:double;
-  ignore_profile:bool;
+  unsafe_goal:double (id: 0);
+  profile_params:frc971.ProfileParameters (id: 1);
+  goal_velocity:double (id: 2);
+  ignore_profile:bool (id: 3);
 }
 
 table SubsystemOutput {
-  output:double;
+  output:double (id: 0);
 }

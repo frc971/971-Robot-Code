@@ -2,8 +2,8 @@ namespace frc971.wpilib;
 
 // Information about the current state of the pneumatics system to log.
 table PneumaticsToLog {
-  compressor_on:bool;
-  read_solenoids:ubyte;
+  compressor_on:bool (id: 0);
+  read_solenoids:ubyte (id: 1);
 }
 
 root_type PneumaticsToLog;

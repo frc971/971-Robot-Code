@@ -5,7 +5,7 @@ namespace frc971.codelab;
 table Goal {
   // If set to true, the intake should turn on the motor and run until the
   // limit sensor in the Position message turns on.
-  intake:bool;
+  intake:bool (id: 0);
 }
 
 root_type Goal;

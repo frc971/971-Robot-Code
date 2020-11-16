@@ -16,24 +16,24 @@ enum SdpType : byte {
 // The SDP payload is an opaque string that describes what (media/data) we
 // want to transmit.
 table WebSocketSdp {
-  type:SdpType;
-  payload:string;
+  type:SdpType (id: 0);
+  payload:string (id: 1);
 }
 
 // ICE is way for different peers to learn how to connect to each other.
 // Because we will only be running in a local network, we don't have to support
 // advaced features.
 table WebSocketIce {
-  candidate:string;
-  sdpMid:string;
-  sdpMLineIndex:int;
+  candidate:string (id: 0);
+  sdpMid:string (id: 1);
+  sdpMLineIndex:int (id: 2);
 }
 
 union Payload {WebSocketSdp, WebSocketIce}
 
 // We only send a single type of message on the websocket to simplify parsing.
 table WebSocketMessage {
-  payload:Payload;
+  payload:Payload (id: 1);
 }
 
 // WebRTC has size limits on the messages sent on datachannels. This message
@@ -42,22 +42,22 @@ table WebSocketMessage {
 // data starts again.
 table MessageHeader {
   // Index of the channel in config
-  channel_index:uint;
+  channel_index:uint (id: 0);
 
   // How many packets will be required for the message being sent.
-  packet_count:uint;
+  packet_count:uint (id: 1);
   // What index into the the total packets for the multipart message, this
   // header is parts of.
-  packet_index:uint;
+  packet_index:uint (id: 2);
 
   // Total number of bytes in the message
-  length:uint;
+  length:uint (id: 3);
 
   // Index into the sequence of messages. This will not always increase.
-  queue_index:uint;
+  queue_index:uint (id: 4);
 
-  data:[ubyte];
+  data:[ubyte] (id: 5);
 
   // Time at which the message was sent, in nanoseconds.
-  monotonic_sent_time:long;
+  monotonic_sent_time:long (id: 6);
 }

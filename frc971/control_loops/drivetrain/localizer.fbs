@@ -3,11 +3,11 @@ namespace frc971.control_loops.drivetrain;
 // Allows you to reset the state of the localizer to a specific position on the
 // field.
 table LocalizerControl {
-  x:float;      // X position, meters
-  y:float;      // Y position, meters
-  theta:float;  // heading, radians
-  theta_uncertainty:double; // Uncertainty in theta.
-  keep_current_theta:bool; // Whether to keep the current theta value.
+  x:float (id: 0);      // X position, meters
+  y:float (id: 1);      // Y position, meters
+  theta:float (id: 2);  // heading, radians
+  theta_uncertainty:double (id: 3); // Uncertainty in theta.
+  keep_current_theta:bool (id: 4); // Whether to keep the current theta value.
 }
 
 root_type LocalizerControl;

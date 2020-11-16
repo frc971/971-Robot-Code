@@ -3,7 +3,7 @@ include "frc971/wpilib/imu.fbs";
 namespace frc971;
 
 table IMUValuesBatch {
-  readings:[IMUValues];
+  readings:[IMUValues] (id: 0);
 }
 
 root_type IMUValuesBatch;

@@ -11,28 +11,28 @@ enum State: ubyte {
 // Statistics from a single connection to a client from this server.
 table ServerConnection {
   // The node that we are connected to.
-  node:Node;
+  node:Node (id: 0);
 
   // Health of this connection.  Connected or not?
-  state:State;
+  state:State (id: 1);
 
   // Number of packets that have been dropped (if known).
-  dropped_packets:uint;
+  dropped_packets:uint (id: 2);
 
   // Number of packets received on all channels.
-  sent_packets:uint;
+  sent_packets:uint (id: 3);
 
   // This is the measured monotonic offset for the connected node in
   // nanoseconds.  Add this to our monotonic time to get their
   // monotonic time.
-  monotonic_offset:int64;
+  monotonic_offset:int64 (id: 4);
 
   // TODO(austin): Per channel counts?
 }
 
 // Statistics for all connections to all the clients.
 table ServerStatistics {
-  connections:[ServerConnection];
+  connections:[ServerConnection] (id: 0);
 }
 
 root_type ServerStatistics;
