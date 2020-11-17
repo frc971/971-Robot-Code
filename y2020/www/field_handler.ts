@@ -1,8 +1,15 @@
-import {aos} from 'aos/configuration_generated';
-import {aos} from 'aos/network/connect_generated';
-import {Connection} from 'aos/network/www/proxy';
-import {frc971} from 'frc971/control_loops/drivetrain/drivetrain_status_generated';
-import {frc971} from 'y2020/vision/sift/sift_generated';
+import * as configuration from 'org_frc971/aos/configuration_generated';
+import * as connect from 'org_frc971/aos/network/connect_generated';
+import {Connection} from 'org_frc971/aos/network/www/proxy';
+import * as flatbuffers_builder from 'org_frc971/external/com_github_google_flatbuffers/ts/builder';
+import {ByteBuffer} from 'org_frc971/external/com_github_google_flatbuffers/ts/byte-buffer';
+import * as drivetrain from 'org_frc971/frc971/control_loops/drivetrain/drivetrain_status_generated';
+import * as sift from 'org_frc971/y2020/vision/sift/sift_generated';
+
+import DrivetrainStatus = drivetrain.frc971.control_loops.drivetrain.Status;
+import ImageMatchResult = sift.frc971.vision.sift.ImageMatchResult;
+import Connect = connect.aos.message_bridge.Connect;
+import Channel = configuration.aos.Channel;
 
 import {FIELD_LENGTH, FIELD_WIDTH, FT_TO_M, IN_TO_M} from './constants';
 
@@ -83,7 +90,7 @@ const REQUIRED_CHANNELS = [
 
 export class FieldHandler {
   private canvas = document.createElement('canvas');
-  private imageMatchResult: frc971.vision.sift.ImageMatchResult|null = null;
+  private imageMatchResult: ImageMatchResult|null = null;
   private drivetrainStatus: DrivetrainStatus|null = null;
 
   constructor(private readonly connection: Connection) {
@@ -93,42 +100,46 @@ export class FieldHandler {
       this.sendConnect();
     });
     this.connection.addHandler(
-        frc971.vision.sift.ImageMatchResult.getFullyQualifiedName(), (res) => {
+        ImageMatchResult.getFullyQualifiedName(), (res) => {
           this.handleImageMatchResult(res);
         });
-    this.connection.addHandler(frc971.control_loops.drivetrain.Status.getFullyQualifiedName(), (data) => {
-      this.handleDrivetrainStatus(data);
-    });
+    this.connection.addHandler(
+        DrivetrainStatus.getFullyQualifiedName(), (data) => {
+          this.handleDrivetrainStatus(data);
+        });
   }
 
   private handleImageMatchResult(data: Uint8Array): void {
-    const fbBuffer = new flatbuffers.ByteBuffer(data);
-    this.imageMatchResult =
-        frc971.vision.sift.ImageMatchResult.getRootAsImageMatchResult(fbBuffer);
+    const fbBuffer = new ByteBuffer(data);
+    this.imageMatchResult = ImageMatchResult.getRootAsImageMatchResult(
+        fbBuffer as unknown as flatbuffers.ByteBuffer);
   }
 
   private handleDrivetrainStatus(data: Uint8Array): void {
-    const fbBuffer = new flatbuffers.ByteBuffer(data);
-    this.drivetrainStatus = frc971.control_loops.drivetrain.Status.getRootAsStatus(fbBuffer);
+    const fbBuffer = new ByteBuffer(data);
+    this.drivetrainStatus = DrivetrainStatus.getRootAsStatus(
+        fbBuffer as unknown as flatbuffers.ByteBuffer);
   }
 
   private sendConnect(): void {
-    const builder = new flatbuffers.Builder(512);
+    const builder =
+        new flatbuffers_builder.Builder(512) as unknown as flatbuffers.Builder;
     const channels: flatbuffers.Offset[] = [];
     for (const channel of REQUIRED_CHANNELS) {
       const nameFb = builder.createString(channel.name);
       const typeFb = builder.createString(channel.type);
-      aos.Channel.startChannel(builder);
-      aos.Channel.addName(builder, nameFb);
-      aos.Channel.addType(builder, typeFb);
-      const channelFb = aos.Channel.endChannel(builder);
+      Channel.startChannel(builder);
+      Channel.addName(builder, nameFb);
+      Channel.addType(builder, typeFb);
+      const channelFb = Channel.endChannel(builder);
       channels.push(channelFb);
     }
 
-    const channelsFb = aos.message_bridge.Connect.createChannelsToTransferVector(builder, channels);
-    aos.message_bridge.Connect.startConnect(builder);
-    aos.message_bridge.Connect.addChannelsToTransfer(builder, channelsFb);
-    const connect = aos.message_bridge.Connect.endConnect(builder);
+    const channelsFb =
+        Connect.createChannelsToTransferVector(builder, channels);
+    Connect.startConnect(builder);
+    Connect.addChannelsToTransfer(builder, channelsFb);
+    const connect = Connect.endConnect(builder);
     builder.finish(connect);
     this.connection.sendConnectMessage(builder);
   }
@@ -214,7 +225,7 @@ export class FieldHandler {
     ctx.lineTo(0.5, -0.5);
     ctx.stroke();
     ctx.beginPath();
-    ctx.arc(0, 0, 0.25, -Math.PI/4, Math.PI/4);
+    ctx.arc(0, 0, 0.25, -Math.PI / 4, Math.PI / 4);
     ctx.stroke();
     ctx.restore();
   }
@@ -233,10 +244,10 @@ export class FieldHandler {
     ctx.restore();
   }
 
-  draw(): void  {
+  draw(): void {
     this.reset();
     this.drawField();
-    //draw cameras
+    // draw cameras
     if (this.imageMatchResult) {
       for (let i = 0; i < this.imageMatchResult.cameraPosesLength(); i++) {
         const pose = this.imageMatchResult.cameraPoses(i);

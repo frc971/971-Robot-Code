@@ -22,6 +22,7 @@ ts_library(
         "//aos:configuration_ts_fbs",
         "//aos/network:connect_ts_fbs",
         "//aos/network:web_proxy_ts_fbs",
+        "@com_github_google_flatbuffers//ts:flatbuffers_ts",
     ],
 )
 
@@ -65,7 +66,10 @@ ts_library(
     ],
     deps = [
         ":reflection_ts",
+        "//aos:configuration_ts_fbs",
+        "//aos:json_to_flatbuffer_flatbuffer_ts",
         "//aos/network/www:proxy",
+        "@com_github_google_flatbuffers//ts:flatbuffers_ts",
     ],
 )
 
@@ -73,11 +77,11 @@ ts_library(
     name = "reflection_ts",
     srcs = ["reflection.ts"],
     visibility = ["//visibility:public"],
-    deps =
-        [
-            "//aos:configuration_ts_fbs",
-            "//aos:json_to_flatbuffer_flatbuffer_ts",
-        ],
+    deps = [
+        "//aos:configuration_ts_fbs",
+        "//aos:json_to_flatbuffer_flatbuffer_ts",
+        "@com_github_google_flatbuffers//ts:flatbuffers_ts",
+    ],
 )
 
 ts_library(

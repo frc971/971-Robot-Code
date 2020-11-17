@@ -15,6 +15,7 @@ ts_library(
         "//aos/network/www:proxy",
         "//y2020/vision:vision_ts_fbs",
         "//y2020/vision/sift:sift_ts_fbs",
+        "@com_github_google_flatbuffers//ts:flatbuffers_ts",
     ],
 )
 
@@ -61,25 +62,12 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
-genrule(
-    name = "flatbuffers",
-    srcs = [
-        "@com_github_google_flatbuffers//:flatjs",
-    ],
-    outs = [
-        "flatbuffers.js",
-    ],
-    cmd = "cp $(location @com_github_google_flatbuffers//:flatjs) $@",
-    visibility = ["//y2020:__subpackages__"],
-)
-
 aos_downloader_dir(
     name = "www_files",
     srcs = [
         ":camera_main_bundle",
         ":field_main_bundle",
         ":files",
-        ":flatbuffers",
     ],
     dir = "www",
     visibility = ["//visibility:public"],

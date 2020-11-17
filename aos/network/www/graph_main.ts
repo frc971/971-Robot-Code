@@ -8,18 +8,27 @@
 // timer in the the /aos timing report message (this message was chosen because
 // it is already being published by the web proxy process, so the demo requires
 // very little setup).
-import {Line, Plot} from 'aos/network/www/plotter';
-import {aos} from 'aos/configuration_generated';
-import {aos} from 'aos/network/connect_generated';
-import {aos} from 'aos/network/www/proxy';
-import {aos} from 'aos/network/www/reflection'
+import * as configuration from 'org_frc971/aos/configuration_generated';
+import * as connect from 'org_frc971/aos/network/connect_generated';
+import {Line, Plot} from 'org_frc971/aos/network/www/plotter';
+import * as proxy from 'org_frc971/aos/network/www/proxy';
+import * as reflection from 'org_frc971/aos/network/www/reflection'
+import * as flatbuffers_builder from 'org_frc971/external/com_github_google_flatbuffers/ts/builder';
+import {ByteBuffer} from 'org_frc971/external/com_github_google_flatbuffers/ts/byte-buffer';
+
+import Channel = configuration.aos.Channel;
+import Connection = proxy.Connection;
+import Configuration = configuration.aos.Configuration;
+import Parser = reflection.Parser;
+import Table = reflection.Table;
+import Connect = connect.aos.message_bridge.Connect;
 
 const width = 900;
 const height = 400;
 
 const helpDiv = document.createElement('div');
-helpDiv.style.top = 0;
-helpDiv.style.left = 0;
+helpDiv.style.top = '0';
+helpDiv.style.left = '0';
 helpDiv.style.position = 'absolute';
 document.body.appendChild(helpDiv);
 helpDiv.innerHTML =
@@ -28,20 +37,20 @@ helpDiv.innerHTML =
     'X-axes of the top two plots are linked together.';
 
 const div = document.createElement('div');
-div.style.top = 40;
-div.style.left = 0;
+div.style.top = '40';
+div.style.left = '0';
 div.style.position = 'absolute';
 document.body.appendChild(div);
 
 const div2 = document.createElement('div');
-div2.style.top = parseFloat(div.style.top) + height;
-div2.style.left = 0;
+div2.style.top = (parseFloat(div.style.top) + height).toString();
+div2.style.left = '0';
 div2.style.position = 'absolute';
 document.body.appendChild(div2);
 
 const benchmarkDiv = document.createElement('div');
-benchmarkDiv.style.top = parseFloat(div2.style.top) + height;
-benchmarkDiv.style.left = 0;
+benchmarkDiv.style.top = (parseFloat(div2.style.top) + height).toString();
+benchmarkDiv.style.left = '0';
 benchmarkDiv.style.position = 'absolute';
 document.body.appendChild(benchmarkDiv);
 
@@ -110,7 +119,7 @@ const timingReport = {
 
 let reportParser = null;
 
-conn.addConfigHandler((config: aos.Configuration) => {
+conn.addConfigHandler((config: Configuration) => {
   // Locate the timing report schema so that we can read the received messages.
   let reportSchema = null;
   for (let ii = 0; ii < config.channelsLength(); ++ii) {
@@ -124,33 +133,34 @@ conn.addConfigHandler((config: aos.Configuration) => {
   reportParser = new Parser(reportSchema);
 
   // Subscribe to the timing report message.
-  const builder = new flatbuffers.Builder(512);
+  const builder =
+      new flatbuffers_builder.Builder(512) as unknown as flatbuffers.Builder;
   const channels: flatbuffers.Offset[] = [];
   for (const channel of [timingReport]) {
     const nameFb = builder.createString(channel.name);
     const typeFb = builder.createString(channel.type);
-    aos.Channel.startChannel(builder);
-    aos.Channel.addName(builder, nameFb);
-    aos.Channel.addType(builder, typeFb);
-    const channelFb = aos.Channel.endChannel(builder);
+    Channel.startChannel(builder);
+    Channel.addName(builder, nameFb);
+    Channel.addType(builder, typeFb);
+    const channelFb = Channel.endChannel(builder);
     channels.push(channelFb);
   }
 
-  const channelsFb = aos.message_bridge.Connect.createChannelsToTransferVector(builder, channels);
-  aos.message_bridge.Connect.startConnect(builder);
-  aos.message_bridge.Connect.addChannelsToTransfer(builder, channelsFb);
-  const connect = aos.message_bridge.Connect.endConnect(builder);
+  const channelsFb = Connect.createChannelsToTransferVector(builder, channels);
+  Connect.startConnect(builder);
+  Connect.addChannelsToTransfer(builder, channelsFb);
+  const connect = Connect.endConnect(builder);
   builder.finish(connect);
   conn.sendConnectMessage(builder);
 });
 
-const startTime = null;
+let startTime = null;
 conn.addHandler(timingReport.type, (data: Uint8Array, time: number) => {
   if (startTime === null) {
     startTime = time;
   }
   time = time - startTime;
-  const table = Table.getRootTable(new flatbuffers.ByteBuffer(data));
+  const table = Table.getRootTable(new ByteBuffer(data));
 
   const timer = reportParser.readVectorOfTables(table, "timers")[0];
   handlerLines.addPoints(
@@ -176,8 +186,8 @@ const points2 = [];
 for (let ii = 0; ii < NUM_POINTS; ++ii) {
   points1.push(ii);
   points2.push(ii);
-  points1.push(Math.sin(ii * 10 / NUM_POINTS);
-  points2.push(Math.cos(ii * 10 / NUM_POINTS);
+  points1.push(Math.sin(ii * 10 / NUM_POINTS));
+  points2.push(Math.cos(ii * 10 / NUM_POINTS));
 }
 line1.setPoints(new Float32Array(points1));
 line2.setPoints(new Float32Array(points2));

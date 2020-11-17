@@ -1,4 +1,4 @@
-import {Connection} from 'aos/network/www/proxy';
+import {Connection} from 'org_frc971/aos/network/www/proxy';
 
 import {FieldHandler} from './field_handler';
 

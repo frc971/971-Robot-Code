@@ -1,9 +1,20 @@
-import {aos} from 'aos/configuration_generated'
-// TODO(james): Fix all the things imported from here to actually run.
-import {aos} from 'aos/json_to_flatbuffer_generated'
+import * as configuration from 'org_frc971/aos/configuration_generated'
+import * as testing from 'org_frc971/aos/json_to_flatbuffer_generated'
+import * as flatbuffers_builder from 'org_frc971/external/com_github_google_flatbuffers/ts/builder';
+import {ByteBuffer} from 'org_frc971/external/com_github_google_flatbuffers/ts/byte-buffer';
+import {Long} from 'org_frc971/external/com_github_google_flatbuffers/ts/long';
 
 import {Connection} from './proxy';
 import {Parser, Table} from './reflection'
+
+import Configuration = configuration.aos.Configuration;
+import BaseType = testing.aos.testing.BaseType;
+import TestTable = testing.aos.testing.Configuration;
+import FooStruct = testing.aos.testing.FooStruct;
+import Location = testing.aos.testing.Location;
+import Map = testing.aos.testing.Map;
+import VectorOfStrings = testing.aos.testing.VectorOfStrings;
+import VectorOfVectorOfString = testing.aos.testing.VectorOfVectorOfString;
 // This file runs a basic test to confirm that the typescript flatbuffer
 // reflection library is working correctly. It currently is not run
 // automatically--to run it, run the web_proxy_demo sh_binary target, open the
@@ -23,8 +34,9 @@ function assertEqual(a: any, b: any, msg?: string): void {
 // Constructs a flatbuffer and then uses Parser.toObject to parse it and confirm
 // that the start/end results are the same. This is largely meant to ensure
 // that we are exercising most of the logic associated with parsing flatbuffers.
-function DoTest(config: aos.Configuration): void {
-  const builder = new flatbuffers.Builder();
+function DoTest(config: Configuration): void {
+  const builder =
+      new flatbuffers_builder.Builder() as unknown as flatbuffers.Builder;
   {
     TestTable.startVectorFooStructVector(builder, 3);
     const fooStruct0 = FooStruct.createFooStruct(builder, 66, 118);
@@ -37,7 +49,11 @@ function DoTest(config: aos.Configuration): void {
         Location.createLocation(builder, nameString, typeString, 100, 200);
     const location1 =
         Location.createLocation(builder, nameString, typeString, 300, 400);
-    const map = Map.createMap(builder, location0, location1);
+    Map.startMap(builder);
+    Map.addMatch(builder, location0);
+    Map.addRename(builder, location1);
+    const map = Map.endMap(builder);
+
     const mapVector = TestTable.createMapsVector(builder, [map]);
 
     const strVector =
@@ -60,15 +76,17 @@ function DoTest(config: aos.Configuration): void {
     TestTable.addVectorFooStruct(builder, vectorFooStruct);
     TestTable.addVectorFooDouble(builder, doubleVector);
     TestTable.addFooDouble(builder, 11.14);
-    TestTable.addFooLong(builder, new flatbuffers.Long(100, 1));
+    TestTable.addFooLong(
+        builder, new Long(100, 1) as unknown as flatbuffers.Long);
     TestTable.addFooEnum(builder, BaseType.Array);
   }
 
-  builder.finish(aos.Configuration.endConfiguration(builder));
+  builder.finish(Configuration.endConfiguration(builder));
   const array = builder.asUint8Array();
-  const fbBuffer = new flatbuffers.ByteBuffer(array);
+  const fbBuffer = new ByteBuffer(array);
 
-  const parsedFb = TestTable.getRootAsConfiguration(fbBuffer);
+  const parsedFb = TestTable.getRootAsConfiguration(
+      fbBuffer as unknown as flatbuffers.ByteBuffer);
 
   let testSchema = null;
   for (let ii = 0; ii < config.channelsLength(); ++ii) {
@@ -145,7 +163,7 @@ conn.addConfigHandler((config: Configuration) => {
     throw new Error('Couldn\'t find Configuration schema in config.');
   }
   let configParser = new Parser(configSchema);
-  const configTable = Table.getRootTable(config.bb);
+  const configTable = Table.getRootTable(config.bb as unknown as ByteBuffer);
   console.log('Received config:');
   console.log(configParser.toObject(configTable, true));
 
