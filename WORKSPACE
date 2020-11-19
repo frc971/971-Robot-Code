@@ -169,6 +169,7 @@ new_git_repository(
 http_archive(
     name = "arm_frc_linux_gnueabi_repo",
     build_file = "@//tools/cpp/arm-frc-linux-gnueabi:arm-frc-linux-gnueabi.BUILD",
+    patches = ["//debian:fts.patch"],
     sha256 = "043a5b047c2af9cf80d146d8327b588264c98a01e0f3f41e3564dd2bbbc95c0e",
     strip_prefix = "frc2020/roborio/",
     url = "https://www.frc971.org/Build-Dependencies/FRC-2020-Linux-Toolchain-7.3.0.tar.gz",

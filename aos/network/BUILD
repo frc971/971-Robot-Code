@@ -299,7 +299,7 @@ cc_test(
         ":message_bridge_test_client_config",
         ":message_bridge_test_server_config",
     ],
-    shard_count = 3,
+    shard_count = 4,
     deps = [
         ":message_bridge_client_lib",
         ":message_bridge_server_lib",

@@ -26,6 +26,10 @@ inline void MkdirP(std::string_view path, mode_t mode) {
 
 bool PathExists(std::string_view path);
 
+// Recursively removes everything in the provided path.  Ignores any errors it
+// runs across.
+void UnlinkRecursive(std::string_view path);
+
 }  // namespace util
 }  // namespace aos
 

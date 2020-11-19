@@ -9,6 +9,7 @@
 #include "aos/network/message_bridge_client_lib.h"
 #include "aos/network/message_bridge_server_lib.h"
 #include "aos/network/team_number.h"
+#include "aos/util/file.h"
 
 namespace aos {
 void SetShmBase(const std::string_view base);
@@ -18,17 +19,36 @@ namespace testing {
 
 namespace chrono = std::chrono;
 
-void DoSetShmBase(const std::string_view node) {
+std::string ShmBase(const std::string_view node) {
   const char *tmpdir_c_str = getenv("TEST_TMPDIR");
   if (tmpdir_c_str != nullptr) {
-    aos::SetShmBase(absl::StrCat(tmpdir_c_str, "/", node));
+    return absl::StrCat(tmpdir_c_str, "/", node);
   } else {
-    aos::SetShmBase(absl::StrCat("/dev/shm/", node));
+    return absl::StrCat("/dev/shm/", node);
   }
 }
 
+void DoSetShmBase(const std::string_view node) {
+  aos::SetShmBase(ShmBase(node));
+}
+
+class MessageBridgeTest : public ::testing::Test {
+  public:
+   MessageBridgeTest()
+       : pi1_config(aos::configuration::ReadConfig(
+             "aos/network/message_bridge_test_server_config.json")),
+         pi2_config(aos::configuration::ReadConfig(
+             "aos/network/message_bridge_test_client_config.json")) {
+     util::UnlinkRecursive(ShmBase("pi1"));
+     util::UnlinkRecursive(ShmBase("pi2"));
+   }
+
+   aos::FlatbufferDetachedBuffer<aos::Configuration> pi1_config;
+   aos::FlatbufferDetachedBuffer<aos::Configuration> pi2_config;
+};
+
 // Test that we can send a ping message over sctp and receive it.
-TEST(MessageBridgeTest, PingPong) {
+TEST_F(MessageBridgeTest, PingPong) {
   // This is rather annoying to set up.  We need to start up a client and
   // server, on the same node, but get them to think that they are on different
   // nodes.
@@ -49,32 +69,25 @@ TEST(MessageBridgeTest, PingPong) {
   // hope for the best.  We can be more generous in the future if we need to.
   //
   // We are faking the application names by passing in --application_name=foo
-  aos::FlatbufferDetachedBuffer<aos::Configuration> server_config =
-      aos::configuration::ReadConfig(
-          "aos/network/message_bridge_test_server_config.json");
-  aos::FlatbufferDetachedBuffer<aos::Configuration> pi2_config =
-      aos::configuration::ReadConfig(
-          "aos/network/message_bridge_test_client_config.json");
-
   DoSetShmBase("pi1");
   FLAGS_application_name = "pi1_message_bridge_server";
   // Force ourselves to be "raspberrypi" and allocate everything.
   FLAGS_override_hostname = "raspberrypi";
 
-  aos::ShmEventLoop pi1_server_event_loop(&server_config.message());
+  aos::ShmEventLoop pi1_server_event_loop(&pi1_config.message());
   MessageBridgeServer pi1_message_bridge_server(&pi1_server_event_loop);
 
   FLAGS_application_name = "pi1_message_bridge_client";
-  aos::ShmEventLoop pi1_client_event_loop(&server_config.message());
+  aos::ShmEventLoop pi1_client_event_loop(&pi1_config.message());
   MessageBridgeClient pi1_message_bridge_client(&pi1_client_event_loop);
 
   // And build the app which sends the pings.
   FLAGS_application_name = "ping";
-  aos::ShmEventLoop ping_event_loop(&server_config.message());
+  aos::ShmEventLoop ping_event_loop(&pi1_config.message());
   aos::Sender<examples::Ping> ping_sender =
       ping_event_loop.MakeSender<examples::Ping>("/test");
 
-  aos::ShmEventLoop pi1_test_event_loop(&server_config.message());
+  aos::ShmEventLoop pi1_test_event_loop(&pi1_config.message());
   aos::Fetcher<logger::MessageHeader> message_header_fetcher1 =
       pi1_test_event_loop.MakeFetcher<logger::MessageHeader>(
           "/pi1/aos/remote_timestamps/pi2");
@@ -399,7 +412,7 @@ TEST(MessageBridgeTest, PingPong) {
 
 // Test that the client disconnecting triggers the server offsets on both sides
 // to clear.
-TEST(MessageBridgeTest, ClientRestart) {
+TEST_F(MessageBridgeTest, ClientRestart) {
   // This is rather annoying to set up.  We need to start up a client and
   // server, on the same node, but get them to think that they are on different
   // nodes.
@@ -414,27 +427,20 @@ TEST(MessageBridgeTest, ClientRestart) {
   // hope for the best.  We can be more generous in the future if we need to.
   //
   // We are faking the application names by passing in --application_name=foo
-  aos::FlatbufferDetachedBuffer<aos::Configuration> server_config =
-      aos::configuration::ReadConfig(
-          "aos/network/message_bridge_test_server_config.json");
-  aos::FlatbufferDetachedBuffer<aos::Configuration> pi2_config =
-      aos::configuration::ReadConfig(
-          "aos/network/message_bridge_test_client_config.json");
-
   FLAGS_application_name = "pi1_message_bridge_server";
   // Force ourselves to be "raspberrypi" and allocate everything.
   FLAGS_override_hostname = "raspberrypi";
   DoSetShmBase("pi1");
-  aos::ShmEventLoop pi1_server_event_loop(&server_config.message());
+  aos::ShmEventLoop pi1_server_event_loop(&pi1_config.message());
   MessageBridgeServer pi1_message_bridge_server(&pi1_server_event_loop);
 
   FLAGS_application_name = "pi1_message_bridge_client";
-  aos::ShmEventLoop pi1_client_event_loop(&server_config.message());
+  aos::ShmEventLoop pi1_client_event_loop(&pi1_config.message());
   MessageBridgeClient pi1_message_bridge_client(&pi1_client_event_loop);
 
   // And build the app for testing.
   FLAGS_application_name = "test1";
-  aos::ShmEventLoop pi1_test_event_loop(&server_config.message());
+  aos::ShmEventLoop pi1_test_event_loop(&pi1_config.message());
   aos::Fetcher<ServerStatistics> pi1_server_statistics_fetcher =
       pi1_test_event_loop.MakeFetcher<ServerStatistics>("/pi1/aos");
 
@@ -607,7 +613,7 @@ TEST(MessageBridgeTest, ClientRestart) {
 
 // Test that the server disconnecting triggers the server offsets on the other
 // side to clear, along with the other client.
-TEST(MessageBridgeTest, ServerRestart) {
+TEST_F(MessageBridgeTest, ServerRestart) {
   // This is rather annoying to set up.  We need to start up a client and
   // server, on the same node, but get them to think that they are on different
   // nodes.
@@ -622,27 +628,20 @@ TEST(MessageBridgeTest, ServerRestart) {
   // hope for the best.  We can be more generous in the future if we need to.
   //
   // We are faking the application names by passing in --application_name=foo
-  aos::FlatbufferDetachedBuffer<aos::Configuration> server_config =
-      aos::configuration::ReadConfig(
-          "aos/network/message_bridge_test_server_config.json");
-  aos::FlatbufferDetachedBuffer<aos::Configuration> pi2_config =
-      aos::configuration::ReadConfig(
-          "aos/network/message_bridge_test_client_config.json");
-
   FLAGS_application_name = "pi1_message_bridge_server";
   // Force ourselves to be "raspberrypi" and allocate everything.
   FLAGS_override_hostname = "raspberrypi";
   DoSetShmBase("pi1");
-  aos::ShmEventLoop pi1_server_event_loop(&server_config.message());
+  aos::ShmEventLoop pi1_server_event_loop(&pi1_config.message());
   MessageBridgeServer pi1_message_bridge_server(&pi1_server_event_loop);
 
   FLAGS_application_name = "pi1_message_bridge_client";
-  aos::ShmEventLoop pi1_client_event_loop(&server_config.message());
+  aos::ShmEventLoop pi1_client_event_loop(&pi1_config.message());
   MessageBridgeClient pi1_message_bridge_client(&pi1_client_event_loop);
 
   // And build the app for testing.
   FLAGS_application_name = "test1";
-  aos::ShmEventLoop pi1_test_event_loop(&server_config.message());
+  aos::ShmEventLoop pi1_test_event_loop(&pi1_config.message());
   aos::Fetcher<ServerStatistics> pi1_server_statistics_fetcher =
       pi1_test_event_loop.MakeFetcher<ServerStatistics>("/pi1/aos");
   aos::Fetcher<ClientStatistics> pi1_client_statistics_fetcher =
