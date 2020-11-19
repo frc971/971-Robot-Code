@@ -1,6 +1,7 @@
 #include <iostream>
 #include <getopt.h>
 
+#include "aos/init.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 #include "gtest/gtest.h"
@@ -25,9 +26,8 @@ void ForcePrintLogsDuringTests() __attribute__((weak));
 GTEST_API_ int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
   FLAGS_logtostderr = true;
-  google::InitGoogleLogging(argv[0]);
-  ::gflags::ParseCommandLineFlags(&argc, &argv, false);
-  google::InstallFailureSignalHandler();
+
+  aos::InitGoogle(&argc, &argv);
 
   if (FLAGS_print_logs) {
     if (::aos::testing::ForcePrintLogsDuringTests) {

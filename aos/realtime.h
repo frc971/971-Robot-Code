@@ -36,6 +36,9 @@ void LockAllMemory();
 
 void ExpandStackSize();
 
+// Registers our hooks which crash on RT malloc.
+void RegisterMallocHook();
+
 // CHECKs that we are (or are not) running on the RT scheduler.  Useful for
 // enforcing that operations which are or are not bounded shouldn't be run. This
 // works both in simulation and when running against the real target.

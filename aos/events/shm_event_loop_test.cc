@@ -3,6 +3,7 @@
 #include <string_view>
 
 #include "aos/events/event_loop_param_test.h"
+#include "aos/realtime.h"
 #include "glog/logging.h"
 #include "gtest/gtest.h"
 
@@ -95,8 +96,22 @@ bool IsRealtime() {
   int scheduler;
   PCHECK((scheduler = sched_getscheduler(0)) != -1);
 
-  LOG(INFO) << "scheduler is " << scheduler;
-  return scheduler == SCHED_FIFO || scheduler == SCHED_RR;
+  {
+    // If we are RT, logging the scheduler will crash us.  Mark that we just
+    // don't care.
+    aos::ScopedNotRealtime nrt;
+    LOG(INFO) << "scheduler is " << scheduler;
+  }
+
+  const bool result = scheduler == SCHED_FIFO || scheduler == SCHED_RR;
+  // Confirm that the scheduler matches AOS' interpretation of if we are
+  // realtime or not.
+  if (result) {
+    aos::CheckRealtime();
+  } else {
+    aos::CheckNotRealtime();
+  }
+  return result;
 }
 
 class ShmEventLoopTest : public ::testing::TestWithParam<ReadMethod> {

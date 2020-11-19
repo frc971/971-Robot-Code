@@ -245,6 +245,9 @@ namespace {
 
 std::shared_ptr<SimulatedMessage> SimulatedMessage::Make(
     SimulatedChannel *channel) {
+  // The allocations in here are due to infrastructure and don't count in the no
+  // mallocs in RT code.
+  ScopedNotRealtime nrt;
   const size_t size = channel->max_size();
   SimulatedMessage *const message = reinterpret_cast<SimulatedMessage *>(
       malloc(sizeof(SimulatedMessage) + size + kChannelDataAlignment - 1));
@@ -288,6 +291,9 @@ class SimulatedSender : public RawSender {
               aos::monotonic_clock::time_point monotonic_remote_time,
               aos::realtime_clock::time_point realtime_remote_time,
               uint32_t remote_queue_index) override {
+    // The allocations in here are due to infrastructure and don't count in the
+    // no mallocs in RT code.
+    ScopedNotRealtime nrt;
     CHECK_LE(length, size()) << ": Attempting to send too big a message.";
     message_->context.monotonic_event_time = event_loop_->monotonic_now();
     message_->context.monotonic_remote_time = monotonic_remote_time;
@@ -353,6 +359,9 @@ class SimulatedFetcher : public RawFetcher {
   ~SimulatedFetcher() { simulated_channel_->UnregisterFetcher(this); }
 
   std::pair<bool, monotonic_clock::time_point> DoFetchNext() override {
+    // The allocations in here are due to infrastructure and don't count in the
+    // no mallocs in RT code.
+    ScopedNotRealtime nrt;
     if (msgs_.size() == 0) {
       return std::make_pair(false, monotonic_clock::min_time);
     }
@@ -367,6 +376,9 @@ class SimulatedFetcher : public RawFetcher {
   }
 
   std::pair<bool, monotonic_clock::time_point> DoFetch() override {
+    // The allocations in here are due to infrastructure and don't count in the
+    // no mallocs in RT code.
+    ScopedNotRealtime nrt;
     if (msgs_.size() == 0) {
       // TODO(austin): Can we just do this logic unconditionally?  It is a lot
       // simpler.  And call clear, obviously.
@@ -837,6 +849,9 @@ SimulatedTimerHandler::SimulatedTimerHandler(
 
 void SimulatedTimerHandler::Setup(monotonic_clock::time_point base,
                                   monotonic_clock::duration repeat_offset) {
+  // The allocations in here are due to infrastructure and don't count in the no
+  // mallocs in RT code.
+  ScopedNotRealtime nrt;
   Disable();
   const ::aos::monotonic_clock::time_point monotonic_now =
       simulated_event_loop_->monotonic_now();
@@ -925,6 +940,9 @@ void SimulatedPhasedLoopHandler::HandleEvent() {
 
 void SimulatedPhasedLoopHandler::Schedule(
     monotonic_clock::time_point sleep_time) {
+  // The allocations in here are due to infrastructure and don't count in the no
+  // mallocs in RT code.
+  ScopedNotRealtime nrt;
   if (token_ != scheduler_->InvalidToken()) {
     scheduler_->Deschedule(token_);
     token_ = scheduler_->InvalidToken();

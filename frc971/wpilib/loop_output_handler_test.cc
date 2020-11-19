@@ -5,7 +5,7 @@
 #include "gtest/gtest.h"
 
 #include "aos/events/simulated_event_loop.h"
-#include "aos/logging/logging.h"
+#include "aos/realtime.h"
 #include "aos/testing/test_logging.h"
 #include "aos/time/time.h"
 #include "frc971/wpilib/loop_output_handler_test_generated.h"
@@ -43,8 +43,6 @@ class TestLoopOutputHandler
   TestLoopOutputHandler(::aos::EventLoop *event_loop, const ::std::string &name)
       : LoopOutputHandler(event_loop, name) {}
 
-  ~TestLoopOutputHandler() { Stop(); }
-
   int count() const { return count_; }
 
   ::aos::monotonic_clock::time_point last_time() const { return last_time_; }
@@ -52,12 +50,18 @@ class TestLoopOutputHandler
 
  protected:
   void Write(const LoopOutputHandlerTestOutput &output) override {
+    aos::CheckRealtime();
+    // We don't care if this is RT if we are testing.
+    aos::ScopedNotRealtime nrt;
     LOG(INFO) << "output " << aos::FlatbufferToJson(&output);
     ++count_;
     last_time_ = event_loop()->monotonic_now();
   }
 
   void Stop() override {
+    aos::CheckRealtime();
+    // We don't care if this is RT if we are testing.
+    aos::ScopedNotRealtime nrt;
     stop_time_ = event_loop()->monotonic_now();
     LOG(INFO) << "Stopping";
   }

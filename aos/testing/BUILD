@@ -6,6 +6,7 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
+        "//aos:init",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
         "@com_google_googletest//:gtest",

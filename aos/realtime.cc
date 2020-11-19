@@ -15,12 +15,26 @@
 
 #include "aos/thread_local.h"
 #include "glog/logging.h"
+#include "glog/raw_logging.h"
 
+DEFINE_bool(
+    die_on_malloc, false,
+    "If true, die when the application allocates memory in a RT section.");
 DEFINE_bool(skip_realtime_scheduler, false,
             "If true, skip changing the scheduler.  Pretend that we changed "
             "the scheduler instead.");
 DEFINE_bool(skip_locking_memory, false,
             "If true, skip locking memory.  Pretend that we did it instead.");
+
+extern "C" {
+typedef void (*MallocHook_NewHook)(const void* ptr, size_t size);
+int MallocHook_AddNewHook(MallocHook_NewHook hook) __attribute__((weak));
+int MallocHook_RemoveNewHook(MallocHook_NewHook hook) __attribute__((weak));
+
+typedef void (*MallocHook_DeleteHook)(const void* ptr);
+int MallocHook_AddDeleteHook(MallocHook_DeleteHook hook) __attribute__((weak));
+int MallocHook_RemoveDeleteHook(MallocHook_DeleteHook hook) __attribute__((weak));
+}   // extern "C"
 
 namespace FLAG__namespace_do_not_use_directly_use_DECLARE_double_instead {
 extern double FLAGS_tcmalloc_release_rate __attribute__((weak));
@@ -207,5 +221,36 @@ void CheckRealtime() { CHECK(is_realtime); }
 void CheckNotRealtime() { CHECK(!is_realtime); }
 
 ScopedRealtimeRestorer::ScopedRealtimeRestorer() : prior_(is_realtime) {}
+
+void NewHook(const void *ptr, size_t size) {
+  if (is_realtime) {
+    is_realtime = false;
+    RAW_LOG(FATAL, "Malloced %p -> %zu bytes", ptr, size);
+  }
+}
+
+void DeleteHook(const void *ptr) {
+  if (is_realtime) {
+    is_realtime = false;
+    RAW_LOG(FATAL, "Delete Hook %p", ptr);
+  }
+}
+
+void RegisterMallocHook() {
+  if (FLAGS_die_on_malloc) {
+    if (&MallocHook_AddNewHook != nullptr) {
+      CHECK(MallocHook_AddNewHook(&NewHook));
+    } else {
+      LOG(FATAL) << "Failed to register required malloc hooks, disable "
+                    "--die_on_malloc to continue.";
+    }
+    if (&MallocHook_AddDeleteHook != nullptr) {
+      CHECK(MallocHook_AddDeleteHook(&DeleteHook));
+    } else {
+      LOG(FATAL) << "Failed to register required malloc hooks, disable "
+                    "--die_on_malloc to continue.";
+    }
+  }
+}
 
 }  // namespace aos

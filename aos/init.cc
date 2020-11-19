@@ -39,6 +39,7 @@ namespace {
 // Common stuff that needs to happen at the beginning of both the realtime and
 // non-realtime initialization sequences. May be called twice.
 void InitStart() {
+  RegisterMallocHook();
   if (FLAGS_coredump) {
     WriteCoreDumps();
   }
@@ -58,6 +59,8 @@ void InitGoogle(int *argc, char ***argv) {
   google::InitGoogleLogging((*argv)[0]);
   gflags::ParseCommandLineFlags(argc, argv, true);
   google::InstallFailureSignalHandler();
+
+  RegisterMallocHook();
 }
 
 void InitNRT() {
