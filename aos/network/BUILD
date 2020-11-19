@@ -299,10 +299,11 @@ cc_test(
         ":message_bridge_test_client_config",
         ":message_bridge_test_server_config",
     ],
-    shard_count = 4,
+    shard_count = 5,
     deps = [
         ":message_bridge_client_lib",
         ":message_bridge_server_lib",
+        "//aos:event",
         "//aos:json_to_flatbuffer",
         "//aos/events:ping_fbs",
         "//aos/events:pong_fbs",

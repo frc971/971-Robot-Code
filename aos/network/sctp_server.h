@@ -36,6 +36,9 @@ class SctpServer {
   bool Send(std::string_view data, sctp_assoc_t snd_assoc_id, int stream,
             int timetolive);
 
+  // Aborts a connection.  Returns true on success.
+  bool Abort(sctp_assoc_t snd_assoc_id);
+
   int fd() { return fd_; }
 
   // Enables the priority scheduler.  This is a SCTP feature which lets us

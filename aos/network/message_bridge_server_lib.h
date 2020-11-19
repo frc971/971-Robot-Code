@@ -24,8 +24,11 @@ namespace message_bridge {
 // new message from the event loop.
 class ChannelState {
  public:
-  ChannelState(const Channel *channel, int channel_index)
-      : channel_index_(channel_index), channel_(channel) {}
+  ChannelState(const Channel *channel, int channel_index,
+               std::unique_ptr<aos::RawFetcher> last_message_fetcher)
+      : channel_index_(channel_index),
+        channel_(channel),
+        last_message_fetcher_(std::move(last_message_fetcher)) {}
 
   // Class to encapsulate all the state per client on a channel.  A client may
   // be subscribed to multiple channels.
@@ -73,6 +76,9 @@ class ChannelState {
   // Sends the data in context using the provided server.
   void SendData(SctpServer *server, const Context &context);
 
+  // Packs a context into a size prefixed message header for transmission.
+  flatbuffers::FlatBufferBuilder PackContext(const Context &context);
+
   // Handles reception of delivery times.
   void HandleDelivery(sctp_assoc_t rcv_assoc_id, uint16_t ssn,
                       absl::Span<const uint8_t> data);
@@ -85,10 +91,16 @@ class ChannelState {
   const int channel_index_;
   const Channel *const channel_;
 
+  std::unique_ptr<aos::RawFetcher> fetcher_;
+
   std::vector<Peer> peers_;
 
   std::deque<SizePrefixedFlatbufferDetachedBuffer<logger::MessageHeader>>
       sent_messages_;
+
+  // A fetcher to use to send the last message when a node connects and is
+  // reliable.
+  std::unique_ptr<aos::RawFetcher> last_message_fetcher_;
 };
 
 // This encapsulates the state required to talk to *all* the clients from this

@@ -94,7 +94,7 @@ MakeMessageHeaderReply() {
 SctpClientConnection::SctpClientConnection(
     aos::ShmEventLoop *const event_loop, std::string_view remote_name,
     const Node *my_node, std::string_view local_host,
-    std::vector<std::unique_ptr<aos::RawSender>> *channels, int client_index,
+    std::vector<SctpClientChannelState> *channels, int client_index,
     MessageBridgeClientStatus *client_status)
     : event_loop_(event_loop),
       connect_message_(MakeConnectMessage(event_loop->configuration(), my_node,
@@ -223,57 +223,71 @@ void SctpClientConnection::HandleData(const Message *message) {
   CHECK_EQ(message->size, flatbuffers::GetPrefixedSize(message->data()) +
                               sizeof(flatbuffers::uoffset_t));
 
-  connection_->mutate_received_packets(connection_->received_packets() + 1);
-
   const int stream = message->header.rcvinfo.rcv_sid - kControlStreams();
+  SctpClientChannelState *channel_state = &((*channels_)[stream_to_channel_[stream]]);
 
-  // Publish the message.
-  RawSender *sender = (*channels_)[stream_to_channel_[stream]].get();
-  sender->Send(message_header->data()->data(), message_header->data()->size(),
-               aos::monotonic_clock::time_point(
-                   chrono::nanoseconds(message_header->monotonic_sent_time())),
-               aos::realtime_clock::time_point(
-                   chrono::nanoseconds(message_header->realtime_sent_time())),
-               message_header->queue_index());
-
-  client_status_->SampleFilter(
-      client_index_,
+  if (message_header->queue_index() == channel_state->last_queue_index &&
       aos::monotonic_clock::time_point(
-          chrono::nanoseconds(message_header->monotonic_sent_time())),
-      sender->monotonic_sent_time());
+          chrono::nanoseconds(message_header->monotonic_sent_time())) ==
+          channel_state->last_timestamp) {
+    LOG(INFO) << "Duplicate message from " << message->PeerAddress();
+    connection_->mutate_duplicate_packets(connection_->duplicate_packets() + 1);
+    // Duplicate message, ignore.
+  } else {
+    connection_->mutate_received_packets(connection_->received_packets() + 1);
 
-  if (stream_reply_with_timestamp_[stream]) {
-    // TODO(austin): Send back less if we are only acking.  Maybe only a
-    // stream id?  Nothing if we are only forwarding?
+    channel_state->last_queue_index = message_header->queue_index();
+    channel_state->last_timestamp = aos::monotonic_clock::time_point(
+        chrono::nanoseconds(message_header->monotonic_sent_time()));
 
-    // Now fill out the message received reply.  This uses a MessageHeader
-    // container so it can be directly logged.
-    message_reception_reply_.mutable_message()->mutate_channel_index(
-        message_header->channel_index());
-    message_reception_reply_.mutable_message()->mutate_monotonic_sent_time(
-        message_header->monotonic_sent_time());
-    message_reception_reply_.mutable_message()->mutate_realtime_sent_time(
-        message_header->realtime_sent_time());
-    message_reception_reply_.mutable_message()->mutate_queue_index(
-        message_header->queue_index());
+    // Publish the message.
+    RawSender *sender = channel_state->sender.get();
+    sender->Send(message_header->data()->data(), message_header->data()->size(),
+                 aos::monotonic_clock::time_point(chrono::nanoseconds(
+                     message_header->monotonic_sent_time())),
+                 aos::realtime_clock::time_point(
+                     chrono::nanoseconds(message_header->realtime_sent_time())),
+                 message_header->queue_index());
 
-    // And capture the relevant data needed to generate the forwarding
-    // MessageHeader.
-    message_reception_reply_.mutable_message()->mutate_monotonic_remote_time(
-        sender->monotonic_sent_time().time_since_epoch().count());
-    message_reception_reply_.mutable_message()->mutate_realtime_remote_time(
-        sender->realtime_sent_time().time_since_epoch().count());
-    message_reception_reply_.mutable_message()->mutate_remote_queue_index(
-        sender->sent_queue_index());
+    client_status_->SampleFilter(
+        client_index_,
+        aos::monotonic_clock::time_point(
+            chrono::nanoseconds(message_header->monotonic_sent_time())),
+        sender->monotonic_sent_time());
 
-    // Unique ID is channel_index and monotonic clock.
-    // TODO(austin): Depending on if we are the logger node or not, we need to
-    // guarentee that this ack gets received too...  Same path as the logger.
-    client_.Send(kTimestampStream(),
-                 std::string_view(reinterpret_cast<const char *>(
-                                      message_reception_reply_.span().data()),
-                                  message_reception_reply_.span().size()),
-                 0);
+    if (stream_reply_with_timestamp_[stream]) {
+      // TODO(austin): Send back less if we are only acking.  Maybe only a
+      // stream id?  Nothing if we are only forwarding?
+
+      // Now fill out the message received reply.  This uses a MessageHeader
+      // container so it can be directly logged.
+      message_reception_reply_.mutable_message()->mutate_channel_index(
+          message_header->channel_index());
+      message_reception_reply_.mutable_message()->mutate_monotonic_sent_time(
+          message_header->monotonic_sent_time());
+      message_reception_reply_.mutable_message()->mutate_realtime_sent_time(
+          message_header->realtime_sent_time());
+      message_reception_reply_.mutable_message()->mutate_queue_index(
+          message_header->queue_index());
+
+      // And capture the relevant data needed to generate the forwarding
+      // MessageHeader.
+      message_reception_reply_.mutable_message()->mutate_monotonic_remote_time(
+          sender->monotonic_sent_time().time_since_epoch().count());
+      message_reception_reply_.mutable_message()->mutate_realtime_remote_time(
+          sender->realtime_sent_time().time_since_epoch().count());
+      message_reception_reply_.mutable_message()->mutate_remote_queue_index(
+          sender->sent_queue_index());
+
+      // Unique ID is channel_index and monotonic clock.
+      // TODO(austin): Depending on if we are the logger node or not, we need to
+      // guarentee that this ack gets received too...  Same path as the logger.
+      client_.Send(kTimestampStream(),
+                   std::string_view(reinterpret_cast<const char *>(
+                                        message_reception_reply_.span().data()),
+                                    message_reception_reply_.span().size()),
+                   0);
+    }
   }
 
   VLOG(1) << "Received data of length " << message->size << " from "
@@ -308,7 +322,24 @@ MessageBridgeClient::MessageBridgeClient(aos::ShmEventLoop *event_loop)
               event_loop_->configuration(), channel->name()->string_view(),
               channel->type()->string_view(), event_loop_->name(),
               event_loop_->node());
-          channels_[channel_index] = event_loop_->MakeRawSender(mapped_channel);
+
+          channels_[channel_index].sender =
+              event_loop_->MakeRawSender(mapped_channel);
+
+          std::unique_ptr<aos::RawFetcher> raw_fetcher =
+              event_loop_->MakeRawFetcher(mapped_channel);
+          raw_fetcher->Fetch();
+
+          if (raw_fetcher->context().data != nullptr) {
+            VLOG(1) << "Found data on "
+                    << configuration::CleanedChannelToString(channel)
+                    << ", won't resend it.";
+            channels_[channel_index].last_queue_index =
+                raw_fetcher->context().queue_index;
+            channels_[channel_index].last_timestamp =
+                raw_fetcher->context().monotonic_remote_time;
+          }
+
           break;
         }
       }

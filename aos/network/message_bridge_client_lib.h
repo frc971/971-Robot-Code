@@ -15,6 +15,16 @@
 namespace aos {
 namespace message_bridge {
 
+// Structure to hold per channel state.
+struct SctpClientChannelState {
+  // The sender for a channel.
+  std::unique_ptr<aos::RawSender> sender;
+  // The last queue index of a message sent.  Used for detecting duplicates.
+  uint32_t last_queue_index = 0xffffffff;
+  // The last timestamp of a message sent.  Used for detecting duplicates.
+  monotonic_clock::time_point last_timestamp = monotonic_clock::min_time;
+};
+
 // See message_bridge_protocol.h for more details about the protocol.
 
 // This class encapsulates all the state required to connect to a server and
@@ -24,7 +34,7 @@ class SctpClientConnection {
   SctpClientConnection(aos::ShmEventLoop *const event_loop,
                        std::string_view remote_name, const Node *my_node,
                        std::string_view local_host,
-                       std::vector<std::unique_ptr<aos::RawSender>> *channels,
+                       std::vector<SctpClientChannelState> *channels,
                        int client_index,
                        MessageBridgeClientStatus *client_status);
 
@@ -62,7 +72,7 @@ class SctpClientConnection {
   SctpClient client_;
 
   // Channels to send received messages on.
-  std::vector<std::unique_ptr<aos::RawSender>> *channels_;
+  std::vector<SctpClientChannelState> *channels_;
   // Stream number -> channel lookup.
   std::vector<int> stream_to_channel_;
   // Bitmask signaling if we should be replying back with delivery times.
@@ -97,7 +107,7 @@ class MessageBridgeClient {
   MessageBridgeClientStatus client_status_;
 
   // Channels to send data over.
-  std::vector<std::unique_ptr<aos::RawSender>> channels_;
+  std::vector<SctpClientChannelState> channels_;
 
   // List of connections.  These correspond to the nodes in source_node_names_
   std::vector<std::unique_ptr<SctpClientConnection>> connections_;
