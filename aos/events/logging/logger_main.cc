@@ -11,6 +11,10 @@
 
 DEFINE_string(config, "config.json", "Config file to use.");
 
+DEFINE_bool(skip_renicing, false,
+            "If true, skip renicing the logger.  This leaves it lower priority "
+            "and increases the likelihood of dropping messages and crashing.");
+
 int main(int argc, char *argv[]) {
   gflags::SetUsageMessage(
       "This program provides a simple logger binary that logs all SHMEM data "
@@ -37,9 +41,15 @@ int main(int argc, char *argv[]) {
 
   aos::logger::Logger logger(&event_loop);
   event_loop.OnRun([&log_namer, &logger]() {
-    errno = 0;
-    setpriority(PRIO_PROCESS, 0, -20);
-    PCHECK(errno == 0) << ": Renicing to -20 failed";
+    if (FLAGS_skip_renicing) {
+      LOG(WARNING) << "Ignoring request to renice to -20 due to "
+                      "--skip_renicing.";
+    } else {
+      errno = 0;
+      setpriority(PRIO_PROCESS, 0, -20);
+      PCHECK(errno == 0)
+          << ": Renicing to -20 failed, use --skip_renicing to skip renicing.";
+    }
     logger.StartLogging(std::move(log_namer));
   });
 

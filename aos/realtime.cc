@@ -16,6 +16,12 @@
 #include "aos/thread_local.h"
 #include "glog/logging.h"
 
+DEFINE_bool(skip_realtime_scheduler, false,
+            "If true, skip changing the scheduler.  Pretend that we changed "
+            "the scheduler instead.");
+DEFINE_bool(skip_locking_memory, false,
+            "If true, skip locking memory.  Pretend that we did it instead.");
+
 namespace FLAG__namespace_do_not_use_directly_use_DECLARE_double_instead {
 extern double FLAGS_tcmalloc_release_rate __attribute__((weak));
 }
@@ -34,18 +40,13 @@ void ReloadThreadName() __attribute__((weak));
 
 namespace {
 
-enum class SetLimitForRoot {
-  kYes,
-  kNo
-};
+enum class SetLimitForRoot { kYes, kNo };
 
-enum class AllowSoftLimitDecrease {
-  kYes,
-  kNo
-};
+enum class AllowSoftLimitDecrease { kYes, kNo };
 
 void SetSoftRLimit(
     int resource, rlim64_t soft, SetLimitForRoot set_for_root,
+    std::string_view help_string,
     AllowSoftLimitDecrease allow_decrease = AllowSoftLimitDecrease::kYes) {
   bool am_root = getuid() == 0;
   if (set_for_root == SetLimitForRoot::kYes || !am_root) {
@@ -62,7 +63,7 @@ void SetSoftRLimit(
 
     PCHECK(setrlimit64(resource, &rlim) == 0)
         << ": changing limit for " << resource << " to " << rlim.rlim_cur
-        << " with max of " << rlim.rlim_max;
+        << " with max of " << rlim.rlim_max << help_string;
   }
 }
 
@@ -71,10 +72,13 @@ void SetSoftRLimit(
 void LockAllMemory() {
   CheckNotRealtime();
   // Allow locking as much as we want into RAM.
-  SetSoftRLimit(RLIMIT_MEMLOCK, RLIM_INFINITY, SetLimitForRoot::kNo);
+  SetSoftRLimit(RLIMIT_MEMLOCK, RLIM_INFINITY, SetLimitForRoot::kNo,
+                "use --skip_locking_memory to not lock memory.");
 
   WriteCoreDumps();
-  PCHECK(mlockall(MCL_CURRENT | MCL_FUTURE) == 0);
+  PCHECK(mlockall(MCL_CURRENT | MCL_FUTURE) == 0)
+      << ": Failed to lock memory, use --skip_locking_memory to bypass this.  "
+         "Bypassing will impact RT performance.";
 
 #if !__has_feature(address_sanitizer) && !__has_feature(memory_sanitizer)
   // Don't give freed memory back to the OS.
@@ -93,24 +97,39 @@ void LockAllMemory() {
   uint8_t data[4096 * 8];
   // Not 0 because linux might optimize that to a 0-filled page.
   memset(data, 1, sizeof(data));
-  __asm__ __volatile__("" :: "m" (data));
+  __asm__ __volatile__("" ::"m"(data));
 
   static const size_t kHeapPreallocSize = 512 * 1024;
   char *const heap_data = static_cast<char *>(malloc(kHeapPreallocSize));
   memset(heap_data, 1, kHeapPreallocSize);
-  __asm__ __volatile__("" :: "m" (heap_data));
+  __asm__ __volatile__("" ::"m"(heap_data));
   free(heap_data);
 }
 
 void InitRT() {
+  if (FLAGS_skip_locking_memory) {
+    LOG(WARNING) << "Ignoring request to lock all memory due to "
+                    "--skip_locking_memory.";
+    return;
+  }
+
   CheckNotRealtime();
   LockAllMemory();
 
+  if (FLAGS_skip_realtime_scheduler) {
+    return;
+  }
   // Only let rt processes run for 3 seconds straight.
-  SetSoftRLimit(RLIMIT_RTTIME, 3000000, SetLimitForRoot::kYes);
+  SetSoftRLimit(
+      RLIMIT_RTTIME, 3000000, SetLimitForRoot::kYes,
+      ", use --skip_realtime_scheduler to stay non-rt and bypass this "
+      "warning.");
 
   // Allow rt processes up to priority 40.
-  SetSoftRLimit(RLIMIT_RTPRIO, 40, SetLimitForRoot::kNo);
+  SetSoftRLimit(
+      RLIMIT_RTPRIO, 40, SetLimitForRoot::kNo,
+      ", use --skip_realtime_scheduler to stay non-rt and bypass this "
+      "warning.");
 }
 
 void UnsetCurrentThreadRealtimePriority() {
@@ -136,27 +155,40 @@ void SetCurrentThreadName(const std::string_view name) {
 }
 
 void SetCurrentThreadRealtimePriority(int priority) {
+  if (FLAGS_skip_realtime_scheduler) {
+    LOG(WARNING) << "Ignoring request to switch to the RT scheduler due to "
+                    "--skip_realtime_scheduler.";
+    return;
+  }
   // Make sure we will only be allowed to run for 3 seconds straight.
-  SetSoftRLimit(RLIMIT_RTTIME, 3000000, SetLimitForRoot::kYes);
+  SetSoftRLimit(
+      RLIMIT_RTTIME, 3000000, SetLimitForRoot::kYes,
+      ", use --skip_realtime_scheduler to stay non-rt and bypass this "
+      "warning.");
 
   // Raise our soft rlimit if necessary.
-  SetSoftRLimit(RLIMIT_RTPRIO, priority, SetLimitForRoot::kNo,
-                AllowSoftLimitDecrease::kNo);
+  SetSoftRLimit(
+      RLIMIT_RTPRIO, priority, SetLimitForRoot::kNo,
+      ", use --skip_realtime_scheduler to stay non-rt and bypass this "
+      "warning.",
+      AllowSoftLimitDecrease::kNo);
 
   struct sched_param param;
   param.sched_priority = priority;
   MarkRealtime(true);
   PCHECK(sched_setscheduler(0, SCHED_FIFO, &param) == 0)
-      << ": changing to SCHED_FIFO with " << priority;
+      << ": changing to SCHED_FIFO with " << priority
+      << ", if you want to bypass this check for testing, use "
+         "--skip_realtime_scheduler";
 }
 
 void WriteCoreDumps() {
   // Do create core files of unlimited size.
-  SetSoftRLimit(RLIMIT_CORE, RLIM_INFINITY, SetLimitForRoot::kYes);
+  SetSoftRLimit(RLIMIT_CORE, RLIM_INFINITY, SetLimitForRoot::kYes, "");
 }
 
 void ExpandStackSize() {
-  SetSoftRLimit(RLIMIT_STACK, 1000000, SetLimitForRoot::kYes,
+  SetSoftRLimit(RLIMIT_STACK, 1000000, SetLimitForRoot::kYes, "",
                 AllowSoftLimitDecrease::kNo);
 }
 
