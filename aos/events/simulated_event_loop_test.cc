@@ -709,7 +709,6 @@ TEST(SimulatedEventLoopTest, MultinodePingPongWithOffset) {
   std::unique_ptr<EventLoop> pi1_pong_counter_event_loop =
       simulated_event_loop_factory.MakeEventLoop("pi1_pong_counter", pi1);
 
-
   // Confirm the offsets are being recovered correctly.
   int pi1_server_statistics_count = 0;
   pi1_pong_counter_event_loop->MakeWatcher(
@@ -975,6 +974,79 @@ TEST(SimulatedEventLoopTest, MultinodePingPongWithOffsetAndSlope) {
                                pi2_pong_time);
   EXPECT_LE(pi1_pong_time, chrono::microseconds(150) + chrono::nanoseconds(10) +
                                pi2_pong_time);
+}
+
+void SendPing(aos::Sender<examples::Ping> *sender, int value) {
+  aos::Sender<examples::Ping>::Builder builder = sender->MakeBuilder();
+  examples::Ping::Builder ping_builder = builder.MakeBuilder<examples::Ping>();
+  ping_builder.add_value(value);
+  builder.Send(ping_builder.Finish());
+}
+
+// Tests that reliable (and unreliable) ping messages get forwarded as expected.
+TEST(SimulatedEventLoopTest, MultinodeStartupTesting) {
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+      aos::configuration::ReadConfig(ConfigPrefix() +
+                                     "events/multinode_pingpong_config.json");
+  const Node *pi1 = configuration::GetNode(&config.message(), "pi1");
+  const Node *pi2 = configuration::GetNode(&config.message(), "pi2");
+
+  SimulatedEventLoopFactory simulated_event_loop_factory(&config.message());
+
+  std::unique_ptr<EventLoop> ping_event_loop =
+      simulated_event_loop_factory.MakeEventLoop("ping", pi1);
+  aos::Sender<examples::Ping> pi1_reliable_sender =
+      ping_event_loop->MakeSender<examples::Ping>("/reliable");
+  aos::Sender<examples::Ping> pi1_unreliable_sender =
+      ping_event_loop->MakeSender<examples::Ping>("/unreliable");
+  SendPing(&pi1_reliable_sender, 1);
+  SendPing(&pi1_unreliable_sender, 1);
+
+  std::unique_ptr<EventLoop> pi2_pong_event_loop =
+      simulated_event_loop_factory.MakeEventLoop("pong", pi2);
+  MessageCounter<examples::Ping> pi2_reliable_counter(pi2_pong_event_loop.get(),
+                                                      "/reliable");
+  MessageCounter<examples::Ping> pi2_unreliable_counter(
+      pi2_pong_event_loop.get(), "/unreliable");
+  aos::Fetcher<examples::Ping> reliable_on_pi2_fetcher =
+      pi2_pong_event_loop->MakeFetcher<examples::Ping>("/reliable");
+  aos::Fetcher<examples::Ping> unreliable_on_pi2_fetcher =
+      pi2_pong_event_loop->MakeFetcher<examples::Ping>("/unreliable");
+
+  const size_t reliable_channel_index = configuration::ChannelIndex(
+      pi2_pong_event_loop->configuration(), reliable_on_pi2_fetcher.channel());
+
+  std::unique_ptr<EventLoop> pi1_remote_timestamp =
+      simulated_event_loop_factory.MakeEventLoop("pi1_remote_timestamp", pi1);
+
+  int reliable_timestamp_count = 0;
+  pi1_remote_timestamp->MakeWatcher(
+      "/pi1/aos/remote_timestamps/pi2",
+      [reliable_channel_index,
+       &reliable_timestamp_count](const logger::MessageHeader &header) {
+        VLOG(1) << aos::FlatbufferToJson(&header);
+        if (header.channel_index() == reliable_channel_index) {
+          ++reliable_timestamp_count;
+        }
+      });
+
+  // Wait to let timestamp estimation start up before looking for the results.
+  simulated_event_loop_factory.RunFor(chrono::milliseconds(500));
+
+  EXPECT_EQ(pi2_reliable_counter.count(), 1u);
+  // This one isn't reliable, but was sent before the start.  It should *not* be
+  // delivered.
+  EXPECT_EQ(pi2_unreliable_counter.count(), 0u);
+  // Confirm we got a timestamp logged for the message that was forwarded.
+  EXPECT_EQ(reliable_timestamp_count, 1u);
+
+  SendPing(&pi1_reliable_sender, 2);
+  SendPing(&pi1_unreliable_sender, 2);
+  simulated_event_loop_factory.RunFor(chrono::milliseconds(500));
+  EXPECT_EQ(pi2_reliable_counter.count(), 2u);
+  EXPECT_EQ(pi2_unreliable_counter.count(), 1u);
+
+  EXPECT_EQ(reliable_timestamp_count, 2u);
 }
 
 }  // namespace testing
