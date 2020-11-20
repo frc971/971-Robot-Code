@@ -77,6 +77,8 @@ class SimulatedWatcher : public WatcherState {
 
   ~SimulatedWatcher() override;
 
+  bool has_run() const;
+
   void Startup(EventLoop * /*event_loop*/) override {}
 
   void Schedule(std::shared_ptr<SimulatedMessage> message);
@@ -102,10 +104,9 @@ class SimulatedWatcher : public WatcherState {
 
 class SimulatedChannel {
  public:
-  explicit SimulatedChannel(const Channel *channel, EventScheduler *scheduler,
+  explicit SimulatedChannel(const Channel *channel,
                             std::chrono::nanoseconds channel_storage_duration)
       : channel_(channel),
-        scheduler_(scheduler),
         channel_storage_duration_(channel_storage_duration),
         next_queue_index_(ipc_lib::QueueIndex::Zero(number_buffers())) {
     available_buffer_indices_.reserve(number_buffers());
@@ -157,7 +158,7 @@ class SimulatedChannel {
   }
 
   // Makes a connected raw sender which calls Send below.
-  ::std::unique_ptr<RawSender> MakeRawSender(EventLoop *event_loop);
+  ::std::unique_ptr<RawSender> MakeRawSender(SimulatedEventLoop *event_loop);
 
   // Makes a connected raw fetcher.
   ::std::unique_ptr<RawFetcher> MakeRawFetcher(EventLoop *event_loop);
@@ -224,7 +225,6 @@ class SimulatedChannel {
   }
 
   const Channel *const channel_;
-  EventScheduler *const scheduler_;
   const std::chrono::nanoseconds channel_storage_duration_;
 
   // List of all watchers.
@@ -270,13 +270,9 @@ SimulatedMessage::~SimulatedMessage() {
 
 class SimulatedSender : public RawSender {
  public:
-  SimulatedSender(SimulatedChannel *simulated_channel, EventLoop *event_loop)
-      : RawSender(event_loop, simulated_channel->channel()),
-        simulated_channel_(simulated_channel),
-        event_loop_(event_loop) {
-    simulated_channel_->CountSenderCreated();
-  }
-  ~SimulatedSender() { simulated_channel_->CountSenderDestroyed(); }
+  SimulatedSender(SimulatedChannel *simulated_channel,
+                  SimulatedEventLoop *event_loop);
+  ~SimulatedSender() override;
 
   void *data() override {
     if (!message_) {
@@ -290,51 +286,12 @@ class SimulatedSender : public RawSender {
   bool DoSend(size_t length,
               aos::monotonic_clock::time_point monotonic_remote_time,
               aos::realtime_clock::time_point realtime_remote_time,
-              uint32_t remote_queue_index) override {
-    // The allocations in here are due to infrastructure and don't count in the
-    // no mallocs in RT code.
-    ScopedNotRealtime nrt;
-    CHECK_LE(length, size()) << ": Attempting to send too big a message.";
-    message_->context.monotonic_event_time = event_loop_->monotonic_now();
-    message_->context.monotonic_remote_time = monotonic_remote_time;
-    message_->context.remote_queue_index = remote_queue_index;
-    message_->context.realtime_event_time = event_loop_->realtime_now();
-    message_->context.realtime_remote_time = realtime_remote_time;
-    CHECK_LE(length, message_->context.size);
-    message_->context.size = length;
-
-    // TODO(austin): Track sending too fast.
-    sent_queue_index_ = simulated_channel_->Send(message_);
-    monotonic_sent_time_ = event_loop_->monotonic_now();
-    realtime_sent_time_ = event_loop_->realtime_now();
-
-    // Drop the reference to the message so that we allocate a new message for
-    // next time.  Otherwise we will continue to reuse the same memory for all
-    // messages and corrupt it.
-    message_.reset();
-    return true;
-  }
+              uint32_t remote_queue_index) override;
 
   bool DoSend(const void *msg, size_t size,
               aos::monotonic_clock::time_point monotonic_remote_time,
               aos::realtime_clock::time_point realtime_remote_time,
-              uint32_t remote_queue_index) override {
-    CHECK_LE(size, this->size()) << ": Attempting to send too big a message.";
-
-    // This is wasteful, but since flatbuffers fill from the back end of the
-    // queue, we need it to be full sized.
-    message_ = SimulatedMessage::Make(simulated_channel_);
-
-    // Now fill in the message.  size is already populated above, and
-    // queue_index will be populated in simulated_channel_.  Put this at the
-    // back of the data segment.
-    memcpy(message_->data(simulated_channel_->max_size()) +
-               simulated_channel_->max_size() - size,
-           msg, size);
-
-    return DoSend(size, monotonic_remote_time, realtime_remote_time,
-                  remote_queue_index);
-  }
+              uint32_t remote_queue_index) override;
 
   int buffer_index() override {
     // First, ensure message_ is allocated.
@@ -344,7 +301,7 @@ class SimulatedSender : public RawSender {
 
  private:
   SimulatedChannel *simulated_channel_;
-  EventLoop *event_loop_;
+  SimulatedEventLoop *event_loop_;
 
   std::shared_ptr<SimulatedMessage> message_;
 };
@@ -510,6 +467,7 @@ class SimulatedEventLoop : public EventLoop {
         has_setup_ = true;
       }
       set_is_running(value);
+      has_run_ = true;
     }));
   }
   ~SimulatedEventLoop() override {
@@ -530,6 +488,8 @@ class SimulatedEventLoop : public EventLoop {
       }
     }
   }
+
+  bool has_run() const { return has_run_; }
 
   std::chrono::nanoseconds send_delay() const { return send_delay_; }
   void set_send_delay(std::chrono::nanoseconds send_delay) {
@@ -569,6 +529,7 @@ class SimulatedEventLoop : public EventLoop {
   }
 
   void OnRun(::std::function<void()> on_run) override {
+    CHECK(!is_running()) << ": Cannot register OnRun callback while running.";
     scheduler_->ScheduleOnRun([this, on_run = std::move(on_run)]() {
       ScopedMarkRealtimeRestorer rt(priority() > 0);
       on_run();
@@ -642,6 +603,8 @@ class SimulatedEventLoop : public EventLoop {
 
   AosLogToFbs log_sender_;
   std::shared_ptr<logging::LogImplementation> log_impl_ = nullptr;
+
+  bool has_run_ = false;
 };
 
 void SimulatedEventLoopFactory::set_send_delay(
@@ -664,6 +627,10 @@ void SimulatedEventLoop::MakeRawWatcher(
 
   GetSimulatedChannel(channel)->MakeRawWatcher(shm_watcher.get());
   NewWatcher(std::move(shm_watcher));
+
+  // Order of operations gets kinda wonky if we let people make watchers after
+  // running once.  If someone has a valid use case, we can reconsider.
+  CHECK(!has_run()) << ": Can't add a watcher after running.";
 }
 
 std::unique_ptr<RawSender> SimulatedEventLoop::MakeRawSender(
@@ -691,13 +658,14 @@ SimulatedChannel *SimulatedEventLoop::GetSimulatedChannel(
     const Channel *channel) {
   auto it = channels_->find(SimpleChannel(channel));
   if (it == channels_->end()) {
-    it = channels_
-             ->emplace(SimpleChannel(channel),
-                       std::unique_ptr<SimulatedChannel>(new SimulatedChannel(
-                           channel, scheduler_,
-                           std::chrono::nanoseconds(
-                               configuration()->channel_storage_duration()))))
-             .first;
+    it =
+        channels_
+            ->emplace(
+                SimpleChannel(channel),
+                std::unique_ptr<SimulatedChannel>(new SimulatedChannel(
+                    channel, std::chrono::nanoseconds(
+                                 configuration()->channel_storage_duration()))))
+            .first;
   }
   return it->second.get();
 }
@@ -723,6 +691,10 @@ SimulatedWatcher::~SimulatedWatcher() {
     scheduler_->Deschedule(token_);
   }
   CHECK_NOTNULL(simulated_channel_)->RemoveWatcher(this);
+}
+
+bool SimulatedWatcher::has_run() const {
+  return simulated_event_loop_->has_run();
 }
 
 void SimulatedWatcher::Schedule(std::shared_ptr<SimulatedMessage> message) {
@@ -801,7 +773,7 @@ void SimulatedChannel::MakeRawWatcher(SimulatedWatcher *watcher) {
 }
 
 ::std::unique_ptr<RawSender> SimulatedChannel::MakeRawSender(
-    EventLoop *event_loop) {
+    SimulatedEventLoop *event_loop) {
   return ::std::unique_ptr<RawSender>(new SimulatedSender(this, event_loop));
 }
 
@@ -822,8 +794,8 @@ uint32_t SimulatedChannel::Send(std::shared_ptr<SimulatedMessage> message) {
   next_queue_index_ = next_queue_index_.Increment();
 
   latest_message_ = message;
-  if (scheduler_->is_running()) {
-    for (SimulatedWatcher *watcher : watchers_) {
+  for (SimulatedWatcher *watcher : watchers_) {
+    if (watcher->has_run()) {
       watcher->Schedule(message);
     }
   }
@@ -836,6 +808,68 @@ uint32_t SimulatedChannel::Send(std::shared_ptr<SimulatedMessage> message) {
 
 void SimulatedChannel::UnregisterFetcher(SimulatedFetcher *fetcher) {
   fetchers_.erase(::std::find(fetchers_.begin(), fetchers_.end(), fetcher));
+}
+
+SimulatedSender::SimulatedSender(SimulatedChannel *simulated_channel,
+                                 SimulatedEventLoop *event_loop)
+    : RawSender(event_loop, simulated_channel->channel()),
+      simulated_channel_(simulated_channel),
+      event_loop_(event_loop) {
+  simulated_channel_->CountSenderCreated();
+}
+
+SimulatedSender::~SimulatedSender() {
+  simulated_channel_->CountSenderDestroyed();
+}
+
+bool SimulatedSender::DoSend(
+    size_t length, aos::monotonic_clock::time_point monotonic_remote_time,
+    aos::realtime_clock::time_point realtime_remote_time,
+    uint32_t remote_queue_index) {
+  // The allocations in here are due to infrastructure and don't count in the
+  // no mallocs in RT code.
+  ScopedNotRealtime nrt;
+  CHECK_LE(length, size()) << ": Attempting to send too big a message.";
+  message_->context.monotonic_event_time = event_loop_->monotonic_now();
+  message_->context.monotonic_remote_time = monotonic_remote_time;
+  message_->context.remote_queue_index = remote_queue_index;
+  message_->context.realtime_event_time = event_loop_->realtime_now();
+  message_->context.realtime_remote_time = realtime_remote_time;
+  CHECK_LE(length, message_->context.size);
+  message_->context.size = length;
+
+  // TODO(austin): Track sending too fast.
+  sent_queue_index_ = simulated_channel_->Send(message_);
+  monotonic_sent_time_ = event_loop_->monotonic_now();
+  realtime_sent_time_ = event_loop_->realtime_now();
+
+  // Drop the reference to the message so that we allocate a new message for
+  // next time.  Otherwise we will continue to reuse the same memory for all
+  // messages and corrupt it.
+  message_.reset();
+  return true;
+}
+
+bool SimulatedSender::DoSend(
+    const void *msg, size_t size,
+    aos::monotonic_clock::time_point monotonic_remote_time,
+    aos::realtime_clock::time_point realtime_remote_time,
+    uint32_t remote_queue_index) {
+  CHECK_LE(size, this->size()) << ": Attempting to send too big a message.";
+
+  // This is wasteful, but since flatbuffers fill from the back end of the
+  // queue, we need it to be full sized.
+  message_ = SimulatedMessage::Make(simulated_channel_);
+
+  // Now fill in the message.  size is already populated above, and
+  // queue_index will be populated in simulated_channel_.  Put this at the
+  // back of the data segment.
+  memcpy(message_->data(simulated_channel_->max_size()) +
+             simulated_channel_->max_size() - size,
+         msg, size);
+
+  return DoSend(size, monotonic_remote_time, realtime_remote_time,
+                remote_queue_index);
 }
 
 SimulatedTimerHandler::SimulatedTimerHandler(
@@ -1044,6 +1078,10 @@ void SimulatedEventLoopFactory::Run() {
        raw_event_loops_) {
     event_loop.second(false);
   }
+}
+
+void SimulatedEventLoopFactory::Exit() {
+  scheduler_scheduler_.Exit();
 }
 
 void SimulatedEventLoopFactory::DisableForwarding(const Channel *channel) {
