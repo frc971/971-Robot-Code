@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+from __future__ import print_function
 from frc971.control_loops.python import drivetrain
 import sys
 
@@ -29,7 +30,7 @@ def main(argv):
     if FLAGS.plot:
         drivetrain.PlotDrivetrainMotions(kDrivetrain)
     elif len(argv) != 5:
-        print "Expected .h file name and .cc file name"
+        print("Expected .h file name and .cc file name")
     else:
         # Write the generated constants out to a file.
         drivetrain.WriteDrivetrain(argv[1:3], argv[3:5], 'y2017', kDrivetrain)
