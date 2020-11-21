@@ -56,13 +56,7 @@ void SenderThread() {
   }
   AOS_LOG(INFO, "Current PID: %d\n", pid);
 
-  {
-    cpu_set_t cpuset;
-    CPU_ZERO(&cpuset);
-    CPU_SET(FLAGS_core, &cpuset);
-
-    SetCurrentThreadAffinity(cpuset);
-  }
+  SetCurrentThreadAffinity(MakeCpusetFromCpus({FLAGS_core}));
   SetCurrentThreadRealtimePriority(FLAGS_sender_priority);
   while (true) {
     const monotonic_clock::time_point wakeup_time =
@@ -151,13 +145,7 @@ void ReceiverThread() {
     }
   });
 
-  {
-    cpu_set_t cpuset;
-    CPU_ZERO(&cpuset);
-    CPU_SET(FLAGS_core, &cpuset);
-
-    SetCurrentThreadAffinity(cpuset);
-  }
+  SetCurrentThreadAffinity(MakeCpusetFromCpus({FLAGS_core}));
   SetCurrentThreadRealtimePriority(FLAGS_receiver_priority);
   epoll.Run();
   UnsetCurrentThreadRealtimePriority();

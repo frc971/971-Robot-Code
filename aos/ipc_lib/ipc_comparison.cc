@@ -811,13 +811,7 @@ int Main(int /*argc*/, char **argv) {
     if (FLAGS_server_priority > 0) {
       SetCurrentThreadRealtimePriority(FLAGS_server_priority);
     }
-    {
-      cpu_set_t cpuset;
-      CPU_ZERO(&cpuset);
-      CPU_SET(FLAGS_server_cpu, &cpuset);
-
-      SetCurrentThreadAffinity(cpuset);
-    }
+    SetCurrentThreadAffinity(MakeCpusetFromCpus({FLAGS_server_cpu}));
 
     while (!done) {
       const PingPongerInterface::Data *data = ping_ponger->Wait();
@@ -832,13 +826,7 @@ int Main(int /*argc*/, char **argv) {
   if (FLAGS_client_priority > 0) {
     SetCurrentThreadRealtimePriority(FLAGS_client_priority);
   }
-  {
-    cpu_set_t cpuset;
-    CPU_ZERO(&cpuset);
-    CPU_SET(FLAGS_client_cpu, &cpuset);
-
-    SetCurrentThreadAffinity(cpuset);
-  }
+  SetCurrentThreadAffinity(MakeCpusetFromCpus({FLAGS_client_cpu}));
 
   // Warm everything up.
   for (int i = 0; i < 1000; ++i) {

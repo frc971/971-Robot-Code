@@ -466,15 +466,6 @@ class PhasedLoopHandler {
   Ftrace ftrace_;
 };
 
-inline cpu_set_t MakeCpusetFromCpus(std::initializer_list<int> cpus) {
-  cpu_set_t result;
-  CPU_ZERO(&result);
-  for (int cpu : cpus) {
-    CPU_SET(cpu, &result);
-  }
-  return result;
-}
-
 class EventLoop {
  public:
   EventLoop(const Configuration *configuration);

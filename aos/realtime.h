@@ -27,6 +27,16 @@ void ExpandStackSize();
 // name can have a maximum of 16 characters.
 void SetCurrentThreadName(const std::string_view name);
 
+// Creates a cpu_set_t from a list of CPUs.
+inline cpu_set_t MakeCpusetFromCpus(std::initializer_list<int> cpus) {
+  cpu_set_t result;
+  CPU_ZERO(&result);
+  for (int cpu : cpus) {
+    CPU_SET(cpu, &result);
+  }
+  return result;
+}
+
 // Sets the current thread's scheduling affinity.
 void SetCurrentThreadAffinity(const cpu_set_t &cpuset);
 
