@@ -9,17 +9,28 @@ nativeUtils {
     configureDependencies {
       wpiVersion = "-1"
       niLibVersion = "2020.10.1"
-      opencvVersion = "3.4.7-2"
-      googleTestVersion = "1.9.0-4-437e100-1"
-      imguiVersion = "1.72b-2"
+      opencvVersion = "3.4.7-5"
+      googleTestVersion = "1.9.0-5-437e100-1"
+      imguiVersion = "1.76-9"
+      wpimathVersion = "-1"
     }
   }
 }
 
 nativeUtils.wpi.addWarnings()
 nativeUtils.wpi.addWarningsAsErrors()
+nativeUtils.wpi.addReleaseSymbolGeneration()
 
 nativeUtils.setSinglePrintPerPlatform()
+nativeUtils.enableSourceLink()
+
+nativeUtils.platformConfigs.each {
+    if (it.name.contains('windows')) return
+    it.linker.args << '-Wl,-rpath,\'$ORIGIN\''
+    if (it.name == 'osxx86-64') {
+        it.linker.args << "-headerpad_max_install_names"
+    }
+}
 
 model {
     components {
@@ -136,6 +147,14 @@ ext.includeStandardZipFormat = { task, value ->
             } else  if (binary instanceof StaticLibraryBinarySpec) {
                 task.dependsOn binary.tasks.createStaticLib
                 task.from(binary.staticLibraryFile) {
+                    into nativeUtils.getPlatformPath(binary) + '/static'
+                }
+                def pdbDir = binary.staticLibraryFile.parentFile
+                task.from(pdbDir) {
+                    include '*.pdb'
+                    into nativeUtils.getPlatformPath(binary) + '/static'
+                }
+                task.from(new File(pdbDir, "SourceLink.json")) {
                     into nativeUtils.getPlatformPath(binary) + '/static'
                 }
             }

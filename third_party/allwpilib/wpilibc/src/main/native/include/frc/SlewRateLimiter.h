@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019 FIRST. All Rights Reserved.                             */
+/* Copyright (c) 2019-2020 FIRST. All Rights Reserved.                        */
 /* Open Source Software - may be modified and shared by FRC teams. The code   */
 /* must be accompanied by the FIRST BSD license file in the root directory of */
 /* the project.                                                               */
@@ -11,7 +11,7 @@
 
 #include <algorithm>
 
-#include <units/units.h>
+#include <units/time.h>
 
 namespace frc {
 /**
@@ -25,11 +25,11 @@ namespace frc {
  */
 template <class Unit>
 class SlewRateLimiter {
+ public:
   using Unit_t = units::unit_t<Unit>;
   using Rate = units::compound_unit<Unit, units::inverse<units::seconds>>;
   using Rate_t = units::unit_t<Rate>;
 
- public:
   /**
    * Creates a new SlewRateLimiter with the given rate limit and initial value.
    *
@@ -37,9 +37,9 @@ class SlewRateLimiter {
    * @param initialValue The initial value of the input.
    */
   explicit SlewRateLimiter(Rate_t rateLimit, Unit_t initialValue = Unit_t{0})
-      : m_rateLimit{rateLimit}, m_prevVal{initialValue} {
-    m_timer.Start();
-  }
+      : m_rateLimit{rateLimit},
+        m_prevVal{initialValue},
+        m_prevTime{frc2::Timer::GetFPGATimestamp()} {}
 
   /**
    * Filters the input to limit its slew rate.
@@ -49,9 +49,11 @@ class SlewRateLimiter {
    * rate.
    */
   Unit_t Calculate(Unit_t input) {
-    m_prevVal += std::clamp(input - m_prevVal, -m_rateLimit * m_timer.Get(),
-                            m_rateLimit * m_timer.Get());
-    m_timer.Reset();
+    units::second_t currentTime = frc2::Timer::GetFPGATimestamp();
+    units::second_t elapsedTime = currentTime - m_prevTime;
+    m_prevVal += std::clamp(input - m_prevVal, -m_rateLimit * elapsedTime,
+                            m_rateLimit * elapsedTime);
+    m_prevTime = currentTime;
     return m_prevVal;
   }
 
@@ -62,13 +64,13 @@ class SlewRateLimiter {
    * @param value The value to reset to.
    */
   void Reset(Unit_t value) {
-    m_timer.Reset();
     m_prevVal = value;
+    m_prevTime = frc2::Timer::GetFPGATimestamp();
   }
 
  private:
-  frc2::Timer m_timer;
   Rate_t m_rateLimit;
   Unit_t m_prevVal;
+  units::second_t m_prevTime;
 };
 }  // namespace frc

@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------------*/
-/* Copyright (c) 2008-2019 FIRST. All Rights Reserved.                        */
+/* Copyright (c) 2008-2020 FIRST. All Rights Reserved.                        */
 /* Open Source Software - may be modified and shared by FRC teams. The code   */
 /* must be accompanied by the FIRST BSD license file in the root directory of */
 /* the project.                                                               */
@@ -10,7 +10,6 @@
 #include <chrono>
 
 #include <hal/DriverStation.h>
-#include <hal/FRCUsageReporting.h>
 #include <hal/HALBase.h>
 #include <hal/Power.h>
 #include <networktables/NetworkTable.h>
@@ -19,10 +18,8 @@
 #include <wpi/SmallString.h>
 #include <wpi/StringRef.h>
 
-#include "frc/AnalogInput.h"
 #include "frc/MotorSafety.h"
 #include "frc/Timer.h"
-#include "frc/Utility.h"
 #include "frc/WPIErrors.h"
 
 namespace frc {
@@ -67,6 +64,15 @@ class MatchDataSender {
 using namespace frc;
 
 static constexpr double kJoystickUnpluggedMessageInterval = 1.0;
+
+static int& GetDSLastCount() {
+  // There is a rollover error condition here. At Packet# = n * (uintmax), this
+  // will return false when instead it should return true. However, this at a
+  // 20ms rate occurs once every 2.7 years of DS connected runtime, so not
+  // worth the cycles to check.
+  thread_local int lastCount{0};
+  return lastCount;
+}
 
 DriverStation::~DriverStation() {
   m_isRunning = false;
@@ -325,6 +331,11 @@ int DriverStation::GetJoystickAxisType(int stick, int axis) const {
   return static_cast<bool>(descriptor.axisTypes);
 }
 
+bool DriverStation::IsJoystickConnected(int stick) const {
+  return GetStickAxisCount(stick) > 0 || GetStickButtonCount(stick) > 0 ||
+         GetStickPOVCount(stick) > 0;
+}
+
 bool DriverStation::IsEnabled() const {
   HAL_ControlWord controlWord;
   HAL_GetControlWord(&controlWord);
@@ -349,10 +360,22 @@ bool DriverStation::IsAutonomous() const {
   return controlWord.autonomous;
 }
 
+bool DriverStation::IsAutonomousEnabled() const {
+  HAL_ControlWord controlWord;
+  HAL_GetControlWord(&controlWord);
+  return controlWord.autonomous && controlWord.enabled;
+}
+
 bool DriverStation::IsOperatorControl() const {
   HAL_ControlWord controlWord;
   HAL_GetControlWord(&controlWord);
   return !(controlWord.autonomous || controlWord.test);
+}
+
+bool DriverStation::IsOperatorControlEnabled() const {
+  HAL_ControlWord controlWord;
+  HAL_GetControlWord(&controlWord);
+  return !controlWord.autonomous && !controlWord.test && controlWord.enabled;
 }
 
 bool DriverStation::IsTest() const {
@@ -367,7 +390,14 @@ bool DriverStation::IsDSAttached() const {
   return controlWord.dsAttached;
 }
 
-bool DriverStation::IsNewControlData() const { return HAL_IsNewControlData(); }
+bool DriverStation::IsNewControlData() const {
+  std::unique_lock lock(m_waitForDataMutex);
+  int& lastCount = GetDSLastCount();
+  int currentCount = m_waitForDataCounter;
+  if (lastCount == currentCount) return false;
+  lastCount = currentCount;
+  return true;
+}
 
 bool DriverStation::IsFMSAttached() const {
   HAL_ControlWord controlWord;
@@ -448,7 +478,12 @@ bool DriverStation::WaitForData(double timeout) {
       std::chrono::steady_clock::now() + std::chrono::duration<double>(timeout);
 
   std::unique_lock lock(m_waitForDataMutex);
+  int& lastCount = GetDSLastCount();
   int currentCount = m_waitForDataCounter;
+  if (lastCount != currentCount) {
+    lastCount = currentCount;
+    return true;
+  }
   while (m_waitForDataCounter == currentCount) {
     if (timeout > 0) {
       auto timedOut = m_waitForDataCond.wait_until(lock, timeoutTime);
@@ -459,6 +494,7 @@ bool DriverStation::WaitForData(double timeout) {
       m_waitForDataCond.wait(lock);
     }
   }
+  lastCount = m_waitForDataCounter;
   return true;
 }
 
@@ -507,6 +543,14 @@ void DriverStation::GetData() {
   SendMatchData();
 }
 
+void DriverStation::SilenceJoystickConnectionWarning(bool silence) {
+  m_silenceJoystickWarning = silence;
+}
+
+bool DriverStation::IsJoystickConnectionWarningSilenced() const {
+  return !IsFMSAttached() && m_silenceJoystickWarning;
+}
+
 DriverStation::DriverStation() {
   HAL_Initialize(500, 0);
   m_waitForDataCounter = 0;
@@ -534,10 +578,12 @@ void DriverStation::ReportJoystickUnpluggedError(const wpi::Twine& message) {
 }
 
 void DriverStation::ReportJoystickUnpluggedWarning(const wpi::Twine& message) {
-  double currentTime = Timer::GetFPGATimestamp();
-  if (currentTime > m_nextMessageTime) {
-    ReportWarning(message);
-    m_nextMessageTime = currentTime + kJoystickUnpluggedMessageInterval;
+  if (IsFMSAttached() || !m_silenceJoystickWarning) {
+    double currentTime = Timer::GetFPGATimestamp();
+    if (currentTime > m_nextMessageTime) {
+      ReportWarning(message);
+      m_nextMessageTime = currentTime + kJoystickUnpluggedMessageInterval;
+    }
   }
 }
 

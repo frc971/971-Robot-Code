@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------------*/
-/* Copyright (c) 2008-2019 FIRST. All Rights Reserved.                        */
+/* Copyright (c) 2008-2020 FIRST. All Rights Reserved.                        */
 /* Open Source Software - may be modified and shared by FRC teams. The code   */
 /* must be accompanied by the FIRST BSD license file in the root directory of */
 /* the project.                                                               */
@@ -148,6 +148,14 @@ uint64_t HAL_ExpandFPGATime(uint32_t unexpanded_lower, int32_t* status);
  * @return        true if initialization was successful, otherwise false.
  */
 HAL_Bool HAL_Initialize(int32_t timeout, int32_t mode);
+
+/**
+ * Call this to shut down HAL.
+ *
+ * This must be called at termination of the robot program to avoid potential
+ * segmentation faults with simulation extensions at exit.
+ */
+void HAL_Shutdown(void);
 
 #ifdef __cplusplus
 }  // extern "C"

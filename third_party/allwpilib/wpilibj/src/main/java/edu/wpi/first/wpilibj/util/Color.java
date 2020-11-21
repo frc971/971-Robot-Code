@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019 FIRST. All Rights Reserved.                             */
+/* Copyright (c) 2019-2020 FIRST. All Rights Reserved.                        */
 /* Open Source Software - may be modified and shared by FRC teams. The code   */
 /* must be accompanied by the FIRST BSD license file in the root directory of */
 /* the project.                                                               */
@@ -18,6 +18,98 @@ import edu.wpi.first.wpiutil.math.MathUtil;
  */
 @SuppressWarnings("MemberName")
 public class Color {
+  private static final double kPrecision = Math.pow(2, -12);
+
+  public final double red;
+  public final double green;
+  public final double blue;
+
+  /**
+   * Constructs a Color.
+   *
+   * @param red   Red value (0-1)
+   * @param green Green value (0-1)
+   * @param blue  Blue value (0-1)
+   */
+  public Color(double red, double green, double blue) {
+    this.red = roundAndClamp(red);
+    this.green = roundAndClamp(green);
+    this.blue = roundAndClamp(blue);
+  }
+
+  /**
+   * Constructs a Color from a Color8Bit.
+   *
+   * @param color The color
+   */
+  public Color(Color8Bit color) {
+    this(color.red / 255.0,
+        color.green / 255.0,
+        color.blue / 255.0);
+  }
+
+  /**
+   * Creates a Color from HSV values.
+   *
+   * @param h The h value [0-180]
+   * @param s The s value [0-255]
+   * @param v The v value [0-255]
+   * @return The color
+   */
+  @SuppressWarnings("ParameterName")
+  public static Color fromHSV(int h, int s, int v) {
+    if (s == 0) {
+      return new Color(v / 255.0, v / 255.0, v / 255.0);
+    }
+
+    final int region = h / 30;
+    final int remainder = (h - (region * 30)) * 6;
+
+    final int p = (v * (255 - s)) >> 8;
+    final int q = (v * (255 - ((s * remainder) >> 8))) >> 8;
+    final int t = (v * (255 - ((s * (255 - remainder)) >> 8))) >> 8;
+
+    switch (region) {
+      case 0:
+        return new Color(v / 255.0, t / 255.0, p / 255.0);
+      case 1:
+        return new Color(q / 255.0, v / 255.0, p / 255.0);
+      case 2:
+        return new Color(p / 255.0, v / 255.0, t / 255.0);
+      case 3:
+        return new Color(p / 255.0, q / 255.0, v / 255.0);
+      case 4:
+        return new Color(t / 255.0, p / 255.0, v / 255.0);
+      default:
+        return new Color(v / 255.0, p / 255.0, q / 255.0);
+    }
+  }
+
+  @Override
+  public boolean equals(Object other) {
+    if (this == other) {
+      return true;
+    }
+    if (other == null || getClass() != other.getClass()) {
+      return false;
+    }
+
+    Color color = (Color) other;
+    return Double.compare(color.red, red) == 0
+        && Double.compare(color.green, green) == 0
+        && Double.compare(color.blue, blue) == 0;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(red, green, blue);
+  }
+
+  private static double roundAndClamp(double value) {
+    final var rounded = Math.round((value + kPrecision / 2) / kPrecision) * kPrecision;
+    return MathUtil.clamp(rounded, 0.0, 1.0);
+  }
+
   /*
    * FIRST Colors
    */
@@ -399,7 +491,7 @@ public class Color {
   /**
    * #20B2AA.
    */
-  public static final Color kLightSeagGeen = new Color(0.1254902f, 0.69803923f, 0.6666667f);
+  public static final Color kLightSeaGreen = new Color(0.1254902f, 0.69803923f, 0.6666667f);
 
   /**
    * #87CEFA.
@@ -414,7 +506,7 @@ public class Color {
   /**
    * #B0C4DE.
    */
-  public static final Color kLightSteellue = new Color(0.6901961f, 0.76862746f, 0.87058824f);
+  public static final Color kLightSteelBlue = new Color(0.6901961f, 0.76862746f, 0.87058824f);
 
   /**
    * #FFFFE0.
@@ -740,59 +832,4 @@ public class Color {
    * #9ACD32.
    */
   public static final Color kYellowGreen = new Color(0.6039216f, 0.8039216f, 0.19607843f);
-
-  public final double red;
-  public final double green;
-  public final double blue;
-
-  private static final double kPrecision = Math.pow(2, -12);
-
-  /**
-   * Constructs a Color.
-   *
-   * @param red   Red value (0-1)
-   * @param green Green value (0-1)
-   * @param blue  Blue value (0-1)
-   */
-  Color(double red, double green, double blue) {
-    this.red = roundAndClamp(red);
-    this.green = roundAndClamp(green);
-    this.blue = roundAndClamp(blue);
-  }
-
-  /**
-   * Constructs a Color from a Color8Bit.
-   *
-   * @param color The color
-   */
-  public Color(Color8Bit color) {
-    this(color.red / 255.0,
-        color.green / 255.0,
-        color.blue / 255.0);
-  }
-
-  @Override
-  public boolean equals(Object other) {
-    if (this == other) {
-      return true;
-    }
-    if (other == null || getClass() != other.getClass()) {
-      return false;
-    }
-
-    Color color = (Color) other;
-    return Double.compare(color.red, red) == 0
-        && Double.compare(color.green, green) == 0
-        && Double.compare(color.blue, blue) == 0;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(red, green, blue);
-  }
-
-  private static double roundAndClamp(double value) {
-    final var rounded = Math.round(value / kPrecision) * kPrecision;
-    return MathUtil.clamp(rounded, 0.0, 1.0);
-  }
 }

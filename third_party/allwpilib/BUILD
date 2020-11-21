@@ -78,7 +78,6 @@ cc_library(
         "-Wno-unused-parameter",
         "-Wno-cast-align",
     ],
-    defines = ["WPILIB2019=1"],
     includes = _hal_header_dirs,
     restricted_to = ["//tools:roborio"],
     visibility = ["//third_party:__pkg__"],
