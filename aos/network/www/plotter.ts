@@ -39,9 +39,9 @@ export class Line {
   private _maxValues: number[] = [0.0, 0.0];
   private _color: number[] = [1.0, 0.0, 0.0];
   private pointAttribLocation: number;
-  private colorLocation: WebGLUniformLocation;
-  private pointSizeLocation: WebGLUniformLocation;
-  private _label: string;
+  private colorLocation: WebGLUniformLocation | null;
+  private pointSizeLocation: WebGLUniformLocation | null;
+  private _label: string = "";
   constructor(
       private readonly ctx: WebGLRenderingContext,
       private readonly program: WebGLProgram,

@@ -8,13 +8,14 @@ package(
 
 exports_files([
     "LICENSE",
+    "tsconfig.json",
 ])
 
 # Public flatc library to compile flatbuffer files at runtime.
 cc_library(
     name = "flatbuffers",
-    copts = ["-Wno-cast-align"],
     hdrs = ["//:public_headers"],
+    copts = ["-Wno-cast-align"],
     linkstatic = 1,
     strip_include_prefix = "/include",
     deps = ["//src:flatbuffers"],
@@ -82,6 +83,7 @@ cc_library(
     linkstatic = 1,
     strip_include_prefix = "/include",
 )
+
 py_library(
     name = "flatpy",
     srcs = glob(["python/flatbuffers/*.py"]),

@@ -6,7 +6,8 @@
 // constructed flatbuffers.
 // See reflection_test_main.ts for sample usage.
 
-import {reflection, aos} from 'aos/configuration_generated';
+import {reflection, aos} from 'org_frc971/aos/configuration_generated';
+import {ByteBuffer} from 'org_frc971/external/com_github_google_flatbuffers/ts/byte-buffer';
 
 // Returns the size, in bytes, of the given type. For vectors/strings/etc.
 // returns the size of the offset.
@@ -99,10 +100,6 @@ function isInteger(baseType: reflection.BaseType): boolean {
 function isLong(baseType: reflection.BaseType): boolean {
   return isInteger(baseType) && (typeSize(baseType) > 4);
 }
-
-// TODO(james): Use the actual flatbuffers.ByteBuffer object; this is just
-// to prevent the typescript compiler from complaining.
-class ByteBuffer {}
 
 // Stores the data associated with a Table within a given buffer.
 export class Table {
@@ -217,7 +214,7 @@ export class Parser {
   }
 
   // Returns the Object definition associated with the given type index.
-  getType(typeIndex: number): Object {
+  getType(typeIndex: number): reflection.Object {
     if (typeIndex === -1) {
       return this.schema.rootTable();
     }
@@ -230,7 +227,7 @@ export class Parser {
   // Retrieves the Field schema for the given field name within a given
   // type index.
   getField(fieldName: string, typeIndex: number): reflection.Field {
-    const schema: Object = this.getType(typeIndex);
+    const schema: reflection.Object = this.getType(typeIndex);
     const numFields = schema.fieldsLength();
     for (let ii = 0; ii < numFields; ++ii) {
       const field = schema.fields(ii);
@@ -300,7 +297,7 @@ export class Parser {
     if (offsetToOffset === table.offset) {
       return null;
     }
-    return table.bb.__string(offsetToOffset);
+    return table.bb.__string(offsetToOffset) as string;
   }
   // Reads a sub-message from the given Table. The sub-message may either be
   // a struct or a Table. Returns null if the sub-message is not set.

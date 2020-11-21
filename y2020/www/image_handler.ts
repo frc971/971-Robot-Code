@@ -1,8 +1,18 @@
-import {aos} from 'aos/configuration_generated';
-import {Connection} from 'aos/network/www/proxy';
-import {aos} from 'aos/network/connect_generated';
-import {frc971} from 'y2020/vision/sift/sift_generated'
-import {frc971} from 'y2020/vision/vision_generated';
+import * as configuration from 'org_frc971/aos/configuration_generated';
+import * as connect from 'org_frc971/aos/network/connect_generated';
+import {Connection} from 'org_frc971/aos/network/www/proxy';
+import * as flatbuffers_builder from 'org_frc971/external/com_github_google_flatbuffers/ts/builder';
+import {ByteBuffer} from 'org_frc971/external/com_github_google_flatbuffers/ts/byte-buffer';
+import {Long} from 'org_frc971/external/com_github_google_flatbuffers/ts/long';
+import * as sift from 'org_frc971/y2020/vision/sift/sift_generated'
+import * as vision from 'org_frc971/y2020/vision/vision_generated';
+
+import Channel = configuration.aos.Channel;
+import Configuration = configuration.aos.Configuration;
+import Connect = connect.aos.message_bridge.Connect;
+import CameraImage = vision.frc971.vision.CameraImage;
+import ImageMatchResult = sift.frc971.vision.sift.ImageMatchResult;
+import Feature = sift.frc971.vision.sift.Feature;
 
 /*
  * All the messages that are required to show an image with metadata.
@@ -11,43 +21,43 @@ import {frc971} from 'y2020/vision/vision_generated';
 const REQUIRED_CHANNELS = [
   {
     name: '/pi1/camera',
-    type: frc971.vision.CameraImage.getFullyQualifiedName(),
+    type: CameraImage.getFullyQualifiedName(),
   },
   {
     name: '/pi2/camera',
-    type: frc971.vision.CameraImage.getFullyQualifiedName(),
+    type: CameraImage.getFullyQualifiedName(),
   },
   {
     name: '/pi3/camera',
-    type: frc971.vision.CameraImage.getFullyQualifiedName(),
+    type: CameraImage.getFullyQualifiedName(),
   },
   {
     name: '/pi4/camera',
-    type: frc971.vision.CameraImage.getFullyQualifiedName(),
+    type: CameraImage.getFullyQualifiedName(),
   },
   {
     name: '/pi5/camera',
-    type: frc971.vision.CameraImage.getFullyQualifiedName(),
+    type: CameraImage.getFullyQualifiedName(),
   },
   {
     name: '/pi1/camera/detailed',
-    type: frc971.vision.sift.ImageMatchResult.getFullyQualifiedName(),
+    type: ImageMatchResult.getFullyQualifiedName(),
   },
   {
     name: '/pi2/camera/detailed',
-    type: frc971.vision.sift.ImageMatchResult.getFullyQualifiedName(),
+    type: ImageMatchResult.getFullyQualifiedName(),
   },
   {
     name: '/pi3/camera/detailed',
-    type: frc971.vision.sift.ImageMatchResult.getFullyQualifiedName(),
+    type: ImageMatchResult.getFullyQualifiedName(),
   },
   {
     name: '/pi4/camera/detailed',
-    type: frc971.vision.sift.ImageMatchResult.getFullyQualifiedName(),
+    type: ImageMatchResult.getFullyQualifiedName(),
   },
   {
     name: '/pi5/camera/detailed',
-    type: frc971.vision.sift.ImageMatchResult.getFullyQualifiedName(),
+    type: ImageMatchResult.getFullyQualifiedName(),
   },
 ];
 
@@ -56,10 +66,10 @@ export class ImageHandler {
   private select = document.createElement('select');
 
   private imageBuffer: Uint8ClampedArray|null = null;
-  private image: frc971.vision.CameraImage|null = null;
-  private imageTimestamp: flatbuffers.Long|null = null;
-  private result: frc971.vision.sift.ImageMatchResult|null = null;
-  private resultTimestamp: flatbuffers.Long|null = null;
+  private image: CameraImage|null = null;
+  private imageTimestamp: Long|null = null;
+  private result: ImageMatchResult|null = null;
+  private resultTimestamp: Long|null = null;
   private width = 0;
   private height = 0;
   private selectedIndex = 0;
@@ -77,32 +87,33 @@ export class ImageHandler {
       this.sendConnect();
     });
     this.connection.addHandler(
-        frc971.vision.sift.ImageMatchResult.getFullyQualifiedName(), (data) => {
+        ImageMatchResult.getFullyQualifiedName(), (data) => {
           this.handleImageMetadata(data);
         });
-    this.connection.addHandler(
-      frc971.vision.CameraImage.getFullyQualifiedName(), (data) => {
-        this.handleImage(data);
-      });
+    this.connection.addHandler(CameraImage.getFullyQualifiedName(), (data) => {
+      this.handleImage(data);
+    });
   }
 
   private sendConnect(): void {
-    const builder = new flatbuffers.Builder(512);
+    const builder =
+        new flatbuffers_builder.Builder(512) as unknown as flatbuffers.Builder;
     const channels: flatbuffers.Offset[] = [];
     for (const channel of REQUIRED_CHANNELS) {
       const nameFb = builder.createString(channel.name);
       const typeFb = builder.createString(channel.type);
-      aos.Channel.startChannel(builder);
-      aos.Channel.addName(builder, nameFb);
-      aos.Channel.addType(builder, typeFb);
-      const channelFb = aos.Channel.endChannel(builder);
+      Channel.startChannel(builder);
+      Channel.addName(builder, nameFb);
+      Channel.addType(builder, typeFb);
+      const channelFb = Channel.endChannel(builder);
       channels.push(channelFb);
     }
 
-    const channelsFb = aos.message_bridge.Connect.createChannelsToTransferVector(builder, channels);
-    aos.message_bridge.Connect.startConnect(builder);
-    aos.message_bridge.Connect.addChannelsToTransfer(builder, channelsFb);
-    const connect = aos.message_bridge.Connect.endConnect(builder);
+    const channelsFb =
+        Connect.createChannelsToTransferVector(builder, channels);
+    Connect.startConnect(builder);
+    Connect.addChannelsToTransfer(builder, channelsFb);
+    const connect = Connect.endConnect(builder);
     builder.finish(connect);
     this.connection.sendConnectMessage(builder);
   }
@@ -120,8 +131,9 @@ export class ImageHandler {
       this.imageSkipCount = 3;
     }
 
-    const fbBuffer = new flatbuffers.ByteBuffer(data);
-    this.image = frc971.vision.CameraImage.getRootAsCameraImage(fbBuffer);
+    const fbBuffer = new ByteBuffer(data);
+    this.image = CameraImage.getRootAsCameraImage(
+        fbBuffer as unknown as flatbuffers.ByteBuffer);
     this.imageTimestamp = this.image.monotonicTimestampNs();
 
     this.width = this.image.cols();
@@ -134,7 +146,8 @@ export class ImageHandler {
   }
 
   convertImage(): void {
-    this.imageBuffer = new Uint8ClampedArray(this.width * this.height * 4); // RGBA
+    this.imageBuffer =
+        new Uint8ClampedArray(this.width * this.height * 4);  // RGBA
     // Read four bytes (YUYV) from the data and transform into two pixels of
     // RGBA for canvas
     for (let j = 0; j < this.height; j++) {
@@ -170,9 +183,9 @@ export class ImageHandler {
 
   handleImageMetadata(data: Uint8Array): void {
     console.log('got an image match result to process');
-    const fbBuffer = new flatbuffers.ByteBuffer(data);
-    this.result =
-        frc971.vision.sift.ImageMatchResult.getRootAsImageMatchResult(fbBuffer);
+    const fbBuffer = new ByteBuffer(data);
+    this.result = ImageMatchResult.getRootAsImageMatchResult(
+        fbBuffer as unknown as flatbuffers.ByteBuffer);
     this.resultTimestamp = this.result.imageMonotonicTimestampNs();
     this.draw();
   }

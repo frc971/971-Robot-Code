@@ -1,6 +1,12 @@
-import {aos.Configuration as Configuration, aos.Channel as Channel} from 'aos/configuration_generated';
-import {Connect} from 'aos/network/connect_generated';
+import * as configuration from 'org_frc971/aos/configuration_generated';
+import * as connect from 'org_frc971/aos/network/connect_generated';
+import * as flatbuffers_builder from 'org_frc971/external/com_github_google_flatbuffers/ts/builder';
+
 import {Connection} from './proxy';
+
+import Configuration = configuration.aos.Configuration;
+import Channel = configuration.aos.Channel;
+import Connect = connect.aos.message_bridge.Connect;
 
 export class ConfigHandler {
   private readonly root_div = document.createElement('div');
@@ -54,7 +60,8 @@ export class ConfigHandler {
 
   handleChange() {
     const toggles = this.root_div.getElementsByTagName('input');
-    const builder = new flatbuffers.Builder(512);
+    const builder =
+        new flatbuffers_builder.Builder(512) as unknown as flatbuffers.Builder;
 
     const channels: flatbuffers.Offset[] = [];
     for (const toggle of toggles) {

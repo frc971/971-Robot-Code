@@ -243,7 +243,6 @@ sh_binary(
         "//y2020/www:camera_main_bundle",
         "//y2020/www:field_main_bundle",
         "//y2020/www:files",
-        "//y2020/www:flatbuffers",
     ],
 )
 

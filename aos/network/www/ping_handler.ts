@@ -1,4 +1,4 @@
-import {aos} from 'aos/events/ping_generated';
+import {aos} from 'org_frc971/aos/events/ping_generated';
 
 export function HandlePing(data: Uint8Array) {
   const fbBuffer = new flatbuffers.ByteBuffer(data);
