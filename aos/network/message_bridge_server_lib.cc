@@ -24,9 +24,8 @@ bool ChannelState::Matches(const Channel *other_channel) {
       channel_->max_size() == other_channel->max_size());
 }
 
-void ChannelState::SendData(SctpServer *server, const Context &context) {
-  // TODO(austin): I don't like allocating this buffer when we are just freeing
-  // it at the end of the function.
+flatbuffers::FlatBufferBuilder ChannelState::PackContext(
+    const Context &context) {
   flatbuffers::FlatBufferBuilder fbb(channel_->max_size() + 100);
   fbb.ForceDefaults(true);
   VLOG(1) << "Found " << peers_.size() << " peers on channel "
@@ -37,6 +36,14 @@ void ChannelState::SendData(SctpServer *server, const Context &context) {
   // Only useful when not logging.
   fbb.FinishSizePrefixed(logger::PackMessage(&fbb, context, channel_index_,
                                              logger::LogType::kLogMessage));
+
+  return fbb;
+}
+
+void ChannelState::SendData(SctpServer *server, const Context &context) {
+  // TODO(austin): I don't like allocating this buffer when we are just freeing
+  // it at the end of the function.
+  flatbuffers::FlatBufferBuilder fbb = PackContext(context);
 
   // TODO(austin): Track which connections need to be reliable and handle
   // resending properly.
@@ -175,6 +182,7 @@ void ChannelState::AddPeer(
 }
 
 int ChannelState::NodeDisconnected(sctp_assoc_t assoc_id) {
+  VLOG(1) << "Disconnected " << assoc_id;
   for (ChannelState::Peer &peer : peers_) {
     if (peer.sac_assoc_id == assoc_id) {
       // TODO(austin): This will not handle multiple clients from
@@ -190,12 +198,47 @@ int ChannelState::NodeDisconnected(sctp_assoc_t assoc_id) {
 
 int ChannelState::NodeConnected(const Node *node, sctp_assoc_t assoc_id,
                                 int stream, SctpServer *server) {
+  VLOG(1) << "Connected to assoc_id: " << assoc_id;
   for (ChannelState::Peer &peer : peers_) {
     if (peer.connection->name()->string_view() == node->name()->string_view()) {
+      // There's a peer already connected.  Disconnect them and take over.
+      if (peer.sac_assoc_id != 0) {
+        LOG(WARNING) << "Peer " << peer.sac_assoc_id
+                     << " already connected, aborting old connection.";
+        server->Abort(peer.sac_assoc_id);
+      }
+
       peer.sac_assoc_id = assoc_id;
       peer.stream = stream;
       peer.server_connection_statistics->mutate_state(State::CONNECTED);
       server->SetStreamPriority(assoc_id, stream, peer.connection->priority());
+      if (last_message_fetcher_ && peer.connection->time_to_live() == 0) {
+        last_message_fetcher_->Fetch();
+        VLOG(1) << "Got a connection on a reliable channel "
+                << configuration::StrippedChannelToString(
+                       last_message_fetcher_->channel())
+                << ", sending? "
+                << (last_message_fetcher_->context().data != nullptr);
+        if (last_message_fetcher_->context().data != nullptr) {
+          // SendData sends to all...  Only send to the new one.
+          // TODO(austin): I don't like allocating this buffer when we are just
+          // freeing it at the end of the function.
+          flatbuffers::FlatBufferBuilder fbb =
+              PackContext(last_message_fetcher_->context());
+
+          if (server->Send(std::string_view(reinterpret_cast<const char *>(
+                                                fbb.GetBufferPointer()),
+                                            fbb.GetSize()),
+                           peer.sac_assoc_id, peer.stream,
+                           peer.connection->time_to_live() / 1000000)) {
+            peer.server_connection_statistics->mutate_sent_packets(
+                peer.server_connection_statistics->sent_packets() + 1);
+          } else {
+            peer.server_connection_statistics->mutate_dropped_packets(
+                peer.server_connection_statistics->dropped_packets() + 1);
+          }
+        }
+      }
       return peer.node_index;
     }
   }
@@ -261,9 +304,17 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop)
 
     if (configuration::ChannelIsSendableOnNode(channel, event_loop_->node()) &&
         channel->has_destination_nodes()) {
+
+      bool any_reliable = false;
+      for (const Connection *connection : *channel->destination_nodes()) {
+        if (connection->time_to_live() == 0) {
+          any_reliable = true;
+        }
+      }
       max_size = std::max(channel->max_size(), max_size);
-      std::unique_ptr<ChannelState> state(
-          new ChannelState{channel, channel_index});
+      std::unique_ptr<ChannelState> state(new ChannelState{
+          channel, channel_index,
+          any_reliable ? event_loop_->MakeRawFetcher(channel) : nullptr});
 
       for (const Connection *connection : *channel->destination_nodes()) {
         const Node *other_node = configuration::GetNode(
@@ -305,13 +356,19 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop)
               state_ptr->SendData(&server_, context);
             });
       } else {
+        for (const Connection *connection : *channel->destination_nodes()) {
+          CHECK_GE(connection->time_to_live(), 1000u);
+        }
         CHECK(timestamp_state_ == nullptr);
         timestamp_state_ = state.get();
       }
       channels_.emplace_back(std::move(state));
     } else if (channel == timestamp_channel) {
       std::unique_ptr<ChannelState> state(
-          new ChannelState{channel, channel_index});
+          new ChannelState{channel, channel_index, nullptr});
+      for (const Connection *connection : *channel->destination_nodes()) {
+        CHECK_GE(connection->time_to_live(), 1000u);
+      }
       timestamp_state_ = state.get();
       channels_.emplace_back(std::move(state));
     } else {
@@ -338,8 +395,10 @@ void MessageBridgeServer::NodeDisconnected(sctp_assoc_t assoc_id) {
       continue;
     }
 
-    node_index = channel_state->NodeDisconnected(assoc_id);
-    CHECK_NE(node_index, -1);
+    int new_node_index = channel_state->NodeDisconnected(assoc_id);
+    if (new_node_index != -1) {
+      node_index = new_node_index;
+    }
   }
 
   if (node_index != -1) {
@@ -360,6 +419,10 @@ void MessageBridgeServer::MessageReceived() {
     const union sctp_notification *snp =
         (const union sctp_notification *)message->data();
 
+    if (VLOG_IS_ON(2)) {
+      PrintNotification(message.get());
+    }
+
     switch (snp->sn_header.sn_type) {
       case SCTP_ASSOC_CHANGE: {
         const struct sctp_assoc_change *sac = &snp->sn_assoc_change;
@@ -379,10 +442,6 @@ void MessageBridgeServer::MessageReceived() {
             break;
         }
       } break;
-    }
-
-    if (VLOG_IS_ON(2)) {
-      PrintNotification(message.get());
     }
   } else if (message->message_type == Message::kMessage) {
     HandleData(message.get());

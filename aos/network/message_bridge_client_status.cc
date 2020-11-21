@@ -31,6 +31,7 @@ FlatbufferDetachedBuffer<ClientStatistics> MakeClientStatistics(
     connection_builder.add_state(State::DISCONNECTED);
     // TODO(austin): Track dropped packets.
     connection_builder.add_received_packets(0);
+    connection_builder.add_duplicate_packets(0);
     connection_builder.add_monotonic_offset(0);
     connection_offsets.emplace_back(connection_builder.Finish());
   }
@@ -90,6 +91,10 @@ void MessageBridgeClientStatus::SendStatistics() {
     client_connection_builder.add_state(connection->state());
     client_connection_builder.add_received_packets(
         connection->received_packets());
+    if (connection->duplicate_packets() != 0) {
+      client_connection_builder.add_duplicate_packets(
+          connection->duplicate_packets());
+    }
 
     // Strip out the monotonic offset if it isn't populated.
     TimestampFilter *filter = &filters_[client_connection_offsets_.size()];

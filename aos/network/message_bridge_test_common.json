@@ -27,7 +27,8 @@
           "name": "pi2",
           "priority": 1,
           "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
-          "timestamp_logger_nodes": ["pi1"]
+          "timestamp_logger_nodes": ["pi1"],
+          "time_to_live": 5000000
         }
       ]
     },
@@ -42,7 +43,8 @@
           "name": "pi1",
           "priority": 1,
           "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
-          "timestamp_logger_nodes": ["pi2"]
+          "timestamp_logger_nodes": ["pi2"],
+          "time_to_live": 5000000
         }
       ]
     },
@@ -123,6 +125,20 @@
           "priority": 1,
           "timestamp_logger": "REMOTE_LOGGER",
           "timestamp_logger_nodes": ["pi1"]
+        }
+      ]
+    },
+    {
+      "name": "/unreliable",
+      "type": "aos.examples.Ping",
+      "source_node": "pi1",
+      "destination_nodes": [
+        {
+          "name": "pi2",
+          "priority": 1,
+          "timestamp_logger": "REMOTE_LOGGER",
+          "timestamp_logger_nodes": ["pi1"],
+          "time_to_live": 5000000
         }
       ]
     }
