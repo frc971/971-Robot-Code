@@ -137,8 +137,8 @@ class Reader : public ::aos::input::JoystickInput {
 }  // namespace input
 }  // namespace y2014_bot3
 
-int main() {
-  ::aos::InitNRT();
+int main(int argc, char **argv) {
+  ::aos::InitGoogle(&argc, &argv);
 
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig("config.json");

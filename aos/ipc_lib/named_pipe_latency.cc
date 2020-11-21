@@ -47,7 +47,13 @@ void SenderThread() {
   // Sleep between 1 and 15 ms.
   ::std::uniform_int_distribution<> distribution(1000, 15000);
 
-  PinCurrentThreadToCPU(FLAGS_core);
+  {
+    cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);
+    CPU_SET(FLAGS_core, &cpuset);
+
+    SetCurrentThreadAffinity(cpuset);
+  }
   SetCurrentThreadRealtimePriority(FLAGS_sender_priority);
   while (true) {
     const monotonic_clock::time_point wakeup_time =
@@ -125,7 +131,13 @@ void ReceiverThread() {
     }
   });
 
-  PinCurrentThreadToCPU(FLAGS_core);
+  {
+    cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);
+    CPU_SET(FLAGS_core, &cpuset);
+
+    SetCurrentThreadAffinity(cpuset);
+  }
   SetCurrentThreadRealtimePriority(FLAGS_receiver_priority);
   epoll.Run();
   UnsetCurrentThreadRealtimePriority();

@@ -48,7 +48,18 @@ template <typename T>
 class WPILibAdapterRobot : public frc::RobotBase {
  public:
   void StartCompetition() override {
-    ::aos::InitNRT();
+    // Just allow overcommit memory like usual. Various processes map memory
+    // they will never use, and the roboRIO doesn't have enough RAM to handle
+    // it. This is in here instead of starter.sh because starter.sh doesn't run
+    // with permissions on a roboRIO.
+    AOS_CHECK(system("echo 0 > /proc/sys/vm/overcommit_memory") == 0);
+
+    // Configure throttling so we reserve 5% of the CPU for non-rt work.
+    // This makes things significantly more stable when work explodes.
+    // This is in here instead of starter.sh for the same reasons, starter is
+    // suid and runs as admin, so this actually works.
+    AOS_CHECK(system("/sbin/sysctl -w kernel.sched_rt_period_us=1000000") == 0);
+    AOS_CHECK(system("/sbin/sysctl -w kernel.sched_rt_runtime_us=950000") == 0);
 
     robot_.Run();
   }

@@ -17,6 +17,7 @@
 #include "aos/events/epoll.h"
 #include "aos/events/event_loop_generated.h"
 #include "aos/events/timing_statistics.h"
+#include "aos/init.h"
 #include "aos/ipc_lib/lockless_queue.h"
 #include "aos/ipc_lib/signalfd.h"
 #include "aos/realtime.h"
@@ -225,6 +226,7 @@ ShmEventLoop::ShmEventLoop(const Configuration *configuration)
       shm_base_(FLAGS_shm_base),
       name_(FLAGS_application_name),
       node_(MaybeMyNode(configuration)) {
+  CHECK(IsInitialized()) << ": Need to initialize AOS first.";
   if (configuration->has_nodes()) {
     CHECK(node_ != nullptr) << ": Couldn't find node in config.";
   }

@@ -13,11 +13,13 @@
 #include <Python.h>
 
 #include <memory>
+#include <errno.h>
 
 #include "aos/configuration.h"
 #include "aos/events/logging/logger.h"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/flatbuffer_merge.h"
+#include "aos/init.h"
 #include "aos/json_to_flatbuffer.h"
 
 namespace frc971 {
@@ -75,6 +77,15 @@ PyObject *LogReader_new(PyTypeObject *type, PyObject * /*args*/,
 }
 
 int LogReader_init(LogReaderType *self, PyObject *args, PyObject *kwds) {
+  int count = 1;
+  if (!aos::IsInitialized()) {
+    // Fake out argc and argv to let InitGoogle run properly to instrument
+    // malloc, setup glog, and such.
+    char *name = program_invocation_name;
+    char **argv = &name;
+    aos::InitGoogle(&count, &argv);
+  }
+
   const char *kwlist[] = {"log_file_name", nullptr};
 
   const char *log_file_name;

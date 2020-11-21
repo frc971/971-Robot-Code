@@ -398,8 +398,6 @@ int main(int argc, char *argv[]) {
 
   ::aos::network::OverrideTeamNumber(FLAGS_team);
 
-  ::aos::InitCreate();
-
   ::y2019::control_loops::drivetrain::LocalizerReplayer replay;
   replay.ProcessFile(FLAGS_logfile.c_str());
 

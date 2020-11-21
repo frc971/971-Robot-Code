@@ -430,7 +430,7 @@ void Main() {
 }  // namespace vision
 }  // namespace y2016
 
-int main(int /*argc*/, char ** /*argv*/) {
-  ::aos::InitNRT();
+int main(int argc, char **argv) {
+  ::aos::InitGoogle(&argc, &argv);
   ::y2016::vision::Main();
 }

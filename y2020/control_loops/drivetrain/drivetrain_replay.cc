@@ -27,8 +27,6 @@ int main(int argc, char **argv) {
 
   aos::network::OverrideTeamNumber(FLAGS_team);
 
-  aos::InitCreate();
-
   const aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig(FLAGS_config);
 

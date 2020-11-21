@@ -7,9 +7,8 @@ DEFINE_double(accelerator, 250.0, "Accelerator speed");
 DEFINE_double(finisher, 500.0, "Finsher speed");
 DEFINE_double(hood, 0.45, "Hood setpoint");
 
-int main(int argc, char ** argv) {
+int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
-  aos::InitNRT();
 
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig("config.json");

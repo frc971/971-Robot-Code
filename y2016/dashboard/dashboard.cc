@@ -279,11 +279,11 @@ void SocketHandler::Quit() {
 }  // namespace dashboard
 }  // namespace y2016
 
-int main(int, char *[]) {
+int main(int argc, char **argv) {
   // Make sure to reference this to force the linker to include it.
   findEmbeddedContent("");
 
-  ::aos::InitNRT();
+  ::aos::InitGoogle(&argc, &argv);
 
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig("config.json");

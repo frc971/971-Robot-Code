@@ -45,7 +45,7 @@ int Main() {
 }  // namespace vision
 }  // namespace y2018
 
-int main(int /*argc*/, char ** /*argv*/) {
-  ::aos::InitNRT();
+int main(int argc, char **argv) {
+  ::aos::InitGoogle(&argc, &argv);
   ::y2018::vision::Main();
 }

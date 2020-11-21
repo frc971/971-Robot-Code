@@ -8,6 +8,7 @@
 #include "absl/container/btree_map.h"
 #include "aos/events/aos_logging.h"
 #include "aos/events/simulated_network_bridge.h"
+#include "aos/init.h"
 #include "aos/json_to_flatbuffer.h"
 #include "aos/realtime.h"
 #include "aos/util/phased_loop.h"
@@ -969,6 +970,7 @@ SimulatedEventLoopFactory::SimulatedEventLoopFactory(
     const Configuration *configuration)
     : configuration_(CHECK_NOTNULL(configuration)),
       nodes_(configuration::GetNodes(configuration_)) {
+  CHECK(IsInitialized()) << ": Need to initialize AOS first.";
   for (const Node *node : nodes_) {
     node_factories_.emplace_back(new NodeEventLoopFactory(
         &scheduler_scheduler_, this, node, &raw_event_loops_));

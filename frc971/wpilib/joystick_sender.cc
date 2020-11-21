@@ -19,7 +19,7 @@ JoystickSender::JoystickSender(::aos::ShmEventLoop *event_loop)
       joystick_state_sender_(
           event_loop_->MakeSender<::aos::JoystickState>("/aos")),
       team_id_(::aos::network::GetTeamNumber()) {
-  event_loop_->SetRuntimeRealtimePriority(29);
+  event_loop_->SetRuntimeRealtimePriority(28);
   event_loop->set_name("joystick_sender");
 
   event_loop_->OnRun([this]() {

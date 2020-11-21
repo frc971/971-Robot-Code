@@ -36,7 +36,9 @@ BaseAutonomousActor::BaseAutonomousActor(
       drivetrain_status_fetcher_(
           event_loop->MakeFetcher<drivetrain::Status>("/drivetrain")),
       drivetrain_goal_fetcher_(
-          event_loop->MakeFetcher<drivetrain::Goal>("/drivetrain")) {}
+          event_loop->MakeFetcher<drivetrain::Goal>("/drivetrain")) {
+  event_loop->SetRuntimeRealtimePriority(29);
+}
 
 void BaseAutonomousActor::ResetDrivetrain() {
   AOS_LOG(INFO, "resetting the drivetrain\n");

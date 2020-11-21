@@ -320,8 +320,8 @@ class Reader : public ::aos::input::ActionJoystickInput {
 }  // namespace input
 }  // namespace y2017
 
-int main() {
-  ::aos::InitNRT();
+int main(int argc, char **argv) {
+  ::aos::InitGoogle(&argc, &argv);
 
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig("config.json");
