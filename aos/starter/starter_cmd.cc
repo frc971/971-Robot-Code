@@ -16,7 +16,6 @@ static const std::unordered_map<std::string, aos::starter::Command> kCommands{
 
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
-  aos::InitNRT();
 
   CHECK(argc == 3) << "Invalid number of command arguments";
 

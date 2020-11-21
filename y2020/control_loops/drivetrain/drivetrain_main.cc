@@ -8,7 +8,6 @@ using ::frc971::control_loops::drivetrain::DrivetrainLoop;
 
 int main(int argc, char *argv[]) {
   ::aos::InitGoogle(&argc, &argv);
-  ::aos::InitNRT();
 
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig("config.json");

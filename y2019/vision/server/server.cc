@@ -280,11 +280,11 @@ void DataThread(seasocks::Server *server, WebsocketHandler *websocket_handler) {
 }  // namespace vision
 }  // namespace y2019
 
-int main(int, char *[]) {
+int main(int argc, char **argv) {
   // Make sure to reference this to force the linker to include it.
   findEmbeddedContent("");
 
-  aos::InitNRT();
+  ::aos::InitGoogle(&argc, &argv);
 
   seasocks::Server server(::std::shared_ptr<seasocks::Logger>(
       new ::aos::seasocks::SeasocksLogger(seasocks::Logger::Level::Info)));

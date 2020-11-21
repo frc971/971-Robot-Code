@@ -35,7 +35,9 @@ ShootActor::ShootActor(::aos::EventLoop *event_loop)
               "/shooter")),
       shooter_goal_sender_(
           event_loop->MakeSender<::y2014::control_loops::shooter::Goal>(
-              "/shooter")) {}
+              "/shooter")) {
+  event_loop->SetRuntimeRealtimePriority(29);
+}
 
 double ShootActor::SpeedToAngleOffset(double speed) {
   const constants::Values &values = constants::GetValues();

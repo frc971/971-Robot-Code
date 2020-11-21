@@ -1,34 +1,14 @@
 #ifndef AOS_INIT_H_
 #define AOS_INIT_H_
 
-#include <string>
-
 namespace aos {
 
-// TODO(james): Clean up/unify the various init functions.
-
-// Initializes glog and gflags.
+// Initializes AOS.
 void InitGoogle(int *argc, char ***argv);
 
-// In order to use shared memory, one of the Init* functions must be called in
-// exactly 1 thread per process. It is OK to keep going without calling one of
-// them again after fork(2)ing.
-
-// Does the non-realtime parts of the initialization process.
-void InitNRT();
-// Initializes everything, including the realtime stuff.
-// relative_priority adjusts the priority of this process relative to all of the
-// other ones (positive for higher priority).
-void Init(int relative_priority = 0);
-// Same as InitNRT, except will remove an existing shared memory file and create
-// a new one.
-void InitCreate();
-
-// Performs the realtime parts of initialization after InitNRT() has been called.
-void GoRT(int relative_priority = 0);
-
-// Pins the current thread to CPU #number.
-void PinCurrentThreadToCPU(int number);
+// Returns true if we have been initialized.  This is mostly here so
+// ShmEventLoop can confirm the world was initialized before running.
+bool IsInitialized();
 
 }  // namespace aos
 

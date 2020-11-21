@@ -4,8 +4,8 @@
 #include "aos/init.h"
 #include "y2018/actors/autonomous_actor.h"
 
-int main(int /*argc*/, char * /*argv*/ []) {
-  ::aos::Init(-1);
+int main(int argc, char *argv[]) {
+  ::aos::InitGoogle(&argc, &argv);
 
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig("config.json");

@@ -22,7 +22,7 @@ class JoystickInput {
         "/aos", [this](const ::aos::JoystickState &joystick_state) {
           this->HandleData(&joystick_state);
         });
-    event_loop->SetRuntimeRealtimePriority(29);
+    event_loop->SetRuntimeRealtimePriority(28);
   }
 
  protected:

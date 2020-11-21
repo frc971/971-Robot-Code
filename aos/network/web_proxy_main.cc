@@ -17,8 +17,6 @@ int main(int argc, char **argv) {
   // Make sure to reference this to force the linker to include it.
   findEmbeddedContent("");
 
-  aos::InitNRT();
-
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig(FLAGS_config);
 

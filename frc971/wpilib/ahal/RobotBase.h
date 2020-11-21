@@ -19,20 +19,6 @@ namespace frc {
 
 class DriverStation;
 
-#ifdef WPILIB2017
-#define START_ROBOT_CLASS(_ClassName_)                                       \
-  int main() {                                                               \
-    if (!HAL_Initialize(0)) {                                                \
-      std::cerr << "FATAL ERROR: HAL could not be initialized" << std::endl; \
-      return -1;                                                             \
-    }                                                                        \
-    HAL_Report(HALUsageReporting::kResourceType_Language,                    \
-               HALUsageReporting::kLanguage_CPlusPlus);                      \
-    static _ClassName_ robot;                                                \
-    std::printf("\n********** Robot program starting **********\n");         \
-    robot.StartCompetition();                                                \
-  }
-#else
 #define START_ROBOT_CLASS(_ClassName_)                                       \
   int main(int argc, char *argv[]) {                                         \
     aos::InitGoogle(&argc, &argv);                                           \
@@ -50,7 +36,6 @@ class DriverStation;
     std::printf("\n********** Robot program starting **********\n");         \
     robot.StartCompetition();                                                \
   }
-#endif
 
 /**
  * Implement a Robot Program framework.

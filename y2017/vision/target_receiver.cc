@@ -72,7 +72,7 @@ int Main() {
 }  // namespace vision
 }  // namespace y2017
 
-int main(int /*argc*/, char ** /*argv*/) {
-  ::aos::InitNRT();
+int main(int argc, char **argv) {
+  ::aos::InitGoogle(&argc, &argv);
   ::y2017::vision::Main();
 }

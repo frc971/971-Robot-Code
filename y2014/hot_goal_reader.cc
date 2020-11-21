@@ -13,8 +13,8 @@
 #include "aos/time/time.h"
 #include "y2014/queues/hot_goal_generated.h"
 
-int main() {
-  ::aos::InitNRT();
+int main(int argc, char **argv) {
+  ::aos::InitGoogle(&argc, &argv);
 
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig("config.json");

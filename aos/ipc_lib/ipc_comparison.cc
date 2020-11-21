@@ -811,7 +811,13 @@ int Main(int /*argc*/, char **argv) {
     if (FLAGS_server_priority > 0) {
       SetCurrentThreadRealtimePriority(FLAGS_server_priority);
     }
-    PinCurrentThreadToCPU(FLAGS_server_cpu);
+    {
+      cpu_set_t cpuset;
+      CPU_ZERO(&cpuset);
+      CPU_SET(FLAGS_server_cpu, &cpuset);
+
+      SetCurrentThreadAffinity(cpuset);
+    }
 
     while (!done) {
       const PingPongerInterface::Data *data = ping_ponger->Wait();
@@ -826,7 +832,13 @@ int Main(int /*argc*/, char **argv) {
   if (FLAGS_client_priority > 0) {
     SetCurrentThreadRealtimePriority(FLAGS_client_priority);
   }
-  PinCurrentThreadToCPU(FLAGS_client_cpu);
+  {
+    cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);
+    CPU_SET(FLAGS_client_cpu, &cpuset);
+
+    SetCurrentThreadAffinity(cpuset);
+  }
 
   // Warm everything up.
   for (int i = 0; i < 1000; ++i) {
@@ -899,9 +911,7 @@ int main(int argc, char **argv) {
       "\ttcp\n"
       "\ttcp_nodelay\n"
       "\tudp\n");
-  ::gflags::ParseCommandLineFlags(&argc, &argv, true);
-
-  ::aos::InitNRT();
+  ::aos::InitGoogle(&argc, &argv);
 
   return ::aos::Main(argc, argv);
 }

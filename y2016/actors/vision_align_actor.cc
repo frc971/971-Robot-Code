@@ -23,11 +23,12 @@ VisionAlignActor::VisionAlignActor(::aos::EventLoop *event_loop)
     : aos::common::actions::ActorBase<vision_align_action::Goal>(
           event_loop, "/vision_align_action"),
       vision_status_fetcher_(
-          event_loop->MakeFetcher<::y2016::vision::VisionStatus>(
-              "/vision")),
+          event_loop->MakeFetcher<::y2016::vision::VisionStatus>("/vision")),
       drivetrain_goal_sender_(
           event_loop->MakeSender<::frc971::control_loops::drivetrain::Goal>(
-              "/drivetrain")) {}
+              "/drivetrain")) {
+  event_loop->SetRuntimeRealtimePriority(29);
+}
 
 bool VisionAlignActor::RunAction(
     const vision_align_action::VisionAlignActionParams * /*params*/) {

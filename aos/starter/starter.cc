@@ -770,9 +770,6 @@ void Main() {
 // This is the callback for when core creates the file indicating that it has
 // started.
 void Run() {
-  // It's safe now because core is up.
-  aos::InitNRT();
-
   std::ifstream list_file(child_list_file);
 
   while (true) {
@@ -806,6 +803,8 @@ void PrintHelp() {
 }  // namespace aos
 
 int main(int argc, char *argv[]) {
+  ::aos::InitGoogle(&argc, &argv);
+
   if (argc != 2) {
     aos::starter::PrintHelp();
     exit(EXIT_FAILURE);

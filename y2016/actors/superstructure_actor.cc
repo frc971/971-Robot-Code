@@ -22,7 +22,9 @@ SuperstructureActor::SuperstructureActor(::aos::EventLoop *event_loop)
       superstructure_status_fetcher_(
           event_loop
               ->MakeFetcher<::y2016::control_loops::superstructure::Status>(
-                  "/superstructure")) {}
+                  "/superstructure")) {
+  event_loop->SetRuntimeRealtimePriority(29);
+}
 
 bool SuperstructureActor::RunAction(
     const superstructure_action::SuperstructureActionParams *params) {
