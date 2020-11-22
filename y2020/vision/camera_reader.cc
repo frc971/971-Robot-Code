@@ -212,7 +212,7 @@ void CameraReader::SendImageMatchResult(
     aos::Sender<sift::ImageMatchResult> *result_sender, bool send_details) {
   auto builder = result_sender->MakeBuilder();
   const auto camera_calibration_offset =
-      aos::CopyFlatBuffer(camera_calibration_, builder.fbb());
+      aos::RecursiveCopyFlatBuffer(camera_calibration_, builder.fbb());
 
   flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<sift::Feature>>>
       features_offset;
