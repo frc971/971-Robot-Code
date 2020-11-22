@@ -33,7 +33,7 @@ else
   ssh "admin@${ROBOT_HOSTNAME}" mkdir robot_code
   ssh "admin@${ROBOT_HOSTNAME}" ln -s /media/sda1/aos_log-current robot_code/aos_log-current
   echo "Adding aos_dump autocomplete to profile"
-  ssh "admin@${ROBOT_HOSTNAME}" 'echo "if [ -f /home/admin/robot_code/aos_dump_autocomplete.sh ]; then; source /home/admin/robot_code/aos_dump_autocomplete.sh; fi;" >> /etc/profile'
+  ssh "admin@${ROBOT_HOSTNAME}" 'echo "if [ -f /home/admin/robot_code/aos_dump_autocomplete.sh ]; then source /home/admin/robot_code/aos_dump_autocomplete.sh; fi;" >> /etc/profile'
 fi
 
 if [[ "$(ssh admin@${ROBOT_HOSTNAME} uname -r)" != "4.14.87-rt49-cg-7.0.0f0-xilinx-zynq-189" ]]; then
@@ -41,7 +41,10 @@ if [[ "$(ssh admin@${ROBOT_HOSTNAME} uname -r)" != "4.14.87-rt49-cg-7.0.0f0-xili
   exit 1
 fi
 
-ssh "admin@${ROBOT_HOSTNAME}" mkdir "/lib/modules/4.14.87-rt49-cg-7.0.0f0-xilinx-zynq-189/kernel/net/sctp/"
+ssh "admin@${ROBOT_HOSTNAME}" 'echo "net.core.wmem_max=1262560" >> /etc/sysctl.conf'
+ssh "admin@${ROBOT_HOSTNAME}" 'echo "net.core.rmem_max=1262560" >> /etc/sysctl.conf'
+
+ssh "admin@${ROBOT_HOSTNAME}" mkdir "/lib/modules/4.14.87-rt49-cg-7.0.0f0-xilinx-zynq-189/kernel/net/sctp/ -p"
 scp frc971/config/sctp.ko "admin@${ROBOT_HOSTNAME}:/lib/modules/4.14.87-rt49-cg-7.0.0f0-xilinx-zynq-189/kernel/net/sctp/sctp.ko"
 ssh "admin@${ROBOT_HOSTNAME}" depmod
 
