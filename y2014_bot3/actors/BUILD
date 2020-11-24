@@ -6,6 +6,7 @@ cc_library(
     hdrs = [
         "autonomous_actor.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos/actions:action_lib",
         "//aos/events:event_loop",
@@ -22,6 +23,7 @@ cc_binary(
     srcs = [
         "autonomous_actor_main.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         ":autonomous_action_lib",

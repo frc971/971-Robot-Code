@@ -46,7 +46,8 @@ def cpu_select(values):
         "@//tools:cpu_roborio": values["roborio"],
         "@//tools:cpu_armhf": values["armhf"],
         "@//tools:cpu_cortex_m4f": values["cortex-m"],
-        "@//tools:cpu_cortex_m4f_k22": values["cortex-m"],
+        # TODO(phil): Support this properly.
+        #"@//tools:cpu_cortex_m4f_k22": values["cortex-m"],
     })
 
 """A select wrapper for address space sizes.
@@ -66,7 +67,8 @@ def address_size_select(values):
         "@//tools:cpu_roborio": values["32"],
         "@//tools:cpu_armhf": values["32"],
         "@//tools:cpu_cortex_m4f": values["32"],
-        "@//tools:cpu_cortex_m4f_k22": values["32"],
+        # TODO(phil): Support this properly.
+        #"@//tools:cpu_cortex_m4f_k22": values["32"],
     })
 
 """A select wrapper for compilers.

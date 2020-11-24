@@ -16,6 +16,7 @@ flatbuffer_cc_library(
         "superstructure_action.fbs",
     ],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )
 
@@ -27,6 +28,7 @@ cc_library(
     hdrs = [
         "superstructure_actor.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":superstructure_action_fbs",
         "//aos/actions:action_lib",
@@ -44,6 +46,7 @@ cc_binary(
     srcs = [
         "superstructure_actor_main.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":superstructure_action_fbs",
         ":superstructure_action_lib",
@@ -60,6 +63,7 @@ cc_library(
     hdrs = [
         "autonomous_actor.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":vision_align_action_lib",
         "//aos/actions:action_lib",
@@ -81,6 +85,7 @@ cc_binary(
     srcs = [
         "autonomous_actor_main.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":autonomous_action_lib",
         "//aos:init",
@@ -93,6 +98,7 @@ flatbuffer_cc_library(
         "vision_align_action.fbs",
     ],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )
 
@@ -104,6 +110,7 @@ cc_library(
     hdrs = [
         "vision_align_actor.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":vision_align_action_fbs",
         "//aos:math",
@@ -126,6 +133,7 @@ cc_binary(
     srcs = [
         "vision_align_actor_main.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":vision_align_action_fbs",
         ":vision_align_action_lib",

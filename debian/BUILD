@@ -115,9 +115,10 @@ py_binary(
     srcs = [
         "download_packages.py",
     ],
-    python_version = "PY3",
     main = "download_packages.py",
+    python_version = "PY3",
     srcs_version = "PY2AND3",
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 download_packages(
@@ -134,6 +135,7 @@ download_packages(
         "python3-numpy",
         "python3-scipy",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 download_packages(
@@ -152,6 +154,7 @@ download_packages(
         "gcc",
         "gfortran",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 download_packages(
@@ -159,6 +162,7 @@ download_packages(
     packages = [
         "patch",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 download_packages(
@@ -166,6 +170,7 @@ download_packages(
     packages = [
         "pandoc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 download_packages(
@@ -176,6 +181,7 @@ download_packages(
         "libusb-1.0-0-dev",
         "libusb-dev",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 download_packages(
@@ -183,6 +189,7 @@ download_packages(
     packages = [
         "g++-mingw-w64-x86-64",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 download_packages(
@@ -190,6 +197,7 @@ download_packages(
     packages = [
         "patchelf",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 download_packages(
@@ -212,6 +220,7 @@ download_packages(
         "python3-matplotlib",
         "python3-tk",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 # This list was obtained by manually looking at the output from:
@@ -229,6 +238,7 @@ download_packages(
         "libtinfo5",
         "zlib1g",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 download_packages(
@@ -251,6 +261,7 @@ download_packages(
         "python3-gi-cairo",
         "python3-shapely",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 download_packages(
@@ -258,66 +269,79 @@ download_packages(
     packages = [
         "m4",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 generate_deb_tarball(
     name = "python",
     files = python_debs,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 generate_deb_tarball(
     name = "clang_6p0",
     files = clang_debs,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 generate_deb_tarball(
     name = "patch",
     files = patch_debs,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 generate_deb_tarball(
     name = "rsync",
     files = rsync_debs,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 generate_deb_tarball(
     name = "ssh_v3",
     files = ssh_debs,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 generate_deb_tarball(
     name = "pandoc",
     files = pandoc_debs,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 generate_deb_tarball(
     name = "libusb",
     files = libusb_debs,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 generate_deb_tarball(
     name = "mingw_compiler",
     files = mingw_compiler_debs,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 generate_deb_tarball(
     name = "patchelf",
     files = patchelf_debs,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 generate_deb_tarball(
     name = "matplotlib",
     files = matplotlib_debs,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 generate_deb_tarball(
     name = "arm_frc_gnueabi_deps",
     files = arm_frc_gnueabi_deps_debs,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 generate_deb_tarball(
     name = "python_gtk",
     files = python_gtk_debs,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 # Starting point for opencv package list below.
@@ -363,6 +387,7 @@ download_packages(
         "libopencv-viz-dev",
         "libopencv-viz3.2",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 # This list was generated with download_packages.py on armhf and then
@@ -370,27 +395,32 @@ download_packages(
 generate_deb_tarball(
     name = "opencv_armhf_v3",
     files = opencv_armhf_debs,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 # This was hand-written based on opencv_armhf.bzl.
 generate_deb_tarball(
     name = "opencv_amd64",
     files = opencv_amd64_debs,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 generate_deb_tarball(
     name = "gstreamer_amd64",
     files = gstreamer_amd64_debs,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 generate_deb_tarball(
     name = "gstreamer_armhf",
     files = gstreamer_armhf_debs,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 generate_deb_tarball(
     name = "m4",
     files = m4_debs,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 download_packages(
@@ -398,16 +428,19 @@ download_packages(
     packages = [
         "liblzma-dev",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 generate_deb_tarball(
     name = "lzma_amd64",
     files = lzma_amd64_debs,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 generate_deb_tarball(
     name = "lzma_arm64",
     files = lzma_arm64_debs,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 exports_files([

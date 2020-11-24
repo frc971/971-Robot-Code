@@ -8,13 +8,14 @@ genrule(
         "const char *WPILibVersion = \"2018-frc971\";",
         "EOF",
     ]),
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 cc_library(
     name = "ahal",
     srcs = glob(["*.cc"]) + [":wpilib_version"],
     hdrs = glob(["*.h"]),
-    restricted_to = ["//tools:roborio"],
+    target_compatible_with = ["//tools/platforms/hardware:roborio"],
     visibility = ["//third_party:__pkg__"],
     deps = [
         "//aos:make_unique",

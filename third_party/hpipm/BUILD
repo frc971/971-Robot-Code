@@ -66,7 +66,7 @@ cc_library(
         "-Wno-unused-parameter",
     ],
     includes = ["include"],
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     textual_hdrs = [
         "ocp_qp/x_ocp_qp_sol.c",
         "dense_qp/x_dense_qp.c",

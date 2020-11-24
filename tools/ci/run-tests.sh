@@ -16,21 +16,21 @@ readonly COMMON='-c opt --stamp=no --curses=no --color=no --symlink_prefix=/'
 # bugs with Eigen.
 tools/bazel --output_base=../k8_output_base test \
     ${COMMON} \
-    --cpu=k8 \
+    --config=k8 \
     --config=eigen \
     ${TARGETS}
 
 tools/bazel --output_base=../roborio_output_base build \
     ${COMMON} \
-    --cpu=roborio \
+    --config=roborio \
     ${TARGETS}
 
 tools/bazel --output_base=../armhf-debian_output_base build \
     ${COMMON} \
-    --cpu=armhf-debian \
+    --config=armhf-debian \
     ${TARGETS}
 
 tools/bazel --output_base=../cortex-m4f_output_base build \
     ${COMMON} \
-    --cpu=cortex-m4f \
+    --config=cortex-m4f \
     ${M4F_TARGETS}

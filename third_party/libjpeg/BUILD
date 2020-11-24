@@ -77,5 +77,6 @@ cc_library(
         "//conditions:default": [],
     }),
     includes = ["src/main/c"],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )

@@ -9,6 +9,7 @@ genrule(
         "kalman_drivetrain_motor_plant.cc",
     ],
     cmd = "$(location //y2017/control_loops/python:drivetrain) $(OUTS)",
+    target_compatible_with = ["@platforms//os:linux"],
     tools = [
         "//y2017/control_loops/python:drivetrain",
     ],
@@ -26,6 +27,7 @@ genrule(
         "hybrid_velocity_drivetrain.cc",
     ],
     cmd = "$(location //y2017/control_loops/python:polydrivetrain) $(OUTS)",
+    target_compatible_with = ["@platforms//os:linux"],
     tools = [
         "//y2017/control_loops/python:polydrivetrain",
     ],
@@ -46,6 +48,7 @@ cc_library(
         "kalman_drivetrain_motor_plant.h",
         "polydrivetrain_dog_motor_plant.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//frc971/control_loops:hybrid_state_feedback_loop",
         "//frc971/control_loops:state_feedback_loop",
@@ -60,6 +63,7 @@ cc_library(
     hdrs = [
         "drivetrain_base.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":polydrivetrain_plants",
         "//frc971:shifter_hall_effect",
@@ -73,6 +77,7 @@ cc_binary(
     srcs = [
         "drivetrain_main.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":drivetrain_base",
         "//aos:init",

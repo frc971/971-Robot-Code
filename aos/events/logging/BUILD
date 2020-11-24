@@ -8,6 +8,7 @@ flatbuffer_cc_library(
     includes = [
         "//aos:configuration_fbs_includes",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )
 
@@ -21,11 +22,13 @@ cc_library(
         "logfile_sorting.h",
         "logfile_utils.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         ":buffer_encoder",
         ":uuid",
         ":logger_fbs",
+        ":lzma_encoder",
         "//aos:configuration",
         "//aos:flatbuffer_merge",
         "//aos:flatbuffers",
@@ -36,11 +39,7 @@ cc_library(
         "@com_github_google_flatbuffers//:flatbuffers",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/types:span",
-    ] + select({
-        "//tools:cpu_k8": [":lzma_encoder"],
-        "//tools:cpu_aarch64": [":lzma_encoder"],
-        "//conditions:default": [],
-    }),
+    ],
 )
 
 cc_binary(
@@ -49,6 +48,7 @@ cc_binary(
     srcs = [
         "logfile_utils_out_of_space_test_runner.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":logfile_utils",
         "//aos:init",
@@ -65,6 +65,7 @@ sh_test(
     data = [
         ":logfile_utils_out_of_space_test_runner",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "@bazel_tools//tools/bash/runfiles",
     ],
@@ -78,6 +79,7 @@ cc_library(
     hdrs = [
         "buffer_encoder.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         ":logger_fbs",
@@ -94,6 +96,7 @@ cc_test(
         "buffer_encoder_test.cc",
     ],
     shard_count = 4,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":buffer_encoder",
         ":buffer_encoder_param_test",
@@ -102,29 +105,15 @@ cc_test(
     ],
 )
 
-# TODO(Brian): Properly restrict this to specific platforms and
-# un-conditionalize the srcs and hdrs once we have support for that which
-# interacts with select properly.
 cc_library(
     name = "lzma_encoder",
-    srcs = select({
-        "//tools:cpu_k8": [
-            "lzma_encoder.cc",
-        ],
-        "//tools:cpu_aarch64": [
-            "lzma_encoder.cc",
-        ],
-        "//conditions:default": [],
-    }),
-    hdrs = select({
-        "//tools:cpu_k8": [
-            "lzma_encoder.h",
-        ],
-        "//tools:cpu_aarch64": [
-            "lzma_encoder.h",
-        ],
-        "//conditions:default": [],
-    }),
+    srcs = [
+        "lzma_encoder.cc",
+    ],
+    hdrs = [
+        "lzma_encoder.h",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         ":buffer_encoder",
@@ -143,11 +132,8 @@ cc_test(
     srcs = [
         "lzma_encoder_test.cc",
     ],
-    restricted_to = [
-        "//tools:k8",
-        "//tools:aarch64",
-    ],
     shard_count = 4,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":buffer_encoder_param_test",
         ":lzma_encoder",
@@ -165,6 +151,7 @@ cc_library(
     hdrs = [
         "buffer_encoder_param_test.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":logfile_utils",
         ":logger_fbs",
@@ -186,6 +173,7 @@ cc_library(
         "log_namer.h",
         "logger.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         ":logfile_utils",
@@ -211,6 +199,7 @@ cc_binary(
     srcs = [
         "log_cat.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         ":logger",
@@ -229,6 +218,7 @@ cc_binary(
     srcs = [
         "log_edit.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":logger",
         "//aos:configuration",
@@ -245,6 +235,7 @@ cc_binary(
     srcs = [
         "log_stats.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":logger",
         "//aos:configuration",
@@ -262,6 +253,7 @@ cc_binary(
     srcs = [
         "logger_main.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         ":logger",
@@ -285,6 +277,7 @@ aos_config(
         "//aos/network:message_bridge_server_fbs",
         "//aos/network:timestamp_fbs",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = ["//aos/events:config"],
 )
 
@@ -301,6 +294,7 @@ cc_test(
         "//aos/events:pingpong_config",
     ],
     shard_count = 5,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":logger",
         "//aos/events:message_counter",
@@ -316,11 +310,13 @@ cc_library(
     name = "uuid",
     srcs = ["uuid.cc"],
     hdrs = ["uuid.h"],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 cc_test(
     name = "uuid_test",
     srcs = ["uuid_test.cc"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":uuid",
         "//aos/testing:googletest",
@@ -330,6 +326,7 @@ cc_test(
 cc_test(
     name = "logfile_utils_test",
     srcs = ["logfile_utils_test.cc"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":logfile_utils",
         ":test_message_fbs",
@@ -342,4 +339,5 @@ flatbuffer_cc_library(
     name = "test_message_fbs",
     srcs = ["test_message.fbs"],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
 )

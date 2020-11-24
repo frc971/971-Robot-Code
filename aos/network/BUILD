@@ -11,6 +11,7 @@ flatbuffer_cc_library(
     includes = [
         "//aos:configuration_fbs_includes",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 flatbuffer_ts_library(
@@ -19,6 +20,7 @@ flatbuffer_ts_library(
     includes = [
         "//aos:configuration_fbs_includes",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 flatbuffer_cc_library(
@@ -28,6 +30,7 @@ flatbuffer_cc_library(
     includes = [
         "//aos:configuration_fbs_includes",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 flatbuffer_cc_library(
@@ -38,6 +41,7 @@ flatbuffer_cc_library(
         ":message_bridge_server_fbs_includes",
         "//aos:configuration_fbs_includes",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 flatbuffer_cc_library(
@@ -47,6 +51,7 @@ flatbuffer_cc_library(
     includes = [
         "//aos:configuration_fbs_includes",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 cc_library(
@@ -57,6 +62,7 @@ cc_library(
     hdrs = [
         "team_number.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos/util:string_to_num",
         "@com_github_google_glog//:glog",
@@ -68,6 +74,7 @@ cc_test(
     srcs = [
         "team_number_test.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":team_number",
         "//aos:configuration",
@@ -87,6 +94,7 @@ cc_library(
         # The casts required to read datastructures from sockets trip -Wcast-align.
         "-Wno-cast-align",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos:unique_malloc_ptr",
         "//aos/util:file",
@@ -106,6 +114,7 @@ cc_library(
     copts = [
         "-Wno-cast-align",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":sctp_lib",
         "//third_party/lksctp-tools:sctp",
@@ -120,6 +129,7 @@ cc_library(
     hdrs = [
         "message_bridge_protocol.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":connect_fbs",
         "//aos:configuration",
@@ -137,6 +147,7 @@ cc_library(
     hdrs = [
         "message_bridge_server_status.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":message_bridge_client_fbs",
         ":message_bridge_server_fbs",
@@ -160,6 +171,7 @@ cc_library(
     copts = [
         "-Wno-cast-align",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":connect_fbs",
         ":message_bridge_client_fbs",
@@ -181,6 +193,7 @@ cc_binary(
     srcs = [
         "message_bridge_server.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":message_bridge_server_lib",
         "//aos:init",
@@ -200,6 +213,7 @@ cc_library(
     copts = [
         "-Wno-cast-align",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":sctp_lib",
         "//third_party/lksctp-tools:sctp",
@@ -214,6 +228,7 @@ cc_library(
     hdrs = [
         "message_bridge_client_status.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":message_bridge_client_fbs",
         ":message_bridge_server_fbs",
@@ -235,6 +250,7 @@ cc_library(
     copts = [
         "-Wno-cast-align",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":connect_fbs",
         ":message_bridge_client_fbs",
@@ -256,6 +272,7 @@ cc_binary(
     copts = [
         "-Wno-cast-align",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":message_bridge_client_lib",
         "//aos:init",
@@ -275,18 +292,21 @@ aos_config(
         "//aos/network:message_bridge_server_fbs",
         "//aos/network:timestamp_fbs",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = ["//aos/events:config"],
 )
 
 aos_config(
     name = "message_bridge_test_server_config",
     src = "message_bridge_test_server.json",
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [":message_bridge_test_common_config"],
 )
 
 aos_config(
     name = "message_bridge_test_client_config",
     src = "message_bridge_test_client.json",
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [":message_bridge_test_common_config"],
 )
 
@@ -300,6 +320,7 @@ cc_test(
         ":message_bridge_test_server_config",
     ],
     shard_count = 5,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":message_bridge_client_lib",
         ":message_bridge_server_lib",
@@ -320,6 +341,7 @@ flatbuffer_cc_library(
         ":connect_fbs_includes",
         "//aos:configuration_fbs_includes",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 flatbuffer_ts_library(
@@ -329,12 +351,14 @@ flatbuffer_ts_library(
         ":connect_fbs_includes",
         "//aos:configuration_fbs_includes",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 cc_library(
     name = "web_proxy_utils",
     srcs = ["web_proxy_utils.cc"],
     hdrs = ["web_proxy_utils.h"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":connect_fbs",
         ":web_proxy_fbs",
@@ -352,6 +376,7 @@ cc_library(
         "-DWEBRTC_POSIX",
         "-Wno-unused-parameter",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":connect_fbs",
         ":web_proxy_fbs",
@@ -370,6 +395,7 @@ gen_embedded(
         include = ["www_defaults/**/*"],
         exclude = ["www/**/*"],
     ),
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 cc_binary(
@@ -384,6 +410,7 @@ cc_binary(
         "//aos/network/www:main_bundle.min.js",
         "@com_github_google_flatbuffers//:flatjs",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":gen_embedded",
         ":web_proxy",
@@ -399,6 +426,7 @@ cc_library(
     name = "timestamp_filter",
     srcs = ["timestamp_filter.cc"],
     hdrs = ["timestamp_filter.h"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos:configuration",
         "//aos/time",
@@ -412,6 +440,7 @@ cc_test(
     srcs = [
         "timestamp_filter_test.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":timestamp_filter",
         "//aos:json_to_flatbuffer",

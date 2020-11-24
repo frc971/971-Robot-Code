@@ -6,7 +6,7 @@ py_binary(
         "haptic_wheel.py",
     ],
     legacy_create_init = False,
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         "//external:python-gflags",
         "//external:python-glog",
@@ -28,7 +28,7 @@ py_library(
         "//third_party/cddlib:_cddlib.so",
         "@python_repo//:scipy",
     ],
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":python_init",
         "//external:python-glog",
@@ -42,7 +42,7 @@ py_test(
         "polytope_test.py",
     ],
     legacy_create_init = False,
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":controls",
         ":python_init",
@@ -55,7 +55,7 @@ py_binary(
         "down_estimator.py",
     ],
     legacy_create_init = False,
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":controls",
         ":python_init",
@@ -68,7 +68,7 @@ py_library(
     srcs = [
         "drivetrain.py",
     ],
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":controls",
         ":python_init",
@@ -84,6 +84,7 @@ py_library(
     data = [
         "//frc971/control_loops/drivetrain:spline.so",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":python_init",
     ],
@@ -94,6 +95,7 @@ py_test(
     srcs = [
         "lib_spline_test.py",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":libspline",
         ":python_init",
@@ -105,7 +107,7 @@ py_library(
     srcs = [
         "polydrivetrain.py",
     ],
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":controls",
         ":drivetrain",
@@ -117,6 +119,7 @@ py_library(
 py_library(
     name = "python_init",
     srcs = ["__init__.py"],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = ["//frc971/control_loops:python_init"],
 )
@@ -127,7 +130,7 @@ py_binary(
         "spline.py",
     ],
     legacy_create_init = False,
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         "//external:python-gflags",
         "//external:python-glog",
@@ -140,7 +143,7 @@ py_binary(
 py_library(
     name = "linear_system",
     srcs = ["linear_system.py"],
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     visibility = ["//visibility:public"],
     deps = [
         ":controls",
@@ -153,7 +156,7 @@ py_library(
 py_library(
     name = "angular_system",
     srcs = ["angular_system.py"],
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     visibility = ["//visibility:public"],
     deps = [
         ":controls",
@@ -175,7 +178,7 @@ py_binary(
         "spline_writer.py",
     ],
     legacy_create_init = False,
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     visibility = ["//visibility:public"],
     deps = [
         ":basic_window",
@@ -192,7 +195,7 @@ py_library(
         "basic_window.py",
         "color.py",
     ],
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     visibility = ["//visibility:public"],
     deps = [
         ":python_init",
@@ -205,7 +208,7 @@ py_library(
     srcs = [
         "color.py",
     ],
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     visibility = ["//visibility:public"],
     deps = [
         ":python_init",
@@ -218,7 +221,7 @@ py_binary(
         "static_zeroing_single_dof_profiled_subsystem_test.py",
     ],
     legacy_create_init = False,
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":controls",
         ":linear_system",

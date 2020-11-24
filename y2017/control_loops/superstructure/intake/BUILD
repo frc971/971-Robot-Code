@@ -7,6 +7,7 @@ genrule(
         "intake_integral_plant.cc",
     ],
     cmd = "$(location //y2017/control_loops/python:intake) $(OUTS)",
+    target_compatible_with = ["@platforms//os:linux"],
     tools = [
         "//y2017/control_loops/python:intake",
     ],
@@ -22,6 +23,7 @@ cc_library(
         "intake_integral_plant.h",
         "intake_plant.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         "//frc971/control_loops:state_feedback_loop",
@@ -36,6 +38,7 @@ cc_library(
     hdrs = [
         "intake.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         ":intake_plants",

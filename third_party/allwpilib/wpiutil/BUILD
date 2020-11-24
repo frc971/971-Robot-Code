@@ -23,6 +23,6 @@ cc_library(
     includes = [
         "src/main/native/include",
     ],
-    restricted_to = ["//tools:roborio"],
+    target_compatible_with = ["//tools/platforms/hardware:roborio"],
     visibility = ["//visibility:public"],
 )

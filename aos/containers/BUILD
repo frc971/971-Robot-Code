@@ -1,12 +1,11 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//tools:environments.bzl", "mcu_cpus")
-
 cc_library(
     name = "ring_buffer",
     hdrs = [
         "ring_buffer.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 cc_test(
@@ -14,6 +13,7 @@ cc_test(
     srcs = [
         "ring_buffer_test.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":ring_buffer",
         "//aos/testing:googletest",
@@ -25,6 +25,7 @@ cc_library(
     hdrs = [
         "priority_queue.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 cc_test(
@@ -32,6 +33,7 @@ cc_test(
     srcs = [
         "priority_queue_test.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":priority_queue",
         "//aos/testing:googletest",
@@ -43,7 +45,6 @@ cc_library(
     hdrs = [
         "sized_array.h",
     ],
-    compatible_with = mcu_cpus,
 )
 
 cc_test(
@@ -51,6 +52,7 @@ cc_test(
     srcs = [
         "sized_array_test.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":sized_array",
         "//aos/testing:googletest",
@@ -62,6 +64,7 @@ cc_library(
     hdrs = [
         "resizeable_buffer.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "@com_github_google_glog//:glog",
     ],
@@ -72,6 +75,7 @@ cc_test(
     srcs = [
         "resizeable_buffer_test.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":resizeable_buffer",
         "//aos/testing:googletest",

@@ -1,12 +1,10 @@
-load("//tools:environments.bzl", "mcu_cpus")
-
 py_binary(
     name = "drivetrain",
     srcs = [
         "drivetrain.py",
     ],
     legacy_create_init = False,
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":python_init",
         "//external:python-gflags",
@@ -22,7 +20,7 @@ py_binary(
         "polydrivetrain.py",
     ],
     legacy_create_init = False,
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":python_init",
         "//external:python-gflags",
@@ -40,7 +38,7 @@ genrule(
         "kalman_drivetrain_motor_plant.cc",
     ],
     cmd = "$(location :drivetrain) $(OUTS)",
-    restricted_to = mcu_cpus,
+    target_compatible_with = ["@platforms//os:none"],
     tools = [
         ":drivetrain",
     ],
@@ -57,7 +55,7 @@ genrule(
         "hybrid_velocity_drivetrain.cc",
     ],
     cmd = "$(location :polydrivetrain) $(OUTS)",
-    restricted_to = mcu_cpus,
+    target_compatible_with = ["@platforms//os:none"],
     tools = [
         ":polydrivetrain",
     ],
@@ -74,11 +72,11 @@ cc_library(
         "drivetrain_dog_motor_plant.h",
         "polydrivetrain_dog_motor_plant.h",
     ],
-    restricted_to = mcu_cpus,
+    target_compatible_with = ["@platforms//os:none"],
     visibility = ["//visibility:public"],
     deps = [
-        "//frc971/control_loops:state_feedback_loop_uc",
-        "//frc971/control_loops/drivetrain:polydrivetrain_uc",
+        "//frc971/control_loops:state_feedback_loop",
+        "//frc971/control_loops/drivetrain:polydrivetrain",
     ],
 )
 
@@ -86,7 +84,6 @@ cc_library(
     name = "spring",
     srcs = ["spring.cc"],
     hdrs = ["spring.h"],
-    compatible_with = mcu_cpus,
     visibility = ["//visibility:public"],
     deps = ["//frc971/zeroing:wrap"],
 )
@@ -96,6 +93,7 @@ cc_test(
     srcs = [
         "spring_test.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":spring",
         "//aos/testing:googletest",
@@ -105,6 +103,7 @@ cc_test(
 py_library(
     name = "python_init",
     srcs = ["__init__.py"],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = ["//motors:python_init"],
 )

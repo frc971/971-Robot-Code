@@ -8,6 +8,7 @@ flatbuffer_cc_library(
         "rollers_goal.fbs",
     ],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 flatbuffer_cc_library(
@@ -16,6 +17,7 @@ flatbuffer_cc_library(
         "rollers_position.fbs",
     ],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 flatbuffer_cc_library(
@@ -24,6 +26,7 @@ flatbuffer_cc_library(
         "rollers_output.fbs",
     ],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 flatbuffer_cc_library(
@@ -32,6 +35,7 @@ flatbuffer_cc_library(
         "rollers_status.fbs",
     ],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 cc_library(
@@ -42,6 +46,7 @@ cc_library(
     hdrs = [
         "rollers.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":rollers_goal_fbs",
         ":rollers_output_fbs",
@@ -57,6 +62,7 @@ cc_binary(
     srcs = [
         "rollers_main.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":rollers_lib",
         "//aos:init",

@@ -1,13 +1,10 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//tools:environments.bzl", "mcu_cpus")
-
 cc_library(
     name = "shifter_hall_effect",
     hdrs = [
         "shifter_hall_effect.h",
     ],
-    compatible_with = mcu_cpus,
 )
 
 cc_library(
@@ -15,10 +12,12 @@ cc_library(
     hdrs = [
         "constants.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 py_library(
     name = "python_init",
     srcs = ["__init__.py"],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )

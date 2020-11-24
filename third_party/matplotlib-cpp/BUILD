@@ -9,7 +9,7 @@ cc_library(
         "@matplotlib_repo//:matplotlib3",
         "@python_repo//:all_files",
     ],
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         "@python_repo//:python3.5_lib",
@@ -21,7 +21,7 @@ cc_binary(
     srcs = [
         "examples/basic.cpp",
     ],
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "matplotlib-cpp",
     ],
@@ -32,7 +32,7 @@ cc_binary(
     srcs = [
         "examples/animation.cpp",
     ],
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "matplotlib-cpp",
     ],

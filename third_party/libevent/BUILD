@@ -169,6 +169,7 @@ cc_library(
         ".",
         "include",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     textual_hdrs = [
         "arc4random.c",
     ],

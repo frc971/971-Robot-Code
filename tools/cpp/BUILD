@@ -2,16 +2,25 @@ load(":toolchain_config.bzl", "cc_toolchain_config")
 
 package(default_visibility = ["//visibility:public"])
 
-[cc_toolchain_config(
-    name = "{}_toolchain_config".format(cpu),
-    cpu = cpu,
-) for cpu in
-    ["armeabi-v7a", "armhf-debian", "cortex-m4f", "cortex-m4f-k22", "k8", "roborio"]
+[
+    cc_toolchain_config(
+        name = "{}_toolchain_config".format(cpu),
+        cpu = cpu,
+    )
+    for cpu in [
+        "armeabi-v7a",
+        "armhf-debian",
+        "cortex-m4f",
+        "cortex-m4f-k22",
+        "k8",
+        "roborio",
+    ]
 ]
 
 cc_library(
     name = "empty_main",
     srcs = ["empty_main.c"],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 cc_library(
@@ -20,30 +29,20 @@ cc_library(
         "//tools:has_asan": [],
         "//tools:has_tsan": [],
         "//tools:cpu_cortex_m4f": [],
-        "//tools:cpu_cortex_m4f_k22": [],
+        # TODO(phil): Support this properly.
+        #"//tools:cpu_cortex_m4f_k22": [],
         "//conditions:default": ["//third_party/gperftools:tcmalloc"],
     }),
 )
 
 cc_library(
     name = "stl",
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 filegroup(
     name = "empty",
     srcs = [],
-)
-
-# This is the entry point for --crosstool_top.
-cc_toolchain_suite(
-    name = "toolchain",
-    toolchains = {
-        "k8": ":cc-compiler-k8",
-        "roborio": ":cc-compiler-roborio",
-        "armhf-debian": "cc-compiler-armhf-debian",
-        "cortex-m4f": "cc-compiler-cortex-m4f",
-        "cortex-m4f-k22": "cc-compiler-cortex-m4f-k22",
-    },
 )
 
 # Compiler inputs given by --copt etc in //tools:bazel.rc.
@@ -111,16 +110,30 @@ filegroup(
 cc_toolchain(
     name = "cc-compiler-k8",
     all_files = ":clang_6p0_all_files",
+    ar_files = ":clang_6p0_ar_files",
+    as_files = ":clang_6p0_compiler_files",
     compiler_files = ":clang_6p0_compiler_files",
     dwp_files = ":empty",
     linker_files = ":clang_6p0_linker_files",
-    ar_files = ":clang_6p0_ar_files",
-    as_files = ":clang_6p0_compiler_files",
     objcopy_files = "//tools/cpp/clang_6p0:objcopy",
     strip_files = ":clang_6p0_strip_files",
     supports_param_files = 1,
-    toolchain_identifier = "k8_linux",
     toolchain_config = ":k8_toolchain_config",
+    toolchain_identifier = "k8_linux",
+)
+
+toolchain(
+    name = "cc-toolchain-k8",
+    exec_compatible_with = [
+        "@platforms//os:linux",
+        "@platforms//cpu:x86_64",
+    ],
+    target_compatible_with = [
+        "@platforms//os:linux",
+        "@platforms//cpu:x86_64",
+    ],
+    toolchain = ":cc-compiler-k8",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
 )
 
 filegroup(
@@ -173,16 +186,30 @@ filegroup(
 cc_toolchain(
     name = "cc-compiler-roborio",
     all_files = ":roborio-compiler-files",
+    ar_files = ":roborio_ar_files",
+    as_files = ":roborio_compiler_files",
     compiler_files = ":roborio_compiler_files",
     dwp_files = ":empty",
     linker_files = ":roborio_linker_files",
-    ar_files = ":roborio_ar_files",
-    as_files = ":roborio_compiler_files",
     objcopy_files = "//tools/cpp/arm-frc-linux-gnueabi:objcopy",
     strip_files = ":roborio_strip_files",
     supports_param_files = 1,
-    toolchain_identifier = "roborio_linux",
     toolchain_config = ":roborio_toolchain_config",
+    toolchain_identifier = "roborio_linux",
+)
+
+toolchain(
+    name = "cc-toolchain-roborio",
+    exec_compatible_with = [
+        "@platforms//os:linux",
+        "@platforms//cpu:x86_64",
+    ],
+    target_compatible_with = [
+        "@platforms//os:linux",
+        "//tools/platforms/hardware:roborio",
+    ],
+    toolchain = ":cc-compiler-roborio",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
 )
 
 filegroup(
@@ -240,16 +267,30 @@ filegroup(
 cc_toolchain(
     name = "cc-compiler-armhf-debian",
     all_files = ":linaro-gcc-files",
+    ar_files = "linaro_linux_ar_files",
+    as_files = "linaro_linux_compiler_files",
     compiler_files = ":linaro_linux_compiler_files",
     dwp_files = ":empty",
     linker_files = ":linaro_linux_linker_files",
-    ar_files = "linaro_linux_ar_files",
-    as_files = "linaro_linux_compiler_files",
     objcopy_files = "//tools/cpp/linaro_linux_gcc:objcopy",
     strip_files = ":linaro_linux_strip_files",
     supports_param_files = 1,
-    toolchain_identifier = "clang_linux_armhf",
     toolchain_config = ":armhf-debian_toolchain_config",
+    toolchain_identifier = "clang_linux_armhf",
+)
+
+toolchain(
+    name = "cc-toolchain-armhf-debian",
+    exec_compatible_with = [
+        "@platforms//os:linux",
+        "@platforms//cpu:x86_64",
+    ],
+    target_compatible_with = [
+        "@platforms//os:linux",
+        "//tools/platforms/hardware:raspberry_pi",
+    ],
+    toolchain = ":cc-compiler-armhf-debian",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
 )
 
 filegroup(
@@ -292,15 +333,29 @@ filegroup(
 cc_toolchain(
     name = "cc-compiler-cortex-m4f",
     all_files = ":gcc_arm_none_eabi_none_files",
+    ar_files = ":gcc_arm_none_eabi_ar_files",
     compiler_files = ":gcc_arm_none_eabi_compiler_files",
     dwp_files = ":empty",
     linker_files = ":gcc_arm_none_eabi_linker_files",
-    ar_files = ":gcc_arm_none_eabi_ar_files",
     objcopy_files = "//tools/cpp/gcc_arm_none_eabi:objcopy",
     strip_files = "//tools/cpp/gcc_arm_none_eabi:strip",
     supports_param_files = 1,
-    toolchain_identifier = "cortex-m4f",
     toolchain_config = ":cortex-m4f_toolchain_config",
+    toolchain_identifier = "cortex-m4f",
+)
+
+toolchain(
+    name = "cc-toolchain-cortex-m4f",
+    exec_compatible_with = [
+        "@platforms//os:linux",
+        "@platforms//cpu:x86_64",
+    ],
+    target_compatible_with = [
+        "@platforms//os:none",
+        "//tools/platforms/hardware:cortex_m4f",
+    ],
+    toolchain = ":cc-compiler-cortex-m4f",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
 )
 
 cc_toolchain(
@@ -312,6 +367,20 @@ cc_toolchain(
     objcopy_files = ":empty",
     strip_files = ":empty",
     supports_param_files = 1,
-    toolchain_identifier = "cortex-m4f-k22",
     toolchain_config = ":cortex-m4f-k22_toolchain_config",
+    toolchain_identifier = "cortex-m4f-k22",
+)
+
+toolchain(
+    name = "cc-toolchain-cortex-m4f-k22",
+    exec_compatible_with = [
+        "@platforms//os:linux",
+        "@platforms//cpu:x86_64",
+    ],
+    target_compatible_with = [
+        "@platforms//os:none",
+        "//tools/platforms/hardware:cortex_m4f",
+    ],
+    toolchain = ":cc-compiler-cortex-m4f-k22",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
 )

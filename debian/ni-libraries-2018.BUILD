@@ -14,6 +14,6 @@ cc_library(
         "include",
     ],
     linkstatic = True,
-    restricted_to = ["@//tools:roborio"],
+    target_compatible_with = ["@//tools/platforms/hardware:roborio"],
     visibility = ["//visibility:public"],
 )

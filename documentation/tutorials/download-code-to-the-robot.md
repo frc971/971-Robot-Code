@@ -20,7 +20,7 @@ ssh admin@roboRIO-971-frc.local /bin/true
 
 2. Download the code
 ```console
-bazel run --cpu=roborio --compilation_mode=opt //y2018:download -- admin@roboRIO-971-frc.local
+bazel run --config=roborio --compilation_mode=opt //y2018:download -- admin@roboRIO-971-frc.local
 ```
 
 3. TODO: How to run the code using the driver station.

@@ -8,5 +8,6 @@ py_library(
     srcs = [
         "protos/extra_actions_base_pb2.py",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )

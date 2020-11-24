@@ -9,6 +9,7 @@ cc_library(
     linkopts = [
         "-lpthread",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         "//aos:macros",
@@ -27,6 +28,7 @@ cc_library(
     hdrs = [
         "core_lib.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         ":aos_sync",
@@ -45,6 +47,7 @@ cc_library(
     linkopts = [
         "-lrt",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         ":aos_sync",
@@ -61,6 +64,7 @@ cc_library(
     hdrs = [
         "shared_mem_types.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":aos_sync",
     ],
@@ -74,6 +78,7 @@ cc_test(
     tags = [
         "manual",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":core_lib",
         "//aos:die",
@@ -93,6 +98,7 @@ cc_binary(
         "ipc_comparison.cc",
     ],
     linkopts = ["-lrt"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos:condition",
         "//aos:event",
@@ -112,6 +118,7 @@ cc_library(
     hdrs = [
         "signalfd.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         "@com_github_google_glog//:glog",
@@ -123,6 +130,7 @@ cc_test(
     srcs = [
         "signalfd_test.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":signalfd",
         "//aos/testing:googletest",
@@ -135,6 +143,7 @@ cc_library(
     name = "index",
     srcs = ["index.cc"],
     hdrs = ["index.h"],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         "@com_github_google_glog//:glog",
@@ -144,6 +153,7 @@ cc_library(
 cc_test(
     name = "index_test",
     srcs = ["index_test.cc"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":index",
         "//aos/testing:googletest",
@@ -158,6 +168,7 @@ cc_library(
         "lockless_queue_memory.h",
     ],
     hdrs = ["lockless_queue.h"],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         ":aos_sync",
@@ -181,6 +192,7 @@ cc_library(
     hdrs = [
         "queue_racer.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":lockless_queue",
         "//aos:event",
@@ -192,6 +204,7 @@ cc_test(
     name = "lockless_queue_test",
     timeout = "eternal",
     srcs = ["lockless_queue_test.cc"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":lockless_queue",
         ":queue_racer",
@@ -206,6 +219,7 @@ cc_test(
 cc_test(
     name = "lockless_queue_death_test",
     srcs = ["lockless_queue_death_test.cc"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":lockless_queue",
         ":queue_racer",
@@ -224,6 +238,7 @@ cc_library(
     hdrs = [
         "data_alignment.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         "@com_github_google_glog//:glog",
@@ -234,6 +249,7 @@ cc_library(
     name = "latency_lib",
     srcs = ["latency_lib.cc"],
     hdrs = ["latency_lib.h"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos:realtime",
         "//aos/logging",
@@ -247,6 +263,7 @@ cc_binary(
     srcs = [
         "signal_stress.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":latency_lib",
         "//aos:init",
@@ -260,6 +277,7 @@ cc_binary(
     srcs = [
         "futex_latency.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":latency_lib",
         "//aos:condition",
@@ -274,6 +292,7 @@ cc_binary(
     srcs = [
         "named_pipe_latency.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":latency_lib",
         "//aos:init",
@@ -287,6 +306,7 @@ cc_binary(
     srcs = [
         "eventfd_latency.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":latency_lib",
         "//aos:init",
@@ -300,6 +320,7 @@ cc_binary(
     srcs = [
         "print_lockless_queue_memory.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         ":lockless_queue",

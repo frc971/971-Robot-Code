@@ -240,6 +240,6 @@ def build_matplotlib(version, tkinter_py_version = None, copy_shared_files = Tru
             ":usr/share/matplotlib/mpl-data/matplotlibrc",
         ] + native.glob(["etc/**"]),
         imports = ["usr/lib/python" + version + "/dist-packages", version, "."],
-        restricted_to = ["@//tools:k8"],
+        target_compatible_with = ["@platforms//cpu:x86_64"],
         visibility = ["//visibility:public"],
     )

@@ -11,6 +11,7 @@ genrule(
         "kalman_drivetrain_motor_plant.cc",
     ],
     cmd = "$(location //y2019/control_loops/python:drivetrain) $(OUTS)",
+    target_compatible_with = ["@platforms//os:linux"],
     tools = [
         "//y2019/control_loops/python:drivetrain",
     ],
@@ -27,6 +28,7 @@ genrule(
         "hybrid_velocity_drivetrain.cc",
     ],
     cmd = "$(location //y2019/control_loops/python:polydrivetrain) $(OUTS)",
+    target_compatible_with = ["@platforms//os:linux"],
     tools = [
         "//y2019/control_loops/python:polydrivetrain",
     ],
@@ -46,6 +48,7 @@ cc_library(
         "kalman_drivetrain_motor_plant.h",
         "polydrivetrain_dog_motor_plant.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         "//frc971/control_loops:hybrid_state_feedback_loop",
@@ -61,6 +64,7 @@ cc_library(
     hdrs = [
         "drivetrain_base.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         ":polydrivetrain_plants",
@@ -74,6 +78,7 @@ cc_binary(
     srcs = [
         "drivetrain_main.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         ":drivetrain_base",
@@ -88,6 +93,7 @@ flatbuffer_cc_library(
     name = "target_selector_fbs",
     srcs = ["target_selector.fbs"],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )
 
@@ -97,12 +103,14 @@ flatbuffer_cc_library(
         "camera.fbs",
     ],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )
 
 cc_library(
     name = "localizer",
     hdrs = ["localizer.h"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//frc971/control_loops:pose",
         "//frc971/control_loops/drivetrain:camera",
@@ -114,6 +122,7 @@ cc_library(
     name = "target_selector",
     srcs = ["target_selector.cc"],
     hdrs = ["target_selector.h"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":target_selector_fbs",
         "//frc971/control_loops:pose",
@@ -128,6 +137,7 @@ cc_test(
     name = "target_selector_test",
     srcs = ["target_selector_test.cc"],
     data = ["//y2019:config"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":target_selector",
         "//aos/events:simulated_event_loop",
@@ -140,6 +150,7 @@ cc_library(
     name = "event_loop_localizer",
     srcs = ["event_loop_localizer.cc"],
     hdrs = ["event_loop_localizer.h"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":camera_fbs",
         ":localizer",
@@ -161,6 +172,7 @@ cc_test(
         }),
     linkstatic = True,
     shard_count = 8,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":localizer",
         ":drivetrain_base",
@@ -182,6 +194,7 @@ cc_test(
 aos_config(
     name = "simulation_config",
     src = "drivetrain_simulation_config.json",
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         "//frc971/control_loops/drivetrain:simulation_channels",
@@ -193,6 +206,7 @@ cc_test(
     name = "localized_drivetrain_test",
     srcs = ["localized_drivetrain_test.cc"],
     data = [":simulation_config"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":camera_fbs",
         ":drivetrain_base",
@@ -211,6 +225,7 @@ cc_binary(
     name = "drivetrain_replay",
     srcs = ["drivetrain_replay.cc"],
     data = ["//y2019:config"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":drivetrain_base",
         ":event_loop_localizer",

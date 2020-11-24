@@ -7,6 +7,7 @@ flatbuffer_cc_library(
     name = "auto_fbs",
     srcs = ["auto.fbs"],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )
 
@@ -14,6 +15,7 @@ flatbuffer_cc_library(
     name = "auto_mode_fbs",
     srcs = ["auto_mode.fbs"],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )
 
@@ -25,6 +27,7 @@ cc_library(
     hdrs = [
         "base_autonomous_actor.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":auto_fbs",
         "//aos/actions:action_lib",
@@ -47,5 +50,6 @@ aos_config(
         ":auto_fbs",
         ":auto_mode_fbs",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )

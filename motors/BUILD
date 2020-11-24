@@ -1,5 +1,4 @@
 load("//motors:macros.bzl", "hex_from_elf")
-load("//tools:environments.bzl", "mcu_cpus")
 
 cc_library(
     name = "motor",
@@ -9,7 +8,7 @@ cc_library(
     hdrs = [
         "motor.h",
     ],
-    restricted_to = mcu_cpus,
+    target_compatible_with = ["@platforms//os:none"],
     visibility = ["//visibility:public"],
     deps = [
         ":algorithms",
@@ -27,7 +26,7 @@ cc_library(
     hdrs = [
         "util.h",
     ],
-    restricted_to = mcu_cpus,
+    target_compatible_with = ["@platforms//os:none"],
     visibility = ["//visibility:public"],
     deps = [
         "//motors/core",
@@ -52,6 +51,7 @@ genrule(
         "$@",
         "$<",
     ]),
+    target_compatible_with = ["@platforms//os:linux"],
     tools = [
         "@pandoc",
         "@pandoc//:all_files",
@@ -66,7 +66,6 @@ cc_library(
     hdrs = [
         "algorithms.h",
     ],
-    compatible_with = mcu_cpus,
 )
 
 cc_test(
@@ -74,6 +73,7 @@ cc_test(
     srcs = [
         "algorithms_test.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":algorithms",
         "//aos/testing:googletest",
@@ -88,7 +88,6 @@ cc_library(
     hdrs = [
         "math.h",
     ],
-    compatible_with = mcu_cpus,
     visibility = ["//visibility:public"],
 )
 
@@ -97,6 +96,7 @@ cc_test(
     srcs = [
         "math_test.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":math",
         "//aos/testing:googletest",
@@ -108,7 +108,7 @@ cc_binary(
     srcs = [
         "button_board.cc",
     ],
-    restricted_to = mcu_cpus,
+    target_compatible_with = ["@platforms//os:none"],
     deps = [
         ":util",
         "//motors/core",
@@ -123,7 +123,7 @@ cc_binary(
 
 hex_from_elf(
     name = "button_board",
-    restricted_to = mcu_cpus,
+    target_compatible_with = ["@platforms//os:none"],
 )
 
 cc_binary(
@@ -132,7 +132,7 @@ cc_binary(
         "simple_receiver.cc",
     ],
     copts = ["-Wno-type-limits"],
-    restricted_to = mcu_cpus,
+    target_compatible_with = ["@platforms//os:none"],
     deps = [
         ":util",
         "//motors/core",
@@ -146,7 +146,7 @@ cc_binary(
 
 hex_from_elf(
     name = "simpler_receiver",
-    restricted_to = mcu_cpus,
+    target_compatible_with = ["@platforms//os:none"],
 )
 
 cc_binary(
@@ -155,7 +155,7 @@ cc_binary(
         "simpler_receiver.cc",
     ],
     copts = ["-Wno-type-limits"],
-    restricted_to = mcu_cpus,
+    target_compatible_with = ["@platforms//os:none"],
     deps = [
         ":util",
         "//motors/core",
@@ -167,11 +167,12 @@ cc_binary(
 
 hex_from_elf(
     name = "simple_receiver",
-    restricted_to = mcu_cpus,
+    target_compatible_with = ["@platforms//os:none"],
 )
 
 py_library(
     name = "python_init",
     srcs = ["__init__.py"],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )

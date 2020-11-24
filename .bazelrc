@@ -1,7 +1,9 @@
-# Use our CROSSTOOL.
-build --crosstool_top=//tools/cpp:toolchain
-# Don't switch HOST compilers.
-build --host_crosstool_top=//tools/cpp:toolchain
+# Use platforms to build our code.
+build --incompatible_enable_cc_toolchain_resolution
+
+# For now we only support building on x86 Linux so we can hard-code the host
+# platform.
+build --host_platform=//tools/platforms:linux_x86
 
 # Always include debug information in the non-.stripped binaries.
 build --strip=never
@@ -17,6 +19,12 @@ build --python_top=//tools/python:runtime
 build --noincompatible_use_python_toolchains
 build --noincompatible_py3_is_default
 build --noincompatible_py2_outputs_are_suffixed
+
+# Shortcuts for selecting the target platform.
+build:k8 --platforms=//tools/platforms:linux_x86
+build:roborio --platforms=//tools/platforms:linux_roborio
+build:armhf-debian --platforms=//tools/platforms:linux_armhf
+build:cortex-m4f --platforms=//tools/platforms:cortex_m4f
 
 build:asan --copt -fsanitize=address
 build:asan --linkopt -fsanitize=address --linkopt -ldl
@@ -71,7 +79,6 @@ build --experimental_multi_threaded_digest
 build --sandbox_fake_hostname=true
 build --sandbox_fake_username=true
 
-build --auto_cpu_environment_group=//tools:cpus
 startup --host_jvm_args=-Dbazel.DigestFunction=SHA1
 
 common --watchfs

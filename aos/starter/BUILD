@@ -15,6 +15,7 @@ cc_binary(
     srcs = [
         "starter.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos:init",
         "//aos:unique_malloc_ptr",
@@ -33,6 +34,7 @@ cc_library(
     name = "starterd_lib",
     srcs = ["starterd_lib.cc"],
     hdrs = ["starterd_lib.h"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":starter_fbs",
         ":starter_rpc_fbs",
@@ -51,6 +53,7 @@ cc_test(
         "//aos/events:pingpong_config",
         "//aos/events:pong",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":starter_rpc_lib",
         ":starterd_lib",
@@ -64,6 +67,7 @@ cc_test(
 cc_binary(
     name = "starterd",
     srcs = ["starterd.cc"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":starterd_lib",
         "//aos:init",
@@ -74,6 +78,7 @@ cc_library(
     name = "starter_rpc_lib",
     srcs = ["starter_rpc_lib.cc"],
     hdrs = ["starter_rpc_lib.h"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":starter_fbs",
         ":starter_rpc_fbs",
@@ -86,6 +91,7 @@ cc_library(
 cc_binary(
     name = "starter_cmd",
     srcs = ["starter_cmd.cc"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":starter_rpc_lib",
         "@com_github_google_glog//:glog",
@@ -96,6 +102,7 @@ flatbuffer_cc_library(
     name = "starter_fbs",
     srcs = ["starter.fbs"],
     gen_reflections = True,
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )
 
@@ -103,5 +110,6 @@ flatbuffer_cc_library(
     name = "starter_rpc_fbs",
     srcs = ["starter_rpc.fbs"],
     gen_reflections = True,
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )

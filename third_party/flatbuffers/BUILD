@@ -1,10 +1,8 @@
-licenses(["notice"])
-
-load("@//tools:environments.bzl", "mcu_cpus")
-
 package(
     default_visibility = ["//visibility:public"],
 )
+
+licenses(["notice"])
 
 exports_files([
     "LICENSE",
@@ -79,7 +77,6 @@ cc_library(
         "include/flatbuffers/stl_emulation.h",
         "include/flatbuffers/util.h",
     ],
-    compatible_with = mcu_cpus,
     linkstatic = 1,
     strip_include_prefix = "/include",
 )

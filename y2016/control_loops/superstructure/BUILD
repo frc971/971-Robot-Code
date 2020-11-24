@@ -8,6 +8,7 @@ flatbuffer_cc_library(
         "superstructure_goal.fbs",
     ],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 flatbuffer_cc_library(
@@ -19,6 +20,7 @@ flatbuffer_cc_library(
     includes = [
         "//frc971/control_loops:control_loops_fbs_includes",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 flatbuffer_cc_library(
@@ -27,6 +29,7 @@ flatbuffer_cc_library(
         "superstructure_output.fbs",
     ],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 flatbuffer_cc_library(
@@ -38,6 +41,7 @@ flatbuffer_cc_library(
     includes = [
         "//frc971/control_loops:control_loops_fbs_includes",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 genrule(
@@ -49,6 +53,7 @@ genrule(
         "integral_intake_plant.cc",
     ],
     cmd = "$(location //y2016/control_loops/python:intake) $(OUTS)",
+    target_compatible_with = ["@platforms//os:linux"],
     tools = [
         "//y2016/control_loops/python:intake",
     ],
@@ -64,6 +69,7 @@ genrule(
         "integral_arm_plant.cc",
     ],
     cmd = "$(location //y2016/control_loops/python:arm) $(OUTS)",
+    target_compatible_with = ["@platforms//os:linux"],
     tools = [
         "//y2016/control_loops/python:arm",
     ],
@@ -84,6 +90,7 @@ cc_library(
         "integral_arm_plant.h",
         "integral_intake_plant.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//frc971/control_loops:state_feedback_loop",
     ],
@@ -99,6 +106,7 @@ cc_library(
         "superstructure.h",
         "superstructure_controls.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":superstructure_goal_fbs",
         ":superstructure_output_fbs",
@@ -123,6 +131,7 @@ cc_test(
         "superstructure_lib_test.cc",
     ],
     data = ["//y2016:config"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":superstructure_goal_fbs",
         ":superstructure_lib",
@@ -143,6 +152,7 @@ cc_binary(
     srcs = [
         "superstructure_main.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":superstructure_lib",
         "//aos:init",

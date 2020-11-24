@@ -11,6 +11,7 @@ flatbuffer_cc_library(
     includes = [
         "//frc971/control_loops:control_loops_fbs_includes",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 flatbuffer_cc_library(
@@ -22,6 +23,7 @@ flatbuffer_cc_library(
     includes = [
         "//frc971/control_loops:control_loops_fbs_includes",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 flatbuffer_cc_library(
@@ -34,6 +36,7 @@ flatbuffer_cc_library(
         "//frc971/control_loops:control_loops_fbs_includes",
         "//frc971/control_loops:profiled_subsystem_fbs_includes",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 flatbuffer_cc_library(
@@ -42,6 +45,7 @@ flatbuffer_cc_library(
         "superstructure_output.fbs",
     ],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 cc_library(
@@ -52,6 +56,7 @@ cc_library(
     hdrs = [
         "superstructure.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":superstructure_goal_fbs",
         ":superstructure_output_fbs",
@@ -74,6 +79,7 @@ cc_test(
         "superstructure_lib_test.cc",
     ],
     data = ["//y2017:config"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":superstructure_goal_fbs",
         ":superstructure_lib",
@@ -98,6 +104,7 @@ cc_binary(
     srcs = [
         "superstructure_main.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":superstructure_lib",
         "//aos:init",
@@ -113,6 +120,7 @@ cc_library(
     hdrs = [
         "vision_time_adjuster.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos/containers:ring_buffer",
         "//frc971/control_loops:control_loops_fbs",
@@ -129,6 +137,7 @@ cc_test(
         "vision_time_adjuster_test.cc",
     ],
     data = ["//y2017:config"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":vision_time_adjuster",
         "//aos/events:simulated_event_loop",
@@ -143,6 +152,7 @@ cc_library(
     hdrs = [
         "vision_distance_average.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos/containers:ring_buffer",
         "//aos/time",
@@ -155,6 +165,7 @@ cc_test(
     srcs = [
         "vision_distance_average_test.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":vision_distance_average",
         "//aos:flatbuffers",

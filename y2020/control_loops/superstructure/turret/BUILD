@@ -9,6 +9,7 @@ genrule(
         "integral_turret_plant.cc",
     ],
     cmd = "$(location //y2020/control_loops/python:turret) $(OUTS)",
+    target_compatible_with = ["@platforms//os:linux"],
     tools = [
         "//y2020/control_loops/python:turret",
     ],
@@ -24,6 +25,7 @@ cc_library(
         "integral_turret_plant.h",
         "turret_plant.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         "//frc971/control_loops:hybrid_state_feedback_loop",
@@ -35,6 +37,7 @@ cc_library(
     name = "aiming",
     srcs = ["aiming.cc"],
     hdrs = ["aiming.h"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos:flatbuffers",
         "//frc971/control_loops:control_loops_fbs",
@@ -50,6 +53,7 @@ cc_library(
 cc_test(
     name = "aiming_test",
     srcs = ["aiming_test.cc"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":aiming",
         "//aos/testing:googletest",

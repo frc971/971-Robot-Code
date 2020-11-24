@@ -18,6 +18,7 @@ robot_downloader(
         "//y2019/actors:binaries",
         "//y2019/vision/server",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 cc_library(
@@ -28,6 +29,7 @@ cc_library(
     hdrs = [
         "constants.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         "//aos/logging",
@@ -54,7 +56,7 @@ cc_binary(
     ],
     # This library uses some deprecated parts of the SPI API.
     copts = ["-Wno-deprecated-declarations"],
-    restricted_to = ["//tools:roborio"],
+    target_compatible_with = ["//tools/platforms/hardware:roborio"],
     deps = [
         ":camera_log_fbs",
         ":constants",
@@ -103,6 +105,7 @@ cc_library(
     hdrs = [
         "joystick_angle.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos/input:drivetrain_input",
         "//frc971/zeroing:wrap",
@@ -114,6 +117,7 @@ cc_test(
     srcs = [
         "joystick_angle_test.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":joystick_angle",
         "//aos/testing:googletest",
@@ -125,6 +129,7 @@ cc_binary(
     srcs = [
         ":joystick_reader.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":camera_log_fbs",
         ":vision_proto",
@@ -158,6 +163,7 @@ flatbuffer_cc_library(
         "camera_log.fbs",
     ],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )
 
@@ -167,6 +173,7 @@ flatbuffer_cc_library(
         "status_light.fbs",
     ],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )
 
@@ -183,6 +190,7 @@ aos_config(
         "//y2019/control_loops/superstructure:superstructure_status_fbs",
         ":camera_log_fbs",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         "//aos/robot_state:config",
@@ -195,11 +203,13 @@ aos_config(
 cc_proto_library(
     name = "vision_proto",
     srcs = ["vision.proto"],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )
 
 py_library(
     name = "python_init",
     srcs = ["__init__.py"],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )

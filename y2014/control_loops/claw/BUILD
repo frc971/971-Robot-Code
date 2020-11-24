@@ -8,6 +8,7 @@ flatbuffer_cc_library(
         "claw_goal.fbs",
     ],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 flatbuffer_cc_library(
@@ -19,6 +20,7 @@ flatbuffer_cc_library(
     includes = [
         "//frc971/control_loops:control_loops_fbs_includes",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 flatbuffer_cc_library(
@@ -27,6 +29,7 @@ flatbuffer_cc_library(
         "claw_output.fbs",
     ],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 flatbuffer_cc_library(
@@ -35,6 +38,7 @@ flatbuffer_cc_library(
         "claw_status.fbs",
     ],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 genrule(
@@ -44,6 +48,7 @@ genrule(
         "claw_motor_plant.cc",
     ],
     cmd = "$(location //y2014/control_loops/python:claw) $(OUTS)",
+    target_compatible_with = ["@platforms//os:linux"],
     tools = [
         "//y2014/control_loops/python:claw",
     ],
@@ -63,6 +68,7 @@ cc_library(
     linkopts = [
         "-lm",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":claw_goal_fbs",
         ":claw_output_fbs",
@@ -84,6 +90,7 @@ cc_test(
         "claw_lib_test.cc",
     ],
     data = ["//y2014:config"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":claw_goal_fbs",
         ":claw_lib",
@@ -102,6 +109,7 @@ cc_binary(
     srcs = [
         "claw_main.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":claw_lib",
         "//aos:init",

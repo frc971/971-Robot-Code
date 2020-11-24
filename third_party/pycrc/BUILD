@@ -9,6 +9,7 @@ genrule(
         "pycrc_main.py",
     ],
     cmd = "cp $< $@",
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 py_binary(
@@ -21,5 +22,6 @@ py_binary(
     imports = ["."],
     legacy_create_init = False,
     main = "pycrc_main.py",
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )

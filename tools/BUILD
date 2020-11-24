@@ -7,44 +7,47 @@ config_setting(
     name = "compiler_clang",
     flag_values = {
         "@bazel_tools//tools/cpp:compiler": "clang",
-    }
+    },
 )
 
 config_setting(
     name = "compiler_gcc",
     flag_values = {
         "@bazel_tools//tools/cpp:compiler": "gcc",
-    }
+    },
 )
 
+# TODO(phil): Get rid of these and just use the constraint values directly
+# everywhere.
 config_setting(
     name = "cpu_k8",
-    values = {"cpu": "k8"},
+    constraint_values = ["@platforms//cpu:x86_64"],
 )
 
 config_setting(
     name = "cpu_roborio",
-    values = {"cpu": "roborio"},
+    constraint_values = ["@//tools/platforms/hardware:roborio"],
 )
 
 config_setting(
     name = "cpu_cortex_m4f",
-    values = {"cpu": "cortex-m4f"},
+    constraint_values = ["@//tools/platforms/hardware:cortex_m4f"],
 )
 
-config_setting(
-    name = "cpu_cortex_m4f_k22",
-    values = {"cpu": "cortex-m4f-k22"},
-)
+# TODO(phil): Re-enable this with proper support.
+#config_setting(
+#    name = "cpu_cortex_m4f_k22",
+#    constraint_values = ["@platforms//cpu:?"],
+#)
 
 config_setting(
     name = "cpu_armhf",
-    values = {"cpu": "armhf-debian"},
+    constraint_values = ["@//tools/platforms/hardware:raspberry_pi"],
 )
 
 config_setting(
     name = "cpu_aarch64",
-    values = {"cpu": "aarch64"},
+    constraint_values = ["@platforms//cpu:arm64"],
 )
 
 config_setting(
@@ -60,34 +63,4 @@ config_setting(
 config_setting(
     name = "has_ubsan",
     values = {"define": "have_ubsan=true"},
-)
-
-environment(name = "k8")
-
-environment(name = "armhf-debian")
-
-environment(name = "roborio")
-
-environment(name = "cortex-m4f")
-
-environment(name = "cortex-m4f-k22")
-
-environment(name = "aarch64")
-
-environment_group(
-    name = "cpus",
-    defaults = [
-        ":k8",
-        ":roborio",
-        ":aarch64",
-        ":armhf-debian",
-    ],
-    environments = [
-        ":k8",
-        ":roborio",
-        ":armhf-debian",
-        ":cortex-m4f",
-        ":cortex-m4f-k22",
-        ":aarch64",
-    ],
 )

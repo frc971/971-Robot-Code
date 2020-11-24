@@ -6,7 +6,7 @@ py_binary(
         "drivetrain.py",
     ],
     legacy_create_init = False,
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":python_init",
         "//external:python-gflags",
@@ -22,7 +22,7 @@ py_binary(
         "polydrivetrain.py",
     ],
     legacy_create_init = False,
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":python_init",
         "//external:python-gflags",
@@ -37,7 +37,7 @@ py_library(
         "drivetrain.py",
         "polydrivetrain.py",
     ],
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     visibility = ["//visibility:public"],
     deps = [
         ":python_init",
@@ -55,7 +55,7 @@ py_binary(
         "hood.py",
     ],
     legacy_create_init = False,
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":python_init",
         "//external:python-gflags",
@@ -71,7 +71,7 @@ py_binary(
         "intake.py",
     ],
     legacy_create_init = False,
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":python_init",
         "//external:python-gflags",
@@ -87,7 +87,7 @@ py_binary(
         "turret.py",
     ],
     legacy_create_init = False,
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":python_init",
         "//external:python-gflags",
@@ -103,7 +103,7 @@ py_binary(
         "control_panel.py",
     ],
     legacy_create_init = False,
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":python_init",
         "//external:python-gflags",
@@ -118,7 +118,7 @@ py_library(
     srcs = [
         "flywheel.py",
     ],
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         "//frc971/control_loops/python:controls",
         "@matplotlib_repo//:matplotlib2.7",
@@ -131,7 +131,7 @@ py_binary(
         "accelerator.py",
     ],
     legacy_create_init = False,
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":flywheel",
         ":python_init",
@@ -146,7 +146,7 @@ py_binary(
         "finisher.py",
     ],
     legacy_create_init = False,
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":flywheel",
         ":python_init",
@@ -158,6 +158,7 @@ py_binary(
 py_library(
     name = "python_init",
     srcs = ["__init__.py"],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = ["//y2020/control_loops:python_init"],
 )

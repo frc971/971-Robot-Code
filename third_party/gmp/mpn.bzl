@@ -56,7 +56,8 @@ def mpn_cc_library(
         srcs,
         hdrs = [],
         copts = [],
-        deps = []):
+        deps = [],
+        target_compatible_with = None):
     native.cc_library(
         name = name,
         srcs = srcs,
@@ -70,6 +71,7 @@ def mpn_cc_library(
             "-DOPERATION_" + name,
         ],
         deps = deps,
+        target_compatible_with = target_compatible_with,
     )
 
 def _m4_mpn_function_impl(ctx):
@@ -164,7 +166,7 @@ def config_include_from_architecture(architecture_paths):
         result[key] = ["-I" + current_directory() + "/config/" + architecture_paths[key][0] + "/"]
     return select(result)
 
-def mpn_m4_cc_library(name, architecture_paths):
+def mpn_m4_cc_library(name, architecture_paths, target_compatible_with = None):
     # Search architecture_paths in order from 0 to N.
     # From there, search starting with the main name, then start looking at the alternatives.
     # And then look for .c or .asm
@@ -190,4 +192,5 @@ def mpn_m4_cc_library(name, architecture_paths):
         operation = name,
         files = select(architecture_globs),
         deps = native.glob(["**/*.m4", "**/*.asm"]) + ["config.m4"],
+        target_compatible_with = target_compatible_with,
     )

@@ -5,6 +5,7 @@ cc_binary(
     srcs = [
         "joystick_reader.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos:init",
         "//aos/actions:action_lib",
@@ -27,6 +28,7 @@ robot_downloader(
         "//y2014_bot3/control_loops/drivetrain:drivetrain",
         "//y2014_bot3/control_loops/rollers:rollers",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 cc_binary(
@@ -34,7 +36,7 @@ cc_binary(
     srcs = [
         "wpilib_interface.cc",
     ],
-    restricted_to = ["//tools:roborio"],
+    target_compatible_with = ["//tools/platforms/hardware:roborio"],
     deps = [
         "//aos:init",
         "//aos:make_unique",
@@ -68,5 +70,6 @@ cc_binary(
 py_library(
     name = "python_init",
     srcs = ["__init__.py"],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )

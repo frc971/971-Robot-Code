@@ -21,6 +21,7 @@ robot_downloader(
         "//y2020/control_loops/drivetrain:drivetrain",
         "//y2020/control_loops/superstructure:superstructure",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 robot_downloader(
@@ -34,13 +35,13 @@ robot_downloader(
     dirs = [
         "//y2020/www:www_files",
     ],
-    restricted_to = ["//tools:armhf-debian"],
     start_binaries = [
         "//aos/network:message_bridge_client",
         "//aos/network:message_bridge_server",
         "//aos/network:web_proxy_main",
         "//y2020/vision:camera_reader",
     ],
+    target_compatible_with = ["//tools/platforms/hardware:raspberry_pi"],
     target_type = "pi",
 )
 
@@ -52,6 +53,7 @@ cc_library(
     hdrs = [
         "constants.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         "//aos/logging",
@@ -75,7 +77,7 @@ cc_binary(
     srcs = [
         "wpilib_interface.cc",
     ],
-    restricted_to = ["//tools:roborio"],
+    target_compatible_with = ["//tools/platforms/hardware:roborio"],
     deps = [
         ":constants",
         "//aos:init",
@@ -117,6 +119,7 @@ cc_binary(
     srcs = [
         ":joystick_reader.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":setpoint_fbs",
         "//aos:init",
@@ -146,6 +149,7 @@ aos_config(
         "//y2020/vision/sift:sift_training_fbs",
         "//y2020/vision:vision_fbs",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         ":config_laptop",
@@ -170,6 +174,7 @@ aos_config(
             "//y2020/vision:vision_fbs",
             "//aos/events/logging:logger_fbs",
         ],
+        target_compatible_with = ["@platforms//os:linux"],
         visibility = ["//visibility:public"],
         deps = [
             "//aos/events:config",
@@ -197,6 +202,7 @@ aos_config(
         "//y2020/vision:vision_fbs",
         "//aos/events/logging:logger_fbs",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         "//aos/events:config",
@@ -220,6 +226,7 @@ aos_config(
         "//y2020/control_loops/superstructure:superstructure_position_fbs",
         "//y2020/control_loops/superstructure:superstructure_status_fbs",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos/events:config",
         "//aos/robot_state:config",
@@ -232,6 +239,7 @@ aos_config(
 py_library(
     name = "python_init",
     srcs = ["__init__.py"],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )
 
@@ -245,6 +253,7 @@ sh_binary(
         "//y2020/www:field_main_bundle.min.js",
         "//y2020/www:files",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
@@ -255,11 +264,13 @@ flatbuffer_cc_library(
         "setpoint.fbs",
     ],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 cc_binary(
     name = "setpoint_setter",
     srcs = ["setpoint_setter.cc"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":setpoint_fbs",
         "//aos:init",
@@ -272,6 +283,7 @@ cc_binary(
         name = "y2020_pi" + str(num) + ".json",
         src = "y2020_pi_template.json",
         parameters = {"NUM": str(num)},
+        target_compatible_with = ["@platforms//os:linux"],
     )
     for num in range(1, 5)
 ]

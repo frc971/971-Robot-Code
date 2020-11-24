@@ -11,6 +11,7 @@ flatbuffer_cc_library(
     includes = [
         "//frc971/control_loops:control_loops_fbs_includes",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 flatbuffer_cc_library(
@@ -22,6 +23,7 @@ flatbuffer_cc_library(
     includes = [
         "//frc971/control_loops:control_loops_fbs_includes",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 flatbuffer_cc_library(
@@ -33,6 +35,7 @@ flatbuffer_cc_library(
     includes = [
         "//frc971/control_loops:control_loops_fbs_includes",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 flatbuffer_cc_library(
@@ -41,6 +44,7 @@ flatbuffer_cc_library(
         "superstructure_output.fbs",
     ],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 cc_library(
@@ -51,6 +55,7 @@ cc_library(
     hdrs = [
         "superstructure.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":superstructure_goal_fbs",
         ":superstructure_output_fbs",
@@ -76,6 +81,7 @@ cc_test(
     ],
     data = ["//y2018:config"],
     shard_count = 5,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":superstructure_goal_fbs",
         ":superstructure_lib",
@@ -97,6 +103,7 @@ cc_binary(
     srcs = [
         "superstructure_main.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":superstructure_lib",
         "//aos:init",
@@ -111,6 +118,7 @@ cc_library(
     hdrs = [
         "debouncer.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 cc_test(
@@ -118,6 +126,7 @@ cc_test(
     srcs = [
         "debouncer_test.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":debouncer",
         "//aos/testing:googletest",

@@ -14,6 +14,7 @@ cc_library(
         "interface.h",
         "logging.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         ":printf_formats",
@@ -36,6 +37,7 @@ cc_library(
     srcs = ["log_namer.cc"],
     hdrs = ["log_namer.h"],
     copts = ["-Wno-format-nonliteral"],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         "//aos:configuration",
@@ -48,6 +50,7 @@ cc_library(
     hdrs = [
         "sizes.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 cc_test(
@@ -55,6 +58,7 @@ cc_test(
     srcs = [
         "implementations_test.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":implementations",
         ":logging",
@@ -68,6 +72,7 @@ cc_library(
     hdrs = [
         "printf_formats.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         "//aos:macros",
@@ -76,6 +81,7 @@ cc_library(
 
 cc_library(
     name = "implementations",
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         ":logging",
@@ -86,5 +92,6 @@ flatbuffer_cc_library(
     name = "log_message_fbs",
     srcs = ["log_message.fbs"],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )

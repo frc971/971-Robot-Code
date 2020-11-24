@@ -2,13 +2,11 @@ package(default_visibility = ["//visibility:public"])
 
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_ts_library")
 load("//aos:config.bzl", "aos_config")
-load("//tools:environments.bzl", "mcu_cpus")
-load("//tools/build_rules:select.bzl", "compiler_select", "cpu_select")
+load("//tools/build_rules:select.bzl", "cpu_select")
 
 flatbuffer_cc_library(
     name = "drivetrain_goal_fbs",
     srcs = ["drivetrain_goal.fbs"],
-    compatible_with = mcu_cpus,
     gen_reflections = 1,
     includes = ["//frc971/control_loops:control_loops_fbs_includes"],
 )
@@ -16,21 +14,18 @@ flatbuffer_cc_library(
 flatbuffer_cc_library(
     name = "drivetrain_output_fbs",
     srcs = ["drivetrain_output.fbs"],
-    compatible_with = mcu_cpus,
     gen_reflections = 1,
 )
 
 flatbuffer_cc_library(
     name = "drivetrain_position_fbs",
     srcs = ["drivetrain_position.fbs"],
-    compatible_with = mcu_cpus,
     gen_reflections = 1,
 )
 
 flatbuffer_cc_library(
     name = "drivetrain_status_fbs",
     srcs = ["drivetrain_status.fbs"],
-    compatible_with = mcu_cpus,
     gen_reflections = 1,
     includes = ["//frc971/control_loops:control_loops_fbs_includes"],
 )
@@ -39,6 +34,7 @@ flatbuffer_ts_library(
     name = "drivetrain_status_ts_fbs",
     srcs = ["drivetrain_status.fbs"],
     includes = ["//frc971/control_loops:control_loops_fbs_includes"],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 genrule(
@@ -46,7 +42,6 @@ genrule(
     srcs = ["drivetrain_goal.fbs"],
     outs = ["drivetrain_goal_float.fbs"],
     cmd = "cat $(SRCS) | sed 's/double/float/g' > $(OUTS)",
-    compatible_with = mcu_cpus,
 )
 
 genrule(
@@ -54,7 +49,6 @@ genrule(
     srcs = ["drivetrain_position.fbs"],
     outs = ["drivetrain_position_float.fbs"],
     cmd = "cat $(SRCS) | sed 's/double/float/g' > $(OUTS)",
-    compatible_with = mcu_cpus,
 )
 
 genrule(
@@ -62,7 +56,6 @@ genrule(
     srcs = ["drivetrain_output.fbs"],
     outs = ["drivetrain_output_float.fbs"],
     cmd = "cat $(SRCS) | sed 's/double/float/g' > $(OUTS)",
-    compatible_with = mcu_cpus,
 )
 
 genrule(
@@ -70,13 +63,11 @@ genrule(
     srcs = ["drivetrain_status.fbs"],
     outs = ["drivetrain_status_float.fbs"],
     cmd = "cat $(SRCS) | sed 's/double/float/g' > $(OUTS)",
-    compatible_with = mcu_cpus,
 )
 
 flatbuffer_cc_library(
     name = "drivetrain_goal_float_fbs",
     srcs = ["drivetrain_goal_float.fbs"],
-    compatible_with = mcu_cpus,
     gen_reflections = 1,
     includes = ["//frc971/control_loops:control_loops_fbs_includes"],
 )
@@ -84,21 +75,18 @@ flatbuffer_cc_library(
 flatbuffer_cc_library(
     name = "drivetrain_output_float_fbs",
     srcs = ["drivetrain_output_float.fbs"],
-    compatible_with = mcu_cpus,
     gen_reflections = 1,
 )
 
 flatbuffer_cc_library(
     name = "drivetrain_position_float_fbs",
     srcs = ["drivetrain_position_float.fbs"],
-    compatible_with = mcu_cpus,
     gen_reflections = 1,
 )
 
 flatbuffer_cc_library(
     name = "drivetrain_status_float_fbs",
     srcs = ["drivetrain_status_float.fbs"],
-    compatible_with = mcu_cpus,
     gen_reflections = 1,
     includes = ["//frc971/control_loops:control_loops_fbs_includes"],
 )
@@ -109,12 +97,14 @@ aos_config(
     flatbuffers = [
         ":drivetrain_status_fbs",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )
 
 aos_config(
     name = "simulation_config",
     src = "drivetrain_simulation_config.json",
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         ":config",
@@ -136,6 +126,7 @@ aos_config(
         "//frc971/wpilib:imu_fbs",
         "//frc971/wpilib:imu_batch_fbs",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         "//aos/robot_state:config",
@@ -149,14 +140,17 @@ cc_library(
     ],
     deps = [
         "//frc971:shifter_hall_effect",
-        "//frc971/control_loops:hybrid_state_feedback_loop",
         "//frc971/control_loops:state_feedback_loop",
-    ],
+    ] + select({
+        "@platforms//os:linux": ["//frc971/control_loops:hybrid_state_feedback_loop"],
+        "//conditions:default": [],
+    }),
 )
 
 cc_library(
     name = "hybrid_ekf",
     hdrs = ["hybrid_ekf.h"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":drivetrain_config",
         "//aos:math",
@@ -171,6 +165,7 @@ cc_library(
 cc_test(
     name = "hybrid_ekf_test",
     srcs = ["hybrid_ekf_test.cc"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":drivetrain_test_lib",
         ":hybrid_ekf",
@@ -185,11 +180,13 @@ flatbuffer_cc_library(
     name = "localizer_fbs",
     srcs = ["localizer.fbs"],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 cc_library(
     name = "localizer",
     hdrs = ["localizer.h"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":drivetrain_config",
         ":drivetrain_status_fbs",
@@ -204,7 +201,6 @@ cc_library(
     hdrs = [
         "gear.h",
     ],
-    compatible_with = mcu_cpus,
 )
 
 cc_library(
@@ -215,6 +211,7 @@ cc_library(
     hdrs = [
         "splinedrivetrain.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":distance_spline",
         ":drivetrain_config",
@@ -238,6 +235,7 @@ cc_library(
     hdrs = [
         "line_follow_drivetrain.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":drivetrain_config",
         ":drivetrain_goal_fbs",
@@ -260,7 +258,7 @@ cc_test(
     name = "line_follow_drivetrain_test",
     srcs = ["line_follow_drivetrain_test.cc"],
     linkstatic = True,
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":drivetrain_config",
         ":drivetrain_test_lib",
@@ -281,6 +279,7 @@ cc_library(
     hdrs = [
         "ssdrivetrain.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":drivetrain_config",
         ":drivetrain_goal_fbs",
@@ -309,58 +308,34 @@ cc_library(
     hdrs = [
         "polydrivetrain.h",
     ],
+    copts = select({
+        "@platforms//os:none": ["-Wno-type-limits"],
+        "//conditions:default": [],
+    }),
     deps = [
         ":drivetrain_config",
-        ":drivetrain_goal_fbs",
-        ":drivetrain_output_fbs",
-        ":drivetrain_position_fbs",
-        ":drivetrain_status_fbs",
         ":gear",
         "//aos:math",
         "//aos/controls:polytope",
-        "//aos/robot_state:robot_state_fbs",
-        "//aos/util:log_interval",
         "//frc971/control_loops:coerce_goal",
         "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops:state_feedback_loop",
-    ],
-)
-
-cc_library(
-    name = "drivetrain_config_uc",
-    hdrs = [
-        "drivetrain_config.h",
-    ],
-    restricted_to = mcu_cpus,
-    deps = [
-        "//frc971:shifter_hall_effect",
-        "//frc971/control_loops:state_feedback_loop_uc",
-    ],
-)
-
-cc_library(
-    name = "polydrivetrain_uc",
-    srcs = [
-        "polydrivetrain.cc",
-    ],
-    hdrs = [
-        "polydrivetrain.h",
-    ],
-    copts = ["-Wno-type-limits"],
-    restricted_to = mcu_cpus,
-    deps = [
-        ":drivetrain_config_uc",
-        ":drivetrain_goal_float_fbs",
-        ":drivetrain_output_float_fbs",
-        ":drivetrain_position_float_fbs",
-        ":drivetrain_status_float_fbs",
-        ":gear",
-        "//aos:math",
-        "//aos/controls:polytope_uc",
-        "//frc971/control_loops:coerce_goal_uc",
-        "//frc971/control_loops:control_loops_fbs",
-        "//frc971/control_loops:state_feedback_loop_uc",
-    ],
+    ] + select({
+        "@platforms//os:linux": [
+            ":drivetrain_goal_fbs",
+            ":drivetrain_output_fbs",
+            ":drivetrain_position_fbs",
+            ":drivetrain_status_fbs",
+            "//aos/robot_state:robot_state_fbs",
+            "//aos/util:log_interval",
+        ],
+        "@platforms//os:none": [
+            ":drivetrain_goal_float_fbs",
+            ":drivetrain_output_float_fbs",
+            ":drivetrain_position_float_fbs",
+            ":drivetrain_status_float_fbs",
+        ],
+    }),
 )
 
 genrule(
@@ -370,6 +345,7 @@ genrule(
         "down_estimator.cc",
     ],
     cmd = "$(location //frc971/control_loops/python:down_estimator) $(OUTS)",
+    target_compatible_with = ["@platforms//os:linux"],
     tools = [
         "//frc971/control_loops/python:down_estimator",
     ],
@@ -384,6 +360,7 @@ cc_library(
     hdrs = [
         "down_estimator.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//frc971/control_loops:state_feedback_loop",
     ],
@@ -397,6 +374,7 @@ cc_library(
     hdrs = [
         "drivetrain.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":down_estimator",
         ":drivetrain_goal_fbs",
@@ -433,6 +411,7 @@ cc_library(
             ],
             "arm": [],
         }),
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":drivetrain_config",
         ":drivetrain_goal_fbs",
@@ -471,6 +450,7 @@ cc_test(
             "arm": [],
         }),
     linkstatic = True,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":drivetrain_config",
         ":drivetrain_lib",
@@ -506,31 +486,10 @@ genrule(
         "integral_haptic_trigger.cc",
     ],
     cmd = "$(location //frc971/control_loops/python:haptic_wheel) $(OUTS)",
-    compatible_with = mcu_cpus,
     tools = [
         "//frc971/control_loops/python:haptic_wheel",
     ],
     visibility = ["//visibility:private"],
-)
-
-cc_library(
-    name = "haptic_input_uc",
-    srcs = [
-        "haptic_trigger.cc",
-        "haptic_wheel.cc",
-        "integral_haptic_trigger.cc",
-        "integral_haptic_wheel.cc",
-    ],
-    hdrs = [
-        "haptic_trigger.h",
-        "haptic_wheel.h",
-        "integral_haptic_trigger.h",
-        "integral_haptic_wheel.h",
-    ],
-    restricted_to = mcu_cpus,
-    deps = [
-        "//frc971/control_loops:state_feedback_loop_uc",
-    ],
 )
 
 cc_library(
@@ -556,6 +515,7 @@ cc_library(
     name = "spline",
     srcs = ["spline.cc"],
     hdrs = ["spline.h"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//frc971/control_loops:binomial",
         "@org_tuxfamily_eigen//:eigen",
@@ -566,6 +526,7 @@ cc_binary(
     name = "spline.so",
     srcs = ["libspline.cc"],
     linkshared = True,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":distance_spline",
         ":spline",
@@ -582,7 +543,7 @@ cc_test(
     srcs = [
         "spline_test.cc",
     ],
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":spline",
         "//aos/testing:googletest",
@@ -595,6 +556,7 @@ cc_library(
     name = "distance_spline",
     srcs = ["distance_spline.cc"],
     hdrs = ["distance_spline.h"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":spline",
         "//aos/logging",
@@ -616,6 +578,7 @@ cc_test(
             "arm": [],
         }),
     linkstatic = True,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":distance_spline",
         "//aos/testing:googletest",
@@ -633,6 +596,7 @@ cc_library(
     name = "trajectory",
     srcs = ["trajectory.cc"],
     hdrs = ["trajectory.h"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":distance_spline",
         ":drivetrain_config",
@@ -650,7 +614,7 @@ cc_binary(
     srcs = [
         "trajectory_plot.cc",
     ],
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":distance_spline",
         ":trajectory",
@@ -676,6 +640,7 @@ cc_test(
             "arm": [],
         }),
     linkstatic = True,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":trajectory",
         ":drivetrain_test_lib",
@@ -700,6 +665,7 @@ cc_library(
     hdrs = [
         "improved_down_estimator.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":drivetrain_config",
         ":drivetrain_status_fbs",
@@ -718,6 +684,7 @@ cc_test(
     srcs = [
         "improved_down_estimator_test.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":drivetrain_test_lib",
         "//aos/controls:quaternion_utils",
@@ -731,6 +698,7 @@ cc_test(
 cc_library(
     name = "camera",
     srcs = ["camera.h"],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         "//aos/containers:sized_array",
@@ -741,6 +709,7 @@ cc_library(
 cc_test(
     name = "camera_test",
     srcs = ["camera_test.cc"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":camera",
         "//aos/testing:googletest",

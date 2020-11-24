@@ -1,6 +1,7 @@
 load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library")
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 load("//tools/build_rules:gtk_dependent.bzl", "gtk_dependent_cc_binary", "gtk_dependent_cc_library")
+load("//tools:platforms.bzl", "platforms")
 
 flatbuffer_cc_library(
     name = "vision_fbs",
@@ -8,17 +9,20 @@ flatbuffer_cc_library(
         "vision.fbs",
     ],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )
 
 cc_proto_library(
     name = "vision_data",
     srcs = ["vision_data.proto"],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 cc_proto_library(
     name = "calibration",
     srcs = ["calibration.proto"],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 _calibration_values_embedded_before = """
@@ -60,6 +64,7 @@ genrule(
         "cat $(location :calibration.pb) | sed 's/\"/\\\\\"/g ; s/^/\"/g ; s/$$/\\\\n\"/g' >> $@",
         "echo '%s' >> $@" % _calibration_values_embedded_after,
     ]),
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 cc_library(
@@ -71,6 +76,7 @@ cc_library(
     hdrs = [
         "stereo_geometry.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":calibration",
         "//aos/logging",
@@ -81,10 +87,10 @@ cc_library(
 cc_binary(
     name = "target_sender",
     srcs = ["target_sender.cc"],
-    restricted_to = [
-        "//tools:k8",
-        "//tools:armhf-debian",
-    ],
+    target_compatible_with = platforms.any_of([
+        "@platforms//cpu:x86_64",
+        "//tools/platforms/hardware:raspberry_pi",
+    ]),
     deps = [
         ":calibration",
         ":stereo_geometry",
@@ -106,10 +112,10 @@ cc_library(
     name = "blob_filters",
     srcs = ["blob_filters.cc"],
     hdrs = ["blob_filters.h"],
-    restricted_to = [
-        "//tools:k8",
-        "//tools:armhf-debian",
-    ],
+    target_compatible_with = platforms.any_of([
+        "@platforms//cpu:x86_64",
+        "//tools/platforms/hardware:raspberry_pi",
+    ]),
     visibility = ["//visibility:public"],
     deps = [
         "//aos/vision/blob:codec",
@@ -127,6 +133,7 @@ cc_binary(
     srcs = [
         "target_receiver.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         ":stereo_geometry",
@@ -146,10 +153,10 @@ cc_binary(
 gtk_dependent_cc_binary(
     name = "debug_receiver",
     srcs = ["debug_receiver.cc"],
-    restricted_to = [
-        "//tools:k8",
-        "//tools:armhf-debian",
-    ],
+    target_compatible_with = platforms.any_of([
+        "@platforms//cpu:x86_64",
+        "//tools/platforms/hardware:raspberry_pi",
+    ]),
     visibility = ["//visibility:public"],
     deps = [
         ":blob_filters",

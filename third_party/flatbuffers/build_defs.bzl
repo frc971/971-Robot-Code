@@ -52,8 +52,10 @@ def flatbuffer_library_public(
         reflection_visibility = None,
         compatible_with = None,
         restricted_to = None,
+        target_compatible_with = None,
         output_to_bindir = False):
-    """Generates code files for reading/writing the given flatbuffers in the requested language using the public compiler.
+    """Generates code files for reading/writing the given flatbuffers in the
+    requested language using the public compiler.
 
     Args:
       name: Rule name.
@@ -73,6 +75,8 @@ def flatbuffer_library_public(
         built for, in addition to default-supported environments.
       restricted_to: Optional, The list of environments this rule can be built
         for, instead of default-supported environments.
+      target_compatible_with: Optional, the list of constraints the target
+        platform must satisfy for this target to be considered compatible.
       output_to_bindir: Passed to genrule for output to bin directory.
 
 
@@ -108,6 +112,7 @@ def flatbuffer_library_public(
         cmd = genrule_cmd,
         compatible_with = compatible_with,
         restricted_to = restricted_to,
+        target_compatible_with = target_compatible_with,
         message = "Generating flatbuffer files for %s:" % (name),
     )
     if reflection_name:
@@ -135,6 +140,7 @@ def flatbuffer_library_public(
             tools = [flatc_path],
             compatible_with = compatible_with,
             restricted_to = restricted_to,
+            target_compatible_with = target_compatible_with,
             cmd = reflection_genrule_cmd,
             message = "Generating flatbuffer reflection binary for %s:" % (name),
         )
@@ -157,6 +163,7 @@ def flatbuffer_cc_library(
         visibility = None,
         compatible_with = None,
         restricted_to = None,
+        target_compatible_with = None,
         srcs_filegroup_visibility = None,
         gen_reflections = False):
     '''A cc_library with the generated reader/writers for the given flatbuffer definitions.
@@ -176,6 +183,8 @@ def flatbuffer_cc_library(
           (e.g. --gen-mutable).
       visibility: The visibility of the generated cc_library. By default, use the
           default visibility of the project.
+      target_compatible_with: Optional, the list of constraints the target
+        platform must satisfy for this target to be considered compatible.
       srcs_filegroup_visibility: The visibility of the generated srcs filegroup.
           By default, use the value of the visibility parameter above.
       gen_reflections: Optional, if true this will generate the flatbuffer
@@ -239,6 +248,7 @@ def flatbuffer_cc_library(
         includes = includes,
         include_paths = include_paths,
         flatc_args = flatc_args,
+        target_compatible_with = target_compatible_with,
         compatible_with = compatible_with,
         restricted_to = restricted_to,
         reflection_name = reflection_name,
@@ -261,6 +271,7 @@ def flatbuffer_cc_library(
         includes = [],
         compatible_with = compatible_with,
         restricted_to = restricted_to,
+        target_compatible_with = target_compatible_with,
         linkstatic = 1,
         visibility = visibility,
     )
@@ -281,6 +292,7 @@ def flatbuffer_py_library(
         namespace,
         tables,
         compatible_with = None,
+        target_compatible_with = None,
         includes = [],
         include_paths = DEFAULT_INCLUDE_PATHS,
         flatc_args = DEFAULT_FLATC_ARGS,
@@ -314,12 +326,14 @@ def flatbuffer_py_library(
         include_paths = include_paths,
         flatc_args = flatc_args,
         compatible_with = compatible_with,
+        target_compatible_with = target_compatible_with,
     )
     native.py_library(
         name = name,
         srcs = python_files,
         visibility = visibility,
         compatible_with = compatible_with,
+        target_compatible_with = target_compatible_with,
         imports = ["."],
         deps = ["@com_github_google_flatbuffers//:flatpy"],
     )
@@ -328,6 +342,7 @@ def flatbuffer_ts_library(
         name,
         srcs,
         compatible_with = None,
+        target_compatible_with = None,
         includes = [],
         include_paths = DEFAULT_INCLUDE_PATHS,
         flatc_args = DEFAULT_FLATC_TS_ARGS,
@@ -350,12 +365,14 @@ def flatbuffer_ts_library(
         include_paths = include_paths,
         flatc_args = flatc_args,
         compatible_with = compatible_with,
+        target_compatible_with = target_compatible_with,
     )
     ts_library(
         name = name,
         srcs = outs,
         visibility = visibility,
         compatible_with = compatible_with,
+        target_compatible_with = target_compatible_with,
         deps = [
             "@npm//@types",
         ],

@@ -1,7 +1,6 @@
 package(default_visibility = ["//visibility:public"])
 
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
-load("//tools:environments.bzl", "mcu_cpus")
 
 cc_library(
     name = "control_loop_test",
@@ -12,6 +11,7 @@ cc_library(
     hdrs = [
         "control_loop_test.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos:flatbuffers",
         "//aos:json_to_flatbuffer",
@@ -25,27 +25,20 @@ cc_library(
 )
 
 cc_library(
-    name = "polytope_uc",
-    hdrs = [
-        "polytope.h",
-    ],
-    restricted_to = mcu_cpus,
-    deps = [
-        "@org_tuxfamily_eigen//:eigen",
-    ],
-)
-
-cc_library(
     name = "polytope",
     hdrs = [
         "polytope.h",
     ],
     deps = [
-        "//aos/logging",
-        "//third_party/cddlib",
-        "@com_github_google_glog//:glog",
         "@org_tuxfamily_eigen//:eigen",
-    ],
+    ] + select({
+        "@platforms//os:linux": [
+            "//aos/logging",
+            "//third_party/cddlib",
+            "@com_github_google_glog//:glog",
+        ],
+        "//conditions:default": [],
+    }),
 )
 
 cc_test(
@@ -53,6 +46,7 @@ cc_test(
     srcs = [
         "polytope_test.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":polytope",
         "//aos/testing:googletest",
@@ -66,6 +60,7 @@ flatbuffer_cc_library(
     srcs = [
         "control_loops.fbs",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 cc_library(
@@ -77,6 +72,7 @@ cc_library(
     hdrs = [
         "control_loop.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos/events:event_loop",
         "//aos/events:shm_event_loop",
@@ -96,6 +92,7 @@ cc_library(
     hdrs = [
         "quaternion_utils.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "@com_github_google_glog//:glog",
         "@org_tuxfamily_eigen//:eigen",
@@ -107,6 +104,7 @@ cc_test(
     srcs = [
         "quaternion_utils_test.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":quaternion_utils",
         "//aos/testing:googletest",

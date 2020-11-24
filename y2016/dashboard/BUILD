@@ -7,6 +7,7 @@ gen_embedded(
         ["www_defaults/**/*"],
         exclude = ["www/**/*"],
     ),
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 aos_downloader_dir(
@@ -15,6 +16,7 @@ aos_downloader_dir(
         "www/**/*",
     ]),
     dir = "www",
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )
 
@@ -24,6 +26,7 @@ cc_binary(
         "dashboard.cc",
         "dashboard.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         ":gen_embedded",

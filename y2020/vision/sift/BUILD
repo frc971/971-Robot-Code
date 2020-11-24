@@ -6,10 +6,7 @@ cc_binary(
     srcs = [
         "fast_gaussian_generator.cc",
     ],
-    restricted_to = [
-        "//tools:k8",
-        "//tools:armhf-debian",
-    ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//third_party:halide",
         "//third_party:halide_gengen",
@@ -25,18 +22,15 @@ py_binary(
     ],
     data = [
         ":fast_gaussian_generator",
-        # TODO(Brian): Replace this with something more fine-grained from the
-        # configuration fragment or something.
-        "//tools/cpp:toolchain",
         "@amd64_debian_sysroot//:sysroot_files",
     ],
-    python_version = "PY3",
-    main = "fast_gaussian_runner.py",
-    restricted_to = [
-        "//tools:k8",
-        "//tools:armhf-debian",
+    toolchains = [
+        "@bazel_tools//tools/cpp:current_cc_toolchain",
     ],
+    main = "fast_gaussian_runner.py",
+    python_version = "PY3",
     srcs_version = "PY2AND3",
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "@bazel_tools//tools/python/runfiles",
     ],
@@ -121,10 +115,7 @@ cc_library(
     hdrs = [
         "sift971.h",
     ],
-    restricted_to = [
-        "//tools:k8",
-        "//tools:armhf-debian",
-    ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         ":fast_gaussian",
@@ -141,10 +132,7 @@ cc_library(
     hdrs = [
         "fast_gaussian.h",
     ],
-    restricted_to = [
-        "//tools:k8",
-        "//tools:armhf-debian",
-    ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":fast_gaussian_all",
         "//third_party:halide_runtime",
@@ -158,10 +146,7 @@ cc_test(
     srcs = [
         "fast_gaussian_test.cc",
     ],
-    restricted_to = [
-        "//tools:k8",
-        "//tools:armhf-debian",
-    ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":fast_gaussian",
         "//aos/testing:googletest",
@@ -174,10 +159,7 @@ cc_binary(
     srcs = [
         "testing_sift.cc",
     ],
-    restricted_to = [
-        "//tools:k8",
-        "//tools:armhf-debian",
-    ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":fast_gaussian",
         "//aos:init",
@@ -207,6 +189,7 @@ flatbuffer_py_library(
         "TrainingImage",
         "TrainingData",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )
 
@@ -214,12 +197,14 @@ flatbuffer_cc_library(
     name = "sift_fbs",
     srcs = ["sift.fbs"],
     gen_reflections = True,
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )
 
 flatbuffer_ts_library(
     name = "sift_ts_fbs",
     srcs = ["sift.fbs"],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//y2020:__subpackages__"],
 )
 
@@ -228,6 +213,7 @@ flatbuffer_cc_library(
     srcs = ["sift_training.fbs"],
     gen_reflections = True,
     includes = [":sift_fbs_includes"],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )
 
@@ -236,6 +222,7 @@ py_binary(
     srcs = ["demo_sift_training.py"],
     python_version = "PY3",
     srcs_version = "PY2AND3",
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":sift_fbs_python",
         "@opencv_contrib_nonfree_amd64//:python_opencv",
@@ -255,6 +242,7 @@ genrule(
         "$(location images/demo/FRC-Image4-cleaned.png)",
         "$(location demo_sift.h)",
     ]),
+    target_compatible_with = ["@platforms//os:linux"],
     tools = [
         ":demo_sift_training",
     ],
@@ -265,5 +253,6 @@ cc_library(
     hdrs = [
         "demo_sift.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )

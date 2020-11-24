@@ -1,4 +1,5 @@
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_py_library")
+load("//tools:platforms.bzl", "platforms")
 
 py_binary(
     name = "load_sift_training",
@@ -17,6 +18,7 @@ py_binary(
     ]),
     python_version = "PY3",
     srcs_version = "PY2AND3",
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//external:python-glog",
         "//y2020/vision/sift:sift_fbs_python",
@@ -34,6 +36,7 @@ genrule(
         "$(location :load_sift_training)",
         "$(location sift_training_data.h)",
     ]),
+    target_compatible_with = ["@platforms//os:linux"],
     tools = [
         ":load_sift_training",
     ],
@@ -44,6 +47,7 @@ cc_library(
     hdrs = [
         "sift_training_data.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )
 
@@ -63,9 +67,10 @@ py_binary(
     data = glob(["calib_files/*.json"]) + glob([
         "test_images/*.png",
     ]),
-    python_version = "PY3",
     main = "load_sift_training.py",
+    python_version = "PY3",
     srcs_version = "PY2AND3",
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":load_sift_training",
         "//external:python-glog",
@@ -84,6 +89,7 @@ genrule(
         "$(location :load_sift_training_test)",
         "$(location sift_training_data_test.h) test",
     ]),
+    target_compatible_with = ["@platforms//os:linux"],
     tools = [
         ":load_sift_training_test",
     ],
@@ -94,6 +100,7 @@ cc_library(
     hdrs = [
         "sift_training_data_test.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )
 
@@ -102,10 +109,7 @@ cc_test(
     srcs = [
         "camera_param_test.cc",
     ],
-    restricted_to = [
-        "//tools:k8",
-        "//tools:armhf-debian",
-    ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":sift_training_data_test",
         "//aos/testing:googletest",

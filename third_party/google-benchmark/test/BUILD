@@ -10,17 +10,17 @@ TEST_COPTS = [
     "-fstrict-aliasing",
 ]
 
-PER_SRC_COPTS = ({
+PER_SRC_COPTS = {
     "cxx03_test.cc": ["-std=c++03"],
     # Some of the issues with DoNotOptimize only occur when optimization is enabled
     "donotoptimize_test.cc": ["-O3"],
-})
+}
 
 TEST_ARGS = ["--benchmark_min_time=0.01"]
 
-PER_SRC_TEST_ARGS = ({
+PER_SRC_TEST_ARGS = {
     "user_counters_tabular_test.cc": ["--benchmark_counters_tabular=true"],
-})
+}
 
 cc_library(
     name = "output_test_helper",

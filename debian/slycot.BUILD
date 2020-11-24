@@ -14,7 +14,7 @@ genrule(
     srcs = ["slycot/src/_wrapper.pyf"],
     outs = ["slycot/src/_fortranwrapper.pyf"],
     cmd = "cat $(SRCS) | sed 's/_wrapper/_fortranwrapper/' > $(OUTS)",
-    restricted_to = ["@//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
 )
 
 # The contents of the file telling f2py how to translate various types. The
@@ -60,7 +60,7 @@ genrule(
             "-i $(OUTS)",
         ]),
     ]),
-    restricted_to = ["@//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     tools = [
         "@python_repo//:f2py",
     ],
@@ -81,7 +81,7 @@ cc_library(
         "-Wno-unused-function",
         "-Wno-unused-but-set-variable",
     ],
-    restricted_to = ["@//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":slicot",
         "@python_repo//:python2.7_f2py",
@@ -97,7 +97,7 @@ cc_binary(
     name = "slycot/_fortranwrapper.so",
     linkshared = True,
     linkstatic = True,
-    restricted_to = ["@//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":slicot",
         ":slycot_c",
@@ -128,7 +128,7 @@ py_library(
         ":slycot/_fortranwrapper.so",
     ],
     imports = ["."],
-    restricted_to = ["@//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     visibility = ["//visibility:public"],
 )
 

@@ -1,4 +1,4 @@
-def hex_from_elf(name, restricted_to = None):
+def hex_from_elf(name, target_compatible_with = None):
     native.genrule(
         name = name,
         srcs = ["%s.elf" % name],
@@ -6,6 +6,6 @@ def hex_from_elf(name, restricted_to = None):
         cmd = "$(OBJCOPY) -O ihex $< $@",
         executable = True,
         output_to_bindir = True,
-        restricted_to = restricted_to,
+        target_compatible_with = target_compatible_with,
         toolchains = ["@bazel_tools//tools/cpp:current_cc_toolchain"],
     )

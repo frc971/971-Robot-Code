@@ -8,6 +8,7 @@ flatbuffer_cc_library(
         "shooter_goal.fbs",
     ],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 flatbuffer_cc_library(
@@ -16,6 +17,7 @@ flatbuffer_cc_library(
         "shooter_position.fbs",
     ],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 flatbuffer_cc_library(
@@ -24,6 +26,7 @@ flatbuffer_cc_library(
         "shooter_output.fbs",
     ],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 flatbuffer_cc_library(
@@ -32,6 +35,7 @@ flatbuffer_cc_library(
         "shooter_status.fbs",
     ],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 genrule(
@@ -43,6 +47,7 @@ genrule(
         "shooter_integral_plant.cc",
     ],
     cmd = "$(location //y2016/control_loops/python:shooter) $(OUTS)",
+    target_compatible_with = ["@platforms//os:linux"],
     tools = [
         "//y2016/control_loops/python:shooter",
     ],
@@ -59,6 +64,7 @@ cc_library(
         "shooter_integral_plant.h",
         "shooter_plant.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//frc971/control_loops:state_feedback_loop",
     ],
@@ -72,6 +78,7 @@ cc_library(
     hdrs = [
         "shooter.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":shooter_goal_fbs",
         ":shooter_output_fbs",
@@ -88,6 +95,7 @@ cc_test(
         "shooter_lib_test.cc",
     ],
     data = ["//y2016:config"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":shooter_goal_fbs",
         ":shooter_lib",
@@ -106,6 +114,7 @@ cc_binary(
     srcs = [
         "shooter_main.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":shooter_goal_fbs",
         ":shooter_lib",

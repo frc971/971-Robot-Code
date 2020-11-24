@@ -1,10 +1,11 @@
-load("//tools/build_rules:gtk_dependent.bzl", "gtk_dependent_cc_binary", "gtk_dependent_cc_library")
+load("//tools/build_rules:gtk_dependent.bzl", "gtk_dependent_cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
     name = "overlay",
     hdrs = ["overlay.h"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos/vision/image:image_types",
         "//aos/vision/math:segment",
@@ -16,6 +17,7 @@ gtk_dependent_cc_library(
     name = "debug_window",
     srcs = ["debug_window.cc"],
     hdrs = ["debug_window.h"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":overlay",
         "//aos/vision/image:image_types",
@@ -34,6 +36,7 @@ gtk_dependent_cc_library(
         "tcp-source.cc",
     ],
     hdrs = ["debug_framework.h"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos/logging",
         "//aos/logging:implementations",

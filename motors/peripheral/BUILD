@@ -1,5 +1,3 @@
-load("//tools:environments.bzl", "mcu_cpus")
-
 cc_library(
     name = "adc",
     srcs = [
@@ -8,7 +6,7 @@ cc_library(
     hdrs = [
         "adc.h",
     ],
-    restricted_to = mcu_cpus,
+    target_compatible_with = ["@platforms//os:none"],
     visibility = ["//visibility:public"],
     deps = [
         ":configuration",
@@ -22,7 +20,7 @@ cc_library(
     hdrs = [
         "configuration.h",
     ],
-    restricted_to = mcu_cpus,
+    target_compatible_with = ["@platforms//os:none"],
     visibility = ["//visibility:public"],
 )
 
@@ -34,7 +32,7 @@ cc_library(
     hdrs = [
         "can.h",
     ],
-    restricted_to = mcu_cpus,
+    target_compatible_with = ["@platforms//os:none"],
     visibility = ["//visibility:public"],
     deps = [
         "//motors:util",
@@ -45,7 +43,6 @@ cc_library(
 cc_library(
     name = "uart_buffer",
     hdrs = ["uart_buffer.h"],
-    compatible_with = mcu_cpus,
     visibility = ["//visibility:public"],
     deps = [
         "//third_party/GSL",
@@ -57,6 +54,7 @@ cc_test(
     srcs = [
         "uart_buffer_test.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":uart_buffer",
         "//aos/testing:googletest",
@@ -67,7 +65,7 @@ cc_library(
     name = "uart",
     srcs = ["uart.cc"],
     hdrs = ["uart.h"],
-    restricted_to = mcu_cpus,
+    target_compatible_with = ["@platforms//os:none"],
     visibility = ["//visibility:public"],
     deps = [
         ":uart_buffer",
@@ -82,7 +80,7 @@ cc_library(
     name = "adc_dma",
     srcs = ["adc_dma.cc"],
     hdrs = ["adc_dma.h"],
-    restricted_to = mcu_cpus,
+    target_compatible_with = ["@platforms//os:none"],
     visibility = ["//visibility:public"],
     deps = [
         ":configuration",
@@ -95,7 +93,7 @@ cc_library(
     name = "spi",
     srcs = ["spi.cc"],
     hdrs = ["spi.h"],
-    restricted_to = mcu_cpus,
+    target_compatible_with = ["@platforms//os:none"],
     visibility = ["//visibility:public"],
     deps = [
         ":uart_buffer",

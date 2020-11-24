@@ -1,4 +1,3 @@
-load("//tools:environments.bzl", "mcu_cpus")
 load("//motors:macros.bzl", "hex_from_elf")
 
 jevois_crc_args = [
@@ -47,7 +46,7 @@ genrule(
             "$(location jevois_crc.c)",
         ]),
     ]),
-    compatible_with = mcu_cpus,
+    target_compatible_with = ["@platforms//os:linux"],
     tools = [
         "//third_party/pycrc:pycrc_main",
     ],
@@ -61,7 +60,7 @@ cc_library(
     hdrs = [
         "jevois_crc.h",
     ],
-    compatible_with = mcu_cpus,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//third_party/GSL",
     ],
@@ -81,19 +80,6 @@ cc_library(
 )
 
 cc_library(
-    name = "structures_mcu",
-    hdrs = [
-        "structures.h",
-    ],
-    restricted_to = mcu_cpus,
-    deps = [
-        "//aos/containers:sized_array",
-        "//aos/time:time_mcu",
-        "@org_tuxfamily_eigen//:eigen",
-    ],
-)
-
-cc_library(
     name = "spi",
     srcs = [
         "spi.cc",
@@ -105,27 +91,12 @@ cc_library(
     deps = [
         ":jevois_crc",
         ":structures",
-        "//aos/logging",
         "//aos/util:bitpacking",
         "//third_party/GSL",
-    ],
-)
-
-cc_library(
-    name = "spi_mcu",
-    srcs = [
-        "spi.cc",
-    ],
-    hdrs = [
-        "spi.h",
-    ],
-    restricted_to = mcu_cpus,
-    deps = [
-        ":jevois_crc",
-        ":structures_mcu",
-        "//aos/util:bitpacking",
-        "//third_party/GSL",
-    ],
+    ] + select({
+        "@platforms//os:linux": ["//aos/logging"],
+        "//conditions:default": [],
+    }),
 )
 
 cc_library(
@@ -142,29 +113,12 @@ cc_library(
         ":jevois_crc",
         ":structures",
         "//aos/containers:sized_array",
-        "//aos/logging",
         "//aos/util:bitpacking",
         "//third_party/GSL",
-    ],
-)
-
-cc_library(
-    name = "uart_mcu",
-    srcs = [
-        "uart.cc",
-    ],
-    hdrs = [
-        "uart.h",
-    ],
-    restricted_to = mcu_cpus,
-    deps = [
-        ":cobs_mcu",
-        ":jevois_crc",
-        ":structures_mcu",
-        "//aos/containers:sized_array",
-        "//aos/util:bitpacking",
-        "//third_party/GSL",
-    ],
+    ] + select({
+        "@platforms//os:linux": ["//aos/logging"],
+        "//conditions:default": [],
+    }),
 )
 
 cc_test(
@@ -172,6 +126,7 @@ cc_test(
     srcs = [
         "uart_test.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":uart",
         "//aos/testing:googletest",
@@ -183,6 +138,7 @@ cc_test(
     srcs = [
         "spi_test.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":spi",
         "//aos/testing:googletest",
@@ -199,22 +155,12 @@ cc_library(
     ],
 )
 
-cc_library(
-    name = "cobs_mcu",
-    hdrs = [
-        "cobs.h",
-    ],
-    restricted_to = mcu_cpus,
-    deps = [
-        "//third_party/GSL",
-    ],
-)
-
 cc_test(
     name = "cobs_test",
     srcs = [
         "cobs_test.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":cobs",
         "//aos/testing:googletest",
@@ -227,6 +173,7 @@ cc_library(
     name = "serial",
     srcs = ["serial.cc"],
     hdrs = ["serial.h"],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         "//aos/logging",
@@ -238,12 +185,12 @@ cc_binary(
     srcs = [
         "teensy.cc",
     ],
-    restricted_to = ["//tools:cortex-m4f"],
+    target_compatible_with = ["//tools/platforms/hardware:cortex_m4f"],
     deps = [
-        ":cobs_mcu",
-        ":spi_mcu",
-        ":uart_mcu",
-        "//aos/time:time_mcu",
+        ":cobs",
+        ":spi",
+        ":uart",
+        "//aos/time:time",
         "//motors:util",
         "//motors/core",
         "//motors/peripheral:configuration",
@@ -257,5 +204,5 @@ cc_binary(
 
 hex_from_elf(
     name = "teensy",
-    restricted_to = ["//tools:cortex-m4f"],
+    target_compatible_with = ["//tools/platforms/hardware:cortex_m4f"],
 )

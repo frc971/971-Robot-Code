@@ -9,6 +9,7 @@ flatbuffer_cc_library(
         "logging.fbs",
     ],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 cc_library(
@@ -19,7 +20,7 @@ cc_library(
     hdrs = [
         "encoder_and_potentiometer.h",
     ],
-    restricted_to = ["//tools:roborio"],
+    target_compatible_with = ["//tools/platforms/hardware:roborio"],
     deps = [
         ":dma",
         ":dma_edge_counting",
@@ -37,7 +38,7 @@ cc_library(
     hdrs = [
         "dma_edge_counting.h",
     ],
-    restricted_to = ["//tools:roborio"],
+    target_compatible_with = ["//tools/platforms/hardware:roborio"],
     deps = [
         ":dma",
         "//aos/logging",
@@ -53,7 +54,7 @@ cc_library(
     hdrs = [
         "interrupt_edge_counting.h",
     ],
-    restricted_to = ["//tools:roborio"],
+    target_compatible_with = ["//tools/platforms/hardware:roborio"],
     deps = [
         "//aos:init",
         "//aos/logging",
@@ -73,7 +74,7 @@ cc_library(
         "buffered_pcm.h",
         "buffered_solenoid.h",
     ],
-    restricted_to = ["//tools:roborio"],
+    target_compatible_with = ["//tools/platforms/hardware:roborio"],
     deps = [
         "//aos/logging",
         "//third_party:wpilib",
@@ -90,7 +91,7 @@ cc_library(
     ],
     # This library uses some deprecated parts of the SPI API.
     copts = ["-Wno-deprecated-declarations"],
-    restricted_to = ["//tools:roborio"],
+    target_compatible_with = ["//tools/platforms/hardware:roborio"],
     deps = [
         "//aos/logging",
         "//aos/time",
@@ -106,7 +107,7 @@ cc_library(
     hdrs = [
         "gyro_sender.h",
     ],
-    restricted_to = ["//tools:roborio"],
+    target_compatible_with = ["//tools/platforms/hardware:roborio"],
     deps = [
         ":gyro_interface",
         "//aos:init",
@@ -128,6 +129,7 @@ flatbuffer_cc_library(
         "loop_output_handler_test.fbs",
     ],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 aos_config(
@@ -137,6 +139,7 @@ aos_config(
         ":pdp_values_fbs",
         ":logging_fbs",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 aos_config(
@@ -145,6 +148,7 @@ aos_config(
     flatbuffers = [
         ":loop_output_handler_test_fbs",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos/events:config",
     ],
@@ -158,6 +162,7 @@ cc_library(
     hdrs = [
         "loop_output_handler.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos:init",
         "//aos/events:event_loop",
@@ -176,6 +181,7 @@ cc_test(
     data = [
         ":loop_output_handler_test_config",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":loop_output_handler",
         ":loop_output_handler_test_fbs",
@@ -193,7 +199,7 @@ cc_library(
     hdrs = [
         "joystick_sender.h",
     ],
-    restricted_to = ["//tools:roborio"],
+    target_compatible_with = ["//tools/platforms/hardware:roborio"],
     deps = [
         "//aos:init",
         "//aos/events:shm_event_loop",
@@ -212,7 +218,7 @@ cc_library(
     hdrs = [
         "wpilib_interface.h",
     ],
-    restricted_to = ["//tools:roborio"],
+    target_compatible_with = ["//tools/platforms/hardware:roborio"],
     deps = [
         "//aos/events:event_loop",
         "//aos/robot_state:robot_state_fbs",
@@ -226,6 +232,7 @@ flatbuffer_cc_library(
         "pdp_values.fbs",
     ],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 cc_library(
@@ -236,7 +243,7 @@ cc_library(
     hdrs = [
         "pdp_fetcher.h",
     ],
-    restricted_to = ["//tools:roborio"],
+    target_compatible_with = ["//tools/platforms/hardware:roborio"],
     deps = [
         ":pdp_values_fbs",
         "//aos:init",
@@ -252,7 +259,7 @@ cc_library(
     hdrs = [
         "wpilib_robot_base.h",
     ],
-    restricted_to = ["//tools:roborio"],
+    target_compatible_with = ["//tools/platforms/hardware:roborio"],
     deps = [
         "//third_party:wpilib",
     ],
@@ -264,6 +271,7 @@ flatbuffer_cc_library(
         "imu.fbs",
     ],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 flatbuffer_cc_library(
@@ -275,6 +283,7 @@ flatbuffer_cc_library(
     includes = [
         ":imu_fbs_includes",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 cc_library(
@@ -285,7 +294,7 @@ cc_library(
     hdrs = [
         "ADIS16470.h",
     ],
-    restricted_to = ["//tools:roborio"],
+    target_compatible_with = ["//tools/platforms/hardware:roborio"],
     deps = [
         ":fpga_time_conversion",
         ":imu_batch_fbs",
@@ -309,7 +318,7 @@ cc_library(
     ],
     # This library uses some deprecated parts of the SPI API.
     copts = ["-Wno-deprecated-declarations"],
-    restricted_to = ["//tools:roborio"],
+    target_compatible_with = ["//tools/platforms/hardware:roborio"],
     deps = [
         ":fpga_time_conversion",
         ":imu_fbs",
@@ -332,7 +341,7 @@ cc_library(
     hdrs = [
         "dma.h",
     ],
-    restricted_to = ["//tools:roborio"],
+    target_compatible_with = ["//tools/platforms/hardware:roborio"],
     deps = [
         "//third_party:wpilib",
     ],
@@ -346,6 +355,7 @@ cc_library(
     hdrs = [
         "spi_rx_clearer.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos/logging",
     ],
@@ -359,7 +369,7 @@ cc_library(
     hdrs = [
         "sensor_reader.h",
     ],
-    restricted_to = ["//tools:roborio"],
+    target_compatible_with = ["//tools/platforms/hardware:roborio"],
     deps = [
         ":dma",
         ":dma_edge_counting",
@@ -386,7 +396,7 @@ cc_library(
     hdrs = [
         "drivetrain_writer.h",
     ],
-    restricted_to = ["//tools:roborio"],
+    target_compatible_with = ["//tools/platforms/hardware:roborio"],
     deps = [
         ":loop_output_handler",
         "//aos:math",
@@ -404,7 +414,7 @@ cc_library(
     hdrs = [
         "fpga_time_conversion.h",
     ],
-    restricted_to = ["//tools:roborio"],
+    target_compatible_with = ["//tools/platforms/hardware:roborio"],
     deps = [
         "//aos/time",
         "//aos/util:compiler_memory_barrier",

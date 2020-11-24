@@ -209,7 +209,7 @@ def cc_proto_library(
         internal_bootstrap_hack=False,
         use_grpc_plugin=False,
         default_runtime="@com_google_protobuf//:protobuf",
-        compatible_with = None,
+        target_compatible_with = None,
         copts = [],
         **kargs):
   """Bazel rule to create a C++ protobuf library from proto source files
@@ -277,7 +277,7 @@ def cc_proto_library(
       plugin_language="grpc",
       gen_cc=1,
       outs=outs,
-      compatible_with = compatible_with,
+      target_compatible_with = target_compatible_with,
       visibility=["//visibility:public"],
   )
 
@@ -293,7 +293,7 @@ def cc_proto_library(
       deps=cc_libs + deps,
       includes=includes,
       copts = COPTS + copts,
-      compatible_with = compatible_with,
+      target_compatible_with = target_compatible_with,
       **kargs)
 
 def internal_gen_well_known_protos_java(srcs):

@@ -26,6 +26,7 @@ _copts = [
         "-frtti",
         "-DGSL_THROW_ON_CONTRACT_VIOLATION",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":test",
         "//third_party/Catch2",
@@ -42,6 +43,7 @@ _copts = [
     copts = _copts + [
         "-DGSL_TERMINATE_ON_CONTRACT_VIOLATION",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":test",
         "//third_party/Catch2",
@@ -58,6 +60,7 @@ cc_library(
         "-frtti",
         "-DGSL_THROW_ON_CONTRACT_VIOLATION",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//third_party/Catch2",
         "//third_party/GSL",

@@ -3,6 +3,7 @@ package(default_visibility = ["//visibility:public"])
 cc_binary(
     name = "image_streamer",
     srcs = ["image_streamer.cc"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":flip_image",
         "//aos/logging",
@@ -28,6 +29,7 @@ cc_library(
         "-Wno-cast-qual",
         "-Wno-error=type-limits",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//third_party/cimg:CImg",
         "//third_party/libjpeg",

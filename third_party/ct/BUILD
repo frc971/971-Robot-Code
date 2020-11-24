@@ -268,7 +268,7 @@ cc_library(
         "ct_core/include/external",
         "ct_optcon/include",
     ],
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     visibility = ["//visibility:public"],
     deps = [
         "//third_party/boostorg/algorithm",
