@@ -22,6 +22,7 @@ DEFAULT_FLATC_ARGS = [
     "--keep-prefix",
     "--cpp-std",
     "c++17",
+    "--require-explicit-ids",
     "--gen-mutable",
     "--reflect-names",
     "--cpp-ptr-type flatbuffers::unique_ptr",
