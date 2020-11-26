@@ -60,7 +60,7 @@ py_binary(
         "//external:python-gflags",
         "//external:python-glog",
         "//frc971/control_loops/python:controls",
-        "@matplotlib_repo//:matplotlib2.7",
+        "@matplotlib_repo//:matplotlib3",
     ],
 )
 
@@ -76,7 +76,7 @@ py_binary(
         "//external:python-gflags",
         "//external:python-glog",
         "//frc971/control_loops/python:controls",
-        "@matplotlib_repo//:matplotlib2.7",
+        "@matplotlib_repo//:matplotlib3",
     ],
 )
 
@@ -92,7 +92,7 @@ py_binary(
         "//external:python-gflags",
         "//external:python-glog",
         "//frc971/control_loops/python:controls",
-        "@matplotlib_repo//:matplotlib2.7",
+        "@matplotlib_repo//:matplotlib3",
     ],
 )
 

@@ -1,6 +1,9 @@
 # Use platforms to build our code.
 build --incompatible_enable_cc_toolchain_resolution
 
+# Default to py3 since that's all we support
+build --python_version=PY3
+
 # For now we only support building on x86 Linux so we can hard-code the host
 # platform.
 build --host_platform=//tools/platforms:linux_x86

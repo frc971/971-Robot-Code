@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 # Path points from Parker.
 # Points in (theta0, theta1) of the boundry of the safe region.

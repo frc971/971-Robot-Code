@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 from aos.util.trapezoid_profile import TrapezoidProfile
 from frc971.control_loops.python import control_loop

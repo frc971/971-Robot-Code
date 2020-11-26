@@ -52,9 +52,9 @@ def main():
 
     output_path = sys.argv[1]
 
-    if (len(sys.argv) > 2):
+    if len(sys.argv) > 2:
         if sys.argv[2] == "test":
-            glog.info("Loading test data")
+            glog.debug("Loading test data")
             import camera_definition_test
             import target_definition_test
             target_data_list = target_definition_test.compute_target_definition(
@@ -64,7 +64,7 @@ def main():
             glog.error("Unhandled arguments: '%s'" % sys.argv[2])
             quit()
     else:
-        glog.info("Loading target configuration data")
+        glog.debug("Loading target configuration data")
         import camera_definition
         import target_definition
         target_data_list = target_definition.compute_target_definition()

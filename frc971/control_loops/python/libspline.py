@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 """Wrapper around spline.h/cc through spline_array.cc."""
 
 __author__ = 'Alex Perry (alex.perry96@gmail.com)'

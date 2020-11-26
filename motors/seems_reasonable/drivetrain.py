@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 from frc971.control_loops.python import drivetrain
 import sys
@@ -27,7 +27,7 @@ def main(argv):
     glog.init()
 
     if len(argv) != 5:
-        print "Expected .h file name and .cc file name"
+        glog.error("Expected .h file name and .cc file name")
     else:
         # Write the generated constants out to a file.
         drivetrain.WriteDrivetrain(

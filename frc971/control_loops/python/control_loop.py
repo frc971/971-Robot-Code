@@ -357,7 +357,7 @@ class ControlLoop(object):
             for y in range(matrix.shape[1]):
                 write_type = repr(matrix[x, y])
                 if scalar_type == 'float':
-                    if '.' not in write_type:
+                    if '.' not in write_type and 'e' not in write_type:
                         write_type += '.0'
                     write_type += 'f'
                 ans.append(

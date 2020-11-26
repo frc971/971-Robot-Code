@@ -121,7 +121,7 @@ py_library(
     target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         "//frc971/control_loops/python:controls",
-        "@matplotlib_repo//:matplotlib2.7",
+        "@matplotlib_repo//:matplotlib3",
     ],
 )
 

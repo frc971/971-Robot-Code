@@ -36,8 +36,4 @@ fi
 
 export LD_LIBRARY_PATH="${BASE_PATH}/usr/lib/lapack:${BASE_PATH}/usr/lib/libblas:${BASE_PATH}/usr/lib/x86_64-linux-gnu"
 
-if head -n 1 "$1" | grep -q python3; then
-  exec "$BASE_PATH"/usr/bin/python3 "$@"
-else
-  exec "$BASE_PATH"/usr/bin/python2 "$@"
-fi
+exec "$BASE_PATH"/usr/bin/python3 "$@"

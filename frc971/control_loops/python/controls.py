@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 """
 Control loop pole placement library.
@@ -10,22 +10,18 @@ Currently it only supports direct pole placement.
 __author__ = 'Austin Schuh (austin.linux@gmail.com)'
 
 import numpy
-import slycot
 import scipy.linalg
+import scipy.signal
 import glog
 
 class Error (Exception):
   """Base class for all control loop exceptions."""
 
 
-class PolePlacementError(Error):
-  """Exception raised when pole placement fails."""
-
-
 # TODO(aschuh): dplace should take a control system object.
 # There should also exist a function to manipulate laplace expressions, and
 # something to plot bode plots and all that.
-def dplace(A, B, poles, alpha=1e-6):
+def dplace(A, B, poles):
   """Set the poles of (A - BF) to poles.
 
   Args:
@@ -34,55 +30,10 @@ def dplace(A, B, poles, alpha=1e-6):
     poles: array(imaginary numbers), The poles to use.  Complex conjugates poles
       must be in pairs.
 
-  Raises:
-    ValueError: Arguments were the wrong shape or there were too many poles.
-    PolePlacementError: Pole placement failed.
-
   Returns:
     numpy.matrix(m x n), K
   """
-  # See http://www.icm.tu-bs.de/NICONET/doc/SB01BD.html for a description of the
-  # fortran code that this is cleaning up the interface to.
-  n = A.shape[0]
-  if A.shape[1] != n:
-    raise ValueError("A must be square")
-  if B.shape[0] != n:
-    raise ValueError("B must have the same number of states as A.")
-  m = B.shape[1]
-
-  num_poles = len(poles)
-  if num_poles > n:
-    raise ValueError("Trying to place more poles than states.")
-
-  out = slycot.sb01bd(n=n,
-                      m=m,
-                      np=num_poles,
-                      alpha=alpha,
-                      A=A,
-                      B=B,
-                      w=numpy.array(poles),
-                      dico='D')
-
-  A_z = numpy.matrix(out[0])
-  num_too_small_eigenvalues = out[2]
-  num_assigned_eigenvalues = out[3]
-  num_uncontrollable_eigenvalues = out[4]
-  K = numpy.matrix(-out[5])
-  Z = numpy.matrix(out[6])
-
-  if num_too_small_eigenvalues != 0:
-    raise PolePlacementError("Number of eigenvalues that are too small "
-                             "and are therefore unmodified is %d." %
-                             num_too_small_eigenvalues)
-  if num_assigned_eigenvalues != num_poles:
-    raise PolePlacementError("Did not place all the eigenvalues that were "
-                             "requested. Only placed %d eigenvalues." %
-                             num_assigned_eigenvalues)
-  if num_uncontrollable_eigenvalues != 0:
-    raise PolePlacementError("Found %d uncontrollable eigenvlaues." %
-                             num_uncontrollable_eigenvalues)
-
-  return K
+  return scipy.signal.place_poles(A=A, B=B, poles=numpy.array(poles)).gain_matrix
 
 def c2d(A, B, dt):
   """Converts from continuous time state space representation to discrete time.
@@ -133,9 +84,7 @@ def dlqr(A, B, Q, R, optimal_cost_function=False):
   # P = (A.T * P * A) - (A.T * P * B * numpy.linalg.inv(R + B.T * P *B) * (A.T * P.T * B).T + Q
   # 0.5 * X.T * P * X -> optimal cost to infinity
 
-  P, rcond, w, S, T = slycot.sb02od(
-      n=A.shape[0], m=B.shape[1], A=A, B=B, Q=Q, R=R, dico='D')
-
+  P = scipy.linalg.solve_discrete_are(a=A, b=B, q=Q, r=R)
   F = numpy.linalg.inv(R + B.T * P * B) * B.T * P * A
   if optimal_cost_function:
     return F, P
@@ -164,9 +113,9 @@ def kalman(A, B, C, Q, R):
                  controllability_rank, n)
 
   # Compute the steady state covariance matrix.
-  P_prior, rcond, w, S, T = slycot.sb02od(n=n, m=m, A=A.T, B=C.T, Q=Q, R=R, dico='D')
+  P_prior = scipy.linalg.solve_discrete_are(a=A.T, b=C.T, q=Q, r=R)
   S = C * P_prior * C.T + R
-  K = numpy.linalg.lstsq(S.T, (P_prior * C.T).T)[0].T
+  K = numpy.linalg.lstsq(S.T, (P_prior * C.T).T, rcond=None)[0].T
   P = (I - K * C) * P_prior
 
   return K, P

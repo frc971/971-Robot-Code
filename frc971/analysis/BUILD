@@ -6,22 +6,6 @@ load("@build_bazel_rules_nodejs//:defs.bzl", "nodejs_binary", "rollup_bundle")
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_ts_library")
 load("//aos:config.bzl", "aos_config")
 
-py_binary(
-    name = "plot_action",
-    srcs = [
-        "logentry.py",
-        "logreader.py",
-        "plot_action.py",
-        "plotter.py",
-    ],
-    legacy_create_init = False,
-    target_compatible_with = ["@platforms//os:linux"],
-    deps = [
-        ":python_init",
-        "@matplotlib_repo//:matplotlib2.7",
-    ],
-)
-
 py_library(
     name = "python_init",
     srcs = ["__init__.py"],
@@ -41,7 +25,7 @@ cc_binary(
         "//aos/events:simulated_event_loop",
         "//aos/events/logging:logger",
         "@com_github_google_glog//:glog",
-        "@python_repo//:python3.5_lib",
+        "@python_repo//:python3.7_lib",
     ],
 )
 

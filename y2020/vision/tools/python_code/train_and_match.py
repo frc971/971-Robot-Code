@@ -54,7 +54,7 @@ def load_images(image_names):
 def load_feature_extractor():
     if FEATURE_EXTRACTOR_NAME is 'SIFT':
         # Initiate SIFT detector
-        feature_extractor = cv2.xfeatures2d.SIFT_create()
+        feature_extractor = cv2.SIFT_create()
     elif FEATURE_EXTRACTOR_NAME is 'SURF':
         # Initiate SURF detector
         feature_extractor = cv2.xfeatures2d.SURF_create()

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 #
 # This is a quick script to show the effect of the wheel nonlinearity term on
 # turning rate

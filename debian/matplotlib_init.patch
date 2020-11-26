@@ -1,13 +1,5 @@
 --- a/__init__.py	2018-07-11 15:57:58.086509489 -0700
 +++ b/__init__.py	2018-07-11 16:04:15.004795500 -0700
-@@ -102,6 +102,7 @@
- from __future__ import (absolute_import, division, print_function,
-                         unicode_literals)
- 
-+import os
- import six
- import sys
- import distutils.version
 @@ -110,6 +111,31 @@
  __version__ = str('1.4.2')
  __version__numpy__ = str('1.6')  # minimum required numpy version
@@ -33,7 +25,7 @@
 +                                         'tcltk', 'tcl8.6')
 +
 +# Tell fontconfig where to find matplotlib's sandboxed font files.
-+os.environ["FONTCONFIG_PATH"] = os.path.join(_matplotlib_base, "etc/fonts/")
++os.environ["FONTCONFIG_PATH"] = os.path.join(_matplotlib_base, "etc/fonts")
 +os.environ["FONTCONFIG_FILE"] = os.path.join(_matplotlib_base, "etc/fonts/fonts.conf")
 +os.environ["FONTCONFIG_SYSROOT"] = _matplotlib_base
 +

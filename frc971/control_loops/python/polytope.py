@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 """
 Polyhedral set library.
@@ -29,7 +29,7 @@ def _SplitAndPad(s):
   split_string = s.split('\n')
   width = max(len(stringpiece) for stringpiece in split_string) + 1
 
-  padded_strings = [string.ljust(stringpiece, width, ' ')
+  padded_strings = [stringpiece.ljust(width, ' ')
                         for stringpiece in split_string]
   return padded_strings
 

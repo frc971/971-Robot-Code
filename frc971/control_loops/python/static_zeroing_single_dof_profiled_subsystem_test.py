@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 # Generates profiled subsystem for use in
 # static_zeroing_single_dof_profiled_subsystem_test

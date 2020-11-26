@@ -11,7 +11,7 @@ py_binary(
         "//external:python-gflags",
         "//external:python-glog",
         "//frc971/control_loops/python:controls",
-        "@matplotlib_repo//:matplotlib2.7",
+        "@matplotlib_repo//:matplotlib3",
     ],
 )
 
@@ -32,7 +32,6 @@ py_library(
     deps = [
         ":python_init",
         "//external:python-glog",
-        "@slycot_repo//:slycot",
     ],
 )
 
@@ -59,7 +58,7 @@ py_binary(
     deps = [
         ":controls",
         ":python_init",
-        "@matplotlib_repo//:matplotlib2.7",
+        "@matplotlib_repo//:matplotlib3",
     ],
 )
 
@@ -72,7 +71,7 @@ py_library(
     deps = [
         ":controls",
         ":python_init",
-        "@matplotlib_repo//:matplotlib2.7",
+        "@matplotlib_repo//:matplotlib3",
     ],
 )
 
@@ -136,7 +135,7 @@ py_binary(
         "//external:python-glog",
         "//frc971/control_loops/python:controls",
         "//y2016/control_loops/python:polydrivetrain_lib",
-        "@matplotlib_repo//:matplotlib2.7",
+        "@matplotlib_repo//:matplotlib3",
     ],
 )
 
@@ -149,7 +148,7 @@ py_library(
         ":controls",
         "//aos/util:py_trapezoid_profile",
         "//frc971/control_loops:python_init",
-        "@matplotlib_repo//:matplotlib2.7",
+        "@matplotlib_repo//:matplotlib3",
     ],
 )
 
@@ -162,7 +161,7 @@ py_library(
         ":controls",
         "//aos/util:py_trapezoid_profile",
         "//frc971/control_loops:python_init",
-        "@matplotlib_repo//:matplotlib2.7",
+        "@matplotlib_repo//:matplotlib3",
     ],
 )
 
@@ -184,7 +183,7 @@ py_binary(
         ":basic_window",
         ":libspline",
         ":python_init",
-        "@matplotlib_repo//:matplotlib2.7",
+        "@matplotlib_repo//:matplotlib3",
         "@python_gtk",
     ],
 )

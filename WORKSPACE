@@ -146,8 +146,8 @@ http_archive(
 http_archive(
     name = "python_repo",
     build_file = "@//debian:python.BUILD",
-    sha256 = "cc48d18417f015238b7efb083f4ff64a80f0baf347fbaf94d5437c14f7a3d84c",
-    url = "https://www.frc971.org/Build-Dependencies/python-4.tar.gz",
+    sha256 = "c2e293cd8bab436c2bd03648d2a0853ff3e2d954644698473fcd263bb9bab037",
+    url = "https://www.frc971.org/Build-Dependencies/python-5.tar.gz",
 )
 
 http_archive(
@@ -426,8 +426,8 @@ http_archive(
 http_archive(
     name = "matplotlib_repo",
     build_file = "@//debian:matplotlib.BUILD",
-    sha256 = "24f8b75754e465299ddf92bd895ab111d54945a45b0f410d7cfa16b15b162e2f",
-    url = "https://www.frc971.org/Build-Dependencies/matplotlib-4.tar.gz",
+    sha256 = "a3db08d5951c1fc73f2203e3ab1f9ff4a647fff7b384c1b87f89adec61a0d77f",
+    url = "https://www.frc971.org/Build-Dependencies/matplotlib-5.tar.gz",
 )
 
 http_archive(
@@ -768,13 +768,13 @@ http_archive(
 )
 
 # Downloaded from:
-# https://files.pythonhosted.org/packages/05/23/7f9a896da9e7ce4170377a7a14bb804b460761f9dd66734e6ad8f001a76c/opencv_contrib_python_nonfree-4.1.1.1-cp35-cp35m-manylinux1_x86_64.whl
+# https://files.pythonhosted.org/packages/0f/13/192104516c4a3d92dc6b5e106ffcfbf0fe35f3c4faa49650205ff652af72/opencv_python-4.5.1.48-cp37-cp37m-manylinux2014_x86_64.whl
 http_archive(
     name = "opencv_contrib_nonfree_amd64",
     build_file = "@//debian:opencv_python.BUILD",
-    sha256 = "c10e7712ee1f19bf382c64fc29b5d24fa0b5bfd901eab69cef83604713e6a89e",
+    sha256 = "6d8434a45e8f75c4da5fd0068ce001f4f8e35771cc851d746d4721eeaf517e25",
     type = "zip",
-    url = "https://www.frc971.org/Build-Dependencies/opencv_contrib_python_nonfree-4.1.1.1-cp35-cp35m-manylinux1_x86_64.whl",
+    url = "https://www.frc971.org/Build-Dependencies/opencv_python-4.5.1.48-cp37-cp37m-manylinux2014_x86_64.whl",
 )
 
 http_archive(
