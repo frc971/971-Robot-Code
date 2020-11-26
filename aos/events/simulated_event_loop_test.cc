@@ -119,6 +119,108 @@ TEST(EventSchedulerTest, DescheduleEvent) {
   EXPECT_EQ(counter, 0);
 }
 
+void SendTestMessage(aos::Sender<TestMessage> *sender, int value) {
+  aos::Sender<TestMessage>::Builder builder = sender->MakeBuilder();
+  TestMessage::Builder test_message_builder =
+      builder.MakeBuilder<TestMessage>();
+  test_message_builder.add_value(value);
+  builder.Send(test_message_builder.Finish());
+}
+
+// Test that sending a message after running gets properly notified.
+TEST(SimulatedEventLoopTest, SendAfterRunFor) {
+  SimulatedEventLoopTestFactory factory;
+
+  SimulatedEventLoopFactory simulated_event_loop_factory(
+      factory.configuration());
+
+  ::std::unique_ptr<EventLoop> ping_event_loop =
+      simulated_event_loop_factory.MakeEventLoop("ping");
+  aos::Sender<TestMessage> test_message_sender =
+      ping_event_loop->MakeSender<TestMessage>("/test");
+  SendTestMessage(&test_message_sender, 1);
+
+  std::unique_ptr<EventLoop> pong1_event_loop =
+      simulated_event_loop_factory.MakeEventLoop("pong");
+  MessageCounter<TestMessage> test_message_counter1(pong1_event_loop.get(),
+                                                    "/test");
+
+  EXPECT_FALSE(ping_event_loop->is_running());
+
+  // Watchers start when you start running, so there should be nothing counted.
+  simulated_event_loop_factory.RunFor(chrono::seconds(1));
+  EXPECT_EQ(test_message_counter1.count(), 0u);
+
+  std::unique_ptr<EventLoop> pong2_event_loop =
+      simulated_event_loop_factory.MakeEventLoop("pong");
+  MessageCounter<TestMessage> test_message_counter2(pong2_event_loop.get(),
+                                                    "/test");
+
+  // Pauses in the middle don't count though, so this should be counted.
+  // But, the fresh watcher shouldn't pick it up yet.
+  SendTestMessage(&test_message_sender, 2);
+
+  EXPECT_EQ(test_message_counter1.count(), 0u);
+  EXPECT_EQ(test_message_counter2.count(), 0u);
+  simulated_event_loop_factory.RunFor(chrono::seconds(1));
+
+  EXPECT_EQ(test_message_counter1.count(), 1u);
+  EXPECT_EQ(test_message_counter2.count(), 0u);
+}
+
+// Test that creating an event loop while running dies.
+TEST(SimulatedEventLoopDeathTest, MakeEventLoopWhileRunning) {
+  SimulatedEventLoopTestFactory factory;
+
+  SimulatedEventLoopFactory simulated_event_loop_factory(
+      factory.configuration());
+
+  ::std::unique_ptr<EventLoop> event_loop =
+      simulated_event_loop_factory.MakeEventLoop("ping");
+
+  auto timer = event_loop->AddTimer([&]() {
+    EXPECT_DEATH(
+        {
+          ::std::unique_ptr<EventLoop> event_loop2 =
+              simulated_event_loop_factory.MakeEventLoop("ping");
+        },
+        "event loop while running");
+    simulated_event_loop_factory.Exit();
+  });
+
+  event_loop->OnRun([&event_loop, &timer] {
+    timer->Setup(event_loop->monotonic_now() + chrono::milliseconds(50));
+  });
+
+  simulated_event_loop_factory.Run();
+}
+
+// Test that creating a watcher after running dies.
+TEST(SimulatedEventLoopDeathTest, MakeWatcherAfterRunning) {
+  SimulatedEventLoopTestFactory factory;
+
+  SimulatedEventLoopFactory simulated_event_loop_factory(
+      factory.configuration());
+
+  ::std::unique_ptr<EventLoop> event_loop =
+      simulated_event_loop_factory.MakeEventLoop("ping");
+
+  simulated_event_loop_factory.RunFor(chrono::seconds(1));
+
+  EXPECT_DEATH(
+      { MessageCounter<TestMessage> counter(event_loop.get(), "/test"); },
+      "Can't add a watcher after running");
+
+  ::std::unique_ptr<EventLoop> event_loop2 =
+      simulated_event_loop_factory.MakeEventLoop("ping");
+
+  simulated_event_loop_factory.RunFor(chrono::seconds(1));
+
+  EXPECT_DEATH(
+      { MessageCounter<TestMessage> counter(event_loop2.get(), "/test"); },
+      "Can't add a watcher after running");
+}
+
 // Test that running for a time period with no handlers causes time to progress
 // correctly.
 TEST(SimulatedEventLoopTest, RunForNoHandlers) {
@@ -303,9 +405,6 @@ TEST(SimulatedEventLoopTest, MultinodePingPong) {
       pi1_pong_counter_event_loop->MakeFetcher<message_bridge::Timestamp>(
           "/aos");
 
-  std::unique_ptr<EventLoop> pi1_remote_timestamp =
-      simulated_event_loop_factory.MakeEventLoop("pi1_remote_timestamp", pi1);
-
   // Count timestamps.
   MessageCounter<message_bridge::Timestamp> pi1_on_pi1_timestamp_counter(
       pi1_pong_counter_event_loop.get(), "/pi1/aos");
@@ -331,8 +430,15 @@ TEST(SimulatedEventLoopTest, MultinodePingPong) {
   // Wait to let timestamp estimation start up before looking for the results.
   simulated_event_loop_factory.RunFor(chrono::milliseconds(500));
 
+  std::unique_ptr<EventLoop> pi1_statistics_counter_event_loop =
+      simulated_event_loop_factory.MakeEventLoop("pi1_statistics_counter", pi1);
+  std::unique_ptr<EventLoop> pi2_statistics_counter_event_loop =
+      simulated_event_loop_factory.MakeEventLoop("pi2_statistics_counter", pi2);
+  std::unique_ptr<EventLoop> pi3_statistics_counter_event_loop =
+      simulated_event_loop_factory.MakeEventLoop("pi3_statistics_counter", pi3);
+
   int pi1_server_statistics_count = 0;
-  pi1_pong_counter_event_loop->MakeWatcher(
+  pi1_statistics_counter_event_loop->MakeWatcher(
       "/pi1/aos", [&pi1_server_statistics_count](
                       const message_bridge::ServerStatistics &stats) {
         VLOG(1) << "pi1 ServerStatistics " << FlatbufferToJson(&stats);
@@ -355,7 +461,7 @@ TEST(SimulatedEventLoopTest, MultinodePingPong) {
       });
 
   int pi2_server_statistics_count = 0;
-  pi2_pong_counter_event_loop->MakeWatcher(
+  pi2_statistics_counter_event_loop->MakeWatcher(
       "/pi2/aos", [&pi2_server_statistics_count](
                       const message_bridge::ServerStatistics &stats) {
         VLOG(1) << "pi2 ServerStatistics " << FlatbufferToJson(&stats);
@@ -371,7 +477,7 @@ TEST(SimulatedEventLoopTest, MultinodePingPong) {
       });
 
   int pi3_server_statistics_count = 0;
-  pi3_pong_counter_event_loop->MakeWatcher(
+  pi3_statistics_counter_event_loop->MakeWatcher(
       "/pi3/aos", [&pi3_server_statistics_count](
                       const message_bridge::ServerStatistics &stats) {
         VLOG(1) << "pi3 ServerStatistics " << FlatbufferToJson(&stats);
@@ -387,7 +493,7 @@ TEST(SimulatedEventLoopTest, MultinodePingPong) {
       });
 
   int pi1_client_statistics_count = 0;
-  pi1_pong_counter_event_loop->MakeWatcher(
+  pi1_statistics_counter_event_loop->MakeWatcher(
       "/pi1/aos", [&pi1_client_statistics_count](
                       const message_bridge::ClientStatistics &stats) {
         VLOG(1) << "pi1 ClientStatistics " << FlatbufferToJson(&stats);
@@ -411,7 +517,7 @@ TEST(SimulatedEventLoopTest, MultinodePingPong) {
       });
 
   int pi2_client_statistics_count = 0;
-  pi2_pong_counter_event_loop->MakeWatcher(
+  pi2_statistics_counter_event_loop->MakeWatcher(
       "/pi2/aos", [&pi2_client_statistics_count](
                       const message_bridge::ClientStatistics &stats) {
         VLOG(1) << "pi2 ClientStatistics " << FlatbufferToJson(&stats);
@@ -427,7 +533,7 @@ TEST(SimulatedEventLoopTest, MultinodePingPong) {
       });
 
   int pi3_client_statistics_count = 0;
-  pi3_pong_counter_event_loop->MakeWatcher(
+  pi3_statistics_counter_event_loop->MakeWatcher(
       "/pi3/aos", [&pi3_client_statistics_count](
                       const message_bridge::ClientStatistics &stats) {
         VLOG(1) << "pi3 ClientStatistics " << FlatbufferToJson(&stats);
@@ -458,6 +564,9 @@ TEST(SimulatedEventLoopTest, MultinodePingPong) {
                    pi1_pong_counter_event_loop->configuration(), channel)
             << " " << configuration::CleanedChannelToString(channel);
   }
+
+  std::unique_ptr<EventLoop> pi1_remote_timestamp =
+      simulated_event_loop_factory.MakeEventLoop("pi1_remote_timestamp", pi1);
 
   // For each remote timestamp we get back, confirm that it is either a ping
   // message, or a timestamp we sent out.  Also confirm that the timestamps are
@@ -588,6 +697,9 @@ TEST(SimulatedEventLoopTest, MultinodePingPongWithOffset) {
       simulated_event_loop_factory.MakeEventLoop("pong", pi2);
   Pong pong(pong_event_loop.get());
 
+  // Wait to let timestamp estimation start up before looking for the results.
+  simulated_event_loop_factory.RunFor(chrono::milliseconds(500));
+
   std::unique_ptr<EventLoop> pi2_pong_counter_event_loop =
       simulated_event_loop_factory.MakeEventLoop("pi2_pong_counter", pi2);
 
@@ -596,9 +708,6 @@ TEST(SimulatedEventLoopTest, MultinodePingPongWithOffset) {
 
   std::unique_ptr<EventLoop> pi1_pong_counter_event_loop =
       simulated_event_loop_factory.MakeEventLoop("pi1_pong_counter", pi1);
-
-  // Wait to let timestamp estimation start up before looking for the results.
-  simulated_event_loop_factory.RunFor(chrono::milliseconds(500));
 
   // Confirm the offsets are being recovered correctly.
   int pi1_server_statistics_count = 0;
@@ -865,6 +974,79 @@ TEST(SimulatedEventLoopTest, MultinodePingPongWithOffsetAndSlope) {
                                pi2_pong_time);
   EXPECT_LE(pi1_pong_time, chrono::microseconds(150) + chrono::nanoseconds(10) +
                                pi2_pong_time);
+}
+
+void SendPing(aos::Sender<examples::Ping> *sender, int value) {
+  aos::Sender<examples::Ping>::Builder builder = sender->MakeBuilder();
+  examples::Ping::Builder ping_builder = builder.MakeBuilder<examples::Ping>();
+  ping_builder.add_value(value);
+  builder.Send(ping_builder.Finish());
+}
+
+// Tests that reliable (and unreliable) ping messages get forwarded as expected.
+TEST(SimulatedEventLoopTest, MultinodeStartupTesting) {
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+      aos::configuration::ReadConfig(ConfigPrefix() +
+                                     "events/multinode_pingpong_config.json");
+  const Node *pi1 = configuration::GetNode(&config.message(), "pi1");
+  const Node *pi2 = configuration::GetNode(&config.message(), "pi2");
+
+  SimulatedEventLoopFactory simulated_event_loop_factory(&config.message());
+
+  std::unique_ptr<EventLoop> ping_event_loop =
+      simulated_event_loop_factory.MakeEventLoop("ping", pi1);
+  aos::Sender<examples::Ping> pi1_reliable_sender =
+      ping_event_loop->MakeSender<examples::Ping>("/reliable");
+  aos::Sender<examples::Ping> pi1_unreliable_sender =
+      ping_event_loop->MakeSender<examples::Ping>("/unreliable");
+  SendPing(&pi1_reliable_sender, 1);
+  SendPing(&pi1_unreliable_sender, 1);
+
+  std::unique_ptr<EventLoop> pi2_pong_event_loop =
+      simulated_event_loop_factory.MakeEventLoop("pong", pi2);
+  MessageCounter<examples::Ping> pi2_reliable_counter(pi2_pong_event_loop.get(),
+                                                      "/reliable");
+  MessageCounter<examples::Ping> pi2_unreliable_counter(
+      pi2_pong_event_loop.get(), "/unreliable");
+  aos::Fetcher<examples::Ping> reliable_on_pi2_fetcher =
+      pi2_pong_event_loop->MakeFetcher<examples::Ping>("/reliable");
+  aos::Fetcher<examples::Ping> unreliable_on_pi2_fetcher =
+      pi2_pong_event_loop->MakeFetcher<examples::Ping>("/unreliable");
+
+  const size_t reliable_channel_index = configuration::ChannelIndex(
+      pi2_pong_event_loop->configuration(), reliable_on_pi2_fetcher.channel());
+
+  std::unique_ptr<EventLoop> pi1_remote_timestamp =
+      simulated_event_loop_factory.MakeEventLoop("pi1_remote_timestamp", pi1);
+
+  int reliable_timestamp_count = 0;
+  pi1_remote_timestamp->MakeWatcher(
+      "/pi1/aos/remote_timestamps/pi2",
+      [reliable_channel_index,
+       &reliable_timestamp_count](const logger::MessageHeader &header) {
+        VLOG(1) << aos::FlatbufferToJson(&header);
+        if (header.channel_index() == reliable_channel_index) {
+          ++reliable_timestamp_count;
+        }
+      });
+
+  // Wait to let timestamp estimation start up before looking for the results.
+  simulated_event_loop_factory.RunFor(chrono::milliseconds(500));
+
+  EXPECT_EQ(pi2_reliable_counter.count(), 1u);
+  // This one isn't reliable, but was sent before the start.  It should *not* be
+  // delivered.
+  EXPECT_EQ(pi2_unreliable_counter.count(), 0u);
+  // Confirm we got a timestamp logged for the message that was forwarded.
+  EXPECT_EQ(reliable_timestamp_count, 1u);
+
+  SendPing(&pi1_reliable_sender, 2);
+  SendPing(&pi1_unreliable_sender, 2);
+  simulated_event_loop_factory.RunFor(chrono::milliseconds(500));
+  EXPECT_EQ(pi2_reliable_counter.count(), 2u);
+  EXPECT_EQ(pi2_unreliable_counter.count(), 1u);
+
+  EXPECT_EQ(reliable_timestamp_count, 2u);
 }
 
 }  // namespace testing

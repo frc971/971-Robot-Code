@@ -40,6 +40,12 @@ class RawMessageDelayer {
 
   const Channel *channel() const { return fetcher_->channel(); }
 
+  uint32_t time_to_live() {
+    return configuration::ConnectionToNode(sender_->channel(),
+                                           send_node_factory_->node())
+        ->time_to_live();
+  }
+
   // Kicks us to re-fetch and schedule the timer.
   void Schedule() {
     // Keep pulling messages out of the fetcher until we find one in the future.
@@ -284,6 +290,16 @@ SimulatedMessageBridge::SimulatedMessageBridge(
           });
     } else {
       // And register every delayer to be poked when a new message shows up.
+
+      source_event_loop->second.event_loop->OnRun([captured_delayers =
+                                                       delayers.get()]() {
+        // Poke all the reliable delayers so they send any queued messages.
+        for (std::unique_ptr<RawMessageDelayer> &delayer : *captured_delayers) {
+          if (delayer->time_to_live() == 0) {
+            delayer->Schedule();
+          }
+        }
+      });
       source_event_loop->second.event_loop->MakeRawNoArgWatcher(
           channel, [captured_delayers = delayers.get()](const Context &) {
             for (std::unique_ptr<RawMessageDelayer> &delayer :

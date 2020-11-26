@@ -79,7 +79,7 @@ class SimulatedEventLoopFactory {
 
   // Stops executing all event loops.  Meant to be called from within an event
   // loop handler.
-  void Exit() { scheduler_scheduler_.Exit(); }
+  void Exit();
 
   const std::vector<const Node *> &nodes() const { return nodes_; }
 
