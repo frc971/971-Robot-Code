@@ -117,9 +117,14 @@ const char kNoError[] = "";
 class ProfileDataChecker {
  public:
   ProfileDataChecker() {
-    const char* tmpdir = getenv("TMPDIR");
-    if (tmpdir == NULL)
-      tmpdir = "/tmp";
+    // Use Bazel's TEST_TMPDIR first if it exists.
+    const char *tmpdir = getenv("TEST_TMPDIR");
+    if (tmpdir == NULL) {
+      const char *tmpdir = getenv("TMPDIR");
+      if (tmpdir == NULL) {
+        tmpdir = "/tmp";
+      }
+    }
     mkdir(tmpdir, 0755);     // if necessary
     filename_ = string(tmpdir) + "/profiledata_unittest.tmp";
   }
