@@ -20,6 +20,8 @@ DEFAULT_FLATC_ARGS = [
     "--gen-object-api",
     "--gen-compare",
     "--keep-prefix",
+    "--cpp-std",
+    "c++17",
     "--gen-mutable",
     "--reflect-names",
     "--cpp-ptr-type flatbuffers::unique_ptr",
