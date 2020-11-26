@@ -20,6 +20,8 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
 
  private:
   void Reset();
+  void SplineAuto();
+  bool DriveFwd();
 
   ::aos::Sender<::frc971::control_loops::drivetrain::LocalizerControl>
       localizer_control_sender_;

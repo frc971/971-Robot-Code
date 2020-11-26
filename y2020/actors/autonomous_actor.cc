@@ -11,6 +11,8 @@
 #include "y2020/control_loops/drivetrain/drivetrain_base.h"
 #include "y2020/actors/auto_splines.h"
 
+DEFINE_bool(spline_auto, false, "If true, define a spline autonomous mode");
+
 namespace y2020 {
 namespace actors {
 
@@ -26,7 +28,9 @@ AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
           ::frc971::control_loops::drivetrain::LocalizerControl>(
           "/drivetrain")),
       joystick_state_fetcher_(
-          event_loop->MakeFetcher<aos::JoystickState>("/aos")) {}
+          event_loop->MakeFetcher<aos::JoystickState>("/aos")) {
+  set_max_drivetrain_voltage(2.0);
+}
 
 void AutonomousActor::Reset() {
   InitializeEncoders();
@@ -62,25 +66,45 @@ void AutonomousActor::Reset() {
 }
 
 bool AutonomousActor::RunAction(
-    const ::frc971::autonomous::AutonomousActionParams *params) {
+     const ::frc971::autonomous::AutonomousActionParams *params) {
   Reset();
+  AOS_LOG(INFO, "Params are %d\n", params->mode());
   if (alliance_ == aos::Alliance::kInvalid) {
     AOS_LOG(INFO, "Aborting autonomous due to invalid alliance selection.");
     return false;
   }
+  if (FLAGS_spline_auto) {
+    SplineAuto();
+  } else {
+    return DriveFwd();
+  }
+  return true;
+}
 
+void AutonomousActor::SplineAuto() {
   SplineHandle spline1 = PlanSpline(std::bind(AutonomousSplines::BasicSSpline,
                                               std::placeholders::_1, alliance_),
                                     SplineDirection::kForward);
 
-  if (!spline1.WaitForPlan()) return true;
+  if (!spline1.WaitForPlan()) return;
   spline1.Start();
 
-  if (!spline1.WaitForSplineDistanceRemaining(0.02)) return true;
-
-  AOS_LOG(INFO, "Params are %d\n", params->mode());
-  return true;
+  if (!spline1.WaitForSplineDistanceRemaining(0.02)) return;
 }
 
+ProfileParametersT MakeProfileParametersT(const float max_velocity,
+                                          const float max_acceleration) {
+  ProfileParametersT params;
+  params.max_velocity = max_velocity;
+  params.max_acceleration = max_acceleration;
+  return params;
+}
+
+bool AutonomousActor::DriveFwd() {
+  const ProfileParametersT kDrive = MakeProfileParametersT(0.1f, 0.5f);
+  const ProfileParametersT kTurn = MakeProfileParametersT(5.0f, 15.0f);
+  StartDrive(0.5, 0.0, kDrive, kTurn);
+  return WaitForDriveDone();
+}
 }  // namespace actors
 }  // namespace y2020
