@@ -309,6 +309,23 @@ class PartsMessageReader {
   monotonic_clock::time_point newest_timestamp_ = monotonic_clock::min_time;
 };
 
+// Struct to hold a message as it gets sorted on a single node.
+struct Message {
+  // The channel.
+  uint32_t channel_index = 0xffffffff;
+  // The local queue index.
+  uint32_t queue_index = 0xffffffff;
+  // The local timestamp on the monotonic clock.
+  monotonic_clock::time_point timestamp = monotonic_clock::min_time;
+  // The data (either a timestamp header, or a data header).
+  SizePrefixedFlatbufferVector<MessageHeader> data;
+
+  bool operator<(const Message &m2) const;
+  bool operator>=(const Message &m2) const;
+};
+
+std::ostream &operator<<(std::ostream &os, const Message &m);
+
 class TimestampMerger;
 
 // A design requirement is that the relevant data for a channel is not more than

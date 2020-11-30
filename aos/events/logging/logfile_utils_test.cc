@@ -215,6 +215,40 @@ TEST(PartsMessageReaderTest, ReadWrite) {
   EXPECT_EQ(reader.newest_timestamp(), monotonic_clock::max_time);
 }
 
+// Tests that Message's operator < works as expected.
+TEST(MessageTest, Sorting) {
+  const aos::monotonic_clock::time_point e = monotonic_clock::epoch();
+
+  Message m1{.channel_index = 0,
+             .queue_index = 0,
+             .timestamp = e + chrono::milliseconds(1),
+             .data = SizePrefixedFlatbufferVector<MessageHeader>::Empty()};
+  Message m2{.channel_index = 0,
+             .queue_index = 0,
+             .timestamp = e + chrono::milliseconds(2),
+             .data = SizePrefixedFlatbufferVector<MessageHeader>::Empty()};
+
+  EXPECT_LT(m1, m2);
+  EXPECT_GE(m2, m1);
+
+  m1.timestamp = e;
+  m2.timestamp = e;
+
+  m1.channel_index = 1;
+  m2.channel_index = 2;
+
+  EXPECT_LT(m1, m2);
+  EXPECT_GE(m2, m1);
+
+  m1.channel_index = 0;
+  m2.channel_index = 0;
+  m1.queue_index = 0;
+  m2.queue_index = 1;
+
+  EXPECT_LT(m1, m2);
+  EXPECT_GE(m2, m1);
+}
+
 }  // namespace testing
 }  // namespace logger
 }  // namespace aos

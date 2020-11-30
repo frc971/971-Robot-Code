@@ -461,6 +461,34 @@ void PartsMessageReader::NextLog() {
   ++next_part_index_;
 }
 
+bool Message::operator<(const Message &m2) const {
+  if (this->timestamp < m2.timestamp) {
+    return true;
+  } else if (this->timestamp > m2.timestamp) {
+    return false;
+  }
+
+  if (this->channel_index < m2.channel_index) {
+    return true;
+  } else if (this->channel_index > m2.channel_index) {
+    return false;
+  }
+
+  return this->queue_index < m2.queue_index;
+}
+
+bool Message::operator>=(const Message &m2) const { return !(*this < m2); }
+
+std::ostream &operator<<(std::ostream &os, const Message &m) {
+  os << "{.channel_index=" << m.channel_index
+     << ", .queue_index=" << m.queue_index << ", .timestamp=" << m.timestamp
+     << ", .data="
+     << aos::FlatbufferToJson(m.data,
+                              {.multi_line = false, .max_vector_size = 1})
+     << "}";
+  return os;
+}
+
 SplitMessageReader::SplitMessageReader(
     const std::vector<std::string> &filenames)
     : filenames_(filenames),
