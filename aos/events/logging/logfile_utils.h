@@ -327,6 +327,7 @@ struct Message {
 
   bool operator<(const Message &m2) const;
   bool operator>=(const Message &m2) const;
+  bool operator==(const Message &m2) const;
 };
 
 std::ostream &operator<<(std::ostream &os, const Message &m);
@@ -367,6 +368,38 @@ class LogPartsSorter {
   // Set used for efficient sorting of messages.  We can benchmark and evaluate
   // other data structures if this proves to be the bottleneck.
   absl::btree_set<Message> messages_;
+};
+
+// Class to run merge sort on the messages from multiple LogPartsSorter
+// instances.
+class NodeMerger {
+ public:
+  NodeMerger(std::vector<std::unique_ptr<LogPartsSorter>> parts);
+
+  // The log file header for one of the log files.
+  const LogFileHeader *log_file_header() const {
+    CHECK(!parts_sorters_.empty());
+    return parts_sorters_[0]->log_file_header();
+  }
+
+  // The time this data is sorted until.
+  monotonic_clock::time_point sorted_until() const { return sorted_until_; }
+
+  // Returns the next sorted message from the set of log files.  It is safe to
+  // call std::move() on the result to move the data flatbuffer from it.
+  Message *Front();
+  // Pops the front message.  This should only be called after a call to
+  // Front().
+  void PopFront();
+
+ private:
+  // Unsorted list of all parts sorters.
+  std::vector<std::unique_ptr<LogPartsSorter>> parts_sorters_;
+  // Pointer to the parts sorter holding the current Front message if one
+  // exists, or nullptr if a new one needs to be found.
+  LogPartsSorter *current_ = nullptr;
+  // Cached sorted_until value.
+  aos::monotonic_clock::time_point sorted_until_ = monotonic_clock::min_time;
 };
 
 class TimestampMerger;
