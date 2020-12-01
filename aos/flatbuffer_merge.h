@@ -50,6 +50,15 @@ inline aos::FlatbufferDetachedBuffer<T> MergeFlatBuffers(
       MergeFlatBuffers<T>(&fb1.message(), &fb2.message()));
 }
 
+template <class T>
+inline flatbuffers::Offset<T> MergeFlatBuffers(
+    const aos::Flatbuffer<T> &fb1, const aos::Flatbuffer<T> &fb2,
+    flatbuffers::FlatBufferBuilder *fbb) {
+  return MergeFlatBuffers<T>(
+      reinterpret_cast<const flatbuffers::Table *>(&fb1.message()),
+      reinterpret_cast<const flatbuffers::Table *>(&fb2.message()), fbb);
+}
+
 // Copies a flatbuffer by walking the tree and copying all the pieces.  This
 // converts DAGs to trees.
 template <class T>

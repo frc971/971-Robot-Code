@@ -14,6 +14,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/btree_set.h"
 #include "absl/types/span.h"
 #include "aos/containers/resizeable_buffer.h"
 #include "aos/events/event_loop.h"
@@ -280,6 +281,10 @@ class PartsMessageReader {
 
   std::string_view filename() const { return message_reader_.filename(); }
 
+  const LogFileHeader *log_file_header() const {
+    return message_reader_.log_file_header();
+  }
+
   // Returns the minimum amount of data needed to queue up for sorting before
   // we are guarenteed to not see data out of order.
   std::chrono::nanoseconds max_out_of_order_duration() const {
@@ -325,6 +330,44 @@ struct Message {
 };
 
 std::ostream &operator<<(std::ostream &os, const Message &m);
+
+// Class to sort the resulting messages from a PartsMessageReader.
+class LogPartsSorter {
+ public:
+  LogPartsSorter(LogParts log_parts);
+
+  // Returns the current log file header.
+  // TODO(austin): Is this the header we want to report?  Do we want a better
+  // start time?
+  // TODO(austin): Report a start time from the LogParts.  Figure out how that
+  // all works.
+  const LogFileHeader *log_file_header() const {
+    return parts_message_reader_.log_file_header();
+  }
+
+  // The time this data is sorted until.
+  monotonic_clock::time_point sorted_until() const { return sorted_until_; }
+
+  // Returns the next sorted message from the log file.  It is safe to call
+  // std::move() on the result to move the data flatbuffer from it.
+  Message *Front();
+  // Pops the front message.  This should only be called after a call to
+  // Front().
+  void PopFront();
+
+  // Returns a debug string representing the contents of this sorter.
+  std::string DebugString() const;
+
+ private:
+  // Log parts reader we are wrapping.
+  PartsMessageReader parts_message_reader_;
+  // Cache of the time we are sorted until.
+  aos::monotonic_clock::time_point sorted_until_ = monotonic_clock::min_time;
+
+  // Set used for efficient sorting of messages.  We can benchmark and evaluate
+  // other data structures if this proves to be the bottleneck.
+  absl::btree_set<Message> messages_;
+};
 
 class TimestampMerger;
 

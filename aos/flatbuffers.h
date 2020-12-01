@@ -477,6 +477,37 @@ class SizePrefixedFlatbufferVector : public SizePrefixedFlatbuffer<T> {
   ResizeableBuffer data_;
 };
 
+// Non-owning Span backed flatbuffer.
+template <typename T>
+class SizePrefixedFlatbufferSpan : public SizePrefixedFlatbuffer<T> {
+ public:
+  // Builds a flatbuffer pointing to the contents of a span.
+  SizePrefixedFlatbufferSpan(const absl::Span<const uint8_t> data)
+      : data_(data) {}
+  // Builds a Flatbuffer pointing to the contents of another flatbuffer.
+  SizePrefixedFlatbufferSpan(const SizePrefixedFlatbuffer<T> &other) {
+    data_ = other.span();
+  }
+
+  // Points to the data in the other flatbuffer.
+  SizePrefixedFlatbufferSpan &operator=(
+      const SizePrefixedFlatbuffer<T> &other) {
+    data_ = other.span();
+    return *this;
+  }
+
+  ~SizePrefixedFlatbufferSpan() override {}
+
+  absl::Span<uint8_t> span() override {
+    LOG(FATAL) << "Unimplemented";
+    return absl::Span<uint8_t>(nullptr, 0);
+  }
+  absl::Span<const uint8_t> span() const override { return data_; }
+
+ private:
+  absl::Span<const uint8_t> data_;
+};
+
 inline flatbuffers::DetachedBuffer CopySpanAsDetachedBuffer(
     absl::Span<const uint8_t> span) {
   // Copy the data from the span.
