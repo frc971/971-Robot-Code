@@ -56,6 +56,12 @@ std::ostream &operator<<(std::ostream &stream, const LogParts &parts);
 // Takes a bunch of parts and sorts them based on part_uuid and part_index.
 std::vector<LogFile> SortParts(const std::vector<std::string> &parts);
 
+// Finds all the nodes which have parts logged from their point of view.
+std::vector<std::string> FindNodes(const std::vector<LogFile> &parts);
+// Finds all the parts which are from the point of view of a single node.
+std::vector<LogParts> FilterPartsForNode(const std::vector<LogFile> &parts,
+                                         std::string_view node);
+
 }  // namespace logger
 }  // namespace aos
 
