@@ -117,6 +117,9 @@ class Flatbuffer {
   void Wipe() { memset(span().data(), 0, span().size()); }
 
   bool Verify() const {
+    if (span().size() < 4u) {
+      return false;
+    }
     flatbuffers::Verifier v(span().data(), span().size());
     return v.VerifyTable(&message());
   }

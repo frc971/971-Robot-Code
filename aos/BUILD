@@ -547,3 +547,16 @@ cc_test(
         "//aos/testing:googletest",
     ],
 )
+
+cc_test(
+    name = "flatbuffers_test",
+    srcs = [
+        "flatbuffers_test.cc",
+    ],
+    deps = [
+        ":flatbuffers",
+        ":json_to_flatbuffer",
+        ":json_to_flatbuffer_flatbuffer",
+        "//aos/testing:googletest",
+    ],
+)
