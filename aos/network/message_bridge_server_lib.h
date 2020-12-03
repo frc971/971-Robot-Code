@@ -91,8 +91,6 @@ class ChannelState {
   const int channel_index_;
   const Channel *const channel_;
 
-  std::unique_ptr<aos::RawFetcher> fetcher_;
-
   std::vector<Peer> peers_;
 
   std::deque<SizePrefixedFlatbufferDetachedBuffer<logger::MessageHeader>>
