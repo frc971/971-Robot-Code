@@ -304,8 +304,7 @@ TEST_F(FlatbufferIntrospectionTest, VectorEnumTest) {
       {BaseType::UShort, BaseType::Obj, BaseType::UInt});
 
   ConfigurationBuilder config_builder(builder);
-  config_builder.add_vector_foo_enum(
-      flatbuffers::Offset<flatbuffers::Vector<int8_t>>(enums.o));
+  config_builder.add_vector_foo_enum(enums);
 
   builder.Finish(config_builder.Finish());
 
