@@ -446,9 +446,11 @@ PartsMessageReader::ReadMessage() {
       // time.
       // TODO(austin): Does this work with startup when we don't know the remote
       // start time too?  Look at one of those logs to compare.
-      CHECK_GE(monotonic_sent_time,
-               newest_timestamp_ - max_out_of_order_duration())
-          << ": Max out of order exceeded.";
+      if (monotonic_sent_time > parts_.monotonic_start_time) {
+        CHECK_GE(monotonic_sent_time,
+                 newest_timestamp_ - max_out_of_order_duration())
+            << ": Max out of order exceeded. " << parts_;
+      }
       return message;
     }
     NextLog();
@@ -532,7 +534,8 @@ Message *LogPartsSorter::Front() {
   // sure the nothing path is checked quickly.
   if (sorted_until() != monotonic_clock::max_time) {
     while (true) {
-      if (!messages_.empty() && messages_.begin()->timestamp < sorted_until()) {
+      if (!messages_.empty() && messages_.begin()->timestamp < sorted_until() &&
+          sorted_until() >= monotonic_start_time()) {
         break;
       }
 
@@ -566,9 +569,12 @@ Message *LogPartsSorter::Front() {
   // Now that we have enough data queued, return a pointer to the oldest piece
   // of data if it exists.
   if (messages_.empty()) {
+    last_message_time_ = monotonic_clock::max_time;
     return nullptr;
   }
 
+  CHECK_GE(messages_.begin()->timestamp, last_message_time_);
+  last_message_time_ = messages_.begin()->timestamp;
   return &(*messages_.begin());
 }
 
@@ -610,7 +616,9 @@ NodeMerger::NodeMerger(std::vector<LogParts> parts) {
 Message *NodeMerger::Front() {
   // Return the current Front if we have one, otherwise go compute one.
   if (current_ != nullptr) {
-    return current_->Front();
+    Message *result = current_->Front();
+    CHECK_GE(result->timestamp, last_message_time_);
+    return result;
   }
 
   // Otherwise, do a simple search for the oldest message, deduplicating any
@@ -634,6 +642,13 @@ Message *NodeMerger::Front() {
 
     // PopFront may change this, so compute it down here.
     sorted_until_ = std::min(sorted_until_, parts_sorter.sorted_until());
+  }
+
+  if (oldest) {
+    CHECK_GE(oldest->timestamp, last_message_time_);
+    last_message_time_ = oldest->timestamp;
+  } else {
+    last_message_time_ = monotonic_clock::max_time;
   }
 
   // Return the oldest message found.  This will be nullptr if nothing was
@@ -934,7 +949,7 @@ std::string TimestampMapper::DebugString() const {
       if (channel_data.messages.empty()) {
         continue;
       }
- 
+
       ss << "  channel " << channel_index << " [\n";
       for (const Message &m : channel_data.messages) {
         ss << "    " << m << "\n";

@@ -394,6 +394,10 @@ class LogPartsSorter {
   // Cache of the time we are sorted until.
   aos::monotonic_clock::time_point sorted_until_ = monotonic_clock::min_time;
 
+  // Timestamp of the last message returned.  Used to make sure nothing goes
+  // backwards.
+  monotonic_clock::time_point last_message_time_ = monotonic_clock::min_time;
+
   // Set used for efficient sorting of messages.  We can benchmark and evaluate
   // other data structures if this proves to be the bottleneck.
   absl::btree_set<Message> messages_;
@@ -442,6 +446,10 @@ class NodeMerger {
 
   // Cached node.
   int node_;
+
+  // Timestamp of the last message returned.  Used to make sure nothing goes
+  // backwards.
+  monotonic_clock::time_point last_message_time_ = monotonic_clock::min_time;
 
   realtime_clock::time_point realtime_start_time_ = realtime_clock::max_time;
   monotonic_clock::time_point monotonic_start_time_ = monotonic_clock::max_time;

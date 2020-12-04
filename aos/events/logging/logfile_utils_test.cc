@@ -510,6 +510,53 @@ TEST_F(LogPartsSorterTest, Pull) {
   EXPECT_EQ(output[3].timestamp, e + chrono::milliseconds(2000));
 }
 
+// Tests that we can pull messages out of a log sorted in order.
+TEST_F(LogPartsSorterTest, WayBeforeStart) {
+  const aos::monotonic_clock::time_point e = monotonic_clock::epoch();
+  {
+    DetachedBufferWriter writer(logfile0_, std::make_unique<DummyEncoder>());
+    writer.QueueSpan(config0_.span());
+    writer.QueueSizedFlatbuffer(
+        MakeLogMessage(e - chrono::milliseconds(500), 0, 0x005));
+    writer.QueueSizedFlatbuffer(
+        MakeLogMessage(e - chrono::milliseconds(10), 2, 0x005));
+    writer.QueueSizedFlatbuffer(
+        MakeLogMessage(e - chrono::milliseconds(1000), 1, 0x105));
+    writer.QueueSizedFlatbuffer(
+        MakeLogMessage(e + chrono::milliseconds(2000), 0, 0x006));
+    writer.QueueSizedFlatbuffer(
+        MakeLogMessage(e + chrono::milliseconds(1901), 1, 0x107));
+  }
+
+  const std::vector<LogFile> parts = SortParts({logfile0_});
+
+  LogPartsSorter parts_sorter(parts[0].parts[0]);
+
+  // Confirm we aren't sorted until any time until the message is popped.
+  // Peeking shouldn't change the sorted until time.
+  EXPECT_EQ(parts_sorter.sorted_until(), monotonic_clock::min_time);
+
+  std::deque<Message> output;
+
+  for (monotonic_clock::time_point t :
+       {e + chrono::milliseconds(1900), e + chrono::milliseconds(1900),
+        e + chrono::milliseconds(1900), monotonic_clock::max_time,
+        monotonic_clock::max_time}) {
+    ASSERT_TRUE(parts_sorter.Front() != nullptr);
+    output.emplace_back(std::move(*parts_sorter.Front()));
+    parts_sorter.PopFront();
+    EXPECT_EQ(parts_sorter.sorted_until(), t);
+  }
+
+  ASSERT_TRUE(parts_sorter.Front() == nullptr);
+
+  EXPECT_EQ(output[0].timestamp, e - chrono::milliseconds(1000));
+  EXPECT_EQ(output[1].timestamp, e - chrono::milliseconds(500));
+  EXPECT_EQ(output[2].timestamp, e - chrono::milliseconds(10));
+  EXPECT_EQ(output[3].timestamp, e + chrono::milliseconds(1901));
+  EXPECT_EQ(output[4].timestamp, e + chrono::milliseconds(2000));
+}
+
 // Tests that messages too far out of order trigger death.
 TEST_F(LogPartsSorterDeathTest, Pull) {
   const aos::monotonic_clock::time_point e = monotonic_clock::epoch();
