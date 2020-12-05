@@ -36,12 +36,16 @@
       "source_node": "pi{{ NUM }}",
       "frequency": 10,
       "num_senders": 2,
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": ["roborio"],
       "max_size": 200,
       "destination_nodes": [
         {
           "name": "roborio",
           "priority": 1,
-          "time_to_live": 5000000
+          "time_to_live": 5000000,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": ["roborio"]
         }
       ]
     },
