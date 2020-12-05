@@ -270,7 +270,8 @@ Tokenizer::TokenType Tokenizer::Next() {
       ConsumeWhitespace();
 
       if (!Consume(":")) {
-        fprintf(stderr, "Error on line %d\n", linenumber_);
+        fprintf(stderr, "Error on line %d, expected ':', got '%c'\n",
+                linenumber_, Char());
         return TokenType::kError;
       }
 
