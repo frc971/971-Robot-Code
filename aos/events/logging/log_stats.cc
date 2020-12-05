@@ -61,7 +61,7 @@ int main(int argc, char **argv) {
   std::vector<ChannelStats> channel_stats;
 
   // Open LogFile
-  aos::logger::LogReader reader(FLAGS_logfile);
+  aos::logger::LogReader reader(aos::logger::SortParts({FLAGS_logfile}));
   aos::SimulatedEventLoopFactory log_reader_factory(reader.configuration());
   reader.Register(&log_reader_factory);
 
