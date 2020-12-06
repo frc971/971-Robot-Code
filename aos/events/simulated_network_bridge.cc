@@ -1,7 +1,10 @@
 #include "aos/events/simulated_network_bridge.h"
 
+#include "absl/strings/str_cat.h"
+#include "aos/configuration.h"
 #include "aos/events/event_loop.h"
 #include "aos/events/simulated_event_loop.h"
+#include "aos/network/remote_message_generated.h"
 
 namespace aos {
 namespace message_bridge {
@@ -21,7 +24,7 @@ class RawMessageDelayer {
                     ServerConnection *server_connection, int client_index,
                     MessageBridgeClientStatus *client_status,
                     size_t channel_index,
-                    aos::Sender<logger::MessageHeader> *timestamp_logger)
+                    aos::Sender<RemoteMessage> *timestamp_logger)
       : fetch_node_factory_(fetch_node_factory),
         send_node_factory_(send_node_factory),
         send_event_loop_(send_event_loop),
@@ -117,11 +120,11 @@ class RawMessageDelayer {
         client_connection_->received_packets() + 1);
 
     if (timestamp_logger_) {
-      aos::Sender<logger::MessageHeader>::Builder builder =
+      aos::Sender<RemoteMessage>::Builder builder =
           timestamp_logger_->MakeBuilder();
 
-      logger::MessageHeader::Builder message_header_builder =
-          builder.MakeBuilder<logger::MessageHeader>();
+      RemoteMessage::Builder message_header_builder =
+          builder.MakeBuilder<RemoteMessage>();
 
       message_header_builder.add_channel_index(channel_index_);
 
@@ -178,7 +181,7 @@ class RawMessageDelayer {
   ClientConnection *client_connection_ = nullptr;
 
   size_t channel_index_;
-  aos::Sender<logger::MessageHeader> *timestamp_logger_ = nullptr;
+  aos::Sender<RemoteMessage> *timestamp_logger_ = nullptr;
 };
 
 SimulatedMessageBridge::SimulatedMessageBridge(
@@ -370,7 +373,7 @@ SimulatedMessageBridge::State::State(
 
         if (!timestamp_loggers[other_node_index]) {
           timestamp_loggers[other_node_index] =
-              event_loop->MakeSender<logger::MessageHeader>(
+              event_loop->MakeSender<RemoteMessage>(
                   absl::StrCat("/aos/remote_timestamps/",
                                connection->name()->string_view()));
         }

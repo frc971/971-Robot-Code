@@ -35,10 +35,10 @@ int Main(int argc, char **argv) {
     }
   }
 
-  std::vector<aos::FlatbufferString<reflection::Schema>> schemas;
+  std::vector<aos::FlatbufferVector<reflection::Schema>> schemas;
 
   for (int i = 6; i < argc; ++i) {
-    schemas.emplace_back(util::ReadFileToStringOrDie(argv[i]));
+    schemas.emplace_back(FileToFlatbuffer<reflection::Schema>(argv[i]));
   }
 
   aos::FlatbufferDetachedBuffer<Configuration> merged_config =

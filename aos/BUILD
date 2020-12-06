@@ -596,3 +596,9 @@ cc_test(
         "//aos/testing:googletest",
     ],
 )
+
+py_binary(
+    name = "flatbuffers_static",
+    srcs = ["flatbuffers_static.py"],
+    visibility = ["//visibility:public"],
+)

@@ -34,18 +34,18 @@ void DoSetShmBase(const std::string_view node) {
 }
 
 class MessageBridgeTest : public ::testing::Test {
-  public:
-   MessageBridgeTest()
-       : pi1_config(aos::configuration::ReadConfig(
-             "aos/network/message_bridge_test_server_config.json")),
-         pi2_config(aos::configuration::ReadConfig(
-             "aos/network/message_bridge_test_client_config.json")) {
-     util::UnlinkRecursive(ShmBase("pi1"));
-     util::UnlinkRecursive(ShmBase("pi2"));
-   }
+ public:
+  MessageBridgeTest()
+      : pi1_config(aos::configuration::ReadConfig(
+            "aos/network/message_bridge_test_server_config.json")),
+        pi2_config(aos::configuration::ReadConfig(
+            "aos/network/message_bridge_test_client_config.json")) {
+    util::UnlinkRecursive(ShmBase("pi1"));
+    util::UnlinkRecursive(ShmBase("pi2"));
+  }
 
-   aos::FlatbufferDetachedBuffer<aos::Configuration> pi1_config;
-   aos::FlatbufferDetachedBuffer<aos::Configuration> pi2_config;
+  aos::FlatbufferDetachedBuffer<aos::Configuration> pi1_config;
+  aos::FlatbufferDetachedBuffer<aos::Configuration> pi2_config;
 };
 
 // Test that we can send a ping message over sctp and receive it.
@@ -89,8 +89,8 @@ TEST_F(MessageBridgeTest, PingPong) {
       ping_event_loop.MakeSender<examples::Ping>("/test");
 
   aos::ShmEventLoop pi1_test_event_loop(&pi1_config.message());
-  aos::Fetcher<logger::MessageHeader> message_header_fetcher1 =
-      pi1_test_event_loop.MakeFetcher<logger::MessageHeader>(
+  aos::Fetcher<RemoteMessage> message_header_fetcher1 =
+      pi1_test_event_loop.MakeFetcher<RemoteMessage>(
           "/pi1/aos/remote_timestamps/pi2");
 
   // Fetchers for confirming the remote timestamps made it.
@@ -121,8 +121,8 @@ TEST_F(MessageBridgeTest, PingPong) {
 
   aos::Fetcher<ClientStatistics> client_statistics_fetcher =
       test_event_loop.MakeFetcher<ClientStatistics>("/aos");
-  aos::Fetcher<logger::MessageHeader> message_header_fetcher2 =
-      test_event_loop.MakeFetcher<logger::MessageHeader>(
+  aos::Fetcher<RemoteMessage> message_header_fetcher2 =
+      test_event_loop.MakeFetcher<RemoteMessage>(
           "/pi2/aos/remote_timestamps/pi1");
 
   // Event loop for fetching data delivered to pi2 from pi1 to match up
@@ -282,8 +282,9 @@ TEST_F(MessageBridgeTest, PingPong) {
       "/pi1/aos/remote_timestamps/pi2",
       [pi1_timestamp_channel, ping_timestamp_channel, &ping_on_pi2_fetcher,
        &ping_on_pi1_fetcher, &pi1_on_pi2_timestamp_fetcher,
-       &pi1_on_pi1_timestamp_fetcher](const logger::MessageHeader &header) {
-        VLOG(1) << aos::FlatbufferToJson(&header);
+       &pi1_on_pi1_timestamp_fetcher](const RemoteMessage &header) {
+        VLOG(1) << "/pi1/aos/remote_timestamps/pi2 RemoteMessage "
+                << aos::FlatbufferToJson(&header);
 
         const aos::monotonic_clock::time_point header_monotonic_sent_time(
             chrono::nanoseconds(header.monotonic_sent_time()));
@@ -879,9 +880,9 @@ TEST_F(MessageBridgeTest, ReliableSentBeforeClientStartup) {
   std::atomic<int> ping_timestamp_count{0};
   pi1_remote_timestamp_event_loop.MakeWatcher(
       "/pi1/aos/remote_timestamps/pi2",
-      [ping_channel_index,
-       &ping_timestamp_count](const logger::MessageHeader &header) {
-        VLOG(1) << aos::FlatbufferToJson(&header);
+      [ping_channel_index, &ping_timestamp_count](const RemoteMessage &header) {
+        VLOG(1) << "/pi1/aos/remote_timestamps/pi2 RemoteMessage "
+                << aos::FlatbufferToJson(&header);
         if (header.channel_index() == ping_channel_index) {
           ++ping_timestamp_count;
         }
@@ -1034,9 +1035,9 @@ TEST_F(MessageBridgeTest, ReliableSentBeforeServerStartup) {
   std::atomic<int> ping_timestamp_count{0};
   pi1_remote_timestamp_event_loop.MakeWatcher(
       "/pi1/aos/remote_timestamps/pi2",
-      [ping_channel_index,
-       &ping_timestamp_count](const logger::MessageHeader &header) {
-        VLOG(1) << aos::FlatbufferToJson(&header);
+      [ping_channel_index, &ping_timestamp_count](const RemoteMessage &header) {
+        VLOG(1) << "/pi1/aos/remote_timestamps/pi2 RemoteMessage "
+                << aos::FlatbufferToJson(&header);
         if (header.channel_index() == ping_channel_index) {
           ++ping_timestamp_count;
         }

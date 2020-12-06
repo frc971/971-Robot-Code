@@ -1638,6 +1638,17 @@ class FlatBufferBuilder {
     return CreateSharedString(str->c_str(), str->size());
   }
 
+#ifdef FLATBUFFERS_HAS_STRING_VIEW
+  /// @brief Store a string in the buffer, which can contain any binary data.
+  /// If a string with this exact contents has already been serialized before,
+  /// instead simply returns the offset of the existing string.
+  /// @param[in] str A const pointer to a `String` struct to add to the buffer.
+  /// @return Returns the offset in the buffer where the string starts
+  Offset<String> CreateSharedString(const flatbuffers::string_view str) {
+    return CreateSharedString(str.data(), str.size());
+  }
+#endif
+
   /// @cond FLATBUFFERS_INTERNAL
   uoffset_t EndVector(size_t len) {
     FLATBUFFERS_ASSERT(nested);  // Hit if no corresponding StartVector.

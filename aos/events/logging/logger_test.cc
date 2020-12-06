@@ -5,6 +5,7 @@
 #include "aos/events/ping_lib.h"
 #include "aos/events/pong_lib.h"
 #include "aos/events/simulated_event_loop.h"
+#include "aos/network/remote_message_generated.h"
 #include "aos/network/timestamp_generated.h"
 #include "aos/testing/tmpdir.h"
 #include "aos/util/file.h"
@@ -21,6 +22,7 @@ namespace logger {
 namespace testing {
 
 namespace chrono = std::chrono;
+using aos::message_bridge::RemoteMessage;
 using aos::testing::MessageCounter;
 
 class LoggerTest : public ::testing::Test {
@@ -376,13 +378,13 @@ class MultinodeLoggerTest : public ::testing::Test {
              logfile_base_ + "_pi2_data/test/aos.examples.Pong.part1.bfbs",
              logfile_base_ + "_pi2_data.part0.bfbs",
              logfile_base_ + "_timestamps/pi1/aos/remote_timestamps/pi2/"
-                             "aos.logger.MessageHeader.part0.bfbs",
+                             "aos.message_bridge.RemoteMessage.part0.bfbs",
              logfile_base_ + "_timestamps/pi1/aos/remote_timestamps/pi2/"
-                             "aos.logger.MessageHeader.part1.bfbs",
+                             "aos.message_bridge.RemoteMessage.part1.bfbs",
              logfile_base_ + "_timestamps/pi2/aos/remote_timestamps/pi1/"
-                             "aos.logger.MessageHeader.part0.bfbs",
+                             "aos.message_bridge.RemoteMessage.part0.bfbs",
              logfile_base_ + "_timestamps/pi2/aos/remote_timestamps/pi1/"
-                             "aos.logger.MessageHeader.part1.bfbs",
+                             "aos.message_bridge.RemoteMessage.part1.bfbs",
              logfile_base_ +
                  "_pi1_data/pi1/aos/aos.message_bridge.Timestamp.part0.bfbs",
              logfile_base_ +
@@ -1415,9 +1417,9 @@ TEST_F(MultinodeLoggerTest, MessageHeader) {
   std::unique_ptr<EventLoop> pi2_event_loop =
       log_reader_factory.MakeEventLoop("test", pi2);
 
-  MessageCounter<MessageHeader> pi1_original_message_header_counter(
+  MessageCounter<RemoteMessage> pi1_original_message_header_counter(
       pi1_event_loop.get(), "/original/aos/remote_timestamps/pi2");
-  MessageCounter<MessageHeader> pi2_original_message_header_counter(
+  MessageCounter<RemoteMessage> pi2_original_message_header_counter(
       pi2_event_loop.get(), "/original/aos/remote_timestamps/pi1");
 
   aos::Fetcher<message_bridge::Timestamp> pi1_timestamp_on_pi1_fetcher =
@@ -1455,7 +1457,7 @@ TEST_F(MultinodeLoggerTest, MessageHeader) {
       [&pi1_event_loop, pi1_timestamp_channel, ping_timestamp_channel,
        &pi1_timestamp_on_pi1_fetcher, &pi1_timestamp_on_pi2_fetcher,
        &ping_on_pi1_fetcher,
-       &ping_on_pi2_fetcher](const MessageHeader &header) {
+       &ping_on_pi2_fetcher](const RemoteMessage &header) {
         const aos::monotonic_clock::time_point header_monotonic_sent_time(
             chrono::nanoseconds(header.monotonic_sent_time()));
         const aos::realtime_clock::time_point header_realtime_sent_time(
@@ -1507,7 +1509,7 @@ TEST_F(MultinodeLoggerTest, MessageHeader) {
       [&pi2_event_loop, pi2_timestamp_channel, pong_timestamp_channel,
        &pi2_timestamp_on_pi2_fetcher, &pi2_timestamp_on_pi1_fetcher,
        &pong_on_pi2_fetcher,
-       &pong_on_pi1_fetcher](const MessageHeader &header) {
+       &pong_on_pi1_fetcher](const RemoteMessage &header) {
         const aos::monotonic_clock::time_point header_monotonic_sent_time(
             chrono::nanoseconds(header.monotonic_sent_time()));
         const aos::realtime_clock::time_point header_realtime_sent_time(

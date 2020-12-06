@@ -7,6 +7,7 @@ licenses(["notice"])
 exports_files([
     "LICENSE",
     "tsconfig.json",
+    "include/flatbuffers/reflection.bfbs",
 ])
 
 # Public flatc library to compile flatbuffer files at runtime.

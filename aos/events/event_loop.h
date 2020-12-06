@@ -485,8 +485,8 @@ class EventLoop {
   template <typename T>
   bool HasChannel(const std::string_view channel_name) {
     return configuration::GetChannel(configuration(), channel_name,
-                                     T::GetFullyQualifiedName(), name(),
-                                     node()) != nullptr;
+                                     T::GetFullyQualifiedName(), name(), node(),
+                                     true) != nullptr;
   }
 
   // Note, it is supported to create:

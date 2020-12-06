@@ -74,13 +74,13 @@
     },
     {
       "name": "/pi1/aos/remote_timestamps/pi2",
-      "type": "aos.logger.MessageHeader",
+      "type": "aos.message_bridge.RemoteMessage",
       "source_node": "pi1",
       "frequency": 10
     },
     {
       "name": "/pi2/aos/remote_timestamps/pi1",
-      "type": "aos.logger.MessageHeader",
+      "type": "aos.message_bridge.RemoteMessage",
       "source_node": "pi2",
       "frequency": 10
     },

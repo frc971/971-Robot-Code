@@ -11,6 +11,7 @@
 #include "aos/network/message_bridge_client_generated.h"
 #include "aos/network/message_bridge_server_generated.h"
 #include "aos/network/message_bridge_server_status.h"
+#include "aos/network/remote_message_generated.h"
 #include "aos/network/sctp_server.h"
 #include "aos/network/timestamp_generated.h"
 #include "glog/logging.h"
@@ -36,7 +37,7 @@ class ChannelState {
     Peer(const Connection *new_connection, int new_node_index,
          ServerConnection *new_server_connection_statistics,
          bool new_logged_remotely,
-         aos::Sender<logger::MessageHeader> *new_timestamp_logger)
+         aos::Sender<RemoteMessage> *new_timestamp_logger)
         : connection(new_connection),
           node_index(new_node_index),
           server_connection_statistics(new_server_connection_statistics),
@@ -50,7 +51,7 @@ class ChannelState {
     const aos::Connection *connection;
     const int node_index;
     ServerConnection *server_connection_statistics;
-    aos::Sender<logger::MessageHeader> *timestamp_logger = nullptr;
+    aos::Sender<RemoteMessage> *timestamp_logger = nullptr;
 
     // If true, this message will be logged on a receiving node.  We need to
     // keep it around to log it locally if that fails.
@@ -67,7 +68,7 @@ class ChannelState {
   void AddPeer(const Connection *connection, int node_index,
                ServerConnection *server_connection_statistics,
                bool logged_remotely,
-               aos::Sender<logger::MessageHeader> *timestamp_logger);
+               aos::Sender<RemoteMessage> *timestamp_logger);
 
   // Returns true if this channel has the same name and type as the other
   // channel.
@@ -125,7 +126,7 @@ class MessageBridgeServer {
   // Event loop to schedule everything on.
   aos::ShmEventLoop *event_loop_;
 
-  std::vector<aos::Sender<logger::MessageHeader>> timestamp_loggers_;
+  std::vector<aos::Sender<RemoteMessage>> timestamp_loggers_;
   SctpServer server_;
 
   MessageBridgeServerStatus server_status_;

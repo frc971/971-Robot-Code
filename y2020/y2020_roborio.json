@@ -44,25 +44,25 @@
     },
     {
       "name": "/roborio/aos/remote_timestamps/pi1",
-      "type": "aos.logger.MessageHeader",
+      "type": "aos.message_bridge.RemoteMessage",
       "logger": "NOT_LOGGED",
       "source_node": "roborio"
     },
     {
       "name": "/roborio/aos/remote_timestamps/pi2",
-      "type": "aos.logger.MessageHeader",
+      "type": "aos.message_bridge.RemoteMessage",
       "logger": "NOT_LOGGED",
       "source_node": "roborio"
     },
     {
       "name": "/roborio/aos/remote_timestamps/pi3",
-      "type": "aos.logger.MessageHeader",
+      "type": "aos.message_bridge.RemoteMessage",
       "logger": "NOT_LOGGED",
       "source_node": "roborio"
     },
     {
       "name": "/roborio/aos/remote_timestamps/pi4",
-      "type": "aos.logger.MessageHeader",
+      "type": "aos.message_bridge.RemoteMessage",
       "logger": "NOT_LOGGED",
       "source_node": "roborio"
     },

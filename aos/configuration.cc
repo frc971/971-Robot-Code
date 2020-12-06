@@ -591,7 +591,8 @@ FlatbufferDetachedBuffer<Configuration> MergeWithConfig(
 
 const Channel *GetChannel(const Configuration *config, std::string_view name,
                           std::string_view type,
-                          std::string_view application_name, const Node *node) {
+                          std::string_view application_name, const Node *node,
+                          bool quiet) {
   const std::string_view original_name = name;
   std::string mutable_name;
   if (node != nullptr) {
@@ -647,7 +648,7 @@ const Channel *GetChannel(const Configuration *config, std::string_view name,
   } else {
     VLOG(1) << "No match for { \"name\": \"" << name << "\", \"type\": \""
             << type << "\" }";
-    if (original_name != name) {
+    if (original_name != name && !quiet) {
       LOG(WARNING) << "Remapped from {\"name\": \"" << original_name
                    << "\", \"type\": \"" << type << "\"}, to {\"name\": \""
                    << name << "\", \"type\": \"" << type
@@ -683,7 +684,7 @@ std::string StrippedChannelToString(const Channel *channel) {
 
 FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
     const Flatbuffer<Configuration> &config,
-    const std::vector<aos::FlatbufferString<reflection::Schema>> &schemas) {
+    const std::vector<aos::FlatbufferVector<reflection::Schema>> &schemas) {
   flatbuffers::FlatBufferBuilder fbb;
   fbb.ForceDefaults(true);
 
@@ -701,8 +702,8 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
     std::vector<flatbuffers::Offset<Channel>> channel_offsets;
     for (const Channel *c : *config.message().channels()) {
       // Search for a schema with a matching type.
-      const aos::FlatbufferString<reflection::Schema> *found_schema = nullptr;
-      for (const aos::FlatbufferString<reflection::Schema> &schema : schemas) {
+      const aos::FlatbufferVector<reflection::Schema> *found_schema = nullptr;
+      for (const aos::FlatbufferVector<reflection::Schema> &schema : schemas) {
         if (schema.message().root_table() != nullptr) {
           if (schema.message().root_table()->name()->string_view() ==
               c->type()->string_view()) {

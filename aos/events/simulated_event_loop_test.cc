@@ -10,6 +10,7 @@
 #include "aos/events/test_message_generated.h"
 #include "aos/network/message_bridge_client_generated.h"
 #include "aos/network/message_bridge_server_generated.h"
+#include "aos/network/remote_message_generated.h"
 #include "aos/network/timestamp_generated.h"
 #include "gtest/gtest.h"
 
@@ -19,9 +20,10 @@ namespace {
 
 std::string ConfigPrefix() { return "aos/"; }
 
-}  // namespace
-
+using message_bridge::RemoteMessage;
 namespace chrono = ::std::chrono;
+
+}  // namespace
 
 class SimulatedEventLoopTestFactory : public EventLoopTestFactory {
  public:
@@ -422,9 +424,9 @@ TEST(SimulatedEventLoopTest, MultinodePingPong) {
       pi3_pong_counter_event_loop.get(), "/pi3/aos");
 
   // Count remote timestamps
-  MessageCounter<logger::MessageHeader> remote_timestamps_pi2_on_pi1(
+  MessageCounter<RemoteMessage> remote_timestamps_pi2_on_pi1(
       pi1_pong_counter_event_loop.get(), "/aos/remote_timestamps/pi2");
-  MessageCounter<logger::MessageHeader> remote_timestamps_pi1_on_pi2(
+  MessageCounter<RemoteMessage> remote_timestamps_pi1_on_pi2(
       pi2_pong_counter_event_loop.get(), "/aos/remote_timestamps/pi1");
 
   // Wait to let timestamp estimation start up before looking for the results.
@@ -575,7 +577,7 @@ TEST(SimulatedEventLoopTest, MultinodePingPong) {
       "/pi1/aos/remote_timestamps/pi2",
       [pi1_timestamp_channel, ping_timestamp_channel, &ping_on_pi2_fetcher,
        &ping_on_pi1_fetcher, &pi1_on_pi2_timestamp_fetcher,
-       &pi1_on_pi1_timestamp_fetcher](const logger::MessageHeader &header) {
+       &pi1_on_pi1_timestamp_fetcher](const RemoteMessage &header) {
         VLOG(1) << aos::FlatbufferToJson(&header);
 
         const aos::monotonic_clock::time_point header_monotonic_sent_time(
@@ -825,9 +827,9 @@ TEST(SimulatedEventLoopTest, MultinodeWithoutStatistics) {
       pi3_pong_counter_event_loop.get(), "/pi3/aos");
 
   // Count remote timestamps
-  MessageCounter<logger::MessageHeader> remote_timestamps_pi2_on_pi1(
+  MessageCounter<RemoteMessage> remote_timestamps_pi2_on_pi1(
       pi1_pong_counter_event_loop.get(), "/aos/remote_timestamps/pi2");
-  MessageCounter<logger::MessageHeader> remote_timestamps_pi1_on_pi2(
+  MessageCounter<RemoteMessage> remote_timestamps_pi1_on_pi2(
       pi2_pong_counter_event_loop.get(), "/aos/remote_timestamps/pi1");
 
   MessageCounter<message_bridge::ServerStatistics>
@@ -1023,7 +1025,7 @@ TEST(SimulatedEventLoopTest, MultinodeStartupTesting) {
   pi1_remote_timestamp->MakeWatcher(
       "/pi1/aos/remote_timestamps/pi2",
       [reliable_channel_index,
-       &reliable_timestamp_count](const logger::MessageHeader &header) {
+       &reliable_timestamp_count](const RemoteMessage &header) {
         VLOG(1) << aos::FlatbufferToJson(&header);
         if (header.channel_index() == reliable_channel_index) {
           ++reliable_timestamp_count;

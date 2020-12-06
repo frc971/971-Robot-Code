@@ -8,6 +8,7 @@
 #include "aos/network/connect_generated.h"
 #include "aos/network/message_bridge_protocol.h"
 #include "aos/network/message_bridge_server_generated.h"
+#include "aos/network/remote_message_generated.h"
 #include "aos/network/sctp_server.h"
 #include "glog/logging.h"
 
@@ -106,11 +107,11 @@ void ChannelState::HandleDelivery(sctp_assoc_t rcv_assoc_id, uint16_t /*ssn*/,
         // This needs to be munged and cleaned up to match the timestamp
         // standard.
 
-        aos::Sender<logger::MessageHeader>::Builder builder =
+        aos::Sender<RemoteMessage>::Builder builder =
             peer.timestamp_logger->MakeBuilder();
 
-        logger::MessageHeader::Builder message_header_builder =
-            builder.MakeBuilder<logger::MessageHeader>();
+        RemoteMessage::Builder message_header_builder =
+            builder.MakeBuilder<RemoteMessage>();
 
         message_header_builder.add_channel_index(
             message_header->channel_index());
@@ -173,10 +174,10 @@ void ChannelState::HandleFailure(
   // time out eventually.  Need to sort that out.
 }
 
-void ChannelState::AddPeer(
-    const Connection *connection, int node_index,
-    ServerConnection *server_connection_statistics, bool logged_remotely,
-    aos::Sender<logger::MessageHeader> *timestamp_logger) {
+void ChannelState::AddPeer(const Connection *connection, int node_index,
+                           ServerConnection *server_connection_statistics,
+                           bool logged_remotely,
+                           aos::Sender<RemoteMessage> *timestamp_logger) {
   peers_.emplace_back(connection, node_index, server_connection_statistics,
                       logged_remotely, timestamp_logger);
 }
@@ -330,7 +331,7 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop)
         // timestamps from it.
         if (delivery_time_is_logged && !timestamp_loggers_[other_node_index]) {
           timestamp_loggers_[other_node_index] =
-              event_loop_->MakeSender<logger::MessageHeader>(
+              event_loop_->MakeSender<RemoteMessage>(
                   absl::StrCat("/aos/remote_timestamps/",
                                connection->name()->string_view()));
         }

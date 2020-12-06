@@ -2,10 +2,10 @@
 #define AOS_EVENTS_SIMULATED_NETWORK_BRIDGE_H_
 
 #include "aos/events/event_loop.h"
-#include "aos/events/logging/logger_generated.h"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/network/message_bridge_client_status.h"
 #include "aos/network/message_bridge_server_status.h"
+#include "aos/network/remote_message_generated.h"
 
 namespace aos {
 namespace message_bridge {
@@ -41,7 +41,7 @@ class SimulatedMessageBridge {
     MessageBridgeServerStatus server_status;
     MessageBridgeClientStatus client_status;
 
-    std::vector<aos::Sender<logger::MessageHeader>> timestamp_loggers;
+    std::vector<aos::Sender<RemoteMessage>> timestamp_loggers;
   };
   // Map of nodes to event loops.  This is a member variable so that the
   // lifetime of the event loops matches the lifetime of the bridge.
