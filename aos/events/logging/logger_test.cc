@@ -112,7 +112,7 @@ TEST_F(LoggerTest, Starts) {
 
 // Tests calling StartLogging twice.
 TEST_F(LoggerDeathTest, ExtraStart) {
-  const ::std::string tmpdir(getenv("TEST_TMPDIR"));
+  const ::std::string tmpdir = aos::testing::TestTmpDir();
   const ::std::string base_name1 = tmpdir + "/logfile1";
   const ::std::string logfile1 = base_name1 + ".part0.bfbs";
   const ::std::string base_name2 = tmpdir + "/logfile2";
@@ -144,7 +144,7 @@ TEST_F(LoggerDeathTest, ExtraStart) {
 
 // Tests calling StopLogging twice.
 TEST_F(LoggerDeathTest, ExtraStop) {
-  const ::std::string tmpdir(getenv("TEST_TMPDIR"));
+  const ::std::string tmpdir = aos::testing::TestTmpDir();
   const ::std::string base_name = tmpdir + "/logfile";
   const ::std::string logfile = base_name + ".part0.bfbs";
   // Remove it.
@@ -173,7 +173,7 @@ TEST_F(LoggerDeathTest, ExtraStop) {
 
 // Tests that we can startup twice.
 TEST_F(LoggerTest, StartsTwice) {
-  const ::std::string tmpdir(getenv("TEST_TMPDIR"));
+  const ::std::string tmpdir = aos::testing::TestTmpDir();
   const ::std::string base_name1 = tmpdir + "/logfile1";
   const ::std::string logfile1 = base_name1 + ".part0.bfbs";
   const ::std::string base_name2 = tmpdir + "/logfile2";
@@ -236,7 +236,7 @@ TEST_F(LoggerTest, StartsTwice) {
 
 // Tests that we can read and write rotated log files.
 TEST_F(LoggerTest, RotatedLogFile) {
-  const ::std::string tmpdir(getenv("TEST_TMPDIR"));
+  const ::std::string tmpdir = aos::testing::TestTmpDir();
   const ::std::string base_name = tmpdir + "/logfile";
   const ::std::string logfile0 = base_name + ".part0.bfbs";
   const ::std::string logfile1 = base_name + ".part1.bfbs";
@@ -317,7 +317,7 @@ TEST_F(LoggerTest, RotatedLogFile) {
 
 // Tests that a large number of messages per second doesn't overwhelm writev.
 TEST_F(LoggerTest, ManyMessages) {
-  const ::std::string tmpdir(getenv("TEST_TMPDIR"));
+  const ::std::string tmpdir = aos::testing::TestTmpDir();
   const ::std::string base_name = tmpdir + "/logfile";
   const ::std::string logfile = base_name + ".part0.bfbs";
   // Remove the log file.
@@ -368,7 +368,7 @@ class MultinodeLoggerTest : public ::testing::Test {
             configuration::GetNode(event_loop_factory_.configuration(), "pi1")),
         pi2_(
             configuration::GetNode(event_loop_factory_.configuration(), "pi2")),
-        tmp_dir_(getenv("TEST_TMPDIR")),
+        tmp_dir_(aos::testing::TestTmpDir()),
         logfile_base_(tmp_dir_ + "/multi_logfile"),
         logfiles_(
             {logfile_base_ + "_pi1_data.part0.bfbs",
@@ -406,6 +406,7 @@ class MultinodeLoggerTest : public ::testing::Test {
     // Go through and remove the logfiles if they already exist.
     for (const auto file : logfiles_) {
       unlink(file.c_str());
+      unlink((file + ".xz").c_str());
     }
 
     LOG(INFO) << "Logging data to " << logfiles_[0] << ", " << logfiles_[1]
