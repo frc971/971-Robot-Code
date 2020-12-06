@@ -406,8 +406,22 @@ Starter::Starter(const aos::Configuration *event_loop_config)
   if (config_msg_->has_applications()) {
     const flatbuffers::Vector<flatbuffers::Offset<aos::Application>>
         *applications = config_msg_->applications();
-    for (const aos::Application *application : *applications) {
-      AddApplication(application);
+
+    if (aos::configuration::MultiNode(config_msg_)) {
+      std::string_view current_node = event_loop_.node()->name()->string_view();
+      for (const aos::Application *application : *applications) {
+        CHECK(application->has_nodes());
+        for (const flatbuffers::String *node : *application->nodes()) {
+          if (node->string_view() == current_node) {
+            AddApplication(application);
+            break;
+          }
+        }
+      }
+    } else {
+      for (const aos::Application *application : *applications) {
+        AddApplication(application);
+      }
     }
   }
 }
