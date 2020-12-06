@@ -152,7 +152,7 @@ TEST_F(MessageBridgeTest, PingPong) {
       "/pi1/aos",
       [&ping_count, &pi2_client_event_loop, &ping_sender,
        &pi1_server_statistics_count](const ServerStatistics &stats) {
-        LOG(INFO) << FlatbufferToJson(&stats);
+        LOG(INFO) << "/pi1/aos ServerStatistics " << FlatbufferToJson(&stats);
 
         ASSERT_TRUE(stats.has_connections());
         EXPECT_EQ(stats.connections()->size(), 1);
@@ -172,6 +172,7 @@ TEST_F(MessageBridgeTest, PingPong) {
           if (connection->node()->name()->string_view() ==
               pi2_client_event_loop.node()->name()->string_view()) {
             if (connection->state() == State::CONNECTED) {
+              EXPECT_TRUE(connection->has_boot_uuid());
               connected = true;
             }
           }
@@ -193,7 +194,7 @@ TEST_F(MessageBridgeTest, PingPong) {
   int pi2_server_statistics_count = 0;
   pong_event_loop.MakeWatcher("/pi2/aos", [&pi2_server_statistics_count](
                                               const ServerStatistics &stats) {
-    LOG(INFO) << FlatbufferToJson(&stats);
+    LOG(INFO) << "/pi2/aos ServerStatistics " << FlatbufferToJson(&stats);
     for (const ServerConnection *connection : *stats.connections()) {
       if (connection->has_monotonic_offset()) {
         ++pi2_server_statistics_count;
@@ -203,6 +204,7 @@ TEST_F(MessageBridgeTest, PingPong) {
                   chrono::milliseconds(1));
         EXPECT_GT(chrono::nanoseconds(connection->monotonic_offset()),
                   chrono::milliseconds(-1));
+        EXPECT_TRUE(connection->has_boot_uuid());
       }
     }
   });
@@ -210,7 +212,7 @@ TEST_F(MessageBridgeTest, PingPong) {
   int pi1_client_statistics_count = 0;
   ping_event_loop.MakeWatcher("/pi1/aos", [&pi1_client_statistics_count](
                                               const ClientStatistics &stats) {
-    LOG(INFO) << FlatbufferToJson(&stats);
+    LOG(INFO) << "/pi1/aos ClientStatistics " << FlatbufferToJson(&stats);
 
     for (const ClientConnection *connection : *stats.connections()) {
       if (connection->has_monotonic_offset()) {
@@ -230,7 +232,7 @@ TEST_F(MessageBridgeTest, PingPong) {
   int pi2_client_statistics_count = 0;
   pong_event_loop.MakeWatcher("/pi2/aos", [&pi2_client_statistics_count](
                                               const ClientStatistics &stats) {
-    LOG(INFO) << FlatbufferToJson(&stats);
+    LOG(INFO) << "/pi2/aos ClientStatistics " << FlatbufferToJson(&stats);
 
     for (const ClientConnection *connection : *stats.connections()) {
       if (connection->has_monotonic_offset()) {
@@ -285,6 +287,8 @@ TEST_F(MessageBridgeTest, PingPong) {
        &pi1_on_pi1_timestamp_fetcher](const RemoteMessage &header) {
         VLOG(1) << "/pi1/aos/remote_timestamps/pi2 RemoteMessage "
                 << aos::FlatbufferToJson(&header);
+
+        EXPECT_TRUE(header.has_boot_uuid());
 
         const aos::monotonic_clock::time_point header_monotonic_sent_time(
             chrono::nanoseconds(header.monotonic_sent_time()));
@@ -462,29 +466,29 @@ TEST_F(MessageBridgeTest, ClientRestart) {
   // Wait until we are connected, then send.
   pi1_test_event_loop.MakeWatcher(
       "/pi1/aos", [](const ServerStatistics &stats) {
-        LOG(INFO) << "pi1 ServerStatistics " << FlatbufferToJson(&stats);
+        LOG(INFO) << "/pi1/aos ServerStatistics " << FlatbufferToJson(&stats);
       });
 
   pi2_test_event_loop.MakeWatcher(
       "/pi2/aos", [](const ServerStatistics &stats) {
-        LOG(INFO) << "pi2 ServerStatistics " << FlatbufferToJson(&stats);
+        LOG(INFO) << "/pi2/aos ServerStatistics " << FlatbufferToJson(&stats);
       });
 
   pi1_test_event_loop.MakeWatcher(
       "/pi1/aos", [](const ClientStatistics &stats) {
-        LOG(INFO) << "pi1 ClientStatistics " << FlatbufferToJson(&stats);
+        LOG(INFO) << "/pi1/aos ClientStatistics " << FlatbufferToJson(&stats);
       });
 
   pi2_test_event_loop.MakeWatcher(
       "/pi2/aos", [](const ClientStatistics &stats) {
-        LOG(INFO) << "pi2 ClientStatistics " << FlatbufferToJson(&stats);
+        LOG(INFO) << "/pi2/aos ClientStatistics " << FlatbufferToJson(&stats);
       });
 
   pi1_test_event_loop.MakeWatcher("/pi1/aos", [](const Timestamp &timestamp) {
-    LOG(INFO) << "pi1 Timestamp " << FlatbufferToJson(&timestamp);
+    LOG(INFO) << "/pi1/aos Timestamp " << FlatbufferToJson(&timestamp);
   });
   pi2_test_event_loop.MakeWatcher("/pi2/aos", [](const Timestamp &timestamp) {
-    LOG(INFO) << "pi2 Timestamp " << FlatbufferToJson(&timestamp);
+    LOG(INFO) << "/pi2/aos Timestamp " << FlatbufferToJson(&timestamp);
   });
 
   // Start everything up.  Pong is the only thing we don't know how to wait on,
@@ -533,6 +537,7 @@ TEST_F(MessageBridgeTest, ClientRestart) {
               chrono::milliseconds(1));
     EXPECT_GT(chrono::nanoseconds(pi1_connection->monotonic_offset()),
               chrono::milliseconds(-1));
+    EXPECT_TRUE(pi1_connection->has_boot_uuid());
 
     EXPECT_EQ(pi2_connection->state(), State::CONNECTED);
     EXPECT_TRUE(pi2_connection->has_monotonic_offset());
@@ -540,6 +545,7 @@ TEST_F(MessageBridgeTest, ClientRestart) {
               chrono::milliseconds(1));
     EXPECT_GT(chrono::nanoseconds(pi2_connection->monotonic_offset()),
               chrono::milliseconds(-1));
+    EXPECT_TRUE(pi2_connection->has_boot_uuid());
   }
 
   std::this_thread::sleep_for(std::chrono::seconds(2));
@@ -555,8 +561,10 @@ TEST_F(MessageBridgeTest, ClientRestart) {
 
     EXPECT_EQ(pi1_connection->state(), State::DISCONNECTED);
     EXPECT_FALSE(pi1_connection->has_monotonic_offset());
+    EXPECT_FALSE(pi1_connection->has_boot_uuid());
     EXPECT_EQ(pi2_connection->state(), State::CONNECTED);
     EXPECT_FALSE(pi2_connection->has_monotonic_offset());
+    EXPECT_TRUE(pi2_connection->has_boot_uuid());
   }
 
   {
@@ -591,6 +599,7 @@ TEST_F(MessageBridgeTest, ClientRestart) {
               chrono::milliseconds(1));
     EXPECT_GT(chrono::nanoseconds(pi1_connection->monotonic_offset()),
               chrono::milliseconds(-1));
+    EXPECT_TRUE(pi1_connection->has_boot_uuid());
 
     EXPECT_EQ(pi2_connection->state(), State::CONNECTED);
     EXPECT_TRUE(pi2_connection->has_monotonic_offset());
@@ -598,6 +607,7 @@ TEST_F(MessageBridgeTest, ClientRestart) {
               chrono::milliseconds(1));
     EXPECT_GT(chrono::nanoseconds(pi2_connection->monotonic_offset()),
               chrono::milliseconds(-1));
+    EXPECT_TRUE(pi2_connection->has_boot_uuid());
   }
 
   // Shut everyone else down
@@ -665,31 +675,31 @@ TEST_F(MessageBridgeTest, ServerRestart) {
   // Wait until we are connected, then send.
   pi1_test_event_loop.MakeWatcher(
       "/pi1/aos", [](const ServerStatistics &stats) {
-        LOG(INFO) << "pi1 ServerStatistics " << FlatbufferToJson(&stats);
+        LOG(INFO) << "/pi1/aos ServerStatistics " << FlatbufferToJson(&stats);
       });
 
   // Confirm both client and server statistics messages have decent offsets in
   // them.
   pi2_test_event_loop.MakeWatcher(
       "/pi2/aos", [](const ServerStatistics &stats) {
-        LOG(INFO) << "pi2 ServerStatistics " << FlatbufferToJson(&stats);
+        LOG(INFO) << "/pi2/aos ServerStatistics " << FlatbufferToJson(&stats);
       });
 
   pi1_test_event_loop.MakeWatcher(
       "/pi1/aos", [](const ClientStatistics &stats) {
-        LOG(INFO) << "pi1 ClientStatistics " << FlatbufferToJson(&stats);
+        LOG(INFO) << "/pi1/aos ClientStatistics " << FlatbufferToJson(&stats);
       });
 
   pi2_test_event_loop.MakeWatcher(
       "/pi2/aos", [](const ClientStatistics &stats) {
-        LOG(INFO) << "pi2 ClientStatistics " << FlatbufferToJson(&stats);
+        LOG(INFO) << "/pi2/aos ClientStatistics " << FlatbufferToJson(&stats);
       });
 
   pi1_test_event_loop.MakeWatcher("/pi1/aos", [](const Timestamp &timestamp) {
-    LOG(INFO) << "pi1 Timestamp " << FlatbufferToJson(&timestamp);
+    LOG(INFO) << "/pi1/aos Timestamp " << FlatbufferToJson(&timestamp);
   });
   pi2_test_event_loop.MakeWatcher("/pi2/aos", [](const Timestamp &timestamp) {
-    LOG(INFO) << "pi2 Timestamp " << FlatbufferToJson(&timestamp);
+    LOG(INFO) << "/pi2/aos Timestamp " << FlatbufferToJson(&timestamp);
   });
 
   // Start everything up.  Pong is the only thing we don't know how to wait on,
@@ -738,6 +748,7 @@ TEST_F(MessageBridgeTest, ServerRestart) {
               chrono::milliseconds(1));
     EXPECT_GT(chrono::nanoseconds(pi1_connection->monotonic_offset()),
               chrono::milliseconds(-1));
+    EXPECT_TRUE(pi1_connection->has_boot_uuid());
 
     EXPECT_EQ(pi2_connection->state(), State::CONNECTED);
     EXPECT_TRUE(pi2_connection->has_monotonic_offset());
@@ -745,6 +756,7 @@ TEST_F(MessageBridgeTest, ServerRestart) {
               chrono::milliseconds(1));
     EXPECT_GT(chrono::nanoseconds(pi2_connection->monotonic_offset()),
               chrono::milliseconds(-1));
+    EXPECT_TRUE(pi2_connection->has_boot_uuid());
   }
 
   std::this_thread::sleep_for(std::chrono::seconds(2));
@@ -761,6 +773,7 @@ TEST_F(MessageBridgeTest, ServerRestart) {
 
     EXPECT_EQ(pi1_server_connection->state(), State::CONNECTED);
     EXPECT_FALSE(pi1_server_connection->has_monotonic_offset());
+    EXPECT_TRUE(pi1_server_connection->has_boot_uuid());
     EXPECT_EQ(pi1_client_connection->state(), State::DISCONNECTED);
     EXPECT_FALSE(pi1_client_connection->has_monotonic_offset());
   }
@@ -797,6 +810,7 @@ TEST_F(MessageBridgeTest, ServerRestart) {
               chrono::milliseconds(1));
     EXPECT_GT(chrono::nanoseconds(pi1_connection->monotonic_offset()),
               chrono::milliseconds(-1));
+    EXPECT_TRUE(pi1_connection->has_boot_uuid());
 
     EXPECT_EQ(pi2_connection->state(), State::CONNECTED);
     EXPECT_TRUE(pi2_connection->has_monotonic_offset());
@@ -804,6 +818,7 @@ TEST_F(MessageBridgeTest, ServerRestart) {
               chrono::milliseconds(1));
     EXPECT_GT(chrono::nanoseconds(pi2_connection->monotonic_offset()),
               chrono::milliseconds(-1));
+    EXPECT_TRUE(pi2_connection->has_boot_uuid());
   }
 
   // Shut everyone else down
@@ -883,6 +898,7 @@ TEST_F(MessageBridgeTest, ReliableSentBeforeClientStartup) {
       [ping_channel_index, &ping_timestamp_count](const RemoteMessage &header) {
         VLOG(1) << "/pi1/aos/remote_timestamps/pi2 RemoteMessage "
                 << aos::FlatbufferToJson(&header);
+        EXPECT_TRUE(header.has_boot_uuid());
         if (header.channel_index() == ping_channel_index) {
           ++ping_timestamp_count;
         }
@@ -1038,6 +1054,7 @@ TEST_F(MessageBridgeTest, ReliableSentBeforeServerStartup) {
       [ping_channel_index, &ping_timestamp_count](const RemoteMessage &header) {
         VLOG(1) << "/pi1/aos/remote_timestamps/pi2 RemoteMessage "
                 << aos::FlatbufferToJson(&header);
+        EXPECT_TRUE(header.has_boot_uuid());
         if (header.channel_index() == ping_channel_index) {
           ++ping_timestamp_count;
         }

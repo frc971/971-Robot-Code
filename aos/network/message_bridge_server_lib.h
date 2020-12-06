@@ -82,7 +82,8 @@ class ChannelState {
 
   // Handles reception of delivery times.
   void HandleDelivery(sctp_assoc_t rcv_assoc_id, uint16_t ssn,
-                      absl::Span<const uint8_t> data);
+                      absl::Span<const uint8_t> data,
+                      const MessageBridgeServerStatus &server_status);
 
   // Handles (by consuming) failure to deliver a message.
   void HandleFailure(

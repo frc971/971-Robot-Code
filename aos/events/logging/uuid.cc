@@ -1,8 +1,13 @@
 #include "aos/events/logging/uuid.h"
 
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <array>
 #include <random>
 #include <string_view>
+
+#include "glog/logging.h"
 
 namespace aos {
 namespace {
@@ -57,9 +62,24 @@ UUID UUID::Random() {
   return result;
 }
 
-UUID UUID::Zero() {
+UUID UUID::Zero() { return FromString("00000000-0000-0000-0000-000000000000"); }
+
+UUID UUID::FromString(std::string_view str) {
   UUID result;
-  result.data_.fill(0);
+  CHECK_EQ(str.size(), kSize);
+
+  std::copy(str.begin(), str.end(), result.data_.begin());
+  return result;
+}
+
+UUID UUID::BootUUID() {
+  int fd = open("/proc/sys/kernel/random/boot_id", O_RDONLY);
+  PCHECK(fd != -1);
+
+  UUID result;
+  CHECK_EQ(static_cast<ssize_t>(kSize), read(fd, result.data_.begin(), kSize));
+  close(fd);
+
   return result;
 }
 

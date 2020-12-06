@@ -27,6 +27,9 @@ table ServerConnection {
   // monotonic time.
   monotonic_offset:int64 (id: 4);
 
+  // Boot UUID of the client.
+  boot_uuid:string (id: 5);
+
   // TODO(austin): Per channel counts?
 }
 

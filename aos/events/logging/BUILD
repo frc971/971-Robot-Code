@@ -26,8 +26,8 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":buffer_encoder",
-        ":uuid",
         ":logger_fbs",
+        ":uuid",
         "//aos:configuration",
         "//aos:flatbuffer_merge",
         "//aos:flatbuffers",
@@ -316,6 +316,10 @@ cc_library(
     srcs = ["uuid.cc"],
     hdrs = ["uuid.h"],
     target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_github_google_glog//:glog",
+    ],
 )
 
 cc_test(

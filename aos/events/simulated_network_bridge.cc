@@ -21,6 +21,8 @@ class RawMessageDelayer {
                     aos::EventLoop *send_event_loop,
                     std::unique_ptr<aos::RawFetcher> fetcher,
                     std::unique_ptr<aos::RawSender> sender,
+                    MessageBridgeServerStatus *server_status,
+                    size_t destination_node_index,
                     ServerConnection *server_connection, int client_index,
                     MessageBridgeClientStatus *client_status,
                     size_t channel_index,
@@ -30,6 +32,8 @@ class RawMessageDelayer {
         send_event_loop_(send_event_loop),
         fetcher_(std::move(fetcher)),
         sender_(std::move(sender)),
+        server_status_(server_status),
+        destination_node_index_(destination_node_index),
         server_connection_(server_connection),
         client_status_(client_status),
         client_index_(client_index),
@@ -123,6 +127,20 @@ class RawMessageDelayer {
       aos::Sender<RemoteMessage>::Builder builder =
           timestamp_logger_->MakeBuilder();
 
+      // Reset the filter every time the UUID changes.  There's probably a more
+      // clever way to do this, but that means a better concept of rebooting.
+      if (server_status_->BootUUID(destination_node_index_) !=
+          send_node_factory_->boot_uuid().string_view()) {
+        server_status_->ResetFilter(destination_node_index_);
+        server_status_->SetBootUUID(
+            destination_node_index_,
+            send_node_factory_->boot_uuid().string_view());
+      }
+
+      flatbuffers::Offset<flatbuffers::String> boot_uuid_offset =
+          builder.fbb()->CreateString(
+              send_node_factory_->boot_uuid().string_view());
+
       RemoteMessage::Builder message_header_builder =
           builder.MakeBuilder<RemoteMessage>();
 
@@ -142,6 +160,7 @@ class RawMessageDelayer {
       message_header_builder.add_realtime_sent_time(
           sender_->realtime_sent_time().time_since_epoch().count());
       message_header_builder.add_queue_index(sender_->sent_queue_index());
+      message_header_builder.add_boot_uuid(boot_uuid_offset);
 
       builder.Send(message_header_builder.Finish());
     }
@@ -172,6 +191,9 @@ class RawMessageDelayer {
   std::unique_ptr<aos::RawFetcher> fetcher_;
   // Sender to send them back out.
   std::unique_ptr<aos::RawSender> sender_;
+
+  MessageBridgeServerStatus *server_status_;
+  const size_t destination_node_index_;
   // True if we have sent the message in the fetcher.
   bool sent_ = false;
 
@@ -222,6 +244,28 @@ SimulatedMessageBridge::SimulatedMessageBridge(
     }
   }
 
+  for (const Node *node : simulated_event_loop_factory->nodes()) {
+    auto it = event_loop_map_.find(node);
+
+    CHECK(it != event_loop_map_.end());
+
+    size_t node_index = 0;
+    for (ServerConnection *connection :
+         it->second.server_status.server_connection()) {
+      if (connection != nullptr) {
+        const Node *client_node =
+            simulated_event_loop_factory->configuration()->nodes()->Get(
+                node_index);
+        auto client_event_loop = event_loop_map_.find(client_node);
+        it->second.server_status.ResetFilter(node_index);
+        it->second.server_status.SetBootUUID(
+            node_index,
+            client_event_loop->second.event_loop->boot_uuid().string_view());
+      }
+      ++node_index;
+    }
+  }
+
   for (const Channel *channel :
        *simulated_event_loop_factory->configuration()->channels()) {
     if (!channel->has_destination_nodes()) {
@@ -268,6 +312,7 @@ SimulatedMessageBridge::SimulatedMessageBridge(
           destination_event_loop->second.event_loop.get(),
           source_event_loop->second.event_loop->MakeRawFetcher(channel),
           destination_event_loop->second.event_loop->MakeRawSender(channel),
+          &source_event_loop->second.server_status, destination_node_index,
           server_connection, client_index,
           &destination_event_loop->second.client_status,
           configuration::ChannelIndex(

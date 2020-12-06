@@ -94,8 +94,9 @@ void ChannelState::SendData(SctpServer *server, const Context &context) {
   // and flushes.  Whee.
 }
 
-void ChannelState::HandleDelivery(sctp_assoc_t rcv_assoc_id, uint16_t /*ssn*/,
-                                  absl::Span<const uint8_t> data) {
+void ChannelState::HandleDelivery(
+    sctp_assoc_t rcv_assoc_id, uint16_t /*ssn*/, absl::Span<const uint8_t> data,
+    const MessageBridgeServerStatus &server_status) {
   const logger::MessageHeader *message_header =
       flatbuffers::GetRoot<logger::MessageHeader>(data.data());
   for (Peer &peer : peers_) {
@@ -109,6 +110,10 @@ void ChannelState::HandleDelivery(sctp_assoc_t rcv_assoc_id, uint16_t /*ssn*/,
 
         aos::Sender<RemoteMessage>::Builder builder =
             peer.timestamp_logger->MakeBuilder();
+
+        flatbuffers::Offset<flatbuffers::String> boot_uuid_offset =
+            builder.fbb()->CreateString(
+                server_status.BootUUID(peer.node_index));
 
         RemoteMessage::Builder message_header_builder =
             builder.MakeBuilder<RemoteMessage>();
@@ -131,6 +136,7 @@ void ChannelState::HandleDelivery(sctp_assoc_t rcv_assoc_id, uint16_t /*ssn*/,
             message_header->realtime_sent_time());
         message_header_builder.add_remote_queue_index(
             message_header->queue_index());
+        message_header_builder.add_boot_uuid(boot_uuid_offset);
 
         builder.Send(message_header_builder.Finish());
       }
@@ -271,7 +277,8 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop)
         MakeConnectMessage(event_loop->configuration(),
                            configuration::GetNode(event_loop->configuration(),
                                                   destination_node_name),
-                           event_loop->node()->name()->string_view())
+                           event_loop->node()->name()->string_view(),
+                           UUID::Zero().string_view())
             .span()
             .size());
     VLOG(1) << "Connection to " << destination_node_name << " has size "
@@ -410,6 +417,7 @@ void MessageBridgeServer::NodeDisconnected(sctp_assoc_t assoc_id) {
                    ->name()
                    ->string_view();
     server_status_.ResetFilter(node_index);
+    server_status_.SetBootUUID(node_index, "");
   }
 }
 
@@ -484,6 +492,7 @@ void MessageBridgeServer::HandleData(const Message *message) {
       }
     }
     server_status_.ResetFilter(node_index);
+    server_status_.SetBootUUID(node_index, connect->boot_uuid()->string_view());
     VLOG(1) << "Resetting filters for " << node_index << " "
             << event_loop_->configuration()
                    ->nodes()
@@ -500,7 +509,8 @@ void MessageBridgeServer::HandleData(const Message *message) {
         ->HandleDelivery(
             message->header.rcvinfo.rcv_assoc_id,
             message->header.rcvinfo.rcv_ssn,
-            absl::Span<const uint8_t>(message->data(), message->size));
+            absl::Span<const uint8_t>(message->data(), message->size),
+            server_status_);
   }
 
   if (VLOG_IS_ON(1)) {

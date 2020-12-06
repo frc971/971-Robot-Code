@@ -13,6 +13,7 @@
 #include "absl/container/btree_map.h"
 #include "aos/events/event_loop.h"
 #include "aos/events/event_scheduler.h"
+#include "aos/events/logging/uuid.h"
 #include "aos/events/simple_channel.h"
 #include "aos/flatbuffer_merge.h"
 #include "aos/flatbuffers.h"
@@ -175,6 +176,15 @@ class NodeEventLoopFactory {
     scheduler_.SetDistributedOffset(monotonic_offset, monotonic_slope);
   }
 
+  // Returns the boot UUID for this node.
+  const UUID &boot_uuid() const { return boot_uuid_; }
+
+  // Reboots the node.  This just resets the boot_uuid_, nothing else.
+  // TODO(austin): This is here for a test case or two, not for general
+  // consumption.  The interactions with the rest of the system need to be
+  // worked out better.  Don't use this for anything real yet.
+  void Reboot() { boot_uuid_ = UUID::Random(); }
+
  private:
   friend class SimulatedEventLoopFactory;
   NodeEventLoopFactory(
@@ -185,6 +195,8 @@ class NodeEventLoopFactory {
 
   EventScheduler scheduler_;
   SimulatedEventLoopFactory *const factory_;
+
+  UUID boot_uuid_ = UUID::Random();
 
   const Node *const node_;
 

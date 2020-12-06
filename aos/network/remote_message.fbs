@@ -26,6 +26,9 @@ table RemoteMessage {
   realtime_remote_time:int64 = -9223372036854775808 (id: 6);
   // Queue index of this message on the remote node.
   remote_queue_index:uint32 = 4294967295 (id: 7);
+
+  // UUID for this boot.
+  boot_uuid:string (id: 8);
 }
 
 root_type RemoteMessage;

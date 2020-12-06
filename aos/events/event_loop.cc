@@ -79,8 +79,9 @@ PhasedLoopHandler::PhasedLoopHandler(EventLoop *event_loop,
 
 PhasedLoopHandler::~PhasedLoopHandler() {}
 
-EventLoop::EventLoop(const Configuration *configuration)
-    : timing_report_(flatbuffers::DetachedBuffer()),
+EventLoop::EventLoop(const Configuration *configuration, UUID boot_uuid)
+    : boot_uuid_(boot_uuid),
+      timing_report_(flatbuffers::DetachedBuffer()),
       configuration_(configuration) {}
 
 EventLoop::~EventLoop() {

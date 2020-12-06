@@ -448,6 +448,7 @@ TEST(SimulatedEventLoopTest, MultinodePingPong) {
         for (const message_bridge::ServerConnection *connection :
              *stats.connections()) {
           EXPECT_EQ(connection->state(), message_bridge::State::CONNECTED);
+          EXPECT_TRUE(connection->has_boot_uuid());
           if (connection->node()->name()->string_view() == "pi2") {
             EXPECT_GT(connection->sent_packets(), 50);
           } else if (connection->node()->name()->string_view() == "pi3") {
@@ -471,6 +472,7 @@ TEST(SimulatedEventLoopTest, MultinodePingPong) {
 
         const message_bridge::ServerConnection *connection =
             stats.connections()->Get(0);
+        EXPECT_TRUE(connection->has_boot_uuid());
         EXPECT_EQ(connection->state(), message_bridge::State::CONNECTED);
         EXPECT_GT(connection->sent_packets(), 50);
         EXPECT_TRUE(connection->has_monotonic_offset());
@@ -487,6 +489,7 @@ TEST(SimulatedEventLoopTest, MultinodePingPong) {
 
         const message_bridge::ServerConnection *connection =
             stats.connections()->Get(0);
+        EXPECT_TRUE(connection->has_boot_uuid());
         EXPECT_EQ(connection->state(), message_bridge::State::CONNECTED);
         EXPECT_GE(connection->sent_packets(), 5);
         EXPECT_TRUE(connection->has_monotonic_offset());
@@ -577,8 +580,14 @@ TEST(SimulatedEventLoopTest, MultinodePingPong) {
       "/pi1/aos/remote_timestamps/pi2",
       [pi1_timestamp_channel, ping_timestamp_channel, &ping_on_pi2_fetcher,
        &ping_on_pi1_fetcher, &pi1_on_pi2_timestamp_fetcher,
-       &pi1_on_pi1_timestamp_fetcher](const RemoteMessage &header) {
+       &pi1_on_pi1_timestamp_fetcher, &simulated_event_loop_factory,
+       pi2](const RemoteMessage &header) {
         VLOG(1) << aos::FlatbufferToJson(&header);
+        EXPECT_TRUE(header.has_boot_uuid());
+        EXPECT_EQ(header.boot_uuid()->string_view(),
+                  simulated_event_loop_factory.GetNodeEventLoopFactory(pi2)
+                      ->boot_uuid()
+                      .string_view());
 
         const aos::monotonic_clock::time_point header_monotonic_sent_time(
             chrono::nanoseconds(header.monotonic_sent_time()));
@@ -661,9 +670,9 @@ TEST(SimulatedEventLoopTest, MultinodePingPong) {
   EXPECT_EQ(pi3_on_pi1_timestamp_counter.count(), 100);
   EXPECT_EQ(pi3_on_pi3_timestamp_counter.count(), 100);
 
-  EXPECT_EQ(pi1_server_statistics_count, 9);
-  EXPECT_EQ(pi2_server_statistics_count, 9);
-  EXPECT_EQ(pi3_server_statistics_count, 9);
+  EXPECT_EQ(pi1_server_statistics_count, 10);
+  EXPECT_EQ(pi2_server_statistics_count, 10);
+  EXPECT_EQ(pi3_server_statistics_count, 10);
 
   EXPECT_EQ(pi1_client_statistics_count, 95);
   EXPECT_EQ(pi2_client_statistics_count, 95);
@@ -721,6 +730,7 @@ TEST(SimulatedEventLoopTest, MultinodePingPongWithOffset) {
         for (const message_bridge::ServerConnection *connection :
              *stats.connections()) {
           EXPECT_EQ(connection->state(), message_bridge::State::CONNECTED);
+          EXPECT_TRUE(connection->has_boot_uuid());
           if (connection->node()->name()->string_view() == "pi2") {
             EXPECT_EQ(connection->monotonic_offset(),
                       chrono::nanoseconds(kOffset).count());
@@ -744,6 +754,7 @@ TEST(SimulatedEventLoopTest, MultinodePingPongWithOffset) {
 
         const message_bridge::ServerConnection *connection =
             stats.connections()->Get(0);
+        EXPECT_TRUE(connection->has_boot_uuid());
         EXPECT_EQ(connection->state(), message_bridge::State::CONNECTED);
         EXPECT_TRUE(connection->has_monotonic_offset());
         EXPECT_EQ(connection->monotonic_offset(),
@@ -760,6 +771,7 @@ TEST(SimulatedEventLoopTest, MultinodePingPongWithOffset) {
 
         const message_bridge::ServerConnection *connection =
             stats.connections()->Get(0);
+        EXPECT_TRUE(connection->has_boot_uuid());
         EXPECT_EQ(connection->state(), message_bridge::State::CONNECTED);
         EXPECT_TRUE(connection->has_monotonic_offset());
         EXPECT_EQ(connection->monotonic_offset(), 0);
@@ -770,9 +782,9 @@ TEST(SimulatedEventLoopTest, MultinodePingPongWithOffset) {
                                       chrono::milliseconds(500) +
                                       chrono::milliseconds(5));
 
-  EXPECT_EQ(pi1_server_statistics_count, 9);
+  EXPECT_EQ(pi1_server_statistics_count, 10);
   EXPECT_EQ(pi2_server_statistics_count, 9);
-  EXPECT_EQ(pi3_server_statistics_count, 9);
+  EXPECT_EQ(pi3_server_statistics_count, 10);
 }
 
 // Test that disabling statistics actually disables them.
@@ -1024,8 +1036,13 @@ TEST(SimulatedEventLoopTest, MultinodeStartupTesting) {
   int reliable_timestamp_count = 0;
   pi1_remote_timestamp->MakeWatcher(
       "/pi1/aos/remote_timestamps/pi2",
-      [reliable_channel_index,
-       &reliable_timestamp_count](const RemoteMessage &header) {
+      [reliable_channel_index, &reliable_timestamp_count,
+       &simulated_event_loop_factory, pi2](const RemoteMessage &header) {
+        EXPECT_TRUE(header.has_boot_uuid());
+        EXPECT_EQ(header.boot_uuid()->string_view(),
+                  simulated_event_loop_factory.GetNodeEventLoopFactory(pi2)
+                      ->boot_uuid()
+                      .string_view());
         VLOG(1) << aos::FlatbufferToJson(&header);
         if (header.channel_index() == reliable_channel_index) {
           ++reliable_timestamp_count;
@@ -1049,6 +1066,85 @@ TEST(SimulatedEventLoopTest, MultinodeStartupTesting) {
   EXPECT_EQ(pi2_unreliable_counter.count(), 1u);
 
   EXPECT_EQ(reliable_timestamp_count, 2u);
+}
+
+// Tests that rebooting a node changes the ServerStatistics message and the
+// RemoteTimestamp message.
+TEST(SimulatedEventLoopTest, BootUUIDTest) {
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+      aos::configuration::ReadConfig(ConfigPrefix() +
+                                     "events/multinode_pingpong_config.json");
+  const Node *pi1 = configuration::GetNode(&config.message(), "pi1");
+  const Node *pi2 = configuration::GetNode(&config.message(), "pi2");
+
+  SimulatedEventLoopFactory simulated_event_loop_factory(&config.message());
+
+  std::unique_ptr<EventLoop> ping_event_loop =
+      simulated_event_loop_factory.MakeEventLoop("ping", pi1);
+  Ping ping(ping_event_loop.get());
+
+  std::unique_ptr<EventLoop> pong_event_loop =
+      simulated_event_loop_factory.MakeEventLoop("pong", pi2);
+  Pong pong(pong_event_loop.get());
+
+  std::unique_ptr<EventLoop> pi1_remote_timestamp =
+      simulated_event_loop_factory.MakeEventLoop("pi1_remote_timestamp", pi1);
+  std::string expected_boot_uuid(
+      simulated_event_loop_factory.GetNodeEventLoopFactory(pi2)
+          ->boot_uuid()
+          .string_view());
+
+  int timestamp_count = 0;
+  pi1_remote_timestamp->MakeWatcher(
+      "/pi1/aos/remote_timestamps/pi2",
+      [&timestamp_count, &expected_boot_uuid](const RemoteMessage &header) {
+        EXPECT_TRUE(header.has_boot_uuid());
+        EXPECT_EQ(header.boot_uuid()->string_view(), expected_boot_uuid);
+        VLOG(1) << aos::FlatbufferToJson(&header);
+        ++timestamp_count;
+      });
+
+  int pi1_server_statistics_count = 0;
+  pi1_remote_timestamp->MakeWatcher(
+      "/pi1/aos", [&pi1_server_statistics_count, &expected_boot_uuid](
+                      const message_bridge::ServerStatistics &stats) {
+        VLOG(1) << "pi1 ServerStatistics " << FlatbufferToJson(&stats);
+        for (const message_bridge::ServerConnection *connection :
+             *stats.connections()) {
+          EXPECT_TRUE(connection->has_boot_uuid());
+          if (connection->node()->name()->string_view() == "pi2") {
+            EXPECT_EQ(expected_boot_uuid,
+                      connection->boot_uuid()->string_view())
+                << " : Got " << aos::FlatbufferToJson(&stats);
+            ++pi1_server_statistics_count;
+          }
+        }
+      });
+
+  // Let a couple of ServerStatistics messages show up before rebooting.
+  simulated_event_loop_factory.RunFor(chrono::milliseconds(2001));
+
+  EXPECT_GT(timestamp_count, 100);
+  EXPECT_GE(pi1_server_statistics_count, 1u);
+
+  // Confirm that reboot changes the UUID.
+  simulated_event_loop_factory.GetNodeEventLoopFactory(pi2)->Reboot();
+
+  EXPECT_NE(expected_boot_uuid,
+            simulated_event_loop_factory.GetNodeEventLoopFactory(pi2)
+                ->boot_uuid()
+                .string_view());
+
+  expected_boot_uuid =
+      simulated_event_loop_factory.GetNodeEventLoopFactory(pi2)
+          ->boot_uuid()
+          .string_view();
+  timestamp_count = 0;
+  pi1_server_statistics_count = 0;
+
+  simulated_event_loop_factory.RunFor(chrono::milliseconds(2000));
+  EXPECT_GT(timestamp_count, 100);
+  EXPECT_GE(pi1_server_statistics_count, 1u);
 }
 
 }  // namespace testing

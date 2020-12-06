@@ -12,6 +12,7 @@
 #include "aos/events/channel_preallocated_allocator.h"
 #include "aos/events/event_loop_event.h"
 #include "aos/events/event_loop_generated.h"
+#include "aos/events/logging/uuid.h"
 #include "aos/events/timing_statistics.h"
 #include "aos/flatbuffers.h"
 #include "aos/ftrace.h"
@@ -473,7 +474,7 @@ class PhasedLoopHandler {
 
 class EventLoop {
  public:
-  EventLoop(const Configuration *configuration);
+  EventLoop(const Configuration *configuration, UUID boot_uuid);
 
   virtual ~EventLoop();
 
@@ -653,6 +654,9 @@ class EventLoop {
   // range of Context::buffer_index values for this channel.
   virtual int NumberBuffers(const Channel *channel) = 0;
 
+  // Returns the boot UUID.
+  const UUID &boot_uuid() { return boot_uuid_; }
+
  protected:
   // Sets the name of the event loop.  This is the application name.
   virtual void set_name(const std::string_view name) = 0;
@@ -731,6 +735,8 @@ class EventLoop {
 
   // If true, don't send AOS_LOG to /aos
   bool skip_logger_ = false;
+
+  UUID boot_uuid_;
 
  private:
   virtual pid_t GetTid() = 0;
