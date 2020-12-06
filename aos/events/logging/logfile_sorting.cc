@@ -5,6 +5,8 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include "dirent.h"
+#include "sys/stat.h"
 
 #include "aos/events/logging/logfile_utils.h"
 #include "aos/flatbuffers.h"
@@ -13,6 +15,60 @@
 namespace aos {
 namespace logger {
 namespace chrono = std::chrono;
+
+namespace {
+
+// Check if string ends with ending
+bool EndsWith(std::string_view str, std::string_view ending) {
+  return str.size() >= ending.size() &&
+         str.substr(str.size() - ending.size()) == ending;
+}
+
+bool FileExists(std::string filename) {
+  struct stat stat_results;
+  int error = stat(filename.c_str(), &stat_results);
+  return error == 0;
+}
+
+}  // namespace
+
+void FindLogs(std::vector<std::string> *files, std::string filename) {
+  DIR *directory = opendir(filename.c_str());
+
+  if (directory == nullptr) {
+    if (EndsWith(filename, ".bfbs") || EndsWith(filename, ".bfbs.xz")) {
+      files->emplace_back(filename);
+    }
+    return;
+  }
+
+  struct dirent *directory_entry;
+  while ((directory_entry = readdir(directory)) != nullptr) {
+    std::string next_filename = directory_entry->d_name;
+    if (next_filename == "." || next_filename == "..") {
+      continue;
+    }
+
+    std::string path = filename + "/" + next_filename;
+    FindLogs(files, path);
+  }
+
+  closedir(directory);
+}
+
+std::vector<std::string> FindLogs(int argc, char **argv) {
+  std::vector<std::string> found_logfiles;
+
+  for (int i = 1; i < argc; i++) {
+    std::string filename = argv[i];
+    if (FileExists(filename)) {
+      aos::logger::FindLogs(&found_logfiles, filename);
+    } else {
+      LOG(FATAL) << "File " << filename << " does not exist";
+    }
+  }
+  return found_logfiles;
+}
 
 std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
   std::vector<std::string> corrupted;
@@ -260,7 +316,7 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
 std::vector<std::string> FindNodes(const std::vector<LogFile> &parts) {
   std::set<std::string> nodes;
   for (const LogFile &log_file : parts) {
-    for (const LogParts& part : log_file.parts) {
+    for (const LogParts &part : log_file.parts) {
       nodes.insert(part.node);
     }
   }
@@ -275,7 +331,7 @@ std::vector<LogParts> FilterPartsForNode(const std::vector<LogFile> &parts,
                                          std::string_view node) {
   std::vector<LogParts> result;
   for (const LogFile &log_file : parts) {
-    for (const LogParts& part : log_file.parts) {
+    for (const LogParts &part : log_file.parts) {
       if (part.node == node) {
         result.emplace_back(part);
       }

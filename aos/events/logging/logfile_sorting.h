@@ -2,8 +2,8 @@
 #define AOS_EVENTS_LOGGING_LOGFILE_SORTING_H_
 
 #include <iostream>
-#include <vector>
 #include <string>
+#include <vector>
 
 #include "aos/events/logging/uuid.h"
 #include "aos/time/time.h"
@@ -61,6 +61,13 @@ std::vector<std::string> FindNodes(const std::vector<LogFile> &parts);
 // Finds all the parts which are from the point of view of a single node.
 std::vector<LogParts> FilterPartsForNode(const std::vector<LogFile> &parts,
                                          std::string_view node);
+
+// Recursively searches the file/folder for .bfbs and .bfbs.xz files and adds
+// them to the vector.
+void FindLogs(std::vector<std::string> *files, std::string filename);
+
+// Recursively searches for logfiles in argv[1] and onward.
+std::vector<std::string> FindLogs(int argc, char **argv);
 
 }  // namespace logger
 }  // namespace aos
