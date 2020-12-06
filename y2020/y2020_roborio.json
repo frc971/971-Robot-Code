@@ -240,10 +240,44 @@
   ],
   "applications": [
     {
-      "name": "drivetrain"
+      "name": "drivetrain",
+      "executable_name": "drivetrain.stripped",
+      "nodes": ["roborio"]
     },
     {
-      "name": "camera_reader"
+      "name": "superstructure",
+      "executable_name": "superstructure.stripped",
+      "nodes": ["roborio"]
+    },
+    {
+      "name": "joystick_reader",
+      "executable_name": "joystick_reader.stripped",
+      "nodes": ["roborio"]
+    },
+    {
+      "name": "wpilib_interface",
+      "executable_name": "wpilib_interface.stripped",
+      "nodes": ["roborio"]
+    },
+    {
+      "name": "autonomous_action",
+      "executable_name": "autonomous_action.stripped",
+      "nodes": ["roborio"]
+    },
+    {
+      "name": "message_bridge_client",
+      "executable_name": "message_bridge_client.stripped",
+      "nodes": ["roborio"]
+    },
+    {
+      "name": "message_bridge_server",
+      "executable_name": "message_bridge_server.stripped",
+      "nodes": ["roborio"]
+    },
+    {
+      "name": "logger",
+      "executable_name": "logger_main.stripped",
+      "nodes": ["roborio"]
     }
   ],
   "maps": [

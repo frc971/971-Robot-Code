@@ -84,6 +84,28 @@
       "max_size": 2000000
     }
   ],
+  "applications": [
+    {
+      "name": "message_bridge_client",
+      "executable_name": "message_bridge_client.stripped",
+      "nodes": ["pi{{ NUM }}"]
+    },
+    {
+      "name": "message_bridge_server",
+      "executable_name": "message_bridge_server.stripped",
+      "nodes": ["pi{{ NUM }}"]
+    },
+    {
+      "name": "web_proxy",
+      "executable_name": "web_proxy_main.stripped",
+      "nodes": ["pi{{ NUM }}"]
+    },
+    {
+      "name": "camera_reader",
+      "executable_name": "camera_reader.stripped",
+      "nodes": ["pi{{ NUM }}"]
+    }
+  ],
   "maps": [
     {
       "match": {
