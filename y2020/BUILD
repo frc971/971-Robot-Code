@@ -210,6 +210,7 @@ aos_config(
     src = "y2020_roborio.json",
     flatbuffers = [
         ":setpoint_fbs",
+        "//aos/events/logging:logger_fbs",
         "//aos/network:message_bridge_client_fbs",
         "//aos/network:message_bridge_server_fbs",
         "//aos/network:timestamp_fbs",

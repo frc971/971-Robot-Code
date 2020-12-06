@@ -279,8 +279,7 @@ TEST_F(LoggerTest, RotatedLogFile) {
 
   // Even though it doesn't make any difference here, exercise the logic for
   // passing in a separate config.
-  LogReader reader(std::vector<std::string>{logfile0, logfile1},
-                   &config_.message());
+  LogReader reader(SortParts({logfile0, logfile1}), &config_.message());
 
   // Confirm that we can remap logged channels to point to new buses.
   reader.RemapLoggedChannel<aos::examples::Ping>("/test", "/original");
@@ -762,7 +761,7 @@ TEST_F(MultinodeLoggerTest, SimpleMultiNode) {
                     "/pi2/aos", "aos.message_bridge.Timestamp", 190)));
   }
 
-  LogReader reader(structured_logfiles_);
+  LogReader reader(SortParts(logfiles_));
 
   SimulatedEventLoopFactory log_reader_factory(reader.configuration());
   log_reader_factory.set_send_delay(chrono::microseconds(0));
@@ -938,7 +937,8 @@ TEST_F(MultinodeLoggerDeathTest, MultiNodeBadReplayConfig) {
         }
       )");
 
-  EXPECT_DEATH(LogReader(structured_logfiles_, &extra_nodes_config.message()),
+  const std::vector<LogFile> sorted_parts = SortParts(logfiles_);
+  EXPECT_DEATH(LogReader(sorted_parts, &extra_nodes_config.message()),
                "Log file and replay config need to have matching nodes lists.");
 }
 
@@ -960,7 +960,7 @@ TEST_F(MultinodeLoggerTest, StaggeredStart) {
     event_loop_factory_.RunFor(chrono::milliseconds(20000));
   }
 
-  LogReader reader(structured_logfiles_);
+  LogReader reader(SortParts(logfiles_));
 
   SimulatedEventLoopFactory log_reader_factory(reader.configuration());
   log_reader_factory.set_send_delay(chrono::microseconds(0));
@@ -1100,7 +1100,7 @@ TEST_F(MultinodeLoggerTest, MismatchedClocks) {
     event_loop_factory_.RunFor(chrono::milliseconds(400));
   }
 
-  LogReader reader(structured_logfiles_);
+  LogReader reader(SortParts(logfiles_));
 
   SimulatedEventLoopFactory log_reader_factory(reader.configuration());
   log_reader_factory.set_send_delay(chrono::microseconds(0));
@@ -1318,7 +1318,7 @@ TEST_F(MultinodeLoggerTest, RemapLoggedChannel) {
     event_loop_factory_.RunFor(chrono::milliseconds(20000));
   }
 
-  LogReader reader(structured_logfiles_);
+  LogReader reader(SortParts(logfiles_));
 
   // Remap just on pi1.
   reader.RemapLoggedChannel<aos::timing::Report>(
@@ -1384,7 +1384,7 @@ TEST_F(MultinodeLoggerTest, MessageHeader) {
     event_loop_factory_.RunFor(chrono::milliseconds(20000));
   }
 
-  LogReader reader(structured_logfiles_);
+  LogReader reader(SortParts(logfiles_));
 
   SimulatedEventLoopFactory log_reader_factory(reader.configuration());
   log_reader_factory.set_send_delay(chrono::microseconds(0));

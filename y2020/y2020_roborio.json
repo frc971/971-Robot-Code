@@ -11,33 +11,7 @@
       "name": "/roborio/aos",
       "type": "aos.RobotState",
       "source_node": "roborio",
-      "frequency": 200,
-      "destination_nodes": [
-        {
-          "name": "pi1",
-          "priority": 2,
-          "timestamp_logger": "LOCAL_LOGGER",
-          "time_to_live": 10000000
-        },
-        {
-          "name": "pi2",
-          "priority": 2,
-          "timestamp_logger": "LOCAL_LOGGER",
-          "time_to_live": 10000000
-        },
-        {
-          "name": "pi3",
-          "priority": 2,
-          "timestamp_logger": "LOCAL_LOGGER",
-          "time_to_live": 10000000
-        },
-        {
-          "name": "pi4",
-          "priority": 2,
-          "timestamp_logger": "LOCAL_LOGGER",
-          "time_to_live": 10000000
-        }
-      ]
+      "frequency": 200
     },
     {
       "name": "/roborio/aos",
@@ -69,6 +43,30 @@
       "num_senders": 2
     },
     {
+      "name": "/roborio/aos/remote_timestamps/pi1",
+      "type": "aos.logger.MessageHeader",
+      "logger": "NOT_LOGGED",
+      "source_node": "roborio"
+    },
+    {
+      "name": "/roborio/aos/remote_timestamps/pi2",
+      "type": "aos.logger.MessageHeader",
+      "logger": "NOT_LOGGED",
+      "source_node": "roborio"
+    },
+    {
+      "name": "/roborio/aos/remote_timestamps/pi3",
+      "type": "aos.logger.MessageHeader",
+      "logger": "NOT_LOGGED",
+      "source_node": "roborio"
+    },
+    {
+      "name": "/roborio/aos/remote_timestamps/pi4",
+      "type": "aos.logger.MessageHeader",
+      "logger": "NOT_LOGGED",
+      "source_node": "roborio"
+    },
+    {
       "name": "/roborio/aos",
       "type": "aos.message_bridge.Timestamp",
       "source_node": "roborio",
@@ -79,21 +77,29 @@
         {
           "name": "pi1",
           "priority": 1,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": ["roborio"],
           "time_to_live": 5000000
         },
         {
           "name": "pi2",
           "priority": 1,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": ["roborio"],
           "time_to_live": 5000000
         },
         {
           "name": "pi3",
           "priority": 1,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": ["roborio"],
           "time_to_live": 5000000
         },
         {
           "name": "pi4",
           "priority": 1,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": ["roborio"],
           "time_to_live": 5000000
         }
       ]
@@ -177,16 +183,29 @@
         {
           "name": "pi1",
           "priority": 5,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": ["roborio"],
           "time_to_live": 5000000
         },
         {
           "name": "pi2",
           "priority": 5,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": ["roborio"],
           "time_to_live": 5000000
         },
         {
           "name": "pi3",
           "priority": 5,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": ["roborio"],
+          "time_to_live": 5000000
+        },
+        {
+          "name": "pi4",
+          "priority": 5,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": ["roborio"],
           "time_to_live": 5000000
         }
       ]

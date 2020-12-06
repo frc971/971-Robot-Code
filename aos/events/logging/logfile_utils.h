@@ -281,6 +281,9 @@ class PartsMessageReader {
 
   std::string_view filename() const { return message_reader_.filename(); }
 
+  // Returns the LogParts that holds the filenames we are reading.
+  const LogParts &parts() const { return parts_; }
+
   const LogFileHeader *log_file_header() const {
     return message_reader_.log_file_header();
   }
@@ -332,6 +335,25 @@ struct Message {
 
 std::ostream &operator<<(std::ostream &os, const Message &m);
 
+// Structure to hold a full message and all the timestamps, which may or may not
+// have been sent from a remote node.  The remote_queue_index will be invalid if
+// this message is from the point of view of the node which sent it.
+struct TimestampedMessage {
+  uint32_t channel_index = 0xffffffff;
+
+  uint32_t queue_index = 0xffffffff;
+  monotonic_clock::time_point monotonic_event_time = monotonic_clock::min_time;
+  realtime_clock::time_point realtime_event_time = realtime_clock::min_time;
+
+  uint32_t remote_queue_index = 0xffffffff;
+  monotonic_clock::time_point monotonic_remote_time = monotonic_clock::min_time;
+  realtime_clock::time_point realtime_remote_time = realtime_clock::min_time;
+
+  SizePrefixedFlatbufferVector<MessageHeader> data;
+};
+
+std::ostream &operator<<(std::ostream &os, const TimestampedMessage &m);
+
 // Class to sort the resulting messages from a PartsMessageReader.
 class LogPartsSorter {
  public:
@@ -344,6 +366,13 @@ class LogPartsSorter {
   // all works.
   const LogFileHeader *log_file_header() const {
     return parts_message_reader_.log_file_header();
+  }
+
+  monotonic_clock::time_point monotonic_start_time() const {
+    return parts_message_reader_.parts().monotonic_start_time;
+  }
+  realtime_clock::time_point realtime_start_time() const {
+    return parts_message_reader_.parts().realtime_start_time;
   }
 
   // The time this data is sorted until.
@@ -365,6 +394,10 @@ class LogPartsSorter {
   // Cache of the time we are sorted until.
   aos::monotonic_clock::time_point sorted_until_ = monotonic_clock::min_time;
 
+  // Timestamp of the last message returned.  Used to make sure nothing goes
+  // backwards.
+  monotonic_clock::time_point last_message_time_ = monotonic_clock::min_time;
+
   // Set used for efficient sorting of messages.  We can benchmark and evaluate
   // other data structures if this proves to be the bottleneck.
   absl::btree_set<Message> messages_;
@@ -374,12 +407,22 @@ class LogPartsSorter {
 // instances.
 class NodeMerger {
  public:
-  NodeMerger(std::vector<std::unique_ptr<LogPartsSorter>> parts);
+  NodeMerger(std::vector<LogParts> parts);
+
+  // Node index in the configuration of this node.
+  int node() const { return node_; }
 
   // The log file header for one of the log files.
   const LogFileHeader *log_file_header() const {
     CHECK(!parts_sorters_.empty());
-    return parts_sorters_[0]->log_file_header();
+    return parts_sorters_[0].log_file_header();
+  }
+
+  monotonic_clock::time_point monotonic_start_time() const {
+    return monotonic_start_time_;
+  }
+  realtime_clock::time_point realtime_start_time() const {
+    return realtime_start_time_;
   }
 
   // The time this data is sorted until.
@@ -394,460 +437,145 @@ class NodeMerger {
 
  private:
   // Unsorted list of all parts sorters.
-  std::vector<std::unique_ptr<LogPartsSorter>> parts_sorters_;
+  std::vector<LogPartsSorter> parts_sorters_;
   // Pointer to the parts sorter holding the current Front message if one
   // exists, or nullptr if a new one needs to be found.
   LogPartsSorter *current_ = nullptr;
   // Cached sorted_until value.
   aos::monotonic_clock::time_point sorted_until_ = monotonic_clock::min_time;
+
+  // Cached node.
+  int node_;
+
+  // Timestamp of the last message returned.  Used to make sure nothing goes
+  // backwards.
+  monotonic_clock::time_point last_message_time_ = monotonic_clock::min_time;
+
+  realtime_clock::time_point realtime_start_time_ = realtime_clock::max_time;
+  monotonic_clock::time_point monotonic_start_time_ = monotonic_clock::max_time;
 };
 
-class TimestampMerger;
-
-// A design requirement is that the relevant data for a channel is not more than
-// max_out_of_order_duration out of order. We approach sorting in layers.
-//
-// 1) Split each (maybe chunked) log file into one queue per channel.  Read this
-//    log file looking for data pertaining to a specific node.
-//    (SplitMessageReader)
-// 2) Merge all the data per channel from the different log files into a sorted
-//    list of timestamps and messages. (TimestampMerger)
-// 3) Combine the timestamps and messages. (TimestampMerger)
-// 4) Merge all the channels to produce the next message on a node.
-//    (ChannelMerger)
-// 5) Duplicate this entire stack per node.
-
-// This class splits messages and timestamps up into a queue per channel, and
-// handles reading data from multiple chunks.
-class SplitMessageReader {
+// Class to match timestamps with the corresponding data from other nodes.
+class TimestampMapper {
  public:
-  SplitMessageReader(const std::vector<std::string> &filenames);
+  TimestampMapper(std::vector<LogParts> file);
 
-  // Sets the TimestampMerger that gets notified for each channel.  The node
-  // that the TimestampMerger is merging as needs to be passed in.
-  void SetTimestampMerger(TimestampMerger *timestamp_merger, int channel,
-                          const Node *target_node);
+  // Copying and moving will mess up the internal raw pointers.  Just don't do
+  // it.
+  TimestampMapper(TimestampMapper const &) = delete;
+  TimestampMapper(TimestampMapper &&) = delete;
+  void operator=(TimestampMapper const &) = delete;
+  void operator=(TimestampMapper &&) = delete;
 
-  // Returns the (timestamp, queue_index, message_header) for the oldest message
-  // in a channel, or max_time if there is nothing in the channel.
-  std::tuple<monotonic_clock::time_point, uint32_t, const MessageHeader *>
-  oldest_message(int channel) {
-    return channels_[channel].data.front_timestamp();
-  }
+  // TODO(austin): It would be super helpful to provide a way to queue up to
+  // time X without matching timestamps, and to then be able to pull the
+  // timestamps out of this queue.  This lets us bootstrap time estimation
+  // without exploding memory usage worst case.
 
-  // Returns the (timestamp, queue_index, message_header) for the oldest
-  // delivery time in a channel, or max_time if there is nothing in the channel.
-  std::tuple<monotonic_clock::time_point, uint32_t, const MessageHeader *>
-  oldest_message(int channel, int destination_node) {
-    return channels_[channel].timestamps[destination_node].front_timestamp();
-  }
-
-  // Returns the timestamp, queue_index, and message for the oldest data on a
-  // channel.  Requeues data as needed.
-  std::tuple<monotonic_clock::time_point, uint32_t,
-             SizePrefixedFlatbufferVector<MessageHeader>>
-  PopOldest(int channel_index);
-
-  // Returns the timestamp, queue_index, and message for the oldest timestamp on
-  // a channel delivered to a node.  Requeues data as needed.
-  std::tuple<monotonic_clock::time_point, uint32_t,
-             SizePrefixedFlatbufferVector<MessageHeader>>
-  PopOldestTimestamp(int channel, int node_index);
-
-  // Returns the header for the log files.
+  // Returns a log file header for this node.
   const LogFileHeader *log_file_header() const {
-    return &log_file_header_.message();
+    return node_merger_.log_file_header();
   }
 
-  const SizePrefixedFlatbufferVector<LogFileHeader> &raw_log_file_header()
-      const {
-    return log_file_header_;
-  }
+  // Returns which node this is sorting for.
+  size_t node() const { return node_merger_.node(); }
 
-  // Returns the starting time for this set of log files.
-  monotonic_clock::time_point monotonic_start_time() {
-    return monotonic_clock::time_point(
-        std::chrono::nanoseconds(log_file_header()->monotonic_start_time()));
-  }
-  realtime_clock::time_point realtime_start_time() {
-    return realtime_clock::time_point(
-        std::chrono::nanoseconds(log_file_header()->realtime_start_time()));
-  }
-
-  // Returns the configuration from the log file header.
-  const Configuration *configuration() const {
-    return log_file_header()->configuration();
-  }
-
-  // Returns the node who's point of view this log file is from.  Make sure this
-  // is a pointer in the configuration() nodes list so it can be consumed
-  // elsewhere.
-  const Node *node() const {
-    if (configuration()->has_nodes()) {
-      return configuration::GetNodeOrDie(configuration(),
-                                         log_file_header()->node());
-    } else {
-      CHECK(!log_file_header()->has_node());
-      return nullptr;
-    }
-  }
-
-  // Returns the timestamp of the newest message read from the log file, and the
-  // timestamp that we need to re-queue data.
-  monotonic_clock::time_point newest_timestamp() const {
-    return newest_timestamp_;
-  }
-
-  // Returns the next time to trigger a requeue.
-  monotonic_clock::time_point time_to_queue() const { return time_to_queue_; }
-
-  // Returns the minimum amount of data needed to queue up for sorting before
-  // we are guarenteed to not see data out of order.
-  std::chrono::nanoseconds max_out_of_order_duration() const {
-    return message_reader_->max_out_of_order_duration();
-  }
-
-  std::string_view filename() const { return message_reader_->filename(); }
-
-  // Adds more messages to the sorted list.  This reads enough data such that
-  // oldest_message_time can be replayed safely.  Returns false if the log file
-  // has all been read.
-  bool QueueMessages(monotonic_clock::time_point oldest_message_time);
-
-  // Returns debug strings for a channel, and timestamps for a node.
-  std::string DebugString(int channel) const;
-  std::string DebugString(int channel, int node_index) const;
-
-  // Returns true if all the messages have been queued from the last log file in
-  // the list of log files chunks.
-  bool at_end() const { return at_end_; }
-
- private:
-  // TODO(austin): Need to copy or refcount the message instead of running
-  // multiple copies of the reader.  Or maybe have a "as_node" index and hide it
-  // inside.
-
-  // Moves to the next log file in the list.
-  bool NextLogFile();
-
-  // Filenames of the log files.
-  std::vector<std::string> filenames_;
-  // And the index of the next file to open.
-  size_t next_filename_index_ = 0;
-
-  // Node we are reading as.
-  const Node *target_node_ = nullptr;
-
-  // Log file header to report.  This is a copy.
-  SizePrefixedFlatbufferVector<LogFileHeader> log_file_header_;
-  // Current log file being read.
-  std::unique_ptr<MessageReader> message_reader_;
-
-  // Datastructure to hold the list of messages, cached timestamp for the
-  // oldest message, and sender to send with.
-  struct MessageHeaderQueue {
-    // If true, this is a timestamp queue.
-    bool timestamps = false;
-
-    // Returns a reference to the the oldest message.
-    SizePrefixedFlatbufferVector<MessageHeader> &front() {
-      CHECK_GT(data_.size(), 0u);
-      return data_.front();
-    }
-
-    // Adds a message to the back of the queue. Returns true if it was actually
-    // emplaced.
-    bool emplace_back(SizePrefixedFlatbufferVector<MessageHeader> &&msg);
-
-    // Drops the front message.  Invalidates the front() reference.
-    void PopFront();
-
-    // The size of the queue.
-    size_t size() { return data_.size(); }
-
-    // Returns a debug string with info about each message in the queue.
-    std::string DebugString() const;
-
-    // Returns the (timestamp, queue_index, message_header) for the oldest
-    // message.
-    const std::tuple<monotonic_clock::time_point, uint32_t,
-                     const MessageHeader *>
-    front_timestamp() {
-      const MessageHeader &message = front().message();
-      return std::make_tuple(
-          monotonic_clock::time_point(
-              std::chrono::nanoseconds(message.monotonic_sent_time())),
-          message.queue_index(), &message);
-    }
-
-    // Pointer to the timestamp merger for this queue if available.
-    TimestampMerger *timestamp_merger = nullptr;
-    // Pointer to the reader which feeds this queue.
-    SplitMessageReader *split_reader = nullptr;
-
-   private:
-    // The data.
-    std::deque<SizePrefixedFlatbufferVector<MessageHeader>> data_;
-  };
-
-  // All the queues needed for a channel.  There isn't going to be data in all
-  // of these.
-  struct ChannelData {
-    // The data queue for the channel.
-    MessageHeaderQueue data;
-    // Queues for timestamps for each node.
-    std::vector<MessageHeaderQueue> timestamps;
-  };
-
-  // Data for all the channels.
-  std::vector<ChannelData> channels_;
-
-  // Once we know the node that this SplitMessageReader will be writing as,
-  // there will be only one MessageHeaderQueue that a specific channel matches.
-  // Precompute this here for efficiency.
-  std::vector<MessageHeaderQueue *> channels_to_write_;
-
-  monotonic_clock::time_point time_to_queue_ = monotonic_clock::min_time;
-
-  // Latches true when we hit the end of the last log file and there is no sense
-  // poking it further.
-  bool at_end_ = false;
-
-  // Timestamp of the newest message that was read and actually queued.  We want
-  // to track this independently from the log file because we need the
-  // timestamps here to be timestamps of messages that are queued.
-  monotonic_clock::time_point newest_timestamp_ = monotonic_clock::min_time;
-};
-
-class ChannelMerger;
-
-// Sorts channels (and timestamps) from multiple log files for a single channel.
-class TimestampMerger {
- public:
-  TimestampMerger(const Configuration *configuration,
-                  std::vector<SplitMessageReader *> split_message_readers,
-                  int channel_index, const Node *target_node,
-                  ChannelMerger *channel_merger);
-
-  // Metadata used to schedule the message.
-  struct DeliveryTimestamp {
-    monotonic_clock::time_point monotonic_event_time =
-        monotonic_clock::min_time;
-    realtime_clock::time_point realtime_event_time = realtime_clock::min_time;
-    uint32_t queue_index = 0xffffffff;
-
-    monotonic_clock::time_point monotonic_remote_time =
-        monotonic_clock::min_time;
-    realtime_clock::time_point realtime_remote_time = realtime_clock::min_time;
-    uint32_t remote_queue_index = 0xffffffff;
-  };
-
-  // Pushes SplitMessageReader onto the timestamp heap.  This should only be
-  // called when timestamps are placed in the channel this class is merging for
-  // the reader.
-  void UpdateTimestamp(
-      SplitMessageReader *split_message_reader,
-      std::tuple<monotonic_clock::time_point, uint32_t, const MessageHeader *>
-          oldest_message_time) {
-    PushTimestampHeap(oldest_message_time, split_message_reader);
-  }
-  // Pushes SplitMessageReader onto the message heap.  This should only be
-  // called when data is placed in the channel this class is merging for the
-  // reader.
-  void Update(
-      SplitMessageReader *split_message_reader,
-      std::tuple<monotonic_clock::time_point, uint32_t, const MessageHeader *>
-          oldest_message_time) {
-    PushMessageHeap(oldest_message_time, split_message_reader);
-  }
-
-  // Returns the oldest combined timestamp and data for this channel.  If there
-  // isn't a matching piece of data, returns only the timestamp with no data.
-  // The caller can determine what the appropriate action is to recover.
-  std::tuple<DeliveryTimestamp, SizePrefixedFlatbufferVector<MessageHeader>>
-  PopOldest();
-
-  // Tracks if the channel merger has pushed this onto it's heap or not.
-  bool pushed() { return pushed_; }
-  // Sets if this has been pushed to the channel merger heap.  Should only be
-  // called by the channel merger.
-  void set_pushed(bool pushed) { pushed_ = pushed; }
-
-  // Returns a debug string with the heaps printed out.
-  std::string DebugString() const;
-
-  // Returns true if we have timestamps.
-  bool has_timestamps() const { return has_timestamps_; }
-
-  // Records that one of the log files ran out of data.  This should only be
-  // called by a SplitMessageReader.
-  void NoticeAtEnd();
-
-  aos::monotonic_clock::time_point channel_merger_time() {
-    if (has_timestamps_) {
-      return std::get<0>(timestamp_heap_[0]);
-    } else {
-      return std::get<0>(message_heap_[0]);
-    }
-  }
-
- private:
-  // Pushes messages and timestamps to the corresponding heaps.
-  void PushMessageHeap(
-      std::tuple<monotonic_clock::time_point, uint32_t, const MessageHeader *>
-          timestamp,
-      SplitMessageReader *split_message_reader);
-  void PushTimestampHeap(
-      std::tuple<monotonic_clock::time_point, uint32_t, const MessageHeader *>
-          timestamp,
-      SplitMessageReader *split_message_reader);
-
-  // Pops a message from the message heap.  This automatically triggers the
-  // split message reader to re-fetch any new data.
-  std::tuple<monotonic_clock::time_point, uint32_t,
-             SizePrefixedFlatbufferVector<MessageHeader>>
-  PopMessageHeap();
-
-  std::tuple<monotonic_clock::time_point, uint32_t, const MessageHeader *>
-  oldest_message() const;
-  std::tuple<monotonic_clock::time_point, uint32_t, const MessageHeader *>
-  oldest_timestamp() const;
-  // Pops a message from the timestamp heap.  This automatically triggers the
-  // split message reader to re-fetch any new data.
-  std::tuple<monotonic_clock::time_point, uint32_t,
-             SizePrefixedFlatbufferVector<MessageHeader>>
-  PopTimestampHeap();
-
-  const Configuration *configuration_;
-
-  // If true, this is a forwarded channel and timestamps should be matched.
-  bool has_timestamps_ = false;
-
-  // Tracks if the ChannelMerger has pushed this onto it's queue.
-  bool pushed_ = false;
-
-  // The split message readers used for source data.
-  std::vector<SplitMessageReader *> split_message_readers_;
-
-  // The channel to merge.
-  int channel_index_;
-
-  // Our node.
-  int node_index_;
-
-  // Heaps for messages and timestamps.
-  std::vector<
-      std::tuple<monotonic_clock::time_point, uint32_t, SplitMessageReader *>>
-      message_heap_;
-  std::vector<
-      std::tuple<monotonic_clock::time_point, uint32_t, SplitMessageReader *>>
-      timestamp_heap_;
-
-  // Parent channel merger.
-  ChannelMerger *channel_merger_;
-};
-
-// This class handles constructing all the split message readers, channel
-// mergers, and combining the results.
-class ChannelMerger {
- public:
-  // Builds a ChannelMerger around a set of log files.  These are of the format:
-  //   {
-  //     {log1_part0, log1_part1, ...},
-  //     {log2}
-  //   }
-  // The inner vector is a list of log file chunks which form up a log file.
-  // The outer vector is a list of log files with subsets of the messages, or
-  // messages from different nodes.
-  ChannelMerger(const std::vector<std::vector<std::string>> &filenames);
-
-  // Returns the nodes that we know how to merge.
-  const std::vector<const Node *> nodes() const;
-  // Sets the node that we will return messages as.  Returns true if the node
-  // has log files and will produce data.  This can only be called once, and
-  // will likely corrupt state if called a second time.
-  bool SetNode(const Node *target_node);
-
-  // Everything else needs the node set before it works.
-
-  // Returns a timestamp for the oldest message in this group of logfiles.
-  monotonic_clock::time_point OldestMessageTime() const;
-  // Pops the oldest message.
-  std::tuple<TimestampMerger::DeliveryTimestamp, int,
-             SizePrefixedFlatbufferVector<MessageHeader>>
-  PopOldest();
-
-  // Returns the config for this set of log files.
-  const Configuration *configuration() const {
-    return log_file_header()->configuration();
-  }
-
-  const LogFileHeader *log_file_header() const {
-    return &log_file_header_.message();
-  }
-
-  // Returns the start times for the configured node's log files.
+  // The start time of this log.
   monotonic_clock::time_point monotonic_start_time() const {
-    return monotonic_clock::time_point(
-        std::chrono::nanoseconds(log_file_header()->monotonic_start_time()));
+    return node_merger_.monotonic_start_time();
   }
   realtime_clock::time_point realtime_start_time() const {
-    return realtime_clock::time_point(
-        std::chrono::nanoseconds(log_file_header()->realtime_start_time()));
+    return node_merger_.realtime_start_time();
   }
 
-  // Returns the node set by SetNode above.
-  const Node *node() const { return node_; }
+  // Uses timestamp_mapper as the peer for its node. Only one mapper may be set
+  // for each node.  Peers are used to look up the data for timestamps on this
+  // node.
+  void AddPeer(TimestampMapper *timestamp_mapper);
 
-  // Called by the TimestampMerger when new data is available with the provided
-  // timestamp and channel_index.
-  void Update(monotonic_clock::time_point timestamp, int channel_index) {
-    PushChannelHeap(timestamp, channel_index);
+  // Time that we are sorted until internally.
+  monotonic_clock::time_point sorted_until() const {
+    return node_merger_.sorted_until();
   }
 
-  // Returns a debug string with all the heaps in it.  Generally only useful for
-  // debugging what went wrong.
+  // Returns the next message for this node.
+  TimestampedMessage *Front();
+  // Pops the next message.  Front must be called first.
+  void PopFront();
+
+  // Returns debug information about this node.
   std::string DebugString() const;
 
-  // Returns true if one of the log files has finished reading everything.  When
-  // log file chunks are involved, this means that the last chunk in a log file
-  // has been read.  It is acceptable to be missing data at this point in time.
-  bool at_end() const { return at_end_; }
-
-  // Marks that one of the log files is at the end.  This should only be called
-  // by timestamp mergers.
-  void NoticeAtEnd() { at_end_ = true; }
-
  private:
-  // Pushes the timestamp for new data on the provided channel.
-  void PushChannelHeap(monotonic_clock::time_point timestamp,
-                       int channel_index);
+  // The state for a remote node.  This holds the data that needs to be matched
+  // with the remote node's timestamps.
+  struct NodeData {
+    // True if we should save data here.  This should be true if any of the
+    // bools in delivered below are true.
+    bool any_delivered = false;
 
-  // CHECKs that channel_heap_ and timestamp_heap_ are valid heaps.
-  void VerifyHeaps();
+    // Peer pointer.  This node is only to be considered if a peer is set.
+    TimestampMapper *peer = nullptr;
 
-  // All the message readers.
-  std::vector<std::unique_ptr<SplitMessageReader>> split_message_readers_;
+    struct ChannelData {
+      // Deque per channel.  This contains the data from the outside
+      // TimestampMapper node which is relevant for the node this NodeData
+      // points to.
+      std::deque<Message> messages;
+      // Bool tracking per channel if a message is delivered to the node this
+      // NodeData represents.
+      bool delivered = false;
+    };
 
-  // The log header we are claiming to be.
-  SizePrefixedFlatbufferVector<LogFileHeader> log_file_header_;
+    // Vector with per channel data.
+    std::vector<ChannelData> channels;
+  };
 
-  // The timestamp mergers which combine data from the split message readers.
-  std::vector<TimestampMerger> timestamp_mergers_;
+  // Returns (and forgets about) the data for the provided timestamp message
+  // showing when it was delivered to this node.
+  Message MatchingMessageFor(const Message &message);
 
-  // A heap of the channel readers and timestamps for the oldest data in each.
-  std::vector<std::pair<monotonic_clock::time_point, int>> channel_heap_;
+  // Queues up a single message into our message queue, and any nodes that this
+  // message is delivered to.  Returns true if one was available, false
+  // otherwise.
+  bool Queue();
 
-  // Configured node.
-  const Node *node_;
+  // Queues up data until we have at least one message >= to time t.
+  // Useful for triggering a remote node to read enough data to have the
+  // timestamp you care about available.
+  void QueueUntil(monotonic_clock::time_point t);
 
-  bool at_end_ = false;
+  // Fills message_ with the contents of m.
+  void FillMessage(Message *m);
 
-  // Cached copy of the list of nodes.
-  std::vector<const Node *> nodes_;
+  // The node merger to source messages from.
+  NodeMerger node_merger_;
+  // The buffer of messages for this node.  These are not matched with any
+  // remote data.
+  std::deque<Message> messages_;
+  // The node index for the source node for each channel.
+  std::vector<size_t> source_node_;
 
-  // Last time popped.  Used to detect events being returned out of order.
-  monotonic_clock::time_point last_popped_time_ = monotonic_clock::min_time;
+  // Vector per node.  Not all nodes will have anything.
+  std::vector<NodeData> nodes_data_;
+
+  // Latest message to return.
+  TimestampedMessage message_;
+
+  // Tracks if the first message points to message_, nullptr (all done), or is
+  // invalid.
+  enum class FirstMessage {
+    kNeedsUpdate,
+    kInMessage,
+    kNullptr,
+  };
+  FirstMessage first_message_ = FirstMessage::kNeedsUpdate;
+
+  // Timestamp of the last message returned.  Used to make sure nothing goes
+  // backwards.
+  monotonic_clock::time_point last_message_time_ = monotonic_clock::min_time;
+  // Time this node is queued up until.  Used for caching.
+  monotonic_clock::time_point queued_until_ = monotonic_clock::min_time;
 };
 
 // Returns the node name with a trailing space, or an empty string if we are on
