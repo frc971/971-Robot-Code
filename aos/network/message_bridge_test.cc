@@ -140,7 +140,7 @@ TEST_F(MessageBridgeTest, PingPong) {
   pong_event_loop.MakeWatcher(
       "/test", [&pong_count](const examples::Ping &ping) {
         ++pong_count;
-        LOG(INFO) << "Got ping back " << FlatbufferToJson(&ping);
+        VLOG(1) << "Got ping back " << FlatbufferToJson(&ping);
       });
 
   FLAGS_override_hostname = "";
@@ -152,7 +152,7 @@ TEST_F(MessageBridgeTest, PingPong) {
       "/pi1/aos",
       [&ping_count, &pi2_client_event_loop, &ping_sender,
        &pi1_server_statistics_count](const ServerStatistics &stats) {
-        LOG(INFO) << "/pi1/aos ServerStatistics " << FlatbufferToJson(&stats);
+        VLOG(1) << "/pi1/aos ServerStatistics " << FlatbufferToJson(&stats);
 
         ASSERT_TRUE(stats.has_connections());
         EXPECT_EQ(stats.connections()->size(), 1);
@@ -179,7 +179,7 @@ TEST_F(MessageBridgeTest, PingPong) {
         }
 
         if (connected) {
-          LOG(INFO) << "Connected!  Sent ping.";
+          VLOG(1) << "Connected!  Sent ping.";
           auto builder = ping_sender.MakeBuilder();
           examples::Ping::Builder ping_builder =
               builder.MakeBuilder<examples::Ping>();
@@ -194,7 +194,7 @@ TEST_F(MessageBridgeTest, PingPong) {
   int pi2_server_statistics_count = 0;
   pong_event_loop.MakeWatcher("/pi2/aos", [&pi2_server_statistics_count](
                                               const ServerStatistics &stats) {
-    LOG(INFO) << "/pi2/aos ServerStatistics " << FlatbufferToJson(&stats);
+    VLOG(1) << "/pi2/aos ServerStatistics " << FlatbufferToJson(&stats);
     for (const ServerConnection *connection : *stats.connections()) {
       if (connection->has_monotonic_offset()) {
         ++pi2_server_statistics_count;
@@ -212,7 +212,7 @@ TEST_F(MessageBridgeTest, PingPong) {
   int pi1_client_statistics_count = 0;
   ping_event_loop.MakeWatcher("/pi1/aos", [&pi1_client_statistics_count](
                                               const ClientStatistics &stats) {
-    LOG(INFO) << "/pi1/aos ClientStatistics " << FlatbufferToJson(&stats);
+    VLOG(1) << "/pi1/aos ClientStatistics " << FlatbufferToJson(&stats);
 
     for (const ClientConnection *connection : *stats.connections()) {
       if (connection->has_monotonic_offset()) {
@@ -232,7 +232,7 @@ TEST_F(MessageBridgeTest, PingPong) {
   int pi2_client_statistics_count = 0;
   pong_event_loop.MakeWatcher("/pi2/aos", [&pi2_client_statistics_count](
                                               const ClientStatistics &stats) {
-    LOG(INFO) << "/pi2/aos ClientStatistics " << FlatbufferToJson(&stats);
+    VLOG(1) << "/pi2/aos ClientStatistics " << FlatbufferToJson(&stats);
 
     for (const ClientConnection *connection : *stats.connections()) {
       if (connection->has_monotonic_offset()) {
@@ -247,11 +247,11 @@ TEST_F(MessageBridgeTest, PingPong) {
 
   ping_event_loop.MakeWatcher("/pi1/aos", [](const Timestamp &timestamp) {
     EXPECT_TRUE(timestamp.has_offsets());
-    LOG(INFO) << "/pi1/aos Timestamp " << FlatbufferToJson(&timestamp);
+    VLOG(1) << "/pi1/aos Timestamp " << FlatbufferToJson(&timestamp);
   });
   pong_event_loop.MakeWatcher("/pi2/aos", [](const Timestamp &timestamp) {
     EXPECT_TRUE(timestamp.has_offsets());
-    LOG(INFO) << "/pi2/aos Timestamp " << FlatbufferToJson(&timestamp);
+    VLOG(1) << "/pi2/aos Timestamp " << FlatbufferToJson(&timestamp);
   });
 
   // Run for 5 seconds to make sure we have time to estimate the offset.
@@ -466,29 +466,29 @@ TEST_F(MessageBridgeTest, ClientRestart) {
   // Wait until we are connected, then send.
   pi1_test_event_loop.MakeWatcher(
       "/pi1/aos", [](const ServerStatistics &stats) {
-        LOG(INFO) << "/pi1/aos ServerStatistics " << FlatbufferToJson(&stats);
+        VLOG(1) << "/pi1/aos ServerStatistics " << FlatbufferToJson(&stats);
       });
 
   pi2_test_event_loop.MakeWatcher(
       "/pi2/aos", [](const ServerStatistics &stats) {
-        LOG(INFO) << "/pi2/aos ServerStatistics " << FlatbufferToJson(&stats);
+        VLOG(1) << "/pi2/aos ServerStatistics " << FlatbufferToJson(&stats);
       });
 
   pi1_test_event_loop.MakeWatcher(
       "/pi1/aos", [](const ClientStatistics &stats) {
-        LOG(INFO) << "/pi1/aos ClientStatistics " << FlatbufferToJson(&stats);
+        VLOG(1) << "/pi1/aos ClientStatistics " << FlatbufferToJson(&stats);
       });
 
   pi2_test_event_loop.MakeWatcher(
       "/pi2/aos", [](const ClientStatistics &stats) {
-        LOG(INFO) << "/pi2/aos ClientStatistics " << FlatbufferToJson(&stats);
+        VLOG(1) << "/pi2/aos ClientStatistics " << FlatbufferToJson(&stats);
       });
 
   pi1_test_event_loop.MakeWatcher("/pi1/aos", [](const Timestamp &timestamp) {
-    LOG(INFO) << "/pi1/aos Timestamp " << FlatbufferToJson(&timestamp);
+    VLOG(1) << "/pi1/aos Timestamp " << FlatbufferToJson(&timestamp);
   });
   pi2_test_event_loop.MakeWatcher("/pi2/aos", [](const Timestamp &timestamp) {
-    LOG(INFO) << "/pi2/aos Timestamp " << FlatbufferToJson(&timestamp);
+    VLOG(1) << "/pi2/aos Timestamp " << FlatbufferToJson(&timestamp);
   });
 
   // Start everything up.  Pong is the only thing we don't know how to wait on,
@@ -675,31 +675,31 @@ TEST_F(MessageBridgeTest, ServerRestart) {
   // Wait until we are connected, then send.
   pi1_test_event_loop.MakeWatcher(
       "/pi1/aos", [](const ServerStatistics &stats) {
-        LOG(INFO) << "/pi1/aos ServerStatistics " << FlatbufferToJson(&stats);
+        VLOG(1) << "/pi1/aos ServerStatistics " << FlatbufferToJson(&stats);
       });
 
   // Confirm both client and server statistics messages have decent offsets in
   // them.
   pi2_test_event_loop.MakeWatcher(
       "/pi2/aos", [](const ServerStatistics &stats) {
-        LOG(INFO) << "/pi2/aos ServerStatistics " << FlatbufferToJson(&stats);
+        VLOG(1) << "/pi2/aos ServerStatistics " << FlatbufferToJson(&stats);
       });
 
   pi1_test_event_loop.MakeWatcher(
       "/pi1/aos", [](const ClientStatistics &stats) {
-        LOG(INFO) << "/pi1/aos ClientStatistics " << FlatbufferToJson(&stats);
+        VLOG(1) << "/pi1/aos ClientStatistics " << FlatbufferToJson(&stats);
       });
 
   pi2_test_event_loop.MakeWatcher(
       "/pi2/aos", [](const ClientStatistics &stats) {
-        LOG(INFO) << "/pi2/aos ClientStatistics " << FlatbufferToJson(&stats);
+        VLOG(1) << "/pi2/aos ClientStatistics " << FlatbufferToJson(&stats);
       });
 
   pi1_test_event_loop.MakeWatcher("/pi1/aos", [](const Timestamp &timestamp) {
-    LOG(INFO) << "/pi1/aos Timestamp " << FlatbufferToJson(&timestamp);
+    VLOG(1) << "/pi1/aos Timestamp " << FlatbufferToJson(&timestamp);
   });
   pi2_test_event_loop.MakeWatcher("/pi2/aos", [](const Timestamp &timestamp) {
-    LOG(INFO) << "/pi2/aos Timestamp " << FlatbufferToJson(&timestamp);
+    VLOG(1) << "/pi2/aos Timestamp " << FlatbufferToJson(&timestamp);
   });
 
   // Start everything up.  Pong is the only thing we don't know how to wait on,
