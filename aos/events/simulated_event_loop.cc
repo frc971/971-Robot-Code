@@ -856,7 +856,9 @@ bool SimulatedSender::DoSend(
     aos::monotonic_clock::time_point monotonic_remote_time,
     aos::realtime_clock::time_point realtime_remote_time,
     uint32_t remote_queue_index) {
-  CHECK_LE(size, this->size()) << ": Attempting to send too big a message.";
+  CHECK_LE(size, this->size())
+      << ": Attempting to send too big a message on "
+      << configuration::CleanedChannelToString(simulated_channel_->channel());
 
   // This is wasteful, but since flatbuffers fill from the back end of the
   // queue, we need it to be full sized.
