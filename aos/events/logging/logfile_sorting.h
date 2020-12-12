@@ -19,12 +19,23 @@ struct LogParts {
   aos::monotonic_clock::time_point monotonic_start_time;
   aos::realtime_clock::time_point realtime_start_time;
 
+  // Time on the logger node (if applicable) that this log file started.
+  aos::monotonic_clock::time_point logger_monotonic_start_time =
+      aos::monotonic_clock::min_time;
+  aos::realtime_clock::time_point logger_realtime_start_time =
+      aos::realtime_clock::min_time;
+
   // UUIDs if available.
   std::string log_event_uuid;
   std::string parts_uuid;
 
   // The node this represents, or empty if we are in a single node world.
   std::string node;
+
+  // Boot UUID of the node which generated this data, if available.  For local
+  // data and timestamps, this is the same as the logger_boot_uuid.  For remote
+  // data, this is the boot_uuid of the remote node.
+  std::string source_boot_uuid;
 
   // Pre-sorted list of parts.
   std::vector<std::string> parts;
@@ -38,6 +49,8 @@ struct LogFile {
 
   // The node the logger was running on (if available)
   std::string logger_node;
+  // Boot UUID of the node running the logger.
+  std::string logger_boot_uuid;
 
   // The start time on the logger node.
   aos::monotonic_clock::time_point monotonic_start_time;

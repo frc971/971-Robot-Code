@@ -50,6 +50,11 @@ void LocalLogNamer::Rotate(
   UpdateHeader(header, uuid_, part_number_);
   data_writer_->QueueSpan(header->span());
 }
+void LocalLogNamer::Reboot(
+    const Node * /*node*/,
+    aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> * /*header*/) {
+  LOG(FATAL) << "Can't reboot a single node.";
+}
 
 DetachedBufferWriter *LocalLogNamer::MakeTimestampWriter(
     const Channel *channel) {
@@ -104,8 +109,23 @@ void MultiNodeLogNamer::WriteHeader(
 void MultiNodeLogNamer::Rotate(
     const Node *node,
     aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header) {
+  DoRotate(node, header, false);
+}
+
+void MultiNodeLogNamer::Reboot(
+    const Node *node,
+    aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header) {
+  DoRotate(node, header, true);
+}
+
+void MultiNodeLogNamer::DoRotate(
+    const Node *node,
+    aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header, bool reboot) {
   if (node == this->node()) {
     if (data_writer_.writer) {
+      if (reboot) {
+        data_writer_.uuid = UUID::Random();
+      }
       ++data_writer_.part_number;
     }
     OpenDataWriter();
@@ -115,6 +135,9 @@ void MultiNodeLogNamer::Rotate(
     for (std::pair<const Channel *const, DataWriter> &data_writer :
          data_writers_) {
       if (node == data_writer.second.node) {
+        if (reboot) {
+          data_writer.second.uuid = UUID::Random();
+        }
         ++data_writer.second.part_number;
         data_writer.second.rotate(data_writer.first, &data_writer.second);
         UpdateHeader(header, data_writer.second.uuid,

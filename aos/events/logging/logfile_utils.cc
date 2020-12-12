@@ -454,10 +454,16 @@ PartsMessageReader::ReadMessage() {
       // time.
       // TODO(austin): Does this work with startup when we don't know the remote
       // start time too?  Look at one of those logs to compare.
-      if (monotonic_sent_time > parts_.monotonic_start_time) {
+      if (monotonic_sent_time >
+          parts_.monotonic_start_time + max_out_of_order_duration()) {
+        after_start_ = true;
+      }
+      if (after_start_) {
         CHECK_GE(monotonic_sent_time,
                  newest_timestamp_ - max_out_of_order_duration())
-            << ": Max out of order exceeded. " << parts_;
+            << ": Max out of order exceeded. " << parts_ << ", start time is "
+            << parts_.monotonic_start_time << " currently reading "
+            << filename();
       }
       return message;
     }
@@ -581,7 +587,8 @@ Message *LogPartsSorter::Front() {
     return nullptr;
   }
 
-  CHECK_GE(messages_.begin()->timestamp, last_message_time_);
+  CHECK_GE(messages_.begin()->timestamp, last_message_time_)
+      << DebugString() << " reading " << parts_message_reader_.filename();
   last_message_time_ = messages_.begin()->timestamp;
   return &(*messages_.begin());
 }
@@ -591,8 +598,16 @@ void LogPartsSorter::PopFront() { messages_.erase(messages_.begin()); }
 std::string LogPartsSorter::DebugString() const {
   std::stringstream ss;
   ss << "messages: [\n";
+  int count = 0;
+  bool no_dots = true;
   for (const Message &m : messages_) {
-    ss << m << "\n";
+    if (count < 15 || count > static_cast<int>(messages_.size()) - 15) {
+      ss << m << "\n";
+    } else if (no_dots) {
+      ss << "...\n";
+      no_dots = false;
+    }
+    ++count;
   }
   ss << "] <- " << parts_message_reader_.filename();
   return ss.str();

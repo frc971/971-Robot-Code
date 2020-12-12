@@ -180,7 +180,12 @@ class Logger {
     bool wants_contents_writer = false;
     DetachedBufferWriter *contents_writer = nullptr;
 
-    int node_index = 0;
+    // Node which this data is from, or -1 if it is unknown.
+    int data_node_index = -1;
+    // Node that this timestamp is for, or -1 if it is known.
+    int timestamp_node_index = -1;
+    // Node that the contents this contents_writer will log are from.
+    int contents_node_index = -1;
   };
 
   // Vector mapping from the channel index from the event loop to the logged
@@ -193,13 +198,45 @@ class Logger {
     aos::realtime_clock::time_point realtime_start_time =
         aos::realtime_clock::min_time;
 
+    bool has_source_node_boot_uuid = false;
+
+    // This is an initial UUID that is a valid UUID4 and is pretty obvious that
+    // it isn't valid.
+    std::string source_node_boot_uuid = "00000000-0000-4000-8000-000000000000";
+
     aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> log_file_header =
         aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader>::Empty();
+
+    // True if a header has been written to the start of a log file.
+    bool header_written = false;
+    // True if the current written header represents the contents which will
+    // follow.  This is cleared when boot_uuid is known to not match anymore.
+    bool header_valid = false;
+
+    // Sets the source_node_boot_uuid, properly updating everything.
+    void SetBootUUID(std::string_view new_source_node_boot_uuid) {
+      source_node_boot_uuid = new_source_node_boot_uuid;
+      header_valid = false;
+      has_source_node_boot_uuid = true;
+
+      flatbuffers::String *source_node_boot_uuid_string =
+          log_file_header.mutable_message()->mutable_source_node_boot_uuid();
+      CHECK_EQ(source_node_boot_uuid.size(),
+               source_node_boot_uuid_string->size());
+      memcpy(source_node_boot_uuid_string->data(), source_node_boot_uuid.data(),
+             source_node_boot_uuid.size());
+    }
   };
 
   void WriteHeader();
+
   aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> MakeHeader(
       const Node *node);
+
+  // Writes the header for the provided node if enough information is valid.
+  void MaybeWriteHeader(int node_index);
+  // Overload for when we already know node as well.
+  void MaybeWriteHeader(int node_index, const Node *node);
 
   bool MaybeUpdateTimestamp(
       const Node *node, int node_index,
@@ -222,9 +259,11 @@ class Logger {
                                FetcherStruct *fetcher);
 
   // Sets the start time for a specific node.
-  void SetStartTime(size_t node_index,
-                    aos::monotonic_clock::time_point monotonic_start_time,
-                    aos::realtime_clock::time_point realtime_start_time);
+  void SetStartTime(
+      size_t node_index, aos::monotonic_clock::time_point monotonic_start_time,
+      aos::realtime_clock::time_point realtime_start_time,
+      aos::monotonic_clock::time_point logger_monotonic_start_time,
+      aos::realtime_clock::time_point logger_realtime_start_time);
 
   EventLoop *const event_loop_;
   // The configuration to place at the top of the log file.
@@ -235,7 +274,6 @@ class Logger {
   std::unique_ptr<LogNamer> log_namer_;
   // Empty indicates there isn't one.
   std::string log_start_uuid_;
-  const std::string boot_uuid_;
 
   // Name to save in the log file.  Defaults to hostname.
   std::string name_;

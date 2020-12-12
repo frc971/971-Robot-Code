@@ -81,8 +81,16 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
     aos::monotonic_clock::time_point monotonic_start_time;
     aos::realtime_clock::time_point realtime_start_time;
 
+    aos::monotonic_clock::time_point logger_monotonic_start_time =
+        aos::monotonic_clock::min_time;
+    aos::realtime_clock::time_point logger_realtime_start_time =
+        aos::realtime_clock::min_time;
+
     // Node to save.
     std::string node;
+
+    // The boot UUID of the node which generated this data.
+    std::string source_boot_uuid;
 
     // Pairs of the filename and the part index for sorting.
     std::vector<std::pair<std::string, int>> parts;
@@ -91,6 +99,9 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
   // Struct to hold both the node, and the parts associated with it.
   struct UnsortedLogPartsMap {
     std::string logger_node;
+    // The boot UUID of the node this log file was created on.
+    std::string logger_boot_uuid;
+
     aos::monotonic_clock::time_point monotonic_start_time =
         aos::monotonic_clock::min_time;
     aos::realtime_clock::time_point realtime_start_time =
@@ -133,6 +144,12 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
         chrono::nanoseconds(log_header->message().monotonic_start_time()));
     const realtime_clock::time_point realtime_start_time(
         chrono::nanoseconds(log_header->message().realtime_start_time()));
+    const monotonic_clock::time_point logger_monotonic_start_time(
+        chrono::nanoseconds(
+            log_header->message().logger_monotonic_start_time()));
+    const realtime_clock::time_point logger_realtime_start_time(
+        chrono::nanoseconds(
+            log_header->message().logger_realtime_start_time()));
 
     const std::string_view node =
         log_header->message().has_node()
@@ -142,6 +159,16 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
     const std::string_view logger_node =
         log_header->message().has_logger_node()
             ? log_header->message().logger_node()->name()->string_view()
+            : "";
+
+    const std::string_view logger_boot_uuid =
+        log_header->message().has_logger_node_boot_uuid()
+            ? log_header->message().logger_node_boot_uuid()->string_view()
+            : "";
+
+    const std::string_view source_boot_uuid =
+        log_header->message().has_source_node_boot_uuid()
+            ? log_header->message().source_node_boot_uuid()->string_view()
             : "";
 
     // Looks like an old log.  No UUID, index, and also single node.  We have
@@ -200,8 +227,10 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
               .insert(std::make_pair(log_event_uuid, UnsortedLogPartsMap()))
               .first;
       log_it->second.logger_node = logger_node;
+      log_it->second.logger_boot_uuid = logger_boot_uuid;
     } else {
       CHECK_EQ(log_it->second.logger_node, logger_node);
+      CHECK_EQ(log_it->second.logger_boot_uuid, logger_boot_uuid);
     }
 
     if (node == log_it->second.logger_node) {
@@ -222,14 +251,25 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
                .first;
       it->second.monotonic_start_time = monotonic_start_time;
       it->second.realtime_start_time = realtime_start_time;
+      it->second.logger_monotonic_start_time = logger_monotonic_start_time;
+      it->second.logger_realtime_start_time = logger_realtime_start_time;
       it->second.node = std::string(node);
+      it->second.source_boot_uuid = source_boot_uuid;
+    } else {
+      CHECK_EQ(it->second.source_boot_uuid, source_boot_uuid);
     }
 
     // First part might be min_time.  If it is, try to put a better time on it.
     if (it->second.monotonic_start_time == monotonic_clock::min_time) {
       it->second.monotonic_start_time = monotonic_start_time;
+      it->second.logger_monotonic_start_time = logger_monotonic_start_time;
+      it->second.logger_realtime_start_time = logger_realtime_start_time;
     } else if (monotonic_start_time != monotonic_clock::min_time) {
       CHECK_EQ(it->second.monotonic_start_time, monotonic_start_time);
+      CHECK_EQ(it->second.logger_monotonic_start_time,
+               logger_monotonic_start_time);
+      CHECK_EQ(it->second.logger_realtime_start_time,
+               logger_realtime_start_time);
     }
     if (it->second.realtime_start_time == realtime_clock::min_time) {
       it->second.realtime_start_time = realtime_start_time;
@@ -285,6 +325,7 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
     LogFile new_file;
     new_file.log_event_uuid = logs.first;
     new_file.logger_node = logs.second.logger_node;
+    new_file.logger_boot_uuid = logs.second.logger_boot_uuid;
     new_file.monotonic_start_time = logs.second.monotonic_start_time;
     new_file.realtime_start_time = logs.second.realtime_start_time;
     new_file.corrupted = corrupted;
@@ -293,7 +334,12 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
       LogParts new_parts;
       new_parts.monotonic_start_time = parts.second.monotonic_start_time;
       new_parts.realtime_start_time = parts.second.realtime_start_time;
+      new_parts.logger_monotonic_start_time =
+          parts.second.logger_monotonic_start_time;
+      new_parts.logger_realtime_start_time =
+          parts.second.logger_realtime_start_time;
       new_parts.log_event_uuid = logs.first;
+      new_parts.source_boot_uuid = parts.second.source_boot_uuid;
       new_parts.parts_uuid = parts.first;
       new_parts.node = std::move(parts.second.node);
 
@@ -341,38 +387,46 @@ std::vector<LogParts> FilterPartsForNode(const std::vector<LogFile> &parts,
 }
 
 std::ostream &operator<<(std::ostream &stream, const LogFile &file) {
-  stream << "{";
+  stream << "{\n";
   if (!file.log_event_uuid.empty()) {
-    stream << "\"log_event_uuid\": \"" << file.log_event_uuid << "\", ";
+    stream << " \"log_event_uuid\": \"" << file.log_event_uuid << "\",\n";
   }
   if (!file.logger_node.empty()) {
-    stream << "\"logger_node\": \"" << file.logger_node << "\", ";
+    stream << " \"logger_node\": \"" << file.logger_node << "\",\n";
   }
-  stream << "\"monotonic_start_time\": " << file.monotonic_start_time
-         << ", \"realtime_start_time\": " << file.realtime_start_time << ", [";
-  stream << "\"parts\": [";
+  if (!file.logger_boot_uuid.empty()) {
+    stream << " \"logger_boot_uuid\": \"" << file.logger_boot_uuid << "\",\n";
+  }
+  stream << " \"monotonic_start_time\": " << file.monotonic_start_time
+         << ",\n \"realtime_start_time\": " << file.realtime_start_time
+         << ",\n";
+  stream << " \"parts\": [\n";
   for (size_t i = 0; i < file.parts.size(); ++i) {
     if (i != 0u) {
-      stream << ", ";
+      stream << ",\n";
     }
     stream << file.parts[i];
   }
-  stream << "]}";
+  stream << " ]\n}";
   return stream;
 }
 std::ostream &operator<<(std::ostream &stream, const LogParts &parts) {
-  stream << "{";
+  stream << " {\n";
   if (!parts.log_event_uuid.empty()) {
-    stream << "\"log_event_uuid\": \"" << parts.log_event_uuid << "\", ";
+    stream << "  \"log_event_uuid\": \"" << parts.log_event_uuid << "\",\n";
   }
   if (!parts.parts_uuid.empty()) {
-    stream << "\"parts_uuid\": \"" << parts.parts_uuid << "\", ";
+    stream << "  \"parts_uuid\": \"" << parts.parts_uuid << "\",\n";
   }
   if (!parts.node.empty()) {
-    stream << "\"node\": \"" << parts.node << "\", ";
+    stream << "  \"node\": \"" << parts.node << "\",\n";
   }
-  stream << "\"monotonic_start_time\": " << parts.monotonic_start_time
-         << ", \"realtime_start_time\": " << parts.realtime_start_time << ", [";
+  if (!parts.source_boot_uuid.empty()) {
+    stream << "  \"source_boot_uuid\": \"" << parts.source_boot_uuid << "\",\n";
+  }
+  stream << "  \"monotonic_start_time\": " << parts.monotonic_start_time
+         << ",\n  \"realtime_start_time\": " << parts.realtime_start_time
+         << ",\n  \"parts\": [";
 
   for (size_t i = 0; i < parts.parts.size(); ++i) {
     if (i != 0u) {
@@ -381,7 +435,7 @@ std::ostream &operator<<(std::ostream &stream, const LogParts &parts) {
     stream << parts.parts[i];
   }
 
-  stream << "]}";
+  stream << "]\n }";
   return stream;
 }
 

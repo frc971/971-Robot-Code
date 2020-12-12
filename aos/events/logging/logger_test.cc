@@ -1,5 +1,6 @@
 #include "aos/events/logging/logger.h"
 
+#include "absl/strings/str_format.h"
 #include "aos/events/event_loop.h"
 #include "aos/events/message_counter.h"
 #include "aos/events/ping_lib.h"
@@ -360,6 +361,30 @@ TEST_F(LoggerTest, ManyMessages) {
   }
 }
 
+std::vector<std::string> MakeLogFiles(std::string logfile_base) {
+  return std::vector<std::string>(
+      {logfile_base + "_pi1_data.part0.bfbs",
+       logfile_base + "_pi2_data/test/aos.examples.Pong.part0.bfbs",
+       logfile_base + "_pi2_data/test/aos.examples.Pong.part1.bfbs",
+       logfile_base + "_pi2_data.part0.bfbs",
+       logfile_base + "_timestamps/pi1/aos/remote_timestamps/pi2/"
+                      "aos.message_bridge.RemoteMessage.part0.bfbs",
+       logfile_base + "_timestamps/pi1/aos/remote_timestamps/pi2/"
+                      "aos.message_bridge.RemoteMessage.part1.bfbs",
+       logfile_base + "_timestamps/pi2/aos/remote_timestamps/pi1/"
+                      "aos.message_bridge.RemoteMessage.part0.bfbs",
+       logfile_base + "_timestamps/pi2/aos/remote_timestamps/pi1/"
+                      "aos.message_bridge.RemoteMessage.part1.bfbs",
+       logfile_base +
+           "_pi1_data/pi1/aos/aos.message_bridge.Timestamp.part0.bfbs",
+       logfile_base +
+           "_pi1_data/pi1/aos/aos.message_bridge.Timestamp.part1.bfbs",
+       logfile_base +
+           "_pi2_data/pi2/aos/aos.message_bridge.Timestamp.part0.bfbs",
+       logfile_base +
+           "_pi2_data/pi2/aos/aos.message_bridge.Timestamp.part1.bfbs"});
+}
+
 class MultinodeLoggerTest : public ::testing::Test {
  public:
   MultinodeLoggerTest()
@@ -372,27 +397,24 @@ class MultinodeLoggerTest : public ::testing::Test {
             configuration::GetNode(event_loop_factory_.configuration(), "pi2")),
         tmp_dir_(aos::testing::TestTmpDir()),
         logfile_base_(tmp_dir_ + "/multi_logfile"),
-        logfiles_(
+        pi1_reboot_logfiles_(
             {logfile_base_ + "_pi1_data.part0.bfbs",
              logfile_base_ + "_pi2_data/test/aos.examples.Pong.part0.bfbs",
              logfile_base_ + "_pi2_data/test/aos.examples.Pong.part1.bfbs",
-             logfile_base_ + "_pi2_data.part0.bfbs",
+             logfile_base_ + "_pi2_data/test/aos.examples.Pong.part2.bfbs",
              logfile_base_ + "_timestamps/pi1/aos/remote_timestamps/pi2/"
                              "aos.message_bridge.RemoteMessage.part0.bfbs",
              logfile_base_ + "_timestamps/pi1/aos/remote_timestamps/pi2/"
                              "aos.message_bridge.RemoteMessage.part1.bfbs",
-             logfile_base_ + "_timestamps/pi2/aos/remote_timestamps/pi1/"
-                             "aos.message_bridge.RemoteMessage.part0.bfbs",
-             logfile_base_ + "_timestamps/pi2/aos/remote_timestamps/pi1/"
-                             "aos.message_bridge.RemoteMessage.part1.bfbs",
-             logfile_base_ +
-                 "_pi1_data/pi1/aos/aos.message_bridge.Timestamp.part0.bfbs",
-             logfile_base_ +
-                 "_pi1_data/pi1/aos/aos.message_bridge.Timestamp.part1.bfbs",
+             logfile_base_ + "_timestamps/pi1/aos/remote_timestamps/pi2/"
+                             "aos.message_bridge.RemoteMessage.part2.bfbs",
              logfile_base_ +
                  "_pi2_data/pi2/aos/aos.message_bridge.Timestamp.part0.bfbs",
              logfile_base_ +
-                 "_pi2_data/pi2/aos/aos.message_bridge.Timestamp.part1.bfbs"}),
+                 "_pi2_data/pi2/aos/aos.message_bridge.Timestamp.part1.bfbs",
+             logfile_base_ +
+                 "_pi2_data/pi2/aos/aos.message_bridge.Timestamp.part2.bfbs"}),
+        logfiles_(MakeLogFiles(logfile_base_)),
         structured_logfiles_{
             std::vector<std::string>{logfiles_[0]},
             std::vector<std::string>{logfiles_[1], logfiles_[2]},
@@ -409,6 +431,14 @@ class MultinodeLoggerTest : public ::testing::Test {
     for (const auto file : logfiles_) {
       unlink(file.c_str());
       unlink((file + ".xz").c_str());
+    }
+
+    for (const auto file : MakeLogFiles("relogged")) {
+      unlink(file.c_str());
+    }
+
+    for (const auto file : pi1_reboot_logfiles_) {
+      unlink(file.c_str());
     }
 
     LOG(INFO) << "Logging data to " << logfiles_[0] << ", " << logfiles_[1]
@@ -545,6 +575,7 @@ class MultinodeLoggerTest : public ::testing::Test {
 
   std::string tmp_dir_;
   std::string logfile_base_;
+  std::vector<std::string> pi1_reboot_logfiles_;
   std::vector<std::string> logfiles_;
 
   std::vector<std::vector<std::string>> structured_logfiles_;
@@ -1478,9 +1509,9 @@ TEST_F(MultinodeLoggerTest, MessageHeader) {
 
   pi1_event_loop->MakeWatcher(
       "/aos/remote_timestamps/pi2",
-      [&pi1_event_loop, pi1_timestamp_channel, ping_timestamp_channel,
-       &pi1_timestamp_on_pi1_fetcher, &pi1_timestamp_on_pi2_fetcher,
-       &ping_on_pi1_fetcher,
+      [&pi1_event_loop, &pi2_event_loop, pi1_timestamp_channel,
+       ping_timestamp_channel, &pi1_timestamp_on_pi1_fetcher,
+       &pi1_timestamp_on_pi2_fetcher, &ping_on_pi1_fetcher,
        &ping_on_pi2_fetcher](const RemoteMessage &header) {
         const aos::monotonic_clock::time_point header_monotonic_sent_time(
             chrono::nanoseconds(header.monotonic_sent_time()));
@@ -1511,6 +1542,10 @@ TEST_F(MultinodeLoggerTest, MessageHeader) {
                                 header.channel_index()));
         }
 
+        ASSERT_TRUE(header.has_boot_uuid());
+        EXPECT_EQ(header.boot_uuid()->string_view(),
+                  pi2_event_loop->boot_uuid().string_view());
+
         EXPECT_EQ(pi1_context->queue_index, header.remote_queue_index());
         EXPECT_EQ(pi2_context->remote_queue_index, header.remote_queue_index());
         EXPECT_EQ(pi2_context->queue_index, header.queue_index());
@@ -1530,9 +1565,9 @@ TEST_F(MultinodeLoggerTest, MessageHeader) {
       });
   pi2_event_loop->MakeWatcher(
       "/aos/remote_timestamps/pi1",
-      [&pi2_event_loop, pi2_timestamp_channel, pong_timestamp_channel,
-       &pi2_timestamp_on_pi2_fetcher, &pi2_timestamp_on_pi1_fetcher,
-       &pong_on_pi2_fetcher,
+      [&pi2_event_loop, &pi1_event_loop, pi2_timestamp_channel,
+       pong_timestamp_channel, &pi2_timestamp_on_pi2_fetcher,
+       &pi2_timestamp_on_pi1_fetcher, &pong_on_pi2_fetcher,
        &pong_on_pi1_fetcher](const RemoteMessage &header) {
         const aos::monotonic_clock::time_point header_monotonic_sent_time(
             chrono::nanoseconds(header.monotonic_sent_time()));
@@ -1562,6 +1597,10 @@ TEST_F(MultinodeLoggerTest, MessageHeader) {
                             pi2_event_loop->configuration()->channels()->Get(
                                 header.channel_index()));
         }
+
+        ASSERT_TRUE(header.has_boot_uuid());
+        EXPECT_EQ(header.boot_uuid()->string_view(),
+                  pi1_event_loop->boot_uuid().string_view());
 
         EXPECT_EQ(pi2_context->queue_index, header.remote_queue_index());
         EXPECT_EQ(pi1_context->remote_queue_index, header.remote_queue_index());
@@ -1602,8 +1641,91 @@ TEST_F(MultinodeLoggerTest, MessageHeader) {
   reader.Deregister();
 }
 
+// Tests that we properly populate and extract the logger_start time by setting
+// up a clock difference between 2 nodes and looking at the resulting parts.
+TEST_F(MultinodeLoggerTest, LoggerStartTime) {
+  {
+    LoggerState pi1_logger = MakeLogger(pi1_);
+    LoggerState pi2_logger = MakeLogger(pi2_);
+
+    NodeEventLoopFactory *pi2 =
+        event_loop_factory_.GetNodeEventLoopFactory(pi2_);
+
+    pi2->SetDistributedOffset(chrono::seconds(1000), 1.0);
+
+    StartLogger(&pi1_logger);
+    StartLogger(&pi2_logger);
+
+    event_loop_factory_.RunFor(chrono::milliseconds(10000));
+  }
+
+  for (const LogFile &log_file : SortParts(logfiles_)) {
+    for (const LogParts &log_part : log_file.parts) {
+      if (log_part.node == log_file.logger_node) {
+        EXPECT_EQ(log_part.logger_monotonic_start_time,
+                  aos::monotonic_clock::min_time);
+        EXPECT_EQ(log_part.logger_realtime_start_time,
+                  aos::realtime_clock::min_time);
+      } else {
+        const chrono::seconds offset = log_file.logger_node == "pi1"
+                                           ? -chrono::seconds(1000)
+                                           : chrono::seconds(1000);
+        EXPECT_EQ(log_part.logger_monotonic_start_time,
+                  log_part.monotonic_start_time + offset);
+        EXPECT_EQ(log_part.logger_realtime_start_time,
+                  log_file.realtime_start_time +
+                      (log_part.logger_monotonic_start_time -
+                       log_file.monotonic_start_time));
+      }
+    }
+  }
+}
+
 // TODO(austin): We can write a test which recreates a logfile and confirms that
 // we get it back.  That is the ultimate test.
+
+// Tests that we properly recreate forwarded timestamps when replaying a log.
+// This should be enough that we can then re-run the logger and get a valid log
+// back.
+TEST_F(MultinodeLoggerDeathTest, RemoteReboot) {
+  std::string pi2_boot1;
+  std::string pi2_boot2;
+  {
+    pi2_boot1 = event_loop_factory_.GetNodeEventLoopFactory(pi2_)
+                    ->boot_uuid()
+                    .string_view();
+    LoggerState pi1_logger = MakeLogger(pi1_);
+
+    event_loop_factory_.RunFor(chrono::milliseconds(95));
+
+    StartLogger(&pi1_logger);
+
+    event_loop_factory_.RunFor(chrono::milliseconds(10000));
+
+    event_loop_factory_.GetNodeEventLoopFactory(pi2_)->Reboot();
+
+    pi2_boot2 = event_loop_factory_.GetNodeEventLoopFactory(pi2_)
+                    ->boot_uuid()
+                    .string_view();
+
+    event_loop_factory_.RunFor(chrono::milliseconds(20000));
+  }
+
+  // Confirm that we refuse to replay logs with missing boot uuids.
+  EXPECT_DEATH(
+      {
+        LogReader reader(SortParts(pi1_reboot_logfiles_));
+
+        SimulatedEventLoopFactory log_reader_factory(reader.configuration());
+        log_reader_factory.set_send_delay(chrono::microseconds(0));
+
+        // This sends out the fetched messages and advances time to the start of
+        // the log file.
+        reader.Register(&log_reader_factory);
+      },
+      absl::StrFormat("(%s|%s).*(%s|%s).*Found parts from different boots",
+                      pi2_boot1, pi2_boot2, pi2_boot2, pi2_boot1));
+}
 
 }  // namespace testing
 }  // namespace logger

@@ -314,6 +314,15 @@ class PartsMessageReader {
   bool done_ = false;
   MessageReader message_reader_;
 
+  // True after we have seen a message after the start of the log.  The
+  // guarentees on logging essentially are that all data from before the
+  // starting time of the log may be arbitrarily out of order, but once we get
+  // max_out_of_order_duration past the start, everything will remain within
+  // max_out_of_order_duration.  We shouldn't see anything before the start
+  // after we've seen a message that is at least max_out_of_order_duration after
+  // the start.
+  bool after_start_ = false;
+
   monotonic_clock::time_point newest_timestamp_ = monotonic_clock::min_time;
 };
 

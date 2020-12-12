@@ -62,6 +62,12 @@ class LogNamer {
       const Node *node,
       aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header) = 0;
 
+  // Reboots all log files for the provided node.  The provided header will be
+  // modified and written per WriteHeader above.  Resets any parts UUIDs.
+  virtual void Reboot(
+      const Node *node,
+      aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header) = 0;
+
   // Returns all the nodes that data is being written for.
   const std::vector<const Node *> &nodes() const { return nodes_; }
 
@@ -97,6 +103,10 @@ class LocalLogNamer : public LogNamer {
   DetachedBufferWriter *MakeWriter(const Channel *channel) override;
 
   void Rotate(const Node *node,
+              aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header)
+      override;
+
+  void Reboot(const Node *node,
               aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header)
       override;
 
@@ -164,6 +174,10 @@ class MultiNodeLogNamer : public LogNamer {
       const Node *node) override;
 
   void Rotate(const Node *node,
+              aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header)
+      override;
+
+  void Reboot(const Node *node,
               aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header)
       override;
 
@@ -275,9 +289,16 @@ class MultiNodeLogNamer : public LogNamer {
     std::unique_ptr<DetachedBufferWriter> writer = nullptr;
     const Node *node;
     size_t part_number = 0;
-    const UUID uuid = UUID::Random();
+    UUID uuid = UUID::Random();
     std::function<void(const Channel *, DataWriter *)> rotate;
   };
+
+  // Implements Rotate and Reboot, controlled by the 'reboot' flag.  The only
+  // difference between the two is if DataWriter::uuid is reset or not.
+  void DoRotate(
+      const Node *node,
+      aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header,
+      bool reboot);
 
   // Opens up a writer for timestamps forwarded back.
   void OpenForwardedTimestampWriter(const Channel *channel,

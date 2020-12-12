@@ -56,7 +56,15 @@ table LogFileHeader {
 
   // All log parts generated on a single node while it is booted will have the
   // same value here. It also matches with the one used by systemd.
-  boot_uuid: string (id: 11);
+  logger_node_boot_uuid: string (id: 11);
+
+  // Empty if we didn't have one at the time.
+  source_node_boot_uuid: string (id: 13);
+
+  // Timestamps that this logfile started at on the logger's clocks.  This is
+  // mostly useful when trying to deduce the order of node reboots.
+  logger_monotonic_start_time:int64 = -9223372036854775808 (id: 14);
+  logger_realtime_start_time:int64 = -9223372036854775808 (id: 15);
 
   // All log events across all nodes produced by a single high-level start event
   // will have the same value here.
