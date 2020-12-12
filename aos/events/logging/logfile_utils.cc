@@ -362,7 +362,11 @@ std::optional<SizePrefixedFlatbufferVector<LogFileHeader>> ReadHeader(
   ResizeableBuffer data;
   data.resize(config_data.size());
   memcpy(data.data(), config_data.begin(), data.size());
-  return SizePrefixedFlatbufferVector<LogFileHeader>(std::move(data));
+  SizePrefixedFlatbufferVector<LogFileHeader> result(std::move(data));
+  if (!result.Verify()) {
+    return std::nullopt;
+  }
+  return result;
 }
 
 std::optional<SizePrefixedFlatbufferVector<MessageHeader>> ReadNthMessage(
@@ -382,7 +386,11 @@ std::optional<SizePrefixedFlatbufferVector<MessageHeader>> ReadNthMessage(
   ResizeableBuffer data;
   data.resize(data_span.size());
   memcpy(data.data(), data_span.begin(), data.size());
-  return SizePrefixedFlatbufferVector<MessageHeader>(std::move(data));
+  SizePrefixedFlatbufferVector<MessageHeader> result(std::move(data));
+  if (!result.Verify()) {
+    return std::nullopt;
+  }
+  return result;
 }
 
 MessageReader::MessageReader(std::string_view filename)
