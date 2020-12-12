@@ -32,6 +32,9 @@ DEFINE_int32(max_vector_size, 100,
              "If positive, vectors longer than this will not be printed");
 DEFINE_bool(pretty, false,
             "If true, pretty print the messages on multiple lines");
+DEFINE_bool(print, true,
+            "If true, actually print the messages.  If false, discard them, "
+            "confirming they can be parsed.");
 
 bool EndsWith(std::string_view str, std::string_view ending) {
   return str.size() >= ending.size() &&
@@ -238,7 +241,9 @@ int main(int argc, char **argv) {
         printer_event_loop->MakeRawWatcher(
             channel, [channel, node_name, &builder](const aos::Context &context,
                                                     const void * /*message*/) {
-              PrintMessage(node_name, channel, context, &builder);
+              if (FLAGS_print) {
+                PrintMessage(node_name, channel, context, &builder);
+              }
             });
         found_channel = true;
       }
@@ -247,8 +252,10 @@ int main(int argc, char **argv) {
     // Print the messages from before the log start time.
     // TODO(austin): Sort between nodes too when it becomes annoying enough.
     for (const MessageInfo &message : messages_before_start) {
-      PrintMessage(message.node_name, message.fetcher->channel(),
-                   message.fetcher->context(), &builder);
+      if (FLAGS_print) {
+        PrintMessage(message.node_name, message.fetcher->channel(),
+                     message.fetcher->context(), &builder);
+      }
     }
     printer_event_loops.emplace_back(std::move(printer_event_loop));
 
