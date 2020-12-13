@@ -28,7 +28,6 @@ cc_library(
         ":buffer_encoder",
         ":uuid",
         ":logger_fbs",
-        ":lzma_encoder",
         "//aos:configuration",
         "//aos:flatbuffer_merge",
         "//aos:flatbuffers",
@@ -39,7 +38,12 @@ cc_library(
         "@com_github_google_flatbuffers//:flatbuffers",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/types:span",
-    ],
+    ] + select({
+        "//tools:cpu_k8": [":lzma_encoder"],
+        "//tools:cpu_aarch64": [":lzma_encoder"],
+        "//conditions:default": [],
+    }),
+
 )
 
 cc_binary(

@@ -9,7 +9,9 @@ cc_library(
         "@matplotlib_repo//:matplotlib3",
         "@python_repo//:all_files",
     ],
-    target_compatible_with = ["@platforms//os:linux"],
+    # While this is technically compatible with "linux", the
+    # "@python_repo//:all_files" has x86 binaries in it.
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     visibility = ["//visibility:public"],
     deps = [
         "@python_repo//:python3.5_lib",

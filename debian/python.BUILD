@@ -10,6 +10,7 @@ cc_library(
         "usr/include/",
         "usr/include/python3.5m/",
     ],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     visibility = ["//visibility:public"],
 )
 
@@ -47,6 +48,7 @@ cc_library(
         "usr/include/",
         "usr/include/python2.7/",
     ],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     visibility = ["//visibility:public"],
 )
 
