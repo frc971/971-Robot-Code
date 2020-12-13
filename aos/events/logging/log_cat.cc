@@ -5,7 +5,6 @@
 #include <string>
 #include <string_view>
 #include <vector>
-#include "dirent.h"
 
 #include "aos/configuration.h"
 #include "aos/events/logging/logger.h"
@@ -36,11 +35,6 @@ DEFINE_bool(print, true,
             "If true, actually print the messages.  If false, discard them, "
             "confirming they can be parsed.");
 
-bool EndsWith(std::string_view str, std::string_view ending) {
-  return str.size() >= ending.size() &&
-         str.substr(str.size() - ending.size()) == ending;
-}
-
 // Print the flatbuffer out to stdout, both to remove the unnecessary cruft from
 // glog and to allow the user to readily redirect just the logged output
 // independent of any debugging information on stderr.
@@ -65,33 +59,6 @@ void PrintMessage(const std::string_view node_name, const aos::Channel *channel,
               << channel->name()->c_str() << ' ' << channel->type()->c_str()
               << ": " << *builder << std::endl;
   }
-}
-
-void SearchDirectory(std::vector<std::string> *files, std::string filename) {
-  DIR *directory = opendir(filename.c_str());
-
-  if (directory == nullptr) {
-    // its not a directory
-    // it could be a file
-    // or it could not exist
-    if (EndsWith(filename, ".bfbs") || EndsWith(filename, ".bfbs.xz")) {
-      files->emplace_back(filename);
-    }
-    return;
-  }
-
-  struct dirent *directory_entry;
-  while ((directory_entry = readdir(directory)) != nullptr) {
-    std::string next_filename = directory_entry->d_name;
-    if (next_filename == "." || next_filename == "..") {
-      continue;
-    }
-
-    std::string path = filename + "/" + next_filename;
-    SearchDirectory(files, path);
-  }
-
-  closedir(directory);
 }
 
 int main(int argc, char **argv) {
@@ -159,10 +126,8 @@ int main(int argc, char **argv) {
     LOG(FATAL) << "Expected at least 1 logfile as an argument.";
   }
 
-  std::vector<std::string> unsorted_logfiles;
-  for (int i = 1; i < argc; ++i) {
-    SearchDirectory(&unsorted_logfiles, argv[i]);
-  }
+  const std::vector<std::string> unsorted_logfiles =
+      aos::logger::FindLogs(argc, argv);
 
   const std::vector<aos::logger::LogFile> logfiles =
       aos::logger::SortParts(unsorted_logfiles);
