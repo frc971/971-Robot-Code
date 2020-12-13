@@ -96,3 +96,6 @@ build --strategy=TypeScriptCompile=worker --strategy=AngularTemplateCompile=work
 # https://github.com/bazelbuild/bazel/issues/6341 for ongoing discussion with
 # upstream about this.
 build --javabase=@openjdk_linux_archive//:jdk --host_javabase=@openjdk_linux_archive//:jdk
+
+# Prevent falling back to the host JDK.
+startup --noautodetect_server_javabase
