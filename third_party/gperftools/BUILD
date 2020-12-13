@@ -142,6 +142,7 @@ cc_library(
         "-lpthread",
     ],
     nocopts = "-std=gnu\\+\\+1y",
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         "//third_party/empty_config_h",
@@ -158,6 +159,7 @@ cc_library(
         "src/tests/testutil.h",
     ],
     copts = common_copts,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":tcmalloc",
     ],
@@ -173,6 +175,7 @@ cc_test(
     defines = [
         "NO_TCMALLOC_SAMPLES",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":tcmalloc",
     ],
@@ -185,6 +188,7 @@ cc_test(
         "src/tests/atomicops_unittest.cc",
     ],
     copts = common_copts,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":tcmalloc",
     ],
@@ -197,6 +201,7 @@ cc_test(
         "src/tests/stacktrace_unittest.cc",
     ],
     copts = common_copts,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":tcmalloc",
     ],
@@ -213,6 +218,7 @@ cc_test(
         #Add this back in when we upgrade clang.
         #'-Wno-mismatched-new-delete',
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":tcmalloc",
         ":testutil",
@@ -228,6 +234,7 @@ cc_test(
     copts = common_copts + [
         "-fno-builtin",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":tcmalloc",
     ],
@@ -240,6 +247,7 @@ cc_test(
         "src/tests/addressmap_unittest.cc",
     ],
     copts = common_copts,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":tcmalloc",
     ],
@@ -254,6 +262,7 @@ cc_test(
     copts = common_copts + [
         "-fno-builtin",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":tcmalloc",
     ],
@@ -266,6 +275,7 @@ cc_test(
         "src/tests/packed-cache_test.cc",
     ],
     copts = common_copts,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":tcmalloc",
     ],
@@ -278,6 +288,7 @@ cc_test(
         "src/tests/frag_unittest.cc",
     ],
     copts = common_copts,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":tcmalloc",
     ],
@@ -290,6 +301,7 @@ cc_test(
         "src/tests/markidle_unittest.cc",
     ]),
     copts = common_copts,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":tcmalloc",
         ":testutil",
@@ -303,6 +315,7 @@ cc_test(
         "src/tests/current_allocated_bytes_test.cc",
     ],
     copts = common_copts,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":tcmalloc",
     ],
@@ -320,6 +333,7 @@ cc_test(
         ],
         "clang": [],
     }),
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":tcmalloc",
         ":testutil",
@@ -333,6 +347,7 @@ cc_test(
         "src/tests/malloc_extension_test.cc",
     ]),
     copts = common_copts,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":tcmalloc",
     ],
@@ -345,6 +360,7 @@ cc_test(
         "src/tests/malloc_extension_c_test.c",
     ]),
     copts = common_copts,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":tcmalloc",
     ],
@@ -357,6 +373,7 @@ cc_test(
         "src/tests/memalign_unittest.cc",
     ]),
     copts = common_copts,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":tcmalloc",
         ":testutil",
@@ -370,6 +387,7 @@ cc_test(
         "src/tests/page_heap_test.cc",
     ],
     copts = common_copts,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":tcmalloc",
     ],
@@ -382,6 +400,7 @@ cc_test(
         "src/tests/pagemap_unittest.cc",
     ]),
     copts = common_copts,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":tcmalloc",
     ],
@@ -394,6 +413,7 @@ cc_test(
         "src/tests/realloc_unittest.cc",
     ],
     copts = common_copts,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":tcmalloc",
     ],
@@ -406,6 +426,7 @@ cc_test(
         "src/tests/stack_trace_table_test.cc",
     ],
     copts = common_copts,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":tcmalloc",
     ],
@@ -418,6 +439,7 @@ cc_test(
         "src/tests/thread_dealloc_unittest.cc",
     ],
     copts = common_copts,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":tcmalloc",
         ":testutil",
@@ -446,6 +468,7 @@ cc_test(
         "src/tests/large_heap_fragmentation_unittest.cc",
     ]),
     copts = common_copts,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":tcmalloc",
     ],
@@ -458,6 +481,7 @@ cc_test(
         "src/tests/raw_printer_test.cc",
     ],
     copts = common_copts,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":tcmalloc",
     ],
@@ -470,6 +494,7 @@ cc_test(
         "src/tests/getpc_test.cc",
     ]),
     copts = common_copts,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":tcmalloc",
     ],
@@ -482,6 +507,7 @@ cc_test(
         "src/tests/profiledata_unittest.cc",
     ],
     copts = common_copts,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":tcmalloc",
     ],
@@ -495,6 +521,7 @@ cc_test(
     ],
     copts = common_copts,
     flaky = True,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":tcmalloc",
     ],
@@ -507,6 +534,7 @@ cc_test(
         "src/tests/heap-profiler_unittest.cc",
     ],
     copts = common_copts,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":tcmalloc",
     ],
@@ -521,6 +549,7 @@ cc_test(
     copts = common_copts + [
         "-Wno-type-limits",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":tcmalloc",
     ],

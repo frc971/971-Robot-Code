@@ -8,6 +8,7 @@ flatbuffer_cc_library(
         "auto_mode.fbs",
     ],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 flatbuffer_cc_library(
@@ -16,4 +17,5 @@ flatbuffer_cc_library(
         "hot_goal.fbs",
     ],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
 )

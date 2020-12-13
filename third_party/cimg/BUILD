@@ -6,6 +6,7 @@ cc_library(
         "CImg.h",
         "plugins/*.h",
     ]),
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         "//third_party/libjpeg",

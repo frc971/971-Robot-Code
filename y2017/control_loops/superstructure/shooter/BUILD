@@ -9,6 +9,7 @@ genrule(
         "shooter_integral_plant.cc",
     ],
     cmd = "$(location //y2017/control_loops/python:shooter) $(OUTS)",
+    target_compatible_with = ["@platforms//os:linux"],
     tools = [
         "//y2017/control_loops/python:shooter",
     ],
@@ -24,6 +25,7 @@ cc_library(
         "shooter_integral_plant.h",
         "shooter_plant.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         "//frc971/control_loops:hybrid_state_feedback_loop",
@@ -39,6 +41,7 @@ cc_library(
     hdrs = [
         "shooter.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         ":shooter_plants",

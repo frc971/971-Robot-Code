@@ -9,6 +9,7 @@ ts_library(
     srcs = [
         "demo.ts",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 gen_embedded(
@@ -17,6 +18,7 @@ gen_embedded(
         include = ["www_defaults/**/*"],
         exclude = ["www/**/*"],
     ),
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 aos_downloader_dir(
@@ -26,12 +28,14 @@ aos_downloader_dir(
         "//y2019/vision/server/www:visualizer_bundle",
     ],
     dir = "www",
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )
 
 cc_proto_library(
     name = "server_data_proto",
     srcs = ["server_data.proto"],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 cc_binary(
@@ -43,6 +47,7 @@ cc_binary(
         "//y2019/vision/server/www:files",
         "//y2019/vision/server/www:visualizer_bundle",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         ":gen_embedded",

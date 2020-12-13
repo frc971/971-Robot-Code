@@ -1,9 +1,8 @@
 package(default_visibility = ["//visibility:public"])
 
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
-
 cc_library(
     name = "shooter_plants",
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//frc971/control_loops:state_feedback_loop",
     ],
@@ -17,6 +16,7 @@ cc_library(
     hdrs = [
         "shooter.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":flywheel_controller",
         "//aos/controls:control_loop",
@@ -36,6 +36,7 @@ cc_library(
     hdrs = [
         "flywheel_controller.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos/controls:control_loop",
         "//frc971/control_loops:profiled_subsystem",

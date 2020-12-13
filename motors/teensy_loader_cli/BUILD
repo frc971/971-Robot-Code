@@ -7,7 +7,7 @@ cc_binary(
         "-DUSE_LIBUSB",
         "-Wno-format-nonliteral",
     ],
-    restricted_to = ["@//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         "@libusb",
     ],

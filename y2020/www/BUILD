@@ -8,6 +8,7 @@ ts_library(
         "camera_main.ts",
         "image_handler.ts",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//y2020:__subpackages__"],
     deps = [
         "//aos:configuration_ts_fbs",
@@ -26,6 +27,7 @@ ts_library(
         "field_handler.ts",
         "field_main.ts",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos:configuration_ts_fbs",
         "//aos/network:connect_ts_fbs",
@@ -40,6 +42,7 @@ rollup_bundle(
     name = "camera_main_bundle",
     enable_code_splitting = False,
     entry_point = "camera_main.ts",
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//y2020:__subpackages__"],
     deps = [
         "camera_main",
@@ -50,6 +53,7 @@ rollup_bundle(
     name = "field_main_bundle",
     enable_code_splitting = False,
     entry_point = "field_main.ts",
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//y2020:__subpackages__"],
     deps = [
         "field_main",
@@ -73,5 +77,6 @@ aos_downloader_dir(
         ":files",
     ],
     dir = "www",
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )

@@ -1,5 +1,3 @@
-load("//tools:environments.bzl", "mcu_cpus")
-
 cc_library(
     name = "legacy",
     srcs = [
@@ -18,7 +16,7 @@ cc_library(
     defines = [
         "USB_SERIAL=1",
     ],
-    restricted_to = mcu_cpus,
+    target_compatible_with = ["@platforms//os:none"],
     visibility = ["//visibility:public"],
     deps = [
         "//motors/core",
@@ -33,7 +31,7 @@ cc_library(
     hdrs = [
         "usb.h",
     ],
-    restricted_to = mcu_cpus,
+    target_compatible_with = ["@platforms//os:none"],
     visibility = ["//visibility:public"],
     deps = [
         ":constants",
@@ -51,7 +49,7 @@ cc_library(
     hdrs = [
         "cdc.h",
     ],
-    restricted_to = mcu_cpus,
+    target_compatible_with = ["@platforms//os:none"],
     visibility = ["//visibility:public"],
     deps = [
         ":queue",
@@ -69,7 +67,7 @@ cc_library(
     hdrs = [
         "interrupt_out.h",
     ],
-    restricted_to = mcu_cpus,
+    target_compatible_with = ["@platforms//os:none"],
     visibility = ["//visibility:public"],
     deps = [
         ":usb",
@@ -86,7 +84,6 @@ cc_library(
     hdrs = [
         "queue.h",
     ],
-    compatible_with = mcu_cpus,
 )
 
 cc_test(
@@ -94,6 +91,7 @@ cc_test(
     srcs = [
         "queue_test.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":queue",
         "//aos/testing:googletest",
@@ -105,7 +103,6 @@ cc_library(
     hdrs = [
         "constants.h",
     ],
-    compatible_with = mcu_cpus,
 )
 
 cc_test(
@@ -113,6 +110,7 @@ cc_test(
     srcs = [
         "constants_test.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":constants",
         "//aos/testing:googletest",
@@ -127,7 +125,7 @@ cc_library(
     hdrs = [
         "hid.h",
     ],
-    restricted_to = mcu_cpus,
+    target_compatible_with = ["@platforms//os:none"],
     visibility = ["//visibility:public"],
     deps = [
         ":usb",

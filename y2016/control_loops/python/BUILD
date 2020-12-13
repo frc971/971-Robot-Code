@@ -6,7 +6,7 @@ py_binary(
         "drivetrain.py",
     ],
     legacy_create_init = False,
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":python_init",
         "//external:python-gflags",
@@ -22,7 +22,7 @@ py_binary(
         "polydrivetrain.py",
     ],
     legacy_create_init = False,
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":python_init",
         "//external:python-gflags",
@@ -37,7 +37,7 @@ py_library(
         "drivetrain.py",
         "polydrivetrain.py",
     ],
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     visibility = ["//visibility:public"],
     deps = [
         ":python_init",
@@ -55,7 +55,7 @@ py_binary(
         "shooter.py",
     ],
     legacy_create_init = False,
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":python_init",
         "//external:python-gflags",
@@ -71,7 +71,7 @@ py_binary(
         "intake.py",
     ],
     legacy_create_init = False,
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":python_init",
         "//external:python-gflags",
@@ -87,7 +87,7 @@ py_binary(
         "shoulder.py",
     ],
     legacy_create_init = False,
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":python_init",
         "//aos/util:py_trapezoid_profile",
@@ -104,7 +104,7 @@ py_binary(
         "wrist.py",
     ],
     legacy_create_init = False,
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":python_init",
         "//aos/util:py_trapezoid_profile",
@@ -120,7 +120,7 @@ py_library(
     srcs = [
         "wrist.py",
     ],
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         "//aos/util:py_trapezoid_profile",
         "//external:python-gflags",
@@ -134,7 +134,7 @@ py_library(
     srcs = [
         "shoulder.py",
     ],
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         "//aos/util:py_trapezoid_profile",
         "//external:python-gflags",
@@ -149,7 +149,7 @@ py_library(
     srcs = [
         "arm.py",
     ],
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":shoulder_lib",
         ":wrist_lib",
@@ -167,7 +167,7 @@ py_binary(
         "arm.py",
     ],
     legacy_create_init = False,
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":python_init",
         ":shoulder_lib",
@@ -182,6 +182,7 @@ py_binary(
 py_library(
     name = "python_init",
     srcs = ["__init__.py"],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = ["//y2016/control_loops:python_init"],
 )

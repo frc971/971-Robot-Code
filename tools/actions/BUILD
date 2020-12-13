@@ -3,6 +3,7 @@ py_binary(
     srcs = [
         "generate_compile_command.py",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//third_party/bazel:extra_actions_proto_py",
     ],
@@ -14,6 +15,7 @@ action_listener(
     mnemonics = [
         "CppCompile",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )
 
@@ -24,6 +26,7 @@ extra_action(
     out_templates = [
         "$(ACTION_ID)_compile_command",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     tools = [
         ":generate_compile_command",
     ],

@@ -9,6 +9,7 @@ genrule(
         "src/include/netinet/sctp.h",
     ],
     cmd = "cp $< $@",
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 cc_library(
@@ -31,5 +32,6 @@ cc_library(
     includes = [
         "src/include",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )

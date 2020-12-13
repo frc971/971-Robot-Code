@@ -7,6 +7,7 @@ flatbuffer_cc_library(
     name = "test_message_fbs",
     srcs = ["test_message.fbs"],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 flatbuffer_cc_library(
@@ -16,29 +17,34 @@ flatbuffer_cc_library(
     includes = [
         "//aos:configuration_fbs_includes",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 flatbuffer_cc_library(
     name = "ping_fbs",
     srcs = ["ping.fbs"],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 flatbuffer_ts_library(
     name = "ping_ts_fbs",
     srcs = ["ping.fbs"],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 flatbuffer_cc_library(
     name = "pong_fbs",
     srcs = ["pong.fbs"],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 cc_library(
     name = "epoll",
     srcs = ["epoll.cc"],
     hdrs = ["epoll.h"],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         "//aos/time",
@@ -49,6 +55,7 @@ cc_library(
 cc_test(
     name = "epoll_test",
     srcs = ["epoll_test.cc"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":epoll",
         "//aos/testing:googletest",
@@ -67,6 +74,7 @@ cc_library(
         "channel_preallocated_allocator.h",
         "event_loop.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         ":event_loop_fbs",
@@ -92,6 +100,7 @@ cc_library(
     hdrs = [
         "ping_lib.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":event_loop",
         ":ping_fbs",
@@ -107,6 +116,7 @@ cc_binary(
         "ping.cc",
     ],
     data = [":pingpong_config"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":ping_lib",
         ":shm_event_loop",
@@ -126,6 +136,7 @@ aos_config(
         "//aos/starter:starter_fbs",
         "//aos/starter:starter_rpc_fbs",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 aos_config(
@@ -135,6 +146,7 @@ aos_config(
         ":ping_fbs",
         ":pong_fbs",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [":config"],
 )
 
@@ -149,6 +161,7 @@ aos_config(
         "//aos/network:timestamp_fbs",
         "//aos/network:message_bridge_server_fbs",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [":config"],
 )
 
@@ -160,6 +173,7 @@ cc_library(
     hdrs = [
         "pong_lib.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":event_loop",
         ":ping_fbs",
@@ -174,6 +188,7 @@ cc_binary(
         "pong.cc",
     ],
     data = [":pingpong_config"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":ping_fbs",
         ":pong_fbs",
@@ -190,6 +205,7 @@ cc_test(
     name = "pingpong_test",
     srcs = ["pingpong_test.cc"],
     data = [":pingpong_config"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":ping_lib",
         ":pong_lib",
@@ -204,6 +220,7 @@ cc_library(
     name = "timing_statistics",
     srcs = ["timing_statistics.cc"],
     hdrs = ["timing_statistics.h"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":event_loop_fbs",
         "//aos:configuration",
@@ -214,6 +231,7 @@ cc_library(
 cc_test(
     name = "timing_statistics_test",
     srcs = ["timing_statistics_test.cc"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":timing_statistics",
         "//aos:configuration",
@@ -226,6 +244,7 @@ cc_library(
     name = "shm_event_loop",
     srcs = ["shm_event_loop.cc"],
     hdrs = ["shm_event_loop.h"],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         ":aos_logging",
@@ -248,6 +267,7 @@ cc_test(
     name = "shm_event_loop_test",
     srcs = ["shm_event_loop_test.cc"],
     shard_count = 16,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":event_loop_param_test",
         ":shm_event_loop",
@@ -260,6 +280,7 @@ cc_library(
     testonly = True,
     srcs = ["event_loop_param_test.cc"],
     hdrs = ["event_loop_param_test.h"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":event_loop",
         ":test_message_fbs",
@@ -273,6 +294,7 @@ cc_test(
     srcs = ["simulated_event_loop_test.cc"],
     data = [":multinode_pingpong_config"],
     shard_count = 4,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":event_loop_param_test",
         ":message_counter",
@@ -287,6 +309,7 @@ cc_library(
     name = "simple_channel",
     srcs = ["simple_channel.cc"],
     hdrs = ["simple_channel.h"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos:configuration_fbs",
         "@com_github_google_flatbuffers//:flatbuffers",
@@ -307,6 +330,7 @@ cc_library(
         "simulated_event_loop.h",
         "simulated_network_bridge.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         ":aos_logging",
@@ -326,6 +350,7 @@ cc_library(
 cc_test(
     name = "event_scheduler_test",
     srcs = ["event_scheduler_test.cc"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":simulated_event_loop",
         "//aos/testing:googletest",
@@ -341,6 +366,7 @@ cc_library(
     hdrs = [
         "aos_logging.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         ":event_loop",
@@ -352,6 +378,7 @@ cc_library(
 cc_library(
     name = "message_counter",
     hdrs = ["message_counter.h"],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         ":event_loop",

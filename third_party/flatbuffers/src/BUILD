@@ -2,7 +2,6 @@ package(
     default_visibility = ["//visibility:private"],
 )
 
-
 # Public flatc library to compile flatbuffer files at runtime.
 cc_library(
     name = "flatbuffers",

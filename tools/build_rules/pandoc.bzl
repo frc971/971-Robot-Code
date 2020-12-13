@@ -6,7 +6,7 @@ Attrs:
   src: Markdown file to convert. Only one file can be specified.
 """
 
-def pandoc_html(name, src):
+def pandoc_html(name, src, target_compatible_with = None):
     output = name + ".html"
     native.genrule(
         name = name,
@@ -15,4 +15,5 @@ def pandoc_html(name, src):
         cmd = "$(location @pandoc//:pandoc_wrapper) -s $< -o $@",
         tools = ["@pandoc//:all_files", "@pandoc//:pandoc_wrapper"],
         executable = True,
+        target_compatible_with = target_compatible_with,
     )

@@ -12,6 +12,7 @@ flatbuffer_cc_library(
         "//frc971/control_loops:control_loops_fbs_includes",
         "//frc971/control_loops:profiled_subsystem_fbs_includes",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 flatbuffer_cc_library(
@@ -20,6 +21,7 @@ flatbuffer_cc_library(
         "superstructure_output.fbs",
     ],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 flatbuffer_cc_library(
@@ -32,6 +34,7 @@ flatbuffer_cc_library(
         "//frc971/control_loops:control_loops_fbs_includes",
         "//frc971/control_loops:profiled_subsystem_fbs_includes",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 flatbuffer_cc_library(
@@ -44,6 +47,7 @@ flatbuffer_cc_library(
         "//frc971/control_loops:control_loops_fbs_includes",
         "//frc971/control_loops:profiled_subsystem_fbs_includes",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 cc_library(
@@ -54,6 +58,7 @@ cc_library(
     hdrs = [
         "superstructure.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":climber",
         ":superstructure_goal_fbs",
@@ -75,6 +80,7 @@ cc_binary(
     srcs = [
         "superstructure_main.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":superstructure_lib",
         "//aos:init",
@@ -90,6 +96,7 @@ cc_test(
     data = [
         "//y2020:config",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":superstructure_goal_fbs",
         ":superstructure_lib",
@@ -119,6 +126,7 @@ cc_library(
     hdrs = [
         "climber.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":superstructure_goal_fbs",
         ":superstructure_output_fbs",

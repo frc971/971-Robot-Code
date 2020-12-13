@@ -3,6 +3,7 @@ load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 cc_binary(
     name = "image_streamer",
     srcs = ["image_streamer.cc"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos/logging",
         "//aos/logging:implementations",
@@ -23,6 +24,7 @@ flatbuffer_cc_library(
         "vision.fbs",
     ],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )
 
@@ -31,6 +33,7 @@ cc_binary(
     srcs = [
         "vision_status.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         ":vision_fbs",

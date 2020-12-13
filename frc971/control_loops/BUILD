@@ -1,7 +1,6 @@
 package(default_visibility = ["//visibility:public"])
 
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
-load("//tools:environments.bzl", "mcu_cpus")
 
 cc_library(
     name = "team_number_test_environment",
@@ -12,6 +11,7 @@ cc_library(
     hdrs = [
         "team_number_test_environment.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos/network:team_number",
         "//aos/testing:googletest",
@@ -23,6 +23,7 @@ cc_test(
     srcs = [
         "hybrid_state_feedback_loop_test.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":hybrid_state_feedback_loop",
         "//aos/testing:googletest",
@@ -32,6 +33,7 @@ cc_test(
 cc_library(
     name = "pose",
     hdrs = ["pose.h"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos/util:math",
         "@org_tuxfamily_eigen//:eigen",
@@ -41,6 +43,7 @@ cc_library(
 cc_test(
     name = "pose_test",
     srcs = ["pose_test.cc"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":pose",
         "//aos/testing:googletest",
@@ -52,6 +55,7 @@ cc_library(
     hdrs = [
         "hall_effect_tracker.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":control_loops_fbs",
     ],
@@ -62,7 +66,6 @@ flatbuffer_cc_library(
     srcs = [
         "control_loops.fbs",
     ],
-    compatible_with = mcu_cpus,
 )
 
 cc_test(
@@ -70,6 +73,7 @@ cc_test(
     srcs = [
         "position_sensor_sim_test.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":control_loops_fbs",
         ":position_sensor_sim",
@@ -90,6 +94,7 @@ cc_library(
     linkopts = [
         "-lm",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":control_loops_fbs",
         ":gaussian_noise",
@@ -108,21 +113,7 @@ cc_library(
     linkopts = [
         "-lm",
     ],
-)
-
-cc_library(
-    name = "coerce_goal_uc",
-    srcs = [
-        "coerce_goal.cc",
-    ],
-    hdrs = [
-        "coerce_goal.h",
-    ],
-    restricted_to = mcu_cpus,
-    deps = [
-        "//aos/controls:polytope_uc",
-        "@org_tuxfamily_eigen//:eigen",
-    ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 cc_library(
@@ -133,9 +124,10 @@ cc_library(
     hdrs = [
         "coerce_goal.h",
     ],
-    linkopts = [
-        "-lm",
-    ],
+    linkopts = select({
+        "@platforms//os:linux": ["-lm"],
+        "//conditions:default": [],
+    }),
     deps = [
         "//aos/controls:polytope",
         "@org_tuxfamily_eigen//:eigen",
@@ -150,24 +142,11 @@ cc_test(
     linkopts = [
         "-lm",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":coerce_goal",
         "//aos/controls:polytope",
         "//aos/testing:googletest",
-        "@org_tuxfamily_eigen//:eigen",
-    ],
-)
-
-# TODO(austin): Select isn't working right.  We should be able to remove
-# logging conditionally with select and have CPU constraints work correctly.
-cc_library(
-    name = "state_feedback_loop_uc",
-    hdrs = [
-        "state_feedback_loop.h",
-    ],
-    restricted_to = mcu_cpus,
-    deps = [
-        "//aos:macros",
         "@org_tuxfamily_eigen//:eigen",
     ],
 )
@@ -179,9 +158,11 @@ cc_library(
     ],
     deps = [
         "//aos:macros",
-        "//aos/logging",
         "@org_tuxfamily_eigen//:eigen",
-    ],
+    ] + select({
+        "@platforms//os:linux": ["//aos/logging"],
+        "//conditions:default": [],
+    }),
 )
 
 cc_library(
@@ -189,6 +170,7 @@ cc_library(
     hdrs = [
         "hybrid_state_feedback_loop.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":c2d",
         ":state_feedback_loop",
@@ -204,6 +186,7 @@ cc_library(
     hdrs = [
         "simple_capped_state_feedback_loop.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":state_feedback_loop",
         "@org_tuxfamily_eigen//:eigen",
@@ -215,6 +198,7 @@ cc_library(
     hdrs = [
         "runge_kutta.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "@org_tuxfamily_eigen//:eigen",
     ],
@@ -225,6 +209,7 @@ cc_test(
     srcs = [
         "runge_kutta_test.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":runge_kutta",
         "//aos/testing:googletest",
@@ -237,6 +222,7 @@ cc_library(
     hdrs = [
         "fixed_quadrature.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 cc_test(
@@ -244,6 +230,7 @@ cc_test(
     srcs = [
         "fixed_quadrature_test.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":fixed_quadrature",
         "//aos/testing:googletest",
@@ -258,6 +245,7 @@ flatbuffer_cc_library(
     includes = [
         ":control_loops_fbs_includes",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 cc_library(
@@ -268,6 +256,7 @@ cc_library(
     hdrs = [
         "profiled_subsystem.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":control_loops_fbs",
         ":profiled_subsystem_fbs",
@@ -284,6 +273,7 @@ cc_library(
     hdrs = [
         "jacobian.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "@org_tuxfamily_eigen//:eigen",
     ],
@@ -294,6 +284,7 @@ cc_test(
     srcs = [
         "jacobian_test.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":jacobian",
         "//aos/testing:googletest",
@@ -306,6 +297,7 @@ cc_test(
     srcs = [
         "c2d_test.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         ":c2d",
@@ -319,6 +311,7 @@ cc_library(
     hdrs = [
         "c2d.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         "//aos/time",
@@ -331,6 +324,7 @@ cc_library(
     hdrs = [
         "dlqr.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         "@org_tuxfamily_eigen//:eigen",
@@ -341,6 +335,7 @@ cc_library(
 py_library(
     name = "python_init",
     srcs = ["__init__.py"],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = ["//frc971:python_init"],
 )
@@ -348,6 +343,7 @@ py_library(
 cc_library(
     name = "binomial",
     hdrs = ["binomial.h"],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 cc_test(
@@ -355,6 +351,7 @@ cc_test(
     srcs = [
         "binomial_test.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":binomial",
         "//aos/testing:googletest",
@@ -370,6 +367,7 @@ cc_library(
     hdrs = [
         "capped_test_plant.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":state_feedback_loop",
         "//aos/testing:googletest",
@@ -381,6 +379,7 @@ cc_library(
     hdrs = [
         "static_zeroing_single_dof_profiled_subsystem.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//frc971/control_loops:profiled_subsystem",
     ],
@@ -395,6 +394,7 @@ genrule(
         "static_zeroing_single_dof_profiled_subsystem_test_integral_plant.cc",
     ],
     cmd = "$(location //frc971/control_loops/python:static_zeroing_single_dof_profiled_subsystem_test) $(OUTS)",
+    target_compatible_with = ["@platforms//os:linux"],
     tools = [
         "//frc971/control_loops/python:static_zeroing_single_dof_profiled_subsystem_test",
     ],
@@ -410,6 +410,7 @@ cc_library(
         "static_zeroing_single_dof_profiled_subsystem_test_integral_plant.h",
         "static_zeroing_single_dof_profiled_subsystem_test_plant.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":state_feedback_loop",
     ],
@@ -424,6 +425,7 @@ flatbuffer_cc_library(
         ":control_loops_fbs_includes",
         ":profiled_subsystem_fbs_includes",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 cc_test(
@@ -431,6 +433,7 @@ cc_test(
     srcs = [
         "static_zeroing_single_dof_profiled_subsystem_test.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":capped_test_plant",
         ":position_sensor_sim",

@@ -6,6 +6,7 @@ cc_library(
     hdrs = [
         "trajectory.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         ":dynamics",
@@ -21,6 +22,7 @@ cc_test(
     srcs = [
         "trajectory_test.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":demo_path",
         ":dynamics",
@@ -39,6 +41,7 @@ cc_library(
     hdrs = [
         "dynamics.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         "//frc971/control_loops:runge_kutta",
@@ -53,6 +56,7 @@ cc_library(
         "demo_path.cc",
     ],
     hdrs = ["demo_path.h"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [":trajectory"],
 )
 
@@ -61,6 +65,7 @@ cc_test(
     srcs = [
         "dynamics_test.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":dynamics",
         "//aos/testing:googletest",
@@ -72,7 +77,7 @@ cc_binary(
     srcs = [
         "trajectory_plot.cc",
     ],
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":ekf",
         ":generated_graph",
@@ -91,6 +96,7 @@ cc_library(
     hdrs = [
         "ekf.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         ":dynamics",
@@ -103,11 +109,13 @@ cc_library(
     name = "graph",
     srcs = ["graph.cc"],
     hdrs = ["graph.h"],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 cc_test(
     name = "graph_test",
     srcs = ["graph_test.cc"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":graph",
         "//aos/testing:googletest",
@@ -122,6 +130,7 @@ cc_library(
     hdrs = [
         "arm.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         ":demo_path",
@@ -143,6 +152,7 @@ genrule(
         "generated_graph.cc",
     ],
     cmd = "$(location //y2018/control_loops/python:graph_codegen) $(OUTS)",
+    target_compatible_with = ["@platforms//os:linux"],
     tools = [
         "//y2018/control_loops/python:graph_codegen",
     ],
@@ -157,6 +167,7 @@ cc_library(
     copts = [
         "-O1",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         ":graph",

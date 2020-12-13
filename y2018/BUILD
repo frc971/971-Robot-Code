@@ -12,6 +12,7 @@ robot_downloader(
         "//y2018/control_loops/drivetrain:drivetrain",
         "//y2018/control_loops/superstructure:superstructure",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 cc_binary(
@@ -19,6 +20,7 @@ cc_binary(
     srcs = [
         "joystick_reader.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":vision_proto",
         "//aos:init",
@@ -49,6 +51,7 @@ cc_library(
     hdrs = [
         "constants.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         "//aos/logging",
@@ -67,7 +70,7 @@ cc_binary(
     srcs = [
         "wpilib_interface.cc",
     ],
-    restricted_to = ["//tools:roborio"],
+    target_compatible_with = ["//tools/platforms/hardware:roborio"],
     deps = [
         ":status_light_fbs",
         "//aos:init",
@@ -111,6 +114,7 @@ flatbuffer_cc_library(
         "status_light.fbs",
     ],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )
 
@@ -125,6 +129,7 @@ aos_config(
         "//y2018/control_loops/superstructure:superstructure_status_fbs",
         "//y2018/vision:vision_fbs",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         "//aos/robot_state:config",
@@ -135,11 +140,13 @@ aos_config(
 cc_proto_library(
     name = "vision_proto",
     srcs = ["vision.proto"],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )
 
 py_library(
     name = "python_init",
     srcs = ["__init__.py"],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )

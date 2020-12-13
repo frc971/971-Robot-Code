@@ -8,6 +8,7 @@ cc_binary(
     testonly = 1,
     srcs = ["basic_test.cc"],
     data = [":config"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":basic",
         ":basic_goal_fbs",
@@ -26,6 +27,7 @@ cc_library(
     name = "basic",
     srcs = ["basic.cc"],
     hdrs = ["basic.h"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":basic_goal_fbs",
         ":basic_output_fbs",
@@ -41,6 +43,7 @@ flatbuffer_cc_library(
         "basic_goal.fbs",
     ],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 flatbuffer_cc_library(
@@ -49,6 +52,7 @@ flatbuffer_cc_library(
         "basic_output.fbs",
     ],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 flatbuffer_cc_library(
@@ -57,6 +61,7 @@ flatbuffer_cc_library(
         "basic_status.fbs",
     ],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 flatbuffer_cc_library(
@@ -65,6 +70,7 @@ flatbuffer_cc_library(
         "basic_position.fbs",
     ],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 aos_config(
@@ -76,6 +82,7 @@ aos_config(
         ":basic_status_fbs",
         ":basic_output_fbs",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos/robot_state:config",
     ],

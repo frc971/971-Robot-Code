@@ -31,6 +31,7 @@ cc_library(
         "gcc": ["-Wno-unused-but-set-variable"],
         "clang": [],
     }),
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )
 
@@ -38,6 +39,7 @@ cc_binary(
     name = "_cddlib.so",
     linkshared = True,
     linkstatic = False,
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [":cddlib"],
 )

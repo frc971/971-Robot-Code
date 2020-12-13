@@ -7,5 +7,6 @@ cc_library(
     name = "Catch2",
     hdrs = ["catch/catch.hpp"],
     includes = ["."],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )

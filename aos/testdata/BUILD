@@ -35,21 +35,25 @@ genrule(
     "empty.json"
   ]
 }""" + "'> $@",
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 aos_config(
     name = "empty_config",
     src = "empty.json",
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 aos_config(
     name = "generated_config",
     src = "generated.json",
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [":empty_config"],
 )
 
 aos_config(
     name = "generated_config_flattener_test",
     src = "generated_config_test.json",
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [":generated_config"],
 )

@@ -1,3 +1,6 @@
+load("//tools:platforms.bzl", "platforms")
+load("//tools/build_rules:select.bzl", "cpu_select")
+
 def fast_gaussian(sigmas, sizes):
     files = []
     for _, sigma_name, _ in sigmas:
@@ -28,17 +31,22 @@ def fast_gaussian(sigmas, sizes):
             ":fast_gaussian_runner",
         ],
         cmd = " ".join([
-            "$(location fast_gaussian_runner)",
+            "$(location :fast_gaussian_runner)",
             "'" + params.to_json() + "'",
-            # TODO(Brian): This should be RULEDIR once we have support for that.
-            "$(@D)",
-            "$(TARGET_CPU)",
-        ]),
+            "$(RULEDIR)",
+        ]) + " " + cpu_select({
+            "amd64": "k8",
+            "roborio": "roborio",
+            "armhf": "armhf-debian",
+            "cortex-m": "cortex-m",
+        }),
         outs = headers + objects + htmls,
-        restricted_to = [
-            "//tools:k8",
-            "//tools:armhf-debian",
-        ],
+        # The tool doesn't support anything other than k8 and armhf-debian
+        # right now.
+        target_compatible_with = platforms.any_of([
+            "@platforms//cpu:x86_64",
+            "//tools/platforms/hardware:raspberry_pi",
+        ]),
     )
 
     native.cc_library(
@@ -47,9 +55,5 @@ def fast_gaussian(sigmas, sizes):
         srcs = headers + objects,
         deps = [
             "//third_party:halide_runtime",
-        ],
-        restricted_to = [
-            "//tools:k8",
-            "//tools:armhf-debian",
         ],
     )

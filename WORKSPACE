@@ -118,6 +118,31 @@ generate_repositories_for_debs(lzma_amd64_debs)
 
 generate_repositories_for_debs(lzma_arm64_debs)
 
+register_toolchains(
+    "//tools/cpp:cc-toolchain-k8",
+    "//tools/cpp:cc-toolchain-armhf-debian",
+    "//tools/cpp:cc-toolchain-roborio",
+    "//tools/cpp:cc-toolchain-cortex-m4f",
+    # Find a good way to select between these two M4F toolchains.
+    #"//tools/cpp:cc-toolchain-cortex-m4f-k22",
+)
+
+http_archive(
+    name = "platforms",
+    sha256 = "3c4057c53b64dd3f2c753e0a80bbb6ccb29fb437910200c911dd51454baf619b",
+    url = "https://www.frc971.org/Build-Dependencies/platforms_10b4d2bdde25ea1e66c02c3f83a6d921000a7272.zip",
+    strip_prefix = "platforms-10b4d2bdde25ea1e66c02c3f83a6d921000a7272",
+)
+
+http_archive(
+    name = "bazel_skylib",
+    urls = [
+        "https://mirror.bazel.build/github.com/bazelbuild/bazel-skylib/releases/download/1.0.3/bazel-skylib-1.0.3.tar.gz",
+        "https://github.com/bazelbuild/bazel-skylib/releases/download/1.0.3/bazel-skylib-1.0.3.tar.gz",
+    ],
+    sha256 = "1c531376ac7e5a180e0237938a2536de0c54d93f5c278634818e0efc952dd56c",
+)
+
 http_archive(
     name = "python_repo",
     build_file = "@//debian:python.BUILD",
@@ -461,7 +486,7 @@ cc_library(
     name = 'api-cpp',
     visibility = ['//visibility:public'],
     srcs = ['linux/athena/static/libCTRE_Phoenix.a'],
-    restricted_to = ['@//tools:roborio'],
+    target_compatible_with = ['@//tools/platforms/hardware:roborio'],
     deps = [
       '@ctre_phoenix_core_headers//:core',
       '@ctre_phoenix_core_athena//:core',
@@ -498,7 +523,7 @@ cc_library(
     name = 'diagnostics',
     visibility = ['//visibility:public'],
     srcs = ['linux/athena/static/libCTRE_PhoenixDiagnostics.a'],
-    restricted_to = ['@//tools:roborio'],
+    target_compatible_with = ['@//tools/platforms/hardware:roborio'],
     deps = [
       '@ctre_phoenix_core_headers//:core',
       '@ctre_phoenix_core_athena//:core',
@@ -535,7 +560,7 @@ cc_library(
     name = 'cci',
     visibility = ['//visibility:public'],
     srcs = ['linux/athena/static/libCTRE_PhoenixCCI.a'],
-    restricted_to = ['@//tools:roborio'],
+    target_compatible_with = ['@//tools/platforms/hardware:roborio'],
 )
 """,
     sha256 = "e5d9b58072002dbd2daa8cc8d42e047e5c90d26bd5a2b1d63dc1b89112ac3837",
@@ -568,7 +593,7 @@ cc_library(
     name = 'core',
     visibility = ['//visibility:public'],
     srcs = ['linux/athena/static/libCTRE_PhoenixCore.a'],
-    restricted_to = ['@//tools:roborio'],
+    target_compatible_with = ['@//tools/platforms/hardware:roborio'],
 )
 """,
     sha256 = "cd827bc68c0f4ef2fe6c363a7f9f5a08f7d944b574c65a2c7fb823686501f43f",

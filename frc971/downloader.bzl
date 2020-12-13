@@ -8,7 +8,7 @@ def robot_downloader(
         data = [],
         dirs = None,
         default_target = None,
-        restricted_to = ["//tools:roborio"],
+        target_compatible_with = ["@//tools/platforms/hardware:roborio"],
         target_type = "roborio"):
     """Sets up the standard robot download targets.
 
@@ -29,7 +29,7 @@ def robot_downloader(
         dirs = dirs,
         target_type = target_type,
         default_target = default_target,
-        restricted_to = restricted_to,
+        target_compatible_with = target_compatible_with,
     )
 
     aos_downloader(
@@ -44,5 +44,5 @@ def robot_downloader(
         dirs = dirs,
         target_type = target_type,
         default_target = default_target,
-        restricted_to = restricted_to,
+        target_compatible_with = target_compatible_with,
     )

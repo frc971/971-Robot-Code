@@ -9,6 +9,7 @@ genrule(
         "stuck_column_integral_plant.cc",
     ],
     cmd = "$(location //y2017/control_loops/python:column) $(OUTS)",
+    target_compatible_with = ["@platforms//os:linux"],
     tools = [
         "//y2017/control_loops/python:column",
     ],
@@ -26,6 +27,7 @@ cc_library(
         "column_plant.h",
         "stuck_column_integral_plant.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         "//frc971/control_loops:state_feedback_loop",
@@ -40,6 +42,7 @@ cc_library(
     hdrs = [
         "column.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         ":column_plants",
@@ -63,6 +66,7 @@ cc_library(
     hdrs = [
         "column_zeroing.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//frc971:constants",
         "//frc971/control_loops:profiled_subsystem_fbs",
@@ -79,6 +83,7 @@ cc_test(
     srcs = [
         "column_zeroing_test.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":column_zeroing",
         "//aos/testing:test_shm",

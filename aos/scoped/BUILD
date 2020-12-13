@@ -8,6 +8,7 @@ cc_library(
     hdrs = [
         "scoped_fd.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos:macros",
         "@com_github_google_glog//:glog",

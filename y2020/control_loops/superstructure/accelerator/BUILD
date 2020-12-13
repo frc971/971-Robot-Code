@@ -1,7 +1,5 @@
 package(default_visibility = ["//visibility:public"])
 
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
-
 genrule(
     name = "genrule_accelerator",
     outs = [
@@ -11,6 +9,7 @@ genrule(
         "integral_accelerator_plant.cc",
     ],
     cmd = "$(location //y2020/control_loops/python:accelerator) $(OUTS)",
+    target_compatible_with = ["@platforms//os:linux"],
     tools = [
         "//y2020/control_loops/python:accelerator",
     ],
@@ -26,6 +25,7 @@ cc_library(
         "accelerator_plant.h",
         "integral_accelerator_plant.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         "//frc971/control_loops:hybrid_state_feedback_loop",

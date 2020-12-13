@@ -37,10 +37,11 @@ architecture_paths = {
         "arm",
         "generic",
     ],
-    "@//tools:cpu_cortex_m4f_k22": [
-        "arm",
-        "generic",
-    ],
+    # TODO(phil): Support this properly.
+    #"@//tools:cpu_cortex_m4f_k22": [
+    #    "arm",
+    #    "generic",
+    #],
 }
 
 # gmp's tools leak memory on purpose. Just skip asan for them.
@@ -51,6 +52,7 @@ genrule(
     srcs = file_from_architecture(architecture_paths, "gmp.h"),
     outs = ["gmp.h"],
     cmd = "cp $< $@",
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 genrule(
@@ -58,6 +60,7 @@ genrule(
     srcs = file_from_architecture(architecture_paths, "config.m4"),
     outs = ["config.m4"],
     cmd = "cp $< $@",
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 copts_common = [
@@ -100,6 +103,7 @@ copts = copts_common + [
 
 cc_library(
     name = "bootstrap",
+    target_compatible_with = ["@platforms//os:linux"],
     textual_hdrs = [
         "bootstrap.c",
         "mini-gmp/mini-gmp.c",
@@ -112,6 +116,7 @@ cc_binary(
     srcs = ["gen-fac.c"],
     copts = copts,
     features = tool_features,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [":bootstrap"],
 )
 
@@ -126,6 +131,7 @@ genrule(
     name = "fac_table_h",
     outs = ["fac_table.h"],
     cmd = "$(location :gen-fac) " + limb_bits + " " + nail_bits + " > $@",
+    target_compatible_with = ["@platforms//os:linux"],
     tools = [":gen-fac"],
 )
 
@@ -134,6 +140,7 @@ cc_binary(
     srcs = ["gen-fib.c"],
     copts = copts,
     features = tool_features,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [":bootstrap"],
 )
 
@@ -141,6 +148,7 @@ genrule(
     name = "fib_table_h",
     outs = ["fib_table.h"],
     cmd = "$(location :gen-fib) header " + limb_bits + " " + nail_bits + " > $@",
+    target_compatible_with = ["@platforms//os:linux"],
     tools = [":gen-fib"],
 )
 
@@ -148,6 +156,7 @@ genrule(
     name = "fib_table_c",
     outs = ["mpn/fib_table.c"],
     cmd = "$(location :gen-fib) table " + limb_bits + " " + nail_bits + " > $@",
+    target_compatible_with = ["@platforms//os:linux"],
     tools = [":gen-fib"],
 )
 
@@ -156,6 +165,7 @@ cc_binary(
     srcs = ["gen-bases.c"],
     copts = copts,
     features = tool_features,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [":bootstrap"],
 )
 
@@ -163,6 +173,7 @@ genrule(
     name = "mp_bases_h",
     outs = ["mp_bases.h"],
     cmd = "$(location :gen-bases) header " + limb_bits + " " + nail_bits + " > $@",
+    target_compatible_with = ["@platforms//os:linux"],
     tools = [":gen-bases"],
 )
 
@@ -170,6 +181,7 @@ genrule(
     name = "mp_bases_c",
     outs = ["mpn/mp_bases.c"],
     cmd = "$(location :gen-bases) table " + limb_bits + " " + nail_bits + " > $@",
+    target_compatible_with = ["@platforms//os:linux"],
     tools = [":gen-bases"],
 )
 
@@ -178,6 +190,7 @@ cc_binary(
     srcs = ["gen-trialdivtab.c"],
     copts = copts,
     features = tool_features,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [":bootstrap"],
 )
 
@@ -185,6 +198,7 @@ genrule(
     name = "trialdivtab_h",
     outs = ["trialdivtab.h"],
     cmd = "$(location :gen-trialdivtab) " + limb_bits + " 8000 > $@",
+    target_compatible_with = ["@platforms//os:linux"],
     tools = [":gen-trialdivtab"],
 )
 
@@ -192,6 +206,7 @@ cc_binary(
     name = "gen-jacobitab",
     srcs = ["gen-jacobitab.c"],
     copts = copts,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [":bootstrap"],
 )
 
@@ -199,6 +214,7 @@ genrule(
     name = "jacobitab_h",
     outs = ["mpn/jacobitab.h"],
     cmd = "$(location :gen-jacobitab) > $@",
+    target_compatible_with = ["@platforms//os:linux"],
     tools = [":gen-jacobitab"],
 )
 
@@ -206,6 +222,7 @@ cc_binary(
     name = "gen-psqr",
     srcs = ["gen-psqr.c"],
     copts = copts,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [":bootstrap"],
 )
 
@@ -213,6 +230,7 @@ genrule(
     name = "perfsqr_h",
     outs = ["mpn/perfsqr.h"],
     cmd = "$(location :gen-psqr) " + limb_bits + " " + nail_bits + " > $@",
+    target_compatible_with = ["@platforms//os:linux"],
     tools = [":gen-psqr"],
 )
 
@@ -453,6 +471,7 @@ gmp_mpn_functions = [
     mpn_m4_cc_library(
         name = x,
         architecture_paths = architecture_paths,
+        target_compatible_with = ["@platforms//os:linux"],
     )
     for x in gmp_mpn_functions
 ]
@@ -493,6 +512,7 @@ cc_library(
         "-Wno-unused-command-line-argument",
         "-Wa,--noexecstack",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 # TODO(austin): Can we run these through the mpn_m4_cc_library and get operation baked in without work?
@@ -502,6 +522,7 @@ mpn_cc_library(
         "mpn/fib_table.c",
     ],
     copts = copts,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [":mpn_core"],
 )
 
@@ -511,11 +532,13 @@ mpn_cc_library(
         "mpn/mp_bases.c",
     ],
     copts = copts,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [":mpn_core"],
 )
 
 cc_library(
     name = "mpn",
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":fib_table",
         ":mp_bases",
@@ -692,6 +715,7 @@ cc_library(
         "mpz/xor.c",
     ],
     copts = copts,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":mpn",
     ],
@@ -734,6 +758,7 @@ cc_library(
         "mpq/swap.c",
     ],
     copts = copts,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":mpn",
     ],
@@ -813,6 +838,7 @@ cc_library(
         "mpf/urandomb.c",
     ],
     copts = copts,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":mpn",
     ],
@@ -844,6 +870,7 @@ cc_library(
         "printf/vsprintf.c",
     ],
     copts = copts,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":mpn",
     ],
@@ -863,6 +890,7 @@ cc_library(
         "scanf/vsscanf.c",
     ],
     copts = copts,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":mpn",
     ],
@@ -887,6 +915,7 @@ cc_library(
         "rand/randsdui.c",
     ],
     copts = copts,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":mpn",
     ],
@@ -908,6 +937,7 @@ cc_library(
         "cxx/osmpz.cc",
     ],
     copts = ccopts,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":mpn",
     ],
@@ -916,6 +946,7 @@ cc_library(
 cc_library(
     name = "gmp",
     includes = ["."],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         ":cxx",
@@ -941,6 +972,7 @@ genrule(
               "amd64": "amd64call.asm",
           }) +
           " > $${ROOT}/$@",
+    target_compatible_with = ["@platforms//os:linux"],
     tools = [
         "@m4_v1.4.18//:bin",
         "@m4_v1.4.18//:lib",
@@ -977,6 +1009,7 @@ cc_library(
         ".",
         "tests",
     ] + ["mpn/" + p for p in architecture_paths],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [":gmp"],
 )
 
@@ -984,6 +1017,7 @@ cc_library(
     name = "tests/" + x,
     srcs = ["tests/" + x + ".c"],
     copts = copts,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [":testlib"],
 ) for x in [
     "t-bswap",
@@ -1000,6 +1034,7 @@ cc_library(
     name = "tests/mpn/" + x,
     srcs = ["tests/mpn/" + x + ".c"],
     copts = copts,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [":testlib"],
 ) for x in [
     "t-asmtype",
@@ -1058,6 +1093,7 @@ cc_library(
     name = "tests/mpz/" + x,
     srcs = ["tests/mpz/" + x + ".c"],
     copts = copts,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [":testlib"],
 ) for x in [
     "reuse",
@@ -1130,6 +1166,7 @@ cc_library(
     name = "tests/mpq/" + x,
     srcs = ["tests/mpq/" + x + ".c"],
     copts = copts,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [":testlib"],
 ) for x in [
     "t-aors",
@@ -1153,6 +1190,7 @@ cc_library(
     name = "tests/mpf/" + x,
     srcs = ["tests/mpf/" + x + ".c"],
     copts = copts,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [":testlib"],
 ) for x in [
     "t-dm2exp",
@@ -1189,6 +1227,7 @@ cc_library(
     name = "tests/rand/" + x,
     srcs = ["tests/rand/" + x + ".c"],
     copts = copts,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [":testlib"],
 ) for x in [
     "t-iset",
@@ -1204,6 +1243,7 @@ cc_library(
     name = "tests/misc/" + x,
     srcs = ["tests/misc/" + x + ".c"],
     copts = copts,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [":testlib"],
 ) for x in [
     "t-printf",
@@ -1215,6 +1255,7 @@ cc_library(
     name = "tests/cxx/" + x,
     srcs = ["tests/cxx/" + x + ".cc"],
     copts = copts,
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [":testlib"],
 ) for x in [
     "t-binary",

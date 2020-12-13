@@ -1,12 +1,11 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//tools:environments.bzl", "mcu_cpus")
-
 cc_library(
     name = "averager",
     hdrs = [
         "averager.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "@com_github_google_glog//:glog",
         "@org_tuxfamily_eigen//:eigen",
@@ -18,6 +17,7 @@ cc_test(
     srcs = [
         "averager_test.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":averager",
         "//aos/testing:googletest",
@@ -33,6 +33,7 @@ cc_library(
     hdrs = [
         "imu_zeroer.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":averager",
         "//frc971/control_loops:control_loops_fbs",
@@ -48,6 +49,7 @@ cc_test(
     srcs = [
         "imu_zeroer_test.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":imu_zeroer",
         "//aos:flatbuffers",
@@ -59,22 +61,23 @@ cc_test(
 cc_library(
     name = "zeroing",
     srcs = [
+        "absolute_and_absolute_encoder.cc",
         "absolute_encoder.cc",
         "hall_effect_and_position.cc",
         "pot_and_absolute_encoder.cc",
         "pot_and_index.cc",
         "pulse_index.cc",
-        "absolute_and_absolute_encoder.cc",
     ],
     hdrs = [
+        "absolute_and_absolute_encoder.h",
         "absolute_encoder.h",
         "hall_effect_and_position.h",
         "pot_and_absolute_encoder.h",
         "pot_and_index.h",
         "pulse_index.h",
         "zeroing.h",
-        "absolute_and_absolute_encoder.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":wrap",
         "//aos/logging",
@@ -87,15 +90,16 @@ cc_library(
 cc_test(
     name = "zeroing_test",
     srcs = [
+        "absolute_and_absolute_encoder_test.cc",
         "absolute_encoder_test.cc",
         "hall_effect_and_position_test.cc",
         "pot_and_absolute_encoder_test.cc",
         "pot_and_index_test.cc",
         "pulse_index_test.cc",
         "relative_encoder_test.cc",
-        "absolute_and_absolute_encoder_test.cc",
         "zeroing_test.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":zeroing",
         "//aos/testing:googletest",
@@ -113,7 +117,6 @@ cc_library(
     hdrs = [
         "wrap.h",
     ],
-    compatible_with = mcu_cpus,
 )
 
 cc_test(
@@ -121,6 +124,7 @@ cc_test(
     srcs = [
         "wrap_test.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":wrap",
         "//aos/testing:googletest",
@@ -132,6 +136,7 @@ cc_test(
     srcs = [
         "unwrap_test.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":wrap",
         "//aos/testing:googletest",

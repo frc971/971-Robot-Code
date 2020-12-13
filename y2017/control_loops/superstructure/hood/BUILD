@@ -7,6 +7,7 @@ genrule(
         "hood_integral_plant.cc",
     ],
     cmd = "$(location //y2017/control_loops/python:hood) $(OUTS)",
+    target_compatible_with = ["@platforms//os:linux"],
     tools = [
         "//y2017/control_loops/python:hood",
     ],
@@ -22,6 +23,7 @@ cc_library(
         "hood_integral_plant.h",
         "hood_plant.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         "//frc971/control_loops:state_feedback_loop",
@@ -36,6 +38,7 @@ cc_library(
     hdrs = [
         "hood.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         ":hood_plants",

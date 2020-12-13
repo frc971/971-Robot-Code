@@ -7,7 +7,7 @@ py_binary(
         "@python_repo//:scipy",
     ],
     legacy_create_init = False,
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":python_init",
         "//external:python-gflags",
@@ -23,7 +23,7 @@ py_binary(
         "haptic_phase_current.py",
     ],
     legacy_create_init = False,
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":python_init",
         "//external:python-gflags",
@@ -35,6 +35,7 @@ py_binary(
 py_library(
     name = "python_init",
     srcs = ["__init__.py"],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = ["//motors:python_init"],
 )

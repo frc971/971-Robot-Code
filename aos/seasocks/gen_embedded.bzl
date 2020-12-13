@@ -41,11 +41,12 @@ Attrs:
   srcs: Files to allow loading.
 """
 
-def gen_embedded(name, srcs, visibility = None):
+def gen_embedded(name, srcs, visibility = None, target_compatible_with = None):
     _do_gen_embedded(
         name = name + "__do_gen",
         visibility = ["//visibility:private"],
         srcs = srcs,
+        target_compatible_with = target_compatible_with,
     )
     native.cc_library(
         name = name,
@@ -57,4 +58,5 @@ def gen_embedded(name, srcs, visibility = None):
         deps = [
             "@//third_party/seasocks",
         ],
+        target_compatible_with = target_compatible_with,
     )

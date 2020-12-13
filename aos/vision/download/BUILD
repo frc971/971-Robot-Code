@@ -3,5 +3,6 @@ py_binary(
     srcs = [
         "downloader.py",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )

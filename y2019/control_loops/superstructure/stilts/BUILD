@@ -9,6 +9,7 @@ genrule(
         "integral_stilts_plant.cc",
     ],
     cmd = "$(location //y2019/control_loops/python:stilts) $(OUTS)",
+    target_compatible_with = ["@platforms//os:linux"],
     tools = [
         "//y2019/control_loops/python:stilts",
     ],
@@ -24,6 +25,7 @@ cc_library(
         "integral_stilts_plant.h",
         "stilts_plant.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         "//frc971/control_loops:hybrid_state_feedback_loop",

@@ -8,4 +8,5 @@ flatbuffer_cc_library(
         "ball_detector.fbs",
     ],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
 )

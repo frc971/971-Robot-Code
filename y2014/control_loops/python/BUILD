@@ -6,7 +6,7 @@ py_binary(
         "drivetrain.py",
     ],
     legacy_create_init = False,
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":python_init",
         "//external:python-gflags",
@@ -22,7 +22,7 @@ py_binary(
         "polydrivetrain.py",
     ],
     legacy_create_init = False,
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":python_init",
         "//external:python-gflags",
@@ -37,7 +37,7 @@ py_library(
         "drivetrain.py",
         "polydrivetrain.py",
     ],
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//external:python-gflags",
         "//external:python-glog",
@@ -53,7 +53,7 @@ py_binary(
         "claw.py",
     ],
     legacy_create_init = False,
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":polydrivetrain_lib",
         ":python_init",
@@ -70,7 +70,7 @@ py_binary(
         "shooter.py",
     ],
     legacy_create_init = False,
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":python_init",
         "//external:python-gflags",
@@ -86,7 +86,7 @@ py_binary(
         "extended_lqr.py",
     ],
     legacy_create_init = False,
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":python_init",
         "//external:python-gflags",
@@ -99,6 +99,7 @@ py_binary(
 py_library(
     name = "python_init",
     srcs = ["__init__.py"],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = ["//y2014/control_loops:python_init"],
 )

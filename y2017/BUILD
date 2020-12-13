@@ -9,6 +9,7 @@ cc_library(
     hdrs = [
         "constants.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         "//aos/logging",
@@ -30,6 +31,7 @@ cc_binary(
     srcs = [
         "joystick_reader.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":constants",
         "//aos:init",
@@ -56,6 +58,7 @@ aos_config(
         "//y2017/control_loops/superstructure:superstructure_status_fbs",
         "//y2017/vision:vision_fbs",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         "//aos/robot_state:config",
@@ -68,7 +71,7 @@ cc_binary(
     srcs = [
         "wpilib_interface.cc",
     ],
-    restricted_to = ["//tools:roborio"],
+    target_compatible_with = ["//tools/platforms/hardware:roborio"],
     deps = [
         ":constants",
         "//aos:init",
@@ -114,10 +117,12 @@ robot_downloader(
         "//y2017/control_loops/superstructure:superstructure",
         "//y2017/actors:autonomous_action",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 py_library(
     name = "python_init",
     srcs = ["__init__.py"],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )

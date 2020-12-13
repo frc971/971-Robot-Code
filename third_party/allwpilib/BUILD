@@ -34,6 +34,7 @@ py_binary(
     srcs = [
         "generate_FRCUsageReporting.py",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 genrule(
@@ -53,6 +54,7 @@ genrule(
         "$(location hal/src/generate/ResourceType.txt)",
         "$(location hal/src/main/native/include/hal/FRCUsageReporting.h)",
     ]),
+    target_compatible_with = ["@platforms//os:linux"],
     tools = [
         ":generate_FRCUsageReporting",
     ],
@@ -79,7 +81,7 @@ cc_library(
         "-Wno-cast-align",
     ],
     includes = _hal_header_dirs,
-    restricted_to = ["//tools:roborio"],
+    target_compatible_with = ["//tools/platforms/hardware:roborio"],
     visibility = ["//third_party:__pkg__"],
     deps = [
         "//aos/logging",

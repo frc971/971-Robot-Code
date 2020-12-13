@@ -1,5 +1,4 @@
 load("//motors:macros.bzl", "hex_from_elf")
-load("//tools:environments.bzl", "mcu_cpus")
 
 cc_binary(
     name = "fet12.elf",
@@ -7,7 +6,7 @@ cc_binary(
         "current_equalization.h",
         "fet12.cc",
     ],
-    restricted_to = mcu_cpus,
+    target_compatible_with = ["@platforms//os:none"],
     deps = [
         ":motor_controls",
         "//motors:motor",
@@ -25,7 +24,7 @@ cc_binary(
         "current_equalization.h",
         "fet12v2.cc",
     ],
-    restricted_to = mcu_cpus,
+    target_compatible_with = ["@platforms//os:none"],
     deps = [
         ":motor_controls",
         "//motors:motor",
@@ -40,7 +39,7 @@ cc_binary(
 
 hex_from_elf(
     name = "fet12",
-    restricted_to = mcu_cpus,
+    target_compatible_with = ["@platforms//os:none"],
 )
 
 cc_binary(
@@ -48,7 +47,7 @@ cc_binary(
     srcs = [
         "power_wheels.cc",
     ],
-    restricted_to = mcu_cpus,
+    target_compatible_with = ["@platforms//os:none"],
     deps = [
         "//motors:util",
         "//motors/core",
@@ -60,7 +59,7 @@ cc_binary(
 
 hex_from_elf(
     name = "power_wheels",
-    restricted_to = mcu_cpus,
+    target_compatible_with = ["@platforms//os:none"],
 )
 
 cc_library(
@@ -71,7 +70,7 @@ cc_library(
     hdrs = [
         "motor_controls.h",
     ],
-    restricted_to = mcu_cpus,
+    target_compatible_with = ["@platforms//os:none"],
     deps = [
         "//motors:math",
         "//motors:motor",
@@ -88,6 +87,7 @@ py_library(
     data = [
         "@python_repo//:scipy",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 py_binary(
@@ -99,6 +99,7 @@ py_binary(
         ":calib_sensors",
         "@python_repo//:scipy",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 genrule(
@@ -122,6 +123,6 @@ genrule(
         "$(location calib_data_6030c.csv)",
         "> \"$@\"",
     ]),
-    restricted_to = mcu_cpus,
+    target_compatible_with = ["@platforms//os:none"],
     tools = ["current_equalize"],
 )

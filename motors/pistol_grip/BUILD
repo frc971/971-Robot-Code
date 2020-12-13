@@ -1,12 +1,11 @@
 load("//motors:macros.bzl", "hex_from_elf")
-load("//tools:environments.bzl", "mcu_cpus")
 
 cc_binary(
     name = "drivers_station.elf",
     srcs = [
         "drivers_station.cc",
     ],
-    restricted_to = mcu_cpus,
+    target_compatible_with = ["@platforms//os:none"],
     deps = [
         "//motors:util",
         "//motors/core",
@@ -21,7 +20,7 @@ cc_binary(
 
 hex_from_elf(
     name = "drivers_station",
-    restricted_to = mcu_cpus,
+    target_compatible_with = ["@platforms//os:none"],
 )
 
 cc_binary(
@@ -35,10 +34,10 @@ cc_binary(
         "vtable_wheel0.cc",
         "vtable_wheel1.cc",
     ],
-    restricted_to = mcu_cpus,
+    target_compatible_with = ["@platforms//os:none"],
     deps = [
         ":motor_controls",
-        "//frc971/control_loops/drivetrain:haptic_input_uc",
+        "//frc971/control_loops/drivetrain:haptic_wheel",
         "//motors:motor",
         "//motors:util",
         "//motors/core",
@@ -50,7 +49,7 @@ cc_binary(
 
 hex_from_elf(
     name = "controller",
-    restricted_to = mcu_cpus,
+    target_compatible_with = ["@platforms//os:none"],
 )
 
 cc_binary(
@@ -58,7 +57,7 @@ cc_binary(
     srcs = [
         "usb_forward.cc",
     ],
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         # Don't add anything else here. :usb_forward_windows still has to build it
         # without any other dependencies.
@@ -82,6 +81,7 @@ genrule(
         "$@",
     ]),
     output_to_bindir = True,
+    target_compatible_with = ["@platforms//os:linux"],
     tools = [
         "usb_forward_windows_build.sh",
         "@mingw_compiler//:all_files",
@@ -96,7 +96,7 @@ cc_library(
     hdrs = [
         "motor_controls.h",
     ],
-    restricted_to = mcu_cpus,
+    target_compatible_with = ["@platforms//os:none"],
     visibility = ["//visibility:public"],
     deps = [
         "//motors:math",

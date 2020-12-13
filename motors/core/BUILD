@@ -1,5 +1,3 @@
-load("//tools:environments.bzl", "mcu_cpus")
-
 filegroup(
     name = "linkerscripts",
     srcs = [
@@ -23,7 +21,7 @@ cc_library(
         "reg_debug.h",
         "time.h",
     ],
-    restricted_to = mcu_cpus,
+    target_compatible_with = ["@platforms//os:none"],
     visibility = ["//visibility:public"],
 )
 
@@ -32,7 +30,7 @@ cc_library(
     hdrs = [
         "semihosting.h",
     ],
-    restricted_to = mcu_cpus,
+    target_compatible_with = ["@platforms//os:none"],
     visibility = ["//visibility:public"],
     deps = [
         "//third_party/GSL",
@@ -47,7 +45,7 @@ cc_library(
     hdrs = [
         "itm.h",
     ],
-    restricted_to = mcu_cpus,
+    target_compatible_with = ["@platforms//os:none"],
     visibility = ["//visibility:public"],
     deps = [
         ":core",

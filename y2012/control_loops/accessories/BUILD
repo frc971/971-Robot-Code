@@ -7,6 +7,7 @@ cc_binary(
     srcs = [
         "accessories.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":accessories_fbs",
         "//aos:init",
@@ -20,4 +21,5 @@ flatbuffer_cc_library(
     srcs = [
         "accessories.fbs",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )

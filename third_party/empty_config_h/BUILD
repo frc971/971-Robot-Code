@@ -5,5 +5,6 @@ cc_library(
     hdrs = [
         "config.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//third_party:__subpackages__"],
 )

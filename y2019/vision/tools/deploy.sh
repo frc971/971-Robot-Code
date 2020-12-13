@@ -15,7 +15,7 @@ else
 fi
 
 echo "Building executables"
-readonly BAZEL_OPTIONS="-c opt --cpu=armhf-debian"
+readonly BAZEL_OPTIONS="-c opt --config=armhf-debian"
 readonly BAZEL_BIN="$(bazel info ${BAZEL_OPTIONS} bazel-bin)"
 readonly TARGET_DIR=/media/$USER/JEVOIS
 

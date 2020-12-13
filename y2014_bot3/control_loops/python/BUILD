@@ -6,7 +6,7 @@ py_binary(
         "drivetrain.py",
     ],
     legacy_create_init = False,
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":python_init",
         "//external:python-gflags",
@@ -22,7 +22,7 @@ py_binary(
         "polydrivetrain.py",
     ],
     legacy_create_init = False,
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":python_init",
         "//external:python-gflags",
@@ -34,6 +34,7 @@ py_binary(
 py_library(
     name = "python_init",
     srcs = ["__init__.py"],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = ["//y2014_bot3/control_loops:python_init"],
 )

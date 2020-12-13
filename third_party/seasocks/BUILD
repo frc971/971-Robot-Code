@@ -23,5 +23,6 @@ cc_library(
         "-Wno-unused-parameter",
     ],
     includes = ["src/main/c"],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )

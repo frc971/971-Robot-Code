@@ -5,7 +5,7 @@ AosConfigInfo = provider(fields = [
     "transitive_src",
 ])
 
-def aos_config(name, src, flatbuffers = [], deps = [], visibility = None, testonly = False):
+def aos_config(name, src, flatbuffers = [], deps = [], visibility = None, testonly = False, target_compatible_with = None):
     _aos_config(
         name = name,
         src = src,
@@ -13,6 +13,7 @@ def aos_config(name, src, flatbuffers = [], deps = [], visibility = None, teston
         flatbuffers = [expand_label(flatbuffer) + "_reflection_out" for flatbuffer in flatbuffers],
         visibility = visibility,
         testonly = testonly,
+        target_compatible_with = target_compatible_with,
     )
 
 def _aos_config_impl(ctx):

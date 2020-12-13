@@ -1,13 +1,12 @@
-load("//tools/build_rules:gtk_dependent.bzl", "gtk_dependent_cc_binary", "gtk_dependent_cc_library")
-load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library")
-load("//tools:environments.bzl", "mcu_cpus")
+load("//tools:platforms.bzl", "platforms")
+load("//tools/build_rules:gtk_dependent.bzl", "gtk_dependent_cc_binary")
 
 package(default_visibility = ["//visibility:public"])
 
-VISION_TARGETS = [
-    "//tools:k8",
-    "//tools:armhf-debian",
-]
+VISION_TARGETS = platforms.any_of([
+    "@platforms//cpu:x86_64",
+    "//tools/platforms/hardware:raspberry_pi",
+])
 
 cc_library(
     name = "constants",
@@ -16,13 +15,14 @@ cc_library(
         "constants_formatting.cc",
     ],
     hdrs = ["constants.h"],
-    compatible_with = mcu_cpus,
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )
 
 cc_binary(
     name = "constants_formatting",
     srcs = ["constants_formatting_main.cc"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [":constants"],
 )
 
@@ -30,6 +30,7 @@ genrule(
     name = "generate_constants",
     outs = ["validate_constants.cc"],
     cmd = "$(location :constants_formatting) $(OUTS)",
+    target_compatible_with = ["@platforms//os:linux"],
     tools = [":constants_formatting"],
 )
 
@@ -37,6 +38,7 @@ cc_library(
     name = "image_writer",
     srcs = ["image_writer.cc"],
     hdrs = ["image_writer.h"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos/vision/image:image_types",
         "@com_github_google_glog//:glog",
@@ -54,6 +56,7 @@ sh_test(
         ":constants.cc",
         ":validate_constants.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 cc_library(
@@ -66,7 +69,7 @@ cc_library(
         "target_finder.h",
         "target_types.h",
     ],
-    restricted_to = VISION_TARGETS,
+    target_compatible_with = VISION_TARGETS,
     deps = [
         ":constants",
         "//aos/util:math",
@@ -84,7 +87,7 @@ cc_library(
 gtk_dependent_cc_binary(
     name = "debug_viewer",
     srcs = ["debug_viewer.cc"],
-    restricted_to = VISION_TARGETS,
+    target_compatible_with = VISION_TARGETS,
     deps = [
         ":target_finder",
         "//aos/vision/blob:move_scale",
@@ -99,7 +102,7 @@ gtk_dependent_cc_binary(
 cc_binary(
     name = "target_sender",
     srcs = ["target_sender.cc"],
-    restricted_to = VISION_TARGETS,
+    target_compatible_with = VISION_TARGETS,
     deps = [
         ":image_writer",
         ":target_finder",
@@ -121,7 +124,7 @@ cc_binary(
 cc_binary(
     name = "serial_waiter",
     srcs = ["serial_waiter.cc"],
-    restricted_to = VISION_TARGETS,
+    target_compatible_with = VISION_TARGETS,
     deps = [
         "//aos/time",
         "//y2019/jevois:serial",
@@ -131,6 +134,7 @@ cc_binary(
 cc_binary(
     name = "debug_serial",
     srcs = ["debug_serial.cc"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos/logging",
         "//aos/logging:implementations",
@@ -145,7 +149,7 @@ cc_binary(
     srcs = [
         "global_calibration.cc",
     ],
-    restricted_to = VISION_TARGETS,
+    target_compatible_with = VISION_TARGETS,
     deps = [
         ":target_finder",
         "//aos/logging",

@@ -79,7 +79,7 @@ cc_library(
     includes = [
         "include",
     ],
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     textual_hdrs = [
         "blas/x_blas2_diag_lib.c",
     ],

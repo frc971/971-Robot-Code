@@ -5,6 +5,7 @@ flatbuffer_cc_library(
     name = "vision_fbs",
     srcs = ["vision.fbs"],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//y2020:__subpackages__"],
 )
 
@@ -16,6 +17,7 @@ cc_library(
     hdrs = [
         "v4l2_reader.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//y2020:__subpackages__"],
     deps = [
         ":vision_fbs",
@@ -34,10 +36,7 @@ cc_binary(
     data = [
         "//y2020:config",
     ],
-    restricted_to = [
-        "//tools:k8",
-        "//tools:armhf-debian",
-    ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//y2020:__subpackages__"],
     deps = [
         ":v4l2_reader",
@@ -57,6 +56,7 @@ cc_binary(
 flatbuffer_ts_library(
     name = "vision_ts_fbs",
     srcs = ["vision.fbs"],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//y2020:__subpackages__"],
 )
 
@@ -68,10 +68,7 @@ cc_binary(
     data = [
         "//y2020:config",
     ],
-    restricted_to = [
-        "//tools:k8",
-        "//tools:armhf-debian",
-    ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//y2020:__subpackages__"],
     deps = [
         ":vision_fbs",
@@ -90,10 +87,7 @@ cc_binary(
     data = [
         "//y2020:config",
     ],
-    restricted_to = [
-        "//tools:k8",
-        "//tools:armhf-debian",
-    ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//y2020:__subpackages__"],
     deps = [
         ":vision_fbs",
@@ -117,10 +111,7 @@ cc_binary(
     data = [
         "//y2020:config",
     ],
-    restricted_to = [
-        "//tools:k8",
-        "//tools:armhf-debian",
-    ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//y2020:__subpackages__"],
     deps = [
         ":vision_fbs",

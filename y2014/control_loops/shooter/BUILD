@@ -8,6 +8,7 @@ flatbuffer_cc_library(
         "shooter_goal.fbs",
     ],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 flatbuffer_cc_library(
@@ -19,6 +20,7 @@ flatbuffer_cc_library(
     includes = [
         "//frc971/control_loops:control_loops_fbs_includes",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 flatbuffer_cc_library(
@@ -27,6 +29,7 @@ flatbuffer_cc_library(
         "shooter_output.fbs",
     ],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 flatbuffer_cc_library(
@@ -35,6 +38,7 @@ flatbuffer_cc_library(
         "shooter_status.fbs",
     ],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 genrule(
@@ -46,6 +50,7 @@ genrule(
         "unaugmented_shooter_motor_plant.h",
     ],
     cmd = "$(location //y2014/control_loops/python:shooter) $(OUTS)",
+    target_compatible_with = ["@platforms//os:linux"],
     tools = [
         "//y2014/control_loops/python:shooter",
     ],
@@ -67,6 +72,7 @@ cc_library(
     linkopts = [
         "-lm",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":shooter_goal_fbs",
         ":shooter_output_fbs",
@@ -85,6 +91,7 @@ cc_test(
         "shooter_lib_test.cc",
     ],
     data = ["//y2014:config"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":shooter_goal_fbs",
         ":shooter_lib",
@@ -103,6 +110,7 @@ cc_binary(
     srcs = [
         "shooter_main.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":shooter_lib",
         "//aos:init",

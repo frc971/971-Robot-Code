@@ -11,7 +11,7 @@ py_binary(
         "plotter.py",
     ],
     legacy_create_init = False,
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":python_init",
         "@matplotlib_repo//:matplotlib2.7",
@@ -21,6 +21,7 @@ py_binary(
 py_library(
     name = "python_init",
     srcs = ["__init__.py"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = ["//frc971:python_init"],
 )
 
@@ -28,7 +29,7 @@ cc_binary(
     name = "py_log_reader.so",
     srcs = ["py_log_reader.cc"],
     linkshared = True,
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos:configuration",
         "//aos:json_to_flatbuffer",
@@ -47,13 +48,14 @@ py_test(
         ":py_log_reader.so",
         "@sample_logfile//file",
     ],
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = ["//aos:configuration_fbs_python"],
 )
 
 py_proto_library(
     name = "plot_config_proto",
     srcs = ["plot_config.proto"],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 py_binary(
@@ -62,7 +64,7 @@ py_binary(
     data = [
         ":py_log_reader.so",
     ] + glob(["plot_configs/**"]),
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":plot_config_proto",
         ":python_init",
@@ -76,6 +78,6 @@ py_test(
     data = [
         "@sample_logfile//file",
     ],
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [":plot"],
 )

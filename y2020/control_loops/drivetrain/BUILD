@@ -11,6 +11,7 @@ genrule(
         "kalman_drivetrain_motor_plant.cc",
     ],
     cmd = "$(location //y2020/control_loops/python:drivetrain) $(OUTS)",
+    target_compatible_with = ["@platforms//os:linux"],
     tools = [
         "//y2020/control_loops/python:drivetrain",
     ],
@@ -27,6 +28,7 @@ genrule(
         "hybrid_velocity_drivetrain.cc",
     ],
     cmd = "$(location //y2020/control_loops/python:polydrivetrain) $(OUTS)",
+    target_compatible_with = ["@platforms//os:linux"],
     tools = [
         "//y2020/control_loops/python:polydrivetrain",
     ],
@@ -46,6 +48,7 @@ cc_library(
         "kalman_drivetrain_motor_plant.h",
         "polydrivetrain_dog_motor_plant.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         "//frc971/control_loops:hybrid_state_feedback_loop",
@@ -57,6 +60,7 @@ cc_library(
     name = "localizer",
     srcs = ["localizer.cc"],
     hdrs = ["localizer.h"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos/containers:ring_buffer",
         "//aos/network:message_bridge_server_fbs",
@@ -77,6 +81,7 @@ cc_library(
     hdrs = [
         "drivetrain_base.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         ":polydrivetrain_plants",
@@ -90,6 +95,7 @@ cc_binary(
     srcs = [
         "drivetrain_main.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         ":drivetrain_base",
@@ -103,6 +109,7 @@ cc_binary(
 aos_config(
     name = "simulation_config",
     src = "drivetrain_simulation_config.json",
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         "//frc971/control_loops/drivetrain:simulation_channels",
@@ -113,6 +120,7 @@ aos_config(
 aos_config(
     name = "replay_config",
     src = "drivetrain_replay_config.json",
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         "//y2020:config",
@@ -123,6 +131,7 @@ cc_test(
     name = "localizer_test",
     srcs = ["localizer_test.cc"],
     data = [":simulation_config"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":drivetrain_base",
         ":localizer",
@@ -143,6 +152,7 @@ cc_test(
         ":replay_config",
         "@drivetrain_replay//file:spinning_wheels_while_still.bfbs",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":drivetrain_base",
         "//aos:configuration",
@@ -161,6 +171,7 @@ cc_binary(
     name = "drivetrain_replay",
     srcs = ["drivetrain_replay.cc"],
     data = ["//y2020:config"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":drivetrain_base",
         ":localizer",

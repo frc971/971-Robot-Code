@@ -162,6 +162,6 @@ py_library(
         "rpathed/usr/lib/x86_64-linux-gnu/libgeos_c.so",
     ],
     imports = ["usr/lib/python3/dist-packages"],
-    restricted_to = ["@//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     visibility = ["//visibility:public"],
 )

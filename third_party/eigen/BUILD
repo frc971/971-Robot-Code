@@ -1,7 +1,5 @@
 licenses(["notice"])
 
-load("@//tools:environments.bzl", "mcu_cpus")
-
 cc_library(
     name = "eigen",
     srcs = glob(["Eigen/src/**/*.h"]),
@@ -20,7 +18,6 @@ cc_library(
     ) + ["unsupported/Eigen/MatrixFunctions"] + glob([
         "unsupported/Eigen/src/MatrixFunctions/*.h",
     ]),
-    compatible_with = mcu_cpus,
     includes = ["."],
     visibility = ["//visibility:public"],
 )

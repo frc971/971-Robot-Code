@@ -4,6 +4,7 @@ cc_library(
     name = "reader",
     srcs = ["reader.cc"],
     hdrs = ["reader.h"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos/time",
         "//aos/vision/image:camera_params",
@@ -17,6 +18,7 @@ cc_library(
     name = "image_stream",
     srcs = ["image_stream.cc"],
     hdrs = ["image_stream.h"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":reader",
         "//aos/logging",

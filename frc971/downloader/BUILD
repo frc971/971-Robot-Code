@@ -8,5 +8,6 @@ py_binary(
         "@ssh",
         "@ssh//:scp",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )

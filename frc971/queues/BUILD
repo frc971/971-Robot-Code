@@ -8,6 +8,7 @@ flatbuffer_cc_library(
         "gyro.fbs",
     ],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 flatbuffer_cc_library(
@@ -16,4 +17,5 @@ flatbuffer_cc_library(
         "gyro_uid.fbs",
     ],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
 )

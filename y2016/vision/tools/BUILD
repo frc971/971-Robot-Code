@@ -1,12 +1,13 @@
 load("//tools/build_rules:gtk_dependent.bzl", "gtk_dependent_cc_binary", "gtk_dependent_cc_library")
+load("//tools:platforms.bzl", "platforms")
 
 gtk_dependent_cc_binary(
     name = "blob_stream_replay",
     srcs = ["blob_stream_replay.cc"],
-    restricted_to = [
-        "//tools:k8",
-        "//tools:armhf-debian",
-    ],
+    target_compatible_with = platforms.any_of([
+        "@platforms//cpu:x86_64",
+        "//tools/platforms/hardware:raspberry_pi",
+    ]),
     deps = [
         "//aos/vision/blob:range_image",
         "//aos/vision/blob:stream_view",

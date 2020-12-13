@@ -8,6 +8,7 @@ cc_library(
     hdrs = [
         "joystick_input.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos/events:event_loop",
         "//aos/input:driver_station_data",
@@ -24,6 +25,7 @@ cc_library(
     hdrs = [
         "drivetrain_input.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos:math",
         "//aos/input:driver_station_data",
@@ -44,6 +46,7 @@ cc_library(
     hdrs = [
         "driver_station_data.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos/robot_state:joystick_state_fbs",
         "@com_github_google_glog//:glog",
@@ -54,6 +57,7 @@ cc_library(
     name = "action_joystick_input",
     srcs = ["action_joystick_input.cc"],
     hdrs = ["action_joystick_input.h"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":drivetrain_input",
         "//aos:init",

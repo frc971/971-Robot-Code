@@ -24,7 +24,7 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
 
 # TODO(phil): Deal with armhf packages. Right now only works for amd64.
 
-def download_packages(name, packages, excludes = [], force_includes = []):
+def download_packages(name, packages, excludes = [], force_includes = [], target_compatible_with = None):
     """Downloads a set of packages as well as their dependencies.
 
     You can also specify excludes in case some of the dependencies are meta
@@ -52,6 +52,7 @@ def download_packages(name, packages, excludes = [], force_includes = []):
         # would like it to.
         cmd = "$(location //debian:download_packages) %s %s %s | tee $@ >&2" %
               (force_includes, excludes_list, package_list),
+        target_compatible_with = target_compatible_with,
     )
 
 def _convert_deb_to_target(deb):
@@ -80,7 +81,7 @@ def generate_repositories_for_debs(files, base_url = "https://www.frc971.org/Bui
                 downloaded_file_path = f,
             )
 
-def generate_deb_tarball(name, files):
+def generate_deb_tarball(name, files, target_compatible_with = None):
     """Takes all debs in the dictionary and generates one tarball from them.
 
     This can then be uploaded and used as another WORKSPACE entry.
@@ -95,10 +96,12 @@ def generate_deb_tarball(name, files):
                 srcs = ["@%s//file" % dep],
                 outs = ["extracted_%s.tar" % dep],
                 cmd = "dpkg-deb --fsys-tarfile $(SRCS) > $@",
+                target_compatible_with = target_compatible_with,
             )
 
     pkg_tar(
         name = name,
         extension = "tar.gz",
         deps = ["extracted_%s.tar" % dep for dep in deps],
+        target_compatible_with = target_compatible_with,
     )

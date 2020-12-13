@@ -1,5 +1,5 @@
 load("@npm_bazel_typescript//:defs.bzl", "ts_library")
-load("@build_bazel_rules_nodejs//:defs.bzl", "rollup_bundle", "nodejs_binary")
+load("@build_bazel_rules_nodejs//:defs.bzl", "nodejs_binary", "rollup_bundle")
 load("//aos:config.bzl", "aos_config")
 
 filegroup(
@@ -17,6 +17,7 @@ ts_library(
         "config_handler.ts",
         "proxy.ts",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         "//aos:configuration_ts_fbs",
@@ -32,6 +33,7 @@ ts_library(
         "main.ts",
         "ping_handler.ts",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":proxy",
         "//aos/events:ping_ts_fbs",
@@ -42,6 +44,7 @@ rollup_bundle(
     name = "main_bundle",
     enable_code_splitting = False,
     entry_point = "main.ts",
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//aos:__subpackages__"],
     deps = [
         ":main",
@@ -57,6 +60,7 @@ genrule(
         "flatbuffers.js",
     ],
     cmd = "cp $(location @com_github_google_flatbuffers//:flatjs) $@",
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//aos:__subpackages__"],
 )
 
@@ -65,6 +69,7 @@ ts_library(
     srcs = [
         "reflection_test_main.ts",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":reflection_ts",
         "//aos:configuration_ts_fbs",
@@ -77,6 +82,7 @@ ts_library(
 ts_library(
     name = "reflection_ts",
     srcs = ["reflection.ts"],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         "//aos:configuration_ts_fbs",
@@ -90,6 +96,7 @@ ts_library(
     srcs = [
         "plotter.ts",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )
 
@@ -98,6 +105,7 @@ ts_library(
     srcs = [
         "graph_main.ts",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":plotter",
         ":proxy",
@@ -112,6 +120,7 @@ rollup_bundle(
     name = "graph_main_bundle",
     enable_code_splitting = False,
     entry_point = "graph_main.ts",
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":graph_main",
     ],
@@ -124,6 +133,7 @@ aos_config(
         "//aos:configuration_fbs",
         "//aos:json_to_flatbuffer_flatbuffer",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos/events:config",
     ],
@@ -133,6 +143,7 @@ rollup_bundle(
     name = "reflection_test_bundle",
     enable_code_splitting = False,
     entry_point = "reflection_test_main.ts",
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":reflection_test_main",
     ],
@@ -150,4 +161,5 @@ sh_binary(
         "//aos/network:web_proxy_main",
         "//y2020:config",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )

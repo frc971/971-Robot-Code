@@ -1,7 +1,5 @@
 package(default_visibility = ["//visibility:public"])
 
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
-
 genrule(
     name = "genrule_finisher",
     outs = [
@@ -11,6 +9,7 @@ genrule(
         "integral_finisher_plant.cc",
     ],
     cmd = "$(location //y2020/control_loops/python:finisher) $(OUTS)",
+    target_compatible_with = ["@platforms//os:linux"],
     tools = [
         "//y2020/control_loops/python:finisher",
     ],
@@ -26,6 +25,7 @@ cc_library(
         "finisher_plant.h",
         "integral_finisher_plant.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         "//frc971/control_loops:hybrid_state_feedback_loop",

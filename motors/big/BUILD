@@ -1,12 +1,11 @@
 load("//motors:macros.bzl", "hex_from_elf")
-load("//tools:environments.bzl", "mcu_cpus")
 
 cc_binary(
     name = "medium_salsa.elf",
     srcs = [
         "medium_salsa.cc",
     ],
-    restricted_to = mcu_cpus,
+    target_compatible_with = ["@platforms//os:none"],
     deps = [
         ":motor_controls",
         "//motors:motor",
@@ -20,7 +19,7 @@ cc_binary(
 
 hex_from_elf(
     name = "medium_salsa",
-    restricted_to = mcu_cpus,
+    target_compatible_with = ["@platforms//os:none"],
 )
 
 cc_library(
@@ -31,7 +30,7 @@ cc_library(
     hdrs = [
         "motor_controls.h",
     ],
-    restricted_to = mcu_cpus,
+    target_compatible_with = ["@platforms//os:none"],
     deps = [
         "//motors:math",
         "//motors:motor",

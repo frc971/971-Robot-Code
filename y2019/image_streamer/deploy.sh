@@ -40,7 +40,7 @@ echo "# Using roboRIO ${ROBORIO}"
 echo -e "\n# Building image_streamer"
 (
 set -x
-bazel build -c opt //y2019/image_streamer:image_streamer --cpu=armhf-debian
+bazel build -c opt //y2019/image_streamer:image_streamer --config=armhf-debian
 )
 
 echo -e "\n# Copy files to ODROID"

@@ -1,11 +1,9 @@
-load("//tools:environments.bzl", "mcu_cpus")
-
 cc_library(
     name = "print",
     hdrs = [
         "print.h",
     ],
-    restricted_to = mcu_cpus,
+    target_compatible_with = ["@platforms//os:none"],
     visibility = ["//visibility:public"],
     deps = [
         "//aos/containers:sized_array",
@@ -22,7 +20,7 @@ cc_library(
     hdrs = [
         "uart.h",
     ],
-    restricted_to = mcu_cpus,
+    target_compatible_with = ["@platforms//os:none"],
     visibility = ["//visibility:public"],
     deps = [
         ":print",
@@ -39,7 +37,7 @@ cc_library(
     hdrs = [
         "itm.h",
     ],
-    restricted_to = mcu_cpus,
+    target_compatible_with = ["@platforms//os:none"],
     visibility = ["//visibility:public"],
     deps = [
         ":print",
@@ -55,7 +53,7 @@ cc_library(
     hdrs = [
         "semihosting.h",
     ],
-    restricted_to = mcu_cpus,
+    target_compatible_with = ["@platforms//os:none"],
     visibility = ["//visibility:public"],
     deps = [
         ":print",
@@ -71,7 +69,7 @@ cc_library(
     hdrs = [
         "usb.h",
     ],
-    restricted_to = mcu_cpus,
+    target_compatible_with = ["@platforms//os:none"],
     visibility = ["//visibility:public"],
     deps = [
         ":print",

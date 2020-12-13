@@ -9,6 +9,7 @@ cc_library(
         "jsont.h",
     ],
     includes = ["."],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )
 
@@ -24,5 +25,6 @@ cc_test(
         ],
         "//conditions:default": [],
     }),
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [":jsont"],
 )

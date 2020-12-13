@@ -6,7 +6,7 @@ py_binary(
         "drivetrain.py",
     ],
     legacy_create_init = False,
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":python_init",
         "//external:python-gflags",
@@ -22,7 +22,7 @@ py_binary(
         "polydrivetrain.py",
     ],
     legacy_create_init = False,
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":python_init",
         "//external:python-gflags",
@@ -37,7 +37,7 @@ py_library(
         "drivetrain.py",
         "polydrivetrain.py",
     ],
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     visibility = ["//visibility:public"],
     deps = [
         ":python_init",
@@ -55,7 +55,7 @@ py_test(
         "polydrivetrain_test.py",
     ],
     legacy_create_init = False,
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":polydrivetrain_lib",
         ":python_init",
@@ -73,7 +73,7 @@ py_binary(
         "path_points.py",
     ],
     legacy_create_init = False,
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":python_init",
         "//external:python-gflags",
@@ -88,7 +88,7 @@ py_binary(
         "intake.py",
     ],
     legacy_create_init = False,
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":python_init",
         "//external:python-gflags",
@@ -103,6 +103,7 @@ cc_library(
     hdrs = [
         "dlqr.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "@slycot_repo//:slicot",
     ],
@@ -113,7 +114,7 @@ cc_binary(
     srcs = [
         "arm_mpc.cc",
     ],
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":arm_bounds",
         ":dlqr",
@@ -129,7 +130,7 @@ cc_binary(
     srcs = [
         "3d_plot.cc",
     ],
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":arm_bounds",
         "//third_party/matplotlib-cpp",
@@ -145,6 +146,7 @@ cc_library(
     hdrs = [
         "arm_bounds.h",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "@cgal_repo//:cgal",
         "@org_tuxfamily_eigen//:eigen",
@@ -156,7 +158,7 @@ cc_binary(
     srcs = [
         "2d_plot.cc",
     ],
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         "//third_party/matplotlib-cpp",
         "@com_github_gflags_gflags//:gflags",
@@ -169,10 +171,10 @@ py_binary(
         "graph_edit.py",
         "graph_generate.py",
     ],
-    python_version = "PY3",
     legacy_create_init = False,
-    restricted_to = ["//tools:k8"],
+    python_version = "PY3",
     srcs_version = "PY3",
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":python_init",
         "//frc971/control_loops/python:basic_window",
@@ -187,9 +189,10 @@ py_binary(
         "graph_codegen.py",
         "graph_generate.py",
     ],
-    python_version = "PY2",
     legacy_create_init = False,
+    python_version = "PY2",
     srcs_version = "PY2",
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":python_init",
     ],
@@ -198,6 +201,7 @@ py_binary(
 py_library(
     name = "python_init",
     srcs = ["__init__.py"],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = ["//y2018/control_loops:python_init"],
 )
@@ -207,7 +211,7 @@ py_binary(
     srcs = [
         "extended_lqr.py",
     ],
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         "//external:python-gflags",
         "//external:python-glog",
@@ -221,7 +225,7 @@ py_binary(
         "arm_mpc.py",
     ],
     main = "arm_mpc.py",
-    restricted_to = ["//tools:k8"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         "//external:python-gflags",
         "//external:python-glog",

@@ -7,6 +7,7 @@ cc_test(
     srcs = [
         "gflags.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "@com_github_gflags_gflags//:gflags",
     ],
@@ -17,6 +18,7 @@ cc_binary(
     srcs = [
         "tcmalloc.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 sh_test(
@@ -28,11 +30,13 @@ sh_test(
     data = [
         ":tcmalloc_build_test_binary",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 cc_proto_library(
     name = "proto_build_test_library",
     srcs = ["proto.proto"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":proto_build_test_library_base",
         "@com_google_protobuf//:cc_wkt_protos",
@@ -42,6 +46,7 @@ cc_proto_library(
 cc_proto_library(
     name = "proto_build_test_library_base",
     srcs = ["proto_base.proto"],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 cc_test(
@@ -50,6 +55,7 @@ cc_test(
     srcs = [
         "proto.cc",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":proto_build_test_library",
         "//aos/testing:googletest",
@@ -64,21 +70,24 @@ flatbuffer_py_library(
         "Foo",
         "Bar",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )
 
 py_test(
     name = "python_fbs",
     srcs = ["python_fbs.py"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [":test_python_fbs"],
 )
 
 py_test(
     name = "python3_opencv",
     srcs = ["python_opencv.py"],
-    python_version = "PY3",
     main = "python_opencv.py",
+    python_version = "PY3",
     srcs_version = "PY2AND3",
+    target_compatible_with = ["@platforms//os:linux"],
     deps = ["@opencv_contrib_nonfree_amd64//:python_opencv"],
 )
 
@@ -86,5 +95,6 @@ py_test(
     name = "python_jinja2",
     srcs = ["python_jinja2.py"],
     srcs_version = "PY2AND3",
+    target_compatible_with = ["@platforms//os:linux"],
     deps = ["@python_jinja2"],
 )
