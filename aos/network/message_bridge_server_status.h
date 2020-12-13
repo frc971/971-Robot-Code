@@ -51,6 +51,7 @@ class MessageBridgeServerStatus {
 
   // Returns the ServerConnection message which is updated by the server.
   ServerConnection *FindServerConnection(std::string_view node_name);
+  ServerConnection *FindServerConnection(const Node *node);
 
   std::vector<ServerConnection *> server_connection() {
     return server_connection_;

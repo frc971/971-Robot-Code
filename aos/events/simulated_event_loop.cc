@@ -1061,6 +1061,13 @@ NodeEventLoopFactory *SimulatedEventLoopFactory::GetNodeEventLoopFactory(
   return std::move(result);
 }
 
+void NodeEventLoopFactory::Disconnect(const Node *other) {
+  factory_->bridge_->Disconnect(node_, other);
+}
+void NodeEventLoopFactory::Connect(const Node *other) {
+  factory_->bridge_->Connect(node_, other);
+}
+
 void SimulatedEventLoopFactory::RunFor(monotonic_clock::duration duration) {
   for (const std::pair<EventLoop *, std::function<void(bool)>> &event_loop :
        raw_event_loops_) {

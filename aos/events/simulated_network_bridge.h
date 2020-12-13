@@ -26,6 +26,11 @@ class SimulatedMessageBridge {
   // for things like the logger.
   void DisableForwarding(const Channel *channel);
 
+  void Disconnect(const Node *source, const Node *other);
+  void Connect(const Node *source, const Node *other);
+  void SetState(const Node *source, const Node *other,
+                message_bridge::State state);
+
   // Disables generating and sending the messages which message_gateway sends.
   // The messages are the ClientStatistics, ServerStatistics and Timestamp
   // messages.

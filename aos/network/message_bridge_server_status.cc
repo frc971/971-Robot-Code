@@ -134,6 +134,11 @@ ServerConnection *MessageBridgeServerStatus::FindServerConnection(
                                               node_name);
 }
 
+ServerConnection *MessageBridgeServerStatus::FindServerConnection(
+    const Node *node) {
+  return FindServerConnection(node->name()->string_view());
+}
+
 void MessageBridgeServerStatus::SetBootUUID(int node_index,
                                             std::string_view boot_uuid) {
   boot_uuids_[node_index] = boot_uuid;

@@ -139,6 +139,11 @@ ClientConnection *MessageBridgeClientStatus::GetClientConnection(
       client_index);
 }
 
+ClientConnection *MessageBridgeClientStatus::GetClientConnection(
+    const Node *node) {
+  return GetClientConnection(FindClientIndex(node->name()->string_view()));
+}
+
 void MessageBridgeClientStatus::SampleFilter(
     int client_index,
     const aos::monotonic_clock::time_point monotonic_sent_time,

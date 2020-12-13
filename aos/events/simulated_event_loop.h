@@ -110,6 +110,8 @@ class SimulatedEventLoopFactory {
   void DisableStatistics();
 
  private:
+  friend class NodeEventLoopFactory;
+
   const Configuration *const configuration_;
   EventSchedulerScheduler scheduler_scheduler_;
   // List of event loops to manage running and not running for.
@@ -184,6 +186,13 @@ class NodeEventLoopFactory {
   // consumption.  The interactions with the rest of the system need to be
   // worked out better.  Don't use this for anything real yet.
   void Reboot() { boot_uuid_ = UUID::Random(); }
+
+  // Stops forwarding messages to the other node, and reports disconnected in
+  // the ServerStatistics message for this node, and the ClientStatistics for
+  // the other node.
+  void Disconnect(const Node *other);
+  // Resumes forwarding messages.
+  void Connect(const Node *other);
 
  private:
   friend class SimulatedEventLoopFactory;

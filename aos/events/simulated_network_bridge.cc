@@ -63,6 +63,14 @@ class RawMessageDelayer {
       if (sent_) {
         break;
       }
+
+      if (server_connection_->state() != State::CONNECTED) {
+        sent_ = true;
+        server_connection_->mutate_dropped_packets(
+            server_connection_->dropped_packets() + 1);
+        continue;
+      }
+
       if (fetcher_->context().monotonic_event_time +
               send_node_factory_->network_delay() +
               send_node_factory_->send_delay() >
@@ -109,6 +117,11 @@ class RawMessageDelayer {
  private:
   // Acutally sends the message, and reschedules.
   void Send() {
+    if (server_connection_->state() != State::CONNECTED) {
+      sent_ = true;
+      Schedule();
+      return;
+    }
     // Fill out the send times.
     sender_->Send(fetcher_->context().data, fetcher_->context().size,
                   fetcher_->context().monotonic_event_time,
@@ -377,6 +390,38 @@ void SimulatedMessageBridge::DisableForwarding(const Channel *channel) {
       }
     }
   }
+}
+
+void SimulatedMessageBridge::Disconnect(const Node *source,
+                                        const Node *destination) {
+  SetState(source, destination, message_bridge::State::DISCONNECTED);
+}
+
+void SimulatedMessageBridge::Connect(const Node *source,
+                                     const Node *destination) {
+  SetState(source, destination, message_bridge::State::CONNECTED);
+}
+void SimulatedMessageBridge::SetState(const Node *source,
+                                      const Node *destination,
+                                      message_bridge::State state) {
+  auto source_state = event_loop_map_.find(source);
+  CHECK(source_state != event_loop_map_.end());
+
+  ServerConnection *server_connection =
+      source_state->second.server_status.FindServerConnection(destination);
+  if (!server_connection) {
+    return;
+  }
+  server_connection->mutate_state(state);
+
+  auto destination_state = event_loop_map_.find(destination);
+  CHECK(destination_state != event_loop_map_.end());
+  ClientConnection *client_connection =
+      destination_state->second.client_status.GetClientConnection(source);
+  if (!client_connection) {
+    return;
+  }
+  client_connection->mutate_state(state);
 }
 
 void SimulatedMessageBridge::DisableStatistics() {

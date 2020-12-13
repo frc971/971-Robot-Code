@@ -26,6 +26,7 @@ class MessageBridgeClientStatus {
   // Returns the connection datastructure for the provided node.
   int FindClientIndex(std::string_view node_name);
   ClientConnection *GetClientConnection(int client_index);
+  ClientConnection *GetClientConnection(const Node *node);
 
   // Returns the ClientStatistics message this holds.
   ClientStatistics *mutable_client_statistics() {
