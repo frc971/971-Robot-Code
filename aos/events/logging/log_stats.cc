@@ -8,8 +8,6 @@
 #include "aos/time/time.h"
 #include "gflags/gflags.h"
 
-DEFINE_string(logfile, "/tmp/logfile.bfbs",
-              "Name and path of the logfile to read from.");
 DEFINE_string(
     name, "",
     "Name to match for printing out channels. Empty means no name filter.");
@@ -45,6 +43,8 @@ struct LogfileStats {
 
 int main(int argc, char **argv) {
   gflags::SetUsageMessage(
+      "Usage: \n"
+      "  log_stats [args] logfile1 logfile2 ...\n"
       "This program provides statistics on a given log file. Supported "
       "statistics are:\n"
       " - Logfile start time;\n"
@@ -57,11 +57,24 @@ int main(int argc, char **argv) {
 
   aos::InitGoogle(&argc, &argv);
 
+  if (argc < 2) {
+    LOG(FATAL) << "Expected at least 1 logfile as an argument.";
+  }
+
+  // find logfiles
+  std::vector<std::string> unsorted_logfiles =
+      aos::logger::FindLogs(argc, argv);
+
+  // sort logfiles
+  const std::vector<aos::logger::LogFile> logfiles =
+      aos::logger::SortParts(unsorted_logfiles);
+
+  // open logfiles
+  aos::logger::LogReader reader(logfiles);
+
   LogfileStats logfile_stats;
   std::vector<ChannelStats> channel_stats;
 
-  // Open LogFile
-  aos::logger::LogReader reader(aos::logger::SortParts({FLAGS_logfile}));
   aos::SimulatedEventLoopFactory log_reader_factory(reader.configuration());
   reader.Register(&log_reader_factory);
 
@@ -175,7 +188,7 @@ int main(int argc, char **argv) {
     }
   }
   std::cout << std::setfill('-') << std::setw(80) << "-"
-            << "\nLogfile statistics for: " << FLAGS_logfile << "\n"
+            << "\nLogfile statistics:\n"
             << "Log starts at:\t" << reader.realtime_start_time(node) << "\n"
             << "Log ends at:\t" << logfile_stats.logfile_end_time << "\n"
             << "Log file size:\t" << logfile_stats.logfile_length << "\n"
