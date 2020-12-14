@@ -32,7 +32,7 @@ class LzmaEncoder final : public DetachedBufferEncoder {
   size_t queue_size() const final { return queue_.size(); }
 
  private:
-  static constexpr size_t kEncodedBufferSizeBytes{1024};
+  static constexpr size_t kEncodedBufferSizeBytes{4096};
 
   void RunLzmaCode(lzma_action action);
 
