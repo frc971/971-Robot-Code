@@ -1324,9 +1324,12 @@ void LogReader::Register(EventLoop *event_loop) {
            !state->at_end()) ||
           timestamped_message.data.span().size() != 0u) {
         CHECK_NE(timestamped_message.data.span().size(), 0u)
-            << ": Got a message without data.  Forwarding entry which was "
-               "not matched?  Use --skip_missing_forwarding_entries to "
-               "ignore this.";
+            << ": Got a message without data on channel "
+            << configuration::CleanedChannelToString(
+                   logged_configuration()->channels()->Get(
+                       timestamped_message.channel_index))
+            << ".  Forwarding entry which was not matched?  Use "
+               "--skip_missing_forwarding_entries to ignore this.";
 
         if (update_time) {
           // Confirm that the message was sent on the sending node before the
