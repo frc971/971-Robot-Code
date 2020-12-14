@@ -57,6 +57,11 @@ SctpServer::SctpServer(std::string_view local_host, int local_port)
              0);
     }
 
+    {
+      int on = 1;
+      PCHECK(setsockopt(fd_, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(int)) == 0);
+    }
+
     // And go!
     if (bind(fd_, (struct sockaddr *)&sockaddr_local_,
              sockaddr_local_.ss_family == AF_INET6
