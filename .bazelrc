@@ -10,6 +10,7 @@ build --strip=never
 
 build --noincompatible_disable_nocopts
 build --noincompatible_restrict_string_escapes
+query --noincompatible_restrict_string_escapes
 
 # Use the malloc we want.
 build --custom_malloc=//tools/cpp:malloc
