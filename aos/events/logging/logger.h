@@ -464,6 +464,12 @@ class LogReader {
     return log_file_header()->name()->string_view();
   }
 
+  // Set whether to exit the SimulatedEventLoopFactory when we finish reading
+  // the logfile.
+  void set_exit_on_finish(bool exit_on_finish) {
+    exit_on_finish_ = exit_on_finish;
+  }
+
  private:
   const Channel *RemapChannel(const EventLoop *event_loop,
                               const Channel *channel);
@@ -819,6 +825,9 @@ class LogReader {
   // during startup when we are bootstrapping everything and trying to get to
   // the start of all the log files.
   bool ignore_missing_data_ = false;
+
+  // Whether to exit the SimulatedEventLoop when we finish reading the logs.
+  bool exit_on_finish_ = true;
 };
 
 }  // namespace logger

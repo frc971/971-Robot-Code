@@ -1,12 +1,14 @@
 import * as configuration from 'org_frc971/aos/configuration_generated';
-import * as connect from 'org_frc971/aos/network/connect_generated';
+import {Connection} from 'org_frc971/aos/network/www/proxy';
 import * as flatbuffers_builder from 'org_frc971/external/com_github_google_flatbuffers/ts/builder';
+import * as web_proxy from 'org_frc971/aos/network/web_proxy_generated';
 
-import {Connection} from './proxy';
 
 import Configuration = configuration.aos.Configuration;
 import Channel = configuration.aos.Channel;
-import Connect = connect.aos.message_bridge.Connect;
+import SubscriberRequest = web_proxy.aos.web_proxy.SubscriberRequest;
+import ChannelRequest = web_proxy.aos.web_proxy.ChannelRequest;
+import TransferMethod = web_proxy.aos.web_proxy.TransferMethod;
 
 export class ConfigHandler {
   private readonly root_div = document.createElement('div');
@@ -76,15 +78,18 @@ export class ConfigHandler {
       Channel.addName(builder, namefb);
       Channel.addType(builder, typefb);
       const channelfb = Channel.endChannel(builder);
-      channels.push(channelfb);
+      ChannelRequest.startChannelRequest(builder);
+      ChannelRequest.addChannel(builder, channelfb);
+      ChannelRequest.addMethod(builder, TransferMethod.SUBSAMPLE);
+      channels.push(ChannelRequest.endChannelRequest(builder));
     }
 
     const channelsfb =
-        Connect.createChannelsToTransferVector(builder, channels);
-    Connect.startConnect(builder);
-    Connect.addChannelsToTransfer(builder, channelsfb);
-    const connect = Connect.endConnect(builder);
-    builder.finish(connect);
+        SubscriberRequest.createChannelsToTransferVector(builder, channels);
+    SubscriberRequest.startSubscriberRequest(builder);
+    SubscriberRequest.addChannelsToTransfer(builder, channelsfb);
+    const request = SubscriberRequest.endSubscriberRequest(builder);
+    builder.finish(request);
     this.connection.sendConnectMessage(builder);
   }
 

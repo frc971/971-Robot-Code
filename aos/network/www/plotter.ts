@@ -35,8 +35,8 @@ export class Line {
   private _drawLine: boolean = true;
   private _pointSize: number = 3.0;
   private _hasUpdate: boolean = false;
-  private _minValues: number[] = [0.0, 0.0];
-  private _maxValues: number[] = [0.0, 0.0];
+  private _minValues: number[] = [Infinity, Infinity];
+  private _maxValues: number[] = [-Infinity, -Infinity];
   private _color: number[] = [1.0, 0.0, 0.0];
   private pointAttribLocation: number;
   private colorLocation: WebGLUniformLocation | null;
@@ -120,6 +120,10 @@ export class Line {
     for (let ii = 0; ii < this.points.length; ii += 2) {
       const x = this.points[ii];
       const y = this.points[ii + 1];
+
+      if (isNaN(x) || isNaN(y)) {
+        continue;
+      }
 
       this._minValues = cwiseOp(this._minValues, [x, y], Math.min);
       this._maxValues = cwiseOp(this._maxValues, [x, y], Math.max);
@@ -497,6 +501,9 @@ export class LineDrawer {
     for (let line of this.lines) {
       minValues = cwiseOp(minValues, line.minValues(), Math.min);
     }
+    if (!isFinite(minValues[0]) || !isFinite(minValues[1])) {
+      return [0, 0];
+    }
     return minValues;
   }
 
@@ -504,6 +511,9 @@ export class LineDrawer {
     let maxValues = [-Infinity, -Infinity];
     for (let line of this.lines) {
       maxValues = cwiseOp(maxValues, line.maxValues(), Math.max);
+    }
+    if (!isFinite(maxValues[0]) || !isFinite(maxValues[1])) {
+      return [0, 0];
     }
     return maxValues;
   }
@@ -729,10 +739,12 @@ export class Plot {
   private lastMousePosition: number[] = [0.0, 0.0];
   private autoFollow: boolean = true;
   private linkedXAxes: Plot[] = [];
+  private lastTimeMs: number = 0;
 
   constructor(wrapperDiv: HTMLDivElement, width: number, height: number) {
     wrapperDiv.appendChild(this.canvas);
     wrapperDiv.appendChild(this.textCanvas);
+    this.lastTimeMs = (new Date()).getTime();
 
     this.canvas.width =
         width - this.axisLabelBuffer.left - this.axisLabelBuffer.right;
@@ -838,6 +850,9 @@ export class Plot {
   }
 
   setZoom(scale: number[], offset: number[]) {
+    if (!isFinite(scale[0]) || !isFinite(scale[1])) {
+      throw new Error("Doesn't support non-finite scales due to singularities.");
+    }
     const x_pressed = Plot.keysPressed["x"];
     const y_pressed = Plot.keysPressed["y"];
     const zoom = this.drawer.getZoom();
@@ -875,7 +890,17 @@ export class Plot {
   }
 
   resetZoom() {
-    this.setZoomCorners(this.drawer.minValues(), this.drawer.maxValues());
+    const minValues = this.drawer.minValues();
+    const maxValues = this.drawer.maxValues();
+    if (minValues[0] == maxValues[0]) {
+      minValues[0] -= 1;
+      maxValues[0] += 1;
+    }
+    if (minValues[1] == maxValues[1]) {
+      minValues[1] -= 1;
+      maxValues[1] += 1;
+    }
+    this.setZoomCorners(minValues, maxValues);
     this.autoFollow = true;
     for (let plot of this.linkedXAxes) {
       plot.autoFollow = true;
@@ -892,6 +917,9 @@ export class Plot {
 
   draw() {
     window.requestAnimationFrame(() => this.draw());
+    const curTime = (new Date()).getTime();
+    const frameRate = 1000.0 / (curTime - this.lastTimeMs);
+    this.lastTimeMs = curTime;
 
     // Clear the overlay.
     const textCtx = this.textCanvas.getContext("2d");

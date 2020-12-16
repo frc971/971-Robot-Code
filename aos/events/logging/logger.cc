@@ -1517,7 +1517,7 @@ void LogReader::Register(EventLoop *event_loop) {
     if (state->OldestMessageTime() == monotonic_clock::max_time) {
       --live_nodes_;
       VLOG(1) << MaybeNodeName(state->event_loop()->node()) << "Node down!";
-      if (live_nodes_ == 0) {
+      if (exit_on_finish_ && live_nodes_ == 0) {
         event_loop_factory_->Exit();
       }
       return;

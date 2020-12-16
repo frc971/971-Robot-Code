@@ -9,9 +9,9 @@
 // it is already being published by the web proxy process, so the demo requires
 // very little setup).
 import * as configuration from 'org_frc971/aos/configuration_generated';
-import * as connect from 'org_frc971/aos/network/connect_generated';
 import {Line, Plot} from 'org_frc971/aos/network/www/plotter';
 import * as proxy from 'org_frc971/aos/network/www/proxy';
+import * as web_proxy from 'org_frc971/aos/network/web_proxy_generated';
 import * as reflection from 'org_frc971/aos/network/www/reflection'
 import * as flatbuffers_builder from 'org_frc971/external/com_github_google_flatbuffers/ts/builder';
 import {ByteBuffer} from 'org_frc971/external/com_github_google_flatbuffers/ts/byte-buffer';
@@ -21,7 +21,9 @@ import Connection = proxy.Connection;
 import Configuration = configuration.aos.Configuration;
 import Parser = reflection.Parser;
 import Table = reflection.Table;
-import Connect = connect.aos.message_bridge.Connect;
+import SubscriberRequest = web_proxy.aos.web_proxy.SubscriberRequest;
+import ChannelRequest = web_proxy.aos.web_proxy.ChannelRequest;
+import TransferMethod = web_proxy.aos.web_proxy.TransferMethod;
 
 const width = 900;
 const height = 400;
@@ -88,6 +90,7 @@ class StatLines {
     this.averagePoints.push(parser.readScalar(statsTable, "average") * 1000);
 
 
+    // TODO: These memory allocations absolutely kill performance.
     this.max.setPoints(new Float32Array(this.maxPoints));
     this.min.setPoints(new Float32Array(this.minPoints));
     this.average.setPoints(new Float32Array(this.averagePoints));
@@ -143,13 +146,16 @@ conn.addConfigHandler((config: Configuration) => {
     Channel.addName(builder, nameFb);
     Channel.addType(builder, typeFb);
     const channelFb = Channel.endChannel(builder);
-    channels.push(channelFb);
+    ChannelRequest.startChannelRequest(builder);
+    ChannelRequest.addChannel(builder, channelFb);
+    ChannelRequest.addMethod(builder, TransferMethod.EVERYTHING_WITH_HISTORY);
+    channels.push(ChannelRequest.endChannelRequest(builder));
   }
 
-  const channelsFb = Connect.createChannelsToTransferVector(builder, channels);
-  Connect.startConnect(builder);
-  Connect.addChannelsToTransfer(builder, channelsFb);
-  const connect = Connect.endConnect(builder);
+  const channelsFb = SubscriberRequest.createChannelsToTransferVector(builder, channels);
+  SubscriberRequest.startSubscriberRequest(builder);
+  SubscriberRequest.addChannelsToTransfer(builder, channelsFb);
+  const connect = SubscriberRequest.endSubscriberRequest(builder);
   builder.finish(connect);
   conn.sendConnectMessage(builder);
 });

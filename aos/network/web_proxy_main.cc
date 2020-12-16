@@ -11,6 +11,7 @@
 
 DEFINE_string(config, "./config.json", "File path of aos configuration");
 DEFINE_string(data_dir, "www", "Directory to serve data files from");
+DEFINE_int32(buffer_size, 0, "-1 if infinite, in # of messages / channel.");
 
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
@@ -22,14 +23,8 @@ int main(int argc, char **argv) {
 
   aos::ShmEventLoop event_loop(&config.message());
 
-  seasocks::Server server(std::shared_ptr<seasocks::Logger>(
-      new aos::seasocks::SeasocksLogger(seasocks::Logger::Level::Info)));
+  aos::web_proxy::WebProxy web_proxy(&event_loop, FLAGS_buffer_size);
+  web_proxy.SetDataPath(FLAGS_data_dir.c_str());
 
-  auto websocket_handler =
-      std::make_shared<aos::web_proxy::WebsocketHandler>(&server, &event_loop);
-  server.addWebSocketHandler("/ws", websocket_handler);
-
-  std::thread data_thread{[&event_loop]() { event_loop.Run(); }};
-
-  server.serve(FLAGS_data_dir.c_str(), 8080);
+  event_loop.Run();
 }

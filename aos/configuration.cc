@@ -631,7 +631,8 @@ const Channel *GetChannel(const Configuration *config, std::string_view name,
             << type << "\" }";
   }
 
-  // Then look for the channel.
+  // Then look for the channel (note that this relies on the channels being
+  // sorted in the config).
   auto channel_iterator =
       std::lower_bound(config->channels()->cbegin(), config->channels()->cend(),
                        std::make_pair(name, type), CompareChannels);

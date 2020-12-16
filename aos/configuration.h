@@ -45,6 +45,9 @@ FlatbufferDetachedBuffer<Configuration> MergeWithConfig(
 //
 // If the application name is empty, it is ignored.  Maps are processed in
 // reverse order, and application specific first.
+//
+// The config should already be fully merged and sorted (as produced by
+// MergeConfiguration() or any of the associated functions).
 const Channel *GetChannel(const Configuration *config,
                           const std::string_view name,
                           const std::string_view type,

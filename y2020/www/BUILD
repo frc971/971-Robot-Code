@@ -13,6 +13,7 @@ ts_library(
     deps = [
         "//aos:configuration_ts_fbs",
         "//aos/network:connect_ts_fbs",
+        "//aos/network:web_proxy_ts_fbs",
         "//aos/network/www:proxy",
         "//y2020/vision:vision_ts_fbs",
         "//y2020/vision/sift:sift_ts_fbs",
@@ -31,6 +32,7 @@ ts_library(
     deps = [
         "//aos:configuration_ts_fbs",
         "//aos/network:connect_ts_fbs",
+        "//aos/network:web_proxy_ts_fbs",
         "//aos/network/www:proxy",
         "//frc971/control_loops/drivetrain:drivetrain_status_ts_fbs",
         "//y2020/vision/sift:sift_ts_fbs",

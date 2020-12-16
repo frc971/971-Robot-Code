@@ -437,6 +437,34 @@ cc_binary(
     ],
 )
 
+cc_binary(
+    name = "log_web_proxy_main",
+    srcs = ["log_web_proxy_main.cc"],
+    args = [
+        "--config=aos/network/www/test_config.json",
+        "--data_dir=aos/network/www",
+    ],
+    copts = [
+        "-DWEBRTC_POSIX",
+        "-Wno-unused-parameter",
+    ],
+    data = [
+        "//aos/network/www:plotting_sample",
+        "//y2020:config",
+        "@com_github_google_flatbuffers//:flatjs",
+    ],
+    deps = [
+        ":gen_embedded",
+        ":web_proxy",
+        "//aos:init",
+        "//aos/events:simulated_event_loop",
+        "//aos/events/logging:logger",
+        "//aos/seasocks:seasocks_logger",
+        "//third_party/seasocks",
+        "@com_github_google_flatbuffers//:flatbuffers",
+    ],
+)
+
 cc_library(
     name = "timestamp_filter",
     srcs = ["timestamp_filter.cc"],

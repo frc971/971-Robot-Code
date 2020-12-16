@@ -112,6 +112,7 @@ ts_library(
         ":reflection_ts",
         "//aos:configuration_ts_fbs",
         "//aos/network:connect_ts_fbs",
+        "//aos/network:web_proxy_ts_fbs",
         "@com_github_google_flatbuffers//ts:flatbuffers_ts",
     ],
 )
@@ -162,4 +163,15 @@ sh_binary(
         "//y2020:config",
     ],
     target_compatible_with = ["@platforms//os:linux"],
+)
+
+filegroup(
+    name = "plotting_sample",
+    srcs = [
+        "graph.html",
+        "graph_main_bundle.min.js",
+        "styles.css",
+        "test_config",
+    ],
+    visibility = ["//visibility:public"],
 )

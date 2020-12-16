@@ -61,3 +61,18 @@ table MessageHeader {
   // Time at which the message was sent, in nanoseconds.
   monotonic_sent_time:long (id: 6);
 }
+
+enum TransferMethod : byte {
+  SUBSAMPLE,
+  EVERYTHING_WITH_HISTORY,
+}
+
+table ChannelRequest {
+  channel:Channel (id: 0);
+  method:TransferMethod (id: 1);
+}
+
+table SubscriberRequest {
+  // The channels that we want transfered to this client.
+  channels_to_transfer:[ChannelRequest] (id: 0);
+}

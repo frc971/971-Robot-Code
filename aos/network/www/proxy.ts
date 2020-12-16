@@ -1,4 +1,3 @@
-import {ConfigHandler} from './config_handler';
 import * as configuration from 'org_frc971/aos/configuration_generated';
 import * as web_proxy from 'org_frc971/aos/network/web_proxy_generated';
 import {Builder} from 'org_frc971/external/com_github_google_flatbuffers/ts/builder';

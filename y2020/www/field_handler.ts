@@ -1,15 +1,17 @@
 import * as configuration from 'org_frc971/aos/configuration_generated';
-import * as connect from 'org_frc971/aos/network/connect_generated';
 import {Connection} from 'org_frc971/aos/network/www/proxy';
 import * as flatbuffers_builder from 'org_frc971/external/com_github_google_flatbuffers/ts/builder';
 import {ByteBuffer} from 'org_frc971/external/com_github_google_flatbuffers/ts/byte-buffer';
 import * as drivetrain from 'org_frc971/frc971/control_loops/drivetrain/drivetrain_status_generated';
 import * as sift from 'org_frc971/y2020/vision/sift/sift_generated';
+import * as web_proxy from 'org_frc971/aos/network/web_proxy_generated';
 
 import DrivetrainStatus = drivetrain.frc971.control_loops.drivetrain.Status;
 import ImageMatchResult = sift.frc971.vision.sift.ImageMatchResult;
-import Connect = connect.aos.message_bridge.Connect;
 import Channel = configuration.aos.Channel;
+import SubscriberRequest = web_proxy.aos.web_proxy.SubscriberRequest;
+import ChannelRequest = web_proxy.aos.web_proxy.ChannelRequest;
+import TransferMethod = web_proxy.aos.web_proxy.TransferMethod;
 
 import {FIELD_LENGTH, FIELD_WIDTH, FT_TO_M, IN_TO_M} from './constants';
 
@@ -132,14 +134,17 @@ export class FieldHandler {
       Channel.addName(builder, nameFb);
       Channel.addType(builder, typeFb);
       const channelFb = Channel.endChannel(builder);
-      channels.push(channelFb);
+      ChannelRequest.startChannelRequest(builder);
+      ChannelRequest.addChannel(builder, channelFb);
+      ChannelRequest.addMethod(builder, TransferMethod.SUBSAMPLE);
+      channels.push(ChannelRequest.endChannelRequest(builder));
     }
 
     const channelsFb =
-        Connect.createChannelsToTransferVector(builder, channels);
-    Connect.startConnect(builder);
-    Connect.addChannelsToTransfer(builder, channelsFb);
-    const connect = Connect.endConnect(builder);
+        SubscriberRequest.createChannelsToTransferVector(builder, channels);
+    SubscriberRequest.startSubscriberRequest(builder);
+    SubscriberRequest.addChannelsToTransfer(builder, channelsFb);
+    const connect = SubscriberRequest.endSubscriberRequest(builder);
     builder.finish(connect);
     this.connection.sendConnectMessage(builder);
   }
