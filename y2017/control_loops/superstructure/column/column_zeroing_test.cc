@@ -5,7 +5,6 @@
 #include "aos/die.h"
 #include "aos/flatbuffers.h"
 #include "aos/json_to_flatbuffer.h"
-#include "aos/testing/test_shm.h"
 #include "frc971/control_loops/position_sensor_sim.h"
 #include "frc971/control_loops/team_number_test_environment.h"
 #include "frc971/zeroing/zeroing.h"
@@ -32,8 +31,6 @@ class ZeroingTest : public ::testing::Test {
 
  protected:
   void SetUp() override { aos::SetDieTestMode(true); }
-  // Initializes logging and provides a tmp shmem.
-  ::aos::testing::TestSharedMemory my_shm_;
 
   PositionSensorSimulator indexer_sensor_;
   PositionSensorSimulator turret_sensor_;

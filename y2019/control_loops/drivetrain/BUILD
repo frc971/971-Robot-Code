@@ -142,7 +142,6 @@ cc_test(
         ":target_selector",
         "//aos/events:simulated_event_loop",
         "//aos/testing:googletest",
-        "//aos/testing:test_shm",
     ],
 )
 

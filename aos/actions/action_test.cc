@@ -11,8 +11,6 @@
 #include "aos/actions/actor.h"
 #include "aos/actions/test_action_generated.h"
 #include "aos/events/simulated_event_loop.h"
-#include "aos/testing/test_logging.h"
-#include "aos/testing/test_shm.h"
 
 namespace aos {
 namespace common {
@@ -104,9 +102,7 @@ class ActionTest : public ::testing::Test {
         event_loop_factory_(&configuration_.message()),
         actor1_event_loop_(event_loop_factory_.MakeEventLoop("actor1")),
         actor2_event_loop_(event_loop_factory_.MakeEventLoop("actor2")),
-        test_event_loop_(event_loop_factory_.MakeEventLoop("test")) {
-    ::aos::testing::EnableTestLogging();
-  }
+        test_event_loop_(event_loop_factory_.MakeEventLoop("test")) {}
 
   void RunAt(monotonic_clock::time_point exec_time, std::function<void()> fn) {
     TimerHandler *timer = test_event_loop_->AddTimer(fn);
