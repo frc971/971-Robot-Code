@@ -199,9 +199,9 @@ function transitionButton(event: MouseEvent): MouseButton {
     case 0:
       return MouseButton.Left;
     case 1:
-      return MouseButton.Right;
-    case 2:
       return MouseButton.Middle;
+    case 2:
+      return MouseButton.Right;
   }
 }
 
@@ -212,9 +212,9 @@ function buttonPressed(event: MouseEvent, button: MouseButton): boolean {
     // we would expect them to be given the .button field.
     case MouseButton.Left:
       return 0 !== (event.buttons & 0x1);
-    case MouseButton.Middle:
-      return 0 !== (event.buttons & 0x2);
     case MouseButton.Right:
+      return 0 !== (event.buttons & 0x2);
+    case MouseButton.Middle:
       return 0 !== (event.buttons & 0x4);
   }
 }
