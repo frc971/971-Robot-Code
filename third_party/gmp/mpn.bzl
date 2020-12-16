@@ -166,6 +166,17 @@ def config_include_from_architecture(architecture_paths):
         result[key] = ["-I" + current_directory() + "/config/" + architecture_paths[key][0] + "/"]
     return select(result)
 
+def _file_globs(path, use_asm):
+    if use_asm:
+        return native.glob([
+            path + ".asm",
+            path + ".c",
+        ])
+    else:
+        return native.glob([
+            path + ".c",
+        ])
+
 def mpn_m4_cc_library(name, architecture_paths, target_compatible_with = None):
     # Search architecture_paths in order from 0 to N.
     # From there, search starting with the main name, then start looking at the alternatives.
@@ -175,16 +186,10 @@ def mpn_m4_cc_library(name, architecture_paths, target_compatible_with = None):
         value = architecture_paths[key]
         globs = []
         for p in value:
-            globs += native.glob([
-                "mpn/" + p + "/" + name + ".asm",
-                "mpn/" + p + "/" + name + ".c",
-            ])
+            globs += _file_globs("mpn/" + p + "/" + name, "msan" not in key)
             if name in alternatives:
                 for alternative in alternatives[name]:
-                    globs += native.glob([
-                        "mpn/" + p + "/" + alternative + ".asm",
-                        "mpn/" + p + "/" + alternative + ".c",
-                    ])
+                    globs += _file_globs("mpn/" + p + "/" + alternative, "msan" not in key)
         architecture_globs[key] = globs
 
     _m4_mpn_function(
