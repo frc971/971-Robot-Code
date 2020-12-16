@@ -1,6 +1,5 @@
 licenses(["notice"])
 
-
 cc_library(
     name = "GSL",
     hdrs = glob(["include/**"]),

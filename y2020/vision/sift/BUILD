@@ -24,13 +24,13 @@ py_binary(
         ":fast_gaussian_generator",
         "@amd64_debian_sysroot//:sysroot_files",
     ],
-    toolchains = [
-        "@bazel_tools//tools/cpp:current_cc_toolchain",
-    ],
     main = "fast_gaussian_runner.py",
     python_version = "PY3",
     srcs_version = "PY2AND3",
     target_compatible_with = ["@platforms//os:linux"],
+    toolchains = [
+        "@bazel_tools//tools/cpp:current_cc_toolchain",
+    ],
     deps = [
         "@bazel_tools//tools/python/runfiles",
     ],
