@@ -43,7 +43,6 @@ cc_library(
         "//tools:cpu_aarch64": [":lzma_encoder"],
         "//conditions:default": [],
     }),
-
 )
 
 cc_binary(

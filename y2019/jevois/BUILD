@@ -190,7 +190,7 @@ cc_binary(
         ":cobs",
         ":spi",
         ":uart",
-        "//aos/time:time",
+        "//aos/time",
         "//motors:util",
         "//motors/core",
         "//motors/peripheral:configuration",

@@ -1,4 +1,5 @@
-load("@bazel_tools//tools/cpp:cc_toolchain_config_lib.bzl",
+load(
+    "@bazel_tools//tools/cpp:cc_toolchain_config_lib.bzl",
     "action_config",
     "artifact_name_pattern",
     "env_entry",
@@ -35,9 +36,9 @@ def _impl(ctx):
         host_system_name = "armeabi-v7a"
     elif (ctx.attr.cpu == "armhf-debian"):
         host_system_name = "linux"
-    elif (ctx.attr.cpu == "cortex-m4f"
-        or ctx.attr.cpu == "cortex-m4f-k22"
-        or ctx.attr.cpu == "k8"):
+    elif (ctx.attr.cpu == "cortex-m4f" or
+          ctx.attr.cpu == "cortex-m4f-k22" or
+          ctx.attr.cpu == "k8"):
         host_system_name = "local"
     elif (ctx.attr.cpu == "roborio"):
         host_system_name = "roborio"
@@ -89,14 +90,14 @@ def _impl(ctx):
     else:
         fail("Unreachable")
 
-    if (ctx.attr.cpu == "armhf-debian"
-        or ctx.attr.cpu == "k8"):
+    if (ctx.attr.cpu == "armhf-debian" or
+        ctx.attr.cpu == "k8"):
         compiler = "clang"
     elif (ctx.attr.cpu == "armeabi-v7a"):
         compiler = "compiler"
-    elif (ctx.attr.cpu == "cortex-m4f"
-        or ctx.attr.cpu == "cortex-m4f-k22"
-        or ctx.attr.cpu == "roborio"):
+    elif (ctx.attr.cpu == "cortex-m4f" or
+          ctx.attr.cpu == "cortex-m4f-k22" or
+          ctx.attr.cpu == "roborio"):
         compiler = "gcc"
     else:
         fail("Unreachable")
@@ -207,8 +208,8 @@ def _impl(ctx):
             enabled = True,
             tools = [tool(path = "clang_6p0/x86_64-linux-gnu-objcopy")],
         )
-    elif (ctx.attr.cpu == "cortex-m4f"
-        or ctx.attr.cpu == "cortex-m4f-k22"):
+    elif (ctx.attr.cpu == "cortex-m4f" or
+          ctx.attr.cpu == "cortex-m4f-k22"):
         objcopy_embed_data_action = action_config(
             action_name = "objcopy_embed_data",
             enabled = True,
@@ -219,11 +220,11 @@ def _impl(ctx):
 
     if (ctx.attr.cpu == "armeabi-v7a"):
         action_configs = []
-    elif (ctx.attr.cpu == "armhf-debian"
-        or ctx.attr.cpu == "cortex-m4f"
-        or ctx.attr.cpu == "cortex-m4f-k22"
-        or ctx.attr.cpu == "k8"
-        or ctx.attr.cpu == "roborio"):
+    elif (ctx.attr.cpu == "armhf-debian" or
+          ctx.attr.cpu == "cortex-m4f" or
+          ctx.attr.cpu == "cortex-m4f-k22" or
+          ctx.attr.cpu == "k8" or
+          ctx.attr.cpu == "roborio"):
         action_configs = [objcopy_embed_data_action]
     else:
         fail("Unreachable")
@@ -619,8 +620,8 @@ def _impl(ctx):
     else:
         default_compile_flags_feature = None
 
-    if (ctx.attr.cpu == "armhf-debian"
-        or ctx.attr.cpu == "k8"):
+    if (ctx.attr.cpu == "armhf-debian" or
+        ctx.attr.cpu == "k8"):
         dbg_feature = feature(
             name = "dbg",
             flag_sets = [
@@ -661,8 +662,8 @@ def _impl(ctx):
                 ),
             ],
         )
-    elif (ctx.attr.cpu == "cortex-m4f"
-        or ctx.attr.cpu == "cortex-m4f-k22"):
+    elif (ctx.attr.cpu == "cortex-m4f" or
+          ctx.attr.cpu == "cortex-m4f-k22"):
         dbg_feature = feature(
             name = "dbg",
             flag_sets = [
@@ -683,8 +684,8 @@ def _impl(ctx):
     else:
         dbg_feature = None
 
-    if (ctx.attr.cpu == "armhf-debian"
-        or ctx.attr.cpu == "k8"):
+    if (ctx.attr.cpu == "armhf-debian" or
+        ctx.attr.cpu == "k8"):
         fastbuild_feature = feature(
             name = "fastbuild",
             flag_sets = [
@@ -719,8 +720,8 @@ def _impl(ctx):
                 ),
             ],
         )
-    elif (ctx.attr.cpu == "cortex-m4f"
-        or ctx.attr.cpu == "cortex-m4f-k22"):
+    elif (ctx.attr.cpu == "cortex-m4f" or
+          ctx.attr.cpu == "cortex-m4f-k22"):
         fastbuild_feature = feature(name = "fastbuild", implies = ["all_modes"])
     else:
         fastbuild_feature = None
@@ -775,8 +776,8 @@ def _impl(ctx):
             ],
             implies = ["opt_post"],
         )
-    elif (ctx.attr.cpu == "armhf-debian"
-        or ctx.attr.cpu == "k8"):
+    elif (ctx.attr.cpu == "armhf-debian" or
+          ctx.attr.cpu == "k8"):
         opt_feature = feature(
             name = "opt",
             flag_sets = [
@@ -794,8 +795,8 @@ def _impl(ctx):
             ],
             implies = ["all_modes"],
         )
-    elif (ctx.attr.cpu == "cortex-m4f"
-        or ctx.attr.cpu == "cortex-m4f-k22"):
+    elif (ctx.attr.cpu == "cortex-m4f" or
+          ctx.attr.cpu == "cortex-m4f-k22"):
         opt_feature = feature(name = "opt", implies = ["all_modes"])
     else:
         opt_feature = None
@@ -821,8 +822,8 @@ def _impl(ctx):
         ],
     )
 
-    if (ctx.attr.cpu == "cortex-m4f"
-        or ctx.attr.cpu == "cortex-m4f-k22"):
+    if (ctx.attr.cpu == "cortex-m4f" or
+        ctx.attr.cpu == "cortex-m4f-k22"):
         include_paths_feature = feature(
             name = "include_paths",
             enabled = True,
@@ -1125,8 +1126,8 @@ def _impl(ctx):
                 ),
             ],
         )
-    elif (ctx.attr.cpu == "cortex-m4f"
-        or ctx.attr.cpu == "cortex-m4f-k22"):
+    elif (ctx.attr.cpu == "cortex-m4f" or
+          ctx.attr.cpu == "cortex-m4f-k22"):
         all_modes_feature = feature(
             name = "all_modes",
             flag_sets = [
@@ -1252,9 +1253,9 @@ def _impl(ctx):
                 ),
             ],
         )
-    elif (ctx.attr.cpu == "cortex-m4f"
-        or ctx.attr.cpu == "cortex-m4f-k22"
-        or ctx.attr.cpu == "roborio"):
+    elif (ctx.attr.cpu == "cortex-m4f" or
+          ctx.attr.cpu == "cortex-m4f-k22" or
+          ctx.attr.cpu == "roborio"):
         unfiltered_compile_flags_feature = feature(
             name = "unfiltered_compile_flags",
             enabled = True,
@@ -1527,59 +1528,59 @@ def _impl(ctx):
         ],
     )
 
-    if (ctx.attr.cpu == "cortex-m4f"
-        or ctx.attr.cpu == "cortex-m4f-k22"):
+    if (ctx.attr.cpu == "cortex-m4f" or
+        ctx.attr.cpu == "cortex-m4f-k22"):
         features = [
-                default_compile_flags_feature,
-                default_link_flags_feature,
-                dbg_feature,
-                opt_feature,
-                fastbuild_feature,
-                all_modes_feature,
-                include_paths_feature,
-                objcopy_embed_flags_feature,
-                user_compile_flags_feature,
-                sysroot_feature,
-                unfiltered_compile_flags_feature,
-            ]
-    elif (ctx.attr.cpu == "armhf-debian"
-        or ctx.attr.cpu == "k8"):
+            default_compile_flags_feature,
+            default_link_flags_feature,
+            dbg_feature,
+            opt_feature,
+            fastbuild_feature,
+            all_modes_feature,
+            include_paths_feature,
+            objcopy_embed_flags_feature,
+            user_compile_flags_feature,
+            sysroot_feature,
+            unfiltered_compile_flags_feature,
+        ]
+    elif (ctx.attr.cpu == "armhf-debian" or
+          ctx.attr.cpu == "k8"):
         features = [
-                default_compile_flags_feature,
-                default_link_flags_feature,
-                opt_feature,
-                dbg_feature,
-                fastbuild_feature,
-                all_modes_feature,
-                pie_for_linking_feature,
-                supports_dynamic_linker_feature,
-                supports_pic_feature,
-                objcopy_embed_flags_feature,
-                user_compile_flags_feature,
-                sysroot_feature,
-                unfiltered_compile_flags_feature,
-            ]
+            default_compile_flags_feature,
+            default_link_flags_feature,
+            opt_feature,
+            dbg_feature,
+            fastbuild_feature,
+            all_modes_feature,
+            pie_for_linking_feature,
+            supports_dynamic_linker_feature,
+            supports_pic_feature,
+            objcopy_embed_flags_feature,
+            user_compile_flags_feature,
+            sysroot_feature,
+            unfiltered_compile_flags_feature,
+        ]
     elif (ctx.attr.cpu == "roborio"):
         features = [
-                default_link_flags_feature,
-                compile_flags1_feature,
-                opt_feature,
-                dependency_file_feature,
-                random_seed_feature,
-                pic_feature,
-                include_paths_feature,
-                opt_post_feature,
-                dbg_feature,
-                fastbuild_feature,
-                all_modes_feature,
-                pie_for_linking_feature,
-                supports_dynamic_linker_feature,
-                supports_pic_feature,
-                objcopy_embed_flags_feature,
-                user_compile_flags_feature,
-                sysroot_feature,
-                unfiltered_compile_flags_feature,
-            ]
+            default_link_flags_feature,
+            compile_flags1_feature,
+            opt_feature,
+            dependency_file_feature,
+            random_seed_feature,
+            pic_feature,
+            include_paths_feature,
+            opt_post_feature,
+            dbg_feature,
+            fastbuild_feature,
+            all_modes_feature,
+            pie_for_linking_feature,
+            supports_dynamic_linker_feature,
+            supports_pic_feature,
+            objcopy_embed_flags_feature,
+            user_compile_flags_feature,
+            sysroot_feature,
+            unfiltered_compile_flags_feature,
+        ]
     elif (ctx.attr.cpu == "armeabi-v7a"):
         features = [supports_pic_feature]
     else:
@@ -1589,35 +1590,35 @@ def _impl(ctx):
         cxx_builtin_include_directories = []
     elif (ctx.attr.cpu == "roborio"):
         cxx_builtin_include_directories = [
-                "%package(@arm_frc_linux_gnueabi_repo//arm-frc2020-linux-gnueabi/usr/lib/gcc/arm-frc2020-linux-gnueabi/7.3.0/include)%",
-                "%package(@arm_frc_linux_gnueabi_repo//arm-frc2020-linux-gnueabi/usr/lib/gcc/arm-frc2020-linux-gnueabi/7.3.0/include-fixed)%",
-                "%package(@arm_frc_linux_gnueabi_repo//arm-frc2020-linux-gnueabi/usr/include/c++/7.3.0/arm-frc2020-linux-gnueabi)%",
-                "%package(@arm_frc_linux_gnueabi_repo//arm-frc2020-linux-gnueabi/usr/include/c++/7.3.0/backward)%",
-            ]
+            "%package(@arm_frc_linux_gnueabi_repo//arm-frc2020-linux-gnueabi/usr/lib/gcc/arm-frc2020-linux-gnueabi/7.3.0/include)%",
+            "%package(@arm_frc_linux_gnueabi_repo//arm-frc2020-linux-gnueabi/usr/lib/gcc/arm-frc2020-linux-gnueabi/7.3.0/include-fixed)%",
+            "%package(@arm_frc_linux_gnueabi_repo//arm-frc2020-linux-gnueabi/usr/include/c++/7.3.0/arm-frc2020-linux-gnueabi)%",
+            "%package(@arm_frc_linux_gnueabi_repo//arm-frc2020-linux-gnueabi/usr/include/c++/7.3.0/backward)%",
+        ]
     elif (ctx.attr.cpu == "k8"):
         cxx_builtin_include_directories = [
-                "%package(@clang_6p0_repo//usr)%/lib/llvm-6.0/lib/clang/6.0.0/include",
-                "%package(@amd64_debian_sysroot//usr)%/include",
-                "%package(@amd64_debian_sysroot//usr)%/lib/gcc/x86_64-linux-gnu/7/include",
-                "%package(@amd64_debian_sysroot//usr)%/lib/gcc/x86_64-linux-gnu/7/include-fixed",
-            ]
+            "%package(@clang_6p0_repo//usr)%/lib/llvm-6.0/lib/clang/6.0.0/include",
+            "%package(@amd64_debian_sysroot//usr)%/include",
+            "%package(@amd64_debian_sysroot//usr)%/lib/gcc/x86_64-linux-gnu/7/include",
+            "%package(@amd64_debian_sysroot//usr)%/lib/gcc/x86_64-linux-gnu/7/include-fixed",
+        ]
     elif (ctx.attr.cpu == "armhf-debian"):
         cxx_builtin_include_directories = [
-                "%package(@linaro_linux_gcc_repo//include)%",
-                "%package(@armhf_debian_rootfs//usr/include)%",
-                "%package(@linaro_linux_gcc_repo//include)%/c++/7.4.1",
-                "%package(@linaro_linux_gcc_repo//lib/gcc/arm-linux-gnueabihf/7.4.1/include)%",
-                "%package(@linaro_linux_gcc_repo//lib/gcc/arm-linux-gnueabihf/7.4.1/include-fixed)%",
-                "%package(@linaro_linux_gcc_repo//arm-linux-gnueabihf/include)%/c++/7.4.1",
-            ]
-    elif (ctx.attr.cpu == "cortex-m4f"
-        or ctx.attr.cpu == "cortex-m4f-k22"):
+            "%package(@linaro_linux_gcc_repo//include)%",
+            "%package(@armhf_debian_rootfs//usr/include)%",
+            "%package(@linaro_linux_gcc_repo//include)%/c++/7.4.1",
+            "%package(@linaro_linux_gcc_repo//lib/gcc/arm-linux-gnueabihf/7.4.1/include)%",
+            "%package(@linaro_linux_gcc_repo//lib/gcc/arm-linux-gnueabihf/7.4.1/include-fixed)%",
+            "%package(@linaro_linux_gcc_repo//arm-linux-gnueabihf/include)%/c++/7.4.1",
+        ]
+    elif (ctx.attr.cpu == "cortex-m4f" or
+          ctx.attr.cpu == "cortex-m4f-k22"):
         cxx_builtin_include_directories = [
-                "/usr/lib/gcc/arm-none-eabi/4.8/include",
-                "/usr/lib/gcc/arm-none-eabi/4.8/include-fixed",
-                "/usr/lib/arm-none-eabi/include",
-                "/usr/include/newlib",
-            ]
+            "/usr/lib/gcc/arm-none-eabi/4.8/include",
+            "/usr/lib/gcc/arm-none-eabi/4.8/include-fixed",
+            "/usr/lib/arm-none-eabi/include",
+            "/usr/include/newlib",
+        ]
     else:
         fail("Unreachable")
 
@@ -1720,8 +1721,8 @@ def _impl(ctx):
                 path = "clang_6p0/x86_64-linux-gnu-strip",
             ),
         ]
-    elif (ctx.attr.cpu == "cortex-m4f"
-        or ctx.attr.cpu == "cortex-m4f-k22"):
+    elif (ctx.attr.cpu == "cortex-m4f" or
+          ctx.attr.cpu == "cortex-m4f-k22"):
         tool_paths = [
             tool_path(
                 name = "ar",
@@ -1832,7 +1833,6 @@ def _impl(ctx):
     else:
         fail("Unreachable")
 
-
     out = ctx.actions.declare_file(ctx.label.name)
     ctx.actions.write(out, "Fake executable")
     return [
@@ -1853,16 +1853,17 @@ def _impl(ctx):
             tool_paths = tool_paths,
             make_variables = make_variables,
             builtin_sysroot = builtin_sysroot,
-            cc_target_os = cc_target_os
+            cc_target_os = cc_target_os,
         ),
         DefaultInfo(
             executable = out,
         ),
     ]
-cc_toolchain_config =  rule(
+
+cc_toolchain_config = rule(
     implementation = _impl,
     attrs = {
-        "cpu": attr.string(mandatory=True, values=["armeabi-v7a", "armhf-debian", "cortex-m4f", "cortex-m4f-k22", "k8", "roborio"]),
+        "cpu": attr.string(mandatory = True, values = ["armeabi-v7a", "armhf-debian", "cortex-m4f", "cortex-m4f-k22", "k8", "roborio"]),
     },
     provides = [CcToolchainConfigInfo],
     executable = True,
