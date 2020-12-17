@@ -74,7 +74,7 @@ struct Context {
   // the caller has access to this context, which makes this pretty useless.
   int buffer_index;
 
-  // Efficiently coppies the flatbuffer into a FlatbufferVector, allocating
+  // Efficiently copies the flatbuffer into a FlatbufferVector, allocating
   // memory in the process.  It is vital that T matches the type of the
   // underlying flatbuffer.
   template <typename T>
@@ -268,6 +268,11 @@ class Fetcher {
 
   // Returns true if this fetcher is valid and connected to a channel.
   operator bool() const { return static_cast<bool>(fetcher_); }
+
+  // Copies the current flatbuffer into a FlatbufferVector.
+  FlatbufferVector<T> CopyFlatBuffer() const {
+    return context().template CopyFlatBuffer<T>();
+  }
 
  private:
   friend class EventLoop;
