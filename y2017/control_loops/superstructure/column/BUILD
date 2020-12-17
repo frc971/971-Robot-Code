@@ -86,7 +86,6 @@ cc_test(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":column_zeroing",
-        "//aos/testing:test_shm",
         "//frc971/control_loops:position_sensor_sim",
         "//frc971/control_loops:team_number_test_environment",
         "//y2017:constants",

@@ -103,7 +103,6 @@ cc_test(
     deps = [
         ":zeroing",
         "//aos/testing:googletest",
-        "//aos/testing:test_shm",
         "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops:position_sensor_sim",
     ],

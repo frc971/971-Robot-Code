@@ -4,17 +4,11 @@
 
 #include "gtest/gtest.h"
 
-#include "aos/testing/test_shm.h"
-
 namespace frc971 {
 namespace control_loops {
 namespace testing {
 
-class VoltageTest : public ::testing::Test {
- protected:
-  // Bring up and down Core.
-  ::aos::testing::TestSharedMemory my_shm_;
-};
+class VoltageTest : public ::testing::Test {};
 
 // Tests that voltage inputs return the same if inside the box.
 TEST_F(VoltageTest, BasicVoltage12) {

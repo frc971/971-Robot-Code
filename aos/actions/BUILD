@@ -74,7 +74,6 @@ cc_test(
         "//aos/events:simulated_event_loop",
         "//aos/logging",
         "//aos/testing:googletest",
-        "//aos/testing:test_shm",
         "//aos/time",
     ],
 )
