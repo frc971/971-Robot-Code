@@ -83,6 +83,9 @@ size_t ChannelIndex(const Configuration *config, const Channel *channel);
 // can't be found.
 const Node *GetNode(const Configuration *config, std::string_view name);
 const Node *GetNode(const Configuration *config, const Node *node);
+// Returns the node with the provided index.  This works in both a single and
+// multi-node world.
+const Node *GetNode(const Configuration *config, size_t node_index);
 // Returns a matching node, or nullptr if the provided node is nullptr and we
 // are in a single node world.
 const Node *GetNodeOrDie(const Configuration *config, const Node *node);

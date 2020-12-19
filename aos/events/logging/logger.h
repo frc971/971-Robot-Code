@@ -19,6 +19,7 @@
 #include "aos/events/logging/uuid.h"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/network/message_bridge_server_generated.h"
+#include "aos/network/multinode_timestamp_filter.h"
 #include "aos/network/remote_message_generated.h"
 #include "aos/network/timestamp_filter.h"
 #include "aos/time/time.h"
@@ -487,13 +488,6 @@ class LogReader {
   // the header is likely distracting.
   SizePrefixedFlatbufferVector<LogFileHeader> log_file_header_;
 
-  // Returns [ta; tb; ...] = tuple[0] * t + tuple[1]
-  std::tuple<Eigen::Matrix<double, Eigen::Dynamic, 1>,
-             Eigen::Matrix<double, Eigen::Dynamic, 1>>
-  SolveOffsets();
-
-  void LogFit(std::string_view prefix);
-
   // State per node.
   class State {
    public:
@@ -553,18 +547,6 @@ class LogReader {
     distributed_clock::time_point ToDistributedClock(
         monotonic_clock::time_point time) {
       return node_event_loop_factory_->ToDistributedClock(time);
-    }
-
-    monotonic_clock::time_point FromDistributedClock(
-        distributed_clock::time_point time) {
-      return node_event_loop_factory_->FromDistributedClock(time);
-    }
-
-    // Sets the offset (and slope) from the distributed clock.
-    void SetDistributedOffset(std::chrono::nanoseconds distributed_offset,
-                              double distributed_slope) {
-      node_event_loop_factory_->SetDistributedOffset(distributed_offset,
-                                                     distributed_slope);
     }
 
     // Returns the current time on the remote node which sends messages on
@@ -709,88 +691,13 @@ class LogReader {
   message_bridge::NoncausalOffsetEstimator *GetFilter(const Node *node_a,
                                                       const Node *node_b);
 
-  // FILE to write offsets to (if populated).
-  FILE *offset_fp_ = nullptr;
-  // Timestamp of the first piece of data used for the horizontal axis on the
-  // plot.
-  aos::realtime_clock::time_point first_time_;
-
   // List of filters for a connection.  The pointer to the first node will be
   // less than the second node.
-  std::map<std::tuple<const Node *, const Node *>,
-           std::tuple<message_bridge::NoncausalOffsetEstimator>>
-      filters_;
-
-  // Returns the offset from the monotonic clock for a node to the distributed
-  // clock.  monotonic = distributed * slope() + offset();
-  double slope(int node_index) const {
-    CHECK_LT(node_index, time_slope_matrix_.rows())
-        << ": Got too high of a node index.";
-    return time_slope_matrix_(node_index);
-  }
-  std::chrono::nanoseconds offset(int node_index) const {
-    CHECK_LT(node_index, time_offset_matrix_.rows())
-        << ": Got too high of a node index.";
-    return std::chrono::duration_cast<std::chrono::nanoseconds>(
-        std::chrono::duration<double>(time_offset_matrix_(node_index)));
-  }
+  std::unique_ptr<message_bridge::MultiNodeNoncausalOffsetEstimator> filters_;
 
   // Updates the offset matrix solution and sets the per-node distributed
   // offsets in the factory.
   void UpdateOffsets();
-
-  // We have 2 types of equations to do a least squares regression over to fully
-  // constrain our time function.
-  //
-  // One is simple.  The distributed clock is the average of all the clocks.
-  //   (ta + tb + tc + td) / num_nodes = t_distributed
-  //
-  // The second is a bit more complicated.  Our basic time conversion function
-  // is:
-  //   tb = ta + (ta * slope + offset)
-  // We can rewrite this as follows
-  //   tb - (1 + slope) * ta = offset
-  //
-  // From here, we have enough equations to solve for t{a,b,c,...}  We want to
-  // take as an input the offsets and slope, and solve for the per-node times as
-  // a function of the distributed clock.
-  //
-  // We need to massage our equations to make this work.  If we solve for the
-  // per-node times at two set distributed clock times, we will be able to
-  // recreate the linear function (we know it is linear).  We can do a similar
-  // thing by breaking our equation up into:
-  //
-  // [1/3  1/3  1/3  ] [ta]   [t_distributed]
-  // [ 1  -1-m1  0   ] [tb] = [oab]
-  // [ 1    0  -1-m2 ] [tc]   [oac]
-  //
-  // This solves to:
-  //
-  // [ta]   [ a00 a01 a02]   [t_distributed]
-  // [tb] = [ a10 a11 a12] * [oab]
-  // [tc]   [ a20 a21 a22]   [oac]
-  //
-  // and can be split into:
-  //
-  // [ta]   [ a00 ]                   [a01 a02]
-  // [tb] = [ a10 ] * t_distributed + [a11 a12] * [oab]
-  // [tc]   [ a20 ]                   [a21 a22]   [oac]
-  //
-  // (map_matrix_ + slope_matrix_) * [ta; tb; tc] = [offset_matrix_];
-  // offset_matrix_ will be in nanoseconds.
-  Eigen::Matrix<mpq_class, Eigen::Dynamic, Eigen::Dynamic> map_matrix_;
-  Eigen::Matrix<mpq_class, Eigen::Dynamic, Eigen::Dynamic> slope_matrix_;
-  Eigen::Matrix<mpq_class, Eigen::Dynamic, 1> offset_matrix_;
-  // Matrix tracking which offsets are valid.
-  Eigen::Matrix<bool, Eigen::Dynamic, 1> valid_matrix_;
-  // Matrix tracking the last valid matrix we used to determine connected nodes.
-  Eigen::Matrix<bool, Eigen::Dynamic, 1> last_valid_matrix_;
-  size_t cached_valid_node_count_ = 0;
-
-  // [ta; tb; tc] = time_slope_matrix_ * t + time_offset_matrix;
-  // t is in seconds.
-  Eigen::Matrix<double, Eigen::Dynamic, 1> time_slope_matrix_;
-  Eigen::Matrix<double, Eigen::Dynamic, 1> time_offset_matrix_;
 
   std::unique_ptr<FlatbufferDetachedBuffer<Configuration>>
       remapped_configuration_buffer_;

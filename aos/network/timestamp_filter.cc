@@ -699,40 +699,72 @@ bool NoncausalOffsetEstimator::Pop(
 }
 
 void NoncausalOffsetEstimator::LogFit(std::string_view prefix) {
-  LOG(INFO)
-      << prefix << " " << node_a_->name()->string_view() << " from "
-      << node_b_->name()->string_view() << " slope " << std::setprecision(20)
-      << fit_.slope() << " offset " << fit_.offset().count() << " a [("
-      << std::get<0>(a_.timestamps()[0]) << " -> "
-      << std::get<1>(a_.timestamps()[0]).count() << "ns), ("
-      << std::get<0>(a_.timestamps()[1]) << " -> "
-      << std::get<1>(a_.timestamps()[1]).count() << "ns) => {dt: " << std::fixed
-      << std::setprecision(6)
-      << std::chrono::duration<double, std::milli>(
-             std::get<0>(a_.timestamps()[1]) - std::get<0>(a_.timestamps()[0]))
-             .count()
-      << "ms, do: " << std::fixed << std::setprecision(6)
-      << std::chrono::duration<double, std::milli>(
-             std::get<1>(a_.timestamps()[1]) - std::get<1>(a_.timestamps()[0]))
-             .count()
-      << "ms}]";
-  LOG(INFO)
-      << prefix << " " << node_a_->name()->string_view() << " from "
-      << node_b_->name()->string_view() << " slope " << std::setprecision(20)
-      << fit_.slope() << " offset " << fit_.offset().count() << " b [("
-      << std::get<0>(b_.timestamps()[0]) << " -> "
-      << std::get<1>(b_.timestamps()[0]).count() << "ns), ("
-      << std::get<0>(b_.timestamps()[1]) << " -> "
-      << std::get<1>(b_.timestamps()[1]).count() << "ns) => {dt: " << std::fixed
-      << std::setprecision(6)
-      << std::chrono::duration<double, std::milli>(
-             std::get<0>(b_.timestamps()[1]) - std::get<0>(b_.timestamps()[0]))
-             .count()
-      << "ms, do: " << std::fixed << std::setprecision(6)
-      << std::chrono::duration<double, std::milli>(
-             std::get<1>(b_.timestamps()[1]) - std::get<1>(b_.timestamps()[0]))
-             .count()
-      << "ms}]";
+  if (a_.timestamps().size() >= 2u) {
+    LOG(INFO) << prefix << " " << node_a_->name()->string_view() << " from "
+              << node_b_->name()->string_view() << " slope "
+              << std::setprecision(20) << fit_.slope() << " offset "
+              << fit_.offset().count() << " a [("
+              << std::get<0>(a_.timestamps()[0]) << " -> "
+              << std::get<1>(a_.timestamps()[0]).count() << "ns), ("
+              << std::get<0>(a_.timestamps()[1]) << " -> "
+              << std::get<1>(a_.timestamps()[1]).count()
+              << "ns) => {dt: " << std::fixed << std::setprecision(6)
+              << std::chrono::duration<double, std::milli>(
+                     std::get<0>(a_.timestamps()[1]) -
+                     std::get<0>(a_.timestamps()[0]))
+                     .count()
+              << "ms, do: " << std::fixed << std::setprecision(6)
+              << std::chrono::duration<double, std::milli>(
+                     std::get<1>(a_.timestamps()[1]) -
+                     std::get<1>(a_.timestamps()[0]))
+                     .count()
+              << "ms}]";
+  } else if (a_.timestamps().size() == 1u) {
+    LOG(INFO) << prefix << " " << node_a_->name()->string_view() << " from "
+              << node_b_->name()->string_view() << " slope "
+              << std::setprecision(20) << fit_.slope() << " offset "
+              << fit_.offset().count() << " a [("
+              << std::get<0>(a_.timestamps()[0]) << " -> "
+              << std::get<1>(a_.timestamps()[0]).count() << "ns)";
+  } else {
+    LOG(INFO) << prefix << " " << node_a_->name()->string_view() << " from "
+              << node_b_->name()->string_view() << " slope "
+              << std::setprecision(20) << fit_.slope() << " offset "
+              << fit_.offset().count() << " no samples.";
+  }
+  if (b_.timestamps().size() >= 2u) {
+    LOG(INFO) << prefix << " " << node_a_->name()->string_view() << " from "
+              << node_b_->name()->string_view() << " slope "
+              << std::setprecision(20) << fit_.slope() << " offset "
+              << fit_.offset().count() << " b [("
+              << std::get<0>(b_.timestamps()[0]) << " -> "
+              << std::get<1>(b_.timestamps()[0]).count() << "ns), ("
+              << std::get<0>(b_.timestamps()[1]) << " -> "
+              << std::get<1>(b_.timestamps()[1]).count()
+              << "ns) => {dt: " << std::fixed << std::setprecision(6)
+              << std::chrono::duration<double, std::milli>(
+                     std::get<0>(b_.timestamps()[1]) -
+                     std::get<0>(b_.timestamps()[0]))
+                     .count()
+              << "ms, do: " << std::fixed << std::setprecision(6)
+              << std::chrono::duration<double, std::milli>(
+                     std::get<1>(b_.timestamps()[1]) -
+                     std::get<1>(b_.timestamps()[0]))
+                     .count()
+              << "ms}]";
+  } else if (b_.timestamps().size() == 1u) {
+    LOG(INFO) << prefix << " " << node_b_->name()->string_view() << " from "
+              << node_a_->name()->string_view() << " slope "
+              << std::setprecision(20) << fit_.slope() << " offset "
+              << fit_.offset().count() << " b [("
+              << std::get<0>(b_.timestamps()[0]) << " -> "
+              << std::get<1>(b_.timestamps()[0]).count() << "ns)";
+  } else {
+    LOG(INFO) << prefix << " " << node_b_->name()->string_view() << " from "
+              << node_a_->name()->string_view() << " slope "
+              << std::setprecision(20) << fit_.slope() << " offset "
+              << fit_.offset().count() << " no samples.";
+  }
 }
 
 void NoncausalOffsetEstimator::Refit() {

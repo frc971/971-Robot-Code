@@ -450,6 +450,21 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "multinode_timestamp_filter",
+    srcs = ["multinode_timestamp_filter.cc"],
+    hdrs = ["multinode_timestamp_filter.h"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":timestamp_filter",
+        "//aos:configuration",
+        "//aos/events:simulated_event_loop",
+        "//aos/time",
+        "//third_party/gmp",
+        "@org_tuxfamily_eigen//:eigen",
+    ],
+)
+
 cc_test(
     name = "timestamp_filter_test",
     srcs = [

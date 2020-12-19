@@ -169,7 +169,6 @@ cc_library(
     srcs = [
         "log_namer.cc",
         "logger.cc",
-        "logger_math.cc",
     ],
     hdrs = [
         "eigen_mpq.h",
@@ -185,6 +184,7 @@ cc_library(
         "//aos/events:event_loop",
         "//aos/events:simulated_event_loop",
         "//aos/network:message_bridge_server_fbs",
+        "//aos/network:multinode_timestamp_filter",
         "//aos/network:remote_message_fbs",
         "//aos/network:remote_message_schema",
         "//aos/network:team_number",

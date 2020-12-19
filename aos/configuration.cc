@@ -878,6 +878,16 @@ const Node *GetNode(const Configuration *config, std::string_view name) {
   return nullptr;
 }
 
+const Node *GetNode(const Configuration *config, size_t node_index) {
+  if (!MultiNode(config)) {
+    CHECK_EQ(node_index, 0u) << ": Invalid node in a single node world.";
+    return nullptr;
+  } else {
+    CHECK_LT(node_index, config->nodes()->size());
+    return config->nodes()->Get(node_index);
+  }
+}
+
 const Node *GetNodeOrDie(const Configuration *config, const Node *node) {
   if (!MultiNode(config)) {
     CHECK(node == nullptr) << ": Provided a node in a single node world.";
