@@ -1496,7 +1496,7 @@ void LogReader::Register(EventLoop *event_loop) {
                        << "): Time skipped the next event.";
         }
         for (size_t i = 0; i < states_.size(); ++i) {
-          if (states_[i]->monotonic_now() >= before_times[i] - kTolerance) {
+          if (states_[i]->monotonic_now() < before_times[i] - kTolerance) {
             LOG(WARNING) << "Check failed: "
                             "states_[i]->monotonic_now() "
                             ">= before_times[i] - kTolerance ("
@@ -1505,12 +1505,12 @@ void LogReader::Register(EventLoop *event_loop) {
                          << ") : Time changed too much on node "
                          << MaybeNodeName(states_[i]->event_loop()->node());
           }
-          if (states_[i]->monotonic_now() <= before_times[i] + kTolerance) {
+          if (states_[i]->monotonic_now() > before_times[i] + kTolerance) {
             LOG(WARNING) << "Check failed: "
                             "states_[i]->monotonic_now() "
                             "<= before_times[i] + kTolerance ("
                          << states_[i]->monotonic_now() << " vs. "
-                         << before_times[i] - kTolerance
+                         << before_times[i] + kTolerance
                          << ") : Time changed too much on node "
                          << MaybeNodeName(states_[i]->event_loop()->node());
           }
