@@ -31,7 +31,7 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
 // schema list.
 FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
     const Flatbuffer<Configuration> &config,
-    const std::vector<aos::FlatbufferString<reflection::Schema>> &schemas);
+    const std::vector<aos::FlatbufferVector<reflection::Schema>> &schemas);
 
 // Merges a configuration json snippet into the provided configuration and
 // returns the modified config.
@@ -49,7 +49,7 @@ const Channel *GetChannel(const Configuration *config,
                           const std::string_view name,
                           const std::string_view type,
                           const std::string_view application_name,
-                          const Node *node);
+                          const Node *node, bool quiet = false);
 inline const Channel *GetChannel(const Flatbuffer<Configuration> &config,
                                  const std::string_view name,
                                  const std::string_view type,

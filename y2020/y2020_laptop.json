@@ -176,7 +176,7 @@
     },
     {
       "name": "/laptop/aos/remote_timestamps/roborio",
-      "type": "aos.logger.MessageHeader",
+      "type": "aos.message_bridge.RemoteMessage",
       "source_node": "laptop",
       "logger": "NOT_LOGGED",
       "frequency": 20,
@@ -185,7 +185,7 @@
     },
     {
       "name": "/laptop/aos/remote_timestamps/pi1",
-      "type": "aos.logger.MessageHeader",
+      "type": "aos.message_bridge.RemoteMessage",
       "source_node": "laptop",
       "logger": "NOT_LOGGED",
       "frequency": 20,
@@ -194,7 +194,7 @@
     },
     {
       "name": "/laptop/aos/remote_timestamps/pi2",
-      "type": "aos.logger.MessageHeader",
+      "type": "aos.message_bridge.RemoteMessage",
       "source_node": "laptop",
       "logger": "NOT_LOGGED",
       "frequency": 20,
@@ -203,7 +203,7 @@
     },
     {
       "name": "/laptop/aos/remote_timestamps/pi3",
-      "type": "aos.logger.MessageHeader",
+      "type": "aos.message_bridge.RemoteMessage",
       "source_node": "laptop",
       "logger": "NOT_LOGGED",
       "frequency": 20,
@@ -212,7 +212,7 @@
     },
     {
       "name": "/laptop/aos/remote_timestamps/pi4",
-      "type": "aos.logger.MessageHeader",
+      "type": "aos.message_bridge.RemoteMessage",
       "source_node": "laptop",
       "logger": "NOT_LOGGED",
       "frequency": 20,

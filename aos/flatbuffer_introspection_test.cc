@@ -10,13 +10,13 @@ namespace testing {
 class FlatbufferIntrospectionTest : public ::testing::Test {
  public:
   FlatbufferIntrospectionTest()
-      : schema_data_(
-            util::ReadFileToStringOrDie("aos/json_to_flatbuffer.bfbs")) {
+      : schema_data_(FileToFlatbuffer<reflection::Schema>(
+            "aos/json_to_flatbuffer.bfbs")) {
     schema_ = reflection::GetSchema(schema_data_.span().data());
   }
 
  protected:
-  FlatbufferString<reflection::Schema> schema_data_;
+  FlatbufferVector<reflection::Schema> schema_data_;
   const reflection::Schema *schema_;
 };
 

@@ -40,6 +40,14 @@ class MessageBridgeServerStatus {
 
   // Resets the filter and clears the entry from the server statistics.
   void ResetFilter(int node_index);
+  // Sets the boot UUID for the provided node.
+  void SetBootUUID(int node_index, std::string_view boot_uuid);
+
+  // Returns the boot UUID for a node, or an empty string_view if there isn't
+  // one.
+  std::string_view BootUUID(int node_index) const {
+    return boot_uuids_[node_index];
+  }
 
   // Returns the ServerConnection message which is updated by the server.
   ServerConnection *FindServerConnection(std::string_view node_name);
@@ -82,6 +90,9 @@ class MessageBridgeServerStatus {
   std::vector<aos::Fetcher<Timestamp>> timestamp_fetchers_;
   // Bidirectional filters for each connection.
   std::vector<ClippedAverageFilter> filters_;
+
+  // List of UUIDs for each node.
+  std::vector<std::string> boot_uuids_;
 
   // Sender for the timestamps that we are forwarding over the network.
   aos::Sender<Timestamp> timestamp_sender_;

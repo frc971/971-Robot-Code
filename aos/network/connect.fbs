@@ -10,4 +10,9 @@ table Connect {
 
   // The channels that we want transfered to this client.
   channels_to_transfer:[Channel] (id: 1);
+
+  // The UUID that this node booted with.
+  boot_uuid: string (id: 2);
 }
+
+root_type Connect;

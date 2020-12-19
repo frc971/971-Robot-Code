@@ -19,6 +19,7 @@
 #include "aos/events/logging/uuid.h"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/network/message_bridge_server_generated.h"
+#include "aos/network/remote_message_generated.h"
 #include "aos/network/timestamp_filter.h"
 #include "aos/time/time.h"
 #include "flatbuffers/flatbuffers.h"
@@ -376,35 +377,41 @@ class LogReader {
   // interference. This operates on raw channel names, without any node or
   // application specific mappings.
   void RemapLoggedChannel(std::string_view name, std::string_view type,
-                          std::string_view add_prefix = "/original");
+                          std::string_view add_prefix = "/original",
+                          std::string_view new_type = "");
   template <typename T>
   void RemapLoggedChannel(std::string_view name,
-                          std::string_view add_prefix = "/original") {
-    RemapLoggedChannel(name, T::GetFullyQualifiedName(), add_prefix);
+                          std::string_view add_prefix = "/original",
+                          std::string_view new_type = "") {
+    RemapLoggedChannel(name, T::GetFullyQualifiedName(), add_prefix, new_type);
   }
 
   // Remaps the provided channel, though this respects node mappings, and
   // preserves them too.  This makes it so if /aos -> /pi1/aos on one node,
   // /original/aos -> /original/pi1/aos on the same node after renaming, just
-  // like you would hope.
+  // like you would hope.  If new_type is not empty, the new channel will use
+  // the provided type instead.  This allows for renaming messages.
   //
   // TODO(austin): If you have 2 nodes remapping something to the same channel,
   // this doesn't handle that.  No use cases exist yet for that, so it isn't
   // being done yet.
   void RemapLoggedChannel(std::string_view name, std::string_view type,
                           const Node *node,
-                          std::string_view add_prefix = "/original");
+                          std::string_view add_prefix = "/original",
+                          std::string_view new_type = "");
   template <typename T>
   void RemapLoggedChannel(std::string_view name, const Node *node,
-                          std::string_view add_prefix = "/original") {
-    RemapLoggedChannel(name, T::GetFullyQualifiedName(), node, add_prefix);
+                          std::string_view add_prefix = "/original",
+                          std::string_view new_type = "") {
+    RemapLoggedChannel(name, T::GetFullyQualifiedName(), node, add_prefix,
+                       new_type);
   }
 
   template <typename T>
   bool HasChannel(std::string_view name, const Node *node = nullptr) {
     return configuration::GetChannel(log_file_header()->configuration(), name,
-                                     T::GetFullyQualifiedName(), "",
-                                     node) != nullptr;
+                                     T::GetFullyQualifiedName(), "", node,
+                                     true) != nullptr;
   }
 
   SimulatedEventLoopFactory *event_loop_factory() {
@@ -500,7 +507,7 @@ class LogReader {
 
     // Returns the MessageHeader sender to log delivery timestamps to for the
     // provided remote node.
-    aos::Sender<MessageHeader> *RemoteTimestampSender(
+    aos::Sender<message_bridge::RemoteMessage> *RemoteTimestampSender(
         const Node *delivered_node);
 
     // Converts a timestamp from the monotonic clock on this node to the
@@ -548,11 +555,12 @@ class LogReader {
     void SetChannelCount(size_t count);
 
     // Sets the sender, filter, and target factory for a channel.
-    void SetChannel(size_t logged_channel_index, size_t factory_channel_index,
-                    std::unique_ptr<RawSender> sender,
-                    message_bridge::NoncausalOffsetEstimator *filter,
-                    aos::Sender<MessageHeader> *remote_timestamp_sender,
-                    State *source_state);
+    void SetChannel(
+        size_t logged_channel_index, size_t factory_channel_index,
+        std::unique_ptr<RawSender> sender,
+        message_bridge::NoncausalOffsetEstimator *filter,
+        aos::Sender<message_bridge::RemoteMessage> *remote_timestamp_sender,
+        State *source_state);
 
     // Returns if we have read all the messages from all the logs.
     bool at_end() const {
@@ -608,7 +616,8 @@ class LogReader {
 
     // Senders.
     std::vector<std::unique_ptr<RawSender>> channels_;
-    std::vector<aos::Sender<MessageHeader> *> remote_timestamp_senders_;
+    std::vector<aos::Sender<message_bridge::RemoteMessage> *>
+        remote_timestamp_senders_;
     // The mapping from logged channel index to sent channel index.  Needed for
     // sending out MessageHeaders.
     std::vector<int> factory_channel_index_;
@@ -649,7 +658,7 @@ class LogReader {
     // channel) which correspond to the originating node.
     std::vector<State *> channel_source_state_;
 
-    std::map<const Node *, aos::Sender<MessageHeader>>
+    std::map<const Node *, aos::Sender<message_bridge::RemoteMessage>>
         remote_timestamp_senders_map_;
   };
 
@@ -754,7 +763,11 @@ class LogReader {
   // Map of channel indices to new name. The channel index will be an index into
   // logged_configuration(), and the string key will be the name of the channel
   // to send on instead of the logged channel name.
-  std::map<size_t, std::string> remapped_channels_;
+  struct RemappedChannel {
+    std::string remapped_name;
+    std::string new_type;
+  };
+  std::map<size_t, RemappedChannel> remapped_channels_;
   std::vector<MapT> maps_;
 
   // Number of nodes which still have data to send.  This is used to figure out

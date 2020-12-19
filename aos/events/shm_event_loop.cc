@@ -222,7 +222,7 @@ namespace chrono = ::std::chrono;
 }  // namespace
 
 ShmEventLoop::ShmEventLoop(const Configuration *configuration)
-    : EventLoop(configuration),
+    : EventLoop(configuration, UUID::BootUUID()),
       shm_base_(FLAGS_shm_base),
       name_(FLAGS_application_name),
       node_(MaybeMyNode(configuration)) {

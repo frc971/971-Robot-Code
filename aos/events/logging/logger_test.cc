@@ -5,6 +5,7 @@
 #include "aos/events/ping_lib.h"
 #include "aos/events/pong_lib.h"
 #include "aos/events/simulated_event_loop.h"
+#include "aos/network/remote_message_generated.h"
 #include "aos/network/timestamp_generated.h"
 #include "aos/testing/tmpdir.h"
 #include "aos/util/file.h"
@@ -21,6 +22,7 @@ namespace logger {
 namespace testing {
 
 namespace chrono = std::chrono;
+using aos::message_bridge::RemoteMessage;
 using aos::testing::MessageCounter;
 
 class LoggerTest : public ::testing::Test {
@@ -376,13 +378,13 @@ class MultinodeLoggerTest : public ::testing::Test {
              logfile_base_ + "_pi2_data/test/aos.examples.Pong.part1.bfbs",
              logfile_base_ + "_pi2_data.part0.bfbs",
              logfile_base_ + "_timestamps/pi1/aos/remote_timestamps/pi2/"
-                             "aos.logger.MessageHeader.part0.bfbs",
+                             "aos.message_bridge.RemoteMessage.part0.bfbs",
              logfile_base_ + "_timestamps/pi1/aos/remote_timestamps/pi2/"
-                             "aos.logger.MessageHeader.part1.bfbs",
+                             "aos.message_bridge.RemoteMessage.part1.bfbs",
              logfile_base_ + "_timestamps/pi2/aos/remote_timestamps/pi1/"
-                             "aos.logger.MessageHeader.part0.bfbs",
+                             "aos.message_bridge.RemoteMessage.part0.bfbs",
              logfile_base_ + "_timestamps/pi2/aos/remote_timestamps/pi1/"
-                             "aos.logger.MessageHeader.part1.bfbs",
+                             "aos.message_bridge.RemoteMessage.part1.bfbs",
              logfile_base_ +
                  "_pi1_data/pi1/aos/aos.message_bridge.Timestamp.part0.bfbs",
              logfile_base_ +
@@ -684,25 +686,31 @@ TEST_F(MultinodeLoggerTest, SimpleMultiNode) {
         UnorderedElementsAre(
             std::make_tuple("/pi1/aos", "aos.message_bridge.Timestamp", 200),
             std::make_tuple("/pi1/aos", "aos.timing.Report", 40),
-            std::make_tuple("/test", "aos.examples.Ping", 2001)));
+            std::make_tuple("/test", "aos.examples.Ping", 2001)))
+        << " : " << logfiles_[0];
     // Timestamps for pong
     EXPECT_THAT(
         CountChannelsTimestamp(logfiles_[0]),
         UnorderedElementsAre(
             std::make_tuple("/test", "aos.examples.Pong", 2001),
-            std::make_tuple("/pi2/aos", "aos.message_bridge.Timestamp", 200)));
+            std::make_tuple("/pi2/aos", "aos.message_bridge.Timestamp", 200)))
+        << " : " << logfiles_[0];
 
     // Pong data.
-    EXPECT_THAT(CountChannelsData(logfiles_[1]),
-                UnorderedElementsAre(
-                    std::make_tuple("/test", "aos.examples.Pong", 101)));
+    EXPECT_THAT(
+        CountChannelsData(logfiles_[1]),
+        UnorderedElementsAre(std::make_tuple("/test", "aos.examples.Pong", 91)))
+        << " : " << logfiles_[1];
     EXPECT_THAT(CountChannelsData(logfiles_[2]),
                 UnorderedElementsAre(
-                    std::make_tuple("/test", "aos.examples.Pong", 1900)));
+                    std::make_tuple("/test", "aos.examples.Pong", 1910)))
+        << " : " << logfiles_[1];
 
     // No timestamps
-    EXPECT_THAT(CountChannelsTimestamp(logfiles_[1]), UnorderedElementsAre());
-    EXPECT_THAT(CountChannelsTimestamp(logfiles_[2]), UnorderedElementsAre());
+    EXPECT_THAT(CountChannelsTimestamp(logfiles_[1]), UnorderedElementsAre())
+        << " : " << logfiles_[1];
+    EXPECT_THAT(CountChannelsTimestamp(logfiles_[2]), UnorderedElementsAre())
+        << " : " << logfiles_[2];
 
     // Timing reports and pongs.
     EXPECT_THAT(
@@ -710,56 +718,74 @@ TEST_F(MultinodeLoggerTest, SimpleMultiNode) {
         UnorderedElementsAre(
             std::make_tuple("/pi2/aos", "aos.message_bridge.Timestamp", 200),
             std::make_tuple("/pi2/aos", "aos.timing.Report", 40),
-            std::make_tuple("/test", "aos.examples.Pong", 2001)));
+            std::make_tuple("/test", "aos.examples.Pong", 2001)))
+        << " : " << logfiles_[3];
     // And ping timestamps.
     EXPECT_THAT(
         CountChannelsTimestamp(logfiles_[3]),
         UnorderedElementsAre(
             std::make_tuple("/test", "aos.examples.Ping", 2001),
-            std::make_tuple("/pi1/aos", "aos.message_bridge.Timestamp", 200)));
+            std::make_tuple("/pi1/aos", "aos.message_bridge.Timestamp", 200)))
+        << " : " << logfiles_[3];
 
     // Timestamps from pi2 on pi1, and the other way.
-    EXPECT_THAT(CountChannelsData(logfiles_[4]), UnorderedElementsAre());
-    EXPECT_THAT(CountChannelsData(logfiles_[5]), UnorderedElementsAre());
-    EXPECT_THAT(CountChannelsData(logfiles_[6]), UnorderedElementsAre());
-    EXPECT_THAT(CountChannelsData(logfiles_[7]), UnorderedElementsAre());
+    EXPECT_THAT(CountChannelsData(logfiles_[4]), UnorderedElementsAre())
+        << " : " << logfiles_[4];
+    EXPECT_THAT(CountChannelsData(logfiles_[5]), UnorderedElementsAre())
+        << " : " << logfiles_[5];
+    EXPECT_THAT(CountChannelsData(logfiles_[6]), UnorderedElementsAre())
+        << " : " << logfiles_[6];
+    EXPECT_THAT(CountChannelsData(logfiles_[7]), UnorderedElementsAre())
+        << " : " << logfiles_[7];
     EXPECT_THAT(
         CountChannelsTimestamp(logfiles_[4]),
         UnorderedElementsAre(
-            std::make_tuple("/pi1/aos", "aos.message_bridge.Timestamp", 10),
-            std::make_tuple("/test", "aos.examples.Ping", 101)));
+            std::make_tuple("/pi1/aos", "aos.message_bridge.Timestamp", 9),
+            std::make_tuple("/test", "aos.examples.Ping", 91)))
+        << " : " << logfiles_[4];
     EXPECT_THAT(
         CountChannelsTimestamp(logfiles_[5]),
         UnorderedElementsAre(
-            std::make_tuple("/pi1/aos", "aos.message_bridge.Timestamp", 190),
-            std::make_tuple("/test", "aos.examples.Ping", 1900)));
+            std::make_tuple("/pi1/aos", "aos.message_bridge.Timestamp", 191),
+            std::make_tuple("/test", "aos.examples.Ping", 1910)))
+        << " : " << logfiles_[5];
     EXPECT_THAT(CountChannelsTimestamp(logfiles_[6]),
                 UnorderedElementsAre(std::make_tuple(
-                    "/pi2/aos", "aos.message_bridge.Timestamp", 10)));
+                    "/pi2/aos", "aos.message_bridge.Timestamp", 9)))
+        << " : " << logfiles_[6];
     EXPECT_THAT(CountChannelsTimestamp(logfiles_[7]),
                 UnorderedElementsAre(std::make_tuple(
-                    "/pi2/aos", "aos.message_bridge.Timestamp", 190)));
+                    "/pi2/aos", "aos.message_bridge.Timestamp", 191)))
+        << " : " << logfiles_[7];
 
     // And then test that the remotely logged timestamp data files only have
     // timestamps in them.
-    EXPECT_THAT(CountChannelsTimestamp(logfiles_[8]), UnorderedElementsAre());
-    EXPECT_THAT(CountChannelsTimestamp(logfiles_[9]), UnorderedElementsAre());
-    EXPECT_THAT(CountChannelsTimestamp(logfiles_[10]), UnorderedElementsAre());
-    EXPECT_THAT(CountChannelsTimestamp(logfiles_[11]), UnorderedElementsAre());
+    EXPECT_THAT(CountChannelsTimestamp(logfiles_[8]), UnorderedElementsAre())
+        << " : " << logfiles_[8];
+    EXPECT_THAT(CountChannelsTimestamp(logfiles_[9]), UnorderedElementsAre())
+        << " : " << logfiles_[9];
+    EXPECT_THAT(CountChannelsTimestamp(logfiles_[10]), UnorderedElementsAre())
+        << " : " << logfiles_[10];
+    EXPECT_THAT(CountChannelsTimestamp(logfiles_[11]), UnorderedElementsAre())
+        << " : " << logfiles_[11];
 
     EXPECT_THAT(CountChannelsData(logfiles_[8]),
                 UnorderedElementsAre(std::make_tuple(
-                    "/pi1/aos", "aos.message_bridge.Timestamp", 10)));
+                    "/pi1/aos", "aos.message_bridge.Timestamp", 9)))
+        << " : " << logfiles_[8];
     EXPECT_THAT(CountChannelsData(logfiles_[9]),
                 UnorderedElementsAre(std::make_tuple(
-                    "/pi1/aos", "aos.message_bridge.Timestamp", 190)));
+                    "/pi1/aos", "aos.message_bridge.Timestamp", 191)))
+        << " : " << logfiles_[9];
 
     EXPECT_THAT(CountChannelsData(logfiles_[10]),
                 UnorderedElementsAre(std::make_tuple(
-                    "/pi2/aos", "aos.message_bridge.Timestamp", 10)));
+                    "/pi2/aos", "aos.message_bridge.Timestamp", 9)))
+        << " : " << logfiles_[10];
     EXPECT_THAT(CountChannelsData(logfiles_[11]),
                 UnorderedElementsAre(std::make_tuple(
-                    "/pi2/aos", "aos.message_bridge.Timestamp", 190)));
+                    "/pi2/aos", "aos.message_bridge.Timestamp", 191)))
+        << " : " << logfiles_[11];
   }
 
   LogReader reader(SortParts(logfiles_));
@@ -1415,9 +1441,9 @@ TEST_F(MultinodeLoggerTest, MessageHeader) {
   std::unique_ptr<EventLoop> pi2_event_loop =
       log_reader_factory.MakeEventLoop("test", pi2);
 
-  MessageCounter<MessageHeader> pi1_original_message_header_counter(
+  MessageCounter<RemoteMessage> pi1_original_message_header_counter(
       pi1_event_loop.get(), "/original/aos/remote_timestamps/pi2");
-  MessageCounter<MessageHeader> pi2_original_message_header_counter(
+  MessageCounter<RemoteMessage> pi2_original_message_header_counter(
       pi2_event_loop.get(), "/original/aos/remote_timestamps/pi1");
 
   aos::Fetcher<message_bridge::Timestamp> pi1_timestamp_on_pi1_fetcher =
@@ -1455,7 +1481,7 @@ TEST_F(MultinodeLoggerTest, MessageHeader) {
       [&pi1_event_loop, pi1_timestamp_channel, ping_timestamp_channel,
        &pi1_timestamp_on_pi1_fetcher, &pi1_timestamp_on_pi2_fetcher,
        &ping_on_pi1_fetcher,
-       &ping_on_pi2_fetcher](const MessageHeader &header) {
+       &ping_on_pi2_fetcher](const RemoteMessage &header) {
         const aos::monotonic_clock::time_point header_monotonic_sent_time(
             chrono::nanoseconds(header.monotonic_sent_time()));
         const aos::realtime_clock::time_point header_realtime_sent_time(
@@ -1507,7 +1533,7 @@ TEST_F(MultinodeLoggerTest, MessageHeader) {
       [&pi2_event_loop, pi2_timestamp_channel, pong_timestamp_channel,
        &pi2_timestamp_on_pi2_fetcher, &pi2_timestamp_on_pi1_fetcher,
        &pong_on_pi2_fetcher,
-       &pong_on_pi1_fetcher](const MessageHeader &header) {
+       &pong_on_pi1_fetcher](const RemoteMessage &header) {
         const aos::monotonic_clock::time_point header_monotonic_sent_time(
             chrono::nanoseconds(header.monotonic_sent_time()));
         const aos::realtime_clock::time_point header_realtime_sent_time(

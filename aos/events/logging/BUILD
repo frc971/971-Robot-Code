@@ -26,8 +26,8 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":buffer_encoder",
-        ":uuid",
         ":logger_fbs",
+        ":uuid",
         "//aos:configuration",
         "//aos:flatbuffer_merge",
         "//aos:flatbuffers",
@@ -185,6 +185,8 @@ cc_library(
         "//aos/events:event_loop",
         "//aos/events:simulated_event_loop",
         "//aos/network:message_bridge_server_fbs",
+        "//aos/network:remote_message_fbs",
+        "//aos/network:remote_message_schema",
         "//aos/network:team_number",
         "//aos/network:timestamp_filter",
         "//aos/time",
@@ -273,11 +275,11 @@ aos_config(
     name = "multinode_pingpong_config",
     src = "multinode_pingpong.json",
     flatbuffers = [
-        ":logger_fbs",
         "//aos/events:ping_fbs",
         "//aos/events:pong_fbs",
         "//aos/network:message_bridge_client_fbs",
         "//aos/network:message_bridge_server_fbs",
+        "//aos/network:remote_message_fbs",
         "//aos/network:timestamp_fbs",
     ],
     target_compatible_with = ["@platforms//os:linux"],
@@ -314,6 +316,10 @@ cc_library(
     srcs = ["uuid.cc"],
     hdrs = ["uuid.h"],
     target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_github_google_glog//:glog",
+    ],
 )
 
 cc_test(

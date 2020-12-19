@@ -455,7 +455,8 @@ class SimulatedEventLoop : public EventLoop {
       std::vector<std::pair<EventLoop *, std::function<void(bool)>>>
           *raw_event_loops,
       const Node *node, pid_t tid)
-      : EventLoop(CHECK_NOTNULL(configuration)),
+      : EventLoop(CHECK_NOTNULL(configuration),
+                  node_event_loop_factory->boot_uuid()),
         scheduler_(scheduler),
         node_event_loop_factory_(node_event_loop_factory),
         channels_(channels),

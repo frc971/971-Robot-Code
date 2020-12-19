@@ -1,8 +1,21 @@
 load("//aos/seasocks:gen_embedded.bzl", "gen_embedded")
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_ts_library")
 load("//aos:config.bzl", "aos_config")
+load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_ts_library")
 
 package(default_visibility = ["//visibility:public"])
+
+flatbuffer_cc_library(
+    name = "remote_message_fbs",
+    srcs = ["remote_message.fbs"],
+    gen_reflections = 1,
+)
+
+cc_static_flatbuffer(
+    name = "remote_message_schema",
+    function = "aos::message_bridge::RemoteMessageSchema",
+    target = ":remote_message_fbs_reflection_out",
+)
 
 flatbuffer_cc_library(
     name = "connect_fbs",
@@ -178,6 +191,7 @@ cc_library(
         ":message_bridge_protocol",
         ":message_bridge_server_fbs",
         ":message_bridge_server_status",
+        ":remote_message_fbs",
         ":sctp_lib",
         ":sctp_server",
         ":timestamp_fbs",
@@ -257,6 +271,7 @@ cc_library(
         ":message_bridge_client_status",
         ":message_bridge_protocol",
         ":message_bridge_server_fbs",
+        ":remote_message_fbs",
         ":sctp_client",
         ":timestamp_fbs",
         "//aos/events:shm_event_loop",
@@ -285,7 +300,7 @@ aos_config(
     name = "message_bridge_test_common_config",
     src = "message_bridge_test_common.json",
     flatbuffers = [
-        "//aos/events/logging:logger_fbs",
+        ":remote_message_fbs",
         "//aos/events:ping_fbs",
         "//aos/events:pong_fbs",
         "//aos/network:message_bridge_client_fbs",

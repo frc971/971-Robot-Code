@@ -85,6 +85,11 @@ MessageBridgeServerStatus::MessageBridgeServerStatus(
       statistics_.message().connections()->size());
 
   filters_.resize(event_loop->configuration()->nodes()->size());
+  boot_uuids_.resize(event_loop->configuration()->nodes()->size());
+  for (std::string &boot_uuid : boot_uuids_) {
+    // Make sure the memory gets allocated.
+    boot_uuid.reserve(UUID::kSize);
+  }
   timestamp_fetchers_.resize(event_loop->configuration()->nodes()->size());
   server_connection_.resize(event_loop->configuration()->nodes()->size());
 
@@ -129,6 +134,13 @@ ServerConnection *MessageBridgeServerStatus::FindServerConnection(
                                               node_name);
 }
 
+void MessageBridgeServerStatus::SetBootUUID(int node_index,
+                                            std::string_view boot_uuid) {
+  boot_uuids_[node_index] = boot_uuid;
+  SendStatistics();
+  last_statistics_send_time_ = event_loop_->monotonic_now();
+}
+
 void MessageBridgeServerStatus::ResetFilter(int node_index) {
   filters_[node_index].Reset();
   server_connection_[node_index]->mutate_monotonic_offset(0);
@@ -153,6 +165,12 @@ void MessageBridgeServerStatus::SendStatistics() {
     node_builder.add_name(node_name_offset);
     flatbuffers::Offset<Node> node_offset = node_builder.Finish();
 
+    flatbuffers::Offset<flatbuffers::String> boot_uuid_offset;
+    if (!boot_uuids_[node_index].empty() &&
+        connection->state() == State::CONNECTED) {
+      boot_uuid_offset = builder.fbb()->CreateString(boot_uuids_[node_index]);
+    }
+
     ServerConnection::Builder server_connection_builder =
         builder.MakeBuilder<ServerConnection>();
     server_connection_builder.add_node(node_offset);
@@ -165,6 +183,10 @@ void MessageBridgeServerStatus::SendStatistics() {
     if (!filters_[node_index].MissingSamples()) {
       server_connection_builder.add_monotonic_offset(
           connection->monotonic_offset());
+    }
+
+    if (!boot_uuid_offset.IsNull()) {
+      server_connection_builder.add_boot_uuid(boot_uuid_offset);
     }
 
     server_connection_offsets_.emplace_back(server_connection_builder.Finish());
