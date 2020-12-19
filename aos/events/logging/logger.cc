@@ -35,6 +35,10 @@ DEFINE_bool(timestamps_to_csv, false,
 DEFINE_bool(skip_order_validation, false,
             "If true, ignore any out of orderness in replay");
 
+DEFINE_double(
+    time_estimation_buffer_seconds, 2.0,
+    "The time to buffer ahead in the log file to accurately reconstruct time.");
+
 namespace aos {
 namespace logger {
 namespace {
@@ -2261,7 +2265,8 @@ void LogReader::State::SeedSortedMessages() {
       (sorted_messages_.size() > 0
            ? std::get<0>(sorted_messages_.front()).monotonic_event_time
            : timestamp_mapper_->monotonic_start_time()) +
-      std::chrono::seconds(2);
+      chrono::duration_cast<chrono::seconds>(
+          chrono::duration<double>(FLAGS_time_estimation_buffer_seconds));
 
   while (true) {
     TimestampedMessage *m = timestamp_mapper_->Front();
@@ -2269,8 +2274,9 @@ void LogReader::State::SeedSortedMessages() {
       return;
     }
     if (sorted_messages_.size() > 0) {
-      // Stop placing sorted messages on the list once we have 2 seconds
-      // queued up (but queue at least until the log starts.
+      // Stop placing sorted messages on the list once we have
+      // --time_estimation_buffer_seconds seconds queued up (but queue at least
+      // until the log starts.
       if (end_queue_time <
           std::get<0>(sorted_messages_.back()).monotonic_event_time) {
         return;
