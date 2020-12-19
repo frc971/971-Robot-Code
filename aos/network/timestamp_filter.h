@@ -359,6 +359,11 @@ class NoncausalTimestampFilter {
   void SetFirstTime(aos::monotonic_clock::time_point time);
   void SetCsvFileName(std::string_view name);
 
+  // Marks the first line segment (the two points used to compute both the
+  // offset and slope), as used.  Those points can't be removed from the filter
+  // going forwards.
+  void Freeze();
+
  private:
   // Removes the oldest timestamp.
   void PopFront() {
@@ -382,6 +387,8 @@ class NoncausalTimestampFilter {
   FILE *fp_ = nullptr;
   FILE *samples_fp_ = nullptr;
 
+  bool fully_frozen_ = false;
+
   aos::monotonic_clock::time_point first_time_ = aos::monotonic_clock::min_time;
 };
 
@@ -402,6 +409,11 @@ class NoncausalOffsetEstimator {
   // Returns true if the line fit changes.
   bool Pop(const Node *node,
            aos::monotonic_clock::time_point node_monotonic_now);
+
+  // Marks the first line segment (the two points used to compute both the
+  // offset and slope), as used.  Those points can't be removed from the filter
+  // going forwards.
+  void Freeze();
 
   // Returns a line for the oldest segment.
   Line fit() const { return fit_; }

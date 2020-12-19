@@ -234,6 +234,14 @@ void MultiNodeNoncausalOffsetEstimator::UpdateOffsets() {
             << " slope " << std::setprecision(9) << std::fixed
             << slope(node_index);
   }
+
+  for (std::pair<const std::tuple<const Node *, const Node *>,
+                 message_bridge::NoncausalOffsetEstimator> &filter : filters_) {
+    // TODO(austin): Do we need to freeze up until a time?  If we freeze a
+    // single point line segment, we are really assuming that it will never
+    // deviate from horizontal again.
+    filter.second.Freeze();
+  }
 }
 
 void MultiNodeNoncausalOffsetEstimator::Initialize(
