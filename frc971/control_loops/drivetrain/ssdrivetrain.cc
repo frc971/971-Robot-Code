@@ -148,7 +148,7 @@ void DrivetrainMotorsSS::SetGoal(
   if (!goal->has_max_ss_voltage()) {
     max_voltage_ = kMaxVoltage;
   } else {
-    max_voltage_ = goal->has_max_ss_voltage();
+    max_voltage_ = goal->max_ss_voltage();
   }
 
   use_profile_ = !kf_->controller().Kff().isZero(0) &&
