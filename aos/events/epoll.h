@@ -59,6 +59,12 @@ class EPoll {
   // Runs until Quit() is called.
   void Run();
 
+  // Consumes a single epoll event. Blocks indefinitely if block is true, or
+  // does not block at all. Returns true if an event was consumed, and false on
+  // any retryable error or if no events are available. Dies fatally on
+  // non-retryable errors.
+  bool Poll(bool block);
+
   // Quits.  Async safe.
   void Quit();
 

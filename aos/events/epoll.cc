@@ -72,37 +72,47 @@ EPoll::~EPoll() {
 
 void EPoll::Run() {
   run_ = true;
+  // As long as run_ is true or we still have events to process, keep polling.
   while (true) {
-    // Pull a single event out.  Infinite timeout if we are supposed to be
-    // running, and 0 length timeout otherwise.  This lets us flush the event
-    // queue before quitting.
-    struct epoll_event event;
-    int num_events = epoll_wait(epoll_fd_, &event, 1, run_ ? -1 : 0);
-    // Retry on EINTR and nothing else.
-    if (num_events == -1) {
-      if (errno == EINTR) {
-        continue;
-      }
-      PCHECK(num_events != -1);
-    }
-    if (!run_) {
-      // If we ran out of events, quit.
-      if (num_events == 0) {
+    // If we ran out of events and Quit() was called, quit
+    if (!Poll(run_)) {
+      if (!run_) {
         return;
       }
     }
-    EventData *const event_data = static_cast<struct EventData *>(event.data.ptr);
-    if (event.events & kInEvents) {
-      CHECK(event_data->in_fn)
-          << ": No handler registered for input events on " << event_data->fd;
-      event_data->in_fn();
-    }
-    if (event.events & kOutEvents) {
-      CHECK(event_data->out_fn)
-          << ": No handler registered for output events on " << event_data->fd;
-      event_data->out_fn();
-    }
   }
+}
+
+bool EPoll::Poll(bool block) {
+  // Pull a single event out.  Infinite timeout if we are supposed to be
+  // running, and 0 length timeout otherwise.  This lets us flush the event
+  // queue before quitting.
+  struct epoll_event event;
+  int num_events = epoll_wait(epoll_fd_, &event, 1, block ? -1 : 0);
+  // Retry on EINTR and nothing else.
+  if (num_events == -1) {
+    if (errno == EINTR) {
+      return false;
+    }
+    PCHECK(num_events != -1);
+  }
+
+  if (num_events == 0) {
+    return false;
+  }
+
+  EventData *const event_data = static_cast<struct EventData *>(event.data.ptr);
+  if (event.events & kInEvents) {
+    CHECK(event_data->in_fn)
+        << ": No handler registered for input events on " << event_data->fd;
+    event_data->in_fn();
+  }
+  if (event.events & kOutEvents) {
+    CHECK(event_data->out_fn)
+        << ": No handler registered for output events on " << event_data->fd;
+    event_data->out_fn();
+  }
+  return true;
 }
 
 void EPoll::Quit() { PCHECK(write(quit_signal_fd_, "q", 1) == 1); }
