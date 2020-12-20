@@ -849,12 +849,6 @@ void TimestampMapper::PopFront() {
 }
 
 Message TimestampMapper::MatchingMessageFor(const Message &message) {
-  TimestampMapper *peer =
-      CHECK_NOTNULL(nodes_data_[source_node_[message.channel_index]].peer);
-  // The queue which will have the matching data, if available.
-  std::deque<Message> *data_queue =
-      &peer->nodes_data_[node()].channels[message.channel_index].messages;
-
   // Figure out what queue index we are looking for.
   CHECK(message.data.message().has_remote_queue_index());
   const uint32_t remote_queue_index =
@@ -867,6 +861,23 @@ Message TimestampMapper::MatchingMessageFor(const Message &message) {
       std::chrono::nanoseconds(message.data.message().monotonic_remote_time()));
   const realtime_clock::time_point realtime_remote_time(
       std::chrono::nanoseconds(message.data.message().realtime_remote_time()));
+
+  TimestampMapper *peer = nodes_data_[source_node_[message.channel_index]].peer;
+
+  // We only register the peers which we have data for.  So, if we are being
+  // asked to pull a timestamp from a peer which doesn't exist, return an empty
+  // message.
+  if (peer == nullptr) {
+    return Message{
+        .channel_index = message.channel_index,
+        .queue_index = remote_queue_index,
+        .timestamp = monotonic_remote_time,
+        .data = SizePrefixedFlatbufferVector<MessageHeader>::Empty()};
+  }
+
+  // The queue which will have the matching data, if available.
+  std::deque<Message> *data_queue =
+      &peer->nodes_data_[node()].channels[message.channel_index].messages;
 
   peer->QueueUntil(monotonic_remote_time);
 
