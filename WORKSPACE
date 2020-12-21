@@ -130,17 +130,17 @@ register_toolchains(
 http_archive(
     name = "platforms",
     sha256 = "3c4057c53b64dd3f2c753e0a80bbb6ccb29fb437910200c911dd51454baf619b",
-    url = "https://www.frc971.org/Build-Dependencies/platforms_10b4d2bdde25ea1e66c02c3f83a6d921000a7272.zip",
     strip_prefix = "platforms-10b4d2bdde25ea1e66c02c3f83a6d921000a7272",
+    url = "https://www.frc971.org/Build-Dependencies/platforms_10b4d2bdde25ea1e66c02c3f83a6d921000a7272.zip",
 )
 
 http_archive(
     name = "bazel_skylib",
+    sha256 = "1c531376ac7e5a180e0237938a2536de0c54d93f5c278634818e0efc952dd56c",
     urls = [
         "https://mirror.bazel.build/github.com/bazelbuild/bazel-skylib/releases/download/1.0.3/bazel-skylib-1.0.3.tar.gz",
         "https://github.com/bazelbuild/bazel-skylib/releases/download/1.0.3/bazel-skylib-1.0.3.tar.gz",
     ],
-    sha256 = "1c531376ac7e5a180e0237938a2536de0c54d93f5c278634818e0efc952dd56c",
 )
 
 http_archive(
