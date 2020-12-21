@@ -1,5 +1,7 @@
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_py_library", "flatbuffer_ts_library")
 
+exports_files(["aos_dump_autocomplete.sh"])
+
 filegroup(
     name = "prime_binaries",
     srcs = [
