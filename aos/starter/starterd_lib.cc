@@ -20,6 +20,7 @@ Application::Application(const aos::Application *application,
       path_(application->has_executable_name()
                 ? application->executable_name()->string_view()
                 : application->name()->string_view()),
+      args_(1),
       user_(application->has_user() ? FindUid(application->user()->c_str())
                                     : std::nullopt),
       event_loop_(event_loop),
