@@ -68,6 +68,9 @@ class EPoll {
   // Quits.  Async safe.
   void Quit();
 
+  // Called before waiting on the epoll file descriptor.
+  void BeforeWait(std::function<void()> function);
+
   // Registers a function to be called if the fd becomes readable.
   // Only one function may be registered for readability on each fd.
   void OnReadable(int fd, ::std::function<void()> function);
@@ -79,6 +82,11 @@ class EPoll {
   // Removes fd from the event loop.
   // All Fds must be cleaned up before this class is destroyed.
   void DeleteFd(int fd);
+
+  // Removes a closed fd.  When fds are closed, they are automatically
+  // unregistered by the kernel.  But we need to clean up any state here.
+  // All Fds must be cleaned up before this class is destroyed.
+  void ForgetClosedFd(int fd);
 
   // Enables calling the existing function registered for fd when it becomes
   // writeable.
@@ -125,6 +133,8 @@ class EPoll {
   // Pipe pair for handling quit.
   int quit_signal_fd_;
   int quit_epoll_fd_;
+
+  std::vector<std::function<void()>> before_epoll_wait_functions_;
 };
 
 }  // namespace internal
