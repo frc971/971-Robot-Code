@@ -251,6 +251,7 @@ void MultiNodeLogNamer::Close() {
 void MultiNodeLogNamer::ResetStatistics() {
   for (std::pair<const Channel *const, DataWriter> &data_writer :
        data_writers_) {
+    if (!data_writer.second.writer) continue;
     data_writer.second.writer->ResetStatistics();
   }
   if (data_writer_.writer) {

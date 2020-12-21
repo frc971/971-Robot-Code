@@ -322,6 +322,7 @@ class MultiNodeLogNamer : public LogNamer {
   T accumulate_data_writers(T t, BinaryOperation op) const {
     for (const std::pair<const Channel *const, DataWriter> &data_writer :
          data_writers_) {
+      if (!data_writer.second.writer) continue;
       t = op(std::move(t), data_writer.second);
     }
     if (data_writer_.writer) {
