@@ -2,6 +2,8 @@ import * as configuration from 'org_frc971/aos/configuration_generated';
 import {Connection} from 'org_frc971/aos/network/www/proxy';
 import * as flatbuffers_builder from 'org_frc971/external/com_github_google_flatbuffers/ts/builder';
 import * as web_proxy from 'org_frc971/aos/network/web_proxy_generated';
+import {Parser, Table} from './reflection'
+import {ByteBuffer} from 'org_frc971/external/com_github_google_flatbuffers/ts/byte-buffer';
 
 
 import Configuration = configuration.aos.Configuration;
@@ -62,35 +64,27 @@ export class ConfigHandler {
 
   handleChange() {
     const toggles = this.root_div.getElementsByTagName('input');
-    const builder =
-        new flatbuffers_builder.Builder(512) as unknown as flatbuffers.Builder;
-
-    const channels: flatbuffers.Offset[] = [];
     for (const toggle of toggles) {
       if (!toggle.checked) {
         continue;
       }
       const index = toggle.getAttribute('data-index');
       const channel = this.config.channels(Number(index));
-      const namefb = builder.createString(channel.name());
-      const typefb = builder.createString(channel.type());
-      Channel.startChannel(builder);
-      Channel.addName(builder, namefb);
-      Channel.addType(builder, typefb);
-      const channelfb = Channel.endChannel(builder);
-      ChannelRequest.startChannelRequest(builder);
-      ChannelRequest.addChannel(builder, channelfb);
-      ChannelRequest.addMethod(builder, TransferMethod.SUBSAMPLE);
-      channels.push(ChannelRequest.endChannelRequest(builder));
+      this.connection.addHandler(
+          channel.name(), channel.type(), (data, time) => {
+            const config = this.connection.getConfig();
+            let schema = null;
+            for (let ii = 0; ii < config.channelsLength(); ++ii) {
+              if (config.channels(ii).type() === channel.type()) {
+                schema = config.channels(ii).schema();
+              }
+            }
+            const parser = new Parser(schema);
+            console.log(
+                parser.toObject(Table.getRootTable(new ByteBuffer(data))));
+          });
     }
 
-    const channelsfb =
-        SubscriberRequest.createChannelsToTransferVector(builder, channels);
-    SubscriberRequest.startSubscriberRequest(builder);
-    SubscriberRequest.addChannelsToTransfer(builder, channelsfb);
-    const request = SubscriberRequest.endSubscriberRequest(builder);
-    builder.finish(request);
-    this.connection.sendConnectMessage(builder);
   }
 
   toggleConfig() {

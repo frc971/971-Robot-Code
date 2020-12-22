@@ -3,6 +3,7 @@ import * as web_proxy from 'org_frc971/aos/network/web_proxy_generated';
 import {Builder} from 'org_frc971/external/com_github_google_flatbuffers/ts/builder';
 import {ByteBuffer} from 'org_frc971/external/com_github_google_flatbuffers/ts/byte-buffer';
 
+import ChannelFb = configuration.aos.Channel;
 import Configuration = configuration.aos.Configuration;
 import MessageHeader = web_proxy.aos.web_proxy.MessageHeader;
 import WebSocketIce = web_proxy.aos.web_proxy.WebSocketIce;
@@ -10,6 +11,9 @@ import WebSocketMessage = web_proxy.aos.web_proxy.WebSocketMessage;
 import Payload = web_proxy.aos.web_proxy.Payload;
 import WebSocketSdp = web_proxy.aos.web_proxy.WebSocketSdp;
 import SdpType = web_proxy.aos.web_proxy.SdpType;
+import SubscriberRequest = web_proxy.aos.web_proxy.SubscriberRequest;
+import ChannelRequestFb = web_proxy.aos.web_proxy.ChannelRequest;
+import TransferMethod = web_proxy.aos.web_proxy.TransferMethod;
 
 // There is one handler for each DataChannel, it maintains the state of
 // multi-part messages and delegates to a callback when the message is fully
@@ -53,6 +57,19 @@ export class Handler {
   }
 }
 
+class Channel {
+  constructor(public readonly name: string, public readonly type: string) {}
+  key(): string {
+    return this.name + "/" + this.type;
+  }
+}
+
+class ChannelRequest {
+  constructor(
+      public readonly channel: Channel,
+      public readonly transferMethod: TransferMethod) {}
+}
+
 // Analogous to the Connection class in //aos/network/web_proxy.h. Because most
 // of the apis are native in JS, it is much simpler.
 export class Connection {
@@ -69,6 +86,8 @@ export class Connection {
       new Map<string, (data: Uint8Array, sentTime: number) => void>();
   private readonly handlers = new Set<Handler>();
 
+  private subscribedChannels: ChannelRequest[] = [];
+
   constructor() {
     const server = location.host;
     this.webSocketUrl = `ws://${server}/ws`;
@@ -79,12 +98,62 @@ export class Connection {
   }
 
   /**
-   * Add a handler for a specific message type. Until we need to handle
-   * different channel names with the same type differently, this is good
-   * enough.
+   * Add a handler for a specific message type, with reliable delivery of all
+   * messages.
    */
-  addHandler(id: string, handler: (data: Uint8Array, sentTime: number) => void): void {
-    this.handlerFuncs.set(id, handler);
+  addReliableHandler(
+      name: string, type: string,
+      handler: (data: Uint8Array, sentTime: number) => void): void {
+    this.addHandlerImpl(
+        name, type, TransferMethod.EVERYTHING_WITH_HISTORY, handler);
+  }
+
+  /**
+   * Add a handler for a specific message type.
+   */
+  addHandler(
+      name: string, type: string,
+      handler: (data: Uint8Array, sentTime: number) => void): void {
+    this.addHandlerImpl(name, type, TransferMethod.SUBSAMPLE, handler);
+  }
+
+  addHandlerImpl(
+      name: string, type: string, method: TransferMethod,
+      handler: (data: Uint8Array, sentTime: number) => void): void {
+    const channel = new Channel(name, type);
+    const request = new ChannelRequest(channel, method);
+    this.handlerFuncs.set(channel.key(), handler);
+    this.subscribeToChannel(request);
+  }
+
+  subscribeToChannel(channel: ChannelRequest): void {
+    this.subscribedChannels.push(channel);
+    if (this.configInternal === null) {
+      throw new Error(
+          'Must call subscribeToChannel after we\'ve received the config.');
+    }
+    const builder = new Builder(512) as unknown as flatbuffers.Builder;
+    const channels: flatbuffers.Offset[] = [];
+    for (const channel of this.subscribedChannels) {
+      const nameFb = builder.createString(channel.channel.name);
+      const typeFb = builder.createString(channel.channel.type);
+      ChannelFb.startChannel(builder);
+      ChannelFb.addName(builder, nameFb);
+      ChannelFb.addType(builder, typeFb);
+      const channelFb = ChannelFb.endChannel(builder);
+      ChannelRequestFb.startChannelRequest(builder);
+      ChannelRequestFb.addChannel(builder, channelFb);
+      ChannelRequestFb.addMethod(builder, channel.transferMethod);
+      channels.push(ChannelRequestFb.endChannelRequest(builder));
+    }
+
+    const channelsFb =
+        SubscriberRequest.createChannelsToTransferVector(builder, channels);
+    SubscriberRequest.startSubscriberRequest(builder);
+    SubscriberRequest.addChannelsToTransfer(builder, channelsFb);
+    const connect = SubscriberRequest.endSubscriberRequest(builder);
+    builder.finish(connect);
+    this.sendConnectMessage(builder);
   }
 
   connect(): void {
@@ -114,8 +183,7 @@ export class Connection {
   onDataChannel(ev: RTCDataChannelEvent): void {
     const channel = ev.channel;
     const name = channel.label;
-    const channelType = name.split('/').pop();
-    const handlerFunc = this.handlerFuncs.get(channelType);
+    const handlerFunc = this.handlerFuncs.get(name);
     this.handlers.add(new Handler(handlerFunc, channel));
   }
 

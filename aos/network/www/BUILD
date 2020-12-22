@@ -20,6 +20,7 @@ ts_library(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
+        ":reflection_ts",
         "//aos:configuration_ts_fbs",
         "//aos/network:connect_ts_fbs",
         "//aos/network:web_proxy_ts_fbs",

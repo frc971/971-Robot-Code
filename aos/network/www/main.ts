@@ -7,4 +7,4 @@ conn.connect();
 
 PingHandler.SetupDom();
 
-conn.addHandler(PingHandler.GetId(), PingHandler.HandlePing);
+conn.addHandler('/aos', PingHandler.GetId(), PingHandler.HandlePing);

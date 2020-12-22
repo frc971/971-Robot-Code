@@ -16,53 +16,6 @@ import SubscriberRequest = web_proxy.aos.web_proxy.SubscriberRequest;
 import ChannelRequest = web_proxy.aos.web_proxy.ChannelRequest;
 import TransferMethod = web_proxy.aos.web_proxy.TransferMethod;
 
-/*
- * All the messages that are required to show an image with metadata.
- * Messages not readable on the server node are ignored.
- */
-const REQUIRED_CHANNELS = [
-  {
-    name: '/pi1/camera',
-    type: CameraImage.getFullyQualifiedName(),
-  },
-  {
-    name: '/pi2/camera',
-    type: CameraImage.getFullyQualifiedName(),
-  },
-  {
-    name: '/pi3/camera',
-    type: CameraImage.getFullyQualifiedName(),
-  },
-  {
-    name: '/pi4/camera',
-    type: CameraImage.getFullyQualifiedName(),
-  },
-  {
-    name: '/pi5/camera',
-    type: CameraImage.getFullyQualifiedName(),
-  },
-  {
-    name: '/pi1/camera/detailed',
-    type: ImageMatchResult.getFullyQualifiedName(),
-  },
-  {
-    name: '/pi2/camera/detailed',
-    type: ImageMatchResult.getFullyQualifiedName(),
-  },
-  {
-    name: '/pi3/camera/detailed',
-    type: ImageMatchResult.getFullyQualifiedName(),
-  },
-  {
-    name: '/pi4/camera/detailed',
-    type: ImageMatchResult.getFullyQualifiedName(),
-  },
-  {
-    name: '/pi5/camera/detailed',
-    type: ImageMatchResult.getFullyQualifiedName(),
-  },
-];
-
 export class ImageHandler {
   private canvas = document.createElement('canvas');
   private select = document.createElement('select');
@@ -86,41 +39,15 @@ export class ImageHandler {
     document.body.appendChild(this.canvas);
 
     this.connection.addConfigHandler(() => {
-      this.sendConnect();
+      this.connection.addHandler(
+          '/camera', ImageMatchResult.getFullyQualifiedName(), (data) => {
+            this.handleImageMetadata(data);
+          });
+      this.connection.addHandler(
+          '/camera', CameraImage.getFullyQualifiedName(), (data) => {
+            this.handleImage(data);
+          });
     });
-    this.connection.addHandler(
-        ImageMatchResult.getFullyQualifiedName(), (data) => {
-          this.handleImageMetadata(data);
-        });
-    this.connection.addHandler(CameraImage.getFullyQualifiedName(), (data) => {
-      this.handleImage(data);
-    });
-  }
-
-  private sendConnect(): void {
-    const builder =
-        new flatbuffers_builder.Builder(512) as unknown as flatbuffers.Builder;
-    const channels: flatbuffers.Offset[] = [];
-    for (const channel of REQUIRED_CHANNELS) {
-      const nameFb = builder.createString(channel.name);
-      const typeFb = builder.createString(channel.type);
-      Channel.startChannel(builder);
-      Channel.addName(builder, nameFb);
-      Channel.addType(builder, typeFb);
-      const channelFb = Channel.endChannel(builder);
-      ChannelRequest.startChannelRequest(builder);
-      ChannelRequest.addChannel(builder, channelFb);
-      ChannelRequest.addMethod(builder, TransferMethod.SUBSAMPLE);
-      channels.push(ChannelRequest.endChannelRequest(builder));
-    }
-
-    const channelsFb =
-        SubscriberRequest.createChannelsToTransferVector(builder, channels);
-    SubscriberRequest.startSubscriberRequest(builder);
-    SubscriberRequest.addChannelsToTransfer(builder, channelsFb);
-    const connect = SubscriberRequest.endSubscriberRequest(builder);
-    builder.finish(connect);
-    this.connection.sendConnectMessage(builder);
   }
 
   handleSelect(ev: Event) {

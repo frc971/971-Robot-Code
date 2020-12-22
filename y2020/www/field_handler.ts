@@ -59,37 +59,6 @@ const LOADING_ZONE_WIDTH = 60 * IN_TO_M;
 const ROBOT_WIDTH = 28 * IN_TO_M;
 const ROBOT_LENGTH = 30 * IN_TO_M;
 
-/**
- * All the messages that are required to display camera information on the field.
- * Messages not readable on the server node are ignored.
- */
-const REQUIRED_CHANNELS = [
-  {
-    name: '/pi1/camera',
-    type: 'frc971.vision.sift.ImageMatchResult',
-  },
-  {
-    name: '/pi2/camera',
-    type: 'frc971.vision.sift.ImageMatchResult',
-  },
-  {
-    name: '/pi3/camera',
-    type: 'frc971.vision.sift.ImageMatchResult',
-  },
-  {
-    name: '/pi4/camera',
-    type: 'frc971.vision.sift.ImageMatchResult',
-  },
-  {
-    name: '/pi5/camera',
-    type: 'frc971.vision.sift.ImageMatchResult',
-  },
-  {
-    name: '/drivetrain',
-    type: 'frc971.control_loops.drivetrain.Status',
-  },
-];
-
 export class FieldHandler {
   private canvas = document.createElement('canvas');
   private imageMatchResult: ImageMatchResult|null = null;
@@ -99,16 +68,15 @@ export class FieldHandler {
     document.body.appendChild(this.canvas);
 
     this.connection.addConfigHandler(() => {
-      this.sendConnect();
+      this.connection.addHandler(
+          '/camera', ImageMatchResult.getFullyQualifiedName(), (res) => {
+            this.handleImageMatchResult(res);
+          });
+      this.connection.addHandler(
+          '/drivetrain', DrivetrainStatus.getFullyQualifiedName(), (data) => {
+            this.handleDrivetrainStatus(data);
+          });
     });
-    this.connection.addHandler(
-        ImageMatchResult.getFullyQualifiedName(), (res) => {
-          this.handleImageMatchResult(res);
-        });
-    this.connection.addHandler(
-        DrivetrainStatus.getFullyQualifiedName(), (data) => {
-          this.handleDrivetrainStatus(data);
-        });
   }
 
   private handleImageMatchResult(data: Uint8Array): void {
@@ -121,32 +89,6 @@ export class FieldHandler {
     const fbBuffer = new ByteBuffer(data);
     this.drivetrainStatus = DrivetrainStatus.getRootAsStatus(
         fbBuffer as unknown as flatbuffers.ByteBuffer);
-  }
-
-  private sendConnect(): void {
-    const builder =
-        new flatbuffers_builder.Builder(512) as unknown as flatbuffers.Builder;
-    const channels: flatbuffers.Offset[] = [];
-    for (const channel of REQUIRED_CHANNELS) {
-      const nameFb = builder.createString(channel.name);
-      const typeFb = builder.createString(channel.type);
-      Channel.startChannel(builder);
-      Channel.addName(builder, nameFb);
-      Channel.addType(builder, typeFb);
-      const channelFb = Channel.endChannel(builder);
-      ChannelRequest.startChannelRequest(builder);
-      ChannelRequest.addChannel(builder, channelFb);
-      ChannelRequest.addMethod(builder, TransferMethod.SUBSAMPLE);
-      channels.push(ChannelRequest.endChannelRequest(builder));
-    }
-
-    const channelsFb =
-        SubscriberRequest.createChannelsToTransferVector(builder, channels);
-    SubscriberRequest.startSubscriberRequest(builder);
-    SubscriberRequest.addChannelsToTransfer(builder, channelsFb);
-    const connect = SubscriberRequest.endSubscriberRequest(builder);
-    builder.finish(connect);
-    this.connection.sendConnectMessage(builder);
   }
 
   drawField(): void {

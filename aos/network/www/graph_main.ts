@@ -121,6 +121,7 @@ const timingReport = {
 };
 
 let reportParser = null;
+let startTime = null;
 
 conn.addConfigHandler((config: Configuration) => {
   // Locate the timing report schema so that we can read the received messages.
@@ -135,44 +136,22 @@ conn.addConfigHandler((config: Configuration) => {
   }
   reportParser = new Parser(reportSchema);
 
-  // Subscribe to the timing report message.
-  const builder =
-      new flatbuffers_builder.Builder(512) as unknown as flatbuffers.Builder;
-  const channels: flatbuffers.Offset[] = [];
-  for (const channel of [timingReport]) {
-    const nameFb = builder.createString(channel.name);
-    const typeFb = builder.createString(channel.type);
-    Channel.startChannel(builder);
-    Channel.addName(builder, nameFb);
-    Channel.addType(builder, typeFb);
-    const channelFb = Channel.endChannel(builder);
-    ChannelRequest.startChannelRequest(builder);
-    ChannelRequest.addChannel(builder, channelFb);
-    ChannelRequest.addMethod(builder, TransferMethod.EVERYTHING_WITH_HISTORY);
-    channels.push(ChannelRequest.endChannelRequest(builder));
-  }
+  conn.addReliableHandler(
+      timingReport.name, timingReport.type,
+      (data: Uint8Array, time: number) => {
+        if (startTime === null) {
+          startTime = time;
+        }
+        time = time - startTime;
+        const table = Table.getRootTable(new ByteBuffer(data));
 
-  const channelsFb = SubscriberRequest.createChannelsToTransferVector(builder, channels);
-  SubscriberRequest.startSubscriberRequest(builder);
-  SubscriberRequest.addChannelsToTransfer(builder, channelsFb);
-  const connect = SubscriberRequest.endSubscriberRequest(builder);
-  builder.finish(connect);
-  conn.sendConnectMessage(builder);
-});
-
-let startTime = null;
-conn.addHandler(timingReport.type, (data: Uint8Array, time: number) => {
-  if (startTime === null) {
-    startTime = time;
-  }
-  time = time - startTime;
-  const table = Table.getRootTable(new ByteBuffer(data));
-
-  const timer = reportParser.readVectorOfTables(table, "timers")[0];
-  handlerLines.addPoints(
-      reportParser, reportParser.readTable(timer, 'handler_time'), time);
-  latencyLines.addPoints(
-      reportParser, reportParser.readTable(timer, 'wakeup_latency'), time);
+        const timer = reportParser.readVectorOfTables(table, 'timers')[0];
+        handlerLines.addPoints(
+            reportParser, reportParser.readTable(timer, 'handler_time'), time);
+        latencyLines.addPoints(
+            reportParser, reportParser.readTable(timer, 'wakeup_latency'),
+            time);
+      });
 });
 
 // Set up and draw the benchmarking plot
