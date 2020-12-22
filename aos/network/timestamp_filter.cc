@@ -492,6 +492,32 @@ Line AverageFits(Line fa, Line fb) {
   return f;
 }
 
+Line Invert(Line fb) {
+  // ta = Ob(tb) + tb
+  // tb = Oa(ta) + ta
+  // Ob(tb) = mb * tb + bb
+  // Oa(ta) = ma * ta + ba
+  //
+  // ta = mb * tb + tb + bb
+  // ta = (mb + 1) * tb + bb
+  // 1 / (mb + 1) ta - bb / (mb + 1) = tb
+  // ta + (-1 + 1 / (mb + 1)) ta - bb / (mb + 1) = tb
+  // ta + ((-mb - 1) / (mb + 1) + 1 / (mb + 1)) ta - bb / (mb + 1) = tb
+  // ta + -mb / (mb + 1) ta - bb / (mb + 1) = tb
+  //
+  // ma = -mb / (mb + 1)
+  // ba = -bb / (mb + 1)
+
+  mpq_class denom = (mpq_class(1) + fb.mpq_slope());
+  mpq_class ma = -fb.mpq_slope() / denom;
+  ma.canonicalize();
+
+  mpq_class ba = -fb.mpq_offset() / denom;
+
+  Line f(ba, ma);
+  return f;
+}
+
 NoncausalTimestampFilter::~NoncausalTimestampFilter() {
   // Destroy the filter by popping until empty.  This will trigger any
   // timestamps to be written to the files.
@@ -779,8 +805,8 @@ void NoncausalOffsetEstimator::LogFit(std::string_view prefix) {
   }
   if (b_timestamps.size() >= 2u) {
     LOG(INFO)
-        << prefix << " " << node_a_->name()->string_view() << " from "
-        << node_b_->name()->string_view() << " slope " << std::setprecision(20)
+        << prefix << " " << node_b_->name()->string_view() << " from "
+        << node_a_->name()->string_view() << " slope " << std::setprecision(20)
         << fit_.slope() << " offset " << fit_.offset().count() << " b [("
         << std::get<0>(b_timestamps[0]) << " -> "
         << std::get<1>(b_timestamps[0]).count() << "ns), ("
@@ -811,17 +837,33 @@ void NoncausalOffsetEstimator::LogFit(std::string_view prefix) {
 }
 
 void NoncausalOffsetEstimator::Refit() {
-  if (a_timestamps_size() == 0 || b_timestamps_size() == 0) {
+  if (a_timestamps_size() == 0 && b_timestamps_size() == 0) {
     VLOG(1) << "Not fitting because there is no data";
     return;
   }
-  fit_ = AverageFits(a_.FitLine(), b_.FitLine());
+
+  // If we only have one side of the timestamp estimation, we will be on the
+  // ragged edge of non-causal.  Events will traverse the network in "0 ns".
+  // Combined with rounding errors, this causes sorting to not work.  Assume
+  // some amount of network delay.
+  constexpr int kSmidgeOfTimeNs = 10;
+
+  if (a_timestamps_size() == 0) {
+    fit_ = Invert(b_.FitLine());
+    fit_.increment_mpq_offset(-mpq_class(kSmidgeOfTimeNs));
+  } else if (b_timestamps_size() == 0) {
+    fit_ = a_.FitLine();
+    fit_.increment_mpq_offset(-mpq_class(kSmidgeOfTimeNs));
+  } else {
+    fit_ = AverageFits(a_.FitLine(), b_.FitLine());
+  }
+
   if (offset_pointer_) {
-    VLOG(1) << "Setting offset to " << fit_.mpq_offset();
+    VLOG(2) << " Setting offset to " << fit_.mpq_offset();
     *offset_pointer_ = fit_.mpq_offset();
   }
   if (slope_pointer_) {
-    VLOG(1) << "Setting slope to " << fit_.mpq_slope();
+    VLOG(2) << " Setting slope to " << fit_.mpq_slope();
     *slope_pointer_ = -fit_.mpq_slope();
   }
   if (valid_pointer_) {

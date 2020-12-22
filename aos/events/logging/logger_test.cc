@@ -415,6 +415,13 @@ class MultinodeLoggerTest : public ::testing::Test {
              logfile_base_ +
                  "_pi2_data/pi2/aos/aos.message_bridge.Timestamp.part2.bfbs"}),
         logfiles_(MakeLogFiles(logfile_base_)),
+        pi1_single_direction_logfiles_(
+            {logfile_base_ + "_pi1_data.part0.bfbs",
+             logfile_base_ + "_pi2_data/test/aos.examples.Pong.part0.bfbs",
+             logfile_base_ + "_timestamps/pi1/aos/remote_timestamps/pi2/"
+                             "aos.message_bridge.RemoteMessage.part0.bfbs",
+             logfile_base_ +
+                 "_pi2_data/pi2/aos/aos.message_bridge.Timestamp.part0.bfbs"}),
         structured_logfiles_{
             std::vector<std::string>{logfiles_[0]},
             std::vector<std::string>{logfiles_[1], logfiles_[2]},
@@ -549,6 +556,17 @@ class MultinodeLoggerTest : public ::testing::Test {
     EXPECT_THAT(sorted_parts[1].corrupted, ::testing::Eq(corrupted_parts));
   }
 
+  void ConfirmReadable(const std::vector<std::string> &files) {
+    LogReader reader(SortParts(files));
+
+    SimulatedEventLoopFactory log_reader_factory(reader.configuration());
+    reader.Register(&log_reader_factory);
+
+    log_reader_factory.Run();
+
+    reader.Deregister();
+  }
+
   void AddExtension(std::string_view extension) {
     std::transform(logfiles_.begin(), logfiles_.end(), logfiles_.begin(),
                    [extension](const std::string &in) {
@@ -577,6 +595,7 @@ class MultinodeLoggerTest : public ::testing::Test {
   std::string logfile_base_;
   std::vector<std::string> pi1_reboot_logfiles_;
   std::vector<std::string> logfiles_;
+  std::vector<std::string> pi1_single_direction_logfiles_;
 
   std::vector<std::vector<std::string>> structured_logfiles_;
 
@@ -1725,6 +1744,48 @@ TEST_F(MultinodeLoggerDeathTest, RemoteReboot) {
       },
       absl::StrFormat("(%s|%s).*(%s|%s).*Found parts from different boots",
                       pi2_boot1, pi2_boot2, pi2_boot2, pi2_boot1));
+}
+
+// Tests that we properly handle one direction of message_bridge being
+// unavailable.
+TEST_F(MultinodeLoggerTest, OneDirectionWithNegativeSlope) {
+  event_loop_factory_.GetNodeEventLoopFactory(pi1_)->Disconnect(pi2_);
+  event_loop_factory_.GetNodeEventLoopFactory(pi2_)->SetDistributedOffset(
+      chrono::seconds(1000), 0.99999);
+  {
+    LoggerState pi1_logger = MakeLogger(pi1_);
+
+    event_loop_factory_.RunFor(chrono::milliseconds(95));
+
+    StartLogger(&pi1_logger);
+
+    event_loop_factory_.RunFor(chrono::milliseconds(10000));
+  }
+
+  // Confirm that we can parse the result.  LogReader has enough internal CHECKs
+  // to confirm the right thing happened.
+  ConfirmReadable(pi1_single_direction_logfiles_);
+}
+
+// Tests that we properly handle one direction of message_bridge being
+// unavailable.
+TEST_F(MultinodeLoggerTest, OneDirectionWithPositiveSlope) {
+  event_loop_factory_.GetNodeEventLoopFactory(pi1_)->Disconnect(pi2_);
+  event_loop_factory_.GetNodeEventLoopFactory(pi2_)->SetDistributedOffset(
+      chrono::seconds(500), 1.00001);
+  {
+    LoggerState pi1_logger = MakeLogger(pi1_);
+
+    event_loop_factory_.RunFor(chrono::milliseconds(95));
+
+    StartLogger(&pi1_logger);
+
+    event_loop_factory_.RunFor(chrono::milliseconds(10000));
+  }
+
+  // Confirm that we can parse the result.  LogReader has enough internal CHECKs
+  // to confirm the right thing happened.
+  ConfirmReadable(pi1_single_direction_logfiles_);
 }
 
 }  // namespace testing

@@ -162,6 +162,26 @@ TEST(LineTest, AverageFits) {
   }
 }
 
+// Tests that the Invert function returns sane results.
+TEST(LineTest, Invert) {
+  const monotonic_clock::time_point ta(chrono::nanoseconds(1000000000));
+  const monotonic_clock::time_point tb(chrono::nanoseconds(2001000000));
+
+  // Double inversion should get us back where we started.  Make sure there are
+  // enough digits to catch rounding problems.
+  Line l1(mpq_class(1000000000), mpq_class(1, 1000));
+  Line l2 = Invert(l1);
+  Line l1_again = Invert(l2);
+
+  // Confirm we can convert time back and forth as expected.
+  EXPECT_EQ(l1.Eval(ta) + ta, tb);
+  EXPECT_EQ(l2.Eval(tb) + tb, ta);
+
+  // And we got back our original line.
+  EXPECT_EQ(l1.mpq_slope(), l1_again.mpq_slope());
+  EXPECT_EQ(l1.mpq_offset(), l1_again.mpq_offset());
+}
+
 // Tests that 2 samples results in the correct line between them, and the
 // correct intermediate as it is being built.
 TEST(NoncausalTimestampFilterTest, SingleSample) {

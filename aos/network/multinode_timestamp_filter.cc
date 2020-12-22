@@ -39,7 +39,7 @@ Solve(const Eigen::Matrix<mpq_class, Eigen::Dynamic, Eigen::Dynamic> &mpq_map,
       (mpq_map.transpose() * mpq_map).inverse() * mpq_map.transpose();
   aos::monotonic_clock::time_point end_time = aos::monotonic_clock::now();
 
-  VLOG(1) << "Took "
+  VLOG(3) << "Took "
           << std::chrono::duration<double>(end_time - start_time).count()
           << " seconds to invert";
 
@@ -215,13 +215,17 @@ void MultiNodeNoncausalOffsetEstimator::LogFit(std::string_view prefix) {
 }
 
 void MultiNodeNoncausalOffsetEstimator::UpdateOffsets() {
-  VLOG(2) << "Samples are " << offset_matrix_;
-  VLOG(2) << "Map is " << (map_matrix_ + slope_matrix_);
+  for (size_t node_index = 0; node_index < nodes_count(); ++node_index) {
+    const Node *node = configuration::GetNode(configuration(), node_index);
+    VLOG(1)
+        << node->name()->string_view() << " before "
+        << event_loop_factory_->GetNodeEventLoopFactory(node)->monotonic_now();
+  }
+  VLOG(1) << "Distributed " << event_loop_factory_->distributed_now();
+
   std::tie(time_slope_matrix_, time_offset_matrix_) = SolveOffsets();
   Eigen::IOFormat HeavyFmt(Eigen::FullPrecision, 0, ", ", ";\n", "[", "]", "[",
                            "]");
-  VLOG(1) << "First slope " << time_slope_matrix_.transpose().format(HeavyFmt)
-          << " offset " << time_offset_matrix_.transpose().format(HeavyFmt);
 
   for (size_t node_index = 0; node_index < nodes_count(); ++node_index) {
     const Node *node = configuration::GetNode(configuration(), node_index);
@@ -241,6 +245,13 @@ void MultiNodeNoncausalOffsetEstimator::UpdateOffsets() {
     // single point line segment, we are really assuming that it will never
     // deviate from horizontal again.
     filter.second.Freeze();
+  }
+
+  for (size_t node_index = 0; node_index < nodes_count(); ++node_index) {
+    const Node *node = configuration::GetNode(configuration(), node_index);
+    VLOG(1)
+        << node->name()->string_view() << " after "
+        << event_loop_factory_->GetNodeEventLoopFactory(node)->monotonic_now();
   }
 }
 
@@ -498,8 +509,8 @@ MultiNodeNoncausalOffsetEstimator::SolveOffsets() {
   } else {
     const Eigen::Matrix<mpq_class, Eigen::Dynamic, Eigen::Dynamic> mpq_map =
         map_matrix_ + slope_matrix_;
-    VLOG(1) << "map " << (map_matrix_ + slope_matrix_).format(HeavyFmt);
-    VLOG(1) << "offsets " << offset_matrix_.format(HeavyFmt);
+    VLOG(2) << "map " << ToDouble(map_matrix_ + slope_matrix_).format(HeavyFmt);
+    VLOG(2) << "offsets " << ToDouble(offset_matrix_).format(HeavyFmt);
 
     return Solve(mpq_map, offset_matrix_);
   }

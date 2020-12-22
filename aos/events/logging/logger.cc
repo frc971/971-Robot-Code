@@ -1424,8 +1424,6 @@ void LogReader::Register(EventLoop *event_loop) {
     // which involves time before changing it.  That especially includes
     // sending the message.
     if (update_time) {
-      filters_->LogFit("");
-
       VLOG(1) << MaybeNodeName(state->event_loop()->node())
               << "updating offsets";
 
@@ -1436,19 +1434,9 @@ void LogReader::Register(EventLoop *event_loop) {
                        return state->monotonic_now();
                      });
 
-      for (size_t i = 0; i < states_.size(); ++i) {
-        VLOG(1) << MaybeNodeName(states_[i]->event_loop()->node()) << "before "
-                << states_[i]->monotonic_now();
-      }
-
       UpdateOffsets();
       VLOG(1) << MaybeNodeName(state->event_loop()->node()) << "Now is now "
               << state->monotonic_now();
-
-      for (size_t i = 0; i < states_.size(); ++i) {
-        VLOG(1) << MaybeNodeName(states_[i]->event_loop()->node()) << "after "
-                << states_[i]->monotonic_now();
-      }
 
       // TODO(austin): We should be perfect.
       const std::chrono::nanoseconds kTolerance{3};
@@ -1462,7 +1450,7 @@ void LogReader::Register(EventLoop *event_loop) {
               << MaybeNodeName(states_[i]->event_loop()->node());
           CHECK_LE(states_[i]->monotonic_now(), before_times[i] + kTolerance)
               << ": Time changed too much on node "
-              << states_[i]->event_loop()->node()->name()->string_view();
+              << MaybeNodeName(states_[i]->event_loop()->node());
         }
       } else {
         if (next_time < state->monotonic_now()) {

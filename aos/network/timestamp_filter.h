@@ -260,6 +260,7 @@ class Line {
   // Returns the full precision slopes and offsets.
   mpq_class mpq_offset() const { return offset_; }
   mpq_class mpq_slope() const { return slope_; }
+  void increment_mpq_offset(mpq_class increment) { offset_ += increment; }
 
   // Returns the rounded offsets and slopes.
   std::chrono::nanoseconds offset() const {
@@ -305,6 +306,18 @@ class Line {
 // and returns O(ta) such that
 // tb = O(ta) + ta
 Line AverageFits(Line fa, Line fb);
+
+// Inverts an offset line
+//
+// Oa(ta) = fa.slope * ta + fa.offset;
+// tb = Oa(ta) + ta;
+// Ob(tb) = fb.slope * tb + fb.offset;
+// ta = Ob(tb) + tb;
+//
+// This takes a line in the form ta = Ob(tb) + tb,
+// and returns one in the form tb = Oa(ta) + ta.  This is a pure algebreic
+// reshuffling of terms.
+Line Invert(Line fb);
 
 // This class implements a noncausal timestamp filter.  It tracks the maximum
 // points while enforcing both a maximum positive and negative slope constraint.
