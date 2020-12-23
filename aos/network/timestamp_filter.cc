@@ -535,16 +535,27 @@ Line NoncausalTimestampFilter::FitLine() {
     return Line::Fit(TrimTuple(timestamps_[0]), TrimTuple(timestamps_[1]));
   }
 }
+void NoncausalTimestampFilter::FlushSavedSamples() {
+  for (const std::tuple<aos::monotonic_clock::time_point,
+                        std::chrono::nanoseconds> &sample : saved_samples_) {
+    fprintf(samples_fp_, "%.9f, %.9f\n",
+            chrono::duration_cast<chrono::duration<double>>(
+                std::get<0>(sample) - first_time_)
+                .count(),
+            chrono::duration_cast<chrono::duration<double>>(std::get<1>(sample))
+                .count());
+  }
+  saved_samples_.clear();
+}
 
 bool NoncausalTimestampFilter::Sample(
     aos::monotonic_clock::time_point monotonic_now,
     chrono::nanoseconds sample_ns) {
-  if (samples_fp_ && first_time_ != aos::monotonic_clock::min_time) {
-    fprintf(samples_fp_, "%.9f, %.9f\n",
-            chrono::duration_cast<chrono::duration<double>>(monotonic_now -
-                                                            first_time_)
-                .count(),
-            chrono::duration_cast<chrono::duration<double>>(sample_ns).count());
+  if (samples_fp_) {
+    saved_samples_.emplace_back(std::make_pair(monotonic_now, sample_ns));
+    if (first_time_ != aos::monotonic_clock::min_time) {
+      FlushSavedSamples();
+    }
   }
 
   // The first sample is easy.  Just do it!
@@ -644,6 +655,7 @@ void NoncausalTimestampFilter::SetFirstTime(
   if (samples_fp_) {
     samples_fp_ = freopen(NULL, "wb", samples_fp_);
     PrintNoncausalTimestampFilterSamplesHeader(samples_fp_);
+    FlushSavedSamples();
   }
 }
 
