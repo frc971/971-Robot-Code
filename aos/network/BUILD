@@ -441,17 +441,11 @@ cc_binary(
     name = "log_web_proxy_main",
     srcs = ["log_web_proxy_main.cc"],
     args = [
-        "--config=aos/network/www/test_config.json",
         "--data_dir=aos/network/www",
     ],
     copts = [
         "-DWEBRTC_POSIX",
         "-Wno-unused-parameter",
-    ],
-    data = [
-        "//aos/network/www:plotting_sample",
-        "//y2020:config",
-        "@com_github_google_flatbuffers//:flatjs",
     ],
     deps = [
         ":gen_embedded",

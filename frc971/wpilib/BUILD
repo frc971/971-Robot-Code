@@ -1,6 +1,7 @@
 package(default_visibility = ["//visibility:public"])
 
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+load("@npm_bazel_typescript//:defs.bzl", "ts_library")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_ts_library")
 load("//aos:config.bzl", "aos_config")
 
 flatbuffer_cc_library(
@@ -286,6 +287,15 @@ flatbuffer_cc_library(
     target_compatible_with = ["@platforms//os:linux"],
 )
 
+flatbuffer_ts_library(
+    name = "imu_batch_ts_fbs",
+    srcs = ["imu_batch.fbs"],
+    includes = [
+        ":imu_fbs_includes",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+)
+
 cc_library(
     name = "ADIS16470",
     srcs = [
@@ -420,5 +430,29 @@ cc_library(
         "//aos/util:compiler_memory_barrier",
         "//third_party:wpilib",
         "@com_github_google_glog//:glog",
+    ],
+)
+
+ts_library(
+    name = "imu_plot_utils",
+    srcs = ["imu_plot_utils.ts"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":imu_batch_ts_fbs",
+        "//aos:configuration_ts_fbs",
+        "//aos/network/www:aos_plotter",
+        "//aos/network/www:reflection_ts",
+        "@com_github_google_flatbuffers//ts:flatbuffers_ts",
+    ],
+)
+
+ts_library(
+    name = "imu_plotter",
+    srcs = ["imu_plotter.ts"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":imu_plot_utils",
+        "//aos/network/www:aos_plotter",
+        "//aos/network/www:proxy",
     ],
 )

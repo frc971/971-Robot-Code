@@ -130,6 +130,10 @@ export class Line {
     }
   }
 
+  getPoints(): Float32Array {
+    return this.points;
+  }
+
   // Get/set the label to use for the line when drawing the legend.
   setLabel(label: string) {
     this._label = label;
@@ -231,7 +235,7 @@ export class Legend {
   // Location, in pixels, of the legend in the text canvas.
   private location: number[] = [0, 0];
   constructor(private ctx: CanvasRenderingContext2D, private lines: Line[]) {
-    this.location = [this.ctx.canvas.width - 100, 30];
+    this.location = [80, 30];
   }
 
   setPosition(location: number[]): void {
@@ -501,9 +505,6 @@ export class LineDrawer {
     for (let line of this.lines) {
       minValues = cwiseOp(minValues, line.minValues(), Math.min);
     }
-    if (!isFinite(minValues[0]) || !isFinite(minValues[1])) {
-      return [0, 0];
-    }
     return minValues;
   }
 
@@ -511,9 +512,6 @@ export class LineDrawer {
     let maxValues = [-Infinity, -Infinity];
     for (let line of this.lines) {
       maxValues = cwiseOp(maxValues, line.maxValues(), Math.max);
-    }
-    if (!isFinite(maxValues[0]) || !isFinite(maxValues[1])) {
-      return [0, 0];
     }
     return maxValues;
   }
@@ -740,6 +738,7 @@ export class Plot {
   private autoFollow: boolean = true;
   private linkedXAxes: Plot[] = [];
   private lastTimeMs: number = 0;
+  private defaultYRange: number[]|null = null;
 
   constructor(wrapperDiv: HTMLDivElement, width: number, height: number) {
     wrapperDiv.appendChild(this.canvas);
@@ -889,9 +888,35 @@ export class Plot {
     this.setZoom(scale, offset);
   }
 
+  setDefaultYRange(range: number[]|null) {
+    if (range == null) {
+      this.defaultYRange = null;
+      return;
+    }
+    if (range.length != 2) {
+      throw new Error('Range should contain exactly two values.');
+    }
+    this.defaultYRange = range;
+  }
+
   resetZoom() {
     const minValues = this.drawer.minValues();
     const maxValues = this.drawer.maxValues();
+    for (const plot of this.linkedXAxes) {
+      const otherMin = plot.drawer.minValues();
+      const otherMax = plot.drawer.maxValues();
+      // For linked x-axes, only adjust the x limits.
+      minValues[0] = Math.min(minValues[0], otherMin[0]);
+      maxValues[0] = Math.max(maxValues[0], otherMax[0]);
+    }
+    if (!isFinite(minValues[0]) || !isFinite(maxValues[0])) {
+      minValues[0] = 0;
+      maxValues[0] = 0;
+    }
+    if (!isFinite(minValues[1]) || !isFinite(maxValues[1])) {
+      minValues[1] = 0;
+      maxValues[1] = 0;
+    }
     if (minValues[0] == maxValues[0]) {
       minValues[0] -= 1;
       maxValues[0] += 1;
@@ -899,6 +924,10 @@ export class Plot {
     if (minValues[1] == maxValues[1]) {
       minValues[1] -= 1;
       maxValues[1] += 1;
+    }
+    if (this.defaultYRange != null) {
+      minValues[1] = this.defaultYRange[0];
+      maxValues[1] = this.defaultYRange[1];
     }
     this.setZoomCorners(minValues, maxValues);
     this.autoFollow = true;

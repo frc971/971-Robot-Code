@@ -102,11 +102,12 @@ ts_library(
 )
 
 ts_library(
-    name = "graph_main",
+    name = "aos_plotter",
     srcs = [
-        "graph_main.ts",
+        "aos_plotter.ts",
     ],
     target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
     deps = [
         ":plotter",
         ":proxy",
@@ -118,13 +119,23 @@ ts_library(
     ],
 )
 
-rollup_bundle(
-    name = "graph_main_bundle",
-    enable_code_splitting = False,
-    entry_point = "graph_main.ts",
+ts_library(
+    name = "demo_plot",
+    srcs = [
+        "demo_plot.ts",
+    ],
     target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
     deps = [
-        ":graph_main",
+        ":aos_plotter",
+        ":plotter",
+        ":proxy",
+        ":reflection_ts",
+        "//aos:configuration_ts_fbs",
+        "//aos/network:connect_ts_fbs",
+        "//aos/network:web_proxy_ts_fbs",
+        "//frc971/wpilib:imu_batch_ts_fbs",
+        "@com_github_google_flatbuffers//ts:flatbuffers_ts",
     ],
 )
 
@@ -136,6 +147,7 @@ aos_config(
         "//aos:json_to_flatbuffer_flatbuffer",
     ],
     target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
     deps = [
         "//aos/events:config",
     ],
@@ -155,8 +167,6 @@ sh_binary(
     name = "web_proxy_demo",
     srcs = ["web_proxy_demo.sh"],
     data = [
-        ":graph.html",
-        ":graph_main_bundle.min.js",
         ":reflection_test.html",
         ":reflection_test_bundle.min.js",
         ":test_config",
@@ -164,15 +174,4 @@ sh_binary(
         "//y2020:config",
     ],
     target_compatible_with = ["@platforms//os:linux"],
-)
-
-filegroup(
-    name = "plotting_sample",
-    srcs = [
-        "graph.html",
-        "graph_main_bundle.min.js",
-        "styles.css",
-        "test_config",
-    ],
-    visibility = ["//visibility:public"],
 )

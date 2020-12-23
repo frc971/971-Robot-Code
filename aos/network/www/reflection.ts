@@ -120,6 +120,16 @@ export class Table {
   static getRootTable(bb: ByteBuffer): Table {
     return new Table(bb, -1, bb.readInt32(bb.position()) + bb.position());
   }
+  static getNamedTable(
+      bb: ByteBuffer, schema: reflection.Schema, type: string,
+      offset: number): Table {
+    for (let ii = 0; ii < schema.objectsLength(); ++ii) {
+      if (schema.objects(ii).name() == type) {
+        return new Table(bb, ii, offset);
+      }
+    }
+    throw new Error('Unable to find type ' + type + ' in schema.');
+  }
   // Reads a scalar of a given type at a given offset.
   readScalar(fieldType: reflection.BaseType, offset: number) {
     switch (fieldType) {

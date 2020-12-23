@@ -1,6 +1,8 @@
 package(default_visibility = ["//visibility:public"])
 
+load("@npm_bazel_typescript//:defs.bzl", "ts_library")
 load("@com_google_protobuf//:protobuf.bzl", "py_proto_library")
+load("@build_bazel_rules_nodejs//:defs.bzl", "nodejs_binary", "rollup_bundle")
 
 py_binary(
     name = "plot_action",
@@ -80,4 +82,55 @@ py_test(
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [":plot"],
+)
+
+ts_library(
+    name = "plot_index",
+    srcs = ["plot_index.ts"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        "//aos:configuration_ts_fbs",
+        "//aos/network/www:demo_plot",
+        "//aos/network/www:proxy",
+        "//frc971/wpilib:imu_plotter",
+    ],
+)
+
+rollup_bundle(
+    name = "plot_index_bundle",
+    enable_code_splitting = False,
+    entry_point = "plot_index.ts",
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":plot_index",
+    ],
+)
+
+filegroup(
+    name = "plotter_files",
+    srcs = [
+        "index.html",
+        "plot_index_bundle.min.js",
+    ],
+)
+
+sh_binary(
+    name = "web_plotter",
+    srcs = ["web_plotter.sh"],
+    data = [
+        ":plotter_files",
+        "//aos/network:log_web_proxy_main",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+)
+
+sh_binary(
+    name = "live_web_plotter_demo",
+    srcs = ["live_web_plotter_demo.sh"],
+    data = [
+        ":plotter_files",
+        "//aos/network:web_proxy_main",
+        "//aos/network/www:test_config",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
 )

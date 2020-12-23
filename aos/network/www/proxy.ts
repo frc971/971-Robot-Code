@@ -5,6 +5,7 @@ import {ByteBuffer} from 'org_frc971/external/com_github_google_flatbuffers/ts/b
 
 import ChannelFb = configuration.aos.Channel;
 import Configuration = configuration.aos.Configuration;
+import Schema = configuration.reflection.Schema;
 import MessageHeader = web_proxy.aos.web_proxy.MessageHeader;
 import WebSocketIce = web_proxy.aos.web_proxy.WebSocketIce;
 import WebSocketMessage = web_proxy.aos.web_proxy.WebSocketMessage;
@@ -83,7 +84,7 @@ export class Connection {
   private readonly configHandlers = new Set<(config: Configuration) => void>();
 
   private readonly handlerFuncs =
-      new Map<string, (data: Uint8Array, sentTime: number) => void>();
+      new Map<string, ((data: Uint8Array, sentTime: number) => void)[]>();
   private readonly handlers = new Set<Handler>();
 
   private subscribedChannels: ChannelRequest[] = [];
@@ -122,8 +123,25 @@ export class Connection {
       handler: (data: Uint8Array, sentTime: number) => void): void {
     const channel = new Channel(name, type);
     const request = new ChannelRequest(channel, method);
-    this.handlerFuncs.set(channel.key(), handler);
+    if (!this.handlerFuncs.has(channel.key())) {
+      this.handlerFuncs.set(channel.key(), []);
+    }
+    this.handlerFuncs.get(channel.key()).push(handler);
     this.subscribeToChannel(request);
+  }
+
+  getSchema(typeName: string): Schema {
+    let schema = null;
+    const config = this.getConfig();
+    for (let ii = 0; ii < config.channelsLength(); ++ii) {
+      if (config.channels(ii).type() === typeName) {
+        schema = config.channels(ii).schema();
+      }
+    }
+    if (schema === null) {
+      throw new Error('Unable to find schema for ' + typeName);
+    }
+    return schema;
   }
 
   subscribeToChannel(channel: ChannelRequest): void {
@@ -183,8 +201,10 @@ export class Connection {
   onDataChannel(ev: RTCDataChannelEvent): void {
     const channel = ev.channel;
     const name = channel.label;
-    const handlerFunc = this.handlerFuncs.get(name);
-    this.handlers.add(new Handler(handlerFunc, channel));
+    const handlers = this.handlerFuncs.get(name);
+    for (const handler of handlers) {
+      this.handlers.add(new Handler(handler, channel));
+    }
   }
 
   onIceCandidate(e: RTCPeerConnectionIceEvent): void {

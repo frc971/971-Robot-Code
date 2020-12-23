@@ -16,7 +16,6 @@
 #include "seasocks/Server.h"
 #include "seasocks/WebSocket.h"
 
-DEFINE_string(config, "./config.json", "File path of aos configuration");
 DEFINE_string(data_dir, "www", "Directory to serve data files from");
 DEFINE_string(node, "", "Directory to serve data files from");
 DEFINE_int32(buffer_size, -1, "-1 if infinite, in # of messages / channel.");

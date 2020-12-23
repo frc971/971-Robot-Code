@@ -72,14 +72,8 @@ export class ConfigHandler {
       const channel = this.config.channels(Number(index));
       this.connection.addHandler(
           channel.name(), channel.type(), (data, time) => {
-            const config = this.connection.getConfig();
-            let schema = null;
-            for (let ii = 0; ii < config.channelsLength(); ++ii) {
-              if (config.channels(ii).type() === channel.type()) {
-                schema = config.channels(ii).schema();
-              }
-            }
-            const parser = new Parser(schema);
+            const parser =
+                new Parser(this.connection.getSchema(channel.type()));
             console.log(
                 parser.toObject(Table.getRootTable(new ByteBuffer(data))));
           });
