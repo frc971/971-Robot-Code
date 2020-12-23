@@ -41,7 +41,7 @@ export class Line {
   private pointAttribLocation: number;
   private colorLocation: WebGLUniformLocation | null;
   private pointSizeLocation: WebGLUniformLocation | null;
-  private _label: string = "";
+  private _label: string|null = null;
   constructor(
       private readonly ctx: WebGLRenderingContext,
       private readonly program: WebGLProgram,
@@ -139,7 +139,7 @@ export class Line {
     this._label = label;
   }
 
-  label(): string {
+  label(): string|null {
     return this._label;
   }
 
@@ -200,6 +200,7 @@ enum MouseButton {
 
 // The button to use for panning the plot.
 const PAN_BUTTON = MouseButton.Left;
+const RECTANGLE_BUTTON = MouseButton.Right;
 
 // Returns the mouse button that generated a given event.
 function transitionButton(event: MouseEvent): MouseButton {
@@ -250,9 +251,6 @@ export class Legend {
     // Space between rows of the legend.
     const step = 20;
 
-    // Total height of the body of the legend.
-    const height = step * this.lines.length;
-
     let maxWidth = 0;
 
     // In the legend, we render both a small line of the appropriate color as
@@ -265,11 +263,24 @@ export class Legend {
 
     // Calculate how wide the legend needs to be to fit all the text.
     this.ctx.textAlign = 'left';
+    let numLabels = 0;
     for (let line of this.lines) {
+      if (line.label() === null) {
+        continue;
+      }
+      ++numLabels;
       const width =
           textStart + this.ctx.measureText(line.label()).actualBoundingBoxRight;
       maxWidth = Math.max(width, maxWidth);
     }
+
+    if (numLabels === 0) {
+      this.ctx.restore();
+      return;
+    }
+
+    // Total height of the body of the legend.
+    const height = step * numLabels;
 
     // Set the legend background to be white and opaque.
     this.ctx.fillStyle = 'rgba(255, 255, 255, 1.0)';
@@ -280,6 +291,9 @@ export class Legend {
 
     // Go through each line and render the little lines and text for each Line.
     for (let line of this.lines) {
+      if (line.label() === null) {
+        continue;
+      }
       this.ctx.translate(0, step);
       const color = line.color();
       this.ctx.strokeStyle = `rgb(${255.0 * color[0]}, ${255.0 * color[1]}, ${255.0 * color[2]})`;
@@ -727,9 +741,13 @@ export class Plot {
   private canvas = document.createElement('canvas');
   private textCanvas = document.createElement('canvas');
   private drawer: LineDrawer;
-  private static keysPressed: object = {'x': false, 'y': false};
+  private static keysPressed:
+      object = {'x': false, 'y': false, 'Escape': false};
+  // List of all plots to use for propagating key-press events to.
+  private static allPlots: Plot[] = [];
   // In canvas coordinates (the +/-1 square).
-  private lastMousePanPosition: number[] = null;
+  private lastMousePanPosition: number[]|null = null;
+  private rectangleStartPosition: number[]|null = null;
   private axisLabelBuffer: WhitespaceBuffers =
       new WhitespaceBuffers(50, 20, 20, 30);
   private axisLabels: AxisLabels;
@@ -739,6 +757,7 @@ export class Plot {
   private linkedXAxes: Plot[] = [];
   private lastTimeMs: number = 0;
   private defaultYRange: number[]|null = null;
+  private zoomRectangle: Line;
 
   constructor(wrapperDiv: HTMLDivElement, width: number, height: number) {
     wrapperDiv.appendChild(this.canvas);
@@ -777,18 +796,25 @@ export class Plot {
     this.canvas.onmousemove = (e) => {
       this.handleMouseMove(e);
     };
-    // TODO(james): Deconflict the global state....
+    this.canvas.addEventListener('contextmenu', event => event.preventDefault());
+    // Note: To handle the fact that only one keypress handle can be registered
+    // per browser tab, we share key-press handlers across all plot instances.
+    Plot.allPlots.push(this);
     document.onkeydown = (e) => {
-      this.handleKeyDown(e);
+      Plot.handleKeyDown(e);
     };
     document.onkeyup = (e) => {
-      this.handleKeyUp(e);
+      Plot.handleKeyUp(e);
     };
 
     const textCtx = this.textCanvas.getContext("2d");
     this.axisLabels =
         new AxisLabels(textCtx, this.drawer, this.axisLabelBuffer);
     this.legend = new Legend(textCtx, this.drawer.getLines());
+
+    this.zoomRectangle = this.getDrawer().addLine();
+    this.zoomRectangle.setColor([1, 1, 1]);
+    this.zoomRectangle.setPointSize(0);
 
     this.draw();
   }
@@ -802,6 +828,10 @@ export class Plot {
       event.offsetX * 2.0 / this.canvas.width - 1.0,
       -event.offsetY * 2.0 / this.canvas.height + 1.0
     ];
+  }
+
+  mousePlotLocation(event: MouseEvent): number[] {
+    return this.drawer.canvasToPlotCoordinates(this.mouseCanvasLocation(event));
   }
 
   handleWheel(event: WheelEvent) {
@@ -823,15 +853,43 @@ export class Plot {
   }
 
   handleMouseDown(event: MouseEvent) {
-    if (transitionButton(event) === PAN_BUTTON) {
-      this.lastMousePanPosition = this.mouseCanvasLocation(event);
+    const button = transitionButton(event);
+    switch (button) {
+      case PAN_BUTTON:
+        this.lastMousePanPosition = this.mouseCanvasLocation(event);
+        break;
+      case RECTANGLE_BUTTON:
+        this.rectangleStartPosition = this.mousePlotLocation(event);
+        break;
+      default:
+        break;
     }
   }
 
   handleMouseUp(event: MouseEvent) {
-    if (transitionButton(event) === PAN_BUTTON) {
-      this.lastMousePanPosition = null;
+    const button = transitionButton(event);
+    switch (button) {
+      case PAN_BUTTON:
+        this.lastMousePanPosition = null;
+        break;
+      case RECTANGLE_BUTTON:
+        if (this.rectangleStartPosition === null) {
+          // We got a right-button release without ever seeing the mouse-down;
+          // just return.
+          return;
+        }
+        this.finishRectangleZoom(event);
+        break;
+      default:
+        break;
     }
+  }
+
+  private finishRectangleZoom(event: MouseEvent) {
+    const currentPosition = this.mousePlotLocation(event);
+    this.setZoomCorners(this.rectangleStartPosition, currentPosition);
+    this.rectangleStartPosition = null;
+    this.zoomRectangle.setPoints(new Float32Array([]));
   }
 
   handleMouseMove(event: MouseEvent) {
@@ -844,6 +902,36 @@ export class Plot {
           this.drawer.getZoom().scale,
           addVec(this.drawer.getZoom().offset, mouseDiff));
       this.lastMousePanPosition = mouseLocation;
+    }
+    if (this.rectangleStartPosition !== null) {
+      if (buttonPressed(event, RECTANGLE_BUTTON)) {
+        // p0 and p1 are the two corners of the rectangle to draw.
+        const p0 = [...this.rectangleStartPosition];
+        const p1 = [...this.mousePlotLocation(event)];
+        const minVisible = this.drawer.minVisiblePoint();
+        const maxVisible = this.drawer.maxVisiblePoint();
+        // Modify the rectangle corners to display correctly if we are limiting
+        // the zoom to the x/y axis.
+        const x_pressed = Plot.keysPressed['x'];
+        const y_pressed = Plot.keysPressed["y"];
+        if (x_pressed && !y_pressed) {
+          p0[1] = minVisible[1];
+          p1[1] = maxVisible[1];
+        } else if (!x_pressed && y_pressed) {
+          p0[0] = minVisible[0];
+          p1[0] = maxVisible[0];
+        }
+        this.zoomRectangle.setPoints(
+            new Float32Array([p0[0], p0[1]]
+                                 .concat([p0[0], p1[1]])
+                                 .concat([p1[0], p1[1]])
+                                 .concat([p1[0], p0[1]])
+                                 .concat([p0[0], p0[1]])));
+      } else {
+        this.finishRectangleZoom(event);
+      }
+    } else {
+      this.zoomRectangle.setPoints(new Float32Array([]));
     }
     this.lastMousePosition = mouseLocation;
   }
@@ -936,12 +1024,20 @@ export class Plot {
     }
   }
 
-  handleKeyUp(event: KeyboardEvent) {
+  static handleKeyUp(event: KeyboardEvent) {
     Plot.keysPressed[event.key] = false;
   }
 
-  handleKeyDown(event: KeyboardEvent) {
+  static handleKeyDown(event: KeyboardEvent) {
     Plot.keysPressed[event.key] = true;
+    for (const plot of this.allPlots) {
+      if (Plot.keysPressed['Escape']) {
+        // Cancel zoom/pan operations on escape.
+        plot.lastMousePanPosition = null;
+        plot.rectangleStartPosition = null;
+        plot.zoomRectangle.setPoints(new Float32Array([]));
+      }
+    }
   }
 
   draw() {

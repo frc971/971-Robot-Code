@@ -34,7 +34,8 @@ document.body.appendChild(rootDiv);
 const helpDiv = document.createElement('div');
 rootDiv.appendChild(helpDiv);
 helpDiv.innerHTML =
-    'Help: click + drag to pan, double click to reset, scroll to zoom. ' +
+    'Help: click + drag to pan, double click to reset, scroll to zoom, ' +
+    'right-click + drag to zoom to rectangle, Esc to cancel. ' +
     'Hold the x/y keys to only pan/zoom along the x/y axes.';
 
 class PlotState {
