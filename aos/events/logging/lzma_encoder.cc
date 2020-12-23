@@ -7,7 +7,7 @@ namespace {
 
 // Returns true if `status` is not an error code, false if it is recoverable, or
 // otherwise logs the appropriate error message and crashes.
-bool LzmaCodeIsOk(lzma_ret status) {
+bool LzmaCodeIsOk(lzma_ret status, std::string_view filename = "") {
   switch (status) {
     case LZMA_OK:
     case LZMA_STREAM_END:
@@ -29,7 +29,12 @@ bool LzmaCodeIsOk(lzma_ret status) {
                     "memory usage limit: "
                  << status;
     case LZMA_FORMAT_ERROR:
-      LOG(FATAL) << "File format not recognized: " << status;
+      if (filename.empty()) {
+        LOG(FATAL) << "File format not recognized: " << status;
+      } else {
+        LOG(FATAL) << "File format of " << filename
+                   << " not recognized: " << status;
+      }
     case LZMA_DATA_ERROR:
       LOG(WARNING) << "Compressed file is corrupt: " << status;
       return false;
@@ -191,7 +196,7 @@ size_t LzmaDecoder::Read(uint8_t *begin, uint8_t *end) {
 
     // If we fail to decompress, give up.  Return everything that has been
     // produced so far.
-    if (!LzmaCodeIsOk(status)) {
+    if (!LzmaCodeIsOk(status, filename_)) {
       finished_ = true;
       LOG(WARNING) << filename_ << " is truncated or corrupted.";
       return (end - begin) - stream_.avail_out;
