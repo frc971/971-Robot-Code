@@ -28,8 +28,10 @@
 //
 // Author: sameeragarwal@google.com (Sameer Agarwal)
 
-#include <memory>
 #include "ceres/subset_preconditioner.h"
+
+#include <memory>
+
 #include "Eigen/Dense"
 #include "Eigen/SparseCore"
 #include "ceres/block_sparse_matrix.h"
@@ -41,6 +43,8 @@
 
 namespace ceres {
 namespace internal {
+
+namespace {
 
 // TODO(sameeragarwal): Refactor the following two functions out of
 // here and sparse_cholesky_test.cc into a more suitable place.
@@ -81,9 +85,11 @@ std::string ParamInfoToString(testing::TestParamInfo<Param> info) {
   return ss.str();
 }
 
+}  // namespace
+
 class SubsetPreconditionerTest : public ::testing::TestWithParam<Param> {
  protected:
-  virtual void SetUp() {
+  void SetUp() final {
     BlockSparseMatrix::RandomMatrixOptions options;
     options.num_col_blocks = 4;
     options.min_col_block_size = 1;
@@ -167,35 +173,36 @@ TEST_P(SubsetPreconditionerTest, foo) {
 }
 
 #ifndef CERES_NO_SUITESPARSE
-INSTANTIATE_TEST_CASE_P(SubsetPreconditionerWithSuiteSparse,
-                        SubsetPreconditionerTest,
-                        ::testing::Combine(::testing::Values(SUITE_SPARSE),
-                                           ::testing::Values(true, false)),
-                        ParamInfoToString);
+INSTANTIATE_TEST_SUITE_P(SubsetPreconditionerWithSuiteSparse,
+                         SubsetPreconditionerTest,
+                         ::testing::Combine(::testing::Values(SUITE_SPARSE),
+                                            ::testing::Values(true, false)),
+                         ParamInfoToString);
 #endif
 
 #ifndef CERES_NO_CXSPARSE
-INSTANTIATE_TEST_CASE_P(SubsetPreconditionerWithCXSparse,
-                        SubsetPreconditionerTest,
-                        ::testing::Combine(::testing::Values(CX_SPARSE),
-                                           ::testing::Values(true, false)),
-                        ParamInfoToString);
+INSTANTIATE_TEST_SUITE_P(SubsetPreconditionerWithCXSparse,
+                         SubsetPreconditionerTest,
+                         ::testing::Combine(::testing::Values(CX_SPARSE),
+                                            ::testing::Values(true, false)),
+                         ParamInfoToString);
 #endif
 
 #ifndef CERES_NO_ACCELERATE_SPARSE
-INSTANTIATE_TEST_CASE_P(SubsetPreconditionerWithAccelerateSparse,
-                        SubsetPreconditionerTest,
-                        ::testing::Combine(::testing::Values(ACCELERATE_SPARSE),
-                                           ::testing::Values(true, false)),
-                        ParamInfoToString);
+INSTANTIATE_TEST_SUITE_P(
+    SubsetPreconditionerWithAccelerateSparse,
+    SubsetPreconditionerTest,
+    ::testing::Combine(::testing::Values(ACCELERATE_SPARSE),
+                       ::testing::Values(true, false)),
+    ParamInfoToString);
 #endif
 
 #ifdef CERES_USE_EIGEN_SPARSE
-INSTANTIATE_TEST_CASE_P(SubsetPreconditionerWithEigenSparse,
-                        SubsetPreconditionerTest,
-                        ::testing::Combine(::testing::Values(EIGEN_SPARSE),
-                                           ::testing::Values(true, false)),
-                        ParamInfoToString);
+INSTANTIATE_TEST_SUITE_P(SubsetPreconditionerWithEigenSparse,
+                         SubsetPreconditionerTest,
+                         ::testing::Combine(::testing::Values(EIGEN_SPARSE),
+                                            ::testing::Values(true, false)),
+                         ParamInfoToString);
 #endif
 
 }  // namespace internal

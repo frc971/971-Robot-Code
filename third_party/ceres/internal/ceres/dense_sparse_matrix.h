@@ -34,6 +34,7 @@
 #define CERES_INTERNAL_DENSE_SPARSE_MATRIX_H_
 
 #include "ceres/internal/eigen.h"
+#include "ceres/internal/port.h"
 #include "ceres/sparse_matrix.h"
 #include "ceres/types.h"
 
@@ -42,7 +43,7 @@ namespace internal {
 
 class TripletSparseMatrix;
 
-class DenseSparseMatrix : public SparseMatrix {
+class CERES_EXPORT_INTERNAL DenseSparseMatrix : public SparseMatrix {
  public:
   // Build a matrix with the same content as the TripletSparseMatrix
   // m. This assumes that m does not have any repeated entries.
@@ -55,18 +56,18 @@ class DenseSparseMatrix : public SparseMatrix {
   virtual ~DenseSparseMatrix() {}
 
   // SparseMatrix interface.
-  virtual void SetZero();
-  virtual void RightMultiply(const double* x, double* y) const;
-  virtual void LeftMultiply(const double* x, double* y) const;
-  virtual void SquaredColumnNorm(double* x) const;
-  virtual void ScaleColumns(const double* scale);
-  virtual void ToDenseMatrix(Matrix* dense_matrix) const;
-  virtual void ToTextFile(FILE* file) const;
-  virtual int num_rows() const;
-  virtual int num_cols() const;
-  virtual int num_nonzeros() const;
-  virtual const double* values() const { return m_.data(); }
-  virtual double* mutable_values() { return m_.data(); }
+  void SetZero() final;
+  void RightMultiply(const double* x, double* y) const final;
+  void LeftMultiply(const double* x, double* y) const final;
+  void SquaredColumnNorm(double* x) const final;
+  void ScaleColumns(const double* scale) final;
+  void ToDenseMatrix(Matrix* dense_matrix) const final;
+  void ToTextFile(FILE* file) const final;
+  int num_rows() const final;
+  int num_cols() const final;
+  int num_nonzeros() const final;
+  const double* values() const final { return m_.data(); }
+  double* mutable_values() final { return m_.data(); }
 
   ConstColMajorMatrixRef matrix() const;
   ColMajorMatrixRef mutable_matrix();
@@ -92,7 +93,7 @@ class DenseSparseMatrix : public SparseMatrix {
   // Calling RemoveDiagonal removes the block. It is a fatal error to append a
   // diagonal to a matrix that already has an appended diagonal, and it is also
   // a fatal error to remove a diagonal from a matrix that has none.
-  void AppendDiagonal(double *d);
+  void AppendDiagonal(double* d);
   void RemoveDiagonal();
 
  private:

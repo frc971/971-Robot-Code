@@ -31,9 +31,9 @@
 #ifndef CERES_INTERNAL_INVERT_PSD_MATRIX_H_
 #define CERES_INTERNAL_INVERT_PSD_MATRIX_H_
 
+#include "Eigen/Dense"
 #include "ceres/internal/eigen.h"
 #include "glog/logging.h"
-#include "Eigen/Dense"
 
 namespace ceres {
 namespace internal {
@@ -51,28 +51,29 @@ template <int kSize>
 typename EigenTypes<kSize, kSize>::Matrix InvertPSDMatrix(
     const bool assume_full_rank,
     const typename EigenTypes<kSize, kSize>::Matrix& m) {
+  using MType = typename EigenTypes<kSize, kSize>::Matrix;
   const int size = m.rows();
 
-  // If the matrix can be assumed to be full rank, then just use the
-  // Cholesky factorization to invert it.
+  // If the matrix can be assumed to be full rank, then if it is small
+  // (< 5) and fixed size, use Eigen's optimized inverse()
+  // implementation.
+  //
+  // https://eigen.tuxfamily.org/dox/group__TutorialLinearAlgebra.html#title3
   if (assume_full_rank) {
+    if (kSize > 0 && kSize < 5) {
+      return m.inverse();
+    }
     return m.template selfadjointView<Eigen::Upper>().llt().solve(
-        Matrix::Identity(size, size));
+        MType::Identity(size, size));
   }
 
-  Eigen::JacobiSVD<Matrix> svd(m, Eigen::ComputeThinU | Eigen::ComputeThinV);
-  const double tolerance =
-      std::numeric_limits<double>::epsilon() * size * svd.singularValues()(0);
-
-  return svd.matrixV() *
-         (svd.singularValues().array() > tolerance)
-             .select(svd.singularValues().array().inverse(), 0)
-             .matrix()
-             .asDiagonal() *
-         svd.matrixU().adjoint();
+  // For a thin SVD the number of columns of the matrix need to be dynamic.
+  using SVDMType = typename EigenTypes<kSize, Eigen::Dynamic>::Matrix;
+  Eigen::JacobiSVD<SVDMType> svd(m, Eigen::ComputeThinU | Eigen::ComputeThinV);
+  return svd.solve(MType::Identity(size, size));
 }
 
 }  // namespace internal
 }  // namespace ceres
 
-#endif // CERES_INTERNAL_INVERT_PSD_MATRIX_H_
+#endif  // CERES_INTERNAL_INVERT_PSD_MATRIX_H_

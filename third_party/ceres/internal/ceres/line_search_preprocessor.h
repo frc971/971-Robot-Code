@@ -31,17 +31,18 @@
 #ifndef CERES_INTERNAL_LINE_SEARCH_PREPROCESSOR_H_
 #define CERES_INTERNAL_LINE_SEARCH_PREPROCESSOR_H_
 
+#include "ceres/internal/port.h"
 #include "ceres/preprocessor.h"
 
 namespace ceres {
 namespace internal {
 
-class LineSearchPreprocessor : public Preprocessor {
+class CERES_EXPORT_INTERNAL LineSearchPreprocessor : public Preprocessor {
  public:
   virtual ~LineSearchPreprocessor();
-  virtual bool Preprocess(const Solver::Options& options,
-                          ProblemImpl* problem,
-                          PreprocessedProblem* preprocessed_problem);
+  bool Preprocess(const Solver::Options& options,
+                  ProblemImpl* problem,
+                  PreprocessedProblem* preprocessed_problem) final;
 };
 
 }  // namespace internal

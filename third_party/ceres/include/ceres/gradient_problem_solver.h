@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2019 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -34,10 +34,11 @@
 #include <cmath>
 #include <string>
 #include <vector>
+
+#include "ceres/internal/disable_warnings.h"
 #include "ceres/internal/port.h"
 #include "ceres/iteration_callback.h"
 #include "ceres/types.h"
-#include "ceres/internal/disable_warnings.h"
 
 namespace ceres {
 
@@ -87,7 +88,7 @@ class CERES_EXPORT GradientProblemSolver {
     // method, please see:
     //
     // Nocedal, J. (1980). "Updating Quasi-Newton Matrices with
-    // Limited Storage". Mathematics of Computation 35 (151): 773–782.
+    // Limited Storage". Mathematics of Computation 35 (151): 773-782.
     int max_lbfgs_rank = 20;
 
     // As part of the (L)BFGS update step (BFGS) / right-multiply step (L-BFGS),
@@ -319,7 +320,8 @@ class CERES_EXPORT GradientProblemSolver {
     // If the line search direction is NONLINEAR_CONJUGATE_GRADIENT,
     // then this indicates the particular variant of non-linear
     // conjugate gradient used.
-    NonlinearConjugateGradientType nonlinear_conjugate_gradient_type = FLETCHER_REEVES;
+    NonlinearConjugateGradientType nonlinear_conjugate_gradient_type =
+        FLETCHER_REEVES;
 
     // If the type of the line search direction is LBFGS, then this
     // indicates the rank of the Hessian approximation.

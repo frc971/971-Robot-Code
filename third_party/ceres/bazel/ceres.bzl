@@ -137,9 +137,7 @@ CERES_SRCS = ["internal/ceres/" + filename for filename in [
 # like SuiteSparse or not, threading or not, glog or not, and so on.
 # See https://github.com/ceres-solver/ceres-solver/issues/335.
 def ceres_library(name,
-                  restrict_schur_specializations=False,
-                  extra_copts=[],
-                  gflags_namespace="gflags"):
+                  restrict_schur_specializations=False):
     # The path to internal/ depends on whether Ceres is the main workspace or
     # an external repository.
     if native.repository_name() != '@':
@@ -184,10 +182,9 @@ def ceres_library(name,
         copts = [
             "-I" + internal,
             "-Wno-sign-compare",
-            "-Wno-ignored-qualifiers",
-            "-Wno-unused-parameter",
             "-Wno-format-nonliteral",
-        ] + schur_eliminator_copts + extra_copts,
+            "-Wno-unused-parameter",
+        ] + schur_eliminator_copts,
 
         # These include directories and defines are propagated to other targets
         # depending on Ceres.
@@ -201,8 +198,7 @@ def ceres_library(name,
             "CERES_NO_ACCELERATE_SPARSE",
             "CERES_NO_LAPACK",
             "CERES_USE_EIGEN_SPARSE",
-            "CERES_USE_CXX11_THREADS",
-            "CERES_GFLAGS_NAMESPACE=" + gflags_namespace,
+            "CERES_USE_CXX_THREADS",
         ],
         includes = [
             "config",

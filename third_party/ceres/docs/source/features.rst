@@ -44,7 +44,7 @@ Why?
     solvers - dense QR and dense Cholesky factorization (using
     `Eigen`_ or `LAPACK`_) for dense problems, sparse Cholesky
     factorization (`SuiteSparse`_, `CXSparse`_ or `Eigen`_) for large
-    sparse problems custom Schur complement based dense, sparse, and
+    sparse problems, custom Schur complement based dense, sparse, and
     iterative linear solvers for `bundle adjustment`_ problems.
 
   - **Line Search Solvers** - When the problem size is so large that
@@ -54,8 +54,9 @@ Why?
     of Non-linear Conjugate Gradients, BFGS and LBFGS.
 
 * **Speed** - Ceres Solver has been extensively optimized, with C++
-  templating, hand written linear algebra routines and OpenMP or C++11 threads
-  based multithreading of the Jacobian evaluation and the linear solvers.
+  templating, hand written linear algebra routines and OpenMP or
+  modern C++ threads based multithreading of the Jacobian evaluation
+  and the linear solvers.
 
 * **Solution Quality** Ceres is the `best performing`_ solver on the NIST
   problem set used by Mondragon and Borchers for benchmarking
@@ -63,7 +64,7 @@ Why?
 
 * **Covariance estimation** - Evaluate the sensitivity/uncertainty of
   the solution by evaluating all or part of the covariance
-  matrix. Ceres is one of the few solvers that allows you to to do
+  matrix. Ceres is one of the few solvers that allows you to do
   this analysis at scale.
 
 * **Community** Since its release as an open source software, Ceres

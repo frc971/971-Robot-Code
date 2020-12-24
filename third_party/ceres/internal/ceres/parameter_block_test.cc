@@ -30,13 +30,13 @@
 
 #include "ceres/parameter_block.h"
 
-#include "gtest/gtest.h"
 #include "ceres/internal/eigen.h"
+#include "gtest/gtest.h"
 
 namespace ceres {
 namespace internal {
 
-TEST(ParameterBlock, SetLocalParameterizationDiesOnSizeMismatch) {
+TEST(ParameterBlock, SetParameterizationDiesOnSizeMismatch) {
   double x[3] = {1.0, 2.0, 3.0};
   ParameterBlock parameter_block(x, 3, -1);
   std::vector<int> indices;
@@ -46,7 +46,7 @@ TEST(ParameterBlock, SetLocalParameterizationDiesOnSizeMismatch) {
       parameter_block.SetParameterization(&subset_wrong_size), "global");
 }
 
-TEST(ParameterBlock, SetLocalParameterizationWithSameExistingParameterization) {
+TEST(ParameterBlock, SetParameterizationWithSameExistingParameterization) {
   double x[3] = {1.0, 2.0, 3.0};
   ParameterBlock parameter_block(x, 3, -1);
   std::vector<int> indices;
@@ -56,51 +56,35 @@ TEST(ParameterBlock, SetLocalParameterizationWithSameExistingParameterization) {
   parameter_block.SetParameterization(&subset);
 }
 
-TEST(ParameterBlock, SetLocalParameterizationDiesWhenResettingToNull) {
+TEST(ParameterBlock, SetParameterizationAllowsResettingToNull) {
   double x[3] = {1.0, 2.0, 3.0};
   ParameterBlock parameter_block(x, 3, -1);
   std::vector<int> indices;
   indices.push_back(1);
   SubsetParameterization subset(3, indices);
   parameter_block.SetParameterization(&subset);
-  EXPECT_DEATH_IF_SUPPORTED(parameter_block.SetParameterization(nullptr), "nullptr");
+  EXPECT_EQ(parameter_block.local_parameterization(), &subset);
+  parameter_block.SetParameterization(nullptr);
+  EXPECT_EQ(parameter_block.local_parameterization(), nullptr);
 }
 
 TEST(ParameterBlock,
-     SetLocalParameterizationDiesWhenResettingToDifferentParameterization) {
+     SetParameterizationAllowsResettingToDifferentParameterization) {
   double x[3] = {1.0, 2.0, 3.0};
   ParameterBlock parameter_block(x, 3, -1);
   std::vector<int> indices;
   indices.push_back(1);
   SubsetParameterization subset(3, indices);
   parameter_block.SetParameterization(&subset);
+  EXPECT_EQ(parameter_block.local_parameterization(), &subset);
+
   SubsetParameterization subset_different(3, indices);
-  EXPECT_DEATH_IF_SUPPORTED(
-      parameter_block.SetParameterization(&subset_different), "re-set");
+  parameter_block.SetParameterization(&subset_different);
+  EXPECT_EQ(parameter_block.local_parameterization(), &subset_different);
 }
 
-TEST(ParameterBlock, SetLocalParameterizationDiesOnNullParameterization) {
+TEST(ParameterBlock, SetParameterizationAndNormalOperation) {
   double x[3] = {1.0, 2.0, 3.0};
-  ParameterBlock parameter_block(x, 3, -1);
-  std::vector<int> indices;
-  indices.push_back(1);
-  EXPECT_DEATH_IF_SUPPORTED(parameter_block.SetParameterization(nullptr), "nullptr");
-}
-
-TEST(ParameterBlock, SetParameterizationDiesOnZeroLocalSize) {
-  double x[3] = {1.0, 2.0, 3.0};
-  ParameterBlock parameter_block(x, 3, -1);
-  std::vector<int> indices;
-  indices.push_back(0);
-  indices.push_back(1);
-  indices.push_back(2);
-  SubsetParameterization subset(3, indices);
-  EXPECT_DEATH_IF_SUPPORTED(parameter_block.SetParameterization(&subset),
-                            "positive dimensional tangent");
-}
-
-TEST(ParameterBlock, SetLocalParameterizationAndNormalOperation) {
-  double x[3] = { 1.0, 2.0, 3.0 };
   ParameterBlock parameter_block(x, 3, -1);
   std::vector<int> indices;
   indices.push_back(1);
@@ -109,9 +93,7 @@ TEST(ParameterBlock, SetLocalParameterizationAndNormalOperation) {
 
   // Ensure the local parameterization jacobian result is correctly computed.
   ConstMatrixRef local_parameterization_jacobian(
-      parameter_block.LocalParameterizationJacobian(),
-      3,
-      2);
+      parameter_block.LocalParameterizationJacobian(), 3, 2);
   ASSERT_EQ(1.0, local_parameterization_jacobian(0, 0));
   ASSERT_EQ(0.0, local_parameterization_jacobian(0, 1));
   ASSERT_EQ(0.0, local_parameterization_jacobian(1, 0));
@@ -121,7 +103,7 @@ TEST(ParameterBlock, SetLocalParameterizationAndNormalOperation) {
 
   // Check that updating works as expected.
   double x_plus_delta[3];
-  double delta[2] = { 0.5, 0.3 };
+  double delta[2] = {0.5, 0.3};
   parameter_block.Plus(x, delta, x_plus_delta);
   ASSERT_EQ(1.5, x_plus_delta[0]);
   ASSERT_EQ(2.0, x_plus_delta[1]);
@@ -131,25 +113,24 @@ TEST(ParameterBlock, SetLocalParameterizationAndNormalOperation) {
 struct TestParameterization : public LocalParameterization {
  public:
   virtual ~TestParameterization() {}
-  virtual bool Plus(const double* x,
-                    const double* delta,
-                    double* x_plus_delta) const {
+  bool Plus(const double* x,
+            const double* delta,
+            double* x_plus_delta) const final {
     LOG(FATAL) << "Shouldn't get called.";
     return true;
   }
-  virtual bool ComputeJacobian(const double* x,
-                               double* jacobian) const {
+  bool ComputeJacobian(const double* x, double* jacobian) const final {
     jacobian[0] = *x * 2;
     return true;
   }
 
-  virtual int GlobalSize() const { return 1; }
-  virtual int LocalSize() const { return 1; }
+  int GlobalSize() const final { return 1; }
+  int LocalSize() const final { return 1; }
 };
 
 TEST(ParameterBlock, SetStateUpdatesLocalParameterizationJacobian) {
   TestParameterization test_parameterization;
-  double x[1] = { 1.0 };
+  double x[1] = {1.0};
   ParameterBlock parameter_block(x, 1, -1, &test_parameterization);
 
   EXPECT_EQ(2.0, *parameter_block.LocalParameterizationJacobian());
@@ -160,10 +141,10 @@ TEST(ParameterBlock, SetStateUpdatesLocalParameterizationJacobian) {
 }
 
 TEST(ParameterBlock, PlusWithNoLocalParameterization) {
-  double x[2] = { 1.0, 2.0 };
+  double x[2] = {1.0, 2.0};
   ParameterBlock parameter_block(x, 2, -1);
 
-  double delta[2] = { 0.2, 0.3 };
+  double delta[2] = {0.2, 0.3};
   double x_plus_delta[2];
   parameter_block.Plus(x, delta, x_plus_delta);
   EXPECT_EQ(1.2, x_plus_delta[0]);
@@ -173,19 +154,17 @@ TEST(ParameterBlock, PlusWithNoLocalParameterization) {
 // Stops computing the jacobian after the first time.
 class BadLocalParameterization : public LocalParameterization {
  public:
-  BadLocalParameterization()
-      : calls_(0) {
-  }
+  BadLocalParameterization() : calls_(0) {}
 
   virtual ~BadLocalParameterization() {}
-  virtual bool Plus(const double* x,
-                    const double* delta,
-                    double* x_plus_delta) const {
+  bool Plus(const double* x,
+            const double* delta,
+            double* x_plus_delta) const final {
     *x_plus_delta = *x + *delta;
     return true;
   }
 
-  virtual bool ComputeJacobian(const double* x, double* jacobian) const {
+  bool ComputeJacobian(const double* x, double* jacobian) const final {
     if (calls_ == 0) {
       jacobian[0] = 0;
     }
@@ -193,8 +172,8 @@ class BadLocalParameterization : public LocalParameterization {
     return true;
   }
 
-  virtual int GlobalSize() const { return 1;}
-  virtual int LocalSize()  const { return 1;}
+  int GlobalSize() const final { return 1; }
+  int LocalSize() const final { return 1; }
 
  private:
   mutable int calls_;
@@ -246,6 +225,41 @@ TEST(ParameterBlock, PlusWithBoundsConstraints) {
   parameter_block.Plus(x, delta, x_plus_delta);
   EXPECT_EQ(x_plus_delta[0], 2.0);
   EXPECT_EQ(x_plus_delta[1], -1.0);
+}
+
+TEST(ParameterBlock, ResetLocalParameterizationToNull) {
+  double x[3] = {1.0, 2.0, 3.0};
+  ParameterBlock parameter_block(x, 3, -1);
+  std::vector<int> indices;
+  indices.push_back(1);
+  SubsetParameterization subset(3, indices);
+  parameter_block.SetParameterization(&subset);
+  EXPECT_EQ(parameter_block.local_parameterization(), &subset);
+  parameter_block.SetParameterization(nullptr);
+  EXPECT_EQ(parameter_block.local_parameterization(), nullptr);
+}
+
+TEST(ParameterBlock, ResetLocalParameterizationToNotNull) {
+  double x[3] = {1.0, 2.0, 3.0};
+  ParameterBlock parameter_block(x, 3, -1);
+  std::vector<int> indices;
+  indices.push_back(1);
+  SubsetParameterization subset(3, indices);
+  parameter_block.SetParameterization(&subset);
+  EXPECT_EQ(parameter_block.local_parameterization(), &subset);
+
+  SubsetParameterization subset_different(3, indices);
+  parameter_block.SetParameterization(&subset_different);
+  EXPECT_EQ(parameter_block.local_parameterization(), &subset_different);
+}
+
+TEST(ParameterBlock, SetNullLocalParameterization) {
+  double x[3] = {1.0, 2.0, 3.0};
+  ParameterBlock parameter_block(x, 3, -1);
+  EXPECT_EQ(parameter_block.local_parameterization(), nullptr);
+
+  parameter_block.SetParameterization(nullptr);
+  EXPECT_EQ(parameter_block.local_parameterization(), nullptr);
 }
 
 }  // namespace internal

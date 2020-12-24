@@ -28,14 +28,16 @@
 //
 // Author: sameeragarwal@google.com (Sameer Agarwal)
 
+#include "ceres/rotation.h"
+
 #include <cmath>
 #include <limits>
 #include <string>
+
 #include "ceres/internal/eigen.h"
-#include "ceres/is_close.h"
 #include "ceres/internal/port.h"
+#include "ceres/is_close.h"
 #include "ceres/jet.h"
-#include "ceres/rotation.h"
 #include "ceres/stringprintf.h"
 #include "ceres/test_util.h"
 #include "glog/logging.h"
@@ -45,8 +47,8 @@
 namespace ceres {
 namespace internal {
 
-using std::min;
 using std::max;
+using std::min;
 using std::numeric_limits;
 using std::string;
 using std::swap;
@@ -54,7 +56,7 @@ using std::swap;
 const double kPi = 3.14159265358979323846;
 const double kHalfSqrt2 = 0.707106781186547524401;
 
-double RandDouble() {
+static double RandDouble() {
   double r = rand();
   return r / RAND_MAX;
 }
@@ -69,13 +71,8 @@ static double const kLooseTolerance = 1e-9;
 // double quaternion[4];
 // EXPECT_THAT(quaternion, IsNormalizedQuaternion());
 MATCHER(IsNormalizedQuaternion, "") {
-  if (arg == NULL) {
-    *result_listener << "Null quaternion";
-    return false;
-  }
-
-  double norm2 = arg[0] * arg[0] + arg[1] * arg[1] +
-      arg[2] * arg[2] + arg[3] * arg[3];
+  double norm2 =
+      arg[0] * arg[0] + arg[1] * arg[1] + arg[2] * arg[2] + arg[3] * arg[3];
   if (fabs(norm2 - 1.0) > kTolerance) {
     *result_listener << "squared norm is " << norm2;
     return false;
@@ -89,11 +86,6 @@ MATCHER(IsNormalizedQuaternion, "") {
 // double actual_quaternion[4];
 // EXPECT_THAT(actual_quaternion, IsNearQuaternion(expected_quaternion));
 MATCHER_P(IsNearQuaternion, expected, "") {
-  if (arg == NULL) {
-    *result_listener << "Null quaternion";
-    return false;
-  }
-
   // Quaternions are equivalent upto a sign change. So we will compare
   // both signs before declaring failure.
   bool near = true;
@@ -120,6 +112,7 @@ MATCHER_P(IsNearQuaternion, expected, "") {
     return true;
   }
 
+  // clang-format off
   *result_listener << "expected : "
                    << expected[0] << " "
                    << expected[1] << " "
@@ -130,6 +123,7 @@ MATCHER_P(IsNearQuaternion, expected, "") {
                    << arg[1] << " "
                    << arg[2] << " "
                    << arg[3];
+  // clang-format on
   return false;
 }
 
@@ -138,11 +132,6 @@ MATCHER_P(IsNearQuaternion, expected, "") {
 // double actual_axis_angle[3];
 // EXPECT_THAT(actual_axis_angle, IsNearAngleAxis(expected_axis_angle));
 MATCHER_P(IsNearAngleAxis, expected, "") {
-  if (arg == NULL) {
-    *result_listener << "Null axis/angle";
-    return false;
-  }
-
   Eigen::Vector3d a(arg[0], arg[1], arg[2]);
   Eigen::Vector3d e(expected[0], expected[1], expected[2]);
   const double e_norm = e.norm();
@@ -164,6 +153,7 @@ MATCHER_P(IsNearAngleAxis, expected, "") {
     return true;
   }
 
+  // clang-format off
   *result_listener << " arg:"
                    << " " << arg[0]
                    << " " << arg[1]
@@ -172,6 +162,7 @@ MATCHER_P(IsNearAngleAxis, expected, "") {
                    << " " << expected[0]
                    << " " << expected[1]
                    << " " << expected[2];
+  // clang-format on
   return false;
 }
 
@@ -179,11 +170,6 @@ MATCHER_P(IsNearAngleAxis, expected, "") {
 // double matrix[9];
 // EXPECT_THAT(matrix, IsOrthonormal());
 MATCHER(IsOrthonormal, "") {
-  if (arg == NULL) {
-    *result_listener << "Null matrix";
-    return false;
-  }
-
   for (int c1 = 0; c1 < 3; c1++) {
     for (int c2 = 0; c2 < 3; c2++) {
       double v = 0;
@@ -208,11 +194,6 @@ MATCHER(IsOrthonormal, "") {
 // double matrix2[9];
 // EXPECT_THAT(matrix1, IsNear3x3Matrix(matrix2));
 MATCHER_P(IsNear3x3Matrix, expected, "") {
-  if (arg == NULL) {
-    *result_listener << "Null matrix";
-    return false;
-  }
-
   for (int i = 0; i < 9; i++) {
     if (fabs(arg[i] - expected[i]) > kTolerance) {
       *result_listener << "component " << i << " should be " << expected[i];
@@ -225,9 +206,9 @@ MATCHER_P(IsNear3x3Matrix, expected, "") {
 
 // Transforms a zero axis/angle to a quaternion.
 TEST(Rotation, ZeroAngleAxisToQuaternion) {
-  double axis_angle[3] = { 0, 0, 0 };
+  double axis_angle[3] = {0, 0, 0};
   double quaternion[4];
-  double expected[4] = { 1, 0, 0, 0 };
+  double expected[4] = {1, 0, 0, 0};
   AngleAxisToQuaternion(axis_angle, quaternion);
   EXPECT_THAT(quaternion, IsNormalizedQuaternion());
   EXPECT_THAT(quaternion, IsNearQuaternion(expected));
@@ -237,9 +218,9 @@ TEST(Rotation, ZeroAngleAxisToQuaternion) {
 TEST(Rotation, SmallAngleAxisToQuaternion) {
   // Small, finite value to test.
   double theta = 1.0e-2;
-  double axis_angle[3] = { theta, 0, 0 };
+  double axis_angle[3] = {theta, 0, 0};
   double quaternion[4];
-  double expected[4] = { cos(theta/2), sin(theta/2.0), 0, 0 };
+  double expected[4] = {cos(theta / 2), sin(theta / 2.0), 0, 0};
   AngleAxisToQuaternion(axis_angle, quaternion);
   EXPECT_THAT(quaternion, IsNormalizedQuaternion());
   EXPECT_THAT(quaternion, IsNearQuaternion(expected));
@@ -249,9 +230,9 @@ TEST(Rotation, SmallAngleAxisToQuaternion) {
 TEST(Rotation, TinyAngleAxisToQuaternion) {
   // Very small value that could potentially cause underflow.
   double theta = pow(numeric_limits<double>::min(), 0.75);
-  double axis_angle[3] = { theta, 0, 0 };
+  double axis_angle[3] = {theta, 0, 0};
   double quaternion[4];
-  double expected[4] = { cos(theta/2), sin(theta/2.0), 0, 0 };
+  double expected[4] = {cos(theta / 2), sin(theta / 2.0), 0, 0};
   AngleAxisToQuaternion(axis_angle, quaternion);
   EXPECT_THAT(quaternion, IsNormalizedQuaternion());
   EXPECT_THAT(quaternion, IsNearQuaternion(expected));
@@ -259,9 +240,9 @@ TEST(Rotation, TinyAngleAxisToQuaternion) {
 
 // Transforms a rotation by pi/2 around X to a quaternion.
 TEST(Rotation, XRotationToQuaternion) {
-  double axis_angle[3] = { kPi / 2, 0, 0 };
+  double axis_angle[3] = {kPi / 2, 0, 0};
   double quaternion[4];
-  double expected[4] = { kHalfSqrt2, kHalfSqrt2, 0, 0 };
+  double expected[4] = {kHalfSqrt2, kHalfSqrt2, 0, 0};
   AngleAxisToQuaternion(axis_angle, quaternion);
   EXPECT_THAT(quaternion, IsNormalizedQuaternion());
   EXPECT_THAT(quaternion, IsNearQuaternion(expected));
@@ -269,18 +250,18 @@ TEST(Rotation, XRotationToQuaternion) {
 
 // Transforms a unit quaternion to an axis angle.
 TEST(Rotation, UnitQuaternionToAngleAxis) {
-  double quaternion[4] = { 1, 0, 0, 0 };
+  double quaternion[4] = {1, 0, 0, 0};
   double axis_angle[3];
-  double expected[3] = { 0, 0, 0 };
+  double expected[3] = {0, 0, 0};
   QuaternionToAngleAxis(quaternion, axis_angle);
   EXPECT_THAT(axis_angle, IsNearAngleAxis(expected));
 }
 
 // Transforms a quaternion that rotates by pi about the Y axis to an axis angle.
 TEST(Rotation, YRotationQuaternionToAngleAxis) {
-  double quaternion[4] = { 0, 0, 1, 0 };
+  double quaternion[4] = {0, 0, 1, 0};
   double axis_angle[3];
-  double expected[3] = { 0, kPi, 0 };
+  double expected[3] = {0, kPi, 0};
   QuaternionToAngleAxis(quaternion, axis_angle);
   EXPECT_THAT(axis_angle, IsNearAngleAxis(expected));
 }
@@ -288,9 +269,9 @@ TEST(Rotation, YRotationQuaternionToAngleAxis) {
 // Transforms a quaternion that rotates by pi/3 about the Z axis to an axis
 // angle.
 TEST(Rotation, ZRotationQuaternionToAngleAxis) {
-  double quaternion[4] = { sqrt(3) / 2, 0, 0, 0.5 };
+  double quaternion[4] = {sqrt(3) / 2, 0, 0, 0.5};
   double axis_angle[3];
-  double expected[3] = { 0, 0, kPi / 3 };
+  double expected[3] = {0, 0, kPi / 3};
   QuaternionToAngleAxis(quaternion, axis_angle);
   EXPECT_THAT(axis_angle, IsNearAngleAxis(expected));
 }
@@ -299,9 +280,9 @@ TEST(Rotation, ZRotationQuaternionToAngleAxis) {
 TEST(Rotation, SmallQuaternionToAngleAxis) {
   // Small, finite value to test.
   double theta = 1.0e-2;
-  double quaternion[4] = { cos(theta/2), sin(theta/2.0), 0, 0 };
+  double quaternion[4] = {cos(theta / 2), sin(theta / 2.0), 0, 0};
   double axis_angle[3];
-  double expected[3] = { theta, 0, 0 };
+  double expected[3] = {theta, 0, 0};
   QuaternionToAngleAxis(quaternion, axis_angle);
   EXPECT_THAT(axis_angle, IsNearAngleAxis(expected));
 }
@@ -310,9 +291,9 @@ TEST(Rotation, SmallQuaternionToAngleAxis) {
 TEST(Rotation, TinyQuaternionToAngleAxis) {
   // Very small value that could potentially cause underflow.
   double theta = pow(numeric_limits<double>::min(), 0.75);
-  double quaternion[4] = { cos(theta/2), sin(theta/2.0), 0, 0 };
+  double quaternion[4] = {cos(theta / 2), sin(theta / 2.0), 0, 0};
   double axis_angle[3];
-  double expected[3] = { theta, 0, 0 };
+  double expected[3] = {theta, 0, 0};
   QuaternionToAngleAxis(quaternion, axis_angle);
   EXPECT_THAT(axis_angle, IsNearAngleAxis(expected));
 }
@@ -328,13 +309,13 @@ TEST(Rotation, QuaternionToAngleAxisAngleIsLessThanPi) {
   quaternion[2] = 0.0;
   quaternion[3] = 0.0;
   QuaternionToAngleAxis(quaternion, angle_axis);
-  const double angle = sqrt(angle_axis[0] * angle_axis[0] +
-                            angle_axis[1] * angle_axis[1] +
-                            angle_axis[2] * angle_axis[2]);
+  const double angle =
+      sqrt(angle_axis[0] * angle_axis[0] + angle_axis[1] * angle_axis[1] +
+           angle_axis[2] * angle_axis[2]);
   EXPECT_LE(angle, kPi);
 }
 
-static const int kNumTrials = 10000;
+static constexpr int kNumTrials = 10000;
 
 // Takes a bunch of random axis/angle values, converts them to quaternions,
 // and back again.
@@ -398,18 +379,18 @@ TEST(Rotation, QuaterionToAngleAxisAndBack) {
 
 // Transforms a zero axis/angle to a rotation matrix.
 TEST(Rotation, ZeroAngleAxisToRotationMatrix) {
-  double axis_angle[3] = { 0, 0, 0 };
+  double axis_angle[3] = {0, 0, 0};
   double matrix[9];
-  double expected[9] = { 1, 0, 0, 0, 1, 0, 0, 0, 1 };
+  double expected[9] = {1, 0, 0, 0, 1, 0, 0, 0, 1};
   AngleAxisToRotationMatrix(axis_angle, matrix);
   EXPECT_THAT(matrix, IsOrthonormal());
   EXPECT_THAT(matrix, IsNear3x3Matrix(expected));
 }
 
 TEST(Rotation, NearZeroAngleAxisToRotationMatrix) {
-  double axis_angle[3] = { 1e-24, 2e-24, 3e-24 };
+  double axis_angle[3] = {1e-24, 2e-24, 3e-24};
   double matrix[9];
-  double expected[9] = { 1, 0, 0, 0, 1, 0, 0, 0, 1 };
+  double expected[9] = {1, 0, 0, 0, 1, 0, 0, 0, 1};
   AngleAxisToRotationMatrix(axis_angle, matrix);
   EXPECT_THAT(matrix, IsOrthonormal());
   EXPECT_THAT(matrix, IsNear3x3Matrix(expected));
@@ -417,10 +398,10 @@ TEST(Rotation, NearZeroAngleAxisToRotationMatrix) {
 
 // Transforms a rotation by pi/2 around X to a rotation matrix and back.
 TEST(Rotation, XRotationToRotationMatrix) {
-  double axis_angle[3] = { kPi / 2, 0, 0 };
+  double axis_angle[3] = {kPi / 2, 0, 0};
   double matrix[9];
   // The rotation matrices are stored column-major.
-  double expected[9] = { 1, 0, 0, 0, 0, 1, 0, -1, 0 };
+  double expected[9] = {1, 0, 0, 0, 0, 1, 0, -1, 0};
   AngleAxisToRotationMatrix(axis_angle, matrix);
   EXPECT_THAT(matrix, IsOrthonormal());
   EXPECT_THAT(matrix, IsNear3x3Matrix(expected));
@@ -432,9 +413,9 @@ TEST(Rotation, XRotationToRotationMatrix) {
 // Transforms an axis angle that rotates by pi about the Y axis to a
 // rotation matrix and back.
 TEST(Rotation, YRotationToRotationMatrix) {
-  double axis_angle[3] = { 0, kPi, 0 };
+  double axis_angle[3] = {0, kPi, 0};
   double matrix[9];
-  double expected[9] = { -1, 0, 0, 0, 1, 0, 0, 0, -1 };
+  double expected[9] = {-1, 0, 0, 0, 1, 0, 0, 0, -1};
   AngleAxisToRotationMatrix(axis_angle, matrix);
   EXPECT_THAT(matrix, IsOrthonormal());
   EXPECT_THAT(matrix, IsNear3x3Matrix(expected));
@@ -475,29 +456,31 @@ TEST(Rotation, NearPiAngleAxisRoundTrip) {
 
 TEST(Rotation, AtPiAngleAxisRoundTrip) {
   // A rotation of kPi about the X axis;
-  static const double kMatrix[3][3] = {
+  // clang-format off
+  static constexpr double kMatrix[3][3] = {
     {1.0,  0.0,  0.0},
     {0.0,  -1.0,  0.0},
     {0.0,  0.0,  -1.0}
   };
+  // clang-format on
 
   double in_matrix[9];
   // Fill it from kMatrix in col-major order.
   for (int j = 0, k = 0; j < 3; ++j) {
-     for (int i = 0; i < 3; ++i, ++k) {
-       in_matrix[k] = kMatrix[i][j];
-     }
+    for (int i = 0; i < 3; ++i, ++k) {
+      in_matrix[k] = kMatrix[i][j];
+    }
   }
 
-  const double expected_axis_angle[3] = { kPi, 0, 0 };
+  const double expected_axis_angle[3] = {kPi, 0, 0};
 
   double out_matrix[9];
   double axis_angle[3];
   RotationMatrixToAngleAxis(in_matrix, axis_angle);
   AngleAxisToRotationMatrix(axis_angle, out_matrix);
 
-  LOG(INFO) << "AngleAxis = " << axis_angle[0] << " " << axis_angle[1]
-            << " " << axis_angle[2];
+  LOG(INFO) << "AngleAxis = " << axis_angle[0] << " " << axis_angle[1] << " "
+            << axis_angle[2];
   LOG(INFO) << "Expected AngleAxis = " << kPi << " 0 0";
   double out_rowmajor[3][3];
   for (int j = 0, k = 0; j < 3; ++j) {
@@ -526,13 +509,15 @@ TEST(Rotation, AtPiAngleAxisRoundTrip) {
 // Transforms an axis angle that rotates by pi/3 about the Z axis to a
 // rotation matrix.
 TEST(Rotation, ZRotationToRotationMatrix) {
-  double axis_angle[3] =  { 0, 0, kPi / 3 };
+  double axis_angle[3] = {0, 0, kPi / 3};
   double matrix[9];
   // This is laid-out row-major on the screen but is actually stored
   // column-major.
+  // clang-format off
   double expected[9] = { 0.5, sqrt(3) / 2, 0,   // Column 1
                          -sqrt(3) / 2, 0.5, 0,  // Column 2
                          0, 0, 1 };             // Column 3
+  // clang-format on
   AngleAxisToRotationMatrix(axis_angle, matrix);
   EXPECT_THAT(matrix, IsOrthonormal());
   EXPECT_THAT(matrix, IsNear3x3Matrix(expected));
@@ -602,12 +587,11 @@ TEST(Rotation, AngleAxisToRotationMatrixAndBackNearZero) {
     RotationMatrixToAngleAxis(matrix, round_trip);
 
     for (int i = 0; i < 3; ++i) {
-      EXPECT_NEAR(round_trip[i], axis_angle[i],
-                  numeric_limits<double>::epsilon());
+      EXPECT_NEAR(
+          round_trip[i], axis_angle[i], numeric_limits<double>::epsilon());
     }
   }
 }
-
 
 // Transposes a 3x3 matrix.
 static void Transpose3x3(double m[9]) {
@@ -647,8 +631,7 @@ TEST(EulerAnglesToRotationMatrix, OnAxis) {
   for (double x = -1.0; x <= 1.0; x += 1.0) {
     for (double y = -1.0; y <= 1.0; y += 1.0) {
       for (double z = -1.0; z <= 1.0; z += 1.0) {
-        if ((x != 0) + (y != 0) + (z != 0) > 1)
-          continue;
+        if ((x != 0) + (y != 0) + (z != 0) > 1) continue;
         double axis_angle[3] = {x, y, z};
         double euler_angles[3] = {x, y, z};
         CompareEulerToAngleAxis(axis_angle, euler_angles);
@@ -680,6 +663,8 @@ TEST(EulerAnglesToRotationMatrix, IsOrthonormal) {
 typedef Jet<double, 3> J3;
 typedef Jet<double, 4> J4;
 
+namespace {
+
 J3 MakeJ3(double a, double v0, double v1, double v2) {
   J3 j;
   j.a = a;
@@ -705,8 +690,10 @@ bool IsClose(double x, double y) {
   return internal::IsClose(x, y, kTolerance, NULL, NULL);
 }
 
+}  // namespace
+
 template <int N>
-bool IsClose(const Jet<double, N> &x, const Jet<double, N> &y) {
+bool IsClose(const Jet<double, N>& x, const Jet<double, N>& y) {
   if (!IsClose(x.a, y.a)) {
     return false;
   }
@@ -719,7 +706,7 @@ bool IsClose(const Jet<double, N> &x, const Jet<double, N> &y) {
 }
 
 template <int M, int N>
-void ExpectJetArraysClose(const Jet<double, N> *x, const Jet<double, N> *y) {
+void ExpectJetArraysClose(const Jet<double, N>* x, const Jet<double, N>* y) {
   for (int i = 0; i < M; i++) {
     if (!IsClose(x[i], y[i])) {
       LOG(ERROR) << "Jet " << i << "/" << M << " not equal";
@@ -738,11 +725,11 @@ void ExpectJetArraysClose(const Jet<double, N> *x, const Jet<double, N> *y) {
 
 // Log-10 of a value well below machine precision.
 static const int kSmallTinyCutoff =
-    static_cast<int>(2 * log(numeric_limits<double>::epsilon())/log(10.0));
+    static_cast<int>(2 * log(numeric_limits<double>::epsilon()) / log(10.0));
 
 // Log-10 of a value just below values representable by double.
-static const int kTinyZeroLimit   =
-    static_cast<int>(1 + log(numeric_limits<double>::min())/log(10.0));
+static const int kTinyZeroLimit =
+    static_cast<int>(1 + log(numeric_limits<double>::min()) / log(10.0));
 
 // Test that exact conversion works for small angles when jets are used.
 TEST(Rotation, SmallAngleAxisToQuaternionForJets) {
@@ -750,19 +737,18 @@ TEST(Rotation, SmallAngleAxisToQuaternionForJets) {
   // to be well within the range represented by doubles.
   for (int i = -2; i >= kSmallTinyCutoff; i--) {
     double theta = pow(10.0, i);
-    J3 axis_angle[3] = { J3(theta, 0), J3(0, 1), J3(0, 2) };
+    J3 axis_angle[3] = {J3(theta, 0), J3(0, 1), J3(0, 2)};
     J3 quaternion[4];
     J3 expected[4] = {
-        MakeJ3(cos(theta/2), -sin(theta/2)/2, 0, 0),
-        MakeJ3(sin(theta/2), cos(theta/2)/2, 0, 0),
-        MakeJ3(0, 0, sin(theta/2)/theta, 0),
-        MakeJ3(0, 0, 0, sin(theta/2)/theta),
+        MakeJ3(cos(theta / 2), -sin(theta / 2) / 2, 0, 0),
+        MakeJ3(sin(theta / 2), cos(theta / 2) / 2, 0, 0),
+        MakeJ3(0, 0, sin(theta / 2) / theta, 0),
+        MakeJ3(0, 0, 0, sin(theta / 2) / theta),
     };
     AngleAxisToQuaternion(axis_angle, quaternion);
     ExpectJetArraysClose<4, 3>(quaternion, expected);
   }
 }
-
 
 // Test that conversion works for very small angles when jets are used.
 TEST(Rotation, TinyAngleAxisToQuaternionForJets) {
@@ -770,7 +756,7 @@ TEST(Rotation, TinyAngleAxisToQuaternionForJets) {
   // underflow occurs.
   for (int i = kSmallTinyCutoff; i >= kTinyZeroLimit; i--) {
     double theta = pow(10.0, i);
-    J3 axis_angle[3] = { J3(theta, 0), J3(0, 1), J3(0, 2) };
+    J3 axis_angle[3] = {J3(theta, 0), J3(0, 1), J3(0, 2)};
     J3 quaternion[4];
     // To avoid loss of precision in the test itself,
     // a finite expansion is used here, which will
@@ -788,7 +774,7 @@ TEST(Rotation, TinyAngleAxisToQuaternionForJets) {
 
 // Test that derivatives are correct for zero rotation.
 TEST(Rotation, ZeroAngleAxisToQuaternionForJets) {
-  J3 axis_angle[3] = { J3(0, 0), J3(0, 1), J3(0, 2) };
+  J3 axis_angle[3] = {J3(0, 0), J3(0, 1), J3(0, 2)};
   J3 quaternion[4];
   J3 expected[4] = {
       MakeJ3(1.0, 0, 0, 0),
@@ -808,13 +794,15 @@ TEST(Rotation, SmallQuaternionToAngleAxisForJets) {
     double theta = pow(10.0, i);
     double s = sin(theta);
     double c = cos(theta);
-    J4 quaternion[4] = { J4(c, 0), J4(s, 1), J4(0, 2), J4(0, 3) };
+    J4 quaternion[4] = {J4(c, 0), J4(s, 1), J4(0, 2), J4(0, 3)};
     J4 axis_angle[3];
+    // clang-format off
     J4 expected[3] = {
         MakeJ4(2*theta, -2*s, 2*c,  0,         0),
         MakeJ4(0,        0,   0,    2*theta/s, 0),
         MakeJ4(0,        0,   0,    0,         2*theta/s),
     };
+    // clang-format on
     QuaternionToAngleAxis(quaternion, axis_angle);
     ExpectJetArraysClose<3, 4>(axis_angle, expected);
   }
@@ -828,16 +816,18 @@ TEST(Rotation, TinyQuaternionToAngleAxisForJets) {
     double theta = pow(10.0, i);
     double s = sin(theta);
     double c = cos(theta);
-    J4 quaternion[4] = { J4(c, 0), J4(s, 1), J4(0, 2), J4(0, 3) };
+    J4 quaternion[4] = {J4(c, 0), J4(s, 1), J4(0, 2), J4(0, 3)};
     J4 axis_angle[3];
     // To avoid loss of precision in the test itself,
     // a finite expansion is used here, which will
     // be exact up to machine precision for the test values used.
+    // clang-format off
     J4 expected[3] = {
         MakeJ4(2*theta, -2*s, 2.0, 0,   0),
         MakeJ4(0,        0,   0,   2.0, 0),
         MakeJ4(0,        0,   0,   0,   2.0),
     };
+    // clang-format on
     QuaternionToAngleAxis(quaternion, axis_angle);
     ExpectJetArraysClose<3, 4>(axis_angle, expected);
   }
@@ -845,7 +835,7 @@ TEST(Rotation, TinyQuaternionToAngleAxisForJets) {
 
 // Test that conversion works for no rotation.
 TEST(Rotation, ZeroQuaternionToAngleAxisForJets) {
-  J4 quaternion[4] = { J4(1, 0), J4(0, 1), J4(0, 2), J4(0, 3) };
+  J4 quaternion[4] = {J4(1, 0), J4(0, 1), J4(0, 2), J4(0, 3)};
   J4 axis_angle[3];
   J4 expected[3] = {
       MakeJ4(0, 0, 2.0, 0, 0),
@@ -859,20 +849,22 @@ TEST(Rotation, ZeroQuaternionToAngleAxisForJets) {
 TEST(Quaternion, RotatePointGivesSameAnswerAsRotationByMatrixCanned) {
   // Canned data generated in octave.
   double const q[4] = {
-    +0.1956830471754074,
-    -0.0150618562474847,
-    +0.7634572982788086,
-    -0.3019454777240753,
+      +0.1956830471754074,
+      -0.0150618562474847,
+      +0.7634572982788086,
+      -0.3019454777240753,
   };
-  double const Q[3][3] = {  // Scaled rotation matrix.
-    { -0.6355194033477252,  0.0951730541682254,  0.3078870197911186 },
-    { -0.1411693904792992,  0.5297609702153905, -0.4551502574482019 },
-    { -0.2896955822708862, -0.4669396571547050, -0.4536309793389248 },
+  double const Q[3][3] = {
+      // Scaled rotation matrix.
+      {-0.6355194033477252, +0.0951730541682254, +0.3078870197911186},
+      {-0.1411693904792992, +0.5297609702153905, -0.4551502574482019},
+      {-0.2896955822708862, -0.4669396571547050, -0.4536309793389248},
   };
-  double const R[3][3] = {  // With unit rows and columns.
-    { -0.8918859164053080,  0.1335655625725649,  0.4320876677394745 },
-    { -0.1981166751680096,  0.7434648665444399, -0.6387564287225856 },
-    { -0.4065578619806013, -0.6553016349046693, -0.6366242786393164 },
+  double const R[3][3] = {
+      // With unit rows and columns.
+      {-0.8918859164053080, +0.1335655625725649, +0.4320876677394745},
+      {-0.1981166751680096, +0.7434648665444399, -0.6387564287225856},
+      {-0.4065578619806013, -0.6553016349046693, -0.6366242786393164},
   };
 
   // Compute R from q and compare to known answer.
@@ -885,19 +877,18 @@ TEST(Quaternion, RotatePointGivesSameAnswerAsRotationByMatrixCanned) {
   ExpectArraysClose(9, R[0], Rq[0], kTolerance);
 }
 
-
 TEST(Quaternion, RotatePointGivesSameAnswerAsRotationByMatrix) {
   // Rotation defined by a unit quaternion.
   double const q[4] = {
-    0.2318160216097109,
-    -0.0178430356832060,
-    0.9044300776717159,
-    -0.3576998641394597,
+      +0.2318160216097109,
+      -0.0178430356832060,
+      +0.9044300776717159,
+      -0.3576998641394597,
   };
   double const p[3] = {
-    +0.11,
-    -13.15,
-    1.17,
+      +0.11,
+      -13.15,
+      1.17,
   };
 
   double R[3 * 3];
@@ -907,10 +898,9 @@ TEST(Quaternion, RotatePointGivesSameAnswerAsRotationByMatrix) {
   UnitQuaternionRotatePoint(q, p, result1);
 
   double result2[3];
-  VectorRef(result2, 3) = ConstMatrixRef(R, 3, 3)* ConstVectorRef(p, 3);
+  VectorRef(result2, 3) = ConstMatrixRef(R, 3, 3) * ConstVectorRef(p, 3);
   ExpectArraysClose(3, result1, result2, kTolerance);
 }
-
 
 // Verify that (a * b) * c == a * (b * c).
 TEST(Quaternion, MultiplicationIsAssociative) {
@@ -938,7 +928,6 @@ TEST(Quaternion, MultiplicationIsAssociative) {
   ASSERT_NEAR(ab_c[2], a_bc[2], kTolerance);
   ASSERT_NEAR(ab_c[3], a_bc[3], kTolerance);
 }
-
 
 TEST(AngleAxis, RotatePointGivesSameAnswerAsRotationMatrix) {
   double angle_axis[3];
@@ -969,6 +958,7 @@ TEST(AngleAxis, RotatePointGivesSameAnswerAsRotationMatrix) {
 
       AngleAxisRotatePoint(angle_axis, p, angle_axis_rotated_p);
       for (int k = 0; k < 3; ++k) {
+        // clang-format off
         EXPECT_NEAR(rotation_matrix_rotated_p[k],
                     angle_axis_rotated_p[k],
                     kTolerance) << "p: " << p[0]
@@ -977,6 +967,7 @@ TEST(AngleAxis, RotatePointGivesSameAnswerAsRotationMatrix) {
                                 << " angle_axis: " << angle_axis[0]
                                 << " " << angle_axis[1]
                                 << " " << angle_axis[2];
+        // clang-format on
       }
     }
   }
@@ -997,7 +988,7 @@ TEST(AngleAxis, NearZeroRotatePointGivesSameAnswerAsRotationMatrix) {
       norm2 = angle_axis[k] * angle_axis[k];
     }
 
-    double theta = (2.0 * i * 0.0001  - 1.0) * 1e-16;
+    double theta = (2.0 * i * 0.0001 - 1.0) * 1e-16;
     const double inv_norm = theta / sqrt(norm2);
     for (int k = 0; k < 3; ++k) {
       angle_axis[k] *= inv_norm;
@@ -1010,6 +1001,7 @@ TEST(AngleAxis, NearZeroRotatePointGivesSameAnswerAsRotationMatrix) {
 
     AngleAxisRotatePoint(angle_axis, p, angle_axis_rotated_p);
     for (int k = 0; k < 3; ++k) {
+      // clang-format off
       EXPECT_NEAR(rotation_matrix_rotated_p[k],
                   angle_axis_rotated_p[k],
                   kTolerance) << "p: " << p[0]
@@ -1018,14 +1010,15 @@ TEST(AngleAxis, NearZeroRotatePointGivesSameAnswerAsRotationMatrix) {
                               << " angle_axis: " << angle_axis[0]
                               << " " << angle_axis[1]
                               << " " << angle_axis[2];
+      // clang-format on
     }
   }
 }
 
 TEST(MatrixAdapter, RowMajor3x3ReturnTypeAndAccessIsCorrect) {
-  double array[9] = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0 };
-  const float const_array[9] =
-      { 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f };
+  double array[9] = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0};
+  const float const_array[9] = {
+      1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f};
   MatrixAdapter<double, 3, 1> A = RowMajorAdapter3x3(array);
   MatrixAdapter<const float, 3, 1> B = RowMajorAdapter3x3(const_array);
 
@@ -1033,16 +1026,16 @@ TEST(MatrixAdapter, RowMajor3x3ReturnTypeAndAccessIsCorrect) {
     for (int j = 0; j < 3; ++j) {
       // The values are integers from 1 to 9, so equality tests are appropriate
       // even for float and double values.
-      EXPECT_EQ(A(i, j), array[3*i+j]);
-      EXPECT_EQ(B(i, j), const_array[3*i+j]);
+      EXPECT_EQ(A(i, j), array[3 * i + j]);
+      EXPECT_EQ(B(i, j), const_array[3 * i + j]);
     }
   }
 }
 
 TEST(MatrixAdapter, ColumnMajor3x3ReturnTypeAndAccessIsCorrect) {
-  double array[9] = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0 };
-  const float const_array[9] =
-      { 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f };
+  double array[9] = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0};
+  const float const_array[9] = {
+      1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f};
   MatrixAdapter<double, 1, 3> A = ColumnMajorAdapter3x3(array);
   MatrixAdapter<const float, 1, 3> B = ColumnMajorAdapter3x3(const_array);
 
@@ -1050,29 +1043,33 @@ TEST(MatrixAdapter, ColumnMajor3x3ReturnTypeAndAccessIsCorrect) {
     for (int j = 0; j < 3; ++j) {
       // The values are integers from 1 to 9, so equality tests are
       // appropriate even for float and double values.
-      EXPECT_EQ(A(i, j), array[3*j+i]);
-      EXPECT_EQ(B(i, j), const_array[3*j+i]);
+      EXPECT_EQ(A(i, j), array[3 * j + i]);
+      EXPECT_EQ(B(i, j), const_array[3 * j + i]);
     }
   }
 }
 
 TEST(MatrixAdapter, RowMajor2x4IsCorrect) {
-  const int expected[8] = { 1, 2, 3, 4, 5, 6, 7, 8 };
+  const int expected[8] = {1, 2, 3, 4, 5, 6, 7, 8};
   int array[8];
   MatrixAdapter<int, 4, 1> M(array);
+  // clang-format off
   M(0, 0) = 1; M(0, 1) = 2; M(0, 2) = 3; M(0, 3) = 4;
   M(1, 0) = 5; M(1, 1) = 6; M(1, 2) = 7; M(1, 3) = 8;
+  // clang-format on
   for (int k = 0; k < 8; ++k) {
     EXPECT_EQ(array[k], expected[k]);
   }
 }
 
 TEST(MatrixAdapter, ColumnMajor2x4IsCorrect) {
-  const int expected[8] = { 1, 5, 2, 6, 3, 7, 4, 8 };
+  const int expected[8] = {1, 5, 2, 6, 3, 7, 4, 8};
   int array[8];
   MatrixAdapter<int, 1, 2> M(array);
+  // clang-format off
   M(0, 0) = 1; M(0, 1) = 2; M(0, 2) = 3; M(0, 3) = 4;
   M(1, 0) = 5; M(1, 1) = 6; M(1, 2) = 7; M(1, 3) = 8;
+  // clang-format on
   for (int k = 0; k < 8; ++k) {
     EXPECT_EQ(array[k], expected[k]);
   }
@@ -1080,11 +1077,13 @@ TEST(MatrixAdapter, ColumnMajor2x4IsCorrect) {
 
 TEST(RotationMatrixToAngleAxis, NearPiExampleOneFromTobiasStrauss) {
   // Example from Tobias Strauss
+  // clang-format off
   const double rotation_matrix[] = {
     -0.999807135425239,    -0.0128154391194470,   -0.0148814136745799,
     -0.0128154391194470,   -0.148441438622958,     0.988838158557669,
     -0.0148814136745799,    0.988838158557669,     0.148248574048196
   };
+  // clang-format on
 
   double angle_axis[3];
   RotationMatrixToAngleAxis(RowMajorAdapter3x3(rotation_matrix), angle_axis);
@@ -1093,9 +1092,9 @@ TEST(RotationMatrixToAngleAxis, NearPiExampleOneFromTobiasStrauss) {
   EXPECT_THAT(rotation_matrix, IsNear3x3Matrix(round_trip));
 }
 
-void CheckRotationMatrixToAngleAxisRoundTrip(const double theta,
-                                             const double phi,
-                                             const double angle) {
+static void CheckRotationMatrixToAngleAxisRoundTrip(const double theta,
+                                                    const double phi,
+                                                    const double angle) {
   double angle_axis[3];
   angle_axis[0] = angle * sin(phi) * cos(theta);
   angle_axis[1] = angle * sin(phi) * sin(theta);

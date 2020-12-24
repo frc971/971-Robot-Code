@@ -32,6 +32,7 @@
 
 #include <utility>
 #include <vector>
+
 #include "ceres/covariance_impl.h"
 #include "ceres/problem.h"
 #include "ceres/problem_impl.h"
@@ -46,19 +47,17 @@ Covariance::Covariance(const Covariance::Options& options) {
   impl_.reset(new internal::CovarianceImpl(options));
 }
 
-Covariance::~Covariance() {
-}
+Covariance::~Covariance() {}
 
 bool Covariance::Compute(
     const vector<pair<const double*, const double*>>& covariance_blocks,
     Problem* problem) {
-  return impl_->Compute(covariance_blocks, problem->problem_impl_.get());
+  return impl_->Compute(covariance_blocks, problem->impl_.get());
 }
 
-bool Covariance::Compute(
-    const vector<const double*>& parameter_blocks,
-    Problem* problem) {
-  return impl_->Compute(parameter_blocks, problem->problem_impl_.get());
+bool Covariance::Compute(const vector<const double*>& parameter_blocks,
+                         Problem* problem) {
+  return impl_->Compute(parameter_blocks, problem->impl_.get());
 }
 
 bool Covariance::GetCovarianceBlock(const double* parameter_block1,
@@ -82,15 +81,15 @@ bool Covariance::GetCovarianceBlockInTangentSpace(
 
 bool Covariance::GetCovarianceMatrix(
     const vector<const double*>& parameter_blocks,
-    double* covariance_matrix) {
+    double* covariance_matrix) const {
   return impl_->GetCovarianceMatrixInTangentOrAmbientSpace(parameter_blocks,
                                                            true,  // ambient
                                                            covariance_matrix);
 }
 
 bool Covariance::GetCovarianceMatrixInTangentSpace(
-    const std::vector<const double *>& parameter_blocks,
-    double *covariance_matrix) {
+    const std::vector<const double*>& parameter_blocks,
+    double* covariance_matrix) const {
   return impl_->GetCovarianceMatrixInTangentOrAmbientSpace(parameter_blocks,
                                                            false,  // tangent
                                                            covariance_matrix);

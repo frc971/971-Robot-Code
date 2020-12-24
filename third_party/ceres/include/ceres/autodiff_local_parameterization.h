@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2019 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -34,8 +34,9 @@
 #define CERES_PUBLIC_AUTODIFF_LOCAL_PARAMETERIZATION_H_
 
 #include <memory>
-#include "ceres/local_parameterization.h"
+
 #include "ceres/internal/autodiff.h"
+#include "ceres/local_parameterization.h"
 
 namespace ceres {
 
@@ -107,21 +108,20 @@ namespace ceres {
 template <typename Functor, int kGlobalSize, int kLocalSize>
 class AutoDiffLocalParameterization : public LocalParameterization {
  public:
-  AutoDiffLocalParameterization() :
-      functor_(new Functor()) {}
+  AutoDiffLocalParameterization() : functor_(new Functor()) {}
 
   // Takes ownership of functor.
-  explicit AutoDiffLocalParameterization(Functor* functor) :
-      functor_(functor) {}
+  explicit AutoDiffLocalParameterization(Functor* functor)
+      : functor_(functor) {}
 
   virtual ~AutoDiffLocalParameterization() {}
-  virtual bool Plus(const double* x,
-                    const double* delta,
-                    double* x_plus_delta) const {
+  bool Plus(const double* x,
+            const double* delta,
+            double* x_plus_delta) const override {
     return (*functor_)(x, delta, x_plus_delta);
   }
 
-  virtual bool ComputeJacobian(const double* x, double* jacobian) const {
+  bool ComputeJacobian(const double* x, double* jacobian) const override {
     double zero_delta[kLocalSize];
     for (int i = 0; i < kLocalSize; ++i) {
       zero_delta[i] = 0.0;
@@ -133,14 +133,15 @@ class AutoDiffLocalParameterization : public LocalParameterization {
     }
 
     const double* parameter_ptrs[2] = {x, zero_delta};
-    double* jacobian_ptrs[2] = { NULL, jacobian };
+    double* jacobian_ptrs[2] = {NULL, jacobian};
     return internal::AutoDifferentiate<
+        kGlobalSize,
         internal::StaticParameterDims<kGlobalSize, kLocalSize>>(
         *functor_, parameter_ptrs, kGlobalSize, x_plus_delta, jacobian_ptrs);
   }
 
-  virtual int GlobalSize() const { return kGlobalSize; }
-  virtual int LocalSize() const { return kLocalSize; }
+  int GlobalSize() const override { return kGlobalSize; }
+  int LocalSize() const override { return kLocalSize; }
 
  private:
   std::unique_ptr<Functor> functor_;

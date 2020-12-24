@@ -32,6 +32,7 @@
 
 #include <numeric>
 #include <string>
+
 #include "ceres/callbacks.h"
 #include "ceres/context_impl.h"
 #include "ceres/evaluator.h"
@@ -57,8 +58,7 @@ namespace {
 ParameterBlockOrdering* CreateDefaultLinearSolverOrdering(
     const Program& program) {
   ParameterBlockOrdering* ordering = new ParameterBlockOrdering;
-  const vector<ParameterBlock*>& parameter_blocks =
-      program.parameter_blocks();
+  const vector<ParameterBlock*>& parameter_blocks = program.parameter_blocks();
   for (int i = 0; i < parameter_blocks.size(); ++i) {
     ordering->AddElementToGroup(
         const_cast<double*>(parameter_blocks[i]->user_state()), 0);
@@ -69,8 +69,7 @@ ParameterBlockOrdering* CreateDefaultLinearSolverOrdering(
 // Check if all the user supplied values in the parameter blocks are
 // sane or not, and if the program is feasible or not.
 bool IsProgramValid(const Program& program, std::string* error) {
-  return (program.ParameterBlocksAreFinite(error) &&
-          program.IsFeasible(error));
+  return (program.ParameterBlocksAreFinite(error) && program.IsFeasible(error));
 }
 
 void AlternateLinearSolverAndPreconditionerForSchurTypeLinearSolver(
@@ -82,34 +81,32 @@ void AlternateLinearSolverAndPreconditionerForSchurTypeLinearSolver(
   const LinearSolverType linear_solver_type_given = options->linear_solver_type;
   const PreconditionerType preconditioner_type_given =
       options->preconditioner_type;
-  options->linear_solver_type = LinearSolver::LinearSolverForZeroEBlocks(
-      linear_solver_type_given);
+  options->linear_solver_type =
+      LinearSolver::LinearSolverForZeroEBlocks(linear_solver_type_given);
 
   std::string message;
   if (linear_solver_type_given == ITERATIVE_SCHUR) {
-    options->preconditioner_type = Preconditioner::PreconditionerForZeroEBlocks(
-        preconditioner_type_given);
+    options->preconditioner_type =
+        Preconditioner::PreconditionerForZeroEBlocks(preconditioner_type_given);
 
     message =
-        StringPrintf(
-            "No E blocks. Switching from %s(%s) to %s(%s).",
-            LinearSolverTypeToString(linear_solver_type_given),
-            PreconditionerTypeToString(preconditioner_type_given),
-            LinearSolverTypeToString(options->linear_solver_type),
-            PreconditionerTypeToString(options->preconditioner_type));
+        StringPrintf("No E blocks. Switching from %s(%s) to %s(%s).",
+                     LinearSolverTypeToString(linear_solver_type_given),
+                     PreconditionerTypeToString(preconditioner_type_given),
+                     LinearSolverTypeToString(options->linear_solver_type),
+                     PreconditionerTypeToString(options->preconditioner_type));
   } else {
     message =
-        StringPrintf(
-            "No E blocks. Switching from %s to %s.",
-            LinearSolverTypeToString(linear_solver_type_given),
-            LinearSolverTypeToString(options->linear_solver_type));
+        StringPrintf("No E blocks. Switching from %s to %s.",
+                     LinearSolverTypeToString(linear_solver_type_given),
+                     LinearSolverTypeToString(options->linear_solver_type));
   }
-
-  VLOG_IF(1, options->logging_type != SILENT) << message;
+  if (options->logging_type != SILENT) {
+    VLOG(1) << message;
+  }
 }
 
-// For Schur type and SPARSE_NORMAL_CHOLESKY linear solvers, reorder
-// the program to reduce fill-in and increase cache coherency.
+// Reorder the program to reduce fill-in and increase cache coherency.
 bool ReorderProgram(PreprocessedProblem* pp) {
   const Solver::Options& options = pp->options;
   if (IsSchurType(options.linear_solver_type)) {
@@ -122,12 +119,27 @@ bool ReorderProgram(PreprocessedProblem* pp) {
         &pp->error);
   }
 
-
   if (options.linear_solver_type == SPARSE_NORMAL_CHOLESKY &&
       !options.dynamic_sparsity) {
-    return ReorderProgramForSparseNormalCholesky(
+    return ReorderProgramForSparseCholesky(
         options.sparse_linear_algebra_library_type,
         *options.linear_solver_ordering,
+        0, /* use all the rows of the jacobian */
+        pp->reduced_program.get(),
+        &pp->error);
+  }
+
+  if (options.linear_solver_type == CGNR &&
+      options.preconditioner_type == SUBSET) {
+    pp->linear_solver_options.subset_preconditioner_start_row_block =
+        ReorderResidualBlocksByPartition(
+            options.residual_blocks_for_subset_preconditioner,
+            pp->reduced_program.get());
+
+    return ReorderProgramForSparseCholesky(
+        options.sparse_linear_algebra_library_type,
+        *options.linear_solver_ordering,
+        pp->linear_solver_options.subset_preconditioner_start_row_block,
         pp->reduced_program.get(),
         &pp->error);
   }
@@ -141,7 +153,9 @@ bool ReorderProgram(PreprocessedProblem* pp) {
 // too.
 bool SetupLinearSolver(PreprocessedProblem* pp) {
   Solver::Options& options = pp->options;
-  if (options.linear_solver_ordering.get() == NULL) {
+  pp->linear_solver_options = LinearSolver::Options();
+
+  if (!options.linear_solver_ordering) {
     // If the user has not supplied a linear solver ordering, then we
     // assume that they are giving all the freedom to us in choosing
     // the best possible ordering. This intent can be indicated by
@@ -165,8 +179,7 @@ bool SetupLinearSolver(PreprocessedProblem* pp) {
     ordering->Remove(pp->removed_parameter_blocks);
     if (IsSchurType(options.linear_solver_type) &&
         min_group_id != ordering->MinNonZeroGroup()) {
-      AlternateLinearSolverAndPreconditionerForSchurTypeLinearSolver(
-          &options);
+      AlternateLinearSolverAndPreconditionerForSchurTypeLinearSolver(&options);
     }
   }
 
@@ -177,7 +190,6 @@ bool SetupLinearSolver(PreprocessedProblem* pp) {
   }
 
   // Configure the linear solver.
-  pp->linear_solver_options = LinearSolver::Options();
   pp->linear_solver_options.min_num_iterations =
       options.min_linear_solver_iterations;
   pp->linear_solver_options.max_num_iterations =
@@ -228,7 +240,7 @@ bool SetupLinearSolver(PreprocessedProblem* pp) {
       // blocks for CX_SPARSE.
       if ((options.sparse_linear_algebra_library_type == SUITE_SPARSE &&
            !SuiteSparse::
-           IsConstrainedApproximateMinimumDegreeOrderingAvailable()) ||
+               IsConstrainedApproximateMinimumDegreeOrderingAvailable()) ||
           (options.sparse_linear_algebra_library_type == CX_SPARSE)) {
         pp->linear_solver_options.use_postordering = true;
       }
@@ -236,7 +248,7 @@ bool SetupLinearSolver(PreprocessedProblem* pp) {
   }
 
   pp->linear_solver.reset(LinearSolver::Create(pp->linear_solver_options));
-  return (pp->linear_solver.get() != NULL);
+  return (pp->linear_solver != nullptr);
 }
 
 // Configure and create the evaluator.
@@ -247,21 +259,20 @@ bool SetupEvaluator(PreprocessedProblem* pp) {
   pp->evaluator_options.num_eliminate_blocks = 0;
   if (IsSchurType(options.linear_solver_type)) {
     pp->evaluator_options.num_eliminate_blocks =
-        options
-        .linear_solver_ordering
-        ->group_to_elements().begin()
-        ->second.size();
+        options.linear_solver_ordering->group_to_elements()
+            .begin()
+            ->second.size();
   }
 
   pp->evaluator_options.num_threads = options.num_threads;
   pp->evaluator_options.dynamic_sparsity = options.dynamic_sparsity;
   pp->evaluator_options.context = pp->problem->context();
-  pp->evaluator_options.evaluation_callback = options.evaluation_callback;
-  pp->evaluator.reset(Evaluator::Create(pp->evaluator_options,
-                                        pp->reduced_program.get(),
-                                        &pp->error));
+  pp->evaluator_options.evaluation_callback =
+      pp->reduced_program->mutable_evaluation_callback();
+  pp->evaluator.reset(Evaluator::Create(
+      pp->evaluator_options, pp->reduced_program.get(), &pp->error));
 
-  return (pp->evaluator.get() != NULL);
+  return (pp->evaluator != nullptr);
 }
 
 // If the user requested inner iterations, then find an inner
@@ -273,6 +284,11 @@ bool SetupInnerIterationMinimizer(PreprocessedProblem* pp) {
     return true;
   }
 
+  if (pp->reduced_program->mutable_evaluation_callback()) {
+    pp->error = "Inner iterations cannot be used with EvaluationCallbacks";
+    return false;
+  }
+
   // With just one parameter block, the outer iteration of the trust
   // region method and inner iterations are doing exactly the same
   // thing, and thus inner iterations are not needed.
@@ -282,7 +298,7 @@ bool SetupInnerIterationMinimizer(PreprocessedProblem* pp) {
     return true;
   }
 
-  if (options.inner_iteration_ordering.get() != NULL) {
+  if (options.inner_iteration_ordering != nullptr) {
     // If the user supplied an ordering, then remove the set of
     // inactive parameter blocks from it
     options.inner_iteration_ordering->Remove(pp->removed_parameter_blocks);
@@ -325,8 +341,7 @@ void SetupMinimizerOptions(PreprocessedProblem* pp) {
 
   TrustRegionStrategy::Options strategy_options;
   strategy_options.linear_solver = pp->linear_solver.get();
-  strategy_options.initial_radius =
-      options.initial_trust_region_radius;
+  strategy_options.initial_radius = options.initial_trust_region_radius;
   strategy_options.max_radius = options.max_trust_region_radius;
   strategy_options.min_lm_diagonal = options.min_lm_diagonal;
   strategy_options.max_lm_diagonal = options.max_lm_diagonal;
@@ -340,8 +355,7 @@ void SetupMinimizerOptions(PreprocessedProblem* pp) {
 
 }  // namespace
 
-TrustRegionPreprocessor::~TrustRegionPreprocessor() {
-}
+TrustRegionPreprocessor::~TrustRegionPreprocessor() {}
 
 bool TrustRegionPreprocessor::Preprocess(const Solver::Options& options,
                                          ProblemImpl* problem,
@@ -356,10 +370,8 @@ bool TrustRegionPreprocessor::Preprocess(const Solver::Options& options,
     return false;
   }
 
-  pp->reduced_program.reset(
-      program->CreateReducedProgram(&pp->removed_parameter_blocks,
-                                    &pp->fixed_cost,
-                                    &pp->error));
+  pp->reduced_program.reset(program->CreateReducedProgram(
+      &pp->removed_parameter_blocks, &pp->fixed_cost, &pp->error));
 
   if (pp->reduced_program.get() == NULL) {
     return false;
@@ -371,8 +383,7 @@ bool TrustRegionPreprocessor::Preprocess(const Solver::Options& options,
     return true;
   }
 
-  if (!SetupLinearSolver(pp) ||
-      !SetupEvaluator(pp) ||
+  if (!SetupLinearSolver(pp) || !SetupEvaluator(pp) ||
       !SetupInnerIterationMinimizer(pp)) {
     return false;
   }

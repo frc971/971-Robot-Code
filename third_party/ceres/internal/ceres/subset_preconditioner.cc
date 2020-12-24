@@ -32,6 +32,7 @@
 
 #include <memory>
 #include <string>
+
 #include "ceres/compressed_row_sparse_matrix.h"
 #include "ceres/inner_product_computer.h"
 #include "ceres/linear_solver.h"
@@ -44,12 +45,13 @@ namespace internal {
 SubsetPreconditioner::SubsetPreconditioner(
     const Preconditioner::Options& options, const BlockSparseMatrix& A)
     : options_(options), num_cols_(A.num_cols()) {
-  CHECK_GE(options_.subset_preconditioner_start_row_block, 0);
+  CHECK_GE(options_.subset_preconditioner_start_row_block, 0)
+      << "Congratulations, you found a bug in Ceres. Please report it.";
+
   LinearSolver::Options sparse_cholesky_options;
   sparse_cholesky_options.sparse_linear_algebra_library_type =
       options_.sparse_linear_algebra_library_type;
-  sparse_cholesky_options.use_postordering =
-      options_.use_postordering;
+  sparse_cholesky_options.use_postordering = options_.use_postordering;
   sparse_cholesky_ = SparseCholesky::Create(sparse_cholesky_options);
 }
 

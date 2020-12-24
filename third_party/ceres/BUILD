@@ -32,14 +32,9 @@
 # not support parameterization around threading choice or sparse backends.
 
 load("//:bazel/ceres.bzl", "ceres_library")
-load("@//tools/build_rules:select.bzl", "cpu_select")
 
 ceres_library(
     name = "ceres",
-    extra_copts = cpu_select({
-        "roborio": ["-Wno-maybe-uninitialized"],
-        "else": [],
-    }),
     restrict_schur_specializations = False,
 )
 
@@ -63,7 +58,6 @@ cc_library(
     copts = [
         "-Wno-sign-compare",
         "-DCERES_TEST_SRCDIR_SUFFIX=\\\"data/\\\"",
-        "-Wno-format-nonliteral",
     ],
     includes = [
         "internal",
@@ -172,13 +166,7 @@ TEST_COPTS = [
     # TODO(keir): When the tests are macro-ified, apply these selectively.
     "-Wno-address",
     "-Wno-unused-parameter",
-    "-Wno-format-nonliteral",
-    "-Wno-missing-braces",
-    "-Wno-missing-field-initializers",
-] + cpu_select({
-    "roborio": ["-Wno-nonnull-compare"],
-    "else": [],
-})
+]
 
 TEST_DEPS = [
     "//:ceres",
@@ -222,7 +210,6 @@ TEST_DEPS = [
     copts = TEST_COPTS,
     deps = TEST_DEPS + ["@com_github_google_benchmark//:benchmark"],
 ) for benchmark_name in [
-    "autodiff_cost_function_benchmark",
     "small_blas_gemm_benchmark",
     "small_blas_gemv_benchmark",
 ]]

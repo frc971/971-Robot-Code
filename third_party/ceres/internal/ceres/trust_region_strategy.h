@@ -32,6 +32,7 @@
 #define CERES_INTERNAL_TRUST_REGION_STRATEGY_H_
 
 #include <string>
+
 #include "ceres/internal/port.h"
 #include "ceres/linear_solver.h"
 
@@ -53,7 +54,7 @@ class SparseMatrix;
 // the LevenbergMarquardtStrategy uses the inverse of the trust region
 // radius to scale the damping term, which controls the step size, but
 // does not set a hard limit on its size.
-class TrustRegionStrategy {
+class CERES_EXPORT_INTERNAL TrustRegionStrategy {
  public:
   struct Options {
     TrustRegionStrategyType trust_region_strategy_type = LEVENBERG_MARQUARDT;
@@ -72,6 +73,11 @@ class TrustRegionStrategy {
     // Further specify which dogleg method to use
     DoglegType dogleg_type = TRADITIONAL_DOGLEG;
   };
+
+  // Factory.
+  static TrustRegionStrategy* Create(const Options& options);
+
+  virtual ~TrustRegionStrategy();
 
   // Per solve options.
   struct PerSolveOptions {
@@ -107,8 +113,6 @@ class TrustRegionStrategy {
     LinearSolverTerminationType termination_type = LINEAR_SOLVER_FAILURE;
   };
 
-  virtual ~TrustRegionStrategy();
-
   // Use the current radius to solve for the trust region step.
   virtual Summary ComputeStep(const PerSolveOptions& per_solve_options,
                               SparseMatrix* jacobian,
@@ -133,9 +137,6 @@ class TrustRegionStrategy {
 
   // Current trust region radius.
   virtual double Radius() const = 0;
-
-  // Factory.
-  static TrustRegionStrategy* Create(const Options& options);
 };
 
 }  // namespace internal

@@ -35,35 +35,35 @@
 #include "ceres/cubic_interpolation.h"
 #include "glog/logging.h"
 
-using ceres::Grid1D;
-using ceres::CubicInterpolator;
 using ceres::AutoDiffCostFunction;
 using ceres::CostFunction;
+using ceres::CubicInterpolator;
+using ceres::Grid1D;
 using ceres::Problem;
-using ceres::Solver;
 using ceres::Solve;
+using ceres::Solver;
 
 // A simple cost functor that interfaces an interpolated table of
 // values with automatic differentiation.
 struct InterpolatedCostFunctor {
   explicit InterpolatedCostFunctor(
-      const CubicInterpolator<Grid1D<double> >& interpolator)
-      : interpolator_(interpolator) {
-  }
+      const CubicInterpolator<Grid1D<double>>& interpolator)
+      : interpolator_(interpolator) {}
 
-  template<typename T> bool operator()(const T* x, T* residuals) const {
+  template <typename T>
+  bool operator()(const T* x, T* residuals) const {
     interpolator_.Evaluate(*x, residuals);
     return true;
   }
 
   static CostFunction* Create(
-      const CubicInterpolator<Grid1D<double> >& interpolator) {
+      const CubicInterpolator<Grid1D<double>>& interpolator) {
     return new AutoDiffCostFunction<InterpolatedCostFunctor, 1, 1>(
         new InterpolatedCostFunctor(interpolator));
   }
 
  private:
-  const CubicInterpolator<Grid1D<double> >& interpolator_;
+  const CubicInterpolator<Grid1D<double>>& interpolator_;
 };
 
 int main(int argc, char** argv) {
@@ -77,7 +77,7 @@ int main(int argc, char** argv) {
   }
 
   Grid1D<double> array(values, 0, kNumSamples);
-  CubicInterpolator<Grid1D<double> > interpolator(array);
+  CubicInterpolator<Grid1D<double>> interpolator(array);
 
   double x = 1.0;
   Problem problem;

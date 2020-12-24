@@ -28,9 +28,11 @@
 //
 // Author: sameeragarwal@google.com (Sameer Agarwal)
 
-#include <memory>
-#include "ceres/internal/eigen.h"
 #include "ceres/levenberg_marquardt_strategy.h"
+
+#include <memory>
+
+#include "ceres/internal/eigen.h"
 #include "ceres/linear_solver.h"
 #include "ceres/trust_region_strategy.h"
 #include "glog/logging.h"
@@ -38,11 +40,11 @@
 #include "gmock/mock-log.h"
 #include "gtest/gtest.h"
 
+using testing::_;
 using testing::AllOf;
 using testing::AnyNumber;
 using testing::HasSubstr;
 using testing::ScopedMockLog;
-using testing::_;
 
 namespace ceres {
 namespace internal {
@@ -54,18 +56,16 @@ const double kTolerance = 1e-16;
 class RegularizationCheckingLinearSolver : public DenseSparseMatrixSolver {
  public:
   RegularizationCheckingLinearSolver(const int num_cols, const double* diagonal)
-      : num_cols_(num_cols),
-        diagonal_(diagonal) {
-  }
+      : num_cols_(num_cols), diagonal_(diagonal) {}
 
   virtual ~RegularizationCheckingLinearSolver() {}
 
  private:
-  virtual LinearSolver::Summary SolveImpl(
+  LinearSolver::Summary SolveImpl(
       DenseSparseMatrix* A,
       const double* b,
       const LinearSolver::PerSolveOptions& per_solve_options,
-      double* x) {
+      double* x) final {
     CHECK(per_solve_options.D != nullptr);
     for (int i = 0; i < num_cols_; ++i) {
       EXPECT_NEAR(per_solve_options.D[i], diagonal_[i], kTolerance)
@@ -152,11 +152,11 @@ TEST(LevenbergMarquardtStrategy, CorrectDiagonalToLinearSolver) {
 #if defined(_MSC_VER)
     // Use GLOG_WARNING to support MSVC if GLOG_NO_ABBREVIATED_SEVERITIES
     // is defined.
-    EXPECT_CALL(log, Log(GLOG_WARNING, _,
-                         HasSubstr("Failed to compute a step")));
+    EXPECT_CALL(log,
+                Log(GLOG_WARNING, _, HasSubstr("Failed to compute a step")));
 #else
-    EXPECT_CALL(log, Log(google::WARNING, _,
-                         HasSubstr("Failed to compute a step")));
+    EXPECT_CALL(log,
+                Log(google::WARNING, _, HasSubstr("Failed to compute a step")));
 #endif
 
     TrustRegionStrategy::Summary summary =

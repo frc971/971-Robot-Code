@@ -40,9 +40,9 @@
 #include <string>
 #include <vector>
 
+#include "Accelerate.h"
 #include "ceres/linear_solver.h"
 #include "ceres/sparse_cholesky.h"
-#include "Accelerate.h"
 
 namespace ceres {
 namespace internal {
@@ -50,11 +50,10 @@ namespace internal {
 class CompressedRowSparseMatrix;
 class TripletSparseMatrix;
 
-template<typename Scalar>
-struct SparseTypesTrait {
-};
+template <typename Scalar>
+struct SparseTypesTrait {};
 
-template<>
+template <>
 struct SparseTypesTrait<double> {
   typedef DenseVector_Double DenseVector;
   typedef SparseMatrix_Double SparseMatrix;
@@ -62,7 +61,7 @@ struct SparseTypesTrait<double> {
   typedef SparseOpaqueFactorization_Double NumericFactorization;
 };
 
-template<>
+template <>
 struct SparseTypesTrait<float> {
   typedef DenseVector_Float DenseVector;
   typedef SparseMatrix_Float SparseMatrix;
@@ -70,14 +69,16 @@ struct SparseTypesTrait<float> {
   typedef SparseOpaqueFactorization_Float NumericFactorization;
 };
 
-template<typename Scalar>
+template <typename Scalar>
 class AccelerateSparse {
  public:
   using DenseVector = typename SparseTypesTrait<Scalar>::DenseVector;
   // Use ASSparseMatrix to avoid collision with ceres::internal::SparseMatrix.
   using ASSparseMatrix = typename SparseTypesTrait<Scalar>::SparseMatrix;
-  using SymbolicFactorization = typename SparseTypesTrait<Scalar>::SymbolicFactorization;
-  using NumericFactorization = typename SparseTypesTrait<Scalar>::NumericFactorization;
+  using SymbolicFactorization =
+      typename SparseTypesTrait<Scalar>::SymbolicFactorization;
+  using NumericFactorization =
+      typename SparseTypesTrait<Scalar>::NumericFactorization;
 
   // Solves a linear system given its symbolic (reference counted within
   // NumericFactorization) and numeric factorization.
@@ -101,13 +102,15 @@ class AccelerateSparse {
 
  private:
   std::vector<long> column_starts_;
+  std::vector<uint8_t> solve_workspace_;
+  std::vector<uint8_t> factorization_workspace_;
   // Storage for the values of A if Scalar != double (necessitating a copy).
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> values_;
 };
 
 // An implementation of SparseCholesky interface using Apple's Accelerate
 // framework.
-template<typename Scalar>
+template <typename Scalar>
 class AppleAccelerateCholesky : public SparseCholesky {
  public:
   // Factory
@@ -115,12 +118,12 @@ class AppleAccelerateCholesky : public SparseCholesky {
 
   // SparseCholesky interface.
   virtual ~AppleAccelerateCholesky();
-  virtual CompressedRowSparseMatrix::StorageType StorageType() const;
-  virtual LinearSolverTerminationType Factorize(CompressedRowSparseMatrix* lhs,
-                                                std::string* message);
-  virtual LinearSolverTerminationType Solve(const double* rhs,
-                                            double* solution,
-                                            std::string* message);
+  CompressedRowSparseMatrix::StorageType StorageType() const;
+  LinearSolverTerminationType Factorize(CompressedRowSparseMatrix* lhs,
+                                        std::string* message) final;
+  LinearSolverTerminationType Solve(const double* rhs,
+                                    double* solution,
+                                    std::string* message) final;
 
  private:
   AppleAccelerateCholesky(const OrderingType ordering_type);
@@ -130,15 +133,15 @@ class AppleAccelerateCholesky : public SparseCholesky {
   const OrderingType ordering_type_;
   AccelerateSparse<Scalar> as_;
   std::unique_ptr<typename AccelerateSparse<Scalar>::SymbolicFactorization>
-  symbolic_factor_;
+      symbolic_factor_;
   std::unique_ptr<typename AccelerateSparse<Scalar>::NumericFactorization>
-  numeric_factor_;
+      numeric_factor_;
   // Copy of rhs/solution if Scalar != double (necessitating a copy).
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> scalar_rhs_and_solution_;
 };
 
-}
-}
+}  // namespace internal
+}  // namespace ceres
 
 #endif  // CERES_NO_ACCELERATE_SPARSE
 

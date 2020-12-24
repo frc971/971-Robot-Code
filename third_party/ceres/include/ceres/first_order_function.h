@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2018 Google Inc. All rights reserved.
+// Copyright 2019 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -26,33 +26,29 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //
-// Author: jodebo_beck@gmx.de (Johannes Beck)
+// Author: sameeragarwal@google.com (Sameer Agarwal)
 
-#include "ceres/internal/integer_sequence.h"
+#ifndef CERES_PUBLIC_FIRST_ORDER_FUNCTION_H_
+#define CERES_PUBLIC_FIRST_ORDER_FUNCTION_H_
 
-#include <type_traits>
+#include "ceres/internal/port.h"
 
 namespace ceres {
-namespace internal {
 
-// Unit test for integer_sequence<...>::value_type
-static_assert(std::is_same<integer_sequence<unsigned int, 0>::value_type,
-                           unsigned int>::value,
-              "Unit test of integer sequence value type failed.");
+// A FirstOrderFunction object implements the evaluation of a function
+// and its gradient.
+class CERES_EXPORT FirstOrderFunction {
+ public:
+  virtual ~FirstOrderFunction() {}
 
-// Unit tests for make_integer_sequence
-static_assert(
-    std::is_same<make_integer_sequence<int, 0>, integer_sequence<int>>::value,
-    "Unit test of make integer sequence failed.");
-static_assert(std::is_same<make_integer_sequence<int, 1>,
-                           integer_sequence<int, 0>>::value,
-              "Unit test of make integer sequence failed.");
-static_assert(std::is_same<make_integer_sequence<int, 2>,
-                           integer_sequence<int, 0, 1>>::value,
-              "Unit test of make integer sequence failed.");
-static_assert(std::is_same<make_integer_sequence<int, 3>,
-                           integer_sequence<int, 0, 1, 2>>::value,
-              "Unit test of make integer sequence failed.");
+  // cost is never null. gradient may be null. The return value
+  // indicates whether the evaluation was successful or not.
+  virtual bool Evaluate(const double* const parameters,
+                        double* cost,
+                        double* gradient) const = 0;
+  virtual int NumParameters() const = 0;
+};
 
-}  // namespace internal
 }  // namespace ceres
+
+#endif  // CERES_PUBLIC_FIRST_ORDER_FUNCTION_H_

@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2019 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -53,6 +53,7 @@
 namespace ceres {
 
 class CostFunction;
+class EvaluationCallback;
 class LossFunction;
 class LocalParameterization;
 struct CRSMatrix;
@@ -62,7 +63,7 @@ namespace internal {
 class Program;
 class ResidualBlock;
 
-class ProblemImpl {
+class CERES_EXPORT_INTERNAL ProblemImpl {
  public:
   typedef std::map<double*, ParameterBlock*> ParameterMap;
   typedef std::unordered_set<ResidualBlock*> ResidualBlockSet;
@@ -77,11 +78,10 @@ class ProblemImpl {
   ~ProblemImpl();
 
   // See the public problem.h file for description of these methods.
-  ResidualBlockId AddResidualBlock(
-      CostFunction* cost_function,
-      LossFunction* loss_function,
-      double* const* const parameter_blocks,
-      int num_parameter_blocks);
+  ResidualBlockId AddResidualBlock(CostFunction* cost_function,
+                                   LossFunction* loss_function,
+                                   double* const* const parameter_blocks,
+                                   int num_parameter_blocks);
 
   template <typename... Ts>
   ResidualBlockId AddResidualBlock(CostFunction* cost_function,
@@ -101,26 +101,33 @@ class ProblemImpl {
                          LocalParameterization* local_parameterization);
 
   void RemoveResidualBlock(ResidualBlock* residual_block);
-  void RemoveParameterBlock(double* values);
+  void RemoveParameterBlock(const double* values);
 
-  void SetParameterBlockConstant(double* values);
+  void SetParameterBlockConstant(const double* values);
   void SetParameterBlockVariable(double* values);
-  bool IsParameterBlockConstant(double* values) const;
+  bool IsParameterBlockConstant(const double* values) const;
 
   void SetParameterization(double* values,
                            LocalParameterization* local_parameterization);
-  const LocalParameterization* GetParameterization(double* values) const;
+  const LocalParameterization* GetParameterization(const double* values) const;
 
   void SetParameterLowerBound(double* values, int index, double lower_bound);
   void SetParameterUpperBound(double* values, int index, double upper_bound);
-  double GetParameterLowerBound(double* values, int index) const;
-  double GetParameterUpperBound(double* values, int index) const;
+  double GetParameterLowerBound(const double* values, int index) const;
+  double GetParameterUpperBound(const double* values, int index) const;
 
   bool Evaluate(const Problem::EvaluateOptions& options,
                 double* cost,
                 std::vector<double>* residuals,
                 std::vector<double>* gradient,
                 CRSMatrix* jacobian);
+
+  bool EvaluateResidualBlock(ResidualBlock* residual_block,
+                             bool apply_loss_function,
+                             bool new_point,
+                             double* cost,
+                             double* residuals,
+                             double** jacobians) const;
 
   int NumParameterBlocks() const;
   int NumParameters() const;

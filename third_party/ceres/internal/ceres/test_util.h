@@ -32,6 +32,7 @@
 #define CERES_INTERNAL_TEST_UTIL_H_
 
 #include <string>
+
 #include "ceres/internal/port.h"
 #include "ceres/problem.h"
 #include "ceres/solver.h"
@@ -44,15 +45,20 @@ namespace internal {
 // Expects that x and y have a relative difference of no more than
 // max_abs_relative_difference. If either x or y is zero, then the relative
 // difference is interpreted as an absolute difference.
-bool ExpectClose(double x, double y, double max_abs_relative_difference);
+//
+// If x and y have the same non-finite value (inf or nan) we treat them as being
+// close. In such a case no error is thrown and true is returned.
+CERES_EXPORT_INTERNAL bool ExpectClose(double x,
+                                       double y,
+                                       double max_abs_relative_difference);
 
 // Expects that for all i = 1,.., n - 1
 //
 //   |p[i] - q[i]| / max(|p[i]|, |q[i]|) < tolerance
-void ExpectArraysClose(int n,
-                       const double* p,
-                       const double* q,
-                       double tolerance);
+CERES_EXPORT_INTERNAL void ExpectArraysClose(int n,
+                                             const double* p,
+                                             const double* q,
+                                             double tolerance);
 
 // Expects that for all i = 1,.., n - 1
 //
@@ -60,16 +66,17 @@ void ExpectArraysClose(int n,
 //
 // where max_norm_p and max_norm_q are the max norms of the arrays p
 // and q respectively.
-void ExpectArraysCloseUptoScale(int n,
-                                const double* p,
-                                const double* q,
-                                double tolerance);
+CERES_EXPORT_INTERNAL void ExpectArraysCloseUptoScale(int n,
+                                                      const double* p,
+                                                      const double* q,
+                                                      double tolerance);
 
 // Construct a fully qualified path for the test file depending on the
 // local build/testing environment.
-std::string TestFileAbsolutePath(const std::string& filename);
+CERES_EXPORT_INTERNAL std::string TestFileAbsolutePath(
+    const std::string& filename);
 
-std::string ToString(const Solver::Options& options);
+CERES_EXPORT_INTERNAL std::string ToString(const Solver::Options& options);
 
 // A templated test fixture, that is used for testing Ceres end to end
 // by computing a solution to the problem for a given solver
@@ -80,7 +87,7 @@ std::string ToString(const Solver::Options& options);
 template <typename SystemTestProblem>
 class SystemTest : public ::testing::Test {
  protected:
-  virtual void SetUp() {
+  void SetUp() final {
     SystemTestProblem system_test_problem;
     SolveAndEvaluateFinalResiduals(
         *system_test_problem.mutable_solver_options(),
@@ -113,11 +120,8 @@ class SystemTest : public ::testing::Test {
     Solver::Summary summary;
     Solve(options, problem, &summary);
     CHECK_NE(summary.termination_type, ceres::FAILURE);
-    problem->Evaluate(Problem::EvaluateOptions(),
-                      nullptr,
-                      final_residuals,
-                      nullptr,
-                      nullptr);
+    problem->Evaluate(
+        Problem::EvaluateOptions(), nullptr, final_residuals, nullptr, nullptr);
   }
 
   std::vector<double> expected_final_residuals_;

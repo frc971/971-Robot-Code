@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2019 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -30,16 +30,18 @@
 
 #include "ceres/solver.h"
 
+#include <cmath>
 #include <limits>
 #include <memory>
-#include <cmath>
 #include <vector>
-#include "gtest/gtest.h"
-#include "ceres/evaluation_callback.h"
+
 #include "ceres/autodiff_cost_function.h"
-#include "ceres/sized_cost_function.h"
+#include "ceres/evaluation_callback.h"
+#include "ceres/local_parameterization.h"
 #include "ceres/problem.h"
 #include "ceres/problem_impl.h"
+#include "ceres/sized_cost_function.h"
+#include "gtest/gtest.h"
 
 namespace ceres {
 namespace internal {
@@ -61,8 +63,8 @@ TEST(SolverOptions, DefaultLineSearchOptionsAreValid) {
 }
 
 struct QuadraticCostFunctor {
-  template <typename T> bool operator()(const T* const x,
-                                        T* residual) const {
+  template <typename T>
+  bool operator()(const T* const x, T* residual) const {
     residual[0] = T(5.0) - *x;
     return true;
   }
@@ -74,35 +76,33 @@ struct QuadraticCostFunctor {
 };
 
 struct RememberingCallback : public IterationCallback {
-  explicit RememberingCallback(double *x) : calls(0), x(x) {}
+  explicit RememberingCallback(double* x) : calls(0), x(x) {}
   virtual ~RememberingCallback() {}
-  virtual CallbackReturnType operator()(const IterationSummary& summary) {
+  CallbackReturnType operator()(const IterationSummary& summary) final {
     x_values.push_back(*x);
     return SOLVER_CONTINUE;
   }
   int calls;
-  double *x;
+  double* x;
   std::vector<double> x_values;
 };
 
 struct NoOpEvaluationCallback : EvaluationCallback {
   virtual ~NoOpEvaluationCallback() {}
-  virtual void PrepareForEvaluation(bool evaluate_jacobians,
-                                    bool new_evaluation_point) {
-    (void) evaluate_jacobians;
-    (void) new_evaluation_point;
+  void PrepareForEvaluation(bool evaluate_jacobians,
+                            bool new_evaluation_point) final {
+    (void)evaluate_jacobians;
+    (void)new_evaluation_point;
   }
 };
 
-TEST(Solver, UpdateStateEveryIterationOption) {
+TEST(Solver, UpdateStateEveryIterationOptionNoEvaluationCallback) {
   double x = 50.0;
   const double original_x = x;
 
-  std::unique_ptr<CostFunction> cost_function(QuadraticCostFunctor::Create());
   Problem::Options problem_options;
-  problem_options.cost_function_ownership = DO_NOT_TAKE_OWNERSHIP;
   Problem problem(problem_options);
-  problem.AddResidualBlock(cost_function.get(), NULL, &x);
+  problem.AddResidualBlock(QuadraticCostFunctor::Create(), nullptr, &x);
 
   Solver::Options options;
   options.linear_solver_type = DENSE_QR;
@@ -114,73 +114,104 @@ TEST(Solver, UpdateStateEveryIterationOption) {
 
   int num_iterations;
 
-  // There are four cases that need to be checked:
-  //
-  //   (update_state_every_iteration = true|false) X
-  //   (evaluation_callback = NULL|provided)
-  //
-  // These need to get checked since there is some interaction between them.
-
-  // First: update_state_every_iteration=false, evaluation_callback=NULL.
+  // First: update_state_every_iteration=false, evaluation_callback=nullptr.
   Solve(options, &problem, &summary);
-  num_iterations = summary.num_successful_steps +
-                   summary.num_unsuccessful_steps;
+  num_iterations =
+      summary.num_successful_steps + summary.num_unsuccessful_steps;
   EXPECT_GT(num_iterations, 1);
   for (int i = 0; i < callback.x_values.size(); ++i) {
     EXPECT_EQ(50.0, callback.x_values[i]);
   }
 
-  // Second: update_state_every_iteration=true, evaluation_callback=NULL.
+  // Second: update_state_every_iteration=true, evaluation_callback=nullptr.
   x = 50.0;
   options.update_state_every_iteration = true;
   callback.x_values.clear();
   Solve(options, &problem, &summary);
-  num_iterations = summary.num_successful_steps +
-                   summary.num_unsuccessful_steps;
-  EXPECT_GT(num_iterations, 1);
-  EXPECT_EQ(original_x, callback.x_values[0]);
-  EXPECT_NE(original_x, callback.x_values[1]);
-
-  NoOpEvaluationCallback evaluation_callback;
-
-  // Third: update_state_every_iteration=true, evaluation_callback=!NULL.
-  x = 50.0;
-  options.update_state_every_iteration = true;
-  options.evaluation_callback = &evaluation_callback;
-  callback.x_values.clear();
-  Solve(options, &problem, &summary);
-  num_iterations = summary.num_successful_steps +
-                   summary.num_unsuccessful_steps;
-  EXPECT_GT(num_iterations, 1);
-  EXPECT_EQ(original_x, callback.x_values[0]);
-  EXPECT_NE(original_x, callback.x_values[1]);
-
-  // Fourth: update_state_every_iteration=false, evaluation_callback=!NULL.
-  x = 50.0;
-  options.update_state_every_iteration = false;
-  options.evaluation_callback = &evaluation_callback;
-  callback.x_values.clear();
-  Solve(options, &problem, &summary);
-  num_iterations = summary.num_successful_steps +
-                   summary.num_unsuccessful_steps;
+  num_iterations =
+      summary.num_successful_steps + summary.num_unsuccessful_steps;
   EXPECT_GT(num_iterations, 1);
   EXPECT_EQ(original_x, callback.x_values[0]);
   EXPECT_NE(original_x, callback.x_values[1]);
 }
 
+TEST(Solver, UpdateStateEveryIterationOptionWithEvaluationCallback) {
+  double x = 50.0;
+  const double original_x = x;
+
+  Problem::Options problem_options;
+  NoOpEvaluationCallback evaluation_callback;
+  problem_options.evaluation_callback = &evaluation_callback;
+
+  Problem problem(problem_options);
+  problem.AddResidualBlock(QuadraticCostFunctor::Create(), nullptr, &x);
+
+  Solver::Options options;
+  options.linear_solver_type = DENSE_QR;
+  RememberingCallback callback(&x);
+  options.callbacks.push_back(&callback);
+
+  Solver::Summary summary;
+
+  int num_iterations;
+
+  // First: update_state_every_iteration=true, evaluation_callback=!nullptr.
+  x = 50.0;
+  options.update_state_every_iteration = true;
+  callback.x_values.clear();
+  Solve(options, &problem, &summary);
+  num_iterations =
+      summary.num_successful_steps + summary.num_unsuccessful_steps;
+  EXPECT_GT(num_iterations, 1);
+  EXPECT_EQ(original_x, callback.x_values[0]);
+  EXPECT_NE(original_x, callback.x_values[1]);
+
+  // Second: update_state_every_iteration=false, evaluation_callback=!nullptr.
+  x = 50.0;
+  options.update_state_every_iteration = false;
+  callback.x_values.clear();
+  Solve(options, &problem, &summary);
+  num_iterations =
+      summary.num_successful_steps + summary.num_unsuccessful_steps;
+  EXPECT_GT(num_iterations, 1);
+  EXPECT_EQ(original_x, callback.x_values[0]);
+  EXPECT_NE(original_x, callback.x_values[1]);
+}
+
+TEST(Solver, CantMixEvaluationCallbackWithInnerIterations) {
+  double x = 50.0;
+  double y = 60.0;
+
+  Problem::Options problem_options;
+  NoOpEvaluationCallback evaluation_callback;
+  problem_options.evaluation_callback = &evaluation_callback;
+
+  Problem problem(problem_options);
+  problem.AddResidualBlock(QuadraticCostFunctor::Create(), nullptr, &x);
+  problem.AddResidualBlock(QuadraticCostFunctor::Create(), nullptr, &y);
+
+  Solver::Options options;
+  options.use_inner_iterations = true;
+  Solver::Summary summary;
+  Solve(options, &problem, &summary);
+  EXPECT_EQ(summary.termination_type, FAILURE);
+
+  options.use_inner_iterations = false;
+  Solve(options, &problem, &summary);
+  EXPECT_EQ(summary.termination_type, CONVERGENCE);
+}
+
 // The parameters must be in separate blocks so that they can be individually
 // set constant or not.
 struct Quadratic4DCostFunction {
-  template <typename T> bool operator()(const T* const x,
-                                        const T* const y,
-                                        const T* const z,
-                                        const T* const w,
-                                        T* residual) const {
+  template <typename T>
+  bool operator()(const T* const x,
+                  const T* const y,
+                  const T* const z,
+                  const T* const w,
+                  T* residual) const {
     // A 4-dimension axis-aligned quadratic.
-    residual[0] = T(10.0) - *x +
-                  T(20.0) - *y +
-                  T(30.0) - *z +
-                  T(40.0) - *w;
+    residual[0] = T(10.0) - *x + T(20.0) - *y + T(30.0) - *z + T(40.0) - *w;
     return true;
   }
 
@@ -193,11 +224,11 @@ struct Quadratic4DCostFunction {
 // A cost function that simply returns its argument.
 class UnaryIdentityCostFunction : public SizedCostFunction<1, 1> {
  public:
-  virtual bool Evaluate(double const* const* parameters,
-                        double* residuals,
-                        double** jacobians) const {
+  bool Evaluate(double const* const* parameters,
+                double* residuals,
+                double** jacobians) const final {
     residuals[0] = parameters[0][0];
-    if (jacobians != NULL && jacobians[0] != NULL) {
+    if (jacobians != nullptr && jacobians[0] != nullptr) {
       jacobians[0][0] = 1.0;
     }
     return true;
@@ -259,7 +290,7 @@ TEST(Solver, LineSearchProblemHasZeroResiduals) {
 TEST(Solver, TrustRegionProblemIsConstant) {
   Problem problem;
   double x = 1;
-  problem.AddResidualBlock(new UnaryIdentityCostFunction, NULL, &x);
+  problem.AddResidualBlock(new UnaryIdentityCostFunction, nullptr, &x);
   problem.SetParameterBlockConstant(&x);
   Solver::Options options;
   options.minimizer_type = TRUST_REGION;
@@ -273,7 +304,7 @@ TEST(Solver, TrustRegionProblemIsConstant) {
 TEST(Solver, LineSearchProblemIsConstant) {
   Problem problem;
   double x = 1;
-  problem.AddResidualBlock(new UnaryIdentityCostFunction, NULL, &x);
+  problem.AddResidualBlock(new UnaryIdentityCostFunction, nullptr, &x);
   problem.SetParameterBlockConstant(&x);
   Solver::Options options;
   options.minimizer_type = LINE_SEARCH;
@@ -336,6 +367,15 @@ TEST(Solver, SparseSchurNoAccelerateSparse) {
   string message;
   EXPECT_FALSE(options.IsValid(&message));
 }
+#else
+TEST(Solver, DynamicSparseNormalCholeskyUnsupportedWithAccelerateSparse) {
+  Solver::Options options;
+  options.sparse_linear_algebra_library_type = ACCELERATE_SPARSE;
+  options.linear_solver_type = SPARSE_NORMAL_CHOLESKY;
+  options.dynamic_sparsity = true;
+  string message;
+  EXPECT_FALSE(options.IsValid(&message));
+}
 #endif
 
 #if !defined(CERES_USE_EIGEN_SPARSE)
@@ -382,7 +422,8 @@ TEST(Solver, IterativeSchurWithClusterJacobiPerconditionerNoSparseLibrary) {
   EXPECT_FALSE(options.IsValid(&message));
 }
 
-TEST(Solver, IterativeSchurWithClusterTridiagonalPerconditionerNoSparseLibrary) {
+TEST(Solver,
+     IterativeSchurWithClusterTridiagonalPerconditionerNoSparseLibrary) {
   Solver::Options options;
   options.sparse_linear_algebra_library_type = NO_SPARSE;
   options.linear_solver_type = ITERATIVE_SCHUR;
@@ -417,39 +458,14 @@ TEST(Solver, LinearSolverTypeNormalOperation) {
   EXPECT_TRUE(options.IsValid(&message));
 
   options.linear_solver_type = SPARSE_SCHUR;
-#if defined(CERES_NO_SUITESPARSE) &&            \
-    defined(CERES_NO_CXSPARSE) &&               \
-   !defined(CERES_USE_EIGEN_SPARSE)
+#if defined(CERES_NO_SUITESPARSE) && defined(CERES_NO_CXSPARSE) && \
+    !defined(CERES_USE_EIGEN_SPARSE)
   EXPECT_FALSE(options.IsValid(&message));
 #else
   EXPECT_TRUE(options.IsValid(&message));
 #endif
 
   options.linear_solver_type = ITERATIVE_SCHUR;
-  EXPECT_TRUE(options.IsValid(&message));
-}
-
-TEST(Solver, CantMixEvaluationCallbackWithInnerIterations) {
-  Solver::Options options;
-  NoOpEvaluationCallback evaluation_callback;
-  string message;
-
-  // Can't combine them.
-  options.use_inner_iterations = true;
-  options.evaluation_callback = &evaluation_callback;
-  EXPECT_FALSE(options.IsValid(&message));
-
-  // Either or none is OK.
-  options.use_inner_iterations = false;
-  options.evaluation_callback = &evaluation_callback;
-  EXPECT_TRUE(options.IsValid(&message));
-
-  options.use_inner_iterations = true;
-  options.evaluation_callback = NULL;
-  EXPECT_TRUE(options.IsValid(&message));
-
-  options.use_inner_iterations = false;
-  options.evaluation_callback = NULL;
   EXPECT_TRUE(options.IsValid(&message));
 }
 
@@ -470,7 +486,7 @@ class DummyCostFunction : public SizedCostFunction<kNumResiduals, Ns...> {
 TEST(Solver, FixedCostForConstantProblem) {
   double x = 1.0;
   Problem problem;
-  problem.AddResidualBlock(new DummyCostFunction<2, 1>(), NULL, &x);
+  problem.AddResidualBlock(new DummyCostFunction<2, 1>(), nullptr, &x);
   problem.SetParameterBlockConstant(&x);
   const double expected_cost = 41.0 / 2.0;  // 1/2 * ((4 + 0)^2 + (4 + 1)^2)
   Solver::Options options;
@@ -481,6 +497,39 @@ TEST(Solver, FixedCostForConstantProblem) {
   EXPECT_EQ(summary.initial_cost, expected_cost);
   EXPECT_EQ(summary.final_cost, expected_cost);
   EXPECT_EQ(summary.iterations.size(), 0);
+}
+
+struct LinearCostFunction {
+  template <typename T>
+  bool operator()(const T* x, const T* y, T* residual) const {
+    residual[0] = T(10.0) - *x;
+    residual[1] = T(5.0) - *y;
+    return true;
+  }
+  static CostFunction* Create() {
+    return new AutoDiffCostFunction<LinearCostFunction, 2, 1, 1>(
+        new LinearCostFunction);
+  }
+};
+
+TEST(Solver, ZeroSizedLocalParameterizationHoldsParameterBlockConstant) {
+  double x = 0.0;
+  double y = 1.0;
+  Problem problem;
+  problem.AddResidualBlock(LinearCostFunction::Create(), nullptr, &x, &y);
+  problem.SetParameterization(&y, new SubsetParameterization(1, {0}));
+  EXPECT_TRUE(problem.IsParameterBlockConstant(&y));
+
+  Solver::Options options;
+  options.function_tolerance = 0.0;
+  options.gradient_tolerance = 0.0;
+  options.parameter_tolerance = 0.0;
+  Solver::Summary summary;
+  Solve(options, &problem, &summary);
+
+  EXPECT_EQ(summary.termination_type, CONVERGENCE);
+  EXPECT_NEAR(x, 10.0, 1e-7);
+  EXPECT_EQ(y, 1.0);
 }
 
 }  // namespace internal
