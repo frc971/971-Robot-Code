@@ -70,6 +70,10 @@ EPoll::~EPoll() {
   close(epoll_fd_);
 }
 
+void EPoll::BeforeWait(std::function<void()> function) {
+  before_epoll_wait_functions_.emplace_back(std::move(function));
+}
+
 void EPoll::Run() {
   run_ = true;
   // As long as run_ is true or we still have events to process, keep polling.
@@ -84,6 +88,9 @@ void EPoll::Run() {
 }
 
 bool EPoll::Poll(bool block) {
+  for (const std::function<void()> &function : before_epoll_wait_functions_) {
+    function();
+  }
   // Pull a single event out.  Infinite timeout if we are supposed to be
   // running, and 0 length timeout otherwise.  This lets us flush the event
   // queue before quitting.
@@ -141,13 +148,26 @@ void EPoll::OnWriteable(int fd, ::std::function<void()> function) {
   DoEpollCtl(event_data, event_data->events | kOutEvents);
 }
 
+void EPoll::ForgetClosedFd(int fd) {
+  auto element = fns_.begin();
+  while (fns_.end() != element) {
+    if (element->get()->fd == fd) {
+      fns_.erase(element);
+      return;
+    }
+    ++element;
+  }
+  LOG(FATAL) << "fd " << fd << " not found";
+}
+
 // Removes fd from the event loop.
 void EPoll::DeleteFd(int fd) {
   auto element = fns_.begin();
   while (fns_.end() != element) {
     if (element->get()->fd == fd) {
       fns_.erase(element);
-      PCHECK(epoll_ctl(epoll_fd_, EPOLL_CTL_DEL, fd, nullptr) == 0);
+      PCHECK(epoll_ctl(epoll_fd_, EPOLL_CTL_DEL, fd, nullptr) == 0)
+          << "Failed to delete fd " << fd;
       return;
     }
     ++element;
