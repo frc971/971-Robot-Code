@@ -1,0 +1,12 @@
+{
+  "channels": [
+    {
+      "name": "/analysis",
+      "type": "frc971.analysis.Plot",
+      "max_size": 10000000
+    }
+  ],
+  "imports": [
+    "../../aos/events/aos.json"
+  ]
+}

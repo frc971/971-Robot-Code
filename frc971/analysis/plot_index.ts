@@ -24,6 +24,7 @@ import * as configuration from 'org_frc971/aos/configuration_generated';
 import * as proxy from 'org_frc971/aos/network/www/proxy';
 import {plotImu} from 'org_frc971/frc971/wpilib/imu_plotter';
 import {plotDemo} from 'org_frc971/aos/network/www/demo_plot';
+import {plotData} from 'org_frc971/frc971/analysis/plot_data_utils';
 
 import Connection = proxy.Connection;
 import Configuration = configuration.aos.Configuration;
@@ -77,7 +78,8 @@ rootDiv.appendChild(plotDiv);
 // presence of certain channels.
 const plotIndex = new Map<string, PlotState>([
   ['Demo', new PlotState(plotDiv, plotDemo)],
-  ['IMU', new PlotState(plotDiv, plotImu)]
+  ['IMU', new PlotState(plotDiv, plotImu)],
+  ['C++ Plotter', new PlotState(plotDiv, plotData)],
 ]);
 
 const invalidSelectValue = 'null';

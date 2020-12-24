@@ -178,7 +178,7 @@ class Connection : public webrtc::PeerConnectionObserver,
       rtc::scoped_refptr<webrtc::DataChannelInterface> channel) override;
   void OnRenegotiationNeeded() override {}
   void OnIceConnectionChange(
-      webrtc::PeerConnectionInterface::IceConnectionState state) override {}
+      webrtc::PeerConnectionInterface::IceConnectionState /*state*/) override {}
   void OnIceGatheringChange(
       webrtc::PeerConnectionInterface::IceGatheringState) override {}
   void OnIceCandidate(const webrtc::IceCandidateInterface *candidate) override;
@@ -186,7 +186,7 @@ class Connection : public webrtc::PeerConnectionObserver,
 
   // CreateSessionDescriptionObserver implementation
   void OnSuccess(webrtc::SessionDescriptionInterface *desc) override;
-  void OnFailure(webrtc::RTCError error) override {}
+  void OnFailure(webrtc::RTCError /*error*/) override {}
   // CreateSessionDescriptionObserver is a refcounted object
   void AddRef() const override {}
   // We handle ownership with a unique_ptr so don't worry about actually
@@ -198,7 +198,7 @@ class Connection : public webrtc::PeerConnectionObserver,
   // DataChannelObserver implementation
   void OnStateChange() override;
   void OnMessage(const webrtc::DataBuffer &buffer) override;
-  void OnBufferedAmountChange(uint64_t sent_data_size) override {}
+  void OnBufferedAmountChange(uint64_t /*sent_data_size*/) override {}
 
  private:
   ::seasocks::WebSocket *sock_;

@@ -3,6 +3,8 @@ package(default_visibility = ["//visibility:public"])
 load("@npm_bazel_typescript//:defs.bzl", "ts_library")
 load("@com_google_protobuf//:protobuf.bzl", "py_proto_library")
 load("@build_bazel_rules_nodejs//:defs.bzl", "nodejs_binary", "rollup_bundle")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_ts_library")
+load("//aos:config.bzl", "aos_config")
 
 py_binary(
     name = "plot_action",
@@ -89,6 +91,7 @@ ts_library(
     srcs = ["plot_index.ts"],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
+        ":plot_data_utils",
         "//aos:configuration_ts_fbs",
         "//aos/network/www:demo_plot",
         "//aos/network/www:proxy",
@@ -133,4 +136,76 @@ sh_binary(
         "//aos/network/www:test_config",
     ],
     target_compatible_with = ["@platforms//os:linux"],
+)
+
+flatbuffer_cc_library(
+    name = "plot_data_fbs",
+    srcs = [
+        "plot_data.fbs",
+    ],
+    gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
+)
+
+flatbuffer_ts_library(
+    name = "plot_data_ts_fbs",
+    srcs = [
+        "plot_data.fbs",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+)
+
+ts_library(
+    name = "plot_data_utils",
+    srcs = ["plot_data_utils.ts"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":plot_data_ts_fbs",
+        "//aos:configuration_ts_fbs",
+        "//aos/network/www:aos_plotter",
+        "//aos/network/www:plotter",
+        "//aos/network/www:proxy",
+        "@com_github_google_flatbuffers//ts:flatbuffers_ts",
+    ],
+)
+
+aos_config(
+    name = "plotter",
+    src = "plotter_config.json",
+    flatbuffers = [":plot_data_fbs"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = ["//aos/events:config"],
+)
+
+cc_library(
+    name = "in_process_plotter",
+    srcs = ["in_process_plotter.cc"],
+    hdrs = ["in_process_plotter.h"],
+    copts = [
+        "-DWEBRTC_POSIX",
+    ],
+    deps = [
+        ":plot_data_fbs",
+        "//aos/events:simulated_event_loop",
+        "//aos/network:web_proxy",
+    ],
+)
+
+cc_binary(
+    name = "in_process_plotter_demo",
+    srcs = ["in_process_plotter_demo.cc"],
+    copts = [
+        "-DWEBRTC_POSIX",
+    ],
+    data = [
+        ":plotter",
+        ":plotter_files",
+    ],
+    # Tagged manual until we either get the linker working with the current
+    # WebRTC implementation or we get a new implementation.
+    tags = ["manual"],
+    deps = [
+        ":in_process_plotter",
+        "//aos:init",
+    ],
 )

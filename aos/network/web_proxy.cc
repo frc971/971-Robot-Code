@@ -7,6 +7,7 @@
 #include "aos/seasocks/seasocks_logger.h"
 #include "api/create_peerconnection_factory.h"
 #include "glog/logging.h"
+#include "internal/Embedded.h"
 
 namespace aos {
 namespace web_proxy {
@@ -22,7 +23,7 @@ class DummySetSessionDescriptionObserver
     return new rtc::RefCountedObject<DummySetSessionDescriptionObserver>();
   }
   virtual void OnSuccess() {}
-  virtual void OnFailure(webrtc::RTCError error) {}
+  virtual void OnFailure(webrtc::RTCError /*error*/) {}
 };
 
 }  // namespace
@@ -32,6 +33,8 @@ WebsocketHandler::WebsocketHandler(::seasocks::Server *server,
     : server_(server),
       config_(aos::CopyFlatBuffer(event_loop->configuration())),
       event_loop_(event_loop) {
+  // We need to reference findEmbeddedContent() to make the linker happy...
+  findEmbeddedContent("");
   const aos::Node *self = event_loop->node();
 
   for (uint i = 0; i < event_loop->configuration()->channels()->size(); ++i) {
@@ -276,11 +279,14 @@ Connection::Connection(
 // Function called for web socket data. Parses the flatbuffer and
 // handles it appropriately.
 void Connection::HandleWebSocketData(const uint8_t *data, size_t size) {
-  const WebSocketMessage *message =
-      flatbuffers::GetRoot<WebSocketMessage>(data);
-  switch (message->payload_type()) {
+  const FlatbufferSpan<WebSocketMessage> message({data, size});
+  if (!message.Verify()) {
+    LOG(ERROR) << "Invalid WebsocketMessage received from browser.";
+    return;
+  }
+  switch (message.message().payload_type()) {
     case Payload::WebSocketSdp: {
-      const WebSocketSdp *offer = message->payload_as_WebSocketSdp();
+      const WebSocketSdp *offer = message.message().payload_as_WebSocketSdp();
       if (offer->type() != SdpType::OFFER) {
         LOG(WARNING) << "Got the wrong sdp type from client";
         break;
@@ -325,7 +331,7 @@ void Connection::HandleWebSocketData(const uint8_t *data, size_t size) {
       break;
     }
     case Payload::WebSocketIce: {
-      const WebSocketIce *ice = message->payload_as_WebSocketIce();
+      const WebSocketIce *ice = message.message().payload_as_WebSocketIce();
       std::string candidate = ice->candidate()->str();
       std::string sdpMid = ice->sdpMid()->str();
       int sdpMLineIndex = ice->sdpMLineIndex();

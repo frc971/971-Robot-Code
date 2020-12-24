@@ -1,0 +1,53 @@
+// This flatbuffer defines the interface that is used by the in-process
+// web plotter to plot data dynamically. Both the structure of the plot and
+// the data to plot is all packaged within a single Plot message. Each Plot
+// message will correspond to a single view/tab on the web-page, and can have
+// multiple figures, each of which can have multiple lines.
+namespace frc971.analysis;
+
+// Position within the web-page to plot a figure at. [0, 0] will be the upper
+// left corner of the allowable places where plots can be put, and should
+// generally be the default location. All values in pixels.
+table Position {
+  top:float (id: 0);
+  left:float (id: 1);
+  width:float (id: 2);
+  height:float (id: 3);
+}
+
+struct Point {
+  x:double (id: 0);
+  y:double (id: 1);
+}
+
+// RGB values are in the range [0, 1].
+struct Color {
+  r:float (id: 0);
+  g:float (id: 1);
+  b:float (id: 2);
+}
+
+table Line {
+  label:string (id: 0);
+  points:[Point] (id: 1);
+  color:Color (id: 2);
+}
+
+table Figure {
+  position:Position (id: 0);
+  lines:[Line] (id: 1);
+  // Specifies whether to link the x-axis of this Figure with that of other
+  // figures in this Plot. Only the axes of Figure's with this flag set will
+  // be linked.
+  share_x_axis:bool (id: 2);
+  title:string (id: 3);
+  xlabel:string (id: 4);
+  ylabel:string (id: 5);
+}
+
+table Plot {
+  figures:[Figure] (id: 0);
+  title:string (id: 1);
+}
+
+root_type Plot;

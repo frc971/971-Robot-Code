@@ -9,12 +9,7 @@
 #include "aos/flatbuffer_merge.h"
 #include "aos/init.h"
 #include "aos/network/web_proxy.h"
-#include "aos/seasocks/seasocks_logger.h"
 #include "gflags/gflags.h"
-
-#include "internal/Embedded.h"
-#include "seasocks/Server.h"
-#include "seasocks/WebSocket.h"
 
 DEFINE_string(data_dir, "www", "Directory to serve data files from");
 DEFINE_string(node, "", "Directory to serve data files from");
@@ -22,8 +17,6 @@ DEFINE_int32(buffer_size, -1, "-1 if infinite, in # of messages / channel.");
 
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
-  // Make sure to reference this to force the linker to include it.
-  findEmbeddedContent("");
 
   const std::vector<std::string> unsorted_logfiles =
       aos::logger::FindLogs(argc, argv);

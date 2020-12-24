@@ -389,11 +389,11 @@ cc_library(
     hdrs = ["web_proxy.h"],
     copts = [
         "-DWEBRTC_POSIX",
-        "-Wno-unused-parameter",
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":connect_fbs",
+        ":gen_embedded",
         ":web_proxy_fbs",
         ":web_proxy_utils",
         "//aos/events:shm_event_loop",
@@ -419,7 +419,6 @@ cc_binary(
     srcs = ["web_proxy_main.cc"],
     copts = [
         "-DWEBRTC_POSIX",
-        "-Wno-unused-parameter",
     ],
     data = [
         "//aos/network/www:files",
@@ -428,12 +427,9 @@ cc_binary(
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
-        ":gen_embedded",
         ":web_proxy",
         "//aos:init",
         "//aos/events:shm_event_loop",
-        "//aos/seasocks:seasocks_logger",
-        "//third_party/seasocks",
         "@com_github_google_flatbuffers//:flatbuffers",
     ],
 )
@@ -446,16 +442,12 @@ cc_binary(
     ],
     copts = [
         "-DWEBRTC_POSIX",
-        "-Wno-unused-parameter",
     ],
     deps = [
-        ":gen_embedded",
         ":web_proxy",
         "//aos:init",
         "//aos/events:simulated_event_loop",
         "//aos/events/logging:logger",
-        "//aos/seasocks:seasocks_logger",
-        "//third_party/seasocks",
         "@com_github_google_flatbuffers//:flatbuffers",
     ],
 )
