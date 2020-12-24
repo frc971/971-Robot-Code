@@ -25,7 +25,7 @@ covariance. Then the maximum likelihood estimate of :math:`x` given
 observations :math:`y` is the solution to the non-linear least squares
 problem:
 
-.. math:: x^* = \arg \min_x \|f(x)\|^2
+.. math:: x^* = \arg \min_x \|f(x) - y\|^2
 
 And the covariance of :math:`x^*` is given by
 
@@ -169,18 +169,18 @@ cases.
       :member:`Covaraince::Options::sparse_linear_algebra_library_type`
       to ``SUITE_SPARSE``.
 
-      Neither ``SPARSE_QR`` cannot compute the covariance if the
+      ``SPARSE_QR`` cannot compute the covariance if the
       Jacobian is rank deficient.
 
 
    2. ``DENSE_SVD`` uses ``Eigen``'s ``JacobiSVD`` to perform the
       computations. It computes the singular value decomposition
 
-      .. math::   U S V^\top = J
+      .. math::   U D V^\top = J
 
       and then uses it to compute the pseudo inverse of J'J as
 
-      .. math::   (J'J)^{\dagger} = V  S^{\dagger}  V^\top
+      .. math::   (J'J)^{\dagger} = V  D^{2\dagger}  V^\top
 
       It is an accurate but slow method and should only be used for
       small to moderate sized problems. It can handle full-rank as
@@ -207,7 +207,7 @@ cases.
 
      (J'J)^{-1} = \begin{bmatrix}
                   2.0471e+14&  -2.0471e+14 \\
-                  -2.0471e+14   2.0471e+14
+                  -2.0471e+14&   2.0471e+14
                   \end{bmatrix}
 
 

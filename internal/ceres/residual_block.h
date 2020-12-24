@@ -65,7 +65,7 @@ class ParameterBlock;
 //
 // The residual block stores pointers to but does not own the cost functions,
 // loss functions, and parameter blocks.
-class ResidualBlock {
+class CERES_EXPORT_INTERNAL ResidualBlock {
  public:
   // Construct the residual block with the given cost/loss functions. Loss may
   // be null. The index is the index of the residual block in the Program's
@@ -81,6 +81,8 @@ class ResidualBlock {
   // residuals are not computed. If jacobians is NULL, no jacobians are
   // computed. If jacobians[i] is NULL, then the jacobian for that parameter is
   // not computed.
+  //
+  // cost must not be null.
   //
   // Evaluate needs scratch space which must be supplied by the caller via
   // scratch. The array should have at least NumScratchDoublesForEvaluate()
@@ -102,7 +104,6 @@ class ResidualBlock {
                 double* residuals,
                 double** jacobians,
                 double* scratch) const;
-
 
   const CostFunction* cost_function() const { return cost_function_; }
   const LossFunction* loss_function() const { return loss_function_; }

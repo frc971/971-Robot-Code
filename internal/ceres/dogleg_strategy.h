@@ -31,6 +31,7 @@
 #ifndef CERES_INTERNAL_DOGLEG_STRATEGY_H_
 #define CERES_INTERNAL_DOGLEG_STRATEGY_H_
 
+#include "ceres/internal/port.h"
 #include "ceres/linear_solver.h"
 #include "ceres/trust_region_strategy.h"
 
@@ -52,21 +53,20 @@ namespace internal {
 // DoglegStrategy follows the approach by Shultz, Schnabel, Byrd.
 // This finds the exact optimum over the two-dimensional subspace
 // spanned by the two Dogleg vectors.
-class DoglegStrategy : public TrustRegionStrategy {
+class CERES_EXPORT_INTERNAL DoglegStrategy : public TrustRegionStrategy {
  public:
   explicit DoglegStrategy(const TrustRegionStrategy::Options& options);
   virtual ~DoglegStrategy() {}
 
   // TrustRegionStrategy interface
-  virtual Summary ComputeStep(const PerSolveOptions& per_solve_options,
-                              SparseMatrix* jacobian,
-                              const double* residuals,
-                              double* step);
-  virtual void StepAccepted(double step_quality);
-  virtual void StepRejected(double step_quality);
-  virtual void StepIsInvalid();
-
-  virtual double Radius() const;
+  Summary ComputeStep(const PerSolveOptions& per_solve_options,
+                      SparseMatrix* jacobian,
+                      const double* residuals,
+                      double* step) final;
+  void StepAccepted(double step_quality) final;
+  void StepRejected(double step_quality) final;
+  void StepIsInvalid();
+  double Radius() const final;
 
   // These functions are predominantly for testing.
   Vector gradient() const { return gradient_; }

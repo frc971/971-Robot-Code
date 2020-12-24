@@ -32,6 +32,8 @@
 
 #include <memory>
 #include <numeric>
+
+#include "Eigen/SparseCore"
 #include "ceres/casts.h"
 #include "ceres/crs_matrix.h"
 #include "ceres/internal/eigen.h"
@@ -41,14 +43,12 @@
 #include "glog/logging.h"
 #include "gtest/gtest.h"
 
-#include "Eigen/SparseCore"
-
 namespace ceres {
 namespace internal {
 
 using std::vector;
 
-void CompareMatrices(const SparseMatrix* a, const SparseMatrix* b) {
+static void CompareMatrices(const SparseMatrix* a, const SparseMatrix* b) {
   EXPECT_EQ(a->num_rows(), b->num_rows());
   EXPECT_EQ(a->num_cols(), b->num_cols());
 
@@ -71,7 +71,7 @@ void CompareMatrices(const SparseMatrix* a, const SparseMatrix* b) {
 
 class CompressedRowSparseMatrixTest : public ::testing::Test {
  protected:
-  virtual void SetUp() {
+  void SetUp() final {
     std::unique_ptr<LinearLeastSquaresProblem> problem(
         CreateLinearLeastSquaresProblemFromId(1));
 
@@ -380,7 +380,7 @@ TEST(CompressedRowSparseMatrix, FromTripletSparseMatrixTransposed) {
 
 typedef ::testing::tuple<CompressedRowSparseMatrix::StorageType> Param;
 
-std::string ParamInfoToString(testing::TestParamInfo<Param> info) {
+static std::string ParamInfoToString(testing::TestParamInfo<Param> info) {
   if (::testing::get<0>(info.param) ==
       CompressedRowSparseMatrix::UPPER_TRIANGULAR) {
     return "UPPER";
@@ -445,16 +445,17 @@ TEST_P(RightMultiplyTest, _) {
                   0.0,
                   std::numeric_limits<double>::epsilon() * 10)
           << "\n"
-          << dense
-          << "x:\n"
+          << dense << "x:\n"
           << x.transpose() << "\n"
-          << "expected: \n" << expected_y.transpose() << "\n"
-          << "actual: \n" << actual_y.transpose();
+          << "expected: \n"
+          << expected_y.transpose() << "\n"
+          << "actual: \n"
+          << actual_y.transpose();
     }
   }
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     CompressedRowSparseMatrix,
     RightMultiplyTest,
     ::testing::Values(CompressedRowSparseMatrix::LOWER_TRIANGULAR,
@@ -513,16 +514,17 @@ TEST_P(LeftMultiplyTest, _) {
                   0.0,
                   std::numeric_limits<double>::epsilon() * 10)
           << "\n"
-          << dense
-          << "x\n"
+          << dense << "x\n"
           << x.transpose() << "\n"
-          << "expected: \n" << expected_y.transpose() << "\n"
-          << "actual: \n" << actual_y.transpose();
+          << "expected: \n"
+          << expected_y.transpose() << "\n"
+          << "actual: \n"
+          << actual_y.transpose();
     }
   }
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     CompressedRowSparseMatrix,
     LeftMultiplyTest,
     ::testing::Values(CompressedRowSparseMatrix::LOWER_TRIANGULAR,
@@ -579,21 +581,21 @@ TEST_P(SquaredColumnNormTest, _) {
                   0.0,
                   std::numeric_limits<double>::epsilon() * 10)
           << "\n"
-          << dense
-          << "expected: \n" << expected.transpose() << "\n"
-          << "actual: \n" << actual.transpose();
+          << dense << "expected: \n"
+          << expected.transpose() << "\n"
+          << "actual: \n"
+          << actual.transpose();
     }
   }
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     CompressedRowSparseMatrix,
     SquaredColumnNormTest,
     ::testing::Values(CompressedRowSparseMatrix::LOWER_TRIANGULAR,
                       CompressedRowSparseMatrix::UPPER_TRIANGULAR,
                       CompressedRowSparseMatrix::UNSYMMETRIC),
     ParamInfoToString);
-
 
 // TODO(sameeragarwal) Add tests for the random matrix creation methods.
 

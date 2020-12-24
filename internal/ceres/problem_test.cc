@@ -30,9 +30,10 @@
 //         keir@google.com (Keir Mierle)
 
 #include "ceres/problem.h"
-#include "ceres/problem_impl.h"
 
 #include <memory>
+
+#include "ceres/autodiff_cost_function.h"
 #include "ceres/casts.h"
 #include "ceres/cost_function.h"
 #include "ceres/crs_matrix.h"
@@ -42,10 +43,12 @@
 #include "ceres/loss_function.h"
 #include "ceres/map_util.h"
 #include "ceres/parameter_block.h"
+#include "ceres/problem_impl.h"
 #include "ceres/program.h"
 #include "ceres/sized_cost_function.h"
 #include "ceres/sparse_matrix.h"
 #include "ceres/types.h"
+#include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
 namespace ceres {
@@ -63,11 +66,12 @@ class UnaryCostFunction : public CostFunction {
     set_num_residuals(num_residuals);
     mutable_parameter_block_sizes()->push_back(parameter_block_size);
   }
+
   virtual ~UnaryCostFunction() {}
 
-  virtual bool Evaluate(double const* const* parameters,
-                        double* residuals,
-                        double** jacobians) const {
+  bool Evaluate(double const* const* parameters,
+                double* residuals,
+                double** jacobians) const final {
     for (int i = 0; i < num_residuals(); ++i) {
       residuals[i] = 1;
     }
@@ -76,7 +80,7 @@ class UnaryCostFunction : public CostFunction {
 };
 
 // Trivial cost function that accepts two arguments.
-class BinaryCostFunction: public CostFunction {
+class BinaryCostFunction : public CostFunction {
  public:
   BinaryCostFunction(int num_residuals,
                      int32_t parameter_block1_size,
@@ -86,9 +90,9 @@ class BinaryCostFunction: public CostFunction {
     mutable_parameter_block_sizes()->push_back(parameter_block2_size);
   }
 
-  virtual bool Evaluate(double const* const* parameters,
-                        double* residuals,
-                        double** jacobians) const {
+  bool Evaluate(double const* const* parameters,
+                double* residuals,
+                double** jacobians) const final {
     for (int i = 0; i < num_residuals(); ++i) {
       residuals[i] = 2;
     }
@@ -97,7 +101,7 @@ class BinaryCostFunction: public CostFunction {
 };
 
 // Trivial cost function that accepts three arguments.
-class TernaryCostFunction: public CostFunction {
+class TernaryCostFunction : public CostFunction {
  public:
   TernaryCostFunction(int num_residuals,
                       int32_t parameter_block1_size,
@@ -109,15 +113,32 @@ class TernaryCostFunction: public CostFunction {
     mutable_parameter_block_sizes()->push_back(parameter_block3_size);
   }
 
-  virtual bool Evaluate(double const* const* parameters,
-                        double* residuals,
-                        double** jacobians) const {
+  bool Evaluate(double const* const* parameters,
+                double* residuals,
+                double** jacobians) const final {
     for (int i = 0; i < num_residuals(); ++i) {
       residuals[i] = 3;
     }
     return true;
   }
 };
+
+TEST(Problem, MoveConstructor) {
+  Problem src;
+  double x;
+  src.AddParameterBlock(&x, 1);
+  Problem dst(std::move(src));
+  EXPECT_TRUE(dst.HasParameterBlock(&x));
+}
+
+TEST(Problem, MoveAssignment) {
+  Problem src;
+  double x;
+  src.AddParameterBlock(&x, 1);
+  Problem dst;
+  dst = std::move(src);
+  EXPECT_TRUE(dst.HasParameterBlock(&x));
+}
 
 TEST(Problem, AddResidualWithNullCostFunctionDies) {
   double x[3], y[4], z[5];
@@ -150,23 +171,23 @@ TEST(Problem, AddResidualWithDifferentSizesOnTheSameVariableDies) {
 
   Problem problem;
   problem.AddResidualBlock(new UnaryCostFunction(2, 3), NULL, x);
-  EXPECT_DEATH_IF_SUPPORTED(problem.AddResidualBlock(
-                                new UnaryCostFunction(
-                                    2, 4 /* 4 != 3 */), NULL, x),
-                            "different block sizes");
+  EXPECT_DEATH_IF_SUPPORTED(
+      problem.AddResidualBlock(
+          new UnaryCostFunction(2, 4 /* 4 != 3 */), NULL, x),
+      "different block sizes");
 }
 
 TEST(Problem, AddResidualWithDuplicateParametersDies) {
   double x[3], z[5];
 
   Problem problem;
-  EXPECT_DEATH_IF_SUPPORTED(problem.AddResidualBlock(
-                                new BinaryCostFunction(2, 3, 3), NULL, x, x),
-                            "Duplicate parameter blocks");
-  EXPECT_DEATH_IF_SUPPORTED(problem.AddResidualBlock(
-                                new TernaryCostFunction(1, 5, 3, 5),
-                                NULL, z, x, z),
-                            "Duplicate parameter blocks");
+  EXPECT_DEATH_IF_SUPPORTED(
+      problem.AddResidualBlock(new BinaryCostFunction(2, 3, 3), NULL, x, x),
+      "Duplicate parameter blocks");
+  EXPECT_DEATH_IF_SUPPORTED(
+      problem.AddResidualBlock(
+          new TernaryCostFunction(1, 5, 3, 5), NULL, z, x, z),
+      "Duplicate parameter blocks");
 }
 
 TEST(Problem, AddResidualWithIncorrectSizesOfParameterBlockDies) {
@@ -179,9 +200,9 @@ TEST(Problem, AddResidualWithIncorrectSizesOfParameterBlockDies) {
 
   // The cost function expects the size of the second parameter, z, to be 4
   // instead of 5 as declared above. This is fatal.
-  EXPECT_DEATH_IF_SUPPORTED(problem.AddResidualBlock(
-      new BinaryCostFunction(2, 3, 4), NULL, x, z),
-               "different block sizes");
+  EXPECT_DEATH_IF_SUPPORTED(
+      problem.AddResidualBlock(new BinaryCostFunction(2, 3, 4), NULL, x, z),
+      "different block sizes");
 }
 
 TEST(Problem, AddResidualAddsDuplicatedParametersOnlyOnce) {
@@ -208,7 +229,7 @@ TEST(Problem, AddParameterWithDifferentSizesOnTheSameVariableDies) {
                             "different block sizes");
 }
 
-static double *IntToPtr(int i) {
+static double* IntToPtr(int i) {
   return reinterpret_cast<double*>(sizeof(double) * i);  // NOLINT
 }
 
@@ -224,16 +245,16 @@ TEST(Problem, AddParameterWithAliasedParametersDies) {
   // ones marked with o==o and aliasing ones marked with o--o.
 
   Problem problem;
-  problem.AddParameterBlock(IntToPtr(5),  5);  // x
+  problem.AddParameterBlock(IntToPtr(5), 5);   // x
   problem.AddParameterBlock(IntToPtr(13), 3);  // y
 
-  EXPECT_DEATH_IF_SUPPORTED(problem.AddParameterBlock(IntToPtr( 4), 2),
+  EXPECT_DEATH_IF_SUPPORTED(problem.AddParameterBlock(IntToPtr(4), 2),
                             "Aliasing detected");
-  EXPECT_DEATH_IF_SUPPORTED(problem.AddParameterBlock(IntToPtr( 4), 3),
+  EXPECT_DEATH_IF_SUPPORTED(problem.AddParameterBlock(IntToPtr(4), 3),
                             "Aliasing detected");
-  EXPECT_DEATH_IF_SUPPORTED(problem.AddParameterBlock(IntToPtr( 4), 9),
+  EXPECT_DEATH_IF_SUPPORTED(problem.AddParameterBlock(IntToPtr(4), 9),
                             "Aliasing detected");
-  EXPECT_DEATH_IF_SUPPORTED(problem.AddParameterBlock(IntToPtr( 8), 3),
+  EXPECT_DEATH_IF_SUPPORTED(problem.AddParameterBlock(IntToPtr(8), 3),
                             "Aliasing detected");
   EXPECT_DEATH_IF_SUPPORTED(problem.AddParameterBlock(IntToPtr(12), 2),
                             "Aliasing detected");
@@ -241,7 +262,7 @@ TEST(Problem, AddParameterWithAliasedParametersDies) {
                             "Aliasing detected");
 
   // These ones should work.
-  problem.AddParameterBlock(IntToPtr( 2), 3);
+  problem.AddParameterBlock(IntToPtr(2), 3);
   problem.AddParameterBlock(IntToPtr(10), 3);
   problem.AddParameterBlock(IntToPtr(16), 2);
 
@@ -284,17 +305,20 @@ TEST(Problem, AddingParametersAndResidualsResultsInExpectedProblem) {
   EXPECT_EQ(7, problem.NumParameters());
 
   problem.AddParameterBlock(z, 5);
-  EXPECT_EQ(3,  problem.NumParameterBlocks());
+  EXPECT_EQ(3, problem.NumParameterBlocks());
   EXPECT_EQ(12, problem.NumParameters());
 
   // Add a parameter that has a local parameterization.
-  w[0] = 1.0; w[1] = 0.0; w[2] = 0.0; w[3] = 0.0;
+  w[0] = 1.0;
+  w[1] = 0.0;
+  w[2] = 0.0;
+  w[3] = 0.0;
   problem.AddParameterBlock(w, 4, new QuaternionParameterization);
-  EXPECT_EQ(4,  problem.NumParameterBlocks());
+  EXPECT_EQ(4, problem.NumParameterBlocks());
   EXPECT_EQ(16, problem.NumParameters());
 
   problem.AddResidualBlock(new UnaryCostFunction(2, 3), NULL, x);
-  problem.AddResidualBlock(new BinaryCostFunction(6, 5, 4) , NULL, z, y);
+  problem.AddResidualBlock(new BinaryCostFunction(6, 5, 4), NULL, z, y);
   problem.AddResidualBlock(new BinaryCostFunction(3, 3, 5), NULL, x, z);
   problem.AddResidualBlock(new BinaryCostFunction(7, 5, 3), NULL, z, x);
   problem.AddResidualBlock(new TernaryCostFunction(1, 5, 3, 4), NULL, z, x, y);
@@ -306,16 +330,14 @@ TEST(Problem, AddingParametersAndResidualsResultsInExpectedProblem) {
 
 class DestructorCountingCostFunction : public SizedCostFunction<3, 4, 5> {
  public:
-  explicit DestructorCountingCostFunction(int *num_destructions)
+  explicit DestructorCountingCostFunction(int* num_destructions)
       : num_destructions_(num_destructions) {}
 
-  virtual ~DestructorCountingCostFunction() {
-    *num_destructions_ += 1;
-  }
+  virtual ~DestructorCountingCostFunction() { *num_destructions_ += 1; }
 
-  virtual bool Evaluate(double const* const* parameters,
-                        double* residuals,
-                        double** jacobians) const {
+  bool Evaluate(double const* const* parameters,
+                double* residuals,
+                double** jacobians) const final {
     return true;
   }
 
@@ -441,8 +463,7 @@ struct DynamicProblem : public ::testing::TestWithParam<bool> {
   // The next block of functions until the end are only for testing the
   // residual block removals.
   void ExpectParameterBlockContainsResidualBlock(
-      double* values,
-      ResidualBlock* residual_block) {
+      double* values, ResidualBlock* residual_block) {
     ParameterBlock* parameter_block =
         FindOrDie(problem->parameter_map(), values);
     EXPECT_TRUE(ContainsKey(*(parameter_block->mutable_residual_blocks()),
@@ -456,12 +477,9 @@ struct DynamicProblem : public ::testing::TestWithParam<bool> {
   }
 
   // Degenerate case.
-  void ExpectParameterBlockContains(double* values) {
-    ExpectSize(values, 0);
-  }
+  void ExpectParameterBlockContains(double* values) { ExpectSize(values, 0); }
 
-  void ExpectParameterBlockContains(double* values,
-                                    ResidualBlock* r1) {
+  void ExpectParameterBlockContains(double* values, ResidualBlock* r1) {
     ExpectSize(values, 1);
     ExpectParameterBlockContainsResidualBlock(values, r1);
   }
@@ -576,8 +594,8 @@ TEST(Problem, RemoveParameterBlockWithUnknownPtrDies) {
   Problem problem;
   problem.AddParameterBlock(x, 3);
 
-  EXPECT_DEATH_IF_SUPPORTED(
-      problem.RemoveParameterBlock(y), "Parameter block not found:");
+  EXPECT_DEATH_IF_SUPPORTED(problem.RemoveParameterBlock(y),
+                            "Parameter block not found:");
 }
 
 TEST(Problem, GetParameterization) {
@@ -588,7 +606,7 @@ TEST(Problem, GetParameterization) {
   problem.AddParameterBlock(x, 3);
   problem.AddParameterBlock(y, 2);
 
-  LocalParameterization* parameterization =  new IdentityParameterization(3);
+  LocalParameterization* parameterization = new IdentityParameterization(3);
   problem.SetParameterization(x, parameterization);
   EXPECT_EQ(problem.GetParameterization(x), parameterization);
   EXPECT_TRUE(problem.GetParameterization(y) == NULL);
@@ -604,8 +622,7 @@ TEST(Problem, ParameterBlockQueryTest) {
   vector<int> constant_parameters;
   constant_parameters.push_back(0);
   problem.SetParameterization(
-      x,
-      new SubsetParameterization(3, constant_parameters));
+      x, new SubsetParameterization(3, constant_parameters));
   EXPECT_EQ(problem.ParameterBlockSize(x), 3);
   EXPECT_EQ(problem.ParameterBlockLocalSize(x), 2);
   EXPECT_EQ(problem.ParameterBlockLocalSize(y), 4);
@@ -692,6 +709,8 @@ TEST_P(DynamicProblem, RemoveParameterBlockWithResiduals) {
   EXPECT_EQ(z, GetParameterBlock(1)->user_state());
   EXPECT_EQ(w, GetParameterBlock(2)->user_state());
 
+  // clang-format off
+
   // Add all combinations of cost functions.
   CostFunction* cost_yzw = new TernaryCostFunction(1, 4, 5, 3);
   CostFunction* cost_yz  = new BinaryCostFunction (1, 4, 5);
@@ -742,12 +761,16 @@ TEST_P(DynamicProblem, RemoveParameterBlockWithResiduals) {
   problem->RemoveParameterBlock(y);
   EXPECT_EQ(0, problem->NumParameterBlocks());
   EXPECT_EQ(0, NumResidualBlocks());
+
+  // clang-format on
 }
 
 TEST_P(DynamicProblem, RemoveResidualBlock) {
   problem->AddParameterBlock(y, 4);
   problem->AddParameterBlock(z, 5);
   problem->AddParameterBlock(w, 3);
+
+  // clang-format off
 
   // Add all combinations of cost functions.
   CostFunction* cost_yzw = new TernaryCostFunction(1, 4, 5, 3);
@@ -863,12 +886,16 @@ TEST_P(DynamicProblem, RemoveResidualBlock) {
     ExpectParameterBlockContains(z);
     ExpectParameterBlockContains(w);
   }
+
+  // clang-format on
 }
 
 TEST_P(DynamicProblem, RemoveInvalidResidualBlockDies) {
   problem->AddParameterBlock(y, 4);
   problem->AddParameterBlock(z, 5);
   problem->AddParameterBlock(w, 3);
+
+  // clang-format off
 
   // Add all combinations of cost functions.
   CostFunction* cost_yzw = new TernaryCostFunction(1, 4, 5, 3);
@@ -886,6 +913,8 @@ TEST_P(DynamicProblem, RemoveInvalidResidualBlockDies) {
   ResidualBlock* r_y   = problem->AddResidualBlock(cost_y,   NULL, y);
   ResidualBlock* r_z   = problem->AddResidualBlock(cost_z,   NULL, z);
   ResidualBlock* r_w   = problem->AddResidualBlock(cost_w,   NULL, w);
+
+  // clang-format on
 
   // Remove r_yzw.
   problem->RemoveResidualBlock(r_yzw);
@@ -916,7 +945,7 @@ TEST_P(DynamicProblem, RemoveInvalidResidualBlockDies) {
 }
 
 // Check that a null-terminated array, a, has the same elements as b.
-template<typename T>
+template <typename T>
 void ExpectVectorContainsUnordered(const T* a, const vector<T>& b) {
   // Compute the size of a.
   int size = 0;
@@ -940,9 +969,9 @@ void ExpectVectorContainsUnordered(const T* a, const vector<T>& b) {
   }
 }
 
-void ExpectProblemHasResidualBlocks(
-    const ProblemImpl &problem,
-    const ResidualBlockId *expected_residual_blocks) {
+static void ExpectProblemHasResidualBlocks(
+    const ProblemImpl& problem,
+    const ResidualBlockId* expected_residual_blocks) {
   vector<ResidualBlockId> residual_blocks;
   problem.GetResidualBlocks(&residual_blocks);
   ExpectVectorContainsUnordered(expected_residual_blocks, residual_blocks);
@@ -952,6 +981,8 @@ TEST_P(DynamicProblem, GetXXXBlocksForYYYBlock) {
   problem->AddParameterBlock(y, 4);
   problem->AddParameterBlock(z, 5);
   problem->AddParameterBlock(w, 3);
+
+  // clang-format off
 
   // Add all combinations of cost functions.
   CostFunction* cost_yzw = new TernaryCostFunction(1, 4, 5, 3);
@@ -1048,11 +1079,13 @@ TEST_P(DynamicProblem, GetXXXBlocksForYYYBlock) {
         get_parameter_blocks_cases[i].expected_parameter_blocks,
         parameter_blocks);
   }
+
+  // clang-format on
 }
 
-INSTANTIATE_TEST_CASE_P(OptionsInstantiation,
-                        DynamicProblem,
-                        ::testing::Values(true, false));
+INSTANTIATE_TEST_SUITE_P(OptionsInstantiation,
+                         DynamicProblem,
+                         ::testing::Values(true, false));
 
 // Test for Problem::Evaluate
 
@@ -1069,9 +1102,9 @@ class QuadraticCostFunction : public CostFunction {
     }
   }
 
-  virtual bool Evaluate(double const* const* parameters,
-                        double* residuals,
-                        double** jacobians) const {
+  bool Evaluate(double const* const* parameters,
+                double* residuals,
+                double** jacobians) const final {
     for (int i = 0; i < kNumResiduals; ++i) {
       residuals[i] = i;
       for (int j = 0; j < kNumParameterBlocks; ++j) {
@@ -1086,8 +1119,8 @@ class QuadraticCostFunction : public CostFunction {
     for (int j = 0; j < kNumParameterBlocks; ++j) {
       if (jacobians[j] != NULL) {
         MatrixRef(jacobians[j], kNumResiduals, kNumResiduals) =
-            (-2.0 * (j + 1.0) *
-             ConstVectorRef(parameters[j], kNumResiduals)).asDiagonal();
+            (-2.0 * (j + 1.0) * ConstVectorRef(parameters[j], kNumResiduals))
+                .asDiagonal();
       }
     }
 
@@ -1096,7 +1129,7 @@ class QuadraticCostFunction : public CostFunction {
 };
 
 // Convert a CRSMatrix to a dense Eigen matrix.
-void CRSToDenseMatrix(const CRSMatrix& input, Matrix* output) {
+static void CRSToDenseMatrix(const CRSMatrix& input, Matrix* output) {
   CHECK(output != nullptr);
   Matrix& m = *output;
   m.resize(input.num_rows, input.num_cols);
@@ -1120,31 +1153,20 @@ class ProblemEvaluateTest : public ::testing::Test {
     parameter_blocks_.push_back(parameters_ + 2);
     parameter_blocks_.push_back(parameters_ + 4);
 
-
     CostFunction* cost_function = new QuadraticCostFunction<2, 2>;
 
     // f(x, y)
-    residual_blocks_.push_back(
-        problem_.AddResidualBlock(cost_function,
-                                  NULL,
-                                  parameters_,
-                                  parameters_ + 2));
+    residual_blocks_.push_back(problem_.AddResidualBlock(
+        cost_function, NULL, parameters_, parameters_ + 2));
     // g(y, z)
-    residual_blocks_.push_back(
-        problem_.AddResidualBlock(cost_function,
-                                  NULL, parameters_ + 2,
-                                  parameters_ + 4));
+    residual_blocks_.push_back(problem_.AddResidualBlock(
+        cost_function, NULL, parameters_ + 2, parameters_ + 4));
     // h(z, x)
-    residual_blocks_.push_back(
-        problem_.AddResidualBlock(cost_function,
-                                  NULL,
-                                  parameters_ + 4,
-                                  parameters_));
+    residual_blocks_.push_back(problem_.AddResidualBlock(
+        cost_function, NULL, parameters_ + 4, parameters_));
   }
 
-  void TearDown() {
-    EXPECT_TRUE(problem_.program().IsValid());
-  }
+  void TearDown() { EXPECT_TRUE(problem_.program().IsValid()); }
 
   void EvaluateAndCompare(const Problem::EvaluateOptions& options,
                           const int expected_num_rows,
@@ -1203,8 +1225,8 @@ class ProblemEvaluateTest : public ::testing::Test {
                          expected.num_cols,
                          expected.cost,
                          (i & 1) ? expected.residuals : NULL,
-                         (i & 2) ? expected.gradient  : NULL,
-                         (i & 4) ? expected.jacobian  : NULL);
+                         (i & 2) ? expected.gradient : NULL,
+                         (i & 4) ? expected.jacobian : NULL);
     }
   }
 
@@ -1214,8 +1236,8 @@ class ProblemEvaluateTest : public ::testing::Test {
   vector<ResidualBlockId> residual_blocks_;
 };
 
-
 TEST_F(ProblemEvaluateTest, MultipleParameterAndResidualBlocks) {
+  // clang-format off
   ExpectedEvaluation expected = {
     // Rows/columns
     6, 6,
@@ -1241,11 +1263,13 @@ TEST_F(ProblemEvaluateTest, MultipleParameterAndResidualBlocks) {
                      0.0, -8.0,   0.0,   0.0,   0.0, -12.0
     }
   };
+  // clang-format on
 
   CheckAllEvaluationCombinations(Problem::EvaluateOptions(), expected);
 }
 
 TEST_F(ProblemEvaluateTest, ParameterAndResidualBlocksPassedInOptions) {
+  // clang-format off
   ExpectedEvaluation expected = {
     // Rows/columns
     6, 6,
@@ -1271,6 +1295,7 @@ TEST_F(ProblemEvaluateTest, ParameterAndResidualBlocksPassedInOptions) {
                      0.0, -8.0,   0.0,   0.0,   0.0, -12.0
     }
   };
+  // clang-format on
 
   Problem::EvaluateOptions evaluate_options;
   evaluate_options.parameter_blocks = parameter_blocks_;
@@ -1279,6 +1304,7 @@ TEST_F(ProblemEvaluateTest, ParameterAndResidualBlocksPassedInOptions) {
 }
 
 TEST_F(ProblemEvaluateTest, ReorderedResidualBlocks) {
+  // clang-format off
   ExpectedEvaluation expected = {
     // Rows/columns
     6, 6,
@@ -1304,6 +1330,7 @@ TEST_F(ProblemEvaluateTest, ReorderedResidualBlocks) {
                      0.0,  0.0,   0.0,  -8.0,   0.0, -24.0
     }
   };
+  // clang-format on
 
   Problem::EvaluateOptions evaluate_options;
   evaluate_options.parameter_blocks = parameter_blocks_;
@@ -1316,7 +1343,9 @@ TEST_F(ProblemEvaluateTest, ReorderedResidualBlocks) {
   CheckAllEvaluationCombinations(evaluate_options, expected);
 }
 
-TEST_F(ProblemEvaluateTest, ReorderedResidualBlocksAndReorderedParameterBlocks) {
+TEST_F(ProblemEvaluateTest,
+       ReorderedResidualBlocksAndReorderedParameterBlocks) {
+  // clang-format off
   ExpectedEvaluation expected = {
     // Rows/columns
     6, 6,
@@ -1342,6 +1371,7 @@ TEST_F(ProblemEvaluateTest, ReorderedResidualBlocksAndReorderedParameterBlocks) 
                       0.0, -24.0,   0.0,  -8.0,   0.0,   0.0
     }
   };
+  // clang-format on
 
   Problem::EvaluateOptions evaluate_options;
   // z, y, x
@@ -1358,6 +1388,7 @@ TEST_F(ProblemEvaluateTest, ReorderedResidualBlocksAndReorderedParameterBlocks) 
 }
 
 TEST_F(ProblemEvaluateTest, ConstantParameterBlock) {
+  // clang-format off
   ExpectedEvaluation expected = {
     // Rows/columns
     6, 6,
@@ -1385,12 +1416,14 @@ TEST_F(ProblemEvaluateTest, ConstantParameterBlock) {
                      0.0, -8.0,   0.0,   0.0,   0.0, -12.0
     }
   };
+  // clang-format on
 
   problem_.SetParameterBlockConstant(parameters_ + 2);
   CheckAllEvaluationCombinations(Problem::EvaluateOptions(), expected);
 }
 
 TEST_F(ProblemEvaluateTest, ExcludedAResidualBlock) {
+  // clang-format off
   ExpectedEvaluation expected = {
     // Rows/columns
     4, 6,
@@ -1413,6 +1446,7 @@ TEST_F(ProblemEvaluateTest, ExcludedAResidualBlock) {
                      0.0, -8.0,   0.0,   0.0,   0.0, -12.0
     }
   };
+  // clang-format on
 
   Problem::EvaluateOptions evaluate_options;
   evaluate_options.residual_blocks.push_back(residual_blocks_[0]);
@@ -1422,6 +1456,7 @@ TEST_F(ProblemEvaluateTest, ExcludedAResidualBlock) {
 }
 
 TEST_F(ProblemEvaluateTest, ExcludedParameterBlock) {
+  // clang-format off
   ExpectedEvaluation expected = {
     // Rows/columns
     6, 4,
@@ -1448,6 +1483,7 @@ TEST_F(ProblemEvaluateTest, ExcludedParameterBlock) {
                      0.0, -8.0,   0.0, -12.0
     }
   };
+  // clang-format on
 
   Problem::EvaluateOptions evaluate_options;
   // x, z
@@ -1458,6 +1494,7 @@ TEST_F(ProblemEvaluateTest, ExcludedParameterBlock) {
 }
 
 TEST_F(ProblemEvaluateTest, ExcludedParameterBlockAndExcludedResidualBlock) {
+  // clang-format off
   ExpectedEvaluation expected = {
     // Rows/columns
     4, 4,
@@ -1481,6 +1518,7 @@ TEST_F(ProblemEvaluateTest, ExcludedParameterBlockAndExcludedResidualBlock) {
                      0.0,  0.0,   0.0, -24.0,
     }
   };
+  // clang-format on
 
   Problem::EvaluateOptions evaluate_options;
   // x, z
@@ -1493,6 +1531,7 @@ TEST_F(ProblemEvaluateTest, ExcludedParameterBlockAndExcludedResidualBlock) {
 }
 
 TEST_F(ProblemEvaluateTest, LocalParameterization) {
+  // clang-format off
   ExpectedEvaluation expected = {
     // Rows/columns
     6, 5,
@@ -1518,14 +1557,532 @@ TEST_F(ProblemEvaluateTest, LocalParameterization) {
                      0.0, -8.0,   0.0,   0.0, -12.0
     }
   };
+  // clang-format on
 
   vector<int> constant_parameters;
   constant_parameters.push_back(0);
-  problem_.SetParameterization(parameters_ + 2,
-                               new SubsetParameterization(2,
-                                                          constant_parameters));
+  problem_.SetParameterization(
+      parameters_ + 2, new SubsetParameterization(2, constant_parameters));
 
   CheckAllEvaluationCombinations(Problem::EvaluateOptions(), expected);
+}
+
+struct IdentityFunctor {
+  template <typename T>
+  bool operator()(const T* x, const T* y, T* residuals) const {
+    residuals[0] = x[0];
+    residuals[1] = x[1];
+    residuals[2] = y[0];
+    residuals[3] = y[1];
+    residuals[4] = y[2];
+    return true;
+  }
+
+  static CostFunction* Create() {
+    return new AutoDiffCostFunction<IdentityFunctor, 5, 2, 3>(
+        new IdentityFunctor);
+  }
+};
+
+class ProblemEvaluateResidualBlockTest : public ::testing::Test {
+ public:
+  static constexpr bool kApplyLossFunction = true;
+  static constexpr bool kDoNotApplyLossFunction = false;
+  static constexpr bool kNewPoint = true;
+  static constexpr bool kNotNewPoint = false;
+  static double loss_function_scale_;
+
+ protected:
+  ProblemImpl problem_;
+  double x_[2] = {1, 2};
+  double y_[3] = {1, 2, 3};
+};
+
+double ProblemEvaluateResidualBlockTest::loss_function_scale_ = 2.0;
+
+TEST_F(ProblemEvaluateResidualBlockTest,
+       OneResidualBlockNoLossFunctionFullEval) {
+  ResidualBlockId residual_block_id =
+      problem_.AddResidualBlock(IdentityFunctor::Create(), nullptr, x_, y_);
+  Vector expected_f(5);
+  expected_f << 1, 2, 1, 2, 3;
+  Matrix expected_dfdx = Matrix::Zero(5, 2);
+  expected_dfdx.block(0, 0, 2, 2) = Matrix::Identity(2, 2);
+  Matrix expected_dfdy = Matrix::Zero(5, 3);
+  expected_dfdy.block(2, 0, 3, 3) = Matrix::Identity(3, 3);
+  double expected_cost = expected_f.squaredNorm() / 2.0;
+
+  double actual_cost;
+  Vector actual_f(5);
+  Matrix actual_dfdx(5, 2);
+  Matrix actual_dfdy(5, 3);
+  double* jacobians[2] = {actual_dfdx.data(), actual_dfdy.data()};
+  EXPECT_TRUE(problem_.EvaluateResidualBlock(residual_block_id,
+                                             kApplyLossFunction,
+                                             kNewPoint,
+                                             &actual_cost,
+                                             actual_f.data(),
+                                             jacobians));
+
+  EXPECT_NEAR(std::abs(expected_cost - actual_cost) / actual_cost,
+              0,
+              std::numeric_limits<double>::epsilon())
+      << actual_cost;
+  EXPECT_NEAR((expected_f - actual_f).norm() / actual_f.norm(),
+              0,
+              std::numeric_limits<double>::epsilon())
+      << actual_f;
+  EXPECT_NEAR((expected_dfdx - actual_dfdx).norm() / actual_dfdx.norm(),
+              0,
+              std::numeric_limits<double>::epsilon())
+      << actual_dfdx;
+  EXPECT_NEAR((expected_dfdy - actual_dfdy).norm() / actual_dfdy.norm(),
+              0,
+              std::numeric_limits<double>::epsilon())
+      << actual_dfdy;
+}
+
+TEST_F(ProblemEvaluateResidualBlockTest,
+       OneResidualBlockNoLossFunctionNullEval) {
+  ResidualBlockId residual_block_id =
+      problem_.AddResidualBlock(IdentityFunctor::Create(), nullptr, x_, y_);
+  EXPECT_TRUE(problem_.EvaluateResidualBlock(residual_block_id,
+                                             kApplyLossFunction,
+                                             kNewPoint,
+                                             nullptr,
+                                             nullptr,
+                                             nullptr));
+}
+
+TEST_F(ProblemEvaluateResidualBlockTest, OneResidualBlockNoLossFunctionCost) {
+  ResidualBlockId residual_block_id =
+      problem_.AddResidualBlock(IdentityFunctor::Create(), nullptr, x_, y_);
+  Vector expected_f(5);
+  expected_f << 1, 2, 1, 2, 3;
+  double expected_cost = expected_f.squaredNorm() / 2.0;
+
+  double actual_cost;
+  EXPECT_TRUE(problem_.EvaluateResidualBlock(residual_block_id,
+                                             kApplyLossFunction,
+                                             kNewPoint,
+                                             &actual_cost,
+                                             nullptr,
+                                             nullptr));
+
+  EXPECT_NEAR(std::abs(expected_cost - actual_cost) / actual_cost,
+              0,
+              std::numeric_limits<double>::epsilon())
+      << actual_cost;
+}
+
+TEST_F(ProblemEvaluateResidualBlockTest,
+       OneResidualBlockNoLossFunctionCostAndResidual) {
+  ResidualBlockId residual_block_id =
+      problem_.AddResidualBlock(IdentityFunctor::Create(), nullptr, x_, y_);
+  Vector expected_f(5);
+  expected_f << 1, 2, 1, 2, 3;
+  double expected_cost = expected_f.squaredNorm() / 2.0;
+
+  double actual_cost;
+  Vector actual_f(5);
+  EXPECT_TRUE(problem_.EvaluateResidualBlock(residual_block_id,
+                                             kApplyLossFunction,
+                                             kNewPoint,
+                                             &actual_cost,
+                                             actual_f.data(),
+                                             nullptr));
+
+  EXPECT_NEAR(std::abs(expected_cost - actual_cost) / actual_cost,
+              0,
+              std::numeric_limits<double>::epsilon())
+      << actual_cost;
+  EXPECT_NEAR((expected_f - actual_f).norm() / actual_f.norm(),
+              0,
+              std::numeric_limits<double>::epsilon())
+      << actual_f;
+}
+
+TEST_F(ProblemEvaluateResidualBlockTest,
+       OneResidualBlockNoLossFunctionCostResidualAndOneJacobian) {
+  ResidualBlockId residual_block_id =
+      problem_.AddResidualBlock(IdentityFunctor::Create(), nullptr, x_, y_);
+  Vector expected_f(5);
+  expected_f << 1, 2, 1, 2, 3;
+  Matrix expected_dfdx = Matrix::Zero(5, 2);
+  expected_dfdx.block(0, 0, 2, 2) = Matrix::Identity(2, 2);
+  double expected_cost = expected_f.squaredNorm() / 2.0;
+
+  double actual_cost;
+  Vector actual_f(5);
+  Matrix actual_dfdx(5, 2);
+  double* jacobians[2] = {actual_dfdx.data(), nullptr};
+  EXPECT_TRUE(problem_.EvaluateResidualBlock(residual_block_id,
+                                             kApplyLossFunction,
+                                             kNewPoint,
+                                             &actual_cost,
+                                             actual_f.data(),
+                                             jacobians));
+
+  EXPECT_NEAR(std::abs(expected_cost - actual_cost) / actual_cost,
+              0,
+              std::numeric_limits<double>::epsilon())
+      << actual_cost;
+  EXPECT_NEAR((expected_f - actual_f).norm() / actual_f.norm(),
+              0,
+              std::numeric_limits<double>::epsilon())
+      << actual_f;
+  EXPECT_NEAR((expected_dfdx - actual_dfdx).norm() / actual_dfdx.norm(),
+              0,
+              std::numeric_limits<double>::epsilon())
+      << actual_dfdx;
+}
+
+TEST_F(ProblemEvaluateResidualBlockTest,
+       OneResidualBlockNoLossFunctionResidual) {
+  ResidualBlockId residual_block_id =
+      problem_.AddResidualBlock(IdentityFunctor::Create(), nullptr, x_, y_);
+  Vector expected_f(5);
+  expected_f << 1, 2, 1, 2, 3;
+  Vector actual_f(5);
+  EXPECT_TRUE(problem_.EvaluateResidualBlock(residual_block_id,
+                                             kApplyLossFunction,
+                                             kNewPoint,
+                                             nullptr,
+                                             actual_f.data(),
+                                             nullptr));
+
+  EXPECT_NEAR((expected_f - actual_f).norm() / actual_f.norm(),
+              0,
+              std::numeric_limits<double>::epsilon())
+      << actual_f;
+}
+
+TEST_F(ProblemEvaluateResidualBlockTest, OneResidualBlockWithLossFunction) {
+  ResidualBlockId residual_block_id =
+      problem_.AddResidualBlock(IdentityFunctor::Create(),
+                                new ScaledLoss(nullptr, 2.0, TAKE_OWNERSHIP),
+                                x_,
+                                y_);
+  Vector expected_f(5);
+  expected_f << 1, 2, 1, 2, 3;
+  expected_f *= std::sqrt(loss_function_scale_);
+  Matrix expected_dfdx = Matrix::Zero(5, 2);
+  expected_dfdx.block(0, 0, 2, 2) = Matrix::Identity(2, 2);
+  expected_dfdx *= std::sqrt(loss_function_scale_);
+  Matrix expected_dfdy = Matrix::Zero(5, 3);
+  expected_dfdy.block(2, 0, 3, 3) = Matrix::Identity(3, 3);
+  expected_dfdy *= std::sqrt(loss_function_scale_);
+  double expected_cost = expected_f.squaredNorm() / 2.0;
+
+  double actual_cost;
+  Vector actual_f(5);
+  Matrix actual_dfdx(5, 2);
+  Matrix actual_dfdy(5, 3);
+  double* jacobians[2] = {actual_dfdx.data(), actual_dfdy.data()};
+  EXPECT_TRUE(problem_.EvaluateResidualBlock(residual_block_id,
+                                             kApplyLossFunction,
+                                             kNewPoint,
+                                             &actual_cost,
+                                             actual_f.data(),
+                                             jacobians));
+
+  EXPECT_NEAR(std::abs(expected_cost - actual_cost) / actual_cost,
+              0,
+              std::numeric_limits<double>::epsilon())
+      << actual_cost;
+  EXPECT_NEAR((expected_f - actual_f).norm() / actual_f.norm(),
+              0,
+              std::numeric_limits<double>::epsilon())
+      << actual_f;
+  EXPECT_NEAR((expected_dfdx - actual_dfdx).norm() / actual_dfdx.norm(),
+              0,
+              std::numeric_limits<double>::epsilon())
+      << actual_dfdx;
+  EXPECT_NEAR((expected_dfdy - actual_dfdy).norm() / actual_dfdy.norm(),
+              0,
+              std::numeric_limits<double>::epsilon())
+      << actual_dfdy;
+}
+
+TEST_F(ProblemEvaluateResidualBlockTest,
+       OneResidualBlockWithLossFunctionDisabled) {
+  ResidualBlockId residual_block_id =
+      problem_.AddResidualBlock(IdentityFunctor::Create(),
+                                new ScaledLoss(nullptr, 2.0, TAKE_OWNERSHIP),
+                                x_,
+                                y_);
+  Vector expected_f(5);
+  expected_f << 1, 2, 1, 2, 3;
+  Matrix expected_dfdx = Matrix::Zero(5, 2);
+  expected_dfdx.block(0, 0, 2, 2) = Matrix::Identity(2, 2);
+  Matrix expected_dfdy = Matrix::Zero(5, 3);
+  expected_dfdy.block(2, 0, 3, 3) = Matrix::Identity(3, 3);
+  double expected_cost = expected_f.squaredNorm() / 2.0;
+
+  double actual_cost;
+  Vector actual_f(5);
+  Matrix actual_dfdx(5, 2);
+  Matrix actual_dfdy(5, 3);
+  double* jacobians[2] = {actual_dfdx.data(), actual_dfdy.data()};
+  EXPECT_TRUE(problem_.EvaluateResidualBlock(residual_block_id,
+                                             kDoNotApplyLossFunction,
+                                             kNewPoint,
+                                             &actual_cost,
+                                             actual_f.data(),
+                                             jacobians));
+
+  EXPECT_NEAR(std::abs(expected_cost - actual_cost) / actual_cost,
+              0,
+              std::numeric_limits<double>::epsilon())
+      << actual_cost;
+  EXPECT_NEAR((expected_f - actual_f).norm() / actual_f.norm(),
+              0,
+              std::numeric_limits<double>::epsilon())
+      << actual_f;
+  EXPECT_NEAR((expected_dfdx - actual_dfdx).norm() / actual_dfdx.norm(),
+              0,
+              std::numeric_limits<double>::epsilon())
+      << actual_dfdx;
+  EXPECT_NEAR((expected_dfdy - actual_dfdy).norm() / actual_dfdy.norm(),
+              0,
+              std::numeric_limits<double>::epsilon())
+      << actual_dfdy;
+}
+
+TEST_F(ProblemEvaluateResidualBlockTest,
+       OneResidualBlockWithOneLocalParameterization) {
+  ResidualBlockId residual_block_id =
+      problem_.AddResidualBlock(IdentityFunctor::Create(), nullptr, x_, y_);
+  problem_.SetParameterization(x_, new SubsetParameterization(2, {1}));
+
+  Vector expected_f(5);
+  expected_f << 1, 2, 1, 2, 3;
+  Matrix expected_dfdx = Matrix::Zero(5, 1);
+  expected_dfdx.block(0, 0, 1, 1) = Matrix::Identity(1, 1);
+  Matrix expected_dfdy = Matrix::Zero(5, 3);
+  expected_dfdy.block(2, 0, 3, 3) = Matrix::Identity(3, 3);
+  double expected_cost = expected_f.squaredNorm() / 2.0;
+
+  double actual_cost;
+  Vector actual_f(5);
+  Matrix actual_dfdx(5, 1);
+  Matrix actual_dfdy(5, 3);
+  double* jacobians[2] = {actual_dfdx.data(), actual_dfdy.data()};
+  EXPECT_TRUE(problem_.EvaluateResidualBlock(residual_block_id,
+                                             kApplyLossFunction,
+                                             kNewPoint,
+                                             &actual_cost,
+                                             actual_f.data(),
+                                             jacobians));
+
+  EXPECT_NEAR(std::abs(expected_cost - actual_cost) / actual_cost,
+              0,
+              std::numeric_limits<double>::epsilon())
+      << actual_cost;
+  EXPECT_NEAR((expected_f - actual_f).norm() / actual_f.norm(),
+              0,
+              std::numeric_limits<double>::epsilon())
+      << actual_f;
+  EXPECT_NEAR((expected_dfdx - actual_dfdx).norm() / actual_dfdx.norm(),
+              0,
+              std::numeric_limits<double>::epsilon())
+      << actual_dfdx;
+  EXPECT_NEAR((expected_dfdy - actual_dfdy).norm() / actual_dfdy.norm(),
+              0,
+              std::numeric_limits<double>::epsilon())
+      << actual_dfdy;
+}
+
+TEST_F(ProblemEvaluateResidualBlockTest,
+       OneResidualBlockWithTwoLocalParameterizations) {
+  ResidualBlockId residual_block_id =
+      problem_.AddResidualBlock(IdentityFunctor::Create(), nullptr, x_, y_);
+  problem_.SetParameterization(x_, new SubsetParameterization(2, {1}));
+  problem_.SetParameterization(y_, new SubsetParameterization(3, {2}));
+
+  Vector expected_f(5);
+  expected_f << 1, 2, 1, 2, 3;
+  Matrix expected_dfdx = Matrix::Zero(5, 1);
+  expected_dfdx.block(0, 0, 1, 1) = Matrix::Identity(1, 1);
+  Matrix expected_dfdy = Matrix::Zero(5, 2);
+  expected_dfdy.block(2, 0, 2, 2) = Matrix::Identity(2, 2);
+  double expected_cost = expected_f.squaredNorm() / 2.0;
+
+  double actual_cost;
+  Vector actual_f(5);
+  Matrix actual_dfdx(5, 1);
+  Matrix actual_dfdy(5, 2);
+  double* jacobians[2] = {actual_dfdx.data(), actual_dfdy.data()};
+  EXPECT_TRUE(problem_.EvaluateResidualBlock(residual_block_id,
+                                             kApplyLossFunction,
+                                             kNewPoint,
+                                             &actual_cost,
+                                             actual_f.data(),
+                                             jacobians));
+
+  EXPECT_NEAR(std::abs(expected_cost - actual_cost) / actual_cost,
+              0,
+              std::numeric_limits<double>::epsilon())
+      << actual_cost;
+  EXPECT_NEAR((expected_f - actual_f).norm() / actual_f.norm(),
+              0,
+              std::numeric_limits<double>::epsilon())
+      << actual_f;
+  EXPECT_NEAR((expected_dfdx - actual_dfdx).norm() / actual_dfdx.norm(),
+              0,
+              std::numeric_limits<double>::epsilon())
+      << actual_dfdx;
+  EXPECT_NEAR((expected_dfdy - actual_dfdy).norm() / actual_dfdy.norm(),
+              0,
+              std::numeric_limits<double>::epsilon())
+      << actual_dfdy;
+}
+
+TEST_F(ProblemEvaluateResidualBlockTest,
+       OneResidualBlockWithOneConstantParameterBlock) {
+  ResidualBlockId residual_block_id =
+      problem_.AddResidualBlock(IdentityFunctor::Create(), nullptr, x_, y_);
+  problem_.SetParameterBlockConstant(x_);
+
+  Vector expected_f(5);
+  expected_f << 1, 2, 1, 2, 3;
+  Matrix expected_dfdy = Matrix::Zero(5, 3);
+  expected_dfdy.block(2, 0, 3, 3) = Matrix::Identity(3, 3);
+  double expected_cost = expected_f.squaredNorm() / 2.0;
+
+  double actual_cost;
+  Vector actual_f(5);
+  Matrix actual_dfdx(5, 2);
+  Matrix actual_dfdy(5, 3);
+
+  // Try evaluating both Jacobians, this should fail.
+  double* jacobians[2] = {actual_dfdx.data(), actual_dfdy.data()};
+  EXPECT_FALSE(problem_.EvaluateResidualBlock(residual_block_id,
+                                              kApplyLossFunction,
+                                              kNewPoint,
+                                              &actual_cost,
+                                              actual_f.data(),
+                                              jacobians));
+
+  jacobians[0] = nullptr;
+  EXPECT_TRUE(problem_.EvaluateResidualBlock(residual_block_id,
+                                             kApplyLossFunction,
+                                             kNewPoint,
+                                             &actual_cost,
+                                             actual_f.data(),
+                                             jacobians));
+
+  EXPECT_NEAR(std::abs(expected_cost - actual_cost) / actual_cost,
+              0,
+              std::numeric_limits<double>::epsilon())
+      << actual_cost;
+  EXPECT_NEAR((expected_f - actual_f).norm() / actual_f.norm(),
+              0,
+              std::numeric_limits<double>::epsilon())
+      << actual_f;
+  EXPECT_NEAR((expected_dfdy - actual_dfdy).norm() / actual_dfdy.norm(),
+              0,
+              std::numeric_limits<double>::epsilon())
+      << actual_dfdy;
+}
+
+TEST_F(ProblemEvaluateResidualBlockTest,
+       OneResidualBlockWithAllConstantParameterBlocks) {
+  ResidualBlockId residual_block_id =
+      problem_.AddResidualBlock(IdentityFunctor::Create(), nullptr, x_, y_);
+  problem_.SetParameterBlockConstant(x_);
+  problem_.SetParameterBlockConstant(y_);
+
+  Vector expected_f(5);
+  expected_f << 1, 2, 1, 2, 3;
+  double expected_cost = expected_f.squaredNorm() / 2.0;
+
+  double actual_cost;
+  Vector actual_f(5);
+  Matrix actual_dfdx(5, 2);
+  Matrix actual_dfdy(5, 3);
+
+  // Try evaluating with one or more Jacobians, this should fail.
+  double* jacobians[2] = {actual_dfdx.data(), actual_dfdy.data()};
+  EXPECT_FALSE(problem_.EvaluateResidualBlock(residual_block_id,
+                                              kApplyLossFunction,
+                                              kNewPoint,
+                                              &actual_cost,
+                                              actual_f.data(),
+                                              jacobians));
+
+  jacobians[0] = nullptr;
+  EXPECT_FALSE(problem_.EvaluateResidualBlock(residual_block_id,
+                                              kApplyLossFunction,
+                                              kNewPoint,
+                                              &actual_cost,
+                                              actual_f.data(),
+                                              jacobians));
+  jacobians[1] = nullptr;
+  EXPECT_TRUE(problem_.EvaluateResidualBlock(residual_block_id,
+                                             kApplyLossFunction,
+                                             kNewPoint,
+                                             &actual_cost,
+                                             actual_f.data(),
+                                             jacobians));
+
+  EXPECT_NEAR(std::abs(expected_cost - actual_cost) / actual_cost,
+              0,
+              std::numeric_limits<double>::epsilon())
+      << actual_cost;
+  EXPECT_NEAR((expected_f - actual_f).norm() / actual_f.norm(),
+              0,
+              std::numeric_limits<double>::epsilon())
+      << actual_f;
+}
+
+TEST_F(ProblemEvaluateResidualBlockTest,
+       OneResidualBlockWithOneParameterBlockConstantAndParameterBlockChanged) {
+  ResidualBlockId residual_block_id =
+      problem_.AddResidualBlock(IdentityFunctor::Create(), nullptr, x_, y_);
+  problem_.SetParameterBlockConstant(x_);
+
+  x_[0] = 2;
+  y_[2] = 1;
+  Vector expected_f(5);
+  expected_f << 2, 2, 1, 2, 1;
+  Matrix expected_dfdy = Matrix::Zero(5, 3);
+  expected_dfdy.block(2, 0, 3, 3) = Matrix::Identity(3, 3);
+  double expected_cost = expected_f.squaredNorm() / 2.0;
+
+  double actual_cost;
+  Vector actual_f(5);
+  Matrix actual_dfdx(5, 2);
+  Matrix actual_dfdy(5, 3);
+
+  // Try evaluating with one or more Jacobians, this should fail.
+  double* jacobians[2] = {actual_dfdx.data(), actual_dfdy.data()};
+  EXPECT_FALSE(problem_.EvaluateResidualBlock(residual_block_id,
+                                              kApplyLossFunction,
+                                              kNewPoint,
+                                              &actual_cost,
+                                              actual_f.data(),
+                                              jacobians));
+
+  jacobians[0] = nullptr;
+  EXPECT_TRUE(problem_.EvaluateResidualBlock(residual_block_id,
+                                             kApplyLossFunction,
+                                             kNewPoint,
+                                             &actual_cost,
+                                             actual_f.data(),
+                                             jacobians));
+  EXPECT_NEAR(std::abs(expected_cost - actual_cost) / actual_cost,
+              0,
+              std::numeric_limits<double>::epsilon())
+      << actual_cost;
+  EXPECT_NEAR((expected_f - actual_f).norm() / actual_f.norm(),
+              0,
+              std::numeric_limits<double>::epsilon())
+      << actual_f;
+  EXPECT_NEAR((expected_dfdy - actual_dfdy).norm() / actual_dfdy.norm(),
+              0,
+              std::numeric_limits<double>::epsilon())
+      << actual_dfdy;
 }
 
 TEST(Problem, SetAndGetParameterLowerBound) {
@@ -1580,6 +2137,146 @@ TEST(Problem, SetAndGetParameterUpperBound) {
             std::numeric_limits<double>::max());
   EXPECT_EQ(problem.GetParameterUpperBound(x, 1),
             std::numeric_limits<double>::max());
+}
+
+TEST(Problem, SetParameterizationTwice) {
+  Problem problem;
+  double x[] = {1.0, 2.0, 3.0};
+  problem.AddParameterBlock(x, 3);
+  problem.SetParameterization(x, new SubsetParameterization(3, {1}));
+  EXPECT_EQ(problem.GetParameterization(x)->GlobalSize(), 3);
+  EXPECT_EQ(problem.GetParameterization(x)->LocalSize(), 2);
+
+  problem.SetParameterization(x, new SubsetParameterization(3, {0, 1}));
+  EXPECT_EQ(problem.GetParameterization(x)->GlobalSize(), 3);
+  EXPECT_EQ(problem.GetParameterization(x)->LocalSize(), 1);
+}
+
+TEST(Problem, SetParameterizationAndThenClearItWithNull) {
+  Problem problem;
+  double x[] = {1.0, 2.0, 3.0};
+  problem.AddParameterBlock(x, 3);
+  problem.SetParameterization(x, new SubsetParameterization(3, {1}));
+  EXPECT_EQ(problem.GetParameterization(x)->GlobalSize(), 3);
+  EXPECT_EQ(problem.GetParameterization(x)->LocalSize(), 2);
+
+  problem.SetParameterization(x, nullptr);
+  EXPECT_EQ(problem.GetParameterization(x), nullptr);
+  EXPECT_EQ(problem.ParameterBlockLocalSize(x), 3);
+  EXPECT_EQ(problem.ParameterBlockSize(x), 3);
+}
+
+TEST(Solver, ZeroSizedLocalParameterizationMeansParameterBlockIsConstant) {
+  double x = 0.0;
+  double y = 1.0;
+  Problem problem;
+  problem.AddResidualBlock(new BinaryCostFunction(1, 1, 1), nullptr, &x, &y);
+  problem.SetParameterization(&y, new SubsetParameterization(1, {0}));
+  EXPECT_TRUE(problem.IsParameterBlockConstant(&y));
+}
+
+class MockEvaluationCallback : public EvaluationCallback {
+ public:
+  MOCK_METHOD2(PrepareForEvaluation, void(bool, bool));
+};
+
+TEST(ProblemEvaluate, CallsEvaluationCallbackWithoutJacobian) {
+  constexpr bool kDoNotComputeJacobians = false;
+  constexpr bool kNewPoint = true;
+
+  MockEvaluationCallback evaluation_callback;
+  EXPECT_CALL(evaluation_callback,
+              PrepareForEvaluation(kDoNotComputeJacobians, kNewPoint))
+      .Times(1);
+
+  Problem::Options options;
+  options.evaluation_callback = &evaluation_callback;
+  ProblemImpl problem(options);
+  double x_[2] = {1, 2};
+  double y_[3] = {1, 2, 3};
+  problem.AddResidualBlock(IdentityFunctor::Create(), nullptr, x_, y_);
+
+  double actual_cost;
+  EXPECT_TRUE(problem.Evaluate(
+      Problem::EvaluateOptions(), &actual_cost, nullptr, nullptr, nullptr));
+}
+
+TEST(ProblemEvaluate, CallsEvaluationCallbackWithJacobian) {
+  constexpr bool kComputeJacobians = true;
+  constexpr bool kNewPoint = true;
+
+  MockEvaluationCallback evaluation_callback;
+  EXPECT_CALL(evaluation_callback,
+              PrepareForEvaluation(kComputeJacobians, kNewPoint))
+      .Times(1);
+
+  Problem::Options options;
+  options.evaluation_callback = &evaluation_callback;
+  ProblemImpl problem(options);
+  double x_[2] = {1, 2};
+  double y_[3] = {1, 2, 3};
+  problem.AddResidualBlock(IdentityFunctor::Create(), nullptr, x_, y_);
+
+  double actual_cost;
+  ceres::CRSMatrix jacobian;
+  EXPECT_TRUE(problem.Evaluate(
+      Problem::EvaluateOptions(), &actual_cost, nullptr, nullptr, &jacobian));
+}
+
+TEST(ProblemEvaluateResidualBlock, NewPointCallsEvaluationCallback) {
+  constexpr bool kComputeJacobians = true;
+  constexpr bool kNewPoint = true;
+
+  MockEvaluationCallback evaluation_callback;
+  EXPECT_CALL(evaluation_callback,
+              PrepareForEvaluation(kComputeJacobians, kNewPoint))
+      .Times(1);
+
+  Problem::Options options;
+  options.evaluation_callback = &evaluation_callback;
+  ProblemImpl problem(options);
+  double x_[2] = {1, 2};
+  double y_[3] = {1, 2, 3};
+  ResidualBlockId residual_block_id =
+      problem.AddResidualBlock(IdentityFunctor::Create(), nullptr, x_, y_);
+
+  double actual_cost;
+  Vector actual_f(5);
+  Matrix actual_dfdx(5, 2);
+  Matrix actual_dfdy(5, 3);
+  double* jacobians[2] = {actual_dfdx.data(), actual_dfdy.data()};
+  EXPECT_TRUE(problem.EvaluateResidualBlock(
+      residual_block_id, true, true, &actual_cost, actual_f.data(), jacobians));
+}
+
+TEST(ProblemEvaluateResidualBlock, OldPointCallsEvaluationCallback) {
+  constexpr bool kComputeJacobians = true;
+  constexpr bool kOldPoint = false;
+
+  MockEvaluationCallback evaluation_callback;
+  EXPECT_CALL(evaluation_callback,
+              PrepareForEvaluation(kComputeJacobians, kOldPoint))
+      .Times(1);
+
+  Problem::Options options;
+  options.evaluation_callback = &evaluation_callback;
+  ProblemImpl problem(options);
+  double x_[2] = {1, 2};
+  double y_[3] = {1, 2, 3};
+  ResidualBlockId residual_block_id =
+      problem.AddResidualBlock(IdentityFunctor::Create(), nullptr, x_, y_);
+
+  double actual_cost;
+  Vector actual_f(5);
+  Matrix actual_dfdx(5, 2);
+  Matrix actual_dfdy(5, 3);
+  double* jacobians[2] = {actual_dfdx.data(), actual_dfdy.data()};
+  EXPECT_TRUE(problem.EvaluateResidualBlock(residual_block_id,
+                                            true,
+                                            false,
+                                            &actual_cost,
+                                            actual_f.data(),
+                                            jacobians));
 }
 
 }  // namespace internal

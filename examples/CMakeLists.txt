@@ -36,25 +36,23 @@ if (BUILD_SHARED_LIBS)
 endif()
 
 add_executable(helloworld helloworld.cc)
-target_link_libraries(helloworld ceres)
+target_link_libraries(helloworld Ceres::ceres)
 
 add_executable(helloworld_numeric_diff helloworld_numeric_diff.cc)
-target_link_libraries(helloworld_numeric_diff ceres)
+target_link_libraries(helloworld_numeric_diff Ceres::ceres)
 
 add_executable(helloworld_analytic_diff helloworld_analytic_diff.cc)
-target_link_libraries(helloworld_analytic_diff ceres)
+target_link_libraries(helloworld_analytic_diff Ceres::ceres)
 
 add_executable(curve_fitting curve_fitting.cc)
-target_link_libraries(curve_fitting ceres)
+target_link_libraries(curve_fitting Ceres::ceres)
 
 add_executable(rosenbrock rosenbrock.cc)
-target_link_libraries(rosenbrock ceres)
+target_link_libraries(rosenbrock Ceres::ceres)
 
 add_executable(curve_fitting_c curve_fitting.c)
-target_link_libraries(curve_fitting_c ceres)
-# Force CMake to link curve_fitting_c using the C linker, this is important
-# when Ceres was compiled using C++11 to ensure that -std=c++11 is not passed
-# through.
+target_link_libraries(curve_fitting_c Ceres::ceres)
+# Force CMake to link curve_fitting_c using the C linker.
 set_target_properties(curve_fitting_c PROPERTIES LINKER_LANGUAGE C)
 # As this is a C file #including <math.h> we have to explicitly add the math
 # library (libm). Although some compilers (dependent upon options) will accept
@@ -64,51 +62,51 @@ if (NOT MSVC)
 endif (NOT MSVC)
 
 add_executable(ellipse_approximation ellipse_approximation.cc)
-target_link_libraries(ellipse_approximation ceres)
+target_link_libraries(ellipse_approximation Ceres::ceres)
 
 add_executable(robust_curve_fitting robust_curve_fitting.cc)
-target_link_libraries(robust_curve_fitting ceres)
+target_link_libraries(robust_curve_fitting Ceres::ceres)
 
 add_executable(simple_bundle_adjuster simple_bundle_adjuster.cc)
-target_link_libraries(simple_bundle_adjuster ceres)
+target_link_libraries(simple_bundle_adjuster Ceres::ceres)
 
 if (GFLAGS)
   add_executable(powell powell.cc)
-  target_link_libraries(powell ceres ${GFLAGS_LIBRARIES})
+  target_link_libraries(powell Ceres::ceres gflags)
 
   add_executable(nist nist.cc)
-  target_link_libraries(nist ceres ${GFLAGS_LIBRARIES})
+  target_link_libraries(nist Ceres::ceres gflags)
   if (MSVC)
     target_compile_options(nist PRIVATE "/bigobj")
   endif()
 
   add_executable(more_garbow_hillstrom more_garbow_hillstrom.cc)
-  target_link_libraries(more_garbow_hillstrom ceres ${GFLAGS_LIBRARIES})
+  target_link_libraries(more_garbow_hillstrom Ceres::ceres gflags)
 
   add_executable(circle_fit circle_fit.cc)
-  target_link_libraries(circle_fit ceres ${GFLAGS_LIBRARIES})
+  target_link_libraries(circle_fit Ceres::ceres gflags)
 
   add_executable(bundle_adjuster
                  bundle_adjuster.cc
                  bal_problem.cc)
-  target_link_libraries(bundle_adjuster ceres ${GFLAGS_LIBRARIES})
+  target_link_libraries(bundle_adjuster Ceres::ceres gflags)
 
   add_executable(libmv_bundle_adjuster
                  libmv_bundle_adjuster.cc)
-  target_link_libraries(libmv_bundle_adjuster ceres ${GFLAGS_LIBRARIES})
+  target_link_libraries(libmv_bundle_adjuster Ceres::ceres gflags)
 
   add_executable(libmv_homography
                  libmv_homography.cc)
-  target_link_libraries(libmv_homography ceres ${GFLAGS_LIBRARIES})
+  target_link_libraries(libmv_homography Ceres::ceres gflags)
 
   add_executable(denoising
                  denoising.cc
                  fields_of_experts.cc)
-  target_link_libraries(denoising ceres ${GFLAGS_LIBRARIES})
+  target_link_libraries(denoising Ceres::ceres gflags)
 
   add_executable(robot_pose_mle
                  robot_pose_mle.cc)
-  target_link_libraries(robot_pose_mle ceres ${GFLAGS_LIBRARIES})
+  target_link_libraries(robot_pose_mle Ceres::ceres gflags)
 
 endif (GFLAGS)
 

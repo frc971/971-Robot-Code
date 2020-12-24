@@ -70,7 +70,7 @@ Then, given :math:`\left[x_{1}, ... , x_{k}\right]`,
 :class:`CostFunction` is responsible for computing the vector
 :math:`f\left(x_{1},...,x_{k}\right)` and the Jacobian matrices
 
-.. math:: J_i =  \frac{\partial}{\partial x_i} f(x_1, ..., x_k) \quad \forall i \in \{1, \ldots, k\}
+.. math:: J_i =  D_i f(x_1, ..., x_k) \quad \forall i \in \{1, \ldots, k\}
 
 .. class:: CostFunction
 
@@ -108,29 +108,29 @@ the corresponding accessors. This information will be verified by the
    that contains the :math:`i^{\text{th}}` parameter block that the
    ``CostFunction`` depends on.
 
-   ``parameters`` is never ``NULL``.
+   ``parameters`` is never ``nullptr``.
 
    ``residuals`` is an array of size ``num_residuals_``.
 
-   ``residuals`` is never ``NULL``.
+   ``residuals`` is never ``nullptr``.
 
    ``jacobians`` is an array of arrays of size
    ``CostFunction::parameter_block_sizes_.size()``.
 
-   If ``jacobians`` is ``NULL``, the user is only expected to compute
+   If ``jacobians`` is ``nullptr``, the user is only expected to compute
    the residuals.
 
    ``jacobians[i]`` is a row-major array of size ``num_residuals x
    parameter_block_sizes_[i]``.
 
-   If ``jacobians[i]`` is **not** ``NULL``, the user is required to
+   If ``jacobians[i]`` is **not** ``nullptr``, the user is required to
    compute the Jacobian of the residual vector with respect to
    ``parameters[i]`` and store it in this array, i.e.
 
    ``jacobians[i][r * parameter_block_sizes_[i] + c]`` =
    :math:`\frac{\displaystyle \partial \text{residual}[r]}{\displaystyle \partial \text{parameters}[i][c]}`
 
-   If ``jacobians[i]`` is ``NULL``, then this computation can be
+   If ``jacobians[i]`` is ``nullptr``, then this computation can be
    skipped. This is the case when the corresponding parameter block is
    marked constant.
 
@@ -152,9 +152,7 @@ the corresponding accessors. This information will be verified by the
 
    .. code-block:: c++
 
-    template<int kNumResiduals,
-             int N0 = 0, int N1 = 0, int N2 = 0, int N3 = 0, int N4 = 0,
-             int N5 = 0, int N6 = 0, int N7 = 0, int N8 = 0, int N9 = 0>
+    template<int kNumResiduals, int... Ns>
     class SizedCostFunction : public CostFunction {
      public:
       virtual bool Evaluate(double const* const* parameters,
@@ -177,23 +175,16 @@ the corresponding accessors. This information will be verified by the
 
      template <typename CostFunctor,
             int kNumResiduals,  // Number of residuals, or ceres::DYNAMIC.
-            int N0,       // Number of parameters in block 0.
-            int N1 = 0,   // Number of parameters in block 1.
-            int N2 = 0,   // Number of parameters in block 2.
-            int N3 = 0,   // Number of parameters in block 3.
-            int N4 = 0,   // Number of parameters in block 4.
-            int N5 = 0,   // Number of parameters in block 5.
-            int N6 = 0,   // Number of parameters in block 6.
-            int N7 = 0,   // Number of parameters in block 7.
-            int N8 = 0,   // Number of parameters in block 8.
-            int N9 = 0>   // Number of parameters in block 9.
+            int... Ns>          // Size of each parameter block
      class AutoDiffCostFunction : public
-     SizedCostFunction<kNumResiduals, N0, N1, N2, N3, N4, N5, N6, N7, N8, N9> {
+     SizedCostFunction<kNumResiduals, Ns> {
       public:
-       explicit AutoDiffCostFunction(CostFunctor* functor);
+       AutoDiffCostFunction(CostFunctor* functor, ownership = TAKE_OWNERSHIP);
        // Ignore the template parameter kNumResiduals and use
        // num_residuals instead.
-       AutoDiffCostFunction(CostFunctor* functor, int num_residuals);
+       AutoDiffCostFunction(CostFunctor* functor,
+                            int num_residuals,
+                            ownership = TAKE_OWNERSHIP);
      };
 
    To get an auto differentiated cost function, you must define a
@@ -268,6 +259,21 @@ the corresponding accessors. This information will be verified by the
    computing a 1-dimensional output from two arguments, both
    2-dimensional.
 
+   By default :class:`AutoDiffCostFunction` will take ownership of the cost
+   functor pointer passed to it, ie. will call `delete` on the cost functor
+   when the :class:`AutoDiffCostFunction` itself is deleted. However, this may
+   be undesirable in certain cases, therefore it is also possible to specify
+   :class:`DO_NOT_TAKE_OWNERSHIP` as a second argument in the constructor,
+   while passing a pointer to a cost functor which does not need to be deleted
+   by the AutoDiffCostFunction. For example:
+
+   .. code-block:: c++
+
+    MyScalarCostFunctor functor(1.0)
+    CostFunction* cost_function
+        = new AutoDiffCostFunction<MyScalarCostFunctor, 1, 2, 2>(
+            &functor, DO_NOT_TAKE_OWNERSHIP);
+
    :class:`AutoDiffCostFunction` also supports cost functions with a
    runtime-determined number of residuals. For example:
 
@@ -284,10 +290,6 @@ the corresponding accessors. This information will be verified by the
                Dimension of x ------------------------------------+  |
                Dimension of y ---------------------------------------+
 
-   The framework can currently accommodate cost functions of up to 10
-   independent variables, and there is no limit on the dimensionality
-   of each of them.
-
    **WARNING 1** A common beginner's error when first using
    :class:`AutoDiffCostFunction` is to get the sizing wrong. In particular,
    there is a tendency to set the template parameters to (dimension of
@@ -303,10 +305,9 @@ the corresponding accessors. This information will be verified by the
 .. class:: DynamicAutoDiffCostFunction
 
    :class:`AutoDiffCostFunction` requires that the number of parameter
-   blocks and their sizes be known at compile time. It also has an
-   upper limit of 10 parameter blocks. In a number of applications,
-   this is not enough e.g., Bezier curve fitting, Neural Network
-   training etc.
+   blocks and their sizes be known at compile time. In a number of
+   applications, this is not enough e.g., Bezier curve fitting, Neural
+   Network training etc.
 
      .. code-block:: c++
 
@@ -376,18 +377,9 @@ the corresponding accessors. This information will be verified by the
       template <typename CostFunctor,
                 NumericDiffMethodType method = CENTRAL,
                 int kNumResiduals,  // Number of residuals, or ceres::DYNAMIC.
-                int N0,       // Number of parameters in block 0.
-                int N1 = 0,   // Number of parameters in block 1.
-                int N2 = 0,   // Number of parameters in block 2.
-                int N3 = 0,   // Number of parameters in block 3.
-                int N4 = 0,   // Number of parameters in block 4.
-                int N5 = 0,   // Number of parameters in block 5.
-                int N6 = 0,   // Number of parameters in block 6.
-                int N7 = 0,   // Number of parameters in block 7.
-                int N8 = 0,   // Number of parameters in block 8.
-                int N9 = 0>   // Number of parameters in block 9.
+                int... Ns>          // Size of each parameter block.
       class NumericDiffCostFunction : public
-      SizedCostFunction<kNumResiduals, N0, N1, N2, N3, N4, N5, N6, N7, N8, N9> {
+      SizedCostFunction<kNumResiduals, Ns> {
       };
 
   To get a numerically differentiated :class:`CostFunction`, you must
@@ -483,10 +475,6 @@ the corresponding accessors. This information will be verified by the
                Dimension of x ------------------------------------------------+  |
                Dimension of y ---------------------------------------------------+
 
-
-  The framework can currently accommodate cost functions of up to 10
-  independent variables, and there is no limit on the dimensionality
-  of each of them.
 
   There are three available numeric differentiation schemes in ceres-solver:
 
@@ -595,8 +583,7 @@ Numeric Differentiation & LocalParameterization
 
    Like :class:`AutoDiffCostFunction` :class:`NumericDiffCostFunction`
    requires that the number of parameter blocks and their sizes be
-   known at compile time. It also has an upper limit of 10 parameter
-   blocks. In a number of applications, this is not enough.
+   known at compile time. In a number of applications, this is not enough.
 
      .. code-block:: c++
 
@@ -716,7 +703,7 @@ Numeric Differentiation & LocalParameterization
 
    .. code-block:: c++
 
-    struct IntrinsicProjection
+    struct IntrinsicProjection {
       IntrinsicProjection(const double* observation) {
         observation_[0] = observation[0];
         observation_[1] = observation[1];
@@ -724,14 +711,14 @@ Numeric Differentiation & LocalParameterization
 
       bool operator()(const double* calibration,
                       const double* point,
-                      double* residuals) {
+                      double* residuals) const {
         double projection[2];
         ThirdPartyProjectionFunction(calibration, point, projection);
         residuals[0] = observation_[0] - projection[0];
         residuals[1] = observation_[1] - projection[1];
         return true;
       }
-     double observation_[2];
+      double observation_[2];
     };
 
 
@@ -746,10 +733,9 @@ Numeric Differentiation & LocalParameterization
 
    struct CameraProjection {
      CameraProjection(double* observation)
-       intrinsic_projection_(
-         new NumericDiffCostFunction<IntrinsicProjection, CENTRAL, 2, 5, 3>(
-           new IntrinsicProjection(observation)) {
-     }
+        : intrinsic_projection_(
+              new NumericDiffCostFunction<IntrinsicProjection, CENTRAL, 2, 5, 3>(
+                  new IntrinsicProjection(observation))) {}
 
      template <typename T>
      bool operator()(const T* rotation,
@@ -759,12 +745,13 @@ Numeric Differentiation & LocalParameterization
                      T* residuals) const {
        T transformed_point[3];
        RotateAndTranslatePoint(rotation, translation, point, transformed_point);
-       return intrinsic_projection_(intrinsics, transformed_point, residual);
+       return intrinsic_projection_(intrinsics, transformed_point, residuals);
      }
 
     private:
-     CostFunctionToFunctor<2,5,3> intrinsic_projection_;
+     CostFunctionToFunctor<2, 5, 3> intrinsic_projection_;
    };
+
 
 :class:`DynamicCostFunctionToFunctor`
 =====================================
@@ -908,7 +895,7 @@ Numeric Differentiation & LocalParameterization
 
        std::vector<LocalParameterization*> local_parameterizations;
        local_parameterizations.push_back(my_parameterization);
-       local_parameterizations.push_back(NULL);
+       local_parameterizations.push_back(nullptr);
 
        std::vector parameter1;
        std::vector parameter2;
@@ -1103,8 +1090,8 @@ their shape graphically. More details can be found in
    Given a loss function :math:`\rho(s)` and a scalar :math:`a`, :class:`ScaledLoss`
    implements the function :math:`a \rho(s)`.
 
-   Since we treat a ``NULL`` Loss function as the Identity loss
-   function, :math:`rho` = ``NULL``: is a valid input and will result
+   Since we treat a ``nullptr`` Loss function as the Identity loss
+   function, :math:`rho` = ``nullptr``: is a valid input and will result
    in the input being scaled by :math:`a`. This provides a simple way
    of implementing a scaled ResidualBlock.
 
@@ -1146,8 +1133,7 @@ their shape graphically. More details can be found in
 Theory
 ------
 
-Let us consider a problem with a single problem and a single parameter
-block.
+Let us consider a problem with a single parameter block.
 
 .. math::
 
@@ -1165,8 +1151,8 @@ where the terms involving the second derivatives of :math:`f(x)` have
 been ignored. Note that :math:`H(x)` is indefinite if
 :math:`\rho''f(x)^\top f(x) + \frac{1}{2}\rho' < 0`. If this is not
 the case, then its possible to re-weight the residual and the Jacobian
-matrix such that the corresponding linear least squares problem for
-the robustified Gauss-Newton step.
+matrix such that the robustified Gauss-Newton step corresponds to an
+ordinary linear least squares problem.
 
 
 Let :math:`\alpha` be a root of
@@ -1187,7 +1173,7 @@ In the case :math:`2 \rho''\left\|f(x)\right\|^2 + \rho' \lesssim 0`,
 we limit :math:`\alpha \le 1- \epsilon` for some small
 :math:`\epsilon`. For more details see [Triggs]_.
 
-With this simple rescaling, one can use any Jacobian based non-linear
+With this simple rescaling, one can apply any Jacobian based non-linear
 least squares algorithm to robustified non-linear least squares
 problems.
 
@@ -1196,6 +1182,113 @@ problems.
 ==============================
 
 .. class:: LocalParameterization
+
+  In many optimization problems, especially sensor fusion problems,
+  one has to model quantities that live in spaces known as `Manifolds
+  <https://en.wikipedia.org/wiki/Manifold>`_ , for example the
+  rotation/orientation of a sensor that is represented by a
+  `Quaternion
+  <https://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation>`_.
+
+  Manifolds are spaces, which locally look like Euclidean spaces. More
+  precisely, at each point on the manifold there is a linear space
+  that is tangent to the manifold. It has dimension equal to the
+  intrinsic dimension of the manifold itself, which is less than or
+  equal to the ambient space in which the manifold is embedded.
+
+  For example, the tangent space to a point on a sphere in three
+  dimensions is the two dimensional plane that is tangent to the
+  sphere at that point. There are two reasons tangent spaces are
+  interesting:
+
+  1. They are Euclidean spaces, so the usual vector space operations
+     apply there, which makes numerical operations easy.
+
+  2. Movement in the tangent space translate into movements along the
+     manifold.  Movements perpendicular to the tangent space do not
+     translate into movements on the manifold.
+
+     Returning to our sphere example, moving in the 2 dimensional
+     plane tangent to the sphere and projecting back onto the sphere
+     will move you away from the point you started from but moving
+     along the normal at the same point and the projecting back onto
+     the sphere brings you back to the point.
+
+  Besides the mathematical niceness, modeling manifold valued
+  quantities correctly and paying attention to their geometry has
+  practical benefits too:
+
+  1. It naturally constrains the quantity to the manifold through out
+     the optimization. Freeing the user from hacks like *quaternion
+     normalization*.
+
+  2. It reduces the dimension of the optimization problem to its
+     *natural* size. For example, a quantity restricted to a line, is a
+     one dimensional object regardless of the dimension of the ambient
+     space in which this line lives.
+
+     Working in the tangent space reduces not just the computational
+     complexity of the optimization algorithm, but also improves the
+     numerical behaviour of the algorithm.
+
+  A basic operation one can perform on a manifold is the
+  :math:`\boxplus` operation that computes the result of moving along
+  delta in the tangent space at x, and then projecting back onto the
+  manifold that x belongs to. Also known as a *Retraction*,
+  :math:`\boxplus` is a generalization of vector addition in Euclidean
+  spaces. Formally, :math:`\boxplus` is a smooth map from a
+  manifold :math:`\mathcal{M}` and its tangent space
+  :math:`T_\mathcal{M}` to the manifold :math:`\mathcal{M}` that
+  obeys the identity
+
+  .. math::  \boxplus(x, 0) = x,\quad \forall x.
+
+  That is, it ensures that the tangent space is *centered* at :math:`x`
+  and the zero vector is the identity element. For more see
+  [Hertzberg]_ and section A.6.9 of [HartleyZisserman]_.
+
+  Let us consider two examples:
+
+  The Euclidean space :math:`R^n` is the simplest example of a
+  manifold. It has dimension :math:`n` (and so does its tangent space)
+  and :math:`\boxplus` is the familiar vector sum operation.
+
+    .. math:: \boxplus(x, \Delta) = x + \Delta
+
+  A more interesting case is :math:`SO(3)`, the special orthogonal
+  group in three dimensions - the space of 3x3 rotation
+  matrices. :math:`SO(3)` is a three dimensional manifold embedded in
+  :math:`R^9` or :math:`R^{3\times 3}`.
+
+  :math:`\boxplus` on :math:`SO(3)` is defined using the *Exponential*
+  map, from the tangent space (:math:`R^3`) to the manifold. The
+  Exponential map :math:`\operatorname{Exp}` is defined as:
+
+  .. math::
+
+     \operatorname{Exp}([p,q,r]) = \left [ \begin{matrix}
+     \cos \theta + cp^2 & -sr + cpq        &  sq + cpr \\
+     sr + cpq         & \cos \theta + cq^2& -sp + cqr \\
+     -sq + cpr        & sp + cqr         & \cos \theta + cr^2
+     \end{matrix} \right ]
+
+  where,
+
+  .. math::
+     \theta = \sqrt{p^2 + q^2 + r^2}, s = \frac{\sin \theta}{\theta},
+     c = \frac{1 - \cos \theta}{\theta^2}.
+
+  Then,
+
+  .. math::
+
+     \boxplus(x, \Delta) = x \operatorname{Exp}(\Delta)
+
+  The ``LocalParameterization`` interface allows the user to define
+  and associate with parameter blocks the manifold that they belong
+  to. It does so by defining the ``Plus`` (:math:`\boxplus`) operation
+  and its derivative with respect to :math:`\Delta` at :math:`\Delta =
+  0`.
 
    .. code-block:: c++
 
@@ -1214,43 +1307,6 @@ problems.
        virtual int LocalSize() const = 0;
      };
 
-   Sometimes the parameters :math:`x` can overparameterize a
-   problem. In that case it is desirable to choose a parameterization
-   to remove the null directions of the cost. More generally, if
-   :math:`x` lies on a manifold of a smaller dimension than the
-   ambient space that it is embedded in, then it is numerically and
-   computationally more effective to optimize it using a
-   parameterization that lives in the tangent space of that manifold
-   at each point.
-
-   For example, a sphere in three dimensions is a two dimensional
-   manifold, embedded in a three dimensional space. At each point on
-   the sphere, the plane tangent to it defines a two dimensional
-   tangent space. For a cost function defined on this sphere, given a
-   point :math:`x`, moving in the direction normal to the sphere at
-   that point is not useful. Thus a better way to parameterize a point
-   on a sphere is to optimize over two dimensional vector
-   :math:`\Delta x` in the tangent space at the point on the sphere
-   point and then "move" to the point :math:`x + \Delta x`, where the
-   move operation involves projecting back onto the sphere. Doing so
-   removes a redundant dimension from the optimization, making it
-   numerically more robust and efficient.
-
-   More generally we can define a function
-
-   .. math:: x' = \boxplus(x, \Delta x),
-
-   where :math:`x'` has the same size as :math:`x`, and :math:`\Delta
-   x` is of size less than or equal to :math:`x`. The function
-   :math:`\boxplus`, generalizes the definition of vector
-   addition. Thus it satisfies the identity
-
-   .. math:: \boxplus(x, 0) = x,\quad \forall x.
-
-   Instances of :class:`LocalParameterization` implement the
-   :math:`\boxplus` operation and its derivative with respect to
-   :math:`\Delta x` at :math:`\Delta x = 0`.
-
 
 .. function:: int LocalParameterization::GlobalSize()
 
@@ -1259,134 +1315,158 @@ problems.
 
 .. function:: int LocalParameterization::LocalSize()
 
-   The size of the tangent space
-   that :math:`\Delta x` lives in.
+   The size of the tangent space that :math:`\Delta` lives in.
 
 .. function:: bool LocalParameterization::Plus(const double* x, const double* delta, double* x_plus_delta) const
 
-    :func:`LocalParameterization::Plus` implements :math:`\boxplus(x,\Delta x)`.
+    :func:`LocalParameterization::Plus` implements :math:`\boxplus(x,\Delta)`.
 
 .. function:: bool LocalParameterization::ComputeJacobian(const double* x, double* jacobian) const
 
    Computes the Jacobian matrix
 
-   .. math:: J = \left . \frac{\partial }{\partial \Delta x} \boxplus(x,\Delta x)\right|_{\Delta x = 0}
+   .. math:: J = D_2 \boxplus(x, 0)
 
    in row major form.
 
 .. function:: bool MultiplyByJacobian(const double* x, const int num_rows, const double* global_matrix, double* local_matrix) const
 
-   local_matrix = global_matrix * jacobian
+   ``local_matrix = global_matrix * jacobian``
 
-   global_matrix is a num_rows x GlobalSize  row major matrix.
-   local_matrix is a num_rows x LocalSize row major matrix.
-   jacobian is the matrix returned by :func:`LocalParameterization::ComputeJacobian` at :math:`x`.
+   ``global_matrix`` is a ``num_rows x GlobalSize``  row major matrix.
+   ``local_matrix`` is a ``num_rows x LocalSize`` row major matrix.
+   ``jacobian`` is the matrix returned by :func:`LocalParameterization::ComputeJacobian` at :math:`x`.
 
-   This is only used by GradientProblem. For most normal uses, it is
-   okay to use the default implementation.
+   This is only used by :class:`GradientProblem`. For most normal
+   uses, it is okay to use the default implementation.
 
-Instances
----------
+Ceres Solver ships with a number of commonly used instances of
+:class:`LocalParameterization`. Another great place to find high
+quality implementations of :math:`\boxplus` operations on a variety of
+manifolds is the `Sophus <https://github.com/strasdat/Sophus>`_
+library developed by Hauke Strasdat and his collaborators.
 
-.. class:: IdentityParameterization
+:class:`IdentityParameterization`
+---------------------------------
 
-   A trivial version of :math:`\boxplus` is when :math:`\Delta x` is
-   of the same size as :math:`x` and
+A trivial version of :math:`\boxplus` is when :math:`\Delta` is of the
+same size as :math:`x` and
 
-   .. math::  \boxplus(x, \Delta x) = x + \Delta x
+.. math::  \boxplus(x, \Delta) = x + \Delta
 
-.. class:: SubsetParameterization
+This is the same as :math:`x` living in a Euclidean manifold.
 
-   A more interesting case if :math:`x` is a two dimensional vector,
-   and the user wishes to hold the first coordinate constant. Then,
-   :math:`\Delta x` is a scalar and :math:`\boxplus` is defined as
+:class:`QuaternionParameterization`
+-----------------------------------
 
-   .. math::
+Another example that occurs commonly in Structure from Motion problems
+is when camera rotations are parameterized using a quaternion. This is
+a 3-dimensional manifold that lives in 4-dimensional space.
 
-      \boxplus(x, \Delta x) = x + \left[ \begin{array}{c} 0 \\ 1
-                                  \end{array} \right] \Delta x
+.. math:: \boxplus(x, \Delta) = \left[ \cos(|\Delta|), \frac{\sin\left(|\Delta|\right)}{|\Delta|} \Delta \right] * x
 
-   :class:`SubsetParameterization` generalizes this construction to
-   hold any part of a parameter block constant.
+The multiplication :math:`*` between the two 4-vectors on the right
+hand side is the standard quaternion product.
 
-.. class:: QuaternionParameterization
+:class:`EigenQuaternionParameterization`
+----------------------------------------
 
-   Another example that occurs commonly in Structure from Motion
-   problems is when camera rotations are parameterized using a
-   quaternion. There, it is useful only to make updates orthogonal to
-   that 4-vector defining the quaternion. One way to do this is to let
-   :math:`\Delta x` be a 3 dimensional vector and define
-   :math:`\boxplus` to be
+`Eigen <http://eigen.tuxfamily.org/index.php?title=Main_Page>`_ uses a
+different internal memory layout for the elements of the quaternion
+than what is commonly used. Specifically, Eigen stores the elements in
+memory as :math:`(x, y, z, w)`, i.e., the *real* part (:math:`w`) is
+stored as the last element. Note, when creating an Eigen quaternion
+through the constructor the elements are accepted in :math:`w, x, y,
+z` order.
 
-    .. math:: \boxplus(x, \Delta x) = \left[ \cos(|\Delta x|), \frac{\sin\left(|\Delta x|\right)}{|\Delta x|} \Delta x \right] * x
-      :label: quaternion
+Since Ceres operates on parameter blocks which are raw ``double``
+pointers this difference is important and requires a different
+parameterization. :class:`EigenQuaternionParameterization` uses the
+same ``Plus`` operation as :class:`QuaternionParameterization` but
+takes into account Eigen's internal memory element ordering.
 
-   The multiplication between the two 4-vectors on the right hand side
-   is the standard quaternion
-   product. :class:`QuaternionParameterization` is an implementation
-   of :eq:`quaternion`.
+:class:`SubsetParameterization`
+-------------------------------
 
-.. class:: EigenQuaternionParameterization
+Suppose :math:`x` is a two dimensional vector, and the user wishes to
+hold the first coordinate constant. Then, :math:`\Delta` is a scalar
+and :math:`\boxplus` is defined as
 
-   Eigen uses a different internal memory layout for the elements of the
-   quaternion than what is commonly used. Specifically, Eigen stores the
-   elements in memory as [x, y, z, w] where the real part is last
-   whereas it is typically stored first. Note, when creating an Eigen
-   quaternion through the constructor the elements are accepted in w, x,
-   y, z order. Since Ceres operates on parameter blocks which are raw
-   double pointers this difference is important and requires a different
-   parameterization. :class:`EigenQuaternionParameterization` uses the
-   same update as :class:`QuaternionParameterization` but takes into
-   account Eigen's internal memory element ordering.
+.. math:: \boxplus(x, \Delta) = x + \left[ \begin{array}{c} 0 \\ 1 \end{array} \right] \Delta
 
-.. class:: HomogeneousVectorParameterization
+:class:`SubsetParameterization` generalizes this construction to hold
+any part of a parameter block constant by specifying the set of
+coordinates that are held constant.
 
-   In computer vision, homogeneous vectors are commonly used to
-   represent entities in projective geometry such as points in
-   projective space. One example where it is useful to use this
-   over-parameterization is in representing points whose triangulation
-   is ill-conditioned. Here it is advantageous to use homogeneous
-   vectors, instead of an Euclidean vector, because it can represent
-   points at infinity.
+.. NOTE::
+   It is legal to hold all coordinates of a parameter block to constant
+   using a :class:`SubsetParameterization`. It is the same as calling
+   :func:`Problem::SetParameterBlockConstant` on that parameter block.
 
-   When using homogeneous vectors it is useful to only make updates
-   orthogonal to that :math:`n`-vector defining the homogeneous
-   vector [HartleyZisserman]_. One way to do this is to let :math:`\Delta x`
-   be a :math:`n-1` dimensional vector and define :math:`\boxplus` to be
+:class:`HomogeneousVectorParameterization`
+------------------------------------------
 
-    .. math:: \boxplus(x, \Delta x) = \left[ \frac{\sin\left(0.5 |\Delta x|\right)}{|\Delta x|} \Delta x, \cos(0.5 |\Delta x|) \right] * x
+In computer vision, homogeneous vectors are commonly used to represent
+objects in projective geometry such as points in projective space. One
+example where it is useful to use this over-parameterization is in
+representing points whose triangulation is ill-conditioned. Here it is
+advantageous to use homogeneous vectors, instead of an Euclidean
+vector, because it can represent points at and near infinity.
 
-   The multiplication between the two vectors on the right hand side
-   is defined as an operator which applies the update orthogonal to
-   :math:`x` to remain on the sphere. Note, it is assumed that
-   last element of :math:`x` is the scalar component of the homogeneous
-   vector.
+:class:`HomogeneousVectorParameterization` defines a
+:class:`LocalParameterization` for an :math:`n-1` dimensional
+manifold that embedded in :math:`n` dimensional space where the
+scale of the vector does not matter, i.e., elements of the
+projective space :math:`\mathbb{P}^{n-1}`. It assumes that the last
+coordinate of the :math:`n`-vector is the *scalar* component of the
+homogenous vector, i.e., *finite* points in this representation are
+those for which the *scalar* component is non-zero.
 
+Further, ``HomogeneousVectorParameterization::Plus`` preserves the
+scale of :math:`x`.
 
-.. class:: ProductParameterization
+:class:`LineParameterization`
+-----------------------------
 
-   Consider an optimization problem over the space of rigid
-   transformations :math:`SE(3)`, which is the Cartesian product of
-   :math:`SO(3)` and :math:`\mathbb{R}^3`. Suppose you are using
-   Quaternions to represent the rotation, Ceres ships with a local
-   parameterization for that and :math:`\mathbb{R}^3` requires no, or
-   :class:`IdentityParameterization` parameterization. So how do we
-   construct a local parameterization for a parameter block a rigid
-   transformation?
+This class provides a parameterization for lines, where the line is
+defined using an origin point and a direction vector. So the
+parameter vector size needs to be two times the ambient space
+dimension, where the first half is interpreted as the origin point
+and the second half as the direction. This local parameterization is
+a special case of the `Affine Grassmannian manifold
+<https://en.wikipedia.org/wiki/Affine_Grassmannian_(manifold))>`_
+for the case :math:`\operatorname{Graff}_1(R^n)`.
 
-   In cases, where a parameter block is the Cartesian product of a
-   number of manifolds and you have the local parameterization of the
-   individual manifolds available, :class:`ProductParameterization`
-   can be used to construct a local parameterization of the cartesian
-   product. For the case of the rigid transformation, where say you
-   have a parameter block of size 7, where the first four entries
-   represent the rotation as a quaternion, a local parameterization
-   can be constructed as
+Note that this is a parameterization for a line, rather than a point
+constrained to lie on a line. It is useful when one wants to optimize
+over the space of lines. For example, :math:`n` distinct points in 3D
+(measurements) we want to find the line that minimizes the sum of
+squared distances to all the points.
 
-   .. code-block:: c++
+:class:`ProductParameterization`
+--------------------------------
 
-     ProductParameterization se3_param(new QuaternionParameterization(),
-                                       new IdentityTransformation(3));
+Consider an optimization problem over the space of rigid
+transformations :math:`SE(3)`, which is the Cartesian product of
+:math:`SO(3)` and :math:`\mathbb{R}^3`. Suppose you are using
+Quaternions to represent the rotation, Ceres ships with a local
+parameterization for that and :math:`\mathbb{R}^3` requires no, or
+:class:`IdentityParameterization` parameterization. So how do we
+construct a local parameterization for a parameter block a rigid
+transformation?
+
+In cases, where a parameter block is the Cartesian product of a number
+of manifolds and you have the local parameterization of the individual
+manifolds available, :class:`ProductParameterization` can be used to
+construct a local parameterization of the cartesian product. For the
+case of the rigid transformation, where say you have a parameter block
+of size 7, where the first four entries represent the rotation as a
+quaternion, a local parameterization can be constructed as
+
+.. code-block:: c++
+
+   ProductParameterization se3_param(new QuaternionParameterization(),
+                                     new IdentityParameterization(3));
 
 
 :class:`AutoDiffLocalParameterization`
@@ -1464,7 +1544,7 @@ Instances
    :class:`Problem` holds the robustified bounds constrained
    non-linear least squares problem :eq:`ceresproblem_modeling`. To
    create a least squares problem, use the
-   :func:`Problem::AddResidualBlock` and
+   :func:`Problem::AddResidalBlock` and
    :func:`Problem::AddParameterBlock` methods.
 
    For example a problem containing 3 parameter blocks of sizes 3, 4
@@ -1489,7 +1569,7 @@ Instances
    the parameter blocks it expects. The function checks that these
    match the sizes of the parameter blocks listed in
    ``parameter_blocks``. The program aborts if a mismatch is
-   detected. ``loss_function`` can be ``NULL``, in which case the cost
+   detected. ``loss_function`` can be ``nullptr``, in which case the cost
    of the term is just the squared norm of the residuals.
 
    The user has the option of explicitly adding the parameter blocks
@@ -1536,19 +1616,133 @@ Instances
    delete on each ``cost_function`` or ``loss_function`` pointer only
    once, regardless of how many residual blocks refer to them.
 
+.. class:: Problem::Options
+
+   Options struct that is used to control :class:`Problem`.
+
+.. member:: Ownership Problem::Options::cost_function_ownership
+
+   Default: ``TAKE_OWNERSHIP``
+
+   This option controls whether the Problem object owns the cost
+   functions.
+
+   If set to TAKE_OWNERSHIP, then the problem object will delete the
+   cost functions on destruction. The destructor is careful to delete
+   the pointers only once, since sharing cost functions is allowed.
+
+.. member:: Ownership Problem::Options::loss_function_ownership
+
+   Default: ``TAKE_OWNERSHIP``
+
+   This option controls whether the Problem object owns the loss
+   functions.
+
+   If set to TAKE_OWNERSHIP, then the problem object will delete the
+   loss functions on destruction. The destructor is careful to delete
+   the pointers only once, since sharing loss functions is allowed.
+
+.. member:: Ownership Problem::Options::local_parameterization_ownership
+
+   Default: ``TAKE_OWNERSHIP``
+
+   This option controls whether the Problem object owns the local
+   parameterizations.
+
+   If set to TAKE_OWNERSHIP, then the problem object will delete the
+   local parameterizations on destruction. The destructor is careful
+   to delete the pointers only once, since sharing local
+   parameterizations is allowed.
+
+.. member:: bool Problem::Options::enable_fast_removal
+
+    Default: ``false``
+
+    If true, trades memory for faster
+    :func:`Problem::RemoveResidualBlock` and
+    :func:`Problem::RemoveParameterBlock` operations.
+
+    By default, :func:`Problem::RemoveParameterBlock` and
+    :func:`Problem::RemoveResidualBlock` take time proportional to
+    the size of the entire problem.  If you only ever remove
+    parameters or residuals from the problem occasionally, this might
+    be acceptable.  However, if you have memory to spare, enable this
+    option to make :func:`Problem::RemoveParameterBlock` take time
+    proportional to the number of residual blocks that depend on it,
+    and :func:`Problem::RemoveResidualBlock` take (on average)
+    constant time.
+
+    The increase in memory usage is twofold: an additional hash set
+    per parameter block containing all the residuals that depend on
+    the parameter block; and a hash set in the problem containing all
+    residuals.
+
+.. member:: bool Problem::Options::disable_all_safety_checks
+
+    Default: `false`
+
+    By default, Ceres performs a variety of safety checks when
+    constructing the problem. There is a small but measurable
+    performance penalty to these checks, typically around 5% of
+    construction time. If you are sure your problem construction is
+    correct, and 5% of the problem construction time is truly an
+    overhead you want to avoid, then you can set
+    disable_all_safety_checks to true.
+
+    **WARNING** Do not set this to true, unless you are absolutely
+    sure of what you are doing.
+
+.. member:: Context* Problem::Options::context
+
+    Default: `nullptr`
+
+    A Ceres global context to use for solving this problem. This may
+    help to reduce computation time as Ceres can reuse expensive
+    objects to create.  The context object can be `nullptr`, in which
+    case Ceres may create one.
+
+    Ceres does NOT take ownership of the pointer.
+
+.. member:: EvaluationCallback* Problem::Options::evaluation_callback
+
+    Default: `nullptr`
+
+    Using this callback interface, Ceres will notify you when it is
+    about to evaluate the residuals or Jacobians.
+
+    If an ``evaluation_callback`` is present, Ceres will update the
+    user's parameter blocks to the values that will be used when
+    calling :func:`CostFunction::Evaluate` before calling
+    :func:`EvaluationCallback::PrepareForEvaluation`. One can then use
+    this callback to share (or cache) computation between cost
+    functions by doing the shared computation in
+    :func:`EvaluationCallback::PrepareForEvaluation` before Ceres
+    calls :func:`CostFunction::Evaluate`.
+
+    Problem does NOT take ownership of the callback.
+
+    .. NOTE::
+
+       Evaluation callbacks are incompatible with inner iterations. So
+       calling Solve with
+       :member:`Solver::Options::use_inner_iterations` set to `true`
+       on a :class:`Problem` with a non-null evaluation callback is an
+       error.
+
 .. function:: ResidualBlockId Problem::AddResidualBlock(CostFunction* cost_function, LossFunction* loss_function, const vector<double*> parameter_blocks)
-.. function:: ResidualBlockId Problem::AddResidualBlock(CostFunction* cost_function, LossFunction* loss_function, double *x0, double *x1, ...)
+
+.. function:: template <typename Ts...> ResidualBlockId Problem::AddResidualBlock(CostFunction* cost_function, LossFunction* loss_function, double* x0, Ts... xs)
 
    Add a residual block to the overall cost function. The cost
    function carries with it information about the sizes of the
    parameter blocks it expects. The function checks that these match
    the sizes of the parameter blocks listed in parameter_blocks. The
    program aborts if a mismatch is detected. loss_function can be
-   NULL, in which case the cost of the term is just the squared norm
-   of the residuals.
+   `nullptr`, in which case the cost of the term is just the squared
+   norm of the residuals.
 
    The parameter blocks may be passed together as a
-   ``vector<double*>``, or as up to ten separate ``double*`` pointers.
+   ``vector<double*>``, or ``double*`` pointers.
 
    The user has the option of explicitly adding the parameter blocks
    using AddParameterBlock. This causes additional correctness
@@ -1583,10 +1777,10 @@ Instances
 
       Problem problem;
 
-      problem.AddResidualBlock(new MyUnaryCostFunction(...), NULL, x1);
-      problem.AddResidualBlock(new MyBinaryCostFunction(...), NULL, x2, x1);
-      problem.AddResidualBlock(new MyUnaryCostFunction(...), NULL, v1);
-      problem.AddResidualBlock(new MyBinaryCostFunction(...), NULL, v2);
+      problem.AddResidualBlock(new MyUnaryCostFunction(...), nullptr, x1);
+      problem.AddResidualBlock(new MyBinaryCostFunction(...), nullptr, x2, x1);
+      problem.AddResidualBlock(new MyUnaryCostFunction(...), nullptr, v1);
+      problem.AddResidualBlock(new MyBinaryCostFunction(...), nullptr, v2);
 
 .. function:: void Problem::AddParameterBlock(double* values, int size, LocalParameterization* local_parameterization)
 
@@ -1618,7 +1812,7 @@ Instances
    jacobian, do not use remove! This may change in a future release.
    Hold the indicated parameter block constant during optimization.
 
-.. function:: void Problem::RemoveParameterBlock(double* values)
+.. function:: void Problem::RemoveParameterBlock(const double* values)
 
    Remove a parameter block from the problem. The parameterization of
    the parameter block, if it exists, will persist until the deletion
@@ -1634,7 +1828,7 @@ Instances
    from the solver uninterpretable. If you depend on the evaluated
    jacobian, do not use remove! This may change in a future release.
 
-.. function:: void Problem::SetParameterBlockConstant(double* values)
+.. function:: void Problem::SetParameterBlockConstant(const double* values)
 
    Hold the indicated parameter block constant during optimization.
 
@@ -1642,20 +1836,28 @@ Instances
 
    Allow the indicated parameter to vary during optimization.
 
+.. function:: bool Problem::IsParameterBlockConstant(const double* values) const
+
+   Returns ``true`` if a parameter block is set constant, and false
+   otherwise. A parameter block may be set constant in two ways:
+   either by calling ``SetParameterBlockConstant`` or by associating a
+   ``LocalParameterization`` with a zero dimensional tangent space
+   with it.
+
 .. function:: void Problem::SetParameterization(double* values, LocalParameterization* local_parameterization)
 
    Set the local parameterization for one of the parameter blocks.
    The local_parameterization is owned by the Problem by default. It
    is acceptable to set the same parameterization for multiple
    parameters; the destructor is careful to delete local
-   parameterizations only once. The local parameterization can only be
-   set once per parameter, and cannot be changed once set.
+   parameterizations only once. Calling `SetParameterization` with
+   `nullptr` will clear any previously set parameterization.
 
-.. function:: LocalParameterization* Problem::GetParameterization(double* values) const
+.. function:: LocalParameterization* Problem::GetParameterization(const double* values) const
 
    Get the local parameterization object associated with this
    parameter block. If there is no parameterization object associated
-   then `NULL` is returned
+   then `nullptr` is returned
 
 .. function:: void Problem::SetParameterLowerBound(double* values, int index, double lower_bound)
 
@@ -1671,13 +1873,13 @@ Instances
    ``std::numeric_limits<double>::max()``, which is treated by the
    solver as the same as :math:`\infty`.
 
-.. function:: double Problem::GetParameterLowerBound(double* values, int index)
+.. function:: double Problem::GetParameterLowerBound(const double* values, int index)
 
    Get the lower bound for the parameter with position `index`. If the
    parameter is not bounded by the user, then its lower bound is
    ``-std::numeric_limits<double>::max()``.
 
-.. function:: double Problem::GetParameterUpperBound(double* values, int index)
+.. function:: double Problem::GetParameterUpperBound(const double* values, int index)
 
    Get the upper bound for the parameter with position `index`. If the
    parameter is not bounded by the user, then its upper bound is
@@ -1745,18 +1947,77 @@ Instances
    blocks for a parameter block will incur a scan of the entire
    :class:`Problem` object.
 
-.. function:: const CostFunction* GetCostFunctionForResidualBlock(const ResidualBlockId residual_block) const
+.. function:: const CostFunction* Problem::GetCostFunctionForResidualBlock(const ResidualBlockId residual_block) const
 
    Get the :class:`CostFunction` for the given residual block.
 
-.. function:: const LossFunction* GetLossFunctionForResidualBlock(const ResidualBlockId residual_block) const
+.. function:: const LossFunction* Problem::GetLossFunctionForResidualBlock(const ResidualBlockId residual_block) const
 
    Get the :class:`LossFunction` for the given residual block.
+
+.. function::  bool EvaluateResidualBlock(ResidualBlockId residual_block_id, bool apply_loss_function, double* cost,double* residuals, double** jacobians) const
+
+   Evaluates the residual block, storing the scalar cost in ``cost``, the
+   residual components in ``residuals``, and the jacobians between the
+   parameters and residuals in ``jacobians[i]``, in row-major order.
+
+   If ``residuals`` is ``nullptr``, the residuals are not computed.
+
+   If ``jacobians`` is ``nullptr``, no Jacobians are computed. If
+   ``jacobians[i]`` is ``nullptr``, then the Jacobian for that
+   parameter block is not computed.
+
+   It is not okay to request the Jacobian w.r.t a parameter block
+   that is constant.
+
+   The return value indicates the success or failure. Even if the
+   function returns false, the caller should expect the output
+   memory locations to have been modified.
+
+   The returned cost and jacobians have had robustification and local
+   parameterizations applied already; for example, the jacobian for a
+   4-dimensional quaternion parameter using the
+   :class:`QuaternionParameterization` is ``num_residuals x 3``
+   instead of ``num_residuals x 4``.
+
+   ``apply_loss_function`` as the name implies allows the user to
+   switch the application of the loss function on and off.
+
+   .. NOTE:: If an :class:`EvaluationCallback` is associated with the
+      problem, then its
+      :func:`EvaluationCallback::PrepareForEvaluation` method will be
+      called every time this method is called with `new_point =
+      true`. This conservatively assumes that the user may have
+      changed the parameter values since the previous call to evaluate
+      / solve.  For improved efficiency, and only if you know that the
+      parameter values have not changed between calls, see
+      :func:`Problem::EvaluateResidualBlockAssumingParametersUnchanged`.
+
+
+.. function::  bool EvaluateResidualBlockAssumingParametersUnchanged(ResidualBlockId residual_block_id, bool apply_loss_function, double* cost,double* residuals, double** jacobians) const
+
+    Same as :func:`Problem::EvaluateResidualBlock` except that if an
+    :class:`EvaluationCallback` is associated with the problem, then
+    its :func:`EvaluationCallback::PrepareForEvaluation` method will
+    be called every time this method is called with new_point = false.
+
+    This means, if an :class:`EvaluationCallback` is associated with
+    the problem then it is the user's responsibility to call
+    :func:`EvaluationCallback::PrepareForEvaluation` before calling
+    this method if necessary, i.e. iff the parameter values have been
+    changed since the last call to evaluate / solve.'
+
+    This is because, as the name implies, we assume that the parameter
+    blocks did not change since the last time
+    :func:`EvaluationCallback::PrepareForEvaluation` was called (via
+    :func:`Solve`, :func:`Problem::Evaluate` or
+    :func:`Problem::EvaluateResidualBlock`).
+
 
 .. function:: bool Problem::Evaluate(const Problem::EvaluateOptions& options, double* cost, vector<double>* residuals, vector<double>* gradient, CRSMatrix* jacobian)
 
    Evaluate a :class:`Problem`. Any of the output pointers can be
-   `NULL`. Which residual blocks and parameter blocks are used is
+   `nullptr`. Which residual blocks and parameter blocks are used is
    controlled by the :class:`Problem::EvaluateOptions` struct below.
 
    .. NOTE::
@@ -1770,10 +2031,10 @@ Instances
 
         Problem problem;
         double x = 1;
-        problem.Add(new MyCostFunction, NULL, &x);
+        problem.Add(new MyCostFunction, nullptr, &x);
 
         double cost = 0.0;
-        problem.Evaluate(Problem::EvaluateOptions(), &cost, NULL, NULL, NULL);
+        problem.Evaluate(Problem::EvaluateOptions(), &cost, nullptr, nullptr, nullptr);
 
       The cost is evaluated at `x = 1`. If you wish to evaluate the
       problem at `x = 2`, then
@@ -1781,7 +2042,7 @@ Instances
       .. code-block:: c++
 
          x = 2;
-         problem.Evaluate(Problem::EvaluateOptions(), &cost, NULL, NULL, NULL);
+         problem.Evaluate(Problem::EvaluateOptions(), &cost, nullptr, nullptr, nullptr);
 
       is the way to do so.
 
@@ -1798,6 +2059,12 @@ Instances
       solved, for example it cannot be called from an
       :class:`IterationCallback` at the end of an iteration during a
       solve.
+
+   .. NOTE::
+
+      If an EvaluationCallback is associated with the problem, then
+      its PrepareForEvaluation method will be called everytime this
+      method is called with ``new_point = true``.
 
 .. class:: Problem::EvaluateOptions
 
@@ -1839,6 +2106,72 @@ Instances
 .. member:: int Problem::EvaluateOptions::num_threads
 
    Number of threads to use. (Requires OpenMP).
+
+
+:class:`EvaluationCallback`
+===========================
+
+.. class:: EvaluationCallback
+
+   Interface for receiving callbacks before Ceres evaluates residuals or
+   Jacobians:
+
+   .. code-block:: c++
+
+      class EvaluationCallback {
+       public:
+        virtual ~EvaluationCallback() {}
+        virtual void PrepareForEvaluation()(bool evaluate_jacobians
+                                            bool new_evaluation_point) = 0;
+      };
+
+.. function:: void EvaluationCallback::PrepareForEvaluation(bool evaluate_jacobians, bool new_evaluation_point)
+
+   Ceres will call :func:`EvaluationCallback::PrepareForEvaluation`
+   every time, and once before it computes the residuals and/or the
+   Jacobians.
+
+   User parameters (the double* values provided by the us) are fixed
+   until the next call to
+   :func:`EvaluationCallback::PrepareForEvaluation`. If
+   ``new_evaluation_point == true``, then this is a new point that is
+   different from the last evaluated point. Otherwise, it is the same
+   point that was evaluated previously (either Jacobian or residual)
+   and the user can use cached results from previous evaluations. If
+   ``evaluate_jacobians`` is true, then Ceres will request Jacobians
+   in the upcoming cost evaluation.
+
+   Using this callback interface, Ceres can notify you when it is
+   about to evaluate the residuals or Jacobians. With the callback,
+   you can share computation between residual blocks by doing the
+   shared computation in
+   :func:`EvaluationCallback::PrepareForEvaluation` before Ceres calls
+   :func:`CostFunction::Evaluate` on all the residuals. It also
+   enables caching results between a pure residual evaluation and a
+   residual & Jacobian evaluation, via the ``new_evaluation_point``
+   argument.
+
+   One use case for this callback is if the cost function compute is
+   moved to the GPU. In that case, the prepare call does the actual
+   cost function evaluation, and subsequent calls from Ceres to the
+   actual cost functions merely copy the results from the GPU onto the
+   corresponding blocks for Ceres to plug into the solver.
+
+   **Note**: Ceres provides no mechanism to share data other than the
+   notification from the callback. Users must provide access to
+   pre-computed shared data to their cost functions behind the scenes;
+   this all happens without Ceres knowing. One approach is to put a
+   pointer to the shared data in each cost function (recommended) or
+   to use a global shared variable (discouraged; bug-prone).  As far
+   as Ceres is concerned, it is evaluating cost functions like any
+   other; it just so happens that behind the scenes the cost functions
+   reuse pre-computed data to execute faster.
+
+   See ``evaluation_callback_test.cc`` for code that explicitly
+   verifies the preconditions between
+   :func:`EvaluationCallback::PrepareForEvaluation` and
+   :func:`CostFunction::Evaluate`.
+
 
 ``rotation.h``
 ==============
@@ -2010,7 +2343,7 @@ numbers.
 
 .. code::
 
-  const double data[] = {1.0, 2.0, 5.0, 6.0};
+  const double x[] = {1.0, 2.0, 5.0, 6.0};
   Grid1D<double, 1> array(x, 0, 4);
   CubicInterpolator interpolator(array);
   double f, dfdx;

@@ -32,6 +32,8 @@
 #define CERES_INTERNAL_SUBSET_PRECONDITIONER_H_
 
 #include <memory>
+
+#include "ceres/internal/port.h"
 #include "ceres/preconditioner.h"
 
 namespace ceres {
@@ -58,26 +60,27 @@ class InnerProductComputer;
 // A = [P]
 //     [Q]
 //
-// where P as subset_preconditioner_start_row_block row blocks,
+// where P has subset_preconditioner_start_row_block row blocks,
 // and the preconditioner is the inverse of the matrix Q'Q.
 //
 // Obviously, the smaller this number, the more accurate and
 // computationally expensive this preconditioner will be.
 //
 // See the tests for example usage.
-class SubsetPreconditioner : public BlockSparseMatrixPreconditioner {
+class CERES_EXPORT_INTERNAL SubsetPreconditioner
+    : public BlockSparseMatrixPreconditioner {
  public:
   SubsetPreconditioner(const Preconditioner::Options& options,
                        const BlockSparseMatrix& A);
   virtual ~SubsetPreconditioner();
 
   // Preconditioner interface
-  virtual void RightMultiply(const double* x, double* y) const;
-  virtual int num_rows() const { return num_cols_; }
-  virtual int num_cols() const { return num_cols_; }
+  void RightMultiply(const double* x, double* y) const final;
+  int num_rows() const final { return num_cols_; }
+  int num_cols() const final { return num_cols_; }
 
  private:
-  virtual bool UpdateImpl(const BlockSparseMatrix& A, const double* D);
+  bool UpdateImpl(const BlockSparseMatrix& A, const double* D) final;
 
   const Preconditioner::Options options_;
   const int num_cols_;

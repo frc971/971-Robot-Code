@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2019 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -32,9 +32,12 @@
 #ifndef CERES_PUBLIC_LOCAL_PARAMETERIZATION_H_
 #define CERES_PUBLIC_LOCAL_PARAMETERIZATION_H_
 
+#include <array>
+#include <memory>
 #include <vector>
-#include "ceres/internal/port.h"
+
 #include "ceres/internal/disable_warnings.h"
+#include "ceres/internal/port.h"
 
 namespace ceres {
 
@@ -87,8 +90,8 @@ namespace ceres {
 //
 // An example that occurs commonly in Structure from Motion problems
 // is when camera rotations are parameterized using Quaternion. There,
-// it is useful only make updates orthogonal to that 4-vector defining
-// the quaternion. One way to do this is to let delta be a 3
+// it is useful to only make updates orthogonal to that 4-vector
+// defining the quaternion. One way to do this is to let delta be a 3
 // dimensional vector and define Plus to be
 //
 //   Plus(x, delta) = [cos(|delta|), sin(|delta|) delta / |delta|] * x
@@ -96,7 +99,7 @@ namespace ceres {
 // The multiplication between the two 4-vectors on the RHS is the
 // standard quaternion product.
 //
-// Given g and a point x, optimizing f can now be restated as
+// Given f and a point x, optimizing f can now be restated as
 //
 //     min  f(Plus(x, delta))
 //    delta
@@ -153,17 +156,16 @@ class CERES_EXPORT IdentityParameterization : public LocalParameterization {
  public:
   explicit IdentityParameterization(int size);
   virtual ~IdentityParameterization() {}
-  virtual bool Plus(const double* x,
-                    const double* delta,
-                    double* x_plus_delta) const;
-  virtual bool ComputeJacobian(const double* x,
-                               double* jacobian) const;
-  virtual bool MultiplyByJacobian(const double* x,
-                                  const int num_cols,
-                                  const double* global_matrix,
-                                  double* local_matrix) const;
-  virtual int GlobalSize() const { return size_; }
-  virtual int LocalSize() const { return size_; }
+  bool Plus(const double* x,
+            const double* delta,
+            double* x_plus_delta) const override;
+  bool ComputeJacobian(const double* x, double* jacobian) const override;
+  bool MultiplyByJacobian(const double* x,
+                          const int num_cols,
+                          const double* global_matrix,
+                          double* local_matrix) const override;
+  int GlobalSize() const override { return size_; }
+  int LocalSize() const override { return size_; }
 
  private:
   const int size_;
@@ -175,19 +177,18 @@ class CERES_EXPORT SubsetParameterization : public LocalParameterization {
   explicit SubsetParameterization(int size,
                                   const std::vector<int>& constant_parameters);
   virtual ~SubsetParameterization() {}
-  virtual bool Plus(const double* x,
-                    const double* delta,
-                    double* x_plus_delta) const;
-  virtual bool ComputeJacobian(const double* x,
-                               double* jacobian) const;
-  virtual bool MultiplyByJacobian(const double* x,
-                                  const int num_cols,
-                                  const double* global_matrix,
-                                  double* local_matrix) const;
-  virtual int GlobalSize() const {
+  bool Plus(const double* x,
+            const double* delta,
+            double* x_plus_delta) const override;
+  bool ComputeJacobian(const double* x, double* jacobian) const override;
+  bool MultiplyByJacobian(const double* x,
+                          const int num_cols,
+                          const double* global_matrix,
+                          double* local_matrix) const override;
+  int GlobalSize() const override {
     return static_cast<int>(constancy_mask_.size());
   }
-  virtual int LocalSize() const { return local_size_; }
+  int LocalSize() const override { return local_size_; }
 
  private:
   const int local_size_;
@@ -201,13 +202,12 @@ class CERES_EXPORT SubsetParameterization : public LocalParameterization {
 class CERES_EXPORT QuaternionParameterization : public LocalParameterization {
  public:
   virtual ~QuaternionParameterization() {}
-  virtual bool Plus(const double* x,
-                    const double* delta,
-                    double* x_plus_delta) const;
-  virtual bool ComputeJacobian(const double* x,
-                               double* jacobian) const;
-  virtual int GlobalSize() const { return 4; }
-  virtual int LocalSize() const { return 3; }
+  bool Plus(const double* x,
+            const double* delta,
+            double* x_plus_delta) const override;
+  bool ComputeJacobian(const double* x, double* jacobian) const override;
+  int GlobalSize() const override { return 4; }
+  int LocalSize() const override { return 3; }
 };
 
 // Implements the quaternion local parameterization for Eigen's representation
@@ -225,12 +225,12 @@ class CERES_EXPORT EigenQuaternionParameterization
     : public ceres::LocalParameterization {
  public:
   virtual ~EigenQuaternionParameterization() {}
-  virtual bool Plus(const double* x,
-                    const double* delta,
-                    double* x_plus_delta) const;
-  virtual bool ComputeJacobian(const double* x, double* jacobian) const;
-  virtual int GlobalSize() const { return 4; }
-  virtual int LocalSize() const { return 3; }
+  bool Plus(const double* x,
+            const double* delta,
+            double* x_plus_delta) const override;
+  bool ComputeJacobian(const double* x, double* jacobian) const override;
+  int GlobalSize() const override { return 4; }
+  int LocalSize() const override { return 3; }
 };
 
 // This provides a parameterization for homogeneous vectors which are commonly
@@ -246,21 +246,47 @@ class CERES_EXPORT EigenQuaternionParameterization
 // remain on the sphere. We assume that the last element of x is the scalar
 // component. The size of the homogeneous vector is required to be greater than
 // 1.
-class CERES_EXPORT HomogeneousVectorParameterization :
-      public LocalParameterization {
+class CERES_EXPORT HomogeneousVectorParameterization
+    : public LocalParameterization {
  public:
   explicit HomogeneousVectorParameterization(int size);
   virtual ~HomogeneousVectorParameterization() {}
-  virtual bool Plus(const double* x,
-                    const double* delta,
-                    double* x_plus_delta) const;
-  virtual bool ComputeJacobian(const double* x,
-                               double* jacobian) const;
-  virtual int GlobalSize() const { return size_; }
-  virtual int LocalSize() const { return size_ - 1; }
+  bool Plus(const double* x,
+            const double* delta,
+            double* x_plus_delta) const override;
+  bool ComputeJacobian(const double* x, double* jacobian) const override;
+  int GlobalSize() const override { return size_; }
+  int LocalSize() const override { return size_ - 1; }
 
  private:
   const int size_;
+};
+
+// This provides a parameterization for lines, where the line is
+// over-parameterized by an origin point and a direction vector. So the
+// parameter vector size needs to be two times the ambient space dimension,
+// where the first half is interpreted as the origin point and the second half
+// as the direction.
+//
+// The plus operator for the line direction is the same as for the
+// HomogeneousVectorParameterization. The update of the origin point is
+// perpendicular to the line direction before the update.
+//
+// This local parameterization is a special case of the affine Grassmannian
+// manifold (see https://en.wikipedia.org/wiki/Affine_Grassmannian_(manifold))
+// for the case Graff_1(R^n).
+template <int AmbientSpaceDimension>
+class LineParameterization : public LocalParameterization {
+ public:
+  static_assert(AmbientSpaceDimension >= 2,
+                "The ambient space must be at least 2");
+
+  bool Plus(const double* x,
+            const double* delta,
+            double* x_plus_delta) const override;
+  bool ComputeJacobian(const double* x, double* jacobian) const override;
+  int GlobalSize() const override { return 2 * AmbientSpaceDimension; }
+  int LocalSize() const override { return 2 * (AmbientSpaceDimension - 1); }
 };
 
 // Construct a local parameterization by taking the Cartesian product
@@ -268,9 +294,6 @@ class CERES_EXPORT HomogeneousVectorParameterization :
 // a parameter block is the cartesian product of two or more
 // manifolds. For example the parameters of a camera consist of a
 // rotation and a translation, i.e., SO(3) x R^3.
-//
-// Currently this class supports taking the cartesian product of up to
-// four local parameterizations.
 //
 // Example usage:
 //
@@ -281,35 +304,51 @@ class CERES_EXPORT HomogeneousVectorParameterization :
 // rotation is represented using a quaternion.
 class CERES_EXPORT ProductParameterization : public LocalParameterization {
  public:
+  ProductParameterization(const ProductParameterization&) = delete;
+  ProductParameterization& operator=(const ProductParameterization&) = delete;
+  virtual ~ProductParameterization() {}
   //
-  // NOTE: All the constructors take ownership of the input local
+  // NOTE: The constructor takes ownership of the input local
   // parameterizations.
   //
-  ProductParameterization(LocalParameterization* local_param1,
-                          LocalParameterization* local_param2);
+  template <typename... LocalParams>
+  ProductParameterization(LocalParams*... local_params)
+      : local_params_(sizeof...(LocalParams)),
+        local_size_{0},
+        global_size_{0},
+        buffer_size_{0} {
+    constexpr int kNumLocalParams = sizeof...(LocalParams);
+    static_assert(kNumLocalParams >= 2,
+                  "At least two local parameterizations must be specified.");
 
-  ProductParameterization(LocalParameterization* local_param1,
-                          LocalParameterization* local_param2,
-                          LocalParameterization* local_param3);
+    using LocalParameterizationPtr = std::unique_ptr<LocalParameterization>;
 
-  ProductParameterization(LocalParameterization* local_param1,
-                          LocalParameterization* local_param2,
-                          LocalParameterization* local_param3,
-                          LocalParameterization* local_param4);
+    // Wrap all raw pointers into std::unique_ptr for exception safety.
+    std::array<LocalParameterizationPtr, kNumLocalParams> local_params_array{
+        LocalParameterizationPtr(local_params)...};
 
-  virtual ~ProductParameterization();
-  virtual bool Plus(const double* x,
-                    const double* delta,
-                    double* x_plus_delta) const;
-  virtual bool ComputeJacobian(const double* x,
-                               double* jacobian) const;
-  virtual int GlobalSize() const { return global_size_; }
-  virtual int LocalSize() const { return local_size_; }
+    // Initialize internal state.
+    for (int i = 0; i < kNumLocalParams; ++i) {
+      LocalParameterizationPtr& param = local_params_[i];
+      param = std::move(local_params_array[i]);
+
+      buffer_size_ =
+          std::max(buffer_size_, param->LocalSize() * param->GlobalSize());
+      global_size_ += param->GlobalSize();
+      local_size_ += param->LocalSize();
+    }
+  }
+
+  bool Plus(const double* x,
+            const double* delta,
+            double* x_plus_delta) const override;
+  bool ComputeJacobian(const double* x,
+                       double* jacobian) const override;
+  int GlobalSize() const override { return global_size_; }
+  int LocalSize() const override { return local_size_; }
 
  private:
-  void Init();
-
-  std::vector<LocalParameterization*> local_params_;
+  std::vector<std::unique_ptr<LocalParameterization>> local_params_;
   int local_size_;
   int global_size_;
   int buffer_size_;
@@ -317,6 +356,8 @@ class CERES_EXPORT ProductParameterization : public LocalParameterization {
 
 }  // namespace ceres
 
+// clang-format off
 #include "ceres/internal/reenable_warnings.h"
+#include "ceres/internal/line_parameterization.h"
 
 #endif  // CERES_PUBLIC_LOCAL_PARAMETERIZATION_H_

@@ -73,16 +73,16 @@ class DenseSparseMatrix;
 // library. This solver always returns a solution, it is the user's
 // responsibility to judge if the solution is good enough for their
 // purposes.
-class DenseNormalCholeskySolver: public DenseSparseMatrixSolver {
+class DenseNormalCholeskySolver : public DenseSparseMatrixSolver {
  public:
   explicit DenseNormalCholeskySolver(const LinearSolver::Options& options);
 
  private:
-  virtual LinearSolver::Summary SolveImpl(
+  LinearSolver::Summary SolveImpl(
       DenseSparseMatrix* A,
       const double* b,
       const LinearSolver::PerSolveOptions& per_solve_options,
-      double* x);
+      double* x) final;
 
   LinearSolver::Summary SolveUsingLAPACK(
       DenseSparseMatrix* A,

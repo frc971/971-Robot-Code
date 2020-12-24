@@ -68,6 +68,7 @@ SPECIALIZATIONS = [(2, 2, 2),
                    (2, 4, 9),
                    (2, 4, "Eigen::Dynamic"),
                    (2, "Eigen::Dynamic", "Eigen::Dynamic"),
+                   (3, 3, 3),
                    (4, 4, 2),
                    (4, 4, 3),
                    (4, 4, 4),
@@ -100,9 +101,9 @@ def GenerateFactoryConditional(row_block_size, e_block_size, f_block_size):
     return "%s"
 
   if (len(conditionals) == 1):
-    return " if " + conditionals[0] + "{\n  %s\n }\n"
+    return "  if " + conditionals[0] + " {\n  %s\n  }\n"
 
-  return " if (" + " &&\n     ".join(conditionals) + ") {\n  %s\n }\n"
+  return "  if (" + " &&\n     ".join(conditionals) + ") {\n  %s\n  }\n"
 
 def Specialize(name, data):
   """
@@ -213,10 +214,10 @@ QUERY_FOOTER = """
 }  // namespace ceres
 """
 
-QUERY_ACTION = """ *row_block_size = %s;
-   *e_block_size = %s;
-   *f_block_size = %s;
-  return;"""
+QUERY_ACTION = """  *row_block_size = %s;
+    *e_block_size = %s;
+    *f_block_size = %s;
+    return;"""
 
 def GenerateQueryFile():
   """

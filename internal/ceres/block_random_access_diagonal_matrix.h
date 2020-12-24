@@ -46,11 +46,13 @@ namespace internal {
 
 // A thread safe block diagonal matrix implementation of
 // BlockRandomAccessMatrix.
-class BlockRandomAccessDiagonalMatrix : public BlockRandomAccessMatrix {
+class CERES_EXPORT_INTERNAL BlockRandomAccessDiagonalMatrix
+    : public BlockRandomAccessMatrix {
  public:
   // blocks is an array of block sizes.
   explicit BlockRandomAccessDiagonalMatrix(const std::vector<int>& blocks);
-  BlockRandomAccessDiagonalMatrix(const BlockRandomAccessDiagonalMatrix&) = delete;
+  BlockRandomAccessDiagonalMatrix(const BlockRandomAccessDiagonalMatrix&) =
+      delete;
   void operator=(const BlockRandomAccessDiagonalMatrix&) = delete;
 
   // The destructor is not thread safe. It assumes that no one is
@@ -58,16 +60,16 @@ class BlockRandomAccessDiagonalMatrix : public BlockRandomAccessMatrix {
   virtual ~BlockRandomAccessDiagonalMatrix();
 
   // BlockRandomAccessMatrix Interface.
-  virtual CellInfo* GetCell(int row_block_id,
-                            int col_block_id,
-                            int* row,
-                            int* col,
-                            int* row_stride,
-                            int* col_stride);
+  CellInfo* GetCell(int row_block_id,
+                    int col_block_id,
+                    int* row,
+                    int* col,
+                    int* row_stride,
+                    int* col_stride) final;
 
   // This is not a thread safe method, it assumes that no cell is
   // locked.
-  virtual void SetZero();
+  void SetZero() final;
 
   // Invert the matrix assuming that each block is positive definite.
   void Invert();
@@ -76,8 +78,8 @@ class BlockRandomAccessDiagonalMatrix : public BlockRandomAccessMatrix {
   void RightMultiply(const double* x, double* y) const;
 
   // Since the matrix is square, num_rows() == num_cols().
-  virtual int num_rows() const { return tsm_->num_rows(); }
-  virtual int num_cols() const { return tsm_->num_cols(); }
+  int num_rows() const final { return tsm_->num_rows(); }
+  int num_cols() const final { return tsm_->num_cols(); }
 
   const TripletSparseMatrix* matrix() const { return tsm_.get(); }
   TripletSparseMatrix* mutable_matrix() { return tsm_.get(); }

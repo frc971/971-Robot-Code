@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2019 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -34,18 +34,18 @@
 #include <cmath>
 #include <memory>
 #include <string>
+#include <unordered_set>
 #include <vector>
+
 #include "ceres/crs_matrix.h"
-#include "ceres/evaluation_callback.h"
 #include "ceres/internal/disable_warnings.h"
 #include "ceres/internal/port.h"
 #include "ceres/iteration_callback.h"
 #include "ceres/ordered_groups.h"
+#include "ceres/problem.h"
 #include "ceres/types.h"
 
 namespace ceres {
-
-class Problem;
 
 // Interface for non-linear least squares solvers.
 class CERES_EXPORT Solver {
@@ -118,7 +118,7 @@ class CERES_EXPORT Solver {
     // method, please see:
     //
     // Nocedal, J. (1980). "Updating Quasi-Newton Matrices with
-    // Limited Storage". Mathematics of Computation 35 (151): 773–782.
+    // Limited Storage". Mathematics of Computation 35 (151): 773-782.
     int max_lbfgs_rank = 20;
 
     // As part of the (L)BFGS update step (BFGS) / right-multiply step (L-BFGS),
@@ -188,9 +188,15 @@ class CERES_EXPORT Solver {
     //
     double min_line_search_step_contraction = 0.6;
 
-    // Maximum number of trial step size iterations during each line search,
-    // if a step size satisfying the search conditions cannot be found within
-    // this number of trials, the line search will terminate.
+    // Maximum number of trial step size iterations during each line
+    // search, if a step size satisfying the search conditions cannot
+    // be found within this number of trials, the line search will
+    // terminate.
+
+    // The minimum allowed value is 0 for trust region minimizer and 1
+    // otherwise. If 0 is specified for the trust region minimizer,
+    // then line search will not be used when solving constrained
+    // optimization problems.
     int max_num_line_search_step_size_iterations = 20;
 
     // Maximum number of restarts of the line search direction algorithm before
@@ -332,6 +338,31 @@ class CERES_EXPORT Solver {
     // preconditioner_type is CLUSTER_JACOBI or CLUSTER_TRIDIAGONAL.
     VisibilityClusteringType visibility_clustering_type = CANONICAL_VIEWS;
 
+    // Subset preconditioner is a preconditioner for problems with
+    // general sparsity. Given a subset of residual blocks of a
+    // problem, it uses the corresponding subset of the rows of the
+    // Jacobian to construct a preconditioner.
+    //
+    // Suppose the Jacobian J has been horizontally partitioned as
+    //
+    // J = [P]
+    //     [Q]
+    //
+    // Where, Q is the set of rows corresponding to the residual
+    // blocks in residual_blocks_for_subset_preconditioner.
+    //
+    // The preconditioner is the inverse of the matrix Q'Q.
+    //
+    // Obviously, the efficacy of the preconditioner depends on how
+    // well the matrix Q approximates J'J, or how well the chosen
+    // residual blocks approximate the non-linear least squares
+    // problem.
+    //
+    // If Solver::Options::preconditioner_type == SUBSET, then
+    // residual_blocks_for_subset_preconditioner must be non-empty.
+    std::unordered_set<ResidualBlockId>
+        residual_blocks_for_subset_preconditioner;
+
     // Ceres supports using multiple dense linear algebra libraries
     // for dense matrix factorizations. Currently EIGEN and LAPACK are
     // the valid choices. EIGEN is always available, LAPACK refers to
@@ -352,12 +383,12 @@ class CERES_EXPORT Solver {
     SparseLinearAlgebraLibraryType sparse_linear_algebra_library_type =
 #if !defined(CERES_NO_SUITESPARSE)
         SUITE_SPARSE;
-#elif !defined(CERES_NO_ACCELERATE_SPARSE)
-        ACCELERATE_SPARSE;
-#elif !defined(CERES_NO_CXSPARSE)
-        CX_SPARSE;
 #elif defined(CERES_USE_EIGEN_SPARSE)
         EIGEN_SPARSE;
+#elif !defined(CERES_NO_CXSPARSE)
+        CX_SPARSE;
+#elif !defined(CERES_NO_ACCELERATE_SPARSE)
+        ACCELERATE_SPARSE;
 #else
         NO_SPARSE;
 #endif
@@ -691,26 +722,18 @@ class CERES_EXPORT Solver {
     // optimistic. This number should be exposed for users to change.
     double gradient_check_numeric_derivative_relative_step_size = 1e-6;
 
-    // If true, the user's parameter blocks are updated at the end of
-    // every Minimizer iteration, otherwise they are updated when the
-    // Minimizer terminates. This is useful if, for example, the user
-    // wishes to visualize the state of the optimization every iteration
-    // (in combination with an IterationCallback).
-    //
-    // NOTE: If an evaluation_callback is provided, then the behaviour
-    // of this flag is slightly different in each case:
-    //
-    // (1) If update_state_every_iteration = false, then the user's
-    // state is changed at every residual and/or jacobian evaluation.
-    // Any user provided IterationCallbacks should NOT inspect and
-    // depend on the user visible state while the solver is running,
-    // since there will be undefined contents.
-    //
-    // (2) If update_state_every_iteration is true, then the user's
-    // state is changed at every residual and/or jacobian evaluation,
-    // BUT the solver will ensure that before the user provided
-    // IterationCallbacks are called, the user visible state will be
-    // updated to the current best point found by the solver.
+    // If update_state_every_iteration is true, then Ceres Solver will
+    // guarantee that at the end of every iteration and before any
+    // user provided IterationCallback is called, the parameter blocks
+    // are updated to the current best solution found by the
+    // solver. Thus the IterationCallback can inspect the values of
+    // the parameter blocks for purposes of computation, visualization
+    // or termination.
+
+    // If update_state_every_iteration is false then there is no such
+    // guarantee, and user provided IterationCallbacks should not
+    // expect to look at the parameter blocks and interpret their
+    // values.
     bool update_state_every_iteration = false;
 
     // Callbacks that are executed at the end of each iteration of the
@@ -729,19 +752,6 @@ class CERES_EXPORT Solver {
     //
     // The solver does NOT take ownership of these pointers.
     std::vector<IterationCallback*> callbacks;
-
-    // If non-NULL, gets notified when Ceres is about to evaluate the
-    // residuals and/or Jacobians. This enables sharing computation
-    // between residuals, which in some cases is important for efficient
-    // cost evaluation. See evaluation_callback.h for details.
-    //
-    // NOTE: Evaluation callbacks are incompatible with inner iterations.
-    //
-    // WARNING: This interacts with update_state_every_iteration. See
-    // the documentation for that option for more details.
-    //
-    // The solver does NOT take ownership of the pointer.
-    EvaluationCallback* evaluation_callback = nullptr;
   };
 
   struct CERES_EXPORT Summary {
@@ -783,22 +793,22 @@ class CERES_EXPORT Solver {
     // accepted. Unless use_non_monotonic_steps is true this is also
     // the number of steps in which the objective function value/cost
     // went down.
-    int num_successful_steps = -1.0;
+    int num_successful_steps = -1;
 
     // Number of minimizer iterations in which the step was rejected
     // either because it did not reduce the cost enough or the step
     // was not numerically valid.
-    int num_unsuccessful_steps = -1.0;
+    int num_unsuccessful_steps = -1;
 
     // Number of times inner iterations were performed.
-    int num_inner_iteration_steps = -1.0;
+    int num_inner_iteration_steps = -1;
 
     // Total number of iterations inside the line search algorithm
     // across all invocations. We call these iterations "steps" to
     // distinguish them from the outer iterations of the line search
     // and trust region minimizer algorithms which call the line
     // search algorithm as a subroutine.
-    int num_line_search_steps = -1.0;
+    int num_line_search_steps = -1;
 
     // All times reported below are wall times.
 
@@ -829,7 +839,7 @@ class CERES_EXPORT Solver {
     int num_linear_solves = -1;
 
     // Time (in seconds) spent evaluating the residual vector.
-    double residual_evaluation_time_in_seconds = 1.0;
+    double residual_evaluation_time_in_seconds = -1.0;
 
     // Number of residual only evaluations.
     int num_residual_evaluations = -1;
@@ -1043,7 +1053,8 @@ class CERES_EXPORT Solver {
 };
 
 // Helper function which avoids going through the interface.
-CERES_EXPORT void Solve(const Solver::Options& options, Problem* problem,
+CERES_EXPORT void Solve(const Solver::Options& options,
+                        Problem* problem,
                         Solver::Summary* summary);
 
 }  // namespace ceres

@@ -1,5 +1,5 @@
 # Ceres Solver - A fast non-linear least squares minimizer
-# Copyright 2015 Google Inc. All rights reserved.
+# Copyright 2017 Google Inc. All rights reserved.
 # http://ceres-solver.org/
 #
 # Redistribution and use in source and binary forms, with or without
@@ -26,25 +26,26 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Author: pablo.speciale@gmail.com (Pablo Speciale)
-#
-# FIND_PACKAGE() searches for a <package>Config.cmake file and an associated
-# <package>Version.cmake file, which it loads to check the version number.
-#
-# This file can be used with CONFIGURE_FILE() to generate such a file for a
-# project with very basic logic.
-#
-# It sets PACKAGE_VERSION_EXACT if the current version string and the requested
-# version string are exactly the same and it sets PACKAGE_VERSION_COMPATIBLE
-# if the current version is >= requested version.
+# Author: sergey.vfx@gmail.com (Sergey Sharybin)
 
-set(PACKAGE_VERSION @CERES_VERSION@)
-
-if ("${PACKAGE_VERSION}" VERSION_LESS "${PACKAGE_FIND_VERSION}")
-   set(PACKAGE_VERSION_COMPATIBLE FALSE)
-else ("${PACKAGE_VERSION}" VERSION_LESS "${PACKAGE_FIND_VERSION}")
-   set(PACKAGE_VERSION_COMPATIBLE TRUE)
-   if ("${PACKAGE_FIND_VERSION}" STREQUAL "${PACKAGE_VERSION}")
-      set(PACKAGE_VERSION_EXACT TRUE)
-   endif ("${PACKAGE_FIND_VERSION}" STREQUAL "${PACKAGE_VERSION}")
-endif ("${PACKAGE_VERSION}" VERSION_LESS "${PACKAGE_FIND_VERSION}")
+function(add_cxx_compiler_flag_if_supported
+    AGGREGATED_CXX_FLAGS_VAR
+    FLAG_TO_ADD_IF_SUPPORTED)
+  include(CheckCXXCompilerFlag)
+  # Use of whitespace or '-' in variable names (used by CheckCXXSourceCompiles
+  # as #defines) will trigger errors.
+  string(STRIP "${FLAG_TO_ADD_IF_SUPPORTED}" FLAG_TO_ADD_IF_SUPPORTED)
+  # Build an informatively named test result variable so that it will be evident
+  # which tests were performed/succeeded in the CMake output, e.g for -Wall:
+  #
+  # -- Performing Test CHECK_CXX_FLAG_Wall - Success
+  #
+  # NOTE: This variable is also used to cache test result.
+  string(REPLACE "-" "_" CHECK_CXX_FLAG
+    "CHECK_CXX_FLAG${FLAG_TO_ADD_IF_SUPPORTED}")
+  check_cxx_compiler_flag(${FLAG_TO_ADD_IF_SUPPORTED} ${CHECK_CXX_FLAG})
+  if (${CHECK_CXX_FLAG})
+    set(${AGGREGATED_CXX_FLAGS_VAR}
+      "${${AGGREGATED_CXX_FLAGS_VAR}} ${FLAG_TO_ADD_IF_SUPPORTED}" PARENT_SCOPE)
+  endif()
+endfunction()

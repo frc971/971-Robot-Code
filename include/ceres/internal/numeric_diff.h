@@ -36,6 +36,7 @@
 #define CERES_PUBLIC_INTERNAL_NUMERIC_DIFF_H_
 
 #include <cstring>
+#include <utility>
 
 #include "Eigen/Dense"
 #include "Eigen/StdVector"
@@ -46,15 +47,17 @@
 #include "ceres/types.h"
 #include "glog/logging.h"
 
-
 namespace ceres {
 namespace internal {
 
 // This is split from the main class because C++ doesn't allow partial template
 // specializations for member functions. The alternative is to repeat the main
 // class for differing numbers of parameters, which is also unfortunate.
-template <typename CostFunctor, NumericDiffMethodType kMethod,
-          int kNumResiduals, typename ParameterDims, int kParameterBlock,
+template <typename CostFunctor,
+          NumericDiffMethodType kMethod,
+          int kNumResiduals,
+          typename ParameterDims,
+          int kParameterBlock,
           int kParameterBlockSize>
 struct NumericDiff {
   // Mutates parameters but must restore them before return.
@@ -65,23 +68,23 @@ struct NumericDiff {
       int num_residuals,
       int parameter_block_index,
       int parameter_block_size,
-      double **parameters,
-      double *jacobian) {
+      double** parameters,
+      double* jacobian) {
+    using Eigen::ColMajor;
     using Eigen::Map;
     using Eigen::Matrix;
     using Eigen::RowMajor;
-    using Eigen::ColMajor;
 
     DCHECK(jacobian);
 
     const int num_residuals_internal =
         (kNumResiduals != ceres::DYNAMIC ? kNumResiduals : num_residuals);
     const int parameter_block_index_internal =
-        (kParameterBlock != ceres::DYNAMIC ? kParameterBlock :
-                                             parameter_block_index);
+        (kParameterBlock != ceres::DYNAMIC ? kParameterBlock
+                                           : parameter_block_index);
     const int parameter_block_size_internal =
-        (kParameterBlockSize != ceres::DYNAMIC ? kParameterBlockSize :
-                                                 parameter_block_size);
+        (kParameterBlockSize != ceres::DYNAMIC ? kParameterBlockSize
+                                               : parameter_block_size);
 
     typedef Matrix<double, kNumResiduals, 1> ResidualVector;
     typedef Matrix<double, kParameterBlockSize, 1> ParameterVector;
@@ -96,17 +99,17 @@ struct NumericDiff {
                    (kParameterBlockSize == 1) ? ColMajor : RowMajor>
         JacobianMatrix;
 
-    Map<JacobianMatrix> parameter_jacobian(jacobian,
-                                           num_residuals_internal,
-                                           parameter_block_size_internal);
+    Map<JacobianMatrix> parameter_jacobian(
+        jacobian, num_residuals_internal, parameter_block_size_internal);
 
     Map<ParameterVector> x_plus_delta(
         parameters[parameter_block_index_internal],
         parameter_block_size_internal);
     ParameterVector x(x_plus_delta);
-    ParameterVector step_size = x.array().abs() *
-        ((kMethod == RIDDERS) ? options.ridders_relative_initial_step_size :
-        options.relative_step_size);
+    ParameterVector step_size =
+        x.array().abs() * ((kMethod == RIDDERS)
+                               ? options.ridders_relative_initial_step_size
+                               : options.relative_step_size);
 
     // It is not a good idea to make the step size arbitrarily
     // small. This will lead to problems with round off and numerical
@@ -117,22 +120,24 @@ struct NumericDiff {
     // For Ridders' method, the initial step size is required to be large,
     // thus ridders_relative_initial_step_size is used.
     if (kMethod == RIDDERS) {
-      min_step_size = std::max(min_step_size,
-                               options.ridders_relative_initial_step_size);
+      min_step_size =
+          std::max(min_step_size, options.ridders_relative_initial_step_size);
     }
 
     // For each parameter in the parameter block, use finite differences to
     // compute the derivative for that parameter.
     FixedArray<double> temp_residual_array(num_residuals_internal);
     FixedArray<double> residual_array(num_residuals_internal);
-    Map<ResidualVector> residuals(residual_array.get(),
+    Map<ResidualVector> residuals(residual_array.data(),
                                   num_residuals_internal);
 
     for (int j = 0; j < parameter_block_size_internal; ++j) {
       const double delta = std::max(min_step_size, step_size(j));
 
       if (kMethod == RIDDERS) {
-        if (!EvaluateRiddersJacobianColumn(functor, j, delta,
+        if (!EvaluateRiddersJacobianColumn(functor,
+                                           j,
+                                           delta,
                                            options,
                                            num_residuals_internal,
                                            parameter_block_size_internal,
@@ -140,20 +145,22 @@ struct NumericDiff {
                                            residuals_at_eval_point,
                                            parameters,
                                            x_plus_delta.data(),
-                                           temp_residual_array.get(),
-                                           residual_array.get())) {
+                                           temp_residual_array.data(),
+                                           residual_array.data())) {
           return false;
         }
       } else {
-        if (!EvaluateJacobianColumn(functor, j, delta,
+        if (!EvaluateJacobianColumn(functor,
+                                    j,
+                                    delta,
                                     num_residuals_internal,
                                     parameter_block_size_internal,
                                     x.data(),
                                     residuals_at_eval_point,
                                     parameters,
                                     x_plus_delta.data(),
-                                    temp_residual_array.get(),
-                                    residual_array.get())) {
+                                    temp_residual_array.data(),
+                                    residual_array.data())) {
           return false;
         }
       }
@@ -181,8 +188,7 @@ struct NumericDiff {
     typedef Matrix<double, kParameterBlockSize, 1> ParameterVector;
 
     Map<const ParameterVector> x(x_ptr, parameter_block_size);
-    Map<ParameterVector> x_plus_delta(x_plus_delta_ptr,
-                                      parameter_block_size);
+    Map<ParameterVector> x_plus_delta(x_plus_delta_ptr, parameter_block_size);
 
     Map<ResidualVector> residuals(residuals_ptr, num_residuals);
     Map<ResidualVector> temp_residuals(temp_residuals_ptr, num_residuals);
@@ -190,9 +196,8 @@ struct NumericDiff {
     // Mutate 1 element at a time and then restore.
     x_plus_delta(parameter_index) = x(parameter_index) + delta;
 
-    if (!VariadicEvaluate<ParameterDims>(*functor,
-                                         parameters,
-                                         residuals.data())) {
+    if (!VariadicEvaluate<ParameterDims>(
+            *functor, parameters, residuals.data())) {
       return false;
     }
 
@@ -205,9 +210,8 @@ struct NumericDiff {
       // Compute the function on the other side of x(parameter_index).
       x_plus_delta(parameter_index) = x(parameter_index) - delta;
 
-      if (!VariadicEvaluate<ParameterDims>(*functor,
-                                           parameters,
-                                           temp_residuals.data())) {
+      if (!VariadicEvaluate<ParameterDims>(
+              *functor, parameters, temp_residuals.data())) {
         return false;
       }
 
@@ -216,8 +220,7 @@ struct NumericDiff {
     } else {
       // Forward difference only; reuse existing residuals evaluation.
       residuals -=
-          Map<const ResidualVector>(residuals_at_eval_point,
-                                    num_residuals);
+          Map<const ResidualVector>(residuals_at_eval_point, num_residuals);
     }
 
     // Restore x_plus_delta.
@@ -253,17 +256,17 @@ struct NumericDiff {
       double* x_plus_delta_ptr,
       double* temp_residuals_ptr,
       double* residuals_ptr) {
+    using Eigen::aligned_allocator;
     using Eigen::Map;
     using Eigen::Matrix;
-    using Eigen::aligned_allocator;
 
     typedef Matrix<double, kNumResiduals, 1> ResidualVector;
-    typedef Matrix<double, kNumResiduals, Eigen::Dynamic> ResidualCandidateMatrix;
+    typedef Matrix<double, kNumResiduals, Eigen::Dynamic>
+        ResidualCandidateMatrix;
     typedef Matrix<double, kParameterBlockSize, 1> ParameterVector;
 
     Map<const ParameterVector> x(x_ptr, parameter_block_size);
-    Map<ParameterVector> x_plus_delta(x_plus_delta_ptr,
-                                      parameter_block_size);
+    Map<ParameterVector> x_plus_delta(x_plus_delta_ptr, parameter_block_size);
 
     Map<ResidualVector> residuals(residuals_ptr, num_residuals);
     Map<ResidualVector> temp_residuals(temp_residuals_ptr, num_residuals);
@@ -274,18 +277,16 @@ struct NumericDiff {
     // As the derivative is estimated, the step size decreases.
     // By default, the step sizes are chosen so that the middle column
     // of the Romberg tableau uses the input delta.
-    double current_step_size = delta *
-        pow(options.ridders_step_shrink_factor,
-            options.max_num_ridders_extrapolations / 2);
+    double current_step_size =
+        delta * pow(options.ridders_step_shrink_factor,
+                    options.max_num_ridders_extrapolations / 2);
 
     // Double-buffering temporary differential candidate vectors
     // from previous step size.
     ResidualCandidateMatrix stepsize_candidates_a(
-        num_residuals,
-        options.max_num_ridders_extrapolations);
+        num_residuals, options.max_num_ridders_extrapolations);
     ResidualCandidateMatrix stepsize_candidates_b(
-        num_residuals,
-        options.max_num_ridders_extrapolations);
+        num_residuals, options.max_num_ridders_extrapolations);
     ResidualCandidateMatrix* current_candidates = &stepsize_candidates_a;
     ResidualCandidateMatrix* previous_candidates = &stepsize_candidates_b;
 
@@ -303,7 +304,9 @@ struct NumericDiff {
     //  3. Extrapolation becomes numerically unstable.
     for (int i = 0; i < options.max_num_ridders_extrapolations; ++i) {
       // Compute the numerical derivative at this step size.
-      if (!EvaluateJacobianColumn(functor, parameter_index, current_step_size,
+      if (!EvaluateJacobianColumn(functor,
+                                  parameter_index,
+                                  current_step_size,
                                   num_residuals,
                                   parameter_block_size,
                                   x.data(),
@@ -326,23 +329,24 @@ struct NumericDiff {
 
       // Extrapolation factor for Richardson acceleration method (see below).
       double richardson_factor = options.ridders_step_shrink_factor *
-          options.ridders_step_shrink_factor;
+                                 options.ridders_step_shrink_factor;
       for (int k = 1; k <= i; ++k) {
         // Extrapolate the various orders of finite differences using
         // the Richardson acceleration method.
         current_candidates->col(k) =
             (richardson_factor * current_candidates->col(k - 1) -
-             previous_candidates->col(k - 1)) / (richardson_factor - 1.0);
+             previous_candidates->col(k - 1)) /
+            (richardson_factor - 1.0);
 
         richardson_factor *= options.ridders_step_shrink_factor *
-            options.ridders_step_shrink_factor;
+                             options.ridders_step_shrink_factor;
 
         // Compute the difference between the previous value and the current.
         double candidate_error = std::max(
-            (current_candidates->col(k) -
-             current_candidates->col(k - 1)).norm(),
-            (current_candidates->col(k) -
-             previous_candidates->col(k - 1)).norm());
+            (current_candidates->col(k) - current_candidates->col(k - 1))
+                .norm(),
+            (current_candidates->col(k) - previous_candidates->col(k - 1))
+                .norm());
 
         // If the error has decreased, update results.
         if (candidate_error <= norm_error) {
@@ -364,8 +368,9 @@ struct NumericDiff {
       // Check to see if the current gradient estimate is numerically unstable.
       // If so, bail out and return the last stable result.
       if (i > 0) {
-        double tableau_error = (current_candidates->col(i) -
-            previous_candidates->col(i - 1)).norm();
+        double tableau_error =
+            (current_candidates->col(i) - previous_candidates->col(i - 1))
+                .norm();
 
         // Compare current error to the chosen candidate's error.
         if (tableau_error >= 2 * norm_error) {
@@ -437,7 +442,7 @@ struct EvaluateJacobianForParameterBlocks;
 
 template <typename ParameterDims, int N, int... Ns, int ParameterIdx>
 struct EvaluateJacobianForParameterBlocks<ParameterDims,
-                                          integer_sequence<int, N, Ns...>,
+                                          std::integer_sequence<int, N, Ns...>,
                                           ParameterIdx> {
   template <NumericDiffMethodType method,
             int kNumResiduals,
@@ -468,7 +473,7 @@ struct EvaluateJacobianForParameterBlocks<ParameterDims,
     }
 
     return EvaluateJacobianForParameterBlocks<ParameterDims,
-                                              integer_sequence<int, Ns...>,
+                                              std::integer_sequence<int, Ns...>,
                                               ParameterIdx + 1>::
         template Apply<method, kNumResiduals>(functor,
                                               residuals_at_eval_point,
@@ -481,14 +486,18 @@ struct EvaluateJacobianForParameterBlocks<ParameterDims,
 
 // End of 'recursion'. Nothing more to do.
 template <typename ParameterDims, int ParameterIdx>
-struct EvaluateJacobianForParameterBlocks<ParameterDims, integer_sequence<int>,
+struct EvaluateJacobianForParameterBlocks<ParameterDims,
+                                          std::integer_sequence<int>,
                                           ParameterIdx> {
-  template <NumericDiffMethodType method, int kNumResiduals,
+  template <NumericDiffMethodType method,
+            int kNumResiduals,
             typename CostFunctor>
   static bool Apply(const CostFunctor* /* NOT USED*/,
                     const double* /* NOT USED*/,
-                    const NumericDiffOptions& /* NOT USED*/, int /* NOT USED*/,
-                    double** /* NOT USED*/, double** /* NOT USED*/) {
+                    const NumericDiffOptions& /* NOT USED*/,
+                    int /* NOT USED*/,
+                    double** /* NOT USED*/,
+                    double** /* NOT USED*/) {
     return true;
   }
 };

@@ -67,23 +67,22 @@ class BlockRandomAccessSparseMatrixAdapter : public LinearOperator {
  public:
   explicit BlockRandomAccessSparseMatrixAdapter(
       const BlockRandomAccessSparseMatrix& m)
-      : m_(m) {
-  }
+      : m_(m) {}
 
   virtual ~BlockRandomAccessSparseMatrixAdapter() {}
 
   // y = y + Ax;
-  virtual void RightMultiply(const double* x, double* y) const {
+  void RightMultiply(const double* x, double* y) const final {
     m_.SymmetricRightMultiply(x, y);
   }
 
   // y = y + A'x;
-  virtual void LeftMultiply(const double* x, double* y) const {
+  void LeftMultiply(const double* x, double* y) const final {
     m_.SymmetricRightMultiply(x, y);
   }
 
-  virtual int num_rows() const { return m_.num_rows(); }
-  virtual int num_cols() const { return m_.num_rows(); }
+  int num_rows() const final { return m_.num_rows(); }
+  int num_cols() const final { return m_.num_rows(); }
 
  private:
   const BlockRandomAccessSparseMatrix& m_;
@@ -93,29 +92,28 @@ class BlockRandomAccessDiagonalMatrixAdapter : public LinearOperator {
  public:
   explicit BlockRandomAccessDiagonalMatrixAdapter(
       const BlockRandomAccessDiagonalMatrix& m)
-      : m_(m) {
-  }
+      : m_(m) {}
 
   virtual ~BlockRandomAccessDiagonalMatrixAdapter() {}
 
   // y = y + Ax;
-  virtual void RightMultiply(const double* x, double* y) const {
+  void RightMultiply(const double* x, double* y) const final {
     m_.RightMultiply(x, y);
   }
 
   // y = y + A'x;
-  virtual void LeftMultiply(const double* x, double* y) const {
+  void LeftMultiply(const double* x, double* y) const final {
     m_.RightMultiply(x, y);
   }
 
-  virtual int num_rows() const { return m_.num_rows(); }
-  virtual int num_cols() const { return m_.num_rows(); }
+  int num_rows() const final { return m_.num_rows(); }
+  int num_cols() const final { return m_.num_rows(); }
 
  private:
   const BlockRandomAccessDiagonalMatrix& m_;
 };
 
-} // namespace
+}  // namespace
 
 LinearSolver::Summary SchurComplementSolver::SolveImpl(
     BlockSparseMatrix* A,
@@ -124,24 +122,43 @@ LinearSolver::Summary SchurComplementSolver::SolveImpl(
     double* x) {
   EventLogger event_logger("SchurComplementSolver::Solve");
 
+  const CompressedRowBlockStructure* bs = A->block_structure();
   if (eliminator_.get() == NULL) {
-    InitStorage(A->block_structure());
-    DetectStructure(*A->block_structure(),
-                    options_.elimination_groups[0],
+    const int num_eliminate_blocks = options_.elimination_groups[0];
+    const int num_f_blocks = bs->cols.size() - num_eliminate_blocks;
+
+    InitStorage(bs);
+    DetectStructure(*bs,
+                    num_eliminate_blocks,
                     &options_.row_block_size,
                     &options_.e_block_size,
                     &options_.f_block_size);
-    eliminator_.reset(SchurEliminatorBase::Create(options_));
-    CHECK(eliminator_ != nullptr);
+
+    // For the special case of the static structure <2,3,6> with
+    // exactly one f block use the SchurEliminatorForOneFBlock.
+    //
+    // TODO(sameeragarwal): A more scalable template specialization
+    // mechanism that does not cause binary bloat.
+    if (options_.row_block_size == 2 && options_.e_block_size == 3 &&
+        options_.f_block_size == 6 && num_f_blocks == 1) {
+      eliminator_.reset(new SchurEliminatorForOneFBlock<2, 3, 6>);
+    } else {
+      eliminator_.reset(SchurEliminatorBase::Create(options_));
+    }
+
+    CHECK(eliminator_);
     const bool kFullRankETE = true;
-    eliminator_->Init(
-        options_.elimination_groups[0], kFullRankETE, A->block_structure());
-  };
+    eliminator_->Init(num_eliminate_blocks, kFullRankETE, bs);
+  }
 
   std::fill(x, x + A->num_cols(), 0.0);
   event_logger.AddEvent("Setup");
 
-  eliminator_->Eliminate(A, b, per_solve_options.D, lhs_.get(), rhs_.get());
+  eliminator_->Eliminate(BlockSparseMatrixData(*A),
+                         b,
+                         per_solve_options.D,
+                         lhs_.get(),
+                         rhs_.get());
   event_logger.AddEvent("Eliminate");
 
   double* reduced_solution = x + A->num_cols() - lhs_->num_cols();
@@ -150,7 +167,8 @@ LinearSolver::Summary SchurComplementSolver::SolveImpl(
   event_logger.AddEvent("ReducedSolve");
 
   if (summary.termination_type == LINEAR_SOLVER_SUCCESS) {
-    eliminator_->BackSubstitute(A, b, per_solve_options.D, reduced_solution, x);
+    eliminator_->BackSubstitute(
+        BlockSparseMatrixData(*A), b, per_solve_options.D, reduced_solution, x);
     event_logger.AddEvent("BackSubstitute");
   }
 
@@ -165,9 +183,7 @@ void DenseSchurComplementSolver::InitStorage(
   const int num_col_blocks = bs->cols.size();
 
   vector<int> blocks(num_col_blocks - num_eliminate_blocks, 0);
-  for (int i = num_eliminate_blocks, j = 0;
-       i < num_col_blocks;
-       ++i, ++j) {
+  for (int i = num_eliminate_blocks, j = 0; i < num_col_blocks; ++i, ++j) {
     blocks[j] = bs->cols[i].size;
   }
 
@@ -178,10 +194,8 @@ void DenseSchurComplementSolver::InitStorage(
 // Solve the system Sx = r, assuming that the matrix S is stored in a
 // BlockRandomAccessDenseMatrix. The linear system is solved using
 // Eigen's Cholesky factorization.
-LinearSolver::Summary
-DenseSchurComplementSolver::SolveReducedLinearSystem(
-    const LinearSolver::PerSolveOptions& per_solve_options,
-    double* solution) {
+LinearSolver::Summary DenseSchurComplementSolver::SolveReducedLinearSystem(
+    const LinearSolver::PerSolveOptions& per_solve_options, double* solution) {
   LinearSolver::Summary summary;
   summary.num_iterations = 0;
   summary.termination_type = LINEAR_SOLVER_SUCCESS;
@@ -202,8 +216,8 @@ DenseSchurComplementSolver::SolveReducedLinearSystem(
   if (options().dense_linear_algebra_library_type == EIGEN) {
     Eigen::LLT<Matrix, Eigen::Upper> llt =
         ConstMatrixRef(m->values(), num_rows, num_rows)
-        .selfadjointView<Eigen::Upper>()
-        .llt();
+            .selfadjointView<Eigen::Upper>()
+            .llt();
     if (llt.info() != Eigen::Success) {
       summary.termination_type = LINEAR_SOLVER_FAILURE;
       summary.message =
@@ -214,11 +228,8 @@ DenseSchurComplementSolver::SolveReducedLinearSystem(
     VectorRef(solution, num_rows) = llt.solve(ConstVectorRef(rhs(), num_rows));
   } else {
     VectorRef(solution, num_rows) = ConstVectorRef(rhs(), num_rows);
-    summary.termination_type =
-        LAPACK::SolveInPlaceUsingCholesky(num_rows,
-                                          m->values(),
-                                          solution,
-                                          &summary.message);
+    summary.termination_type = LAPACK::SolveInPlaceUsingCholesky(
+        num_rows, m->values(), solution, &summary.message);
   }
 
   return summary;
@@ -232,8 +243,7 @@ SparseSchurComplementSolver::SparseSchurComplementSolver(
   }
 }
 
-SparseSchurComplementSolver::~SparseSchurComplementSolver() {
-}
+SparseSchurComplementSolver::~SparseSchurComplementSolver() {}
 
 // Determine the non-zero blocks in the Schur Complement matrix, and
 // initialize a BlockRandomAccessSparseMatrix object.
@@ -347,8 +357,7 @@ LinearSolver::Summary SparseSchurComplementSolver::SolveReducedLinearSystem(
 
 LinearSolver::Summary
 SparseSchurComplementSolver::SolveReducedLinearSystemUsingConjugateGradients(
-    const LinearSolver::PerSolveOptions& per_solve_options,
-    double* solution) {
+    const LinearSolver::PerSolveOptions& per_solve_options, double* solution) {
   CHECK(options().use_explicit_schur_complement);
   const int num_rows = lhs()->num_rows();
   // The case where there are no f blocks, and the system is block
@@ -368,13 +377,12 @@ SparseSchurComplementSolver::SolveReducedLinearSystemUsingConjugateGradients(
     preconditioner_.reset(new BlockRandomAccessDiagonalMatrix(blocks_));
   }
 
-  BlockRandomAccessSparseMatrix* sc =
-      down_cast<BlockRandomAccessSparseMatrix*>(
-          const_cast<BlockRandomAccessMatrix*>(lhs()));
+  BlockRandomAccessSparseMatrix* sc = down_cast<BlockRandomAccessSparseMatrix*>(
+      const_cast<BlockRandomAccessMatrix*>(lhs()));
 
   // Extract block diagonal from the Schur complement to construct the
   // schur_jacobi preconditioner.
-  for (int i = 0; i  < blocks_.size(); ++i) {
+  for (int i = 0; i < blocks_.size(); ++i) {
     const int block_size = blocks_[i];
 
     int sc_r, sc_c, sc_row_stride, sc_col_stride;
@@ -401,7 +409,6 @@ SparseSchurComplementSolver::SolveReducedLinearSystemUsingConjugateGradients(
   std::unique_ptr<LinearOperator> preconditioner_adapter(
       new BlockRandomAccessDiagonalMatrixAdapter(*preconditioner_));
 
-
   LinearSolver::Options cg_options;
   cg_options.min_num_iterations = options().min_num_iterations;
   cg_options.max_num_iterations = options().max_num_iterations;
@@ -412,10 +419,8 @@ SparseSchurComplementSolver::SolveReducedLinearSystemUsingConjugateGradients(
   cg_per_solve_options.q_tolerance = per_solve_options.q_tolerance;
   cg_per_solve_options.preconditioner = preconditioner_adapter.get();
 
-  return cg_solver.Solve(lhs_adapter.get(),
-                         rhs(),
-                         cg_per_solve_options,
-                         solution);
+  return cg_solver.Solve(
+      lhs_adapter.get(), rhs(), cg_per_solve_options, solution);
 }
 
 }  // namespace internal

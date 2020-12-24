@@ -30,12 +30,13 @@
 
 #include "ceres/reorder_program.h"
 
+#include <random>
+
 #include "ceres/parameter_block.h"
 #include "ceres/problem_impl.h"
 #include "ceres/program.h"
 #include "ceres/sized_cost_function.h"
 #include "ceres/solver.h"
-
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
@@ -48,9 +49,9 @@ using std::vector;
 template <int kNumResiduals, int... Ns>
 class MockCostFunctionBase : public SizedCostFunction<kNumResiduals, Ns...> {
  public:
-  virtual bool Evaluate(double const* const* parameters,
-                        double* residuals,
-                        double** jacobians) const {
+  bool Evaluate(double const* const* parameters,
+                double* residuals,
+                double** jacobians) const final {
     // Do nothing. This is never called.
     return true;
   }
@@ -70,12 +71,12 @@ TEST(_, ReorderResidualBlockNormalFunction) {
   problem.AddParameterBlock(&y, 1);
   problem.AddParameterBlock(&z, 1);
 
-  problem.AddResidualBlock(new UnaryCostFunction(), NULL, &x);
-  problem.AddResidualBlock(new BinaryCostFunction(), NULL, &z, &x);
-  problem.AddResidualBlock(new BinaryCostFunction(), NULL, &z, &y);
-  problem.AddResidualBlock(new UnaryCostFunction(), NULL, &z);
-  problem.AddResidualBlock(new BinaryCostFunction(), NULL, &x, &y);
-  problem.AddResidualBlock(new UnaryCostFunction(), NULL, &y);
+  problem.AddResidualBlock(new UnaryCostFunction(), nullptr, &x);
+  problem.AddResidualBlock(new BinaryCostFunction(), nullptr, &z, &x);
+  problem.AddResidualBlock(new BinaryCostFunction(), nullptr, &z, &y);
+  problem.AddResidualBlock(new UnaryCostFunction(), nullptr, &z);
+  problem.AddResidualBlock(new BinaryCostFunction(), nullptr, &x, &y);
+  problem.AddResidualBlock(new UnaryCostFunction(), nullptr, &y);
 
   ParameterBlockOrdering* linear_solver_ordering = new ParameterBlockOrdering;
   linear_solver_ordering->AddElementToGroup(&x, 0);
@@ -107,9 +108,7 @@ TEST(_, ReorderResidualBlockNormalFunction) {
 
   std::string message;
   EXPECT_TRUE(LexicographicallyOrderResidualBlocks(
-                  2,
-                  problem.mutable_program(),
-                  &message));
+      2, problem.mutable_program(), &message));
   EXPECT_EQ(residual_blocks.size(), expected_residual_blocks.size());
   for (int i = 0; i < expected_residual_blocks.size(); ++i) {
     EXPECT_EQ(residual_blocks[i], expected_residual_blocks[i]);
@@ -132,10 +131,8 @@ TEST(_, ApplyOrderingOrderingTooSmall) {
 
   Program program(problem.program());
   std::string message;
-  EXPECT_FALSE(ApplyOrdering(problem.parameter_map(),
-                             linear_solver_ordering,
-                             &program,
-                             &message));
+  EXPECT_FALSE(ApplyOrdering(
+      problem.parameter_map(), linear_solver_ordering, &program, &message));
 }
 
 TEST(_, ApplyOrderingNormal) {
@@ -156,10 +153,8 @@ TEST(_, ApplyOrderingNormal) {
   Program* program = problem.mutable_program();
   std::string message;
 
-  EXPECT_TRUE(ApplyOrdering(problem.parameter_map(),
-                            linear_solver_ordering,
-                            program,
-                            &message));
+  EXPECT_TRUE(ApplyOrdering(
+      problem.parameter_map(), linear_solver_ordering, program, &message));
   const vector<ParameterBlock*>& parameter_blocks = program->parameter_blocks();
 
   EXPECT_EQ(parameter_blocks.size(), 3);
@@ -169,16 +164,16 @@ TEST(_, ApplyOrderingNormal) {
 }
 
 #ifndef CERES_NO_SUITESPARSE
-class ReorderProgramForSparseNormalCholeskyUsingSuiteSparseTest :
-      public ::testing::Test {
+class ReorderProgramFoSparseCholeskyUsingSuiteSparseTest
+    : public ::testing::Test {
  protected:
   void SetUp() {
-    problem_.AddResidualBlock(new UnaryCostFunction(), NULL, &x_);
-    problem_.AddResidualBlock(new BinaryCostFunction(), NULL, &z_, &x_);
-    problem_.AddResidualBlock(new BinaryCostFunction(), NULL, &z_, &y_);
-    problem_.AddResidualBlock(new UnaryCostFunction(), NULL, &z_);
-    problem_.AddResidualBlock(new BinaryCostFunction(), NULL, &x_, &y_);
-    problem_.AddResidualBlock(new UnaryCostFunction(), NULL, &y_);
+    problem_.AddResidualBlock(new UnaryCostFunction(), nullptr, &x_);
+    problem_.AddResidualBlock(new BinaryCostFunction(), nullptr, &z_, &x_);
+    problem_.AddResidualBlock(new BinaryCostFunction(), nullptr, &z_, &y_);
+    problem_.AddResidualBlock(new UnaryCostFunction(), nullptr, &z_);
+    problem_.AddResidualBlock(new BinaryCostFunction(), nullptr, &x_, &y_);
+    problem_.AddResidualBlock(new UnaryCostFunction(), nullptr, &y_);
   }
 
   void ComputeAndValidateOrdering(
@@ -188,11 +183,11 @@ class ReorderProgramForSparseNormalCholeskyUsingSuiteSparseTest :
         program->parameter_blocks();
 
     std::string error;
-    EXPECT_TRUE(ReorderProgramForSparseNormalCholesky(
-                    ceres::SUITE_SPARSE,
-                    linear_solver_ordering,
-                    program,
-                    &error));
+    EXPECT_TRUE(ReorderProgramForSparseCholesky(ceres::SUITE_SPARSE,
+                                                linear_solver_ordering,
+                                                0, /* use all rows */
+                                                program,
+                                                &error));
     const vector<ParameterBlock*>& ordered_parameter_blocks =
         program->parameter_blocks();
     EXPECT_EQ(ordered_parameter_blocks.size(),
@@ -208,7 +203,7 @@ class ReorderProgramForSparseNormalCholeskyUsingSuiteSparseTest :
   double z_;
 };
 
-TEST_F(ReorderProgramForSparseNormalCholeskyUsingSuiteSparseTest,
+TEST_F(ReorderProgramFoSparseCholeskyUsingSuiteSparseTest,
        EverythingInGroupZero) {
   ParameterBlockOrdering linear_solver_ordering;
   linear_solver_ordering.AddElementToGroup(&x_, 0);
@@ -218,8 +213,7 @@ TEST_F(ReorderProgramForSparseNormalCholeskyUsingSuiteSparseTest,
   ComputeAndValidateOrdering(linear_solver_ordering);
 }
 
-TEST_F(ReorderProgramForSparseNormalCholeskyUsingSuiteSparseTest,
-       ContiguousGroups) {
+TEST_F(ReorderProgramFoSparseCholeskyUsingSuiteSparseTest, ContiguousGroups) {
   ParameterBlockOrdering linear_solver_ordering;
   linear_solver_ordering.AddElementToGroup(&x_, 0);
   linear_solver_ordering.AddElementToGroup(&y_, 1);
@@ -228,8 +222,7 @@ TEST_F(ReorderProgramForSparseNormalCholeskyUsingSuiteSparseTest,
   ComputeAndValidateOrdering(linear_solver_ordering);
 }
 
-TEST_F(ReorderProgramForSparseNormalCholeskyUsingSuiteSparseTest,
-       GroupsWithGaps) {
+TEST_F(ReorderProgramFoSparseCholeskyUsingSuiteSparseTest, GroupsWithGaps) {
   ParameterBlockOrdering linear_solver_ordering;
   linear_solver_ordering.AddElementToGroup(&x_, 0);
   linear_solver_ordering.AddElementToGroup(&y_, 2);
@@ -238,7 +231,7 @@ TEST_F(ReorderProgramForSparseNormalCholeskyUsingSuiteSparseTest,
   ComputeAndValidateOrdering(linear_solver_ordering);
 }
 
-TEST_F(ReorderProgramForSparseNormalCholeskyUsingSuiteSparseTest,
+TEST_F(ReorderProgramFoSparseCholeskyUsingSuiteSparseTest,
        NonContiguousStartingAtTwo) {
   ParameterBlockOrdering linear_solver_ordering;
   linear_solver_ordering.AddElementToGroup(&x_, 2);
@@ -248,6 +241,46 @@ TEST_F(ReorderProgramForSparseNormalCholeskyUsingSuiteSparseTest,
   ComputeAndValidateOrdering(linear_solver_ordering);
 }
 #endif  // CERES_NO_SUITESPARSE
+
+TEST(_, ReorderResidualBlocksbyPartition) {
+  ProblemImpl problem;
+  double x;
+  double y;
+  double z;
+
+  problem.AddParameterBlock(&x, 1);
+  problem.AddParameterBlock(&y, 1);
+  problem.AddParameterBlock(&z, 1);
+
+  problem.AddResidualBlock(new UnaryCostFunction(), nullptr, &x);
+  problem.AddResidualBlock(new BinaryCostFunction(), nullptr, &z, &x);
+  problem.AddResidualBlock(new BinaryCostFunction(), nullptr, &z, &y);
+  problem.AddResidualBlock(new UnaryCostFunction(), nullptr, &z);
+  problem.AddResidualBlock(new BinaryCostFunction(), nullptr, &x, &y);
+  problem.AddResidualBlock(new UnaryCostFunction(), nullptr, &y);
+
+  std::vector<ResidualBlockId> residual_block_ids;
+  problem.GetResidualBlocks(&residual_block_ids);
+  std::vector<ResidualBlock*> residual_blocks =
+      problem.program().residual_blocks();
+  auto rng = std::default_random_engine{};
+  for (int i = 1; i < 6; ++i) {
+    std::shuffle(
+        std::begin(residual_block_ids), std::end(residual_block_ids), rng);
+    std::unordered_set<ResidualBlockId> bottom(residual_block_ids.begin(),
+                                               residual_block_ids.begin() + i);
+    const int start_bottom =
+        ReorderResidualBlocksByPartition(bottom, problem.mutable_program());
+    std::vector<ResidualBlock*> actual_residual_blocks =
+        problem.program().residual_blocks();
+    EXPECT_THAT(actual_residual_blocks,
+                testing::UnorderedElementsAreArray(residual_blocks));
+    EXPECT_EQ(start_bottom, residual_blocks.size() - i);
+    for (int j = start_bottom; j < residual_blocks.size(); ++j) {
+      EXPECT_THAT(bottom, ::testing::Contains(actual_residual_blocks[j]));
+    }
+  }
+}
 
 }  // namespace internal
 }  // namespace ceres

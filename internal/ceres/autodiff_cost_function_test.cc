@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2019 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -30,33 +30,32 @@
 
 #include "ceres/autodiff_cost_function.h"
 
-#include <cstddef>
 #include <memory>
 
-#include "gtest/gtest.h"
-#include "ceres/cost_function.h"
 #include "ceres/array_utils.h"
+#include "ceres/cost_function.h"
+#include "gtest/gtest.h"
 
 namespace ceres {
 namespace internal {
 
 class BinaryScalarCost {
  public:
-  explicit BinaryScalarCost(double a): a_(a) {}
+  explicit BinaryScalarCost(double a) : a_(a) {}
   template <typename T>
-  bool operator()(const T* const x, const T* const y,
-                  T* cost) const {
-    cost[0] = x[0] * y[0] + x[1] * y[1]  - T(a_);
+  bool operator()(const T* const x, const T* const y, T* cost) const {
+    cost[0] = x[0] * y[0] + x[1] * y[1] - T(a_);
     return true;
   }
+
  private:
   double a_;
 };
 
 TEST(AutodiffCostFunction, BilinearDifferentiationTest) {
-  CostFunction* cost_function  =
-    new AutoDiffCostFunction<BinaryScalarCost, 1, 2, 2>(
-        new BinaryScalarCost(1.0));
+  CostFunction* cost_function =
+      new AutoDiffCostFunction<BinaryScalarCost, 1, 2, 2>(
+          new BinaryScalarCost(1.0));
 
   double** parameters = new double*[2];
   parameters[0] = new double[2];
@@ -74,7 +73,7 @@ TEST(AutodiffCostFunction, BilinearDifferentiationTest) {
 
   double residuals = 0.0;
 
-  cost_function->Evaluate(parameters, &residuals, NULL);
+  cost_function->Evaluate(parameters, &residuals, nullptr);
   EXPECT_EQ(10.0, residuals);
 
   cost_function->Evaluate(parameters, &residuals, jacobians);
@@ -113,10 +112,19 @@ struct TenParameterCost {
 };
 
 TEST(AutodiffCostFunction, ManyParameterAutodiffInstantiates) {
-  CostFunction* cost_function  =
-      new AutoDiffCostFunction<
-          TenParameterCost, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1>(
-              new TenParameterCost);
+  CostFunction* cost_function =
+      new AutoDiffCostFunction<TenParameterCost,
+                               1,
+                               1,
+                               1,
+                               1,
+                               1,
+                               1,
+                               1,
+                               1,
+                               1,
+                               1,
+                               1>(new TenParameterCost);
 
   double** parameters = new double*[10];
   double** jacobians = new double*[10];
@@ -128,7 +136,7 @@ TEST(AutodiffCostFunction, ManyParameterAutodiffInstantiates) {
 
   double residuals = 0.0;
 
-  cost_function->Evaluate(parameters, &residuals, NULL);
+  cost_function->Evaluate(parameters, &residuals, nullptr);
   EXPECT_EQ(45.0, residuals);
 
   cost_function->Evaluate(parameters, &residuals, jacobians);

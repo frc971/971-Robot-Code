@@ -33,6 +33,7 @@
 
 #include <cmath>
 #include <vector>
+
 #include "ceres/ceres.h"
 #include "glog/logging.h"
 #include "gtest/gtest.h"
@@ -53,6 +54,7 @@ namespace internal {
 
 const int kYRows = 212;
 const int kYCols = 2;
+// clang-format off
 const double kYData[kYRows * kYCols] = {
   +3.871364e+00, +9.916027e-01,
   +3.864003e+00, +1.034148e+00,
@@ -267,11 +269,16 @@ const double kYData[kYRows * kYCols] = {
   +3.870542e+00, +9.996121e-01,
   +3.865424e+00, +1.028474e+00
 };
+// clang-format on
 
 ConstMatrixRef kY(kYData, kYRows, kYCols);
 
 class PointToLineSegmentContourCostFunction : public CostFunction {
  public:
+  // This class needs to have an Eigen aligned operator new as it contains
+  // fixed-size Eigen types.
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   PointToLineSegmentContourCostFunction(const int num_segments,
                                         const Eigen::Vector2d& y)
       : num_segments_(num_segments), y_(y) {
@@ -284,9 +291,9 @@ class PointToLineSegmentContourCostFunction : public CostFunction {
     set_num_residuals(2);
   }
 
-  virtual bool Evaluate(const double* const* x,
-                        double* residuals,
-                        double** jacobians) const {
+  bool Evaluate(const double* const* x,
+                double* residuals,
+                double** jacobians) const final {
     // Convert the preimage position `t` into a segment index `i0` and the
     // line segment interpolation parameter `u`. `i1` is the index of the next
     // control point.
@@ -323,7 +330,8 @@ class PointToLineSegmentContourCostFunction : public CostFunction {
     return true;
   }
 
-  static CostFunction* Create(const int num_segments, const Eigen::Vector2d& y) {
+  static CostFunction* Create(const int num_segments,
+                              const Eigen::Vector2d& y) {
     return new PointToLineSegmentContourCostFunction(num_segments, y);
   }
 

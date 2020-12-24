@@ -31,20 +31,25 @@
 
 cmake_minimum_required(VERSION 3.5)
 cmake_policy(VERSION 3.5)
+if (POLICY CMP0074)
+  # FindTBB.cmake uses TBB_ROOT in a way that is historical, but also compliant
+  # with CMP0074 so suppress the legacy compatibility warning and allow its use.
+  cmake_policy(SET CMP0074 NEW)
+endif()
 
-# Set the C++ version (must be >= C++11) when compiling Ceres.
+# Set the C++ version (must be >= C++14) when compiling Ceres.
 #
 # Reflect a user-specified (via -D) CMAKE_CXX_STANDARD if present, otherwise
-# default to C++11.
+# default to C++14.
 set(DEFAULT_CXX_STANDARD ${CMAKE_CXX_STANDARD})
 if (NOT DEFAULT_CXX_STANDARD)
-  set(DEFAULT_CXX_STANDARD 11)
+  set(DEFAULT_CXX_STANDARD 14)
 endif()
 set(CMAKE_CXX_STANDARD ${DEFAULT_CXX_STANDARD} CACHE STRING
-  "C++ standard (minimum 11)" FORCE)
+  "C++ standard (minimum 14)" FORCE)
 # Restrict CMAKE_CXX_STANDARD to the valid versions permitted and ensure that
 # if one was forced via -D that it is in the valid set.
-set(ALLOWED_CXX_STANDARDS 11 14 17)
+set(ALLOWED_CXX_STANDARDS 14 17 20)
 set_property(CACHE CMAKE_CXX_STANDARD PROPERTY STRINGS ${ALLOWED_CXX_STANDARDS})
 list(FIND ALLOWED_CXX_STANDARDS ${CMAKE_CXX_STANDARD} POSITION)
 if (POSITION LESS 0)
@@ -56,10 +61,33 @@ endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON CACHE BOOL "")
 mark_as_advanced(CMAKE_CXX_STANDARD_REQUIRED)
 
-# MSVC versions < 2013 did not fully support >= C++11.
-if (MSVC AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 12.0)
+# MSVC versions < 2015 did not fully support >= C++14, and technically even
+# 2015 did not support a couple of smaller features
+if (CMAKE_CXX_COMPILER_ID MATCHES MSVC AND
+    CMAKE_CXX_COMPILER_VERSION VERSION_LESS 14.0)
   message(FATAL_ERROR "Invalid CMAKE_CXX_COMPILER_VERSION: "
-    "${CMAKE_CXX_COMPILER_VERSION}. Ceres requires at least MSVC 2013 Update 4+")
+    "${CMAKE_CXX_COMPILER_VERSION}. Ceres requires at least MSVC 2015 for "
+    "C++14 support.")
+endif()
+
+# On macOS, add the Homebrew prefix (with appropriate suffixes) to the
+# respective HINTS directories (after any user-specified locations).  This
+# handles Homebrew installations into non-standard locations (not /usr/local).
+# We do not use CMAKE_PREFIX_PATH for this as given the search ordering of
+# find_xxx(), doing so would override any user-specified HINTS locations with
+# the Homebrew version if it exists.
+if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
+  find_program(HOMEBREW_EXECUTABLE brew)
+  mark_as_advanced(FORCE HOMEBREW_EXECUTABLE)
+  if (HOMEBREW_EXECUTABLE)
+    # Detected a Homebrew install, query for its install prefix.
+    execute_process(COMMAND ${HOMEBREW_EXECUTABLE} --prefix
+      OUTPUT_VARIABLE HOMEBREW_INSTALL_PREFIX
+      OUTPUT_STRIP_TRAILING_WHITESPACE)
+    message(STATUS "Detected Homebrew with install prefix: "
+      "${HOMEBREW_INSTALL_PREFIX}, adding to CMake search paths.")
+    list(APPEND CMAKE_PREFIX_PATH "${HOMEBREW_INSTALL_PREFIX}")
+  endif()
 endif()
 
 project(Ceres C CXX)
@@ -77,29 +105,16 @@ project(Ceres C CXX)
 # append rather than set in case the user has passed their own
 # additional paths via -D.
 list(APPEND CMAKE_MODULE_PATH "${Ceres_SOURCE_DIR}/cmake")
+include(AddCompileFlagsIfSupported)
 include(UpdateCacheVariable)
+
+# Xcode 11.0-1 with macOS 10.15 (Catalina) broke alignment.
+include(DetectBrokenStackCheckMacOSXcodePairing)
+detect_broken_stack_check_macos_xcode_pairing()
 
 # Set up the git hook to make Gerrit Change-Id: lines in commit messages.
 include(AddGerritCommitHook)
 add_gerrit_commit_hook(${Ceres_SOURCE_DIR} ${Ceres_BINARY_DIR})
-
-# On OS X, add the Homebrew prefix to the set of prefixes searched by
-# CMake in find_path & find_library.  This should ensure that we can
-# still build Ceres even if Homebrew is installed in a non-standard
-# location (not /usr/local).
-if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
-  find_program(HOMEBREW_EXECUTABLE brew)
-  mark_as_advanced(FORCE HOMEBREW_EXECUTABLE)
-  if (HOMEBREW_EXECUTABLE)
-    # Detected a Homebrew install, query for its install prefix.
-    execute_process(COMMAND ${HOMEBREW_EXECUTABLE} --prefix
-      OUTPUT_VARIABLE HOMEBREW_INSTALL_PREFIX
-      OUTPUT_STRIP_TRAILING_WHITESPACE)
-    message(STATUS "Detected Homebrew with install prefix: "
-      "${HOMEBREW_INSTALL_PREFIX}, adding to CMake search paths.")
-    list(APPEND CMAKE_PREFIX_PATH "${HOMEBREW_INSTALL_PREFIX}")
-  endif()
-endif()
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${Ceres_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${Ceres_BINARY_DIR}/lib)
@@ -157,20 +172,18 @@ option(BUILD_DOCUMENTATION "Build User's Guide (html)" OFF)
 option(BUILD_EXAMPLES "Build examples" ON)
 option(BUILD_BENCHMARKS "Build Ceres benchmarking suite" ON)
 option(BUILD_SHARED_LIBS "Build Ceres as a shared library." OFF)
+option(PROVIDE_UNINSTALL_TARGET "Add a custom target to ease removal of installed targets" ON)
+set(SANITIZERS "" CACHE STRING "Semicolon-separated list of sanitizers to use (e.g address, memory, thread)")
+include(EnableSanitizer)
+enable_sanitizer(${SANITIZERS})
 if (ANDROID)
   option(ANDROID_STRIP_DEBUG_SYMBOLS "Strip debug symbols from Android builds (reduces file sizes)" ON)
 endif()
 if (MSVC)
   option(MSVC_USE_STATIC_CRT
     "MS Visual Studio: Use static C-Run Time Library in place of shared." OFF)
+endif()
 
-  if (BUILD_TESTING AND BUILD_SHARED_LIBS)
-    message(
-      "-- Disabling tests. The flags BUILD_TESTING and BUILD_SHARED_LIBS"
-      " are incompatible with MSVC.")
-    update_cache_variable(BUILD_TESTING OFF)
-  endif (BUILD_TESTING AND BUILD_SHARED_LIBS)
-endif (MSVC)
 # Allow user to specify a suffix for the library install directory, the only
 # really sensible option (other than "") being "64", such that:
 # ${CMAKE_INSTALL_PREFIX}/lib -> ${CMAKE_INSTALL_PREFIX}/lib64.
@@ -224,40 +237,28 @@ unset(CERES_COMPILE_OPTIONS)
 message("-- Building with C++${CMAKE_CXX_STANDARD}")
 
 # Eigen.
-find_package(Eigen REQUIRED)
-if (EIGEN_FOUND)
-  message("-- Found Eigen version ${EIGEN_VERSION}: ${EIGEN_INCLUDE_DIRS}")
-  if (EIGEN_VERSION VERSION_LESS 3.1.0)
-    message(FATAL_ERROR "-- Ceres requires Eigen version >= 3.1.0 in order "
-      "that Eigen/SparseCore be available, detected version of Eigen is: "
-      "${EIGEN_VERSION}")
-  endif (EIGEN_VERSION VERSION_LESS 3.1.0)
-
+# Eigen delivers Eigen3Config.cmake since v3.3.3
+find_package(Eigen3 3.3 REQUIRED)
+if (EIGEN3_FOUND)
+  message("-- Found Eigen version ${EIGEN3_VERSION_STRING}: ${EIGEN3_INCLUDE_DIRS}")
   if (CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64.*|AARCH64.*)" AND
-      EIGEN_VERSION VERSION_LESS 3.3.4)
+      EIGEN3_VERSION_STRING VERSION_LESS 3.3.4)
     # As per issue #289: https://github.com/ceres-solver/ceres-solver/issues/289
     # the bundle_adjustment_test will fail for Eigen < 3.3.4 on aarch64.
     message(FATAL_ERROR "-- Ceres requires Eigen version >= 3.3.4 on aarch64. "
-      "Detected version of Eigen is: ${EIGEN_VERSION}.")
+      "Detected version of Eigen is: ${EIGEN3_VERSION_STRING}.")
   endif()
 
   if (EIGENSPARSE)
     message("-- Enabling use of Eigen as a sparse linear algebra library.")
     list(APPEND CERES_COMPILE_OPTIONS CERES_USE_EIGEN_SPARSE)
-    if (EIGEN_VERSION VERSION_LESS 3.2.2)
-      message("   WARNING:")
-      message("")
-      message("   Your version of Eigen (${EIGEN_VERSION}) is older than ")
-      message("   version 3.2.2.  The performance of SPARSE_NORMAL_CHOLESKY ")
-      message("   and SPARSE_SCHUR linear solvers will suffer.")
-    endif (EIGEN_VERSION VERSION_LESS 3.2.2)
   else (EIGENSPARSE)
     message("-- Disabling use of Eigen as a sparse linear algebra library.")
     message("   This does not affect the covariance estimation algorithm ")
     message("   which can still use the EIGEN_SPARSE_QR algorithm.")
     add_definitions(-DEIGEN_MPL2_ONLY)
   endif (EIGENSPARSE)
-endif (EIGEN_FOUND)
+endif (EIGEN3_FOUND)
 
 if (LAPACK)
   find_package(LAPACK QUIET)
@@ -388,26 +389,24 @@ endif()
 # GFlags.
 if (GFLAGS)
   # Don't search with REQUIRED as we can continue without gflags.
-  find_package(Gflags)
-  if (GFLAGS_FOUND)
-    message("-- Found Google Flags header in: ${GFLAGS_INCLUDE_DIRS}, "
-      "in namespace: ${GFLAGS_NAMESPACE}")
-    add_definitions(-DCERES_GFLAGS_NAMESPACE=${GFLAGS_NAMESPACE})
-  else (GFLAGS_FOUND)
-    message("-- Did not find Google Flags (gflags), Building without gflags "
-      "- no tests or tools will be built!")
+  find_package(gflags 2.2.0)
+  if (gflags_FOUND)
+    if (TARGET gflags)
+      message("-- Found Google Flags (gflags) version ${gflags_VERSION}: ${gflags_DIR}")
+    else()
+      message("-- Detected version of gflags: ${gflags_VERSION} does not define "
+        "expected gflags CMake target which should be exported by gflags 2.2+. "
+        "Building without gflags.")
+      update_cache_variable(GFLAGS OFF)
+    endif()
+  else (gflags_FOUND)
+    message("-- Did not find Google Flags (gflags), Building without gflags.")
     update_cache_variable(GFLAGS OFF)
-  endif (GFLAGS_FOUND)
-else (GFLAGS)
-  message("-- Google Flags disabled; no tests or tools will be built!")
-  # Mark as advanced (remove from default GUI view) the gflags search
-  # variables in case user enabled GFLAGS, FindGflags did not find it, so
-  # made search variables visible in GUI for user to set, but then user disables
-  # GFLAGS instead of setting them.
-  mark_as_advanced(FORCE GFLAGS_INCLUDE_DIR
-                         GFLAGS_LIBRARY
-                         GFLAGS_NAMESPACE)
-endif (GFLAGS)
+  endif (gflags_FOUND)
+endif()
+if (NOT GFLAGS)
+  message("-- Use of gflags disabled - no tests or tools will be built!")
+endif()
 
 # MiniGLog.
 if (MINIGLOG)
@@ -439,13 +438,13 @@ else (MINIGLOG)
   set(GLOG_GFLAGS_DEPENDENCY_MESSAGE
     " Assuming glog was built with gflags support as gflags was found. "
     "This will make gflags a public dependency of Ceres.")
-  if (NOT GFLAGS_FOUND)
+  if (NOT gflags_FOUND)
     set(GLOG_GFLAGS_DEPENDENCY_MESSAGE
       " Assuming glog was NOT built with gflags support as gflags was "
       "not found.  If glog was built with gflags, please set the "
       "gflags search locations such that it can be found by Ceres.  "
       "Otherwise, Ceres may fail to link due to missing gflags symbols.")
-  endif(NOT GFLAGS_FOUND)
+  endif(NOT gflags_FOUND)
   message("-- Found Google Log (glog)." ${GLOG_GFLAGS_DEPENDENCY_MESSAGE})
 endif (MINIGLOG)
 
@@ -477,7 +476,7 @@ if (BUILD_SHARED_LIBS)
   # The CERES_BUILDING_SHARED_LIBRARY compile definition is NOT stored in
   # CERES_COMPILE_OPTIONS as it must only be defined when Ceres is compiled
   # not when it is used as it controls the CERES_EXPORT macro which provides
-  # dllimport/export support in MSVC.
+  # symbol import/export support.
   add_definitions(-DCERES_BUILDING_SHARED_LIBRARY)
   list(APPEND CERES_COMPILE_OPTIONS CERES_USING_SHARED_LIBRARY)
 else (BUILD_SHARED_LIBS)
@@ -524,25 +523,30 @@ if (MSVC)
   # [1] https://msdn.microsoft.com/en-us/library/4hwaceh6.aspx
   add_definitions("-D_USE_MATH_DEFINES")
   # Disable signed/unsigned int conversion warnings.
-  add_definitions("/wd4018")
+  add_compile_options("/wd4018" "/wd4267")
   # Disable warning about using struct/class for the same symobl.
-  add_definitions("/wd4099")
+  add_compile_options("/wd4099")
   # Disable warning about the insecurity of using "std::copy".
-  add_definitions("/wd4996")
+  add_compile_options("/wd4996")
   # Disable performance warning about int-to-bool conversion.
-  add_definitions("/wd4800")
+  add_compile_options("/wd4800")
   # Disable performance warning about fopen insecurity.
-  add_definitions("/wd4996")
+  add_compile_options("/wd4996")
   # Disable warning about int64 to int32 conversion. Disabling
   # this warning may not be correct; needs investigation.
   # TODO(keir): Investigate these warnings in more detail.
-  add_definitions("/wd4244")
+  add_compile_options("/wd4244")
   # It's not possible to use STL types in DLL interfaces in a portable and
   # reliable way. However, that's what happens with Google Log and Google Flags
   # on Windows. MSVC gets upset about this and throws warnings that we can't do
   # much about. The real solution is to link static versions of Google Log and
   # Google Test, but that seems tricky on Windows. So, disable the warning.
-  add_definitions("/wd4251")
+  add_compile_options("/wd4251")
+
+  # Add bigobj flag otherwise the build would fail due to large object files
+  # probably resulting from generated headers (like the fixed-size schur
+  # specializations).
+  add_compile_options("/bigobj")
 
   # Google Flags doesn't have their DLL import/export stuff set up correctly,
   # which results in linker warnings. This is irrelevant for Ceres, so ignore
@@ -585,9 +589,20 @@ if (MSVC)
 endif (MSVC)
 
 if (UNIX)
-  # GCC is not strict enough by default, so enable most of the warnings.
-  set(CMAKE_CXX_FLAGS
-    "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas -Wno-sign-compare -Wno-unused-parameter -Wno-missing-field-initializers")
+  # Flags which we add to GCC to make it more picky about stuff
+  # we do care about,
+  add_cxx_compiler_flag_if_supported(CERES_STRICT_CXX_FLAGS
+                                     -Wmissing-declarations)
+  # Flags which we add to GCC to silence lots of annoying false-positives.
+  add_cxx_compiler_flag_if_supported(CERES_STRICT_CXX_FLAGS
+                                     -Wno-unknown-pragmas)
+  add_cxx_compiler_flag_if_supported(CERES_STRICT_CXX_FLAGS
+                                     -Wno-sign-compare)
+  add_cxx_compiler_flag_if_supported(CERES_STRICT_CXX_FLAGS
+                                     -Wno-unused-parameter)
+  add_cxx_compiler_flag_if_supported(CERES_STRICT_CXX_FLAGS
+                                     -Wno-missing-field-initializers)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CERES_STRICT_CXX_FLAGS}")
 endif (UNIX)
 
 # Use a larger inlining threshold for Clang, since it hobbles Eigen,
@@ -690,10 +705,13 @@ include(CeresCompileOptionsToComponents)
 ceres_compile_options_to_components("${CERES_COMPILE_OPTIONS}"
   CERES_COMPILED_COMPONENTS)
 
+include(CMakePackageConfigHelpers)
+
 # Create a CeresConfigVersion.cmake file containing the version information,
 # used by both export() & install().
-configure_file("${Ceres_SOURCE_DIR}/cmake/CeresConfigVersion.cmake.in"
-               "${Ceres_BINARY_DIR}/CeresConfigVersion.cmake" @ONLY)
+write_basic_package_version_file("${Ceres_BINARY_DIR}/CeresConfigVersion.cmake"
+  VERSION ${CERES_VERSION}
+  COMPATIBILITY SameMajorVersion)
 
 # Install method #1: Put Ceres in CMAKE_INSTALL_PREFIX: /usr/local or equivalent.
 
@@ -711,6 +729,7 @@ endif ()
 # imported library targets for Ceres (with dependency relations) which can be
 # used in target_link_libraries() calls in the client project to use Ceres.
 install(EXPORT CeresExport
+        NAMESPACE Ceres::
         DESTINATION ${RELATIVE_CMAKECONFIG_INSTALL_DIR} FILE CeresTargets.cmake)
 
 # Save the relative path from the installed CeresConfig.cmake file to the
@@ -739,17 +758,22 @@ install(FILES "${Ceres_BINARY_DIR}/CeresConfig-install.cmake"
         RENAME CeresConfig.cmake
         DESTINATION ${RELATIVE_CMAKECONFIG_INSTALL_DIR})
 install(FILES "${Ceres_BINARY_DIR}/CeresConfigVersion.cmake"
-              "${Ceres_SOURCE_DIR}/cmake/FindEigen.cmake"
-              "${Ceres_SOURCE_DIR}/cmake/FindGlog.cmake"
-              "${Ceres_SOURCE_DIR}/cmake/FindGflags.cmake"
         DESTINATION ${RELATIVE_CMAKECONFIG_INSTALL_DIR})
+if (GLOG_FOUND AND NOT FOUND_INSTALLED_GLOG_CMAKE_CONFIGURATION)
+  # Version of glog detected was not built with CMake, install our glog module
+  # file to enable detection in CeresConfig.
+  install(FILES "${Ceres_SOURCE_DIR}/cmake/FindGlog.cmake"
+          DESTINATION ${RELATIVE_CMAKECONFIG_INSTALL_DIR})
+endif()
 
-# Create an uninstall target to remove all installed files.
-configure_file("${Ceres_SOURCE_DIR}/cmake/uninstall.cmake.in"
-               "${Ceres_BINARY_DIR}/cmake/uninstall.cmake"
-               @ONLY)
-add_custom_target(uninstall
-                  COMMAND ${CMAKE_COMMAND} -P ${Ceres_BINARY_DIR}/cmake/uninstall.cmake)
+if (PROVIDE_UNINSTALL_TARGET)
+  # Create an uninstall target to remove all installed files.
+  configure_file("${Ceres_SOURCE_DIR}/cmake/uninstall.cmake.in"
+                 "${Ceres_BINARY_DIR}/cmake/uninstall.cmake"
+                 @ONLY)
+  add_custom_target(uninstall
+                    COMMAND ${CMAKE_COMMAND} -P ${Ceres_BINARY_DIR}/cmake/uninstall.cmake)
+endif()
 
 # Install method #2: Put Ceres build into local CMake registry.
 #
@@ -766,7 +790,9 @@ if (EXPORT_BUILD_DIR)
 
   # Analogously to install(EXPORT ...), export the Ceres target from the build
   # directory as a package called Ceres into the local CMake package registry.
-  export(TARGETS ceres FILE ${Ceres_BINARY_DIR}/CeresTargets.cmake)
+  export(TARGETS ceres
+         NAMESPACE Ceres::
+         FILE ${Ceres_BINARY_DIR}/CeresTargets.cmake)
   export(PACKAGE ${CMAKE_PROJECT_NAME})
 
   # Configure a CeresConfig.cmake file for the export of the Ceres build

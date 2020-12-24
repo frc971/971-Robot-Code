@@ -32,6 +32,8 @@
 
 workspace(name = "com_google_ceres_solver")
 
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
 # External dependency: Google Flags; has Bazel build already.
 http_archive(
     name = "com_github_gflags_gflags",
@@ -54,18 +56,29 @@ http_archive(
 )
 
 # External dependency: Eigen; has no Bazel build.
-new_http_archive(
-    name = "com_github_eigen_eigen",
-    build_file = "bazel/eigen.BUILD",
-    sha256 = "dd254beb0bafc695d0f62ae1a222ff85b52dbaa3a16f76e781dce22d0d20a4a6",
-    strip_prefix = "eigen-eigen-5a0156e40feb",
+http_archive(
+    name = "com_gitlab_libeigen_eigen",
+    sha256 = "0215c6593c4ee9f1f7f28238c4e8995584ebf3b556e9dbf933d84feb98d5b9ef",
+    strip_prefix = "eigen-3.3.8",
     urls = [
-        "http://bitbucket.org/eigen/eigen/get/3.3.4.tar.bz2",
+        "https://gitlab.com/libeigen/eigen/-/archive/3.3.8/eigen-3.3.8.tar.bz2",
     ],
+    build_file_content =
+"""
+# TODO(keir): Replace this with a better version, like from TensorFlow.
+# See https://github.com/ceres-solver/ceres-solver/issues/337.
+cc_library(
+    name = 'eigen',
+    srcs = [],
+    includes = ['.'],
+    hdrs = glob(['Eigen/**']),
+    visibility = ['//visibility:public'],
+)
+"""
 )
 
 # External dependency: Google Benchmark; has no Bazel build.
-new_http_archive(
+http_archive(
     name = "com_github_google_benchmark",
     urls = ["https://github.com/google/benchmark/archive/56f52ee228783547f544d9ac4a533574b9010e3f.zip"],
     sha256 = "8c1c6e90cd320b07504fabb86400f390faff2e599183ebd9396908817968ae79",

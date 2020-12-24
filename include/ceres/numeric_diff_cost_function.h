@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2019 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -98,6 +98,8 @@
 // NumericDiffCostFunction also supports cost functions with a
 // runtime-determined number of residuals. For example:
 //
+// clang-format off
+//
 //   CostFunction* cost_function
 //       = new NumericDiffCostFunction<MyScalarCostFunctor, CENTRAL, DYNAMIC, 2, 2>(
 //           new CostFunctorWithDynamicNumResiduals(1.0),               ^     ^  ^
@@ -109,6 +111,8 @@
 //             Indicate dynamic number of residuals --------------------+     |  |
 //             Dimension of x ------------------------------------------------+  |
 //             Dimension of y ---------------------------------------------------+
+// clang-format on
+//
 //
 // The central difference method is considerably more accurate at the cost of
 // twice as many function evaluations than forward difference. Consider using
@@ -182,37 +186,36 @@ class NumericDiffCostFunction : public SizedCostFunction<kNumResiduals, Ns...> {
       Ownership ownership = TAKE_OWNERSHIP,
       int num_residuals = kNumResiduals,
       const NumericDiffOptions& options = NumericDiffOptions())
-      : functor_(functor),
-        ownership_(ownership),
-        options_(options) {
+      : functor_(functor), ownership_(ownership), options_(options) {
     if (kNumResiduals == DYNAMIC) {
       SizedCostFunction<kNumResiduals, Ns...>::set_num_residuals(num_residuals);
     }
   }
 
-  ~NumericDiffCostFunction() {
+  explicit NumericDiffCostFunction(NumericDiffCostFunction&& other)
+      : functor_(std::move(other.functor_)), ownership_(other.ownership_) {}
+
+  virtual ~NumericDiffCostFunction() {
     if (ownership_ != TAKE_OWNERSHIP) {
       functor_.release();
     }
   }
 
-  virtual bool Evaluate(double const* const* parameters,
-                        double* residuals,
-                        double** jacobians) const {
+  bool Evaluate(double const* const* parameters,
+                double* residuals,
+                double** jacobians) const override {
     using internal::FixedArray;
     using internal::NumericDiff;
 
     using ParameterDims =
         typename SizedCostFunction<kNumResiduals, Ns...>::ParameterDims;
-    using Parameters = typename ParameterDims::Parameters;
 
     constexpr int kNumParameters = ParameterDims::kNumParameters;
     constexpr int kNumParameterBlocks = ParameterDims::kNumParameterBlocks;
 
     // Get the function value (residuals) at the the point to evaluate.
-    if (!internal::VariadicEvaluate<ParameterDims>(*functor_,
-                                                   parameters,
-                                                   residuals)) {
+    if (!internal::VariadicEvaluate<ParameterDims>(
+            *functor_, parameters, residuals)) {
       return false;
     }
 
@@ -223,21 +226,22 @@ class NumericDiffCostFunction : public SizedCostFunction<kNumResiduals, Ns...> {
     // Create a copy of the parameters which will get mutated.
     FixedArray<double> parameters_copy(kNumParameters);
     std::array<double*, kNumParameterBlocks> parameters_reference_copy =
-        ParameterDims::GetUnpackedParameters(parameters_copy.get());
+        ParameterDims::GetUnpackedParameters(parameters_copy.data());
 
     for (int block = 0; block < kNumParameterBlocks; ++block) {
-      memcpy(parameters_reference_copy[block], parameters[block],
+      memcpy(parameters_reference_copy[block],
+             parameters[block],
              sizeof(double) * ParameterDims::GetDim(block));
     }
 
-    internal::EvaluateJacobianForParameterBlocks<ParameterDims>::template Apply<
-        method, kNumResiduals>(
-          functor_.get(),
-          residuals,
-          options_,
-          SizedCostFunction<kNumResiduals, Ns...>::num_residuals(),
-          parameters_reference_copy.data(),
-          jacobians);
+    internal::EvaluateJacobianForParameterBlocks<ParameterDims>::
+        template Apply<method, kNumResiduals>(
+            functor_.get(),
+            residuals,
+            options_,
+            SizedCostFunction<kNumResiduals, Ns...>::num_residuals(),
+            parameters_reference_copy.data(),
+            jacobians);
 
     return true;
   }

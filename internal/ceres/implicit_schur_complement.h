@@ -35,10 +35,12 @@
 #define CERES_INTERNAL_IMPLICIT_SCHUR_COMPLEMENT_H_
 
 #include <memory>
+
+#include "ceres/internal/eigen.h"
+#include "ceres/internal/port.h"
 #include "ceres/linear_operator.h"
 #include "ceres/linear_solver.h"
 #include "ceres/partitioned_matrix_view.h"
-#include "ceres/internal/eigen.h"
 #include "ceres/types.h"
 
 namespace ceres {
@@ -86,7 +88,7 @@ class BlockSparseMatrix;
 // RightMultiply (and the LeftMultiply) methods are not thread safe as
 // they depend on mutable arrays used for the temporaries needed to
 // compute the product y += Sx;
-class ImplicitSchurComplement : public LinearOperator {
+class CERES_EXPORT_INTERNAL ImplicitSchurComplement : public LinearOperator {
  public:
   // num_eliminate_blocks is the number of E blocks in the matrix
   // A.
@@ -113,11 +115,11 @@ class ImplicitSchurComplement : public LinearOperator {
   void Init(const BlockSparseMatrix& A, const double* D, const double* b);
 
   // y += Sx, where S is the Schur complement.
-  virtual void RightMultiply(const double* x, double* y) const;
+  void RightMultiply(const double* x, double* y) const final;
 
   // The Schur complement is a symmetric positive definite matrix,
   // thus the left and right multiply operators are the same.
-  virtual void LeftMultiply(const double* x, double* y) const {
+  void LeftMultiply(const double* x, double* y) const final {
     RightMultiply(x, y);
   }
 
@@ -127,9 +129,9 @@ class ImplicitSchurComplement : public LinearOperator {
   // complement.
   void BackSubstitute(const double* x, double* y);
 
-  virtual int num_rows() const { return A_->num_cols_f(); }
-  virtual int num_cols() const { return A_->num_cols_f(); }
-  const Vector& rhs()    const { return rhs_;             }
+  int num_rows() const final { return A_->num_cols_f(); }
+  int num_cols() const final { return A_->num_cols_f(); }
+  const Vector& rhs() const { return rhs_; }
 
   const BlockSparseMatrix* block_diagonal_EtE_inverse() const {
     return block_diagonal_EtE_inverse_.get();

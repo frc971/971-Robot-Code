@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2019 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -32,6 +32,8 @@
 #define CERES_PUBLIC_GRADIENT_PROBLEM_H_
 
 #include <memory>
+
+#include "ceres/first_order_function.h"
 #include "ceres/internal/port.h"
 #include "ceres/local_parameterization.h"
 
@@ -107,18 +109,6 @@ class CERES_EXPORT GradientProblem {
   std::unique_ptr<FirstOrderFunction> function_;
   std::unique_ptr<LocalParameterization> parameterization_;
   std::unique_ptr<double[]> scratch_;
-};
-
-// A FirstOrderFunction object implements the evaluation of a function
-// and its gradient.
-class CERES_EXPORT FirstOrderFunction {
- public:
-  virtual ~FirstOrderFunction() {}
-  // cost is never NULL. gradient may be null.
-  virtual bool Evaluate(const double* const parameters,
-                        double* cost,
-                        double* gradient) const = 0;
-  virtual int NumParameters() const = 0;
 };
 
 }  // namespace ceres
