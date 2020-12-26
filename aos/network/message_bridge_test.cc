@@ -76,10 +76,12 @@ TEST_F(MessageBridgeTest, PingPong) {
   FLAGS_override_hostname = "raspberrypi";
 
   aos::ShmEventLoop pi1_server_event_loop(&pi1_config.message());
+  pi1_server_event_loop.SetRuntimeRealtimePriority(1);
   MessageBridgeServer pi1_message_bridge_server(&pi1_server_event_loop);
 
   FLAGS_application_name = "pi1_message_bridge_client";
   aos::ShmEventLoop pi1_client_event_loop(&pi1_config.message());
+  pi1_client_event_loop.SetRuntimeRealtimePriority(1);
   MessageBridgeClient pi1_message_bridge_client(&pi1_client_event_loop);
 
   // And build the app which sends the pings.
@@ -105,10 +107,12 @@ TEST_F(MessageBridgeTest, PingPong) {
   DoSetShmBase("pi2");
 
   aos::ShmEventLoop pi2_client_event_loop(&pi2_config.message());
+  pi2_client_event_loop.SetRuntimeRealtimePriority(1);
   MessageBridgeClient pi2_message_bridge_client(&pi2_client_event_loop);
 
   FLAGS_application_name = "pi2_message_bridge_server";
   aos::ShmEventLoop pi2_server_event_loop(&pi2_config.message());
+  pi2_server_event_loop.SetRuntimeRealtimePriority(1);
   MessageBridgeServer pi2_message_bridge_server(&pi2_server_event_loop);
 
   // And build the app which sends the pongs.
@@ -438,10 +442,12 @@ TEST_F(MessageBridgeTest, ClientRestart) {
   FLAGS_override_hostname = "raspberrypi";
   DoSetShmBase("pi1");
   aos::ShmEventLoop pi1_server_event_loop(&pi1_config.message());
+  pi1_server_event_loop.SetRuntimeRealtimePriority(1);
   MessageBridgeServer pi1_message_bridge_server(&pi1_server_event_loop);
 
   FLAGS_application_name = "pi1_message_bridge_client";
   aos::ShmEventLoop pi1_client_event_loop(&pi1_config.message());
+  pi1_client_event_loop.SetRuntimeRealtimePriority(1);
   MessageBridgeClient pi1_message_bridge_client(&pi1_client_event_loop);
 
   // And build the app for testing.
@@ -455,6 +461,7 @@ TEST_F(MessageBridgeTest, ClientRestart) {
   DoSetShmBase("pi2");
   FLAGS_application_name = "pi2_message_bridge_server";
   aos::ShmEventLoop pi2_server_event_loop(&pi2_config.message());
+  pi2_server_event_loop.SetRuntimeRealtimePriority(1);
   MessageBridgeServer pi2_message_bridge_server(&pi2_server_event_loop);
 
   // And build the app for testing.
@@ -508,6 +515,7 @@ TEST_F(MessageBridgeTest, ClientRestart) {
   {
     FLAGS_application_name = "pi2_message_bridge_client";
     aos::ShmEventLoop pi2_client_event_loop(&pi2_config.message());
+    pi2_client_event_loop.SetRuntimeRealtimePriority(1);
     MessageBridgeClient pi2_message_bridge_client(&pi2_client_event_loop);
 
     // Run for 5 seconds to make sure we have time to estimate the offset.
@@ -570,6 +578,7 @@ TEST_F(MessageBridgeTest, ClientRestart) {
   {
     FLAGS_application_name = "pi2_message_bridge_client";
     aos::ShmEventLoop pi2_client_event_loop(&pi2_config.message());
+    pi2_client_event_loop.SetRuntimeRealtimePriority(1);
     MessageBridgeClient pi2_message_bridge_client(&pi2_client_event_loop);
 
     // Run for 5 seconds to make sure we have time to estimate the offset.
@@ -645,10 +654,12 @@ TEST_F(MessageBridgeTest, ServerRestart) {
   FLAGS_override_hostname = "raspberrypi";
   DoSetShmBase("pi1");
   aos::ShmEventLoop pi1_server_event_loop(&pi1_config.message());
+  pi1_server_event_loop.SetRuntimeRealtimePriority(1);
   MessageBridgeServer pi1_message_bridge_server(&pi1_server_event_loop);
 
   FLAGS_application_name = "pi1_message_bridge_client";
   aos::ShmEventLoop pi1_client_event_loop(&pi1_config.message());
+  pi1_client_event_loop.SetRuntimeRealtimePriority(1);
   MessageBridgeClient pi1_message_bridge_client(&pi1_client_event_loop);
 
   // And build the app for testing.
@@ -664,6 +675,7 @@ TEST_F(MessageBridgeTest, ServerRestart) {
   DoSetShmBase("pi2");
   FLAGS_application_name = "pi2_message_bridge_client";
   aos::ShmEventLoop pi2_client_event_loop(&pi2_config.message());
+  pi2_client_event_loop.SetRuntimeRealtimePriority(1);
   MessageBridgeClient pi2_message_bridge_client(&pi2_client_event_loop);
 
   // And build the app for testing.
@@ -719,6 +731,7 @@ TEST_F(MessageBridgeTest, ServerRestart) {
   {
     FLAGS_application_name = "pi2_message_bridge_server";
     aos::ShmEventLoop pi2_server_event_loop(&pi2_config.message());
+    pi2_server_event_loop.SetRuntimeRealtimePriority(1);
     MessageBridgeServer pi2_message_bridge_server(&pi2_server_event_loop);
 
     // Run for 5 seconds to make sure we have time to estimate the offset.
@@ -781,6 +794,7 @@ TEST_F(MessageBridgeTest, ServerRestart) {
   {
     FLAGS_application_name = "pi2_message_bridge_server";
     aos::ShmEventLoop pi2_server_event_loop(&pi2_config.message());
+    pi2_server_event_loop.SetRuntimeRealtimePriority(1);
     MessageBridgeServer pi2_message_bridge_server(&pi2_server_event_loop);
 
     // Run for 5 seconds to make sure we have time to estimate the offset.
@@ -864,10 +878,12 @@ TEST_F(MessageBridgeTest, ReliableSentBeforeClientStartup) {
 
   FLAGS_application_name = "pi1_message_bridge_server";
   aos::ShmEventLoop pi1_server_event_loop(&pi1_config.message());
+  pi1_server_event_loop.SetRuntimeRealtimePriority(1);
   MessageBridgeServer pi1_message_bridge_server(&pi1_server_event_loop);
 
   FLAGS_application_name = "pi1_message_bridge_client";
   aos::ShmEventLoop pi1_client_event_loop(&pi1_config.message());
+  pi1_client_event_loop.SetRuntimeRealtimePriority(1);
   MessageBridgeClient pi1_message_bridge_client(&pi1_client_event_loop);
 
   FLAGS_application_name = "pi1_timestamp";
@@ -879,6 +895,7 @@ TEST_F(MessageBridgeTest, ReliableSentBeforeClientStartup) {
 
   FLAGS_application_name = "pi2_message_bridge_server";
   aos::ShmEventLoop pi2_server_event_loop(&pi2_config.message());
+  pi2_server_event_loop.SetRuntimeRealtimePriority(1);
   MessageBridgeServer pi2_message_bridge_server(&pi2_server_event_loop);
 
   aos::ShmEventLoop receive_event_loop(&pi2_config.message());
@@ -931,6 +948,7 @@ TEST_F(MessageBridgeTest, ReliableSentBeforeClientStartup) {
     LOG(INFO) << "Starting first pi2 MessageBridgeClient";
     FLAGS_application_name = "pi2_message_bridge_client";
     aos::ShmEventLoop pi2_client_event_loop(&pi2_config.message());
+    pi2_client_event_loop.SetRuntimeRealtimePriority(1);
     MessageBridgeClient pi2_message_bridge_client(&pi2_client_event_loop);
 
     aos::TimerHandler *quit = pi2_client_event_loop.AddTimer(
@@ -962,6 +980,7 @@ TEST_F(MessageBridgeTest, ReliableSentBeforeClientStartup) {
     LOG(INFO) << "Starting second pi2 MessageBridgeClient";
     FLAGS_application_name = "pi2_message_bridge_client";
     aos::ShmEventLoop pi2_client_event_loop(&pi2_config.message());
+    pi2_client_event_loop.SetRuntimeRealtimePriority(1);
     MessageBridgeClient pi2_message_bridge_client(&pi2_client_event_loop);
 
     aos::TimerHandler *quit = pi2_client_event_loop.AddTimer(
@@ -1008,10 +1027,12 @@ TEST_F(MessageBridgeTest, ReliableSentBeforeServerStartup) {
 
   FLAGS_application_name = "pi2_message_bridge_server";
   aos::ShmEventLoop pi2_server_event_loop(&pi2_config.message());
+  pi2_server_event_loop.SetRuntimeRealtimePriority(1);
   MessageBridgeServer pi2_message_bridge_server(&pi2_server_event_loop);
 
   FLAGS_application_name = "pi2_message_bridge_client";
   aos::ShmEventLoop pi2_client_event_loop(&pi2_config.message());
+  pi2_client_event_loop.SetRuntimeRealtimePriority(1);
   MessageBridgeClient pi2_message_bridge_client(&pi2_client_event_loop);
 
   aos::ShmEventLoop receive_event_loop(&pi2_config.message());
@@ -1040,6 +1061,7 @@ TEST_F(MessageBridgeTest, ReliableSentBeforeServerStartup) {
 
   FLAGS_application_name = "pi1_message_bridge_client";
   aos::ShmEventLoop pi1_client_event_loop(&pi1_config.message());
+  pi1_client_event_loop.SetRuntimeRealtimePriority(1);
   MessageBridgeClient pi1_message_bridge_client(&pi1_client_event_loop);
 
   FLAGS_application_name = "pi1_timestamp";
@@ -1086,6 +1108,7 @@ TEST_F(MessageBridgeTest, ReliableSentBeforeServerStartup) {
     // Now, spin up a server for 2 seconds.
     FLAGS_application_name = "pi1_message_bridge_server";
     aos::ShmEventLoop pi1_server_event_loop(&pi1_config.message());
+    pi1_server_event_loop.SetRuntimeRealtimePriority(1);
     MessageBridgeServer pi1_message_bridge_server(&pi1_server_event_loop);
 
     aos::TimerHandler *quit = pi1_server_event_loop.AddTimer(
@@ -1116,6 +1139,7 @@ TEST_F(MessageBridgeTest, ReliableSentBeforeServerStartup) {
     // Now, spin up a second server for 2 seconds.
     FLAGS_application_name = "pi1_message_bridge_server";
     aos::ShmEventLoop pi1_server_event_loop(&pi1_config.message());
+    pi1_server_event_loop.SetRuntimeRealtimePriority(1);
     MessageBridgeServer pi1_message_bridge_server(&pi1_server_event_loop);
 
     aos::TimerHandler *quit = pi1_server_event_loop.AddTimer(
