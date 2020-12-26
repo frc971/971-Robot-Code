@@ -4,6 +4,7 @@
 #include <set>
 #include "aos/events/event_loop.h"
 #include "aos/events/shm_event_loop.h"
+#include "aos/mutex/mutex.h"
 #include "aos/network/connect_generated.h"
 #include "aos/network/web_proxy_generated.h"
 #include "aos/seasocks/seasocks_logger.h"
@@ -99,7 +100,8 @@ class Subscriber {
   void RunIteration();
 
   void AddListener(rtc::scoped_refptr<webrtc::DataChannelInterface> channel,
-                   TransferMethod transfer_method);
+                   TransferMethod transfer_method,
+                   rtc::Thread *signaling_thread);
 
   void RemoveListener(
       rtc::scoped_refptr<webrtc::DataChannelInterface> channel);
@@ -114,6 +116,8 @@ class Subscriber {
     TransferMethod transfer_method;
     uint32_t current_queue_index = 0;
     size_t next_packet_number = 0;
+    // Thread to use for making calls to the DataChannelInterface.
+    rtc::Thread *signaling_thread;
   };
   struct Message {
     uint32_t index = 0xffffffff;
@@ -130,6 +134,15 @@ class Subscriber {
   std::deque<Message> message_buffer_;
   std::map<rtc::scoped_refptr<webrtc::DataChannelInterface>, ChannelInformation>
       channels_;
+  // In order to enable the Connection class to add/remove listeners
+  // asyncrhonously, queue up all the newly added listeners in pending_*
+  // members. Access to these members is controlled by mutex_.
+  std::map<rtc::scoped_refptr<webrtc::DataChannelInterface>, ChannelInformation>
+      pending_channels_;
+  std::vector<rtc::scoped_refptr<webrtc::DataChannelInterface>>
+      pending_removal_;
+
+  aos::Mutex mutex_;
 };
 
 // Represents a single connection to a browser for the entire lifetime of the
@@ -190,6 +203,10 @@ class Connection : public webrtc::PeerConnectionObserver,
  private:
   ::seasocks::WebSocket *sock_;
   ::seasocks::Server *server_;
+  // The signaling thread is the thread on which most/all of the work we do with
+  // WebRTC will happen--it is both where the handlers we register should be
+  // called and where we should be calling Send() from.
+  rtc::Thread *signaling_thread_;
   const std::vector<std::unique_ptr<Subscriber>> &subscribers_;
   const std::vector<FlatbufferDetachedBuffer<MessageHeader>> config_headers_;
   std::map<int, rtc::scoped_refptr<webrtc::DataChannelInterface>> channels_;

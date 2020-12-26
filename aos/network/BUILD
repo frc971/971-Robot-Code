@@ -397,6 +397,7 @@ cc_library(
         ":web_proxy_fbs",
         ":web_proxy_utils",
         "//aos/events:shm_event_loop",
+        "//aos/mutex",
         "//aos/seasocks:seasocks_logger",
         "//third_party:webrtc",
         "//third_party/seasocks",
