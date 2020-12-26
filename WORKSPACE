@@ -1,6 +1,6 @@
 workspace(name = "org_frc971")
 
-load("@bazel_tools//tools/build_defs/repo:git.bzl", "new_git_repository")
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository", "new_git_repository")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive", "http_file")
 load(
     "//debian:python.bzl",
@@ -165,6 +165,15 @@ local_repository(
 local_repository(
     name = "org_tuxfamily_eigen",
     path = "third_party/eigen",
+)
+
+http_archive(
+    name = "boringssl",
+    patch_args = ["-p1"],
+    patches = ["//debian:boringssl.patch"],
+    sha256 = "bcab08a22c28f5322316542aa2c3a9ef0a9f9fde9be22d489cee574867b24675",
+    strip_prefix = "boringssl-613fe9dbe74b58d6aaaf0d22fe57dccd964c7413",
+    urls = ["https://www.frc971.org/Build-Dependencies/boringssl-613fe9dbe74b58d6aaaf0d22fe57dccd964c7413.zip"],
 )
 
 # C++ rules for Bazel.

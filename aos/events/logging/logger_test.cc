@@ -473,6 +473,8 @@ class MultinodeLoggerTest : public ::testing::Test {
 
     logger->logger = std::make_unique<Logger>(logger->event_loop.get());
     logger->logger->set_polling_period(std::chrono::milliseconds(100));
+    logger->logger->set_name(absl::StrCat(
+        "name_prefix_", logger->event_loop->node()->name()->str()));
     logger->event_loop->OnRun([logger, logfile_base, compress]() {
       std::unique_ptr<MultiNodeLogNamer> namer =
           std::make_unique<MultiNodeLogNamer>(
@@ -510,6 +512,9 @@ class MultinodeLoggerTest : public ::testing::Test {
       log_event_uuids.insert(log_file.log_event_uuid);
       logger_nodes.emplace_back(log_file.logger_node);
       both_uuids.insert(log_file.log_event_uuid);
+      EXPECT_TRUE(log_file.config);
+      EXPECT_EQ(log_file.name,
+                absl::StrCat("name_prefix_", log_file.logger_node));
 
       for (const LogParts &part : log_file.parts) {
         EXPECT_NE(part.monotonic_start_time, aos::monotonic_clock::min_time)
@@ -520,6 +525,7 @@ class MultinodeLoggerTest : public ::testing::Test {
         EXPECT_TRUE(log_event_uuids.find(part.log_event_uuid) !=
                     log_event_uuids.end());
         EXPECT_NE(part.node, "");
+        EXPECT_TRUE(log_file.config);
         parts_uuids.insert(part.parts_uuid);
         both_uuids.insert(part.parts_uuid);
       }

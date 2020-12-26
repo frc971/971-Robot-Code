@@ -99,6 +99,7 @@ TEST(PartsMessageReaderDeathTest, TooFarOutOfOrder) {
       JsonToSizedFlatbuffer<LogFileHeader>(
           R"({
   "max_out_of_order_duration": 100000000,
+  "configuration": {},
   "log_event_uuid": "30ef1283-81d7-4004-8c36-1c162dbcb2b2",
   "parts_uuid": "2a05d725-5d5c-4c0b-af42-88de2f3c3876",
   "parts_index": 0
@@ -143,6 +144,7 @@ TEST(PartsMessageReaderTest, ReadWrite) {
       JsonToSizedFlatbuffer<LogFileHeader>(
           R"({
   "max_out_of_order_duration": 100000000,
+  "configuration": {},
   "log_event_uuid": "30ef1283-81d7-4004-8c36-1c162dbcb2b2",
   "parts_uuid": "2a05d725-5d5c-4c0b-af42-88de2f3c3876",
   "parts_index": 0
@@ -153,6 +155,7 @@ TEST(PartsMessageReaderTest, ReadWrite) {
   "max_out_of_order_duration": 200000000,
   "monotonic_start_time": 0,
   "realtime_start_time": 0,
+  "configuration": {},
   "log_event_uuid": "30ef1283-81d7-4004-8c36-1c162dbcb2b2",
   "parts_uuid": "2a05d725-5d5c-4c0b-af42-88de2f3c3876",
   "parts_index": 1

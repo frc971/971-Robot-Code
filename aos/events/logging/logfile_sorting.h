@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "aos/configuration.h"
 #include "aos/events/logging/uuid.h"
 #include "aos/time/time.h"
 
@@ -39,6 +40,10 @@ struct LogParts {
 
   // Pre-sorted list of parts.
   std::vector<std::string> parts;
+
+  // Configuration for all the log parts.  This will be a single object for all
+  // log files with the same config.
+  std::shared_ptr<const aos::Configuration> config;
 };
 
 // Datastructure to hold parts from the same run of the logger which have no
@@ -56,11 +61,18 @@ struct LogFile {
   aos::monotonic_clock::time_point monotonic_start_time;
   aos::realtime_clock::time_point realtime_start_time;
 
+  // The name field in the log file headers.
+  std::string name;
+
   // All the parts, unsorted.
   std::vector<LogParts> parts;
 
   // A list of parts which were corrupted and are unknown where they should go.
   std::vector<std::string> corrupted;
+
+  // Configuration for all the log parts and files.  This is a single
+  // object for log files with the same config.
+  std::shared_ptr<const aos::Configuration> config;
 };
 
 std::ostream &operator<<(std::ostream &stream, const LogFile &file);

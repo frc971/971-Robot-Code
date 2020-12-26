@@ -623,8 +623,7 @@ NodeMerger::NodeMerger(std::vector<LogParts> parts) {
     parts_sorters_.emplace_back(std::move(part));
   }
 
-  node_ = configuration::GetNodeIndex(log_file_header()->configuration(),
-                                      part0_node);
+  node_ = configuration::GetNodeIndex(configuration(), part0_node);
 
   monotonic_start_time_ = monotonic_clock::max_time;
   realtime_start_time_ = realtime_clock::max_time;
@@ -634,6 +633,15 @@ NodeMerger::NodeMerger(std::vector<LogParts> parts) {
       realtime_start_time_ = parts_sorter.realtime_start_time();
     }
   }
+}
+
+std::vector<const LogParts *> NodeMerger::Parts() const {
+  std::vector<const LogParts *> p;
+  p.reserve(parts_sorters_.size());
+  for (const LogPartsSorter &parts_sorter : parts_sorters_) {
+    p.emplace_back(&parts_sorter.parts());
+  }
+  return p;
 }
 
 Message *NodeMerger::Front() {
@@ -695,7 +703,14 @@ TimestampMapper::TimestampMapper(std::vector<LogParts> parts)
                .monotonic_remote_time = monotonic_clock::min_time,
                .realtime_remote_time = realtime_clock::min_time,
                .data = SizePrefixedFlatbufferVector<MessageHeader>::Empty()} {
-  const Configuration *config = log_file_header()->configuration();
+  for (const LogParts *part : node_merger_.Parts()) {
+    if (!configuration_) {
+      configuration_ = part->config;
+    } else {
+      CHECK_EQ(configuration_.get(), part->config.get());
+    }
+  }
+  const Configuration *config = configuration_.get();
   // Only fill out nodes_data_ if there are nodes.  Otherwise everything gets
   // pretty simple.
   if (configuration::MultiNode(config)) {
@@ -728,7 +743,7 @@ TimestampMapper::TimestampMapper(std::vector<LogParts> parts)
 }
 
 void TimestampMapper::AddPeer(TimestampMapper *timestamp_mapper) {
-  CHECK(configuration::MultiNode(log_file_header()->configuration()));
+  CHECK(configuration::MultiNode(configuration()));
   CHECK_NE(timestamp_mapper->node(), node());
   CHECK_LT(timestamp_mapper->node(), nodes_data_.size());
 

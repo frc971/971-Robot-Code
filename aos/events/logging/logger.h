@@ -448,7 +448,7 @@ class LogReader {
 
   template <typename T>
   bool HasChannel(std::string_view name, const Node *node = nullptr) {
-    return configuration::GetChannel(log_file_header()->configuration(), name,
+    return configuration::GetChannel(logged_configuration(), name,
                                      T::GetFullyQualifiedName(), "", node,
                                      true) != nullptr;
   }
@@ -457,13 +457,7 @@ class LogReader {
     return event_loop_factory_;
   }
 
-  const LogFileHeader *log_file_header() const {
-    return &log_file_header_.message();
-  }
-
-  std::string_view name() const {
-    return log_file_header()->name()->string_view();
-  }
+  std::string_view name() const { return log_files_[0].name; }
 
   // Set whether to exit the SimulatedEventLoopFactory when we finish reading
   // the logfile.
@@ -489,10 +483,6 @@ class LogReader {
   }
 
   const std::vector<LogFile> log_files_;
-
-  // This is *a* log file header used to provide the logged config.  The rest of
-  // the header is likely distracting.
-  SizePrefixedFlatbufferVector<LogFileHeader> log_file_header_;
 
   // State per node.
   class State {

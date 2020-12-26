@@ -38,6 +38,7 @@ cc_library(
         "@com_github_google_flatbuffers//:flatbuffers",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/types:span",
+        "@boringssl//:crypto",
     ] + select({
         "//tools:cpu_k8": [":lzma_encoder"],
         "//tools:cpu_aarch64": [":lzma_encoder"],

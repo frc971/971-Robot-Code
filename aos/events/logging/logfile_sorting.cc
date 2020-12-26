@@ -9,14 +9,31 @@
 #include "sys/stat.h"
 
 #include "aos/events/logging/logfile_utils.h"
+#include "aos/flatbuffer_merge.h"
 #include "aos/flatbuffers.h"
 #include "aos/time/time.h"
+
+#include <openssl/sha.h>
 
 namespace aos {
 namespace logger {
 namespace chrono = std::chrono;
 
 namespace {
+
+std::string Sha256(const absl::Span<const uint8_t> str) {
+  unsigned char hash[SHA256_DIGEST_LENGTH];
+  SHA256_CTX sha256;
+  SHA256_Init(&sha256);
+  SHA256_Update(&sha256, str.data(), str.size());
+  SHA256_Final(hash, &sha256);
+  std::stringstream ss;
+  for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
+    ss << std::hex << std::setw(2) << std::setfill('0')
+       << static_cast<int>(hash[i]);
+  }
+  return ss.str();
+}
 
 // Check if string ends with ending
 bool EndsWith(std::string_view str, std::string_view ending) {
@@ -107,6 +124,9 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
     aos::realtime_clock::time_point realtime_start_time =
         aos::realtime_clock::min_time;
 
+    // Name from a log.  All logs below have been confirmed to match.
+    std::string name;
+
     std::map<std::string, UnsortedLogParts> unsorted_parts;
   };
 
@@ -124,6 +144,9 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
     // extracting.
     std::vector<std::pair<monotonic_clock::time_point, std::string>>
         unsorted_parts;
+
+    // Name from a log.  All logs below have been confirmed to match.
+    std::string name;
   };
 
   // A list of all the old parts which we don't know how to sort using uuids.
@@ -154,6 +177,11 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
     const std::string_view node =
         log_header->message().has_node()
             ? log_header->message().node()->name()->string_view()
+            : "";
+
+    const std::string_view name =
+        log_header->message().has_name()
+            ? log_header->message().name()->string_view()
             : "";
 
     const std::string_view logger_node =
@@ -201,9 +229,11 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
         old_parts.back().parts.realtime_start_time = realtime_start_time;
         old_parts.back().unsorted_parts.emplace_back(
             std::make_pair(first_message_time, part));
+        old_parts.back().name = name;
       } else {
         result->unsorted_parts.emplace_back(
             std::make_pair(first_message_time, part));
+        CHECK_EQ(result->name, name);
       }
       continue;
     }
@@ -211,6 +241,8 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
     CHECK(log_header->message().has_log_event_uuid());
     CHECK(log_header->message().has_parts_uuid());
     CHECK(log_header->message().has_parts_index());
+
+    CHECK(log_header->message().has_configuration());
 
     CHECK_EQ(log_header->message().has_logger_node(),
              log_header->message().has_node());
@@ -228,9 +260,11 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
               .first;
       log_it->second.logger_node = logger_node;
       log_it->second.logger_boot_uuid = logger_boot_uuid;
+      log_it->second.name = name;
     } else {
       CHECK_EQ(log_it->second.logger_node, logger_node);
       CHECK_EQ(log_it->second.logger_boot_uuid, logger_boot_uuid);
+      CHECK_EQ(log_it->second.name, name);
     }
 
     if (node == log_it->second.logger_node) {
@@ -293,6 +327,8 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
       << ": Can't have a mix of old and new parts.";
 
   // Now reformat old_parts to be in the right datastructure to report.
+  std::map<std::string, std::shared_ptr<const Configuration>>
+      copied_config_sha256;
   if (!old_parts.empty()) {
     std::vector<LogFile> result;
     for (UnsortedOldParts &p : old_parts) {
@@ -304,14 +340,46 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
             return a.first < b.first;
           });
       LogFile log_file;
+
+      // We want to use a single Configuration flatbuffer for all the parts to
+      // make downstream easier.  Since this is an old log, it doesn't have a
+      // SHA256 in the header to rely on, so we need a way to detect duplicates.
+      //
+      // SHA256 is decently fast, so use that as a representative hash of the
+      // header.
+      auto header =
+          std::make_shared<SizePrefixedFlatbufferVector<LogFileHeader>>(
+              std::move(*ReadHeader(p.unsorted_parts[0].second)));
+
+      // Do a recursive copy to normalize the flatbuffer.  Different
+      // configurations can be built different ways, and can even have their
+      // vtable out of order.  Don't think and just trigger a copy.
+      FlatbufferDetachedBuffer<Configuration> config_copy =
+          RecursiveCopyFlatBuffer(header->message().configuration());
+
+      std::string config_copy_sha256 = Sha256(config_copy.span());
+
+      auto it = copied_config_sha256.find(config_copy_sha256);
+      if (it != copied_config_sha256.end()) {
+        log_file.config = it->second;
+      } else {
+        std::shared_ptr<const Configuration> config(
+            header, header->message().configuration());
+
+        copied_config_sha256.emplace(config_copy_sha256, config);
+        log_file.config = config;
+      }
+
       for (std::pair<monotonic_clock::time_point, std::string> &f :
            p.unsorted_parts) {
         p.parts.parts.emplace_back(std::move(f.second));
       }
+      p.parts.config = log_file.config;
       log_file.parts.emplace_back(std::move(p.parts));
       log_file.monotonic_start_time = log_file.parts[0].monotonic_start_time;
       log_file.realtime_start_time = log_file.parts[0].realtime_start_time;
       log_file.corrupted = corrupted;
+      log_file.name = p.name;
       result.emplace_back(std::move(log_file));
     }
 
@@ -328,7 +396,9 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
     new_file.logger_boot_uuid = logs.second.logger_boot_uuid;
     new_file.monotonic_start_time = logs.second.monotonic_start_time;
     new_file.realtime_start_time = logs.second.realtime_start_time;
+    new_file.name = logs.second.name;
     new_file.corrupted = corrupted;
+    bool seen_part = false;
     for (std::pair<const std::string, UnsortedLogParts> &parts :
          logs.second.unsorted_parts) {
       LogParts new_parts;
@@ -352,6 +422,31 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
       for (std::pair<std::string, int> &p : parts.second.parts) {
         new_parts.parts.emplace_back(std::move(p.first));
       }
+
+      if (!seen_part) {
+        auto header =
+            std::make_shared<SizePrefixedFlatbufferVector<LogFileHeader>>(
+                std::move(*ReadHeader(new_parts.parts[0])));
+
+        std::shared_ptr<const Configuration> config(
+            header, header->message().configuration());
+
+        FlatbufferDetachedBuffer<Configuration> config_copy =
+            RecursiveCopyFlatBuffer(header->message().configuration());
+
+        std::string config_copy_sha256 = Sha256(config_copy.span());
+
+        auto it = copied_config_sha256.find(config_copy_sha256);
+        if (it != copied_config_sha256.end()) {
+          new_file.config = it->second;
+        } else {
+          copied_config_sha256.emplace(config_copy_sha256, config);
+          new_file.config = config;
+        }
+      }
+      new_parts.config = new_file.config;
+      seen_part = true;
+
       new_file.parts.emplace_back(std::move(new_parts));
     }
     result.emplace_back(std::move(new_file));
@@ -397,7 +492,8 @@ std::ostream &operator<<(std::ostream &stream, const LogFile &file) {
   if (!file.logger_boot_uuid.empty()) {
     stream << " \"logger_boot_uuid\": \"" << file.logger_boot_uuid << "\",\n";
   }
-  stream << " \"monotonic_start_time\": " << file.monotonic_start_time
+  stream << " \"config\": " << file.config.get();
+  stream << ",\n \"monotonic_start_time\": " << file.monotonic_start_time
          << ",\n \"realtime_start_time\": " << file.realtime_start_time
          << ",\n";
   stream << " \"parts\": [\n";
@@ -424,7 +520,8 @@ std::ostream &operator<<(std::ostream &stream, const LogParts &parts) {
   if (!parts.source_boot_uuid.empty()) {
     stream << "  \"source_boot_uuid\": \"" << parts.source_boot_uuid << "\",\n";
   }
-  stream << "  \"monotonic_start_time\": " << parts.monotonic_start_time
+  stream << "  \"config\": " << parts.config.get();
+  stream << ",\n  \"monotonic_start_time\": " << parts.monotonic_start_time
          << ",\n  \"realtime_start_time\": " << parts.realtime_start_time
          << ",\n  \"parts\": [";
 

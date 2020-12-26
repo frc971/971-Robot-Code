@@ -368,20 +368,14 @@ class LogPartsSorter {
  public:
   LogPartsSorter(LogParts log_parts);
 
-  // Returns the current log file header.
-  // TODO(austin): Is this the header we want to report?  Do we want a better
-  // start time?
-  // TODO(austin): Report a start time from the LogParts.  Figure out how that
-  // all works.
-  const LogFileHeader *log_file_header() const {
-    return parts_message_reader_.log_file_header();
-  }
+  // Returns the parts that this is sorting messages from.
+  const LogParts &parts() const { return parts_message_reader_.parts(); }
 
   monotonic_clock::time_point monotonic_start_time() const {
-    return parts_message_reader_.parts().monotonic_start_time;
+    return parts().monotonic_start_time;
   }
   realtime_clock::time_point realtime_start_time() const {
-    return parts_message_reader_.parts().realtime_start_time;
+    return parts().realtime_start_time;
   }
 
   // The time this data is sorted until.
@@ -421,10 +415,11 @@ class NodeMerger {
   // Node index in the configuration of this node.
   int node() const { return node_; }
 
-  // The log file header for one of the log files.
-  const LogFileHeader *log_file_header() const {
-    CHECK(!parts_sorters_.empty());
-    return parts_sorters_[0].log_file_header();
+  // List of parts being sorted together.
+  std::vector<const LogParts *> Parts() const;
+
+  const Configuration *configuration() const {
+    return parts_sorters_[0].parts().config.get();
   }
 
   monotonic_clock::time_point monotonic_start_time() const {
@@ -481,10 +476,9 @@ class TimestampMapper {
   // timestamps out of this queue.  This lets us bootstrap time estimation
   // without exploding memory usage worst case.
 
-  // Returns a log file header for this node.
-  const LogFileHeader *log_file_header() const {
-    return node_merger_.log_file_header();
-  }
+  std::vector<const LogParts *> Parts() const { return node_merger_.Parts(); }
+
+  const Configuration *configuration() const { return configuration_.get(); }
 
   // Returns which node this is sorting for.
   size_t node() const { return node_merger_.node(); }
@@ -559,6 +553,9 @@ class TimestampMapper {
 
   // The node merger to source messages from.
   NodeMerger node_merger_;
+
+  std::shared_ptr<const Configuration> configuration_;
+
   // The buffer of messages for this node.  These are not matched with any
   // remote data.
   std::deque<Message> messages_;

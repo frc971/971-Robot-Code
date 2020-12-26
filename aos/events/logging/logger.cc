@@ -40,18 +40,6 @@ DEFINE_double(
 namespace aos {
 namespace logger {
 namespace {
-// Helper to safely read a header, or CHECK.
-SizePrefixedFlatbufferVector<LogFileHeader> MaybeReadHeaderOrDie(
-    const std::vector<LogFile> &log_files) {
-  CHECK_GE(log_files.size(), 1u) << ": Empty filenames list";
-  CHECK_GE(log_files[0].parts.size(), 1u) << ": Empty filenames list";
-  CHECK_GE(log_files[0].parts[0].parts.size(), 1u) << ": Empty filenames list";
-  std::optional<SizePrefixedFlatbufferVector<LogFileHeader>> result =
-      ReadHeader(log_files[0].parts[0].parts[0]);
-  CHECK(result);
-  return result.value();
-}
-
 std::string LogFileVectorToString(std::vector<LogFile> log_files) {
   std::stringstream ss;
   for (const auto f : log_files) {
@@ -929,8 +917,20 @@ LogReader::LogReader(std::string_view filename,
 LogReader::LogReader(std::vector<LogFile> log_files,
                      const Configuration *replay_configuration)
     : log_files_(std::move(log_files)),
-      log_file_header_(MaybeReadHeaderOrDie(log_files_)),
       replay_configuration_(replay_configuration) {
+  CHECK_GT(log_files_.size(), 0u);
+  {
+    // Validate that we have the same config everwhere.  This will be true if
+    // all the parts were sorted together and the configs match.
+    const Configuration *config = nullptr;
+    for (const LogFile &log_file : log_files) {
+      if (config == nullptr) {
+        config = log_file.config.get();
+      } else {
+        CHECK_EQ(config, log_file.config.get());
+      }
+    }
+  }
   MakeRemappedConfig();
 
   // Remap all existing remote timestamp channels.  They will be recreated, and
@@ -1000,11 +1000,10 @@ LogReader::~LogReader() {
   if (remapped_configuration_buffer_) {
     remapped_configuration_buffer_->Wipe();
   }
-  log_file_header_.Wipe();
 }
 
 const Configuration *LogReader::logged_configuration() const {
-  return log_file_header_.message().configuration();
+  return log_files_[0].config.get();
 }
 
 const Configuration *LogReader::configuration() const {
