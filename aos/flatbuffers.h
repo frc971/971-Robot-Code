@@ -416,6 +416,16 @@ class SizePrefixedFlatbufferDetachedBuffer final
     return SizePrefixedFlatbufferDetachedBuffer<T>(fbb.Release());
   }
 
+  flatbuffers::DetachedBuffer Release() {
+    flatbuffers::FlatBufferBuilder fbb;
+    fbb.ForceDefaults(true);
+    const auto end = fbb.EndTable(fbb.StartTable());
+    fbb.Finish(flatbuffers::Offset<flatbuffers::Table>(end));
+    flatbuffers::DetachedBuffer result = fbb.Release();
+    std::swap(result, buffer_);
+    return result;
+  }
+
   // Returns references to the buffer, and the data.
   absl::Span<uint8_t> span() override {
     return absl::Span<uint8_t>(buffer_.data(), buffer_.size());

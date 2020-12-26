@@ -27,8 +27,13 @@ table LogFileHeader {
   // find a message out of order.
   max_out_of_order_duration:long (id: 2);
 
-  // The configuration of the channels.
+  // The configuration of the channels.  It is valid to have a log file with
+  // just this filled out.  That is a config only file which will be pointed to
+  // by files using configuration_sha256 and optionally configuration_path.
   configuration:aos.Configuration (id: 3);
+  // sha256 of the configuration used.  If this is set, configuration will not
+  // be set.
+  configuration_sha256:string (id: 16);
 
   // Name of the device which this log file is for.
   name:string (id: 4);

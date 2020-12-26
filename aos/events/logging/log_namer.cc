@@ -50,6 +50,18 @@ void LocalLogNamer::Rotate(
   UpdateHeader(header, uuid_, part_number_);
   data_writer_->QueueSpan(header->span());
 }
+
+void LocalLogNamer::WriteConfiguration(
+    aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header,
+    std::string_view config_sha256) {
+  const std::string filename = absl::StrCat(base_name_, config_sha256, ".bfbs");
+
+  std::unique_ptr<DetachedBufferWriter> writer =
+      std::make_unique<DetachedBufferWriter>(
+          filename, std::make_unique<aos::logger::DummyEncoder>());
+  writer->QueueSizedFlatbuffer(header->Release());
+}
+
 void LocalLogNamer::Reboot(
     const Node * /*node*/,
     aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> * /*header*/) {
@@ -120,7 +132,8 @@ void MultiNodeLogNamer::Reboot(
 
 void MultiNodeLogNamer::DoRotate(
     const Node *node,
-    aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header, bool reboot) {
+    aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header,
+    bool reboot) {
   if (node == this->node()) {
     if (data_writer_.writer) {
       if (reboot) {
@@ -146,6 +159,28 @@ void MultiNodeLogNamer::DoRotate(
       }
     }
   }
+}
+
+void MultiNodeLogNamer::WriteConfiguration(
+    aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header,
+    std::string_view config_sha256) {
+  if (ran_out_of_space_) {
+    return;
+  }
+
+  const std::string_view separator = base_name_.back() == '/' ? "" : "_";
+  const std::string filename = absl::StrCat(
+      base_name_, separator, config_sha256, ".bfbs", extension_, temp_suffix_);
+
+  std::unique_ptr<DetachedBufferWriter> writer =
+      std::make_unique<DetachedBufferWriter>(filename, encoder_factory_());
+
+  writer->QueueSizedFlatbuffer(header->Release());
+
+  if (!writer->ran_out_of_space()) {
+    all_filenames_.emplace_back(filename);
+  }
+  CloseWriter(&writer);
 }
 
 DetachedBufferWriter *MultiNodeLogNamer::MakeWriter(const Channel *channel) {

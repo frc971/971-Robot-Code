@@ -61,6 +61,10 @@ class Logger {
     on_logged_period_ = std::move(on_logged_period);
   }
 
+  void set_separate_config(bool separate_config) {
+    separate_config_ = separate_config;
+  }
+
   // Sets the period between polling the data. Defaults to 100ms.
   //
   // Changing this while a set of files is being written may result in
@@ -232,7 +236,7 @@ class Logger {
   void WriteHeader();
 
   aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> MakeHeader(
-      const Node *node);
+      const Node *node, std::string_view config_sha256);
 
   // Writes the header for the provided node if enough information is valid.
   void MaybeWriteHeader(int node_index);
@@ -313,6 +317,9 @@ class Logger {
   // Max size that the header has consumed.  This much extra data will be
   // reserved in the builder to avoid reallocating.
   size_t max_header_size_ = 0;
+
+  // If true, write the message header into a separate file.
+  bool separate_config_ = true;
 
   // Fetcher for all the statistics from all the nodes.
   aos::Fetcher<message_bridge::ServerStatistics> server_statistics_fetcher_;

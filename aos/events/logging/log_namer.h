@@ -74,6 +74,11 @@ class LogNamer {
   // Returns the node the logger is running on.
   const Node *node() const { return node_; }
 
+  // Writes out the nested Configuration object to the config file location.
+  virtual void WriteConfiguration(
+      aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header,
+      std::string_view config_sha256) = 0;
+
  protected:
   // Modifies the header to have the provided UUID and part id.
   void UpdateHeader(
@@ -114,6 +119,10 @@ class LocalLogNamer : public LogNamer {
 
   DetachedBufferWriter *MakeForwardedTimestampWriter(
       const Channel * /*channel*/, const Node * /*node*/) override;
+
+  void WriteConfiguration(
+      aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header,
+      std::string_view config_sha256) override;
 
  private:
   // Creates a new data writer with the new part number.
@@ -180,6 +189,10 @@ class MultiNodeLogNamer : public LogNamer {
   void Reboot(const Node *node,
               aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header)
       override;
+
+  void WriteConfiguration(
+      aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header,
+      std::string_view config_sha256) override;
 
   DetachedBufferWriter *MakeWriter(const Channel *channel) override;
 

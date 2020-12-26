@@ -43,6 +43,7 @@ struct LogParts {
 
   // Configuration for all the log parts.  This will be a single object for all
   // log files with the same config.
+  std::string config_sha256;
   std::shared_ptr<const aos::Configuration> config;
 };
 
@@ -70,8 +71,9 @@ struct LogFile {
   // A list of parts which were corrupted and are unknown where they should go.
   std::vector<std::string> corrupted;
 
-  // Configuration for all the log parts and files.  This is a single
+  // Configuration for all the log parts and files.  This will be a single
   // object for log files with the same config.
+  std::string config_sha256;
   std::shared_ptr<const aos::Configuration> config;
 };
 

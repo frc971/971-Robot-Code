@@ -12,8 +12,7 @@
 #include "aos/flatbuffer_merge.h"
 #include "aos/flatbuffers.h"
 #include "aos/time/time.h"
-
-#include <openssl/sha.h>
+#include "openssl/sha.h"
 
 namespace aos {
 namespace logger {
@@ -45,6 +44,28 @@ bool FileExists(std::string filename) {
   struct stat stat_results;
   int error = stat(filename.c_str(), &stat_results);
   return error == 0;
+}
+
+bool ConfigOnly(const LogFileHeader *header) {
+  CHECK_EQ(LogFileHeader::MiniReflectTypeTable()->num_elems, 17u);
+  if (header->has_monotonic_start_time()) return false;
+  if (header->has_realtime_start_time()) return false;
+  if (header->has_max_out_of_order_duration()) return false;
+  if (header->has_configuration_sha256()) return false;
+  if (header->has_name()) return false;
+  if (header->has_node()) return false;
+  if (header->has_log_event_uuid()) return false;
+  if (header->has_logger_instance_uuid()) return false;
+  if (header->has_logger_node_boot_uuid()) return false;
+  if (header->has_source_node_boot_uuid()) return false;
+  if (header->has_logger_monotonic_start_time()) return false;
+  if (header->has_logger_realtime_start_time()) return false;
+  if (header->has_log_start_uuid()) return false;
+  if (header->has_parts_uuid()) return false;
+  if (header->has_parts_index()) return false;
+  if (header->has_logger_node()) return false;
+
+  return header->has_configuration();
 }
 
 }  // namespace
@@ -90,6 +111,9 @@ std::vector<std::string> FindLogs(int argc, char **argv) {
 std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
   std::vector<std::string> corrupted;
 
+  std::map<std::string, std::shared_ptr<const Configuration>>
+      config_sha256_lookup;
+
   // Start by grouping all parts by UUID, and extracting the part index.
   // Datastructure to hold all the info extracted from a set of parts which go
   // together so we can sort them afterwords.
@@ -111,6 +135,8 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
 
     // Pairs of the filename and the part index for sorting.
     std::vector<std::pair<std::string, int>> parts;
+
+    std::string config_sha256;
   };
 
   // Struct to hold both the node, and the parts associated with it.
@@ -199,6 +225,31 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
             ? log_header->message().source_node_boot_uuid()->string_view()
             : "";
 
+    const std::string_view configuration_sha256 =
+        log_header->message().has_configuration_sha256()
+            ? log_header->message().configuration_sha256()->string_view()
+            : "";
+
+    if (ConfigOnly(&log_header->message())) {
+      const std::string hash = Sha256(log_header->span());
+
+      if (config_sha256_lookup.find(hash) == config_sha256_lookup.end()) {
+        auto header =
+            std::make_shared<SizePrefixedFlatbufferVector<LogFileHeader>>(
+                std::move(*log_header));
+        config_sha256_lookup.emplace(
+            hash, std::shared_ptr<const Configuration>(
+                      header, header->message().configuration()));
+      }
+      continue;
+    }
+
+    if (configuration_sha256.empty()) {
+      CHECK(log_header->message().has_configuration());
+    } else {
+      CHECK(!log_header->message().has_configuration());
+    }
+
     // Looks like an old log.  No UUID, index, and also single node.  We have
     // little to no multi-node log files in the wild without part UUIDs and
     // indexes which we care much about.
@@ -241,8 +292,6 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
     CHECK(log_header->message().has_log_event_uuid());
     CHECK(log_header->message().has_parts_uuid());
     CHECK(log_header->message().has_parts_index());
-
-    CHECK(log_header->message().has_configuration());
 
     CHECK_EQ(log_header->message().has_logger_node(),
              log_header->message().has_node());
@@ -289,8 +338,10 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
       it->second.logger_realtime_start_time = logger_realtime_start_time;
       it->second.node = std::string(node);
       it->second.source_boot_uuid = source_boot_uuid;
+      it->second.config_sha256 = configuration_sha256;
     } else {
       CHECK_EQ(it->second.source_boot_uuid, source_boot_uuid);
+      CHECK_EQ(it->second.config_sha256, configuration_sha256);
     }
 
     // First part might be min_time.  If it is, try to put a better time on it.
@@ -366,7 +417,7 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
         std::shared_ptr<const Configuration> config(
             header, header->message().configuration());
 
-        copied_config_sha256.emplace(config_copy_sha256, config);
+        copied_config_sha256.emplace(std::move(config_copy_sha256), config);
         log_file.config = config;
       }
 
@@ -399,6 +450,7 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
     new_file.name = logs.second.name;
     new_file.corrupted = corrupted;
     bool seen_part = false;
+    std::string config_sha256;
     for (std::pair<const std::string, UnsortedLogParts> &parts :
          logs.second.unsorted_parts) {
       LogParts new_parts;
@@ -423,28 +475,60 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
         new_parts.parts.emplace_back(std::move(p.first));
       }
 
-      if (!seen_part) {
-        auto header =
-            std::make_shared<SizePrefixedFlatbufferVector<LogFileHeader>>(
-                std::move(*ReadHeader(new_parts.parts[0])));
-
-        std::shared_ptr<const Configuration> config(
-            header, header->message().configuration());
-
-        FlatbufferDetachedBuffer<Configuration> config_copy =
-            RecursiveCopyFlatBuffer(header->message().configuration());
-
-        std::string config_copy_sha256 = Sha256(config_copy.span());
-
-        auto it = copied_config_sha256.find(config_copy_sha256);
-        if (it != copied_config_sha256.end()) {
-          new_file.config = it->second;
+      if (!parts.second.config_sha256.empty()) {
+        // The easy case.  We've got a sha256 to point to, so go look it up.
+        // Abort if it doesn't exist.
+        auto it = config_sha256_lookup.find(parts.second.config_sha256);
+        CHECK(it != config_sha256_lookup.end())
+            << ": Failed to find a matching config with a SHA256 of "
+            << parts.second.config_sha256;
+        new_parts.config_sha256 = std::move(parts.second.config_sha256);
+        new_parts.config = it->second;
+        if (!seen_part) {
+          new_file.config_sha256 = new_parts.config_sha256;
+          new_file.config = new_parts.config;
+          config_sha256 = new_file.config_sha256;
         } else {
-          copied_config_sha256.emplace(config_copy_sha256, config);
-          new_file.config = config;
+          CHECK_EQ(config_sha256, new_file.config_sha256)
+              << ": Mismatched configs in " << new_file;
         }
+      } else {
+        CHECK(config_sha256.empty())
+            << ": Part " << new_parts
+            << " is missing a sha256 but other parts have one.";
+        if (!seen_part) {
+          // We want to use a single Configuration flatbuffer for all the parts
+          // to make downstream easier.  Since this is an old log, it doesn't
+          // have a SHA256 in the header to rely on, so we need a way to detect
+          // duplicates.
+          //
+          // SHA256 is decently fast, so use that as a representative hash of
+          // the header.
+          auto header =
+              std::make_shared<SizePrefixedFlatbufferVector<LogFileHeader>>(
+                  std::move(*ReadHeader(new_parts.parts[0])));
+
+          // Do a recursive copy to normalize the flatbuffer.  Different
+          // configurations can be built different ways, and can even have their
+          // vtable out of order.  Don't think and just trigger a copy.
+          FlatbufferDetachedBuffer<Configuration> config_copy =
+              RecursiveCopyFlatBuffer(header->message().configuration());
+
+          std::string config_copy_sha256 = Sha256(config_copy.span());
+
+          auto it = copied_config_sha256.find(config_copy_sha256);
+          if (it != copied_config_sha256.end()) {
+            new_file.config = it->second;
+          } else {
+            std::shared_ptr<const Configuration> config(
+                header, header->message().configuration());
+
+            copied_config_sha256.emplace(std::move(config_copy_sha256), config);
+            new_file.config = config;
+          }
+        }
+        new_parts.config = new_file.config;
       }
-      new_parts.config = new_file.config;
       seen_part = true;
 
       new_file.parts.emplace_back(std::move(new_parts));
@@ -493,6 +577,9 @@ std::ostream &operator<<(std::ostream &stream, const LogFile &file) {
     stream << " \"logger_boot_uuid\": \"" << file.logger_boot_uuid << "\",\n";
   }
   stream << " \"config\": " << file.config.get();
+  if (!file.config_sha256.empty()) {
+    stream << ",\n \"config_sha256\": \"" << file.config_sha256 << "\"";
+  }
   stream << ",\n \"monotonic_start_time\": " << file.monotonic_start_time
          << ",\n \"realtime_start_time\": " << file.realtime_start_time
          << ",\n";
@@ -521,6 +608,9 @@ std::ostream &operator<<(std::ostream &stream, const LogParts &parts) {
     stream << "  \"source_boot_uuid\": \"" << parts.source_boot_uuid << "\",\n";
   }
   stream << "  \"config\": " << parts.config.get();
+  if (!parts.config_sha256.empty()) {
+    stream << ",\n  \"config_sha256\": \"" << parts.config_sha256 << "\"";
+  }
   stream << ",\n  \"monotonic_start_time\": " << parts.monotonic_start_time
          << ",\n  \"realtime_start_time\": " << parts.realtime_start_time
          << ",\n  \"parts\": [";

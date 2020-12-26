@@ -22,6 +22,7 @@
 #include "aos/time/time.h"
 #include "aos/util/file.h"
 #include "flatbuffers/flatbuffers.h"
+#include "openssl/sha.h"
 #include "third_party/gmp/gmpxx.h"
 
 DEFINE_bool(skip_missing_forwarding_entries, false,
@@ -40,6 +41,19 @@ DEFINE_double(
 namespace aos {
 namespace logger {
 namespace {
+std::string Sha256(const absl::Span<const uint8_t> str) {
+  unsigned char hash[SHA256_DIGEST_LENGTH];
+  SHA256_CTX sha256;
+  SHA256_Init(&sha256);
+  SHA256_Update(&sha256, str.data(), str.size());
+  SHA256_Final(hash, &sha256);
+  std::stringstream ss;
+  for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
+    ss << std::hex << std::setw(2) << std::setfill('0') << (int)hash[i];
+  }
+  return ss.str();
+}
+
 std::string LogFileVectorToString(std::vector<LogFile> log_files) {
   std::stringstream ss;
   for (const auto f : log_files) {
@@ -274,6 +288,22 @@ void Logger::StartLogging(std::unique_ptr<LogNamer> log_namer,
                           std::string_view log_start_uuid) {
   CHECK(!log_namer_) << ": Already logging";
   log_namer_ = std::move(log_namer);
+
+  std::string config_sha256;
+  if (separate_config_) {
+    flatbuffers::FlatBufferBuilder fbb;
+    flatbuffers::Offset<aos::Configuration> configuration_offset =
+        CopyFlatBuffer(configuration_, &fbb);
+    LogFileHeader::Builder log_file_header_builder(fbb);
+    log_file_header_builder.add_configuration(configuration_offset);
+    fbb.FinishSizePrefixed(log_file_header_builder.Finish());
+    aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> config_header(
+        fbb.Release());
+    config_sha256 = Sha256(config_header.span());
+    LOG(INFO) << "Config sha256 of " << config_sha256;
+    log_namer_->WriteConfiguration(&config_header, config_sha256);
+  }
+
   log_event_uuid_ = UUID::Random();
   log_start_uuid_ = log_start_uuid;
   VLOG(1) << "Starting logger for " << FlatbufferToJson(event_loop_->node());
@@ -303,7 +333,8 @@ void Logger::StartLogging(std::unique_ptr<LogNamer> log_namer,
   for (const Node *node : log_namer_->nodes()) {
     const int node_index = configuration::GetNodeIndex(configuration_, node);
 
-    node_state_[node_index].log_file_header = MakeHeader(node);
+    node_state_[node_index].log_file_header =
+        MakeHeader(node, config_sha256);
   }
 
   // Grab data from each channel right before we declare the log file started
@@ -570,15 +601,17 @@ bool Logger::MaybeUpdateTimestamp(
 }
 
 aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> Logger::MakeHeader(
-    const Node *node) {
+    const Node *node, std::string_view config_sha256) {
   // Now write the header with this timestamp in it.
   flatbuffers::FlatBufferBuilder fbb;
   fbb.ForceDefaults(true);
 
-  // TODO(austin): Compress this much more efficiently.  There are a bunch of
-  // duplicated schemas.
-  const flatbuffers::Offset<aos::Configuration> configuration_offset =
-      CopyFlatBuffer(configuration_, &fbb);
+  flatbuffers::Offset<aos::Configuration> configuration_offset;
+  if (!separate_config_) {
+    configuration_offset = CopyFlatBuffer(configuration_, &fbb);
+  } else {
+    CHECK(!config_sha256.empty());
+  }
 
   const flatbuffers::Offset<flatbuffers::String> name_offset =
       fbb.CreateString(name_);
@@ -595,6 +628,11 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> Logger::MakeHeader(
     log_start_uuid_offset = fbb.CreateString(log_start_uuid_);
   }
 
+  flatbuffers::Offset<flatbuffers::String> config_sha256_offset;
+  if (!config_sha256.empty()) {
+    config_sha256_offset = fbb.CreateString(config_sha256);
+  }
+
   const flatbuffers::Offset<flatbuffers::String> logger_node_boot_uuid_offset =
       fbb.CreateString(event_loop_->boot_uuid().string_view());
 
@@ -608,7 +646,6 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> Logger::MakeHeader(
   flatbuffers::Offset<Node> logger_node_offset;
 
   if (configuration::MultiNode(configuration_)) {
-    // TODO(austin): Reuse the node we just copied in above.
     node_offset = RecursiveCopyFlatBuffer(node, &fbb);
     logger_node_offset = RecursiveCopyFlatBuffer(event_loop_->node(), &fbb);
   }
@@ -623,7 +660,9 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> Logger::MakeHeader(
     log_file_header_builder.add_logger_node(logger_node_offset);
   }
 
-  log_file_header_builder.add_configuration(configuration_offset);
+  if (!configuration_offset.IsNull()) {
+    log_file_header_builder.add_configuration(configuration_offset);
+  }
   // The worst case theoretical out of order is the polling period times 2.
   // One message could get logged right after the boundary, but be for right
   // before the next boundary.  And the reverse could happen for another
@@ -664,6 +703,12 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> Logger::MakeHeader(
 
   log_file_header_builder.add_parts_uuid(parts_uuid_offset);
   log_file_header_builder.add_parts_index(0);
+
+  log_file_header_builder.add_configuration_sha256(0);
+
+  if (!config_sha256_offset.IsNull()) {
+    log_file_header_builder.add_configuration_sha256(config_sha256_offset);
+  }
 
   fbb.FinishSizePrefixed(log_file_header_builder.Finish());
   aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> result(
