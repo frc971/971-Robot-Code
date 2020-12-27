@@ -3,6 +3,7 @@ package(default_visibility = ["//visibility:public"])
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_ts_library")
 load("//aos:config.bzl", "aos_config")
 load("//tools/build_rules:select.bzl", "cpu_select")
+load("@npm_bazel_typescript//:defs.bzl", "ts_library")
 
 flatbuffer_cc_library(
     name = "drivetrain_goal_fbs",
@@ -713,5 +714,16 @@ cc_test(
     deps = [
         ":camera",
         "//aos/testing:googletest",
+    ],
+)
+
+ts_library(
+    name = "drivetrain_plotter",
+    srcs = ["drivetrain_plotter.ts"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        "//aos/network/www:aos_plotter",
+        "//aos/network/www:proxy",
+        "//frc971/wpilib:imu_plot_utils",
     ],
 )

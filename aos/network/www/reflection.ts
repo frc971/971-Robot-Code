@@ -246,7 +246,9 @@ export class Parser {
         return field;
       }
     }
-    throw new Error('Couldn\'t find field ' + fieldName + '.');
+    throw new Error(
+        'Couldn\'t find field ' + fieldName + ' in object ' + schema.name() +
+        '.');
   }
 
   // Reads a scalar with the given field name from a Table. If readDefaults

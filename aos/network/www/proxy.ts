@@ -125,6 +125,12 @@ export class Connection {
     const request = new ChannelRequest(channel, method);
     if (!this.handlerFuncs.has(channel.key())) {
       this.handlerFuncs.set(channel.key(), []);
+    } else {
+      if (method == TransferMethod.EVERYTHING_WITH_HISTORY) {
+        console.warn(
+            'Behavior of multiple reliable handlers is currently poorly ' +
+            'defined and may not actually deliver all of the messages.');
+      }
     }
     this.handlerFuncs.get(channel.key()).push(handler);
     this.subscribeToChannel(request);

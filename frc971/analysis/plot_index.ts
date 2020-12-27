@@ -23,6 +23,7 @@
 import * as configuration from 'org_frc971/aos/configuration_generated';
 import * as proxy from 'org_frc971/aos/network/www/proxy';
 import {plotImu} from 'org_frc971/frc971/wpilib/imu_plotter';
+import {plotDrivetrain} from 'org_frc971/frc971/control_loops/drivetrain/drivetrain_plotter';
 import {plotDemo} from 'org_frc971/aos/network/www/demo_plot';
 import {plotData} from 'org_frc971/frc971/analysis/plot_data_utils';
 
@@ -79,6 +80,7 @@ rootDiv.appendChild(plotDiv);
 const plotIndex = new Map<string, PlotState>([
   ['Demo', new PlotState(plotDiv, plotDemo)],
   ['IMU', new PlotState(plotDiv, plotImu)],
+  ['Drivetrain', new PlotState(plotDiv, plotDrivetrain)],
   ['C++ Plotter', new PlotState(plotDiv, plotData)],
 ]);
 
@@ -114,6 +116,9 @@ conn.addConfigHandler((config: Configuration) => {
     }
     plotIndex.get(plotSelect.value).initialize(conn);
     plotIndex.get(plotSelect.value).show();
+    // Set the URL so that if you reload you get back to this plot.
+    window.history.replaceState(
+        null, null, '?plot=' + encodeURIComponent(plotSelect.value));
   });
   plotSelect.value = getDefaultPlot();
   // Force the event to occur once at the start.
