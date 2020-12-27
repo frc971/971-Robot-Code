@@ -30,14 +30,9 @@ int main(int argc, char *argv[]) {
   aos::ShmEventLoop event_loop(&config.message());
 
   std::unique_ptr<aos::logger::LogNamer> log_namer;
-  if (event_loop.node() == nullptr) {
-    log_namer = std::make_unique<aos::logger::LocalLogNamer>(
-        aos::logging::GetLogName("fbs_log"), event_loop.node());
-  } else {
-    log_namer = std::make_unique<aos::logger::MultiNodeLogNamer>(
-        absl::StrCat(aos::logging::GetLogName("fbs_log"), "/"),
-        event_loop.configuration(), event_loop.node());
-  }
+  log_namer = std::make_unique<aos::logger::MultiNodeLogNamer>(
+      absl::StrCat(aos::logging::GetLogName("fbs_log"), "/"),
+      event_loop.configuration(), event_loop.node());
 
   aos::logger::Logger logger(&event_loop);
   event_loop.OnRun([&log_namer, &logger]() {
