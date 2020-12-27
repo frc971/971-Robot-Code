@@ -32,6 +32,7 @@
 
 #include <numeric>
 #include <string>
+
 #include "ceres/casts.h"
 #include "ceres/context_impl.h"
 #include "ceres/evaluator.h"
@@ -60,17 +61,16 @@ bool SetupEvaluator(PreprocessedProblem* pp) {
   pp->evaluator_options.num_eliminate_blocks = 0;
   pp->evaluator_options.num_threads = pp->options.num_threads;
   pp->evaluator_options.context = pp->problem->context();
-  pp->evaluator_options.evaluation_callback = pp->options.evaluation_callback;
-  pp->evaluator.reset(Evaluator::Create(pp->evaluator_options,
-                                        pp->reduced_program.get(),
-                                        &pp->error));
+  pp->evaluator_options.evaluation_callback =
+      pp->reduced_program->mutable_evaluation_callback();
+  pp->evaluator.reset(Evaluator::Create(
+      pp->evaluator_options, pp->reduced_program.get(), &pp->error));
   return (pp->evaluator.get() != NULL);
 }
 
 }  // namespace
 
-LineSearchPreprocessor::~LineSearchPreprocessor() {
-}
+LineSearchPreprocessor::~LineSearchPreprocessor() {}
 
 bool LineSearchPreprocessor::Preprocess(const Solver::Options& options,
                                         ProblemImpl* problem,
@@ -85,10 +85,8 @@ bool LineSearchPreprocessor::Preprocess(const Solver::Options& options,
     return false;
   }
 
-  pp->reduced_program.reset(
-      program->CreateReducedProgram(&pp->removed_parameter_blocks,
-                                    &pp->fixed_cost,
-                                    &pp->error));
+  pp->reduced_program.reset(program->CreateReducedProgram(
+      &pp->removed_parameter_blocks, &pp->fixed_cost, &pp->error));
 
   if (pp->reduced_program.get() == NULL) {
     return false;

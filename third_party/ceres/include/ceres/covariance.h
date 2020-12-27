@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2019 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -34,6 +34,7 @@
 #include <memory>
 #include <utility>
 #include <vector>
+
 #include "ceres/internal/disable_warnings.h"
 #include "ceres/internal/port.h"
 #include "ceres/types.h"
@@ -50,7 +51,7 @@ class CovarianceImpl;
 // =======
 // It is very easy to use this class incorrectly without understanding
 // the underlying mathematics. Please read and understand the
-// documentation completely before attempting to use this class.
+// documentation completely before attempting to use it.
 //
 //
 // This class allows the user to evaluate the covariance for a
@@ -72,7 +73,7 @@ class CovarianceImpl;
 // the maximum likelihood estimate of x given observations y is the
 // solution to the non-linear least squares problem:
 //
-//  x* = arg min_x |f(x)|^2
+//  x* = arg min_x |f(x) - y|^2
 //
 // And the covariance of x* is given by
 //
@@ -219,11 +220,11 @@ class CERES_EXPORT Covariance {
     // 1. DENSE_SVD uses Eigen's JacobiSVD to perform the
     //    computations. It computes the singular value decomposition
     //
-    //      U * S * V' = J
+    //      U * D * V' = J
     //
     //    and then uses it to compute the pseudo inverse of J'J as
     //
-    //      pseudoinverse[J'J]^ = V * pseudoinverse[S] * V'
+    //      pseudoinverse[J'J] = V * pseudoinverse[D^2] * V'
     //
     //    It is an accurate but slow method and should only be used
     //    for small to moderate sized problems. It can handle
@@ -234,7 +235,7 @@ class CERES_EXPORT Covariance {
     //
     //      Q * R = J
     //
-    //    [J'J]^-1 = [R*R']^-1
+    //    [J'J]^-1 = [R'*R]^-1
     //
     // SPARSE_QR is not capable of computing the covariance if the
     // Jacobian is rank deficient. Depending on the value of
@@ -349,10 +350,9 @@ class CERES_EXPORT Covariance {
   // covariance computation. Please see the documentation for
   // Covariance::Options for more on the conditions under which this
   // function returns false.
-  bool Compute(
-      const std::vector<std::pair<const double*,
-                                  const double*>>& covariance_blocks,
-      Problem* problem);
+  bool Compute(const std::vector<std::pair<const double*, const double*>>&
+                   covariance_blocks,
+               Problem* problem);
 
   // Compute a part of the covariance matrix.
   //
@@ -425,8 +425,8 @@ class CERES_EXPORT Covariance {
   // a square matrix whose row and column count is equal to the sum of
   // the sizes of the individual parameter blocks. The covariance
   // matrix will be a row-major matrix.
-  bool GetCovarianceMatrix(const std::vector<const double *> &parameter_blocks,
-                           double *covariance_matrix);
+  bool GetCovarianceMatrix(const std::vector<const double*>& parameter_blocks,
+                           double* covariance_matrix) const;
 
   // Return the covariance matrix corresponding to parameter_blocks
   // in the tangent space if a local parameterization is associated
@@ -445,7 +445,7 @@ class CERES_EXPORT Covariance {
   // blocks. The covariance matrix will be a row-major matrix.
   bool GetCovarianceMatrixInTangentSpace(
       const std::vector<const double*>& parameter_blocks,
-      double* covariance_matrix);
+      double* covariance_matrix) const;
 
  private:
   std::unique_ptr<internal::CovarianceImpl> impl_;

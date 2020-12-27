@@ -28,16 +28,17 @@
 //
 // Author: sameeragarwal@google.com (Sameer Agarwal)
 
+#include "ceres/local_parameterization.h"
+
 #include <cmath>
 #include <limits>
 #include <memory>
 
 #include "Eigen/Geometry"
 #include "ceres/autodiff_local_parameterization.h"
-#include "ceres/householder_vector.h"
 #include "ceres/internal/autodiff.h"
 #include "ceres/internal/eigen.h"
-#include "ceres/local_parameterization.h"
+#include "ceres/internal/householder_vector.h"
 #include "ceres/random.h"
 #include "ceres/rotation.h"
 #include "gtest/gtest.h"
@@ -69,13 +70,37 @@ TEST(IdentityParameterization, EverythingTest) {
 
   Matrix global_matrix = Matrix::Ones(10, 3);
   Matrix local_matrix = Matrix::Zero(10, 3);
-  parameterization.MultiplyByJacobian(x,
-                                      10,
-                                      global_matrix.data(),
-                                      local_matrix.data());
+  parameterization.MultiplyByJacobian(
+      x, 10, global_matrix.data(), local_matrix.data());
   EXPECT_EQ((local_matrix - global_matrix).norm(), 0.0);
 }
 
+TEST(SubsetParameterization, EmptyConstantParameters) {
+  std::vector<int> constant_parameters;
+  SubsetParameterization parameterization(3, constant_parameters);
+  EXPECT_EQ(parameterization.GlobalSize(), 3);
+  EXPECT_EQ(parameterization.LocalSize(), 3);
+  double x[3] = {1, 2, 3};
+  double delta[3] = {4, 5, 6};
+  double x_plus_delta[3] = {-1, -2, -3};
+  parameterization.Plus(x, delta, x_plus_delta);
+  EXPECT_EQ(x_plus_delta[0], x[0] + delta[0]);
+  EXPECT_EQ(x_plus_delta[1], x[1] + delta[1]);
+  EXPECT_EQ(x_plus_delta[2], x[2] + delta[2]);
+
+  Matrix jacobian(3, 3);
+  Matrix expected_jacobian(3, 3);
+  expected_jacobian.setIdentity();
+  parameterization.ComputeJacobian(x, jacobian.data());
+  EXPECT_EQ(jacobian, expected_jacobian);
+
+  Matrix global_matrix(3, 5);
+  global_matrix.setRandom();
+  Matrix local_matrix(3, 5);
+  parameterization.MultiplyByJacobian(
+      x, 5, global_matrix.data(), local_matrix.data());
+  EXPECT_EQ(global_matrix, local_matrix);
+}
 
 TEST(SubsetParameterization, NegativeParameterIndexDeathTest) {
   std::vector<int> constant_parameters;
@@ -161,7 +186,7 @@ TEST(SubsetParameterization, NormalFunctionTest) {
     parameterization.Plus(x, delta, x_plus_delta);
     int k = 0;
     for (int j = 0; j < kGlobalSize; ++j) {
-      if (j == i)  {
+      if (j == i) {
         EXPECT_EQ(x_plus_delta[j], x[j]);
       } else {
         EXPECT_EQ(x_plus_delta[j], x[j] + delta[k++]);
@@ -193,10 +218,8 @@ TEST(SubsetParameterization, NormalFunctionTest) {
     }
 
     Matrix local_matrix = Matrix::Zero(10, kLocalSize);
-    parameterization.MultiplyByJacobian(x,
-                                        10,
-                                        global_matrix.data(),
-                                        local_matrix.data());
+    parameterization.MultiplyByJacobian(
+        x, 10, global_matrix.data(), local_matrix.data());
     Matrix expected_local_matrix =
         global_matrix * MatrixRef(jacobian, kGlobalSize, kLocalSize);
     EXPECT_EQ((local_matrix - expected_local_matrix).norm(), 0.0);
@@ -206,7 +229,7 @@ TEST(SubsetParameterization, NormalFunctionTest) {
 // Functor needed to implement automatically differentiated Plus for
 // quaternions.
 struct QuaternionPlus {
-  template<typename T>
+  template <typename T>
   bool operator()(const T* x, const T* delta, T* x_plus_delta) const {
     const T squared_norm_delta =
         delta[0] * delta[0] + delta[1] * delta[1] + delta[2] * delta[2];
@@ -235,10 +258,10 @@ struct QuaternionPlus {
   }
 };
 
-template<typename Parameterization, typename Plus>
-void QuaternionParameterizationTestHelper(
-    const double* x, const double* delta,
-    const double* x_plus_delta_ref) {
+template <typename Parameterization, typename Plus>
+void QuaternionParameterizationTestHelper(const double* x,
+                                          const double* delta,
+                                          const double* x_plus_delta_ref) {
   const int kGlobalSize = 4;
   const int kLocalSize = 3;
 
@@ -251,34 +274,28 @@ void QuaternionParameterizationTestHelper(
     EXPECT_NEAR(x_plus_delta[i], x_plus_delta[i], kTolerance);
   }
 
-  const double x_plus_delta_norm =
-      sqrt(x_plus_delta[0] * x_plus_delta[0] +
-           x_plus_delta[1] * x_plus_delta[1] +
-           x_plus_delta[2] * x_plus_delta[2] +
-           x_plus_delta[3] * x_plus_delta[3]);
+  const double x_plus_delta_norm = sqrt(
+      x_plus_delta[0] * x_plus_delta[0] + x_plus_delta[1] * x_plus_delta[1] +
+      x_plus_delta[2] * x_plus_delta[2] + x_plus_delta[3] * x_plus_delta[3]);
 
   EXPECT_NEAR(x_plus_delta_norm, 1.0, kTolerance);
 
   double jacobian_ref[12];
   double zero_delta[kLocalSize] = {0.0, 0.0, 0.0};
   const double* parameters[2] = {x, zero_delta};
-  double* jacobian_array[2] = { NULL, jacobian_ref };
+  double* jacobian_array[2] = {NULL, jacobian_ref};
 
   // Autodiff jacobian at delta_x = 0.
-  internal::AutoDifferentiate<StaticParameterDims<kGlobalSize, kLocalSize>>(
-      Plus(),
-      parameters,
-      kGlobalSize,
-      x_plus_delta,
-      jacobian_array);
+  internal::AutoDifferentiate<kGlobalSize,
+                              StaticParameterDims<kGlobalSize, kLocalSize>>(
+      Plus(), parameters, kGlobalSize, x_plus_delta, jacobian_array);
 
   double jacobian[12];
   parameterization.ComputeJacobian(x, jacobian);
   for (int i = 0; i < 12; ++i) {
     EXPECT_TRUE(IsFinite(jacobian[i]));
     EXPECT_NEAR(jacobian[i], jacobian_ref[i], kTolerance)
-        << "Jacobian mismatch: i = " << i
-        << "\n Expected \n"
+        << "Jacobian mismatch: i = " << i << "\n Expected \n"
         << ConstMatrixRef(jacobian_ref, kGlobalSize, kLocalSize)
         << "\n Actual \n"
         << ConstMatrixRef(jacobian, kGlobalSize, kLocalSize);
@@ -286,10 +303,8 @@ void QuaternionParameterizationTestHelper(
 
   Matrix global_matrix = Matrix::Random(10, kGlobalSize);
   Matrix local_matrix = Matrix::Zero(10, kLocalSize);
-  parameterization.MultiplyByJacobian(x,
-                                      10,
-                                      global_matrix.data(),
-                                      local_matrix.data());
+  parameterization.MultiplyByJacobian(
+      x, 10, global_matrix.data(), local_matrix.data());
   Matrix expected_local_matrix =
       global_matrix * MatrixRef(jacobian, kGlobalSize, kLocalSize);
   EXPECT_NEAR((local_matrix - expected_local_matrix).norm(),
@@ -338,9 +353,8 @@ TEST(QuaternionParameterization, AwayFromZeroTest) {
   Normalize<4>(x);
 
   double delta[3] = {0.24, 0.15, 0.10};
-  const double delta_norm = sqrt(delta[0] * delta[0] +
-                                 delta[1] * delta[1] +
-                                 delta[2] * delta[2]);
+  const double delta_norm =
+      sqrt(delta[0] * delta[0] + delta[1] * delta[1] + delta[2] * delta[2]);
   double q_delta[4];
   q_delta[0] = cos(delta_norm);
   q_delta[1] = sin(delta_norm) / delta_norm * delta[0];
@@ -356,7 +370,7 @@ TEST(QuaternionParameterization, AwayFromZeroTest) {
 // Functor needed to implement automatically differentiated Plus for
 // Eigen's quaternion.
 struct EigenQuaternionPlus {
-  template<typename T>
+  template <typename T>
   bool operator()(const T* x, const T* delta, T* x_plus_delta) const {
     const T norm_delta =
         sqrt(delta[0] * delta[0] + delta[1] * delta[1] + delta[2] * delta[2]);
@@ -372,7 +386,7 @@ struct EigenQuaternionPlus {
       // constant and when used for automatic differentiation will
       // lead to a zero derivative. Instead we take a first order
       // approximation and evaluate it at zero.
-      q_delta.coeffs() <<  delta[0], delta[1], delta[2], T(1.0);
+      q_delta.coeffs() << delta[0], delta[1], delta[2], T(1.0);
     }
 
     Eigen::Map<Eigen::Quaternion<T>> x_plus_delta_ref(x_plus_delta);
@@ -415,9 +429,8 @@ TEST(EigenQuaternionParameterization, AwayFromZeroTest) {
   x.normalize();
 
   double delta[3] = {0.24, 0.15, 0.10};
-  const double delta_norm = sqrt(delta[0] * delta[0] +
-                                 delta[1] * delta[1] +
-                                 delta[2] * delta[2]);
+  const double delta_norm =
+      sqrt(delta[0] * delta[0] + delta[1] * delta[1] + delta[2] * delta[2]);
 
   // Note: w is first in the constructor.
   Eigen::Quaterniond q_delta(cos(delta_norm),
@@ -432,44 +445,48 @@ TEST(EigenQuaternionParameterization, AwayFromZeroTest) {
 }
 
 // Functor needed to implement automatically differentiated Plus for
-// homogeneous vectors. Note this explicitly defined for vectors of size 4.
+// homogeneous vectors.
+template <int Dim>
 struct HomogeneousVectorParameterizationPlus {
-  template<typename Scalar>
-  bool operator()(const Scalar* p_x, const Scalar* p_delta,
+  template <typename Scalar>
+  bool operator()(const Scalar* p_x,
+                  const Scalar* p_delta,
                   Scalar* p_x_plus_delta) const {
-    Eigen::Map<const Eigen::Matrix<Scalar, 4, 1>> x(p_x);
-    Eigen::Map<const Eigen::Matrix<Scalar, 3, 1>> delta(p_delta);
-    Eigen::Map<Eigen::Matrix<Scalar, 4, 1>> x_plus_delta(p_x_plus_delta);
+    Eigen::Map<const Eigen::Matrix<Scalar, Dim, 1>> x(p_x);
+    Eigen::Map<const Eigen::Matrix<Scalar, Dim - 1, 1>> delta(p_delta);
+    Eigen::Map<Eigen::Matrix<Scalar, Dim, 1>> x_plus_delta(p_x_plus_delta);
 
-    const Scalar squared_norm_delta =
-        delta[0] * delta[0] + delta[1] * delta[1] + delta[2] * delta[2];
+    const Scalar squared_norm_delta = delta.squaredNorm();
 
-    Eigen::Matrix<Scalar, 4, 1> y;
+    Eigen::Matrix<Scalar, Dim, 1> y;
     Scalar one_half(0.5);
     if (squared_norm_delta > Scalar(0.0)) {
       Scalar norm_delta = sqrt(squared_norm_delta);
       Scalar norm_delta_div_2 = 0.5 * norm_delta;
-      const Scalar sin_delta_by_delta = sin(norm_delta_div_2) /
-          norm_delta_div_2;
-      y[0] = sin_delta_by_delta * delta[0] * one_half;
-      y[1] = sin_delta_by_delta * delta[1] * one_half;
-      y[2] = sin_delta_by_delta * delta[2] * one_half;
-      y[3] = cos(norm_delta_div_2);
+      const Scalar sin_delta_by_delta =
+          sin(norm_delta_div_2) / norm_delta_div_2;
+      y.template head<Dim - 1>() = sin_delta_by_delta * one_half * delta;
+      y[Dim - 1] = cos(norm_delta_div_2);
 
     } else {
       // We do not just use y = [0,0,0,1] here because that is a
       // constant and when used for automatic differentiation will
       // lead to a zero derivative. Instead we take a first order
       // approximation and evaluate it at zero.
-      y[0] = delta[0] * one_half;
-      y[1] = delta[1] * one_half;
-      y[2] = delta[2] * one_half;
-      y[3] = Scalar(1.0);
+      y.template head<Dim - 1>() = delta * one_half;
+      y[Dim - 1] = Scalar(1.0);
     }
 
-    Eigen::Matrix<Scalar, Eigen::Dynamic, 1> v(4);
+    Eigen::Matrix<Scalar, Dim, 1> v;
     Scalar beta;
-    internal::ComputeHouseholderVector<Scalar>(x, &v, &beta);
+
+    // NOTE: The explicit template arguments are needed here because
+    // ComputeHouseholderVector is templated and some versions of MSVC
+    // have trouble deducing the type of v automatically.
+    internal::ComputeHouseholderVector<
+        Eigen::Map<const Eigen::Matrix<Scalar, Dim, 1>>,
+        Scalar,
+        Dim>(x, &v, &beta);
 
     x_plus_delta = x.norm() * (y - v * (beta * v.dot(y)));
 
@@ -477,8 +494,8 @@ struct HomogeneousVectorParameterizationPlus {
   }
 };
 
-void HomogeneousVectorParameterizationHelper(const double* x,
-                                             const double* delta) {
+static void HomogeneousVectorParameterizationHelper(const double* x,
+                                                    const double* delta) {
   const double kTolerance = 1e-14;
 
   HomogeneousVectorParameterization homogeneous_vector_parameterization(4);
@@ -487,19 +504,17 @@ void HomogeneousVectorParameterizationHelper(const double* x,
   double x_plus_delta[4] = {0.0, 0.0, 0.0, 0.0};
   homogeneous_vector_parameterization.Plus(x, delta, x_plus_delta);
 
-  const double x_plus_delta_norm =
-      sqrt(x_plus_delta[0] * x_plus_delta[0] +
-           x_plus_delta[1] * x_plus_delta[1] +
-           x_plus_delta[2] * x_plus_delta[2] +
-           x_plus_delta[3] * x_plus_delta[3]);
+  const double x_plus_delta_norm = sqrt(
+      x_plus_delta[0] * x_plus_delta[0] + x_plus_delta[1] * x_plus_delta[1] +
+      x_plus_delta[2] * x_plus_delta[2] + x_plus_delta[3] * x_plus_delta[3]);
 
-  const double x_norm = sqrt(x[0] * x[0] + x[1] * x[1] +
-                             x[2] * x[2] + x[3] * x[3]);
+  const double x_norm =
+      sqrt(x[0] * x[0] + x[1] * x[1] + x[2] * x[2] + x[3] * x[3]);
 
   EXPECT_NEAR(x_plus_delta_norm, x_norm, kTolerance);
 
   // Autodiff jacobian at delta_x = 0.
-  AutoDiffLocalParameterization<HomogeneousVectorParameterizationPlus, 4, 3>
+  AutoDiffLocalParameterization<HomogeneousVectorParameterizationPlus<4>, 4, 3>
       autodiff_jacobian;
 
   double jacobian_autodiff[12];
@@ -580,34 +595,211 @@ TEST(HomogeneousVectorParameterization, DeathTests) {
   EXPECT_DEATH_IF_SUPPORTED(HomogeneousVectorParameterization x(1), "size");
 }
 
+// Functor needed to implement automatically differentiated Plus for
+// line parameterization.
+template <int AmbientSpaceDim>
+struct LineParameterizationPlus {
+  template <typename Scalar>
+  bool operator()(const Scalar* p_x,
+                  const Scalar* p_delta,
+                  Scalar* p_x_plus_delta) const {
+    static constexpr int kTangetSpaceDim = AmbientSpaceDim - 1;
+    Eigen::Map<const Eigen::Matrix<Scalar, AmbientSpaceDim, 1>> origin_point(
+        p_x);
+    Eigen::Map<const Eigen::Matrix<Scalar, AmbientSpaceDim, 1>> dir(
+        p_x + AmbientSpaceDim);
+    Eigen::Map<const Eigen::Matrix<Scalar, kTangetSpaceDim, 1>>
+        delta_origin_point(p_delta);
+    Eigen::Map<Eigen::Matrix<Scalar, AmbientSpaceDim, 1>>
+        origin_point_plus_delta(p_x_plus_delta);
+
+    HomogeneousVectorParameterizationPlus<AmbientSpaceDim> dir_plus;
+    dir_plus(dir.data(),
+             p_delta + kTangetSpaceDim,
+             p_x_plus_delta + AmbientSpaceDim);
+
+    Eigen::Matrix<Scalar, AmbientSpaceDim, 1> v;
+    Scalar beta;
+
+    // NOTE: The explicit template arguments are needed here because
+    // ComputeHouseholderVector is templated and some versions of MSVC
+    // have trouble deducing the type of v automatically.
+    internal::ComputeHouseholderVector<
+        Eigen::Map<const Eigen::Matrix<Scalar, AmbientSpaceDim, 1>>,
+        Scalar,
+        AmbientSpaceDim>(dir, &v, &beta);
+
+    Eigen::Matrix<Scalar, AmbientSpaceDim, 1> y;
+    y << 0.5 * delta_origin_point, Scalar(0.0);
+    origin_point_plus_delta = origin_point + y - v * (beta * v.dot(y));
+
+    return true;
+  }
+};
+
+template <int AmbientSpaceDim>
+static void LineParameterizationHelper(const double* x_ptr,
+                                       const double* delta) {
+  const double kTolerance = 1e-14;
+
+  static constexpr int ParameterDim = 2 * AmbientSpaceDim;
+  static constexpr int TangientParameterDim = 2 * (AmbientSpaceDim - 1);
+
+  LineParameterization<AmbientSpaceDim> line_parameterization;
+
+  using ParameterVector = Eigen::Matrix<double, ParameterDim, 1>;
+  ParameterVector x_plus_delta = ParameterVector::Zero();
+  line_parameterization.Plus(x_ptr, delta, x_plus_delta.data());
+
+  // Ensure the update maintains the norm for the line direction.
+  Eigen::Map<const ParameterVector> x(x_ptr);
+  const double dir_plus_delta_norm =
+      x_plus_delta.template tail<AmbientSpaceDim>().norm();
+  const double dir_norm = x.template tail<AmbientSpaceDim>().norm();
+  EXPECT_NEAR(dir_plus_delta_norm, dir_norm, kTolerance);
+
+  // Ensure the update of the origin point is perpendicular to the line
+  // direction.
+  const double dot_prod_val = x.template tail<AmbientSpaceDim>().dot(
+      x_plus_delta.template head<AmbientSpaceDim>() -
+      x.template head<AmbientSpaceDim>());
+  EXPECT_NEAR(dot_prod_val, 0.0, kTolerance);
+
+  // Autodiff jacobian at delta_x = 0.
+  AutoDiffLocalParameterization<LineParameterizationPlus<AmbientSpaceDim>,
+                                ParameterDim,
+                                TangientParameterDim>
+      autodiff_jacobian;
+
+  using JacobianMatrix = Eigen::
+      Matrix<double, ParameterDim, TangientParameterDim, Eigen::RowMajor>;
+  constexpr double kNaN = std::numeric_limits<double>::quiet_NaN();
+  JacobianMatrix jacobian_autodiff = JacobianMatrix::Constant(kNaN);
+  JacobianMatrix jacobian_analytic = JacobianMatrix::Constant(kNaN);
+
+  autodiff_jacobian.ComputeJacobian(x_ptr, jacobian_autodiff.data());
+  line_parameterization.ComputeJacobian(x_ptr, jacobian_analytic.data());
+
+  EXPECT_FALSE(jacobian_autodiff.hasNaN());
+  EXPECT_FALSE(jacobian_analytic.hasNaN());
+  EXPECT_TRUE(jacobian_autodiff.isApprox(jacobian_analytic))
+      << "auto diff:\n"
+      << jacobian_autodiff << "\n"
+      << "analytic diff:\n"
+      << jacobian_analytic;
+}
+
+TEST(LineParameterization, ZeroTest3D) {
+  double x[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 1.0};
+  double delta[4] = {0.0, 0.0, 0.0, 0.0};
+
+  LineParameterizationHelper<3>(x, delta);
+}
+
+TEST(LineParameterization, ZeroTest4D) {
+  double x[8] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0};
+  double delta[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+
+  LineParameterizationHelper<4>(x, delta);
+}
+
+TEST(LineParameterization, ZeroOriginPointTest3D) {
+  double x[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 1.0};
+  double delta[4] = {0.0, 0.0, 1.0, 2.0};
+
+  LineParameterizationHelper<3>(x, delta);
+}
+
+TEST(LineParameterization, ZeroOriginPointTest4D) {
+  double x[8] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0};
+  double delta[6] = {0.0, 0.0, 0.0, 1.0, 2.0, 3.0};
+
+  LineParameterizationHelper<4>(x, delta);
+}
+
+TEST(LineParameterization, ZeroDirTest3D) {
+  double x[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 1.0};
+  double delta[4] = {3.0, 2.0, 0.0, 0.0};
+
+  LineParameterizationHelper<3>(x, delta);
+}
+
+TEST(LineParameterization, ZeroDirTest4D) {
+  double x[8] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0};
+  double delta[6] = {3.0, 2.0, 1.0, 0.0, 0.0, 0.0};
+
+  LineParameterizationHelper<4>(x, delta);
+}
+
+TEST(LineParameterization, AwayFromZeroTest3D1) {
+  Eigen::Matrix<double, 6, 1> x;
+  x.head<3>() << 1.54, 2.32, 1.34;
+  x.tail<3>() << 0.52, 0.25, 0.15;
+  x.tail<3>().normalize();
+
+  double delta[4] = {4.0, 7.0, 1.0, -0.5};
+
+  LineParameterizationHelper<3>(x.data(), delta);
+}
+
+TEST(LineParameterization, AwayFromZeroTest4D1) {
+  Eigen::Matrix<double, 8, 1> x;
+  x.head<4>() << 1.54, 2.32, 1.34, 3.23;
+  x.tail<4>() << 0.52, 0.25, 0.15, 0.45;
+  x.tail<4>().normalize();
+
+  double delta[6] = {4.0, 7.0, -3.0, 0.0, 1.0, -0.5};
+
+  LineParameterizationHelper<4>(x.data(), delta);
+}
+
+TEST(LineParameterization, AwayFromZeroTest3D2) {
+  Eigen::Matrix<double, 6, 1> x;
+  x.head<3>() << 7.54, -2.81, 8.63;
+  x.tail<3>() << 2.52, 5.25, 4.15;
+
+  double delta[4] = {4.0, 7.0, 1.0, -0.5};
+
+  LineParameterizationHelper<3>(x.data(), delta);
+}
+
+TEST(LineParameterization, AwayFromZeroTest4D2) {
+  Eigen::Matrix<double, 8, 1> x;
+  x.head<4>() << 7.54, -2.81, 8.63, 6.93;
+  x.tail<4>() << 2.52, 5.25, 4.15, 1.45;
+
+  double delta[6] = {4.0, 7.0, -3.0, 2.0, 1.0, -0.5};
+
+  LineParameterizationHelper<4>(x.data(), delta);
+}
 
 class ProductParameterizationTest : public ::testing::Test {
- protected :
-  virtual void SetUp() {
+ protected:
+  void SetUp() final {
     const int global_size1 = 5;
     std::vector<int> constant_parameters1;
     constant_parameters1.push_back(2);
-    param1_.reset(new SubsetParameterization(global_size1,
-                                             constant_parameters1));
+    param1_.reset(
+        new SubsetParameterization(global_size1, constant_parameters1));
 
     const int global_size2 = 3;
     std::vector<int> constant_parameters2;
     constant_parameters2.push_back(0);
     constant_parameters2.push_back(1);
-    param2_.reset(new SubsetParameterization(global_size2,
-                                             constant_parameters2));
+    param2_.reset(
+        new SubsetParameterization(global_size2, constant_parameters2));
 
     const int global_size3 = 4;
     std::vector<int> constant_parameters3;
     constant_parameters3.push_back(1);
-    param3_.reset(new SubsetParameterization(global_size3,
-                                             constant_parameters3));
+    param3_.reset(
+        new SubsetParameterization(global_size3, constant_parameters3));
 
     const int global_size4 = 2;
     std::vector<int> constant_parameters4;
     constant_parameters4.push_back(1);
-    param4_.reset(new SubsetParameterization(global_size4,
-                                             constant_parameters4));
+    param4_.reset(
+        new SubsetParameterization(global_size4, constant_parameters4));
   }
 
   std::unique_ptr<LocalParameterization> param1_;
@@ -626,7 +818,6 @@ TEST_F(ProductParameterizationTest, LocalAndGlobalSize2) {
   EXPECT_EQ(product_param.GlobalSize(),
             param1->GlobalSize() + param2->GlobalSize());
 }
-
 
 TEST_F(ProductParameterizationTest, LocalAndGlobalSize3) {
   LocalParameterization* param1 = param1_.release();
@@ -648,15 +839,11 @@ TEST_F(ProductParameterizationTest, LocalAndGlobalSize4) {
 
   ProductParameterization product_param(param1, param2, param3, param4);
   EXPECT_EQ(product_param.LocalSize(),
-            param1->LocalSize() +
-            param2->LocalSize() +
-            param3->LocalSize() +
-            param4->LocalSize());
+            param1->LocalSize() + param2->LocalSize() + param3->LocalSize() +
+                param4->LocalSize());
   EXPECT_EQ(product_param.GlobalSize(),
-            param1->GlobalSize() +
-            param2->GlobalSize() +
-            param3->GlobalSize() +
-            param4->GlobalSize());
+            param1->GlobalSize() + param2->GlobalSize() + param3->GlobalSize() +
+                param4->GlobalSize());
 }
 
 TEST_F(ProductParameterizationTest, Plus) {
@@ -683,27 +870,23 @@ TEST_F(ProductParameterizationTest, Plus) {
   int x_cursor = 0;
   int delta_cursor = 0;
 
-  EXPECT_TRUE(param1->Plus(&x[x_cursor],
-                           &delta[delta_cursor],
-                           &x_plus_delta[x_cursor]));
+  EXPECT_TRUE(param1->Plus(
+      &x[x_cursor], &delta[delta_cursor], &x_plus_delta[x_cursor]));
   x_cursor += param1->GlobalSize();
   delta_cursor += param1->LocalSize();
 
-  EXPECT_TRUE(param2->Plus(&x[x_cursor],
-                           &delta[delta_cursor],
-                           &x_plus_delta[x_cursor]));
+  EXPECT_TRUE(param2->Plus(
+      &x[x_cursor], &delta[delta_cursor], &x_plus_delta[x_cursor]));
   x_cursor += param2->GlobalSize();
   delta_cursor += param2->LocalSize();
 
-  EXPECT_TRUE(param3->Plus(&x[x_cursor],
-                           &delta[delta_cursor],
-                           &x_plus_delta[x_cursor]));
+  EXPECT_TRUE(param3->Plus(
+      &x[x_cursor], &delta[delta_cursor], &x_plus_delta[x_cursor]));
   x_cursor += param3->GlobalSize();
   delta_cursor += param3->LocalSize();
 
-  EXPECT_TRUE(param4->Plus(&x[x_cursor],
-                           &delta[delta_cursor],
-                           &x_plus_delta[x_cursor]));
+  EXPECT_TRUE(param4->Plus(
+      &x[x_cursor], &delta[delta_cursor], &x_plus_delta[x_cursor]));
   x_cursor += param4->GlobalSize();
   delta_cursor += param4->LocalSize();
 
@@ -725,45 +908,41 @@ TEST_F(ProductParameterizationTest, ComputeJacobian) {
     x[i] = RandNormal();
   }
 
-  Matrix jacobian = Matrix::Random(product_param.GlobalSize(),
-                                   product_param.LocalSize());
+  Matrix jacobian =
+      Matrix::Random(product_param.GlobalSize(), product_param.LocalSize());
   EXPECT_TRUE(product_param.ComputeJacobian(&x[0], jacobian.data()));
   int x_cursor = 0;
   int delta_cursor = 0;
 
   Matrix jacobian1(param1->GlobalSize(), param1->LocalSize());
   EXPECT_TRUE(param1->ComputeJacobian(&x[x_cursor], jacobian1.data()));
-  jacobian.block(x_cursor, delta_cursor,
-                 param1->GlobalSize(),
-                 param1->LocalSize())
-      -= jacobian1;
+  jacobian.block(
+      x_cursor, delta_cursor, param1->GlobalSize(), param1->LocalSize()) -=
+      jacobian1;
   x_cursor += param1->GlobalSize();
   delta_cursor += param1->LocalSize();
 
   Matrix jacobian2(param2->GlobalSize(), param2->LocalSize());
   EXPECT_TRUE(param2->ComputeJacobian(&x[x_cursor], jacobian2.data()));
-  jacobian.block(x_cursor, delta_cursor,
-                 param2->GlobalSize(),
-                 param2->LocalSize())
-      -= jacobian2;
+  jacobian.block(
+      x_cursor, delta_cursor, param2->GlobalSize(), param2->LocalSize()) -=
+      jacobian2;
   x_cursor += param2->GlobalSize();
   delta_cursor += param2->LocalSize();
 
   Matrix jacobian3(param3->GlobalSize(), param3->LocalSize());
   EXPECT_TRUE(param3->ComputeJacobian(&x[x_cursor], jacobian3.data()));
-  jacobian.block(x_cursor, delta_cursor,
-                 param3->GlobalSize(),
-                 param3->LocalSize())
-      -= jacobian3;
+  jacobian.block(
+      x_cursor, delta_cursor, param3->GlobalSize(), param3->LocalSize()) -=
+      jacobian3;
   x_cursor += param3->GlobalSize();
   delta_cursor += param3->LocalSize();
 
   Matrix jacobian4(param4->GlobalSize(), param4->LocalSize());
   EXPECT_TRUE(param4->ComputeJacobian(&x[x_cursor], jacobian4.data()));
-  jacobian.block(x_cursor, delta_cursor,
-                 param4->GlobalSize(),
-                 param4->LocalSize())
-      -= jacobian4;
+  jacobian.block(
+      x_cursor, delta_cursor, param4->GlobalSize(), param4->LocalSize()) -=
+      jacobian4;
   x_cursor += param4->GlobalSize();
   delta_cursor += param4->LocalSize();
 

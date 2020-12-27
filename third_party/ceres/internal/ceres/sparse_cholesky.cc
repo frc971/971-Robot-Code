@@ -89,7 +89,8 @@ std::unique_ptr<SparseCholesky> SparseCholesky::Create(
       if (options.use_mixed_precision_solves) {
         sparse_cholesky = AppleAccelerateCholesky<float>::Create(ordering_type);
       } else {
-        sparse_cholesky = AppleAccelerateCholesky<double>::Create(ordering_type);
+        sparse_cholesky =
+            AppleAccelerateCholesky<double>::Create(ordering_type);
       }
       break;
 #else
@@ -124,14 +125,6 @@ LinearSolverTerminationType SparseCholesky::FactorAndSolve(
     termination_type = Solve(rhs, solution, message);
   }
   return termination_type;
-}
-
-CompressedRowSparseMatrix::StorageType StorageTypeForSparseLinearAlgebraLibrary(
-    SparseLinearAlgebraLibraryType sparse_linear_algebra_library_type) {
-  if (sparse_linear_algebra_library_type == SUITE_SPARSE) {
-    return CompressedRowSparseMatrix::UPPER_TRIANGULAR;
-  }
-  return CompressedRowSparseMatrix::LOWER_TRIANGULAR;
 }
 
 RefinedSparseCholesky::RefinedSparseCholesky(

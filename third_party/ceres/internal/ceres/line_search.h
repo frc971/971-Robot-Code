@@ -35,6 +35,7 @@
 
 #include <string>
 #include <vector>
+
 #include "ceres/function_sample.h"
 #include "ceres/internal/eigen.h"
 #include "ceres/internal/port.h"
@@ -262,10 +263,10 @@ class ArmijoLineSearch : public LineSearch {
   virtual ~ArmijoLineSearch() {}
 
  private:
-  virtual void DoSearch(double step_size_estimate,
-                        double initial_cost,
-                        double initial_gradient,
-                        Summary* summary) const;
+  void DoSearch(double step_size_estimate,
+                double initial_cost,
+                double initial_gradient,
+                Summary* summary) const final;
 };
 
 // Bracketing / Zoom Strong Wolfe condition line search.  This implementation
@@ -295,10 +296,10 @@ class WolfeLineSearch : public LineSearch {
                  Summary* summary) const;
 
  private:
-  virtual void DoSearch(double step_size_estimate,
-                        double initial_cost,
-                        double initial_gradient,
-                        Summary* summary) const;
+  void DoSearch(double step_size_estimate,
+                double initial_cost,
+                double initial_gradient,
+                Summary* summary) const final;
 };
 
 }  // namespace internal

@@ -33,8 +33,10 @@
 
 #include <memory>
 #include <vector>
-#include "ceres/sparse_matrix.h"
+
 #include "ceres/internal/eigen.h"
+#include "ceres/internal/port.h"
+#include "ceres/sparse_matrix.h"
 #include "ceres/types.h"
 
 namespace ceres {
@@ -44,7 +46,7 @@ namespace internal {
 // manipulate sparse matrices in triplet (i,j,s) form.  This object is
 // inspired by the design of the cholmod_triplet struct used in the
 // SuiteSparse package and is memory layout compatible with it.
-class TripletSparseMatrix : public SparseMatrix {
+class CERES_EXPORT_INTERNAL TripletSparseMatrix : public SparseMatrix {
  public:
   TripletSparseMatrix();
   TripletSparseMatrix(int num_rows, int num_cols, int max_num_nonzeros);
@@ -58,22 +60,24 @@ class TripletSparseMatrix : public SparseMatrix {
 
   TripletSparseMatrix& operator=(const TripletSparseMatrix& rhs);
 
-  ~TripletSparseMatrix();
+  virtual ~TripletSparseMatrix();
 
   // Implementation of the SparseMatrix interface.
-  virtual void SetZero();
-  virtual void RightMultiply(const double* x, double* y) const;
-  virtual void LeftMultiply(const double* x, double* y) const;
-  virtual void SquaredColumnNorm(double* x) const;
-  virtual void ScaleColumns(const double* scale);
-  virtual void ToDenseMatrix(Matrix* dense_matrix) const;
-  virtual void ToTextFile(FILE* file) const;
-  virtual int num_rows()        const { return num_rows_;     }
-  virtual int num_cols()        const { return num_cols_;     }
-  virtual int num_nonzeros()    const { return num_nonzeros_; }
-  virtual const double* values()  const { return values_.get(); }
-  virtual double* mutable_values()      { return values_.get(); }
-  virtual void set_num_nonzeros(int num_nonzeros);
+  void SetZero() final;
+  void RightMultiply(const double* x, double* y) const final;
+  void LeftMultiply(const double* x, double* y) const final;
+  void SquaredColumnNorm(double* x) const final;
+  void ScaleColumns(const double* scale) final;
+  void ToDenseMatrix(Matrix* dense_matrix) const final;
+  void ToTextFile(FILE* file) const final;
+  // clang-format off
+  int num_rows()        const final   { return num_rows_;     }
+  int num_cols()        const final   { return num_cols_;     }
+  int num_nonzeros()    const final   { return num_nonzeros_; }
+  const double* values()  const final { return values_.get(); }
+  double* mutable_values() final      { return values_.get(); }
+  // clang-format on
+  void set_num_nonzeros(int num_nonzeros);
 
   // Increase max_num_nonzeros and correspondingly increase the size
   // of rows_, cols_ and values_. If new_max_num_nonzeros is smaller
@@ -94,11 +98,13 @@ class TripletSparseMatrix : public SparseMatrix {
   // bounds are dropped and the num_non_zeros changed accordingly.
   void Resize(int new_num_rows, int new_num_cols);
 
+  // clang-format off
   int max_num_nonzeros() const { return max_num_nonzeros_; }
   const int* rows()      const { return rows_.get();       }
   const int* cols()      const { return cols_.get();       }
   int* mutable_rows()          { return rows_.get();       }
   int* mutable_cols()          { return cols_.get();       }
+  // clang-format on
 
   // Returns true if the entries of the matrix obey the row, column,
   // and column size bounds and false otherwise.

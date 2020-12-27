@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2019 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -53,9 +53,9 @@ namespace ceres {
 //  class IntrinsicProjection : public CostFunction {
 //    public:
 //      IntrinsicProjection(const double* observation);
-//      virtual bool Evaluate(double const* const* parameters,
-//                            double* residuals,
-//                            double** jacobians) const;
+//      bool Evaluate(double const* const* parameters,
+//                    double* residuals,
+//                    double** jacobians) const override;
 //  };
 //
 // is a cost function that implements the projection of a point in its
@@ -119,8 +119,8 @@ class DynamicCostFunctionToFunctor {
     const int num_parameter_blocks =
         static_cast<int>(parameter_block_sizes.size());
     const int num_residuals = cost_function_->num_residuals();
-    const int num_parameters = std::accumulate(parameter_block_sizes.begin(),
-                                               parameter_block_sizes.end(), 0);
+    const int num_parameters = std::accumulate(
+        parameter_block_sizes.begin(), parameter_block_sizes.end(), 0);
 
     internal::FixedArray<double> parameters(num_parameters);
     internal::FixedArray<double*> parameter_blocks(num_parameter_blocks);
@@ -130,8 +130,8 @@ class DynamicCostFunctionToFunctor {
 
     // Build a set of arrays to get the residuals and jacobians from
     // the CostFunction wrapped by this functor.
-    double* parameter_ptr = parameters.get();
-    double* jacobian_ptr = jacobians.get();
+    double* parameter_ptr = parameters.data();
+    double* jacobian_ptr = jacobians.data();
     for (int i = 0; i < num_parameter_blocks; ++i) {
       parameter_blocks[i] = parameter_ptr;
       jacobian_blocks[i] = jacobian_ptr;
@@ -141,9 +141,9 @@ class DynamicCostFunctionToFunctor {
       jacobian_ptr += num_residuals * parameter_block_sizes[i];
     }
 
-    if (!cost_function_->Evaluate(parameter_blocks.get(),
-                                  residuals.get(),
-                                  jacobian_blocks.get())) {
+    if (!cost_function_->Evaluate(parameter_blocks.data(),
+                                  residuals.data(),
+                                  jacobian_blocks.data())) {
       return false;
     }
 

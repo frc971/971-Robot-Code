@@ -32,9 +32,11 @@
 #define CERES_INTERNAL_PRECONDITIONER_H_
 
 #include <vector>
+
 #include "ceres/casts.h"
 #include "ceres/compressed_row_sparse_matrix.h"
 #include "ceres/context_impl.h"
+#include "ceres/internal/port.h"
 #include "ceres/linear_operator.h"
 #include "ceres/sparse_matrix.h"
 #include "ceres/types.h"
@@ -45,12 +47,13 @@ namespace internal {
 class BlockSparseMatrix;
 class SparseMatrix;
 
-class Preconditioner : public LinearOperator {
+class CERES_EXPORT_INTERNAL Preconditioner : public LinearOperator {
  public:
   struct Options {
     PreconditionerType type = JACOBI;
     VisibilityClusteringType visibility_clustering_type = CANONICAL_VIEWS;
-    SparseLinearAlgebraLibraryType sparse_linear_algebra_library_type = SUITE_SPARSE;
+    SparseLinearAlgebraLibraryType sparse_linear_algebra_library_type =
+        SUITE_SPARSE;
 
     // When using the subset preconditioner, all row blocks starting
     // from this row block are used to construct the preconditioner.
@@ -131,15 +134,13 @@ class Preconditioner : public LinearOperator {
   // LeftMultiply and num_cols are just calls to RightMultiply and
   // num_rows respectively. Update() must be called before
   // RightMultiply can be called.
-  virtual void RightMultiply(const double* x, double* y) const = 0;
-  virtual void LeftMultiply(const double* x, double* y) const {
+  void RightMultiply(const double* x, double* y) const override = 0;
+  void LeftMultiply(const double* x, double* y) const override {
     return RightMultiply(x, y);
   }
 
-  virtual int num_rows() const = 0;
-  virtual int num_cols() const {
-    return num_rows();
-  }
+  int num_rows() const override = 0;
+  int num_cols() const override { return num_rows(); }
 };
 
 // This templated subclass of Preconditioner serves as a base class for
@@ -149,7 +150,7 @@ template <typename MatrixType>
 class TypedPreconditioner : public Preconditioner {
  public:
   virtual ~TypedPreconditioner() {}
-  virtual bool Update(const LinearOperator& A, const double* D) {
+  bool Update(const LinearOperator& A, const double* D) final {
     return UpdateImpl(*down_cast<const MatrixType*>(&A), D);
   }
 
@@ -159,9 +160,11 @@ class TypedPreconditioner : public Preconditioner {
 
 // Preconditioners that depend on access to the low level structure
 // of a SparseMatrix.
-typedef TypedPreconditioner<SparseMatrix>              SparseMatrixPreconditioner;               // NOLINT
-typedef TypedPreconditioner<BlockSparseMatrix>         BlockSparseMatrixPreconditioner;          // NOLINT
-typedef TypedPreconditioner<CompressedRowSparseMatrix> CompressedRowSparseMatrixPreconditioner;  // NOLINT
+// clang-format off
+typedef TypedPreconditioner<SparseMatrix>              SparseMatrixPreconditioner;
+typedef TypedPreconditioner<BlockSparseMatrix>         BlockSparseMatrixPreconditioner;
+typedef TypedPreconditioner<CompressedRowSparseMatrix> CompressedRowSparseMatrixPreconditioner;
+// clang-format on
 
 // Wrap a SparseMatrix object as a preconditioner.
 class SparseMatrixPreconditionerWrapper : public SparseMatrixPreconditioner {

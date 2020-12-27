@@ -1,5 +1,5 @@
 # Ceres Solver - A fast non-linear least squares minimizer
-# Copyright 2018 Google Inc. All rights reserved.
+# Copyright 2017 Google Inc. All rights reserved.
 # http://ceres-solver.org/
 #
 # Redistribution and use in source and binary forms, with or without
@@ -26,14 +26,26 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Authors: mierle@gmail.com (Keir Mierle)
+# Author: sergey.vfx@gmail.com (Sergey Sharybin)
 
-# TODO(keir): Replace this with a better version, like from TensorFlow.
-# See https://github.com/ceres-solver/ceres-solver/issues/337.
-cc_library(
-    name = "eigen",
-    srcs = [],
-    hdrs = glob(["Eigen/**"]),
-    includes = ["."],
-    visibility = ["//visibility:public"],
-)
+function(add_cxx_compiler_flag_if_supported
+    AGGREGATED_CXX_FLAGS_VAR
+    FLAG_TO_ADD_IF_SUPPORTED)
+  include(CheckCXXCompilerFlag)
+  # Use of whitespace or '-' in variable names (used by CheckCXXSourceCompiles
+  # as #defines) will trigger errors.
+  string(STRIP "${FLAG_TO_ADD_IF_SUPPORTED}" FLAG_TO_ADD_IF_SUPPORTED)
+  # Build an informatively named test result variable so that it will be evident
+  # which tests were performed/succeeded in the CMake output, e.g for -Wall:
+  #
+  # -- Performing Test CHECK_CXX_FLAG_Wall - Success
+  #
+  # NOTE: This variable is also used to cache test result.
+  string(REPLACE "-" "_" CHECK_CXX_FLAG
+    "CHECK_CXX_FLAG${FLAG_TO_ADD_IF_SUPPORTED}")
+  check_cxx_compiler_flag(${FLAG_TO_ADD_IF_SUPPORTED} ${CHECK_CXX_FLAG})
+  if (${CHECK_CXX_FLAG})
+    set(${AGGREGATED_CXX_FLAGS_VAR}
+      "${${AGGREGATED_CXX_FLAGS_VAR}} ${FLAG_TO_ADD_IF_SUPPORTED}" PARENT_SCOPE)
+  endif()
+endfunction()

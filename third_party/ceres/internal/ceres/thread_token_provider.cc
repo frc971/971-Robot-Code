@@ -39,12 +39,11 @@ namespace internal {
 
 ThreadTokenProvider::ThreadTokenProvider(int num_threads) {
   (void)num_threads;
-#ifdef CERES_USE_CXX11_THREADS
+#ifdef CERES_USE_CXX_THREADS
   for (int i = 0; i < num_threads; i++) {
     pool_.Push(i);
   }
 #endif
-
 }
 
 int ThreadTokenProvider::Acquire() {
@@ -56,20 +55,18 @@ int ThreadTokenProvider::Acquire() {
   return 0;
 #endif
 
-#ifdef CERES_USE_CXX11_THREADS
+#ifdef CERES_USE_CXX_THREADS
   int thread_id;
   CHECK(pool_.Wait(&thread_id));
   return thread_id;
 #endif
-
 }
 
 void ThreadTokenProvider::Release(int thread_id) {
   (void)thread_id;
-#ifdef CERES_USE_CXX11_THREADS
+#ifdef CERES_USE_CXX_THREADS
   pool_.Push(thread_id);
 #endif
-
 }
 
 }  // namespace internal

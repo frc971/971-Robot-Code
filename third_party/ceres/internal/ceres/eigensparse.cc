@@ -33,6 +33,7 @@
 #ifdef CERES_USE_EIGEN_SPARSE
 
 #include <sstream>
+
 #include "Eigen/SparseCholesky"
 #include "Eigen/SparseCore"
 #include "ceres/compressed_row_sparse_matrix.h"
@@ -48,11 +49,11 @@ class EigenSparseCholeskyTemplate : public SparseCholesky {
  public:
   EigenSparseCholeskyTemplate() : analyzed_(false) {}
   virtual ~EigenSparseCholeskyTemplate() {}
-  virtual CompressedRowSparseMatrix::StorageType StorageType() const {
+  CompressedRowSparseMatrix::StorageType StorageType() const final {
     return CompressedRowSparseMatrix::LOWER_TRIANGULAR;
   }
 
-  virtual LinearSolverTerminationType Factorize(
+  LinearSolverTerminationType Factorize(
       const Eigen::SparseMatrix<typename Solver::Scalar>& lhs,
       std::string* message) {
     if (!analyzed_) {
@@ -104,8 +105,8 @@ class EigenSparseCholeskyTemplate : public SparseCholesky {
     return LINEAR_SOLVER_SUCCESS;
   }
 
-  virtual LinearSolverTerminationType Factorize(CompressedRowSparseMatrix* lhs,
-                                                std::string* message) {
+  LinearSolverTerminationType Factorize(CompressedRowSparseMatrix* lhs,
+                                        std::string* message) final {
     CHECK_EQ(lhs->storage_type(), StorageType());
 
     typename Solver::Scalar* values_ptr = NULL;
@@ -142,10 +143,6 @@ std::unique_ptr<SparseCholesky> EigenSparseCholesky::Create(
     const OrderingType ordering_type) {
   std::unique_ptr<SparseCholesky> sparse_cholesky;
 
-  // The preprocessor gymnastics here are dealing with the fact that
-  // before version 3.2.2, Eigen did not support a third template
-  // parameter to specify the ordering and it always defaults to AMD.
-#if EIGEN_VERSION_AT_LEAST(3, 2, 2)
   typedef Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>,
                                 Eigen::Upper,
                                 Eigen::AMDOrdering<int>>
@@ -160,11 +157,6 @@ std::unique_ptr<SparseCholesky> EigenSparseCholesky::Create(
     sparse_cholesky.reset(
         new EigenSparseCholeskyTemplate<WithNaturalOrdering>());
   }
-#else
-  typedef Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>, Eigen::Upper>
-      WithAMDOrdering;
-  sparse_cholesky.reset(new EigenSparseCholeskyTemplate<WithAMDOrdering>());
-#endif
   return sparse_cholesky;
 }
 
@@ -173,10 +165,6 @@ EigenSparseCholesky::~EigenSparseCholesky() {}
 std::unique_ptr<SparseCholesky> FloatEigenSparseCholesky::Create(
     const OrderingType ordering_type) {
   std::unique_ptr<SparseCholesky> sparse_cholesky;
-  // The preprocessor gymnastics here are dealing with the fact that
-  // before version 3.2.2, Eigen did not support a third template
-  // parameter to specify the ordering and it always defaults to AMD.
-#if EIGEN_VERSION_AT_LEAST(3, 2, 2)
   typedef Eigen::SimplicialLDLT<Eigen::SparseMatrix<float>,
                                 Eigen::Upper,
                                 Eigen::AMDOrdering<int>>
@@ -191,11 +179,6 @@ std::unique_ptr<SparseCholesky> FloatEigenSparseCholesky::Create(
     sparse_cholesky.reset(
         new EigenSparseCholeskyTemplate<WithNaturalOrdering>());
   }
-#else
-  typedef Eigen::SimplicialLDLT<Eigen::SparseMatrix<float>, Eigen::Upper>
-      WithAMDOrdering;
-  sparse_cholesky.reset(new EigenSparseCholeskyTemplate<WithAMDOrdering>());
-#endif
   return sparse_cholesky;
 }
 

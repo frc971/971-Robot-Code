@@ -35,17 +35,18 @@
 #include "ceres/dense_sparse_matrix.h"
 
 #include <memory>
+
 #include "ceres/casts.h"
+#include "ceres/internal/eigen.h"
 #include "ceres/linear_least_squares_problems.h"
 #include "ceres/triplet_sparse_matrix.h"
-#include "ceres/internal/eigen.h"
 #include "glog/logging.h"
 #include "gtest/gtest.h"
 
 namespace ceres {
 namespace internal {
 
-void CompareMatrices(const SparseMatrix* a, const SparseMatrix* b) {
+static void CompareMatrices(const SparseMatrix* a, const SparseMatrix* b) {
   EXPECT_EQ(a->num_rows(), b->num_rows());
   EXPECT_EQ(a->num_cols(), b->num_cols());
 
@@ -67,8 +68,8 @@ void CompareMatrices(const SparseMatrix* a, const SparseMatrix* b) {
 }
 
 class DenseSparseMatrixTest : public ::testing::Test {
- protected :
-  virtual void SetUp() {
+ protected:
+  void SetUp() final {
     std::unique_ptr<LinearLeastSquaresProblem> problem(
         CreateLinearLeastSquaresProblemFromId(1));
 

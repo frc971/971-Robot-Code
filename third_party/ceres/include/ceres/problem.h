@@ -50,6 +50,7 @@
 namespace ceres {
 
 class CostFunction;
+class EvaluationCallback;
 class LossFunction;
 class LocalParameterization;
 class Solver;
@@ -114,8 +115,8 @@ typedef internal::ResidualBlock* ResidualBlockId;
 //
 //   Problem problem;
 //
-//   problem.AddResidualBlock(new MyUnaryCostFunction(...), NULL, x1);
-//   problem.AddResidualBlock(new MyBinaryCostFunction(...), NULL, x2, x3);
+//   problem.AddResidualBlock(new MyUnaryCostFunction(...), nullptr, x1);
+//   problem.AddResidualBlock(new MyBinaryCostFunction(...), nullptr, x2, x3);
 //
 // Please see cost_function.h for details of the CostFunction object.
 class CERES_EXPORT Problem {
@@ -161,18 +162,38 @@ class CERES_EXPORT Problem {
 
     // A Ceres global context to use for solving this problem. This may help to
     // reduce computation time as Ceres can reuse expensive objects to create.
-    // The context object can be NULL, in which case Ceres may create one.
+    // The context object can be nullptr, in which case Ceres may create one.
     //
     // Ceres does NOT take ownership of the pointer.
     Context* context = nullptr;
+
+    // Using this callback interface, Ceres can notify you when it is
+    // about to evaluate the residuals or jacobians. With the
+    // callback, you can share computation between residual blocks by
+    // doing the shared computation in
+    // EvaluationCallback::PrepareForEvaluation() before Ceres calls
+    // CostFunction::Evaluate(). It also enables caching results
+    // between a pure residual evaluation and a residual & jacobian
+    // evaluation.
+    //
+    // Problem DOES NOT take ownership of the callback.
+    //
+    // NOTE: Evaluation callbacks are incompatible with inner
+    // iterations. So calling Solve with
+    // Solver::Options::use_inner_iterations = true on a Problem with
+    // a non-null evaluation callback is an error.
+    EvaluationCallback* evaluation_callback = nullptr;
   };
 
   // The default constructor is equivalent to the
   // invocation Problem(Problem::Options()).
   Problem();
   explicit Problem(const Options& options);
+  Problem(Problem&&);
+  Problem& operator=(Problem&&);
+
   Problem(const Problem&) = delete;
-  void operator=(const Problem&) = delete;
+  Problem& operator=(const Problem&) = delete;
 
   ~Problem();
 
@@ -181,7 +202,7 @@ class CERES_EXPORT Problem {
   // parameter blocks it expects. The function checks that these match
   // the sizes of the parameter blocks listed in parameter_blocks. The
   // program aborts if a mismatch is detected. loss_function can be
-  // NULL, in which case the cost of the term is just the squared norm
+  // nullptr, in which case the cost of the term is just the squared norm
   // of the residuals.
   //
   // The user has the option of explicitly adding the parameter blocks
@@ -210,8 +231,8 @@ class CERES_EXPORT Problem {
   //
   //   Problem problem;
   //
-  //   problem.AddResidualBlock(new MyUnaryCostFunction(...), NULL, x1);
-  //   problem.AddResidualBlock(new MyBinaryCostFunction(...), NULL, x2, x1);
+  //   problem.AddResidualBlock(new MyUnaryCostFunction(...), nullptr, x1);
+  //   problem.AddResidualBlock(new MyBinaryCostFunction(...), nullptr, x2, x1);
   //
   // Add a residual block by listing the parameter block pointers
   // directly instead of wapping them in a container.
@@ -221,7 +242,8 @@ class CERES_EXPORT Problem {
                                    double* x0,
                                    Ts*... xs) {
     const std::array<double*, sizeof...(Ts) + 1> parameter_blocks{{x0, xs...}};
-    return AddResidualBlock(cost_function, loss_function,
+    return AddResidualBlock(cost_function,
+                            loss_function,
                             parameter_blocks.data(),
                             static_cast<int>(parameter_blocks.size()));
   }
@@ -234,11 +256,10 @@ class CERES_EXPORT Problem {
 
   // Add a residual block by providing a pointer to the parameter block array
   // and the number of parameter blocks.
-  ResidualBlockId AddResidualBlock(
-      CostFunction* cost_function,
-      LossFunction* loss_function,
-      double* const* const parameter_blocks,
-      int num_parameter_blocks);
+  ResidualBlockId AddResidualBlock(CostFunction* cost_function,
+                                   LossFunction* loss_function,
+                                   double* const* const parameter_blocks,
+                                   int num_parameter_blocks);
 
   // Add a parameter block with appropriate size to the problem.
   // Repeated calls with the same arguments are ignored. Repeated
@@ -268,7 +289,7 @@ class CERES_EXPORT Problem {
   // ordering, rendering the jacobian or residuals returned from the solver
   // uninterpretable. If you depend on the evaluated jacobian, do not use
   // remove! This may change in a future release.
-  void RemoveParameterBlock(double* values);
+  void RemoveParameterBlock(const double* values);
 
   // Remove a residual block from the problem. Any parameters that the residual
   // block depends on are not removed. The cost and loss functions for the
@@ -282,27 +303,31 @@ class CERES_EXPORT Problem {
   void RemoveResidualBlock(ResidualBlockId residual_block);
 
   // Hold the indicated parameter block constant during optimization.
-  void SetParameterBlockConstant(double* values);
+  void SetParameterBlockConstant(const double* values);
 
   // Allow the indicated parameter block to vary during optimization.
   void SetParameterBlockVariable(double* values);
 
-  // Returns true if a parameter block is set constant, and false otherwise.
-  bool IsParameterBlockConstant(double* values) const;
+  // Returns true if a parameter block is set constant, and false
+  // otherwise. A parameter block may be set constant in two ways:
+  // either by calling SetParameterBlockConstant or by associating a
+  // LocalParameterization with a zero dimensional tangent space with
+  // it.
+  bool IsParameterBlockConstant(const double* values) const;
 
   // Set the local parameterization for one of the parameter blocks.
   // The local_parameterization is owned by the Problem by default. It
   // is acceptable to set the same parameterization for multiple
   // parameters; the destructor is careful to delete local
-  // parameterizations only once. The local parameterization can only
-  // be set once per parameter, and cannot be changed once set.
+  // parameterizations only once. Calling SetParameterization with
+  // nullptr will clear any previously set parameterization.
   void SetParameterization(double* values,
                            LocalParameterization* local_parameterization);
 
   // Get the local parameterization object associated with this
   // parameter block. If there is no parameterization object
-  // associated then NULL is returned.
-  const LocalParameterization* GetParameterization(double* values) const;
+  // associated then nullptr is returned.
+  const LocalParameterization* GetParameterization(const double* values) const;
 
   // Set the lower/upper bound for the parameter at position "index".
   void SetParameterLowerBound(double* values, int index, double lower_bound);
@@ -312,8 +337,8 @@ class CERES_EXPORT Problem {
   // "index". If the parameter is not bounded by the user, then its
   // lower bound is -std::numeric_limits<double>::max() and upper
   // bound is std::numeric_limits<double>::max().
-  double GetParameterLowerBound(double* values, int index) const;
-  double GetParameterUpperBound(double* values, int index) const;
+  double GetParameterLowerBound(const double* values, int index) const;
+  double GetParameterUpperBound(const double* values, int index) const;
 
   // Number of parameter blocks in the problem. Always equals
   // parameter_blocks().size() and parameter_block_sizes().size().
@@ -361,7 +386,7 @@ class CERES_EXPORT Problem {
   const CostFunction* GetCostFunctionForResidualBlock(
       const ResidualBlockId residual_block) const;
 
-  // Get the LossFunction for the given residual block. Returns NULL
+  // Get the LossFunction for the given residual block. Returns nullptr
   // if no loss function is associated with this residual block.
   const LossFunction* GetLossFunctionForResidualBlock(
       const ResidualBlockId residual_block) const;
@@ -415,7 +440,7 @@ class CERES_EXPORT Problem {
     int num_threads = 1;
   };
 
-  // Evaluate Problem. Any of the output pointers can be NULL. Which
+  // Evaluate Problem. Any of the output pointers can be nullptr. Which
   // residual blocks and parameter blocks are used is controlled by
   // the EvaluateOptions struct above.
   //
@@ -425,16 +450,18 @@ class CERES_EXPORT Problem {
   //
   //   Problem problem;
   //   double x = 1;
-  //   problem.AddResidualBlock(new MyCostFunction, NULL, &x);
+  //   problem.AddResidualBlock(new MyCostFunction, nullptr, &x);
   //
   //   double cost = 0.0;
-  //   problem.Evaluate(Problem::EvaluateOptions(), &cost, NULL, NULL, NULL);
+  //   problem.Evaluate(Problem::EvaluateOptions(), &cost,
+  //                    nullptr, nullptr, nullptr);
   //
   // The cost is evaluated at x = 1. If you wish to evaluate the
   // problem at x = 2, then
   //
-  //    x = 2;
-  //    problem.Evaluate(Problem::EvaluateOptions(), &cost, NULL, NULL, NULL);
+  //   x = 2;
+  //   problem.Evaluate(Problem::EvaluateOptions(), &cost,
+  //                    nullptr, nullptr, nullptr);
   //
   // is the way to do so.
   //
@@ -448,16 +475,81 @@ class CERES_EXPORT Problem {
   // Note 3: This function cannot be called while the problem is being
   // solved, for example it cannot be called from an IterationCallback
   // at the end of an iteration during a solve.
+  //
+  // Note 4: If an EvaluationCallback is associated with the problem,
+  // then its PrepareForEvaluation method will be called every time
+  // this method is called with new_point = true.
   bool Evaluate(const EvaluateOptions& options,
                 double* cost,
                 std::vector<double>* residuals,
                 std::vector<double>* gradient,
                 CRSMatrix* jacobian);
 
+  // Evaluates the residual block, storing the scalar cost in *cost,
+  // the residual components in *residuals, and the jacobians between
+  // the parameters and residuals in jacobians[i], in row-major order.
+  //
+  // If residuals is nullptr, the residuals are not computed.
+  //
+  // If jacobians is nullptr, no Jacobians are computed. If
+  // jacobians[i] is nullptr, then the Jacobian for that parameter
+  // block is not computed.
+  //
+  // It is not okay to request the Jacobian w.r.t a parameter block
+  // that is constant.
+  //
+  // The return value indicates the success or failure. Even if the
+  // function returns false, the caller should expect the output
+  // memory locations to have been modified.
+  //
+  // The returned cost and jacobians have had robustification and
+  // local parameterizations applied already; for example, the
+  // jacobian for a 4-dimensional quaternion parameter using the
+  // "QuaternionParameterization" is num_residuals by 3 instead of
+  // num_residuals by 4.
+  //
+  // apply_loss_function as the name implies allows the user to switch
+  // the application of the loss function on and off.
+  //
+  // If an EvaluationCallback is associated with the problem, then its
+  // PrepareForEvaluation method will be called every time this method
+  // is called with new_point = true. This conservatively assumes that
+  // the user may have changed the parameter values since the previous
+  // call to evaluate / solve.  For improved efficiency, and only if
+  // you know that the parameter values have not changed between
+  // calls, see EvaluateResidualBlockAssumingParametersUnchanged().
+  bool EvaluateResidualBlock(ResidualBlockId residual_block_id,
+                             bool apply_loss_function,
+                             double* cost,
+                             double* residuals,
+                             double** jacobians) const;
+
+  // Same as EvaluateResidualBlock except that if an
+  // EvaluationCallback is associated with the problem, then its
+  // PrepareForEvaluation method will be called every time this method
+  // is called with new_point = false.
+  //
+  // This means, if an EvaluationCallback is associated with the
+  // problem then it is the user's responsibility to call
+  // PrepareForEvaluation before calling this method if necessary,
+  // i.e. iff the parameter values have been changed since the last
+  // call to evaluate / solve.'
+  //
+  // This is because, as the name implies, we assume that the
+  // parameter blocks did not change since the last time
+  // PrepareForEvaluation was called (via Solve, Evaluate or
+  // EvaluateResidualBlock).
+  bool EvaluateResidualBlockAssumingParametersUnchanged(
+      ResidualBlockId residual_block_id,
+      bool apply_loss_function,
+      double* cost,
+      double* residuals,
+      double** jacobians) const;
+
  private:
   friend class Solver;
   friend class Covariance;
-  std::unique_ptr<internal::ProblemImpl> problem_impl_;
+  std::unique_ptr<internal::ProblemImpl> impl_;
 };
 
 }  // namespace ceres

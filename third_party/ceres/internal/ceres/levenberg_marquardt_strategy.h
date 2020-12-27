@@ -32,6 +32,7 @@
 #define CERES_INTERNAL_LEVENBERG_MARQUARDT_STRATEGY_H_
 
 #include "ceres/internal/eigen.h"
+#include "ceres/internal/port.h"
 #include "ceres/trust_region_strategy.h"
 
 namespace ceres {
@@ -42,21 +43,22 @@ namespace internal {
 // K. Madsen, H.B. Nielsen and O. Tingleff. Available to download from
 //
 // http://www2.imm.dtu.dk/pubdb/views/edoc_download.php/3215/pdf/imm3215.pdf
-class LevenbergMarquardtStrategy : public TrustRegionStrategy {
+class CERES_EXPORT_INTERNAL LevenbergMarquardtStrategy
+    : public TrustRegionStrategy {
  public:
   explicit LevenbergMarquardtStrategy(
       const TrustRegionStrategy::Options& options);
   virtual ~LevenbergMarquardtStrategy();
 
   // TrustRegionStrategy interface
-  virtual TrustRegionStrategy::Summary ComputeStep(
+  TrustRegionStrategy::Summary ComputeStep(
       const TrustRegionStrategy::PerSolveOptions& per_solve_options,
       SparseMatrix* jacobian,
       const double* residuals,
-      double* step);
-  virtual void StepAccepted(double step_quality);
-  virtual void StepRejected(double step_quality);
-  virtual void StepIsInvalid() {
+      double* step) final;
+  void StepAccepted(double step_quality) final;
+  void StepRejected(double step_quality) final;
+  void StepIsInvalid() final {
     // Treat the current step as a rejected step with no increase in
     // solution quality. Since rejected steps lead to decrease in the
     // size of the trust region, the next time ComputeStep is called,
@@ -64,7 +66,7 @@ class LevenbergMarquardtStrategy : public TrustRegionStrategy {
     StepRejected(0.0);
   }
 
-  virtual double Radius() const;
+  double Radius() const final;
 
  private:
   LinearSolver* linear_solver_;
@@ -74,11 +76,11 @@ class LevenbergMarquardtStrategy : public TrustRegionStrategy {
   const double max_diagonal_;
   double decrease_factor_;
   bool reuse_diagonal_;
-  Vector diagonal_;   // diagonal_ =  diag(J'J)
+  Vector diagonal_;  // diagonal_ =  diag(J'J)
   // Scaled copy of diagonal_. Stored here as optimization to prevent
   // allocations in every iteration and reuse when a step fails and
   // ComputeStep is called again.
-  Vector lm_diagonal_;  // lm_diagonal_ = diagonal_ / radius_;
+  Vector lm_diagonal_;  // lm_diagonal_ = sqrt(diagonal_ / radius_);
 };
 
 }  // namespace internal

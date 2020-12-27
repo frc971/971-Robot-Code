@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2017 Google Inc. All rights reserved.
+// Copyright 2019 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -124,13 +124,17 @@ namespace ceres {
 //
 //   int NumParameters() const;
 //
-template<typename Function,
-         typename LinearSolver = Eigen::LDLT<
-           Eigen::Matrix<typename Function::Scalar,
-                         Function::NUM_PARAMETERS,
-                         Function::NUM_PARAMETERS>>>
+template <typename Function,
+          typename LinearSolver =
+              Eigen::LDLT<Eigen::Matrix<typename Function::Scalar,
+                                        Function::NUM_PARAMETERS,
+                                        Function::NUM_PARAMETERS>>>
 class TinySolver {
  public:
+  // This class needs to have an Eigen aligned operator new as it contains
+  // fixed-size Eigen types.
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   enum {
     NUM_RESIDUALS = Function::NUM_RESIDUALS,
     NUM_PARAMETERS = Function::NUM_PARAMETERS
@@ -164,7 +168,7 @@ class TinySolver {
     Status status = HIT_MAX_ITERATIONS;
   };
 
-  bool Update(const Function& function, const Parameters &x) {
+  bool Update(const Function& function, const Parameters& x) {
     if (!function(x.data(), error_.data(), jacobian_.data())) {
       return false;
     }

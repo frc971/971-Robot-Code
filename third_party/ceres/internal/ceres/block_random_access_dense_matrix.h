@@ -31,11 +31,10 @@
 #ifndef CERES_INTERNAL_BLOCK_RANDOM_ACCESS_DENSE_MATRIX_H_
 #define CERES_INTERNAL_BLOCK_RANDOM_ACCESS_DENSE_MATRIX_H_
 
-#include "ceres/block_random_access_matrix.h"
-
 #include <memory>
 #include <vector>
 
+#include "ceres/block_random_access_matrix.h"
 #include "ceres/internal/port.h"
 
 namespace ceres {
@@ -51,7 +50,8 @@ namespace internal {
 // pair.
 //
 // ReturnCell is a nop.
-class BlockRandomAccessDenseMatrix : public BlockRandomAccessMatrix {
+class CERES_EXPORT_INTERNAL BlockRandomAccessDenseMatrix
+    : public BlockRandomAccessMatrix {
  public:
   // blocks is a vector of block sizes. The resulting matrix has
   // blocks.size() * blocks.size() cells.
@@ -64,21 +64,21 @@ class BlockRandomAccessDenseMatrix : public BlockRandomAccessMatrix {
   virtual ~BlockRandomAccessDenseMatrix();
 
   // BlockRandomAccessMatrix interface.
-  virtual CellInfo* GetCell(int row_block_id,
-                            int col_block_id,
-                            int* row,
-                            int* col,
-                            int* row_stride,
-                            int* col_stride);
+  CellInfo* GetCell(int row_block_id,
+                    int col_block_id,
+                    int* row,
+                    int* col,
+                    int* row_stride,
+                    int* col_stride) final;
 
   // This is not a thread safe method, it assumes that no cell is
   // locked.
-  virtual void SetZero();
+  void SetZero() final;
 
   // Since the matrix is square with the same row and column block
   // structure, num_rows() = num_cols().
-  virtual int num_rows() const { return num_rows_; }
-  virtual int num_cols() const { return num_rows_; }
+  int num_rows() const final { return num_rows_; }
+  int num_cols() const final { return num_rows_; }
 
   // The underlying matrix storing the cells.
   const double* values() const { return values_.get(); }

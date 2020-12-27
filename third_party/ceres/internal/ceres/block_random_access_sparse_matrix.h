@@ -39,10 +39,10 @@
 #include <vector>
 
 #include "ceres/block_random_access_matrix.h"
-#include "ceres/triplet_sparse_matrix.h"
 #include "ceres/internal/port.h"
-#include "ceres/types.h"
 #include "ceres/small_blas.h"
+#include "ceres/triplet_sparse_matrix.h"
+#include "ceres/types.h"
 
 namespace ceres {
 namespace internal {
@@ -51,7 +51,8 @@ namespace internal {
 // BlockRandomAccessMatrix. Internally a TripletSparseMatrix is used
 // for doing the actual storage. This class augments this matrix with
 // an unordered_map that allows random read/write access.
-class BlockRandomAccessSparseMatrix : public BlockRandomAccessMatrix {
+class CERES_EXPORT_INTERNAL BlockRandomAccessSparseMatrix
+    : public BlockRandomAccessMatrix {
  public:
   // blocks is an array of block sizes. block_pairs is a set of
   // <row_block_id, col_block_id> pairs to identify the non-zero cells
@@ -67,16 +68,16 @@ class BlockRandomAccessSparseMatrix : public BlockRandomAccessMatrix {
   virtual ~BlockRandomAccessSparseMatrix();
 
   // BlockRandomAccessMatrix Interface.
-  virtual CellInfo* GetCell(int row_block_id,
-                            int col_block_id,
-                            int* row,
-                            int* col,
-                            int* row_stride,
-                            int* col_stride);
+  CellInfo* GetCell(int row_block_id,
+                    int col_block_id,
+                    int* row,
+                    int* col,
+                    int* row_stride,
+                    int* col_stride) final;
 
   // This is not a thread safe method, it assumes that no cell is
   // locked.
-  virtual void SetZero();
+  void SetZero() final;
 
   // Assume that the matrix is symmetric and only one half of the
   // matrix is stored.
@@ -85,8 +86,8 @@ class BlockRandomAccessSparseMatrix : public BlockRandomAccessMatrix {
   void SymmetricRightMultiply(const double* x, double* y) const;
 
   // Since the matrix is square, num_rows() == num_cols().
-  virtual int num_rows() const { return tsm_->num_rows(); }
-  virtual int num_cols() const { return tsm_->num_cols(); }
+  int num_rows() const final { return tsm_->num_rows(); }
+  int num_cols() const final { return tsm_->num_cols(); }
 
   // Access to the underlying matrix object.
   const TripletSparseMatrix* matrix() const { return tsm_.get(); }
@@ -110,7 +111,7 @@ class BlockRandomAccessSparseMatrix : public BlockRandomAccessMatrix {
 
   // A mapping from <row_block_id, col_block_id> to the position in
   // the values array of tsm_ where the block is stored.
-  typedef std::unordered_map<long int, CellInfo* > LayoutType;
+  typedef std::unordered_map<long int, CellInfo*> LayoutType;
   LayoutType layout_;
 
   // In order traversal of contents of the matrix. This allows us to

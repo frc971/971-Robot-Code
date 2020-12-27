@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2019 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -38,6 +38,7 @@
 #include <memory>
 #include <string>
 #include <unordered_set>
+
 #include "ceres/array_utils.h"
 #include "ceres/internal/eigen.h"
 #include "ceres/internal/port.h"
@@ -123,7 +124,6 @@ class ParameterBlock {
   // Set this parameter block to vary or not.
   void SetConstant() { is_set_constant_ = true; }
   void SetVarying() { is_set_constant_ = false; }
-  bool IsSetConstantByUser() const { return is_set_constant_; }
   bool IsConstant() const { return (is_set_constant_ || LocalSize() == 0); }
 
   double UpperBound(int index) const {
@@ -166,23 +166,19 @@ class ParameterBlock {
                : local_parameterization_->LocalSize();
   }
 
-  // Set the parameterization. The parameterization can be set exactly once;
-  // multiple calls to set the parameterization to different values will crash.
-  // It is an error to pass nullptr for the parameterization. The parameter
-  // block does not take ownership of the parameterization.
+  // Set the parameterization. The parameter block does not take
+  // ownership of the parameterization.
   void SetParameterization(LocalParameterization* new_parameterization) {
-    CHECK(new_parameterization != nullptr)
-        << "nullptr parameterization invalid.";
     // Nothing to do if the new parameterization is the same as the
     // old parameterization.
     if (new_parameterization == local_parameterization_) {
       return;
     }
 
-    CHECK(local_parameterization_ == nullptr)
-        << "Can't re-set the local parameterization; it leads to "
-        << "ambiguous ownership. Current local parameterization is: "
-        << local_parameterization_;
+    if (new_parameterization == nullptr) {
+      local_parameterization_ = nullptr;
+      return;
+    }
 
     CHECK(new_parameterization->GlobalSize() == size_)
         << "Invalid parameterization for parameter block. The parameter block "
@@ -190,9 +186,9 @@ class ParameterBlock {
         << "size of " << new_parameterization->GlobalSize() << ". Did you "
         << "accidentally use the wrong parameter block or parameterization?";
 
-    CHECK_GT(new_parameterization->LocalSize(), 0)
+    CHECK_GE(new_parameterization->LocalSize(), 0)
         << "Invalid parameterization. Parameterizations must have a "
-        << "positive dimensional tangent space.";
+        << "non-negative dimensional tangent space.";
 
     local_parameterization_ = new_parameterization;
     local_parameterization_jacobian_.reset(
@@ -371,13 +367,13 @@ class ParameterBlock {
 
   // The index of the parameter. This is used by various other parts of Ceres to
   // permit switching from a ParameterBlock* to an index in another array.
-  int32_t index_ = -1;
+  int index_ = -1;
 
   // The offset of this parameter block inside a larger state vector.
-  int32_t state_offset_ = -1;
+  int state_offset_ = -1;
 
   // The offset of this parameter block inside a larger delta vector.
-  int32_t delta_offset_ = -1;
+  int delta_offset_ = -1;
 
   // If non-null, contains the residual blocks this parameter block is in.
   std::unique_ptr<ResidualBlockSet> residual_blocks_;
