@@ -85,8 +85,7 @@ class MultiNodeNoncausalOffsetEstimator {
 
   // List of filters for a connection.  The pointer to the first node will be
   // less than the second node.
-  std::map<std::tuple<const Node *, const Node *>,
-           std::tuple<NoncausalOffsetEstimator>>
+  std::map<std::tuple<const Node *, const Node *>, NoncausalOffsetEstimator>
       filters_;
 
   // We have 2 types of equations to do a least squares regression over to fully

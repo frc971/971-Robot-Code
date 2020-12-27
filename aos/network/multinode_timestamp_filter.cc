@@ -59,17 +59,14 @@ Solve(const Eigen::Matrix<mpq_class, Eigen::Dynamic, Eigen::Dynamic> &mpq_map,
 void MultiNodeNoncausalOffsetEstimator::Start(
     SimulatedEventLoopFactory *factory) {
   for (std::pair<const std::tuple<const Node *, const Node *>,
-                 std::tuple<message_bridge::NoncausalOffsetEstimator>> &filter :
-       filters_) {
+                 message_bridge::NoncausalOffsetEstimator> &filter : filters_) {
     const Node *const node_a = std::get<0>(filter.first);
     const Node *const node_b = std::get<1>(filter.first);
 
-    std::get<0>(filter.second)
-        .SetFirstFwdTime(
-            factory->GetNodeEventLoopFactory(node_a)->monotonic_now());
-    std::get<0>(filter.second)
-        .SetFirstRevTime(
-            factory->GetNodeEventLoopFactory(node_b)->monotonic_now());
+    filter.second.SetFirstFwdTime(
+        factory->GetNodeEventLoopFactory(node_a)->monotonic_now());
+    filter.second.SetFirstRevTime(
+        factory->GetNodeEventLoopFactory(node_b)->monotonic_now());
   }
 }
 
@@ -89,24 +86,23 @@ MultiNodeNoncausalOffsetEstimator::GetFilter(const Node *node_a,
   auto it = filters_.find(tuple);
 
   if (it == filters_.end()) {
-    auto &x =
-        filters_
-            .insert(std::make_pair(
-                tuple, std::make_tuple(message_bridge::NoncausalOffsetEstimator(
-                           node_a, node_b))))
-            .first->second;
+    auto &x = filters_
+                  .insert(std::make_pair(
+                      tuple,
+                      message_bridge::NoncausalOffsetEstimator(node_a, node_b)))
+                  .first->second;
     if (FLAGS_timestamps_to_csv) {
-      std::get<0>(x).SetFwdCsvFileName(absl::StrCat(
-          "/tmp/timestamp_noncausal_", node_a->name()->string_view(), "_",
-          node_b->name()->string_view()));
-      std::get<0>(x).SetRevCsvFileName(absl::StrCat(
-          "/tmp/timestamp_noncausal_", node_b->name()->string_view(), "_",
-          node_a->name()->string_view()));
+      x.SetFwdCsvFileName(absl::StrCat("/tmp/timestamp_noncausal_",
+                                       node_a->name()->string_view(), "_",
+                                       node_b->name()->string_view()));
+      x.SetRevCsvFileName(absl::StrCat("/tmp/timestamp_noncausal_",
+                                       node_b->name()->string_view(), "_",
+                                       node_a->name()->string_view()));
     }
 
-    return &std::get<0>(x);
+    return &x;
   } else {
-    return &std::get<0>(it->second);
+    return &it->second;
   }
 }
 
@@ -120,10 +116,9 @@ void MultiNodeNoncausalOffsetEstimator::LogFit(std::string_view prefix) {
   }
 
   for (std::pair<const std::tuple<const Node *, const Node *>,
-                 std::tuple<message_bridge::NoncausalOffsetEstimator>> &filter :
+                 message_bridge::NoncausalOffsetEstimator> &filter :
        filters_) {
-    message_bridge::NoncausalOffsetEstimator *estimator =
-        &std::get<0>(filter.second);
+    message_bridge::NoncausalOffsetEstimator *estimator = &filter.second;
 
     if (estimator->a_timestamps().size() == 0 &&
         estimator->b_timestamps().size() == 0) {
@@ -282,8 +277,8 @@ void MultiNodeNoncausalOffsetEstimator::Initialize(
     // Now, add the a - b -> sample elements.
     size_t i = 1;
     for (std::pair<const std::tuple<const Node *, const Node *>,
-                   std::tuple<message_bridge::NoncausalOffsetEstimator>>
-             &filter : filters_) {
+                   message_bridge::NoncausalOffsetEstimator> &filter :
+         filters_) {
       const Node *const node_a = std::get<0>(filter.first);
       const Node *const node_b = std::get<1>(filter.first);
 
@@ -298,12 +293,12 @@ void MultiNodeNoncausalOffsetEstimator::Initialize(
       map_matrix_(i, node_b_index) = mpq_class(1);
 
       // -> sample
-      std::get<0>(filter.second)
+      filter.second
           .set_slope_pointer(&slope_matrix_(i, node_a_index));
-      std::get<0>(filter.second).set_offset_pointer(&offset_matrix_(i, 0));
+      filter.second.set_offset_pointer(&offset_matrix_(i, 0));
 
       valid_matrix_(i) = false;
-      std::get<0>(filter.second).set_valid_pointer(&valid_matrix_(i));
+      filter.second.set_valid_pointer(&valid_matrix_(i));
 
       ++i;
     }
