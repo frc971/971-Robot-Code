@@ -20,17 +20,19 @@ except gflags.DuplicateFlagError:
 # Hood is an angular subsystem due to the mounting of the encoder on the hood
 # joint.  We are currently electing to ignore potential non-linearity.
 
-range_of_travel_radians = (37.0 * numpy.pi / 180.0)
-# 0.083 inches/turn
-# 6.38 inches of travel
-turns_of_leadscrew_per_range_of_travel = 6.38 / 0.083
+range_of_travel_radians = (38.0 * numpy.pi / 180.0)
+# 0.472441 inches/turn (12 mm)
+# 6.7725 inches of travel
+turns_of_leadscrew_per_range_of_travel = 6.7725 / 0.472441
 
 radians_per_turn = range_of_travel_radians / turns_of_leadscrew_per_range_of_travel
+
+radians_per_turn_of_motor = 12.0 / 60.0 * radians_per_turn
 
 kHood = angular_system.AngularSystemParams(
     name='Hood',
     motor=control_loop.BAG(),
-    G=radians_per_turn / (2.0 * numpy.pi),
+    G=radians_per_turn_of_motor / (2.0 * numpy.pi),
     J=4.0,
     q_pos=0.15,
     q_vel=5.0,

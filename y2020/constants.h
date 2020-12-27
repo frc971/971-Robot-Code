@@ -39,7 +39,20 @@ struct Values {
   // Hood
   static constexpr double kHoodEncoderCountsPerRevolution() { return 4096.0; }
 
-  static constexpr double kHoodEncoderRatio() { return 8.0 / 72.0; }
+  static constexpr double kHoodEncoderRatio() {
+    // TODO: This math is not quite right
+    // 10.211 in of travel gets you 1 radian on the output
+    const double radians_per_in_travel = 1.0 / 10.211;
+
+    // one turn on the leadscrew gets you 12.0 mm travel
+    const double mm_travel_per_radian = 12.0 / (2.0 * M_PI);
+    const double in_travel_per_radian = mm_travel_per_radian / 25.4;
+
+    // units reduce; radians on the encoder * this number = radians on the hood
+    return in_travel_per_radian * radians_per_in_travel / 0.94816;
+  }
+
+  static constexpr double kHoodSingleTurnEncoderRatio() { return 8.0 / 72.0; }
 
   static constexpr double kMaxHoodEncoderPulsesPerSecond() {
     return control_loops::superstructure::hood::kFreeSpeed / (2.0 * M_PI) *
@@ -50,14 +63,14 @@ struct Values {
   static constexpr ::frc971::constants::Range kHoodRange() {
     return ::frc971::constants::Range{
         0.00,  // Back Hard
-        0.64,   // Front Hard
-        0.01,    // Back Soft
-        0.63    // Front Soft
+        0.64,  // Front Hard
+        0.01,  // Back Soft
+        0.63   // Front Soft
     };
   }
 
   ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<
-      ::frc971::zeroing::AbsoluteEncoderZeroingEstimator>
+      ::frc971::zeroing::AbsoluteAndAbsoluteEncoderZeroingEstimator>
       hood;
 
   // Intake
@@ -151,7 +164,6 @@ struct Values {
            control_loops::superstructure::finisher::kOutputRatio /
            kFinisherEncoderRatio() * kFinisherEncoderCountsPerRevolution();
   }
-
 
   static constexpr double kAcceleratorEncoderCountsPerRevolution() {
     return 2048.0;

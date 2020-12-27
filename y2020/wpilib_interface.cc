@@ -136,6 +136,11 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     hood_encoder_.set_absolute_pwm(::std::move(absolute_pwm));
   }
 
+  void set_hood_single_turn_absolute_pwm(
+      ::std::unique_ptr<frc::DigitalInput> absolute_pwm) {
+    hood_encoder_.set_single_turn_absolute_pwm(::std::move(absolute_pwm));
+  }
+
   // Intake
 
   void set_intake_encoder(::std::unique_ptr<frc::Encoder> encoder) {
@@ -221,12 +226,13 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
       // TODO(alex): check new absolute encoder api.
       // Hood
-      frc971::AbsolutePositionT hood;
+      frc971::AbsoluteAndAbsolutePositionT hood;
       CopyPosition(hood_encoder_, &hood,
                    Values::kHoodEncoderCountsPerRevolution(),
-                   Values::kHoodEncoderRatio(), true);
-      flatbuffers::Offset<frc971::AbsolutePosition> hood_offset =
-          frc971::AbsolutePosition::Pack(*builder.fbb(), &hood);
+                   Values::kHoodEncoderRatio(),
+                   Values::kHoodSingleTurnEncoderRatio(), false);
+      flatbuffers::Offset<frc971::AbsoluteAndAbsolutePosition> hood_offset =
+          frc971::AbsoluteAndAbsolutePosition::Pack(*builder.fbb(), &hood);
 
       // Intake
       frc971::AbsolutePositionT intake_joint;
@@ -311,7 +317,9 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
   ::frc971::wpilib::AbsoluteEncoderAndPotentiometer turret_encoder_;
 
-  ::frc971::wpilib::AbsoluteEncoder hood_encoder_, intake_joint_encoder_;
+  ::frc971::wpilib::AbsoluteAndAbsoluteEncoder hood_encoder_;
+
+  ::frc971::wpilib::AbsoluteEncoder intake_joint_encoder_;
 
   ::std::unique_ptr<::frc::Encoder> finisher_encoder_,
       left_accelerator_encoder_, right_accelerator_encoder_,
@@ -486,10 +494,13 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     sensor_reader.set_drivetrain_left_encoder(make_encoder(0));
     sensor_reader.set_drivetrain_right_encoder(make_encoder(1));
     // TODO: pin numbers
+    // TODO(Ravago): Hood pin numbers
     sensor_reader.set_hood_encoder(
         make_unique<frc::Encoder>(22, 23, false, frc::Encoder::k4X));
 
-    sensor_reader.set_hood_absolute_pwm(make_unique<frc::DigitalInput>(24));
+    sensor_reader.set_hood_absolute_pwm(make_unique<frc::DigitalInput>(25));
+    sensor_reader.set_hood_single_turn_absolute_pwm(
+        make_unique<frc::DigitalInput>(24));
 
     sensor_reader.set_intake_encoder(make_encoder(5));
     sensor_reader.set_intake_absolute_pwm(make_unique<frc::DigitalInput>(1));

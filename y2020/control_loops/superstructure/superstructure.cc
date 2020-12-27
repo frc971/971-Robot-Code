@@ -6,6 +6,7 @@ namespace y2020 {
 namespace control_loops {
 namespace superstructure {
 
+using frc971::control_loops::AbsoluteAndAbsoluteEncoderProfiledJointStatus;
 using frc971::control_loops::AbsoluteEncoderProfiledJointStatus;
 using frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus;
 
@@ -65,11 +66,12 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
   OutputT output_struct;
 
-  flatbuffers::Offset<AbsoluteEncoderProfiledJointStatus> hood_status_offset =
-      hood_.Iterate(unsafe_goal != nullptr ? unsafe_goal->hood() : nullptr,
-                    position->hood(),
-                    output != nullptr ? &(output_struct.hood_voltage) : nullptr,
-                    status->fbb());
+  flatbuffers::Offset<AbsoluteAndAbsoluteEncoderProfiledJointStatus>
+      hood_status_offset = hood_.Iterate(
+          unsafe_goal != nullptr ? unsafe_goal->hood() : nullptr,
+          position->hood(),
+          output != nullptr ? &(output_struct.hood_voltage) : nullptr,
+          status->fbb());
 
   if (unsafe_goal != nullptr) {
     if (unsafe_goal->shooting() &&
@@ -121,7 +123,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
   climber_.Iterate(unsafe_goal, output != nullptr ? &(output_struct) : nullptr);
 
-  const AbsoluteEncoderProfiledJointStatus *const hood_status =
+  const AbsoluteAndAbsoluteEncoderProfiledJointStatus *const hood_status =
       GetMutableTemporaryPointer(*status->fbb(), hood_status_offset);
 
   const PotAndAbsoluteEncoderProfiledJointStatus *const turret_status =

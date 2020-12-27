@@ -171,6 +171,7 @@ class RelativeEncoderZeroingEstimator
 
 // TODO(Brian): Actually split these targets apart. Need to convert all the
 // reverse dependencies to #include what they actually need...
+#include "frc971/zeroing/absolute_and_absolute_encoder.h"
 #include "frc971/zeroing/absolute_encoder.h"
 #include "frc971/zeroing/hall_effect_and_position.h"
 #include "frc971/zeroing/pot_and_absolute_encoder.h"

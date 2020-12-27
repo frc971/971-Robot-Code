@@ -33,7 +33,7 @@ class AbsoluteAndAbsoluteEncoderZeroingEstimator
 
   bool zeroed() const override { return zeroed_; }
 
-  double offset() const override { return offset_; }
+  double offset() const override { return first_offset_; }
 
   bool error() const override { return error_; }
 

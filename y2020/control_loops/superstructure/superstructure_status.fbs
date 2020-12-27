@@ -51,7 +51,7 @@ table Status {
   estopped:bool (id: 1);
 
   // Subsystem status.
-  hood:frc971.control_loops.AbsoluteEncoderProfiledJointStatus (id: 2);
+  hood:frc971.control_loops.AbsoluteAndAbsoluteEncoderProfiledJointStatus (id: 2);
   intake:frc971.control_loops.AbsoluteEncoderProfiledJointStatus (id: 3);
   turret:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 4);
 

@@ -102,6 +102,29 @@ class SensorReader {
         encoder_ratio * (2.0 * M_PI);
   }
 
+  // Copies an AbsoluteEncoderAndPotentiometer to an AbsoluteAndAbsolutePosition
+  // with the correct unit and direction changes.
+  void CopyPosition(const ::frc971::wpilib::AbsoluteAndAbsoluteEncoder &encoder,
+                    ::frc971::AbsoluteAndAbsolutePositionT *position,
+                    double encoder_counts_per_revolution, double encoder_ratio,
+                    double single_turn_encoder_ratio, bool reverse) {
+    const double multiplier = reverse ? -1.0 : 1.0;
+    position->encoder =
+        multiplier * encoder_translate(encoder.ReadRelativeEncoder(),
+                                       encoder_counts_per_revolution,
+                                       encoder_ratio);
+
+    position->absolute_encoder =
+        (reverse ? (1.0 - encoder.ReadAbsoluteEncoder())
+                 : encoder.ReadAbsoluteEncoder()) *
+        encoder_ratio * (2.0 * M_PI);
+
+    position->single_turn_absolute_encoder =
+        (reverse ? (1.0 - encoder.ReadSingleTurnAbsoluteEncoder())
+                 : encoder.ReadSingleTurnAbsoluteEncoder()) *
+        single_turn_encoder_ratio * (2.0 * M_PI);
+  }
+
   // Copies a DMAEdgeCounter to a HallEffectAndPosition with the correct unit
   // and direction changes.
   void CopyPosition(const ::frc971::wpilib::DMAEdgeCounter &counter,
@@ -128,11 +151,10 @@ class SensorReader {
 
   // Copies a Absolute Encoder with the correct unit
   // and direction changes.
-  void CopyPosition(
-      const ::frc971::wpilib::AbsoluteEncoder &encoder,
-      ::frc971::AbsolutePositionT *position,
-      double encoder_counts_per_revolution, double encoder_ratio,
-      bool reverse) {
+  void CopyPosition(const ::frc971::wpilib::AbsoluteEncoder &encoder,
+                    ::frc971::AbsolutePositionT *position,
+                    double encoder_counts_per_revolution, double encoder_ratio,
+                    bool reverse) {
     const double multiplier = reverse ? -1.0 : 1.0;
     position->encoder =
         multiplier * encoder_translate(encoder.ReadRelativeEncoder(),
@@ -145,12 +167,11 @@ class SensorReader {
         encoder_ratio * (2.0 * M_PI);
   }
 
-  void CopyPosition(
-      const ::frc971::wpilib::DMAEncoderAndPotentiometer &encoder,
-      ::frc971::PotAndIndexPositionT *position,
-      ::std::function<double(int32_t)> encoder_translate,
-      ::std::function<double(double)> potentiometer_translate, bool reverse,
-      double pot_offset) {
+  void CopyPosition(const ::frc971::wpilib::DMAEncoderAndPotentiometer &encoder,
+                    ::frc971::PotAndIndexPositionT *position,
+                    ::std::function<double(int32_t)> encoder_translate,
+                    ::std::function<double(double)> potentiometer_translate,
+                    bool reverse, double pot_offset) {
     const double multiplier = reverse ? -1.0 : 1.0;
     position->encoder =
         multiplier * encoder_translate(encoder.polled_encoder_value());
