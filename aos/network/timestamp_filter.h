@@ -338,17 +338,19 @@ class NoncausalTimestampFilter {
   bool Pop(aos::monotonic_clock::time_point time);
 
   // Returns the current list of timestamps in our list.
-  const std::deque<
+  std::deque<
       std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>>
-      &timestamps() {
-    return timestamps_;
-  }
+  Timestamps();
+
+  size_t timestamps_size() const { return timestamps_.size(); }
 
   void Debug() {
-    for (std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>
+    for (std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds,
+                    bool>
              timestamp : timestamps_) {
       LOG(INFO) << std::get<0>(timestamp) << " offset "
-                << std::get<1>(timestamp).count();
+                << std::get<1>(timestamp).count() << " frozen? "
+                << std::get<2>(timestamp);
     }
   }
 
@@ -365,12 +367,15 @@ class NoncausalTimestampFilter {
   }
 
   // Writes a timestamp to the file if it is reasonable.
-  void MaybeWriteTimestamp(
-      std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>
-          timestamp);
+  void MaybeWriteTimestamp(std::tuple<aos::monotonic_clock::time_point,
+                                      std::chrono::nanoseconds, bool>
+                               timestamp);
 
-  std::deque<
-      std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>>
+  // Timestamp, offest, and then a boolean representing if this sample is frozen
+  // and can't be modified or not.
+  // TODO(austin): Actually use and update the bool.
+  std::deque<std::tuple<aos::monotonic_clock::time_point,
+                        std::chrono::nanoseconds, bool>>
       timestamps_;
 
   std::string csv_file_name_;
@@ -413,16 +418,19 @@ class NoncausalOffsetEstimator {
   }
 
   // Returns the data points from each filter.
-  const std::deque<
+  std::deque<
       std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>>
-      &a_timestamps() {
-    return a_.timestamps();
+  ATimestamps() {
+    return a_.Timestamps();
   }
-  const std::deque<
+  std::deque<
       std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>>
-      &b_timestamps() {
-    return b_.timestamps();
+  BTimestamps() {
+    return b_.Timestamps();
   }
+
+  size_t a_timestamps_size() const { return a_.timestamps_size(); }
+  size_t b_timestamps_size() const { return b_.timestamps_size(); }
 
   void SetFirstFwdTime(monotonic_clock::time_point time) {
     a_.SetFirstTime(time);

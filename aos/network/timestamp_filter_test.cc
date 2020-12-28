@@ -171,7 +171,7 @@ TEST(NoncausalTimestampFilterTest, SingleSample) {
   NoncausalTimestampFilter filter;
 
   filter.Sample(ta, chrono::nanoseconds(1000));
-  EXPECT_EQ(filter.timestamps().size(), 1u);
+  EXPECT_EQ(filter.Timestamps().size(), 1u);
 
   {
     Line l1 = filter.FitLine();
@@ -181,7 +181,7 @@ TEST(NoncausalTimestampFilterTest, SingleSample) {
   }
 
   filter.Sample(tb, chrono::nanoseconds(1100));
-  EXPECT_EQ(filter.timestamps().size(), 2u);
+  EXPECT_EQ(filter.Timestamps().size(), 2u);
 
   {
     Line l2 = filter.FitLine();
@@ -204,7 +204,7 @@ TEST(NoncausalTimestampFilterTest, ClippedSample) {
     filter.Debug();
     filter.Sample(tb, chrono::microseconds(2));
     filter.Debug();
-    ASSERT_EQ(filter.timestamps().size(), 2u);
+    ASSERT_EQ(filter.Timestamps().size(), 2u);
 
     {
       Line l2 = filter.FitLine();
@@ -221,7 +221,7 @@ TEST(NoncausalTimestampFilterTest, ClippedSample) {
     filter.Debug();
     filter.Sample(tb, chrono::microseconds(0));
     filter.Debug();
-    ASSERT_EQ(filter.timestamps().size(), 2u);
+    ASSERT_EQ(filter.Timestamps().size(), 2u);
 
     {
       Line l2 = filter.FitLine();
@@ -238,7 +238,7 @@ TEST(NoncausalTimestampFilterTest, ClippedSample) {
     filter.Debug();
     filter.Sample(tb, -chrono::microseconds(1));
     filter.Debug();
-    ASSERT_EQ(filter.timestamps().size(), 1u);
+    ASSERT_EQ(filter.Timestamps().size(), 1u);
   }
 
   {
@@ -249,10 +249,10 @@ TEST(NoncausalTimestampFilterTest, ClippedSample) {
     filter.Debug();
     filter.Sample(tb, chrono::microseconds(3));
     filter.Debug();
-    ASSERT_EQ(filter.timestamps().size(), 2u);
+    ASSERT_EQ(filter.Timestamps().size(), 2u);
 
-    EXPECT_EQ(std::get<1>(filter.timestamps()[0]), chrono::microseconds(2));
-    EXPECT_EQ(std::get<1>(filter.timestamps()[1]), chrono::microseconds(3));
+    EXPECT_EQ(std::get<1>(filter.Timestamps()[0]), chrono::microseconds(2));
+    EXPECT_EQ(std::get<1>(filter.Timestamps()[1]), chrono::microseconds(3));
   }
 
   {
@@ -263,16 +263,16 @@ TEST(NoncausalTimestampFilterTest, ClippedSample) {
     filter.Debug();
     filter.Sample(tb, chrono::microseconds(1));
     filter.Debug();
-    ASSERT_EQ(filter.timestamps().size(), 2u);
+    ASSERT_EQ(filter.Timestamps().size(), 2u);
 
     // Now add a sample with a slope of 0.002.  This should back propagate and
     // remove the middle point since it violates our constraints.
     filter.Sample(tc, chrono::microseconds(3));
     filter.Debug();
-    ASSERT_EQ(filter.timestamps().size(), 2u);
+    ASSERT_EQ(filter.Timestamps().size(), 2u);
 
-    EXPECT_EQ(std::get<1>(filter.timestamps()[0]), chrono::microseconds(1));
-    EXPECT_EQ(std::get<1>(filter.timestamps()[1]), chrono::microseconds(3));
+    EXPECT_EQ(std::get<1>(filter.Timestamps()[0]), chrono::microseconds(1));
+    EXPECT_EQ(std::get<1>(filter.Timestamps()[1]), chrono::microseconds(3));
   }
 }
 
@@ -292,24 +292,24 @@ TEST(NoncausalTimestampFilterTest, PointRemoval) {
   filter.Debug();
   filter.Sample(tc, chrono::microseconds(1));
   filter.Debug();
-  ASSERT_EQ(filter.timestamps().size(), 3u);
+  ASSERT_EQ(filter.Timestamps().size(), 3u);
 
   // Before or in the middle of the first line segment shouldn't change the
   // number of points.
   EXPECT_FALSE(filter.Pop(t_before));
-  ASSERT_EQ(filter.timestamps().size(), 3u);
+  ASSERT_EQ(filter.Timestamps().size(), 3u);
 
   EXPECT_FALSE(filter.Pop(ta));
-  ASSERT_EQ(filter.timestamps().size(), 3u);
+  ASSERT_EQ(filter.Timestamps().size(), 3u);
 
   EXPECT_FALSE(filter.Pop(ta + chrono::microseconds(100)));
-  ASSERT_EQ(filter.timestamps().size(), 3u);
+  ASSERT_EQ(filter.Timestamps().size(), 3u);
 
   // The second point should trigger a pop, since the offset computed using the
   // points won't change when it is used, and any times after (even 1-2 ns
   // later) would be wrong.
   EXPECT_TRUE(filter.Pop(tb));
-  ASSERT_EQ(filter.timestamps().size(), 2u);
+  ASSERT_EQ(filter.Timestamps().size(), 2u);
 }
 
 // Run a couple of points through the estimator and confirm it works.
@@ -336,32 +336,32 @@ TEST(NoncausalOffsetEstimatorTest, FullEstimator) {
   // Add 3 timestamps in and confirm that the slopes come out reasonably.
   estimator.Sample(node_a, ta1, tb1);
   estimator.Sample(node_b, tb1, ta1);
-  EXPECT_EQ(estimator.a_timestamps().size(), 1u);
-  EXPECT_EQ(estimator.b_timestamps().size(), 1u);
+  EXPECT_EQ(estimator.ATimestamps().size(), 1u);
+  EXPECT_EQ(estimator.BTimestamps().size(), 1u);
 
   // 1 point -> a line.
   EXPECT_EQ(estimator.fit().mpq_slope(), mpq_class(0));
 
   estimator.Sample(node_a, ta2, tb2);
   estimator.Sample(node_b, tb2, ta2);
-  EXPECT_EQ(estimator.a_timestamps().size(), 2u);
-  EXPECT_EQ(estimator.b_timestamps().size(), 2u);
+  EXPECT_EQ(estimator.ATimestamps().size(), 2u);
+  EXPECT_EQ(estimator.BTimestamps().size(), 2u);
 
   // Adding the second point should slope up.
   EXPECT_EQ(estimator.fit().mpq_slope(), mpq_class(1, 100000));
 
   estimator.Sample(node_a, ta3, tb3);
   estimator.Sample(node_b, tb3, ta3);
-  EXPECT_EQ(estimator.a_timestamps().size(), 3u);
-  EXPECT_EQ(estimator.b_timestamps().size(), 3u);
+  EXPECT_EQ(estimator.ATimestamps().size(), 3u);
+  EXPECT_EQ(estimator.BTimestamps().size(), 3u);
 
   // And the third point shouldn't change anything.
   EXPECT_EQ(estimator.fit().mpq_slope(), mpq_class(1, 100000));
 
   estimator.Pop(node_a, ta2);
   estimator.Pop(node_b, tb2);
-  EXPECT_EQ(estimator.a_timestamps().size(), 2u);
-  EXPECT_EQ(estimator.b_timestamps().size(), 2u);
+  EXPECT_EQ(estimator.ATimestamps().size(), 2u);
+  EXPECT_EQ(estimator.BTimestamps().size(), 2u);
 
   // Dropping the first point should have the slope point back down.
   EXPECT_EQ(estimator.fit().mpq_slope(), mpq_class(-1, 100000));
@@ -369,8 +369,8 @@ TEST(NoncausalOffsetEstimatorTest, FullEstimator) {
   // And dropping down to 1 point means 0 slope.
   estimator.Pop(node_a, ta3);
   estimator.Pop(node_b, tb3);
-  EXPECT_EQ(estimator.a_timestamps().size(), 1u);
-  EXPECT_EQ(estimator.b_timestamps().size(), 1u);
+  EXPECT_EQ(estimator.ATimestamps().size(), 1u);
+  EXPECT_EQ(estimator.BTimestamps().size(), 1u);
   EXPECT_EQ(estimator.fit().mpq_slope(), mpq_class(0));
 }
 

@@ -120,8 +120,14 @@ void MultiNodeNoncausalOffsetEstimator::LogFit(std::string_view prefix) {
        filters_) {
     message_bridge::NoncausalOffsetEstimator *estimator = &filter.second;
 
-    if (estimator->a_timestamps().size() == 0 &&
-        estimator->b_timestamps().size() == 0) {
+    const std::deque<
+        std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>>
+        a_timestamps = estimator->ATimestamps();
+    const std::deque<
+        std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>>
+        b_timestamps = estimator->BTimestamps();
+
+    if (a_timestamps.size() == 0 && b_timestamps.size() == 0) {
       continue;
     }
 
@@ -157,34 +163,29 @@ void MultiNodeNoncausalOffsetEstimator::LogFit(std::string_view prefix) {
 
     const aos::distributed_clock::time_point a0 =
         node_a_factory->ToDistributedClock(
-            std::get<0>(estimator->a_timestamps()[0]));
+            std::get<0>(a_timestamps[0]));
     const aos::distributed_clock::time_point a1 =
-        node_a_factory->ToDistributedClock(
-            std::get<0>(estimator->a_timestamps()[1]));
+        node_a_factory->ToDistributedClock(std::get<0>(a_timestamps[1]));
 
-    VLOG(2) << node_a->name()->string_view() << " timestamps()[0] = "
-            << std::get<0>(estimator->a_timestamps()[0]) << " -> " << a0
-            << " distributed -> " << node_b->name()->string_view() << " "
+    VLOG(2) << node_a->name()->string_view()
+            << " timestamps()[0] = " << std::get<0>(a_timestamps[0]) << " -> "
+            << a0 << " distributed -> " << node_b->name()->string_view() << " "
             << node_b_factory->FromDistributedClock(a0) << " should be "
             << aos::monotonic_clock::time_point(
                    std::chrono::nanoseconds(static_cast<int64_t>(
-                       std::get<0>(estimator->a_timestamps()[0])
-                           .time_since_epoch()
-                           .count() *
+                       std::get<0>(a_timestamps[0]).time_since_epoch().count() *
                        (1.0 + estimator->fit().slope()))) +
                    estimator->fit().offset())
             << ((a0 <= event_loop_factory_->distributed_now())
                     ? ""
                     : " After now, investigate");
-    VLOG(2) << node_a->name()->string_view() << " timestamps()[1] = "
-            << std::get<0>(estimator->a_timestamps()[1]) << " -> " << a1
-            << " distributed -> " << node_b->name()->string_view() << " "
+    VLOG(2) << node_a->name()->string_view()
+            << " timestamps()[1] = " << std::get<0>(a_timestamps[1]) << " -> "
+            << a1 << " distributed -> " << node_b->name()->string_view() << " "
             << node_b_factory->FromDistributedClock(a1) << " should be "
             << aos::monotonic_clock::time_point(
                    std::chrono::nanoseconds(static_cast<int64_t>(
-                       std::get<0>(estimator->a_timestamps()[1])
-                           .time_since_epoch()
-                           .count() *
+                       std::get<0>(a_timestamps[1]).time_since_epoch().count() *
                        (1.0 + estimator->fit().slope()))) +
                    estimator->fit().offset())
             << ((event_loop_factory_->distributed_now() <= a1)
@@ -192,21 +193,19 @@ void MultiNodeNoncausalOffsetEstimator::LogFit(std::string_view prefix) {
                     : " Before now, investigate");
 
     const aos::distributed_clock::time_point b0 =
-        node_b_factory->ToDistributedClock(
-            std::get<0>(estimator->b_timestamps()[0]));
+        node_b_factory->ToDistributedClock(std::get<0>(b_timestamps[0]));
     const aos::distributed_clock::time_point b1 =
-        node_b_factory->ToDistributedClock(
-            std::get<0>(estimator->b_timestamps()[1]));
+        node_b_factory->ToDistributedClock(std::get<0>(b_timestamps[1]));
 
     VLOG(2) << node_b->name()->string_view() << " timestamps()[0] = "
-            << std::get<0>(estimator->b_timestamps()[0]) << " -> " << b0
+            << std::get<0>(b_timestamps[0]) << " -> " << b0
             << " distributed -> " << node_a->name()->string_view() << " "
             << node_a_factory->FromDistributedClock(b0)
             << ((b0 <= event_loop_factory_->distributed_now())
                     ? ""
                     : " After now, investigate");
     VLOG(2) << node_b->name()->string_view() << " timestamps()[1] = "
-            << std::get<0>(estimator->b_timestamps()[1]) << " -> " << b1
+            << std::get<0>(b_timestamps[1]) << " -> " << b1
             << " distributed -> " << node_a->name()->string_view() << " "
             << node_a_factory->FromDistributedClock(b1)
             << ((event_loop_factory_->distributed_now() <= b1)

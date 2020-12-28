@@ -507,13 +507,32 @@ NoncausalTimestampFilter::~NoncausalTimestampFilter() {
   }
 }
 
+std::tuple<monotonic_clock::time_point, chrono::nanoseconds> TrimTuple(
+    std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds, bool>
+        t) {
+  return std::make_tuple(std::get<0>(t), std::get<1>(t));
+}
+
+std::deque<
+    std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>>
+NoncausalTimestampFilter::Timestamps() {
+  std::deque<
+      std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>>
+      result;
+
+  for (const auto x : timestamps_) {
+    result.emplace_back(TrimTuple(x));
+  }
+  return result;
+}
+
 Line NoncausalTimestampFilter::FitLine() {
   DCHECK_GE(timestamps_.size(), 1u);
   if (timestamps_.size() == 1) {
     Line fit(std::get<1>(timestamps_[0]), 0.0);
     return fit;
   } else {
-    return Line::Fit(timestamps_[0], timestamps_[1]);
+    return Line::Fit(TrimTuple(timestamps_[0]), TrimTuple(timestamps_[1]));
   }
 }
 
@@ -530,13 +549,13 @@ bool NoncausalTimestampFilter::Sample(
 
   // The first sample is easy.  Just do it!
   if (timestamps_.size() == 0) {
-    timestamps_.emplace_back(std::make_pair(monotonic_now, sample_ns));
+    timestamps_.emplace_back(std::make_tuple(monotonic_now, sample_ns, false));
     return true;
   } else {
     // Future samples get quite a bit harder.  We want the line to track the
     // highest point without volating the slope constraint.
-    std::tuple<aos::monotonic_clock::time_point, chrono::nanoseconds> back =
-        timestamps_.back();
+    std::tuple<aos::monotonic_clock::time_point, chrono::nanoseconds, bool>
+        back = timestamps_.back();
 
     aos::monotonic_clock::duration dt = monotonic_now - std::get<0>(back);
     aos::monotonic_clock::duration doffset = sample_ns - std::get<1>(back);
@@ -558,7 +577,7 @@ bool NoncausalTimestampFilter::Sample(
       }
 
       // TODO(austin): Refuse to modify the 0th element after we have used it.
-      timestamps_.emplace_back(std::make_pair(monotonic_now, sample_ns));
+      timestamps_.emplace_back(std::make_tuple(monotonic_now, sample_ns, true));
 
       // If we are early in the log file, the filter hasn't had time to get
       // started.  We might only have 2 samples, and the first sample was
@@ -574,19 +593,19 @@ bool NoncausalTimestampFilter::Sample(
 
         VLOG(1) << csv_file_name_ << " slope " << std::setprecision(20)
                 << FitLine().slope() << " offset " << FitLine().offset().count()
-                << " a [(" << std::get<0>(timestamps()[0]) << " -> "
-                << std::get<1>(timestamps()[0]).count() << "ns), ("
-                << std::get<0>(timestamps()[1]) << " -> "
-                << std::get<1>(timestamps()[1]).count()
+                << " a [(" << std::get<0>(timestamps_[0]) << " -> "
+                << std::get<1>(timestamps_[0]).count() << "ns), ("
+                << std::get<0>(timestamps_[1]) << " -> "
+                << std::get<1>(timestamps_[1]).count()
                 << "ns) => {dt: " << std::fixed << std::setprecision(6)
                 << chrono::duration<double, std::milli>(
-                       std::get<0>(timestamps()[1]) -
-                       std::get<0>(timestamps()[0]))
+                       std::get<0>(timestamps_[1]) -
+                       std::get<0>(timestamps_[0]))
                        .count()
                 << "ms, do: " << std::fixed << std::setprecision(6)
                 << chrono::duration<double, std::milli>(
-                       std::get<1>(timestamps()[1]) -
-                       std::get<1>(timestamps()[0]))
+                       std::get<1>(timestamps_[1]) -
+                       std::get<1>(timestamps_[0]))
                        .count()
                 << "ms}]";
         VLOG(1) << "Back is out of range, clipping from "
@@ -638,7 +657,7 @@ void NoncausalTimestampFilter::SetCsvFileName(std::string_view name) {
 }
 
 void NoncausalTimestampFilter::MaybeWriteTimestamp(
-    std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>
+    std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds, bool>
         timestamp) {
   if (fp_ && first_time_ != aos::monotonic_clock::min_time) {
     fprintf(fp_, "%.9f, %.9f, %.9f\n",
@@ -699,66 +718,72 @@ bool NoncausalOffsetEstimator::Pop(
 }
 
 void NoncausalOffsetEstimator::LogFit(std::string_view prefix) {
-  if (a_.timestamps().size() >= 2u) {
+    const std::deque<
+        std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>>
+        a_timestamps = ATimestamps();
+    const std::deque<
+        std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>>
+        b_timestamps = BTimestamps();
+  if (a_timestamps.size() >= 2u) {
     LOG(INFO) << prefix << " " << node_a_->name()->string_view() << " from "
               << node_b_->name()->string_view() << " slope "
               << std::setprecision(20) << fit_.slope() << " offset "
               << fit_.offset().count() << " a [("
-              << std::get<0>(a_.timestamps()[0]) << " -> "
-              << std::get<1>(a_.timestamps()[0]).count() << "ns), ("
-              << std::get<0>(a_.timestamps()[1]) << " -> "
-              << std::get<1>(a_.timestamps()[1]).count()
+              << std::get<0>(a_timestamps[0]) << " -> "
+              << std::get<1>(a_timestamps[0]).count() << "ns), ("
+              << std::get<0>(a_timestamps[1]) << " -> "
+              << std::get<1>(a_timestamps[1]).count()
               << "ns) => {dt: " << std::fixed << std::setprecision(6)
               << std::chrono::duration<double, std::milli>(
-                     std::get<0>(a_.timestamps()[1]) -
-                     std::get<0>(a_.timestamps()[0]))
+                     std::get<0>(a_timestamps[1]) -
+                     std::get<0>(a_timestamps[0]))
                      .count()
               << "ms, do: " << std::fixed << std::setprecision(6)
               << std::chrono::duration<double, std::milli>(
-                     std::get<1>(a_.timestamps()[1]) -
-                     std::get<1>(a_.timestamps()[0]))
+                     std::get<1>(a_timestamps[1]) -
+                     std::get<1>(a_timestamps[0]))
                      .count()
               << "ms}]";
-  } else if (a_.timestamps().size() == 1u) {
+  } else if (a_timestamps.size() == 1u) {
     LOG(INFO) << prefix << " " << node_a_->name()->string_view() << " from "
               << node_b_->name()->string_view() << " slope "
               << std::setprecision(20) << fit_.slope() << " offset "
               << fit_.offset().count() << " a [("
-              << std::get<0>(a_.timestamps()[0]) << " -> "
-              << std::get<1>(a_.timestamps()[0]).count() << "ns)";
+              << std::get<0>(a_timestamps[0]) << " -> "
+              << std::get<1>(a_timestamps[0]).count() << "ns)";
   } else {
     LOG(INFO) << prefix << " " << node_a_->name()->string_view() << " from "
               << node_b_->name()->string_view() << " slope "
               << std::setprecision(20) << fit_.slope() << " offset "
               << fit_.offset().count() << " no samples.";
   }
-  if (b_.timestamps().size() >= 2u) {
+  if (b_timestamps.size() >= 2u) {
     LOG(INFO) << prefix << " " << node_a_->name()->string_view() << " from "
               << node_b_->name()->string_view() << " slope "
               << std::setprecision(20) << fit_.slope() << " offset "
               << fit_.offset().count() << " b [("
-              << std::get<0>(b_.timestamps()[0]) << " -> "
-              << std::get<1>(b_.timestamps()[0]).count() << "ns), ("
-              << std::get<0>(b_.timestamps()[1]) << " -> "
-              << std::get<1>(b_.timestamps()[1]).count()
+              << std::get<0>(b_timestamps[0]) << " -> "
+              << std::get<1>(b_timestamps[0]).count() << "ns), ("
+              << std::get<0>(b_timestamps[1]) << " -> "
+              << std::get<1>(b_timestamps[1]).count()
               << "ns) => {dt: " << std::fixed << std::setprecision(6)
               << std::chrono::duration<double, std::milli>(
-                     std::get<0>(b_.timestamps()[1]) -
-                     std::get<0>(b_.timestamps()[0]))
+                     std::get<0>(b_timestamps[1]) -
+                     std::get<0>(b_timestamps[0]))
                      .count()
               << "ms, do: " << std::fixed << std::setprecision(6)
               << std::chrono::duration<double, std::milli>(
-                     std::get<1>(b_.timestamps()[1]) -
-                     std::get<1>(b_.timestamps()[0]))
+                     std::get<1>(b_timestamps[1]) -
+                     std::get<1>(b_timestamps[0]))
                      .count()
               << "ms}]";
-  } else if (b_.timestamps().size() == 1u) {
+  } else if (b_timestamps.size() == 1u) {
     LOG(INFO) << prefix << " " << node_b_->name()->string_view() << " from "
               << node_a_->name()->string_view() << " slope "
               << std::setprecision(20) << fit_.slope() << " offset "
               << fit_.offset().count() << " b [("
-              << std::get<0>(b_.timestamps()[0]) << " -> "
-              << std::get<1>(b_.timestamps()[0]).count() << "ns)";
+              << std::get<0>(b_timestamps[0]) << " -> "
+              << std::get<1>(b_timestamps[0]).count() << "ns)";
   } else {
     LOG(INFO) << prefix << " " << node_b_->name()->string_view() << " from "
               << node_a_->name()->string_view() << " slope "
@@ -768,7 +793,7 @@ void NoncausalOffsetEstimator::LogFit(std::string_view prefix) {
 }
 
 void NoncausalOffsetEstimator::Refit() {
-  if (a_.timestamps().size() == 0 || b_.timestamps().size() == 0) {
+  if (a_timestamps_size() == 0 || b_timestamps_size() == 0) {
     VLOG(1) << "Not fitting because there is no data";
     return;
   }
