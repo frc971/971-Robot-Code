@@ -9,13 +9,21 @@ env:
 
 steps:
   - label: "x86_64"
-    command: tools/bazel ${STARTUP} --output_base=../k8_output_base test ${COMMON} --config=k8 --config=eigen ${TARGETS}
+    commands:
+      - tools/ci/clean-disk.sh
+      - tools/bazel ${STARTUP} --output_base=../k8_output_base test ${COMMON} --config=k8 --config=eigen ${TARGETS}
 
   - label: "roborio"
-    command: tools/bazel ${STARTUP} --output_base=../roborio_output_base build ${COMMON} --config=roborio ${ROBORIO_TARGETS}
+    commands:
+      - tools/ci/clean-disk.sh
+      - tools/bazel ${STARTUP} --output_base=../roborio_output_base build ${COMMON} --config=roborio ${ROBORIO_TARGETS}
 
   - label: "armhf-debian"
-    command: tools/bazel ${STARTUP} --output_base=../armhf-debian_output_base build ${COMMON} --config=armhf-debian ${TARGETS}
+    commands:
+      - tools/ci/clean-disk.sh
+      - tools/bazel ${STARTUP} --output_base=../armhf-debian_output_base build ${COMMON} --config=armhf-debian ${TARGETS}
 
   - label: "cortex-m4f"
-    command: tools/bazel ${STARTUP} --output_base=../cortex-m4f_output_base build ${COMMON} --config=cortex-m4f ${M4F_TARGETS}
+    commands:
+      - tools/ci/clean-disk.sh
+      - tools/bazel ${STARTUP} --output_base=../cortex-m4f_output_base build ${COMMON} --config=cortex-m4f ${M4F_TARGETS}
