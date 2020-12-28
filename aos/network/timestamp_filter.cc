@@ -33,6 +33,15 @@ void PrintNoncausalTimestampFilterSamplesHeader(FILE *fp) {
   fprintf(fp, "# time_since_start, sample_ns, offset\n");
 }
 
+void NormalizeTimestamps(monotonic_clock::time_point *ta_base, double *ta) {
+  chrono::nanoseconds ta_digits(static_cast<int64_t>(std::floor(*ta)));
+  *ta_base += ta_digits;
+  *ta -= static_cast<double>(ta_digits.count());
+
+  CHECK_GE(*ta, 0.0);
+  CHECK_LT(*ta, 1.0);
+}
+
 }  // namespace
 
 void TimestampFilter::Set(aos::monotonic_clock::time_point monotonic_now,
@@ -541,7 +550,7 @@ std::tuple<monotonic_clock::time_point, chrono::nanoseconds> TrimTuple(
 
 std::deque<
     std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>>
-NoncausalTimestampFilter::Timestamps() {
+NoncausalTimestampFilter::Timestamps() const {
   std::deque<
       std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>>
       result;
@@ -572,6 +581,244 @@ void NoncausalTimestampFilter::FlushSavedSamples() {
                 .count());
   }
   saved_samples_.clear();
+}
+
+std::pair<std::tuple<monotonic_clock::time_point, chrono::nanoseconds>,
+          std::tuple<monotonic_clock::time_point, chrono::nanoseconds>>
+NoncausalTimestampFilter::FindTimestamps(monotonic_clock::time_point ta_base,
+                                         double ta) const {
+  CHECK_GE(ta, 0.0);
+  CHECK_LT(ta, 1.0);
+
+  // Since ta is less than an integer, and timestamps should be at least 1 ns
+  // apart, we can ignore ta if we make sure that the end of the segment is
+  // strictly > than ta_base.
+  return FindTimestamps(ta_base);
+}
+
+std::pair<std::tuple<monotonic_clock::time_point, chrono::nanoseconds>,
+          std::tuple<monotonic_clock::time_point, chrono::nanoseconds>>
+NoncausalTimestampFilter::FindTimestamps(monotonic_clock::time_point ta) const {
+  CHECK_GT(timestamps_size(), 1u);
+  // Linear search until this is proven to be a measurable slowdown.
+  size_t index = 0;
+  while (index < timestamps_size() - 2u) {
+    if (std::get<0>(timestamp(index + 1)) > ta) {
+      break;
+    }
+    ++index;
+  }
+  return std::make_pair(timestamp(index), timestamp(index + 1));
+}
+
+chrono::nanoseconds NoncausalTimestampFilter::InterpolateOffset(
+    std::tuple<monotonic_clock::time_point, chrono::nanoseconds> p0,
+    std::tuple<monotonic_clock::time_point, chrono::nanoseconds> p1,
+    monotonic_clock::time_point ta) {
+  // Given 2 points defining a line and the time along that line, interpolate.
+  //
+  // ta may be massive, but the points will be close, so compute everything
+  // relative to the points.
+  //
+  // There are 2 formulations:
+  //  oa = p0.o + (ta - p0.t) * (p1.o - p0.o) / (p1.t - p0.t)
+  // or
+  //  oa = p1.o + (p1.t - ta) * (p0.o - p1.o) / (p1.t - p0.t)
+  //
+  // These have different properties with respect to numerical precision as you
+  // get close to p0 and p1. Switch over in the middle of the line segment.
+  const chrono::nanoseconds time_in = ta - std::get<0>(p0);
+  const chrono::nanoseconds time_left = std::get<0>(p1) - ta;
+  const chrono::nanoseconds dt = std::get<0>(p1) - std::get<0>(p0);
+  if (time_in < time_left) {
+    return std::get<1>(p0) +
+           chrono::nanoseconds(static_cast<int64_t>(
+               std::round(static_cast<double>(time_in.count()) *
+                          (std::get<1>(p1) - std::get<1>(p0)).count() /
+                          static_cast<double>(dt.count()))));
+  } else {
+    return std::get<1>(p1) +
+           chrono::nanoseconds(static_cast<int64_t>(
+               std::round(static_cast<double>(time_left.count()) *
+                          (std::get<1>(p0) - std::get<1>(p1)).count() /
+                          static_cast<double>(dt.count()))));
+  }
+}
+
+chrono::nanoseconds NoncausalTimestampFilter::InterpolateOffset(
+    std::tuple<monotonic_clock::time_point, chrono::nanoseconds> p0,
+    std::tuple<monotonic_clock::time_point, chrono::nanoseconds> /*p1*/,
+    monotonic_clock::time_point /*ta_base*/, double /*ta*/) {
+  // For the double variant, we want to split the result up into a large integer
+  // portion, and the rest.  We want to do this without introducing numerical
+  // precision problems.
+  //
+  // One way would be to carefully compute the integer portion, and then compute
+  // the double portion in such a way that the two are guarenteed to add up
+  // correctly.
+  //
+  // The simpler way is to simply just use the offset from p0 as the integer
+  // portion, and make the rest be the double portion.  It will get us most of
+  // the way there for a lot less work, and we can revisit if this breaks down.
+  //
+  // oa = p0.o + (ta - p0.t) * (p1.o - p0.o) / (p1.t - p0.t)
+  //      ^^^^
+  return std::get<1>(p0);
+}
+
+double NoncausalTimestampFilter::InterpolateOffsetRemainder(
+    std::tuple<monotonic_clock::time_point, chrono::nanoseconds> p0,
+    std::tuple<monotonic_clock::time_point, chrono::nanoseconds> p1,
+    monotonic_clock::time_point ta_base, double ta) {
+  const chrono::nanoseconds time_in = ta_base - std::get<0>(p0);
+  const chrono::nanoseconds dt = std::get<0>(p1) - std::get<0>(p0);
+
+  // The remainder then is the rest of the equation.
+  //
+  // oa = p0.o + (ta - p0.t) * (p1.o - p0.o) / (p1.t - p0.t)
+  //             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  return static_cast<double>(ta + time_in.count()) /
+         static_cast<double>(dt.count()) *
+         (std::get<1>(p1) - std::get<1>(p0)).count();
+}
+
+chrono::nanoseconds NoncausalTimestampFilter::Offset(
+    monotonic_clock::time_point ta) const {
+  CHECK_GT(timestamps_size(), 0u);
+  if (timestamps_size() == 1u) {
+    // Special case size = 1 since the interpolation functions don't need to
+    // handle it and the answer is trivial.
+    return NoncausalTimestampFilter::InterpolateOffset(timestamp(0), ta);
+  }
+
+  std::pair<std::tuple<monotonic_clock::time_point, chrono::nanoseconds>,
+            std::tuple<monotonic_clock::time_point, chrono::nanoseconds>>
+      points = FindTimestamps(ta);
+  return NoncausalTimestampFilter::InterpolateOffset(points.first,
+                                                     points.second, ta);
+}
+
+std::pair<chrono::nanoseconds, double> NoncausalTimestampFilter::Offset(
+    monotonic_clock::time_point ta_base, double ta) const {
+  CHECK_GT(timestamps_size(), 0u);
+  if (timestamps_size() == 1u) {
+    // Special case size = 1 since the interpolation functions don't need to
+    // handle it and the answer is trivial.
+    return std::make_pair(
+        NoncausalTimestampFilter::InterpolateOffset(timestamp(0), ta_base, ta),
+        0.0);
+  }
+
+  std::pair<std::tuple<monotonic_clock::time_point, chrono::nanoseconds>,
+            std::tuple<monotonic_clock::time_point, chrono::nanoseconds>>
+      points = FindTimestamps(ta_base, ta);
+  // Return both the integer and double portion together to save a timestamp
+  // lookup.
+  return std::make_pair(NoncausalTimestampFilter::InterpolateOffset(
+                            points.first, points.second, ta_base, ta),
+                        NoncausalTimestampFilter::InterpolateOffsetRemainder(
+                            points.first, points.second, ta_base, ta));
+}
+
+double NoncausalTimestampFilter::OffsetError(
+    aos::monotonic_clock::time_point ta_base, double ta,
+    aos::monotonic_clock::time_point tb_base, double tb) const {
+  NormalizeTimestamps(&ta_base, &ta);
+  NormalizeTimestamps(&tb_base, &tb);
+
+  const auto offset = Offset(ta_base, ta);
+
+  // Compute the integer portion first, and the double portion second.  Subtract
+  // the results of each.  This handles large offsets without losing precision.
+  return static_cast<double>(((tb_base - ta_base) - offset.first).count()) +
+         ((tb - ta) - offset.second);
+}
+
+double NoncausalTimestampFilter::Cost(aos::monotonic_clock::time_point ta_base,
+                                      double ta,
+                                      aos::monotonic_clock::time_point tb_base,
+                                      double tb) const {
+  NormalizeTimestamps(&ta_base, &ta);
+  NormalizeTimestamps(&tb_base, &tb);
+
+  // Squaring the error throws away half the digits.  The optimizer uses the
+  // gradient heavily to compensate, so we don't need to care much about
+  // computing this carefully.
+  return std::pow(OffsetError(ta_base, ta, tb_base, tb), 2.0);
+}
+
+double NoncausalTimestampFilter::DCostDta(
+    aos::monotonic_clock::time_point ta_base, double ta,
+    aos::monotonic_clock::time_point tb_base, double tb) const {
+  // As a reminder, our cost function is:
+  //   (OffsetError(ta, tb))^2
+  // ie
+  //   ((tb - ta - Offset(ta))^2
+  //
+  // Assuming Offset(ta) = m * ta + ba (linear): this becomes
+  //   ((tb - ta - (ma ta + ba))^2
+  // ie
+  //   ((tb - (1 + ma) ta - ba)^2
+  //
+  // d cost/dta =>
+  //   2 * (tb - (1 + ma) ta - ba) * (-(1 + ma))
+  //
+  // We don't actually want to compute tb - (1 + ma) ta for numerical precision
+  // reasons.  The important digits are small compared to the offset.  Given our
+  // original cost above, this is equivilent to:
+  //   2 * (tb - ta - Offset(ta)) * (-(1 + ma))
+  //
+  // We can compute this a lot more accurately.
+
+  // Go find our timestamps for the interpolation.
+  // Rather than lookup timestamps a number of times, look them up here and
+  // inline the implementation of OffsetError.
+  if (timestamps_size() == 1u) {
+    return -2.0 * OffsetError(ta_base, ta, tb_base, tb);
+  }
+
+  NormalizeTimestamps(&ta_base, &ta);
+  NormalizeTimestamps(&tb_base, &tb);
+
+  std::pair<std::tuple<monotonic_clock::time_point, chrono::nanoseconds>,
+            std::tuple<monotonic_clock::time_point, chrono::nanoseconds>>
+      points = FindTimestamps(ta_base, ta);
+
+  const double m =
+      static_cast<double>(
+          (std::get<1>(points.second) - std::get<1>(points.first)).count()) /
+      static_cast<double>(
+          (std::get<0>(points.second) - std::get<0>(points.first)).count());
+  // Subtract the integer offsets first and then handle the double remainder to
+  // keep precision up.
+  //
+  //   (tb - ta - Offset(ta)) ->
+  //      (tb_base - ta_base - OffsetBase + tb - ta - OffsetRemainder)
+  return -2.0 *
+         (static_cast<double>((tb_base - ta_base -
+                               NoncausalTimestampFilter::InterpolateOffset(
+                                   points.first, points.second, ta_base, ta))
+                                  .count()) +
+          (tb - ta) -
+          NoncausalTimestampFilter::InterpolateOffsetRemainder(
+              points.first, points.second, ta_base, ta)) *
+         (1.0 + m);
+}
+
+double NoncausalTimestampFilter::DCostDtb(
+    aos::monotonic_clock::time_point ta_base, double ta,
+    aos::monotonic_clock::time_point tb_base, double tb) const {
+  // As a reminder, our cost function is:
+  //   (OffsetError(ta, tb))^2
+  //
+  // d cost/dtb =>
+  //   2 * OffsetError(ta, tb) * d/dtb OffsetError(ta, tb)
+  //
+  // OffsetError => (tb - (1 + ma) ta - ba), so
+  //   d/dtb OffsetError(ta, tb) = 1
+  //
+  // d cost/dtb => 2 * OffsetError(ta, tb)
+  return 2.0 * OffsetError(ta_base, ta, tb_base, tb);
 }
 
 bool NoncausalTimestampFilter::Sample(

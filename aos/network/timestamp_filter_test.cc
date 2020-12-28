@@ -5,6 +5,7 @@
 #include "aos/configuration.h"
 #include "aos/json_to_flatbuffer.h"
 #include "aos/macros.h"
+#include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
 namespace aos {
@@ -330,6 +331,371 @@ TEST(NoncausalTimestampFilterTest, PointRemoval) {
   // later) would be wrong.
   EXPECT_TRUE(filter.Pop(tb));
   ASSERT_EQ(filter.Timestamps().size(), 2u);
+}
+
+// Tests that all variants of InterpolateOffset do reasonable things.
+TEST(NoncausalTimestampFilterTest, InterpolateOffset) {
+  const monotonic_clock::time_point e = monotonic_clock::epoch();
+
+  const monotonic_clock::time_point t1 = e + chrono::nanoseconds(0);
+  const chrono::nanoseconds o1 = chrono::nanoseconds(100);
+  const double o1d = static_cast<double>(o1.count());
+
+  const monotonic_clock::time_point t2 = e + chrono::nanoseconds(1000);
+  const chrono::nanoseconds o2 = chrono::nanoseconds(150);
+  const double o2d = static_cast<double>(o2.count());
+
+  EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
+                std::make_tuple(t1, o1), std::make_tuple(t2, o2), t1),
+            o1);
+  EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
+                std::make_tuple(t1, o1), std::make_tuple(t2, o2), t1, 0.0),
+            o1);
+  EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffsetRemainder(
+                std::make_tuple(t1, o1), std::make_tuple(t2, o2), t1, 0.0),
+            0.0);
+
+  EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
+                std::make_tuple(t1, o1), std::make_tuple(t2, o2), t2),
+            o2);
+  EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
+                std::make_tuple(t1, o1), std::make_tuple(t2, o2), t2, 0.0),
+            o1);
+  EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffsetRemainder(
+                std::make_tuple(t1, o1), std::make_tuple(t2, o2), t2, 0.0),
+            o2d - o1d);
+
+  EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
+                std::make_tuple(t1, o1), std::make_tuple(t2, o2),
+                e + chrono::nanoseconds(500)),
+            chrono::nanoseconds(125));
+  EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
+                std::make_tuple(t1, o1), std::make_tuple(t2, o2),
+                e + chrono::nanoseconds(500), 0.0),
+            o1);
+  EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffsetRemainder(
+                std::make_tuple(t1, o1), std::make_tuple(t2, o2),
+                e + chrono::nanoseconds(500), 0.0),
+            25.);
+
+  EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
+                std::make_tuple(t1, o1), std::make_tuple(t2, o2),
+                e + chrono::nanoseconds(-200)),
+            chrono::nanoseconds(90));
+  EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
+                std::make_tuple(t1, o1), std::make_tuple(t2, o2), e, -200.),
+            o1);
+  EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffsetRemainder(
+                std::make_tuple(t1, o1), std::make_tuple(t2, o2), e, -200.),
+            -10.);
+
+  EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
+                std::make_tuple(t1, o1), std::make_tuple(t2, o2),
+                e + chrono::nanoseconds(200)),
+            chrono::nanoseconds(110));
+  EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
+                std::make_tuple(t1, o1), std::make_tuple(t2, o2), e, 200.),
+            o1);
+  EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffsetRemainder(
+                std::make_tuple(t1, o1), std::make_tuple(t2, o2), e, 200.),
+            10.);
+
+  EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
+                std::make_tuple(t1, o1), std::make_tuple(t2, o2),
+                e + chrono::nanoseconds(800)),
+            chrono::nanoseconds(140));
+  EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
+                std::make_tuple(t1, o1), std::make_tuple(t2, o2), e, 800.),
+            o1);
+  EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffsetRemainder(
+                std::make_tuple(t1, o1), std::make_tuple(t2, o2), e, 800.),
+            40.);
+
+  EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
+                std::make_tuple(t1, o1), std::make_tuple(t2, o2),
+                e + chrono::nanoseconds(1200)),
+            chrono::nanoseconds(160));
+  EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
+                std::make_tuple(t1, o1), std::make_tuple(t2, o2), e, 1200.),
+            o1);
+  EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffsetRemainder(
+                std::make_tuple(t1, o1), std::make_tuple(t2, o2), e, 1200.),
+            60.);
+
+  EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
+                std::make_tuple(t1, o1), e + chrono::nanoseconds(800)),
+            o1);
+  EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(std::make_tuple(t1, o1),
+                                                        e, 800.),
+            o1);
+  EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
+                std::make_tuple(t1, o1), e + chrono::nanoseconds(-300)),
+            o1);
+  EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(std::make_tuple(t1, o1),
+                                                        e, -300.),
+            o1);
+}
+
+// Tests that FindTimestamps finds timestamps in a sequence.
+TEST(NoncausalTimestampFilterTest, FindTimestamps) {
+  const monotonic_clock::time_point e = monotonic_clock::epoch();
+  // Note: t1, t2, t3 need to be picked such that the slop is small so filter
+  // doesn't modify the timestamps.
+  const monotonic_clock::time_point t1 = e + chrono::nanoseconds(0);
+  const chrono::nanoseconds o1 = chrono::nanoseconds(100);
+  const monotonic_clock::time_point t2 = e + chrono::microseconds(1000);
+  const chrono::nanoseconds o2 = chrono::nanoseconds(150);
+  const monotonic_clock::time_point t3 = e + chrono::microseconds(2000);
+  const chrono::nanoseconds o3 = chrono::nanoseconds(50);
+
+  NoncausalTimestampFilter filter;
+
+  filter.Sample(t1, o1);
+  filter.Sample(t2, o2);
+  filter.Sample(t3, o3);
+
+  // Try points before, after, and at each of the points in the line.
+  EXPECT_THAT(filter.FindTimestamps(e - chrono::microseconds(10)),
+              ::testing::Pair(::testing::Eq(std::make_tuple(t1, o1)),
+                              ::testing::Eq(std::make_tuple(t2, o2))));
+  EXPECT_THAT(filter.FindTimestamps(e - chrono::microseconds(10), 0.9),
+              ::testing::Pair(::testing::Eq(std::make_tuple(t1, o1)),
+                              ::testing::Eq(std::make_tuple(t2, o2))));
+
+  EXPECT_THAT(filter.FindTimestamps(e + chrono::microseconds(0)),
+              ::testing::Pair(::testing::Eq(std::make_tuple(t1, o1)),
+                              ::testing::Eq(std::make_tuple(t2, o2))));
+  EXPECT_THAT(filter.FindTimestamps(e + chrono::microseconds(0), 0.8),
+              ::testing::Pair(::testing::Eq(std::make_tuple(t1, o1)),
+                              ::testing::Eq(std::make_tuple(t2, o2))));
+
+  EXPECT_THAT(filter.FindTimestamps(e + chrono::microseconds(100)),
+              ::testing::Pair(::testing::Eq(std::make_tuple(t1, o1)),
+                              ::testing::Eq(std::make_tuple(t2, o2))));
+  EXPECT_THAT(filter.FindTimestamps(e + chrono::microseconds(100), 0.7),
+              ::testing::Pair(::testing::Eq(std::make_tuple(t1, o1)),
+                              ::testing::Eq(std::make_tuple(t2, o2))));
+
+  EXPECT_THAT(filter.FindTimestamps(e + chrono::microseconds(1000)),
+              ::testing::Pair(::testing::Eq(std::make_tuple(t2, o2)),
+                              ::testing::Eq(std::make_tuple(t3, o3))));
+  EXPECT_THAT(filter.FindTimestamps(e + chrono::microseconds(1000), 0.0),
+              ::testing::Pair(::testing::Eq(std::make_tuple(t2, o2)),
+                              ::testing::Eq(std::make_tuple(t3, o3))));
+
+  EXPECT_THAT(filter.FindTimestamps(e + chrono::microseconds(1500)),
+              ::testing::Pair(::testing::Eq(std::make_tuple(t2, o2)),
+                              ::testing::Eq(std::make_tuple(t3, o3))));
+  EXPECT_THAT(filter.FindTimestamps(e + chrono::microseconds(1500), 0.0),
+              ::testing::Pair(::testing::Eq(std::make_tuple(t2, o2)),
+                              ::testing::Eq(std::make_tuple(t3, o3))));
+
+  EXPECT_THAT(filter.FindTimestamps(e + chrono::microseconds(2000)),
+              ::testing::Pair(::testing::Eq(std::make_tuple(t2, o2)),
+                              ::testing::Eq(std::make_tuple(t3, o3))));
+  EXPECT_THAT(filter.FindTimestamps(e + chrono::microseconds(2000), 0.1),
+              ::testing::Pair(::testing::Eq(std::make_tuple(t2, o2)),
+                              ::testing::Eq(std::make_tuple(t3, o3))));
+
+  EXPECT_THAT(filter.FindTimestamps(e + chrono::microseconds(2500)),
+              ::testing::Pair(::testing::Eq(std::make_tuple(t2, o2)),
+                              ::testing::Eq(std::make_tuple(t3, o3))));
+  EXPECT_THAT(filter.FindTimestamps(e + chrono::microseconds(2500), 0.0),
+              ::testing::Pair(::testing::Eq(std::make_tuple(t2, o2)),
+                              ::testing::Eq(std::make_tuple(t3, o3))));
+}
+
+// Tests that Offset returns results indicative of it calling InterpolateOffset
+// and FindTimestamps correctly.
+TEST(NoncausalTimestampFilterTest, Offset) {
+  const monotonic_clock::time_point e = monotonic_clock::epoch();
+  // Note: t1, t2, t3 need to be picked such that the slop is small so filter
+  // doesn't modify the timestamps.
+  const monotonic_clock::time_point t1 = e + chrono::nanoseconds(0);
+  const chrono::nanoseconds o1 = chrono::nanoseconds(100);
+  const double o1d = static_cast<double>(o1.count());
+
+  const monotonic_clock::time_point t2 = e + chrono::microseconds(1000);
+  const chrono::nanoseconds o2 = chrono::nanoseconds(150);
+  const double o2d = static_cast<double>(o2.count());
+
+  const monotonic_clock::time_point t3 = e + chrono::microseconds(2000);
+  const chrono::nanoseconds o3 = chrono::nanoseconds(50);
+  const double o3d = static_cast<double>(o3.count());
+
+  NoncausalTimestampFilter filter;
+
+  filter.Sample(t1, o1);
+
+  // 1 point is handled properly.
+  EXPECT_EQ(filter.Offset(t1), o1);
+  EXPECT_EQ(filter.Offset(t1, 0.0), std::make_pair(o1, 0.0));
+  EXPECT_EQ(filter.Offset(t2, 0.0), std::make_pair(o1, 0.0));
+
+  filter.Sample(t2, o2);
+  filter.Sample(t3, o3);
+
+  EXPECT_EQ(filter.Offset(t1), o1);
+  EXPECT_EQ(filter.Offset(t2), o2);
+  EXPECT_EQ(filter.Offset(t3), o3);
+
+  EXPECT_EQ(filter.Offset(t1, 0.0), std::make_pair(o1, 0.0));
+
+  EXPECT_EQ(filter.Offset(
+                e + (t2.time_since_epoch() + t1.time_since_epoch()) / 2, 0.0),
+            std::make_pair(o1, (o2d - o1d) / 2.));
+
+  EXPECT_EQ(filter.Offset(t2, 0.0), std::make_pair(o2, 0.0));
+
+  EXPECT_EQ(filter.Offset(
+                e + (t2.time_since_epoch() + t3.time_since_epoch()) / 2, 0.),
+            std::make_pair(o2, (o2d + o3d) / 2. - o2d));
+
+  EXPECT_EQ(filter.Offset(t3, 0.0), std::make_pair(o2, o3d - o2d));
+}
+
+// Tests that the cost function handles a single point line properly, and the
+// derivatives are consistent.  Do this with a massive offset to ensure that we
+// are subtracting out nominal offsets correctly to retain numerical precision
+// in the result.
+TEST(NoncausalTimestampFilterTest, CostAndSlopeSinglePoint) {
+  const monotonic_clock::time_point e = monotonic_clock::epoch();
+  const monotonic_clock::time_point t1 =
+      e + chrono::nanoseconds(0) + chrono::seconds(10000000000);
+  const chrono::nanoseconds o1 =
+      chrono::nanoseconds(1000) - chrono::seconds(10000000000);
+
+  NoncausalTimestampFilter filter;
+
+  filter.Sample(t1, o1);
+
+  // Spot check some known points.
+  EXPECT_EQ(filter.OffsetError(t1, 0.0, t1 + o1, 0.0), 0.0);
+  EXPECT_EQ(filter.OffsetError(t1, 5.0, t1 + o1, 5.0), 0.0);
+  EXPECT_EQ(filter.Cost(t1, 0.0, t1 + o1, 0.0), 0.0);
+  EXPECT_EQ(filter.Cost(t1, 1.0, t1 + o1, 0.0), 1.0);
+
+  constexpr double kDelta = 10.;
+
+  // Perturb ta and tb so we make sure it works away from 0.
+  for (double ta_nominal : {-1000.0, 0.0, 1000.0}) {
+    for (double tb_nominal : {-2000.0, 0.0, 2000.0}) {
+      {
+        const double minus_costa =
+            filter.Cost(t1, ta_nominal - kDelta, t1 + o1, tb_nominal);
+        const double plus_costa =
+            filter.Cost(t1, ta_nominal + kDelta, t1 + o1, tb_nominal);
+
+        const double minus_costb =
+            filter.Cost(t1, ta_nominal, t1 + o1, tb_nominal - kDelta);
+        const double plus_costb =
+            filter.Cost(t1, ta_nominal, t1 + o1, tb_nominal + kDelta);
+
+        EXPECT_NEAR((plus_costa - minus_costa) / (2.0 * kDelta),
+                    filter.DCostDta(t1, ta_nominal, t1 + o1, tb_nominal), 1e-9);
+        EXPECT_NEAR((plus_costb - minus_costb) / (2.0 * kDelta),
+                    filter.DCostDtb(t1, ta_nominal, t1 + o1, tb_nominal), 1e-9);
+      }
+    }
+  }
+}
+
+TEST(NoncausalTimestampFilterTest, CostAndSlope) {
+  const monotonic_clock::time_point e = monotonic_clock::epoch();
+  // Note: t1, t2, t3 need to be picked such that the slope is small so filter
+  // doesn't modify the timestamps.
+  const monotonic_clock::time_point t1 =
+      e + chrono::nanoseconds(0) + chrono::seconds(10000000000);
+  const chrono::nanoseconds o1 =
+      chrono::nanoseconds(1000) - chrono::seconds(10000000000);
+
+  const monotonic_clock::time_point t2 =
+      e + chrono::microseconds(1000) + chrono::seconds(10000000000);
+  const chrono::nanoseconds o2 =
+      chrono::nanoseconds(1500) - chrono::seconds(10000000000);
+
+  const monotonic_clock::time_point t3 =
+      e + chrono::microseconds(2000) + chrono::seconds(10000000000);
+  const chrono::nanoseconds o3 =
+      chrono::nanoseconds(500) - chrono::seconds(10000000000);
+
+  NoncausalTimestampFilter filter;
+
+  filter.Sample(t1, o1);
+  filter.Sample(t2, o2);
+  filter.Sample(t3, o3);
+
+  // Spot check some known points.
+  EXPECT_EQ(filter.OffsetError(t1, 0.0, t1 + o1, 0.0), 0.0);
+  EXPECT_EQ(filter.OffsetError(t1, 5.0, t1 + o1, 5.0), -0.0025);
+  EXPECT_EQ(filter.OffsetError(t2, 0.0, t2 + o2, 0.0), 0.0);
+  EXPECT_EQ(filter.OffsetError(t3, 0.0, t3 + o3, 0.0), 0.0);
+
+  EXPECT_EQ(filter.Cost(t1, 0.0, t1 + o1, 0.0), 0.0);
+  EXPECT_EQ(filter.Cost(t2, 0.0, t2 + o2, 0.0), 0.0);
+  EXPECT_EQ(filter.Cost(t3, 0.0, t3 + o3, 0.0), 0.0);
+
+  // Perturb ta and tbd so we make sure it works away from 0.
+  constexpr double kDelta = 10.;
+
+  // Note: don't test 0 offset because that makes the computed slope at t2
+  // wrong.
+  for (double ta_nominal : {-1000.0, 20.0, 1000.0}) {
+    for (double tb_nominal : {-2000.0, 20.0, 2000.0}) {
+      // Check points round each of the 3 points in the polyline.  Use 3 points
+      // so if we mess up the point selection code, it shows up.
+      {
+        const double minus_costa =
+            filter.Cost(t1, ta_nominal - kDelta, t1 + o1, tb_nominal);
+        const double plus_costa =
+            filter.Cost(t1, ta_nominal + kDelta, t1 + o1, tb_nominal);
+
+        const double minus_costb =
+            filter.Cost(t1, ta_nominal, t1 + o1, tb_nominal - kDelta);
+        const double plus_costb =
+            filter.Cost(t1, ta_nominal, t1 + o1, tb_nominal + kDelta);
+
+        EXPECT_NEAR((plus_costa - minus_costa) / (2.0 * kDelta),
+                    filter.DCostDta(t1, ta_nominal, t1 + o1, tb_nominal), 1e-9);
+        EXPECT_NEAR((plus_costb - minus_costb) / (2.0 * kDelta),
+                    filter.DCostDtb(t1, ta_nominal, t1 + o1, tb_nominal), 1e-9);
+      }
+
+      {
+        const double minus_costa =
+            filter.Cost(t2, ta_nominal - kDelta, t2 + o2, tb_nominal);
+        const double plus_costa =
+            filter.Cost(t2, ta_nominal + kDelta, t2 + o2, tb_nominal);
+
+        const double minus_costb =
+            filter.Cost(t2, ta_nominal, t2 + o2, tb_nominal - kDelta);
+        const double plus_costb =
+            filter.Cost(t2, ta_nominal, t2 + o2, tb_nominal + kDelta);
+
+        EXPECT_NEAR((plus_costa - minus_costa) / (2.0 * kDelta),
+                    filter.DCostDta(t2, ta_nominal, t2 + o2, tb_nominal), 1e-9);
+        EXPECT_NEAR((plus_costb - minus_costb) / (2.0 * kDelta),
+                    filter.DCostDtb(t2, ta_nominal, t2 + o2, tb_nominal), 1e-9);
+      }
+
+      {
+        const double minus_costa =
+            filter.Cost(t3, ta_nominal - kDelta, t3 + o3, tb_nominal);
+        const double plus_costa =
+            filter.Cost(t3, ta_nominal + kDelta, t3 + o3, tb_nominal);
+
+        const double minus_costb =
+            filter.Cost(t3, ta_nominal, t3 + o3, tb_nominal - kDelta);
+        const double plus_costb =
+            filter.Cost(t3, ta_nominal, t3 + o3, tb_nominal + kDelta);
+
+        EXPECT_NEAR((plus_costa - minus_costa) / (2.0 * kDelta),
+                    filter.DCostDta(t3, ta_nominal, t3 + o3, tb_nominal), 1e-9);
+        EXPECT_NEAR((plus_costb - minus_costb) / (2.0 * kDelta),
+                    filter.DCostDtb(t3, ta_nominal, t3 + o3, tb_nominal), 1e-9);
+      }
+    }
+  }
 }
 
 // Run a couple of points through the estimator and confirm it works.

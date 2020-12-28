@@ -269,8 +269,14 @@ class Line {
   }
   double slope() const { return slope_.get_d(); }
 
+  std::string DebugString() const {
+    std::stringstream ss;
+    ss << "Offset " << mpq_offset() << " slope " << mpq_slope();
+    return ss.str();
+  }
+
   void Debug() const {
-    LOG(INFO) << "Offset " << mpq_offset() << " slope " << mpq_slope();
+    LOG(INFO) << DebugString();
   }
 
   // Returns the offset at a given time.
@@ -330,9 +336,11 @@ Line Invert(Line fb);
 // O(ta) = tb - ta - network_delay.  This means that the fastest time a message
 // can be delivered is going to be when the offset is the most positive.
 //
-// TODO(austin): Figure out how to track when we have used something from this
-// filter, and when we do that, enforce that it can't change anymore.  That will
-// help us find when we haven't buffered far enough in the future.
+// All the offset and error calculation functions are designed to be used in an
+// optimization problem with large times but to retain sub-nanosecond precision.
+// To do this, time is treated as both a large integer portion, and a small
+// double portion.  All the functions are subtracting the large times in integer
+// precision and handling the remainder with double precision.
 class NoncausalTimestampFilter {
  public:
   ~NoncausalTimestampFilter();
@@ -340,6 +348,38 @@ class NoncausalTimestampFilter {
   // Returns a line fit to the oldest 2 points in the timestamp list if
   // available, or the only point (assuming 0 slope) if not available.
   Line FitLine();
+
+  // Returns the offset for the point in time, using the timestamps in the deque
+  // to form a polyline used to interpolate.
+  std::chrono::nanoseconds Offset(monotonic_clock::time_point ta) const;
+  std::pair<std::chrono::nanoseconds, double> Offset(
+      monotonic_clock::time_point ta_base, double ta) const;
+
+  // Returns the error between the offset in the provided timestamps, and the
+  // offset at ta.
+  double OffsetError(aos::monotonic_clock::time_point ta_base, double ta,
+                     aos::monotonic_clock::time_point tb_base, double tb) const;
+
+  // Returns the cost (OffsetError^2), ie (ob - oa - offset(oa, ob))^2,
+  // calculated accurately.
+  // Since this is designed to be used with a gradient based solver, it isn't
+  // super important if Cost is precise.
+  double Cost(aos::monotonic_clock::time_point ta_base, double ta,
+              aos::monotonic_clock::time_point tb_base, double tb) const;
+
+  // Returns the partial derivitive dcost/dta
+  double DCostDta(aos::monotonic_clock::time_point ta_base, double ta,
+                  aos::monotonic_clock::time_point tb_base, double tb) const;
+  // Returns the partial derivitive dcost/dtb
+  double DCostDtb(aos::monotonic_clock::time_point ta_base, double ta,
+                  aos::monotonic_clock::time_point tb_base, double tb) const;
+
+  double Convert(double ta) const {
+    return ta +
+           static_cast<double>(
+               Offset(monotonic_clock::epoch(), ta).first.count()) +
+           Offset(monotonic_clock::epoch(), ta).second;
+  }
 
   // Adds a new sample to our filtered timestamp list.
   // Returns true if adding the sample changed the output from FitLine().
@@ -353,7 +393,13 @@ class NoncausalTimestampFilter {
   // Returns the current list of timestamps in our list.
   std::deque<
       std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>>
-  Timestamps();
+  Timestamps() const;
+
+  std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>
+  timestamp(size_t i) const {
+    return std::make_tuple(std::get<0>(timestamps_[i]),
+                           std::get<1>(timestamps_[i]));
+  }
 
   size_t timestamps_size() const { return timestamps_.size(); }
 
@@ -376,6 +422,42 @@ class NoncausalTimestampFilter {
   // offset and slope), as used.  Those points can't be removed from the filter
   // going forwards.
   void Freeze();
+
+  // Public for testing.
+  // Assuming that there are at least 2 points in timestamps_, finds the 2
+  // matching points.
+  std::pair<std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>,
+            std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>>
+  FindTimestamps(monotonic_clock::time_point ta) const;
+  std::pair<std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>,
+            std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>>
+  FindTimestamps(monotonic_clock::time_point ta_base, double ta) const;
+
+  static std::chrono::nanoseconds InterpolateOffset(
+      std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> p0,
+      std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> p1,
+      monotonic_clock::time_point ta);
+
+  static std::chrono::nanoseconds InterpolateOffset(
+      std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> p0,
+      monotonic_clock::time_point /*ta*/) {
+    return std::get<1>(p0);
+  }
+
+  static std::chrono::nanoseconds InterpolateOffset(
+      std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> p0,
+      std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> p1,
+      monotonic_clock::time_point ta_base, double ta);
+  static double InterpolateOffsetRemainder(
+      std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> /*p0*/,
+      std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> /*p1*/,
+      monotonic_clock::time_point ta_base, double ta);
+
+  static std::chrono::nanoseconds InterpolateOffset(
+      std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> p0,
+      monotonic_clock::time_point /*ta_base*/, double /*ta*/) {
+    return std::get<1>(p0);
+  }
 
  private:
   // Removes the oldest timestamp.
@@ -420,6 +502,18 @@ class NoncausalOffsetEstimator {
  public:
   NoncausalOffsetEstimator(const Node *node_a, const Node *node_b)
       : node_a_(node_a), node_b_(node_b) {}
+
+  const NoncausalTimestampFilter *GetFilter(const Node *n) {
+    if (n == node_a_) {
+      return &a_;
+    }
+    if (n == node_b_) {
+      return &b_;
+    }
+
+    LOG(FATAL) << "Unknown node";
+    return nullptr;
+  }
 
   // Updates the filter based on a sample from the provided node to the other
   // node.
