@@ -1,0 +1,21 @@
+env:
+  STARTUP: --max_idle_secs=0 --watchfs
+  COMMON: -c opt --stamp=no --curses=no --color=no --symlink_prefix=/ --disk_cache=~/.cache/bazel/disk_cache/
+  TARGETS: //... @com_github_google_glog//... @com_google_ceres_solver//...
+  M4F_TARGETS: //...
+  # Sanity check that we are able to build the y2020 roborio code, which confirms
+  # that we have the platform compatibility for the roborio set up correctly.
+  ROBORIO_TARGETS: ${TARGETS} //y2020:download_stripped
+
+steps:
+  - label: "x86_64"
+    command: tools/bazel ${STARTUP} --output_base=../k8_output_base test ${COMMON} --config=k8 --config=eigen ${TARGETS}
+
+  - label: "roborio"
+    command: tools/bazel ${STARTUP} --output_base=../roborio_output_base build ${COMMON} --config=roborio ${ROBORIO_TARGETS}
+
+  - label: "armhf-debian"
+    command: tools/bazel ${STARTUP} --output_base=../armhf-debian_output_base build ${COMMON} --config=armhf-debian ${TARGETS}
+
+  - label: "cortex-m4f"
+    command: tools/bazel ${STARTUP} --output_base=../cortex-m4f_output_base build ${COMMON} --config=cortex-m4f ${M4F_TARGETS}

@@ -5,6 +5,11 @@ set -x
 # No need to pass this through.  It hurts caching.
 unset SSH_AUTH_SOCK
 
+if [ -n ${BUILDKITE+x} ]; then
+  buildkite-agent pipeline upload tools/ci/buildkite.yaml
+  exit 0
+fi
+
 readonly TARGETS='//... @com_github_google_glog//... @com_google_ceres_solver//...'
 readonly M4F_TARGETS='//...'
 # Sanity check that we are able to build the y2020 roborio code, which confirms
