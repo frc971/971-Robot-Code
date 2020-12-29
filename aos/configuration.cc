@@ -593,6 +593,10 @@ const Channel *GetChannel(const Configuration *config, std::string_view name,
                           std::string_view type,
                           std::string_view application_name, const Node *node,
                           bool quiet) {
+  if (!config->has_channels()) {
+    return nullptr;
+  }
+
   const std::string_view original_name = name;
   std::string mutable_name;
   if (node != nullptr) {
