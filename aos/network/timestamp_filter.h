@@ -389,12 +389,21 @@ class NoncausalTimestampFilter {
                                       std::chrono::nanoseconds, bool>
                                timestamp);
 
+  // Writes any saved timestamps to file.
+  void FlushSavedSamples();
+
   // Timestamp, offest, and then a boolean representing if this sample is frozen
   // and can't be modified or not.
   // TODO(austin): Actually use and update the bool.
   std::deque<std::tuple<aos::monotonic_clock::time_point,
                         std::chrono::nanoseconds, bool>>
       timestamps_;
+
+  // Holds any timestamps from before the start of the log to be flushed when we
+  // know when the log starts.
+  std::vector<
+      std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>>
+      saved_samples_;
 
   std::string csv_file_name_;
   FILE *fp_ = nullptr;
