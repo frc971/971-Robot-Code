@@ -226,9 +226,13 @@ TEST_F(MessageBridgeTest, PingPong) {
         // milliseconds on localhost.  This might have to bump up if this is
         // proving flaky.
         EXPECT_LT(chrono::nanoseconds(connection->monotonic_offset()),
-                  chrono::milliseconds(10));
+                  chrono::milliseconds(10))
+            << " " << connection->monotonic_offset()
+            << "ns vs 10000ns on iteration " << pi1_client_statistics_count;
         EXPECT_GT(chrono::nanoseconds(connection->monotonic_offset()),
-                  chrono::microseconds(10));
+                  chrono::microseconds(10))
+            << " " << connection->monotonic_offset()
+            << "ns vs 10000ns on iteration " << pi1_client_statistics_count;
       }
     }
   });
