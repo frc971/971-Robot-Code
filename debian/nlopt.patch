@@ -1,0 +1,13 @@
+diff --git a/src/algs/ags/solver.cc b/src/algs/ags/solver.cc
+index 63b8760..b837112 100644
+--- a/src/algs/ags/solver.cc
++++ b/src/algs/ags/solver.cc
+@@ -38,6 +38,8 @@ namespace
+         mRightBound = rightBound;
+       }
+ 
++      virtual ~ProblemInternal() {}
++
+       double Calculate(const double* y, int fNumber) const
+       {
+         return mFunctions[fNumber](y);

@@ -484,6 +484,7 @@ cc_library(
         "//aos/events:simulated_event_loop",
         "//aos/time",
         "//third_party/gmp",
+        "@com_github_stevengj_nlopt//:nlopt",
         "@org_tuxfamily_eigen//:eigen",
     ],
 )
@@ -498,5 +499,19 @@ cc_test(
         ":timestamp_filter",
         "//aos:json_to_flatbuffer",
         "//aos/testing:googletest",
+    ],
+)
+
+cc_test(
+    name = "multinode_timestamp_filter_test",
+    srcs = [
+        "multinode_timestamp_filter_test.cc",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":multinode_timestamp_filter",
+        ":timestamp_filter",
+        "//aos/testing:googletest",
+        "@com_github_stevengj_nlopt//:nlopt",
     ],
 )

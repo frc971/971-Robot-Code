@@ -157,6 +157,16 @@ http_archive(
     url = "https://www.frc971.org/Build-Dependencies/clang_6p0.tar.gz",
 )
 
+http_archive(
+    name = "com_github_stevengj_nlopt",
+    build_file = "@//debian:nlopt.BUILD",
+    patch_args = ["-p1"],
+    patches = ["//debian:nlopt.patch"],
+    sha256 = "2d65815b21c30813499fe19c63947f7da56b10c0d4a459dce05417899b43e461",
+    strip_prefix = "nlopt-496be736b8b249273838b891f4c8ca3669551127",
+    url = "https://www.frc971.org/Build-Dependencies/nlopt-496be736b8b249273838b891f4c8ca3669551127.zip",
+)
+
 local_repository(
     name = "com_google_absl",
     path = "third_party/abseil",

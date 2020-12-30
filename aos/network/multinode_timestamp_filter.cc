@@ -1,12 +1,15 @@
 #include "aos/network/multinode_timestamp_filter.h"
 
+#include <chrono>
 #include <map>
 
+#include "absl/strings/str_join.h"
 #include "aos/configuration.h"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/network/timestamp_filter.h"
 #include "aos/time/time.h"
 #include "glog/logging.h"
+#include "nlopt.h"
 
 DEFINE_bool(timestamps_to_csv, false,
             "If true, write all the time synchronization information to a set "
@@ -16,6 +19,7 @@ DEFINE_bool(timestamps_to_csv, false,
 namespace aos {
 namespace message_bridge {
 namespace {
+namespace chrono = std::chrono;
 Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> ToDouble(
     Eigen::Matrix<mpq_class, Eigen::Dynamic, Eigen::Dynamic> in) {
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> result =
@@ -55,6 +59,95 @@ Solve(const Eigen::Matrix<mpq_class, Eigen::Dynamic, Eigen::Dynamic> &mpq_map,
                          ToDouble(mpq_solution_offset));
 }
 }  // namespace
+
+TimestampProblem::TimestampProblem(size_t count) {
+  CHECK_GT(count, 1u);
+  filters_.resize(count);
+  base_clock_.resize(count);
+}
+
+// TODO(austin): Adjust simulated event loop factory to take lists of points
+// on all clocks and interpolate.
+//
+// TODO(austin): Add linear inequality constraints too.
+//
+// TODO(austin): Add a rate of change constraint from the last sample.  1
+// ms/s.  Figure out how to define it.  Do this last.  This lets us handle
+// constraints going away, and constraints close in time.
+
+std::vector<double> TimestampProblem::Solve() {
+  // TODO(austin): Add constraints for relevant segments.
+  const size_t n = filters_.size() - 1u;
+  //  NLOPT_LD_MMA and NLOPT_LD_LBFGS are alternative solvers, but SLSQP is a
+  //  better fit for the quadratic nature of this problem.
+  nlopt_opt opt = nlopt_create(NLOPT_LD_SLSQP, n);
+  nlopt_set_min_objective(opt, TimestampProblem::DoCost, this);
+
+  // Ask for really good.  This is very quadratic, so it should be pretty
+  // precise.
+  nlopt_set_xtol_rel(opt, 1e-19);
+
+  count_ = 0;
+
+  std::vector<double> result(n, 0.0);
+  double minf = 0.0;
+  CHECK_GE(nlopt_optimize(opt, result.data(), &minf), 0);
+
+  if (VLOG_IS_ON(1)) {
+    std::vector<double> gradient(n, 0.0);
+    Cost(result.data(), gradient.data());
+
+    // High precision formatter for the gradient.
+    struct MyFormatter {
+      void operator()(std::string *out, double i) const {
+        std::stringstream ss;
+        ss << std::setprecision(12) << std::fixed << i;
+        out->append(ss.str());
+      }
+    };
+
+    VLOG(1) << std::setprecision(12) << std::fixed << "Found minimum at f("
+            << result[0] << ") -> " << minf << " grad ["
+            << absl::StrJoin(gradient, ", ", MyFormatter()) << "] after "
+            << count_ << " cycles.";
+  }
+  return result;
+}
+
+double TimestampProblem::Cost(const double *x, double *grad) {
+  ++count_;
+
+  if (grad != nullptr) {
+    for (size_t i = 0; i < filters_.size() - 1u; ++i) {
+      grad[i] = 0;
+    }
+
+    for (size_t i = 0u; i < filters_.size(); ++i) {
+      for (const struct FilterPair &filter : filters_[i]) {
+        if (i != solution_node_) {
+          grad[NodeToSolutionIndex(i)] += filter.filter->DCostDta(
+              base_clock_[i], get_t(x, i), base_clock_[filter.b_index],
+              get_t(x, filter.b_index));
+        }
+        if (filter.b_index != solution_node_) {
+          grad[NodeToSolutionIndex(filter.b_index)] += filter.filter->DCostDtb(
+              base_clock_[i], get_t(x, i), base_clock_[filter.b_index],
+              get_t(x, filter.b_index));
+        }
+      }
+    }
+  }
+
+  double cost = 0;
+  for (size_t i = 0u; i < filters_.size(); ++i) {
+    for (const struct FilterPair &filter : filters_[i]) {
+      cost += filter.filter->Cost(base_clock_[i], get_t(x, i),
+                                  base_clock_[filter.b_index],
+                                  get_t(x, filter.b_index));
+    }
+  }
+  return cost;
+}
 
 void MultiNodeNoncausalOffsetEstimator::Start(
     SimulatedEventLoopFactory *factory) {
@@ -116,8 +209,7 @@ void MultiNodeNoncausalOffsetEstimator::LogFit(std::string_view prefix) {
   }
 
   for (std::pair<const std::tuple<const Node *, const Node *>,
-                 message_bridge::NoncausalOffsetEstimator> &filter :
-       filters_) {
+                 message_bridge::NoncausalOffsetEstimator> &filter : filters_) {
     message_bridge::NoncausalOffsetEstimator *estimator = &filter.second;
 
     const std::deque<
@@ -162,8 +254,7 @@ void MultiNodeNoncausalOffsetEstimator::LogFit(std::string_view prefix) {
             << recovered_offset - estimator->fit().offset().count() << ")";
 
     const aos::distributed_clock::time_point a0 =
-        node_a_factory->ToDistributedClock(
-            std::get<0>(a_timestamps[0]));
+        node_a_factory->ToDistributedClock(std::get<0>(a_timestamps[0]));
     const aos::distributed_clock::time_point a1 =
         node_a_factory->ToDistributedClock(std::get<0>(a_timestamps[1]));
 
@@ -197,16 +288,16 @@ void MultiNodeNoncausalOffsetEstimator::LogFit(std::string_view prefix) {
     const aos::distributed_clock::time_point b1 =
         node_b_factory->ToDistributedClock(std::get<0>(b_timestamps[1]));
 
-    VLOG(2) << node_b->name()->string_view() << " timestamps()[0] = "
-            << std::get<0>(b_timestamps[0]) << " -> " << b0
-            << " distributed -> " << node_a->name()->string_view() << " "
+    VLOG(2) << node_b->name()->string_view()
+            << " timestamps()[0] = " << std::get<0>(b_timestamps[0]) << " -> "
+            << b0 << " distributed -> " << node_a->name()->string_view() << " "
             << node_a_factory->FromDistributedClock(b0)
             << ((b0 <= event_loop_factory_->distributed_now())
                     ? ""
                     : " After now, investigate");
-    VLOG(2) << node_b->name()->string_view() << " timestamps()[1] = "
-            << std::get<0>(b_timestamps[1]) << " -> " << b1
-            << " distributed -> " << node_a->name()->string_view() << " "
+    VLOG(2) << node_b->name()->string_view()
+            << " timestamps()[1] = " << std::get<0>(b_timestamps[1]) << " -> "
+            << b1 << " distributed -> " << node_a->name()->string_view() << " "
             << node_a_factory->FromDistributedClock(b1)
             << ((event_loop_factory_->distributed_now() <= b1)
                     ? ""
@@ -311,8 +402,7 @@ void MultiNodeNoncausalOffsetEstimator::Initialize(
       map_matrix_(i, node_b_index) = mpq_class(1);
 
       // -> sample
-      filter.second
-          .set_slope_pointer(&slope_matrix_(i, node_a_index));
+      filter.second.set_slope_pointer(&slope_matrix_(i, node_a_index));
       filter.second.set_offset_pointer(&offset_matrix_(i, 0));
 
       valid_matrix_(i) = false;
