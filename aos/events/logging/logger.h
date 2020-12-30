@@ -504,6 +504,9 @@ class LogReader {
     // filter to change the time offset estimation function.
     TimestampedMessage PopOldest(bool *update_time);
 
+    // Returns the oldest message (if it exists) non destructively.
+    const TimestampedMessage &PeekOldest();
+
     // Returns the monotonic time of the oldest message.
     monotonic_clock::time_point OldestMessageTime() const;
 

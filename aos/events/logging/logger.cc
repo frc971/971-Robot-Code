@@ -1486,7 +1486,8 @@ void LogReader::Register(EventLoop *event_loop) {
       const std::chrono::nanoseconds kTolerance{3};
       if (!FLAGS_skip_order_validation) {
         CHECK_GE(next_time, state->monotonic_now())
-            << ": Time skipped the next event.";
+            << ": Time skipped the next event, just sent "
+            << timestamped_message << ", sending next " << state->PeekOldest();
 
         for (size_t i = 0; i < states_.size(); ++i) {
           CHECK_GE(states_[i]->monotonic_now(), before_times[i] - kTolerance)
@@ -1501,7 +1502,9 @@ void LogReader::Register(EventLoop *event_loop) {
           LOG(WARNING) << "Check failed: next_time >= "
                           "state->monotonic_now() ("
                        << next_time << " vs. " << state->monotonic_now()
-                       << "): Time skipped the next event.";
+                       << "): Time skipped the next event, just sent "
+                       << timestamped_message << ", sending next "
+                       << state->PeekOldest();
         }
         for (size_t i = 0; i < states_.size(); ++i) {
           if (states_[i]->monotonic_now() < before_times[i] - kTolerance) {
@@ -1996,6 +1999,10 @@ aos::Sender<RemoteMessage> *LogReader::State::RemoteTimestampSender(
   }
 
   return &(sender->second);
+}
+
+const TimestampedMessage &LogReader::State::PeekOldest() {
+  return std::get<0>(sorted_messages_.front());
 }
 
 TimestampedMessage LogReader::State::PopOldest(bool *update_time) {
