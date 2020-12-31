@@ -35,11 +35,11 @@ namespace {
     const DrivetrainConfig<double> &dt_config) {
   ::Eigen::Matrix<double, 3, 2> result;
   result.setZero();
-  result.block<2, 2>(1, 0) = dt_config.Tlr_to_la() *
-                             dt_config.make_hybrid_drivetrain_velocity_loop()
-                                 .plant()
-                                 .coefficients()
-                                 .B_continuous;
+  result.block<2, 2>(1, 0) =
+      dt_config.Tlr_to_la() * dt_config.make_hybrid_drivetrain_velocity_loop()
+                                  .plant()
+                                  .coefficients()
+                                  .B_continuous;
   return result;
 }
 void AB(const DrivetrainConfig<double> &dt_config,
@@ -64,11 +64,10 @@ void AB(const DrivetrainConfig<double> &dt_config,
   return BDiscrete;
 }
 
-::Eigen::Matrix<double, 2, 3> CalcK(
-    const ::Eigen::Matrix<double, 3, 3> & A,
-    const ::Eigen::Matrix<double, 3, 2> & B,
-    const ::Eigen::Matrix<double, 3, 3> & Q,
-    const ::Eigen::Matrix<double, 2, 2> & R) {
+::Eigen::Matrix<double, 2, 3> CalcK(const ::Eigen::Matrix<double, 3, 3> &A,
+                                    const ::Eigen::Matrix<double, 3, 2> &B,
+                                    const ::Eigen::Matrix<double, 3, 3> &Q,
+                                    const ::Eigen::Matrix<double, 2, 2> &R) {
   Eigen::Matrix<double, 2, 3> K;
   Eigen::Matrix<double, 3, 3> S;
   int info = ::frc971::controls::dlqr<3, 2>(A, B, Q, R, &K, &S);
@@ -229,8 +228,9 @@ void LineFollowDrivetrain::Update(
   const ::Eigen::Matrix<double, 5, 1> rel_state =
       (::Eigen::Matrix<double, 5, 1>() << relative_x,
        relative_pose_.rel_pos().y(), relative_pose_.rel_theta(),
-       abs_state(3, 0), abs_state(4, 0)).finished();
-  if (velocity_sign_ * goal_velocity_ < 0)  {
+       abs_state(3, 0), abs_state(4, 0))
+          .finished();
+  if (velocity_sign_ * goal_velocity_ < 0) {
     goal_theta = rel_state(2, 0);
   }
   controls_goal_ << goal_theta, goal_velocity_, 0.0;
@@ -269,7 +269,8 @@ flatbuffers::Offset<LineFollowLogging> LineFollowDrivetrain::PopulateStatus(
   line_follow_logging_builder.add_y(target_pose_.abs_pos().y());
   line_follow_logging_builder.add_theta(target_pose_.abs_theta());
   line_follow_logging_builder.add_offset(relative_pose_.rel_pos().y());
-  line_follow_logging_builder.add_distance_to_target(-relative_pose_.rel_pos().x());
+  line_follow_logging_builder.add_distance_to_target(
+      -relative_pose_.rel_pos().x());
   line_follow_logging_builder.add_goal_theta(controls_goal_(0, 0));
   line_follow_logging_builder.add_rel_theta(relative_pose_.rel_theta());
   return line_follow_logging_builder.Finish();

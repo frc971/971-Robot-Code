@@ -41,8 +41,7 @@ class LineFollowDrivetrain {
   // Returns whether we set the output. If false, that implies that we do not
   // yet have a target to track into and so some other drivetrain should take
   // over.
-  bool SetOutput(
-      ::frc971::control_loops::drivetrain::OutputT *output);
+  bool SetOutput(::frc971::control_loops::drivetrain::OutputT *output);
 
   flatbuffers::Offset<LineFollowLogging> PopulateStatus(
       aos::Sender<drivetrain::Status>::Builder *line_follow_logging_builder)

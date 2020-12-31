@@ -113,8 +113,8 @@ void DrivetrainMotorsSS::PolyCapU(Eigen::Matrix<double, 2, 1> *U) {
     bool is_inside_h, is_inside_45;
     const auto adjusted_pos_error_h =
         DoCoerceGoal<double>(pos_poly_hv, LH, wh, drive_error, &is_inside_h);
-    const auto adjusted_pos_error_45 =
-        DoCoerceGoal<double>(pos_poly_hv, L45, w45, intersection, &is_inside_45);
+    const auto adjusted_pos_error_45 = DoCoerceGoal<double>(
+        pos_poly_hv, L45, w45, intersection, &is_inside_45);
     if (pos_poly_hv.IsInside(intersection)) {
       adjusted_pos_error = adjusted_pos_error_h;
     } else {
@@ -131,8 +131,8 @@ void DrivetrainMotorsSS::PolyCapU(Eigen::Matrix<double, 2, 1> *U) {
     }
   }
 
-  *U = -U_integral + velocity_K *velocity_error +
-       position_K *T_ *adjusted_pos_error + kf_->ff_U();
+  *U = -U_integral + velocity_K * velocity_error +
+       position_K * T_ * adjusted_pos_error + kf_->ff_U();
 
   if (!output_was_capped_) {
     if ((*U - kf_->U_uncapped()).norm() > 0.0001) {

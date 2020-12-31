@@ -61,10 +61,10 @@ TEST_P(ParameterizedDistanceSplineTest, XYIntegral) {
     idx_plot.push_back(dpoint(0));
     idy_plot.push_back(dpoint(1));
 
-    EXPECT_LT((point - expected_point).norm(), 1e-2) << ": At distance "
-                                                     << distance;
-    EXPECT_LT((dpoint - expected_dpoint).norm(), 1e-2) << ": At distance "
-                                                       << distance;
+    EXPECT_LT((point - expected_point).norm(), 1e-2)
+        << ": At distance " << distance;
+    EXPECT_LT((dpoint - expected_dpoint).norm(), 1e-2)
+        << ": At distance " << distance;
 
     // We need to record the starting state without integrating.
     if (i == 0) {

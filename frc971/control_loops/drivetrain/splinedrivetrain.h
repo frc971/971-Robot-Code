@@ -45,22 +45,20 @@ class SplineDrivetrain {
       aos::Sender<drivetrain::Status>::Builder *builder) const;
   flatbuffers::Offset<TrajectoryLogging> MakeTrajectoryLogging(
       flatbuffers::FlatBufferBuilder *builder) const;
-  void PopulateStatus(
-      drivetrain::Status::Builder *status) const;
+  void PopulateStatus(drivetrain::Status::Builder *status) const;
 
   // Accessor for the current goal state, pretty much only present for debugging
   // purposes.
   ::Eigen::Matrix<double, 5, 1> CurrentGoalState() const {
-    return current_trajectory_
-               ? current_trajectory_->GoalState(current_xva_(0),
-                                                current_xva_(1))
-               : ::Eigen::Matrix<double, 5, 1>::Zero();
+    return current_trajectory_ ? current_trajectory_->GoalState(current_xva_(0),
+                                                                current_xva_(1))
+                               : ::Eigen::Matrix<double, 5, 1>::Zero();
   }
 
   bool IsAtEnd() const {
     return current_trajectory_
-        ? current_trajectory_->is_at_end(current_xva_.block<2, 1>(0, 0)) :
-              true;
+               ? current_trajectory_->is_at_end(current_xva_.block<2, 1>(0, 0))
+               : true;
   }
 
   // Returns true if the splinedrivetrain is enabled.

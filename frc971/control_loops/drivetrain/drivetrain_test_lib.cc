@@ -108,7 +108,8 @@ DrivetrainSimulation::DrivetrainSimulation(
       drivetrain_status_fetcher_(
           event_loop_->MakeFetcher<::frc971::control_loops::drivetrain::Status>(
               "/drivetrain")),
-      imu_sender_(event_loop->MakeSender<::frc971::IMUValuesBatch>("/drivetrain")),
+      imu_sender_(
+          event_loop->MakeSender<::frc971::IMUValuesBatch>("/drivetrain")),
       dt_config_(dt_config),
       drivetrain_plant_(MakePlantFromConfig(dt_config_)),
       velocity_drivetrain_(
@@ -267,12 +268,11 @@ void DrivetrainSimulation::Simulate() {
   U(1, 0) += drivetrain_plant_.right_voltage_offset();
   drivetrain_plant_.Update(U);
   double dt_float = ::aos::time::DurationInSeconds(dt_config_.dt);
-  const auto dynamics =
-      [this](const ::Eigen::Matrix<double, 5, 1> &X,
-             const ::Eigen::Matrix<double, 2, 1> &U) {
-        return ContinuousDynamics(velocity_drivetrain_->plant(),
-                                  dt_config_.Tlr_to_la(), X, U);
-      };
+  const auto dynamics = [this](const ::Eigen::Matrix<double, 5, 1> &X,
+                               const ::Eigen::Matrix<double, 2, 1> &U) {
+    return ContinuousDynamics(velocity_drivetrain_->plant(),
+                              dt_config_.Tlr_to_la(), X, U);
+  };
   const Eigen::Matrix<double, 5, 1> last_state = state_;
   state_ = RungeKuttaU(dynamics, state_, U, dt_float);
   // Calculate Xdot from the actual state change rather than getting Xdot at the
@@ -284,8 +284,7 @@ void DrivetrainSimulation::Simulate() {
   const Eigen::Matrix<double, 5, 1> Xdot = (state_ - last_state) / dt_float;
 
   const double yaw_rate = Xdot(2);
-  const double longitudinal_velocity =
-      (state_(4) + state_(3)) / 2.0;
+  const double longitudinal_velocity = (state_(4) + state_(3)) / 2.0;
   const double centripetal_accel = yaw_rate * longitudinal_velocity;
   // TODO(james): Allow inputting arbitrary calibrations, e.g., for testing
   // situations where the IMU is not perfectly flat in the CG of the robot.

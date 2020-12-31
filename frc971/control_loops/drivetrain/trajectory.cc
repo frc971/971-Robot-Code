@@ -45,7 +45,7 @@ Trajectory::Trajectory(const DistanceSpline *spline,
 void Trajectory::LateralAccelPass() {
   for (size_t i = 0; i < plan_.size(); ++i) {
     const double distance = Distance(i);
-    const double velocity_limit =  LateralVelocityCurvature(distance);
+    const double velocity_limit = LateralVelocityCurvature(distance);
     if (velocity_limit < plan_[i]) {
       plan_[i] = velocity_limit;
       plan_segment_type_[i] = CURVATURE_LIMITED;
@@ -102,8 +102,8 @@ double Trajectory::BestAcceleration(double x, double v, bool backwards) {
   }
   if (best_accel < min_voltage_accel || best_accel > max_voltage_accel) {
     LOG(WARNING) << "Viable friction limits and viable voltage limits do not "
-                    "overlap (x: " << x << ", v: " << v
-                 << ", backwards: " << backwards
+                    "overlap (x: "
+                 << x << ", v: " << v << ", backwards: " << backwards
                  << ") best_accel = " << best_accel << ", min voltage "
                  << min_voltage_accel << ", max voltage " << max_voltage_accel
                  << " min friction " << min_friction_accel << " max friction "
@@ -414,7 +414,7 @@ void Trajectory::BackwardPass() {
       // by the acceleration/deceleration limits. This may not always be true;
       // if we ever encounter this error, we just need to back out what the
       // accelerations would be in this case.
-      LOG(FATAL) <<  "Unexpectedly got VOLTAGE_LIMITED plan.";
+      LOG(FATAL) << "Unexpectedly got VOLTAGE_LIMITED plan.";
       break;
     case SegmentType::ACCELERATION_LIMITED:
       // TODO(james): The integration done here and in the DECELERATION_LIMITED

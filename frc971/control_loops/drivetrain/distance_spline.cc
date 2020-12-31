@@ -92,8 +92,9 @@ DistanceSpline::DistanceSpline(const Spline &spline, int num_alpha)
   const double squared_norm = dspline_point.squaredNorm();
 
   return ddspline_point / squared_norm -
-         dspline_point * (dspline_point(0) * ddspline_point(0) +
-                          dspline_point(1) * ddspline_point(1)) /
+         dspline_point *
+             (dspline_point(0) * ddspline_point(0) +
+              dspline_point(1) * ddspline_point(1)) /
              ::std::pow(squared_norm, 2);
 }
 
@@ -111,10 +112,10 @@ double DistanceSpline::DDTheta(double distance) const {
 
   const double squared_norm = dspline_point.squaredNorm();
 
-  return ddtheta / squared_norm -
-         dtheta * (dspline_point(0) * ddspline_point(0) +
-                   dspline_point(1) * ddspline_point(1)) /
-             ::std::pow(squared_norm, 2);
+  return ddtheta / squared_norm - dtheta *
+                                      (dspline_point(0) * ddspline_point(0) +
+                                       dspline_point(1) * ddspline_point(1)) /
+                                      ::std::pow(squared_norm, 2);
 }
 
 DistanceSpline::AlphaAndIndex DistanceSpline::DistanceToAlpha(

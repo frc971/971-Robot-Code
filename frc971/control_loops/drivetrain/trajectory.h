@@ -225,7 +225,8 @@ class Trajectory {
   const ::Eigen::Matrix<double, 2, 1> K1(double current_ddtheta) const {
     return (::Eigen::Matrix<double, 2, 1>()
                 << -robot_radius_l_ * current_ddtheta,
-            robot_radius_r_ * current_ddtheta).finished();
+            robot_radius_r_ * current_ddtheta)
+        .finished();
   }
 
   const ::Eigen::Matrix<double, 2, 1> K2(double current_dtheta) const {

@@ -50,7 +50,8 @@ TEST_F(SplineTest, XYIntegral) {
     const double alpha =
         1.0 * static_cast<double>(i) / static_cast<double>(num_points - 1);
     const ::Eigen::Matrix<double, 2, 1> expected_point = spline6_.Point(alpha);
-    const ::Eigen::Matrix<double, 2, 1> expected_dpoint = spline6_.DPoint(alpha);
+    const ::Eigen::Matrix<double, 2, 1> expected_dpoint =
+        spline6_.DPoint(alpha);
     const ::Eigen::Matrix<double, 2, 1> expected_ddpoint =
         spline6_.DDPoint(alpha);
 
@@ -65,10 +66,10 @@ TEST_F(SplineTest, XYIntegral) {
     idy_plot.push_back(dpoint(1));
 
     EXPECT_LT((point - expected_point).norm(), 1e-2) << ": At alpha " << alpha;
-    EXPECT_LT((dpoint - expected_dpoint).norm(), 1e-2) << ": At alpha "
-                                                       << alpha;
-    EXPECT_LT((ddpoint - expected_ddpoint).norm(), 1e-2) << ": At alpha "
-                                                         << alpha;
+    EXPECT_LT((dpoint - expected_dpoint).norm(), 1e-2)
+        << ": At alpha " << alpha;
+    EXPECT_LT((ddpoint - expected_ddpoint).norm(), 1e-2)
+        << ": At alpha " << alpha;
 
     // We need to record the starting state without integrating.
     if (i == 0) {
@@ -182,12 +183,12 @@ TEST_F(SplineTest, FourToSixSpline) {
     y_plot.push_back(point(1));
 
     EXPECT_LT((point - expected_point).norm(), 1e-9) << ": At alpha " << alpha;
-    EXPECT_LT((dpoint - expected_dpoint).norm(), 1e-9) << ": At alpha "
-                                                       << alpha;
-    EXPECT_LT((ddpoint - expected_ddpoint).norm(), 1e-9) << ": At alpha "
-                                                         << alpha;
-    EXPECT_LT((dddpoint - expected_dddpoint).norm(), 1e-9) << ": At alpha "
-                                                           << alpha;
+    EXPECT_LT((dpoint - expected_dpoint).norm(), 1e-9)
+        << ": At alpha " << alpha;
+    EXPECT_LT((ddpoint - expected_ddpoint).norm(), 1e-9)
+        << ": At alpha " << alpha;
+    EXPECT_LT((dddpoint - expected_dddpoint).norm(), 1e-9)
+        << ": At alpha " << alpha;
   }
 
   // Conditionally plot the functions and their integrals to aid debugging.

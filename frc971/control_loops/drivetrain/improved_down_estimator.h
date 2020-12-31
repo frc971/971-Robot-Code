@@ -255,8 +255,7 @@ class DrivetrainUkf : public QuaternionUkf {
     // determine that calibration routines would be unnecessary).
     Eigen::Quaternion<double> Xquat(X);
     Eigen::Matrix<double, 3, 1> gprime =
-        Xquat.conjugate() * Eigen::Matrix<double, 3, 1>(0.0, 0.0, 1.0) *
-        1.0;
+        Xquat.conjugate() * Eigen::Matrix<double, 3, 1>(0.0, 0.0, 1.0) * 1.0;
     return gprime;
   }
 

@@ -76,8 +76,7 @@ class HybridEkfTest : public ::testing::Test {
       EXPECT_FLOAT_EQ(Xdot_ekf(StateIdx::kLeftVelocity), expected_accel(0));
       EXPECT_FLOAT_EQ(Xdot_ekf(StateIdx::kRightVelocity), expected_accel(1));
       EXPECT_EQ(Xdot_ekf(StateIdx::kLateralVelocity), 0.0);
-      EXPECT_EQ(
-          Xdot_ekf(StateIdx::kLongitudinalVelocityOffset), 0.0);
+      EXPECT_EQ(Xdot_ekf(StateIdx::kLongitudinalVelocityOffset), 0.0);
     } else {
       const double lng_accel = U(InputIdx::kLongitudinalAccel) +
                                lat_vel * yaw_rate + ekf_.VelocityAccel(lng_vel);
@@ -121,7 +120,6 @@ class HybridEkfTest : public ::testing::Test {
   std::normal_distribution<> normal_;
 };
 
-
 // Tests that if we provide a bunch of observations of the position
 // with zero change in time, the state should approach the estimation.
 struct DiffEqInputs {
@@ -152,7 +150,7 @@ TEST_P(HybridEkfDiffEqTest, CheckDynamics) {
     const State Xdot_plus = DiffEq(GetParam().X + perturbation, GetParam().U,
                                    GetParam().ignore_accel);
     const State Xdot_minus = DiffEq(GetParam().X - perturbation, GetParam().U,
-                                   GetParam().ignore_accel);
+                                    GetParam().ignore_accel);
     const State numerical_dXdot_dX = (Xdot_plus - Xdot_minus) / (2.0 * kEps);
     const State A_based_dXdot_dX = A * perturbation / kEps;
     EXPECT_LT((A_based_dXdot_dX - numerical_dXdot_dX).norm(), 1e-8)

@@ -108,9 +108,10 @@ TEST(DownEstimatorTest, UkfConstantRotation) {
   EXPECT_TRUE(QuaternionEqual(expected, dtukf.X_hat(), 0.01))
       << "Expected: " << expected.coeffs()
       << " Got: " << dtukf.X_hat().coeffs();
-  EXPECT_NEAR(0.0,
-            (Eigen::Vector3d(0.0, 1.0, 0.0) - dtukf.H(dtukf.X_hat().coeffs()))
-                .norm(), 1e-10);
+  EXPECT_NEAR(
+      0.0,
+      (Eigen::Vector3d(0.0, 1.0, 0.0) - dtukf.H(dtukf.X_hat().coeffs())).norm(),
+      1e-10);
 }
 
 // Tests that the euler angles in the status message are correct.
@@ -166,7 +167,6 @@ TEST(DownEstimatorTest, UkfEulerStatus) {
       << " Got: " << dtukf.X_hat().coeffs();
 }
 
-
 // Tests that if the gyro indicates no movement but that the accelerometer shows
 // that we are slightly rotated, that we eventually adjust our estimate to be
 // correct.
@@ -193,9 +193,9 @@ TEST(DownEstimatorTest, UkfAccelCorrectsBias) {
       << " Got: " << dtukf.X_hat().coeffs();
 }
 
-// Tests that if the accelerometer is reading values with a magnitude that isn't ~1g,
-// that we are slightly rotated, that we eventually adjust our estimate to be
-// correct.
+// Tests that if the accelerometer is reading values with a magnitude that isn't
+// ~1g, that we are slightly rotated, that we eventually adjust our estimate to
+// be correct.
 TEST(DownEstimatorTest, UkfIgnoreBadAccel) {
   drivetrain::DrivetrainUkf dtukf(
       drivetrain::testing::GetTestDrivetrainConfig());

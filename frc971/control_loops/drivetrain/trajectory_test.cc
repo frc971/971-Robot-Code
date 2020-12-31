@@ -67,16 +67,14 @@ class ParameterizedSplineTest
   ::std::unique_ptr<Trajectory> trajectory_;
   ::std::vector<::Eigen::Matrix<double, 3, 1>> length_plan_xva_;
 
-  ParameterizedSplineTest()
-      : dt_config_(GetTestDrivetrainConfig()) {}
+  ParameterizedSplineTest() : dt_config_(GetTestDrivetrainConfig()) {}
 
   void SetUp() {
     distance_spline_ = ::std::unique_ptr<DistanceSpline>(
         new DistanceSpline(Spline(GetParam().control_points)));
     // Run lots of steps to make the feedforwards terms more accurate.
-    trajectory_ = ::std::unique_ptr<Trajectory>(
-        new Trajectory(distance_spline_.get(), dt_config_,
-                       GetParam().velocity_limit));
+    trajectory_ = ::std::unique_ptr<Trajectory>(new Trajectory(
+        distance_spline_.get(), dt_config_, GetParam().velocity_limit));
     trajectory_->set_lateral_acceleration(GetParam().lateral_acceleration);
     trajectory_->set_longitudinal_acceleration(
         GetParam().longitudinal_acceleration);
@@ -85,8 +83,7 @@ class ParameterizedSplineTest
     GetParam().trajectory_modification_fn(trajectory_.get());
 
     initial_plan_ = trajectory_->plan();
-    trajectory_->VoltageFeasibilityPass(
-        Trajectory::VoltageLimit::kAggressive);
+    trajectory_->VoltageFeasibilityPass(Trajectory::VoltageLimit::kAggressive);
     aggressive_voltage_plan_ = trajectory_->plan();
     trajectory_->VoltageFeasibilityPass(
         Trajectory::VoltageLimit::kConservative);
@@ -136,7 +133,8 @@ class ParameterizedSplineTest
       matplotlibcpp::plot(distances, backward_plan_, {{"label", "backward"}});
       matplotlibcpp::plot(distances, forward_plan_, {{"label", "forward"}});
       matplotlibcpp::plot(distances, curvature_plan_, {{"label", "lateral"}});
-      matplotlibcpp::plot(distances, aggressive_voltage_plan_, {{"label", "aggressive voltage"}});
+      matplotlibcpp::plot(distances, aggressive_voltage_plan_,
+                          {{"label", "aggressive voltage"}});
       matplotlibcpp::plot(distances, voltage_plan_, {{"label", "voltage"}});
       matplotlibcpp::plot(distances, initial_plan_, {{"label", "initial"}});
       matplotlibcpp::legend();
@@ -187,7 +185,6 @@ class ParameterizedSplineTest
   ::std::vector<double> length_plan_a_;
   ::std::vector<double> length_plan_vl_;
   ::std::vector<double> length_plan_vr_;
-
 };
 
 // Tests that the VoltageVelocityLimit function produces correct results by
@@ -206,7 +203,7 @@ TEST_P(ParameterizedSplineTest, VoltageFeasibilityCheck) {
     const ::Eigen::Matrix<double, 2, 2> B =
         trajectory_->velocity_drivetrain().plant().coefficients().B_continuous;
     const double conservative_limit = trajectory_->VoltageVelocityLimit(
-      distance, Trajectory::VoltageLimit::kConservative, &U);
+        distance, Trajectory::VoltageLimit::kConservative, &U);
     ASSERT_LT(0.0, conservative_limit)
         << "Voltage limit should be strictly positive.";
     const bool on_straight_line = distance_spline_->DTheta(distance) == 0 &&
@@ -245,8 +242,7 @@ TEST_P(ParameterizedSplineTest, VoltageFeasibilityCheck) {
       const double aggressive_limit = trajectory_->VoltageVelocityLimit(
           distance, Trajectory::VoltageLimit::kAggressive, &U);
       if (on_straight_line) {
-        EXPECT_EQ(::std::numeric_limits<double>::infinity(),
-                  aggressive_limit);
+        EXPECT_EQ(::std::numeric_limits<double>::infinity(), aggressive_limit);
         continue;
       }
       EXPECT_TRUE((GetParam().voltage_limit == U.array().abs()).all()) << U;
@@ -264,14 +260,12 @@ TEST_P(ParameterizedSplineTest, VoltageFeasibilityCheck) {
         const ::Eigen::Matrix<double, 2, 1> perturbed_wheel_accels =
             K2 * perturbed_accel + K1 * aggressive_limit * aggressive_limit;
         const ::Eigen::Matrix<double, 2, 1> perturbed_voltages =
-            B.inverse() *
-            (perturbed_wheel_accels - A * K2 * aggressive_limit);
+            B.inverse() * (perturbed_wheel_accels - A * K2 * aggressive_limit);
         EXPECT_GT(perturbed_voltages.lpNorm<::Eigen::Infinity>(),
                   GetParam().voltage_limit)
             << "We were able to perturb the voltage!!.";
       }
     }
-
   }
 }
 
@@ -446,7 +440,7 @@ TEST_P(ParameterizedSplineTest, PathRelativeMathTest) {
     Eigen::Matrix<double, 5, 5> A_continuous;
     Eigen::Matrix<double, 5, 2> B_continuous;
     trajectory_->PathRelativeContinuousSystem(distance, &A_continuous,
-                                             &B_continuous);
+                                              &B_continuous);
     Eigen::Matrix<double, 5, 5> A_discrete;
     Eigen::Matrix<double, 5, 2> B_discrete;
     controls::C2D(A_continuous, B_continuous, dt_config_.dt, &A_discrete,
@@ -541,7 +535,8 @@ void LimitMiddleOfPathTrajectoryModificationFunction(Trajectory *trajectory) {
   trajectory->LimitVelocity(1.0, 2.0, 0.5);
 }
 
-void ShortLimitMiddleOfPathTrajectoryModificationFunction(Trajectory *trajectory) {
+void ShortLimitMiddleOfPathTrajectoryModificationFunction(
+    Trajectory *trajectory) {
   trajectory->LimitVelocity(1.5, 1.5, 0.5);
 }
 

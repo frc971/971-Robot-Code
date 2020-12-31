@@ -45,8 +45,8 @@ void QuaternionUkf::Predict(const Eigen::Matrix<double, 3, 1> &U,
 
 // States are X_hat_bar (position estimate) and P (Covariance)
 void QuaternionUkf::DoPredict(const Eigen::Matrix<double, 3, 1> &U,
-                            const Eigen::Matrix<double, 3, 1> &measurement,
-                            const aos::monotonic_clock::duration dt) {
+                              const Eigen::Matrix<double, 3, 1> &measurement,
+                              const aos::monotonic_clock::duration dt) {
   // Compute the sigma points.
   // Our system is pretty linear. The traditional way of dealing with process
   // noise is to augment your state vector with the mean of the process noise,
@@ -155,8 +155,7 @@ void QuaternionUkf::DoPredict(const Eigen::Matrix<double, 3, 1> &U,
   }
 
   // Compute the kalman gain.
-  const Eigen::Matrix<double, 3, kNumMeasurements> K =
-      P_xz * P_vv.inverse();
+  const Eigen::Matrix<double, 3, kNumMeasurements> K = P_xz * P_vv.inverse();
 
   // Update X_hat and the covariance P
   X_hat_ = X_hat_ * Eigen::Quaternion<double>(
@@ -288,8 +287,7 @@ flatbuffers::Offset<DownEstimatorState> DrivetrainUkf::PopulateStatus(
     const Eigen::Vector3d robot_y_in_global_frame =
         X_hat() * Eigen::Vector3d::UnitY();
     const double xy_norm = robot_y_in_global_frame.block<2, 1>(0, 0).norm();
-    builder.add_lateral_pitch(
-        std::atan2(robot_y_in_global_frame.z(), xy_norm));
+    builder.add_lateral_pitch(std::atan2(robot_y_in_global_frame.z(), xy_norm));
   }
 
   builder.add_position_x(pos_vel()(0, 0));

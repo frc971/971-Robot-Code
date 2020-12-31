@@ -25,12 +25,12 @@ enum class LoopType : int32_t {
 };
 
 enum class GyroType : int32_t {
-  SPARTAN_GYRO = 0, // Use the gyro on the spartan board.
-  IMU_X_GYRO = 1,   // Use the x-axis of the gyro on the IMU.
-  IMU_Y_GYRO = 2,   // Use the y-axis of the gyro on the IMU.
-  IMU_Z_GYRO = 3,   // Use the z-axis of the gyro on the IMU.
-  FLIPPED_SPARTAN_GYRO = 4, // Use the gyro on the spartan board.
-  FLIPPED_IMU_Z_GYRO = 5,   // Use the flipped z-axis of the gyro on the IMU.
+  SPARTAN_GYRO = 0,          // Use the gyro on the spartan board.
+  IMU_X_GYRO = 1,            // Use the x-axis of the gyro on the IMU.
+  IMU_Y_GYRO = 2,            // Use the y-axis of the gyro on the IMU.
+  IMU_Z_GYRO = 3,            // Use the z-axis of the gyro on the IMU.
+  FLIPPED_SPARTAN_GYRO = 4,  // Use the gyro on the spartan board.
+  FLIPPED_IMU_Z_GYRO = 5,    // Use the flipped z-axis of the gyro on the IMU.
 };
 
 enum class IMUType : int32_t {
@@ -128,7 +128,8 @@ struct DrivetrainConfig {
 
   Eigen::Matrix<Scalar, 2, 2> Tlr_to_la() const {
     return (::Eigen::Matrix<Scalar, 2, 2>() << 0.5, 0.5,
-            -1.0 / (2 * robot_radius), 1.0 / (2 * robot_radius)).finished();
+            -1.0 / (2 * robot_radius), 1.0 / (2 * robot_radius))
+        .finished();
   }
 
   Eigen::Matrix<Scalar, 2, 2> Tla_to_lr() const {
@@ -140,8 +141,7 @@ struct DrivetrainConfig {
   Eigen::Matrix<Scalar, 4, 1> AngularLinearToLeftRight(
       const Eigen::Matrix<Scalar, 2, 1> &linear,
       const Eigen::Matrix<Scalar, 2, 1> &angular) const {
-    Eigen::Matrix<Scalar, 2, 1> scaled_angle =
-        angular * this->robot_radius;
+    Eigen::Matrix<Scalar, 2, 1> scaled_angle = angular * this->robot_radius;
     Eigen::Matrix<Scalar, 4, 1> state;
     state(0, 0) = linear(0, 0) - scaled_angle(0, 0);
     state(1, 0) = linear(1, 0) - scaled_angle(1, 0);

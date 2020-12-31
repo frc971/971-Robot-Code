@@ -68,7 +68,7 @@ class DrivetrainSimulation {
   Eigen::Matrix<double, 5, 1> *mutable_state() { return &state_; }
 
   ::Eigen::Matrix<double, 2, 1> GetPosition() const {
-    return state_.block<2,1>(0,0);
+    return state_.block<2, 1>(0, 0);
   }
 
   void MaybePlot();

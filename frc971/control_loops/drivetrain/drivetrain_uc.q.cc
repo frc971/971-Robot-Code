@@ -38,10 +38,10 @@ void DrivetrainQueue_Goal::Zero() {
   left_goal = 0.0f;
   right_goal = 0.0f;
   max_ss_voltage = 0.0f;
-  //linear.max_velocity = 0.0f;
-  //linear.max_acceleration = 0.0f;
-  //angular.max_velocity = 0.0f;
-  //angular.max_acceleration = 0.0f;
+  // linear.max_velocity = 0.0f;
+  // linear.max_acceleration = 0.0f;
+  // angular.max_velocity = 0.0f;
+  // angular.max_acceleration = 0.0f;
 }
 
 DrivetrainQueue_Goal::DrivetrainQueue_Goal() { Zero(); }

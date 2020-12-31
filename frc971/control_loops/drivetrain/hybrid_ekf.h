@@ -231,14 +231,15 @@ class HybridEkf {
   // matrix for linear cases?
   void Correct(
       const Output &z, const Input *U,
-      std::function<
-          void(const State &, const StateSquare &,
-               std::function<Output(const State &, const Input &)> *,
-               std::function<Eigen::Matrix<Scalar, kNOutputs, kNStates>(
-                   const State &)> *)> make_h,
+      std::function<void(const State &, const StateSquare &,
+                         std::function<Output(const State &, const Input &)> *,
+                         std::function<Eigen::Matrix<
+                             Scalar, kNOutputs, kNStates>(const State &)> *)>
+          make_h,
       std::function<Output(const State &, const Input &)> h,
       std::function<Eigen::Matrix<Scalar, kNOutputs, kNStates>(const State &)>
-          dhdx, const Eigen::Matrix<Scalar, kNOutputs, kNOutputs> &R,
+          dhdx,
+      const Eigen::Matrix<Scalar, kNOutputs, kNOutputs> &R,
       aos::monotonic_clock::time_point t);
 
   // A utility function for specifically updating with encoder and gyro
@@ -289,12 +290,11 @@ class HybridEkf {
     Eigen::Matrix<Scalar, kNOutputs, kNOutputs> R;
     R.setZero();
     R.diagonal() << encoder_noise_, encoder_noise_, gyro_noise_;
-    Correct(
-        z, &U, {},
-        [this](const State &X, const Input &) {
-          return H_encoders_and_gyro_ * X;
-        },
-        [this](const State &) { return H_encoders_and_gyro_; }, R, t);
+    Correct(z, &U, {},
+            [this](const State &X, const Input &) {
+              return H_encoders_and_gyro_ * X;
+            },
+            [this](const State &) { return H_encoders_and_gyro_; }, R, t);
   }
 
   // Sundry accessor:
@@ -359,7 +359,8 @@ class HybridEkf {
     std::function<void(const State &, const StateSquare &,
                        std::function<Output(const State &, const Input &)> *,
                        std::function<Eigen::Matrix<Scalar, kNOutputs, kNStates>(
-                           const State &)> *)> make_h;
+                           const State &)> *)>
+        make_h;
     // A function to calculate the expected output at a given state/input.
     // TODO(james): For encoders/gyro, it is linear and the function call may
     // be expensive. Potential source of optimization.
@@ -434,8 +435,7 @@ class HybridEkf {
     const Scalar diameter = 2.0 * dt_config_.robot_radius;
     const Scalar yaw_rate = CalcYawRate(X);
     // X and Y derivatives
-    A_continuous(kX, kTheta) =
-        -stheta * lng_vel - ctheta * lat_vel;
+    A_continuous(kX, kTheta) = -stheta * lng_vel - ctheta * lat_vel;
     A_continuous(kX, kLeftVelocity) = ctheta / 2.0;
     A_continuous(kX, kRightVelocity) = ctheta / 2.0;
     A_continuous(kX, kLateralVelocity) = -stheta;
@@ -494,8 +494,7 @@ class HybridEkf {
     const Scalar expected_lat_accel = lng_vel * yaw_rate;
     const Scalar expected_lng_accel =
         CalcLongitudinalVelocity(Xdot) - yaw_rate * lat_vel;
-    const Scalar lng_accel_offset =
-        U(kLongitudinalAccel) - expected_lng_accel;
+    const Scalar lng_accel_offset = U(kLongitudinalAccel) - expected_lng_accel;
     constexpr double kAccelWeight = 1.0;
     if (!ignore_accel) {
       Xdot(kLeftVelocity) += kAccelWeight * lng_accel_offset;
@@ -590,7 +589,6 @@ class HybridEkf {
   aos::PriorityQueue<Observation, kSaveSamples, std::less<Observation>>
       observations_;
 
-
   friend class testing::HybridEkfTest;
   friend class y2019::control_loops::testing::ParameterizedLocalizerTest;
 };  // class HybridEkf
@@ -601,10 +599,12 @@ void HybridEkf<Scalar>::Correct(
     std::function<void(const State &, const StateSquare &,
                        std::function<Output(const State &, const Input &)> *,
                        std::function<Eigen::Matrix<Scalar, kNOutputs, kNStates>(
-                           const State &)> *)> make_h,
+                           const State &)> *)>
+        make_h,
     std::function<Output(const State &, const Input &)> h,
     std::function<Eigen::Matrix<Scalar, kNOutputs, kNStates>(const State &)>
-        dhdx, const Eigen::Matrix<Scalar, kNOutputs, kNOutputs> &R,
+        dhdx,
+    const Eigen::Matrix<Scalar, kNOutputs, kNOutputs> &R,
     aos::monotonic_clock::time_point t) {
   CHECK(!observations_.empty());
   if (!observations_.full() && t < observations_.begin()->t) {
@@ -752,9 +752,9 @@ void HybridEkf<Scalar>::InitializeMatrices() {
   // noise on these numbers is particularly high, then we can end up with weird
   // dynamics where a camera update both shifts our X/Y position and adjusts our
   // velocity estimates substantially, causing the camera updates to create
-  // "momentum" and if we don't trust the encoders enough, then we have no way of
-  // determining that the velocity updates are bogus. This also interacts with
-  // kVelocityOffsetTimeConstant.
+  // "momentum" and if we don't trust the encoders enough, then we have no way
+  // of determining that the velocity updates are bogus. This also interacts
+  // with kVelocityOffsetTimeConstant.
   Q_continuous_(kLongitudinalVelocityOffset, kLongitudinalVelocityOffset) =
       std::pow(1.1, 2.0);
   Q_continuous_(kLateralVelocity, kLateralVelocity) = std::pow(0.1, 2.0);

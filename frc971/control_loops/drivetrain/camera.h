@@ -150,14 +150,14 @@ class TypedCamera {
     struct Reading {
       // The heading as reported from the camera; zero = straight ahead,
       // positive = target in the left half of the image.
-      Scalar heading;   // radians
+      Scalar heading;  // radians
       // The distance from the camera to the target.
       Scalar distance;  // meters
       // Height of the target from the camera.
-      Scalar height;    // meters
+      Scalar height;  // meters
       // The angle of the target relative to line between the camera and
       // the center of the target.
-      Scalar skew;      // radians
+      Scalar skew;  // radians
     };
     Reading reading;
     Reading noise;
@@ -283,14 +283,12 @@ class TypedCamera {
         apparent_width / noise_parameters_.max_viewable_distance;
     view->noise.distance =
         noise_parameters_.nominal_distance_noise / normalized_width;
-    view->noise.skew =
-        noise_parameters_.nominal_skew_noise / normalized_width;
+    view->noise.skew = noise_parameters_.nominal_skew_noise / normalized_width;
     view->noise.height =
         noise_parameters_.nominal_height_noise / normalized_width;
   }
 
  private:
-
   // If the specified target is visible from the current camera Pose, adds it to
   // the views array.
   void AddTargetIfVisible(
@@ -316,7 +314,7 @@ class TypedCamera {
   // such a logical obstacle (e.g., the cargo ship) may consist of many
   // obstacles in this list to account for all of its sides.
   ::std::array<LineSegment, num_obstacles> obstacles_;
-}; // class TypedCamera
+};  // class TypedCamera
 
 template <int num_targets, int num_obstacles, typename Scalar>
 void TypedCamera<num_targets, num_obstacles, Scalar>::AddTargetIfVisible(

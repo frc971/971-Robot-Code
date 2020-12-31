@@ -1,7 +1,7 @@
 #include "frc971/control_loops/drivetrain/drivetrain.h"
 
-#include <stdio.h>
 #include <sched.h>
+#include <stdio.h>
 #include <cmath>
 #include <memory>
 #include "Eigen/Dense"
@@ -114,7 +114,8 @@ void DrivetrainLoop::RunIteration(
     down_estimator_.Reset();
     // Just reset the localizer to the current state, except for the encoders.
     LocalizerInterface::Ekf::State X_hat = localizer_->Xhat();
-    X_hat(LocalizerInterface::StateIdx::kLeftEncoder) = position->left_encoder();
+    X_hat(LocalizerInterface::StateIdx::kLeftEncoder) =
+        position->left_encoder();
     X_hat(LocalizerInterface::StateIdx::kRightEncoder) =
         position->right_encoder();
     localizer_->Reset(monotonic_now, X_hat);
@@ -264,9 +265,8 @@ void DrivetrainLoop::RunIteration(
       VLOG(1) << "localizer_control "
               << aos::FlatbufferToJson(localizer_control_fetcher_.get());
       localizer_->ResetPosition(
-          monotonic_now,
-          localizer_control_fetcher_->x(), localizer_control_fetcher_->y(),
-          localizer_control_fetcher_->theta(),
+          monotonic_now, localizer_control_fetcher_->x(),
+          localizer_control_fetcher_->y(), localizer_control_fetcher_->theta(),
           localizer_control_fetcher_->theta_uncertainty(),
           !localizer_control_fetcher_->keep_current_theta());
     }

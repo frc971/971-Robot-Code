@@ -183,8 +183,7 @@ void SplineDrivetrain::Update(
   enable_ = enable;
   if (enable && current_trajectory_) {
     ::Eigen::Matrix<double, 2, 1> U_ff = ::Eigen::Matrix<double, 2, 1>::Zero();
-    if (!IsAtEnd() &&
-        current_spline_handle_ == current_spline_idx_) {
+    if (!IsAtEnd() && current_spline_handle_ == current_spline_idx_) {
       has_started_execution_ = true;
       // TODO(alex): It takes about a cycle for the outputs to propagate to the
       // motors. Consider delaying the output by a cycle.
@@ -213,7 +212,7 @@ void SplineDrivetrain::Update(
     state_error(2, 0) = ::aos::math::NormalizeAngle(state_error(2, 0));
     ::Eigen::Matrix<double, 2, 1> U_fb = K * state_error;
 
-    ::Eigen::Matrix<double, 2, 1> xv_state = current_xva_.block<2,1>(0,0);
+    ::Eigen::Matrix<double, 2, 1> xv_state = current_xva_.block<2, 1>(0, 0);
     next_xva_ = current_trajectory_->GetNextXVA(dt_config_.dt, &xv_state);
     next_U_ = U_ff + U_fb - voltage_error;
     uncapped_U_ = next_U_;
@@ -237,9 +236,8 @@ void SplineDrivetrain::SetOutput(
   output->right_voltage = next_U_(1);
 }
 
-
 void SplineDrivetrain::PopulateStatus(
-  drivetrain::Status::Builder *builder) const {
+    drivetrain::Status::Builder *builder) const {
   if (builder && enable_) {
     builder->add_uncapped_left_voltage(uncapped_U_(0));
     builder->add_uncapped_right_voltage(uncapped_U_(1));
