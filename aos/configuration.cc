@@ -962,6 +962,14 @@ int GetNodeIndex(const Configuration *config, std::string_view name) {
   LOG(FATAL) << "Node " << name << " not found in the configuration.";
 }
 
+size_t NodesCount(const Configuration *config) {
+  if (!MultiNode(config)) {
+    return 1u;
+  }
+
+  return config->nodes()->size();
+}
+
 std::vector<const Node *> GetNodes(const Configuration *config) {
   std::vector<const Node *> nodes;
   if (MultiNode(config)) {

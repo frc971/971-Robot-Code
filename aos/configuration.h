@@ -40,7 +40,7 @@ FlatbufferDetachedBuffer<Configuration> MergeWithConfig(
 FlatbufferDetachedBuffer<Configuration> MergeWithConfig(
     const Configuration *config, const Flatbuffer<Configuration> &addition);
 
-// Returns the resolved location for a name, type, and application name. Returns
+// Returns the resolved Channel for a name, type, and application name. Returns
 // nullptr if none is found.
 //
 // If the application name is empty, it is ignored.  Maps are processed in
@@ -111,6 +111,8 @@ std::vector<const Node *> GetNodesWithTag(const Configuration *config,
 // to a node in config, but is not required.
 int GetNodeIndex(const Configuration *config, const Node *node);
 int GetNodeIndex(const Configuration *config, std::string_view name);
+// Returns the number of nodes.
+size_t NodesCount(const Configuration *config);
 
 // Returns true if we are running in a multinode configuration.
 bool MultiNode(const Configuration *config);
