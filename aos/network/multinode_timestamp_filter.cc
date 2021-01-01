@@ -149,6 +149,50 @@ double TimestampProblem::Cost(const double *x, double *grad) {
   return cost;
 }
 
+void TimestampProblem::Debug() {
+  LOG(INFO) << "Solving for node " << solution_node_ << " at "
+            << base_clock_[solution_node_];
+
+  std::vector<std::string> cost;
+  for (size_t i = 0u; i < filters_.size(); ++i) {
+    for (const struct FilterPair &filter : filters_[i]) {
+      cost.emplace_back(filter.filter->DebugCost(base_clock_[i], 0.0,
+                                                 base_clock_[filter.b_index],
+                                                 0.0, i, filter.b_index));
+    }
+  }
+  LOG(INFO) << "Cost: " << absl::StrJoin(cost, " + ");
+
+  std::vector<std::vector<std::string>> gradients(filters_.size());
+  for (size_t i = 0u; i < filters_.size(); ++i) {
+    std::string gradient = "0.0";
+    for (const struct FilterPair &filter : filters_[i]) {
+      if (i != solution_node_) {
+        gradients[NodeToSolutionIndex(i)].emplace_back(
+            filter.filter->DebugDCostDta(base_clock_[i], 0.0,
+                                         base_clock_[filter.b_index], 0.0, i,
+                                         filter.b_index));
+      }
+      if (filter.b_index != solution_node_) {
+        gradients[NodeToSolutionIndex(filter.b_index)].emplace_back(
+            filter.filter->DebugDCostDtb(base_clock_[i], 0.0,
+                                         base_clock_[filter.b_index], 0.0, i,
+                                         filter.b_index));
+      }
+    }
+  }
+
+  for (size_t i = 0u; i < filters_.size(); ++i) {
+    LOG(INFO) << "Grad[" << i << "] = "
+              << (gradients[i].empty() ? std::string("0.0")
+                                       : absl::StrJoin(gradients[i], " + "));
+  }
+
+  for (size_t i = 0u; i < filters_.size(); ++i) {
+    LOG(INFO) << "base_clock[" << i << "] = " << base_clock_[i];
+  }
+}
+
 void MultiNodeNoncausalOffsetEstimator::Start(
     SimulatedEventLoopFactory *factory) {
   for (std::pair<const std::tuple<const Node *, const Node *>,

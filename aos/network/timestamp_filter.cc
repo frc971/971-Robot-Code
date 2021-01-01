@@ -5,6 +5,7 @@
 #include <tuple>
 
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
 #include "aos/configuration.h"
 #include "aos/time/time.h"
 #include "third_party/gmp/gmpxx.h"
@@ -805,6 +806,49 @@ double NoncausalTimestampFilter::DCostDta(
          (1.0 + m);
 }
 
+std::string NoncausalTimestampFilter::DebugDCostDta(
+    aos::monotonic_clock::time_point ta_base, double ta,
+    aos::monotonic_clock::time_point tb_base, double tb,
+    size_t node_a, size_t node_b) const {
+  if (timestamps_size() == 1u) {
+    return absl::StrFormat("-2. * (t%d - t%d - %d)", node_b, node_a,
+                              std::get<1>(timestamp(0)).count());
+  }
+
+  NormalizeTimestamps(&ta_base, &ta);
+  NormalizeTimestamps(&tb_base, &tb);
+
+  std::pair<std::tuple<monotonic_clock::time_point, chrono::nanoseconds>,
+            std::tuple<monotonic_clock::time_point, chrono::nanoseconds>>
+      points = FindTimestamps(ta_base, ta);
+
+  // As a reminder, our cost function is essentially:
+  //   ((tb - ta - (ma ta + ba))^2
+  // ie
+  //   ((tb - (1 + ma) ta - ba)^2
+  //
+  // d cost/dta =>
+  //   2 * (tb - (1 + ma) ta - ba) * (-(1 + ma))
+
+  const int64_t rise =
+      (std::get<1>(points.second) - std::get<1>(points.first)).count();
+  const int64_t run =
+      (std::get<0>(points.second) - std::get<0>(points.first)).count();
+
+  if (rise == 0) {
+    return absl::StrFormat("-2. * (t%d - t%d %c %d.)", node_b, node_a,
+                           std::get<1>(points.first).count() >= 0 ? '-' : '+',
+                           std::abs(std::get<1>(points.first).count()));
+  } else {
+    return absl::StrFormat(
+        "-2. * (t%d - t%d - (t%d - %d.) * %d. / %d. - %d.) * (1 + %d. / "
+        "%d.)",
+        node_b, node_a, node_a,
+        std::get<0>(points.first).time_since_epoch().count(), rise, run,
+        std::get<1>(points.first).count(), rise, run);
+  }
+}
+
 double NoncausalTimestampFilter::DCostDtb(
     aos::monotonic_clock::time_point ta_base, double ta,
     aos::monotonic_clock::time_point tb_base, double tb) const {
@@ -819,6 +863,88 @@ double NoncausalTimestampFilter::DCostDtb(
   //
   // d cost/dtb => 2 * OffsetError(ta, tb)
   return 2.0 * OffsetError(ta_base, ta, tb_base, tb);
+}
+
+std::string NoncausalTimestampFilter::DebugDCostDtb(
+    aos::monotonic_clock::time_point ta_base, double ta,
+    aos::monotonic_clock::time_point tb_base, double tb, size_t node_a,
+    size_t node_b) const {
+  if (timestamps_size() == 1u) {
+    return absl::StrFormat("2. * (t%d - t%d - %d)", node_b, node_a,
+                           std::get<1>(timestamp(0)).count());
+  }
+
+  NormalizeTimestamps(&ta_base, &ta);
+  NormalizeTimestamps(&tb_base, &tb);
+
+  std::pair<std::tuple<monotonic_clock::time_point, chrono::nanoseconds>,
+            std::tuple<monotonic_clock::time_point, chrono::nanoseconds>>
+      points = FindTimestamps(ta_base, ta);
+
+  // As a reminder, our cost function is essentially:
+  //   ((tb - ta - (ma ta + ba))^2
+  // ie
+  //   ((tb - (1 + ma) ta - ba)^2
+  //
+  // d cost/dta =>
+  //   2 * ((tb - (1 + ma) ta - ba)
+
+  const int64_t rise =
+      (std::get<1>(points.second) - std::get<1>(points.first)).count();
+  const int64_t run =
+      (std::get<0>(points.second) - std::get<0>(points.first)).count();
+
+  if (rise == 0) {
+    return absl::StrFormat("2. * (t%d - t%d %c %d.)", node_b, node_a,
+                           std::get<1>(points.first).count() < 0 ? '+' : '-',
+                           std::abs(std::get<1>(points.first).count()));
+  }
+
+  return absl::StrFormat("2. * (t%d - t%d - (t%d - %d.) * %d. / %d. - %d.)",
+                         node_b, node_a, node_a,
+                         std::get<0>(points.first).time_since_epoch().count(),
+                         rise, run, std::get<1>(points.first).count());
+}
+
+std::string NoncausalTimestampFilter::DebugCost(
+    aos::monotonic_clock::time_point ta_base, double ta,
+    aos::monotonic_clock::time_point tb_base, double tb, size_t node_a,
+    size_t node_b) const {
+  if (timestamps_size() == 1u) {
+    return absl::StrFormat("(t%d - t%d - %d) ** 2.", node_b, node_a,
+                           std::get<1>(timestamp(0)).count());
+  }
+
+  NormalizeTimestamps(&ta_base, &ta);
+  NormalizeTimestamps(&tb_base, &tb);
+
+  std::pair<std::tuple<monotonic_clock::time_point, chrono::nanoseconds>,
+            std::tuple<monotonic_clock::time_point, chrono::nanoseconds>>
+      points = FindTimestamps(ta_base, ta);
+
+  // As a reminder, our cost function is essentially:
+  //   ((tb - ta - (ma ta + ba))^2
+  // ie
+  //   ((tb - (1 + ma) ta - ba)^2
+  //
+  // d cost/dta =>
+  //   2 * ((tb - (1 + ma) ta - ba)
+
+  const int64_t rise =
+      (std::get<1>(points.second) - std::get<1>(points.first)).count();
+  const int64_t run =
+      (std::get<0>(points.second) - std::get<0>(points.first)).count();
+
+  if (rise == 0) {
+    return absl::StrFormat("(t%d - t%d %c %d.) ** 2.", node_b, node_a,
+                           std::get<1>(points.first).count() < 0 ? '+' : '-',
+                           std::abs(std::get<1>(points.first).count()));
+  } else {
+    return absl::StrFormat("(t%d - t%d - (t%d - %d.) * %d. / %d. - %d.) ** 2.",
+                           node_b, node_a, node_a,
+                           std::get<0>(points.first).time_since_epoch().count(),
+                           rise, run, std::get<1>(points.first).count());
+  }
 }
 
 bool NoncausalTimestampFilter::Sample(
