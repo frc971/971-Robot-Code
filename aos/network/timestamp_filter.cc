@@ -4,6 +4,7 @@
 #include <iomanip>
 #include <tuple>
 
+#include "absl/numeric/int128.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "aos/configuration.h"
@@ -619,31 +620,24 @@ chrono::nanoseconds NoncausalTimestampFilter::InterpolateOffset(
   // Given 2 points defining a line and the time along that line, interpolate.
   //
   // ta may be massive, but the points will be close, so compute everything
-  // relative to the points.
+  // relative to the points.  2 64 bit numbers multiplied together could result
+  // in a 128 bit number, so let's use one to be safe.  Multiply before divide
+  // and use 128 bit arithmetic to make this perfectly precise in integer math.
   //
-  // There are 2 formulations:
   //  oa = p0.o + (ta - p0.t) * (p1.o - p0.o) / (p1.t - p0.t)
-  // or
-  //  oa = p1.o + (p1.t - ta) * (p0.o - p1.o) / (p1.t - p0.t)
   //
-  // These have different properties with respect to numerical precision as you
-  // get close to p0 and p1. Switch over in the middle of the line segment.
+  // Add (or subtract, integer division rounds towards 0...) 0.5 ((dt / 2) / dt)
+  // to the numerator to round to the nearest number rather than round down.
   const chrono::nanoseconds time_in = ta - std::get<0>(p0);
-  const chrono::nanoseconds time_left = std::get<0>(p1) - ta;
   const chrono::nanoseconds dt = std::get<0>(p1) - std::get<0>(p0);
-  if (time_in < time_left) {
-    return std::get<1>(p0) +
-           chrono::nanoseconds(static_cast<int64_t>(
-               std::round(static_cast<double>(time_in.count()) *
-                          (std::get<1>(p1) - std::get<1>(p0)).count() /
-                          static_cast<double>(dt.count()))));
-  } else {
-    return std::get<1>(p1) +
-           chrono::nanoseconds(static_cast<int64_t>(
-               std::round(static_cast<double>(time_left.count()) *
-                          (std::get<1>(p0) - std::get<1>(p1)).count() /
-                          static_cast<double>(dt.count()))));
-  }
+
+  absl::int128 numerator =
+      absl::int128(time_in.count()) *
+      absl::int128((std::get<1>(p1) - std::get<1>(p0)).count());
+  numerator += numerator > 0 ? absl::int128(dt.count() / 2)
+                             : -absl::int128(dt.count() / 2);
+  return std::get<1>(p0) + chrono::nanoseconds(static_cast<int64_t>(
+                               numerator / absl::int128(dt.count())));
 }
 
 chrono::nanoseconds NoncausalTimestampFilter::InterpolateOffset(
@@ -655,7 +649,7 @@ chrono::nanoseconds NoncausalTimestampFilter::InterpolateOffset(
   // precision problems.
   //
   // One way would be to carefully compute the integer portion, and then compute
-  // the double portion in such a way that the two are guarenteed to add up
+  // the double portion in such a way that the two are guaranteed to add up
   // correctly.
   //
   // The simpler way is to simply just use the offset from p0 as the integer
@@ -664,6 +658,7 @@ chrono::nanoseconds NoncausalTimestampFilter::InterpolateOffset(
   //
   // oa = p0.o + (ta - p0.t) * (p1.o - p0.o) / (p1.t - p0.t)
   //      ^^^^
+  // TODO(austin): Use 128 bit math and the remainder to be more accurate here.
   return std::get<1>(p0);
 }
 
@@ -678,6 +673,7 @@ double NoncausalTimestampFilter::InterpolateOffsetRemainder(
   //
   // oa = p0.o + (ta - p0.t) * (p1.o - p0.o) / (p1.t - p0.t)
   //             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  // TODO(austin): Use 128 bit math and the remainder to be more accurate here.
   return static_cast<double>(ta + time_in.count()) /
          static_cast<double>(dt.count()) *
          (std::get<1>(p1) - std::get<1>(p0)).count();
@@ -766,7 +762,7 @@ double NoncausalTimestampFilter::DCostDta(
   //
   // We don't actually want to compute tb - (1 + ma) ta for numerical precision
   // reasons.  The important digits are small compared to the offset.  Given our
-  // original cost above, this is equivilent to:
+  // original cost above, this is equivalent to:
   //   2 * (tb - ta - Offset(ta)) * (-(1 + ma))
   //
   // We can compute this a lot more accurately.
