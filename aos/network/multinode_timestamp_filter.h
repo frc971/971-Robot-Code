@@ -72,6 +72,9 @@ class TimestampProblem {
                                        : x[NodeToSolutionIndex(time_index)];
   }
 
+  // LOGs a representation of the problem.
+  void Debug();
+
  private:
   // Static trampoline for nlopt.  n is the number of constraints, x is input
   // solution to solve for, grad is the gradient to fill out (if not nullptr),
