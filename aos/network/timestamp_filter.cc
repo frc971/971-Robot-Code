@@ -969,6 +969,10 @@ bool NoncausalTimestampFilter::Sample(
     aos::monotonic_clock::duration dt = monotonic_now - std::get<0>(back);
     aos::monotonic_clock::duration doffset = sample_ns - std::get<1>(back);
 
+    if (dt == chrono::nanoseconds(0) && doffset == chrono::nanoseconds(0)) {
+      return false;
+    }
+
     // If the point is higher than the max negative slope, the slope will either
     // adhere to our constraint, or will be too positive.  If it is too
     // positive, we need to back propagate and remove offending points which

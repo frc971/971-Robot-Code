@@ -398,6 +398,23 @@ TEST(NoncausalTimestampFilterTest, PointRemoval) {
   ASSERT_EQ(filter.Timestamps().size(), 2u);
 }
 
+// Tests that inserting duplicate points causes the duplicates to get ignored.
+TEST(NoncausalTimestampFilterTest, DuplicatePoints) {
+  const monotonic_clock::time_point ta(chrono::milliseconds(0));
+  const chrono::nanoseconds oa(chrono::microseconds(1));
+  const monotonic_clock::time_point tb(chrono::milliseconds(1));
+  const chrono::nanoseconds ob(chrono::microseconds(2));
+
+  NoncausalTimestampFilter filter;
+
+  filter.Sample(ta, oa);
+  filter.Sample(tb, ob);
+  EXPECT_EQ(filter.Timestamps().size(), 2u);
+
+  filter.Sample(tb, ob);
+  EXPECT_EQ(filter.Timestamps().size(), 2u);
+}
+
 // Tests that all variants of InterpolateOffset do reasonable things.
 TEST(NoncausalTimestampFilterTest, InterpolateOffset) {
   const monotonic_clock::time_point e = monotonic_clock::epoch();
