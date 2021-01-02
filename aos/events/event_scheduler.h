@@ -43,6 +43,23 @@ class distributed_clock {
 std::ostream &operator<<(std::ostream &stream,
                          const aos::distributed_clock::time_point &now);
 
+// Interface to handle converting time on a node to and from the distributed
+// clock accurately.
+class TimeConverter {
+ public:
+  virtual ~TimeConverter() {}
+
+  // Converts a time to the distributed clock for scheduling and cross-node
+  // time measurement.
+  virtual distributed_clock::time_point ToDistributedClock(
+      size_t node_index, monotonic_clock::time_point time) = 0;
+
+  // Takes the distributed time and converts it to the monotonic clock for this
+  // node.
+  virtual monotonic_clock::time_point FromDistributedClock(
+      size_t node_index, distributed_clock::time_point time) = 0;
+};
+
 class EventSchedulerScheduler;
 
 class EventScheduler {

@@ -1,6 +1,7 @@
 #ifndef AOS_NETWORK_MULTINODE_TIMESTAMP_FILTER_H_
 #define AOS_NETWORK_MULTINODE_TIMESTAMP_FILTER_H_
 
+#include <functional>
 #include <map>
 #include <string_view>
 
@@ -115,6 +116,61 @@ class TimestampProblem {
 
   // List of filters indexed by node.
   std::vector<std::vector<FilterPair>> filters_;
+};
+
+// Helpers to convert times between the monotonic and distributed clocks for
+// multiple nodes using a list of points and interpolation.
+class InterpolatedTimeConverter : public TimeConverter {
+ public:
+  InterpolatedTimeConverter(size_t node_count) : node_count_(node_count) {}
+
+  virtual ~InterpolatedTimeConverter() {}
+
+  // Converts a time to the distributed clock for scheduling and cross-node
+  // time measurement.
+  distributed_clock::time_point ToDistributedClock(
+      size_t node_index, monotonic_clock::time_point time) override;
+
+  // Takes the distributed time and converts it to the monotonic clock for this
+  // node.
+  monotonic_clock::time_point FromDistributedClock(
+      size_t node_index, distributed_clock::time_point time) override;
+
+ private:
+  // Returns the next timestamp, or nullopt if there isn't one. It is assumed
+  // that if there isn't one, there never will be one.
+  // A timestamp is a sample of the distributed clock and a corresponding point
+  // on every monotonic clock for all the nodes in the factory that this will be
+  // hooked up to.
+  virtual std::optional<std::tuple<distributed_clock::time_point,
+                                   std::vector<monotonic_clock::time_point>>>
+  NextTimestamp() = 0;
+
+  // Queues timestamps util the last time in the queue matches the provided
+  // function.
+  void QueueUntil(
+      std::function<
+          bool(const std::tuple<distributed_clock::time_point,
+                                std::vector<monotonic_clock::time_point>> &)>
+          not_done);
+
+  // The number of nodes to enforce.
+  const size_t node_count_;
+
+  // List of timestamps.
+  std::deque<std::tuple<distributed_clock::time_point,
+                        std::vector<monotonic_clock::time_point>>>
+      times_;
+
+  // If true, we have popped data from times_, so anything before the start is
+  // unknown.
+  bool have_popped_ = false;
+
+ protected:
+  // If true, NextTimestamp returned nothing, so don't bother checking again.
+  // (This also enforces that we don't find more time data after calling it
+  // quits.)
+  bool at_end_ = false;
 };
 
 // Class to hold a NoncausalOffsetEstimator per pair of communicating nodes, and
