@@ -14,6 +14,106 @@
 namespace aos {
 namespace message_bridge {
 
+// A condensed representation of the time estimation problem statement.  This is
+// designed to not have the concept of a Node object, or anything, just
+// measurement pairs and indices.
+//
+// The problem is defined to be the squared error between the offset computed
+// using packets from one node to another, and the corresponding difference in
+// time the pair of node.  This handles connections with data in 1 direction and
+// connections with data in both.
+//
+// All solved times are relative to the times in base_clock, and all math is
+// done such that large values of base_clock don't contribute to numerical
+// precision problems as long as the resulting time is small.
+//
+// To make this object reusable, it has a solution_node index which specifies
+// which of the nodes is treated as an input and not solved for.
+class TimestampProblem {
+ public:
+  TimestampProblem(size_t count);
+
+  // Sets node to fix time for and not solve for.
+  void set_solution_node(size_t solution_node) {
+    solution_node_ = solution_node;
+  }
+  size_t solution_node() const { return solution_node_; }
+
+  // Sets and gets the base time for a node.
+  void set_base_clock(size_t i, monotonic_clock::time_point t) {
+    base_clock_[i] = t;
+  }
+  monotonic_clock::time_point base_clock(size_t i) const {
+    return base_clock_[i];
+  }
+
+  // Adds a timestamp filter from a -> b.
+  //   filter[a_index]->Offset(ta) + ta => t(b_index);
+  void add_filter(size_t a_index, const NoncausalTimestampFilter *filter,
+                  size_t b_index) {
+    filters_[a_index].emplace_back(filter, b_index);
+  }
+
+  // Solves the optimization problem phrased and returns the offsets from the
+  // base clock for each node, excluding the solution node.
+  std::vector<double> Solve();
+
+  // Returns the squared error for all of the offsets.
+  // x is the offsets from the base_clock for every node (in order) except the
+  // solution node.  It should be one element shorter than the number of nodes
+  // this problem was constructed with.
+  // grad (if non-nullptr) is the place to put the current gradient and needs to
+  // be the same length as x.
+  double Cost(const double *x, double *grad);
+
+  // Returns the time offset from base for a node.
+  double get_t(const double *x, size_t time_index) {
+    return time_index == solution_node_ ? 0.0
+                                       : x[NodeToSolutionIndex(time_index)];
+  }
+
+ private:
+  // Static trampoline for nlopt.  n is the number of constraints, x is input
+  // solution to solve for, grad is the gradient to fill out (if not nullptr),
+  // and data is an untyped pointer to a TimestampProblem.
+  static double DoCost(unsigned n, const double *x, double *grad, void *data) {
+    CHECK_EQ(n + 1u,
+             reinterpret_cast<TimestampProblem *>(data)->filters_.size());
+    return reinterpret_cast<TimestampProblem *>(data)->Cost(x, grad);
+  }
+
+  // Converts from a node index to an index in the solution.
+  size_t NodeToSolutionIndex(size_t node_index) {
+    // The solver is going to provide us a matrix with solution_node_ removed.
+    // The indices of all nodes before solution_node_ are in the same spot, and
+    // the indices of the nodes after solution node are shifted over.
+    return node_index < solution_node_ ? node_index : (node_index - 1);
+  }
+
+  // Number of times Cost has been called for tracking.
+  int count_ = 0;
+
+  // The node to hold fixed when solving.
+  size_t solution_node_ = 0;
+
+  // The optimization problem is solved as base_clock + x to minimize numerical
+  // precision problems.  This contains all the base times.  The base time
+  // corresponding to solution_node is fixed and not solved.
+  std::vector<monotonic_clock::time_point> base_clock_;
+
+  // Filter and the node index it is referencing.
+  //   filter->Offset(ta) + ta => t_(b_node);
+  struct FilterPair {
+    FilterPair(const NoncausalTimestampFilter *my_filter, size_t my_b_index)
+        : filter(my_filter), b_index(my_b_index) {}
+    const NoncausalTimestampFilter *const filter;
+    const size_t b_index;
+  };
+
+  // List of filters indexed by node.
+  std::vector<std::vector<FilterPair>> filters_;
+};
+
 // Class to hold a NoncausalOffsetEstimator per pair of communicating nodes, and
 // to estimate and set the overall time of all nodes.
 class MultiNodeNoncausalOffsetEstimator {
@@ -36,11 +136,6 @@ class MultiNodeNoncausalOffsetEstimator {
 
   // Captures the start time.
   void Start(SimulatedEventLoopFactory *factory);
-
-  // Returns [ta; tb; ...] = tuple[0] * t + tuple[1]
-  std::tuple<Eigen::Matrix<double, Eigen::Dynamic, 1>,
-             Eigen::Matrix<double, Eigen::Dynamic, 1>>
-  SolveOffsets();
 
   // Returns the number of nodes.
   size_t nodes_count() const {
@@ -80,6 +175,11 @@ class MultiNodeNoncausalOffsetEstimator {
   void UpdateOffsets();
 
  private:
+  // Returns [ta; tb; ...] = tuple[0] * t + tuple[1]
+  std::tuple<Eigen::Matrix<double, Eigen::Dynamic, 1>,
+             Eigen::Matrix<double, Eigen::Dynamic, 1>>
+  SolveOffsets();
+
   SimulatedEventLoopFactory *event_loop_factory_;
   const Configuration *logged_configuration_;
 
