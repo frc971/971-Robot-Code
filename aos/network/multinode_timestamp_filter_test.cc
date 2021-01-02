@@ -77,7 +77,7 @@ TEST(TimestampProblemTest, Solve) {
   // Solve the problem with infinate precision as a verification and compare the
   // result.
   {
-    const std::vector<double> result = problem.Solve();
+    const std::vector<double> result = problem.SolveDouble();
 
     mpq_class tb_mpq =
         SolveExact(a.FitLine(), b.FitLine(), problem.base_clock(0));
@@ -89,7 +89,7 @@ TEST(TimestampProblemTest, Solve) {
   // Solve some other timestamps for grins.
   {
     problem.set_base_clock(0, e + chrono::milliseconds(500));
-    std::vector<double> result = problem.Solve();
+    std::vector<double> result = problem.SolveDouble();
 
     mpq_class tb_mpq =
         SolveExact(a.FitLine(), b.FitLine(), problem.base_clock(0));
@@ -110,7 +110,7 @@ TEST(TimestampProblemTest, Solve) {
     b.Sample(e + chrono::milliseconds(4000), -chrono::milliseconds(1002));
     {
       problem.set_base_clock(0, e + chrono::milliseconds(1500));
-      const std::vector<double> result = problem.Solve();
+      const std::vector<double> result = problem.SolveDouble();
 
       mpq_class tb_mpq =
           SolveExact(a.FitLine(), b.FitLine(), problem.base_clock(0));
@@ -122,7 +122,7 @@ TEST(TimestampProblemTest, Solve) {
 
     {
       problem.set_base_clock(0, e + chrono::milliseconds(1600));
-      const std::vector<double> result = problem.Solve();
+      const std::vector<double> result = problem.SolveDouble();
 
       mpq_class tb_mpq =
           SolveExact(a.FitLine(), b.FitLine(), problem.base_clock(0));
