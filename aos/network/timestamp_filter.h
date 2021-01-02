@@ -413,12 +413,15 @@ class NoncausalTimestampFilter {
   size_t timestamps_size() const { return timestamps_.size(); }
 
   void Debug() {
+    size_t count = 0;
     for (std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds,
                     bool>
              timestamp : timestamps_) {
       LOG(INFO) << std::get<0>(timestamp) << " offset "
                 << std::get<1>(timestamp).count() << " frozen? "
-                << std::get<2>(timestamp);
+                << std::get<2>(timestamp) << " consumed? "
+                << (count < next_to_consume_);
+      ++count;
     }
   }
 
@@ -431,6 +434,23 @@ class NoncausalTimestampFilter {
   // offset and slope), as used.  Those points can't be removed from the filter
   // going forwards.
   void Freeze();
+
+  // Marks all line segments up until the provided time on the provided node as
+  // used.
+  void FreezeUntil(aos::monotonic_clock::time_point node_monotonic_now);
+  void FreezeUntilRemote(aos::monotonic_clock::time_point remote_monotonic_now);
+
+  // Returns the next timestamp in the queue if available without incrementing
+  // the pointer.  This, Consume, and FreezeUntil work together to allow
+  // tracking and freezing timestamps which have been combined externally.
+  std::optional<
+      std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>>
+  Observe() const;
+  // Returns the next timestamp in the queue if available, incrementing the
+  // pointer.
+  std::optional<
+      std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>>
+  Consume();
 
   // Public for testing.
   // Assuming that there are at least 2 points in timestamps_, finds the 2
@@ -473,6 +493,9 @@ class NoncausalTimestampFilter {
   void PopFront() {
     MaybeWriteTimestamp(timestamps_.front());
     timestamps_.pop_front();
+    if (next_to_consume_ > 0u) {
+      next_to_consume_--;
+    }
   }
 
   // Writes a timestamp to the file if it is reasonable.
@@ -489,6 +512,10 @@ class NoncausalTimestampFilter {
   std::deque<std::tuple<aos::monotonic_clock::time_point,
                         std::chrono::nanoseconds, bool>>
       timestamps_;
+
+  // The index of the next element in timestamps to consume.  0 means none have
+  // been consumed, and size() means all have been consumed.
+  size_t next_to_consume_ = 0;
 
   // Holds any timestamps from before the start of the log to be flushed when we
   // know when the log starts.

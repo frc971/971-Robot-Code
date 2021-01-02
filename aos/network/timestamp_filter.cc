@@ -1043,6 +1043,58 @@ bool NoncausalTimestampFilter::Pop(aos::monotonic_clock::time_point time) {
   return removed;
 }
 
+std::optional<std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>>
+NoncausalTimestampFilter::Observe() const {
+  if (timestamps_.empty() || next_to_consume_ >= timestamps_.size()) {
+    return std::nullopt;
+  }
+  return TrimTuple(timestamps_[next_to_consume_]);
+}
+
+std::optional<std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>>
+NoncausalTimestampFilter::Consume() {
+  if (timestamps_.empty() || next_to_consume_ >= timestamps_.size()) {
+    return std::nullopt;
+  }
+
+  auto result = TrimTuple(timestamps_[next_to_consume_]);
+  ++next_to_consume_;
+  return result;
+}
+
+void NoncausalTimestampFilter::FreezeUntil(
+    aos::monotonic_clock::time_point node_monotonic_now) {
+  for (size_t i = 0; i < timestamps_.size(); ++i) {
+    if (std::get<0>(timestamps_[i]) > node_monotonic_now) {
+      return;
+    }
+    std::get<2>(timestamps_[i]) = true;
+  }
+
+  if (timestamps_.size() < 2u) {
+    // This will evaluate to a line.  We can't support adding points to a line
+    // yet.
+    fully_frozen_ = true;
+  }
+}
+
+void NoncausalTimestampFilter::FreezeUntilRemote(
+    aos::monotonic_clock::time_point remote_monotonic_now) {
+  for (size_t i = 0; i < timestamps_.size(); ++i) {
+    if (std::get<0>(timestamps_[i]) + std::get<1>(timestamps_[i]) >
+        remote_monotonic_now) {
+      return;
+    }
+    std::get<2>(timestamps_[i]) = true;
+  }
+
+  if (timestamps_.size() < 2u) {
+    // This will evaluate to a line.  We can't support adding points to a line
+    // yet.
+    fully_frozen_ = true;
+  }
+}
+
 void NoncausalTimestampFilter::Freeze() {
   if (timestamps_.size() >= 1u) {
     std::get<2>(timestamps_[0]) = true;

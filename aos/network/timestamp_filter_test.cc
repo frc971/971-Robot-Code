@@ -211,6 +211,71 @@ TEST(NoncausalTimestampFilterTest, SingleSample) {
   }
 }
 
+// Tests that 2 samples results in the correct line between them, and the
+// correct intermediate as it is being built.
+TEST(NoncausalTimestampFilterTest, PeekPop) {
+  const monotonic_clock::time_point ta(chrono::nanoseconds(100000));
+  const chrono::nanoseconds oa(chrono::nanoseconds(1000));
+  const monotonic_clock::time_point tb(chrono::nanoseconds(200000));
+  const chrono::nanoseconds ob(chrono::nanoseconds(1100));
+  const monotonic_clock::time_point tc(chrono::nanoseconds(300000));
+  const chrono::nanoseconds oc(chrono::nanoseconds(1010));
+
+  // Simple case, everything is done in order, nothing is dropped.
+  {
+    NoncausalTimestampFilter filter;
+
+    filter.Sample(ta, oa);
+    filter.Sample(tb, ob);
+    filter.Sample(tc, oc);
+
+    EXPECT_TRUE(filter.Observe());
+    EXPECT_EQ(*filter.Consume(), std::make_tuple(ta, oa));
+    EXPECT_TRUE(filter.Observe());
+    EXPECT_EQ(*filter.Consume(), std::make_tuple(tb, ob));
+    EXPECT_TRUE(filter.Observe());
+    EXPECT_EQ(*filter.Consume(), std::make_tuple(tc, oc));
+    EXPECT_FALSE(filter.Observe());
+  }
+
+  // Now try again while dropping ta after popping it.
+  {
+    NoncausalTimestampFilter filter;
+
+    filter.Sample(ta, oa);
+    filter.Sample(tb, ob);
+    filter.Sample(tc, oc);
+
+
+    EXPECT_TRUE(filter.Observe());
+    EXPECT_EQ(*filter.Consume(), std::make_tuple(ta, oa));
+
+    filter.Pop(tb);
+    EXPECT_TRUE(filter.Observe());
+    EXPECT_EQ(*filter.Consume(), std::make_tuple(tb, ob));
+    EXPECT_TRUE(filter.Observe());
+    EXPECT_EQ(*filter.Consume(), std::make_tuple(tc, oc));
+    EXPECT_FALSE(filter.Observe());
+  }
+
+  // Now try again while dropping ta before popping it.
+  {
+    NoncausalTimestampFilter filter;
+
+    filter.Sample(ta, oa);
+    filter.Sample(tb, ob);
+    filter.Sample(tc, oc);
+
+
+    filter.Pop(tb);
+    EXPECT_TRUE(filter.Observe());
+    EXPECT_EQ(*filter.Consume(), std::make_tuple(tb, ob));
+    EXPECT_TRUE(filter.Observe());
+    EXPECT_EQ(*filter.Consume(), std::make_tuple(tc, oc));
+    EXPECT_FALSE(filter.Observe());
+  }
+}
+
 // Tests that invalid samples get clipped as expected.
 TEST(NoncausalTimestampFilterTest, ClippedSample) {
   const monotonic_clock::time_point ta(chrono::milliseconds(0));
