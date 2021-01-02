@@ -73,6 +73,9 @@ class SimulatedEventLoopFactory {
   // lifetime identical to the factory.
   NodeEventLoopFactory *GetNodeEventLoopFactory(const Node *node);
 
+  // Sets the time converter for all nodes.
+  void SetTimeConverter(TimeConverter *time_converter);
+
   // Starts executing the event loops unconditionally.
   void Run();
   // Executes the event loops for a duration.
@@ -166,16 +169,19 @@ class NodeEventLoopFactory {
 
   // Converts a time to the distributed clock for scheduling and cross-node time
   // measurement.
+  // Note: converting time too far in the future can cause problems when
+  // replaying logs.  Only convert times in the present or near past.
   inline distributed_clock::time_point ToDistributedClock(
       monotonic_clock::time_point time) const;
   inline monotonic_clock::time_point FromDistributedClock(
       distributed_clock::time_point time) const;
 
-  // Sets the offset between the monotonic clock and the central distributed
-  // clock.  distributed_clock = monotonic_clock + offset.
-  void SetDistributedOffset(std::chrono::nanoseconds monotonic_offset,
-                            double monotonic_slope) {
-    scheduler_.SetDistributedOffset(monotonic_offset, monotonic_slope);
+  // Sets the class used to convert time.  This pointer must out-live the
+  // SimulatedEventLoopFactory.
+  void SetTimeConverter(TimeConverter *time_converter) {
+    scheduler_.SetTimeConverter(
+        configuration::GetNodeIndex(factory_->configuration(), node_),
+        time_converter);
   }
 
   // Returns the boot UUID for this node.

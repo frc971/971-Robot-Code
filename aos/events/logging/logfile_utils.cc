@@ -766,8 +766,8 @@ void TimestampMapper::AddPeer(TimestampMapper *timestamp_mapper) {
   // Only set it if this node delivers to the peer timestamp_mapper.  Otherwise
   // we could needlessly save data.
   if (node_data->any_delivered) {
-    LOG(INFO) << "Registering on node " << node() << " for peer node "
-              << timestamp_mapper->node();
+    VLOG(1) << "Registering on node " << node() << " for peer node "
+            << timestamp_mapper->node();
     CHECK(timestamp_mapper->nodes_data_[node()].peer == nullptr);
 
     timestamp_mapper->nodes_data_[node()].peer = this;

@@ -76,141 +76,6 @@ TEST(ClippedAverageFilterTest, Sample) {
   EXPECT_EQ(filter.offset(), chrono::microseconds(100500));
 }
 
-// Tests that the FromInt64 function correctly produces a mpq even though it
-// only can use 32 bit numbers.
-TEST(LineTest, Int64) {
-  EXPECT_EQ(FromInt64(0x9710000000ll),
-            mpq_class(0x971) * mpq_class(0x10000000));
-
-  EXPECT_EQ(FromInt64(-0x9710000000ll),
-            mpq_class(-0x971) * mpq_class(0x10000000));
-}
-
-// Tests that we can create a simple line and the methods return sane results.
-TEST(LineTest, SimpleLine) {
-  mpq_class offset(1023);
-  mpq_class slope(1);
-  Line l(offset, slope);
-
-  EXPECT_EQ(l.mpq_offset(), offset);
-  EXPECT_EQ(l.mpq_slope(), slope);
-
-  EXPECT_EQ(l.offset(), chrono::nanoseconds(1023));
-  EXPECT_EQ(l.slope(), 1.0);
-
-  EXPECT_EQ(chrono::nanoseconds(1023 + 100),
-            l.Eval(monotonic_clock::time_point(chrono::nanoseconds(100))));
-}
-
-// Tests that we can fit a line to 2 points and they recover correctly.
-TEST(LineTest, FitLine) {
-  const monotonic_clock::time_point ta(chrono::nanoseconds(1000));
-  const monotonic_clock::time_point tb(chrono::nanoseconds(100001013));
-  Line l = Line::Fit(std::make_tuple(ta, chrono::nanoseconds(100)),
-                     std::make_tuple(tb, chrono::nanoseconds(105)));
-
-  EXPECT_EQ(chrono::nanoseconds(100), l.Eval(ta));
-  EXPECT_EQ(chrono::nanoseconds(105), l.Eval(tb));
-}
-
-// Tests that averaging 2 lines results in the correct outcome.
-// Try to compute the correct outcome a couple of different ways to confirm the
-// math is done right.
-TEST(LineTest, AverageFits) {
-  const monotonic_clock::time_point ta(chrono::nanoseconds(1000));
-  const monotonic_clock::time_point tb(chrono::nanoseconds(100001013));
-
-  // Test 2 lines which both diverge and should average back to nothing.
-  {
-    Line l1(mpq_class(999000), mpq_class(1000, 1000));
-    Line l2(-mpq_class(990000), mpq_class(1000, 1000));
-
-    Line a = AverageFits(l1, l2);
-    a.Debug();
-
-    EXPECT_EQ(a.mpq_slope(), mpq_class(0));
-
-    // Confirm some points to make sure everything works.
-    //
-    // tb = ta + O(ta)
-    // tb = Oa(ta) + ta
-    // ta = Ob(tb) + tb
-    // tb - ta = O(ta, tb)
-    // So, if we pick a point at t=x, we can evaluate both functions and should
-    // get back O(x)
-
-    const monotonic_clock::time_point ta(chrono::nanoseconds(1000));
-    const monotonic_clock::time_point tb(chrono::nanoseconds(100001013));
-
-    EXPECT_EQ((l1.Eval(ta) - l2.Eval(a.Eval(ta) + ta)) / 2, a.Eval(ta));
-    EXPECT_EQ((l1.Eval(tb) - l2.Eval(a.Eval(tb) + tb)) / 2, a.Eval(tb));
-  }
-
-  // Test 2 lines which are parallel, so there should be a slope.
-  {
-    Line l1(mpq_class(990000), mpq_class(1000, 1000));
-    Line l2(-mpq_class(990000), -mpq_class(1000, 1000));
-
-    Line a = AverageFits(l1, l2);
-    a.Debug();
-
-    EXPECT_EQ(a.mpq_slope(), mpq_class(2));
-
-    // Confirm some points to make sure everything works.
-
-    EXPECT_EQ((l1.Eval(ta) - l2.Eval(a.Eval(ta) + ta)) / 2, a.Eval(ta));
-    EXPECT_EQ((l1.Eval(tb) - l2.Eval(a.Eval(tb) + tb)) / 2, a.Eval(tb));
-  }
-}
-
-// Tests that the Invert function returns sane results.
-TEST(LineTest, Invert) {
-  const monotonic_clock::time_point ta(chrono::nanoseconds(1000000000));
-  const monotonic_clock::time_point tb(chrono::nanoseconds(2001000000));
-
-  // Double inversion should get us back where we started.  Make sure there are
-  // enough digits to catch rounding problems.
-  Line l1(mpq_class(1000000000), mpq_class(1, 1000));
-  Line l2 = Invert(l1);
-  Line l1_again = Invert(l2);
-
-  // Confirm we can convert time back and forth as expected.
-  EXPECT_EQ(l1.Eval(ta) + ta, tb);
-  EXPECT_EQ(l2.Eval(tb) + tb, ta);
-
-  // And we got back our original line.
-  EXPECT_EQ(l1.mpq_slope(), l1_again.mpq_slope());
-  EXPECT_EQ(l1.mpq_offset(), l1_again.mpq_offset());
-}
-
-// Tests that 2 samples results in the correct line between them, and the
-// correct intermediate as it is being built.
-TEST(NoncausalTimestampFilterTest, SingleSample) {
-  const monotonic_clock::time_point ta(chrono::nanoseconds(100000));
-  const monotonic_clock::time_point tb(chrono::nanoseconds(200000));
-
-  NoncausalTimestampFilter filter;
-
-  filter.Sample(ta, chrono::nanoseconds(1000));
-  EXPECT_EQ(filter.Timestamps().size(), 1u);
-
-  {
-    Line l1 = filter.FitLine();
-
-    EXPECT_EQ(l1.mpq_offset(), mpq_class(1000));
-    EXPECT_EQ(l1.mpq_slope(), mpq_class(0));
-  }
-
-  filter.Sample(tb, chrono::nanoseconds(1100));
-  EXPECT_EQ(filter.Timestamps().size(), 2u);
-
-  {
-    Line l2 = filter.FitLine();
-    EXPECT_EQ(l2.mpq_offset(), mpq_class(900));
-    EXPECT_EQ(l2.mpq_slope(), mpq_class(1, 1000));
-  }
-}
-
 // Tests that 2 samples results in the correct line between them, and the
 // correct intermediate as it is being built.
 TEST(NoncausalTimestampFilterTest, PeekPop) {
@@ -292,11 +157,10 @@ TEST(NoncausalTimestampFilterTest, ClippedSample) {
     filter.Debug();
     ASSERT_EQ(filter.Timestamps().size(), 2u);
 
-    {
-      Line l2 = filter.FitLine();
-      EXPECT_EQ(l2.mpq_offset(), mpq_class(1000));
-      EXPECT_EQ(l2.mpq_slope(), mpq_class(1, 1000));
-    }
+    EXPECT_EQ(filter.timestamp(0),
+              std::make_tuple(ta, chrono::microseconds(1)));
+    EXPECT_EQ(filter.timestamp(1),
+              std::make_tuple(tb, chrono::microseconds(2)));
   }
 
   {
@@ -309,11 +173,10 @@ TEST(NoncausalTimestampFilterTest, ClippedSample) {
     filter.Debug();
     ASSERT_EQ(filter.Timestamps().size(), 2u);
 
-    {
-      Line l2 = filter.FitLine();
-      EXPECT_EQ(l2.mpq_offset(), mpq_class(1000));
-      EXPECT_EQ(l2.mpq_slope(), -mpq_class(1, 1000));
-    }
+    EXPECT_EQ(filter.timestamp(0),
+              std::make_tuple(ta, chrono::microseconds(1)));
+    EXPECT_EQ(filter.timestamp(1),
+              std::make_tuple(tb, chrono::microseconds(0)));
   }
 
   {
@@ -804,42 +667,29 @@ TEST(NoncausalOffsetEstimatorTest, FullEstimator) {
   // Add 3 timestamps in and confirm that the slopes come out reasonably.
   estimator.Sample(node_a, ta1, tb1);
   estimator.Sample(node_b, tb1, ta1);
-  EXPECT_EQ(estimator.ATimestamps().size(), 1u);
-  EXPECT_EQ(estimator.BTimestamps().size(), 1u);
-
-  // 1 point -> a line.
-  EXPECT_EQ(estimator.fit().mpq_slope(), mpq_class(0));
+  EXPECT_EQ(estimator.a_timestamps_size(), 1u);
+  EXPECT_EQ(estimator.b_timestamps_size(), 1u);
 
   estimator.Sample(node_a, ta2, tb2);
   estimator.Sample(node_b, tb2, ta2);
-  EXPECT_EQ(estimator.ATimestamps().size(), 2u);
-  EXPECT_EQ(estimator.BTimestamps().size(), 2u);
-
-  // Adding the second point should slope up.
-  EXPECT_EQ(estimator.fit().mpq_slope(), mpq_class(1, 100000));
+  EXPECT_EQ(estimator.a_timestamps_size(), 2u);
+  EXPECT_EQ(estimator.b_timestamps_size(), 2u);
 
   estimator.Sample(node_a, ta3, tb3);
   estimator.Sample(node_b, tb3, ta3);
-  EXPECT_EQ(estimator.ATimestamps().size(), 3u);
-  EXPECT_EQ(estimator.BTimestamps().size(), 3u);
-
-  // And the third point shouldn't change anything.
-  EXPECT_EQ(estimator.fit().mpq_slope(), mpq_class(1, 100000));
+  EXPECT_EQ(estimator.a_timestamps_size(), 3u);
+  EXPECT_EQ(estimator.b_timestamps_size(), 3u);
 
   estimator.Pop(node_a, ta2);
   estimator.Pop(node_b, tb2);
-  EXPECT_EQ(estimator.ATimestamps().size(), 2u);
-  EXPECT_EQ(estimator.BTimestamps().size(), 2u);
-
-  // Dropping the first point should have the slope point back down.
-  EXPECT_EQ(estimator.fit().mpq_slope(), mpq_class(-1, 100000));
+  EXPECT_EQ(estimator.a_timestamps_size(), 2u);
+  EXPECT_EQ(estimator.b_timestamps_size(), 2u);
 
   // And dropping down to 1 point means 0 slope.
   estimator.Pop(node_a, ta3);
   estimator.Pop(node_b, tb3);
-  EXPECT_EQ(estimator.ATimestamps().size(), 1u);
-  EXPECT_EQ(estimator.BTimestamps().size(), 1u);
-  EXPECT_EQ(estimator.fit().mpq_slope(), mpq_class(0));
+  EXPECT_EQ(estimator.a_timestamps_size(), 1u);
+  EXPECT_EQ(estimator.b_timestamps_size(), 1u);
 }
 
 }  // namespace testing

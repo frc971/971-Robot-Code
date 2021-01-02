@@ -1034,6 +1034,13 @@ NodeEventLoopFactory *SimulatedEventLoopFactory::GetNodeEventLoopFactory(
   return result->get();
 }
 
+void SimulatedEventLoopFactory::SetTimeConverter(
+    TimeConverter *time_converter) {
+  for (std::unique_ptr<NodeEventLoopFactory> &factory : node_factories_) {
+    factory->SetTimeConverter(time_converter);
+  }
+}
+
 ::std::unique_ptr<EventLoop> SimulatedEventLoopFactory::MakeEventLoop(
     std::string_view name, const Node *node) {
   if (node == nullptr) {
@@ -1092,9 +1099,7 @@ void SimulatedEventLoopFactory::Run() {
   }
 }
 
-void SimulatedEventLoopFactory::Exit() {
-  scheduler_scheduler_.Exit();
-}
+void SimulatedEventLoopFactory::Exit() { scheduler_scheduler_.Exit(); }
 
 void SimulatedEventLoopFactory::DisableForwarding(const Channel *channel) {
   CHECK(bridge_) << ": Can't disable forwarding without a message bridge.";

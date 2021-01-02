@@ -741,10 +741,6 @@ class LogReader {
   // less than the second node.
   std::unique_ptr<message_bridge::MultiNodeNoncausalOffsetEstimator> filters_;
 
-  // Updates the offset matrix solution and sets the per-node distributed
-  // offsets in the factory.
-  void UpdateOffsets();
-
   std::unique_ptr<FlatbufferDetachedBuffer<Configuration>>
       remapped_configuration_buffer_;
 

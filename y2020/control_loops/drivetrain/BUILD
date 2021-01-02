@@ -139,6 +139,7 @@ cc_test(
         "//aos/events:simulated_event_loop",
         "//aos/events/logging:logger",
         "//aos/network:team_number",
+        "//aos/network:testing_time_converter",
         "//frc971/control_loops:team_number_test_environment",
         "//frc971/control_loops/drivetrain:drivetrain_lib",
         "//frc971/control_loops/drivetrain:drivetrain_test_lib",

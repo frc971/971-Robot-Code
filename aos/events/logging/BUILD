@@ -307,6 +307,7 @@ cc_test(
         "//aos/events:ping_lib",
         "//aos/events:pong_lib",
         "//aos/events:simulated_event_loop",
+        "//aos/network:testing_time_converter",
         "//aos/testing:googletest",
         "//aos/testing:tmpdir",
     ],

@@ -11,6 +11,7 @@
 #include "aos/network/message_bridge_client_generated.h"
 #include "aos/network/message_bridge_server_generated.h"
 #include "aos/network/remote_message_generated.h"
+#include "aos/network/testing_time_converter.h"
 #include "aos/network/timestamp_generated.h"
 #include "gtest/gtest.h"
 
@@ -690,15 +691,27 @@ TEST(SimulatedEventLoopTest, MultinodePingPongWithOffset) {
       aos::configuration::ReadConfig(ConfigPrefix() +
                                      "events/multinode_pingpong_config.json");
   const Node *pi1 = configuration::GetNode(&config.message(), "pi1");
+  const size_t pi1_index = configuration::GetNodeIndex(&config.message(), pi1);
+  ASSERT_EQ(pi1_index, 0u);
   const Node *pi2 = configuration::GetNode(&config.message(), "pi2");
+  const size_t pi2_index = configuration::GetNodeIndex(&config.message(), pi2);
+  ASSERT_EQ(pi2_index, 1u);
   const Node *pi3 = configuration::GetNode(&config.message(), "pi3");
+  const size_t pi3_index = configuration::GetNodeIndex(&config.message(), pi3);
+  ASSERT_EQ(pi3_index, 2u);
 
+  message_bridge::TestingTimeConverter time(
+      configuration::NodesCount(&config.message()));
   SimulatedEventLoopFactory simulated_event_loop_factory(&config.message());
   NodeEventLoopFactory *pi2_factory =
       simulated_event_loop_factory.GetNodeEventLoopFactory(pi2);
+  pi2_factory->SetTimeConverter(&time);
 
   constexpr chrono::milliseconds kOffset{1501};
-  pi2_factory->SetDistributedOffset(kOffset, 1.0);
+  time.AddNextTimestamp(
+      distributed_clock::epoch(),
+      {monotonic_clock::epoch(), monotonic_clock::epoch() + kOffset,
+       monotonic_clock::epoch()});
 
   std::unique_ptr<EventLoop> ping_event_loop =
       simulated_event_loop_factory.MakeEventLoop("ping", pi1);
@@ -711,14 +724,14 @@ TEST(SimulatedEventLoopTest, MultinodePingPongWithOffset) {
   // Wait to let timestamp estimation start up before looking for the results.
   simulated_event_loop_factory.RunFor(chrono::milliseconds(500));
 
+  std::unique_ptr<EventLoop> pi1_pong_counter_event_loop =
+      simulated_event_loop_factory.MakeEventLoop("pi1_pong_counter", pi1);
+
   std::unique_ptr<EventLoop> pi2_pong_counter_event_loop =
       simulated_event_loop_factory.MakeEventLoop("pi2_pong_counter", pi2);
 
   std::unique_ptr<EventLoop> pi3_pong_counter_event_loop =
       simulated_event_loop_factory.MakeEventLoop("pi3_pong_counter", pi3);
-
-  std::unique_ptr<EventLoop> pi1_pong_counter_event_loop =
-      simulated_event_loop_factory.MakeEventLoop("pi1_pong_counter", pi1);
 
   // Confirm the offsets are being recovered correctly.
   int pi1_server_statistics_count = 0;
@@ -1188,16 +1201,32 @@ TEST(SimulatedEventLoopTest, MultinodePingPongWithOffsetAndSlope) {
       aos::configuration::ReadConfig(ConfigPrefix() +
                                      "events/multinode_pingpong_config.json");
   const Node *pi1 = configuration::GetNode(&config.message(), "pi1");
+  const size_t pi1_index = configuration::GetNodeIndex(&config.message(), pi1);
+  ASSERT_EQ(pi1_index, 0u);
   const Node *pi2 = configuration::GetNode(&config.message(), "pi2");
+  const size_t pi2_index = configuration::GetNodeIndex(&config.message(), pi2);
+  ASSERT_EQ(pi2_index, 1u);
+  const Node *pi3 = configuration::GetNode(&config.message(), "pi3");
+  const size_t pi3_index = configuration::GetNodeIndex(&config.message(), pi3);
+  ASSERT_EQ(pi3_index, 2u);
 
+  message_bridge::TestingTimeConverter time(
+      configuration::NodesCount(&config.message()));
   SimulatedEventLoopFactory simulated_event_loop_factory(&config.message());
   NodeEventLoopFactory *pi2_factory =
       simulated_event_loop_factory.GetNodeEventLoopFactory(pi2);
+  pi2_factory->SetTimeConverter(&time);
 
-  // Move the pi far into the future so the slope is significant.  And set it to
-  // something reasonable.
   constexpr chrono::milliseconds kOffset{150100};
-  pi2_factory->SetDistributedOffset(kOffset, 1.0001);
+  time.AddNextTimestamp(
+      distributed_clock::epoch(),
+      {monotonic_clock::epoch(), monotonic_clock::epoch() + kOffset,
+       monotonic_clock::epoch()});
+  time.AddNextTimestamp(
+      distributed_clock::epoch() + chrono::seconds(10),
+      {monotonic_clock::epoch() + chrono::milliseconds(9999),
+       monotonic_clock::epoch() + kOffset + chrono::seconds(10),
+       monotonic_clock::epoch() + chrono::milliseconds(9999)});
 
   std::unique_ptr<EventLoop> ping_event_loop =
       simulated_event_loop_factory.MakeEventLoop("ping", pi1);
