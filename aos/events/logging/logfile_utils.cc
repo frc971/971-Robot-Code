@@ -728,7 +728,8 @@ TimestampMapper::TimestampMapper(std::vector<LogParts> parts)
       for (const Channel *channel : *config->channels()) {
         node_data->channels[channel_index].delivered =
             configuration::ChannelIsReadableOnNode(channel, node) &&
-            configuration::ChannelIsSendableOnNode(channel, my_node);
+            configuration::ChannelIsSendableOnNode(channel, my_node) &&
+            (my_node != node);
         node_data->any_delivered = node_data->any_delivered ||
                                    node_data->channels[channel_index].delivered;
         ++channel_index;
