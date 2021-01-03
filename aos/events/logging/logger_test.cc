@@ -1590,12 +1590,14 @@ TEST_F(MultinodeLoggerTest, MessageHeader) {
   const size_t pong_timestamp_channel = configuration::ChannelIndex(
       pi1_event_loop->configuration(), pong_on_pi1_fetcher.channel());
 
+  const chrono::nanoseconds network_delay = event_loop_factory_.network_delay();
+
   pi1_event_loop->MakeWatcher(
       "/aos/remote_timestamps/pi2",
       [&pi1_event_loop, &pi2_event_loop, pi1_timestamp_channel,
        ping_timestamp_channel, &pi1_timestamp_on_pi1_fetcher,
        &pi1_timestamp_on_pi2_fetcher, &ping_on_pi1_fetcher,
-       &ping_on_pi2_fetcher](const RemoteMessage &header) {
+       &ping_on_pi2_fetcher, network_delay](const RemoteMessage &header) {
         const aos::monotonic_clock::time_point header_monotonic_sent_time(
             chrono::nanoseconds(header.monotonic_sent_time()));
         const aos::realtime_clock::time_point header_realtime_sent_time(
@@ -1645,13 +1647,19 @@ TEST_F(MultinodeLoggerTest, MessageHeader) {
                   header_realtime_remote_time);
         EXPECT_EQ(pi1_context->monotonic_event_time,
                   header_monotonic_remote_time);
+
+        EXPECT_EQ(pi1_event_loop->context().monotonic_event_time,
+                  pi2_context->monotonic_event_time +
+                      (pi1_event_loop->monotonic_now() -
+                       pi2_event_loop->monotonic_now()) +
+                      network_delay);
       });
   pi2_event_loop->MakeWatcher(
       "/aos/remote_timestamps/pi1",
       [&pi2_event_loop, &pi1_event_loop, pi2_timestamp_channel,
        pong_timestamp_channel, &pi2_timestamp_on_pi2_fetcher,
        &pi2_timestamp_on_pi1_fetcher, &pong_on_pi2_fetcher,
-       &pong_on_pi1_fetcher](const RemoteMessage &header) {
+       &pong_on_pi1_fetcher, network_delay](const RemoteMessage &header) {
         const aos::monotonic_clock::time_point header_monotonic_sent_time(
             chrono::nanoseconds(header.monotonic_sent_time()));
         const aos::realtime_clock::time_point header_realtime_sent_time(
@@ -1701,6 +1709,12 @@ TEST_F(MultinodeLoggerTest, MessageHeader) {
                   header_realtime_remote_time);
         EXPECT_EQ(pi2_context->monotonic_event_time,
                   header_monotonic_remote_time);
+
+        EXPECT_EQ(pi2_event_loop->context().monotonic_event_time,
+                  pi1_context->monotonic_event_time +
+                      (pi2_event_loop->monotonic_now() -
+                       pi1_event_loop->monotonic_now()) +
+                      network_delay);
       });
 
   // And confirm we can re-create a log again, while checking the contents.
