@@ -26,6 +26,8 @@ namespace chrono = std::chrono;
 using aos::message_bridge::RemoteMessage;
 using aos::testing::MessageCounter;
 
+constexpr std::string_view kSingleConfigSha1(
+    "bc8c9c2e31589eae6f0e36d766f6a437643e861d9568b7483106841cf7504dea");
 constexpr std::string_view kConfigSha1(
     "0000c81e444ac470b8d29fb864621ae93a0e294a7e90c0dc4840d0f0d40fd72e");
 
@@ -60,8 +62,11 @@ using LoggerDeathTest = LoggerTest;
 TEST_F(LoggerTest, Starts) {
   const ::std::string tmpdir = aos::testing::TestTmpDir();
   const ::std::string base_name = tmpdir + "/logfile";
+  const ::std::string config =
+      absl::StrCat(base_name, kSingleConfigSha1, ".bfbs");
   const ::std::string logfile = base_name + ".part0.bfbs";
   // Remove it.
+  unlink(config.c_str());
   unlink(logfile.c_str());
 
   LOG(INFO) << "Logging data to " << logfile;
@@ -121,11 +126,17 @@ TEST_F(LoggerTest, Starts) {
 TEST_F(LoggerDeathTest, ExtraStart) {
   const ::std::string tmpdir = aos::testing::TestTmpDir();
   const ::std::string base_name1 = tmpdir + "/logfile1";
+  const ::std::string config1 =
+      absl::StrCat(base_name1, kSingleConfigSha1, ".bfbs");
   const ::std::string logfile1 = base_name1 + ".part0.bfbs";
   const ::std::string base_name2 = tmpdir + "/logfile2";
+  const ::std::string config2 =
+      absl::StrCat(base_name2, kSingleConfigSha1, ".bfbs");
   const ::std::string logfile2 = base_name2 + ".part0.bfbs";
   unlink(logfile1.c_str());
+  unlink(config1.c_str());
   unlink(logfile2.c_str());
+  unlink(config2.c_str());
 
   LOG(INFO) << "Logging data to " << logfile1 << " then " << logfile2;
 
@@ -153,8 +164,11 @@ TEST_F(LoggerDeathTest, ExtraStart) {
 TEST_F(LoggerDeathTest, ExtraStop) {
   const ::std::string tmpdir = aos::testing::TestTmpDir();
   const ::std::string base_name = tmpdir + "/logfile";
+  const ::std::string config =
+      absl::StrCat(base_name, kSingleConfigSha1, ".bfbs");
   const ::std::string logfile = base_name + ".part0.bfbs";
   // Remove it.
+  unlink(config.c_str());
   unlink(logfile.c_str());
 
   LOG(INFO) << "Logging data to " << logfile;
@@ -183,11 +197,17 @@ TEST_F(LoggerDeathTest, ExtraStop) {
 TEST_F(LoggerTest, StartsTwice) {
   const ::std::string tmpdir = aos::testing::TestTmpDir();
   const ::std::string base_name1 = tmpdir + "/logfile1";
+  const ::std::string config1 =
+      absl::StrCat(base_name1, kSingleConfigSha1, ".bfbs");
   const ::std::string logfile1 = base_name1 + ".part0.bfbs";
   const ::std::string base_name2 = tmpdir + "/logfile2";
+  const ::std::string config2 =
+      absl::StrCat(base_name2, kSingleConfigSha1, ".bfbs");
   const ::std::string logfile2 = base_name2 + ".part0.bfbs";
   unlink(logfile1.c_str());
+  unlink(config1.c_str());
   unlink(logfile2.c_str());
+  unlink(config2.c_str());
 
   LOG(INFO) << "Logging data to " << logfile1 << " then " << logfile2;
 
@@ -247,9 +267,12 @@ TEST_F(LoggerTest, StartsTwice) {
 TEST_F(LoggerTest, RotatedLogFile) {
   const ::std::string tmpdir = aos::testing::TestTmpDir();
   const ::std::string base_name = tmpdir + "/logfile";
+  const ::std::string config =
+      absl::StrCat(base_name, kSingleConfigSha1, ".bfbs");
   const ::std::string logfile0 = base_name + ".part0.bfbs";
   const ::std::string logfile1 = base_name + ".part1.bfbs";
   // Remove it.
+  unlink(config.c_str());
   unlink(logfile0.c_str());
   unlink(logfile1.c_str());
 
@@ -329,8 +352,11 @@ TEST_F(LoggerTest, RotatedLogFile) {
 TEST_F(LoggerTest, ManyMessages) {
   const ::std::string tmpdir = aos::testing::TestTmpDir();
   const ::std::string base_name = tmpdir + "/logfile";
+  const ::std::string config =
+      absl::StrCat(base_name, kSingleConfigSha1, ".bfbs");
   const ::std::string logfile = base_name + ".part0.bfbs";
   // Remove the log file.
+  unlink(config.c_str());
   unlink(logfile.c_str());
 
   LOG(INFO) << "Logging data to " << logfile;
@@ -369,7 +395,8 @@ TEST_F(LoggerTest, ManyMessages) {
   }
 }
 
-std::vector<std::string> MakeLogFiles(std::string logfile_base1, std::string logfile_base2) {
+std::vector<std::string> MakeLogFiles(std::string logfile_base1,
+                                      std::string logfile_base2) {
   return std::vector<std::string>(
       {logfile_base1 + "_pi1_data.part0.bfbs",
        logfile_base1 + "_pi2_data/test/aos.examples.Pong.part0.bfbs",
@@ -453,7 +480,8 @@ class MultinodeLoggerTest : public ::testing::Test {
       unlink((file + ".xz").c_str());
     }
 
-    for (const auto file : MakeLogFiles("relogged1", "relogged2")) {
+    for (const auto file :
+         MakeLogFiles(tmp_dir_ + "/relogged1", tmp_dir_ + "/relogged2")) {
       unlink(file.c_str());
     }
 
@@ -632,8 +660,7 @@ class MultinodeLoggerTest : public ::testing::Test {
 // Counts the number of messages on a channel.  Returns (channel name, channel
 // type, count) for every message matching matcher()
 std::vector<std::tuple<std::string, std::string, int>> CountChannelsMatching(
-    std::shared_ptr<const aos::Configuration> config,
-    std::string_view filename,
+    std::shared_ptr<const aos::Configuration> config, std::string_view filename,
     std::function<bool(const MessageHeader *)> matcher) {
   MessageReader message_reader(filename);
   std::vector<int> counts(config->channels()->size(), 0);
@@ -788,9 +815,11 @@ TEST_F(MultinodeLoggerTest, SimpleMultiNode) {
         << " : " << logfiles_[1];
 
     // No timestamps
-    EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[1]), UnorderedElementsAre())
+    EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[1]),
+                UnorderedElementsAre())
         << " : " << logfiles_[1];
-    EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[2]), UnorderedElementsAre())
+    EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[2]),
+                UnorderedElementsAre())
         << " : " << logfiles_[2];
 
     // Timing reports and pongs.
@@ -841,13 +870,17 @@ TEST_F(MultinodeLoggerTest, SimpleMultiNode) {
 
     // And then test that the remotely logged timestamp data files only have
     // timestamps in them.
-    EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[8]), UnorderedElementsAre())
+    EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[8]),
+                UnorderedElementsAre())
         << " : " << logfiles_[8];
-    EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[9]), UnorderedElementsAre())
+    EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[9]),
+                UnorderedElementsAre())
         << " : " << logfiles_[9];
-    EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[10]), UnorderedElementsAre())
+    EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[10]),
+                UnorderedElementsAre())
         << " : " << logfiles_[10];
-    EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[11]), UnorderedElementsAre())
+    EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[11]),
+                UnorderedElementsAre())
         << " : " << logfiles_[11];
 
     EXPECT_THAT(CountChannelsData(config, logfiles_[8]),
@@ -1679,8 +1712,8 @@ TEST_F(MultinodeLoggerTest, MessageHeader) {
         configuration::GetNode(log_reader_factory.configuration(), pi2_),
         &log_reader_factory);
 
-    StartLogger(&pi1_logger, "relogged1");
-    StartLogger(&pi2_logger, "relogged2");
+    StartLogger(&pi1_logger, tmp_dir_ + "/relogged1");
+    StartLogger(&pi2_logger, tmp_dir_ + "/relogged2");
 
     log_reader_factory.Run();
   }
