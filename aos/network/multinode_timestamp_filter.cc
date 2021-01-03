@@ -111,6 +111,7 @@ std::vector<double> TimestampProblem::Solve() {
             << absl::StrJoin(gradient, ", ", MyFormatter()) << "] after "
             << count_ << " cycles.";
   }
+  nlopt_destroy(opt);
   return result;
 }
 
