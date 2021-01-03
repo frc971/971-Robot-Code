@@ -1321,11 +1321,15 @@ TEST(SimulatedEventLoopTest, MultinodeStartupTesting) {
   std::unique_ptr<EventLoop> pi1_remote_timestamp =
       simulated_event_loop_factory.MakeEventLoop("pi1_remote_timestamp", pi1);
 
+  const chrono::nanoseconds network_delay =
+      simulated_event_loop_factory.network_delay();
+
   int reliable_timestamp_count = 0;
   pi1_remote_timestamp->MakeWatcher(
       "/pi1/aos/remote_timestamps/pi2",
       [reliable_channel_index, &reliable_timestamp_count,
-       &simulated_event_loop_factory, pi2](const RemoteMessage &header) {
+       &simulated_event_loop_factory, pi2, network_delay, &pi2_pong_event_loop,
+       &pi1_remote_timestamp](const RemoteMessage &header) {
         EXPECT_TRUE(header.has_boot_uuid());
         EXPECT_EQ(header.boot_uuid()->string_view(),
                   simulated_event_loop_factory.GetNodeEventLoopFactory(pi2)
@@ -1335,6 +1339,14 @@ TEST(SimulatedEventLoopTest, MultinodeStartupTesting) {
         if (header.channel_index() == reliable_channel_index) {
           ++reliable_timestamp_count;
         }
+
+        const aos::monotonic_clock::time_point header_monotonic_sent_time(
+            chrono::nanoseconds(header.monotonic_sent_time()));
+
+        EXPECT_EQ(pi1_remote_timestamp->context().monotonic_event_time,
+                  header_monotonic_sent_time + network_delay +
+                      (pi1_remote_timestamp->monotonic_now() -
+                       pi2_pong_event_loop->monotonic_now()));
       });
 
   // Wait to let timestamp estimation start up before looking for the results.
