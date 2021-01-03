@@ -124,6 +124,10 @@ table MessageHeader {
   realtime_remote_time:int64 = -9223372036854775808 (id: 6);
   // Queue index of this message on the remote node.
   remote_queue_index:uint32 = 4294967295 (id: 7);
+
+  // Time this timestamp was received on the monotonic clock of the logger node
+  // in nanoseconds.
+  monotonic_timestamp_time:int64 = -9223372036854775808 (id: 8);
 }
 
 root_type MessageHeader;

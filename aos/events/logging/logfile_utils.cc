@@ -530,6 +530,9 @@ std::ostream &operator<<(std::ostream &os, const TimestampedMessage &m) {
   if (m.realtime_remote_time != realtime_clock::min_time) {
     os << ", .realtime_remote_time=" << m.realtime_remote_time;
   }
+  if (m.monotonic_timestamp_time != monotonic_clock::min_time) {
+    os << ", .monotonic_timestamp_time=" << m.monotonic_timestamp_time;
+  }
   if (m.data.Verify()) {
     os << ", .data="
        << aos::FlatbufferToJson(m.data,
@@ -666,9 +669,19 @@ Message *NodeMerger::Front() {
       oldest = m;
       current_ = &parts_sorter;
     } else if (*m == *oldest) {
-      // Found a duplicate.  It doesn't matter which one we return.  It is
-      // easiest to just drop the new one.
-      parts_sorter.PopFront();
+      // Found a duplicate.  If there is a choice, we want the one which has the
+      // timestamp time.
+      if (!m->data.message().has_monotonic_timestamp_time()) {
+        parts_sorter.PopFront();
+      } else if (!oldest->data.message().has_monotonic_timestamp_time()) {
+        current_->PopFront();
+        current_ = &parts_sorter;
+        oldest = m;
+      } else {
+        CHECK_EQ(m->data.message().monotonic_timestamp_time(),
+                 oldest->data.message().monotonic_timestamp_time());
+        parts_sorter.PopFront();
+      }
     }
 
     // PopFront may change this, so compute it down here.
@@ -702,6 +715,7 @@ TimestampMapper::TimestampMapper(std::vector<LogParts> parts)
                .remote_queue_index = 0xffffffff,
                .monotonic_remote_time = monotonic_clock::min_time,
                .realtime_remote_time = realtime_clock::min_time,
+               .monotonic_timestamp_time = monotonic_clock::min_time,
                .data = SizePrefixedFlatbufferVector<MessageHeader>::Empty()} {
   for (const LogParts *part : node_merger_.Parts()) {
     if (!configuration_) {
@@ -770,6 +784,7 @@ void TimestampMapper::FillMessage(Message *m) {
       .remote_queue_index = 0xffffffff,
       .monotonic_remote_time = monotonic_clock::min_time,
       .realtime_remote_time = realtime_clock::min_time,
+      .monotonic_timestamp_time = monotonic_clock::min_time,
       .data = std::move(m->data)};
 }
 
@@ -843,6 +858,9 @@ TimestampedMessage *TimestampMapper::Front() {
                 m->data.message().monotonic_remote_time())),
         .realtime_remote_time = realtime_clock::time_point(
             std::chrono::nanoseconds(m->data.message().realtime_remote_time())),
+        .monotonic_timestamp_time =
+            monotonic_clock::time_point(std::chrono::nanoseconds(
+                m->data.message().monotonic_timestamp_time())),
         .data = std::move(data.data)};
     CHECK_GE(message_.monotonic_event_time, last_message_time_);
     last_message_time_ = message_.monotonic_event_time;

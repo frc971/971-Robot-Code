@@ -358,6 +358,9 @@ struct TimestampedMessage {
   monotonic_clock::time_point monotonic_remote_time = monotonic_clock::min_time;
   realtime_clock::time_point realtime_remote_time = realtime_clock::min_time;
 
+  monotonic_clock::time_point monotonic_timestamp_time =
+      monotonic_clock::min_time;
+
   SizePrefixedFlatbufferVector<MessageHeader> data;
 };
 
