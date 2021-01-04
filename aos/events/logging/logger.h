@@ -552,13 +552,9 @@ class LogReader {
     // Connects up the timestamp mappers.
     void AddPeer(State *peer);
 
-    // Returns the timestamps, channel_index, and message from a channel.
-    // update_time (will be) set to true when popping this message causes the
-    // filter to change the time offset estimation function.
-    TimestampedMessage PopOldest(bool *update_time);
-
-    // Returns the oldest message (if it exists) non destructively.
-    const TimestampedMessage &PeekOldest();
+    // Returns the next sorted message with all the timestamps extracted and
+    // matched.
+    TimestampedMessage PopOldest();
 
     // Returns the monotonic time of the oldest message.
     monotonic_clock::time_point OldestMessageTime() const;
@@ -639,11 +635,6 @@ class LogReader {
                     RemoteMessageSender *remote_timestamp_sender,
                     State *source_state);
 
-    // Returns if we have read all the messages from all the logs.
-    bool at_end() const {
-      return timestamp_mapper_ ? timestamp_mapper_->Front() == nullptr : true;
-    }
-
     // Unregisters everything so we can destory the event loop.
     void Deregister();
 
@@ -671,6 +662,8 @@ class LogReader {
                    << configuration::StrippedChannelToString(
                           event_loop_->configuration()->channels()->Get(
                               std::get<0>(message).channel_index))
+                   << (std::get<0>(message).data.span().size() == 0 ? " null"
+                                                                    : " data")
                    << "\n";
         } else if (i == 7) {
           messages << "...\n";
