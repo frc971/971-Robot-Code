@@ -15,8 +15,6 @@
 #include "y2020/control_loops/drivetrain/drivetrain_base.h"
 #include "y2020/control_loops/drivetrain/localizer.h"
 
-DEFINE_string(logfile, "/tmp/logfile.bfbs",
-              "Name of the logfile to read from.");
 DEFINE_string(config, "y2020/config.json",
               "Name of the config file to replay using.");
 DEFINE_string(output_file, "/tmp/replayed.bfbs",
@@ -30,7 +28,15 @@ int main(int argc, char **argv) {
   const aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig(FLAGS_config);
 
-  aos::logger::LogReader reader(FLAGS_logfile, &config.message());
+  // find logfiles
+  std::vector<std::string> unsorted_logfiles =
+      aos::logger::FindLogs(argc, argv);
+
+  // sort logfiles
+  const std::vector<aos::logger::LogFile> logfiles = aos::logger::SortParts(unsorted_logfiles);
+
+  // open logfiles
+  aos::logger::LogReader reader(logfiles, &config.message());
   // TODO(james): Actually enforce not sending on the same buses as the logfile
   // spews out.
   reader.RemapLoggedChannel("/drivetrain",
@@ -48,7 +54,18 @@ int main(int argc, char **argv) {
       reader.event_loop_factory()->MakeEventLoop("log_writer", node);
   log_writer_event_loop->SkipTimingReport();
   aos::logger::Logger writer(log_writer_event_loop.get());
-  writer.StartLoggingLocalNamerOnRun(FLAGS_output_file);
+
+
+  std::unique_ptr<aos::logger::LogNamer> log_namer;
+  log_namer = std::make_unique<aos::logger::MultiNodeLogNamer>(
+      absl::StrCat(FLAGS_output_file, "/"),
+      log_writer_event_loop->configuration(),
+      log_writer_event_loop->node());
+
+  aos::logger::Logger logger(log_writer_event_loop.get());
+  log_writer_event_loop->OnRun([&log_namer, &logger]() {
+    logger.StartLogging(std::move(log_namer));
+  });
 
   std::unique_ptr<aos::EventLoop> drivetrain_event_loop =
       reader.event_loop_factory()->MakeEventLoop("drivetrain", node);
