@@ -50,7 +50,7 @@ std::vector<double> TimestampProblem::SolveDouble() {
 
   // Ask for really good.  This is very quadratic, so it should be pretty
   // precise.
-  nlopt_set_xtol_rel(opt, 1e-5);
+  nlopt_set_xtol_rel(opt, 1e-9);
 
   cost_call_count_ = 0;
 
@@ -112,7 +112,7 @@ std::vector<monotonic_clock::time_point> TimestampProblem::DoubleToMonotonic(
   for (size_t i = 0; i < result.size(); ++i) {
     if (live(i)) {
       result[i] = base_clock(i) + std::chrono::nanoseconds(static_cast<int64_t>(
-                                      std::floor(get_t(r, i))));
+                                      std::round(get_t(r, i))));
     } else {
       result[i] = monotonic_clock::min_time;
     }
@@ -805,9 +805,11 @@ MultiNodeNoncausalOffsetEstimator::NextSolution(
   // Ok, now solve for the minimum time on each channel.
   std::vector<aos::monotonic_clock::time_point> times;
   NoncausalTimestampFilter *next_filter = nullptr;
+  size_t solution_index = 0;
   {
     size_t node_a_index = 0;
     for (const auto &filters : filters_per_node_) {
+      VLOG(1) << "Investigating filter for node " << node_a_index;
       monotonic_clock::time_point next_node_time = monotonic_clock::max_time;
       NoncausalTimestampFilter *next_node_filter = nullptr;
       // Find the oldest time for each node in each filter, and solve for that
@@ -839,9 +841,8 @@ MultiNodeNoncausalOffsetEstimator::NextSolution(
         // on the node we are solving for.  The rate that time elapses should be
         // ~1.
         problem->set_base_clock(
-            node_index,
-            base_times[node_a_index] +
-                (next_node_time - base_times[problem->solution_node()]));
+            node_index, base_times[node_index] +
+                            (next_node_time - base_times[node_a_index]));
       }
 
       problem->set_solution_node(node_a_index);
@@ -852,9 +853,16 @@ MultiNodeNoncausalOffsetEstimator::NextSolution(
       // TODO(austin): Can we cache?  Solving is expensive.
       std::vector<monotonic_clock::time_point> solution = problem->Solve();
 
+      if (VLOG_IS_ON(1)) {
+        VLOG(1) << "Candidate solution for node " << node_a_index << " is";
+        for (size_t i = 0; i < solution.size(); ++i) {
+          VLOG(1) << "  " << solution[i];
+        }
+      }
       if (times.empty()) {
         times = std::move(solution);
         next_filter = next_node_filter;
+        solution_index = node_a_index;
         ++node_a_index;
         continue;
       }
@@ -869,6 +877,7 @@ MultiNodeNoncausalOffsetEstimator::NextSolution(
           // The new solution is better!  Save it.
           times = std::move(solution);
           next_filter = next_node_filter;
+          solution_index = node_a_index;
           break;
         case TimeComparison::kInvalid:
           // Somehow the new solution is better *and* worse than the old
@@ -884,6 +893,12 @@ MultiNodeNoncausalOffsetEstimator::NextSolution(
           break;
       }
       ++node_a_index;
+    }
+  }
+  if (VLOG_IS_ON(1)) {
+    VLOG(1) << "Best solution is for node " << solution_index;
+    for (size_t i = 0; i < times.size(); ++i) {
+      VLOG(1) << "  " << times[i];
     }
   }
   return std::make_tuple(next_filter, std::move(times));
@@ -906,6 +921,7 @@ MultiNodeNoncausalOffsetEstimator::NextTimestamp() {
   // All done.
   if (next_filter == nullptr) {
     if (first_solution_) {
+      VLOG(1) << "No more timestamps and the first solution.";
       // If this is our first time, there is no solution.  Instead of giving up
       // completely, (and providing no estimate of time at all), just say that
       // everything is on the distributed clock.  This will then get used as a
@@ -945,6 +961,7 @@ MultiNodeNoncausalOffsetEstimator::NextTimestamp() {
     std::vector<aos::monotonic_clock::time_point> resolved_times;
     NoncausalTimestampFilter *resolved_next_filter = nullptr;
 
+    VLOG(1) << "Resolving with updated base times for accuracy.";
     std::tie(resolved_next_filter, resolved_times) =
         NextSolution(&problem, times);
 

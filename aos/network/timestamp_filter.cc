@@ -16,7 +16,7 @@ namespace {
 namespace chrono = std::chrono;
 
 std::string TimeString(const aos::monotonic_clock::time_point t,
-                                        std::chrono::nanoseconds o) {
+                       std::chrono::nanoseconds o) {
   std::stringstream ss;
   ss << "O(" << t << ") = " << o.count() << ", remote " << t + o;
   return ss.str();
@@ -962,7 +962,7 @@ void NoncausalTimestampFilter::Sample(
              x,
          monotonic_clock::time_point t) { return std::get<0>(x) < t; });
 
-  CHECK (it != timestamps_.end());
+  CHECK(it != timestamps_.end());
 
   CHECK(!std::get<2>(*(it)))
       << ": Tried to insert " << monotonic_now << " before " << std::get<0>(*it)
@@ -1244,6 +1244,23 @@ void NoncausalOffsetEstimator::Sample(
     a_.Sample(node_delivered_time, other_node_sent_time - node_delivered_time);
   } else if (node == node_b_) {
     b_.Sample(node_delivered_time, other_node_sent_time - node_delivered_time);
+  } else {
+    LOG(FATAL) << "Unknown node " << node->name()->string_view();
+  }
+}
+
+void NoncausalOffsetEstimator::ReverseSample(
+    const Node *node, aos::monotonic_clock::time_point node_sent_time,
+    aos::monotonic_clock::time_point other_node_delivered_time) {
+  VLOG(1) << "Reverse sample delivered " << other_node_delivered_time
+          << " sent " << node_sent_time << " from "
+          << node->name()->string_view();
+  if (node == node_a_) {
+    b_.Sample(other_node_delivered_time,
+              node_sent_time - other_node_delivered_time);
+  } else if (node == node_b_) {
+    a_.Sample(other_node_delivered_time,
+              node_sent_time - other_node_delivered_time);
   } else {
     LOG(FATAL) << "Unknown node " << node->name()->string_view();
   }
