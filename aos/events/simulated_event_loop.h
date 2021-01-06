@@ -184,6 +184,11 @@ class NodeEventLoopFactory {
         time_converter);
   }
 
+  // Sets the boot UUID for this node.  This typically should only be used by
+  // the log reader.
+  void set_boot_uuid(std::string_view uuid) {
+    boot_uuid_ = UUID::FromString(uuid);
+  }
   // Returns the boot UUID for this node.
   const UUID &boot_uuid() const { return boot_uuid_; }
 

@@ -30,7 +30,7 @@ using aos::testing::MessageCounter;
 constexpr std::string_view kSingleConfigSha1(
     "bc8c9c2e31589eae6f0e36d766f6a437643e861d9568b7483106841cf7504dea");
 constexpr std::string_view kConfigSha1(
-    "0000c81e444ac470b8d29fb864621ae93a0e294a7e90c0dc4840d0f0d40fd72e");
+    "f59be0b208c3feab512abac12720b53166303b382b39806e2beeb46e3b9d2a4a");
 
 class LoggerTest : public ::testing::Test {
  public:
@@ -805,6 +805,10 @@ TEST_F(MultinodeLoggerTest, SimpleMultiNode) {
         CountChannelsData(config, logfiles_[0]),
         UnorderedElementsAre(
             std::make_tuple("/pi1/aos", "aos.message_bridge.Timestamp", 200),
+            std::make_tuple("/pi1/aos", "aos.message_bridge.ServerStatistics",
+                            21),
+            std::make_tuple("/pi1/aos", "aos.message_bridge.ClientStatistics",
+                            200),
             std::make_tuple("/pi1/aos", "aos.timing.Report", 40),
             std::make_tuple("/test", "aos.examples.Ping", 2001)))
         << " : " << logfiles_[0];
@@ -839,6 +843,10 @@ TEST_F(MultinodeLoggerTest, SimpleMultiNode) {
         CountChannelsData(config, logfiles_[3]),
         UnorderedElementsAre(
             std::make_tuple("/pi2/aos", "aos.message_bridge.Timestamp", 200),
+            std::make_tuple("/pi2/aos", "aos.message_bridge.ServerStatistics",
+                            21),
+            std::make_tuple("/pi2/aos", "aos.message_bridge.ClientStatistics",
+                            200),
             std::make_tuple("/pi2/aos", "aos.timing.Report", 40),
             std::make_tuple("/test", "aos.examples.Pong", 2001)))
         << " : " << logfiles_[3];
@@ -1595,11 +1603,6 @@ TEST_F(MultinodeLoggerTest, MessageHeader) {
   std::unique_ptr<EventLoop> pi2_event_loop =
       log_reader_factory.MakeEventLoop("test", pi2);
 
-  MessageCounter<RemoteMessage> pi1_original_message_header_counter(
-      pi1_event_loop.get(), "/original/aos/remote_timestamps/pi2");
-  MessageCounter<RemoteMessage> pi2_original_message_header_counter(
-      pi2_event_loop.get(), "/original/aos/remote_timestamps/pi1");
-
   aos::Fetcher<message_bridge::Timestamp> pi1_timestamp_on_pi1_fetcher =
       pi1_event_loop->MakeFetcher<message_bridge::Timestamp>("/pi1/aos");
   aos::Fetcher<message_bridge::Timestamp> pi1_timestamp_on_pi2_fetcher =
@@ -1772,10 +1775,17 @@ TEST_F(MultinodeLoggerTest, MessageHeader) {
     log_reader_factory.Run();
   }
 
-  EXPECT_EQ(pi2_original_message_header_counter.count(), 0u);
-  EXPECT_EQ(pi1_original_message_header_counter.count(), 0u);
-
   reader.Deregister();
+
+  // And verify that we can run the LogReader over the relogged files without
+  // hitting any fatal errors.
+  {
+    LogReader relogged_reader(SortParts(
+        MakeLogFiles(tmp_dir_ + "/relogged1", tmp_dir_ + "/relogged2")));
+    relogged_reader.Register();
+
+    relogged_reader.event_loop_factory()->Run();
+  }
 }
 
 // Tests that we properly populate and extract the logger_start time by setting

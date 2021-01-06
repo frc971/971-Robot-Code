@@ -460,6 +460,16 @@ class LogReader {
                                      true) != nullptr;
   }
 
+  // Returns true if the channel exists on the node and was logged.
+  template <typename T>
+  bool HasLoggedChannel(std::string_view name, const Node *node = nullptr) {
+    const Channel *channel = configuration::GetChannel(logged_configuration(), name,
+                                     T::GetFullyQualifiedName(), "", node,
+                                     true);
+    if (channel == nullptr) return false;
+    return channel->logger() != LoggerConfig::NOT_LOGGED;
+  }
+
   SimulatedEventLoopFactory *event_loop_factory() {
     return event_loop_factory_;
   }

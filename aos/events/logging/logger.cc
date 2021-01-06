@@ -998,6 +998,9 @@ LogReader::LogReader(std::vector<LogFile> log_files,
         CHECK(!HasChannel<RemoteMessage>(channel, node))
             << ": Can't have both a MessageHeader and RemoteMessage remote "
                "timestamp channel.";
+        // In theory, we should check NOT_LOGGED like RemoteMessage and be more
+        // careful about updating the config, but there are fewer and fewer logs
+        // with MessageHeader remote messages, so it isn't worth the effort.
         RemapLoggedChannel<MessageHeader>(channel, node, "/original",
                                           "aos.message_bridge.RemoteMessage");
       } else {
@@ -1005,7 +1008,13 @@ LogReader::LogReader(std::vector<LogFile> log_files,
             << ": Failed to find {\"name\": \"" << channel << "\", \"type\": \""
             << RemoteMessage::GetFullyQualifiedName() << "\"} for node "
             << node->name()->string_view();
-        RemapLoggedChannel<RemoteMessage>(channel, node);
+        // Only bother to remap if there's something on the channel.  We can
+        // tell if the channel was marked NOT_LOGGED or not.  This makes the
+        // config not change un-necesarily when we replay a log with NOT_LOGGED
+        // messages.
+        if (HasLoggedChannel<RemoteMessage>(channel, node)) {
+          RemapLoggedChannel<RemoteMessage>(channel, node);
+        }
       }
     }
   }
@@ -1118,6 +1127,10 @@ void LogReader::Register(SimulatedEventLoopFactory *event_loop_factory) {
                  filtered_parts[0].source_boot_uuid)
             << ": Found parts from different boots "
             << LogFileVectorToString(log_files_);
+      }
+      if (!filtered_parts[0].source_boot_uuid.empty()) {
+        event_loop_factory_->GetNodeEventLoopFactory(node)->set_boot_uuid(
+            filtered_parts[0].source_boot_uuid);
       }
     }
 

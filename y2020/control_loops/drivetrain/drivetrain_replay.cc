@@ -17,9 +17,35 @@
 
 DEFINE_string(config, "y2020/config.json",
               "Name of the config file to replay using.");
-DEFINE_string(output_file, "/tmp/replayed.bfbs",
-              "Name of the logfile to write replayed data to.");
+DEFINE_string(output_file, "/tmp/replayed",
+              "Name of the folder to write replayed logs to.");
 DEFINE_int32(team, 971, "Team number to use for logfile replay.");
+
+class LoggerState {
+ public:
+  LoggerState(aos::logger::LogReader *reader, const aos::Node *node)
+      : event_loop_(
+            reader->event_loop_factory()->MakeEventLoop("logger", node)),
+        namer_(std::make_unique<aos::logger::MultiNodeLogNamer>(
+            absl::StrCat(FLAGS_output_file, "/", node->name()->string_view(),
+                         "/"),
+            event_loop_->configuration(), node)),
+        logger_(std::make_unique<aos::logger::Logger>(event_loop_.get())) {
+    event_loop_->SkipTimingReport();
+    event_loop_->OnRun([this]() {
+      logger_->StartLogging(std::move(namer_), aos::UUID::Zero().string_view());
+    });
+  }
+
+ private:
+  std::unique_ptr<aos::EventLoop> event_loop_;
+  std::unique_ptr<aos::logger::LogNamer> namer_;
+  std::unique_ptr<aos::logger::Logger> logger_;
+};
+
+// TODO(james): Currently, this replay produces logfiles that can't be read due
+// to time estimation issues. Pending the active refactorings of the
+// timestamp-related code, fix this.
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
 
@@ -33,7 +59,8 @@ int main(int argc, char **argv) {
       aos::logger::FindLogs(argc, argv);
 
   // sort logfiles
-  const std::vector<aos::logger::LogFile> logfiles = aos::logger::SortParts(unsorted_logfiles);
+  const std::vector<aos::logger::LogFile> logfiles =
+      aos::logger::SortParts(unsorted_logfiles);
 
   // open logfiles
   aos::logger::LogReader reader(logfiles, &config.message());
@@ -45,27 +72,21 @@ int main(int argc, char **argv) {
                             "frc971.control_loops.drivetrain.Output");
   reader.Register();
 
+  // List of nodes to create loggers for (note: currently just roborio; this
+  // code was refactored to allow easily adding new loggers to accommodate
+  // debugging and potential future changes).
+  const std::vector<std::string> nodes_to_log = {"roborio"};
+  std::vector<std::unique_ptr<LoggerState>> loggers;
+  for (const std::string& node : nodes_to_log) {
+    loggers.emplace_back(std::make_unique<LoggerState>(
+        &reader,
+        aos::configuration::GetNode(reader.configuration(), node)));
+  }
+
   const aos::Node *node = nullptr;
   if (aos::configuration::MultiNode(reader.configuration())) {
     node = aos::configuration::GetNode(reader.configuration(), "roborio");
   }
-
-  std::unique_ptr<aos::EventLoop> log_writer_event_loop =
-      reader.event_loop_factory()->MakeEventLoop("log_writer", node);
-  log_writer_event_loop->SkipTimingReport();
-  aos::logger::Logger writer(log_writer_event_loop.get());
-
-
-  std::unique_ptr<aos::logger::LogNamer> log_namer;
-  log_namer = std::make_unique<aos::logger::MultiNodeLogNamer>(
-      absl::StrCat(FLAGS_output_file, "/"),
-      log_writer_event_loop->configuration(),
-      log_writer_event_loop->node());
-
-  aos::logger::Logger logger(log_writer_event_loop.get());
-  log_writer_event_loop->OnRun([&log_namer, &logger]() {
-    logger.StartLogging(std::move(log_namer));
-  });
 
   std::unique_ptr<aos::EventLoop> drivetrain_event_loop =
       reader.event_loop_factory()->MakeEventLoop("drivetrain", node);
