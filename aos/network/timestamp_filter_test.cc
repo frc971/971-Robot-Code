@@ -76,9 +76,19 @@ TEST(ClippedAverageFilterTest, Sample) {
   EXPECT_EQ(filter.offset(), chrono::microseconds(100500));
 }
 
+class FilterTest : public ::testing::Test {
+  public:
+   FlatbufferDetachedBuffer<Node> node_buffer =
+       JsonToFlatbuffer<Node>("{\"name\": \"test\"}");
+   const Node *node = &node_buffer.message();
+};
+
+using NoncausalTimestampFilterTest = FilterTest;
+using NoncausalTimestampFilterDeathTest = FilterTest;
+
 // Tests that 2 samples results in the correct line between them, and the
 // correct intermediate as it is being built.
-TEST(NoncausalTimestampFilterTest, PeekPop) {
+TEST_F(NoncausalTimestampFilterTest, PeekPop) {
   const monotonic_clock::time_point ta(chrono::nanoseconds(100000));
   const chrono::nanoseconds oa(chrono::nanoseconds(1000));
   const monotonic_clock::time_point tb(chrono::nanoseconds(200000));
@@ -88,7 +98,7 @@ TEST(NoncausalTimestampFilterTest, PeekPop) {
 
   // Simple case, everything is done in order, nothing is dropped.
   {
-    NoncausalTimestampFilter filter;
+    NoncausalTimestampFilter filter(node);
 
     filter.Sample(ta, oa);
     filter.Sample(tb, ob);
@@ -105,7 +115,7 @@ TEST(NoncausalTimestampFilterTest, PeekPop) {
 
   // Now try again while dropping ta after popping it.
   {
-    NoncausalTimestampFilter filter;
+    NoncausalTimestampFilter filter(node);
 
     filter.Sample(ta, oa);
     filter.Sample(tb, ob);
@@ -125,7 +135,7 @@ TEST(NoncausalTimestampFilterTest, PeekPop) {
 
   // Now try again while dropping ta before popping it.
   {
-    NoncausalTimestampFilter filter;
+    NoncausalTimestampFilter filter(node);
 
     filter.Sample(ta, oa);
     filter.Sample(tb, ob);
@@ -142,20 +152,20 @@ TEST(NoncausalTimestampFilterTest, PeekPop) {
 }
 
 // Tests that invalid samples get clipped as expected.
-TEST(NoncausalTimestampFilterTest, ClippedSample) {
+TEST_F(NoncausalTimestampFilterTest, ClippedSample) {
   const monotonic_clock::time_point ta(chrono::milliseconds(0));
   const monotonic_clock::time_point tb(chrono::milliseconds(1));
   const monotonic_clock::time_point tc(chrono::milliseconds(2));
 
   {
     // A positive slope of 1 ms/second is properly applied.
-    NoncausalTimestampFilter filter;
+    NoncausalTimestampFilter filter(node);
 
     filter.Sample(ta, chrono::microseconds(1));
     filter.Debug();
     filter.Sample(tb, chrono::microseconds(2));
     filter.Debug();
-    ASSERT_EQ(filter.Timestamps().size(), 2u);
+    ASSERT_EQ(filter.timestamps_size(), 2u);
 
     EXPECT_EQ(filter.timestamp(0),
               std::make_tuple(ta, chrono::microseconds(1)));
@@ -165,13 +175,13 @@ TEST(NoncausalTimestampFilterTest, ClippedSample) {
 
   {
     // A negative slope of 1 ms/second is properly applied.
-    NoncausalTimestampFilter filter;
+    NoncausalTimestampFilter filter(node);
 
     filter.Sample(ta, chrono::microseconds(1));
     filter.Debug();
     filter.Sample(tb, chrono::microseconds(0));
     filter.Debug();
-    ASSERT_EQ(filter.Timestamps().size(), 2u);
+    ASSERT_EQ(filter.timestamps_size(), 2u);
 
     EXPECT_EQ(filter.timestamp(0),
               std::make_tuple(ta, chrono::microseconds(1)));
@@ -181,59 +191,59 @@ TEST(NoncausalTimestampFilterTest, ClippedSample) {
 
   {
     // Too much negative is ignored.
-    NoncausalTimestampFilter filter;
+    NoncausalTimestampFilter filter(node);
 
     filter.Sample(ta, chrono::microseconds(1));
     filter.Debug();
     filter.Sample(tb, -chrono::microseconds(1));
     filter.Debug();
-    ASSERT_EQ(filter.Timestamps().size(), 1u);
+    ASSERT_EQ(filter.timestamps_size(), 1u);
   }
 
   {
     // Too much positive pulls up the first point.
-    NoncausalTimestampFilter filter;
+    NoncausalTimestampFilter filter(node);
 
     filter.Sample(ta, chrono::microseconds(1));
     filter.Debug();
     filter.Sample(tb, chrono::microseconds(3));
     filter.Debug();
-    ASSERT_EQ(filter.Timestamps().size(), 2u);
+    ASSERT_EQ(filter.timestamps_size(), 2u);
 
-    EXPECT_EQ(std::get<1>(filter.Timestamps()[0]), chrono::microseconds(2));
-    EXPECT_EQ(std::get<1>(filter.Timestamps()[1]), chrono::microseconds(3));
+    EXPECT_EQ(std::get<1>(filter.timestamp(0)), chrono::microseconds(2));
+    EXPECT_EQ(std::get<1>(filter.timestamp(1)), chrono::microseconds(3));
   }
 
   {
     // Too much positive slope removes points.
-    NoncausalTimestampFilter filter;
+    NoncausalTimestampFilter filter(node);
 
     filter.Sample(ta, chrono::microseconds(1));
     filter.Debug();
     filter.Sample(tb, chrono::microseconds(1));
     filter.Debug();
-    ASSERT_EQ(filter.Timestamps().size(), 2u);
+    ASSERT_EQ(filter.timestamps_size(), 2u);
 
     // Now add a sample with a slope of 0.002.  This should back propagate and
     // remove the middle point since it violates our constraints.
     filter.Sample(tc, chrono::microseconds(3));
     filter.Debug();
-    ASSERT_EQ(filter.Timestamps().size(), 2u);
+    ASSERT_EQ(filter.timestamps_size(), 2u);
 
-    EXPECT_EQ(std::get<1>(filter.Timestamps()[0]), chrono::microseconds(1));
-    EXPECT_EQ(std::get<1>(filter.Timestamps()[1]), chrono::microseconds(3));
+    EXPECT_EQ(std::get<1>(filter.timestamp(0)), chrono::microseconds(1));
+    EXPECT_EQ(std::get<1>(filter.timestamp(1)), chrono::microseconds(3));
   }
 }
 
 // Tests that removing points from the filter works as expected.
-TEST(NoncausalTimestampFilterTest, PointRemoval) {
+TEST_F(NoncausalTimestampFilterTest, PointRemoval) {
   const monotonic_clock::time_point t_before(-chrono::milliseconds(1));
   const monotonic_clock::time_point ta(chrono::milliseconds(0));
   const monotonic_clock::time_point tb(chrono::milliseconds(1));
   const monotonic_clock::time_point tc(chrono::milliseconds(2));
 
   // A positive slope of 1 ms/second is properly applied.
-  NoncausalTimestampFilter filter;
+  NoncausalTimestampFilter filter(node);
 
   filter.Sample(ta, chrono::microseconds(1));
   filter.Debug();
@@ -241,45 +251,433 @@ TEST(NoncausalTimestampFilterTest, PointRemoval) {
   filter.Debug();
   filter.Sample(tc, chrono::microseconds(1));
   filter.Debug();
-  ASSERT_EQ(filter.Timestamps().size(), 3u);
+  ASSERT_EQ(filter.timestamps_size(), 3u);
 
   // Before or in the middle of the first line segment shouldn't change the
   // number of points.
   EXPECT_FALSE(filter.Pop(t_before));
-  ASSERT_EQ(filter.Timestamps().size(), 3u);
+  ASSERT_EQ(filter.timestamps_size(), 3u);
 
   EXPECT_FALSE(filter.Pop(ta));
-  ASSERT_EQ(filter.Timestamps().size(), 3u);
+  ASSERT_EQ(filter.timestamps_size(), 3u);
 
   EXPECT_FALSE(filter.Pop(ta + chrono::microseconds(100)));
-  ASSERT_EQ(filter.Timestamps().size(), 3u);
+  ASSERT_EQ(filter.timestamps_size(), 3u);
 
   // The second point should trigger a pop, since the offset computed using the
   // points won't change when it is used, and any times after (even 1-2 ns
   // later) would be wrong.
   EXPECT_TRUE(filter.Pop(tb));
-  ASSERT_EQ(filter.Timestamps().size(), 2u);
+  ASSERT_EQ(filter.timestamps_size(), 2u);
 }
 
 // Tests that inserting duplicate points causes the duplicates to get ignored.
-TEST(NoncausalTimestampFilterTest, DuplicatePoints) {
+TEST_F(NoncausalTimestampFilterTest, DuplicatePoints) {
   const monotonic_clock::time_point ta(chrono::milliseconds(0));
   const chrono::nanoseconds oa(chrono::microseconds(1));
   const monotonic_clock::time_point tb(chrono::milliseconds(1));
   const chrono::nanoseconds ob(chrono::microseconds(2));
 
-  NoncausalTimestampFilter filter;
+  NoncausalTimestampFilter filter(node);
 
   filter.Sample(ta, oa);
   filter.Sample(tb, ob);
-  EXPECT_EQ(filter.Timestamps().size(), 2u);
+  EXPECT_EQ(filter.timestamps_size(), 2u);
 
   filter.Sample(tb, ob);
-  EXPECT_EQ(filter.Timestamps().size(), 2u);
+  EXPECT_EQ(filter.timestamps_size(), 2u);
+}
+
+// Tests that inserting points in the middle of the time sequence works for the
+// simple case.
+TEST_F(NoncausalTimestampFilterTest, BackwardsInTimeSimple) {
+  // Start with the simple case.  A valid point in the middle.
+  const monotonic_clock::time_point ta(chrono::milliseconds(0));
+  const chrono::nanoseconds oa(chrono::microseconds(1));
+
+  const monotonic_clock::time_point tb(chrono::milliseconds(1));
+  const chrono::nanoseconds ob(chrono::microseconds(0));
+
+  const monotonic_clock::time_point tc(chrono::milliseconds(2));
+  const chrono::nanoseconds oc(chrono::microseconds(1));
+  NoncausalTimestampFilter filter(node);
+
+  filter.Sample(ta, oa);
+  filter.Sample(tc, oc);
+  filter.Sample(tb, ob);
+  filter.Debug();
+  EXPECT_EQ(filter.timestamps_size(), 3u);
+
+  EXPECT_EQ(filter.timestamp(0), std::make_tuple(ta, oa));
+  EXPECT_EQ(filter.timestamp(1), std::make_tuple(tb, ob));
+  EXPECT_EQ(filter.timestamp(2), std::make_tuple(tc, oc));
+}
+
+// Tests that inserting a duplicate point at the beginning gets ignored if it is
+// more negative than the original beginning point.
+TEST_F(NoncausalTimestampFilterTest, BackwardsInTimeDuplicateNegative) {
+  const monotonic_clock::time_point ta(chrono::milliseconds(0));
+  const chrono::nanoseconds oa(chrono::microseconds(1));
+
+  const monotonic_clock::time_point tb(chrono::milliseconds(1));
+  const chrono::nanoseconds ob(chrono::microseconds(1));
+  NoncausalTimestampFilter filter(node);
+
+  filter.Sample(ta, oa);
+  filter.Sample(tb, ob);
+  filter.Sample(ta, chrono::microseconds(0));
+  filter.Debug();
+  EXPECT_EQ(filter.timestamps_size(), 2u);
+
+  EXPECT_EQ(filter.timestamp(0), std::make_tuple(ta, chrono::microseconds(1)));
+  EXPECT_EQ(filter.timestamp(1), std::make_tuple(tb, ob));
+}
+
+// Tests that inserting a better duplicate point at the beginning gets taken if
+// it is more positive than the original beginning point.
+TEST_F(NoncausalTimestampFilterTest, BackwardsInTimeDuplicatePositive) {
+  const monotonic_clock::time_point ta(chrono::milliseconds(0));
+  const chrono::nanoseconds oa(chrono::microseconds(1));
+
+  const monotonic_clock::time_point tb(chrono::milliseconds(1));
+  const chrono::nanoseconds ob(chrono::microseconds(1));
+  NoncausalTimestampFilter filter(node);
+
+  filter.Sample(ta, oa);
+  filter.Sample(tb, ob);
+  filter.Sample(ta, chrono::microseconds(2));
+  filter.Debug();
+  EXPECT_EQ(filter.timestamps_size(), 2u);
+
+  EXPECT_EQ(filter.timestamp(0), std::make_tuple(ta, chrono::microseconds(2)));
+  EXPECT_EQ(filter.timestamp(1), std::make_tuple(tb, ob));
+}
+
+// Tests that inserting a negative duplicate point in the middle is dropped.
+TEST_F(NoncausalTimestampFilterTest, BackwardsInTimeMiddleDuplicateNegative) {
+  const monotonic_clock::time_point ta(chrono::milliseconds(0));
+  const chrono::nanoseconds oa(chrono::microseconds(1));
+
+  const monotonic_clock::time_point tb(chrono::milliseconds(1));
+  const chrono::nanoseconds ob(chrono::microseconds(2));
+
+  const monotonic_clock::time_point tc(chrono::milliseconds(2));
+  const chrono::nanoseconds oc(chrono::microseconds(1));
+  NoncausalTimestampFilter filter(node);
+
+  filter.Sample(ta, oa);
+  filter.Sample(tb, ob);
+  filter.Sample(tc, oc);
+  filter.Sample(tb, chrono::microseconds(0));
+  filter.Debug();
+  EXPECT_EQ(filter.timestamps_size(), 3u);
+
+  EXPECT_EQ(filter.timestamp(0), std::make_tuple(ta, oa));
+  EXPECT_EQ(filter.timestamp(1), std::make_tuple(tb, ob));
+  EXPECT_EQ(filter.timestamp(2), std::make_tuple(tc, oc));
+}
+
+// Tests that inserting a positive duplicate point in the middle is taken.
+TEST_F(NoncausalTimestampFilterTest, BackwardsInTimeMiddleDuplicatePositive) {
+  const monotonic_clock::time_point ta(chrono::milliseconds(0));
+  const chrono::nanoseconds oa(chrono::microseconds(1));
+
+  const monotonic_clock::time_point tb(chrono::milliseconds(1));
+  const chrono::nanoseconds ob(chrono::microseconds(0));
+
+  const monotonic_clock::time_point tc(chrono::milliseconds(2));
+  const chrono::nanoseconds oc(chrono::microseconds(1));
+  NoncausalTimestampFilter filter(node);
+
+  filter.Sample(ta, oa);
+  filter.Sample(tb, ob);
+  filter.Sample(tc, oc);
+  filter.Sample(tb, chrono::microseconds(2));
+  filter.Debug();
+  EXPECT_EQ(filter.timestamps_size(), 3u);
+
+  EXPECT_EQ(filter.timestamp(0), std::make_tuple(ta, oa));
+  EXPECT_EQ(filter.timestamp(1), std::make_tuple(tb, chrono::microseconds(2)));
+  EXPECT_EQ(filter.timestamp(2), std::make_tuple(tc, oc));
+}
+
+// Tests that a bunch of points added in any order results in the same answer as
+// adding them in order.  4 points should give us enough combos, and try all the
+// orderings of the points too.  Given that the in and out of order code
+// essentially re-implements the same logic, this is an awesome consistency
+// check.
+TEST_F(NoncausalTimestampFilterTest, RandomTimeInsertion) {
+  // 2 ms apart with 1 us of resolution on the delta should give us all sorts of
+  // equality constraints for all sorts of orderings.
+  const std::array<monotonic_clock::time_point, 4> t(
+      {monotonic_clock::time_point(chrono::milliseconds(0)),
+       monotonic_clock::time_point(chrono::milliseconds(2)),
+       monotonic_clock::time_point(chrono::milliseconds(4)),
+       monotonic_clock::time_point(chrono::milliseconds(6))});
+
+  for (int i = -10; i < 10; ++i) {
+    for (int j = -10; j < 10; ++j) {
+      for (int k = -10; k < 10; ++k) {
+        for (int l = -10; l < 10; ++l) {
+          std::array<chrono::nanoseconds, 4> o(
+              {chrono::microseconds(i), chrono::microseconds(j),
+               chrono::microseconds(k), chrono::microseconds(l)});
+          NoncausalTimestampFilter forward(node);
+
+          VLOG(1) << "Sorting in order";
+          forward.Sample(t[0], o[0]);
+          forward.Sample(t[1], o[1]);
+          forward.Sample(t[2], o[2]);
+          forward.Sample(t[3], o[3]);
+
+          // Confirm everything is within the velocity bounds.
+          for (size_t i = 1; i < forward.timestamps_size(); ++i) {
+            const chrono::nanoseconds dt =
+                std::get<0>(forward.timestamp(i)) -
+                std::get<0>(forward.timestamp(i - 1));
+            const chrono::nanoseconds doffset =
+                std::get<1>(forward.timestamp(i)) -
+                std::get<1>(forward.timestamp(i - 1));
+            EXPECT_GE(doffset, -dt * kMaxVelocity());
+            EXPECT_LE(doffset, dt * kMaxVelocity());
+          }
+
+          // Now that we have the correct answer, try all the combos to see
+          // what breaks it.
+          std::array<int, 4> indices({0, 1, 2, 3});
+          int r = 0;
+          do {
+            std::array<
+                std::pair<monotonic_clock::time_point, chrono::nanoseconds>, 4>
+                pairs({std::make_pair(t[indices[0]], o[indices[0]]),
+                       std::make_pair(t[indices[1]], o[indices[1]]),
+                       std::make_pair(t[indices[2]], o[indices[2]]),
+                       std::make_pair(t[indices[3]], o[indices[3]])});
+
+            VLOG(1) << "Sorting randomized";
+            NoncausalTimestampFilter random(node);
+            random.Sample(pairs[0].first, pairs[0].second);
+            if (VLOG_IS_ON(1)) {
+              random.Debug();
+            }
+            random.Sample(pairs[1].first, pairs[1].second);
+            if (VLOG_IS_ON(1)) {
+              random.Debug();
+            }
+            random.Sample(pairs[2].first, pairs[2].second);
+            if (VLOG_IS_ON(1)) {
+              random.Debug();
+            }
+            random.Sample(pairs[3].first, pairs[3].second);
+            if (VLOG_IS_ON(1)) {
+              random.Debug();
+            }
+
+            if (forward.timestamps_size() != random.timestamps_size()) {
+              LOG(INFO) << "Iteration i == " << i << " && j == " << j
+                        << " && k == " << k << " && l == " << l
+                        << " && r == " << r;
+              LOG(INFO) << "Forward";
+              forward.Debug();
+              LOG(INFO) << "Random";
+              for (int i = 0; i < 4; ++i) {
+                LOG(INFO) << "Sample(" << pairs[i].first << ", "
+                          << pairs[i].second.count() << ")";
+              }
+              random.Debug();
+            }
+            ASSERT_EQ(forward.timestamps_size(), random.timestamps_size());
+            for (size_t s = 0; s < forward.timestamps_size(); ++s) {
+              EXPECT_EQ(forward.timestamp(s), random.timestamp(s));
+            }
+            ++r;
+          } while (std::next_permutation(indices.begin(), indices.end()));
+        }
+      }
+    }
+  }
+}
+
+// Tests that the right points get frozen when we ask for them to be.
+TEST_F(NoncausalTimestampFilterTest, FrozenTimestamps) {
+  // Start with the simple case.  A valid point in the middle.
+  const monotonic_clock::time_point ta(chrono::milliseconds(0));
+  const chrono::nanoseconds oa(chrono::microseconds(1));
+
+  const monotonic_clock::time_point tb(chrono::milliseconds(1));
+  const chrono::nanoseconds ob(chrono::microseconds(0));
+
+  const monotonic_clock::time_point tc(chrono::milliseconds(2));
+  const chrono::nanoseconds oc(chrono::microseconds(1));
+
+  // Test for our node.
+  {
+    NoncausalTimestampFilter filter(node);
+
+    filter.Sample(ta, oa);
+    filter.Sample(tc, oc);
+    filter.Sample(tb, ob);
+    ASSERT_EQ(filter.timestamps_size(), 3u);
+
+    filter.FreezeUntil(ta - chrono::microseconds(1));
+    EXPECT_TRUE(filter.frozen(0));
+    EXPECT_FALSE(filter.frozen(1));
+
+    filter.FreezeUntil(ta);
+    EXPECT_TRUE(filter.frozen(0));
+    EXPECT_FALSE(filter.frozen(1));
+
+    filter.FreezeUntil(ta + chrono::microseconds(1));
+    EXPECT_TRUE(filter.frozen(0));
+    EXPECT_TRUE(filter.frozen(1));
+    EXPECT_FALSE(filter.frozen(2));
+
+    filter.FreezeUntil(tc);
+    EXPECT_TRUE(filter.frozen(0));
+    EXPECT_TRUE(filter.frozen(1));
+    EXPECT_TRUE(filter.frozen(2));
+  }
+
+  // Test that fully frozen doesn't apply when there is 1 time and we are before
+  // the start.
+  {
+    NoncausalTimestampFilter filter(node);
+
+    filter.Sample(ta, oa);
+
+    filter.FreezeUntil(ta - chrono::microseconds(1));
+    EXPECT_TRUE(filter.frozen(0));
+
+    // New samples aren't frozen until they are explicitly frozen.
+    filter.Sample(tb, ob);
+    EXPECT_FALSE(filter.frozen(1));
+    filter.FreezeUntil(ta + chrono::microseconds(1));
+
+    EXPECT_TRUE(filter.frozen(1));
+  }
+
+  // Test the remote node
+  {
+    NoncausalTimestampFilter filter(node);
+
+    filter.Sample(ta, oa);
+    filter.Sample(tc, oc);
+    filter.Sample(tb, ob);
+    ASSERT_EQ(filter.timestamps_size(), 3u);
+
+    filter.FreezeUntilRemote(ta + oa - chrono::microseconds(1));
+    EXPECT_TRUE(filter.frozen(0));
+    EXPECT_FALSE(filter.frozen(1));
+
+    filter.FreezeUntilRemote(ta + oa);
+    EXPECT_TRUE(filter.frozen(0));
+    EXPECT_FALSE(filter.frozen(1));
+
+    filter.FreezeUntilRemote(ta + oa + chrono::microseconds(1));
+    EXPECT_TRUE(filter.frozen(0));
+    EXPECT_TRUE(filter.frozen(1));
+    EXPECT_FALSE(filter.frozen(2));
+
+    filter.FreezeUntilRemote(tc + oc);
+    EXPECT_TRUE(filter.frozen(0));
+    EXPECT_TRUE(filter.frozen(1));
+    EXPECT_TRUE(filter.frozen(2));
+  }
+
+  // Test that fully frozen doesn't apply when there is 1 time and we are before
+  // the start on the remote node.
+  {
+    NoncausalTimestampFilter filter(node);
+
+    filter.Sample(ta, oa);
+
+    filter.FreezeUntilRemote(ta + oa - chrono::microseconds(1));
+    EXPECT_TRUE(filter.frozen(0));
+
+    filter.Sample(tb, ob);
+    EXPECT_FALSE(filter.frozen(1));
+    filter.FreezeUntilRemote(ta + oa + chrono::microseconds(1));
+
+    EXPECT_TRUE(filter.frozen(1));
+  }
+}
+
+// Tests that we refuse to modify frozen points in a bunch of different ways.
+TEST_F(NoncausalTimestampFilterDeathTest, FrozenTimestamps) {
+  // Start with the simple case.  A valid point in the middle.
+  const monotonic_clock::time_point ta(chrono::milliseconds(0));
+  const chrono::nanoseconds oa(chrono::microseconds(100));
+
+  const monotonic_clock::time_point tb(chrono::milliseconds(100));
+  const chrono::nanoseconds ob(chrono::microseconds(0));
+
+  const monotonic_clock::time_point tc(chrono::milliseconds(200));
+  const chrono::nanoseconds oc(chrono::microseconds(100));
+
+  {
+    // Test that adding before a frozen sample explodes.
+    NoncausalTimestampFilter filter(node);
+
+    filter.Sample(ta, oa);
+    filter.Sample(tb, ob);
+    ASSERT_EQ(filter.timestamps_size(), 2u);
+    filter.FreezeUntil(tb);
+
+    EXPECT_DEATH({ filter.Sample(tb, oa); },
+                 "Tried to insert 0.100000000sec before 0.100000000sec, which "
+                 "is a frozen time");
+  }
+
+  {
+    // Test that if we freeze it all after the end, we refuse any new samples.
+    NoncausalTimestampFilter filter(node);
+
+    filter.Sample(ta, oa);
+    filter.Sample(tb, ob);
+    ASSERT_EQ(filter.timestamps_size(), 2u);
+    filter.FreezeUntil(tc);
+
+    EXPECT_DEATH(
+        { filter.Sample(tc, oc); },
+        "Returned a horizontal line previously and then got a new sample at "
+        "0.200000000sec, 0.2 seconds after the last sample at 0.000000000sec");
+  }
+
+  {
+    // Test that if we freeze it all after the end, we refuse any new samples.
+    NoncausalTimestampFilter filter(node);
+
+    filter.Sample(ta, oa);
+    filter.Sample(tc, oc);
+    ASSERT_EQ(filter.timestamps_size(), 2u);
+    filter.FreezeUntil(tc);
+
+    EXPECT_DEATH(
+        { filter.Sample(tb, ob); },
+        "Tried to insert 0.100000000sec before 0.200000000sec, which is a frozen time");
+  }
+
+  {
+    // Test that if we freeze, and a point in the middle triggers back
+    // propagation, we refuse.
+    NoncausalTimestampFilter filter(node);
+
+    filter.Sample(ta, oa);
+    filter.Sample(tb, ob);
+    filter.Sample(tc, oc);
+    ASSERT_EQ(filter.timestamps_size(), 3u);
+    filter.FreezeUntil(tb);
+
+    EXPECT_DEATH(
+        { filter.Sample(tb, oa); },
+        "Tried to insert 0.100000000sec before 0.100000000sec, which is a frozen time");
+    EXPECT_DEATH({ filter.Sample(tb + chrono::nanoseconds(1), oa); },
+                 "Can't pop an already frozen sample");
+  }
 }
 
 // Tests that all variants of InterpolateOffset do reasonable things.
-TEST(NoncausalTimestampFilterTest, InterpolateOffset) {
+TEST_F(NoncausalTimestampFilterTest, InterpolateOffset) {
   const monotonic_clock::time_point e = monotonic_clock::epoch();
 
   const monotonic_clock::time_point t1 = e + chrono::nanoseconds(0);
@@ -382,7 +780,7 @@ TEST(NoncausalTimestampFilterTest, InterpolateOffset) {
 }
 
 // Tests that FindTimestamps finds timestamps in a sequence.
-TEST(NoncausalTimestampFilterTest, FindTimestamps) {
+TEST_F(NoncausalTimestampFilterTest, FindTimestamps) {
   const monotonic_clock::time_point e = monotonic_clock::epoch();
   // Note: t1, t2, t3 need to be picked such that the slop is small so filter
   // doesn't modify the timestamps.
@@ -393,7 +791,7 @@ TEST(NoncausalTimestampFilterTest, FindTimestamps) {
   const monotonic_clock::time_point t3 = e + chrono::microseconds(2000);
   const chrono::nanoseconds o3 = chrono::nanoseconds(50);
 
-  NoncausalTimestampFilter filter;
+  NoncausalTimestampFilter filter(node);
 
   filter.Sample(t1, o1);
   filter.Sample(t2, o2);
@@ -452,7 +850,7 @@ TEST(NoncausalTimestampFilterTest, FindTimestamps) {
 
 // Tests that Offset returns results indicative of it calling InterpolateOffset
 // and FindTimestamps correctly.
-TEST(NoncausalTimestampFilterTest, Offset) {
+TEST_F(NoncausalTimestampFilterTest, Offset) {
   const monotonic_clock::time_point e = monotonic_clock::epoch();
   // Note: t1, t2, t3 need to be picked such that the slop is small so filter
   // doesn't modify the timestamps.
@@ -468,7 +866,7 @@ TEST(NoncausalTimestampFilterTest, Offset) {
   const chrono::nanoseconds o3 = chrono::nanoseconds(50);
   const double o3d = static_cast<double>(o3.count());
 
-  NoncausalTimestampFilter filter;
+  NoncausalTimestampFilter filter(node);
 
   filter.Sample(t1, o1);
 
@@ -503,14 +901,14 @@ TEST(NoncausalTimestampFilterTest, Offset) {
 // derivatives are consistent.  Do this with a massive offset to ensure that we
 // are subtracting out nominal offsets correctly to retain numerical precision
 // in the result.
-TEST(NoncausalTimestampFilterTest, CostAndSlopeSinglePoint) {
+TEST_F(NoncausalTimestampFilterTest, CostAndSlopeSinglePoint) {
   const monotonic_clock::time_point e = monotonic_clock::epoch();
   const monotonic_clock::time_point t1 =
       e + chrono::nanoseconds(0) + chrono::seconds(10000000000);
   const chrono::nanoseconds o1 =
       chrono::nanoseconds(1000) - chrono::seconds(10000000000);
 
-  NoncausalTimestampFilter filter;
+  NoncausalTimestampFilter filter(node);
 
   filter.Sample(t1, o1);
 
@@ -545,7 +943,7 @@ TEST(NoncausalTimestampFilterTest, CostAndSlopeSinglePoint) {
   }
 }
 
-TEST(NoncausalTimestampFilterTest, CostAndSlope) {
+TEST_F(NoncausalTimestampFilterTest, CostAndSlope) {
   const monotonic_clock::time_point e = monotonic_clock::epoch();
   // Note: t1, t2, t3 need to be picked such that the slope is small so filter
   // doesn't modify the timestamps.
@@ -564,7 +962,7 @@ TEST(NoncausalTimestampFilterTest, CostAndSlope) {
   const chrono::nanoseconds o3 =
       chrono::nanoseconds(500) - chrono::seconds(10000000000);
 
-  NoncausalTimestampFilter filter;
+  NoncausalTimestampFilter filter(node);
 
   filter.Sample(t1, o1);
   filter.Sample(t2, o2);

@@ -160,14 +160,14 @@ TEST(TimestampProblemTest, Solve) {
   const monotonic_clock::time_point e = monotonic_clock::epoch();
   const monotonic_clock::time_point ta = e + chrono::milliseconds(500);
 
-  NoncausalTimestampFilter a;
+  NoncausalTimestampFilter a(nullptr);
   // Delivered at e, sent at e + offset.
   // Sent at 1.001, received at 0
   a.Sample(e, chrono::milliseconds(1001));
   a.Sample(e + chrono::milliseconds(1000), chrono::milliseconds(1001));
   a.Sample(e + chrono::milliseconds(3000), chrono::milliseconds(999));
 
-  NoncausalTimestampFilter b;
+  NoncausalTimestampFilter b(nullptr);
   // Sent at 0.001s, received at 1.000s
   b.Sample(e + chrono::milliseconds(1000), -chrono::milliseconds(999));
   b.Sample(e + chrono::milliseconds(2000), -chrono::milliseconds(1000));
@@ -207,11 +207,11 @@ TEST(TimestampProblemTest, Solve) {
 
   // Now do the second line segment.
   {
-    NoncausalTimestampFilter a;
+    NoncausalTimestampFilter a(nullptr);
     a.Sample(e + chrono::milliseconds(1000), chrono::milliseconds(1001));
     a.Sample(e + chrono::milliseconds(3000), chrono::milliseconds(999));
 
-    NoncausalTimestampFilter b;
+    NoncausalTimestampFilter b(nullptr);
     b.Sample(e + chrono::milliseconds(2000), -chrono::milliseconds(1000));
     b.Sample(e + chrono::milliseconds(4000), -chrono::milliseconds(1002));
     {

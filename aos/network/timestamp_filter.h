@@ -235,6 +235,7 @@ class ClippedAverageFilter {
 // precision and handling the remainder with double precision.
 class NoncausalTimestampFilter {
  public:
+  NoncausalTimestampFilter(const Node *node) : node_(node) {}
   ~NoncausalTimestampFilter();
 
   // Returns the offset for the point in time, using the timestamps in the deque
@@ -286,15 +287,40 @@ class NoncausalTimestampFilter {
   // Returns true if any points were popped.
   bool Pop(aos::monotonic_clock::time_point time);
 
-  // Returns the current list of timestamps in our list.
-  std::deque<
-      std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>>
-  Timestamps() const;
-
   std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>
   timestamp(size_t i) const {
+    if (i == 0u && timestamps_.size() >= 2u && !has_popped_) {
+      std::chrono::nanoseconds dt =
+          std::get<0>(timestamps_[1]) - std::get<0>(timestamps_[0]);
+      std::chrono::nanoseconds doffset =
+          std::get<1>(timestamps_[1]) - std::get<1>(timestamps_[0]);
+
+      // If we are early in the log file, the filter hasn't had time to get
+      // started.  We might only have 2 samples, and the first sample was
+      // incredibly delayed, violating our velocity constraint.  In that case,
+      // modify the first sample (rather than remove it) to retain the knowledge
+      // of the velocity, but adhere to the constraints.
+      //
+      // We are doing this here so as points get added in any order, we don't
+      // confuse ourselves about what really happened.
+      if (doffset > dt * kMaxVelocity()) {
+        const aos::monotonic_clock::duration adjusted_initial_time =
+            std::get<1>(timestamps_[1]) -
+            aos::monotonic_clock::duration(
+                static_cast<aos::monotonic_clock::duration::rep>(
+                    dt.count() * kMaxVelocity()));
+
+        return std::make_tuple(std::get<0>(timestamps_[0]),
+                               adjusted_initial_time);
+      }
+    }
     return std::make_tuple(std::get<0>(timestamps_[i]),
                            std::get<1>(timestamps_[i]));
+  }
+
+  // Returns if the timestamp is frozen or not.
+  bool frozen(size_t index) const {
+    return fully_frozen_ || std::get<2>(timestamps_[index]);
   }
 
   size_t timestamps_size() const { return timestamps_.size(); }
@@ -316,11 +342,6 @@ class NoncausalTimestampFilter {
   // are only used when doing CSV file logging to debug the filter.
   void SetFirstTime(aos::monotonic_clock::time_point time);
   void SetCsvFileName(std::string_view name);
-
-  // Marks the first line segment (the two points used to compute both the
-  // offset and slope), as used.  Those points can't be removed from the filter
-  // going forwards.
-  void Freeze();
 
   // Marks all line segments up until the provided time on the provided node as
   // used.
@@ -377,21 +398,17 @@ class NoncausalTimestampFilter {
 
  private:
   // Removes the oldest timestamp.
-  void PopFront() {
-    MaybeWriteTimestamp(timestamps_.front());
-    timestamps_.pop_front();
-    if (next_to_consume_ > 0u) {
-      next_to_consume_--;
-    }
-  }
+  void PopFront();
 
   // Writes a timestamp to the file if it is reasonable.
-  void MaybeWriteTimestamp(std::tuple<aos::monotonic_clock::time_point,
-                                      std::chrono::nanoseconds, bool>
-                               timestamp);
+  void MaybeWriteTimestamp(
+      std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>
+          timestamp);
 
   // Writes any saved timestamps to file.
   void FlushSavedSamples();
+
+  const Node *node_;
 
   // Timestamp, offest, and then a boolean representing if this sample is frozen
   // and can't be modified or not.
@@ -416,6 +433,8 @@ class NoncausalTimestampFilter {
 
   bool fully_frozen_ = false;
 
+  bool has_popped_ = false;
+
   aos::monotonic_clock::time_point first_time_ = aos::monotonic_clock::min_time;
 };
 
@@ -424,7 +443,7 @@ class NoncausalTimestampFilter {
 class NoncausalOffsetEstimator {
  public:
   NoncausalOffsetEstimator(const Node *node_a, const Node *node_b)
-      : node_a_(node_a), node_b_(node_b) {}
+      : a_(node_a), b_(node_b), node_a_(node_a), node_b_(node_b) {}
 
   NoncausalTimestampFilter *GetFilter(const Node *n) {
     if (n == node_a_) {
