@@ -232,6 +232,10 @@ export class Connection {
     this.webSocketConnection.send(array.buffer.slice(array.byteOffset));
   }
 
+  onIceCandidateError(e: RTCPeerConnectionIceErrorEvent): void {
+    console.warn(e);
+  }
+
   // Called for new SDPs. Make sure to set it locally and remotely.
   onOfferCreated(description: RTCSessionDescriptionInit): void {
     this.rtcPeerConnection.setLocalDescription(description);
@@ -251,16 +255,17 @@ export class Connection {
   // We now have a websocket, so start setting up the peer connection. We only
   // want a DataChannel, so create it and then create an offer to send.
   onWebSocketOpen(): void {
-    this.rtcPeerConnection = new RTCPeerConnection({});
+    this.rtcPeerConnection = new RTCPeerConnection(
+        {'iceServers': [{'urls': ['stun:stun.l.google.com:19302']}]});
     this.rtcPeerConnection.addEventListener(
         'datachannel', (e) => this.onDataChannel(e));
     this.dataChannel = this.rtcPeerConnection.createDataChannel('signalling');
     this.handlers.add(
         new Handler((data) => this.onConfigMessage(data), this.dataChannel));
-    // TODO(james): Is this used? Can we delete it?
-    // window.dc = this.dataChannel;
     this.rtcPeerConnection.addEventListener(
         'icecandidate', (e) => this.onIceCandidate(e));
+    this.rtcPeerConnection.addEventListener(
+        'icecandidateerror', (e) => this.onIceCandidateError(e));
     this.rtcPeerConnection.createOffer().then(
         (offer) => this.onOfferCreated(offer));
   }

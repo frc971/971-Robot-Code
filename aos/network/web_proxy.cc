@@ -308,6 +308,11 @@ void Connection::HandleWebSocketData(const uint8_t *data, size_t size) {
       webrtc::PeerConnectionInterface::RTCConfiguration config;
       config.sdp_semantics = webrtc::SdpSemantics::kUnifiedPlan;
       config.enable_dtls_srtp = true;
+      {
+        webrtc::PeerConnectionInterface::IceServer ice_server;
+        ice_server.urls.push_back("stun:stun.l.google.com:19302");
+        config.servers.push_back(ice_server);
+      }
 
       std::unique_ptr<rtc::Thread> signaling_thread = rtc::Thread::Create();
       signaling_thread->SetName("signaling_thread", nullptr);
@@ -319,6 +324,14 @@ void Connection::HandleWebSocketData(const uint8_t *data, size_t size) {
       factory_deps.signaling_thread = signaling_thread.release();
       rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> factory =
           CreateModularPeerConnectionFactory(std::move(factory_deps));
+      {
+        // Don't ignore *any* networks--by default, the loopback interface is
+        // ignored, which makes it impossible to use WebRTC on devices with no
+        // network.
+        webrtc::PeerConnectionFactoryInterface::Options options;
+        options.network_ignore_mask = 0;
+        factory->SetOptions(options);
+      }
 
       peer_connection_ =
           factory->CreatePeerConnection(config, nullptr, nullptr, this);
