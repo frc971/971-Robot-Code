@@ -969,6 +969,10 @@ bool NoncausalTimestampFilter::Sample(
     aos::monotonic_clock::duration dt = monotonic_now - std::get<0>(back);
     aos::monotonic_clock::duration doffset = sample_ns - std::get<1>(back);
 
+    if (dt == chrono::nanoseconds(0) && doffset == chrono::nanoseconds(0)) {
+      return false;
+    }
+
     // If the point is higher than the max negative slope, the slope will either
     // adhere to our constraint, or will be too positive.  If it is too
     // positive, we need to back propagate and remove offending points which
@@ -1041,6 +1045,58 @@ bool NoncausalTimestampFilter::Pop(aos::monotonic_clock::time_point time) {
     removed = true;
   }
   return removed;
+}
+
+std::optional<std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>>
+NoncausalTimestampFilter::Observe() const {
+  if (timestamps_.empty() || next_to_consume_ >= timestamps_.size()) {
+    return std::nullopt;
+  }
+  return TrimTuple(timestamps_[next_to_consume_]);
+}
+
+std::optional<std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>>
+NoncausalTimestampFilter::Consume() {
+  if (timestamps_.empty() || next_to_consume_ >= timestamps_.size()) {
+    return std::nullopt;
+  }
+
+  auto result = TrimTuple(timestamps_[next_to_consume_]);
+  ++next_to_consume_;
+  return result;
+}
+
+void NoncausalTimestampFilter::FreezeUntil(
+    aos::monotonic_clock::time_point node_monotonic_now) {
+  for (size_t i = 0; i < timestamps_.size(); ++i) {
+    if (std::get<0>(timestamps_[i]) > node_monotonic_now) {
+      return;
+    }
+    std::get<2>(timestamps_[i]) = true;
+  }
+
+  if (timestamps_.size() < 2u) {
+    // This will evaluate to a line.  We can't support adding points to a line
+    // yet.
+    fully_frozen_ = true;
+  }
+}
+
+void NoncausalTimestampFilter::FreezeUntilRemote(
+    aos::monotonic_clock::time_point remote_monotonic_now) {
+  for (size_t i = 0; i < timestamps_.size(); ++i) {
+    if (std::get<0>(timestamps_[i]) + std::get<1>(timestamps_[i]) >
+        remote_monotonic_now) {
+      return;
+    }
+    std::get<2>(timestamps_[i]) = true;
+  }
+
+  if (timestamps_.size() < 2u) {
+    // This will evaluate to a line.  We can't support adding points to a line
+    // yet.
+    fully_frozen_ = true;
+  }
 }
 
 void NoncausalTimestampFilter::Freeze() {

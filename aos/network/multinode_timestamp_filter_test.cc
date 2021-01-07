@@ -7,6 +7,7 @@
 #include "aos/json_to_flatbuffer.h"
 #include "aos/macros.h"
 #include "aos/network/multinode_timestamp_filter.h"
+#include "aos/network/testing_time_converter.h"
 #include "gtest/gtest.h"
 
 namespace aos {
@@ -131,6 +132,193 @@ TEST(TimestampProblemTest, Solve) {
           << tb_mpq.get_d() << " " << tb_mpq << " got " << result[0];
     }
   }
+}
+
+// Tests that a single timestamp InterpolatedTimeConverter returns equal
+// results.  1 second should be 1 second everywhere.
+TEST(InterpolatedTimeConverterTest, OneTime) {
+  const distributed_clock::time_point de = distributed_clock::epoch();
+  const monotonic_clock::time_point me = monotonic_clock::epoch();
+
+  TestingTimeConverter time_converter(3u);
+  time_converter.AddNextTimestamp(
+      de + chrono::seconds(0),
+      {me + chrono::seconds(1), me + chrono::seconds(10),
+       me + chrono::seconds(1000)});
+
+  EXPECT_EQ(time_converter.FromDistributedClock(0, de - chrono::seconds(1)),
+            me + chrono::seconds(0));
+  EXPECT_EQ(time_converter.FromDistributedClock(1, de - chrono::seconds(1)),
+            me + chrono::seconds(9));
+  EXPECT_EQ(time_converter.FromDistributedClock(2, de - chrono::seconds(1)),
+            me + chrono::seconds(999));
+  EXPECT_EQ(time_converter.ToDistributedClock(0, me + chrono::seconds(0)),
+            de - chrono::seconds(1));
+  EXPECT_EQ(time_converter.ToDistributedClock(1, me + chrono::seconds(9)),
+            de - chrono::seconds(1));
+  EXPECT_EQ(time_converter.ToDistributedClock(2, me + chrono::seconds(999)),
+            de - chrono::seconds(1));
+
+  EXPECT_EQ(time_converter.FromDistributedClock(0, de),
+            me + chrono::seconds(1));
+  EXPECT_EQ(time_converter.FromDistributedClock(1, de),
+            me + chrono::seconds(10));
+  EXPECT_EQ(time_converter.FromDistributedClock(2, de),
+            me + chrono::seconds(1000));
+  EXPECT_EQ(time_converter.ToDistributedClock(0, me + chrono::seconds(1)), de);
+  EXPECT_EQ(time_converter.ToDistributedClock(1, me + chrono::seconds(10)), de);
+  EXPECT_EQ(time_converter.ToDistributedClock(2, me + chrono::seconds(1000)),
+            de);
+}
+
+// Tests that actual interpolation works as expected for multiple timestamps.
+TEST(InterpolatedTimeConverterTest, Interpolation) {
+  const distributed_clock::time_point de = distributed_clock::epoch();
+  const monotonic_clock::time_point me = monotonic_clock::epoch();
+
+  TestingTimeConverter time_converter(3u);
+  // Test that 2 timestamps interpolate correctly.
+  time_converter.AddNextTimestamp(
+      de + chrono::seconds(0),
+      {me + chrono::seconds(1), me + chrono::seconds(10),
+       me + chrono::seconds(1000)});
+  time_converter.AddNextTimestamp(
+      de + chrono::seconds(1),
+      {me + chrono::seconds(2), me + chrono::seconds(11),
+       me + chrono::seconds(1001)});
+
+  EXPECT_EQ(
+      time_converter.FromDistributedClock(0, de + chrono::milliseconds(500)),
+      me + chrono::milliseconds(1500));
+  EXPECT_EQ(
+      time_converter.FromDistributedClock(1, de + chrono::milliseconds(500)),
+      me + chrono::milliseconds(10500));
+  EXPECT_EQ(
+      time_converter.FromDistributedClock(2, de + chrono::milliseconds(500)),
+      me + chrono::milliseconds(1000500));
+  EXPECT_EQ(
+      time_converter.ToDistributedClock(0, me + chrono::milliseconds(1500)),
+      de + chrono::milliseconds(500));
+  EXPECT_EQ(
+      time_converter.ToDistributedClock(1, me + chrono::milliseconds(10500)),
+      de + chrono::milliseconds(500));
+  EXPECT_EQ(
+      time_converter.ToDistributedClock(2, me + chrono::milliseconds(1000500)),
+      de + chrono::milliseconds(500));
+
+  // And that we can interpolate between points not at the start.
+  time_converter.AddNextTimestamp(
+      de + chrono::seconds(2),
+      {me + chrono::seconds(3) - chrono::milliseconds(2),
+       me + chrono::seconds(12) - chrono::milliseconds(2),
+       me + chrono::seconds(1002)});
+
+  time_converter.AddNextTimestamp(
+      de + chrono::seconds(3),
+      {me + chrono::seconds(4) - chrono::milliseconds(4),
+       me + chrono::seconds(13) - chrono::milliseconds(2),
+       me + chrono::seconds(1003) - chrono::milliseconds(2)});
+
+  EXPECT_EQ(
+      time_converter.FromDistributedClock(0, de + chrono::milliseconds(2500)),
+      me + chrono::milliseconds(3497));
+  EXPECT_EQ(
+      time_converter.FromDistributedClock(1, de + chrono::milliseconds(2500)),
+      me + chrono::milliseconds(12498));
+  EXPECT_EQ(
+      time_converter.FromDistributedClock(2, de + chrono::milliseconds(2500)),
+      me + chrono::milliseconds(1002499));
+  EXPECT_EQ(
+      time_converter.ToDistributedClock(0, me + chrono::milliseconds(3497)),
+      de + chrono::milliseconds(2500));
+  EXPECT_EQ(
+      time_converter.ToDistributedClock(1, me + chrono::milliseconds(12498)),
+      de + chrono::milliseconds(2500));
+  EXPECT_EQ(
+      time_converter.ToDistributedClock(2, me + chrono::milliseconds(1002499)),
+      de + chrono::milliseconds(2500));
+}
+
+// Tests that reading times before the start of our interpolation points
+// explodes.
+TEST(InterpolatedTimeConverterDeathTest, ReadLostTime) {
+  const distributed_clock::time_point de = distributed_clock::epoch();
+  const monotonic_clock::time_point me = monotonic_clock::epoch();
+
+  TestingTimeConverter time_converter(3u);
+  time_converter.StartEqual();
+
+  // Test that 2 timestamps interpolate correctly.
+  for (int i = 0; i < 200; ++i) {
+    time_converter.AddMonotonic({chrono::milliseconds(100),
+                                 chrono::milliseconds(100),
+                                 chrono::milliseconds(100)});
+  }
+
+  // Force 5 seconds to be read.
+  EXPECT_EQ(
+      de + chrono::milliseconds(5000),
+      time_converter.ToDistributedClock(0, me + chrono::milliseconds(5000)));
+  EXPECT_EQ(
+      me + chrono::milliseconds(5000),
+      time_converter.FromDistributedClock(0, de + chrono::milliseconds(5000)));
+
+  // Double check we can read things from before the start
+  EXPECT_EQ(
+      de - chrono::milliseconds(100),
+      time_converter.ToDistributedClock(0, me - chrono::milliseconds(100)));
+  EXPECT_EQ(
+      me - chrono::milliseconds(100),
+      time_converter.FromDistributedClock(0, de - chrono::milliseconds(100)));
+
+  // And at and after the origin.
+  EXPECT_EQ(de, time_converter.ToDistributedClock(0, me));
+  EXPECT_EQ(me, time_converter.FromDistributedClock(0, de));
+
+  EXPECT_EQ(
+      de + chrono::milliseconds(100),
+      time_converter.ToDistributedClock(0, me + chrono::milliseconds(100)));
+  EXPECT_EQ(
+      me + chrono::milliseconds(100),
+      time_converter.FromDistributedClock(0, de + chrono::milliseconds(100)));
+
+  // Force 10.1 seconds now.  This will forget the 0th point at the origin.
+  EXPECT_EQ(
+      de + chrono::milliseconds(10100),
+      time_converter.ToDistributedClock(0, me + chrono::milliseconds(10100)));
+  EXPECT_EQ(
+      me + chrono::milliseconds(10100),
+      time_converter.FromDistributedClock(0, de + chrono::milliseconds(10100)));
+
+  // Yup, can't read the origin anymore.
+  EXPECT_DEATH({ LOG(INFO) << time_converter.ToDistributedClock(0, me); },
+               "forgotten");
+  EXPECT_DEATH({ LOG(INFO) << time_converter.FromDistributedClock(0, de); },
+               "forgotten");
+
+  // But can still read the next point.
+  EXPECT_EQ(
+      de + chrono::milliseconds(100),
+      time_converter.ToDistributedClock(0, me + chrono::milliseconds(100)));
+  EXPECT_EQ(
+      me + chrono::milliseconds(100),
+      time_converter.FromDistributedClock(0, de + chrono::milliseconds(100)));
+}
+
+// Tests unity time with 1 node.
+TEST(InterpolatedTimeConverterTest, SingleNodeTime) {
+  const distributed_clock::time_point de = distributed_clock::epoch();
+  const monotonic_clock::time_point me = monotonic_clock::epoch();
+
+  TestingTimeConverter time_converter(1u);
+  time_converter.AddNextTimestamp(de + chrono::seconds(0),
+                                  {me + chrono::seconds(1)});
+
+  EXPECT_EQ(time_converter.FromDistributedClock(0, de), me);
+  EXPECT_EQ(time_converter.FromDistributedClock(0, de + chrono::seconds(100)),
+            me + chrono::seconds(100));
+
+  EXPECT_TRUE(time_converter.NextTimestamp());
 }
 
 }  // namespace testing

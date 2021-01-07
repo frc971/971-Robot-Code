@@ -494,6 +494,18 @@ cc_test(
     ],
 )
 
+cc_library(
+    name = "testing_time_converter",
+    testonly = True,
+    srcs = ["testing_time_converter.cc"],
+    hdrs = ["testing_time_converter.h"],
+    deps = [
+        ":multinode_timestamp_filter",
+        "//aos/events:simulated_event_loop",
+        "//aos/time",
+    ],
+)
+
 cc_test(
     name = "multinode_timestamp_filter_test",
     srcs = [
@@ -502,6 +514,7 @@ cc_test(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":multinode_timestamp_filter",
+        ":testing_time_converter",
         ":timestamp_filter",
         "//aos/testing:googletest",
         "@com_github_stevengj_nlopt//:nlopt",

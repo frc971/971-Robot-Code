@@ -1,6 +1,7 @@
 #include "aos/network/multinode_timestamp_filter.h"
 
 #include <chrono>
+#include <functional>
 #include <map>
 
 #include "absl/strings/str_join.h"
@@ -192,6 +193,187 @@ void TimestampProblem::Debug() {
   for (size_t i = 0u; i < filters_.size(); ++i) {
     LOG(INFO) << "base_clock[" << i << "] = " << base_clock_[i];
   }
+}
+
+void InterpolatedTimeConverter::QueueUntil(
+    std::function<
+        bool(const std::tuple<distributed_clock::time_point,
+                              std::vector<monotonic_clock::time_point>> &)>
+        not_done) {
+  while (!at_end_ && (times_.empty() || not_done(times_.back()))) {
+    std::optional<std::tuple<distributed_clock::time_point,
+                             std::vector<monotonic_clock::time_point>>>
+        next_time = NextTimestamp();
+    if (!next_time) {
+      VLOG(1) << "Last timestamp, calling it quits";
+      at_end_ = true;
+      break;
+    }
+    VLOG(1) << "Fetched next timestamp while solving.";
+    for (monotonic_clock::time_point t : std::get<1>(*next_time)) {
+      VLOG(1) << "  " << t;
+    }
+    CHECK_EQ(node_count_, std::get<1>(*next_time).size());
+    times_.emplace_back(std::move(*next_time));
+  }
+
+  CHECK(!times_.empty())
+      << ": Found no times to do timestamp estimation, please investigate.";
+  // Keep at least 50 points and 10 seconds of time.
+  while (times_.size() > 50 &&
+         std::get<0>(times_.front()) + chrono::seconds(10) <
+             std::get<0>(times_.back())) {
+    times_.pop_front();
+    have_popped_ = true;
+  }
+}
+
+distributed_clock::time_point InterpolatedTimeConverter::ToDistributedClock(
+    size_t node_index, monotonic_clock::time_point time) {
+  CHECK_LT(node_index, node_count_);
+  // If there is only one node, time estimation makes no sense.  Just return
+  // unity time.
+  if (node_count_ == 1u) {
+    return distributed_clock::epoch() + time.time_since_epoch();
+  }
+
+  // Make sure there are enough timestamps in the queue.
+  QueueUntil(
+      [time, node_index](
+          const std::tuple<distributed_clock::time_point,
+                           std::vector<monotonic_clock::time_point>> &t) {
+        return std::get<1>(t)[node_index] < time;
+      });
+
+  // Before the beginning needs to have 0 slope otherwise time jumps when
+  // timestamp 2 happens.
+  if (times_.size() == 1u || time < std::get<1>(times_[0])[node_index]) {
+    if (time < std::get<1>(times_[0])[node_index]) {
+      CHECK(!have_popped_)
+          << ": Trying to interpolate time " << time
+          << " but we have forgotten the relevant points already.";
+    }
+    const distributed_clock::time_point result =
+        time - std::get<1>(times_[0])[node_index] + std::get<0>(times_[0]);
+    VLOG(2) << "ToDistributedClock(" << node_index << ", " << time << ") -> "
+            << result;
+    return result;
+  }
+
+  // Now, find the corresponding timestamps.  Search from the back since that's
+  // where most of the times we care about will be.
+  size_t index = times_.size() - 2u;
+  while (index > 0u) {
+    if (std::get<1>(times_[index])[node_index] <= time) {
+      break;
+    }
+    --index;
+  }
+
+  // Interpolate with the two of these.
+  const distributed_clock::time_point d0 = std::get<0>(times_[index]);
+  const distributed_clock::time_point d1 = std::get<0>(times_[index + 1]);
+
+  const monotonic_clock::time_point t0 = std::get<1>(times_[index])[node_index];
+  const monotonic_clock::time_point t1 =
+      std::get<1>(times_[index + 1])[node_index];
+
+  const chrono::nanoseconds dt = (t1 - t0);
+
+  CHECK_NE(dt.count(), 0u) << " t0 " << t0 << " t1 " << t1 << " d0 " << d0
+                           << " d1 " << d1 << " looking up monotonic " << time;
+  // Basic interpolation between 2 points look like
+  //  p0.d + (t - p0.t) * (p1.d - p0.d) / (p1.t - p0.t)
+  // This can be multiplied out with integer arithmetic to get exact results.
+  // Since we are using integer arithmetic, we want to round to the nearest, not
+  // towards 0.  To do that, we want to add half of the denominator when > 0,
+  // and subtract when < 0 so we round correctly.  Multiply before dividing so
+  // we don't round early, and use 128 bit arithmetic to guarantee that 64 bit
+  // multiplication fits.
+  absl::int128 numerator =
+      absl::int128((time - t0).count()) * absl::int128((d1 - d0).count());
+  numerator += numerator > 0 ? absl::int128(dt.count() / 2)
+                             : -absl::int128(dt.count() / 2);
+  const distributed_clock::time_point result =
+      d0 + std::chrono::nanoseconds(
+               static_cast<int64_t>(numerator / absl::int128(dt.count())));
+  VLOG(2) << "ToDistributedClock(" << node_index << ", " << time << ") -> "
+          << result;
+  return result;
+}
+
+monotonic_clock::time_point InterpolatedTimeConverter::FromDistributedClock(
+    size_t node_index, distributed_clock::time_point time) {
+  CHECK_LT(node_index, node_count_);
+  // If there is only one node, time estimation makes no sense.  Just return
+  // unity time.
+  if (node_count_ == 1u) {
+    return monotonic_clock::epoch() + time.time_since_epoch();
+  }
+
+  // Make sure there are enough timestamps in the queue.
+  QueueUntil(
+      [time](const std::tuple<distributed_clock::time_point,
+                              std::vector<monotonic_clock::time_point>> &t) {
+        return std::get<0>(t) < time;
+      });
+
+  if (times_.size() == 1u || time < std::get<0>(times_[0])) {
+    if (time < std::get<0>(times_[0])) {
+      CHECK(!have_popped_)
+          << ": Trying to interpolate time " << time
+          << " but we have forgotten the relevant points already.";
+    }
+    monotonic_clock::time_point result =
+        time - std::get<0>(times_[0]) + std::get<1>(times_[0])[node_index];
+    VLOG(2) << "FromDistributedClock(" << node_index << ", " << time << ") -> "
+            << result;
+    return result;
+  }
+
+  // Now, find the corresponding timestamps.  Search from the back since that's
+  // where most of the times we care about will be.
+  size_t index = times_.size() - 2u;
+  while (index > 0u) {
+    if (std::get<0>(times_[index]) <= time) {
+      break;
+    }
+    --index;
+  }
+
+  // Interpolate with the two of these.
+  const distributed_clock::time_point d0 = std::get<0>(times_[index]);
+  const distributed_clock::time_point d1 = std::get<0>(times_[index + 1]);
+
+  const monotonic_clock::time_point t0 = std::get<1>(times_[index])[node_index];
+  const monotonic_clock::time_point t1 =
+      std::get<1>(times_[index + 1])[node_index];
+
+  const chrono::nanoseconds dd = d1 - d0;
+
+  CHECK_NE(dd.count(), 0u) << " t0 " << t0 << " t1 " << t1 << "d0 " << d0
+                           << " d1 " << d1 << " looking up distributed "
+                           << time;
+
+  // Basic interpolation between 2 points look like
+  //  p0.t + (t - p0.d) * (p1.t - p0.t) / (p1.d - p0.d)
+  // This can be multiplied out with integer arithmetic to get exact results.
+  // Since we are using integer arithmetic, we want to round to the nearest, not
+  // towards 0.  To do that, we want to add half of the denominator when > 0,
+  // and subtract when < 0 so we round correctly.  Multiply before dividing so
+  // we don't round early, and use 128 bit arithmetic to guarantee that 64 bit
+  // multiplication fits.
+  absl::int128 numerator =
+      absl::int128((time - d0).count()) * absl::int128((t1 - t0).count());
+  numerator += numerator > 0 ? absl::int128(dd.count() / 2)
+                             : -absl::int128(dd.count() / 2);
+
+  const monotonic_clock::time_point result =
+      t0 + std::chrono::nanoseconds(
+               static_cast<int64_t>(numerator / absl::int128(dd.count())));
+  VLOG(2) << "FromDistributedClock(" << node_index << ", " << time << ") -> "
+          << result;
+  return result;
 }
 
 void MultiNodeNoncausalOffsetEstimator::Start(
