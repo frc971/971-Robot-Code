@@ -61,9 +61,11 @@ MessageBridgeClientStatus::MessageBridgeClientStatus(aos::EventLoop *event_loop)
   statistics_timer_ = event_loop_->AddTimer([this]() { SendStatistics(); });
   statistics_timer_->set_name("statistics");
   event_loop_->OnRun([this]() {
-    statistics_timer_->Setup(
-        event_loop_->monotonic_now() + chrono::milliseconds(100),
-        chrono::milliseconds(100));
+    if (send_) {
+      statistics_timer_->Setup(
+          event_loop_->monotonic_now() + chrono::milliseconds(100),
+          chrono::milliseconds(100));
+    }
   });
 }
 
@@ -163,7 +165,11 @@ void MessageBridgeClientStatus::SampleFilter(
   filter->Sample(monotonic_delivered_time, offset);
 }
 
-void MessageBridgeClientStatus::DisableStatistics() { send_ = false; }
+void MessageBridgeClientStatus::DisableStatistics() {
+  statistics_timer_->Disable();
+  // TODO(austin): Re-arm when re-enabled.
+  send_ = false;
+}
 
 }  // namespace message_bridge
 }  // namespace aos

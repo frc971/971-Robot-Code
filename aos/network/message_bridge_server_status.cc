@@ -123,8 +123,10 @@ MessageBridgeServerStatus::MessageBridgeServerStatus(
 
   statistics_timer_ = event_loop_->AddTimer([this]() { Tick(); });
   event_loop_->OnRun([this]() {
-    statistics_timer_->Setup(event_loop_->monotonic_now() + kPingPeriod,
-                             kPingPeriod);
+    if (send_) {
+      statistics_timer_->Setup(event_loop_->monotonic_now() + kPingPeriod,
+                               kPingPeriod);
+    }
   });
 }
 
@@ -358,6 +360,7 @@ void MessageBridgeServerStatus::Tick() {
 
 void MessageBridgeServerStatus::DisableStatistics() {
   send_ = false;
+  statistics_timer_->Disable();
 }
 
 }  // namespace message_bridge
