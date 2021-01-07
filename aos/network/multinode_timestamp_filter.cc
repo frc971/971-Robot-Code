@@ -76,7 +76,7 @@ TimestampProblem::TimestampProblem(size_t count) {
 // ms/s.  Figure out how to define it.  Do this last.  This lets us handle
 // constraints going away, and constraints close in time.
 
-std::vector<double> TimestampProblem::Solve() {
+std::vector<double> TimestampProblem::SolveDouble() {
   // TODO(austin): Add constraints for relevant segments.
   const size_t n = filters_.size() - 1u;
   //  NLOPT_LD_MMA and NLOPT_LD_LBFGS are alternative solvers, but SLSQP is a
@@ -86,13 +86,37 @@ std::vector<double> TimestampProblem::Solve() {
 
   // Ask for really good.  This is very quadratic, so it should be pretty
   // precise.
-  nlopt_set_xtol_rel(opt, 1e-19);
+  nlopt_set_xtol_rel(opt, 1e-5);
 
   count_ = 0;
 
   std::vector<double> result(n, 0.0);
   double minf = 0.0;
-  CHECK_GE(nlopt_optimize(opt, result.data(), &minf), 0);
+  nlopt_result status = nlopt_optimize(opt, result.data(), &minf);
+  if (status < 0)  {
+    if (status == NLOPT_ROUNDOFF_LIMITED) {
+      constexpr double kTolerance = 1e-9;
+      std::vector<double> gradient(n, 0.0);
+      Cost(result.data(), gradient.data());
+      for (double g : gradient) {
+        if (std::abs(g) > kTolerance) {
+          // If we failed, update base_clock_ to the current time so it gets
+          // printed inside Debug and explode with a CHECK saying the same
+          // thing.
+          std::vector<monotonic_clock::time_point> new_base =
+              DoubleToMonotonic(result.data());
+          base_clock_ = std::move(new_base);
+          Debug();
+          CHECK_LE(std::abs(g), kTolerance)
+              << ": Optimization problem failed with a large gradient.  "
+              << nlopt_result_to_string(status);
+        }
+      }
+    } else {
+      LOG(FATAL) << "Failed to solve optimization problem "
+                 << nlopt_result_to_string(status);
+    }
+  }
 
   if (VLOG_IS_ON(1)) {
     std::vector<double> gradient(n, 0.0);
@@ -110,10 +134,27 @@ std::vector<double> TimestampProblem::Solve() {
     VLOG(1) << std::setprecision(12) << std::fixed << "Found minimum at f("
             << result[0] << ") -> " << minf << " grad ["
             << absl::StrJoin(gradient, ", ", MyFormatter()) << "] after "
-            << count_ << " cycles.";
+            << count_ << " cycles for node " << solution_node_ << ".";
   }
   nlopt_destroy(opt);
   return result;
+}
+
+std::vector<monotonic_clock::time_point> TimestampProblem::DoubleToMonotonic(
+    const double *r) const {
+  std::vector<monotonic_clock::time_point> result(filters_.size());
+  for (size_t i = 0; i < result.size(); ++i) {
+    result[i] =
+        base_clock(i) +
+        std::chrono::nanoseconds(static_cast<int64_t>(std::floor(get_t(r, i))));
+  }
+
+  return result;
+}
+
+std::vector<monotonic_clock::time_point> TimestampProblem::Solve() {
+  std::vector<double> solution = SolveDouble();
+  return DoubleToMonotonic(solution.data());
 }
 
 double TimestampProblem::Cost(const double *x, double *grad) {
@@ -147,6 +188,37 @@ double TimestampProblem::Cost(const double *x, double *grad) {
                                   base_clock_[filter.b_index],
                                   get_t(x, filter.b_index));
     }
+  }
+
+  if (VLOG_IS_ON(1)) {
+    struct MyFormatter {
+      void operator()(std::string *out, monotonic_clock::time_point t) const {
+        std::stringstream ss;
+        ss << t;
+        out->append(ss.str());
+      }
+      void operator()(std::string *out, double i) const {
+        std::stringstream ss;
+        ss << std::setprecision(12) << std::fixed << i;
+        out->append(ss.str());
+      }
+    };
+
+    std::string gradient;
+    if (grad) {
+      std::stringstream ss;
+      ss << " grad ["
+         << absl::StrJoin(absl::Span<const double>(grad, filters_.size() - 1u),
+                          ", ", MyFormatter())
+         << "]";
+      gradient = ss.str();
+    }
+
+    LOG(INFO) << std::setprecision(12) << std::fixed
+              << "Evaluated minimum at f("
+              << absl::StrJoin(DoubleToMonotonic(x), ", ", MyFormatter())
+              << ") -> " << cost << gradient << " after " << count_
+              << " cycles.";
   }
   return cost;
 }

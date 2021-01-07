@@ -57,7 +57,10 @@ class TimestampProblem {
 
   // Solves the optimization problem phrased and returns the offsets from the
   // base clock for each node, excluding the solution node.
-  std::vector<double> Solve();
+  std::vector<double> SolveDouble();
+  // Solves the optimization problem phrased and returns the optimal time on
+  // each node.
+  std::vector<monotonic_clock::time_point> Solve();
 
   // Returns the squared error for all of the offsets.
   // x is the offsets from the base_clock for every node (in order) except the
@@ -68,10 +71,15 @@ class TimestampProblem {
   double Cost(const double *x, double *grad);
 
   // Returns the time offset from base for a node.
-  double get_t(const double *x, size_t time_index) {
+  double get_t(const double *x, size_t time_index) const {
     return time_index == solution_node_ ? 0.0
-                                       : x[NodeToSolutionIndex(time_index)];
+                                        : x[NodeToSolutionIndex(time_index)];
   }
+
+  // Converts a list of solutions to the corresponding monotonic times for all
+  // nodes, not just the nodes being solved.
+  std::vector<monotonic_clock::time_point> DoubleToMonotonic(
+      const double *r) const;
 
   // LOGs a representation of the problem.
   void Debug();
@@ -87,7 +95,7 @@ class TimestampProblem {
   }
 
   // Converts from a node index to an index in the solution.
-  size_t NodeToSolutionIndex(size_t node_index) {
+  size_t NodeToSolutionIndex(size_t node_index) const {
     // The solver is going to provide us a matrix with solution_node_ removed.
     // The indices of all nodes before solution_node_ are in the same spot, and
     // the indices of the nodes after solution node are shifted over.
