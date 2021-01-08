@@ -688,23 +688,34 @@ class LogReader {
     // sending out MessageHeaders.
     std::vector<int> factory_channel_index_;
 
-    struct SentTimestamp {
-      monotonic_clock::time_point monotonic_event_time =
+    struct ContiguousSentTimestamp {
+      // Most timestamps make it through the network, so it saves a ton of
+      // memory and CPU to store the start and end, and search for valid ranges.
+      // For one of the logs I looked at, we had 2 ranges for 4 days.
+      //
+      // Save monotonic times as well to help if a queue index ever wraps.  Odds
+      // are very low, but doesn't hurt.
+      //
+      // The starting time and matching queue index.
+      monotonic_clock::time_point starting_monotonic_event_time =
           monotonic_clock::min_time;
-      realtime_clock::time_point realtime_event_time = realtime_clock::min_time;
-      uint32_t queue_index = 0xffffffff;
+      uint32_t starting_queue_index = 0xffffffff;
 
-      // The queue index that this message *actually* was sent with.
+      // Ending time and queue index.
+      monotonic_clock::time_point ending_monotonic_event_time =
+          monotonic_clock::max_time;
+      uint32_t ending_queue_index = 0xffffffff;
+
+      // The queue index that the first message was *actually* sent with.  The
+      // queue indices are assumed to be contiguous through this range.
       uint32_t actual_queue_index = 0xffffffff;
     };
 
     // Stores all the timestamps that have been sent on this channel.  This is
     // only done for channels which are forwarded and on the node which
-    // initially sends the message.
-    //
-    // TODO(austin): This whole concept is a hack.  We should be able to
-    // associate state with the message as it gets sorted and recover it.
-    std::vector<std::unique_ptr<std::vector<SentTimestamp>>> queue_index_map_;
+    // initially sends the message.  Compress using ranges and offsets.
+    std::vector<std::unique_ptr<std::vector<ContiguousSentTimestamp>>>
+        queue_index_map_;
 
     // Factory (if we are in sim) that this loop was created on.
     NodeEventLoopFactory *node_event_loop_factory_ = nullptr;
