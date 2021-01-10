@@ -95,6 +95,27 @@ export function plotDrivetrain(conn: Connection, element: Element): void {
   const controllerType = modePlot.addMessageLine(goal, ['controller_type']);
   controllerType.setDrawLine(false);
 
+  // Drivetrain estimated relative position
+  const positionPlot = aosPlotter.addPlot(element, [0, currentTop],
+                                         [width, height]);
+  currentTop += height;
+  positionPlot.plot.getAxisLabels().setTitle("Estimated Relative Position " +
+                                             "of the Drivetrain");
+  positionPlot.plot.getAxisLabels().setXLabel("Monotonic Time (sec)");
+  positionPlot.plot.getAxisLabels().setYLabel("Relative Position (m)");
+  const leftPosition =
+      positionPlot.addMessageLine(status, ["estimated_left_position"]);
+  leftPosition.setColor(kRed);
+  const rightPosition =
+      positionPlot.addMessageLine(status, ["estimated_right_position"]);
+  rightPosition.setColor(kGreen);
+  const leftPositionGoal =
+      positionPlot.addMessageLine(status, ["profiled_left_position_goal"]);
+  leftPositionGoal.setColor(kBlue);
+  const rightPositionGoal =
+      positionPlot.addMessageLine(status, ["profiled_right_position_goal"]);
+  rightPositionGoal.setColor(kPink);
+
   // Drivetrain Output Voltage
   const outputPlot =
       aosPlotter.addPlot(element, [0, currentTop], [width, height]);
