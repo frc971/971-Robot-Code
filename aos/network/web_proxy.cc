@@ -9,6 +9,8 @@
 #include "glog/logging.h"
 #include "internal/Embedded.h"
 
+DEFINE_int32(proxy_port, 8080, "Port to use for the web proxy server.");
+
 namespace aos {
 namespace web_proxy {
 
@@ -85,7 +87,7 @@ WebProxy::WebProxy(aos::EventLoop *event_loop, aos::internal::EPoll *epoll,
       websocket_handler_(
           new WebsocketHandler(&server_, event_loop, buffer_size)) {
   server_.addWebSocketHandler("/ws", websocket_handler_);
-  CHECK(server_.startListening(8080));
+  CHECK(server_.startListening(FLAGS_proxy_port));
 
   epoll->OnReadable(server_.fd(), [this]() {
     CHECK(::seasocks::Server::PollResult::Continue == server_.poll(0));
