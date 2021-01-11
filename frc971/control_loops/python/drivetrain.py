@@ -216,7 +216,7 @@ class Drivetrain(control_loop.ControlLoop):
 
         # State feedback matrices
         # X will be of the format
-        # [[positionl], [velocityl], [positionr], velocityr]]
+        # [[positionl], [velocityl], [positionr], [velocityr]]
         self.A_continuous = numpy.matrix(
             [[0, 1, 0, 0], [0, -self.mspl * self.tcl, 0, -self.msnr * self.tcr],
              [0, 0, 0, 1], [0, -self.msnl * self.tcl, 0,
@@ -231,6 +231,13 @@ class Drivetrain(control_loop.ControlLoop):
                                                    self.B_continuous, self.dt)
 
     def BuildDrivetrainController(self, q_pos, q_vel):
+        # We can solve for the max velocity by setting \dot(x) = Ax + Bu to 0
+        max_voltage = 12
+        glog.debug(
+            "Max speed %f m/s",
+            -(self.B_continuous[1, 1] + self.B_continuous[1, 0]) /
+            (self.A_continuous[1, 1] + self.A_continuous[1, 3]) * max_voltage)
+
         # Tune the LQR controller
         self.Q = numpy.matrix([[(1.0 / (q_pos**2.0)), 0.0, 0.0, 0.0],
                                [0.0, (1.0 / (q_vel**2.0)), 0.0, 0.0],
