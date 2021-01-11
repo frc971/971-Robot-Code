@@ -1298,6 +1298,10 @@ void LogReader::Register(EventLoop *event_loop) {
         event_loop,
         logged_configuration()->channels()->Get(logged_channel_index));
 
+    if (channel->logger() == LoggerConfig::NOT_LOGGED) {
+      continue;
+    }
+
     message_bridge::NoncausalOffsetEstimator *filter = nullptr;
     RemoteMessageSender *remote_timestamp_sender = nullptr;
 

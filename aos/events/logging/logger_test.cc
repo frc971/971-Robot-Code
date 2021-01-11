@@ -30,7 +30,7 @@ using aos::testing::MessageCounter;
 constexpr std::string_view kSingleConfigSha1(
     "bc8c9c2e31589eae6f0e36d766f6a437643e861d9568b7483106841cf7504dea");
 constexpr std::string_view kConfigSha1(
-    "f59be0b208c3feab512abac12720b53166303b382b39806e2beeb46e3b9d2a4a");
+    "47511a1906dbb59cf9f8ad98ad08e568c718a4deb204c8bbce81ff76cef9095c");
 
 class LoggerTest : public ::testing::Test {
  public:
