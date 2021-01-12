@@ -460,7 +460,6 @@ cc_library(
     deps = [
         "//aos:configuration",
         "//aos/time",
-        "//third_party/gmp",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -475,7 +474,6 @@ cc_library(
         "//aos:configuration",
         "//aos/events:simulated_event_loop",
         "//aos/time",
-        "//third_party/gmp",
         "@com_github_stevengj_nlopt//:nlopt",
         "@org_tuxfamily_eigen//:eigen",
     ],
@@ -517,6 +515,7 @@ cc_test(
         ":testing_time_converter",
         ":timestamp_filter",
         "//aos/testing:googletest",
+        "//third_party/gmp",
         "@com_github_stevengj_nlopt//:nlopt",
     ],
 )

@@ -36,25 +36,25 @@
     {
       "name": "/pi1/aos",
       "type": "aos.message_bridge.ServerStatistics",
-      "logger": "NOT_LOGGED",
+      "logger": "LOCAL_LOGGER",
       "source_node": "pi1"
     },
     {
       "name": "/pi2/aos",
       "type": "aos.message_bridge.ServerStatistics",
-      "logger": "NOT_LOGGED",
+      "logger": "LOCAL_LOGGER",
       "source_node": "pi2"
     },
     {
       "name": "/pi1/aos",
       "type": "aos.message_bridge.ClientStatistics",
-      "logger": "NOT_LOGGED",
+      "logger": "LOCAL_LOGGER",
       "source_node": "pi1"
     },
     {
       "name": "/pi2/aos",
       "type": "aos.message_bridge.ClientStatistics",
-      "logger": "NOT_LOGGED",
+      "logger": "LOCAL_LOGGER",
       "source_node": "pi2"
     },
     {

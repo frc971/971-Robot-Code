@@ -10,7 +10,6 @@
 #include "aos/configuration.h"
 #include "aos/time/time.h"
 #include "glog/logging.h"
-#include "third_party/gmp/gmpxx.h"
 
 namespace aos {
 namespace message_bridge {
@@ -218,113 +217,6 @@ class ClippedAverageFilter {
   FILE *rev_fp_ = nullptr;
 };
 
-// Converts a int64_t into a mpq_class.  This only uses 32 bit precision
-// internally, so it will work on ARM.  This should only be used on 64 bit
-// platforms to test out the 32 bit implementation.
-inline mpq_class FromInt64(int64_t i) {
-  uint64_t absi = std::abs(i);
-  mpq_class bits(static_cast<uint32_t>((absi >> 32) & 0xffffffffu));
-  bits *= mpq_class(0x10000);
-  bits *= mpq_class(0x10000);
-  bits += mpq_class(static_cast<uint32_t>(absi & 0xffffffffu));
-
-  if (i < 0) {
-    return -bits;
-  } else {
-    return bits;
-  }
-}
-
-// Class to hold an affine function for the time offset.
-// O(t) = slope * t + offset
-//
-// This is stored using mpq_class, which stores everything as full rational
-// fractions.
-class Line {
- public:
-  Line() {}
-
-  // Constructs a line given the offset and slope.
-  Line(mpq_class offset, mpq_class slope) : offset_(offset), slope_(slope) {}
-
-  // TODO(austin): Remove this one.
-  Line(std::chrono::nanoseconds offset, double slope)
-      : offset_(DoFromInt64(offset.count())), slope_(slope) {}
-
-  // Fits a line to 2 points and returns the associated line.
-  static Line Fit(
-      const std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> a,
-      const std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>
-          b);
-
-  // Returns the full precision slopes and offsets.
-  mpq_class mpq_offset() const { return offset_; }
-  mpq_class mpq_slope() const { return slope_; }
-  void increment_mpq_offset(mpq_class increment) { offset_ += increment; }
-
-  // Returns the rounded offsets and slopes.
-  std::chrono::nanoseconds offset() const {
-    double o = offset_.get_d();
-    return std::chrono::nanoseconds(static_cast<int64_t>(o));
-  }
-  double slope() const { return slope_.get_d(); }
-
-  std::string DebugString() const {
-    std::stringstream ss;
-    ss << "Offset " << mpq_offset() << " slope " << mpq_slope();
-    return ss.str();
-  }
-
-  void Debug() const {
-    LOG(INFO) << DebugString();
-  }
-
-  // Returns the offset at a given time.
-  // TODO(austin): get_d() ie double -> int64 can't be accurate...
-  std::chrono::nanoseconds Eval(monotonic_clock::time_point pt) const {
-    mpq_class result =
-        mpq_class(FromInt64(pt.time_since_epoch().count())) * slope_ + offset_;
-    return std::chrono::nanoseconds(static_cast<int64_t>(result.get_d()));
-  }
-
- private:
-  static mpq_class DoFromInt64(int64_t i) {
-#if GMP_NUMB_BITS == 32
-    return message_bridge::FromInt64(i);
-#else
-    return i;
-#endif
-  }
-
-  mpq_class offset_;
-  mpq_class slope_;
-};
-
-// Averages 2 fits per the equations below
-//
-// Oa(ta) = fa.slope * ta + fa.offset;
-// tb = Oa(ta) + ta;
-// Ob(tb) = fb.slope * tb + fb.offset;
-// ta = Ob(tb) + tb;
-//
-// This splits the difference between Oa and Ob and solves:
-// tb - ta = (Oa(ta) - Ob(tb)) / 2.0
-// and returns O(ta) such that
-// tb = O(ta) + ta
-Line AverageFits(Line fa, Line fb);
-
-// Inverts an offset line
-//
-// Oa(ta) = fa.slope * ta + fa.offset;
-// tb = Oa(ta) + ta;
-// Ob(tb) = fb.slope * tb + fb.offset;
-// ta = Ob(tb) + tb;
-//
-// This takes a line in the form ta = Ob(tb) + tb,
-// and returns one in the form tb = Oa(ta) + ta.  This is a pure algebreic
-// reshuffling of terms.
-Line Invert(Line fb);
-
 // This class implements a noncausal timestamp filter.  It tracks the maximum
 // points while enforcing both a maximum positive and negative slope constraint.
 // It does this by building up a buffer of samples, and removing any samples
@@ -344,10 +236,6 @@ Line Invert(Line fb);
 class NoncausalTimestampFilter {
  public:
   ~NoncausalTimestampFilter();
-
-  // Returns a line fit to the oldest 2 points in the timestamp list if
-  // available, or the only point (assuming 0 slope) if not available.
-  Line FitLine();
 
   // Returns the offset for the point in time, using the timestamps in the deque
   // to form a polyline used to interpolate.
@@ -391,12 +279,11 @@ class NoncausalTimestampFilter {
   }
 
   // Adds a new sample to our filtered timestamp list.
-  // Returns true if adding the sample changed the output from FitLine().
-  bool Sample(aos::monotonic_clock::time_point monotonic_now,
+  void Sample(aos::monotonic_clock::time_point monotonic_now,
               std::chrono::nanoseconds sample_ns);
 
   // Removes any old timestamps from our timestamps list.
-  // Returns true if adding the sample changed the output from FitLine().
+  // Returns true if any points were popped.
   bool Pop(aos::monotonic_clock::time_point time);
 
   // Returns the current list of timestamps in our list.
@@ -539,7 +426,7 @@ class NoncausalOffsetEstimator {
   NoncausalOffsetEstimator(const Node *node_a, const Node *node_b)
       : node_a_(node_a), node_b_(node_b) {}
 
-  const NoncausalTimestampFilter *GetFilter(const Node *n) {
+  NoncausalTimestampFilter *GetFilter(const Node *n) {
     if (n == node_a_) {
       return &a_;
     }
@@ -558,41 +445,11 @@ class NoncausalOffsetEstimator {
               aos::monotonic_clock::time_point other_node_sent_time);
 
   // Removes old data points from a node before the provided time.
-  // Returns true if the line fit changes.
+  // Returns true if any points were popped.
   bool Pop(const Node *node,
            aos::monotonic_clock::time_point node_monotonic_now);
 
-  // Marks the first line segment (the two points used to compute both the
-  // offset and slope), as used.  Those points can't be removed from the filter
-  // going forwards.
-  void Freeze();
-
-  // Returns a line for the oldest segment.
-  Line fit() const { return fit_; }
-
-  // Sets the locations to update when the fit changes.
-  void set_offset_pointer(mpq_class *offset_pointer) {
-    offset_pointer_ = offset_pointer;
-  }
-  void set_slope_pointer(mpq_class *slope_pointer) {
-    slope_pointer_ = slope_pointer;
-  }
-  void set_valid_pointer(bool *valid_pointer) {
-    valid_pointer_ = valid_pointer;
-  }
-
   // Returns the data points from each filter.
-  std::deque<
-      std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>>
-  ATimestamps() {
-    return a_.Timestamps();
-  }
-  std::deque<
-      std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>>
-  BTimestamps() {
-    return b_.Timestamps();
-  }
-
   size_t a_timestamps_size() const { return a_.timestamps_size(); }
   size_t b_timestamps_size() const { return b_.timestamps_size(); }
 
@@ -605,20 +462,9 @@ class NoncausalOffsetEstimator {
   }
   void SetRevCsvFileName(std::string_view name) { b_.SetCsvFileName(name); }
 
-  // Logs the fits and timestamps for all the filters.
-  void LogFit(std::string_view prefix);
-
  private:
-  void Refit();
-
   NoncausalTimestampFilter a_;
   NoncausalTimestampFilter b_;
-
-  mpq_class *offset_pointer_ = nullptr;
-  mpq_class *slope_pointer_ = nullptr;
-  bool *valid_pointer_ = nullptr;
-
-  Line fit_{std::chrono::nanoseconds(0), 0.0};
 
   const Node *const node_a_;
   const Node *const node_b_;

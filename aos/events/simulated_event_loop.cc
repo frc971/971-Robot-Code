@@ -120,9 +120,12 @@ class SimulatedChannel {
     latest_message_.reset();
     CHECK_EQ(static_cast<size_t>(number_buffers()),
              available_buffer_indices_.size());
-    CHECK_EQ(0u, fetchers_.size());
-    CHECK_EQ(0u, watchers_.size());
-    CHECK_EQ(0, sender_count_);
+    CHECK_EQ(0u, fetchers_.size())
+        << configuration::StrippedChannelToString(channel());
+    CHECK_EQ(0u, watchers_.size())
+        << configuration::StrippedChannelToString(channel());
+    CHECK_EQ(0, sender_count_)
+        << configuration::StrippedChannelToString(channel());
   }
 
   // The number of messages we pretend to have in the queue.
@@ -1034,6 +1037,13 @@ NodeEventLoopFactory *SimulatedEventLoopFactory::GetNodeEventLoopFactory(
   return result->get();
 }
 
+void SimulatedEventLoopFactory::SetTimeConverter(
+    TimeConverter *time_converter) {
+  for (std::unique_ptr<NodeEventLoopFactory> &factory : node_factories_) {
+    factory->SetTimeConverter(time_converter);
+  }
+}
+
 ::std::unique_ptr<EventLoop> SimulatedEventLoopFactory::MakeEventLoop(
     std::string_view name, const Node *node) {
   if (node == nullptr) {
@@ -1092,9 +1102,7 @@ void SimulatedEventLoopFactory::Run() {
   }
 }
 
-void SimulatedEventLoopFactory::Exit() {
-  scheduler_scheduler_.Exit();
-}
+void SimulatedEventLoopFactory::Exit() { scheduler_scheduler_.Exit(); }
 
 void SimulatedEventLoopFactory::DisableForwarding(const Channel *channel) {
   CHECK(bridge_) << ": Can't disable forwarding without a message bridge.";

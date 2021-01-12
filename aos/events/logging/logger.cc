@@ -998,6 +998,9 @@ LogReader::LogReader(std::vector<LogFile> log_files,
         CHECK(!HasChannel<RemoteMessage>(channel, node))
             << ": Can't have both a MessageHeader and RemoteMessage remote "
                "timestamp channel.";
+        // In theory, we should check NOT_LOGGED like RemoteMessage and be more
+        // careful about updating the config, but there are fewer and fewer logs
+        // with MessageHeader remote messages, so it isn't worth the effort.
         RemapLoggedChannel<MessageHeader>(channel, node, "/original",
                                           "aos.message_bridge.RemoteMessage");
       } else {
@@ -1005,7 +1008,13 @@ LogReader::LogReader(std::vector<LogFile> log_files,
             << ": Failed to find {\"name\": \"" << channel << "\", \"type\": \""
             << RemoteMessage::GetFullyQualifiedName() << "\"} for node "
             << node->name()->string_view();
-        RemapLoggedChannel<RemoteMessage>(channel, node);
+        // Only bother to remap if there's something on the channel.  We can
+        // tell if the channel was marked NOT_LOGGED or not.  This makes the
+        // config not change un-necesarily when we replay a log with NOT_LOGGED
+        // messages.
+        if (HasLoggedChannel<RemoteMessage>(channel, node)) {
+          RemapLoggedChannel<RemoteMessage>(channel, node);
+        }
       }
     }
   }
@@ -1101,7 +1110,8 @@ void LogReader::Register(SimulatedEventLoopFactory *event_loop_factory) {
   remapped_configuration_ = event_loop_factory_->configuration();
   filters_ =
       std::make_unique<message_bridge::MultiNodeNoncausalOffsetEstimator>(
-          event_loop_factory_);
+          event_loop_factory_, logged_configuration(),
+          FLAGS_skip_order_validation);
 
   for (const Node *node : configuration::GetNodes(configuration())) {
     const size_t node_index =
@@ -1118,6 +1128,10 @@ void LogReader::Register(SimulatedEventLoopFactory *event_loop_factory) {
             << ": Found parts from different boots "
             << LogFileVectorToString(log_files_);
       }
+      if (!filtered_parts[0].source_boot_uuid.empty()) {
+        event_loop_factory_->GetNodeEventLoopFactory(node)->set_boot_uuid(
+            filtered_parts[0].source_boot_uuid);
+      }
     }
 
     states_[node_index] = std::make_unique<State>(
@@ -1130,6 +1144,7 @@ void LogReader::Register(SimulatedEventLoopFactory *event_loop_factory) {
 
     state->SetChannelCount(logged_configuration()->channels()->size());
   }
+  event_loop_factory_->SetTimeConverter(filters_.get());
 
   for (const Node *node : configuration::GetNodes(configuration())) {
     const size_t node_index =
@@ -1161,14 +1176,11 @@ void LogReader::Register(SimulatedEventLoopFactory *event_loop_factory) {
            "you sure that the replay config matches the original config?";
   }
 
-  filters_->Initialize(logged_configuration());
+  filters_->CheckGraph();
 
   for (std::unique_ptr<State> &state : states_) {
     state->SeedSortedMessages();
   }
-
-  // And solve.
-  UpdateOffsets();
 
   // We want to start the log file at the last start time of the log files
   // from all the nodes.  Compute how long each node's simulation needs to run
@@ -1190,6 +1202,9 @@ void LogReader::Register(SimulatedEventLoopFactory *event_loop_factory) {
     start_time = std::max(
         start_time, state->ToDistributedClock(state->monotonic_start_time()));
   }
+
+  // TODO(austin): If a node doesn't have a start time, we might not queue
+  // enough.  If this happens, we'll explode with a frozen error eventually.
 
   CHECK_GE(start_time, distributed_clock::epoch())
       << ": Hmm, we have a node starting before the start of time.  Offset "
@@ -1252,14 +1267,6 @@ void LogReader::Register(SimulatedEventLoopFactory *event_loop_factory) {
                .count()
         << "\n";
     }
-  }
-}
-
-void LogReader::UpdateOffsets() {
-  filters_->UpdateOffsets();
-
-  if (VLOG_IS_ON(1)) {
-    filters_->LogFit("Offset is");
   }
 }
 
@@ -1344,9 +1351,6 @@ void LogReader::Register(EventLoop *event_loop) {
       }
       return;
     }
-    if (VLOG_IS_ON(1)) {
-      filters_->LogFit("Offset was");
-    }
 
     bool update_time;
     TimestampedMessage timestamped_message = state->PopOldest(&update_time);
@@ -1388,8 +1392,13 @@ void LogReader::Register(EventLoop *event_loop) {
           // Confirm that the message was sent on the sending node before the
           // destination node (this node).  As a proxy, do this by making sure
           // that time on the source node is past when the message was sent.
+          //
+          // TODO(austin): <= means that the cause message (which we know) could
+          // happen after the effect even though we know they are at the same
+          // time.  I doubt anyone will notice for a bit, but we should really
+          // fix that.
           if (!FLAGS_skip_order_validation) {
-            CHECK_LT(
+            CHECK_LE(
                 timestamped_message.monotonic_remote_time,
                 state->monotonic_remote_now(timestamped_message.channel_index))
                 << state->event_loop()->node()->name()->string_view() << " to "
@@ -1401,7 +1410,7 @@ void LogReader::Register(EventLoop *event_loop) {
                        logged_configuration()->channels()->Get(
                            timestamped_message.channel_index))
                 << " " << state->DebugString();
-          } else if (timestamped_message.monotonic_remote_time >=
+          } else if (timestamped_message.monotonic_remote_time >
                      state->monotonic_remote_now(
                          timestamped_message.channel_index)) {
             LOG(WARNING)
@@ -1492,7 +1501,6 @@ void LogReader::Register(EventLoop *event_loop) {
                        return state->monotonic_now();
                      });
 
-      UpdateOffsets();
       VLOG(1) << MaybeNodeName(state->event_loop()->node()) << "Now is now "
               << state->monotonic_now();
 

@@ -303,6 +303,7 @@ cc_test(
         ":pong_lib",
         ":simulated_event_loop",
         "//aos/network:remote_message_fbs",
+        "//aos/network:testing_time_converter",
         "//aos/testing:googletest",
     ],
 )

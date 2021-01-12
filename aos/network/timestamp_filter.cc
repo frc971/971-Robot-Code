@@ -9,7 +9,6 @@
 #include "absl/strings/str_format.h"
 #include "aos/configuration.h"
 #include "aos/time/time.h"
-#include "third_party/gmp/gmpxx.h"
 
 namespace aos {
 namespace message_bridge {
@@ -25,14 +24,12 @@ void ClippedAverageFilterPrintHeader(FILE *fp) {
 }
 
 void PrintNoncausalTimestampFilterHeader(FILE *fp) {
-  fprintf(fp,
-          "# time_since_start, sample_ns, filtered_offset, offset, "
-          "velocity, filtered_velocity, velocity_contribution, "
-          "sample_contribution, time_contribution\n");
+  fprintf(fp, "time_since_start,sample_ns,filtered_offset\n");
 }
 
 void PrintNoncausalTimestampFilterSamplesHeader(FILE *fp) {
-  fprintf(fp, "# time_since_start, sample_ns, offset\n");
+  fprintf(fp,
+          "time_since_start,sample_ns,monotonic,monotonic+offset(remote)\n");
 }
 
 void NormalizeTimestamps(monotonic_clock::time_point *ta_base, double *ta) {
@@ -448,87 +445,6 @@ void ClippedAverageFilter::Update(
   }
 }
 
-Line Line::Fit(
-    const std::tuple<monotonic_clock::time_point, chrono::nanoseconds> a,
-    const std::tuple<monotonic_clock::time_point, chrono::nanoseconds> b) {
-  mpq_class slope = FromInt64((std::get<1>(b) - std::get<1>(a)).count()) /
-                    FromInt64((std::get<0>(b) - std::get<0>(a)).count());
-  slope.canonicalize();
-  mpq_class offset =
-      FromInt64(std::get<1>(a).count()) -
-      FromInt64(std::get<0>(a).time_since_epoch().count()) * slope;
-  offset.canonicalize();
-  Line f(offset, slope);
-  return f;
-}
-
-Line AverageFits(Line fa, Line fb) {
-  // tb = Oa(ta) + ta
-  // ta = Ob(tb) + tb
-  // tb - ta = Oa(ta)
-  // tb - ta = -Ob(tb)
-  // Oa(ta) = ma * ta + ba
-  // Ob(tb) = mb * tb + bb
-  //
-  // ta + O(ta, tb) = tb
-  // tb - ta = O(ta, tb)
-  // O(ta, tb) = (Oa(ta) - Ob(tb)) / 2.0
-  // ta + (ma * ta + ba - mb * tb - bb) / 2 = tb
-  // (2 + ma) / 2 * ta + (ba - bb) / 2 = (2 + mb) / 2 * tb
-  // (2 + ma) * ta + (ba - bb) = (2 + mb) * tb
-  // tb = (2 + ma) / (2 + mb) * ta + (ba - bb) / (2 + mb)
-  // ta = (2 + mb) / (2 + ma) * tb + (bb - ba) / (2 + ma)
-  //
-  // ta - tb = (mb - ma) / (2 + ma) * tb + (bb - ba) / (2 + ma)
-  // mb = (mb - ma) / (2 + ma)
-  // bb = (bb - ba) / (2 + ma)
-  //
-  // tb - ta = (ma - mb) / (2 + mb) * tb + (ba - bb) / (2 + mb)
-  // ma = (ma - mb) / (2 + mb)
-  // ba = (ba - bb) / (2 + mb)
-  //
-  // O(ta) = ma * ta + ba
-  // tb = O(ta) + ta
-  // ta = O(tb) + tb
-
-  mpq_class m =
-      (fa.mpq_slope() - fb.mpq_slope()) / (mpq_class(2) + fb.mpq_slope());
-  m.canonicalize();
-
-  mpq_class b =
-      (fa.mpq_offset() - fb.mpq_offset()) / (mpq_class(2) + fb.mpq_slope());
-  b.canonicalize();
-
-  Line f(b, m);
-  return f;
-}
-
-Line Invert(Line fb) {
-  // ta = Ob(tb) + tb
-  // tb = Oa(ta) + ta
-  // Ob(tb) = mb * tb + bb
-  // Oa(ta) = ma * ta + ba
-  //
-  // ta = mb * tb + tb + bb
-  // ta = (mb + 1) * tb + bb
-  // 1 / (mb + 1) ta - bb / (mb + 1) = tb
-  // ta + (-1 + 1 / (mb + 1)) ta - bb / (mb + 1) = tb
-  // ta + ((-mb - 1) / (mb + 1) + 1 / (mb + 1)) ta - bb / (mb + 1) = tb
-  // ta + -mb / (mb + 1) ta - bb / (mb + 1) = tb
-  //
-  // ma = -mb / (mb + 1)
-  // ba = -bb / (mb + 1)
-
-  mpq_class denom = (mpq_class(1) + fb.mpq_slope());
-  mpq_class ma = -fb.mpq_slope() / denom;
-  ma.canonicalize();
-
-  mpq_class ba = -fb.mpq_offset() / denom;
-
-  Line f(ba, ma);
-  return f;
-}
-
 NoncausalTimestampFilter::~NoncausalTimestampFilter() {
   // Destroy the filter by popping until empty.  This will trigger any
   // timestamps to be written to the files.
@@ -563,23 +479,20 @@ NoncausalTimestampFilter::Timestamps() const {
   return result;
 }
 
-Line NoncausalTimestampFilter::FitLine() {
-  DCHECK_GE(timestamps_.size(), 1u);
-  if (timestamps_.size() == 1) {
-    Line fit(std::get<1>(timestamps_[0]), 0.0);
-    return fit;
-  } else {
-    return Line::Fit(TrimTuple(timestamps_[0]), TrimTuple(timestamps_[1]));
-  }
-}
 void NoncausalTimestampFilter::FlushSavedSamples() {
   for (const std::tuple<aos::monotonic_clock::time_point,
                         std::chrono::nanoseconds> &sample : saved_samples_) {
-    fprintf(samples_fp_, "%.9f, %.9f\n",
+    fprintf(samples_fp_, "%.9f, %.9f, %.9f, %.9f\n",
             chrono::duration_cast<chrono::duration<double>>(
                 std::get<0>(sample) - first_time_)
                 .count(),
             chrono::duration_cast<chrono::duration<double>>(std::get<1>(sample))
+                .count(),
+            chrono::duration_cast<chrono::duration<double>>(
+                std::get<0>(sample).time_since_epoch())
+                .count(),
+            chrono::duration_cast<chrono::duration<double>>(
+                (std::get<0>(sample) + std::get<1>(sample)).time_since_epoch())
                 .count());
   }
   saved_samples_.clear();
@@ -804,11 +717,11 @@ double NoncausalTimestampFilter::DCostDta(
 
 std::string NoncausalTimestampFilter::DebugDCostDta(
     aos::monotonic_clock::time_point ta_base, double ta,
-    aos::monotonic_clock::time_point tb_base, double tb,
-    size_t node_a, size_t node_b) const {
+    aos::monotonic_clock::time_point tb_base, double tb, size_t node_a,
+    size_t node_b) const {
   if (timestamps_size() == 1u) {
     return absl::StrFormat("-2. * (t%d - t%d - %d)", node_b, node_a,
-                              std::get<1>(timestamp(0)).count());
+                           std::get<1>(timestamp(0)).count());
   }
 
   NormalizeTimestamps(&ta_base, &ta);
@@ -943,7 +856,7 @@ std::string NoncausalTimestampFilter::DebugCost(
   }
 }
 
-bool NoncausalTimestampFilter::Sample(
+void NoncausalTimestampFilter::Sample(
     aos::monotonic_clock::time_point monotonic_now,
     chrono::nanoseconds sample_ns) {
   if (samples_fp_) {
@@ -953,13 +866,17 @@ bool NoncausalTimestampFilter::Sample(
     }
   }
 
-  CHECK(!fully_frozen_)
-      << ": Returned a horizontal line previously and then got a new sample.";
-
   // The first sample is easy.  Just do it!
   if (timestamps_.size() == 0) {
     timestamps_.emplace_back(std::make_tuple(monotonic_now, sample_ns, false));
-    return true;
+    CHECK(!fully_frozen_)
+        << ": Returned a horizontal line previously and then got a new "
+           "sample at "
+        << monotonic_now << ", "
+        << chrono::duration<double>(monotonic_now - std::get<0>(timestamps_[0]))
+               .count()
+        << " seconds after the last sample at " << std::get<0>(timestamps_[0])
+        << " " << csv_file_name_ << ".";
   } else {
     // Future samples get quite a bit harder.  We want the line to track the
     // highest point without volating the slope constraint.
@@ -970,7 +887,7 @@ bool NoncausalTimestampFilter::Sample(
     aos::monotonic_clock::duration doffset = sample_ns - std::get<1>(back);
 
     if (dt == chrono::nanoseconds(0) && doffset == chrono::nanoseconds(0)) {
-      return false;
+      return;
     }
 
     // If the point is higher than the max negative slope, the slope will either
@@ -979,6 +896,22 @@ bool NoncausalTimestampFilter::Sample(
     // were too low rather than reject this new point.  We never want a point to
     // be higher than the line.
     if (-dt * kMaxVelocity() <= doffset) {
+      // TODO(austin): If the slope is the same, and the (to be newly in the
+      // middle) point is not frozen, drop the point out of the middle.  This
+      // won't happen in the real world, but happens a lot with tests.
+
+      // Be overly conservative here.  It either won't make a difference, or
+      // will give us an error with an actual useful time difference.
+      CHECK(!fully_frozen_)
+          << ": Returned a horizontal line previously and then got a new "
+             "sample at "
+          << monotonic_now << ", "
+          << chrono::duration<double>(monotonic_now -
+                                      std::get<0>(timestamps_[0]))
+                 .count()
+          << " seconds after the last sample at " << std::get<0>(timestamps_[0])
+          << " " << csv_file_name_ << ".";
+
       // Back propagate the max velocity and remove any elements violating the
       // velocity constraint.
       while (dt * kMaxVelocity() < doffset && timestamps_.size() > 1u) {
@@ -1005,10 +938,8 @@ bool NoncausalTimestampFilter::Sample(
                             static_cast<aos::monotonic_clock::duration::rep>(
                                 dt.count() * kMaxVelocity()));
 
-        VLOG(1) << csv_file_name_ << " slope " << std::setprecision(20)
-                << FitLine().slope() << " offset " << FitLine().offset().count()
-                << " a [(" << std::get<0>(timestamps_[0]) << " -> "
-                << std::get<1>(timestamps_[0]).count() << "ns), ("
+        VLOG(1) << csv_file_name_ << " a [(" << std::get<0>(timestamps_[0])
+                << " -> " << std::get<1>(timestamps_[0]).count() << "ns), ("
                 << std::get<0>(timestamps_[1]) << " -> "
                 << std::get<1>(timestamps_[1]).count()
                 << "ns) => {dt: " << std::fixed << std::setprecision(6)
@@ -1028,11 +959,10 @@ bool NoncausalTimestampFilter::Sample(
 
         std::get<1>(timestamps_[0]) = adjusted_initial_time;
       }
-      if (timestamps_.size() == 2) {
-        return true;
-      }
+    } else {
+      VLOG(1) << "Rejecting sample because " << doffset.count() << " > "
+              << (-dt * kMaxVelocity()).count();
     }
-    return false;
   }
 }
 
@@ -1159,15 +1089,9 @@ void NoncausalOffsetEstimator::Sample(
   VLOG(1) << "Sample delivered " << node_delivered_time << " sent "
           << other_node_sent_time << " to " << node->name()->string_view();
   if (node == node_a_) {
-    if (a_.Sample(node_delivered_time,
-                  other_node_sent_time - node_delivered_time)) {
-      Refit();
-    }
+    a_.Sample(node_delivered_time, other_node_sent_time - node_delivered_time);
   } else if (node == node_b_) {
-    if (b_.Sample(node_delivered_time,
-                  other_node_sent_time - node_delivered_time)) {
-      Refit();
-    }
+    b_.Sample(node_delivered_time, other_node_sent_time - node_delivered_time);
   } else {
     LOG(FATAL) << "Unknown node " << node->name()->string_view();
   }
@@ -1180,7 +1104,6 @@ bool NoncausalOffsetEstimator::Pop(
       VLOG(1) << "Popping forward sample to " << node_a_->name()->string_view()
               << " from " << node_b_->name()->string_view() << " at "
               << node_monotonic_now;
-      Refit();
       return true;
     }
   } else if (node == node_b_) {
@@ -1188,128 +1111,12 @@ bool NoncausalOffsetEstimator::Pop(
       VLOG(1) << "Popping reverse sample to " << node_b_->name()->string_view()
               << " from " << node_a_->name()->string_view() << " at "
               << node_monotonic_now;
-      Refit();
       return true;
     }
   } else {
     LOG(FATAL) << "Unknown node " << node->name()->string_view();
   }
   return false;
-}
-
-void NoncausalOffsetEstimator::Freeze() {
-  a_.Freeze();
-  b_.Freeze();
-}
-
-void NoncausalOffsetEstimator::LogFit(std::string_view prefix) {
-  const std::deque<
-      std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>>
-      a_timestamps = ATimestamps();
-  const std::deque<
-      std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>>
-      b_timestamps = BTimestamps();
-  if (a_timestamps.size() >= 2u) {
-    LOG(INFO)
-        << prefix << " " << node_a_->name()->string_view() << " from "
-        << node_b_->name()->string_view() << " slope " << std::setprecision(20)
-        << fit_.slope() << " offset " << fit_.offset().count() << " a [("
-        << std::get<0>(a_timestamps[0]) << " -> "
-        << std::get<1>(a_timestamps[0]).count() << "ns), ("
-        << std::get<0>(a_timestamps[1]) << " -> "
-        << std::get<1>(a_timestamps[1]).count() << "ns) => {dt: " << std::fixed
-        << std::setprecision(6)
-        << std::chrono::duration<double, std::milli>(
-               std::get<0>(a_timestamps[1]) - std::get<0>(a_timestamps[0]))
-               .count()
-        << "ms, do: " << std::fixed << std::setprecision(6)
-        << std::chrono::duration<double, std::milli>(
-               std::get<1>(a_timestamps[1]) - std::get<1>(a_timestamps[0]))
-               .count()
-        << "ms}]";
-  } else if (a_timestamps.size() == 1u) {
-    LOG(INFO) << prefix << " " << node_a_->name()->string_view() << " from "
-              << node_b_->name()->string_view() << " slope "
-              << std::setprecision(20) << fit_.slope() << " offset "
-              << fit_.offset().count() << " a [("
-              << std::get<0>(a_timestamps[0]) << " -> "
-              << std::get<1>(a_timestamps[0]).count() << "ns)";
-  } else {
-    LOG(INFO) << prefix << " " << node_a_->name()->string_view() << " from "
-              << node_b_->name()->string_view() << " slope "
-              << std::setprecision(20) << fit_.slope() << " offset "
-              << fit_.offset().count() << " no samples.";
-  }
-  if (b_timestamps.size() >= 2u) {
-    LOG(INFO)
-        << prefix << " " << node_b_->name()->string_view() << " from "
-        << node_a_->name()->string_view() << " slope " << std::setprecision(20)
-        << fit_.slope() << " offset " << fit_.offset().count() << " b [("
-        << std::get<0>(b_timestamps[0]) << " -> "
-        << std::get<1>(b_timestamps[0]).count() << "ns), ("
-        << std::get<0>(b_timestamps[1]) << " -> "
-        << std::get<1>(b_timestamps[1]).count() << "ns) => {dt: " << std::fixed
-        << std::setprecision(6)
-        << std::chrono::duration<double, std::milli>(
-               std::get<0>(b_timestamps[1]) - std::get<0>(b_timestamps[0]))
-               .count()
-        << "ms, do: " << std::fixed << std::setprecision(6)
-        << std::chrono::duration<double, std::milli>(
-               std::get<1>(b_timestamps[1]) - std::get<1>(b_timestamps[0]))
-               .count()
-        << "ms}]";
-  } else if (b_timestamps.size() == 1u) {
-    LOG(INFO) << prefix << " " << node_b_->name()->string_view() << " from "
-              << node_a_->name()->string_view() << " slope "
-              << std::setprecision(20) << fit_.slope() << " offset "
-              << fit_.offset().count() << " b [("
-              << std::get<0>(b_timestamps[0]) << " -> "
-              << std::get<1>(b_timestamps[0]).count() << "ns)";
-  } else {
-    LOG(INFO) << prefix << " " << node_b_->name()->string_view() << " from "
-              << node_a_->name()->string_view() << " slope "
-              << std::setprecision(20) << fit_.slope() << " offset "
-              << fit_.offset().count() << " no samples.";
-  }
-}
-
-void NoncausalOffsetEstimator::Refit() {
-  if (a_timestamps_size() == 0 && b_timestamps_size() == 0) {
-    VLOG(1) << "Not fitting because there is no data";
-    return;
-  }
-
-  // If we only have one side of the timestamp estimation, we will be on the
-  // ragged edge of non-causal.  Events will traverse the network in "0 ns".
-  // Combined with rounding errors, this causes sorting to not work.  Assume
-  // some amount of network delay.
-  constexpr int kSmidgeOfTimeNs = 10;
-
-  if (a_timestamps_size() == 0) {
-    fit_ = Invert(b_.FitLine());
-    fit_.increment_mpq_offset(-mpq_class(kSmidgeOfTimeNs));
-  } else if (b_timestamps_size() == 0) {
-    fit_ = a_.FitLine();
-    fit_.increment_mpq_offset(-mpq_class(kSmidgeOfTimeNs));
-  } else {
-    fit_ = AverageFits(a_.FitLine(), b_.FitLine());
-  }
-
-  if (offset_pointer_) {
-    VLOG(2) << " Setting offset to " << fit_.mpq_offset();
-    *offset_pointer_ = fit_.mpq_offset();
-  }
-  if (slope_pointer_) {
-    VLOG(2) << " Setting slope to " << fit_.mpq_slope();
-    *slope_pointer_ = -fit_.mpq_slope();
-  }
-  if (valid_pointer_) {
-    *valid_pointer_ = true;
-  }
-
-  if (VLOG_IS_ON(1)) {
-    LogFit("Refitting to");
-  }
 }
 
 }  // namespace message_bridge

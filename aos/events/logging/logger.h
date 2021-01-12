@@ -460,6 +460,16 @@ class LogReader {
                                      true) != nullptr;
   }
 
+  // Returns true if the channel exists on the node and was logged.
+  template <typename T>
+  bool HasLoggedChannel(std::string_view name, const Node *node = nullptr) {
+    const Channel *channel = configuration::GetChannel(logged_configuration(), name,
+                                     T::GetFullyQualifiedName(), "", node,
+                                     true);
+    if (channel == nullptr) return false;
+    return channel->logger() != LoggerConfig::NOT_LOGGED;
+  }
+
   SimulatedEventLoopFactory *event_loop_factory() {
     return event_loop_factory_;
   }
@@ -751,10 +761,6 @@ class LogReader {
   // List of filters for a connection.  The pointer to the first node will be
   // less than the second node.
   std::unique_ptr<message_bridge::MultiNodeNoncausalOffsetEstimator> filters_;
-
-  // Updates the offset matrix solution and sets the per-node distributed
-  // offsets in the factory.
-  void UpdateOffsets();
 
   std::unique_ptr<FlatbufferDetachedBuffer<Configuration>>
       remapped_configuration_buffer_;

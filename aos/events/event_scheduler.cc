@@ -44,13 +44,12 @@ aos::monotonic_clock::time_point EventScheduler::OldestEvent() {
 void EventScheduler::CallOldestEvent() {
   CHECK_GT(events_list_.size(), 0u);
   auto iter = events_list_.begin();
-  monotonic_now_ = iter->first;
-  monotonic_now_valid_ = true;
+  CHECK_EQ(monotonic_now(), iter->first)
+      << ": Time is wrong on node " << node_index_;
 
   ::std::function<void()> callback = ::std::move(iter->second);
   events_list_.erase(iter);
   callback();
-  monotonic_now_valid_ = false;
 }
 
 void EventScheduler::RunOnRun() {
@@ -158,6 +157,10 @@ EventSchedulerScheduler::OldestEvent() {
     }
   }
 
+  if (min_scheduler) {
+    VLOG(1) << "Oldest event " << min_event_time << " on scheduler "
+            << min_scheduler->node_index_;
+  }
   return std::make_tuple(min_event_time, min_scheduler);
 }
 

@@ -2,13 +2,14 @@
 
 #include <chrono>
 
-#include <nlopt.h>
 #include "aos/configuration.h"
 #include "aos/json_to_flatbuffer.h"
 #include "aos/macros.h"
 #include "aos/network/multinode_timestamp_filter.h"
 #include "aos/network/testing_time_converter.h"
 #include "gtest/gtest.h"
+#include "nlopt.h"
+#include "third_party/gmp/gmpxx.h"
 
 namespace aos {
 namespace message_bridge {
@@ -16,6 +17,102 @@ namespace testing {
 
 namespace chrono = std::chrono;
 using aos::monotonic_clock;
+
+// Converts a int64_t into a mpq_class.  This only uses 32 bit precision
+// internally, so it will work on ARM.  This should only be used on 64 bit
+// platforms to test out the 32 bit implementation.
+inline mpq_class FromInt64(int64_t i) {
+  uint64_t absi = std::abs(i);
+  mpq_class bits(static_cast<uint32_t>((absi >> 32) & 0xffffffffu));
+  bits *= mpq_class(0x10000);
+  bits *= mpq_class(0x10000);
+  bits += mpq_class(static_cast<uint32_t>(absi & 0xffffffffu));
+
+  if (i < 0) {
+    return -bits;
+  } else {
+    return bits;
+  }
+}
+
+// Class to hold an affine function for the time offset.
+// O(t) = slope * t + offset
+//
+// This is stored using mpq_class, which stores everything as full rational
+// fractions.
+class Line {
+ public:
+  Line() {}
+
+  // Constructs a line given the offset and slope.
+  Line(mpq_class offset, mpq_class slope) : offset_(offset), slope_(slope) {}
+
+  // TODO(austin): Remove this one.
+  Line(std::chrono::nanoseconds offset, double slope)
+      : offset_(DoFromInt64(offset.count())), slope_(slope) {}
+
+  // Fits a line to 2 points and returns the associated line.
+  static Line Fit(
+      const std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> a,
+      const std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>
+          b);
+
+  // Returns the full precision slopes and offsets.
+  mpq_class mpq_offset() const { return offset_; }
+  mpq_class mpq_slope() const { return slope_; }
+  void increment_mpq_offset(mpq_class increment) { offset_ += increment; }
+
+  // Returns the rounded offsets and slopes.
+  std::chrono::nanoseconds offset() const {
+    double o = offset_.get_d();
+    return std::chrono::nanoseconds(static_cast<int64_t>(o));
+  }
+  double slope() const { return slope_.get_d(); }
+
+  std::string DebugString() const {
+    std::stringstream ss;
+    ss << "Offset " << mpq_offset() << " slope " << mpq_slope();
+    return ss.str();
+  }
+
+  void Debug() const {
+    LOG(INFO) << DebugString();
+  }
+
+  // Returns the offset at a given time.
+  // TODO(austin): get_d() ie double -> int64 can't be accurate...
+  std::chrono::nanoseconds Eval(monotonic_clock::time_point pt) const {
+    mpq_class result =
+        mpq_class(FromInt64(pt.time_since_epoch().count())) * slope_ + offset_;
+    return std::chrono::nanoseconds(static_cast<int64_t>(result.get_d()));
+  }
+
+ private:
+  static mpq_class DoFromInt64(int64_t i) {
+#if GMP_NUMB_BITS == 32
+    return FromInt64(i);
+#else
+    return i;
+#endif
+  }
+
+  mpq_class offset_;
+  mpq_class slope_;
+};
+
+Line Line::Fit(
+    const std::tuple<monotonic_clock::time_point, chrono::nanoseconds> a,
+    const std::tuple<monotonic_clock::time_point, chrono::nanoseconds> b) {
+  mpq_class slope = FromInt64((std::get<1>(b) - std::get<1>(a)).count()) /
+                    FromInt64((std::get<0>(b) - std::get<0>(a)).count());
+  slope.canonicalize();
+  mpq_class offset =
+      FromInt64(std::get<1>(a).count()) -
+      FromInt64(std::get<0>(a).time_since_epoch().count()) * slope;
+  offset.canonicalize();
+  Line f(offset, slope);
+  return f;
+}
 
 mpq_class SolveExact(Line la, Line lb, monotonic_clock::time_point ta) {
   mpq_class ma = la.mpq_slope();
@@ -39,13 +136,22 @@ mpq_class SolveExact(Line la, Line lb, monotonic_clock::time_point ta) {
   // tb = (((1 + d.ma) + (1 + d.mb)) * ta + d.ba - (1 + d.mb) d.bb) / (1 + (1
   // + d.mb) (1 + d.mb))
 
-  mpq_class mpq_ta(message_bridge::FromInt64(ta.time_since_epoch().count()));
+  mpq_class mpq_ta(FromInt64(ta.time_since_epoch().count()));
   mpq_class one(1);
   mpq_class mpq_tb =
       (((one + ma) + (one + mb)) * mpq_ta + ba - (one + mb) * bb) /
       (one + (one + mb) * (one + mb));
   mpq_tb.canonicalize();
   return mpq_tb;
+}
+
+Line FitLine(const NoncausalTimestampFilter &filter) {
+  if (filter.timestamps_size() == 1) {
+    Line fit(std::get<1>(filter.timestamp(0)), 0.0);
+    return fit;
+  } else {
+    return Line::Fit(filter.timestamp(0), filter.timestamp(1));
+  }
 }
 
 // Tests that an infinite precision solution matches our numeric solver solution
@@ -80,7 +186,7 @@ TEST(TimestampProblemTest, Solve) {
     const std::vector<double> result = problem.SolveDouble();
 
     mpq_class tb_mpq =
-        SolveExact(a.FitLine(), b.FitLine(), problem.base_clock(0));
+        SolveExact(FitLine(a), FitLine(b), problem.base_clock(0));
     EXPECT_EQ(tb_mpq.get_d(), result[0])
         << std::setprecision(12) << std::fixed << " Expected " << tb_mpq.get_d()
         << " " << tb_mpq << " got " << result[0];
@@ -92,7 +198,7 @@ TEST(TimestampProblemTest, Solve) {
     std::vector<double> result = problem.SolveDouble();
 
     mpq_class tb_mpq =
-        SolveExact(a.FitLine(), b.FitLine(), problem.base_clock(0));
+        SolveExact(FitLine(a), FitLine(b), problem.base_clock(0));
 
     EXPECT_EQ(tb_mpq.get_d(), result[0])
         << std::setprecision(12) << std::fixed << " Expected " << tb_mpq.get_d()
@@ -113,7 +219,7 @@ TEST(TimestampProblemTest, Solve) {
       const std::vector<double> result = problem.SolveDouble();
 
       mpq_class tb_mpq =
-          SolveExact(a.FitLine(), b.FitLine(), problem.base_clock(0));
+          SolveExact(FitLine(a), FitLine(b), problem.base_clock(0));
 
       EXPECT_NEAR(tb_mpq.get_d(), result[0], 1e-6)
           << std::setprecision(12) << std::fixed << " Expected "
@@ -125,7 +231,7 @@ TEST(TimestampProblemTest, Solve) {
       const std::vector<double> result = problem.SolveDouble();
 
       mpq_class tb_mpq =
-          SolveExact(a.FitLine(), b.FitLine(), problem.base_clock(0));
+          SolveExact(FitLine(a), FitLine(b), problem.base_clock(0));
 
       EXPECT_EQ(tb_mpq.get_d(), result[0])
           << std::setprecision(12) << std::fixed << " Expected "
