@@ -92,21 +92,6 @@ cc_library(
 )
 
 cc_library(
-    name = "inet_addr",
-    srcs = [
-        "inet_addr.cc",
-    ],
-    hdrs = [
-        "inet_addr.h",
-    ],
-    target_compatible_with = ["@platforms//os:linux"],
-    deps = [
-        "//aos:byteorder",
-        "//aos:network_port",
-    ],
-)
-
-cc_library(
     name = "phased_loop",
     srcs = [
         "phased_loop.cc",
