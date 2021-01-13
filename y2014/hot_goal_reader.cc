@@ -6,7 +6,6 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-#include "aos/byteorder.h"
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 #include "aos/logging/logging.h"
@@ -37,7 +36,7 @@ int main(int argc, char **argv) {
         sockaddr_in address, *sockaddr_pointer;
         memset(&address, 0, sizeof(address));
         address.sin_family = AF_INET;
-        address.sin_port = ::aos::hton<uint16_t>(1180);
+        address.sin_port = htons(1180);
         sockaddr *address_pointer;
         sockaddr_pointer = &address;
         memcpy(&address_pointer, &sockaddr_pointer, sizeof(void *));

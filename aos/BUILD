@@ -47,15 +47,6 @@ cc_library(
     visibility = ["//visibility:public"],
 )
 
-cc_library(
-    name = "byteorder",
-    hdrs = [
-        "byteorder.h",
-    ],
-    target_compatible_with = ["@platforms//os:linux"],
-    visibility = ["//visibility:public"],
-)
-
 py_library(
     name = "python_init",
     srcs = ["__init__.py"],
@@ -75,15 +66,6 @@ cc_library(
     name = "gtest_prod",
     hdrs = [
         "gtest_prod.h",
-    ],
-    target_compatible_with = ["@platforms//os:linux"],
-    visibility = ["//visibility:public"],
-)
-
-cc_library(
-    name = "network_port",
-    hdrs = [
-        "network_port.h",
     ],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
