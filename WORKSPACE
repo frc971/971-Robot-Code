@@ -177,6 +177,36 @@ local_repository(
     path = "third_party/eigen",
 )
 
+local_repository(
+    name = "com_github_rawrtc_re",
+    path = "third_party/rawrtc/re",
+)
+
+local_repository(
+    name = "com_github_rawrtc_rew",
+    path = "third_party/rawrtc/rew",
+)
+
+local_repository(
+    name = "com_github_rawrtc_usrsctp",
+    path = "third_party/rawrtc/usrsctp",
+)
+
+local_repository(
+    name = "com_github_rawrtc_rawrtc_common",
+    path = "third_party/rawrtc/rawrtc-common",
+)
+
+local_repository(
+    name = "com_github_rawrtc_rawrtc_data_channel",
+    path = "third_party/rawrtc/rawrtc-data-channel",
+)
+
+local_repository(
+    name = "com_github_rawrtc_rawrtc",
+    path = "third_party/rawrtc/rawrtc",
+)
+
 http_archive(
     name = "boringssl",
     patch_args = ["-p1"],
