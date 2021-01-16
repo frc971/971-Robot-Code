@@ -73,6 +73,7 @@ class BaseWindow(Gtk.DrawingArea):
         scale = self.get_current_scale()
         cr.scale(scale, -scale)
         cr.translate(-self.center[0], -self.center[1])
+        cr.reset_clip()
         self.needs_redraw = False
         self.handle_draw(cr)
         cr.restore()
