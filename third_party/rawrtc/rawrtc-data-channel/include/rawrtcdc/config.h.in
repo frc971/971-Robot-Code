@@ -1,0 +1,21 @@
+#pragma once
+
+/// Current version of the library.
+///
+/// Follows [Semantic Versioning 2.0.0](https://semver.org)
+#mesondefine RAWRTCDC_VERSION
+#mesondefine RAWRTCDC_VERSION_MAJOR
+#mesondefine RAWRTCDC_VERSION_MINOR
+#mesondefine RAWRTCDC_VERSION_PATCH
+
+/// Debug level
+#mesondefine RAWRTC_DEBUG_LEVEL
+
+/// Whether hardware CRC32-C has been enabled
+///
+/// Note: This does not necessarily mean that hardware CRC32-C will be used
+///       which depends on whether your CPU supports SSE 4.2 at runtime.
+#mesondefine RAWRTCDC_ENABLE_SSE42_CRC32C
+
+/// Whether the SCTP redirect transport has been compiled
+#mesondefine RAWRTCDC_HAVE_SCTP_REDIRECT_TRANSPORT
