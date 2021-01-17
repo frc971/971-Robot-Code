@@ -36,6 +36,7 @@ class Graph():  # (TODO): Remove Computer Calculation
         end = -2.0 * AXIS_MARGIN_SPACE
         height = 0.5 * (SCREEN_SIZE) - AXIS_MARGIN_SPACE
         zero = AXIS_MARGIN_SPACE - SCREEN_SIZE / 2.0
+        legend_entries = {}
         if mypoints.getLibsplines():
             distanceSpline = DistanceSpline(mypoints.getLibsplines())
             traj = Trajectory(distanceSpline)
@@ -44,14 +45,18 @@ class Graph():  # (TODO): Remove Computer Calculation
             XVA = traj.GetPlanXVA(dT)
             if len(XVA[0]) > 0:
                 self.draw_x_axis(cr, start, height, zero, XVA, end)
-                self.drawVelocity(cr, XVA, start, height, skip, zero, end)
+                self.drawVelocity(cr, XVA, start, height, skip, zero, end,
+                                  legend_entries)
                 self.drawAcceleration(cr, XVA, start, height, skip, zero,
-                                      AXIS_MARGIN_SPACE, end)
-                self.drawVoltage(cr, XVA, start, height, skip, traj, zero, end)
+                                      AXIS_MARGIN_SPACE, end, legend_entries)
+                self.drawVoltage(cr, XVA, start, height, skip, traj, zero, end,
+                                 legend_entries)
                 cr.set_source_rgb(0, 0, 0)
                 cr.move_to(-1.0 * AXIS_MARGIN_SPACE, zero + height / 2.0)
                 cr.line_to(AXIS_MARGIN_SPACE - SCREEN_SIZE,
                            zero + height / 2.0)
+                self.drawLegend(cr, XVA, start, height, skip, zero, end,
+                                legend_entries)
         cr.stroke()
 
     def connectLines(self, cr, points, color):
@@ -88,7 +93,19 @@ class Graph():  # (TODO): Remove Computer Calculation
         cr.line_to(x - (width / 2), y)
         cr.stroke()
 
-    def drawVelocity(self, cr, xva, start, height, skip, zero, end):
+    def drawLegend(self, cr, xva, start, height, skip, zero, end,
+                   legend_entries):
+        step_size = (end - start) / len(legend_entries)
+        margin_under_x_axis = height * 0.1
+        for index, (name, color) in enumerate(legend_entries.items()):
+            set_color(cr, color)
+            cr.move_to(start + index * step_size, zero - margin_under_x_axis)
+            txt_scale = SCREEN_SIZE / 900.0
+            display_text(cr, name, txt_scale, txt_scale, 1.0 / txt_scale,
+                         1.0 / txt_scale)
+
+    def drawVelocity(self, cr, xva, start, height, skip, zero, end,
+                     legend_entries):
         COLOR = palette["RED"]
         velocity = xva[1]
         n_timesteps = len(velocity)
@@ -116,8 +133,11 @@ class Graph():  # (TODO): Remove Computer Calculation
                          1.0 / txt_scale, 1.0 / txt_scale)
             cr.stroke()
 
-    def drawAcceleration(self, cr, xva, start, height, skip, zero, margin,
-                         end):
+        # add entry to legend
+        legend_entries["Velocity"] = COLOR
+
+    def drawAcceleration(self, cr, xva, start, height, skip, zero, margin, end,
+                         legend_entries):
         COLOR = palette["BLUE"]
         accel = xva[2]
         max_a = np.amax(accel)
@@ -146,27 +166,32 @@ class Graph():  # (TODO): Remove Computer Calculation
                          1.0 / txt_scale, 1.0 / txt_scale)
             cr.stroke()
 
-    def drawVoltage(self, cr, xva, start, height, skip, traj, zero, end):
-        COLOR1 = palette["GREEN"]
-        COLOR2 = palette["CYAN"]
+        # draw legend
+        legend_entries["Acceleration"] = COLOR
+
+    def drawVoltage(self, cr, xva, start, height, skip, traj, zero, end,
+                    legend_entries):
+        COLOR_LEFT = palette["GREEN"]
+        COLOR_RIGHT = palette["CYAN"]
         poses = xva[0]
         n_timesteps = len(poses)
         spacing = np.abs(start - end) / float(n_timesteps)
-        points1 = []
-        points2 = []
+        points_left = []
+        points_right = []
         for i in range(0, len(poses)):
             if i % skip == 0:
+                # libspline says the order is left-right
                 voltage = traj.Voltage(poses[i])
-                points1.append([
+                points_left.append([
                     start + (i * spacing),
                     zero + height / 2 + height * (voltage[0] / 24.0)
                 ])
-                points2.append([
+                points_right.append([
                     start + (i * spacing),
                     zero + height / 2 + height * (voltage[1] / 24.0)
                 ])
-        self.connectLines(cr, points1, COLOR1)
-        self.connectLines(cr, points2, COLOR2)
+        self.connectLines(cr, points_left, COLOR_LEFT)
+        self.connectLines(cr, points_right, COLOR_RIGHT)
 
         for i in np.linspace(-1, 1, 7):
             self.HtickMark(cr, -1.0 * SCREEN_SIZE,
@@ -179,3 +204,6 @@ class Graph():  # (TODO): Remove Computer Calculation
             display_text(cr, str(round(i * 12.0, 2)), txt_scale, txt_scale,
                          1.0 / txt_scale, 1.0 / txt_scale)
             cr.stroke()
+
+        legend_entries["Left Voltage"] = COLOR_LEFT
+        legend_entries["Right Voltage"] = COLOR_RIGHT
