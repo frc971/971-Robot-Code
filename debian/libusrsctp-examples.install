@@ -1,0 +1,14 @@
+usr/lib/libusrsctp/client
+usr/lib/libusrsctp/datachan_serv
+usr/lib/libusrsctp/daytime_server
+usr/lib/libusrsctp/discard_server
+usr/lib/libusrsctp/echo_server
+usr/lib/libusrsctp/ekr_client
+usr/lib/libusrsctp/ekr_loop
+usr/lib/libusrsctp/ekr_peer
+usr/lib/libusrsctp/ekr_server
+usr/lib/libusrsctp/http_client
+usr/lib/libusrsctp/http_client_upcall
+usr/lib/libusrsctp/rtcweb
+usr/lib/libusrsctp/test_libmgmt
+usr/lib/libusrsctp/tsctp
