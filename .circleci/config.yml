@@ -1,0 +1,184 @@
+version: 2
+
+shared:
+  host: &shared-host
+    working_directory: ~/rawrtc-data-channel
+    steps:
+      - checkout
+
+      # Configure library
+      - run:
+          name: Configure
+          command: |
+            mkdir build
+            meson build --prefix /tmp/prefix
+
+      # Build library
+      - run:
+          name: Build
+          command: |
+            cd build
+            ninja install
+
+  cross: &shared-cross
+    working_directory: ~/rawrtc-data-channel
+    steps:
+      - checkout
+
+      # Configure library
+      - run:
+          name: Configure
+          command: |
+            mkdir build
+            meson build --prefix /tmp/prefix --cross-file ${CROSS_FILE_NAME}
+
+      # Build library
+      - run:
+          name: Build
+          command: |
+            cd build
+            ninja install
+
+
+jobs:
+   # Host: Ubuntu 14.04 LTS
+  trusty-gcc:
+    <<: *shared-host
+    docker:
+      - image: rawrtc/ci-image:trusty
+    environment:
+      CC: gcc
+  trusty-clang:
+    <<: *shared-host
+    docker:
+      - image: rawrtc/ci-image:trusty
+    environment:
+      CC: clang
+      
+  # Host: Ubuntu 16.04 LTS
+  xenial-gcc:
+    <<: *shared-host
+    docker:
+      - image: rawrtc/ci-image:xenial
+    environment:
+      CC: gcc
+  xenial-clang:
+    <<: *shared-host
+    docker:
+      - image: rawrtc/ci-image:xenial
+    environment:
+      CC: clang
+      
+  # Host: Ubuntu 18.04 LTS
+  bionic-gcc:
+    <<: *shared-host
+    docker:
+      - image: rawrtc/ci-image:bionic
+    environment:
+      CC: gcc
+  bionic-clang:
+    <<: *shared-host
+    docker:
+      - image: rawrtc/ci-image:bionic
+    environment:
+      CC: clang
+
+  # Host: Arch Linux
+  archlinux-gcc:
+    <<: *shared-host
+    docker:
+      - image: rawrtc/ci-image:archlinux
+    environment:
+      CC: gcc
+  archlinux-clang:
+    <<: *shared-host
+    docker:
+      - image: rawrtc/ci-image:archlinux
+    environment:
+      CC: clang
+
+  # Cross: Linux ARMv6
+  linux-armv6:
+    <<: *shared-cross
+    docker:
+      - image: rawrtc/cross-build:linux-armv6
+
+  # Cross: Linux ARMv7
+  linux-armv7:
+    <<: *shared-cross
+    docker:
+      - image: rawrtc/cross-build:linux-armv7
+
+  # Cross: Android API 16 ARM
+  android-16-arm:
+    <<: *shared-cross
+    docker:
+      - image: rawrtc/cross-build:android-16-arm
+
+  # Cross: Android API 16 x86
+  android-16-x86:
+    <<: *shared-cross
+    docker:
+      - image: rawrtc/cross-build:android-16-x86
+
+  # Cross: Android API 28 ARM
+  android-28-arm:
+    <<: *shared-cross
+    docker:
+      - image: rawrtc/cross-build:android-28-arm
+
+  # Cross: Android API 28 ARM64
+  android-28-arm64:
+    <<: *shared-cross
+    docker:
+      - image: rawrtc/cross-build:android-28-arm64
+
+  # Cross: Android API 28 x86
+  android-28-x86:
+    <<: *shared-cross
+    docker:
+      - image: rawrtc/cross-build:android-28-x86
+
+  # Cross: Android API 28 x86_64
+  android-28-x86_64:
+    <<: *shared-cross
+    docker:
+      - image: rawrtc/cross-build:android-28-x86_64
+
+  # Cross: Windows x86
+  #windows-x86:
+  #  <<: *shared-cross
+  #  docker:
+  #    - image: rawrtc/cross-build:windows-x86
+
+  # Cross: Windows x64
+  #windows-x64:
+  #  <<: *shared-cross
+  #  docker:
+  #    - image: rawrtc/cross-build:windows-x64
+
+
+workflows:
+  version: 2
+
+  # Build all
+  build:
+    jobs:
+      - trusty-gcc
+      - trusty-clang
+      - xenial-gcc
+      - xenial-clang
+      - bionic-gcc
+      - bionic-clang
+      - archlinux-gcc
+      - archlinux-clang
+      - linux-armv6
+      - linux-armv7
+      - android-16-arm
+      - android-16-x86
+      - android-28-arm
+      - android-28-arm64
+      - android-28-x86
+      - android-28-x86_64
+      #- windows-x86
+      #- windows-x64
