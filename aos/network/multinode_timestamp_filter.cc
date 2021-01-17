@@ -591,6 +591,31 @@ chrono::nanoseconds MaxElapsedTime(
   return dt;
 }
 
+// Returns the amount of time that ta and tb are out of order by.  The primary
+// direction is defined to be the direction of the average of the offsets.  So,
+// if the average is +, and we get 1 - outlier, the absolute value of that -
+// outlier is the invalid distance.
+chrono::nanoseconds InvalidDistance(
+    const std::vector<monotonic_clock::time_point> &ta,
+    const std::vector<monotonic_clock::time_point> &tb) {
+  // Use an int128 so we have no concern about number of times or size of the
+  // difference.
+  absl::int128 sum = 0;
+  for (size_t i = 0; i < ta.size(); ++i) {
+    if (ta[i] == monotonic_clock::min_time ||
+        tb[i] == monotonic_clock::min_time) {
+      continue;
+    }
+    sum += (ta[i] - tb[i]).count();
+  }
+  // Pick the direction and sign to return.
+  if (sum < 0) {
+    return MaxElapsedTime(tb, ta);
+  } else {
+    return MaxElapsedTime(ta, tb);
+  }
+}
+
 // Class to efficiently track up to 64 bit sets.  It uses a uint64 as the
 // backing store, and ffs() to find the first bit set efficiently so we can
 // iterate through the set.
@@ -880,11 +905,24 @@ MultiNodeNoncausalOffsetEstimator::NextSolution(
           solution_index = node_a_index;
           break;
         case TimeComparison::kInvalid:
+          // If times are close enough, drop the invalid time.
+          if (InvalidDistance(times, solution) < chrono::nanoseconds(500)) {
+            VLOG(1) << "Times can't be compared by "
+                    << InvalidDistance(times, solution).count() << "ns";
+            for (size_t i = 0; i < times.size(); ++i) {
+              VLOG(1) << "  " << times[i] << " vs " << solution[i] << " -> "
+                      << (times[i] - solution[i]).count() << "ns";
+            }
+            VLOG(1) << "Ignoring because it is close enough.";
+            next_node_filter->Consume();
+            break;
+          }
           // Somehow the new solution is better *and* worse than the old
           // solution...  This is an internal failure because that means time
           // goes backwards on a node.
           CHECK_EQ(times.size(), solution.size());
-          LOG(INFO) << "Times can't be compared.";
+          LOG(INFO) << "Times can't be compared by "
+                    << InvalidDistance(times, solution).count() << "ns";
           for (size_t i = 0; i < times.size(); ++i) {
             LOG(INFO) << "  " << times[i] << " vs " << solution[i] << " -> "
                       << (times[i] - solution[i]).count() << "ns";
