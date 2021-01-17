@@ -1,0 +1,46 @@
+# Build matrix
+language: c
+matrix:
+  include:
+    # Mac OS 10.13 (default)
+    - os: osx
+      osx_image: xcode9.4
+      compiler: clang
+
+    # Mac OS 10.13 (latest)
+    - os: osx
+      osx_image: xcode10.1
+      compiler: clang
+
+# Dependencies
+addons:
+  homebrew:
+    packages:
+      - meson
+      - ninja
+      - openssl
+    update: true
+
+# Setup prefix & enable core dumps
+before_script:
+  - export PREFIX=/tmp/prefix
+  - export LD_LIBRARY_PATH=${PREFIX}/lib:${LD_LIBRARY_PATH}
+  - export PATH=${PREFIX}/bin:${PATH}
+  - export PKG_CONFIG_PATH=/usr/local/opt/openssl/lib/pkgconfig:${PKG_CONFIG_PATH}
+  - ulimit -c unlimited -S
+
+# Build library and run ICE gatherer
+script:
+  - |
+    mkdir build
+    meson build --prefix ${PREFIX}
+    cd build
+    ninja install
+  - ice-gatherer
+
+# Find core dump and print traceback on failure
+after_failure:
+  - |
+    for f in $(find /cores -maxdepth 1 -name 'core.*' -print); do
+      lldb --core $f --batch --one-line "bt"
+    done;
