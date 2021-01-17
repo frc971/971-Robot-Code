@@ -1,0 +1,29 @@
+# Build matrix
+language: c
+matrix:
+  include:
+    # Mac OS 10.13 (default)
+    - os: osx
+      osx_image: xcode9.4
+      compiler: clang
+
+    # Mac OS 10.13 (latest)
+    - os: osx
+      osx_image: xcode10.1
+      compiler: clang
+
+# Dependencies
+addons:
+  homebrew:
+    packages:
+      - meson
+      - ninja
+    update: true
+
+# Build library
+script:
+  - |
+    mkdir build
+    meson build --prefix /tmp/prefix
+    cd build
+    ninja install

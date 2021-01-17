@@ -1,0 +1,2 @@
+option('debug_level', type: 'integer', min: 0, max: 7, value: 5,
+    description: 'Global debug level', yield: true)
