@@ -177,7 +177,7 @@ double TimestampProblem::Cost(const double *time_offsets, double *grad) {
     if (grad) {
       std::stringstream ss;
       ss << " grad ["
-         << absl::StrJoin(absl::Span<const double>(grad, filters_.size() - 1u),
+         << absl::StrJoin(absl::Span<const double>(grad, LiveNodesCount() - 1u),
                           ", ", MyFormatter())
          << "]";
       gradient = ss.str();
@@ -213,16 +213,14 @@ void TimestampProblem::Debug() {
     std::string gradient = "0.0";
     for (const struct FilterPair &filter : filters_[i]) {
       if (i != solution_node_ && live(i)) {
-        gradients[NodeToSolutionIndex(i)].emplace_back(
-            filter.filter->DebugDCostDta(base_clock_[i], 0.0,
-                                         base_clock_[filter.b_index], 0.0, i,
-                                         filter.b_index));
+        gradients[i].emplace_back(filter.filter->DebugDCostDta(
+            base_clock_[i], 0.0, base_clock_[filter.b_index], 0.0, i,
+            filter.b_index));
       }
       if (filter.b_index != solution_node_ && live(filter.b_index)) {
-        gradients[NodeToSolutionIndex(filter.b_index)].emplace_back(
-            filter.filter->DebugDCostDtb(base_clock_[i], 0.0,
-                                         base_clock_[filter.b_index], 0.0, i,
-                                         filter.b_index));
+        gradients[filter.b_index].emplace_back(filter.filter->DebugDCostDtb(
+            base_clock_[i], 0.0, base_clock_[filter.b_index], 0.0, i,
+            filter.b_index));
       }
     }
   }
@@ -828,7 +826,7 @@ MultiNodeNoncausalOffsetEstimator::NextSolution(
     TimestampProblem *problem,
     const std::vector<aos::monotonic_clock::time_point> &base_times) {
   // Ok, now solve for the minimum time on each channel.
-  std::vector<aos::monotonic_clock::time_point> times;
+  std::vector<aos::monotonic_clock::time_point> result_times;
   NoncausalTimestampFilter *next_filter = nullptr;
   size_t solution_index = 0;
   {
@@ -884,15 +882,15 @@ MultiNodeNoncausalOffsetEstimator::NextSolution(
           VLOG(1) << "  " << solution[i];
         }
       }
-      if (times.empty()) {
-        times = std::move(solution);
+      if (result_times.empty()) {
+        result_times = std::move(solution);
         next_filter = next_node_filter;
         solution_index = node_a_index;
         ++node_a_index;
         continue;
       }
 
-      switch (CompareTimes(times, solution, false)) {
+      switch (CompareTimes(result_times, solution, false)) {
         // The old solution is before or at the new solution.  This means that
         // the old solution is a better result, so ignore this one.
         case TimeComparison::kBefore:
@@ -900,18 +898,20 @@ MultiNodeNoncausalOffsetEstimator::NextSolution(
           break;
         case TimeComparison::kAfter:
           // The new solution is better!  Save it.
-          times = std::move(solution);
+          result_times = std::move(solution);
           next_filter = next_node_filter;
           solution_index = node_a_index;
           break;
-        case TimeComparison::kInvalid:
+        case TimeComparison::kInvalid: {
           // If times are close enough, drop the invalid time.
-          if (InvalidDistance(times, solution) < chrono::nanoseconds(500)) {
+          if (InvalidDistance(result_times, solution) <
+              chrono::nanoseconds(500)) {
             VLOG(1) << "Times can't be compared by "
-                    << InvalidDistance(times, solution).count() << "ns";
-            for (size_t i = 0; i < times.size(); ++i) {
-              VLOG(1) << "  " << times[i] << " vs " << solution[i] << " -> "
-                      << (times[i] - solution[i]).count() << "ns";
+                    << InvalidDistance(result_times, solution).count() << "ns";
+            for (size_t i = 0; i < result_times.size(); ++i) {
+              VLOG(1) << "  " << result_times[i] << " vs " << solution[i]
+                      << " -> " << (result_times[i] - solution[i]).count()
+                      << "ns";
             }
             VLOG(1) << "Ignoring because it is close enough.";
             next_node_filter->Consume();
@@ -920,26 +920,58 @@ MultiNodeNoncausalOffsetEstimator::NextSolution(
           // Somehow the new solution is better *and* worse than the old
           // solution...  This is an internal failure because that means time
           // goes backwards on a node.
-          CHECK_EQ(times.size(), solution.size());
+          CHECK_EQ(result_times.size(), solution.size());
           LOG(INFO) << "Times can't be compared by "
-                    << InvalidDistance(times, solution).count() << "ns";
-          for (size_t i = 0; i < times.size(); ++i) {
-            LOG(INFO) << "  " << times[i] << " vs " << solution[i] << " -> "
-                      << (times[i] - solution[i]).count() << "ns";
+                    << InvalidDistance(result_times, solution).count() << "ns";
+          for (size_t i = 0; i < result_times.size(); ++i) {
+            LOG(INFO) << "  " << result_times[i] << " vs " << solution[i]
+                      << " -> " << (result_times[i] - solution[i]).count()
+                      << "ns";
           }
+          FLAGS_v = 1;
+
+          // Attempting solution for each node.
+          for (size_t a_index = 0; a_index < solution.size(); ++a_index) {
+            if (!problem->live(a_index)) {
+              continue;
+            }
+            for (size_t node_index = 0; node_index < solution.size();
+                 ++node_index) {
+              // Offset everything based on the elapsed time since the last
+              // solution on the node we are solving for.  The rate that time
+              // elapses should be ~1.
+              problem->set_base_clock(node_index, solution[node_index]);
+            }
+
+            problem->set_solution_node(a_index);
+            problem->Debug();
+            std::vector<monotonic_clock::time_point> resolve_solution =
+                problem->Solve();
+
+            if (VLOG_IS_ON(1)) {
+              VLOG(1) << "Candidate solution for resolved node " << a_index
+                      << " is";
+              for (size_t i = 0; i < resolve_solution.size(); ++i) {
+                VLOG(1) << "  " << resolve_solution[i] << " vs original "
+                        << solution[i] << " -> "
+                        << (resolve_solution[i] - solution[i]).count();
+              }
+            }
+          }
+
           LOG(FATAL) << "Please investigate.";
-          break;
+        } break;
       }
       ++node_a_index;
     }
   }
   if (VLOG_IS_ON(1)) {
     VLOG(1) << "Best solution is for node " << solution_index;
-    for (size_t i = 0; i < times.size(); ++i) {
-      VLOG(1) << "  " << times[i];
+    for (size_t i = 0; i < result_times.size(); ++i) {
+      VLOG(1) << "  " << result_times[i];
     }
   }
-  return std::make_tuple(next_filter, std::move(times));
+  return std::make_tuple(next_filter, std::move(result_times));
 }
 
 std::optional<std::tuple<distributed_clock::time_point,
@@ -950,9 +982,10 @@ MultiNodeNoncausalOffsetEstimator::NextTimestamp() {
   TimestampProblem problem = MakeProblem();
 
   // Ok, now solve for the minimum time on each channel.
-  std::vector<aos::monotonic_clock::time_point> times;
+  std::vector<aos::monotonic_clock::time_point> result_times;
   NoncausalTimestampFilter *next_filter = nullptr;
-  std::tie(next_filter, times) = NextSolution(&problem, last_monotonics_);
+  std::tie(next_filter, result_times) =
+      NextSolution(&problem, last_monotonics_);
 
   CHECK(!all_done_);
 
@@ -1001,19 +1034,19 @@ MultiNodeNoncausalOffsetEstimator::NextTimestamp() {
 
     VLOG(1) << "Resolving with updated base times for accuracy.";
     std::tie(resolved_next_filter, resolved_times) =
-        NextSolution(&problem, times);
+        NextSolution(&problem, result_times);
 
     first_solution_ = false;
     next_filter = resolved_next_filter;
 
     // Force any unknown nodes to track the distributed clock (which starts at 0
     // too).
-    for (monotonic_clock::time_point &time : times) {
+    for (monotonic_clock::time_point &time : result_times) {
       if (time == monotonic_clock::min_time) {
         time = monotonic_clock::epoch();
       }
     }
-    times = std::move(resolved_times);
+    result_times = std::move(resolved_times);
     next_filter->Consume();
   } else {
     next_filter->Consume();
@@ -1021,7 +1054,7 @@ MultiNodeNoncausalOffsetEstimator::NextTimestamp() {
     // want to consume it.  But, if this is the first time around, we want to
     // re-solve by recursing (once) to pickup the better base.
 
-    TimeComparison compare = CompareTimes(last_monotonics_, times, true);
+    TimeComparison compare = CompareTimes(last_monotonics_, result_times, true);
     switch (compare) {
       case TimeComparison::kBefore:
         break;
@@ -1031,9 +1064,9 @@ MultiNodeNoncausalOffsetEstimator::NextTimestamp() {
       case TimeComparison::kEq:
         return NextTimestamp();
       case TimeComparison::kInvalid:
-        CHECK_EQ(last_monotonics_.size(), times.size());
-        for (size_t i = 0; i < times.size(); ++i) {
-          LOG(INFO) << "  " << last_monotonics_[i] << " vs " << times[i];
+        CHECK_EQ(last_monotonics_.size(), result_times.size());
+        for (size_t i = 0; i < result_times.size(); ++i) {
+          LOG(INFO) << "  " << last_monotonics_[i] << " vs " << result_times[i];
         }
         LOG(FATAL) << "Found solutions which can't be ordered.";
         break;
@@ -1043,16 +1076,16 @@ MultiNodeNoncausalOffsetEstimator::NextTimestamp() {
   // Now, figure out what distributed should be.  It should move at the rate of
   // the max elapsed time so that conversions to and from it don't round to bad
   // values.
-  const chrono::nanoseconds dt = MaxElapsedTime(last_monotonics_, times);
+  const chrono::nanoseconds dt = MaxElapsedTime(last_monotonics_, result_times);
   last_distributed_ += dt;
-  for (size_t i = 0; i < times.size(); ++i) {
-    if (times[i] == monotonic_clock::min_time) {
+  for (size_t i = 0; i < result_times.size(); ++i) {
+    if (result_times[i] == monotonic_clock::min_time) {
       // Found an unknown node.  Move its time along by the amount the
       // distributed clock moved.
-      times[i] = last_monotonics_[i] + dt;
+      result_times[i] = last_monotonics_[i] + dt;
     }
   }
-  last_monotonics_ = std::move(times);
+  last_monotonics_ = std::move(result_times);
 
   // And freeze everything.
   {
