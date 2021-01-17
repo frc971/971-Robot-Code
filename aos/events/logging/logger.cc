@@ -1111,7 +1111,9 @@ void LogReader::Register(SimulatedEventLoopFactory *event_loop_factory) {
   filters_ =
       std::make_unique<message_bridge::MultiNodeNoncausalOffsetEstimator>(
           event_loop_factory_, logged_configuration(),
-          FLAGS_skip_order_validation);
+          FLAGS_skip_order_validation,
+          chrono::duration_cast<chrono::nanoseconds>(
+              chrono::duration<double>(FLAGS_time_estimation_buffer_seconds)));
 
   for (const Node *node : configuration::GetNodes(configuration())) {
     const size_t node_index =

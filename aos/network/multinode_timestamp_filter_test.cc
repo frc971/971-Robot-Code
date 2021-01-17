@@ -351,50 +351,54 @@ TEST(InterpolatedTimeConverterDeathTest, ReadLostTime) {
   const distributed_clock::time_point de = distributed_clock::epoch();
   const monotonic_clock::time_point me = monotonic_clock::epoch();
 
+  constexpr auto kDefaultHistoryDuration =
+      InterpolatedTimeConverter::kDefaultHistoryDuration;
+  constexpr chrono::nanoseconds kDt =
+      kDefaultHistoryDuration /
+      (InterpolatedTimeConverter::kHistoryMinCount * 2);
+
   TestingTimeConverter time_converter(3u);
   time_converter.StartEqual();
 
   // Test that 2 timestamps interpolate correctly.
-  for (int i = 0; i < 200; ++i) {
-    time_converter.AddMonotonic({chrono::milliseconds(100),
-                                 chrono::milliseconds(100),
-                                 chrono::milliseconds(100)});
+  for (int i = 0; i < InterpolatedTimeConverter::kHistoryMinCount * 4; ++i) {
+    time_converter.AddMonotonic({kDt, kDt, kDt});
   }
 
   // Force 5 seconds to be read.
   EXPECT_EQ(
-      de + chrono::milliseconds(5000),
-      time_converter.ToDistributedClock(0, me + chrono::milliseconds(5000)));
+      de + kDefaultHistoryDuration / 2,
+      time_converter.ToDistributedClock(0, me + kDefaultHistoryDuration / 2));
   EXPECT_EQ(
-      me + chrono::milliseconds(5000),
-      time_converter.FromDistributedClock(0, de + chrono::milliseconds(5000)));
+      me + kDefaultHistoryDuration / 2,
+      time_converter.FromDistributedClock(0, de + kDefaultHistoryDuration / 2));
 
   // Double check we can read things from before the start
   EXPECT_EQ(
-      de - chrono::milliseconds(100),
-      time_converter.ToDistributedClock(0, me - chrono::milliseconds(100)));
+      de - kDt,
+      time_converter.ToDistributedClock(0, me - kDt));
   EXPECT_EQ(
-      me - chrono::milliseconds(100),
-      time_converter.FromDistributedClock(0, de - chrono::milliseconds(100)));
+      me - kDt,
+      time_converter.FromDistributedClock(0, de - kDt));
 
   // And at and after the origin.
   EXPECT_EQ(de, time_converter.ToDistributedClock(0, me));
   EXPECT_EQ(me, time_converter.FromDistributedClock(0, de));
 
   EXPECT_EQ(
-      de + chrono::milliseconds(100),
-      time_converter.ToDistributedClock(0, me + chrono::milliseconds(100)));
+      de + chrono::milliseconds(10),
+      time_converter.ToDistributedClock(0, me + kDt));
   EXPECT_EQ(
-      me + chrono::milliseconds(100),
-      time_converter.FromDistributedClock(0, de + chrono::milliseconds(100)));
+      me + chrono::milliseconds(10),
+      time_converter.FromDistributedClock(0, de + kDt));
 
   // Force 10.1 seconds now.  This will forget the 0th point at the origin.
   EXPECT_EQ(
-      de + chrono::milliseconds(10100),
-      time_converter.ToDistributedClock(0, me + chrono::milliseconds(10100)));
+      de + kDefaultHistoryDuration + kDt,
+      time_converter.ToDistributedClock(0, me + kDefaultHistoryDuration + kDt));
   EXPECT_EQ(
-      me + chrono::milliseconds(10100),
-      time_converter.FromDistributedClock(0, de + chrono::milliseconds(10100)));
+      me + kDefaultHistoryDuration + kDt,
+      time_converter.FromDistributedClock(0, de + kDefaultHistoryDuration + kDt));
 
   // Yup, can't read the origin anymore.
   EXPECT_DEATH({ LOG(INFO) << time_converter.ToDistributedClock(0, me); },
@@ -404,11 +408,11 @@ TEST(InterpolatedTimeConverterDeathTest, ReadLostTime) {
 
   // But can still read the next point.
   EXPECT_EQ(
-      de + chrono::milliseconds(100),
-      time_converter.ToDistributedClock(0, me + chrono::milliseconds(100)));
+      de + kDt,
+      time_converter.ToDistributedClock(0, me + kDt));
   EXPECT_EQ(
-      me + chrono::milliseconds(100),
-      time_converter.FromDistributedClock(0, de + chrono::milliseconds(100)));
+      me + kDt,
+      time_converter.FromDistributedClock(0, de + kDt));
 }
 
 // Tests unity time with 1 node.

@@ -262,9 +262,10 @@ void InterpolatedTimeConverter::QueueUntil(
 
   CHECK(!times_.empty())
       << ": Found no times to do timestamp estimation, please investigate.";
-  // Keep at least 50 points and 10 seconds of time.
-  while (times_.size() > 50 &&
-         std::get<0>(times_.front()) + chrono::seconds(10) <
+  // Keep at least 500 points and time_estimation_buffer_seconds seconds of
+  // time.  This should be enough to handle any reasonable amount of history.
+  while (times_.size() > kHistoryMinCount &&
+         std::get<0>(times_.front()) + time_estimation_buffer_seconds_ <
              std::get<0>(times_.back())) {
     times_.pop_front();
     have_popped_ = true;
@@ -420,10 +421,12 @@ monotonic_clock::time_point InterpolatedTimeConverter::FromDistributedClock(
 }
 MultiNodeNoncausalOffsetEstimator::MultiNodeNoncausalOffsetEstimator(
     SimulatedEventLoopFactory *event_loop_factory,
-    const Configuration *logged_configuration, bool skip_order_validation)
+    const Configuration *logged_configuration, bool skip_order_validation,
+    chrono::nanoseconds time_estimation_buffer_seconds)
     : InterpolatedTimeConverter(!configuration::MultiNode(logged_configuration)
                                     ? 1u
-                                    : logged_configuration->nodes()->size()),
+                                    : logged_configuration->nodes()->size(),
+                                time_estimation_buffer_seconds),
       event_loop_factory_(event_loop_factory),
       logged_configuration_(logged_configuration),
       skip_order_validation_(skip_order_validation) {
