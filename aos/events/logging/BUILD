@@ -172,7 +172,6 @@ cc_library(
         "logger.cc",
     ],
     hdrs = [
-        "eigen_mpq.h",
         "log_namer.h",
         "logger.h",
     ],
@@ -192,11 +191,8 @@ cc_library(
         "//aos/network:timestamp_filter",
         "//aos/time",
         "//aos/util:file",
-        "//third_party/gmp",
         "@com_github_google_flatbuffers//:flatbuffers",
         "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:span",
-        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 

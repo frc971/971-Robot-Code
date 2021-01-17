@@ -7,11 +7,7 @@
 #include <tuple>
 #include <vector>
 
-#include "Eigen/Dense"
-#include "absl/strings/str_cat.h"
-#include "absl/types/span.h"
 #include "aos/events/event_loop.h"
-#include "aos/events/logging/eigen_mpq.h"
 #include "aos/events/logging/log_namer.h"
 #include "aos/events/logging/logfile_sorting.h"
 #include "aos/events/logging/logfile_utils.h"
@@ -24,7 +20,6 @@
 #include "aos/network/timestamp_filter.h"
 #include "aos/time/time.h"
 #include "flatbuffers/flatbuffers.h"
-#include "third_party/gmp/gmpxx.h"
 
 namespace aos {
 namespace logger {
