@@ -18,7 +18,7 @@ namespace chrono = std::chrono;
 std::string TimeString(const aos::monotonic_clock::time_point t,
                        std::chrono::nanoseconds o) {
   std::stringstream ss;
-  ss << "O(" << t << ") = " << o.count() << ", remote " << t + o;
+  ss << "O(" << t << ") = " << o.count() << "ns, remote " << t + o;
   return ss.str();
 }
 std::string TimeString(const std::tuple<aos::monotonic_clock::time_point,
@@ -858,6 +858,39 @@ std::string NoncausalTimestampFilter::DebugCost(
                            std::get<0>(points.first).time_since_epoch().count(),
                            rise, run, std::get<1>(points.first).count());
   }
+}
+
+bool NoncausalTimestampFilter::ValidateSolution(
+    aos::monotonic_clock::time_point ta,
+    aos::monotonic_clock::time_point tb) const {
+  CHECK_GT(timestamps_size(), 0u);
+  if (timestamps_size() == 1u) {
+    // Special case size = 1 since the interpolation functions don't need to
+    // handle it and the answer is trivial.
+    const chrono::nanoseconds offset =
+        NoncausalTimestampFilter::InterpolateOffset(timestamp(0), ta);
+    if (offset + ta > tb) {
+      LOG(ERROR) << node_->name()->string_view() << " "
+                 << TimeString(ta, offset) << " > solution time " << tb;
+      return false;
+    }
+    return true;
+  }
+
+  std::pair<std::tuple<monotonic_clock::time_point, chrono::nanoseconds>,
+            std::tuple<monotonic_clock::time_point, chrono::nanoseconds>>
+      points = FindTimestamps(ta);
+  const chrono::nanoseconds offset =
+      NoncausalTimestampFilter::InterpolateOffset(points.first, points.second,
+                                                  ta);
+  if (offset + ta > tb) {
+    LOG(ERROR) << node_->name()->string_view() << " " << TimeString(ta, offset)
+               << " > solution time " << tb;
+    LOG(ERROR) << "Bracketing times are " << TimeString(points.first) << " and "
+               << TimeString(points.second);
+    return false;
+  }
+  return true;
 }
 
 void NoncausalTimestampFilter::Sample(

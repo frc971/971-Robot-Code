@@ -86,6 +86,10 @@ class TimestampProblem {
   std::vector<monotonic_clock::time_point> DoubleToMonotonic(
       const double *r) const;
 
+  // Validates the solution, returning true if it meets all the constraints, and
+  // false otherwise.
+  bool ValidateSolution(std::vector<monotonic_clock::time_point> solution);
+
   // LOGs a representation of the problem.
   void Debug();
 

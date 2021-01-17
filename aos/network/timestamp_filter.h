@@ -272,6 +272,10 @@ class NoncausalTimestampFilter {
                             aos::monotonic_clock::time_point tb_base, double tb,
                             size_t node_a, size_t node_b) const;
 
+  // Confirms that the solution meets the constraints.  Returns true on success.
+  bool ValidateSolution(aos::monotonic_clock::time_point ta,
+                        aos::monotonic_clock::time_point tb) const;
+
   double Convert(double ta) const {
     return ta +
            static_cast<double>(

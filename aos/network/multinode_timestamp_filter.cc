@@ -126,6 +126,18 @@ std::vector<monotonic_clock::time_point> TimestampProblem::Solve() {
   return DoubleToMonotonic(solution.data());
 }
 
+bool TimestampProblem::ValidateSolution(
+    std::vector<monotonic_clock::time_point> solution) {
+  bool success = true;
+  for (size_t i = 0u; i < filters_.size(); ++i) {
+    for (const struct FilterPair &filter : filters_[i]) {
+      success = success && filter.filter->ValidateSolution(
+                               solution[i], solution[filter.b_index]);
+    }
+  }
+  return success;
+}
+
 double TimestampProblem::Cost(const double *time_offsets, double *grad) {
   ++cost_call_count_;
 
@@ -878,6 +890,18 @@ MultiNodeNoncausalOffsetEstimator::NextSolution(
       }
       // TODO(austin): Can we cache?  Solving is expensive.
       std::vector<monotonic_clock::time_point> solution = problem->Solve();
+
+      // Bypass checking if order validation is turned off.  This lets us dump a
+      // CSV file so we can view the problem and figure out what to do.  The
+      // results won't make sense.
+      if (!skip_order_validation_ && !problem->ValidateSolution(solution)) {
+        LOG(WARNING) << "Invalid solution, constraints not met.";
+        for (size_t i = 0; i < solution.size(); ++i) {
+          LOG(INFO) << "  " << solution[i];
+        }
+        problem->Debug();
+        LOG(FATAL) << "Bailing";
+      }
 
       if (VLOG_IS_ON(1)) {
         VLOG(1) << "Candidate solution for node " << node_a_index << " is";
