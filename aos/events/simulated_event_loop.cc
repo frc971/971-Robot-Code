@@ -462,8 +462,7 @@ class SimulatedEventLoop : public EventLoop {
       std::vector<std::pair<EventLoop *, std::function<void(bool)>>>
           *raw_event_loops,
       const Node *node, pid_t tid)
-      : EventLoop(CHECK_NOTNULL(configuration),
-                  node_event_loop_factory->boot_uuid()),
+      : EventLoop(CHECK_NOTNULL(configuration)),
         scheduler_(scheduler),
         node_event_loop_factory_(node_event_loop_factory),
         channels_(channels),
@@ -574,6 +573,10 @@ class SimulatedEventLoop : public EventLoop {
   }
 
   int NumberBuffers(const Channel *channel) override;
+
+  const UUID &boot_uuid() const override {
+    return node_event_loop_factory_->boot_uuid();
+  }
 
  private:
   friend class SimulatedTimerHandler;

@@ -474,7 +474,7 @@ class PhasedLoopHandler {
 
 class EventLoop {
  public:
-  EventLoop(const Configuration *configuration, UUID boot_uuid);
+  EventLoop(const Configuration *configuration);
 
   virtual ~EventLoop();
 
@@ -655,7 +655,7 @@ class EventLoop {
   virtual int NumberBuffers(const Channel *channel) = 0;
 
   // Returns the boot UUID.
-  const UUID &boot_uuid() { return boot_uuid_; }
+  virtual const UUID &boot_uuid() const = 0;
 
  protected:
   // Sets the name of the event loop.  This is the application name.
@@ -735,8 +735,6 @@ class EventLoop {
 
   // If true, don't send AOS_LOG to /aos
   bool skip_logger_ = false;
-
-  UUID boot_uuid_;
 
  private:
   virtual pid_t GetTid() = 0;
