@@ -7,7 +7,6 @@
 #include <sys/uio.h>
 #include <vector>
 
-#include "Eigen/Dense"
 #include "absl/strings/escaping.h"
 #include "absl/types/span.h"
 #include "aos/events/event_loop.h"
@@ -23,7 +22,6 @@
 #include "aos/util/file.h"
 #include "flatbuffers/flatbuffers.h"
 #include "openssl/sha.h"
-#include "third_party/gmp/gmpxx.h"
 
 DEFINE_bool(skip_missing_forwarding_entries, false,
             "If true, drop any forwarding entries with missing data.  If "
