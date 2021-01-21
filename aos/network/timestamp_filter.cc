@@ -13,8 +13,25 @@
 namespace aos {
 namespace message_bridge {
 namespace {
-
 namespace chrono = std::chrono;
+
+std::string TimeString(const aos::monotonic_clock::time_point t,
+                                        std::chrono::nanoseconds o) {
+  std::stringstream ss;
+  ss << "O(" << t << ") = " << o.count() << ", remote " << t + o;
+  return ss.str();
+}
+std::string TimeString(const std::tuple<aos::monotonic_clock::time_point,
+                                        std::chrono::nanoseconds, bool>
+                           t) {
+  return TimeString(std::get<0>(t), std::get<1>(t));
+}
+
+std::string TimeString(
+    const std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>
+        t) {
+  return TimeString(std::get<0>(t), std::get<1>(t));
+}
 
 void ClippedAverageFilterPrintHeader(FILE *fp) {
   fprintf(fp,
@@ -466,19 +483,6 @@ std::tuple<monotonic_clock::time_point, chrono::nanoseconds> TrimTuple(
   return std::make_tuple(std::get<0>(t), std::get<1>(t));
 }
 
-std::deque<
-    std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>>
-NoncausalTimestampFilter::Timestamps() const {
-  std::deque<
-      std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>>
-      result;
-
-  for (const auto x : timestamps_) {
-    result.emplace_back(TrimTuple(x));
-  }
-  return result;
-}
-
 void NoncausalTimestampFilter::FlushSavedSamples() {
   for (const std::tuple<aos::monotonic_clock::time_point,
                         std::chrono::nanoseconds> &sample : saved_samples_) {
@@ -868,6 +872,7 @@ void NoncausalTimestampFilter::Sample(
 
   // The first sample is easy.  Just do it!
   if (timestamps_.size() == 0) {
+    VLOG(1) << "Initial sample of " << TimeString(monotonic_now, sample_ns);
     timestamps_.emplace_back(std::make_tuple(monotonic_now, sample_ns, false));
     CHECK(!fully_frozen_)
         << ": Returned a horizontal line previously and then got a new "
@@ -877,91 +882,234 @@ void NoncausalTimestampFilter::Sample(
                .count()
         << " seconds after the last sample at " << std::get<0>(timestamps_[0])
         << " " << csv_file_name_ << ".";
-  } else {
-    // Future samples get quite a bit harder.  We want the line to track the
-    // highest point without volating the slope constraint.
-    std::tuple<aos::monotonic_clock::time_point, chrono::nanoseconds, bool>
-        back = timestamps_.back();
+    return;
+  }
 
-    aos::monotonic_clock::duration dt = monotonic_now - std::get<0>(back);
-    aos::monotonic_clock::duration doffset = sample_ns - std::get<1>(back);
+  // Future samples get quite a bit harder.  We want the line to track the
+  // highest point without volating the slope constraint.
+  std::tuple<aos::monotonic_clock::time_point, chrono::nanoseconds, bool> back =
+      timestamps_.back();
 
-    if (dt == chrono::nanoseconds(0) && doffset == chrono::nanoseconds(0)) {
+  aos::monotonic_clock::duration dt = monotonic_now - std::get<0>(back);
+  aos::monotonic_clock::duration doffset = sample_ns - std::get<1>(back);
+
+  if (dt == chrono::nanoseconds(0) && doffset == chrono::nanoseconds(0)) {
+    VLOG(1) << "Duplicate sample of O(" << monotonic_now
+            << ") = " << sample_ns.count() << ", remote time "
+            << monotonic_now + sample_ns;
+
+    return;
+  }
+
+  // Lets handle the easy case first.  We are just appending.
+  if (dt > chrono::nanoseconds(0)) {
+    // We are trying to draw a line through the most positive points which
+    // adheres to our +- velocity constraint. If the point is less than the max
+    // negative slope, the point violates our constraint and will never be worth
+    // considering.  Ignore it.
+    if (doffset < -dt * kMaxVelocity()) {
+      VLOG(1) << std::setprecision(1) << std::fixed << "Rejected sample of "
+              << TimeString(monotonic_now, sample_ns) << " because "
+              << doffset.count() << " < " << (-dt * kMaxVelocity()).count()
+              << " len " << timestamps_.size();
       return;
     }
 
-    // If the point is higher than the max negative slope, the slope will either
-    // adhere to our constraint, or will be too positive.  If it is too
-    // positive, we need to back propagate and remove offending points which
-    // were too low rather than reject this new point.  We never want a point to
-    // be higher than the line.
-    if (-dt * kMaxVelocity() <= doffset) {
-      // TODO(austin): If the slope is the same, and the (to be newly in the
-      // middle) point is not frozen, drop the point out of the middle.  This
-      // won't happen in the real world, but happens a lot with tests.
+    // Be overly conservative here.  It either won't make a difference, or
+    // will give us an error with an actual useful time difference.
+    CHECK(!fully_frozen_)
+        << ": Returned a horizontal line previously and then got a new "
+           "sample at "
+        << monotonic_now << ", "
+        << chrono::duration<double>(monotonic_now - std::get<0>(timestamps_[0]))
+               .count()
+        << " seconds after the last sample at " << std::get<0>(timestamps_[0])
+        << " " << csv_file_name_ << ".";
 
-      // Be overly conservative here.  It either won't make a difference, or
-      // will give us an error with an actual useful time difference.
-      CHECK(!fully_frozen_)
-          << ": Returned a horizontal line previously and then got a new "
-             "sample at "
-          << monotonic_now << ", "
-          << chrono::duration<double>(monotonic_now -
-                                      std::get<0>(timestamps_[0]))
-                 .count()
-          << " seconds after the last sample at " << std::get<0>(timestamps_[0])
-          << " " << csv_file_name_ << ".";
+    // Back propagate the max velocity and remove any elements violating the
+    // velocity constraint.  This is to handle the case where the offsets were
+    // becoming gradually more negative, and then there's a sudden positive
+    // jump.
+    //
+    // 1      4
+    //    2
+    //       3
+    //
+    // In this case, point 3 is now violating our constraint and we need to
+    // remove it.  This is the non-causal part of the filter.
+    while (dt * kMaxVelocity() < doffset && timestamps_.size() > 1u) {
+      CHECK(!std::get<2>(back)) << ": Can't pop an already frozen sample.";
+      VLOG(1) << "Removing now invalid sample during back propegation of "
+              << TimeString(back);
+      timestamps_.pop_back();
 
-      // Back propagate the max velocity and remove any elements violating the
-      // velocity constraint.
-      while (dt * kMaxVelocity() < doffset && timestamps_.size() > 1u) {
-        CHECK(!std::get<2>(back)) << ": Can't pop an already frozen sample.";
-        timestamps_.pop_back();
+      back = timestamps_.back();
+      dt = monotonic_now - std::get<0>(back);
+      doffset = sample_ns - std::get<1>(back);
+    }
 
-        back = timestamps_.back();
-        dt = monotonic_now - std::get<0>(back);
-        doffset = sample_ns - std::get<1>(back);
+    timestamps_.emplace_back(std::make_tuple(monotonic_now, sample_ns, false));
+    return;
+  }
+
+  // Since it didn't fit at the end, now figure out where to insert our new
+  // point.  lower_bound returns the element which we are supposed to insert
+  // "before".
+  auto it = std::lower_bound(
+      timestamps_.begin(), timestamps_.end(), monotonic_now,
+      [](const std::tuple<aos::monotonic_clock::time_point,
+                          std::chrono::nanoseconds, bool>
+             x,
+         monotonic_clock::time_point t) { return std::get<0>(x) < t; });
+
+  CHECK (it != timestamps_.end());
+
+  CHECK(!std::get<2>(*(it)))
+      << ": Tried to insert " << monotonic_now << " before " << std::get<0>(*it)
+      << ", which is a frozen time.";
+
+  if (it == timestamps_.begin()) {
+    // We are being asked to add at the beginning.
+    {
+      const chrono::nanoseconds dt = std::get<0>(*it) - monotonic_now;
+      const chrono::nanoseconds original_offset = std::get<1>(*it);
+      const chrono::nanoseconds doffset = original_offset - sample_ns;
+
+      if (dt == chrono::nanoseconds(0) && doffset >= chrono::nanoseconds(0)) {
+        VLOG(1) << "Redundant timestamp "
+                << TimeString(monotonic_now, sample_ns) << " because "
+                << TimeString(timestamps_.front())
+                << " is at the same time and a better solution.";
+        return;
+      }
+    }
+
+    VLOG(1) << "Added sample at beginning "
+            << TimeString(monotonic_now, sample_ns);
+    timestamps_.insert(it, std::make_tuple(monotonic_now, sample_ns, false));
+
+    while (true) {
+      // First point was too positive, so we need to remove points after it
+      // until we are valid.
+      auto second = timestamps_.begin() + 1;
+      if (second != timestamps_.end()) {
+        const chrono::nanoseconds dt = std::get<0>(*second) - monotonic_now;
+        const chrono::nanoseconds doffset = std::get<1>(*second) - sample_ns;
+
+        if (doffset < -dt * kMaxVelocity()) {
+          VLOG(1) << "Removing redundant sample of " << TimeString(*second)
+                  << " because " << TimeString(timestamps_.front())
+                  << " would make the slope too negative.";
+          timestamps_.erase(second);
+          continue;
+        }
+
+        auto third = second + 1;
+        if (third != timestamps_.end()) {
+          // The second point might need to be popped.  This shows up when
+          // the first point violated the constraints, but in timestamp(), we
+          // were clipping it to be valid.  When a point is added before it, the
+          // prior first point might now be invalid and need to be cleaned up.
+          //
+          //    3
+          //
+          // 1 2
+          //
+          // Point 2 was invalid before, but was clipped in timestamp(), but can
+          // now be removed.
+          const chrono::nanoseconds dt =
+              std::get<0>(*third) - std::get<0>(*second);
+          const chrono::nanoseconds doffset =
+              std::get<1>(*third) - std::get<1>(*second);
+
+          if (doffset > dt * kMaxVelocity()) {
+            VLOG(1) << "Removing invalid sample of " << TimeString(*second)
+                    << " because " << TimeString(*third)
+                    << " would make the slope too positive.";
+            timestamps_.erase(second);
+            continue;
+          }
+        }
       }
 
-      timestamps_.emplace_back(
-          std::make_tuple(monotonic_now, sample_ns, false));
+      break;
+    }
+    return;
+  } else {
+    VLOG(1) << "Found the next time " << std::get<0>(*(it - 1)) << " < "
+            << monotonic_now << " < " << std::get<0>(*it);
 
-      // If we are early in the log file, the filter hasn't had time to get
-      // started.  We might only have 2 samples, and the first sample was
-      // incredibly delayed, violating our velocity constraint.  In that case,
-      // modify the first sample (rather than remove it) to retain the knowledge
-      // of the velocity, but adhere to the constraints.
-      if (dt * kMaxVelocity() < doffset) {
-        CHECK_EQ(timestamps_.size(), 2u);
-        const aos::monotonic_clock::duration adjusted_initial_time =
-            sample_ns - aos::monotonic_clock::duration(
-                            static_cast<aos::monotonic_clock::duration::rep>(
-                                dt.count() * kMaxVelocity()));
+    {
+      chrono::nanoseconds prior_dt = monotonic_now - std::get<0>(*(it - 1));
+      chrono::nanoseconds prior_doffset = sample_ns - std::get<1>(*(it - 1));
+      chrono::nanoseconds next_dt = std::get<0>(*it) - monotonic_now;
+      chrono::nanoseconds next_doffset = std::get<1>(*it) - sample_ns;
 
-        VLOG(1) << csv_file_name_ << " a [(" << std::get<0>(timestamps_[0])
-                << " -> " << std::get<1>(timestamps_[0]).count() << "ns), ("
-                << std::get<0>(timestamps_[1]) << " -> "
-                << std::get<1>(timestamps_[1]).count()
-                << "ns) => {dt: " << std::fixed << std::setprecision(6)
-                << chrono::duration<double, std::milli>(
-                       std::get<0>(timestamps_[1]) -
-                       std::get<0>(timestamps_[0]))
-                       .count()
-                << "ms, do: " << std::fixed << std::setprecision(6)
-                << chrono::duration<double, std::milli>(
-                       std::get<1>(timestamps_[1]) -
-                       std::get<1>(timestamps_[0]))
-                       .count()
-                << "ms}]";
-        VLOG(1) << "Back is out of range, clipping from "
-                << std::get<1>(timestamps_[0]).count() << " to "
-                << adjusted_initial_time.count();
-
-        std::get<1>(timestamps_[0]) = adjusted_initial_time;
+      // If we are worse than either the previous or next point, discard.
+      if (prior_doffset < -prior_dt * kMaxVelocity()) {
+        VLOG(1) << "Ignoring timestamp " << TimeString(monotonic_now, sample_ns)
+                << " because " << TimeString(*(it - 1))
+                << " is before and the slope would be too negative.";
+        return;
       }
-    } else {
-      VLOG(1) << "Rejecting sample because " << doffset.count() << " > "
-              << (-dt * kMaxVelocity()).count();
+      if (next_doffset > next_dt * kMaxVelocity()) {
+        VLOG(1) << "Ignoring timestamp " << TimeString(monotonic_now, sample_ns)
+                << " because " << TimeString(*it)
+                << " is following and the slope would be too positive.";
+        return;
+      }
+    }
+
+    // Now, insert and start propagating forwards and backwards anything we've
+    // made invalid.  Do this simultaneously so we keep discovering anything
+    // new.
+    auto middle_it = timestamps_.insert(
+        it, std::make_tuple(monotonic_now, sample_ns, false));
+    VLOG(1) << "Inserted " << TimeString(*middle_it);
+
+    while (middle_it != timestamps_.end() && middle_it != timestamps_.begin()) {
+      auto next_it =
+          (middle_it == timestamps_.end()) ? timestamps_.end() : middle_it + 1;
+      auto prior_it = (middle_it == timestamps_.begin()) ? timestamps_.begin()
+                                                         : middle_it - 1;
+
+      // See if the next can be popped.  If so, pop it.
+      if (next_it != timestamps_.end()) {
+        const chrono::nanoseconds next_dt =
+            std::get<0>(*next_it) - std::get<0>(*middle_it);
+        const chrono::nanoseconds next_doffset =
+            std::get<1>(*next_it) - std::get<1>(*middle_it);
+
+        if (next_doffset < -next_dt * kMaxVelocity()) {
+          VLOG(1) << "Next slope is too negative, removing next point "
+                  << TimeString(*next_it);
+          next_it = timestamps_.erase(next_it);
+          // erase invalidates all iterators, and this code uses middle as the
+          // state.  Update middle.
+          middle_it = next_it - 1;
+          continue;
+        }
+      }
+
+      // See if the previous point can be popped.
+      if (prior_it != timestamps_.begin()) {
+        const chrono::nanoseconds prior_dt =
+            std::get<0>(*middle_it) - std::get<0>(*prior_it);
+        const chrono::nanoseconds prior_doffset =
+            std::get<1>(*middle_it) - std::get<1>(*prior_it);
+
+        if (prior_doffset > prior_dt * kMaxVelocity()) {
+          CHECK(!std::get<2>(*prior_it))
+              << ": Can't pop an already frozen sample.";
+          VLOG(1) << "Prior slope is too positive, removing prior point "
+                  << TimeString(*prior_it);
+          prior_it = timestamps_.erase(prior_it);
+          middle_it = prior_it;
+          continue;
+        }
+      }
+      // Made no modifications, bail.
+      break;
     }
   }
 }
@@ -982,7 +1130,7 @@ NoncausalTimestampFilter::Observe() const {
   if (timestamps_.empty() || next_to_consume_ >= timestamps_.size()) {
     return std::nullopt;
   }
-  return TrimTuple(timestamps_[next_to_consume_]);
+  return timestamp(next_to_consume_);
 }
 
 std::optional<std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>>
@@ -991,7 +1139,7 @@ NoncausalTimestampFilter::Consume() {
     return std::nullopt;
   }
 
-  auto result = TrimTuple(timestamps_[next_to_consume_]);
+  auto result = timestamp(next_to_consume_);
   ++next_to_consume_;
   return result;
 }
@@ -999,15 +1147,18 @@ NoncausalTimestampFilter::Consume() {
 void NoncausalTimestampFilter::FreezeUntil(
     aos::monotonic_clock::time_point node_monotonic_now) {
   for (size_t i = 0; i < timestamps_.size(); ++i) {
-    if (std::get<0>(timestamps_[i]) > node_monotonic_now) {
+    // Freeze 1 point past the match.
+    std::get<2>(timestamps_[i]) = true;
+    if (std::get<0>(timestamps_[i]) >= node_monotonic_now) {
       return;
     }
-    std::get<2>(timestamps_[i]) = true;
   }
 
-  if (timestamps_.size() < 2u) {
-    // This will evaluate to a line.  We can't support adding points to a line
-    // yet.
+  if (timestamps_.empty()) {
+    fully_frozen_ = true;
+  } else if (node_monotonic_now > std::get<0>(timestamps_.back())) {
+    // We've been asked to freeze past the last point.  It isn't safe to add any
+    // more points or we will change this region.
     fully_frozen_ = true;
   }
 }
@@ -1015,31 +1166,21 @@ void NoncausalTimestampFilter::FreezeUntil(
 void NoncausalTimestampFilter::FreezeUntilRemote(
     aos::monotonic_clock::time_point remote_monotonic_now) {
   for (size_t i = 0; i < timestamps_.size(); ++i) {
-    if (std::get<0>(timestamps_[i]) + std::get<1>(timestamps_[i]) >
+    // Freeze 1 point past the match.
+    std::get<2>(timestamps_[i]) = true;
+    if (std::get<0>(timestamp(i)) + std::get<1>(timestamp(i)) >=
         remote_monotonic_now) {
       return;
     }
-    std::get<2>(timestamps_[i]) = true;
   }
 
-  if (timestamps_.size() < 2u) {
-    // This will evaluate to a line.  We can't support adding points to a line
-    // yet.
+  if (timestamps_.empty()) {
     fully_frozen_ = true;
-  }
-}
-
-void NoncausalTimestampFilter::Freeze() {
-  if (timestamps_.size() >= 1u) {
-    std::get<2>(timestamps_[0]) = true;
-  }
-
-  if (timestamps_.size() < 2u) {
-    // This will evaluate to a line.  We can't support adding points to a line
-    // yet.
+  } else if (remote_monotonic_now > std::get<0>(timestamps_.back()) +
+                                        std::get<1>(timestamps_.back())) {
+    // We've been asked to freeze past the last point.  It isn't safe to add any
+    // more points or we will change this region.
     fully_frozen_ = true;
-  } else {
-    std::get<2>(timestamps_[1]) = true;
   }
 }
 
@@ -1066,8 +1207,19 @@ void NoncausalTimestampFilter::SetCsvFileName(std::string_view name) {
   PrintNoncausalTimestampFilterSamplesHeader(samples_fp_);
 }
 
+void NoncausalTimestampFilter::PopFront() {
+  VLOG(1) << node_->name()->string_view() << " Popped sample of "
+          << TimeString(timestamp(0));
+  MaybeWriteTimestamp(timestamp(0));
+  timestamps_.pop_front();
+  has_popped_ = true;
+  if (next_to_consume_ > 0u) {
+    next_to_consume_--;
+  }
+}
+
 void NoncausalTimestampFilter::MaybeWriteTimestamp(
-    std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds, bool>
+    std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>
         timestamp) {
   if (fp_ && first_time_ != aos::monotonic_clock::min_time) {
     fprintf(fp_, "%.9f, %.9f, %.9f\n",
@@ -1086,7 +1238,7 @@ void NoncausalTimestampFilter::MaybeWriteTimestamp(
 void NoncausalOffsetEstimator::Sample(
     const Node *node, aos::monotonic_clock::time_point node_delivered_time,
     aos::monotonic_clock::time_point other_node_sent_time) {
-  VLOG(1) << "Sample delivered " << node_delivered_time << " sent "
+  VLOG(1) << "Sample delivered         " << node_delivered_time << " sent "
           << other_node_sent_time << " to " << node->name()->string_view();
   if (node == node_a_) {
     a_.Sample(node_delivered_time, other_node_sent_time - node_delivered_time);
