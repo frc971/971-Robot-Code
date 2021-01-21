@@ -289,7 +289,6 @@ def _impl(ctx):
                                 "-D__STDC_CONSTANT_MACROS",
                                 "-D__STDC_LIMIT_MACROS",
                                 "-D_FILE_OFFSET_BITS=64",
-                                "-DAOS_ARCHITECTURE_arm_frc",
                                 "-U_FORTIFY_SOURCE",
                                 "-D_FORTIFY_SOURCE=1",
                                 "-fstack-protector",
