@@ -272,6 +272,10 @@ class NoncausalTimestampFilter {
                             aos::monotonic_clock::time_point tb_base, double tb,
                             size_t node_a, size_t node_b) const;
 
+  // Confirms that the solution meets the constraints.  Returns true on success.
+  bool ValidateSolution(aos::monotonic_clock::time_point ta,
+                        aos::monotonic_clock::time_point tb) const;
+
   double Convert(double ta) const {
     return ta +
            static_cast<double>(
@@ -457,11 +461,16 @@ class NoncausalOffsetEstimator {
     return nullptr;
   }
 
-  // Updates the filter based on a sample from the provided node to the other
-  // node.
+  // Updates the filter for the provided node based on a sample from the
+  // provided node to the other node.
   void Sample(const Node *node,
               aos::monotonic_clock::time_point node_delivered_time,
               aos::monotonic_clock::time_point other_node_sent_time);
+  // Updates the filter for the provided node based on a sample going to the
+  // provided node from the other node.
+  void ReverseSample(
+      const Node *node, aos::monotonic_clock::time_point node_sent_time,
+      aos::monotonic_clock::time_point other_node_delivered_time);
 
   // Removes old data points from a node before the provided time.
   // Returns true if any points were popped.

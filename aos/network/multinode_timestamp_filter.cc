@@ -50,7 +50,7 @@ std::vector<double> TimestampProblem::SolveDouble() {
 
   // Ask for really good.  This is very quadratic, so it should be pretty
   // precise.
-  nlopt_set_xtol_rel(opt, 1e-5);
+  nlopt_set_xtol_rel(opt, 1e-9);
 
   cost_call_count_ = 0;
 
@@ -112,7 +112,7 @@ std::vector<monotonic_clock::time_point> TimestampProblem::DoubleToMonotonic(
   for (size_t i = 0; i < result.size(); ++i) {
     if (live(i)) {
       result[i] = base_clock(i) + std::chrono::nanoseconds(static_cast<int64_t>(
-                                      std::floor(get_t(r, i))));
+                                      std::round(get_t(r, i))));
     } else {
       result[i] = monotonic_clock::min_time;
     }
@@ -124,6 +124,18 @@ std::vector<monotonic_clock::time_point> TimestampProblem::DoubleToMonotonic(
 std::vector<monotonic_clock::time_point> TimestampProblem::Solve() {
   std::vector<double> solution = SolveDouble();
   return DoubleToMonotonic(solution.data());
+}
+
+bool TimestampProblem::ValidateSolution(
+    std::vector<monotonic_clock::time_point> solution) {
+  bool success = true;
+  for (size_t i = 0u; i < filters_.size(); ++i) {
+    for (const struct FilterPair &filter : filters_[i]) {
+      success = success && filter.filter->ValidateSolution(
+                               solution[i], solution[filter.b_index]);
+    }
+  }
+  return success;
 }
 
 double TimestampProblem::Cost(const double *time_offsets, double *grad) {
@@ -177,7 +189,7 @@ double TimestampProblem::Cost(const double *time_offsets, double *grad) {
     if (grad) {
       std::stringstream ss;
       ss << " grad ["
-         << absl::StrJoin(absl::Span<const double>(grad, filters_.size() - 1u),
+         << absl::StrJoin(absl::Span<const double>(grad, LiveNodesCount() - 1u),
                           ", ", MyFormatter())
          << "]";
       gradient = ss.str();
@@ -213,16 +225,14 @@ void TimestampProblem::Debug() {
     std::string gradient = "0.0";
     for (const struct FilterPair &filter : filters_[i]) {
       if (i != solution_node_ && live(i)) {
-        gradients[NodeToSolutionIndex(i)].emplace_back(
-            filter.filter->DebugDCostDta(base_clock_[i], 0.0,
-                                         base_clock_[filter.b_index], 0.0, i,
-                                         filter.b_index));
+        gradients[i].emplace_back(filter.filter->DebugDCostDta(
+            base_clock_[i], 0.0, base_clock_[filter.b_index], 0.0, i,
+            filter.b_index));
       }
       if (filter.b_index != solution_node_ && live(filter.b_index)) {
-        gradients[NodeToSolutionIndex(filter.b_index)].emplace_back(
-            filter.filter->DebugDCostDtb(base_clock_[i], 0.0,
-                                         base_clock_[filter.b_index], 0.0, i,
-                                         filter.b_index));
+        gradients[filter.b_index].emplace_back(filter.filter->DebugDCostDtb(
+            base_clock_[i], 0.0, base_clock_[filter.b_index], 0.0, i,
+            filter.b_index));
       }
     }
   }
@@ -264,9 +274,10 @@ void InterpolatedTimeConverter::QueueUntil(
 
   CHECK(!times_.empty())
       << ": Found no times to do timestamp estimation, please investigate.";
-  // Keep at least 50 points and 10 seconds of time.
-  while (times_.size() > 50 &&
-         std::get<0>(times_.front()) + chrono::seconds(10) <
+  // Keep at least 500 points and time_estimation_buffer_seconds seconds of
+  // time.  This should be enough to handle any reasonable amount of history.
+  while (times_.size() > kHistoryMinCount &&
+         std::get<0>(times_.front()) + time_estimation_buffer_seconds_ <
              std::get<0>(times_.back())) {
     times_.pop_front();
     have_popped_ = true;
@@ -422,10 +433,12 @@ monotonic_clock::time_point InterpolatedTimeConverter::FromDistributedClock(
 }
 MultiNodeNoncausalOffsetEstimator::MultiNodeNoncausalOffsetEstimator(
     SimulatedEventLoopFactory *event_loop_factory,
-    const Configuration *logged_configuration, bool skip_order_validation)
+    const Configuration *logged_configuration, bool skip_order_validation,
+    chrono::nanoseconds time_estimation_buffer_seconds)
     : InterpolatedTimeConverter(!configuration::MultiNode(logged_configuration)
                                     ? 1u
-                                    : logged_configuration->nodes()->size()),
+                                    : logged_configuration->nodes()->size(),
+                                time_estimation_buffer_seconds),
       event_loop_factory_(event_loop_factory),
       logged_configuration_(logged_configuration),
       skip_order_validation_(skip_order_validation) {
@@ -589,6 +602,31 @@ chrono::nanoseconds MaxElapsedTime(
     first = false;
   }
   return dt;
+}
+
+// Returns the amount of time that ta and tb are out of order by.  The primary
+// direction is defined to be the direction of the average of the offsets.  So,
+// if the average is +, and we get 1 - outlier, the absolute value of that -
+// outlier is the invalid distance.
+chrono::nanoseconds InvalidDistance(
+    const std::vector<monotonic_clock::time_point> &ta,
+    const std::vector<monotonic_clock::time_point> &tb) {
+  // Use an int128 so we have no concern about number of times or size of the
+  // difference.
+  absl::int128 sum = 0;
+  for (size_t i = 0; i < ta.size(); ++i) {
+    if (ta[i] == monotonic_clock::min_time ||
+        tb[i] == monotonic_clock::min_time) {
+      continue;
+    }
+    sum += (ta[i] - tb[i]).count();
+  }
+  // Pick the direction and sign to return.
+  if (sum < 0) {
+    return MaxElapsedTime(tb, ta);
+  } else {
+    return MaxElapsedTime(ta, tb);
+  }
 }
 
 // Class to efficiently track up to 64 bit sets.  It uses a uint64 as the
@@ -803,11 +841,13 @@ MultiNodeNoncausalOffsetEstimator::NextSolution(
     TimestampProblem *problem,
     const std::vector<aos::monotonic_clock::time_point> &base_times) {
   // Ok, now solve for the minimum time on each channel.
-  std::vector<aos::monotonic_clock::time_point> times;
+  std::vector<aos::monotonic_clock::time_point> result_times;
   NoncausalTimestampFilter *next_filter = nullptr;
+  size_t solution_index = 0;
   {
     size_t node_a_index = 0;
     for (const auto &filters : filters_per_node_) {
+      VLOG(1) << "Investigating filter for node " << node_a_index;
       monotonic_clock::time_point next_node_time = monotonic_clock::max_time;
       NoncausalTimestampFilter *next_node_filter = nullptr;
       // Find the oldest time for each node in each filter, and solve for that
@@ -839,9 +879,8 @@ MultiNodeNoncausalOffsetEstimator::NextSolution(
         // on the node we are solving for.  The rate that time elapses should be
         // ~1.
         problem->set_base_clock(
-            node_index,
-            base_times[node_a_index] +
-                (next_node_time - base_times[problem->solution_node()]));
+            node_index, base_times[node_index] +
+                            (next_node_time - base_times[node_a_index]));
       }
 
       problem->set_solution_node(node_a_index);
@@ -852,14 +891,33 @@ MultiNodeNoncausalOffsetEstimator::NextSolution(
       // TODO(austin): Can we cache?  Solving is expensive.
       std::vector<monotonic_clock::time_point> solution = problem->Solve();
 
-      if (times.empty()) {
-        times = std::move(solution);
+      // Bypass checking if order validation is turned off.  This lets us dump a
+      // CSV file so we can view the problem and figure out what to do.  The
+      // results won't make sense.
+      if (!skip_order_validation_ && !problem->ValidateSolution(solution)) {
+        LOG(WARNING) << "Invalid solution, constraints not met.";
+        for (size_t i = 0; i < solution.size(); ++i) {
+          LOG(INFO) << "  " << solution[i];
+        }
+        problem->Debug();
+        LOG(FATAL) << "Bailing";
+      }
+
+      if (VLOG_IS_ON(1)) {
+        VLOG(1) << "Candidate solution for node " << node_a_index << " is";
+        for (size_t i = 0; i < solution.size(); ++i) {
+          VLOG(1) << "  " << solution[i];
+        }
+      }
+      if (result_times.empty()) {
+        result_times = std::move(solution);
         next_filter = next_node_filter;
+        solution_index = node_a_index;
         ++node_a_index;
         continue;
       }
 
-      switch (CompareTimes(times, solution, false)) {
+      switch (CompareTimes(result_times, solution, false)) {
         // The old solution is before or at the new solution.  This means that
         // the old solution is a better result, so ignore this one.
         case TimeComparison::kBefore:
@@ -867,26 +925,80 @@ MultiNodeNoncausalOffsetEstimator::NextSolution(
           break;
         case TimeComparison::kAfter:
           // The new solution is better!  Save it.
-          times = std::move(solution);
+          result_times = std::move(solution);
           next_filter = next_node_filter;
+          solution_index = node_a_index;
           break;
-        case TimeComparison::kInvalid:
+        case TimeComparison::kInvalid: {
+          // If times are close enough, drop the invalid time.
+          if (InvalidDistance(result_times, solution) <
+              chrono::nanoseconds(500)) {
+            VLOG(1) << "Times can't be compared by "
+                    << InvalidDistance(result_times, solution).count() << "ns";
+            for (size_t i = 0; i < result_times.size(); ++i) {
+              VLOG(1) << "  " << result_times[i] << " vs " << solution[i]
+                      << " -> " << (result_times[i] - solution[i]).count()
+                      << "ns";
+            }
+            VLOG(1) << "Ignoring because it is close enough.";
+            next_node_filter->Consume();
+            break;
+          }
           // Somehow the new solution is better *and* worse than the old
           // solution...  This is an internal failure because that means time
           // goes backwards on a node.
-          CHECK_EQ(times.size(), solution.size());
-          LOG(INFO) << "Times can't be compared.";
-          for (size_t i = 0; i < times.size(); ++i) {
-            LOG(INFO) << "  " << times[i] << " vs " << solution[i] << " -> "
-                      << (times[i] - solution[i]).count() << "ns";
+          CHECK_EQ(result_times.size(), solution.size());
+          LOG(INFO) << "Times can't be compared by "
+                    << InvalidDistance(result_times, solution).count() << "ns";
+          for (size_t i = 0; i < result_times.size(); ++i) {
+            LOG(INFO) << "  " << result_times[i] << " vs " << solution[i]
+                      << " -> " << (result_times[i] - solution[i]).count()
+                      << "ns";
           }
+          FLAGS_v = 1;
+
+          // Attempting solution for each node.
+          for (size_t a_index = 0; a_index < solution.size(); ++a_index) {
+            if (!problem->live(a_index)) {
+              continue;
+            }
+            for (size_t node_index = 0; node_index < solution.size();
+                 ++node_index) {
+              // Offset everything based on the elapsed time since the last
+              // solution on the node we are solving for.  The rate that time
+              // elapses should be ~1.
+              problem->set_base_clock(node_index, solution[node_index]);
+            }
+
+            problem->set_solution_node(a_index);
+            problem->Debug();
+            std::vector<monotonic_clock::time_point> resolve_solution =
+                problem->Solve();
+
+            if (VLOG_IS_ON(1)) {
+              VLOG(1) << "Candidate solution for resolved node " << a_index
+                      << " is";
+              for (size_t i = 0; i < resolve_solution.size(); ++i) {
+                VLOG(1) << "  " << resolve_solution[i] << " vs original "
+                        << solution[i] << " -> "
+                        << (resolve_solution[i] - solution[i]).count();
+              }
+            }
+          }
+
           LOG(FATAL) << "Please investigate.";
-          break;
+        } break;
       }
       ++node_a_index;
     }
   }
-  return std::make_tuple(next_filter, std::move(times));
+  if (VLOG_IS_ON(1)) {
+    VLOG(1) << "Best solution is for node " << solution_index;
+    for (size_t i = 0; i < result_times.size(); ++i) {
+      VLOG(1) << "  " << result_times[i];
+    }
+  }
+  return std::make_tuple(next_filter, std::move(result_times));
 }
 
 std::optional<std::tuple<distributed_clock::time_point,
@@ -897,15 +1009,17 @@ MultiNodeNoncausalOffsetEstimator::NextTimestamp() {
   TimestampProblem problem = MakeProblem();
 
   // Ok, now solve for the minimum time on each channel.
-  std::vector<aos::monotonic_clock::time_point> times;
+  std::vector<aos::monotonic_clock::time_point> result_times;
   NoncausalTimestampFilter *next_filter = nullptr;
-  std::tie(next_filter, times) = NextSolution(&problem, last_monotonics_);
+  std::tie(next_filter, result_times) =
+      NextSolution(&problem, last_monotonics_);
 
   CHECK(!all_done_);
 
   // All done.
   if (next_filter == nullptr) {
     if (first_solution_) {
+      VLOG(1) << "No more timestamps and the first solution.";
       // If this is our first time, there is no solution.  Instead of giving up
       // completely, (and providing no estimate of time at all), just say that
       // everything is on the distributed clock.  This will then get used as a
@@ -945,20 +1059,21 @@ MultiNodeNoncausalOffsetEstimator::NextTimestamp() {
     std::vector<aos::monotonic_clock::time_point> resolved_times;
     NoncausalTimestampFilter *resolved_next_filter = nullptr;
 
+    VLOG(1) << "Resolving with updated base times for accuracy.";
     std::tie(resolved_next_filter, resolved_times) =
-        NextSolution(&problem, times);
+        NextSolution(&problem, result_times);
 
     first_solution_ = false;
     next_filter = resolved_next_filter;
 
     // Force any unknown nodes to track the distributed clock (which starts at 0
     // too).
-    for (monotonic_clock::time_point &time : times) {
+    for (monotonic_clock::time_point &time : result_times) {
       if (time == monotonic_clock::min_time) {
         time = monotonic_clock::epoch();
       }
     }
-    times = std::move(resolved_times);
+    result_times = std::move(resolved_times);
     next_filter->Consume();
   } else {
     next_filter->Consume();
@@ -966,7 +1081,7 @@ MultiNodeNoncausalOffsetEstimator::NextTimestamp() {
     // want to consume it.  But, if this is the first time around, we want to
     // re-solve by recursing (once) to pickup the better base.
 
-    TimeComparison compare = CompareTimes(last_monotonics_, times, true);
+    TimeComparison compare = CompareTimes(last_monotonics_, result_times, true);
     switch (compare) {
       case TimeComparison::kBefore:
         break;
@@ -976,9 +1091,9 @@ MultiNodeNoncausalOffsetEstimator::NextTimestamp() {
       case TimeComparison::kEq:
         return NextTimestamp();
       case TimeComparison::kInvalid:
-        CHECK_EQ(last_monotonics_.size(), times.size());
-        for (size_t i = 0; i < times.size(); ++i) {
-          LOG(INFO) << "  " << last_monotonics_[i] << " vs " << times[i];
+        CHECK_EQ(last_monotonics_.size(), result_times.size());
+        for (size_t i = 0; i < result_times.size(); ++i) {
+          LOG(INFO) << "  " << last_monotonics_[i] << " vs " << result_times[i];
         }
         LOG(FATAL) << "Found solutions which can't be ordered.";
         break;
@@ -988,16 +1103,16 @@ MultiNodeNoncausalOffsetEstimator::NextTimestamp() {
   // Now, figure out what distributed should be.  It should move at the rate of
   // the max elapsed time so that conversions to and from it don't round to bad
   // values.
-  const chrono::nanoseconds dt = MaxElapsedTime(last_monotonics_, times);
+  const chrono::nanoseconds dt = MaxElapsedTime(last_monotonics_, result_times);
   last_distributed_ += dt;
-  for (size_t i = 0; i < times.size(); ++i) {
-    if (times[i] == monotonic_clock::min_time) {
+  for (size_t i = 0; i < result_times.size(); ++i) {
+    if (result_times[i] == monotonic_clock::min_time) {
       // Found an unknown node.  Move its time along by the amount the
       // distributed clock moved.
-      times[i] = last_monotonics_[i] + dt;
+      result_times[i] = last_monotonics_[i] + dt;
     }
   }
-  last_monotonics_ = std::move(times);
+  last_monotonics_ = std::move(result_times);
 
   // And freeze everything.
   {

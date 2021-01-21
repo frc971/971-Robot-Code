@@ -333,8 +333,7 @@ void Logger::StartLogging(std::unique_ptr<LogNamer> log_namer,
   for (const Node *node : log_namer_->nodes()) {
     const int node_index = configuration::GetNodeIndex(configuration_, node);
 
-    node_state_[node_index].log_file_header =
-        MakeHeader(node, config_sha256);
+    node_state_[node_index].log_file_header = MakeHeader(node, config_sha256);
   }
 
   // Grab data from each channel right before we declare the log file started
@@ -1112,7 +1111,9 @@ void LogReader::Register(SimulatedEventLoopFactory *event_loop_factory) {
   filters_ =
       std::make_unique<message_bridge::MultiNodeNoncausalOffsetEstimator>(
           event_loop_factory_, logged_configuration(),
-          FLAGS_skip_order_validation);
+          FLAGS_skip_order_validation,
+          chrono::duration_cast<chrono::nanoseconds>(
+              chrono::duration<double>(FLAGS_time_estimation_buffer_seconds)));
 
   for (const Node *node : configuration::GetNodes(configuration())) {
     const size_t node_index =
@@ -2027,8 +2028,7 @@ void LogReader::RemoteMessageSender::ScheduleTimestamp() {
 
   if (scheduled_time_ != remote_timestamps_.front().monotonic_timestamp_time) {
     CHECK_NOTNULL(timer_);
-    timer_->Setup(
-        remote_timestamps_.front().monotonic_timestamp_time);
+    timer_->Setup(remote_timestamps_.front().monotonic_timestamp_time);
     scheduled_time_ = remote_timestamps_.front().monotonic_timestamp_time;
   }
 }
@@ -2098,8 +2098,8 @@ TimestampedMessage LogReader::State::PopOldest() {
   SeedSortedMessages();
 
   if (std::get<1>(result) != nullptr) {
-    std::get<1>(result)->Pop(
-        event_loop_->node(), std::get<0>(result).monotonic_event_time);
+    std::get<1>(result)->Pop(event_loop_->node(),
+                             std::get<0>(result).monotonic_event_time);
   }
   return std::move(std::get<0>(result));
 }
@@ -2161,6 +2161,16 @@ void LogReader::State::SeedSortedMessages() {
       filter->Sample(event_loop_->node(),
                      timestamped_message.monotonic_event_time,
                      timestamped_message.monotonic_remote_time);
+
+      if (timestamped_message.monotonic_timestamp_time !=
+          monotonic_clock::min_time) {
+        // TODO(austin): This assumes that this timestamp is only logged on the
+        // node which sent the data.  That is correct for now, but should be
+        // explicitly checked somewhere.
+        filter->ReverseSample(event_loop_->node(),
+                              timestamped_message.monotonic_event_time,
+                              timestamped_message.monotonic_timestamp_time);
+      }
     }
     sorted_messages_.emplace_back(std::move(timestamped_message), filter);
   }

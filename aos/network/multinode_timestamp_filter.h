@@ -86,6 +86,10 @@ class TimestampProblem {
   std::vector<monotonic_clock::time_point> DoubleToMonotonic(
       const double *r) const;
 
+  // Validates the solution, returning true if it meets all the constraints, and
+  // false otherwise.
+  bool ValidateSolution(std::vector<monotonic_clock::time_point> solution);
+
   // LOGs a representation of the problem.
   void Debug();
 
@@ -177,7 +181,16 @@ class TimestampProblem {
 // multiple nodes using a list of points and interpolation.
 class InterpolatedTimeConverter : public TimeConverter {
  public:
-  InterpolatedTimeConverter(size_t node_count) : node_count_(node_count) {}
+  static constexpr std::chrono::nanoseconds kDefaultHistoryDuration{
+      10000000000};
+  static constexpr int kHistoryMinCount{500};
+
+  InterpolatedTimeConverter(
+      size_t node_count,
+      std::chrono::nanoseconds time_estimation_buffer_seconds =
+          kDefaultHistoryDuration)
+      : node_count_(node_count),
+        time_estimation_buffer_seconds_(time_estimation_buffer_seconds) {}
 
   virtual ~InterpolatedTimeConverter() {}
 
@@ -220,6 +233,12 @@ class InterpolatedTimeConverter : public TimeConverter {
   // If true, we have popped data from times_, so anything before the start is
   // unknown.
   bool have_popped_ = false;
+
+  // The amount of time to buffer when estimating.  We care so we don't throw
+  // data out of our queue too soon.  This time is indicative of how much to
+  // buffer everywhere, so let's latch onto it as well until proven that there
+  // is a different metric.
+  const std::chrono::nanoseconds time_estimation_buffer_seconds_;
 
  protected:
   // If true, NextTimestamp returned nothing, so don't bother checking again.
@@ -269,7 +288,8 @@ class MultiNodeNoncausalOffsetEstimator final
  public:
   MultiNodeNoncausalOffsetEstimator(
       SimulatedEventLoopFactory *event_loop_factory,
-      const Configuration *logged_configuration, bool skip_order_validation);
+      const Configuration *logged_configuration, bool skip_order_validation,
+      std::chrono::nanoseconds time_estimation_buffer_seconds);
 
   ~MultiNodeNoncausalOffsetEstimator() override;
 

@@ -1073,8 +1073,8 @@ TEST(NoncausalOffsetEstimatorTest, FullEstimator) {
   EXPECT_EQ(estimator.a_timestamps_size(), 2u);
   EXPECT_EQ(estimator.b_timestamps_size(), 2u);
 
-  estimator.Sample(node_a, ta3, tb3);
-  estimator.Sample(node_b, tb3, ta3);
+  estimator.ReverseSample(node_b, tb3, ta3);
+  estimator.ReverseSample(node_a, ta3, tb3);
   EXPECT_EQ(estimator.a_timestamps_size(), 3u);
   EXPECT_EQ(estimator.b_timestamps_size(), 3u);
 
