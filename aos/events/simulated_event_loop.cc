@@ -154,10 +154,14 @@ class SimulatedChannel {
   }
 
   void FreeBufferIndex(int i) {
+    // This extra checking has a large performance hit with msan, so just skip
+    // it.
+#if !__has_feature(memory_sanitizer)
     DCHECK(std::find(available_buffer_indices_.begin(),
                      available_buffer_indices_.end(),
                      i) == available_buffer_indices_.end())
         << ": Buffer is not in use: " << i;
+#endif
     available_buffer_indices_.push_back(i);
   }
 
