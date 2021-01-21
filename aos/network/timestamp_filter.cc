@@ -870,7 +870,8 @@ bool NoncausalTimestampFilter::ValidateSolution(
     const chrono::nanoseconds offset =
         NoncausalTimestampFilter::InterpolateOffset(timestamp(0), ta);
     if (offset + ta > tb) {
-      LOG(ERROR) << node_->name()->string_view() << " "
+      LOG(ERROR) << node_a_->name()->string_view() << " -> "
+                 << node_b_->name()->string_view() << " "
                  << TimeString(ta, offset) << " > solution time " << tb;
       return false;
     }
@@ -884,8 +885,9 @@ bool NoncausalTimestampFilter::ValidateSolution(
       NoncausalTimestampFilter::InterpolateOffset(points.first, points.second,
                                                   ta);
   if (offset + ta > tb) {
-    LOG(ERROR) << node_->name()->string_view() << " " << TimeString(ta, offset)
-               << " > solution time " << tb;
+    LOG(ERROR) << node_a_->name()->string_view() << " -> "
+               << node_b_->name()->string_view() << " "
+               << TimeString(ta, offset) << " > solution time " << tb;
     LOG(ERROR) << "Bracketing times are " << TimeString(points.first) << " and "
                << TimeString(points.second);
     return false;
@@ -907,14 +909,16 @@ void NoncausalTimestampFilter::Sample(
   if (timestamps_.size() == 0) {
     VLOG(1) << "Initial sample of " << TimeString(monotonic_now, sample_ns);
     timestamps_.emplace_back(std::make_tuple(monotonic_now, sample_ns, false));
-    CHECK(!fully_frozen_)
-        << ": Returned a horizontal line previously and then got a new "
-           "sample at "
-        << monotonic_now << ", "
-        << chrono::duration<double>(monotonic_now - std::get<0>(timestamps_[0]))
-               .count()
-        << " seconds after the last sample at " << std::get<0>(timestamps_[0])
-        << " " << csv_file_name_ << ".";
+    CHECK(!fully_frozen_) << ": " << node_a_->name()->string_view() << " -> "
+                          << node_b_->name()->string_view()
+                          << " Returned a horizontal line previously and then "
+                             "got a new sample at "
+                          << monotonic_now << ", "
+                          << chrono::duration<double>(
+                                 monotonic_now - std::get<0>(timestamps_[0]))
+                                 .count()
+                          << " seconds after the last sample at "
+                          << std::get<0>(timestamps_[0]) << ".";
     return;
   }
 
@@ -1241,7 +1245,8 @@ void NoncausalTimestampFilter::SetCsvFileName(std::string_view name) {
 }
 
 void NoncausalTimestampFilter::PopFront() {
-  VLOG(1) << node_->name()->string_view() << " Popped sample of "
+  VLOG(1) << node_a_->name()->string_view() << " -> "
+          << node_b_->name()->string_view() << " Popped sample of "
           << TimeString(timestamp(0));
   MaybeWriteTimestamp(timestamp(0));
   timestamps_.pop_front();
