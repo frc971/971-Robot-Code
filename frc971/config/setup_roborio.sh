@@ -41,6 +41,8 @@ if [[ "$(ssh admin@${ROBOT_HOSTNAME} uname -r)" != "4.14.87-rt49-cg-7.0.0f0-xili
   exit 1
 fi
 
+ssh "admin@${ROBOT_HOSTNAME}" "sed -i 's/vm\.overcommit_memory=2/vm\.overcommit_memory=0/' /etc/sysctl.conf"
+
 ssh "admin@${ROBOT_HOSTNAME}" 'echo "net.core.wmem_max=1262560" >> /etc/sysctl.conf'
 ssh "admin@${ROBOT_HOSTNAME}" 'echo "net.core.rmem_max=1262560" >> /etc/sysctl.conf'
 

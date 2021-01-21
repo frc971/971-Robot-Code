@@ -5,7 +5,8 @@ filegroup(
     name = "starter",
     srcs = [
         "starter.sh",
-        "starter_exe",
+        "starterd",
+        "starter_cmd",
     ],
     visibility = ["//visibility:public"],
 )

@@ -84,7 +84,7 @@ void Application::DoStart() {
   }
 
   if (user_) {
-    if (seteuid(*user_) == -1 || setfsuid(*user_) == -1) {
+    if (setuid(*user_) == -1) {
       write_pipe_.Write(
           static_cast<uint32_t>(aos::starter::LastStopReason::SET_USR_ERR));
       PLOG(FATAL) << "Could not set user for " << name_ << " to " << *user_;
@@ -476,6 +476,10 @@ Application *Starter::AddApplication(const aos::Application *application) {
 }
 
 void Starter::Run() {
+#ifdef AOS_ARCHITECTURE_arm_frc
+  PCHECK(setuid(0) == 0) << "Failed to change user to root";
+#endif
+
   for (auto &application : applications_) {
     application.second.Start();
   }
