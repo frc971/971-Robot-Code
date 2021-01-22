@@ -78,6 +78,7 @@ class ShmEventLoop : public EventLoop {
   const Node *node() const override { return node_; }
 
   int priority() const override { return priority_; }
+  const UUID &boot_uuid() const override { return boot_uuid_; }
 
   // Returns the epoll loop used to run the event loop.
   internal::EPoll *epoll() { return &epoll_; }
@@ -135,6 +136,8 @@ class ShmEventLoop : public EventLoop {
   // Private method to access the private memory mapping of a ShmFetcher.
   absl::Span<const char> GetShmFetcherPrivateMemory(
       const aos::RawFetcher *fetcher) const;
+
+  const UUID boot_uuid_;
 
   // Capture the --shm_base flag at construction time.  This makes it much
   // easier to make different shared memory regions for doing things like
