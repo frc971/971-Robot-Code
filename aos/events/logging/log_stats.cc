@@ -83,7 +83,7 @@ int main(int argc, char **argv) {
   if (aos::configuration::MultiNode(reader.configuration())) {
     if (FLAGS_node.empty()) {
       LOG(INFO) << "Need a --node specified.  The log file has:";
-      for (const aos::Node *node : reader.Nodes()) {
+      for (const aos::Node *node : reader.LoggedNodes()) {
         LOG(INFO) << "  " << node->name()->string_view();
       }
       return 1;

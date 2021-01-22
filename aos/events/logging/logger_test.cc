@@ -96,7 +96,7 @@ TEST_F(LoggerTest, Starts) {
   // log file.
   reader.Register();
 
-  EXPECT_THAT(reader.Nodes(), ::testing::ElementsAre(nullptr));
+  EXPECT_THAT(reader.LoggedNodes(), ::testing::ElementsAre(nullptr));
 
   std::unique_ptr<EventLoop> test_event_loop =
       reader.event_loop_factory()->MakeEventLoop("log_reader");
@@ -237,7 +237,7 @@ TEST_F(LoggerTest, StartsTwice) {
     LogReader reader(std::get<0>(logfile));
     reader.Register();
 
-    EXPECT_THAT(reader.Nodes(), ::testing::ElementsAre(nullptr));
+    EXPECT_THAT(reader.LoggedNodes(), ::testing::ElementsAre(nullptr));
 
     std::unique_ptr<EventLoop> test_event_loop =
         reader.event_loop_factory()->MakeEventLoop("log_reader");
@@ -322,7 +322,7 @@ TEST_F(LoggerTest, RotatedLogFile) {
   // log file.
   reader.Register();
 
-  EXPECT_THAT(reader.Nodes(), ::testing::ElementsAre(nullptr));
+  EXPECT_THAT(reader.LoggedNodes(), ::testing::ElementsAre(nullptr));
 
   std::unique_ptr<EventLoop> test_event_loop =
       reader.event_loop_factory()->MakeEventLoop("log_reader");
@@ -943,7 +943,10 @@ TEST_F(MultinodeLoggerTest, SimpleMultiNode) {
   LOG(INFO) << "now pi2 "
             << log_reader_factory.GetNodeEventLoopFactory(pi2)->monotonic_now();
 
-  EXPECT_THAT(reader.Nodes(), ::testing::ElementsAre(pi1, pi2));
+  EXPECT_THAT(reader.LoggedNodes(),
+              ::testing::ElementsAre(
+                  configuration::GetNode(reader.logged_configuration(), pi1),
+                  configuration::GetNode(reader.logged_configuration(), pi2)));
 
   reader.event_loop_factory()->set_send_delay(chrono::microseconds(0));
 
@@ -1137,7 +1140,10 @@ TEST_F(MultinodeLoggerTest, StaggeredStart) {
   const Node *pi2 =
       configuration::GetNode(log_reader_factory.configuration(), "pi2");
 
-  EXPECT_THAT(reader.Nodes(), ::testing::ElementsAre(pi1, pi2));
+  EXPECT_THAT(reader.LoggedNodes(),
+              ::testing::ElementsAre(
+                  configuration::GetNode(reader.logged_configuration(), pi1),
+                  configuration::GetNode(reader.logged_configuration(), pi2)));
 
   reader.event_loop_factory()->set_send_delay(chrono::microseconds(0));
 
@@ -1313,7 +1319,10 @@ TEST_F(MultinodeLoggerTest, MismatchedClocks) {
             << " "
             << log_reader_factory.GetNodeEventLoopFactory(pi2)->realtime_now();
 
-  EXPECT_THAT(reader.Nodes(), ::testing::ElementsAre(pi1, pi2));
+  EXPECT_THAT(reader.LoggedNodes(),
+              ::testing::ElementsAre(
+                  configuration::GetNode(reader.logged_configuration(), pi1),
+                  configuration::GetNode(reader.logged_configuration(), pi2)));
 
   reader.event_loop_factory()->set_send_delay(chrono::microseconds(0));
 
@@ -1594,7 +1603,10 @@ TEST_F(MultinodeLoggerTest, MessageHeader) {
   LOG(INFO) << "now pi2 "
             << log_reader_factory.GetNodeEventLoopFactory(pi2)->monotonic_now();
 
-  EXPECT_THAT(reader.Nodes(), ::testing::ElementsAre(pi1, pi2));
+  EXPECT_THAT(reader.LoggedNodes(),
+              ::testing::ElementsAre(
+                  configuration::GetNode(reader.logged_configuration(), pi1),
+                  configuration::GetNode(reader.logged_configuration(), pi2)));
 
   reader.event_loop_factory()->set_send_delay(chrono::microseconds(0));
 

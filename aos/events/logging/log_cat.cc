@@ -147,7 +147,8 @@ int main(int argc, char **argv) {
 
   bool found_channel = false;
 
-  for (const aos::Node *node : reader.Nodes()) {
+  for (const aos::Node *node :
+       aos::configuration::GetNodes(event_loop_factory.configuration())) {
     std::unique_ptr<aos::EventLoop> printer_event_loop =
         event_loop_factory.MakeEventLoop("printer", node);
     printer_event_loop->SkipTimingReport();
