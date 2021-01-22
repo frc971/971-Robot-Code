@@ -86,6 +86,7 @@ int main(int argc, char **argv) {
       for (const aos::Node *node : reader.Nodes()) {
         LOG(INFO) << "  " << node->name()->string_view();
       }
+      reader.Deregister();
       return 1;
     } else {
       node = aos::configuration::GetNode(reader.configuration(), FLAGS_node);
