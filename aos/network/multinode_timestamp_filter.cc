@@ -85,25 +85,30 @@ std::vector<double> TimestampProblem::SolveDouble() {
   }
 
   if (VLOG_IS_ON(1)) {
-    std::vector<double> gradient(n, 0.0);
-    Cost(result.data(), gradient.data());
-
-    // High precision formatter for the gradient.
-    struct MyFormatter {
-      void operator()(std::string *out, double i) const {
-        std::stringstream ss;
-        ss << std::setprecision(12) << std::fixed << i;
-        out->append(ss.str());
-      }
-    };
-
-    VLOG(1) << std::setprecision(12) << std::fixed << "Found minimum at f("
-            << absl::StrJoin(result, ", ") << ") -> " << minf << " grad ["
-            << absl::StrJoin(gradient, ", ", MyFormatter()) << "] after "
-            << cost_call_count_ << " cycles for node " << solution_node_ << ".";
+    PrintSolution(result);
   }
   nlopt_destroy(opt);
   return result;
+}
+
+void TimestampProblem::PrintSolution(const std::vector<double> &solution) {
+  const size_t n = filters_.size() - 1u;
+  std::vector<double> gradient(n, 0.0);
+  const double minf = Cost(solution.data(), gradient.data());
+
+  // High precision formatter for the gradient.
+  struct MyFormatter {
+    void operator()(std::string *out, double i) const {
+      std::stringstream ss;
+      ss << std::setprecision(12) << std::fixed << i;
+      out->append(ss.str());
+    }
+  };
+
+  LOG(INFO) << std::setprecision(12) << std::fixed << "Found minimum at f("
+            << absl::StrJoin(solution, ", ") << ") -> " << minf << " grad ["
+            << absl::StrJoin(gradient, ", ", MyFormatter()) << "] after "
+            << cost_call_count_ << " cycles for node " << solution_node_ << ".";
 }
 
 std::vector<monotonic_clock::time_point> TimestampProblem::DoubleToMonotonic(
@@ -432,14 +437,14 @@ monotonic_clock::time_point InterpolatedTimeConverter::FromDistributedClock(
   return result;
 }
 MultiNodeNoncausalOffsetEstimator::MultiNodeNoncausalOffsetEstimator(
-    SimulatedEventLoopFactory *event_loop_factory,
+    const Configuration *configuration,
     const Configuration *logged_configuration, bool skip_order_validation,
     chrono::nanoseconds time_estimation_buffer_seconds)
     : InterpolatedTimeConverter(!configuration::MultiNode(logged_configuration)
                                     ? 1u
                                     : logged_configuration->nodes()->size(),
                                 time_estimation_buffer_seconds),
-      event_loop_factory_(event_loop_factory),
+      configuration_(configuration),
       logged_configuration_(logged_configuration),
       skip_order_validation_(skip_order_validation) {
   filters_per_node_.resize(NodesCount());
@@ -484,15 +489,37 @@ MultiNodeNoncausalOffsetEstimator::~MultiNodeNoncausalOffsetEstimator() {
 
 void MultiNodeNoncausalOffsetEstimator::Start(
     SimulatedEventLoopFactory *factory) {
+  std::vector<monotonic_clock::time_point> times;
+  for (const Node *node : configuration::GetNodes(factory->configuration())) {
+    times.emplace_back(factory->GetNodeEventLoopFactory(node)->monotonic_now());
+  }
+  Start(times);
+}
+
+void MultiNodeNoncausalOffsetEstimator::Start(
+    std::vector<monotonic_clock::time_point> times) {
   for (std::pair<const std::tuple<const Node *, const Node *>,
                  message_bridge::NoncausalOffsetEstimator> &filter : filters_) {
     const Node *const node_a = std::get<0>(filter.first);
+    const size_t node_a_index =
+        configuration::GetNodeIndex(configuration_, node_a);
     const Node *const node_b = std::get<1>(filter.first);
+    const size_t node_b_index =
+        configuration::GetNodeIndex(configuration_, node_b);
 
-    filter.second.SetFirstFwdTime(
-        factory->GetNodeEventLoopFactory(node_a)->monotonic_now());
-    filter.second.SetFirstRevTime(
-        factory->GetNodeEventLoopFactory(node_b)->monotonic_now());
+    filter.second.SetFirstFwdTime(times[node_a_index]);
+    filter.second.SetFirstRevTime(times[node_b_index]);
+  }
+
+  std::fstream s("/tmp/timestamp_noncausal_starttime.csv", s.trunc | s.out);
+  CHECK(s.is_open());
+  for (const Node *node : configuration::GetNodes(configuration())) {
+    const size_t node_index =
+        configuration::GetNodeIndex(configuration(), node);
+    s << node->name()->string_view() << ", " << std::setprecision(12)
+      << std::fixed
+      << chrono::duration<double>(times[node_index].time_since_epoch()).count()
+      << "\n";
   }
 }
 
@@ -894,13 +921,16 @@ MultiNodeNoncausalOffsetEstimator::NextSolution(
       // Bypass checking if order validation is turned off.  This lets us dump a
       // CSV file so we can view the problem and figure out what to do.  The
       // results won't make sense.
-      if (!skip_order_validation_ && !problem->ValidateSolution(solution)) {
+      if (!problem->ValidateSolution(solution)) {
         LOG(WARNING) << "Invalid solution, constraints not met.";
         for (size_t i = 0; i < solution.size(); ++i) {
           LOG(INFO) << "  " << solution[i];
         }
         problem->Debug();
-        LOG(FATAL) << "Bailing";
+        if (!skip_order_validation_) {
+          LOG(FATAL) << "Bailing, use --skip_order_validation to continue.  "
+                        "Use at your own risk.";
+        }
       }
 
       if (VLOG_IS_ON(1)) {
@@ -932,7 +962,7 @@ MultiNodeNoncausalOffsetEstimator::NextSolution(
         case TimeComparison::kInvalid: {
           // If times are close enough, drop the invalid time.
           if (InvalidDistance(result_times, solution) <
-              chrono::nanoseconds(500)) {
+                  chrono::nanoseconds(500)) {
             VLOG(1) << "Times can't be compared by "
                     << InvalidDistance(result_times, solution).count() << "ns";
             for (size_t i = 0; i < result_times.size(); ++i) {
@@ -955,9 +985,10 @@ MultiNodeNoncausalOffsetEstimator::NextSolution(
                       << " -> " << (result_times[i] - solution[i]).count()
                       << "ns";
           }
-          FLAGS_v = 1;
-
-          // Attempting solution for each node.
+          // Since we found a problem with the solution, solve one problem per
+          // node, starting at the problem point.  This will show us any
+          // inconsistencies due to the problem phrasing and which node we
+          // solved from.
           for (size_t a_index = 0; a_index < solution.size(); ++a_index) {
             if (!problem->live(a_index)) {
               continue;
@@ -972,21 +1003,29 @@ MultiNodeNoncausalOffsetEstimator::NextSolution(
 
             problem->set_solution_node(a_index);
             problem->Debug();
-            std::vector<monotonic_clock::time_point> resolve_solution =
-                problem->Solve();
+            const std::vector<double> resolve_solution_double =
+                problem->SolveDouble();
+            problem->PrintSolution(resolve_solution_double);
 
-            if (VLOG_IS_ON(1)) {
-              VLOG(1) << "Candidate solution for resolved node " << a_index
+            const std::vector<monotonic_clock::time_point> resolve_solution =
+                problem->DoubleToMonotonic(resolve_solution_double.data());
+
+            LOG(INFO) << "Candidate solution for resolved node " << a_index
                       << " is";
-              for (size_t i = 0; i < resolve_solution.size(); ++i) {
-                VLOG(1) << "  " << resolve_solution[i] << " vs original "
+            for (size_t i = 0; i < resolve_solution.size(); ++i) {
+              LOG(INFO) << "  " << resolve_solution[i] << " vs original "
                         << solution[i] << " -> "
                         << (resolve_solution[i] - solution[i]).count();
-              }
             }
           }
 
-          LOG(FATAL) << "Please investigate.";
+          if (skip_order_validation_) {
+            next_node_filter->Consume();
+            LOG(ERROR) << "Skipping because --skip_order_validation";
+            break;
+          } else {
+            LOG(FATAL) << "Please investigate.";
+          }
         } break;
       }
       ++node_a_index;

@@ -1111,7 +1111,7 @@ void LogReader::Register(SimulatedEventLoopFactory *event_loop_factory) {
   remapped_configuration_ = event_loop_factory_->configuration();
   filters_ =
       std::make_unique<message_bridge::MultiNodeNoncausalOffsetEstimator>(
-          event_loop_factory_, logged_configuration(),
+          event_loop_factory_->configuration(), logged_configuration(),
           FLAGS_skip_order_validation,
           chrono::duration_cast<chrono::nanoseconds>(
               chrono::duration<double>(FLAGS_time_estimation_buffer_seconds)));
@@ -1264,15 +1264,6 @@ void LogReader::Register(SimulatedEventLoopFactory *event_loop_factory) {
 
   if (FLAGS_timestamps_to_csv) {
     filters_->Start(event_loop_factory);
-    std::fstream s("/tmp/timestamp_noncausal_starttime.csv", s.trunc | s.out);
-    CHECK(s.is_open());
-    for (std::unique_ptr<State> &state : states_) {
-      s << state->event_loop()->node()->name()->string_view() << ", "
-        << std::setprecision(12) << std::fixed
-        << chrono::duration<double>(state->monotonic_now().time_since_epoch())
-               .count()
-        << "\n";
-    }
   }
 }
 

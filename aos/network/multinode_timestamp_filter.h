@@ -110,6 +110,10 @@ class TimestampProblem {
     return count;
   }
 
+  // LOG(INFO)'s the provided solution, showing the arguments, the minimum
+  // value, and the gradient.
+  void PrintSolution(const std::vector<double> &solution);
+
  private:
   // Static trampoline for nlopt.  n is the number of constraints, time_offsets
   // is input solution to solve for, grad is the gradient to fill out (if not
@@ -287,7 +291,7 @@ class MultiNodeNoncausalOffsetEstimator final
     : public InterpolatedTimeConverter {
  public:
   MultiNodeNoncausalOffsetEstimator(
-      SimulatedEventLoopFactory *event_loop_factory,
+      const Configuration *configuration,
       const Configuration *logged_configuration, bool skip_order_validation,
       std::chrono::nanoseconds time_estimation_buffer_seconds);
 
@@ -308,6 +312,7 @@ class MultiNodeNoncausalOffsetEstimator final
 
   // Captures the start time.
   void Start(SimulatedEventLoopFactory *factory);
+  void Start(std::vector<monotonic_clock::time_point> times);
 
   // Returns the number of nodes.
   size_t NodesCount() const {
@@ -320,9 +325,7 @@ class MultiNodeNoncausalOffsetEstimator final
   }
 
   // Returns the configuration that we are replaying into.
-  const aos::Configuration *configuration() const {
-    return event_loop_factory_->configuration();
-  }
+  const aos::Configuration *configuration() const { return configuration_; }
 
  private:
   TimestampProblem MakeProblem();
@@ -332,7 +335,7 @@ class MultiNodeNoncausalOffsetEstimator final
   NextSolution(TimestampProblem *problem,
                const std::vector<aos::monotonic_clock::time_point> &base_times);
 
-  SimulatedEventLoopFactory *event_loop_factory_;
+  const Configuration *configuration_;
   const Configuration *logged_configuration_;
 
   // If true, skip any validation which would trigger if we see evidance that

@@ -208,8 +208,25 @@ cc_binary(
         "//aos:configuration",
         "//aos:init",
         "//aos:json_to_flatbuffer",
-        "//aos/events:shm_event_loop",
         "//aos/events:simulated_event_loop",
+        "@com_github_gflags_gflags//:gflags",
+        "@com_github_google_glog//:glog",
+    ],
+)
+
+cc_binary(
+    name = "timestamp_extractor",
+    srcs = [
+        "timestamp_extractor.cc",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":logfile_utils",
+        "//aos:configuration",
+        "//aos:init",
+        "//aos/events:simulated_event_loop",
+        "//aos/network:multinode_timestamp_filter",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
     ],

@@ -28,6 +28,6 @@ plot samplefile12 using 1:2 title 'sample 1-2', \
      samplefile21 using 1:(-$2) title 'sample 2-1', \
      noncausalfile12 using 1:3 title 'nc 1-2' with lines, \
      noncausalfile21 using 1:(-$3) title 'nc 2-1' with lines, \
-     offsetfile using ((column(node1_index) - node1_start_time + (column(node2_index) - node2_start_time)) / 2):(column(node2_index) - column(node1_index)) title 'filter 2-1' with lines
+     offsetfile using ((column(node1_index) - node1_start_time + (column(node2_index) - node2_start_time)) / 2):(column(node2_index) - column(node1_index)) title 'filter 2-1' with linespoints
 
 pause -1
