@@ -235,7 +235,8 @@ class ClippedAverageFilter {
 // precision and handling the remainder with double precision.
 class NoncausalTimestampFilter {
  public:
-  NoncausalTimestampFilter(const Node *node) : node_(node) {}
+  NoncausalTimestampFilter(const Node *node_a, const Node *node_b)
+      : node_a_(node_a), node_b_(node_b) {}
   ~NoncausalTimestampFilter();
 
   // Returns the offset for the point in time, using the timestamps in the deque
@@ -412,7 +413,8 @@ class NoncausalTimestampFilter {
   // Writes any saved timestamps to file.
   void FlushSavedSamples();
 
-  const Node *node_;
+  const Node *const node_a_;
+  const Node *const node_b_;
 
   // Timestamp, offest, and then a boolean representing if this sample is frozen
   // and can't be modified or not.
@@ -447,7 +449,10 @@ class NoncausalTimestampFilter {
 class NoncausalOffsetEstimator {
  public:
   NoncausalOffsetEstimator(const Node *node_a, const Node *node_b)
-      : a_(node_a), b_(node_b), node_a_(node_a), node_b_(node_b) {}
+      : a_(node_a, node_b),
+        b_(node_b, node_a),
+        node_a_(node_a),
+        node_b_(node_b) {}
 
   NoncausalTimestampFilter *GetFilter(const Node *n) {
     if (n == node_a_) {

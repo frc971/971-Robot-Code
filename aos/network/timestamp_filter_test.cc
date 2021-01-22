@@ -78,9 +78,13 @@ TEST(ClippedAverageFilterTest, Sample) {
 
 class FilterTest : public ::testing::Test {
   public:
-   FlatbufferDetachedBuffer<Node> node_buffer =
-       JsonToFlatbuffer<Node>("{\"name\": \"test\"}");
-   const Node *node = &node_buffer.message();
+   FlatbufferDetachedBuffer<Node> node_a_buffer =
+       JsonToFlatbuffer<Node>("{\"name\": \"test_a\"}");
+   const Node *const node_a = &node_a_buffer.message();
+
+   FlatbufferDetachedBuffer<Node> node_b_buffer =
+       JsonToFlatbuffer<Node>("{\"name\": \"test_b\"}");
+   const Node *const node_b = &node_b_buffer.message();
 };
 
 using NoncausalTimestampFilterTest = FilterTest;
@@ -98,7 +102,7 @@ TEST_F(NoncausalTimestampFilterTest, PeekPop) {
 
   // Simple case, everything is done in order, nothing is dropped.
   {
-    NoncausalTimestampFilter filter(node);
+    NoncausalTimestampFilter filter(node_a, node_b);
 
     filter.Sample(ta, oa);
     filter.Sample(tb, ob);
@@ -115,7 +119,7 @@ TEST_F(NoncausalTimestampFilterTest, PeekPop) {
 
   // Now try again while dropping ta after popping it.
   {
-    NoncausalTimestampFilter filter(node);
+    NoncausalTimestampFilter filter(node_a, node_b);
 
     filter.Sample(ta, oa);
     filter.Sample(tb, ob);
@@ -135,7 +139,7 @@ TEST_F(NoncausalTimestampFilterTest, PeekPop) {
 
   // Now try again while dropping ta before popping it.
   {
-    NoncausalTimestampFilter filter(node);
+    NoncausalTimestampFilter filter(node_a, node_b);
 
     filter.Sample(ta, oa);
     filter.Sample(tb, ob);
@@ -159,7 +163,7 @@ TEST_F(NoncausalTimestampFilterTest, ClippedSample) {
 
   {
     // A positive slope of 1 ms/second is properly applied.
-    NoncausalTimestampFilter filter(node);
+    NoncausalTimestampFilter filter(node_a, node_b);
 
     filter.Sample(ta, chrono::microseconds(1));
     filter.Debug();
@@ -175,7 +179,7 @@ TEST_F(NoncausalTimestampFilterTest, ClippedSample) {
 
   {
     // A negative slope of 1 ms/second is properly applied.
-    NoncausalTimestampFilter filter(node);
+    NoncausalTimestampFilter filter(node_a, node_b);
 
     filter.Sample(ta, chrono::microseconds(1));
     filter.Debug();
@@ -191,7 +195,7 @@ TEST_F(NoncausalTimestampFilterTest, ClippedSample) {
 
   {
     // Too much negative is ignored.
-    NoncausalTimestampFilter filter(node);
+    NoncausalTimestampFilter filter(node_a, node_b);
 
     filter.Sample(ta, chrono::microseconds(1));
     filter.Debug();
@@ -202,7 +206,7 @@ TEST_F(NoncausalTimestampFilterTest, ClippedSample) {
 
   {
     // Too much positive pulls up the first point.
-    NoncausalTimestampFilter filter(node);
+    NoncausalTimestampFilter filter(node_a, node_b);
 
     filter.Sample(ta, chrono::microseconds(1));
     filter.Debug();
@@ -216,7 +220,7 @@ TEST_F(NoncausalTimestampFilterTest, ClippedSample) {
 
   {
     // Too much positive slope removes points.
-    NoncausalTimestampFilter filter(node);
+    NoncausalTimestampFilter filter(node_a, node_b);
 
     filter.Sample(ta, chrono::microseconds(1));
     filter.Debug();
@@ -243,7 +247,7 @@ TEST_F(NoncausalTimestampFilterTest, PointRemoval) {
   const monotonic_clock::time_point tc(chrono::milliseconds(2));
 
   // A positive slope of 1 ms/second is properly applied.
-  NoncausalTimestampFilter filter(node);
+  NoncausalTimestampFilter filter(node_a, node_b);
 
   filter.Sample(ta, chrono::microseconds(1));
   filter.Debug();
@@ -278,7 +282,7 @@ TEST_F(NoncausalTimestampFilterTest, DuplicatePoints) {
   const monotonic_clock::time_point tb(chrono::milliseconds(1));
   const chrono::nanoseconds ob(chrono::microseconds(2));
 
-  NoncausalTimestampFilter filter(node);
+  NoncausalTimestampFilter filter(node_a, node_b);
 
   filter.Sample(ta, oa);
   filter.Sample(tb, ob);
@@ -300,7 +304,7 @@ TEST_F(NoncausalTimestampFilterTest, BackwardsInTimeSimple) {
 
   const monotonic_clock::time_point tc(chrono::milliseconds(2));
   const chrono::nanoseconds oc(chrono::microseconds(1));
-  NoncausalTimestampFilter filter(node);
+  NoncausalTimestampFilter filter(node_a, node_b);
 
   filter.Sample(ta, oa);
   filter.Sample(tc, oc);
@@ -321,7 +325,7 @@ TEST_F(NoncausalTimestampFilterTest, BackwardsInTimeDuplicateNegative) {
 
   const monotonic_clock::time_point tb(chrono::milliseconds(1));
   const chrono::nanoseconds ob(chrono::microseconds(1));
-  NoncausalTimestampFilter filter(node);
+  NoncausalTimestampFilter filter(node_a, node_b);
 
   filter.Sample(ta, oa);
   filter.Sample(tb, ob);
@@ -341,7 +345,7 @@ TEST_F(NoncausalTimestampFilterTest, BackwardsInTimeDuplicatePositive) {
 
   const monotonic_clock::time_point tb(chrono::milliseconds(1));
   const chrono::nanoseconds ob(chrono::microseconds(1));
-  NoncausalTimestampFilter filter(node);
+  NoncausalTimestampFilter filter(node_a, node_b);
 
   filter.Sample(ta, oa);
   filter.Sample(tb, ob);
@@ -363,7 +367,7 @@ TEST_F(NoncausalTimestampFilterTest, BackwardsInTimeMiddleDuplicateNegative) {
 
   const monotonic_clock::time_point tc(chrono::milliseconds(2));
   const chrono::nanoseconds oc(chrono::microseconds(1));
-  NoncausalTimestampFilter filter(node);
+  NoncausalTimestampFilter filter(node_a, node_b);
 
   filter.Sample(ta, oa);
   filter.Sample(tb, ob);
@@ -387,7 +391,7 @@ TEST_F(NoncausalTimestampFilterTest, BackwardsInTimeMiddleDuplicatePositive) {
 
   const monotonic_clock::time_point tc(chrono::milliseconds(2));
   const chrono::nanoseconds oc(chrono::microseconds(1));
-  NoncausalTimestampFilter filter(node);
+  NoncausalTimestampFilter filter(node_a, node_b);
 
   filter.Sample(ta, oa);
   filter.Sample(tb, ob);
@@ -422,7 +426,7 @@ TEST_F(NoncausalTimestampFilterTest, RandomTimeInsertion) {
           std::array<chrono::nanoseconds, 4> o(
               {chrono::microseconds(i), chrono::microseconds(j),
                chrono::microseconds(k), chrono::microseconds(l)});
-          NoncausalTimestampFilter forward(node);
+          NoncausalTimestampFilter forward(node_a, node_b);
 
           VLOG(1) << "Sorting in order";
           forward.Sample(t[0], o[0]);
@@ -455,7 +459,7 @@ TEST_F(NoncausalTimestampFilterTest, RandomTimeInsertion) {
                        std::make_pair(t[indices[3]], o[indices[3]])});
 
             VLOG(1) << "Sorting randomized";
-            NoncausalTimestampFilter random(node);
+            NoncausalTimestampFilter random(node_a, node_b);
             random.Sample(pairs[0].first, pairs[0].second);
             if (VLOG_IS_ON(1)) {
               random.Debug();
@@ -512,7 +516,7 @@ TEST_F(NoncausalTimestampFilterTest, FrozenTimestamps) {
 
   // Test for our node.
   {
-    NoncausalTimestampFilter filter(node);
+    NoncausalTimestampFilter filter(node_a, node_b);
 
     filter.Sample(ta, oa);
     filter.Sample(tc, oc);
@@ -541,7 +545,7 @@ TEST_F(NoncausalTimestampFilterTest, FrozenTimestamps) {
   // Test that fully frozen doesn't apply when there is 1 time and we are before
   // the start.
   {
-    NoncausalTimestampFilter filter(node);
+    NoncausalTimestampFilter filter(node_a, node_b);
 
     filter.Sample(ta, oa);
 
@@ -558,7 +562,7 @@ TEST_F(NoncausalTimestampFilterTest, FrozenTimestamps) {
 
   // Test the remote node
   {
-    NoncausalTimestampFilter filter(node);
+    NoncausalTimestampFilter filter(node_a, node_b);
 
     filter.Sample(ta, oa);
     filter.Sample(tc, oc);
@@ -587,7 +591,7 @@ TEST_F(NoncausalTimestampFilterTest, FrozenTimestamps) {
   // Test that fully frozen doesn't apply when there is 1 time and we are before
   // the start on the remote node.
   {
-    NoncausalTimestampFilter filter(node);
+    NoncausalTimestampFilter filter(node_a, node_b);
 
     filter.Sample(ta, oa);
 
@@ -616,7 +620,7 @@ TEST_F(NoncausalTimestampFilterDeathTest, FrozenTimestamps) {
 
   {
     // Test that adding before a frozen sample explodes.
-    NoncausalTimestampFilter filter(node);
+    NoncausalTimestampFilter filter(node_a, node_b);
 
     filter.Sample(ta, oa);
     filter.Sample(tb, ob);
@@ -630,7 +634,7 @@ TEST_F(NoncausalTimestampFilterDeathTest, FrozenTimestamps) {
 
   {
     // Test that if we freeze it all after the end, we refuse any new samples.
-    NoncausalTimestampFilter filter(node);
+    NoncausalTimestampFilter filter(node_a, node_b);
 
     filter.Sample(ta, oa);
     filter.Sample(tb, ob);
@@ -645,7 +649,7 @@ TEST_F(NoncausalTimestampFilterDeathTest, FrozenTimestamps) {
 
   {
     // Test that if we freeze it all after the end, we refuse any new samples.
-    NoncausalTimestampFilter filter(node);
+    NoncausalTimestampFilter filter(node_a, node_b);
 
     filter.Sample(ta, oa);
     filter.Sample(tc, oc);
@@ -660,7 +664,7 @@ TEST_F(NoncausalTimestampFilterDeathTest, FrozenTimestamps) {
   {
     // Test that if we freeze, and a point in the middle triggers back
     // propagation, we refuse.
-    NoncausalTimestampFilter filter(node);
+    NoncausalTimestampFilter filter(node_a, node_b);
 
     filter.Sample(ta, oa);
     filter.Sample(tb, ob);
@@ -791,7 +795,7 @@ TEST_F(NoncausalTimestampFilterTest, FindTimestamps) {
   const monotonic_clock::time_point t3 = e + chrono::microseconds(2000);
   const chrono::nanoseconds o3 = chrono::nanoseconds(50);
 
-  NoncausalTimestampFilter filter(node);
+  NoncausalTimestampFilter filter(node_a, node_b);
 
   filter.Sample(t1, o1);
   filter.Sample(t2, o2);
@@ -866,7 +870,7 @@ TEST_F(NoncausalTimestampFilterTest, Offset) {
   const chrono::nanoseconds o3 = chrono::nanoseconds(50);
   const double o3d = static_cast<double>(o3.count());
 
-  NoncausalTimestampFilter filter(node);
+  NoncausalTimestampFilter filter(node_a, node_b);
 
   filter.Sample(t1, o1);
 
@@ -908,7 +912,7 @@ TEST_F(NoncausalTimestampFilterTest, CostAndSlopeSinglePoint) {
   const chrono::nanoseconds o1 =
       chrono::nanoseconds(1000) - chrono::seconds(10000000000);
 
-  NoncausalTimestampFilter filter(node);
+  NoncausalTimestampFilter filter(node_a, node_b);
 
   filter.Sample(t1, o1);
 
@@ -962,7 +966,7 @@ TEST_F(NoncausalTimestampFilterTest, CostAndSlope) {
   const chrono::nanoseconds o3 =
       chrono::nanoseconds(500) - chrono::seconds(10000000000);
 
-  NoncausalTimestampFilter filter(node);
+  NoncausalTimestampFilter filter(node_a, node_b);
 
   filter.Sample(t1, o1);
   filter.Sample(t2, o2);
