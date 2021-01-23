@@ -50,7 +50,9 @@ void AutonomousActor::Reset() {
     starting_position *= -1.0;
     starting_heading = aos::math::NormalizeAngle(starting_heading + M_PI);
   }
-  {
+  if (FLAGS_spline_auto) {
+    // TODO(james): Resetting the localizer breaks the left/right statespace
+    // controller.  That is a bug, but we can fix that later by not resetting.
     auto builder = localizer_control_sender_.MakeBuilder();
 
     LocalizerControl::Builder localizer_control_builder =
@@ -66,7 +68,7 @@ void AutonomousActor::Reset() {
 }
 
 bool AutonomousActor::RunAction(
-     const ::frc971::autonomous::AutonomousActionParams *params) {
+    const ::frc971::autonomous::AutonomousActionParams *params) {
   Reset();
   AOS_LOG(INFO, "Params are %d\n", params->mode());
   if (alliance_ == aos::Alliance::kInvalid) {
