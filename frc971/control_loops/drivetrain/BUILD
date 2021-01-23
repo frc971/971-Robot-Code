@@ -727,3 +727,13 @@ ts_library(
         "//frc971/wpilib:imu_plot_utils",
     ],
 )
+
+ts_library(
+    name = "robot_state_plotter",
+    srcs = ["robot_state_plotter.ts"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        "//aos/network/www:aos_plotter",
+        "//aos/network/www:proxy",
+    ],
+)
