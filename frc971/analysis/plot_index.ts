@@ -24,6 +24,8 @@ import * as configuration from 'org_frc971/aos/configuration_generated';
 import * as proxy from 'org_frc971/aos/network/www/proxy';
 import {plotImu} from 'org_frc971/frc971/wpilib/imu_plotter';
 import {plotDrivetrain} from 'org_frc971/frc971/control_loops/drivetrain/drivetrain_plotter';
+import {plotRobotState} from
+    'org_frc971/frc971/control_loops/drivetrain/robot_state_plotter'
 import {plotDemo} from 'org_frc971/aos/network/www/demo_plot';
 import {plotData} from 'org_frc971/frc971/analysis/plot_data_utils';
 
@@ -81,6 +83,7 @@ const plotIndex = new Map<string, PlotState>([
   ['Demo', new PlotState(plotDiv, plotDemo)],
   ['IMU', new PlotState(plotDiv, plotImu)],
   ['Drivetrain', new PlotState(plotDiv, plotDrivetrain)],
+  ['Robot State', new PlotState(plotDiv, plotRobotState)],
   ['C++ Plotter', new PlotState(plotDiv, plotData)],
 ]);
 

@@ -96,6 +96,7 @@ ts_library(
         "//aos/network/www:demo_plot",
         "//aos/network/www:proxy",
         "//frc971/control_loops/drivetrain:drivetrain_plotter",
+        "//frc971/control_loops/drivetrain:robot_state_plotter",
         "//frc971/wpilib:imu_plotter",
     ],
 )
