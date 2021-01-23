@@ -62,21 +62,25 @@ void DrivetrainMotorsSS::PolyCapU(Eigen::Matrix<double, 2, 1> *U) {
   const Eigen::Matrix<double, 7, 1> error = kf_->R() - kf_->X_hat();
 
   Eigen::Matrix<double, 2, 2> position_K;
-  position_K << kf_->controller().K(0, 0), kf_->controller().K(0, 2),
-      kf_->controller().K(1, 0), kf_->controller().K(1, 2);
+  position_K << kf_->controller().K(kLeftVoltage, kLeftPosition),
+      kf_->controller().K(kLeftVoltage, kRightPosition),
+      kf_->controller().K(kRightVoltage, kLeftPosition),
+      kf_->controller().K(kRightVoltage, kRightPosition);
   Eigen::Matrix<double, 2, 2> velocity_K;
-  velocity_K << kf_->controller().K(0, 1), kf_->controller().K(0, 3),
-      kf_->controller().K(1, 1), kf_->controller().K(1, 3);
+  velocity_K << kf_->controller().K(kLeftVoltage, kLeftVelocity),
+      kf_->controller().K(kLeftVoltage, kRightVelocity),
+      kf_->controller().K(kRightVoltage, kLeftVelocity),
+      kf_->controller().K(kRightVoltage, kRightVelocity);
 
   Eigen::Matrix<double, 2, 1> position_error;
-  position_error << error(0, 0), error(2, 0);
+  position_error << error(kLeftPosition), error(kRightPosition);
   // drive_error = [total_distance_error, left_error - right_error]
   const auto drive_error = T_inverse_ * position_error;
   Eigen::Matrix<double, 2, 1> velocity_error;
-  velocity_error << error(1, 0), error(3, 0);
+  velocity_error << error(kLeftVelocity), error(kRightVelocity);
 
   Eigen::Matrix<double, 2, 1> U_integral;
-  U_integral << kf_->X_hat(4, 0), kf_->X_hat(5, 0);
+  U_integral << kf_->X_hat(kLeftError), kf_->X_hat(kRightError);
 
   const ::aos::controls::HVPolytope<2, 4, 4> pos_poly_hv(
       U_poly_.static_H() * position_K * T_,
@@ -201,11 +205,11 @@ void DrivetrainMotorsSS::Update(bool enable_control_loop) {
         (gyro_to_wheel_offset - last_gyro_to_wheel_offset_) *
         dt_config_.robot_radius;
 
-    kf_->mutable_next_R().block<4, 1>(0, 0) =
+    kf_->mutable_next_R().block<4, 1>(kLeftPosition, 0) =
         dt_config_.AngularLinearToLeftRight(next_linear, next_angular);
 
-    kf_->mutable_next_R().block<3, 1>(4, 0) =
-        unprofiled_goal_.block<3, 1>(4, 0);
+    kf_->mutable_next_R().block<3, 1>(kLeftError, 0) =
+        unprofiled_goal_.block<3, 1>(kLeftError, 0);
 
     kf_->mutable_next_R(0, 0) -= wheel_compensation_offset;
     kf_->mutable_next_R(2, 0) += wheel_compensation_offset;
@@ -263,8 +267,8 @@ void DrivetrainMotorsSS::Update(bool enable_control_loop) {
 void DrivetrainMotorsSS::SetOutput(
     ::frc971::control_loops::drivetrain::OutputT *output) const {
   if (output) {
-    output->left_voltage = kf_->U(0, 0);
-    output->right_voltage = kf_->U(1, 0);
+    output->left_voltage = kf_->U(kLeftVoltage);
+    output->right_voltage = kf_->U(kRightVoltage);
     output->left_high = true;
     output->right_high = true;
   }
@@ -282,10 +286,14 @@ void DrivetrainMotorsSS::PopulateStatus(
   Eigen::Matrix<double, 4, 1> profiled_gyro_left_right =
       dt_config_.AngularLinearToLeftRight(profiled_linear, profiled_angular);
 
-  builder->add_profiled_left_position_goal(profiled_gyro_left_right(0, 0));
-  builder->add_profiled_left_velocity_goal(profiled_gyro_left_right(1, 0));
-  builder->add_profiled_right_position_goal(profiled_gyro_left_right(2, 0));
-  builder->add_profiled_right_velocity_goal(profiled_gyro_left_right(3, 0));
+  builder->add_profiled_left_position_goal(
+      profiled_gyro_left_right(kLeftPosition));
+  builder->add_profiled_left_velocity_goal(
+      profiled_gyro_left_right(kLeftVelocity));
+  builder->add_profiled_right_position_goal(
+      profiled_gyro_left_right(kRightPosition));
+  builder->add_profiled_right_velocity_goal(
+      profiled_gyro_left_right(kRightVelocity));
 }
 
 }  // namespace drivetrain

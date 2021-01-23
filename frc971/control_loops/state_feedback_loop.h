@@ -413,38 +413,38 @@ class StateFeedbackLoop {
   }
   Scalar X_hat(int i, int j = 0) const { return X_hat()(i, j); }
   const Eigen::Matrix<Scalar, number_of_states, 1> &R() const { return R_; }
-  Scalar R(int i, int j) const { return R()(i, j); }
+  Scalar R(int i, int j = 0) const { return R()(i, j); }
   const Eigen::Matrix<Scalar, number_of_states, 1> &next_R() const {
     return next_R_;
   }
-  Scalar next_R(int i, int j) const { return next_R()(i, j); }
+  Scalar next_R(int i, int j = 0) const { return next_R()(i, j); }
   const Eigen::Matrix<Scalar, number_of_inputs, 1> &U() const { return U_; }
-  Scalar U(int i, int j) const { return U()(i, j); }
+  Scalar U(int i, int j = 0) const { return U()(i, j); }
   const Eigen::Matrix<Scalar, number_of_inputs, 1> &U_uncapped() const {
     return U_uncapped_;
   }
-  Scalar U_uncapped(int i, int j) const { return U_uncapped()(i, j); }
+  Scalar U_uncapped(int i, int j = 0) const { return U_uncapped()(i, j); }
   const Eigen::Matrix<Scalar, number_of_inputs, 1> &ff_U() const {
     return ff_U_;
   }
-  Scalar ff_U(int i, int j) const { return ff_U()(i, j); }
+  Scalar ff_U(int i, int j = 0) const { return ff_U()(i, j); }
 
   Eigen::Matrix<Scalar, number_of_states, 1> &mutable_X_hat() {
     return observer_.mutable_X_hat();
   }
   Scalar &mutable_X_hat(int i, int j = 0) { return mutable_X_hat()(i, j); }
   Eigen::Matrix<Scalar, number_of_states, 1> &mutable_R() { return R_; }
-  Scalar &mutable_R(int i, int j) { return mutable_R()(i, j); }
+  Scalar &mutable_R(int i, int j = 0) { return mutable_R()(i, j); }
   Eigen::Matrix<Scalar, number_of_states, 1> &mutable_next_R() {
     return next_R_;
   }
-  Scalar &mutable_next_R(int i, int j) { return mutable_next_R()(i, j); }
+  Scalar &mutable_next_R(int i, int j = 0) { return mutable_next_R()(i, j); }
   Eigen::Matrix<Scalar, number_of_inputs, 1> &mutable_U() { return U_; }
-  Scalar &mutable_U(int i, int j) { return mutable_U()(i, j); }
+  Scalar &mutable_U(int i, int j = 0) { return mutable_U()(i, j); }
   Eigen::Matrix<Scalar, number_of_inputs, 1> &mutable_U_uncapped() {
     return U_uncapped_;
   }
-  Scalar &mutable_U_uncapped(int i, int j) {
+  Scalar &mutable_U_uncapped(int i, int j = 0) {
     return mutable_U_uncapped()(i, j);
   }
 

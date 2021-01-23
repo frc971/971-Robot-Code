@@ -301,7 +301,7 @@ void DrivetrainLoop::RunIteration(
     // currently unusable--either don't use voltage error at all for the spline
     // following code, or use the EKF's voltage error estimates.
     const Eigen::Matrix<double, 2, 1> voltage_error =
-        0 * kf_.X_hat().block<2, 1>(4, 0);
+        0 * kf_.X_hat().block<2, 1>(kLeftError, 0);
     dt_spline_.Update(
         output != nullptr && controller_type == ControllerType::SPLINE_FOLLOWER,
         trajectory_state, voltage_error);
@@ -369,24 +369,25 @@ void DrivetrainLoop::RunIteration(
 
     dt_closedloop_.PopulateStatus(&builder);
 
-    builder.add_estimated_left_position(gyro_left_right(0, 0));
-    builder.add_estimated_right_position(gyro_left_right(2, 0));
+    builder.add_estimated_left_position(gyro_left_right(kLeftPosition));
+    builder.add_estimated_right_position(gyro_left_right(kRightPosition));
 
-    builder.add_estimated_left_velocity(gyro_left_right(1, 0));
-    builder.add_estimated_right_velocity(gyro_left_right(3, 0));
+    builder.add_estimated_left_velocity(gyro_left_right(kLeftVelocity));
+    builder.add_estimated_right_velocity(gyro_left_right(kRightVelocity));
 
     if (dt_spline_.enable()) {
       dt_spline_.PopulateStatus(&builder);
     } else {
-      builder.add_robot_speed((kf_.X_hat(1) + kf_.X_hat(3)) / 2.0);
+      builder.add_robot_speed(
+          (kf_.X_hat(kLeftVelocity) + kf_.X_hat(kRightVelocity)) / 2.0);
       builder.add_output_was_capped(dt_closedloop_.output_was_capped());
-      builder.add_uncapped_left_voltage(kf_.U_uncapped(0, 0));
-      builder.add_uncapped_right_voltage(kf_.U_uncapped(1, 0));
+      builder.add_uncapped_left_voltage(kf_.U_uncapped(kLeftVoltage));
+      builder.add_uncapped_right_voltage(kf_.U_uncapped(kRightVoltage));
     }
 
-    builder.add_left_voltage_error(kf_.X_hat(4));
-    builder.add_right_voltage_error(kf_.X_hat(5));
-    builder.add_estimated_angular_velocity_error(kf_.X_hat(6));
+    builder.add_left_voltage_error(kf_.X_hat(kLeftError));
+    builder.add_right_voltage_error(kf_.X_hat(kRightError));
+    builder.add_estimated_angular_velocity_error(kf_.X_hat(kAngularError));
     builder.add_estimated_heading(localizer_->theta());
 
     builder.add_x(localizer_->x());
@@ -429,8 +430,8 @@ void DrivetrainLoop::RunIteration(
   last_last_left_voltage_ = last_left_voltage_;
   last_last_right_voltage_ = last_right_voltage_;
   Eigen::Matrix<double, 2, 1> U;
-  U(0, 0) = last_left_voltage_;
-  U(1, 0) = last_right_voltage_;
+  U(kLeftVoltage) = last_left_voltage_;
+  U(kRightVoltage) = last_right_voltage_;
   last_left_voltage_ = left_voltage;
   last_right_voltage_ = right_voltage;
 

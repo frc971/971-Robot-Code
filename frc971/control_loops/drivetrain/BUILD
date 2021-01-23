@@ -285,6 +285,7 @@ cc_library(
         ":drivetrain_config",
         ":drivetrain_goal_fbs",
         ":drivetrain_output_fbs",
+        ":drivetrain_states",
         ":drivetrain_status_fbs",
         ":gear",
         ":localizer",
@@ -315,6 +316,7 @@ cc_library(
     }),
     deps = [
         ":drivetrain_config",
+        ":drivetrain_states",
         ":gear",
         "//aos:math",
         "//aos/controls:polytope",
@@ -368,6 +370,11 @@ cc_library(
 )
 
 cc_library(
+    name = "drivetrain_states",
+    hdrs = ["drivetrain_states.h"],
+)
+
+cc_library(
     name = "drivetrain_lib",
     srcs = [
         "drivetrain.cc",
@@ -381,6 +388,7 @@ cc_library(
         ":drivetrain_goal_fbs",
         ":drivetrain_output_fbs",
         ":drivetrain_position_fbs",
+        ":drivetrain_states",
         ":drivetrain_status_fbs",
         ":gear",
         ":improved_down_estimator",

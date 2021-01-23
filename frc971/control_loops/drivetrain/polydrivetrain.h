@@ -20,6 +20,7 @@
 #include "frc971/control_loops/drivetrain/drivetrain_status_float_generated.h"
 #endif  // __linux__
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
+#include "frc971/control_loops/drivetrain/drivetrain_states.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 
 namespace frc971 {
@@ -294,8 +295,8 @@ Scalar PolyDrivetrain<Scalar>::MaxVelocity(
 template <typename Scalar>
 void PolyDrivetrain<Scalar>::Update(Scalar voltage_battery) {
   if (dt_config_.loop_type == LoopType::CLOSED_LOOP) {
-    loop_->mutable_X_hat()(0, 0) = kf_->X_hat()(1, 0);
-    loop_->mutable_X_hat()(1, 0) = kf_->X_hat()(3, 0);
+    loop_->mutable_X_hat()(0, 0) = kf_->X_hat()(kLeftVelocity);
+    loop_->mutable_X_hat()(1, 0) = kf_->X_hat()(kRightVelocity);
   }
 
   // TODO(austin): Observer for the current velocity instead of difference
