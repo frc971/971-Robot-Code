@@ -1070,16 +1070,8 @@ const Configuration *LogReader::configuration() const {
   return remapped_configuration_;
 }
 
-std::vector<const Node *> LogReader::Nodes() const {
-  // Because the Node pointer will only be valid if it actually points to
-  // memory owned by remapped_configuration_, we need to wait for the
-  // remapped_configuration_ to be populated before accessing it.
-  //
-  // Also, note, that when ever a map is changed, the nodes in here are
-  // invalidated.
-  CHECK(remapped_configuration_ != nullptr)
-      << ": Need to call Register before the node() pointer will be valid.";
-  return configuration::GetNodes(remapped_configuration_);
+std::vector<const Node *> LogReader::LoggedNodes() const {
+  return configuration::GetNodes(logged_configuration());
 }
 
 monotonic_clock::time_point LogReader::monotonic_start_time(

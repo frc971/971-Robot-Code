@@ -403,9 +403,8 @@ class LogReader {
   const Configuration *configuration() const;
 
   // Returns the nodes that this log file was created on.  This is a list of
-  // pointers to a node in the nodes() list inside configuration().  The
-  // pointers here are invalidated whenever RemapLoggedChannel is called.
-  std::vector<const Node *> Nodes() const;
+  // pointers to a node in the nodes() list inside logged_configuration().
+  std::vector<const Node *> LoggedNodes() const;
 
   // Returns the starting timestamp for the log file.
   monotonic_clock::time_point monotonic_start_time(
