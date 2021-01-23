@@ -13,6 +13,8 @@ namespace wpilib {
 class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler<
                              ::frc971::control_loops::drivetrain::Output> {
  public:
+  static constexpr double kMaxBringupPower = 12.0;
+
   DrivetrainWriter(::aos::EventLoop *event_loop)
       : ::frc971::wpilib::LoopOutputHandler<
             ::frc971::control_loops::drivetrain::Output>(event_loop,
@@ -44,7 +46,9 @@ class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler<
   void Stop() override;
 
   double SafeSpeed(bool reversed, double voltage) {
-    return (::aos::Clip((reversed ? -1.0 : 1.0) * voltage, -12.0, 12.0) / 12.0);
+    return (::aos::Clip((reversed ? -1.0 : 1.0) * voltage, -kMaxBringupPower,
+                        kMaxBringupPower) /
+            12.0);
   }
 
   ::std::unique_ptr<::frc::PWM> left_controller0_, right_controller0_,
