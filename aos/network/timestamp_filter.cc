@@ -599,7 +599,7 @@ double NoncausalTimestampFilter::InterpolateOffsetRemainder(
 chrono::nanoseconds NoncausalTimestampFilter::Offset(
     monotonic_clock::time_point ta) const {
   CHECK_GT(timestamps_size(), 0u);
-  if (timestamps_size() == 1u) {
+  if (timestamps_size() == 1u || ta < std::get<0>(timestamp(0))) {
     // Special case size = 1 since the interpolation functions don't need to
     // handle it and the answer is trivial.
     return NoncausalTimestampFilter::InterpolateOffset(timestamp(0), ta);
@@ -615,7 +615,7 @@ chrono::nanoseconds NoncausalTimestampFilter::Offset(
 std::pair<chrono::nanoseconds, double> NoncausalTimestampFilter::Offset(
     monotonic_clock::time_point ta_base, double ta) const {
   CHECK_GT(timestamps_size(), 0u);
-  if (timestamps_size() == 1u) {
+  if (timestamps_size() == 1u || ta_base < std::get<0>(timestamp(0))) {
     // Special case size = 1 since the interpolation functions don't need to
     // handle it and the answer is trivial.
     return std::make_pair(
@@ -687,12 +687,12 @@ double NoncausalTimestampFilter::DCostDta(
   // Go find our timestamps for the interpolation.
   // Rather than lookup timestamps a number of times, look them up here and
   // inline the implementation of OffsetError.
-  if (timestamps_size() == 1u) {
-    return -2.0 * OffsetError(ta_base, ta, tb_base, tb);
-  }
-
   NormalizeTimestamps(&ta_base, &ta);
   NormalizeTimestamps(&tb_base, &tb);
+
+  if (timestamps_size() == 1u || ta_base < std::get<0>(timestamp(0))) {
+    return -2.0 * OffsetError(ta_base, ta, tb_base, tb);
+  }
 
   std::pair<std::tuple<monotonic_clock::time_point, chrono::nanoseconds>,
             std::tuple<monotonic_clock::time_point, chrono::nanoseconds>>
@@ -723,13 +723,13 @@ std::string NoncausalTimestampFilter::DebugDCostDta(
     aos::monotonic_clock::time_point ta_base, double ta,
     aos::monotonic_clock::time_point tb_base, double tb, size_t node_a,
     size_t node_b) const {
-  if (timestamps_size() == 1u) {
+  NormalizeTimestamps(&ta_base, &ta);
+  NormalizeTimestamps(&tb_base, &tb);
+
+  if (timestamps_size() == 1u || ta_base < std::get<0>(timestamp(0))) {
     return absl::StrFormat("-2. * (t%d - t%d - %d)", node_b, node_a,
                            std::get<1>(timestamp(0)).count());
   }
-
-  NormalizeTimestamps(&ta_base, &ta);
-  NormalizeTimestamps(&tb_base, &tb);
 
   std::pair<std::tuple<monotonic_clock::time_point, chrono::nanoseconds>,
             std::tuple<monotonic_clock::time_point, chrono::nanoseconds>>
@@ -775,6 +775,7 @@ double NoncausalTimestampFilter::DCostDtb(
   //   d/dtb OffsetError(ta, tb) = 1
   //
   // d cost/dtb => 2 * OffsetError(ta, tb)
+  NormalizeTimestamps(&ta_base, &ta);
   return 2.0 * OffsetError(ta_base, ta, tb_base, tb);
 }
 
@@ -782,13 +783,13 @@ std::string NoncausalTimestampFilter::DebugDCostDtb(
     aos::monotonic_clock::time_point ta_base, double ta,
     aos::monotonic_clock::time_point tb_base, double tb, size_t node_a,
     size_t node_b) const {
-  if (timestamps_size() == 1u) {
+  NormalizeTimestamps(&ta_base, &ta);
+  NormalizeTimestamps(&tb_base, &tb);
+
+  if (timestamps_size() == 1u || ta_base < std::get<0>(timestamp(0))) {
     return absl::StrFormat("2. * (t%d - t%d - %d)", node_b, node_a,
                            std::get<1>(timestamp(0)).count());
   }
-
-  NormalizeTimestamps(&ta_base, &ta);
-  NormalizeTimestamps(&tb_base, &tb);
 
   std::pair<std::tuple<monotonic_clock::time_point, chrono::nanoseconds>,
             std::tuple<monotonic_clock::time_point, chrono::nanoseconds>>
@@ -823,13 +824,13 @@ std::string NoncausalTimestampFilter::DebugCost(
     aos::monotonic_clock::time_point ta_base, double ta,
     aos::monotonic_clock::time_point tb_base, double tb, size_t node_a,
     size_t node_b) const {
-  if (timestamps_size() == 1u) {
+  NormalizeTimestamps(&ta_base, &ta);
+  NormalizeTimestamps(&tb_base, &tb);
+
+  if (timestamps_size() == 1u || ta_base < std::get<0>(timestamp(0))) {
     return absl::StrFormat("(t%d - t%d - %d) ** 2.", node_b, node_a,
                            std::get<1>(timestamp(0)).count());
   }
-
-  NormalizeTimestamps(&ta_base, &ta);
-  NormalizeTimestamps(&tb_base, &tb);
 
   std::pair<std::tuple<monotonic_clock::time_point, chrono::nanoseconds>,
             std::tuple<monotonic_clock::time_point, chrono::nanoseconds>>
@@ -864,7 +865,7 @@ bool NoncausalTimestampFilter::ValidateSolution(
     aos::monotonic_clock::time_point ta,
     aos::monotonic_clock::time_point tb) const {
   CHECK_GT(timestamps_size(), 0u);
-  if (timestamps_size() == 1u) {
+  if (timestamps_size() == 1u || ta < std::get<0>(timestamp(0))) {
     // Special case size = 1 since the interpolation functions don't need to
     // handle it and the answer is trivial.
     const chrono::nanoseconds offset =
