@@ -7,7 +7,7 @@
       "source_node": "pi{{ NUM }}",
       "frequency": 50,
       "num_senders": 20,
-      "max_size": 2048
+      "max_size": 4096
     },
     {
       "name": "/pi{{ NUM }}/aos",
@@ -15,6 +15,20 @@
       "source_node": "pi{{ NUM }}",
       "frequency": 200,
       "num_senders": 20
+    },
+    {
+      "name": "/pi{{ NUM }}/aos",
+      "type": "aos.starter.Status",
+      "source_node": "pi{{ NUM }}",
+      "frequency": 50,
+      "num_senders": 20
+    },
+    {
+      "name": "/pi{{ NUM }}/aos",
+      "type": "aos.starter.StarterRpc",
+      "source_node": "pi{{ NUM }}",
+      "frequency": 10,
+      "num_senders": 2
     },
     {
       "name": "/pi{{ NUM }}/aos",

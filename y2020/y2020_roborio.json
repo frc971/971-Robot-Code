@@ -19,7 +19,7 @@
       "source_node": "roborio",
       "frequency": 50,
       "num_senders": 20,
-      "max_size": 2048
+      "max_size": 4096
     },
     {
       "name": "/roborio/aos",
@@ -27,6 +27,20 @@
       "source_node": "roborio",
       "frequency": 400,
       "num_senders": 20
+    },
+    {
+      "name": "/roborio/aos",
+      "type": "aos.starter.Status",
+      "source_node": "roborio",
+      "frequency": 50,
+      "num_senders": 20
+    },
+    {
+      "name": "/roborio/aos",
+      "type": "aos.starter.StarterRpc",
+      "source_node": "roborio",
+      "frequency": 10,
+      "num_senders": 2
     },
     {
       "name": "/roborio/aos",

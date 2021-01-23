@@ -106,7 +106,7 @@
       "source_node": "laptop",
       "frequency": 50,
       "num_senders": 20,
-      "max_size": 2048
+      "max_size": 4096
     },
     {
       "name": "/laptop/aos",
