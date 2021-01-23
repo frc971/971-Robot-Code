@@ -54,7 +54,7 @@ std::string Sha256(const absl::Span<const uint8_t> str) {
 
 std::string LogFileVectorToString(std::vector<LogFile> log_files) {
   std::stringstream ss;
-  for (const auto f : log_files) {
+  for (const auto &f : log_files) {
     ss << f << "\n";
   }
   return ss.str();
@@ -970,7 +970,10 @@ LogReader::LogReader(std::vector<LogFile> log_files,
     // Validate that we have the same config everwhere.  This will be true if
     // all the parts were sorted together and the configs match.
     const Configuration *config = nullptr;
-    for (const LogFile &log_file : log_files) {
+    for (const LogFile &log_file : log_files_) {
+      if (log_file.config.get() == nullptr) {
+        LOG(FATAL) << "Couldn't find a config in " << log_file;
+      }
       if (config == nullptr) {
         config = log_file.config.get();
       } else {
