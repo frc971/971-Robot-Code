@@ -72,6 +72,10 @@ void DrivetrainMotorsSS::PolyCapU(Eigen::Matrix<double, 2, 1> *U) {
       kf_->controller().K(kRightVoltage, kLeftVelocity),
       kf_->controller().K(kRightVoltage, kRightVelocity);
 
+  Eigen::Matrix<double, 2, 2> error_K;
+  error_K << kf_->controller().K(kLeftVoltage, kLeftError), 0.0, 0.0,
+      kf_->controller().K(kRightVoltage, kRightError);
+
   Eigen::Matrix<double, 2, 1> position_error;
   position_error << error(kLeftPosition), error(kRightPosition);
   // drive_error = [total_distance_error, left_error - right_error]
@@ -79,8 +83,9 @@ void DrivetrainMotorsSS::PolyCapU(Eigen::Matrix<double, 2, 1> *U) {
   Eigen::Matrix<double, 2, 1> velocity_error;
   velocity_error << error(kLeftVelocity), error(kRightVelocity);
 
-  Eigen::Matrix<double, 2, 1> U_integral;
-  U_integral << kf_->X_hat(kLeftError), kf_->X_hat(kRightError);
+  Eigen::Matrix<double, 2, 1> U_integral =
+      error_K * Eigen::Matrix<double, 2, 1>(kf_->X_hat(kLeftError),
+                                            kf_->X_hat(kRightError));
 
   const ::aos::controls::HVPolytope<2, 4, 4> pos_poly_hv(
       U_poly_.static_H() * position_K * T_,
