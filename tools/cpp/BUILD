@@ -2,6 +2,17 @@ load(":toolchain_config.bzl", "cc_toolchain_config")
 
 package(default_visibility = ["//visibility:public"])
 
+cc_toolchain_suite(
+    name = "toolchain",
+    toolchains = {
+        "k8": ":cc-compiler-k8",
+        "armhf-debian": ":cc-compiler-armhf-debian",
+        "roborio": ":cc-compiler-roborio",
+        "cortex-m4f": ":cc-compiler-cortex-m4f",
+    },
+    visibility = ["//visibility:public"],
+)
+
 [
     cc_toolchain_config(
         name = "{}_toolchain_config".format(cpu),

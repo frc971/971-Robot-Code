@@ -1,0 +1,26 @@
+# https://docs.bazel.build/versions/master/platforms-intro.html#platform-mappings
+platforms:
+  //tools/platforms:linux_x86
+    --cpu=k8
+
+  //tools/platforms:linux_roborio
+    --cpu=roborio
+
+  //tools/platforms:linux_armhf
+    --cpu=armhf-debian
+
+  //tools/platforms:cortex_m4f
+    --cpu=cortex-m4f
+
+flags:
+  --cpu=k8
+    //tools/platforms:linux_x86
+
+  --cpu=roborio
+    //tools/platforms:linux_roborio
+
+  --cpu=armhf-debian
+    //tools/platforms:linux_armhf
+
+  --cpu=cortex-m4f
+    //tools/platforms:cortex_m4f
