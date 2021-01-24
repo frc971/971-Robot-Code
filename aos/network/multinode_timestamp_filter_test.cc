@@ -233,9 +233,10 @@ TEST(TimestampProblemTest, Solve) {
       mpq_class tb_mpq =
           SolveExact(FitLine(a), FitLine(b), problem.base_clock(0));
 
-      EXPECT_EQ(tb_mpq.get_d(), result[0])
+      EXPECT_NEAR(tb_mpq.get_d(), result[0], 1e-6)
           << std::setprecision(12) << std::fixed << " Expected "
-          << tb_mpq.get_d() << " " << tb_mpq << " got " << result[0];
+          << tb_mpq.get_d() << " " << tb_mpq << " got " << result[0]
+          << " difference of " << tb_mpq.get_d() - result[0];
     }
   }
 }
