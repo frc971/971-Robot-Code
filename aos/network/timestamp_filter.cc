@@ -499,6 +499,7 @@ void NoncausalTimestampFilter::FlushSavedSamples() {
                 (std::get<0>(sample) + std::get<1>(sample)).time_since_epoch())
                 .count());
   }
+  fflush(samples_fp_);
   saved_samples_.clear();
 }
 
@@ -520,6 +521,7 @@ std::pair<std::tuple<monotonic_clock::time_point, chrono::nanoseconds>,
 NoncausalTimestampFilter::FindTimestamps(monotonic_clock::time_point ta) const {
   CHECK_GT(timestamps_size(), 1u);
   // Linear search until this is proven to be a measurable slowdown.
+  // If ta is outside our timestamp range, return the closest pair
   size_t index = 0;
   while (index < timestamps_size() - 2u) {
     if (std::get<0>(timestamp(index + 1)) > ta) {
@@ -528,6 +530,36 @@ NoncausalTimestampFilter::FindTimestamps(monotonic_clock::time_point ta) const {
     ++index;
   }
   return std::make_pair(timestamp(index), timestamp(index + 1));
+}
+
+chrono::nanoseconds NoncausalTimestampFilter::ExtrapolateOffset(
+    std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> p0,
+    monotonic_clock::time_point ta) {
+  const chrono::nanoseconds dt = ta - std::get<0>(p0);
+  if (dt <= std::chrono::nanoseconds(0)) {
+    // Extrapolate backwards, using the (positive) MaxVelocity slope
+    // We've been asked to extrapolate the offset to a time before our first
+    // sample point.  To be conservative, we'll return an extrapolated
+    // offset that is less than (less tight an estimate of the network delay)
+    // than our sample offset, bound by the max slew velocity we allow
+    //       p0
+    //      /
+    //     /
+    //   ta
+    // Since dt < 0, we shift by dt * slope to get that value
+    return std::get<1>(p0) +
+           chrono::duration_cast<chrono::nanoseconds>(dt * kMaxVelocity());
+  } else {
+    // Extrapolate forwards, using the (negative) MaxVelocity slope
+    // Same concept, except going foward past our last (most recent) sample:
+    //       pN
+    //         |
+    //          |
+    //           ta
+    // Since dt > 0, we shift by - dt * slope to get that value
+    return std::get<1>(p0) -
+           chrono::duration_cast<chrono::nanoseconds>(dt * kMaxVelocity());
+  }
 }
 
 chrono::nanoseconds NoncausalTimestampFilter::InterpolateOffset(
@@ -596,13 +628,78 @@ double NoncausalTimestampFilter::InterpolateOffsetRemainder(
          (std::get<1>(p1) - std::get<1>(p0)).count();
 }
 
+chrono::nanoseconds NoncausalTimestampFilter::ExtrapolateOffset(
+    std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> p0,
+    monotonic_clock::time_point /*ta_base*/, double /*ta*/) {
+  // For this version, use the base offset from p0 as the base for the offset
+  return std::get<1>(p0);
+}
+
+double NoncausalTimestampFilter::ExtrapolateOffsetRemainder(
+    std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> p0,
+    monotonic_clock::time_point ta_base, double ta) {
+  // Compute the remainder portion of this offset
+  // oa = p0.o +/- ((ta + ta_base) - p0.t)) * kMaxVelocity()
+  //               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  // But compute (ta + ta_base - p0.t) as (ta + (ta_base - p0.t))
+  // to handle numerical precision
+  const chrono::nanoseconds time_in = ta_base - std::get<0>(p0);
+  const double dt = static_cast<double>(ta + time_in.count());
+  if (dt < 0.0) {
+    // Extrapolate backwards with max (positive) slope (which means
+    // the returned offset should be negative)
+    return dt * kMaxVelocity();
+  } else {
+    // Extrapolate forwards with max (negative) slope
+    return -dt * kMaxVelocity();
+  }
+}
+
+bool NoncausalTimestampFilter::IsOutsideSamples(
+    monotonic_clock::time_point ta_base, double ta) const {
+  DCHECK_GE(ta, 0.0);
+  DCHECK_LT(ta, 1.0);
+  if (timestamps_size() == 1u || ta_base < std::get<0>(timestamp(0)) ||
+      ta_base >= std::get<0>(timestamp(timestamps_size() - 1u))) {
+    return true;
+  }
+
+  return false;
+}
+
+bool NoncausalTimestampFilter::IsAfterSamples(
+    monotonic_clock::time_point ta_base, double ta) const {
+  DCHECK_GE(ta, 0.0);
+  DCHECK_LT(ta, 1.0);
+  if (ta_base >= std::get<0>(timestamp(timestamps_size() - 1u))) {
+    return true;
+  }
+
+  return false;
+}
+
+std::tuple<monotonic_clock::time_point, chrono::nanoseconds>
+NoncausalTimestampFilter::GetReferenceTimestamp(
+    monotonic_clock::time_point ta_base, double ta) const {
+  DCHECK_GE(ta, 0.0);
+  DCHECK_LT(ta, 1.0);
+  std::tuple<monotonic_clock::time_point, chrono::nanoseconds>
+      reference_timestamp = timestamp(0);
+  if (ta_base >= std::get<0>(timestamp(timestamps_size() - 1u))) {
+    reference_timestamp = timestamp(timestamps_size() - 1u);
+  }
+
+  return reference_timestamp;
+}
+
 chrono::nanoseconds NoncausalTimestampFilter::Offset(
     monotonic_clock::time_point ta) const {
   CHECK_GT(timestamps_size(), 0u);
-  if (timestamps_size() == 1u || ta < std::get<0>(timestamp(0))) {
-    // Special case size = 1 since the interpolation functions don't need to
-    // handle it and the answer is trivial.
-    return NoncausalTimestampFilter::InterpolateOffset(timestamp(0), ta);
+  if (IsOutsideSamples(ta, 0.)) {
+    // Special case when size = 1 or if we're asked to extrapolate to
+    // times before or after we have data.
+    auto reference_timestamp = GetReferenceTimestamp(ta, 0.);
+    return NoncausalTimestampFilter::ExtrapolateOffset(reference_timestamp, ta);
   }
 
   std::pair<std::tuple<monotonic_clock::time_point, chrono::nanoseconds>,
@@ -615,12 +712,14 @@ chrono::nanoseconds NoncausalTimestampFilter::Offset(
 std::pair<chrono::nanoseconds, double> NoncausalTimestampFilter::Offset(
     monotonic_clock::time_point ta_base, double ta) const {
   CHECK_GT(timestamps_size(), 0u);
-  if (timestamps_size() == 1u || ta_base < std::get<0>(timestamp(0))) {
-    // Special case size = 1 since the interpolation functions don't need to
-    // handle it and the answer is trivial.
-    return std::make_pair(
-        NoncausalTimestampFilter::InterpolateOffset(timestamp(0), ta_base, ta),
-        0.0);
+  if (IsOutsideSamples(ta_base, ta)) {
+    // Special case size = 1 or ta_base before first timestamp or
+    // after last timesteamp, so we need to extrapolate out
+    auto reference_timestamp = GetReferenceTimestamp(ta_base, ta);
+    return std::make_pair(NoncausalTimestampFilter::ExtrapolateOffset(
+                              reference_timestamp, ta_base, ta),
+                          NoncausalTimestampFilter::ExtrapolateOffsetRemainder(
+                              reference_timestamp, ta_base, ta));
   }
 
   std::pair<std::tuple<monotonic_clock::time_point, chrono::nanoseconds>,
@@ -680,7 +779,7 @@ double NoncausalTimestampFilter::DCostDta(
   // We don't actually want to compute tb - (1 + ma) ta for numerical precision
   // reasons.  The important digits are small compared to the offset.  Given our
   // original cost above, this is equivalent to:
-  //   2 * (tb - ta - Offset(ta)) * (-(1 + ma))
+  //   - 2 * (tb - ta - Offset(ta)) * (1 + ma)
   //
   // We can compute this a lot more accurately.
 
@@ -690,8 +789,20 @@ double NoncausalTimestampFilter::DCostDta(
   NormalizeTimestamps(&ta_base, &ta);
   NormalizeTimestamps(&tb_base, &tb);
 
-  if (timestamps_size() == 1u || ta_base < std::get<0>(timestamp(0))) {
-    return -2.0 * OffsetError(ta_base, ta, tb_base, tb);
+  if (IsOutsideSamples(ta_base, ta)) {
+    double slope = kMaxVelocity();
+    if (IsAfterSamples(ta_base, ta)) {
+      // If we're past the last sample point, use a negative slope
+      slope = -kMaxVelocity();
+    }
+    // This implements the high precision version of the above equation:
+    //   - 2 * (tb - ta - Offset(ta)) * (1 + ma)
+    //      = -2 * OffsetError(ta,tb) * (1 + ma)
+    // Where for extrapolated data, we have to extrapolate for Offset(ta)
+    // and use +/- kMaxVelocity() for ma
+    // (slope is positive if timepoint is before our first sample, and
+    //   negative if the point is after our last sample)
+    return -2.0 * OffsetError(ta_base, ta, tb_base, tb) * (1.0 + slope);
   }
 
   std::pair<std::tuple<monotonic_clock::time_point, chrono::nanoseconds>,
@@ -708,6 +819,8 @@ double NoncausalTimestampFilter::DCostDta(
   //
   //   (tb - ta - Offset(ta)) ->
   //      (tb_base - ta_base - OffsetBase + tb - ta - OffsetRemainder)
+  // NOTE: We don't use OffsetError function here, in order to avoid
+  // extra calls to FindTimestamps
   return -2.0 *
          (static_cast<double>((tb_base - ta_base -
                                NoncausalTimestampFilter::InterpolateOffset(
@@ -726,9 +839,21 @@ std::string NoncausalTimestampFilter::DebugDCostDta(
   NormalizeTimestamps(&ta_base, &ta);
   NormalizeTimestamps(&tb_base, &tb);
 
-  if (timestamps_size() == 1u || ta_base < std::get<0>(timestamp(0))) {
-    return absl::StrFormat("-2. * (t%d - t%d - %d)", node_b, node_a,
-                           std::get<1>(timestamp(0)).count());
+  if (IsOutsideSamples(ta_base, ta)) {
+    auto reference_timestamp = GetReferenceTimestamp(ta_base, ta);
+    double slope = kMaxVelocity();
+    std::string note = "_";
+    if (IsAfterSamples(ta_base, ta)) {
+      slope = -kMaxVelocity();
+      note = "^";
+    }
+    // d cost / dta ==>
+    // - 2 * (tb - ta - (ta - ref) * ma - ref_offset) * (1 + ma)
+    return absl::StrFormat(
+        "-2. * (t%d - t%d - ((t%d - %d) * %f - %d.) * (1 + %f.)%s", node_b,
+        node_a, node_a,
+        std::get<0>(reference_timestamp).time_since_epoch().count(), slope,
+        std::get<1>(reference_timestamp).count(), slope, note);
   }
 
   std::pair<std::tuple<monotonic_clock::time_point, chrono::nanoseconds>,
@@ -786,9 +911,20 @@ std::string NoncausalTimestampFilter::DebugDCostDtb(
   NormalizeTimestamps(&ta_base, &ta);
   NormalizeTimestamps(&tb_base, &tb);
 
-  if (timestamps_size() == 1u || ta_base < std::get<0>(timestamp(0))) {
-    return absl::StrFormat("2. * (t%d - t%d - %d)", node_b, node_a,
-                           std::get<1>(timestamp(0)).count());
+  if (IsOutsideSamples(ta_base, ta)) {
+    auto reference_timestamp = GetReferenceTimestamp(ta_base, ta);
+    double slope = kMaxVelocity();
+    std::string note = "_";
+    if (IsAfterSamples(ta_base, ta)) {
+      slope = -kMaxVelocity();
+      note = "^";
+    }
+    // d cost / dtb ==> 2 * OffsetError(ta, tb) ==>
+    // 2 * (tb - ta - (ta - ref) * ma - ref_offset)
+    return absl::StrFormat(
+        "2. * (t%d - t%d - ((t%d - %d) * %f + %d)%s", node_b, node_a, node_a,
+        std::get<0>(reference_timestamp).time_since_epoch().count(), slope,
+        std::get<1>(reference_timestamp).count(), note);
   }
 
   std::pair<std::tuple<monotonic_clock::time_point, chrono::nanoseconds>,
@@ -800,7 +936,7 @@ std::string NoncausalTimestampFilter::DebugDCostDtb(
   // ie
   //   ((tb - (1 + ma) ta - ba)^2
   //
-  // d cost/dta =>
+  // d cost/dtb => 2 * OffsetError(ta, tb) ==>
   //   2 * ((tb - (1 + ma) ta - ba)
 
   const int64_t rise =
@@ -827,9 +963,20 @@ std::string NoncausalTimestampFilter::DebugCost(
   NormalizeTimestamps(&ta_base, &ta);
   NormalizeTimestamps(&tb_base, &tb);
 
-  if (timestamps_size() == 1u || ta_base < std::get<0>(timestamp(0))) {
-    return absl::StrFormat("(t%d - t%d - %d) ** 2.", node_b, node_a,
-                           std::get<1>(timestamp(0)).count());
+  if (IsOutsideSamples(ta_base, ta)) {
+    auto reference_timestamp = GetReferenceTimestamp(ta_base, ta);
+    double slope = kMaxVelocity();
+    std::string note = "_";
+    if (IsAfterSamples(ta_base, ta)) {
+      slope = -kMaxVelocity();
+      note = "^";
+    }
+    // Cost = OffsetError(ta, tb) ** 2 = (tb - ta - Offset(ta, tb)) ** 2 ==>
+    // (tb - ta - ((ta - ref) * ma - ref_offset)
+    return absl::StrFormat(
+        "(t%d - t%d - (t%d - %d.) * %f - %d.)%s ** 2.", node_b, node_a, node_a,
+        std::get<0>(reference_timestamp).time_since_epoch().count(), slope,
+        std::get<1>(reference_timestamp).count(), note);
   }
 
   std::pair<std::tuple<monotonic_clock::time_point, chrono::nanoseconds>,
@@ -865,11 +1012,14 @@ bool NoncausalTimestampFilter::ValidateSolution(
     aos::monotonic_clock::time_point ta,
     aos::monotonic_clock::time_point tb) const {
   CHECK_GT(timestamps_size(), 0u);
-  if (timestamps_size() == 1u || ta < std::get<0>(timestamp(0))) {
-    // Special case size = 1 since the interpolation functions don't need to
-    // handle it and the answer is trivial.
+  if (IsOutsideSamples(ta, 0.)) {
+    // Special case size = 1 or ta_base before first timestamp or
+    // after last timestamp, so we need to extrapolate out
+    auto reference_timestamp = GetReferenceTimestamp(ta, 0.);
+
+    // Special case size = 1 or ta before first timestamp, so we extrapolate
     const chrono::nanoseconds offset =
-        NoncausalTimestampFilter::InterpolateOffset(timestamp(0), ta);
+        NoncausalTimestampFilter::ExtrapolateOffset(reference_timestamp, ta);
     if (offset + ta > tb) {
       LOG(ERROR) << node_a_->name()->string_view() << " -> "
                  << node_b_->name()->string_view() << " "
@@ -1271,6 +1421,7 @@ void NoncausalTimestampFilter::MaybeWriteTimestamp(
             std::chrono::duration_cast<std::chrono::duration<double>>(
                 std::get<1>(timestamp))
                 .count());
+    fflush(fp_);
   }
 }
 

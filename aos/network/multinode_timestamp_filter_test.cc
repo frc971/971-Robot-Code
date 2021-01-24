@@ -180,7 +180,7 @@ TEST(TimestampProblemTest, Solve) {
   problem.add_filter(0, &a, 1);
   problem.add_filter(1, &b, 0);
 
-  // Solve the problem with infinate precision as a verification and compare the
+  // Solve the problem with infinite precision as a verification and compare the
   // result.
   {
     const std::vector<double> result = problem.SolveDouble();

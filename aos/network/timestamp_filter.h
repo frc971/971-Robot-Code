@@ -14,6 +14,9 @@
 namespace aos {
 namespace message_bridge {
 
+// TODO<jim>: Should do something to help with precision, like make it an
+// integer and divide by the value (e.g., / 1000)
+
 // Max velocity to clamp the filter to in seconds/second.
 inline constexpr double kMaxVelocity() { return 0.001; }
 
@@ -239,6 +242,16 @@ class NoncausalTimestampFilter {
       : node_a_(node_a), node_b_(node_b) {}
   ~NoncausalTimestampFilter();
 
+  // Check whether the given timestamp falls within our current samples
+  bool IsOutsideSamples(monotonic_clock::time_point ta_base,
+                        double ta) const;
+
+  // Check whether the given timestamp lies after our current samples
+  bool IsAfterSamples(monotonic_clock::time_point ta_base, double ta) const;
+
+  std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>
+  GetReferenceTimestamp(monotonic_clock::time_point ta_base, double ta) const;
+
   // Returns the offset for the point in time, using the timestamps in the deque
   // to form a polyline used to interpolate.
   std::chrono::nanoseconds Offset(monotonic_clock::time_point ta) const;
@@ -380,26 +393,27 @@ class NoncausalTimestampFilter {
       std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> p1,
       monotonic_clock::time_point ta);
 
-  static std::chrono::nanoseconds InterpolateOffset(
+  static std::chrono::nanoseconds ExtrapolateOffset(
       std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> p0,
-      monotonic_clock::time_point /*ta*/) {
-    return std::get<1>(p0);
-  }
+      monotonic_clock::time_point ta);
 
   static std::chrono::nanoseconds InterpolateOffset(
       std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> p0,
       std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> p1,
       monotonic_clock::time_point ta_base, double ta);
+
   static double InterpolateOffsetRemainder(
       std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> /*p0*/,
       std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> /*p1*/,
       monotonic_clock::time_point ta_base, double ta);
 
-  static std::chrono::nanoseconds InterpolateOffset(
+  static std::chrono::nanoseconds ExtrapolateOffset(
       std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> p0,
-      monotonic_clock::time_point /*ta_base*/, double /*ta*/) {
-    return std::get<1>(p0);
-  }
+      monotonic_clock::time_point /*ta_base*/, double /*ta*/);
+
+  static double ExtrapolateOffsetRemainder(
+      std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> p0,
+      monotonic_clock::time_point ta_base, double ta);
 
  private:
   // Removes the oldest timestamp.
