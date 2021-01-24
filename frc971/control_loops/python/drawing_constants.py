@@ -60,6 +60,91 @@ def display_text(cr, text, widtha, heighta, widthb, heightb):
     cr.scale(widthb, -heightb)
 
 
+def draw_at_home_grid(cr):
+    field = np.zeros(shape=(5, 11), dtype=bool)
+    # field[row from bottom][column from left]
+
+    if GALACTIC_SEARCH in FIELD.tags:
+        # Galactic search start zone
+        field[1][0] = True
+        field[3][0] = True
+
+        # Galactic search end zone
+        field[1][10] = True
+        field[3][10] = True
+
+        if ARED in FIELD.tags:
+            field[4][5] = True
+            field[2][2] = True
+            field[1][4] = True
+        elif ABLUE in FIELD.tags:
+            field[0][5] = True
+            field[3][6] = True
+            field[2][8] = True
+        elif BRED in FIELD.tags:
+            field[3][2] = True
+            field[1][4] = True
+            field[3][6] = True
+        elif BBLUE in FIELD.tags:
+            field[1][5] = True
+            field[3][7] = True
+            field[1][9] = True
+    elif AUTONAV in FIELD.tags:
+        # start/end zone
+        field[1][0] = True
+        field[1][1] = True
+        field[3][0] = True
+        field[3][1] = True
+
+        if BAREL in FIELD.tags:
+            # barrels
+            field[1][4] = True
+            field[3][8] = True
+            field[1][10] = True
+        if BARREL in FIELD.tags:
+            field[1][3:8] = True  # 3 to 7 inclusive
+            field[1][9] = True
+        if BOUNCE in FIELD.tags:
+            # turn on two rows
+            field[1][:11] = True
+            field[3][:11] = True
+
+            # turn off parts of rows
+            field[3][2] = False
+            field[3][5] = False
+            field[3][8] = False
+
+            field[1][3] = False
+            field[1][5] = False
+            field[1][8] = False
+
+            # markers to hit
+            field[4][2] = True
+            field[4][5] = True
+            field[4][8] = True
+
+    # Move origin to bottom left
+    xorigin = -mToPx(FIELD.width) / 2.0
+    yorigin = -mToPx(FIELD.length) / 2.0
+
+    color = palette["BLACK"]
+    # markers are at least 6.35 x 6.35 cm
+    marker_length = mToPx(0.0635)
+
+    for row, row_array in enumerate(field):
+        for column, has_marker in enumerate(row_array):
+            one_indexed_row = row + 1
+            one_indexed_column = column + 1
+
+            # 76.2 cm increments
+            pos_y = one_indexed_row * mToPx(0.762)
+            pos_x = one_indexed_column * mToPx(0.762)
+
+            if has_marker:
+                draw_px_x(cr, xorigin + pos_x, yorigin + pos_y, marker_length,
+                          color)
+
+
 def markers(cr):
     SHOW_MARKERS = False
     if SHOW_MARKERS:
@@ -111,9 +196,9 @@ def markers(cr):
 
 def draw_init_lines(cr):
     set_color(cr, palette["RED"])
-    init_line_x = WIDTH_OF_FIELD_IN_METERS / 2.0 - inToM(120)
-    init_start_y = -LENGTH_OF_FIELD_IN_METERS / 2.0
-    init_end_y = LENGTH_OF_FIELD_IN_METERS / 2.0
+    init_line_x = FIELD.width / 2.0 - inToM(120)
+    init_start_y = -FIELD.length / 2.0
+    init_end_y = FIELD.length / 2.0
     cr.move_to(mToPx(init_line_x), mToPx(init_start_y))
     cr.line_to(mToPx(init_line_x), mToPx(init_end_y))
 
@@ -124,7 +209,7 @@ def draw_init_lines(cr):
 
 
 def draw_trench_run(cr):
-    edge_of_field_y = LENGTH_OF_FIELD_IN_METERS / 2.0
+    edge_of_field_y = FIELD.length / 2.0
     edge_of_trench_y = edge_of_field_y - inToM(55.5)
     trench_start_x = inToM(-108.0)
     trench_length_x = inToM(216.0)
@@ -133,7 +218,7 @@ def draw_trench_run(cr):
     ball_two_x = -inToM(36)
     ball_three_x = 0.0
     # The fourth/fifth balls are referenced off of the init line...
-    ball_fourfive_x = WIDTH_OF_FIELD_IN_METERS / 2.0 - inToM(120.0 + 130.36)
+    ball_fourfive_x = FIELD.width / 2.0 - inToM(120.0 + 130.36)
 
     for sign in [1.0, -1.0]:
         set_color(cr, palette["GREEN"])
@@ -167,9 +252,9 @@ def draw_shield_generator(cr):
 
 def draw_control_panel(cr):  # Base plates are not included
     set_color(cr, palette["LIGHT_GREY"])
-    edge_of_field_y = LENGTH_OF_FIELD_IN_METERS / 2.0
+    edge_of_field_y = FIELD.length / 2.0
     edge_of_trench_y = edge_of_field_y - inToM(55.5)
-    high_x = inToM(374.59) - WIDTH_OF_FIELD_IN_METERS / 2.0
+    high_x = inToM(374.59) - FIELD.width / 2.0
     low_x = high_x - inToM(30)
     for sign in [1.0, -1.0]:
         # Bottom Control Panel
