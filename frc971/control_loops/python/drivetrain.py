@@ -46,19 +46,20 @@ class DrivetrainParams(object):
           G_high: float, Gear ratio for high gear.
           G_low: float, Gear ratio for low gear.
           dt: float, Control loop time step.
-          q_pos: float, q position for a single speed.
-          q_pos_low: float, q position low gear.
-          q_pos_high: float, q position high gear.
-          q_vel: float, q velocity for a single speed
-          q_vel_low: float, q velocity low gear.
-          q_vel_high: float, q velocity high gear.
+          q_pos: float, q position for a single speed LQR controller.
+          q_pos_low: float, q position low gear LQR controller.
+          q_pos_high: float, q position high gear LQR controller.
+          q_vel: float, q velocity for a single speed LQR controller.
+          q_vel_low: float, q velocity low gear LQR controller.
+          q_vel_high: float, q velocity high gear LQR controller.
           efficiency: float, gear box effiency.
           has_imu: bool, true if imu is present.
           force: bool, true if force.
           kf_q_voltage: float
           motor_type: object, class of values defining the motor in drivetrain.
           num_motors: int, number of motors on one side of drivetrain.
-          controller_poles: array, An array of poles. (See control_loop.py)
+          controller_poles: array, An array of poles for the polydrivetrain
+            controller. (See control_loop.py)
           observer_poles: array, An array of poles. (See control_loop.py)
           robot_cg_offset: offset in meters of CG from robot center to left side
         """
@@ -249,7 +250,12 @@ class Drivetrain(control_loop.ControlLoop):
         self.K = controls.dlqr(self.A, self.B, self.Q, self.R)
 
         glog.debug('DT q_pos %f q_vel %s %s', q_pos, q_vel, self._name)
-        glog.debug(str(numpy.linalg.eig(self.A - self.B * self.K)[0]))
+        glog.debug('Poles: %s', str(numpy.linalg.eig(self.A - self.B * self.K)[0]))
+        glog.debug('Time constants: %s hz',
+                   str([
+                       numpy.log(x) / -self.dt
+                       for x in numpy.linalg.eig(self.A - self.B * self.K)[0]
+                   ]))
         glog.debug('K %s', repr(self.K))
 
         self.hlp = 0.3
@@ -526,8 +532,35 @@ def WriteDrivetrain(drivetrain_files,
 
 
 def PlotDrivetrainMotions(drivetrain_params):
+    # Test out the voltage error.
+    drivetrain = KFDrivetrain(
+        left_low=False, right_low=False, drivetrain_params=drivetrain_params)
+    close_loop_left = []
+    close_loop_right = []
+    left_power = []
+    right_power = []
+    R = numpy.matrix([[0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]])
+    for _ in xrange(300):
+        U = numpy.clip(drivetrain.K * (R - drivetrain.X_hat), drivetrain.U_min,
+                       drivetrain.U_max)
+        drivetrain.UpdateObserver(U)
+        drivetrain.Update(U + numpy.matrix([[1.0], [1.0]]))
+        close_loop_left.append(drivetrain.X[0, 0])
+        close_loop_right.append(drivetrain.X[2, 0])
+        left_power.append(U[0, 0])
+        right_power.append(U[1, 0])
+
+    t = [drivetrain.dt * x for x in range(300)]
+    pylab.plot(t, close_loop_left, label='left position')
+    pylab.plot(t, close_loop_right, 'm--', label='right position')
+    pylab.plot(t, left_power, label='left power')
+    pylab.plot(t, right_power, '--', label='right power')
+    pylab.suptitle('Voltage error')
+    pylab.legend()
+    pylab.show()
+
     # Simulate the response of the system to a step input.
-    drivetrain = Drivetrain(
+    drivetrain = KFDrivetrain(
         left_low=False, right_low=False, drivetrain_params=drivetrain_params)
     simulated_left = []
     simulated_right = []
@@ -544,13 +577,13 @@ def PlotDrivetrainMotions(drivetrain_params):
     pylab.show()
 
     # Simulate forwards motion.
-    drivetrain = Drivetrain(
+    drivetrain = KFDrivetrain(
         left_low=False, right_low=False, drivetrain_params=drivetrain_params)
     close_loop_left = []
     close_loop_right = []
     left_power = []
     right_power = []
-    R = numpy.matrix([[1.0], [0.0], [1.0], [0.0]])
+    R = numpy.matrix([[1.0], [0.0], [1.0], [0.0], [0.0], [0.0], [0.0]])
     for _ in xrange(300):
         U = numpy.clip(drivetrain.K * (R - drivetrain.X_hat), drivetrain.U_min,
                        drivetrain.U_max)
@@ -561,19 +594,20 @@ def PlotDrivetrainMotions(drivetrain_params):
         left_power.append(U[0, 0])
         right_power.append(U[1, 0])
 
-    pylab.plot(range(300), close_loop_left, label='left position')
-    pylab.plot(range(300), close_loop_right, 'm--', label='right position')
-    pylab.plot(range(300), left_power, label='left power')
-    pylab.plot(range(300), right_power, '--', label='right power')
+    t = [drivetrain.dt * x for x in range(300)]
+    pylab.plot(t, close_loop_left, label='left position')
+    pylab.plot(t, close_loop_right, 'm--', label='right position')
+    pylab.plot(t, left_power, label='left power')
+    pylab.plot(t, right_power, '--', label='right power')
     pylab.suptitle('Linear Move\nLeft and Right Position going to 1')
     pylab.legend()
     pylab.show()
 
     # Try turning in place
-    drivetrain = Drivetrain(drivetrain_params=drivetrain_params)
+    drivetrain = KFDrivetrain(drivetrain_params=drivetrain_params)
     close_loop_left = []
     close_loop_right = []
-    R = numpy.matrix([[-1.0], [0.0], [1.0], [0.0]])
+    R = numpy.matrix([[-1.0], [0.0], [1.0], [0.0], [0.0], [0.0], [0.0]])
     for _ in xrange(200):
         U = numpy.clip(drivetrain.K * (R - drivetrain.X_hat), drivetrain.U_min,
                        drivetrain.U_max)
@@ -590,10 +624,10 @@ def PlotDrivetrainMotions(drivetrain_params):
     pylab.show()
 
     # Try turning just one side.
-    drivetrain = Drivetrain(drivetrain_params=drivetrain_params)
+    drivetrain = KFDrivetrain(drivetrain_params=drivetrain_params)
     close_loop_left = []
     close_loop_right = []
-    R = numpy.matrix([[0.0], [0.0], [1.0], [0.0]])
+    R = numpy.matrix([[0.0], [0.0], [1.0], [0.0], [0.0], [0.0], [0.0]])
     for _ in xrange(300):
         U = numpy.clip(drivetrain.K * (R - drivetrain.X_hat), drivetrain.U_min,
                        drivetrain.U_max)
