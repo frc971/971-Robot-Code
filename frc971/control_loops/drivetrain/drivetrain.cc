@@ -300,8 +300,12 @@ void DrivetrainLoop::RunIteration(
     // TODO(james): The regular Kalman Filter's voltage error terms are
     // currently unusable--either don't use voltage error at all for the spline
     // following code, or use the EKF's voltage error estimates.
+    static_assert(kLeftError + 1 == kRightError);
+    Eigen::Matrix<double, 2, 2> error_K;
+    error_K << kf_.controller().K(kLeftVoltage, kLeftError), 0.0, 0.0,
+        kf_.controller().K(kRightVoltage, kRightError);
     const Eigen::Matrix<double, 2, 1> voltage_error =
-        0 * kf_.X_hat().block<2, 1>(kLeftError, 0);
+        0 * error_K * kf_.X_hat().block<2, 1>(kLeftError, 0);
     dt_spline_.Update(
         output != nullptr && controller_type == ControllerType::SPLINE_FOLLOWER,
         trajectory_state, voltage_error);
