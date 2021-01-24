@@ -30,6 +30,11 @@ bool SendCommandBlocking(aos::starter::Command, std::string_view name,
 const aos::FlatbufferDetachedBuffer<aos::starter::ApplicationStatus> GetStatus(
     std::string_view name, const aos::Configuration *config);
 
+// Fetches the entire status message of starter. Creates a temporary event loop
+// from the provided config for fetching.
+const aos::FlatbufferVector<aos::starter::Status> GetStarterStatus(
+    const aos::Configuration *config);
+
 }  // namespace starter
 }  // namespace aos
 
