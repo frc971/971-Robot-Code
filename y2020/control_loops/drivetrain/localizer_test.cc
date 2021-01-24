@@ -436,7 +436,7 @@ TEST_F(LocalizedDrivetrainTest, NoCameraUpdateStraightLine) {
   VerifyNearGoal();
   // Due to accelerometer drift, the straight-line driving tends to be less
   // accurate...
-  EXPECT_TRUE(VerifyEstimatorAccurate(0.1));
+  EXPECT_TRUE(VerifyEstimatorAccurate(0.15));
 }
 
 // Tests that camera updates with a perfect models results in no errors.
@@ -537,7 +537,7 @@ TEST_F(LocalizedDrivetrainTest, TooFastTurret) {
   // If we remove the disturbance, we should now be correct.
   drivetrain_plant_.mutable_state()->topRows(3) -= disturbance;
   VerifyNearGoal(5e-3);
-  EXPECT_TRUE(VerifyEstimatorAccurate(1e-3));
+  EXPECT_TRUE(VerifyEstimatorAccurate(2e-3));
 }
 
 // Tests that we don't reject camera measurements when the turret is spinning

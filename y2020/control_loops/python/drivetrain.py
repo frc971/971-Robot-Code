@@ -14,18 +14,18 @@ gflags.DEFINE_bool('plot', False, 'If true, plot the loop response.')
 
 kDrivetrain = drivetrain.DrivetrainParams(
     J=6.0,
-    mass=68.0,
+    mass=58.0,
     # TODO(austin): Measure radius a bit better.
     robot_radius=0.7 / 2.0,
     wheel_radius=6.0 * 0.0254 / 2.0,
     motor_type=control_loop.Falcon(),
     G=(8.0 / 70.0) * (17.0 / 24.0),
-    q_pos=0.14,
-    q_vel=1.30,
+    q_pos=0.24,
+    q_vel=2.5,
     efficiency=0.80,
     has_imu=True,
     force=True,
-    kf_q_voltage=13.0,
+    kf_q_voltage=1.0,
     controller_poles=[0.82, 0.82])
 
 
