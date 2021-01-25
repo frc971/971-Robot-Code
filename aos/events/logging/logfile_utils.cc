@@ -708,15 +708,7 @@ void NodeMerger::PopFront() {
 
 TimestampMapper::TimestampMapper(std::vector<LogParts> parts)
     : node_merger_(std::move(parts)),
-      message_{.channel_index = 0xffffffff,
-               .queue_index = 0xffffffff,
-               .monotonic_event_time = monotonic_clock::min_time,
-               .realtime_event_time = realtime_clock::min_time,
-               .remote_queue_index = 0xffffffff,
-               .monotonic_remote_time = monotonic_clock::min_time,
-               .realtime_remote_time = realtime_clock::min_time,
-               .monotonic_timestamp_time = monotonic_clock::min_time,
-               .data = SizePrefixedFlatbufferVector<MessageHeader>::Empty()} {
+      timestamp_callback_([](TimestampedMessage *) {}) {
   for (const LogParts *part : node_merger_.Parts()) {
     if (!configuration_) {
       configuration_ = part->config;
@@ -774,8 +766,8 @@ void TimestampMapper::AddPeer(TimestampMapper *timestamp_mapper) {
   }
 }
 
-void TimestampMapper::FillMessage(Message *m) {
-  message_ = {
+void TimestampMapper::QueueMessage(Message *m) {
+  matched_messages_.emplace_back(TimestampedMessage{
       .channel_index = m->channel_index,
       .queue_index = m->queue_index,
       .monotonic_event_time = m->timestamp,
@@ -785,7 +777,7 @@ void TimestampMapper::FillMessage(Message *m) {
       .monotonic_remote_time = monotonic_clock::min_time,
       .realtime_remote_time = realtime_clock::min_time,
       .monotonic_timestamp_time = monotonic_clock::min_time,
-      .data = std::move(m->data)};
+      .data = std::move(m->data)});
 }
 
 TimestampedMessage *TimestampMapper::Front() {
@@ -794,27 +786,40 @@ TimestampedMessage *TimestampMapper::Front() {
     case FirstMessage::kNeedsUpdate:
       break;
     case FirstMessage::kInMessage:
-      return &message_;
+      return &matched_messages_.front();
     case FirstMessage::kNullptr:
       return nullptr;
   }
 
+  if (matched_messages_.empty()) {
+    if (!QueueMatched()) {
+      first_message_ = FirstMessage::kNullptr;
+      return nullptr;
+    }
+  }
+  first_message_ = FirstMessage::kInMessage;
+  return &matched_messages_.front();
+}
+
+bool TimestampMapper::QueueMatched() {
   if (nodes_data_.empty()) {
     // Simple path.  We are single node, so there are no timestamps to match!
     CHECK_EQ(messages_.size(), 0u);
     Message *m = node_merger_.Front();
     if (!m) {
-      first_message_ = FirstMessage::kNullptr;
-      return nullptr;
+      return false;
     }
-    // Fill in message_ so we have a place to associate remote timestamps, and
-    // return it.
-    FillMessage(m);
+    // Enqueue this message into matched_messages_ so we have a place to
+    // associate remote timestamps, and return it.
+    QueueMessage(m);
 
-    CHECK_GE(message_.monotonic_event_time, last_message_time_);
-    last_message_time_ = message_.monotonic_event_time;
-    first_message_ = FirstMessage::kInMessage;
-    return &message_;
+    CHECK_GE(matched_messages_.back().monotonic_event_time, last_message_time_);
+    last_message_time_ = matched_messages_.back().monotonic_event_time;
+
+    // We are thin wrapper around node_merger.  Call it directly.
+    node_merger_.PopFront();
+    timestamp_callback_(&matched_messages_.back());
+    return true;
   }
 
   // We need to only add messages to the list so they get processed for messages
@@ -823,8 +828,7 @@ TimestampedMessage *TimestampMapper::Front() {
   if (messages_.empty()) {
     if (!Queue()) {
       // Found nothing to add, we are out of data!
-      first_message_ = FirstMessage::kNullptr;
-      return nullptr;
+      return false;
     }
 
     // Now that it has been added (and cannibalized), forget about it upstream.
@@ -835,18 +839,19 @@ TimestampedMessage *TimestampMapper::Front() {
 
   if (source_node_[m->channel_index] == node()) {
     // From us, just forward it on, filling the remote data in as invalid.
-    FillMessage(m);
-    CHECK_GE(message_.monotonic_event_time, last_message_time_);
-    last_message_time_ = message_.monotonic_event_time;
-    first_message_ = FirstMessage::kInMessage;
-    return &message_;
+    QueueMessage(m);
+    CHECK_GE(matched_messages_.back().monotonic_event_time, last_message_time_);
+    last_message_time_ = matched_messages_.back().monotonic_event_time;
+    messages_.pop_front();
+    timestamp_callback_(&matched_messages_.back());
+    return true;
   } else {
     // Got a timestamp, find the matching remote data, match it, and return it.
     Message data = MatchingMessageFor(*m);
 
     // Return the data from the remote.  The local message only has timestamp
     // info which isn't relevant anymore once extracted.
-    message_ = {
+    matched_messages_.emplace_back(TimestampedMessage{
         .channel_index = m->channel_index,
         .queue_index = m->queue_index,
         .monotonic_event_time = m->timestamp,
@@ -861,11 +866,21 @@ TimestampedMessage *TimestampMapper::Front() {
         .monotonic_timestamp_time =
             monotonic_clock::time_point(std::chrono::nanoseconds(
                 m->data.message().monotonic_timestamp_time())),
-        .data = std::move(data.data)};
-    CHECK_GE(message_.monotonic_event_time, last_message_time_);
-    last_message_time_ = message_.monotonic_event_time;
-    first_message_ = FirstMessage::kInMessage;
-    return &message_;
+        .data = std::move(data.data)});
+    CHECK_GE(matched_messages_.back().monotonic_event_time, last_message_time_);
+    last_message_time_ = matched_messages_.back().monotonic_event_time;
+    // Since messages_ holds the data, drop it.
+    messages_.pop_front();
+    timestamp_callback_(&matched_messages_.back());
+    return true;
+  }
+}
+
+void TimestampMapper::QueueUntil(monotonic_clock::time_point queue_time) {
+  while (last_message_time_ <= queue_time) {
+    if (!QueueMatched()) {
+      return;
+    }
   }
 }
 
@@ -873,13 +888,7 @@ void TimestampMapper::PopFront() {
   CHECK(first_message_ != FirstMessage::kNeedsUpdate);
   first_message_ = FirstMessage::kNeedsUpdate;
 
-  if (nodes_data_.empty()) {
-    // We are thin wrapper around node_merger.  Call it directly.
-    node_merger_.PopFront();
-  } else {
-    // Since messages_ holds the data, drop it.
-    messages_.pop_front();
-  }
+  matched_messages_.pop_front();
 }
 
 Message TimestampMapper::MatchingMessageFor(const Message &message) {
@@ -913,7 +922,7 @@ Message TimestampMapper::MatchingMessageFor(const Message &message) {
   std::deque<Message> *data_queue =
       &peer->nodes_data_[node()].channels[message.channel_index].messages;
 
-  peer->QueueUntil(monotonic_remote_time);
+  peer->QueueUnmatchedUntil(monotonic_remote_time);
 
   if (data_queue->empty()) {
     return Message{
@@ -981,7 +990,7 @@ Message TimestampMapper::MatchingMessageFor(const Message &message) {
   }
 }
 
-void TimestampMapper::QueueUntil(monotonic_clock::time_point t) {
+void TimestampMapper::QueueUnmatchedUntil(monotonic_clock::time_point t) {
   if (queued_until_ > t) {
     return;
   }
