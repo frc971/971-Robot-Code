@@ -2105,10 +2105,10 @@ monotonic_clock::time_point LogReader::State::OldestMessageTime() const {
 
 void LogReader::State::SeedSortedMessages() {
   if (!timestamp_mapper_) return;
-  const aos::monotonic_clock::time_point end_queue_time =
-      (sorted_messages_.size() > 0
-           ? std::get<0>(sorted_messages_.front()).monotonic_event_time
-           : timestamp_mapper_->monotonic_start_time()) +
+  aos::monotonic_clock::time_point end_queue_time =
+      (sorted_messages_.empty()
+           ? timestamp_mapper_->monotonic_start_time()
+           : std::get<0>(sorted_messages_.front()).monotonic_event_time) +
       chrono::duration_cast<chrono::seconds>(
           chrono::duration<double>(FLAGS_time_estimation_buffer_seconds));
 
@@ -2117,14 +2117,26 @@ void LogReader::State::SeedSortedMessages() {
     if (m == nullptr) {
       return;
     }
-    if (sorted_messages_.size() > 0) {
+    if (!sorted_messages_.empty()) {
       // Stop placing sorted messages on the list once we have
       // --time_estimation_buffer_seconds seconds queued up (but queue at least
-      // until the log starts.
+      // until the log starts).  Only break if the queue isn't empty to make
+      // sure something is always queued.
       if (end_queue_time <
           std::get<0>(sorted_messages_.back()).monotonic_event_time) {
         return;
       }
+    } else {
+      // If we were empty, there's a chance the start time was
+      // monotonic_clock::min_time if the log file had no idea of the start.  In
+      // that case, we want to queue --time_estimation_buffer_seconds from the
+      // first message.  The most conservative thing to do is to take the max of
+      // that duration and the one computed using the start time.
+      end_queue_time = std::max(
+          end_queue_time,
+          m->monotonic_event_time +
+              chrono::duration_cast<chrono::seconds>(chrono::duration<double>(
+                  FLAGS_time_estimation_buffer_seconds)));
     }
 
     message_bridge::NoncausalOffsetEstimator *filter = nullptr;
