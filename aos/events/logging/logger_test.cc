@@ -1965,6 +1965,8 @@ TEST_F(MultinodeLoggerTest, DeadNode) {
   ConfirmReadable(pi1_single_direction_logfiles_);
 }
 
+// TODO(austin): Make a log file where the remote node has no start time.
+
 }  // namespace testing
 }  // namespace logger
 }  // namespace aos
