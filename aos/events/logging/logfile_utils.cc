@@ -884,6 +884,30 @@ void TimestampMapper::QueueUntil(monotonic_clock::time_point queue_time) {
   }
 }
 
+void TimestampMapper::QueueFor(chrono::nanoseconds time_estimation_buffer) {
+  // Make sure we have something queued first.  This makes the end time
+  // calculation simpler, and is typically what folks want regardless.
+  if (matched_messages_.empty()) {
+    if (!QueueMatched()) {
+      return;
+    }
+  }
+
+  const aos::monotonic_clock::time_point end_queue_time =
+      std::max(monotonic_start_time(),
+               matched_messages_.front().monotonic_event_time) +
+      time_estimation_buffer;
+
+  // Place sorted messages on the list until we have
+  // --time_estimation_buffer_seconds seconds queued up (but queue at least
+  // until the log starts).
+  while (end_queue_time >= last_message_time_) {
+    if (!QueueMatched()) {
+      return;
+    }
+  }
+}
+
 void TimestampMapper::PopFront() {
   CHECK(first_message_ != FirstMessage::kNeedsUpdate);
   first_message_ = FirstMessage::kNeedsUpdate;

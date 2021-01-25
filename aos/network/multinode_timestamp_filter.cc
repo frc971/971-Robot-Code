@@ -571,6 +571,67 @@ MultiNodeNoncausalOffsetEstimator::GetFilter(const Node *node_a,
   }
 }
 
+void MultiNodeNoncausalOffsetEstimator::SetTimestampMappers(
+    std::vector<logger::TimestampMapper *> timestamp_mappers) {
+  CHECK_EQ(timestamp_mappers.size(), NodesCount());
+  filters_per_channel_.resize(timestamp_mappers.size());
+
+  // Pre-build all the filters.  Why not?
+  for (const Node *node : configuration::GetNodes(logged_configuration())) {
+    const size_t node_index =
+        configuration::GetNodeIndex(configuration(), node);
+    filters_per_channel_[node_index].resize(
+        logged_configuration()->channels()->size(), nullptr);
+    for (size_t channel_index = 0;
+         channel_index < logged_configuration()->channels()->size();
+         ++channel_index) {
+      const Channel *channel =
+          logged_configuration()->channels()->Get(channel_index);
+
+      if (!configuration::ChannelIsSendableOnNode(channel, node) &&
+          configuration::ChannelIsReadableOnNode(channel, node)) {
+        // We've got a message which is being forwarded to this node.
+        const Node *source_node = configuration::GetNode(
+            configuration(), channel->source_node()->string_view());
+        filters_per_channel_[node_index][channel_index] =
+            GetFilter(configuration()->nodes()->Get(node_index), source_node);
+      }
+    }
+  }
+
+  size_t node_index = 0;
+  for (logger::TimestampMapper *timestamp_mapper : timestamp_mappers) {
+    if (timestamp_mapper != nullptr) {
+      CHECK_EQ(timestamp_mapper->sorted_until(), monotonic_clock::min_time)
+          << ": Timestamps queued before we registered the timestamp hooks.";
+      timestamp_mapper->set_timestamp_callback(
+          [this, node_index](logger::TimestampedMessage *msg) {
+            if (msg->monotonic_remote_time != monotonic_clock::min_time) {
+              // Got a forwarding timestamp!
+              NoncausalOffsetEstimator *filter =
+                  filters_per_channel_[node_index][msg->channel_index];
+              CHECK_NOTNULL(filter);
+              const Node *node = configuration()->nodes()->Get(node_index);
+
+              // Call the correct method depending on if we are the forward or
+              // reverse direction here.
+              filter->Sample(node, msg->monotonic_event_time,
+                             msg->monotonic_remote_time);
+
+              if (msg->monotonic_timestamp_time != monotonic_clock::min_time) {
+                // TODO(austin): This assumes that this timestamp is only logged
+                // on the node which sent the data.  That is correct for now,
+                // but should be explicitly checked somewhere.
+                filter->ReverseSample(node, msg->monotonic_event_time,
+                                      msg->monotonic_timestamp_time);
+              }
+            }
+          });
+    }
+    ++node_index;
+  }
+}
+
 TimeComparison CompareTimes(const std::vector<monotonic_clock::time_point> &ta,
                             const std::vector<monotonic_clock::time_point> &tb,
                             bool ignore_min_time) {

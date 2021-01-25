@@ -546,6 +546,8 @@ class LogReader {
     // Connects up the timestamp mappers.
     void AddPeer(State *peer);
 
+    TimestampMapper *timestamp_mapper() { return timestamp_mapper_.get(); }
+
     // Returns the next sorted message with all the timestamps extracted and
     // matched.
     TimestampedMessage PopOldest();
@@ -647,36 +649,15 @@ class LogReader {
 
     // Returns a debug string for the channel merger.
     std::string DebugString() const {
-      std::stringstream messages;
-      size_t i = 0;
-      for (const auto &message : sorted_messages_) {
-        if (i < 7 || i + 7 > sorted_messages_.size()) {
-          messages << "sorted_messages[" << i
-                   << "]: " << std::get<0>(message).monotonic_event_time << " "
-                   << configuration::StrippedChannelToString(
-                          event_loop_->configuration()->channels()->Get(
-                              std::get<0>(message).channel_index))
-                   << (std::get<0>(message).data.span().size() == 0 ? " null"
-                                                                    : " data")
-                   << "\n";
-        } else if (i == 7) {
-          messages << "...\n";
-        }
-        ++i;
-      }
       if (!timestamp_mapper_) {
-        return messages.str();
+        return "";
       }
-      return messages.str() + timestamp_mapper_->DebugString();
+      return timestamp_mapper_->DebugString();
     }
 
    private:
     // Log file.
     std::unique_ptr<TimestampMapper> timestamp_mapper_;
-
-    std::deque<std::tuple<TimestampedMessage,
-                          message_bridge::NoncausalOffsetEstimator *>>
-        sorted_messages_;
 
     // Senders.
     std::vector<std::unique_ptr<RawSender>> channels_;

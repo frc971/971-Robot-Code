@@ -517,6 +517,8 @@ class TimestampMapper {
 
   // Queues data the provided time.
   void QueueUntil(monotonic_clock::time_point queue_time);
+  // Queues until we have time_estimation_buffer of data in the queue.
+  void QueueFor(std::chrono::nanoseconds time_estimation_buffer);
 
   // Sets a callback to be called whenever a full message is queued.
   void set_timestamp_callback(std::function<void(TimestampedMessage *)> fn) {

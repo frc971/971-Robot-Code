@@ -473,6 +473,7 @@ cc_library(
         ":timestamp_filter",
         "//aos:configuration",
         "//aos/events:simulated_event_loop",
+        "//aos/events/logging:logfile_utils",
         "//aos/time",
         "@com_github_stevengj_nlopt//:nlopt",
         "@org_tuxfamily_eigen//:eigen",

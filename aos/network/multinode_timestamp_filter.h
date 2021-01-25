@@ -7,6 +7,7 @@
 
 #include "Eigen/Dense"
 #include "aos/configuration.h"
+#include "aos/events/logging/logfile_utils.h"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/network/timestamp_filter.h"
 #include "aos/time/time.h"
@@ -297,6 +298,11 @@ class MultiNodeNoncausalOffsetEstimator final
 
   ~MultiNodeNoncausalOffsetEstimator() override;
 
+  // Sets the timestamp mappers for all the nodes.  This registers the timestamp
+  // callback to add elements to the filters.
+  void SetTimestampMappers(
+      std::vector<logger::TimestampMapper *> timestamp_mappers);
+
   std::optional<std::tuple<distributed_clock::time_point,
                            std::vector<monotonic_clock::time_point>>>
   NextTimestamp() override;
@@ -359,6 +365,9 @@ class MultiNodeNoncausalOffsetEstimator final
 
   distributed_clock::time_point last_distributed_ = distributed_clock::epoch();
   std::vector<aos::monotonic_clock::time_point> last_monotonics_;
+
+  // A mapping from node and channel to the relevant estimator.
+  std::vector<std::vector<NoncausalOffsetEstimator *>> filters_per_channel_;
 
   bool first_solution_ = true;
   bool all_done_ = false;
