@@ -447,7 +447,6 @@ class NoncausalTimestampFilter {
       std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>>
       saved_samples_;
 
-  std::string csv_file_name_;
   FILE *fp_ = nullptr;
   FILE *samples_fp_ = nullptr;
 
