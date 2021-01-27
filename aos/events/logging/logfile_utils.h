@@ -520,6 +520,19 @@ class TimestampMapper {
   // Queues until we have time_estimation_buffer of data in the queue.
   void QueueFor(std::chrono::nanoseconds time_estimation_buffer);
 
+  // Queues until the condition is met.
+  template <typename T>
+  void QueueUntilCondition(T fn) {
+    while (true) {
+      if (fn()) {
+        break;
+      }
+      if (!QueueMatched()) {
+        break;
+      }
+    }
+  }
+
   // Sets a callback to be called whenever a full message is queued.
   void set_timestamp_callback(std::function<void(TimestampedMessage *)> fn) {
     timestamp_callback_ = fn;

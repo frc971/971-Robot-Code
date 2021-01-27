@@ -239,13 +239,13 @@ class InterpolatedTimeConverter : public TimeConverter {
   // unknown.
   bool have_popped_ = false;
 
+ protected:
   // The amount of time to buffer when estimating.  We care so we don't throw
   // data out of our queue too soon.  This time is indicative of how much to
   // buffer everywhere, so let's latch onto it as well until proven that there
   // is a different metric.
   const std::chrono::nanoseconds time_estimation_buffer_seconds_;
 
- protected:
   // If true, NextTimestamp returned nothing, so don't bother checking again.
   // (This also enforces that we don't find more time data after calling it
   // quits.)
@@ -368,6 +368,8 @@ class MultiNodeNoncausalOffsetEstimator final
 
   // A mapping from node and channel to the relevant estimator.
   std::vector<std::vector<NoncausalOffsetEstimator *>> filters_per_channel_;
+
+  std::vector<logger::TimestampMapper *> timestamp_mappers_;
 
   bool first_solution_ = true;
   bool all_done_ = false;

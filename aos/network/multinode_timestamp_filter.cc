@@ -630,6 +630,8 @@ void MultiNodeNoncausalOffsetEstimator::SetTimestampMappers(
     }
     ++node_index;
   }
+
+  timestamp_mappers_ = std::move(timestamp_mappers);
 }
 
 TimeComparison CompareTimes(const std::vector<monotonic_clock::time_point> &ta,
@@ -867,8 +869,40 @@ TimestampProblem MultiNodeNoncausalOffsetEstimator::MakeProblem() {
           all_live_nodes.Set(node_a_index, true);
           all_live_nodes.Set(filter.b_index, true);
           problem.add_filter(node_a_index, filter.filter, filter.b_index);
+
+          if (timestamp_mappers_[node_a_index] != nullptr) {
+            // Make sure we have enough data queued such that if we are going to
+            // have a timestamp on this filter, we do have a timestamp queued.
+            timestamp_mappers_[node_a_index]->QueueFor(
+                time_estimation_buffer_seconds_);
+            // Now, we have cases at startup where we have a couple of points
+            // followed by a long gap, followed by the body of the data.  We are
+            // extrapolating, then adding the new data, and finding that time
+            // was frozen already.
+            //
+            // The fix is to make sure we queue a couple of seconds past the
+            // second point in the line segment, and we always make sure to load
+            // the line segment.
+            //
+            // But, there are filters which have no data in them.  We don't want
+            // to queue those until we hit 2, because that'll force us to read
+            // everything into memory.  So, only queue for the filters which
+            // have data in them.
+            if (filter.filter->timestamps_size() == 1u) {
+              timestamp_mappers_[node_a_index]->QueueUntilCondition(
+                  [&filter]() {
+                    return filter.filter->timestamps_size() >= 2u;
+                  });
+            }
+            if (filter.filter->timestamps_size() >= 2u) {
+              timestamp_mappers_[node_a_index]->QueueUntil(
+                  std::get<0>(filter.filter->timestamp(1u)) +
+                  time_estimation_buffer_seconds_);
+            }
+          }
         }
       }
+
       ++node_a_index;
     }
   }
