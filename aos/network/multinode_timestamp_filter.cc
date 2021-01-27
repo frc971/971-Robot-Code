@@ -646,6 +646,7 @@ TimeComparison CompareTimes(const std::vector<monotonic_clock::time_point> &ta,
   bool is_less = false;
   bool is_greater = false;
   bool is_eq = true;
+  bool some_eq = false;
   for (size_t i = 0; i < ta.size(); ++i) {
     if (ignore_min_time && tb[i] == monotonic_clock::min_time) {
       continue;
@@ -656,11 +657,19 @@ TimeComparison CompareTimes(const std::vector<monotonic_clock::time_point> &ta,
     } else if (ta[i] > tb[i]) {
       is_greater = true;
       is_eq = false;
+    } else {
+      some_eq = true;
     }
   }
 
   if (is_eq) {
     return TimeComparison::kEq;
+  }
+  if (some_eq) {
+    // if at least one, but not all, are equal, then consider this invalid
+    // This represents a case where the solution on at least one node
+    // has not moved forward
+    return TimeComparison::kInvalid;
   }
   if (is_less && !is_greater) {
     return TimeComparison::kBefore;
@@ -697,10 +706,6 @@ chrono::nanoseconds MaxElapsedTime(
   return dt;
 }
 
-// Returns the amount of time that ta and tb are out of order by.  The primary
-// direction is defined to be the direction of the average of the offsets.  So,
-// if the average is +, and we get 1 - outlier, the absolute value of that -
-// outlier is the invalid distance.
 chrono::nanoseconds InvalidDistance(
     const std::vector<monotonic_clock::time_point> &ta,
     const std::vector<monotonic_clock::time_point> &tb) {

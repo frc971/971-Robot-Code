@@ -254,12 +254,21 @@ class InterpolatedTimeConverter : public TimeConverter {
 
 enum class TimeComparison { kBefore, kAfter, kInvalid, kEq };
 
-// Compares two times.
+// Compares two sets of times, optionally ignoring times that are min_time
 TimeComparison CompareTimes(const std::vector<monotonic_clock::time_point> &ta,
-                            const std::vector<monotonic_clock::time_point> &tb);
+                            const std::vector<monotonic_clock::time_point> &tb,
+                            bool ignore_min_time);
 
 // Returns the maximum amount of elapsed time between the two samples in time.
 std::chrono::nanoseconds MaxElapsedTime(
+    const std::vector<monotonic_clock::time_point> &ta,
+    const std::vector<monotonic_clock::time_point> &tb);
+
+// Returns the amount of time by which ta and tb are out of order.  The primary
+// direction is defined to be the direction of the average of the offsets.  So,
+// if the average is +, and we get a -ve outlier, the absolute value of that -ve
+// outlier is the invalid distance.
+std::chrono::nanoseconds InvalidDistance(
     const std::vector<monotonic_clock::time_point> &ta,
     const std::vector<monotonic_clock::time_point> &tb);
 
