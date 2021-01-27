@@ -17,6 +17,9 @@ DEFINE_bool(timestamps_to_csv, false,
             "of CSV files in /tmp/.  This should only be needed when debugging "
             "time synchronization.");
 
+DEFINE_int32(max_invalid_distance_ns, 500,
+             "The max amount of time we will let the solver go backwards.");
+
 namespace aos {
 namespace message_bridge {
 namespace {
@@ -1057,7 +1060,7 @@ MultiNodeNoncausalOffsetEstimator::NextSolution(
         case TimeComparison::kInvalid: {
           // If times are close enough, drop the invalid time.
           if (InvalidDistance(result_times, solution) <
-                  chrono::nanoseconds(500)) {
+              chrono::nanoseconds(FLAGS_max_invalid_distance_ns)) {
             VLOG(1) << "Times can't be compared by "
                     << InvalidDistance(result_times, solution).count() << "ns";
             for (size_t i = 0; i < result_times.size(); ++i) {
@@ -1119,7 +1122,8 @@ MultiNodeNoncausalOffsetEstimator::NextSolution(
             LOG(ERROR) << "Skipping because --skip_order_validation";
             break;
           } else {
-            LOG(FATAL) << "Please investigate.";
+            LOG(FATAL) << "Please investigate.  Use --max_invalid_distance_ns "
+                          "to change this.";
           }
         } break;
       }
