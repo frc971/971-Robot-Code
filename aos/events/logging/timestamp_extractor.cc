@@ -18,7 +18,7 @@ namespace chrono = std::chrono;
 
 std::string LogFileVectorToString(std::vector<logger::LogFile> log_files) {
   std::stringstream ss;
-  for (const auto f : log_files) {
+  for (const auto &f : log_files) {
     ss << f << "\n";
   }
   return ss.str();
