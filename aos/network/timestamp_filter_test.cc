@@ -625,9 +625,11 @@ TEST_F(NoncausalTimestampFilterDeathTest, FrozenTimestamps) {
     ASSERT_EQ(filter.timestamps_size(), 2u);
     filter.FreezeUntil(tb);
 
-    EXPECT_DEATH({ filter.Sample(tb, oa); },
-                 "Tried to insert 0.100000000sec before 0.100000000sec, which "
-                 "is a frozen time");
+    EXPECT_DEATH(
+        { filter.Sample(tb, oa); },
+        "test_a -> test_b Tried to insert 0.100000000sec before "
+        "0.100000000sec, which is frozen "
+        "in the past.  Increase --time_estimation_buffer_seconds to at least");
   }
 
   {
@@ -641,7 +643,8 @@ TEST_F(NoncausalTimestampFilterDeathTest, FrozenTimestamps) {
 
     EXPECT_DEATH(
         { filter.Sample(tc, oc); },
-        "Returned a horizontal line previously and then got a new sample at "
+        "test_a -> test_b Returned a horizontal line previously and then got a "
+        "new sample at "
         "0.200000000sec, 0.2 seconds after the last sample at 0.000000000sec");
   }
 
@@ -655,8 +658,9 @@ TEST_F(NoncausalTimestampFilterDeathTest, FrozenTimestamps) {
     filter.FreezeUntil(tc);
 
     EXPECT_DEATH({ filter.Sample(tb, ob); },
-                 "Tried to insert 0.100000000sec before 0.200000000sec, which "
-                 "is a frozen time");
+                 "test_a -> test_b Tried to insert 0.100000000sec before "
+                 "0.200000000sec, which "
+                 "is frozen");
   }
 
   {
@@ -670,11 +674,13 @@ TEST_F(NoncausalTimestampFilterDeathTest, FrozenTimestamps) {
     ASSERT_EQ(filter.timestamps_size(), 3u);
     filter.FreezeUntil(tb);
 
-    EXPECT_DEATH({ filter.Sample(tb, oa); },
-                 "Tried to insert 0.100000000sec before 0.100000000sec, which "
-                 "is a frozen time");
+    EXPECT_DEATH(
+        { filter.Sample(tb, oa); },
+        "test_a -> test_b Tried to insert 0.100000000sec before "
+        "0.100000000sec, which "
+        "is frozen in the past.  Increase --time_estimation_buffer_seconds");
     EXPECT_DEATH({ filter.Sample(tb + chrono::nanoseconds(1), oa); },
-                 "Can't pop an already frozen sample");
+                 "test_a -> test_b Can't pop an already frozen sample");
   }
 }
 

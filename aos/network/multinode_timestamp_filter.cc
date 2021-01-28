@@ -863,6 +863,15 @@ TimestampProblem MultiNodeNoncausalOffsetEstimator::MakeProblem() {
   BitSet64 all_live_nodes(problem.size());
   const BitSet64 all_nodes = ~BitSet64(problem.size());
 
+  for (size_t node_index = 0; node_index < timestamp_mappers_.size();
+       ++node_index) {
+    if (timestamp_mappers_[node_index] != nullptr) {
+      // Make sure we have enough data queued such that if we are going to
+      // have a timestamp on this filter, we do have a timestamp queued.
+      timestamp_mappers_[node_index]->QueueFor(time_estimation_buffer_seconds_);
+    }
+  }
+
   {
     size_t node_a_index = 0;
     for (const auto &filters : filters_per_node_) {
@@ -879,10 +888,6 @@ TimestampProblem MultiNodeNoncausalOffsetEstimator::MakeProblem() {
           problem.add_filter(node_a_index, filter.filter, filter.b_index);
 
           if (timestamp_mappers_[node_a_index] != nullptr) {
-            // Make sure we have enough data queued such that if we are going to
-            // have a timestamp on this filter, we do have a timestamp queued.
-            timestamp_mappers_[node_a_index]->QueueFor(
-                time_estimation_buffer_seconds_);
             // Now, we have cases at startup where we have a couple of points
             // followed by a long gap, followed by the body of the data.  We are
             // extrapolating, then adding the new data, and finding that time
@@ -896,15 +901,34 @@ TimestampProblem MultiNodeNoncausalOffsetEstimator::MakeProblem() {
             // to queue those until we hit 2, because that'll force us to read
             // everything into memory.  So, only queue for the filters which
             // have data in them.
-            if (filter.filter->timestamps_size() == 1u) {
-              timestamp_mappers_[node_a_index]->QueueUntilCondition(
-                  [&filter]() {
-                    return filter.filter->timestamps_size() >= 2u;
-                  });
-            }
-            if (filter.filter->timestamps_size() >= 2u) {
+
+            size_t node_b_index = configuration::GetNodeIndex(
+                timestamp_mappers_[node_a_index]->configuration(),
+                configuration::GetNode(
+                    timestamp_mappers_[node_a_index]->configuration(),
+                    filter.filter->node_b()));
+
+            // Timestamps can come from either node.  When a message is
+            // delivered to a node, it can have the timestamp time attached to
+            // that message as well.  That means that we have to queue both
+            // nodes until we have 2 unobserved points from both nodes.
+            timestamp_mappers_[node_a_index]->QueueUntilCondition(
+                [&filter]() { return filter.filter->has_unobserved_line(); });
+
+            timestamp_mappers_[node_b_index]->QueueUntilCondition(
+                [&filter]() { return filter.filter->has_unobserved_line(); });
+
+            // If we actually found a line, make sure to buffer to the desired
+            // distance past that last point so the filter doesn't try to
+            // invalidate the point.  Do this for both nodes to pick up all the
+            // timestamps.
+            if (filter.filter->has_unobserved_line()) {
               timestamp_mappers_[node_a_index]->QueueUntil(
-                  std::get<0>(filter.filter->timestamp(1u)) +
+                  filter.filter->unobserved_line_end() +
+                  time_estimation_buffer_seconds_);
+
+              timestamp_mappers_[node_b_index]->QueueUntil(
+                  filter.filter->unobserved_line_remote_end() +
                   time_estimation_buffer_seconds_);
             }
           }

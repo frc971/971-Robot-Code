@@ -343,6 +343,9 @@ class NoncausalTimestampFilter {
 
   size_t timestamps_size() const { return timestamps_.size(); }
 
+  // Returns a debug string with the nodes this filter represents.
+  std::string NodeNames() const;
+
   void Debug() {
     size_t count = 0;
     for (std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds,
@@ -365,6 +368,15 @@ class NoncausalTimestampFilter {
   // used.
   void FreezeUntil(aos::monotonic_clock::time_point node_monotonic_now);
   void FreezeUntilRemote(aos::monotonic_clock::time_point remote_monotonic_now);
+
+  // Returns true if there is a full line which hasn't been observed.
+  bool has_unobserved_line() const;
+  // Returns the time of the second point in the unobserved line, or min_time if
+  // there is no line.
+  monotonic_clock::time_point unobserved_line_end() const;
+  // Returns the time of the second point in the unobserved line on the remote
+  // node, or min_time if there is no line.
+  monotonic_clock::time_point unobserved_line_remote_end() const;
 
   // Returns the next timestamp in the queue if available without incrementing
   // the pointer.  This, Consume, and FreezeUntil work together to allow
@@ -414,6 +426,9 @@ class NoncausalTimestampFilter {
   static double ExtrapolateOffsetRemainder(
       std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> p0,
       monotonic_clock::time_point ta_base, double ta);
+
+  const Node *node_a() const { return node_a_; }
+  const Node *node_b() const { return node_b_; }
 
  private:
   // Removes the oldest timestamp.
