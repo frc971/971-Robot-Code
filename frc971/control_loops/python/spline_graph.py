@@ -75,6 +75,12 @@ class GridWindow(Gtk.Window):
         value = self.vol_input.get_value()
         self.drawing_area.points.setConstraint("VOLTAGE", value)
 
+    def input_combobox_choice(self, combo):
+        text = combo.get_active_text()
+        if text is not None:
+            print("Combo Clicked on: " + text)
+            set_field(text)
+
     def __init__(self):
         Gtk.Window.__init__(self)
 
@@ -187,8 +193,37 @@ class GridWindow(Gtk.Window):
         container.put(self.output_json, 210, 0)
         container.put(self.input_json, 320, 0)
 
-        self.show_all()
 
+        #Dropdown feature
+        self.label = Gtk.Label("Change Map:")
+        self.label.set_size_request(100,40)
+        container.put(self.label,430,0)
+
+        game_store = Gtk.ListStore(str)
+        games = [
+           "2020 Field",
+           "2019 Field",
+           "2021 Galactic Search ARed",
+           "2021 Galactic Search ABlue",
+           "2021 Galactic Search BRed",
+           "2021 Galactic Search BBlue",
+           "2021 AutoNav Barrel Racing",
+           "2021 AutoNav Slalom",
+           "2021 AutoNav Bounce",
+           ]
+
+        self.game_combo = Gtk.ComboBoxText()
+        self.game_combo.set_entry_text_column(0)
+        self.game_combo.connect("changed", self.input_combobox_choice)
+
+        for game in games:
+          self.game_combo.append_text(game)
+
+        self.game_combo.set_active(0)
+        self.game_combo.set_size_request(100,40)
+        container.put(self.game_combo,440,30)
+
+        self.show_all()
 
 window = GridWindow()
 RunApp()
