@@ -176,16 +176,6 @@ export function plotDrivetrain(conn: Connection, element: Element): void {
   polyRightVelocity.setColor(CYAN);
   polyRightVelocity.setDrawLine(false);
 
-  const splineLeftVelocity = velocityPlot.addMessageLine(
-      status, ['trajectory_logging', 'left_velocity']);
-  splineLeftVelocity.setColor(RED);
-  splineLeftVelocity.setDrawLine(false);
-
-  const splineRightVelocity = velocityPlot.addMessageLine(
-      status, ['trajectory_logging', 'right_velocity']);
-  splineRightVelocity.setColor(GREEN);
-  splineRightVelocity.setDrawLine(false);
-
   const leftVelocity =
       velocityPlot.addMessageLine(status, ['estimated_left_velocity']);
   leftVelocity.setColor(RED);
@@ -193,12 +183,36 @@ export function plotDrivetrain(conn: Connection, element: Element): void {
       velocityPlot.addMessageLine(status, ['estimated_right_velocity']);
   rightVelocity.setColor(GREEN);
 
+  const leftSpeed = velocityPlot.addMessageLine(position, ["left_speed"]);
+  leftSpeed.setColor(BLUE);
+  const rightSpeed = velocityPlot.addMessageLine(position, ["right_speed"]);
+  rightSpeed.setColor(BROWN);
+
+  // Drivetrain trajectory and localizer velocities
+  const velocityPlot2 = aosPlotter.addPlot(element, [0, currentTop],
+                                          [DEFAULT_WIDTH, DEFAULT_HEIGHT]);
+  currentTop += DEFAULT_HEIGHT;
+  velocityPlot2.plot.getAxisLabels().setTitle(
+      "Trajectory and Localizer Velocity Plots");
+  velocityPlot2.plot.getAxisLabels().setXLabel(TIME);
+  velocityPlot2.plot.getAxisLabels().setYLabel('Wheel Velocity (m/s)');
+
+  const splineLeftVelocity = velocityPlot2.addMessageLine(
+      status, ['trajectory_logging', 'left_velocity']);
+  splineLeftVelocity.setColor(RED);
+  splineLeftVelocity.setDrawLine(false);
+
+  const splineRightVelocity = velocityPlot2.addMessageLine(
+      status, ['trajectory_logging', 'right_velocity']);
+  splineRightVelocity.setColor(GREEN);
+  splineRightVelocity.setDrawLine(false);
+
   const ekfLeftVelocity =
-      velocityPlot.addMessageLine(status, ['localizer', 'left_velocity']);
+      velocityPlot2.addMessageLine(status, ['localizer', 'left_velocity']);
   ekfLeftVelocity.setColor(RED);
   ekfLeftVelocity.setPointSize(0.0);
   const ekfRightVelocity =
-      velocityPlot.addMessageLine(status, ['localizer', 'right_velocity']);
+      velocityPlot2.addMessageLine(status, ['localizer', 'right_velocity']);
   ekfRightVelocity.setColor(GREEN);
   ekfRightVelocity.setPointSize(0.0);
 
