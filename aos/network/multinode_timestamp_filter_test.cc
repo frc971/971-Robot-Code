@@ -167,45 +167,40 @@ TEST(TimestampProblemTest, CompareTimes) {
   std::vector<monotonic_clock::time_point> times_b = {time_list.begin() + 1u,
                                                       time_list.end()};
 
-  CHECK_EQ(static_cast<int>(CompareTimes(times_a, times_b, true)),
-           static_cast<int>(TimeComparison::kBefore));
-  CHECK_EQ(static_cast<int>(CompareTimes(times_a, times_b, false)),
+  CHECK_EQ(static_cast<int>(CompareTimes(times_a, times_b)),
            static_cast<int>(TimeComparison::kBefore));
 
-  CHECK_EQ(static_cast<int>(CompareTimes(times_b, times_a, true)),
-           static_cast<int>(TimeComparison::kAfter));
-  CHECK_EQ(static_cast<int>(CompareTimes(times_b, times_a, false)),
+  CHECK_EQ(static_cast<int>(CompareTimes(times_b, times_a)),
            static_cast<int>(TimeComparison::kAfter));
 
-  CHECK_EQ(static_cast<int>(CompareTimes(times_a, times_a, true)),
-           static_cast<int>(TimeComparison::kEq));
-  CHECK_EQ(static_cast<int>(CompareTimes(times_b, times_b, false)),
+  CHECK_EQ(static_cast<int>(CompareTimes(times_a, times_a)),
            static_cast<int>(TimeComparison::kEq));
 
+  // Now try one of the times being min_time.
   std::vector<monotonic_clock::time_point> times_b_min = times_b;
   times_b_min[5] = monotonic_clock::min_time;
 
-  CHECK_EQ(static_cast<int>(CompareTimes(times_a, times_b_min, true)),
+  CHECK_EQ(static_cast<int>(CompareTimes(times_a, times_b_min)),
            static_cast<int>(TimeComparison::kBefore));
-  CHECK_EQ(static_cast<int>(CompareTimes(times_a, times_b_min, false)),
-           static_cast<int>(TimeComparison::kInvalid));
+  CHECK_EQ(static_cast<int>(CompareTimes(times_b_min, times_a)),
+           static_cast<int>(TimeComparison::kAfter));
 
   // Test if one of the elements is equal
   std::vector<monotonic_clock::time_point> times_b_some_eq = times_b_min;
   times_b_some_eq[2] = times_a[2];
 
-  CHECK_EQ(static_cast<int>(CompareTimes(times_a, times_b_some_eq, true)),
+  CHECK_EQ(static_cast<int>(CompareTimes(times_a, times_b_some_eq)),
            static_cast<int>(TimeComparison::kInvalid));
-  CHECK_EQ(static_cast<int>(CompareTimes(times_b, times_b_some_eq, false)),
+  CHECK_EQ(static_cast<int>(CompareTimes(times_b_some_eq, times_a)),
            static_cast<int>(TimeComparison::kInvalid));
 
   // Test if elements are out of order
   std::vector<monotonic_clock::time_point> times_b_mixed = times_b_min;
   times_b_mixed[3] = times_a[0];
 
-  CHECK_EQ(static_cast<int>(CompareTimes(times_a, times_b_mixed, true)),
+  CHECK_EQ(static_cast<int>(CompareTimes(times_a, times_b_mixed)),
            static_cast<int>(TimeComparison::kInvalid));
-  CHECK_EQ(static_cast<int>(CompareTimes(times_b, times_b_mixed, false)),
+  CHECK_EQ(static_cast<int>(CompareTimes(times_b_mixed, times_a)),
            static_cast<int>(TimeComparison::kInvalid));
 
   CHECK_EQ(InvalidDistance(times_a, times_a).count(), 0);
