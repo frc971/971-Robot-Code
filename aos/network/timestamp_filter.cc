@@ -520,16 +520,15 @@ std::pair<std::tuple<monotonic_clock::time_point, chrono::nanoseconds>,
           std::tuple<monotonic_clock::time_point, chrono::nanoseconds>>
 NoncausalTimestampFilter::FindTimestamps(monotonic_clock::time_point ta) const {
   CHECK_GT(timestamps_size(), 1u);
-  // Linear search until this is proven to be a measurable slowdown.
-  // If ta is outside our timestamp range, return the closest pair
-  size_t index = 0;
-  while (index < timestamps_size() - 2u) {
-    if (std::get<0>(timestamp(index + 1)) > ta) {
-      break;
-    }
-    ++index;
-  }
-  return std::make_pair(timestamp(index), timestamp(index + 1));
+  auto it = std::upper_bound(timestamps_.begin() + 1, timestamps_.end() - 1, ta,
+                             [](monotonic_clock::time_point ta,
+                                std::tuple<aos::monotonic_clock::time_point,
+                                           std::chrono::nanoseconds, bool>
+                                    t) { return ta < std::get<0>(t); });
+
+  const size_t index = std::distance(timestamps_.begin(), it);
+
+  return std::make_pair(timestamp(index - 1), timestamp(index));
 }
 
 chrono::nanoseconds NoncausalTimestampFilter::ExtrapolateOffset(
