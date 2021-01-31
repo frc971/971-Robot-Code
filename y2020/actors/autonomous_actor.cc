@@ -11,7 +11,7 @@
 #include "y2020/control_loops/drivetrain/drivetrain_base.h"
 #include "y2020/actors/auto_splines.h"
 
-DEFINE_bool(spline_auto, false, "If true, define a spline autonomous mode");
+DEFINE_bool(spline_auto, true, "If true, define a spline autonomous mode");
 
 namespace y2020 {
 namespace actors {
@@ -44,7 +44,7 @@ void AutonomousActor::Reset() {
   // Currently just arbitrarily chosen for testing purposes, such that the
   // robot starts on the side of the field nearest where it would score
   // (although I do not know if this is actually a legal starting position).
-  Eigen::Vector2d starting_position(3.3, -0.7);
+  Eigen::Vector2d starting_position(0.0, 0.0);
   double starting_heading = 0.0;
   if (alliance_ == aos::Alliance::kRed) {
     starting_position *= -1.0;
@@ -103,9 +103,9 @@ ProfileParametersT MakeProfileParametersT(const float max_velocity,
 }
 
 bool AutonomousActor::DriveFwd() {
-  const ProfileParametersT kDrive = MakeProfileParametersT(0.1f, 0.5f);
+  const ProfileParametersT kDrive = MakeProfileParametersT(0.3f, 1.0f);
   const ProfileParametersT kTurn = MakeProfileParametersT(5.0f, 15.0f);
-  StartDrive(0.5, 0.0, kDrive, kTurn);
+  StartDrive(1.0, 0.0, kDrive, kTurn);
   return WaitForDriveDone();
 }
 }  // namespace actors

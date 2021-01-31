@@ -31,7 +31,7 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::BasicSSpline(
         builder->MakeBuilder<frc971::Constraint>();
     longitudinal_constraint_builder.add_constraint_type(
         frc971::ConstraintType::LONGITUDINAL_ACCELERATION);
-    longitudinal_constraint_builder.add_value(2.0);
+    longitudinal_constraint_builder.add_value(1.0);
     longitudinal_constraint_offset = longitudinal_constraint_builder.Finish();
   }
 
@@ -40,7 +40,7 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::BasicSSpline(
         builder->MakeBuilder<frc971::Constraint>();
     lateral_constraint_builder.add_constraint_type(
         frc971::ConstraintType::LATERAL_ACCELERATION);
-    lateral_constraint_builder.add_value(2.0);
+    lateral_constraint_builder.add_value(1.0);
     lateral_constraint_offset = lateral_constraint_builder.Finish();
   }
 
@@ -49,7 +49,7 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::BasicSSpline(
         builder->MakeBuilder<frc971::Constraint>();
     voltage_constraint_builder.add_constraint_type(
         frc971::ConstraintType::VOLTAGE);
-    voltage_constraint_builder.add_value(8.0);
+    voltage_constraint_builder.add_value(2.0);
     voltage_constraint_offset = voltage_constraint_builder.Finish();
   }
 
@@ -60,12 +60,12 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::BasicSSpline(
               {longitudinal_constraint_offset, lateral_constraint_offset,
                voltage_constraint_offset});
 
-  const float startx = 3.3;
-  const float starty = -.7;
-  std::vector<float> x_pos{0.0f + startx, 0.8f + startx, 0.8f + startx,
-                           1.2f + startx, 1.2f + startx, 2.0f + startx};
-  std::vector<float> y_pos{starty - 0.0f, starty - 0.0f, starty - 0.1f,
-                           starty - 0.2f, starty - 0.3f, starty - 0.3f};
+  const float startx = 0.0;
+  const float starty = 0.0;
+  std::vector<float> x_pos{0.0f + startx, 0.4f + startx, 0.4f + startx,
+                           0.6f + startx, 0.6f + startx, 1.0f + startx};
+  std::vector<float> y_pos{starty + 0.0f, starty + 0.0f, starty + 0.05f,
+                           starty + 0.1f, starty + 0.15f, starty + 0.15f};
   if (alliance == aos::Alliance::kRed) {
     for (size_t ii = 0; ii < x_pos.size(); ++ii) {
       x_pos[ii] *= -1;
