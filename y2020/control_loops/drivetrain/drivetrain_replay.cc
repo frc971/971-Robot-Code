@@ -17,7 +17,7 @@
 
 DEFINE_string(config, "y2020/config.json",
               "Name of the config file to replay using.");
-DEFINE_string(output_file, "/tmp/replayed",
+DEFINE_string(output_folder, "/tmp/replayed",
               "Name of the folder to write replayed logs to.");
 DEFINE_int32(team, 971, "Team number to use for logfile replay.");
 
@@ -27,7 +27,7 @@ class LoggerState {
       : event_loop_(
             reader->event_loop_factory()->MakeEventLoop("logger", node)),
         namer_(std::make_unique<aos::logger::MultiNodeLogNamer>(
-            absl::StrCat(FLAGS_output_file, "/", node->name()->string_view(),
+            absl::StrCat(FLAGS_output_folder, "/", node->name()->string_view(),
                          "/"),
             event_loop_->configuration(), node)),
         logger_(std::make_unique<aos::logger::Logger>(event_loop_.get())) {
