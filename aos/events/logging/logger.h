@@ -457,9 +457,9 @@ class LogReader {
   // Returns true if the channel exists on the node and was logged.
   template <typename T>
   bool HasLoggedChannel(std::string_view name, const Node *node = nullptr) {
-    const Channel *channel = configuration::GetChannel(logged_configuration(), name,
-                                     T::GetFullyQualifiedName(), "", node,
-                                     true);
+    const Channel *channel =
+        configuration::GetChannel(logged_configuration(), name,
+                                  T::GetFullyQualifiedName(), "", node, true);
     if (channel == nullptr) return false;
     return channel->logger() != LoggerConfig::NOT_LOGGED;
   }
@@ -497,7 +497,7 @@ class LogReader {
 
   // Class to manage sending RemoteMessages on the provided node after the
   // correct delay.
-  class RemoteMessageSender{
+  class RemoteMessageSender {
    public:
     RemoteMessageSender(aos::Sender<message_bridge::RemoteMessage> sender,
                         EventLoop *event_loop);
@@ -604,6 +604,12 @@ class LogReader {
     monotonic_clock::time_point monotonic_remote_now(size_t channel_index) {
       return channel_source_state_[channel_index]
           ->node_event_loop_factory_->monotonic_now();
+    }
+
+    // Returns the start time of the remote for the provided channel.
+    monotonic_clock::time_point monotonic_remote_start_time(
+        size_t channel_index) {
+      return channel_source_state_[channel_index]->monotonic_start_time();
     }
 
     distributed_clock::time_point RemoteToDistributedClock(

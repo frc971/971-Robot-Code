@@ -1437,12 +1437,18 @@ void LogReader::Register(EventLoop *event_loop) {
         // simulation.
         state->Send(std::move(timestamped_message));
       } else if (!ignore_missing_data_ &&
+                 // When starting up, we can have data which was sent before the
+                 // log starts, but the timestamp was after the log starts. This
+                 // is unreasonable to avoid, so ignore the missing data.
+                 timestamped_message.monotonic_remote_time >=
+                     state->monotonic_remote_start_time(
+                         timestamped_message.channel_index) &&
                  !FLAGS_skip_missing_forwarding_entries) {
-        // We've found a timestamp without data.  This likely means that we are
-        // at the end of the log file.  Record it and CHECK that in the rest of
-        // the log file, we don't find any more data on that channel.  Not all
-        // channels will end at the same point in time since they can be in
-        // different files.
+        // We've found a timestamp without data that we expect to have data for.
+        // This likely means that we are at the end of the log file.  Record it
+        // and CHECK that in the rest of the log file, we don't find any more
+        // data on that channel.  Not all channels will end at the same point in
+        // time since they can be in different files.
         VLOG(1) << "Found the last message on channel "
                 << timestamped_message.channel_index;
 
@@ -1454,7 +1460,8 @@ void LogReader::Register(EventLoop *event_loop) {
 
         // Now that we found the end of one channel, artificially stop the
         // rest.  It is confusing when part of your data gets replayed but not
-        // all.
+        // all.  Read the rest of the messages and drop them on the floor while
+        // doing some basic validation.
         while (state->OldestMessageTime() != monotonic_clock::max_time) {
           TimestampedMessage next = state->PopOldest();
           // Make sure that once we have seen the last message on a channel,
@@ -2098,6 +2105,10 @@ TimestampedMessage LogReader::State::PopOldest() {
     // mapper directly.
     filter->Pop(event_loop_->node(), result.monotonic_event_time);
   }
+  VLOG(1) << "Popped " << result
+          << configuration::CleanedChannelToString(
+                 event_loop_->configuration()->channels()->Get(
+                     factory_channel_index_[result.channel_index]));
   return result;
 }
 
