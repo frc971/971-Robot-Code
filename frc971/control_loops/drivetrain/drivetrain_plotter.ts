@@ -216,6 +216,16 @@ export function plotDrivetrain(conn: Connection, element: Element): void {
   ekfRightVelocity.setColor(GREEN);
   ekfRightVelocity.setPointSize(0.0);
 
+  const splineVelocityOffset = velocityPlot2.addMessageLine(
+      status, ['localizer', 'longitudinal_velocity_offset']);
+  splineVelocityOffset.setColor(BROWN);
+  splineVelocityOffset.setPointSize(0.0);
+
+  const splineLateralVelocity = velocityPlot2.addMessageLine(
+      status, ['localizer', 'lateral_velocity']);
+  splineLateralVelocity.setColor(PINK);
+  splineLateralVelocity.setPointSize(0.0);
+
   // Heading
   const yawPlot = aosPlotter.addPlot(element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT]);
   currentTop += DEFAULT_HEIGHT;
