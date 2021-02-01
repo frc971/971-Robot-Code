@@ -1053,23 +1053,31 @@ TEST_P(AbstractEventLoopTest, TimerIntervalAndDuration) {
 // Verify that we can change a timer's parameters during execution.
 TEST_P(AbstractEventLoopTest, TimerChangeParameters) {
   auto loop = MakePrimary();
-  ::std::vector<::aos::monotonic_clock::time_point> iteration_list;
+  std::vector<monotonic_clock::time_point> iteration_list;
 
   auto test_timer = loop->AddTimer([&iteration_list, &loop]() {
-    iteration_list.push_back(loop->monotonic_now());
+    iteration_list.push_back(loop->context().monotonic_event_time);
   });
 
-  auto modifier_timer = loop->AddTimer([&loop, &test_timer]() {
-    test_timer->Setup(loop->monotonic_now(), ::std::chrono::milliseconds(30));
+  monotonic_clock::time_point s;
+  auto modifier_timer = loop->AddTimer([&test_timer, &s]() {
+    test_timer->Setup(s + chrono::milliseconds(45), chrono::milliseconds(30));
   });
 
-  test_timer->Setup(loop->monotonic_now(), ::std::chrono::milliseconds(20));
-  modifier_timer->Setup(loop->monotonic_now() +
-                        ::std::chrono::milliseconds(45));
-  EndEventLoop(loop.get(), ::std::chrono::milliseconds(150));
+  s = loop->monotonic_now();
+  test_timer->Setup(s, chrono::milliseconds(20));
+  modifier_timer->Setup(s + chrono::milliseconds(45));
+  EndEventLoop(loop.get(), chrono::milliseconds(150));
   Run();
 
   EXPECT_EQ(iteration_list.size(), 7);
+  EXPECT_EQ(iteration_list[0], s);
+  EXPECT_EQ(iteration_list[1], s + chrono::milliseconds(20));
+  EXPECT_EQ(iteration_list[2], s + chrono::milliseconds(40));
+  EXPECT_EQ(iteration_list[3], s + chrono::milliseconds(45));
+  EXPECT_EQ(iteration_list[4], s + chrono::milliseconds(75));
+  EXPECT_EQ(iteration_list[5], s + chrono::milliseconds(105));
+  EXPECT_EQ(iteration_list[6], s + chrono::milliseconds(135));
 }
 
 // Verify that we can disable a timer during execution.
