@@ -2034,8 +2034,16 @@ void LogReader::RemoteMessageSender::Send(
         << ": Unsupported mix of timestamps and no timestamps.";
     sender_.Send(std::move(remote_message));
   } else {
-    remote_timestamps_.emplace_back(std::move(remote_message),
-                                    monotonic_timestamp_time);
+    remote_timestamps_.emplace(
+        std::upper_bound(
+            remote_timestamps_.begin(), remote_timestamps_.end(),
+            monotonic_timestamp_time,
+            [](const aos::monotonic_clock::time_point monotonic_timestamp_time,
+               const Timestamp &timestamp) {
+              return monotonic_timestamp_time <
+                     timestamp.monotonic_timestamp_time;
+            }),
+        std::move(remote_message), monotonic_timestamp_time);
     ScheduleTimestamp();
   }
 }
