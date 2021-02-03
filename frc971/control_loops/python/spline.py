@@ -28,7 +28,7 @@ def RungeKutta(f, y0, t, h, count=1):
     """4th order RungeKutta integration of dy/dt = f(t, y) starting at X."""
     y1 = y0
     dh = h / float(count)
-    for x in xrange(count):
+    for x in range(count):
         k1 = dh * f(t + dh * x, y1)
         k2 = dh * f(t + dh * x + dh / 2.0, y1 + k1 / 2.0)
         k3 = dh * f(t + dh * x + dh / 2.0, y1 + k2 / 2.0)
@@ -738,7 +738,7 @@ def main(argv):
 
     distances = numpy.linspace(0.0, path.length(), distance_count)
 
-    for i in xrange(len(distances) - 1):
+    for i in range(len(distances) - 1):
         position += velocity * (distances[i + 1] - distances[i])
         velocity += path.ddxy(distances[i]) * (distances[i + 1] - distances[i])
         iposition_plot[:, i + 1] = position
@@ -868,7 +868,7 @@ def main(argv):
              velocity_drivetrain.robot_radius_r)
     Ter = numpy.matrix([[0.5, 0.5], [-1.0 / width, 1.0 / width]])
 
-    for i in xrange(len(length_plan_t)):
+    for i in range(len(length_plan_t)):
         xva_plan[0, i] = length_plan_x[i][0, 0]
         xva_plan[1, i] = length_plan_v[i]
         xva_plan[2, i] = length_plan_a[i]
@@ -895,7 +895,7 @@ def main(argv):
     R = numpy.matrix(numpy.diag([1.0 / (12.0**2), 1.0 / (12.0**2)]))
     kMinVelocity = 0.1
 
-    for i in xrange(len(length_plan_t)):
+    for i in range(len(length_plan_t)):
         states[:, i] = state
 
         theta = state[2, 0]
@@ -983,7 +983,7 @@ def main(argv):
         return 2.0 + 0.0001 * x
 
     v = 0.0
-    for _ in xrange(10):
+    for _ in range(10):
         dx = 4.0 / 10.0
         v = integrate_accel_for_distance(a, v, 0.0, dx)
     print('v', v)

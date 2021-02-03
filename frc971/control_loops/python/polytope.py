@@ -40,9 +40,9 @@ def _PadHeight(padded_array, min_height):
   if height < min_height:
     pad_array = [' ' * len(padded_array[0])]
     height_error = min_height - height
-    return (pad_array * ((height_error) / 2) +
+    return (pad_array * int((height_error) / 2) +
             padded_array +
-            pad_array * ((height_error + 1) / 2))
+            pad_array * int((height_error + 1) / 2))
   return padded_array
 
 
@@ -101,9 +101,9 @@ class HPolytope(object):
 
     try:
       # Copy the data into the matrix.
-      for i in xrange(self.num_constraints):
+      for i in range(self.num_constraints):
         libcdd.dd_set_d(matrix.matrix[i][0], self._k[i, 0])
-        for j in xrange(self.ndim):
+        for j in range(self.ndim):
           libcdd.dd_set_d(matrix.matrix[i][j + 1], -self._H[i, j])
 
       # Set enums to the correct values.
@@ -132,7 +132,7 @@ class HPolytope(object):
           # Count the number of vertices and rays in the result.
           num_vertices = 0
           num_rays = 0
-          for i in xrange(vertex_matrix.rowsize):
+          for i in range(vertex_matrix.rowsize):
             if libcdd.dd_get_d(vertex_matrix.matrix[i][0]) == 0:
               num_rays += 1
             else:
@@ -148,14 +148,14 @@ class HPolytope(object):
           vertex_index = 0
 
           # Copy the data out of the matrix.
-          for index in xrange(vertex_matrix.rowsize):
+          for index in range(vertex_matrix.rowsize):
             if libcdd.dd_get_d(vertex_matrix.matrix[index][0]) == 0.0:
-              for j in xrange(vertex_matrix.colsize - 1):
+              for j in range(vertex_matrix.colsize - 1):
                 rays[ray_index, j] = libcdd.dd_get_d(
                     vertex_matrix.matrix[index][j + 1])
               ray_index += 1
             else:
-              for j in xrange(vertex_matrix.colsize - 1):
+              for j in range(vertex_matrix.colsize - 1):
                 vertices[vertex_index, j] = libcdd.dd_get_d(
                     vertex_matrix.matrix[index][j + 1])
               vertex_index += 1
@@ -203,7 +203,7 @@ class HPolytope(object):
     if self.ndim == 1:
       x_strings = ["[[x0]] "]
     else:
-      for index in xrange(self.ndim):
+      for index in range(self.ndim):
         if index == 0:
           x = "[[x%d]  " % index
         elif index == self.ndim - 1:
@@ -216,8 +216,8 @@ class HPolytope(object):
   def _MakeCmpStrings(self, height):
     """Builds an array of strings with the comparison in it for printing."""
     cmp_strings = []
-    for index in xrange(height):
-      if index == (height - 1) / 2:
+    for index in range(height):
+      if index == int((height - 1) / 2):
         cmp_strings.append("<= ")
       else:
         cmp_strings.append("   ")

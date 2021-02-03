@@ -276,7 +276,7 @@ class ScenarioPlotter(object):
         # intake.Y[0,0] = intake.X[0,0]
         # observer_intake.X_hat[0,0] = intake.X[0,0]
 
-        for i in xrange(iterations):
+        for i in range(iterations):
             X_hat = intake.X
 
             if observer_intake is not None:

@@ -184,7 +184,7 @@ class ScenarioPlotter(object):
     else:
       initial_t = 0
 
-    for i in xrange(iterations):
+    for i in range(iterations):
       X_hat = wrist.X
 
       if observer_wrist is not None:

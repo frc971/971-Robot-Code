@@ -261,7 +261,7 @@ class ScenarioPlotter(object):
         shooter_profile.SetGoal(goal[2, 0])
 
         U_last = numpy.matrix(numpy.zeros((2, 1)))
-        for i in xrange(iterations):
+        for i in range(iterations):
             X_hat = arm.X
 
             if observer is not None:

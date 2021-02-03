@@ -353,8 +353,8 @@ class ControlLoop(object):
             '  Eigen::Matrix<%s, %d, %d> %s;\n' % (scalar_type, matrix.shape[0],
                                                    matrix.shape[1], matrix_name)
         ]
-        for x in xrange(matrix.shape[0]):
-            for y in xrange(matrix.shape[1]):
+        for x in range(matrix.shape[0]):
+            for y in range(matrix.shape[1]):
                 write_type = repr(matrix[x, y])
                 if scalar_type == 'float':
                     if '.' not in write_type:

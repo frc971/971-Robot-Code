@@ -205,7 +205,7 @@ def PlotSpinup(params, goal, iterations=400):
     else:
         initial_t = 0
 
-    for i in xrange(iterations):
+    for i in range(iterations):
         X_hat = flywheel.X
 
         if observer_flywheel is not None:

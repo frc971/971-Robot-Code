@@ -28,30 +28,30 @@ def main(argv):
   data = [0.0] * 4096
   min_zero = 4096
   max_zero = 0
-  for i in xrange(0, 4096):
+  for i in range(0, 4096):
     if data_count[i] == 0:
       min_zero = min(i, min_zero)
       max_zero = max(i, min_zero)
 
-  for i in xrange(0, 4096):
+  for i in range(0, 4096):
     if data_count[i] != 0:
       data[i] = data_sum[i] / data_count[i]
   if min_zero == 0 and max_zero == 4095:
-    for i in xrange(0, 4096):
+    for i in range(0, 4096):
       if data_count[i] != 0:
         while i > 0:
           data[i - 1] = data[i]
           i -= 1
         break;
 
-    for i in reversed(xrange(0, 4096)):
+    for i in reversed(range(0, 4096)):
       if data_count[i] != 0:
         while i < 4095:
           data[i + 1] = data[i]
           i += 1
         break;
   else:
-    for i in xrange(0, 4096):
+    for i in range(0, 4096):
       if data_count[i] == 0:
         if i < (min_zero + max_zero) / 2:
           data[i] = data[min_zero - 1]

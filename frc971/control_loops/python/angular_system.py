@@ -216,7 +216,7 @@ def RunTest(plant,
 
     U_last = numpy.matrix(numpy.zeros((1, 1)))
     iterations = int(duration / plant.dt)
-    for i in xrange(iterations):
+    for i in range(iterations):
         t = i * plant.dt
         observer.Y = plant.Y
         observer.CorrectObserver(U_last)

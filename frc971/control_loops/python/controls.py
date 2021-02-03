@@ -117,7 +117,7 @@ def ctrb(A, B):
   n = A.shape[0]
   output = B
   intermediate = B
-  for i in xrange(0, n):
+  for i in range(0, n):
     intermediate = A * intermediate
     output = numpy.concatenate((output, intermediate), axis=1)
 

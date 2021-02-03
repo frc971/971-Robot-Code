@@ -215,7 +215,7 @@ class ScenarioPlotter(object):
     else:
       initial_t = 0
 
-    for i in xrange(iterations):
+    for i in range(iterations):
       X_hat = indexer.X
 
       if observer_indexer is not None:

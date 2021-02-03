@@ -217,7 +217,7 @@ def main(argv):
         [[goal_position], [0.0],
          [-sprung_shooter.A[1, 0] / sprung_shooter.A[1, 2] * goal_position]])
     voltage = numpy.matrix([[0.0]])
-    for _ in xrange(500):
+    for _ in range(500):
         U = sprung_shooter.K * (R - sprung_shooter.X_hat)
         U = ClipDeltaU(sprung_shooter, voltage, U)
         sprung_shooter.Y = raw_sprung_shooter.Y + 0.01
@@ -240,7 +240,7 @@ def main(argv):
     R = numpy.matrix([[goal_position], [0.0],
                       [-shooter.A[1, 0] / shooter.A[1, 2] * goal_position]])
     voltage = numpy.matrix([[0.0]])
-    for _ in xrange(500):
+    for _ in range(500):
         U = shooter.K * (R - shooter.X_hat)
         U = ClipDeltaU(shooter, voltage, U)
         shooter.Y = raw_shooter.Y + 0.01

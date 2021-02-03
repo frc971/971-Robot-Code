@@ -34,7 +34,7 @@ def VerifyCheckSumsAndUpload(fnames, ssh_target):
   jetson_fnames = [ToJetsonFname(fname) for fname in fnames]
   checksums = GetChecksums(fnames)
   jetson_checksums = GetJetsonChecksums(ssh_target, jetson_fnames)
-  for i in xrange(len(fnames)):
+  for i in range(len(fnames)):
     if (checksums[i] != jetson_checksums[i]):
       # if empty, unlink
       subprocess.check_call(["ssh", ssh_target, "unlink " + jetson_fnames[i]])

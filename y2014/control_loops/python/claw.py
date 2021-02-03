@@ -401,7 +401,7 @@ def run_test(claw,
     upper_bound = (initial_X[1, 0] if initial_X[1, 0] > goal[1, 0] else
                    goal[1, 0]) + max_separation_error
 
-    for i in xrange(iterations):
+    for i in range(iterations):
         U = claw.K * (goal - claw.X)
         U = ScaleU(claw, U, claw.K, goal - claw.X)
         claw.Update(U)

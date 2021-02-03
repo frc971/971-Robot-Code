@@ -253,7 +253,7 @@ def rerun_and_plot_kf(data_time,
         observer.X_hat[0, 0] = data_radians[0]
 
     last_request_current = data_request_current[0]
-    kf_torques = [[] for i in xrange(num_kf)]
+    kf_torques = [[] for i in range(num_kf)]
     for angle, current, request_current in zip(data_radians, data_current,
                                                data_request_current):
         # Predict and correct all the parameter swept observers.

@@ -201,7 +201,7 @@ class ScenarioPlotter(object):
     profile.SetGoal(goal[0, 0])
 
     U_last = numpy.matrix(numpy.zeros((1, 1)))
-    for i in xrange(iterations):
+    for i in range(iterations):
       observer_turret.Y = turret.Y
       observer_turret.CorrectObserver(U_last)
 

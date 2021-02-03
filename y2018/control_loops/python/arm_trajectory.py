@@ -509,7 +509,7 @@ class Trajectory:
             int_d = 0.0
             int_vel = prev_velocity
             num_steps = 10
-            for _ in xrange(num_steps):
+            for _ in range(num_steps):
                 int_accel_t = self.compute_feasable_back_acceleration(
                     dynamics, prev_distance - int_d, int_vel, vmax,
                     alpha_unitizer)
@@ -585,7 +585,7 @@ class Trajectory:
             int_d = 0.0
             int_vel = prev_velocity
             num_steps = 10
-            for _ in xrange(num_steps):
+            for _ in range(num_steps):
                 int_accel_t = self.compute_feasable_forwards_acceleration(
                     dynamics, prev_distance + int_d, int_vel, vmax,
                     alpha_unitizer)

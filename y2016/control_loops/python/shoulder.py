@@ -188,7 +188,7 @@ class ScenarioPlotter(object):
     else:
       initial_t = 0
 
-    for i in xrange(iterations):
+    for i in range(iterations):
       X_hat = shoulder.X
 
       if observer_shoulder is not None:

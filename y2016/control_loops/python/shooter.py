@@ -190,7 +190,7 @@ class ScenarioPlotter(object):
         else:
             initial_t = 0
 
-        for i in xrange(iterations):
+        for i in range(iterations):
             X_hat = shooter.X
 
             if observer_shooter is not None:

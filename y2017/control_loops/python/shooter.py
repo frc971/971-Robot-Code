@@ -285,7 +285,7 @@ class ScenarioPlotter(object):
             initial_t = 0
 
         last_U = numpy.matrix([[0.0]])
-        for i in xrange(iterations):
+        for i in range(iterations):
             X_hat = shooter.X
 
             if observer_shooter is not None:

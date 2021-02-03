@@ -273,7 +273,7 @@ class ScenarioPlotter(object):
         profile.SetGoal(goal[2, 0])
 
         U_last = numpy.matrix(numpy.zeros((2, 1)))
-        for i in xrange(iterations):
+        for i in range(iterations):
             observer_column.Y = column.Y
             observer_column.CorrectObserver(U_last)
 

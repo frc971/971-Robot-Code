@@ -83,7 +83,7 @@ def main(argv):
         real_velocities = [0]
         estimated_angles = [0]
         estimated_velocities = [0]
-        for _ in xrange(100):
+        for _ in range(100):
             estimator.Predict(0)
             estimator.Update(numpy.sqrt(2) / 2.0, numpy.sqrt(2) / 2.0, 0, 0)
             real_angles.append(math.pi / 2)
@@ -92,7 +92,7 @@ def main(argv):
             estimated_velocities.append(estimator.X_hat[1, 0])
         angle = math.pi / 2
         velocity = 1
-        for i in xrange(100):
+        for i in range(100):
             measured_velocity = velocity + (random.random() - 0.5) * 0.01 + 0.05
             estimator.Predict(measured_velocity)
             estimator.Update(
@@ -111,7 +111,7 @@ def main(argv):
         pylab.show()
 
     if len(argv) != 3:
-        print "Expected .h file name and .cc file name"
+        glog.error("Expected .h file name and .cc file name")
     else:
         namespaces = ['frc971', 'control_loops', 'drivetrain']
         kf_loop_writer = control_loop.ControlLoopWriter(
