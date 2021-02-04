@@ -1264,6 +1264,10 @@ MultiNodeNoncausalOffsetEstimator::NextTimestamp() {
       case TimeComparison::kEq:
         return NextTimestamp();
       case TimeComparison::kInvalid:
+        if (InvalidDistance(last_monotonics_, result_times) <
+            chrono::nanoseconds(FLAGS_max_invalid_distance_ns)) {
+          return NextTimestamp();
+        }
         CHECK_EQ(last_monotonics_.size(), result_times.size());
         for (size_t i = 0; i < result_times.size(); ++i) {
           LOG(INFO) << "  " << last_monotonics_[i] << " vs " << result_times[i];
