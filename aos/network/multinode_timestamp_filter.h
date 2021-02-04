@@ -256,8 +256,7 @@ enum class TimeComparison { kBefore, kAfter, kInvalid, kEq };
 
 // Compares two sets of times, optionally ignoring times that are min_time
 TimeComparison CompareTimes(const std::vector<monotonic_clock::time_point> &ta,
-                            const std::vector<monotonic_clock::time_point> &tb,
-                            bool ignore_min_time);
+                            const std::vector<monotonic_clock::time_point> &tb);
 
 // Returns the maximum amount of elapsed time between the two samples in time.
 std::chrono::nanoseconds MaxElapsedTime(

@@ -637,9 +637,9 @@ void MultiNodeNoncausalOffsetEstimator::SetTimestampMappers(
   timestamp_mappers_ = std::move(timestamp_mappers);
 }
 
-TimeComparison CompareTimes(const std::vector<monotonic_clock::time_point> &ta,
-                            const std::vector<monotonic_clock::time_point> &tb,
-                            bool ignore_min_time) {
+TimeComparison CompareTimes(
+    const std::vector<monotonic_clock::time_point> &ta,
+    const std::vector<monotonic_clock::time_point> &tb) {
   if (ta.size() != tb.size() || ta.empty()) {
     return TimeComparison::kInvalid;
   }
@@ -648,7 +648,8 @@ TimeComparison CompareTimes(const std::vector<monotonic_clock::time_point> &ta,
   bool is_eq = true;
   bool some_eq = false;
   for (size_t i = 0; i < ta.size(); ++i) {
-    if (ignore_min_time && tb[i] == monotonic_clock::min_time) {
+    if (tb[i] == monotonic_clock::min_time ||
+        ta[i] == monotonic_clock::min_time) {
       continue;
     }
     if (ta[i] < tb[i]) {
@@ -693,7 +694,8 @@ chrono::nanoseconds MaxElapsedTime(
   chrono::nanoseconds dt;
   for (size_t i = 0; i < ta.size(); ++i) {
     // Skip any invalid timestamps.
-    if (tb[i] == monotonic_clock::min_time) {
+    if (ta[i] == monotonic_clock::min_time ||
+        tb[i] == monotonic_clock::min_time) {
       continue;
     }
 
@@ -1074,7 +1076,7 @@ MultiNodeNoncausalOffsetEstimator::NextSolution(
         continue;
       }
 
-      switch (CompareTimes(result_times, solution, false)) {
+      switch (CompareTimes(result_times, solution)) {
         // The old solution is before or at the new solution.  This means that
         // the old solution is a better result, so ignore this one.
         case TimeComparison::kBefore:
@@ -1248,11 +1250,15 @@ MultiNodeNoncausalOffsetEstimator::NextTimestamp() {
     // want to consume it.  But, if this is the first time around, we want to
     // re-solve by recursing (once) to pickup the better base.
 
-    TimeComparison compare = CompareTimes(last_monotonics_, result_times, true);
+    TimeComparison compare = CompareTimes(last_monotonics_, result_times);
     switch (compare) {
       case TimeComparison::kBefore:
         break;
       case TimeComparison::kAfter:
+        problem.Debug();
+        for (size_t i = 0; i < result_times.size(); ++i) {
+          LOG(INFO) << "  " << last_monotonics_[i] << " vs " << result_times[i];
+        }
         LOG(FATAL) << "Found a solution before the last returned solution.";
         break;
       case TimeComparison::kEq:
