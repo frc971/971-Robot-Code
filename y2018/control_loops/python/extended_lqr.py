@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # This is an initial, hacky implementation of the extended LQR paper. It's just
 # a proof of concept, so don't trust it too much.
 

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 from frc971.control_loops.python import control_loop
 from frc971.control_loops.python import controls
@@ -125,7 +125,7 @@ class SecondOrderVelocityShooter(VelocityShooter):
         glog.debug('Poles are %s',
                    repr(numpy.linalg.eig(self.A - self.B * self.K)[0]))
 
-        self.PlaceObserverPoles([0.3, 0.3])
+        self.PlaceObserverPoles([0.299, 0.301])
 
         self.U_max = numpy.matrix([[12.0]])
         self.U_min = numpy.matrix([[-12.0]])

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import gflags
 import glog
@@ -65,11 +65,9 @@ class SprungShooter(control_loop.ControlLoop):
         self.A, self.B = self.ContinuousToDiscrete(self.A_continuous,
                                                    self.B_continuous, self.dt)
 
-        self.PlaceControllerPoles([0.45, 0.45])
+        self.PlaceControllerPoles([0.4501, 0.4499])
 
-        self.rpl = .05
-        self.ipl = 0.008
-        self.PlaceObserverPoles([self.rpl, self.rpl])
+        self.PlaceObserverPoles([0.05001, 0.04999])
 
         self.U_max = numpy.matrix([[12.0]])
         self.U_min = numpy.matrix([[-12.0]])
@@ -92,11 +90,9 @@ class Shooter(SprungShooter):
         self.A, self.B = self.ContinuousToDiscrete(self.A_continuous,
                                                    self.B_continuous, self.dt)
 
-        self.PlaceControllerPoles([0.45, 0.45])
+        self.PlaceControllerPoles([0.45001, 0.44999])
 
-        self.rpl = .05
-        self.ipl = 0.008
-        self.PlaceObserverPoles([self.rpl, self.rpl])
+        self.PlaceObserverPoles([0.05001, 0.04999])
 
         self.U_max = numpy.matrix([[12.0]])
         self.U_min = numpy.matrix([[-12.0]])

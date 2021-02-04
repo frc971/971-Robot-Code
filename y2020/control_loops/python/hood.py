@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 from aos.util.trapezoid_profile import TrapezoidProfile
 from frc971.control_loops.python import control_loop
@@ -16,7 +16,6 @@ try:
     gflags.DEFINE_bool('plot', False, 'If true, plot the loop response.')
 except gflags.DuplicateFlagError:
     pass
-
 
 # Hood is an angular subsystem due to the mounting of the encoder on the hood
 # joint.  We are currently electing to ignore potential non-linearity.
@@ -47,7 +46,7 @@ def main(argv):
         angular_system.PlotKick(kHood, R)
         angular_system.PlotMotion(kHood, R)
 
-    glog.info("Radians per turn: %f\n", radians_per_turn)
+    glog.debug("Radians per turn: %f\n", radians_per_turn)
 
     # Write the generated constants out to a file.
     if len(argv) != 5:

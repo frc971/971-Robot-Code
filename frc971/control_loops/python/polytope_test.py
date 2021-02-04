@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import numpy
 from numpy.testing import *
@@ -153,39 +153,39 @@ class TestHPolytope(unittest.TestCase):
     def test_few_constraints_odd_constraint_even_dims_str(self):
         """Tests printing out the set with odd constraints and even dimensions."""
         self.MakePWithDims(num_constraints=5, num_dims=2)
-        self.assertEqual('[[ 0.  0.]            [[ 0.]  \n'
-                         ' [ 0.  0.]  [[x0]      [ 0.]  \n'
-                         ' [ 0.  0.]   [x1]] <=  [ 0.]  \n'
-                         ' [ 0.  0.]             [ 0.]  \n'
-                         ' [ 0.  0.]]            [ 0.]] ',
+        self.assertEqual('[[0. 0.]            [[0.]  \n'
+                         ' [0. 0.]  [[x0]      [0.]  \n'
+                         ' [0. 0.]   [x1]] <=  [0.]  \n'
+                         ' [0. 0.]             [0.]  \n'
+                         ' [0. 0.]]            [0.]] ',
                          str(self.p))
 
     def test_few_constraints_odd_constraint_small_dims_str(self):
         """Tests printing out the set with odd constraints and odd dimensions."""
         self.MakePWithDims(num_constraints=5, num_dims=1)
-        self.assertEqual('[[ 0.]            [[ 0.]  \n'
-                         ' [ 0.]             [ 0.]  \n'
-                         ' [ 0.]  [[x0]] <=  [ 0.]  \n'
-                         ' [ 0.]             [ 0.]  \n'
-                         ' [ 0.]]            [ 0.]] ',
+        self.assertEqual('[[0.]            [[0.]  \n'
+                         ' [0.]             [0.]  \n'
+                         ' [0.]  [[x0]] <=  [0.]  \n'
+                         ' [0.]             [0.]  \n'
+                         ' [0.]]            [0.]] ',
                          str(self.p))
 
     def test_few_constraints_odd_constraint_odd_dims_str(self):
         """Tests printing out the set with odd constraints and odd dimensions."""
         self.MakePWithDims(num_constraints=5, num_dims=3)
-        self.assertEqual('[[ 0.  0.  0.]            [[ 0.]  \n'
-                         ' [ 0.  0.  0.]  [[x0]      [ 0.]  \n'
-                         ' [ 0.  0.  0.]   [x1]  <=  [ 0.]  \n'
-                         ' [ 0.  0.  0.]   [x2]]     [ 0.]  \n'
-                         ' [ 0.  0.  0.]]            [ 0.]] ',
+        self.assertEqual('[[0. 0. 0.]            [[0.]  \n'
+                         ' [0. 0. 0.]  [[x0]      [0.]  \n'
+                         ' [0. 0. 0.]   [x1]  <=  [0.]  \n'
+                         ' [0. 0. 0.]   [x2]]     [0.]  \n'
+                         ' [0. 0. 0.]]            [0.]] ',
                          str(self.p))
 
     def test_many_constraints_even_constraint_odd_dims_str(self):
         """Tests printing out the set with even constraints and odd dimensions."""
         self.MakePWithDims(num_constraints=2, num_dims=3)
-        self.assertEqual('[[ 0.  0.  0.]  [[x0]     [[ 0.]  \n'
-                         ' [ 0.  0.  0.]]  [x1]  <=  [ 0.]] \n'
-                         '                 [x2]]            ',
+        self.assertEqual('[[0. 0. 0.]  [[x0]     [[0.]  \n'
+                         ' [0. 0. 0.]]  [x1]  <=  [0.]] \n'
+                         '              [x2]]           ',
                          str(self.p))
 
 

@@ -1,9 +1,6 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 
 # This file checks our math in extended_lqr.tex.
-
-from __future__ import print_function
-from __future__ import division
 
 import sys
 import random

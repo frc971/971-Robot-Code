@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 import numpy as np
 import matplotlib.pyplot as plt
 from frc971.control_loops.python import drivetrain

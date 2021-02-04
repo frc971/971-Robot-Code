@@ -16,7 +16,7 @@ def main():
 
   image = cv2.cvtColor(image4_cleaned, cv2.COLOR_BGR2GRAY)
   image = cv2.resize(image, (640, 480))
-  sift = cv2.xfeatures2d.SIFT_create()
+  sift = cv2.SIFT_create()
   keypoints, descriptors = sift.detectAndCompute(image, None)
 
   fbb = flatbuffers.Builder(0)

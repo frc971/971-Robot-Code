@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 from frc971.control_loops.python import control_loop
 from y2020.control_loops.python import flywheel

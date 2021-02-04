@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 from frc971.control_loops.python import control_loop
 from frc971.control_loops.python import controls
@@ -136,7 +136,9 @@ class Claw(control_loop.ControlLoop):
         glog.debug('det %s', str(numpy.linalg.det(lstsq_A)))
 
         out_x = numpy.linalg.lstsq(
-            lstsq_A, numpy.matrix([[self.A[1, 2]], [self.A[3, 2]]]))[0]
+            lstsq_A,
+            numpy.matrix([[self.A[1, 2]], [self.A[3, 2]]]),
+            rcond=None)[0]
         self.K[1, 2] = -lstsq_A[0, 0] * (
             self.K[0, 2] - out_x[0]) / lstsq_A[0, 1] + out_x[1]
 
@@ -369,7 +371,7 @@ def run_test(claw,
              iterations=200):
     """Runs the claw plant on a given claw (claw) with an initial condition (initial_X) and goal (goal).
 
-    The tests themselves are not terribly sophisticated; I just test for 
+    The tests themselves are not terribly sophisticated; I just test for
     whether the goal has been reached and whether the separation goes
     outside of the initial and goal values by more than max_separation_error.
     Prints out something for a failure of either condition and returns
