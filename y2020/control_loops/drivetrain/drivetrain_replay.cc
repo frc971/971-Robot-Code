@@ -20,6 +20,7 @@ DEFINE_string(config, "y2020/config.json",
 DEFINE_string(output_folder, "/tmp/replayed",
               "Name of the folder to write replayed logs to.");
 DEFINE_int32(team, 971, "Team number to use for logfile replay.");
+DEFINE_bool(log_all_nodes, false, "Whether to rerun the logger on every node.");
 
 class LoggerState {
  public:
@@ -32,8 +33,9 @@ class LoggerState {
             event_loop_->configuration(), node)),
         logger_(std::make_unique<aos::logger::Logger>(event_loop_.get())) {
     event_loop_->SkipTimingReport();
+    event_loop_->SkipAosLog();
     event_loop_->OnRun([this]() {
-      logger_->StartLogging(std::move(namer_), aos::UUID::Zero().string_view());
+      logger_->StartLogging(std::move(namer_));
     });
   }
 
@@ -72,15 +74,21 @@ int main(int argc, char **argv) {
                             "frc971.control_loops.drivetrain.Output");
   reader.Register();
 
-  // List of nodes to create loggers for (note: currently just roborio; this
-  // code was refactored to allow easily adding new loggers to accommodate
-  // debugging and potential future changes).
-  const std::vector<std::string> nodes_to_log = {"roborio"};
   std::vector<std::unique_ptr<LoggerState>> loggers;
-  for (const std::string& node : nodes_to_log) {
-    loggers.emplace_back(std::make_unique<LoggerState>(
-        &reader,
-        aos::configuration::GetNode(reader.configuration(), node)));
+  if (FLAGS_log_all_nodes) {
+    for (const aos::Node *node :
+         aos::configuration::GetNodes(reader.configuration())) {
+      loggers.emplace_back(std::make_unique<LoggerState>(&reader, node));
+    }
+  } else {
+    // List of nodes to create loggers for (note: currently just roborio; this
+    // code was refactored to allow easily adding new loggers to accommodate
+    // debugging and potential future changes).
+    const std::vector<std::string> nodes_to_log = {"roborio"};
+    for (const std::string &node : nodes_to_log) {
+      loggers.emplace_back(std::make_unique<LoggerState>(
+          &reader, aos::configuration::GetNode(reader.configuration(), node)));
+    }
   }
 
   const aos::Node *node = nullptr;
