@@ -57,16 +57,16 @@ void log_do(log_level level, const char *format, ...)
 #define LOG_SOURCENAME __FILE__
 
 // The basic logging call.
-#define AOS_LOG(level, format, args...)                                    \
-  do {                                                                     \
-    log_do(level, LOG_SOURCENAME ": " STRINGIFY(__LINE__) ": %s: " format, \
-           LOG_CURRENT_FUNCTION, ##args);                                  \
-    /* so that GCC knows that it won't return */                           \
-    if (level == FATAL) {                                                  \
-      fprintf(stderr, "log_do(FATAL) fell through!!!!!\n");                \
-      printf("see stderr\n");                                              \
-      abort();                                                             \
-    }                                                                      \
+#define AOS_LOG(level, format, args...)                                        \
+  do {                                                                         \
+    log_do(level, LOG_SOURCENAME ": " AOS_STRINGIFY(__LINE__) ": %s: " format, \
+           LOG_CURRENT_FUNCTION, ##args);                                      \
+    /* so that GCC knows that it won't return */                               \
+    if (level == FATAL) {                                                      \
+      fprintf(stderr, "log_do(FATAL) fell through!!!!!\n");                    \
+      printf("see stderr\n");                                                  \
+      abort();                                                                 \
+    }                                                                          \
   } while (0)
 
 // Same as LOG except appends " due to %d (%s)\n" (formatted with errno and
@@ -152,21 +152,22 @@ namespace aos {
 // The (int, int) specialization works around the issue that the compiler
 // will not instantiate the template version of the function on values of
 // unnamed enum type.
-#define AOS_DEFINE_CHECK_OP_IMPL(name, op)                                   \
-  template <typename T1, typename T2>                                        \
-  inline void LogImpl##name(const T1 &v1, const T2 &v2,                      \
-                            const char *exprtext) {                          \
-    if (!__builtin_expect(v1 op v2, 1)) {                                    \
-      log_do(FATAL,                                                          \
-             LOG_SOURCENAME ": " STRINGIFY(__LINE__) ": CHECK(%s) failed\n", \
-             exprtext);                                                      \
-      fprintf(stderr, "log_do(FATAL) fell through!!!!!\n");                  \
-      printf("see stderr\n");                                                \
-      abort();                                                               \
-    }                                                                        \
-  }                                                                          \
-  inline void LogImpl##name(int v1, int v2, const char *exprtext) {          \
-    ::aos::LogImpl##name<int, int>(v1, v2, exprtext);                        \
+#define AOS_DEFINE_CHECK_OP_IMPL(name, op)                          \
+  template <typename T1, typename T2>                               \
+  inline void LogImpl##name(const T1 &v1, const T2 &v2,             \
+                            const char *exprtext) {                 \
+    if (!__builtin_expect(v1 op v2, 1)) {                           \
+      log_do(FATAL,                                                 \
+             LOG_SOURCENAME                                         \
+             ": " AOS_STRINGIFY(__LINE__) ": CHECK(%s) failed\n",   \
+             exprtext);                                             \
+      fprintf(stderr, "log_do(FATAL) fell through!!!!!\n");         \
+      printf("see stderr\n");                                       \
+      abort();                                                      \
+    }                                                               \
+  }                                                                 \
+  inline void LogImpl##name(int v1, int v2, const char *exprtext) { \
+    ::aos::LogImpl##name<int, int>(v1, v2, exprtext);               \
   }
 
 // We use the full name Check_EQ, Check_NE, etc. in case the file including
@@ -181,8 +182,8 @@ AOS_DEFINE_CHECK_OP_IMPL(Check_GE, >=)
 AOS_DEFINE_CHECK_OP_IMPL(Check_GT, >)
 
 #define AOS_CHECK_OP(name, op, val1, val2) \
-  ::aos::LogImplCheck##name(val1, val2,    \
-                            STRINGIFY(val1) STRINGIFY(op) STRINGIFY(val2))
+  ::aos::LogImplCheck##name(               \
+      val1, val2, AOS_STRINGIFY(val1) AOS_STRINGIFY(op) AOS_STRINGIFY(val2))
 
 #define AOS_CHECK_EQ(val1, val2) AOS_CHECK_OP(_EQ, ==, val1, val2)
 #define AOS_CHECK_NE(val1, val2) AOS_CHECK_OP(_NE, !=, val1, val2)
@@ -202,7 +203,7 @@ inline T *CheckNotNull(const char *value_name, T *t) {
 
 // Check that the input is non NULL.  This very useful in constructor
 // initializer lists.
-#define AOS_CHECK_NOTNULL(val) ::aos::CheckNotNull(STRINGIFY(val), val)
+#define AOS_CHECK_NOTNULL(val) ::aos::CheckNotNull(AOS_STRINGIFY(val), val)
 
 inline int CheckSyscall(const char *syscall_string, int value) {
   if (__builtin_expect(value == -1, false)) {
@@ -222,7 +223,7 @@ inline void CheckSyscallReturn(const char *syscall_string, int value) {
 // the values of any of the arguments. Returns the result otherwise.
 //
 // Example: const int fd = AOS_PCHECK(open("/tmp/whatever", O_WRONLY))
-#define AOS_PCHECK(syscall) ::aos::CheckSyscall(STRINGIFY(syscall), syscall)
+#define AOS_PCHECK(syscall) ::aos::CheckSyscall(AOS_STRINGIFY(syscall), syscall)
 
 // PELOG(FATAL)s with the result of syscall if it returns anything other than 0.
 // This is useful for quickly checking things like many of the pthreads
@@ -231,7 +232,7 @@ inline void CheckSyscallReturn(const char *syscall_string, int value) {
 //
 // Example: AOS_PRCHECK(munmap(address, length))
 #define AOS_PRCHECK(syscall) \
-  ::aos::CheckSyscallReturn(STRINGIFY(syscall), syscall)
+  ::aos::CheckSyscallReturn(AOS_STRINGIFY(syscall), syscall)
 
 }  // namespace aos
 

@@ -23,8 +23,8 @@
 #define UNUSED_VARIABLE
 #endif
 
-#define STRINGIFY(x) TO_STRING(x)
-#define TO_STRING(x) #x
+#define AOS_STRINGIFY(x) AOS_TO_STRING(x)
+#define AOS_TO_STRING(x) #x
 
 #ifdef __VXWORKS__
 // We're using ancient glibc, so sticking to just what the syscall can handle is

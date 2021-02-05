@@ -67,7 +67,7 @@ class SimpleLogInterval {
       : interval_(interval), level_(level), message_(message) {}
 
 #define AOS_LOG_INTERVAL(simple_log) \
-  simple_log.WantToLog(LOG_SOURCENAME ": " STRINGIFY(__LINE__))
+  simple_log.WantToLog(LOG_SOURCENAME ": " AOS_STRINGIFY(__LINE__))
   void WantToLog(const char *context) {
     context_ = context;
     interval_.WantToLog();
