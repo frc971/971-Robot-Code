@@ -9,7 +9,6 @@ import glog
 
 
 class LinearSystemParams(object):
-
     def __init__(self,
                  name,
                  motor,
@@ -38,7 +37,6 @@ class LinearSystemParams(object):
 
 
 class LinearSystem(control_loop.ControlLoop):
-
     def __init__(self, params, name='LinearSystem'):
         super(LinearSystem, self).__init__(name)
         self.params = params
@@ -58,8 +56,9 @@ class LinearSystem(control_loop.ControlLoop):
 
         # State is [position, velocity]
         # Input is [Voltage]
-        C1 = self.motor.Kt / (self.G * self.G * self.radius * self.radius *
-                              self.motor.resistance * self.mass * self.motor.Kv)
+        C1 = self.motor.Kt / (
+            self.G * self.G * self.radius * self.radius * self.motor.resistance
+            * self.mass * self.motor.Kv)
         C2 = self.motor.Kt / (
             self.G * self.radius * self.motor.resistance * self.mass)
 
@@ -124,7 +123,6 @@ class LinearSystem(control_loop.ControlLoop):
 
 
 class IntegralLinearSystem(LinearSystem):
-
     def __init__(self, params, name='IntegralLinearSystem'):
         super(IntegralLinearSystem, self).__init__(params, name=name)
 
@@ -147,7 +145,8 @@ class IntegralLinearSystem(LinearSystem):
 
         self.Q = numpy.matrix([[(self.params.kalman_q_pos**2.0), 0.0, 0.0],
                                [0.0, (self.params.kalman_q_vel**2.0), 0.0],
-                               [0.0, 0.0, (self.params.kalman_q_voltage**2.0)]])
+                               [0.0, 0.0, (self.params.kalman_q_voltage
+                                           **2.0)]])
 
         self.R = numpy.matrix([[(self.params.kalman_r_position**2.0)]])
 
@@ -265,7 +264,8 @@ def RunTest(plant,
         goal = controller.A * goal + controller.B * ff_U
 
         if U[0, 0] != U_uncapped[0, 0]:
-            profile.MoveCurrentState(numpy.matrix([[goal[0, 0]], [goal[1, 0]]]))
+            profile.MoveCurrentState(
+                numpy.matrix([[goal[0, 0]], [goal[1, 0]]]))
 
     glog.debug('Time: %f', t_plot[-1])
     glog.debug('goal_error %s', repr(end_goal - goal))
@@ -395,11 +395,10 @@ def WriteLinearSystem(params, plant_files, controller_files, year_namespaces):
     if type(params) is list:
         name = params[0].name
         for index, param in enumerate(params):
-            linear_systems.append(
-                LinearSystem(param, param.name + str(index)))
+            linear_systems.append(LinearSystem(param, param.name + str(index)))
             integral_linear_systems.append(
-                IntegralLinearSystem(param, 'Integral' + param.name + str(
-                    index)))
+                IntegralLinearSystem(param,
+                                     'Integral' + param.name + str(index)))
     else:
         name = params.name
         linear_systems.append(LinearSystem(params, params.name))
@@ -409,17 +408,15 @@ def WriteLinearSystem(params, plant_files, controller_files, year_namespaces):
     loop_writer = control_loop.ControlLoopWriter(
         name, linear_systems, namespaces=year_namespaces)
     loop_writer.AddConstant(
-        control_loop.Constant('kFreeSpeed', '%f', linear_systems[0]
-                              .motor.free_speed))
+        control_loop.Constant('kFreeSpeed', '%f',
+                              linear_systems[0].motor.free_speed))
     loop_writer.AddConstant(
-        control_loop.Constant('kOutputRatio', '%f', linear_systems[0].G *
-                              linear_systems[0].radius))
+        control_loop.Constant('kOutputRatio', '%f',
+                              linear_systems[0].G * linear_systems[0].radius))
     loop_writer.AddConstant(
         control_loop.Constant('kRadius', '%f', linear_systems[0].radius))
     loop_writer.Write(plant_files[0], plant_files[1])
 
     integral_loop_writer = control_loop.ControlLoopWriter(
-        'Integral' + name,
-        integral_linear_systems,
-        namespaces=year_namespaces)
+        'Integral' + name, integral_linear_systems, namespaces=year_namespaces)
     integral_loop_writer.Write(controller_files[0], controller_files[1])

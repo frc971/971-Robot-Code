@@ -22,7 +22,6 @@ gflags.DEFINE_bool(
 
 
 class SystemParams(object):
-
     def __init__(self, J, G, kP, kD, kCompensationTimeconstant, q_pos, q_vel,
                  q_torque, current_limit):
         self.J = J
@@ -69,7 +68,6 @@ kTrigger = SystemParams(
 
 
 class HapticInput(control_loop.ControlLoop):
-
     def __init__(self, params=None, name='HapticInput'):
         # The defaults are for the steering wheel.
         super(HapticInput, self).__init__(name)
@@ -109,7 +107,6 @@ class HapticInput(control_loop.ControlLoop):
 
 
 class IntegralHapticInput(HapticInput):
-
     def __init__(self, params=None, name="IntegralHapticInput"):
         super(IntegralHapticInput, self).__init__(name=name, params=params)
 
@@ -369,7 +366,9 @@ def main(argv):
             trigger_velocity = [t * 50.0 for t in trigger_velocity]
             trigger_torque = [t / 2.0 for t in trigger_torque]
             trigger_current = [t * 10.0 for t in trigger_current]
-            trigger_request_current = [t * 2.0 for t in trigger_request_current]
+            trigger_request_current = [
+                t * 2.0 for t in trigger_request_current
+            ]
             resampled_trigger_request_current = scipy.interpolate.interp1d(
                 trigger_request_time, trigger_request_current,
                 kind="zero")(trigger_data_time)
@@ -390,8 +389,9 @@ def main(argv):
                     kWheel,
                     run_correct=True)
             else:
-                plot_input(trigger_data_time, trigger_radians, trigger_velocity,
-                           trigger_torque, trigger_current, kTrigger)
+                plot_input(trigger_data_time, trigger_radians,
+                           trigger_velocity, trigger_torque, trigger_current,
+                           kTrigger)
                 plot_input(wheel_data_time, wheel_radians, wheel_velocity,
                            wheel_torque, wheel_current, kWheel)
             pylab.show()
@@ -403,7 +403,8 @@ def main(argv):
     else:
         namespaces = ['frc971', 'control_loops', 'drivetrain']
         for name, params, filenames in [('HapticWheel', kWheel, argv[1:5]),
-                                        ('HapticTrigger', kTrigger, argv[5:9])]:
+                                        ('HapticTrigger', kTrigger,
+                                         argv[5:9])]:
             haptic_input = HapticInput(params=params, name=name)
             loop_writer = control_loop.ControlLoopWriter(
                 name, [haptic_input],
@@ -422,11 +423,13 @@ def main(argv):
                 control_loop.Constant("k" + name + "Dt", "%f",
                                       integral_haptic_input.dt))
             integral_loop_writer.AddConstant(
-                control_loop.Constant("k" + name + "FreeCurrent", "%f",
-                                      integral_haptic_input.motor.free_current))
+                control_loop.Constant(
+                    "k" + name + "FreeCurrent", "%f",
+                    integral_haptic_input.motor.free_current))
             integral_loop_writer.AddConstant(
-                control_loop.Constant("k" + name + "StallTorque", "%f",
-                                      integral_haptic_input.motor.stall_torque))
+                control_loop.Constant(
+                    "k" + name + "StallTorque", "%f",
+                    integral_haptic_input.motor.stall_torque))
             integral_loop_writer.AddConstant(
                 control_loop.Constant("k" + name + "J", "%f",
                                       integral_haptic_input.J))

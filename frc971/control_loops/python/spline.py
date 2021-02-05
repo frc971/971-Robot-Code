@@ -217,19 +217,20 @@ def ddspline_theta(alpha,
     dddy = numpy.array(dddspline_points)[1, :]
 
     return -1.0 / ((dx**2.0 + dy**2.0)**2.0) * (dx * ddy - dy * ddx) * 2.0 * (
-        dy * ddy + dx * ddx) + 1.0 / (dx**2.0 + dy**2.0) * (dx * dddy -
-                                                            dy * dddx)
+        dy * ddy + dx * ddx) + 1.0 / (dx**2.0 + dy**2.0) * (
+            dx * dddy - dy * dddx)
 
 
 class Path(object):
     """Represents a path to follow."""
+
     def __init__(self, control_points):
         """Constructs a path given the control points."""
         self._control_points = control_points
 
         def spline_velocity(alpha):
-            return numpy.linalg.norm(dspline(alpha, self._control_points),
-                                     axis=0)
+            return numpy.linalg.norm(
+                dspline(alpha, self._control_points), axis=0)
 
         self._point_distances = [0.0]
         num_alpha = 100
@@ -264,18 +265,16 @@ class Path(object):
             return 0.0
         elif distance >= self.length():
             return 1.0
-        after_index = numpy.searchsorted(self._point_distances,
-                                         distance,
-                                         side='right')
+        after_index = numpy.searchsorted(
+            self._point_distances, distance, side='right')
         before_index = after_index - 1
 
         # Linearly interpolate alpha from our (sorted) distance table.
         return (distance - self._point_distances[before_index]) / (
             self._point_distances[after_index] -
             self._point_distances[before_index]) * (
-                1.0 /
-                (len(self._point_distances) - 1.0)) + float(before_index) / (
-                    len(self._point_distances) - 1.0)
+                1.0 / (len(self._point_distances) - 1.0)
+            ) + float(before_index) / (len(self._point_distances) - 1.0)
 
     def length(self):
         """Returns the length of the spline (in meters)"""
@@ -289,8 +288,8 @@ class Path(object):
     # TODO(austin): need a better name...
     def dxy(self, distance):
         """Returns the xy velocity as a function of distance."""
-        dspline_point = dspline(self.distance_to_alpha(distance),
-                                self._control_points)
+        dspline_point = dspline(
+            self.distance_to_alpha(distance), self._control_points)
         return dspline_point / numpy.linalg.norm(dspline_point, axis=0)
 
     # TODO(austin): need a better name...
@@ -303,16 +302,16 @@ class Path(object):
         norm = numpy.linalg.norm(dspline_points, axis=0)**2.0
 
         return ddspline_points / norm - numpy.multiply(
-            dspline_points, (numpy.array(dspline_points)[0, :] *
-                             numpy.array(ddspline_points)[0, :] +
-                             numpy.array(dspline_points)[1, :] *
+            dspline_points, (numpy.array(dspline_points)[0, :] * numpy.array(
+                ddspline_points)[0, :] + numpy.array(dspline_points)[1, :] *
                              numpy.array(ddspline_points)[1, :]) / (norm**2.0))
 
     def theta(self, distance, dspline_points=None):
         """Returns the heading as a function of distance."""
-        return spline_theta(self.distance_to_alpha(distance),
-                            self._control_points,
-                            dspline_points=dspline_points)
+        return spline_theta(
+            self.distance_to_alpha(distance),
+            self._control_points,
+            dspline_points=dspline_points)
 
     def dtheta(self, distance, dspline_points=None, ddspline_points=None):
         """Returns the angular velocity as a function of distance."""
@@ -359,12 +358,12 @@ class Path(object):
         # TODO(austin): Factor out the d^alpha/dd^2.
         return ddtheta_points / numpy.linalg.norm(
             dspline_points, axis=0)**2.0 - numpy.multiply(
-                dtheta_points, (numpy.array(dspline_points)[0, :] *
-                                numpy.array(ddspline_points)[0, :] +
-                                numpy.array(dspline_points)[1, :] *
-                                numpy.array(ddspline_points)[1, :]) /
-                ((numpy.array(dspline_points)[0, :]**2.0 +
-                  numpy.array(dspline_points)[1, :]**2.0)**2.0))
+                dtheta_points,
+                (numpy.array(dspline_points)[0, :] * numpy.array(
+                    ddspline_points)[0, :] + numpy.array(dspline_points)[1, :]
+                 * numpy.array(ddspline_points)[1, :]) / (
+                     (numpy.array(dspline_points)[0, :]**2.0 +
+                      numpy.array(dspline_points)[1, :]**2.0)**2.0))
 
 
 def integrate_accel_for_distance(f, v, x, dx):
@@ -428,8 +427,8 @@ class Trajectory(object):
         return plan
 
     def lateral_velocity_curvature(self, distance):
-        return numpy.sqrt(self._lateral_accel /
-                          numpy.linalg.norm(self._path.ddxy(distance)))
+        return numpy.sqrt(
+            self._lateral_accel / numpy.linalg.norm(self._path.ddxy(distance)))
 
     def lateral_accel_pass(self, plan):
         plan = plan.copy()
@@ -553,9 +552,8 @@ class Trajectory(object):
             if distance > self.distances[-1]:
                 distance = self.distances[-1]
         else:
-            after_index = numpy.searchsorted(self.distances,
-                                             distance,
-                                             side='right')
+            after_index = numpy.searchsorted(
+                self.distances, distance, side='right')
             before_index = after_index - 1
 
         vforwards = integrate_accel_for_distance(
@@ -594,8 +592,8 @@ class Trajectory(object):
         return U
 
     def goal_state(self, distance, velocity):
-        width = (self._drivetrain.robot_radius_l +
-                 self._drivetrain.robot_radius_r)
+        width = (
+            self._drivetrain.robot_radius_l + self._drivetrain.robot_radius_r)
         goal = numpy.matrix(numpy.zeros((5, 1)))
 
         goal[0:2, :] = self._path.xy(distance)
@@ -627,23 +625,25 @@ def main(argv):
 
     # Compute theta and the two derivatives
     theta = spline_theta(alphas, control_points, dspline_points=dspline_points)
-    dtheta = dspline_theta(alphas,
-                           control_points,
-                           dspline_points=dspline_points)
-    ddtheta = ddspline_theta(alphas,
-                             control_points,
-                             dspline_points=dspline_points,
-                             dddspline_points=dddspline_points)
+    dtheta = dspline_theta(
+        alphas, control_points, dspline_points=dspline_points)
+    ddtheta = ddspline_theta(
+        alphas,
+        control_points,
+        dspline_points=dspline_points,
+        dddspline_points=dddspline_points)
 
     # Plot the control points and the spline.
     pylab.figure()
-    pylab.plot(numpy.array(control_points)[0, :],
-               numpy.array(control_points)[1, :],
-               '-o',
-               label='control')
-    pylab.plot(numpy.array(spline_points)[0, :],
-               numpy.array(spline_points)[1, :],
-               label='spline')
+    pylab.plot(
+        numpy.array(control_points)[0, :],
+        numpy.array(control_points)[1, :],
+        '-o',
+        label='control')
+    pylab.plot(
+        numpy.array(spline_points)[0, :],
+        numpy.array(spline_points)[1, :],
+        label='spline')
     pylab.legend()
 
     # For grins, confirm that the double integral of the acceleration (with
@@ -715,9 +715,10 @@ def main(argv):
     pylab.plot(alphas, ddtheta, label='ddtheta')
     pylab.plot(alphas, thetaint_plot, label='thetai')
     pylab.plot(alphas, dthetaint_plot, label='dthetai')
-    pylab.plot(alphas,
-               numpy.linalg.norm(numpy.array(dspline_points), axis=0),
-               label='velocity')
+    pylab.plot(
+        alphas,
+        numpy.linalg.norm(numpy.array(dspline_points), axis=0),
+        label='velocity')
 
     # Now, repeat as a function of path length as opposed to alpha
     path = Path(control_points)
@@ -784,11 +785,12 @@ def main(argv):
     longitudal_accel = 3.0
     lateral_accel = 2.0
 
-    trajectory = Trajectory(path,
-                            drivetrain=velocity_drivetrain,
-                            longitudal_accel=longitudal_accel,
-                            lateral_accel=lateral_accel,
-                            distance_count=500)
+    trajectory = Trajectory(
+        path,
+        drivetrain=velocity_drivetrain,
+        longitudal_accel=longitudal_accel,
+        lateral_accel=lateral_accel,
+        distance_count=500)
 
     vmax = numpy.inf
     vmax = 10.0
@@ -884,8 +886,8 @@ def main(argv):
 
         state_plan[:, i] = numpy.matrix([[x_r], [y_r], [theta_r],
                                          [vel_lr[0, 0]], [vel_lr[1, 0]]])
-        u_plan[:, i] = trajectory.ff_voltage(backward_accel_plan, xva_plan[0,
-                                                                           i])
+        u_plan[:, i] = trajectory.ff_voltage(backward_accel_plan,
+                                             xva_plan[0, i])
 
     Q = numpy.matrix(
         numpy.diag([
@@ -937,8 +939,8 @@ def main(argv):
         goal_state = trajectory.goal_state(xva_plan[0, i], xva_plan[1, i])
         state_error = goal_state - state
 
-        U = (trajectory.ff_voltage(backward_accel_plan, xva_plan[0, i]) + K *
-             (state_error))
+        U = (trajectory.ff_voltage(backward_accel_plan, xva_plan[0, i]) +
+             K * (state_error))
 
         def spline_diffeq(U, t, x):
             velocity = x[3:5, :]
@@ -970,12 +972,12 @@ def main(argv):
     pylab.legend()
 
     pylab.figure()
-    pylab.plot(numpy.array(states)[0, :],
-               numpy.array(states)[1, :],
-               label='robot')
-    pylab.plot(numpy.array(spline_points)[0, :],
-               numpy.array(spline_points)[1, :],
-               label='spline')
+    pylab.plot(
+        numpy.array(states)[0, :], numpy.array(states)[1, :], label='robot')
+    pylab.plot(
+        numpy.array(spline_points)[0, :],
+        numpy.array(spline_points)[1, :],
+        label='spline')
     pylab.legend()
 
     def a(_, x):

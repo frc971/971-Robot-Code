@@ -32,6 +32,7 @@ class Mode(enum.Enum):
 
 class GTK_Widget(BaseWindow):
     """Create a GTK+ widget on which we will draw using Cairo"""
+
     def __init__(self):
         super(GTK_Widget, self).__init__()
 
@@ -75,6 +76,7 @@ class GTK_Widget(BaseWindow):
         self.module_path = os.path.dirname(os.path.realpath(sys.argv[0]))
 
     """set extents on images"""
+
     def reinit_extents(self):
         self.extents_x_min = -1.0 * SCREEN_SIZE
         self.extents_x_max = SCREEN_SIZE
@@ -298,10 +300,11 @@ class GTK_Widget(BaseWindow):
                 array[j, 1] = point[1]
             spline = Spline(np.ascontiguousarray(np.transpose(array)))
             for k in np.linspace(0.01, 1, 100):
-                cr.move_to(mToPx(spline.Point(k - 0.01)[0]),
-                           mToPx(spline.Point(k - 0.01)[1]))
-                cr.line_to(mToPx(spline.Point(k)[0]),
-                           mToPx(spline.Point(k)[1]))
+                cr.move_to(
+                    mToPx(spline.Point(k - 0.01)[0]),
+                    mToPx(spline.Point(k - 0.01)[1]))
+                cr.line_to(
+                    mToPx(spline.Point(k)[0]), mToPx(spline.Point(k)[1]))
                 cr.stroke()
                 holding = [
                     spline.Point(k - 0.01)[0],

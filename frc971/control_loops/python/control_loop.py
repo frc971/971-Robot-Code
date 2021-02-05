@@ -4,7 +4,6 @@ import os
 
 
 class Constant(object):
-
     def __init__(self, name, formatt, value, comment=None):
         self.name = name
         self.formatt = formatt
@@ -26,7 +25,6 @@ class Constant(object):
 
 
 class ControlLoopWriter(object):
-
     def __init__(self,
                  gain_schedule_name,
                  loops,
@@ -143,8 +141,8 @@ class ControlLoopWriter(object):
                      '#define %s\n\n' % (header_guard, header_guard))
             fd.write(
                 '#include \"frc971/control_loops/state_feedback_loop.h\"\n')
-            if (self._plant_type == 'StateFeedbackHybridPlant' or
-                    self._observer_type == 'HybridKalman'):
+            if (self._plant_type == 'StateFeedbackHybridPlant'
+                    or self._observer_type == 'HybridKalman'):
                 fd.write(
                     '#include \"frc971/control_loops/hybrid_state_feedback_loop.h\"\n'
                 )
@@ -215,9 +213,9 @@ class ControlLoopWriter(object):
             fd.write('  ::std::vector< ::std::unique_ptr<%s>> plants(%d);\n' %
                      (self._PlantCoeffType(), len(self._loops)))
             for index, loop in enumerate(self._loops):
-                fd.write('  plants[%d] = ::std::unique_ptr<%s>(new %s(%s));\n' %
-                         (index, self._PlantCoeffType(), self._PlantCoeffType(),
-                          loop.PlantFunction()))
+                fd.write('  plants[%d] = ::std::unique_ptr<%s>(new %s(%s));\n'
+                         % (index, self._PlantCoeffType(),
+                            self._PlantCoeffType(), loop.PlantFunction()))
             fd.write('  return %s(&plants);\n' % self._PlantType())
             fd.write('}\n\n')
 
@@ -228,9 +226,9 @@ class ControlLoopWriter(object):
                 (self._ControllerCoeffType(), len(self._loops)))
             for index, loop in enumerate(self._loops):
                 fd.write(
-                    '  controllers[%d] = ::std::unique_ptr<%s>(new %s(%s));\n' %
-                    (index, self._ControllerCoeffType(),
-                     self._ControllerCoeffType(), loop.ControllerFunction()))
+                    '  controllers[%d] = ::std::unique_ptr<%s>(new %s(%s));\n'
+                    % (index, self._ControllerCoeffType(),
+                       self._ControllerCoeffType(), loop.ControllerFunction()))
             fd.write('  return %s(&controllers);\n' % self._ControllerType())
             fd.write('}\n\n')
 
@@ -259,7 +257,6 @@ class ControlLoopWriter(object):
 
 
 class ControlLoop(object):
-
     def __init__(self, name):
         """Constructs a control loop object.
 
@@ -350,8 +347,8 @@ class ControlLoop(object):
                 with the contents of matrix.
         """
         ans = [
-            '  Eigen::Matrix<%s, %d, %d> %s;\n' % (scalar_type, matrix.shape[0],
-                                                   matrix.shape[1], matrix_name)
+            '  Eigen::Matrix<%s, %d, %d> %s;\n' %
+            (scalar_type, matrix.shape[0], matrix.shape[1], matrix_name)
         ]
         for x in range(matrix.shape[0]):
             for y in range(matrix.shape[1]):
@@ -472,7 +469,8 @@ class ControlLoop(object):
         Returns:
             string, The header declaration for the function.
         """
-        return '%s %s;\n' % (observer_coefficient_type, self.ObserverFunction())
+        return '%s %s;\n' % (observer_coefficient_type,
+                             self.ObserverFunction())
 
     def DumpObserver(self, observer_coefficient_type, scalar_type):
         """Returns a c++ function which will create a Observer object.
@@ -497,7 +495,7 @@ class ControlLoop(object):
             ans.append(self._DumpMatrix('Q', Q, scalar_type))
             ans.append(self._DumpMatrix('R', R, scalar_type))
             ans.append('  return %s(KalmanGain, Q, R);\n' %
-                       (observer_coefficient_type,))
+                       (observer_coefficient_type, ))
 
         elif observer_coefficient_type.startswith('HybridKalman'):
             ans.append(
@@ -511,7 +509,7 @@ class ControlLoop(object):
                                  scalar_type))
             ans.append(
                 '  return %s(Q_continuous, R_continuous, P_steady_state);\n' %
-                (observer_coefficient_type,))
+                (observer_coefficient_type, ))
         else:
             glog.fatal('Unsupported observer type %s',
                        observer_coefficient_type)
@@ -521,7 +519,6 @@ class ControlLoop(object):
 
 
 class HybridControlLoop(ControlLoop):
-
     def __init__(self, name):
         super(HybridControlLoop, self).__init__(name=name)
 
@@ -553,7 +550,6 @@ class HybridControlLoop(ControlLoop):
 
 
 class CIM(object):
-
     def __init__(self):
         # Stall Torque in N m
         self.stall_torque = 2.42
@@ -573,7 +569,6 @@ class CIM(object):
 
 
 class MiniCIM(object):
-
     def __init__(self):
         # Stall Torque in N m
         self.stall_torque = 1.41
@@ -593,7 +588,6 @@ class MiniCIM(object):
 
 
 class NMotor(object):
-
     def __init__(self, motor, n):
         """Gangs together n motors."""
         self.motor = motor
@@ -609,7 +603,6 @@ class NMotor(object):
 
 
 class Vex775Pro(object):
-
     def __init__(self):
         # Stall Torque in N m
         self.stall_torque = 0.71
@@ -653,7 +646,6 @@ class BAG(object):
 
 
 class MN3510(object):
-
     def __init__(self):
         # http://www.robotshop.com/en/t-motor-navigator-mn3510-360kv-brushless-motor.html#Specifications
         # Free Current in Amps
@@ -688,11 +680,11 @@ class Falcon(object):
         # Resistance of the motor, divided by 2 to account for the 2 motors
         self.resistance = 12.0 / self.stall_current
         # Motor velocity constant
-        self.Kv = (self.free_speed /
-                   (12.0 - self.resistance * self.free_current))
+        self.Kv = (
+            self.free_speed / (12.0 - self.resistance * self.free_current))
         # Torque constant
         self.Kt = self.stall_torque / self.stall_current
         # Motor inertia in kg m^2
         # Diameter of 1.9", weight of: 100 grams
         # TODO(austin): Get a number from Scott Westbrook for the mass
-        self.motor_inertia = 0.1 * ((0.95 * 0.0254) ** 2.0)
+        self.motor_inertia = 0.1 * ((0.95 * 0.0254)**2.0)

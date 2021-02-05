@@ -9,7 +9,6 @@ import glog
 
 
 class DrivetrainParams(object):
-
     def __init__(self,
                  J,
                  mass,
@@ -110,7 +109,6 @@ class DrivetrainParams(object):
 
 
 class Drivetrain(control_loop.ControlLoop):
-
     def __init__(self,
                  drivetrain_params,
                  name="Drivetrain",
@@ -219,9 +217,10 @@ class Drivetrain(control_loop.ControlLoop):
         # X will be of the format
         # [[positionl], [velocityl], [positionr], [velocityr]]
         self.A_continuous = numpy.matrix(
-            [[0, 1, 0, 0], [0, -self.mspl * self.tcl, 0, -self.msnr * self.tcr],
-             [0, 0, 0, 1], [0, -self.msnl * self.tcl, 0,
-                            -self.mspr * self.tcr]])
+            [[0, 1, 0,
+              0], [0, -self.mspl * self.tcl, 0, -self.msnr * self.tcr],
+             [0, 0, 0, 1],
+             [0, -self.msnl * self.tcl, 0, -self.mspr * self.tcr]])
         self.B_continuous = numpy.matrix(
             [[0, 0], [self.mspl * self.mpl, self.msnr * self.mpr], [0, 0],
              [self.msnl * self.mpl, self.mspr * self.mpr]])
@@ -250,12 +249,14 @@ class Drivetrain(control_loop.ControlLoop):
         self.K = controls.dlqr(self.A, self.B, self.Q, self.R)
 
         glog.debug('DT q_pos %f q_vel %s %s', q_pos, q_vel, self._name)
-        glog.debug('Poles: %s', str(numpy.linalg.eig(self.A - self.B * self.K)[0]))
-        glog.debug('Time constants: %s hz',
-                   str([
-                       numpy.log(x) / -self.dt
-                       for x in numpy.linalg.eig(self.A - self.B * self.K)[0]
-                   ]))
+        glog.debug('Poles: %s',
+                   str(numpy.linalg.eig(self.A - self.B * self.K)[0]))
+        glog.debug(
+            'Time constants: %s hz',
+            str([
+                numpy.log(x) / -self.dt
+                for x in numpy.linalg.eig(self.A - self.B * self.K)[0]
+            ]))
         glog.debug('K %s', repr(self.K))
 
         self.hlp = 0.3
@@ -267,7 +268,6 @@ class Drivetrain(control_loop.ControlLoop):
 
 
 class KFDrivetrain(Drivetrain):
-
     def __init__(self,
                  drivetrain_params,
                  name="KFDrivetrain",
@@ -308,7 +308,8 @@ class KFDrivetrain(Drivetrain):
             self.A_continuous[0:4, 4:6] = numpy.matrix([[0.0, 0.0],
                                                         [self.mspl, self.msnl],
                                                         [0.0, 0.0],
-                                                        [self.msnr, self.mspr]])
+                                                        [self.msnr,
+                                                         self.mspr]])
             q_voltage = drivetrain_params.kf_q_voltage * self.mpl
         else:
             self.A_continuous[0:4, 4:6] = self.unaugmented_B_continuous
@@ -322,31 +323,31 @@ class KFDrivetrain(Drivetrain):
                                                    self.B_continuous, self.dt)
 
         if self.has_imu:
-            self.C = numpy.matrix([[1, 0, 0, 0, 0, 0, 0], [0, 0, 1, 0, 0, 0, 0],
-                                   [
-                                       0, -0.5 / drivetrain_params.robot_radius,
-                                       0, 0.5 / drivetrain_params.robot_radius,
-                                       0, 0, 0
-                                   ], [0, 0, 0, 0, 0, 0, 0]])
+            self.C = numpy.matrix(
+                [[1, 0, 0, 0, 0, 0, 0], [0, 0, 1, 0, 0, 0, 0],
+                 [
+                     0, -0.5 / drivetrain_params.robot_radius, 0,
+                     0.5 / drivetrain_params.robot_radius, 0, 0, 0
+                 ], [0, 0, 0, 0, 0, 0, 0]])
             gravity = 9.8
-            self.C[3, 0:6] = 0.5 * (
-                self.A_continuous[1, 0:6] + self.A_continuous[3, 0:6]) / gravity
+            self.C[3, 0:6] = 0.5 * (self.A_continuous[1, 0:6] +
+                                    self.A_continuous[3, 0:6]) / gravity
 
             self.D = numpy.matrix(
                 [[0, 0], [0, 0], [0, 0],
                  [
-                     0.5 * (self.B_continuous[1, 0] + self.B_continuous[3, 0]) /
-                     gravity,
-                     0.5 * (self.B_continuous[1, 1] + self.B_continuous[3, 1]) /
-                     gravity
+                     0.5 * (self.B_continuous[1, 0] + self.B_continuous[3, 0])
+                     / gravity,
+                     0.5 * (self.B_continuous[1, 1] + self.B_continuous[3, 1])
+                     / gravity
                  ]])
         else:
-            self.C = numpy.matrix([[1, 0, 0, 0, 0, 0, 0], [0, 0, 1, 0, 0, 0, 0],
-                                   [
-                                       0, -0.5 / drivetrain_params.robot_radius,
-                                       0, 0.5 / drivetrain_params.robot_radius,
-                                       0, 0, 0
-                                   ]])
+            self.C = numpy.matrix(
+                [[1, 0, 0, 0, 0, 0, 0], [0, 0, 1, 0, 0, 0, 0],
+                 [
+                     0, -0.5 / drivetrain_params.robot_radius, 0,
+                     0.5 / drivetrain_params.robot_radius, 0, 0, 0
+                 ]])
 
             self.D = numpy.matrix([[0, 0], [0, 0], [0, 0]])
 
@@ -619,7 +620,8 @@ def PlotDrivetrainMotions(drivetrain_params):
     pylab.plot(range(200), close_loop_left, label='left position')
     pylab.plot(range(200), close_loop_right, label='right position')
     pylab.suptitle(
-        'Angular Move\nLeft position going to -1 and right position going to 1')
+        'Angular Move\nLeft position going to -1 and right position going to 1'
+    )
     pylab.legend(loc='center right')
     pylab.show()
 

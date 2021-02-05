@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-
 """Wrapper around libcdd, a polytope manipulation library."""
 
 __author__ = 'Austin Schuh (austin.linux@gmail.com)'
@@ -15,7 +14,8 @@ import sys
 libcdd = None
 for path in os.environ.get('PYTHONPATH').split(':'):
     try:
-        libcdd = ctypes.cdll.LoadLibrary(os.path.join(path, 'third_party/cddlib/_cddlib.so'))
+        libcdd = ctypes.cdll.LoadLibrary(
+            os.path.join(path, 'third_party/cddlib/_cddlib.so'))
     except OSError:
         pass
 
@@ -49,36 +49,26 @@ class dd_matrixdata(ctypes.Structure):
         ("rowvec", ctypes.POINTER(mytype)),
     ]
 
+
 # Define the input and output types for a bunch of libcdd functions.
 libcdd.dd_CreateMatrix.restype = ctypes.POINTER(dd_matrixdata)
 libcdd.ddd_get_d.argtypes = [mytype]
 libcdd.ddd_get_d.restype = ctypes.c_double
 
-libcdd.dd_CopyGenerators.argtypes = [
-    ctypes.POINTER(dd_polyhedradata)
-]
+libcdd.dd_CopyGenerators.argtypes = [ctypes.POINTER(dd_polyhedradata)]
 libcdd.dd_CopyGenerators.restype = ctypes.POINTER(dd_matrixdata)
 
 libcdd.dd_DDMatrix2Poly.argtypes = [
     ctypes.POINTER(dd_matrixdata),
     ctypes.POINTER(ctypes.c_int)
 ]
-libcdd.dd_DDMatrix2Poly.restype = (
-  ctypes.POINTER(dd_polyhedradata))
+libcdd.dd_DDMatrix2Poly.restype = (ctypes.POINTER(dd_polyhedradata))
 
-libcdd.dd_FreeMatrix.argtypes = [
-    ctypes.POINTER(dd_matrixdata)
-]
+libcdd.dd_FreeMatrix.argtypes = [ctypes.POINTER(dd_matrixdata)]
 
-libcdd.dd_FreePolyhedra.argtypes = [
-  ctypes.POINTER(dd_polyhedradata)
-]
+libcdd.dd_FreePolyhedra.argtypes = [ctypes.POINTER(dd_polyhedradata)]
 
-libcdd.ddd_set_d.argtypes = [
-  mytype,
-  ctypes.c_double
-]
-
+libcdd.ddd_set_d.argtypes = [mytype, ctypes.c_double]
 
 # Various enums.
 DD_INEQUALITY = 1

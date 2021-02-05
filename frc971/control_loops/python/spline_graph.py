@@ -7,6 +7,7 @@ from gi.repository import Gdk, Gtk, GLib
 import cairo
 import basic_window
 
+
 class GridWindow(Gtk.Window):
     def method_connect(self, event, cb):
         def handler(obj, *args):

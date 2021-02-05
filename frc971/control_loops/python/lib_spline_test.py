@@ -7,6 +7,7 @@ import unittest
 
 from libspline import Spline, DistanceSpline, Trajectory
 
+
 class TestSpline(unittest.TestCase):
     def testSimpleSpline(self):
         points = np.array([[1.0, 2.0, 3.0, 4.0, 5.0, 6.0],
@@ -14,6 +15,7 @@ class TestSpline(unittest.TestCase):
         spline = Spline(points)
         assert_allclose(spline.Point(.5), [3.5, 4.5])
         assert_almost_equal(spline.Theta(.5), math.atan2(1, 1))
+
 
 class TestDistanceSpline(unittest.TestCase):
     def testDistanceSpline(self):
@@ -23,6 +25,7 @@ class TestDistanceSpline(unittest.TestCase):
         dSpline = DistanceSpline([spline])
         assert_almost_equal(dSpline.Length(), 5 * math.sqrt(2))
 
+
 class TestTrajectory(unittest.TestCase):
     def testTrajectory(self):
         points = np.array([[1.0, 2.0, 3.0, 4.0, 5.0, 5.0],
@@ -31,7 +34,7 @@ class TestTrajectory(unittest.TestCase):
         dSpline = DistanceSpline([spline])
         trajectory = Trajectory(dSpline)
         trajectory.Plan()
-        plan = trajectory.GetPlanXVA(5.05*1e-3)
+        plan = trajectory.GetPlanXVA(5.05 * 1e-3)
         self.assertEqual(plan.shape, (3, 624))
 
     def testLimits(self):
@@ -43,7 +46,7 @@ class TestTrajectory(unittest.TestCase):
         trajectory = Trajectory(dSpline)
         trajectory.LimitVelocity(0, trajectory.Length(), 3)
         trajectory.Plan()
-        plan = trajectory.GetPlanXVA(5.05*1e-3)
+        plan = trajectory.GetPlanXVA(5.05 * 1e-3)
         self.assertEqual(plan.shape, (3, 656))
 
 

@@ -42,14 +42,15 @@ class Graph():  # (TODO): Remove Computer Calculation
             traj.Plan()
             XVA = traj.GetPlanXVA(dT)
             if len(XVA[0]) > 0:
-              self.draw_x_axis(cr, start, height, zero, XVA, end)
-              self.drawVelocity(cr, XVA, start, height, skip, zero, end)
-              self.drawAcceleration(cr, XVA, start, height, skip, zero,
-                                    AXIS_MARGIN_SPACE, end)
-              self.drawVoltage(cr, XVA, start, height, skip, traj, zero, end)
-              cr.set_source_rgb(0, 0, 0)
-              cr.move_to(-1.0 * AXIS_MARGIN_SPACE, zero + height / 2.0)
-              cr.line_to(AXIS_MARGIN_SPACE - SCREEN_SIZE, zero + height / 2.0)
+                self.draw_x_axis(cr, start, height, zero, XVA, end)
+                self.drawVelocity(cr, XVA, start, height, skip, zero, end)
+                self.drawAcceleration(cr, XVA, start, height, skip, zero,
+                                      AXIS_MARGIN_SPACE, end)
+                self.drawVoltage(cr, XVA, start, height, skip, traj, zero, end)
+                cr.set_source_rgb(0, 0, 0)
+                cr.move_to(-1.0 * AXIS_MARGIN_SPACE, zero + height / 2.0)
+                cr.line_to(AXIS_MARGIN_SPACE - SCREEN_SIZE,
+                           zero + height / 2.0)
         cr.stroke()
 
     def connectLines(self, cr, points, color):

@@ -10,6 +10,7 @@ from constants import *
 
 identity = cairo.Matrix()
 
+
 # Override the matrix of a cairo context.
 class OverrideMatrix(object):
     def __init__(self, cr, matrix):
@@ -26,14 +27,17 @@ class OverrideMatrix(object):
 
 mainloop = GLib.MainLoop()
 
+
 def set_color(cr, color):
     if color.a == 1.0:
         cr.set_source_rgb(color.r, color.g, color.b)
     else:
         cr.set_source_rgba(color.r, color.g, color.b, color.a)
 
+
 def quit_main_loop(*args):
     mainloop.quit()
+
 
 def RunApp():
     try:
@@ -50,9 +54,9 @@ class BaseWindow(Gtk.DrawingArea):
     def __init__(self):
         super(BaseWindow, self).__init__()
 
-        self.set_size_request(2*SCREEN_SIZE, SCREEN_SIZE)
+        self.set_size_request(2 * SCREEN_SIZE, SCREEN_SIZE)
         self.center = (0, 0)
-        self.shape = (2*SCREEN_SIZE, SCREEN_SIZE)
+        self.shape = (2 * SCREEN_SIZE, SCREEN_SIZE)
         self.needs_redraw = False
 
     def get_current_scale(self):
@@ -81,4 +85,3 @@ class BaseWindow(Gtk.DrawingArea):
     # Handle the expose-event by drawing
     def handle_draw(self, cr):
         pass
-

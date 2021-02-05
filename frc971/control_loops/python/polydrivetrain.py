@@ -98,7 +98,6 @@ def DoCoerceGoal(region, K, w, R):
 
 
 class VelocityDrivetrainModel(control_loop.ControlLoop):
-
     def __init__(self,
                  drivetrain_params,
                  left_low=True,
@@ -142,8 +141,10 @@ class VelocityDrivetrainModel(control_loop.ControlLoop):
         # Build a kalman filter for the velocity.  We don't care what the gains
         # are, but the hybrid kalman filter that we want to write to disk to get
         # access to A_continuous and B_continuous needs this for completeness.
-        self.Q_continuous = numpy.matrix([[(0.5**2.0), 0.0], [0.0, (0.5**2.0)]])
-        self.R_continuous = numpy.matrix([[(0.1**2.0), 0.0], [0.0, (0.1**2.0)]])
+        self.Q_continuous = numpy.matrix([[(0.5**2.0), 0.0], [0.0, (0.5
+                                                                    **2.0)]])
+        self.R_continuous = numpy.matrix([[(0.1**2.0), 0.0], [0.0, (0.1
+                                                                    **2.0)]])
         self.PlaceObserverPoles(drivetrain_params.observer_poles)
         _, _, self.Q, self.R = controls.kalmd(
             A_continuous=self.A_continuous,
@@ -428,7 +429,8 @@ class VelocityDrivetrain(object):
             if not self.IsInGear(self.left_gear) and not self.IsInGear(
                     self.right_gear):
                 # TODO(austin): Use battery volts here.
-                R_left = self.MotorRPM(self.left_shifter_position, self.X[0, 0])
+                R_left = self.MotorRPM(self.left_shifter_position,
+                                       self.X[0, 0])
                 self.U_ideal[0, 0] = numpy.clip(
                     self.left_cim.K * (R_left - self.left_cim.X) +
                     R_left / self.left_cim.Kv, self.left_cim.U_min,

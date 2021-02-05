@@ -18,7 +18,6 @@ gflags.DEFINE_bool('plot', False, 'If true, plot the loop response.')
 
 
 class DownEstimator(control_loop.ControlLoop):
-
     def __init__(self, name='DownEstimator'):
         super(DownEstimator, self).__init__(name)
         self.dt = 0.005
@@ -55,7 +54,8 @@ class DownEstimator(control_loop.ControlLoop):
 
         self.InitializeState()
 
-    def Update(self, accelerometer_x, accelerometer_y, accelerometer_z, gyro_x):
+    def Update(self, accelerometer_x, accelerometer_y, accelerometer_z,
+               gyro_x):
         acceleration = math.sqrt(accelerometer_x**2 + accelerometer_y**2 +
                                  accelerometer_z**2)
         if acceleration < 0.9 or acceleration > 1.1:
@@ -93,7 +93,8 @@ def main(argv):
         angle = math.pi / 2
         velocity = 1
         for i in range(100):
-            measured_velocity = velocity + (random.random() - 0.5) * 0.01 + 0.05
+            measured_velocity = velocity + (
+                random.random() - 0.5) * 0.01 + 0.05
             estimator.Predict(measured_velocity)
             estimator.Update(
                 math.sin(angle) + (random.random() - 0.5) * 0.02, 0,

@@ -137,10 +137,10 @@ def draw_trench_run(cr):
 
     for sign in [1.0, -1.0]:
         set_color(cr, palette["GREEN"])
-        cr.rectangle(mToPx(sign * trench_start_x),
-                     mToPx(sign * edge_of_field_y),
-                     mToPx(sign * trench_length_x),
-                     mToPx(sign * (edge_of_trench_y - edge_of_field_y)))
+        cr.rectangle(
+            mToPx(sign * trench_start_x), mToPx(sign * edge_of_field_y),
+            mToPx(sign * trench_length_x),
+            mToPx(sign * (edge_of_trench_y - edge_of_field_y)))
         cr.stroke()
         draw_circle(cr, mToPx(sign * ball_one_x), mToPx(sign * ball_line_y),
                     mToPx(0.1), palette["YELLOW"])
@@ -437,5 +437,5 @@ def draw_cargo_ship(cr):
 
 def draw_points(cr, p, size):
     for i in range(0, len(p)):
-        draw_px_cross(cr, p[i][0], p[i][1], size,
-                      Color(0, np.sqrt(0.2 * i), 0))
+        draw_px_cross(cr, p[i][0], p[i][1], size, Color(
+            0, np.sqrt(0.2 * i), 0))
