@@ -8,6 +8,18 @@ class Points():
         self.points = []  # Holds all points not yet in spline
         self.libsplines = []  # Formatted for libspline library usage
         self.splines = []  # Formatted for drawing
+        self.constraints = [  # default constraints
+            {
+                "constraint_type": "LONGITUDINAL_ACCELERATION",
+                "value": 3
+            }, {
+                "constraint_type": "LATERAL_ACCELERATION",
+                "value": 2
+            }, {
+                "constraint_type": "VOLTAGE",
+                "value": 10
+            }
+        ]
 
     def getPoints(self):
         return self.points
@@ -17,6 +29,21 @@ class Points():
 
     def getLibsplines(self):
         return self.libsplines
+
+    def setConstraint(self, id, value):
+        for constraint in self.constraints:
+            if constraint["constraint_type"] == id:
+                constraint["value"] = value
+                break
+
+    def addConstraintsToTrajectory(self, trajectory):
+        for constraint in self.constraints:
+            if constraint["constraint_type"] == "VOLTAGE":
+                trajectory.SetVoltageLimit(constraint["value"])
+            elif constraint["constraint_type"] == "LATERAL_ACCELERATION":
+                trajectory.SetLateralAcceleration(constraint["value"])
+            elif constraint["constraint_type"] == "LONGITUDINAL_ACCELERATION":
+                trajectory.SetLongitudinalAcceleration(constraint["value"])
 
     def splineExtrapolate(self, o_spline_edit):
         spline_edit = o_spline_edit
@@ -82,14 +109,40 @@ class Points():
             spline = Spline(np.ascontiguousarray(np.transpose(array)))
             self.libsplines.append(spline)
 
+    def toMultiSpline(self):
+        multi_spline = {
+            "spline_count": 0,
+            "spline_x": [],
+            "spline_y": [],
+            "constraints": self.constraints,
+        }
+        for points in self.splines:
+            multi_spline["spline_count"] += 1
+            for j, point in enumerate(points):
+                if j == 0 and multi_spline["spline_count"] > 1:
+                    continue  # skip overlapping points
+                multi_spline["spline_x"].append(point[0])
+                multi_spline["spline_y"].append(point[1])
+        return multi_spline
+
+    def fromMultiSpline(self, multi_spline):
+        self.constraints = multi_spline["constraints"]
+        self.splines = []
+        self.points = []
+
+        i = 0
+        for j in range(multi_spline["spline_count"]):
+            # get the last point of the last spline
+            # and read in another 6 points
+            for i in range(i, i + 6):
+                self.points.append(
+                    [multi_spline["spline_x"][i], multi_spline["spline_y"][i]])
+            self.splines.append(np.array(self.points))
+            self.points = []
+        self.update_lib_spline()
+
     def getSplines(self):
         return self.splines
-
-    def resetSplines(self):
-        self.splines = []
-
-    def setUpSplines(self, newSplines):
-        self.splines = newSplines
 
     def setSplines(self, spline_edit, index_of_edit, x, y):
         self.splines[spline_edit][index_of_edit] = [x, y]

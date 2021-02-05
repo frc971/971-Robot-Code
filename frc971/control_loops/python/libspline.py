@@ -176,9 +176,9 @@ class Trajectory:
     def __del__(self):
         libSpline.deleteTrajectory(self.__trajectory)
 
-    def SetLongitudalAcceleration(self, accel):
-        libSpline.TrajectorySetLongitualAcceleration(self.__trajectory,
-                                                     ct.c_double(accel))
+    def SetLongitudinalAcceleration(self, accel):
+        libSpline.TrajectorySetLongitudinalAcceleration(
+            self.__trajectory, ct.c_double(accel))
 
     def SetLateralAcceleration(self, accel):
         libSpline.TrajectorySetLateralAcceleration(self.__trajectory,

@@ -39,6 +39,7 @@ class Graph():  # (TODO): Remove Computer Calculation
         if mypoints.getLibsplines():
             distanceSpline = DistanceSpline(mypoints.getLibsplines())
             traj = Trajectory(distanceSpline)
+            mypoints.addConstraintsToTrajectory(traj)
             traj.Plan()
             XVA = traj.GetPlanXVA(dT)
             if len(XVA[0]) > 0:

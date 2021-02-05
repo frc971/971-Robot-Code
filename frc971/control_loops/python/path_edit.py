@@ -337,9 +337,11 @@ class GTK_Widget(BaseWindow):
         else:
             # Will export to json file
             self.mode = Mode.kEditing
-            exportList = [l.tolist() for l in self.points.getSplines()]
+
+            multi_spline = self.points.toMultiSpline()
+            print(multi_spline)
             with open(self.path_to_export, mode='w') as points_file:
-                json.dump(exportList, points_file)
+                json.dump(multi_spline, points_file)
 
     def import_json(self, file_name):
         self.path_to_export = os.path.join(self.module_path,
@@ -349,13 +351,25 @@ class GTK_Widget(BaseWindow):
         else:
             # import from json file
             self.mode = Mode.kEditing
-            self.points.resetPoints()
-            self.points.resetSplines()
             print("LOADING LOAD FROM " + file_name)  # Load takes a few seconds
             with open(self.path_to_export) as points_file:
-                self.points.setUpSplines(json.load(points_file))
+                multi_spline = json.load(points_file)
 
-            self.points.update_lib_spline()
+            # if people messed with the spline json,
+            # it might not be the right length
+            # so give them a nice error message
+            try: # try to salvage as many segments of the spline as possible
+                self.points.fromMultiSpline(multi_spline)
+            except IndexError:
+                # check if they're both 6+5*(k-1) long
+                expected_length = 6 + 5 * (multi_spline["spline_count"] - 1)
+                x_len = len(multi_spline["spline_x"])
+                y_len = len(multi_spline["spline_x"])
+                if x_len is not expected_length:
+                    print("Error: spline x values were not the expected length; expected {} got {}".format(expected_length, x_len))
+                elif y_len is not expected_length:
+                    print("Error: spline y values were not the expected length; expected {} got {}".format(expected_length, y_len))
+
             print("SPLINES LOADED")
 
     def do_key_press(self, event, file_name):
