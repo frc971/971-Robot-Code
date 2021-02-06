@@ -5,34 +5,20 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include "dirent.h"
-#include "sys/stat.h"
 
 #include "aos/events/logging/logfile_utils.h"
 #include "aos/flatbuffer_merge.h"
 #include "aos/flatbuffers.h"
 #include "aos/time/time.h"
+#include "dirent.h"
 #include "openssl/sha.h"
+#include "sys/stat.h"
 
 namespace aos {
 namespace logger {
 namespace chrono = std::chrono;
 
 namespace {
-
-std::string Sha256(const absl::Span<const uint8_t> str) {
-  unsigned char hash[SHA256_DIGEST_LENGTH];
-  SHA256_CTX sha256;
-  SHA256_Init(&sha256);
-  SHA256_Update(&sha256, str.data(), str.size());
-  SHA256_Final(hash, &sha256);
-  std::stringstream ss;
-  for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
-    ss << std::hex << std::setw(2) << std::setfill('0')
-       << static_cast<int>(hash[i]);
-  }
-  return ss.str();
-}
 
 // Check if string ends with ending
 bool EndsWith(std::string_view str, std::string_view ending) {
@@ -624,6 +610,20 @@ std::ostream &operator<<(std::ostream &stream, const LogParts &parts) {
 
   stream << "]\n }";
   return stream;
+}
+
+std::string Sha256(const absl::Span<const uint8_t> str) {
+  unsigned char hash[SHA256_DIGEST_LENGTH];
+  SHA256_CTX sha256;
+  SHA256_Init(&sha256);
+  SHA256_Update(&sha256, str.data(), str.size());
+  SHA256_Final(hash, &sha256);
+  std::stringstream ss;
+  for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
+    ss << std::hex << std::setw(2) << std::setfill('0')
+       << static_cast<int>(hash[i]);
+  }
+  return ss.str();
 }
 
 }  // namespace logger

@@ -96,6 +96,9 @@ void FindLogs(std::vector<std::string> *files, std::string filename);
 // Recursively searches for logfiles in argv[1] and onward.
 std::vector<std::string> FindLogs(int argc, char **argv);
 
+// Returns the sha256 of a span.
+std::string Sha256(const absl::Span<const uint8_t> str);
+
 }  // namespace logger
 }  // namespace aos
 
