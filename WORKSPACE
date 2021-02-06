@@ -447,8 +447,8 @@ http_archive(
 http_archive(
     name = "python_gtk",
     build_file = "@//debian:python_gtk.BUILD",
-    sha256 = "2c95dbce3ead87ad7d64327535f08c95ab14d5c12d5646530d734e70a1921130",
-    url = "https://www.frc971.org/Build-Dependencies/python_gtk-2.tar.gz",
+    sha256 = "d8310f3a8b8bd7d7b0040bfec4bb7818ab6221031ffd334525de3618585148b8",
+    url = "https://www.frc971.org/Build-Dependencies/python_gtk-3.tar.gz",
 )
 
 # Downloaded from

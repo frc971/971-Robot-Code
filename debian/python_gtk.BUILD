@@ -70,7 +70,7 @@ _data_files = glob([
 _src_copied = ["/".join(f.split("/")[4:]) for f in _src_files]
 
 _builtin_so_files = glob([
-    "usr/lib/python3/dist-packages/**/*.cpython-35m-x86_64-linux-gnu.so",
+    "usr/lib/python3/dist-packages/**/*.cpython-37m-x86_64-linux-gnu.so",
 ])
 
 _system_so_files = glob(
@@ -79,7 +79,7 @@ _system_so_files = glob(
         "usr/lib/**/*.so*",
     ],
     exclude = [
-        "usr/lib/**/*.cpython-35m-x86_64-linux-gnu.so",
+        "usr/lib/**/*.cpython-37m-x86_64-linux-gnu.so",
         "usr/lib/gcc/x86_64-linux-gnu/6/libgcc_s.so.1",
         "usr/lib/gcc/x86_64-linux-gnu/6/libgcc_s.so",
     ],
@@ -160,6 +160,7 @@ py_library(
     ],
     data = _data_files + _builtin_so_copied + _system_so_copied + [
         "rpathed/usr/lib/x86_64-linux-gnu/libgeos_c.so",
+        "usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders",
     ],
     imports = ["usr/lib/python3/dist-packages"],
     target_compatible_with = ["@platforms//cpu:x86_64"],
