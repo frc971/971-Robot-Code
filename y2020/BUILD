@@ -11,6 +11,9 @@ robot_downloader(
     data = [
         ":config",
     ],
+    dirs = [
+      "//y2020/actors:splines"
+    ],
     start_binaries = [
         "//aos/events/logging:logger_main",
         ":joystick_reader",

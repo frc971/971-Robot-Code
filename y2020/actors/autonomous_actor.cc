@@ -8,8 +8,8 @@
 #include "aos/logging/logging.h"
 #include "aos/util/math.h"
 #include "frc971/control_loops/drivetrain/localizer_generated.h"
-#include "y2020/control_loops/drivetrain/drivetrain_base.h"
 #include "y2020/actors/auto_splines.h"
+#include "y2020/control_loops/drivetrain/drivetrain_base.h"
 
 DEFINE_bool(spline_auto, true, "If true, define a spline autonomous mode");
 
@@ -24,11 +24,13 @@ namespace chrono = ::std::chrono;
 AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
     : frc971::autonomous::BaseAutonomousActor(
           event_loop, control_loops::drivetrain::GetDrivetrainConfig()),
-      localizer_control_sender_(event_loop->MakeSender<
-          ::frc971::control_loops::drivetrain::LocalizerControl>(
-          "/drivetrain")),
+      localizer_control_sender_(
+          event_loop->MakeSender<
+              ::frc971::control_loops::drivetrain::LocalizerControl>(
+              "/drivetrain")),
       joystick_state_fetcher_(
-          event_loop->MakeFetcher<aos::JoystickState>("/aos")) {
+          event_loop->MakeFetcher<aos::JoystickState>("/aos")),
+      auto_splines_() {
   set_max_drivetrain_voltage(2.0);
 }
 
@@ -84,9 +86,10 @@ bool AutonomousActor::RunAction(
 }
 
 void AutonomousActor::SplineAuto() {
-  SplineHandle spline1 = PlanSpline(std::bind(AutonomousSplines::BasicSSpline,
-                                              std::placeholders::_1, alliance_),
-                                    SplineDirection::kForward);
+  SplineHandle spline1 = PlanSpline(
+      [this](aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder
+                 *builder) { return auto_splines_.TestSpline(builder); },
+      SplineDirection::kForward);
 
   if (!spline1.WaitForPlan()) return;
   spline1.Start();

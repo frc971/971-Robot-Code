@@ -7,6 +7,7 @@
 #include "frc971/control_loops/control_loops_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
 #include "frc971/control_loops/drivetrain/localizer_generated.h"
+#include "y2020/actors/auto_splines.h"
 
 namespace y2020 {
 namespace actors {
@@ -27,6 +28,7 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
       localizer_control_sender_;
   aos::Fetcher<aos::JoystickState> joystick_state_fetcher_;
   aos::Alliance alliance_ = aos::Alliance::kInvalid;
+  AutonomousSplines auto_splines_;
 };
 
 }  // namespace actors

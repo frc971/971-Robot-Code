@@ -1,3 +1,5 @@
+load("//frc971/downloader:downloader.bzl", "aos_downloader_dir")
+
 filegroup(
     name = "binaries.stripped",
     srcs = [
@@ -11,6 +13,24 @@ filegroup(
     srcs = [
         ":autonomous_action",
     ],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "spline_jsons",
+    srcs = glob([
+        "splines/*.json"
+        ]),
+    visibility = ["//visibility:public"],
+)
+
+aos_downloader_dir(
+    name = "splines",
+    srcs = [
+        ":spline_jsons",
+    ],
+    dir = "splines",
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )
 
