@@ -43,8 +43,14 @@ class RawMessageDelayer {
         channel_index_(channel_index),
         timestamp_logger_(timestamp_logger) {
     timer_ = send_event_loop_->AddTimer([this]() { Send(); });
+    std::string timer_name =
+        absl::StrCat(send_event_loop_->node()->name()->string_view(), " ",
+                     fetcher_->channel()->name()->string_view(), " ",
+                     fetcher_->channel()->type()->string_view());
+    timer_->set_name(timer_name);
     timestamp_timer_ =
         fetch_event_loop_->AddTimer([this]() { SendTimestamp(); });
+    timestamp_timer_->set_name(absl::StrCat(timer_name, " timestamps"));
 
     Schedule();
   }
