@@ -463,6 +463,7 @@ cc_test(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":configuration",
+        "//aos/testing:flatbuffer_eq",
         "//aos/testing:googletest",
         "//aos/testing:test_logging",
     ],

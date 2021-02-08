@@ -102,3 +102,18 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )
+
+cc_library(
+    name = "flatbuffer_eq",
+    testonly = True,
+    hdrs = [
+        "flatbuffer_eq.h",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aos:flatbuffer_merge",
+        "//aos:flatbuffers",
+        "//aos:json_to_flatbuffer",
+        "@com_google_googletest//:gtest",
+    ],
+)
