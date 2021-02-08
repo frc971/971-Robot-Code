@@ -30,10 +30,11 @@ namespace util {
 }
 
 void WriteStringToFileOrDie(const std::string_view filename,
-                            const std::string_view contents) {
+                            const std::string_view contents,
+                            mode_t permissions) {
   ::std::string r;
   ScopedFD fd(open(::std::string(filename).c_str(),
-                   O_CREAT | O_WRONLY | O_TRUNC, S_IRWXU));
+                   O_CREAT | O_WRONLY | O_TRUNC, permissions));
   PCHECK(fd.get() != -1) << ": opening " << filename;
   size_t size_written = 0;
   while (size_written != contents.size()) {
