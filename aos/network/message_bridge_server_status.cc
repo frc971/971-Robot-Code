@@ -122,6 +122,8 @@ MessageBridgeServerStatus::MessageBridgeServerStatus(
   }
 
   statistics_timer_ = event_loop_->AddTimer([this]() { Tick(); });
+  statistics_timer_->set_name(absl::StrCat(
+      event_loop_->node()->name()->string_view(), "_server_statistics"));
   event_loop_->OnRun([this]() {
     if (send_) {
       statistics_timer_->Setup(event_loop_->monotonic_now() + kPingPeriod,
