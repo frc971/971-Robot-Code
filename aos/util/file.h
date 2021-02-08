@@ -1,6 +1,7 @@
 #ifndef AOS_UTIL_FILE_H_
 #define AOS_UTIL_FILE_H_
 
+#include <sys/stat.h>
 #include <string>
 #include <string_view>
 
@@ -15,7 +16,8 @@ namespace util {
 
 // Creates filename if it doesn't exist and sets the contents to contents.
 void WriteStringToFileOrDie(const std::string_view filename,
-                            const std::string_view contents);
+                            const std::string_view contents,
+                            mode_t permissions = S_IRWXU);
 
 // Returns true if it succeeds or false if the filesystem is full.
 bool MkdirPIfSpace(std::string_view path, mode_t mode);
