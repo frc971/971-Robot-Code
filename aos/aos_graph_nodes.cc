@@ -84,8 +84,8 @@ int main(int argc, char **argv) {
         for (const aos::Connection *connection :
              *channel->destination_nodes()) {
           VLOG(1) << "Destination Node: " << connection->name()->string_view();
-          graph_out << "\t" << source_node_name << " -> "
-                    << connection->name()->c_str() << " [label=\""
+          graph_out << "\t\"" << source_node_name << "\" -> \""
+                    << connection->name()->c_str() << "\" [label=\""
                     << channel->name()->c_str() << "\\n"
                     << type_name << "\" color=\"" << color_map[source_node_name]
                     << "\"];" << std::endl;
@@ -95,8 +95,8 @@ int main(int argc, char **argv) {
   }
 
   // Write out all the nodes at the end, with their respective colors
-  for (const auto node_color : color_map) {
-    graph_out << "\t" << node_color.first << " [color=\"" << node_color.second
+  for (const auto &node_color : color_map) {
+    graph_out << "\t\"" << node_color.first << "\" [color=\"" << node_color.second
               << "\"];" << std::endl;
   }
 
