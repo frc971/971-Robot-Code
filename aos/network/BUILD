@@ -334,6 +334,7 @@ cc_test(
         ":message_bridge_test_client_config",
         ":message_bridge_test_server_config",
     ],
+    flaky = True,
     shard_count = 5,
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
