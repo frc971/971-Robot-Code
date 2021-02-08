@@ -255,9 +255,12 @@ class EventLoopTestFactory {
   const Node *my_node_ = nullptr;
 };
 
+enum class DoTimingReports { kYes, kNo };
+
 class AbstractEventLoopTest
     : public ::testing::TestWithParam<
-          std::tuple<std::function<EventLoopTestFactory *()>, ReadMethod>> {
+          std::tuple<std::function<EventLoopTestFactory *()>, ReadMethod,
+                     DoTimingReports>> {
  public:
   AbstractEventLoopTest() : factory_(std::get<0>(GetParam())()) {
     if (read_method() == ReadMethod::PIN) {
@@ -266,12 +269,17 @@ class AbstractEventLoopTest
   }
 
   ReadMethod read_method() const { return std::get<1>(GetParam()); }
+  DoTimingReports do_timing_reports() const { return std::get<2>(GetParam()); }
 
   ::std::unique_ptr<EventLoop> Make(std::string_view name = "");
 
   ::std::unique_ptr<EventLoop> MakePrimary(std::string_view name = "primary") {
     ++event_loop_count_;
-    return factory_->MakePrimary(name);
+    auto result = factory_->MakePrimary(name);
+    if (do_timing_reports() == DoTimingReports::kNo) {
+      result->SkipTimingReport();
+    }
+    return result;
   }
 
   void InvalidChannelAlignment() { factory_->InvalidChannelAlignment(); }
