@@ -1121,4 +1121,9 @@ void SimulatedEventLoopFactory::DisableStatistics() {
   bridge_->DisableStatistics();
 }
 
+void SimulatedEventLoopFactory::SkipTimingReport() {
+  CHECK(bridge_) << ": Can't skip timing reports without a message bridge.";
+  bridge_->SkipTimingReport();
+}
+
 }  // namespace aos
