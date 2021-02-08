@@ -112,6 +112,11 @@ class SimulatedEventLoopFactory {
   // Disables the messages sent by the simulated message gateway.
   void DisableStatistics();
 
+  // Calls SkipTimingReport() on all EventLoops used as part of the
+  // infrastructure. This may improve the performance of long-simulated-duration
+  // tests.
+  void SkipTimingReport();
+
  private:
   friend class NodeEventLoopFactory;
 

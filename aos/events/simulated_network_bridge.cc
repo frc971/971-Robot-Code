@@ -506,6 +506,12 @@ void SimulatedMessageBridge::DisableStatistics() {
   }
 }
 
+void SimulatedMessageBridge::SkipTimingReport() {
+  for (std::pair<const Node *const, State> &state : event_loop_map_) {
+    state.second.event_loop->SkipTimingReport();
+  }
+}
+
 SimulatedMessageBridge::State::State(
     std::unique_ptr<aos::EventLoop> &&new_event_loop)
     : event_loop(std::move(new_event_loop)),

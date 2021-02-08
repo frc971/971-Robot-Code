@@ -36,6 +36,10 @@ class SimulatedMessageBridge {
   // messages.
   void DisableStatistics();
 
+  // Calls SkipTimingReport() on all EventLoops used in the implementation. This
+  // may improve the performance of long-simulated-duration tests.
+  void SkipTimingReport();
+
  private:
   struct State {
     State(std::unique_ptr<aos::EventLoop> &&new_event_loop);
