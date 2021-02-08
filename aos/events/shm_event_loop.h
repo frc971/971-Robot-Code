@@ -8,6 +8,7 @@
 #include "aos/events/epoll.h"
 #include "aos/events/event_loop.h"
 #include "aos/events/event_loop_generated.h"
+#include "aos/ipc_lib/signalfd.h"
 
 DECLARE_string(application_name);
 DECLARE_string(shm_base);
@@ -151,6 +152,9 @@ class ShmEventLoop : public EventLoop {
   const Node *const node_;
 
   internal::EPoll epoll_;
+
+  // Only set during Run().
+  std::unique_ptr<ipc_lib::SignalFd> signalfd_;
 };
 
 }  // namespace aos
