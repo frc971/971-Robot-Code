@@ -2,12 +2,13 @@
 
 #include "absl/strings/strip.h"
 #include "aos/json_to_flatbuffer.h"
+#include "aos/testing/flatbuffer_eq.h"
 #include "aos/testing/test_logging.h"
 #include "aos/util/file.h"
 #include "flatbuffers/reflection.h"
 #include "glog/logging.h"
-#include "gtest/gtest.h"
 #include "gmock/gmock.h"
+#include "gtest/gtest.h"
 
 namespace aos {
 namespace configuration {
@@ -23,12 +24,17 @@ class ConfigurationTest : public ::testing::Test {
 typedef ConfigurationTest ConfigurationDeathTest;
 
 // *the* expected location for all working tests.
-const char *kExpectedLocation =
-    "{ \"name\": \"/foo\", \"type\": \".aos.bar\", \"max_size\": 5 }";
+aos::FlatbufferDetachedBuffer<Channel> ExpectedLocation() {
+  return JsonToFlatbuffer<Channel>(
+      "{ \"name\": \"/foo\", \"type\": \".aos.bar\", \"max_size\": 5 }");
+}
+
 // And for multinode setups
-const char *kExpectedMultinodeLocation =
-    "{ \"name\": \"/foo\", \"type\": \".aos.bar\", \"max_size\": 5, "
-    "\"source_node\": \"pi1\" }";
+aos::FlatbufferDetachedBuffer<Channel> ExpectedMultinodeLocation() {
+  return JsonToFlatbuffer<Channel>(
+      "{ \"name\": \"/foo\", \"type\": \".aos.bar\", \"max_size\": 5, "
+      "\"source_node\": \"pi1\" }");
+}
 
 // Tests that we can read and merge a configuration.
 TEST_F(ConfigurationTest, ConfigMerge) {
@@ -143,9 +149,8 @@ TEST_F(ConfigurationTest, GetChannel) {
       ReadConfig(kConfigPrefix + "config1.json");
 
   // Test a basic lookup first.
-  EXPECT_EQ(
-      FlatbufferToJson(GetChannel(config, "/foo", ".aos.bar", "app1", nullptr)),
-      kExpectedLocation);
+  EXPECT_THAT(GetChannel(config, "/foo", ".aos.bar", "app1", nullptr),
+              aos::testing::FlatbufferEq(ExpectedLocation()));
 
   // Test that an invalid name results in nullptr back.
   EXPECT_EQ(GetChannel(config, "/invalid_name", ".aos.bar", "app1", nullptr),
@@ -153,22 +158,18 @@ TEST_F(ConfigurationTest, GetChannel) {
 
   // Tests that a root map/rename works. And that they get processed from the
   // bottom up.
-  EXPECT_EQ(FlatbufferToJson(
-                GetChannel(config, "/batman", ".aos.bar", "app1", nullptr)),
-            kExpectedLocation);
+  EXPECT_THAT(GetChannel(config, "/batman", ".aos.bar", "app1", nullptr),
+              aos::testing::FlatbufferEq(ExpectedLocation()));
 
   // And then test that an application specific map/rename works.
-  EXPECT_EQ(
-      FlatbufferToJson(GetChannel(config, "/bar", ".aos.bar", "app1", nullptr)),
-      kExpectedLocation);
-  EXPECT_EQ(
-      FlatbufferToJson(GetChannel(config, "/baz", ".aos.bar", "app2", nullptr)),
-      kExpectedLocation);
+  EXPECT_THAT(GetChannel(config, "/bar", ".aos.bar", "app1", nullptr),
+              aos::testing::FlatbufferEq(ExpectedLocation()));
+  EXPECT_THAT(GetChannel(config, "/baz", ".aos.bar", "app2", nullptr),
+              aos::testing::FlatbufferEq(ExpectedLocation()));
 
   // And then test that an invalid application name gets properly ignored.
-  EXPECT_EQ(
-      FlatbufferToJson(GetChannel(config, "/foo", ".aos.bar", "app3", nullptr)),
-      kExpectedLocation);
+  EXPECT_THAT(GetChannel(config, "/foo", ".aos.bar", "app3", nullptr),
+              aos::testing::FlatbufferEq(ExpectedLocation()));
 }
 
 // Tests that we can lookup a location with node specific maps.
@@ -179,29 +180,24 @@ TEST_F(ConfigurationTest, GetChannelMultinode) {
   const Node *pi2 = GetNode(&config.message(), "pi2");
 
   // Test a basic lookup first.
-  EXPECT_EQ(
-      FlatbufferToJson(GetChannel(config, "/foo", ".aos.bar", "app1", pi1)),
-      kExpectedMultinodeLocation);
-  EXPECT_EQ(
-      FlatbufferToJson(GetChannel(config, "/foo", ".aos.bar", "app1", pi2)),
-      kExpectedMultinodeLocation);
+  EXPECT_THAT(GetChannel(config, "/foo", ".aos.bar", "app1", pi1),
+              aos::testing::FlatbufferEq(ExpectedMultinodeLocation()));
+  EXPECT_THAT(GetChannel(config, "/foo", ".aos.bar", "app1", pi2),
+              aos::testing::FlatbufferEq(ExpectedMultinodeLocation()));
 
   // Tests that a root map/rename works with a node specific map.
-  EXPECT_EQ(
-      FlatbufferToJson(GetChannel(config, "/batman", ".aos.bar", "app1", pi1)),
-      kExpectedMultinodeLocation);
+  EXPECT_THAT(GetChannel(config, "/batman", ".aos.bar", "app1", pi1),
+              aos::testing::FlatbufferEq(ExpectedMultinodeLocation()));
 
   // Tests that a root map/rename fails with a node specific map for the wrong
   // node.
   EXPECT_EQ(GetChannel(config, "/batman", ".aos.bar", "app1", pi2), nullptr);
 
   // And then test that an application specific map/rename works.
-  EXPECT_EQ(
-      FlatbufferToJson(GetChannel(config, "/batman2", ".aos.bar", "app1", pi1)),
-      kExpectedMultinodeLocation);
-  EXPECT_EQ(
-      FlatbufferToJson(GetChannel(config, "/batman3", ".aos.bar", "app1", pi1)),
-      kExpectedMultinodeLocation);
+  EXPECT_THAT(GetChannel(config, "/batman2", ".aos.bar", "app1", pi1),
+              aos::testing::FlatbufferEq(ExpectedMultinodeLocation()));
+  EXPECT_THAT(GetChannel(config, "/batman3", ".aos.bar", "app1", pi1),
+              aos::testing::FlatbufferEq(ExpectedMultinodeLocation()));
 
   // And then that it fails when the node changes.
   EXPECT_EQ(GetChannel(config, "/batman3", ".aos.bar", "app1", pi2), nullptr);
@@ -214,9 +210,8 @@ TEST_F(ConfigurationTest, GetChannelTypedMultinode) {
   const Node *pi1 = GetNode(&config.message(), "pi1");
 
   // Test a basic lookup first.
-  EXPECT_EQ(
-      FlatbufferToJson(GetChannel(config, "/batman", ".aos.bar", "app1", pi1)),
-      kExpectedMultinodeLocation);
+  EXPECT_THAT(GetChannel(config, "/batman", ".aos.bar", "app1", pi1),
+              aos::testing::FlatbufferEq(ExpectedMultinodeLocation()));
 
   // Now confirm that a second message on the same name doesn't get remapped.
   const char *kExpectedBazMultinodeLocation =
@@ -234,12 +229,8 @@ TEST_F(ConfigurationTest, GetChannelGlob) {
   const Node *pi1 = GetNode(&config.message(), "pi1");
 
   // Confirm that a glob with nothing after it matches.
-  const char *kExpectedMultinodeLocation =
-      "{ \"name\": \"/foo\", \"type\": \".aos.bar\", \"max_size\": 5, "
-      "\"source_node\": \"pi1\" }";
-  EXPECT_EQ(FlatbufferToJson(
-                GetChannel(config, "/magic/string", ".aos.bar", "app7", pi1)),
-            kExpectedMultinodeLocation);
+  EXPECT_THAT(GetChannel(config, "/magic/string", ".aos.bar", "app7", pi1),
+              aos::testing::FlatbufferEq(ExpectedMultinodeLocation()));
 
   // Now confirm that glob with something following it matches and renames
   // correctly.
