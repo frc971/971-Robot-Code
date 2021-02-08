@@ -24,7 +24,11 @@ namespace chrono = ::std::chrono;
     name_copy += std::to_string(event_loop_count_);
   }
   ++event_loop_count_;
-  return factory_->Make(name_copy);
+  auto result = factory_->Make(name_copy);
+  if (do_timing_reports() == DoTimingReports::kNo) {
+    result->SkipTimingReport();
+  }
+  return result;
 }
 
 void AbstractEventLoopTest::VerifyBuffers(
@@ -1016,38 +1020,42 @@ TEST_P(AbstractEventLoopTest, TimerIntervalAndDuration) {
   EXPECT_LT(expected_times[expected_times.size() / 2], average_time + kEpsilon);
   EXPECT_GT(expected_times[expected_times.size() / 2], average_time - kEpsilon);
 
-  // And, since we are here, check that the timing report makes sense.
-  // Start by looking for our event loop's timing.
-  FlatbufferDetachedBuffer<timing::Report> report =
-      FlatbufferDetachedBuffer<timing::Report>::Empty();
-  while (report_fetcher.FetchNext()) {
-    if (report_fetcher->name()->string_view() == "primary") {
-      report = CopyFlatBuffer(report_fetcher.get());
+  if (do_timing_reports() == DoTimingReports::kYes) {
+    // And, since we are here, check that the timing report makes sense.
+    // Start by looking for our event loop's timing.
+    FlatbufferDetachedBuffer<timing::Report> report =
+        FlatbufferDetachedBuffer<timing::Report>::Empty();
+    while (report_fetcher.FetchNext()) {
+      if (report_fetcher->name()->string_view() == "primary") {
+        report = CopyFlatBuffer(report_fetcher.get());
+      }
     }
+
+    // Confirm that we have the right number of reports, and the contents are
+    // sane.
+    VLOG(1) << FlatbufferToJson(report, {.multi_line = true});
+
+    EXPECT_EQ(report.message().name()->string_view(), "primary");
+
+    ASSERT_NE(report.message().senders(), nullptr);
+    EXPECT_EQ(report.message().senders()->size(), 2);
+
+    ASSERT_NE(report.message().timers(), nullptr);
+    EXPECT_EQ(report.message().timers()->size(), 2);
+
+    EXPECT_EQ(report.message().timers()->Get(0)->name()->string_view(),
+              "Test loop");
+    EXPECT_GE(report.message().timers()->Get(0)->count(), 1);
+
+    EXPECT_EQ(report.message().timers()->Get(1)->name()->string_view(),
+              "timing_reports");
+    EXPECT_EQ(report.message().timers()->Get(1)->count(), 1);
+
+    // Make sure there is a single phased loop report with our report in it.
+    ASSERT_EQ(report.message().phased_loops(), nullptr);
+  } else {
+    ASSERT_FALSE(report_fetcher.Fetch());
   }
-
-  // Confirm that we have the right number of reports, and the contents are
-  // sane.
-  VLOG(1) << FlatbufferToJson(report, {.multi_line = true});
-
-  EXPECT_EQ(report.message().name()->string_view(), "primary");
-
-  ASSERT_NE(report.message().senders(), nullptr);
-  EXPECT_EQ(report.message().senders()->size(), 2);
-
-  ASSERT_NE(report.message().timers(), nullptr);
-  EXPECT_EQ(report.message().timers()->size(), 2);
-
-  EXPECT_EQ(report.message().timers()->Get(0)->name()->string_view(),
-            "Test loop");
-  EXPECT_GE(report.message().timers()->Get(0)->count(), 1);
-
-  EXPECT_EQ(report.message().timers()->Get(1)->name()->string_view(),
-            "timing_reports");
-  EXPECT_EQ(report.message().timers()->Get(1)->count(), 1);
-
-  // Make sure there is a single phased loop report with our report in it.
-  ASSERT_EQ(report.message().phased_loops(), nullptr);
 }
 
 // Verify that we can change a timer's parameters during execution.
@@ -1501,32 +1509,36 @@ TEST_P(AbstractEventLoopTest, PhasedLoopTest) {
   EXPECT_LT(expected_times[expected_times.size() / 2], average_time + kEpsilon);
   EXPECT_GT(expected_times[expected_times.size() / 2], average_time - kEpsilon);
 
-  // And, since we are here, check that the timing report makes sense.
-  // Start by looking for our event loop's timing.
-  FlatbufferDetachedBuffer<timing::Report> report =
-      FlatbufferDetachedBuffer<timing::Report>::Empty();
-  while (report_fetcher.FetchNext()) {
-    if (report_fetcher->name()->string_view() == "primary") {
-      report = CopyFlatBuffer(report_fetcher.get());
+  if (do_timing_reports() == DoTimingReports::kYes) {
+    // And, since we are here, check that the timing report makes sense.
+    // Start by looking for our event loop's timing.
+    FlatbufferDetachedBuffer<timing::Report> report =
+        FlatbufferDetachedBuffer<timing::Report>::Empty();
+    while (report_fetcher.FetchNext()) {
+      if (report_fetcher->name()->string_view() == "primary") {
+        report = CopyFlatBuffer(report_fetcher.get());
+      }
     }
+
+    VLOG(1) << FlatbufferToJson(report, {.multi_line = true});
+
+    EXPECT_EQ(report.message().name()->string_view(), "primary");
+
+    ASSERT_NE(report.message().senders(), nullptr);
+    EXPECT_EQ(report.message().senders()->size(), 2);
+
+    ASSERT_NE(report.message().timers(), nullptr);
+    EXPECT_EQ(report.message().timers()->size(), 1);
+
+    // Make sure there is a single phased loop report with our report in it.
+    ASSERT_NE(report.message().phased_loops(), nullptr);
+    ASSERT_EQ(report.message().phased_loops()->size(), 1);
+    EXPECT_EQ(report.message().phased_loops()->Get(0)->name()->string_view(),
+              "Test loop");
+    EXPECT_GE(report.message().phased_loops()->Get(0)->count(), 1);
+  } else {
+    ASSERT_FALSE(report_fetcher.Fetch());
   }
-
-  VLOG(1) << FlatbufferToJson(report, {.multi_line = true});
-
-  EXPECT_EQ(report.message().name()->string_view(), "primary");
-
-  ASSERT_NE(report.message().senders(), nullptr);
-  EXPECT_EQ(report.message().senders()->size(), 2);
-
-  ASSERT_NE(report.message().timers(), nullptr);
-  EXPECT_EQ(report.message().timers()->size(), 1);
-
-  // Make sure there is a single phased loop report with our report in it.
-  ASSERT_NE(report.message().phased_loops(), nullptr);
-  ASSERT_EQ(report.message().phased_loops()->size(), 1);
-  EXPECT_EQ(report.message().phased_loops()->Get(0)->name()->string_view(),
-            "Test loop");
-  EXPECT_GE(report.message().phased_loops()->Get(0)->count(), 1);
 }
 
 // Tests that senders count correctly in the timing report.
@@ -1564,50 +1576,54 @@ TEST_P(AbstractEventLoopTest, SenderTimingReport) {
 
   Run();
 
-  // And, since we are here, check that the timing report makes sense.
-  // Start by looking for our event loop's timing.
-  FlatbufferDetachedBuffer<timing::Report> primary_report =
-      FlatbufferDetachedBuffer<timing::Report>::Empty();
-  while (report_fetcher.FetchNext()) {
-    LOG(INFO) << "Report " << FlatbufferToJson(report_fetcher.get());
-    if (report_fetcher->name()->string_view() == "primary") {
-      primary_report = CopyFlatBuffer(report_fetcher.get());
+  if (do_timing_reports() == DoTimingReports::kYes) {
+    // And, since we are here, check that the timing report makes sense.
+    // Start by looking for our event loop's timing.
+    FlatbufferDetachedBuffer<timing::Report> primary_report =
+        FlatbufferDetachedBuffer<timing::Report>::Empty();
+    while (report_fetcher.FetchNext()) {
+      LOG(INFO) << "Report " << FlatbufferToJson(report_fetcher.get());
+      if (report_fetcher->name()->string_view() == "primary") {
+        primary_report = CopyFlatBuffer(report_fetcher.get());
+      }
     }
+
+    LOG(INFO) << FlatbufferToJson(primary_report, {.multi_line = true});
+
+    EXPECT_EQ(primary_report.message().name()->string_view(), "primary");
+
+    ASSERT_NE(primary_report.message().senders(), nullptr);
+    EXPECT_EQ(primary_report.message().senders()->size(), 3);
+
+    // Confirm that the sender looks sane.
+    EXPECT_EQ(
+        loop1->configuration()
+            ->channels()
+            ->Get(primary_report.message().senders()->Get(0)->channel_index())
+            ->name()
+            ->string_view(),
+        "/test");
+    EXPECT_EQ(primary_report.message().senders()->Get(0)->count(), 10);
+
+    // Confirm that the timing primary_report sender looks sane.
+    EXPECT_EQ(
+        loop1->configuration()
+            ->channels()
+            ->Get(primary_report.message().senders()->Get(1)->channel_index())
+            ->name()
+            ->string_view(),
+        "/aos");
+    EXPECT_EQ(primary_report.message().senders()->Get(1)->count(), 1);
+
+    ASSERT_NE(primary_report.message().timers(), nullptr);
+    EXPECT_EQ(primary_report.message().timers()->size(), 3);
+
+    // Make sure there are no phased loops or watchers.
+    ASSERT_EQ(primary_report.message().phased_loops(), nullptr);
+    ASSERT_EQ(primary_report.message().watchers(), nullptr);
+  } else {
+    ASSERT_FALSE(report_fetcher.Fetch());
   }
-
-  LOG(INFO) << FlatbufferToJson(primary_report, {.multi_line = true});
-
-  EXPECT_EQ(primary_report.message().name()->string_view(), "primary");
-
-  ASSERT_NE(primary_report.message().senders(), nullptr);
-  EXPECT_EQ(primary_report.message().senders()->size(), 3);
-
-  // Confirm that the sender looks sane.
-  EXPECT_EQ(
-      loop1->configuration()
-          ->channels()
-          ->Get(primary_report.message().senders()->Get(0)->channel_index())
-          ->name()
-          ->string_view(),
-      "/test");
-  EXPECT_EQ(primary_report.message().senders()->Get(0)->count(), 10);
-
-  // Confirm that the timing primary_report sender looks sane.
-  EXPECT_EQ(
-      loop1->configuration()
-          ->channels()
-          ->Get(primary_report.message().senders()->Get(1)->channel_index())
-          ->name()
-          ->string_view(),
-      "/aos");
-  EXPECT_EQ(primary_report.message().senders()->Get(1)->count(), 1);
-
-  ASSERT_NE(primary_report.message().timers(), nullptr);
-  EXPECT_EQ(primary_report.message().timers()->size(), 3);
-
-  // Make sure there are no phased loops or watchers.
-  ASSERT_EQ(primary_report.message().phased_loops(), nullptr);
-  ASSERT_EQ(primary_report.message().watchers(), nullptr);
 }
 
 // Tests that senders count correctly in the timing report.
@@ -1645,32 +1661,36 @@ TEST_P(AbstractEventLoopTest, WatcherTimingReport) {
 
   Run();
 
-  // And, since we are here, check that the timing report makes sense.
-  // Start by looking for our event loop's timing.
-  FlatbufferDetachedBuffer<timing::Report> primary_report =
-      FlatbufferDetachedBuffer<timing::Report>::Empty();
-  while (report_fetcher.FetchNext()) {
-    LOG(INFO) << "Report " << FlatbufferToJson(report_fetcher.get());
-    if (report_fetcher->name()->string_view() == "primary") {
-      primary_report = CopyFlatBuffer(report_fetcher.get());
+  if (do_timing_reports() == DoTimingReports::kYes) {
+    // And, since we are here, check that the timing report makes sense.
+    // Start by looking for our event loop's timing.
+    FlatbufferDetachedBuffer<timing::Report> primary_report =
+        FlatbufferDetachedBuffer<timing::Report>::Empty();
+    while (report_fetcher.FetchNext()) {
+      LOG(INFO) << "Report " << FlatbufferToJson(report_fetcher.get());
+      if (report_fetcher->name()->string_view() == "primary") {
+        primary_report = CopyFlatBuffer(report_fetcher.get());
+      }
     }
+
+    // Check the watcher report.
+    VLOG(1) << FlatbufferToJson(primary_report, {.multi_line = true});
+
+    EXPECT_EQ(primary_report.message().name()->string_view(), "primary");
+
+    // Just the timing report timer.
+    ASSERT_NE(primary_report.message().timers(), nullptr);
+    EXPECT_EQ(primary_report.message().timers()->size(), 3);
+
+    // No phased loops
+    ASSERT_EQ(primary_report.message().phased_loops(), nullptr);
+
+    ASSERT_NE(primary_report.message().watchers(), nullptr);
+    ASSERT_EQ(primary_report.message().watchers()->size(), 1);
+    EXPECT_EQ(primary_report.message().watchers()->Get(0)->count(), 10);
+  } else {
+    ASSERT_FALSE(report_fetcher.Fetch());
   }
-
-  // Check the watcher report.
-  VLOG(1) << FlatbufferToJson(primary_report, {.multi_line = true});
-
-  EXPECT_EQ(primary_report.message().name()->string_view(), "primary");
-
-  // Just the timing report timer.
-  ASSERT_NE(primary_report.message().timers(), nullptr);
-  EXPECT_EQ(primary_report.message().timers()->size(), 3);
-
-  // No phased loops
-  ASSERT_EQ(primary_report.message().phased_loops(), nullptr);
-
-  ASSERT_NE(primary_report.message().watchers(), nullptr);
-  ASSERT_EQ(primary_report.message().watchers()->size(), 1);
-  EXPECT_EQ(primary_report.message().watchers()->Get(0)->count(), 10);
 }
 
 // Tests that fetchers count correctly in the timing report.
@@ -1717,47 +1737,53 @@ TEST_P(AbstractEventLoopTest, FetcherTimingReport) {
 
   Run();
 
-  // And, since we are here, check that the timing report makes sense.
-  // Start by looking for our event loop's timing.
-  FlatbufferDetachedBuffer<timing::Report> primary_report =
-      FlatbufferDetachedBuffer<timing::Report>::Empty();
-  while (report_fetcher.FetchNext()) {
-    if (report_fetcher->name()->string_view() == "primary") {
-      primary_report = CopyFlatBuffer(report_fetcher.get());
+  if (do_timing_reports() == DoTimingReports::kYes) {
+    // And, since we are here, check that the timing report makes sense.
+    // Start by looking for our event loop's timing.
+    FlatbufferDetachedBuffer<timing::Report> primary_report =
+        FlatbufferDetachedBuffer<timing::Report>::Empty();
+    while (report_fetcher.FetchNext()) {
+      if (report_fetcher->name()->string_view() == "primary") {
+        primary_report = CopyFlatBuffer(report_fetcher.get());
+      }
     }
+
+    VLOG(1) << FlatbufferToJson(primary_report, {.multi_line = true});
+
+    EXPECT_EQ(primary_report.message().name()->string_view(), "primary");
+
+    ASSERT_NE(primary_report.message().senders(), nullptr);
+    EXPECT_EQ(primary_report.message().senders()->size(), 2);
+
+    ASSERT_NE(primary_report.message().timers(), nullptr);
+    EXPECT_EQ(primary_report.message().timers()->size(), 4);
+
+    // Make sure there are no phased loops or watchers.
+    ASSERT_EQ(primary_report.message().phased_loops(), nullptr);
+    ASSERT_EQ(primary_report.message().watchers(), nullptr);
+
+    // Now look at the fetchrs.
+    ASSERT_NE(primary_report.message().fetchers(), nullptr);
+    ASSERT_EQ(primary_report.message().fetchers()->size(), 2);
+
+    EXPECT_EQ(primary_report.message().fetchers()->Get(0)->count(), 1);
+    EXPECT_GE(primary_report.message().fetchers()->Get(0)->latency()->average(),
+              0.1);
+    EXPECT_GE(primary_report.message().fetchers()->Get(0)->latency()->min(),
+              0.1);
+    EXPECT_GE(primary_report.message().fetchers()->Get(0)->latency()->max(),
+              0.1);
+    EXPECT_EQ(primary_report.message()
+                  .fetchers()
+                  ->Get(0)
+                  ->latency()
+                  ->standard_deviation(),
+              0.0);
+
+    EXPECT_EQ(primary_report.message().fetchers()->Get(1)->count(), 10);
+  } else {
+    ASSERT_FALSE(report_fetcher.Fetch());
   }
-
-  VLOG(1) << FlatbufferToJson(primary_report, {.multi_line = true});
-
-  EXPECT_EQ(primary_report.message().name()->string_view(), "primary");
-
-  ASSERT_NE(primary_report.message().senders(), nullptr);
-  EXPECT_EQ(primary_report.message().senders()->size(), 2);
-
-  ASSERT_NE(primary_report.message().timers(), nullptr);
-  EXPECT_EQ(primary_report.message().timers()->size(), 4);
-
-  // Make sure there are no phased loops or watchers.
-  ASSERT_EQ(primary_report.message().phased_loops(), nullptr);
-  ASSERT_EQ(primary_report.message().watchers(), nullptr);
-
-  // Now look at the fetchrs.
-  ASSERT_NE(primary_report.message().fetchers(), nullptr);
-  ASSERT_EQ(primary_report.message().fetchers()->size(), 2);
-
-  EXPECT_EQ(primary_report.message().fetchers()->Get(0)->count(), 1);
-  EXPECT_GE(primary_report.message().fetchers()->Get(0)->latency()->average(),
-            0.1);
-  EXPECT_GE(primary_report.message().fetchers()->Get(0)->latency()->min(), 0.1);
-  EXPECT_GE(primary_report.message().fetchers()->Get(0)->latency()->max(), 0.1);
-  EXPECT_EQ(primary_report.message()
-                .fetchers()
-                ->Get(0)
-                ->latency()
-                ->standard_deviation(),
-            0.0);
-
-  EXPECT_EQ(primary_report.message().fetchers()->Get(1)->count(), 10);
 }
 
 // Tests that a raw watcher and raw fetcher can receive messages from a raw

@@ -70,25 +70,18 @@ class ShmEventLoopTestFactory : public EventLoopTestFactory {
   ::aos::ShmEventLoop *primary_event_loop_;
 };
 
-INSTANTIATE_TEST_CASE_P(ShmEventLoopCopyTest, AbstractEventLoopTest,
-                        ::testing::Values(std::make_pair(
-                            []() { return new ShmEventLoopTestFactory(); },
-                            ReadMethod::COPY)));
+auto CommonParameters() {
+  return ::testing::Combine(
+      ::testing::Values([]() { return new ShmEventLoopTestFactory(); }),
+      ::testing::Values(ReadMethod::COPY, ReadMethod::PIN),
+      ::testing::Values(DoTimingReports::kYes, DoTimingReports::kNo));
+}
 
-INSTANTIATE_TEST_CASE_P(ShmEventLoopCopyDeathTest, AbstractEventLoopDeathTest,
-                        ::testing::Values(std::make_pair(
-                            []() { return new ShmEventLoopTestFactory(); },
-                            ReadMethod::COPY)));
+INSTANTIATE_TEST_CASE_P(ShmEventLoopCommonTest, AbstractEventLoopTest,
+                        CommonParameters());
 
-INSTANTIATE_TEST_CASE_P(ShmEventLoopPinTest, AbstractEventLoopTest,
-                        ::testing::Values(std::make_pair(
-                            []() { return new ShmEventLoopTestFactory(); },
-                            ReadMethod::PIN)));
-
-INSTANTIATE_TEST_CASE_P(ShmEventLoopPinDeathTest, AbstractEventLoopDeathTest,
-                        ::testing::Values(std::make_pair(
-                            []() { return new ShmEventLoopTestFactory(); },
-                            ReadMethod::PIN)));
+INSTANTIATE_TEST_CASE_P(ShmEventLoopCommonDeathTest, AbstractEventLoopDeathTest,
+                        CommonParameters());
 
 }  // namespace
 
