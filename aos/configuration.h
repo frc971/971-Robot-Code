@@ -152,6 +152,12 @@ std::vector<std::string_view> SourceNodeNames(const Configuration *config,
 std::vector<const Node *> TimestampNodes(const Configuration *config,
                                          const Node *my_node);
 
+// Returns the application for the provided node and name if it exists, or
+// nullptr if it does not exist on this node.
+const Application *GetApplication(const Configuration *config,
+                                  const Node *my_node,
+                                  std::string_view application_name);
+
 // TODO(austin): GetSchema<T>(const Flatbuffer<Configuration> &config);
 
 }  // namespace configuration

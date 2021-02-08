@@ -42,6 +42,7 @@
   "applications": [
     {
       "name": "app1",
+      "nodes": ["pi1"],
       "maps": [
         {
           "match": {
@@ -64,7 +65,8 @@
       ]
     },
     {
-      "name": "app2"
+      "name": "app2",
+      "nodes": ["pi2"]
     }
   ],
   "nodes": [

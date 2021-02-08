@@ -609,17 +609,13 @@ const Channel *GetChannel(const Configuration *config, std::string_view name,
 
   // First handle application specific maps.  Only do this if we have a matching
   // application name, and it has maps.
-  if (config->has_applications()) {
-    auto application_iterator = std::lower_bound(
-        config->applications()->cbegin(), config->applications()->cend(),
-        application_name, CompareApplications);
-    if (application_iterator != config->applications()->cend() &&
-        EqualsApplications(*application_iterator, application_name)) {
-      if (application_iterator->has_maps()) {
-        mutable_name = std::string(name);
-        HandleMaps(application_iterator->maps(), &mutable_name, type, node);
-        name = std::string_view(mutable_name);
-      }
+  {
+    const Application *application =
+        GetApplication(config, node, application_name);
+    if (application != nullptr && application->has_maps()) {
+      mutable_name = std::string(name);
+      HandleMaps(application->maps(), &mutable_name, type, node);
+      name = std::string_view(mutable_name);
     }
   }
 
@@ -1220,6 +1216,32 @@ std::vector<const Node *> TimestampNodes(const Configuration *config,
     result.emplace_back(node);
   }
   return result;
+}
+
+const Application *GetApplication(const Configuration *config,
+                                  const Node *my_node,
+                                  std::string_view application_name) {
+  if (config->has_applications()) {
+    auto application_iterator = std::lower_bound(
+        config->applications()->cbegin(), config->applications()->cend(),
+        application_name, CompareApplications);
+    if (application_iterator != config->applications()->cend() &&
+        EqualsApplications(*application_iterator, application_name)) {
+      if (MultiNode(config)) {
+        // Ok, we need
+        CHECK(application_iterator->has_nodes());
+        CHECK(my_node != nullptr);
+        for (const flatbuffers::String *str : *application_iterator->nodes()) {
+          if (str->string_view() == my_node->name()->string_view()) {
+            return *application_iterator;
+          }
+        }
+      } else {
+        return *application_iterator;
+      }
+    }
+  }
+  return nullptr;
 }
 
 }  // namespace configuration
