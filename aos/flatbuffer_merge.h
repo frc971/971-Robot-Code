@@ -29,6 +29,7 @@ inline aos::FlatbufferDetachedBuffer<T> MergeFlatBuffers(const T *fb1,
                                                          const T *fb2) {
   flatbuffers::FlatBufferBuilder fbb;
   fbb.ForceDefaults(true);
+  fbb.DedupVtables(false);
   fbb.Finish(MergeFlatBuffers<T>(
       reinterpret_cast<const flatbuffers::Table *>(fb1),
       reinterpret_cast<const flatbuffers::Table *>(fb2), &fbb));
@@ -167,6 +168,7 @@ template <class T>
 inline FlatbufferDetachedBuffer<T> CopyFlatBuffer(const T *t) {
   flatbuffers::FlatBufferBuilder fbb;
   fbb.ForceDefaults(true);
+  fbb.DedupVtables(false);
   fbb.Finish(CopyFlatBuffer<T>(t, &fbb));
   return FlatbufferDetachedBuffer<T>(fbb.Release());
 }
@@ -175,6 +177,7 @@ template <class T>
 inline FlatbufferDetachedBuffer<T> RecursiveCopyFlatBuffer(const T *t) {
   flatbuffers::FlatBufferBuilder fbb;
   fbb.ForceDefaults(true);
+  fbb.DedupVtables(false);
   fbb.Finish(RecursiveCopyFlatBuffer<T>(t, &fbb));
   return FlatbufferDetachedBuffer<T>(fbb.Release());
 }
