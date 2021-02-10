@@ -1,9 +1,8 @@
 #include "aos/json_to_flatbuffer.h"
 
-#include "gtest/gtest.h"
-
 #include "aos/json_to_flatbuffer_generated.h"
 #include "flatbuffers/minireflect.h"
+#include "gtest/gtest.h"
 
 namespace aos {
 namespace testing {
@@ -64,6 +63,9 @@ TEST_F(JsonToFlatbufferTest, Basic) {
   EXPECT_TRUE(JsonAndBack("{ \"foo_enum_default\": \"UType\" }"));
 
   EXPECT_TRUE(JsonAndBack("{ \"foo_string\": \"baz\" }"));
+
+  EXPECT_TRUE(JsonAndBack("{ \"foo_enum_nonconsecutive\": \"Zero\" }"));
+  EXPECT_TRUE(JsonAndBack("{ \"foo_enum_nonconsecutive\": \"Big\" }"));
 }
 
 // Tests that NaN is handled correctly
@@ -88,6 +90,11 @@ TEST_F(JsonToFlatbufferTest, InvalidEnumName) {
   EXPECT_FALSE(JsonAndBack("{ \"foo_enum\": \"5ype\" }"));
 
   EXPECT_FALSE(JsonAndBack("{ \"foo_enum_default\": \"7ype\" }"));
+
+  EXPECT_FALSE(JsonAndBack("{ \"foo_enum_nonconsecutive\": \"Nope\" }"));
+
+  EXPECT_FALSE(
+      JsonAndBack("{ \"foo_enum_nonconsecutive_default\": \"Nope\" }"));
 }
 
 // Test that adding a duplicate field results in an error.

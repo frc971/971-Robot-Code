@@ -1,8 +1,6 @@
 #include "aos/json_to_flatbuffer.h"
 
 #include <cstddef>
-#include "stdio.h"
-
 #include <string_view>
 
 #include "aos/flatbuffer_utils.h"
@@ -10,6 +8,7 @@
 #include "flatbuffers/flatbuffers.h"
 #include "flatbuffers/minireflect.h"
 #include "glog/logging.h"
+#include "stdio.h"
 
 // TODO(austin): Can we just do an Offset<void> ?  It doesn't matter, so maybe
 // just say that.
@@ -418,7 +417,11 @@ bool JsonParser::AddElement(int field_index, const ::std::string &data) {
         bool found = false;
         for (size_t i = 0; i < enum_type_table->num_elems; ++i) {
           if (data == enum_type_table->names[i]) {
-            int_value = i;
+            if (enum_type_table->values) {
+              int_value = enum_type_table->values[i];
+            } else {
+              int_value = i;
+            }
             found = true;
             break;
           }

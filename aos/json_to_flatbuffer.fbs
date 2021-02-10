@@ -21,6 +21,11 @@ enum BaseType : byte {
     Array
 }
 
+enum NonConsecutive : int {
+  Zero = 0,
+  Big = 10000000,
+}
+
 table Location {
   name:string (id: 0);
   type:string (id: 1);
@@ -126,6 +131,9 @@ table Configuration {
   foo_struct:FooStruct (id: 34);
   vector_foo_struct:[FooStruct] (id: 35);
   foo_struct_enum:StructEnum (id: 36);
+
+  foo_enum_nonconsecutive:NonConsecutive (id: 37);
+  foo_enum_nonconsecutive_default:NonConsecutive = Big (id: 38);
 }
 
 root_type Configuration;
