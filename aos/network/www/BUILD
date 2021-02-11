@@ -74,7 +74,7 @@ ts_library(
     deps = [
         ":reflection_ts",
         "//aos:configuration_ts_fbs",
-        "//aos:json_to_flatbuffer_flatbuffer_ts",
+        "//aos:json_to_flatbuffer_fbs_ts",
         "//aos/network/www:proxy",
         "@com_github_google_flatbuffers//ts:flatbuffers_ts",
     ],
@@ -87,7 +87,7 @@ ts_library(
     visibility = ["//visibility:public"],
     deps = [
         "//aos:configuration_ts_fbs",
-        "//aos:json_to_flatbuffer_flatbuffer_ts",
+        "//aos:json_to_flatbuffer_fbs_ts",
         "@com_github_google_flatbuffers//ts:flatbuffers_ts",
     ],
 )
@@ -144,7 +144,7 @@ aos_config(
     src = "test_config_file.json",
     flatbuffers = [
         "//aos:configuration_fbs",
-        "//aos:json_to_flatbuffer_flatbuffer",
+        "//aos:json_to_flatbuffer_fbs",
     ],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],

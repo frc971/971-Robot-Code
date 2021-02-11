@@ -316,14 +316,14 @@ cc_library(
 )
 
 flatbuffer_ts_library(
-    name = "json_to_flatbuffer_flatbuffer_ts",
+    name = "json_to_flatbuffer_fbs_ts",
     srcs = ["json_to_flatbuffer.fbs"],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//aos:__subpackages__"],
 )
 
 flatbuffer_cc_library(
-    name = "json_to_flatbuffer_flatbuffer",
+    name = "json_to_flatbuffer_fbs",
     srcs = ["json_to_flatbuffer.fbs"],
     gen_reflections = 1,
     target_compatible_with = ["@platforms//os:linux"],
@@ -377,10 +377,13 @@ cc_test(
     srcs = [
         "json_to_flatbuffer_test.cc",
     ],
+    data = [
+        ":json_to_flatbuffer_fbs_reflection_out",
+    ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":json_to_flatbuffer",
-        ":json_to_flatbuffer_flatbuffer",
+        ":json_to_flatbuffer_fbs",
         "//aos/testing:googletest",
     ],
 )
@@ -391,12 +394,12 @@ cc_test(
         "flatbuffer_introspection_test.cc",
     ],
     data = [
-        ":json_to_flatbuffer_flatbuffer_reflection_out",
+        ":json_to_flatbuffer_fbs_reflection_out",
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":json_to_flatbuffer",
-        ":json_to_flatbuffer_flatbuffer",
+        ":json_to_flatbuffer_fbs",
         "//aos/testing:googletest",
         "//aos/util:file",
         "@com_github_google_flatbuffers//:flatbuffers",
@@ -426,7 +429,7 @@ cc_test(
     deps = [
         ":flatbuffer_merge",
         ":json_to_flatbuffer",
-        ":json_to_flatbuffer_flatbuffer",
+        ":json_to_flatbuffer_fbs",
         "//aos/testing:googletest",
     ],
 )
@@ -578,7 +581,7 @@ cc_test(
     deps = [
         ":flatbuffers",
         ":json_to_flatbuffer",
-        ":json_to_flatbuffer_flatbuffer",
+        ":json_to_flatbuffer_fbs",
         "//aos/testing:googletest",
     ],
 )

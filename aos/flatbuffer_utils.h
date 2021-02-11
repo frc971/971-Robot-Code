@@ -5,6 +5,7 @@
 #include <string_view>
 
 #include "flatbuffers/flatbuffers.h"
+#include "flatbuffers/reflection_generated.h"
 #include "glog/logging.h"
 
 namespace aos {
@@ -25,6 +26,9 @@ class FlatbufferType final {
   // Implicit on purpose, to allow freely creating a FlatbufferType.
   FlatbufferType(const flatbuffers::TypeTable *type_table)
       : type_table_(CHECK_NOTNULL(type_table)) {}
+  FlatbufferType(const reflection::Schema *schema)
+      : schema_(CHECK_NOTNULL(schema)),
+        object_(DCHECK_NOTNULL(schema->root_table())) {}
 
   // This is deliberately copyable, for ease of memory management. It is cheap
   // to pass by value.
@@ -92,7 +96,22 @@ class FlatbufferType final {
   FlatbufferType FieldType(int index) const;
 
  private:
+  explicit FlatbufferType(const reflection::Schema *schema,
+                          const reflection::Object *object)
+      : schema_(DCHECK_NOTNULL(schema)), object_(DCHECK_NOTNULL(object)) {}
+  explicit FlatbufferType(const reflection::Schema *schema,
+                          const reflection::Enum *fb_enum)
+      : schema_(DCHECK_NOTNULL(schema)), enum_(DCHECK_NOTNULL(fb_enum)) {}
+
+  const reflection::Type *ReflectionType(int index) const;
+  const reflection::Field *ReflectionObjectField(int index) const;
+  const reflection::EnumVal *ReflectionEnumValue(int index) const;
+  reflection::BaseType ReflectionElementBaseType(int index) const;
+
   const flatbuffers::TypeTable *type_table_ = nullptr;
+  const reflection::Schema *schema_ = nullptr;
+  const reflection::Object *object_ = nullptr;
+  const reflection::Enum *enum_ = nullptr;
 };
 
 }  // namespace aos
