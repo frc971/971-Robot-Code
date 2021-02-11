@@ -36,6 +36,11 @@ class Points():
                 constraint["value"] = value
                 break
 
+    def getConstraint(self, id):
+        for constraint in self.constraints:
+            if constraint["constraint_type"] == id:
+                return constraint["value"]
+
     def addConstraintsToTrajectory(self, trajectory):
         for constraint in self.constraints:
             if constraint["constraint_type"] == "VOLTAGE":
