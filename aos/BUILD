@@ -7,6 +7,7 @@ filegroup(
     srcs = [
         "//aos:aos_dump",
         "//aos:aos_dump_autocomplete.sh",
+        "//aos:aos_send",
         "//aos/starter",
     ],
     visibility = ["//visibility:public"],
@@ -23,10 +24,10 @@ filegroup(
 filegroup(
     name = "prime_binaries_stripped",
     srcs = [
-        # starter is hard coded to look for a non-stripped core...
         "//aos:aos_dump.stripped",
-        "//aos/starter",
         "//aos:aos_dump_autocomplete.sh",
+        "//aos:aos_send.stripped",
+        "//aos/starter",
     ],
     visibility = ["//visibility:public"],
 )
@@ -488,6 +489,24 @@ cc_binary(
     ],
 )
 
+cc_library(
+    name = "aos_cli_utils",
+    srcs = [
+        "aos_cli_utils.cc",
+    ],
+    hdrs = [
+        "aos_cli_utils.h",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":configuration",
+        "//aos:init",
+        "//aos/events:shm_event_loop",
+        "@com_github_google_glog//:glog",
+    ],
+)
+
 cc_binary(
     name = "aos_dump",
     srcs = [
@@ -496,10 +515,27 @@ cc_binary(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
+        ":aos_cli_utils",
         ":configuration",
         ":json_to_flatbuffer",
         "//aos:init",
-        "//aos/events:shm_event_loop",
+        "@com_github_google_glog//:glog",
+    ],
+)
+
+cc_binary(
+    name = "aos_send",
+    srcs = [
+        "aos_send.cc",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":aos_cli_utils",
+        ":configuration",
+        ":init",
+        ":json_to_flatbuffer",
+        "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
     ],
 )
