@@ -52,6 +52,18 @@ class GridWindow(Gtk.Window):
         print("INPUT JSON CLICKED")
         self.drawing_area.import_json(self.file_name_box.get_text())
 
+    def long_changed(self, button):
+        print("LONGITUDAL VELOCITY CHANGED")
+
+    def lat_changed(self, button):
+        print("LATITUDAL VELOCITY CHANGED")
+
+    def accel_changed(self, button):
+        print("ACCELERATION CHANGED")
+
+    def vol_changed(self, button):
+        print("VOLTAGE CHANGED")
+
     def __init__(self):
         Gtk.Window.__init__(self)
 
@@ -94,6 +106,49 @@ class GridWindow(Gtk.Window):
         self.file_name_box.set_editable(True)
 
         container.put(self.file_name_box, 0, 0)
+
+        self.long_input = Gtk.SpinButton()
+        self.long_input.set_size_request(100, 20)
+        self.long_input.set_numeric(True)
+        self.long_input.set_range(-100, 100)
+        self.long_input.connect("value-changed", self.long_changed)
+        self.long_label = Gtk.Label()
+        self.long_label.set_text("Longitudal Velocity Restriction")
+
+        self.lat_input = Gtk.SpinButton()
+        self.lat_input.set_size_request(100, 20)
+        self.lat_input.set_numeric(True)
+        self.lat_input.set_range(-100, 100)
+        self.lat_input.connect("value-changed", self.lat_changed)
+        self.lat_label = Gtk.Label()
+        self.lat_label.set_text("Latitudal Velocity Restriction")
+
+        self.accel_input = Gtk.SpinButton()
+        self.accel_input.set_size_request(100, 20)
+        self.accel_input.set_numeric(True)
+        self.accel_input.set_range(-100, 100)
+        self.accel_input.connect("value-changed", self.accel_changed)
+
+        self.accel_label = Gtk.Label()
+        self.accel_label.set_text("Acceleration Restriction")
+
+        self.vol_input = Gtk.SpinButton()
+        self.vol_input.set_size_request(100, 20)
+        self.vol_input.set_numeric(True)
+        self.vol_input.set_range(-12, 12)
+        self.vol_input.connect("value-changed", self.vol_changed)
+
+        self.vol_label = Gtk.Label()
+        self.vol_label.set_text("Voltage Restriction")
+
+        container.put(self.long_input, 0, 60)
+        container.put(self.lat_input, 0, 110)
+        container.put(self.accel_input, 0, 160)
+        container.put(self.vol_input, 0, 210)
+        container.put(self.long_label, 0, 40)
+        container.put(self.lat_label, 0, 90)
+        container.put(self.accel_label, 0, 140)
+        container.put(self.vol_label, 0, 190)
 
         self.output_json = Gtk.Button.new_with_label("Output")
         self.output_json.set_size_request(100, 40)
