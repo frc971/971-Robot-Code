@@ -7,6 +7,7 @@
 #include <string_view>
 
 #include "aos/fast_string_builder.h"
+#include "aos/flatbuffer_utils.h"
 #include "aos/flatbuffers.h"
 #include "flatbuffers/flatbuffers.h"
 #include "flatbuffers/reflection.h"
@@ -14,25 +15,25 @@
 namespace aos {
 
 // Parses the flatbuffer into the buffer, or returns an empty buffer.
-flatbuffers::DetachedBuffer JsonToFlatbuffer(
-    const std::string_view data, const flatbuffers::TypeTable *typetable);
+flatbuffers::DetachedBuffer JsonToFlatbuffer(std::string_view data,
+                                             FlatbufferType type);
 
 // Parses the flatbuffer into the builder, and returns the offset.
 flatbuffers::Offset<flatbuffers::Table> JsonToFlatbuffer(
-    const std::string_view data, const flatbuffers::TypeTable *typetable,
+    std::string_view data, FlatbufferType type,
     flatbuffers::FlatBufferBuilder *fbb);
 
 // Typed versions of the above methods.
 template <typename T>
 inline flatbuffers::DetachedBuffer JsonToFlatbuffer(
     const std::string_view data) {
-  return JsonToFlatbuffer(data, T::MiniReflectTypeTable());
+  return JsonToFlatbuffer(data, FlatbufferType(T::MiniReflectTypeTable()));
 }
 template <typename T>
 inline flatbuffers::Offset<T> JsonToFlatbuffer(
     const std::string_view data, flatbuffers::FlatBufferBuilder *fbb) {
   return flatbuffers::Offset<T>(
-      JsonToFlatbuffer(data, T::MiniReflectTypeTable(), fbb).o);
+      JsonToFlatbuffer(data, FlatbufferType(T::MiniReflectTypeTable()), fbb).o);
 }
 
 struct JsonOptions {
@@ -68,17 +69,17 @@ typename std::enable_if<
       Flatbuffer<T>::MiniReflectTypeTable(), json_options);
 }
 
-std::string FlatbufferToJson(const reflection::Schema *const schema,
-                             const uint8_t *const data,
+std::string FlatbufferToJson(const reflection::Schema *schema,
+                             const uint8_t *data,
                              JsonOptions json_options = {});
 
 void FlatbufferToJson(FastStringBuilder *builder,
-                      const reflection::Schema *const schema,
-                      const uint8_t *const data, JsonOptions json_options = {});
+                      const reflection::Schema *schema, const uint8_t *data,
+                      JsonOptions json_options = {});
 
 // Writes a Flatbuffer to a file, or dies.
 template <typename T>
-inline void WriteFlatbufferToJson(const std::string_view filename,
+inline void WriteFlatbufferToJson(std::string_view filename,
                                   const Flatbuffer<T> &msg) {
   std::ofstream json_file(std::string(filename), std::ios::out);
   CHECK(json_file) << ": Couldn't open " << filename;
@@ -88,7 +89,7 @@ inline void WriteFlatbufferToJson(const std::string_view filename,
 
 // Writes a NonSizePrefixedFlatbuffer to a binary file, or dies.
 template <typename T>
-inline void WriteFlatbufferToFile(const std::string_view filename,
+inline void WriteFlatbufferToFile(std::string_view filename,
                                   const NonSizePrefixedFlatbuffer<T> &msg) {
   std::ofstream file(std::string(filename),
                      std::ios::out | std::ofstream::binary);
