@@ -243,8 +243,7 @@ class NoncausalTimestampFilter {
   ~NoncausalTimestampFilter();
 
   // Check whether the given timestamp falls within our current samples
-  bool IsOutsideSamples(monotonic_clock::time_point ta_base,
-                        double ta) const;
+  bool IsOutsideSamples(monotonic_clock::time_point ta_base, double ta) const;
 
   // Check whether the given timestamp lies after our current samples
   bool IsAfterSamples(monotonic_clock::time_point ta_base, double ta) const;
@@ -338,7 +337,11 @@ class NoncausalTimestampFilter {
 
   // Returns if the timestamp is frozen or not.
   bool frozen(size_t index) const {
-    return fully_frozen_ || std::get<2>(timestamps_[index]);
+    return fully_frozen_ || std::get<0>(timestamps_[index]) <= frozen_time_;
+  }
+
+  bool frozen(aos::monotonic_clock::time_point t) const {
+    return t <= frozen_time_;
   }
 
   size_t timestamps_size() const { return timestamps_.size(); }
@@ -346,18 +349,7 @@ class NoncausalTimestampFilter {
   // Returns a debug string with the nodes this filter represents.
   std::string NodeNames() const;
 
-  void Debug() {
-    size_t count = 0;
-    for (std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds,
-                    bool>
-             timestamp : timestamps_) {
-      LOG(INFO) << std::get<0>(timestamp) << " offset "
-                << std::get<1>(timestamp).count() << " frozen? "
-                << std::get<2>(timestamp) << " consumed? "
-                << (count < next_to_consume_);
-      ++count;
-    }
-  }
+  void Debug();
 
   // Sets the starting point and filename to log samples to.  These functions
   // are only used when doing CSV file logging to debug the filter.
@@ -447,10 +439,12 @@ class NoncausalTimestampFilter {
 
   // Timestamp, offest, and then a boolean representing if this sample is frozen
   // and can't be modified or not.
-  // TODO(austin): Actually use and update the bool.
-  std::deque<std::tuple<aos::monotonic_clock::time_point,
-                        std::chrono::nanoseconds, bool>>
+  std::deque<
+      std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>>
       timestamps_;
+
+  aos::monotonic_clock::time_point frozen_time_ =
+      aos::monotonic_clock::min_time;
 
   // The index of the next element in timestamps to consume.  0 means none have
   // been consumed, and size() means all have been consumed.

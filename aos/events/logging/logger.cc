@@ -2016,6 +2016,8 @@ void LogReader::RemoteMessageSender::ScheduleTimestamp() {
     CHECK_NOTNULL(timer_);
     timer_->Setup(remote_timestamps_.front().monotonic_timestamp_time);
     scheduled_time_ = remote_timestamps_.front().monotonic_timestamp_time;
+    CHECK_GE(scheduled_time_, event_loop_->monotonic_now())
+        << event_loop_->node()->name()->string_view();
   }
 }
 
@@ -2045,7 +2047,8 @@ void LogReader::RemoteMessageSender::Send(
 }
 
 void LogReader::RemoteMessageSender::SendTimestamp() {
-  CHECK_EQ(event_loop_->context().monotonic_event_time, scheduled_time_);
+  CHECK_EQ(event_loop_->context().monotonic_event_time, scheduled_time_)
+      << event_loop_->node()->name()->string_view();
   CHECK(!remote_timestamps_.empty());
 
   // Send out all timestamps at the currently scheduled time.
@@ -2100,7 +2103,7 @@ TimestampedMessage LogReader::State::PopOldest() {
 
     // TODO(austin): We probably want to push this down into the timestamp
     // mapper directly.
-    filter->Pop(event_loop_->node(), result.monotonic_event_time);
+    filter->Pop(event_loop_->node(), event_loop_->monotonic_now());
   }
   VLOG(1) << "Popped " << result
           << configuration::CleanedChannelToString(

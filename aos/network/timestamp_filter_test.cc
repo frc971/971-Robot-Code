@@ -625,11 +625,11 @@ TEST_F(NoncausalTimestampFilterDeathTest, FrozenTimestamps) {
     ASSERT_EQ(filter.timestamps_size(), 2u);
     filter.FreezeUntil(tb);
 
-    EXPECT_DEATH(
-        { filter.Sample(tb, oa); },
-        "test_a -> test_b Tried to insert 0.100000000sec before "
-        "0.100000000sec, which is frozen "
-        "in the past.  Increase --time_estimation_buffer_seconds to at least");
+    EXPECT_DEATH({ filter.Sample(tb, oa); },
+                 "monotonic_now > frozen_time_ \\(0.100000000sec vs. "
+                 "0.100000000sec\\) : test_a -> test_b Tried to insert "
+                 "0.100000000sec before the frozen time of 0.100000000sec.  "
+                 "Increase --time_estimation_buffer_seconds to greater than 0");
   }
 
   {
@@ -658,9 +658,10 @@ TEST_F(NoncausalTimestampFilterDeathTest, FrozenTimestamps) {
     filter.FreezeUntil(tc);
 
     EXPECT_DEATH({ filter.Sample(tb, ob); },
-                 "test_a -> test_b Tried to insert 0.100000000sec before "
-                 "0.200000000sec, which "
-                 "is frozen");
+                 "monotonic_now > frozen_time_ \\(0.100000000sec vs. "
+                 "0.200000000sec\\) : test_a -> test_b Tried to insert "
+                 "0.100000000sec before the frozen time of 0.200000000sec.  "
+                 "Increase --time_estimation_buffer_seconds to greater than 0.1");
   }
 
   {
@@ -674,11 +675,11 @@ TEST_F(NoncausalTimestampFilterDeathTest, FrozenTimestamps) {
     ASSERT_EQ(filter.timestamps_size(), 3u);
     filter.FreezeUntil(tb);
 
-    EXPECT_DEATH(
-        { filter.Sample(tb, oa); },
-        "test_a -> test_b Tried to insert 0.100000000sec before "
-        "0.100000000sec, which "
-        "is frozen in the past.  Increase --time_estimation_buffer_seconds");
+    EXPECT_DEATH({ filter.Sample(tb, oa); },
+                 "monotonic_now > frozen_time_ \\(0.100000000sec vs. "
+                 "0.100000000sec\\) : test_a -> test_b Tried to insert "
+                 "0.100000000sec before the frozen time of 0.100000000sec.  "
+                 "Increase --time_estimation_buffer_seconds to greater than 0");
     EXPECT_DEATH({ filter.Sample(tb + chrono::nanoseconds(1), oa); },
                  "test_a -> test_b Can't pop an already frozen sample");
   }
