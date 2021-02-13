@@ -21,11 +21,6 @@ std::string TimeString(const aos::monotonic_clock::time_point t,
   ss << "O(" << t << ") = " << o.count() << "ns, remote " << t + o;
   return ss.str();
 }
-std::string TimeString(const std::tuple<aos::monotonic_clock::time_point,
-                                        std::chrono::nanoseconds, bool>
-                           t) {
-  return TimeString(std::get<0>(t), std::get<1>(t));
-}
 
 std::string TimeString(
     const std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>
@@ -520,11 +515,11 @@ std::pair<std::tuple<monotonic_clock::time_point, chrono::nanoseconds>,
           std::tuple<monotonic_clock::time_point, chrono::nanoseconds>>
 NoncausalTimestampFilter::FindTimestamps(monotonic_clock::time_point ta) const {
   CHECK_GT(timestamps_size(), 1u);
-  auto it = std::upper_bound(timestamps_.begin() + 1, timestamps_.end() - 1, ta,
-                             [](monotonic_clock::time_point ta,
-                                std::tuple<aos::monotonic_clock::time_point,
-                                           std::chrono::nanoseconds, bool>
-                                    t) { return ta < std::get<0>(t); });
+  auto it = std::upper_bound(
+      timestamps_.begin() + 1, timestamps_.end() - 1, ta,
+      [](monotonic_clock::time_point ta,
+         std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>
+             t) { return ta < std::get<0>(t); });
 
   const size_t index = std::distance(timestamps_.begin(), it);
 
@@ -1016,6 +1011,11 @@ bool NoncausalTimestampFilter::ValidateSolution(
     aos::monotonic_clock::time_point ta,
     aos::monotonic_clock::time_point tb) const {
   CHECK_GT(timestamps_size(), 0u);
+  if (ta < std::get<0>(timestamp(0)) && has_popped_) {
+    LOG(ERROR) << NodeNames() << " O(" << ta
+               << ") is before the start and we have forgotten the answer.";
+    return false;
+  }
   if (IsOutsideSamples(ta, 0.)) {
     // Special case size = 1 or ta_base before first timestamp or
     // after last timestamp, so we need to extrapolate out
@@ -1062,7 +1062,7 @@ void NoncausalTimestampFilter::Sample(
   if (timestamps_.size() == 0) {
     VLOG(1) << NodeNames() << " Initial sample of "
             << TimeString(monotonic_now, sample_ns);
-    timestamps_.emplace_back(std::make_tuple(monotonic_now, sample_ns, false));
+    timestamps_.emplace_back(std::make_tuple(monotonic_now, sample_ns));
     CHECK(!fully_frozen_)
         << ": " << NodeNames()
         << " Returned a horizontal line previously and then "
@@ -1071,15 +1071,21 @@ void NoncausalTimestampFilter::Sample(
         << chrono::duration<double>(monotonic_now - std::get<0>(timestamps_[0]))
                .count()
         << " seconds after the last sample at " << std::get<0>(timestamps_[0])
-        << ".  Increase --time_estimation_buffer_seconds to at least "
+        << ".  Increase --time_estimation_buffer_seconds to greater than "
         << chrono::duration<double>(monotonic_now - std::get<0>(timestamps_[0]))
                .count();
     return;
   }
+  CHECK_GT(monotonic_now, frozen_time_)
+      << ": " << NodeNames() << " Tried to insert " << monotonic_now
+      << " before the frozen time of " << frozen_time_
+      << ".  Increase "
+         "--time_estimation_buffer_seconds to greater than "
+      << chrono::duration<double>(frozen_time_ - monotonic_now).count();
 
   // Future samples get quite a bit harder.  We want the line to track the
   // highest point without volating the slope constraint.
-  std::tuple<aos::monotonic_clock::time_point, chrono::nanoseconds, bool> back =
+  std::tuple<aos::monotonic_clock::time_point, chrono::nanoseconds> back =
       timestamps_.back();
 
   aos::monotonic_clock::duration dt = monotonic_now - std::get<0>(back);
@@ -1118,7 +1124,7 @@ void NoncausalTimestampFilter::Sample(
         << chrono::duration<double>(monotonic_now - std::get<0>(timestamps_[0]))
                .count()
         << " seconds after the last sample at " << std::get<0>(timestamps_[0])
-        << ".  Increase --time_estimation_buffer_seconds to at least "
+        << ".  Increase --time_estimation_buffer_seconds to greater than "
         << chrono::duration<double>(monotonic_now - std::get<0>(timestamps_[0]))
                .count();
 
@@ -1134,13 +1140,13 @@ void NoncausalTimestampFilter::Sample(
     // In this case, point 3 is now violating our constraint and we need to
     // remove it.  This is the non-causal part of the filter.
     while (dt * kMaxVelocity() < doffset && timestamps_.size() > 1u) {
-      CHECK(!std::get<2>(back))
+      CHECK(!frozen(std::get<0>(back)))
           << ": " << NodeNames() << " Can't pop an already frozen sample "
           << TimeString(back) << " while inserting "
           << TimeString(monotonic_now, sample_ns) << ", "
           << chrono::duration<double>(monotonic_now - std::get<0>(back)).count()
           << " seconds in the past.  Increase --time_estimation_buffer_seconds "
-             "to at least "
+             "to greater than "
           << chrono::duration<double>(monotonic_now - std::get<0>(back))
                  .count();
       VLOG(1) << NodeNames()
@@ -1153,7 +1159,9 @@ void NoncausalTimestampFilter::Sample(
       doffset = sample_ns - std::get<1>(back);
     }
 
-    timestamps_.emplace_back(std::make_tuple(monotonic_now, sample_ns, false));
+    VLOG(1) << NodeNames() << " Added sample of "
+            << TimeString(monotonic_now, sample_ns);
+    timestamps_.emplace_back(std::make_tuple(monotonic_now, sample_ns));
     return;
   }
 
@@ -1163,18 +1171,14 @@ void NoncausalTimestampFilter::Sample(
   auto it = std::lower_bound(
       timestamps_.begin(), timestamps_.end(), monotonic_now,
       [](const std::tuple<aos::monotonic_clock::time_point,
-                          std::chrono::nanoseconds, bool>
+                          std::chrono::nanoseconds>
              x,
          monotonic_clock::time_point t) { return std::get<0>(x) < t; });
 
   CHECK(it != timestamps_.end());
 
-  CHECK(!std::get<2>(*(it)))
-      << ": " << NodeNames() << " Tried to insert " << monotonic_now
-      << " before " << std::get<0>(*it)
-      << ", which is frozen in the past.  Increase "
-         "--time_estimation_buffer_seconds to at least "
-      << chrono::duration<double>(std::get<0>(*it) - monotonic_now).count();
+  // We shouldn't hit this one, but I really want to be sure...
+  CHECK(!frozen(std::get<0>(*(it))));
 
   if (it == timestamps_.begin()) {
     // We are being asked to add at the beginning.
@@ -1194,7 +1198,7 @@ void NoncausalTimestampFilter::Sample(
 
     VLOG(1) << NodeNames() << " Added sample at beginning "
             << TimeString(monotonic_now, sample_ns);
-    timestamps_.insert(it, std::make_tuple(monotonic_now, sample_ns, false));
+    timestamps_.insert(it, std::make_tuple(monotonic_now, sample_ns));
 
     while (true) {
       // First point was too positive, so we need to remove points after it
@@ -1274,8 +1278,8 @@ void NoncausalTimestampFilter::Sample(
     // Now, insert and start propagating forwards and backwards anything we've
     // made invalid.  Do this simultaneously so we keep discovering anything
     // new.
-    auto middle_it = timestamps_.insert(
-        it, std::make_tuple(monotonic_now, sample_ns, false));
+    auto middle_it =
+        timestamps_.insert(it, std::make_tuple(monotonic_now, sample_ns));
     VLOG(1) << NodeNames() << " Inserted " << TimeString(*middle_it);
 
     while (middle_it != timestamps_.end() && middle_it != timestamps_.begin()) {
@@ -1311,10 +1315,10 @@ void NoncausalTimestampFilter::Sample(
             std::get<1>(*middle_it) - std::get<1>(*prior_it);
 
         if (prior_doffset > prior_dt * kMaxVelocity()) {
-          CHECK(!std::get<2>(*prior_it))
+          CHECK(!frozen(std::get<0>(*prior_it)))
               << ": " << NodeNames()
               << " Can't pop an already frozen sample.  Increase "
-                 "--time_estimation_buffer_seconds to at least "
+                 "--time_estimation_buffer_seconds to greater than "
               << chrono::duration<double>(prior_dt).count();
 
           VLOG(1) << "Prior slope is too positive, removing prior point "
@@ -1331,6 +1335,7 @@ void NoncausalTimestampFilter::Sample(
 }
 
 bool NoncausalTimestampFilter::Pop(aos::monotonic_clock::time_point time) {
+  VLOG(1) << NodeNames() << " Pop(" << time << ")";
   bool removed = false;
   // When the timestamp which is the end of the line is popped, we want to
   // drop it off the list.  Hence the >=
@@ -1339,6 +1344,18 @@ bool NoncausalTimestampFilter::Pop(aos::monotonic_clock::time_point time) {
     removed = true;
   }
   return removed;
+}
+
+void NoncausalTimestampFilter::Debug() {
+  size_t count = 0;
+  for (std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>
+           timestamp : timestamps_) {
+    LOG(INFO) << NodeNames() << " "
+              << TimeString(std::get<0>(timestamp), std::get<1>(timestamp))
+              << " frozen? " << frozen(std::get<0>(timestamp)) << " consumed? "
+              << (count < next_to_consume_);
+    ++count;
+  }
 }
 
 monotonic_clock::time_point NoncausalTimestampFilter::unobserved_line_end()
@@ -1368,6 +1385,8 @@ NoncausalTimestampFilter::Observe() const {
   if (timestamps_.empty() || next_to_consume_ >= timestamps_.size()) {
     return std::nullopt;
   }
+  VLOG(1) << NodeNames() << " Observed sample of "
+          << TimeString(timestamp(next_to_consume_));
   return timestamp(next_to_consume_);
 }
 
@@ -1378,28 +1397,34 @@ NoncausalTimestampFilter::Consume() {
   }
 
   auto result = timestamp(next_to_consume_);
+  VLOG(1) << NodeNames() << " Consumed sample of " << TimeString(result);
   ++next_to_consume_;
   return result;
 }
 
 void NoncausalTimestampFilter::FreezeUntil(
     aos::monotonic_clock::time_point node_monotonic_now) {
+  if (node_monotonic_now < frozen_time_) {
+    return;
+  }
   for (size_t i = 0; i < timestamps_.size(); ++i) {
     // Freeze 1 point past the match.
-    std::get<2>(timestamps_[i]) = true;
-    if (std::get<0>(timestamps_[i]) >= node_monotonic_now) {
+    if (std::get<0>(timestamp(i)) >= node_monotonic_now) {
+      frozen_time_ = std::get<0>(timestamp(i));
       return;
     }
   }
 
   if (timestamps_.empty()) {
-    VLOG(1) << NodeNames() << " fully_frozen_";
+    VLOG(1) << NodeNames() << " fully_frozen_, no timestamps.";
     fully_frozen_ = true;
   } else if (node_monotonic_now > std::get<0>(timestamps_.back())) {
     // We've been asked to freeze past the last point.  It isn't safe to add any
     // more points or we will change this region.
-    VLOG(1) << NodeNames() << " fully_frozen_";
+    VLOG(1) << NodeNames() << " fully_frozen_, after the end.";
     fully_frozen_ = true;
+  } else {
+    LOG(FATAL) << "How did we get here?";
   }
 }
 
@@ -1407,22 +1432,24 @@ void NoncausalTimestampFilter::FreezeUntilRemote(
     aos::monotonic_clock::time_point remote_monotonic_now) {
   for (size_t i = 0; i < timestamps_.size(); ++i) {
     // Freeze 1 point past the match.
-    std::get<2>(timestamps_[i]) = true;
     if (std::get<0>(timestamp(i)) + std::get<1>(timestamp(i)) >=
         remote_monotonic_now) {
+      frozen_time_ = std::max(std::get<0>(timestamp(i)), frozen_time_);
       return;
     }
   }
 
   if (timestamps_.empty()) {
-    VLOG(1) << NodeNames() << " fully_frozen_";
+    VLOG(1) << NodeNames() << " fully_frozen_, no timestamps.";
     fully_frozen_ = true;
   } else if (remote_monotonic_now > std::get<0>(timestamps_.back()) +
                                         std::get<1>(timestamps_.back())) {
     // We've been asked to freeze past the last point.  It isn't safe to add any
     // more points or we will change this region.
-    VLOG(1) << NodeNames() << " fully_frozen_";
+    VLOG(1) << NodeNames() << " fully_frozen_, after the end.";
     fully_frozen_ = true;
+  } else {
+    LOG(FATAL) << "How did we get here?";
   }
 }
 
@@ -1450,6 +1477,9 @@ void NoncausalTimestampFilter::SetCsvFileName(std::string_view name) {
 void NoncausalTimestampFilter::PopFront() {
   VLOG(1) << NodeNames() << " Popped sample of " << TimeString(timestamp(0));
   MaybeWriteTimestamp(timestamp(0));
+
+  // If we drop data, we shouldn't add anything before that point.
+  frozen_time_ = std::max(frozen_time_, std::get<0>(timestamp(0)));
   timestamps_.pop_front();
   has_popped_ = true;
   if (next_to_consume_ > 0u) {
@@ -1479,7 +1509,9 @@ void NoncausalOffsetEstimator::Sample(
     const Node *node, aos::monotonic_clock::time_point node_delivered_time,
     aos::monotonic_clock::time_point other_node_sent_time) {
   VLOG(1) << "Sample delivered         " << node_delivered_time << " sent "
-          << other_node_sent_time << " to " << node->name()->string_view();
+          << other_node_sent_time << " " << node->name()->string_view()
+          << " -> "
+          << ((node == node_a_) ? node_b_ : node_a_)->name()->string_view();
   if (node == node_a_) {
     a_.Sample(node_delivered_time, other_node_sent_time - node_delivered_time);
   } else if (node == node_b_) {
@@ -1493,8 +1525,9 @@ void NoncausalOffsetEstimator::ReverseSample(
     const Node *node, aos::monotonic_clock::time_point node_sent_time,
     aos::monotonic_clock::time_point other_node_delivered_time) {
   VLOG(1) << "Reverse sample delivered " << other_node_delivered_time
-          << " sent " << node_sent_time << " from "
-          << node->name()->string_view();
+          << " sent " << node_sent_time << " "
+          << ((node == node_a_) ? node_b_ : node_a_)->name()->string_view()
+          << " -> " << node->name()->string_view();
   if (node == node_a_) {
     b_.Sample(other_node_delivered_time,
               node_sent_time - other_node_delivered_time);

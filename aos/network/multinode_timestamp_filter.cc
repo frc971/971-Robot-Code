@@ -179,7 +179,7 @@ double TimestampProblem::Cost(const double *time_offsets, double *grad) {
     }
   }
 
-  if (VLOG_IS_ON(1)) {
+  if (VLOG_IS_ON(2)) {
     struct MyFormatter {
       void operator()(std::string *out, monotonic_clock::time_point t) const {
         std::stringstream ss;
