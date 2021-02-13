@@ -1090,10 +1090,12 @@ MultiNodeNoncausalOffsetEstimator::NextSolution(
           break;
         case TimeComparison::kInvalid: {
           // If times are close enough, drop the invalid time.
-          if (InvalidDistance(result_times, solution) <
+          const chrono::nanoseconds invalid_distance =
+              InvalidDistance(result_times, solution);
+          if (invalid_distance <=
               chrono::nanoseconds(FLAGS_max_invalid_distance_ns)) {
-            VLOG(1) << "Times can't be compared by "
-                    << InvalidDistance(result_times, solution).count() << "ns";
+            VLOG(1) << "Times can't be compared by " << invalid_distance.count()
+                    << "ns";
             for (size_t i = 0; i < result_times.size(); ++i) {
               VLOG(1) << "  " << result_times[i] << " vs " << solution[i]
                       << " -> " << (result_times[i] - solution[i]).count()
@@ -1153,8 +1155,8 @@ MultiNodeNoncausalOffsetEstimator::NextSolution(
             LOG(ERROR) << "Skipping because --skip_order_validation";
             break;
           } else {
-            LOG(FATAL) << "Please investigate.  Use --max_invalid_distance_ns "
-                          "to change this.";
+            LOG(FATAL) << "Please investigate.  Use --max_invalid_distance_ns="
+                       << invalid_distance.count() << " to ignore this.";
           }
         } break;
       }
