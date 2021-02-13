@@ -70,6 +70,10 @@ Localizer::Localizer(
       clock_offset_fetcher_(
           event_loop_->MakeFetcher<aos::message_bridge::ServerStatistics>(
               "/aos")) {
+  // TODO(james): The down estimator has trouble handling situations where the
+  // robot is constantly wiggling but not actually moving much, and can cause
+  // drift when using accelerometer readings.
+  ekf_.set_ignore_accel(true);
   // TODO(james): This doesn't really need to be a watcher; we could just use a
   // fetcher for the superstructure status.
   // This probably should be a Fetcher instead of a Watcher, but this

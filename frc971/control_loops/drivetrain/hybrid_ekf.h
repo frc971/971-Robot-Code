@@ -160,6 +160,7 @@ class HybridEkf {
   // offsets decay, in seconds.
   static constexpr double kVelocityOffsetTimeConstant = 1.0;
   static constexpr double kLateralVelocityTimeConstant = 1.0;
+
   // The maximum allowable timestep--we use this to check for situations where
   // measurement updates come in too infrequently and this might cause the
   // integrator and discretization in the prediction step to be overly
@@ -337,6 +338,8 @@ class HybridEkf {
     return U;
   }
 
+  void set_ignore_accel(bool ignore_accel) { ignore_accel_ = ignore_accel; }
+
  private:
   struct Observation {
     // Time when the observation was taken.
@@ -421,7 +424,7 @@ class HybridEkf {
 
   // Returns the "A" matrix for a given state. See DiffEq for discussion of
   // ignore_accel.
-  StateSquare AForState(const State &X, bool ignore_accel = false) const {
+  StateSquare AForState(const State &X, bool ignore_accel) const {
     // Calculate the A matrix for a given state. Note that A = partial Xdot /
     // partial X. This is distinct from saying that Xdot = A * X. This is
     // particularly relevant for the (kX, kTheta) members which otherwise seem
@@ -478,8 +481,7 @@ class HybridEkf {
 
   // Returns dX / dt given X and U. If ignore_accel is set, then we ignore the
   // accelerometer-based components of U (this is solely used in testing).
-  State DiffEq(const State &X, const Input &U,
-               bool ignore_accel = false) const {
+  State DiffEq(const State &X, const Input &U, bool ignore_accel) const {
     State Xdot = A_continuous_ * X + B_continuous_ * U;
     // And then we need to add on the terms for the x/y change:
     const Scalar theta = X(kTheta);
@@ -528,13 +530,15 @@ class HybridEkf {
       // I also have to figure out how much we care about the precision of
       // some of these values--I don't think we care much, but we probably
       // do want to maintain some of the structure of the matrices.
-      const StateSquare A_c = AForState(*state);
+      const StateSquare A_c = AForState(*state, ignore_accel_);
       controls::DiscretizeQAFast(Q_continuous_, A_c, dt, &obs->Q_d, &obs->A_d);
       obs->discretization_time = dt;
 
       obs->predict_update =
           RungeKuttaU(
-              [this](const State &X, const Input &U) { return DiffEq(X, U); },
+              [this](const State &X, const Input &U) {
+                return DiffEq(X, U, ignore_accel_);
+              },
               *state, obs->U, aos::time::DurationInSeconds(dt)) -
           *state;
     }
@@ -585,6 +589,10 @@ class HybridEkf {
   Eigen::Matrix<Scalar, kNStates, kNInputs> B_continuous_;
 
   bool have_zeroed_encoders_ = false;
+
+  // Whether to pay attention to accelerometer readings to compensate for wheel
+  // slip.
+  bool ignore_accel_ = false;
 
   aos::PriorityQueue<Observation, kSaveSamples, std::less<Observation>>
       observations_;
