@@ -917,8 +917,12 @@ TimestampProblem MultiNodeNoncausalOffsetEstimator::MakeProblem() {
             timestamp_mappers_[node_a_index]->QueueUntilCondition(
                 [&filter]() { return filter.filter->has_unobserved_line(); });
 
-            timestamp_mappers_[node_b_index]->QueueUntilCondition(
-                [&filter]() { return filter.filter->has_unobserved_line(); });
+            // Sometimes, we literally have no logs for the reverse direction.
+            // So don't sweat it.
+            if (timestamp_mappers_[node_b_index] != nullptr) {
+              timestamp_mappers_[node_b_index]->QueueUntilCondition(
+                  [&filter]() { return filter.filter->has_unobserved_line(); });
+            }
 
             // If we actually found a line, make sure to buffer to the desired
             // distance past that last point so the filter doesn't try to
@@ -929,9 +933,11 @@ TimestampProblem MultiNodeNoncausalOffsetEstimator::MakeProblem() {
                   filter.filter->unobserved_line_end() +
                   time_estimation_buffer_seconds_);
 
-              timestamp_mappers_[node_b_index]->QueueUntil(
-                  filter.filter->unobserved_line_remote_end() +
-                  time_estimation_buffer_seconds_);
+              if (timestamp_mappers_[node_b_index] != nullptr) {
+                timestamp_mappers_[node_b_index]->QueueUntil(
+                    filter.filter->unobserved_line_remote_end() +
+                    time_estimation_buffer_seconds_);
+              }
             }
           }
         }
