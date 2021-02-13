@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/uio.h>
+
 #include <vector>
 
 #include "absl/strings/escaping.h"
@@ -39,18 +40,6 @@ DEFINE_double(
 namespace aos {
 namespace logger {
 namespace {
-std::string Sha256(const absl::Span<const uint8_t> str) {
-  unsigned char hash[SHA256_DIGEST_LENGTH];
-  SHA256_CTX sha256;
-  SHA256_Init(&sha256);
-  SHA256_Update(&sha256, str.data(), str.size());
-  SHA256_Final(hash, &sha256);
-  std::stringstream ss;
-  for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
-    ss << std::hex << std::setw(2) << std::setfill('0') << (int)hash[i];
-  }
-  return ss.str();
-}
 
 std::string LogFileVectorToString(std::vector<LogFile> log_files) {
   std::stringstream ss;

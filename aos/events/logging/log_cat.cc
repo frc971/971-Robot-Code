@@ -24,6 +24,8 @@ DEFINE_bool(fetch, false,
             "log file");
 DEFINE_bool(raw, false,
             "If true, just print the data out unsorted and unparsed");
+DEFINE_string(raw_header, "",
+              "If set, the file to read the header from in raw mode");
 DEFINE_bool(format_raw, true,
             "If true and --raw is specified, print out raw data, but use the "
             "schema to format the data.");
@@ -81,7 +83,17 @@ int main(int argc, char **argv) {
       LOG(FATAL) << "Expected 1 logfile as an argument.";
     }
     aos::logger::MessageReader reader(argv[1]);
-    std::cout << aos::FlatbufferToJson(reader.log_file_header(),
+
+    std::optional<aos::logger::MessageReader> raw_header_reader;
+    const aos::logger::LogFileHeader *full_header = reader.log_file_header();
+    if (!FLAGS_raw_header.empty()) {
+      raw_header_reader.emplace(FLAGS_raw_header);
+      CHECK_EQ(
+          reader.log_file_header()->configuration_sha256()->string_view(),
+          aos::logger::Sha256(raw_header_reader->raw_log_file_header().span()));
+      full_header = raw_header_reader->log_file_header();
+    }
+    std::cout << aos::FlatbufferToJson(full_header,
                                        {.multi_line = FLAGS_pretty,
                                         .max_vector_size = static_cast<size_t>(
                                             FLAGS_max_vector_size)})
@@ -94,9 +106,10 @@ int main(int argc, char **argv) {
       if (!message) {
         break;
       }
-      const aos::Channel *channel =
-          reader.log_file_header()->configuration()->channels()->Get(
-              message.value().message().channel_index());
+      const auto *const channels = full_header->configuration()->channels();
+      const size_t channel_index = message.value().message().channel_index();
+      CHECK_LT(channel_index, channels->size());
+      const aos::Channel *const channel = channels->Get(channel_index);
 
       if (FLAGS_format_raw && message.value().message().data() != nullptr) {
         std::cout << aos::configuration::StrippedChannelToString(channel) << " "
