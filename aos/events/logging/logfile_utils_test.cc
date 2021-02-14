@@ -629,7 +629,7 @@ TEST_F(LogPartsSorterDeathTest, Pull) {
   ASSERT_TRUE(parts_sorter.Front() != nullptr);
   parts_sorter.PopFront();
 
-  EXPECT_DEATH({ parts_sorter.Front(); }, "Max out of order exceeded.");
+  EXPECT_DEATH({ parts_sorter.Front(); }, "Max out of order of 100000000ns exceeded.");
 }
 
 // Tests that we can merge data from 2 separate files, including duplicate data.

@@ -31,6 +31,10 @@
 DEFINE_int32(flush_size, 128000,
              "Number of outstanding bytes to allow before flushing to disk.");
 
+DEFINE_double(
+    max_out_of_order, -1,
+    "If set, this overrides the max out of order duration for a log file.");
+
 namespace aos::logger {
 
 namespace chrono = std::chrono;
@@ -412,7 +416,10 @@ MessageReader::MessageReader(std::string_view filename)
       SizePrefixedFlatbufferVector<LogFileHeader>(std::move(header_data_copy));
 
   max_out_of_order_duration_ =
-      chrono::nanoseconds(log_file_header()->max_out_of_order_duration());
+      FLAGS_max_out_of_order > 0
+          ? chrono::duration_cast<chrono::nanoseconds>(
+                chrono::duration<double>(FLAGS_max_out_of_order))
+          : chrono::nanoseconds(log_file_header()->max_out_of_order_duration());
 
   VLOG(1) << "Opened " << filename << " as node "
           << FlatbufferToJson(log_file_header()->node());
@@ -461,7 +468,8 @@ PartsMessageReader::ReadMessage() {
       if (after_start_) {
         CHECK_GE(monotonic_sent_time,
                  newest_timestamp_ - max_out_of_order_duration())
-            << ": Max out of order exceeded. " << parts_ << ", start time is "
+            << ": Max out of order of " << max_out_of_order_duration().count()
+            << "ns exceeded. " << parts_ << ", start time is "
             << parts_.monotonic_start_time << " currently reading "
             << filename();
       }
