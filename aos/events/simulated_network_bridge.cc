@@ -149,9 +149,6 @@ class RawMessageDelayer {
     if (timestamp_logger_) {
       flatbuffers::FlatBufferBuilder fbb;
         fbb.ForceDefaults(true);
-      aos::Sender<RemoteMessage>::Builder builder =
-          timestamp_logger_->MakeBuilder();
-
       // Reset the filter every time the UUID changes.  There's probably a more
       // clever way to do this, but that means a better concept of rebooting.
       if (server_status_->BootUUID(destination_node_index_) !=
