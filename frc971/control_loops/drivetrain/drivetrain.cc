@@ -27,13 +27,10 @@ namespace frc971 {
 namespace control_loops {
 namespace drivetrain {
 
-DrivetrainLoop::DrivetrainLoop(const DrivetrainConfig<double> &dt_config,
-                               ::aos::EventLoop *event_loop,
-                               LocalizerInterface *localizer,
-                               const ::std::string &name)
-    : aos::controls::ControlLoop<Goal, Position, Status, Output>(event_loop,
-                                                                 name),
-      dt_config_(dt_config),
+DrivetrainFilters::DrivetrainFilters(const DrivetrainConfig<double> &dt_config,
+                                     ::aos::EventLoop *event_loop,
+                                     LocalizerInterface *localizer)
+    : dt_config_(dt_config),
       localizer_control_fetcher_(
           event_loop->MakeFetcher<LocalizerControl>("/drivetrain")),
       imu_values_fetcher_(
@@ -41,19 +38,16 @@ DrivetrainLoop::DrivetrainLoop(const DrivetrainConfig<double> &dt_config,
       gyro_reading_fetcher_(
           event_loop->MakeFetcher<::frc971::sensors::GyroReading>(
               "/drivetrain")),
-      down_estimator_(dt_config),
+      down_estimator_(dt_config_),
       localizer_(localizer),
       kf_(dt_config_.make_kf_drivetrain_loop()),
-      dt_openloop_(dt_config_, &kf_),
-      dt_closedloop_(dt_config_, &kf_, localizer_),
-      dt_spline_(dt_config_),
-      dt_line_follow_(dt_config_, localizer->target_selector()),
       left_gear_(dt_config_.default_high_gear ? Gear::HIGH : Gear::LOW),
       right_gear_(dt_config_.default_high_gear ? Gear::HIGH : Gear::LOW),
       left_high_requested_(dt_config_.default_high_gear),
       right_high_requested_(dt_config_.default_high_gear) {
-  ::aos::controls::HPolytope<0>::Init();
-  event_loop->SetRuntimeRealtimePriority(30);
+  last_voltage_.setZero();
+  last_last_voltage_.setZero();
+  aos::controls::HPolytope<0>::Init();
   event_loop->OnRun([this]() {
     // On the first fetch, make sure that we are caught all the way up to the
     // present.
@@ -64,63 +58,38 @@ DrivetrainLoop::DrivetrainLoop(const DrivetrainConfig<double> &dt_config,
   }
 }
 
-int DrivetrainLoop::ControllerIndexFromGears() {
-  if (MaybeHigh(left_gear_)) {
-    if (MaybeHigh(right_gear_)) {
-      return 3;
-    } else {
-      return 2;
-    }
-  } else {
-    if (MaybeHigh(right_gear_)) {
-      return 1;
-    } else {
-      return 0;
-    }
-  }
+flatbuffers::Offset<LocalizerState> DrivetrainFilters::PopulateLocalizerState(
+    flatbuffers::FlatBufferBuilder *fbb) {
+  return localizer_->PopulateStatus(fbb);
+}
+flatbuffers::Offset<ImuZeroerState> DrivetrainFilters::PopulateImuZeroerState(
+    flatbuffers::FlatBufferBuilder *fbb) {
+  return imu_zeroer_.PopulateStatus(fbb);
 }
 
-Gear ComputeGear(double shifter_position,
-                 const constants::ShifterHallEffect &shifter_config,
-                 bool high_requested) {
-  if (shifter_position < shifter_config.clear_low) {
-    return Gear::LOW;
-  } else if (shifter_position > shifter_config.clear_high) {
-    return Gear::HIGH;
-  } else {
-    if (high_requested) {
-      return Gear::SHIFTING_UP;
-    } else {
-      return Gear::SHIFTING_DOWN;
-    }
-  }
+flatbuffers::Offset<DownEstimatorState>
+DrivetrainFilters::PopulateDownEstimatorState(
+    flatbuffers::FlatBufferBuilder *fbb,
+    aos::monotonic_clock::time_point monotonic_now) {
+  return down_estimator_.PopulateStatus(fbb, monotonic_now);
 }
 
-void DrivetrainLoop::RunIteration(
-    const drivetrain::Goal *goal, const drivetrain::Position *position,
-    aos::Sender<drivetrain::Output>::Builder *output,
-    aos::Sender<drivetrain::Status>::Builder *status) {
-  const monotonic_clock::time_point monotonic_now =
-      event_loop()->monotonic_now();
+void DrivetrainFilters::Reset(aos::monotonic_clock::time_point monotonic_now,
+                              const drivetrain::Position *position) {
+  // If all the sensors got reset (e.g., due to wpilib_interface restarting),
+  // reset the localizer and down estimator to avoid weird jumps in the
+  // filters.
+  down_estimator_.Reset();
+  // Just reset the localizer to the current state, except for the encoders.
+  LocalizerInterface::Ekf::State X_hat = localizer_->Xhat();
+  X_hat(LocalizerInterface::StateIdx::kLeftEncoder) = position->left_encoder();
+  X_hat(LocalizerInterface::StateIdx::kRightEncoder) =
+      position->right_encoder();
+  localizer_->Reset(monotonic_now, X_hat);
+}
 
-  if (!has_been_enabled_ && output) {
-    has_been_enabled_ = true;
-  }
-
-  if (WasReset()) {
-    // If all the sensors got reset (e.g., due to wpilib_interface restarting),
-    // reset the localizer and down estimator to avoid weird jumps in the
-    // filters.
-    down_estimator_.Reset();
-    // Just reset the localizer to the current state, except for the encoders.
-    LocalizerInterface::Ekf::State X_hat = localizer_->Xhat();
-    X_hat(LocalizerInterface::StateIdx::kLeftEncoder) =
-        position->left_encoder();
-    X_hat(LocalizerInterface::StateIdx::kRightEncoder) =
-        position->right_encoder();
-    localizer_->Reset(monotonic_now, X_hat);
-  }
-
+void DrivetrainFilters::Correct(aos::monotonic_clock::time_point monotonic_now,
+                                const drivetrain::Position *position) {
   // TODO(austin): Put gear detection logic here.
   switch (dt_config_.shifter_type) {
     case ShifterType::SIMPLE_SHIFTER:
@@ -145,21 +114,6 @@ void DrivetrainLoop::RunIteration(
       break;
     case ShifterType::NO_SHIFTER:
       break;
-  }
-
-  kf_.set_index(ControllerIndexFromGears());
-
-  flatbuffers::Offset<GearLogging> gear_logging_offset;
-  // Set the gear-logging parts of the status
-  if (status) {
-    GearLogging::Builder gear_logging_builder =
-        status->MakeBuilder<GearLogging>();
-    gear_logging_builder.add_left_state(static_cast<uint32_t>(left_gear_));
-    gear_logging_builder.add_right_state(static_cast<uint32_t>(right_gear_));
-    gear_logging_builder.add_left_loop_high(MaybeHigh(left_gear_));
-    gear_logging_builder.add_right_loop_high(MaybeHigh(right_gear_));
-    gear_logging_builder.add_controller_index(kf_.index());
-    gear_logging_offset = gear_logging_builder.Finish();
   }
 
   while (imu_values_fetcher_.FetchNext()) {
@@ -249,30 +203,133 @@ void DrivetrainLoop::RunIteration(
     last_gyro_rate_ = 0.0;
   }
 
+  localizer_->Update(
+      {last_last_voltage_(kLeftVoltage), last_last_voltage_(kRightVoltage)},
+      monotonic_now, position->left_encoder(), position->right_encoder(),
+      down_estimator_.avg_recent_yaw_rates(),
+      down_estimator_.avg_recent_accel());
+
+  // If we get a new message setting the absolute position, then reset the
+  // localizer.
+  if (localizer_control_fetcher_.Fetch()) {
+    VLOG(1) << "localizer_control "
+            << aos::FlatbufferToJson(localizer_control_fetcher_.get());
+    localizer_->ResetPosition(
+        monotonic_now, localizer_control_fetcher_->x(),
+        localizer_control_fetcher_->y(), localizer_control_fetcher_->theta(),
+        localizer_control_fetcher_->theta_uncertainty(),
+        !localizer_control_fetcher_->keep_current_theta());
+  }
+
+  kf_.set_index(ControllerIndexFromGears());
+
   {
     Eigen::Matrix<double, 4, 1> Y;
     Y << position->left_encoder(), position->right_encoder(), last_gyro_rate_,
         last_accel_;
     kf_.Correct(Y);
-    localizer_->Update({last_last_left_voltage_, last_last_right_voltage_},
-                       monotonic_now, position->left_encoder(),
-                       position->right_encoder(),
-                       down_estimator_.avg_recent_yaw_rates(),
-                       down_estimator_.avg_recent_accel());
-    // If we get a new message setting the absolute position, then reset the
-    // localizer.
-    if (localizer_control_fetcher_.Fetch()) {
-      VLOG(1) << "localizer_control "
-              << aos::FlatbufferToJson(localizer_control_fetcher_.get());
-      localizer_->ResetPosition(
-          monotonic_now, localizer_control_fetcher_->x(),
-          localizer_control_fetcher_->y(), localizer_control_fetcher_->theta(),
-          localizer_control_fetcher_->theta_uncertainty(),
-          !localizer_control_fetcher_->keep_current_theta());
+  }
+}
+
+Eigen::Matrix<double, 2, 1> DrivetrainFilters::VoltageError() const {
+  static_assert(kLeftError + 1 == kRightError);
+  Eigen::Matrix<double, 2, 2> error_K;
+  error_K << kf_.controller().K(kLeftVoltage, kLeftError), 0.0, 0.0,
+      kf_.controller().K(kRightVoltage, kRightError);
+  const Eigen::Matrix<double, 2, 1> voltage_error =
+      error_K * kf_.X_hat().block<2, 1>(kLeftError, 0);
+  return voltage_error;
+}
+
+void DrivetrainFilters::UpdateObserver(Eigen::Matrix<double, 2, 1> U) {
+  last_last_voltage_ = last_voltage_;
+
+  kf_.UpdateObserver(last_voltage_, dt_config_.dt);
+
+  last_voltage_ = U;
+}
+
+int DrivetrainFilters::ControllerIndexFromGears() const {
+  if (MaybeHigh(left_gear_)) {
+    if (MaybeHigh(right_gear_)) {
+      return 3;
+    } else {
+      return 2;
+    }
+  } else {
+    if (MaybeHigh(right_gear_)) {
+      return 1;
+    } else {
+      return 0;
     }
   }
+}
+flatbuffers::Offset<GearLogging> DrivetrainFilters::CreateGearLogging(
+    flatbuffers::FlatBufferBuilder *fbb) const {
+  GearLogging::Builder gear_logging_builder(*fbb);
+  gear_logging_builder.add_left_state(static_cast<uint32_t>(left_gear_));
+  gear_logging_builder.add_right_state(static_cast<uint32_t>(right_gear_));
+  gear_logging_builder.add_left_loop_high(MaybeHigh(left_gear_));
+  gear_logging_builder.add_right_loop_high(MaybeHigh(right_gear_));
+  gear_logging_builder.add_controller_index(ControllerIndexFromGears());
+  return gear_logging_builder.Finish();
+}
 
-  dt_openloop_.SetPosition(position, left_gear_, right_gear_);
+Gear DrivetrainFilters::ComputeGear(
+    double shifter_position, const constants::ShifterHallEffect &shifter_config,
+    bool high_requested) const {
+  if (shifter_position < shifter_config.clear_low) {
+    return Gear::LOW;
+  } else if (shifter_position > shifter_config.clear_high) {
+    return Gear::HIGH;
+  } else {
+    if (high_requested) {
+      return Gear::SHIFTING_UP;
+    } else {
+      return Gear::SHIFTING_DOWN;
+    }
+  }
+}
+
+DrivetrainLoop::DrivetrainLoop(const DrivetrainConfig<double> &dt_config,
+                               ::aos::EventLoop *event_loop,
+                               LocalizerInterface *localizer,
+                               const ::std::string &name)
+    : aos::controls::ControlLoop<Goal, Position, Status, Output>(event_loop,
+                                                                 name),
+      dt_config_(dt_config),
+      filters_(dt_config, event_loop, localizer),
+      dt_openloop_(dt_config_, filters_.kf()),
+      dt_closedloop_(dt_config_, filters_.kf(), localizer),
+      dt_spline_(dt_config_),
+      dt_line_follow_(dt_config_, localizer->target_selector()) {
+  event_loop->SetRuntimeRealtimePriority(30);
+}
+
+void DrivetrainLoop::RunIteration(
+    const drivetrain::Goal *goal, const drivetrain::Position *position,
+    aos::Sender<drivetrain::Output>::Builder *output,
+    aos::Sender<drivetrain::Status>::Builder *status) {
+  const monotonic_clock::time_point monotonic_now =
+      event_loop()->monotonic_now();
+
+  if (!has_been_enabled_ && output) {
+    has_been_enabled_ = true;
+  }
+
+  if (WasReset()) {
+    filters_.Reset(monotonic_now, position);
+  }
+
+  filters_.Correct(monotonic_now, position);
+
+  // Set the gear-logging parts of the status
+  CHECK(status);
+  flatbuffers::Offset<GearLogging> gear_logging_offset =
+      filters_.CreateGearLogging(status->fbb());
+
+  dt_openloop_.SetPosition(position, filters_.left_gear(),
+                           filters_.right_gear());
 
   ControllerType controller_type = ControllerType::POLYDRIVE;
   if (goal) {
@@ -291,21 +348,14 @@ void DrivetrainLoop::RunIteration(
                         controller_type == ControllerType::MOTION_PROFILE);
 
   const Eigen::Matrix<double, 5, 1> trajectory_state =
-      (Eigen::Matrix<double, 5, 1>() << localizer_->x(), localizer_->y(),
-       localizer_->theta(), localizer_->left_velocity(),
-       localizer_->right_velocity())
-          .finished();
+      filters_.trajectory_state();
 
   {
     // TODO(james): The regular Kalman Filter's voltage error terms are
     // currently unusable--either don't use voltage error at all for the spline
     // following code, or use the EKF's voltage error estimates.
-    static_assert(kLeftError + 1 == kRightError);
-    Eigen::Matrix<double, 2, 2> error_K;
-    error_K << kf_.controller().K(kLeftVoltage, kLeftError), 0.0, 0.0,
-        kf_.controller().K(kRightVoltage, kRightError);
     const Eigen::Matrix<double, 2, 1> voltage_error =
-        0 * error_K * kf_.X_hat().block<2, 1>(kLeftError, 0);
+        0 * filters_.VoltageError();
     dt_spline_.Update(
         output != nullptr && controller_type == ControllerType::SPLINE_FOLLOWER,
         trajectory_state, voltage_error);
@@ -340,11 +390,11 @@ void DrivetrainLoop::RunIteration(
   // set the output status of the control loop state
   if (status) {
     Eigen::Matrix<double, 2, 1> linear =
-        dt_config_.LeftRightToLinear(kf_.X_hat());
+        dt_config_.LeftRightToLinear(filters_.DrivetrainXHat());
     Eigen::Matrix<double, 2, 1> angular =
-        dt_config_.LeftRightToAngular(kf_.X_hat());
+        dt_config_.LeftRightToAngular(filters_.DrivetrainXHat());
 
-    angular(0, 0) = localizer_->theta();
+    angular(0, 0) = filters_.localizer_theta();
 
     Eigen::Matrix<double, 4, 1> gyro_left_right =
         dt_config_.AngularLinearToLeftRight(linear, angular);
@@ -356,20 +406,20 @@ void DrivetrainLoop::RunIteration(
         dt_openloop_.PopulateStatus(status->fbb());
 
     const flatbuffers::Offset<DownEstimatorState> down_estimator_state_offset =
-        down_estimator_.PopulateStatus(status->fbb(), monotonic_now);
+        filters_.PopulateDownEstimatorState(status->fbb(), monotonic_now);
 
     const flatbuffers::Offset<LocalizerState> localizer_offset =
-        localizer_->PopulateStatus(status->fbb());
+        filters_.PopulateLocalizerState(status->fbb());
 
     const flatbuffers::Offset<ImuZeroerState> zeroer_offset =
-        imu_zeroer_.PopulateStatus(status->fbb());
+        filters_.PopulateImuZeroerState(status->fbb());
 
     flatbuffers::Offset<LineFollowLogging> line_follow_logging_offset =
         dt_line_follow_.PopulateStatus(status);
     flatbuffers::Offset<TrajectoryLogging> trajectory_logging_offset =
         dt_spline_.MakeTrajectoryLogging(status);
 
-    StatusBuilder builder = status->MakeBuilder<Status>();
+    Status::Builder builder = status->MakeBuilder<Status>();
 
     dt_closedloop_.PopulateStatus(&builder);
 
@@ -382,21 +432,25 @@ void DrivetrainLoop::RunIteration(
     if (dt_spline_.enable()) {
       dt_spline_.PopulateStatus(&builder);
     } else {
-      builder.add_robot_speed(
-          (kf_.X_hat(kLeftVelocity) + kf_.X_hat(kRightVelocity)) / 2.0);
+      builder.add_robot_speed((filters_.DrivetrainXHat(kLeftVelocity) +
+                               filters_.DrivetrainXHat(kRightVelocity)) /
+                              2.0);
       builder.add_output_was_capped(dt_closedloop_.output_was_capped());
-      builder.add_uncapped_left_voltage(kf_.U_uncapped(kLeftVoltage));
-      builder.add_uncapped_right_voltage(kf_.U_uncapped(kRightVoltage));
+      builder.add_uncapped_left_voltage(
+          filters_.DrivetrainUUncapped(kLeftVoltage));
+      builder.add_uncapped_right_voltage(
+          filters_.DrivetrainUUncapped(kRightVoltage));
     }
 
-    builder.add_left_voltage_error(kf_.X_hat(kLeftError));
-    builder.add_right_voltage_error(kf_.X_hat(kRightError));
-    builder.add_estimated_angular_velocity_error(kf_.X_hat(kAngularError));
-    builder.add_estimated_heading(localizer_->theta());
+    builder.add_left_voltage_error(filters_.DrivetrainXHat(kLeftError));
+    builder.add_right_voltage_error(filters_.DrivetrainXHat(kRightError));
+    builder.add_estimated_angular_velocity_error(
+        filters_.DrivetrainXHat(kAngularError));
+    builder.add_estimated_heading(filters_.localizer_theta());
 
-    builder.add_x(localizer_->x());
-    builder.add_y(localizer_->y());
-    builder.add_theta(::aos::math::NormalizeAngle(localizer_->theta()));
+    builder.add_x(filters_.x());
+    builder.add_y(filters_.y());
+    builder.add_theta(::aos::math::NormalizeAngle(filters_.localizer_theta()));
 
     builder.add_cim_logging(cim_logging_offset);
     builder.add_poly_drive_logging(poly_drive_logging_offset);
@@ -414,8 +468,8 @@ void DrivetrainLoop::RunIteration(
   if (output) {
     left_voltage = output_struct.left_voltage;
     right_voltage = output_struct.right_voltage;
-    left_high_requested_ = output_struct.left_high;
-    right_high_requested_ = output_struct.right_high;
+    filters_.set_left_high_requested(output_struct.left_high);
+    filters_.set_right_high_requested(output_struct.right_high);
   }
 
   const double scalar = robot_state().voltage_battery() / 12.0;
@@ -431,16 +485,12 @@ void DrivetrainLoop::RunIteration(
   // Gyro heading vs left-right
   // Voltage error.
 
-  last_last_left_voltage_ = last_left_voltage_;
-  last_last_right_voltage_ = last_right_voltage_;
-  Eigen::Matrix<double, 2, 1> U;
-  U(kLeftVoltage) = last_left_voltage_;
-  U(kRightVoltage) = last_right_voltage_;
-  last_left_voltage_ = left_voltage;
-  last_right_voltage_ = right_voltage;
-
-  last_state_ = kf_.X_hat();
-  kf_.UpdateObserver(U, dt_config_.dt);
+  {
+    Eigen::Matrix<double, 2, 1> U;
+    U(kLeftVoltage) = left_voltage;
+    U(kRightVoltage) = right_voltage;
+    filters_.UpdateObserver(U);
+  }
 
   if (output) {
     output->Send(Output::Pack(*output->fbb(), &output_struct));
