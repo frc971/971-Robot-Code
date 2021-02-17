@@ -311,28 +311,13 @@ aos_config(
     deps = ["//aos/events:config"],
 )
 
-aos_config(
-    name = "message_bridge_test_server_config",
-    src = "message_bridge_test_server.json",
-    target_compatible_with = ["@platforms//os:linux"],
-    deps = [":message_bridge_test_common_config"],
-)
-
-aos_config(
-    name = "message_bridge_test_client_config",
-    src = "message_bridge_test_client.json",
-    target_compatible_with = ["@platforms//os:linux"],
-    deps = [":message_bridge_test_common_config"],
-)
-
 cc_test(
     name = "message_bridge_test",
     srcs = [
         "message_bridge_test.cc",
     ],
     data = [
-        ":message_bridge_test_client_config",
-        ":message_bridge_test_server_config",
+        ":message_bridge_test_common_config",
     ],
     flaky = True,
     shard_count = 5,

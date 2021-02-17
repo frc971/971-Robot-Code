@@ -34,11 +34,9 @@ void DoSetShmBase(const std::string_view node) {
 
 class MessageBridgeTest : public ::testing::Test {
  public:
-  MessageBridgeTest()
-      : pi1_config(aos::configuration::ReadConfig(
-            "aos/network/message_bridge_test_server_config.json")),
-        pi2_config(aos::configuration::ReadConfig(
-            "aos/network/message_bridge_test_client_config.json")) {
+  MessageBridgeTest(std::string_view path =
+                        "aos/network/message_bridge_test_common_config.json")
+      : config(aos::configuration::ReadConfig(path)) {
     util::UnlinkRecursive(ShmBase("pi1"));
     util::UnlinkRecursive(ShmBase("pi2"));
   }
@@ -57,7 +55,7 @@ class MessageBridgeTest : public ::testing::Test {
     OnPi1();
     FLAGS_application_name = "pi1_message_bridge_server";
     pi1_server_event_loop =
-        std::make_unique<aos::ShmEventLoop>(&pi1_config.message());
+        std::make_unique<aos::ShmEventLoop>(&config.message());
     pi1_server_event_loop->SetRuntimeRealtimePriority(1);
     pi1_message_bridge_server =
         std::make_unique<MessageBridgeServer>(pi1_server_event_loop.get());
@@ -96,7 +94,7 @@ class MessageBridgeTest : public ::testing::Test {
     OnPi1();
     FLAGS_application_name = "pi1_message_bridge_client";
     pi1_client_event_loop =
-        std::make_unique<aos::ShmEventLoop>(&pi1_config.message());
+        std::make_unique<aos::ShmEventLoop>(&config.message());
     pi1_client_event_loop->SetRuntimeRealtimePriority(1);
     pi1_message_bridge_client =
         std::make_unique<MessageBridgeClient>(pi1_client_event_loop.get());
@@ -121,7 +119,7 @@ class MessageBridgeTest : public ::testing::Test {
     OnPi1();
     FLAGS_application_name = "test1";
     pi1_test_event_loop =
-        std::make_unique<aos::ShmEventLoop>(&pi1_config.message());
+        std::make_unique<aos::ShmEventLoop>(&config.message());
 
     pi1_test_event_loop->MakeWatcher(
         "/pi1/aos", [](const ServerStatistics &stats) {
@@ -155,7 +153,7 @@ class MessageBridgeTest : public ::testing::Test {
     OnPi2();
     FLAGS_application_name = "pi2_message_bridge_server";
     pi2_server_event_loop =
-        std::make_unique<aos::ShmEventLoop>(&pi2_config.message());
+        std::make_unique<aos::ShmEventLoop>(&config.message());
     pi2_server_event_loop->SetRuntimeRealtimePriority(1);
     pi2_message_bridge_server =
         std::make_unique<MessageBridgeServer>(pi2_server_event_loop.get());
@@ -194,7 +192,7 @@ class MessageBridgeTest : public ::testing::Test {
     OnPi2();
     FLAGS_application_name = "pi2_message_bridge_client";
     pi2_client_event_loop =
-        std::make_unique<aos::ShmEventLoop>(&pi2_config.message());
+        std::make_unique<aos::ShmEventLoop>(&config.message());
     pi2_client_event_loop->SetRuntimeRealtimePriority(1);
     pi2_message_bridge_client =
         std::make_unique<MessageBridgeClient>(pi2_client_event_loop.get());
@@ -234,7 +232,7 @@ class MessageBridgeTest : public ::testing::Test {
     OnPi2();
     FLAGS_application_name = "test2";
     pi2_test_event_loop =
-        std::make_unique<aos::ShmEventLoop>(&pi2_config.message());
+        std::make_unique<aos::ShmEventLoop>(&config.message());
 
     pi2_test_event_loop->MakeWatcher(
         "/pi2/aos", [](const ServerStatistics &stats) {
@@ -264,8 +262,7 @@ class MessageBridgeTest : public ::testing::Test {
     pi2_test_thread.join();
   }
 
-  aos::FlatbufferDetachedBuffer<aos::Configuration> pi1_config;
-  aos::FlatbufferDetachedBuffer<aos::Configuration> pi2_config;
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config;
 
   std::unique_ptr<aos::ShmEventLoop> pi1_server_event_loop;
   std::unique_ptr<MessageBridgeServer> pi1_message_bridge_server;
@@ -320,11 +317,11 @@ TEST_F(MessageBridgeTest, PingPong) {
 
   // And build the app which sends the pings.
   FLAGS_application_name = "ping";
-  aos::ShmEventLoop ping_event_loop(&pi1_config.message());
+  aos::ShmEventLoop ping_event_loop(&config.message());
   aos::Sender<examples::Ping> ping_sender =
       ping_event_loop.MakeSender<examples::Ping>("/test");
 
-  aos::ShmEventLoop pi1_test_event_loop(&pi1_config.message());
+  aos::ShmEventLoop pi1_test_event_loop(&config.message());
   aos::Fetcher<RemoteMessage> message_header_fetcher1 =
       pi1_test_event_loop.MakeFetcher<RemoteMessage>(
           "/pi1/aos/remote_timestamps/pi2");
@@ -343,11 +340,11 @@ TEST_F(MessageBridgeTest, PingPong) {
 
   // And build the app which sends the pongs.
   FLAGS_application_name = "pong";
-  aos::ShmEventLoop pong_event_loop(&pi2_config.message());
+  aos::ShmEventLoop pong_event_loop(&config.message());
 
   // And build the app for testing.
   FLAGS_application_name = "test";
-  aos::ShmEventLoop test_event_loop(&pi2_config.message());
+  aos::ShmEventLoop test_event_loop(&config.message());
 
   aos::Fetcher<ClientStatistics> client_statistics_fetcher =
       test_event_loop.MakeFetcher<ClientStatistics>("/aos");
@@ -357,7 +354,7 @@ TEST_F(MessageBridgeTest, PingPong) {
 
   // Event loop for fetching data delivered to pi2 from pi1 to match up
   // messages.
-  aos::ShmEventLoop delivered_messages_event_loop(&pi2_config.message());
+  aos::ShmEventLoop delivered_messages_event_loop(&config.message());
   aos::Fetcher<Timestamp> pi1_on_pi2_timestamp_fetcher =
       delivered_messages_event_loop.MakeFetcher<Timestamp>("/pi1/aos");
   aos::Fetcher<examples::Ping> ping_on_pi2_fetcher =
@@ -939,7 +936,7 @@ TEST_F(MessageBridgeTest, ReliableSentBeforeClientStartup) {
   OnPi1();
 
   FLAGS_application_name = "sender";
-  aos::ShmEventLoop send_event_loop(&pi1_config.message());
+  aos::ShmEventLoop send_event_loop(&config.message());
   aos::Sender<examples::Ping> ping_sender =
       send_event_loop.MakeSender<examples::Ping>("/test");
   SendPing(&ping_sender, 1);
@@ -951,14 +948,14 @@ TEST_F(MessageBridgeTest, ReliableSentBeforeClientStartup) {
   MakePi1Client();
 
   FLAGS_application_name = "pi1_timestamp";
-  aos::ShmEventLoop pi1_remote_timestamp_event_loop(&pi1_config.message());
+  aos::ShmEventLoop pi1_remote_timestamp_event_loop(&config.message());
 
   // Now do it for "raspberrypi2", the client.
   OnPi2();
 
   MakePi2Server();
 
-  aos::ShmEventLoop receive_event_loop(&pi2_config.message());
+  aos::ShmEventLoop receive_event_loop(&config.message());
   aos::Fetcher<examples::Ping> ping_fetcher =
       receive_event_loop.MakeFetcher<examples::Ping>("/test");
   aos::Fetcher<examples::Ping> unreliable_ping_fetcher =
@@ -1058,7 +1055,7 @@ TEST_F(MessageBridgeTest, ReliableSentBeforeServerStartup) {
   MakePi2Server();
   MakePi2Client();
 
-  aos::ShmEventLoop receive_event_loop(&pi2_config.message());
+  aos::ShmEventLoop receive_event_loop(&config.message());
   aos::Fetcher<examples::Ping> ping_fetcher =
       receive_event_loop.MakeFetcher<examples::Ping>("/test");
   aos::Fetcher<examples::Ping> unreliable_ping_fetcher =
@@ -1070,7 +1067,7 @@ TEST_F(MessageBridgeTest, ReliableSentBeforeServerStartup) {
   OnPi1();
 
   FLAGS_application_name = "sender";
-  aos::ShmEventLoop send_event_loop(&pi1_config.message());
+  aos::ShmEventLoop send_event_loop(&config.message());
   aos::Sender<examples::Ping> ping_sender =
       send_event_loop.MakeSender<examples::Ping>("/test");
   {
@@ -1084,7 +1081,7 @@ TEST_F(MessageBridgeTest, ReliableSentBeforeServerStartup) {
   MakePi1Client();
 
   FLAGS_application_name = "pi1_timestamp";
-  aos::ShmEventLoop pi1_remote_timestamp_event_loop(&pi1_config.message());
+  aos::ShmEventLoop pi1_remote_timestamp_event_loop(&config.message());
 
   const size_t ping_channel_index = configuration::ChannelIndex(
       receive_event_loop.configuration(), ping_fetcher.channel());

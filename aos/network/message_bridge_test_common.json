@@ -162,5 +162,19 @@
         "name": "/pi2/aos"
       }
     }
+  ],
+  "nodes": [
+    {
+      "name": "pi1",
+      "hostname": "localhost",
+      "hostnames": ["raspberrypi"],
+      "port": 9971
+    },
+    {
+      "name": "pi2",
+      "hostname": "localhost",
+      "hostnames": ["raspberrypi2"],
+      "port": 9972
+    }
   ]
 }
