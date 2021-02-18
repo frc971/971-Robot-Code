@@ -123,22 +123,6 @@ py_library(
     deps = ["//frc971/control_loops:python_init"],
 )
 
-py_binary(
-    name = "spline",
-    srcs = [
-        "spline.py",
-    ],
-    legacy_create_init = False,
-    target_compatible_with = ["@platforms//cpu:x86_64"],
-    deps = [
-        "//external:python-gflags",
-        "//external:python-glog",
-        "//frc971/control_loops/python:controls",
-        "//y2016/control_loops/python:polydrivetrain_lib",
-        "@matplotlib_repo//:matplotlib3",
-    ],
-)
-
 py_library(
     name = "linear_system",
     srcs = ["linear_system.py"],
