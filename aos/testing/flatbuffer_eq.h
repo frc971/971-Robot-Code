@@ -9,17 +9,16 @@
 namespace aos {
 namespace testing {
 
-// Use FlatbufferEq to instantiate this.
+// Use FlatbufferUnwrapped to instantiate this.
 template <typename T>
-class FlatbufferEqMatcher {
+class FlatbufferUnwrappedMatcher {
  public:
-  FlatbufferEqMatcher(aos::FlatbufferString<T> expected)
-      : expected_(std::move(expected)) {}
+  FlatbufferUnwrappedMatcher(::testing::Matcher<const T *> matcher)
+      : matcher_(std::move(matcher)) {}
 
   bool MatchAndExplain(const T *t,
                        ::testing::MatchResultListener *listener) const {
-    *listener << "is " << aos::FlatbufferToJson(t);
-    return aos::CompareFlatBuffer(t, &expected_.message());
+    return matcher_.MatchAndExplain(t, listener);
   }
 
   bool MatchAndExplain(const aos::Flatbuffer<T> &t,
@@ -27,11 +26,46 @@ class FlatbufferEqMatcher {
     return MatchAndExplain(&t.message(), listener);
   }
 
-  void DescribeTo(std::ostream *os) const {
+  void DescribeTo(std::ostream *os) const { matcher_.DescribeTo(os); }
+
+  void DescribeNegationTo(std::ostream *os) const {
+    matcher_.DescribeNegationTo(os);
+  }
+
+ private:
+  const ::testing::Matcher<const T *> matcher_;
+};
+
+// Returns a googlemock matcher which will compare a `const T *` or a `const
+// aos::Flatbuffer<T> &` against another matcher which only handles `const T *`.
+// This will automatically propagate the nice error messages.
+//
+// T must be a flatbuffer table type.
+template <typename T>
+inline auto FlatbufferUnwrapped(::testing::Matcher<const T *> matcher) {
+  return ::testing::MakePolymorphicMatcher(
+      FlatbufferUnwrappedMatcher(std::move(matcher)));
+}
+
+// Use FlatbufferEq to instantiate this.
+template <typename T>
+class FlatbufferEqMatcher : public ::testing::MatcherInterface<const T *> {
+ public:
+  FlatbufferEqMatcher(aos::FlatbufferString<T> expected)
+      : expected_(std::move(expected)) {}
+  ~FlatbufferEqMatcher() override = default;
+
+  bool MatchAndExplain(
+      const T *t, ::testing::MatchResultListener *listener) const override {
+    *listener << "is " << aos::FlatbufferToJson(t);
+    return aos::CompareFlatBuffer(t, &expected_.message());
+  }
+
+  void DescribeTo(std::ostream *os) const override {
     *os << "is equal to " << aos::FlatbufferToJson(&expected_.message());
   }
 
-  void DescribeNegationTo(std::ostream *os) const {
+  void DescribeNegationTo(std::ostream *os) const override {
     *os << "is not equal to " << aos::FlatbufferToJson(&expected_.message());
   }
 
@@ -45,10 +79,9 @@ class FlatbufferEqMatcher {
 //
 // T must be a flatbuffer table type.
 template <typename T>
-::testing::PolymorphicMatcher<FlatbufferEqMatcher<T>> FlatbufferEq(
-    const aos::NonSizePrefixedFlatbuffer<T> &expected) {
-  return ::testing::MakePolymorphicMatcher(
-      FlatbufferEqMatcher(aos::FlatbufferString<T>(expected)));
+inline auto FlatbufferEq(const aos::NonSizePrefixedFlatbuffer<T> &expected) {
+  return FlatbufferUnwrapped(::testing::MakeMatcher(
+      new FlatbufferEqMatcher(aos::FlatbufferString<T>(expected))));
 }
 
 }  // namespace testing
