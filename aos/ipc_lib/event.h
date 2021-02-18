@@ -1,9 +1,8 @@
-#ifndef AOS_EVENT_H_
-#define AOS_EVENT_H_
-
-#include "aos/time/time.h"
+#ifndef AOS_IPC_LIB_EVENT_H_
+#define AOS_IPC_LIB_EVENT_H_
 
 #include "aos/ipc_lib/aos_sync.h"
+#include "aos/time/time.h"
 
 namespace aos {
 
@@ -57,4 +56,4 @@ class Event {
 
 }  // namespace aos
 
-#endif  // AOS_EVENT_H_
+#endif  // AOS_IPC_LIB_EVENT_H_

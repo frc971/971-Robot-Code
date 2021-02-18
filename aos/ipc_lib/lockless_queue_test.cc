@@ -4,14 +4,15 @@
 #include <signal.h>
 #include <unistd.h>
 #include <wait.h>
+
 #include <chrono>
 #include <memory>
 #include <random>
 #include <thread>
 
-#include "aos/event.h"
 #include "aos/events/epoll.h"
 #include "aos/ipc_lib/aos_sync.h"
+#include "aos/ipc_lib/event.h"
 #include "aos/ipc_lib/queue_racer.h"
 #include "aos/ipc_lib/signalfd.h"
 #include "aos/realtime.h"
@@ -127,8 +128,7 @@ TEST_F(LocklessQueueTest, DiedWatcherWakeup) {
                            alignof(LocklessQueueWatcher)>::type data;
     new (&data)
         LocklessQueueWatcher(LocklessQueueWatcher::Make(queue(), 5).value());
-  })
-      .join();
+  }).join();
 
   EXPECT_EQ(wake_upper.Wakeup(7), 0);
 }

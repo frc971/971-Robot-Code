@@ -340,11 +340,11 @@ cc_test(
     deps = [
         ":message_bridge_client_lib",
         ":message_bridge_server_lib",
-        "//aos:event",
         "//aos:json_to_flatbuffer",
         "//aos/events:ping_fbs",
         "//aos/events:pong_fbs",
         "//aos/events:shm_event_loop",
+        "//aos/ipc_lib:event",
         "//aos/testing:googletest",
     ],
 )

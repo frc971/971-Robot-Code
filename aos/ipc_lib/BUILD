@@ -100,8 +100,8 @@ cc_binary(
     linkopts = ["-lrt"],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
+        ":event",
         "//aos:condition",
-        "//aos:event",
         "//aos:init",
         "//aos/logging",
         "//aos/logging:implementations",
@@ -194,8 +194,8 @@ cc_library(
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
+        ":event",
         ":lockless_queue",
-        "//aos:event",
         "//aos/testing:googletest",
     ],
 )
@@ -206,10 +206,10 @@ cc_test(
     srcs = ["lockless_queue_test.cc"],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
+        ":event",
         ":lockless_queue",
         ":queue_racer",
         ":signalfd",
-        "//aos:event",
         "//aos/events:epoll",
         "//aos/testing:googletest",
         "//aos/testing:prevent_exit",
@@ -221,10 +221,10 @@ cc_test(
     srcs = ["lockless_queue_death_test.cc"],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
+        ":event",
         ":lockless_queue",
         ":queue_racer",
         ":signalfd",
-        "//aos:event",
         "//aos/events:epoll",
         "//aos/libc:aos_strsignal",
         "//aos/testing:googletest",
@@ -324,5 +324,37 @@ cc_binary(
     visibility = ["//visibility:public"],
     deps = [
         ":lockless_queue",
+    ],
+)
+
+cc_library(
+    name = "event",
+    srcs = [
+        "event.cc",
+    ],
+    hdrs = [
+        "event.h",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aos/ipc_lib:aos_sync",
+        "//aos/time",
+        "//aos/type_traits",
+        "@com_github_google_glog//:glog",
+    ],
+)
+
+cc_test(
+    name = "event_test",
+    srcs = [
+        "event_test.cc",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":event",
+        "//aos/testing:googletest",
+        "//aos/testing:test_logging",
+        "//aos/time",
     ],
 )

@@ -2,9 +2,10 @@
 
 #include <inttypes.h>
 #include <string.h>
+
 #include <limits>
 
-#include "aos/event.h"
+#include "aos/ipc_lib/event.h"
 #include "gtest/gtest.h"
 
 namespace aos {

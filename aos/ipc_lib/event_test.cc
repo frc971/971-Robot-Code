@@ -1,12 +1,11 @@
-#include "aos/event.h"
+#include "aos/ipc_lib/event.h"
 
 #include <chrono>
 #include <thread>
 
-#include "gtest/gtest.h"
-
-#include "aos/time/time.h"
 #include "aos/testing/test_logging.h"
+#include "aos/time/time.h"
+#include "gtest/gtest.h"
 
 namespace aos {
 namespace testing {
@@ -19,9 +18,7 @@ class EventTest : public ::testing::Test {
   Event test_event_;
 
  protected:
-  void SetUp() override {
-    ::aos::testing::EnableTestLogging();
-  }
+  void SetUp() override { ::aos::testing::EnableTestLogging(); }
 };
 
 // Makes sure that basic operations with no blocking or anything work.

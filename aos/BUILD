@@ -146,38 +146,6 @@ cc_test(
     ],
 )
 
-cc_library(
-    name = "event",
-    srcs = [
-        "event.cc",
-    ],
-    hdrs = [
-        "event.h",
-    ],
-    target_compatible_with = ["@platforms//os:linux"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//aos/ipc_lib:aos_sync",
-        "//aos/time",
-        "//aos/type_traits",
-        "@com_github_google_glog//:glog",
-    ],
-)
-
-cc_test(
-    name = "event_test",
-    srcs = [
-        "event_test.cc",
-    ],
-    target_compatible_with = ["@platforms//os:linux"],
-    deps = [
-        ":event",
-        "//aos/testing:googletest",
-        "//aos/testing:test_logging",
-        "//aos/time",
-    ],
-)
-
 cc_binary(
     name = "dump_rtprio",
     srcs = [

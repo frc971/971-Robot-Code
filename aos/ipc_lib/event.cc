@@ -1,4 +1,4 @@
-#include "aos/event.h"
+#include "aos/ipc_lib/event.h"
 
 #include <chrono>
 
@@ -51,8 +51,6 @@ void Event::Set() {
   }
 }
 
-bool Event::Clear() {
-  return !futex_unset(&impl_);
-}
+bool Event::Clear() { return !futex_unset(&impl_); }
 
 }  // namespace aos

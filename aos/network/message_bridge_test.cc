@@ -1,16 +1,15 @@
-#include "gtest/gtest.h"
-
 #include <chrono>
 #include <thread>
 
 #include "absl/strings/str_cat.h"
-#include "aos/event.h"
 #include "aos/events/ping_generated.h"
 #include "aos/events/pong_generated.h"
+#include "aos/ipc_lib/event.h"
 #include "aos/network/message_bridge_client_lib.h"
 #include "aos/network/message_bridge_server_lib.h"
 #include "aos/network/team_number.h"
 #include "aos/util/file.h"
+#include "gtest/gtest.h"
 
 namespace aos {
 void SetShmBase(const std::string_view base);

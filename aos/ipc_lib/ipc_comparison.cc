@@ -1,5 +1,3 @@
-#include "gflags/gflags.h"
-
 #include <fcntl.h>
 #include <mqueue.h>
 #include <netinet/in.h>
@@ -22,13 +20,14 @@
 #include <thread>
 
 #include "aos/condition.h"
-#include "aos/event.h"
 #include "aos/init.h"
+#include "aos/ipc_lib/event.h"
 #include "aos/logging/implementations.h"
 #include "aos/logging/logging.h"
 #include "aos/mutex/mutex.h"
 #include "aos/realtime.h"
 #include "aos/time/time.h"
+#include "gflags/gflags.h"
 
 DEFINE_string(method, "", "Which IPC method to use");
 DEFINE_int32(messages, 1000000, "How many messages to send back and forth");

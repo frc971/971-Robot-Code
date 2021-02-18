@@ -70,7 +70,6 @@ cc_test(
         ":actions_fbs",
         ":test_action2_fbs",
         ":test_action_fbs",
-        "//aos:event",
         "//aos/events:simulated_event_loop",
         "//aos/logging",
         "//aos/testing:googletest",
