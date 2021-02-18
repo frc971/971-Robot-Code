@@ -117,7 +117,7 @@ cc_binary(
         ":vision_fbs",
         "//aos:init",
         "//aos/events:simulated_event_loop",
-        "//aos/events/logging:logger",
+        "//aos/events/logging:log_reader",
         "//third_party:opencv",
     ],
 )

@@ -4,7 +4,7 @@
 // And then opening the plotting webpage at http://localhost:8080/graph.html
 
 #include "aos/configuration.h"
-#include "aos/events/logging/logger.h"
+#include "aos/events/logging/log_reader.h"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/flatbuffer_merge.h"
 #include "aos/init.h"

@@ -6,7 +6,7 @@
 #include "aos/controls/control_loop_test.h"
 #include "aos/controls/polytope.h"
 #include "aos/events/event_loop.h"
-#include "aos/events/logging/logger.h"
+#include "aos/events/logging/log_writer.h"
 #include "aos/time/time.h"
 #include "gflags/gflags.h"
 #include "gtest/gtest.h"

@@ -3,7 +3,7 @@
 #include <chrono>
 #include <string_view>
 
-#include "aos/events/logging/logger.h"
+#include "aos/events/logging/log_reader.h"
 #include "aos/events/shm_event_loop.h"
 #include "aos/network/connect_generated.h"
 #include "aos/network/message_bridge_client_generated.h"

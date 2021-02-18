@@ -11,7 +11,8 @@
 #include "gtest/gtest.h"
 
 #include "aos/configuration.h"
-#include "aos/events/logging/logger.h"
+#include "aos/events/logging/log_writer.h"
+#include "aos/events/logging/log_reader.h"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/init.h"
 #include "aos/json_to_flatbuffer.h"

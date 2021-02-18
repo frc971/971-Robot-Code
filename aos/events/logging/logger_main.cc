@@ -2,7 +2,7 @@
 #include <sys/time.h>
 
 #include "aos/configuration.h"
-#include "aos/events/logging/logger.h"
+#include "aos/events/logging/log_writer.h"
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 #include "aos/logging/log_namer.h"

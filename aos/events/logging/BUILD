@@ -166,18 +166,52 @@ cc_library(
 )
 
 cc_library(
-    name = "logger",
+    name = "log_namer",
     srcs = [
         "log_namer.cc",
-        "logger.cc",
     ],
     hdrs = [
         "log_namer.h",
-        "logger.h",
+    ],
+    deps = [
+        ":logfile_utils",
+        ":logger_fbs",
+        ":uuid",
+        "@com_github_google_flatbuffers//:flatbuffers",
+    ],
+)
+
+cc_library(
+    name = "log_writer",
+    srcs = [
+        "log_writer.cc",
+    ],
+    hdrs = [
+        "log_writer.h",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":log_namer",
+        "//aos:configuration",
+        "//aos/events:event_loop",
+        "//aos/events:simulated_event_loop",
+        "//aos/network:message_bridge_server_fbs",
+    ],
+)
+
+cc_library(
+    name = "log_reader",
+    srcs = [
+        "log_reader.cc",
+    ],
+    hdrs = [
+        "log_reader.h",
     ],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
+        ":log_namer",
+        ":log_writer",
         ":logfile_utils",
         ":logger_fbs",
         ":uuid",
@@ -204,7 +238,7 @@ cc_binary(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
-        ":logger",
+        ":log_reader",
         "//aos:configuration",
         "//aos:init",
         "//aos:json_to_flatbuffer",
@@ -239,7 +273,7 @@ cc_binary(
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
-        ":logger",
+        ":log_reader",
         "//aos:configuration",
         "//aos:init",
         "//aos:json_to_flatbuffer",
@@ -256,7 +290,7 @@ cc_binary(
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
-        ":logger",
+        ":log_reader",
         "//aos:configuration",
         "//aos:init",
         "//aos:json_to_flatbuffer",
@@ -275,7 +309,7 @@ cc_binary(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
-        ":logger",
+        ":log_writer",
         "//aos:configuration",
         "//aos:init",
         "//aos/events:shm_event_loop",
@@ -315,7 +349,8 @@ cc_test(
     shard_count = 5,
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
-        ":logger",
+        ":log_reader",
+        ":log_writer",
         "//aos/events:message_counter",
         "//aos/events:ping_lib",
         "//aos/events:pong_lib",

@@ -23,7 +23,7 @@ cc_binary(
         "//aos:json_to_flatbuffer",
         "//aos/events:shm_event_loop",
         "//aos/events:simulated_event_loop",
-        "//aos/events/logging:logger",
+        "//aos/events/logging:log_reader",
         "@com_github_google_glog//:glog",
         "@python_repo//:python3.7_lib",
     ],

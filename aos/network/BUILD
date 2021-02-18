@@ -197,7 +197,7 @@ cc_library(
         ":timestamp_fbs",
         "//aos:unique_malloc_ptr",
         "//aos/events:shm_event_loop",
-        "//aos/events/logging:logger",
+        "//aos/events/logging:log_reader",
         "//third_party/lksctp-tools:sctp",
     ],
 )
@@ -275,7 +275,7 @@ cc_library(
         ":sctp_client",
         ":timestamp_fbs",
         "//aos/events:shm_event_loop",
-        "//aos/events/logging:logger",
+        "//aos/events/logging:log_reader",
     ],
 )
 
@@ -448,7 +448,7 @@ cc_binary(
         ":web_proxy",
         "//aos:init",
         "//aos/events:simulated_event_loop",
-        "//aos/events/logging:logger",
+        "//aos/events/logging:log_reader",
         "@com_github_google_flatbuffers//:flatbuffers",
     ],
 )
