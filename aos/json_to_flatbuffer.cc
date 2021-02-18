@@ -17,19 +17,6 @@
 // one is and how to test it.  So everything rejects it.
 
 namespace aos {
-
-// Finds the field index in the table given the name.
-int FieldIndex(const flatbuffers::TypeTable *typetable,
-               const char *field_name) {
-  CHECK(typetable->values == nullptr);
-  for (size_t i = 0; i < typetable->num_elems; ++i) {
-    if (strcmp(field_name, typetable->names[i]) == 0) {
-      return i;
-    }
-  }
-  return -1;
-}
-
 namespace {
 
 // Class to hold one of the 3 json types for an array.
@@ -77,30 +64,29 @@ struct FieldElement {
 
 // Adds a single element.  This assumes that vectors have been dealt with
 // already.  Returns true on success.
-bool AddSingleElement(const flatbuffers::TypeTable *typetable,
-                      const FieldElement &field_element,
+bool AddSingleElement(FlatbufferType type, const FieldElement &field_element,
                       ::std::vector<bool> *fields_in_use,
                       flatbuffers::FlatBufferBuilder *fbb);
-bool AddSingleElement(const flatbuffers::TypeTable *typetable, int field_index,
-                      int64_t int_value, flatbuffers::FlatBufferBuilder *fbb);
-bool AddSingleElement(const flatbuffers::TypeTable *typetable, int field_index,
-                      double double_value, flatbuffers::FlatBufferBuilder *fbb);
-bool AddSingleElement(const flatbuffers::TypeTable *typetable, int field_index,
+bool AddSingleElement(FlatbufferType type, int field_index, int64_t int_value,
+                      flatbuffers::FlatBufferBuilder *fbb);
+bool AddSingleElement(FlatbufferType type, int field_index, double double_value,
+                      flatbuffers::FlatBufferBuilder *fbb);
+bool AddSingleElement(FlatbufferType type, int field_index,
                       flatbuffers::Offset<flatbuffers::String> offset_element,
                       flatbuffers::FlatBufferBuilder *fbb);
 
-// Writes an array of FieldElement (with the definition in the type
-// table) to the builder.  Returns the offset of the table.
-flatbuffers::uoffset_t WriteTable(const flatbuffers::TypeTable *typetable,
+// Writes an array of FieldElement (with the definition in "type") to the
+// builder.  Returns the offset of the resulting table.
+flatbuffers::uoffset_t WriteTable(FlatbufferType type,
                                   const ::std::vector<FieldElement> &elements,
                                   flatbuffers::FlatBufferBuilder *fbb) {
   // End of a nested struct!  Add it.
   const flatbuffers::uoffset_t start = fbb->StartTable();
 
-  ::std::vector<bool> fields_in_use(typetable->num_elems, false);
+  ::std::vector<bool> fields_in_use(type.NumberFields(), false);
 
   for (const FieldElement &field_element : elements) {
-    AddSingleElement(typetable, field_element, &fields_in_use, fbb);
+    AddSingleElement(type, field_element, &fields_in_use, fbb);
   }
 
   return fbb->EndTable(start);
@@ -123,10 +109,10 @@ class JsonParser {
 
   // Parses the json into a flatbuffer.  Returns either an empty vector on
   // error, or a vector with the flatbuffer data in it.
-  flatbuffers::Offset<flatbuffers::Table> Parse(
-      const std::string_view data, const flatbuffers::TypeTable *typetable) {
+  flatbuffers::Offset<flatbuffers::Table> Parse(const std::string_view data,
+                                                FlatbufferType type) {
     flatbuffers::uoffset_t end = 0;
-    bool result = DoParse(typetable, data, &end);
+    bool result = DoParse(type, data, &end);
 
     if (result) {
       // On success, finish the table and build the vector.
@@ -143,8 +129,8 @@ class JsonParser {
 
   // Parses the flatbuffer.  This is a second method so we can do easier
   // cleanup at the top level.  Returns true on success.
-  bool DoParse(const flatbuffers::TypeTable *typetable,
-               const std::string_view data, flatbuffers::uoffset_t *table_end);
+  bool DoParse(FlatbufferType type, const std::string_view data,
+               flatbuffers::uoffset_t *table_end);
 
   // Adds *_value for the provided field.  If we are in a vector, queues the
   // data up in vector_elements.  Returns true on success.
@@ -169,7 +155,7 @@ class JsonParser {
   // nested structures.
   struct FlatBufferContext {
     // Type of the current type.
-    const flatbuffers::TypeTable *typetable;
+    FlatbufferType type;
     // If true, we are parsing a vector.
     bool in_vector;
     // The field index of the current field.
@@ -194,10 +180,9 @@ class JsonParser {
   ::std::vector<FlatBufferContext> stack_;
 };
 
-bool JsonParser::DoParse(const flatbuffers::TypeTable *typetable,
-                         const std::string_view data,
+bool JsonParser::DoParse(FlatbufferType type, const std::string_view data,
                          flatbuffers::uoffset_t *table_end) {
-  ::std::vector<const flatbuffers::TypeTable *> stack;
+  ::std::vector<FlatbufferType> stack;
 
   Tokenizer t(data);
 
@@ -220,23 +205,22 @@ bool JsonParser::DoParse(const flatbuffers::TypeTable *typetable,
 
       case Tokenizer::TokenType::kStartObject:  // {
         if (stack_.size() == 0) {
-          stack_.push_back({typetable, false, -1, "", {}, {}});
+          stack_.push_back({type, false, -1, "", {}, {}});
         } else {
           int field_index = stack_.back().field_index;
 
-          const flatbuffers::TypeCode &type_code =
-              stack_.back().typetable->type_codes[field_index];
-
-          if (type_code.base_type != flatbuffers::ET_SEQUENCE) {
+          if (!stack_.back().type.FieldIsSequence(field_index)) {
             fprintf(stderr, "Field '%s' is not a sequence\n",
                     stack_.back().field_name.c_str());
             return false;
           }
 
-          flatbuffers::TypeFunction type_function =
-              stack_.back().typetable->type_refs[type_code.sequence_ref];
-
-          stack_.push_back({type_function(), false, -1, "", {}, {}});
+          stack_.push_back({stack_.back().type.FieldType(field_index),
+                            false,
+                            -1,
+                            "",
+                            {},
+                            {}});
         }
         break;
       case Tokenizer::TokenType::kEndObject:  // }
@@ -247,7 +231,7 @@ bool JsonParser::DoParse(const flatbuffers::TypeTable *typetable,
         } else {
           // End of a nested struct!  Add it.
           const flatbuffers::uoffset_t end =
-              WriteTable(stack_.back().typetable, stack_.back().elements, fbb_);
+              WriteTable(stack_.back().type, stack_.back().elements, fbb_);
 
           // We now want to talk about the parent structure.  Pop the child.
           stack_.pop_back();
@@ -335,8 +319,8 @@ bool JsonParser::DoParse(const flatbuffers::TypeTable *typetable,
       case Tokenizer::TokenType::kField:  // field name
       {
         stack_.back().field_name = t.field_name();
-        stack_.back().field_index = FieldIndex(
-            stack_.back().typetable, stack_.back().field_name.c_str());
+        stack_.back().field_index =
+            stack_.back().type.FieldIndex(stack_.back().field_name.c_str());
 
         if (stack_.back().field_index == -1) {
           fprintf(stderr, "Invalid field name '%s'\n",
@@ -350,10 +334,7 @@ bool JsonParser::DoParse(const flatbuffers::TypeTable *typetable,
 }
 
 bool JsonParser::AddElement(int field_index, int64_t int_value) {
-  flatbuffers::TypeCode type_code =
-      stack_.back().typetable->type_codes[field_index];
-
-  if (type_code.is_repeating != in_vector()) {
+  if (stack_.back().type.FieldIsRepeating(field_index) != in_vector()) {
     fprintf(stderr, "Type and json disagree on if we are in a vector or not\n");
     return false;
   }
@@ -367,10 +348,7 @@ bool JsonParser::AddElement(int field_index, int64_t int_value) {
 }
 
 bool JsonParser::AddElement(int field_index, double double_value) {
-  flatbuffers::TypeCode type_code =
-      stack_.back().typetable->type_codes[field_index];
-
-  if (type_code.is_repeating != in_vector()) {
+  if (stack_.back().type.FieldIsRepeating(field_index) != in_vector()) {
     fprintf(stderr, "Type and json disagree on if we are in a vector or not\n");
     return false;
   }
@@ -384,16 +362,13 @@ bool JsonParser::AddElement(int field_index, double double_value) {
 }
 
 bool JsonParser::AddElement(int field_index, const ::std::string &data) {
-  flatbuffers::TypeCode type_code =
-      stack_.back().typetable->type_codes[field_index];
-
-  if (type_code.is_repeating != in_vector()) {
+  if (stack_.back().type.FieldIsRepeating(field_index) != in_vector()) {
     fprintf(stderr, "Type and json disagree on if we are in a vector or not\n");
     return false;
   }
 
   const flatbuffers::ElementaryType elementary_type =
-      static_cast<flatbuffers::ElementaryType>(type_code.base_type);
+      stack_.back().type.FieldElementaryType(field_index);
   switch (elementary_type) {
     case flatbuffers::ET_CHAR:
     case flatbuffers::ET_UCHAR:
@@ -403,40 +378,25 @@ bool JsonParser::AddElement(int field_index, const ::std::string &data) {
     case flatbuffers::ET_UINT:
     case flatbuffers::ET_LONG:
     case flatbuffers::ET_ULONG:
-      if (type_code.sequence_ref != -1) {
+      if (stack_.back().type.FieldIsEnum(field_index)) {
         // We have an enum.
-        const flatbuffers::TypeTable *type_table = stack_.back().typetable;
-        flatbuffers::TypeFunction type_function =
-            type_table->type_refs[type_code.sequence_ref];
+        const FlatbufferType type = stack_.back().type;
+        const FlatbufferType enum_type = type.FieldType(field_index);
+        CHECK(enum_type.IsEnum());
 
-        const flatbuffers::TypeTable *enum_type_table = type_function();
+        const std::optional<int64_t> int_value = enum_type.EnumValue(data);
 
-        CHECK_EQ(enum_type_table->st, flatbuffers::ST_ENUM);
-
-        int64_t int_value = 0;
-        bool found = false;
-        for (size_t i = 0; i < enum_type_table->num_elems; ++i) {
-          if (data == enum_type_table->names[i]) {
-            if (enum_type_table->values) {
-              int_value = enum_type_table->values[i];
-            } else {
-              int_value = i;
-            }
-            found = true;
-            break;
-          }
-        }
-
-        if (!found) {
-          fprintf(stderr, "Enum value '%s' not found for field '%s'\n",
-                  data.c_str(), type_table->names[field_index]);
+        if (!int_value) {
+          const std::string_view name = type.FieldName(field_index);
+          fprintf(stderr, "Enum value '%s' not found for field '%.*s'\n",
+                  data.c_str(), static_cast<int>(name.size()), name.data());
           return false;
         }
 
         if (in_vector()) {
-          stack_.back().vector_elements.emplace_back(int_value);
+          stack_.back().vector_elements.emplace_back(*int_value);
         } else {
-          stack_.back().elements.emplace_back(field_index, int_value);
+          stack_.back().elements.emplace_back(field_index, *int_value);
         }
         return true;
       }
@@ -457,13 +417,13 @@ bool JsonParser::AddElement(int field_index, const ::std::string &data) {
   return true;
 }
 
-bool AddSingleElement(const flatbuffers::TypeTable *typetable,
-                      const FieldElement &field_element,
+bool AddSingleElement(FlatbufferType type, const FieldElement &field_element,
                       ::std::vector<bool> *fields_in_use,
                       flatbuffers::FlatBufferBuilder *fbb) {
   if ((*fields_in_use)[field_element.field_index]) {
-    fprintf(stderr, "Duplicate field: '%s'\n",
-            typetable->names[field_element.field_index]);
+    const std::string_view name = type.FieldName(field_element.field_index);
+    fprintf(stderr, "Duplicate field: '%.*s'\n", static_cast<int>(name.size()),
+            name.data());
     return false;
   }
 
@@ -471,29 +431,27 @@ bool AddSingleElement(const flatbuffers::TypeTable *typetable,
 
   switch (field_element.element.type) {
     case Element::ElementType::INT:
-      return AddSingleElement(typetable, field_element.field_index,
+      return AddSingleElement(type, field_element.field_index,
                               field_element.element.int_element, fbb);
     case Element::ElementType::DOUBLE:
-      return AddSingleElement(typetable, field_element.field_index,
+      return AddSingleElement(type, field_element.field_index,
                               field_element.element.double_element, fbb);
     case Element::ElementType::OFFSET:
-      return AddSingleElement(typetable, field_element.field_index,
+      return AddSingleElement(type, field_element.field_index,
                               field_element.element.offset_element, fbb);
   }
   return false;
 }
 
-bool AddSingleElement(const flatbuffers::TypeTable *typetable, int field_index,
-                      int64_t int_value, flatbuffers::FlatBufferBuilder *fbb
+bool AddSingleElement(FlatbufferType type, int field_index, int64_t int_value,
+                      flatbuffers::FlatBufferBuilder *fbb
 
 ) {
   flatbuffers::voffset_t field_offset = flatbuffers::FieldIndexToOffset(
       static_cast<flatbuffers::voffset_t>(field_index));
 
-  flatbuffers::TypeCode type_code = typetable->type_codes[field_index];
-
   const flatbuffers::ElementaryType elementary_type =
-      static_cast<flatbuffers::ElementaryType>(type_code.base_type);
+      type.FieldElementaryType(field_index);
   switch (elementary_type) {
     case flatbuffers::ET_BOOL:
       fbb->AddElement<bool>(field_offset, int_value, 0);
@@ -530,25 +488,25 @@ bool AddSingleElement(const flatbuffers::TypeTable *typetable, int field_index,
       return true;
     case flatbuffers::ET_STRING:
     case flatbuffers::ET_UTYPE:
-    case flatbuffers::ET_SEQUENCE:
-      fprintf(
-          stderr, "Mismatched type for field '%s'. Got: integer, expected %s\n",
-          typetable->names[field_index], ElementaryTypeName(elementary_type));
+    case flatbuffers::ET_SEQUENCE: {
+      const std::string_view name = type.FieldName(field_index);
+      fprintf(stderr,
+              "Mismatched type for field '%.*s'. Got: integer, expected %s\n",
+              static_cast<int>(name.size()), name.data(),
+              ElementaryTypeName(elementary_type));
       return false;
+    }
   };
   return false;
 }
 
-bool AddSingleElement(const flatbuffers::TypeTable *typetable, int field_index,
-                      double double_value,
+bool AddSingleElement(FlatbufferType type, int field_index, double double_value,
                       flatbuffers::FlatBufferBuilder *fbb) {
   flatbuffers::voffset_t field_offset = flatbuffers::FieldIndexToOffset(
       static_cast<flatbuffers::voffset_t>(field_index));
 
-  flatbuffers::TypeCode type_code = typetable->type_codes[field_index];
-
   const flatbuffers::ElementaryType elementary_type =
-      static_cast<flatbuffers::ElementaryType>(type_code.base_type);
+      type.FieldElementaryType(field_index);
   switch (elementary_type) {
     case flatbuffers::ET_UTYPE:
     case flatbuffers::ET_BOOL:
@@ -561,11 +519,14 @@ bool AddSingleElement(const flatbuffers::TypeTable *typetable, int field_index,
     case flatbuffers::ET_LONG:
     case flatbuffers::ET_ULONG:
     case flatbuffers::ET_STRING:
-    case flatbuffers::ET_SEQUENCE:
-      fprintf(
-          stderr, "Mismatched type for field '%s'. Got: double, expected %s\n",
-          typetable->names[field_index], ElementaryTypeName(elementary_type));
+    case flatbuffers::ET_SEQUENCE: {
+      const std::string_view name = type.FieldName(field_index);
+      fprintf(stderr,
+              "Mismatched type for field '%.*s'. Got: double, expected %s\n",
+              static_cast<int>(name.size()), name.data(),
+              ElementaryTypeName(elementary_type));
       return false;
+    }
     case flatbuffers::ET_FLOAT:
       fbb->AddElement<float>(field_offset, double_value, 0);
       return true;
@@ -575,22 +536,20 @@ bool AddSingleElement(const flatbuffers::TypeTable *typetable, int field_index,
   }
   return false;
 }
-bool AddSingleElement(const flatbuffers::TypeTable *typetable, int field_index,
+bool AddSingleElement(FlatbufferType type, int field_index,
                       flatbuffers::Offset<flatbuffers::String> offset_element,
                       flatbuffers::FlatBufferBuilder *fbb) {
-  flatbuffers::TypeCode type_code = typetable->type_codes[field_index];
-
   flatbuffers::voffset_t field_offset = flatbuffers::FieldIndexToOffset(
       static_cast<flatbuffers::voffset_t>(field_index));
 
   // Vectors will always be Offset<>'s.
-  if (type_code.is_repeating) {
+  if (type.FieldIsRepeating(field_index)) {
     fbb->AddOffset(field_offset, offset_element);
     return true;
   }
 
   const flatbuffers::ElementaryType elementary_type =
-      static_cast<flatbuffers::ElementaryType>(type_code.base_type);
+      type.FieldElementaryType(field_index);
   switch (elementary_type) {
     case flatbuffers::ET_CHAR:
     case flatbuffers::ET_UCHAR:
@@ -603,16 +562,15 @@ bool AddSingleElement(const flatbuffers::TypeTable *typetable, int field_index,
     case flatbuffers::ET_UTYPE:
     case flatbuffers::ET_BOOL:
     case flatbuffers::ET_FLOAT:
-    case flatbuffers::ET_DOUBLE:
-      fprintf(
-          stderr, "Mismatched type for field '%s'. Got: string, expected %s\n",
-          typetable->names[field_index], ElementaryTypeName(elementary_type));
-      CHECK_EQ(type_code.sequence_ref, -1)
-          << ": Field name " << typetable->names[field_index]
-          << " Got string expected " << ElementaryTypeName(elementary_type);
+    case flatbuffers::ET_DOUBLE: {
+      const std::string_view name = type.FieldName(field_index);
+      fprintf(stderr,
+              "Mismatched type for field '%.*s'. Got: string, expected %s\n",
+              static_cast<int>(name.size()), name.data(),
+              ElementaryTypeName(elementary_type));
       return false;
+    }
     case flatbuffers::ET_STRING:
-      CHECK_EQ(type_code.sequence_ref, -1);
     case flatbuffers::ET_SEQUENCE:
       fbb->AddOffset(field_offset, offset_element);
       return true;
@@ -621,16 +579,12 @@ bool AddSingleElement(const flatbuffers::TypeTable *typetable, int field_index,
 }
 
 bool JsonParser::FinishVector(int field_index) {
-  flatbuffers::TypeCode type_code =
-      stack_.back().typetable->type_codes[field_index];
+  // Vectors have a start (unfortunately which needs to know the size)
+  fbb_->StartVector(stack_.back().vector_elements.size(),
+                    stack_.back().type.FieldInlineSize(field_index));
 
   const flatbuffers::ElementaryType elementary_type =
-      static_cast<flatbuffers::ElementaryType>(type_code.base_type);
-
-  // Vectors have a start (unfortunately which needs to know the size)
-  fbb_->StartVector(
-      stack_.back().vector_elements.size(),
-      flatbuffers::InlineSize(elementary_type, stack_.back().typetable));
+      stack_.back().type.FieldElementaryType(field_index);
 
   // Then the data (in reverse order for some reason...)
   for (size_t i = stack_.back().vector_elements.size(); i > 0;) {
@@ -640,8 +594,6 @@ bool JsonParser::FinishVector(int field_index) {
         if (!PushElement(elementary_type, element.int_element)) return false;
         break;
       case Element::ElementType::DOUBLE:
-        CHECK_EQ(type_code.sequence_ref, -1)
-            << ": Field index is " << field_index;
         if (!PushElement(elementary_type, element.double_element)) return false;
         break;
       case Element::ElementType::OFFSET:
@@ -768,19 +720,19 @@ bool JsonParser::PushElement(
 }  // namespace
 
 flatbuffers::Offset<flatbuffers::Table> JsonToFlatbuffer(
-    const std::string_view data, const flatbuffers::TypeTable *typetable,
+    const std::string_view data, FlatbufferType type,
     flatbuffers::FlatBufferBuilder *fbb) {
   JsonParser p(fbb);
-  return p.Parse(data, typetable);
+  return p.Parse(data, type);
 }
 
-flatbuffers::DetachedBuffer JsonToFlatbuffer(
-    const std::string_view data, const flatbuffers::TypeTable *typetable) {
+flatbuffers::DetachedBuffer JsonToFlatbuffer(const std::string_view data,
+                                             FlatbufferType type) {
   flatbuffers::FlatBufferBuilder fbb;
   fbb.ForceDefaults(true);
 
   const flatbuffers::Offset<flatbuffers::Table> result =
-      JsonToFlatbuffer(data, typetable, &fbb);
+      JsonToFlatbuffer(data, type, &fbb);
   if (result.o != 0) {
     fbb.Finish(result);
 

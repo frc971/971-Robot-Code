@@ -7,6 +7,7 @@ filegroup(
     srcs = [
         "//aos:aos_dump",
         "//aos:aos_dump_autocomplete.sh",
+        "//aos:aos_send",
         "//aos/starter",
     ],
     visibility = ["//visibility:public"],
@@ -23,10 +24,10 @@ filegroup(
 filegroup(
     name = "prime_binaries_stripped",
     srcs = [
-        # starter is hard coded to look for a non-stripped core...
         "//aos:aos_dump.stripped",
-        "//aos/starter",
         "//aos:aos_dump_autocomplete.sh",
+        "//aos:aos_send.stripped",
+        "//aos/starter",
     ],
     visibility = ["//visibility:public"],
 )
@@ -316,14 +317,14 @@ cc_library(
 )
 
 flatbuffer_ts_library(
-    name = "json_to_flatbuffer_flatbuffer_ts",
+    name = "json_to_flatbuffer_fbs_ts",
     srcs = ["json_to_flatbuffer.fbs"],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//aos:__subpackages__"],
 )
 
 flatbuffer_cc_library(
-    name = "json_to_flatbuffer_flatbuffer",
+    name = "json_to_flatbuffer_fbs",
     srcs = ["json_to_flatbuffer.fbs"],
     gen_reflections = 1,
     target_compatible_with = ["@platforms//os:linux"],
@@ -337,6 +338,7 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "@com_github_google_flatbuffers//:flatbuffers",
+        "@com_github_google_glog//:glog",
     ],
 )
 
@@ -376,10 +378,13 @@ cc_test(
     srcs = [
         "json_to_flatbuffer_test.cc",
     ],
+    data = [
+        ":json_to_flatbuffer_fbs_reflection_out",
+    ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":json_to_flatbuffer",
-        ":json_to_flatbuffer_flatbuffer",
+        ":json_to_flatbuffer_fbs",
         "//aos/testing:googletest",
     ],
 )
@@ -390,12 +395,12 @@ cc_test(
         "flatbuffer_introspection_test.cc",
     ],
     data = [
-        ":json_to_flatbuffer_flatbuffer_reflection_out",
+        ":json_to_flatbuffer_fbs_reflection_out",
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":json_to_flatbuffer",
-        ":json_to_flatbuffer_flatbuffer",
+        ":json_to_flatbuffer_fbs",
         "//aos/testing:googletest",
         "//aos/util:file",
         "@com_github_google_flatbuffers//:flatbuffers",
@@ -425,7 +430,7 @@ cc_test(
     deps = [
         ":flatbuffer_merge",
         ":json_to_flatbuffer",
-        ":json_to_flatbuffer_flatbuffer",
+        ":json_to_flatbuffer_fbs",
         "//aos/testing:googletest",
     ],
 )
@@ -484,6 +489,24 @@ cc_binary(
     ],
 )
 
+cc_library(
+    name = "aos_cli_utils",
+    srcs = [
+        "aos_cli_utils.cc",
+    ],
+    hdrs = [
+        "aos_cli_utils.h",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":configuration",
+        "//aos:init",
+        "//aos/events:shm_event_loop",
+        "@com_github_google_glog//:glog",
+    ],
+)
+
 cc_binary(
     name = "aos_dump",
     srcs = [
@@ -492,10 +515,27 @@ cc_binary(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
+        ":aos_cli_utils",
         ":configuration",
         ":json_to_flatbuffer",
         "//aos:init",
-        "//aos/events:shm_event_loop",
+        "@com_github_google_glog//:glog",
+    ],
+)
+
+cc_binary(
+    name = "aos_send",
+    srcs = [
+        "aos_send.cc",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":aos_cli_utils",
+        ":configuration",
+        ":init",
+        ":json_to_flatbuffer",
+        "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
     ],
 )
@@ -577,7 +617,7 @@ cc_test(
     deps = [
         ":flatbuffers",
         ":json_to_flatbuffer",
-        ":json_to_flatbuffer_flatbuffer",
+        ":json_to_flatbuffer_fbs",
         "//aos/testing:googletest",
     ],
 )

@@ -11,22 +11,33 @@ class JsonToFlatbufferTest : public ::testing::Test {
  public:
   JsonToFlatbufferTest() {}
 
+  FlatbufferVector<reflection::Schema> Schema() {
+    return FileToFlatbuffer<reflection::Schema>("aos/json_to_flatbuffer.bfbs");
+  }
+
   bool JsonAndBack(const ::std::string str) { return JsonAndBack(str, str); }
 
   bool JsonAndBack(const ::std::string in, const ::std::string out) {
     printf("Testing: %s\n", in.c_str());
-    FlatbufferDetachedBuffer<Configuration> fb =
+    FlatbufferDetachedBuffer<Configuration> fb_typetable =
         JsonToFlatbuffer<Configuration>(in.data());
+    FlatbufferDetachedBuffer<Configuration> fb_reflection =
+        JsonToFlatbuffer(in.data(), FlatbufferType(&Schema().message()));
 
-    if (fb.span().size() == 0) {
+    if (fb_typetable.span().size() == 0) {
+      return false;
+    }
+    if (fb_reflection.span().size() == 0) {
       return false;
     }
 
-    const ::std::string back = FlatbufferToJson(fb);
+    const ::std::string back_typetable = FlatbufferToJson(fb_typetable);
+    const ::std::string back_reflection = FlatbufferToJson(fb_reflection);
 
-    printf("Back to string: %s\n", back.c_str());
+    printf("Back to string via TypeTable: %s\n", back_typetable.c_str());
+    printf("Back to string via reflection: %s\n", back_reflection.c_str());
 
-    return back == out;
+    return back_typetable == out && back_reflection == out;
   }
 };
 
@@ -222,20 +233,35 @@ TEST_F(JsonToFlatbufferTest, TrimmedVector) {
   json_short += " ] }";
   json_long += ", 101 ] }";
 
-  const FlatbufferDetachedBuffer<Configuration> fb_short(
+  const FlatbufferDetachedBuffer<Configuration> fb_short_typetable(
       JsonToFlatbuffer<Configuration>(json_short));
-  ASSERT_GT(fb_short.span().size(), 0);
-  const FlatbufferDetachedBuffer<Configuration> fb_long(
+  ASSERT_GT(fb_short_typetable.span().size(), 0);
+  const FlatbufferDetachedBuffer<Configuration> fb_long_typetable(
       JsonToFlatbuffer<Configuration>(json_long));
-  ASSERT_GT(fb_long.span().size(), 0);
+  ASSERT_GT(fb_long_typetable.span().size(), 0);
+  const FlatbufferDetachedBuffer<Configuration> fb_short_reflection(
+      JsonToFlatbuffer(json_short, FlatbufferType(&Schema().message())));
+  ASSERT_GT(fb_short_reflection.span().size(), 0);
+  const FlatbufferDetachedBuffer<Configuration> fb_long_reflection(
+      JsonToFlatbuffer(json_long, FlatbufferType(&Schema().message())));
+  ASSERT_GT(fb_long_reflection.span().size(), 0);
 
-  const std::string back_json_short = FlatbufferToJson<Configuration>(
-      fb_short, {.multi_line = false, .max_vector_size = 100});
-  const std::string back_json_long = FlatbufferToJson<Configuration>(
-      fb_long, {.multi_line = false, .max_vector_size = 100});
+  const std::string back_json_short_typetable = FlatbufferToJson<Configuration>(
+      fb_short_typetable, {.multi_line = false, .max_vector_size = 100});
+  const std::string back_json_long_typetable = FlatbufferToJson<Configuration>(
+      fb_long_typetable, {.multi_line = false, .max_vector_size = 100});
+  const std::string back_json_short_reflection =
+      FlatbufferToJson<Configuration>(
+          fb_short_reflection, {.multi_line = false, .max_vector_size = 100});
+  const std::string back_json_long_reflection = FlatbufferToJson<Configuration>(
+      fb_long_reflection, {.multi_line = false, .max_vector_size = 100});
 
-  EXPECT_EQ(json_short, back_json_short);
-  EXPECT_EQ("{ \"vector_foo_int\": [ ... 101 elements ... ] }", back_json_long);
+  EXPECT_EQ(json_short, back_json_short_typetable);
+  EXPECT_EQ(json_short, back_json_short_reflection);
+  EXPECT_EQ("{ \"vector_foo_int\": [ ... 101 elements ... ] }",
+            back_json_long_typetable);
+  EXPECT_EQ("{ \"vector_foo_int\": [ ... 101 elements ... ] }",
+            back_json_long_reflection);
 }
 
 // Tests that a nullptr buffer prints nullptr.
