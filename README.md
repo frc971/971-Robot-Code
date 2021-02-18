@@ -64,22 +64,30 @@ There are a couple options for building code that are given here-- setting up ei
 In order to use the build server, you'll first need to get ssh access set up.  (NOTE: you don't need to do any of the other setup steps done for your own computer, since things like `bazel`, `python`, etc. are already installed on the build server)
   1. Use ssh-keygen to create a public and private key.
 ```console
-# IMPORTANT These are the windows instructions. Change the backslash to forward for linux.
-cd ~
-ssh-keygen -f .\.ssh\id_971_rsa
+# In windows:
+# Important use Powershell!
+cd ~/.ssh
+ssh-keygen -f id_971_rsa
+chmod 600 id_971_rsa
 ```
-  2. Send the contents of id_971_rsa.pub to Stephan along with the password that you want to use. WAIT for feedback, as he needs to setup the account.
 ```console
-cat .\.ssh\id_971_rsa.pub
+# In Linux and MacOS:
+cd ~
+ssh-keygen -f ~/.ssh/id_971_rsa
+chmod 600 ./.ssh/id_971_rsa
+```
+  2. Send the contents of id_971_rsa.pub to Stephan Massalt along with the password that you want to use. WAIT for feedback, as he needs to setup the account.
+```console
+cat ~/.ssh/id_971_rsa.pub
 # Then send the stuff that gets printed to Stephan via slack.
 ```
   3. Once you hear back from Stephan, test SSH.
 ```console
-ssh [user]@build.frc971.org -p 2222 -i .\.ssh\id_971_rsa
+ssh [user]@build.frc971.org -p 2222 -i ~/.ssh/id_971_rsa
 ```
   4. If that doesnt work, then send the error msg to #coding However, if it does then use the `exit` command and then SSH tunnel.
 ```console
-ssh [user]@build.frc971.org -p 2222 -i .\.ssh\id_971_rsa -L 9971:127.0.0.1:3389
+ssh [user]@build.frc971.org -p 2222 -i ~/.ssh/id_971_rsa -L 9971:127.0.0.1:3389
 ```
   5. So at this point you run the Remote Desktop app in Windows.  Once
 you get there, all you need to do is put `127.0.0.1:9971` for the
