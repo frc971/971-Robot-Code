@@ -1,7 +1,8 @@
-#include "aos/events/logging/logger.h"
+#include "aos/events/logging/log_reader.h"
 
 #include "absl/strings/str_format.h"
 #include "aos/events/event_loop.h"
+#include "aos/events/logging/log_writer.h"
 #include "aos/events/message_counter.h"
 #include "aos/events/ping_lib.h"
 #include "aos/events/pong_lib.h"
@@ -31,6 +32,21 @@ constexpr std::string_view kSingleConfigSha1(
     "bc8c9c2e31589eae6f0e36d766f6a437643e861d9568b7483106841cf7504dea");
 constexpr std::string_view kConfigSha1(
     "47511a1906dbb59cf9f8ad98ad08e568c718a4deb204c8bbce81ff76cef9095c");
+
+std::vector<std::vector<std::string>> ToLogReaderVector(
+    const std::vector<LogFile> &log_files) {
+  std::vector<std::vector<std::string>> result;
+  for (const LogFile &log_file : log_files) {
+    for (const LogParts &log_parts : log_file.parts) {
+      std::vector<std::string> parts;
+      for (const std::string &part : log_parts.parts) {
+        parts.emplace_back(part);
+      }
+      result.emplace_back(std::move(parts));
+    }
+  }
+  return result;
+}
 
 class LoggerTest : public ::testing::Test {
  public:

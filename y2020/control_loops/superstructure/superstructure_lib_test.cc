@@ -4,7 +4,7 @@
 #include <memory>
 
 #include "aos/controls/control_loop_test.h"
-#include "aos/events/logging/logger.h"
+#include "aos/events/logging/log_writer.h"
 #include "frc971/control_loops/capped_test_plant.h"
 #include "frc971/control_loops/position_sensor_sim.h"
 #include "frc971/control_loops/team_number_test_environment.h"

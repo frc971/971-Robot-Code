@@ -470,7 +470,7 @@ cc_test(
         ":drivetrain_output_fbs",
         ":drivetrain_test_lib",
         "//aos/controls:control_loop_test",
-        "//aos/events/logging:logger",
+        "//aos/events/logging:log_writer",
         "//aos/testing:googletest",
         "//frc971/queues:gyro_fbs",
         "//frc971/wpilib:imu_fbs",

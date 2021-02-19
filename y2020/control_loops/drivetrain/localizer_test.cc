@@ -3,7 +3,7 @@
 #include "gtest/gtest.h"
 
 #include "aos/controls/control_loop_test.h"
-#include "aos/events/logging/logger.h"
+#include "aos/events/logging/log_writer.h"
 #include "aos/network/message_bridge_server_generated.h"
 #include "aos/network/team_number.h"
 #include "aos/network/testing_time_converter.h"

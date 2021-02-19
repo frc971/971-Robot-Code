@@ -2,7 +2,7 @@
 
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
-#include "aos/events/logging/logger.h"
+#include "aos/events/logging/log_reader.h"
 #include "aos/events/logging/logger_generated.h"
 #include "aos/events/shm_event_loop.h"
 #include "aos/network/connect_generated.h"
