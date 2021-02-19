@@ -174,6 +174,20 @@ cc_library(
 )
 
 cc_library(
+    name = "timestamp_channel",
+    srcs = ["timestamp_channel.cc"],
+    hdrs = ["timestamp_channel.h"],
+    deps = [
+        ":remote_message_fbs",
+        "//aos:configuration",
+        "//aos/events:event_loop",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/container:btree",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
     name = "message_bridge_server_lib",
     srcs = [
         "message_bridge_server_lib.cc",
@@ -194,6 +208,7 @@ cc_library(
         ":remote_message_fbs",
         ":sctp_lib",
         ":sctp_server",
+        ":timestamp_channel",
         ":timestamp_fbs",
         "//aos:unique_malloc_ptr",
         "//aos/events:shm_event_loop",
@@ -297,6 +312,21 @@ cc_binary(
 )
 
 aos_config(
+    name = "message_bridge_test_combined_timestamps_common_config",
+    src = "message_bridge_test_combined_timestamps_common.json",
+    flatbuffers = [
+        ":remote_message_fbs",
+        "//aos/events:ping_fbs",
+        "//aos/events:pong_fbs",
+        "//aos/network:message_bridge_client_fbs",
+        "//aos/network:message_bridge_server_fbs",
+        "//aos/network:timestamp_fbs",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = ["//aos/events:config"],
+)
+
+aos_config(
     name = "message_bridge_test_common_config",
     src = "message_bridge_test_common.json",
     flatbuffers = [
@@ -317,10 +347,11 @@ cc_test(
         "message_bridge_test.cc",
     ],
     data = [
+        ":message_bridge_test_combined_timestamps_common_config",
         ":message_bridge_test_common_config",
     ],
     flaky = True,
-    shard_count = 5,
+    shard_count = 10,
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":message_bridge_client_lib",

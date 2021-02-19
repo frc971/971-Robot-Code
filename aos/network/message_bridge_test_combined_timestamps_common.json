@@ -73,33 +73,15 @@
       "frequency": 2
     },
     {
-      "name": "/pi1/aos/remote_timestamps/pi2/pi1/aos/aos-message_bridge-Timestamp",
+      "name": "/pi1/aos/remote_timestamps/pi2",
       "type": "aos.message_bridge.RemoteMessage",
       "source_node": "pi1",
       "frequency": 10
     },
     {
-      "name": "/pi2/aos/remote_timestamps/pi1/pi2/aos/aos-message_bridge-Timestamp",
+      "name": "/pi2/aos/remote_timestamps/pi1",
       "type": "aos.message_bridge.RemoteMessage",
       "source_node": "pi2",
-      "frequency": 10
-    },
-    {
-      "name": "/pi1/aos/remote_timestamps/pi2/test/aos-examples-Ping",
-      "type": "aos.message_bridge.RemoteMessage",
-      "source_node": "pi1",
-      "frequency": 10
-    },
-    {
-      "name": "/pi2/aos/remote_timestamps/pi1/test/aos-examples-Pong",
-      "type": "aos.message_bridge.RemoteMessage",
-      "source_node": "pi2",
-      "frequency": 10
-    },
-    {
-      "name": "/pi1/aos/remote_timestamps/pi2/unreliable/aos-examples-Ping",
-      "type": "aos.message_bridge.RemoteMessage",
-      "source_node": "pi1",
       "frequency": 10
     },
     {
@@ -142,7 +124,7 @@
           "name": "pi1",
           "priority": 1,
           "timestamp_logger": "REMOTE_LOGGER",
-          "timestamp_logger_nodes": ["pi2"]
+          "timestamp_logger_nodes": ["pi1"]
         }
       ]
     },

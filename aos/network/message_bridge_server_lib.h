@@ -13,6 +13,7 @@
 #include "aos/network/message_bridge_server_status.h"
 #include "aos/network/remote_message_generated.h"
 #include "aos/network/sctp_server.h"
+#include "aos/network/timestamp_channel.h"
 #include "aos/network/timestamp_generated.h"
 #include "glog/logging.h"
 
@@ -127,7 +128,7 @@ class MessageBridgeServer {
   // Event loop to schedule everything on.
   aos::ShmEventLoop *event_loop_;
 
-  std::vector<aos::Sender<RemoteMessage>> timestamp_loggers_;
+  ChannelTimestampSender timestamp_loggers_;
   SctpServer server_;
 
   MessageBridgeServerStatus server_status_;

@@ -10,6 +10,7 @@
 #include "aos/network/message_bridge_server_generated.h"
 #include "aos/network/remote_message_generated.h"
 #include "aos/network/sctp_server.h"
+#include "aos/network/timestamp_channel.h"
 #include "glog/logging.h"
 
 namespace aos {
@@ -254,6 +255,7 @@ int ChannelState::NodeConnected(const Node *node, sctp_assoc_t assoc_id,
 
 MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop)
     : event_loop_(event_loop),
+      timestamp_loggers_(event_loop_),
       server_("::", event_loop->node()->port()),
       server_status_(event_loop, [this](const Context &context) {
         timestamp_state_->SendData(&server_, context);
@@ -261,7 +263,6 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop)
   CHECK(event_loop_->node() != nullptr) << ": No nodes configured.";
 
   int32_t max_size = 0;
-  timestamp_loggers_.resize(event_loop->configuration()->nodes()->size());
 
   // Seed up all the per-node connection state.
   // We are making the assumption here that every connection is bidirectional
@@ -287,10 +288,6 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop)
   }
 
   // TODO(austin): Logging synchronization.
-  //
-  // TODO(austin): How do we handle parameter channels?  The oldest value
-  // needs to be sent regardless on connection (though probably only if it has
-  // changed).
   event_loop_->epoll()->OnReadable(server_.fd(),
                                    [this]() { MessageReceived(); });
 
@@ -327,21 +324,11 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop)
       for (const Connection *connection : *channel->destination_nodes()) {
         const Node *other_node = configuration::GetNode(
             event_loop_->configuration(), connection->name()->string_view());
-        const size_t other_node_index = configuration::GetNodeIndex(
-            event_loop_->configuration(), other_node);
 
         const bool delivery_time_is_logged =
             configuration::ConnectionDeliveryTimeIsLoggedOnNode(
                 connection, event_loop_->node());
 
-        // Conditionally create the timestamp logger if we are supposed to log
-        // timestamps from it.
-        if (delivery_time_is_logged && !timestamp_loggers_[other_node_index]) {
-          timestamp_loggers_[other_node_index] =
-              event_loop_->MakeSender<RemoteMessage>(
-                  absl::StrCat("/aos/remote_timestamps/",
-                               connection->name()->string_view()));
-        }
         state->AddPeer(
             connection,
             configuration::GetNodeIndex(event_loop_->configuration(),
@@ -349,8 +336,9 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop)
             server_status_.FindServerConnection(
                 connection->name()->string_view()),
             configuration::ChannelMessageIsLoggedOnNode(channel, other_node),
-            delivery_time_is_logged ? &timestamp_loggers_[other_node_index]
-                                    : nullptr);
+            delivery_time_is_logged
+                ? timestamp_loggers_.SenderForChannel(channel, connection)
+                : nullptr);
       }
 
       // Don't subscribe to timestamps on the timestamp channel.  Those get
