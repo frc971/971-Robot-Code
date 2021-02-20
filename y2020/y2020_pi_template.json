@@ -100,6 +100,12 @@
       "source_node": "pi{{ NUM }}",
       "frequency": 2,
       "max_size": 2000000
+    },
+    {
+      "name": "/pi{{ NUM }}/camera",
+      "type": "y2020.vision.GalacticSearchPath",
+      "source_node": "pi{{ NUM }}",
+      "max_size" : 104
     }
   ],
   "applications": [
