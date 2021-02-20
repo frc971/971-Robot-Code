@@ -46,7 +46,8 @@ void EventLoop::MakeWatcher(const std::string_view channel_name, Watch &&w) {
 
   CHECK(channel != nullptr)
       << ": Channel { \"name\": \"" << channel_name << "\", \"type\": \""
-      << MessageType::GetFullyQualifiedName() << "\" } not found in config.";
+      << MessageType::GetFullyQualifiedName()
+      << "\" } not found in config for application " << name() << ".";
 
   MakeRawWatcher(channel,
                  [this, w](const Context &context, const void *message) {
@@ -64,7 +65,8 @@ void EventLoop::MakeNoArgWatcher(const std::string_view channel_name,
       name(), node());
   CHECK(channel != nullptr)
       << ": Channel { \"name\": \"" << channel_name << "\", \"type\": \""
-      << MessageType::GetFullyQualifiedName() << "\" } not found in config.";
+      << MessageType::GetFullyQualifiedName()
+      << "\" } not found in config for application " << name() << ".";
   MakeRawNoArgWatcher(channel, [this, w](const Context &context) {
     context_ = context;
     w();
