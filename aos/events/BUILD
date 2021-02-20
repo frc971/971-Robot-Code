@@ -151,20 +151,27 @@ aos_config(
     deps = [":config"],
 )
 
-aos_config(
-    name = "multinode_pingpong_config",
-    src = "multinode_pingpong.json",
-    flatbuffers = [
-        ":ping_fbs",
-        ":pong_fbs",
-        "//aos/network:message_bridge_client_fbs",
-        "//aos/network:remote_message_fbs",
-        "//aos/network:timestamp_fbs",
-        "//aos/network:message_bridge_server_fbs",
-    ],
-    target_compatible_with = ["@platforms//os:linux"],
-    deps = [":config"],
-)
+[
+    aos_config(
+        name = config + "_config",
+        src = config + ".json",
+        flatbuffers = [
+            ":ping_fbs",
+            ":pong_fbs",
+            "//aos/network:message_bridge_client_fbs",
+            "//aos/network:remote_message_fbs",
+            "//aos/network:timestamp_fbs",
+            "//aos/network:message_bridge_server_fbs",
+        ],
+        target_compatible_with = ["@platforms//os:linux"],
+        deps = [":config"],
+    )
+    for config in [
+        "multinode_pingpong_test_split",
+        "multinode_pingpong",
+        "multinode_pingpong_test_combined",
+    ]
+]
 
 cc_library(
     name = "pong_lib",
@@ -293,7 +300,10 @@ cc_library(
 cc_test(
     name = "simulated_event_loop_test",
     srcs = ["simulated_event_loop_test.cc"],
-    data = [":multinode_pingpong_config"],
+    data = [
+        ":multinode_pingpong_test_combined_config",
+        ":multinode_pingpong_test_split_config",
+    ],
     shard_count = 4,
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
@@ -346,6 +356,7 @@ cc_library(
         "//aos/network:message_bridge_client_status",
         "//aos/network:message_bridge_server_status",
         "//aos/network:remote_message_fbs",
+        "//aos/network:timestamp_channel",
         "//aos/util:phased_loop",
         "@com_google_absl//absl/container:btree",
     ],

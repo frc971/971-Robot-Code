@@ -403,8 +403,8 @@ SimulatedMessageBridge::SimulatedMessageBridge(
           configuration::ChannelIndex(
               source_event_loop->second.event_loop->configuration(), channel),
           delivery_time_is_logged
-              ? &source_event_loop->second
-                     .timestamp_loggers[destination_node_index]
+              ? source_event_loop->second.timestamp_loggers.SenderForChannel(
+                    channel, connection)
               : nullptr));
     }
 
@@ -512,9 +512,9 @@ void SimulatedMessageBridge::SkipTimingReport() {
 SimulatedMessageBridge::State::State(
     std::unique_ptr<aos::EventLoop> &&new_event_loop)
     : event_loop(std::move(new_event_loop)),
+      timestamp_loggers(event_loop.get()),
       server_status(event_loop.get()),
       client_status(event_loop.get()) {
-  timestamp_loggers.resize(event_loop->configuration()->nodes()->size());
 
   // Find all nodes which log timestamps back to us (from us).
   for (const Channel *channel : *event_loop->configuration()->channels()) {
@@ -533,18 +533,7 @@ SimulatedMessageBridge::State::State(
           continue;
         }
 
-        // (And only construct the sender if it hasn't been constructed)
-        const Node *other_node = configuration::GetNode(
-            event_loop->configuration(), connection->name()->string_view());
-        const size_t other_node_index = configuration::GetNodeIndex(
-            event_loop->configuration(), other_node);
-
-        if (!timestamp_loggers[other_node_index]) {
-          timestamp_loggers[other_node_index] =
-              event_loop->MakeSender<RemoteMessage>(
-                  absl::StrCat("/aos/remote_timestamps/",
-                               connection->name()->string_view()));
-        }
+        timestamp_loggers.SenderForChannel(channel, connection);
       }
     }
   }

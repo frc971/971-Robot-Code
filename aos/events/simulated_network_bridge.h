@@ -6,6 +6,7 @@
 #include "aos/network/message_bridge_client_status.h"
 #include "aos/network/message_bridge_server_status.h"
 #include "aos/network/remote_message_generated.h"
+#include "aos/network/timestamp_channel.h"
 
 namespace aos {
 namespace message_bridge {
@@ -47,10 +48,9 @@ class SimulatedMessageBridge {
     State(const State &state) = delete;
 
     std::unique_ptr<aos::EventLoop> event_loop;
+    ChannelTimestampSender timestamp_loggers;
     MessageBridgeServerStatus server_status;
     MessageBridgeClientStatus client_status;
-
-    std::vector<aos::Sender<RemoteMessage>> timestamp_loggers;
   };
   // Map of nodes to event loops.  This is a member variable so that the
   // lifetime of the event loops matches the lifetime of the bridge.
