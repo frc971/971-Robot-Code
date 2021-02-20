@@ -29,6 +29,114 @@ namespace frc971 {
 namespace control_loops {
 namespace drivetrain {
 
+namespace chrono = std::chrono;
+
+// A class to hold all the estimators in use in the drivetrain.  This lets us
+// run them on a log file without running the controllers, making them easier to
+// tune.
+class DrivetrainFilters {
+ public:
+  DrivetrainFilters(const DrivetrainConfig<double> &dt_config,
+                    ::aos::EventLoop *event_loop,
+                    LocalizerInterface *localizer);
+
+  double localizer_theta() const { return localizer_->theta(); }
+  double x() const { return localizer_->x(); }
+  double y() const { return localizer_->y(); }
+
+  // Returns the current gear for both sides.
+  Gear left_gear() const { return left_gear_; }
+  Gear right_gear() const { return right_gear_; }
+
+  // Tracks the shift requests for each side.
+  void set_left_high_requested(bool value) { left_high_requested_ = value; }
+  void set_right_high_requested(bool value) { right_high_requested_ = value; }
+
+  // Returns a pointer to the drivetrain kalman filter.
+  StateFeedbackLoop<7, 2, 4> *kf() { return &kf_; }
+
+  // Populates the various state flatbuffers used for diagnostics.
+  flatbuffers::Offset<LocalizerState> PopulateLocalizerState(
+      flatbuffers::FlatBufferBuilder *fbb);
+  flatbuffers::Offset<ImuZeroerState> PopulateImuZeroerState(
+      flatbuffers::FlatBufferBuilder *fbb);
+  flatbuffers::Offset<DownEstimatorState> PopulateDownEstimatorState(
+      flatbuffers::FlatBufferBuilder *fbb,
+      aos::monotonic_clock::time_point monotonic_now);
+  flatbuffers::Offset<GearLogging> CreateGearLogging(
+      flatbuffers::FlatBufferBuilder *fbb) const;
+
+  // Returns the current localizer state.
+  Eigen::Matrix<double, 5, 1> trajectory_state() {
+    return (Eigen::Matrix<double, 5, 1>() << localizer_->x(), localizer_->y(),
+            localizer_->theta(), localizer_->left_velocity(),
+            localizer_->right_velocity())
+        .finished();
+  }
+
+  // Resets all filters when wpilib_interface resets.
+  void Reset(aos::monotonic_clock::time_point monotonic_now,
+             const drivetrain::Position *position);
+
+  // Corrects all the filters.
+  void Correct(aos::monotonic_clock::time_point monotonic_now,
+               const drivetrain::Position *position);
+  // Runs the predict step for all filters.  Should be called with the undelayed
+  // U.
+  void UpdateObserver(Eigen::Matrix<double, 2, 1> U);
+
+  // Returns the negative of the voltage error from the drivetrain controller.
+  // This can be used for integral control.
+  Eigen::Matrix<double, 2, 1> VoltageError() const;
+
+  // Returns the current drivetrain state.
+  Eigen::Matrix<double, 7, 1> DrivetrainXHat() const { return kf_.X_hat(); }
+  double DrivetrainXHat(int index) const { return kf_.X_hat(index); }
+
+  // Returns the current uncapped voltage from the kalman filter.
+  double DrivetrainUUncapped(int index) const { return kf_.U_uncapped(index); }
+
+ private:
+  // Returns the current controller index for the current gear.
+  int ControllerIndexFromGears() const;
+
+  // Computes which gear a shifter is in.
+  Gear ComputeGear(double shifter_position,
+                   const constants::ShifterHallEffect &shifter_config,
+                   bool high_requested) const;
+
+  const DrivetrainConfig<double> dt_config_;
+
+  aos::Fetcher<LocalizerControl> localizer_control_fetcher_;
+  aos::Fetcher<frc971::IMUValuesBatch> imu_values_fetcher_;
+  aos::Fetcher<frc971::sensors::GyroReading> gyro_reading_fetcher_;
+
+  zeroing::ImuZeroer imu_zeroer_;
+  DrivetrainUkf down_estimator_;
+  aos::monotonic_clock::time_point last_imu_update_ =
+      aos::monotonic_clock::min_time;
+  LocalizerInterface *localizer_;
+  StateFeedbackLoop<7, 2, 4> kf_;
+
+  // Current gears for each drive side.
+  Gear left_gear_;
+  Gear right_gear_;
+
+  // Shift request.
+  bool left_high_requested_;
+  bool right_high_requested_;
+
+  // Last acceleration and yaw rate.
+  aos::monotonic_clock::time_point last_gyro_time_ =
+      aos::monotonic_clock::min_time;
+  double last_accel_ = 0.0;
+  double last_gyro_rate_ = 0.0;
+
+  // Last applied voltage.
+  Eigen::Matrix<double, 2, 1> last_voltage_;
+  Eigen::Matrix<double, 2, 1> last_last_voltage_;
+};
+
 class DrivetrainLoop
     : public aos::controls::ControlLoop<Goal, Position, Status, Output> {
  public:
@@ -40,8 +148,6 @@ class DrivetrainLoop
                           const ::std::string &name = "/drivetrain");
 
   virtual ~DrivetrainLoop() {}
-
-  int ControllerIndexFromGears();
 
  protected:
   // Executes one cycle of the control loop.
@@ -55,48 +161,15 @@ class DrivetrainLoop
   flatbuffers::Offset<drivetrain::Output> Zero(
       aos::Sender<drivetrain::Output>::Builder *builder) override;
 
-  double last_gyro_rate_ = 0.0;
-
   const DrivetrainConfig<double> dt_config_;
+  DrivetrainFilters filters_;
 
-  ::aos::Fetcher<LocalizerControl> localizer_control_fetcher_;
-  ::aos::Fetcher<::frc971::IMUValuesBatch> imu_values_fetcher_;
-  ::aos::Fetcher<::frc971::sensors::GyroReading> gyro_reading_fetcher_;
-
-  zeroing::ImuZeroer imu_zeroer_;
-  DrivetrainUkf down_estimator_;
-  aos::monotonic_clock::time_point last_imu_update_ =
-      aos::monotonic_clock::min_time;
-  LocalizerInterface *localizer_;
-
-  StateFeedbackLoop<7, 2, 4> kf_;
   PolyDrivetrain<double> dt_openloop_;
   DrivetrainMotorsSS dt_closedloop_;
   SplineDrivetrain dt_spline_;
   LineFollowDrivetrain dt_line_follow_;
-  ::aos::monotonic_clock::time_point last_gyro_time_ =
-      ::aos::monotonic_clock::min_time;
-
-  // Current gears for each drive side.
-  Gear left_gear_;
-  Gear right_gear_;
-
-  double last_left_voltage_ = 0;
-  double last_right_voltage_ = 0;
-  // The left/right voltages previous to last_*_voltage_.
-  double last_last_left_voltage_ = 0;
-  double last_last_right_voltage_ = 0;
-
-  bool left_high_requested_;
-  bool right_high_requested_;
 
   bool has_been_enabled_ = false;
-
-  double last_accel_ = 0.0;
-
-  // Last kalman filter state.
-  ::Eigen::Matrix<double, 7, 1> last_state_ =
-      ::Eigen::Matrix<double, 7, 1>::Zero();
 };
 
 }  // namespace drivetrain
