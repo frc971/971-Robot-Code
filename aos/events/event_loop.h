@@ -484,10 +484,14 @@ class EventLoop {
 
   // Returns true if the channel exists in the configuration.
   template <typename T>
-  bool HasChannel(const std::string_view channel_name) {
+  const Channel *GetChannel(const std::string_view channel_name) {
     return configuration::GetChannel(configuration(), channel_name,
                                      T::GetFullyQualifiedName(), name(), node(),
-                                     true) != nullptr;
+                                     true);
+  }
+  template <typename T>
+  bool HasChannel(const std::string_view channel_name) {
+    return GetChannel<T>(channel_name) != nullptr;
   }
 
   // Note, it is supported to create:
@@ -498,9 +502,7 @@ class EventLoop {
   // sent to the provided channel.
   template <typename T>
   Fetcher<T> MakeFetcher(const std::string_view channel_name) {
-    const Channel *channel =
-        configuration::GetChannel(configuration(), channel_name,
-                                  T::GetFullyQualifiedName(), name(), node());
+    const Channel *channel = GetChannel<T>(channel_name);
     CHECK(channel != nullptr)
         << ": Channel { \"name\": \"" << channel_name << "\", \"type\": \""
         << T::GetFullyQualifiedName() << "\" } not found in config.";
@@ -519,9 +521,7 @@ class EventLoop {
   // the provided channel.
   template <typename T>
   Sender<T> MakeSender(const std::string_view channel_name) {
-    const Channel *channel =
-        configuration::GetChannel(configuration(), channel_name,
-                                  T::GetFullyQualifiedName(), name(), node());
+    const Channel *channel = GetChannel<T>(channel_name);
     CHECK(channel != nullptr)
         << ": Channel { \"name\": \"" << channel_name << "\", \"type\": \""
         << T::GetFullyQualifiedName() << "\" } not found in config for "
