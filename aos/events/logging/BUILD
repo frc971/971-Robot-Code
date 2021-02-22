@@ -320,8 +320,23 @@ cc_binary(
 )
 
 aos_config(
-    name = "multinode_pingpong_config",
-    src = "multinode_pingpong.json",
+    name = "multinode_pingpong_split_config",
+    src = "multinode_pingpong_split.json",
+    flatbuffers = [
+        "//aos/events:ping_fbs",
+        "//aos/events:pong_fbs",
+        "//aos/network:message_bridge_client_fbs",
+        "//aos/network:message_bridge_server_fbs",
+        "//aos/network:remote_message_fbs",
+        "//aos/network:timestamp_fbs",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = ["//aos/events:config"],
+)
+
+aos_config(
+    name = "multinode_pingpong_combined_config",
+    src = "multinode_pingpong_combined.json",
     flatbuffers = [
         "//aos/events:ping_fbs",
         "//aos/events:pong_fbs",
@@ -343,7 +358,8 @@ cc_test(
         "//conditions:default": [],
     }),
     data = [
-        ":multinode_pingpong_config",
+        ":multinode_pingpong_combined_config",
+        ":multinode_pingpong_split_config",
         "//aos/events:pingpong_config",
     ],
     shard_count = 5,

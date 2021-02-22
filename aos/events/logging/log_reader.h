@@ -288,7 +288,8 @@ class LogReader {
 
     // Returns the MessageHeader sender to log delivery timestamps to for the
     // provided remote node.
-    RemoteMessageSender *RemoteTimestampSender(const Node *delivered_node);
+    RemoteMessageSender *RemoteTimestampSender(const Channel *channel,
+                                               const Connection *connection);
 
     // Converts a timestamp from the monotonic clock on this node to the
     // distributed clock.
@@ -417,8 +418,16 @@ class LogReader {
     // channel) which correspond to the originating node.
     std::vector<State *> channel_source_state_;
 
-    std::map<const Node *, std::unique_ptr<RemoteMessageSender>>
-        remote_timestamp_senders_map_;
+    // This is a cache for channel, connection mapping to the corresponding
+    // sender.
+    absl::btree_map<std::pair<const Channel *, const Connection *>,
+                    std::shared_ptr<RemoteMessageSender>>
+        channel_timestamp_loggers_;
+
+    // Mapping from resolved RemoteMessage channel to RemoteMessage sender. This
+    // is the channel that timestamps are published to.
+    absl::btree_map<const Channel *, std::shared_ptr<RemoteMessageSender>>
+        timestamp_loggers_;
   };
 
   // Node index -> State.
