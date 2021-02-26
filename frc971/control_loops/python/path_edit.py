@@ -326,7 +326,7 @@ class GTK_Widget(BaseWindow):
         difs = np.array([pxToM(dif_x), pxToM(dif_y)])
 
         if self.mode == Mode.kEditing:
-            self.spline_edit = self.points.updates_for_mouse_move(
+            self.points.updates_for_mouse_move(
                 self.index_of_edit, self.spline_edit, self.x, self.y, difs)
 
     def export_json(self, file_name):
@@ -406,8 +406,7 @@ class GTK_Widget(BaseWindow):
                 self.points.setSplines(self.spline_edit, self.index_of_edit,
                                        pxToM(self.x), pxToM(self.y))
 
-                self.spline_edit = self.points.splineExtrapolate(
-                    self.spline_edit)
+                self.points.splineExtrapolate(self.spline_edit)
 
                 self.index_of_edit = -1
                 self.spline_edit = -1

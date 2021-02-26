@@ -48,24 +48,20 @@ class Points():
     def splineExtrapolate(self, o_spline_edit):
         spline_edit = o_spline_edit
         if not spline_edit == len(self.splines) - 1:
-            spline_edit = spline_edit + 1
             f = self.splines[spline_edit][5]
             e = self.splines[spline_edit][4]
             d = self.splines[spline_edit][3]
-            self.splines[spline_edit][0] = f
-            self.splines[spline_edit][1] = f * 2 + e * -1
-            self.splines[spline_edit][2] = d + f * 4 + e * -4
+            self.splines[spline_edit + 1][0] = f
+            self.splines[spline_edit + 1][1] = f * 2 + e * -1
+            self.splines[spline_edit + 1][2] = d + f * 4 + e * -4
 
         if not spline_edit == 0:
-            spline_edit = spline_edit - 1
             a = self.splines[spline_edit][0]
             b = self.splines[spline_edit][1]
             c = self.splines[spline_edit][2]
-            self.splines[spline_edit][5] = a
-            self.splines[spline_edit][4] = a * 2 + b * -1
-            self.splines[spline_edit][3] = c + a * 4 + b * -4
-
-        return spline_edit
+            self.splines[spline_edit - 1][5] = a
+            self.splines[spline_edit - 1][4] = a * 2 + b * -1
+            self.splines[spline_edit - 1][3] = c + a * 4 + b * -4
 
     def updates_for_mouse_move(self, index_of_edit, spline_edit, x, y, difs):
         if index_of_edit > -1:
@@ -97,7 +93,7 @@ class Points():
                     index_of_edit +
                     1] = self.splines[spline_edit][index_of_edit + 1] + difs
 
-            return self.splineExtrapolate(spline_edit)
+            self.splineExtrapolate(spline_edit)
 
     def update_lib_spline(self):
         self.libsplines = []
