@@ -8,10 +8,13 @@
 #include "aos/logging/logging.h"
 #include "aos/util/math.h"
 #include "frc971/control_loops/drivetrain/localizer_generated.h"
+#include "frc971/control_loops/drivetrain/spline.h"
 #include "y2020/actors/auto_splines.h"
 #include "y2020/control_loops/drivetrain/drivetrain_base.h"
 
 DEFINE_bool(spline_auto, true, "If true, define a spline autonomous mode");
+DEFINE_bool(galactic_search, false,
+            "If true, do the galactic search autonomous");
 
 namespace y2020 {
 namespace actors {
@@ -30,6 +33,8 @@ AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
               "/drivetrain")),
       joystick_state_fetcher_(
           event_loop->MakeFetcher<aos::JoystickState>("/aos")),
+      path_fetcher_(event_loop->MakeFetcher<y2020::vision::GalacticSearchPath>(
+          "/pi1/camera")),
       auto_splines_() {
   set_max_drivetrain_voltage(2.0);
 }
@@ -42,31 +47,6 @@ void AutonomousActor::Reset() {
   CHECK(joystick_state_fetcher_.get() != nullptr)
       << "Expect at least one JoystickState message before running auto...";
   alliance_ = joystick_state_fetcher_->alliance();
-  // Set up the starting position for the blue alliance.
-  // Currently just arbitrarily chosen for testing purposes, such that the
-  // robot starts on the side of the field nearest where it would score
-  // (although I do not know if this is actually a legal starting position).
-  Eigen::Vector2d starting_position(0.0, 0.0);
-  double starting_heading = 0.0;
-  if (alliance_ == aos::Alliance::kRed) {
-    starting_position *= -1.0;
-    starting_heading = aos::math::NormalizeAngle(starting_heading + M_PI);
-  }
-  if (FLAGS_spline_auto) {
-    // TODO(james): Resetting the localizer breaks the left/right statespace
-    // controller.  That is a bug, but we can fix that later by not resetting.
-    auto builder = localizer_control_sender_.MakeBuilder();
-
-    LocalizerControl::Builder localizer_control_builder =
-        builder.MakeBuilder<LocalizerControl>();
-    localizer_control_builder.add_x(starting_position.x());
-    localizer_control_builder.add_y(starting_position.y());
-    localizer_control_builder.add_theta(starting_heading);
-    localizer_control_builder.add_theta_uncertainty(0.00001);
-    if (!builder.Send(localizer_control_builder.Finish())) {
-      AOS_LOG(ERROR, "Failed to reset localizer.\n");
-    }
-  }
 }
 
 bool AutonomousActor::RunAction(
@@ -77,7 +57,9 @@ bool AutonomousActor::RunAction(
     AOS_LOG(INFO, "Aborting autonomous due to invalid alliance selection.");
     return false;
   }
-  if (FLAGS_spline_auto) {
+  if (FLAGS_galactic_search) {
+    GalacticSearch();
+  } else if (FLAGS_spline_auto) {
     SplineAuto();
   } else {
     return DriveFwd();
@@ -85,16 +67,101 @@ bool AutonomousActor::RunAction(
   return true;
 }
 
+void AutonomousActor::SendStartingPosition(double x, double y, double theta) {
+  // Set up the starting position for the blue alliance.
+  double starting_heading = theta;
+
+  // TODO(james): Resetting the localizer breaks the left/right statespace
+  // controller.  That is a bug, but we can fix that later by not resetting.
+  auto builder = localizer_control_sender_.MakeBuilder();
+
+  LocalizerControl::Builder localizer_control_builder =
+      builder.MakeBuilder<LocalizerControl>();
+  localizer_control_builder.add_x(x);
+  localizer_control_builder.add_y(y);
+  localizer_control_builder.add_theta(starting_heading);
+  localizer_control_builder.add_theta_uncertainty(0.00001);
+  if (!builder.Send(localizer_control_builder.Finish())) {
+    AOS_LOG(ERROR, "Failed to reset localizer.\n");
+  }
+}
+
+void AutonomousActor::GalacticSearch() {
+  path_fetcher_.Fetch();
+  CHECK(path_fetcher_.get() != nullptr)
+      << "Expect at least one GalacticSearchPath message before running "
+         "auto...";
+  if (path_fetcher_->alliance() == y2020::vision::Alliance::kUnknown) {
+    AOS_LOG(ERROR, "The galactic search path is unknown, doing nothing.");
+  } else {
+    SplineHandle spline1 = PlanSpline(
+        [this](aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder
+                   *builder) {
+          flatbuffers::Offset<frc971::MultiSpline> target_spline;
+          if (path_fetcher_->alliance() == y2020::vision::Alliance::kRed) {
+            if (path_fetcher_->letter() == y2020::vision::Letter::kA) {
+              target_spline = auto_splines_.SplineRedA(builder);
+            } else {
+              CHECK(path_fetcher_->letter() == y2020::vision::Letter::kB);
+              target_spline = auto_splines_.SplineRedB(builder);
+            }
+          } else {
+            if (path_fetcher_->letter() == y2020::vision::Letter::kA) {
+              target_spline = auto_splines_.SplineBlueA(builder);
+            } else {
+              CHECK(path_fetcher_->letter() == y2020::vision::Letter::kB);
+              target_spline = auto_splines_.SplineBlueB(builder);
+            }
+          }
+          const frc971::MultiSpline *const spline =
+              flatbuffers::GetTemporaryPointer(*builder->fbb(), target_spline);
+
+          SendStartingPosition(CHECK_NOTNULL(spline));
+
+          return target_spline;
+        },
+        SplineDirection::kForward);
+
+    if (!spline1.WaitForPlan()) return;
+    spline1.Start();
+
+    if (!spline1.WaitForSplineDistanceRemaining(0.02)) return;
+  }
+}
+
 void AutonomousActor::SplineAuto() {
   SplineHandle spline1 = PlanSpline(
       [this](aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder
-                 *builder) { return auto_splines_.TestSpline(builder); },
+                 *builder) {
+        flatbuffers::Offset<frc971::MultiSpline> target_spline;
+        target_spline = auto_splines_.TestSpline(builder);
+        const frc971::MultiSpline *const spline =
+            flatbuffers::GetTemporaryPointer(*builder->fbb(), target_spline);
+        SendStartingPosition(CHECK_NOTNULL(spline));
+        return target_spline;
+      },
       SplineDirection::kForward);
 
   if (!spline1.WaitForPlan()) return;
   spline1.Start();
 
   if (!spline1.WaitForSplineDistanceRemaining(0.02)) return;
+}
+
+void AutonomousActor::SendStartingPosition(
+    const frc971::MultiSpline *const spline) {
+  float x = spline->spline_x()->Get(0);
+  float y = spline->spline_y()->Get(0);
+
+  Eigen::Matrix<double, 2, 6> control_points;
+  for (size_t ii = 0; ii < 6; ++ii) {
+    control_points(0, ii) = spline->spline_x()->Get(ii);
+    control_points(1, ii) = spline->spline_y()->Get(ii);
+  }
+
+  frc971::control_loops::drivetrain::Spline spline_object(control_points);
+
+  SendStartingPosition(x, y, spline_object.Theta(0));
 }
 
 ProfileParametersT MakeProfileParametersT(const float max_velocity,
@@ -106,6 +173,7 @@ ProfileParametersT MakeProfileParametersT(const float max_velocity,
 }
 
 bool AutonomousActor::DriveFwd() {
+  SendStartingPosition(0, 0, 0);
   const ProfileParametersT kDrive = MakeProfileParametersT(0.3f, 1.0f);
   const ProfileParametersT kTurn = MakeProfileParametersT(5.0f, 15.0f);
   StartDrive(1.0, 0.0, kDrive, kTurn);

@@ -59,6 +59,8 @@ cc_library(
         "//y2020/control_loops/drivetrain:drivetrain_base",
         "//y2020/control_loops/superstructure:superstructure_goal_fbs",
         "//y2020/control_loops/superstructure:superstructure_status_fbs",
+        "//y2020/vision:galactic_search_path_fbs",
+        "//frc971/control_loops/drivetrain:spline",
     ],
 )
 
