@@ -105,7 +105,13 @@
       "name": "/pi{{ NUM }}/camera",
       "type": "y2020.vision.GalacticSearchPath",
       "source_node": "pi{{ NUM }}",
-      "max_size" : 104
+      "max_size" : 104,
+      "destination_nodes": [
+        {
+          "name": "roborio",
+          "time_to_live": 100000000
+        }
+      ]
     }
   ],
   "applications": [
