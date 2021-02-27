@@ -1,0 +1,22 @@
+namespace y2020.vision;
+
+enum Alliance : byte {
+  kRed,
+  kBlue,
+  kUnknown
+}
+
+enum Letter : byte {
+  kA,
+  kB
+}
+
+table GalacticSearchPath {
+  // Alliance of the path
+  alliance:Alliance (id: 0);
+
+  // Letter of the path
+  letter:Letter (id: 1);
+}
+
+root_type GalacticSearchPath;
