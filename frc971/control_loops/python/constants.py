@@ -1,4 +1,5 @@
 from gi.repository import Gtk
+from collections import namedtuple
 
 window = Gtk.Window()
 screen = window.get_screen()
@@ -17,23 +18,103 @@ BALL_RADIUS = 0.165
 ROBOT_SIDE_TO_HATCH_PANEL = 0.1
 HATCH_PANEL_WIDTH = 0.4826
 
-FIELD = 2020
+FieldType = namedtuple(
+    'Field', ['name', 'tags', 'year', 'width', 'length', 'json_name'])
 
-if FIELD == 2019:
-    # Half Field
-    WIDTH_OF_FIELD_IN_METERS = 8.258302
-elif FIELD == 2020:
-    # Full Field
-    WIDTH_OF_FIELD_IN_METERS = 15.98295
-    LENGTH_OF_FIELD_IN_METERS = 8.21055
+GALACTIC_SEARCH = "Galactic Search"
+ARED = "A Red"
+BRED = "B Red"
+ABLUE = "A Blue"
+BBLUE = "B Blue"
+AUTONAV = "AutoNav"
+BOUNCE = "Bounce"
+SLALOM = "Slalom"
+BARREL = "Barrel"
+
+FIELDS = {
+    "2019 Field":
+    FieldType(
+        "2019 Field",
+        tags=[],
+        year=2019,
+        width=8.258302,
+        length=8.258302,
+        json_name="spline_2019.json"),
+    "2020 Field":
+    FieldType(
+        "2020 Field",
+        tags=[],
+        year=2020,
+        width=15.98295,
+        length=8.21055,
+        json_name="spline_2020.json"),
+    "2021 Galactic Search BRed":
+    FieldType(
+        "2021 Galactic Search BRed",
+        tags=[GALACTIC_SEARCH, BRED],
+        year=2021,
+        width=9.144,
+        length=4.572,
+        json_name="spline_red_a.json"),
+    "2021 Galactic Search ARed":
+    FieldType(
+        "2021 Galactic Search ARed",
+        tags=[GALACTIC_SEARCH, ARED],
+        year=2021,
+        width=9.144,
+        length=4.572,
+        json_name="spline_red_b.json"),
+    "2021 Galactic Search BBlue":
+    FieldType(
+        "2021 Galactic Search BBlue",
+        tags=[GALACTIC_SEARCH, BBLUE],
+        year=2021,
+        width=9.144,
+        length=4.572,
+        json_name="spline_blue_b.json"),
+    "2021 Galactic Search ABlue":
+    FieldType(
+        "2021 Galactic Search ABlue",
+        tags=[GALACTIC_SEARCH, ABLUE],
+        year=2021,
+        width=9.144,
+        length=4.572,
+        json_name="spline_blue_a.json"),
+    "2021 AutoNav Barrel":
+    FieldType(
+        "2021 AutoNav Barrel",
+        tags=[AUTONAV, BARREL],
+        year=2021,
+        width=9.144,
+        length=4.572,
+        json_name="autonav_barrel.json"),
+    "2021 AutoNav Slalom":
+    FieldType(
+        "2021 AutoNav Slalom",
+        tags=[AUTONAV, SLALOM],
+        year=2021,
+        width=9.144,
+        length=4.572,
+        json_name="autonav_slalom.json"),
+    "2021 AutoNav Bounce":
+    FieldType(
+        "2021 AutoNav Bounce",
+        tags=[AUTONAV, BOUNCE],
+        year=2021,
+        width=9.144,
+        length=4.572,
+        json_name="autonav_bounce.json"),
+}
+
+FIELD = FIELDS["2021 Galactic Search BRed"]
 
 
 def pxToM(p):
-    return p * WIDTH_OF_FIELD_IN_METERS / SCREEN_SIZE
+    return p * FIELD.width / SCREEN_SIZE
 
 
 def mToPx(m):
-    return (m * SCREEN_SIZE / WIDTH_OF_FIELD_IN_METERS)
+    return (m * SCREEN_SIZE / FIELD.width)
 
 
 def inToM(i):

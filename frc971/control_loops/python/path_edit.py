@@ -96,17 +96,19 @@ class GTK_Widget(BaseWindow):
         return self.all_controls[self.get_index_of_nearest_point()]
 
     def draw_field_elements(self, cr):
-        if FIELD == 2019:
+        if FIELD.year == 2019:
             draw_HAB(cr)
             draw_rockets(cr)
             draw_cargo_ship(cr)
-        elif FIELD == 2020:
+        elif FIELD.year == 2020:
             set_color(cr, palette["BLACK"])
             markers(cr)
             draw_shield_generator(cr)
             draw_trench_run(cr)
             draw_init_lines(cr)
             draw_control_panel(cr)
+        elif FIELD.year == 2021:
+            draw_at_home_grid(cr)
 
     def draw_robot_at_point(self, cr, i, p, spline):
         p1 = [mToPx(spline.Point(i)[0]), mToPx(spline.Point(i)[1])]
@@ -222,18 +224,18 @@ class GTK_Widget(BaseWindow):
         cr.show_text('Press "i" to import')
 
         cr.save()
-        cr.translate(mToPx(WIDTH_OF_FIELD_IN_METERS) / 2.0, 0.0)
         set_color(cr, palette["BLACK"])
-        if FIELD == 2020:
-            cr.rectangle(-mToPx(WIDTH_OF_FIELD_IN_METERS) / 2.0,
-                         -mToPx(LENGTH_OF_FIELD_IN_METERS) / 2.0,
-                         mToPx(WIDTH_OF_FIELD_IN_METERS),
-                         mToPx(LENGTH_OF_FIELD_IN_METERS))
-        else:
+
+        if FIELD.year == 2019:  # half field
             cr.rectangle(0, -SCREEN_SIZE / 2, SCREEN_SIZE, SCREEN_SIZE)
+        else:  # full field
+            cr.translate(mToPx(FIELD.width) / 2.0, 0.0)
+            cr.rectangle(-mToPx(FIELD.width) / 2.0, -mToPx(FIELD.length) / 2.0,
+                         mToPx(FIELD.width), mToPx(FIELD.length))
         cr.set_line_join(cairo.LINE_JOIN_ROUND)
         cr.stroke()
         self.draw_field_elements(cr)
+
         y = 0
 
         # update everything
@@ -319,7 +321,7 @@ class GTK_Widget(BaseWindow):
     def mouse_move(self, event):
         old_x = self.x
         old_y = self.y
-        self.x = event.x - mToPx(WIDTH_OF_FIELD_IN_METERS / 2.0)
+        self.x = event.x - mToPx(FIELD.width / 2.0)
         self.y = event.y
         dif_x = self.x - old_x
         dif_y = self.y - old_y
@@ -435,6 +437,6 @@ class GTK_Widget(BaseWindow):
 
     def do_button_press(self, event):
         # Be consistent with the scaling in the drawing_area
-        self.x = event.x * 2 - mToPx(WIDTH_OF_FIELD_IN_METERS / 2.0)
+        self.x = event.x * 2 - mToPx(FIELD.width / 2.0)
         self.y = event.y * 2
         self.button_press_action()
