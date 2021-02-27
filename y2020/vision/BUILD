@@ -9,6 +9,14 @@ flatbuffer_cc_library(
     visibility = ["//y2020:__subpackages__"],
 )
 
+flatbuffer_cc_library(
+    name = "galactic_search_path_fbs",
+    srcs = ["galactic_search_path.fbs"],
+    gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//y2020:__subpackages__"],
+)
+
 cc_library(
     name = "v4l2_reader",
     srcs = [
