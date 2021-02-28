@@ -8,6 +8,7 @@
 #include "aos/events/event_loop.h"
 #include "aos/network/message_bridge_server_generated.h"
 #include "aos/network/team_number.h"
+#include "aos/network/timestamp_channel.h"
 
 namespace aos {
 namespace logger {
@@ -29,35 +30,28 @@ Logger::Logger(EventLoop *event_loop, const Configuration *configuration,
               : aos::Fetcher<message_bridge::ServerStatistics>()) {
   VLOG(1) << "Creating logger for " << FlatbufferToJson(event_loop_->node());
 
-  // Find all the nodes which are logging timestamps on our node.  This may
-  // over-estimate if should_log is specified.
-  std::vector<const Node *> timestamp_logger_nodes =
-      configuration::TimestampNodes(configuration_, event_loop_->node());
-
   std::map<const Channel *, const Node *> timestamp_logger_channels;
 
-  // Now that we have all the nodes accumulated, make remote timestamp loggers
-  // for them.
-  for (const Node *node : timestamp_logger_nodes) {
-    // Note: since we are doing a find using the event loop channel, we need to
-    // make sure this channel pointer is part of the event loop configuration,
-    // not configuration_.  This only matters when configuration_ !=
-    // event_loop->configuration();
-    const Channel *channel = configuration::GetChannel(
-        event_loop->configuration(),
-        absl::StrCat("/aos/remote_timestamps/", node->name()->string_view()),
-        RemoteMessage::GetFullyQualifiedName(), event_loop_->name(),
-        event_loop_->node());
-
-    CHECK(channel != nullptr)
-        << ": Remote timestamps are logged on "
-        << event_loop_->node()->name()->string_view()
-        << " but can't find channel /aos/remote_timestamps/"
-        << node->name()->string_view();
-    if (!should_log(channel)) {
+  message_bridge::ChannelTimestampFinder finder(event_loop_);
+  for (const Channel *channel : *event_loop_->configuration()->channels()) {
+    if (!configuration::ChannelIsSendableOnNode(channel, event_loop_->node())) {
       continue;
     }
-    timestamp_logger_channels.insert(std::make_pair(channel, node));
+    if (!channel->has_destination_nodes()) {
+      continue;
+    }
+    for (const Connection *connection : *channel->destination_nodes()) {
+      if (configuration::ConnectionDeliveryTimeIsLoggedOnNode(
+              connection, event_loop_->node())) {
+        const Node *other_node = configuration::GetNode(
+            event_loop_->configuration(), connection->name()->string_view());
+
+        VLOG(1) << "Timestamps are logged from "
+                << FlatbufferToJson(other_node);
+        timestamp_logger_channels.insert(
+            std::make_pair(finder.ForChannel(channel, connection), other_node));
+      }
+    }
   }
 
   const size_t our_node_index =
