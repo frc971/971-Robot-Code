@@ -735,6 +735,10 @@ Eigen::Matrix<double, 5, 1> Trajectory::StateToPathRelativeState(
 // linearization for the infal point).
 void Trajectory::CalculatePathGains() {
   const std::vector<Eigen::Matrix<double, 3, 1>> xva_plan = PlanXVA(config_.dt);
+  if (xva_plan.empty()) {
+    LOG(ERROR) << "Plan is empty--unable to plan trajectory.";
+    return;
+  }
   plan_gains_.resize(xva_plan.size());
 
   // Set up reasonable gain matrices. Current choices of gains are arbitrary

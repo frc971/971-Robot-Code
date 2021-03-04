@@ -43,7 +43,7 @@ class Graph():  # (TODO): Remove Computer Calculation
             mypoints.addConstraintsToTrajectory(traj)
             traj.Plan()
             XVA = traj.GetPlanXVA(dT)
-            if len(XVA[0]) > 0:
+            if XVA is not None:
                 self.draw_x_axis(cr, start, height, zero, XVA, end)
                 self.drawVelocity(cr, XVA, start, height, skip, zero, end,
                                   legend_entries)
