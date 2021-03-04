@@ -179,5 +179,40 @@ bool AutonomousActor::DriveFwd() {
   StartDrive(1.0, 0.0, kDrive, kTurn);
   return WaitForDriveDone();
 }
+
+void AutonomousActor::SendSuperstructureGoal() {
+
+  auto builder = superstructure_goal_sender_.MakeBuilder();
+
+  flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+      intake_offset;
+    
+  {
+    StaticZeroingSingleDOFProfiledSubsystemGoal::Builder intake_builder =
+        builder.MakeBuilder<StaticZeroingSingleDOFProfiledSubsystemGoal>();
+
+    frc971::ProfileParameters::Builder profile_params_builder = 
+        builder.MakeBuilder<frc971::ProfileParameters>();
+    profile_params_builder.add_max_velocity(0.0);
+    profile_params_builder.add_max_acceleration(0.0);
+    flatbuffers::Offset<frc971::ProfileParameters> profile_params_offset = 
+        profile_params_builder.Finish();
+    intake_builder.add_unsafe_goal(intake_goal_);
+    intake_builder.add_profile_params(profile_params_offset);
+    intake_offset = intake_builder.Finish();
+  }
+
+  superstructure::Goal::Builder superstructure_builder =
+        builder.MakeBuilder<superstructure::Goal>();
+  
+  superstructure_builder.add_intake(intake_offset);
+  superstructure_builder.add_roller_voltage(roller_voltage_);
+  superstructure_builder.add_roller_speed_compensation(kRollerSpeedCompensation);
+
+  if (!builder.Send(superstructure_builder.Finish())) {
+    AOS_LOG(ERROR, "Sending superstructure goal failed.\n");
+  }
+
+}
 }  // namespace actors
 }  // namespace y2020

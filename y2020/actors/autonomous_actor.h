@@ -9,9 +9,15 @@
 #include "frc971/control_loops/drivetrain/localizer_generated.h"
 #include "y2020/actors/auto_splines.h"
 #include "y2020/vision/galactic_search_path_generated.h"
+#include "y2020/control_loops/superstructure/superstructure_goal_generated.h"
+#include "y2020/control_loops/superstructure/superstructure_status_generated.h"
 
 namespace y2020 {
 namespace actors {
+
+using ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal;
+
+namespace superstructure = y2020::control_loops::superstructure;
 
 class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
  public:
@@ -22,14 +28,27 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
 
  private:
   void Reset();
+
+  void set_intake_goal(double intake_goal) { intake_goal_ = intake_goal; }
+  void set_roller_voltage(double roller_voltage) {
+    roller_voltage_ = roller_voltage;
+  }
+  
+  void SendSuperstructureGoal();
   void SplineAuto();
   void SendStartingPosition(double x, double y, double theta);
   void SendStartingPosition(const frc971::MultiSpline *const spline);
   void GalacticSearch();
   bool DriveFwd();
 
+  double intake_goal_ = 0.0;
+  double roller_voltage_ = 0.0;
+  const float kRollerSpeedCompensation = 2.0;
+
   ::aos::Sender<::frc971::control_loops::drivetrain::LocalizerControl>
       localizer_control_sender_;
+  ::aos::Sender<::y2020::control_loops::superstructure::Goal>
+      superstructure_goal_sender_;
   aos::Fetcher<aos::JoystickState> joystick_state_fetcher_;
   aos::Fetcher<y2020::vision::GalacticSearchPath> path_fetcher_;
   aos::Alliance alliance_ = aos::Alliance::kInvalid;
