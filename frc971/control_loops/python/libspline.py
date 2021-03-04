@@ -251,6 +251,9 @@ class Trajectory:
             libSpline.TrajectoryGetPlanXVAPtr(self.__trajectory,
                                               int(dt * 1e9)))
         XVALength = libSpline.TrajectoryGetVectorLength(XVAPtr)
+        if XVALength == 0:
+            libSpline.TrajectoryDeleteVector(XVAPtr)
+            return None
         X = np.zeros(XVALength)
         V = np.zeros(XVALength)
         A = np.zeros(XVALength)
