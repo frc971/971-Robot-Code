@@ -332,8 +332,12 @@ class GTK_Widget(BaseWindow):
                 self.index_of_edit, self.spline_edit, self.x, self.y, difs)
 
     def export_json(self, file_name):
-        self.path_to_export = os.path.join(self.module_path,
-                                           "spline_jsons/" + file_name)
+        self.path_to_export = os.path.join(
+            self.module_path,  # position of the python
+            "../../..",  # root of the repository
+            get_json_folder(FIELD),  # path from the root
+            file_name  # selected file
+        )
         if file_name[-5:] != ".json":
             print("Error: Filename doesn't end in .json")
         else:
@@ -346,8 +350,13 @@ class GTK_Widget(BaseWindow):
                 json.dump(multi_spline, points_file)
 
     def import_json(self, file_name):
-        self.path_to_export = os.path.join(self.module_path,
-                                           "spline_jsons/" + file_name)
+        self.path_to_export = os.path.join(
+            self.module_path,  # position of the python
+            "../../..",  # root of the repository
+            get_json_folder(FIELD),  # path from the root
+            file_name  # selected file
+        )
+
         if file_name[-5:] != ".json":
             print("Error: Filename doesn't end in .json")
         else:
@@ -360,7 +369,7 @@ class GTK_Widget(BaseWindow):
             # if people messed with the spline json,
             # it might not be the right length
             # so give them a nice error message
-            try: # try to salvage as many segments of the spline as possible
+            try:  # try to salvage as many segments of the spline as possible
                 self.points.fromMultiSpline(multi_spline)
             except IndexError:
                 # check if they're both 6+5*(k-1) long
@@ -368,9 +377,13 @@ class GTK_Widget(BaseWindow):
                 x_len = len(multi_spline["spline_x"])
                 y_len = len(multi_spline["spline_x"])
                 if x_len is not expected_length:
-                    print("Error: spline x values were not the expected length; expected {} got {}".format(expected_length, x_len))
+                    print(
+                        "Error: spline x values were not the expected length; expected {} got {}"
+                        .format(expected_length, x_len))
                 elif y_len is not expected_length:
-                    print("Error: spline y values were not the expected length; expected {} got {}".format(expected_length, y_len))
+                    print(
+                        "Error: spline y values were not the expected length; expected {} got {}"
+                        .format(expected_length, y_len))
 
             print("SPLINES LOADED")
 

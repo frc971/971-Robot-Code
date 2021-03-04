@@ -109,6 +109,13 @@ FIELDS = {
 FIELD = FIELDS["2021 Galactic Search BRed"]
 
 
+def get_json_folder(field):
+    if field.year == 2020 or field.year == 2021:
+        return "y2020/actors/splines"
+    else:
+        return "frc971/control_loops/python/spline_jsons"
+
+
 def pxToM(p):
     return p * FIELD.width / SCREEN_SIZE
 
