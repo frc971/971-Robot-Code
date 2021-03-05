@@ -55,7 +55,7 @@ FIELDS = {
         year=2021,
         width=9.144,
         length=4.572,
-        json_name="spline_red_a.json"),
+        json_name="spline_red_b.json"),
     "2021 Galactic Search ARed":
     FieldType(
         "2021 Galactic Search ARed",
@@ -63,7 +63,7 @@ FIELDS = {
         year=2021,
         width=9.144,
         length=4.572,
-        json_name="spline_red_b.json"),
+        json_name="spline_red_a.json"),
     "2021 Galactic Search BBlue":
     FieldType(
         "2021 Galactic Search BBlue",
