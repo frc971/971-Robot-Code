@@ -2,7 +2,8 @@
 
 set -xe
 
-IMAGE="2020-02-13-raspbian-buster-lite.img"
+# Full path to Raspberry Pi Buster disk image
+IMAGE="2020-08-20-raspios-buster-armhf-lite.img"
 BOOT_PARTITION="${IMAGE}.boot_partition"
 PARTITION="${IMAGE}.partition"
 
@@ -43,7 +44,7 @@ then
 else
   OFFSET="$(fdisk -lu "${IMAGE}" | grep "${IMAGE}2" | awk '{print 512*$2}')"
 
-  if [[ "$(stat -c %s "${IMAGE}")" < 2000000000 ]]; then
+  if [[ "$(stat -c %s "${IMAGE}")" < 3000000000 ]]; then
     echo "Growing image"
     dd if=/dev/zero bs=1G count=1 >> "${IMAGE}"
     START="$(fdisk -lu "${IMAGE}" | grep "${IMAGE}2" | awk '{print $2}')"

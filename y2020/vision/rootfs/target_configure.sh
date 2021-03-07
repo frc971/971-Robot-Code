@@ -38,6 +38,7 @@ apt-get install -y vim-nox \
   libopencv-videostab3.2 \
   libopencv-viz3.2 \
   python3-opencv \
+  python3-matplotlib \
   gstreamer1.0-plugins-bad \
   gstreamer1.0-plugins-base \
   gstreamer1.0-plugins-good \
