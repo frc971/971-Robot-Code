@@ -44,12 +44,11 @@ struct Values {
     // 10.211 in of travel gets you 1 radian on the output
     const double radians_per_in_travel = 1.0 / 10.211;
 
-    // one turn on the leadscrew gets you 12.0 mm travel
-    const double mm_travel_per_radian = 12.0 / (2.0 * M_PI);
-    const double in_travel_per_radian = mm_travel_per_radian / 25.4;
+    // one turn on the leadscrew gets you 0.5 in travel
+    const double in_travel_per_radian = 0.5 / (2.0 * M_PI);
 
     // units reduce; radians on the encoder * this number = radians on the hood
-    return in_travel_per_radian * radians_per_in_travel / 0.94816;
+    return in_travel_per_radian * radians_per_in_travel;
   }
 
   static constexpr double kHoodSingleTurnEncoderRatio() { return 8.0 / 72.0; }
