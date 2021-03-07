@@ -65,6 +65,8 @@ export class MessageHandler {
   // to match with the Line.setPoint() interface.
   // By convention, NaN is used to indicate that a message existed at a given
   // timestamp but the requested field was not populated.
+  // If you want to retrieve a single signal from a vector, you can specify it
+  // as "field_name[index]".
   getField(field: string[]): Float32Array {
     const fieldName = field[field.length - 1];
     const subMessage = field.slice(0, field.length - 1);
@@ -78,10 +80,28 @@ export class MessageHandler {
         }
       }
       results[ii * 2] = this.messages[ii].time;
+      const regex = /(.*)\[([0-9]*)\]/;
+      let name = fieldName;
+      let match = fieldName.match(regex);
+      let index = undefined;
+      if (match) {
+        name = match[1]
+        index = parseInt(match[2])
+      }
       if (message === undefined) {
         results[ii * 2 + 1] = NaN;
       } else {
-        results[ii * 2 + 1] = this.parser.readScalar(message, fieldName);
+        if (index === undefined) {
+          results[ii * 2 + 1] = this.parser.readScalar(message, name);
+        } else {
+          const vector =
+              this.parser.readVectorOfScalars(message, name);
+          if (index < vector.length) {
+            results[ii * 2 + 1] = vector[index];
+          } else {
+            results[ii * 2 + 1] = NaN;
+          }
+        }
       }
     }
     return results;
