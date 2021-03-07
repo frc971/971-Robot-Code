@@ -126,10 +126,10 @@ const Values *DoGetValuesForTeam(uint16_t team) {
     case kPracticeTeamNumber:
       hood->zeroing_constants.measured_absolute_position = 0.0;
 
-      intake->zeroing_constants.measured_absolute_position = 0.0;
+      intake->zeroing_constants.measured_absolute_position = 0.347;
 
-      turret->potentiometer_offset = 0.0;
-      turret_params->zeroing_constants.measured_absolute_position = 0.0;
+      turret->potentiometer_offset = 5.3931926228241;
+      turret_params->zeroing_constants.measured_absolute_position = 4.22;
       break;
 
     case Values::kCodingRobotTeamNumber:
