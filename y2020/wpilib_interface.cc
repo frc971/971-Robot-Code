@@ -262,7 +262,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       // Shooter
       y2020::control_loops::superstructure::ShooterPositionT shooter;
       shooter.theta_finisher =
-          encoder_translate(finisher_encoder_->GetRaw(),
+          encoder_translate(-finisher_encoder_->GetRaw(),
                             Values::kFinisherEncoderCountsPerRevolution(),
                             Values::kFinisherEncoderRatio());
 
@@ -377,8 +377,12 @@ class SuperstructureWriter
     accelerator_right_falcon_ = ::std::move(t);
   }
 
-  void set_flywheel_falcon(::std::unique_ptr<::frc::TalonFX> t) {
-    finisher_falcon_ = ::std::move(t);
+  void set_finisher_falcon0(::std::unique_ptr<::frc::TalonFX> t) {
+    finisher_falcon0_ = ::std::move(t);
+  }
+
+  void set_finisher_falcon1(::std::unique_ptr<::frc::TalonFX> t) {
+    finisher_falcon1_ = ::std::move(t);
   }
 
   void set_climber_falcon(
@@ -414,10 +418,12 @@ class SuperstructureWriter
                                         -kMaxBringupPower, kMaxBringupPower) /
                              12.0);
 
-    washing_machine_control_panel_victor_->SetSpeed(
-        std::clamp(-output.washing_machine_spinner_voltage(), -kMaxBringupPower,
-                   kMaxBringupPower) /
-        12.0);
+    if (washing_machine_control_panel_victor_) {
+      washing_machine_control_panel_victor_->SetSpeed(
+          std::clamp(-output.washing_machine_spinner_voltage(),
+                     -kMaxBringupPower, kMaxBringupPower) /
+          12.0);
+    }
 
     accelerator_left_falcon_->SetSpeed(
         std::clamp(-output.accelerator_left_voltage(), -kMaxBringupPower,
@@ -429,9 +435,14 @@ class SuperstructureWriter
                    kMaxBringupPower) /
         12.0);
 
-    finisher_falcon_->SetSpeed(std::clamp(output.finisher_voltage(),
-                                          -kMaxBringupPower, kMaxBringupPower) /
-                               12.0);
+    finisher_falcon1_->SetSpeed(std::clamp(output.finisher_voltage(),
+                                           -kMaxBringupPower,
+                                           kMaxBringupPower) /
+                                12.0);
+    finisher_falcon0_->SetSpeed(std::clamp(-output.finisher_voltage(),
+                                           -kMaxBringupPower,
+                                           kMaxBringupPower) /
+                                12.0);
 
     if (climber_falcon_) {
       climber_falcon_->Set(
@@ -448,17 +459,20 @@ class SuperstructureWriter
     intake_joint_victor_->SetDisabled();
     turret_victor_->SetDisabled();
     feeder_falcon_->SetDisabled();
-    washing_machine_control_panel_victor_->SetDisabled();
+    if (washing_machine_control_panel_victor_) {
+      washing_machine_control_panel_victor_->SetDisabled();
+    }
     accelerator_left_falcon_->SetDisabled();
     accelerator_right_falcon_->SetDisabled();
-    finisher_falcon_->SetDisabled();
+    finisher_falcon0_->SetDisabled();
+    finisher_falcon1_->SetDisabled();
   }
 
   ::std::unique_ptr<::frc::VictorSP> hood_victor_, intake_joint_victor_,
       turret_victor_, washing_machine_control_panel_victor_;
 
   ::std::unique_ptr<::frc::TalonFX> feeder_falcon_, accelerator_left_falcon_,
-      accelerator_right_falcon_, finisher_falcon_;
+      accelerator_right_falcon_, finisher_falcon0_, finisher_falcon1_;
 
   ::std::unique_ptr<::ctre::phoenix::motorcontrol::can::TalonFX>
       intake_roller_falcon_, climber_falcon_;
@@ -555,13 +569,15 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(0));
     superstructure_writer.set_turret_victor(make_unique<frc::VictorSP>(7));
     superstructure_writer.set_feeder_falcon(make_unique<frc::TalonFX>(6));
-    superstructure_writer.set_washing_machine_control_panel_victor(
-        make_unique<frc::VictorSP>(3));
+    // TODO(austin): When this goes over to CAN, update it and make it work.
+    //superstructure_writer.set_washing_machine_control_panel_victor(
+        //make_unique<frc::VictorSP>(3));
     superstructure_writer.set_accelerator_left_falcon(
         make_unique<::frc::TalonFX>(5));
     superstructure_writer.set_accelerator_right_falcon(
         make_unique<::frc::TalonFX>(4));
-    superstructure_writer.set_flywheel_falcon(make_unique<::frc::TalonFX>(9));
+    superstructure_writer.set_finisher_falcon0(make_unique<::frc::TalonFX>(9));
+    superstructure_writer.set_finisher_falcon1(make_unique<::frc::TalonFX>(3));
     // TODO: check port
     superstructure_writer.set_climber_falcon(
         make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(1));

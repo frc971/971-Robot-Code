@@ -156,7 +156,7 @@ struct Values {
   static constexpr double kFinisherEncoderCountsPerRevolution() {
     return 2048.0;
   }
-  static constexpr double kFinisherEncoderRatio() { return 30.0 / 40.0; }
+  static constexpr double kFinisherEncoderRatio() { return 36.0 / 40.0; }
 
   static constexpr double kMaxFinisherEncoderPulsesPerSecond() {
     return control_loops::superstructure::finisher::kFreeSpeed / (2.0 * M_PI) *

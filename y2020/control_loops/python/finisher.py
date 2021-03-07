@@ -13,27 +13,25 @@ FLAGS = gflags.FLAGS
 
 gflags.DEFINE_bool('plot', False, 'If true, plot the loop response.')
 
-# Inertia for a single 4" diameter, 2" wide neopreme wheel.
-J_wheel = 0.000319 * 2.0 * 6.0
 # Gear ratio to the final wheel.
 # 40 tooth on the flywheel
 # 48 for the falcon.
 # 60 tooth on the outer wheel.
 G = 48.0 / 40.0
 # Overall flywheel inertia.
-J = J_wheel * (1.0 + (40.0 / 60.0)**2.0)
+J = 0.00507464
 
 # The position and velocity are measured for the final wheel.
 kFinisher = flywheel.FlywheelParams(
     name='Finisher',
-    motor=control_loop.Falcon(),
+    motor=control_loop.NMotor(control_loop.Falcon(), 2),
     G=G,
     J=J,
     q_pos=0.01,
     q_vel=100.0,
     q_voltage=6.0,
     r_pos=0.05,
-    controller_poles=[.92])
+    controller_poles=[.90])
 
 
 def main(argv):
