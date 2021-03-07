@@ -395,9 +395,9 @@ class SuperstructureWriter
 
  private:
   void Write(const superstructure::Output &output) override {
-    hood_victor_->SetSpeed(
-        std::clamp(output.hood_voltage(), -kMaxBringupPower, kMaxBringupPower) /
-        12.0);
+    hood_victor_->SetSpeed(std::clamp(-output.hood_voltage(), -kMaxBringupPower,
+                                      kMaxBringupPower) /
+                           12.0);
 
     intake_joint_victor_->SetSpeed(std::clamp(-output.intake_joint_voltage(),
                                               -kMaxBringupPower,

@@ -141,7 +141,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
       flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
           hood_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
               *builder.fbb(), hood_pos,
-              CreateProfileParameters(*builder.fbb(), 0.7, 3.0));
+              CreateProfileParameters(*builder.fbb(), 5.0, 30.0));
 
       flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
           intake_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(

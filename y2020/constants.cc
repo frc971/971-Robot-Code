@@ -35,7 +35,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       *const hood = &r->hood;
 
   // Hood constants.
-  hood->zeroing_voltage = 3.0;
+  hood->zeroing_voltage = 2.0;
   hood->operating_voltage = 12.0;
   hood->zeroing_profile_params = {0.5, 3.0};
   hood->default_profile_params = {6.0, 30.0};
@@ -109,8 +109,6 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       break;
 
     case kCompTeamNumber:
-      hood->zeroing_constants.measured_absolute_position = 0.266691815725476;
-
       intake->zeroing_constants.measured_absolute_position =
           1.42977866919024 - Values::kIntakeZero();
 
@@ -119,8 +117,9 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       turret_params->zeroing_constants.measured_absolute_position =
           0.547478339799516;
 
-      hood->zeroing_constants.measured_absolute_position = 0.03207;
-      hood->zeroing_constants.single_turn_measured_absolute_position = 0.31055;
+      hood->zeroing_constants.measured_absolute_position = 0.0344482433884915;
+      hood->zeroing_constants.single_turn_measured_absolute_position =
+          0.31055891442198;
       break;
 
     case kPracticeTeamNumber:

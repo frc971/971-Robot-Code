@@ -156,3 +156,13 @@ ts_library(
         "//aos/network/www:proxy",
     ],
 )
+
+ts_library(
+    name = "hood_plotter",
+    srcs = ["hood_plotter.ts"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        "//aos/network/www:aos_plotter",
+        "//aos/network/www:proxy",
+    ],
+)

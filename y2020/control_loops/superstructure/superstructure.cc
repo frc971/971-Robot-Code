@@ -139,17 +139,6 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
     output_struct.turret_voltage =
         std::clamp(output_struct.turret_voltage, -turret_.operating_voltage(),
                    turret_.operating_voltage());
-
-    // Friction is a pain and putting a really high burden on the integrator.
-    const double hood_velocity_sign =
-        hood_status->velocity() * kHoodFrictionGain;
-    output_struct.hood_voltage +=
-        std::clamp(hood_velocity_sign, -kHoodFrictionVoltageLimit,
-                   kHoodFrictionVoltageLimit);
-
-    // And dither the output.
-    time_ += 0.00505;
-    output_struct.hood_voltage += 1.3 * std::sin(time_ * 2.0 * M_PI * 30.0);
   }
 
   bool zeroed;

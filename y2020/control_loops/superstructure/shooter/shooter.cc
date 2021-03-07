@@ -30,8 +30,10 @@ bool Shooter::UpToSpeed(const ShooterGoal *goal) {
       std::abs(goal->velocity_accelerator() -
                accelerator_left_.avg_angular_velocity()) < kVelocityTolerance &&
       std::abs(goal->velocity_accelerator() -
-               accelerator_right_.avg_angular_velocity()) < kVelocityTolerance &&
-      std::abs(goal->velocity_finisher() - finisher_.velocity()) < kVelocityTolerance &&
+               accelerator_right_.avg_angular_velocity()) <
+          kVelocityTolerance &&
+      std::abs(goal->velocity_finisher() - finisher_.velocity()) <
+          kVelocityTolerance &&
       std::abs(goal->velocity_accelerator() - accelerator_left_.velocity()) <
           kVelocityTolerance &&
       std::abs(goal->velocity_accelerator() - accelerator_right_.velocity()) <

@@ -261,14 +261,9 @@ class SuperstructureSimulation {
                 voltage_check_turret);
 
     // Invert the friction model.
-    const double hood_velocity_sign =
-        hood_plant_->X(1) * Superstructure::kHoodFrictionGain;
     ::Eigen::Matrix<double, 1, 1> hood_U;
     hood_U << superstructure_output_fetcher_->hood_voltage() +
-                  hood_plant_->voltage_offset() -
-                  std::clamp(hood_velocity_sign,
-                             -Superstructure::kHoodFrictionVoltageLimit,
-                             Superstructure::kHoodFrictionVoltageLimit);
+                  hood_plant_->voltage_offset();
 
     ::Eigen::Matrix<double, 1, 1> intake_U;
     intake_U << superstructure_output_fetcher_->intake_joint_voltage() +

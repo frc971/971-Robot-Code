@@ -21,9 +21,9 @@ except gflags.DuplicateFlagError:
 # joint.  We are currently electing to ignore potential non-linearity.
 
 range_of_travel_radians = (38.0 * numpy.pi / 180.0)
-# 0.472441 inches/turn (12 mm)
+# 0.5 inches/turn
 # 6.7725 inches of travel
-turns_of_leadscrew_per_range_of_travel = 6.7725 / 0.472441
+turns_of_leadscrew_per_range_of_travel = 6.7725 / 0.5
 
 radians_per_turn = range_of_travel_radians / turns_of_leadscrew_per_range_of_travel
 
@@ -33,13 +33,13 @@ kHood = angular_system.AngularSystemParams(
     name='Hood',
     motor=control_loop.BAG(),
     G=radians_per_turn_of_motor / (2.0 * numpy.pi),
-    J=4.0,
+    J=0.1,
     q_pos=0.15,
-    q_vel=5.0,
+    q_vel=10.0,
     kalman_q_pos=0.12,
     kalman_q_vel=10.0,
-    kalman_q_voltage=15.0,
-    kalman_r_position=0.05)
+    kalman_q_voltage=30.0,
+    kalman_r_position=0.02)
 
 
 def main(argv):

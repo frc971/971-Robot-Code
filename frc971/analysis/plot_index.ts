@@ -30,6 +30,8 @@ import {plotFinisher} from
     'org_frc971/y2020/control_loops/superstructure/finisher_plotter'
 import {plotAccelerator} from
     'org_frc971/y2020/control_loops/superstructure/accelerator_plotter'
+import {plotHood} from
+    'org_frc971/y2020/control_loops/superstructure/hood_plotter'
 import {plotDemo} from 'org_frc971/aos/network/www/demo_plot';
 import {plotData} from 'org_frc971/frc971/analysis/plot_data_utils';
 
@@ -90,6 +92,7 @@ const plotIndex = new Map<string, PlotState>([
   ['Robot State', new PlotState(plotDiv, plotRobotState)],
   ['Finisher', new PlotState(plotDiv, plotFinisher)],
   ['Accelerator', new PlotState(plotDiv, plotAccelerator)],
+  ['Hood', new PlotState(plotDiv, plotHood)],
   ['C++ Plotter', new PlotState(plotDiv, plotData)],
 ]);
 

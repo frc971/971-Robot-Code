@@ -61,10 +61,10 @@ struct Values {
 
   static constexpr ::frc971::constants::Range kHoodRange() {
     return ::frc971::constants::Range{
-        0.00,  // Back Hard
-        0.64,  // Front Hard
-        0.01,  // Back Soft
-        0.63   // Front Soft
+        -0.01,  // Back Hard
+        0.65,   // Front Hard
+        0.00,   // Back Soft
+        0.63    // Front Soft
     };
   }
 

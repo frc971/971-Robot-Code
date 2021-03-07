@@ -29,9 +29,6 @@ class Superstructure
   static constexpr double kTurretFrictionGain = 10.0;
   static constexpr double kTurretFrictionVoltageLimit = 1.5;
 
-  static constexpr double kHoodFrictionGain = 40.0;
-  static constexpr double kHoodFrictionVoltageLimit = 1.5;
-
   using PotAndAbsoluteEncoderSubsystem =
       ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystem<
           ::frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator,
@@ -72,8 +69,6 @@ class Superstructure
 
   aos::monotonic_clock::time_point shooting_start_time_ =
       aos::monotonic_clock::min_time;
-
-  double time_ = 0.0;
 
   DISALLOW_COPY_AND_ASSIGN(Superstructure);
 };
