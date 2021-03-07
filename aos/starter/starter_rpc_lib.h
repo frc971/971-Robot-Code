@@ -2,6 +2,7 @@
 #define AOS_STARTER_STARTER_RPC_LIB_H_
 
 #include <chrono>
+#include <optional>
 
 #include "aos/configuration.h"
 #include "aos/starter/starter_generated.h"
@@ -32,7 +33,7 @@ const aos::FlatbufferDetachedBuffer<aos::starter::ApplicationStatus> GetStatus(
 
 // Fetches the entire status message of starter. Creates a temporary event loop
 // from the provided config for fetching.
-const aos::FlatbufferVector<aos::starter::Status> GetStarterStatus(
+std::optional<const aos::FlatbufferVector<aos::starter::Status>> GetStarterStatus(
     const aos::Configuration *config);
 
 }  // namespace starter

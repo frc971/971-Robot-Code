@@ -1,11 +1,13 @@
 #include <chrono>
 #include <functional>
 #include <iostream>
+#include <optional>
 #include <unordered_map>
 
 #include "absl/strings/str_format.h"
 #include "aos/init.h"
 #include "aos/json_to_flatbuffer.h"
+#include "aos/time/time.h"
 #include "gflags/gflags.h"
 #include "starter_rpc_lib.h"
 
@@ -13,25 +15,49 @@ DEFINE_string(config, "./config.json", "File path of aos configuration");
 
 namespace {
 
+namespace chrono = std::chrono;
+
 static const std::unordered_map<std::string, aos::starter::Command>
     kCommandConversions{{"start", aos::starter::Command::START},
                         {"stop", aos::starter::Command::STOP},
                         {"restart", aos::starter::Command::RESTART}};
 
+void PrintKey() {
+  absl::PrintF("%-30s %-30s %s\n\n", "Name", "Time since last started", "State");
+}
+
+void PrintApplicationStatus(const aos::starter::ApplicationStatus *app_status,
+    const aos::monotonic_clock::time_point &time) {
+  const auto last_start_time =
+      aos::monotonic_clock::time_point(chrono::nanoseconds(app_status->last_start_time()));
+  const auto time_running =
+      chrono::duration_cast<chrono::seconds>(time - last_start_time);
+  absl::PrintF("%-30s %-30s %s\n", app_status->name()->string_view(),
+               std::to_string(time_running.count()) + 's',
+               aos::starter::EnumNameState(app_status->state()));
+}
+
 bool GetStarterStatus(int argc, char **argv, const aos::Configuration *config) {
   if (argc == 1) {
     // Print status for all processes.
-    auto status = aos::starter::GetStarterStatus(config);
-    for (const aos::starter::ApplicationStatus *app_status :
-         *status.message().statuses()) {
-      absl::PrintF("%-30s %s\n", app_status->name()->string_view(),
-                   aos::starter::EnumNameState(app_status->state()));
+    const auto optional_status = aos::starter::GetStarterStatus(config);
+    if (optional_status) {
+      auto status = *optional_status;
+      const auto time = aos::monotonic_clock::now();
+      PrintKey();
+      for (const aos::starter::ApplicationStatus *app_status :
+           *status.message().statuses()) {
+        PrintApplicationStatus(app_status, time);
+      }
+    } else {
+      LOG(WARNING) << "No status found";
     }
   } else if (argc == 2) {
     // Print status for the specified process.
     const char *application_name = argv[1];
     auto status = aos::starter::GetStatus(application_name, config);
-    std::cout << aos::FlatbufferToJson(&status.message()) << '\n';
+    PrintKey();
+    PrintApplicationStatus(&status.message(), aos::monotonic_clock::now());
   } else {
     LOG(ERROR) << "The \"status\" command requires zero or one arguments.";
     return true;
@@ -58,7 +84,7 @@ bool InteractWithProgram(int argc, char **argv,
   const char *application_name = argv[1];
 
   if (aos::starter::SendCommandBlocking(command, application_name, config,
-                                        std::chrono::seconds(3))) {
+                                        chrono::seconds(3))) {
     switch (command) {
       case aos::starter::Command::START:
         std::cout << "Successfully started " << application_name << '\n';
