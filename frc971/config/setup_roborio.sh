@@ -45,6 +45,7 @@ ssh "admin@${ROBOT_HOSTNAME}" "sed -i 's/vm\.overcommit_memory=2/vm\.overcommit_
 
 ssh "admin@${ROBOT_HOSTNAME}" 'echo "net.core.wmem_max=1262560" >> /etc/sysctl.conf'
 ssh "admin@${ROBOT_HOSTNAME}" 'echo "net.core.rmem_max=1262560" >> /etc/sysctl.conf'
+ssh "admin@${ROBOT_HOSTNAME}" 'echo "vm.min_free_kbytes=4000" >> /etc/sysctl.conf'
 
 ssh "admin@${ROBOT_HOSTNAME}" mkdir "/lib/modules/4.14.87-rt49-cg-7.0.0f0-xilinx-zynq-189/kernel/net/sctp/ -p"
 scp frc971/config/sctp.ko "admin@${ROBOT_HOSTNAME}:/lib/modules/4.14.87-rt49-cg-7.0.0f0-xilinx-zynq-189/kernel/net/sctp/sctp.ko"
