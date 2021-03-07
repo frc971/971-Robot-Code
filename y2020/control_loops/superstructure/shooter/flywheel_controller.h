@@ -15,6 +15,8 @@ namespace control_loops {
 namespace superstructure {
 namespace shooter {
 
+class CurrentLimitedStateFeedbackController;
+
 // Handles the velocity control of each flywheel.
 class FlywheelController {
  public:
@@ -22,6 +24,8 @@ class FlywheelController {
       StateFeedbackLoop<3, 1, 1, double, StateFeedbackHybridPlant<3, 1, 1>,
                         HybridKalman<3, 1, 1>> &&loop,
       double bemf, double resistance);
+
+  ~FlywheelController();
 
   // Sets the velocity goal in radians/sec
   void set_goal(double angular_velocity_goal);
@@ -36,8 +40,11 @@ class FlywheelController {
   // Returns the control loop calculated voltage.
   double voltage() const;
 
+  // Returns the expected battery current for the last U.
+  double current() const;
+
   // Returns the instantaneous velocity.
-  double velocity() const { return loop_->X_hat(1, 0); }
+  double velocity() const;
 
   // Executes the control loop for a cycle.
   void Update(bool disabled);
@@ -48,10 +55,7 @@ class FlywheelController {
   // The current sensor measurement.
   Eigen::Matrix<double, 1, 1> Y_;
   // The control loop.
-  ::std::unique_ptr<
-      StateFeedbackLoop<3, 1, 1, double, StateFeedbackHybridPlant<3, 1, 1>,
-                        HybridKalman<3, 1, 1>>>
-      loop_;
+  ::std::unique_ptr<CurrentLimitedStateFeedbackController> loop_;
 
   // History array for calculating a filtered angular velocity.
   static constexpr int kHistoryLength = 10;

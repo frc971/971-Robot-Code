@@ -286,7 +286,7 @@ class SuperstructureSimulation {
 
     // Confirm that we aren't drawing too much current.
     CHECK_NEAR(accelerator_left_plant_->battery_current(accelerator_left_U),
-               0.0, 60.0);
+               0.0, 70.0);
 
     ::Eigen::Matrix<double, 1, 1> accelerator_right_U;
     accelerator_right_U
@@ -295,14 +295,15 @@ class SuperstructureSimulation {
 
     // Confirm that we aren't drawing too much current.
     CHECK_NEAR(accelerator_right_plant_->battery_current(accelerator_right_U),
-               0.0, 60.0);
+               0.0, 70.0);
 
     ::Eigen::Matrix<double, 1, 1> finisher_U;
     finisher_U << superstructure_output_fetcher_->finisher_voltage() +
                       finisher_plant_->voltage_offset();
 
-    // Confirm that we aren't drawing too much current.
-    CHECK_NEAR(finisher_plant_->battery_current(finisher_U), 0.0, 60.0);
+    // Confirm that we aren't drawing too much current.  2 motors -> twice the
+    // lumped current since our model can't tell them apart.
+    CHECK_NEAR(finisher_plant_->battery_current(finisher_U), 0.0, 200.0);
 
     hood_plant_->Update(hood_U);
     intake_plant_->Update(intake_U);

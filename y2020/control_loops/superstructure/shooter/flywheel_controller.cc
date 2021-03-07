@@ -27,6 +27,9 @@ class CurrentLimitedStateFeedbackController
         bemf_(bemf),
         resistance_(resistance) {}
 
+  double resistance() const { return resistance_; }
+  double bemf() const { return bemf_; }
+
   void CapU() override {
     const double bemf_voltage = X_hat(1) / bemf_;
     // Solve the system of equations:
@@ -38,7 +41,7 @@ class CurrentLimitedStateFeedbackController
     // And we have a quadratic!
     const double a = 1;
     const double b = -bemf_voltage;
-    const double c = -50.0 * 12.0 * resistance_;
+    const double c = -60.0 * 12.0 * resistance_;
 
     // Root is always positive.
     const double root = std::sqrt(b * b - 4.0 * a * c);
@@ -100,6 +103,11 @@ void FlywheelController::set_position(
 
 double FlywheelController::voltage() const { return loop_->U(0, 0); }
 
+double FlywheelController::current() const {
+  return ((voltage() - (velocity() / loop_->bemf())) / (loop_->resistance())) *
+         voltage() / 12.0;
+}
+
 void FlywheelController::Update(bool disabled) {
   loop_->mutable_R() = loop_->next_R();
   if (loop_->R(1, 0) < 1.0) {
@@ -116,6 +124,10 @@ flatbuffers::Offset<FlywheelControllerStatus> FlywheelController::SetStatus(
   const int oldest_history_position = history_position_;
   const int newest_history_position =
       ((history_position_ == 0) ? kHistoryLength : history_position_) - 1;
+  const int second_newest_history_position =
+      ((newest_history_position == 0) ? kHistoryLength
+                                      : newest_history_position) -
+      1;
 
   const double total_loop_time = ::aos::time::DurationInSeconds(
       std::get<1>(history_[newest_history_position]) -
@@ -125,17 +137,31 @@ flatbuffers::Offset<FlywheelControllerStatus> FlywheelController::SetStatus(
       std::get<0>(history_[newest_history_position]) -
       std::get<0>(history_[oldest_history_position]);
 
+  const double last_loop_time = ::aos::time::DurationInSeconds(
+      std::get<1>(history_[newest_history_position]) -
+      std::get<1>(history_[second_newest_history_position]));
+
+  const double last_distance_traveled =
+      std::get<0>(history_[newest_history_position]) -
+      std::get<0>(history_[second_newest_history_position]);
+
   // Compute the distance moved over that time period.
   avg_angular_velocity_ = (distance_traveled) / (total_loop_time);
 
   FlywheelControllerStatusBuilder builder(*fbb);
 
   builder.add_avg_angular_velocity(avg_angular_velocity_);
+  builder.add_dt_angular_velocity(last_distance_traveled / last_loop_time);
   builder.add_angular_velocity(loop_->X_hat(1, 0));
   builder.add_voltage_error(loop_->X_hat(2, 0));
+  builder.add_commanded_current(current());
   builder.add_angular_velocity_goal(last_goal_);
   return builder.Finish();
 }
+
+FlywheelController::~FlywheelController() {}
+
+double FlywheelController::velocity() const { return loop_->X_hat(1, 0); }
 
 }  // namespace shooter
 }  // namespace superstructure

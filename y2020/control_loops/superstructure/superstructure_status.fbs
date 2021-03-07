@@ -17,6 +17,12 @@ table FlywheelControllerStatus {
 
   // Voltage error.
   voltage_error:double (id: 3);
+
+  // The commanded battery current.
+  commanded_current:double (id: 4);
+
+  // The angular velocity of the flywheel computed using delta x / delta t
+  dt_angular_velocity:double (id: 5);
 }
 
 table ShooterStatus {

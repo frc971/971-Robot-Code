@@ -16,8 +16,11 @@ const double kVelocityTolerance = 20.0;
 }  // namespace
 
 Shooter::Shooter()
-    : finisher_(finisher::MakeIntegralFinisherLoop(), finisher::kBemf,
-                finisher::kResistance),
+    : finisher_(
+          finisher::MakeIntegralFinisherLoop(), finisher::kBemf,
+          // There are 2 motors.  So the current limit per motor is going to be
+          // using resistance * 2 to un-parallel the motor resistances.
+          finisher::kResistance * 2.0),
       accelerator_left_(accelerator::MakeIntegralAcceleratorLoop(),
                         accelerator::kBemf, accelerator::kResistance),
       accelerator_right_(accelerator::MakeIntegralAcceleratorLoop(),
