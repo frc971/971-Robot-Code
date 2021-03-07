@@ -5,6 +5,7 @@
 
 #include "glog/logging.h"
 
+#include "aos/logging/logging.h"
 #include "frc971/zeroing/wrap.h"
 
 namespace frc971 {
@@ -56,13 +57,15 @@ void AbsoluteAndAbsoluteEncoderZeroingEstimator::UpdateEstimate(
     const AbsoluteAndAbsolutePosition &info) {
   // Check for Abs Encoder NaN value that would mess up the rest of the zeroing
   // code below. NaN values are given when the Absolute Encoder is disconnected.
-  if (::std::isnan(info.absolute_encoder())) {
+  if (::std::isnan(info.absolute_encoder()) ||
+      ::std::isnan(info.single_turn_absolute_encoder())) {
     if (zeroed_) {
-      VLOG(1) << "NAN on absolute encoder.";
+      VLOG(1) << "NAN on one of the absolute encoders.";
       error_ = true;
     } else {
       ++nan_samples_;
-      VLOG(1) << "NAN on absolute encoder while zeroing" << nan_samples_;
+      VLOG(1) << "NAN on one of the absolute encoders while zeroing"
+              << nan_samples_;
       if (nan_samples_ >= constants_.average_filter_size) {
         error_ = true;
         zeroed_ = true;
@@ -70,6 +73,8 @@ void AbsoluteAndAbsoluteEncoderZeroingEstimator::UpdateEstimate(
     }
     // Throw some dummy values in for now.
     filtered_absolute_encoder_ = info.absolute_encoder();
+    filtered_single_turn_absolute_encoder_ =
+        info.single_turn_absolute_encoder();
     filtered_position_ =
         single_turn_to_relative_encoder_offset_ + info.encoder();
     position_ = offset_ + info.encoder();
@@ -139,11 +144,11 @@ void AbsoluteAndAbsoluteEncoderZeroingEstimator::UpdateEstimate(
 
     // Now compute the offset between the pot and relative encoder.
     if (offset_samples_.size() < constants_.average_filter_size) {
-      offset_samples_.push_back(adjusted_single_turn_absolute_encoder -
-                                sample.encoder);
+      offset_samples_.push_back(sample.encoder -
+                                adjusted_single_turn_absolute_encoder);
     } else {
       offset_samples_[samples_idx_] =
-          adjusted_single_turn_absolute_encoder - sample.encoder;
+          sample.encoder - adjusted_single_turn_absolute_encoder;
     }
 
     // Drop the oldest sample when we run this function the next time around.
@@ -153,7 +158,7 @@ void AbsoluteAndAbsoluteEncoderZeroingEstimator::UpdateEstimate(
         ::std::accumulate(offset_samples_.begin(), offset_samples_.end(), 0.0) /
         offset_samples_.size();
 
-    offset_ = UnWrap(sample.encoder + single_turn_to_relative_encoder_offset_,
+    offset_ = UnWrap(sample.encoder - single_turn_to_relative_encoder_offset_,
                      average_relative_to_absolute_offset + sample.encoder,
                      constants_.one_revolution_distance) -
               sample.encoder;
@@ -167,26 +172,36 @@ void AbsoluteAndAbsoluteEncoderZeroingEstimator::UpdateEstimate(
           (adjusted_absolute_encoder -
            (sample.absolute_encoder - constants_.measured_absolute_position))));
 
+    const double what_Unwrap_added =
+        (adjusted_single_turn_absolute_encoder -
+         (sample.single_turn_absolute_encoder -
+          constants_.single_turn_measured_absolute_position));
+
     // TODO(Ravago): this is impossible to read.
     filtered_single_turn_absolute_encoder_ =
-        ((sample.encoder + single_turn_to_relative_encoder_offset_) -
+        ((sample.encoder - single_turn_to_relative_encoder_offset_) -
          (-constants_.single_turn_measured_absolute_position +
-          (adjusted_single_turn_absolute_encoder -
-           (sample.single_turn_absolute_encoder -
-            constants_.single_turn_measured_absolute_position))));
+          what_Unwrap_added));
+
+    /*
+    filtered_single_turn_absolute_encoder_ =
+        sample.encoder - single_turn_to_relative_encoder_offset_;
+    */
+
+    if (!zeroed_) {
+      first_offset_ = offset_;
+    }
 
     if (offset_ready()) {
-      if (!zeroed_) {
-        first_offset_ = offset_;
-      }
-
       if (::std::abs(first_offset_ - offset_) >
           constants_.allowable_encoder_error *
               constants_.one_revolution_distance) {
-        VLOG(1) << "Offset moved too far. Initial: " << first_offset_
-                << ", current " << offset_ << ", allowable change: "
-                << constants_.allowable_encoder_error *
-                       constants_.one_revolution_distance;
+        AOS_LOG(INFO,
+                "Offset moved too far. Initial: %f, current %f, allowable "
+                "change: %f  ",
+                first_offset_, offset_,
+                constants_.allowable_encoder_error *
+                    constants_.one_revolution_distance);
         error_ = true;
       }
 
@@ -195,8 +210,7 @@ void AbsoluteAndAbsoluteEncoderZeroingEstimator::UpdateEstimate(
   }
 
   // Update the position.
-  filtered_position_ = single_turn_to_relative_encoder_offset_ + info.encoder();
-  position_ = offset_ + info.encoder();
+  position_ = first_offset_ + info.encoder();
 }
 
 flatbuffers::Offset<AbsoluteAndAbsoluteEncoderZeroingEstimator::State>

@@ -31,8 +31,8 @@ const uint16_t kSpareRoborioTeamNumber = 6971;
 const Values *DoGetValuesForTeam(uint16_t team) {
   Values *const r = new Values();
   ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<
-      ::frc971::zeroing::AbsoluteEncoderZeroingEstimator> *const hood =
-      &r->hood;
+      ::frc971::zeroing::AbsoluteAndAbsoluteEncoderZeroingEstimator>
+      *const hood = &r->hood;
 
   // Hood constants.
   hood->zeroing_voltage = 3.0;
@@ -43,12 +43,17 @@ const Values *DoGetValuesForTeam(uint16_t team) {
   hood->make_integral_loop =
       control_loops::superstructure::hood::MakeIntegralHoodLoop;
   hood->zeroing_constants.average_filter_size = Values::kZeroingSampleSize;
-  hood->zeroing_constants.one_revolution_distance =
-      M_PI * 2.0 * constants::Values::kHoodEncoderRatio();
   hood->zeroing_constants.zeroing_threshold = 0.0005;
   hood->zeroing_constants.moving_buffer_size = 20;
   hood->zeroing_constants.allowable_encoder_error = 0.9;
-  hood->zeroing_constants.middle_position = Values::kHoodRange().middle();
+  hood->zeroing_constants.one_revolution_distance =
+      M_PI * 2.0 * constants::Values::kHoodEncoderRatio();
+  hood->zeroing_constants.single_turn_middle_position =
+      Values::kHoodRange().middle();
+  hood->zeroing_constants.single_turn_one_revolution_distance =
+      M_PI * 2.0 * constants::Values::kHoodSingleTurnEncoderRatio();
+  hood->zeroing_constants.measured_absolute_position = 0;
+  hood->zeroing_constants.single_turn_measured_absolute_position = 0;
 
   ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<
       ::frc971::zeroing::AbsoluteEncoderZeroingEstimator> *const intake =
@@ -93,7 +98,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
   turret_params->zeroing_constants.allowable_encoder_error = 0.9;
 
   CHECK_LE(hood->range.range(),
-           hood->zeroing_constants.one_revolution_distance);
+           hood->zeroing_constants.single_turn_one_revolution_distance);
   CHECK_LE(intake->range.range(),
            intake->zeroing_constants.one_revolution_distance);
 
@@ -113,6 +118,9 @@ const Values *DoGetValuesForTeam(uint16_t team) {
                                      0.0109413725126625 - 0.223719825811759;
       turret_params->zeroing_constants.measured_absolute_position =
           0.547478339799516;
+
+      hood->zeroing_constants.measured_absolute_position = 0.03207;
+      hood->zeroing_constants.single_turn_measured_absolute_position = 0.31055;
       break;
 
     case kPracticeTeamNumber:

@@ -6,12 +6,12 @@
 #include "aos/robot_state/joystick_state_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "y2020/constants.h"
+#include "y2020/control_loops/superstructure/climber.h"
 #include "y2020/control_loops/superstructure/shooter/shooter.h"
 #include "y2020/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2020/control_loops/superstructure/superstructure_output_generated.h"
 #include "y2020/control_loops/superstructure/superstructure_position_generated.h"
 #include "y2020/control_loops/superstructure/superstructure_status_generated.h"
-#include "y2020/control_loops/superstructure/climber.h"
 #include "y2020/control_loops/superstructure/turret/aiming.h"
 
 namespace y2020 {
@@ -40,8 +40,13 @@ class Superstructure
       ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystem<
           ::frc971::zeroing::AbsoluteEncoderZeroingEstimator,
           ::frc971::control_loops::AbsoluteEncoderProfiledJointStatus>;
+  using AbsoluteAndAbsoluteEncoderSubsystem =
+      ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystem<
+          ::frc971::zeroing::AbsoluteAndAbsoluteEncoderZeroingEstimator,
+          ::frc971::control_loops::
+              AbsoluteAndAbsoluteEncoderProfiledJointStatus>;
 
-  const AbsoluteEncoderSubsystem &hood() const { return hood_; }
+  const AbsoluteAndAbsoluteEncoderSubsystem &hood() const { return hood_; }
   const AbsoluteEncoderSubsystem &intake_joint() const { return intake_joint_; }
   const PotAndAbsoluteEncoderSubsystem &turret() const { return turret_; }
   const shooter::Shooter &shooter() const { return shooter_; }
@@ -53,7 +58,7 @@ class Superstructure
                             aos::Sender<Status>::Builder *status) override;
 
  private:
-  AbsoluteEncoderSubsystem hood_;
+  AbsoluteAndAbsoluteEncoderSubsystem hood_;
   AbsoluteEncoderSubsystem intake_joint_;
   PotAndAbsoluteEncoderSubsystem turret_;
   shooter::Shooter shooter_;

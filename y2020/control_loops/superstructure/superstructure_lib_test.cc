@@ -38,6 +38,8 @@ using ::frc971::control_loops::PositionSensorSimulator;
 using ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal;
 typedef ::frc971::control_loops::drivetrain::Status DrivetrainStatus;
 typedef Superstructure::AbsoluteEncoderSubsystem AbsoluteEncoderSubsystem;
+typedef Superstructure::AbsoluteAndAbsoluteEncoderSubsystem
+    AbsoluteAndAbsoluteEncoderSubsystem;
 typedef Superstructure::PotAndAbsoluteEncoderSubsystem
     PotAndAbsoluteEncoderSubsystem;
 
@@ -88,8 +90,11 @@ class SuperstructureSimulation {
         superstructure_output_fetcher_(
             event_loop_->MakeFetcher<Output>("/superstructure")),
         hood_plant_(new CappedTestPlant(hood::MakeHoodPlant())),
-        hood_encoder_(constants::GetValues()
-                          .hood.zeroing_constants.one_revolution_distance),
+        hood_encoder_(
+            constants::GetValues()
+                .hood.zeroing_constants.one_revolution_distance,
+            constants::GetValues()
+                .hood.zeroing_constants.single_turn_one_revolution_distance),
         intake_plant_(new CappedTestPlant(intake::MakeIntakePlant())),
         intake_encoder_(constants::GetValues()
                             .intake.zeroing_constants.one_revolution_distance),
@@ -129,7 +134,9 @@ class SuperstructureSimulation {
     hood_encoder_.Initialize(
         start_pos, kNoiseScalar, 0.0,
         constants::GetValues()
-            .hood.zeroing_constants.measured_absolute_position);
+            .hood.zeroing_constants.measured_absolute_position,
+        constants::GetValues()
+            .hood.zeroing_constants.single_turn_measured_absolute_position);
   }
 
   void InitializeIntakePosition(double start_pos) {
@@ -165,9 +172,9 @@ class SuperstructureSimulation {
     ::aos::Sender<Position>::Builder builder =
         superstructure_position_sender_.MakeBuilder();
 
-    frc971::AbsolutePosition::Builder hood_builder =
-        builder.MakeBuilder<frc971::AbsolutePosition>();
-    flatbuffers::Offset<frc971::AbsolutePosition> hood_offset =
+    frc971::AbsoluteAndAbsolutePosition::Builder hood_builder =
+        builder.MakeBuilder<frc971::AbsoluteAndAbsolutePosition>();
+    flatbuffers::Offset<frc971::AbsoluteAndAbsolutePosition> hood_offset =
         hood_encoder_.GetSensorValues(&hood_builder);
 
     frc971::AbsolutePosition::Builder intake_builder =
@@ -224,9 +231,9 @@ class SuperstructureSimulation {
     EXPECT_TRUE(superstructure_status_fetcher_.Fetch());
 
     const double voltage_check_hood =
-        (static_cast<AbsoluteEncoderSubsystem::State>(
+        (static_cast<AbsoluteAndAbsoluteEncoderSubsystem::State>(
              superstructure_status_fetcher_->hood()->state()) ==
-         AbsoluteEncoderSubsystem::State::RUNNING)
+         AbsoluteAndAbsoluteEncoderSubsystem::State::RUNNING)
             ? constants::GetValues().hood.operating_voltage
             : constants::GetValues().hood.zeroing_voltage;
 
@@ -826,7 +833,7 @@ TEST_F(SuperstructureTest, ZeroNoGoal) {
   SetEnabled(true);
   WaitUntilZeroed();
   RunFor(chrono::seconds(2));
-  EXPECT_EQ(AbsoluteEncoderSubsystem::State::RUNNING,
+  EXPECT_EQ(AbsoluteAndAbsoluteEncoderSubsystem::State::RUNNING,
             superstructure_.hood().state());
 
   EXPECT_EQ(AbsoluteEncoderSubsystem::State::RUNNING,
