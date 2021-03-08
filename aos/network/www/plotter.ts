@@ -96,9 +96,10 @@ export class Line {
     return this._drawLine;
   }
 
-  setDrawLine(newDrawLine: boolean) {
+  setDrawLine(newDrawLine: boolean): Line {
     this._drawLine = newDrawLine;
     this._hasUpdate = true;
+    return this;
   }
 
   // Set the points to render. The points in the line are ordered and should
@@ -137,8 +138,9 @@ export class Line {
   }
 
   // Get/set the label to use for the line when drawing the legend.
-  setLabel(label: string) {
+  setLabel(label: string): Line {
     this._label = label;
+    return this;
   }
 
   label(): string|null {
