@@ -151,20 +151,10 @@ class AosPlot {
 }
 
 export class AosPlotter {
-
   public static readonly TIME: string = "Monotonic Time (sec)";
 
   public static readonly DEFAULT_WIDTH: number = 900;
   public static readonly DEFAULT_HEIGHT: number = 400;
-
-  public static readonly RED: number[] = [1, 0, 0];
-  public static readonly GREEN: number[] = [0, 1, 0];
-  public static readonly BLUE: number[] = [0, 0, 1];
-  public static readonly BROWN: number[] = [0.6, 0.3, 0];
-  public static readonly PINK: number[] = [1, 0.3, 0.6];
-  public static readonly CYAN: number[] = [0.3, 1, 1];
-  public static readonly WHITE: number[] = [1, 1, 1];
-
 
   private plots: AosPlot[] = [];
   private messages = new Set<MessageHandler>();

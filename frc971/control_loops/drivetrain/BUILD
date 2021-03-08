@@ -731,6 +731,7 @@ ts_library(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos/network/www:aos_plotter",
+        "//aos/network/www:colors",
         "//aos/network/www:proxy",
         "//frc971/wpilib:imu_plot_utils",
     ],
@@ -742,6 +743,7 @@ ts_library(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos/network/www:aos_plotter",
+        "//aos/network/www:colors",
         "//aos/network/www:proxy",
     ],
 )

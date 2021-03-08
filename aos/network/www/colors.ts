@@ -1,0 +1,7 @@
+export const RED: number[] = [1, 0, 0];
+export const GREEN: number[] = [0, 1, 0];
+export const BLUE: number[] = [0, 0, 1];
+export const BROWN: number[] = [0.6, 0.3, 0];
+export const PINK: number[] = [1, 0.3, 0.6];
+export const CYAN: number[] = [0.3, 1, 1];
+export const WHITE: number[] = [1, 1, 1];
