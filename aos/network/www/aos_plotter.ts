@@ -60,6 +60,32 @@ export class MessageHandler {
     this.messages.push(
         new TimestampedMessage(Table.getRootTable(new ByteBuffer(data)), time));
   }
+  private readField<T>(
+      message: Table, fieldName: string,
+      normalReader: (message: Table, name: string) => T | null,
+      vectorReader: (message: Table, name: string) => T[] | null): T[]|null {
+    // Typescript handles bindings in non-obvious ways that aren't caught well
+    // by the compiler.
+    normalReader = normalReader.bind(this.parser);
+    vectorReader = vectorReader.bind(this.parser);
+    const regex = /(.*)\[([0-9]*)\]/;
+    const match = fieldName.match(regex);
+    if (match) {
+      const name = match[1];
+      const vector = vectorReader(message, name);
+      if (vector === null) {
+        return null;
+      }
+      if (match[2] === "") {
+        return vector;
+      } else {
+        const index = parseInt(match[2]);
+        return (index < vector.length) ? [vector[index]] : null;
+      }
+    }
+    const singleResult = normalReader(message, fieldName);
+    return singleResult ? [singleResult] : null;
+  }
   // Returns a time-series of every single instance of the given field. Format
   // of the return value is [time0, value0, time1, value1,... timeN, valueN],
   // to match with the Line.setPoint() interface.
@@ -70,41 +96,44 @@ export class MessageHandler {
   getField(field: string[]): Float32Array {
     const fieldName = field[field.length - 1];
     const subMessage = field.slice(0, field.length - 1);
-    const results = new Float32Array(this.messages.length * 2);
+    const results = [];
     for (let ii = 0; ii < this.messages.length; ++ii) {
-      let message = this.messages[ii].message;
+      let tables = [this.messages[ii].message];
       for (const subMessageName of subMessage) {
-        message = this.parser.readTable(message, subMessageName);
-        if (message === undefined) {
-          break;
+        let nextTables = [];
+        for (const table of tables) {
+          const nextTable = this.readField(
+              table, subMessageName, Parser.prototype.readTable,
+              Parser.prototype.readVectorOfTables);
+          if (nextTable === null) {
+            continue;
+          }
+          nextTables = nextTables.concat(nextTable);
         }
+        tables = nextTables;
       }
-      results[ii * 2] = this.messages[ii].time;
-      const regex = /(.*)\[([0-9]*)\]/;
-      let name = fieldName;
-      let match = fieldName.match(regex);
-      let index = undefined;
-      if (match) {
-        name = match[1]
-        index = parseInt(match[2])
-      }
-      if (message === undefined) {
-        results[ii * 2 + 1] = NaN;
+      const time = this.messages[ii].time;
+      if (tables.length === 0) {
+        results.push(time);
+        results.push(NaN);
       } else {
-        if (index === undefined) {
-          results[ii * 2 + 1] = this.parser.readScalar(message, name);
-        } else {
-          const vector =
-              this.parser.readVectorOfScalars(message, name);
-          if (index < vector.length) {
-            results[ii * 2 + 1] = vector[index];
+        for (const table of tables) {
+          const values = this.readField(
+              table, fieldName, Parser.prototype.readScalar,
+              Parser.prototype.readVectorOfScalars);
+          if (values === null) {
+            results.push(time);
+            results.push(NaN);
           } else {
-            results[ii * 2 + 1] = NaN;
+            for (const value of values) {
+              results.push(time);
+              results.push((value === null) ? NaN : value);
+            }
           }
         }
       }
     }
-    return results;
+    return new Float32Array(results);
   }
   numMessages(): number {
     return this.messages.length;

@@ -19,11 +19,11 @@ import * as proxy from 'org_frc971/aos/network/www/proxy';
 import Connection = proxy.Connection;
 
 export function plotDemo(conn: Connection, parentDiv: Element): void {
-  const width = 900;
-  const height = 400;
+  const width = AosPlotter.DEFAULT_WIDTH;
+  const height = AosPlotter.DEFAULT_HEIGHT;
 
   const benchmarkDiv = document.createElement('div');
-  benchmarkDiv.style.top = height.toString();
+  benchmarkDiv.style.top = (height * 2).toString();
   benchmarkDiv.style.left = '0';
   benchmarkDiv.style.position = 'absolute';
   parentDiv.appendChild(benchmarkDiv);
@@ -33,20 +33,45 @@ export function plotDemo(conn: Connection, parentDiv: Element): void {
   const aosPlotter = new AosPlotter(conn);
 
   {
-    // Setup a plot that just shows the PID of each timing report message.
-    // For the basic live_web_plotter_demo, this will be a boring line showing
-    // just the PID of the proxy process. On a real system, or against a logfile,
-    // this would show the PIDs of all active processes.
+    // Setup a plot that shows some arbitrary PDP current values.
+    const pdpValues =
+        aosPlotter.addMessageSource('/aos', 'frc971.PDPValues');
+    const timingPlot = aosPlotter.addPlot(parentDiv);
+    timingPlot.plot.getAxisLabels().setTitle('Current Values');
+    timingPlot.plot.getAxisLabels().setYLabel('Current (Amps)');
+    timingPlot.plot.getAxisLabels().setXLabel('Monotonic Send Time (sec)');
+    // Displays points for every single current sample at each time-point.
+    const allValuesLine = timingPlot.addMessageLine(pdpValues, ['currents[]']);
+    allValuesLine.setDrawLine(false);
+    allValuesLine.setPointSize(5);
+    // Displays a line for the current along channel 1.
+    const singleValueLine = timingPlot.addMessageLine(pdpValues, ['currents[1]']);
+    singleValueLine.setDrawLine(true);
+    singleValueLine.setPointSize(0);
+    const voltageLine = timingPlot.addMessageLine(pdpValues, ['voltage']);
+    voltageLine.setPointSize(0);
+  }
+
+  {
     const timingReport =
         aosPlotter.addMessageSource('/aos', 'aos.timing.Report');
-    const timingPlot =
-        aosPlotter.addPlot(parentDiv, [0, 0], [width, height]);
-    timingPlot.plot.getAxisLabels().setTitle('Timing Report PID');
+    // Setup a plot that just shows some arbitrary timing data.
+    const timingPlot = aosPlotter.addPlot(parentDiv);
+    timingPlot.plot.getAxisLabels().setTitle('Timing Report Wakeups');
     timingPlot.plot.getAxisLabels().setYLabel('PID');
     timingPlot.plot.getAxisLabels().setXLabel('Monotonic Send Time (sec)');
-    const msgLine = timingPlot.addMessageLine(timingReport, ['pid']);
-    msgLine.setDrawLine(false);
-    msgLine.setPointSize(5);
+    // Show *all* the wakeup latencies for all timers.
+    const allValuesLine = timingPlot.addMessageLine(
+        timingReport, ['timers[]', 'wakeup_latency', 'average']);
+    allValuesLine.setDrawLine(false);
+    allValuesLine.setPointSize(5);
+    // Show *all* the wakeup latencies for the first timer in each timing report
+    // (this is not actually all that helpful unless you were to also filter by
+    // PID).
+    const singleValueLine = timingPlot.addMessageLine(
+        timingReport, ['timers[0]', 'wakeup_latency', 'average']);
+    singleValueLine.setDrawLine(true);
+    singleValueLine.setPointSize(0);
   }
 
   // Set up and draw the benchmarking plot.
