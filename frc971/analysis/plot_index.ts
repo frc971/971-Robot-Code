@@ -26,6 +26,10 @@ import {plotImu} from 'org_frc971/frc971/wpilib/imu_plotter';
 import {plotDrivetrain} from 'org_frc971/frc971/control_loops/drivetrain/drivetrain_plotter';
 import {plotRobotState} from
     'org_frc971/frc971/control_loops/drivetrain/robot_state_plotter'
+import {plotFinisher} from
+    'org_frc971/y2020/control_loops/superstructure/finisher_plotter'
+import {plotAccelerator} from
+    'org_frc971/y2020/control_loops/superstructure/accelerator_plotter'
 import {plotDemo} from 'org_frc971/aos/network/www/demo_plot';
 import {plotData} from 'org_frc971/frc971/analysis/plot_data_utils';
 
@@ -84,6 +88,8 @@ const plotIndex = new Map<string, PlotState>([
   ['IMU', new PlotState(plotDiv, plotImu)],
   ['Drivetrain', new PlotState(plotDiv, plotDrivetrain)],
   ['Robot State', new PlotState(plotDiv, plotRobotState)],
+  ['Finisher', new PlotState(plotDiv, plotFinisher)],
+  ['Accelerator', new PlotState(plotDiv, plotAccelerator)],
   ['C++ Plotter', new PlotState(plotDiv, plotData)],
 ]);
 

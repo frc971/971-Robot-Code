@@ -72,9 +72,10 @@ export class Line {
     return this._color;
   }
 
-  setColor(newColor: number[]) {
+  setColor(newColor: number[]): Line {
     this._color = newColor;
     this._hasUpdate = true;
+    return this;
   }
 
   // Get/set the size of the markers to draw, in pixels (zero means no markers).
@@ -82,9 +83,10 @@ export class Line {
     return this._pointSize;
   }
 
-  setPointSize(size: number) {
+  setPointSize(size: number): Line {
     this._pointSize = size;
     this._hasUpdate = true;
+    return this;
   }
 
   // Get/set whether we draw a line between the points (i.e., setting this to
