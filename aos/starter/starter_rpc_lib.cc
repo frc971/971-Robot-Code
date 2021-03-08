@@ -127,18 +127,15 @@ const FlatbufferDetachedBuffer<aos::starter::ApplicationStatus> GetStatus(
                       aos::starter::ApplicationStatus>::Empty();
 }
 
-const aos::FlatbufferVector<aos::starter::Status> GetStarterStatus(
+std::optional<const aos::FlatbufferVector<aos::starter::Status>> GetStarterStatus(
     const aos::Configuration *config) {
   ShmEventLoop event_loop(config);
   event_loop.SkipAosLog();
 
   auto status_fetcher = event_loop.MakeFetcher<aos::starter::Status>("/aos");
   status_fetcher.Fetch();
-  if (status_fetcher) {
-    return status_fetcher.CopyFlatBuffer();
-  } else {
-    return FlatbufferVector<aos::starter::Status>::Empty();
-  }
+  return (status_fetcher ? std::make_optional(status_fetcher.CopyFlatBuffer()) :
+      std::nullopt);
 }
 
 }  // namespace starter

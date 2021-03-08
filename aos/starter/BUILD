@@ -95,6 +95,7 @@ cc_binary(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":starter_rpc_lib",
+        "//aos/time:time",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/strings:str_format",
     ],
