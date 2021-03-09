@@ -168,6 +168,7 @@ export class AosPlotter {
 
   private plots: AosPlot[] = [];
   private messages = new Set<MessageHandler>();
+  private lowestHeight = 0;
   constructor(private readonly connection: Connection) {
     // Set up to redraw at some regular interval. The exact rate is unimportant.
     setInterval(() => {
@@ -199,7 +200,13 @@ export class AosPlotter {
   }
   // Add a new figure at the provided position with the provided size within
   // parentElement.
-  addPlot(parentElement: Element, topLeft: number[], size: number[]): AosPlot {
+  addPlot(
+      parentElement: Element, topLeft: number[]|null = null,
+      size: number[] = [AosPlotter.DEFAULT_WIDTH, AosPlotter.DEFAULT_HEIGHT]):
+      AosPlot {
+    if (topLeft === null) {
+      topLeft = [0, this.lowestHeight];
+    }
     const div = document.createElement("div");
     div.style.top = topLeft[1].toString();
     div.style.left = topLeft[0].toString();
@@ -210,6 +217,8 @@ export class AosPlotter {
       newPlot.linkXAxis(plot.plot);
     }
     this.plots.push(new AosPlot(this, newPlot));
+    // Height goes up as you go down.
+    this.lowestHeight = Math.max(topLeft[1] + size[1], this.lowestHeight);
     return this.plots[this.plots.length - 1];
   }
   private draw(): void {

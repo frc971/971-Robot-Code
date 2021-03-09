@@ -112,6 +112,8 @@ function getDefaultPlot(): string {
 
 const conn = new Connection();
 
+let reloadOnChange = false;
+
 conn.connect();
 
 conn.addConfigHandler((config: Configuration) => {
@@ -131,6 +133,10 @@ conn.addConfigHandler((config: Configuration) => {
     // Set the URL so that if you reload you get back to this plot.
     window.history.replaceState(
         null, null, '?plot=' + encodeURIComponent(plotSelect.value));
+    if (reloadOnChange) {
+      window.location.reload();
+    }
+    reloadOnChange = true;
   });
   plotSelect.value = getDefaultPlot();
   // Force the event to occur once at the start.
