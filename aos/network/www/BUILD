@@ -93,12 +93,22 @@ ts_library(
 )
 
 ts_library(
+    name = "colors",
+    srcs = [
+        "colors.ts",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+)
+
+ts_library(
     name = "plotter",
     srcs = [
         "plotter.ts",
     ],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
+    deps = [":colors"],
 )
 
 ts_library(

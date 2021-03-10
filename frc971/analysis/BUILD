@@ -79,6 +79,7 @@ ts_library(
         "//aos:configuration_ts_fbs",
         "//aos/network/www:demo_plot",
         "//aos/network/www:proxy",
+        "//frc971/control_loops/drivetrain:down_estimator_plotter",
         "//frc971/control_loops/drivetrain:drivetrain_plotter",
         "//frc971/control_loops/drivetrain:robot_state_plotter",
         "//frc971/wpilib:imu_plotter",

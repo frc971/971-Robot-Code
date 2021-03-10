@@ -1,3 +1,4 @@
+import * as Colors from 'org_frc971/aos/network/www/colors';
 // Multiplies all the values in the provided array by scale.
 function scaleVec(vec: number[], scale: number): number[] {
   const scaled: number[] = [];
@@ -348,6 +349,12 @@ export class LineDrawer {
   private xGridLines: Line[] = [];
   private yGridLines: Line[] = [];
 
+  public static readonly COLOR_CYCLE = [
+    Colors.RED, Colors.GREEN, Colors.BLUE, Colors.BROWN, Colors.PINK,
+    Colors.CYAN, Colors.WHITE
+  ];
+  private colorCycleIndex = 0;
+
   constructor(public readonly ctx: WebGLRenderingContext) {
     this.program = this.compileShaders();
     this.scaleLocation = this.ctx.getUniformLocation(this.program, 'scale');
@@ -513,9 +520,13 @@ export class LineDrawer {
     return program;
   }
 
-  addLine(): Line {
+  addLine(useColorCycle: boolean = true): Line {
     this.lines.push(new Line(this.ctx, this.program, this.vertexBuffer));
-    return this.lines[this.lines.length - 1];
+    const line = this.lines[this.lines.length - 1];
+    if (useColorCycle) {
+      line.setColor(LineDrawer.COLOR_CYCLE[this.colorCycleIndex++]);
+    }
+    return line;
   }
 
   minValues(): number[] {
@@ -816,8 +827,8 @@ export class Plot {
         new AxisLabels(textCtx, this.drawer, this.axisLabelBuffer);
     this.legend = new Legend(textCtx, this.drawer.getLines());
 
-    this.zoomRectangle = this.getDrawer().addLine();
-    this.zoomRectangle.setColor([1, 1, 1]);
+    this.zoomRectangle = this.getDrawer().addLine(false);
+    this.zoomRectangle.setColor(Colors.WHITE);
     this.zoomRectangle.setPointSize(0);
 
     this.draw();

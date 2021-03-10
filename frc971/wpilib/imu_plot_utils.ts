@@ -10,9 +10,16 @@ import Schema = configuration.reflection.Schema;
 import IMUValuesBatch = imu.frc971.IMUValuesBatch;
 import IMUValues = imu.frc971.IMUValues;
 
+const FILTER_WINDOW_SIZE = 100;
+
 export class ImuMessageHandler extends MessageHandler {
+  // Calculated magnitude of the measured acceleration from the IMU.
+  private acceleration_magnitudes: number[] = [];
   constructor(private readonly schema: Schema) {
     super(schema);
+  }
+  private readScalar(table: Table, fieldName: string): number {
+    return this.parser.readScalar(table, fieldName);
   }
   addMessage(data: Uint8Array, time: number): void {
     const batch = IMUValuesBatch.getRootAsIMUValuesBatch(
@@ -27,8 +34,44 @@ export class ImuMessageHandler extends MessageHandler {
         console.log(this.parser.toObject(table));
         continue;
       }
-      this.messages.push(new TimestampedMessage(
-          table, message.monotonicTimestampNs().toFloat64() * 1e-9));
+      const time = message.monotonicTimestampNs().toFloat64() * 1e-9;
+      this.messages.push(new TimestampedMessage(table, time));
+      this.acceleration_magnitudes.push(time);
+      this.acceleration_magnitudes.push(Math.hypot(
+          message.accelerometerX(), message.accelerometerY(),
+          message.accelerometerZ()));
+    }
+  }
+
+  // Computes a moving average for a given input, using a basic window centered
+  // on each value.
+  private movingAverageCentered(input: Float32Array): Float32Array {
+    const num_measurements = input.length / 2;
+    const filtered_measurements = new Float32Array(input);
+    for (let ii = 0; ii < num_measurements; ++ii) {
+      let sum = 0;
+      let count = 0;
+      for (let jj = Math.max(0, Math.ceil(ii - FILTER_WINDOW_SIZE / 2));
+           jj < Math.min(num_measurements, ii + FILTER_WINDOW_SIZE / 2); ++jj) {
+        sum += input[jj * 2 + 1];
+        ++count;
+      }
+      filtered_measurements[ii * 2 + 1] = sum / count;
+    }
+    return new Float32Array(filtered_measurements);
+  }
+
+  getField(field: string[]): Float32Array {
+    // Any requested input that ends with "_filtered" will get a moving average
+    // applied to the original field.
+    const filtered_suffix = "_filtered";
+    if (field[0] == "acceleration_magnitude") {
+      return new Float32Array(this.acceleration_magnitudes);
+    } else if (field[0].endsWith(filtered_suffix)) {
+      return this.movingAverageCentered(this.getField(
+          [field[0].slice(0, field[0].length - filtered_suffix.length)]));
+    } else {
+      return super.getField(field);
     }
   }
 }
