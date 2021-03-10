@@ -1,19 +1,13 @@
 // Provides a plot for debugging robot state-related issues.
 import {AosPlotter} from 'org_frc971/aos/network/www/aos_plotter';
 import * as proxy from 'org_frc971/aos/network/www/proxy';
+import {BLUE, BROWN, CYAN, GREEN, PINK, RED, WHITE} from 'org_frc971/aos/network/www/colors';
 
 import Connection = proxy.Connection;
 
 const TIME = AosPlotter.TIME;
 const DEFAULT_WIDTH = AosPlotter.DEFAULT_WIDTH;
 const DEFAULT_HEIGHT = AosPlotter.DEFAULT_HEIGHT * 3;
-const RED = AosPlotter.RED;
-const GREEN = AosPlotter.GREEN;
-const BLUE = AosPlotter.BLUE;
-const BROWN = AosPlotter.BROWN;
-const PINK = AosPlotter.PINK;
-const CYAN = AosPlotter.CYAN;
-const WHITE = AosPlotter.WHITE;
 
 export function plotHood(conn: Connection, element: Element) : void {
   const aosPlotter = new AosPlotter(conn);
