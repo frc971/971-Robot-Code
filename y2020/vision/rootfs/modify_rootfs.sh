@@ -23,7 +23,7 @@ if mount | grep "${BOOT_PARTITION}" >/dev/null ;
 then
   echo "Already mounted"
 else
-  OFFSET="$(fdisk -lu "${IMAGE}" | grep "${IMAGE}1" | awk '{print 512*$2}')"
+  OFFSET="$(/sbin/fdisk -lu "${IMAGE}" | grep "${IMAGE}1" | awk '{print 512*$2}')"
   sudo mount -o loop,offset=${OFFSET} "${IMAGE}" "${BOOT_PARTITION}"
 fi
 
@@ -42,14 +42,14 @@ if mount | grep "${PARTITION}" >/dev/null ;
 then
   echo "Already mounted"
 else
-  OFFSET="$(fdisk -lu "${IMAGE}" | grep "${IMAGE}2" | awk '{print 512*$2}')"
+  OFFSET="$(/sbin/fdisk -lu "${IMAGE}" | grep "${IMAGE}2" | awk '{print 512*$2}')"
 
   if [[ "$(stat -c %s "${IMAGE}")" < 3000000000 ]]; then
     echo "Growing image"
     dd if=/dev/zero bs=1G count=1 >> "${IMAGE}"
-    START="$(fdisk -lu "${IMAGE}" | grep "${IMAGE}2" | awk '{print $2}')"
+    START="$(/sbin/fdisk -lu "${IMAGE}" | grep "${IMAGE}2" | awk '{print $2}')"
 
-    sed -e 's/\s*\([\+0-9a-zA-Z]*\).*/\1/' << EOF | fdisk "${IMAGE}"
+    sed -e 's/\s*\([\+0-9a-zA-Z]*\).*/\1/' << EOF | /sbin/fdisk "${IMAGE}"
   d # remove old partition
   2
   n # new partition

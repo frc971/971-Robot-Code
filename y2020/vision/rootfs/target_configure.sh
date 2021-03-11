@@ -53,6 +53,8 @@ apt-get install -y vim-nox \
   libnice10 \
   libnice-dev
 
+python3 -m pip install glog
+
 echo 'GOVERNOR="performance"' > /etc/default/cpufrequtils
 
 # Add a .bashrc and friends for root.
