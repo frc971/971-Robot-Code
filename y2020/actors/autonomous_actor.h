@@ -8,6 +8,7 @@
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
 #include "frc971/control_loops/drivetrain/localizer_generated.h"
 #include "y2020/actors/auto_splines.h"
+#include "y2020/vision/galactic_search_path_generated.h"
 
 namespace y2020 {
 namespace actors {
@@ -22,11 +23,15 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
  private:
   void Reset();
   void SplineAuto();
+  void SendStartingPosition(double x, double y, double theta);
+  void SendStartingPosition(const frc971::MultiSpline *const spline);
+  void GalacticSearch();
   bool DriveFwd();
 
   ::aos::Sender<::frc971::control_loops::drivetrain::LocalizerControl>
       localizer_control_sender_;
   aos::Fetcher<aos::JoystickState> joystick_state_fetcher_;
+  aos::Fetcher<y2020::vision::GalacticSearchPath> path_fetcher_;
   aos::Alliance alliance_ = aos::Alliance::kInvalid;
   AutonomousSplines auto_splines_;
 };
