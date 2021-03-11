@@ -17,21 +17,30 @@ gflags.DEFINE_bool('plot', False, 'If true, plot the loop response.')
 # 40 tooth on the flywheel
 # 48 for the falcon.
 # 60 tooth on the outer wheel.
-G = 48.0 / 40.0
+G = 44.0 / 40.0
 # Overall flywheel inertia.
 J = 0.00507464
+J = 0.008
+
+def AddResistance(motor, resistance):
+    motor.resistance += resistance
+    return motor
+
+def ScaleKv(motor, scale):
+    motor.Kv *= scale
+    return motor
 
 # The position and velocity are measured for the final wheel.
 kFinisher = flywheel.FlywheelParams(
     name='Finisher',
-    motor=control_loop.NMotor(control_loop.Falcon(), 2),
+    motor=AddResistance(control_loop.NMotor(control_loop.Falcon(), 2), 0.01),
     G=G,
     J=J,
     q_pos=0.01,
-    q_vel=100.0,
-    q_voltage=6.0,
-    r_pos=0.05,
-    controller_poles=[.90])
+    q_vel=10.0,
+    q_voltage=4.0,
+    r_pos=0.01,
+    controller_poles=[.89])
 
 
 def main(argv):

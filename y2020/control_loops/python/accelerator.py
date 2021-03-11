@@ -21,19 +21,19 @@ G_per_wheel = 1.2
 G = (30.0 / 40.0) * numpy.power(G_per_wheel, 3.0)
 # Overall flywheel inertia.
 J = J_wheel * (
-    1.0 + numpy.power(G, -2.0) + numpy.power(G, -4.0) + numpy.power(G, -6.0))
+    1.0 + numpy.power(G_per_wheel, -2.0) + numpy.power(G_per_wheel, -4.0) + numpy.power(G_per_wheel, -6.0))
 
 # The position and velocity are measured for the final wheel.
 kAccelerator = flywheel.FlywheelParams(
     name='Accelerator',
     motor=control_loop.Falcon(),
     G=G,
-    J=J + 0.0015,
+    J=J * 1.3,
     q_pos=0.01,
     q_vel=40.0,
-    q_voltage=2.0,
-    r_pos=0.05,
-    controller_poles=[.86])
+    q_voltage=1.0,
+    r_pos=0.03,
+    controller_poles=[.89])
 
 
 def main(argv):
