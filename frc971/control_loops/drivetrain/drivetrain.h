@@ -144,6 +144,8 @@ class DrivetrainFilters {
 class DrivetrainLoop
     : public aos::controls::ControlLoop<Goal, Position, Status, Output> {
  public:
+  static constexpr size_t kNumSplineFetchers = 4;
+
   // Constructs a control loop which can take a Drivetrain or defaults to the
   // drivetrain at frc971::control_loops::drivetrain
   explicit DrivetrainLoop(const DrivetrainConfig<double> &dt_config,
@@ -154,6 +156,11 @@ class DrivetrainLoop
   virtual ~DrivetrainLoop() {}
 
  protected:
+  struct TrajectoryFetcherState {
+    aos::Fetcher<fb::Trajectory> fetcher;
+    bool in_use = false;
+  };
+
   // Executes one cycle of the control loop.
   void RunIteration(
       const ::frc971::control_loops::drivetrain::Goal *goal,
@@ -165,8 +172,11 @@ class DrivetrainLoop
   flatbuffers::Offset<drivetrain::Output> Zero(
       aos::Sender<drivetrain::Output>::Builder *builder) override;
 
+  void UpdateTrajectoryFetchers();
+
   const DrivetrainConfig<double> dt_config_;
   DrivetrainFilters filters_;
+  std::array<TrajectoryFetcherState, kNumSplineFetchers> trajectory_fetchers_;
 
   PolyDrivetrain<double> dt_openloop_;
   DrivetrainMotorsSS dt_closedloop_;

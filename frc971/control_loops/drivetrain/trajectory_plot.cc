@@ -29,10 +29,6 @@
 // https://photos.google.com/share/AF1QipPl34MOTPem2QmmTC3B21dL7GV2_HjxnseRrqxgR60TUasyIPliIuWmnH3yxuSNZw?key=cVhZLUYycXBIZlNTRy10cjZlWm0tcmlqQl9MTE13
 
 DEFINE_bool(plot, true, "If true, plot");
-DEFINE_double(qx, 0.05, "Q_xpos");
-DEFINE_double(qy, 0.05, "Q_ypos");
-DEFINE_double(qt, 0.2, "Q_thetapos");
-DEFINE_double(qv, 0.5, "Q_vel");
 
 DEFINE_double(dx, 0.0, "Amount to disturb x at the start");
 DEFINE_double(dy, 0.0, "Amount to disturb y at the start");
@@ -49,13 +45,14 @@ namespace control_loops {
 namespace drivetrain {
 
 void Main() {
-  DistanceSpline distance_spline(Spline(
-      Spline4To6((::Eigen::Matrix<double, 2, 4>() << 0.0, 1.2 * FLAGS_forward,
-                  -0.2 * FLAGS_forward, FLAGS_forward, 0.0, 0.0, 1.0, 1.0)
-                     .finished())));
+  const DrivetrainConfig<double> config =
+      ::y2019::control_loops::drivetrain::GetDrivetrainConfig();
   Trajectory trajectory(
-      &distance_spline,
-      ::y2019::control_loops::drivetrain::GetDrivetrainConfig());
+      DistanceSpline(Spline(Spline4To6(
+          (::Eigen::Matrix<double, 2, 4>() << 0.0, 1.2 * FLAGS_forward,
+           -0.2 * FLAGS_forward, FLAGS_forward, 0.0, 0.0, 1.0, 1.0)
+              .finished()))),
+      config, nullptr);
   trajectory.set_lateral_acceleration(2.0);
   trajectory.set_longitudinal_acceleration(1.0);
 
@@ -66,8 +63,9 @@ void Main() {
   ::std::vector<double> spline_theta;
 
   for (const double distance : distances) {
-    const ::Eigen::Matrix<double, 2, 1> point = distance_spline.XY(distance);
-    const double theta = distance_spline.Theta(distance);
+    const ::Eigen::Matrix<double, 2, 1> point =
+        trajectory.spline().XY(distance);
+    const double theta = trajectory.spline().Theta(distance);
     spline_x.push_back(point(0));
     spline_y.push_back(point(1));
     spline_theta.push_back(theta);
@@ -88,7 +86,7 @@ void Main() {
 
   ::std::vector<double> plan_segment_center_distance;
   ::std::vector<double> plan_type;
-  for (Trajectory::SegmentType segment_type : trajectory.plan_segment_type()) {
+  for (fb::SegmentConstraint segment_type : trajectory.plan_segment_type()) {
     plan_type.push_back(static_cast<int>(segment_type));
   }
   for (size_t i = 0; i < distances.size() - 1; ++i) {
@@ -128,24 +126,14 @@ void Main() {
     }
   }
 
-  const double kXPos = FLAGS_qx;
-  const double kYPos = FLAGS_qy;
-  const double kThetaPos = FLAGS_qt;
-  const double kVel = FLAGS_qv;
-  const ::Eigen::DiagonalMatrix<double, 5> Q =
-      (::Eigen::DiagonalMatrix<double, 5>().diagonal()
-           << 1.0 / ::std::pow(kXPos, 2),
-       1.0 / ::std::pow(kYPos, 2), 1.0 / ::std::pow(kThetaPos, 2),
-       1.0 / ::std::pow(kVel, 2), 1.0 / ::std::pow(kVel, 2))
-          .finished()
-          .asDiagonal();
+  flatbuffers::FlatBufferBuilder fbb;
 
-  const ::Eigen::DiagonalMatrix<double, 2> R =
-      (::Eigen::DiagonalMatrix<double, 2>().diagonal()
-           << 1.0 / ::std::pow(12.0, 2),
-       1.0 / ::std::pow(12.0, 2))
-          .finished()
-          .asDiagonal();
+  fbb.Finish(trajectory.Serialize(&fbb));
+
+  aos::FlatbufferDetachedBuffer<fb::Trajectory> trajectory_buffer(
+      fbb.Release());
+
+  FinishedTrajectory finished_trajectory(config, &trajectory_buffer.message());
 
   ::Eigen::Matrix<double, 5, 1> state = ::Eigen::Matrix<double, 5, 1>::Zero();
   state(0, 0) = FLAGS_dx;
@@ -186,17 +174,17 @@ void Main() {
     error_velocity_l.push_back(state_error(3));
     error_velocity_r.push_back(state_error(4));
 
-    ::Eigen::Matrix<double, 2, 5> K =
-        trajectory.KForState(state, chrono::microseconds(5050), Q, R);
+    const ::Eigen::Matrix<double, 2, 5> K =
+        finished_trajectory.GainForDistance(distance);
 
     const ::Eigen::Matrix<double, 2, 1> U_ff = trajectory.FFVoltage(distance);
     const ::Eigen::Matrix<double, 2, 1> U_fb = K * state_error;
     const ::Eigen::Matrix<double, 2, 1> U = U_ff + U_fb;
     state = RungeKuttaU(
-        [&trajectory](const ::Eigen::Matrix<double, 5, 1> &X,
-                      const ::Eigen::Matrix<double, 2, 1> &U) {
+        [&trajectory, &config](const ::Eigen::Matrix<double, 5, 1> &X,
+                               const ::Eigen::Matrix<double, 2, 1> &U) {
           return ContinuousDynamics(trajectory.velocity_drivetrain().plant(),
-                                    trajectory.Tlr_to_la(), X, U);
+                                    config.Tlr_to_la(), X, U);
         },
         state, U, kDtDouble);
 

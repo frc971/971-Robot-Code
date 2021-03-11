@@ -7,6 +7,20 @@
       "max_size": 2000,
       "frequency": 200
     },
+    /* TODO(james): Experiment with size limitations. */
+    {
+      "name": "/drivetrain",
+      "type": "frc971.control_loops.drivetrain.fb.Trajectory",
+      "max_size": 200000,
+      "frequency": 10,
+      "read_method": "PIN",
+      "num_readers": 6
+    },
+    {
+      "name": "/drivetrain",
+      "type": "frc971.control_loops.drivetrain.SplineGoal",
+      "frequency": 10
+    },
     {
       "name": "/drivetrain",
       "type": "frc971.sensors.GyroReading",

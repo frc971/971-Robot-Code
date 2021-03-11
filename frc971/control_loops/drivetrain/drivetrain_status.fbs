@@ -54,21 +54,21 @@ enum PlanningState : byte {
 // For logging information about the state of the trajectory planning.
 table TrajectoryLogging {
   // state of planning the trajectory.
-  planning_state:PlanningState (id: 0);
+  planning_state:PlanningState (id: 0, deprecated);
 
   // State of the spline execution.
   is_executing:bool (id: 1);
   // Whether we have finished the spline specified by current_spline_idx.
   is_executed:bool (id: 2);
 
-  // The handle of the goal spline.  0 means stop requested.
+  // The handle of the goal spline. Empty means no goal/stop requested.
   goal_spline_handle:int (id: 3);
-  // Handle of the executing spline.  -1 means none requested.  If there was no
-  // spline executing when a spline finished optimizing, it will become the
-  // current spline even if we aren't ready to start yet.
+  // Handle of the executing spline. Will generally be identical to
+  // goal_spline_handle if the spline is available; however, if the commanded
+  // spline has not yet been planned, this will be empty.
   current_spline_idx:int (id: 4);
   // Handle of the spline that is being optimized and staged.
-  planning_spline_idx:int (id: 5);
+  planning_spline_idx:int (id: 5, deprecated);
 
   // Expected position and velocity on the spline
   x:float (id: 6);
@@ -77,6 +77,9 @@ table TrajectoryLogging {
   left_velocity:float (id: 9);
   right_velocity:float (id: 10);
   distance_remaining:float (id: 11);
+
+  // Splines that we have full plans for.
+  available_splines:[int] (id: 12);
 }
 
 // For logging state of the line follower.

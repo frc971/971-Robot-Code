@@ -64,7 +64,7 @@ class BaseAutonomousActor : public ::aos::common::actions::ActorBase<Goal> {
   // it.
   SplineHandle PlanSpline(
       std::function<flatbuffers::Offset<frc971::MultiSpline>(
-          aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder
+          aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
               *builder)> &&multispline_builder,
       SplineDirection direction);
 
@@ -123,6 +123,8 @@ class BaseAutonomousActor : public ::aos::common::actions::ActorBase<Goal> {
       target_selector_hint_sender_;
   ::aos::Sender<::frc971::control_loops::drivetrain::Goal>
       drivetrain_goal_sender_;
+  ::aos::Sender<::frc971::control_loops::drivetrain::SplineGoal>
+      spline_goal_sender_;
   ::aos::Fetcher<::frc971::control_loops::drivetrain::Status>
       drivetrain_status_fetcher_;
   ::aos::Fetcher<::frc971::control_loops::drivetrain::Goal>

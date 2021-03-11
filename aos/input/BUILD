@@ -35,6 +35,7 @@ cc_library(
         "//frc971/control_loops/drivetrain:drivetrain_config",
         "//frc971/control_loops/drivetrain:drivetrain_goal_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
+        "//frc971/control_loops/drivetrain:spline_goal_fbs",
     ],
 )
 

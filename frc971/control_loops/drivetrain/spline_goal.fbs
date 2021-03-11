@@ -1,0 +1,16 @@
+include "frc971/control_loops/control_loops.fbs";
+
+namespace frc971.control_loops.drivetrain;
+
+table SplineGoal {
+  // index of the spline.
+  spline_idx:int (id: 0);
+
+  // Acutal spline.
+  spline:frc971.MultiSpline (id: 1);
+
+  // Whether to follow the spline driving forwards or backwards.
+  drive_spline_backwards:bool (id: 2);
+}
+
+root_type SplineGoal;

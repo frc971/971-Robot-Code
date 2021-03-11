@@ -104,8 +104,9 @@ void AutonomousActor::GalacticSearch() {
     AOS_LOG(ERROR, "The galactic search path is unknown, doing nothing.");
   } else {
     SplineHandle spline1 = PlanSpline(
-        [this](aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder
-                   *builder) {
+        [this](
+            aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+                *builder) {
           flatbuffers::Offset<frc971::MultiSpline> target_spline;
           if (path_fetcher_->alliance() == y2020::vision::Alliance::kRed) {
             if (path_fetcher_->letter() == y2020::vision::Letter::kA) {
@@ -147,7 +148,7 @@ void AutonomousActor::GalacticSearch() {
 
 void AutonomousActor::AutoNavBounce() {
   SplineHandle spline1 = PlanSpline(
-      [this](aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder
+      [this](aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
                  *builder) {
         flatbuffers::Offset<frc971::MultiSpline> target_spline =
             auto_splines_.AutoNavBounce1(builder);
@@ -162,7 +163,7 @@ void AutonomousActor::AutoNavBounce() {
   spline1.Start();
 
   SplineHandle spline2 = PlanSpline(
-      [this](aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder
+      [this](aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
                  *builder) { return auto_splines_.AutoNavBounce2(builder); },
       SplineDirection::kBackward);
 
@@ -172,7 +173,7 @@ void AutonomousActor::AutoNavBounce() {
   spline2.Start();
 
   SplineHandle spline3 = PlanSpline(
-      [this](aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder
+      [this](aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
                  *builder) { return auto_splines_.AutoNavBounce3(builder); },
       SplineDirection::kForward);
 
@@ -182,7 +183,7 @@ void AutonomousActor::AutoNavBounce() {
   spline3.Start();
 
   SplineHandle spline4 = PlanSpline(
-      [this](aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder
+      [this](aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
                  *builder) { return auto_splines_.AutoNavBounce4(builder); },
       SplineDirection::kBackward);
 
@@ -196,7 +197,7 @@ void AutonomousActor::AutoNavBounce() {
 
 void AutonomousActor::AutoNavBarrel() {
   SplineHandle spline1 = PlanSpline(
-      [this](aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder
+      [this](aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
                  *builder) {
         flatbuffers::Offset<frc971::MultiSpline> target_spline;
         target_spline = auto_splines_.AutoNavBarrel(builder);
@@ -215,7 +216,7 @@ void AutonomousActor::AutoNavBarrel() {
 
 void AutonomousActor::AutoNavSlalom() {
   SplineHandle spline1 = PlanSpline(
-      [this](aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder
+      [this](aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
                  *builder) {
         flatbuffers::Offset<frc971::MultiSpline> target_spline;
         target_spline = auto_splines_.AutoNavSlalom(builder);
@@ -234,7 +235,7 @@ void AutonomousActor::AutoNavSlalom() {
 
 void AutonomousActor::SplineAuto() {
   SplineHandle spline1 = PlanSpline(
-      [this](aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder
+      [this](aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
                  *builder) {
         flatbuffers::Offset<frc971::MultiSpline> target_spline;
         target_spline = auto_splines_.TestSpline(builder);

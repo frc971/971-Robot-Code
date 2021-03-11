@@ -3,9 +3,12 @@
 
 #include <chrono>
 
+#include "aos/flatbuffers.h"
 #include "Eigen/Dense"
 #include "frc971/control_loops/drivetrain/distance_spline.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
+#include "frc971/control_loops/drivetrain/trajectory_generated.h"
+#include "frc971/control_loops/drivetrain/spline_goal_generated.h"
 #include "frc971/control_loops/hybrid_state_feedback_loop.h"
 #include "frc971/control_loops/runge_kutta.h"
 #include "frc971/control_loops/state_feedback_loop.h"
@@ -27,34 +30,23 @@ double IntegrateAccelForDistance(const F &fn, double v, double x, double dx) {
                 // true because when starting from a stop, under sane
                 // accelerations, we can assume that we will start with a
                 // constant acceleration.  So, hard-code it.
-                if (::std::abs(y) < 1e-6) {
+                if (std::abs(y) < 1e-6) {
                   return 0.0;
                 }
                 return (fn(t, y) - a0) / y;
               },
               v, x, dx) -
           v) +
-         ::std::sqrt(2.0 * a0 * dx + v * v);
+         std::sqrt(2.0 * a0 * dx + v * v);
 }
 
-// Class to plan and hold the velocity plan for a spline.
-class Trajectory {
+class BaseTrajectory {
  public:
-  Trajectory(const DistanceSpline *spline,
-             const DrivetrainConfig<double> &config, double vmax = 10.0,
-             int num_distance = 0);
-  // Sets the plan longitudinal acceleration limit
-  void set_longitudinal_acceleration(double longitudinal_acceleration) {
-    longitudinal_acceleration_ = longitudinal_acceleration;
-  }
-  // Sets the plan lateral acceleration limit
-  void set_lateral_acceleration(double lateral_acceleration) {
-    lateral_acceleration_ = lateral_acceleration;
-  }
-  // Sets the voltage limit
-  void set_voltage_limit(double voltage_limit) {
-    voltage_limit_ = voltage_limit;
-  }
+  BaseTrajectory(
+      const flatbuffers::Vector<flatbuffers::Offset<Constraint>> *constraints,
+      const DrivetrainConfig<double> &config);
+
+  virtual ~BaseTrajectory() = default;
 
   // Returns the friction-constrained velocity limit at a given distance along
   // the path. At the returned velocity, one or both wheels will be on the edge
@@ -73,6 +65,184 @@ class Trajectory {
   // min_accel == max_accel.
   void FrictionLngAccelLimits(double x, double v, double *min_accel,
                               double *max_accel) const;
+
+  // Returns the forwards/backwards acceleration for a distance along the spline
+  // taking into account the lateral acceleration, longitudinal acceleration,
+  // and voltage limits.
+  double BestAcceleration(double x, double v, bool backwards) const;
+  double BackwardAcceleration(double x, double v) const {
+    return BestAcceleration(x, v, true);
+  }
+  double ForwardAcceleration(double x, double v) const {
+    return BestAcceleration(x, v, false);
+  }
+
+  const StateFeedbackLoop<2, 2, 2, double, StateFeedbackHybridPlant<2, 2, 2>,
+                          HybridKalman<2, 2, 2>>
+      &velocity_drivetrain() const {
+    return *velocity_drivetrain_;
+  }
+
+  // Returns K1 and K2.
+  // K2 * d^x/dt^2 + K1 (dx/dt)^2 = A * K2 * dx/dt + B * U
+  const Eigen::Matrix<double, 2, 1> K1(double current_ddtheta) const;
+  const Eigen::Matrix<double, 2, 1> K2(double current_dtheta) const;
+
+  // Computes K3, K4, and K5 for the provided distance.
+  // K5 a + K3 v^2 + K4 v = U
+  void K345(const double x, Eigen::Matrix<double, 2, 1> *K3,
+            Eigen::Matrix<double, 2, 1> *K4,
+            Eigen::Matrix<double, 2, 1> *K5) const;
+
+  virtual const DistanceSpline &spline() const = 0;
+
+  // Returns the length of the path in meters.
+  double length() const { return spline().length(); }
+
+  // Returns whether a state represents a state at the end of the spline.
+  bool is_at_end(Eigen::Matrix<double, 2, 1> state) const {
+    return state(0) > length() - 1e-4;
+  }
+
+  // Returns true if the state is invalid or unreasonable in some way.
+  bool state_is_faulted(Eigen::Matrix<double, 2, 1> state) const {
+    // Consider things faulted if the current velocity implies we are going
+    // backwards or if any infinities/NaNs have crept in.
+    return state(1) < 0 || !state.allFinite();
+  }
+
+  virtual float plan_velocity(size_t index) const = 0;
+  virtual size_t distance_plan_size() const = 0;
+
+  // Sets the plan longitudinal acceleration limit
+  void set_longitudinal_acceleration(double longitudinal_acceleration) {
+    longitudinal_acceleration_ = longitudinal_acceleration;
+  }
+  // Sets the plan lateral acceleration limit
+  void set_lateral_acceleration(double lateral_acceleration) {
+    lateral_acceleration_ = lateral_acceleration;
+  }
+  // Sets the voltage limit
+  void set_voltage_limit(double voltage_limit) {
+    voltage_limit_ = voltage_limit;
+  }
+
+  float max_lateral_accel() const { return lateral_acceleration_; }
+
+  float max_longitudinal_accel() const { return longitudinal_acceleration_; }
+
+  float max_voltage() const { return voltage_limit_; }
+
+  // Return the next position, velocity, acceleration based on the current
+  // state. Updates the passed in state for the next iteration.
+  Eigen::Matrix<double, 3, 1> GetNextXVA(
+      std::chrono::nanoseconds dt, Eigen::Matrix<double, 2, 1> *state) const;
+
+  // Returns the distance for an index in the plan.
+  double Distance(int index) const {
+    return static_cast<double>(index) * length() /
+           static_cast<double>(distance_plan_size() - 1);
+  }
+
+  virtual fb::SegmentConstraint plan_constraint(size_t index) const = 0;
+
+  // Returns the feed forwards position, velocity, acceleration for an explicit
+  // distance.
+  Eigen::Matrix<double, 3, 1> FFAcceleration(double distance) const;
+
+  // Returns the feed forwards voltage for an explicit distance.
+  Eigen::Matrix<double, 2, 1> FFVoltage(double distance) const;
+
+  // Computes alpha for a distance.
+  size_t DistanceToSegment(double distance) const {
+    return std::max(
+        static_cast<size_t>(0),
+        std::min(distance_plan_size() - 1,
+                 static_cast<size_t>(std::floor(distance / length() *
+                                                (distance_plan_size() - 1)))));
+  }
+
+  // Returns the goal state as a function of path distance, velocity.
+  const ::Eigen::Matrix<double, 5, 1> GoalState(double distance,
+                                                double velocity) const;
+
+ protected:
+  double robot_radius_l() const { return robot_radius_l_; }
+  double robot_radius_r() const { return robot_radius_r_; }
+
+ private:
+  static float ConstraintValue(
+      const flatbuffers::Vector<flatbuffers::Offset<Constraint>> *constraints,
+      ConstraintType type);
+
+  std::unique_ptr<
+      StateFeedbackLoop<2, 2, 2, double, StateFeedbackHybridPlant<2, 2, 2>,
+                        HybridKalman<2, 2, 2>>>
+      velocity_drivetrain_;
+
+  const DrivetrainConfig<double> config_;
+
+  // Robot radiuses.
+  const double robot_radius_l_;
+  const double robot_radius_r_;
+  float lateral_acceleration_ = 3.0;
+  float longitudinal_acceleration_ = 2.0;
+  float voltage_limit_ = 12.0;
+};
+
+// A wrapper around the Trajectory flatbuffer to allow for controlling to a
+// spline using a pre-generated trajectory.
+class FinishedTrajectory  : public BaseTrajectory {
+ public:
+  // Note: The lifetime of the supplied buffer is assumed to be greater than
+  // that of this object.
+  explicit FinishedTrajectory(const DrivetrainConfig<double> &config,
+                              const fb::Trajectory *buffer);
+
+  virtual ~FinishedTrajectory() = default;
+
+  // Takes the 5-element state that is [x, y, theta, v_left, v_right] and
+  // converts it to a path-relative state, using distance as a linearization
+  // point (i.e., distance should be roughly equal to the actual distance along
+  // the path).
+  Eigen::Matrix<double, 5, 1> StateToPathRelativeState(
+      double distance, const Eigen::Matrix<double, 5, 1> &state) const;
+
+  // Retrieves the gain matrix K for a given distance along the path.
+  Eigen::Matrix<double, 2, 5> GainForDistance(double distance) const;
+
+  size_t distance_plan_size() const override;
+  float plan_velocity(size_t index) const override;
+  fb::SegmentConstraint plan_constraint(size_t index) const override;
+
+  bool drive_spline_backwards() const {
+    return trajectory().drive_spline_backwards();
+  }
+
+  int spline_handle() const { return trajectory().handle(); }
+  const fb::Trajectory &trajectory() const { return *buffer_; }
+
+ private:
+  const DistanceSpline &spline() const override { return spline_; }
+  const fb::Trajectory *buffer_;
+  const DistanceSpline spline_;
+};
+
+// Class to handle plannign a trajectory and producing a flatbuffer containing
+// all the information required to create a FinishedTrajectory;
+class Trajectory : public BaseTrajectory {
+ public:
+  Trajectory(const SplineGoal &spline_goal,
+             const DrivetrainConfig<double> &config);
+  Trajectory(
+      DistanceSpline &&spline, const DrivetrainConfig<double> &config,
+      const flatbuffers::Vector<flatbuffers::Offset<Constraint>> *constraints,
+      int spline_idx = 0, double vmax = 10.0, int num_distance = 0);
+
+  virtual ~Trajectory() = default;
+
+  std::vector<Eigen::Matrix<double, 3, 1>> PlanXVA(
+      std::chrono::nanoseconds dt);
 
   enum class VoltageLimit {
     kConservative,
@@ -104,17 +274,6 @@ class Trajectory {
   // Runs the forwards pass, setting the starting velocity to 0 m/s
   void ForwardPass();
 
-  // Returns the forwards/backwards acceleration for a distance along the spline
-  // taking into account the lateral acceleration, longitudinal acceleration,
-  // and voltage limits.
-  double BestAcceleration(double x, double v, bool backwards);
-  double BackwardAcceleration(double x, double v) {
-    return BestAcceleration(x, v, true);
-  }
-  double ForwardAcceleration(double x, double v) {
-    return BestAcceleration(x, v, false);
-  }
-
   // Runs the forwards pass, setting the ending velocity to 0 m/s
   void BackwardPass();
 
@@ -127,113 +286,16 @@ class Trajectory {
     CalculatePathGains();
   }
 
-  // Returns the feed forwards position, velocity, acceleration for an explicit
-  // distance.
-  ::Eigen::Matrix<double, 3, 1> FFAcceleration(double distance);
-
-  // Returns the feed forwards voltage for an explicit distance.
-  ::Eigen::Matrix<double, 2, 1> FFVoltage(double distance);
-
-  // Returns whether a state represents a state at the end of the spline.
-  bool is_at_end(::Eigen::Matrix<double, 2, 1> state) const {
-    return state(0) > length() - 1e-4;
-  }
-
-  // Returns true if the state is invalid or unreasonable in some way.
-  bool state_is_faulted(::Eigen::Matrix<double, 2, 1> state) const {
-    // Consider things faulted if the current velocity implies we are going
-    // backwards or if any infinities/NaNs have crept in.
-    return state(1) < 0 || !state.allFinite();
-  }
-
-  // Returns the length of the path in meters.
-  double length() const { return spline_->length(); }
-
   // Returns a list of the distances.  Mostly useful for plotting.
-  const ::std::vector<double> Distances() const;
+  const std::vector<double> Distances() const;
   // Returns the distance for an index in the plan.
   double Distance(int index) const {
     return static_cast<double>(index) * length() /
            static_cast<double>(plan_.size() - 1);
   }
 
-  // Returns the plan.  This is the pathwise velocity as a function of distance.
-  // To get the distance for an index, use the Distance(index) function provided
-  // with the index.
-  const ::std::vector<double> plan() const { return plan_; }
-
-  // Returns the left, right to linear, angular transformation matrix.
-  const ::Eigen::Matrix<double, 2, 2> &Tlr_to_la() const { return Tlr_to_la_; }
-  // Returns the linear, angular to left, right transformation matrix.
-  const ::Eigen::Matrix<double, 2, 2> &Tla_to_lr() const { return Tla_to_lr_; }
-
-  // Returns the goal state as a function of path distance, velocity.
-  const ::Eigen::Matrix<double, 5, 1> GoalState(double distance,
-                                                double velocity);
-
-  // Returns the velocity drivetrain in use.
-  const StateFeedbackLoop<2, 2, 2, double, StateFeedbackHybridPlant<2, 2, 2>,
-                          HybridKalman<2, 2, 2>>
-      &velocity_drivetrain() const {
-    return *velocity_drivetrain_;
-  }
-
-  // Returns the continuous statespace A and B matricies for [x, y, theta, vl,
-  // vr] for the linearized system (around the provided state).
-  ::Eigen::Matrix<double, 5, 5> ALinearizedContinuous(
-      const ::Eigen::Matrix<double, 5, 1> &state) const;
-  ::Eigen::Matrix<double, 5, 2> BLinearizedContinuous() const;
-
-  // Returns the discrete time A and B matricies for the provided state,
-  // assuming the provided timestep.
-  void AB(const ::Eigen::Matrix<double, 5, 1> &state,
-          ::std::chrono::nanoseconds dt, ::Eigen::Matrix<double, 5, 5> *A,
-          ::Eigen::Matrix<double, 5, 2> *B) const;
-
-  // Returns the lqr controller for the current state, timestep, and Q and R
-  // gains. This controller is currently not used--we instead are experimenting
-  // with the path-relative LQR (and potentially MPC, in the future) controller,
-  // which uses the methods defined below.
-  // TODO(austin): This feels like it should live somewhere else, but I'm not
-  // sure where.  So, throw it here...
-  ::Eigen::Matrix<double, 2, 5> KForState(
-      const ::Eigen::Matrix<double, 5, 1> &state, ::std::chrono::nanoseconds dt,
-      const ::Eigen::DiagonalMatrix<double, 5> &Q,
-      const ::Eigen::DiagonalMatrix<double, 2> &R) const;
-
-  // Return the next position, velocity, acceleration based on the current
-  // state. Updates the passed in state for the next iteration.
-  ::Eigen::Matrix<double, 3, 1> GetNextXVA(
-      ::std::chrono::nanoseconds dt, ::Eigen::Matrix<double, 2, 1> *state);
-  ::std::vector<::Eigen::Matrix<double, 3, 1>> PlanXVA(
-      ::std::chrono::nanoseconds dt);
-
-  enum SegmentType : uint8_t {
-    VELOCITY_LIMITED,
-    CURVATURE_LIMITED,
-    ACCELERATION_LIMITED,
-    DECELERATION_LIMITED,
-    VOLTAGE_LIMITED,
-  };
-
-  const ::std::vector<SegmentType> &plan_segment_type() const {
+  const std::vector<fb::SegmentConstraint> &plan_segment_type() const {
     return plan_segment_type_;
-  }
-
-  // Returns K1 and K2.
-  // K2 * d^x/dt^2 + K1 (dx/dt)^2 = A * K2 * dx/dt + B * U
-  const ::Eigen::Matrix<double, 2, 1> K1(double current_ddtheta) const {
-    return (::Eigen::Matrix<double, 2, 1>()
-                << -robot_radius_l_ * current_ddtheta,
-            robot_radius_r_ * current_ddtheta)
-        .finished();
-  }
-
-  const ::Eigen::Matrix<double, 2, 1> K2(double current_dtheta) const {
-    return (::Eigen::Matrix<double, 2, 1>()
-                << 1.0 - robot_radius_l_ * current_dtheta,
-            1.0 + robot_radius_r_ * current_dtheta)
-        .finished();
   }
 
   // The controller represented by these functions uses a discrete-time,
@@ -278,60 +340,31 @@ class Trajectory {
   // phase, and is a relatively expensive operation.
   void CalculatePathGains();
 
-  // Retrieves the gain matrix K for a given distance along the path.
-  Eigen::Matrix<double, 2, 5> GainForDistance(double distance);
+  flatbuffers::Offset<fb::Trajectory> Serialize(
+      flatbuffers::FlatBufferBuilder *fbb) const;
+
+  const std::vector<double> plan() const { return plan_; }
+
+  const DistanceSpline &spline() const override { return spline_; }
 
  private:
-  // Computes alpha for a distance.
-  size_t DistanceToSegment(double distance) const {
-    return ::std::max(
-        static_cast<size_t>(0),
-        ::std::min(plan_segment_type_.size() - 1,
-                   static_cast<size_t>(::std::floor(distance / length() *
-                                                    (plan_.size() - 1)))));
+
+  float plan_velocity(size_t index) const override {
+    return plan_[index];
+  }
+  size_t distance_plan_size() const override { return plan_.size(); }
+
+  fb::SegmentConstraint plan_constraint(size_t index) const override {
+    return plan_segment_type_[index];
   }
 
-  // Computes K3, K4, and K5 for the provided distance.
-  // K5 a + K3 v^2 + K4 v = U
-  void K345(const double x, ::Eigen::Matrix<double, 2, 1> *K3,
-            ::Eigen::Matrix<double, 2, 1> *K4,
-            ::Eigen::Matrix<double, 2, 1> *K5) {
-    const double current_ddtheta = spline_->DDTheta(x);
-    const double current_dtheta = spline_->DTheta(x);
-    // We've now got the equation:
-    //     K2 * d^x/dt^2 + K1 (dx/dt)^2 = A * K2 * dx/dt + B * U
-    const ::Eigen::Matrix<double, 2, 1> my_K2 = K2(current_dtheta);
-
-    const ::Eigen::Matrix<double, 2, 2> B_inverse =
-        velocity_drivetrain_->plant().coefficients().B_continuous.inverse();
-
-    // Now, rephrase it as K5 a + K3 v^2 + K4 v = U
-    *K3 = B_inverse * K1(current_ddtheta);
-    *K4 = -B_inverse *
-          velocity_drivetrain_->plant().coefficients().A_continuous * my_K2;
-    *K5 = B_inverse * my_K2;
-  }
+  const int spline_idx_;
 
   // The spline we are planning for.
-  const DistanceSpline *spline_;
-  // The drivetrain we are controlling.
-  ::std::unique_ptr<
-      StateFeedbackLoop<2, 2, 2, double, StateFeedbackHybridPlant<2, 2, 2>,
-                        HybridKalman<2, 2, 2>>>
-      velocity_drivetrain_;
+  const DistanceSpline spline_;
 
   const DrivetrainConfig<double> config_;
 
-  // Robot radiuses.
-  const double robot_radius_l_;
-  const double robot_radius_r_;
-  // Acceleration limits.
-  double longitudinal_acceleration_;
-  double lateral_acceleration_;
-  // Transformation matrix from left, right to linear, angular
-  const ::Eigen::Matrix<double, 2, 2> Tlr_to_la_;
-  // Transformation matrix from linear, angular to left, right
-  const ::Eigen::Matrix<double, 2, 2> Tla_to_lr_;
   // Velocities in the plan (distance for each index is defined by Distance())
   std::vector<double> plan_;
   // Gain matrices to use for the path-relative state error at each stage in the
@@ -339,24 +372,24 @@ class Trajectory {
   // config_.dt in time.
   // The first value in the pair is the distance along the path corresponding to
   // the gain matrix; the second value is the gain itself.
-  std::vector<std::pair<double, Eigen::Matrix<double, 2, 5>>> plan_gains_;
-  std::vector<SegmentType> plan_segment_type_;
-  // Plan voltage limit.
-  double voltage_limit_ = 12.0;
+  std::vector<std::pair<double, Eigen::Matrix<float, 2, 5>>> plan_gains_;
+  std::vector<fb::SegmentConstraint> plan_segment_type_;
+
+  bool drive_spline_backwards_ = false;
 };
 
 // Returns the continuous time dynamics given the [x, y, theta, vl, vr] state
 // and the [vl, vr] input voltage.
-inline ::Eigen::Matrix<double, 5, 1> ContinuousDynamics(
+inline Eigen::Matrix<double, 5, 1> ContinuousDynamics(
     const StateFeedbackHybridPlant<2, 2, 2> &velocity_drivetrain,
-    const ::Eigen::Matrix<double, 2, 2> &Tlr_to_la,
-    const ::Eigen::Matrix<double, 5, 1> X,
-    const ::Eigen::Matrix<double, 2, 1> U) {
+    const Eigen::Matrix<double, 2, 2> &Tlr_to_la,
+    const Eigen::Matrix<double, 5, 1> X,
+    const Eigen::Matrix<double, 2, 1> U) {
   const auto &velocity = X.block<2, 1>(3, 0);
   const double theta = X(2);
-  ::Eigen::Matrix<double, 2, 1> la = Tlr_to_la * velocity;
-  return (::Eigen::Matrix<double, 5, 1>() << ::std::cos(theta) * la(0),
-          ::std::sin(theta) * la(0), la(1),
+  Eigen::Matrix<double, 2, 1> la = Tlr_to_la * velocity;
+  return (Eigen::Matrix<double, 5, 1>() << std::cos(theta) * la(0),
+          std::sin(theta) * la(0), la(1),
           (velocity_drivetrain.coefficients().A_continuous * velocity +
            velocity_drivetrain.coefficients().B_continuous * U))
       .finished();

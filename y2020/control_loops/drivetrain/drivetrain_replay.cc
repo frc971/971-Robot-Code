@@ -12,6 +12,7 @@
 #include "aos/json_to_flatbuffer.h"
 #include "aos/network/team_number.h"
 #include "frc971/control_loops/drivetrain/drivetrain.h"
+#include "frc971/control_loops/drivetrain/trajectory_generator.h"
 #include "gflags/gflags.h"
 #include "y2020/control_loops/drivetrain/drivetrain_base.h"
 #include "y2020/control_loops/drivetrain/localizer.h"
@@ -96,6 +97,14 @@ int main(int argc, char **argv) {
   if (aos::configuration::MultiNode(reader.configuration())) {
     node = aos::configuration::GetNode(reader.configuration(), "roborio");
   }
+
+  std::unique_ptr<aos::EventLoop> trajectory_generator_event_loop =
+      reader.event_loop_factory()->MakeEventLoop("trajectory_generator", node);
+  trajectory_generator_event_loop->SkipTimingReport();
+
+  frc971::control_loops::drivetrain::TrajectoryGenerator trajectory_generator(
+      trajectory_generator_event_loop.get(),
+      y2020::control_loops::drivetrain::GetDrivetrainConfig());
 
   std::unique_ptr<aos::EventLoop> drivetrain_event_loop =
       reader.event_loop_factory()->MakeEventLoop("drivetrain", node);

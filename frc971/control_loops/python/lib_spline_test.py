@@ -23,7 +23,7 @@ class TestDistanceSpline(unittest.TestCase):
                            [2.0, 3.0, 4.0, 5.0, 6.0, 7.0]])
         spline = Spline(points)
         dSpline = DistanceSpline([spline])
-        assert_almost_equal(dSpline.Length(), 5 * math.sqrt(2))
+        assert_almost_equal(dSpline.Length(), 5 * math.sqrt(2), decimal=5)
 
 
 class TestTrajectory(unittest.TestCase):
@@ -35,7 +35,7 @@ class TestTrajectory(unittest.TestCase):
         trajectory = Trajectory(dSpline)
         trajectory.Plan()
         plan = trajectory.GetPlanXVA(5.05 * 1e-3)
-        self.assertEqual(plan.shape, (3, 624))
+        self.assertEqual(plan.shape, (3, 745))
 
     def testLimits(self):
         """ A plan with a lower limit should take longer. """
@@ -47,7 +47,7 @@ class TestTrajectory(unittest.TestCase):
         trajectory.LimitVelocity(0, trajectory.Length(), 3)
         trajectory.Plan()
         plan = trajectory.GetPlanXVA(5.05 * 1e-3)
-        self.assertEqual(plan.shape, (3, 656))
+        self.assertEqual(plan.shape, (3, 753))
 
 
 if __name__ == '__main__':

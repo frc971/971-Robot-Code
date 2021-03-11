@@ -6,10 +6,10 @@ namespace y2019 {
 namespace actors {
 
 void MaybeFlipSpline(
-    aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder,
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder,
     flatbuffers::Offset<flatbuffers::Vector<float>> spline_y_offset,
     bool is_left) {
-
   flatbuffers::Vector<float> *spline_y =
       GetMutableTemporaryPointer(*builder->fbb(), spline_y_offset);
 
@@ -22,7 +22,8 @@ void MaybeFlipSpline(
 
 // Path off of level 2 to the far side of the rocket with a panel
 flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::HABToFarRocket(
-    aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder,
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder,
     bool is_left) {
   flatbuffers::Offset<frc971::Constraint> longitudinal_constraint_offset;
   flatbuffers::Offset<frc971::Constraint> lateral_constraint_offset;
@@ -97,7 +98,8 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::HABToFarRocket(
 
 // Path from the far side of the rocket to the loading station to pickup
 flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::FarRocketToHP(
-    aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder,
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder,
     bool is_left) {
   flatbuffers::Offset<frc971::Constraint> longitudinal_constraint_offset;
   flatbuffers::Offset<frc971::Constraint> lateral_constraint_offset;
@@ -170,7 +172,8 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::FarRocketToHP(
 
 // Path from the human player station to the far side of the rocket with a panel
 flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::HPToFarRocket(
-    aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder,
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder,
     bool is_left) {
   flatbuffers::Offset<frc971::Constraint> longitudinal_constraint_offset;
   flatbuffers::Offset<frc971::Constraint> lateral_constraint_offset;
@@ -245,7 +248,8 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::HPToFarRocket(
 
 // Path from the far side of the rocket to close to the loading station
 flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::FarRocketToNearHP(
-    aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder,
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder,
     bool is_left) {
   // TODO(theo): Add some real constraints.
   flatbuffers::Offset<flatbuffers::Vector<float>> spline_x_offset =
@@ -269,8 +273,10 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::FarRocketToNearHP(
 }
 
 // Path from level 2 to 2nd cargo ship bay with a hatch panel
-flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::HABToSecondCargoShipBay(
-    aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder,
+flatbuffers::Offset<frc971::MultiSpline>
+AutonomousSplines::HABToSecondCargoShipBay(
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder,
     bool is_left) {
   flatbuffers::Offset<frc971::Constraint> longitudinal_constraint_offset;
   flatbuffers::Offset<frc971::Constraint> voltage_constraint_offset;
@@ -335,8 +341,10 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::HABToSecondCargoShip
 }
 
 // Path from 2nd cargo ship bay to loading station
-flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::SecondCargoShipBayToHP(
-    aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder,
+flatbuffers::Offset<frc971::MultiSpline>
+AutonomousSplines::SecondCargoShipBayToHP(
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder,
     bool is_left) {
   flatbuffers::Offset<frc971::Constraint> voltage_constraint_offset;
   flatbuffers::Offset<frc971::Constraint> velocity_constraint_offset;
@@ -390,8 +398,10 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::SecondCargoShipBayTo
 }
 
 // Path from loading station to 3rd cargo ship bay with a hatch panel
-flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::HPToThirdCargoShipBay(
-    aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder,
+flatbuffers::Offset<frc971::MultiSpline>
+AutonomousSplines::HPToThirdCargoShipBay(
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder,
     bool is_left) {
   flatbuffers::Offset<frc971::Constraint> voltage_constraint_offset;
   flatbuffers::Offset<frc971::Constraint> velocity_constraint_offset;
@@ -456,8 +466,10 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::HPToThirdCargoShipBa
 }
 
 // Path from 3rd cargo ship bay to near the loading station
-flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::ThirdCargoShipBayToNearHP(
-    aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder,
+flatbuffers::Offset<frc971::MultiSpline>
+AutonomousSplines::ThirdCargoShipBayToNearHP(
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder,
     bool is_left) {
   flatbuffers::Offset<frc971::Constraint> velocity_constraint_offset;
 
@@ -500,7 +512,8 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::ThirdCargoShipBayToN
 }
 
 flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::HabToFarRocketTest(
-    aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder,
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder,
     bool is_left) {
   flatbuffers::Offset<frc971::Constraint> longitudinal_constraint_offset;
   flatbuffers::Offset<frc971::Constraint> lateral_constraint_offset;
@@ -574,7 +587,8 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::HabToFarRocketTest(
 }
 
 flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::FarRocketToHPTest(
-    aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder) {
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder) {
   flatbuffers::Offset<frc971::Constraint> longitudinal_constraint_offset;
   flatbuffers::Offset<frc971::Constraint> lateral_constraint_offset;
   flatbuffers::Offset<frc971::Constraint> voltage_constraint_offset;
@@ -642,7 +656,8 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::FarRocketToHPTest(
 }
 
 flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::HPToNearRocketTest(
-    aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder) {
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder) {
   flatbuffers::Offset<frc971::Constraint> longitudinal_constraint_offset;
   flatbuffers::Offset<frc971::Constraint> lateral_constraint_offset;
   flatbuffers::Offset<frc971::Constraint> voltage_constraint_offset;
@@ -710,7 +725,8 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::HPToNearRocketTest(
 }
 
 flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::BasicSSpline(
-    aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder) {
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder) {
   flatbuffers::Offset<frc971::Constraint> longitudinal_constraint_offset;
   flatbuffers::Offset<frc971::Constraint> lateral_constraint_offset;
   flatbuffers::Offset<frc971::Constraint> voltage_constraint_offset;
@@ -772,7 +788,8 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::BasicSSpline(
 }
 
 flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::StraightLine(
-    aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder) {
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder) {
   flatbuffers::Offset<flatbuffers::Vector<float>> spline_x_offset =
       builder->fbb()->CreateVector<float>(
           {-12.3, -11.9, -11.5, -11.1, -10.6, -10.0});

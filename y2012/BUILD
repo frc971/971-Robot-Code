@@ -16,6 +16,7 @@ cc_binary(
         "//frc971/autonomous:auto_fbs",
         "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_goal_fbs",
+        "//frc971/control_loops/drivetrain:spline_goal_fbs",
         "//y2012/control_loops/accessories:accessories_fbs",
     ],
 )

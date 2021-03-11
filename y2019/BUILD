@@ -14,6 +14,7 @@ robot_downloader(
         ":joystick_reader",
         ":wpilib_interface",
         "//y2019/control_loops/drivetrain:drivetrain",
+        "//y2019/control_loops/drivetrain:trajectory_generator",
         "//y2019/control_loops/superstructure:superstructure",
         "//y2019/actors:binaries",
         "//y2019/vision/server",

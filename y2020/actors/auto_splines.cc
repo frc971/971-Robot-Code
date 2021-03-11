@@ -6,7 +6,8 @@ namespace y2020 {
 namespace actors {
 
 void MaybeFlipSpline(
-    aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder,
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder,
     flatbuffers::Offset<flatbuffers::Vector<float>> spline_y_offset,
     bool is_left) {
   flatbuffers::Vector<float> *spline_y =
@@ -20,7 +21,8 @@ void MaybeFlipSpline(
 }
 
 flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::BasicSSpline(
-    aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder,
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder,
     aos::Alliance alliance) {
   flatbuffers::Offset<frc971::Constraint> longitudinal_constraint_offset;
   flatbuffers::Offset<frc971::Constraint> lateral_constraint_offset;
@@ -89,7 +91,8 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::BasicSSpline(
 }
 
 flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::StraightLine(
-    aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder) {
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder) {
   flatbuffers::Offset<flatbuffers::Vector<float>> spline_x_offset =
       builder->fbb()->CreateVector<float>(
           {-12.3, -11.9, -11.5, -11.1, -10.6, -10.0});

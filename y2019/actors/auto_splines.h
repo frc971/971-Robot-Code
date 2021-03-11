@@ -20,59 +20,72 @@ class AutonomousSplines {
 
   // Path off of level 2 to the far side of the rocket with a panel
   static flatbuffers::Offset<frc971::MultiSpline> HABToFarRocket(
-      aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder,
+      aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+          *builder,
       bool is_left);
 
   // Path from the far side of the rocket to the loading station to pickup
   static flatbuffers::Offset<frc971::MultiSpline> FarRocketToHP(
-      aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder,
+      aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+          *builder,
       bool is_left);
 
   // Path from the far side of the rocket to the loading station to pickup
   static flatbuffers::Offset<frc971::MultiSpline> HPToFarRocket(
-      aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder,
+      aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+          *builder,
       bool is_left);
 
   // Path from the far side of the rocket to close to the loading station
   static flatbuffers::Offset<frc971::MultiSpline> FarRocketToNearHP(
-      aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder,
+      aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+          *builder,
       bool is_left);
 
   // Splines for 2 Panels on the far reaches of the cargo ship
 
   // Path from level 2 to 2nd cargo ship bay with a hatch panel
   static flatbuffers::Offset<frc971::MultiSpline> HABToSecondCargoShipBay(
-      aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder,
+      aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+          *builder,
       bool is_left);
 
   // Path from 2nd cargo ship bay to loading station
   static flatbuffers::Offset<frc971::MultiSpline> SecondCargoShipBayToHP(
-      aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder,
+      aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+          *builder,
       bool is_left);
 
   // Path from loading station to 3rd cargo ship bay with a hatch panel
   static flatbuffers::Offset<frc971::MultiSpline> HPToThirdCargoShipBay(
-      aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder,
+      aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+          *builder,
       bool is_left);
 
   // Path from 3rd cargo ship bay to near the loading station
   static flatbuffers::Offset<frc971::MultiSpline> ThirdCargoShipBayToNearHP(
-      aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder,
+      aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+          *builder,
       bool is_left);
 
   // Testing Splines
   static flatbuffers::Offset<frc971::MultiSpline> HPToNearRocketTest(
-      aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder);
+      aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+          *builder);
   static flatbuffers::Offset<frc971::MultiSpline> HabToFarRocketTest(
-      aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder,
+      aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+          *builder,
       bool is_left);
   static flatbuffers::Offset<frc971::MultiSpline> FarRocketToHPTest(
-      aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder);
+      aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+          *builder);
 
   static flatbuffers::Offset<frc971::MultiSpline> BasicSSpline(
-      aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder);
+      aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+          *builder);
   static flatbuffers::Offset<frc971::MultiSpline> StraightLine(
-      aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder);
+      aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+          *builder);
 };
 
 }  // namespace actors

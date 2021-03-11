@@ -200,6 +200,21 @@
     },
     {
       "name": "/drivetrain",
+      "type": "frc971.control_loops.drivetrain.fb.Trajectory",
+      "source_node": "roborio",
+      "max_size": 200000,
+      "frequency": 10,
+      "read_method": "PIN",
+      "num_readers": 6
+    },
+    {
+      "name": "/drivetrain",
+      "type": "frc971.control_loops.drivetrain.SplineGoal",
+      "source_node": "roborio",
+      "frequency": 10
+    },
+    {
+      "name": "/drivetrain",
       "type": "frc971.control_loops.drivetrain.Goal",
       "source_node": "roborio",
       "frequency": 200
@@ -270,6 +285,11 @@
     {
       "name": "drivetrain",
       "executable_name": "drivetrain.stripped",
+      "nodes": ["roborio"]
+    },
+    {
+      "name": "trajectory_generator",
+      "executable_name": "trajectory_generator.stripped",
       "nodes": ["roborio"]
     },
     {

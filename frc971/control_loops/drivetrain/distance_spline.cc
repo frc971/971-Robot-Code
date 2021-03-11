@@ -2,14 +2,15 @@
 
 #include "aos/logging/logging.h"
 #include "frc971/control_loops/drivetrain/spline.h"
+#include "glog/logging.h"
 
 namespace frc971 {
 namespace control_loops {
 namespace drivetrain {
 
-::std::vector<double> DistanceSpline::BuildDistances(size_t num_alpha) {
+::std::vector<float> DistanceSpline::BuildDistances(size_t num_alpha) {
   num_alpha = num_alpha == 0 ? 100 * splines_.size() : num_alpha;
-  ::std::vector<double> distances;
+  ::std::vector<float> distances;
   distances.push_back(0.0);
 
   if (splines_.size() > 1) {
@@ -76,11 +77,81 @@ namespace drivetrain {
   return distances;
 }
 
+std::vector<Spline> FlatbufferToSplines(const MultiSpline *fb) {
+  CHECK_NOTNULL(fb);
+  const size_t spline_count = fb->spline_count();
+  CHECK_EQ(fb->spline_x()->size(), static_cast<size_t>(spline_count * 5 + 1));
+  CHECK_EQ(fb->spline_y()->size(), static_cast<size_t>(spline_count * 5 + 1));
+  std::vector<Spline> splines;
+  for (size_t ii = 0; ii < spline_count; ++ii) {
+    Eigen::Matrix<double, 2, 6> points;
+    for (int jj = 0; jj < 6; ++jj) {
+      points(0, jj) = fb->spline_x()->Get(ii * 5 + jj);
+      points(1, jj) = fb->spline_y()->Get(ii * 5 + jj);
+    }
+    splines.emplace_back(Spline(points));
+  }
+  return splines;
+}
+
 DistanceSpline::DistanceSpline(::std::vector<Spline> &&splines, int num_alpha)
     : splines_(::std::move(splines)), distances_(BuildDistances(num_alpha)) {}
 
 DistanceSpline::DistanceSpline(const Spline &spline, int num_alpha)
     : splines_({spline}), distances_(BuildDistances(num_alpha)) {}
+
+DistanceSpline::DistanceSpline(const MultiSpline *fb, int num_alpha)
+    : splines_(FlatbufferToSplines(fb)),
+      distances_(BuildDistances(num_alpha)) {}
+
+// TODO(james): Directly use the flatbuffer vector for accessing distances,
+// rather than doing this redundant copy.
+DistanceSpline::DistanceSpline(const fb::DistanceSpline &fb)
+    : splines_(FlatbufferToSplines(fb.spline())),
+      distances_(CHECK_NOTNULL(fb.distances())->begin(),
+                 fb.distances()->end()) {}
+
+flatbuffers::Offset<fb::DistanceSpline> DistanceSpline::Serialize(
+    flatbuffers::FlatBufferBuilder *fbb,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Constraint>>>
+        constraints) const {
+  if (splines_.empty()) {
+    return {};
+  }
+  const size_t num_points = splines_.size() * 5 + 1;
+  float *spline_x_vector = nullptr;
+  float *spline_y_vector = nullptr;
+  const flatbuffers::Offset<flatbuffers::Vector<float>> spline_x_offset =
+      fbb->CreateUninitializedVector(num_points, &spline_x_vector);
+  const flatbuffers::Offset<flatbuffers::Vector<float>> spline_y_offset =
+      fbb->CreateUninitializedVector(num_points, &spline_y_vector);
+  CHECK_NOTNULL(spline_x_vector);
+  CHECK_NOTNULL(spline_y_vector);
+  spline_x_vector[0] = splines_[0].control_points()(0, 0);
+  spline_y_vector[0] = splines_[0].control_points()(1, 0);
+  for (size_t spline_index = 0; spline_index < splines_.size();
+       ++spline_index) {
+    for (size_t point = 1; point < 6u; ++point) {
+      spline_x_vector[spline_index * 5 + point] =
+          splines_[spline_index].control_points()(0, point);
+      spline_y_vector[spline_index * 5 + point] =
+          splines_[spline_index].control_points()(1, point);
+    }
+  }
+  MultiSpline::Builder multi_spline_builder(*fbb);
+  multi_spline_builder.add_spline_count(splines_.size());
+  multi_spline_builder.add_spline_x(spline_x_offset);
+  multi_spline_builder.add_spline_y(spline_y_offset);
+  multi_spline_builder.add_constraints(constraints);
+  const flatbuffers::Offset<MultiSpline> multi_spline_offset =
+      multi_spline_builder.Finish();
+  const flatbuffers::Offset<flatbuffers::Vector<float>> distances_offset =
+      fbb->CreateVector(distances_);
+  fb::DistanceSpline::Builder spline_builder(*fbb);
+  spline_builder.add_spline(multi_spline_offset);
+  spline_builder.add_distances(distances_offset);
+  return spline_builder.Finish();
+}
 
 ::Eigen::Matrix<double, 2, 1> DistanceSpline::DDXY(double distance) const {
   const AlphaAndIndex a = DistanceToAlpha(distance);

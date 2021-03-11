@@ -33,6 +33,8 @@ BaseAutonomousActor::BaseAutonomousActor(
               "/drivetrain")),
       drivetrain_goal_sender_(
           event_loop->MakeSender<drivetrain::Goal>("/drivetrain")),
+      spline_goal_sender_(
+          event_loop->MakeSender<drivetrain::SplineGoal>("/drivetrain")),
       drivetrain_status_fetcher_(
           event_loop->MakeFetcher<drivetrain::Status>("/drivetrain")),
       drivetrain_goal_fetcher_(
@@ -443,8 +445,8 @@ void BaseAutonomousActor::LineFollowAtVelocity(
 
 BaseAutonomousActor::SplineHandle BaseAutonomousActor::PlanSpline(
     std::function<flatbuffers::Offset<frc971::MultiSpline>(
-        aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder)>
-        &&multispline_builder,
+        aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+            *builder)> &&multispline_builder,
     SplineDirection direction) {
   AOS_LOG(INFO, "Planning spline\n");
 
@@ -452,7 +454,7 @@ BaseAutonomousActor::SplineHandle BaseAutonomousActor::PlanSpline(
 
   drivetrain_goal_fetcher_.Fetch();
 
-  auto builder = drivetrain_goal_sender_.MakeBuilder();
+  auto builder = spline_goal_sender_.MakeBuilder();
 
   flatbuffers::Offset<frc971::MultiSpline> multispline_offset =
       multispline_builder(&builder);
@@ -464,24 +466,7 @@ BaseAutonomousActor::SplineHandle BaseAutonomousActor::PlanSpline(
                                             SplineDirection::kBackward);
   spline_builder.add_spline(multispline_offset);
 
-  flatbuffers::Offset<drivetrain::SplineGoal> spline_offset =
-      spline_builder.Finish();
-
-  drivetrain::Goal::Builder goal_builder =
-      builder.MakeBuilder<drivetrain::Goal>();
-
-  drivetrain::ControllerType controller_type =
-      drivetrain::ControllerType::SPLINE_FOLLOWER;
-  if (drivetrain_goal_fetcher_.get()) {
-    controller_type = drivetrain_goal_fetcher_->controller_type();
-    goal_builder.add_throttle(drivetrain_goal_fetcher_->throttle());
-  }
-  goal_builder.add_controller_type(controller_type);
-  goal_builder.add_spline_handle(goal_spline_handle_);
-
-  goal_builder.add_spline(spline_offset);
-
-  builder.Send(goal_builder.Finish());
+  builder.Send(spline_builder.Finish());
 
   return BaseAutonomousActor::SplineHandle(spline_handle, this);
 }
@@ -492,13 +477,18 @@ bool BaseAutonomousActor::SplineHandle::IsPlanned() {
       base_autonomous_actor_->drivetrain_status_fetcher_.get());
 
   if (base_autonomous_actor_->drivetrain_status_fetcher_.get() &&
-      ((base_autonomous_actor_->drivetrain_status_fetcher_->trajectory_logging()
-                ->planning_spline_idx() == spline_handle_ &&
-        base_autonomous_actor_->drivetrain_status_fetcher_->trajectory_logging()
-                ->planning_state() == drivetrain::PlanningState::PLANNED) ||
-       base_autonomous_actor_->drivetrain_status_fetcher_->trajectory_logging()
-               ->current_spline_idx() == spline_handle_)) {
-    return true;
+      base_autonomous_actor_->drivetrain_status_fetcher_.get()
+          ->has_trajectory_logging() &&
+      base_autonomous_actor_->drivetrain_status_fetcher_.get()
+          ->trajectory_logging()
+          ->has_available_splines()) {
+    const flatbuffers::Vector<int> *splines =
+        base_autonomous_actor_->drivetrain_status_fetcher_.get()
+            ->trajectory_logging()
+            ->available_splines();
+
+    return std::find(splines->begin(), splines->end(), spline_handle_) !=
+           splines->end();
   }
   return false;
 }
@@ -547,8 +537,7 @@ bool BaseAutonomousActor::SplineHandle::IsDone() {
              ->is_executed() &&
         base_autonomous_actor_->drivetrain_status_fetcher_->trajectory_logging()
                 ->current_spline_idx() == spline_handle_) ||
-       base_autonomous_actor_->drivetrain_status_fetcher_->trajectory_logging()
-               ->planning_spline_idx() == spline_handle_)) {
+       IsPlanned())) {
     return false;
   }
   return true;

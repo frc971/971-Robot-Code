@@ -1,4 +1,4 @@
-include "frc971/control_loops/control_loops.fbs";
+include "frc971/control_loops/drivetrain/spline_goal.fbs";
 
 namespace frc971.control_loops.drivetrain;
 
@@ -7,17 +7,6 @@ enum ControllerType : byte {
   MOTION_PROFILE,
   SPLINE_FOLLOWER,
   LINE_FOLLOWER,
-}
-
-table SplineGoal {
-  // index of the spline. Zero indicates the spline should not be computed.
-  spline_idx:int (id: 0);
-
-  // Acutal spline.
-  spline:frc971.MultiSpline (id: 1);
-
-  // Whether to follow the spline driving forwards or backwards.
-  drive_spline_backwards:bool (id: 2);
 }
 
 table Goal {
@@ -56,9 +45,11 @@ table Goal {
   // Parameters for a spline to follow. This just contains info on a spline to
   // compute. Each time this is sent, spline drivetrain will compute a new
   // spline.
-  spline:SplineGoal (id: 14);
+  // TODO(james): Is this actually how we want to manage deprecation?
+  spline:SplineGoal (id: 14, deprecated);
 
-  // Which spline to follow.
+  // Which spline to follow; if this is not populated, any running spline will
+  // be cancelled.
   spline_handle:int (id: 15);
 }
 

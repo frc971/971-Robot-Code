@@ -43,63 +43,76 @@ class AutonomousSplines {
             "splines/autonav_slalom.json")) {}
 
   static flatbuffers::Offset<frc971::MultiSpline> BasicSSpline(
-      aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder,
+      aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+          *builder,
       aos::Alliance alliance);
   static flatbuffers::Offset<frc971::MultiSpline> StraightLine(
-      aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder);
+      aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+          *builder);
 
   flatbuffers::Offset<frc971::MultiSpline> TestSpline(
-      aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder) {
+      aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+          *builder) {
     return aos::CopyFlatBuffer<frc971::MultiSpline>(test_spline_,
                                                     builder->fbb());
   }
   flatbuffers::Offset<frc971::MultiSpline> SplineRedA(
-      aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder) {
+      aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+          *builder) {
     return aos::CopyFlatBuffer<frc971::MultiSpline>(spline_red_a_,
                                                     builder->fbb());
   }
   flatbuffers::Offset<frc971::MultiSpline> SplineBlueA(
-      aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder) {
+      aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+          *builder) {
     return aos::CopyFlatBuffer<frc971::MultiSpline>(spline_blue_a_,
                                                     builder->fbb());
   }
   flatbuffers::Offset<frc971::MultiSpline> SplineRedB(
-      aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder) {
+      aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+          *builder) {
     return aos::CopyFlatBuffer<frc971::MultiSpline>(spline_red_b_,
                                                     builder->fbb());
   }
   flatbuffers::Offset<frc971::MultiSpline> SplineBlueB(
-      aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder) {
+      aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+          *builder) {
     return aos::CopyFlatBuffer<frc971::MultiSpline>(spline_blue_b_,
                                                     builder->fbb());
   }
   flatbuffers::Offset<frc971::MultiSpline> AutoNavBounce1(
-      aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder) {
+      aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+          *builder) {
     return aos::CopyFlatBuffer<frc971::MultiSpline>(autonav_bounce_1_,
                                                     builder->fbb());
   }
   flatbuffers::Offset<frc971::MultiSpline> AutoNavBounce2(
-      aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder) {
+      aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+          *builder) {
     return aos::CopyFlatBuffer<frc971::MultiSpline>(autonav_bounce_2_,
                                                     builder->fbb());
   }
   flatbuffers::Offset<frc971::MultiSpline> AutoNavBounce3(
-      aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder) {
+      aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+          *builder) {
     return aos::CopyFlatBuffer<frc971::MultiSpline>(autonav_bounce_3_,
                                                     builder->fbb());
   }
   flatbuffers::Offset<frc971::MultiSpline> AutoNavBounce4(
-      aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder) {
+      aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+          *builder) {
     return aos::CopyFlatBuffer<frc971::MultiSpline>(autonav_bounce_4_,
                                                     builder->fbb());
   }
   flatbuffers::Offset<frc971::MultiSpline> AutoNavBarrel(
-      aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder) {
+      aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+          *builder) {
     return aos::CopyFlatBuffer<frc971::MultiSpline>(autonav_barrel_,
                                                     builder->fbb());
   }
   flatbuffers::Offset<frc971::MultiSpline> AutoNavSlalom(
-      aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder) {
+      aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+          *builder) {
     return aos::CopyFlatBuffer<frc971::MultiSpline>(autonav_slalom_,
                                                     builder->fbb());
   }

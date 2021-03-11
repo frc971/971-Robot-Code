@@ -6,10 +6,20 @@ load("//tools/build_rules:select.bzl", "cpu_select")
 load("@npm_bazel_typescript//:defs.bzl", "ts_library")
 
 flatbuffer_cc_library(
+    name = "spline_goal_fbs",
+    srcs = ["spline_goal.fbs"],
+    gen_reflections = 1,
+    includes = ["//frc971/control_loops:control_loops_fbs_includes"],
+)
+
+flatbuffer_cc_library(
     name = "drivetrain_goal_fbs",
     srcs = ["drivetrain_goal.fbs"],
     gen_reflections = 1,
-    includes = ["//frc971/control_loops:control_loops_fbs_includes"],
+    includes = [
+        ":spline_goal_fbs_includes",
+        "//frc971/control_loops:control_loops_fbs_includes",
+    ],
 )
 
 flatbuffer_cc_library(
@@ -27,6 +37,13 @@ flatbuffer_cc_library(
 flatbuffer_cc_library(
     name = "drivetrain_status_fbs",
     srcs = ["drivetrain_status.fbs"],
+    gen_reflections = 1,
+    includes = ["//frc971/control_loops:control_loops_fbs_includes"],
+)
+
+flatbuffer_cc_library(
+    name = "trajectory_fbs",
+    srcs = ["trajectory.fbs"],
     gen_reflections = 1,
     includes = ["//frc971/control_loops:control_loops_fbs_includes"],
 )
@@ -70,7 +87,10 @@ flatbuffer_cc_library(
     name = "drivetrain_goal_float_fbs",
     srcs = ["drivetrain_goal_float.fbs"],
     gen_reflections = 1,
-    includes = ["//frc971/control_loops:control_loops_fbs_includes"],
+    includes = [
+        ":spline_goal_fbs_includes",
+        "//frc971/control_loops:control_loops_fbs_includes",
+    ],
 )
 
 flatbuffer_cc_library(
@@ -118,6 +138,8 @@ aos_config(
     src = "drivetrain_config.json",
     flatbuffers = [
         ":drivetrain_goal_fbs",
+        ":trajectory_fbs",
+        ":spline_goal_fbs",
         ":drivetrain_output_fbs",
         ":drivetrain_status_fbs",
         ":drivetrain_position_fbs",
@@ -220,6 +242,7 @@ cc_library(
         ":drivetrain_output_fbs",
         ":drivetrain_status_fbs",
         ":spline",
+        ":spline_goal_fbs",
         ":trajectory",
         "//aos:condition",
         "//aos:init",
@@ -243,6 +266,7 @@ cc_library(
         ":drivetrain_output_fbs",
         ":drivetrain_status_fbs",
         ":localizer",
+        ":spline_goal_fbs",
         "//aos:math",
         "//aos/util:math",
         "//frc971/control_loops:c2d",
@@ -289,6 +313,7 @@ cc_library(
         ":drivetrain_status_fbs",
         ":gear",
         ":localizer",
+        ":spline_goal_fbs",
         "//aos:math",
         "//aos/controls:control_loop",
         "//aos/controls:polytope",
@@ -322,6 +347,7 @@ cc_library(
         "//aos/controls:polytope",
         "//frc971/control_loops:coerce_goal",
         "//frc971/control_loops:control_loops_fbs",
+        ":spline_goal_fbs",
         "//frc971/control_loops:state_feedback_loop",
     ] + select({
         "@platforms//os:linux": [
@@ -396,6 +422,7 @@ cc_library(
         ":localizer",
         ":localizer_fbs",
         ":polydrivetrain",
+        ":spline_goal_fbs",
         ":splinedrivetrain",
         ":ssdrivetrain",
         "//aos/controls:control_loop",
@@ -462,6 +489,7 @@ cc_test(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":drivetrain_config",
+        ":trajectory_generator",
         ":drivetrain_lib",
         ":localizer_fbs",
         ":drivetrain_goal_fbs",
@@ -568,8 +596,11 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":spline",
+        ":trajectory_fbs",
         "//aos/logging",
+        "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops:fixed_quadrature",
+        "@com_github_google_glog//:glog",
         "@org_tuxfamily_eigen//:eigen",
     ],
 )
@@ -591,6 +622,7 @@ cc_test(
     deps = [
         ":distance_spline",
         "//aos/testing:googletest",
+        "//aos:flatbuffers",
         "//aos/testing:test_shm",
         "@com_github_gflags_gflags//:gflags",
     ] + cpu_select({
@@ -609,12 +641,28 @@ cc_library(
     deps = [
         ":distance_spline",
         ":drivetrain_config",
+        ":spline_goal_fbs",
+        ":trajectory_fbs",
         "//frc971/control_loops:c2d",
         "//frc971/control_loops:dlqr",
         "//frc971/control_loops:hybrid_state_feedback_loop",
         "//frc971/control_loops:runge_kutta",
         "//frc971/control_loops:state_feedback_loop",
         "@org_tuxfamily_eigen//:eigen",
+    ],
+)
+
+cc_library(
+    name = "trajectory_generator",
+    srcs = ["trajectory_generator.cc"],
+    hdrs = ["trajectory_generator.h"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":distance_spline",
+        ":drivetrain_config",
+        ":spline_goal_fbs",
+        ":trajectory",
+        ":trajectory_fbs",
     ],
 )
 

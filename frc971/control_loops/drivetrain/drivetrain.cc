@@ -309,6 +309,41 @@ DrivetrainLoop::DrivetrainLoop(const DrivetrainConfig<double> &dt_config,
       dt_spline_(dt_config_),
       dt_line_follow_(dt_config_, localizer->target_selector()) {
   event_loop->SetRuntimeRealtimePriority(30);
+  for (size_t ii = 0; ii < trajectory_fetchers_.size(); ++ii) {
+    trajectory_fetchers_[ii].fetcher =
+        event_loop->MakeFetcher<fb::Trajectory>("/drivetrain");
+  }
+}
+
+void DrivetrainLoop::UpdateTrajectoryFetchers() {
+  for (auto &fetcher : trajectory_fetchers_) {
+    const fb::Trajectory *trajectory = fetcher.fetcher.get();
+    // If the current fetcher is already being used by the SplineDrivetrain,
+    // don't touch it.
+    // We have to check both in_use and HasTrajectory because if
+    // in_use is true and HasTrajectory() is false, that implies that the
+    // SplineDrivetrain has finished executing the trajectory and disposed of
+    // it; if in_use is false and HasTrajectory() is true, that implies that
+    // this fetcher is at the same point in the queue as another fetcher, and
+    // that the other fetcher is the one that we are using to keep the message
+    // pinned.
+    // TODO(james): Consider garbage-collecting splines once we run out of
+    // fetchers.
+    if (fetcher.in_use && dt_spline_.HasTrajectory(trajectory)) {
+      continue;
+    }
+    fetcher.in_use = false;
+    // Go through and find the next Trajectory that isn't already held by the
+    // SplineDrivetrain, and add it.
+    while (fetcher.fetcher.FetchNext()) {
+      trajectory = fetcher.fetcher.get();
+      if (!dt_spline_.HasTrajectory(trajectory)) {
+        fetcher.in_use = true;
+        dt_spline_.AddTrajectory(trajectory);
+        break;
+      }
+    }
+  }
 }
 
 void DrivetrainLoop::RunIteration(
@@ -325,6 +360,8 @@ void DrivetrainLoop::RunIteration(
   if (WasReset()) {
     filters_.Reset(monotonic_now, position);
   }
+
+  UpdateTrajectoryFetchers();
 
   filters_.Correct(monotonic_now, position);
 

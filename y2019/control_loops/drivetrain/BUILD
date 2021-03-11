@@ -74,6 +74,21 @@ cc_library(
 )
 
 cc_binary(
+    name = "trajectory_generator",
+    srcs = [
+        "trajectory_generator_main.cc",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":drivetrain_base",
+        "//aos:init",
+        "//aos/events:shm_event_loop",
+        "//frc971/control_loops/drivetrain:trajectory_generator",
+    ],
+)
+
+cc_binary(
     name = "drivetrain",
     srcs = [
         "drivetrain_main.cc",

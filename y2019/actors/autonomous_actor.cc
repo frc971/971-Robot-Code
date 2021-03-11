@@ -144,11 +144,12 @@ const ElevatorWristPosition kPanelCargoBackwardPos{0.0, -M_PI / 2.0};
 
 template <typename Functor>
 std::function<flatbuffers::Offset<frc971::MultiSpline>(
-    aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder)>
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder)>
 BindIsLeft(Functor f, bool is_left) {
-  return
-      [is_left, f](aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder
-                       *builder) { return f(builder, is_left); };
+  return [is_left,
+          f](aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+                 *builder) { return f(builder, is_left); };
 }
 
 bool AutonomousActor::RunAction(

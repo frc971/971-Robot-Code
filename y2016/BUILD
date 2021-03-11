@@ -40,6 +40,7 @@ cc_binary(
         "//frc971/autonomous:auto_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_goal_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
+        "//frc971/control_loops/drivetrain:spline_goal_fbs",
         "//frc971/queues:gyro_fbs",
         "//y2016/actors:autonomous_action_lib",
         "//y2016/actors:superstructure_action_lib",

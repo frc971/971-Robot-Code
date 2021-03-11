@@ -12,7 +12,7 @@ robot_downloader(
         ":config",
     ],
     dirs = [
-      "//y2020/actors:splines"
+        "//y2020/actors:splines",
     ],
     start_binaries = [
         "//aos/events/logging:logger_main",
@@ -22,6 +22,7 @@ robot_downloader(
         "//aos/network:message_bridge_server",
         "//y2020/actors:binaries",
         "//y2020/control_loops/drivetrain:drivetrain",
+        "//y2020/control_loops/drivetrain:trajectory_generator",
         "//y2020/control_loops/superstructure:superstructure",
     ],
     target_compatible_with = ["@platforms//os:linux"],

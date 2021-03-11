@@ -63,18 +63,22 @@ class ParameterizedSplineTest
  public:
   ::aos::testing::TestSharedMemory shm_;
 
-  ::std::unique_ptr<DistanceSpline> distance_spline_;
+  const DistanceSpline *distance_spline_;
   ::std::unique_ptr<Trajectory> trajectory_;
+  std::unique_ptr<aos::FlatbufferDetachedBuffer<fb::Trajectory>>
+      trajectory_buffer_;
+  ::std::unique_ptr<FinishedTrajectory> finished_trajectory_;
   ::std::vector<::Eigen::Matrix<double, 3, 1>> length_plan_xva_;
 
   ParameterizedSplineTest() : dt_config_(GetTestDrivetrainConfig()) {}
 
   void SetUp() {
-    distance_spline_ = ::std::unique_ptr<DistanceSpline>(
-        new DistanceSpline(Spline(GetParam().control_points)));
+    const int spline_index = 12345;
     // Run lots of steps to make the feedforwards terms more accurate.
     trajectory_ = ::std::unique_ptr<Trajectory>(new Trajectory(
-        distance_spline_.get(), dt_config_, GetParam().velocity_limit));
+        DistanceSpline(GetParam().control_points), dt_config_,
+        /*constraints=*/nullptr, spline_index, GetParam().velocity_limit));
+    distance_spline_ = &trajectory_->spline();
     trajectory_->set_lateral_acceleration(GetParam().lateral_acceleration);
     trajectory_->set_longitudinal_acceleration(
         GetParam().longitudinal_acceleration);
@@ -98,6 +102,18 @@ class ParameterizedSplineTest
     trajectory_->CalculatePathGains();
 
     length_plan_xva_ = trajectory_->PlanXVA(dt_config_.dt);
+
+    flatbuffers::FlatBufferBuilder fbb;
+
+    fbb.Finish(trajectory_->Serialize(&fbb));
+
+    trajectory_buffer_ = std::make_unique<aos::FlatbufferDetachedBuffer<
+        frc971::control_loops::drivetrain::fb::Trajectory>>(fbb.Release());
+
+    EXPECT_EQ(spline_index, trajectory_buffer_->message().handle());
+
+    finished_trajectory_ = std::make_unique<FinishedTrajectory>(
+        dt_config_, &trajectory_buffer_->message());
   }
 
   void TearDown() {
@@ -118,7 +134,7 @@ class ParameterizedSplineTest
 
       ::std::vector<double> plan_segment_center_distance;
       ::std::vector<double> plan_type;
-      for (Trajectory::SegmentType segment_type :
+      for (fb::SegmentConstraint segment_type :
            trajectory_->plan_segment_type()) {
         plan_type.push_back(static_cast<int>(segment_type));
       }
@@ -351,12 +367,13 @@ TEST_P(ParameterizedSplineTest, FrictionLimitCheck) {
 // to the right point.
 TEST_P(ParameterizedSplineTest, FFSpline) {
   ::Eigen::Matrix<double, 5, 1> state = ::Eigen::Matrix<double, 5, 1>::Zero();
-  state = trajectory_->GoalState(0.0, 0.0);
+  state = finished_trajectory_->GoalState(0.0, 0.0);
 
   for (size_t i = 0; i < length_plan_xva_.size(); ++i) {
     const double distance = length_plan_xva_[i](0);
 
-    const ::Eigen::Matrix<double, 2, 1> U_ff = trajectory_->FFVoltage(distance);
+    const ::Eigen::Matrix<double, 2, 1> U_ff =
+        finished_trajectory_->FFVoltage(distance);
     const ::Eigen::Matrix<double, 2, 1> U = U_ff;
 
     length_plan_vl_.push_back(U(0));
@@ -365,48 +382,15 @@ TEST_P(ParameterizedSplineTest, FFSpline) {
         [this](const ::Eigen::Matrix<double, 5, 1> &X,
                const ::Eigen::Matrix<double, 2, 1> &U) {
           return ContinuousDynamics(trajectory_->velocity_drivetrain().plant(),
-                                    trajectory_->Tlr_to_la(), X, U);
+                                    dt_config_.Tlr_to_la(), X, U);
         },
         state, U, ::aos::time::DurationInSeconds(dt_config_.dt));
   }
 
-  EXPECT_LT((state - trajectory_->GoalState(trajectory_->length(), 0.0)).norm(),
+  EXPECT_LT((state - finished_trajectory_->GoalState(
+                         finished_trajectory_->length(), 0.0))
+                .norm(),
             4e-2);
-}
-
-// Tests that following a spline with both feed forwards and feed back gets
-// pretty darn close to the right point.
-TEST_P(ParameterizedSplineTest, FBSpline) {
-  ::Eigen::Matrix<double, 5, 1> state = ::Eigen::Matrix<double, 5, 1>::Zero();
-
-  for (size_t i = 0; i < length_plan_xva_.size(); ++i) {
-    const double distance = length_plan_xva_[i](0);
-    const double velocity = length_plan_xva_[i](1);
-    const ::Eigen::Matrix<double, 5, 1> goal_state =
-        trajectory_->GoalState(distance, velocity);
-
-    const ::Eigen::Matrix<double, 5, 1> state_error = goal_state - state;
-
-    const ::Eigen::Matrix<double, 2, 5> K =
-        trajectory_->KForState(state, dt_config_.dt, Q, R);
-
-    const ::Eigen::Matrix<double, 2, 1> U_ff = trajectory_->FFVoltage(distance);
-    const ::Eigen::Matrix<double, 2, 1> U_fb = K * state_error;
-    const ::Eigen::Matrix<double, 2, 1> U = U_ff + U_fb;
-
-    length_plan_vl_.push_back(U(0));
-    length_plan_vr_.push_back(U(1));
-    state = RungeKuttaU(
-        [this](const ::Eigen::Matrix<double, 5, 1> &X,
-               const ::Eigen::Matrix<double, 2, 1> &U) {
-          return ContinuousDynamics(trajectory_->velocity_drivetrain().plant(),
-                                    trajectory_->Tlr_to_la(), X, U);
-        },
-        state, U, ::aos::time::DurationInSeconds(dt_config_.dt));
-  }
-
-  EXPECT_LT((state - trajectory_->GoalState(trajectory_->length(), 0.0)).norm(),
-            2e-2);
 }
 
 // Tests that Iteratively computing the XVA plan is the same as precomputing it.
@@ -417,7 +401,7 @@ TEST_P(ParameterizedSplineTest, IterativeXVA) {
   ::Eigen::Matrix<double, 2, 1> state = ::Eigen::Matrix<double, 2, 1>::Zero();
   for (size_t i = 1; i < length_plan_xva_.size(); ++i) {
     ::Eigen::Matrix<double, 3, 1> xva =
-        trajectory_->GetNextXVA(dt_config_.dt, &state);
+        finished_trajectory_->GetNextXVA(dt_config_.dt, &state);
     EXPECT_LT((length_plan_xva_[i] - xva).norm(), 1e-2);
   }
 }
@@ -455,20 +439,22 @@ TEST_P(ParameterizedSplineTest, PathRelativeMathTest) {
       continue;
     }
 
-    const Eigen::Matrix<double, 2, 1> U_ff = trajectory_->FFVoltage(distance);
+    const Eigen::Matrix<double, 2, 1> U_ff =
+        finished_trajectory_->FFVoltage(distance);
     const Eigen::Matrix<double, 2, 1> U = U_ff;
 
     absolute_state = RungeKuttaU(
         [this](const Eigen::Matrix<double, 5, 1> &X,
                const Eigen::Matrix<double, 2, 1> &U) {
-          return ContinuousDynamics(trajectory_->velocity_drivetrain().plant(),
-                                    trajectory_->Tlr_to_la(), X, U);
+          return ContinuousDynamics(finished_trajectory_->velocity_drivetrain().plant(),
+                                    dt_config_.Tlr_to_la(), X, U);
         },
         absolute_state, U, aos::time::DurationInSeconds(dt_config_.dt));
     const Eigen::Matrix<double, 5, 1> goal_absolute_state =
-        trajectory_->GoalState(distance, velocity);
+        finished_trajectory_->GoalState(distance, velocity);
     const Eigen::Matrix<double, 5, 1> goal_relative_state =
-        trajectory_->StateToPathRelativeState(distance, goal_absolute_state);
+        finished_trajectory_->StateToPathRelativeState(distance,
+                                                       goal_absolute_state);
     ASSERT_EQ(distance, goal_relative_state(0));
     ASSERT_EQ(0.0, goal_relative_state(1));
     ASSERT_NEAR(goal_absolute_state(2), goal_relative_state(2), 1e-2);
@@ -497,15 +483,18 @@ TEST_P(ParameterizedSplineTest, PathRelativeMathTest) {
     const double velocity = length_plan_xva_[i](1);
 
     const Eigen::Matrix<double, 5, 1> goal_absolute_state =
-        trajectory_->GoalState(distance, velocity);
+        finished_trajectory_->GoalState(distance, velocity);
     const Eigen::Matrix<double, 5, 1> goal_relative_state =
-        trajectory_->StateToPathRelativeState(distance, goal_absolute_state);
+        finished_trajectory_->StateToPathRelativeState(distance,
+                                                       goal_absolute_state);
     const Eigen::Matrix<double, 5, 1> current_relative_state =
-        trajectory_->StateToPathRelativeState(distance, absolute_state);
+        finished_trajectory_->StateToPathRelativeState(distance,
+                                                       absolute_state);
 
-    const Eigen::Matrix<double, 2, 1> U_ff = trajectory_->FFVoltage(distance);
+    const Eigen::Matrix<double, 2, 1> U_ff =
+        finished_trajectory_->FFVoltage(distance);
     Eigen::Matrix<double, 2, 1> U_fb =
-        trajectory_->GainForDistance(distance) *
+        finished_trajectory_->GainForDistance(distance) *
         (goal_relative_state - current_relative_state);
     if (i == 0) {
       initial_error = (goal_relative_state - current_relative_state).norm();
@@ -516,15 +505,15 @@ TEST_P(ParameterizedSplineTest, PathRelativeMathTest) {
         [this](const Eigen::Matrix<double, 5, 1> &X,
                const Eigen::Matrix<double, 2, 1> &U) {
           return ContinuousDynamics(trajectory_->velocity_drivetrain().plant(),
-                                    trajectory_->Tlr_to_la(), X, U);
+                                    dt_config_.Tlr_to_la(), X, U);
         },
         absolute_state, U, aos::time::DurationInSeconds(dt_config_.dt));
   }
 
-  EXPECT_LT(
-      (absolute_state - trajectory_->GoalState(trajectory_->length(), 0.0))
-          .norm(),
-      4e-2 + initial_error * 0.5);
+  EXPECT_LT((absolute_state - finished_trajectory_->GoalState(
+                                  finished_trajectory_->length(), 0.0))
+                .norm(),
+            4e-2 + initial_error * 0.5);
 }
 
 SplineTestParams MakeSplineTestParams(struct SplineTestParams params) {

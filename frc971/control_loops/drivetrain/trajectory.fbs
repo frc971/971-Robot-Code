@@ -1,0 +1,44 @@
+include "frc971/control_loops/control_loops.fbs";
+
+namespace frc971.control_loops.drivetrain.fb;
+
+enum SegmentConstraint : byte {
+  VELOCITY_LIMITED,
+  CURVATURE_LIMITED,
+  ACCELERATION_LIMITED,
+  DECELERATION_LIMITED,
+  VOLTAGE_LIMITED,
+}
+
+table PlanPoint {
+  // Distance along the path of this point.
+  distance: float (id: 0);
+  velocity: float (id: 1);
+  segment_constraint: SegmentConstraint (id: 2);
+}
+
+table GainPoint {
+  distance: float (id: 0);
+  // Column-major matrix (should be 2 rows x 5 columns).
+  gains: [float] (id: 1);
+}
+
+table DistanceSpline {
+  spline:frc971.MultiSpline (id: 0);
+  distances:[float] (id: 1);
+}
+
+table Trajectory {
+  // Unique ID of the trajectory, same as that defined in the SplineGoal.
+  handle:int (id: 0);
+  // Spline plan, indexed on distance.
+  distance_based_plan : [PlanPoint] (id : 1);
+  // Gains, indexed on time.
+  gains: [GainPoint] (id: 2);
+  spline:DistanceSpline (id: 3);
+
+  // Whether to follow the spline driving forwards or backwards.
+  drive_spline_backwards:bool (id: 4);
+}
+
+root_type Trajectory;

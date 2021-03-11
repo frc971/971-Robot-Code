@@ -121,6 +121,7 @@ cc_library(
         "//aos/util:trapezoid_profile",
         "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_goal_fbs",
+        "//frc971/control_loops/drivetrain:spline_goal_fbs",
         "//y2016:constants",
         "//y2016/control_loops/drivetrain:drivetrain_base",
         "//y2016/vision:vision_fbs",

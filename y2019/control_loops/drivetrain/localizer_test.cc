@@ -142,10 +142,8 @@ class ParameterizedLocalizerTest
   }
 
   void SetUp() {
-    flatbuffers::DetachedBuffer goal_buffer;
     {
       flatbuffers::FlatBufferBuilder fbb;
-
       flatbuffers::Offset<flatbuffers::Vector<float>> spline_x_offset =
           fbb.CreateVector<float>(GetParam().control_pts_x.begin(),
                                   GetParam().control_pts_x.size());
@@ -169,12 +167,31 @@ class ParameterizedLocalizerTest
       spline_builder.add_spline_idx(1);
       spline_builder.add_spline(multispline_offset);
 
-      flatbuffers::Offset<frc971::control_loops::drivetrain::SplineGoal>
-          spline_offset = spline_builder.Finish();
+      fbb.Finish(spline_builder.Finish());
+      aos::FlatbufferDetachedBuffer<
+          frc971::control_loops::drivetrain::SplineGoal>
+          spline_goal_buffer(fbb.Release());
+
+      frc971::control_loops::drivetrain::Trajectory trajectory(
+          spline_goal_buffer.message(), dt_config_);
+      trajectory.Plan();
+
+      flatbuffers::FlatBufferBuilder traj_fbb;
+
+      traj_fbb.Finish(trajectory.Serialize(&traj_fbb));
+
+      trajectory_ = std::make_unique<aos::FlatbufferDetachedBuffer<
+          frc971::control_loops::drivetrain::fb::Trajectory>>(
+          traj_fbb.Release());
+      spline_drivetrain_.AddTrajectory(&trajectory_->message());
+    }
+
+    flatbuffers::DetachedBuffer goal_buffer;
+    {
+      flatbuffers::FlatBufferBuilder fbb;
 
       frc971::control_loops::drivetrain::Goal::Builder goal_builder(fbb);
 
-      goal_builder.add_spline(spline_offset);
       goal_builder.add_controller_type(
           frc971::control_loops::drivetrain::ControllerType::SPLINE_FOLLOWER);
       goal_builder.add_spline_handle(1);
@@ -186,33 +203,6 @@ class ParameterizedLocalizerTest
     aos::FlatbufferDetachedBuffer<frc971::control_loops::drivetrain::Goal> goal(
         std::move(goal_buffer));
 
-    // Let the spline drivetrain compute the spline.
-    while (true) {
-      // We need to keep sending the goal.  There are conditions when the
-      // trajectory lock isn't grabbed the first time, and we want to keep
-      // banging on it to keep trying.  Otherwise we deadlock.
-      spline_drivetrain_.SetGoal(&goal.message());
-
-      ::std::this_thread::sleep_for(::std::chrono::milliseconds(5));
-
-      flatbuffers::FlatBufferBuilder fbb;
-
-      flatbuffers::Offset<frc971::control_loops::drivetrain::TrajectoryLogging>
-          trajectory_logging_offset =
-              spline_drivetrain_.MakeTrajectoryLogging(&fbb);
-
-      ::frc971::control_loops::drivetrain::Status::Builder status_builder(fbb);
-      status_builder.add_trajectory_logging(trajectory_logging_offset);
-      spline_drivetrain_.PopulateStatus(&status_builder);
-      fbb.Finish(status_builder.Finish());
-      aos::FlatbufferDetachedBuffer<::frc971::control_loops::drivetrain::Status>
-          status(fbb.Release());
-
-      if (status.message().trajectory_logging()->planning_state() ==
-          ::frc971::control_loops::drivetrain::PlanningState::PLANNED) {
-        break;
-      }
-    }
     spline_drivetrain_.SetGoal(&goal.message());
   }
 
@@ -357,6 +347,9 @@ class ParameterizedLocalizerTest
 
   TestLocalizer localizer_;
 
+  std::unique_ptr<aos::FlatbufferDetachedBuffer<
+      frc971::control_loops::drivetrain::fb::Trajectory>>
+      trajectory_;
   ::frc971::control_loops::drivetrain::SplineDrivetrain spline_drivetrain_;
 
   // All the data we want to end up plotting.

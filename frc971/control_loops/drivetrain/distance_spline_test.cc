@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "aos/testing/test_shm.h"
+#include "aos/flatbuffers.h"
 #include "gflags/gflags.h"
 #include "gtest/gtest.h"
 #if defined(SUPPORT_PLOT)
@@ -150,6 +151,24 @@ TEST_P(ParameterizedDistanceSplineTest, ThetaIntegral) {
     matplotlibcpp::show();
   }
 #endif
+}
+
+TEST_P(ParameterizedDistanceSplineTest, Serialization) {
+  flatbuffers::FlatBufferBuilder fbb;
+  fbb.Finish(distance_spline_.Serialize(&fbb, {}));
+  const aos::FlatbufferDetachedBuffer<fb::DistanceSpline> spline(fbb.Release());
+  DistanceSpline reread_spline(spline.message());
+  ASSERT_EQ(reread_spline.distances().size(),
+            distance_spline_.distances().size());
+  for (size_t ii = 0; ii < distance_spline_.distances().size(); ++ii) {
+    const float orig_distance = distance_spline_.distances()[ii];
+    const float new_distance = reread_spline.distances()[ii];
+    EXPECT_EQ(orig_distance, new_distance);
+    EXPECT_FLOAT_EQ(distance_spline_.XY(orig_distance).x(),
+                    reread_spline.XY(new_distance).x());
+    EXPECT_FLOAT_EQ(distance_spline_.XY(orig_distance).y(),
+                    reread_spline.XY(new_distance).y());
+  }
 }
 
 INSTANTIATE_TEST_CASE_P(
