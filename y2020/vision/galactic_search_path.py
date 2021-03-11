@@ -30,6 +30,11 @@ class Letter(Enum):
 
 NUM_RECTS = 4
 AOS_SEND_PATH = "bazel-bin/aos/aos_send"
+CONFIG_PATH = "bazel-bin/y2020/config.json"
+
+if os.path.isdir("/home/pi/robot_code"):
+    AOS_SEND_PATH = "/home/pi/robot_code/aos_send.stripped"
+    CONFIG_PATH = "/home/pi/robot_code/config.stripped.json"
 
 # The minimum percentage of yellow for a region of a image to
 # be considered to have a ball
@@ -101,7 +106,7 @@ def on_submit(event):
             glog.warn("More than one ball found, path is unknown" if rects_with_balls > 1 else
                       "No balls found")
         glog.info("Path is %s" % path)
-        os.system(AOS_SEND_PATH + " --config bazel-bin/y2020/config.json " +
+        os.system(AOS_SEND_PATH + " --config " + CONFIG_PATH +
                   "/pi1/camera y2020.vision.GalacticSearchPath '" + json.dumps(path) + "'")
 
         for j in range(len(pcts)):
