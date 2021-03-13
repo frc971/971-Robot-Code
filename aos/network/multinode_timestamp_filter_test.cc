@@ -481,6 +481,63 @@ TEST(InterpolatedTimeConverterTest, SingleNodeTime) {
   EXPECT_TRUE(time_converter.NextTimestamp());
 }
 
+// Tests that our Newtons method solver returns consistent answers for a simple
+// problem or two.  Also confirm that the residual error to the constraints
+// looks sane, meaning it is centered.
+TEST(TimestampProblemTest, SolveNewton) {
+  FlatbufferDetachedBuffer<Node> node_a_buffer =
+      JsonToFlatbuffer<Node>("{\"name\": \"test_a\"}");
+  const Node *const node_a = &node_a_buffer.message();
+
+  FlatbufferDetachedBuffer<Node> node_b_buffer =
+      JsonToFlatbuffer<Node>("{\"name\": \"test_b\"}");
+  const Node *const node_b = &node_b_buffer.message();
+
+  const monotonic_clock::time_point e = monotonic_clock::epoch();
+  const monotonic_clock::time_point ta = e + chrono::milliseconds(500);
+
+  // Setup a time problem with an interesting shape that isn't simple and
+  // parallel.
+  NoncausalTimestampFilter a(node_a, node_b);
+  a.Sample(e, chrono::milliseconds(1002));
+  a.Sample(e + chrono::milliseconds(1000), chrono::milliseconds(1001));
+  a.Sample(e + chrono::milliseconds(3000), chrono::milliseconds(999));
+
+  NoncausalTimestampFilter b(node_b, node_a);
+  b.Sample(e + chrono::milliseconds(1000), -chrono::milliseconds(999));
+  b.Sample(e + chrono::milliseconds(2000), -chrono::milliseconds(1000));
+  b.Sample(e + chrono::milliseconds(4000), -chrono::milliseconds(1002));
+
+  TimestampProblem problem(2);
+  problem.set_base_clock(0, ta);
+  problem.set_base_clock(1, e);
+  problem.set_solution_node(0);
+  problem.add_filter(0, &a, 1);
+  problem.add_filter(1, &b, 0);
+
+  problem.Debug();
+
+  problem.set_base_clock(0, e + chrono::seconds(1));
+  problem.set_base_clock(1, e);
+
+  problem.set_solution_node(0);
+  std::vector<monotonic_clock::time_point> result1 = problem.SolveNewton();
+
+  problem.set_base_clock(1, result1[1]);
+  problem.set_solution_node(1);
+  std::vector<monotonic_clock::time_point> result2 = problem.SolveNewton();
+
+  EXPECT_EQ(result1[0], e + chrono::seconds(1));
+  EXPECT_EQ(result1[0], result2[0]);
+  EXPECT_EQ(result1[1], result2[1]);
+
+  // Confirm that the error is almost equal for both directions.  The solution
+  // is an integer solution, so there will be a little bit of error left over.
+  EXPECT_NEAR(a.OffsetError(result1[0], 0.0, result1[1], 0.0) -
+                  b.OffsetError(result1[1], 0.0, result1[0], 0.0),
+              0.0, 0.5);
+}
+
 }  // namespace testing
 }  // namespace message_bridge
 }  // namespace aos
