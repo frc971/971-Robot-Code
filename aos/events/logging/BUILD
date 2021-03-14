@@ -384,7 +384,9 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
+        "@com_github_google_flatbuffers//:flatbuffers",
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/types:span",
     ],
 )
 

@@ -98,9 +98,9 @@ SctpClientConnection::SctpClientConnection(
     std::vector<SctpClientChannelState> *channels, int client_index,
     MessageBridgeClientStatus *client_status)
     : event_loop_(event_loop),
-      connect_message_(
-          MakeConnectMessage(event_loop->configuration(), my_node, remote_name,
-                             event_loop->boot_uuid().string_view())),
+      connect_message_(MakeConnectMessage(event_loop->configuration(), my_node,
+                                          remote_name,
+                                          event_loop->boot_uuid())),
       message_reception_reply_(MakeMessageHeaderReply()),
       remote_node_(CHECK_NOTNULL(
           configuration::GetNode(event_loop->configuration(), remote_name))),

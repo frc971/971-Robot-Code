@@ -113,8 +113,7 @@ void ChannelState::HandleDelivery(
             peer.timestamp_logger->MakeBuilder();
 
         flatbuffers::Offset<flatbuffers::String> boot_uuid_offset =
-            builder.fbb()->CreateString(
-                server_status.BootUUID(peer.node_index));
+            server_status.BootUUID(peer.node_index).PackString(builder.fbb());
 
         RemoteMessage::Builder message_header_builder =
             builder.MakeBuilder<RemoteMessage>();
@@ -279,7 +278,7 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop)
                            configuration::GetNode(event_loop->configuration(),
                                                   destination_node_name),
                            event_loop->node()->name()->string_view(),
-                           UUID::Zero().string_view())
+                           UUID::Zero())
             .span()
             .size());
     VLOG(1) << "Connection to " << destination_node_name << " has size "
@@ -405,7 +404,7 @@ void MessageBridgeServer::NodeDisconnected(sctp_assoc_t assoc_id) {
                    ->name()
                    ->string_view();
     server_status_.ResetFilter(node_index);
-    server_status_.SetBootUUID(node_index, "");
+    server_status_.ClearBootUUID(node_index);
   }
 }
 
@@ -480,7 +479,8 @@ void MessageBridgeServer::HandleData(const Message *message) {
       }
     }
     server_status_.ResetFilter(node_index);
-    server_status_.SetBootUUID(node_index, connect->boot_uuid()->string_view());
+    server_status_.SetBootUUID(
+        node_index, UUID::FromString(connect->boot_uuid()->string_view()));
     VLOG(1) << "Resetting filters for " << node_index << " "
             << event_loop_->configuration()
                    ->nodes()

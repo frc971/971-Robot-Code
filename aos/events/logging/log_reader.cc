@@ -1172,7 +1172,7 @@ bool LogReader::State::Send(const TimestampedMessage &timestamped_message) {
     flatbuffers::FlatBufferBuilder fbb;
     fbb.ForceDefaults(true);
     flatbuffers::Offset<flatbuffers::String> boot_uuid_offset =
-        fbb.CreateString(event_loop_->boot_uuid().string_view());
+        event_loop_->boot_uuid().PackString(&fbb);
 
     RemoteMessage::Builder message_header_builder(fbb);
 

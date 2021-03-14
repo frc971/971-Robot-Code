@@ -432,7 +432,7 @@ bool Logger::MaybeUpdateTimestamp(
     // There are no offsets to compute for ourself, so always succeed.
     SetStartTime(node_index, monotonic_start_time, realtime_start_time,
                  monotonic_start_time, realtime_start_time);
-    node_state_[node_index].SetBootUUID(event_loop_->boot_uuid().string_view());
+    node_state_[node_index].SetBootUUID(event_loop_->boot_uuid());
     return true;
   } else if (server_statistics_fetcher_.get() != nullptr) {
     // We must be a remote node now.  Look for the connection and see if it is
@@ -500,10 +500,10 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> Logger::MakeHeader(
 
   CHECK(log_event_uuid_ != UUID::Zero());
   const flatbuffers::Offset<flatbuffers::String> log_event_uuid_offset =
-      fbb.CreateString(log_event_uuid_.string_view());
+      log_event_uuid_.PackString(&fbb);
 
   const flatbuffers::Offset<flatbuffers::String> logger_instance_uuid_offset =
-      fbb.CreateString(logger_instance_uuid_.string_view());
+      logger_instance_uuid_.PackString(&fbb);
 
   flatbuffers::Offset<flatbuffers::String> log_start_uuid_offset;
   if (!log_start_uuid_.empty()) {
@@ -516,10 +516,10 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> Logger::MakeHeader(
   }
 
   const flatbuffers::Offset<flatbuffers::String> logger_node_boot_uuid_offset =
-      fbb.CreateString(event_loop_->boot_uuid().string_view());
+      event_loop_->boot_uuid().PackString(&fbb);
 
   const flatbuffers::Offset<flatbuffers::String> source_node_boot_uuid_offset =
-      fbb.CreateString(event_loop_->boot_uuid().string_view());
+      event_loop_->boot_uuid().PackString(&fbb);
 
   const flatbuffers::Offset<flatbuffers::String> parts_uuid_offset =
       fbb.CreateString("00000000-0000-4000-8000-000000000000");

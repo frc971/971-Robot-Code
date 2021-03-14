@@ -148,6 +148,7 @@ cc_library(
         "//aos:configuration",
         "//aos:flatbuffer_merge",
         "//aos:flatbuffers",
+        "//aos/events/logging:uuid",
         "@com_github_google_flatbuffers//:flatbuffers",
     ],
 )
