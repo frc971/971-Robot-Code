@@ -650,10 +650,9 @@ TEST_P(RemoteMessageSimulatedEventLoopTest, MultinodePingPong) {
          channel_index = channel.first](const RemoteMessage &header) {
           VLOG(1) << aos::FlatbufferToJson(&header);
           EXPECT_TRUE(header.has_boot_uuid());
-          EXPECT_EQ(header.boot_uuid()->string_view(),
+          EXPECT_EQ(UUID::FromVector(header.boot_uuid()),
                     simulated_event_loop_factory.GetNodeEventLoopFactory(pi2)
-                        ->boot_uuid()
-                        .ToString());
+                        ->boot_uuid());
 
           const aos::monotonic_clock::time_point header_monotonic_sent_time(
               chrono::nanoseconds(header.monotonic_sent_time()));
@@ -1430,10 +1429,9 @@ TEST_P(RemoteMessageSimulatedEventLoopTest, MultinodeStartupTesting) {
        &simulated_event_loop_factory, pi2, network_delay, &pi2_pong_event_loop,
        &pi1_remote_timestamp](const RemoteMessage &header) {
         EXPECT_TRUE(header.has_boot_uuid());
-        EXPECT_EQ(header.boot_uuid()->string_view(),
+        EXPECT_EQ(UUID::FromVector(header.boot_uuid()),
                   simulated_event_loop_factory.GetNodeEventLoopFactory(pi2)
-                      ->boot_uuid()
-                      .ToString());
+                      ->boot_uuid());
         VLOG(1) << aos::FlatbufferToJson(&header);
         if (header.channel_index() == reliable_channel_index) {
           ++reliable_timestamp_count;
@@ -1506,7 +1504,7 @@ TEST_P(RemoteMessageSimulatedEventLoopTest, BootUUIDTest) {
                : "/pi1/aos/remote_timestamps/pi2/test/aos-examples-Ping",
       [&timestamp_count, &expected_boot_uuid](const RemoteMessage &header) {
         EXPECT_TRUE(header.has_boot_uuid());
-        EXPECT_EQ(UUID::FromString(header.boot_uuid()), expected_boot_uuid);
+        EXPECT_EQ(UUID::FromVector(header.boot_uuid()), expected_boot_uuid);
         VLOG(1) << aos::FlatbufferToJson(&header);
         ++timestamp_count;
       });

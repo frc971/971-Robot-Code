@@ -129,8 +129,8 @@ void ChannelState::HandleDelivery(
         aos::Sender<RemoteMessage>::Builder builder =
             peer.timestamp_logger->MakeBuilder();
 
-        flatbuffers::Offset<flatbuffers::String> boot_uuid_offset =
-            server_status.BootUUID(peer.node_index).PackString(builder.fbb());
+        flatbuffers::Offset<flatbuffers::Vector<uint8_t>> boot_uuid_offset =
+            server_status.BootUUID(peer.node_index).PackVector(builder.fbb());
 
         RemoteMessage::Builder remote_message_builder =
             builder.MakeBuilder<RemoteMessage>();

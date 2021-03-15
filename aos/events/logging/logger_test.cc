@@ -419,7 +419,7 @@ struct Param {
   // channel.
   bool shared;
   // sha256 of the config.
-  std::string sha256;
+  std::string_view sha256;
 };
 
 class MultinodeLoggerTest : public ::testing::TestWithParam<struct Param> {
@@ -1900,8 +1900,8 @@ TEST_P(MultinodeLoggerTest, MessageHeader) {
           }
 
           ASSERT_TRUE(header.has_boot_uuid());
-          EXPECT_EQ(header.boot_uuid()->string_view(),
-                    pi2_event_loop->boot_uuid().ToString());
+          EXPECT_EQ(UUID::FromVector(header.boot_uuid()),
+                    pi2_event_loop->boot_uuid());
 
           EXPECT_EQ(pi1_context->queue_index, header.remote_queue_index());
           EXPECT_EQ(pi2_context->remote_queue_index,
@@ -1980,8 +1980,8 @@ TEST_P(MultinodeLoggerTest, MessageHeader) {
           }
 
           ASSERT_TRUE(header.has_boot_uuid());
-          EXPECT_EQ(header.boot_uuid()->string_view(),
-                    pi1_event_loop->boot_uuid().ToString());
+          EXPECT_EQ(UUID::FromVector(header.boot_uuid()),
+                    pi1_event_loop->boot_uuid());
 
           EXPECT_EQ(pi2_context->queue_index, header.remote_queue_index());
           EXPECT_EQ(pi1_context->remote_queue_index,
@@ -2199,25 +2199,24 @@ TEST_P(MultinodeLoggerTest, DeadNode) {
   ConfirmReadable(pi1_single_direction_logfiles_);
 }
 
+constexpr std::string_view kCombinedConfigSha1(
+    "8d17eb7c2347fd4a8a9a2e0f171a91338fe4d5dd705829c39497608075a8d6fc");
+constexpr std::string_view kSplitConfigSha1(
+    "a6235491429b7b062e5da35c1d0d279c7e7e33cd70787f231d420ab831959744");
+
 INSTANTIATE_TEST_CASE_P(
     All, MultinodeLoggerTest,
-    ::testing::Values(
-        Param{
-            "multinode_pingpong_combined_config.json", true,
-            "47511a1906dbb59cf9f8ad98ad08e568c718a4deb204c8bbce81ff76cef9095c"},
-        Param{"multinode_pingpong_split_config.json", false,
-              "ce3ec411a089e5b80d6868bdb2ff8ce86467053b41469e50a09edf3c0110d80"
-              "f"}));
+    ::testing::Values(Param{"multinode_pingpong_combined_config.json", true,
+                            kCombinedConfigSha1},
+                      Param{"multinode_pingpong_split_config.json", false,
+                            kSplitConfigSha1}));
 
 INSTANTIATE_TEST_CASE_P(
     All, MultinodeLoggerDeathTest,
-    ::testing::Values(
-        Param{
-            "multinode_pingpong_combined_config.json", true,
-            "47511a1906dbb59cf9f8ad98ad08e568c718a4deb204c8bbce81ff76cef9095c"},
-        Param{"multinode_pingpong_split_config.json", false,
-              "ce3ec411a089e5b80d6868bdb2ff8ce86467053b41469e50a09edf3c0110d80"
-              "f"}));
+    ::testing::Values(Param{"multinode_pingpong_combined_config.json", true,
+                            kCombinedConfigSha1},
+                      Param{"multinode_pingpong_split_config.json", false,
+                            kSplitConfigSha1}));
 
 // TODO(austin): Make a log file where the remote node has no start time.
 

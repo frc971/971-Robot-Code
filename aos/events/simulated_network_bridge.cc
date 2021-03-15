@@ -159,8 +159,8 @@ class RawMessageDelayer {
                                     send_node_factory_->boot_uuid());
       }
 
-      flatbuffers::Offset<flatbuffers::String> boot_uuid_offset =
-          send_node_factory_->boot_uuid().PackString(&fbb);
+      flatbuffers::Offset<flatbuffers::Vector<uint8_t>> boot_uuid_offset =
+          send_node_factory_->boot_uuid().PackVector(&fbb);
 
       RemoteMessage::Builder message_header_builder(fbb);
 

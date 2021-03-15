@@ -197,7 +197,7 @@ class Logger {
 
     // This is an initial UUID that is a valid UUID4 and is pretty obvious that
     // it isn't valid.
-    std::string source_node_boot_uuid = "00000000-0000-4000-8000-000000000000";
+    UUID source_node_boot_uuid = UUID::Zero();
 
     aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> log_file_header =
         aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader>::Empty();
@@ -208,30 +208,23 @@ class Logger {
     // follow.  This is cleared when boot_uuid is known to not match anymore.
     bool header_valid = false;
 
-    // Sets the source_node_boot_uuid, properly updating everything.
-    void SetBootUUID(const UUID &new_source_node_boot_uuid) {
-      new_source_node_boot_uuid.CopyTo(source_node_boot_uuid.data());
-      header_valid = false;
-      has_source_node_boot_uuid = true;
-
-      flatbuffers::String *source_node_boot_uuid_string =
-          log_file_header.mutable_message()->mutable_source_node_boot_uuid();
-      CHECK_EQ(source_node_boot_uuid.size(),
-               source_node_boot_uuid_string->size());
-      memcpy(source_node_boot_uuid_string->data(), source_node_boot_uuid.data(),
-             source_node_boot_uuid.size());
-    }
-    void SetBootUUID(std::string_view new_source_node_boot_uuid) {
+    // Sets the source_node_boot_uuid, properly updating everything.  Returns
+    // true if it changed, false otherwise.
+    bool SetBootUUID(const UUID &new_source_node_boot_uuid) {
+      if (has_source_node_boot_uuid &&
+          source_node_boot_uuid == new_source_node_boot_uuid) {
+        return false;
+      }
       source_node_boot_uuid = new_source_node_boot_uuid;
       header_valid = false;
       has_source_node_boot_uuid = true;
 
       flatbuffers::String *source_node_boot_uuid_string =
           log_file_header.mutable_message()->mutable_source_node_boot_uuid();
-      CHECK_EQ(source_node_boot_uuid.size(),
-               source_node_boot_uuid_string->size());
-      memcpy(source_node_boot_uuid_string->data(), source_node_boot_uuid.data(),
-             source_node_boot_uuid.size());
+      CHECK_EQ(UUID::kStringSize, source_node_boot_uuid_string->size());
+      source_node_boot_uuid.CopyTo(source_node_boot_uuid_string->data());
+
+      return true;
     }
   };
 
