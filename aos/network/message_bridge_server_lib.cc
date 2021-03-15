@@ -8,6 +8,7 @@
 #include "aos/network/connect_generated.h"
 #include "aos/network/message_bridge_protocol.h"
 #include "aos/network/message_bridge_server_generated.h"
+#include "aos/network/remote_data_generated.h"
 #include "aos/network/remote_message_generated.h"
 #include "aos/network/sctp_server.h"
 #include "aos/network/timestamp_channel.h"
@@ -34,10 +35,22 @@ flatbuffers::FlatBufferBuilder ChannelState::PackContext(
           << channel_->name()->string_view() << " "
           << channel_->type()->string_view() << " size " << context.size;
 
+  flatbuffers::Offset<flatbuffers::Vector<uint8_t>> data_offset =
+      fbb.CreateVector(static_cast<const uint8_t *>(context.data),
+                       context.size);
+
+  RemoteData::Builder remote_data_builder(fbb);
+  remote_data_builder.add_channel_index(channel_index_);
+  remote_data_builder.add_queue_index(context.queue_index);
+  remote_data_builder.add_monotonic_sent_time(
+      context.monotonic_event_time.time_since_epoch().count());
+  remote_data_builder.add_realtime_sent_time(
+      context.realtime_event_time.time_since_epoch().count());
+  remote_data_builder.add_data(data_offset);
+
   // TODO(austin): Use an iovec to build it up in 3 parts to avoid the copy?
   // Only useful when not logging.
-  fbb.FinishSizePrefixed(logger::PackMessage(&fbb, context, channel_index_,
-                                             logger::LogType::kLogMessage));
+  fbb.FinishSizePrefixed(remote_data_builder.Finish());
 
   return fbb;
 }
@@ -115,30 +128,30 @@ void ChannelState::HandleDelivery(
         flatbuffers::Offset<flatbuffers::String> boot_uuid_offset =
             server_status.BootUUID(peer.node_index).PackString(builder.fbb());
 
-        RemoteMessage::Builder message_header_builder =
+        RemoteMessage::Builder remote_message_builder =
             builder.MakeBuilder<RemoteMessage>();
 
-        message_header_builder.add_channel_index(
+        remote_message_builder.add_channel_index(
             message_header->channel_index());
 
-        message_header_builder.add_queue_index(
+        remote_message_builder.add_queue_index(
             message_header->remote_queue_index());
-        message_header_builder.add_monotonic_sent_time(
+        remote_message_builder.add_monotonic_sent_time(
             message_header->monotonic_remote_time());
-        message_header_builder.add_realtime_sent_time(
+        remote_message_builder.add_realtime_sent_time(
             message_header->realtime_remote_time());
 
         // Swap the remote and sent metrics.  They are from the sender's
         // perspective, not the receiver's perspective.
-        message_header_builder.add_monotonic_remote_time(
+        remote_message_builder.add_monotonic_remote_time(
             message_header->monotonic_sent_time());
-        message_header_builder.add_realtime_remote_time(
+        remote_message_builder.add_realtime_remote_time(
             message_header->realtime_sent_time());
-        message_header_builder.add_remote_queue_index(
+        remote_message_builder.add_remote_queue_index(
             message_header->queue_index());
-        message_header_builder.add_boot_uuid(boot_uuid_offset);
+        remote_message_builder.add_boot_uuid(boot_uuid_offset);
 
-        builder.Send(message_header_builder.Finish());
+        builder.Send(remote_message_builder.Finish());
       }
       break;
     }
@@ -166,7 +179,7 @@ void ChannelState::HandleDelivery(
 }
 
 void ChannelState::HandleFailure(
-    SizePrefixedFlatbufferDetachedBuffer<logger::MessageHeader> &&message) {
+    SizePrefixedFlatbufferDetachedBuffer<RemoteData> &&message) {
   // TODO(austin): Put it in the log queue.
   if (VLOG_IS_ON(2)) {
     LOG(INFO) << "Failed to send " << FlatbufferToJson(message);
