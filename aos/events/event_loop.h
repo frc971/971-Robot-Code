@@ -147,21 +147,18 @@ class RawSender {
   // get the sent times instead.
   virtual void *data() = 0;
   virtual size_t size() = 0;
-  bool Send(size_t size,
-            aos::monotonic_clock::time_point monotonic_remote_time =
-                aos::monotonic_clock::min_time,
-            aos::realtime_clock::time_point realtime_remote_time =
-                aos::realtime_clock::min_time,
-            uint32_t remote_queue_index = 0xffffffffu);
+  bool Send(size_t size);
+  bool Send(size_t size, monotonic_clock::time_point monotonic_remote_time,
+            realtime_clock::time_point realtime_remote_time,
+            uint32_t remote_queue_index);
 
   // Sends a single block of data by copying it.
   // The remote arguments have the same meaning as in Send above.
+  bool Send(const void *data, size_t size);
   bool Send(const void *data, size_t size,
-            aos::monotonic_clock::time_point monotonic_remote_time =
-                aos::monotonic_clock::min_time,
-            aos::realtime_clock::time_point realtime_remote_time =
-                aos::realtime_clock::min_time,
-            uint32_t remote_queue_index = 0xffffffffu);
+            monotonic_clock::time_point monotonic_remote_time,
+            realtime_clock::time_point realtime_remote_time,
+            uint32_t remote_queue_index);
 
   const Channel *channel() const { return channel_; }
 
@@ -190,10 +187,8 @@ class RawSender {
  protected:
   EventLoop *event_loop() { return event_loop_; }
 
-  aos::monotonic_clock::time_point monotonic_sent_time_ =
-      aos::monotonic_clock::min_time;
-  aos::realtime_clock::time_point realtime_sent_time_ =
-      aos::realtime_clock::min_time;
+  monotonic_clock::time_point monotonic_sent_time_ = monotonic_clock::min_time;
+  realtime_clock::time_point realtime_sent_time_ = realtime_clock::min_time;
   uint32_t sent_queue_index_ = 0xffffffff;
 
  private:

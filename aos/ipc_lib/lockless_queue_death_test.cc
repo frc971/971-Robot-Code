@@ -533,7 +533,9 @@ TEST(LocklessQueueTest, Death) {
         for (int i = 0; i < 5; ++i) {
           char data[100];
           size_t s = snprintf(data, sizeof(data), "foobar%d", i + 1);
-          sender.Send(data, s + 1);
+          sender.Send(data, s + 1, monotonic_clock::min_time,
+                      realtime_clock::min_time, 0xffffffffl,
+                      nullptr, nullptr, nullptr);
           // Pin a message, so when we keep writing we will exercise the pinning
           // logic.
           if (i == 1) {
@@ -605,7 +607,9 @@ TEST(LocklessQueueTest, Death) {
           // Send a message to make sure that the queue still works.
           char data[100];
           size_t s = snprintf(data, sizeof(data), "foobar%d", 971);
-          sender.Send(data, s + 1);
+          sender.Send(data, s + 1, monotonic_clock::min_time,
+                      realtime_clock::min_time, 0xffffffffl,
+                      nullptr, nullptr, nullptr);
         }
 
         // Now loop through the queue and make sure the number in the snprintf
@@ -613,10 +617,10 @@ TEST(LocklessQueueTest, Death) {
         char last_data = '0';
         int i = 0;
         while (true) {
-          ::aos::monotonic_clock::time_point monotonic_sent_time;
-          ::aos::realtime_clock::time_point realtime_sent_time;
-          ::aos::monotonic_clock::time_point monotonic_remote_time;
-          ::aos::realtime_clock::time_point realtime_remote_time;
+          monotonic_clock::time_point monotonic_sent_time;
+          realtime_clock::time_point realtime_sent_time;
+          monotonic_clock::time_point monotonic_remote_time;
+          realtime_clock::time_point realtime_remote_time;
           uint32_t remote_queue_index;
           char read_data[1024];
           size_t length;

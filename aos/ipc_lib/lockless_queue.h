@@ -82,12 +82,12 @@ struct Message {
     // Timestamp of the message.  Needs to be monotonically incrementing in the
     // queue, which means that time needs to be re-sampled every time a write
     // fails.
-    ::aos::monotonic_clock::time_point monotonic_sent_time;
-    ::aos::realtime_clock::time_point realtime_sent_time;
+    monotonic_clock::time_point monotonic_sent_time;
+    realtime_clock::time_point realtime_sent_time;
     // Timestamps of the message from the remote node.  These are transparently
     // passed through.
-    ::aos::monotonic_clock::time_point monotonic_remote_time;
-    ::aos::realtime_clock::time_point realtime_remote_time;
+    monotonic_clock::time_point monotonic_remote_time;
+    realtime_clock::time_point realtime_remote_time;
 
     // Queue index from the remote node.
     uint32_t remote_queue_index;
@@ -303,26 +303,21 @@ class LocklessQueueSender {
   // Note: calls to Data() are expensive enough that you should cache it.
   size_t size() const;
   void *Data();
-  bool Send(size_t length,
-            aos::monotonic_clock::time_point monotonic_remote_time =
-                aos::monotonic_clock::min_time,
-            aos::realtime_clock::time_point realtime_remote_time =
-                aos::realtime_clock::min_time,
-            uint32_t remote_queue_index = 0xffffffff,
-            aos::monotonic_clock::time_point *monotonic_sent_time = nullptr,
-            aos::realtime_clock::time_point *realtime_sent_time = nullptr,
+  bool Send(size_t length, monotonic_clock::time_point monotonic_remote_time,
+            realtime_clock::time_point realtime_remote_time,
+            uint32_t remote_queue_index,
+            monotonic_clock::time_point *monotonic_sent_time = nullptr,
+            realtime_clock::time_point *realtime_sent_time = nullptr,
             uint32_t *queue_index = nullptr);
 
   // Sends up to length data.  Does not wakeup the target.
   bool Send(const char *data, size_t length,
-            aos::monotonic_clock::time_point monotonic_remote_time =
-                aos::monotonic_clock::min_time,
-            aos::realtime_clock::time_point realtime_remote_time =
-                aos::realtime_clock::min_time,
-            uint32_t remote_queue_index = 0xffffffff,
-            aos::monotonic_clock::time_point *monotonic_sent_time = nullptr,
-            aos::realtime_clock::time_point *realtime_sent_time = nullptr,
-            uint32_t *queue_index = nullptr);
+            monotonic_clock::time_point monotonic_remote_time,
+            realtime_clock::time_point realtime_remote_time,
+            uint32_t remote_queue_index,
+            monotonic_clock::time_point *monotonic_sent_time,
+            realtime_clock::time_point *realtime_sent_time,
+            uint32_t *queue_index);
 
   int buffer_index() const;
 
@@ -401,11 +396,12 @@ class LocklessQueueReader {
   //
   // data may be nullptr to indicate the data should not be copied.
   Result Read(uint32_t queue_index,
-              ::aos::monotonic_clock::time_point *monotonic_sent_time,
-              ::aos::realtime_clock::time_point *realtime_sent_time,
-              ::aos::monotonic_clock::time_point *monotonic_remote_time,
-              ::aos::realtime_clock::time_point *realtime_remote_time,
-              uint32_t *remote_queue_index, size_t *length, char *data) const;
+              monotonic_clock::time_point *monotonic_sent_time,
+              realtime_clock::time_point *realtime_sent_time,
+              monotonic_clock::time_point *monotonic_remote_time,
+              realtime_clock::time_point *realtime_remote_time,
+              uint32_t *remote_queue_index,
+              size_t *length, char *data) const;
 
   // Returns the index to the latest queue message.  Returns empty_queue_index()
   // if there are no messages in the queue.  Do note that this index wraps if

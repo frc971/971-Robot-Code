@@ -238,17 +238,18 @@ TEST_F(LocklessQueueTest, Send) {
     // Send a trivial piece of data.
     char data[100];
     size_t s = snprintf(data, sizeof(data), "foobar%d", i);
-    sender.Send(data, s);
+    sender.Send(data, s, monotonic_clock::min_time, realtime_clock::min_time,
+                0xffffffffu, nullptr, nullptr, nullptr);
 
     // Confirm that the queue index still makes sense.  This is easier since the
     // empty case has been handled.
     EXPECT_EQ(reader.LatestIndex().index(), i);
 
     // Read a result from 5 in the past.
-    ::aos::monotonic_clock::time_point monotonic_sent_time;
-    ::aos::realtime_clock::time_point realtime_sent_time;
-    ::aos::monotonic_clock::time_point monotonic_remote_time;
-    ::aos::realtime_clock::time_point realtime_remote_time;
+    monotonic_clock::time_point monotonic_sent_time;
+    realtime_clock::time_point realtime_sent_time;
+    monotonic_clock::time_point monotonic_remote_time;
+    realtime_clock::time_point realtime_remote_time;
     uint32_t remote_queue_index;
     char read_data[1024];
     size_t length;
