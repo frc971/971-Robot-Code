@@ -13,7 +13,6 @@
 #include "aos/events/event_loop.h"
 #include "aos/events/logging/logfile_sorting.h"
 #include "aos/events/logging/logger_generated.h"
-#include "aos/events/logging/uuid.h"
 #include "aos/flatbuffer_merge.h"
 #include "aos/network/multinode_timestamp_filter.h"
 #include "aos/network/remote_message_generated.h"
@@ -22,6 +21,7 @@
 #include "aos/network/timestamp_channel.h"
 #include "aos/time/time.h"
 #include "aos/util/file.h"
+#include "aos/uuid.h"
 #include "flatbuffers/flatbuffers.h"
 #include "openssl/sha.h"
 

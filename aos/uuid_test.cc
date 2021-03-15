@@ -1,4 +1,4 @@
-#include "aos/events/logging/uuid.h"
+#include "aos/uuid.h"
 
 #include "glog/logging.h"
 #include "gtest/gtest.h"

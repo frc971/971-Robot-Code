@@ -27,7 +27,7 @@ cc_library(
     deps = [
         ":buffer_encoder",
         ":logger_fbs",
-        ":uuid",
+        "//aos:uuid",
         "//aos:configuration",
         "//aos:flatbuffer_merge",
         "//aos:flatbuffers",
@@ -176,7 +176,7 @@ cc_library(
     deps = [
         ":logfile_utils",
         ":logger_fbs",
-        ":uuid",
+        "//aos:uuid",
         "@com_github_google_flatbuffers//:flatbuffers",
     ],
 )
@@ -214,7 +214,7 @@ cc_library(
         ":log_writer",
         ":logfile_utils",
         ":logger_fbs",
-        ":uuid",
+        "//aos:uuid",
         "//aos/events:event_loop",
         "//aos/events:simulated_event_loop",
         "//aos/network:message_bridge_server_fbs",
@@ -374,29 +374,6 @@ cc_test(
         "//aos/network:testing_time_converter",
         "//aos/testing:googletest",
         "//aos/testing:tmpdir",
-    ],
-)
-
-cc_library(
-    name = "uuid",
-    srcs = ["uuid.cc"],
-    hdrs = ["uuid.h"],
-    target_compatible_with = ["@platforms//os:linux"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "@com_github_google_flatbuffers//:flatbuffers",
-        "@com_github_google_glog//:glog",
-        "@com_google_absl//absl/types:span",
-    ],
-)
-
-cc_test(
-    name = "uuid_test",
-    srcs = ["uuid_test.cc"],
-    target_compatible_with = ["@platforms//os:linux"],
-    deps = [
-        ":uuid",
-        "//aos/testing:googletest",
     ],
 )
 

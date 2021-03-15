@@ -1,4 +1,4 @@
-#include "aos/events/logging/uuid.h"
+#include "aos/uuid.h"
 
 #include <fcntl.h>
 #include <sys/stat.h>

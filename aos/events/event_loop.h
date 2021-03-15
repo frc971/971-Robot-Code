@@ -12,7 +12,6 @@
 #include "aos/events/channel_preallocated_allocator.h"
 #include "aos/events/event_loop_event.h"
 #include "aos/events/event_loop_generated.h"
-#include "aos/events/logging/uuid.h"
 #include "aos/events/timing_statistics.h"
 #include "aos/flatbuffers.h"
 #include "aos/ftrace.h"
@@ -20,6 +19,7 @@
 #include "aos/json_to_flatbuffer.h"
 #include "aos/time/time.h"
 #include "aos/util/phased_loop.h"
+#include "aos/uuid.h"
 
 #include "absl/container/btree_set.h"
 #include "flatbuffers/flatbuffers.h"

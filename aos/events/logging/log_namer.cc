@@ -9,7 +9,7 @@
 #include "absl/strings/str_cat.h"
 #include "aos/events/logging/logfile_utils.h"
 #include "aos/events/logging/logger_generated.h"
-#include "aos/events/logging/uuid.h"
+#include "aos/uuid.h"
 #include "flatbuffers/flatbuffers.h"
 #include "glog/logging.h"
 

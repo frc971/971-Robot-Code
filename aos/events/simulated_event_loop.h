@@ -13,11 +13,11 @@
 #include "absl/container/btree_map.h"
 #include "aos/events/event_loop.h"
 #include "aos/events/event_scheduler.h"
-#include "aos/events/logging/uuid.h"
 #include "aos/events/simple_channel.h"
 #include "aos/flatbuffer_merge.h"
 #include "aos/flatbuffers.h"
 #include "aos/ipc_lib/index.h"
+#include "aos/uuid.h"
 #include "glog/logging.h"
 
 namespace aos {

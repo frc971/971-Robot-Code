@@ -9,7 +9,7 @@
 
 #include "aos/events/logging/logfile_utils.h"
 #include "aos/events/logging/logger_generated.h"
-#include "aos/events/logging/uuid.h"
+#include "aos/uuid.h"
 #include "flatbuffers/flatbuffers.h"
 
 namespace aos {

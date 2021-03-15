@@ -57,12 +57,8 @@ class UUID {
     return absl::Span<const uint8_t>(data_.data(), data_.size());
   }
 
-  bool operator==(const UUID &other) const {
-    return other.span() == span();
-  }
-  bool operator!=(const UUID &other) const {
-    return other.span() != span();
-  }
+  bool operator==(const UUID &other) const { return other.span() == span(); }
+  bool operator!=(const UUID &other) const { return other.span() != span(); }
 
  private:
   friend std::ostream &operator<<(std::ostream &os, const UUID &uuid);

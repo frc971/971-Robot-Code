@@ -83,7 +83,7 @@ cc_library(
         "//aos:configuration_fbs",
         "//aos:flatbuffers",
         "//aos:ftrace",
-        "//aos/events/logging:uuid",
+        "//aos:uuid",
         "//aos/ipc_lib:data_alignment",
         "//aos/logging:implementations",
         "//aos/time",

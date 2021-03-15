@@ -9,11 +9,11 @@
 #include "aos/events/logging/log_namer.h"
 #include "aos/events/logging/logfile_utils.h"
 #include "aos/events/logging/logger_generated.h"
-#include "aos/events/logging/uuid.h"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/network/message_bridge_server_generated.h"
 #include "aos/network/remote_message_generated.h"
 #include "aos/time/time.h"
+#include "aos/uuid.h"
 #include "flatbuffers/flatbuffers.h"
 
 namespace aos {

@@ -4,8 +4,8 @@
 #include <string_view>
 
 #include "aos/configuration.h"
-#include "aos/events/logging/uuid.h"
 #include "aos/network/connect_generated.h"
+#include "aos/uuid.h"
 
 namespace aos {
 namespace message_bridge {

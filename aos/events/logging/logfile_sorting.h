@@ -6,8 +6,8 @@
 #include <vector>
 
 #include "aos/configuration.h"
-#include "aos/events/logging/uuid.h"
 #include "aos/time/time.h"
+#include "aos/uuid.h"
 
 namespace aos {
 namespace logger {
