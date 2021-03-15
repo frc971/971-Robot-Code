@@ -239,7 +239,7 @@ TEST_F(LocklessQueueTest, Send) {
     char data[100];
     size_t s = snprintf(data, sizeof(data), "foobar%d", i);
     sender.Send(data, s, monotonic_clock::min_time, realtime_clock::min_time,
-                0xffffffffu, nullptr, nullptr, nullptr);
+                0xffffffffu, UUID::Zero(), nullptr, nullptr, nullptr);
 
     // Confirm that the queue index still makes sense.  This is easier since the
     // empty case has been handled.
@@ -251,6 +251,7 @@ TEST_F(LocklessQueueTest, Send) {
     monotonic_clock::time_point monotonic_remote_time;
     realtime_clock::time_point realtime_remote_time;
     uint32_t remote_queue_index;
+    UUID remote_boot_uuid;
     char read_data[1024];
     size_t length;
 
@@ -260,10 +261,10 @@ TEST_F(LocklessQueueTest, Send) {
     } else {
       index = index.IncrementBy(i - 5);
     }
-    LocklessQueueReader::Result read_result =
-        reader.Read(index.index(), &monotonic_sent_time, &realtime_sent_time,
-                    &monotonic_remote_time, &realtime_remote_time,
-                    &remote_queue_index, &length, &(read_data[0]));
+    LocklessQueueReader::Result read_result = reader.Read(
+        index.index(), &monotonic_sent_time, &realtime_sent_time,
+        &monotonic_remote_time, &realtime_remote_time, &remote_queue_index,
+        &remote_boot_uuid, &length, &(read_data[0]));
 
     // This should either return GOOD, or TOO_OLD if it is before the start of
     // the queue.

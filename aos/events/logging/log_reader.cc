@@ -315,7 +315,8 @@ void LogReader::Register(SimulatedEventLoopFactory *event_loop_factory) {
       for (size_t i = 1; i < filtered_parts.size(); ++i) {
         CHECK_EQ(filtered_parts[i].source_boot_uuid,
                  filtered_parts[0].source_boot_uuid)
-            << ": Found parts from different boots "
+            << ": Found parts from different boots for node "
+            << node->name()->string_view() << " "
             << LogFileVectorToString(log_files_);
       }
       if (!filtered_parts[0].source_boot_uuid.empty()) {
@@ -1125,7 +1126,12 @@ bool LogReader::State::Send(const TimestampedMessage &timestamped_message) {
       timestamped_message.data.message().data()->Data(),
       timestamped_message.data.message().data()->size(),
       timestamped_message.monotonic_remote_time,
-      timestamped_message.realtime_remote_time, remote_queue_index);
+      timestamped_message.realtime_remote_time, remote_queue_index,
+      (channel_source_state_[timestamped_message.channel_index] != nullptr
+           ? CHECK_NOTNULL(
+                 channel_source_state_[timestamped_message.channel_index])
+                 ->event_loop_->boot_uuid()
+           : event_loop_->boot_uuid()));
   if (!sent) return false;
 
   if (queue_index_map_[timestamped_message.channel_index]) {

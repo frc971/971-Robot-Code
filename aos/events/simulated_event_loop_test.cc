@@ -1485,18 +1485,28 @@ TEST_P(RemoteMessageSimulatedEventLoopTest, BootUUIDTest) {
 
   std::unique_ptr<EventLoop> pi1_remote_timestamp =
       simulated_event_loop_factory.MakeEventLoop("pi1_remote_timestamp", pi1);
-  std::string expected_boot_uuid(
-      simulated_event_loop_factory.GetNodeEventLoopFactory(pi2)
-          ->boot_uuid()
-          .ToString());
+  UUID expected_boot_uuid =
+      simulated_event_loop_factory.GetNodeEventLoopFactory(pi2)->boot_uuid();
 
   int timestamp_count = 0;
+  pi1_remote_timestamp->MakeWatcher(
+      "/pi2/aos", [&expected_boot_uuid,
+                   &pi1_remote_timestamp](const message_bridge::Timestamp &) {
+        EXPECT_EQ(pi1_remote_timestamp->context().remote_boot_uuid,
+                  expected_boot_uuid);
+      });
+  pi1_remote_timestamp->MakeWatcher(
+      "/test",
+      [&expected_boot_uuid, &pi1_remote_timestamp](const examples::Pong &) {
+        EXPECT_EQ(pi1_remote_timestamp->context().remote_boot_uuid,
+                  expected_boot_uuid);
+      });
   pi1_remote_timestamp->MakeWatcher(
       shared() ? "/pi1/aos/remote_timestamps/pi2"
                : "/pi1/aos/remote_timestamps/pi2/test/aos-examples-Ping",
       [&timestamp_count, &expected_boot_uuid](const RemoteMessage &header) {
         EXPECT_TRUE(header.has_boot_uuid());
-        EXPECT_EQ(header.boot_uuid()->string_view(), expected_boot_uuid);
+        EXPECT_EQ(UUID::FromString(header.boot_uuid()), expected_boot_uuid);
         VLOG(1) << aos::FlatbufferToJson(&header);
         ++timestamp_count;
       });
@@ -1511,7 +1521,7 @@ TEST_P(RemoteMessageSimulatedEventLoopTest, BootUUIDTest) {
           EXPECT_TRUE(connection->has_boot_uuid());
           if (connection->node()->name()->string_view() == "pi2") {
             EXPECT_EQ(expected_boot_uuid,
-                      connection->boot_uuid()->string_view())
+                      UUID::FromString(connection->boot_uuid()))
                 << " : Got " << aos::FlatbufferToJson(&stats);
             ++pi1_server_statistics_count;
           }
@@ -1527,15 +1537,12 @@ TEST_P(RemoteMessageSimulatedEventLoopTest, BootUUIDTest) {
   // Confirm that reboot changes the UUID.
   simulated_event_loop_factory.GetNodeEventLoopFactory(pi2)->Reboot();
 
-  EXPECT_NE(expected_boot_uuid,
-            simulated_event_loop_factory.GetNodeEventLoopFactory(pi2)
-                ->boot_uuid()
-                .ToString());
+  EXPECT_NE(
+      expected_boot_uuid,
+      simulated_event_loop_factory.GetNodeEventLoopFactory(pi2)->boot_uuid());
 
   expected_boot_uuid =
-      simulated_event_loop_factory.GetNodeEventLoopFactory(pi2)
-          ->boot_uuid()
-          .ToString();
+      simulated_event_loop_factory.GetNodeEventLoopFactory(pi2)->boot_uuid();
   timestamp_count = 0;
   pi1_server_statistics_count = 0;
 

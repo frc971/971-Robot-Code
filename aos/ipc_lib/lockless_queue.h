@@ -13,6 +13,7 @@
 #include "aos/ipc_lib/data_alignment.h"
 #include "aos/ipc_lib/index.h"
 #include "aos/time/time.h"
+#include "aos/uuid.h"
 
 namespace aos {
 namespace ipc_lib {
@@ -91,6 +92,9 @@ struct Message {
 
     // Queue index from the remote node.
     uint32_t remote_queue_index;
+
+    // Remote boot UUID for this message.
+    UUID remote_boot_uuid;
 
     size_t length;
   } header;
@@ -305,7 +309,7 @@ class LocklessQueueSender {
   void *Data();
   bool Send(size_t length, monotonic_clock::time_point monotonic_remote_time,
             realtime_clock::time_point realtime_remote_time,
-            uint32_t remote_queue_index,
+            uint32_t remote_queue_index, const UUID &remote_boot_uuid,
             monotonic_clock::time_point *monotonic_sent_time = nullptr,
             realtime_clock::time_point *realtime_sent_time = nullptr,
             uint32_t *queue_index = nullptr);
@@ -314,10 +318,10 @@ class LocklessQueueSender {
   bool Send(const char *data, size_t length,
             monotonic_clock::time_point monotonic_remote_time,
             realtime_clock::time_point realtime_remote_time,
-            uint32_t remote_queue_index,
-            monotonic_clock::time_point *monotonic_sent_time,
-            realtime_clock::time_point *realtime_sent_time,
-            uint32_t *queue_index);
+            uint32_t remote_queue_index, const UUID &remote_boot_uuid,
+            monotonic_clock::time_point *monotonic_sent_time = nullptr,
+            realtime_clock::time_point *realtime_sent_time = nullptr,
+            uint32_t *queue_index = nullptr);
 
   int buffer_index() const;
 
@@ -400,7 +404,7 @@ class LocklessQueueReader {
               realtime_clock::time_point *realtime_sent_time,
               monotonic_clock::time_point *monotonic_remote_time,
               realtime_clock::time_point *realtime_remote_time,
-              uint32_t *remote_queue_index,
+              uint32_t *remote_queue_index, UUID *remote_boot_uuid,
               size_t *length, char *data) const;
 
   // Returns the index to the latest queue message.  Returns empty_queue_index()

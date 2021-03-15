@@ -63,7 +63,7 @@ std::string ShmFolder(std::string_view shm_base, const Channel *channel) {
 }
 std::string ShmPath(std::string_view shm_base, const Channel *channel) {
   CHECK(channel->has_type());
-  return ShmFolder(shm_base, channel) + channel->type()->str() + ".v3";
+  return ShmFolder(shm_base, channel) + channel->type()->str() + ".v4";
 }
 
 void PageFaultDataWrite(char *data, size_t size) {
@@ -372,7 +372,7 @@ class SimpleShmFetcher {
         queue_index.index(), &context_.monotonic_event_time,
         &context_.realtime_event_time, &context_.monotonic_remote_time,
         &context_.realtime_remote_time, &context_.remote_queue_index,
-        &context_.size, copy_buffer);
+        &context_.remote_boot_uuid, &context_.size, copy_buffer);
 
     if (read_result == ipc_lib::LocklessQueueReader::Result::GOOD) {
       if (pin_data()) {
@@ -535,13 +535,15 @@ class ShmSender : public RawSender {
   bool DoSend(size_t length,
               aos::monotonic_clock::time_point monotonic_remote_time,
               aos::realtime_clock::time_point realtime_remote_time,
-              uint32_t remote_queue_index) override {
+              uint32_t remote_queue_index,
+              const UUID &remote_boot_uuid) override {
     CHECK_LE(length, static_cast<size_t>(channel()->max_size()))
         << ": Sent too big a message on "
         << configuration::CleanedChannelToString(channel());
-    CHECK(lockless_queue_sender_.Send(
-        length, monotonic_remote_time, realtime_remote_time, remote_queue_index,
-        &monotonic_sent_time_, &realtime_sent_time_, &sent_queue_index_))
+    CHECK(lockless_queue_sender_.Send(length, monotonic_remote_time,
+                                      realtime_remote_time, remote_queue_index,
+                                      remote_boot_uuid, &monotonic_sent_time_,
+                                      &realtime_sent_time_, &sent_queue_index_))
         << ": Somebody wrote outside the buffer of their message on channel "
         << configuration::CleanedChannelToString(channel());
 
@@ -552,14 +554,15 @@ class ShmSender : public RawSender {
   bool DoSend(const void *msg, size_t length,
               aos::monotonic_clock::time_point monotonic_remote_time,
               aos::realtime_clock::time_point realtime_remote_time,
-              uint32_t remote_queue_index) override {
+              uint32_t remote_queue_index,
+              const UUID &remote_boot_uuid) override {
     CHECK_LE(length, static_cast<size_t>(channel()->max_size()))
         << ": Sent too big a message on "
         << configuration::CleanedChannelToString(channel());
     CHECK(lockless_queue_sender_.Send(
         reinterpret_cast<const char *>(msg), length, monotonic_remote_time,
-        realtime_remote_time, remote_queue_index, &monotonic_sent_time_,
-        &realtime_sent_time_, &sent_queue_index_))
+        realtime_remote_time, remote_queue_index, remote_boot_uuid,
+        &monotonic_sent_time_, &realtime_sent_time_, &sent_queue_index_))
         << ": Somebody wrote outside the buffer of their message on channel "
         << configuration::CleanedChannelToString(channel());
     wake_upper_.Wakeup(event_loop()->priority());

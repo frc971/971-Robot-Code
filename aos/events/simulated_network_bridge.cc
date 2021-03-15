@@ -136,7 +136,8 @@ class RawMessageDelayer {
     sender_->Send(fetcher_->context().data, fetcher_->context().size,
                   fetcher_->context().monotonic_event_time,
                   fetcher_->context().realtime_event_time,
-                  fetcher_->context().queue_index);
+                  fetcher_->context().queue_index,
+                  fetcher_->context().remote_boot_uuid);
 
     // And simulate message_bridge's offset recovery.
     client_status_->SampleFilter(client_index_,
