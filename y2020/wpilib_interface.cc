@@ -33,6 +33,7 @@
 #include "aos/util/phased_loop.h"
 #include "aos/util/wrapping_counter.h"
 #include "ctre/phoenix/motorcontrol/can/TalonFX.h"
+#include "ctre/phoenix/motorcontrol/can/VictorSPX.h"
 #include "frc971/autonomous/auto_mode_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_position_generated.h"
 #include "frc971/wpilib/ADIS16470.h"
@@ -360,8 +361,17 @@ class SuperstructureWriter
     turret_victor_ = ::std::move(t);
   }
 
-  void set_feeder_falcon(::std::unique_ptr<::frc::TalonFX> t) {
+  void set_feeder_falcon(
+      ::std::unique_ptr<::ctre::phoenix::motorcontrol::can::TalonFX> t) {
     feeder_falcon_ = ::std::move(t);
+    CHECK_EQ(ctre::phoenix::OKAY,
+             feeder_falcon_->ConfigSupplyCurrentLimit(
+                 {true, Values::kFeederSupplyCurrentLimit(),
+                  Values::kFeederSupplyCurrentLimit(), 0}));
+    CHECK_EQ(ctre::phoenix::OKAY,
+             feeder_falcon_->ConfigStatorCurrentLimit(
+                 {true, Values::kFeederStatorCurrentLimit(),
+                  Values::kFeederStatorCurrentLimit(), 0}));
   }
 
   void set_washing_machine_control_panel_victor(
@@ -414,10 +424,10 @@ class SuperstructureWriter
                                         -kMaxBringupPower, kMaxBringupPower) /
                              12.0);
 
-    feeder_falcon_->SetSpeed(std::clamp(output.feeder_voltage(),
-                                        -kMaxBringupPower, kMaxBringupPower) /
-                             12.0);
-
+    feeder_falcon_->Set(ctre::phoenix::motorcontrol::ControlMode::PercentOutput,
+                        std::clamp(output.feeder_voltage(), -kMaxBringupPower,
+                                   kMaxBringupPower) /
+                            12.0);
     if (washing_machine_control_panel_victor_) {
       washing_machine_control_panel_victor_->SetSpeed(
           std::clamp(-output.washing_machine_spinner_voltage(),
@@ -458,7 +468,6 @@ class SuperstructureWriter
     hood_victor_->SetDisabled();
     intake_joint_victor_->SetDisabled();
     turret_victor_->SetDisabled();
-    feeder_falcon_->SetDisabled();
     if (washing_machine_control_panel_victor_) {
       washing_machine_control_panel_victor_->SetDisabled();
     }
@@ -466,16 +475,20 @@ class SuperstructureWriter
     accelerator_right_falcon_->SetDisabled();
     finisher_falcon0_->SetDisabled();
     finisher_falcon1_->SetDisabled();
+    feeder_falcon_->Set(ctre::phoenix::motorcontrol::ControlMode::Disabled, 0);
+    intake_roller_falcon_->Set(
+        ctre::phoenix::motorcontrol::ControlMode::Disabled, 0);
+    climber_falcon_->Set(ctre::phoenix::motorcontrol::ControlMode::Disabled, 0);
   }
 
   ::std::unique_ptr<::frc::VictorSP> hood_victor_, intake_joint_victor_,
       turret_victor_, washing_machine_control_panel_victor_;
 
-  ::std::unique_ptr<::frc::TalonFX> feeder_falcon_, accelerator_left_falcon_,
+  ::std::unique_ptr<::frc::TalonFX> accelerator_left_falcon_,
       accelerator_right_falcon_, finisher_falcon0_, finisher_falcon1_;
 
   ::std::unique_ptr<::ctre::phoenix::motorcontrol::can::TalonFX>
-      intake_roller_falcon_, climber_falcon_;
+      intake_roller_falcon_, climber_falcon_, feeder_falcon_;
 };
 
 class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
@@ -508,7 +521,6 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     sensor_reader.set_drivetrain_left_encoder(make_encoder(0));
     sensor_reader.set_drivetrain_right_encoder(make_encoder(1));
     // TODO: pin numbers
-    // TODO(Ravago): Hood pin numbers
     sensor_reader.set_hood_encoder(
         make_unique<frc::Encoder>(22, 23, false, frc::Encoder::k4X));
 
@@ -568,10 +580,10 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     superstructure_writer.set_intake_roller_falcon(
         make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(0));
     superstructure_writer.set_turret_victor(make_unique<frc::VictorSP>(7));
-    superstructure_writer.set_feeder_falcon(make_unique<frc::TalonFX>(6));
-    // TODO(austin): When this goes over to CAN, update it and make it work.
-    //superstructure_writer.set_washing_machine_control_panel_victor(
-        //make_unique<frc::VictorSP>(3));
+    superstructure_writer.set_feeder_falcon(
+        make_unique<ctre::phoenix::motorcontrol::can::TalonFX>(1));
+    superstructure_writer.set_washing_machine_control_panel_victor(
+        make_unique<frc::VictorSP>(6));
     superstructure_writer.set_accelerator_left_falcon(
         make_unique<::frc::TalonFX>(5));
     superstructure_writer.set_accelerator_right_falcon(
@@ -580,7 +592,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     superstructure_writer.set_finisher_falcon1(make_unique<::frc::TalonFX>(3));
     // TODO: check port
     superstructure_writer.set_climber_falcon(
-        make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(1));
+        make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(2));
 
     AddLoop(&output_event_loop);
 
