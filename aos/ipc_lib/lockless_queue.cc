@@ -906,29 +906,27 @@ void *LocklessQueueSender::Data() {
 
 bool LocklessQueueSender::Send(
     const char *data, size_t length,
-    aos::monotonic_clock::time_point monotonic_remote_time,
-    aos::realtime_clock::time_point realtime_remote_time,
+    monotonic_clock::time_point monotonic_remote_time,
+    realtime_clock::time_point realtime_remote_time,
     uint32_t remote_queue_index,
-    aos::monotonic_clock::time_point *monotonic_sent_time,
-    aos::realtime_clock::time_point *realtime_sent_time,
-    uint32_t *queue_index) {
+    monotonic_clock::time_point *monotonic_sent_time,
+    realtime_clock::time_point *realtime_sent_time, uint32_t *queue_index) {
   CHECK_LE(length, size());
   // Flatbuffers write from the back of the buffer to the front.  If we are
   // going to write an explicit chunk of memory into the buffer, we need to
   // adhere to this convention and place it at the end.
   memcpy((reinterpret_cast<char *>(Data()) + size() - length), data, length);
   return Send(length, monotonic_remote_time, realtime_remote_time,
-              remote_queue_index, monotonic_sent_time, realtime_sent_time,
-              queue_index);
+              remote_queue_index, monotonic_sent_time,
+              realtime_sent_time, queue_index);
 }
 
 bool LocklessQueueSender::Send(
-    size_t length, aos::monotonic_clock::time_point monotonic_remote_time,
-    aos::realtime_clock::time_point realtime_remote_time,
+    size_t length, monotonic_clock::time_point monotonic_remote_time,
+    realtime_clock::time_point realtime_remote_time,
     uint32_t remote_queue_index,
-    aos::monotonic_clock::time_point *monotonic_sent_time,
-    aos::realtime_clock::time_point *realtime_sent_time,
-    uint32_t *queue_index) {
+    monotonic_clock::time_point *monotonic_sent_time,
+    realtime_clock::time_point *realtime_sent_time, uint32_t *queue_index) {
   const size_t queue_size = memory_->queue_size();
   CHECK_LE(length, size());
 
@@ -1207,11 +1205,12 @@ const void *LocklessQueuePinner::Data() const {
 
 LocklessQueueReader::Result LocklessQueueReader::Read(
     uint32_t uint32_queue_index,
-    ::aos::monotonic_clock::time_point *monotonic_sent_time,
-    ::aos::realtime_clock::time_point *realtime_sent_time,
-    ::aos::monotonic_clock::time_point *monotonic_remote_time,
-    ::aos::realtime_clock::time_point *realtime_remote_time,
-    uint32_t *remote_queue_index, size_t *length, char *data) const {
+    monotonic_clock::time_point *monotonic_sent_time,
+    realtime_clock::time_point *realtime_sent_time,
+    monotonic_clock::time_point *monotonic_remote_time,
+    realtime_clock::time_point *realtime_remote_time,
+    uint32_t *remote_queue_index, size_t *length,
+    char *data) const {
   const size_t queue_size = memory_->queue_size();
 
   // Build up the QueueIndex.

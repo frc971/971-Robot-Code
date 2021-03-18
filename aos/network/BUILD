@@ -37,6 +37,13 @@ flatbuffer_ts_library(
 )
 
 flatbuffer_cc_library(
+    name = "remote_data_fbs",
+    srcs = ["remote_data.fbs"],
+    gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
+)
+
+flatbuffer_cc_library(
     name = "timestamp_fbs",
     srcs = ["timestamp.fbs"],
     gen_reflections = 1,
@@ -148,6 +155,7 @@ cc_library(
         "//aos:configuration",
         "//aos:flatbuffer_merge",
         "//aos:flatbuffers",
+        "//aos:uuid",
         "@com_github_google_flatbuffers//:flatbuffers",
     ],
 )
@@ -205,6 +213,7 @@ cc_library(
         ":message_bridge_protocol",
         ":message_bridge_server_fbs",
         ":message_bridge_server_status",
+        ":remote_data_fbs",
         ":remote_message_fbs",
         ":sctp_lib",
         ":sctp_server",
@@ -286,6 +295,7 @@ cc_library(
         ":message_bridge_client_status",
         ":message_bridge_protocol",
         ":message_bridge_server_fbs",
+        ":remote_data_fbs",
         ":remote_message_fbs",
         ":sctp_client",
         ":timestamp_fbs",

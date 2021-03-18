@@ -11,6 +11,7 @@
 #include "aos/network/message_bridge_client_generated.h"
 #include "aos/network/message_bridge_server_generated.h"
 #include "aos/network/message_bridge_server_status.h"
+#include "aos/network/remote_data_generated.h"
 #include "aos/network/remote_message_generated.h"
 #include "aos/network/sctp_server.h"
 #include "aos/network/timestamp_channel.h"
@@ -88,7 +89,7 @@ class ChannelState {
 
   // Handles (by consuming) failure to deliver a message.
   void HandleFailure(
-      SizePrefixedFlatbufferDetachedBuffer<logger::MessageHeader> &&message);
+      SizePrefixedFlatbufferDetachedBuffer<RemoteData> &&message);
 
  private:
   const int channel_index_;
@@ -96,8 +97,7 @@ class ChannelState {
 
   std::vector<Peer> peers_;
 
-  std::deque<SizePrefixedFlatbufferDetachedBuffer<logger::MessageHeader>>
-      sent_messages_;
+  std::deque<SizePrefixedFlatbufferDetachedBuffer<RemoteData>> sent_messages_;
 
   // A fetcher to use to send the last message when a node connects and is
   // reliable.

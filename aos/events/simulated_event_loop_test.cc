@@ -653,7 +653,7 @@ TEST_P(RemoteMessageSimulatedEventLoopTest, MultinodePingPong) {
           EXPECT_EQ(header.boot_uuid()->string_view(),
                     simulated_event_loop_factory.GetNodeEventLoopFactory(pi2)
                         ->boot_uuid()
-                        .string_view());
+                        .ToString());
 
           const aos::monotonic_clock::time_point header_monotonic_sent_time(
               chrono::nanoseconds(header.monotonic_sent_time()));
@@ -1433,7 +1433,7 @@ TEST_P(RemoteMessageSimulatedEventLoopTest, MultinodeStartupTesting) {
         EXPECT_EQ(header.boot_uuid()->string_view(),
                   simulated_event_loop_factory.GetNodeEventLoopFactory(pi2)
                       ->boot_uuid()
-                      .string_view());
+                      .ToString());
         VLOG(1) << aos::FlatbufferToJson(&header);
         if (header.channel_index() == reliable_channel_index) {
           ++reliable_timestamp_count;
@@ -1488,7 +1488,7 @@ TEST_P(RemoteMessageSimulatedEventLoopTest, BootUUIDTest) {
   std::string expected_boot_uuid(
       simulated_event_loop_factory.GetNodeEventLoopFactory(pi2)
           ->boot_uuid()
-          .string_view());
+          .ToString());
 
   int timestamp_count = 0;
   pi1_remote_timestamp->MakeWatcher(
@@ -1530,12 +1530,12 @@ TEST_P(RemoteMessageSimulatedEventLoopTest, BootUUIDTest) {
   EXPECT_NE(expected_boot_uuid,
             simulated_event_loop_factory.GetNodeEventLoopFactory(pi2)
                 ->boot_uuid()
-                .string_view());
+                .ToString());
 
   expected_boot_uuid =
       simulated_event_loop_factory.GetNodeEventLoopFactory(pi2)
           ->boot_uuid()
-          .string_view();
+          .ToString();
   timestamp_count = 0;
   pi1_server_statistics_count = 0;
 

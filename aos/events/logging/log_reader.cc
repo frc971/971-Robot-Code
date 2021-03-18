@@ -13,7 +13,6 @@
 #include "aos/events/event_loop.h"
 #include "aos/events/logging/logfile_sorting.h"
 #include "aos/events/logging/logger_generated.h"
-#include "aos/events/logging/uuid.h"
 #include "aos/flatbuffer_merge.h"
 #include "aos/network/multinode_timestamp_filter.h"
 #include "aos/network/remote_message_generated.h"
@@ -22,6 +21,7 @@
 #include "aos/network/timestamp_channel.h"
 #include "aos/time/time.h"
 #include "aos/util/file.h"
+#include "aos/uuid.h"
 #include "flatbuffers/flatbuffers.h"
 #include "openssl/sha.h"
 
@@ -1172,7 +1172,7 @@ bool LogReader::State::Send(const TimestampedMessage &timestamped_message) {
     flatbuffers::FlatBufferBuilder fbb;
     fbb.ForceDefaults(true);
     flatbuffers::Offset<flatbuffers::String> boot_uuid_offset =
-        fbb.CreateString(event_loop_->boot_uuid().string_view());
+        event_loop_->boot_uuid().PackString(&fbb);
 
     RemoteMessage::Builder message_header_builder(fbb);
 

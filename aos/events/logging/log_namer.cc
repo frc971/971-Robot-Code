@@ -9,7 +9,7 @@
 #include "absl/strings/str_cat.h"
 #include "aos/events/logging/logfile_utils.h"
 #include "aos/events/logging/logger_generated.h"
-#include "aos/events/logging/uuid.h"
+#include "aos/uuid.h"
 #include "flatbuffers/flatbuffers.h"
 #include "glog/logging.h"
 
@@ -20,11 +20,10 @@ void LogNamer::UpdateHeader(
     aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header,
     const UUID &uuid, int parts_index) const {
   header->mutable_message()->mutate_parts_index(parts_index);
-  CHECK_EQ(uuid.string_view().size(),
+  CHECK_EQ(UUID::kStringSize,
            header->mutable_message()->mutable_parts_uuid()->size());
-  std::copy(uuid.string_view().begin(), uuid.string_view().end(),
-            reinterpret_cast<char *>(
-                header->mutable_message()->mutable_parts_uuid()->Data()));
+  uuid.CopyTo(reinterpret_cast<char *>(
+      header->mutable_message()->mutable_parts_uuid()->Data()));
 }
 
 void LocalLogNamer::WriteHeader(

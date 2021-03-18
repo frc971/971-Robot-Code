@@ -1901,7 +1901,7 @@ TEST_P(MultinodeLoggerTest, MessageHeader) {
 
           ASSERT_TRUE(header.has_boot_uuid());
           EXPECT_EQ(header.boot_uuid()->string_view(),
-                    pi2_event_loop->boot_uuid().string_view());
+                    pi2_event_loop->boot_uuid().ToString());
 
           EXPECT_EQ(pi1_context->queue_index, header.remote_queue_index());
           EXPECT_EQ(pi2_context->remote_queue_index,
@@ -1981,7 +1981,7 @@ TEST_P(MultinodeLoggerTest, MessageHeader) {
 
           ASSERT_TRUE(header.has_boot_uuid());
           EXPECT_EQ(header.boot_uuid()->string_view(),
-                    pi1_event_loop->boot_uuid().string_view());
+                    pi1_event_loop->boot_uuid().ToString());
 
           EXPECT_EQ(pi2_context->queue_index, header.remote_queue_index());
           EXPECT_EQ(pi1_context->remote_queue_index,
@@ -2090,7 +2090,7 @@ TEST_P(MultinodeLoggerDeathTest, RemoteReboot) {
   {
     pi2_boot1 = event_loop_factory_.GetNodeEventLoopFactory(pi2_)
                     ->boot_uuid()
-                    .string_view();
+                    .ToString();
     LoggerState pi1_logger = MakeLogger(pi1_);
 
     event_loop_factory_.RunFor(chrono::milliseconds(95));
@@ -2103,7 +2103,7 @@ TEST_P(MultinodeLoggerDeathTest, RemoteReboot) {
 
     pi2_boot2 = event_loop_factory_.GetNodeEventLoopFactory(pi2_)
                     ->boot_uuid()
-                    .string_view();
+                    .ToString();
 
     event_loop_factory_.RunFor(chrono::milliseconds(20000));
   }

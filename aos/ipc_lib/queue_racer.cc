@@ -177,7 +177,9 @@ void QueueRacer::RunIteration(bool race_reads, int write_wrap_count) {
         }
 
         ++started_writes_;
-        sender.Send(sizeof(ThreadPlusCount));
+        sender.Send(sizeof(ThreadPlusCount), aos::monotonic_clock::min_time,
+                    aos::realtime_clock::min_time, 0xffffffff,
+                    nullptr, nullptr, nullptr);
         // Blank out the new scratch buffer, to catch other people using it.
         {
           char *const new_data = static_cast<char *>(sender.Data()) +
@@ -261,10 +263,10 @@ void QueueRacer::CheckReads(bool race_reads, int write_wrap_count,
 
   for (uint64_t i = initial_i;
        i < (1 + write_wrap_count) * num_messages_ * num_threads_; ++i) {
-    ::aos::monotonic_clock::time_point monotonic_sent_time;
-    ::aos::realtime_clock::time_point realtime_sent_time;
-    ::aos::monotonic_clock::time_point monotonic_remote_time;
-    ::aos::realtime_clock::time_point realtime_remote_time;
+    monotonic_clock::time_point monotonic_sent_time;
+    realtime_clock::time_point realtime_sent_time;
+    monotonic_clock::time_point monotonic_remote_time;
+    realtime_clock::time_point realtime_remote_time;
     uint32_t remote_queue_index;
     size_t length;
     char read_data[1024];

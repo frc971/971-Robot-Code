@@ -11,13 +11,13 @@
 #include "aos/events/logging/logfile_sorting.h"
 #include "aos/events/logging/logfile_utils.h"
 #include "aos/events/logging/logger_generated.h"
-#include "aos/events/logging/uuid.h"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/network/message_bridge_server_generated.h"
 #include "aos/network/multinode_timestamp_filter.h"
 #include "aos/network/remote_message_generated.h"
 #include "aos/network/timestamp_filter.h"
 #include "aos/time/time.h"
+#include "aos/uuid.h"
 #include "flatbuffers/flatbuffers.h"
 
 namespace aos {

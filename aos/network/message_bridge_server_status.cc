@@ -85,11 +85,8 @@ MessageBridgeServerStatus::MessageBridgeServerStatus(
       statistics_.message().connections()->size());
 
   filters_.resize(event_loop->configuration()->nodes()->size());
-  boot_uuids_.resize(event_loop->configuration()->nodes()->size());
-  for (std::string &boot_uuid : boot_uuids_) {
-    // Make sure the memory gets allocated.
-    boot_uuid.reserve(UUID::kSize);
-  }
+  boot_uuids_.resize(event_loop->configuration()->nodes()->size(), UUID::Zero());
+  has_boot_uuids_.resize(event_loop->configuration()->nodes()->size(), false);
   timestamp_fetchers_.resize(event_loop->configuration()->nodes()->size());
   server_connection_.resize(event_loop->configuration()->nodes()->size());
 
@@ -144,8 +141,15 @@ ServerConnection *MessageBridgeServerStatus::FindServerConnection(
 }
 
 void MessageBridgeServerStatus::SetBootUUID(int node_index,
-                                            std::string_view boot_uuid) {
+                                            const UUID &boot_uuid) {
+  has_boot_uuids_[node_index] = true;
   boot_uuids_[node_index] = boot_uuid;
+  SendStatistics();
+  last_statistics_send_time_ = event_loop_->monotonic_now();
+}
+
+void MessageBridgeServerStatus::ClearBootUUID(int node_index) {
+  has_boot_uuids_[node_index] = false;
   SendStatistics();
   last_statistics_send_time_ = event_loop_->monotonic_now();
 }
@@ -175,9 +179,9 @@ void MessageBridgeServerStatus::SendStatistics() {
     flatbuffers::Offset<Node> node_offset = node_builder.Finish();
 
     flatbuffers::Offset<flatbuffers::String> boot_uuid_offset;
-    if (!boot_uuids_[node_index].empty() &&
-        connection->state() == State::CONNECTED) {
-      boot_uuid_offset = builder.fbb()->CreateString(boot_uuids_[node_index]);
+    if (connection->state() == State::CONNECTED &&
+        has_boot_uuids_[node_index]) {
+      boot_uuid_offset = boot_uuids_[node_index].PackString(builder.fbb());
     }
 
     ServerConnection::Builder server_connection_builder =

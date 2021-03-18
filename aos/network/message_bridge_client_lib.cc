@@ -8,6 +8,7 @@
 #include "aos/network/connect_generated.h"
 #include "aos/network/message_bridge_client_generated.h"
 #include "aos/network/message_bridge_protocol.h"
+#include "aos/network/remote_data_generated.h"
 #include "aos/network/sctp_client.h"
 #include "aos/network/timestamp_generated.h"
 #include "aos/unique_malloc_ptr.h"
@@ -98,9 +99,9 @@ SctpClientConnection::SctpClientConnection(
     std::vector<SctpClientChannelState> *channels, int client_index,
     MessageBridgeClientStatus *client_status)
     : event_loop_(event_loop),
-      connect_message_(
-          MakeConnectMessage(event_loop->configuration(), my_node, remote_name,
-                             event_loop->boot_uuid().string_view())),
+      connect_message_(MakeConnectMessage(event_loop->configuration(), my_node,
+                                          remote_name,
+                                          event_loop->boot_uuid())),
       message_reception_reply_(MakeMessageHeaderReply()),
       remote_node_(CHECK_NOTNULL(
           configuration::GetNode(event_loop->configuration(), remote_name))),
@@ -218,8 +219,8 @@ void SctpClientConnection::NodeDisconnected() {
 }
 
 void SctpClientConnection::HandleData(const Message *message) {
-  const logger::MessageHeader *message_header =
-      flatbuffers::GetSizePrefixedRoot<logger::MessageHeader>(message->data());
+  const RemoteData *remote_data =
+      flatbuffers::GetSizePrefixedRoot<RemoteData>(message->data());
 
   VLOG(1) << "Got a message of size " << message->size;
   CHECK_EQ(message->size, flatbuffers::GetPrefixedSize(message->data()) +
@@ -228,9 +229,9 @@ void SctpClientConnection::HandleData(const Message *message) {
   const int stream = message->header.rcvinfo.rcv_sid - kControlStreams();
   SctpClientChannelState *channel_state = &((*channels_)[stream_to_channel_[stream]]);
 
-  if (message_header->queue_index() == channel_state->last_queue_index &&
-      aos::monotonic_clock::time_point(
-          chrono::nanoseconds(message_header->monotonic_sent_time())) ==
+  if (remote_data->queue_index() == channel_state->last_queue_index &&
+      monotonic_clock::time_point(
+          chrono::nanoseconds(remote_data->monotonic_sent_time())) ==
           channel_state->last_timestamp) {
     LOG(INFO) << "Duplicate message from " << message->PeerAddress();
     connection_->mutate_duplicate_packets(connection_->duplicate_packets() + 1);
@@ -238,23 +239,23 @@ void SctpClientConnection::HandleData(const Message *message) {
   } else {
     connection_->mutate_received_packets(connection_->received_packets() + 1);
 
-    channel_state->last_queue_index = message_header->queue_index();
-    channel_state->last_timestamp = aos::monotonic_clock::time_point(
-        chrono::nanoseconds(message_header->monotonic_sent_time()));
+    channel_state->last_queue_index = remote_data->queue_index();
+    channel_state->last_timestamp = monotonic_clock::time_point(
+        chrono::nanoseconds(remote_data->monotonic_sent_time()));
 
     // Publish the message.
     RawSender *sender = channel_state->sender.get();
-    sender->Send(message_header->data()->data(), message_header->data()->size(),
-                 aos::monotonic_clock::time_point(chrono::nanoseconds(
-                     message_header->monotonic_sent_time())),
-                 aos::realtime_clock::time_point(
-                     chrono::nanoseconds(message_header->realtime_sent_time())),
-                 message_header->queue_index());
+    sender->Send(remote_data->data()->data(), remote_data->data()->size(),
+                 monotonic_clock::time_point(
+                     chrono::nanoseconds(remote_data->monotonic_sent_time())),
+                 realtime_clock::time_point(
+                     chrono::nanoseconds(remote_data->realtime_sent_time())),
+                 remote_data->queue_index());
 
     client_status_->SampleFilter(
         client_index_,
-        aos::monotonic_clock::time_point(
-            chrono::nanoseconds(message_header->monotonic_sent_time())),
+        monotonic_clock::time_point(
+            chrono::nanoseconds(remote_data->monotonic_sent_time())),
         sender->monotonic_sent_time());
 
     if (stream_reply_with_timestamp_[stream]) {
@@ -264,13 +265,13 @@ void SctpClientConnection::HandleData(const Message *message) {
       // Now fill out the message received reply.  This uses a MessageHeader
       // container so it can be directly logged.
       message_reception_reply_.mutable_message()->mutate_channel_index(
-          message_header->channel_index());
+          remote_data->channel_index());
       message_reception_reply_.mutable_message()->mutate_monotonic_sent_time(
-          message_header->monotonic_sent_time());
+          remote_data->monotonic_sent_time());
       message_reception_reply_.mutable_message()->mutate_realtime_sent_time(
-          message_header->realtime_sent_time());
+          remote_data->realtime_sent_time());
       message_reception_reply_.mutable_message()->mutate_queue_index(
-          message_header->queue_index());
+          remote_data->queue_index());
 
       // And capture the relevant data needed to generate the forwarding
       // MessageHeader.

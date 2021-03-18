@@ -1,0 +1,25 @@
+namespace aos.message_bridge;
+
+table RemoteData {
+  // Index into the channel datastructure in the log file header.  This
+  // provides the data type.
+  channel_index:uint (id: 0);
+  // Time this message was sent on the monotonic clock in nanoseconds on this
+  // node.
+  monotonic_sent_time:long (id: 1);
+  // Time this message was sent on the realtime clock in nanoseconds on this
+  // node.
+  realtime_sent_time:long (id: 2);
+  // Index into the ipc queue of this message.  This should start with 0 and
+  // always monotonically increment if no messages were ever lost.  It will
+  // wrap at a multiple of the queue size.
+  queue_index:uint (id: 3);
+
+  // The nested flatbuffer.
+  data:[ubyte] (id: 4);
+
+  // UUID for this boot.  This is 16 bytes long.
+  boot_uuid:[uint8] (id: 5);
+}
+
+root_type RemoteData;

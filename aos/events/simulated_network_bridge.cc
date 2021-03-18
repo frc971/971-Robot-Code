@@ -148,20 +148,18 @@ class RawMessageDelayer {
 
     if (timestamp_logger_) {
       flatbuffers::FlatBufferBuilder fbb;
-        fbb.ForceDefaults(true);
+      fbb.ForceDefaults(true);
       // Reset the filter every time the UUID changes.  There's probably a more
       // clever way to do this, but that means a better concept of rebooting.
       if (server_status_->BootUUID(destination_node_index_) !=
-          send_node_factory_->boot_uuid().string_view()) {
+          send_node_factory_->boot_uuid()) {
         server_status_->ResetFilter(destination_node_index_);
-        server_status_->SetBootUUID(
-            destination_node_index_,
-            send_node_factory_->boot_uuid().string_view());
+        server_status_->SetBootUUID(destination_node_index_,
+                                    send_node_factory_->boot_uuid());
       }
 
       flatbuffers::Offset<flatbuffers::String> boot_uuid_offset =
-          fbb.CreateString(
-              send_node_factory_->boot_uuid().string_view());
+          send_node_factory_->boot_uuid().PackString(&fbb);
 
       RemoteMessage::Builder message_header_builder(fbb);
 
@@ -343,8 +341,7 @@ SimulatedMessageBridge::SimulatedMessageBridge(
         auto client_event_loop = event_loop_map_.find(client_node);
         it->second.server_status.ResetFilter(node_index);
         it->second.server_status.SetBootUUID(
-            node_index,
-            client_event_loop->second.event_loop->boot_uuid().string_view());
+            node_index, client_event_loop->second.event_loop->boot_uuid());
       }
       ++node_index;
     }

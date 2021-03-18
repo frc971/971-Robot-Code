@@ -129,6 +129,11 @@ inline bool RawFetcher::Fetch() {
   return false;
 }
 
+inline bool RawSender::Send(size_t size) {
+  return Send(size, monotonic_clock::min_time, realtime_clock::min_time,
+              0xffffffffu);
+}
+
 inline bool RawSender::Send(
     size_t size, aos::monotonic_clock::time_point monotonic_remote_time,
     aos::realtime_clock::time_point realtime_remote_time,
@@ -145,6 +150,11 @@ inline bool RawSender::Send(
     return true;
   }
   return false;
+}
+
+inline bool RawSender::Send(const void *data, size_t size) {
+  return Send(data, size, monotonic_clock::min_time, realtime_clock::min_time,
+              0xffffffffu);
 }
 
 inline bool RawSender::Send(

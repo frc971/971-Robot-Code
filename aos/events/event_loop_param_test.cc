@@ -1848,6 +1848,7 @@ TEST_P(AbstractEventLoopTest, RawRemoteTimes) {
       aos::monotonic_clock::time_point(chrono::seconds(1501));
   const aos::realtime_clock::time_point realtime_remote_time =
       aos::realtime_clock::time_point(chrono::seconds(3132));
+  const uint32_t remote_queue_index = 0x254971;
 
   std::unique_ptr<aos::RawSender> sender =
       loop1->MakeRawSender(configuration::GetChannel(
@@ -1859,18 +1860,20 @@ TEST_P(AbstractEventLoopTest, RawRemoteTimes) {
 
   loop2->OnRun([&]() {
     EXPECT_TRUE(sender->Send(kData.data(), kData.size(), monotonic_remote_time,
-                             realtime_remote_time));
+                             realtime_remote_time, remote_queue_index));
   });
 
   bool happened = false;
   loop2->MakeRawWatcher(
       configuration::GetChannel(loop2->configuration(), "/test",
                                 "aos.TestMessage", "", nullptr),
-      [this, monotonic_remote_time, realtime_remote_time, &fetcher, &happened](
-          const Context &context, const void * /*message*/) {
+      [this, monotonic_remote_time, realtime_remote_time,
+       remote_queue_index, &fetcher,
+       &happened](const Context &context, const void * /*message*/) {
         happened = true;
         EXPECT_EQ(monotonic_remote_time, context.monotonic_remote_time);
         EXPECT_EQ(realtime_remote_time, context.realtime_remote_time);
+        EXPECT_EQ(remote_queue_index, context.remote_queue_index);
 
         ASSERT_TRUE(fetcher->Fetch());
         EXPECT_EQ(monotonic_remote_time,

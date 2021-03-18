@@ -9,11 +9,11 @@
 #include "aos/events/logging/log_namer.h"
 #include "aos/events/logging/logfile_utils.h"
 #include "aos/events/logging/logger_generated.h"
-#include "aos/events/logging/uuid.h"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/network/message_bridge_server_generated.h"
 #include "aos/network/remote_message_generated.h"
 #include "aos/time/time.h"
+#include "aos/uuid.h"
 #include "flatbuffers/flatbuffers.h"
 
 namespace aos {
@@ -209,6 +209,18 @@ class Logger {
     bool header_valid = false;
 
     // Sets the source_node_boot_uuid, properly updating everything.
+    void SetBootUUID(const UUID &new_source_node_boot_uuid) {
+      new_source_node_boot_uuid.CopyTo(source_node_boot_uuid.data());
+      header_valid = false;
+      has_source_node_boot_uuid = true;
+
+      flatbuffers::String *source_node_boot_uuid_string =
+          log_file_header.mutable_message()->mutable_source_node_boot_uuid();
+      CHECK_EQ(source_node_boot_uuid.size(),
+               source_node_boot_uuid_string->size());
+      memcpy(source_node_boot_uuid_string->data(), source_node_boot_uuid.data(),
+             source_node_boot_uuid.size());
+    }
     void SetBootUUID(std::string_view new_source_node_boot_uuid) {
       source_node_boot_uuid = new_source_node_boot_uuid;
       header_valid = false;
