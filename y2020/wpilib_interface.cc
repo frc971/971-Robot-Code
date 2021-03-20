@@ -364,14 +364,24 @@ class SuperstructureWriter
   void set_feeder_falcon(
       ::std::unique_ptr<::ctre::phoenix::motorcontrol::can::TalonFX> t) {
     feeder_falcon_ = ::std::move(t);
-    CHECK_EQ(ctre::phoenix::OKAY,
-             feeder_falcon_->ConfigSupplyCurrentLimit(
-                 {true, Values::kFeederSupplyCurrentLimit(),
-                  Values::kFeederSupplyCurrentLimit(), 0}));
-    CHECK_EQ(ctre::phoenix::OKAY,
-             feeder_falcon_->ConfigStatorCurrentLimit(
-                 {true, Values::kFeederStatorCurrentLimit(),
-                  Values::kFeederStatorCurrentLimit(), 0}));
+    {
+      auto result = feeder_falcon_->ConfigSupplyCurrentLimit(
+          {true, Values::kFeederSupplyCurrentLimit(),
+           Values::kFeederSupplyCurrentLimit(), 0});
+      if (result != ctre::phoenix::OKAY) {
+        LOG(WARNING) << "Failed to configure feeder supply current limit: "
+                     << result;
+      }
+    }
+    {
+      auto result = feeder_falcon_->ConfigStatorCurrentLimit(
+          {true, Values::kFeederStatorCurrentLimit(),
+           Values::kFeederStatorCurrentLimit(), 0});
+      if (result != ctre::phoenix::OKAY) {
+        LOG(WARNING) << "Failed to configure feeder stator current limit: "
+                     << result;
+      }
+    }
   }
 
   void set_washing_machine_control_panel_victor(
