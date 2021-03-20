@@ -26,6 +26,9 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   void SendStartingPosition(double x, double y, double theta);
   void SendStartingPosition(const frc971::MultiSpline *const spline);
   void GalacticSearch();
+  void AutoNavBounce();
+  void AutoNavBarrel();
+  void AutoNavSlalom();
   bool DriveFwd();
 
   ::aos::Sender<::frc971::control_loops::drivetrain::LocalizerControl>
