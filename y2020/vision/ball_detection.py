@@ -4,7 +4,6 @@ from rect import Rect
 
 import cv2 as cv
 import numpy as np
-
 # This function finds the percentage of yellow pixels in the rectangles
 # given that are regions of the given image. This allows us to determine
 # whether there is a ball in those rectangles
@@ -27,5 +26,4 @@ def capture_img():
     video_stream = cv.VideoCapture(0)
     frame = video_stream.read()[1]
     video_stream.release()
-    frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
     return frame
