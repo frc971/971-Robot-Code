@@ -1,14 +1,15 @@
 #!/usr/bin/python3
 
-from rect import Rect
-import ball_detection
-
 # Creates a UI for a user to select the regions in a camera image where the balls could be placed.
 # After the balls have been placed on the field and they submit the regions,
 # it will take another picture and based on the yellow regions in that picture it will determine where the
 # balls are. This tells us which path the current field is. It then sends the Alliance and Letter of the path
 # with aos_send to the /camera channel for the robot to excecute the spline for that path.
 
+from rect import Rect
+import ball_detection
+
+import cv2 as cv
 from enum import Enum
 import glog
 import json
@@ -30,15 +31,14 @@ class Letter(Enum):
 
 NUM_RECTS = 4
 AOS_SEND_PATH = "bazel-bin/aos/aos_send"
-CONFIG_PATH = "bazel-bin/y2020/config.json"
 
 if os.path.isdir("/home/pi/robot_code"):
     AOS_SEND_PATH = "/home/pi/robot_code/aos_send.stripped"
-    CONFIG_PATH = "/home/pi/robot_code/config.stripped.json"
+    os.system("./starter_cmd stop camera_reader")
 
 # The minimum percentage of yellow for a region of a image to
 # be considered to have a ball
-BALL_PCT_THRESHOLD = 50
+BALL_PCT_THRESHOLD = 10
 
 rects = [Rect(None, None, None, None)]
 
@@ -87,9 +87,25 @@ def on_cancel(event):
         rects[rect_index].y2 = None
         plt.show()
 
+SLEEP = 100
+img_fig = None
+
 def on_submit(event):
+    global img_fig
     plt.close("all")
-    pcts = ball_detection.pct_yellow(ball_detection.capture_img(), rects)
+    plt.ion()
+    img_fig = plt.figure()
+    running = True
+    while running:
+        detect_path()
+        cv.waitKey(SLEEP)
+
+def detect_path():
+    img = ball_detection.capture_img()
+    img_fig.figimage(img)
+    plt.show()
+    plt.pause(0.001)
+    pcts = ball_detection.pct_yellow(img, rects)
     if len(pcts) == len(rects):
         paths = []
         for i in range(len(pcts)):
@@ -106,8 +122,8 @@ def on_submit(event):
             glog.warn("More than one ball found, path is unknown" if rects_with_balls > 1 else
                       "No balls found")
         glog.info("Path is %s" % path)
-        os.system(AOS_SEND_PATH + " --config " + CONFIG_PATH +
-                  "/pi1/camera y2020.vision.GalacticSearchPath '" + json.dumps(path) + "'")
+        os.system(AOS_SEND_PATH +
+                  " /pi2/camera y2020.vision.GalacticSearchPath '" + json.dumps(path) + "'")
 
         for j in range(len(pcts)):
             glog.info("%s: %s%% yellow" % (rects[j], pcts[j]))
