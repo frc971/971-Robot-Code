@@ -247,7 +247,9 @@ class Logger {
 
   void WriteMissingTimestamps();
 
-  // Fetches from each channel until all the data is logged.
+  // Fetches from each channel until all the data is logged.  This is dangerous
+  // because it lets you log for more than 1 period.  All calls need to verify
+  // that t isn't greater than 1 period in the future.
   void LogUntil(monotonic_clock::time_point t);
 
   void RecordFetchResult(aos::monotonic_clock::time_point start,

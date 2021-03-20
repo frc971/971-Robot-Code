@@ -249,6 +249,10 @@ void Logger::StartLogging(std::unique_ptr<LogNamer> log_namer,
   // Note: this ship may have already sailed, but we don't have to make it
   // worse.
   // TODO(austin): Test...
+  //
+  // This is safe to call here since we have set last_synchronized_time_ as the
+  // same time as in the header, and all the data before it should be logged
+  // without ordering concerns.
   LogUntil(last_synchronized_time_);
 
   timer_handler_->Setup(event_loop_->monotonic_now() + polling_period_,
@@ -260,7 +264,7 @@ std::unique_ptr<LogNamer> Logger::StopLogging(
   CHECK(log_namer_) << ": Not logging right now";
 
   if (end_time != aos::monotonic_clock::min_time) {
-    LogUntil(end_time);
+    DoLogData(end_time);
   }
   timer_handler_->Disable();
 
