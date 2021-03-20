@@ -296,8 +296,8 @@ void AutonomousActor::SendSuperstructureGoal() {
 
     frc971::ProfileParameters::Builder profile_params_builder =
         builder.MakeBuilder<frc971::ProfileParameters>();
-    profile_params_builder.add_max_velocity(0.0);
-    profile_params_builder.add_max_acceleration(0.0);
+    profile_params_builder.add_max_velocity(10.0);
+    profile_params_builder.add_max_acceleration(30.0);
     flatbuffers::Offset<frc971::ProfileParameters> profile_params_offset =
         profile_params_builder.Finish();
     intake_builder.add_unsafe_goal(intake_goal_);

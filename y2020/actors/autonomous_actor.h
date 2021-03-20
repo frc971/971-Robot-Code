@@ -33,7 +33,7 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   void set_roller_voltage(double roller_voltage) {
     roller_voltage_ = roller_voltage;
   }
-  
+
   void SendSuperstructureGoal();
   void SplineAuto();
   void SendStartingPosition(double x, double y, double theta);
