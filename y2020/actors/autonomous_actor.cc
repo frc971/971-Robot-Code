@@ -15,6 +15,9 @@
 DEFINE_bool(spline_auto, true, "If true, define a spline autonomous mode");
 DEFINE_bool(galactic_search, false,
             "If true, do the galactic search autonomous");
+DEFINE_bool(bounce, false, "If true, run the AutoNav Bounce autonomous");
+DEFINE_bool(barrel, false, "If true, run the AutoNav Barrel autonomous");
+DEFINE_bool(slalom, false, "If true, run the AutoNav Slalom autonomous");
 
 namespace y2020 {
 namespace actors {
@@ -59,6 +62,12 @@ bool AutonomousActor::RunAction(
   }
   if (FLAGS_galactic_search) {
     GalacticSearch();
+  } else if (FLAGS_bounce) {
+    AutoNavBounce();
+  } else if (FLAGS_barrel) {
+    AutoNavBarrel();
+  } else if (FLAGS_slalom) {
+    AutoNavSlalom();
   } else if (FLAGS_spline_auto) {
     SplineAuto();
   } else {
@@ -134,6 +143,93 @@ void AutonomousActor::GalacticSearch() {
     set_roller_voltage(0.0);
     SendSuperstructureGoal();
   }
+}
+
+void AutonomousActor::AutoNavBounce() {
+  SplineHandle spline1 = PlanSpline(
+      [this](aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder
+                 *builder) {
+        flatbuffers::Offset<frc971::MultiSpline> target_spline =
+            auto_splines_.AutoNavBounce1(builder);
+        const frc971::MultiSpline *const spline =
+            flatbuffers::GetTemporaryPointer(*builder->fbb(), target_spline);
+        SendStartingPosition(CHECK_NOTNULL(spline));
+        return target_spline;
+      },
+      SplineDirection::kForward);
+
+  if (!spline1.WaitForPlan()) return;
+  spline1.Start();
+
+  SplineHandle spline2 = PlanSpline(
+      [this](aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder
+                 *builder) { return auto_splines_.AutoNavBounce2(builder); },
+      SplineDirection::kBackward);
+
+  if (!spline1.WaitForSplineDistanceRemaining(0.02)) return;
+
+  if (!spline2.WaitForPlan()) return;
+  spline2.Start();
+
+  SplineHandle spline3 = PlanSpline(
+      [this](aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder
+                 *builder) { return auto_splines_.AutoNavBounce3(builder); },
+      SplineDirection::kForward);
+
+  if (!spline2.WaitForSplineDistanceRemaining(0.02)) return;
+
+  if (!spline3.WaitForPlan()) return;
+  spline3.Start();
+
+  SplineHandle spline4 = PlanSpline(
+      [this](aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder
+                 *builder) { return auto_splines_.AutoNavBounce4(builder); },
+      SplineDirection::kBackward);
+
+  if (!spline3.WaitForSplineDistanceRemaining(0.02)) return;
+
+  if (!spline4.WaitForPlan()) return;
+  spline4.Start();
+
+  if (!spline4.WaitForSplineDistanceRemaining(0.02)) return;
+}
+
+void AutonomousActor::AutoNavBarrel() {
+  SplineHandle spline1 = PlanSpline(
+      [this](aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder
+                 *builder) {
+        flatbuffers::Offset<frc971::MultiSpline> target_spline;
+        target_spline = auto_splines_.AutoNavBarrel(builder);
+        const frc971::MultiSpline *const spline =
+            flatbuffers::GetTemporaryPointer(*builder->fbb(), target_spline);
+        SendStartingPosition(CHECK_NOTNULL(spline));
+        return target_spline;
+      },
+      SplineDirection::kForward);
+
+  if (!spline1.WaitForPlan()) return;
+  spline1.Start();
+
+  if (!spline1.WaitForSplineDistanceRemaining(0.02)) return;
+}
+
+void AutonomousActor::AutoNavSlalom() {
+  SplineHandle spline1 = PlanSpline(
+      [this](aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder
+                 *builder) {
+        flatbuffers::Offset<frc971::MultiSpline> target_spline;
+        target_spline = auto_splines_.AutoNavSlalom(builder);
+        const frc971::MultiSpline *const spline =
+            flatbuffers::GetTemporaryPointer(*builder->fbb(), target_spline);
+        SendStartingPosition(CHECK_NOTNULL(spline));
+        return target_spline;
+      },
+      SplineDirection::kForward);
+
+  if (!spline1.WaitForPlan()) return;
+  spline1.Start();
+
+  if (!spline1.WaitForSplineDistanceRemaining(0.02)) return;
 }
 
 void AutonomousActor::SplineAuto() {
