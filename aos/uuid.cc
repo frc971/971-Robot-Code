@@ -7,7 +7,11 @@
 #include <random>
 #include <string_view>
 
+#include "gflags/gflags.h"
 #include "glog/logging.h"
+
+DEFINE_string(boot_uuid, "",
+              "If set, override the boot UUID to have this value instead.");
 
 namespace aos {
 namespace {
@@ -150,6 +154,10 @@ UUID UUID::FromString(std::string_view str) {
 }
 
 UUID UUID::BootUUID() {
+  if (!FLAGS_boot_uuid.empty()) {
+    return UUID::FromString(FLAGS_boot_uuid);
+  }
+
   int fd = open("/proc/sys/kernel/random/boot_id", O_RDONLY);
   PCHECK(fd != -1);
 

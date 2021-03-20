@@ -39,6 +39,9 @@ flatbuffers::FlatBufferBuilder ChannelState::PackContext(
       fbb.CreateVector(static_cast<const uint8_t *>(context.data),
                        context.size);
 
+  flatbuffers::Offset<flatbuffers::Vector<uint8_t>> boot_uuid_offset =
+      context.remote_boot_uuid.PackVector(&fbb);
+
   RemoteData::Builder remote_data_builder(fbb);
   remote_data_builder.add_channel_index(channel_index_);
   remote_data_builder.add_queue_index(context.queue_index);
@@ -47,6 +50,7 @@ flatbuffers::FlatBufferBuilder ChannelState::PackContext(
   remote_data_builder.add_realtime_sent_time(
       context.realtime_event_time.time_since_epoch().count());
   remote_data_builder.add_data(data_offset);
+  remote_data_builder.add_boot_uuid(boot_uuid_offset);
 
   // TODO(austin): Use an iovec to build it up in 3 parts to avoid the copy?
   // Only useful when not logging.
@@ -125,8 +129,8 @@ void ChannelState::HandleDelivery(
         aos::Sender<RemoteMessage>::Builder builder =
             peer.timestamp_logger->MakeBuilder();
 
-        flatbuffers::Offset<flatbuffers::String> boot_uuid_offset =
-            server_status.BootUUID(peer.node_index).PackString(builder.fbb());
+        flatbuffers::Offset<flatbuffers::Vector<uint8_t>> boot_uuid_offset =
+            server_status.BootUUID(peer.node_index).PackVector(builder.fbb());
 
         RemoteMessage::Builder remote_message_builder =
             builder.MakeBuilder<RemoteMessage>();

@@ -534,7 +534,7 @@ TEST(LocklessQueueTest, Death) {
           char data[100];
           size_t s = snprintf(data, sizeof(data), "foobar%d", i + 1);
           sender.Send(data, s + 1, monotonic_clock::min_time,
-                      realtime_clock::min_time, 0xffffffffl,
+                      realtime_clock::min_time, 0xffffffffl, UUID::Zero(),
                       nullptr, nullptr, nullptr);
           // Pin a message, so when we keep writing we will exercise the pinning
           // logic.
@@ -608,7 +608,7 @@ TEST(LocklessQueueTest, Death) {
           char data[100];
           size_t s = snprintf(data, sizeof(data), "foobar%d", 971);
           sender.Send(data, s + 1, monotonic_clock::min_time,
-                      realtime_clock::min_time, 0xffffffffl,
+                      realtime_clock::min_time, 0xffffffffl, UUID::Zero(),
                       nullptr, nullptr, nullptr);
         }
 
@@ -622,13 +622,14 @@ TEST(LocklessQueueTest, Death) {
           monotonic_clock::time_point monotonic_remote_time;
           realtime_clock::time_point realtime_remote_time;
           uint32_t remote_queue_index;
+          UUID remote_boot_uuid;
           char read_data[1024];
           size_t length;
 
-          LocklessQueueReader::Result read_result =
-              reader.Read(i, &monotonic_sent_time, &realtime_sent_time,
-                          &monotonic_remote_time, &realtime_remote_time,
-                          &remote_queue_index, &length, &(read_data[0]));
+          LocklessQueueReader::Result read_result = reader.Read(
+              i, &monotonic_sent_time, &realtime_sent_time,
+              &monotonic_remote_time, &realtime_remote_time,
+              &remote_queue_index, &remote_boot_uuid, &length, &(read_data[0]));
 
           if (read_result != LocklessQueueReader::Result::GOOD) {
             if (read_result == LocklessQueueReader::Result::TOO_OLD) {

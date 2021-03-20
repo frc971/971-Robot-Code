@@ -11,6 +11,8 @@
 #include "aos/util/file.h"
 #include "gtest/gtest.h"
 
+DECLARE_string(boot_uuid);
+
 namespace aos {
 void SetShmBase(const std::string_view base);
 
@@ -47,7 +49,9 @@ class MessageBridgeParameterizedTest
  public:
   MessageBridgeParameterizedTest()
       : config(aos::configuration::ReadConfig(
-            absl::StrCat("aos/network/", GetParam().config))) {
+            absl::StrCat("aos/network/", GetParam().config))),
+        pi1_boot_uuid_(UUID::Random()),
+        pi2_boot_uuid_(UUID::Random()) {
     util::UnlinkRecursive(ShmBase("pi1"));
     util::UnlinkRecursive(ShmBase("pi2"));
   }
@@ -57,11 +61,13 @@ class MessageBridgeParameterizedTest
   void OnPi1() {
     DoSetShmBase("pi1");
     FLAGS_override_hostname = "raspberrypi";
+    FLAGS_boot_uuid = pi1_boot_uuid_.ToString();
   }
 
   void OnPi2() {
     DoSetShmBase("pi2");
     FLAGS_override_hostname = "raspberrypi2";
+    FLAGS_boot_uuid = pi2_boot_uuid_.ToString();
   }
 
   void MakePi1Server() {
@@ -147,6 +153,12 @@ class MessageBridgeParameterizedTest
     pi1_test_event_loop->MakeWatcher(
         "/pi1/aos", [](const Timestamp &timestamp) {
           VLOG(1) << "/pi1/aos Timestamp " << FlatbufferToJson(&timestamp);
+        });
+    pi1_test_event_loop->MakeWatcher(
+        "/pi2/aos", [this](const Timestamp &timestamp) {
+          VLOG(1) << "/pi2/aos Timestamp " << FlatbufferToJson(&timestamp);
+          EXPECT_EQ(pi1_test_event_loop->context().remote_boot_uuid,
+                    pi2_boot_uuid_);
         });
   }
 
@@ -258,6 +270,12 @@ class MessageBridgeParameterizedTest
         });
 
     pi2_test_event_loop->MakeWatcher(
+        "/pi1/aos", [this](const Timestamp &timestamp) {
+          VLOG(1) << "/pi1/aos Timestamp " << FlatbufferToJson(&timestamp);
+          EXPECT_EQ(pi2_test_event_loop->context().remote_boot_uuid,
+                    pi1_boot_uuid_);
+        });
+    pi2_test_event_loop->MakeWatcher(
         "/pi2/aos", [](const Timestamp &timestamp) {
           VLOG(1) << "/pi2/aos Timestamp " << FlatbufferToJson(&timestamp);
         });
@@ -276,6 +294,8 @@ class MessageBridgeParameterizedTest
   }
 
   aos::FlatbufferDetachedBuffer<aos::Configuration> config;
+  const UUID pi1_boot_uuid_;
+  const UUID pi2_boot_uuid_;
 
   std::unique_ptr<aos::ShmEventLoop> pi1_server_event_loop;
   std::unique_ptr<MessageBridgeServer> pi1_message_bridge_server;
@@ -380,11 +400,12 @@ TEST_P(MessageBridgeParameterizedTest, PingPong) {
 
   // Count the pongs.
   int pong_count = 0;
-  pong_event_loop.MakeWatcher(
-      "/test", [&pong_count](const examples::Ping &ping) {
-        ++pong_count;
-        VLOG(1) << "Got ping back " << FlatbufferToJson(&ping);
-      });
+  pong_event_loop.MakeWatcher("/test", [&pong_count, &pong_event_loop,
+                                        this](const examples::Ping &ping) {
+    EXPECT_EQ(pong_event_loop.context().remote_boot_uuid, pi1_boot_uuid_);
+    ++pong_count;
+    VLOG(1) << "Got ping back " << FlatbufferToJson(&ping);
+  });
 
   FLAGS_override_hostname = "";
 

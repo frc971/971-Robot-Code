@@ -131,15 +131,15 @@ inline bool RawFetcher::Fetch() {
 
 inline bool RawSender::Send(size_t size) {
   return Send(size, monotonic_clock::min_time, realtime_clock::min_time,
-              0xffffffffu);
+              0xffffffffu, event_loop_->boot_uuid());
 }
 
 inline bool RawSender::Send(
     size_t size, aos::monotonic_clock::time_point monotonic_remote_time,
     aos::realtime_clock::time_point realtime_remote_time,
-    uint32_t remote_queue_index) {
+    uint32_t remote_queue_index, const UUID &uuid) {
   if (DoSend(size, monotonic_remote_time, realtime_remote_time,
-             remote_queue_index)) {
+             remote_queue_index, uuid)) {
     timing_.size.Add(size);
     timing_.sender->mutate_count(timing_.sender->count() + 1);
     ftrace_.FormatMessage(
@@ -154,16 +154,16 @@ inline bool RawSender::Send(
 
 inline bool RawSender::Send(const void *data, size_t size) {
   return Send(data, size, monotonic_clock::min_time, realtime_clock::min_time,
-              0xffffffffu);
+              0xffffffffu, event_loop_->boot_uuid());
 }
 
 inline bool RawSender::Send(
     const void *data, size_t size,
     aos::monotonic_clock::time_point monotonic_remote_time,
     aos::realtime_clock::time_point realtime_remote_time,
-    uint32_t remote_queue_index) {
+    uint32_t remote_queue_index, const UUID &uuid) {
   if (DoSend(data, size, monotonic_remote_time, realtime_remote_time,
-             remote_queue_index)) {
+             remote_queue_index, uuid)) {
     timing_.size.Add(size);
     timing_.sender->mutate_count(timing_.sender->count() + 1);
     ftrace_.FormatMessage(
@@ -190,6 +190,7 @@ inline monotonic_clock::time_point TimerHandler::Call(
   event_loop_->context_.size = 0;
   event_loop_->context_.data = nullptr;
   event_loop_->context_.buffer_index = -1;
+  event_loop_->context_.remote_boot_uuid = event_loop_->boot_uuid();
 
   ftrace_.FormatMessage(
       "timer: %.*s: start now=%" PRId64 " event=%" PRId64,
@@ -235,6 +236,7 @@ inline void PhasedLoopHandler::Call(
   event_loop_->context_.size = 0;
   event_loop_->context_.data = nullptr;
   event_loop_->context_.buffer_index = -1;
+  event_loop_->context_.remote_boot_uuid = event_loop_->boot_uuid();
 
   // Compute how many cycles elapsed and schedule the next wakeup.
   Reschedule(schedule, monotonic_start_time);

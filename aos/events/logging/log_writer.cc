@@ -241,7 +241,8 @@ void Logger::StartLogging(std::unique_ptr<LogNamer> log_namer,
   WriteHeader();
 
   LOG(INFO) << "Logging node as " << FlatbufferToJson(event_loop_->node())
-            << " start_time " << last_synchronized_time_;
+            << " start_time " << last_synchronized_time_ << " boot uuid "
+            << event_loop_->boot_uuid();
 
   // Force logging up until the start of the log file now, so the messages at
   // the start are always ordered before the rest of the messages.
@@ -451,19 +452,6 @@ bool Logger::MaybeUpdateTimestamp(
         break;
       }
 
-      // Update the boot UUID as soon as we know we are connected.
-      if (!connection->has_boot_uuid()) {
-        VLOG(1) << "Missing boot_uuid for node " << aos::FlatbufferToJson(node);
-        break;
-      }
-
-      if (!node_state_[node_index].has_source_node_boot_uuid ||
-          node_state_[node_index].source_node_boot_uuid !=
-              connection->boot_uuid()->string_view()) {
-        node_state_[node_index].SetBootUUID(
-            connection->boot_uuid()->string_view());
-      }
-
       if (!connection->has_monotonic_offset()) {
         VLOG(1) << "Missing monotonic offset for setting start time for node "
                 << aos::FlatbufferToJson(node);
@@ -631,6 +619,9 @@ void Logger::LogUntil(monotonic_clock::time_point t) {
   // reboots which may have happened.
   WriteMissingTimestamps();
 
+  int our_node_index = aos::configuration::GetNodeIndex(
+      event_loop_->configuration(), event_loop_->node());
+
   // Write each channel to disk, one at a time.
   for (FetcherStruct &f : fetchers_) {
     while (true) {
@@ -653,6 +644,16 @@ void Logger::LogUntil(monotonic_clock::time_point t) {
         break;
       }
       if (f.writer != nullptr) {
+        // Only check if the boot UUID has changed if this is data from another
+        // node.  Our UUID can't change without restarting the application.
+        if (our_node_index != f.data_node_index) {
+          // And update our boot UUID if the UUID has changed.
+          if (node_state_[f.data_node_index].SetBootUUID(
+                  f.fetcher->context().remote_boot_uuid)) {
+            MaybeWriteHeader(f.data_node_index);
+          }
+        }
+
         // Write!
         const auto start = event_loop_->monotonic_now();
         flatbuffers::FlatBufferBuilder fbb(f.fetcher->context().size +
@@ -719,12 +720,8 @@ void Logger::LogUntil(monotonic_clock::time_point t) {
             flatbuffers::GetRoot<RemoteMessage>(f.fetcher->context().data);
 
         CHECK(msg->has_boot_uuid()) << ": " << aos::FlatbufferToJson(msg);
-        if (!node_state_[f.contents_node_index].has_source_node_boot_uuid ||
-            node_state_[f.contents_node_index].source_node_boot_uuid !=
-                msg->boot_uuid()->string_view()) {
-          node_state_[f.contents_node_index].SetBootUUID(
-              msg->boot_uuid()->string_view());
-
+        if (node_state_[f.contents_node_index].SetBootUUID(
+                UUID::FromVector(msg->boot_uuid()))) {
           MaybeWriteHeader(f.contents_node_index);
         }
 

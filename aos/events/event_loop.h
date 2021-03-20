@@ -75,6 +75,10 @@ struct Context {
   // the caller has access to this context, which makes this pretty useless.
   int buffer_index;
 
+  // UUID of the remote node which sent this message, or this node in the case
+  // of events which are local to this node.
+  UUID remote_boot_uuid = UUID::Zero();
+
   // Efficiently copies the flatbuffer into a FlatbufferVector, allocating
   // memory in the process.  It is vital that T matches the type of the
   // underlying flatbuffer.
@@ -150,7 +154,7 @@ class RawSender {
   bool Send(size_t size);
   bool Send(size_t size, monotonic_clock::time_point monotonic_remote_time,
             realtime_clock::time_point realtime_remote_time,
-            uint32_t remote_queue_index);
+            uint32_t remote_queue_index, const UUID &remote_boot_uuid);
 
   // Sends a single block of data by copying it.
   // The remote arguments have the same meaning as in Send above.
@@ -158,7 +162,7 @@ class RawSender {
   bool Send(const void *data, size_t size,
             monotonic_clock::time_point monotonic_remote_time,
             realtime_clock::time_point realtime_remote_time,
-            uint32_t remote_queue_index);
+            uint32_t remote_queue_index, const UUID &remote_boot_uuid);
 
   const Channel *channel() const { return channel_; }
 
@@ -195,13 +199,15 @@ class RawSender {
   friend class EventLoop;
 
   virtual bool DoSend(const void *data, size_t size,
-                      aos::monotonic_clock::time_point monotonic_remote_time,
-                      aos::realtime_clock::time_point realtime_remote_time,
-                      uint32_t remote_queue_index) = 0;
+                      monotonic_clock::time_point monotonic_remote_time,
+                      realtime_clock::time_point realtime_remote_time,
+                      uint32_t remote_queue_index,
+                      const UUID &remote_boot_uuid) = 0;
   virtual bool DoSend(size_t size,
-                      aos::monotonic_clock::time_point monotonic_remote_time,
-                      aos::realtime_clock::time_point realtime_remote_time,
-                      uint32_t remote_queue_index) = 0;
+                      monotonic_clock::time_point monotonic_remote_time,
+                      realtime_clock::time_point realtime_remote_time,
+                      uint32_t remote_queue_index,
+                      const UUID &remote_boot_uuid) = 0;
 
   EventLoop *const event_loop_;
   const Channel *const channel_;

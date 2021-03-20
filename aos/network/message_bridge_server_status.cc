@@ -355,6 +355,7 @@ void MessageBridgeServerStatus::Tick() {
   context.realtime_event_time = timestamp_sender_.realtime_sent_time();
   context.queue_index = timestamp_sender_.sent_queue_index();
   context.size = timestamp_copy.span().size();
+  context.remote_boot_uuid = event_loop_->boot_uuid();
   context.data = timestamp_copy.span().data();
 
   // Since we are building up the timestamp to send here, we need to trigger the
