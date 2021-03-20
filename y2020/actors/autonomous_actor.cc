@@ -122,10 +122,17 @@ void AutonomousActor::GalacticSearch() {
         },
         SplineDirection::kForward);
 
+    set_intake_goal(1.2);
+    set_roller_voltage(7.0);
+    SendSuperstructureGoal();
+
     if (!spline1.WaitForPlan()) return;
     spline1.Start();
 
     if (!spline1.WaitForSplineDistanceRemaining(0.02)) return;
+    set_intake_goal(-0.89);
+    set_roller_voltage(0.0);
+    SendSuperstructureGoal();
   }
 }
 
@@ -186,16 +193,16 @@ void AutonomousActor::SendSuperstructureGoal() {
 
   flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
       intake_offset;
-    
+
   {
     StaticZeroingSingleDOFProfiledSubsystemGoal::Builder intake_builder =
         builder.MakeBuilder<StaticZeroingSingleDOFProfiledSubsystemGoal>();
 
-    frc971::ProfileParameters::Builder profile_params_builder = 
+    frc971::ProfileParameters::Builder profile_params_builder =
         builder.MakeBuilder<frc971::ProfileParameters>();
     profile_params_builder.add_max_velocity(0.0);
     profile_params_builder.add_max_acceleration(0.0);
-    flatbuffers::Offset<frc971::ProfileParameters> profile_params_offset = 
+    flatbuffers::Offset<frc971::ProfileParameters> profile_params_offset =
         profile_params_builder.Finish();
     intake_builder.add_unsafe_goal(intake_goal_);
     intake_builder.add_profile_params(profile_params_offset);
@@ -204,7 +211,7 @@ void AutonomousActor::SendSuperstructureGoal() {
 
   superstructure::Goal::Builder superstructure_builder =
         builder.MakeBuilder<superstructure::Goal>();
-  
+
   superstructure_builder.add_intake(intake_offset);
   superstructure_builder.add_roller_voltage(roller_voltage_);
   superstructure_builder.add_roller_speed_compensation(kRollerSpeedCompensation);
