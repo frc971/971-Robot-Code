@@ -125,6 +125,8 @@ bool ChannelIsReadableOnNode(const Channel *channel, const Node *node);
 
 // Returns true if the message is supposed to be logged on this node.
 bool ChannelMessageIsLoggedOnNode(const Channel *channel, const Node *node);
+bool ChannelMessageIsLoggedOnNode(const Channel *channel,
+                                  std::string_view node_name);
 
 const Connection *ConnectionToNode(const Channel *channel, const Node *node);
 // Returns true if the delivery timestamps are supposed to be logged on this

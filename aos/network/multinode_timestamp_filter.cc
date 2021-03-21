@@ -267,7 +267,7 @@ void InterpolatedTimeConverter::QueueUntil(
                              std::vector<monotonic_clock::time_point>>>
         next_time = NextTimestamp();
     if (!next_time) {
-      LOG(INFO) << "Last timestamp, calling it quits";
+      VLOG(1) << "Last timestamp, calling it quits";
       at_end_ = true;
       break;
     }

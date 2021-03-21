@@ -105,6 +105,8 @@
       "name": "/pi{{ NUM }}/camera",
       "type": "y2020.vision.GalacticSearchPath",
       "source_node": "pi{{ NUM }}",
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": ["roborio"],
       "max_size" : 104,
       "destination_nodes": [
         {
