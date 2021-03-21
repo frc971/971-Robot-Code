@@ -9,6 +9,7 @@
 #include "aos/fast_string_builder.h"
 #include "aos/flatbuffer_utils.h"
 #include "aos/flatbuffers.h"
+#include "aos/util/file.h"
 #include "flatbuffers/flatbuffers.h"
 #include "flatbuffers/reflection.h"
 
@@ -111,13 +112,10 @@ inline FlatbufferDetachedBuffer<T> JsonFileToFlatbuffer(
 // Parses a file as a binary flatbuffer or dies.
 template <typename T>
 inline FlatbufferVector<T> FileToFlatbuffer(const std::string_view path) {
-  std::ifstream instream(std::string(path), std::ios::in | std::ios::binary);
+  const std::string data_string = util::ReadFileToStringOrDie(path);
   ResizeableBuffer data;
-  std::istreambuf_iterator<char> it(instream);
-  while (it != std::istreambuf_iterator<char>()) {
-    data.push_back(*it);
-    ++it;
-  }
+  data.resize(data_string.size());
+  memcpy(data.data(), data_string.data(), data_string.size());
   return FlatbufferVector<T>(std::move(data));
 }
 
