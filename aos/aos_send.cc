@@ -39,6 +39,7 @@ int main(int argc, char **argv) {
       cli_info.event_loop->MakeRawSender(channel);
   flatbuffers::FlatBufferBuilder fbb(sender->fbb_allocator()->size(),
                                      sender->fbb_allocator());
+  fbb.ForceDefaults(true);
   fbb.Finish(aos::JsonToFlatbuffer(std::string_view(argv[1]), channel->schema(),
                                    &fbb));
   sender->Send(fbb.GetSize());
