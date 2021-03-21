@@ -23,11 +23,19 @@ samplefile21 = sprintf("/tmp/timestamp_noncausal_%s_%s_samples.csv", node2, node
 offsetfile = "/tmp/timestamp_noncausal_offsets.csv"
 
 #set term qt 0
+if (ARG3 ne "" ) {
+     set term png
+     set output ARG3
+}
 
 plot samplefile12 using 1:2 title 'sample 1-2', \
      samplefile21 using 1:(-$2) title 'sample 2-1', \
      noncausalfile12 using 1:3 title 'nc 1-2' with lines, \
      noncausalfile21 using 1:(-$3) title 'nc 2-1' with lines, \
      offsetfile using ((column(node1_index) - node1_start_time + (column(node2_index) - node2_start_time)) / 2):(column(node2_index) - column(node1_index)) title 'filter 2-1' with linespoints
+
+if (ARG3 ne "" ) {
+     exit
+}
 
 pause -1
