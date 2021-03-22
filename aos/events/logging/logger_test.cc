@@ -28,7 +28,7 @@ namespace chrono = std::chrono;
 using aos::message_bridge::RemoteMessage;
 using aos::testing::MessageCounter;
 
-constexpr std::string_view kSingleConfigSha1(
+constexpr std::string_view kSingleConfigSha256(
     "bc8c9c2e31589eae6f0e36d766f6a437643e861d9568b7483106841cf7504dea");
 
 std::vector<std::vector<std::string>> ToLogReaderVector(
@@ -78,7 +78,7 @@ TEST_F(LoggerTest, Starts) {
   const ::std::string tmpdir = aos::testing::TestTmpDir();
   const ::std::string base_name = tmpdir + "/logfile";
   const ::std::string config =
-      absl::StrCat(base_name, kSingleConfigSha1, ".bfbs");
+      absl::StrCat(base_name, kSingleConfigSha256, ".bfbs");
   const ::std::string logfile = base_name + ".part0.bfbs";
   // Remove it.
   unlink(config.c_str());
@@ -142,11 +142,11 @@ TEST_F(LoggerDeathTest, ExtraStart) {
   const ::std::string tmpdir = aos::testing::TestTmpDir();
   const ::std::string base_name1 = tmpdir + "/logfile1";
   const ::std::string config1 =
-      absl::StrCat(base_name1, kSingleConfigSha1, ".bfbs");
+      absl::StrCat(base_name1, kSingleConfigSha256, ".bfbs");
   const ::std::string logfile1 = base_name1 + ".part0.bfbs";
   const ::std::string base_name2 = tmpdir + "/logfile2";
   const ::std::string config2 =
-      absl::StrCat(base_name2, kSingleConfigSha1, ".bfbs");
+      absl::StrCat(base_name2, kSingleConfigSha256, ".bfbs");
   const ::std::string logfile2 = base_name2 + ".part0.bfbs";
   unlink(logfile1.c_str());
   unlink(config1.c_str());
@@ -180,7 +180,7 @@ TEST_F(LoggerDeathTest, ExtraStop) {
   const ::std::string tmpdir = aos::testing::TestTmpDir();
   const ::std::string base_name = tmpdir + "/logfile";
   const ::std::string config =
-      absl::StrCat(base_name, kSingleConfigSha1, ".bfbs");
+      absl::StrCat(base_name, kSingleConfigSha256, ".bfbs");
   const ::std::string logfile = base_name + ".part0.bfbs";
   // Remove it.
   unlink(config.c_str());
@@ -213,11 +213,11 @@ TEST_F(LoggerTest, StartsTwice) {
   const ::std::string tmpdir = aos::testing::TestTmpDir();
   const ::std::string base_name1 = tmpdir + "/logfile1";
   const ::std::string config1 =
-      absl::StrCat(base_name1, kSingleConfigSha1, ".bfbs");
+      absl::StrCat(base_name1, kSingleConfigSha256, ".bfbs");
   const ::std::string logfile1 = base_name1 + ".part0.bfbs";
   const ::std::string base_name2 = tmpdir + "/logfile2";
   const ::std::string config2 =
-      absl::StrCat(base_name2, kSingleConfigSha1, ".bfbs");
+      absl::StrCat(base_name2, kSingleConfigSha256, ".bfbs");
   const ::std::string logfile2 = base_name2 + ".part0.bfbs";
   unlink(logfile1.c_str());
   unlink(config1.c_str());
@@ -283,7 +283,7 @@ TEST_F(LoggerTest, RotatedLogFile) {
   const ::std::string tmpdir = aos::testing::TestTmpDir();
   const ::std::string base_name = tmpdir + "/logfile";
   const ::std::string config =
-      absl::StrCat(base_name, kSingleConfigSha1, ".bfbs");
+      absl::StrCat(base_name, kSingleConfigSha256, ".bfbs");
   const ::std::string logfile0 = base_name + ".part0.bfbs";
   const ::std::string logfile1 = base_name + ".part1.bfbs";
   // Remove it.
@@ -368,7 +368,7 @@ TEST_F(LoggerTest, ManyMessages) {
   const ::std::string tmpdir = aos::testing::TestTmpDir();
   const ::std::string base_name = tmpdir + "/logfile";
   const ::std::string config =
-      absl::StrCat(base_name, kSingleConfigSha1, ".bfbs");
+      absl::StrCat(base_name, kSingleConfigSha256, ".bfbs");
   const ::std::string logfile = base_name + ".part0.bfbs";
   // Remove the log file.
   unlink(config.c_str());
