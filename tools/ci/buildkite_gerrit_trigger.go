@@ -188,11 +188,14 @@ func (s *State) handleEvent(eventInfo EventInfo, client *buildkite.Client) {
 				"review",
 				"-m",
 				fmt.Sprintf("\"Build Started: %s\"", *build.WebURL),
+				// Don't email out the initial link to lower the spam.
+				"-n",
+				"NONE",
 				"--verified",
 				"0",
 				fmt.Sprintf("%d,%d", eventInfo.Change.Number, eventInfo.PatchSet.Number))
 
-			log.Printf("Running 'ssh -p 29418 -i %s %s@software.frc971.org gerrit review -m '\"Build Started: %s\"' --verified 0 %d,%d' and waiting for it to finish...",
+			log.Printf("Running 'ssh -p 29418 -i %s %s@software.frc971.org gerrit review -m '\"Build Started: %s\"' -n NONE --verified 0 %d,%d' and waiting for it to finish...",
 				s.Key, s.User,
 				*build.WebURL, eventInfo.Change.Number, eventInfo.PatchSet.Number)
 			if err := cmd.Run(); err != nil {
@@ -290,11 +293,14 @@ func (s *State) handle(w http.ResponseWriter, r *http.Request) {
 							"review",
 							"-m",
 							fmt.Sprintf("\"Build Started: %s\"", webhook.Build.WebURL),
+							// Don't email out the initial link to lower the spam.
+							"-n",
+							"NONE",
 							"--verified",
 							"0",
 							fmt.Sprintf("%d,%d", c.ChangeNumber, c.Patchset))
 
-						log.Printf("Running 'ssh -p 29418 -i %s %s@software.frc971.org gerrit review -m '\"Build Started: %s\"' --verified 0 %d,%d' and waiting for it to finish...",
+						log.Printf("Running 'ssh -p 29418 -i %s %s@software.frc971.org gerrit review -m '\"Build Started: %s\"' -n NONE --verified 0 %d,%d' and waiting for it to finish...",
 							s.Key, s.User,
 							webhook.Build.WebURL, c.ChangeNumber, c.Patchset)
 						if err := cmd.Run(); err != nil {
