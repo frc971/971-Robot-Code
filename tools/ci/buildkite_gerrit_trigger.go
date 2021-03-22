@@ -89,7 +89,12 @@ type EventInfo struct {
 	Author         *User      `json:"author"`
 	Uploader       *User      `json:"uploader"`
 	Reviewer       *User      `json:"reviewer"`
+	Adder          *User      `json:"adder"`
+	Remover        *User      `json:"remover"`
 	Submitter      User       `json:"submitter,omitempty"`
+	NewRev         string     `json:"newRev,omitempty"`
+	Ref            string     `json:"ref,omitempty"`
+	TargetNode     string     `json:"targetNode,omitempty"`
 	Approvals      []Approval `json:"approvals,omitempty"`
 	Comment        string     `json:"comment,omitempty"`
 	PatchSet       *PatchSet  `json:"patchSet"`
@@ -437,7 +442,22 @@ func main() {
 			case "change-abandoned":
 			case "change-deleted":
 			case "change-merged":
-				// TODO(austin): Trigger a master build?
+				if eventInfo.RefName == "refs/heads/master" && eventInfo.Change.Status == "MERGED" {
+					if build, _, err := client.Builds.Create(
+						"spartan-robotics", "971-robot-code", &buildkite.CreateBuild{
+							Commit: eventInfo.NewRev,
+							Branch: "master",
+							Author: buildkite.Author{
+								Name:  eventInfo.Submitter.Name,
+								Email: eventInfo.Submitter.Email,
+							},
+						}); err == nil {
+						log.Printf("Scheduled master build %s\n", *build.ID)
+					} else {
+						log.Printf("Failed to schedule master build %v", err)
+						// TODO(austin): Notify failure to build.  Stephan should be able to pick this up in nagios.
+					}
+				}
 			case "change-restored":
 			case "comment-added":
 				if matched, _ := regexp.MatchString(`(?m)^retest$`, eventInfo.Comment); !matched {
