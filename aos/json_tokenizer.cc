@@ -152,6 +152,12 @@ bool Tokenizer::ConsumeNumber(::std::string *s) {
     return true;
   }
 
+  // Inf is also acceptable.
+  if (Consume("inf")) {
+    *s = ::std::string(original.substr(0, original.size() - data_.size()));
+    return true;
+  }
+
   // Then, we either get a 0, or we get a nonzero.  Only nonzero can be followed
   // by a second number.
   if (!Consume("0")) {
@@ -460,6 +466,14 @@ bool Tokenizer::FieldAsDouble(double *value) {
     return true;
   } else if (field_value() == "-nan") {
     *value = -std::numeric_limits<double>::quiet_NaN();
+    return true;
+  }
+
+  if (field_value() == "inf") {
+    *value = std::numeric_limits<double>::infinity();
+    return true;
+  } else if (field_value() == "-inf") {
+    *value = -std::numeric_limits<double>::infinity();
     return true;
   }
 

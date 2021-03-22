@@ -79,10 +79,20 @@ TEST_F(JsonToFlatbufferTest, Basic) {
   EXPECT_TRUE(JsonAndBack("{ \"foo_enum_nonconsecutive\": \"Big\" }"));
 }
 
+// Tests that Inf is handled correctly
+TEST_F(JsonToFlatbufferTest, Inf) {
+  EXPECT_TRUE(JsonAndBack("{ \"foo_float\": inf }"));
+  EXPECT_TRUE(JsonAndBack("{ \"foo_float\": -inf }"));
+  EXPECT_TRUE(JsonAndBack("{ \"foo_double\": inf }"));
+  EXPECT_TRUE(JsonAndBack("{ \"foo_double\": -inf }"));
+}
+
 // Tests that NaN is handled correctly
 TEST_F(JsonToFlatbufferTest, Nan) {
   EXPECT_TRUE(JsonAndBack("{ \"foo_float\": nan }"));
   EXPECT_TRUE(JsonAndBack("{ \"foo_float\": -nan }"));
+  EXPECT_TRUE(JsonAndBack("{ \"foo_double\": nan }"));
+  EXPECT_TRUE(JsonAndBack("{ \"foo_double\": -nan }"));
 }
 
 // Tests that we can handle decimal points.
