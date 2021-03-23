@@ -46,7 +46,7 @@
       "name": "/roborio/aos",
       "type": "aos.message_bridge.ServerStatistics",
       "source_node": "roborio",
-      "frequency": 2,
+      "frequency": 10,
       "num_senders": 2
     },
     {
@@ -57,28 +57,42 @@
       "num_senders": 2
     },
     {
-      "name": "/roborio/aos/remote_timestamps/pi1",
+      "name": "/roborio/aos/remote_timestamps/laptop/roborio/aos/aos-message_bridge-Timestamp",
       "type": "aos.message_bridge.RemoteMessage",
       "frequency": 200,
       "logger": "NOT_LOGGED",
       "source_node": "roborio"
     },
     {
-      "name": "/roborio/aos/remote_timestamps/pi2",
+      "name": "/roborio/aos/remote_timestamps/pi1/roborio/aos/aos-message_bridge-Timestamp",
       "type": "aos.message_bridge.RemoteMessage",
       "frequency": 200,
       "logger": "NOT_LOGGED",
       "source_node": "roborio"
     },
     {
-      "name": "/roborio/aos/remote_timestamps/pi3",
+      "name": "/roborio/aos/remote_timestamps/pi2/roborio/aos/aos-message_bridge-Timestamp",
       "type": "aos.message_bridge.RemoteMessage",
       "frequency": 200,
       "logger": "NOT_LOGGED",
       "source_node": "roborio"
     },
     {
-      "name": "/roborio/aos/remote_timestamps/pi4",
+      "name": "/roborio/aos/remote_timestamps/pi3/roborio/aos/aos-message_bridge-Timestamp",
+      "type": "aos.message_bridge.RemoteMessage",
+      "frequency": 200,
+      "logger": "NOT_LOGGED",
+      "source_node": "roborio"
+    },
+    {
+      "name": "/roborio/aos/remote_timestamps/pi4/roborio/aos/aos-message_bridge-Timestamp",
+      "type": "aos.message_bridge.RemoteMessage",
+      "frequency": 200,
+      "logger": "NOT_LOGGED",
+      "source_node": "roborio"
+    },
+    {
+      "name": "/roborio/aos/remote_timestamps/pi5/roborio/aos/aos-message_bridge-Timestamp",
       "type": "aos.message_bridge.RemoteMessage",
       "frequency": 200,
       "logger": "NOT_LOGGED",
@@ -115,6 +129,13 @@
         },
         {
           "name": "pi4",
+          "priority": 1,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": ["roborio"],
+          "time_to_live": 5000000
+        },
+        {
+          "name": "pi5",
           "priority": 1,
           "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
           "timestamp_logger_nodes": ["roborio"],
@@ -192,47 +213,17 @@
     },
     {
       "name": "/drivetrain",
+      "type": "frc971.control_loops.drivetrain.Output",
+      "source_node": "roborio",
+      "frequency": 200,
+      "num_senders": 2
+    },
+    {
+      "name": "/drivetrain",
       "type": "frc971.control_loops.drivetrain.Status",
       "source_node": "roborio",
       "frequency": 200,
       "max_size": 2000,
-      "num_senders": 2,
-      "destination_nodes": [
-        {
-          "name": "pi1",
-          "priority": 5,
-          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
-          "timestamp_logger_nodes": ["roborio"],
-          "time_to_live": 5000000
-        },
-        {
-          "name": "pi2",
-          "priority": 5,
-          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
-          "timestamp_logger_nodes": ["roborio"],
-          "time_to_live": 5000000
-        },
-        {
-          "name": "pi3",
-          "priority": 5,
-          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
-          "timestamp_logger_nodes": ["roborio"],
-          "time_to_live": 5000000
-        },
-        {
-          "name": "pi4",
-          "priority": 5,
-          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
-          "timestamp_logger_nodes": ["roborio"],
-          "time_to_live": 5000000
-        }
-      ]
-    },
-    {
-      "name": "/drivetrain",
-      "type": "frc971.control_loops.drivetrain.Output",
-      "source_node": "roborio",
-      "frequency": 200,
       "num_senders": 2
     },
     {
@@ -352,6 +343,9 @@
     },
     {
       "name": "pi4"
+    },
+    {
+      "name": "pi5"
     }
   ]
 }

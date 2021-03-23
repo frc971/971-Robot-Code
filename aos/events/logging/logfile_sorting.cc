@@ -80,6 +80,12 @@ void FindLogs(std::vector<std::string> *files, std::string filename) {
   closedir(directory);
 }
 
+std::vector<std::string> FindLogs(std::string filename) {
+  std::vector<std::string> files;
+  FindLogs(&files, filename);
+  return files;
+}
+
 std::vector<std::string> FindLogs(int argc, char **argv) {
   std::vector<std::string> found_logfiles;
 

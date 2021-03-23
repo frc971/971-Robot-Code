@@ -152,6 +152,7 @@ aos_config(
         ":config_pi2",
         ":config_pi3",
         ":config_pi4",
+        ":config_pi5",
         ":config_roborio",
     ],
     flatbuffers = [
@@ -191,6 +192,7 @@ aos_config(
         "pi2",
         "pi3",
         "pi4",
+        "pi5",
     ]
 ]
 
@@ -289,5 +291,5 @@ cc_binary(
         parameters = {"NUM": str(num)},
         target_compatible_with = ["@platforms//os:linux"],
     )
-    for num in range(1, 5)
+    for num in range(1, 6)
 ]

@@ -723,11 +723,17 @@ http_file(
     urls = ["https://www.frc971.org/Build-Dependencies/small_sample_logfile.fbs"],
 )
 
-http_file(
+http_archive(
     name = "drivetrain_replay",
-    downloaded_file_path = "spinning_wheels_while_still.bfbs",
-    sha256 = "8abe3bbf7ac7a3ab37ad8a313ec22fc244899d916f5e9037100b02e242f5fb45",
-    urls = ["https://www.frc971.org/Build-Dependencies/spinning_wheels_while_still4.bfbs"],
+    build_file_content = """
+filegroup(
+    name = "drivetrain_replay",
+    srcs = glob(["**/*.bfbs"]),
+    visibility = ["//visibility:public"],
+)
+    """,
+    sha256 = "115dcd2fe005cb9cad3325707aa7f4466390c43a08555edf331c06c108bdf692",
+    url = "https://www.frc971.org/Build-Dependencies/2021-03-20_drivetrain_spin_wheels.tar.gz",
 )
 
 # OpenCV armhf (for raspberry pi)

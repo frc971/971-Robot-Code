@@ -65,7 +65,7 @@ class Localizer : public frc971::control_loops::drivetrain::LocalizerInterface {
                             right_encoder, 0, 0, 0, 0, 0, 0)
                                .finished(),
                            ekf_.P());
-  };
+  }
 
  private:
   // Storage for a single turret position data point.

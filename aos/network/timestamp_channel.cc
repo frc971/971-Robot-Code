@@ -42,7 +42,7 @@ const Channel *ChannelTimestampFinder::ForChannel(
       RemoteMessage::GetFullyQualifiedName(), name_, node_, true);
   if (shared_timestamp_channel != nullptr) {
     LOG(WARNING) << "Failed to find timestamp channel {\"name\": \""
-                 << split_timestamp_channel << "\", \"type\": \""
+                 << split_timestamp_channel_name << "\", \"type\": \""
                  << RemoteMessage::GetFullyQualifiedName()
                  << "\"}, falling back to old version.";
     return shared_timestamp_channel;

@@ -117,16 +117,6 @@ aos_config(
     ],
 )
 
-aos_config(
-    name = "replay_config",
-    src = "drivetrain_replay_config.json",
-    target_compatible_with = ["@platforms//os:linux"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//y2020:config",
-    ],
-)
-
 cc_test(
     name = "localizer_test",
     srcs = ["localizer_test.cc"],
@@ -150,8 +140,8 @@ cc_test(
     name = "drivetrain_replay_test",
     srcs = ["drivetrain_replay_test.cc"],
     data = [
-        ":replay_config",
-        "@drivetrain_replay//file:spinning_wheels_while_still.bfbs",
+        "//y2020:config",
+        "@drivetrain_replay",
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [

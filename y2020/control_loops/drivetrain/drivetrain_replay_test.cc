@@ -22,9 +22,10 @@
 #include "y2020/control_loops/drivetrain/drivetrain_base.h"
 
 DEFINE_string(
-    logfile, "external/drivetrain_replay/file/spinning_wheels_while_still.bfbs",
+    logfile,
+    "external/drivetrain_replay/",
     "Name of the logfile to read from.");
-DEFINE_string(config, "y2020/control_loops/drivetrain/replay_config.json",
+DEFINE_string(config, "y2020/config.json",
               "Name of the config file to replay using.");
 
 namespace y2020 {
@@ -36,7 +37,8 @@ class DrivetrainReplayTest : public ::testing::Test {
  public:
   DrivetrainReplayTest()
       : config_(aos::configuration::ReadConfig(FLAGS_config)),
-        reader_(FLAGS_logfile, &config_.message()) {
+        reader_(aos::logger::SortParts(aos::logger::FindLogs(FLAGS_logfile)),
+                &config_.message()) {
     aos::network::OverrideTeamNumber(971);
 
     // TODO(james): Actually enforce not sending on the same buses as the
@@ -55,10 +57,6 @@ class DrivetrainReplayTest : public ::testing::Test {
 
     frc971::control_loops::drivetrain::DrivetrainConfig<double> config =
         GetDrivetrainConfig();
-    // Make the modification required to the imu transform to work with the 2016
-    // logs...
-    config.imu_transform << 0.0, -1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0;
-    config.gyro_type = frc971::control_loops::drivetrain::GyroType::IMU_Z_GYRO;
 
     localizer_ =
         std::make_unique<frc971::control_loops::drivetrain::DeadReckonEkf>(
@@ -69,25 +67,6 @@ class DrivetrainReplayTest : public ::testing::Test {
 
     test_event_loop_ =
         reader_.event_loop_factory()->MakeEventLoop("drivetrain_test", roborio_);
-
-    // IMU readings used to be published out one at a time, but we now expect
-    // batches.  Batch them up to upgrade the data.
-    imu_sender_ =
-        test_event_loop_->MakeSender<frc971::IMUValuesBatch>("/drivetrain");
-    test_event_loop_->MakeWatcher(
-        "/drivetrain", [this](const frc971::IMUValues &values) {
-          aos::Sender<frc971::IMUValuesBatch>::Builder builder =
-              imu_sender_.MakeBuilder();
-          flatbuffers::Offset<frc971::IMUValues> values_offsets =
-              aos::CopyFlatBuffer(&values, builder.fbb());
-          flatbuffers::Offset<
-              flatbuffers::Vector<flatbuffers::Offset<frc971::IMUValues>>>
-              values_offset = builder.fbb()->CreateVector(&values_offsets, 1);
-          frc971::IMUValuesBatch::Builder imu_values_batch_builder =
-              builder.MakeBuilder<frc971::IMUValuesBatch>();
-          imu_values_batch_builder.add_readings(values_offset);
-          builder.Send(imu_values_batch_builder.Finish());
-        });
 
     status_fetcher_ = test_event_loop_->MakeFetcher<
         frc971::control_loops::drivetrain::Status>("/drivetrain");
@@ -102,7 +81,6 @@ class DrivetrainReplayTest : public ::testing::Test {
   std::unique_ptr<frc971::control_loops::drivetrain::DrivetrainLoop>
       drivetrain_;
   std::unique_ptr<aos::EventLoop> test_event_loop_;
-  aos::Sender<frc971::IMUValuesBatch> imu_sender_;
 
   aos::Fetcher<frc971::control_loops::drivetrain::Status> status_fetcher_;
 };
@@ -116,7 +94,10 @@ TEST_F(DrivetrainReplayTest, SpinningWheels) {
   ASSERT_TRUE(status_fetcher_->has_x());
   ASSERT_TRUE(status_fetcher_->has_y());
   ASSERT_TRUE(status_fetcher_->has_theta());
-  EXPECT_LT(std::abs(status_fetcher_->x()), 0.25);
+  EXPECT_NEAR(status_fetcher_->estimated_left_position(),
+              status_fetcher_->estimated_right_position(), 0.1);
+  EXPECT_LT(std::abs(status_fetcher_->x()),
+            std::abs(status_fetcher_->estimated_left_position()) / 2.0);
   // Because the encoders should not be affecting the y or yaw axes, expect a
   // reasonably precise result (although, since this is a real worl dtest, the
   // robot probably did actually move be some non-zero amount).

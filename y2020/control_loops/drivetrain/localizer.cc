@@ -24,7 +24,7 @@ Eigen::Matrix<float, 4, 4> FlatbufferToTransformationMatrix(
 }
 
 // Indices of the pis to use.
-const std::array<std::string, 3> kPisToUse{"pi1", "pi2", "pi3"};
+const std::array<std::string, 5> kPisToUse{"pi1", "pi2", "pi3", "pi4", "pi5"};
 
 // Calculates the pose implied by the camera target, just based on
 // distance/heading components.

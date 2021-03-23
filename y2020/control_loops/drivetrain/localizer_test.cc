@@ -131,9 +131,10 @@ class LocalizedDrivetrainTest : public aos::testing::ControlLoopTest {
         drivetrain_plant_(drivetrain_plant_event_loop_.get(), dt_config_),
         last_frame_(monotonic_now()) {
     event_loop_factory()->SetTimeConverter(&time_converter_);
-    CHECK_EQ(aos::configuration::GetNodeIndex(configuration(), roborio_), 5);
+    CHECK_EQ(aos::configuration::GetNodeIndex(configuration(), roborio_), 6);
     CHECK_EQ(aos::configuration::GetNodeIndex(configuration(), pi1_), 1);
     time_converter_.AddMonotonic({monotonic_clock::epoch() + kPiTimeOffset,
+                                  monotonic_clock::epoch() + kPiTimeOffset,
                                   monotonic_clock::epoch() + kPiTimeOffset,
                                   monotonic_clock::epoch() + kPiTimeOffset,
                                   monotonic_clock::epoch() + kPiTimeOffset,

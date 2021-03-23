@@ -93,6 +93,10 @@ std::vector<LogParts> FilterPartsForNode(const std::vector<LogFile> &parts,
 // them to the vector.
 void FindLogs(std::vector<std::string> *files, std::string filename);
 
+// Recursively searches the file/folder for .bfbs and .bfbs.xz files and returns
+// them in a vector.
+std::vector<std::string> FindLogs(std::string filename);
+
 // Recursively searches for logfiles in argv[1] and onward.
 std::vector<std::string> FindLogs(int argc, char **argv);
 

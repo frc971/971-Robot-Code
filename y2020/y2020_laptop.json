@@ -101,6 +101,20 @@
       ]
     },
     {
+      "name": "/pi5/aos",
+      "type": "aos.message_bridge.Timestamp",
+      "source_node": "pi5",
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": ["laptop"],
+      "destination_nodes": [
+        {
+          "name": "laptop",
+          "priority": 1,
+          "time_to_live": 5000000
+        }
+      ]
+    },
+    {
       "name": "/laptop/aos",
       "type": "aos.timing.Report",
       "source_node": "laptop",
@@ -119,7 +133,7 @@
       "name": "/laptop/aos",
       "type": "aos.message_bridge.ServerStatistics",
       "source_node": "laptop",
-      "frequency": 2,
+      "frequency": 10,
       "num_senders": 2
     },
     {
@@ -166,6 +180,13 @@
           "timestamp_logger_nodes": ["laptop"]
         },
         {
+          "name": "pi5",
+          "priority": 1,
+          "time_to_live": 5000000,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": ["laptop"]
+        },
+        {
           "name": "roborio",
           "priority": 1,
           "time_to_live": 5000000,
@@ -175,7 +196,7 @@
       ]
     },
     {
-      "name": "/laptop/aos/remote_timestamps/roborio",
+      "name": "/laptop/aos/remote_timestamps/roborio/laptop/aos/aos-message_bridge-Timestamp",
       "type": "aos.message_bridge.RemoteMessage",
       "source_node": "laptop",
       "logger": "NOT_LOGGED",
@@ -184,7 +205,7 @@
       "max_size": 200
     },
     {
-      "name": "/laptop/aos/remote_timestamps/pi1",
+      "name": "/laptop/aos/remote_timestamps/pi1/laptop/aos/aos-message_bridge-Timestamp",
       "type": "aos.message_bridge.RemoteMessage",
       "source_node": "laptop",
       "logger": "NOT_LOGGED",
@@ -193,7 +214,7 @@
       "max_size": 200
     },
     {
-      "name": "/laptop/aos/remote_timestamps/pi2",
+      "name": "/laptop/aos/remote_timestamps/pi2/laptop/aos/aos-message_bridge-Timestamp",
       "type": "aos.message_bridge.RemoteMessage",
       "source_node": "laptop",
       "logger": "NOT_LOGGED",
@@ -202,7 +223,7 @@
       "max_size": 200
     },
     {
-      "name": "/laptop/aos/remote_timestamps/pi3",
+      "name": "/laptop/aos/remote_timestamps/pi3/laptop/aos/aos-message_bridge-Timestamp",
       "type": "aos.message_bridge.RemoteMessage",
       "source_node": "laptop",
       "logger": "NOT_LOGGED",
@@ -211,7 +232,16 @@
       "max_size": 200
     },
     {
-      "name": "/laptop/aos/remote_timestamps/pi4",
+      "name": "/laptop/aos/remote_timestamps/pi4/laptop/aos/aos-message_bridge-Timestamp",
+      "type": "aos.message_bridge.RemoteMessage",
+      "source_node": "laptop",
+      "logger": "NOT_LOGGED",
+      "frequency": 20,
+      "num_senders": 2,
+      "max_size": 200
+    },
+    {
+      "name": "/laptop/aos/remote_timestamps/pi5/laptop/aos/aos-message_bridge-Timestamp",
       "type": "aos.message_bridge.RemoteMessage",
       "source_node": "laptop",
       "logger": "NOT_LOGGED",
@@ -321,6 +351,34 @@
       "name": "/pi4/camera",
       "type": "frc971.vision.sift.ImageMatchResult",
       "source_node": "pi4",
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": ["laptop"],
+      "destination_nodes": [
+        {
+          "name": "laptop",
+          "priority": 1,
+          "time_to_live": 5000000
+        }
+      ]
+    },
+    {
+      "name": "/pi5/camera",
+      "type": "frc971.vision.CameraImage",
+      "source_node": "pi5",
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": ["laptop"],
+      "destination_nodes": [
+        {
+          "name": "laptop",
+          "priority": 1,
+          "time_to_live": 5000000
+        }
+      ]
+    },
+    {
+      "name": "/pi5/camera",
+      "type": "frc971.vision.sift.ImageMatchResult",
+      "source_node": "pi5",
       "logger": "LOCAL_AND_REMOTE_LOGGER",
       "logger_nodes": ["laptop"],
       "destination_nodes": [
@@ -367,6 +425,9 @@
     },
     {
       "name": "pi4"
+    },
+    {
+      "name": "pi5"
     }
   ]
 }
