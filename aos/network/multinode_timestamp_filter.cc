@@ -17,14 +17,17 @@ DEFINE_bool(timestamps_to_csv, false,
             "of CSV files in /tmp/.  This should only be needed when debugging "
             "time synchronization.");
 
-DEFINE_int32(max_invalid_distance_ns, 500,
+DEFINE_int32(max_invalid_distance_ns, 0,
              "The max amount of time we will let the solver go backwards.");
 
 namespace aos {
 namespace message_bridge {
 namespace {
 namespace chrono = std::chrono;
-}
+
+const Eigen::IOFormat kHeavyFormat(Eigen::StreamPrecision, Eigen::DontAlignCols,
+                                   ", ", ";\n", "[", "]", "[", "]");
+}  // namespace
 
 TimestampProblem::TimestampProblem(size_t count) {
   CHECK_GT(count, 1u);
@@ -34,13 +37,15 @@ TimestampProblem::TimestampProblem(size_t count) {
   node_mapping_.resize(count, 0);
 }
 
-// TODO(austin): Add linear inequality constraints too.
+// TODO(austin): Add linear inequality constraints too.  Currently we just
+// enforce them.
 //
 // TODO(austin): Add a rate of change constraint from the last sample.  1
 // ms/s.  Figure out how to define it.  Do this last.  This lets us handle
 // constraints going away, and constraints close in time.
 //
-// TODO(austin): Use the timestamp of the remote timestamp as more data.
+// TODO(austin): When the new newton's method solver prooves it's worth, kill
+// the old SLSQP solver.  It will be unreachable for a little bit.
 
 std::vector<double> TimestampProblem::SolveDouble() {
   MaybeUpdateNodeMapping();
@@ -144,6 +149,239 @@ bool TimestampProblem::ValidateSolution(
     }
   }
   return success;
+}
+
+Eigen::VectorXd TimestampProblem::Gradient(
+    const Eigen::Ref<Eigen::VectorXd> time_offsets) const {
+  Eigen::VectorXd grad = Eigen::VectorXd::Zero(live_nodes_);
+  for (size_t i = 0; i < filters_.size(); ++i) {
+    for (const struct FilterPair &filter : filters_[i]) {
+      // Reminder, our cost function has the following form.
+      //   ((tb - (1 + ma) ta - ba)^2
+      // We are ignoring the slope when taking the derivative and applying the
+      // chain rule to keep the gradient smooth.  This means that the gradient
+      // is +- 2 * error.
+      //
+      const size_t a_solution_index = NodeToFullSolutionIndex(i);
+      const size_t b_solution_index = NodeToFullSolutionIndex(filter.b_index);
+      const double error =
+          2.0 * filter.filter->OffsetError(base_clock_[i],
+                                           time_offsets(a_solution_index),
+                                           base_clock_[filter.b_index],
+                                           time_offsets(b_solution_index));
+
+      grad(a_solution_index) += -error;
+      grad(b_solution_index) += error;
+    }
+  }
+  return grad;
+}
+
+Eigen::MatrixXd TimestampProblem::Hessian(
+    const Eigen::Ref<Eigen::VectorXd> /*time_offsets*/) const {
+  Eigen::MatrixXd hessian = Eigen::MatrixXd::Zero(live_nodes_, live_nodes_);
+
+  for (size_t i = 0; i < filters_.size(); ++i) {
+    for (const struct FilterPair &filter : filters_[i]) {
+      // Reminder, our cost function has the following form.
+      //   ((tb - (1 + ma) ta - ba)^2
+      // We are ignoring the slope when taking the derivative and applying the
+      // chain rule to keep the gradient smooth.  This means that the Hessian is
+      // 2 for d^2 cost/dta^2 and d^2 cost/dtb^2
+      const size_t a_solution_index = NodeToFullSolutionIndex(i);
+      const size_t b_solution_index = NodeToFullSolutionIndex(filter.b_index);
+      hessian(a_solution_index, a_solution_index) += 2;
+      hessian(b_solution_index, a_solution_index) += -2;
+      hessian(a_solution_index, b_solution_index) =
+          hessian(b_solution_index, a_solution_index);
+      hessian(b_solution_index, b_solution_index) += 2;
+    }
+  }
+
+  return hessian;
+}
+
+Eigen::VectorXd TimestampProblem::Newton(
+    const Eigen::Ref<Eigen::VectorXd> time_offsets) const {
+  CHECK_GT(live_nodes_, 0u) << ": No live nodes to solve for.";
+  // TODO(austin): Each of the DCost functions does a binary search of the
+  // timestamps list.  By the time we have computed the gradient and Hessian,
+  // we've done 5 binary searches for the same information.
+  const Eigen::VectorXd grad = Gradient(time_offsets);
+  const Eigen::MatrixXd hessian = Hessian(time_offsets);
+  const Eigen::MatrixXd constraint_jacobian =
+      Eigen::MatrixXd::Ones(1, live_nodes_) / static_cast<double>(live_nodes_);
+  // https://www.cs.purdue.edu/homes/jhonorio/16spring-cs52000-equality.pdf
+  //
+  // Queue long explanation for why this is the right math...
+  //
+  // Our cost function is piecewise quadratic and simple by design.  It should
+  // also be convex.  This means it is equivalent for us to drive the gradient
+  // to 0 to find the corresponding times on all nodes.
+  //
+  // This gets us close but doesn't let us solve for the time corresponding to a
+  // specific time on one node on all the nodes.
+  //
+  // To do this, we want a Newton solver which works for equality constraints.
+  //   argmin f(x) subject to {A x = b}
+  // More specifically, we want a version of this which will start with
+  // infeasible initial solutions.
+  //
+  // The newton step for this is
+  //   X(n+1) = X(n) + xnt
+  //
+  //   [Hessian(cost(X(n))) A^T] [xnt] = [-grad(cost(X(n)))]
+  //   [A                     0] [w]     [-A X(n) + b      ]
+  //
+  // It turns out that w is the dual newton step.  But we don't actually need to
+  // track the dual problem to solve our problem except to show that the dual
+  // problem has also converged.
+  //
+  // We could set A to [1, 0, 0, ...] and force a single clock to a specific
+  // time.  But, that will result in the optimal solution being different
+  // depending on which node is picked.
+  //
+  // Instead, let's solve for the average clock instead.  This will be always
+  // symmetric, and we can drive the goal for that clock to make any individual
+  // clock have the right time.  That would be a solver wrapped around a solver.
+  //
+  // Turns out, we can do that by combining the iterations.  If we set A to
+  // [1/n, 1/n, 1/n ...], and b to the distributed clock, that would drive our
+  // states such that the distributed clock will be what we want.  If we instead
+  // leave A the same, but set (-A X(n) + b) to be ( - [1, 0, 0...] * X(n) +
+  // goal_clock), we will drive the distributed clock to be what it needs to be
+  // to set a node's clock to the right time.
+  //
+  // This ends up working surprisingly well.  A toy problem with 2 line segments
+  // and 2 nodes converges in 2 iterations.
+  //
+  // TODO(austin): Maybe drive the distributed so we drive the min clock?  This
+  // will solve the for loop at the same time, making things faster.
+  //
+  //
+  // To ensure reliable convergence, we want to make 1 adjustment to the above
+  // problem statement.
+  //
+  // d cost/dta =>
+  //   2 * (tb - (1 + ma) ta - ba) * (-(1 + ma))
+  //
+  // This means that as you move between line segments with different slopes,
+  // you end up with step changes in the gradient.  Solvers like continuous
+  // derivatives.  But, we don't really care if this is an exact solution to the
+  // cost problem.  We just care that it is close to a solution to the cost
+  // problem and more importantly well behaved.
+  //
+  // The simple fix is to ignore the slope when applying the chain rule.  This
+  // makes the derivative just be the distance to the line, which is a
+  // continuous function.  Newtons method then converges really really easily
+  // every time.
+
+  Eigen::MatrixXd a;
+  a.resize(live_nodes_ + 1, live_nodes_ + 1);
+  a.block(0, 0, live_nodes_, live_nodes_) = hessian;
+  a.block(0, live_nodes_, live_nodes_, 1) = constraint_jacobian.transpose();
+  a.block(live_nodes_, 0, 1, live_nodes_) = constraint_jacobian;
+  a(live_nodes_, live_nodes_) = 0.0;
+
+  Eigen::VectorXd b = Eigen::VectorXd::Zero(live_nodes_ + 1);
+  b.block(0, 0, live_nodes_, 1) = -grad;
+
+  // Since we are driving the clock on the solution node to the base_clock, that
+  // is equivalent to driving the solution node's offset to 0.
+  b(live_nodes_) = -time_offsets(NodeToFullSolutionIndex(solution_node_));
+
+  return a.colPivHouseholderQr().solve(b);
+}
+
+std::vector<monotonic_clock::time_point> TimestampProblem::SolveNewton() {
+  constexpr int kMaxIterations = 200;
+  MaybeUpdateNodeMapping();
+  VLOG(1) << "Solving for node " << solution_node_ << " at "
+          << base_clock(solution_node_);
+  Eigen::VectorXd data = Eigen::VectorXd::Zero(live_nodes_);
+
+  int solution_number = 0;
+  while (true) {
+    Eigen::VectorXd step = Newton(data);
+
+    if (VLOG_IS_ON(1)) {
+      // Print out the gradient ignoring the component removed by the equality
+      // constraint.  This tells us what gradient we are depending to try to
+      // finish our solution.
+      const Eigen::MatrixXd constraint_jacobian =
+          Eigen::MatrixXd::Ones(1, live_nodes_) /
+          static_cast<double>(live_nodes_);
+      Eigen::VectorXd adjusted_grad =
+          Gradient(data) + step(live_nodes_) * constraint_jacobian.transpose();
+
+      VLOG(1) << "Adjusted grad " << solution_number << " -> "
+              << std::setprecision(12) << std::fixed << std::setfill(' ')
+              << adjusted_grad.transpose().format(kHeavyFormat);
+    }
+
+    VLOG(1) << "Step " << solution_number << " -> " << std::setprecision(12)
+            << std::fixed << std::setfill(' ')
+            << step.transpose().format(kHeavyFormat);
+    // We got there if the max step is small (this is strongly correlated to the
+    // gradient since the Hessian is constant), and our solution node's time is
+    // also close.
+    if (step.block(0, 0, live_nodes_, 1).lpNorm<Eigen::Infinity>() < 1e-4 &&
+        std::abs(data(NodeToFullSolutionIndex(solution_node_))) < 1e-4) {
+      break;
+    }
+
+    data += step.block(0, 0, live_nodes_, 1);
+
+    ++solution_number;
+
+    // We are doing all our math with both an int64 base and a double offset.
+    // This lets us handle large offsets while retaining precision down to the
+    // nanosecond easily.
+    //
+    // Some problems start out with a poor initial solution.  This is especially
+    // true for the first solution.  Because we control the solver, as we
+    // determine that the double is getting too big, we can move that
+    // information to the int64 base clock.  Threshold this to not be *too* big
+    // since it makes it hard to debug as the data keeps jumping around.
+    for (size_t j = 0; j < size(); ++j) {
+      const size_t solution_index = NodeToFullSolutionIndex(j);
+      if (j != solution_node_ && live(j) &&
+          std::abs(data(solution_index)) > 1000) {
+        int64_t dsolution =
+            static_cast<int64_t>(std::round(data(solution_index)));
+        base_clock_[j] += chrono::nanoseconds(dsolution);
+        data(solution_index) -= dsolution;
+      }
+    }
+
+    // And finally, don't let us iterate forever.  If it isn't converging,
+    // report back.
+    if (solution_number > kMaxIterations) {
+      break;
+    }
+  }
+
+  VLOG(1) << "Solving for node " << solution_node_ << " of "
+          << base_clock(solution_node_) << " in " << solution_number
+          << " cycles";
+  std::vector<monotonic_clock::time_point> result(size());
+  for (size_t i = 0; i < size(); ++i) {
+    if (live(i)) {
+      result[i] =
+          base_clock(i) + std::chrono::nanoseconds(static_cast<int64_t>(
+                              std::round(data(NodeToFullSolutionIndex(i)))));
+      VLOG(1) << "live  " << result[i] << " "
+              << data(NodeToFullSolutionIndex(i));
+    } else {
+      result[i] = monotonic_clock::min_time;
+      VLOG(1) << "dead  " << result[i];
+    }
+  }
+  if (solution_number > kMaxIterations) {
+    LOG(FATAL) << "Failed to converge.";
+  }
+
+  return result;
 }
 
 double TimestampProblem::Cost(const double *time_offsets, double *grad) {
@@ -998,7 +1236,7 @@ TimestampProblem MultiNodeNoncausalOffsetEstimator::MakeProblem() {
 }
 
 std::tuple<NoncausalTimestampFilter *,
-           std::vector<aos::monotonic_clock::time_point>>
+           std::vector<aos::monotonic_clock::time_point>, int>
 MultiNodeNoncausalOffsetEstimator::NextSolution(
     TimestampProblem *problem,
     const std::vector<aos::monotonic_clock::time_point> &base_times) {
@@ -1047,11 +1285,12 @@ MultiNodeNoncausalOffsetEstimator::NextSolution(
 
       problem->set_solution_node(node_a_index);
       problem->set_base_clock(problem->solution_node(), next_node_time);
-      if (VLOG_IS_ON(1)) {
+      if (VLOG_IS_ON(2)) {
         problem->Debug();
       }
       // TODO(austin): Can we cache?  Solving is expensive.
-      std::vector<monotonic_clock::time_point> solution = problem->Solve();
+      std::vector<monotonic_clock::time_point> solution =
+          problem->SolveNewton();
 
       // Bypass checking if order validation is turned off.  This lets us dump a
       // CSV file so we can view the problem and figure out what to do.  The
@@ -1122,39 +1361,6 @@ MultiNodeNoncausalOffsetEstimator::NextSolution(
                       << " -> " << (result_times[i] - solution[i]).count()
                       << "ns";
           }
-          // Since we found a problem with the solution, solve one problem per
-          // node, starting at the problem point.  This will show us any
-          // inconsistencies due to the problem phrasing and which node we
-          // solved from.
-          for (size_t a_index = 0; a_index < solution.size(); ++a_index) {
-            if (!problem->live(a_index)) {
-              continue;
-            }
-            for (size_t node_index = 0; node_index < solution.size();
-                 ++node_index) {
-              // Offset everything based on the elapsed time since the last
-              // solution on the node we are solving for.  The rate that time
-              // elapses should be ~1.
-              problem->set_base_clock(node_index, solution[node_index]);
-            }
-
-            problem->set_solution_node(a_index);
-            problem->Debug();
-            const std::vector<double> resolve_solution_double =
-                problem->SolveDouble();
-            problem->PrintSolution(resolve_solution_double);
-
-            const std::vector<monotonic_clock::time_point> resolve_solution =
-                problem->DoubleToMonotonic(resolve_solution_double.data());
-
-            LOG(INFO) << "Candidate solution for resolved node " << a_index
-                      << " is";
-            for (size_t i = 0; i < resolve_solution.size(); ++i) {
-              LOG(INFO) << "  " << resolve_solution[i] << " vs original "
-                        << solution[i] << " -> "
-                        << (resolve_solution[i] - solution[i]).count();
-            }
-          }
 
           if (skip_order_validation_) {
             next_node_filter->Consume();
@@ -1175,7 +1381,7 @@ MultiNodeNoncausalOffsetEstimator::NextSolution(
       VLOG(1) << "  " << result_times[i];
     }
   }
-  return std::make_tuple(next_filter, std::move(result_times));
+  return std::make_tuple(next_filter, std::move(result_times), solution_index);
 }
 
 std::optional<std::tuple<distributed_clock::time_point,
@@ -1188,7 +1394,8 @@ MultiNodeNoncausalOffsetEstimator::NextTimestamp() {
   // Ok, now solve for the minimum time on each channel.
   std::vector<aos::monotonic_clock::time_point> result_times;
   NoncausalTimestampFilter *next_filter = nullptr;
-  std::tie(next_filter, result_times) =
+  int solution_node_index = 0;
+  std::tie(next_filter, result_times, solution_node_index) =
       NextSolution(&problem, last_monotonics_);
 
   CHECK(!all_done_);
@@ -1235,13 +1442,16 @@ MultiNodeNoncausalOffsetEstimator::NextTimestamp() {
   if (first_solution_) {
     std::vector<aos::monotonic_clock::time_point> resolved_times;
     NoncausalTimestampFilter *resolved_next_filter = nullptr;
+    int resolved_solution_node_index = 0;
 
     VLOG(1) << "Resolving with updated base times for accuracy.";
-    std::tie(resolved_next_filter, resolved_times) =
+    std::tie(resolved_next_filter, resolved_times,
+             resolved_solution_node_index) =
         NextSolution(&problem, result_times);
 
     first_solution_ = false;
     next_filter = resolved_next_filter;
+    solution_node_index = resolved_solution_node_index;
 
     // Force any unknown nodes to track the distributed clock (which starts at 0
     // too).
@@ -1265,23 +1475,34 @@ MultiNodeNoncausalOffsetEstimator::NextTimestamp() {
       case TimeComparison::kAfter:
         problem.Debug();
         for (size_t i = 0; i < result_times.size(); ++i) {
-          LOG(INFO) << "  " << last_monotonics_[i] << " vs " << result_times[i];
+          LOG(INFO) << "  " << last_monotonics_[i] << " vs " << result_times[i]
+                    << " -> " << (last_monotonics_[i] - result_times[i]).count()
+                    << "ns";
         }
-        LOG(FATAL) << "Found a solution before the last returned solution.";
+        LOG(FATAL)
+            << "Found a solution before the last returned solution on node "
+            << solution_node_index;
         break;
       case TimeComparison::kEq:
         return NextTimestamp();
-      case TimeComparison::kInvalid:
-        if (InvalidDistance(last_monotonics_, result_times) <
+      case TimeComparison::kInvalid: {
+        const chrono::nanoseconds invalid_distance =
+            InvalidDistance(last_monotonics_, result_times);
+        if (invalid_distance <
             chrono::nanoseconds(FLAGS_max_invalid_distance_ns)) {
           return NextTimestamp();
         }
+        LOG(INFO) << "Times can't be compared by " << invalid_distance.count()
+                  << "ns";
         CHECK_EQ(last_monotonics_.size(), result_times.size());
         for (size_t i = 0; i < result_times.size(); ++i) {
-          LOG(INFO) << "  " << last_monotonics_[i] << " vs " << result_times[i];
+          LOG(INFO) << "  " << last_monotonics_[i] << " vs " << result_times[i]
+                    << " -> " << (last_monotonics_[i] - result_times[i]).count()
+                    << "ns";
         }
-        LOG(FATAL) << "Found solutions which can't be ordered.";
-        break;
+        LOG(FATAL) << "Please investigate.  Use --max_invalid_distance_ns="
+                   << invalid_distance.count() << " to ignore this.";
+      } break;
     }
   }
 

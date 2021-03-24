@@ -49,6 +49,18 @@ void NormalizeTimestamps(monotonic_clock::time_point *ta_base, double *ta) {
   *ta_base += ta_digits;
   *ta -= static_cast<double>(ta_digits.count());
 
+  // Sign, numerical precision wins again.
+  //   *ta_base=1000.300249970sec, *ta=-1.35525e-20
+  // We then promptly round this to
+  //   *ta_base=1000.300249969sec, *ta=1
+  // The 1.0 then breaks the LT assumption below, so we kersplat.
+  //
+  // Detect this case directly and move the 1.0 back into ta_base.
+  if (*ta == 1.0) {
+    *ta = 0.0;
+    *ta_base += chrono::nanoseconds(1);
+  }
+
   CHECK_GE(*ta, 0.0);
   CHECK_LT(*ta, 1.0);
 }

@@ -64,6 +64,10 @@ class TimestampProblem {
   // each node.
   std::vector<monotonic_clock::time_point> Solve();
 
+  // Solves the optimization problem phrased using the symmetric Netwon's method
+  // solver and returns the optimal time on each node.
+  std::vector<monotonic_clock::time_point> SolveNewton();
+
   // Returns the squared error for all of the offsets.
   // time_offsets is the offsets from the base_clock for every node (in order)
   // except the solution node.  It should be one element shorter than the number
@@ -126,6 +130,17 @@ class TimestampProblem {
     return reinterpret_cast<TimestampProblem *>(data)->Cost(time_offsets, grad);
   }
 
+  // Returns the Hessian of the cost function at time_offsets.
+  Eigen::MatrixXd Hessian(const Eigen::Ref<Eigen::VectorXd> time_offsets) const;
+  // Returns the gradient of the cost function at time_offsets.
+  Eigen::VectorXd Gradient(
+      const Eigen::Ref<Eigen::VectorXd> time_offsets) const;
+
+  // Returns the newton step of the timestamp problem.  The last term is the
+  // scalar on the equality constraint.  This needs to be removed from the
+  // solution to get the actual newton step.
+  Eigen::VectorXd Newton(const Eigen::Ref<Eigen::VectorXd> time_offsets) const;
+
   void MaybeUpdateNodeMapping() {
     if (node_mapping_valid_) {
       return;
@@ -139,19 +154,26 @@ class TimestampProblem {
         node_mapping_[i] = std::numeric_limits<size_t>::max();
       }
     }
+    live_nodes_ = live_node_index;
     node_mapping_valid_ = true;
   }
 
   // Converts from a node index to an index in the solution.
   size_t NodeToSolutionIndex(size_t node_index) const {
-    CHECK(node_mapping_valid_);
     CHECK_NE(node_index, solution_node_);
     // The solver is going to provide us a matrix with solution_node_ removed.
     // The indices of all nodes before solution_node_ are in the same spot, and
     // the indices of the nodes after solution node are shifted over.
-    size_t mapped_node_index = node_mapping_[node_index];
+    size_t mapped_node_index = NodeToFullSolutionIndex(node_index);
     return node_index < solution_node_ ? mapped_node_index
                                        : (mapped_node_index - 1);
+  }
+
+  // Converts from a node index to an index in the solution without skipping the
+  // solution node.
+  size_t NodeToFullSolutionIndex(size_t node_index) const {
+    CHECK(node_mapping_valid_);
+    return node_mapping_[node_index];
   }
 
   // Number of times Cost has been called for tracking.
@@ -166,8 +188,12 @@ class TimestampProblem {
   std::vector<monotonic_clock::time_point> base_clock_;
   std::vector<bool> live_;
 
+  // True if both node_mapping_ and live_nodes_ are valid.
   bool node_mapping_valid_ = false;
+  // Mapping from a node index to an index in the solution.
   std::vector<size_t> node_mapping_;
+  // The number of live nodes there are.
+  size_t live_nodes_ = 0;
 
   // Filter and the node index it is referencing.
   //   filter->Offset(ta) + ta => t_(b_node);
@@ -345,7 +371,7 @@ class MultiNodeNoncausalOffsetEstimator final
   TimestampProblem MakeProblem();
 
   std::tuple<NoncausalTimestampFilter *,
-             std::vector<aos::monotonic_clock::time_point>>
+             std::vector<aos::monotonic_clock::time_point>, int>
   NextSolution(TimestampProblem *problem,
                const std::vector<aos::monotonic_clock::time_point> &base_times);
 
