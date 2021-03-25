@@ -199,6 +199,11 @@ void DrivetrainFilters::Correct(aos::monotonic_clock::time_point monotonic_now,
       break;
   }
 
+  ready_ = imu_zeroer_.Zeroed();
+
+  // TODO(james): How aggressively can we fault here? If we fault to
+  // aggressively, we might have issues during startup if wpilib_interface takes
+  // too long to start publishing IMU measurements.
   if (monotonic_now > last_gyro_time_ + chrono::milliseconds(20)) {
     last_gyro_rate_ = 0.0;
   }
@@ -461,6 +466,15 @@ void DrivetrainLoop::RunIteration(
     builder.add_localizer(localizer_offset);
     builder.add_zeroing(zeroer_offset);
     status->Send(builder.Finish());
+  }
+
+  // If the filters aren't ready/valid, then disable all outputs (currently,
+  // this only happens if the IMU is faulted or has not zeroed).
+  // TODO(james): Add exceptions so that during competitive play the driver
+  // can retain minimal control of the robot.
+  if (!filters_.Ready()) {
+    output_struct.left_voltage = 0.0;
+    output_struct.right_voltage = 0.0;
   }
 
   double left_voltage = 0.0;

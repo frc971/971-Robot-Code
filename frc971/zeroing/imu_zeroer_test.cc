@@ -8,9 +8,22 @@ static constexpr int kMinSamplesToZero =
     2 * ImuZeroer::kSamplesToAverage * ImuZeroer::kRequiredZeroPoints;
 
 aos::FlatbufferDetachedBuffer<IMUValues> MakeMeasurement(
-    const Eigen::Vector3d &gyro, const Eigen::Vector3d &accel) {
+    const Eigen::Vector3d &gyro, const Eigen::Vector3d &accel,
+    bool faulted = false) {
   flatbuffers::FlatBufferBuilder fbb;
   fbb.ForceDefaults(true);
+
+  ADIS16470DiagStatBuilder diag_stat_builder(fbb);
+  diag_stat_builder.add_clock_error(faulted);
+  diag_stat_builder.add_memory_failure(false);
+  diag_stat_builder.add_sensor_failure(false);
+  diag_stat_builder.add_standby_mode(false);
+  diag_stat_builder.add_spi_communication_error(false);
+  diag_stat_builder.add_flash_memory_update_error(false);
+  diag_stat_builder.add_data_path_overrun(false);
+
+  const auto diag_stat_offset = diag_stat_builder.Finish();
+
   IMUValuesBuilder builder(fbb);
   builder.add_gyro_x(gyro.x());
   builder.add_gyro_y(gyro.y());
@@ -18,6 +31,7 @@ aos::FlatbufferDetachedBuffer<IMUValues> MakeMeasurement(
   builder.add_accelerometer_x(accel.x());
   builder.add_accelerometer_y(accel.y());
   builder.add_accelerometer_z(accel.z());
+  builder.add_previous_reading_diag_stat(diag_stat_offset);
   fbb.Finish(builder.Finish());
   return fbb.Release();
 }
@@ -152,6 +166,7 @@ TEST(ImuZeroerTest, FaultOnNewZero) {
         MakeMeasurement({0.01, 0.05, 0.03}, {4, 5, 6}).message());
   }
   ASSERT_TRUE(zeroer.Faulted());
+  ASSERT_FALSE(zeroer.Zeroed());
 }
 
 // Tests that we do not fault if the zero only changes by a small amount.
@@ -168,6 +183,17 @@ TEST(ImuZeroerTest, NoFaultOnSimilarZero) {
         MakeMeasurement({0.01, 0.020001, 0.03}, {4, 5, 6}).message());
   }
   ASSERT_FALSE(zeroer.Faulted());
+}
+
+// Tests that we fault on a bad diagnostic.
+TEST(ImuZeroerTest, FaultOnBadDiagnostic) {
+  ImuZeroer zeroer;
+  ASSERT_FALSE(zeroer.Zeroed());
+  ASSERT_FALSE(zeroer.Faulted());
+  zeroer.InsertAndProcessMeasurement(
+      MakeMeasurement({0.01, 0.02, 0.03}, {4, 5, 6}, true).message());
+  ASSERT_FALSE(zeroer.Zeroed());
+  ASSERT_TRUE(zeroer.Faulted());
 }
 
 }  // namespace frc971::zeroing

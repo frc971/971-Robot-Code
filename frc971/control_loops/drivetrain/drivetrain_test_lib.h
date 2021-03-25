@@ -79,6 +79,10 @@ class DrivetrainSimulation {
     send_messages_ = send_messages;
   }
 
+  void set_imu_faulted(const bool fault_imu) {
+    imu_faulted_ = fault_imu;
+  }
+
  private:
   // Sends out the position queue messages.
   void SendPositionMessage();
@@ -102,6 +106,8 @@ class DrivetrainSimulation {
   ::aos::Fetcher<::frc971::control_loops::drivetrain::Status>
       drivetrain_status_fetcher_;
   ::aos::Sender<::frc971::IMUValuesBatch> imu_sender_;
+
+  bool imu_faulted_ = false;
 
   DrivetrainConfig<double> dt_config_;
 

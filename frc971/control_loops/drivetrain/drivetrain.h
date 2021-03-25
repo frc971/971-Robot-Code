@@ -96,6 +96,8 @@ class DrivetrainFilters {
   // Returns the current uncapped voltage from the kalman filter.
   double DrivetrainUUncapped(int index) const { return kf_.U_uncapped(index); }
 
+  bool Ready() const { return ready_; }
+
  private:
   // Returns the current controller index for the current gear.
   int ControllerIndexFromGears() const;
@@ -131,6 +133,8 @@ class DrivetrainFilters {
       aos::monotonic_clock::min_time;
   double last_accel_ = 0.0;
   double last_gyro_rate_ = 0.0;
+
+  bool ready_ = false;
 
   // Last applied voltage.
   Eigen::Matrix<double, 2, 1> last_voltage_;

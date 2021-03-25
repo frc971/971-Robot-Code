@@ -191,6 +191,38 @@ TEST_F(DrivetrainTest, ConvergesCorrectly) {
   VerifyDownEstimator();
 }
 
+// Tests that the drivetrain disables itself when the IMU errors.
+TEST_F(DrivetrainTest, DisablesOnImuError) {
+  SetEnabled(true);
+  {
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType::MOTION_PROFILE);
+    goal_builder.add_left_goal(-1.0);
+    goal_builder.add_right_goal(1.0);
+    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
+  }
+
+  // Sanity check that the drivetrain is indeed commanding voltage while the IMU
+  // is healthy.
+  for (int i = 0; i < 50; ++i) {
+    RunFor(dt());
+    ASSERT_TRUE(drivetrain_output_fetcher_.Fetch());
+    EXPECT_NE(0.0, drivetrain_output_fetcher_->left_voltage());
+    EXPECT_NE(0.0, drivetrain_output_fetcher_->right_voltage());
+  }
+
+  // Fault the IMU and confirm that we disable the outputs.
+  drivetrain_plant_.set_imu_faulted(true);
+
+  for (int i = 0; i < 500; ++i) {
+    RunFor(dt());
+    ASSERT_TRUE(drivetrain_output_fetcher_.Fetch());
+    EXPECT_EQ(0.0, drivetrain_output_fetcher_->left_voltage());
+    EXPECT_EQ(0.0, drivetrain_output_fetcher_->right_voltage());
+  }
+}
+
 // Tests that the drivetrain converges on a goal when under the effect of a
 // voltage offset/disturbance.
 TEST_F(DrivetrainTest, ConvergesWithVoltageError) {
@@ -960,6 +992,8 @@ TEST_F(DrivetrainTest, SplineVoltageError) {
   const double estimated_y = drivetrain_status_fetcher_->y();
   const ::Eigen::Vector2d actual = drivetrain_plant_.GetPosition();
   // Expect the x position comparison to fail; everything else to succeed.
+  spline_estimate_tolerance_ = 0.11;
+  spline_control_tolerance_ = 0.11;
   EXPECT_GT(std::abs(estimated_x - expected_x), spline_control_tolerance_);
   EXPECT_NEAR(estimated_y, expected_y, spline_control_tolerance_);
   EXPECT_NEAR(actual(0), estimated_x, spline_estimate_tolerance_);

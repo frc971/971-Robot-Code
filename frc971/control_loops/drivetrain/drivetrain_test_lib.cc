@@ -193,8 +193,22 @@ void DrivetrainSimulation::SendImuMessage() {
     return;
   }
   auto builder = imu_sender_.MakeBuilder();
+
+  frc971::ADIS16470DiagStat::Builder diag_stat_builder =
+      builder.MakeBuilder<frc971::ADIS16470DiagStat>();
+  diag_stat_builder.add_clock_error(false);
+  diag_stat_builder.add_memory_failure(imu_faulted_);
+  diag_stat_builder.add_sensor_failure(false);
+  diag_stat_builder.add_standby_mode(false);
+  diag_stat_builder.add_spi_communication_error(false);
+  diag_stat_builder.add_flash_memory_update_error(false);
+  diag_stat_builder.add_data_path_overrun(false);
+
+  const auto diag_stat_offset = diag_stat_builder.Finish();
+
   frc971::IMUValues::Builder imu_builder =
       builder.MakeBuilder<frc971::IMUValues>();
+  imu_builder.add_self_test_diag_stat(diag_stat_offset);
   const Eigen::Vector3d gyro =
       dt_config_.imu_transform.inverse() *
       Eigen::Vector3d(0.0, 0.0,

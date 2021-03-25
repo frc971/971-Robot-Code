@@ -2,6 +2,25 @@
 
 namespace frc971::zeroing {
 
+namespace {
+bool DiagStatHasFaults(const ADIS16470DiagStat &diag) {
+  return diag.clock_error() || diag.memory_failure() || diag.sensor_failure() ||
+         diag.standby_mode() || diag.spi_communication_error() ||
+         diag.flash_memory_update_error() || diag.data_path_overrun();
+}
+bool ReadingHasFaults(const IMUValues &values) {
+  if (values.has_previous_reading_diag_stat() &&
+      DiagStatHasFaults(*values.previous_reading_diag_stat())) {
+    return true;
+  }
+  if (values.has_self_test_diag_stat() &&
+      DiagStatHasFaults(*values.self_test_diag_stat())) {
+    return true;
+  }
+  return false;
+}
+}  // namespace
+
 ImuZeroer::ImuZeroer() {
   gyro_average_.setZero();
   accel_average_.setZero();
@@ -10,7 +29,7 @@ ImuZeroer::ImuZeroer() {
 }
 
 bool ImuZeroer::Zeroed() const {
-  return num_zeroes_ > kRequiredZeroPoints || Faulted();
+  return num_zeroes_ > kRequiredZeroPoints && !Faulted();
 }
 
 bool ImuZeroer::Faulted() const { return faulted_; }
@@ -41,6 +60,10 @@ void ImuZeroer::InsertAndProcessMeasurement(const IMUValues &values) {
 }
 
 void ImuZeroer::InsertMeasurement(const IMUValues &values) {
+  if (ReadingHasFaults(values)) {
+    faulted_ = true;
+    return;
+  }
   last_gyro_sample_ << values.gyro_x(), values.gyro_y(), values.gyro_z();
   gyro_averager_.AddData(last_gyro_sample_);
   last_accel_sample_ << values.accelerometer_x(), values.accelerometer_y(),
