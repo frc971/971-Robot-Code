@@ -89,6 +89,9 @@ std::vector<std::string> FindNodes(const std::vector<LogFile> &parts);
 std::vector<LogParts> FilterPartsForNode(const std::vector<LogFile> &parts,
                                          std::string_view node);
 
+// Finds all the nodes on which the loggers which generated these log files ran.
+std::vector<std::string> FindLoggerNodes(const std::vector<LogFile> &parts);
+
 // Recursively searches the file/folder for .bfbs and .bfbs.xz files and adds
 // them to the vector.
 void FindLogs(std::vector<std::string> *files, std::string filename);

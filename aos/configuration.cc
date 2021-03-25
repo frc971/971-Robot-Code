@@ -1039,21 +1039,25 @@ bool ChannelIsReadableOnNode(const Channel *channel, const Node *node) {
 }
 
 bool ChannelMessageIsLoggedOnNode(const Channel *channel, const Node *node) {
+  if (channel->logger() == LoggerConfig::LOCAL_LOGGER && node == nullptr) {
+    // Single node world.  If there is a local logger, then we want to use
+    // it.
+    return true;
+  }
+  return ChannelMessageIsLoggedOnNode(
+      channel, CHECK_NOTNULL(node)->name()->string_view());
+}
+
+bool ChannelMessageIsLoggedOnNode(const Channel *channel,
+                                  std::string_view node_name) {
   switch (channel->logger()) {
     case LoggerConfig::LOCAL_LOGGER:
-      if (node == nullptr) {
-        // Single node world.  If there is a local logger, then we want to use
-        // it.
-        return true;
-      }
-      return channel->source_node()->string_view() ==
-             node->name()->string_view();
+      return channel->source_node()->string_view() == node_name;
     case LoggerConfig::LOCAL_AND_REMOTE_LOGGER:
       CHECK(channel->has_logger_nodes());
       CHECK_GT(channel->logger_nodes()->size(), 0u);
 
-      if (channel->source_node()->string_view() ==
-          CHECK_NOTNULL(node)->name()->string_view()) {
+      if (channel->source_node()->string_view() == node_name) {
         return true;
       }
 
@@ -1062,8 +1066,7 @@ bool ChannelMessageIsLoggedOnNode(const Channel *channel, const Node *node) {
       CHECK(channel->has_logger_nodes());
       CHECK_GT(channel->logger_nodes()->size(), 0u);
       for (const flatbuffers::String *logger_node : *channel->logger_nodes()) {
-        if (logger_node->string_view() ==
-            CHECK_NOTNULL(node)->name()->string_view()) {
+        if (logger_node->string_view() == node_name) {
           return true;
         }
       }

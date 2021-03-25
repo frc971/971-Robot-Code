@@ -649,6 +649,42 @@ void LogReader::Register(EventLoop *event_loop) {
         VLOG(1) << "Found the last message on channel "
                 << timestamped_message.channel_index;
 
+        // The user might be working with log files from 1 node but forgot to
+        // configure the infrastructure to log data for a remote channel on that
+        // node.  That can be very hard to debug, even though the log reader is
+        // doing the right thing.  At least log a warning in that case and tell
+        // the user what is happening so they can either update their config to
+        // log the channel or can find a log with the data.
+        {
+          const std::vector<std::string> logger_nodes =
+              FindLoggerNodes(log_files_);
+          if (logger_nodes.size()) {
+            // We have old logs which don't have the logger nodes logged.  In
+            // that case, we can't be helpful :(
+            bool data_logged = false;
+            const Channel *channel = logged_configuration()->channels()->Get(
+                timestamped_message.channel_index);
+            for (const std::string &node : logger_nodes) {
+              data_logged |=
+                  configuration::ChannelMessageIsLoggedOnNode(channel, node);
+            }
+            if (!data_logged) {
+              LOG(WARNING) << "Got a timestamp without any logfiles which "
+                              "could contain data for channel "
+                           << configuration::CleanedChannelToString(channel);
+              LOG(WARNING) << "Only have logs logged on ["
+                           << absl::StrJoin(logger_nodes, ", ") << "]";
+              LOG(WARNING)
+                  << "Dropping the rest of the data on "
+                  << state->event_loop()->node()->name()->string_view();
+              LOG(WARNING)
+                  << "Consider using --skip_missing_forwarding_entries to "
+                     "bypass this, update your config to log it, or add data "
+                     "from one of the nodes it is logged on.";
+            }
+          }
+        }
+
         // Vector storing if we've seen a nullptr message or not per channel.
         std::vector<bool> last_message;
         last_message.resize(logged_configuration()->channels()->size(), false);
