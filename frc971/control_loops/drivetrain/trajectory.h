@@ -206,7 +206,8 @@ class FinishedTrajectory  : public BaseTrajectory {
   // point (i.e., distance should be roughly equal to the actual distance along
   // the path).
   Eigen::Matrix<double, 5, 1> StateToPathRelativeState(
-      double distance, const Eigen::Matrix<double, 5, 1> &state) const;
+      double distance, const Eigen::Matrix<double, 5, 1> &state,
+      bool drive_backwards) const;
 
   // Retrieves the gain matrix K for a given distance along the path.
   Eigen::Matrix<double, 2, 5> GainForDistance(double distance) const;

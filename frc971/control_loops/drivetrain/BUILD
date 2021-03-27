@@ -643,6 +643,7 @@ cc_library(
         ":drivetrain_config",
         ":spline_goal_fbs",
         ":trajectory_fbs",
+        "//aos/util:math",
         "//frc971/control_loops:c2d",
         "//frc971/control_loops:dlqr",
         "//frc971/control_loops:hybrid_state_feedback_loop",

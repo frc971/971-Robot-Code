@@ -117,7 +117,8 @@ void SplineDrivetrain::Update(
     ::Eigen::Matrix<double, 2, 5> K =
         current_trajectory().GainForDistance(current_distance);
     ::Eigen::Matrix<double, 5, 1> goal_state = CurrentGoalState();
-    if (current_trajectory().drive_spline_backwards()) {
+    const bool backwards = current_trajectory().drive_spline_backwards();
+    if (backwards) {
       ::Eigen::Matrix<double, 2, 1> swapU(U_ff(1, 0), U_ff(0, 0));
       U_ff = -swapU;
       goal_state(2, 0) += M_PI;
@@ -128,12 +129,18 @@ void SplineDrivetrain::Update(
     }
     const Eigen::Matrix<double, 5, 1> relative_goal =
         current_trajectory().StateToPathRelativeState(current_distance,
-                                                      goal_state);
+                                                      goal_state, backwards);
     const Eigen::Matrix<double, 5, 1> relative_state =
-        current_trajectory().StateToPathRelativeState(current_distance, state);
+        current_trajectory().StateToPathRelativeState(current_distance, state,
+                                                      backwards);
     Eigen::Matrix<double, 5, 1> state_error = relative_goal - relative_state;
     state_error(2, 0) = ::aos::math::NormalizeAngle(state_error(2, 0));
     ::Eigen::Matrix<double, 2, 1> U_fb = K * state_error;
+
+    if (backwards) {
+      Eigen::Matrix<double, 2, 1> swapU(U_fb(1), U_fb(0));
+      U_fb = -swapU;
+    }
 
     ::Eigen::Matrix<double, 2, 1> xv_state = current_xva_.block<2, 1>(0, 0);
     next_xva_ = current_trajectory().GetNextXVA(dt_config_.dt, &xv_state);
@@ -184,11 +191,17 @@ flatbuffers::Offset<TrajectoryLogging> SplineDrivetrain::MakeTrajectoryLogging(
     ::Eigen::Matrix<double, 5, 1> goal_state = CurrentGoalState();
     trajectory_logging_builder.add_x(goal_state(0));
     trajectory_logging_builder.add_y(goal_state(1));
-    trajectory_logging_builder.add_theta(::aos::math::NormalizeAngle(
-        goal_state(2) +
-        (current_trajectory().drive_spline_backwards() ? M_PI : 0.0)));
-    trajectory_logging_builder.add_left_velocity(goal_state(3));
-    trajectory_logging_builder.add_right_velocity(goal_state(4));
+    if (current_trajectory().drive_spline_backwards()) {
+      trajectory_logging_builder.add_left_velocity(-goal_state(4));
+      trajectory_logging_builder.add_right_velocity(-goal_state(3));
+      trajectory_logging_builder.add_theta(
+          ::aos::math::NormalizeAngle(goal_state(2) + M_PI));
+    } else {
+      trajectory_logging_builder.add_theta(
+          ::aos::math::NormalizeAngle(goal_state(2)));
+      trajectory_logging_builder.add_left_velocity(goal_state(3));
+      trajectory_logging_builder.add_right_velocity(goal_state(4));
+    }
   }
   trajectory_logging_builder.add_is_executing(!IsAtEnd() &&
                                               executing_spline_);

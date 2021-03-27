@@ -811,9 +811,25 @@ TEST_F(DrivetrainTest, SplineRestart) {
       CHECK_NOTNULL(drivetrain_status_fetcher_->trajectory_logging())->has_y());
 }
 
+class DrivetrainBackwardsParamTest
+    : public DrivetrainTest,
+      public ::testing::WithParamInterface<bool> {};
+
 // Tests that simple spline converges when it doesn't start where it thinks.
-TEST_F(DrivetrainTest, SplineOffset) {
+TEST_P(DrivetrainBackwardsParamTest, SplineOffset) {
   SetEnabled(true);
+  if (GetParam()) {
+    // Turn the robot around if we are backwards.
+    (*drivetrain_plant_.mutable_state())(2) += M_PI;
+
+    auto builder = localizer_control_sender_.MakeBuilder();
+    LocalizerControl::Builder localizer_control_builder =
+        builder.MakeBuilder<LocalizerControl>();
+    localizer_control_builder.add_x(drivetrain_plant_.state()(0));
+    localizer_control_builder.add_y(drivetrain_plant_.state()(1));
+    localizer_control_builder.add_theta(drivetrain_plant_.state()(2));
+    ASSERT_TRUE(builder.Send(localizer_control_builder.Finish()));
+  }
   {
     auto builder = trajectory_goal_sender_.MakeBuilder();
 
@@ -834,7 +850,7 @@ TEST_F(DrivetrainTest, SplineOffset) {
 
     SplineGoal::Builder spline_goal_builder = builder.MakeBuilder<SplineGoal>();
     spline_goal_builder.add_spline_idx(1);
-    spline_goal_builder.add_drive_spline_backwards(false);
+    spline_goal_builder.add_drive_spline_backwards(GetParam());
     spline_goal_builder.add_spline(multispline_offset);
     ASSERT_TRUE(builder.Send(spline_goal_builder.Finish()));
   }
@@ -851,6 +867,10 @@ TEST_F(DrivetrainTest, SplineOffset) {
   RunFor(chrono::milliseconds(5000));
   VerifyNearSplineGoal();
 }
+
+INSTANTIATE_TEST_CASE_P(DriveSplinesForwardsAndBackwards,
+                        DrivetrainBackwardsParamTest,
+                        ::testing::Values(false, true));
 
 // Tests that simple spline converges when it starts to the side of where it
 // thinks.
