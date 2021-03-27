@@ -113,15 +113,19 @@ void AutonomousActor::GalacticSearch() {
           flatbuffers::Offset<frc971::MultiSpline> target_spline;
           if (path_fetcher_->alliance() == y2020::vision::Alliance::kRed) {
             if (path_fetcher_->letter() == y2020::vision::Letter::kA) {
+              LOG(INFO) << "Red A";
               target_spline = auto_splines_.SplineRedA(builder);
             } else {
+              LOG(INFO) << "Red B";
               CHECK(path_fetcher_->letter() == y2020::vision::Letter::kB);
               target_spline = auto_splines_.SplineRedB(builder);
             }
           } else {
             if (path_fetcher_->letter() == y2020::vision::Letter::kA) {
+              LOG(INFO) << "Blue A";
               target_spline = auto_splines_.SplineBlueA(builder);
             } else {
+              LOG(INFO) << "Blue B";
               CHECK(path_fetcher_->letter() == y2020::vision::Letter::kB);
               target_spline = auto_splines_.SplineBlueB(builder);
             }
