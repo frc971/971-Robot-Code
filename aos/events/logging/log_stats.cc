@@ -14,6 +14,10 @@ DEFINE_string(
 
 DEFINE_string(node, "", "Node to print stats out for.");
 
+DEFINE_bool(excessive_size_only, false,
+            "Only print channels that have a set max message size that is more "
+            "than double of the max message size.");
+
 // define struct to hold all information
 struct ChannelStats {
   // pointer to the channel for which stats are collected
@@ -147,6 +151,7 @@ int main(int argc, char **argv) {
 
   log_reader_factory.Run();
 
+  std::cout << std::endl;
   // Print out the stats per channel and for the logfile
   for (size_t i = 0; i != channel_stats.size(); i++) {
     if (channel_stats[i].total_num_messages > 0) {
@@ -158,24 +163,37 @@ int main(int argc, char **argv) {
       logfile_stats.total_log_messages += channel_stats[i].total_num_messages;
       logfile_stats.logfile_end_time = std::max(
           logfile_stats.logfile_end_time, channel_stats[i].channel_end_time);
-      std::cout << "Channel name: "
-                << channel_stats[i].channel->name()->string_view()
-                << "\tMsg type: "
-                << channel_stats[i].channel->type()->string_view() << "\n"
-                << "Number of msg: " << channel_stats[i].total_num_messages
-                << std::setprecision(3) << std::fixed
-                << "\tAvg msg per sec: " << channel_stats[i].avg_messages_sec
-                << "\tSet max msg frequency: "
-                << channel_stats[i].channel->frequency() << "\n"
-                << "Avg msg size: "
-                << (channel_stats[i].total_message_size /
-                    channel_stats[i].total_num_messages)
-                << "\tMax msg size: " << channel_stats[i].max_message_size
-                << "\tSet max msg size: "
-                << channel_stats[i].channel->max_size() << "\n"
-                << "First msg time: " << channel_stats[i].first_message_time
-                << "\tLast msg time: " << channel_stats[i].current_message_time
-                << "\tSeconds active: " << sec_active << "sec\n";
+
+      if (!FLAGS_excessive_size_only ||
+          (channel_stats[i].max_message_size * 2) <
+              static_cast<unsigned long>(
+                  channel_stats[i].channel->max_size())) {
+        std::cout << "Channel name: "
+                  << channel_stats[i].channel->name()->string_view()
+                  << "\tMsg type: "
+                  << channel_stats[i].channel->type()->string_view() << "\n";
+        if (!FLAGS_excessive_size_only) {
+          std::cout << "Number of msg: " << channel_stats[i].total_num_messages
+                    << std::setprecision(3) << std::fixed
+                    << "\tAvg msg per sec: "
+                    << channel_stats[i].avg_messages_sec
+                    << "\tSet max msg frequency: "
+                    << channel_stats[i].channel->frequency() << "\n";
+        }
+        std::cout << "Avg msg size: "
+                  << (channel_stats[i].total_message_size /
+                      channel_stats[i].total_num_messages)
+                  << "\tMax msg size: " << channel_stats[i].max_message_size
+                  << "\tSet max msg size: "
+                  << channel_stats[i].channel->max_size() << "\n";
+        if (!FLAGS_excessive_size_only) {
+          std::cout << "First msg time: " << channel_stats[i].first_message_time
+                    << "\tLast msg time: "
+                    << channel_stats[i].current_message_time
+                    << "\tSeconds active: " << sec_active << "sec\n";
+        }
+        std::cout << std::endl;
+      }
     } else {
       std::cout << "Channel name: "
                 << channel_stats[i].channel->name()->string_view() << "\t"

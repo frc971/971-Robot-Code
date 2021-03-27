@@ -26,6 +26,7 @@
       "type": "aos.logging.LogMessageFbs",
       "source_node": "roborio",
       "frequency": 400,
+      "max_size": 344,
       "num_senders": 20
     },
     {
@@ -40,6 +41,7 @@
       "type": "aos.starter.StarterRpc",
       "source_node": "roborio",
       "frequency": 10,
+      "max_size": 72,
       "num_senders": 2
     },
     {
@@ -54,6 +56,7 @@
       "type": "aos.message_bridge.ClientStatistics",
       "source_node": "roborio",
       "frequency": 10,
+      "max_size": 736,
       "num_senders": 2
     },
     {
@@ -66,37 +69,40 @@
     {
       "name": "/roborio/aos/remote_timestamps/pi1/roborio/aos/aos-message_bridge-Timestamp",
       "type": "aos.message_bridge.RemoteMessage",
-      "frequency": 200,
+      "frequency": 20,
       "logger": "NOT_LOGGED",
-      "source_node": "roborio"
+      "source_node": "roborio",
+      "max_size": 208
     },
     {
       "name": "/roborio/aos/remote_timestamps/pi2/roborio/aos/aos-message_bridge-Timestamp",
       "type": "aos.message_bridge.RemoteMessage",
-      "frequency": 200,
+      "frequency": 20,
       "logger": "NOT_LOGGED",
-      "source_node": "roborio"
+      "source_node": "roborio",
+      "max_size": 208
     },
     {
       "name": "/roborio/aos/remote_timestamps/pi3/roborio/aos/aos-message_bridge-Timestamp",
       "type": "aos.message_bridge.RemoteMessage",
-      "frequency": 200,
+      "frequency": 20,
       "logger": "NOT_LOGGED",
       "source_node": "roborio"
     },
     {
       "name": "/roborio/aos/remote_timestamps/pi4/roborio/aos/aos-message_bridge-Timestamp",
       "type": "aos.message_bridge.RemoteMessage",
-      "frequency": 200,
+      "frequency": 20,
       "logger": "NOT_LOGGED",
       "source_node": "roborio"
     },
     {
       "name": "/roborio/aos/remote_timestamps/pi5/roborio/aos/aos-message_bridge-Timestamp",
       "type": "aos.message_bridge.RemoteMessage",
-      "frequency": 200,
+      "frequency": 20,
       "logger": "NOT_LOGGED",
-      "source_node": "roborio"
+      "source_node": "roborio",
+      "max_size": 208
     },
     {
       "name": "/roborio/aos",
@@ -104,7 +110,7 @@
       "source_node": "roborio",
       "frequency": 10,
       "num_senders": 2,
-      "max_size": 400,
+      "max_size": 304,
       "destination_nodes": [
         {
           "name": "pi1",
@@ -147,7 +153,8 @@
       "name": "/superstructure",
       "type": "y2020.control_loops.superstructure.Goal",
       "source_node": "roborio",
-      "frequency": 200
+      "frequency": 200,
+      "max_size": 512
     },
     {
       "name": "/superstructure",
@@ -161,14 +168,16 @@
       "type": "y2020.control_loops.superstructure.Output",
       "source_node": "roborio",
       "frequency": 200,
-      "num_senders": 2
+      "num_senders": 2,
+      "max_size": 224
     },
     {
       "name": "/superstructure",
       "type": "y2020.control_loops.superstructure.Position",
       "source_node": "roborio",
       "frequency": 200,
-      "num_senders": 2
+      "num_senders": 2,
+      "max_size": 448
     },
     {
       "name": "/superstructure",
@@ -217,6 +226,7 @@
       "name": "/drivetrain",
       "type": "frc971.control_loops.drivetrain.Goal",
       "source_node": "roborio",
+      "max_size": 224,
       "frequency": 200
     },
     {
@@ -224,6 +234,7 @@
       "type": "frc971.control_loops.drivetrain.Position",
       "source_node": "roborio",
       "frequency": 200,
+      "max_size": 112,
       "num_senders": 2
     },
     {
@@ -231,6 +242,7 @@
       "type": "frc971.control_loops.drivetrain.Output",
       "source_node": "roborio",
       "frequency": 200,
+      "max_size": 80,
       "num_senders": 2
     },
     {
@@ -238,14 +250,15 @@
       "type": "frc971.control_loops.drivetrain.Status",
       "source_node": "roborio",
       "frequency": 200,
-      "max_size": 2000,
+      "max_size": 1616,
       "num_senders": 2
     },
     {
       "name": "/drivetrain",
       "type": "frc971.control_loops.drivetrain.LocalizerControl",
       "source_node": "roborio",
-      "frequency": 200
+      "frequency": 200,
+      "max_size": 96
     },
     {
       "name": "/drivetrain",
@@ -272,7 +285,8 @@
       "name": "/roborio/aos",
       "type": "frc971.PDPValues",
       "source_node": "roborio",
-      "frequency": 50
+      "frequency": 50,
+      "max_size": 368
     },
     {
       "name": "/roborio/aos",
