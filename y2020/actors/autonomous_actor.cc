@@ -40,7 +40,7 @@ AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
       joystick_state_fetcher_(
           event_loop->MakeFetcher<aos::JoystickState>("/aos")),
       path_fetcher_(event_loop->MakeFetcher<y2020::vision::GalacticSearchPath>(
-          "/pi1/camera")),
+          "/pi2/camera")),
       auto_splines_() {
   set_max_drivetrain_voltage(2.0);
 }
