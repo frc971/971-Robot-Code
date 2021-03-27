@@ -48,6 +48,7 @@ AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
 void AutonomousActor::Reset() {
   InitializeEncoders();
   ResetDrivetrain();
+  RetractIntake();
 
   joystick_state_fetcher_.Fetch();
   CHECK(joystick_state_fetcher_.get() != nullptr)
@@ -152,7 +153,6 @@ void AutonomousActor::GalacticSearch() {
 }
 
 void AutonomousActor::AutoNavBounce() {
-  RetractIntake();
   SplineHandle spline1 = PlanSpline(
       [this](aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
                  *builder) {
@@ -202,7 +202,6 @@ void AutonomousActor::AutoNavBounce() {
 }
 
 void AutonomousActor::AutoNavBarrel() {
-  RetractIntake();
   SplineHandle spline1 = PlanSpline(
       [this](aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
                  *builder) {
@@ -222,7 +221,6 @@ void AutonomousActor::AutoNavBarrel() {
 }
 
 void AutonomousActor::AutoNavSlalom() {
-  RetractIntake();
   SplineHandle spline1 = PlanSpline(
       [this](aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
                  *builder) {
@@ -242,7 +240,6 @@ void AutonomousActor::AutoNavSlalom() {
 }
 
 void AutonomousActor::SplineAuto() {
-  RetractIntake();
   SplineHandle spline1 = PlanSpline(
       [this](aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
                  *builder) {
