@@ -118,8 +118,8 @@ class GTK_Widget(BaseWindow):
         distance = np.sqrt((p2[1] - p1[1])**2 + (p2[0] - p1[0])**2)
         x_difference_o = p2[0] - p1[0]
         y_difference_o = p2[1] - p1[1]
-        x_difference = x_difference_o * mToPx(LENGTH_OF_ROBOT / 2) / distance
-        y_difference = y_difference_o * mToPx(LENGTH_OF_ROBOT / 2) / distance
+        x_difference = x_difference_o * mToPx(FIELD.robot.length / 2) / distance
+        y_difference = y_difference_o * mToPx(FIELD.robot.length / 2) / distance
 
         front_middle = []
         front_middle.append(p1[0] + x_difference)
@@ -132,8 +132,8 @@ class GTK_Widget(BaseWindow):
         slope = [-(1 / x_difference_o) / (1 / y_difference_o)]
         angle = np.arctan(slope)
 
-        x_difference = np.sin(angle[0]) * mToPx(WIDTH_OF_ROBOT / 2)
-        y_difference = np.cos(angle[0]) * mToPx(WIDTH_OF_ROBOT / 2)
+        x_difference = np.sin(angle[0]) * mToPx(FIELD.robot.width / 2)
+        y_difference = np.cos(angle[0]) * mToPx(FIELD.robot.width / 2)
 
         front_1 = []
         front_1.append(front_middle[0] - x_difference)
@@ -152,9 +152,9 @@ class GTK_Widget(BaseWindow):
         back_2.append(back_middle[1] + y_difference)
 
         x_difference = x_difference_o * mToPx(
-            LENGTH_OF_ROBOT / 2 + ROBOT_SIDE_TO_BALL_CENTER) / distance
+            FIELD.robot.length / 2 + ROBOT_SIDE_TO_BALL_CENTER) / distance
         y_difference = y_difference_o * mToPx(
-            LENGTH_OF_ROBOT / 2 + ROBOT_SIDE_TO_BALL_CENTER) / distance
+            FIELD.robot.length / 2 + ROBOT_SIDE_TO_BALL_CENTER) / distance
 
         #Calculate Ball
         ball_center = []
@@ -162,9 +162,9 @@ class GTK_Widget(BaseWindow):
         ball_center.append(p1[1] + y_difference)
 
         x_difference = x_difference_o * mToPx(
-            LENGTH_OF_ROBOT / 2 + ROBOT_SIDE_TO_HATCH_PANEL) / distance
+            FIELD.robot.length / 2 + ROBOT_SIDE_TO_HATCH_PANEL) / distance
         y_difference = y_difference_o * mToPx(
-            LENGTH_OF_ROBOT / 2 + ROBOT_SIDE_TO_HATCH_PANEL) / distance
+            FIELD.robot.length / 2 + ROBOT_SIDE_TO_HATCH_PANEL) / distance
 
         #Calculate Panel
         panel_center = []
