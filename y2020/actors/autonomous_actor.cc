@@ -147,13 +147,12 @@ void AutonomousActor::GalacticSearch() {
     spline1.Start();
 
     if (!spline1.WaitForSplineDistanceRemaining(0.02)) return;
-    set_intake_goal(-0.89);
-    set_roller_voltage(0.0);
-    SendSuperstructureGoal();
+    RetractIntake();
   }
 }
 
 void AutonomousActor::AutoNavBounce() {
+  RetractIntake();
   SplineHandle spline1 = PlanSpline(
       [this](aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
                  *builder) {
@@ -203,6 +202,7 @@ void AutonomousActor::AutoNavBounce() {
 }
 
 void AutonomousActor::AutoNavBarrel() {
+  RetractIntake();
   SplineHandle spline1 = PlanSpline(
       [this](aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
                  *builder) {
@@ -222,6 +222,7 @@ void AutonomousActor::AutoNavBarrel() {
 }
 
 void AutonomousActor::AutoNavSlalom() {
+  RetractIntake();
   SplineHandle spline1 = PlanSpline(
       [this](aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
                  *builder) {
@@ -241,6 +242,7 @@ void AutonomousActor::AutoNavSlalom() {
 }
 
 void AutonomousActor::SplineAuto() {
+  RetractIntake();
   SplineHandle spline1 = PlanSpline(
       [this](aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
                  *builder) {
@@ -325,5 +327,12 @@ void AutonomousActor::SendSuperstructureGoal() {
   }
 
 }
+
+void AutonomousActor::RetractIntake() {
+  set_intake_goal(-0.89);
+  set_roller_voltage(0.0);
+  SendSuperstructureGoal();
+}
+
 }  // namespace actors
 }  // namespace y2020
