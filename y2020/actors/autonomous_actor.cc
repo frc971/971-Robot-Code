@@ -34,6 +34,9 @@ AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
           event_loop->MakeSender<
               ::frc971::control_loops::drivetrain::LocalizerControl>(
               "/drivetrain")),
+      superstructure_goal_sender_(
+          event_loop->MakeSender<control_loops::superstructure::Goal>(
+              "/superstructure")),
       joystick_state_fetcher_(
           event_loop->MakeFetcher<aos::JoystickState>("/aos")),
       path_fetcher_(event_loop->MakeFetcher<y2020::vision::GalacticSearchPath>(
