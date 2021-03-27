@@ -35,6 +35,7 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   }
 
   void SendSuperstructureGoal();
+  void RetractIntake();
   void SplineAuto();
   void SendStartingPosition(double x, double y, double theta);
   void SendStartingPosition(const frc971::MultiSpline *const spline);
