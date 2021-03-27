@@ -7,9 +7,6 @@ screen = window.get_screen()
 #Set screen size for rest of program.
 SCREEN_SIZE = screen.get_height() / 3
 
-WIDTH_OF_ROBOT = 0.65
-LENGTH_OF_ROBOT = 0.8
-
 # Placeholder value
 ROBOT_SIDE_TO_BALL_CENTER = 0.15
 BALL_RADIUS = 0.165
@@ -19,7 +16,9 @@ ROBOT_SIDE_TO_HATCH_PANEL = 0.1
 HATCH_PANEL_WIDTH = 0.4826
 
 FieldType = namedtuple(
-    'Field', ['name', 'tags', 'year', 'width', 'length', 'json_name'])
+    'Field', ['name', 'tags', 'year', 'width', 'length', 'robot', 'json_name'])
+RobotType = namedtuple(
+        "Robot", ['width', 'length'])
 
 GALACTIC_SEARCH = "Galactic Search"
 ARED = "A Red"
@@ -31,6 +30,10 @@ BOUNCE = "Bounce"
 SLALOM = "Slalom"
 BARREL = "Barrel"
 
+Robot2019 = RobotType(width=0.65, length=0.8)
+Robot2020 = RobotType(width=0.8128, length=0.8636) # 32 in x 34 in
+Robot2021 = Robot2020
+
 FIELDS = {
     "2019 Field":
     FieldType(
@@ -39,6 +42,7 @@ FIELDS = {
         year=2019,
         width=8.258302,
         length=8.258302,
+        robot=Robot2019,
         json_name="spline_2019.json"),
     "2020 Field":
     FieldType(
@@ -47,6 +51,7 @@ FIELDS = {
         year=2020,
         width=15.98295,
         length=8.21055,
+        robot=Robot2020,
         json_name="spline_2020.json"),
     "2021 Galactic Search BRed":
     FieldType(
@@ -55,6 +60,7 @@ FIELDS = {
         year=2021,
         width=9.144,
         length=4.572,
+        robot=Robot2021,
         json_name="spline_red_b.json"),
     "2021 Galactic Search ARed":
     FieldType(
@@ -63,6 +69,7 @@ FIELDS = {
         year=2021,
         width=9.144,
         length=4.572,
+        robot=Robot2021,
         json_name="spline_red_a.json"),
     "2021 Galactic Search BBlue":
     FieldType(
@@ -71,6 +78,7 @@ FIELDS = {
         year=2021,
         width=9.144,
         length=4.572,
+        robot=Robot2021,
         json_name="spline_blue_b.json"),
     "2021 Galactic Search ABlue":
     FieldType(
@@ -79,6 +87,7 @@ FIELDS = {
         year=2021,
         width=9.144,
         length=4.572,
+        robot=Robot2021,
         json_name="spline_blue_a.json"),
     "2021 AutoNav Barrel":
     FieldType(
@@ -87,6 +96,7 @@ FIELDS = {
         year=2021,
         width=9.144,
         length=4.572,
+        robot=Robot2021,
         json_name="autonav_barrel.json"),
     "2021 AutoNav Slalom":
     FieldType(
@@ -95,6 +105,7 @@ FIELDS = {
         year=2021,
         width=9.144,
         length=4.572,
+        robot=Robot2021,
         json_name="autonav_slalom.json"),
     "2021 AutoNav Bounce":
     FieldType(
@@ -103,6 +114,7 @@ FIELDS = {
         year=2021,
         width=9.144,
         length=4.572,
+        robot=Robot2021,
         json_name="autonav_bounce.json"),
 }
 
