@@ -391,9 +391,17 @@ bool BaseAutonomousActor::SplineHandle::SplineDistanceRemaining(
     double distance) {
   base_autonomous_actor_->drivetrain_status_fetcher_.Fetch();
   if (base_autonomous_actor_->drivetrain_status_fetcher_.get()) {
+    // Confirm that:
+    // (a) The spline has started executiong (is_executing remains true even
+    //     when we reach the end of the spline).
+    // (b) The spline that we are executing is the correct one.
+    // (c) There is less than distance distance remaining.
     return base_autonomous_actor_->drivetrain_status_fetcher_
                ->trajectory_logging()
                ->is_executing() &&
+           base_autonomous_actor_->drivetrain_status_fetcher_
+                   ->trajectory_logging()
+                   ->goal_spline_handle() == spline_handle_ &&
            base_autonomous_actor_->drivetrain_status_fetcher_
                    ->trajectory_logging()
                    ->distance_remaining() < distance;
