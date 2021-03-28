@@ -41,6 +41,12 @@ void SplineDrivetrain::SetGoal(
   UpdateSplineHandles();
 }
 
+bool SplineDrivetrain::IsCurrentTrajectory(
+    const fb::Trajectory *trajectory) const {
+  return (current_trajectory_ != nullptr &&
+          current_trajectory().spline_handle() == trajectory->handle());
+}
+
 bool SplineDrivetrain::HasTrajectory(const fb::Trajectory *trajectory) const {
   if (trajectory == nullptr) {
     return false;
@@ -53,6 +59,19 @@ bool SplineDrivetrain::HasTrajectory(const fb::Trajectory *trajectory) const {
   return false;
 }
 
+void SplineDrivetrain::DeleteTrajectory(const fb::Trajectory *trajectory) {
+  CHECK(trajectory != nullptr);
+
+  for (size_t ii = 0; ii < trajectories_.size(); ++ii) {
+    if (trajectories_[ii]->spline_handle() == trajectory->handle()) {
+      trajectories_.erase(trajectories_.begin() + ii);
+      return;
+    }
+  }
+
+  LOG(FATAL) << "Trying to remove unknown trajectory " << trajectory->handle();
+}
+
 void SplineDrivetrain::AddTrajectory(const fb::Trajectory *trajectory) {
   trajectories_.emplace_back(
       std::make_unique<FinishedTrajectory>(dt_config_, trajectory));
@@ -60,11 +79,9 @@ void SplineDrivetrain::AddTrajectory(const fb::Trajectory *trajectory) {
 }
 
 void SplineDrivetrain::DeleteCurrentSpline() {
-  CHECK(current_trajectory_index_);
-  CHECK_LT(*current_trajectory_index_, trajectories_.size());
-  trajectories_.erase(trajectories_.begin() + *current_trajectory_index_);
+  DeleteTrajectory(&CHECK_NOTNULL(current_trajectory_)->trajectory());
   executing_spline_ = false;
-  current_trajectory_index_.reset();
+  current_trajectory_ = nullptr;
   current_xva_.setZero();
 }
 
@@ -92,7 +109,7 @@ void SplineDrivetrain::UpdateSplineHandles() {
   for (size_t ii = 0; ii < trajectories_.size(); ++ii) {
     if (trajectories_[ii]->spline_handle() == *commanded_spline_) {
       executing_spline_ = true;
-      current_trajectory_index_ = ii;
+      current_trajectory_ = trajectories_[ii].get();
     }
   }
   // If we didn't find the commanded spline in the list of available splines,

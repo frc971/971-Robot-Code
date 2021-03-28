@@ -316,6 +316,27 @@ DrivetrainLoop::DrivetrainLoop(const DrivetrainConfig<double> &dt_config,
 }
 
 void DrivetrainLoop::UpdateTrajectoryFetchers() {
+  if (dt_spline_.trajectory_count() >= trajectory_fetchers_.size()) {
+    aos::monotonic_clock::time_point min_time = aos::monotonic_clock::max_time;
+    size_t min_fetcher_index = 0;
+    size_t fetcher_index = 0;
+    // Find the oldest spline to forget.
+    for (auto &fetcher : trajectory_fetchers_) {
+      CHECK_NE(fetcher.fetcher.context().monotonic_event_time,
+               monotonic_clock::min_time);
+      if (fetcher.fetcher.context().monotonic_event_time < min_time &&
+          !dt_spline_.IsCurrentTrajectory(fetcher.fetcher.get())) {
+        min_time = fetcher.fetcher.context().monotonic_event_time;
+        min_fetcher_index = fetcher_index;
+      }
+      ++fetcher_index;
+    }
+
+    dt_spline_.DeleteTrajectory(
+        trajectory_fetchers_[min_fetcher_index].fetcher.get());
+    trajectory_fetchers_[min_fetcher_index].in_use = false;
+  }
+
   for (auto &fetcher : trajectory_fetchers_) {
     const fb::Trajectory *trajectory = fetcher.fetcher.get();
     // If the current fetcher is already being used by the SplineDrivetrain,

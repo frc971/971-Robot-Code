@@ -144,7 +144,9 @@ class DrivetrainFilters {
 class DrivetrainLoop
     : public aos::controls::ControlLoop<Goal, Position, Status, Output> {
  public:
-  static constexpr size_t kNumSplineFetchers = 4;
+  // Note that we only actually store N - 1 splines, since we need to keep one
+  // fetcher free to check whether there are any new splines.
+  static constexpr size_t kNumSplineFetchers = 5;
 
   // Constructs a control loop which can take a Drivetrain or defaults to the
   // drivetrain at frc971::control_loops::drivetrain

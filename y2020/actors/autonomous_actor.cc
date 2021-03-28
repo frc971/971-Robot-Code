@@ -8,7 +8,6 @@
 #include "aos/logging/logging.h"
 #include "aos/util/math.h"
 #include "frc971/control_loops/drivetrain/localizer_generated.h"
-#include "frc971/control_loops/drivetrain/spline.h"
 #include "y2020/actors/auto_splines.h"
 #include "y2020/control_loops/drivetrain/drivetrain_base.h"
 
@@ -43,6 +42,57 @@ AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
           "/pi2/camera")),
       auto_splines_() {
   set_max_drivetrain_voltage(2.0);
+  replan_timer_ = event_loop->AddTimer([this]() { Replan(); });
+  event_loop->OnRun([this, event_loop]() {
+    replan_timer_->Setup(event_loop->monotonic_now());
+  });
+}
+
+void AutonomousActor::Replan() {
+  if (FLAGS_galactic_search) {
+    galactic_search_splines_ = {
+        .red_a = PlanSpline(std::bind(&AutonomousSplines::SplineRedA,
+                                      &auto_splines_, std::placeholders::_1),
+                            SplineDirection::kForward),
+        .red_b = PlanSpline(std::bind(&AutonomousSplines::SplineRedB,
+                                      &auto_splines_, std::placeholders::_1),
+                            SplineDirection::kForward),
+        .blue_a = PlanSpline(std::bind(&AutonomousSplines::SplineBlueA,
+                                       &auto_splines_, std::placeholders::_1),
+                             SplineDirection::kForward),
+        .blue_b = PlanSpline(std::bind(&AutonomousSplines::SplineBlueB,
+                                       &auto_splines_, std::placeholders::_1),
+                             SplineDirection::kForward)};
+  } else if (FLAGS_bounce) {
+    bounce_splines_ = {
+        PlanSpline(std::bind(&AutonomousSplines::AutoNavBounce1, &auto_splines_,
+                             std::placeholders::_1),
+                   SplineDirection::kForward),
+        PlanSpline(std::bind(&AutonomousSplines::AutoNavBounce2, &auto_splines_,
+                             std::placeholders::_1),
+                   SplineDirection::kBackward),
+        PlanSpline(std::bind(&AutonomousSplines::AutoNavBounce3, &auto_splines_,
+                             std::placeholders::_1),
+                   SplineDirection::kForward),
+        PlanSpline(std::bind(&AutonomousSplines::AutoNavBounce4, &auto_splines_,
+                             std::placeholders::_1),
+                   SplineDirection::kBackward)};
+  } else if (FLAGS_barrel) {
+    barrel_spline_ =
+        PlanSpline(std::bind(&AutonomousSplines::AutoNavBarrel, &auto_splines_,
+                             std::placeholders::_1),
+                   SplineDirection::kForward);
+  } else if (FLAGS_slalom) {
+    slalom_spline_ =
+        PlanSpline(std::bind(&AutonomousSplines::AutoNavSlalom, &auto_splines_,
+                             std::placeholders::_1),
+                   SplineDirection::kForward);
+  } else if (FLAGS_spline_auto) {
+    test_spline_ =
+        PlanSpline(std::bind(&AutonomousSplines::TestSpline, &auto_splines_,
+                             std::placeholders::_1),
+                   SplineDirection::kForward);
+  }
 }
 
 void AutonomousActor::Reset() {
@@ -59,6 +109,11 @@ void AutonomousActor::Reset() {
 bool AutonomousActor::RunAction(
     const ::frc971::autonomous::AutonomousActionParams *params) {
   Reset();
+
+  // Queue up a replan to occur as soon as this action completes.
+  // TODO(james): Modify this so we don't replan during teleop.
+  replan_timer_->Setup(monotonic_now());
+
   AOS_LOG(INFO, "Params are %d\n", params->mode());
   if (alliance_ == aos::Alliance::kInvalid) {
     AOS_LOG(INFO, "Aborting autonomous due to invalid alliance selection.");
@@ -80,9 +135,8 @@ bool AutonomousActor::RunAction(
   return true;
 }
 
-void AutonomousActor::SendStartingPosition(double x, double y, double theta) {
+void AutonomousActor::SendStartingPosition(const Eigen::Vector3d &start) {
   // Set up the starting position for the blue alliance.
-  double starting_heading = theta;
 
   // TODO(james): Resetting the localizer breaks the left/right statespace
   // controller.  That is a bug, but we can fix that later by not resetting.
@@ -90,9 +144,9 @@ void AutonomousActor::SendStartingPosition(double x, double y, double theta) {
 
   LocalizerControl::Builder localizer_control_builder =
       builder.MakeBuilder<LocalizerControl>();
-  localizer_control_builder.add_x(x);
-  localizer_control_builder.add_y(y);
-  localizer_control_builder.add_theta(starting_heading);
+  localizer_control_builder.add_x(start(0));
+  localizer_control_builder.add_y(start(1));
+  localizer_control_builder.add_theta(start(2));
   localizer_control_builder.add_theta_uncertainty(0.00001);
   if (!builder.Send(localizer_control_builder.Finish())) {
     AOS_LOG(ERROR, "Failed to reset localizer.\n");
@@ -100,6 +154,8 @@ void AutonomousActor::SendStartingPosition(double x, double y, double theta) {
 }
 
 void AutonomousActor::GalacticSearch() {
+  CHECK(galactic_search_splines_);
+
   path_fetcher_.Fetch();
   CHECK(path_fetcher_.get() != nullptr)
       << "Expect at least one GalacticSearchPath message before running "
@@ -107,171 +163,101 @@ void AutonomousActor::GalacticSearch() {
   if (path_fetcher_->alliance() == y2020::vision::Alliance::kUnknown) {
     AOS_LOG(ERROR, "The galactic search path is unknown, doing nothing.");
   } else {
-    SplineHandle spline1 = PlanSpline(
-        [this](
-            aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
-                *builder) {
-          flatbuffers::Offset<frc971::MultiSpline> target_spline;
-          if (path_fetcher_->alliance() == y2020::vision::Alliance::kRed) {
-            if (path_fetcher_->letter() == y2020::vision::Letter::kA) {
-              LOG(INFO) << "Red A";
-              target_spline = auto_splines_.SplineRedA(builder);
-            } else {
-              LOG(INFO) << "Red B";
-              CHECK(path_fetcher_->letter() == y2020::vision::Letter::kB);
-              target_spline = auto_splines_.SplineRedB(builder);
-            }
-          } else {
-            if (path_fetcher_->letter() == y2020::vision::Letter::kA) {
-              LOG(INFO) << "Blue A";
-              target_spline = auto_splines_.SplineBlueA(builder);
-            } else {
-              LOG(INFO) << "Blue B";
-              CHECK(path_fetcher_->letter() == y2020::vision::Letter::kB);
-              target_spline = auto_splines_.SplineBlueB(builder);
-            }
-          }
-          const frc971::MultiSpline *const spline =
-              flatbuffers::GetTemporaryPointer(*builder->fbb(), target_spline);
+    SplineHandle *spline = nullptr;
+    if (path_fetcher_->alliance() == y2020::vision::Alliance::kRed) {
+      if (path_fetcher_->letter() == y2020::vision::Letter::kA) {
+        LOG(INFO) << "Red A";
+        spline = &galactic_search_splines_->red_a;
+      } else {
+        LOG(INFO) << "Red B";
+        CHECK(path_fetcher_->letter() == y2020::vision::Letter::kB);
+        spline = &galactic_search_splines_->red_b;
+      }
+    } else {
+      if (path_fetcher_->letter() == y2020::vision::Letter::kA) {
+        LOG(INFO) << "Blue A";
+        spline = &galactic_search_splines_->blue_a;
+      } else {
+        LOG(INFO) << "Blue B";
+        CHECK(path_fetcher_->letter() == y2020::vision::Letter::kB);
+        spline = &galactic_search_splines_->red_b;
+      }
+    }
+    CHECK_NOTNULL(spline);
 
-          SendStartingPosition(CHECK_NOTNULL(spline));
-
-          return target_spline;
-        },
-        SplineDirection::kForward);
+    SendStartingPosition(spline->starting_position());
 
     set_intake_goal(1.2);
     set_roller_voltage(7.0);
     SendSuperstructureGoal();
 
-    if (!spline1.WaitForPlan()) return;
-    spline1.Start();
+    if (!spline->WaitForPlan()) return;
+    spline->Start();
 
-    if (!spline1.WaitForSplineDistanceRemaining(0.02)) return;
+    if (!spline->WaitForSplineDistanceRemaining(0.02)) return;
     RetractIntake();
   }
 }
 
 void AutonomousActor::AutoNavBounce() {
-  SplineHandle spline1 = PlanSpline(
-      [this](aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
-                 *builder) {
-        flatbuffers::Offset<frc971::MultiSpline> target_spline =
-            auto_splines_.AutoNavBounce1(builder);
-        const frc971::MultiSpline *const spline =
-            flatbuffers::GetTemporaryPointer(*builder->fbb(), target_spline);
-        SendStartingPosition(CHECK_NOTNULL(spline));
-        return target_spline;
-      },
-      SplineDirection::kForward);
+  CHECK(bounce_splines_);
 
-  if (!spline1.WaitForPlan()) return;
-  spline1.Start();
+  auto &splines = *bounce_splines_;
 
-  SplineHandle spline2 = PlanSpline(
-      [this](aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
-                 *builder) { return auto_splines_.AutoNavBounce2(builder); },
-      SplineDirection::kBackward);
+  SendStartingPosition(splines[0].starting_position());
 
-  if (!spline1.WaitForSplineDistanceRemaining(0.02)) return;
+  if (!splines[0].WaitForPlan()) return;
+  splines[0].Start();
 
-  if (!spline2.WaitForPlan()) return;
-  spline2.Start();
+  if (!splines[0].WaitForSplineDistanceRemaining(0.02)) return;
 
-  SplineHandle spline3 = PlanSpline(
-      [this](aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
-                 *builder) { return auto_splines_.AutoNavBounce3(builder); },
-      SplineDirection::kForward);
+  if (!splines[1].WaitForPlan()) return;
+  splines[1].Start();
 
-  if (!spline2.WaitForSplineDistanceRemaining(0.02)) return;
+  if (!splines[1].WaitForSplineDistanceRemaining(0.02)) return;
 
-  if (!spline3.WaitForPlan()) return;
-  spline3.Start();
+  if (!splines[2].WaitForPlan()) return;
+  splines[2].Start();
 
-  SplineHandle spline4 = PlanSpline(
-      [this](aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
-                 *builder) { return auto_splines_.AutoNavBounce4(builder); },
-      SplineDirection::kBackward);
+  if (!splines[2].WaitForSplineDistanceRemaining(0.02)) return;
 
-  if (!spline3.WaitForSplineDistanceRemaining(0.02)) return;
+  if (!splines[3].WaitForPlan()) return;
+  splines[3].Start();
 
-  if (!spline4.WaitForPlan()) return;
-  spline4.Start();
-
-  if (!spline4.WaitForSplineDistanceRemaining(0.02)) return;
+  if (!splines[3].WaitForSplineDistanceRemaining(0.02)) return;
 }
 
 void AutonomousActor::AutoNavBarrel() {
-  SplineHandle spline1 = PlanSpline(
-      [this](aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
-                 *builder) {
-        flatbuffers::Offset<frc971::MultiSpline> target_spline;
-        target_spline = auto_splines_.AutoNavBarrel(builder);
-        const frc971::MultiSpline *const spline =
-            flatbuffers::GetTemporaryPointer(*builder->fbb(), target_spline);
-        SendStartingPosition(CHECK_NOTNULL(spline));
-        return target_spline;
-      },
-      SplineDirection::kForward);
+  CHECK(barrel_spline_);
 
-  if (!spline1.WaitForPlan()) return;
-  spline1.Start();
+  SendStartingPosition(barrel_spline_->starting_position());
 
-  if (!spline1.WaitForSplineDistanceRemaining(0.02)) return;
+  if (!barrel_spline_->WaitForPlan()) return;
+  barrel_spline_->Start();
+
+  if (!barrel_spline_->WaitForSplineDistanceRemaining(0.02)) return;
 }
 
 void AutonomousActor::AutoNavSlalom() {
-  SplineHandle spline1 = PlanSpline(
-      [this](aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
-                 *builder) {
-        flatbuffers::Offset<frc971::MultiSpline> target_spline;
-        target_spline = auto_splines_.AutoNavSlalom(builder);
-        const frc971::MultiSpline *const spline =
-            flatbuffers::GetTemporaryPointer(*builder->fbb(), target_spline);
-        SendStartingPosition(CHECK_NOTNULL(spline));
-        return target_spline;
-      },
-      SplineDirection::kForward);
+  CHECK(slalom_spline_);
 
-  if (!spline1.WaitForPlan()) return;
-  spline1.Start();
+  SendStartingPosition(slalom_spline_->starting_position());
 
-  if (!spline1.WaitForSplineDistanceRemaining(0.02)) return;
+  if (!slalom_spline_->WaitForPlan()) return;
+  slalom_spline_->Start();
+
+  if (!slalom_spline_->WaitForSplineDistanceRemaining(0.02)) return;
 }
 
 void AutonomousActor::SplineAuto() {
-  SplineHandle spline1 = PlanSpline(
-      [this](aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
-                 *builder) {
-        flatbuffers::Offset<frc971::MultiSpline> target_spline;
-        target_spline = auto_splines_.TestSpline(builder);
-        const frc971::MultiSpline *const spline =
-            flatbuffers::GetTemporaryPointer(*builder->fbb(), target_spline);
-        SendStartingPosition(CHECK_NOTNULL(spline));
-        return target_spline;
-      },
-      SplineDirection::kForward);
+  CHECK(test_spline_);
 
-  if (!spline1.WaitForPlan()) return;
-  spline1.Start();
+  SendStartingPosition(test_spline_->starting_position());
 
-  if (!spline1.WaitForSplineDistanceRemaining(0.02)) return;
-}
+  if (!test_spline_->WaitForPlan()) return;
+  test_spline_->Start();
 
-void AutonomousActor::SendStartingPosition(
-    const frc971::MultiSpline *const spline) {
-  float x = spline->spline_x()->Get(0);
-  float y = spline->spline_y()->Get(0);
-
-  Eigen::Matrix<double, 2, 6> control_points;
-  for (size_t ii = 0; ii < 6; ++ii) {
-    control_points(0, ii) = spline->spline_x()->Get(ii);
-    control_points(1, ii) = spline->spline_y()->Get(ii);
-  }
-
-  frc971::control_loops::drivetrain::Spline spline_object(control_points);
-
-  SendStartingPosition(x, y, spline_object.Theta(0));
+  if (!test_spline_->WaitForSplineDistanceRemaining(0.02)) return;
 }
 
 ProfileParametersT MakeProfileParametersT(const float max_velocity,
@@ -283,7 +269,7 @@ ProfileParametersT MakeProfileParametersT(const float max_velocity,
 }
 
 bool AutonomousActor::DriveFwd() {
-  SendStartingPosition(0, 0, 0);
+  SendStartingPosition({0, 0, 0});
   const ProfileParametersT kDrive = MakeProfileParametersT(0.3f, 1.0f);
   const ProfileParametersT kTurn = MakeProfileParametersT(5.0f, 15.0f);
   StartDrive(1.0, 0.0, kDrive, kTurn);
@@ -291,7 +277,6 @@ bool AutonomousActor::DriveFwd() {
 }
 
 void AutonomousActor::SendSuperstructureGoal() {
-
   auto builder = superstructure_goal_sender_.MakeBuilder();
 
   flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>

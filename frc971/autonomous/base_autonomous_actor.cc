@@ -5,12 +5,14 @@
 #include <chrono>
 #include <cmath>
 
+#include "aos/util/math.h"
 #include "aos/util/phased_loop.h"
 #include "aos/logging/logging.h"
 
 #include "frc971/control_loops/control_loops_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_goal_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
+#include "frc971/control_loops/drivetrain/spline.h"
 #include "y2019/control_loops/drivetrain/target_selector_generated.h"
 
 using ::aos::monotonic_clock;
@@ -474,9 +476,31 @@ BaseAutonomousActor::SplineHandle BaseAutonomousActor::PlanSpline(
                                             SplineDirection::kBackward);
   spline_builder.add_spline(multispline_offset);
 
+  // Calculate the starting position and yaw.
+  Eigen::Vector3d start;
+  {
+    const frc971::MultiSpline *const spline =
+        flatbuffers::GetTemporaryPointer(*builder.fbb(), multispline_offset);
+
+    start(0) = spline->spline_x()->Get(0);
+    start(1) = spline->spline_y()->Get(0);
+
+    Eigen::Matrix<double, 2, 6> control_points;
+    for (size_t ii = 0; ii < 6; ++ii) {
+      control_points(0, ii) = spline->spline_x()->Get(ii);
+      control_points(1, ii) = spline->spline_y()->Get(ii);
+    }
+
+    frc971::control_loops::drivetrain::Spline spline_object(control_points);
+    start(2) = spline_object.Theta(0);
+    if (direction == SplineDirection::kBackward) {
+      start(2) = aos::math::NormalizeAngle(start(2) + M_PI);
+    }
+  }
+
   builder.Send(spline_builder.Finish());
 
-  return BaseAutonomousActor::SplineHandle(spline_handle, this);
+  return BaseAutonomousActor::SplineHandle(spline_handle, this, start);
 }
 
 bool BaseAutonomousActor::SplineHandle::IsPlanned() {

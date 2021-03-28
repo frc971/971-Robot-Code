@@ -202,8 +202,9 @@
       "name": "/drivetrain",
       "type": "frc971.control_loops.drivetrain.fb.Trajectory",
       "source_node": "roborio",
-      "max_size": 200000,
-      "frequency": 10,
+      "max_size": 400000,
+      "frequency": 2,
+      "num_senders": 2,
       "read_method": "PIN",
       "num_readers": 6
     },

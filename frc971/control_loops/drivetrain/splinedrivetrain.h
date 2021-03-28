@@ -32,6 +32,8 @@ class SplineDrivetrain {
   // returns false.
   bool HasTrajectory(const fb::Trajectory *trajectory) const;
   void AddTrajectory(const fb::Trajectory *trajectory);
+  bool IsCurrentTrajectory(const fb::Trajectory *trajectory) const;
+  void DeleteTrajectory(const fb::Trajectory *trajectory);
 
   void Update(bool enabled, const ::Eigen::Matrix<double, 5, 1> &state,
               const ::Eigen::Matrix<double, 2, 1> &voltage_error);
@@ -58,6 +60,8 @@ class SplineDrivetrain {
                : true;
   }
 
+  size_t trajectory_count() const { return trajectories_.size(); }
+
   // Returns true if the splinedrivetrain is enabled.
   bool enable() const { return enable_; }
 
@@ -79,10 +83,7 @@ class SplineDrivetrain {
   void DeleteCurrentSpline();
 
   const FinishedTrajectory &current_trajectory() const {
-    CHECK(current_trajectory_index_);
-    CHECK_LE(0u, *current_trajectory_index_);
-    CHECK_LT(*current_trajectory_index_, trajectories_.size());
-    return *trajectories_[*current_trajectory_index_];
+    return *CHECK_NOTNULL(current_trajectory_);
   }
 
   const DrivetrainConfig<double> dt_config_;
@@ -92,7 +93,7 @@ class SplineDrivetrain {
   // TODO(james): Sort out construction to avoid so much dynamic memory
   // allocation...
   std::vector<std::unique_ptr<FinishedTrajectory>> trajectories_;
-  std::optional<size_t> current_trajectory_index_;
+  const FinishedTrajectory *current_trajectory_ = nullptr;
 
   std::optional<int> commanded_spline_;
 

@@ -1399,14 +1399,25 @@ TEST_F(DrivetrainTest, SplineExecuteAfterPlan) {
   VerifyNearPosition(1.0, 1.0);
 }
 
-// Tests that when we send a bunch of splines we can fill up the internal
-// buffers and that we handle that case sanely.
+// Tests that when we send a bunch of splines we properly evict old splines from
+// the internal buffers.
 TEST_F(DrivetrainTest, FillSplineBuffer) {
   SetEnabled(true);
-  std::vector<int> sent_spline_indices;
-  constexpr size_t kExtraSplines = 4;
-  for (size_t spline_index = 1;
-       spline_index < DrivetrainLoop::kNumSplineFetchers + 1 + kExtraSplines;
+  std::vector<int> expected_splines;
+  constexpr size_t kExtraSplines = 10;
+  constexpr size_t kNumStoredSplines = DrivetrainLoop::kNumSplineFetchers - 1;
+  constexpr int kRunSpline = 1;
+  {
+    // Tell the drivetrain to execute spline 1; we then will check that that
+    // spline never gets evicted.
+    auto builder = drivetrain_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
+    goal_builder.add_spline_handle(kRunSpline);
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+  }
+  for (size_t spline_index = 0;
+       spline_index < DrivetrainLoop::kNumSplineFetchers + kExtraSplines;
        ++spline_index) {
     auto builder = trajectory_goal_sender_.MakeBuilder();
 
@@ -1430,65 +1441,34 @@ TEST_F(DrivetrainTest, FillSplineBuffer) {
     spline_goal_builder.add_drive_spline_backwards(false);
     spline_goal_builder.add_spline(multispline_offset);
     ASSERT_TRUE(builder.Send(spline_goal_builder.Finish()));
-    RunFor(dt());
+    // Run for at least 2 iterations. Because of how the logic works, there will
+    // actually typically be a single iteration where we store kNumStoredSplines
+    // + 1.
+    RunFor(2 * dt());
 
-    sent_spline_indices.push_back(spline_index);
-  }
-
-  drivetrain_status_fetcher_.Fetch();
-
-  ASSERT_EQ(DrivetrainLoop::kNumSplineFetchers,
-            CHECK_NOTNULL(drivetrain_status_fetcher_.get()
-                              ->trajectory_logging()
-                              ->available_splines())
-                ->size());
-  for (size_t ii = 0; ii < DrivetrainLoop::kNumSplineFetchers; ++ii) {
-    EXPECT_EQ(sent_spline_indices[ii],
-              CHECK_NOTNULL(drivetrain_status_fetcher_.get()
-                                ->trajectory_logging()
-                                ->available_splines())
-                  ->Get(ii));
-  }
-
-  // Next, start going through and executing all the splines; we should
-  // gradually work through the splines.
-  for (size_t ii = 0; ii < sent_spline_indices.size(); ++ii) {
-    const int current_spline = sent_spline_indices[ii];
-    {
-      auto builder = drivetrain_goal_sender_.MakeBuilder();
-      Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-      goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
-      goal_builder.add_spline_handle(current_spline);
-      ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    expected_splines.push_back(spline_index);
+    if (expected_splines.size() > kNumStoredSplines) {
+      if (expected_splines.front() != kRunSpline) {
+        expected_splines.erase(expected_splines.begin());
+      } else {
+        expected_splines.erase(expected_splines.begin() + 1);
+      }
     }
 
-    // Run for two iterations to give the drivetrain time to resolve all of its
-    // internal state for handling splines (coordinating the fetchers and goal
-    // message to get this two all happen in 1 message is entirely possible, but
-    // has no practical need).
-    RunFor(2 * dt());
+    // We should always just have the past kNumStoredSplines available.
     drivetrain_status_fetcher_.Fetch();
 
-    ASSERT_EQ(current_spline, drivetrain_status_fetcher_.get()
-                                  ->trajectory_logging()
-                                  ->current_spline_idx())
-        << aos::FlatbufferToJson(drivetrain_status_fetcher_.get());
-
-    const int num_available_splines = std::min(
-        sent_spline_indices.size() - ii, DrivetrainLoop::kNumSplineFetchers);
-
-    ASSERT_EQ(num_available_splines,
+    ASSERT_EQ(expected_splines.size(),
               CHECK_NOTNULL(drivetrain_status_fetcher_.get()
                                 ->trajectory_logging()
                                 ->available_splines())
-                  ->size())
-        << aos::FlatbufferToJson(drivetrain_status_fetcher_.get());
-    for (int jj = 0; jj < num_available_splines; ++jj) {
-      EXPECT_EQ(sent_spline_indices[ii + jj],
+                  ->size());
+    for (size_t ii = 0; ii < expected_splines.size(); ++ii) {
+      EXPECT_EQ(expected_splines[ii],
                 CHECK_NOTNULL(drivetrain_status_fetcher_.get()
                                   ->trajectory_logging()
                                   ->available_splines())
-                    ->Get(jj));
+                    ->Get(ii));
     }
   }
 }

@@ -43,15 +43,23 @@ class BaseAutonomousActor : public ::aos::common::actions::ActorBase<Goal> {
     bool SplineDistanceRemaining(double distance);
     bool WaitForSplineDistanceRemaining(double distance);
 
+    // Returns [x, y, theta] position of the start.
+    const Eigen::Vector3d &starting_position() const { return spline_start_; }
+
    private:
     friend BaseAutonomousActor;
     SplineHandle(int32_t spline_handle,
-                 BaseAutonomousActor *base_autonomous_actor)
+                 BaseAutonomousActor *base_autonomous_actor,
+                 const Eigen::Vector3d &start)
         : spline_handle_(spline_handle),
-          base_autonomous_actor_(base_autonomous_actor) {}
+          base_autonomous_actor_(base_autonomous_actor),
+          spline_start_(start) {}
 
     int32_t spline_handle_;
     BaseAutonomousActor *base_autonomous_actor_;
+
+    // Starting [x, y, theta] position of the spline.
+    Eigen::Vector3d spline_start_;
   };
 
   // Represents the direction that we will drive along a spline.
