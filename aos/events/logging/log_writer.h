@@ -243,7 +243,8 @@ class Logger {
       aos::monotonic_clock::time_point monotonic_start_time,
       aos::realtime_clock::time_point realtime_start_time);
 
-  void DoLogData(const monotonic_clock::time_point end_time);
+  void DoLogData(const monotonic_clock::time_point end_time,
+                 bool run_on_logged);
 
   void WriteMissingTimestamps();
 
