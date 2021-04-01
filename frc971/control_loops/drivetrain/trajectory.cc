@@ -111,7 +111,7 @@ Trajectory::Trajectory(
       spline_(std::move(input_spline)),
       config_(config),
       plan_(num_distance == 0
-                ? std::max(100, static_cast<int>(spline_.length() / 0.0025))
+                ? std::max(10000, static_cast<int>(spline_.length() / 0.0025))
                 : num_distance,
             vmax),
       plan_segment_type_(plan_.size(),
