@@ -107,7 +107,12 @@ class DetachedBufferWriter {
   void Close();
 
   // Returns the total number of bytes written and currently queued.
-  size_t total_bytes() const { return encoder_->total_bytes(); }
+  size_t total_bytes() const {
+    if (!encoder_) {
+      return 0;
+    }
+    return encoder_->total_bytes();
+  }
 
   // The maximum time for a single write call, or 0 if none have been performed.
   std::chrono::nanoseconds max_write_time() const { return max_write_time_; }

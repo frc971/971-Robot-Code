@@ -334,6 +334,12 @@ void MultiNodeLogNamer::CreateBufferWriter(
     // Refuse to open any new files, which might skip data. Any existing files
     // are in the same folder, which means they're on the same filesystem, which
     // means they're probably going to run out of space and get stuck too.
+    if (!destination->get()) {
+      // But avoid leaving a nullptr writer if we're out of space when
+      // attempting to open the first file.
+      *destination = std::make_unique<DetachedBufferWriter>(
+          DetachedBufferWriter::already_out_of_space_t());
+    }
     return;
   }
   const std::string_view separator = base_name_.back() == '/' ? "" : "_";

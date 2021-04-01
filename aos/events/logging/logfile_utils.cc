@@ -141,16 +141,21 @@ void DetachedBufferWriter::Close() {
 }
 
 void DetachedBufferWriter::Flush() {
-  const auto queue = encoder_->queue();
-  if (queue.empty()) {
-    return;
-  }
   if (ran_out_of_space_) {
     // We don't want any later data to be written after space becomes available,
     // so refuse to write anything more once we've dropped data because we ran
     // out of space.
-    VLOG(1) << "Ignoring queue: " << queue.size();
-    encoder_->Clear(queue.size());
+    if (encoder_) {
+      VLOG(1) << "Ignoring queue: " << encoder_->queue().size();
+      encoder_->Clear(encoder_->queue().size());
+    } else {
+      VLOG(1) << "No queue to ignore";
+    }
+    return;
+  }
+
+  const auto queue = encoder_->queue();
+  if (queue.empty()) {
     return;
   }
 
@@ -205,6 +210,19 @@ void DetachedBufferWriter::UpdateStatsForWrite(
 }
 
 void DetachedBufferWriter::FlushAtThreshold() {
+  if (ran_out_of_space_) {
+    // We don't want any later data to be written after space becomes available,
+    // so refuse to write anything more once we've dropped data because we ran
+    // out of space.
+    if (encoder_) {
+      VLOG(1) << "Ignoring queue: " << encoder_->queue().size();
+      encoder_->Clear(encoder_->queue().size());
+    } else {
+      VLOG(1) << "No queue to ignore";
+    }
+    return;
+  }
+
   // Flush if we are at the max number of iovs per writev, because there's no
   // point queueing up any more data in memory. Also flush once we have enough
   // data queued up.
