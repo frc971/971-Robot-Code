@@ -62,6 +62,7 @@ class Logger {
   void set_polling_period(std::chrono::nanoseconds polling_period) {
     polling_period_ = polling_period;
   }
+  std::chrono::nanoseconds polling_period() const { return polling_period_; }
 
   std::string_view log_start_uuid() const { return log_start_uuid_; }
   UUID logger_instance_uuid() const { return logger_instance_uuid_; }
