@@ -17,6 +17,7 @@ cc_test(
     deps = [
         ":ring_buffer",
         "//aos/testing:googletest",
+        "@com_github_google_glog//:glog",
     ],
 )
 
