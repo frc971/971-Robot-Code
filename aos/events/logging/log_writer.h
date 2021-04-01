@@ -149,6 +149,15 @@ class Logger {
     });
   }
 
+  // Shortcut to call StartLogging with a MultiNodeLogNamer when event
+  // processing starts.
+  void StartLoggingOnRun(std::string base_name) {
+    event_loop_->OnRun([this, base_name]() {
+      StartLogging(std::make_unique<MultiNodeLogNamer>(
+          base_name, event_loop_->configuration(), event_loop_->node()));
+    });
+  }
+
  private:
   // Structure to track both a fetcher, and if the data fetched has been
   // written.  We may want to delay writing data to disk so that we don't let
