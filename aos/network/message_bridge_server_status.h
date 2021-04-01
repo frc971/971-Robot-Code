@@ -49,6 +49,18 @@ class MessageBridgeServerStatus {
   // one.
   const UUID &BootUUID(int node_index) const { return boot_uuids_[node_index]; }
 
+  void AddPartialDeliveries(int node_index, uint32_t partial_deliveries) {
+    partial_deliveries_[node_index] += partial_deliveries;
+  }
+
+  void ResetPartialDeliveries(int node_index) {
+    partial_deliveries_[node_index] = 0;
+  }
+
+  uint32_t PartialDeliveries(int node_index) const {
+    return partial_deliveries_[node_index];
+  }
+
   // Returns the ServerConnection message which is updated by the server.
   ServerConnection *FindServerConnection(std::string_view node_name);
   ServerConnection *FindServerConnection(const Node *node);
@@ -105,6 +117,8 @@ class MessageBridgeServerStatus {
   std::function<void(const Context &)> send_data_;
 
   bool send_ = true;
+
+  std::vector<uint32_t> partial_deliveries_;
 };
 
 

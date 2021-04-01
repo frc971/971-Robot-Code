@@ -112,9 +112,10 @@ void ChannelState::SendData(SctpServer *server, const Context &context) {
   // and flushes.  Whee.
 }
 
-void ChannelState::HandleDelivery(
-    sctp_assoc_t rcv_assoc_id, uint16_t /*ssn*/, absl::Span<const uint8_t> data,
-    const MessageBridgeServerStatus &server_status) {
+void ChannelState::HandleDelivery(sctp_assoc_t rcv_assoc_id, uint16_t /*ssn*/,
+                                  absl::Span<const uint8_t> data,
+                                  uint32_t partial_deliveries,
+                                  MessageBridgeServerStatus *server_status) {
   const logger::MessageHeader *message_header =
       flatbuffers::GetRoot<logger::MessageHeader>(data.data());
   for (Peer &peer : peers_) {
@@ -130,7 +131,7 @@ void ChannelState::HandleDelivery(
             peer.timestamp_logger->MakeBuilder();
 
         flatbuffers::Offset<flatbuffers::Vector<uint8_t>> boot_uuid_offset =
-            server_status.BootUUID(peer.node_index).PackVector(builder.fbb());
+            server_status->BootUUID(peer.node_index).PackVector(builder.fbb());
 
         RemoteMessage::Builder remote_message_builder =
             builder.MakeBuilder<RemoteMessage>();
@@ -154,6 +155,9 @@ void ChannelState::HandleDelivery(
         remote_message_builder.add_remote_queue_index(
             message_header->queue_index());
         remote_message_builder.add_boot_uuid(boot_uuid_offset);
+
+        server_status->AddPartialDeliveries(peer.node_index,
+                                            partial_deliveries);
 
         builder.Send(remote_message_builder.Finish());
       }
@@ -422,6 +426,7 @@ void MessageBridgeServer::NodeDisconnected(sctp_assoc_t assoc_id) {
                    ->string_view();
     server_status_.ResetFilter(node_index);
     server_status_.ClearBootUUID(node_index);
+    server_status_.ResetPartialDeliveries(node_index);
   }
 }
 
@@ -495,7 +500,10 @@ void MessageBridgeServer::HandleData(const Message *message) {
         ++channel_index;
       }
     }
+    // TODO(sarah.newman): what if node_index is -1?
     server_status_.ResetFilter(node_index);
+    server_status_.AddPartialDeliveries(node_index,
+                                        message->partial_deliveries);
     server_status_.SetBootUUID(
         node_index, UUID::FromString(connect->boot_uuid()->string_view()));
     VLOG(1) << "Resetting filters for " << node_index << " "
@@ -515,7 +523,7 @@ void MessageBridgeServer::HandleData(const Message *message) {
             message->header.rcvinfo.rcv_assoc_id,
             message->header.rcvinfo.rcv_ssn,
             absl::Span<const uint8_t>(message->data(), message->size),
-            server_status_);
+            message->partial_deliveries, &server_status_);
   }
 
   if (VLOG_IS_ON(1)) {
