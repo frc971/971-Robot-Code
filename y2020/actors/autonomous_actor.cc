@@ -180,7 +180,7 @@ void AutonomousActor::GalacticSearch() {
       } else {
         LOG(INFO) << "Blue B";
         CHECK(path_fetcher_->letter() == y2020::vision::Letter::kB);
-        spline = &galactic_search_splines_->red_b;
+        spline = &galactic_search_splines_->blue_b;
       }
     }
   }
