@@ -14,6 +14,7 @@ namespace aos {
 namespace logger {
 namespace {
 using message_bridge::RemoteMessage;
+namespace chrono = std::chrono;
 }  // namespace
 
 Logger::Logger(EventLoop *event_loop, const Configuration *configuration,
@@ -682,7 +683,7 @@ void Logger::LogUntil(monotonic_clock::time_point t) {
         CHECK(node_state_[f.data_node_index].header_valid)
             << ": Can't write data before the header on channel "
             << configuration::CleanedChannelToString(f.fetcher->channel());
-        f.writer->QueueSizedFlatbuffer(&fbb);
+        f.writer->QueueSizedFlatbuffer(&fbb, end);
       }
 
       if (f.timestamp_writer != nullptr) {
@@ -708,7 +709,7 @@ void Logger::LogUntil(monotonic_clock::time_point t) {
         CHECK(node_state_[f.timestamp_node_index].header_valid)
             << ": Can't write data before the header on channel "
             << configuration::CleanedChannelToString(f.fetcher->channel());
-        f.timestamp_writer->QueueSizedFlatbuffer(&fbb);
+        f.timestamp_writer->QueueSizedFlatbuffer(&fbb, end);
       }
 
       if (f.contents_writer != nullptr) {
@@ -769,7 +770,7 @@ void Logger::LogUntil(monotonic_clock::time_point t) {
         CHECK(node_state_[f.contents_node_index].header_valid)
             << ": Can't write data before the header on channel "
             << configuration::CleanedChannelToString(f.fetcher->channel());
-        f.contents_writer->QueueSizedFlatbuffer(&fbb);
+        f.contents_writer->QueueSizedFlatbuffer(&fbb, end);
       }
 
       f.written = true;

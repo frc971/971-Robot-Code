@@ -42,7 +42,7 @@ int main(int argc, char **argv) {
 
     aos::logger::DetachedBufferWriter buffer_writer(
         FLAGS_logfile, std::make_unique<aos::logger::DummyEncoder>());
-    buffer_writer.QueueSizedFlatbuffer(&fbb);
+    buffer_writer.QueueSizedFlatbuffer(&fbb, aos::monotonic_clock::min_time);
 
     while (true) {
       absl::Span<const uint8_t> msg_data = span_reader.ReadMessage();

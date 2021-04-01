@@ -71,16 +71,22 @@ class DetachedBufferWriter {
   // Triggers a flush if there's enough data queued up.
   //
   // Steals the detached buffer from it.
-  void QueueSizedFlatbuffer(flatbuffers::FlatBufferBuilder *fbb) {
-    QueueSizedFlatbuffer(fbb->Release());
+  void QueueSizedFlatbuffer(flatbuffers::FlatBufferBuilder *fbb,
+                            aos::monotonic_clock::time_point now) {
+    QueueSizedFlatbuffer(fbb->Release(), now);
   }
   // May steal the backing storage of buffer, or may leave it alone.
+  void QueueSizedFlatbuffer(flatbuffers::DetachedBuffer &&buffer,
+                            aos::monotonic_clock::time_point now) {
+    QueueSizedFlatbuffer(std::move(buffer));
+    FlushAtThreshold(now);
+  }
+  // Unconditionally queues the buffer.
   void QueueSizedFlatbuffer(flatbuffers::DetachedBuffer &&buffer) {
     if (ran_out_of_space_) {
       return;
     }
     encoder_->Encode(std::move(buffer));
-    FlushAtThreshold();
   }
 
   // Queues up data in span. May copy or may write it to disk immediately.
@@ -159,8 +165,10 @@ class DetachedBufferWriter {
                            ssize_t written, int iovec_size);
 
   // Flushes data if we've reached the threshold to do that as part of normal
-  // operation.
-  void FlushAtThreshold();
+  // operation either due to the outstanding queued data, or because we have
+  // passed our flush period.  now is the current time to save some CPU grabbing
+  // the current time.  It just needs to be close.
+  void FlushAtThreshold(aos::monotonic_clock::time_point now);
 
   std::string filename_;
   std::unique_ptr<DetachedBufferEncoder> encoder_;
@@ -180,6 +188,9 @@ class DetachedBufferWriter {
   int total_write_count_ = 0;
   int total_write_messages_ = 0;
   int total_write_bytes_ = 0;
+
+  aos::monotonic_clock::time_point last_flush_time_ =
+      aos::monotonic_clock::min_time;
 };
 
 // Packes a message pointed to by the context into a MessageHeader.
