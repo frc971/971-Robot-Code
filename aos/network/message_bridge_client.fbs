@@ -21,6 +21,10 @@ table ClientConnection {
   // Number of duplicate packets we received and dropped.
   duplicate_packets:uint (id: 4);
 
+  // Number of extra calls needed to receive a single message
+  // (indicates congestion)
+  partial_deliveries:uint (id: 5);
+
   // TODO(austin): Per channel counts?
 }
 

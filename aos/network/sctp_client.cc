@@ -25,10 +25,14 @@ SctpClient::SctpClient(std::string_view remote_host, int remote_port,
   PCHECK(fd_ != -1);
 
   {
-    // Allow the kernel to deliver messages from different streams in any order.
-    int full_interleaving = 2;
+    // Per https://tools.ietf.org/html/rfc6458
+    // Setting this to !0 allows event notifications to be interleaved
+    // with data if enabled, and would have to be handled in the code.
+    // Enabling interleaving would only matter during congestion, which
+    // typically only happens during application startup.
+    int interleaving = 0;
     PCHECK(setsockopt(fd_, IPPROTO_SCTP, SCTP_FRAGMENT_INTERLEAVE,
-                      &full_interleaving, sizeof(full_interleaving)) == 0);
+                      &interleaving, sizeof(interleaving)) == 0);
   }
 
   {
@@ -57,7 +61,6 @@ SctpClient::SctpClient(std::string_view remote_host, int remote_port,
     // stack out in the wild for linux is old and primitive.
     struct sctp_event_subscribe subscribe;
     memset(&subscribe, 0, sizeof(subscribe));
-    subscribe.sctp_data_io_event = 1;
     subscribe.sctp_association_event = 1;
     subscribe.sctp_stream_change_event = 1;
     PCHECK(setsockopt(fd_, SOL_SCTP, SCTP_EVENTS, (char *)&subscribe,

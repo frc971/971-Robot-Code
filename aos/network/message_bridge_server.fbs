@@ -19,7 +19,7 @@ table ServerConnection {
   // Number of packets that have been dropped (if known).
   dropped_packets:uint (id: 2);
 
-  // Number of packets received on all channels.
+  // Number of packets sent on all channels.
   sent_packets:uint (id: 3);
 
   // This is the measured monotonic offset for the connected node in
@@ -29,6 +29,10 @@ table ServerConnection {
 
   // Boot UUID of the client.
   boot_uuid:string (id: 5);
+
+  // Number of extra calls needed to receive a single message
+  // (indicates congestion)
+  partial_deliveries:uint (id: 6);
 
   // TODO(austin): Per channel counts?
 }

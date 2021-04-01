@@ -571,6 +571,7 @@ TEST_P(RemoteMessageSimulatedEventLoopTest, MultinodePingPong) {
             LOG(FATAL) << "Unknown connection";
           }
 
+          EXPECT_EQ(connection->partial_deliveries(), 0);
           EXPECT_TRUE(connection->has_monotonic_offset());
           EXPECT_EQ(connection->monotonic_offset(), 150000);
         }
@@ -588,6 +589,7 @@ TEST_P(RemoteMessageSimulatedEventLoopTest, MultinodePingPong) {
             stats.connections()->Get(0);
         EXPECT_EQ(connection->state(), message_bridge::State::CONNECTED);
         EXPECT_GT(connection->received_packets(), 50);
+        EXPECT_EQ(connection->partial_deliveries(), 0);
         EXPECT_TRUE(connection->has_monotonic_offset());
         EXPECT_EQ(connection->monotonic_offset(), 150000);
         ++pi2_client_statistics_count;
@@ -604,6 +606,7 @@ TEST_P(RemoteMessageSimulatedEventLoopTest, MultinodePingPong) {
             stats.connections()->Get(0);
         EXPECT_EQ(connection->state(), message_bridge::State::CONNECTED);
         EXPECT_GE(connection->received_packets(), 5);
+        EXPECT_EQ(connection->partial_deliveries(), 0);
         EXPECT_TRUE(connection->has_monotonic_offset());
         EXPECT_EQ(connection->monotonic_offset(), 150000);
         ++pi3_client_statistics_count;

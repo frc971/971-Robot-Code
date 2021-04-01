@@ -33,6 +33,7 @@ FlatbufferDetachedBuffer<ClientStatistics> MakeClientStatistics(
     connection_builder.add_received_packets(0);
     connection_builder.add_duplicate_packets(0);
     connection_builder.add_monotonic_offset(0);
+    connection_builder.add_partial_deliveries(0);
     connection_offsets.emplace_back(connection_builder.Finish());
   }
   flatbuffers::Offset<
@@ -97,6 +98,8 @@ void MessageBridgeClientStatus::SendStatistics() {
       client_connection_builder.add_duplicate_packets(
           connection->duplicate_packets());
     }
+    client_connection_builder.add_partial_deliveries(
+        connection->partial_deliveries());
 
     // Strip out the monotonic offset if it isn't populated.
     TimestampFilter *filter = &filters_[client_connection_offsets_.size()];

@@ -1067,6 +1067,11 @@ TEST_P(MessageBridgeParameterizedTest, ReliableSentBeforeClientStartup) {
                   ->duplicate_packets(),
               0u);
 
+    EXPECT_EQ(pi2_client_statistics_fetcher->connections()
+                  ->Get(0)
+                  ->partial_deliveries(),
+              0u);
+
     EXPECT_TRUE(ping_fetcher.Fetch());
     EXPECT_FALSE(unreliable_ping_fetcher.Fetch());
     EXPECT_EQ(ping_timestamp_count, 1);
@@ -1086,6 +1091,11 @@ TEST_P(MessageBridgeParameterizedTest, ReliableSentBeforeClientStartup) {
                   ->Get(0)
                   ->duplicate_packets(),
               1u);
+
+    EXPECT_EQ(pi2_client_statistics_fetcher->connections()
+                  ->Get(0)
+                  ->partial_deliveries(),
+              0u);
 
     EXPECT_EQ(ping_timestamp_count, 1);
     EXPECT_FALSE(ping_fetcher.Fetch());
@@ -1192,6 +1202,11 @@ TEST_P(MessageBridgeParameterizedTest, ReliableSentBeforeServerStartup) {
                   ->duplicate_packets(),
               0u);
 
+    EXPECT_EQ(pi2_client_statistics_fetcher->connections()
+                  ->Get(0)
+                  ->partial_deliveries(),
+              0u);
+
     EXPECT_TRUE(ping_fetcher.Fetch());
     EXPECT_FALSE(unreliable_ping_fetcher.Fetch());
     EXPECT_EQ(ping_timestamp_count, 1);
@@ -1212,6 +1227,12 @@ TEST_P(MessageBridgeParameterizedTest, ReliableSentBeforeServerStartup) {
                   ->Get(0)
                   ->duplicate_packets(),
               1u);
+
+
+    EXPECT_EQ(pi2_client_statistics_fetcher->connections()
+                  ->Get(0)
+                  ->partial_deliveries(),
+              0u);
 
     EXPECT_EQ(ping_timestamp_count, 1);
     EXPECT_FALSE(ping_fetcher.Fetch());

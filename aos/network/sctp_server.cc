@@ -30,7 +30,6 @@ SctpServer::SctpServer(std::string_view local_host, int local_port)
     {
       struct sctp_event_subscribe subscribe;
       memset(&subscribe, 0, sizeof(subscribe));
-      subscribe.sctp_data_io_event = 1;
       subscribe.sctp_association_event = 1;
       subscribe.sctp_send_failure_event = 1;
       subscribe.sctp_partial_delivery_event = 1;
@@ -45,10 +44,14 @@ SctpServer::SctpServer(std::string_view local_host, int local_port)
                         sizeof(int)) == 0);
     }
     {
-      // Allow one packet on the wire to have multiple source packets.
-      int full_interleaving = 2;
+      // Per https://tools.ietf.org/html/rfc6458
+      // Setting this to !0 allows event notifications to be interleaved
+      // with data if enabled, and would have to be handled in the code.
+      // Enabling interleaving would only matter during congestion, which
+      // typically only happens during application startup.
+      int interleaving = 0;
       PCHECK(setsockopt(fd_, IPPROTO_SCTP, SCTP_FRAGMENT_INTERLEAVE,
-                        &full_interleaving, sizeof(full_interleaving)) == 0);
+                        &interleaving, sizeof(interleaving)) == 0);
     }
     {
       // Turn off the NAGLE algorithm.

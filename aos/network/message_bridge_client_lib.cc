@@ -238,6 +238,8 @@ void SctpClientConnection::HandleData(const Message *message) {
     // Duplicate message, ignore.
   } else {
     connection_->mutate_received_packets(connection_->received_packets() + 1);
+    connection_->mutate_partial_deliveries(connection_->partial_deliveries() +
+                                           message->partial_deliveries);
 
     channel_state->last_queue_index = remote_data->queue_index();
     channel_state->last_timestamp = monotonic_clock::time_point(

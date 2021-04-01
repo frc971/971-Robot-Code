@@ -36,6 +36,7 @@ FlatbufferDetachedBuffer<ServerStatistics> MakeServerStatistics(
     connection_builder.add_dropped_packets(0);
     connection_builder.add_sent_packets(0);
     connection_builder.add_monotonic_offset(0);
+    connection_builder.add_partial_deliveries(0);
     connection_offsets.emplace_back(connection_builder.Finish());
   }
   flatbuffers::Offset<
@@ -85,6 +86,7 @@ MessageBridgeServerStatus::MessageBridgeServerStatus(
       statistics_.message().connections()->size());
 
   filters_.resize(event_loop->configuration()->nodes()->size());
+  partial_deliveries_.resize(event_loop->configuration()->nodes()->size());
   boot_uuids_.resize(event_loop->configuration()->nodes()->size(), UUID::Zero());
   has_boot_uuids_.resize(event_loop->configuration()->nodes()->size(), false);
   timestamp_fetchers_.resize(event_loop->configuration()->nodes()->size());
@@ -191,6 +193,8 @@ void MessageBridgeServerStatus::SendStatistics() {
     server_connection_builder.add_dropped_packets(
         connection->dropped_packets());
     server_connection_builder.add_sent_packets(connection->sent_packets());
+    server_connection_builder.add_partial_deliveries(
+        partial_deliveries_[node_index]);
 
     // TODO(austin): If it gets stale, drop it too.
     if (!filters_[node_index].MissingSamples()) {

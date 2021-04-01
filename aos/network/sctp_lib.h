@@ -52,6 +52,8 @@ struct Message {
     return reinterpret_cast<const uint8_t *>(&actual_data[0].data);
   }
 
+  uint32_t partial_deliveries = 0;
+
   // Returns a human readable peer IP address.
   std::string PeerAddress() const;
 
@@ -70,7 +72,7 @@ std::string GetHostname();
 void LogSctpStatus(int fd, sctp_assoc_t assoc_id);
 
 // Read and allocate a message.
-aos::unique_c_ptr<Message> ReadSctpMessage(int fd, int max_size);
+aos::unique_c_ptr<Message> ReadSctpMessage(int fd, size_t max_size);
 
 // Returns the max network buffer available for reading for a socket.
 size_t ReadRMemMax();
