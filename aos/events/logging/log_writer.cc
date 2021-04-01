@@ -25,7 +25,7 @@ Logger::Logger(EventLoop *event_loop, const Configuration *configuration,
       configuration_(configuration),
       name_(network::GetHostname()),
       timer_handler_(event_loop_->AddTimer(
-          [this]() { DoLogData(event_loop_->monotonic_now()); })),
+          [this]() { DoLogData(event_loop_->monotonic_now(), true); })),
       server_statistics_fetcher_(
           configuration::MultiNode(event_loop_->configuration())
               ? event_loop_->MakeFetcher<message_bridge::ServerStatistics>(
@@ -320,7 +320,11 @@ std::unique_ptr<LogNamer> Logger::StopLogging(
   CHECK(log_namer_) << ": Not logging right now";
 
   if (end_time != aos::monotonic_clock::min_time) {
-    DoLogData(end_time);
+    // Folks like to use the on_logged_period_ callback to trigger stop and
+    // start events.  We can't have those then recurse and try to stop again.
+    // Rather than making everything reentrant, let's just instead block the
+    // callback here.
+    DoLogData(end_time, false);
   }
   timer_handler_->Disable();
 
@@ -834,7 +838,8 @@ void Logger::LogUntil(monotonic_clock::time_point t) {
   last_synchronized_time_ = t;
 }
 
-void Logger::DoLogData(const monotonic_clock::time_point end_time) {
+void Logger::DoLogData(const monotonic_clock::time_point end_time,
+                       bool run_on_logged) {
   // We want to guarantee that messages aren't out of order by more than
   // max_out_of_order_duration.  To do this, we need sync points.  Every write
   // cycle should be a sync point.
@@ -844,7 +849,9 @@ void Logger::DoLogData(const monotonic_clock::time_point end_time) {
     // per iteration, even if it is small.
     LogUntil(std::min(last_synchronized_time_ + polling_period_, end_time));
 
-    on_logged_period_();
+    if (run_on_logged) {
+      on_logged_period_();
+    }
 
     // If we missed cycles, we could be pretty far behind.  Spin until we are
     // caught up.
