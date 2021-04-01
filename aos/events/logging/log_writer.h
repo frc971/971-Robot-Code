@@ -64,7 +64,7 @@ class Logger {
   }
   std::chrono::nanoseconds polling_period() const { return polling_period_; }
 
-  std::string_view log_start_uuid() const { return log_start_uuid_; }
+  std::optional<UUID> log_start_uuid() const { return log_start_uuid_; }
   UUID logger_instance_uuid() const { return logger_instance_uuid_; }
 
   // The maximum time for a single fetch which returned a message, or 0 if none
@@ -126,7 +126,7 @@ class Logger {
   // multiple nodes. The default (empty string) indicates there isn't one
   // available.
   void StartLogging(std::unique_ptr<LogNamer> log_namer,
-                    std::string_view log_start_uuid = "");
+                    std::optional<UUID> log_start_uuid = std::nullopt);
 
   // Stops logging. Ensures any messages through end_time make it into the log.
   //
@@ -276,7 +276,7 @@ class Logger {
   const UUID logger_instance_uuid_ = UUID::Random();
   std::unique_ptr<LogNamer> log_namer_;
   // Empty indicates there isn't one.
-  std::string log_start_uuid_;
+  std::optional<UUID> log_start_uuid_;
 
   // Name to save in the log file.  Defaults to hostname.
   std::string name_;

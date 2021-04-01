@@ -169,7 +169,7 @@ Logger::~Logger() {
 }
 
 void Logger::StartLogging(std::unique_ptr<LogNamer> log_namer,
-                          std::string_view log_start_uuid) {
+                          std::optional<UUID> log_start_uuid) {
   CHECK(!log_namer_) << ": Already logging";
   log_namer_ = std::move(log_namer);
 
@@ -287,7 +287,7 @@ std::unique_ptr<LogNamer> Logger::StopLogging(
   node_state_.clear();
 
   log_event_uuid_ = UUID::Zero();
-  log_start_uuid_ = std::string();
+  log_start_uuid_ = std::nullopt;
 
   return std::move(log_namer_);
 }
@@ -509,8 +509,8 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> Logger::MakeHeader(
       logger_instance_uuid_.PackString(&fbb);
 
   flatbuffers::Offset<flatbuffers::String> log_start_uuid_offset;
-  if (!log_start_uuid_.empty()) {
-    log_start_uuid_offset = fbb.CreateString(log_start_uuid_);
+  if (log_start_uuid_) {
+    log_start_uuid_offset = fbb.CreateString(log_start_uuid_->ToString());
   }
 
   flatbuffers::Offset<flatbuffers::String> config_sha256_offset;
