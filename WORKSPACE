@@ -219,11 +219,10 @@ http_archive(
 # C++ rules for Bazel.
 http_archive(
     name = "rules_cc",
-    sha256 = "67412176974bfce3f4cf8bdaff39784a72ed709fc58def599d1f68710b58d68b",
-    strip_prefix = "rules_cc-b7fe9697c0c76ab2fd431a891dbb9a6a32ed7c3e",
+    sha256 = "ed36cc7a6f46b7c28ab4009db4a37e350e1ba367446b0886bcc9cdc1df92752e",
+    strip_prefix = "rules_cc-608c7b605fb844a20e96a3eddc9b49ad2542adab",
     urls = [
-        "https://mirror.bazel.build/github.com/bazelbuild/rules_cc/archive/b7fe9697c0c76ab2fd431a891dbb9a6a32ed7c3e.zip",
-        "https://github.com/bazelbuild/rules_cc/archive/b7fe9697c0c76ab2fd431a891dbb9a6a32ed7c3e.zip",
+        "https://www.frc971.org/Build-Dependencies/rules_cc-608c7b605fb844a20e96a3eddc9b49ad2542adab.zip",
     ],
 )
 
