@@ -99,8 +99,8 @@ def draw_at_home_grid(cr):
         if BARREL in FIELD.tags:
             # barrels
             field[1][4] = True
-            field[3][8] = True
-            field[1][10] = True
+            field[3][7] = True
+            field[1][9] = True
         if SLALOM in FIELD.tags:
             field[1][3:8] = True  # 3 to 7 inclusive
             field[1][9] = True
