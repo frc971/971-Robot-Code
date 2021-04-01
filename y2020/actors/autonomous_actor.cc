@@ -11,8 +11,9 @@
 #include "y2020/actors/auto_splines.h"
 #include "y2020/control_loops/drivetrain/drivetrain_base.h"
 
-DEFINE_bool(spline_auto, true, "If true, define a spline autonomous mode");
-DEFINE_bool(galactic_search, false,
+DEFINE_bool(spline_auto, false, "If true, define a spline autonomous mode");
+DEFINE_bool(ignore_vision, true, "If true, ignore vision");
+DEFINE_bool(galactic_search, true,
             "If true, do the galactic search autonomous");
 DEFINE_bool(bounce, false, "If true, run the AutoNav Bounce autonomous");
 DEFINE_bool(barrel, false, "If true, run the AutoNav Barrel autonomous");
@@ -157,13 +158,12 @@ void AutonomousActor::GalacticSearch() {
   CHECK(galactic_search_splines_);
 
   path_fetcher_.Fetch();
-  CHECK(path_fetcher_.get() != nullptr)
-      << "Expect at least one GalacticSearchPath message before running "
-         "auto...";
-  if (path_fetcher_->alliance() == y2020::vision::Alliance::kUnknown) {
-    AOS_LOG(ERROR, "The galactic search path is unknown, doing nothing.");
-  } else {
-    SplineHandle *spline = nullptr;
+  SplineHandle *spline = nullptr;
+  if (path_fetcher_.get()) {
+    if (path_fetcher_->alliance() == y2020::vision::Alliance::kUnknown) {
+      AOS_LOG(ERROR, "The galactic search path is unknown, doing nothing.");
+      return;
+    }
     if (path_fetcher_->alliance() == y2020::vision::Alliance::kRed) {
       if (path_fetcher_->letter() == y2020::vision::Letter::kA) {
         LOG(INFO) << "Red A";
@@ -180,23 +180,30 @@ void AutonomousActor::GalacticSearch() {
       } else {
         LOG(INFO) << "Blue B";
         CHECK(path_fetcher_->letter() == y2020::vision::Letter::kB);
-        spline = &galactic_search_splines_->red_b;
+        spline = &galactic_search_splines_->blue_b;
       }
     }
-    CHECK_NOTNULL(spline);
-
-    SendStartingPosition(spline->starting_position());
-
-    set_intake_goal(1.2);
-    set_roller_voltage(7.0);
-    SendSuperstructureGoal();
-
-    if (!spline->WaitForPlan()) return;
-    spline->Start();
-
-    if (!spline->WaitForSplineDistanceRemaining(0.02)) return;
-    RetractIntake();
   }
+  if (FLAGS_ignore_vision) {
+    LOG(INFO) << "Forcing Red B";
+    spline = &galactic_search_splines_->red_b;
+  }
+
+  CHECK(spline != nullptr)
+      << "Expect at least one GalacticSearchPath message before running "
+         "auto...";
+
+  SendStartingPosition(spline->starting_position());
+
+  set_intake_goal(1.25);
+  set_roller_voltage(12.0);
+  SendSuperstructureGoal();
+
+  if (!spline->WaitForPlan()) return;
+  spline->Start();
+
+  if (!spline->WaitForSplineDistanceRemaining(0.02)) return;
+  RetractIntake();
 }
 
 void AutonomousActor::AutoNavBounce() {
@@ -288,8 +295,8 @@ void AutonomousActor::SendSuperstructureGoal() {
 
     frc971::ProfileParameters::Builder profile_params_builder =
         builder.MakeBuilder<frc971::ProfileParameters>();
-    profile_params_builder.add_max_velocity(10.0);
-    profile_params_builder.add_max_acceleration(30.0);
+    profile_params_builder.add_max_velocity(20.0);
+    profile_params_builder.add_max_acceleration(60.0);
     flatbuffers::Offset<frc971::ProfileParameters> profile_params_offset =
         profile_params_builder.Finish();
     intake_builder.add_unsafe_goal(intake_goal_);
