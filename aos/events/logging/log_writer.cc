@@ -220,6 +220,9 @@ void Logger::StartLogging(std::unique_ptr<LogNamer> log_namer,
     node_state_[node_index].log_file_header = MakeHeader(node, config_sha256);
   }
 
+  const aos::monotonic_clock::time_point beginning_time =
+      event_loop_->monotonic_now();
+
   // Grab data from each channel right before we declare the log file started
   // so we can capture the latest message on each channel.  This lets us have
   // non periodic messages with configuration that now get logged.
@@ -239,11 +242,18 @@ void Logger::StartLogging(std::unique_ptr<LogNamer> log_namer,
                  monotonic_clock::min_time, realtime_clock::min_time);
   }
 
+  const aos::monotonic_clock::time_point fetch_time =
+      event_loop_->monotonic_now();
   WriteHeader();
+  const aos::monotonic_clock::time_point header_time =
+      event_loop_->monotonic_now();
 
   LOG(INFO) << "Logging node as " << FlatbufferToJson(event_loop_->node())
-            << " start_time " << last_synchronized_time_ << " boot uuid "
-            << event_loop_->boot_uuid();
+            << " start_time " << last_synchronized_time_ << ", took "
+            << chrono::duration<double>(fetch_time - beginning_time).count()
+            << " to fetch, "
+            << chrono::duration<double>(header_time - fetch_time).count()
+            << " to write headers, boot uuid " << event_loop_->boot_uuid();
 
   // Force logging up until the start of the log file now, so the messages at
   // the start are always ordered before the rest of the messages.
