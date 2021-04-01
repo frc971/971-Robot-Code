@@ -1,5 +1,7 @@
 #include "aos/events/logging/log_writer.h"
 
+#include <dirent.h>
+
 #include <functional>
 #include <map>
 #include <vector>
@@ -166,6 +168,49 @@ Logger::~Logger() {
     // and write it to disk.
     StopLogging(event_loop_->monotonic_now());
   }
+}
+
+bool Logger::RenameLogBase(std::string new_base_name) {
+  if (new_base_name == log_namer_->base_name()) {
+    return true;
+  }
+  std::string current_directory = std::string(log_namer_->base_name());
+  std::string new_directory = new_base_name;
+
+  auto current_path_split = current_directory.rfind("/");
+  auto new_path_split = new_directory.rfind("/");
+
+  CHECK(new_base_name.substr(new_path_split) ==
+        current_directory.substr(current_path_split))
+      << "Rename of file base from " << current_directory << " to "
+      << new_directory << " is not supported.";
+
+  current_directory.resize(current_path_split);
+  new_directory.resize(new_path_split);
+  DIR *dir = opendir(current_directory.c_str());
+  if (dir) {
+    closedir(dir);
+    const int result = rename(current_directory.c_str(), new_directory.c_str());
+    if (result != 0) {
+      PLOG(ERROR) << "Unable to rename " << current_directory << " to "
+                  << new_directory;
+      return false;
+    }
+  } else {
+    // Handle if directory was already renamed.
+    dir = opendir(new_directory.c_str());
+    if (!dir) {
+      LOG(ERROR) << "Old directory " << current_directory
+                 << " missing and new directory " << new_directory
+                 << " not present.";
+      return false;
+    }
+    closedir(dir);
+  }
+
+  log_namer_->set_base_name(new_base_name);
+  Rotate();
+  return true;
 }
 
 void Logger::StartLogging(std::unique_ptr<LogNamer> log_namer,

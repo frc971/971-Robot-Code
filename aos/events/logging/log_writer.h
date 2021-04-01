@@ -128,6 +128,11 @@ class Logger {
   void StartLogging(std::unique_ptr<LogNamer> log_namer,
                     std::optional<UUID> log_start_uuid = std::nullopt);
 
+  // Moves the current log location to the new name. Returns true if a change
+  // was made, false otherwise.
+  // Only renaming the folder is supported, not the file base name.
+  bool RenameLogBase(std::string new_base_name);
+
   // Stops logging. Ensures any messages through end_time make it into the log.
   //
   // If you want to stop ASAP, pass min_time to avoid reading any more messages.

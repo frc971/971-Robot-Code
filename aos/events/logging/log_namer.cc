@@ -87,7 +87,10 @@ DetachedBufferWriter *LocalLogNamer::MakeForwardedTimestampWriter(
 MultiNodeLogNamer::MultiNodeLogNamer(std::string_view base_name,
                                      const Configuration *configuration,
                                      const Node *node)
-    : LogNamer(node), base_name_(base_name), configuration_(configuration) {}
+    : LogNamer(node),
+      base_name_(base_name),
+      old_base_name_(),
+      configuration_(configuration) {}
 
 MultiNodeLogNamer::~MultiNodeLogNamer() {
   if (!ran_out_of_space_) {
@@ -376,11 +379,28 @@ void MultiNodeLogNamer::RenameTempFile(DetachedBufferWriter *destination) {
   if (temp_suffix_.empty()) {
     return;
   }
-  const std::string current_filename = std::string(destination->filename());
+  std::string current_filename = std::string(destination->filename());
   CHECK(current_filename.size() > temp_suffix_.size());
-  const std::string final_filename =
+  std::string final_filename =
       current_filename.substr(0, current_filename.size() - temp_suffix_.size());
-  const int result = rename(current_filename.c_str(), final_filename.c_str());
+  int result = rename(current_filename.c_str(), final_filename.c_str());
+
+  // When changing the base name, we rename the log folder while there active
+  // buffer writers. Therefore, the name of that active buffer may still refer
+  // to the old file location rather than the new one. This minimized changes to
+  // existing code.
+  if (result != 0 && errno != ENOSPC && !old_base_name_.empty()) {
+    auto offset = current_filename.find(old_base_name_);
+    if (offset != std::string::npos) {
+      current_filename.replace(offset, old_base_name_.length(), base_name_);
+    }
+    offset = final_filename.find(old_base_name_);
+    if (offset != std::string::npos) {
+      final_filename.replace(offset, old_base_name_.length(), base_name_);
+    }
+    result = rename(current_filename.c_str(), final_filename.c_str());
+  }
+
   if (result != 0) {
     if (errno == ENOSPC) {
       ran_out_of_space_ = true;
@@ -389,6 +409,8 @@ void MultiNodeLogNamer::RenameTempFile(DetachedBufferWriter *destination) {
       PLOG(FATAL) << "Renaming " << current_filename << " to " << final_filename
                   << " failed";
     }
+  } else {
+    VLOG(1) << "Renamed " << current_filename << " -> " << final_filename;
   }
 }
 

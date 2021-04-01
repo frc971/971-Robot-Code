@@ -1,5 +1,7 @@
 #include "aos/events/logging/log_reader.h"
 
+#include <sys/stat.h>
+
 #include "absl/strings/str_format.h"
 #include "aos/events/event_loop.h"
 #include "aos/events/logging/log_writer.h"
@@ -2075,6 +2077,48 @@ TEST_P(MultinodeLoggerTest, LoggerStartTime) {
       }
     }
   }
+}
+
+// Test that renaming the base, renames the folder.
+TEST_F(MultinodeLoggerTest, LoggerRenameFolder) {
+  time_converter_.AddMonotonic(
+      {monotonic_clock::epoch(),
+       monotonic_clock::epoch() + chrono::seconds(1000)});
+  logfile_base1_ = tmp_dir_ + "/renamefolder/multi_logfile1";
+  logfile_base2_ = tmp_dir_ + "/renamefolder/multi_logfile2";
+  logfiles_ = MakeLogFiles(logfile_base1_, logfile_base2_);
+  LoggerState pi1_logger = MakeLogger(pi1_);
+  LoggerState pi2_logger = MakeLogger(pi2_);
+
+  StartLogger(&pi1_logger);
+  StartLogger(&pi2_logger);
+
+  event_loop_factory_.RunFor(chrono::milliseconds(10000));
+  logfile_base1_ = tmp_dir_ + "/new-good/multi_logfile1";
+  logfile_base2_ = tmp_dir_ + "/new-good/multi_logfile2";
+  logfiles_ = MakeLogFiles(logfile_base1_, logfile_base2_);
+  ASSERT_TRUE(pi1_logger.logger->RenameLogBase(logfile_base1_));
+  ASSERT_TRUE(pi2_logger.logger->RenameLogBase(logfile_base2_));
+  for (auto &file : logfiles_) {
+    struct stat s;
+    EXPECT_EQ(0, stat(file.c_str(), &s));
+  }
+}
+
+// Test that renaming the file base dies.
+TEST_P(MultinodeLoggerDeathTest, LoggerRenameFile) {
+  time_converter_.AddMonotonic(
+      {monotonic_clock::epoch(),
+       monotonic_clock::epoch() + chrono::seconds(1000)});
+  logfile_base1_ = tmp_dir_ + "/renamefile/multi_logfile1";
+  logfile_base2_ = tmp_dir_ + "/renamefile/multi_logfile2";
+  logfiles_ = MakeLogFiles(logfile_base1_, logfile_base2_);
+  LoggerState pi1_logger = MakeLogger(pi1_);
+  StartLogger(&pi1_logger);
+  event_loop_factory_.RunFor(chrono::milliseconds(10000));
+  logfile_base1_ = tmp_dir_ + "/new-renamefile/new_multi_logfile1";
+  EXPECT_DEATH({ pi1_logger.logger->RenameLogBase(logfile_base1_); },
+               "Rename of file base from");
 }
 
 // TODO(austin): We can write a test which recreates a logfile and confirms that

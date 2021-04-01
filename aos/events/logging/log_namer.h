@@ -23,6 +23,15 @@ class LogNamer {
   LogNamer(const Node *node) : node_(node) { nodes_.emplace_back(node_); }
   virtual ~LogNamer() {}
 
+  virtual std::string_view base_name() const = 0;
+
+  // Rotate should be called at least once in between calls to set_base_name.
+  // Otherwise temporary files will not be recoverable.
+  // Rotate is called by Logger::RenameLogBase, which is currently the only user
+  // of this method.
+  // Only renaming the folder is supported, not the file base name.
+  virtual void set_base_name(std::string_view base_name) = 0;
+
   // Writes the header to all log files for a specific node.  This function
   // needs to be called after all the writers are created.
   //
@@ -101,6 +110,12 @@ class LocalLogNamer : public LogNamer {
         data_writer_(OpenDataWriter()) {}
   ~LocalLogNamer() override = default;
 
+  std::string_view base_name() const final { return base_name_; }
+
+  void set_base_name(std::string_view base_name) final {
+    base_name_ = base_name;
+  }
+
   void WriteHeader(
       aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header,
       const Node *node) override;
@@ -132,7 +147,7 @@ class LocalLogNamer : public LogNamer {
         std::make_unique<aos::logger::DummyEncoder>());
   }
 
-  const std::string base_name_;
+  std::string base_name_;
   const UUID uuid_;
   size_t part_number_ = 0;
   std::unique_ptr<DetachedBufferWriter> data_writer_;
@@ -145,7 +160,12 @@ class MultiNodeLogNamer : public LogNamer {
                     const Configuration *configuration, const Node *node);
   ~MultiNodeLogNamer() override;
 
-  std::string_view base_name() const { return base_name_; }
+  std::string_view base_name() const final { return base_name_; }
+
+  void set_base_name(std::string_view base_name) final {
+    old_base_name_ = base_name_;
+    base_name_ = base_name;
+  }
 
   // If temp_suffix is set, then this will write files under names beginning
   // with the specified suffix, and then rename them to the desired name after
@@ -344,7 +364,8 @@ class MultiNodeLogNamer : public LogNamer {
     return t;
   }
 
-  const std::string base_name_;
+  std::string base_name_;
+  std::string old_base_name_;
   const Configuration *const configuration_;
 
   bool ran_out_of_space_ = false;
