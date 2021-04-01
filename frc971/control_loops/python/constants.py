@@ -5,7 +5,7 @@ window = Gtk.Window()
 screen = window.get_screen()
 
 #Set screen size for rest of program.
-SCREEN_SIZE = screen.get_height() / 3
+SCREEN_SIZE = screen.get_height() / 1.5
 
 # Placeholder value
 ROBOT_SIDE_TO_BALL_CENTER = 0.15
