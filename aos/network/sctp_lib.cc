@@ -134,8 +134,7 @@ void PrintNotification(const Message *msg) {
       VLOG(1) << "\t\t(remote_error: err=" << ntohs(sre->sre_error) << ")";
     } break;
     case SCTP_STREAM_CHANGE_EVENT: {
-      const struct sctp_stream_change_event *sce =
-          &snp->sn_strchange_event;
+      const struct sctp_stream_change_event *sce = &snp->sn_strchange_event;
       LOG(INFO) << " SCTP_STREAM_CHANGE_EVENT";
       VLOG(1) << "\t\t(stream_change_event: flags=" << sce->strchange_flags
               << ", assoc_id=" << sce->strchange_assoc_id
