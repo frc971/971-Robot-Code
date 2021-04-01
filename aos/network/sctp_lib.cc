@@ -225,6 +225,9 @@ aos::unique_c_ptr<Message> ReadSctpMessage(int fd, int max_size) {
     }
   }
 
+  CHECK_NE(inmessage.msg_flags & MSG_CTRUNC, MSG_CTRUNC)
+      << ": Control message truncated.";
+
   CHECK_LE(size, max_size) << ": Message overflowed buffer on stream "
                            << result->header.rcvinfo.rcv_sid << ".";
 

@@ -57,7 +57,6 @@ SctpClient::SctpClient(std::string_view remote_host, int remote_port,
     // stack out in the wild for linux is old and primitive.
     struct sctp_event_subscribe subscribe;
     memset(&subscribe, 0, sizeof(subscribe));
-    subscribe.sctp_data_io_event = 1;
     subscribe.sctp_association_event = 1;
     subscribe.sctp_stream_change_event = 1;
     PCHECK(setsockopt(fd_, SOL_SCTP, SCTP_EVENTS, (char *)&subscribe,

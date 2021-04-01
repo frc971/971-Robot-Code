@@ -30,7 +30,6 @@ SctpServer::SctpServer(std::string_view local_host, int local_port)
     {
       struct sctp_event_subscribe subscribe;
       memset(&subscribe, 0, sizeof(subscribe));
-      subscribe.sctp_data_io_event = 1;
       subscribe.sctp_association_event = 1;
       subscribe.sctp_send_failure_event = 1;
       subscribe.sctp_partial_delivery_event = 1;
