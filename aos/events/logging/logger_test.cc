@@ -2200,9 +2200,9 @@ TEST_P(MultinodeLoggerTest, DeadNode) {
 }
 
 constexpr std::string_view kCombinedConfigSha1(
-    "60f7907de2ce98f5df6cc433487165086595021fabf52176fe45f532305e447b");
+    "0184681f8b83b5b9902a88ab12504c06b780907f6d156353bd958ebcf9389ef9");
 constexpr std::string_view kSplitConfigSha1(
-    "49e1da5ed560f76252706d30f3180207b81ec2100ec9bd8adc10df45460022ce");
+    "1020274679a8f8c15ea20a48e4a35dd59a435203e5f31a57e15355e5a6ee31f7");
 
 INSTANTIATE_TEST_CASE_P(
     All, MultinodeLoggerTest,
