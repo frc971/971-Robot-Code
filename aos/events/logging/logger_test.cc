@@ -454,17 +454,17 @@ class MultinodeLoggerTest : public ::testing::TestWithParam<struct Param> {
     event_loop_factory_.SetTimeConverter(&time_converter_);
 
     // Go through and remove the logfiles if they already exist.
-    for (const auto file : logfiles_) {
+    for (const auto &file : logfiles_) {
       unlink(file.c_str());
       unlink((file + ".xz").c_str());
     }
 
-    for (const auto file :
+    for (const auto &file :
          MakeLogFiles(tmp_dir_ + "/relogged1", tmp_dir_ + "/relogged2")) {
       unlink(file.c_str());
     }
 
-    for (const auto file : pi1_reboot_logfiles_) {
+    for (const auto &file : pi1_reboot_logfiles_) {
       unlink(file.c_str());
     }
 
