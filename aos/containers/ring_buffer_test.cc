@@ -1,16 +1,70 @@
 #include "aos/containers/ring_buffer.h"
 
+#include "glog/logging.h"
 #include "gtest/gtest.h"
 
 namespace aos {
 namespace testing {
+
+// A class which is implicitly convertible to and from int, and tracks object
+// lifetimes.
+struct TrackedInt {
+  enum class State { kNoValue, kAlive, kDestroyed };
+
+  static int instance_count;
+  int value;
+  State state;
+
+  TrackedInt(int new_value) : value(new_value), state(State::kAlive) {
+    ++instance_count;
+  }
+
+  TrackedInt(const TrackedInt &other) = delete;
+  TrackedInt(TrackedInt &&other) : value(other.value), state(other.state) {
+    CHECK(other.state != State::kDestroyed);
+    other.state = State::kNoValue;
+    ++instance_count;
+  }
+  ~TrackedInt() {
+    CHECK(state != State::kDestroyed);
+    state = State::kDestroyed;
+    --instance_count;
+    CHECK_GE(instance_count, 0);
+  }
+  TrackedInt &operator=(const TrackedInt &other) = delete;
+  TrackedInt &operator=(TrackedInt &&other) {
+    CHECK(state != State::kDestroyed);
+    CHECK(other.state != State::kDestroyed);
+    state = other.state;
+    other.state = State::kNoValue;
+    value = other.value;
+    return *this;
+  }
+
+  operator int() const {
+    CHECK(state == State::kAlive);
+    return value;
+  }
+};
+
+int TrackedInt::instance_count;
+
+struct TrackedIntTracker {
+  TrackedIntTracker() {
+    CHECK_EQ(0, TrackedInt::instance_count) << ": Instances alive before test";
+  }
+  ~TrackedIntTracker() {
+    CHECK_EQ(0, TrackedInt::instance_count) << ": Instances alive after test";
+  }
+};
 
 class RingBufferTest : public ::testing::Test {
  public:
   RingBufferTest() {}
 
  protected:
-  RingBuffer<int, 10> buffer_;
+  TrackedIntTracker tracked_int_tracker_;
+  RingBuffer<TrackedInt, 10> buffer_;
 };
 
 // Test if the RingBuffer is empty when initialized properly
@@ -37,9 +91,8 @@ TEST_F(RingBufferTest, CanAddData) {
     buffer_.Push(i);
 
     // The buffer shouldn't be empty and it's size should be 1 more since we
-    // just
-    // added an item. Also, the last item in the buffer should equal the one we
-    // just added
+    // just added an item. Also, the last item in the buffer should equal the
+    // one we just added
     ASSERT_FALSE(buffer_.empty());
     ASSERT_EQ(i + 1, buffer_.size());
     ASSERT_EQ(i, buffer_[i]);
@@ -60,8 +113,7 @@ TEST_F(RingBufferTest, OverfillData) {
   ASSERT_TRUE(buffer_.full());
 
   // Since the buffer is a size of 10 and has been filled up 2.5 times, it
-  // should
-  // now contain the numbers 15-24
+  // should now contain the numbers 15-24
   for (size_t i = 0; i < buffer_.size(); ++i) {
     ASSERT_EQ(15 + i, buffer_[i]);
   }
@@ -144,7 +196,7 @@ TEST_F(RingBufferTest, CIterator) {
     buffer_.Push(i);
   }
 
-  const RingBuffer<int, 10> &cbuffer = buffer_;
+  const RingBuffer<TrackedInt, 10> &cbuffer = buffer_;
 
   int i = 0;
   for (const int element : cbuffer) {
