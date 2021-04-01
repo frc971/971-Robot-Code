@@ -728,6 +728,7 @@ void SimulatedWatcher::Schedule(std::shared_ptr<SimulatedMessage> message) {
 }
 
 void SimulatedWatcher::HandleEvent() {
+  VLOG(1) << "Watcher " << configuration::CleanedChannelToString(channel_);
   CHECK_NE(msgs_.size(), 0u) << ": No events to handle.";
 
   const monotonic_clock::time_point monotonic_now =
@@ -919,6 +920,7 @@ void SimulatedTimerHandler::Setup(monotonic_clock::time_point base,
 }
 
 void SimulatedTimerHandler::HandleEvent() {
+  VLOG(1) << "Timer " << name();
   const ::aos::monotonic_clock::time_point monotonic_now =
       simulated_event_loop_->monotonic_now();
   logging::ScopedLogRestorer prev_logger;
@@ -974,6 +976,7 @@ SimulatedPhasedLoopHandler::~SimulatedPhasedLoopHandler() {
 }
 
 void SimulatedPhasedLoopHandler::HandleEvent() {
+  VLOG(1) << "Phased loop " << name();
   monotonic_clock::time_point monotonic_now =
       simulated_event_loop_->monotonic_now();
   logging::ScopedLogRestorer prev_logger;
