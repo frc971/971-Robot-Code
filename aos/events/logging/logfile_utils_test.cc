@@ -255,6 +255,7 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> MakeHeader(
     const aos::FlatbufferDetachedBuffer<Configuration> &config,
     const std::string_view json) {
   flatbuffers::FlatBufferBuilder fbb;
+  fbb.ForceDefaults(true);
   flatbuffers::Offset<Configuration> config_offset =
       aos::CopyFlatBuffer(config, &fbb);
   LogFileHeader::Builder header_builder(fbb);
@@ -266,6 +267,7 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> MakeHeader(
       JsonToFlatbuffer<LogFileHeader>(json));
   CHECK(header_updates.Verify());
   flatbuffers::FlatBufferBuilder fbb2;
+  fbb2.ForceDefaults(true);
   fbb2.FinishSizePrefixed(
       aos::MergeFlatBuffers(config_header, header_updates, &fbb2));
   return fbb2.Release();
