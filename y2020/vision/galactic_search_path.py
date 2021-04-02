@@ -1,180 +1,184 @@
 #!/usr/bin/python3
 
-# Creates a UI for a user to select the regions in a camera image where the balls could be placed.
-# After the balls have been placed on the field and they submit the regions,
-# it will take another picture and based on the yellow regions in that picture it will determine where the
-# balls are. This tells us which path the current field is. It then sends the Alliance and Letter of the path
-# with aos_send to the /camera channel for the robot to excecute the spline for that path.
-
-from rect import Rect
-import ball_detection
-
 import cv2 as cv
 from enum import Enum
 import glog
 import json
-import matplotlib.patches as patches
 import matplotlib.pyplot as plt
-from matplotlib.widgets import Button
 import numpy as np
 import os
+
+class Rect:
+
+    # x1 and y1 are top left corner, x2 and y2 are bottom right
+    def __init__(self, x1, y1, x2, y2):
+        self.x1 = x1
+        self.y1 = y1
+        self.x2 = x2
+        self.y2 = y2
+
+    def __str__(self):
+        return "({}, {}), ({}, {})".format(self.x1, self.y1, self.x2, self.y2)
+
+    def to_list(self):
+        return [self.x1, self.y1, self.x2, self.y2]
+
+    @classmethod
+    def from_list(cls, list):
+        rect = None
+        if len(list) == 4:
+            rect = cls(list[0], list[1], list[2], list[3])
+        else:
+            glog.error("Expected list len to be 4 but it was %u", len(list))
+            rect = cls(None, None, None, None)
+        return rect
+
 
 class Alliance(Enum):
     kRed = "red"
     kBlue = "blue"
     kUnknown = None
 
+    @staticmethod
+    def from_value(value):
+        return (Alliance.kRed if value == Alliance.kRed.value else Alliance.kBlue)
+
+    @staticmethod
+    def from_name(name):
+        return (Alliance.kRed if name == Alliance.kRed.name else Alliance.kBlue)
+
 class Letter(Enum):
-    kA = "A"
-    kB = "B"
+    kA = 'A'
+    kB = 'B'
 
+    @staticmethod
+    def from_value(value):
+        return (Letter.kA if value == Letter.kA.value else Letter.kB)
 
-NUM_RECTS = 4
+    @staticmethod
+    def from_name(name):
+        return (Letter.kA if name == Letter.kA.name else Letter.kB)
+
+class Path:
+
+    def __init__(self, letter, alliance, rects):
+        self.letter = letter
+        self.alliance = alliance
+        self.rects = rects
+
+    def __str__(self):
+        return "%s %s: " % (self.alliance.value, self.letter.value)
+
+    def to_dict(self):
+        return {"alliance": self.alliance.name, "letter": self.letter.name}
+
+RECTS_JSON_PATH = "rects.json"
+
 AOS_SEND_PATH = "bazel-bin/aos/aos_send"
 
-if os.path.isdir("/home/pi/robot_code"):
-    AOS_SEND_PATH = "/home/pi/robot_code/aos_send.stripped"
-    os.system("./starter_cmd stop camera_reader")
+def setup_if_pi():
+    if os.path.isdir("/home/pi/robot_code"):
+        AOS_SEND_PATH = "/home/pi/robot_code/aos_send.stripped"
+        os.system("./starter_cmd stop camera_reader")
+
+setup_if_pi()
 
 # The minimum percentage of yellow for a region of a image to
 # be considered to have a ball
-BALL_PCT_THRESHOLD = 10
+BALL_PCT_THRESHOLD = 0.1
 
-rects = [Rect(None, None, None, None)]
+_paths = []
 
-# current index in rects list
-rect_index = 0
+def _run_detection_loop():
+    global img_fig, rects_dict
 
-fig, img_ax = plt.subplots()
+    with open(RECTS_JSON_PATH, 'r') as rects_json:
+        rects_dict = json.load(rects_json)
+        for letter in rects_dict:
+            for alliance in rects_dict[letter]:
+                rects = []
+                for rect_list in rects_dict[letter][alliance]:
+                    rects.append(Rect.from_list(rect_list))
+                _paths.append(Path(Letter.from_name(letter), Alliance.from_name(alliance), rects))
 
-txt = img_ax.text(0, 0, "", size = 10, backgroundcolor = "white")
-
-confirm = Button(plt.axes([0.7, 0.05, 0.1, 0.075]), "Confirm")
-cancel = Button(plt.axes([0.81, 0.05, 0.1, 0.075]), "Cancel")
-submit = Button(plt.axes([0.4, 0.4, 0.1, 0.1]), "Submit")
-
-def draw_txt():
-    alliance = (Alliance.kRed if rect_index % 2 == 0 else Alliance.kBlue)
-    letter = (Letter.kA if rect_index < (NUM_RECTS / 2) else Letter.kB)
-    txt.set_text("Click on top left point and bottom right point for " +
-                 alliance.value + ", path " + letter.value)
-    txt.set_color(alliance.value)
-
-
-def on_confirm(event):
-    global rect_index
-    if rects[rect_index].x1 != None and rects[rect_index].x2 != None:
-        confirm.ax.set_visible(False)
-        cancel.ax.set_visible(False)
-        rect_index += 1
-        clear_rect()
-        if rect_index == NUM_RECTS:
-            submit.ax.set_visible(True)
-        else:
-            draw_txt()
-            rects.append(Rect(None, None, None, None))
-        plt.show()
-
-def on_cancel(event):
-    global rect_index
-    if rect_index < NUM_RECTS:
-        confirm.ax.set_visible(False)
-        cancel.ax.set_visible(False)
-        clear_rect()
-        rects[rect_index].x1 = None
-        rects[rect_index].y1 = None
-        rects[rect_index].x2 = None
-        rects[rect_index].y2 = None
-        plt.show()
-
-SLEEP = 100
-img_fig = None
-
-def on_submit(event):
-    global img_fig
-    plt.close("all")
     plt.ion()
     img_fig = plt.figure()
+
     running = True
     while running:
-        detect_path()
-        cv.waitKey(SLEEP)
+        _detect_path()
 
-def detect_path():
-    img = ball_detection.capture_img()
+def _detect_path():
+    img = capture_img()
     img_fig.figimage(img)
     plt.show()
     plt.pause(0.001)
-    pcts = ball_detection.pct_yellow(img, rects)
-    if len(pcts) == len(rects):
-        paths = []
-        for i in range(len(pcts)):
-            alliance = (Alliance.kRed if i % 2 == 0 else Alliance.kBlue)
-            letter = (Letter.kA if i < NUM_RECTS / 2 else Letter.kB)
-            paths.append({"alliance" : alliance.name, "letter" : letter.name})
-        max_index = np.argmax(pcts)
-        path = paths[max_index]
-        # Make sure that exactly one percentage is >= the threshold
-        rects_with_balls = np.where(pcts >= BALL_PCT_THRESHOLD)[0].size
-        glog.info("rects_with_balls: %s" % rects_with_balls)
-        if rects_with_balls != 1:
-            path["alliance"] = Alliance.kUnknown.name
-            glog.warn("More than one ball found, path is unknown" if rects_with_balls > 1 else
-                      "No balls found")
-        glog.info("Path is %s" % path)
-        os.system(AOS_SEND_PATH +
-                  " /pi2/camera y2020.vision.GalacticSearchPath '" + json.dumps(path) + "'")
 
-        for j in range(len(pcts)):
-            glog.info("%s: %s%% yellow" % (rects[j], pcts[j]))
-    else:
-        glog.error("Error: len of pcts (%u) != len of rects: (%u)" % (len(pcts), len(rects)))
+    mask = _create_mask(img)
 
-# Clears rect on screen
-def clear_rect():
-    if len(img_ax.patches) == 0:
-        glog.error("There were no patches found in img_ax")
-    else:
-        img_ax.patches[-1].remove()
+    current_path = None
+    num_current_paths = 0
+    for path in _paths:
+        pcts = _pct_yellow(mask, path.rects)
+        if len(pcts) == len(path.rects):
+            glog.info(path)
+            for i in range(len(pcts)):
+                glog.info("Percent yellow of %s: %f", path.rects[i], pcts[i])
+            glog.info("")
 
-def on_click(event):
-    # This will get called when user clicks on Submit button, don't want to override the points on
-    # the last rect. Additionally, the event xdata or ydata will be None if the user clicks out of
-    # the bounds of the axis
-    if rect_index < NUM_RECTS and event.xdata != None and event.ydata != None:
-        if rects[rect_index].x1 == None:
-            rects[rect_index].x1, rects[rect_index].y1 = int(event.xdata), int(event.ydata)
-        elif rects[rect_index].x2 == None:
-            rects[rect_index].x2, rects[rect_index].y2 = int(event.xdata), int(event.ydata)
-            if rects[rect_index].x2 < rects[rect_index].x1:
-                rects[rect_index].x2 = rects[rect_index].x1 + (rects[rect_index].x1 - rects[rect_index].x2)
-            if rects[rect_index].y2 < rects[rect_index].y1:
-                    rects[rect_index].y2 = rects[rect_index].y1 + (rects[rect_index].y1 - rects[rect_index].y2)
+            # If all the balls in a path were detected then that path is present
+            rects_with_balls = np.where(pcts >= BALL_PCT_THRESHOLD)[0].size
+            if rects_with_balls == len(path.rects):
+                current_path = path
+                num_current_paths += 1
+        else:
+            glog.error("Error: len of pcts (%u) != len of rects: (%u)", len(pcts), len(rects))
 
-            img_ax.add_patch(patches.Rectangle((rects[rect_index].x1, rects[rect_index].y1),
-                rects[rect_index].x2 - rects[rect_index].x1, rects[rect_index].y2 - rects[rect_index].y1,
-                edgecolor = 'r', linewidth = 1, facecolor="none"))
-            confirm.ax.set_visible(True)
-            cancel.ax.set_visible(True)
-            plt.show()
-    else:
-        glog.info("Either submitted or user pressed out of the bounds of the axis")
+    if num_current_paths != 1:
+        if num_current_paths == 0:
+            current_path = Path(Letter.kA, None, None)
+        current_path.alliance = Alliance.kUnknown
+        glog.warn("Expected 1 path but detected %u", num_current_paths)
 
-def setup_button(button, on_clicked):
-    button.on_clicked(on_clicked)
-    button.ax.set_visible(False)
+
+    path_dict = current_path.to_dict()
+    glog.info("Path is %s", path_dict)
+    os.system(AOS_SEND_PATH +
+              " /pi2/camera y2020.vision.GalacticSearchPath '" + json.dumps(path_dict) + "'")
+
+def _create_mask(img):
+    hsv = cv.cvtColor(img, cv.COLOR_BGR2HSV)
+    lower_yellow = np.array([23, 100, 75], dtype = np.uint8)
+    higher_yellow = np.array([40, 255, 255], dtype = np.uint8)
+    mask = cv.inRange(hsv, lower_yellow, higher_yellow)
+    return mask
+
+# This function finds the percentage of yellow pixels in the rectangles
+# given that are regions of the given image. This allows us to determine
+# whether there is a ball in those rectangles
+def _pct_yellow(mask, rects):
+    pcts = np.zeros(len(rects))
+    for i in range(len(rects)):
+        rect = rects[i]
+        slice = mask[rect.y1 : rect.y2, rect.x1 : rect.x2]
+        yellow_px = np.count_nonzero(slice)
+        pcts[i] = yellow_px / (slice.shape[0] * slice.shape[1])
+
+    return pcts
+
+_video_stream = cv.VideoCapture(0)
+
+def capture_img():
+    global _video_stream
+    return _video_stream.read()[1]
+
+def release_stream():
+    global _video_stream
+    _video_stream.release()
 
 def main():
-    glog.setLevel("INFO")
-
-    img_ax.imshow(ball_detection.capture_img())
-
-    fig.canvas.mpl_connect("button_press_event", on_click)
-    setup_button(confirm, on_confirm)
-    setup_button(cancel, on_cancel)
-    setup_button(submit, on_submit)
-    draw_txt()
-    plt.show()
+    _run_detection_loop()
+    release_stream()
 
 if __name__ == "__main__":
     main()
