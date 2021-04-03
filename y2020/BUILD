@@ -65,6 +65,7 @@ cc_library(
         "//aos/stl_mutex",
         "//frc971:constants",
         "//frc971/control_loops:static_zeroing_single_dof_profiled_subsystem",
+        "//frc971/shooter_interpolation:interpolation",
         "//y2020/control_loops/drivetrain:polydrivetrain_plants",
         "//y2020/control_loops/superstructure/accelerator:accelerator_plants",
         "//y2020/control_loops/superstructure/control_panel:control_panel_plants",
