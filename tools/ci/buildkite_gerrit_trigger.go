@@ -14,6 +14,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"time"
 )
 
 type Commit struct {
@@ -87,7 +88,13 @@ type RefUpdate struct {
 type EventInfo struct {
 	Author         *User      `json:"author"`
 	Uploader       *User      `json:"uploader"`
+	Reviewer       *User      `json:"reviewer"`
+	Adder          *User      `json:"adder"`
+	Remover        *User      `json:"remover"`
 	Submitter      User       `json:"submitter,omitempty"`
+	NewRev         string     `json:"newRev,omitempty"`
+	Ref            string     `json:"ref,omitempty"`
+	TargetNode     string     `json:"targetNode,omitempty"`
 	Approvals      []Approval `json:"approvals,omitempty"`
 	Comment        string     `json:"comment,omitempty"`
 	PatchSet       *PatchSet  `json:"patchSet"`
@@ -124,95 +131,111 @@ func (s *State) handleEvent(eventInfo EventInfo, client *buildkite.Client) {
 	log.Printf("Got a matching change of %s %s %d,%d\n",
 		eventInfo.Change.ID, eventInfo.PatchSet.Revision, eventInfo.Change.Number, eventInfo.PatchSet.Number)
 
-	// Triggering a build creates a UUID, and we can see events back from the webhook before the command returns.  Lock across the command so nothing access Commits while the new UUID is being added.
-	s.mu.Lock()
+	for {
 
-	var user *User
-	if eventInfo.Author != nil {
-		user = eventInfo.Author
-	} else if eventInfo.Uploader != nil {
-		user = eventInfo.Uploader
-	} else {
-		log.Fatalf("Failed to find Author or Uploader")
-	}
+		// Triggering a build creates a UUID, and we can see events back from the webhook before the command returns.  Lock across the command so nothing access Commits while the new UUID is being added.
+		s.mu.Lock()
 
-	// Trigger the build.
-	if build, _, err := client.Builds.Create(
-		"spartan-robotics", "971-robot-code", &buildkite.CreateBuild{
-			Commit: eventInfo.PatchSet.Revision,
-			Branch: eventInfo.Change.ID,
-			Author: buildkite.Author{
-				Name:  user.Name,
-				Email: user.Email,
-			},
-			Env: map[string]string{
-				"GERRIT_CHANGE_NUMBER": fmt.Sprintf("%d", eventInfo.Change.Number),
-				"GERRIT_PATCH_NUMBER":  fmt.Sprintf("%d", eventInfo.PatchSet.Number),
-			},
-		}); err == nil {
-
-		if build.ID != nil {
-			log.Printf("Scheduled build %s\n", *build.ID)
-			s.Commits[*build.ID] = Commit{
-				Sha1:         eventInfo.PatchSet.Revision,
-				ChangeId:     eventInfo.Change.ID,
-				ChangeNumber: eventInfo.Change.Number,
-				Patchset:     eventInfo.PatchSet.Number,
-			}
-		}
-		s.mu.Unlock()
-
-		if data, err := json.MarshalIndent(build, "", "\t"); err != nil {
-			log.Fatalf("json encode failed: %s", err)
+		var user *User
+		if eventInfo.Author != nil {
+			user = eventInfo.Author
+		} else if eventInfo.Uploader != nil {
+			user = eventInfo.Uploader
 		} else {
-			log.Printf("%s\n", string(data))
+			log.Fatalf("Failed to find Author or Uploader")
 		}
 
-		// Now remove the verified from Gerrit and post the link.
-		cmd := exec.Command("ssh",
-			"-p",
-			"29418",
-			"-i",
-			s.Key,
-			s.User+"@software.frc971.org",
-			"gerrit",
-			"review",
-			"-m",
-			fmt.Sprintf("\"Build Started: %s\"", *build.WebURL),
-			"--verified",
-			"0",
-			fmt.Sprintf("%d,%d", eventInfo.Change.Number, eventInfo.PatchSet.Number))
+		// Trigger the build.
+		if build, _, err := client.Builds.Create(
+			"spartan-robotics", "971-robot-code", &buildkite.CreateBuild{
+				Commit: eventInfo.PatchSet.Revision,
+				Branch: eventInfo.Change.ID,
+				Author: buildkite.Author{
+					Name:  user.Name,
+					Email: user.Email,
+				},
+				Env: map[string]string{
+					"GERRIT_CHANGE_NUMBER": fmt.Sprintf("%d", eventInfo.Change.Number),
+					"GERRIT_PATCH_NUMBER":  fmt.Sprintf("%d", eventInfo.PatchSet.Number),
+				},
+			}); err == nil {
 
-		log.Printf("Running 'ssh -p 29418 -i %s %s@software.frc971.org gerrit review -m '\"Build Started: %s\"' --verified 0 %d,%d' and waiting for it to finish...",
-			s.Key, s.User,
-			*build.WebURL, eventInfo.Change.Number, eventInfo.PatchSet.Number)
-		if err := cmd.Run(); err != nil {
-			log.Printf("Command failed with error: %v", err)
+			if build.ID != nil {
+				log.Printf("Scheduled build %s\n", *build.ID)
+				s.Commits[*build.ID] = Commit{
+					Sha1:         eventInfo.PatchSet.Revision,
+					ChangeId:     eventInfo.Change.ID,
+					ChangeNumber: eventInfo.Change.Number,
+					Patchset:     eventInfo.PatchSet.Number,
+				}
+			}
+			s.mu.Unlock()
+
+			if data, err := json.MarshalIndent(build, "", "\t"); err != nil {
+				log.Fatalf("json encode failed: %s", err)
+			} else {
+				log.Printf("%s\n", string(data))
+			}
+
+			// Now remove the verified from Gerrit and post the link.
+			cmd := exec.Command("ssh",
+				"-p",
+				"29418",
+				"-i",
+				s.Key,
+				s.User+"@software.frc971.org",
+				"gerrit",
+				"review",
+				"-m",
+				fmt.Sprintf("\"Build Started: %s\"", *build.WebURL),
+				// Don't email out the initial link to lower the spam.
+				"-n",
+				"NONE",
+				"--verified",
+				"0",
+				fmt.Sprintf("%d,%d", eventInfo.Change.Number, eventInfo.PatchSet.Number))
+
+			log.Printf("Running 'ssh -p 29418 -i %s %s@software.frc971.org gerrit review -m '\"Build Started: %s\"' -n NONE --verified 0 %d,%d' and waiting for it to finish...",
+				s.Key, s.User,
+				*build.WebURL, eventInfo.Change.Number, eventInfo.PatchSet.Number)
+			if err := cmd.Run(); err != nil {
+				log.Printf("Command failed with error: %v", err)
+			}
+			return
+		} else {
+			s.mu.Unlock()
+			log.Printf("Failed to trigger build: %s", err)
+			log.Printf("Trying again in 30 seconds")
+			time.Sleep(30 * time.Second)
 		}
-	} else {
-		s.mu.Unlock()
-		log.Fatalf("Failed to trigger build: %s", err)
 	}
 
 }
 
+type BuildkiteChange struct {
+	ID     string `json:"id,omitempty"`
+	Number int    `json:"number,omitempty"`
+	URL    string `json:"url,omitempty"`
+}
+
 type Build struct {
-	ID           string `json:"id,omitempty"`
-	GraphqlId    string `json:"graphql_id,omitempty"`
-	URL          string `json:"url,omitempty"`
-	WebURL       string `json:"web_url,omitempty"`
-	Number       int    `json:"number,omitempty"`
-	State        string `json:"state,omitempty"`
-	Blocked      bool   `json:"blocked,omitempty"`
-	BlockedState string `json:"blocked_state,omitempty"`
-	Message      string `json:"message,omitempty"`
-	Commit       string `json:"commit"`
-	Branch       string `json:"branch"`
-	Source       string `json:"source,omitempty"`
-	CreatedAt    string `json:"created_at,omitempty"`
-	ScheduledAt  string `json:"scheduled_at,omitempty"`
-	StartedAt    string `json:"started_at,omitempty"`
-	FinishedAt   string `json:"finished_at,omitempty"`
+	ID           string           `json:"id,omitempty"`
+	GraphqlId    string           `json:"graphql_id,omitempty"`
+	URL          string           `json:"url,omitempty"`
+	WebURL       string           `json:"web_url,omitempty"`
+	Number       int              `json:"number,omitempty"`
+	State        string           `json:"state,omitempty"`
+	Blocked      bool             `json:"blocked,omitempty"`
+	BlockedState string           `json:"blocked_state,omitempty"`
+	Message      string           `json:"message,omitempty"`
+	Commit       string           `json:"commit"`
+	Branch       string           `json:"branch"`
+	Source       string           `json:"source,omitempty"`
+	CreatedAt    string           `json:"created_at,omitempty"`
+	ScheduledAt  string           `json:"scheduled_at,omitempty"`
+	StartedAt    string           `json:"started_at,omitempty"`
+	FinishedAt   string           `json:"finished_at,omitempty"`
+	RebuiltFrom  *BuildkiteChange `json:"rebuilt_from,omitempty"`
 }
 
 type BuildkiteWebhook struct {
@@ -252,13 +275,48 @@ func (s *State) handle(w http.ResponseWriter, r *http.Request) {
 
 		// We've successfully received the webhook.  Spawn a goroutine in case the mutex is blocked so we don't block this thread.
 		f := func() {
-			if webhook.Event == "build.finished" {
+			if webhook.Event == "build.running" {
+				if webhook.Build.RebuiltFrom != nil {
+					s.mu.Lock()
+					if c, ok := s.Commits[webhook.Build.RebuiltFrom.ID]; ok {
+						log.Printf("Detected a rebuild of %s for build %s", webhook.Build.RebuiltFrom.ID, webhook.Build.ID)
+						s.Commits[webhook.Build.ID] = c
+
+						// And now remove the vote since the rebuild started.
+						cmd := exec.Command("ssh",
+							"-p",
+							"29418",
+							"-i",
+							s.Key,
+							s.User+"@software.frc971.org",
+							"gerrit",
+							"review",
+							"-m",
+							fmt.Sprintf("\"Build Started: %s\"", webhook.Build.WebURL),
+							// Don't email out the initial link to lower the spam.
+							"-n",
+							"NONE",
+							"--verified",
+							"0",
+							fmt.Sprintf("%d,%d", c.ChangeNumber, c.Patchset))
+
+						log.Printf("Running 'ssh -p 29418 -i %s %s@software.frc971.org gerrit review -m '\"Build Started: %s\"' -n NONE --verified 0 %d,%d' and waiting for it to finish...",
+							s.Key, s.User,
+							webhook.Build.WebURL, c.ChangeNumber, c.Patchset)
+						if err := cmd.Run(); err != nil {
+							log.Printf("Command failed with error: %v", err)
+						}
+					}
+					s.mu.Unlock()
+				}
+			} else if webhook.Event == "build.finished" {
 				var commit *Commit
 				{
 					s.mu.Lock()
 					if c, ok := s.Commits[webhook.Build.ID]; ok {
 						commit = &c
-						delete(s.Commits, webhook.Build.ID)
+						// While we *should* delete this now from the map, that will prevent rebuilds from being mapped correctly.
+						// Instead, leave it in the map indefinately.  For the number of builds we do, it should take quite a while to use enough ram to matter.  If that becomes an issue, we can either clean the list when a commit is submitted, or keep a fixed number of builds in the list and expire the oldest ones when it is time.
 					}
 					s.mu.Unlock()
 				}
@@ -390,7 +448,22 @@ func main() {
 			case "change-abandoned":
 			case "change-deleted":
 			case "change-merged":
-				// TODO(austin): Trigger a master build?
+				if eventInfo.RefName == "refs/heads/master" && eventInfo.Change.Status == "MERGED" {
+					if build, _, err := client.Builds.Create(
+						"spartan-robotics", "971-robot-code", &buildkite.CreateBuild{
+							Commit: eventInfo.NewRev,
+							Branch: "master",
+							Author: buildkite.Author{
+								Name:  eventInfo.Submitter.Name,
+								Email: eventInfo.Submitter.Email,
+							},
+						}); err == nil {
+						log.Printf("Scheduled master build %s\n", *build.ID)
+					} else {
+						log.Printf("Failed to schedule master build %v", err)
+						// TODO(austin): Notify failure to build.  Stephan should be able to pick this up in nagios.
+					}
+				}
 			case "change-restored":
 			case "comment-added":
 				if matched, _ := regexp.MatchString(`(?m)^retest$`, eventInfo.Comment); !matched {
