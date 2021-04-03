@@ -2,6 +2,7 @@
 
 #include <chrono>
 
+#include "aos/util/math.h"
 #include "Eigen/Dense"
 #include "frc971/control_loops/c2d.h"
 #include "frc971/control_loops/dlqr.h"
@@ -711,7 +712,8 @@ double Trajectory::EstimateDistanceAlongPath(
 }
 
 Eigen::Matrix<double, 5, 1> FinishedTrajectory::StateToPathRelativeState(
-    double distance, const Eigen::Matrix<double, 5, 1> &state) const {
+    double distance, const Eigen::Matrix<double, 5, 1> &state,
+    bool drive_backwards) const {
   const double nominal_theta = spline().Theta(distance);
   const Eigen::Matrix<double, 2, 1> nominal_xy = spline().XY(distance);
   const Eigen::Matrix<double, 2, 1> xy_err =
@@ -721,9 +723,16 @@ Eigen::Matrix<double, 5, 1> FinishedTrajectory::StateToPathRelativeState(
   Eigen::Matrix<double, 5, 1> path_state;
   path_state(0) = distance + xy_err.x() * ctheta + xy_err.y() * stheta;
   path_state(1) = -xy_err.x() * stheta + xy_err.y() * ctheta;
-  path_state(2) = state(2) - nominal_theta;
+  path_state(2) = aos::math::NormalizeAngle(state(2) - nominal_theta +
+                                            (drive_backwards ? M_PI : 0.0));
+  path_state(2) = aos::math::NormalizeAngle(state(2) - nominal_theta);
   path_state(3) = state(3);
   path_state(4) = state(4);
+  if (drive_backwards) {
+    std::swap(path_state(3), path_state(4));
+    path_state(3) *= -1.0;
+    path_state(4) *= -1.0;
+  }
   return path_state;
 }
 

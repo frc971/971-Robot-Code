@@ -453,8 +453,8 @@ TEST_P(ParameterizedSplineTest, PathRelativeMathTest) {
     const Eigen::Matrix<double, 5, 1> goal_absolute_state =
         finished_trajectory_->GoalState(distance, velocity);
     const Eigen::Matrix<double, 5, 1> goal_relative_state =
-        finished_trajectory_->StateToPathRelativeState(distance,
-                                                       goal_absolute_state);
+        finished_trajectory_->StateToPathRelativeState(
+            distance, goal_absolute_state, false);
     ASSERT_EQ(distance, goal_relative_state(0));
     ASSERT_EQ(0.0, goal_relative_state(1));
     ASSERT_NEAR(goal_absolute_state(2), goal_relative_state(2), 1e-2);
@@ -485,11 +485,11 @@ TEST_P(ParameterizedSplineTest, PathRelativeMathTest) {
     const Eigen::Matrix<double, 5, 1> goal_absolute_state =
         finished_trajectory_->GoalState(distance, velocity);
     const Eigen::Matrix<double, 5, 1> goal_relative_state =
-        finished_trajectory_->StateToPathRelativeState(distance,
-                                                       goal_absolute_state);
+        finished_trajectory_->StateToPathRelativeState(
+            distance, goal_absolute_state, false);
     const Eigen::Matrix<double, 5, 1> current_relative_state =
-        finished_trajectory_->StateToPathRelativeState(distance,
-                                                       absolute_state);
+        finished_trajectory_->StateToPathRelativeState(distance, absolute_state,
+                                                       false);
 
     const Eigen::Matrix<double, 2, 1> U_ff =
         finished_trajectory_->FFVoltage(distance);
