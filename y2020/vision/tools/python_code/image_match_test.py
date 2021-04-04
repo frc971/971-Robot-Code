@@ -32,7 +32,7 @@ query_image_names = [
     'test_images/train_loading_bay_blue.png',  #9
     'test_images/train_loading_bay_red.png',  #10
     'test_images/pi-7971-3_test_image.png',  #11
-    'sample_images/capture-2020-02-13-16-40-07.png',
+    'test_images/test_taped_dusk-2021-04-03-19-30-00.png',  #12
 ]
 
 training_image_index = 0
@@ -126,6 +126,7 @@ while looping:
     # If we're querying static images, show full results
     if (query_image_index is not -1):
         print("Showing results for static query image")
+        cv2.imshow('test', query_images[0]), cv2.waitKey(0)
         homography_list, matches_mask_list = tam.show_results(
             training_images, train_keypoint_lists, query_images,
             query_keypoint_lists, target_pt_list, good_matches_list)
@@ -162,18 +163,24 @@ while looping:
         #   -- This causes a lot of mapping around of points, but overall OK
 
         src_pts_3d = []
+        query_image_matches = query_images[0].copy()
         for m in good_matches:
             src_pts_3d.append(target_list[i].keypoint_list_3d[m.trainIdx])
             pt = query_keypoint_lists[0][m.queryIdx].pt
-            query_images[0] = cv2.circle(
-                query_images[0], (int(pt[0]), int(pt[1])), 5, (0, 255, 0), 3)
+            query_image_matches = cv2.circle(query_image_matches,
+                                             (int(pt[0]), int(pt[1])), 5,
+                                             (0, 255, 0), 3)
 
-        cv2.imshow('DEBUG', query_images[0]), cv2.waitKey(0)
+        cv2.imshow('DEBUG matches', query_image_matches), cv2.waitKey(0)
         # Reshape 3d point list to work with computations to follow
         src_pts_3d_array = np.asarray(np.float32(src_pts_3d)).reshape(-1, 3, 1)
 
         # Load from camera parameters
         cam_mat = camera_params.camera_int.camera_matrix
+        cam_mat[0][0] = 390
+        cam_mat[1][1] = 390
+        # TODO<Jim>: Would be good to read this from a config file
+        print("FIXING CAM MAT to pi camera: ", cam_mat)
         dist_coeffs = camera_params.camera_int.dist_coeffs
 
         # Create list of matching query point locations
@@ -227,9 +234,17 @@ while looping:
         img_ret = field_display.plot_line_on_field(img_ret, (255, 255, 0),
                                                    T_w_ci_estj, T_w_target_pt)
         # THESE ARE OUR ESTIMATES OF HEADING, DISTANCE, AND SKEW TO TARGET
-        log_file.write('%lf, %lf, %lf\n' %
-                       (heading_est, distance_to_target_ground,
-                        angle_to_target_robot))
+        log_file.write(
+            '%lf, %lf, %lf\n' %
+            (heading_est, distance_to_target_ground, angle_to_target_robot))
+        print("Estimates: \n  Heading on field: ",
+              "{:.2f}".format(heading_est), " radians; ",
+              "{:.2f}".format(heading_est / math.pi * 180.0),
+              " degrees\n  Distance to target: ",
+              "{:.2f}".format(distance_to_target_ground),
+              "m\n  Angle to target: ", "{:.2f}".format(angle_to_target_robot),
+              " radians; ", "{:.2f}".format(angle_to_target_robot / math.pi *
+                                            180.0), " degrees\n")
 
         # A bunch of code to visualize things...
         #
@@ -241,9 +256,9 @@ while looping:
             target_pt_list[i].reshape(-1, 1, 2),
             homography_list[i]).astype(int)
         # Ballpark the size of the circle so it looks right on image
-        radius = int(
-            32 * abs(homography_list[i][0][0] + homography_list[i][1][1]) /
-            2)  # Average of scale factors
+        radius = int(12 *
+                     abs(homography_list[i][0][0] + homography_list[i][1][1]) /
+                     2)  # Average of scale factors
         query_image_copy = cv2.circle(query_image_copy,
                                       (target_point_2d_trans.flatten()[0],
                                        target_point_2d_trans.flatten()[1]),
