@@ -12,12 +12,12 @@
 #include "y2020/control_loops/drivetrain/drivetrain_base.h"
 
 DEFINE_bool(spline_auto, false, "If true, define a spline autonomous mode");
-DEFINE_bool(ignore_vision, true, "If true, ignore vision");
-DEFINE_bool(galactic_search, true,
+DEFINE_bool(ignore_vision, false, "If true, ignore vision");
+DEFINE_bool(galactic_search, false,
             "If true, do the galactic search autonomous");
 DEFINE_bool(bounce, false, "If true, run the AutoNav Bounce autonomous");
 DEFINE_bool(barrel, false, "If true, run the AutoNav Barrel autonomous");
-DEFINE_bool(slalom, false, "If true, run the AutoNav Slalom autonomous");
+DEFINE_bool(slalom, true, "If true, run the AutoNav Slalom autonomous");
 
 namespace y2020 {
 namespace actors {
