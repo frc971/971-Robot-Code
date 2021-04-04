@@ -38,7 +38,7 @@ namespace superstructure = y2020::control_loops::superstructure;
 // TODO(sabina): fix button locations.
 
 const ButtonLocation kShootFast(3, 16);
-const ButtonLocation kTurret(3, 15);
+const ButtonLocation kAutoTrack(3, 15);
 const ButtonLocation kHood(3, 3);
 const ButtonLocation kShootSlow(4, 2);
 const ButtonLocation kFeed(4, 1);
@@ -77,16 +77,13 @@ class Reader : public ::aos::input::ActionJoystickInput {
 
     double hood_pos = constants::Values::kHoodRange().middle();
     double intake_pos = -0.89;
-    double turret_pos = 0.0;
     float roller_speed = 0.0f;
     float roller_speed_compensation = 0.0f;
     double accelerator_speed = 0.0;
     double finisher_speed = 0.0;
     double climber_speed = 0.0;
 
-    if (data.IsPressed(kTurret)) {
-      turret_pos = 3.5;
-    }
+    const bool auto_track = data.IsPressed(kAutoTrack);
 
     if (data.IsPressed(kHood)) {
       hood_pos = 0.45;
@@ -150,7 +147,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
 
       flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
           turret_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-              *builder.fbb(), turret_pos,
+              *builder.fbb(), 0.0,
               CreateProfileParameters(*builder.fbb(), 6.0, 20.0));
 
       flatbuffers::Offset<superstructure::ShooterGoal> shooter_offset =
@@ -169,6 +166,10 @@ class Reader : public ::aos::input::ActionJoystickInput {
       superstructure_goal_builder.add_shooter(shooter_offset);
       superstructure_goal_builder.add_shooting(data.IsPressed(kFeed));
       superstructure_goal_builder.add_climber_voltage(climber_speed);
+
+      superstructure_goal_builder.add_turret_tracking(auto_track);
+      superstructure_goal_builder.add_hood_tracking(auto_track);
+      superstructure_goal_builder.add_shooter_tracking(auto_track);
 
       if (!builder.Send(superstructure_goal_builder.Finish())) {
         AOS_LOG(ERROR, "Sending superstructure goal failed.\n");
