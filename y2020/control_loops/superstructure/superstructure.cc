@@ -64,11 +64,40 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   const flatbuffers::Offset<AimerStatus> aimer_status_offset =
       aimer_.PopulateStatus(status->fbb());
 
+  const double distance_to_goal = aimer_.DistanceToGoal();
+
+  aos::FlatbufferFixedAllocatorArray<
+      frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal, 64>
+      hood_goal;
+  aos::FlatbufferFixedAllocatorArray<ShooterGoal, 64> shooter_goal;
+
+  constants::Values::ShotParams shot_params;
+  if (constants::GetValues().shot_interpolation_table.GetInRange(
+          distance_to_goal, &shot_params)) {
+    hood_goal.Finish(frc971::control_loops::
+                         CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+                             *hood_goal.fbb(), shot_params.hood_angle));
+
+    shooter_goal.Finish(CreateShooterGoal(*shooter_goal.fbb(),
+                                          shot_params.accelerator_power,
+                                          shot_params.finisher_power));
+  } else {
+    hood_goal.Finish(
+        frc971::control_loops::
+            CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+                *hood_goal.fbb(), constants::GetValues().hood.range.upper));
+
+    shooter_goal.Finish(CreateShooterGoal(*shooter_goal.fbb(), 0.0, 0.0));
+  }
+
   OutputT output_struct;
 
   flatbuffers::Offset<AbsoluteAndAbsoluteEncoderProfiledJointStatus>
       hood_status_offset = hood_.Iterate(
-          unsafe_goal != nullptr ? unsafe_goal->hood() : nullptr,
+          unsafe_goal != nullptr
+              ? (unsafe_goal->hood_tracking() ? &hood_goal.message()
+                                              : unsafe_goal->hood())
+              : nullptr,
           position->hood(),
           output != nullptr ? &(output_struct.hood_voltage) : nullptr,
           status->fbb());
@@ -109,6 +138,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
                                                    ? aimer_.TurretGoal()
                                                    : unsafe_goal->turret())
                                             : nullptr;
+
   flatbuffers::Offset<PotAndAbsoluteEncoderProfiledJointStatus>
       turret_status_offset = turret_.Iterate(
           turret_goal, position->turret(),
@@ -117,7 +147,10 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
   flatbuffers::Offset<ShooterStatus> shooter_status_offset =
       shooter_.RunIteration(
-          unsafe_goal != nullptr ? unsafe_goal->shooter() : nullptr,
+          unsafe_goal != nullptr
+              ? (unsafe_goal->shooter_tracking() ? &shooter_goal.message()
+                                                 : unsafe_goal->shooter())
+              : nullptr,
           position->shooter(), status->fbb(),
           output != nullptr ? &(output_struct) : nullptr, position_timestamp);
 

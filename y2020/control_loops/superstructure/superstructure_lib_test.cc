@@ -909,7 +909,19 @@ TEST_F(SuperstructureTest, WhenShooting) {
 
 class SuperstructureAllianceTest
     : public SuperstructureTest,
-      public ::testing::WithParamInterface<aos::Alliance> {};
+      public ::testing::WithParamInterface<aos::Alliance> {
+ protected:
+  void SendAlliancePosition() {
+    auto builder = joystick_state_sender_.MakeBuilder();
+
+    aos::JoystickState::Builder joystick_builder =
+        builder.MakeBuilder<aos::JoystickState>();
+
+    joystick_builder.add_alliance(GetParam());
+
+    ASSERT_TRUE(builder.Send(joystick_builder.Finish()));
+  }
+};
 
 // Tests that the turret switches to auto-aiming when we set turret_tracking to
 // true.
@@ -921,16 +933,7 @@ TEST_P(SuperstructureAllianceTest, TurretAutoAim) {
   WaitUntilZeroed();
 
   constexpr double kShotAngle = 1.0;
-  {
-    auto builder = joystick_state_sender_.MakeBuilder();
-
-    aos::JoystickState::Builder joystick_builder =
-        builder.MakeBuilder<aos::JoystickState>();
-
-    joystick_builder.add_alliance(GetParam());
-
-    ASSERT_TRUE(builder.Send(joystick_builder.Finish()));
-  }
+  SendAlliancePosition();
   {
     auto builder = superstructure_goal_sender_.MakeBuilder();
 
@@ -973,6 +976,187 @@ TEST_P(SuperstructureAllianceTest, TurretAutoAim) {
                   superstructure_status_fetcher_->aimer()->turret_position());
   EXPECT_FLOAT_EQ(0,
                   superstructure_status_fetcher_->aimer()->turret_velocity());
+}
+
+
+
+// Test a manual goal
+TEST_P(SuperstructureAllianceTest, ShooterInterpolationManualGoal) {
+  SetEnabled(true);
+  WaitUntilZeroed();
+
+  {
+     auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    auto shooter_goal = CreateShooterGoal(*builder.fbb(), 400.0, 500.0);
+
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+      hood_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+          *builder.fbb(), constants::Values::kHoodRange().lower);
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_shooter(shooter_goal);
+    goal_builder.add_hood(hood_offset);
+
+    builder.Send(goal_builder.Finish());
+  }
+
+  RunFor(chrono::seconds(10));
+
+  superstructure_status_fetcher_.Fetch();
+
+  EXPECT_DOUBLE_EQ(superstructure_status_fetcher_->shooter()
+                       ->accelerator_left()
+                       ->angular_velocity_goal(),
+                   400.0);
+  EXPECT_DOUBLE_EQ(superstructure_status_fetcher_->shooter()
+                       ->accelerator_right()
+                       ->angular_velocity_goal(),
+                   400.0);
+  EXPECT_DOUBLE_EQ(superstructure_status_fetcher_->shooter()
+                       ->finisher()
+                       ->angular_velocity_goal(),
+                   500.0);
+  EXPECT_NEAR(superstructure_status_fetcher_->hood()->position(),
+              constants::Values::kHoodRange().lower, 0.001);
+}
+
+
+// Test an out of range value with auto tracking
+TEST_P(SuperstructureAllianceTest, ShooterInterpolationOutOfRange) {
+  SetEnabled(true);
+  const frc971::control_loops::Pose target = turret::OuterPortPose(GetParam());
+  WaitUntilZeroed();
+  constexpr double kShotAngle = 1.0;
+  {
+    auto builder = drivetrain_status_sender_.MakeBuilder();
+
+    frc971::control_loops::drivetrain::LocalizerState::Builder
+        localizer_builder = builder.MakeBuilder<
+            frc971::control_loops::drivetrain::LocalizerState>();
+    localizer_builder.add_left_velocity(0.0);
+    localizer_builder.add_right_velocity(0.0);
+    const auto localizer_offset = localizer_builder.Finish();
+
+    DrivetrainStatus::Builder status_builder =
+        builder.MakeBuilder<DrivetrainStatus>();
+
+    // Set the robot up at kShotAngle off from the target, 100m away.
+    status_builder.add_x(target.abs_pos().x() + std::cos(kShotAngle) * 100);
+    status_builder.add_y(target.abs_pos().y() + std::sin(kShotAngle) * 100);
+    status_builder.add_theta(0.0);
+    status_builder.add_localizer(localizer_offset);
+
+    ASSERT_TRUE(builder.Send(status_builder.Finish()));
+  }
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    // Add a goal, this should be ignored with auto tracking
+    auto shooter_goal = CreateShooterGoal(*builder.fbb(), 400.0, 500.0);
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        hood_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), constants::Values::kHoodRange().lower);
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_shooter(shooter_goal);
+    goal_builder.add_hood(hood_offset);
+    goal_builder.add_shooter_tracking(true);
+    goal_builder.add_hood_tracking(true);
+
+    builder.Send(goal_builder.Finish());
+  }
+  RunFor(chrono::seconds(10));
+
+  superstructure_status_fetcher_.Fetch();
+
+  EXPECT_DOUBLE_EQ(superstructure_status_fetcher_->shooter()
+                       ->accelerator_left()
+                       ->angular_velocity_goal(),
+                   0.0);
+  EXPECT_DOUBLE_EQ(superstructure_status_fetcher_->shooter()
+                       ->accelerator_right()
+                       ->angular_velocity_goal(),
+                   0.0);
+  EXPECT_DOUBLE_EQ(superstructure_status_fetcher_->shooter()
+                       ->finisher()
+                       ->angular_velocity_goal(),
+                   0.0);
+  EXPECT_NEAR(superstructure_status_fetcher_->hood()->position(),
+              constants::Values::kHoodRange().upper, 0.001);
+
+}
+
+
+
+TEST_P(SuperstructureAllianceTest, ShooterInterpolationInRange) {
+  SetEnabled(true);
+  const frc971::control_loops::Pose target = turret::OuterPortPose(GetParam());
+  WaitUntilZeroed();
+  constexpr double kShotAngle = 1.0;
+
+  SendAlliancePosition();
+
+  // Test an in range value returns a reasonable result
+  {
+    auto builder = drivetrain_status_sender_.MakeBuilder();
+
+    frc971::control_loops::drivetrain::LocalizerState::Builder
+        localizer_builder = builder.MakeBuilder<
+            frc971::control_loops::drivetrain::LocalizerState>();
+    localizer_builder.add_left_velocity(0.0);
+    localizer_builder.add_right_velocity(0.0);
+    const auto localizer_offset = localizer_builder.Finish();
+
+    DrivetrainStatus::Builder status_builder =
+        builder.MakeBuilder<DrivetrainStatus>();
+
+    // Set the robot up at kShotAngle off from the target, 2.5m away.
+    status_builder.add_x(target.abs_pos().x() + std::cos(kShotAngle) * 2.5);
+    status_builder.add_y(target.abs_pos().y() + std::sin(kShotAngle) * 2.5);
+    status_builder.add_theta(0.0);
+    status_builder.add_localizer(localizer_offset);
+
+    ASSERT_TRUE(builder.Send(status_builder.Finish()));
+  }
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    // Add a goal, this should be ignored with auto tracking
+    auto shooter_goal = CreateShooterGoal(*builder.fbb(), 400.0, 500.0);
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        hood_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), constants::Values::kHoodRange().lower);
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_shooter(shooter_goal);
+    goal_builder.add_hood(hood_offset);
+    goal_builder.add_shooter_tracking(true);
+    goal_builder.add_hood_tracking(true);
+
+    builder.Send(goal_builder.Finish());
+  }
+  RunFor(chrono::seconds(10));
+
+  superstructure_status_fetcher_.Fetch();
+
+  EXPECT_GE(superstructure_status_fetcher_->shooter()
+                ->accelerator_left()
+                ->angular_velocity_goal(),
+            100.0);
+  EXPECT_GE(superstructure_status_fetcher_->shooter()
+                ->accelerator_right()
+                ->angular_velocity_goal(),
+            100.0);
+  EXPECT_GE(superstructure_status_fetcher_->shooter()
+                ->finisher()
+                ->angular_velocity_goal(),
+            100.0);
+  EXPECT_GE(superstructure_status_fetcher_->hood()->position(),
+            constants::Values::kHoodRange().lower);
 }
 
 INSTANTIATE_TEST_CASE_P(ShootAnyAlliance, SuperstructureAllianceTest,

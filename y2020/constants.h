@@ -8,6 +8,7 @@
 
 #include "frc971/constants.h"
 #include "frc971/control_loops/static_zeroing_single_dof_profiled_subsystem.h"
+#include "frc971/shooter_interpolation/interpolation.h"
 #include "y2020/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "y2020/control_loops/superstructure/accelerator/accelerator_plant.h"
 #include "y2020/control_loops/superstructure/control_panel/control_panel_plant.h"
@@ -15,6 +16,8 @@
 #include "y2020/control_loops/superstructure/hood/hood_plant.h"
 #include "y2020/control_loops/superstructure/intake/intake_plant.h"
 #include "y2020/control_loops/superstructure/turret/turret_plant.h"
+
+using ::frc971::shooter_interpolation::InterpolationTable;
 
 namespace y2020 {
 namespace constants {
@@ -184,6 +187,28 @@ struct Values {
 
   // Climber
   static constexpr double kClimberSupplyCurrentLimit() { return 60.0; }
+
+  struct ShotParams {
+    // Measured in radians
+    double hood_angle;
+    // Angular velocity in radians per second of the slowest (lowest) wheel in the kicker.
+    // Positive is shooting the ball.
+    double accelerator_power;
+    // Angular velocity in radians per seconds of the flywheel. Positive is shooting.
+    double finisher_power;
+
+    static ShotParams BlendY(double coefficient, ShotParams a1, ShotParams a2) {
+      using ::frc971::shooter_interpolation::Blend;
+      return ShotParams{
+          Blend(coefficient, a1.hood_angle, a2.hood_angle),
+          Blend(coefficient, a1.accelerator_power, a2.accelerator_power),
+          Blend(coefficient, a1.finisher_power, a2.finisher_power)};
+    }
+  };
+
+  // { distance_to_target, { hood_angle, accelerator_power, finisher_power }}
+  InterpolationTable<ShotParams>
+      shot_interpolation_table;
 };
 
 // Creates (once) a Values instance for ::aos::network::GetTeamNumber() and
