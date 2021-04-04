@@ -89,17 +89,22 @@ BALL_PCT_THRESHOLD = 0.1
 
 _paths = []
 
+def load_json():
+    rects_dict = None
+    with open(RECTS_JSON_PATH, 'r') as rects_json:
+        rects_dict = json.load(rects_json)
+    return rects_dict
+
 def _run_detection_loop():
     global img_fig, rects_dict
 
-    with open(RECTS_JSON_PATH, 'r') as rects_json:
-        rects_dict = json.load(rects_json)
-        for letter in rects_dict:
-            for alliance in rects_dict[letter]:
-                rects = []
-                for rect_list in rects_dict[letter][alliance]:
-                    rects.append(Rect.from_list(rect_list))
-                _paths.append(Path(Letter.from_name(letter), Alliance.from_name(alliance), rects))
+    rects_dict = load_json()
+    for letter in rects_dict:
+        for alliance in rects_dict[letter]:
+            rects = []
+            for rect_list in rects_dict[letter][alliance]:
+                rects.append(Rect.from_list(rect_list))
+            _paths.append(Path(Letter.from_name(letter), Alliance.from_name(alliance), rects))
 
     plt.ion()
     img_fig = plt.figure()
@@ -112,6 +117,7 @@ def _detect_path():
     img = capture_img()
     img_fig.figimage(img)
     plt.show()
+
     plt.pause(0.001)
 
     mask = _create_mask(img)
@@ -139,6 +145,7 @@ def _detect_path():
             current_path = Path(Letter.kA, None, None)
         current_path.alliance = Alliance.kUnknown
         glog.warn("Expected 1 path but detected %u", num_current_paths)
+        return
 
 
     path_dict = current_path.to_dict()
@@ -146,11 +153,16 @@ def _detect_path():
     os.system(AOS_SEND_PATH +
               " /pi2/camera y2020.vision.GalacticSearchPath '" + json.dumps(path_dict) + "'")
 
+KERNEL = np.ones((5, 5), np.uint8)
+
 def _create_mask(img):
     hsv = cv.cvtColor(img, cv.COLOR_BGR2HSV)
     lower_yellow = np.array([23, 100, 75], dtype = np.uint8)
     higher_yellow = np.array([40, 255, 255], dtype = np.uint8)
     mask = cv.inRange(hsv, lower_yellow, higher_yellow)
+    mask = cv.erode(mask, KERNEL, iterations = 1)
+    mask = cv.dilate(mask, KERNEL, iterations = 3)
+
     return mask
 
 # This function finds the percentage of yellow pixels in the rectangles

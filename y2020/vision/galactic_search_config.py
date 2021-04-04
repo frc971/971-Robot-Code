@@ -22,8 +22,6 @@ import sys
 
 _num_rects = 3 # can be 3 or 2, can be specified in commang line arg
 
-setup_if_pi()
-
 _path = Path(Letter.kA, Alliance.kRed, [Rect(None, None, None, None)])
 
 # current index in rects list
@@ -35,7 +33,7 @@ _txt = _img_ax.text(0, 0, "", size = 10, backgroundcolor = "white")
 
 _confirm = Button(plt.axes([0.7, 0.05, 0.1, 0.075]), "Confirm")
 _cancel = Button(plt.axes([0.81, 0.05, 0.1, 0.075]), "Cancel")
-_submit = Button(plt.axes([0.4, 0.4, 0.1, 0.1]), "Submit")
+_submit = Button(plt.axes([0.4, 0.05, 0.1, 0.1]), "Submit")
 
 def draw_txt(txt):
     txt.set_text("Click on top left point and bottom right point for rect #%u" % (_rect_index + 1))
@@ -71,8 +69,7 @@ def on_cancel(event):
 def on_submit(event):
     plt.close("all")
     dict = None
-    with open(RECTS_JSON_PATH, 'r') as rects_json:
-        dict = json.load(rects_json)
+    dict = load_json()
     if _path.letter.name not in dict:
         dict[_path.letter.name] = {}
     if _path.alliance.name not in dict[_path.letter.name]:
@@ -134,12 +131,33 @@ def setup_ui():
     draw_txt(_txt)
     plt.show()
 
+def view_rects():
+
+    rects_dict = load_json()
+    if (_path.letter.name in rects_dict and
+        _path.alliance.name in rects_dict[_path.letter.name]):
+        _confirm.ax.set_visible(False)
+        _cancel.ax.set_visible(False)
+        _submit.ax.set_visible(False)
+        _img_ax.imshow(capture_img())
+
+        for rect_list in rects_dict[_path.letter.name][_path.alliance.name]:
+            rect = Rect.from_list(rect_list)
+            _img_ax.add_patch(patches.Rectangle((rect.x1, rect.y1),
+                rect.x2 - rect.x1, rect.y2 - rect.y1,
+                edgecolor = 'r', linewidth = 1, facecolor="none"))
+        plt.show()
+    else:
+        glog.error("Could not find path %s %s in rects.json",
+            _path.alliance.value, _path.letter.value)
+
 def main(argv):
     global _num_rects
 
     glog.setLevel("INFO")
     opts = getopt.getopt(argv[1 : ], "a:l:n:",
-                        ["alliance = ", "letter = ", "_num_rects = "])[0]
+                        ["alliance = ", "letter = ", "_num_rects = ", "view"])[0]
+    view = False
     for opt, arg in opts:
         if opt in ["-a", "--alliance"]:
             _path.alliance = Alliance.from_value(arg)
@@ -147,8 +165,13 @@ def main(argv):
             _path.letter = Letter.from_value(arg.upper())
         elif opt in ["-n", "--_num_rects"] and arg.isdigit():
             _num_rects = int(arg)
+        elif opt == "--view":
+            view = True
 
-    setup_ui()
+    if view:
+        view_rects()
+    else:
+        setup_ui()
 
 
 if __name__ == "__main__":
