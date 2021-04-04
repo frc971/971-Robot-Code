@@ -13,6 +13,7 @@
 #include "aos/network/team_number.h"
 #include "aos/util/log_interval.h"
 #include "frc971/autonomous/base_autonomous_actor.h"
+#include "frc971/control_loops/drivetrain/localizer_generated.h"
 #include "y2020/constants.h"
 #include "y2020/control_loops/drivetrain/drivetrain_base.h"
 #include "y2020/control_loops/superstructure/superstructure_goal_generated.h"
@@ -45,6 +46,7 @@ const ButtonLocation kFeed(4, 1);
 const ButtonLocation kIntakeExtend(3, 9);
 const ButtonLocation kIntakeIn(4, 4);
 const ButtonLocation kSpit(4, 3);
+const ButtonLocation kLocalizerReset(3, 8);
 
 const ButtonLocation kWinch(3, 14);
 
@@ -57,6 +59,10 @@ class Reader : public ::aos::input::ActionJoystickInput {
             ::aos::input::DrivetrainInputReader::InputType::kPistol, {}),
         superstructure_goal_sender_(
             event_loop->MakeSender<superstructure::Goal>("/superstructure")),
+        localizer_control_sender_(
+            event_loop->MakeSender<
+                ::frc971::control_loops::drivetrain::LocalizerControl>(
+                "/drivetrain")),
         superstructure_status_fetcher_(
             event_loop->MakeFetcher<superstructure::Status>("/superstructure")),
         setpoint_fetcher_(event_loop->MakeFetcher<y2020::joysticks::Setpoint>(
@@ -64,6 +70,23 @@ class Reader : public ::aos::input::ActionJoystickInput {
 
   void AutoEnded() override {
     AOS_LOG(INFO, "Auto ended, assuming disc and have piece\n");
+  }
+
+  void ResetLocalizer() {
+    auto builder = localizer_control_sender_.MakeBuilder();
+
+    // Start roughly in front of the red-team goal, robot pointed away from
+    // goal.
+    frc971::control_loops::drivetrain::LocalizerControl::Builder
+        localizer_control_builder = builder.MakeBuilder<
+            frc971::control_loops::drivetrain::LocalizerControl>();
+    localizer_control_builder.add_x(5.0);
+    localizer_control_builder.add_y(-2.0);
+    localizer_control_builder.add_theta(M_PI);
+    localizer_control_builder.add_theta_uncertainty(0.01);
+    if (!builder.Send(localizer_control_builder.Finish())) {
+      AOS_LOG(ERROR, "Failed to reset localizer.\n");
+    }
   }
 
   void HandleTeleop(const ::aos::input::driver_station::Data &data) override {
@@ -131,6 +154,10 @@ class Reader : public ::aos::input::ActionJoystickInput {
       climber_speed = 12.0f;
     }
 
+    if (data.IsPressed(kLocalizerReset)) {
+      ResetLocalizer();
+    }
+
     auto builder = superstructure_goal_sender_.MakeBuilder();
 
     flatbuffers::Offset<superstructure::Goal> superstructure_goal_offset;
@@ -179,6 +206,9 @@ class Reader : public ::aos::input::ActionJoystickInput {
 
  private:
   ::aos::Sender<superstructure::Goal> superstructure_goal_sender_;
+
+  ::aos::Sender<frc971::control_loops::drivetrain::LocalizerControl>
+      localizer_control_sender_;
 
   ::aos::Fetcher<superstructure::Status> superstructure_status_fetcher_;
 
