@@ -204,9 +204,8 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
     if (unsafe_goal) {
       output_struct.washing_machine_spinner_voltage = 0.0;
       if (unsafe_goal->shooting()) {
-        if (shooter_.ready() &&
-            unsafe_goal->shooter()->velocity_accelerator() > 10.0 &&
-            unsafe_goal->shooter()->velocity_finisher() > 10.0) {
+        if (shooter_.ready() && shooter_.finisher_goal() > 10.0 &&
+            shooter_.accelerator_goal() > 10.0) {
           output_struct.feeder_voltage = 12.0;
         } else {
           output_struct.feeder_voltage = 0.0;

@@ -26,6 +26,9 @@ class Shooter {
 
   bool ready() { return ready_; }
 
+  float finisher_goal() const { return finisher_.goal(); }
+  float accelerator_goal() const { return accelerator_left_.goal(); }
+
  private:
   FlywheelController finisher_, accelerator_left_, accelerator_right_;
 
