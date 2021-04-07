@@ -39,6 +39,12 @@ DEFINE_double(
     "The time to buffer ahead in the log file to accurately reconstruct time.");
 
 namespace aos {
+namespace configuration {
+// We don't really want to expose this publicly, but log reader doesn't really
+// want to re-implement it.
+void HandleMaps(const flatbuffers::Vector<flatbuffers::Offset<aos::Map>> *maps,
+                std::string *name, std::string_view type, const Node *node);
+}
 namespace logger {
 namespace {
 
@@ -892,6 +898,65 @@ void LogReader::MakeRemappedConfig() {
         nullptr));
     channel_offsets.emplace_back(
         CopyChannel(c, pair.second.remapped_name, "", &fbb));
+
+    if (c->has_destination_nodes()) {
+      for (const Connection *connection : *c->destination_nodes()) {
+        switch (connection->timestamp_logger()) {
+          case LoggerConfig::LOCAL_LOGGER:
+          case LoggerConfig::NOT_LOGGED:
+            // There is no timestamp channel associated with this, so ignore it.
+            break;
+
+          case LoggerConfig::REMOTE_LOGGER:
+          case LoggerConfig::LOCAL_AND_REMOTE_LOGGER:
+            // We want to make a split timestamp channel regardless of what type
+            // of log this used to be.  No sense propagating the single
+            // timestamp channel.
+
+            CHECK(connection->has_timestamp_logger_nodes());
+            for (const flatbuffers::String *timestamp_logger_node :
+                 *connection->timestamp_logger_nodes()) {
+              const Node *node = configuration::GetNode(
+                  logged_configuration(), timestamp_logger_node->string_view());
+              message_bridge::ChannelTimestampFinder finder(
+                  logged_configuration(), "log_reader", node);
+
+              // We are assuming here that all the maps are setup correctly to
+              // handle arbitrary timestamps.  Apply the maps for this node to
+              // see what name this ends up with.
+              std::string name = finder.SplitChannelName(
+                  pair.second.remapped_name, c->type()->str(), connection);
+              std::string unmapped_name = name;
+              configuration::HandleMaps(logged_configuration()->maps(), &name,
+                                        "aos.message_bridge.RemoteMessage",
+                                        node);
+              CHECK_NE(name, unmapped_name)
+                  << ": Remote timestamp channel was not remapped, this is "
+                     "very fishy";
+              flatbuffers::Offset<flatbuffers::String> channel_name_offset =
+                  fbb.CreateString(name);
+              flatbuffers::Offset<flatbuffers::String> channel_type_offset =
+                  fbb.CreateString("aos.message_bridge.RemoteMessage");
+              flatbuffers::Offset<flatbuffers::String> source_node_offset =
+                  fbb.CreateString(timestamp_logger_node->string_view());
+
+              // Now, build a channel.  Don't log it, 2 senders, and match the
+              // source frequency.
+              Channel::Builder channel_builder(fbb);
+              channel_builder.add_name(channel_name_offset);
+              channel_builder.add_type(channel_type_offset);
+              channel_builder.add_source_node(source_node_offset);
+              channel_builder.add_logger(LoggerConfig::NOT_LOGGED);
+              channel_builder.add_num_senders(2);
+              if (c->has_frequency()) {
+                channel_builder.add_frequency(c->frequency());
+              }
+              channel_offsets.emplace_back(channel_builder.Finish());
+            }
+            break;
+        }
+      }
+    }
   }
 
   // Now reconstruct the original channels, translating types as needed

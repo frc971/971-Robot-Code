@@ -12,11 +12,14 @@ ChannelTimestampFinder::ChannelTimestampFinder(
 
 std::string ChannelTimestampFinder::SplitChannelName(
     const Channel *channel, const Connection *connection) {
-  std::string type(channel->type()->string_view());
+  return SplitChannelName(channel->name()->string_view(), channel->type()->str(), connection);
+}
+
+std::string ChannelTimestampFinder::SplitChannelName(
+    std::string_view name, std::string type, const Connection *connection) {
   std::replace(type.begin(), type.end(), '.', '-');
   return absl::StrCat("/aos/remote_timestamps/",
-                      connection->name()->string_view(),
-                      channel->name()->string_view(), "/", type);
+                      connection->name()->string_view(), name, "/", type);
 }
 
 std::string ChannelTimestampFinder::CombinedChannelName(

@@ -272,55 +272,6 @@ bool EqualsApplications(const Application *a, std::string_view name) {
   return a->name()->string_view() == name;
 }
 
-// Maps name for the provided maps.  Modifies name.
-void HandleMaps(const flatbuffers::Vector<flatbuffers::Offset<aos::Map>> *maps,
-                std::string *name, std::string_view type, const Node *node) {
-  // For the same reason we merge configs in reverse order, we want to process
-  // maps in reverse order.  That lets the outer config overwrite channels from
-  // the inner configs.
-  for (auto i = maps->rbegin(); i != maps->rend(); ++i) {
-    if (!i->has_match() || !i->match()->has_name()) {
-      continue;
-    }
-    if (!i->has_rename() || !i->rename()->has_name()) {
-      continue;
-    }
-
-    // Handle normal maps (now that we know that match and rename are filled
-    // out).
-    const std::string_view match_name = i->match()->name()->string_view();
-    if (match_name != *name) {
-      if (match_name.back() == '*' &&
-          std::string_view(*name).substr(
-              0, std::min(name->size(), match_name.size() - 1)) ==
-              match_name.substr(0, match_name.size() - 1)) {
-        CHECK_EQ(match_name.find('*'), match_name.size() - 1);
-      } else {
-        continue;
-      }
-    }
-
-    // Handle type specific maps.
-    if (i->match()->has_type() && i->match()->type()->string_view() != type) {
-      continue;
-    }
-
-    // Now handle node specific maps.
-    if (node != nullptr && i->match()->has_source_node() &&
-        i->match()->source_node()->string_view() !=
-            node->name()->string_view()) {
-      continue;
-    }
-
-    std::string new_name(i->rename()->name()->string_view());
-    if (match_name.back() == '*') {
-      new_name += std::string(name->substr(match_name.size() - 1));
-    }
-    VLOG(1) << "Renamed \"" << *name << "\" to \"" << new_name << "\"";
-    *name = std::move(new_name);
-  }
-}
-
 void ValidateConfiguration(const Flatbuffer<Configuration> &config) {
   // No imports should be left.
   CHECK(!config.message().has_imports());
@@ -418,6 +369,55 @@ void ValidateConfiguration(const Flatbuffer<Configuration> &config) {
 }
 
 }  // namespace
+
+// Maps name for the provided maps.  Modifies name.
+void HandleMaps(const flatbuffers::Vector<flatbuffers::Offset<aos::Map>> *maps,
+                std::string *name, std::string_view type, const Node *node) {
+  // For the same reason we merge configs in reverse order, we want to process
+  // maps in reverse order.  That lets the outer config overwrite channels from
+  // the inner configs.
+  for (auto i = maps->rbegin(); i != maps->rend(); ++i) {
+    if (!i->has_match() || !i->match()->has_name()) {
+      continue;
+    }
+    if (!i->has_rename() || !i->rename()->has_name()) {
+      continue;
+    }
+
+    // Handle normal maps (now that we know that match and rename are filled
+    // out).
+    const std::string_view match_name = i->match()->name()->string_view();
+    if (match_name != *name) {
+      if (match_name.back() == '*' &&
+          std::string_view(*name).substr(
+              0, std::min(name->size(), match_name.size() - 1)) ==
+              match_name.substr(0, match_name.size() - 1)) {
+        CHECK_EQ(match_name.find('*'), match_name.size() - 1);
+      } else {
+        continue;
+      }
+    }
+
+    // Handle type specific maps.
+    if (i->match()->has_type() && i->match()->type()->string_view() != type) {
+      continue;
+    }
+
+    // Now handle node specific maps.
+    if (node != nullptr && i->match()->has_source_node() &&
+        i->match()->source_node()->string_view() !=
+            node->name()->string_view()) {
+      continue;
+    }
+
+    std::string new_name(i->rename()->name()->string_view());
+    if (match_name.back() == '*') {
+      new_name += std::string(name->substr(match_name.size() - 1));
+    }
+    VLOG(1) << "Renamed \"" << *name << "\" to \"" << new_name << "\"";
+    *name = std::move(new_name);
+  }
+}
 
 FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
     const Flatbuffer<Configuration> &config) {

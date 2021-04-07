@@ -1767,6 +1767,83 @@ TEST_P(MultinodeLoggerTest, RemapLoggedChannel) {
   reader.Deregister();
 }
 
+// Tests that we can remap a forwarded channel as well.
+TEST_P(MultinodeLoggerTest, RemapForwardedLoggedChannel) {
+  time_converter_.StartEqual();
+  {
+    LoggerState pi1_logger = MakeLogger(pi1_);
+    LoggerState pi2_logger = MakeLogger(pi2_);
+
+    event_loop_factory_.RunFor(chrono::milliseconds(95));
+
+    StartLogger(&pi1_logger);
+    StartLogger(&pi2_logger);
+
+    event_loop_factory_.RunFor(chrono::milliseconds(20000));
+  }
+
+  LogReader reader(SortParts(logfiles_));
+
+  reader.RemapLoggedChannel<examples::Ping>("/test");
+
+  SimulatedEventLoopFactory log_reader_factory(reader.configuration());
+  log_reader_factory.set_send_delay(chrono::microseconds(0));
+
+  reader.Register(&log_reader_factory);
+
+  const Node *pi1 =
+      configuration::GetNode(log_reader_factory.configuration(), "pi1");
+  const Node *pi2 =
+      configuration::GetNode(log_reader_factory.configuration(), "pi2");
+
+  // Confirm we can read the data on the remapped channel, just for pi1. Nothing
+  // else should have moved.
+  std::unique_ptr<EventLoop> pi1_event_loop =
+      log_reader_factory.MakeEventLoop("test", pi1);
+  pi1_event_loop->SkipTimingReport();
+  std::unique_ptr<EventLoop> full_pi1_event_loop =
+      log_reader_factory.MakeEventLoop("test", pi1);
+  full_pi1_event_loop->SkipTimingReport();
+  std::unique_ptr<EventLoop> pi2_event_loop =
+      log_reader_factory.MakeEventLoop("test", pi2);
+  pi2_event_loop->SkipTimingReport();
+
+  MessageCounter<examples::Ping> pi1_ping(pi1_event_loop.get(), "/test");
+  MessageCounter<examples::Ping> pi2_ping(pi2_event_loop.get(), "/test");
+  MessageCounter<examples::Ping> pi1_original_ping(pi1_event_loop.get(),
+                                                   "/original/test");
+  MessageCounter<examples::Ping> pi2_original_ping(pi2_event_loop.get(),
+                                                   "/original/test");
+
+  std::unique_ptr<MessageCounter<message_bridge::RemoteMessage>>
+      pi1_original_ping_timestamp;
+  std::unique_ptr<MessageCounter<message_bridge::RemoteMessage>>
+      pi1_ping_timestamp;
+  if (!shared()) {
+    pi1_original_ping_timestamp =
+        std::make_unique<MessageCounter<message_bridge::RemoteMessage>>(
+            pi1_event_loop.get(),
+            "/pi1/aos/remote_timestamps/pi2/original/test/aos-examples-Ping");
+    pi1_ping_timestamp =
+        std::make_unique<MessageCounter<message_bridge::RemoteMessage>>(
+            pi1_event_loop.get(),
+            "/pi1/aos/remote_timestamps/pi2/test/aos-examples-Ping");
+  }
+
+  log_reader_factory.Run();
+
+  EXPECT_EQ(pi1_ping.count(), 0u);
+  EXPECT_EQ(pi2_ping.count(), 0u);
+  EXPECT_NE(pi1_original_ping.count(), 0u);
+  EXPECT_NE(pi2_original_ping.count(), 0u);
+  if (!shared()) {
+    EXPECT_NE(pi1_original_ping_timestamp->count(), 0u);
+    EXPECT_EQ(pi1_ping_timestamp->count(), 0u);
+  }
+
+  reader.Deregister();
+}
+
 // Tests that we properly recreate forwarded timestamps when replaying a log.
 // This should be enough that we can then re-run the logger and get a valid log
 // back.

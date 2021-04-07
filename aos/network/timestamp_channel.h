@@ -29,6 +29,8 @@ class ChannelTimestampFinder {
                             const Connection *connection);
   std::string SplitChannelName(const Channel *channel,
                                const Connection *connection);
+  std::string SplitChannelName(std::string_view name, std::string type,
+                               const Connection *connection);
   std::string CombinedChannelName(std::string_view remote_node);
 
  private:
