@@ -25,6 +25,10 @@ cc_library(
         "-Wno-cast-qual",
         "-Wno-cast-align",
         "-Wno-missing-braces",
+        "-DUSE_OPENSSL",
+        "-DHAVE_INET6",
+        "-DHAVE_STDBOOL_H",
+        "-DHAVE_INTTYPES_H",
     ],
     defines = [
         "RAWRTCDC_HAVE_SCTP_REDIRECT_TRANSPORT=0",
@@ -34,6 +38,6 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "@com_github_rawrtc_rawrtc_common//:rawrtcc",
-        "@com_github_rawrtc_usrsctp//:usrsctp_crc32",
+        "@com_github_rawrtc_usrsctp//:usrsctp",
     ],
 )

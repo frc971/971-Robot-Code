@@ -5013,7 +5013,7 @@ sctp_add_to_readq(struct sctp_inpcb *inp,
  */
 
 struct mbuf *
-sctp_generate_cause(uint16_t code, char *info)
+sctp_generate_cause(uint16_t code, const char *info)
 {
 	struct mbuf *m;
 	struct sctp_gen_error_cause *cause;

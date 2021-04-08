@@ -21,6 +21,11 @@ cc_library(
         "-Wno-cast-qual",
         "-Wno-missing-braces",
         "-Iexternal/com_github_rawrtc_rawrtc/",
+        "-DUSE_OPENSSL",
+        #"-DUSE_ZLIB",
+        "-DHAVE_INET6",
+        "-DHAVE_STDBOOL_H",
+        "-DHAVE_INTTYPES_H",
     ],
     includes = ["include/"],
     local_defines = [
@@ -31,4 +36,30 @@ cc_library(
         "@com_github_rawrtc_rawrtc_common//:rawrtcc",
         "@com_github_rawrtc_rawrtc_data_channel//:rawrtcdc",
     ],
+)
+
+cc_binary(
+    name = "peer-connection",
+    srcs = [
+        "tools/helper/common.c",
+        "tools/helper/common.h",
+        "tools/helper/handler.c",
+        "tools/helper/handler.h",
+        "tools/helper/parameters.c",
+        "tools/helper/parameters.h",
+        "tools/helper/utils.c",
+        "tools/helper/utils.h",
+        "tools/peer-connection.c",
+    ],
+    copts = [
+        "-Wno-missing-braces",
+        "-Wno-incompatible-pointer-types-discards-qualifiers",
+    ] + compiler_select({
+        "clang": [],
+        "gcc": [
+            "-Wno-discarded-qualifiers",
+        ],
+    }),
+    includes = ["tools"],
+    deps = [":rawrtc"],
 )
