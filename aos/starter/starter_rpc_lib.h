@@ -16,6 +16,11 @@ namespace starter {
 const aos::starter::ApplicationStatus *FindApplicationStatus(
     const aos::starter::Status &status, std::string_view name);
 
+// Checks if the name is an executable name and if it is, it returns that
+// application's name, otherwise returns name as given
+std::string_view FindApplication(const std::string_view &name,
+                                 const aos::Configuration *config);
+
 // Sends the given command to the application with the name name. Creates a
 // temporary event loop from the provided config for sending the command and
 // receiving back status messages. Returns true if the command executed
@@ -33,8 +38,8 @@ const aos::FlatbufferDetachedBuffer<aos::starter::ApplicationStatus> GetStatus(
 
 // Fetches the entire status message of starter. Creates a temporary event loop
 // from the provided config for fetching.
-std::optional<const aos::FlatbufferVector<aos::starter::Status>> GetStarterStatus(
-    const aos::Configuration *config);
+std::optional<const aos::FlatbufferVector<aos::starter::Status>>
+GetStarterStatus(const aos::Configuration *config);
 
 }  // namespace starter
 }  // namespace aos
