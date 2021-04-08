@@ -2,6 +2,7 @@
 #include <functional>
 #include <iostream>
 #include <optional>
+#include <string_view>
 #include <unordered_map>
 
 #include "absl/strings/str_format.h"
@@ -23,13 +24,14 @@ static const std::unordered_map<std::string, aos::starter::Command>
                         {"restart", aos::starter::Command::RESTART}};
 
 void PrintKey() {
-  absl::PrintF("%-30s %-30s %s\n\n", "Name", "Time since last started", "State");
+  absl::PrintF("%-30s %-30s %s\n\n", "Name", "Time since last started",
+               "State");
 }
 
 void PrintApplicationStatus(const aos::starter::ApplicationStatus *app_status,
-    const aos::monotonic_clock::time_point &time) {
-  const auto last_start_time =
-      aos::monotonic_clock::time_point(chrono::nanoseconds(app_status->last_start_time()));
+                            const aos::monotonic_clock::time_point &time) {
+  const auto last_start_time = aos::monotonic_clock::time_point(
+      chrono::nanoseconds(app_status->last_start_time()));
   const auto time_running =
       chrono::duration_cast<chrono::seconds>(time - last_start_time);
   absl::PrintF("%-30s %-30s %s\n", app_status->name()->string_view(),
@@ -54,7 +56,8 @@ bool GetStarterStatus(int argc, char **argv, const aos::Configuration *config) {
     }
   } else if (argc == 2) {
     // Print status for the specified process.
-    const char *application_name = argv[1];
+    const auto application_name =
+        aos::starter::FindApplication(argv[1], config);
     auto status = aos::starter::GetStatus(application_name, config);
     PrintKey();
     PrintApplicationStatus(&status.message(), aos::monotonic_clock::now());
@@ -68,7 +71,6 @@ bool GetStarterStatus(int argc, char **argv, const aos::Configuration *config) {
 bool InteractWithProgram(int argc, char **argv,
                          const aos::Configuration *config) {
   const char *command_string = argv[0];
-
   if (argc != 2) {
     LOG(ERROR) << "The \"" << command_string
                << "\" command requires an application name as an argument.";
@@ -81,8 +83,7 @@ bool InteractWithProgram(int argc, char **argv,
       << "\" is not in kCommandConversions.";
 
   const aos::starter::Command command = command_search->second;
-  const char *application_name = argv[1];
-
+  const auto application_name = aos::starter::FindApplication(argv[1], config);
   if (aos::starter::SendCommandBlocking(command, application_name, config,
                                         chrono::seconds(3))) {
     switch (command) {
@@ -143,7 +144,7 @@ int main(int argc, char **argv) {
 
   if (parsing_failed) {
     LOG(ERROR) << "Parsing failed. Valid commands are:";
-    for (auto entry: kCommands) {
+    for (auto entry : kCommands) {
       LOG(ERROR) << " - " << entry.first;
     }
     return 1;

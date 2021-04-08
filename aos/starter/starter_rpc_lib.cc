@@ -26,6 +26,19 @@ const aos::starter::ApplicationStatus *FindApplicationStatus(
   return *search;
 }
 
+std::string_view FindApplication(const std::string_view &name,
+                                 const aos::Configuration *config) {
+  std::string_view app_name = name;
+  for (const auto app : *config->applications()) {
+    if (app->executable_name() != nullptr &&
+        app->executable_name()->string_view() == name) {
+      app_name = app->name()->string_view();
+      break;
+    }
+  }
+  return app_name;
+}
+
 bool SendCommandBlocking(aos::starter::Command command, std::string_view name,
                          const aos::Configuration *config,
                          std::chrono::milliseconds timeout) {
@@ -127,15 +140,15 @@ const FlatbufferDetachedBuffer<aos::starter::ApplicationStatus> GetStatus(
                       aos::starter::ApplicationStatus>::Empty();
 }
 
-std::optional<const aos::FlatbufferVector<aos::starter::Status>> GetStarterStatus(
-    const aos::Configuration *config) {
+std::optional<const aos::FlatbufferVector<aos::starter::Status>>
+GetStarterStatus(const aos::Configuration *config) {
   ShmEventLoop event_loop(config);
   event_loop.SkipAosLog();
 
   auto status_fetcher = event_loop.MakeFetcher<aos::starter::Status>("/aos");
   status_fetcher.Fetch();
-  return (status_fetcher ? std::make_optional(status_fetcher.CopyFlatBuffer()) :
-      std::nullopt);
+  return (status_fetcher ? std::make_optional(status_fetcher.CopyFlatBuffer())
+                         : std::nullopt);
 }
 
 }  // namespace starter
