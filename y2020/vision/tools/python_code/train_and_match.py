@@ -240,8 +240,8 @@ def show_results(training_images, train_keypoint_lists, query_images,
         transformed_target = cv2.perspectiveTransform(
             target_point_list[i].reshape(-1, 1, 2), H)
         # Ballpark the size of the circle so it looks right on image
-        radius = int(
-            32 * abs(H[0][0] + H[1][1]) / 2)  # Average of scale factors
+        radius = int(12 * abs(H[0][0] + H[1][1]) /
+                     2)  # Average of scale factors
         # We're only using one query image at this point
         query_image = query_images[QUERY_INDEX].copy()
 
