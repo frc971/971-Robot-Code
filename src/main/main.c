@@ -786,6 +786,8 @@ static int fd_poll(struct re *re)
 				flags |= FD_WRITE;
 			if (re->events[i].events & (EPOLLERR|EPOLLHUP))
 				flags |= FD_EXCEPT;
+			if (re->events[i].events & EPOLLHUP)
+				flags |= FD_EXCEPT;
 
 			if (!flags) {
 				DEBUG_WARNING("epoll: no flags fd=%d\n", fd);
