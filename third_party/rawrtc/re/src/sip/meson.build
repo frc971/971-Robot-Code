@@ -1,0 +1,17 @@
+sources += files([
+    'addr.c',
+    'auth.c',
+    'contact.c',
+    'cseq.c',
+    'ctrans.c',
+    'dialog.c',
+    'keepalive.c',
+    'keepalive_udp.c',
+    'msg.c',
+    'reply.c',
+    'request.c',
+    'sip.c',
+    'strans.c',
+    'transp.c',
+    'via.c',
+])
