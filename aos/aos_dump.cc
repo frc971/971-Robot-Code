@@ -95,6 +95,9 @@ int main(int argc, char **argv) {
         [channel, &str_builder, &cli_info, &message_count, &next_send_time](
             const aos::Context &context, const void * /*message*/) {
           if (context.monotonic_event_time > next_send_time) {
+            if (FLAGS_count > 0 && message_count >= FLAGS_count) {
+              return;
+            }
             PrintMessage(channel, context, &str_builder);
             ++message_count;
             next_send_time = context.monotonic_event_time +
