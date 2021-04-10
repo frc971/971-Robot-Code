@@ -441,6 +441,7 @@ ts_library(
         ":imu_batch_ts_fbs",
         "//aos:configuration_ts_fbs",
         "//aos/network/www:aos_plotter",
+        "//aos/network/www:plotter",
         "//aos/network/www:reflection_ts",
         "@com_github_google_flatbuffers//ts:flatbuffers_ts",
     ],

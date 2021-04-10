@@ -4,7 +4,7 @@ import * as configuration from 'org_frc971/aos/configuration_generated';
 import * as plot_data from 'org_frc971/frc971/analysis/plot_data_generated';
 import {MessageHandler, TimestampedMessage} from 'org_frc971/aos/network/www/aos_plotter';
 import {ByteBuffer} from 'org_frc971/external/com_github_google_flatbuffers/ts/byte-buffer';
-import {Plot} from 'org_frc971/aos/network/www/plotter';
+import {Plot, Point} from 'org_frc971/aos/network/www/plotter';
 import * as proxy from 'org_frc971/aos/network/www/proxy';
 
 import Connection = proxy.Connection;
@@ -79,10 +79,10 @@ export function plotData(conn: Connection, parentDiv: Element) {
             if (lineFb.label()) {
               line.setLabel(lineFb.label());
             }
-            const points = new Float32Array(lineFb.pointsLength() * 2);
+            const points = [];
             for (let kk = 0; kk < lineFb.pointsLength(); ++kk) {
-              points[kk * 2] = lineFb.points(kk).x();
-              points[kk * 2 + 1] = lineFb.points(kk).y();
+              const point = lineFb.points(kk);
+              points.push(new Point(point.x(), point.y()));
             }
             if (lineFb.color()) {
               line.setColor(

@@ -29,10 +29,72 @@ function addVec(a: number[], b: number[]): number[] {
   });
 }
 
+function subtractVec(a: number[], b: number[]): number[] {
+  return cwiseOp(a, b, (p, q) => {
+    return p - q;
+  });
+}
+
+function multVec(a: number[], b: number[]): number[] {
+  return cwiseOp(a, b, (p, q) => {
+    return p * q;
+  });
+}
+
+function divideVec(a: number[], b: number[]): number[] {
+  return cwiseOp(a, b, (p, q) => {
+    return p / q;
+  });
+}
+
+// Parameters used when scaling the lines to the canvas.
+// If a point in a line is at pos then its position in the canvas space will be
+// scale * pos + offset.
+class ZoomParameters {
+  public scale: number[] = [1.0, 1.0];
+  public offset: number[] = [0.0, 0.0];
+  copy():ZoomParameters {
+    const copy = new ZoomParameters();
+    copy.scale = [this.scale[0], this.scale[1]];
+    copy.offset = [this.offset[0], this.offset[1]];
+    return copy;
+  }
+}
+
+export class Point {
+  constructor(
+  public x: number = 0.0,
+  public y: number = 0.0) {}
+}
+
 // Represents a single line within a plot. Handles rendering the line with
 // all of its points and the appropriate color/markers/lines.
 export class Line {
-  private points: Float32Array = new Float32Array([]);
+  // Notes on zoom/precision management:
+  // The adjustedPoints field is the buffert of points (formatted [x0, y0, x1,
+  // y1, ..., xn, yn]) that will be read directly by WebGL and operated on in
+  // the vertex shader. However, WebGL provides relatively minimal guarantess
+  // about the floating point precision available in the shaders (to the point
+  // where even Float32 precision is not guaranteed). As such, we
+  // separately maintain the points vector using javascript number's
+  // (arbitrary-precision ints or double-precision floats). We then periodically
+  // set the baseZoom to be equal to the current desired zoom, calculate the
+  // scaled values directly in typescript, store them in adjustedPoints, and
+  // then just pass an identity transformation to WebGL for the zoom parameters.
+  // When actively zooming, we then just use WebGL to compensate for the offset
+  // between the baseZoom and the desired zoom, taking advantage of WebGL's
+  // performance to handle the high-rate updates but then falling back to
+  // typescript periodically to reset the offsets to avoid precision issues.
+  //
+  // As a practical matter, I've found that even if we were to recalculate
+  // the zoom in typescript on every iteration, the penalty is relatively
+  // minor--we still perform far better than using a non-WebGL canvas. This
+  // suggests that the bulk of the performance advantage from using WebGL for
+  // this use-case lies not in doing the zoom updates in the shaders, but rather
+  // in relying on WebGL to figure out how to drawin the lines/points that we
+  // specify.
+  private adjustedPoints: Float32Array = new Float32Array([]);
+  private points: Point[] = [];
   private _drawLine: boolean = true;
   private _pointSize: number = 3.0;
   private _hasUpdate: boolean = false;
@@ -46,7 +108,7 @@ export class Line {
   constructor(
       private readonly ctx: WebGLRenderingContext,
       private readonly program: WebGLProgram,
-      private readonly buffer: WebGLBuffer) {
+      private readonly buffer: WebGLBuffer, private baseZoom: ZoomParameters) {
     this.pointAttribLocation = this.ctx.getAttribLocation(this.program, 'apos');
     this.colorLocation = this.ctx.getUniformLocation(this.program, 'color');
     this.pointSizeLocation =
@@ -106,24 +168,18 @@ export class Line {
   // Set the points to render. The points in the line are ordered and should
   // be of the format:
   // [x1, y1, x2, y2, x3, y3, ...., xN, yN]
-  setPoints(points: Float32Array) {
-    if (points.length % 2 !== 0) {
-      throw new Error("Must have even number of elements in points array.");
-    }
-    if (points.BYTES_PER_ELEMENT != 4) {
-      throw new Error(
-          'Must pass in a Float32Array--actual size was ' +
-          points.BYTES_PER_ELEMENT + '.');
-    }
+  setPoints(points: Point[]) {
     this.points = points;
+    this.adjustedPoints = new Float32Array(points.length * 2);
+    this.updateBaseZoom(this.baseZoom);
     this._hasUpdate = true;
     this._minValues[0] = Infinity;
     this._minValues[1] = Infinity;
     this._maxValues[0] = -Infinity;
     this._maxValues[1] = -Infinity;
-    for (let ii = 0; ii < this.points.length; ii += 2) {
-      const x = this.points[ii];
-      const y = this.points[ii + 1];
+    for (let ii = 0; ii < this.points.length; ++ii) {
+      const x = this.points[ii].x;
+      const y = this.points[ii].y;
 
       if (isNaN(x) || isNaN(y)) {
         continue;
@@ -134,7 +190,7 @@ export class Line {
     }
   }
 
-  getPoints(): Float32Array {
+  getPoints(): Point[] {
     return this.points;
   }
 
@@ -146,6 +202,15 @@ export class Line {
 
   label(): string|null {
     return this._label;
+  }
+
+  updateBaseZoom(zoom: ZoomParameters) {
+    this.baseZoom = zoom;
+    for (let ii = 0; ii < this.points.length; ++ii) {
+      const point = this.points[ii];
+      this.adjustedPoints[ii * 2] = point.x * zoom.scale[0] + zoom.offset[0];
+      this.adjustedPoints[ii * 2 + 1] = point.y * zoom.scale[1] + zoom.offset[1];
+    }
   }
 
   // Render the line on the canvas.
@@ -160,7 +225,7 @@ export class Line {
     // confirm that this.points really is a Float32Array.
     this.ctx.bufferData(
         this.ctx.ARRAY_BUFFER,
-        this.points,
+        this.adjustedPoints,
         this.ctx.STATIC_DRAW);
     {
       const numComponents = 2;  // pull out 2 values per iteration
@@ -181,20 +246,12 @@ export class Line {
         1.0);
 
     if (this._drawLine) {
-      this.ctx.drawArrays(this.ctx.LINE_STRIP, 0, this.points.length / 2);
+      this.ctx.drawArrays(this.ctx.LINE_STRIP, 0, this.points.length);
     }
     if (this._pointSize > 0.0) {
-      this.ctx.drawArrays(this.ctx.POINTS, 0, this.points.length / 2);
+      this.ctx.drawArrays(this.ctx.POINTS, 0, this.points.length);
     }
   }
-}
-
-// Parameters used when scaling the lines to the canvas.
-// If a point in a line is at pos then its position in the canvas space will be
-// scale * pos + offset.
-class ZoomParameters {
-  public scale: number[] = [1.0, 1.0];
-  public offset: number[] = [0.0, 0.0];
 }
 
 enum MouseButton {
@@ -338,6 +395,7 @@ export class LineDrawer {
   private vertexBuffer: WebGLBuffer;
   private lines: Line[] = [];
   private zoom: ZoomParameters = new ZoomParameters();
+  private baseZoom: ZoomParameters = new ZoomParameters();
   private zoomUpdated: boolean = true;
   // Maximum grid lines to render at once--this is used provide an upper limit
   // on the number of Line objects we need to create in order to render the
@@ -362,32 +420,24 @@ export class LineDrawer {
     this.vertexBuffer = this.ctx.createBuffer();
 
     for (let ii = 0; ii < this.MAX_GRID_LINES; ++ii) {
-      this.xGridLines.push(new Line(this.ctx, this.program, this.vertexBuffer));
-      this.yGridLines.push(new Line(this.ctx, this.program, this.vertexBuffer));
+      this.xGridLines.push(
+          new Line(this.ctx, this.program, this.vertexBuffer, this.baseZoom));
+      this.yGridLines.push(
+          new Line(this.ctx, this.program, this.vertexBuffer, this.baseZoom));
     }
   }
 
-  setXGrid(lines: Line[]) {
-    this.xGridLines = lines;
-  }
-
   getZoom(): ZoomParameters {
-    return this.zoom;
+    return this.zoom.copy();
   }
 
   plotToCanvasCoordinates(plotPos: number[]): number[] {
-    return addVec(cwiseOp(plotPos, this.zoom.scale, (a, b) => {
-                    return a * b;
-                  }), this.zoom.offset);
+    return addVec(multVec(plotPos, this.zoom.scale), this.zoom.offset);
   }
 
 
   canvasToPlotCoordinates(canvasPos: number[]): number[] {
-    return cwiseOp(cwiseOp(canvasPos, this.zoom.offset, (a, b) => {
-                     return a - b;
-                   }), this.zoom.scale, (a, b) => {
-      return a / b;
-    });
+    return divideVec(subtractVec(canvasPos, this.zoom.offset), this.zoom.scale);
   }
 
   // Tehse return the max/min rendered points, in plot-space (this is helpful
@@ -405,8 +455,14 @@ export class LineDrawer {
   }
 
   setZoom(zoom: ZoomParameters) {
+    if (this.zoom.scale[0] == zoom.scale[0] &&
+        this.zoom.scale[1] == zoom.scale[1] &&
+        this.zoom.offset[0] == zoom.offset[0] &&
+        this.zoom.offset[1] == zoom.offset[1]) {
+      return;
+    }
     this.zoomUpdated = true;
-    this.zoom = zoom;
+    this.zoom = zoom.copy();
   }
 
   setXTicks(ticks: number[]): void  {
@@ -420,8 +476,8 @@ export class LineDrawer {
   // Update the grid lines.
   updateTicks() {
     for (let ii = 0; ii < this.MAX_GRID_LINES; ++ii) {
-      this.xGridLines[ii].setPoints(new Float32Array([]));
-      this.yGridLines[ii].setPoints(new Float32Array([]));
+      this.xGridLines[ii].setPoints([]);
+      this.yGridLines[ii].setPoints([]);
     }
 
     const minValues = this.minVisiblePoint();
@@ -429,8 +485,10 @@ export class LineDrawer {
 
     for (let ii = 0; ii < this.xTicks.length; ++ii) {
       this.xGridLines[ii].setColor([0.0, 0.0, 0.0]);
-      const points = new Float32Array(
-          [this.xTicks[ii], minValues[1], this.xTicks[ii], maxValues[1]]);
+      const points = [
+        new Point(this.xTicks[ii], minValues[1]),
+        new Point(this.xTicks[ii], maxValues[1])
+      ];
       this.xGridLines[ii].setPointSize(0);
       this.xGridLines[ii].setPoints(points);
       this.xGridLines[ii].draw();
@@ -438,8 +496,10 @@ export class LineDrawer {
 
     for (let ii = 0; ii < this.yTicks.length; ++ii) {
       this.yGridLines[ii].setColor([0.0, 0.0, 0.0]);
-      const points = new Float32Array(
-          [minValues[0], this.yTicks[ii], maxValues[0], this.yTicks[ii]]);
+      const points = [
+        new Point(minValues[0], this.yTicks[ii]),
+        new Point(maxValues[0], this.yTicks[ii])
+      ];
       this.yGridLines[ii].setPointSize(0);
       this.yGridLines[ii].setPoints(points);
       this.yGridLines[ii].draw();
@@ -521,7 +581,8 @@ export class LineDrawer {
   }
 
   addLine(useColorCycle: boolean = true): Line {
-    this.lines.push(new Line(this.ctx, this.program, this.vertexBuffer));
+    this.lines.push(
+        new Line(this.ctx, this.program, this.vertexBuffer, this.baseZoom));
     const line = this.lines[this.lines.length - 1];
     if (useColorCycle) {
       line.setColor(LineDrawer.COLOR_CYCLE[this.colorCycleIndex++]);
@@ -555,10 +616,44 @@ export class LineDrawer {
 
     this.ctx.useProgram(this.program);
 
+    // Check for whether the zoom parameters have changed significantly; if so,
+    // update the base zoom.
+    // These thresholds are somewhat arbitrary.
+    const scaleDiff = divideVec(this.zoom.scale, this.baseZoom.scale);
+    const scaleChanged = scaleDiff[0] < 0.9 || scaleDiff[0] > 1.1 ||
+        scaleDiff[1] < 0.9 || scaleDiff[1] > 1.1;
+    const offsetDiff = subtractVec(this.zoom.offset, this.baseZoom.offset);
+    // Note that offset is in the canvas coordinate frame and so just using
+    // hard-coded constants is fine.
+    const offsetChanged =
+        Math.abs(offsetDiff[0]) > 0.1 || Math.abs(offsetDiff[1]) > 0.1;
+    if (scaleChanged || offsetChanged) {
+      this.baseZoom = this.zoom.copy();
+      for (const line of this.lines) {
+        line.updateBaseZoom(this.baseZoom);
+      }
+      for (const line of this.xGridLines) {
+        line.updateBaseZoom(this.baseZoom);
+      }
+      for (const line of this.yGridLines) {
+        line.updateBaseZoom(this.baseZoom);
+      }
+    }
+
+    // all the points in the lines will be pre-scaled by this.baseZoom, so
+    // we need to remove its effects before passing it in.
+    // zoom.scale * pos + zoom.offset = scale * (baseZoom.scale * pos + baseZoom.offset) + offset
+    // zoom.scale = scale * baseZoom.scale
+    // scale = zoom.scale / baseZoom.scale
+    // zoom.offset = scale * baseZoom.offset + offset
+    // offset = zoom.offset - scale * baseZoom.offset
+    const scale = divideVec(this.zoom.scale, this.baseZoom.scale);
+    const offset =
+        subtractVec(this.zoom.offset, multVec(scale, this.baseZoom.offset));
     this.ctx.uniform2f(
-        this.scaleLocation, this.zoom.scale[0], this.zoom.scale[1]);
+        this.scaleLocation, scale[0], scale[1]);
     this.ctx.uniform2f(
-        this.offsetLocation, this.zoom.offset[0], this.zoom.offset[1]);
+        this.offsetLocation, offset[0], offset[1]);
   }
 }
 
@@ -904,7 +999,7 @@ export class Plot {
     const currentPosition = this.mousePlotLocation(event);
     this.setZoomCorners(this.rectangleStartPosition, currentPosition);
     this.rectangleStartPosition = null;
-    this.zoomRectangle.setPoints(new Float32Array([]));
+    this.zoomRectangle.setPoints([]);
   }
 
   handleMouseMove(event: MouseEvent) {
@@ -936,17 +1031,16 @@ export class Plot {
           p0[0] = minVisible[0];
           p1[0] = maxVisible[0];
         }
-        this.zoomRectangle.setPoints(
-            new Float32Array([p0[0], p0[1]]
-                                 .concat([p0[0], p1[1]])
-                                 .concat([p1[0], p1[1]])
-                                 .concat([p1[0], p0[1]])
-                                 .concat([p0[0], p0[1]])));
+        this.zoomRectangle.setPoints([
+          new Point(p0[0], p0[1]), new Point(p0[0], p1[1]),
+          new Point(p1[0], p1[1]), new Point(p1[0], p0[1]),
+          new Point(p0[0], p0[1])
+        ]);
       } else {
         this.finishRectangleZoom(event);
       }
     } else {
-      this.zoomRectangle.setPoints(new Float32Array([]));
+      this.zoomRectangle.setPoints([]);
     }
     this.lastMousePosition = mouseLocation;
   }
@@ -1050,7 +1144,7 @@ export class Plot {
         // Cancel zoom/pan operations on escape.
         plot.lastMousePanPosition = null;
         plot.rectangleStartPosition = null;
-        plot.zoomRectangle.setPoints(new Float32Array([]));
+        plot.zoomRectangle.setPoints([]);
       }
     }
   }
