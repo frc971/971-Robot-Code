@@ -224,7 +224,9 @@ void Localizer::HandleImageMatch(
     const Eigen::Matrix<float, 4, 4> H_field_target =
         FlatbufferToTransformationMatrix(*vision_result->field_to_target());
     // Back out the robot position that is implied by the current camera
-    // reading.
+    // reading. Note that the Pose object ignores any roll/pitch components, so
+    // if the camera's extrinsics for pitch/roll are off, this should just
+    // ignore it.
     const Pose measured_pose(H_field_target *
                              (H_robot_camera * H_camera_target).inverse());
     // This "Z" is the robot pose directly implied by the camera results.
@@ -234,7 +236,11 @@ void Localizer::HandleImageMatch(
                                        measured_pose.rel_pos().y(),
                                        measured_pose.rel_theta());
     // Pose of the target in the robot frame.
-    Pose pose_robot_target(H_robot_camera * H_camera_target);
+    // Note that we use measured_pose's transformation matrix rather than just
+    // doing H_robot_camera * H_camera_target because measured_pose ignores
+    // pitch/roll.
+    Pose pose_robot_target(measured_pose.AsTransformationMatrix().inverse() *
+                           H_field_target);
     // TODO(james): Figure out how to properly handle calculating the
     // noise. Currently, the values are deliberately tuned so that image updates
     // will not be trusted overly much. In theory, we should probably also be
