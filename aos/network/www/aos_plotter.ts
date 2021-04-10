@@ -141,9 +141,15 @@ export class MessageHandler {
 }
 
 class MessageLine {
+  private _lastNumMessages: number = 0;
   constructor(
       public readonly messages: MessageHandler, public readonly line: Line,
       public readonly field: string[]) {}
+  hasUpdate(): boolean {
+    const updated = this._lastNumMessages != this.messages.numMessages();
+    this._lastNumMessages = this.messages.numMessages();
+    return updated;
+  }
 }
 
 class AosPlot {
@@ -172,7 +178,7 @@ class AosPlot {
     // is a relatively expensive call, we don't want to do it any more than
     // necessary.
     for (const line of this.lines) {
-      if (line.messages.numMessages() * 2 != line.line.getPoints().length) {
+      if (line.hasUpdate()) {
         line.line.setPoints(line.messages.getField(line.field));
       }
     }
