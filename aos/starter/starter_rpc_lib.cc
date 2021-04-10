@@ -30,7 +30,7 @@ std::string_view FindApplication(const std::string_view &name,
                                  const aos::Configuration *config) {
   std::string_view app_name = name;
   for (const auto app : *config->applications()) {
-    if (app->executable_name() != nullptr &&
+    if (app->has_executable_name() &&
         app->executable_name()->string_view() == name) {
       app_name = app->name()->string_view();
       break;
@@ -74,7 +74,7 @@ bool SendCommandBlocking(aos::starter::Command command, std::string_view name,
       event_loop.MakeFetcher<aos::starter::Status>("/aos");
   initial_status_fetcher.Fetch();
   auto initial_status =
-      initial_status_fetcher
+      initial_status_fetcher.get()
           ? FindApplicationStatus(*initial_status_fetcher, name)
           : nullptr;
 
