@@ -11,6 +11,7 @@
 namespace frc971 {
 namespace wpilib {
 namespace {
+namespace chrono = std::chrono;
 namespace registers {
 
 // Flash memory write count
@@ -262,14 +263,14 @@ void ADIS16470::DoInitializeStep() {
       reset_->Set(false);
       // Datasheet says it needs a 1 us pulse, so make sure we do something in
       // between asserting and deasserting.
-      std::this_thread::sleep_for(::std::chrono::milliseconds(1));
+      std::this_thread::sleep_for(chrono::milliseconds(1));
       reset_->Set(true);
 
       state_ = State::kWaitForReset;
       // Datasheet says it takes 193 ms to come out of reset, so give it some
       // margin on top of that.
       initialize_timer_->Setup(event_loop_->monotonic_now() +
-                               std::chrono::milliseconds(250));
+                               chrono::milliseconds(250));
     }
     break;
 
@@ -303,7 +304,7 @@ void ADIS16470::DoInitializeStep() {
           // Start a sensor self test.
           WriteRegister(registers::GLOB_CMD, 1 << 2);
           // Datasheet says it takes 14ms, so give it some margin.
-          std::this_thread::sleep_for(std::chrono::milliseconds(25));
+          std::this_thread::sleep_for(chrono::milliseconds(25));
           // Read DIAG_STAT again, and queue up a read of the first part of the
           // autospi data packet.
           const uint16_t self_test_diag_stat_value =
@@ -335,6 +336,21 @@ void ADIS16470::DoInitializeStep() {
 
             // Finally, enable automatic mode so it starts reading data.
             spi_->StartAutoTrigger(*data_ready_, true, false);
+
+            // We need a bit of time for the auto trigger to start up so we have
+            // something to throw out.  1 khz trigger, so 2 ms gives us 2 cycles
+            // to hit it worst case.
+            std::this_thread::sleep_for(chrono::milliseconds(2));
+
+            // Throw out the first sample.  It is almost always faulted due to
+            // how we start up, and it isn't worth tracking for downstream users
+            // to look at.
+            to_read_ = absl::MakeSpan(read_data_);
+            CHECK_EQ(spi_->ReadAutoReceivedData(
+                         to_read_.data(), to_read_.size(),
+                         1000.0 /* block for up to 1 second */),
+                     static_cast<int>(to_read_.size()))
+                << ": Failed to read first sample.";
             success = true;
           }
         }
