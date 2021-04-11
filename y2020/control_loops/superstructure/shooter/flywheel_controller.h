@@ -29,6 +29,7 @@ class FlywheelController {
 
   // Sets the velocity goal in radians/sec
   void set_goal(double angular_velocity_goal);
+  double goal() const { return last_goal_; }
   // Sets the current encoder position in radians
   void set_position(double current_position,
                     const aos::monotonic_clock::time_point position_timestamp);
