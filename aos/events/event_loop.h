@@ -269,7 +269,7 @@ class Fetcher {
   const T *operator->() const { return get(); }
 
   // Returns true if this fetcher is valid and connected to a channel.
-  operator bool() const { return static_cast<bool>(fetcher_); }
+  bool valid() const { return static_cast<bool>(fetcher_); }
 
   // Copies the current flatbuffer into a FlatbufferVector.
   FlatbufferVector<T> CopyFlatBuffer() const {
