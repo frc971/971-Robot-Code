@@ -82,6 +82,7 @@ ts_library(
         "//frc971/control_loops/drivetrain:down_estimator_plotter",
         "//frc971/control_loops/drivetrain:drivetrain_plotter",
         "//frc971/control_loops/drivetrain:robot_state_plotter",
+        "//frc971/control_loops/drivetrain:spline_plotter",
         "//frc971/wpilib:imu_plotter",
         "//y2020/control_loops/superstructure:accelerator_plotter",
         "//y2020/control_loops/superstructure:finisher_plotter",

@@ -3,6 +3,7 @@
 import * as configuration from 'org_frc971/aos/configuration_generated';
 import * as imu from 'org_frc971/frc971/wpilib/imu_batch_generated';
 import {MessageHandler, TimestampedMessage} from 'org_frc971/aos/network/www/aos_plotter';
+import {Point} from 'org_frc971/aos/network/www/plotter';
 import {Table} from 'org_frc971/aos/network/www/reflection';
 import {ByteBuffer} from 'org_frc971/external/com_github_google_flatbuffers/ts/byte-buffer';
 
@@ -14,7 +15,7 @@ const FILTER_WINDOW_SIZE = 100;
 
 export class ImuMessageHandler extends MessageHandler {
   // Calculated magnitude of the measured acceleration from the IMU.
-  private acceleration_magnitudes: number[] = [];
+  private acceleration_magnitudes: Point[] = [];
   constructor(private readonly schema: Schema) {
     super(schema);
   }
@@ -36,37 +37,38 @@ export class ImuMessageHandler extends MessageHandler {
       }
       const time = message.monotonicTimestampNs().toFloat64() * 1e-9;
       this.messages.push(new TimestampedMessage(table, time));
-      this.acceleration_magnitudes.push(time);
-      this.acceleration_magnitudes.push(Math.hypot(
-          message.accelerometerX(), message.accelerometerY(),
-          message.accelerometerZ()));
+      this.acceleration_magnitudes.push(new Point(
+          time,
+          Math.hypot(
+              message.accelerometerX(), message.accelerometerY(),
+              message.accelerometerZ())));
     }
   }
 
   // Computes a moving average for a given input, using a basic window centered
   // on each value.
-  private movingAverageCentered(input: Float32Array): Float32Array {
-    const num_measurements = input.length / 2;
-    const filtered_measurements = new Float32Array(input);
+  private movingAverageCentered(input: Point[]): Point[] {
+    const num_measurements = input.length;
+    const filtered_measurements = [];
     for (let ii = 0; ii < num_measurements; ++ii) {
       let sum = 0;
       let count = 0;
       for (let jj = Math.max(0, Math.ceil(ii - FILTER_WINDOW_SIZE / 2));
            jj < Math.min(num_measurements, ii + FILTER_WINDOW_SIZE / 2); ++jj) {
-        sum += input[jj * 2 + 1];
+        sum += input[jj].y;
         ++count;
       }
-      filtered_measurements[ii * 2 + 1] = sum / count;
+      filtered_measurements.push(new Point(input[ii].x, sum / count));
     }
-    return new Float32Array(filtered_measurements);
+    return filtered_measurements;
   }
 
-  getField(field: string[]): Float32Array {
+  getField(field: string[]): Point[] {
     // Any requested input that ends with "_filtered" will get a moving average
     // applied to the original field.
     const filtered_suffix = "_filtered";
     if (field[0] == "acceleration_magnitude") {
-      return new Float32Array(this.acceleration_magnitudes);
+      return this.acceleration_magnitudes;
     } else if (field[0].endsWith(filtered_suffix)) {
       return this.movingAverageCentered(this.getField(
           [field[0].slice(0, field[0].length - filtered_suffix.length)]));

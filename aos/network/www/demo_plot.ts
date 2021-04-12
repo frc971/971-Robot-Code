@@ -13,7 +13,7 @@
 // (a) Make use of the AosPlotter to plot a shmem message as a time-series.
 // (b) Define your own custom plot with whatever data you want.
 import {AosPlotter} from 'org_frc971/aos/network/www/aos_plotter';
-import {Plot} from 'org_frc971/aos/network/www/plotter';
+import {Plot, Point} from 'org_frc971/aos/network/www/plotter';
 import * as proxy from 'org_frc971/aos/network/www/proxy';
 
 import Connection = proxy.Connection;
@@ -89,11 +89,9 @@ export function plotDemo(conn: Connection, parentDiv: Element): void {
   const points1 = [];
   const points2 = [];
   for (let ii = 0; ii < NUM_POINTS; ++ii) {
-    points1.push(ii);
-    points2.push(ii);
-    points1.push(Math.sin(ii * 10 / NUM_POINTS));
-    points2.push(Math.cos(ii * 10 / NUM_POINTS));
+    points1.push(new Point(ii, Math.sin(ii * 10 / NUM_POINTS)));
+    points2.push(new Point(ii, Math.cos(ii * 10 / NUM_POINTS)));
   }
-  line1.setPoints(new Float32Array(points1));
-  line2.setPoints(new Float32Array(points2));
+  line1.setPoints(points1);
+  line2.setPoints(points2);
 }

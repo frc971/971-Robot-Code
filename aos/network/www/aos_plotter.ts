@@ -24,7 +24,7 @@
 // the required boilerplate, as well as some extra examples about how to
 // add axis labels and the such.
 import * as configuration from 'org_frc971/aos/configuration_generated';
-import {Line, Plot} from 'org_frc971/aos/network/www/plotter';
+import {Line, Plot, Point} from 'org_frc971/aos/network/www/plotter';
 import * as proxy from 'org_frc971/aos/network/www/proxy';
 import * as web_proxy from 'org_frc971/aos/network/web_proxy_generated';
 import * as reflection from 'org_frc971/aos/network/www/reflection'
@@ -93,7 +93,7 @@ export class MessageHandler {
   // timestamp but the requested field was not populated.
   // If you want to retrieve a single signal from a vector, you can specify it
   // as "field_name[index]".
-  getField(field: string[]): Float32Array {
+  getField(field: string[]): Point[] {
     const fieldName = field[field.length - 1];
     const subMessage = field.slice(0, field.length - 1);
     const results = [];
@@ -114,26 +114,23 @@ export class MessageHandler {
       }
       const time = this.messages[ii].time;
       if (tables.length === 0) {
-        results.push(time);
-        results.push(NaN);
+        results.push(new Point(time, NaN));
       } else {
         for (const table of tables) {
           const values = this.readField(
               table, fieldName, Parser.prototype.readScalar,
               Parser.prototype.readVectorOfScalars);
           if (values === null) {
-            results.push(time);
-            results.push(NaN);
+            results.push(new Point(time, NaN));
           } else {
             for (const value of values) {
-              results.push(time);
-              results.push((value === null) ? NaN : value);
+              results.push(new Point(time, (value === null) ? NaN : value));
             }
           }
         }
       }
     }
-    return new Float32Array(results);
+    return results;
   }
   numMessages(): number {
     return this.messages.length;
