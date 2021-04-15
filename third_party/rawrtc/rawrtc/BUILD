@@ -13,6 +13,7 @@ cc_library(
         ],
         "gcc": [
             "-Wno-discarded-qualifiers",
+            "-Wno-incompatible-pointer-types",
             "-Wno-implicit-fallthrough",
         ],
     }) + [
@@ -53,10 +54,12 @@ cc_binary(
     ],
     copts = [
         "-Wno-missing-braces",
-        "-Wno-incompatible-pointer-types-discards-qualifiers",
     ] + compiler_select({
-        "clang": [],
+        "clang": [
+            "-Wno-incompatible-pointer-types-discards-qualifiers",
+        ],
         "gcc": [
+            "-Wno-incompatible-pointer-types",
             "-Wno-discarded-qualifiers",
         ],
     }),
