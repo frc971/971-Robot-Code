@@ -17,13 +17,80 @@ namespace frc971 {
 namespace vision {
 namespace {
 
-void ViewerMain() {
-  struct TargetData {
-    float x;
-    float y;
-    float radius;
-  };
+struct TargetData {
+  float x;
+  float y;
+  float radius;
+};
 
+std::map<int64_t, TargetData> target_data_map;
+std::map<int64_t, std::vector<TargetData>> feature_match_map;
+std::map<int64_t, std::vector<int>> feature_index_map;
+
+aos::Fetcher<CameraImage> image_fetcher;
+aos::Fetcher<sift::ImageMatchResult> match_fetcher;
+
+bool DisplayLoop() {
+  // Try to get target data
+  // TODO<Jim>: Could also parse (and show) matching features
+  if (match_fetcher.Fetch()) {
+    const sift::ImageMatchResult *match = match_fetcher.get();
+    CHECK(match != nullptr) << "Got null when trying to fetch match result";
+
+    int64_t timestamp = match->image_monotonic_timestamp_ns();
+    if (match->camera_poses() != NULL && match->camera_poses()->size() > 0) {
+      LOG(INFO) << "Got matches for timestamp " << timestamp << "\n";
+      TargetData target_data = {
+          match->camera_poses()->Get(0)->query_target_point_x(),
+          match->camera_poses()->Get(0)->query_target_point_y(),
+          match->camera_poses()->Get(0)->query_target_point_radius()};
+      target_data_map[timestamp] = target_data;
+      // Only keep last 10 matches
+      while (target_data_map.size() > 10u) {
+        target_data_map.erase(target_data_map.begin());
+      }
+    }
+  }
+
+  // Read latest image
+  if (!image_fetcher.Fetch()) {
+    return true;
+  }
+
+  const CameraImage *image = image_fetcher.get();
+  CHECK(image != nullptr) << "Couldn't read image";
+
+  // Create color image:
+  cv::Mat image_color_mat(cv::Size(image->cols(), image->rows()), CV_8UC2,
+                          (void *)image->data()->data());
+  cv::Mat rgb_image(cv::Size(image->cols(), image->rows()), CV_8UC3);
+  cv::cvtColor(image_color_mat, rgb_image, CV_YUV2BGR_YUYV);
+
+  int64_t timestamp = image->monotonic_timestamp_ns();
+  auto target_it = target_data_map.find(timestamp);
+  if (target_it != target_data_map.end()) {
+    float x = target_it->second.x;
+    float y = target_it->second.y;
+    float radius = target_it->second.radius;
+    cv::circle(rgb_image, cv::Point2f(x, y), radius, cv::Scalar(0, 255, 0), 5);
+  }
+
+  cv::imshow("Display", rgb_image);
+  int keystroke = cv::waitKey(1);
+  if ((keystroke & 0xFF) == static_cast<int>('c')) {
+    // Convert again, to get clean image
+    cv::cvtColor(image_color_mat, rgb_image, CV_YUV2BGR_YUYV);
+    std::stringstream name;
+    name << "capture-" << aos::realtime_clock::now() << ".png";
+    cv::imwrite(name.str(), rgb_image);
+    LOG(INFO) << "Saved image file: " << name.str();
+  } else if ((keystroke & 0xFF) == static_cast<int>('q')) {
+    return false;
+  }
+  return true;
+}
+
+void ViewerMain() {
   std::map<int64_t, TargetData> target_data_map;
 
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
@@ -31,53 +98,19 @@ void ViewerMain() {
 
   aos::ShmEventLoop event_loop(&config.message());
 
-  event_loop.MakeWatcher(
-      FLAGS_channel, [&target_data_map](const CameraImage &image) {
-        // Create color image:
-        cv::Mat image_color_mat(cv::Size(image.cols(), image.rows()), CV_8UC2,
-                                (void *)image.data()->data());
-        cv::Mat rgb_image(cv::Size(image.cols(), image.rows()), CV_8UC3);
-        cv::cvtColor(image_color_mat, rgb_image, CV_YUV2BGR_YUYV);
+  image_fetcher = event_loop.MakeFetcher<CameraImage>(FLAGS_channel);
 
-        unsigned long timestamp = image.monotonic_timestamp_ns();
-        auto target_it = target_data_map.find(timestamp);
-        if (target_it != target_data_map.end()) {
-          float x = target_it->second.x;
-          float y = target_it->second.y;
-          float radius = target_it->second.radius;
-          cv::circle(rgb_image, cv::Point2f(x, y), radius,
-                     cv::Scalar(0, 255, 0), 5);
-        }
+  match_fetcher = event_loop.MakeFetcher<sift::ImageMatchResult>(FLAGS_channel);
 
-        cv::imshow("Display", rgb_image);
-        int keystroke = cv::waitKey(1);
-        if ((keystroke & 0xFF) == static_cast<int>('c')) {
-          // Convert again, to get clean image
-          cv::cvtColor(image_color_mat, rgb_image, CV_YUV2BGR_YUYV);
-          std::stringstream name;
-          name << "capture-" << aos::realtime_clock::now() << ".png";
-          cv::imwrite(name.str(), rgb_image);
-          LOG(INFO) << "Saved image file: " << name.str();
-        } else if ((keystroke & 0xFF) == static_cast<int>('q')) {
-          exit(0);
-        }
-      });
-
-  event_loop.MakeWatcher(
-      FLAGS_channel, [&target_data_map](const sift::ImageMatchResult &match) {
-        int64_t timestamp = match.image_monotonic_timestamp_ns();
-        if (match.camera_poses() != NULL && match.camera_poses()->size() > 0) {
-          LOG(INFO) << "Got match!\n";
-          TargetData target_data = {
-              match.camera_poses()->Get(0)->query_target_point_x(),
-              match.camera_poses()->Get(0)->query_target_point_y(),
-              match.camera_poses()->Get(0)->query_target_point_radius()};
-          target_data_map[timestamp] = target_data;
-          while (target_data_map.size() > 10u) {
-            target_data_map.erase(target_data_map.begin());
-          }
-        }
-      });
+  // Run the display loop
+  event_loop.AddPhasedLoop(
+      [&event_loop](int) {
+        if (!DisplayLoop()) {
+          LOG(INFO) << "Calling event_loop Exit";
+          event_loop.Exit();
+        };
+      },
+      ::std::chrono::milliseconds(100));
 
   event_loop.Run();
 }
