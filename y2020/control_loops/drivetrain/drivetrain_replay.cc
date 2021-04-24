@@ -5,8 +5,8 @@
 // in some other way. The original drivetrain status data will be on the
 // /original/drivetrain channel.
 #include "aos/configuration.h"
-#include "aos/events/logging/log_writer.h"
 #include "aos/events/logging/log_reader.h"
+#include "aos/events/logging/log_writer.h"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/init.h"
 #include "aos/json_to_flatbuffer.h"
@@ -16,6 +16,7 @@
 #include "gflags/gflags.h"
 #include "y2020/control_loops/drivetrain/drivetrain_base.h"
 #include "y2020/control_loops/drivetrain/localizer.h"
+#include "y2020/control_loops/superstructure/superstructure.h"
 
 DEFINE_string(config, "y2020/config.json",
               "Name of the config file to replay using.");
@@ -74,6 +75,10 @@ int main(int argc, char **argv) {
                             "frc971.control_loops.drivetrain.Status");
   reader.RemapLoggedChannel("/drivetrain",
                             "frc971.control_loops.drivetrain.Output");
+  reader.RemapLoggedChannel("/superstructure",
+                            "y2020.control_loops.superstructure.Status");
+  reader.RemapLoggedChannel("/superstructure",
+                            "y2020.control_loops.superstructure.Output");
   reader.Register();
 
   std::vector<std::unique_ptr<LoggerState>> loggers;
@@ -116,6 +121,13 @@ int main(int argc, char **argv) {
   frc971::control_loops::drivetrain::DrivetrainLoop drivetrain(
       y2020::control_loops::drivetrain::GetDrivetrainConfig(),
       drivetrain_event_loop.get(), &localizer);
+
+  std::unique_ptr<aos::EventLoop> superstructure_event_loop =
+      reader.event_loop_factory()->MakeEventLoop("superstructure", node);
+  superstructure_event_loop->SkipTimingReport();
+
+  y2020::control_loops::superstructure::Superstructure superstructure(
+      superstructure_event_loop.get());
 
   reader.event_loop_factory()->Run();
 

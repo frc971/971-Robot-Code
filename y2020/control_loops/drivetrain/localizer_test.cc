@@ -286,11 +286,11 @@ class LocalizedDrivetrainTest : public aos::testing::ControlLoopTest {
 
       // TODO(james): Use non-zero turret angles.
       camera_target->camera_to_target.reset(new TransformationMatrixT());
-      camera_target->camera_to_target->data =
-          MatrixToVector((robot_pose.AsTransformationMatrix() *
-                          TurretRobotTransformation() * H_turret_camera)
-                             .inverse() *
-                         H_field_target);
+      camera_target->camera_to_target->data = MatrixToVector(
+          (robot_pose.AsTransformationMatrix() * TurretRobotTransformation() *
+           H_turret_camera * camera_calibration_offset_)
+              .inverse() *
+          H_field_target);
 
       frame->camera_poses.emplace_back(std::move(camera_target));
     }
@@ -365,6 +365,11 @@ class LocalizedDrivetrainTest : public aos::testing::ControlLoopTest {
   std::queue<std::tuple<aos::monotonic_clock::time_point,
                         std::unique_ptr<ImageMatchResultT>>>
       camera_delay_queue_;
+
+  // Offset to add to the camera for actually taking the images, to simulate an
+  // inaccurate calibration.
+  Eigen::Matrix<double, 4, 4> camera_calibration_offset_ =
+      Eigen::Matrix<double, 4, 4>::Identity();
 
   void set_enable_cameras(bool enable) { enable_cameras_ = enable; }
   void set_camera_is_turreted(bool turreted) { is_turreted_ = turreted; }
@@ -442,6 +447,24 @@ TEST_F(LocalizedDrivetrainTest, NoCameraUpdateStraightLine) {
 
 // Tests that camera updates with a perfect models results in no errors.
 TEST_F(LocalizedDrivetrainTest, PerfectCameraUpdate) {
+  SetEnabled(true);
+  set_enable_cameras(true);
+  set_camera_is_turreted(true);
+
+  SendGoal(-1.0, 1.0);
+
+  RunFor(chrono::seconds(3));
+  VerifyNearGoal();
+  EXPECT_TRUE(VerifyEstimatorAccurate(2e-3));
+}
+
+// Tests that camera updates with a perfect model but incorrect camera pitch
+// results in no errors.
+TEST_F(LocalizedDrivetrainTest, PerfectCameraUpdateWithBadPitch) {
+  // Introduce some camera pitch.
+  camera_calibration_offset_.template block<3, 3>(0, 0) =
+      Eigen::AngleAxis<double>(0.1, Eigen::Vector3d::UnitY())
+          .toRotationMatrix();
   SetEnabled(true);
   set_enable_cameras(true);
   set_camera_is_turreted(true);
