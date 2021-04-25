@@ -28,6 +28,9 @@ cc_library(
         "-DHAVE_STDBOOL_H",
         "-DHAVE_INTTYPES_H",
     ],
+    defines = [
+        "HAVE_STDBOOL_H",
+    ],
     includes = ["include/"],
     local_defines = [
         "RAWRTC_VERSION=\\\"0.5.1\\\"",
@@ -39,17 +42,36 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "tools_helper",
+    srcs = [
+        "tools/helper/common.c",
+        "tools/helper/handler.c",
+        "tools/helper/parameters.c",
+        "tools/helper/utils.c",
+    ],
+    hdrs = [
+        "tools/helper/common.h",
+        "tools/helper/handler.h",
+        "tools/helper/parameters.h",
+        "tools/helper/utils.h",
+    ],
+    copts = [
+        "-Wno-missing-braces",
+        "-Wno-incompatible-pointer-types-discards-qualifiers",
+    ] + compiler_select({
+        "clang": [],
+        "gcc": [
+            "-Wno-discarded-qualifiers",
+        ],
+    }),
+    visibility = ["//visibility:public"],
+    deps = [":rawrtc"],
+)
+
 cc_binary(
     name = "peer-connection",
     srcs = [
-        "tools/helper/common.c",
-        "tools/helper/common.h",
-        "tools/helper/handler.c",
-        "tools/helper/handler.h",
-        "tools/helper/parameters.c",
-        "tools/helper/parameters.h",
-        "tools/helper/utils.c",
-        "tools/helper/utils.h",
         "tools/peer-connection.c",
     ],
     copts = [
@@ -64,5 +86,8 @@ cc_binary(
         ],
     }),
     includes = ["tools"],
-    deps = [":rawrtc"],
+    deps = [
+        ":rawrtc",
+        ":tools_helper",
+    ],
 )

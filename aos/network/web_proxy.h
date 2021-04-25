@@ -1,11 +1,15 @@
 #ifndef AOS_NETWORK_WEB_PROXY_H_
 #define AOS_NETWORK_WEB_PROXY_H_
+
+#include <deque>
 #include <map>
 #include <set>
+
 #include "aos/events/event_loop.h"
 #include "aos/events/shm_event_loop.h"
 #include "aos/mutex/mutex.h"
 #include "aos/network/connect_generated.h"
+#include "aos/network/rawrtc.h"
 #include "aos/network/web_proxy_generated.h"
 #include "aos/seasocks/seasocks_logger.h"
 #include "flatbuffers/flatbuffers.h"
@@ -13,13 +17,12 @@
 #include "seasocks/StringUtil.h"
 #include "seasocks/WebSocket.h"
 
-#include "api/peer_connection_interface.h"
-
 namespace aos {
 namespace web_proxy {
 
 class Connection;
 class Subscriber;
+class ApplicationConnection;
 
 // Basic class that handles receiving new websocket connections. Creates a new
 // Connection to manage the rest of the negotiation and data passing. When the
@@ -34,12 +37,14 @@ class WebsocketHandler : public ::seasocks::WebSocket::Handler {
   void onDisconnect(::seasocks::WebSocket *sock) override;
 
  private:
-  std::map<::seasocks::WebSocket *, std::unique_ptr<Connection>> connections_;
   ::seasocks::Server *server_;
   std::vector<std::unique_ptr<Subscriber>> subscribers_;
   const aos::FlatbufferDetachedBuffer<aos::Configuration> config_;
 
-  const EventLoop *const event_loop_;
+  std::map<::seasocks::WebSocket *, std::unique_ptr<ApplicationConnection>>
+      connections_;
+
+  EventLoop *const event_loop_;
 };
 
 // Wrapper class that manages the seasocks server and WebsocketHandler.
@@ -92,135 +97,86 @@ class Subscriber {
  public:
   Subscriber(std::unique_ptr<RawFetcher> fetcher, int channel_index,
              int buffer_size)
-      : fbb_(1024),
-        fetcher_(std::move(fetcher)),
+      : fetcher_(std::move(fetcher)),
         channel_index_(channel_index),
         buffer_size_(buffer_size) {}
 
   void RunIteration();
 
-  void AddListener(rtc::scoped_refptr<webrtc::DataChannelInterface> channel,
-                   TransferMethod transfer_method,
-                   rtc::Thread *signaling_thread);
+  void AddListener(std::shared_ptr<ScopedDataChannel> data_channel,
+                   TransferMethod transfer_method);
 
-  void RemoveListener(
-      rtc::scoped_refptr<webrtc::DataChannelInterface> channel);
-
-  // Check if the Channel passed matches the channel this fetchs.
-  bool Compare(const Channel *channel) const;
-
-  int index() const { return channel_index_; }
+  void RemoveListener(std::shared_ptr<ScopedDataChannel> data_channel);
 
  private:
   struct ChannelInformation {
     TransferMethod transfer_method;
     uint32_t current_queue_index = 0;
     size_t next_packet_number = 0;
-    // Thread to use for making calls to the DataChannelInterface.
-    rtc::Thread *signaling_thread;
   };
   struct Message {
     uint32_t index = 0xffffffff;
-    std::vector<webrtc::DataBuffer> data;
+    std::vector<std::shared_ptr<struct mbuf>> data;
   };
 
-  const webrtc::DataBuffer *NextBuffer(ChannelInformation *channel);
+  std::shared_ptr<struct mbuf> NextBuffer(ChannelInformation *channel);
   void SkipToLastMessage(ChannelInformation *channel);
 
-  flatbuffers::FlatBufferBuilder fbb_;
   std::unique_ptr<RawFetcher> fetcher_;
   int channel_index_;
   int buffer_size_;
   std::deque<Message> message_buffer_;
-  std::map<rtc::scoped_refptr<webrtc::DataChannelInterface>, ChannelInformation>
-      channels_;
-  // In order to enable the Connection class to add/remove listeners
-  // asyncrhonously, queue up all the newly added listeners in pending_*
-  // members. Access to these members is controlled by mutex_.
-  std::map<rtc::scoped_refptr<webrtc::DataChannelInterface>, ChannelInformation>
-      pending_channels_;
-  std::vector<rtc::scoped_refptr<webrtc::DataChannelInterface>>
-      pending_removal_;
-
-  aos::Mutex mutex_;
+  std::map<std::shared_ptr<ScopedDataChannel>, ChannelInformation> channels_;
 };
 
-// Represents a single connection to a browser for the entire lifetime of the
-// connection.
-class Connection : public webrtc::PeerConnectionObserver,
-                   public webrtc::CreateSessionDescriptionObserver,
-                   public webrtc::DataChannelObserver {
+// Class to manage a WebRTC connection to a browser.
+class ApplicationConnection {
  public:
-  Connection(::seasocks::WebSocket *sock, ::seasocks::Server *server,
-             const std::vector<std::unique_ptr<Subscriber>> &subscribers,
-             const aos::FlatbufferDetachedBuffer<aos::Configuration> &config,
-             const EventLoop *event_loop);
+  ApplicationConnection(
+      ::seasocks::Server *server, ::seasocks::WebSocket *sock,
+      const std::vector<std::unique_ptr<Subscriber>> &subscribers,
+      const aos::FlatbufferDetachedBuffer<aos::Configuration> &config,
+      const EventLoop *event_loop);
 
-  ~Connection() {
-    // DataChannel may call OnStateChange after this is destroyed, so make sure
-    // it doesn't.
-    if (data_channel_) {
-      data_channel_->UnregisterObserver();
-    }
-  }
+  ~ApplicationConnection();
 
-  void HandleWebSocketData(const uint8_t *data, size_t size);
-
-  void Send(const flatbuffers::DetachedBuffer &buffer) const;
-
-  // PeerConnectionObserver implementation
-  void OnSignalingChange(
-      webrtc::PeerConnectionInterface::SignalingState) override {}
-  void OnAddStream(rtc::scoped_refptr<webrtc::MediaStreamInterface>) override {}
-  void OnRemoveStream(
-      rtc::scoped_refptr<webrtc::MediaStreamInterface>) override {}
-  void OnDataChannel(
-      rtc::scoped_refptr<webrtc::DataChannelInterface> channel) override;
-  void OnRenegotiationNeeded() override {}
-  void OnIceConnectionChange(
-      webrtc::PeerConnectionInterface::IceConnectionState) override {}
-  void OnIceGatheringChange(
-      webrtc::PeerConnectionInterface::IceGatheringState) override {}
-  void OnIceCandidate(const webrtc::IceCandidateInterface *candidate) override;
-  void OnIceCandidateError(const std::string &host_candidate,
-                           const std::string &url, int error_code,
-                           const std::string &error_text) override {
-    LOG(ERROR) << "ICE Candidate Error on " << host_candidate << " for " << url
-               << " with error " << error_code << ": " << error_text;
-  }
-  void OnIceConnectionReceivingChange(bool) override {}
-
-  // CreateSessionDescriptionObserver implementation
-  void OnSuccess(webrtc::SessionDescriptionInterface *desc) override;
-  void OnFailure(webrtc::RTCError /*error*/) override {}
-  // CreateSessionDescriptionObserver is a refcounted object
-  void AddRef() const override {}
-  // We handle ownership with a unique_ptr so don't worry about actually
-  // refcounting. We will delete when we are done.
-  rtc::RefCountReleaseStatus Release() const override {
-    return rtc::RefCountReleaseStatus::kOtherRefsRemained;
-  }
-
-  // DataChannelObserver implementation
-  void OnStateChange() override;
-  void OnMessage(const webrtc::DataBuffer &buffer) override;
-  void OnBufferedAmountChange(uint64_t /*sent_data_size*/) override {}
+  // Handles a SDP sent through the negotiation channel.
+  void OnSdp(const char *sdp);
+  // Handles a ICE candidate sent through the negotiation channel.
+  void OnIce(const WebSocketIce *ice);
 
  private:
-  ::seasocks::WebSocket *sock_;
-  ::seasocks::Server *server_;
-  // The signaling thread is the thread on which most/all of the work we do with
-  // WebRTC will happen--it is both where the handlers we register should be
-  // called and where we should be calling Send() from.
-  rtc::Thread *signaling_thread_;
-  const std::vector<std::unique_ptr<Subscriber>> &subscribers_;
-  const std::vector<FlatbufferDetachedBuffer<MessageHeader>> config_headers_;
-  std::map<int, rtc::scoped_refptr<webrtc::DataChannelInterface>> channels_;
+  void LocalCandidate(
+      struct rawrtc_peer_connection_ice_candidate *const candidate,
+      char const *const url);
 
-  rtc::scoped_refptr<webrtc::PeerConnectionInterface> peer_connection_;
-  rtc::scoped_refptr<webrtc::DataChannelInterface> data_channel_;
+  // Handles a signaling channel being made.
+  void OnDataChannel(std::shared_ptr<ScopedDataChannel> channel);
+
+  // Handles data coming in on the signaling channel requesting subscription.
+  void HandleSignallingData(
+      struct mbuf *const
+          buffer,  // nullable (in case partial delivery has been requested)
+      const enum rawrtc_data_channel_message_flag /*flags*/);
+
+  RawRTCConnection connection_;
+
+  ::seasocks::Server *server_;
+  ::seasocks::WebSocket *sock_;
+
+  struct ChannelState {
+    std::shared_ptr<ScopedDataChannel> data_channel;
+    bool requested = true;
+  };
+
+  std::map<int, ChannelState> channels_;
+  const std::vector<std::unique_ptr<Subscriber>> &subscribers_;
+
+  const std::vector<FlatbufferDetachedBuffer<MessageHeader>> config_headers_;
 
   const EventLoop *const event_loop_;
+
+  std::shared_ptr<ScopedDataChannel> channel_;
 };
 
 }  // namespace web_proxy

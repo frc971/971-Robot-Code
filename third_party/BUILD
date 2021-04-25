@@ -91,18 +91,6 @@ cc_library(
 )
 
 cc_library(
-    name = "webrtc",
-    target_compatible_with = ["@platforms//os:linux"],
-    visibility = ["//visibility:public"],
-    deps = cpu_select({
-        "amd64": ["@webrtc_x64//:webrtc"],
-        "armhf": ["@webrtc_arm//:webrtc"],
-        "cortex-m": ["@webrtc_arm//:webrtc"],
-        "roborio": ["@webrtc_rio//:webrtc"],
-    }),
-)
-
-cc_library(
     name = "lzma",
     visibility = ["//visibility:public"],
     deps = select({

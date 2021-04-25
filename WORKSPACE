@@ -657,27 +657,6 @@ http_archive(
 )
 
 http_archive(
-    name = "webrtc_x64",
-    build_file = "@//debian:webrtc.BUILD",
-    sha256 = "bd212b2a112a043d08d27f49027091788fa01c7c2ac5f072d096c17d9dbd976f",
-    url = "https://www.frc971.org/Build-Dependencies/webrtc-30326-1a68679-linux-x64.tar.gz",
-)
-
-http_archive(
-    name = "webrtc_arm",
-    build_file = "@//debian:webrtc.BUILD",
-    sha256 = "c34badaf313877cd03a0dfd6b71de024d806a7652550a7f1cd7dea523a7c813d",
-    url = "https://www.frc971.org/Build-Dependencies/webrtc-30326-1a68679-linux-arm.tar.gz",
-)
-
-http_archive(
-    name = "webrtc_rio",
-    build_file = "@//debian:webrtc.BUILD",
-    sha256 = "d86d3b030099b35ae5ea31c807fb4d0b0352598e79f1ea84877e5504e185faa8",
-    url = "https://www.frc971.org/Build-Dependencies/webrtc-30376-4c4735b-linux-rio.tar.gz",
-)
-
-http_archive(
     name = "build_bazel_rules_nodejs",
     sha256 = "0d9660cf0894f1fe1e9840818553e0080fbce0851169812d77a70bdb9981c946",
     urls = ["https://www.frc971.org/Build-Dependencies/rules_nodejs-0.37.0.tar.gz"],
