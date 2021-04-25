@@ -14,6 +14,10 @@ flatbuffers::Offset<MessageHeader> PackMessage(
     flatbuffers::FlatBufferBuilder *fbb, const Context &context,
     int channel_index, int packet_index);
 
+// Returns the size that the overall packed message packed by PackMessage will
+// be for the provided packet index.
+size_t PackedMessageSize(const Context &context, int packet_index);
+
 // Packs the provided raw data into a series of MessageHeader's of the
 // appropriate length.
 std::vector<FlatbufferDetachedBuffer<MessageHeader>> PackBuffer(

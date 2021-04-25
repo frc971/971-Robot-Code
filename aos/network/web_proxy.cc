@@ -199,17 +199,25 @@ void Subscriber::RunIteration() {
             << "packets";
     for (int packet_index = 0;
          packet_index < GetPacketCount(fetcher_->context()); ++packet_index) {
-      flatbuffers::FlatBufferBuilder fbb;
-      flatbuffers::Offset<MessageHeader> message_offset =
-          PackMessage(&fbb, fetcher_->context(), channel_index_, packet_index);
-      fbb.Finish(message_offset);
+      // Pack directly into the mbuffer.  This is admittedly a bit painful.
+      const size_t packet_size =
+          PackedMessageSize(fetcher_->context(), packet_index);
+      struct mbuf *mbuffer = mbuf_alloc(packet_size);
 
-      const flatbuffers::DetachedBuffer buffer = fbb.Release();
+      {
+        // Wrap a pre-allocated builder around the mbuffer.
+        PreallocatedAllocator allocator(mbuf_buf(mbuffer), packet_size);
+        flatbuffers::FlatBufferBuilder fbb(packet_size, &allocator);
+        flatbuffers::Offset<MessageHeader> message_offset = PackMessage(
+            &fbb, fetcher_->context(), channel_index_, packet_index);
+        fbb.Finish(message_offset);
 
-
-      struct mbuf *mbuffer = mbuf_alloc(buffer.size());
-      mbuf_write_mem(mbuffer, buffer.data(), buffer.size());
-      mbuf_set_pos(mbuffer, 0);
+        // Now, the flatbuffer is built from the back to the front.  So any
+        // extra memory will be at the front.  Setup the end and start pointers
+        // on the mbuf.
+        mbuf_set_end(mbuffer, packet_size);
+        mbuf_set_pos(mbuffer, packet_size - fbb.GetSize());
+      }
 
       message.data.emplace_back(
           std::shared_ptr<struct mbuf>(mbuffer, mem_deref));

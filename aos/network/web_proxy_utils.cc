@@ -9,6 +9,10 @@ namespace {
 // the middle which seems to work.
 constexpr size_t kPacketSize = 125000;
 
+// Max header size we have seen is 72 bytes, followed by 48 bytes of scratch
+// space.
+constexpr size_t kMaxHeaderSize = 72 + 48;
+
 int GetPacketCountFromSize(const int packet_size) {
   return packet_size / kPacketSize + 1;
 }
@@ -33,6 +37,19 @@ flatbuffers::Offset<flatbuffers::Vector<uint8_t>> FillOutPacketVector(
 
 int GetPacketCount(const Context &context) {
   return GetPacketCountFromSize(context.size);
+}
+
+size_t PackedMessageSize(const Context &context, int packet_index) {
+  // Make sure the final size is aligned because flatbuffers will align it up
+  // otherwise.
+  constexpr size_t kAlignment = 8;
+  if (kPacketSize * (packet_index + 1) < context.size) {
+    return (kPacketSize + kMaxHeaderSize + kAlignment - 1) & ~(kAlignment - 1);
+  } else {
+    const int prefix_size = kPacketSize * packet_index;
+    return (context.size - prefix_size + kMaxHeaderSize + kAlignment - 1) &
+           ~(kAlignment - 1);
+  }
 }
 
 flatbuffers::Offset<MessageHeader> PackMessage(
