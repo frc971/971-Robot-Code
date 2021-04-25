@@ -119,6 +119,11 @@ bool EPoll::Poll(bool block) {
         << ": No handler registered for output events on " << event_data->fd;
     event_data->out_fn();
   }
+  if (event.events & kErrorEvents) {
+    CHECK(event_data->err_fn)
+        << ": No handler registered for error events on " << event_data->fd;
+    event_data->err_fn();
+  }
   return true;
 }
 
@@ -134,6 +139,18 @@ void EPoll::OnReadable(int fd, ::std::function<void()> function) {
   }
   event_data->in_fn = ::std::move(function);
   DoEpollCtl(event_data, event_data->events | kInEvents);
+}
+
+void EPoll::OnError(int fd, ::std::function<void()> function) {
+  EventData *event_data = GetEventData(fd);
+  if (event_data == nullptr) {
+    fns_.emplace_back(std::make_unique<EventData>(fd));
+    event_data = fns_.back().get();
+  } else {
+    CHECK(!event_data->err_fn) << ": Duplicate in functions for " << fd;
+  }
+  event_data->err_fn = ::std::move(function);
+  DoEpollCtl(event_data, event_data->events | kErrorEvents);
 }
 
 void EPoll::OnWriteable(int fd, ::std::function<void()> function) {

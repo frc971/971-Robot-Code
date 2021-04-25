@@ -75,6 +75,10 @@ class EPoll {
   // Only one function may be registered for readability on each fd.
   void OnReadable(int fd, ::std::function<void()> function);
 
+  // Registers a function to be called if the fd reports an error.
+  // Only one function may be registered for errors on each fd.
+  void OnError(int fd, ::std::function<void()> function);
+
   // Registers a function to be called if the fd becomes writeable.
   // Only one function may be registered for writability on each fd.
   void OnWriteable(int fd, ::std::function<void()> function);
@@ -108,7 +112,7 @@ class EPoll {
 
     const int fd;
     uint32_t events = 0;
-    ::std::function<void()> in_fn, out_fn;
+    std::function<void()> in_fn, out_fn, err_fn;
   };
 
   void EnableEvents(int fd, uint32_t events);
@@ -122,6 +126,7 @@ class EPoll {
   // with input.
   static constexpr uint32_t kInEvents = EPOLLIN | EPOLLPRI;
   static constexpr uint32_t kOutEvents = EPOLLOUT;
+  static constexpr uint32_t kErrorEvents = EPOLLERR;
 
   ::std::atomic<bool> run_{true};
 
