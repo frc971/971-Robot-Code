@@ -11,26 +11,6 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
-cc_binary(
-    name = "starter_exe",
-    srcs = [
-        "starter.cc",
-    ],
-    target_compatible_with = ["@platforms//os:linux"],
-    deps = [
-        "//aos:init",
-        "//aos:unique_malloc_ptr",
-        "//aos/libc:aos_strsignal",
-        "//aos/logging",
-        "//aos/logging:implementations",
-        "//aos/time",
-        "//aos/util:run_command",
-        "//third_party/libevent",
-        "@com_github_google_glog//:glog",
-        "@com_google_absl//absl/base",
-    ],
-)
-
 cc_library(
     name = "starterd_lib",
     srcs = ["starterd_lib.cc"],
