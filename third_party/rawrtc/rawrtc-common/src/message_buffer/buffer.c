@@ -79,12 +79,13 @@ enum rawrtc_code rawrtc_message_buffer_clear(
 
         // Handle message
         unlink = message_handler(buffered_message->buffer, buffered_message->context, arg);
+        struct le* next = le->next;
         if (unlink) {
             list_unlink(le);
         }
 
         // Get next message
-        le = le->next;
+        le = next;
 
         // Remove message
         if (unlink) {
