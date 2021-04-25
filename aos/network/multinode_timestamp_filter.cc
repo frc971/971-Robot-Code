@@ -10,7 +10,6 @@
 #include "aos/network/timestamp_filter.h"
 #include "aos/time/time.h"
 #include "glog/logging.h"
-#include "nlopt.h"
 
 DEFINE_bool(timestamps_to_csv, false,
             "If true, write all the time synchronization information to a set "
@@ -43,101 +42,6 @@ TimestampProblem::TimestampProblem(size_t count) {
 // TODO(austin): Add a rate of change constraint from the last sample.  1
 // ms/s.  Figure out how to define it.  Do this last.  This lets us handle
 // constraints going away, and constraints close in time.
-//
-// TODO(austin): When the new newton's method solver prooves it's worth, kill
-// the old SLSQP solver.  It will be unreachable for a little bit.
-
-std::vector<double> TimestampProblem::SolveDouble() {
-  MaybeUpdateNodeMapping();
-  // TODO(austin): Add constraints for relevant segments.
-  const size_t n = filters_.size() - 1u;
-  //  NLOPT_LD_MMA and NLOPT_LD_LBFGS are alternative solvers, but SLSQP is a
-  //  better fit for the quadratic nature of this problem.
-  nlopt_opt opt = nlopt_create(NLOPT_LD_SLSQP, n);
-  nlopt_set_min_objective(opt, TimestampProblem::DoCost, this);
-
-  // Ask for really good.  This is very quadratic, so it should be pretty
-  // precise.
-  nlopt_set_xtol_rel(opt, 1e-9);
-
-  cost_call_count_ = 0;
-
-  std::vector<double> result(n, 0.0);
-  double minf = 0.0;
-  nlopt_result status = nlopt_optimize(opt, result.data(), &minf);
-  if (status < 0) {
-    if (status == NLOPT_ROUNDOFF_LIMITED) {
-      constexpr double kTolerance = 1e-9;
-      std::vector<double> gradient(n, 0.0);
-      Cost(result.data(), gradient.data());
-      for (double g : gradient) {
-        if (std::abs(g) > kTolerance) {
-          // If we failed, update base_clock_ to the current time so it gets
-          // printed inside Debug and explode with a CHECK saying the same
-          // thing.
-          std::vector<monotonic_clock::time_point> new_base =
-              DoubleToMonotonic(result.data());
-          // Put the result into base_clock_ so Debug prints out something
-          // useful.
-          base_clock_ = std::move(new_base);
-          Debug();
-          CHECK_LE(std::abs(g), kTolerance)
-              << ": Optimization problem failed with a large gradient.  "
-              << nlopt_result_to_string(status);
-        }
-      }
-    } else {
-      LOG(FATAL) << "Failed to solve optimization problem "
-                 << nlopt_result_to_string(status);
-    }
-  }
-
-  if (VLOG_IS_ON(1)) {
-    PrintSolution(result);
-  }
-  nlopt_destroy(opt);
-  return result;
-}
-
-void TimestampProblem::PrintSolution(const std::vector<double> &solution) {
-  const size_t n = filters_.size() - 1u;
-  std::vector<double> gradient(n, 0.0);
-  const double minf = Cost(solution.data(), gradient.data());
-
-  // High precision formatter for the gradient.
-  struct MyFormatter {
-    void operator()(std::string *out, double i) const {
-      std::stringstream ss;
-      ss << std::setprecision(12) << std::fixed << i;
-      out->append(ss.str());
-    }
-  };
-
-  LOG(INFO) << std::setprecision(12) << std::fixed << "Found minimum at f("
-            << absl::StrJoin(solution, ", ") << ") -> " << minf << " grad ["
-            << absl::StrJoin(gradient, ", ", MyFormatter()) << "] after "
-            << cost_call_count_ << " cycles for node " << solution_node_ << ".";
-}
-
-std::vector<monotonic_clock::time_point> TimestampProblem::DoubleToMonotonic(
-    const double *r) const {
-  std::vector<monotonic_clock::time_point> result(filters_.size());
-  for (size_t i = 0; i < result.size(); ++i) {
-    if (live(i)) {
-      result[i] = base_clock(i) + std::chrono::nanoseconds(static_cast<int64_t>(
-                                      std::round(get_t(r, i))));
-    } else {
-      result[i] = monotonic_clock::min_time;
-    }
-  }
-
-  return result;
-}
-
-std::vector<monotonic_clock::time_point> TimestampProblem::Solve() {
-  std::vector<double> solution = SolveDouble();
-  return DoubleToMonotonic(solution.data());
-}
 
 bool TimestampProblem::ValidateSolution(
     std::vector<monotonic_clock::time_point> solution) {
@@ -384,99 +288,26 @@ std::vector<monotonic_clock::time_point> TimestampProblem::SolveNewton() {
   return result;
 }
 
-double TimestampProblem::Cost(const double *time_offsets, double *grad) {
-  ++cost_call_count_;
-
-  if (grad != nullptr) {
-    for (size_t i = 0; i < filters_.size() - 1u; ++i) {
-      grad[i] = 0;
-    }
-
-    for (size_t i = 0u; i < filters_.size(); ++i) {
-      for (const struct FilterPair &filter : filters_[i]) {
-        if (i != solution_node_) {
-          grad[NodeToSolutionIndex(i)] += filter.filter->DCostDta(
-              base_clock_[i], get_t(time_offsets, i),
-              base_clock_[filter.b_index], get_t(time_offsets, filter.b_index));
-        }
-        if (filter.b_index != solution_node_) {
-          grad[NodeToSolutionIndex(filter.b_index)] += filter.filter->DCostDtb(
-              base_clock_[i], get_t(time_offsets, i),
-              base_clock_[filter.b_index], get_t(time_offsets, filter.b_index));
-        }
-      }
-    }
-  }
-
-  double cost = 0;
-  for (size_t i = 0u; i < filters_.size(); ++i) {
-    for (const struct FilterPair &filter : filters_[i]) {
-      cost += filter.filter->Cost(base_clock_[i], get_t(time_offsets, i),
-                                  base_clock_[filter.b_index],
-                                  get_t(time_offsets, filter.b_index));
-    }
-  }
-
-  if (VLOG_IS_ON(2)) {
-    struct MyFormatter {
-      void operator()(std::string *out, monotonic_clock::time_point t) const {
-        std::stringstream ss;
-        ss << t;
-        out->append(ss.str());
-      }
-      void operator()(std::string *out, double i) const {
-        std::stringstream ss;
-        ss << std::setprecision(12) << std::fixed << i;
-        out->append(ss.str());
-      }
-    };
-
-    std::string gradient;
-    if (grad) {
-      std::stringstream ss;
-      ss << " grad ["
-         << absl::StrJoin(absl::Span<const double>(grad, LiveNodesCount() - 1u),
-                          ", ", MyFormatter())
-         << "]";
-      gradient = ss.str();
-    }
-
-    LOG(INFO) << std::setprecision(12) << std::fixed
-              << "Evaluated minimum at f("
-              << absl::StrJoin(DoubleToMonotonic(time_offsets), ", ",
-                               MyFormatter())
-              << ") -> " << cost << gradient << " after " << cost_call_count_
-              << " cycles.";
-  }
-  return cost;
-}
-
 void TimestampProblem::Debug() {
   MaybeUpdateNodeMapping();
   LOG(INFO) << "Solving for node " << solution_node_ << " at "
             << base_clock_[solution_node_];
 
-  std::vector<std::string> cost;
-  for (size_t i = 0u; i < filters_.size(); ++i) {
-    for (const struct FilterPair &filter : filters_[i]) {
-      cost.emplace_back(filter.filter->DebugCost(base_clock_[i], 0.0,
-                                                 base_clock_[filter.b_index],
-                                                 0.0, i, filter.b_index));
-    }
-  }
-  LOG(INFO) << "Cost: " << absl::StrJoin(cost, " + ");
-
   std::vector<std::vector<std::string>> gradients(filters_.size());
   for (size_t i = 0u; i < filters_.size(); ++i) {
-    std::string gradient = "0.0";
     for (const struct FilterPair &filter : filters_[i]) {
-      if (i != solution_node_ && live(i)) {
-        gradients[i].emplace_back(filter.filter->DebugDCostDta(
-            base_clock_[i], 0.0, base_clock_[filter.b_index], 0.0, i,
-            filter.b_index));
-      }
-      if (filter.b_index != solution_node_ && live(filter.b_index)) {
-        gradients[filter.b_index].emplace_back(filter.filter->DebugDCostDtb(
+      if (live(i) && live(filter.b_index)) {
+        // TODO(austin): This should be right, but I haven't gone and spent a
+        // bunch of time making sure it all matches perfectly.  We aren't
+        // hitting this anymore.  I'm also likely the one who will be debugging
+        // it next and would rather spend the time debugging it when I get a bug
+        // report.
+        gradients[i].emplace_back(
+            std::string("- ") +
+            filter.filter->DebugOffsetError(base_clock_[i], 0.0,
+                                            base_clock_[filter.b_index], 0.0, i,
+                                            filter.b_index));
+        gradients[filter.b_index].emplace_back(filter.filter->DebugOffsetError(
             base_clock_[i], 0.0, base_clock_[filter.b_index], 0.0, i,
             filter.b_index));
       }

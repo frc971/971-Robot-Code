@@ -502,7 +502,6 @@ cc_library(
         "//aos/events:simulated_event_loop",
         "//aos/events/logging:logfile_utils",
         "//aos/time",
-        "@com_github_stevengj_nlopt//:nlopt",
         "@org_tuxfamily_eigen//:eigen",
     ],
 )
@@ -543,7 +542,5 @@ cc_test(
         ":testing_time_converter",
         ":timestamp_filter",
         "//aos/testing:googletest",
-        "//third_party/gmp",
-        "@com_github_stevengj_nlopt//:nlopt",
     ],
 )

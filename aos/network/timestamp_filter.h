@@ -261,29 +261,11 @@ class NoncausalTimestampFilter {
   // offset at ta.
   double OffsetError(aos::monotonic_clock::time_point ta_base, double ta,
                      aos::monotonic_clock::time_point tb_base, double tb) const;
-
-  // Returns the cost (OffsetError^2), ie (ob - oa - offset(oa, ob))^2,
-  // calculated accurately.
-  // Since this is designed to be used with a gradient based solver, it isn't
-  // super important if Cost is precise.
-  double Cost(aos::monotonic_clock::time_point ta_base, double ta,
-              aos::monotonic_clock::time_point tb_base, double tb) const;
-  std::string DebugCost(aos::monotonic_clock::time_point ta_base, double ta,
-                        aos::monotonic_clock::time_point tb_base, double tb,
-                        size_t node_a, size_t node_b) const;
-
-  // Returns the partial derivitive dcost/dta
-  double DCostDta(aos::monotonic_clock::time_point ta_base, double ta,
-                  aos::monotonic_clock::time_point tb_base, double tb) const;
-  std::string DebugDCostDta(aos::monotonic_clock::time_point ta_base, double ta,
-                            aos::monotonic_clock::time_point tb_base, double tb,
-                            size_t node_a, size_t node_b) const;
-  // Returns the partial derivitive dcost/dtb
-  double DCostDtb(aos::monotonic_clock::time_point ta_base, double ta,
-                  aos::monotonic_clock::time_point tb_base, double tb) const;
-  std::string DebugDCostDtb(aos::monotonic_clock::time_point ta_base, double ta,
-                            aos::monotonic_clock::time_point tb_base, double tb,
-                            size_t node_a, size_t node_b) const;
+  // Returns the string representation of 2 * OffsetError(ta, tb)
+  std::string DebugOffsetError(aos::monotonic_clock::time_point ta_base,
+                               double ta,
+                               aos::monotonic_clock::time_point tb_base,
+                               double tb, size_t node_a, size_t node_b) const;
 
   // Confirms that the solution meets the constraints.  Returns true on success.
   bool ValidateSolution(aos::monotonic_clock::time_point ta,

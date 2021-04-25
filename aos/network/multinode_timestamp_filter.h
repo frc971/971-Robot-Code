@@ -57,39 +57,9 @@ class TimestampProblem {
     filters_[a_index].emplace_back(filter, b_index);
   }
 
-  // Solves the optimization problem phrased and returns the offsets from the
-  // base clock for each node, excluding the solution node.
-  std::vector<double> SolveDouble();
-  // Solves the optimization problem phrased and returns the optimal time on
-  // each node.
-  std::vector<monotonic_clock::time_point> Solve();
-
   // Solves the optimization problem phrased using the symmetric Netwon's method
   // solver and returns the optimal time on each node.
   std::vector<monotonic_clock::time_point> SolveNewton();
-
-  // Returns the squared error for all of the offsets.
-  // time_offsets is the offsets from the base_clock for every node (in order)
-  // except the solution node.  It should be one element shorter than the number
-  // of nodes this problem was constructed with. grad (if non-nullptr) is the
-  // place to put the current gradient and needs to be the same length as
-  // time_offsets.
-  double Cost(const double *time_offsets, double *grad);
-
-  // Returns the time offset from base for a node.
-  double get_t(const double *time_offsets, size_t node_index) const {
-    if (node_index == solution_node_) return 0.0;
-    size_t mapped_index = NodeToSolutionIndex(node_index);
-    if (mapped_index == std::numeric_limits<size_t>::max()) {
-      return 0.0;
-    }
-    return time_offsets[mapped_index];
-  }
-
-  // Converts a list of solutions to the corresponding monotonic times for all
-  // nodes, not just the nodes being solved.
-  std::vector<monotonic_clock::time_point> DoubleToMonotonic(
-      const double *r) const;
 
   // Validates the solution, returning true if it meets all the constraints, and
   // false otherwise.
@@ -115,21 +85,7 @@ class TimestampProblem {
     return count;
   }
 
-  // LOG(INFO)'s the provided solution, showing the arguments, the minimum
-  // value, and the gradient.
-  void PrintSolution(const std::vector<double> &solution);
-
  private:
-  // Static trampoline for nlopt.  n is the number of constraints, time_offsets
-  // is input solution to solve for, grad is the gradient to fill out (if not
-  // nullptr), and data is an untyped pointer to a TimestampProblem.
-  static double DoCost(unsigned n, const double *time_offsets, double *grad,
-                       void *data) {
-    CHECK_EQ(n + 1u,
-             reinterpret_cast<TimestampProblem *>(data)->filters_.size());
-    return reinterpret_cast<TimestampProblem *>(data)->Cost(time_offsets, grad);
-  }
-
   // Returns the Hessian of the cost function at time_offsets.
   Eigen::MatrixXd Hessian(const Eigen::Ref<Eigen::VectorXd> time_offsets) const;
   // Returns the gradient of the cost function at time_offsets.
@@ -158,26 +114,12 @@ class TimestampProblem {
     node_mapping_valid_ = true;
   }
 
-  // Converts from a node index to an index in the solution.
-  size_t NodeToSolutionIndex(size_t node_index) const {
-    CHECK_NE(node_index, solution_node_);
-    // The solver is going to provide us a matrix with solution_node_ removed.
-    // The indices of all nodes before solution_node_ are in the same spot, and
-    // the indices of the nodes after solution node are shifted over.
-    size_t mapped_node_index = NodeToFullSolutionIndex(node_index);
-    return node_index < solution_node_ ? mapped_node_index
-                                       : (mapped_node_index - 1);
-  }
-
   // Converts from a node index to an index in the solution without skipping the
   // solution node.
   size_t NodeToFullSolutionIndex(size_t node_index) const {
     CHECK(node_mapping_valid_);
     return node_mapping_[node_index];
   }
-
-  // Number of times Cost has been called for tracking.
-  int cost_call_count_ = 0;
 
   // The node to hold fixed when solving.
   size_t solution_node_ = 0;
