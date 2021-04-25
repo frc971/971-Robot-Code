@@ -16,12 +16,20 @@ class Pipe {
  public:
   Pipe() { PCHECK(pipe2(fds_, O_NONBLOCK) == 0); }
   ~Pipe() {
-    PCHECK(close(fds_[0]) == 0);
-    PCHECK(close(fds_[1]) == 0);
+    if (fds_[0] >= 0) {
+      PCHECK(close(fds_[0]) == 0);
+    }
+    if (fds_[1] >= 0) {
+      PCHECK(close(fds_[1]) == 0);
+    }
   }
 
   int read_fd() { return fds_[0]; }
   int write_fd() { return fds_[1]; }
+  void close_read_fd() {
+    PCHECK(close(fds_[0]) == 0);
+    fds_[0] = -1;
+  }
 
   void Write(const std::string &data) {
     CHECK_EQ(write(write_fd(), data.data(), data.size()),
@@ -111,6 +119,32 @@ TEST_F(EPollTest, BasicWriteable) {
   number_writes = 0;
   RunFor(tick_duration());
   EXPECT_EQ(number_writes, bytes_in_pipe);
+
+  epoll_.DeleteFd(pipe.write_fd());
+}
+
+// Test that the basics of OnError work.
+TEST_F(EPollTest, BasicError) {
+  // In order to trigger an error, close the read file descriptor (per the
+  // epoll_ctl manpage, this should trigger an error).
+  Pipe pipe;
+  int number_errors = 0;
+  epoll_.OnError(pipe.write_fd(), [&]() {
+    ++number_errors;
+  });
+
+  // Sanity check that we *don't* get any errors before anything interesting has
+  // happened.
+  RunFor(tick_duration());
+  EXPECT_EQ(number_errors, 0);
+
+  pipe.close_read_fd();
+
+  // For some reason, OnError doesn't seem to play nice with the timer setup we
+  // have in this test, so just poll for a single event.
+  epoll_.Poll(false);
+
+  EXPECT_EQ(number_errors, 1);
 
   epoll_.DeleteFd(pipe.write_fd());
 }
