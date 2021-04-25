@@ -27,10 +27,10 @@ enum rawrtc_code rawrtc_peer_connection_configuration_create(
  */
 enum rawrtc_code rawrtc_peer_connection_configuration_add_ice_server(
     struct rawrtc_peer_connection_configuration* const configuration,
-    char* const* const urls,  // copied
+    const char* const* const urls,  // copied
     size_t const n_urls,
-    char* const username,  // nullable, copied
-    char* const credential,  // nullable, copied
+    const char* const username,  // nullable, copied
+    const char* const credential,  // nullable, copied
     enum rawrtc_ice_credential_type const credential_type);
 
 /*

@@ -35,10 +35,10 @@ struct rawrtc_ice_server_url {
 
 enum rawrtc_code rawrtc_ice_server_create(
     struct rawrtc_ice_server** const serverp,  // de-referenced
-    char* const* const urls,  // copied
+    const char* const* const urls,  // copied
     size_t const n_urls,
-    char* const username,  // nullable, copied
-    char* const credential,  // nullable, copied
+    const char* const username,  // nullable, copied
+    const char* const credential,  // nullable, copied
     enum rawrtc_ice_credential_type const credential_type);
 
 enum rawrtc_code rawrtc_ice_server_copy(

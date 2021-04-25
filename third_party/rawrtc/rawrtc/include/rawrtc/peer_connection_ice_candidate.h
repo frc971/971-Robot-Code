@@ -20,8 +20,8 @@ struct rawrtc_peer_connection_ice_candidate;
  */
 enum rawrtc_code rawrtc_peer_connection_ice_candidate_create(
     struct rawrtc_peer_connection_ice_candidate** const candidatep,  // de-referenced
-    char* const sdp,
-    char* const mid,  // nullable, copied
+    const char* const sdp,
+    const char* const mid,  // nullable, copied
     uint8_t const* const media_line_index,  // nullable, copied
     char* const username_fragment  // nullable, copied
 );
