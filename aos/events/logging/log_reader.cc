@@ -653,7 +653,10 @@ void LogReader::Register(EventLoop *event_loop) {
         // data on that channel.  Not all channels will end at the same point in
         // time since they can be in different files.
         VLOG(1) << "Found the last message on channel "
-                << timestamped_message.channel_index;
+                << timestamped_message.channel_index << ", "
+                << configuration::CleanedChannelToString(
+                       logged_configuration()->channels()->Get(
+                           timestamped_message.channel_index));
 
         // The user might be working with log files from 1 node but forgot to
         // configure the infrastructure to log data for a remote channel on that
