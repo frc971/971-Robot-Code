@@ -19,8 +19,8 @@ filegroup(
 filegroup(
     name = "spline_jsons",
     srcs = glob([
-        "splines/*.json"
-        ]),
+        "splines/*.json",
+    ]),
     visibility = ["//visibility:public"],
 )
 
@@ -56,11 +56,11 @@ cc_library(
         "//frc971/control_loops:profiled_subsystem_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_config",
         "//frc971/control_loops/drivetrain:localizer_fbs",
+        "//frc971/control_loops/drivetrain:spline",
         "//y2020/control_loops/drivetrain:drivetrain_base",
         "//y2020/control_loops/superstructure:superstructure_goal_fbs",
         "//y2020/control_loops/superstructure:superstructure_status_fbs",
         "//y2020/vision:galactic_search_path_fbs",
-        "//frc971/control_loops/drivetrain:spline",
     ],
 )
 

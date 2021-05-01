@@ -146,6 +146,14 @@ cc_binary(
 aos_config(
     name = "config",
     src = "y2020.json",
+    flatbuffers = [
+        "//aos/network:message_bridge_client_fbs",
+        "//aos/network:message_bridge_server_fbs",
+        "//aos/network:timestamp_fbs",
+        "//y2020/vision/sift:sift_fbs",
+        "//y2020/vision/sift:sift_training_fbs",
+        "//y2020/vision:vision_fbs",
+    ],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
@@ -157,14 +165,6 @@ aos_config(
         ":config_pi5",
         ":config_roborio",
     ],
-    flatbuffers = [
-        "//aos/network:message_bridge_client_fbs",
-        "//aos/network:message_bridge_server_fbs",
-        "//aos/network:timestamp_fbs",
-        "//y2020/vision/sift:sift_fbs",
-        "//y2020/vision/sift:sift_training_fbs",
-        "//y2020/vision:vision_fbs",
-    ]
 )
 
 [
@@ -179,7 +179,7 @@ aos_config(
             "//y2020/vision/sift:sift_training_fbs",
             "//y2020/vision:vision_fbs",
             "//aos/network:remote_message_fbs",
-            "//y2020/vision:galactic_search_path_fbs"
+            "//y2020/vision:galactic_search_path_fbs",
         ],
         target_compatible_with = ["@platforms//os:linux"],
         visibility = ["//visibility:public"],
