@@ -29,8 +29,13 @@ typedef void (fd_h)(int flags, void *arg);
  *
  * @param sig Signal number
  */
+typedef int(re_fd_listen_h)(int fd, int flags, fd_h *fh, void *arg);
+typedef void(re_fd_close_h)(int fd);
+
 typedef void (re_signal_h)(int sig);
 
+void re_fd_set_listen_callback(re_fd_listen_h *listenh);
+void re_fd_set_close_callback(re_fd_close_h *closeh);
 
 int   fd_listen(int fd, int flags, fd_h *fh, void *arg);
 void  fd_close(int fd);

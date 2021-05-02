@@ -412,8 +412,14 @@ cc_library(
 
 cc_library(
     name = "web_proxy",
-    srcs = ["web_proxy.cc"],
-    hdrs = ["web_proxy.h"],
+    srcs = [
+        "rawrtc.cc",
+        "web_proxy.cc",
+    ],
+    hdrs = [
+        "rawrtc.h",
+        "web_proxy.h",
+    ],
     copts = [
         "-DWEBRTC_POSIX",
     ],
@@ -426,9 +432,9 @@ cc_library(
         "//aos/events:shm_event_loop",
         "//aos/mutex",
         "//aos/seasocks:seasocks_logger",
-        "//third_party:webrtc",
         "//third_party/seasocks",
         "@com_github_google_glog//:glog",
+        "@com_github_rawrtc_rawrtc//:rawrtc",
     ],
 )
 

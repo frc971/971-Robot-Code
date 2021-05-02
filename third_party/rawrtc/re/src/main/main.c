@@ -222,6 +222,25 @@ static struct re *re_get(void)
 #endif
 
 
+static re_fd_listen_h *global_fd_listen_h = NULL;
+static re_fd_close_h *global_fd_close_h = NULL;
+
+void re_fd_set_listen_callback(re_fd_listen_h *listenh) {
+  struct re *re = re_get();
+
+  re_lock(re);
+  global_fd_listen_h = listenh;
+  re_unlock(re);
+}
+void re_fd_set_close_callback(re_fd_close_h *closeh) {
+  struct re *re = re_get();
+
+  re_lock(re);
+  global_fd_close_h = closeh;
+  re_unlock(re);
+}
+
+
 #if MAIN_DEBUG
 /**
  * Call the application event handler
@@ -566,7 +585,11 @@ int fd_listen(int fd, int flags, fd_h *fh, void *arg)
 	struct re *re = re_get();
 	int err = 0;
 
-	DEBUG_INFO("fd_listen: fd=%d flags=0x%02x\n", fd, flags);
+        if (global_fd_listen_h != NULL) {
+          return (*global_fd_listen_h)(fd, flags, fh, arg);
+        }
+
+        DEBUG_INFO("fd_listen: fd=%d flags=0x%02x\n", fd, flags);
 
 	if (fd < 0) {
 		DEBUG_WARNING("fd_listen: corrupt fd %d\n", fd);
@@ -642,6 +665,11 @@ int fd_listen(int fd, int flags, fd_h *fh, void *arg)
  */
 void fd_close(int fd)
 {
+        if (global_fd_close_h != NULL) {
+          (*global_fd_close_h)(fd);
+          return;
+        }
+
 	(void)fd_listen(fd, 0, NULL, NULL);
 }
 

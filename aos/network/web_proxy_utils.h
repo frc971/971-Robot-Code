@@ -8,11 +8,8 @@ namespace web_proxy {
 
 int GetPacketCount(const Context &context);
 
-/*
- * Packs a message embedded in context into a MessageHeader on fbb. Handles
- * multipart messages by use of the packet_index.
- * TODO(alex): make this an iterator that returns each packet sequentially
- */
+// Packs a message embedded in context into a MessageHeader on fbb. Handles
+// multipart messages by use of the packet_index.
 flatbuffers::Offset<MessageHeader> PackMessage(
     flatbuffers::FlatBufferBuilder *fbb, const Context &context,
     int channel_index, int packet_index);
