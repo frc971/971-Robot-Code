@@ -1159,7 +1159,7 @@ TEST_P(SuperstructureAllianceTest, ShooterInterpolationInRange) {
             constants::Values::kHoodRange().lower);
 }
 
-INSTANTIATE_TEST_CASE_P(ShootAnyAlliance, SuperstructureAllianceTest,
+INSTANTIATE_TEST_SUITE_P(ShootAnyAlliance, SuperstructureAllianceTest,
                         ::testing::Values(aos::Alliance::kRed,
                                           aos::Alliance::kBlue,
                                           aos::Alliance::kInvalid));

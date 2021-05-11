@@ -868,7 +868,7 @@ TEST_P(DrivetrainBackwardsParamTest, SplineOffset) {
   VerifyNearSplineGoal();
 }
 
-INSTANTIATE_TEST_CASE_P(DriveSplinesForwardsAndBackwards,
+INSTANTIATE_TEST_SUITE_P(DriveSplinesForwardsAndBackwards,
                         DrivetrainBackwardsParamTest,
                         ::testing::Values(false, true));
 

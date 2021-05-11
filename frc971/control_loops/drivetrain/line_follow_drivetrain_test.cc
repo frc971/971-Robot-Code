@@ -300,7 +300,7 @@ TEST_P(LineFollowDrivetrainTargetParamTest, NonZeroTargetTest) {
   target_selector_.set_has_target(true);
   // Start the state at zero and then put the target in a
   state_.setZero();
-  driver_model_ = [this](const ::Eigen::Matrix<double, 5, 1> &state) {
+  driver_model_ = [](const ::Eigen::Matrix<double, 5, 1> &state) {
     return 0.2 *
            (state.topRows<2>() - GetParam().abs_pos().topRows<2>()).norm();
   };
@@ -308,7 +308,7 @@ TEST_P(LineFollowDrivetrainTargetParamTest, NonZeroTargetTest) {
   RunForTime(chrono::seconds(10));
   VerifyNearGoal();
 }
-INSTANTIATE_TEST_CASE_P(TargetPosTest, LineFollowDrivetrainTargetParamTest,
+INSTANTIATE_TEST_SUITE_P(TargetPosTest, LineFollowDrivetrainTargetParamTest,
                         ::testing::Values(Pose({0.0, 0.0, 0.0}, 0.0),
                                           Pose({1.0, 0.0, 0.0}, 0.0),
                                           Pose({3.0, 1.0, 0.0}, 0.0),
@@ -329,7 +329,7 @@ TEST_P(LineFollowDrivetrainParamTest, VaryPositionAndModel) {
   VerifyNearGoal();
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     PositionAndModelTest, LineFollowDrivetrainParamTest,
     ::testing::Combine(
         ::testing::Values(

@@ -454,7 +454,7 @@ TEST_P(ZeroingClawTest, ParameterizedZero) {
   VerifyNearGoal();
 }
 
-INSTANTIATE_TEST_CASE_P(ZeroingClawTest, ZeroingClawTest,
+INSTANTIATE_TEST_SUITE_P(ZeroingClawTest, ZeroingClawTest,
                         ::testing::Values(::std::make_pair(0.04, 0.02),
                                           ::std::make_pair(0.2, 0.1),
                                           ::std::make_pair(0.3, 0.2),

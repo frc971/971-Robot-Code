@@ -197,7 +197,7 @@ TEST_P(CameraViewParamTest, InvalidReading) {
   EXPECT_LT(5, view.noise.height);
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     InvalidMeasurements, CameraViewParamTest,
     ::testing::Values(
         // heading, distance, height, skew

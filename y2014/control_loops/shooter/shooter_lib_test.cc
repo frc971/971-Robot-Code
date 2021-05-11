@@ -788,7 +788,7 @@ TEST_P(ShooterZeroingTest, AllDisparateStartingZero) {
   ASSERT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     ShooterZeroingTestParameters, ShooterZeroingTest,
     ::testing::Combine(
         ::testing::Bool(), ::testing::Bool(), ::testing::Bool(),

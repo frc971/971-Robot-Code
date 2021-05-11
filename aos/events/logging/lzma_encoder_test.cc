@@ -7,7 +7,7 @@
 
 namespace aos::logger::testing {
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     Lzma, BufferEncoderTest,
     ::testing::Combine(::testing::Values([]() {
                          return std::make_unique<LzmaEncoder>(2);

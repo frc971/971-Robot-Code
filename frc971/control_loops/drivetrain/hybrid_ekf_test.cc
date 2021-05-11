@@ -159,7 +159,7 @@ TEST_P(HybridEkfDiffEqTest, CheckDynamics) {
   }
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     CheckMathTest, HybridEkfDiffEqTest,
     ::testing::Values(DiffEqInputs{State::Zero(), Input::Zero(), false},
                       DiffEqInputs{State::Zero(), Input::Zero(), true},
@@ -337,7 +337,7 @@ TEST_P(HybridEkfOldCorrectionsTest, CreateOldCorrection) {
 }
 
 // Ensure that we check kSaveSamples - 1, for potential corner cases.
-INSTANTIATE_TEST_CASE_P(OldCorrectionTest, HybridEkfOldCorrectionsTest,
+INSTANTIATE_TEST_SUITE_P(OldCorrectionTest, HybridEkfOldCorrectionsTest,
                         ::testing::Values(0, 1, 10,
                                           HybridEkf<>::kSaveSamples - 1));
 

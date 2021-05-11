@@ -71,10 +71,10 @@ auto CommonParameters() {
       ::testing::Values(DoTimingReports::kYes, DoTimingReports::kNo));
 }
 
-INSTANTIATE_TEST_CASE_P(SimulatedEventLoopCommonTest, AbstractEventLoopTest,
+INSTANTIATE_TEST_SUITE_P(SimulatedEventLoopCommonTest, AbstractEventLoopTest,
                         CommonParameters());
 
-INSTANTIATE_TEST_CASE_P(SimulatedEventLoopCommonDeathTest,
+INSTANTIATE_TEST_SUITE_P(SimulatedEventLoopCommonDeathTest,
                         AbstractEventLoopDeathTest, CommonParameters());
 
 // Parameters to run all the tests with.
@@ -1552,7 +1552,7 @@ TEST_P(RemoteMessageSimulatedEventLoopTest, BootUUIDTest) {
   EXPECT_GE(pi1_server_statistics_count, 1u);
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     All, RemoteMessageSimulatedEventLoopTest,
     ::testing::Values(
         Param{"multinode_pingpong_test_combined_config.json", true},

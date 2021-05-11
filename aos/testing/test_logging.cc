@@ -105,6 +105,7 @@ class MyTestEventListener : public ::testing::EmptyTestEventListener {
           failure_type = "ASSERT";
           break;
         case ::testing::TestPartResult::Type::kSuccess:
+        case ::testing::TestPartResult::Type::kSkip:
           break;
       }
       log_do(ERROR, "%s: %d: gtest %s failure\n%s\n", result.file_name(),

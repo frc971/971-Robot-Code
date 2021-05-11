@@ -483,7 +483,7 @@ TEST_P(CollisionAvoidanceTests, FixWristElevatorCollision) {
               status_.message().intake()->position(), 0.001);
 }
 
-INSTANTIATE_TEST_CASE_P(CollisionAvoidancePieceTest, CollisionAvoidanceTests,
+INSTANTIATE_TEST_SUITE_P(CollisionAvoidancePieceTest, CollisionAvoidanceTests,
                         ::testing::Bool());
 
 }  // namespace testing

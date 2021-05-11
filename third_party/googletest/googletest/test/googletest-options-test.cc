@@ -42,6 +42,9 @@
 # include <windows.h>
 #elif GTEST_OS_WINDOWS
 # include <direct.h>
+#elif GTEST_OS_OS2
+// For strcasecmp on OS/2
+#include <strings.h>
 #endif  // GTEST_OS_WINDOWS_MOBILE
 
 #include "src/gtest-internal-inl.h"
@@ -102,10 +105,15 @@ TEST(OutputFileHelpersTest, GetCurrentExecutableName) {
       _strcmpi("gtest-options-ex_test", exe_str.c_str()) == 0 ||
       _strcmpi("gtest_all_test", exe_str.c_str()) == 0 ||
       _strcmpi("gtest_dll_test", exe_str.c_str()) == 0;
+#elif GTEST_OS_OS2
+  const bool success =
+      strcasecmp("googletest-options-test", exe_str.c_str()) == 0 ||
+      strcasecmp("gtest-options-ex_test", exe_str.c_str()) == 0 ||
+      strcasecmp("gtest_all_test", exe_str.c_str()) == 0 ||
+      strcasecmp("gtest_dll_test", exe_str.c_str()) == 0;
 #elif GTEST_OS_FUCHSIA
   const bool success = exe_str == "app";
 #else
-  // FIXME: remove the hard-coded "lt-" prefix when libtool replacement is ready
   const bool success =
       exe_str == "googletest-options-test" ||
       exe_str == "gtest_all_test" ||
@@ -120,7 +128,7 @@ TEST(OutputFileHelpersTest, GetCurrentExecutableName) {
 
 class XmlOutputChangeDirTest : public Test {
  protected:
-  virtual void SetUp() {
+  void SetUp() override {
     original_working_dir_ = FilePath::GetCurrentDir();
     posix::ChDir("..");
     // This will make the test fail if run from the root directory.
@@ -128,7 +136,7 @@ class XmlOutputChangeDirTest : public Test {
               FilePath::GetCurrentDir().string());
   }
 
-  virtual void TearDown() {
+  void TearDown() override {
     posix::ChDir(original_working_dir_.string().c_str());
   }
 

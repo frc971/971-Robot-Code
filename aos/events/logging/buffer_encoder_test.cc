@@ -93,7 +93,7 @@ TEST(DummyDecoderTest, ReadsRepeatedlyIntoSmallerBuffer) {
   ASSERT_EQ(dummy_decoder.Read(&*buffer.begin(), &*buffer.end()), 0);
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     Dummy, BufferEncoderTest,
     ::testing::Combine(::testing::Values([]() {
                          return std::make_unique<DummyEncoder>();
