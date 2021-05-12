@@ -580,11 +580,12 @@ cc_test(
     srcs = [
         "spline_test.cc",
     ],
+    linkstatic = True,
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":spline",
         "//aos/testing:googletest",
-        "//third_party/matplotlib-cpp",
+        "//frc971/analysis:in_process_plotter",
         "@com_github_gflags_gflags//:gflags",
     ],
 )

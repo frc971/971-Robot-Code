@@ -172,8 +172,9 @@ cc_library(
     name = "in_process_plotter",
     srcs = ["in_process_plotter.cc"],
     hdrs = ["in_process_plotter.h"],
-    copts = [
-        "-DWEBRTC_POSIX",
+    data = [
+        ":plotter",
+        ":plotter_files",
     ],
     deps = [
         ":plot_data_fbs",
@@ -185,16 +186,6 @@ cc_library(
 cc_binary(
     name = "in_process_plotter_demo",
     srcs = ["in_process_plotter_demo.cc"],
-    copts = [
-        "-DWEBRTC_POSIX",
-    ],
-    data = [
-        ":plotter",
-        ":plotter_files",
-    ],
-    # Tagged manual until we either get the linker working with the current
-    # WebRTC implementation or we get a new implementation.
-    tags = ["manual"],
     deps = [
         ":in_process_plotter",
         "//aos:init",

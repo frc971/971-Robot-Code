@@ -4,7 +4,7 @@
 
 #include "gflags/gflags.h"
 #include "gtest/gtest.h"
-#include "third_party/matplotlib-cpp/matplotlibcpp.h"
+#include "frc971/analysis/in_process_plotter.h"
 
 DEFINE_bool(plot, false, "If true, plot");
 
@@ -13,20 +13,55 @@ namespace control_loops {
 namespace drivetrain {
 namespace testing {
 
+std::string TestName() {
+  const ::testing::TestInfo *info =
+        ::testing::UnitTest::GetInstance()->current_test_info();
+  return std::string(info->test_case_name()) + "." +
+         std::string(info->name());
+}
+
 // Test fixture with a spline from 0, 0 to 1, 1
 class SplineTest : public ::testing::Test {
+ public:
+  static void SetUpTestSuite() {
+    if (FLAGS_plot) {
+      plotter_ = std::make_unique<analysis::Plotter>();
+    }
+  }
+
+  static void TearDownTestSuite() {
+    if (FLAGS_plot) {
+      plotter_->Spin();
+    }
+  }
  protected:
   SplineTest()
       : control_points_((::Eigen::Matrix<double, 2, 4>() << 0.0, 0.5, 0.5, 1.0,
                          0.0, 0.0, 1.0, 1.0)
                             .finished()),
         spline4_(control_points_),
-        spline6_(Spline4To6(control_points_)) {}
+        spline6_(Spline4To6(control_points_)) {
+    if (FLAGS_plot) {
+      CHECK(plotter_);
+      plotter_->Title(TestName());
+    }
+  }
+  ~SplineTest() {}
+
+  void TearDown() override {
+    if (FLAGS_plot) {
+      plotter_->Publish();
+    }
+  }
+
+  static std::unique_ptr<analysis::Plotter> plotter_;
 
   ::Eigen::Matrix<double, 2, 4> control_points_;
   NSpline<4> spline4_;
   NSpline<6> spline6_;
 };
+
+std::unique_ptr<analysis::Plotter> SplineTest::plotter_;
 
 // Tests that the derivitives of xy integrate back up to the position.
 TEST_F(SplineTest, XYIntegral) {
@@ -83,22 +118,22 @@ TEST_F(SplineTest, XYIntegral) {
 
   // Conditionally plot the functions and their integrals to aid debugging.
   if (FLAGS_plot) {
-    matplotlibcpp::figure();
-    matplotlibcpp::plot(alphas_plot, x_plot, {{"label", "x"}});
-    matplotlibcpp::plot(alphas_plot, ix_plot, {{"label", "ix"}});
-    matplotlibcpp::plot(alphas_plot, y_plot, {{"label", "y"}});
-    matplotlibcpp::plot(alphas_plot, iy_plot, {{"label", "iy"}});
-    matplotlibcpp::plot(alphas_plot, dx_plot, {{"label", "dx"}});
-    matplotlibcpp::plot(alphas_plot, idx_plot, {{"label", "idx"}});
-    matplotlibcpp::plot(alphas_plot, dy_plot, {{"label", "dy"}});
-    matplotlibcpp::plot(alphas_plot, idy_plot, {{"label", "idy"}});
-    matplotlibcpp::legend();
+    plotter_->AddFigure("Spline Attributes Over Alpha");
+    plotter_->AddLine(alphas_plot, x_plot, "X");
+    plotter_->AddLine(alphas_plot, ix_plot, "Integrated X");
+    plotter_->AddLine(alphas_plot, y_plot, "Y");
+    plotter_->AddLine(alphas_plot, iy_plot, "Integrated Y");
+    plotter_->AddLine(alphas_plot, dx_plot, "dX");
+    plotter_->AddLine(alphas_plot, idx_plot, "Integrated dX");
+    plotter_->AddLine(alphas_plot, dy_plot, "dY");
+    plotter_->AddLine(alphas_plot, idy_plot, "Integrated dY");
+    plotter_->XLabel("Spline Alpha");
+    plotter_->YLabel("X/Y (m), dX, dY (m / alpha)");
 
-    matplotlibcpp::figure();
-    matplotlibcpp::plot(x_plot, y_plot, {{"label", "spline"}});
-    matplotlibcpp::legend();
-
-    matplotlibcpp::show();
+    plotter_->AddFigure("X/Y Plot of Spline Path");
+    plotter_->AddLine(x_plot, y_plot, "spline");
+    plotter_->XLabel("X (m)");
+    plotter_->YLabel("Y (m)");
   }
 }
 
@@ -141,14 +176,13 @@ TEST_F(SplineTest, ThetaIntegral) {
 
   // Conditionally plot the functions and their integrals to aid debugging.
   if (FLAGS_plot) {
-    matplotlibcpp::figure();
-    matplotlibcpp::plot(alphas_plot, theta_plot, {{"label", "theta"}});
-    matplotlibcpp::plot(alphas_plot, itheta_plot, {{"label", "itheta"}});
-    matplotlibcpp::plot(alphas_plot, dtheta_plot, {{"label", "dtheta"}});
-    matplotlibcpp::plot(alphas_plot, idtheta_plot, {{"label", "idtheta"}});
-    matplotlibcpp::legend();
-
-    matplotlibcpp::show();
+    plotter_->AddFigure("Heading Plot");
+    plotter_->AddLine(alphas_plot, theta_plot, "theta");
+    plotter_->AddLine(alphas_plot, itheta_plot, "Integrated theta");
+    plotter_->AddLine(alphas_plot, dtheta_plot, "dtheta");
+    plotter_->AddLine(alphas_plot, idtheta_plot, "Integrated dtheta");
+    plotter_->XLabel("Alpha");
+    plotter_->YLabel("Theta (rad), Dtheta (rad / alpha)");
   }
 }
 
@@ -193,10 +227,11 @@ TEST_F(SplineTest, FourToSixSpline) {
 
   // Conditionally plot the functions and their integrals to aid debugging.
   if (FLAGS_plot) {
-    matplotlibcpp::figure();
-    matplotlibcpp::plot(alphas_plot, x_plot, {{"label", "x"}});
-    matplotlibcpp::plot(alphas_plot, y_plot, {{"label", "y"}});
-    matplotlibcpp::legend();
+    plotter_->AddFigure("Spline X/Y");
+    plotter_->AddLine(alphas_plot, x_plot, "X");
+    plotter_->AddLine(alphas_plot, y_plot, "Y");
+    plotter_->XLabel("Alpha");
+    plotter_->YLabel("X/Y (m)");
 
     ::std::vector<double> control4x;
     ::std::vector<double> control4y;
@@ -211,13 +246,12 @@ TEST_F(SplineTest, FourToSixSpline) {
       control6y.push_back(spline6_.control_points()(1, i));
     }
 
-    matplotlibcpp::figure();
-    matplotlibcpp::plot(x_plot, y_plot, {{"label", "spline"}});
-    matplotlibcpp::plot(control4x, control4y, {{"label", "4 control points"}});
-    matplotlibcpp::plot(control6x, control6y, {{"label", "6 control points"}});
-    matplotlibcpp::legend();
-
-    matplotlibcpp::show();
+    plotter_->AddFigure("Spline Path Control Points Comparison");
+    plotter_->AddLine(x_plot, y_plot, "Spline");
+    plotter_->AddLine(control4x, control4y, "4-Spline Control Points");
+    plotter_->AddLine(control6x, control6y, "6-Spline Control Points");
+    plotter_->XLabel("X (m)");
+    plotter_->YLabel("Y (m)");
   }
 }
 
