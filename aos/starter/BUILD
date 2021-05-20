@@ -97,3 +97,22 @@ flatbuffer_cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )
+
+py_binary(
+    name = "starter_demo",
+    srcs = ["starter_demo.py"],
+    args = [
+        "$(rootpath :starterd)",
+        "\"$(rootpaths //aos/events:pingpong_config)\"",
+        "$(rootpath //aos/events:ping)",
+        "$(rootpath //aos/events:pong)",
+        "$(rootpath :starter_cmd)",
+    ],
+    data = [
+        ":starter_cmd",
+        ":starterd",
+        "//aos/events:ping",
+        "//aos/events:pingpong_config",
+        "//aos/events:pong",
+    ],
+)
