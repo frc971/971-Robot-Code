@@ -70,9 +70,9 @@ PhasedLoopHandler::PhasedLoopHandler(EventLoop *event_loop,
           Schedule(sleep_time);
         },
         monotonic_now);
-    // The first time, we'll double count.  Reschedule here will count cycles
-    // elapsed before now, and then the reschedule before runing the handler
-    // will count the time that elapsed then.  So clear the count here.
+    // Reschedule here will count cycles elapsed before now, and then the
+    // reschedule before running the handler will count the time that elapsed
+    // then. So clear the count here.
     cycles_elapsed_ = 0;
   });
 }

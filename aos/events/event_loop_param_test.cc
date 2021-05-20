@@ -1549,6 +1549,103 @@ TEST_P(AbstractEventLoopTest, PhasedLoopTest) {
   }
 }
 
+// Tests that a phased loop responds correctly to a changing offset.
+TEST_P(AbstractEventLoopTest, PhasedLoopChangingOffsetTest) {
+  // Force a slower rate so we are guaranteed to have reports for our phased
+  // loop.
+  FLAGS_timing_report_ms = 2000;
+
+  const chrono::milliseconds kOffset = chrono::milliseconds(400);
+  const chrono::milliseconds kInterval = chrono::milliseconds(1000);
+  const int kCount = 5;
+
+  auto loop1 = MakePrimary();
+
+  // Collect up a couple of samples.
+  ::std::vector<::aos::monotonic_clock::time_point> times;
+  ::std::vector<::aos::monotonic_clock::time_point> expected_times;
+
+  PhasedLoopHandler *phased_loop;
+
+  // Run kCount iterations.
+  phased_loop = loop1->AddPhasedLoop(
+      [&phased_loop, &times, &expected_times, &loop1, this, kOffset,
+       kInterval](int count) {
+        EXPECT_EQ(count, 1);
+        times.push_back(loop1->monotonic_now());
+
+        expected_times.push_back(loop1->context().monotonic_event_time);
+
+        phased_loop->set_interval_and_offset(
+            kInterval, kOffset - chrono::milliseconds(times.size()));
+        LOG(INFO) << "new offset: "
+                  << (kOffset - chrono::milliseconds(times.size())).count();
+
+        if (times.size() == kCount) {
+          LOG(INFO) << "Exiting";
+          this->Exit();
+        }
+      },
+      kInterval, kOffset);
+  phased_loop->set_name("Test loop");
+
+  // Add a delay to make sure that delay during startup doesn't result in a
+  // "missed cycle".
+  SleepFor(chrono::seconds(2));
+
+  Run();
+  // Confirm that we got both the right number of samples, and it's odd.
+  EXPECT_EQ(times.size(), static_cast<size_t>(kCount));
+  EXPECT_EQ(times.size(), expected_times.size());
+  EXPECT_EQ((times.size() % 2), 1);
+
+  // Grab the middle sample.
+  ::aos::monotonic_clock::time_point average_time = times[times.size() / 2];
+
+  // Add up all the delays of all the times.
+  ::aos::monotonic_clock::duration sum = chrono::seconds(0);
+  for (const ::aos::monotonic_clock::time_point time : times) {
+    sum += time - average_time;
+  }
+
+  // Average and add to the middle to find the average time.
+  sum /= times.size();
+  average_time += sum;
+
+  // Compute the offset from the start of the second of the average time.  This
+  // should be pretty close to the offset.
+  const ::aos::monotonic_clock::duration remainder =
+      average_time.time_since_epoch() -
+      chrono::duration_cast<chrono::seconds>(average_time.time_since_epoch());
+
+  const chrono::milliseconds kEpsilon(100);
+  EXPECT_LT(remainder, kOffset + kEpsilon);
+  EXPECT_GT(remainder, kOffset - kEpsilon);
+
+  // Make sure that the average duration is close to 1 second.
+  EXPECT_NEAR(chrono::duration_cast<chrono::duration<double>>(times.back() -
+                                                              times.front())
+                      .count() /
+                  static_cast<double>(times.size() - 1),
+              1.0, 0.1);
+
+  // Confirm that the ideal wakeup times increment correctly.
+  for (size_t i = 1; i < expected_times.size(); ++i) {
+    LOG(INFO) << i - 1 << ": " << expected_times[i - 1] << ", " << i << ": "
+              << expected_times[i];
+    EXPECT_EQ(expected_times[i], expected_times[i - 1] + chrono::seconds(1) -
+                                     chrono::milliseconds(1));
+  }
+
+  for (size_t i = 0; i < expected_times.size(); ++i) {
+    EXPECT_EQ(expected_times[i].time_since_epoch() % chrono::seconds(1),
+              kOffset - chrono::milliseconds(i));
+  }
+
+  EXPECT_LT(expected_times[expected_times.size() / 2], average_time + kEpsilon);
+  EXPECT_GT(expected_times[expected_times.size() / 2], average_time - kEpsilon);
+}
+
 // Tests that senders count correctly in the timing report.
 TEST_P(AbstractEventLoopTest, SenderTimingReport) {
   FLAGS_timing_report_ms = 1000;
