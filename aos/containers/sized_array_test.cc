@@ -175,5 +175,70 @@ TEST(SizedArrayTest, OverflowTest) {
   EXPECT_DEATH(a.emplace_back(5), "Aborted at");
 }
 
+// Tests inserting at various positions in the array.
+TEST(SizedArrayTest, Inserting) {
+  SizedArray<int, 5> a;
+  a.insert(a.begin(), 2);
+  EXPECT_EQ(a.at(0), 2);
+  EXPECT_EQ(a.size(), 1);
+
+  a.emplace_back(3);
+  EXPECT_EQ(a.at(0), 2);
+  EXPECT_EQ(a.at(1), 3);
+  EXPECT_EQ(a.size(), 2);
+
+  a.insert(a.begin(), 0);
+  EXPECT_EQ(a.at(0), 0);
+  EXPECT_EQ(a.at(1), 2);
+  EXPECT_EQ(a.at(2), 3);
+  EXPECT_EQ(a.size(), 3);
+
+  a.insert(a.begin() + 1, 1);
+  EXPECT_EQ(a.at(0), 0);
+  EXPECT_EQ(a.at(1), 1);
+  EXPECT_EQ(a.at(2), 2);
+  EXPECT_EQ(a.at(3), 3);
+  EXPECT_EQ(a.size(), 4);
+
+  a.insert(a.begin() + 1, 0);
+  EXPECT_EQ(a.at(0), 0);
+  EXPECT_EQ(a.at(1), 0);
+  EXPECT_EQ(a.at(2), 1);
+  EXPECT_EQ(a.at(3), 2);
+  EXPECT_EQ(a.at(4), 3);
+  EXPECT_EQ(a.size(), 5);
+}
+
+// Tests erasing things from the array
+TEST(SizedArrayTest, Erasing) {
+  SizedArray<int, 5> a;
+  a.push_back(8);
+  a.push_back(9);
+  a.push_back(7);
+  a.push_back(1);
+  a.push_back(5);
+  EXPECT_EQ(a.at(0), 8);
+  EXPECT_EQ(a.at(1), 9);
+  EXPECT_EQ(a.at(2), 7);
+  EXPECT_EQ(a.at(3), 1);
+  EXPECT_EQ(a.at(4), 5);
+  EXPECT_EQ(a.size(), 5);
+
+  a.erase(a.begin() + 1, a.begin() + 3);
+  EXPECT_EQ(a.at(0), 8);
+  EXPECT_EQ(a.at(1), 1);
+  EXPECT_EQ(a.at(2), 5);
+  EXPECT_EQ(a.size(), 3);
+
+  a.erase(a.begin());
+  EXPECT_EQ(a.at(0), 1);
+  EXPECT_EQ(a.at(1), 5);
+  EXPECT_EQ(a.size(), 2);
+
+  a.erase(a.end() - 1);
+  EXPECT_EQ(a.at(0), 1);
+  EXPECT_EQ(a.size(), 1);
+}
+
 }  // namespace testing
 }  // namespace aos
