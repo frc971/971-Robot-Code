@@ -1,8 +1,8 @@
 #include "frc971/zeroing/pot_and_absolute_encoder.h"
 
-#include "gtest/gtest.h"
-
 #include "frc971/zeroing/zeroing_test.h"
+#include "gmock/gmock.h"
+#include "gtest/gtest.h"
 
 namespace frc971 {
 namespace zeroing {
@@ -16,7 +16,7 @@ class PotAndAbsoluteEncoderZeroingTest : public ZeroingTest {
               PotAndAbsoluteEncoderZeroingEstimator *estimator,
               double new_position) {
     simulator->MoveTo(new_position);
-    FBB fbb;
+    flatbuffers::FlatBufferBuilder fbb;
     estimator->UpdateEstimate(
         *simulator->FillSensorValues<PotAndAbsolutePosition>(&fbb));
   }
@@ -70,7 +70,7 @@ TEST_F(PotAndAbsoluteEncoderZeroingTest,
   PotAndAbsoluteEncoderZeroingEstimator estimator(constants);
 
   // We tolerate a couple NANs before we start.
-  FBB fbb;
+  flatbuffers::FlatBufferBuilder fbb;
   fbb.Finish(CreatePotAndAbsolutePosition(
       fbb, 0.0, ::std::numeric_limits<double>::quiet_NaN(), 0.0));
   for (size_t i = 0; i < kSampleSize - 1; ++i) {
@@ -124,7 +124,7 @@ TEST_F(PotAndAbsoluteEncoderZeroingTest,
 
   PotAndAbsoluteEncoderZeroingEstimator estimator(constants);
 
-  FBB fbb;
+  flatbuffers::FlatBufferBuilder fbb;
   fbb.Finish(CreatePotAndAbsolutePosition(
       fbb, 0.0, ::std::numeric_limits<double>::quiet_NaN(), 0.0));
   const auto sensor_values =
@@ -136,6 +136,16 @@ TEST_F(PotAndAbsoluteEncoderZeroingTest,
 
   estimator.UpdateEstimate(*sensor_values);
   ASSERT_TRUE(estimator.error());
+
+  flatbuffers::FlatBufferBuilder fbb2;
+  fbb2.Finish(estimator.GetEstimatorState(&fbb2));
+
+  const PotAndAbsoluteEncoderEstimatorState *state =
+      flatbuffers::GetRoot<PotAndAbsoluteEncoderEstimatorState>(
+          fbb2.GetBufferPointer());
+
+  EXPECT_THAT(*state->errors(),
+              ::testing::ElementsAre(ZeroingError::LOST_ABSOLUTE_ENCODER));
 }
 
 }  // namespace testing

@@ -3,8 +3,8 @@
 
 #include <vector>
 
+#include "aos/containers/error_list.h"
 #include "flatbuffers/flatbuffers.h"
-
 #include "frc971/zeroing/zeroing.h"
 
 namespace frc971 {
@@ -92,6 +92,9 @@ class PotAndAbsoluteEncoderZeroingEstimator
   double filtered_position_ = 0.0;
   // The filtered position.
   double position_ = 0.0;
+
+  // Marker to track what kind of error has occured.
+  aos::ErrorList<ZeroingError> errors_;
 };
 
 }  // namespace zeroing

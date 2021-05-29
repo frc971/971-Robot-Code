@@ -71,6 +71,7 @@ void AbsoluteAndAbsoluteEncoderZeroingEstimator::UpdateEstimate(
     if (zeroed_) {
       VLOG(1) << "NAN on one of the absolute encoders.";
       error_ = true;
+      errors_.Set(ZeroingError::LOST_ABSOLUTE_ENCODER);
     } else {
       ++nan_samples_;
       VLOG(1) << "NAN on one of the absolute encoders while zeroing"
@@ -78,6 +79,7 @@ void AbsoluteAndAbsoluteEncoderZeroingEstimator::UpdateEstimate(
       if (nan_samples_ >= constants_.average_filter_size) {
         error_ = true;
         zeroed_ = true;
+        errors_.Set(ZeroingError::LOST_ABSOLUTE_ENCODER);
       }
     }
     // Throw some dummy values in for now.
@@ -189,11 +191,6 @@ void AbsoluteAndAbsoluteEncoderZeroingEstimator::UpdateEstimate(
          (-constants_.single_turn_measured_absolute_position +
           what_Unwrap_added));
 
-    /*
-    filtered_single_turn_absolute_encoder_ =
-        sample.encoder - single_turn_to_relative_encoder_offset_;
-    */
-
     if (!zeroed_) {
       first_offset_ = offset_;
     }
@@ -209,6 +206,7 @@ void AbsoluteAndAbsoluteEncoderZeroingEstimator::UpdateEstimate(
                 constants_.allowable_encoder_error *
                     constants_.one_revolution_distance);
         error_ = true;
+        errors_.Set(ZeroingError::OFFSET_MOVED_TOO_FAR);
       }
 
       zeroed_ = true;
@@ -222,8 +220,12 @@ void AbsoluteAndAbsoluteEncoderZeroingEstimator::UpdateEstimate(
 flatbuffers::Offset<AbsoluteAndAbsoluteEncoderZeroingEstimator::State>
 AbsoluteAndAbsoluteEncoderZeroingEstimator::GetEstimatorState(
     flatbuffers::FlatBufferBuilder *fbb) const {
+  flatbuffers::Offset<flatbuffers::Vector<ZeroingError>> errors_offset =
+      errors_.ToFlatbuffer(fbb);
+
   State::Builder builder(*fbb);
   builder.add_error(error_);
+  builder.add_errors(errors_offset);
   builder.add_zeroed(zeroed_);
   builder.add_position(position_);
   builder.add_absolute_position(filtered_absolute_encoder_);

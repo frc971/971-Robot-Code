@@ -86,6 +86,13 @@ table RelativePosition {
   encoder:double (id: 0);
 }
 
+// An enum to represent the different types of errors
+// a zeroing estimator could have.
+enum ZeroingError : short {
+  OFFSET_MOVED_TOO_FAR,
+  LOST_ABSOLUTE_ENCODER
+}
+
 // The internal state of a zeroing estimator.
 table EstimatorState {
   // If true, there has been a fatal error for the estimator.
@@ -114,6 +121,9 @@ table PotAndAbsoluteEncoderEstimatorState {
   // The estimated absolute position of the encoder.  This is filtered, so it
   // can be easily used when zeroing.
   absolute_position:double (id: 4);
+
+  // If errored, this contains the causes for the error.
+  errors: [ZeroingError] (id: 5);
 }
 
 // The internal state of a zeroing estimator.
@@ -128,6 +138,9 @@ table AbsoluteEncoderEstimatorState {
   // The estimated absolute position of the encoder.  This is filtered, so it
   // can be easily used when zeroing.
   absolute_position:double (id: 3);
+
+  // If errored, this contains the causes for the error.
+  errors: [ZeroingError] (id: 4);
 }
 
 // The internal state of a zeroing estimator.
@@ -145,7 +158,11 @@ table AbsoluteAndAbsoluteEncoderEstimatorState {
 
   // Estimated absolute position of the single turn absolute encoder.
   single_turn_absolute_position:double (id: 4);
+
+  // If errored, this contains the causes for the error.
+  errors: [ZeroingError] (id: 5);
 }
+
 
 table RelativeEncoderEstimatorState {
   // If true, there has been a fatal error for the estimator.

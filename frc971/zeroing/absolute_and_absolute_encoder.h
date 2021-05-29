@@ -5,6 +5,7 @@
 
 #include "flatbuffers/flatbuffers.h"
 
+#include "aos/containers/error_list.h"
 #include "frc971/zeroing/zeroing.h"
 
 namespace frc971 {
@@ -73,6 +74,8 @@ class AbsoluteAndAbsoluteEncoderZeroingEstimator
   bool zeroed_;
   // Marker to track whether an error has occurred.
   bool error_;
+  // Marker to track what kind of error has occured.
+  aos::ErrorList<ZeroingError> errors_;
   // The first valid offset we recorded. This is only set after zeroed_ first
   // changes to true.
   double first_offset_;

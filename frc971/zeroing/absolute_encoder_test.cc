@@ -1,8 +1,8 @@
 #include "frc971/zeroing/absolute_encoder.h"
 
-#include "gtest/gtest.h"
-
 #include "frc971/zeroing/zeroing_test.h"
+#include "gmock/gmock.h"
+#include "gtest/gtest.h"
 
 namespace frc971 {
 namespace zeroing {
@@ -15,7 +15,7 @@ class AbsoluteEncoderZeroingTest : public ZeroingTest {
   void MoveTo(PositionSensorSimulator *simulator,
               AbsoluteEncoderZeroingEstimator *estimator, double new_position) {
     simulator->MoveTo(new_position);
-    FBB fbb;
+    flatbuffers::FlatBufferBuilder fbb;
     estimator->UpdateEstimate(
         *simulator->FillSensorValues<AbsolutePosition>(&fbb));
   }
@@ -71,7 +71,7 @@ TEST_F(AbsoluteEncoderZeroingTest, TestAbsoluteEncoderZeroingIgnoresNAN) {
   AbsoluteEncoderZeroingEstimator estimator(constants);
 
   // We tolerate a couple NANs before we start.
-  FBB fbb;
+  flatbuffers::FlatBufferBuilder fbb;
   fbb.Finish(CreateAbsolutePosition(
       fbb, 0.0, ::std::numeric_limits<double>::quiet_NaN()));
   const auto sensor_values =
@@ -126,7 +126,7 @@ TEST_F(AbsoluteEncoderZeroingTest, TestAbsoluteEncoderZeroingWithNaN) {
 
   AbsoluteEncoderZeroingEstimator estimator(constants);
 
-  FBB fbb;
+  flatbuffers::FlatBufferBuilder fbb;
   fbb.Finish(CreateAbsolutePosition(
       fbb, 0.0, ::std::numeric_limits<double>::quiet_NaN()));
   const auto sensor_values =
@@ -138,6 +138,16 @@ TEST_F(AbsoluteEncoderZeroingTest, TestAbsoluteEncoderZeroingWithNaN) {
 
   estimator.UpdateEstimate(*sensor_values);
   ASSERT_TRUE(estimator.error());
+
+  flatbuffers::FlatBufferBuilder fbb2;
+  fbb2.Finish(estimator.GetEstimatorState(&fbb2));
+
+  const AbsoluteEncoderEstimatorState *state =
+      flatbuffers::GetRoot<AbsoluteEncoderEstimatorState>(
+          fbb2.GetBufferPointer());
+
+  EXPECT_THAT(*state->errors(),
+              ::testing::ElementsAre(ZeroingError::LOST_ABSOLUTE_ENCODER));
 }
 
 }  // namespace testing

@@ -85,6 +85,9 @@ class AbsoluteEncoderZeroingEstimator
 
   // The filtered position.
   double position_ = 0.0;
+
+  // Marker to track what kind of error has occured.
+  aos::ErrorList<ZeroingError> errors_;
 };
 
 }  // namespace zeroing
