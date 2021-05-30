@@ -77,10 +77,10 @@ auto CommonParameters() {
       ::testing::Values(DoTimingReports::kYes, DoTimingReports::kNo));
 }
 
-INSTANTIATE_TEST_CASE_P(ShmEventLoopCommonTest, AbstractEventLoopTest,
+INSTANTIATE_TEST_SUITE_P(ShmEventLoopCommonTest, AbstractEventLoopTest,
                         CommonParameters());
 
-INSTANTIATE_TEST_CASE_P(ShmEventLoopCommonDeathTest, AbstractEventLoopDeathTest,
+INSTANTIATE_TEST_SUITE_P(ShmEventLoopCommonDeathTest, AbstractEventLoopDeathTest,
                         CommonParameters());
 
 }  // namespace
@@ -321,13 +321,13 @@ TEST_P(ShmEventLoopDeathTest, OutOfBoundsWrite) {
 
 // TODO(austin): Test that missing a deadline with a timer recovers as expected.
 
-INSTANTIATE_TEST_CASE_P(ShmEventLoopCopyTest, ShmEventLoopTest,
+INSTANTIATE_TEST_SUITE_P(ShmEventLoopCopyTest, ShmEventLoopTest,
                         ::testing::Values(ReadMethod::COPY));
-INSTANTIATE_TEST_CASE_P(ShmEventLoopPinTest, ShmEventLoopTest,
+INSTANTIATE_TEST_SUITE_P(ShmEventLoopPinTest, ShmEventLoopTest,
                         ::testing::Values(ReadMethod::PIN));
-INSTANTIATE_TEST_CASE_P(ShmEventLoopCopyDeathTest, ShmEventLoopDeathTest,
+INSTANTIATE_TEST_SUITE_P(ShmEventLoopCopyDeathTest, ShmEventLoopDeathTest,
                         ::testing::Values(ReadMethod::COPY));
-INSTANTIATE_TEST_CASE_P(ShmEventLoopPinDeathTest, ShmEventLoopDeathTest,
+INSTANTIATE_TEST_SUITE_P(ShmEventLoopPinDeathTest, ShmEventLoopDeathTest,
                         ::testing::Values(ReadMethod::PIN));
 
 }  // namespace testing

@@ -112,7 +112,7 @@ TEST_P(TargetSelectorParamTest, ExpectReturn) {
   }
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TargetSelectorTest, TargetSelectorParamTest,
     ::testing::Values(
         // When we are far away from anything, we should not register any

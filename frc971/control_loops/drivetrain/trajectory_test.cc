@@ -529,7 +529,7 @@ void ShortLimitMiddleOfPathTrajectoryModificationFunction(
   trajectory->LimitVelocity(1.5, 1.5, 0.5);
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     SplineTest, ParameterizedSplineTest,
     ::testing::Values(
         MakeSplineTestParams(

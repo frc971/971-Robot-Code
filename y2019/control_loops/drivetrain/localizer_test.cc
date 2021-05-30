@@ -563,7 +563,7 @@ TEST_P(ParameterizedLocalizerTest, SplineTest) {
 // things don't appear to be unstable (since these tests do do a test of the
 // full localizer + spline system, we should pay attention if there is actual
 // instability rather than just poor tolerances).
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     LocalizerTest, ParameterizedLocalizerTest,
     ::testing::Values(
         // Checks a "perfect" scenario, where we should track perfectly.

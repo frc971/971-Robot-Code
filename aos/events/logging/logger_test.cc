@@ -2325,14 +2325,14 @@ constexpr std::string_view kCombinedConfigSha1(
 constexpr std::string_view kSplitConfigSha1(
     "1020274679a8f8c15ea20a48e4a35dd59a435203e5f31a57e15355e5a6ee31f7");
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     All, MultinodeLoggerTest,
     ::testing::Values(Param{"multinode_pingpong_combined_config.json", true,
                             kCombinedConfigSha1},
                       Param{"multinode_pingpong_split_config.json", false,
                             kSplitConfigSha1}));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     All, MultinodeLoggerDeathTest,
     ::testing::Values(Param{"multinode_pingpong_combined_config.json", true,
                             kCombinedConfigSha1},

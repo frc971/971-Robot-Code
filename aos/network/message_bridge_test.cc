@@ -1249,7 +1249,7 @@ TEST_P(MessageBridgeParameterizedTest, ReliableSentBeforeServerStartup) {
   pi1_remote_timestamp_thread.join();
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     MessageBridgeTests, MessageBridgeParameterizedTest,
     ::testing::Values(
         Param{"message_bridge_test_combined_timestamps_common_config.json",

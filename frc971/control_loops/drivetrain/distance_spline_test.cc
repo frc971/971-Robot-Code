@@ -171,7 +171,7 @@ TEST_P(ParameterizedDistanceSplineTest, Serialization) {
   }
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     DistanceSplineTest, ParameterizedDistanceSplineTest,
     ::testing::Values(
         ::std::vector<Spline>(

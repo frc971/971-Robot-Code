@@ -433,7 +433,7 @@ class IntakeSystemTest : public ::aos::testing::ControlLoopTest {
   TestIntakeSystemSimulation<SZSDPS, QueueGroup> subsystem_plant_;
 };
 
-TYPED_TEST_CASE_P(IntakeSystemTest);
+TYPED_TEST_SUITE_P(IntakeSystemTest);
 
 // Tests that the subsystem does nothing when the goal is zero.
 TYPED_TEST_P(IntakeSystemTest, DoesNothing) {
@@ -819,7 +819,7 @@ TYPED_TEST_P(IntakeSystemTest, ZeroingErrorTest) {
   EXPECT_EQ(this->subsystem()->state(), TestFixture::SZSDPS::State::ESTOP);
 }
 
-REGISTER_TYPED_TEST_CASE_P(IntakeSystemTest, DoesNothing, ReachesGoal,
+REGISTER_TYPED_TEST_SUITE_P(IntakeSystemTest, DoesNothing, ReachesGoal,
                            FunctionsWhenProfileDisabled,
                            MaintainConstantVelocityWithoutProfile,
                            SaturationTest, RespectsRange, ZeroTest, ZeroNoGoal,
@@ -827,7 +827,7 @@ REGISTER_TYPED_TEST_CASE_P(IntakeSystemTest, DoesNothing, ReachesGoal,
                            ResetTest, DisabledGoalTest, DisabledZeroTest,
                            MinPositionTest, MaxPositionTest, NullGoalTest,
                            ZeroingErrorTest);
-INSTANTIATE_TYPED_TEST_CASE_P(My, IntakeSystemTest, TestTypes);
+INSTANTIATE_TYPED_TEST_SUITE_P(My, IntakeSystemTest, TestTypes);
 
 }  // namespace control_loops
 }  // namespace frc971
