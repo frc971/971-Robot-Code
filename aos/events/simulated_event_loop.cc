@@ -1571,6 +1571,21 @@ void SimulatedEventLoopFactory::RunFor(monotonic_clock::duration duration) {
   }
 }
 
+bool SimulatedEventLoopFactory::RunUntil(realtime_clock::time_point now,
+                                         const aos::Node *node) {
+  bool ran_until_time = scheduler_scheduler_.RunUntil(
+      now, &GetNodeEventLoopFactory(node)->scheduler_, [this, &node](void) {
+        return GetNodeEventLoopFactory(node)->realtime_offset();
+      });
+  for (std::unique_ptr<NodeEventLoopFactory> &node : node_factories_) {
+    if (node) {
+      for (SimulatedEventLoop *loop : node->event_loops_) {
+        CHECK(!loop->is_running());
+      }
+    }
+  }
+  return ran_until_time;
+}
 void SimulatedEventLoopFactory::Run() {
   // This sets running to true too.
   scheduler_scheduler_.Run();

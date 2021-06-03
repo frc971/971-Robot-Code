@@ -91,6 +91,10 @@ class SimulatedEventLoopFactory {
   void Run();
   // Executes the event loops for a duration.
   void RunFor(distributed_clock::duration duration);
+  // Executes the event loops until a time.
+  // Returns true if there are still events remaining.
+  bool RunUntil(aos::realtime_clock::time_point time,
+                const aos::Node *node = nullptr);
 
   // Stops executing all event loops.  Meant to be called from within an event
   // loop handler.
@@ -208,6 +212,8 @@ class NodeEventLoopFactory {
     realtime_offset_ =
         realtime_now.time_since_epoch() - monotonic_now.time_since_epoch();
   }
+
+  inline std::chrono::nanoseconds realtime_offset() { return realtime_offset_; }
 
   // Returns the current time on both clocks.
   inline monotonic_clock::time_point monotonic_now() const;
