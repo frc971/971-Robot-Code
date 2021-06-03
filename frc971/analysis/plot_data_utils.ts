@@ -64,7 +64,7 @@ export function plotData(conn: Connection, parentDiv: Element) {
             plot.getAxisLabels().setXLabel(figure.xlabel());
           }
           if (figure.ylabel()) {
-            plot.getAxisLabels().setYLabel(figure.xlabel());
+            plot.getAxisLabels().setYLabel(figure.ylabel());
           }
           if (figure.shareXAxis()) {
             for (const other of linkedXAxes) {

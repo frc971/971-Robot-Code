@@ -420,9 +420,6 @@ cc_library(
         "rawrtc.h",
         "web_proxy.h",
     ],
-    copts = [
-        "-DWEBRTC_POSIX",
-    ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":connect_fbs",
@@ -450,9 +447,6 @@ gen_embedded(
 cc_binary(
     name = "web_proxy_main",
     srcs = ["web_proxy_main.cc"],
-    copts = [
-        "-DWEBRTC_POSIX",
-    ],
     data = [
         "//aos/network/www:files",
         "//aos/network/www:main_bundle.min.js",
@@ -472,9 +466,6 @@ cc_binary(
     srcs = ["log_web_proxy_main.cc"],
     args = [
         "--data_dir=aos/network/www",
-    ],
-    copts = [
-        "-DWEBRTC_POSIX",
     ],
     deps = [
         ":web_proxy",
