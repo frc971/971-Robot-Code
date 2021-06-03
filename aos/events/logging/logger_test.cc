@@ -12,6 +12,7 @@
 #include "aos/network/remote_message_generated.h"
 #include "aos/network/testing_time_converter.h"
 #include "aos/network/timestamp_generated.h"
+#include "aos/testing/path.h"
 #include "aos/testing/tmpdir.h"
 #include "aos/util/file.h"
 #include "glog/logging.h"
@@ -25,6 +26,8 @@
 namespace aos {
 namespace logger {
 namespace testing {
+
+using aos::testing::ArtifactPath;
 
 namespace chrono = std::chrono;
 using aos::message_bridge::RemoteMessage;
@@ -51,8 +54,8 @@ std::vector<std::vector<std::string>> ToLogReaderVector(
 class LoggerTest : public ::testing::Test {
  public:
   LoggerTest()
-      : config_(
-            aos::configuration::ReadConfig("aos/events/pingpong_config.json")),
+      : config_(aos::configuration::ReadConfig(
+            ArtifactPath("aos/events/pingpong_config.json"))),
         event_loop_factory_(&config_.message()),
         ping_event_loop_(event_loop_factory_.MakeEventLoop("ping")),
         ping_(ping_event_loop_.get()),
@@ -427,8 +430,8 @@ struct Param {
 class MultinodeLoggerTest : public ::testing::TestWithParam<struct Param> {
  public:
   MultinodeLoggerTest()
-      : config_(aos::configuration::ReadConfig(
-            absl::StrCat("aos/events/logging/", GetParam().config))),
+      : config_(aos::configuration::ReadConfig(ArtifactPath(
+            absl::StrCat("aos/events/logging/", GetParam().config)))),
         time_converter_(configuration::NodesCount(&config_.message())),
         event_loop_factory_(&config_.message()),
         pi1_(

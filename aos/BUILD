@@ -355,6 +355,7 @@ cc_test(
         ":json_to_flatbuffer",
         ":json_to_flatbuffer_fbs",
         "//aos/testing:googletest",
+        "//aos/testing:path",
     ],
 )
 
@@ -371,6 +372,7 @@ cc_test(
         ":json_to_flatbuffer",
         ":json_to_flatbuffer_fbs",
         "//aos/testing:googletest",
+        "//aos/testing:path",
         "//aos/util:file",
         "@com_github_google_flatbuffers//:flatbuffers",
     ],
@@ -439,6 +441,7 @@ cc_test(
         ":configuration",
         "//aos/testing:flatbuffer_eq",
         "//aos/testing:googletest",
+        "//aos/testing:path",
         "//aos/testing:test_logging",
     ],
 )

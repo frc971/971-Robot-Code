@@ -13,13 +13,14 @@
 #include "aos/network/remote_message_generated.h"
 #include "aos/network/testing_time_converter.h"
 #include "aos/network/timestamp_generated.h"
+#include "aos/testing/path.h"
 #include "gtest/gtest.h"
 
 namespace aos {
 namespace testing {
 namespace {
 
-std::string ConfigPrefix() { return "aos/"; }
+using aos::testing::ArtifactPath;
 
 using message_bridge::RemoteMessage;
 namespace chrono = ::std::chrono;
@@ -92,7 +93,7 @@ class RemoteMessageSimulatedEventLoopTest
  public:
   RemoteMessageSimulatedEventLoopTest()
       : config(aos::configuration::ReadConfig(
-            absl::StrCat(ConfigPrefix(), "events/", GetParam().config))) {
+            ArtifactPath(absl::StrCat("aos/events/", GetParam().config)))) {
     LOG(INFO) << "Config " << GetParam().config;
   }
 
@@ -762,9 +763,8 @@ TEST_P(RemoteMessageSimulatedEventLoopTest, MultinodePingPong) {
 // ServerStatistics correctly.
 TEST(SimulatedEventLoopTest, MultinodePingPongWithOffset) {
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
-      aos::configuration::ReadConfig(
-          ConfigPrefix() +
-          "events/multinode_pingpong_test_combined_config.json");
+      aos::configuration::ReadConfig(ArtifactPath(
+          "aos/events/multinode_pingpong_test_combined_config.json"));
   const Node *pi1 = configuration::GetNode(&config.message(), "pi1");
   const size_t pi1_index = configuration::GetNodeIndex(&config.message(), pi1);
   ASSERT_EQ(pi1_index, 0u);
@@ -1271,9 +1271,8 @@ TEST_P(RemoteMessageSimulatedEventLoopTest, MultinodeDisconnect) {
 // it gets delivered as expected.
 TEST(SimulatedEventLoopTest, MultinodePingPongWithOffsetAndSlope) {
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
-      aos::configuration::ReadConfig(
-          ConfigPrefix() +
-          "events/multinode_pingpong_test_combined_config.json");
+      aos::configuration::ReadConfig(ArtifactPath(
+          "aos/events/multinode_pingpong_test_combined_config.json"));
   const Node *pi1 = configuration::GetNode(&config.message(), "pi1");
   const size_t pi1_index = configuration::GetNodeIndex(&config.message(), pi1);
   ASSERT_EQ(pi1_index, 0u);

@@ -11,6 +11,7 @@
 #include "aos/actions/actor.h"
 #include "aos/actions/test_action_generated.h"
 #include "aos/events/simulated_event_loop.h"
+#include "aos/testing/path.h"
 
 namespace aos {
 namespace common {
@@ -97,8 +98,8 @@ class TestActor2Nop
 class ActionTest : public ::testing::Test {
  protected:
   ActionTest()
-      : configuration_(
-            configuration::ReadConfig("aos/actions/action_test_config.json")),
+      : configuration_(configuration::ReadConfig(
+            aos::testing::ArtifactPath("aos/actions/action_test_config.json"))),
         event_loop_factory_(&configuration_.message()),
         actor1_event_loop_(event_loop_factory_.MakeEventLoop("actor1")),
         actor2_event_loop_(event_loop_factory_.MakeEventLoop("actor2")),

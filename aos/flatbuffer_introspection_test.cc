@@ -1,5 +1,6 @@
 #include "aos/json_to_flatbuffer.h"
 #include "aos/json_to_flatbuffer_generated.h"
+#include "aos/testing/path.h"
 #include "aos/util/file.h"
 #include "flatbuffers/reflection.h"
 #include "gtest/gtest.h"
@@ -7,11 +8,13 @@
 namespace aos {
 namespace testing {
 
+using aos::testing::ArtifactPath;
+
 class FlatbufferIntrospectionTest : public ::testing::Test {
  public:
   FlatbufferIntrospectionTest()
       : schema_data_(FileToFlatbuffer<reflection::Schema>(
-            "aos/json_to_flatbuffer.bfbs")) {
+            ArtifactPath("aos/json_to_flatbuffer.bfbs"))) {
     schema_ = reflection::GetSchema(schema_data_.span().data());
   }
 

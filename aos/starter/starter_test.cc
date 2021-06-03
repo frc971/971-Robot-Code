@@ -5,13 +5,17 @@
 
 #include "aos/events/ping_generated.h"
 #include "aos/events/pong_generated.h"
+#include "aos/testing/path.h"
 #include "aos/testing/tmpdir.h"
 #include "gtest/gtest.h"
 #include "starter_rpc_lib.h"
 #include "starterd_lib.h"
 
+using aos::testing::ArtifactPath;
+
 TEST(StarterdTest, StartStopTest) {
-  const std::string config_file = "aos/events/pingpong_config.json";
+  const std::string config_file =
+      ArtifactPath("aos/events/pingpong_config.json");
 
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig(config_file);
@@ -23,16 +27,17 @@ TEST(StarterdTest, StartStopTest) {
                              R"({"applications": [
                                   {
                                     "name": "ping",
-                                    "executable_name": "aos/events/ping",
+                                    "executable_name": "%s",
                                     "args": ["--shm_base", "%s/aos"]
                                   },
                                   {
                                     "name": "pong",
-                                    "executable_name": "aos/events/pong",
+                                    "executable_name": "%s",
                                     "args": ["--shm_base", "%s/aos"]
                                   }
                                 ]})",
-                             test_dir, test_dir));
+                             ArtifactPath("aos/events/ping"), test_dir,
+                             ArtifactPath("aos/events/pong"), test_dir));
 
   const aos::Configuration *config_msg = &new_config.message();
 
@@ -108,7 +113,8 @@ TEST(StarterdTest, StartStopTest) {
 }
 
 TEST(StarterdTest, DeathTest) {
-  const std::string config_file = "aos/events/pingpong_config.json";
+  const std::string config_file =
+      ArtifactPath("aos/events/pingpong_config.json");
 
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig(config_file);
@@ -120,16 +126,17 @@ TEST(StarterdTest, DeathTest) {
                              R"({"applications": [
                                   {
                                     "name": "ping",
-                                    "executable_name": "aos/events/ping",
+                                    "executable_name": "%s",
                                     "args": ["--shm_base", "%s/aos"]
                                   },
                                   {
                                     "name": "pong",
-                                    "executable_name": "aos/events/pong",
+                                    "executable_name": "%s",
                                     "args": ["--shm_base", "%s/aos"]
                                   }
                                 ]})",
-                             test_dir, test_dir));
+                             ArtifactPath("aos/events/ping"), test_dir,
+                             ArtifactPath("aos/events/pong"), test_dir));
 
   const aos::Configuration *config_msg = &new_config.message();
 
