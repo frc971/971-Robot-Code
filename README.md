@@ -60,6 +60,10 @@ There are a couple options for building code that are given here-- setting up ei
      1. `sudo cp doc/frc971.conf /etc/sysctl.d/`
      2. `sudo sysctl --system`
 
+  4. In order to run certain tests, you need to give yourself
+     permissions--follow the "Setup real-time niceties" section of
+     [aos/events/README.md](aos/events/README.md).
+
 ### Setting up access to a workspace on the build server
 In order to use the build server, you'll first need to get ssh access set up.  (NOTE: you don't need to do any of the other setup steps done for your own computer, since things like `bazel`, `python`, etc. are already installed on the build server)
   1. Use ssh-keygen to create a public and private key.
