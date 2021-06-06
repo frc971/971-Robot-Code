@@ -373,6 +373,7 @@ cc_test(
         "//aos/events:simulated_event_loop",
         "//aos/network:testing_time_converter",
         "//aos/testing:googletest",
+        "//aos/testing:path",
         "//aos/testing:tmpdir",
     ],
 )

@@ -41,6 +41,7 @@ cc_test(
         "//aos/events:ping_fbs",
         "//aos/events:pong_fbs",
         "//aos/testing:googletest",
+        "//aos/testing:path",
         "//aos/testing:tmpdir",
     ],
 )

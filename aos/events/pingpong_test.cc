@@ -2,19 +2,22 @@
 #include "aos/events/pong_lib.h"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/json_to_flatbuffer.h"
+#include "aos/testing/path.h"
 #include "glog/logging.h"
 #include "gtest/gtest.h"
 
 namespace aos {
 namespace testing {
 
+using aos::testing::ArtifactPath;
+
 namespace chrono = std::chrono;
 
 class PingPongTest : public ::testing::Test {
  public:
   PingPongTest()
-      : config_(
-            aos::configuration::ReadConfig("aos/events/pingpong_config.json")),
+      : config_(aos::configuration::ReadConfig(
+            ArtifactPath("aos/events/pingpong_config.json"))),
         event_loop_factory_(&config_.message()),
         ping_event_loop_(event_loop_factory_.MakeEventLoop("ping")),
         ping_(ping_event_loop_.get()),

@@ -8,6 +8,7 @@
 #include "aos/network/message_bridge_client_lib.h"
 #include "aos/network/message_bridge_server_lib.h"
 #include "aos/network/team_number.h"
+#include "aos/testing/path.h"
 #include "aos/util/file.h"
 #include "gtest/gtest.h"
 
@@ -18,6 +19,8 @@ void SetShmBase(const std::string_view base);
 
 namespace message_bridge {
 namespace testing {
+
+using aos::testing::ArtifactPath;
 
 namespace chrono = std::chrono;
 
@@ -49,7 +52,7 @@ class MessageBridgeParameterizedTest
  public:
   MessageBridgeParameterizedTest()
       : config(aos::configuration::ReadConfig(
-            absl::StrCat("aos/network/", GetParam().config))),
+            ArtifactPath(absl::StrCat("aos/network/", GetParam().config)))),
         pi1_boot_uuid_(UUID::Random()),
         pi2_boot_uuid_(UUID::Random()) {
     util::UnlinkRecursive(ShmBase("pi1"));

@@ -372,6 +372,7 @@ cc_test(
         "//aos/events:shm_event_loop",
         "//aos/ipc_lib:event",
         "//aos/testing:googletest",
+        "//aos/testing:path",
     ],
 )
 

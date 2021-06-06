@@ -1,6 +1,7 @@
 #include "aos/json_to_flatbuffer.h"
 
 #include "aos/json_to_flatbuffer_generated.h"
+#include "aos/testing/path.h"
 #include "flatbuffers/minireflect.h"
 #include "gtest/gtest.h"
 
@@ -12,7 +13,8 @@ class JsonToFlatbufferTest : public ::testing::Test {
   JsonToFlatbufferTest() {}
 
   FlatbufferVector<reflection::Schema> Schema() {
-    return FileToFlatbuffer<reflection::Schema>("aos/json_to_flatbuffer.bfbs");
+    return FileToFlatbuffer<reflection::Schema>(
+        ArtifactPath("aos/json_to_flatbuffer.bfbs"));
   }
 
   bool JsonAndBack(const ::std::string str) { return JsonAndBack(str, str); }

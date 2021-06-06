@@ -221,6 +221,7 @@ cc_test(
         "//aos:configuration",
         "//aos:flatbuffers",
         "//aos/testing:googletest",
+        "//aos/testing:path",
     ],
 )
 
@@ -315,6 +316,7 @@ cc_test(
         "//aos/network:remote_message_fbs",
         "//aos/network:testing_time_converter",
         "//aos/testing:googletest",
+        "//aos/testing:path",
     ],
 )
 
