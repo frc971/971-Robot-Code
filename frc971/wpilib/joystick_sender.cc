@@ -1,11 +1,10 @@
 #include "frc971/wpilib/joystick_sender.h"
 
-#include "aos/input/driver_station_data.h"
 #include "aos/logging/logging.h"
 #include "aos/network/team_number.h"
 #include "aos/realtime.h"
-#include "aos/robot_state/joystick_state_generated.h"
-
+#include "frc971/input/driver_station_data.h"
+#include "frc971/input/joystick_state_generated.h"
 #include "frc971/wpilib/ahal/DriverStation.h"
 #include "hal/HAL.h"
 
@@ -35,15 +34,16 @@ JoystickSender::JoystickSender(::aos::ShmEventLoop *event_loop)
         auto status = HAL_GetMatchInfo(&match_info);
 
         std::array<flatbuffers::Offset<Joystick>,
-                   aos::input::driver_station::JoystickFeature::kJoysticks>
+                   frc971::input::driver_station::JoystickFeature::kJoysticks>
             joysticks;
 
         for (size_t i = 0;
-             i < aos::input::driver_station::JoystickFeature::kJoysticks; ++i) {
-          std::array<double, aos::input::driver_station::JoystickAxis::kAxes>
+             i < frc971::input::driver_station::JoystickFeature::kJoysticks;
+             ++i) {
+          std::array<double, frc971::input::driver_station::JoystickAxis::kAxes>
               axis;
-          for (int j = 0; j < aos::input::driver_station::JoystickAxis::kAxes;
-               ++j) {
+          for (int j = 0;
+               j < frc971::input::driver_station::JoystickAxis::kAxes; ++j) {
             axis[j] = ds->GetStickAxis(i, j);
           }
 

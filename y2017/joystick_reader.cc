@@ -5,23 +5,23 @@
 
 #include "aos/actions/actions.h"
 #include "aos/init.h"
-#include "aos/input/action_joystick_input.h"
-#include "aos/input/driver_station_data.h"
-#include "aos/input/drivetrain_input.h"
 #include "aos/logging/logging.h"
 #include "aos/time/time.h"
 #include "aos/util/log_interval.h"
 #include "frc971/autonomous/base_autonomous_actor.h"
+#include "frc971/input/action_joystick_input.h"
+#include "frc971/input/driver_station_data.h"
+#include "frc971/input/drivetrain_input.h"
 #include "y2017/constants.h"
 #include "y2017/control_loops/drivetrain/drivetrain_base.h"
 #include "y2017/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2017/control_loops/superstructure/superstructure_status_generated.h"
 
-using ::aos::input::driver_station::ButtonLocation;
-using ::aos::input::driver_station::ControlBit;
-using ::aos::input::driver_station::JoystickAxis;
-using ::aos::input::driver_station::POVLocation;
-using ::aos::input::DrivetrainInputReader;
+using ::frc971::input::DrivetrainInputReader;
+using ::frc971::input::driver_station::ButtonLocation;
+using ::frc971::input::driver_station::ControlBit;
+using ::frc971::input::driver_station::JoystickAxis;
+using ::frc971::input::driver_station::POVLocation;
 
 namespace y2017 {
 namespace input {
@@ -47,10 +47,10 @@ const ButtonLocation kExtra1(3, 11);
 const ButtonLocation kExtra2(3, 10);
 const ButtonLocation kHang(3, 2);
 
-class Reader : public ::aos::input::ActionJoystickInput {
+class Reader : public ::frc971::input::ActionJoystickInput {
  public:
   Reader(::aos::EventLoop *event_loop)
-      : ::aos::input::ActionJoystickInput(
+      : ::frc971::input::ActionJoystickInput(
             event_loop,
             ::y2017::control_loops::drivetrain::GetDrivetrainConfig(),
             DrivetrainInputReader::InputType::kSteeringWheel, {}),
@@ -65,7 +65,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
 
   enum class ShotDistance { VISION_SHOT, MIDDLE_SHOT, FAR_SHOT };
 
-  void HandleTeleop(const ::aos::input::driver_station::Data &data) {
+  void HandleTeleop(const ::frc971::input::driver_station::Data &data) {
     // Default the intake to in.
     intake_goal_ = 0.07;
     bool lights_on = false;
@@ -113,9 +113,8 @@ class Reader : public ::aos::input::ActionJoystickInput {
       last_shot_distance_ = ShotDistance::FAR_SHOT;
     }
 
-    if (data.IsPressed(kVisionAlign) ||
-        data.IsPressed(kMiddleShot) || data.IsPressed(kFarShot) ||
-        data.IsPressed(kFire)) {
+    if (data.IsPressed(kVisionAlign) || data.IsPressed(kMiddleShot) ||
+        data.IsPressed(kFarShot) || data.IsPressed(kFire)) {
       switch (last_shot_distance_) {
         case ShotDistance::VISION_SHOT:
           hood_goal_ = 0.10;
@@ -135,23 +134,24 @@ class Reader : public ::aos::input::ActionJoystickInput {
           break;
       }
     } else {
-      //hood_goal_ = 0.15;
+      // hood_goal_ = 0.15;
       shooter_velocity_ = 0.0;
     }
 
     if (data.IsPressed(kExtra1)) {
-      //turret_goal_ = -M_PI * 3.0 / 4.0;
+      // turret_goal_ = -M_PI * 3.0 / 4.0;
       turret_goal_ += 0.150;
     }
     if (data.IsPressed(kExtra2)) {
-      //turret_goal_ = M_PI * 3.0 / 4.0;
+      // turret_goal_ = M_PI * 3.0 / 4.0;
       turret_goal_ -= 0.150;
     }
     turret_goal_ = ::std::max(::std::min(turret_goal_, M_PI), -M_PI);
 
     fire_ = data.IsPressed(kFire) && shooter_velocity_ != 0.0;
     if (data.IsPressed(kVisionAlign)) {
-      fire_ = fire_ && superstructure_status_fetcher_->turret()->vision_tracking();
+      fire_ =
+          fire_ && superstructure_status_fetcher_->turret()->vision_tracking();
     }
 
     auto builder = superstructure_goal_sender_.MakeBuilder();
@@ -206,7 +206,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
       indexer_angular_velocity = 1.0;
     } else if (fire_) {
       indexer_voltage_rollers = 12.0;
-      switch (last_shot_distance_)  {
+      switch (last_shot_distance_) {
         case ShotDistance::VISION_SHOT:
           indexer_angular_velocity = -1.25 * M_PI;
           break;
@@ -247,7 +247,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
 
     flatbuffers::Offset<frc971::ProfileParameters>
         intake_profile_parameters_offset =
-          frc971::CreateProfileParameters(*builder.fbb(), 0.5, 3.0);
+            frc971::CreateProfileParameters(*builder.fbb(), 0.5, 3.0);
 
     superstructure::IntakeGoal::Builder intake_goal_builder =
         builder.MakeBuilder<superstructure::IntakeGoal>();

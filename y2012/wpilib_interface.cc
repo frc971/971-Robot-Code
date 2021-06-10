@@ -1,12 +1,12 @@
+#include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include <inttypes.h>
 
 #include <chrono>
-#include <thread>
-#include <mutex>
 #include <functional>
+#include <mutex>
+#include <thread>
 
 #include "frc971/wpilib/ahal/AnalogInput.h"
 #include "frc971/wpilib/ahal/Compressor.h"
@@ -24,7 +24,6 @@
 #include "aos/init.h"
 #include "aos/logging/logging.h"
 #include "aos/make_unique.h"
-#include "aos/robot_state/robot_state_generated.h"
 #include "aos/stl_mutex/stl_mutex.h"
 #include "aos/time/time.h"
 #include "aos/util/log_interval.h"
@@ -32,6 +31,7 @@
 #include "aos/util/wrapping_counter.h"
 #include "frc971/control_loops/drivetrain/drivetrain_output_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_position_generated.h"
+#include "frc971/input/robot_state_generated.h"
 #include "frc971/wpilib/buffered_pcm.h"
 #include "frc971/wpilib/buffered_solenoid.h"
 #include "frc971/wpilib/dma.h"
@@ -53,15 +53,12 @@ namespace y2012 {
 namespace wpilib {
 
 double drivetrain_translate(int32_t in) {
-  return -static_cast<double>(in) /
-         (256.0 /*cpr*/ * 4.0 /*4x*/) *
-         1 *
+  return -static_cast<double>(in) / (256.0 /*cpr*/ * 4.0 /*4x*/) * 1 *
          (3.5 /*wheel diameter*/ * 2.54 / 100.0 * M_PI) * 2.0 / 2.0;
 }
 
 double drivetrain_velocity_translate(double in) {
-  return (1.0 / in) / 256.0 /*cpr*/ *
-         1 *
+  return (1.0 / in) / 256.0 /*cpr*/ * 1 *
          (3.5 /*wheel diameter*/ * 2.54 / 100.0 * M_PI) * 2.0 / 2.0;
 }
 
@@ -290,6 +287,5 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
 }  // namespace wpilib
 }  // namespace y2012
-
 
 AOS_ROBOT_CLASS(::y2012::wpilib::WPILibRobot);

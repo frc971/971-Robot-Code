@@ -1,12 +1,13 @@
-#include "aos/input/joystick_input.h"
+#include "frc971/input/joystick_input.h"
 
 #include <string.h>
+
 #include <atomic>
 
 #include "aos/logging/logging.h"
-#include "aos/robot_state/robot_state_generated.h"
+#include "frc971/input/robot_state_generated.h"
 
-namespace aos {
+namespace frc971 {
 namespace input {
 
 void JoystickInput::HandleData(const ::aos::JoystickState *joystick_state) {
@@ -16,8 +17,8 @@ void JoystickInput::HandleData(const ::aos::JoystickState *joystick_state) {
           (static_cast<int>(joystick_state->scale_left()) << 1);
 
   {
-    using driver_station::JoystickFeature;
     using driver_station::ButtonLocation;
+    using driver_station::JoystickFeature;
     for (int joystick = 1; joystick <= JoystickFeature::kJoysticks;
          ++joystick) {
       for (int button = 1; button <= ButtonLocation::kButtons; ++button) {
@@ -61,4 +62,4 @@ void JoystickInput::HandleData(const ::aos::JoystickState *joystick_state) {
 }
 
 }  // namespace input
-}  // namespace aos
+}  // namespace frc971

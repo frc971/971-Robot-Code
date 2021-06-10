@@ -91,7 +91,7 @@ cc_binary(
         "//aos/controls:control_loop",
         "//aos/events:shm_event_loop",
         "//aos/logging",
-        "//aos/robot_state:robot_state_fbs",
+        "//frc971/input:robot_state_fbs",
         "//aos/stl_mutex",
         "//aos/time",
         "//aos/util:log_interval",
@@ -129,9 +129,9 @@ cc_binary(
         ":setpoint_fbs",
         "//aos:init",
         "//aos/actions:action_lib",
-        "//aos/input:action_joystick_input",
-        "//aos/input:drivetrain_input",
-        "//aos/input:joystick_input",
+        "//frc971/input:action_joystick_input",
+        "//frc971/input:drivetrain_input",
+        "//frc971/input:joystick_input",
         "//aos/logging",
         "//frc971/autonomous:auto_fbs",
         "//frc971/autonomous:base_autonomous_actor",
@@ -185,7 +185,7 @@ aos_config(
         visibility = ["//visibility:public"],
         deps = [
             "//aos/events:config",
-            "//aos/robot_state:config",
+            "//frc971/input:config",
             "//frc971/control_loops/drivetrain:config",
         ],
     )
@@ -214,7 +214,7 @@ aos_config(
     visibility = ["//visibility:public"],
     deps = [
         "//aos/events:config",
-        "//aos/robot_state:config",
+        "//frc971/input:config",
         "//frc971/control_loops/drivetrain:config",
     ],
 )
@@ -237,7 +237,7 @@ aos_config(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos/events:config",
-        "//aos/robot_state:config",
+        "//frc971/input:config",
         "//frc971/autonomous:config",
         "//frc971/control_loops/drivetrain:config",
         "//frc971/wpilib:config",

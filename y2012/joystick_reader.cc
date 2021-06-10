@@ -1,22 +1,21 @@
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include <math.h>
 
 #include "aos/actions/actions.h"
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
-#include "aos/input/driver_station_data.h"
-#include "aos/input/joystick_input.h"
 #include "aos/logging/logging.h"
 #include "aos/time/time.h"
-
 #include "frc971/control_loops/drivetrain/drivetrain_goal_generated.h"
+#include "frc971/input/driver_station_data.h"
+#include "frc971/input/joystick_input.h"
 #include "y2012/control_loops/accessories/accessories_generated.h"
 
-using ::aos::input::driver_station::ButtonLocation;
-using ::aos::input::driver_station::JoystickAxis;
-using ::aos::input::driver_station::ControlBit;
+using ::frc971::input::driver_station::ButtonLocation;
+using ::frc971::input::driver_station::ControlBit;
+using ::frc971::input::driver_station::JoystickAxis;
 
 #define OLD_DS 0
 
@@ -76,10 +75,10 @@ const ButtonLocation kUserRight(2, 10);
 const JoystickAxis kAdjustClawGoal(3, 2);
 const JoystickAxis kAdjustClawSeparation(3, 1);
 
-class Reader : public ::aos::input::JoystickInput {
+class Reader : public ::frc971::input::JoystickInput {
  public:
   Reader(::aos::EventLoop *event_loop)
-      : ::aos::input::JoystickInput(event_loop),
+      : ::frc971::input::JoystickInput(event_loop),
         drivetrain_goal_sender_(
             event_loop->MakeSender<::frc971::control_loops::drivetrain::Goal>(
                 "/drivetrain")),
@@ -89,14 +88,15 @@ class Reader : public ::aos::input::JoystickInput {
                     "/accessories")),
         is_high_gear_(false) {}
 
-  void RunIteration(const ::aos::input::driver_station::Data &data) override {
+  void RunIteration(
+      const ::frc971::input::driver_station::Data &data) override {
     if (!data.GetControlBit(ControlBit::kAutonomous)) {
       HandleDrivetrain(data);
       HandleTeleop(data);
     }
   }
 
-  void HandleDrivetrain(const ::aos::input::driver_station::Data &data) {
+  void HandleDrivetrain(const ::frc971::input::driver_station::Data &data) {
     const double wheel = -data.GetAxis(kSteeringWheel);
     const double throttle = -data.GetAxis(kDriveThrottle);
     if (data.PosEdge(kShiftLow)) {
@@ -118,16 +118,17 @@ class Reader : public ::aos::input::JoystickInput {
     }
   }
 
-  void HandleTeleop(const ::aos::input::driver_station::Data &data) {
+  void HandleTeleop(const ::frc971::input::driver_station::Data &data) {
     auto builder = accessories_goal_sender_.MakeBuilder();
     flatbuffers::Offset<flatbuffers::Vector<uint8_t>> solenoids_offset =
         builder.fbb()->CreateVector<uint8_t>({data.IsPressed(kLongShot),
-                                     data.IsPressed(kCloseShot),
-                                     data.IsPressed(kFenderShot)});
+                                              data.IsPressed(kCloseShot),
+                                              data.IsPressed(kFenderShot)});
 
     flatbuffers::Offset<flatbuffers::Vector<double>> sticks_offset =
-        builder.fbb()->CreateVector<double>({data.GetAxis(kAdjustClawGoal),
-                                     data.GetAxis(kAdjustClawSeparation)});
+        builder.fbb()->CreateVector<double>(
+            {data.GetAxis(kAdjustClawGoal),
+             data.GetAxis(kAdjustClawSeparation)});
 
     y2012::control_loops::accessories::Message::Builder message_builder =
         builder.MakeBuilder<y2012::control_loops::accessories::Message>();

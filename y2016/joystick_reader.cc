@@ -1,19 +1,18 @@
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include <math.h>
 
 #include "aos/actions/actions.h"
 #include "aos/init.h"
-#include "aos/input/action_joystick_input.h"
-#include "aos/input/driver_station_data.h"
 #include "aos/logging/logging.h"
 #include "aos/time/time.h"
 #include "aos/util/log_interval.h"
-
 #include "frc971/autonomous/auto_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_goal_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
+#include "frc971/input/action_joystick_input.h"
+#include "frc971/input/driver_station_data.h"
 #include "y2016/actors/autonomous_actor.h"
 #include "y2016/actors/superstructure_actor.h"
 #include "y2016/actors/vision_align_actor.h"
@@ -26,10 +25,10 @@
 #include "y2016/queues/ball_detector_generated.h"
 #include "y2016/vision/vision_generated.h"
 
-using ::aos::input::driver_station::ButtonLocation;
-using ::aos::input::driver_station::ControlBit;
-using ::aos::input::driver_station::JoystickAxis;
-using ::aos::input::driver_station::POVLocation;
+using ::frc971::input::driver_station::ButtonLocation;
+using ::frc971::input::driver_station::ControlBit;
+using ::frc971::input::driver_station::JoystickAxis;
+using ::frc971::input::driver_station::POVLocation;
 
 namespace y2016 {
 namespace input {
@@ -66,15 +65,15 @@ const ButtonLocation kVisionAlign(3, 4);
 const ButtonLocation kExpand(3, 6);
 const ButtonLocation kWinch(3, 5);
 
-class Reader : public ::aos::input::ActionJoystickInput {
+class Reader : public ::frc971::input::ActionJoystickInput {
  public:
   Reader(::aos::EventLoop *event_loop)
-      : ::aos::input::ActionJoystickInput(
+      : ::frc971::input::ActionJoystickInput(
             event_loop, control_loops::drivetrain::GetDrivetrainConfig(),
-            ::aos::input::DrivetrainInputReader::InputType::kSteeringWheel, {}),
+            ::frc971::input::DrivetrainInputReader::InputType::kSteeringWheel,
+            {}),
         vision_status_fetcher_(
-            event_loop->MakeFetcher<::y2016::vision::VisionStatus>(
-                "/vision")),
+            event_loop->MakeFetcher<::y2016::vision::VisionStatus>("/vision")),
         ball_detector_fetcher_(
             event_loop->MakeFetcher<::y2016::sensors::BallDetector>(
                 "/superstructure")),
@@ -103,13 +102,14 @@ class Reader : public ::aos::input::ActionJoystickInput {
             actors::VisionAlignActor::MakeFactory(event_loop)),
         superstructure_action_factory_(
             actors::SuperstructureActor::MakeFactory(event_loop)) {
-    set_vision_align_fn([this](const ::aos::input::driver_station::Data &data) {
-      return VisionAlign(data);
-    });
+    set_vision_align_fn(
+        [this](const ::frc971::input::driver_station::Data &data) {
+          return VisionAlign(data);
+        });
   }
 
   // Returns true when we are vision aligning
-  bool VisionAlign(const ::aos::input::driver_station::Data &data) {
+  bool VisionAlign(const ::frc971::input::driver_station::Data &data) {
     vision_valid_ = false;
 
     vision_status_fetcher_.Fetch();
@@ -143,7 +143,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
     return vision_action_running_;
   }
 
-  void HandleTeleop(const ::aos::input::driver_station::Data &data) {
+  void HandleTeleop(const ::frc971::input::driver_station::Data &data) {
     if (!data.GetControlBit(ControlBit::kEnabled)) {
       // If we are not enabled, reset the waiting for zero bit.
       AOS_LOG(DEBUG, "Waiting for zero.\n");
@@ -408,8 +408,7 @@ class Reader : public ::aos::input::ActionJoystickInput {
  private:
   ::aos::Fetcher<::y2016::vision::VisionStatus> vision_status_fetcher_;
   ::aos::Fetcher<::y2016::sensors::BallDetector> ball_detector_fetcher_;
-  ::aos::Sender<::y2016::control_loops::shooter::Goal>
-      shooter_goal_sender_;
+  ::aos::Sender<::y2016::control_loops::shooter::Goal> shooter_goal_sender_;
   ::aos::Fetcher<::y2016::control_loops::superstructure::Status>
       superstructure_status_fetcher_;
   ::aos::Sender<::y2016::control_loops::superstructure::Goal>

@@ -26,7 +26,6 @@
 #include "aos/init.h"
 #include "aos/logging/logging.h"
 #include "aos/make_unique.h"
-#include "aos/robot_state/robot_state_generated.h"
 #include "aos/stl_mutex/stl_mutex.h"
 #include "aos/time/time.h"
 #include "aos/util/compiler_memory_barrier.h"
@@ -38,6 +37,7 @@
 #include "frc971/control_loops/control_loops_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_output_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_position_generated.h"
+#include "frc971/input/robot_state_generated.h"
 #include "frc971/wpilib/ADIS16448.h"
 #include "frc971/wpilib/buffered_pcm.h"
 #include "frc971/wpilib/buffered_solenoid.h"
@@ -61,8 +61,8 @@
 #endif
 
 namespace superstructure = ::y2017::control_loops::superstructure;
-using ::y2017::constants::Values;
 using ::aos::monotonic_clock;
+using ::y2017::constants::Values;
 namespace chrono = ::std::chrono;
 using namespace frc;
 using aos::make_unique;

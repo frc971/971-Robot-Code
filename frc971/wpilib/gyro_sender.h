@@ -7,7 +7,7 @@
 
 #include "aos/events/event_loop.h"
 #include "aos/events/shm_event_loop.h"
-#include "aos/robot_state/robot_state_generated.h"
+#include "frc971/input/robot_state_generated.h"
 #include "frc971/queues/gyro_generated.h"
 #include "frc971/queues/gyro_uid_generated.h"
 #include "frc971/wpilib/gyro_interface.h"

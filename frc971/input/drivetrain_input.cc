@@ -1,31 +1,32 @@
-#include "aos/input/drivetrain_input.h"
+#include "frc971/input/drivetrain_input.h"
 
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+
 #include <cmath>
 
 #include "aos/commonmath.h"
-#include "aos/input/driver_station_data.h"
 #include "aos/logging/logging.h"
 #include "frc971/control_loops/control_loops_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_goal_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
+#include "frc971/input/driver_station_data.h"
 
-using ::aos::input::driver_station::ButtonLocation;
-using ::aos::input::driver_station::ControlBit;
-using ::aos::input::driver_station::JoystickAxis;
-using ::aos::input::driver_station::POVLocation;
+using ::frc971::input::driver_station::ButtonLocation;
+using ::frc971::input::driver_station::ControlBit;
+using ::frc971::input::driver_station::JoystickAxis;
+using ::frc971::input::driver_station::POVLocation;
 
 namespace drivetrain = frc971::control_loops::drivetrain;
 
-namespace aos {
+namespace frc971 {
 namespace input {
 
 const ButtonLocation kShiftHigh(2, 3), kShiftHigh2(2, 2), kShiftLow(2, 1);
 
 void DrivetrainInputReader::HandleDrivetrain(
-    const ::aos::input::driver_station::Data &data) {
+    const ::frc971::input::driver_station::Data &data) {
   const auto wheel_and_throttle = GetWheelAndThrottle(data);
   const double wheel = wheel_and_throttle.wheel;
   const double wheel_velocity = wheel_and_throttle.wheel_velocity;
@@ -107,10 +108,10 @@ void DrivetrainInputReader::HandleDrivetrain(
   goal_builder.add_highgear(high_gear);
   goal_builder.add_quickturn(data.IsPressed(quick_turn_));
   goal_builder.add_controller_type(
-      is_line_following
-          ? drivetrain::ControllerType::LINE_FOLLOWER
-          : (is_control_loop_driving ? drivetrain::ControllerType::MOTION_PROFILE
-                                     : drivetrain::ControllerType::POLYDRIVE));
+      is_line_following ? drivetrain::ControllerType::LINE_FOLLOWER
+                        : (is_control_loop_driving
+                               ? drivetrain::ControllerType::MOTION_PROFILE
+                               : drivetrain::ControllerType::POLYDRIVE));
   goal_builder.add_left_goal(current_left_goal);
   goal_builder.add_right_goal(current_right_goal);
   goal_builder.add_linear(linear_offset);
@@ -124,7 +125,7 @@ void DrivetrainInputReader::HandleDrivetrain(
 
 DrivetrainInputReader::WheelAndThrottle
 SteeringWheelDrivetrainInputReader::GetWheelAndThrottle(
-    const ::aos::input::driver_station::Data &data) {
+    const ::frc971::input::driver_station::Data &data) {
   const double wheel = -data.GetAxis(wheel_);
   const double throttle = -data.GetAxis(throttle_);
 
@@ -144,7 +145,7 @@ SteeringWheelDrivetrainInputReader::GetWheelAndThrottle(
       wheel, 0.0, 0.0, throttle, 0.0, 0.0, high_gear_};
 }
 
-double UnwrappedAxis(const ::aos::input::driver_station::Data &data,
+double UnwrappedAxis(const ::frc971::input::driver_station::Data &data,
                      const JoystickAxis &high_bits,
                      const JoystickAxis &low_bits) {
   const float high_bits_data = data.GetAxis(high_bits);
@@ -173,18 +174,17 @@ double UnwrappedAxis(const ::aos::input::driver_station::Data &data,
 
 DrivetrainInputReader::WheelAndThrottle
 PistolDrivetrainInputReader::GetWheelAndThrottle(
-    const ::aos::input::driver_station::Data &data) {
-  const double wheel =
-      -UnwrappedAxis(data, wheel_, wheel_low_);
+    const ::frc971::input::driver_station::Data &data) {
+  const double wheel = -UnwrappedAxis(data, wheel_, wheel_low_);
   const double wheel_velocity =
       -UnwrappedAxis(data, wheel_velocity_high_, wheel_velocity_low_) * 50.0;
   const double wheel_torque =
       -UnwrappedAxis(data, wheel_torque_high_, wheel_torque_low_) / 2.0;
 
-  double throttle =
-      UnwrappedAxis(data, throttle_, throttle_low_);
+  double throttle = UnwrappedAxis(data, throttle_, throttle_low_);
   const double throttle_velocity =
-      UnwrappedAxis(data, throttle_velocity_high_, throttle_velocity_low_) * 50.0;
+      UnwrappedAxis(data, throttle_velocity_high_, throttle_velocity_low_) *
+      50.0;
   const double throttle_torque =
       UnwrappedAxis(data, throttle_torque_high_, throttle_torque_low_) / 2.0;
 
@@ -210,14 +210,14 @@ PistolDrivetrainInputReader::GetWheelAndThrottle(
   }
 
   return DrivetrainInputReader::WheelAndThrottle{
-      wheel,    wheel_velocity,    wheel_torque,
-      throttle, throttle_velocity, throttle_torque,
+      wheel,     wheel_velocity,    wheel_torque,
+      throttle,  throttle_velocity, throttle_torque,
       high_gear_};
 }
 
 DrivetrainInputReader::WheelAndThrottle
 XboxDrivetrainInputReader::GetWheelAndThrottle(
-    const ::aos::input::driver_station::Data &data) {
+    const ::frc971::input::driver_station::Data &data) {
   // xbox
   constexpr double kWheelDeadband = 0.05;
   constexpr double kThrottleDeadband = 0.05;
@@ -345,4 +345,4 @@ std::unique_ptr<XboxDrivetrainInputReader> XboxDrivetrainInputReader::Make(
 }
 
 }  // namespace input
-}  // namespace aos
+}  // namespace frc971

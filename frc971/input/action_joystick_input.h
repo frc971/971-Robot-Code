@@ -1,21 +1,21 @@
 #ifndef AOS_INPUT_ACTION_JOYSTICK_INPUT_H_
 #define AOS_INPUT_ACTION_JOYSTICK_INPUT_H_
 
-#include "aos/input/driver_station_data.h"
-#include "aos/input/drivetrain_input.h"
-#include "aos/input/joystick_input.h"
 #include "frc971/autonomous/auto_generated.h"
 #include "frc971/autonomous/auto_mode_generated.h"
 #include "frc971/autonomous/base_autonomous_actor.h"
+#include "frc971/input/driver_station_data.h"
+#include "frc971/input/drivetrain_input.h"
+#include "frc971/input/joystick_input.h"
 
-namespace aos {
+namespace frc971 {
 namespace input {
 
 // Class to abstract out managing actions, autonomous mode, and drivetrains.
 // Turns out we do the same thing every year, so let's stop copying it.
-class ActionJoystickInput : public ::aos::input::JoystickInput {
+class ActionJoystickInput : public ::frc971::input::JoystickInput {
  public:
-   // Configuration parameters that don't really belong in the DrivetrainConfig.
+  // Configuration parameters that don't really belong in the DrivetrainConfig.
   struct InputConfig {
     // If true, we will run teleop during auto mode after auto mode ends.  This
     // is to support the 2019 sandstorm mode.  Auto will run, and then when the
@@ -32,7 +32,7 @@ class ActionJoystickInput : public ::aos::input::JoystickInput {
           &dt_config,
       DrivetrainInputReader::InputType input_type,
       const InputConfig &input_config)
-      : ::aos::input::JoystickInput(event_loop),
+      : ::frc971::input::JoystickInput(event_loop),
         input_config_(input_config),
         drivetrain_input_reader_(
             DrivetrainInputReader::Make(event_loop, input_type, dt_config)),
@@ -76,7 +76,7 @@ class ActionJoystickInput : public ::aos::input::JoystickInput {
   // no drivetain code is run.  If it returns false, the vision align function
   // is assumed to be disabled and normal drive code is run.
   void set_vision_align_fn(
-      ::std::function<bool(const ::aos::input::driver_station::Data &data)>
+      ::std::function<bool(const ::frc971::input::driver_station::Data &data)>
           vision_align_fn) {
     drivetrain_input_reader_->set_vision_align_fn(vision_align_fn);
   }
@@ -85,9 +85,10 @@ class ActionJoystickInput : public ::aos::input::JoystickInput {
   // Handles anything that needs to be cleaned up when the auto action exits.
   virtual void AutoEnded() {}
   // Handles any year specific superstructure code.
-  virtual void HandleTeleop(const ::aos::input::driver_station::Data &data) = 0;
+  virtual void HandleTeleop(
+      const ::frc971::input::driver_station::Data &data) = 0;
 
-  void RunIteration(const ::aos::input::driver_station::Data &data) override;
+  void RunIteration(const ::frc971::input::driver_station::Data &data) override;
 
   void StartAuto();
   void StopAuto();
@@ -127,6 +128,6 @@ class ActionJoystickInput : public ::aos::input::JoystickInput {
 };
 
 }  // namespace input
-}  // namespace aos
+}  // namespace frc971
 
 #endif  // AOS_INPUT_ACTION_JOYSTICK_INPUT_H_

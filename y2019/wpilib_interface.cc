@@ -10,13 +10,13 @@
 #include <mutex>
 #include <thread>
 
+#include "ctre/phoenix/CANifier.h"
 #include "frc971/wpilib/ahal/AnalogInput.h"
 #include "frc971/wpilib/ahal/Counter.h"
 #include "frc971/wpilib/ahal/DigitalGlitchFilter.h"
 #include "frc971/wpilib/ahal/DriverStation.h"
 #include "frc971/wpilib/ahal/Encoder.h"
 #include "frc971/wpilib/ahal/VictorSP.h"
-#include "ctre/phoenix/CANifier.h"
 #undef ERROR
 
 #include "aos/commonmath.h"
@@ -26,7 +26,6 @@
 #include "aos/logging/logging.h"
 #include "aos/make_unique.h"
 #include "aos/realtime.h"
-#include "aos/robot_state/robot_state_generated.h"
 #include "aos/time/time.h"
 #include "aos/util/log_interval.h"
 #include "aos/util/phased_loop.h"
@@ -34,6 +33,7 @@
 #include "ctre/phoenix/motorcontrol/can/TalonSRX.h"
 #include "frc971/autonomous/auto_mode_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_position_generated.h"
+#include "frc971/input/robot_state_generated.h"
 #include "frc971/wpilib/ADIS16448.h"
 #include "frc971/wpilib/buffered_pcm.h"
 #include "frc971/wpilib/buffered_solenoid.h"
@@ -58,8 +58,8 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-using ::y2019::constants::Values;
 using ::aos::monotonic_clock;
+using ::y2019::constants::Values;
 namespace superstructure = ::y2019::control_loops::superstructure;
 namespace chrono = ::std::chrono;
 using aos::make_unique;
@@ -800,8 +800,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     camera_reader.set_activate_passthrough(make_unique<frc::DigitalInput>(25));
 
     auto imu_trigger = make_unique<frc::DigitalInput>(0);
-    ::frc971::wpilib::ADIS16448 imu(&imu_event_loop, frc::SPI::Port::kOnboardCS1,
-                                    imu_trigger.get());
+    ::frc971::wpilib::ADIS16448 imu(
+        &imu_event_loop, frc::SPI::Port::kOnboardCS1, imu_trigger.get());
     imu.set_spi_idle_callback(
         [&camera_reader]() { camera_reader.DoSpiTransaction(); });
     auto imu_reset = make_unique<frc::DigitalOutput>(1);

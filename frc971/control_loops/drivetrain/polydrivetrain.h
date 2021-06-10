@@ -7,12 +7,12 @@
 #include "frc971/control_loops/drivetrain/gear.h"
 #ifdef __linux__
 #include "aos/logging/logging.h"
-#include "aos/robot_state/robot_state_generated.h"
 #include "frc971/control_loops/control_loops_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_goal_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_output_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_position_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
+#include "frc971/input/robot_state_generated.h"
 #else
 #include "frc971/control_loops/drivetrain/drivetrain_goal_float_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_output_float_generated.h"

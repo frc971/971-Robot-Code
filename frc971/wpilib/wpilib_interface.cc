@@ -2,8 +2,7 @@
 
 #include "aos/events/event_loop.h"
 #include "aos/logging/logging.h"
-#include "aos/robot_state/robot_state_generated.h"
-
+#include "frc971/input/robot_state_generated.h"
 #include "hal/HAL.h"
 
 namespace frc971 {

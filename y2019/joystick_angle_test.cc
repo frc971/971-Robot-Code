@@ -1,10 +1,12 @@
 #include "y2019/joystick_angle.h"
+
 #include <iostream>
-#include "aos/input/driver_station_data.h"
+
+#include "frc971/input/driver_station_data.h"
 #include "gtest/gtest.h"
 
-using y2019::input::joysticks::JoystickAngle;
 using y2019::input::joysticks::GetJoystickPosition;
+using y2019::input::joysticks::JoystickAngle;
 
 TEST(JoystickAngleTest, JoystickAngleTest) {
   EXPECT_EQ(JoystickAngle::kUpperRight, GetJoystickPosition(0.75, 0.75));

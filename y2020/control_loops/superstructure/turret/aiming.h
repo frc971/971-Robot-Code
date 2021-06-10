@@ -2,10 +2,10 @@
 #define y2020_CONTROL_LOOPS_SUPERSTRUCTURE_TURRET_AIMING_H_
 
 #include "aos/flatbuffers.h"
-#include "aos/robot_state/joystick_state_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "frc971/control_loops/pose.h"
 #include "frc971/control_loops/profiled_subsystem_generated.h"
+#include "frc971/input/joystick_state_generated.h"
 #include "y2020/control_loops/superstructure/superstructure_status_generated.h"
 
 namespace y2020 {
@@ -66,7 +66,7 @@ class Aimer {
   bool aiming_for_inner_port_ = false;
   // Distance of the shot to the virtual target, used for calculating hood
   // position and shooter speed.
-  double shot_distance_ = 0.0;    // meters
+  double shot_distance_ = 0.0;  // meters
   // Real-world distance to the target.
   double target_distance_ = 0.0;  // meters
 };

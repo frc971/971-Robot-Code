@@ -1,6 +1,6 @@
 {
   "imports": [
-    "../../../aos/robot_state/robot_state_config.json",
+    "../../../frc971/input/robot_state_config.json",
     "drivetrain_config.json",
     "drivetrain_simulation_channels.json"
   ]

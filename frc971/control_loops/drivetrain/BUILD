@@ -152,7 +152,7 @@ aos_config(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
-        "//aos/robot_state:config",
+        "//frc971/input:config",
     ],
 )
 
@@ -317,7 +317,7 @@ cc_library(
         "//aos:math",
         "//aos/controls:control_loop",
         "//aos/controls:polytope",
-        "//aos/robot_state:robot_state_fbs",
+        "//frc971/input:robot_state_fbs",
         "//aos/util:log_interval",
         "//aos/util:trapezoid_profile",
         "//frc971:shifter_hall_effect",
@@ -355,7 +355,7 @@ cc_library(
             ":drivetrain_output_fbs",
             ":drivetrain_position_fbs",
             ":drivetrain_status_fbs",
-            "//aos/robot_state:robot_state_fbs",
+            "//frc971/input:robot_state_fbs",
             "//aos/util:log_interval",
         ],
         "@platforms//os:none": [

@@ -22,7 +22,6 @@
 #include "aos/init.h"
 #include "aos/logging/logging.h"
 #include "aos/make_unique.h"
-#include "aos/robot_state/robot_state_generated.h"
 #include "aos/stl_mutex/stl_mutex.h"
 #include "aos/time/time.h"
 #include "aos/util/log_interval.h"
@@ -30,6 +29,7 @@
 #include "aos/util/wrapping_counter.h"
 #include "frc971/control_loops/drivetrain/drivetrain_output_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_position_generated.h"
+#include "frc971/input/robot_state_generated.h"
 #include "frc971/wpilib/buffered_pcm.h"
 #include "frc971/wpilib/buffered_solenoid.h"
 #include "frc971/wpilib/dma.h"
@@ -49,13 +49,13 @@
 #define M_PI 3.14159265358979323846
 #endif
 
+using aos::make_unique;
 using ::aos::util::SimpleLogInterval;
 using ::frc971::wpilib::BufferedPcm;
 using ::frc971::wpilib::BufferedSolenoid;
-using ::frc971::wpilib::LoopOutputHandler;
-using ::frc971::wpilib::JoystickSender;
 using ::frc971::wpilib::GyroSender;
-using aos::make_unique;
+using ::frc971::wpilib::JoystickSender;
+using ::frc971::wpilib::LoopOutputHandler;
 
 namespace y2014_bot3 {
 namespace wpilib {
@@ -231,8 +231,8 @@ class SolenoidWriter {
 };
 
 // Writes out rollers voltages.
-class RollersWriter : public LoopOutputHandler<
-                          ::y2014_bot3::control_loops::rollers::Output> {
+class RollersWriter
+    : public LoopOutputHandler<::y2014_bot3::control_loops::rollers::Output> {
  public:
   RollersWriter(::aos::EventLoop *event_loop)
       : ::frc971::wpilib::LoopOutputHandler<
@@ -256,8 +256,8 @@ class RollersWriter : public LoopOutputHandler<
   }
 
  private:
-  virtual void Write(const ::y2014_bot3::control_loops::rollers::Output
-                         &output) override {
+  virtual void Write(
+      const ::y2014_bot3::control_loops::rollers::Output &output) override {
     rollers_front_left_intake_talon_->SetSpeed(output.front_intake_voltage() /
                                                12.0);
     rollers_front_right_intake_talon_->SetSpeed(

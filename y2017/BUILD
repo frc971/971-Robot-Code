@@ -36,8 +36,8 @@ cc_binary(
         ":constants",
         "//aos:init",
         "//aos/actions:action_lib",
-        "//aos/input:action_joystick_input",
-        "//aos/input:drivetrain_input",
+        "//frc971/input:action_joystick_input",
+        "//frc971/input:drivetrain_input",
         "//aos/logging",
         "//aos/time",
         "//aos/util:log_interval",
@@ -61,7 +61,7 @@ aos_config(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
-        "//aos/robot_state:config",
+        "//frc971/input:config",
         "//frc971/control_loops/drivetrain:config",
     ],
 )
@@ -79,7 +79,7 @@ cc_binary(
         "//aos:math",
         "//aos/controls:control_loop",
         "//aos/logging",
-        "//aos/robot_state:robot_state_fbs",
+        "//frc971/input:robot_state_fbs",
         "//aos/stl_mutex",
         "//aos/time",
         "//aos/util:log_interval",

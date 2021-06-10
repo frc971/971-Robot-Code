@@ -2,14 +2,15 @@
 #define AOS_CONTROL_LOOP_CONTROL_LOOP_H_
 
 #include <string.h>
+
 #include <atomic>
 
 #include "aos/events/event_loop.h"
-#include "aos/robot_state/joystick_state_generated.h"
-#include "aos/robot_state/robot_state_generated.h"
 #include "aos/time/time.h"
 #include "aos/type_traits/type_traits.h"
 #include "aos/util/log_interval.h"
+#include "frc971/input/joystick_state_generated.h"
+#include "frc971/input/robot_state_generated.h"
 
 namespace aos {
 namespace controls {

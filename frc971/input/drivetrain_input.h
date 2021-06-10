@@ -4,17 +4,18 @@
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+
 #include <cmath>
 #include <memory>
 
-#include "aos/input/driver_station_data.h"
 #include "aos/logging/logging.h"
 #include "frc971/control_loops/control_loops_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
 #include "frc971/control_loops/drivetrain/drivetrain_goal_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
+#include "frc971/input/driver_station_data.h"
 
-namespace aos {
+namespace frc971 {
 namespace input {
 
 // We have a couple different joystick configurations used to drive our skid
@@ -84,7 +85,7 @@ class DrivetrainInputReader {
           &dt_config);
 
   // Processes new joystick data and publishes drivetrain goal messages.
-  void HandleDrivetrain(const ::aos::input::driver_station::Data &data);
+  void HandleDrivetrain(const ::frc971::input::driver_station::Data &data);
 
   // Sets the scalar for the steering wheel for closed loop mode converting
   // steering ratio to meters displacement on the two wheels.
@@ -96,7 +97,7 @@ class DrivetrainInputReader {
   double robot_velocity() const { return robot_velocity_; }
 
   void set_vision_align_fn(
-      ::std::function<bool(const ::aos::input::driver_station::Data &data)>
+      ::std::function<bool(const ::frc971::input::driver_station::Data &data)>
           vision_align_fn) {
     vision_align_fn_ = vision_align_fn;
   }
@@ -129,7 +130,7 @@ class DrivetrainInputReader {
  private:
   // Computes the steering and throttle from the provided driverstation data.
   virtual WheelAndThrottle GetWheelAndThrottle(
-      const ::aos::input::driver_station::Data &data) = 0;
+      const ::frc971::input::driver_station::Data &data) = 0;
 
   ::aos::Fetcher<::frc971::control_loops::drivetrain::Status>
       drivetrain_status_fetcher_;
@@ -144,7 +145,7 @@ class DrivetrainInputReader {
   // joysticks to meters displacement on the two wheels.
   double wheel_multiplier_ = 0.5;
 
-  ::std::function<bool(const ::aos::input::driver_station::Data &data)>
+  ::std::function<bool(const ::frc971::input::driver_station::Data &data)>
       vision_align_fn_;
 };
 
@@ -166,7 +167,7 @@ class SteeringWheelDrivetrainInputReader : public DrivetrainInputReader {
 
  private:
   WheelAndThrottle GetWheelAndThrottle(
-      const ::aos::input::driver_station::Data &data) override;
+      const ::frc971::input::driver_station::Data &data) override;
   bool high_gear_;
   bool default_high_gear_;
 };
@@ -227,7 +228,7 @@ class PistolDrivetrainInputReader : public DrivetrainInputReader {
         slow_down_(slow_down) {}
 
   WheelAndThrottle GetWheelAndThrottle(
-      const ::aos::input::driver_station::Data &data) override;
+      const ::frc971::input::driver_station::Data &data) override;
 
   // Sets the default shifter position
   void set_default_high_gear(bool default_high_gear) {
@@ -266,10 +267,10 @@ class XboxDrivetrainInputReader : public DrivetrainInputReader {
 
  private:
   WheelAndThrottle GetWheelAndThrottle(
-      const ::aos::input::driver_station::Data &data) override;
+      const ::frc971::input::driver_station::Data &data) override;
 };
 
 }  // namespace input
-}  // namespace aos
+}  // namespace frc971
 
 #endif  // AOS_INPUT_DRIVETRAIN_INPUT_H_

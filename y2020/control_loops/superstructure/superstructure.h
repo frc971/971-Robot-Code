@@ -3,8 +3,8 @@
 
 #include "aos/controls/control_loop.h"
 #include "aos/events/event_loop.h"
-#include "aos/robot_state/joystick_state_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
+#include "frc971/input/joystick_state_generated.h"
 #include "y2020/constants.h"
 #include "y2020/control_loops/superstructure/climber.h"
 #include "y2020/control_loops/superstructure/shooter/shooter.h"
