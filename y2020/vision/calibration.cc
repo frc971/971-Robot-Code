@@ -1,5 +1,10 @@
+// These need to come before opencv, or they don't compile. Presumably opencv
+// #defines something annoying.
+// clang-format off
 #include "Eigen/Dense"
 #include "Eigen/Geometry"
+// clang-format on
+
 #include <opencv2/aruco/charuco.hpp>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/core/eigen.hpp>
@@ -37,17 +42,11 @@ namespace vision {
 
 class CameraCalibration {
  public:
-  CameraCalibration(const std::string_view training_data_bfbs) {
-    const sift::TrainingData *const training_data =
-        flatbuffers::GetRoot<sift::TrainingData>(training_data_bfbs.data());
-    {
-      flatbuffers::Verifier verifier(
-          reinterpret_cast<const uint8_t *>(training_data_bfbs.data()),
-          training_data_bfbs.size());
-      CHECK(training_data->Verify(verifier));
-    }
-
-    camera_calibration_ = FindCameraCalibration(training_data);
+  CameraCalibration(const absl::Span<const uint8_t> training_data_bfbs) {
+    const aos::FlatbufferSpan<sift::TrainingData> training_data(
+        training_data_bfbs);
+    CHECK(training_data.Verify());
+    camera_calibration_ = FindCameraCalibration(&training_data.message());
   }
 
   cv::Mat CameraIntrinsics() const {

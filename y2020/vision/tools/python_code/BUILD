@@ -49,6 +49,9 @@ cc_library(
     ],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
+    deps = [
+        "@com_google_absl//absl/types:span",
+    ],
 )
 
 py_binary(
@@ -102,6 +105,9 @@ cc_library(
     ],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
+    deps = [
+        "@com_google_absl//absl/types:span",
+    ],
 )
 
 cc_test(

@@ -6,7 +6,6 @@
 #include "aos/flatbuffer_merge.h"
 #include "aos/init.h"
 #include "aos/network/team_number.h"
-
 #include "y2020/vision/sift/sift971.h"
 #include "y2020/vision/sift/sift_generated.h"
 #include "y2020/vision/sift/sift_training_generated.h"
@@ -599,15 +598,9 @@ void CameraReaderMain() {
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig(FLAGS_config);
 
-  const auto training_data_bfbs = SiftTrainingData();
-  const sift::TrainingData *const training_data =
-      flatbuffers::GetRoot<sift::TrainingData>(training_data_bfbs.data());
-  {
-    flatbuffers::Verifier verifier(
-        reinterpret_cast<const uint8_t *>(training_data_bfbs.data()),
-        training_data_bfbs.size());
-    CHECK(training_data->Verify(verifier));
-  }
+  const aos::FlatbufferSpan<sift::TrainingData> training_data(
+      SiftTrainingData());
+  CHECK(training_data.Verify());
 
   const auto index_params = cv::makePtr<cv::flann::IndexParams>();
   index_params->setAlgorithm(cvflann::FLANN_INDEX_KDTREE);
@@ -622,13 +615,12 @@ void CameraReaderMain() {
   {
     aos::Sender<sift::TrainingData> training_data_sender =
         event_loop.MakeSender<sift::TrainingData>("/camera");
-    training_data_sender.Send(
-        aos::FlatbufferString<sift::TrainingData>(training_data_bfbs));
+    training_data_sender.Send(training_data);
   }
 
   V4L2Reader v4l2_reader(&event_loop, "/dev/video0");
-  CameraReader camera_reader(&event_loop, training_data, &v4l2_reader,
-                             &matcher);
+  CameraReader camera_reader(&event_loop, &training_data.message(),
+                             &v4l2_reader, &matcher);
 
   event_loop.Run();
 }

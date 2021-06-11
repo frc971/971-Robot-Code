@@ -219,13 +219,14 @@ def main():
     output_prefix = [
         b'#ifndef Y2020_VISION_TOOLS_PYTHON_CODE_TRAINING_DATA_H_',
         b'#define Y2020_VISION_TOOLS_PYTHON_CODE_TRAINING_DATA_H_',
-        b'#include <string_view>',
+        b'#include <stdint.h>',
+        b'#include "absl/types/span.h"',
         b'namespace frc971 {',
         b'namespace vision {',
-        b'inline std::string_view SiftTrainingData() {',
+        b'inline absl::Span<const uint8_t> SiftTrainingData() {',
     ]
     output_suffix = [
-        b'  return std::string_view(kData, sizeof(kData));',
+        b'  return absl::Span<const uint8_t>(reinterpret_cast<const uint8_t *>(kData), sizeof(kData));',
         b'}',
         b'}  // namespace vision',
         b'}  // namespace frc971',
