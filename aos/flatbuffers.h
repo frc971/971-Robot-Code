@@ -176,40 +176,6 @@ class FlatbufferSpan : public NonSizePrefixedFlatbuffer<T> {
   absl::Span<const uint8_t> data_;
 };
 
-// String backed flatbuffer.
-template <typename T>
-class FlatbufferString : public NonSizePrefixedFlatbuffer<T> {
- public:
-  // Builds a flatbuffer using the contents of the string.
-  FlatbufferString(const std::string_view data) : data_(data) {}
-  // Builds a Flatbuffer by copying the data from the other flatbuffer.
-  FlatbufferString(const NonSizePrefixedFlatbuffer<T> &other) {
-    absl::Span<const uint8_t> d = other.span();
-    data_ = std::string(reinterpret_cast<const char *>(d.data()), d.size());
-  }
-
-  // Copies the data from the other flatbuffer.
-  FlatbufferString &operator=(const NonSizePrefixedFlatbuffer<T> &other) {
-    absl::Span<const uint8_t> d = other.span();
-    data_ = std::string(reinterpret_cast<const char *>(d.data()), d.size());
-    return *this;
-  }
-
-  virtual ~FlatbufferString() override {}
-
-  absl::Span<uint8_t> span() override {
-    return absl::Span<uint8_t>(reinterpret_cast<uint8_t *>(data_.data()),
-                               data_.size());
-  }
-  absl::Span<const uint8_t> span() const override {
-    return absl::Span<const uint8_t>(
-        reinterpret_cast<const uint8_t *>(data_.data()), data_.size());
-  }
-
- private:
-  std::string data_;
-};
-
 // ResizeableBuffer backed flatbuffer.
 template <typename T>
 class FlatbufferVector : public NonSizePrefixedFlatbuffer<T> {
