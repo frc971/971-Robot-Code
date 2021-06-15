@@ -227,8 +227,15 @@ void Localizer::HandleImageMatch(
     // reading. Note that the Pose object ignores any roll/pitch components, so
     // if the camera's extrinsics for pitch/roll are off, this should just
     // ignore it.
-    const Pose measured_pose(H_field_target *
-                             (H_robot_camera * H_camera_target).inverse());
+    const Pose measured_camera_pose(H_field_target * H_camera_target.inverse());
+    // Calculate the camera-to-robot transformation matrix ignoring the
+    // pitch/roll of the camera.
+    // TODO(james): This could probably be made a bit more efficient, but I
+    // don't think this is anywhere near our bottleneck currently.
+    const Eigen::Matrix<float, 4, 4> H_camera_robot_stripped =
+        Pose(H_robot_camera).AsTransformationMatrix().inverse();
+    const Pose measured_pose(measured_camera_pose.AsTransformationMatrix() *
+                             H_camera_robot_stripped);
     // This "Z" is the robot pose directly implied by the camera results.
     // Currently, we do not actually use this result directly. However, it is
     // kept around in case we want to quickly re-enable it.

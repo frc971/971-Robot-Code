@@ -190,6 +190,7 @@ cc_binary(
         "//aos/events/logging:log_writer",
         "//frc971/control_loops/drivetrain:drivetrain_lib",
         "//frc971/control_loops/drivetrain:trajectory_generator",
+        "//y2020/control_loops/superstructure:superstructure_lib",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
     ],
