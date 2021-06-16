@@ -7,10 +7,10 @@
 #include "aos/events/simulated_event_loop.h"
 #include "aos/flatbuffers.h"
 #include "aos/json_to_flatbuffer.h"
-#include "aos/robot_state/joystick_state_generated.h"
-#include "aos/robot_state/robot_state_generated.h"
 #include "aos/testing/test_logging.h"
 #include "aos/time/time.h"
+#include "frc971/input/joystick_state_generated.h"
+#include "frc971/input/robot_state_generated.h"
 #include "gtest/gtest.h"
 
 namespace aos {

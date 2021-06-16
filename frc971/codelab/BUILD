@@ -84,6 +84,6 @@ aos_config(
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
-        "//aos/robot_state:config",
+        "//frc971/input:config",
     ],
 )

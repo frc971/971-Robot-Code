@@ -10,9 +10,8 @@
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 #include "aos/logging/logging.h"
-#include "aos/robot_state/robot_state_generated.h"
 #include "aos/time/time.h"
-
+#include "frc971/input/robot_state_generated.h"
 #include "frc971/queues/gyro_generated.h"
 #include "frc971/queues/gyro_uid_generated.h"
 #include "frc971/zeroing/averager.h"
@@ -31,9 +30,9 @@ GyroSender::GyroSender(::aos::ShmEventLoop *event_loop)
       gyro_reading_sender_(
           event_loop_->MakeSender<frc971::sensors::GyroReading>(
               "/drivetrain")) {
-  AOS_PCHECK(
-      system("busybox ps -ef | grep '\\[spi0\\]' | awk '{print $1}' | xargs chrt -f -p "
-             "33") == 0);
+  AOS_PCHECK(system("busybox ps -ef | grep '\\[spi0\\]' | awk '{print $1}' | "
+                    "xargs chrt -f -p "
+                    "33") == 0);
   event_loop->set_name("Gyro");
   event_loop_->SetRuntimeRealtimePriority(33);
 

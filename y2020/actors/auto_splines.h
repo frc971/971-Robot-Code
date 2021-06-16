@@ -3,9 +3,9 @@
 
 #include "aos/events/event_loop.h"
 #include "aos/flatbuffer_merge.h"
-#include "aos/robot_state/joystick_state_generated.h"
 #include "frc971/control_loops/control_loops_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_goal_generated.h"
+#include "frc971/input/joystick_state_generated.h"
 /*
 
   The cooridinate system for the autonomous splines is the same as the spline

@@ -5,30 +5,29 @@
 
 #include "aos/actions/actions.h"
 #include "aos/init.h"
-#include "aos/input/action_joystick_input.h"
-#include "aos/input/driver_station_data.h"
-#include "aos/input/drivetrain_input.h"
-#include "aos/input/joystick_input.h"
 #include "aos/logging/logging.h"
 #include "aos/network/team_number.h"
 #include "aos/util/log_interval.h"
 #include "frc971/autonomous/base_autonomous_actor.h"
 #include "frc971/control_loops/drivetrain/localizer_generated.h"
+#include "frc971/input/action_joystick_input.h"
+#include "frc971/input/driver_station_data.h"
+#include "frc971/input/drivetrain_input.h"
+#include "frc971/input/joystick_input.h"
 #include "y2020/constants.h"
 #include "y2020/control_loops/drivetrain/drivetrain_base.h"
 #include "y2020/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2020/control_loops/superstructure/superstructure_status_generated.h"
 #include "y2020/setpoint_generated.h"
 
-using aos::input::driver_station::ButtonLocation;
-using aos::input::driver_station::ControlBit;
-using aos::input::driver_station::JoystickAxis;
-using aos::input::driver_station::POVLocation;
+using frc971::input::driver_station::ButtonLocation;
+using frc971::input::driver_station::ControlBit;
+using frc971::input::driver_station::JoystickAxis;
+using frc971::input::driver_station::POVLocation;
 
 using frc971::CreateProfileParameters;
 using frc971::control_loops::CreateStaticZeroingSingleDOFProfiledSubsystemGoal;
 using frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal;
-
 
 namespace y2020 {
 namespace input {
@@ -50,13 +49,13 @@ const ButtonLocation kLocalizerReset(3, 8);
 
 const ButtonLocation kWinch(3, 14);
 
-class Reader : public ::aos::input::ActionJoystickInput {
+class Reader : public ::frc971::input::ActionJoystickInput {
  public:
   Reader(::aos::EventLoop *event_loop)
-      : ::aos::input::ActionJoystickInput(
+      : ::frc971::input::ActionJoystickInput(
             event_loop,
             ::y2020::control_loops::drivetrain::GetDrivetrainConfig(),
-            ::aos::input::DrivetrainInputReader::InputType::kPistol, {}),
+            ::frc971::input::DrivetrainInputReader::InputType::kPistol, {}),
         superstructure_goal_sender_(
             event_loop->MakeSender<superstructure::Goal>("/superstructure")),
         localizer_control_sender_(
@@ -89,7 +88,8 @@ class Reader : public ::aos::input::ActionJoystickInput {
     }
   }
 
-  void HandleTeleop(const ::aos::input::driver_station::Data &data) override {
+  void HandleTeleop(
+      const ::frc971::input::driver_station::Data &data) override {
     superstructure_status_fetcher_.Fetch();
     if (!superstructure_status_fetcher_.get()) {
       AOS_LOG(ERROR, "Got no superstructure status message.\n");

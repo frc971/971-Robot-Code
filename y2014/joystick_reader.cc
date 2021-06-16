@@ -1,17 +1,16 @@
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include <math.h>
 
 #include "aos/actions/actions.h"
 #include "aos/init.h"
-#include "aos/input/action_joystick_input.h"
-#include "aos/input/driver_station_data.h"
 #include "aos/logging/logging.h"
 #include "aos/time/time.h"
 #include "aos/util/log_interval.h"
-
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
+#include "frc971/input/action_joystick_input.h"
+#include "frc971/input/driver_station_data.h"
 #include "y2014/actors/shoot_actor.h"
 #include "y2014/constants.h"
 #include "y2014/control_loops/claw/claw_goal_generated.h"
@@ -19,9 +18,9 @@
 #include "y2014/control_loops/drivetrain/drivetrain_base.h"
 #include "y2014/control_loops/shooter/shooter_goal_generated.h"
 
-using ::aos::input::driver_station::ButtonLocation;
-using ::aos::input::driver_station::JoystickAxis;
-using ::aos::input::driver_station::ControlBit;
+using ::frc971::input::driver_station::ButtonLocation;
+using ::frc971::input::driver_station::ControlBit;
+using ::frc971::input::driver_station::JoystickAxis;
 
 #define OLD_DS 0
 
@@ -30,7 +29,7 @@ namespace input {
 namespace joysticks {
 
 const ButtonLocation kDriveControlLoopEnable1(1, 7),
-                     kDriveControlLoopEnable2(1, 11);
+    kDriveControlLoopEnable2(1, 11);
 const JoystickAxis kSteeringWheel(1, 1), kDriveThrottle(2, 2);
 const ButtonLocation kShiftHigh(2, 3), kShiftLow(2, 1);
 const ButtonLocation kQuickTurn(1, 5);
@@ -150,12 +149,13 @@ const ShotGoal kDemoShotGoal = {
 const ClawGoal k254PassGoal = {-1.95, kGrabSeparation};
 const ClawGoal kFlipped254PassGoal = {1.96, kGrabSeparation};
 
-class Reader : public ::aos::input::ActionJoystickInput {
+class Reader : public ::frc971::input::ActionJoystickInput {
  public:
   Reader(::aos::EventLoop *event_loop)
-      : ::aos::input::ActionJoystickInput(
+      : ::frc971::input::ActionJoystickInput(
             event_loop, control_loops::GetDrivetrainConfig(),
-            ::aos::input::DrivetrainInputReader::InputType::kSteeringWheel, {}),
+            ::frc971::input::DrivetrainInputReader::InputType::kSteeringWheel,
+            {}),
         claw_status_fetcher_(
             event_loop->MakeFetcher<::y2014::control_loops::claw::Status>(
                 "/claw")),
@@ -194,7 +194,8 @@ class Reader : public ::aos::input::ActionJoystickInput {
     intake_power_ = goal.intake_power;
   }
 
-  void HandleTeleop(const ::aos::input::driver_station::Data &data) override {
+  void HandleTeleop(
+      const ::frc971::input::driver_station::Data &data) override {
     if (data.IsPressed(kRollersIn) || data.IsPressed(kRollersOut)) {
       intake_power_ = 0.0;
       separation_angle_ = kGrabSeparation;
@@ -206,8 +207,8 @@ class Reader : public ::aos::input::ActionJoystickInput {
     if (OLD_DS || ::std::abs(claw_goal_adjust) < kAdjustClawGoalDeadband) {
       claw_goal_adjust = 0;
     } else {
-      claw_goal_adjust = (claw_goal_adjust -
-                          ((claw_goal_adjust < 0) ? -kAdjustClawGoalDeadband
+      claw_goal_adjust = (claw_goal_adjust - ((claw_goal_adjust < 0)
+                                                  ? -kAdjustClawGoalDeadband
                                                   : kAdjustClawGoalDeadband)) *
                          0.035;
     }
@@ -217,8 +218,8 @@ class Reader : public ::aos::input::ActionJoystickInput {
       claw_separation_adjust = 0;
     } else {
       claw_separation_adjust =
-          (claw_separation_adjust -
-           ((claw_separation_adjust < 0) ? -kAdjustClawGoalDeadband
+          (claw_separation_adjust - ((claw_separation_adjust < 0)
+                                         ? -kAdjustClawGoalDeadband
                                          : kAdjustClawGoalDeadband)) *
           -0.035;
     }

@@ -7,9 +7,9 @@
 #include <array>
 #include <memory>
 
-#include "aos/robot_state/joystick_state_generated.h"
+#include "frc971/input/joystick_state_generated.h"
 
-namespace aos {
+namespace frc971 {
 namespace input {
 namespace driver_station {
 
@@ -49,23 +49,19 @@ class ButtonLocation : public JoystickFeature {
 // Safe for static initialization.
 class POVLocation : public JoystickFeature {
  public:
-  POVLocation(int joystick, int number)
-      : JoystickFeature(joystick, number) {}
+  POVLocation(int joystick, int number) : JoystickFeature(joystick, number) {}
 };
 
 // Represents various bits of control information that the DS sends.
 // Use Data to actually get the value.
-enum class ControlBit {
-  kTestMode, kFmsAttached, kAutonomous, kEnabled
-};
+enum class ControlBit { kTestMode, kFmsAttached, kAutonomous, kEnabled };
 
 // Represents a single axis of a joystick.
 // Use Data to actually get the value.
 // Safe for static initialization.
 class JoystickAxis : public JoystickFeature {
  public:
-  JoystickAxis(int joystick, int number)
-      : JoystickFeature(joystick, number) {}
+  JoystickAxis(int joystick, int number) : JoystickFeature(joystick, number) {}
 
   // How many axes there are available on each joystick.
   static const int kAxes = 6;
@@ -78,7 +74,7 @@ class Data {
   Data();
 
   // Updates the current information with a new set of values.
-  void Update(const JoystickState *new_values);
+  void Update(const aos::JoystickState *new_values);
 
   bool IsPressed(POVLocation location) const;
   bool PosEdge(POVLocation location) const;
@@ -132,6 +128,6 @@ class Data {
 
 }  // namespace driver_station
 }  // namespace input
-}  // namespace aos
+}  // namespace frc971
 
 #endif  // AOS_INPUT_DRIVER_STATION_DATA_H_

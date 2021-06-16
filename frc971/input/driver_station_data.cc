@@ -1,21 +1,20 @@
-#include "aos/input/driver_station_data.h"
+#include "frc971/input/driver_station_data.h"
 
 #include "glog/logging.h"
 
-namespace aos {
+namespace frc971 {
 namespace input {
 namespace driver_station {
 
 Data::Data() : current_values_(), old_values_() {}
 
-void Data::Update(const JoystickState *new_values) {
+void Data::Update(const aos::JoystickState *new_values) {
   old_values_ = current_values_;
   CHECK(new_values->has_joysticks());
   CHECK_EQ(new_values->joysticks()->size(), current_values_.joysticks.size());
   for (size_t i = 0; i < current_values_.joysticks.size(); ++i) {
-    const Joystick *joystick = new_values->joysticks()->Get(i);
-    current_values_.joysticks[i].buttons =
-        joystick->buttons();
+    const aos::Joystick *joystick = new_values->joysticks()->Get(i);
+    current_values_.joysticks[i].buttons = joystick->buttons();
     current_values_.joysticks[i].pov = joystick->pov();
     for (size_t j = 0; j < joystick->axis()->size(); ++j) {
       current_values_.joysticks[i].axis[j] = joystick->axis()->Get(j);
@@ -72,12 +71,12 @@ bool Data::IsPressed(const ButtonLocation location) const {
 
 bool Data::PosEdge(const ButtonLocation location) const {
   return !GetButton(location, old_values_) &&
-      GetButton(location, current_values_);
+         GetButton(location, current_values_);
 }
 
 bool Data::NegEdge(const ButtonLocation location) const {
   return GetButton(location, old_values_) &&
-      !GetButton(location, current_values_);
+         !GetButton(location, current_values_);
 }
 
 bool Data::IsPressed(const POVLocation location) const {
@@ -108,12 +107,12 @@ bool Data::GetControlBit(const ControlBit bit) const {
 
 bool Data::PosEdge(const ControlBit bit) const {
   return !GetControlBitValue(bit, old_values_) &&
-      GetControlBitValue(bit, current_values_);
+         GetControlBitValue(bit, current_values_);
 }
 
 bool Data::NegEdge(const ControlBit bit) const {
   return GetControlBitValue(bit, old_values_) &&
-      !GetControlBitValue(bit, current_values_);
+         !GetControlBitValue(bit, current_values_);
 }
 
 float Data::GetAxis(JoystickAxis axis) const {
@@ -122,4 +121,4 @@ float Data::GetAxis(JoystickAxis axis) const {
 
 }  // namespace driver_station
 }  // namespace input
-}  // namespace aos
+}  // namespace frc971

@@ -6,10 +6,10 @@
 
 #include "aos/events/event_loop.h"
 #include "aos/events/shm_event_loop.h"
-#include "aos/robot_state/robot_state_generated.h"
 #include "aos/stl_mutex/stl_mutex.h"
 #include "aos/time/time.h"
 #include "frc971/control_loops/control_loops_generated.h"
+#include "frc971/input/robot_state_generated.h"
 #include "frc971/wpilib/ahal/DigitalGlitchFilter.h"
 #include "frc971/wpilib/ahal/DigitalInput.h"
 #include "frc971/wpilib/ahal/DriverStation.h"

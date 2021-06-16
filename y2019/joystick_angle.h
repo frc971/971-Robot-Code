@@ -1,10 +1,10 @@
 #ifndef Y2019_JOYSTICK_ANGLE_H_
 #define Y2019_JOYSTICK_ANGLE_H_
 
-#include "aos/input/driver_station_data.h"
+#include "frc971/input/driver_station_data.h"
 
-using ::aos::input::driver_station::JoystickAxis;
-using ::aos::input::driver_station::Data;
+using ::frc971::input::driver_station::Data;
+using ::frc971::input::driver_station::JoystickAxis;
 
 namespace y2019 {
 namespace input {

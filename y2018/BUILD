@@ -25,8 +25,8 @@ cc_binary(
         ":vision_proto",
         "//aos:init",
         "//aos/actions:action_lib",
-        "//aos/input:action_joystick_input",
-        "//aos/input:drivetrain_input",
+        "//frc971/input:action_joystick_input",
+        "//frc971/input:drivetrain_input",
         "//aos/logging",
         "//aos/network:team_number",
         "//aos/stl_mutex",
@@ -78,7 +78,7 @@ cc_binary(
         "//aos:math",
         "//aos/controls:control_loop",
         "//aos/logging",
-        "//aos/robot_state:robot_state_fbs",
+        "//frc971/input:robot_state_fbs",
         "//aos/time",
         "//aos/util:log_interval",
         "//aos/util:phased_loop",
@@ -132,7 +132,7 @@ aos_config(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
-        "//aos/robot_state:config",
+        "//frc971/input:config",
         "//frc971/control_loops/drivetrain:config",
     ],
 )

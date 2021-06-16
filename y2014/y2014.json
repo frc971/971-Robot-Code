@@ -48,7 +48,7 @@
     }
   ],
   "imports": [
-    "../aos/robot_state/robot_state_config.json",
+    "../frc971/input/robot_state_config.json",
     "../frc971/control_loops/drivetrain/drivetrain_config.json"
   ]
 }

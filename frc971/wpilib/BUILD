@@ -115,7 +115,7 @@ cc_library(
         "//aos/events:event_loop",
         "//aos/events:shm_event_loop",
         "//aos/logging",
-        "//aos/robot_state:robot_state_fbs",
+        "//frc971/input:robot_state_fbs",
         "//aos/time",
         "//aos/util:phased_loop",
         "//frc971/queues:gyro_fbs",
@@ -167,7 +167,7 @@ cc_library(
     deps = [
         "//aos:init",
         "//aos/events:event_loop",
-        "//aos/robot_state:robot_state_fbs",
+        "//frc971/input:robot_state_fbs",
         "//aos/scoped:scoped_fd",
         "//aos/time",
         "//aos/util:log_interval",
@@ -204,9 +204,9 @@ cc_library(
     deps = [
         "//aos:init",
         "//aos/events:shm_event_loop",
-        "//aos/input:driver_station_data",
+        "//frc971/input:driver_station_data",
         "//aos/network:team_number",
-        "//aos/robot_state:joystick_state_fbs",
+        "//frc971/input:joystick_state_fbs",
         "//third_party:wpilib",
     ],
 )
@@ -222,7 +222,7 @@ cc_library(
     target_compatible_with = ["//tools/platforms/hardware:roborio"],
     deps = [
         "//aos/events:event_loop",
-        "//aos/robot_state:robot_state_fbs",
+        "//frc971/input:robot_state_fbs",
         "//third_party:wpilib",
     ],
 )

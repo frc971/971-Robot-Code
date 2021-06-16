@@ -9,7 +9,7 @@ cc_binary(
     deps = [
         "//aos:init",
         "//aos/actions:action_lib",
-        "//aos/input:joystick_input",
+        "//frc971/input:joystick_input",
         "//aos/logging",
         "//aos/time",
         "//aos/util:log_interval",
@@ -44,7 +44,7 @@ cc_binary(
         "//aos/controls:control_loop_fbs",
         "//aos/events:shm_event_loop",
         "//aos/logging",
-        "//aos/robot_state:robot_state_fbs",
+        "//frc971/input:robot_state_fbs",
         "//aos/stl_mutex",
         "//aos/time",
         "//aos/util:log_interval",

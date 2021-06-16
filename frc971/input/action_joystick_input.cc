@@ -1,17 +1,17 @@
-#include "aos/input/action_joystick_input.h"
+#include "frc971/input/action_joystick_input.h"
 
-#include "aos/input/driver_station_data.h"
 #include "frc971/autonomous/auto_generated.h"
 #include "frc971/autonomous/auto_mode_generated.h"
 #include "frc971/autonomous/base_autonomous_actor.h"
+#include "frc971/input/driver_station_data.h"
 
-using ::aos::input::driver_station::ControlBit;
+using ::frc971::input::driver_station::ControlBit;
 
-namespace aos {
+namespace frc971 {
 namespace input {
 
 void ActionJoystickInput::RunIteration(
-    const ::aos::input::driver_station::Data &data) {
+    const ::frc971::input::driver_station::Data &data) {
   const bool last_auto_running = auto_running_;
   auto_running_ = data.GetControlBit(ControlBit::kAutonomous) &&
                   data.GetControlBit(ControlBit::kEnabled);
@@ -64,4 +64,4 @@ void ActionJoystickInput::StopAuto() {
 }
 
 }  // namespace input
-}  // namespace aos
+}  // namespace frc971

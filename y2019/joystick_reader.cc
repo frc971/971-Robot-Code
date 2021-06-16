@@ -2,14 +2,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+
 #include <chrono>
 
 #include "aos/actions/actions.h"
 #include "aos/init.h"
-#include "aos/input/action_joystick_input.h"
-#include "aos/input/driver_station_data.h"
-#include "aos/input/drivetrain_input.h"
-#include "aos/input/joystick_input.h"
 #include "aos/logging/logging.h"
 #include "aos/network/team_number.h"
 #include "aos/util/log_interval.h"
@@ -17,7 +14,10 @@
 #include "external/com_google_protobuf/src/google/protobuf/stubs/stringprintf.h"
 #include "frc971/autonomous/base_autonomous_actor.h"
 #include "frc971/control_loops/drivetrain/localizer_generated.h"
-
+#include "frc971/input/action_joystick_input.h"
+#include "frc971/input/driver_station_data.h"
+#include "frc971/input/drivetrain_input.h"
+#include "frc971/input/joystick_input.h"
 #include "y2019/camera_log_generated.h"
 #include "y2019/control_loops/drivetrain/drivetrain_base.h"
 #include "y2019/control_loops/drivetrain/target_selector_generated.h"
@@ -27,16 +27,16 @@
 #include "y2019/vision.pb.h"
 
 using aos::events::ProtoTXUdpSocket;
-using aos::input::driver_station::ButtonLocation;
-using aos::input::driver_station::ControlBit;
-using aos::input::driver_station::JoystickAxis;
-using aos::input::driver_station::POVLocation;
 using frc971::CreateProfileParameters;
 using frc971::control_loops::CreateStaticZeroingSingleDOFProfiledSubsystemGoal;
 using frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal;
 using frc971::control_loops::drivetrain::LocalizerControl;
-using y2019::control_loops::superstructure::SuctionGoal;
+using frc971::input::driver_station::ButtonLocation;
+using frc971::input::driver_station::ControlBit;
+using frc971::input::driver_station::JoystickAxis;
+using frc971::input::driver_station::POVLocation;
 using y2019::control_loops::superstructure::CreateSuctionGoal;
+using y2019::control_loops::superstructure::SuctionGoal;
 
 namespace chrono = ::std::chrono;
 
@@ -138,13 +138,13 @@ const ElevatorWristPosition kBallHPIntakeBackwardPos{0.89, -2.018};
 
 const ElevatorWristPosition kBallIntakePos{0.309, 2.13};
 
-class Reader : public ::aos::input::ActionJoystickInput {
+class Reader : public ::frc971::input::ActionJoystickInput {
  public:
   Reader(::aos::EventLoop *event_loop)
-      : ::aos::input::ActionJoystickInput(
+      : ::frc971::input::ActionJoystickInput(
             event_loop,
             ::y2019::control_loops::drivetrain::GetDrivetrainConfig(),
-            ::aos::input::DrivetrainInputReader::InputType::kPistol,
+            ::frc971::input::DrivetrainInputReader::InputType::kPistol,
             {.run_teleop_in_auto = true,
              .cancel_auto_button = kCancelAutoMode}),
         target_selector_hint_sender_(
@@ -186,7 +186,8 @@ class Reader : public ::aos::input::ActionJoystickInput {
     switch_ball_ = false;
   }
 
-  void HandleTeleop(const ::aos::input::driver_station::Data &data) override {
+  void HandleTeleop(
+      const ::frc971::input::driver_station::Data &data) override {
     ::aos::monotonic_clock::time_point monotonic_now =
         ::aos::monotonic_clock::now();
     superstructure_position_fetcher_.Fetch();
@@ -270,16 +271,16 @@ class Reader : public ::aos::input::ActionJoystickInput {
         const double cargo_joy_x = data.GetAxis(kCargoSelectorX);
         if (cargo_joy_y > 0.5) {
           target_selector_hint_builder.add_suggested_target(
-            control_loops::drivetrain::SelectionHint::NEAR_SHIP);
+              control_loops::drivetrain::SelectionHint::NEAR_SHIP);
         } else if (cargo_joy_y < -0.5) {
           target_selector_hint_builder.add_suggested_target(
               control_loops::drivetrain::SelectionHint::FAR_SHIP);
         } else if (::std::abs(cargo_joy_x) > 0.5) {
           target_selector_hint_builder.add_suggested_target(
-            control_loops::drivetrain::SelectionHint::MID_SHIP);
+              control_loops::drivetrain::SelectionHint::MID_SHIP);
         } else {
           target_selector_hint_builder.add_suggested_target(
-            control_loops::drivetrain::SelectionHint::NONE);
+              control_loops::drivetrain::SelectionHint::NONE);
         }
       }
       if (!builder.Send(target_selector_hint_builder.Finish())) {
@@ -514,8 +515,10 @@ class Reader : public ::aos::input::ActionJoystickInput {
           ->mutate_max_acceleration(1.25);
     } else if (data.IsPressed(kHalfStilt)) {
       was_above_ = false;
-      mutable_superstructure_goal->mutable_stilts()->mutate_unsafe_goal ( 0.345);
-      mutable_superstructure_goal->mutable_stilts()->mutable_profile_params()->mutate_max_velocity ( 0.65);
+      mutable_superstructure_goal->mutable_stilts()->mutate_unsafe_goal(0.345);
+      mutable_superstructure_goal->mutable_stilts()
+          ->mutable_profile_params()
+          ->mutate_max_velocity(0.65);
     } else if (data.IsPressed(kDeployStilt) || was_above_) {
       mutable_superstructure_goal->mutable_stilts()->mutate_unsafe_goal(
           kDeployStiltPosition);

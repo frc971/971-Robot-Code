@@ -1,26 +1,25 @@
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include <math.h>
 
 #include "aos/init.h"
-#include "aos/input/joystick_input.h"
-#include "aos/input/driver_station_data.h"
 #include "aos/logging/logging.h"
-#include "aos/util/log_interval.h"
 #include "aos/time/time.h"
-
-#include "aos/input/drivetrain_input.h"
+#include "aos/util/log_interval.h"
 #include "frc971/autonomous/base_autonomous_actor.h"
 #include "frc971/control_loops/drivetrain/drivetrain_goal_generated.h"
+#include "frc971/input/driver_station_data.h"
+#include "frc971/input/drivetrain_input.h"
+#include "frc971/input/joystick_input.h"
 #include "y2014_bot3/control_loops/drivetrain/drivetrain_base.h"
 #include "y2014_bot3/control_loops/rollers/rollers_goal_generated.h"
 
-using ::aos::input::driver_station::ButtonLocation;
-using ::aos::input::driver_station::POVLocation;
-using ::aos::input::driver_station::JoystickAxis;
-using ::aos::input::driver_station::ControlBit;
-using ::aos::input::DrivetrainInputReader;
+using ::frc971::input::DrivetrainInputReader;
+using ::frc971::input::driver_station::ButtonLocation;
+using ::frc971::input::driver_station::ControlBit;
+using ::frc971::input::driver_station::JoystickAxis;
+using ::frc971::input::driver_station::POVLocation;
 
 namespace y2014_bot3 {
 namespace input {
@@ -40,10 +39,10 @@ const ButtonLocation kFrontRollersOut(3, 6);
 const ButtonLocation kBackRollersOut(4, 12);
 const ButtonLocation kHumanPlayer(4, 11);
 
-class Reader : public ::aos::input::JoystickInput {
+class Reader : public ::frc971::input::JoystickInput {
  public:
   Reader(::aos::EventLoop *event_loop)
-      : ::aos::input::JoystickInput(event_loop),
+      : ::frc971::input::JoystickInput(event_loop),
         rollers_goal_sender_(
             event_loop->MakeSender<::y2014_bot3::control_loops::rollers::Goal>(
                 "/rollers")),
@@ -55,7 +54,7 @@ class Reader : public ::aos::input::JoystickInput {
         ::y2014_bot3::control_loops::drivetrain::GetDrivetrainConfig());
   }
 
-  virtual void RunIteration(const ::aos::input::driver_station::Data &data) {
+  virtual void RunIteration(const ::frc971::input::driver_station::Data &data) {
     bool last_auto_running = auto_running_;
     auto_running_ = data.GetControlBit(ControlBit::kAutonomous) &&
                     data.GetControlBit(ControlBit::kEnabled);
@@ -75,11 +74,11 @@ class Reader : public ::aos::input::JoystickInput {
     action_queue_.Tick();
   }
 
-  void HandleDrivetrain(const ::aos::input::driver_station::Data &data) {
+  void HandleDrivetrain(const ::frc971::input::driver_station::Data &data) {
     drivetrain_input_reader_->HandleDrivetrain(data);
   }
 
-  void HandleTeleop(const ::aos::input::driver_station::Data &data) {
+  void HandleTeleop(const ::frc971::input::driver_station::Data &data) {
     if (!data.GetControlBit(ControlBit::kEnabled)) {
       action_queue_.CancelAllActions();
       AOS_LOG(DEBUG, "Canceling\n");

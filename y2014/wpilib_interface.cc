@@ -1,12 +1,12 @@
+#include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include <inttypes.h>
 
-#include <thread>
 #include <chrono>
-#include <mutex>
 #include <functional>
+#include <mutex>
+#include <thread>
 
 #include "frc971/wpilib/ahal/AnalogInput.h"
 #include "frc971/wpilib/ahal/Compressor.h"
@@ -22,7 +22,6 @@
 #include "aos/init.h"
 #include "aos/logging/logging.h"
 #include "aos/make_unique.h"
-#include "aos/robot_state/robot_state_generated.h"
 #include "aos/stl_mutex/stl_mutex.h"
 #include "aos/time/time.h"
 #include "aos/util/log_interval.h"
@@ -30,6 +29,7 @@
 #include "aos/util/wrapping_counter.h"
 #include "frc971/control_loops/drivetrain/drivetrain_output_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_position_generated.h"
+#include "frc971/input/robot_state_generated.h"
 #include "frc971/shifter_hall_effect.h"
 #include "frc971/wpilib/buffered_pcm.h"
 #include "frc971/wpilib/buffered_solenoid.h"
@@ -63,8 +63,7 @@ namespace wpilib {
 // The low bit is direction.
 
 double drivetrain_translate(int32_t in) {
-  return -static_cast<double>(in) /
-         (256.0 /*cpr*/ * 4.0 /*4x*/) *
+  return -static_cast<double>(in) / (256.0 /*cpr*/ * 4.0 /*4x*/) *
          constants::GetValues().drivetrain_encoder_ratio *
          (3.5 /*wheel diameter*/ * 2.54 / 100.0 * M_PI) * 2.0 / 2.0;
 }
@@ -75,16 +74,16 @@ double drivetrain_velocity_translate(double in) {
          (3.5 /*wheel diameter*/ * 2.54 / 100.0 * M_PI) * 2.0 / 2.0;
 }
 
-float hall_translate(const constants::DualHallShifterHallEffect &k, float in_low,
-                     float in_high) {
+float hall_translate(const constants::DualHallShifterHallEffect &k,
+                     float in_low, float in_high) {
   const float low_ratio =
       0.5 * (in_low - static_cast<float>(k.shifter_hall_effect.low_gear_low)) /
-      static_cast<float>(k.low_gear_middle - k.shifter_hall_effect.low_gear_low);
+      static_cast<float>(k.low_gear_middle -
+                         k.shifter_hall_effect.low_gear_low);
   const float high_ratio =
-      0.5 +
-      0.5 * (in_high - static_cast<float>(k.high_gear_middle)) /
-          static_cast<float>(k.shifter_hall_effect.high_gear_high -
-                             k.high_gear_middle);
+      0.5 + 0.5 * (in_high - static_cast<float>(k.high_gear_middle)) /
+                static_cast<float>(k.shifter_hall_effect.high_gear_high -
+                                   k.high_gear_middle);
 
   // Return low when we are below 1/2, and high when we are above 1/2.
   if (low_ratio + high_ratio < 1.0) {
@@ -377,7 +376,6 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       const double multiplier = reversed_ ? -1.0 : 1.0;
 
       synchronizer_.RunIteration();
-
 
       ::frc971::HallEffectStructT front;
       CopyPosition(front_counter_.get(), &front);

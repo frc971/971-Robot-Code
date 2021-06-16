@@ -4,9 +4,9 @@
 #include <atomic>
 
 #include "aos/events/event_loop.h"
-#include "aos/input/driver_station_data.h"
+#include "frc971/input/driver_station_data.h"
 
-namespace aos {
+namespace frc971 {
 namespace input {
 
 // A class for handling joystick packet values.
@@ -34,13 +34,13 @@ class JoystickInput {
   // Subclasses should do whatever they want with data here.
   virtual void RunIteration(const driver_station::Data &data) = 0;
 
-  EventLoop *event_loop_;
+  ::aos::EventLoop *event_loop_;
   driver_station::Data data_;
 
   int mode_;
 };
 
 }  // namespace input
-}  // namespace aos
+}  // namespace frc971
 
 #endif  // AOS_INPUT_JOYSTICK_INPUT_H_

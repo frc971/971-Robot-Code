@@ -13,6 +13,6 @@
     }
   ],
   "imports": [
-    "../events/aos.json"
+    "../../../org_frc971/aos/events/aos.json"
   ]
 }
