@@ -1,0 +1,7 @@
+namespace frc971.control_loops.zeroing.testing;
+
+table SubsystemOutput {
+  output:double (id: 0);
+}
+
+root_type SubsystemOutput;

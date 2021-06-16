@@ -1801,7 +1801,8 @@ TEST_P(AbstractEventLoopTest, RawBasic) {
   auto loop2 = MakePrimary();
   auto loop3 = Make();
 
-  const std::string kData("971 is the best");
+  const FlatbufferDetachedBuffer<TestMessage> kMessage =
+      JsonToFlatbuffer<TestMessage>("{}");
 
   std::unique_ptr<aos::RawSender> sender =
       loop1->MakeRawSender(configuration::GetChannel(
@@ -1811,29 +1812,29 @@ TEST_P(AbstractEventLoopTest, RawBasic) {
       loop3->MakeRawFetcher(configuration::GetChannel(
           loop3->configuration(), "/test", "aos.TestMessage", "", nullptr));
 
-  loop2->OnRun(
-      [&]() { EXPECT_TRUE(sender->Send(kData.data(), kData.size())); });
+  loop2->OnRun([&]() {
+    EXPECT_TRUE(sender->Send(kMessage.span().data(), kMessage.span().size()));
+  });
 
   bool happened = false;
   loop2->MakeRawWatcher(
       configuration::GetChannel(loop2->configuration(), "/test",
                                 "aos.TestMessage", "", nullptr),
-      [this, &kData, &fetcher, &happened](const Context &context,
-                                          const void *message) {
+      [this, &kMessage, &fetcher, &happened](const Context &context,
+                                             const void *message) {
         happened = true;
-        EXPECT_EQ(std::string_view(kData),
-                  std::string_view(reinterpret_cast<const char *>(message),
-                                   context.size));
-        EXPECT_EQ(std::string_view(kData),
-                  std::string_view(reinterpret_cast<const char *>(context.data),
-                                   context.size));
+        EXPECT_EQ(
+            kMessage.span(),
+            absl::Span<const uint8_t>(
+                reinterpret_cast<const uint8_t *>(message), context.size));
+        EXPECT_EQ(message, context.data);
 
         ASSERT_TRUE(fetcher->Fetch());
 
-        EXPECT_EQ(std::string_view(kData),
-                  std::string_view(
-                      reinterpret_cast<const char *>(fetcher->context().data),
-                      fetcher->context().size));
+        EXPECT_EQ(kMessage.span(),
+                  absl::Span<const uint8_t>(reinterpret_cast<const uint8_t *>(
+                                                fetcher->context().data),
+                                            fetcher->context().size));
 
         this->Exit();
       });
@@ -1850,7 +1851,8 @@ TEST_P(AbstractEventLoopTest, RawRemoteTimes) {
   auto loop2 = MakePrimary();
   auto loop3 = Make();
 
-  const std::string kData("971 is the best");
+  const FlatbufferDetachedBuffer<TestMessage> kMessage =
+      JsonToFlatbuffer<TestMessage>("{}");
 
   const aos::monotonic_clock::time_point monotonic_remote_time =
       aos::monotonic_clock::time_point(chrono::seconds(1501));
@@ -1868,9 +1870,9 @@ TEST_P(AbstractEventLoopTest, RawRemoteTimes) {
           loop3->configuration(), "/test", "aos.TestMessage", "", nullptr));
 
   loop2->OnRun([&]() {
-    EXPECT_TRUE(sender->Send(kData.data(), kData.size(), monotonic_remote_time,
-                             realtime_remote_time, remote_queue_index,
-                             remote_boot_uuid));
+    EXPECT_TRUE(sender->Send(kMessage.span().data(), kMessage.span().size(),
+                             monotonic_remote_time, realtime_remote_time,
+                             remote_queue_index, remote_boot_uuid));
   });
 
   bool happened = false;
@@ -1904,7 +1906,8 @@ TEST_P(AbstractEventLoopTest, RawRemoteTimes) {
 TEST_P(AbstractEventLoopTest, RawSenderSentData) {
   auto loop1 = MakePrimary();
 
-  const std::string kData("971 is the best");
+  const FlatbufferDetachedBuffer<TestMessage> kMessage =
+      JsonToFlatbuffer<TestMessage>("{}");
 
   std::unique_ptr<aos::RawSender> sender =
       loop1->MakeRawSender(configuration::GetChannel(
@@ -1913,7 +1916,7 @@ TEST_P(AbstractEventLoopTest, RawSenderSentData) {
   const aos::monotonic_clock::time_point monotonic_now = loop1->monotonic_now();
   const aos::realtime_clock::time_point realtime_now = loop1->realtime_now();
 
-  EXPECT_TRUE(sender->Send(kData.data(), kData.size()));
+  EXPECT_TRUE(sender->Send(kMessage.span().data(), kMessage.span().size()));
 
   EXPECT_GE(sender->monotonic_sent_time(), monotonic_now);
   EXPECT_LE(sender->monotonic_sent_time(),
@@ -1923,7 +1926,7 @@ TEST_P(AbstractEventLoopTest, RawSenderSentData) {
             realtime_now + chrono::milliseconds(100));
   EXPECT_EQ(sender->sent_queue_index(), 0u);
 
-  EXPECT_TRUE(sender->Send(kData.data(), kData.size()));
+  EXPECT_TRUE(sender->Send(kMessage.span().data(), kMessage.span().size()));
 
   EXPECT_GE(sender->monotonic_sent_time(), monotonic_now);
   EXPECT_LE(sender->monotonic_sent_time(),

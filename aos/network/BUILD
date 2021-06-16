@@ -53,6 +53,13 @@ flatbuffer_cc_library(
     target_compatible_with = ["@platforms//os:linux"],
 )
 
+cc_static_flatbuffer(
+    name = "timestamp_schema",
+    function = "aos::message_bridge::TimestampSchema",
+    target = ":timestamp_fbs_reflection_out",
+    visibility = ["//visibility:public"],
+)
+
 flatbuffer_cc_library(
     name = "message_bridge_client_fbs",
     srcs = ["message_bridge_client.fbs"],
@@ -64,6 +71,13 @@ flatbuffer_cc_library(
     target_compatible_with = ["@platforms//os:linux"],
 )
 
+cc_static_flatbuffer(
+    name = "message_bridge_client_schema",
+    function = "aos::message_bridge::ClientStatisticsSchema",
+    target = ":message_bridge_client_fbs_reflection_out",
+    visibility = ["//visibility:public"],
+)
+
 flatbuffer_cc_library(
     name = "message_bridge_server_fbs",
     srcs = ["message_bridge_server.fbs"],
@@ -72,6 +86,13 @@ flatbuffer_cc_library(
         "//aos:configuration_fbs_includes",
     ],
     target_compatible_with = ["@platforms//os:linux"],
+)
+
+cc_static_flatbuffer(
+    name = "message_bridge_server_schema",
+    function = "aos::message_bridge::ServerStatisticsSchema",
+    target = ":message_bridge_server_fbs_reflection_out",
+    visibility = ["//visibility:public"],
 )
 
 cc_library(

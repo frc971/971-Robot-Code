@@ -1,0 +1,9 @@
+include "frc971/control_loops/control_loops.fbs";
+
+namespace frc971.control_loops.zeroing.testing;
+
+table SubsystemAbsolutePosition {
+  position:frc971.AbsolutePosition (id: 0);
+}
+
+root_type SubsystemAbsolutePosition;

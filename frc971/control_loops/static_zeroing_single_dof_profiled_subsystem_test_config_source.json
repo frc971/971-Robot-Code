@@ -1,0 +1,44 @@
+{
+  "channels": [
+    {
+      "name": "/aos",
+      "type": "aos.JoystickState"
+    },
+    {
+      "name": "/aos",
+      "type": "aos.logging.LogMessageFbs"
+    },
+    {
+      "name": "/aos",
+      "type": "aos.RobotState"
+    },
+    {
+      "name": "/aos",
+      "type": "aos.timing.Report"
+    },
+    {
+      "name": "/loop",
+      "type": "frc971.control_loops.zeroing.testing.SubsystemGoal"
+    },
+    {
+      "name": "/loop",
+      "type": "frc971.control_loops.zeroing.testing.SubsystemOutput"
+    },
+    {
+      "name": "/loop",
+      "type": "frc971.control_loops.zeroing.testing.SubsystemPotAndAbsoluteEncoderProfiledJointStatus"
+    },
+    {
+      "name": "/loop",
+      "type": "frc971.control_loops.zeroing.testing.SubsystemAbsolutePosition"
+    },
+    {
+      "name": "/loop",
+      "type": "frc971.control_loops.zeroing.testing.SubsystemPotAndAbsolutePosition"
+    },
+    {
+      "name": "/loop",
+      "type": "frc971.control_loops.zeroing.testing.SubsystemAbsoluteEncoderProfiledJointStatus"
+    }
+  ]
+}

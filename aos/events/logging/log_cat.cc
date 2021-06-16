@@ -44,6 +44,13 @@ void PrintMessage(const std::string_view node_name, const aos::Channel *channel,
                   const aos::Context &context,
                   aos::FastStringBuilder *builder) {
   builder->Reset();
+  CHECK(flatbuffers::Verify(*channel->schema(),
+                            *channel->schema()->root_table(),
+                            static_cast<const uint8_t *>(context.data),
+                            static_cast<size_t>(context.size)))
+      << ": Corrupted flatbuffer on " << channel->name()->c_str() << " "
+      << channel->type()->c_str();
+
   aos::FlatbufferToJson(
       builder, channel->schema(), static_cast<const uint8_t *>(context.data),
       {FLAGS_pretty, static_cast<size_t>(FLAGS_max_vector_size)});
@@ -110,6 +117,17 @@ int main(int argc, char **argv) {
       const size_t channel_index = message.value().message().channel_index();
       CHECK_LT(channel_index, channels->size());
       const aos::Channel *const channel = channels->Get(channel_index);
+
+      if (message.value().message().data() != nullptr) {
+        CHECK(channel->has_schema());
+
+        CHECK(flatbuffers::Verify(*channel->schema(),
+                                  *channel->schema()->root_table(),
+                                  message.value().message().data()->data(),
+                                  message.value().message().data()->size()))
+            << ": Corrupted flatbuffer on " << channel->name()->c_str() << " "
+            << channel->type()->c_str();
+      }
 
       if (FLAGS_format_raw && message.value().message().data() != nullptr) {
         std::cout << aos::configuration::StrippedChannelToString(channel) << " "

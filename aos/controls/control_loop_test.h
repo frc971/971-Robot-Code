@@ -24,16 +24,6 @@ namespace testing {
 template <typename TestBaseClass>
 class ControlLoopTestTemplated : public TestBaseClass {
  public:
-  // Builds a control loop test with the provided configuration.  Note: this
-  // merges and sorts the config to reduce user errors.
-  ControlLoopTestTemplated(std::string_view configuration,
-                           ::std::chrono::nanoseconds dt = kTimeTick)
-      : ControlLoopTestTemplated(
-            configuration::MergeConfiguration(
-                aos::FlatbufferDetachedBuffer<Configuration>(JsonToFlatbuffer(
-                    configuration, Configuration::MiniReflectTypeTable()))),
-            dt) {}
-
   ControlLoopTestTemplated(
       FlatbufferDetachedBuffer<Configuration> configuration,
       ::std::chrono::nanoseconds dt = kTimeTick)

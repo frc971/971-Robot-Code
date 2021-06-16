@@ -806,6 +806,17 @@ uint32_t SimulatedChannel::Send(std::shared_ptr<SimulatedMessage> message) {
   message->context.queue_index = queue_index;
   message->context.data = message->data(channel()->max_size()) +
                           channel()->max_size() - message->context.size;
+
+  DCHECK(channel()->has_schema())
+      << ": Missing schema for channel "
+      << configuration::StrippedChannelToString(channel());
+  DCHECK(flatbuffers::Verify(
+      *channel()->schema(), *channel()->schema()->root_table(),
+      static_cast<const uint8_t *>(message->context.data),
+      message->context.size))
+      << ": Corrupted flatbuffer on " << channel()->name()->c_str() << " "
+      << channel()->type()->c_str();
+
   next_queue_index_ = next_queue_index_.Increment();
 
   latest_message_ = message;
