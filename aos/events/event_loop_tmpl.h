@@ -295,7 +295,7 @@ class WatcherState {
   // Calls the callback, measuring time with get_time, with the provided
   // context.
   void DoCallCallback(std::function<monotonic_clock::time_point()> get_time,
-                      Context context) {
+                      Context context) noexcept {
     if (context.data) {
       CheckChannelDataAlignment(context.data, context.size);
     }
