@@ -23,6 +23,8 @@ Logger::Logger(EventLoop *event_loop, const Configuration *configuration,
                std::function<bool(const Channel *)> should_log)
     : event_loop_(event_loop),
       configuration_(configuration),
+      node_(configuration::GetNode(configuration_, event_loop->node())),
+      node_index_(configuration::GetNodeIndex(configuration_, node_)),
       name_(network::GetHostname()),
       timer_handler_(event_loop_->AddTimer(
           [this]() { DoLogData(event_loop_->monotonic_now(), true); })),
@@ -31,7 +33,7 @@ Logger::Logger(EventLoop *event_loop, const Configuration *configuration,
               ? event_loop_->MakeFetcher<message_bridge::ServerStatistics>(
                     "/aos")
               : aos::Fetcher<message_bridge::ServerStatistics>()) {
-  VLOG(1) << "Creating logger for " << FlatbufferToJson(event_loop_->node());
+  VLOG(1) << "Creating logger for " << FlatbufferToJson(node_);
 
   std::map<const Channel *, const Node *> timestamp_logger_channels;
 
@@ -47,7 +49,7 @@ Logger::Logger(EventLoop *event_loop, const Configuration *configuration,
       if (configuration::ConnectionDeliveryTimeIsLoggedOnNode(
               connection, event_loop_->node())) {
         const Node *other_node = configuration::GetNode(
-            event_loop_->configuration(), connection->name()->string_view());
+            configuration_, connection->name()->string_view());
 
         VLOG(1) << "Timestamps are logged from "
                 << FlatbufferToJson(other_node);
@@ -56,9 +58,6 @@ Logger::Logger(EventLoop *event_loop, const Configuration *configuration,
       }
     }
   }
-
-  const size_t our_node_index =
-      configuration::GetNodeIndex(configuration_, event_loop_->node());
 
   for (size_t channel_index = 0;
        channel_index < configuration_->channels()->size(); ++channel_index) {
@@ -73,7 +72,7 @@ Logger::Logger(EventLoop *event_loop, const Configuration *configuration,
     CHECK(channel != nullptr)
         << ": Failed to look up channel "
         << aos::configuration::CleanedChannelToString(config_channel);
-    if (!should_log(channel)) {
+    if (!should_log(config_channel)) {
       continue;
     }
 
@@ -82,25 +81,25 @@ Logger::Logger(EventLoop *event_loop, const Configuration *configuration,
     fs.channel = channel;
 
     const bool is_local =
-        configuration::ChannelIsSendableOnNode(channel, event_loop_->node());
+        configuration::ChannelIsSendableOnNode(config_channel, node_);
 
     const bool is_readable =
-        configuration::ChannelIsReadableOnNode(channel, event_loop_->node());
+        configuration::ChannelIsReadableOnNode(config_channel, node_);
     const bool is_logged = configuration::ChannelMessageIsLoggedOnNode(
-        channel, event_loop_->node());
+        config_channel, node_);
     const bool log_message = is_logged && is_readable;
 
     bool log_delivery_times = false;
-    if (event_loop_->node() != nullptr) {
+    if (configuration::MultiNode(configuration_)) {
       const aos::Connection *connection =
-          configuration::ConnectionToNode(channel, event_loop_->node());
+          configuration::ConnectionToNode(config_channel, node_);
 
       log_delivery_times = configuration::ConnectionDeliveryTimeIsLoggedOnNode(
           connection, event_loop_->node());
 
       CHECK_EQ(log_delivery_times,
                configuration::ConnectionDeliveryTimeIsLoggedOnNode(
-                   channel, event_loop_->node(), event_loop_->node()));
+                   config_channel, node_, node_));
 
       if (connection) {
         fs.reliable_forwarding = (connection->time_to_live() == 0);
@@ -120,7 +119,7 @@ Logger::Logger(EventLoop *event_loop, const Configuration *configuration,
       if (log_delivery_times) {
         VLOG(1) << "  Delivery times";
         fs.wants_timestamp_writer = true;
-        fs.timestamp_node_index = our_node_index;
+        fs.timestamp_node_index = static_cast<int>(node_index_);
       }
       // Both the timestamp and data writers want data_node_index so it knows
       // what the source node is.
@@ -138,7 +137,7 @@ Logger::Logger(EventLoop *event_loop, const Configuration *configuration,
         if (!is_local) {
           fs.log_type = LogType::kLogRemoteMessage;
         } else {
-          fs.data_node_index = our_node_index;
+          fs.data_node_index = static_cast<int>(node_index_);
         }
       }
       if (log_contents) {
@@ -167,8 +166,7 @@ Logger::Logger(EventLoop *event_loop, const Configuration *configuration,
 
     const Channel *logged_channel = aos::configuration::GetChannel(
         configuration_, event_loop_channel->name()->string_view(),
-        event_loop_channel->type()->string_view(), "",
-        configuration::GetNode(configuration_, event_loop_->node()));
+        event_loop_channel->type()->string_view(), "", node_);
 
     if (logged_channel != nullptr) {
       event_loop_to_logged_channel_index_[event_loop_channel_index] =
@@ -252,7 +250,7 @@ void Logger::StartLogging(std::unique_ptr<LogNamer> log_namer,
 
   log_event_uuid_ = UUID::Random();
   log_start_uuid_ = log_start_uuid;
-  VLOG(1) << "Starting logger for " << FlatbufferToJson(event_loop_->node());
+  VLOG(1) << "Starting logger for " << FlatbufferToJson(node_);
 
   // We want to do as much work as possible before the initial Fetch. Time
   // between that and actually starting to log opens up the possibility of
@@ -302,7 +300,7 @@ void Logger::StartLogging(std::unique_ptr<LogNamer> log_namer,
   const aos::monotonic_clock::time_point header_time =
       event_loop_->monotonic_now();
 
-  LOG(INFO) << "Logging node as " << FlatbufferToJson(event_loop_->node())
+  LOG(INFO) << "Logging node as " << FlatbufferToJson(node_)
             << " start_time " << last_synchronized_time_ << ", took "
             << chrono::duration<double>(fetch_time - beginning_time).count()
             << " to fetch, "
@@ -404,7 +402,7 @@ bool Logger::MaybeUpdateTimestamp(
       monotonic_clock::min_time) {
     return false;
   }
-  if (event_loop_->node() == node ||
+  if (node_ == node ||
       !configuration::MultiNode(configuration_)) {
     // There are no offsets to compute for ourself, so always succeed.
     log_namer_->SetStartTimes(node_index, monotonic_start_time,
@@ -484,7 +482,7 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> Logger::MakeHeader(
   flatbuffers::Offset<Node> logger_node_offset;
 
   if (configuration::MultiNode(configuration_)) {
-    logger_node_offset = RecursiveCopyFlatBuffer(event_loop_->node(), &fbb);
+    logger_node_offset = RecursiveCopyFlatBuffer(node_, &fbb);
   }
 
   aos::logger::LogFileHeader::Builder log_file_header_builder(fbb);
@@ -557,9 +555,6 @@ void Logger::LogUntil(monotonic_clock::time_point t) {
   // reboots which may have happened.
   WriteMissingTimestamps();
 
-  int our_node_index = aos::configuration::GetNodeIndex(
-      event_loop_->configuration(), event_loop_->node());
-
   // Write each channel to disk, one at a time.
   for (FetcherStruct &f : fetchers_) {
     while (true) {
@@ -583,7 +578,7 @@ void Logger::LogUntil(monotonic_clock::time_point t) {
       }
       if (f.writer != nullptr) {
         const UUID source_node_boot_uuid =
-            our_node_index != f.data_node_index
+            static_cast<int>(node_index_) != f.data_node_index
                 ? f.fetcher->context().source_boot_uuid
                 : event_loop_->boot_uuid();
         // Write!
@@ -598,7 +593,7 @@ void Logger::LogUntil(monotonic_clock::time_point t) {
         RecordCreateMessageTime(start, end, &f);
 
         VLOG(2) << "Writing data as node "
-                << FlatbufferToJson(event_loop_->node()) << " for channel "
+                << FlatbufferToJson(node_) << " for channel "
                 << configuration::CleanedChannelToString(f.fetcher->channel())
                 << " to " << f.writer->filename() << " data "
                 << FlatbufferToJson(
@@ -623,7 +618,7 @@ void Logger::LogUntil(monotonic_clock::time_point t) {
         RecordCreateMessageTime(start, end, &f);
 
         VLOG(2) << "Writing timestamps as node "
-                << FlatbufferToJson(event_loop_->node()) << " for channel "
+                << FlatbufferToJson(node_) << " for channel "
                 << configuration::CleanedChannelToString(f.fetcher->channel())
                 << " to " << f.timestamp_writer->filename() << " timestamp "
                 << FlatbufferToJson(

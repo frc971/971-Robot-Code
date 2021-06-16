@@ -388,10 +388,17 @@ NewDataWriter *LocalLogNamer::MakeForwardedTimestampWriter(
   LOG(FATAL) << "Can't log forwarded timestamps in a singe log file.";
   return nullptr;
 }
-
 MultiNodeLogNamer::MultiNodeLogNamer(std::string_view base_name,
                                      EventLoop *event_loop)
-    : LogNamer(event_loop), base_name_(base_name), old_base_name_() {}
+    : MultiNodeLogNamer(base_name, event_loop->configuration(), event_loop,
+                        event_loop->node()) {}
+
+MultiNodeLogNamer::MultiNodeLogNamer(std::string_view base_name,
+                                     const Configuration *configuration,
+                                     EventLoop *event_loop, const Node *node)
+    : LogNamer(configuration, event_loop, node),
+      base_name_(base_name),
+      old_base_name_() {}
 
 MultiNodeLogNamer::~MultiNodeLogNamer() {
   if (!ran_out_of_space_) {
@@ -432,7 +439,8 @@ void MultiNodeLogNamer::WriteConfiguration(
   writer->QueueSizedFlatbuffer(header->Release());
 
   if (!writer->ran_out_of_space()) {
-    all_filenames_.emplace_back(filename);
+    all_filenames_.emplace_back(
+        absl::StrCat(config_sha256, ".bfbs", extension_));
   }
   CloseWriter(&writer);
 }
@@ -499,7 +507,7 @@ NewDataWriter *MultiNodeLogNamer::MakeForwardedTimestampWriter(
     nodes_.emplace_back(node);
   }
 
-  NewDataWriter data_writer(this, node,
+  NewDataWriter data_writer(this, configuration::GetNode(configuration_, node),
                             [this, channel](NewDataWriter *data_writer) {
                               OpenForwardedTimestampWriter(channel,
                                                            data_writer);

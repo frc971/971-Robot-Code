@@ -114,10 +114,11 @@ class LogNamer {
  public:
   // Constructs a LogNamer with the primary node (ie the one the logger runs on)
   // being node.
-  LogNamer(EventLoop *event_loop)
+  LogNamer(const aos::Configuration *configuration, EventLoop *event_loop,
+           const aos::Node *node)
       : event_loop_(event_loop),
-        configuration_(event_loop_->configuration()),
-        node_(event_loop_->node()),
+        configuration_(configuration),
+        node_(node),
         logger_node_index_(configuration::GetNodeIndex(configuration_, node_)) {
     nodes_.emplace_back(node_);
     node_states_.resize(configuration::NodesCount(configuration_));
@@ -241,10 +242,11 @@ class LogNamer {
 // any other log type.
 class LocalLogNamer : public LogNamer {
  public:
-  LocalLogNamer(std::string_view base_name, aos::EventLoop *event_loop)
-      : LogNamer(event_loop),
+  LocalLogNamer(std::string_view base_name, aos::EventLoop *event_loop,
+                const aos::Node *node)
+      : LogNamer(event_loop->configuration(), event_loop, node),
         base_name_(base_name),
-        data_writer_(this, node(),
+        data_writer_(this, node,
                      [this](NewDataWriter *writer) {
                        writer->writer = std::make_unique<DetachedBufferWriter>(
                            absl::StrCat(base_name_, ".part",
@@ -289,6 +291,9 @@ class LocalLogNamer : public LogNamer {
 class MultiNodeLogNamer : public LogNamer {
  public:
   MultiNodeLogNamer(std::string_view base_name, EventLoop *event_loop);
+  MultiNodeLogNamer(std::string_view base_name,
+                    const Configuration *configuration, EventLoop *event_loop,
+                    const Node *node);
   ~MultiNodeLogNamer() override;
 
   std::string_view base_name() const final { return base_name_; }

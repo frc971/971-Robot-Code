@@ -149,7 +149,8 @@ class Logger {
   // starts.
   void StartLoggingLocalNamerOnRun(std::string base_name) {
     event_loop_->OnRun([this, base_name]() {
-      StartLogging(std::make_unique<LocalLogNamer>(base_name, event_loop_));
+      StartLogging(
+          std::make_unique<LocalLogNamer>(base_name, event_loop_, node_));
     });
   }
 
@@ -157,7 +158,8 @@ class Logger {
   // processing starts.
   void StartLoggingOnRun(std::string base_name) {
     event_loop_->OnRun([this, base_name]() {
-      StartLogging(std::make_unique<MultiNodeLogNamer>(base_name, event_loop_));
+      StartLogging(std::make_unique<MultiNodeLogNamer>(
+          base_name, configuration_, event_loop_, node_));
     });
   }
 
@@ -235,6 +237,19 @@ class Logger {
   EventLoop *const event_loop_;
   // The configuration to place at the top of the log file.
   const Configuration *const configuration_;
+
+  // The node that is writing the log.
+  // For most cases, this is the same node as the node that is reading the
+  // messages. However, in some cases, these two nodes may be different. i.e. if
+  // one node reading and modifying the messages, and another node is listening
+  // and saving those messages to another log.
+  //
+  // node_ is a pointer to the writing node, and that node is guaranteed to be
+  // in configuration_ which is the configuration being written to the top of
+  // the log file.
+  const Node *const node_;
+  // The node_index_ is the index of the node in configuration_.
+  const size_t node_index_;
 
   UUID log_event_uuid_ = UUID::Zero();
   const UUID logger_instance_uuid_ = UUID::Random();

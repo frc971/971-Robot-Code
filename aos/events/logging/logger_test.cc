@@ -170,10 +170,11 @@ TEST_F(LoggerDeathTest, ExtraStart) {
     logger.set_polling_period(std::chrono::milliseconds(100));
     logger_event_loop->OnRun(
         [base_name1, base_name2, &logger_event_loop, &logger]() {
-          logger.StartLogging(
-              std::make_unique<LocalLogNamer>(base_name1, logger_event_loop.get()));
+          logger.StartLogging(std::make_unique<LocalLogNamer>(
+              base_name1, logger_event_loop.get(), logger_event_loop->node()));
           EXPECT_DEATH(logger.StartLogging(std::make_unique<LocalLogNamer>(
-                           base_name2, logger_event_loop.get())),
+                           base_name2, logger_event_loop.get(),
+                           logger_event_loop->node())),
                        "Already logging");
         });
     event_loop_factory_.RunFor(chrono::milliseconds(20000));
@@ -203,8 +204,8 @@ TEST_F(LoggerDeathTest, ExtraStop) {
     logger.set_separate_config(false);
     logger.set_polling_period(std::chrono::milliseconds(100));
     logger_event_loop->OnRun([base_name, &logger_event_loop, &logger]() {
-      logger.StartLogging(
-          std::make_unique<LocalLogNamer>(base_name, logger_event_loop.get()));
+      logger.StartLogging(std::make_unique<LocalLogNamer>(
+          base_name, logger_event_loop.get(), logger_event_loop->node()));
       logger.StopLogging(aos::monotonic_clock::min_time);
       EXPECT_DEATH(logger.StopLogging(aos::monotonic_clock::min_time),
                    "Not logging right now");
@@ -240,13 +241,13 @@ TEST_F(LoggerTest, StartsTwice) {
     Logger logger(logger_event_loop.get());
     logger.set_separate_config(false);
     logger.set_polling_period(std::chrono::milliseconds(100));
-    logger.StartLogging(
-        std::make_unique<LocalLogNamer>(base_name1, logger_event_loop.get()));
+    logger.StartLogging(std::make_unique<LocalLogNamer>(
+        base_name1, logger_event_loop.get(), logger_event_loop->node()));
     event_loop_factory_.RunFor(chrono::milliseconds(10000));
     logger.StopLogging(logger_event_loop->monotonic_now());
     event_loop_factory_.RunFor(chrono::milliseconds(10000));
-    logger.StartLogging(
-        std::make_unique<LocalLogNamer>(base_name2, logger_event_loop.get()));
+    logger.StartLogging(std::make_unique<LocalLogNamer>(
+        base_name2, logger_event_loop.get(), logger_event_loop->node()));
     event_loop_factory_.RunFor(chrono::milliseconds(10000));
   }
 
@@ -657,14 +658,27 @@ class MultinodeLoggerTest : public ::testing::TestWithParam<struct Param> {
   struct LoggerState {
     std::unique_ptr<EventLoop> event_loop;
     std::unique_ptr<Logger> logger;
+    const Configuration *configuration;
+    const Node *node;
+    MultiNodeLogNamer *log_namer;
   };
 
   LoggerState MakeLogger(const Node *node,
-                         SimulatedEventLoopFactory *factory = nullptr) {
+                         SimulatedEventLoopFactory *factory = nullptr,
+                         const Configuration *configuration = nullptr) {
     if (factory == nullptr) {
       factory = &event_loop_factory_;
     }
-    return {factory->MakeEventLoop("logger", node), {}};
+    if (configuration == nullptr) {
+      configuration = factory->configuration();
+    }
+    return {
+        factory->MakeEventLoop(
+            "logger", configuration::GetNode(factory->configuration(), node)),
+        {},
+        configuration,
+        node,
+        nullptr};
   }
 
   void StartLogger(LoggerState *logger, std::string logfile_base = "",
@@ -677,14 +691,16 @@ class MultinodeLoggerTest : public ::testing::TestWithParam<struct Param> {
       }
     }
 
-    logger->logger = std::make_unique<Logger>(logger->event_loop.get());
+    logger->logger = std::make_unique<Logger>(logger->event_loop.get(),
+                                              logger->configuration);
     logger->logger->set_polling_period(std::chrono::milliseconds(100));
     logger->logger->set_name(absl::StrCat(
         "name_prefix_", logger->event_loop->node()->name()->str()));
     logger->event_loop->OnRun([logger, logfile_base, compress]() {
       std::unique_ptr<MultiNodeLogNamer> namer =
-          std::make_unique<MultiNodeLogNamer>(logfile_base,
-                                              logger->event_loop.get());
+          std::make_unique<MultiNodeLogNamer>(
+              logfile_base, logger->configuration, logger->event_loop.get(),
+              logger->node);
       if (compress) {
 #ifdef LZMA
         namer->set_extension(".xz");
@@ -694,6 +710,7 @@ class MultinodeLoggerTest : public ::testing::TestWithParam<struct Param> {
         LOG(FATAL) << "Compression unsupported";
 #endif
       }
+      logger->log_namer = namer.get();
 
       logger->logger->StartLogging(std::move(namer));
     });
@@ -2485,7 +2502,86 @@ INSTANTIATE_TEST_SUITE_P(
                       Param{"multinode_pingpong_split_config.json", false,
                             kSplitConfigSha1}));
 
-// TODO(austin): Make a log file where the remote node has no start time.
+// Tests that we can relog with a different config.  This makes most sense when
+// you are trying to edit a log and want to use channel renaming + the original
+// config in the new log.
+TEST_P(MultinodeLoggerTest, LogDifferentConfig) {
+  time_converter_.StartEqual();
+  {
+    LoggerState pi1_logger = MakeLogger(pi1_);
+    LoggerState pi2_logger = MakeLogger(pi2_);
+
+    event_loop_factory_.RunFor(chrono::milliseconds(95));
+
+    StartLogger(&pi1_logger);
+    StartLogger(&pi2_logger);
+
+    event_loop_factory_.RunFor(chrono::milliseconds(20000));
+  }
+
+  LogReader reader(SortParts(logfiles_));
+  reader.RemapLoggedChannel<aos::examples::Ping>("/test", "/original");
+
+  SimulatedEventLoopFactory log_reader_factory(reader.configuration());
+  log_reader_factory.set_send_delay(chrono::microseconds(0));
+
+  // This sends out the fetched messages and advances time to the start of the
+  // log file.
+  reader.Register(&log_reader_factory);
+
+  const Node *pi1 =
+      configuration::GetNode(log_reader_factory.configuration(), "pi1");
+  const Node *pi2 =
+      configuration::GetNode(log_reader_factory.configuration(), "pi2");
+
+  LOG(INFO) << "Start time " << reader.monotonic_start_time(pi1) << " pi1";
+  LOG(INFO) << "Start time " << reader.monotonic_start_time(pi2) << " pi2";
+  LOG(INFO) << "now pi1 "
+            << log_reader_factory.GetNodeEventLoopFactory(pi1)->monotonic_now();
+  LOG(INFO) << "now pi2 "
+            << log_reader_factory.GetNodeEventLoopFactory(pi2)->monotonic_now();
+
+  EXPECT_THAT(reader.LoggedNodes(),
+              ::testing::ElementsAre(
+                  configuration::GetNode(reader.logged_configuration(), pi1),
+                  configuration::GetNode(reader.logged_configuration(), pi2)));
+
+  reader.event_loop_factory()->set_send_delay(chrono::microseconds(0));
+
+  // And confirm we can re-create a log again, while checking the contents.
+  std::vector<std::string> log_files;
+  {
+    LoggerState pi1_logger =
+        MakeLogger(configuration::GetNode(reader.logged_configuration(), pi1_),
+                   &log_reader_factory, reader.logged_configuration());
+    LoggerState pi2_logger =
+        MakeLogger(configuration::GetNode(reader.logged_configuration(), pi2_),
+                   &log_reader_factory, reader.logged_configuration());
+
+    StartLogger(&pi1_logger, tmp_dir_ + "/relogged1");
+    StartLogger(&pi2_logger, tmp_dir_ + "/relogged2");
+
+    log_reader_factory.Run();
+
+    for (auto &x : pi1_logger.log_namer->all_filenames()) {
+      log_files.emplace_back(absl::StrCat(tmp_dir_, "/relogged1_", x));
+    }
+    for (auto &x : pi2_logger.log_namer->all_filenames()) {
+      log_files.emplace_back(absl::StrCat(tmp_dir_, "/relogged2_", x));
+    }
+  }
+
+  reader.Deregister();
+
+  // And verify that we can run the LogReader over the relogged files without
+  // hitting any fatal errors.
+  {
+    LogReader relogged_reader(SortParts(log_files));
+    relogged_reader.Register();
+
+    relogged_reader.event_loop_factory()->Run();
+  }
+}
 
 }  // namespace testing
 }  // namespace logger

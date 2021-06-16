@@ -486,6 +486,8 @@ MessageReader::MessageReader(std::string_view filename)
 
   raw_log_file_header_ = std::move(*raw_log_file_header);
 
+  CHECK(raw_log_file_header_.Verify()) << "Log file header is corrupted";
+
   max_out_of_order_duration_ =
       FLAGS_max_out_of_order > 0
           ? chrono::duration_cast<chrono::nanoseconds>(

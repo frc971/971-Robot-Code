@@ -171,6 +171,8 @@ int main(int argc, char **argv) {
       if (message.span() == absl::Span<const uint8_t>()) {
         break;
       }
+      CHECK(message.Verify());
+
       const auto *const channels = full_header->configuration()->channels();
       const size_t channel_index = message.message().channel_index();
       CHECK_LT(channel_index, channels->size());
