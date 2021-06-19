@@ -31,6 +31,14 @@ void PrintMessage(const aos::Channel *channel, const aos::Context &context,
   // information on stderr.
 
   builder->Reset();
+
+  CHECK(flatbuffers::Verify(*channel->schema(),
+                            *channel->schema()->root_table(),
+                            static_cast<const uint8_t *>(context.data),
+                            static_cast<size_t>(context.size)))
+      << ": Corrupted flatbuffer on " << channel->name()->c_str() << " "
+      << channel->type()->c_str();
+
   aos::FlatbufferToJson(
       builder, channel->schema(), static_cast<const uint8_t *>(context.data),
       {FLAGS_pretty, static_cast<size_t>(FLAGS_max_vector_size)});

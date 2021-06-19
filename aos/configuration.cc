@@ -915,6 +915,14 @@ int GetNodeIndexFromConfig(const Configuration *config, const Node *node) {
 }
 }  // namespace
 
+aos::FlatbufferDetachedBuffer<aos::Configuration> AddSchema(
+    std::string_view json,
+    const std::vector<aos::FlatbufferVector<reflection::Schema>> &schemas) {
+  FlatbufferDetachedBuffer<Configuration> addition =
+      JsonToFlatbuffer(json, Configuration::MiniReflectTypeTable());
+  return MergeConfiguration(addition, schemas);
+}
+
 int GetNodeIndex(const Configuration *config, const Node *node) {
   if (!MultiNode(config)) {
     return 0;

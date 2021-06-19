@@ -1,4 +1,4 @@
-def cc_static_flatbuffer(name, target, function):
+def cc_static_flatbuffer(name, target, function, visibility = None):
     """Creates a cc_library which encodes a file as a Span.
 
     args:
@@ -7,10 +7,10 @@ def cc_static_flatbuffer(name, target, function):
     """
     native.genrule(
         name = name + "_gen",
-        tools = ["//aos:flatbuffers_static"],
+        tools = ["@org_frc971//aos:flatbuffers_static"],
         srcs = [target],
         outs = [name + ".h"],
-        cmd = "$(location //aos:flatbuffers_static) $(SRCS) $(OUTS) '" + function + "'",
+        cmd = "$(location @org_frc971//aos:flatbuffers_static) $(SRCS) $(OUTS) '" + function + "'",
     )
 
     native.cc_library(
@@ -19,4 +19,5 @@ def cc_static_flatbuffer(name, target, function):
         deps = [
             "@com_google_absl//absl/types:span",
         ],
+        visibility = visibility,
     )

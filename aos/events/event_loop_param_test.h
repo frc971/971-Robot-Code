@@ -7,8 +7,14 @@
 
 #include "aos/events/event_loop.h"
 #include "aos/events/test_message_generated.h"
+#include "aos/events/test_message_schema.h"
+#include "aos/events/timing_report_schema.h"
 #include "aos/flatbuffers.h"
 #include "aos/json_to_flatbuffer.h"
+#include "aos/logging/log_message_schema.h"
+#include "aos/network/message_bridge_client_schema.h"
+#include "aos/network/message_bridge_server_schema.h"
+#include "aos/network/timestamp_schema.h"
 #include "gtest/gtest.h"
 
 namespace aos {
@@ -17,7 +23,8 @@ namespace testing {
 class EventLoopTestFactory {
  public:
   EventLoopTestFactory()
-      : flatbuffer_(JsonToFlatbuffer<Configuration>(R"config({
+      : flatbuffer_(configuration::AddSchema(
+            R"config({
   "channels": [
     {
       "name": "/aos",
@@ -40,7 +47,11 @@ class EventLoopTestFactory {
       "type": "aos.TestMessage"
     }
   ]
-})config")) {}
+})config",
+            {aos::FlatbufferSpan<reflection::Schema>(
+                 logging::LogMessageFbsSchema()),
+             aos::FlatbufferSpan<reflection::Schema>(timing::ReportSchema()),
+             aos::FlatbufferSpan<reflection::Schema>(TestMessageSchema())})) {}
 
   virtual ~EventLoopTestFactory() {}
 
@@ -61,7 +72,8 @@ class EventLoopTestFactory {
 
   // Sets the config to a config with a max size with an invalid alignment.
   void InvalidChannelAlignment() {
-    flatbuffer_ = JsonToFlatbuffer<Configuration>(R"config({
+    flatbuffer_ = configuration::AddSchema(
+        R"config({
   "channels": [
     {
       "name": "/aos",
@@ -85,7 +97,11 @@ class EventLoopTestFactory {
       "type": "aos.TestMessage"
     }
   ]
-})config");
+})config",
+        {aos::FlatbufferSpan<reflection::Schema>(
+             logging::LogMessageFbsSchema()),
+         aos::FlatbufferSpan<reflection::Schema>(timing::ReportSchema()),
+         aos::FlatbufferSpan<reflection::Schema>(TestMessageSchema())});
   }
 
   void PinReads() {
@@ -124,8 +140,11 @@ class EventLoopTestFactory {
   ]
 })config";
 
-    flatbuffer_ = FlatbufferDetachedBuffer<Configuration>(
-        JsonToFlatbuffer(kJson, Configuration::MiniReflectTypeTable()));
+    flatbuffer_ = configuration::AddSchema(
+        kJson, {aos::FlatbufferSpan<reflection::Schema>(
+                    logging::LogMessageFbsSchema()),
+                aos::FlatbufferSpan<reflection::Schema>(timing::ReportSchema()),
+                aos::FlatbufferSpan<reflection::Schema>(TestMessageSchema())});
   }
 
   void EnableNodes(std::string_view my_node) {
@@ -239,8 +258,19 @@ class EventLoopTestFactory {
 })config";
 
     flatbuffer_ = configuration::MergeConfiguration(
-        FlatbufferDetachedBuffer<Configuration>(
-            JsonToFlatbuffer(kJson, Configuration::MiniReflectTypeTable())));
+        configuration::MergeConfiguration(
+            aos::FlatbufferDetachedBuffer<Configuration>(
+                JsonToFlatbuffer<Configuration>(kJson))),
+        {aos::FlatbufferSpan<reflection::Schema>(
+             logging::LogMessageFbsSchema()),
+         aos::FlatbufferSpan<reflection::Schema>(timing::ReportSchema()),
+         aos::FlatbufferSpan<reflection::Schema>(TestMessageSchema()),
+         aos::FlatbufferSpan<reflection::Schema>(
+             message_bridge::ClientStatisticsSchema()),
+         aos::FlatbufferSpan<reflection::Schema>(
+             message_bridge::ServerStatisticsSchema()),
+         aos::FlatbufferSpan<reflection::Schema>(
+             message_bridge::TimestampSchema())});
 
     my_node_ = configuration::GetNode(&flatbuffer_.message(), my_node);
   }

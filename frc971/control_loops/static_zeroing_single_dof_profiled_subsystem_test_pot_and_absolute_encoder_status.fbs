@@ -1,0 +1,10 @@
+include "frc971/control_loops/control_loops.fbs";
+include "frc971/control_loops/profiled_subsystem.fbs";
+
+namespace frc971.control_loops.zeroing.testing;
+
+table SubsystemPotAndAbsoluteEncoderProfiledJointStatus {
+  status:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 0);
+}
+
+root_type SubsystemPotAndAbsoluteEncoderProfiledJointStatus;

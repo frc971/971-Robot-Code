@@ -10,6 +10,4 @@ table SubsystemGoal {
   ignore_profile:bool (id: 3);
 }
 
-table SubsystemOutput {
-  output:double (id: 0);
-}
+root_type SubsystemGoal;

@@ -1,4 +1,5 @@
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_ts_library")
+load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
 load("//aos:config.bzl", "aos_config")
 
 package(default_visibility = ["//visibility:public"])
@@ -10,6 +11,12 @@ flatbuffer_cc_library(
     target_compatible_with = ["@platforms//os:linux"],
 )
 
+cc_static_flatbuffer(
+    name = "test_message_schema",
+    function = "aos::TestMessageSchema",
+    target = ":test_message_fbs_reflection_out",
+)
+
 flatbuffer_cc_library(
     name = "event_loop_fbs",
     srcs = ["event_loop.fbs"],
@@ -18,6 +25,12 @@ flatbuffer_cc_library(
         "//aos:configuration_fbs_includes",
     ],
     target_compatible_with = ["@platforms//os:linux"],
+)
+
+cc_static_flatbuffer(
+    name = "timing_report_schema",
+    function = "aos::timing::ReportSchema",
+    target = ":event_loop_fbs_reflection_out",
 )
 
 flatbuffer_cc_library(
@@ -293,7 +306,13 @@ cc_library(
     deps = [
         ":event_loop",
         ":test_message_fbs",
+        ":test_message_schema",
+        ":timing_report_schema",
         "//aos:realtime",
+        "//aos/logging:log_message_schema",
+        "//aos/network:message_bridge_client_schema",
+        "//aos/network:message_bridge_server_schema",
+        "//aos/network:timestamp_schema",
         "//aos/testing:googletest",
     ],
 )

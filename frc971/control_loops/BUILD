@@ -1,5 +1,6 @@
 package(default_visibility = ["//visibility:public"])
 
+load("//aos:config.bzl", "aos_config")
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 
 cc_library(
@@ -417,10 +418,70 @@ cc_library(
 )
 
 flatbuffer_cc_library(
-    name = "static_zeroing_single_dof_profiled_subsystem_test_fbs",
+    name = "static_zeroing_single_dof_profiled_subsystem_test_subsystem_goal_fbs",
     srcs = [
-        "static_zeroing_single_dof_profiled_subsystem_test.fbs",
+        "static_zeroing_single_dof_profiled_subsystem_test_subsystem_goal.fbs",
     ],
+    gen_reflections = 1,
+    includes = [
+        ":control_loops_fbs_includes",
+        ":profiled_subsystem_fbs_includes",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+)
+
+flatbuffer_cc_library(
+    name = "static_zeroing_single_dof_profiled_subsystem_test_subsystem_output_fbs",
+    srcs = [
+        "static_zeroing_single_dof_profiled_subsystem_test_subsystem_output.fbs",
+    ],
+    gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
+)
+
+flatbuffer_cc_library(
+    name = "static_zeroing_single_dof_profiled_subsystem_test_pot_and_absolute_position_fbs",
+    srcs = [
+        "static_zeroing_single_dof_profiled_subsystem_test_pot_and_absolute_position.fbs",
+    ],
+    gen_reflections = 1,
+    includes = [
+        ":control_loops_fbs_includes",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+)
+
+flatbuffer_cc_library(
+    name = "static_zeroing_single_dof_profiled_subsystem_test_absolute_position_fbs",
+    srcs = [
+        "static_zeroing_single_dof_profiled_subsystem_test_absolute_position.fbs",
+    ],
+    gen_reflections = 1,
+    includes = [
+        ":control_loops_fbs_includes",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+)
+
+flatbuffer_cc_library(
+    name = "static_zeroing_single_dof_profiled_subsystem_test_pot_and_absolute_encoder_status_fbs",
+    srcs = [
+        "static_zeroing_single_dof_profiled_subsystem_test_pot_and_absolute_encoder_status.fbs",
+    ],
+    gen_reflections = 1,
+    includes = [
+        ":control_loops_fbs_includes",
+        ":profiled_subsystem_fbs_includes",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+)
+
+flatbuffer_cc_library(
+    name = "static_zeroing_single_dof_profiled_subsystem_test_absolute_encoder_status_fbs",
+    srcs = [
+        "static_zeroing_single_dof_profiled_subsystem_test_absolute_encoder_status.fbs",
+    ],
+    gen_reflections = 1,
     includes = [
         ":control_loops_fbs_includes",
         ":profiled_subsystem_fbs_includes",
@@ -433,14 +494,40 @@ cc_test(
     srcs = [
         "static_zeroing_single_dof_profiled_subsystem_test.cc",
     ],
+    data = [
+        ":static_zeroing_single_dof_profiled_subsystem_test_config",
+    ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":capped_test_plant",
         ":position_sensor_sim",
         ":static_zeroing_single_dof_profiled_subsystem",
-        ":static_zeroing_single_dof_profiled_subsystem_test_fbs",
+        ":static_zeroing_single_dof_profiled_subsystem_test_absolute_encoder_status_fbs",
+        ":static_zeroing_single_dof_profiled_subsystem_test_absolute_position_fbs",
         ":static_zeroing_single_dof_profiled_subsystem_test_plants",
+        ":static_zeroing_single_dof_profiled_subsystem_test_pot_and_absolute_encoder_status_fbs",
+        ":static_zeroing_single_dof_profiled_subsystem_test_pot_and_absolute_position_fbs",
+        ":static_zeroing_single_dof_profiled_subsystem_test_subsystem_goal_fbs",
+        ":static_zeroing_single_dof_profiled_subsystem_test_subsystem_output_fbs",
         "//aos/controls:control_loop_test",
         "//aos/testing:googletest",
     ],
+)
+
+aos_config(
+    name = "static_zeroing_single_dof_profiled_subsystem_test_config",
+    src = "static_zeroing_single_dof_profiled_subsystem_test_config_source.json",
+    flatbuffers = [
+        "//frc971/input:joystick_state_fbs",
+        "//frc971/input:robot_state_fbs",
+        "//aos/logging:log_message_fbs",
+        "//aos/events:event_loop_fbs",
+        ":static_zeroing_single_dof_profiled_subsystem_test_subsystem_output_fbs",
+        ":static_zeroing_single_dof_profiled_subsystem_test_absolute_encoder_status_fbs",
+        ":static_zeroing_single_dof_profiled_subsystem_test_subsystem_goal_fbs",
+        ":static_zeroing_single_dof_profiled_subsystem_test_absolute_position_fbs",
+        ":static_zeroing_single_dof_profiled_subsystem_test_pot_and_absolute_encoder_status_fbs",
+        ":static_zeroing_single_dof_profiled_subsystem_test_pot_and_absolute_position_fbs",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
