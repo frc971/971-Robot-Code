@@ -1039,10 +1039,16 @@ bool ChannelIsReadableOnNode(const Channel *channel, const Node *node) {
 }
 
 bool ChannelMessageIsLoggedOnNode(const Channel *channel, const Node *node) {
-  if (channel->logger() == LoggerConfig::LOCAL_LOGGER && node == nullptr) {
+  if (node == nullptr) {
     // Single node world.  If there is a local logger, then we want to use
     // it.
-    return true;
+    if (channel->logger() == LoggerConfig::LOCAL_LOGGER) {
+      return true;
+    } else if (channel->logger() == LoggerConfig::NOT_LOGGED) {
+      return false;
+    }
+    LOG(FATAL) << "Unsupported logging configuration in a single node world: "
+               << CleanedChannelToString(channel);
   }
   return ChannelMessageIsLoggedOnNode(
       channel, CHECK_NOTNULL(node)->name()->string_view());
