@@ -459,6 +459,8 @@ TEST_F(ConfigurationTest, ChannelMessageIsLoggedOnNode) {
                                            &bar_node.message()));
   EXPECT_FALSE(ChannelMessageIsLoggedOnNode(&logged_on_self_channel.message(),
                                             &baz_node.message()));
+  EXPECT_TRUE(
+      ChannelMessageIsLoggedOnNode(&logged_on_self_channel.message(), nullptr));
 
   // No logger.
   EXPECT_FALSE(ChannelMessageIsLoggedOnNode(&not_logged_channel.message(),
@@ -467,6 +469,8 @@ TEST_F(ConfigurationTest, ChannelMessageIsLoggedOnNode) {
                                             &bar_node.message()));
   EXPECT_FALSE(ChannelMessageIsLoggedOnNode(&not_logged_channel.message(),
                                             &baz_node.message()));
+  EXPECT_FALSE(
+      ChannelMessageIsLoggedOnNode(&not_logged_channel.message(), nullptr));
 
   // Remote logger.
   EXPECT_FALSE(ChannelMessageIsLoggedOnNode(&logged_on_remote_channel.message(),
@@ -491,6 +495,53 @@ TEST_F(ConfigurationTest, ChannelMessageIsLoggedOnNode) {
                                            &bar_node.message()));
   EXPECT_TRUE(ChannelMessageIsLoggedOnNode(&logged_on_both_channel.message(),
                                            &baz_node.message()));
+}
+
+// Tests that our node message is logged helpers work as intended.
+TEST_F(ConfigurationDeathTest, ChannelMessageIsLoggedOnNode) {
+  FlatbufferDetachedBuffer<Channel> logged_on_both_channel(JsonToFlatbuffer(
+      R"channel({
+  "name": "/test",
+  "type": "aos.examples.Ping",
+  "source_node": "bar",
+  "logger": "LOCAL_AND_REMOTE_LOGGER",
+  "logger_nodes": ["baz"],
+  "destination_nodes": [
+    {
+      "name": "baz"
+    }
+  ]
+})channel",
+      Channel::MiniReflectTypeTable()));
+
+  FlatbufferDetachedBuffer<Channel> logged_on_separate_logger_node_channel(
+      JsonToFlatbuffer(
+          R"channel({
+  "name": "/test",
+  "type": "aos.examples.Ping",
+  "source_node": "bar",
+  "logger": "REMOTE_LOGGER",
+  "logger_nodes": ["foo"],
+  "destination_nodes": [
+    {
+      "name": "baz"
+    }
+  ]
+})channel",
+          Channel::MiniReflectTypeTable()));
+
+  EXPECT_DEATH(
+      {
+        ChannelMessageIsLoggedOnNode(&logged_on_both_channel.message(),
+                                     nullptr);
+      },
+      "Unsupported logging configuration in a single node world");
+  EXPECT_DEATH(
+      {
+        ChannelMessageIsLoggedOnNode(
+            &logged_on_separate_logger_node_channel.message(), nullptr);
+      },
+      "Unsupported logging configuration in a single node world");
 }
 
 // Tests that our forwarding timestamps are logged helpers work as intended.
