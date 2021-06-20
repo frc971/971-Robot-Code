@@ -1,6 +1,7 @@
-#include "aos/init.h"
+#include <memory>
 
 #include "aos/events/shm_event_loop.h"
+#include "aos/init.h"
 #include "frc971/control_loops/drivetrain/drivetrain.h"
 #include "y2019/control_loops/drivetrain/drivetrain_base.h"
 #include "y2019/control_loops/drivetrain/event_loop_localizer.h"
@@ -16,7 +17,7 @@ int main(int argc, char **argv) {
   ::aos::ShmEventLoop event_loop(&config.message());
   ::y2019::control_loops::drivetrain::EventLoopLocalizer localizer(
       &event_loop, ::y2019::control_loops::drivetrain::GetDrivetrainConfig());
-  DrivetrainLoop drivetrain(
+  std::unique_ptr<DrivetrainLoop> drivetrain = std::make_unique<DrivetrainLoop>(
       ::y2019::control_loops::drivetrain::GetDrivetrainConfig(), &event_loop,
       &localizer);
 
