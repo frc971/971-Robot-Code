@@ -24,8 +24,7 @@ static const std::unordered_map<std::string, aos::starter::Command>
                         {"restart", aos::starter::Command::RESTART}};
 
 void PrintKey() {
-  absl::PrintF("%-30s %-30s %s\n\n", "Name", "Time since last started",
-               "State");
+  absl::PrintF("%-30s %-10s %s\n\n", "Name", "Uptime", "State");
 }
 
 void PrintApplicationStatus(const aos::starter::ApplicationStatus *app_status,
@@ -34,7 +33,7 @@ void PrintApplicationStatus(const aos::starter::ApplicationStatus *app_status,
       chrono::nanoseconds(app_status->last_start_time()));
   const auto time_running =
       chrono::duration_cast<chrono::seconds>(time - last_start_time);
-  absl::PrintF("%-30s %-30s %s\n", app_status->name()->string_view(),
+  absl::PrintF("%-30s %-10s %s\n", app_status->name()->string_view(),
                std::to_string(time_running.count()) + 's',
                aos::starter::EnumNameState(app_status->state()));
 }
