@@ -38,22 +38,8 @@ apt-get install -y vim-nox \
   libopencv-videostab3.2 \
   libopencv-viz3.2 \
   python3-opencv \
-  python3-matplotlib \
-  gstreamer1.0-plugins-bad \
-  gstreamer1.0-plugins-base \
-  gstreamer1.0-plugins-good \
-  gstreamer1.0-plugins-ugly \
-  gstreamer1.0-x \
-  gstreamer1.0-nice \
-  gstreamer1.0-gl \
-  libgstreamer-plugins-bad1.0-0 \
-  libgstreamer-plugins-base1.0-0 \
-  libgstreamer1.0-0 \
-  libgstreamer-gl1.0-0 \
   libnice10 \
   libnice-dev
-
-python3 -m pip install glog
 
 echo 'GOVERNOR="performance"' > /etc/default/cpufrequtils
 
