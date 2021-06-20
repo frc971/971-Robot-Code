@@ -14,6 +14,7 @@
 #include "aos/events/shm_event_loop.h"
 #include "aos/logging/logging.h"
 #include "frc971/wpilib/fpga_time_conversion.h"
+#include "frc971/wpilib/imu_batch_generated.h"
 #include "frc971/wpilib/imu_generated.h"
 #include "frc971/wpilib/spi_rx_clearer.h"
 
@@ -85,7 +86,7 @@ class ADIS16448 {
   bool Initialize();
 
   ::aos::EventLoop *event_loop_;
-  ::aos::Sender<::frc971::IMUValues> imu_values_sender_;
+  ::aos::Sender<::frc971::IMUValuesBatch> imu_values_sender_;
 
   // TODO(Brian): This object has no business owning these ones.
   const ::std::unique_ptr<frc::SPI> spi_;

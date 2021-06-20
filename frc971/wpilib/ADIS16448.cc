@@ -119,7 +119,7 @@ ADIS16448::ADIS16448(::aos::ShmEventLoop *event_loop, frc::SPI::Port port,
                      frc::DigitalInput *dio1)
     : event_loop_(event_loop),
       imu_values_sender_(
-          event_loop_->MakeSender<::frc971::IMUValues>("/drivetrain")),
+          event_loop_->MakeSender<::frc971::IMUValuesBatch>("/drivetrain")),
       spi_(new frc::SPI(port)),
       dio1_(dio1) {
   // 1MHz is the maximum supported for burst reads, but we
@@ -276,7 +276,15 @@ void ADIS16448::DoRun() {
         ConvertValue(&to_receive[24], kTemperatureLsbDegree) +
         kTemperatureZero);
 
-    if (!builder.Send(imu_builder.Finish())) {
+    flatbuffers::Offset<IMUValues> imu_offset = imu_builder.Finish();
+
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<IMUValues>>>
+        readings_offset = builder.fbb()->CreateVector(&imu_offset, 1);
+
+    IMUValuesBatch::Builder imu_values_batch_builder =
+        builder.MakeBuilder<IMUValuesBatch>();
+    imu_values_batch_builder.add_readings(readings_offset);
+    if (!builder.Send(imu_values_batch_builder.Finish())) {
       AOS_LOG(WARNING, "sending queue message failed\n");
     }
 
