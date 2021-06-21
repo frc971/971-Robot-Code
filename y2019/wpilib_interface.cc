@@ -598,8 +598,7 @@ class SolenoidWriter {
             event_loop->MakeFetcher<::y2019::StatusLight>("/superstructure")),
         pneumatics_to_log_sender_(
             event_loop->MakeSender<::frc971::wpilib::PneumaticsToLog>("/aos")) {
-    ::aos::SetCurrentThreadName("Solenoids");
-    ::aos::SetCurrentThreadRealtimePriority(27);
+    event_loop_->SetRuntimeRealtimePriority(27);
 
     event_loop_->AddPhasedLoop([this](int iterations) { Loop(iterations); },
                                ::std::chrono::milliseconds(20),
