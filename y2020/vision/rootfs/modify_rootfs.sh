@@ -44,7 +44,7 @@ then
 else
   OFFSET="$(/sbin/fdisk -lu "${IMAGE}" | grep "${IMAGE}2" | awk '{print 512*$2}')"
 
-  if [[ "$(stat -c %s "${IMAGE}")" < 3000000000 ]]; then
+  if [[ "$(stat -c %s "${IMAGE}")" < 2000000000 ]]; then
     echo "Growing image"
     dd if=/dev/zero bs=1G count=1 >> "${IMAGE}"
     START="$(/sbin/fdisk -lu "${IMAGE}" | grep "${IMAGE}2" | awk '{print $2}')"
