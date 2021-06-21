@@ -1,6 +1,7 @@
-#include "aos/init.h"
+#include <memory>
 
 #include "aos/events/shm_event_loop.h"
+#include "aos/init.h"
 #include "frc971/control_loops/drivetrain/drivetrain.h"
 #include "y2014_bot3/control_loops/drivetrain/drivetrain_base.h"
 
@@ -16,7 +17,7 @@ int main(int argc, char **argv) {
   ::frc971::control_loops::drivetrain::DeadReckonEkf localizer(
       &event_loop,
       ::y2014_bot3::control_loops::drivetrain::GetDrivetrainConfig());
-  DrivetrainLoop drivetrain(
+  std::unique_ptr<DrivetrainLoop> drivetrain = std::make_unique<DrivetrainLoop>(
       ::y2014_bot3::control_loops::drivetrain::GetDrivetrainConfig(),
       &event_loop, &localizer);
 
