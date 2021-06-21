@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 #include <optional>
-#include <string>
+#include <string_view>
 
 #include "glog/logging.h"
 
@@ -29,14 +29,14 @@ uint16_t GetTeamNumber();
 void OverrideTeamNumber(uint16_t team);
 
 // Returns the pi number for a pi formated hostname.  pi-team#-pi# (pi-971-5)
-std::optional<uint16_t> ParsePiNumber(const std::string &hostname);
+std::optional<uint16_t> ParsePiNumber(const std::string_view hostname);
 
 namespace team_number_internal {
 
-std::optional<uint16_t> ParseRoborioTeamNumber(const std::string &hostname);
+std::optional<uint16_t> ParseRoborioTeamNumber(const std::string_view hostname);
 
 // Returns the team number for a pi formated hostname.  pi-team#-pi#
-std::optional<uint16_t> ParsePiTeamNumber(const std::string &hostname);
+std::optional<uint16_t> ParsePiTeamNumber(const std::string_view hostname);
 
 }  // namespace team_number_internal
 }  // namespace network

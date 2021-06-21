@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "aos/util/string_to_num.h"
+#include "absl/strings/numbers.h"
 
 DEFINE_string(
     override_hostname, "",
@@ -16,16 +16,17 @@ namespace aos {
 namespace network {
 namespace team_number_internal {
 
-std::optional<uint16_t> ParseRoborioTeamNumber(const std::string &hostname) {
+std::optional<uint16_t> ParseRoborioTeamNumber(
+    const std::string_view hostname) {
   for (size_t i = 0; i < hostname.size(); i++) {
     if (hostname[i] == '-') {
-      const std::string num_as_s =
+      const std::string_view num_as_s =
           hostname[hostname.size() - 1] == 'C'
               ? hostname.substr(i + 1, hostname.size() - 5 - i)
               : hostname.substr(i + 1);
 
       int num;
-      if (!::aos::util::StringToNumber(num_as_s, &num)) {
+      if (!absl::SimpleAtoi(num_as_s, &num)) {
         return std::nullopt;
       }
       if (hostname.substr(0, i) == "roboRIO" &&
@@ -38,7 +39,7 @@ std::optional<uint16_t> ParseRoborioTeamNumber(const std::string &hostname) {
   return std::nullopt;
 }
 
-std::optional<uint16_t> ParsePiTeamNumber(const std::string &hostname) {
+std::optional<uint16_t> ParsePiTeamNumber(const std::string_view hostname) {
   if (hostname.substr(0, 3) != "pi-") {
     return std::nullopt;
   }
@@ -52,10 +53,10 @@ std::optional<uint16_t> ParsePiTeamNumber(const std::string &hostname) {
   if (second_separator == hostname.npos) {
     return std::nullopt;
   }
-  const std::string number_string =
+  const std::string_view number_string =
       hostname.substr(first_separator, second_separator - first_separator);
   int number;
-  if (!util::StringToNumber(number_string, &number)) {
+  if (!absl::SimpleAtoi(number_string, &number)) {
     return std::nullopt;
   }
   return number;
@@ -74,8 +75,8 @@ uint16_t DoGetTeamNumber() {
 
   const char *override_number = getenv("AOS_TEAM_NUMBER");
   if (override_number != nullptr) {
-    uint16_t result;
-    if (!::aos::util::StringToNumber(override_number, &result)) {
+    uint32_t result;
+    if (!absl::SimpleAtoi(override_number, &result)) {
       LOG(FATAL) << "Error parsing AOS_TEAM_NUMBER: " << override_number;
     }
     LOG(WARNING)
@@ -121,7 +122,7 @@ uint16_t GetTeamNumber() {
 
 void OverrideTeamNumber(uint16_t team) { override_team = team; }
 
-std::optional<uint16_t> ParsePiNumber(const std::string &hostname) {
+std::optional<uint16_t> ParsePiNumber(const std::string_view hostname) {
   if (hostname.substr(0, 3) != "pi-") {
     return std::nullopt;
   }
@@ -135,14 +136,14 @@ std::optional<uint16_t> ParsePiNumber(const std::string &hostname) {
   if (second_separator == hostname.npos) {
     return std::nullopt;
   }
-  const std::string number_string = hostname.substr(
+  const std::string_view number_string = hostname.substr(
       second_separator + 1, hostname.size() - second_separator - 1);
   if (number_string.size() == 0) {
     return std::nullopt;
   }
 
   int number;
-  if (!util::StringToNumber(number_string, &number)) {
+  if (!absl::SimpleAtoi(number_string, &number)) {
     return std::nullopt;
   }
   return number;

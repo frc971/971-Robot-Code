@@ -119,26 +119,6 @@ cc_library(
 )
 
 cc_library(
-    name = "string_to_num",
-    hdrs = [
-        "string_to_num.h",
-    ],
-    target_compatible_with = ["@platforms//os:linux"],
-)
-
-cc_test(
-    name = "string_to_num_test",
-    srcs = [
-        "string_to_num_test.cc",
-    ],
-    target_compatible_with = ["@platforms//os:linux"],
-    deps = [
-        ":string_to_num",
-        "//aos/testing:googletest",
-    ],
-)
-
-cc_library(
     name = "trapezoid_profile",
     srcs = [
         "trapezoid_profile.cc",
