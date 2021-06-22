@@ -95,6 +95,12 @@ int main(int argc, char **argv) {
     const aos::logger::LogFileHeader *full_header = reader.log_file_header();
     if (!FLAGS_raw_header.empty()) {
       raw_header_reader.emplace(FLAGS_raw_header);
+      std::cout << aos::FlatbufferToJson(
+                       reader.log_file_header(),
+                       {.multi_line = FLAGS_pretty,
+                        .max_vector_size =
+                            static_cast<size_t>(FLAGS_max_vector_size)})
+                << std::endl;
       CHECK_EQ(
           reader.log_file_header()->configuration_sha256()->string_view(),
           aos::logger::Sha256(raw_header_reader->raw_log_file_header().span()));
