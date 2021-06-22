@@ -11,8 +11,8 @@ namespace control_loops {
 namespace rollers {
 
 Rollers::Rollers(::aos::EventLoop *event_loop, const ::std::string &name)
-    : aos::controls::ControlLoop<Goal, Position, Status, Output>(event_loop,
-                                                                 name) {}
+    : frc971::controls::ControlLoop<Goal, Position, Status, Output>(event_loop,
+                                                                    name) {}
 
 void Rollers::RunIteration(const Goal *goal, const Position * /*position*/,
                            aos::Sender<Output>::Builder *output,

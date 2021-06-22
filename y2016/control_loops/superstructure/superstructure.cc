@@ -2,13 +2,11 @@
 
 #include "aos/commonmath.h"
 #include "aos/logging/logging.h"
-
+#include "y2016/constants.h"
 #include "y2016/control_loops/superstructure/integral_arm_plant.h"
 #include "y2016/control_loops/superstructure/integral_intake_plant.h"
 #include "y2016/control_loops/superstructure/superstructure_controls.h"
 #include "y2016/queues/ball_detector_generated.h"
-
-#include "y2016/constants.h"
 
 namespace y2016 {
 namespace control_loops {
@@ -207,9 +205,9 @@ bool CollisionAvoidance::collided_with_given_angles(double shoulder_angle,
 
   // The wrist must go back to zero when the shoulder is moving the arm into
   // a stowed/intaking position.
-  if (shoulder_angle <
-          CollisionAvoidance::kMinShoulderAngleForHorizontalShooter &&
-      ::std::abs(wrist_angle) > kMaxWristAngleForSafeArmStowing) {
+  if (shoulder_angle<CollisionAvoidance::kMinShoulderAngleForHorizontalShooter
+                         && ::std::abs(wrist_angle)>
+          kMaxWristAngleForSafeArmStowing) {
     AOS_LOG(DEBUG, "Collided: Shoulder %f < %f and wrist |%f| > %f.\n",
             shoulder_angle,
             CollisionAvoidance::kMinShoulderAngleForHorizontalShooter,
@@ -228,8 +226,8 @@ constexpr double CollisionAvoidance::kMaxShoulderAngleUntilSafeIntakeStowing;
 
 Superstructure::Superstructure(::aos::EventLoop *event_loop,
                                const ::std::string &name)
-    : aos::controls::ControlLoop<Goal, Position, Status, Output>(event_loop,
-                                                                 name),
+    : frc971::controls::ControlLoop<Goal, Position, Status, Output>(event_loop,
+                                                                    name),
       ball_detector_fetcher_(
           event_loop->MakeFetcher<::y2016::sensors::BallDetector>(
               "/superstructure")),
@@ -287,11 +285,10 @@ double Superstructure::MoveButKeepBelow(double reference_angle,
   }
 }
 
-void Superstructure::RunIteration(
-    const Goal *unsafe_goal,
-    const Position *position,
-    aos::Sender<Output>::Builder *output,
-    aos::Sender<Status>::Builder *status) {
+void Superstructure::RunIteration(const Goal *unsafe_goal,
+                                  const Position *position,
+                                  aos::Sender<Output>::Builder *output,
+                                  aos::Sender<Status>::Builder *status) {
   const State state_before_switch = state_;
   if (WasReset()) {
     AOS_LOG(ERROR, "WPILib reset, restarting\n");
@@ -727,9 +724,10 @@ void Superstructure::RunIteration(
 
       // Intake.
       if (unsafe_goal->force_intake() || !ball_detected) {
-        output_struct.voltage_top_rollers = ::std::max(
-            -kMaxIntakeTopVoltage,
-            ::std::min(unsafe_goal->voltage_top_rollers(), kMaxIntakeTopVoltage));
+        output_struct.voltage_top_rollers =
+            ::std::max(-kMaxIntakeTopVoltage,
+                       ::std::min(unsafe_goal->voltage_top_rollers(),
+                                  kMaxIntakeTopVoltage));
         output_struct.voltage_bottom_rollers =
             ::std::max(-kMaxIntakeBottomVoltage,
                        ::std::min(unsafe_goal->voltage_bottom_rollers(),

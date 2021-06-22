@@ -1,9 +1,8 @@
 #ifndef FRC971_CODELAB_BASIC_H_
 #define FRC971_CODELAB_BASIC_H_
 
-#include "aos/controls/control_loop.h"
+#include "frc971/control_loops/control_loop.h"
 #include "aos/time/time.h"
-
 #include "frc971/codelab/basic_goal_generated.h"
 #include "frc971/codelab/basic_output_generated.h"
 #include "frc971/codelab/basic_position_generated.h"
@@ -29,7 +28,7 @@ namespace codelab {
 //  2 channels are input channels: goal, position.
 //  2 channels are output channels: output, status.
 //
-// ::aos::controls::ControlLoop is a helper class that takes
+// ::frc971::controls::ControlLoop is a helper class that takes
 // all the channel types as template parameters and then calls
 // RunIteration() whenever a Position message is received.
 // It will pass in the Position message and most recent Goal message
@@ -52,7 +51,7 @@ namespace codelab {
 // that  would remove the challenge for future students), but we will go through
 // the code review process.
 class Basic
-    : public ::aos::controls::ControlLoop<Goal, Position, Status, Output> {
+    : public ::frc971::controls::ControlLoop<Goal, Position, Status, Output> {
  public:
   explicit Basic(::aos::EventLoop *event_loop,
                  const ::std::string &name = "/codelab");

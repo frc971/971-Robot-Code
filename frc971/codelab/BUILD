@@ -15,7 +15,7 @@ cc_binary(
         ":basic_output_fbs",
         ":basic_position_fbs",
         ":basic_status_fbs",
-        "//aos/controls:control_loop_test",
+        "//frc971/control_loops:control_loop_test",
         "//aos/events:shm_event_loop",
         "//aos/testing:googletest",
         "//frc971/control_loops:state_feedback_loop",
@@ -33,7 +33,7 @@ cc_library(
         ":basic_output_fbs",
         ":basic_position_fbs",
         ":basic_status_fbs",
-        "//aos/controls:control_loop",
+        "//frc971/control_loops:control_loop",
     ],
 )
 

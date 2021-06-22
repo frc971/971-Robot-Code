@@ -226,7 +226,7 @@ cc_test(
         ":drivetrain_base",
         ":event_loop_localizer",
         ":localizer",
-        "//aos/controls:control_loop_test",
+        "//frc971/control_loops:control_loop_test",
         "//aos/events:shm_event_loop",
         "//aos/network:team_number",
         "//frc971/control_loops:team_number_test_environment",

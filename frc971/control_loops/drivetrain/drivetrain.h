@@ -2,9 +2,8 @@
 #define FRC971_CONTROL_LOOPS_DRIVETRAIN_H_
 
 #include "Eigen/Dense"
-
-#include "aos/controls/control_loop.h"
-#include "aos/controls/polytope.h"
+#include "frc971/control_loops/control_loop.h"
+#include "frc971/control_loops/polytope.h"
 #include "aos/util/log_interval.h"
 #include "frc971/control_loops/control_loops_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
@@ -142,7 +141,7 @@ class DrivetrainFilters {
 };
 
 class DrivetrainLoop
-    : public aos::controls::ControlLoop<Goal, Position, Status, Output> {
+    : public frc971::controls::ControlLoop<Goal, Position, Status, Output> {
  public:
   // Note that we only actually store N - 1 splines, since we need to keep one
   // fetcher free to check whether there are any new splines.

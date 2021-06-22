@@ -43,7 +43,7 @@ cc_library(
     deps = [
         ":intake_plants",
         "//aos:math",
-        "//aos/controls:control_loop",
+        "//frc971/control_loops:control_loop",
         "//frc971/control_loops:control_loops_fbs",
         "//frc971/zeroing",
         "//y2018:constants",

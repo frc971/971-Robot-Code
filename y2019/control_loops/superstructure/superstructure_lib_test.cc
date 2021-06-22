@@ -3,8 +3,8 @@
 #include <chrono>
 #include <memory>
 
-#include "aos/controls/control_loop_test.h"
 #include "frc971/control_loops/capped_test_plant.h"
+#include "frc971/control_loops/control_loop_test.h"
 #include "frc971/control_loops/position_sensor_sim.h"
 #include "frc971/control_loops/team_number_test_environment.h"
 #include "gtest/gtest.h"
@@ -399,10 +399,10 @@ class SuperstructureSimulation {
   CollisionAvoidance collision_avoidance_;
 };
 
-class SuperstructureTest : public ::aos::testing::ControlLoopTest {
+class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
  protected:
   SuperstructureTest()
-      : ::aos::testing::ControlLoopTest(
+      : ::frc971::testing::ControlLoopTest(
             aos::configuration::ReadConfig("y2019/config.json"),
             chrono::microseconds(5050)),
         test_event_loop_(MakeEventLoop("test")),
@@ -569,7 +569,6 @@ TEST_F(SuperstructureTest, SaturationTest) {
   WaitUntilZeroed();
   {
     auto builder = superstructure_goal_sender_.MakeBuilder();
-
 
     flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
         elevator_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(

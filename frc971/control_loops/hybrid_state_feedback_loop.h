@@ -11,7 +11,7 @@
 #include "Eigen/Dense"
 #include "unsupported/Eigen/MatrixFunctions"
 
-#include "aos/controls/control_loop.h"
+#include "frc971/control_loops/control_loop.h"
 #include "aos/logging/logging.h"
 #include "aos/macros.h"
 #include "frc971/control_loops/c2d.h"

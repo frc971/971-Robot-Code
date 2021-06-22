@@ -48,7 +48,7 @@ cc_library(
         ":column_plants",
         ":column_zeroing",
         "//aos:math",
-        "//aos/controls:control_loop",
+        "//frc971/control_loops:control_loop",
         "//frc971/control_loops:profiled_subsystem",
         "//y2017:constants",
         "//y2017/control_loops/superstructure:superstructure_position_fbs",

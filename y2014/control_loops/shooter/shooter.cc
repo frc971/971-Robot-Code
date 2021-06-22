@@ -3,8 +3,8 @@
 #include <stdio.h>
 
 #include <algorithm>
-#include <limits>
 #include <chrono>
+#include <limits>
 
 #include "aos/logging/logging.h"
 #include "y2014/constants.h"
@@ -17,9 +17,9 @@ namespace shooter {
 namespace chrono = ::std::chrono;
 using ::aos::monotonic_clock;
 
-using ::y2014::control_loops::shooter::kSpringConstant;
-using ::y2014::control_loops::shooter::kMaxExtension;
 using ::y2014::control_loops::shooter::kDt;
+using ::y2014::control_loops::shooter::kMaxExtension;
+using ::y2014::control_loops::shooter::kSpringConstant;
 using ::y2014::control_loops::shooter::MakeShooterLoop;
 
 void ZeroedStateFeedbackLoop::CapU() {
@@ -103,8 +103,8 @@ void ZeroedStateFeedbackLoop::SetCalibration(double encoder_val,
 
 ShooterMotor::ShooterMotor(::aos::EventLoop *event_loop,
                            const ::std::string &name)
-    : aos::controls::ControlLoop<Goal, Position, Status, Output>(event_loop,
-                                                                 name),
+    : frc971::controls::ControlLoop<Goal, Position, Status, Output>(event_loop,
+                                                                    name),
       shooter_(MakeShooterLoop()),
       state_(STATE_INITIALIZE),
       cycles_not_moved_(0),
@@ -138,7 +138,7 @@ double ShooterMotor::PowerToPosition(double power) {
   }
 
   new_pos = ::std::min(::std::max(new_pos, values.shooter.lower_limit),
-                              values.shooter.upper_limit);
+                       values.shooter.upper_limit);
   return new_pos;
 }
 
@@ -162,9 +162,8 @@ void ShooterMotor::CheckCalibrations(const Position *position) {
     if (position->pusher_proximal()->current()) {
       --proximal_posedge_validation_cycles_left_;
       if (proximal_posedge_validation_cycles_left_ == 0) {
-        shooter_.SetCalibration(
-            position->pusher_proximal()->posedge_value(),
-            values.shooter.pusher_proximal.upper_angle);
+        shooter_.SetCalibration(position->pusher_proximal()->posedge_value(),
+                                values.shooter.pusher_proximal.upper_angle);
 
         AOS_LOG(DEBUG, "Setting calibration using proximal sensor\n");
         zeroed_ = true;
@@ -183,9 +182,8 @@ void ShooterMotor::CheckCalibrations(const Position *position) {
     if (position->pusher_distal()->current()) {
       --distal_posedge_validation_cycles_left_;
       if (distal_posedge_validation_cycles_left_ == 0) {
-        shooter_.SetCalibration(
-            position->pusher_distal()->posedge_value(),
-            values.shooter.pusher_distal.upper_angle);
+        shooter_.SetCalibration(position->pusher_distal()->posedge_value(),
+                                values.shooter.pusher_distal.upper_angle);
 
         AOS_LOG(DEBUG, "Setting calibration using distal sensor\n");
         zeroed_ = true;
@@ -197,13 +195,12 @@ void ShooterMotor::CheckCalibrations(const Position *position) {
 }
 
 // Positive is out, and positive power is out.
-void ShooterMotor::RunIteration(
-    const Goal *goal,
-    const Position *position,
-    aos::Sender<Output>::Builder *output,
-    aos::Sender<Status>::Builder *status) {
+void ShooterMotor::RunIteration(const Goal *goal, const Position *position,
+                                aos::Sender<Output>::Builder *output,
+                                aos::Sender<Status>::Builder *status) {
   OutputT output_struct;
-  const monotonic_clock::time_point monotonic_now = event_loop()->monotonic_now();
+  const monotonic_clock::time_point monotonic_now =
+      event_loop()->monotonic_now();
   if (goal && ::std::isnan(goal->shot_power())) {
     state_ = STATE_ESTOP;
     AOS_LOG(ERROR, "Estopping because got a shot power of NAN.\n");
@@ -362,7 +359,7 @@ void ShooterMotor::RunIteration(
         latch_piston_ = true;
       }
       if (output == nullptr) {
-        load_timeout_ += ::aos::controls::kLoopFrequency;
+        load_timeout_ += ::frc971::controls::kLoopFrequency;
       }
       // Go to 0, which should be the latch position, or trigger a hall effect
       // on the way.  If we don't see edges where we are supposed to, the
@@ -391,8 +388,7 @@ void ShooterMotor::RunIteration(
                               shooter_.goal_position()) < 0.001) {
           // We are at the goal, but not latched.
           state_ = STATE_LOADING_PROBLEM;
-          loading_problem_end_time_ =
-              monotonic_now + kLoadProblemEndTimeout;
+          loading_problem_end_time_ = monotonic_now + kLoadProblemEndTimeout;
         }
       }
       if (load_timeout_ < monotonic_now) {

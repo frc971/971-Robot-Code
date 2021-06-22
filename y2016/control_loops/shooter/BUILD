@@ -85,7 +85,7 @@ cc_library(
         ":shooter_plants",
         ":shooter_position_fbs",
         ":shooter_status_fbs",
-        "//aos/controls:control_loop",
+        "//frc971/control_loops:control_loop",
     ],
 )
 
@@ -102,7 +102,7 @@ cc_test(
         ":shooter_output_fbs",
         ":shooter_position_fbs",
         ":shooter_status_fbs",
-        "//aos/controls:control_loop_test",
+        "//frc971/control_loops:control_loop_test",
         "//aos/testing:googletest",
         "//frc971/control_loops:state_feedback_loop",
         "//frc971/control_loops:team_number_test_environment",

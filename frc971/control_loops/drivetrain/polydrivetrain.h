@@ -2,7 +2,7 @@
 #define FRC971_CONTROL_LOOPS_DRIVETRAIN_POLYDRIVETRAIN_H_
 
 #include "aos/commonmath.h"
-#include "aos/controls/polytope.h"
+#include "frc971/control_loops/polytope.h"
 #include "frc971/control_loops/coerce_goal.h"
 #include "frc971/control_loops/drivetrain/gear.h"
 #ifdef __linux__
@@ -80,7 +80,7 @@ class PolyDrivetrain {
 
   StateFeedbackLoop<7, 2, 4, Scalar> *kf_;
 
-  const ::aos::controls::HVPolytope<2, 4, 4, Scalar> U_Poly_;
+  const ::frc971::controls::HVPolytope<2, 4, 4, Scalar> U_Poly_;
 
   ::std::unique_ptr<StateFeedbackLoop<2, 2, 2, Scalar>> loop_;
 
@@ -340,12 +340,12 @@ void PolyDrivetrain<Scalar>::Update(Scalar voltage_battery) {
       const Scalar equality_w = kZero;
 
       // Construct a constraint on R by manipulating the constraint on U
-      ::aos::controls::HVPolytope<2, 4, 4, Scalar> R_poly_hv(
+      ::frc971::controls::HVPolytope<2, 4, 4, Scalar> R_poly_hv(
           U_Poly_.static_H() * (loop_->controller().K() + FF),
           U_Poly_.static_k() +
               U_Poly_.static_H() * loop_->controller().K() * loop_->X_hat(),
           (loop_->controller().K() + FF).inverse() *
-              ::aos::controls::ShiftPoints<2, 4, Scalar>(
+              ::frc971::controls::ShiftPoints<2, 4, Scalar>(
                   U_Poly_.StaticVertices(),
                   loop_->controller().K() * loop_->X_hat()));
 

@@ -1,11 +1,10 @@
-#include "flatbuffers/flatbuffers.h"
-#include "gtest/gtest.h"
-
-#include "aos/controls/control_loop.h"
-#include "aos/controls/control_loop_test.h"
-#include "frc971/control_loops/capped_test_plant.h"
-#include "frc971/control_loops/position_sensor_sim.h"
 #include "frc971/control_loops/static_zeroing_single_dof_profiled_subsystem.h"
+
+#include "flatbuffers/flatbuffers.h"
+#include "frc971/control_loops/capped_test_plant.h"
+#include "frc971/control_loops/control_loop.h"
+#include "frc971/control_loops/control_loop_test.h"
+#include "frc971/control_loops/position_sensor_sim.h"
 #include "frc971/control_loops/static_zeroing_single_dof_profiled_subsystem_test_absolute_encoder_status_generated.h"
 #include "frc971/control_loops/static_zeroing_single_dof_profiled_subsystem_test_absolute_position_generated.h"
 #include "frc971/control_loops/static_zeroing_single_dof_profiled_subsystem_test_integral_plant.h"
@@ -15,6 +14,7 @@
 #include "frc971/control_loops/static_zeroing_single_dof_profiled_subsystem_test_subsystem_goal_generated.h"
 #include "frc971/control_loops/static_zeroing_single_dof_profiled_subsystem_test_subsystem_output_generated.h"
 #include "frc971/zeroing/zeroing.h"
+#include "gtest/gtest.h"
 
 using ::frc971::control_loops::PositionSensorSimulator;
 
@@ -163,7 +163,8 @@ class TestIntakeSystemSimulation {
     typename ::aos::Sender<PositionType>::Builder position =
         subsystem_position_sender_.MakeBuilder();
 
-    auto real_position_builder = position.template MakeBuilder<RealPositionType>();
+    auto real_position_builder =
+        position.template MakeBuilder<RealPositionType>();
     flatbuffers::Offset<RealPositionType> position_offset =
         this->subsystem_sensor_sim_
             .template GetSensorValues<typename RealPositionType::Builder>(
@@ -262,7 +263,7 @@ void TestIntakeSystemSimulation<SZSDPS_AbsEncoder, AbsoluteEncoderQueueGroup>::
 // to wrap it.
 template <typename QueueGroup, typename SZSDPS>
 class Subsystem
-    : public ::aos::controls::ControlLoop<
+    : public ::frc971::controls::ControlLoop<
           typename QueueGroup::Goal, typename QueueGroup::Position,
           typename QueueGroup::Status, typename QueueGroup::Output> {
  public:
@@ -272,7 +273,7 @@ class Subsystem
   typedef typename QueueGroup::Output OutputType;
 
   Subsystem(::aos::EventLoop *event_loop, const ::std::string &name)
-      : aos::controls::ControlLoop<
+      : frc971::controls::ControlLoop<
             typename QueueGroup::Goal, typename QueueGroup::Position,
             typename QueueGroup::Status, typename QueueGroup::Output>(
             event_loop, name),
@@ -347,7 +348,7 @@ class Subsystem
 };
 
 template <typename TSZSDPS>
-class IntakeSystemTest : public ::aos::testing::ControlLoopTest {
+class IntakeSystemTest : public ::frc971::testing::ControlLoopTest {
  protected:
   using SZSDPS = typename TSZSDPS::first_type;
   using QueueGroup = typename TSZSDPS::second_type;
@@ -360,7 +361,7 @@ class IntakeSystemTest : public ::aos::testing::ControlLoopTest {
   typedef typename QueueGroup::Output OutputType;
 
   IntakeSystemTest()
-      : ::aos::testing::ControlLoopTest(
+      : ::frc971::testing::ControlLoopTest(
             aos::configuration::ReadConfig("frc971/control_loops/"
                                            "static_zeroing_single_dof_profiled_"
                                            "subsystem_test_config.json"),

@@ -45,7 +45,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":shooter_plants",
-        "//aos/controls:control_loop",
+        "//frc971/control_loops:control_loop",
         "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops:profiled_subsystem_fbs",
         "//y2017/control_loops/superstructure:superstructure_goal_fbs",

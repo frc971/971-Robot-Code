@@ -2,8 +2,7 @@
 
 #include "Eigen/Dense"
 #include "Eigen/Geometry"
-
-#include "aos/controls/quaternion_utils.h"
+#include "frc971/control_loops/quaternion_utils.h"
 
 namespace frc971 {
 namespace control_loops {
@@ -80,7 +79,7 @@ void QuaternionUkf::DoPredict(const Eigen::Matrix<double, 3, 1> &U,
 
   // We now have the sigma points after the model update.
   // Compute the mean of the transformed sigma point
-  X_hat_ = Eigen::Quaternion<double>(aos::controls::QuaternionMean(Y));
+  X_hat_ = Eigen::Quaternion<double>(frc971::controls::QuaternionMean(Y));
 
   // And the covariance.
   Eigen::Matrix<double, 3, 2 * 3 + 1> Wprime;
@@ -159,7 +158,7 @@ void QuaternionUkf::DoPredict(const Eigen::Matrix<double, 3, 1> &U,
 
   // Update X_hat and the covariance P
   X_hat_ = X_hat_ * Eigen::Quaternion<double>(
-                        aos::controls::ToQuaternionFromRotationVector(
+                        frc971::controls::ToQuaternionFromRotationVector(
                             K * (measurement - Z_hat_)));
   P_ = P_prior - K * P_vv * K.transpose();
 }
@@ -215,7 +214,7 @@ Eigen::Matrix<double, 3, 3> ComputeQuaternionCovariance(
   for (int i = 0; i < 7; ++i) {
     // Compute the error vector for each sigma point.
     Eigen::Matrix<double, 3, 1> Wprimei =
-        aos::controls::ToRotationVectorFromQuaternion(
+        frc971::controls::ToRotationVectorFromQuaternion(
             Eigen::Quaternion<double>(mean).conjugate() *
             Eigen::Quaternion<double>(points.col(i)));
     // Now, compute the contribution of this sigma point to P_prior.
@@ -241,7 +240,7 @@ Eigen::Matrix<double, 4, 3 * 2 + 1> GenerateSigmaPoints(
   Eigen::Matrix<double, 4, 3 * 2 + 1> X;
   for (int i = 0; i < 3; ++i) {
     Eigen::Quaternion<double> perturbation(
-        aos::controls::ToQuaternionFromRotationVector(S.col(i), M_PI_2));
+        frc971::controls::ToQuaternionFromRotationVector(S.col(i), M_PI_2));
 
     X.col(i * 2) = (mean * perturbation).coeffs();
     X.col(i * 2 + 1) = (mean * perturbation.conjugate()).coeffs();

@@ -1,11 +1,9 @@
-#include "y2018/control_loops/superstructure/superstructure.h"
-
 #include <unistd.h>
 
 #include <chrono>
 #include <memory>
 
-#include "aos/controls/control_loop_test.h"
+#include "frc971/control_loops/control_loop_test.h"
 #include "frc971/control_loops/position_sensor_sim.h"
 #include "frc971/control_loops/team_number_test_environment.h"
 #include "gtest/gtest.h"
@@ -13,6 +11,7 @@
 #include "y2018/control_loops/superstructure/arm/dynamics.h"
 #include "y2018/control_loops/superstructure/arm/generated_graph.h"
 #include "y2018/control_loops/superstructure/intake/intake_plant.h"
+#include "y2018/control_loops/superstructure/superstructure.h"
 #include "y2018/status_light_generated.h"
 #include "y2018/vision/vision_generated.h"
 
@@ -64,9 +63,8 @@ class IntakeSideSimulation {
     plant_.mutable_X(0) = start_pos;
     plant_.mutable_X(2) = start_pos;
 
-    pot_encoder_.Initialize(
-        start_pos, kNoiseScalar, 0.0,
-        zeroing_constants_.measured_absolute_position);
+    pot_encoder_.Initialize(start_pos, kNoiseScalar, 0.0,
+                            zeroing_constants_.measured_absolute_position);
   }
 
   flatbuffers::Offset<IntakeElasticSensors> GetSensorValues(
@@ -106,10 +104,8 @@ class IntakeSideSimulation {
     const double position_intake = plant_.Y(1);
 
     pot_encoder_.MoveTo(position_intake);
-    EXPECT_GE(position_intake,
-              constants::Values::kIntakeRange().lower_hard);
-    EXPECT_LE(position_intake,
-              constants::Values::kIntakeRange().upper_hard);
+    EXPECT_GE(position_intake, constants::Values::kIntakeRange().lower_hard);
+    EXPECT_LE(position_intake, constants::Values::kIntakeRange().upper_hard);
   }
 
  private:
@@ -312,10 +308,10 @@ class SuperstructureSimulation {
   bool first_ = true;
 };
 
-class SuperstructureTest : public ::aos::testing::ControlLoopTest {
+class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
  protected:
   SuperstructureTest()
-      : ::aos::testing::ControlLoopTest(
+      : ::frc971::testing::ControlLoopTest(
             aos::configuration::ReadConfig("y2018/config.json"),
             ::std::chrono::microseconds(5050)),
         test_event_loop_(MakeEventLoop("test")),
@@ -405,7 +401,8 @@ TEST_F(SuperstructureTest, ReachesGoal) {
     intake_goal_builder.add_left_intake_angle(0.1);
     intake_goal_builder.add_right_intake_angle(0.2);
 
-    flatbuffers::Offset<IntakeGoal> intake_offset = intake_goal_builder.Finish();
+    flatbuffers::Offset<IntakeGoal> intake_offset =
+        intake_goal_builder.Finish();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_intake(intake_offset);
@@ -435,7 +432,8 @@ TEST_F(SuperstructureTest, OffsetStartReachesGoal) {
     intake_goal_builder.add_left_intake_angle(0.1);
     intake_goal_builder.add_right_intake_angle(0.2);
 
-    flatbuffers::Offset<IntakeGoal> intake_offset = intake_goal_builder.Finish();
+    flatbuffers::Offset<IntakeGoal> intake_offset =
+        intake_goal_builder.Finish();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_intake(intake_offset);
@@ -463,7 +461,8 @@ TEST_F(SuperstructureTest, RespectsRange) {
     intake_goal_builder.add_left_intake_angle(5.0 * M_PI);
     intake_goal_builder.add_right_intake_angle(5.0 * M_PI);
 
-    flatbuffers::Offset<IntakeGoal> intake_offset = intake_goal_builder.Finish();
+    flatbuffers::Offset<IntakeGoal> intake_offset =
+        intake_goal_builder.Finish();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_intake(intake_offset);
@@ -501,7 +500,8 @@ TEST_F(SuperstructureTest, RespectsRange) {
     intake_goal_builder.add_left_intake_angle(-5.0 * M_PI);
     intake_goal_builder.add_right_intake_angle(-5.0 * M_PI);
 
-    flatbuffers::Offset<IntakeGoal> intake_offset = intake_goal_builder.Finish();
+    flatbuffers::Offset<IntakeGoal> intake_offset =
+        intake_goal_builder.Finish();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_intake(intake_offset);
@@ -544,7 +544,8 @@ TEST_F(SuperstructureTest, DISABLED_LowerHardstopStartup) {
     intake_goal_builder.add_right_intake_angle(
         constants::Values::kIntakeRange().lower);
 
-    flatbuffers::Offset<IntakeGoal> intake_offset = intake_goal_builder.Finish();
+    flatbuffers::Offset<IntakeGoal> intake_offset =
+        intake_goal_builder.Finish();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_intake(intake_offset);
@@ -589,7 +590,8 @@ TEST_F(SuperstructureTest, DISABLED_UpperHardstopStartup) {
     intake_goal_builder.add_right_intake_angle(
         constants::Values::kIntakeRange().upper);
 
-    flatbuffers::Offset<IntakeGoal> intake_offset = intake_goal_builder.Finish();
+    flatbuffers::Offset<IntakeGoal> intake_offset =
+        intake_goal_builder.Finish();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_intake(intake_offset);
@@ -617,7 +619,8 @@ TEST_F(SuperstructureTest, ResetTest) {
     intake_goal_builder.add_right_intake_angle(
         constants::Values::kIntakeRange().upper - 0.1);
 
-    flatbuffers::Offset<IntakeGoal> intake_offset = intake_goal_builder.Finish();
+    flatbuffers::Offset<IntakeGoal> intake_offset =
+        intake_goal_builder.Finish();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_intake(intake_offset);
@@ -664,7 +667,8 @@ TEST_F(SuperstructureTest, ArmSimpleGoal) {
     intake_goal_builder.add_left_intake_angle(-0.8);
     intake_goal_builder.add_right_intake_angle(-0.8);
 
-    flatbuffers::Offset<IntakeGoal> intake_offset = intake_goal_builder.Finish();
+    flatbuffers::Offset<IntakeGoal> intake_offset =
+        intake_goal_builder.Finish();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_intake(intake_offset);
@@ -687,7 +691,8 @@ TEST_F(SuperstructureTest, ArmMoveAndMoveBack) {
     intake_goal_builder.add_left_intake_angle(0.0);
     intake_goal_builder.add_right_intake_angle(0.0);
 
-    flatbuffers::Offset<IntakeGoal> intake_offset = intake_goal_builder.Finish();
+    flatbuffers::Offset<IntakeGoal> intake_offset =
+        intake_goal_builder.Finish();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_intake(intake_offset);
@@ -708,7 +713,8 @@ TEST_F(SuperstructureTest, ArmMoveAndMoveBack) {
     intake_goal_builder.add_left_intake_angle(0.0);
     intake_goal_builder.add_right_intake_angle(0.0);
 
-    flatbuffers::Offset<IntakeGoal> intake_offset = intake_goal_builder.Finish();
+    flatbuffers::Offset<IntakeGoal> intake_offset =
+        intake_goal_builder.Finish();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_intake(intake_offset);
@@ -734,7 +740,8 @@ TEST_F(SuperstructureTest, ArmMultistepMove) {
     intake_goal_builder.add_left_intake_angle(0.0);
     intake_goal_builder.add_right_intake_angle(0.0);
 
-    flatbuffers::Offset<IntakeGoal> intake_offset = intake_goal_builder.Finish();
+    flatbuffers::Offset<IntakeGoal> intake_offset =
+        intake_goal_builder.Finish();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_intake(intake_offset);
@@ -755,7 +762,8 @@ TEST_F(SuperstructureTest, ArmMultistepMove) {
     intake_goal_builder.add_left_intake_angle(0.0);
     intake_goal_builder.add_right_intake_angle(0.0);
 
-    flatbuffers::Offset<IntakeGoal> intake_offset = intake_goal_builder.Finish();
+    flatbuffers::Offset<IntakeGoal> intake_offset =
+        intake_goal_builder.Finish();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_intake(intake_offset);
@@ -768,7 +776,6 @@ TEST_F(SuperstructureTest, ArmMultistepMove) {
   RunFor(chrono::seconds(10));
   VerifyNearGoal();
 }
-
 
 // TODO(austin): Test multiple path segments.
 // TODO(austin): Disable in the middle and test recovery.

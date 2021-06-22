@@ -25,8 +25,8 @@ constexpr double kMaxIntakeRollerVoltage = 12.0;
 
 Superstructure::Superstructure(::aos::EventLoop *event_loop,
                                const ::std::string &name)
-    : aos::controls::ControlLoop<Goal, Position, Status, Output>(event_loop,
-                                                                 name),
+    : frc971::controls::ControlLoop<Goal, Position, Status, Output>(event_loop,
+                                                                    name),
       status_light_sender_(
           event_loop->MakeSender<::y2018::StatusLight>("/superstructure")),
       vision_status_fetcher_(
@@ -130,7 +130,6 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
           output != nullptr ? &voltage_distal_output : nullptr,
           output != nullptr ? &release_arm_brake_output : nullptr,
           output != nullptr ? &claw_grabbed_output : nullptr, status->fbb());
-
 
   bool hook_release_output = false;
   bool forks_release_output = false;

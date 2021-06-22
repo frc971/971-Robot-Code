@@ -23,8 +23,8 @@ typedef ::y2017::constants::Values::ShotParams ShotParams;
 
 Superstructure::Superstructure(::aos::EventLoop *event_loop,
                                const ::std::string &name)
-    : aos::controls::ControlLoop<Goal, Position, Status, Output>(event_loop,
-                                                                 name),
+    : frc971::controls::ControlLoop<Goal, Position, Status, Output>(event_loop,
+                                                                    name),
       vision_status_fetcher_(
           event_loop->MakeFetcher<::y2017::vision::VisionStatus>("/vision")),
       drivetrain_status_fetcher_(
@@ -48,11 +48,10 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
       });
 }
 
-void Superstructure::RunIteration(
-    const Goal *unsafe_goal,
-    const Position *position,
-    aos::Sender<Output>::Builder *output,
-    aos::Sender<Status>::Builder *status) {
+void Superstructure::RunIteration(const Goal *unsafe_goal,
+                                  const Position *position,
+                                  aos::Sender<Output>::Builder *output,
+                                  aos::Sender<Status>::Builder *status) {
   OutputT output_struct;
   const ::aos::monotonic_clock::time_point monotonic_now =
       event_loop()->monotonic_now();
@@ -104,8 +103,8 @@ void Superstructure::RunIteration(
     if (distance_average_.Valid()) {
       if (unsafe_goal->use_vision_for_shots()) {
         ShotParams shot_params;
-        if (shot_interpolation_table_.GetInRange(
-                distance_average_.Get(), &shot_params)) {
+        if (shot_interpolation_table_.GetInRange(distance_average_.Get(),
+                                                 &shot_params)) {
           hood_goal_angle = shot_params.angle;
           shooter_goal.angular_velocity = shot_params.power;
           if (indexer_goal.angular_velocity != 0.0) {
@@ -115,10 +114,10 @@ void Superstructure::RunIteration(
           in_range = false;
         }
       }
-      AOS_LOG(
-          DEBUG, "VisionDistance %f, hood %f shooter %f, indexer %f * M_PI\n",
-          vision_distance, hood_goal_angle,
-          shooter_goal.angular_velocity, indexer_goal.angular_velocity / M_PI);
+      AOS_LOG(DEBUG,
+              "VisionDistance %f, hood %f shooter %f, indexer %f * M_PI\n",
+              vision_distance, hood_goal_angle, shooter_goal.angular_velocity,
+              indexer_goal.angular_velocity / M_PI);
     } else {
       AOS_LOG(DEBUG, "VisionNotValid %f\n", vision_distance);
       if (unsafe_goal->use_vision_for_shots()) {

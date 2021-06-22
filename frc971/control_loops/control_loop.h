@@ -12,7 +12,7 @@
 #include "frc971/input/joystick_state_generated.h"
 #include "frc971/input/robot_state_generated.h"
 
-namespace aos {
+namespace frc971 {
 namespace controls {
 
 // Control loops run this often, "starting" at time 0.
@@ -26,7 +26,7 @@ template <class GoalType, class PositionType, class StatusType,
           class OutputType>
 class ControlLoop {
  public:
-  ControlLoop(EventLoop *event_loop, const ::std::string &name)
+  ControlLoop(aos::EventLoop *event_loop, const ::std::string &name)
       : event_loop_(event_loop), name_(name) {
     output_sender_ = event_loop_->MakeSender<OutputType>(name_);
     status_sender_ = event_loop_->MakeSender<StatusType>(name_);
@@ -74,7 +74,7 @@ class ControlLoop {
   // Runs one cycle of the loop.
   void IteratePosition(const PositionType &position);
 
-  EventLoop *event_loop() { return event_loop_; }
+  aos::EventLoop *event_loop() { return event_loop_; }
 
   // Returns the position context.  This is only valid inside the RunIteration
   // method.
@@ -105,7 +105,7 @@ class ControlLoop {
       ::std::chrono::milliseconds(100);
 
   // Pointer to the queue group
-  EventLoop *event_loop_;
+  aos::EventLoop *event_loop_;
   ::std::string name_;
 
   ::aos::Sender<OutputType> output_sender_;
@@ -135,8 +135,8 @@ class ControlLoop {
 };
 
 }  // namespace controls
-}  // namespace aos
+}  // namespace frc971
 
-#include "aos/controls/control_loop-tmpl.h"  // IWYU pragma: export
+#include "frc971/control_loops/control_loop-tmpl.h"  // IWYU pragma: export
 
 #endif

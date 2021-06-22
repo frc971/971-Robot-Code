@@ -40,7 +40,7 @@ cc_binary(
     deps = [
         "//aos:init",
         "//aos:make_unique",
-        "//aos/controls:control_loop",
+        "//frc971/control_loops:control_loop",
         "//aos/logging",
         "//frc971/input:robot_state_fbs",
         "//aos/stl_mutex",

@@ -3,8 +3,8 @@
 
 #include <memory>
 
-#include "aos/controls/control_loop.h"
-#include "aos/controls/polytope.h"
+#include "frc971/control_loops/control_loop.h"
+#include "frc971/control_loops/polytope.h"
 #include "frc971/control_loops/coerce_goal.h"
 #include "frc971/control_loops/hall_effect_tracker.h"
 #include "frc971/control_loops/state_feedback_loop.h"
@@ -49,7 +49,7 @@ class ClawLimitedLoop : public StateFeedbackLoop<4, 2, 2> {
 
   bool top_known_ = false, bottom_known_ = false;
 
-  const ::aos::controls::HPolytope<2> U_Poly_, U_Poly_zeroing_;
+  const ::frc971::controls::HPolytope<2> U_Poly_, U_Poly_zeroing_;
 };
 
 class ClawMotor;
@@ -88,7 +88,9 @@ class ZeroedStateFeedbackLoop {
   double absolute_position() const { return encoder() + offset(); }
 
   const ::frc971::HallEffectTracker &front() const { return front_; }
-  const ::frc971::HallEffectTracker &calibration() const { return calibration_; }
+  const ::frc971::HallEffectTracker &calibration() const {
+    return calibration_;
+  }
   const ::frc971::HallEffectTracker &back() const { return back_; }
 
   bool any_hall_effect_changed() const {
@@ -143,8 +145,8 @@ class ZeroedStateFeedbackLoop {
   double last_off_encoder_;
   bool any_triggered_last_;
 
-  const ::frc971::HallEffectTracker* posedge_filter_ = nullptr;
-  const ::frc971::HallEffectTracker* negedge_filter_ = nullptr;
+  const ::frc971::HallEffectTracker *posedge_filter_ = nullptr;
+  const ::frc971::HallEffectTracker *negedge_filter_ = nullptr;
 
  private:
   // Does the edges of 1 sensor for GetPositionOfEdge.
@@ -187,7 +189,7 @@ class BottomZeroedStateFeedbackLoop : public ZeroedStateFeedbackLoop {
 };
 
 class ClawMotor
-    : public aos::controls::ControlLoop<Goal, Position, Status, Output> {
+    : public frc971::controls::ControlLoop<Goal, Position, Status, Output> {
  public:
   explicit ClawMotor(::aos::EventLoop *event_loop,
                      const ::std::string &name = "/claw");

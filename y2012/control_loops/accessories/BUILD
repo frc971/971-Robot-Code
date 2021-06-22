@@ -11,8 +11,8 @@ cc_binary(
     deps = [
         ":accessories_fbs",
         "//aos:init",
-        "//aos/controls:control_loop",
-        "//aos/controls:control_loop_fbs",
+        "//frc971/control_loops:control_loop",
+        "//y2012/control_loops:control_loop_fbs",
     ],
 )
 

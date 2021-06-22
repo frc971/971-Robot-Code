@@ -56,7 +56,7 @@ flatbuffers::Offset<ShooterSideStatus> ShooterSide::SetStatus(
   // Compute the distance moved over that time period.
   const double avg_angular_velocity =
       (history_[oldest_history_position] - history_[history_position_]) /
-      (::aos::time::DurationInSeconds(::aos::controls::kLoopFrequency) *
+      (::aos::time::DurationInSeconds(::frc971::controls::kLoopFrequency) *
        static_cast<double>(kHistoryLength - 1));
   shooter_side_status_builder.add_avg_angular_velocity(avg_angular_velocity);
 
@@ -71,8 +71,8 @@ flatbuffers::Offset<ShooterSideStatus> ShooterSide::SetStatus(
 }
 
 Shooter::Shooter(::aos::EventLoop *event_loop, const ::std::string &name)
-    : aos::controls::ControlLoop<Goal, Position, Status, Output>(event_loop,
-                                                                 name),
+    : frc971::controls::ControlLoop<Goal, Position, Status, Output>(event_loop,
+                                                                    name),
       shots_(0),
       last_pre_shot_timeout_(::aos::monotonic_clock::min_time) {}
 

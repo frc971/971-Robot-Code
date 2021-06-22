@@ -3,10 +3,9 @@
 
 #include <memory>
 
-#include "aos/controls/control_loop.h"
-#include "frc971/control_loops/state_feedback_loop.h"
+#include "frc971/control_loops/control_loop.h"
 #include "aos/time/time.h"
-
+#include "frc971/control_loops/state_feedback_loop.h"
 #include "y2014/constants.h"
 #include "y2014/control_loops/shooter/shooter_goal_generated.h"
 #include "y2014/control_loops/shooter/shooter_motor_plant.h"
@@ -21,7 +20,7 @@ namespace testing {
 class ShooterTest_UnloadWindupPositive_Test;
 class ShooterTest_UnloadWindupNegative_Test;
 class ShooterTest_RezeroWhileUnloading_Test;
-};
+};  // namespace testing
 
 // Note: Everything in this file assumes that there is a 1 cycle delay between
 // power being requested and it showing up at the motor.  It assumes that
@@ -131,7 +130,7 @@ static constexpr ::std::chrono::nanoseconds kPrepareFireEndTime =
     ::std::chrono::milliseconds(40);
 
 class ShooterMotor
-    : public aos::controls::ControlLoop<Goal, Position, Status, Output> {
+    : public frc971::controls::ControlLoop<Goal, Position, Status, Output> {
  public:
   explicit ShooterMotor(::aos::EventLoop *event_loop,
                         const ::std::string &name = "/shooter");

@@ -1,7 +1,7 @@
 #ifndef y2020_CONTROL_LOOPS_SUPERSTRUCTURE_SUPERSTRUCTURE_H_
 #define y2020_CONTROL_LOOPS_SUPERSTRUCTURE_SUPERSTRUCTURE_H_
 
-#include "aos/controls/control_loop.h"
+#include "frc971/control_loops/control_loop.h"
 #include "aos/events/event_loop.h"
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "frc971/input/joystick_state_generated.h"
@@ -19,7 +19,7 @@ namespace control_loops {
 namespace superstructure {
 
 class Superstructure
-    : public ::aos::controls::ControlLoop<Goal, Position, Status, Output> {
+    : public ::frc971::controls::ControlLoop<Goal, Position, Status, Output> {
  public:
   explicit Superstructure(::aos::EventLoop *event_loop,
                           const ::std::string &name = "/superstructure");

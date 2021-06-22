@@ -10,7 +10,7 @@
 #include "glog/logging.h"
 #endif  // __linux__
 
-namespace aos {
+namespace frc971 {
 namespace controls {
 
 // A number_of_dimensions dimensional polytope.
@@ -235,6 +235,6 @@ HPolytope<number_of_dimensions>::CalculateVertices(
 #endif  // __linux__
 
 }  // namespace controls
-}  // namespace aos
+}  // namespace frc971
 
 #endif  // AOS_CONTROLS_POLYTOPE_H_

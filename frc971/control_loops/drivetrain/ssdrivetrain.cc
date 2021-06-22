@@ -1,8 +1,7 @@
 #include "frc971/control_loops/drivetrain/ssdrivetrain.h"
 
 #include "aos/commonmath.h"
-#include "aos/controls/polytope.h"
-
+#include "frc971/control_loops/polytope.h"
 #include "frc971/control_loops/coerce_goal.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
 #include "frc971/control_loops/drivetrain/drivetrain_goal_generated.h"
@@ -33,10 +32,10 @@ DrivetrainMotorsSS::DrivetrainMotorsSS(
           (Eigen::Matrix<double, 2, 4>() << /*[[*/ 1.0, 1.0, -1.0, -1.0 /*]*/,
            /*[*/ -1.0, 1.0, 1.0, -1.0 /*]*/)
               .finished()),
-      linear_profile_(::aos::controls::kLoopFrequency),
-      angular_profile_(::aos::controls::kLoopFrequency),
+      linear_profile_(::frc971::controls::kLoopFrequency),
+      angular_profile_(::frc971::controls::kLoopFrequency),
       localizer_(localizer) {
-  ::aos::controls::HPolytope<0>::Init();
+  ::frc971::controls::HPolytope<0>::Init();
   T_ << 1, 1, 1, -1;
   T_inverse_ = T_.inverse();
   unprofiled_goal_.setZero();
@@ -87,13 +86,13 @@ void DrivetrainMotorsSS::PolyCapU(Eigen::Matrix<double, 2, 1> *U) {
       error_K * Eigen::Matrix<double, 2, 1>(kf_->X_hat(kLeftError),
                                             kf_->X_hat(kRightError));
 
-  const ::aos::controls::HVPolytope<2, 4, 4> pos_poly_hv(
+  const ::frc971::controls::HVPolytope<2, 4, 4> pos_poly_hv(
       U_poly_.static_H() * position_K * T_,
       U_poly_.static_H() *
               (-velocity_K * velocity_error + U_integral - kf_->ff_U()) +
           (U_poly_.static_k() * max_voltage_),
       (position_K * T_).inverse() *
-          ::aos::controls::ShiftPoints<2, 4, double>(
+          ::frc971::controls::ShiftPoints<2, 4, double>(
               (U_poly_.StaticVertices() * max_voltage_),
               -velocity_K * velocity_error + U_integral - kf_->ff_U()));
 

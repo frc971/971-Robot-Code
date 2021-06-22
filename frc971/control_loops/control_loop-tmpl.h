@@ -3,7 +3,7 @@
 
 #include "aos/logging/logging.h"
 
-namespace aos {
+namespace frc971 {
 namespace controls {
 
 // TODO(aschuh): Tests.
@@ -91,4 +91,4 @@ void ControlLoop<GoalType, PositionType, StatusType,
 }
 
 }  // namespace controls
-}  // namespace aos
+}  // namespace frc971

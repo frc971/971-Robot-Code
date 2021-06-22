@@ -140,7 +140,7 @@ cc_test(
     deps = [
         ":drivetrain_base",
         ":localizer",
-        "//aos/controls:control_loop_test",
+        "//frc971/control_loops:control_loop_test",
         "//aos/events:simulated_event_loop",
         "//aos/events/logging:log_writer",
         "//aos/network:team_number",

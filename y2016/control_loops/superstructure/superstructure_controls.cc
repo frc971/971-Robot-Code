@@ -1,11 +1,9 @@
 #include "y2016/control_loops/superstructure/superstructure_controls.h"
 
 #include "aos/logging/logging.h"
-
-#include "y2016/control_loops/superstructure/integral_intake_plant.h"
-#include "y2016/control_loops/superstructure/integral_arm_plant.h"
-
 #include "y2016/constants.h"
+#include "y2016/control_loops/superstructure/integral_arm_plant.h"
+#include "y2016/control_loops/superstructure/integral_intake_plant.h"
 
 namespace y2016 {
 namespace control_loops {
@@ -45,8 +43,8 @@ Arm::Arm()
                 constants::GetValues().shoulder.zeroing),
             ::frc971::zeroing::PotAndIndexPulseZeroingEstimator(
                 constants::GetValues().wrist.zeroing)}}),
-      shoulder_profile_(::aos::controls::kLoopFrequency),
-      wrist_profile_(::aos::controls::kLoopFrequency) {
+      shoulder_profile_(::frc971::controls::kLoopFrequency),
+      wrist_profile_(::frc971::controls::kLoopFrequency) {
   Y_.setZero();
   offset_.setZero();
   AdjustProfile(0.0, 0.0, 0.0, 0.0);

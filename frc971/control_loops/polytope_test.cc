@@ -1,4 +1,4 @@
-#include "aos/controls/polytope.h"
+#include "frc971/control_loops/polytope.h"
 
 #include <vector>
 
@@ -8,7 +8,7 @@
 
 #include "aos/testing/test_logging.h"
 
-namespace aos {
+namespace frc971 {
 namespace controls {
 
 class HPolytopeTest : public ::testing::Test {
@@ -99,4 +99,4 @@ TEST_F(HPolytopeTest, CalculatedVertices) {
 }
 
 }  // namespace controls
-}  // namespace aos
+}  // namespace frc971

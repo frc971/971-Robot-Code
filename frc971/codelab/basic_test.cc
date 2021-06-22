@@ -5,12 +5,12 @@
 #include <chrono>
 #include <memory>
 
-#include "aos/controls/control_loop_test.h"
 #include "aos/events/shm_event_loop.h"
 #include "frc971/codelab/basic_goal_generated.h"
 #include "frc971/codelab/basic_output_generated.h"
 #include "frc971/codelab/basic_position_generated.h"
 #include "frc971/codelab/basic_status_generated.h"
+#include "frc971/control_loops/control_loop_test.h"
 #include "frc971/control_loops/team_number_test_environment.h"
 #include "gtest/gtest.h"
 
@@ -81,10 +81,10 @@ class BasicSimulation {
   bool first_ = true;
 };
 
-class BasicControlLoopTest : public ::aos::testing::ControlLoopTest {
+class BasicControlLoopTest : public ::frc971::testing::ControlLoopTest {
  public:
   BasicControlLoopTest()
-      : ::aos::testing::ControlLoopTest(
+      : ::frc971::testing::ControlLoopTest(
             aos::configuration::ReadConfig("frc971/codelab/config.json"),
             chrono::microseconds(5050)),
         test_event_loop_(MakeEventLoop("test")),

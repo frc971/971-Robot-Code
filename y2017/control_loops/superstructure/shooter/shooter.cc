@@ -130,7 +130,7 @@ flatbuffers::Offset<ShooterStatus> Shooter::Iterate(
 
   wheel_.set_position(position);
 
-  chrono::nanoseconds dt = ::aos::controls::kLoopFrequency;
+  chrono::nanoseconds dt = ::frc971::controls::kLoopFrequency;
   if (last_time_ != ::aos::monotonic_clock::min_time) {
     dt = position_time - last_time_;
   }
