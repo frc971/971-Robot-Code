@@ -937,7 +937,7 @@ TEST_P(AbstractEventLoopTest, MultipleWatcherQuit) {
 
 // Verify that timer intervals and duration function properly.
 TEST_P(AbstractEventLoopTest, TimerIntervalAndDuration) {
-  // Force a slower rate so we are guarenteed to have reports for our timer.
+  // Force a slower rate so we are guaranteed to have reports for our timer.
   FLAGS_timing_report_ms = 2000;
 
   const int kCount = 5;
@@ -977,9 +977,9 @@ TEST_P(AbstractEventLoopTest, TimerIntervalAndDuration) {
   Run();
 
   // Confirm that we got both the right number of samples, and it's odd.
-  EXPECT_EQ(times.size(), static_cast<size_t>(kCount));
-  EXPECT_EQ(times.size(), expected_times.size());
-  EXPECT_EQ((times.size() % 2), 1);
+  ASSERT_EQ(times.size(), static_cast<size_t>(kCount));
+  ASSERT_EQ(times.size(), expected_times.size());
+  ASSERT_EQ((times.size() % 2), 1);
 
   // Grab the middle sample.
   ::aos::monotonic_clock::time_point average_time = times[times.size() / 2];
@@ -1179,7 +1179,7 @@ TEST_P(AbstractEventLoopTest, TimerDisableOther) {
 }
 
 // Verifies that the event loop implementations detect when Channel is not a
-// pointer into confguration()
+// pointer into configuration()
 TEST_P(AbstractEventLoopDeathTest, InvalidChannel) {
   auto loop = MakePrimary();
 
@@ -1421,7 +1421,7 @@ TEST_P(AbstractEventLoopTest, MessageSendTimeNoArg) {
 // Tests that a couple phased loops run in a row result in the correct offset
 // and period.
 TEST_P(AbstractEventLoopTest, PhasedLoopTest) {
-  // Force a slower rate so we are guarenteed to have reports for our phased
+  // Force a slower rate so we are guaranteed to have reports for our phased
   // loop.
   FLAGS_timing_report_ms = 2000;
 
@@ -1474,9 +1474,9 @@ TEST_P(AbstractEventLoopTest, PhasedLoopTest) {
   Run();
 
   // Confirm that we got both the right number of samples, and it's odd.
-  EXPECT_EQ(times.size(), static_cast<size_t>(kCount));
-  EXPECT_EQ(times.size(), expected_times.size());
-  EXPECT_EQ((times.size() % 2), 1);
+  ASSERT_EQ(times.size(), static_cast<size_t>(kCount));
+  ASSERT_EQ(times.size(), expected_times.size());
+  ASSERT_EQ((times.size() % 2), 1);
 
   // Grab the middle sample.
   ::aos::monotonic_clock::time_point average_time = times[times.size() / 2];
