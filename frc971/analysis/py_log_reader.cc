@@ -1,6 +1,11 @@
 // This file provides a Python module for reading logfiles. See
 // log_reader_test.py for usage.
 //
+// NOTE: This code has not been maintained recently, and so is missing key
+// features to support reading multi-node logfiles (namely, it assumes the the
+// logfile is just a single file). Updating this code should not be difficult,
+// but hasn't been needed thus far.
+//
 // This reader works by having the user specify exactly what channels they want
 // data for. We then process the logfile and store all the data on that channel
 // into a list of timestamps + JSON message data. The user can then use an
