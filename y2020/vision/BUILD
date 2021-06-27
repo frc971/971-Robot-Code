@@ -87,6 +87,33 @@ cc_binary(
     ],
 )
 
+cc_library(
+    name = "charuco_lib",
+    srcs = [
+        "charuco_lib.cc",
+    ],
+    hdrs = [
+        "charuco_lib.h",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//y2020:__subpackages__"],
+    deps = [
+        ":vision_fbs",
+        "//aos:flatbuffers",
+        "//aos/events:event_loop",
+        "//aos/network:team_number",
+        "//frc971/control_loops:quaternion_utils",
+        "//third_party:opencv",
+        "//y2020/vision/sift:sift_fbs",
+        "//y2020/vision/sift:sift_training_fbs",
+        "//y2020/vision/tools/python_code:sift_training_data",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/types:span",
+        "@org_tuxfamily_eigen//:eigen",
+    ],
+)
+
 cc_binary(
     name = "calibration",
     srcs = [
@@ -98,10 +125,13 @@ cc_binary(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//y2020:__subpackages__"],
     deps = [
+        ":charuco_lib",
         ":vision_fbs",
         "//aos:init",
         "//aos/events:shm_event_loop",
         "//frc971/control_loops/drivetrain:improved_down_estimator",
+        "//frc971/wpilib:imu_batch_fbs",
+        "//frc971/wpilib:imu_fbs",
         "//third_party:opencv",
         "//y2020/vision/sift:sift_fbs",
         "//y2020/vision/sift:sift_training_fbs",
