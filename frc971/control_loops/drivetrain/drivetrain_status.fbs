@@ -190,10 +190,15 @@ table ImuZeroerState {
   // in the zeroing.
   number_of_zeroes:int (id: 2);
 
-  // Current zeroing values beind used for each gyro axis, in rad / sec.
+  // Current zeroing values being used for each gyro axis, in rad / sec.
   gyro_x_average:float (id: 3);
   gyro_y_average:float (id: 4);
   gyro_z_average:float (id: 5);
+
+  // Current zeroing values being used for each accelerometer axis, in m / s^2.
+  accel_x_average:float (id: 6);
+  accel_y_average:float (id: 7);
+  accel_z_average:float (id: 8);
 }
 
 table Status {

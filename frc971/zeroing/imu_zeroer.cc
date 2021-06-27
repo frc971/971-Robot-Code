@@ -111,6 +111,10 @@ ImuZeroer::PopulateStatus(flatbuffers::FlatBufferBuilder *fbb) const {
   builder.add_gyro_y_average(GyroOffset().y());
   builder.add_gyro_z_average(GyroOffset().z());
 
+  builder.add_accel_x_average(accel_average_.x());
+  builder.add_accel_y_average(accel_average_.y());
+  builder.add_accel_z_average(accel_average_.z());
+
   return builder.Finish();
 }
 
