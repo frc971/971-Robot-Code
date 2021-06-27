@@ -10,13 +10,13 @@ namespace y2019 {
 namespace control_loops {
 namespace superstructure {
 
-using frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus;
 using frc971::control_loops::AbsoluteEncoderProfiledJointStatus;
+using frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus;
 
 Superstructure::Superstructure(::aos::EventLoop *event_loop,
                                const ::std::string &name)
-    : aos::controls::ControlLoop<Goal, Position, Status, Output>(event_loop,
-                                                                 name),
+    : frc971::controls::ControlLoop<Goal, Position, Status, Output>(event_loop,
+                                                                    name),
       status_light_sender_(
           event_loop->MakeSender<::y2019::StatusLight>("/superstructure")),
       drivetrain_status_fetcher_(

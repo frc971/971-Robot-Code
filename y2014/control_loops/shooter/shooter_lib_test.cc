@@ -3,8 +3,8 @@
 #include <chrono>
 #include <memory>
 
-#include "aos/controls/control_loop_test.h"
 #include "aos/network/team_number.h"
+#include "frc971/control_loops/control_loop_test.h"
 #include "frc971/control_loops/team_number_test_environment.h"
 #include "gtest/gtest.h"
 #include "y2014/constants.h"
@@ -23,9 +23,9 @@ namespace control_loops {
 namespace shooter {
 namespace testing {
 
+using ::frc971::control_loops::testing::kTeamNumber;
 using ::y2014::control_loops::shooter::kMaxExtension;
 using ::y2014::control_loops::shooter::MakeRawShooterPlant;
-using ::frc971::control_loops::testing::kTeamNumber;
 
 // Class which simulates the shooter and sends out queue messages containing the
 // position.
@@ -133,8 +133,7 @@ class ShooterSimulation {
   void UpdateEffectEdge(
       ::frc971::PosedgeOnlyCountedHallEffectStructT *sensor,
       const ::frc971::PosedgeOnlyCountedHallEffectStructT &last_sensor,
-      const constants::Values::AnglePair &limits,
-      float last_position) {
+      const constants::Values::AnglePair &limits, float last_position) {
     sensor->posedge_count = last_sensor.posedge_count;
     sensor->negedge_count = last_sensor.negedge_count;
 
@@ -288,7 +287,7 @@ class ShooterSimulation {
     last_voltage_ = shooter_output_fetcher_->voltage();
   }
 
-  private:
+ private:
   ::aos::EventLoop *event_loop_;
   ::aos::Sender<Position> shooter_position_sender_;
   ::aos::Fetcher<Output> shooter_output_fetcher_;
@@ -327,10 +326,10 @@ class ShooterSimulation {
 
 template <typename TestType>
 class ShooterTestTemplated
-    : public ::aos::testing::ControlLoopTestTemplated<TestType> {
+    : public ::frc971::testing::ControlLoopTestTemplated<TestType> {
  protected:
   ShooterTestTemplated()
-      : ::aos::testing::ControlLoopTestTemplated<TestType>(
+      : ::frc971::testing::ControlLoopTestTemplated<TestType>(
             aos::configuration::ReadConfig("y2014/config.json"),
             // TODO(austin): I think this runs at 5 ms in real life.
             chrono::microseconds(5000)),
@@ -554,7 +553,6 @@ TEST_F(ShooterTest, MoveGoal) {
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
 }
 
-
 TEST_F(ShooterTest, Unload) {
   SetEnabled(true);
   {
@@ -727,7 +725,6 @@ TEST_F(ShooterTest, StartsOnDistal) {
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
 }
 
-
 // Tests that the shooter zeros correctly and goes to a position.
 TEST_F(ShooterTest, StartsOnProximal) {
   SetEnabled(true);
@@ -760,8 +757,8 @@ TEST_P(ShooterZeroingTest, AllDisparateStartingZero) {
   bool plunger_back = ::std::get<2>(GetParam());
   double start_pos = ::std::get<3>(GetParam());
   // flag to initialize test
-	//printf("@@@@ l= %d b= %d p= %d s= %.3f\n",
-	//		latch, brake, plunger_back, start_pos);
+  // printf("@@@@ l= %d b= %d p= %d s= %.3f\n",
+  //		latch, brake, plunger_back, start_pos);
   bool initialized = false;
   Reinitialize(start_pos);
   {

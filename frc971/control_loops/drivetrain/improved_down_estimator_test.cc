@@ -3,7 +3,7 @@
 #include <Eigen/Geometry>
 #include <random>
 
-#include "aos/controls/quaternion_utils.h"
+#include "frc971/control_loops/quaternion_utils.h"
 #include "aos/testing/random_seed.h"
 #include "frc971/control_loops/drivetrain/drivetrain_test_lib.h"
 #include "frc971/control_loops/runge_kutta.h"
@@ -235,7 +235,7 @@ TEST(DownEstimatorTest, SigmaPoints) {
       drivetrain::GenerateSigmaPoints(mean, covariance);
 
   const Eigen::Matrix<double, 4, 1> calculated_mean =
-      aos::controls::QuaternionMean(vectors);
+      frc971::controls::QuaternionMean(vectors);
 
   VLOG(1) << "actual mean: " << mean.coeffs();
   VLOG(1) << "calculated mean: " << calculated_mean;
@@ -266,7 +266,7 @@ TEST(DownEstimatorTest, ClippedSigmaPoints) {
       drivetrain::GenerateSigmaPoints(mean, covariance);
 
   const Eigen::Matrix<double, 4, 1> calculated_mean =
-      aos::controls::QuaternionMean(vectors);
+      frc971::controls::QuaternionMean(vectors);
 
   Eigen::Matrix<double, 3, 3 * 2 + 1> Wprime;
   Eigen::Matrix<double, 3, 3> calculated_covariance =

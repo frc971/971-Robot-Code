@@ -2,14 +2,13 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "aos/output/motor_output.h"
-#include "aos/logging/logging.h"
+#include "frc971/control_loops/output_check.q.h"
 #include "aos/init.h"
-#include "aos/util/log_interval.h"
-#include "aos/time/time.h"
+#include "aos/logging/logging.h"
 #include "aos/logging/queue_logging.h"
-#include "aos/controls/output_check.q.h"
-
+#include "aos/output/motor_output.h"
+#include "aos/time/time.h"
+#include "aos/util/log_interval.h"
 #include "bot3/control_loops/drivetrain/drivetrain.q.h"
 #include "bot3/control_loops/rollers/rollers.q.h"
 
@@ -89,7 +88,7 @@ class MotorWriter : public ::aos::MotorOutput {
     }
 
     {
-      auto message = ::aos::controls::output_check_sent.MakeMessage();
+      auto message = ::frc971::controls::output_check_sent.MakeMessage();
       ++output_check_;
       if (output_check_ == 0) output_check_ = 1;
       SetRawPWMOutput(10, output_check_);

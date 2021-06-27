@@ -5,7 +5,7 @@
 #include "Eigen/Geometry"
 #include "glog/logging.h"
 
-namespace aos {
+namespace frc971 {
 namespace controls {
 
 // Function to compute the quaternion average of a bunch of quaternions. Each
@@ -66,6 +66,6 @@ Eigen::Matrix<double, 4, 1> ToQuaternionFromRotationVector(
     const double max_angle_cap = std::numeric_limits<double>::infinity());
 
 }  // namespace controls
-}  // namespace aos
+}  // namespace frc971
 
 #endif  // AOS_CONTROLS_QUATERNION_UTILS_H_

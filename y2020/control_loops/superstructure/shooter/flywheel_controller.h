@@ -3,7 +3,7 @@
 
 #include <memory>
 
-#include "aos/controls/control_loop.h"
+#include "frc971/control_loops/control_loop.h"
 #include "aos/time/time.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "y2020/control_loops/superstructure/accelerator/integral_accelerator_plant.h"

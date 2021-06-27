@@ -1,17 +1,17 @@
+#include "y2020/control_loops/drivetrain/localizer.h"
+
 #include <queue>
 
-#include "gtest/gtest.h"
-
-#include "aos/controls/control_loop_test.h"
 #include "aos/events/logging/log_writer.h"
 #include "aos/network/message_bridge_server_generated.h"
 #include "aos/network/team_number.h"
 #include "aos/network/testing_time_converter.h"
+#include "frc971/control_loops/control_loop_test.h"
 #include "frc971/control_loops/drivetrain/drivetrain.h"
 #include "frc971/control_loops/drivetrain/drivetrain_test_lib.h"
 #include "frc971/control_loops/team_number_test_environment.h"
+#include "gtest/gtest.h"
 #include "y2020/control_loops/drivetrain/drivetrain_base.h"
-#include "y2020/control_loops/drivetrain/localizer.h"
 #include "y2020/control_loops/superstructure/superstructure_status_generated.h"
 
 DEFINE_string(output_file, "",
@@ -95,12 +95,12 @@ using aos::monotonic_clock;
 using frc971::control_loops::drivetrain::DrivetrainLoop;
 using frc971::control_loops::drivetrain::testing::DrivetrainSimulation;
 
-class LocalizedDrivetrainTest : public aos::testing::ControlLoopTest {
+class LocalizedDrivetrainTest : public frc971::testing::ControlLoopTest {
  protected:
   // We must use the 2020 drivetrain config so that we don't have to deal
   // with shifting:
   LocalizedDrivetrainTest()
-      : aos::testing::ControlLoopTest(
+      : frc971::testing::ControlLoopTest(
             aos::configuration::ReadConfig(
                 "y2020/control_loops/drivetrain/simulation_config.json"),
             GetTest2020DrivetrainConfig().dt),

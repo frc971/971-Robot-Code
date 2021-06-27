@@ -3,7 +3,7 @@
 
 #include <memory>
 
-#include "aos/controls/control_loop.h"
+#include "frc971/control_loops/control_loop.h"
 #include "aos/util/trapezoid_profile.h"
 #include "frc971/control_loops/profiled_subsystem.h"
 #include "frc971/control_loops/simple_capped_state_feedback_loop.h"

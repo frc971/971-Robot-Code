@@ -1,9 +1,9 @@
-#include "aos/controls/quaternion_utils.h"
+#include "frc971/control_loops/quaternion_utils.h"
 
 #include "Eigen/Dense"
 #include "Eigen/Geometry"
 
-namespace aos {
+namespace frc971 {
 namespace controls {
 
 Eigen::Matrix<double, 4, 1> ToQuaternionFromRotationVector(
@@ -136,4 +136,4 @@ Eigen::Matrix<double, 3, 1> ToRotationVectorFromQuaternion(
 }
 
 }  // namespace controls
-}  // namespace aos
+}  // namespace frc971

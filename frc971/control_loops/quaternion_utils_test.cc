@@ -2,12 +2,12 @@
 
 #include <random>
 
-#include "aos/controls/quaternion_utils.h"
+#include "frc971/control_loops/quaternion_utils.h"
 #include "aos/testing/random_seed.h"
 #include "glog/logging.h"
 #include "gtest/gtest.h"
 
-namespace aos {
+namespace frc971 {
 namespace controls {
 namespace testing {
 
@@ -149,4 +149,4 @@ TEST(DownEstimatorTest, RandomQuaternions) {
 
 }  // namespace testing
 }  // namespace controls
-}  // namespace aos
+}  // namespace frc971

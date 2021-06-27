@@ -19,7 +19,7 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":flywheel_controller",
-        "//aos/controls:control_loop",
+        "//frc971/control_loops:control_loop",
         "//frc971/control_loops:profiled_subsystem",
         "//y2020/control_loops/superstructure:superstructure_goal_fbs",
         "//y2020/control_loops/superstructure:superstructure_output_fbs",
@@ -38,7 +38,7 @@ cc_library(
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
-        "//aos/controls:control_loop",
+        "//frc971/control_loops:control_loop",
         "//frc971/control_loops:profiled_subsystem",
         "//y2020/control_loops/superstructure:superstructure_goal_fbs",
         "//y2020/control_loops/superstructure:superstructure_status_fbs",

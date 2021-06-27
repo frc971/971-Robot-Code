@@ -19,7 +19,6 @@
 #include "frc971/wpilib/wpilib_robot_base.h"
 #undef ERROR
 
-#include "aos/controls/control_loops_generated.h"
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 #include "aos/logging/logging.h"
@@ -44,6 +43,7 @@
 #include "frc971/wpilib/loop_output_handler.h"
 #include "frc971/wpilib/sensor_reader.h"
 #include "y2012/control_loops/accessories/accessories_generated.h"
+#include "y2012/control_loops/control_loops_generated.h"
 
 namespace accessories = ::y2012::control_loops::accessories;
 using namespace frc;

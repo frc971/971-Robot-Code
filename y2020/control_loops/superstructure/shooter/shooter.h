@@ -1,7 +1,7 @@
 #ifndef Y2020_CONTROL_LOOPS_SHOOTER_SHOOTER_H_
 #define Y2020_CONTROL_LOOPS_SHOOTER_SHOOTER_H_
 
-#include "aos/controls/control_loop.h"
+#include "frc971/control_loops/control_loop.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "y2020/control_loops/superstructure/shooter/flywheel_controller.h"
 #include "y2020/control_loops/superstructure/superstructure_goal_generated.h"

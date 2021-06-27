@@ -1,14 +1,14 @@
 #ifndef AOS_ACTIONS_ACTOR_H_
 #define AOS_ACTIONS_ACTOR_H_
 
-#include <stdio.h>
 #include <inttypes.h>
+#include <stdio.h>
 
 #include <chrono>
 #include <functional>
 
 #include "aos/actions/actions_generated.h"
-#include "aos/controls/control_loop.h"
+#include "frc971/control_loops/control_loop.h"
 #include "aos/logging/logging.h"
 #include "aos/time/time.h"
 #include "aos/util/phased_loop.h"
@@ -76,7 +76,7 @@ class ActorBase {
   // Done condition are defined as functions that return true when done
   // end_time is when to stop and return true. Time(0, 0) (the default) means
   // never time out.
-  // This will be polled at ::aos::controls::kLoopFrequency
+  // This will be polled at ::frc971::controls::kLoopFrequency
   bool WaitUntil(::std::function<bool(void)> done_condition,
                  ::aos::monotonic_clock::time_point end_time =
                      ::aos::monotonic_clock::min_time);
@@ -184,7 +184,7 @@ void ActorBase<T>::HandleGoal(const GoalType &goal) {
 template <class T>
 bool ActorBase<T>::WaitUntil(::std::function<bool(void)> done_condition,
                              ::aos::monotonic_clock::time_point end_time) {
-  ::aos::time::PhasedLoop phased_loop(::aos::controls::kLoopFrequency,
+  ::aos::time::PhasedLoop phased_loop(::frc971::controls::kLoopFrequency,
                                       event_loop_->monotonic_now(),
                                       ::std::chrono::milliseconds(5) / 2);
 

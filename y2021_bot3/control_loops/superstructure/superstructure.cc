@@ -11,8 +11,8 @@ using frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus;
 
 Superstructure::Superstructure(::aos::EventLoop *event_loop,
                                const ::std::string &name)
-    : aos::controls::ControlLoop<Goal, Position, Status, Output>(event_loop,
-                                                                 name) {
+    : frc971::controls::ControlLoop<Goal, Position, Status, Output>(event_loop,
+                                                                    name) {
   event_loop->SetRuntimeRealtimePriority(30);
 }
 

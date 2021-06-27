@@ -1,11 +1,9 @@
-#include "y2016/control_loops/shooter/shooter.h"
-
 #include <unistd.h>
 
 #include <chrono>
 #include <memory>
 
-#include "aos/controls/control_loop_test.h"
+#include "frc971/control_loops/control_loop_test.h"
 #include "frc971/control_loops/team_number_test_environment.h"
 #include "gtest/gtest.h"
 #include "y2016/control_loops/shooter/shooter.h"
@@ -43,7 +41,6 @@ class ShooterPlant : public StateFeedbackPlant<2, 1, 1> {
  private:
   double voltage_offset_ = 0.0;
 };
-
 
 // Class which simulates the shooter and sends out queue messages with the
 // position.
@@ -116,10 +113,10 @@ class ShooterSimulation {
   bool first_ = true;
 };
 
-class ShooterTest : public ::aos::testing::ControlLoopTest {
+class ShooterTest : public ::frc971::testing::ControlLoopTest {
  protected:
   ShooterTest()
-      : ::aos::testing::ControlLoopTest(
+      : ::frc971::testing::ControlLoopTest(
             aos::configuration::ReadConfig("y2016/config.json"),
             chrono::microseconds(5000)),
         test_event_loop_(MakeEventLoop("test")),

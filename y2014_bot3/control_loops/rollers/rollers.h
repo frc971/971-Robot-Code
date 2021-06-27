@@ -1,8 +1,7 @@
 #ifndef Y2014_BOT3_CONTROL_LOOPS_ROLLERS_H_
 #define Y2014_BOT3_CONTROL_LOOPS_ROLLERS_H_
 
-#include "aos/controls/control_loop.h"
-
+#include "frc971/control_loops/control_loop.h"
 #include "y2014_bot3/control_loops/rollers/rollers_goal_generated.h"
 #include "y2014_bot3/control_loops/rollers/rollers_output_generated.h"
 #include "y2014_bot3/control_loops/rollers/rollers_position_generated.h"
@@ -13,7 +12,7 @@ namespace control_loops {
 namespace rollers {
 
 class Rollers
-    : public aos::controls::ControlLoop<Goal, Position, Status, Output> {
+    : public frc971::controls::ControlLoop<Goal, Position, Status, Output> {
  public:
   // Constructs a control loops which can take a rollers or defaults to the
   // rollers at ::2014_bot3::control_loops::rollers.

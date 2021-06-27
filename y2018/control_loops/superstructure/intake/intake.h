@@ -4,7 +4,7 @@
 #include <math.h>
 
 #include "aos/commonmath.h"
-#include "aos/controls/control_loop.h"
+#include "frc971/control_loops/control_loop.h"
 #include "frc971/zeroing/wrap.h"
 #include "frc971/zeroing/zeroing.h"
 #include "y2018/constants.h"
@@ -46,7 +46,7 @@ class IntakeController {
   double goal_angle(const double *unsafe_goal);
 
   constexpr static double kDt =
-      ::aos::time::DurationInSeconds(::aos::controls::kLoopFrequency);
+      ::aos::time::DurationInSeconds(::frc971::controls::kLoopFrequency);
 
   // Sets the offset of the controller to be the zeroing estimator offset when
   // possible otherwise zero.

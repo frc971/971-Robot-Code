@@ -1,24 +1,22 @@
-#include "y2016/control_loops/superstructure/superstructure.h"
-
 #include <unistd.h>
 
 #include <chrono>
 #include <memory>
 
 #include "aos/commonmath.h"
-#include "aos/controls/control_loop_test.h"
 #include "aos/time/time.h"
+#include "frc971/control_loops/control_loop_test.h"
 #include "frc971/control_loops/position_sensor_sim.h"
 #include "frc971/control_loops/team_number_test_environment.h"
 #include "gtest/gtest.h"
+#include "y2016/constants.h"
 #include "y2016/control_loops/superstructure/arm_plant.h"
 #include "y2016/control_loops/superstructure/intake_plant.h"
+#include "y2016/control_loops/superstructure/superstructure.h"
 #include "y2016/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2016/control_loops/superstructure/superstructure_output_generated.h"
 #include "y2016/control_loops/superstructure/superstructure_position_generated.h"
 #include "y2016/control_loops/superstructure/superstructure_status_generated.h"
-
-#include "y2016/constants.h"
 
 using ::frc971::control_loops::PositionSensorSimulator;
 
@@ -350,10 +348,10 @@ class SuperstructureSimulation {
   double peak_wrist_velocity_ = 1e10;
 };
 
-class SuperstructureTest : public ::aos::testing::ControlLoopTest {
+class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
  protected:
   SuperstructureTest()
-      : ::aos::testing::ControlLoopTest(
+      : ::frc971::testing::ControlLoopTest(
             aos::configuration::ReadConfig("y2016/config.json"),
             chrono::microseconds(5000)),
         test_event_loop_(MakeEventLoop("test")),

@@ -52,7 +52,7 @@ cc_library(
         ":rollers_output_fbs",
         ":rollers_position_fbs",
         ":rollers_status_fbs",
-        "//aos/controls:control_loop",
+        "//frc971/control_loops:control_loop",
         "//aos/logging",
     ],
 )

@@ -4,8 +4,8 @@ namespace frc971 {
 namespace codelab {
 
 Basic::Basic(::aos::EventLoop *event_loop, const ::std::string &name)
-    : aos::controls::ControlLoop<Goal, Position, Status, Output>(event_loop,
-                                                                 name) {}
+    : frc971::controls::ControlLoop<Goal, Position, Status, Output>(event_loop,
+                                                                    name) {}
 
 void Basic::RunIteration(const Goal *goal, const Position *position,
                          aos::Sender<Output>::Builder *output,

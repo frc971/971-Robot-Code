@@ -9,7 +9,6 @@ cc_binary(
     deps = [
         "//aos:init",
         "//aos/actions:action_lib",
-        "//frc971/input:joystick_input",
         "//aos/logging",
         "//aos/time",
         "//aos/util:log_interval",
@@ -17,6 +16,7 @@ cc_binary(
         "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_goal_fbs",
         "//frc971/control_loops/drivetrain:spline_goal_fbs",
+        "//frc971/input:joystick_input",
         "//y2012/control_loops/accessories:accessories_fbs",
     ],
 )
@@ -40,11 +40,9 @@ cc_binary(
     deps = [
         "//aos:init",
         "//aos:make_unique",
-        "//aos/controls:control_loop",
-        "//aos/controls:control_loop_fbs",
+        "//frc971/control_loops:control_loop",
         "//aos/events:shm_event_loop",
         "//aos/logging",
-        "//frc971/input:robot_state_fbs",
         "//aos/stl_mutex",
         "//aos/time",
         "//aos/util:log_interval",
@@ -53,6 +51,7 @@ cc_binary(
         "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_output_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_position_fbs",
+        "//frc971/input:robot_state_fbs",
         "//frc971/wpilib:buffered_pcm",
         "//frc971/wpilib:dma",
         "//frc971/wpilib:dma_edge_counting",
@@ -66,6 +65,7 @@ cc_binary(
         "//frc971/wpilib:wpilib_interface",
         "//frc971/wpilib:wpilib_robot_base",
         "//third_party:wpilib",
+        "//y2012/control_loops:control_loop_fbs",
         "//y2012/control_loops/accessories:accessories_fbs",
     ],
 )

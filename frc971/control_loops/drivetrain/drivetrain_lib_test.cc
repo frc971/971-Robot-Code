@@ -3,16 +3,11 @@
 #include <chrono>
 #include <memory>
 
-#include "aos/controls/control_loop_test.h"
-#include "aos/controls/polytope.h"
 #include "aos/events/event_loop.h"
 #include "aos/events/logging/log_writer.h"
 #include "aos/time/time.h"
-#include "gflags/gflags.h"
-#include "gtest/gtest.h"
-#include "gmock/gmock.h"
-
 #include "frc971/control_loops/coerce_goal.h"
+#include "frc971/control_loops/control_loop_test.h"
 #include "frc971/control_loops/drivetrain/drivetrain.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
 #include "frc971/control_loops/drivetrain/drivetrain_goal_generated.h"
@@ -20,9 +15,13 @@
 #include "frc971/control_loops/drivetrain/drivetrain_position_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_test_lib.h"
-#include "frc971/control_loops/drivetrain/trajectory_generator.h"
 #include "frc971/control_loops/drivetrain/localizer_generated.h"
+#include "frc971/control_loops/drivetrain/trajectory_generator.h"
+#include "frc971/control_loops/polytope.h"
 #include "frc971/queues/gyro_generated.h"
+#include "gflags/gflags.h"
+#include "gmock/gmock.h"
+#include "gtest/gtest.h"
 
 DEFINE_string(output_file, "",
               "If set, logs all channels to the provided logfile.");
@@ -35,10 +34,10 @@ namespace testing {
 namespace chrono = ::std::chrono;
 using ::aos::monotonic_clock;
 
-class DrivetrainTest : public ::aos::testing::ControlLoopTest {
+class DrivetrainTest : public ::frc971::testing::ControlLoopTest {
  protected:
   DrivetrainTest()
-      : ::aos::testing::ControlLoopTest(
+      : ::frc971::testing::ControlLoopTest(
             aos::configuration::ReadConfig(
                 "frc971/control_loops/drivetrain/simulation_config.json"),
             GetTestDrivetrainConfig().dt),
@@ -581,7 +580,6 @@ TEST_F(DrivetrainTest, SplineSimple) {
   VerifyNearSplineGoal();
 }
 
-
 // Tests that we can drive a spline backwards.
 TEST_F(DrivetrainTest, SplineSimpleBackwards) {
   SetEnabled(true);
@@ -741,7 +739,6 @@ TEST_F(DrivetrainTest, SplineStop) {
     EXPECT_FALSE(CHECK_NOTNULL(drivetrain_status_fetcher_->trajectory_logging())
                      ->has_y());
   }
-
 }
 
 // Tests that a spline can't be restarted.
@@ -869,8 +866,8 @@ TEST_P(DrivetrainBackwardsParamTest, SplineOffset) {
 }
 
 INSTANTIATE_TEST_SUITE_P(DriveSplinesForwardsAndBackwards,
-                        DrivetrainBackwardsParamTest,
-                        ::testing::Values(false, true));
+                         DrivetrainBackwardsParamTest,
+                         ::testing::Values(false, true));
 
 // Tests that simple spline converges when it starts to the side of where it
 // thinks.

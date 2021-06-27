@@ -1,12 +1,11 @@
 #include <queue>
 
-#include "gtest/gtest.h"
-
-#include "aos/controls/control_loop_test.h"
 #include "aos/network/team_number.h"
+#include "frc971/control_loops/control_loop_test.h"
 #include "frc971/control_loops/drivetrain/drivetrain.h"
 #include "frc971/control_loops/drivetrain/drivetrain_test_lib.h"
 #include "frc971/control_loops/team_number_test_environment.h"
+#include "gtest/gtest.h"
 #include "y2019/control_loops/drivetrain/camera_generated.h"
 #include "y2019/control_loops/drivetrain/drivetrain_base.h"
 #include "y2019/control_loops/drivetrain/event_loop_localizer.h"
@@ -32,17 +31,17 @@ DrivetrainConfig<double> GetTest2019DrivetrainConfig() {
 };  // namespace
 
 namespace chrono = ::std::chrono;
-using ::frc971::control_loops::drivetrain::testing::DrivetrainSimulation;
-using ::frc971::control_loops::drivetrain::DrivetrainLoop;
-using ::frc971::control_loops::drivetrain::testing::GetTestDrivetrainConfig;
 using ::aos::monotonic_clock;
+using ::frc971::control_loops::drivetrain::DrivetrainLoop;
+using ::frc971::control_loops::drivetrain::testing::DrivetrainSimulation;
+using ::frc971::control_loops::drivetrain::testing::GetTestDrivetrainConfig;
 
-class LocalizedDrivetrainTest : public ::aos::testing::ControlLoopTest {
+class LocalizedDrivetrainTest : public ::frc971::testing::ControlLoopTest {
  protected:
   // We must use the 2019 drivetrain config so that we don't have to deal
   // with shifting:
   LocalizedDrivetrainTest()
-      : ::aos::testing::ControlLoopTest(
+      : ::frc971::testing::ControlLoopTest(
             aos::configuration::ReadConfig(
                 "y2019/control_loops/drivetrain/simulation_config.json"),
             GetTest2019DrivetrainConfig().dt),

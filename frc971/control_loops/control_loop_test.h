@@ -13,7 +13,7 @@
 #include "frc971/input/robot_state_generated.h"
 #include "gtest/gtest.h"
 
-namespace aos {
+namespace frc971 {
 namespace testing {
 
 // Handles setting up the environment that all control loops need to actually
@@ -25,18 +25,18 @@ template <typename TestBaseClass>
 class ControlLoopTestTemplated : public TestBaseClass {
  public:
   ControlLoopTestTemplated(
-      FlatbufferDetachedBuffer<Configuration> configuration,
+      aos::FlatbufferDetachedBuffer<aos::Configuration> configuration,
       ::std::chrono::nanoseconds dt = kTimeTick)
       : configuration_(std::move(configuration)),
         event_loop_factory_(&configuration_.message()),
         dt_(dt),
         robot_status_event_loop_(MakeEventLoop(
             "robot_status",
-            configuration::MultiNode(event_loop_factory_.configuration())
-                ? configuration::GetNode(event_loop_factory_.configuration(),
-                                         "roborio")
+            aos::configuration::MultiNode(event_loop_factory_.configuration())
+                ? aos::configuration::GetNode(
+                      event_loop_factory_.configuration(), "roborio")
                 : nullptr)) {
-    testing::EnableTestLogging();
+    aos::testing::EnableTestLogging();
     robot_state_sender_ =
         robot_status_event_loop_->MakeSender<::aos::RobotState>("/aos");
     joystick_state_sender_ =
@@ -82,7 +82,7 @@ class ControlLoopTestTemplated : public TestBaseClass {
   }
 
   ::std::unique_ptr<::aos::EventLoop> MakeEventLoop(
-      std::string_view name, const Node *node = nullptr) {
+      std::string_view name, const aos::Node *node = nullptr) {
     return event_loop_factory_.MakeEventLoop(name, node);
   }
 
@@ -90,7 +90,7 @@ class ControlLoopTestTemplated : public TestBaseClass {
     event_loop_factory_.set_send_delay(send_delay);
   }
 
-  void RunFor(monotonic_clock::duration duration) {
+  void RunFor(aos::monotonic_clock::duration duration) {
     event_loop_factory_.RunFor(duration);
   }
 
@@ -100,11 +100,11 @@ class ControlLoopTestTemplated : public TestBaseClass {
 
   ::std::chrono::nanoseconds dt() const { return dt_; }
 
-  const Configuration *configuration() const {
+  const aos::Configuration *configuration() const {
     return &configuration_.message();
   }
 
-  SimulatedEventLoopFactory *event_loop_factory() {
+  aos::SimulatedEventLoopFactory *event_loop_factory() {
     return &event_loop_factory_;
   }
 
@@ -156,9 +156,9 @@ class ControlLoopTestTemplated : public TestBaseClass {
   static constexpr ::std::chrono::microseconds kTimeTick{5000};
   static constexpr ::std::chrono::milliseconds kDSPacketTime{20};
 
-  FlatbufferDetachedBuffer<Configuration> configuration_;
+  aos::FlatbufferDetachedBuffer<aos::Configuration> configuration_;
 
-  SimulatedEventLoopFactory event_loop_factory_;
+  aos::SimulatedEventLoopFactory event_loop_factory_;
 
   const ::std::chrono::nanoseconds dt_;
 
@@ -191,6 +191,6 @@ constexpr ::std::chrono::milliseconds
     ControlLoopTestTemplated<TestBaseClass>::kDSPacketTime;
 
 }  // namespace testing
-}  // namespace aos
+}  // namespace frc971
 
 #endif  // AOS_CONTROLS_CONTROL_LOOP_TEST_H_

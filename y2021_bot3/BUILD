@@ -48,7 +48,7 @@ cc_binary(
         "//aos:init",
         "//aos:make_unique",
         "//aos:math",
-        "//aos/controls:control_loop",
+        "//frc971/control_loops:control_loop",
         "//aos/events:shm_event_loop",
         "//aos/logging",
         "//frc971/input:robot_state_fbs",

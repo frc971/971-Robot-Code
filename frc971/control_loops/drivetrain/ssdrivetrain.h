@@ -2,10 +2,9 @@
 #define FRC971_CONTROL_LOOPS_DRIVETRAIN_SSDRIVETRAIN_H_
 
 #include "aos/commonmath.h"
-#include "aos/controls/control_loop.h"
-#include "aos/controls/polytope.h"
+#include "frc971/control_loops/control_loop.h"
+#include "frc971/control_loops/polytope.h"
 #include "aos/util/trapezoid_profile.h"
-
 #include "frc971/control_loops/coerce_goal.h"
 #include "frc971/control_loops/control_loops_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
@@ -56,7 +55,7 @@ class DrivetrainMotorsSS {
 
   // Reprsents +/- full power on each motor in U-space, aka the square from
   // (-12, -12) to (12, 12).
-  const ::aos::controls::HVPolytope<2, 4, 4> U_poly_;
+  const ::frc971::controls::HVPolytope<2, 4, 4> U_poly_;
 
   // multiplying by T converts [left_error, right_error] to
   // [left_right_error_difference, total_distance_error].

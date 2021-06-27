@@ -2,15 +2,14 @@
 #define FRC971_CONTROL_LOOPS_COERCE_GOAL_H_
 
 #include "Eigen/Dense"
-
-#include "aos/controls/polytope.h"
+#include "frc971/control_loops/polytope.h"
 
 namespace frc971 {
 namespace control_loops {
 
 template <typename Scalar = double>
 Eigen::Matrix<Scalar, 2, 1> DoCoerceGoal(
-    const aos::controls::HVPolytope<2, 4, 4, Scalar> &region,
+    const frc971::controls::HVPolytope<2, 4, 4, Scalar> &region,
     const Eigen::Matrix<Scalar, 1, 2> &K, Scalar w,
     const Eigen::Matrix<Scalar, 2, 1> &R, bool *is_inside);
 
@@ -20,7 +19,7 @@ Eigen::Matrix<Scalar, 2, 1> DoCoerceGoal(
 // finds a point that is inside the region and closest to the line.
 template <typename Scalar = double>
 static inline Eigen::Matrix<Scalar, 2, 1> CoerceGoal(
-    const aos::controls::HVPolytope<2, 4, 4, Scalar> &region,
+    const frc971::controls::HVPolytope<2, 4, 4, Scalar> &region,
     const Eigen::Matrix<Scalar, 1, 2> &K, Scalar w,
     const Eigen::Matrix<Scalar, 2, 1> &R) {
   return DoCoerceGoal(region, K, w, R, nullptr);
@@ -28,7 +27,7 @@ static inline Eigen::Matrix<Scalar, 2, 1> CoerceGoal(
 
 template <typename Scalar>
 Eigen::Matrix<Scalar, 2, 1> DoCoerceGoal(
-    const aos::controls::HVPolytope<2, 4, 4, Scalar> &region,
+    const frc971::controls::HVPolytope<2, 4, 4, Scalar> &region,
     const Eigen::Matrix<Scalar, 1, 2> &K, Scalar w,
     const Eigen::Matrix<Scalar, 2, 1> &R, bool *is_inside) {
   if (region.IsInside(R)) {

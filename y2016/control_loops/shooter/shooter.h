@@ -3,7 +3,7 @@
 
 #include <memory>
 
-#include "aos/controls/control_loop.h"
+#include "frc971/control_loops/control_loop.h"
 #include "aos/events/event_loop.h"
 #include "aos/time/time.h"
 #include "frc971/control_loops/state_feedback_loop.h"
@@ -58,7 +58,7 @@ class ShooterSide {
 };
 
 class Shooter
-    : public ::aos::controls::ControlLoop<Goal, Position, Status, Output> {
+    : public ::frc971::controls::ControlLoop<Goal, Position, Status, Output> {
  public:
   explicit Shooter(::aos::EventLoop *event_loop,
                    const ::std::string &name = "/shooter");

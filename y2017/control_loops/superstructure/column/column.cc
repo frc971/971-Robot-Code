@@ -6,7 +6,6 @@
 #include <utility>
 
 #include "Eigen/Dense"
-
 #include "aos/commonmath.h"
 #include "frc971/constants.h"
 #include "frc971/control_loops/profiled_subsystem.h"
@@ -48,7 +47,7 @@ ColumnProfiledSubsystem::ColumnProfiledSubsystem(
           ::std::move(loop), {{zeroing_constants}}),
       stuck_indexer_detector_(new StateFeedbackLoop<6, 2, 2>(
           column::MakeStuckIntegralColumnLoop())),
-      profile_(::aos::controls::kLoopFrequency),
+      profile_(::frc971::controls::kLoopFrequency),
       range_(range),
       default_velocity_(default_velocity),
       default_acceleration_(default_acceleration) {
@@ -128,7 +127,7 @@ void ColumnProfiledSubsystem::Correct(const ColumnPosition &new_position) {
 
   indexer_dt_velocity_ =
       (new_position.indexer()->encoder() - indexer_last_position_) /
-      ::aos::time::DurationInSeconds(::aos::controls::kLoopFrequency);
+      ::aos::time::DurationInSeconds(::frc971::controls::kLoopFrequency);
   indexer_last_position_ = new_position.indexer()->encoder();
 
   stuck_indexer_detector_->Correct(Y_);
@@ -143,7 +142,7 @@ void ColumnProfiledSubsystem::Correct(const ColumnPosition &new_position) {
   indexer_average_angular_velocity_ =
       (indexer_history_[indexer_oldest_history_position] -
        indexer_history_[indexer_history_position_]) /
-      (::aos::time::DurationInSeconds(::aos::controls::kLoopFrequency) *
+      (::aos::time::DurationInSeconds(::frc971::controls::kLoopFrequency) *
        static_cast<double>(kHistoryLength - 1));
 
   // Ready if average angular velocity is close to the goal.
@@ -253,7 +252,7 @@ void ColumnProfiledSubsystem::Update(bool disable) {
         profile_.Update(unprofiled_goal_(2, 0), unprofiled_goal_(3, 0));
 
     constexpr double kDt =
-        ::aos::time::DurationInSeconds(::aos::controls::kLoopFrequency);
+        ::aos::time::DurationInSeconds(::frc971::controls::kLoopFrequency);
 
     loop_->mutable_next_R(0, 0) = 0.0;
     // TODO(austin): This might not handle saturation right, but I'm not sure I
@@ -287,7 +286,7 @@ void ColumnProfiledSubsystem::Update(bool disable) {
 
   // Run the KF predict step.
   stuck_indexer_detector_->UpdateObserver(loop_->U(),
-                                          ::aos::controls::kLoopFrequency);
+                                          ::frc971::controls::kLoopFrequency);
 }
 
 bool ColumnProfiledSubsystem::CheckHardLimits() {
@@ -382,7 +381,7 @@ void ColumnProfiledSubsystem::PopulateTurretStatus(
   status_builder->add_voltage_error(X_hat(5, 0));
   status_builder->add_calculated_velocity(
       (turret_position() - turret_last_position_) /
-      ::aos::time::DurationInSeconds(::aos::controls::kLoopFrequency));
+      ::aos::time::DurationInSeconds(::frc971::controls::kLoopFrequency));
 
   status_builder->add_estimator_state(estimator_state_offset);
 
@@ -558,8 +557,7 @@ Column::Iterate(const ::aos::monotonic_clock::time_point monotonic_now,
       if (unsafe_turret_goal && unsafe_indexer_goal) {
         profiled_subsystem_.AdjustProfile(unsafe_turret_goal->profile_params());
         profiled_subsystem_.set_unprofiled_goal(
-            unsafe_indexer_goal->angular_velocity,
-            unsafe_turret_goal->angle());
+            unsafe_indexer_goal->angular_velocity, unsafe_turret_goal->angle());
 
         if (unsafe_turret_goal->track()) {
           if (vision_time_adjuster_.valid()) {

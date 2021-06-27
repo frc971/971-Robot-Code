@@ -3,9 +3,9 @@
 #include <chrono>
 #include <memory>
 
-#include "aos/controls/control_loop_test.h"
 #include "aos/events/logging/log_writer.h"
 #include "frc971/control_loops/capped_test_plant.h"
+#include "frc971/control_loops/control_loop_test.h"
 #include "frc971/control_loops/position_sensor_sim.h"
 #include "frc971/control_loops/team_number_test_environment.h"
 #include "gtest/gtest.h"
@@ -412,10 +412,10 @@ class SuperstructureSimulation {
   float climber_voltage_ = 0.0f;
 };
 
-class SuperstructureTest : public ::aos::testing::ControlLoopTest {
+class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
  protected:
   SuperstructureTest()
-      : ::aos::testing::ControlLoopTest(
+      : ::frc971::testing::ControlLoopTest(
             aos::configuration::ReadConfig("y2020/config.json"),
             chrono::microseconds(5050)),
         roborio_(aos::configuration::GetNode(configuration(), "roborio")),
@@ -978,21 +978,19 @@ TEST_P(SuperstructureAllianceTest, TurretAutoAim) {
                   superstructure_status_fetcher_->aimer()->turret_velocity());
 }
 
-
-
 // Test a manual goal
 TEST_P(SuperstructureAllianceTest, ShooterInterpolationManualGoal) {
   SetEnabled(true);
   WaitUntilZeroed();
 
   {
-     auto builder = superstructure_goal_sender_.MakeBuilder();
+    auto builder = superstructure_goal_sender_.MakeBuilder();
 
     auto shooter_goal = CreateShooterGoal(*builder.fbb(), 400.0, 500.0);
 
     flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
-      hood_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-          *builder.fbb(), constants::Values::kHoodRange().lower);
+        hood_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), constants::Values::kHoodRange().lower);
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
 
@@ -1021,7 +1019,6 @@ TEST_P(SuperstructureAllianceTest, ShooterInterpolationManualGoal) {
   EXPECT_NEAR(superstructure_status_fetcher_->hood()->position(),
               constants::Values::kHoodRange().lower, 0.001);
 }
-
 
 // Test an out of range value with auto tracking
 TEST_P(SuperstructureAllianceTest, ShooterInterpolationOutOfRange) {
@@ -1086,10 +1083,7 @@ TEST_P(SuperstructureAllianceTest, ShooterInterpolationOutOfRange) {
                    0.0);
   EXPECT_NEAR(superstructure_status_fetcher_->hood()->position(),
               constants::Values::kHoodRange().upper, 0.001);
-
 }
-
-
 
 TEST_P(SuperstructureAllianceTest, ShooterInterpolationInRange) {
   SetEnabled(true);
@@ -1160,9 +1154,9 @@ TEST_P(SuperstructureAllianceTest, ShooterInterpolationInRange) {
 }
 
 INSTANTIATE_TEST_SUITE_P(ShootAnyAlliance, SuperstructureAllianceTest,
-                        ::testing::Values(aos::Alliance::kRed,
-                                          aos::Alliance::kBlue,
-                                          aos::Alliance::kInvalid));
+                         ::testing::Values(aos::Alliance::kRed,
+                                           aos::Alliance::kBlue,
+                                           aos::Alliance::kInvalid));
 
 }  // namespace testing
 }  // namespace superstructure

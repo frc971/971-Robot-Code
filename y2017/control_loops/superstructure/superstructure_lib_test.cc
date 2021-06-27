@@ -1,11 +1,9 @@
-#include "y2017/control_loops/superstructure/superstructure.h"
-
 #include <unistd.h>
 
 #include <chrono>
 #include <memory>
 
-#include "aos/controls/control_loop_test.h"
+#include "frc971/control_loops/control_loop_test.h"
 #include "frc971/control_loops/position_sensor_sim.h"
 #include "frc971/control_loops/team_number_test_environment.h"
 #include "gtest/gtest.h"
@@ -14,6 +12,7 @@
 #include "y2017/control_loops/superstructure/hood/hood_plant.h"
 #include "y2017/control_loops/superstructure/intake/intake_plant.h"
 #include "y2017/control_loops/superstructure/shooter/shooter_plant.h"
+#include "y2017/control_loops/superstructure/superstructure.h"
 
 using ::frc971::control_loops::PositionSensorSimulator;
 
@@ -517,10 +516,10 @@ class SuperstructureSimulation {
   double peak_hood_velocity_ = 1e10;
 };
 
-class SuperstructureTest : public ::aos::testing::ControlLoopTest {
+class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
  protected:
   SuperstructureTest()
-      : ::aos::testing::ControlLoopTest(
+      : ::frc971::testing::ControlLoopTest(
             aos::configuration::ReadConfig("y2017/config.json"),
             chrono::microseconds(5050)),
         test_event_loop_(MakeEventLoop("test")),
@@ -566,20 +565,22 @@ class SuperstructureTest : public ::aos::testing::ControlLoopTest {
     // Check that the angular velocity, average angular velocity, and estimated
     // angular velocity match when we are done for the shooter.
     EXPECT_NEAR(superstructure_goal_fetcher_->shooter()->angular_velocity(),
-                superstructure_status_fetcher_->shooter()->angular_velocity(), 0.1);
-    EXPECT_NEAR(superstructure_goal_fetcher_->shooter()->angular_velocity(),
-                superstructure_status_fetcher_->shooter()->avg_angular_velocity(),
+                superstructure_status_fetcher_->shooter()->angular_velocity(),
                 0.1);
+    EXPECT_NEAR(
+        superstructure_goal_fetcher_->shooter()->angular_velocity(),
+        superstructure_status_fetcher_->shooter()->avg_angular_velocity(), 0.1);
     EXPECT_NEAR(superstructure_goal_fetcher_->shooter()->angular_velocity(),
                 superstructure_plant_.shooter_velocity(), 0.1);
 
     // Check that the angular velocity, average angular velocity, and estimated
     // angular velocity match when we are done for the indexer.
     EXPECT_NEAR(superstructure_goal_fetcher_->indexer()->angular_velocity(),
-                superstructure_status_fetcher_->indexer()->angular_velocity(), 0.1);
-    EXPECT_NEAR(superstructure_goal_fetcher_->indexer()->angular_velocity(),
-                superstructure_status_fetcher_->indexer()->avg_angular_velocity(),
+                superstructure_status_fetcher_->indexer()->angular_velocity(),
                 0.1);
+    EXPECT_NEAR(
+        superstructure_goal_fetcher_->indexer()->angular_velocity(),
+        superstructure_status_fetcher_->indexer()->avg_angular_velocity(), 0.1);
     EXPECT_NEAR(superstructure_goal_fetcher_->indexer()->angular_velocity(),
                 superstructure_plant_.indexer_velocity(), 0.1);
   }

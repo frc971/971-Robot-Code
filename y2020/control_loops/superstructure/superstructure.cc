@@ -12,8 +12,8 @@ using frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus;
 
 Superstructure::Superstructure(::aos::EventLoop *event_loop,
                                const ::std::string &name)
-    : aos::controls::ControlLoop<Goal, Position, Status, Output>(event_loop,
-                                                                 name),
+    : frc971::controls::ControlLoop<Goal, Position, Status, Output>(event_loop,
+                                                                    name),
       hood_(constants::GetValues().hood),
       intake_joint_(constants::GetValues().intake),
       turret_(constants::GetValues().turret.subsystem_params),

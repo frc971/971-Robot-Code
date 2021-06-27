@@ -3,7 +3,7 @@
 #include <chrono>
 #include <memory>
 
-#include "aos/controls/control_loop_test.h"
+#include "frc971/control_loops/control_loop_test.h"
 #include "frc971/control_loops/team_number_test_environment.h"
 #include "gtest/gtest.h"
 #include "y2014/constants.h"
@@ -19,15 +19,15 @@ namespace control_loops {
 namespace claw {
 namespace testing {
 
-using ::frc971::HallEffectStructT;
 using ::aos::monotonic_clock;
+using ::frc971::HallEffectStructT;
 namespace chrono = ::std::chrono;
 
 typedef enum {
-	TOP_CLAW = 0,
-	BOTTOM_CLAW,
+  TOP_CLAW = 0,
+  BOTTOM_CLAW,
 
-	CLAW_COUNT
+  CLAW_COUNT
 } ClawType;
 
 // Class which simulates the wrist and sends out queue messages containing the
@@ -62,7 +62,8 @@ class ClawMotorSimulation {
     AOS_LOG(INFO, "Reinitializing to {top: %f, bottom: %f}\n",
             initial_top_position, initial_bottom_position);
     claw_plant_->mutable_X(0, 0) = initial_bottom_position;
-    claw_plant_->mutable_X(1, 0) = initial_top_position - initial_bottom_position;
+    claw_plant_->mutable_X(1, 0) =
+        initial_top_position - initial_bottom_position;
     claw_plant_->mutable_X(2, 0) = 0.0;
     claw_plant_->mutable_X(3, 0) = 0.0;
     claw_plant_->mutable_Y() = claw_plant_->C() * claw_plant_->X();
@@ -199,7 +200,8 @@ class ClawMotorSimulation {
     UpdateHallEffect(half_claw->position + initial_position,
                      last_position.position + initial_position,
                      initial_position, half_claw->front.get(),
-                     *last_position.front.get(), claw.front, claw_name, "front");
+                     *last_position.front.get(), claw.front, claw_name,
+                     "front");
     UpdateHallEffect(half_claw->position + initial_position,
                      last_position.position + initial_position,
                      initial_position, half_claw->calibration.get(),
@@ -245,7 +247,7 @@ class ClawMotorSimulation {
 
   // Simulates the claw moving for one timestep.
   void Simulate() {
-    const constants::Values& v = constants::GetValues();
+    const constants::Values &v = constants::GetValues();
     EXPECT_TRUE(claw_output_fetcher_.Fetch());
 
     Eigen::Matrix<double, 2, 1> U;
@@ -286,10 +288,10 @@ class ClawMotorSimulation {
   PositionT last_position_;
 };
 
-class ClawTest : public ::aos::testing::ControlLoopTest {
+class ClawTest : public ::frc971::testing::ControlLoopTest {
  protected:
   ClawTest()
-      : ::aos::testing::ControlLoopTest(
+      : ::frc971::testing::ControlLoopTest(
             aos::configuration::ReadConfig("y2014/config.json"),
             chrono::microseconds(5000)),
         test_event_loop_(MakeEventLoop("test")),
@@ -431,10 +433,9 @@ TEST_F(ClawTest, LimitClawGoal) {
   EXPECT_NEAR(7.5, top_goal, 1e-4);
 }
 
-
 class ZeroingClawTest
     : public ClawTest,
-      public ::testing::WithParamInterface< ::std::pair<double, double>> {};
+      public ::testing::WithParamInterface<::std::pair<double, double>> {};
 
 // Tests that the wrist zeros correctly starting on the hall effect sensor.
 TEST_P(ZeroingClawTest, ParameterizedZero) {
@@ -454,29 +455,19 @@ TEST_P(ZeroingClawTest, ParameterizedZero) {
   VerifyNearGoal();
 }
 
-INSTANTIATE_TEST_SUITE_P(ZeroingClawTest, ZeroingClawTest,
-                        ::testing::Values(::std::make_pair(0.04, 0.02),
-                                          ::std::make_pair(0.2, 0.1),
-                                          ::std::make_pair(0.3, 0.2),
-                                          ::std::make_pair(0.4, 0.3),
-                                          ::std::make_pair(0.5, 0.4),
-                                          ::std::make_pair(0.6, 0.5),
-                                          ::std::make_pair(0.7, 0.6),
-                                          ::std::make_pair(0.8, 0.7),
-                                          ::std::make_pair(0.9, 0.8),
-                                          ::std::make_pair(1.0, 0.9),
-                                          ::std::make_pair(1.1, 1.0),
-                                          ::std::make_pair(1.15, 1.05),
-                                          ::std::make_pair(1.05, 0.95),
-                                          ::std::make_pair(1.2, 1.1),
-                                          ::std::make_pair(1.3, 1.2),
-                                          ::std::make_pair(1.4, 1.3),
-                                          ::std::make_pair(1.5, 1.4),
-                                          ::std::make_pair(1.6, 1.5),
-                                          ::std::make_pair(1.7, 1.6),
-                                          ::std::make_pair(1.8, 1.7),
-                                          ::std::make_pair(2.015, 2.01)
-));
+INSTANTIATE_TEST_SUITE_P(
+    ZeroingClawTest, ZeroingClawTest,
+    ::testing::Values(::std::make_pair(0.04, 0.02), ::std::make_pair(0.2, 0.1),
+                      ::std::make_pair(0.3, 0.2), ::std::make_pair(0.4, 0.3),
+                      ::std::make_pair(0.5, 0.4), ::std::make_pair(0.6, 0.5),
+                      ::std::make_pair(0.7, 0.6), ::std::make_pair(0.8, 0.7),
+                      ::std::make_pair(0.9, 0.8), ::std::make_pair(1.0, 0.9),
+                      ::std::make_pair(1.1, 1.0), ::std::make_pair(1.15, 1.05),
+                      ::std::make_pair(1.05, 0.95), ::std::make_pair(1.2, 1.1),
+                      ::std::make_pair(1.3, 1.2), ::std::make_pair(1.4, 1.3),
+                      ::std::make_pair(1.5, 1.4), ::std::make_pair(1.6, 1.5),
+                      ::std::make_pair(1.7, 1.6), ::std::make_pair(1.8, 1.7),
+                      ::std::make_pair(2.015, 2.01)));
 
 /*
 // Tests that loosing the encoder for a second triggers a re-zero.
@@ -559,7 +550,7 @@ class WindupClawTest : public ClawTest {
                   monotonic_clock::time_point start_time, double offset) {
     SetEnabled(true);
     int capped_count = 0;
-    const constants::Values& values = constants::GetValues();
+    const constants::Values &values = constants::GetValues();
     bool kicked = false;
     bool measured = false;
     while (test_event_loop_->monotonic_now() <

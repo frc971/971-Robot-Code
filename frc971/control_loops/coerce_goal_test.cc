@@ -2,7 +2,7 @@
 
 #include <unistd.h>
 
-#include "aos/controls/polytope.h"
+#include "frc971/control_loops/polytope.h"
 #include "gtest/gtest.h"
 
 namespace frc971 {
@@ -10,8 +10,8 @@ namespace control_loops {
 
 namespace {
 
-aos::controls::HVPolytope<2, 4, 4> MakeBox(double x1_min, double x1_max,
-                                           double x2_min, double x2_max) {
+frc971::controls::HVPolytope<2, 4, 4> MakeBox(double x1_min, double x1_max,
+                                              double x2_min, double x2_max) {
   Eigen::Matrix<double, 4, 2> box_H;
   box_H << /*[[*/ 1.0, 0.0 /*]*/,
       /*[*/ -1.0, 0.0 /*]*/,
@@ -22,21 +22,20 @@ aos::controls::HVPolytope<2, 4, 4> MakeBox(double x1_min, double x1_max,
       /*[*/ -x1_min /*]*/,
       /*[*/ x2_max /*]*/,
       /*[*/ -x2_min /*]]*/;
-  aos::controls::HPolytope<2> t_poly(box_H, box_k);
-  return aos::controls::HVPolytope<2, 4, 4>(t_poly.H(), t_poly.k(),
-                                            t_poly.Vertices());
+  frc971::controls::HPolytope<2> t_poly(box_H, box_k);
+  return frc971::controls::HVPolytope<2, 4, 4>(t_poly.H(), t_poly.k(),
+                                               t_poly.Vertices());
 }
 }  // namespace
 
 class CoerceGoalTest : public ::testing::Test {
  public:
-  void SetUp() override { aos::controls::HPolytope<2>::Init(); }
+  void SetUp() override { frc971::controls::HPolytope<2>::Init(); }
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-
 TEST_F(CoerceGoalTest, Inside) {
-  aos::controls::HVPolytope<2, 4, 4> box = MakeBox(1, 2, 1, 2);
+  frc971::controls::HVPolytope<2, 4, 4> box = MakeBox(1, 2, 1, 2);
 
   Eigen::Matrix<double, 1, 2> K;
   K << /*[[*/ 1, -1 /*]]*/;
@@ -52,7 +51,7 @@ TEST_F(CoerceGoalTest, Inside) {
 }
 
 TEST_F(CoerceGoalTest, LineOutside) {
-  aos::controls::HVPolytope<2, 4, 4> box = MakeBox(1, 2, 1, 2);
+  frc971::controls::HVPolytope<2, 4, 4> box = MakeBox(1, 2, 1, 2);
 
   // Make a line equivalent to y = -x, which does not pass through the box and
   // is nearest the box at (1, 1).
@@ -76,7 +75,7 @@ TEST_F(CoerceGoalTest, LineOutside) {
 }
 
 TEST_F(CoerceGoalTest, GoalOutsideLineInsideThroughOrigin) {
-  aos::controls::HVPolytope<2, 4, 4> box = MakeBox(1, 2, 1, 2);
+  frc971::controls::HVPolytope<2, 4, 4> box = MakeBox(1, 2, 1, 2);
 
   Eigen::Matrix<double, 1, 2> K;
   K << 1, -1;
@@ -92,7 +91,7 @@ TEST_F(CoerceGoalTest, GoalOutsideLineInsideThroughOrigin) {
 }
 
 TEST_F(CoerceGoalTest, GoalOutsideLineNotThroughOrigin) {
-  aos::controls::HVPolytope<2, 4, 4> box = MakeBox(1, 2, 1, 2);
+  frc971::controls::HVPolytope<2, 4, 4> box = MakeBox(1, 2, 1, 2);
 
   Eigen::Matrix<double, 1, 2> K;
   K << 1, 1;
@@ -108,7 +107,7 @@ TEST_F(CoerceGoalTest, GoalOutsideLineNotThroughOrigin) {
 }
 
 TEST_F(CoerceGoalTest, GoalOutsideLineThroughVertex) {
-  aos::controls::HVPolytope<2, 4, 4> box = MakeBox(1, 2, 1, 2);
+  frc971::controls::HVPolytope<2, 4, 4> box = MakeBox(1, 2, 1, 2);
 
   Eigen::Matrix<double, 1, 2> K;
   K << 1, -1;
@@ -124,7 +123,7 @@ TEST_F(CoerceGoalTest, GoalOutsideLineThroughVertex) {
 }
 
 TEST_F(CoerceGoalTest, LineAndGoalOutside) {
-  aos::controls::HVPolytope<2, 4, 4> box = MakeBox(3, 4, 1, 2);
+  frc971::controls::HVPolytope<2, 4, 4> box = MakeBox(3, 4, 1, 2);
 
   Eigen::Matrix<double, 1, 2> K;
   K << 1, -1;
@@ -140,7 +139,7 @@ TEST_F(CoerceGoalTest, LineAndGoalOutside) {
 }
 
 TEST_F(CoerceGoalTest, LineThroughEdgeOfBox) {
-  aos::controls::HVPolytope<2, 4, 4> box = MakeBox(0, 4, 1, 2);
+  frc971::controls::HVPolytope<2, 4, 4> box = MakeBox(0, 4, 1, 2);
 
   Eigen::Matrix<double, 1, 2> K;
   K << -1, 1;
@@ -156,7 +155,7 @@ TEST_F(CoerceGoalTest, LineThroughEdgeOfBox) {
 }
 
 TEST_F(CoerceGoalTest, PerpendicularLine) {
-  aos::controls::HVPolytope<2, 4, 4> box = MakeBox(1, 2, 1, 2);
+  frc971::controls::HVPolytope<2, 4, 4> box = MakeBox(1, 2, 1, 2);
 
   Eigen::Matrix<double, 1, 2> K;
   K << 1, 1;

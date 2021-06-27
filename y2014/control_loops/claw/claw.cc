@@ -2,9 +2,8 @@
 
 #include <algorithm>
 
-#include "aos/logging/logging.h"
 #include "aos/commonmath.h"
-
+#include "aos/logging/logging.h"
 #include "y2014/constants.h"
 #include "y2014/control_loops/claw/claw_motor_plant.h"
 
@@ -46,8 +45,8 @@ namespace control_loops {
 namespace claw {
 
 using ::frc971::HallEffectTracker;
-using ::y2014::control_loops::claw::kDt;
 using ::frc971::control_loops::DoCoerceGoal;
+using ::y2014::control_loops::claw::kDt;
 
 static const double kZeroingVoltage = 4.0;
 static const double kMaxVoltage = 12.0;
@@ -57,20 +56,18 @@ ClawLimitedLoop::ClawLimitedLoop(StateFeedbackLoop<4, 2, 2> &&loop)
     : StateFeedbackLoop<4, 2, 2>(::std::move(loop)),
       uncapped_average_voltage_(0.0),
       is_zeroing_(true),
-      U_Poly_((Eigen::Matrix<double, 4, 2>() << 1, 0,
-               -1, 0,
-               0, 1,
-               0, -1).finished(),
+      U_Poly_((Eigen::Matrix<double, 4, 2>() << 1, 0, -1, 0, 0, 1, 0, -1)
+                  .finished(),
               (Eigen::Matrix<double, 4, 1>() << kMaxVoltage, kMaxVoltage,
-               kMaxVoltage, kMaxVoltage).finished()),
-      U_Poly_zeroing_((Eigen::Matrix<double, 4, 2>() << 1, 0,
-               -1, 0,
-               0, 1,
-               0, -1).finished(),
-              (Eigen::Matrix<double, 4, 1>() <<
-               kZeroingVoltage, kZeroingVoltage,
-               kZeroingVoltage, kZeroingVoltage).finished()) {
-  ::aos::controls::HPolytope<0>::Init();
+               kMaxVoltage, kMaxVoltage)
+                  .finished()),
+      U_Poly_zeroing_(
+          (Eigen::Matrix<double, 4, 2>() << 1, 0, -1, 0, 0, 1, 0, -1)
+              .finished(),
+          (Eigen::Matrix<double, 4, 1>() << kZeroingVoltage, kZeroingVoltage,
+           kZeroingVoltage, kZeroingVoltage)
+              .finished()) {
+  ::frc971::controls::HPolytope<0>::Init();
 }
 
 // Caps the voltage prioritizing reducing velocity error over reducing
@@ -119,8 +116,8 @@ void ClawLimitedLoop::CapU() {
     const Eigen::Matrix<double, 4, 2> pos_poly_H = poly.H() * position_K;
     const Eigen::Matrix<double, 4, 1> pos_poly_k =
         poly.k() - poly.H() * velocity_K * velocity_error;
-    const ::aos::controls::HPolytope<2> pos_poly(pos_poly_H, pos_poly_k);
-    const ::aos::controls::HVPolytope<2, 4, 4> hv_pos_poly(
+    const ::frc971::controls::HPolytope<2> pos_poly(pos_poly_H, pos_poly_k);
+    const ::frc971::controls::HVPolytope<2, 4, 4> hv_pos_poly(
         pos_poly_H, pos_poly_k, pos_poly.Vertices());
 
     Eigen::Matrix<double, 2, 1> adjusted_pos_error;
@@ -187,7 +184,8 @@ void ClawLimitedLoop::CapU() {
     {
       const auto values = constants::GetValues().claw;
       if (top_known_) {
-        if (X_hat(0, 0) + X_hat(1, 0) > values.upper_claw.upper_limit && U(1, 0) > 0) {
+        if (X_hat(0, 0) + X_hat(1, 0) > values.upper_claw.upper_limit &&
+            U(1, 0) > 0) {
           AOS_LOG(WARNING, "upper claw too high and moving up\n");
           mutable_U(1, 0) = 0;
         } else if (X_hat(0, 0) + X_hat(1, 0) < values.upper_claw.lower_limit &&
@@ -337,7 +335,6 @@ void TopZeroedStateFeedbackLoop::HandleCalibrationError(
   }
 }
 
-
 void BottomZeroedStateFeedbackLoop::HandleCalibrationError(
     const constants::Values::Claws::Claw &claw_values) {
   double edge_encoder;
@@ -369,8 +366,8 @@ bool BottomZeroedStateFeedbackLoop::SetCalibrationOnEdge(
 }
 
 ClawMotor::ClawMotor(::aos::EventLoop *event_loop, const ::std::string &name)
-    : aos::controls::ControlLoop<Goal, Position, Status, Output>(event_loop,
-                                                                 name),
+    : frc971::controls::ControlLoop<Goal, Position, Status, Output>(event_loop,
+                                                                    name),
       has_top_claw_goal_(false),
       top_claw_goal_(0.0),
       top_claw_(this),
@@ -692,9 +689,9 @@ void ClawMotor::RunIteration(const Goal *goal, const Position *position,
     bottom_claw_.HandleCalibrationError(values.claw.lower_claw);
     top_claw_.HandleCalibrationError(values.claw.upper_claw);
   } else if (top_claw_.zeroing_state() !=
-             ZeroedStateFeedbackLoop::UNKNOWN_POSITION &&
+                 ZeroedStateFeedbackLoop::UNKNOWN_POSITION &&
              bottom_claw_.zeroing_state() !=
-             ZeroedStateFeedbackLoop::UNKNOWN_POSITION) {
+                 ZeroedStateFeedbackLoop::UNKNOWN_POSITION) {
     // Time to fine tune the zero.
     // Limit the goals here.
     if (!enabled) {
@@ -920,8 +917,8 @@ void ClawMotor::RunIteration(const Goal *goal, const Position *position,
         bottom_claw_goal_ -= dx;
         top_claw_goal_ -= dx;
         Eigen::Matrix<double, 4, 1> R;
-        R << bottom_claw_goal_, top_claw_goal_ - bottom_claw_goal_, claw_.R(2, 0),
-            claw_.R(3, 0);
+        R << bottom_claw_goal_, top_claw_goal_ - bottom_claw_goal_,
+            claw_.R(2, 0), claw_.R(3, 0);
         claw_.mutable_U() = claw_.controller().K() * (R - claw_.X_hat());
         capped_goal_ = true;
         AOS_LOG(DEBUG,
@@ -943,8 +940,8 @@ void ClawMotor::RunIteration(const Goal *goal, const Position *position,
         bottom_claw_goal_ -= dx;
         top_claw_goal_ -= dx;
         Eigen::Matrix<double, 4, 1> R;
-        R << bottom_claw_goal_, top_claw_goal_ - bottom_claw_goal_, claw_.R(2, 0),
-            claw_.R(3, 0);
+        R << bottom_claw_goal_, top_claw_goal_ - bottom_claw_goal_,
+            claw_.R(2, 0), claw_.R(3, 0);
         claw_.mutable_U() = claw_.controller().K() * (R - claw_.X_hat());
         capped_goal_ = true;
         AOS_LOG(DEBUG, "Moving the goal by %f to prevent windup\n", dx);
@@ -954,16 +951,16 @@ void ClawMotor::RunIteration(const Goal *goal, const Position *position,
 
   if (output) {
     if (goal) {
-      //setup the intake
+      // setup the intake
       output_struct.intake_voltage =
           (goal->intake() > 12.0)
               ? 12
               : (goal->intake() < -12.0) ? -12.0 : goal->intake();
       output_struct.tusk_voltage = goal->centering();
       output_struct.tusk_voltage =
-          (goal->centering() > 12.0) ? 12 : (goal->centering() < -12.0)
-              ? -12.0
-              : goal->centering();
+          (goal->centering() > 12.0)
+              ? 12
+              : (goal->centering() < -12.0) ? -12.0 : goal->centering();
     }
     output_struct.top_claw_voltage = claw_.U(1, 0);
     output_struct.bottom_claw_voltage = claw_.U(0, 0);

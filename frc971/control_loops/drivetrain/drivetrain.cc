@@ -2,10 +2,11 @@
 
 #include <sched.h>
 #include <stdio.h>
+
 #include <cmath>
 #include <memory>
-#include "Eigen/Dense"
 
+#include "Eigen/Dense"
 #include "aos/logging/logging.h"
 #include "frc971/control_loops/drivetrain/down_estimator.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
@@ -47,7 +48,7 @@ DrivetrainFilters::DrivetrainFilters(const DrivetrainConfig<double> &dt_config,
       right_high_requested_(dt_config_.default_high_gear) {
   last_voltage_.setZero();
   last_last_voltage_.setZero();
-  aos::controls::HPolytope<0>::Init();
+  frc971::controls::HPolytope<0>::Init();
   event_loop->OnRun([this]() {
     // On the first fetch, make sure that we are caught all the way up to the
     // present.
@@ -300,8 +301,8 @@ DrivetrainLoop::DrivetrainLoop(const DrivetrainConfig<double> &dt_config,
                                ::aos::EventLoop *event_loop,
                                LocalizerInterface *localizer,
                                const ::std::string &name)
-    : aos::controls::ControlLoop<Goal, Position, Status, Output>(event_loop,
-                                                                 name),
+    : frc971::controls::ControlLoop<Goal, Position, Status, Output>(event_loop,
+                                                                    name),
       dt_config_(dt_config),
       filters_(dt_config, event_loop, localizer),
       dt_openloop_(dt_config_, filters_.kf()),
