@@ -615,6 +615,14 @@ std::ostream &operator<<(std::ostream &stream, const LogParts &parts) {
   if (!parts.config_sha256.empty()) {
     stream << ",\n  \"config_sha256\": \"" << parts.config_sha256 << "\"";
   }
+  if (parts.logger_monotonic_start_time != aos::monotonic_clock::min_time) {
+    stream << ",\n  \"logger_monotonic_start_time\": \""
+           << parts.logger_monotonic_start_time << "\"";
+  }
+  if (parts.logger_realtime_start_time != aos::realtime_clock::min_time) {
+    stream << ",\n  \"logger_realtime_start_time\": \""
+           << parts.logger_realtime_start_time << "\"";
+  }
   stream << ",\n  \"monotonic_start_time\": " << parts.monotonic_start_time
          << ",\n  \"realtime_start_time\": " << parts.realtime_start_time
          << ",\n  \"parts\": [";
