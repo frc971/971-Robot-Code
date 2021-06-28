@@ -36,6 +36,8 @@ DEFINE_bool(pretty, false,
 DEFINE_bool(print, true,
             "If true, actually print the messages.  If false, discard them, "
             "confirming they can be parsed.");
+DEFINE_bool(print_parts_only, false,
+            "If true, only print out the results of logfile sorting.");
 
 // Print the flatbuffer out to stdout, both to remove the unnecessary cruft from
 // glog and to allow the user to readily redirect just the logged output
@@ -171,6 +173,12 @@ int main(int argc, char **argv) {
 
   for (auto &it : logfiles) {
     VLOG(1) << it;
+    if (FLAGS_print_parts_only) {
+      std::cout << it << std::endl;
+    }
+  }
+  if (FLAGS_print_parts_only) {
+    return 0;
   }
 
   aos::logger::LogReader reader(logfiles);
