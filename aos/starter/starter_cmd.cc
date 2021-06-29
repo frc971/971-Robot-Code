@@ -24,7 +24,8 @@ static const std::unordered_map<std::string, aos::starter::Command>
                         {"restart", aos::starter::Command::RESTART}};
 
 void PrintKey() {
-  absl::PrintF("%-30s %-10s %s\n\n", "Name", "Uptime", "State");
+  absl::PrintF("%-30s %-30s %s\n\n", "Name", "Time since last started",
+               "State");
 }
 
 void PrintApplicationStatus(const aos::starter::ApplicationStatus *app_status,
@@ -33,7 +34,7 @@ void PrintApplicationStatus(const aos::starter::ApplicationStatus *app_status,
       chrono::nanoseconds(app_status->last_start_time()));
   const auto time_running =
       chrono::duration_cast<chrono::seconds>(time - last_start_time);
-  absl::PrintF("%-30s %-10s %s\n", app_status->name()->string_view(),
+  absl::PrintF("%-30s %-30s %s\n", app_status->name()->string_view(),
                std::to_string(time_running.count()) + 's',
                aos::starter::EnumNameState(app_status->state()));
 }
@@ -103,6 +104,37 @@ bool InteractWithProgram(int argc, char **argv,
   return false;
 }
 
+bool RestartAll(int argc, char **, const aos::Configuration *config) {
+  if (argc == 1) {
+    const auto optional_status = aos::starter::GetStarterStatus(config);
+    if (optional_status) {
+      auto status = *optional_status;
+      for (const aos::starter::ApplicationStatus *app_status :
+           *status.message().statuses()) {
+        const auto application_name = aos::starter::FindApplication(
+            app_status->name()->string_view(), config);
+
+        // Restart each running process
+
+        if (aos::starter::SendCommandBlocking(aos::starter::Command::RESTART,
+                                              application_name, config,
+                                              chrono::seconds(3))) {
+          std::cout << "Successfully restarted " << application_name << '\n';
+        } else {
+          std::cout << "Failed to restart " << application_name << '\n';
+          return true;
+        }
+      }
+    } else {
+      LOG(WARNING) << "No processes found";
+    }
+  } else {
+    LOG(ERROR) << "The \"restart_all\" command requires only zero arguments.";
+    return true;
+  }
+  return false;
+}
+
 // This is the set of subcommands we support. Each subcommand accepts argc and
 // argv from its own point of view. So argv[0] is always the name of the
 // subcommand. argv[1] and up are the arguments to the subcommand.
@@ -112,12 +144,11 @@ bool InteractWithProgram(int argc, char **argv,
 static const std::unordered_map<
     std::string, std::function<bool(int argc, char **argv,
                                     const aos::Configuration *config)>>
-    kCommands{
-        {"status", GetStarterStatus},
-        {"start", InteractWithProgram},
-        {"stop", InteractWithProgram},
-        {"restart", InteractWithProgram},
-    };
+    kCommands{{"status", GetStarterStatus},
+              {"start", InteractWithProgram},
+              {"stop", InteractWithProgram},
+              {"restart", InteractWithProgram},
+              {"restart_all", RestartAll}};
 
 }  // namespace
 
