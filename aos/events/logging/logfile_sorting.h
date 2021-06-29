@@ -38,6 +38,10 @@ struct LogParts {
   // data, this is the boot_uuid of the remote node.
   std::string source_boot_uuid;
 
+  // Boot number for this node.  This communicates the order of all the
+  // source_boot_uuid's for a node.
+  size_t boot_count = 0;
+
   // Pre-sorted list of parts.
   std::vector<std::string> parts;
 
