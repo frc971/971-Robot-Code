@@ -54,7 +54,9 @@ struct LogParts {
 // Datastructure to hold parts from the same run of the logger which have no
 // ordering constraints relative to each other.
 struct LogFile {
-  // The UUID tying them all together (if available)
+  // The UUID tying them all together (if available).  This is set to a random
+  // uuid everytime a set of log files is started, regardless of if the logger
+  // starts and stops.
   std::string log_event_uuid;
 
   // The node the logger was running on (if available)

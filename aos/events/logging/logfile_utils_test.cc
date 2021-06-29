@@ -1675,6 +1675,77 @@ TEST_F(TimestampMapperTest, QueueUntilNode0) {
   }
 }
 
+// This tests that we can properly sort a multi-node log file which has the old
+// (and buggy) timestamps in the header, and the non-resetting parts_index.
+// These make it so we can just bairly figure out what happened first and what
+// happened second, but not in a way that is robust to multiple nodes rebooting.
+TEST_F(SortingElementTest, OldReboot) {
+  const aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> boot0 =
+      MakeHeader(config_, R"({
+  /* 100ms */
+  "max_out_of_order_duration": 100000000,
+  "node": {
+    "name": "pi2"
+  },
+  "logger_node": {
+    "name": "pi1"
+  },
+  "monotonic_start_time": 1000000,
+  "realtime_start_time": 1000000000000,
+  "logger_monotonic_start_time": 1000000,
+  "logger_realtime_start_time": 1000000000000,
+  "log_event_uuid": "30ef1283-81d7-4004-8c36-1c162dbcb2b2",
+  "parts_uuid": "1a9e5ca2-31b2-475b-8282-88f6d1ce5109",
+  "parts_index": 0,
+  "logger_instance_uuid": "1c3142ad-10a5-408d-a760-b63b73d3b904",
+  "logger_node_boot_uuid": "a570df8b-5cc2-4dbe-89bd-286f9ddd02b7",
+  "source_node_boot_uuid": "6ba4f28d-21a2-4d7f-83f4-ee365cf86464"
+})");
+  const aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> boot1 =
+      MakeHeader(config_, R"({
+  /* 100ms */
+  "max_out_of_order_duration": 100000000,
+  "node": {
+    "name": "pi2"
+  },
+  "logger_node": {
+    "name": "pi1"
+  },
+  "monotonic_start_time": 1000000,
+  "realtime_start_time": 1000000000000,
+  "logger_monotonic_start_time": 1000000,
+  "logger_realtime_start_time": 1000000000000,
+  "log_event_uuid": "30ef1283-81d7-4004-8c36-1c162dbcb2b2",
+  "parts_uuid": "2a05d725-5d5c-4c0b-af42-88de2f3c3876",
+  "parts_index": 1,
+  "logger_instance_uuid": "1c3142ad-10a5-408d-a760-b63b73d3b904",
+  "logger_node_boot_uuid": "a570df8b-5cc2-4dbe-89bd-286f9ddd02b7",
+  "source_node_boot_uuid": "b728d27a-9181-4eac-bfc1-5d09b80469d2"
+})");
+
+  {
+    DetachedBufferWriter writer(logfile0_, std::make_unique<DummyEncoder>());
+    writer.QueueSpan(boot0.span());
+  }
+  {
+    DetachedBufferWriter writer(logfile1_, std::make_unique<DummyEncoder>());
+    writer.QueueSpan(boot1.span());
+  }
+
+  const std::vector<LogFile> parts = SortParts({logfile0_, logfile1_});
+
+  ASSERT_EQ(parts.size(), 1u);
+  ASSERT_EQ(parts[0].parts.size(), 2u);
+
+  EXPECT_EQ(parts[0].parts[0].boot_count, 0);
+  EXPECT_EQ(parts[0].parts[0].source_boot_uuid,
+            boot0.message().source_node_boot_uuid()->string_view());
+
+  EXPECT_EQ(parts[0].parts[1].boot_count, 1);
+  EXPECT_EQ(parts[0].parts[1].source_boot_uuid,
+            boot1.message().source_node_boot_uuid()->string_view());
+}
+
 }  // namespace testing
 }  // namespace logger
 }  // namespace aos
