@@ -892,13 +892,13 @@ std::ostream &operator<<(std::ostream &stream, const LogFile &file) {
   if (!file.logger_boot_uuid.empty()) {
     stream << " \"logger_boot_uuid\": \"" << file.logger_boot_uuid << "\",\n";
   }
-  stream << " \"config\": " << file.config.get();
+  stream << " \"config\": \"" << file.config.get() << "\"";
   if (!file.config_sha256.empty()) {
     stream << ",\n \"config_sha256\": \"" << file.config_sha256 << "\"";
   }
-  stream << ",\n \"monotonic_start_time\": " << file.monotonic_start_time
-         << ",\n \"realtime_start_time\": " << file.realtime_start_time
-         << ",\n";
+  stream << ",\n \"monotonic_start_time\": \"" << file.monotonic_start_time
+         << "\",\n \"realtime_start_time\": \"" << file.realtime_start_time
+         << "\",\n";
   stream << " \"parts\": [\n";
   for (size_t i = 0; i < file.parts.size(); ++i) {
     if (i != 0u) {
@@ -924,7 +924,7 @@ std::ostream &operator<<(std::ostream &stream, const LogParts &parts) {
     stream << "  \"source_boot_uuid\": \"" << parts.source_boot_uuid << "\",\n";
     stream << "  \"boot_count\": " << parts.boot_count << ",\n";
   }
-  stream << "  \"config\": " << parts.config.get();
+  stream << "  \"config\": \"" << parts.config.get() << "\"";
   if (!parts.config_sha256.empty()) {
     stream << ",\n  \"config_sha256\": \"" << parts.config_sha256 << "\"";
   }
@@ -936,15 +936,15 @@ std::ostream &operator<<(std::ostream &stream, const LogParts &parts) {
     stream << ",\n  \"logger_realtime_start_time\": \""
            << parts.logger_realtime_start_time << "\"";
   }
-  stream << ",\n  \"monotonic_start_time\": " << parts.monotonic_start_time
-         << ",\n  \"realtime_start_time\": " << parts.realtime_start_time
-         << ",\n  \"parts\": [";
+  stream << ",\n  \"monotonic_start_time\": \"" << parts.monotonic_start_time
+         << "\",\n  \"realtime_start_time\": \"" << parts.realtime_start_time
+         << "\",\n  \"parts\": [";
 
   for (size_t i = 0; i < parts.parts.size(); ++i) {
     if (i != 0u) {
       stream << ", ";
     }
-    stream << parts.parts[i];
+    stream << "\"" << parts.parts[i] << "\"";
   }
 
   stream << "]\n }";
