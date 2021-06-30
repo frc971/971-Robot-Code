@@ -267,9 +267,11 @@ void PartsSorter::PopulateFromFiles(const std::vector<std::string> &parts) {
     }
 
     if (configuration_sha256.empty()) {
-      CHECK(log_header->message().has_configuration());
+      CHECK(log_header->message().has_configuration())
+          << ": Failed to find header on " << part;
     } else {
-      CHECK(!log_header->message().has_configuration());
+      CHECK(!log_header->message().has_configuration())
+          << ": Found header where one shouldn't be on " << part;
     }
 
     // Looks like an old log.  No UUID, index, and also single node.  We have
