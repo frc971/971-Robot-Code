@@ -518,9 +518,9 @@ class TimestampMapper {
   // node.
   void AddPeer(TimestampMapper *timestamp_mapper);
 
-  // Time that we are sorted until internally.
-  monotonic_clock::time_point sorted_until() const {
-    return node_merger_.sorted_until();
+  // Returns true if anything has been queued up.
+  bool started() const {
+    return node_merger_.sorted_until() != monotonic_clock::min_time;
   }
 
   // Returns the next message for this node.

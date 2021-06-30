@@ -839,7 +839,7 @@ TEST_F(TimestampMapperTest, ReadNode0First) {
     EXPECT_EQ(mapper1_count, 0u);
     output0.emplace_back(std::move(*mapper0.Front()));
     mapper0.PopFront();
-    EXPECT_EQ(mapper0.sorted_until(), e + chrono::milliseconds(1900));
+    EXPECT_TRUE(mapper0.started());
     EXPECT_EQ(mapper0_count, 1u);
     EXPECT_EQ(mapper1_count, 0u);
 
@@ -848,12 +848,12 @@ TEST_F(TimestampMapperTest, ReadNode0First) {
     EXPECT_EQ(mapper1_count, 0u);
     output0.emplace_back(std::move(*mapper0.Front()));
     mapper0.PopFront();
-    EXPECT_EQ(mapper0.sorted_until(), e + chrono::milliseconds(2900));
+    EXPECT_TRUE(mapper0.started());
 
     ASSERT_TRUE(mapper0.Front() != nullptr);
     output0.emplace_back(std::move(*mapper0.Front()));
     mapper0.PopFront();
-    EXPECT_EQ(mapper0.sorted_until(), monotonic_clock::max_time);
+    EXPECT_TRUE(mapper0.started());
 
     EXPECT_EQ(mapper0_count, 3u);
     EXPECT_EQ(mapper1_count, 0u);
@@ -880,8 +880,7 @@ TEST_F(TimestampMapperTest, ReadNode0First) {
     EXPECT_EQ(mapper1_count, 1u);
     output1.emplace_back(std::move(*mapper1.Front()));
     mapper1.PopFront();
-    EXPECT_EQ(mapper1.sorted_until(),
-              e + chrono::seconds(100) + chrono::milliseconds(1900));
+    EXPECT_TRUE(mapper1.started());
     EXPECT_EQ(mapper0_count, 3u);
     EXPECT_EQ(mapper1_count, 1u);
 
@@ -890,13 +889,12 @@ TEST_F(TimestampMapperTest, ReadNode0First) {
     EXPECT_EQ(mapper1_count, 2u);
     output1.emplace_back(std::move(*mapper1.Front()));
     mapper1.PopFront();
-    EXPECT_EQ(mapper1.sorted_until(),
-              e + chrono::seconds(100) + chrono::milliseconds(2900));
+    EXPECT_TRUE(mapper1.started());
 
     ASSERT_TRUE(mapper1.Front() != nullptr);
     output1.emplace_back(std::move(*mapper1.Front()));
     mapper1.PopFront();
-    EXPECT_EQ(mapper1.sorted_until(), monotonic_clock::max_time);
+    EXPECT_TRUE(mapper1.started());
 
     EXPECT_EQ(mapper0_count, 3u);
     EXPECT_EQ(mapper1_count, 3u);
@@ -1071,19 +1069,17 @@ TEST_F(TimestampMapperTest, ReadNode1First) {
     ASSERT_TRUE(mapper1.Front() != nullptr);
     output1.emplace_back(std::move(*mapper1.Front()));
     mapper1.PopFront();
-    EXPECT_EQ(mapper1.sorted_until(),
-              e + chrono::seconds(100) + chrono::milliseconds(1900));
+    EXPECT_TRUE(mapper1.started());
 
     ASSERT_TRUE(mapper1.Front() != nullptr);
     output1.emplace_back(std::move(*mapper1.Front()));
     mapper1.PopFront();
-    EXPECT_EQ(mapper1.sorted_until(),
-              e + chrono::seconds(100) + chrono::milliseconds(2900));
+    EXPECT_TRUE(mapper1.started());
 
     ASSERT_TRUE(mapper1.Front() != nullptr);
     output1.emplace_back(std::move(*mapper1.Front()));
     mapper1.PopFront();
-    EXPECT_EQ(mapper1.sorted_until(), monotonic_clock::max_time);
+    EXPECT_TRUE(mapper1.started());
 
     ASSERT_TRUE(mapper1.Front() == nullptr);
 
@@ -1104,17 +1100,17 @@ TEST_F(TimestampMapperTest, ReadNode1First) {
     ASSERT_TRUE(mapper0.Front() != nullptr);
     output0.emplace_back(std::move(*mapper0.Front()));
     mapper0.PopFront();
-    EXPECT_EQ(mapper0.sorted_until(), monotonic_clock::max_time);
+    EXPECT_TRUE(mapper0.started());
 
     ASSERT_TRUE(mapper0.Front() != nullptr);
     output0.emplace_back(std::move(*mapper0.Front()));
     mapper0.PopFront();
-    EXPECT_EQ(mapper0.sorted_until(), monotonic_clock::max_time);
+    EXPECT_TRUE(mapper0.started());
 
     ASSERT_TRUE(mapper0.Front() != nullptr);
     output0.emplace_back(std::move(*mapper0.Front()));
     mapper0.PopFront();
-    EXPECT_EQ(mapper0.sorted_until(), monotonic_clock::max_time);
+    EXPECT_TRUE(mapper0.started());
 
     ASSERT_TRUE(mapper0.Front() == nullptr);
 
@@ -1179,19 +1175,17 @@ TEST_F(TimestampMapperTest, ReadMissingDataBefore) {
     ASSERT_TRUE(mapper1.Front() != nullptr);
     output1.emplace_back(std::move(*mapper1.Front()));
     mapper1.PopFront();
-    EXPECT_EQ(mapper1.sorted_until(),
-              e + chrono::seconds(100) + chrono::milliseconds(1900));
+    EXPECT_TRUE(mapper1.started());
 
     ASSERT_TRUE(mapper1.Front() != nullptr);
     output1.emplace_back(std::move(*mapper1.Front()));
     mapper1.PopFront();
-    EXPECT_EQ(mapper1.sorted_until(),
-              e + chrono::seconds(100) + chrono::milliseconds(2900));
+    EXPECT_TRUE(mapper1.started());
 
     ASSERT_TRUE(mapper1.Front() != nullptr);
     output1.emplace_back(std::move(*mapper1.Front()));
     mapper1.PopFront();
-    EXPECT_EQ(mapper1.sorted_until(), monotonic_clock::max_time);
+    EXPECT_TRUE(mapper1.started());
 
     ASSERT_TRUE(mapper1.Front() == nullptr);
 
@@ -1259,19 +1253,17 @@ TEST_F(TimestampMapperTest, ReadMissingDataAfter) {
     ASSERT_TRUE(mapper1.Front() != nullptr);
     output1.emplace_back(std::move(*mapper1.Front()));
     mapper1.PopFront();
-    EXPECT_EQ(mapper1.sorted_until(),
-              e + chrono::seconds(100) + chrono::milliseconds(1900));
+    EXPECT_TRUE(mapper1.started());
 
     ASSERT_TRUE(mapper1.Front() != nullptr);
     output1.emplace_back(std::move(*mapper1.Front()));
     mapper1.PopFront();
-    EXPECT_EQ(mapper1.sorted_until(),
-              e + chrono::seconds(100) + chrono::milliseconds(2900));
+    EXPECT_TRUE(mapper1.started());
 
     ASSERT_TRUE(mapper1.Front() != nullptr);
     output1.emplace_back(std::move(*mapper1.Front()));
     mapper1.PopFront();
-    EXPECT_EQ(mapper1.sorted_until(), monotonic_clock::max_time);
+    EXPECT_TRUE(mapper1.started());
 
     ASSERT_TRUE(mapper1.Front() == nullptr);
 

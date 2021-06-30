@@ -674,7 +674,7 @@ void MultiNodeNoncausalOffsetEstimator::SetTimestampMappers(
   size_t node_index = 0;
   for (logger::TimestampMapper *timestamp_mapper : timestamp_mappers) {
     if (timestamp_mapper != nullptr) {
-      CHECK_EQ(timestamp_mapper->sorted_until(), monotonic_clock::min_time)
+      CHECK(!timestamp_mapper->started())
           << ": Timestamps queued before we registered the timestamp hooks.";
       timestamp_mapper->set_timestamp_callback(
           [this, node_index](logger::TimestampedMessage *msg) {
