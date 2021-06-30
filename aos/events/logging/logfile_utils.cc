@@ -662,15 +662,21 @@ std::string LogPartsSorter::DebugString() const {
 
 NodeMerger::NodeMerger(std::vector<LogParts> parts) {
   CHECK_GE(parts.size(), 1u);
-  const std::string part0_node = parts[0].node;
+  // Enforce that we are sorting things only from a single node from a single
+  // boot.
+  const std::string_view part0_node = parts[0].node;
+  const std::string_view part0_source_boot_uuid = parts[0].source_boot_uuid;
   for (size_t i = 1; i < parts.size(); ++i) {
     CHECK_EQ(part0_node, parts[i].node) << ": Can't merge different nodes.";
+    CHECK_EQ(part0_source_boot_uuid, parts[i].source_boot_uuid)
+        << ": Can't merge different boots.";
   }
+
+  node_ = configuration::GetNodeIndex(parts[0].config.get(), part0_node);
+
   for (LogParts &part : parts) {
     parts_sorters_.emplace_back(std::move(part));
   }
-
-  node_ = configuration::GetNodeIndex(configuration(), part0_node);
 
   monotonic_start_time_ = monotonic_clock::max_time;
   realtime_start_time_ = realtime_clock::max_time;
