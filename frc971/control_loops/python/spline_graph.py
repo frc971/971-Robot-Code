@@ -119,7 +119,7 @@ class GridWindow(Gtk.Window):
         self.file_name_box = Gtk.Entry()
         self.file_name_box.set_size_request(200, 40)
 
-        self.file_name_box.set_text(FIELD.json_name)
+        self.file_name_box.set_text(FIELD.field_id + ".json")
         self.file_name_box.set_editable(True)
 
         container.put(self.file_name_box, 0, 0)
