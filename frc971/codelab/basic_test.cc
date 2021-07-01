@@ -1,3 +1,6 @@
+// In this file, you can view the tests that are being run to determine
+// if the code works properly in different situations.
+
 #include "frc971/codelab/basic.h"
 
 #include <unistd.h>
@@ -53,6 +56,10 @@ class BasicSimulation {
     builder.Send(position_builder.Finish());
   }
 
+  // This is a helper function that is used in the tests to check
+  // if the output of the test is equal to the expected output.
+  // It takes in two expected values and ompares them to the values
+  // it recieves from the code.
   void VerifyResults(double voltage, bool status) {
     output_fetcher_.Fetch();
     status_fetcher_.Fetch();
@@ -210,6 +217,9 @@ TEST_F(BasicControlLoopTest, NoGoalSet) {
 }
 
 // Tests that the control loop handles things properly if disabled.
+// Note: "output" will be null when the robot is disabled. This is
+// a tricky test to get to pass, it should pass at first but fail
+// as you add more code.
 TEST_F(BasicControlLoopTest, Disabled) {
   basic_simulation_.set_limit_sensor(true);
 

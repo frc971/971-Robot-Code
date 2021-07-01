@@ -33,7 +33,7 @@ scp -p -P 29418 <username>@software.frc971.org:hooks/commit-msg .git/hooks/
    stuff you don't want before using `git add`.
 
 3. After you've used `git add` to add all the changes you want to commit, run
-   `git commit` and write an informative commit message in the editor that pops
+   `git commit -s` and write an informative commit message in the editor that pops
    up. Save and quit in the editor that opens to actually commit your changes.
    If you change your mind about committing, you can quit without saving to
    cancel the commit.
@@ -41,6 +41,8 @@ scp -p -P 29418 <username>@software.frc971.org:hooks/commit-msg .git/hooks/
      commit in the commit message editor.
    - If your commit message is short, you can use `git commit -m "<message>"` to
      specify it on the command line.
+   - The additional `-s` adds a signed-off-by trailer to put your name on the
+      review for open sourcing.
 
 4. Send your changes to Gerrit by running
    `git push origin HEAD:refs/for/master`.
@@ -63,10 +65,13 @@ Gerrit allows you to edit your change and resubmit it.
 3. Add the changes using `git add <file1> <file2> ...`.
 
 4. Add the changes you made to the previous commit by running
-   `git commit --amend`. This will allow you to edit the previous commit
+   `git commit --amend -s`. This will allow you to edit the previous commit
    message. MAKE SURE YOU DON'T EDIT THE GERRIT Change-Id. This is what Gerrit
    uses to know that you're updating an existing change instead of pushing a new
    one.
+
+5. Send the updated change to Gerrit with
+   `git push origin HEAD:refs/for/master`.
 
 ## Troubleshooting
 * If your commit is missing a Change-Id, you'll get a reasonably understandable
