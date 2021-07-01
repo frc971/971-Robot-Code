@@ -6,13 +6,6 @@ load("@build_bazel_rules_nodejs//:defs.bzl", "nodejs_binary", "rollup_bundle")
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_ts_library")
 load("//aos:config.bzl", "aos_config")
 
-py_library(
-    name = "python_init",
-    srcs = ["__init__.py"],
-    target_compatible_with = ["@platforms//os:linux"],
-    deps = ["//frc971:python_init"],
-)
-
 cc_binary(
     name = "py_log_reader.so",
     srcs = ["py_log_reader.cc"],
@@ -38,36 +31,6 @@ py_test(
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = ["//aos:configuration_fbs_python"],
-)
-
-py_proto_library(
-    name = "plot_config_proto",
-    srcs = ["plot_config.proto"],
-    target_compatible_with = ["@platforms//os:linux"],
-)
-
-py_binary(
-    name = "plot",
-    srcs = ["plot.py"],
-    data = [
-        ":py_log_reader.so",
-    ] + glob(["plot_configs/**"]),
-    target_compatible_with = ["@platforms//os:linux"],
-    deps = [
-        ":plot_config_proto",
-        ":python_init",
-        "@matplotlib_repo//:matplotlib3",
-    ],
-)
-
-py_test(
-    name = "plot_test",
-    srcs = ["plot_test.py"],
-    data = [
-        "@sample_logfile//file",
-    ],
-    target_compatible_with = ["@platforms//os:linux"],
-    deps = [":plot"],
 )
 
 ts_library(
