@@ -456,6 +456,24 @@ std::map<std::string, int> PartsSorter::ComputeBootCounts() {
   // TODO(austin): This is the "old" way.  Once we have better ordering info in
   // headers, we should use it.
   for (std::pair<const std::string, UnsortedLogPartsMap> &logs : parts_list) {
+    {
+      // We know nothing about the order of the logger node's boot, but we know
+      // it happened.  If there is only 1 single boot, the constraint code will
+      // happily mark it as boot 0.  Otherwise we'll get the appropriate boot
+      // count if it can be computed or an error.
+      //
+      // Add it to the boots list to kick this off.
+      auto it = boot_constraints.find(logs.second.logger_node);
+      if (it == boot_constraints.end()) {
+        it = boot_constraints
+                 .insert(
+                     std::make_pair(logs.second.logger_node, NodeBootState()))
+                 .first;
+      }
+
+      it->second.boots.insert(logs.second.logger_boot_uuid);
+    }
+
     std::map<std::string,
              std::vector<std::pair<std::string, std::pair<int, int>>>>
         node_boot_parts_index_ranges;
@@ -722,6 +740,11 @@ std::vector<LogFile> PartsSorter::FormatNewParts() {
     new_file.log_event_uuid = logs.first;
     new_file.logger_node = logs.second.logger_node;
     new_file.logger_boot_uuid = logs.second.logger_boot_uuid;
+    {
+      auto boot_count_it = boot_counts.find(new_file.logger_boot_uuid);
+      CHECK(boot_count_it != boot_counts.end());
+      new_file.logger_boot_count = boot_count_it->second;
+    }
     new_file.monotonic_start_time = logs.second.monotonic_start_time;
     new_file.realtime_start_time = logs.second.realtime_start_time;
     new_file.name = logs.second.name;

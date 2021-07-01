@@ -64,6 +64,9 @@ struct LogFile {
   // Boot UUID of the node running the logger.
   std::string logger_boot_uuid;
 
+  // Boot number for the logger node.
+  size_t logger_boot_count = 0;
+
   // The start time on the logger node.
   aos::monotonic_clock::time_point monotonic_start_time;
   aos::realtime_clock::time_point realtime_start_time;
