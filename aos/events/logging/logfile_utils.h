@@ -350,6 +350,9 @@ struct Message {
   uint32_t queue_index = 0xffffffff;
   // The local timestamp on the monotonic clock.
   monotonic_clock::time_point timestamp = monotonic_clock::min_time;
+  // The current boot count added on by SortParts.
+  size_t boot_count = 0;
+
   // The data (either a timestamp header, or a data header).
   SizePrefixedFlatbufferVector<MessageHeader> data;
 
@@ -431,6 +434,13 @@ class NodeMerger {
  public:
   NodeMerger(std::vector<LogParts> parts);
 
+  // Copying and moving will mess up the internal raw pointers.  Just don't do
+  // it.
+  NodeMerger(NodeMerger const &) = delete;
+  NodeMerger(NodeMerger &&) = delete;
+  void operator=(NodeMerger const &) = delete;
+  void operator=(NodeMerger &&) = delete;
+
   // Node index in the configuration of this node.
   int node() const { return node_; }
 
@@ -478,6 +488,56 @@ class NodeMerger {
   monotonic_clock::time_point monotonic_start_time_ = monotonic_clock::max_time;
 };
 
+// Class to concatenate multiple boots worth of logs into a single per-node
+// stream.
+class BootMerger {
+ public:
+  BootMerger(std::vector<LogParts> file);
+
+  // Copying and moving will mess up the internal raw pointers.  Just don't do
+  // it.
+  BootMerger(BootMerger const &) = delete;
+  BootMerger(BootMerger &&) = delete;
+  void operator=(BootMerger const &) = delete;
+  void operator=(BootMerger &&) = delete;
+
+  // Node index in the configuration of this node.
+  int node() const { return node_mergers_[0]->node(); }
+
+  // List of parts being sorted together.
+  std::vector<const LogParts *> Parts() const;
+
+  const Configuration *configuration() const {
+    return node_mergers_[0]->configuration();
+  }
+
+  monotonic_clock::time_point monotonic_start_time() const {
+    return node_mergers_[index_]->monotonic_start_time();
+  }
+  realtime_clock::time_point realtime_start_time() const {
+    return node_mergers_[index_]->realtime_start_time();
+  }
+
+  bool started() const {
+    return node_mergers_[index_]->sorted_until() != monotonic_clock::min_time ||
+           index_ != 0;
+  }
+
+  // Returns the next sorted message from the set of log files.  It is safe to
+  // call std::move() on the result to move the data flatbuffer from it.
+  Message *Front();
+  // Pops the front message.  This should only be called after a call to
+  // Front().
+  void PopFront();
+
+ private:
+  int index_ = 0;
+
+  // TODO(austin): Sanjay points out this is pretty inefficient.  Don't keep so
+  // many things open.
+  std::vector<std::unique_ptr<NodeMerger>> node_mergers_;
+};
+
 // Class to match timestamps with the corresponding data from other nodes.
 //
 // This class also buffers data for the node it represents, and supports
@@ -497,8 +557,6 @@ class TimestampMapper {
   // time X without matching timestamps, and to then be able to pull the
   // timestamps out of this queue.  This lets us bootstrap time estimation
   // without exploding memory usage worst case.
-
-  std::vector<const LogParts *> Parts() const { return node_merger_.Parts(); }
 
   const Configuration *configuration() const { return configuration_.get(); }
 
