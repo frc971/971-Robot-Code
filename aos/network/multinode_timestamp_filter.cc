@@ -6,6 +6,7 @@
 
 #include "absl/strings/str_join.h"
 #include "aos/configuration.h"
+#include "aos/events/logging/boot_timestamp.h"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/network/timestamp_filter.h"
 #include "aos/time/time.h"
@@ -23,6 +24,7 @@ namespace aos {
 namespace message_bridge {
 namespace {
 namespace chrono = std::chrono;
+using aos::logger::BootTimestamp;
 
 const Eigen::IOFormat kHeavyFormat(Eigen::StreamPrecision, Eigen::DontAlignCols,
                                    ", ", ";\n", "[", "]", "[", "]");
@@ -678,7 +680,9 @@ void MultiNodeNoncausalOffsetEstimator::SetTimestampMappers(
           << ": Timestamps queued before we registered the timestamp hooks.";
       timestamp_mapper->set_timestamp_callback(
           [this, node_index](logger::TimestampedMessage *msg) {
-            if (msg->monotonic_remote_time != monotonic_clock::min_time) {
+            // TODO(austin): Funnel the boot index through the offset estimator.
+            CHECK_EQ(msg->monotonic_remote_time.boot, 0u);
+            if (msg->monotonic_remote_time.time != monotonic_clock::min_time) {
               // Got a forwarding timestamp!
               NoncausalOffsetEstimator *filter =
                   filters_per_channel_[node_index][msg->channel_index];
@@ -687,15 +691,18 @@ void MultiNodeNoncausalOffsetEstimator::SetTimestampMappers(
 
               // Call the correct method depending on if we are the forward or
               // reverse direction here.
-              filter->Sample(node, msg->monotonic_event_time,
-                             msg->monotonic_remote_time);
+              CHECK_EQ(msg->monotonic_event_time.boot, 0u);
+              filter->Sample(node, msg->monotonic_event_time.time,
+                             msg->monotonic_remote_time.time);
 
-              if (msg->monotonic_timestamp_time != monotonic_clock::min_time) {
+              CHECK_EQ(msg->monotonic_timestamp_time.boot, 0u);
+              if (msg->monotonic_timestamp_time.time !=
+                  monotonic_clock::min_time) {
                 // TODO(austin): This assumes that this timestamp is only logged
                 // on the node which sent the data.  That is correct for now,
                 // but should be explicitly checked somewhere.
-                filter->ReverseSample(node, msg->monotonic_event_time,
-                                      msg->monotonic_timestamp_time);
+                filter->ReverseSample(node, msg->monotonic_event_time.time,
+                                      msg->monotonic_timestamp_time.time);
               }
             }
           });
@@ -998,14 +1005,17 @@ TimestampProblem MultiNodeNoncausalOffsetEstimator::MakeProblem() {
             // invalidate the point.  Do this for both nodes to pick up all the
             // timestamps.
             if (filter.filter->has_unobserved_line()) {
+              // TODO(austin): Handle boots properly...
               timestamp_mappers_[node_a_index]->QueueUntil(
-                  filter.filter->unobserved_line_end() +
-                  time_estimation_buffer_seconds_);
+                  BootTimestamp{.boot = 0u,
+                                .time = filter.filter->unobserved_line_end() +
+                                        time_estimation_buffer_seconds_});
 
               if (timestamp_mappers_[node_b_index] != nullptr) {
-                timestamp_mappers_[node_b_index]->QueueUntil(
-                    filter.filter->unobserved_line_remote_end() +
-                    time_estimation_buffer_seconds_);
+                timestamp_mappers_[node_b_index]->QueueUntil(BootTimestamp{
+                    .boot = 0u,
+                    .time = filter.filter->unobserved_line_remote_end() +
+                            time_estimation_buffer_seconds_});
               }
             }
           }

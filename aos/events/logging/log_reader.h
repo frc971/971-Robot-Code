@@ -258,13 +258,15 @@ class LogReader {
     void SeedSortedMessages();
 
     // Returns the starting time for this node.
-    monotonic_clock::time_point monotonic_start_time() const {
-      return timestamp_mapper_ ? timestamp_mapper_->monotonic_start_time()
-                               : monotonic_clock::min_time;
+    monotonic_clock::time_point monotonic_start_time(size_t boot_count) const {
+      return timestamp_mapper_
+                 ? timestamp_mapper_->monotonic_start_time(boot_count)
+                 : monotonic_clock::min_time;
     }
-    realtime_clock::time_point realtime_start_time() const {
-      return timestamp_mapper_ ? timestamp_mapper_->realtime_start_time()
-                               : realtime_clock::min_time;
+    realtime_clock::time_point realtime_start_time(size_t boot_count) const {
+      return timestamp_mapper_
+                 ? timestamp_mapper_->realtime_start_time(boot_count)
+                 : realtime_clock::min_time;
     }
 
     // Sets the node event loop factory for replaying into a
@@ -307,8 +309,10 @@ class LogReader {
 
     // Returns the start time of the remote for the provided channel.
     monotonic_clock::time_point monotonic_remote_start_time(
+        size_t boot_count,
         size_t channel_index) {
-      return channel_source_state_[channel_index]->monotonic_start_time();
+      return channel_source_state_[channel_index]->monotonic_start_time(
+          boot_count);
     }
 
     distributed_clock::time_point RemoteToDistributedClock(
