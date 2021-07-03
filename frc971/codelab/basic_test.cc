@@ -53,7 +53,8 @@ class BasicSimulation {
 
     position_builder.add_limit_sensor(limit_sensor_);
 
-    builder.Send(position_builder.Finish());
+    EXPECT_EQ(builder.Send(position_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   // This is a helper function that is used in the tests to check
@@ -122,7 +123,8 @@ TEST_F(BasicControlLoopTest, IntakeLimitTransitionsToTrue) {
     auto builder = goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_intake(true);
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   basic_simulation_.set_limit_sensor(false);
@@ -135,7 +137,8 @@ TEST_F(BasicControlLoopTest, IntakeLimitTransitionsToTrue) {
     auto builder = goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_intake(true);
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   basic_simulation_.set_limit_sensor(true);
 
@@ -151,7 +154,8 @@ TEST_F(BasicControlLoopTest, IntakeLimitNotSet) {
     auto builder = goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_intake(true);
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   basic_simulation_.set_limit_sensor(false);
 
@@ -167,7 +171,8 @@ TEST_F(BasicControlLoopTest, NoIntakeLimitNotSet) {
     auto builder = goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_intake(false);
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   basic_simulation_.set_limit_sensor(false);
 
@@ -183,7 +188,8 @@ TEST_F(BasicControlLoopTest, IntakeLimitSet) {
     auto builder = goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_intake(true);
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   basic_simulation_.set_limit_sensor(true);
 
@@ -198,7 +204,8 @@ TEST_F(BasicControlLoopTest, NoIntakeLimitSet) {
     auto builder = goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_intake(false);
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   basic_simulation_.set_limit_sensor(true);
 
@@ -227,7 +234,8 @@ TEST_F(BasicControlLoopTest, Disabled) {
     auto builder = goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_intake(true);
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   SetEnabled(false);

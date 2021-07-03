@@ -62,7 +62,7 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
   void SendPositionMessage() {
     auto builder = superstructure_position_sender_.MakeBuilder();
     Position::Builder position_builder = builder.MakeBuilder<Position>();
-    builder.Send(position_builder.Finish());
+    builder.CheckOk(builder.Send(position_builder.Finish()));
   }
 
   ::std::unique_ptr<::aos::EventLoop> superstructure_event_loop;
@@ -83,7 +83,7 @@ TEST_F(SuperstructureTest, RunIntakeOrOuttake) {
     auto builder = superstructure_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_intake_speed(10.0);
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    builder.CheckOk(builder.Send(goal_builder.Finish()));
     SendPositionMessage();
     RunFor(dt() * 2);
     VerifyResults(10.0, 0.0, 0.0, 10.0, 0.0, 0.0);
@@ -93,7 +93,7 @@ TEST_F(SuperstructureTest, RunIntakeOrOuttake) {
     auto builder = superstructure_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_outtake_speed(10.0);
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    builder.CheckOk(builder.Send(goal_builder.Finish()));
     RunFor(dt() * 2);
     VerifyResults(0.0, 10.0, 0.0, 0.0, 10.0, 0.0);
   }
@@ -103,7 +103,7 @@ TEST_F(SuperstructureTest, RunClimber) {
   auto builder = superstructure_goal_sender_.MakeBuilder();
   Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
   goal_builder.add_climber_speed(4.0);
-  ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+  builder.CheckOk(builder.Send(goal_builder.Finish()));
   RunFor(dt() * 2);
   VerifyResults(0.0, 0.0, 4.0, 0.0, 0.0, 4.0);
 }
@@ -114,7 +114,7 @@ TEST_F(SuperstructureTest, RunIntakeAndOuttake) {
   Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
   goal_builder.add_intake_speed(10.0);
   goal_builder.add_outtake_speed(5.0);
-  ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+  builder.CheckOk(builder.Send(goal_builder.Finish()));
   RunFor(dt() * 2);
   VerifyResults(10.0, 5.0, 0.0, 10.0, 5.0, 0.0);
 }
@@ -128,7 +128,7 @@ TEST_F(SuperstructureTest, InvalidVoltage) {
     goal_builder.add_intake_speed(20.0);
     goal_builder.add_outtake_speed(15.0);
     goal_builder.add_climber_speed(18.0);
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    builder.CheckOk(builder.Send(goal_builder.Finish()));
     RunFor(dt() * 2);
     VerifyResults(12.0, 12.0, 12.0, 20.0, 15.0, 18.0);
   }
@@ -139,7 +139,7 @@ TEST_F(SuperstructureTest, InvalidVoltage) {
     goal_builder.add_intake_speed(-20.0);
     goal_builder.add_outtake_speed(-15.0);
     goal_builder.add_climber_speed(-18.0);
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    builder.CheckOk(builder.Send(goal_builder.Finish()));
     RunFor(dt() * 2);
     VerifyResults(-12.0, -12.0, -12.0, -20.0, -15.0, -18.0);
   }
@@ -149,7 +149,7 @@ TEST_F(SuperstructureTest, InvalidVoltage) {
 TEST_F(SuperstructureTest, GoalIsNull) {
   auto builder = superstructure_goal_sender_.MakeBuilder();
   Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-  ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+  builder.CheckOk(builder.Send(goal_builder.Finish()));
   RunFor(dt() * 2);
   VerifyResults(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
 }
@@ -161,7 +161,7 @@ TEST_F(SuperstructureTest, Disabled) {
   goal_builder.add_intake_speed(6.0);
   goal_builder.add_outtake_speed(5.0);
   goal_builder.add_climber_speed(4.0);
-  ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+  builder.CheckOk(builder.Send(goal_builder.Finish()));
   SetEnabled(false);
   RunFor(dt() * 2);
   VerifyResults(0.0, 0.0, 0.0, 6.0, 5.0, 4.0);

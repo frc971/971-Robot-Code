@@ -22,6 +22,7 @@ class AosLogToFbs {
  private:
   Sender<logging::LogMessageFbs> log_sender_;
   std::shared_ptr<logging::LogImplementation> implementation_;
+  SendFailureCounter send_failure_counter_;
 };
 
 }  // namespace aos

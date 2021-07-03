@@ -52,7 +52,7 @@ int main(int argc, char **argv) {
   tuning_params_builder.add_finisher(finisher_params);
   tuning_params_builder.add_accelerator(accelerator_params);
   tuning_params_builder.add_balls_per_iteration(FLAGS_balls_per_iteration);
-  CHECK(builder.Send(tuning_params_builder.Finish()));
+  builder.CheckOk(builder.Send(tuning_params_builder.Finish()));
 
   return 0;
 }

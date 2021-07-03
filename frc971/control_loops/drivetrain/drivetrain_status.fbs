@@ -259,6 +259,9 @@ table Status {
   localizer:LocalizerState (id: 26);
 
   zeroing:ImuZeroerState (id: 27);
+
+  // Total number of status send failures.
+  send_failures:uint64 (id: 28);
 }
 
 root_type Status;

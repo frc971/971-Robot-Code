@@ -408,8 +408,9 @@ void Main() {
       }
 
       if (drivetrain_offset.CompleteVisionStatus(&new_vision_status)) {
-        if (!builder.Send(
-                VisionStatus::Pack(*builder.fbb(), &new_vision_status))) {
+        if (builder.Send(
+                VisionStatus::Pack(*builder.fbb(), &new_vision_status)) !=
+            aos::RawSender::Error::kOk) {
           AOS_LOG(ERROR, "Failed to send vision information\n");
         }
       } else {

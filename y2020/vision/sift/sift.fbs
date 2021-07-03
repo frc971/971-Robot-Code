@@ -167,6 +167,9 @@ table ImageMatchResult {
 
   // Information about the camera which took this image.
   camera_calibration:CameraCalibration (id: 4);
+
+  // Total number of match result send failures.
+  send_failures:uint64 (id: 5);
 }
 
 root_type ImageMatchResult;

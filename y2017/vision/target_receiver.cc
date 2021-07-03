@@ -48,7 +48,7 @@ int Main() {
         builder.MakeBuilder<VisionStatus>();
     vision_status_builder.add_image_valid(target.has_target());
     if (target.has_target()) {
-      vision_status_builder.add_target_time (
+      vision_status_builder.add_target_time(
           std::chrono::duration_cast<std::chrono::nanoseconds>(
               target_time.time_since_epoch())
               .count());
@@ -57,13 +57,14 @@ int Main() {
       double angle = 0.0;
       finder.GetAngleDist(
           aos::vision::Vector<2>(target.target().x(), target.target().y()),
-          /* TODO: Insert down estimate here in radians: */ 0.0,
-          &distance, &angle);
+          /* TODO: Insert down estimate here in radians: */ 0.0, &distance,
+          &angle);
       vision_status_builder.add_distance(distance);
       vision_status_builder.add_angle(angle);
     }
 
-    if (!builder.Send(vision_status_builder.Finish())) {
+    if (builder.Send(vision_status_builder.Finish()) !=
+        aos::RawSender::Error::kOk) {
       AOS_LOG(ERROR, "Failed to send vision information\n");
     }
   }

@@ -3,8 +3,8 @@
 #include "absl/strings/str_format.h"
 #include "aos/events/event_loop.h"
 #include "aos/events/logging/log_reader.h"
-#include "aos/events/logging/snappy_encoder.h"
 #include "aos/events/logging/log_writer.h"
+#include "aos/events/logging/snappy_encoder.h"
 #include "aos/events/message_counter.h"
 #include "aos/events/ping_lib.h"
 #include "aos/events/pong_lib.h"
@@ -168,15 +168,15 @@ TEST_F(LoggerDeathTest, ExtraStart) {
 
     Logger logger(logger_event_loop.get());
     logger.set_polling_period(std::chrono::milliseconds(100));
-    logger_event_loop->OnRun(
-        [base_name1, base_name2, &logger_event_loop, &logger]() {
+    logger_event_loop->OnRun([base_name1, base_name2, &logger_event_loop,
+                              &logger]() {
+      logger.StartLogging(std::make_unique<LocalLogNamer>(
+          base_name1, logger_event_loop.get(), logger_event_loop->node()));
+      EXPECT_DEATH(
           logger.StartLogging(std::make_unique<LocalLogNamer>(
-              base_name1, logger_event_loop.get(), logger_event_loop->node()));
-          EXPECT_DEATH(logger.StartLogging(std::make_unique<LocalLogNamer>(
-                           base_name2, logger_event_loop.get(),
-                           logger_event_loop->node())),
-                       "Already logging");
-        });
+              base_name2, logger_event_loop.get(), logger_event_loop->node())),
+          "Already logging");
+    });
     event_loop_factory_.RunFor(chrono::milliseconds(20000));
   }
 }
@@ -398,7 +398,8 @@ TEST_F(LoggerTest, ManyMessages) {
               ping_sender.MakeBuilder();
           examples::Ping::Builder ping_builder =
               builder.MakeBuilder<examples::Ping>();
-          CHECK(builder.Send(ping_builder.Finish()));
+          CHECK_EQ(builder.Send(ping_builder.Finish()),
+                   RawSender::Error::kOk);
         });
 
     // 100 ms / 0.05 ms -> 2000 messages.  Should be enough to crash it.
@@ -2613,9 +2614,9 @@ TEST_P(MultinodeLoggerTest, DeadNode) {
 }
 
 constexpr std::string_view kCombinedConfigSha1(
-    "cad3b6838a518ab29470771a959b89945ee034bc7a738080fd1713a1dce51b1f");
+    "644a3ab079c3ddfb1ef866483cfca9ec015c4142202169081138f72664ffd589");
 constexpr std::string_view kSplitConfigSha1(
-    "aafdd7e43d1942cce5b3e2dd8c6b9706abf7068a43501625a33b7cdfddf6c932");
+    "20bb9f6ee89519c4bd49986f0afe497d61c71b29d846f2c51f51727c9ef37415");
 
 INSTANTIATE_TEST_SUITE_P(
     All, MultinodeLoggerTest,

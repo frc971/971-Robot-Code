@@ -260,10 +260,10 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   }
 
   if (output) {
-    output->Send(Output::Pack(*output->fbb(), &output_struct));
+    output->CheckOk(output->Send(Output::Pack(*output->fbb(), &output_struct)));
   }
 
-  status->Send(status_builder.Finish());
+  (void)status->Send(status_builder.Finish());
 }
 
 }  // namespace superstructure

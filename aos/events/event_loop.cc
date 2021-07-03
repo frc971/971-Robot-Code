@@ -19,7 +19,27 @@ void CheckAlignment(const Channel *channel) {
                << configuration::CleanedChannelToString(channel) << ".";
   }
 }
+
+std::string_view ErrorToString(const RawSender::Error err) {
+  switch (err) {
+    case RawSender::Error::kOk:
+      return "RawSender::Error::kOk";
+    case RawSender::Error::kMessagesSentTooFast:
+      return "RawSender::Error::kMessagesSentTooFast";
+  }
+  LOG(FATAL) << "Unknown error given with code " << static_cast<int>(err);
+}
 }  // namespace
+
+std::ostream &operator<<(std::ostream &os, const RawSender::Error err) {
+  os << ErrorToString(err);
+  return os;
+}
+
+void RawSender::CheckOk(const RawSender::Error err) {
+  CHECK_EQ(err, Error::kOk) << "Messages were sent too fast on channel: "
+                            << configuration::CleanedChannelToString(channel_);
+}
 
 RawSender::RawSender(EventLoop *event_loop, const Channel *channel)
     : event_loop_(event_loop),
@@ -31,11 +51,10 @@ RawSender::RawSender(EventLoop *event_loop, const Channel *channel)
 
 RawSender::~RawSender() { event_loop_->DeleteSender(this); }
 
-bool RawSender::DoSend(const SharedSpan data,
-                       monotonic_clock::time_point monotonic_remote_time,
-                       realtime_clock::time_point realtime_remote_time,
-                       uint32_t remote_queue_index,
-                       const UUID &source_boot_uuid) {
+RawSender::Error RawSender::DoSend(
+    const SharedSpan data, monotonic_clock::time_point monotonic_remote_time,
+    realtime_clock::time_point realtime_remote_time,
+    uint32_t remote_queue_index, const UUID &source_boot_uuid) {
   return DoSend(data->data(), data->size(), monotonic_remote_time,
                 realtime_remote_time, remote_queue_index, source_boot_uuid);
 }
@@ -261,7 +280,13 @@ void EventLoop::SendTimingReport() {
   for (RawFetcher *fetcher : fetchers_) {
     fetcher->timing_.ResetTimingReport();
   }
-  timing_report_sender_->Send(timing_report_.span().size());
+  // TODO(milind): If we fail to send, we don't want to reset the timing report.
+  // We would need to move the reset after the send, and then find the correct
+  // timing report and set the reports with it instead of letting the sender do
+  // this. If we failed to send, we wouldn't reset or set the reports, so they
+  // can accumalate until the next send.
+  timing_report_failure_counter_.Count(
+      timing_report_sender_->Send(timing_report_.span().size()));
 }
 
 void EventLoop::UpdateTimingReport() {
@@ -421,6 +446,7 @@ void EventLoop::UpdateTimingReport() {
   if (fetcher_offsets.size() > 0) {
     report_builder.add_fetchers(fetchers_offset);
   }
+  report_builder.add_send_failures(timing_report_failure_counter_.failures());
   fbb.Finish(report_builder.Finish());
 
   timing_report_ = FlatbufferDetachedBuffer<timing::Report>(fbb.Release());

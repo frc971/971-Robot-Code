@@ -1424,7 +1424,7 @@ bool LogReader::State::Send(const TimestampedMessage &timestamped_message) {
 
   // Send!  Use the replayed queue index here instead of the logged queue index
   // for the remote queue index.  This makes re-logging work.
-  const bool sent = sender->Send(
+  const auto err = sender->Send(
       RawSender::SharedSpan(timestamped_message.data,
                             &timestamped_message.data->span),
       timestamped_message.monotonic_remote_time.time,
@@ -1434,7 +1434,7 @@ bool LogReader::State::Send(const TimestampedMessage &timestamped_message) {
                  channel_source_state_[timestamped_message.channel_index])
                  ->event_loop_->boot_uuid()
            : event_loop_->boot_uuid()));
-  if (!sent) return false;
+  if (err != RawSender::Error::kOk) return false;
 
   if (queue_index_map_[timestamped_message.channel_index]) {
     CHECK_EQ(timestamped_message.monotonic_event_time.boot, boot_count());
@@ -1455,7 +1455,8 @@ bool LogReader::State::Send(const TimestampedMessage &timestamped_message) {
       ContiguousSentTimestamp *back =
           &queue_index_map_[timestamped_message.channel_index]->back();
       if ((back->starting_queue_index - back->actual_queue_index) ==
-          (timestamped_message.queue_index.index - sender->sent_queue_index())) {
+          (timestamped_message.queue_index.index -
+           sender->sent_queue_index())) {
         back->ending_queue_index = timestamped_message.queue_index.index;
         back->ending_monotonic_event_time =
             timestamped_message.monotonic_event_time.time;
@@ -1597,7 +1598,8 @@ void LogReader::RemoteMessageSender::SendTimestamp() {
   // Send out all timestamps at the currently scheduled time.
   while (remote_timestamps_.front().monotonic_timestamp_time ==
          scheduled_time_) {
-    sender_.Send(std::move(remote_timestamps_.front().remote_message));
+    CHECK_EQ(sender_.Send(std::move(remote_timestamps_.front().remote_message)),
+             RawSender::Error::kOk);
     remote_timestamps_.pop_front();
     if (remote_timestamps_.empty()) {
       break;

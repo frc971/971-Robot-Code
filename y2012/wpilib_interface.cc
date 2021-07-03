@@ -89,13 +89,13 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       position_builder.add_right_speed(drivetrain_velocity_translate(
           drivetrain_right_encoder_->GetPeriod()));
 
-      builder.Send(position_builder.Finish());
+      builder.CheckOk(builder.Send(position_builder.Finish()));
     }
 
     {
       auto builder = accessories_position_sender_.MakeBuilder();
-      builder.Send(
-          builder.MakeBuilder<::aos::control_loops::Position>().Finish());
+      builder.CheckOk(builder.Send(
+          builder.MakeBuilder<::aos::control_loops::Position>().Finish()));
     }
   }
 
@@ -182,7 +182,7 @@ class SolenoidWriter {
           builder.MakeBuilder<frc971::wpilib::PneumaticsToLog>();
       pcm_->Flush();
       to_log_builder.add_read_solenoids(pcm_->GetAll());
-      builder.Send(to_log_builder.Finish());
+      builder.CheckOk(builder.Send(to_log_builder.Finish()));
     }
   }
 

@@ -83,6 +83,9 @@ table Report {
   fetchers:[Fetcher] (id: 4);
   timers:[Timer] (id: 5);
   phased_loops:[Timer] (id: 6);
+
+  // Total count of Report send failures
+  send_failures:uint64 (id: 7);
 }
 
 root_type Report;

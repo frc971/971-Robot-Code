@@ -54,8 +54,8 @@ void GyroSender::Loop(const int iterations) {
           AOS_LOG(INFO, "gyro initialized successfully\n");
 
           auto builder = uid_sender_.MakeBuilder();
-          builder.Send(
-              frc971::sensors::CreateUid(*builder.fbb(), gyro_.ReadPartID()));
+          builder.CheckOk(builder.Send(
+              frc971::sensors::CreateUid(*builder.fbb(), gyro_.ReadPartID())));
         }
         last_initialize_time_ = monotonic_now;
       }
@@ -117,7 +117,7 @@ void GyroSender::Loop(const int iterations) {
             builder.MakeBuilder<sensors::GyroReading>();
         gyro_builder.add_angle(angle_);
         gyro_builder.add_velocity(angle_rate + zero_offset_ * kReadingRate);
-        builder.Send(gyro_builder.Finish());
+        builder.CheckOk(builder.Send(gyro_builder.Finish()));
       } else {
         // TODO(brian): Don't break without 6 seconds of standing still before
         // enabling. Ideas:
@@ -128,7 +128,7 @@ void GyroSender::Loop(const int iterations) {
               builder.MakeBuilder<sensors::GyroReading>();
           gyro_builder.add_angle(0.0);
           gyro_builder.add_velocity(0.0);
-          builder.Send(gyro_builder.Finish());
+          builder.CheckOk(builder.Send(gyro_builder.Finish()));
         }
         zeroing_data_.AddData(new_angle);
 

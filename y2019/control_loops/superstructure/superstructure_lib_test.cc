@@ -7,6 +7,7 @@
 #include "frc971/control_loops/control_loop_test.h"
 #include "frc971/control_loops/position_sensor_sim.h"
 #include "frc971/control_loops/team_number_test_environment.h"
+#include "glog/logging.h"
 #include "gtest/gtest.h"
 #include "y2019/constants.h"
 #include "y2019/control_loops/superstructure/elevator/elevator_plant.h"
@@ -166,7 +167,8 @@ class SuperstructureSimulation {
     position_builder.add_stilts(stilts_offset);
     position_builder.add_suction_pressure(simulated_pressure_);
 
-    builder.Send(position_builder.Finish());
+    CHECK_EQ(builder.Send(position_builder.Finish()),
+             aos::RawSender::Error::kOk);
   }
 
   double elevator_position() const { return elevator_plant_->X(0, 0); }
@@ -501,7 +503,8 @@ TEST_F(SuperstructureTest, DoesNothing) {
     goal_builder.add_intake(intake_offset);
     goal_builder.add_stilts(stilts_offset);
 
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   RunFor(chrono::seconds(10));
   VerifyNearGoal();
@@ -550,7 +553,8 @@ TEST_F(SuperstructureTest, ReachesGoal) {
     goal_builder.add_intake(intake_offset);
     goal_builder.add_stilts(stilts_offset);
 
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   // Give it a lot of time to get there.
@@ -593,7 +597,8 @@ TEST_F(SuperstructureTest, SaturationTest) {
     goal_builder.add_intake(intake_offset);
     goal_builder.add_stilts(stilts_offset);
 
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   RunFor(chrono::seconds(8));
   VerifyNearGoal();
@@ -630,7 +635,8 @@ TEST_F(SuperstructureTest, SaturationTest) {
     goal_builder.add_intake(intake_offset);
     goal_builder.add_stilts(stilts_offset);
 
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   superstructure_plant_.set_peak_elevator_velocity(23.0);
   superstructure_plant_.set_peak_elevator_acceleration(0.2);
@@ -682,7 +688,8 @@ TEST_F(SuperstructureTest, ZeroTest) {
     goal_builder.add_intake(intake_offset);
     goal_builder.add_stilts(stilts_offset);
 
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   WaitUntilZeroed();
   VerifyNearGoal();
@@ -743,7 +750,8 @@ TEST_F(SuperstructureTest, CollisionTest) {
     goal_builder.add_intake(intake_offset);
     goal_builder.add_stilts(stilts_offset);
 
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   // Give it a lot of time to get there.
@@ -783,7 +791,8 @@ TEST_F(SuperstructureTest, IntakeRollerTest) {
     goal_builder.add_stilts(stilts_offset);
     goal_builder.add_roller_voltage(6.0);
 
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::seconds(5));
@@ -818,7 +827,8 @@ TEST_F(SuperstructureTest, IntakeRollerTest) {
     goal_builder.add_stilts(stilts_offset);
     goal_builder.add_roller_voltage(6.0);
 
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::seconds(5));
@@ -860,7 +870,8 @@ TEST_F(SuperstructureTest, VacuumDetectsPiece) {
     goal_builder.add_stilts(stilts_offset);
     goal_builder.add_suction(suction_offset);
 
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   RunFor(Vacuum::kTimeAtHigherVoltage - chrono::milliseconds(10));
@@ -904,7 +915,8 @@ TEST_F(SuperstructureTest, VacuumBacksOff) {
     goal_builder.add_stilts(stilts_offset);
     goal_builder.add_suction(suction_offset);
 
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   // Verify that at 0 pressure after short time voltage is still high
@@ -954,7 +966,8 @@ TEST_F(SuperstructureTest, VacuumStopsQuickly) {
     goal_builder.add_stilts(stilts_offset);
     goal_builder.add_suction(suction_offset);
 
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   // Get a Gamepiece
@@ -991,7 +1004,8 @@ TEST_F(SuperstructureTest, VacuumStopsQuickly) {
     goal_builder.add_stilts(stilts_offset);
     goal_builder.add_suction(suction_offset);
 
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   superstructure_plant_.set_simulated_pressure(1.0);

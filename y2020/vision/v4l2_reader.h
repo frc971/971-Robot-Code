@@ -53,7 +53,7 @@ class V4L2Reader {
                         aos::monotonic_clock::time_point monotonic_eof);
 
     void Send() {
-      builder.Send(message_offset);
+      (void)builder.Send(message_offset);
       message_offset = flatbuffers::Offset<CameraImage>();
     }
 

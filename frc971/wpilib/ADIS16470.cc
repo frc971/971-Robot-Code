@@ -263,7 +263,7 @@ void ADIS16470::DoReads() {
   IMUValuesBatch::Builder imu_values_batch_builder =
       builder.MakeBuilder<IMUValuesBatch>();
   imu_values_batch_builder.add_readings(readings_offset);
-  builder.Send(imu_values_batch_builder.Finish());
+  builder.CheckOk(builder.Send(imu_values_batch_builder.Finish()));
 }
 
 void ADIS16470::DoInitializeStep() {
@@ -388,7 +388,7 @@ void ADIS16470::DoInitializeStep() {
       IMUValuesBatch::Builder imu_batch_builder =
           builder.MakeBuilder<IMUValuesBatch>();
       imu_batch_builder.add_readings(readings_offset);
-      builder.Send(imu_batch_builder.Finish());
+      builder.CheckOk(builder.Send(imu_batch_builder.Finish()));
       if (success) {
         state_ = State::kRunning;
       } else {

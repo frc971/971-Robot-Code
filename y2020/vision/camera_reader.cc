@@ -165,6 +165,7 @@ class CameraReader {
   std::vector<cv::FlannBasedMatcher> matchers_;
   aos::Sender<CameraImage> image_sender_;
   aos::Sender<sift::ImageMatchResult> result_sender_;
+  aos::SendFailureCounter result_failure_counter_;
   aos::Sender<sift::ImageMatchResult> detailed_result_sender_;
   // We schedule this immediately to read an image. Having it on a timer means
   // other things can run on the event loop in between.
@@ -289,10 +290,11 @@ void CameraReader::SendImageMatchResult(
   result_builder.add_image_monotonic_timestamp_ns(
       image.monotonic_timestamp_ns());
   result_builder.add_camera_calibration(camera_calibration_offset);
+  result_builder.add_send_failures(result_failure_counter_.failures());
 
   // TODO<Jim>: Need to add target point computed from matches and
   // mapped by homography
-  builder.Send(result_builder.Finish());
+  result_failure_counter_.Count(builder.Send(result_builder.Finish()));
 }
 
 void CameraReader::ProcessImage(const CameraImage &image) {
@@ -713,7 +715,8 @@ void CameraReaderMain() {
   {
     aos::Sender<sift::TrainingData> training_data_sender =
         event_loop.MakeSender<sift::TrainingData>("/camera");
-    training_data_sender.Send(training_data);
+    CHECK_EQ(training_data_sender.Send(training_data),
+             aos::RawSender::Error::kOk);
   }
 
   V4L2Reader v4l2_reader(&event_loop, "/dev/video0");

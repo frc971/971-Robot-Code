@@ -44,7 +44,7 @@ int main(int argc, char **argv) {
   fbb.ForceDefaults(true);
   fbb.Finish(aos::JsonToFlatbuffer(std::string_view(argv[1]), channel->schema(),
                                    &fbb));
-  sender->Send(fbb.GetSize());
+  sender->CheckOk(sender->Send(fbb.GetSize()));
 
   return 0;
 }

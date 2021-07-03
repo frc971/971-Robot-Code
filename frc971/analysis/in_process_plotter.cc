@@ -74,8 +74,8 @@ void Plotter::AddLine(const std::vector<double> &x,
   for (size_t ii = 0; ii < x.size(); ++ii) {
     points.emplace_back(x[ii], y[ii]);
   }
-  const flatbuffers::Offset<flatbuffers::Vector<const Point*>>
-      points_offset = builder_.fbb()->CreateVectorOfStructs(points);
+  const flatbuffers::Offset<flatbuffers::Vector<const Point *>> points_offset =
+      builder_.fbb()->CreateVectorOfStructs(points);
 
   const Color *color = &color_wheel_.at(color_wheel_position_);
   color_wheel_position_ = (color_wheel_position_ + 1) % color_wheel_.size();
@@ -118,7 +118,8 @@ void Plotter::Publish() {
   plot_builder.add_title(title_);
   plot_builder.add_figures(figures_offset);
 
-  builder_.Send(plot_builder.Finish());
+  CHECK_EQ(builder_.Send(plot_builder.Finish()),
+           aos::RawSender::Error::kOk);
 
   builder_ = plot_sender_.MakeBuilder();
 

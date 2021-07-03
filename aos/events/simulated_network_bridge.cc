@@ -61,10 +61,10 @@ class RawMessageDelayer {
       timestamp_timer_ =
           fetch_event_loop_->AddTimer([this]() { SendTimestamp(); });
       if (send_event_loop_) {
-        std::string timer_name = absl::StrCat(
-            send_event_loop_->node()->name()->string_view(), " ",
-            fetcher_->channel()->name()->string_view(), " ",
-            fetcher_->channel()->type()->string_view());
+        std::string timer_name =
+            absl::StrCat(send_event_loop_->node()->name()->string_view(), " ",
+                         fetcher_->channel()->name()->string_view(), " ",
+                         fetcher_->channel()->type()->string_view());
         if (timer_) {
           timer_->set_name(timer_name);
         }
@@ -250,11 +250,11 @@ class RawMessageDelayer {
       return;
     }
     // Fill out the send times.
-    sender_->Send(fetcher_->context().data, fetcher_->context().size,
-                  fetcher_->context().monotonic_event_time,
-                  fetcher_->context().realtime_event_time,
-                  fetcher_->context().queue_index,
-                  fetcher_->context().source_boot_uuid);
+    sender_->CheckOk(sender_->Send(
+        fetcher_->context().data, fetcher_->context().size,
+        fetcher_->context().monotonic_event_time,
+        fetcher_->context().realtime_event_time,
+        fetcher_->context().queue_index, fetcher_->context().source_boot_uuid));
 
     // And simulate message_bridge's offset recovery.
     client_status_->SampleFilter(client_index_,
@@ -338,8 +338,8 @@ class RawMessageDelayer {
     while (remote_timestamps_.front().monotonic_timestamp_time ==
            scheduled_time_) {
       if (server_connection_->state() == State::CONNECTED) {
-        timestamp_logger_->Send(
-            std::move(remote_timestamps_.front().remote_message));
+        timestamp_logger_->CheckOk(timestamp_logger_->Send(
+            std::move(remote_timestamps_.front().remote_message)));
       }
       remote_timestamps_.pop_front();
       if (remote_timestamps_.empty()) {

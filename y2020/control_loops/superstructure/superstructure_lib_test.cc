@@ -10,6 +10,7 @@
 #include "frc971/control_loops/control_loop_test.h"
 #include "frc971/control_loops/position_sensor_sim.h"
 #include "frc971/control_loops/team_number_test_environment.h"
+#include "glog/logging.h"
 #include "gtest/gtest.h"
 #include "y2020/constants.h"
 #include "y2020/control_loops/superstructure/accelerator/accelerator_plant.h"
@@ -207,7 +208,8 @@ class SuperstructureSimulation {
     position_builder.add_intake_beambreak_triggered(
         intake_beambreak_triggered_);
 
-    builder.Send(position_builder.Finish());
+    CHECK_EQ(builder.Send(position_builder.Finish()),
+             aos::RawSender::Error::kOk);
   }
 
   double hood_position() const { return hood_plant_->X(0, 0); }
@@ -571,7 +573,8 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
       goal_builder.add_roller_voltage(roller_voltage);
       goal_builder.add_roller_speed_compensation(roller_speed_compensation);
       goal_builder.add_shooting(shooting);
-      ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+      ASSERT_EQ(builder.Send(goal_builder.Finish()),
+                aos::RawSender::Error::kOk);
     }
     RunFor(chrono::seconds(1));
     superstructure_output_fetcher_.Fetch();
@@ -590,7 +593,7 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
 
           Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
           goal_builder.add_shooter(shooter_goal_offset);
-          ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+          builder.CheckOk(builder.Send(goal_builder.Finish()));
         },
         dt());
   }
@@ -683,7 +686,8 @@ TEST_F(SuperstructureTest, DoesNothing) {
     goal_builder.add_turret(turret_offset);
     goal_builder.add_shooter(shooter_offset);
 
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   RunFor(chrono::seconds(10));
   VerifyNearGoal();
@@ -729,7 +733,8 @@ TEST_F(SuperstructureTest, ReachesGoal) {
     goal_builder.add_turret(turret_offset);
     goal_builder.add_shooter(shooter_offset);
 
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   // Give it a lot of time to get there.
@@ -770,7 +775,8 @@ TEST_F(SuperstructureTest, SaturationTest) {
     goal_builder.add_turret(turret_offset);
     goal_builder.add_shooter(shooter_offset);
 
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   RunFor(chrono::seconds(8));
   VerifyNearGoal();
@@ -804,7 +810,8 @@ TEST_F(SuperstructureTest, SaturationTest) {
     goal_builder.add_turret(turret_offset);
     goal_builder.add_shooter(shooter_offset);
 
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   superstructure_plant_.set_peak_hood_velocity(23.0);
   // 30 hz sin wave on the hood causes acceleration to be ignored.
@@ -858,7 +865,8 @@ TEST_F(SuperstructureTest, SpinUp) {
     goal_builder.add_shooter(shooter_offset);
     goal_builder.add_shooting(true);
 
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   // In the beginning, the finisher and accelerator should not be ready
@@ -903,7 +911,8 @@ TEST_F(SuperstructureTest, SpinUp) {
     goal_builder.add_intake(intake_offset);
     goal_builder.add_shooter(shooter_offset);
 
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   // Give it a lot of time to get there.
@@ -952,7 +961,8 @@ TEST_F(SuperstructureTest, Climber) {
     goal_builder.add_climber_voltage(-10.0);
     goal_builder.add_turret(turret_offset);
 
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   // The turret needs to move out of the way first.  This takes some time.
@@ -976,7 +986,8 @@ TEST_F(SuperstructureTest, Climber) {
     goal_builder.add_climber_voltage(10.0);
     goal_builder.add_turret(turret_offset);
 
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   RunFor(chrono::seconds(1));
 
@@ -999,7 +1010,7 @@ TEST_F(SuperstructureTest, Preserializing) {
 
     goal_builder.add_intake_preloading(true);
 
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    builder.CheckOk(builder.Send(goal_builder.Finish()));
   }
 
   superstructure_plant_.set_intake_beambreak_triggered(false);
@@ -1233,7 +1244,7 @@ TEST_F(SuperstructureReplayTest, BallsShotReplay) {
                                         std::sin(kShotAngle) * kShotDistance);
         drivetrain_status_builder.add_localizer(localizer_offset);
 
-        ASSERT_TRUE(builder.Send(drivetrain_status_builder.Finish()));
+        builder.CheckOk(builder.Send(drivetrain_status_builder.Finish()));
       },
       frc971::controls::kLoopFrequency);
 
@@ -1255,7 +1266,8 @@ class SuperstructureAllianceTest
 
     joystick_builder.add_alliance(GetParam());
 
-    ASSERT_TRUE(builder.Send(joystick_builder.Finish()));
+    ASSERT_EQ(builder.Send(joystick_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 };
 
@@ -1277,7 +1289,8 @@ TEST_P(SuperstructureAllianceTest, TurretAutoAim) {
 
     goal_builder.add_turret_tracking(true);
 
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   {
@@ -1299,7 +1312,8 @@ TEST_P(SuperstructureAllianceTest, TurretAutoAim) {
     status_builder.add_theta(0.0);
     status_builder.add_localizer(localizer_offset);
 
-    ASSERT_TRUE(builder.Send(status_builder.Finish()));
+    ASSERT_EQ(builder.Send(status_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   // Give it time to stabilize.
@@ -1333,7 +1347,8 @@ TEST_P(SuperstructureAllianceTest, ShooterInterpolationManualGoal) {
     goal_builder.add_shooter(shooter_goal);
     goal_builder.add_hood(hood_offset);
 
-    builder.Send(goal_builder.Finish());
+    CHECK_EQ(builder.Send(goal_builder.Finish()),
+             aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::seconds(10));
@@ -1381,7 +1396,8 @@ TEST_P(SuperstructureAllianceTest, ShooterInterpolationOutOfRange) {
     status_builder.add_theta(0.0);
     status_builder.add_localizer(localizer_offset);
 
-    ASSERT_TRUE(builder.Send(status_builder.Finish()));
+    ASSERT_EQ(builder.Send(status_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   {
     auto builder = superstructure_goal_sender_.MakeBuilder();
@@ -1399,7 +1415,8 @@ TEST_P(SuperstructureAllianceTest, ShooterInterpolationOutOfRange) {
     goal_builder.add_shooter_tracking(true);
     goal_builder.add_hood_tracking(true);
 
-    builder.Send(goal_builder.Finish());
+    CHECK_EQ(builder.Send(goal_builder.Finish()),
+             aos::RawSender::Error::kOk);
   }
   RunFor(chrono::seconds(10));
 
@@ -1450,7 +1467,8 @@ TEST_P(SuperstructureAllianceTest, ShooterInterpolationInRange) {
     status_builder.add_theta(0.0);
     status_builder.add_localizer(localizer_offset);
 
-    ASSERT_TRUE(builder.Send(status_builder.Finish()));
+    ASSERT_EQ(builder.Send(status_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   {
     auto builder = superstructure_goal_sender_.MakeBuilder();
@@ -1468,7 +1486,8 @@ TEST_P(SuperstructureAllianceTest, ShooterInterpolationInRange) {
     goal_builder.add_shooter_tracking(true);
     goal_builder.add_hood_tracking(true);
 
-    builder.Send(goal_builder.Finish());
+    CHECK_EQ(builder.Send(goal_builder.Finish()),
+             aos::RawSender::Error::kOk);
   }
   RunFor(chrono::seconds(10));
 

@@ -450,7 +450,8 @@ TEST_P(MessageBridgeParameterizedTest, PingPong) {
       examples::Ping::Builder ping_builder =
           builder.MakeBuilder<examples::Ping>();
       ping_builder.add_value(ping_count + 971);
-      builder.Send(ping_builder.Finish());
+      EXPECT_EQ(builder.Send(ping_builder.Finish()),
+                RawSender::Error::kOk);
       ++ping_count;
     }
   });
@@ -985,7 +986,7 @@ void SendPing(aos::Sender<examples::Ping> *sender, int value) {
   aos::Sender<examples::Ping>::Builder builder = sender->MakeBuilder();
   examples::Ping::Builder ping_builder = builder.MakeBuilder<examples::Ping>();
   ping_builder.add_value(value);
-  builder.Send(ping_builder.Finish());
+  builder.CheckOk(builder.Send(ping_builder.Finish()));
 }
 
 // Tests that when a message is sent before the bridge starts up, but is
@@ -1148,7 +1149,7 @@ TEST_P(MessageBridgeParameterizedTest, ReliableSentBeforeServerStartup) {
     examples::Ping::Builder ping_builder =
         builder.MakeBuilder<examples::Ping>();
     ping_builder.add_value(1);
-    builder.Send(ping_builder.Finish());
+    builder.CheckOk(builder.Send(ping_builder.Finish()));
   }
 
   MakePi1Client();

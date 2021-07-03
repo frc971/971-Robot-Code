@@ -292,7 +292,8 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     goal_builder.add_hood(hood_goal_offset);
     goal_builder.add_shooter(shooter_goal_offset);
 
-    if (!builder.Send(goal_builder.Finish())) {
+    if (builder.Send(goal_builder.Finish()) !=
+        aos::RawSender::Error::kOk) {
       AOS_LOG(ERROR, "Sending superstructure goal failed.\n");
     }
   }

@@ -165,7 +165,7 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
       goal->mutable_indexer()->mutate_voltage_rollers(0.0);
     }
 
-    if (!builder.Send(goal_offset)) {
+    if (builder.Send(goal_offset) != aos::RawSender::Error::kOk) {
       AOS_LOG(ERROR, "Sending superstructure goal failed.\n");
     }
   }

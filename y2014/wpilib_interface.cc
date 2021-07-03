@@ -271,7 +271,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       position_builder.add_right_shifter_position(
           hall_translate(values.right_drive, low_right_hall, high_right_hall));
 
-      builder.Send(position_builder.Finish());
+      builder.CheckOk(builder.Send(position_builder.Finish()));
     }
 
     {
@@ -279,7 +279,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       y2014::sensors::AutoMode::Builder auto_builder =
           builder.MakeBuilder<y2014::sensors::AutoMode>();
       auto_builder.add_voltage(auto_selector_analog_->GetVoltage());
-      builder.Send(auto_builder.Finish());
+      builder.CheckOk(builder.Send(auto_builder.Finish()));
     }
   }
 
@@ -310,7 +310,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       position_builder.add_pusher_distal(pusher_distal_offset);
       position_builder.add_pusher_proximal(pusher_proximal_offset);
 
-      builder.Send(position_builder.Finish());
+      builder.CheckOk(builder.Send(position_builder.Finish()));
     }
 
     {
@@ -325,7 +325,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
       position_builder.add_top(top_offset);
       position_builder.add_bottom(bottom_offset);
-      builder.Send(position_builder.Finish());
+      builder.CheckOk(builder.Send(position_builder.Finish()));
     }
   }
 
@@ -558,7 +558,7 @@ class SolenoidWriter {
 
       pcm_->Flush();
       to_log_builder.add_read_solenoids(pcm_->GetAll());
-      builder.Send(to_log_builder.Finish());
+      (void)builder.Send(to_log_builder.Finish());
     }
   }
 

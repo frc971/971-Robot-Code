@@ -656,7 +656,7 @@ void ShooterMotor::RunIteration(const Goal *goal, const Position *position,
     output_struct.latch_piston = latch_piston_;
     output_struct.brake_piston = brake_piston_;
 
-    output->Send(Output::Pack(*output->fbb(), &output_struct));
+    output->CheckOk(output->Send(Output::Pack(*output->fbb(), &output_struct)));
   }
 
   if (position) {
@@ -676,7 +676,7 @@ void ShooterMotor::RunIteration(const Goal *goal, const Position *position,
 
   status_builder.add_shots(shot_count_);
 
-  status->Send(status_builder.Finish());
+  (void)status->Send(status_builder.Finish());
 }
 
 flatbuffers::Offset<Output> ShooterMotor::Zero(

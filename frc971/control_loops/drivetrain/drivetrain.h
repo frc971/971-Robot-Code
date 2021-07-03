@@ -2,9 +2,8 @@
 #define FRC971_CONTROL_LOOPS_DRIVETRAIN_H_
 
 #include "Eigen/Dense"
-#include "frc971/control_loops/control_loop.h"
-#include "frc971/control_loops/polytope.h"
 #include "aos/util/log_interval.h"
+#include "frc971/control_loops/control_loop.h"
 #include "frc971/control_loops/control_loops_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
 #include "frc971/control_loops/drivetrain/drivetrain_goal_generated.h"
@@ -20,6 +19,7 @@
 #include "frc971/control_loops/drivetrain/polydrivetrain.h"
 #include "frc971/control_loops/drivetrain/splinedrivetrain.h"
 #include "frc971/control_loops/drivetrain/ssdrivetrain.h"
+#include "frc971/control_loops/polytope.h"
 #include "frc971/queues/gyro_generated.h"
 #include "frc971/wpilib/imu_batch_generated.h"
 #include "frc971/zeroing/imu_zeroer.h"
@@ -185,6 +185,8 @@ class DrivetrainLoop
   LineFollowDrivetrain dt_line_follow_;
 
   bool has_been_enabled_ = false;
+
+  aos::SendFailureCounter status_failure_counter_;
 };
 
 }  // namespace drivetrain

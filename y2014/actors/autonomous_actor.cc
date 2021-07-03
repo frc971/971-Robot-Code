@@ -53,7 +53,7 @@ void AutonomousActor::PositionClawVertically(double intake_power,
   goal_builder.add_intake(intake_power);
   goal_builder.add_centering(centering_power);
 
-  if (!builder.Send(goal_builder.Finish())) {
+  if (builder.Send(goal_builder.Finish()) != aos::RawSender::Error::kOk) {
     AOS_LOG(WARNING, "sending claw goal failed\n");
   }
 }
@@ -66,7 +66,7 @@ void AutonomousActor::PositionClawBackIntake() {
   goal_builder.add_separation_angle(0.0);
   goal_builder.add_intake(12.0);
   goal_builder.add_centering(12.0);
-  if (!builder.Send(goal_builder.Finish())) {
+  if (builder.Send(goal_builder.Finish()) != aos::RawSender::Error::kOk) {
     AOS_LOG(WARNING, "sending claw goal failed\n");
   }
 }
@@ -81,7 +81,7 @@ void AutonomousActor::PositionClawUpClosed() {
   goal_builder.add_separation_angle(0.0);
   goal_builder.add_intake(4.0);
   goal_builder.add_centering(1.0);
-  if (!builder.Send(goal_builder.Finish())) {
+  if (builder.Send(goal_builder.Finish()) != aos::RawSender::Error::kOk) {
     AOS_LOG(WARNING, "sending claw goal failed\n");
   }
 }
@@ -94,7 +94,7 @@ void AutonomousActor::PositionClawForShot() {
   goal_builder.add_separation_angle(0.10);
   goal_builder.add_intake(4.0);
   goal_builder.add_centering(1.0);
-  if (!builder.Send(goal_builder.Finish())) {
+  if (builder.Send(goal_builder.Finish()) != aos::RawSender::Error::kOk) {
     AOS_LOG(WARNING, "sending claw goal failed\n");
   }
 }
@@ -108,7 +108,7 @@ void AutonomousActor::SetShotPower(double power) {
   goal_builder.add_shot_requested(false);
   goal_builder.add_unload_requested(false);
   goal_builder.add_load_requested(false);
-  if (!builder.Send(goal_builder.Finish())) {
+  if (builder.Send(goal_builder.Finish()) != aos::RawSender::Error::kOk) {
     AOS_LOG(WARNING, "sending shooter goal failed\n");
   }
 }

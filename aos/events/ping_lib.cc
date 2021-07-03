@@ -36,7 +36,7 @@ void Ping::SendPing() {
   ping_builder.add_value(count_);
   ping_builder.add_send_time(
       event_loop_->monotonic_now().time_since_epoch().count());
-  CHECK(builder.Send(ping_builder.Finish()));
+  builder.CheckOk(builder.Send(ping_builder.Finish()));
   VLOG(2) << "Sending ping";
 }
 

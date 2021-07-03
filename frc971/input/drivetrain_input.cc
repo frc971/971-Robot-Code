@@ -114,7 +114,7 @@ void DrivetrainInputReader::HandleDrivetrain(
   goal_builder.add_right_goal(current_right_goal);
   goal_builder.add_linear(linear_offset);
 
-  if (!builder.Send(goal_builder.Finish())) {
+  if (builder.Send(goal_builder.Finish()) != aos::RawSender::Error::kOk) {
     AOS_LOG(WARNING, "sending stick values failed\n");
   }
 

@@ -39,8 +39,7 @@ class TargetSelectorParamTest : public ::testing::TestWithParam<TestParams> {
   TargetSelectorParamTest()
       : configuration_(aos::configuration::ReadConfig("y2019/config.json")),
         event_loop_factory_(&configuration_.message()),
-        event_loop_(
-            this->event_loop_factory_.MakeEventLoop("drivetrain")),
+        event_loop_(this->event_loop_factory_.MakeEventLoop("drivetrain")),
         test_event_loop_(this->event_loop_factory_.MakeEventLoop("test")),
         target_selector_hint_sender_(
             test_event_loop_->MakeSender<
@@ -82,12 +81,14 @@ TEST_P(TargetSelectorParamTest, ExpectReturn) {
         builder.MakeBuilder<superstructure::Goal>();
 
     goal_builder.add_suction(suction_offset);
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   {
     auto builder = target_selector_hint_sender_.MakeBuilder();
-    ASSERT_TRUE(builder.Send(drivetrain::CreateTargetSelectorHint(
-        *builder.fbb(), GetParam().selection_hint)));
+    ASSERT_EQ(builder.Send(drivetrain::CreateTargetSelectorHint(
+                  *builder.fbb(), GetParam().selection_hint)),
+              aos::RawSender::Error::kOk);
   }
   bool expect_target = GetParam().expect_target;
   const State state = GetParam().state;

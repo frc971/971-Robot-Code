@@ -53,7 +53,7 @@ void BaseAutonomousActor::ApplyThrottle(double throttle) {
   goal_builder.add_highgear(true);
   goal_builder.add_wheel(0.0);
   goal_builder.add_throttle(throttle);
-  builder.Send(goal_builder.Finish());
+  builder.CheckOk(builder.Send(goal_builder.Finish()));
 }
 
 void BaseAutonomousActor::ResetDrivetrain() {
@@ -72,7 +72,7 @@ void BaseAutonomousActor::ResetDrivetrain() {
   goal_builder.add_left_goal(initial_drivetrain_.left);
   goal_builder.add_right_goal(initial_drivetrain_.right);
   goal_builder.add_max_ss_voltage(max_drivetrain_voltage_);
-  builder.Send(goal_builder.Finish());
+  builder.CheckOk(builder.Send(goal_builder.Finish()));
 }
 
 void BaseAutonomousActor::InitializeEncoders() {
@@ -113,7 +113,7 @@ void BaseAutonomousActor::StartDrive(double distance, double angle,
   goal_builder.add_linear(linear_offset);
   goal_builder.add_angular(angular_offset);
 
-  builder.Send(goal_builder.Finish());
+  builder.CheckOk(builder.Send(goal_builder.Finish()));
 }
 
 void BaseAutonomousActor::WaitUntilDoneOrCanceled(
@@ -453,7 +453,7 @@ void BaseAutonomousActor::LineFollowAtVelocity(
     // line_follow_drivetrain.cc, but it is somewhat year-specific, so we should
     // factor it out in some way.
     goal_builder.add_throttle(velocity / 4.0);
-    builder.Send(goal_builder.Finish());
+    builder.CheckOk(builder.Send(goal_builder.Finish()));
   }
 
   {
@@ -463,7 +463,7 @@ void BaseAutonomousActor::LineFollowAtVelocity(
             ::y2019::control_loops::drivetrain::TargetSelectorHint>();
 
     target_hint_builder.add_suggested_target(hint);
-    builder.Send(target_hint_builder.Finish());
+    builder.CheckOk(builder.Send(target_hint_builder.Finish()));
   }
 }
 
@@ -512,7 +512,7 @@ BaseAutonomousActor::SplineHandle BaseAutonomousActor::PlanSpline(
     }
   }
 
-  builder.Send(spline_builder.Finish());
+  builder.CheckOk(builder.Send(spline_builder.Finish()));
 
   return BaseAutonomousActor::SplineHandle(spline_handle, this, start);
 }
@@ -566,7 +566,7 @@ void BaseAutonomousActor::SplineHandle::Start() {
   goal_builder.add_spline_handle(spline_handle_);
   base_autonomous_actor_->goal_spline_handle_ = spline_handle_;
 
-  builder.Send(goal_builder.Finish());
+  builder.CheckOk(builder.Send(goal_builder.Finish()));
 }
 
 bool BaseAutonomousActor::SplineHandle::IsDone() {

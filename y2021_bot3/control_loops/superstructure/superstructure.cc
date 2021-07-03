@@ -33,7 +33,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
         std::clamp(unsafe_goal->outtake_speed(), -12.0, 12.0);
     output_struct.climber_volts =
         std::clamp(unsafe_goal->climber_speed(), -12.0, 12.0);
-    output->Send(Output::Pack(*output->fbb(), &output_struct));
+    output->CheckOk(output->Send(Output::Pack(*output->fbb(), &output_struct)));
   }
 
   Status::Builder status_builder = status->MakeBuilder<Status>();
@@ -47,7 +47,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
     status_builder.add_climber_speed(unsafe_goal->climber_speed());
   }
 
-  status->Send(status_builder.Finish());
+  (void)status->Send(status_builder.Finish());
 }
 
 }  // namespace superstructure

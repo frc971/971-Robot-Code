@@ -72,7 +72,8 @@ void SuperstructureActor::MoveSuperstructure(double shoulder, double shooter,
   superstructure_goal_builder.add_voltage_climber(0.0);
   superstructure_goal_builder.add_unfold_climber(unfold_climber);
 
-  if (!builder.Send(superstructure_goal_builder.Finish())) {
+  if (builder.Send(superstructure_goal_builder.Finish()) !=
+      aos::RawSender::Error::kOk) {
     AOS_LOG(ERROR, "Sending superstructure move failed.\n");
   }
 }

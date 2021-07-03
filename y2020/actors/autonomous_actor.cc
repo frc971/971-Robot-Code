@@ -189,7 +189,8 @@ void AutonomousActor::SendStartingPosition(const Eigen::Vector3d &start) {
   localizer_control_builder.add_theta_uncertainty(0.00001);
   LOG(INFO) << "User button pressed, x: " << start(0) << " y: " << start(1)
             << " theta: " << start(2);
-  if (!builder.Send(localizer_control_builder.Finish())) {
+  if (builder.Send(localizer_control_builder.Finish()) !=
+      aos::RawSender::Error::kOk) {
     AOS_LOG(ERROR, "Failed to reset localizer.\n");
   }
 }
@@ -368,7 +369,8 @@ void AutonomousActor::SendSuperstructureGoal() {
   superstructure_builder.add_shooter_tracking(shooter_tracking_);
   superstructure_builder.add_shooting(shooting_);
 
-  if (!builder.Send(superstructure_builder.Finish())) {
+  if (builder.Send(superstructure_builder.Finish()) !=
+      aos::RawSender::Error::kOk) {
     AOS_LOG(ERROR, "Sending superstructure goal failed.\n");
   }
 }

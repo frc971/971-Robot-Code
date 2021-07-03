@@ -186,12 +186,12 @@ void Shooter::RunIteration(const Goal *goal, const Position *position,
       output_builder.add_push_to_shooter(shoot);
     }
 
-    output->Send(output_builder.Finish());
+    output->CheckOk(output->Send(output_builder.Finish()));
   }
 
   status_builder.add_shots(shots_);
 
-  status->Send(status_builder.Finish());
+  (void)status->Send(status_builder.Finish());
 }
 
 }  // namespace shooter

@@ -23,7 +23,7 @@ void ControlLoop<GoalType, PositionType, StatusType,
                  OutputType>::ZeroOutputs() {
   typename ::aos::Sender<OutputType>::Builder builder =
       output_sender_.MakeBuilder();
-  builder.Send(Zero(&builder));
+  builder.CheckOk(builder.Send(Zero(&builder)));
 }
 
 template <class GoalType, class PositionType, class StatusType,

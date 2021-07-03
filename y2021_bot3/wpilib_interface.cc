@@ -148,14 +148,14 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       drivetrain_builder.add_right_speed(-drivetrain_velocity_translate(
           drivetrain_right_encoder_->GetPeriod()));
 
-      builder.Send(drivetrain_builder.Finish());
+      builder.CheckOk(builder.Send(drivetrain_builder.Finish()));
     }
 
     {
       auto builder = superstructure_position_sender_.MakeBuilder();
       superstructure::Position::Builder position_builder =
           builder.MakeBuilder<superstructure::Position>();
-      builder.Send(position_builder.Finish());
+      builder.CheckOk(builder.Send(position_builder.Finish()));
     }
 
     {
@@ -173,7 +173,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
       auto_mode_builder.add_mode(mode);
 
-      builder.Send(auto_mode_builder.Finish());
+      builder.CheckOk(builder.Send(auto_mode_builder.Finish()));
     }
   }
 

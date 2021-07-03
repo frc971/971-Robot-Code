@@ -45,7 +45,7 @@ void PDPFetcher::Loop(int iterations) {
   pdp_builder.add_power(pdp_->GetTotalPower());
   pdp_builder.add_currents(currents_offset);
 
-  if (!builder.Send(pdp_builder.Finish())) {
+  if (builder.Send(pdp_builder.Finish()) != aos::RawSender::Error::kOk) {
     AOS_LOG(WARNING, "sending pdp values failed\n");
   }
 }

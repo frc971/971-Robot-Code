@@ -113,6 +113,8 @@ class MessageBridgeServerStatus {
   // Sender for the timestamps that we are forwarding over the network.
   aos::Sender<Timestamp> timestamp_sender_;
 
+  SendFailureCounter timestamp_failure_counter_;
+
   aos::monotonic_clock::time_point last_statistics_send_time_ =
       aos::monotonic_clock::min_time;
 
@@ -122,7 +124,6 @@ class MessageBridgeServerStatus {
 
   std::vector<uint32_t> partial_deliveries_;
 };
-
 
 }  // namespace message_bridge
 }  // namespace aos

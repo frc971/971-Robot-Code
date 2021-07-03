@@ -329,10 +329,10 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
     output_builder.add_forks_release(forks_release_output);
     output_builder.add_voltage_winch(voltage_winch_output);
 
-    output->Send(output_builder.Finish());
+    output->CheckOk(output->Send(output_builder.Finish()));
   }
 
-  status->Send(status_builder.Finish());
+  (void)status->Send(status_builder.Finish());
 }
 
 void Superstructure::SendColors(float red, float green, float blue) {
@@ -344,7 +344,8 @@ void Superstructure::SendColors(float red, float green, float blue) {
   status_light_builder.add_green(green);
   status_light_builder.add_blue(blue);
 
-  if (!builder.Send(status_light_builder.Finish())) {
+  if (builder.Send(status_light_builder.Finish()) !=
+      aos::RawSender::Error::kOk) {
     AOS_LOG(ERROR, "Failed to send lights.\n");
   }
 }

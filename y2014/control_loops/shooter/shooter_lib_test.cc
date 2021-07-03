@@ -199,7 +199,8 @@ class ShooterSimulation {
                      *last_position_message_.pusher_proximal.get(),
                      values.shooter.pusher_proximal, last_position_);
 
-    builder.Send(Position::Pack(*builder.fbb(), &position));
+    EXPECT_EQ(builder.Send(Position::Pack(*builder.fbb(), &position)),
+              aos::RawSender::Error::kOk);
 
     last_position_ = position.position;
     last_position_message_ = std::move(position);
@@ -403,7 +404,8 @@ TEST_F(ShooterTest, GoesToValue) {
     ::aos::Sender<Goal>::Builder builder = shooter_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_shot_power(70.0);
-    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
+    EXPECT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   RunFor(chrono::seconds(2));
 
@@ -422,7 +424,8 @@ TEST_F(ShooterTest, Fire) {
     ::aos::Sender<Goal>::Builder builder = shooter_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_shot_power(70.0);
-    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
+    EXPECT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   RunFor(chrono::milliseconds(1200));
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
@@ -431,7 +434,8 @@ TEST_F(ShooterTest, Fire) {
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_shot_power(35.0);
     goal_builder.add_shot_requested(true);
-    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
+    EXPECT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   bool hit_fire = false;
@@ -445,7 +449,8 @@ TEST_F(ShooterTest, Fire) {
         Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
         goal_builder.add_shot_power(17.0);
         goal_builder.add_shot_requested(false);
-        EXPECT_TRUE(builder.Send(goal_builder.Finish()));
+        EXPECT_EQ(builder.Send(goal_builder.Finish()),
+                  aos::RawSender::Error::kOk);
       }
       hit_fire = true;
     }
@@ -467,7 +472,8 @@ TEST_F(ShooterTest, FireLong) {
     ::aos::Sender<Goal>::Builder builder = shooter_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_shot_power(70.0);
-    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
+    EXPECT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   RunFor(chrono::milliseconds(1500));
 
@@ -477,7 +483,8 @@ TEST_F(ShooterTest, FireLong) {
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_shot_power(0.0);
     goal_builder.add_shot_requested(true);
-    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
+    EXPECT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   bool hit_fire = false;
@@ -490,7 +497,8 @@ TEST_F(ShooterTest, FireLong) {
             shooter_goal_sender_.MakeBuilder();
         Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
         goal_builder.add_shot_requested(false);
-        EXPECT_TRUE(builder.Send(goal_builder.Finish()));
+        EXPECT_EQ(builder.Send(goal_builder.Finish()),
+                  aos::RawSender::Error::kOk);
       }
       hit_fire = true;
     }
@@ -513,7 +521,8 @@ TEST_F(ShooterTest, LoadTooFar) {
     ::aos::Sender<Goal>::Builder builder = shooter_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_shot_power(500.0);
-    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
+    EXPECT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   while (test_event_loop_->monotonic_now() <
          monotonic_clock::time_point(chrono::milliseconds(1600))) {
@@ -531,7 +540,8 @@ TEST_F(ShooterTest, MoveGoal) {
     ::aos::Sender<Goal>::Builder builder = shooter_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_shot_power(70.0);
-    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
+    EXPECT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   RunFor(chrono::milliseconds(1500));
 
@@ -540,7 +550,8 @@ TEST_F(ShooterTest, MoveGoal) {
     ::aos::Sender<Goal>::Builder builder = shooter_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_shot_power(14.0);
-    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
+    EXPECT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::milliseconds(500));
@@ -559,7 +570,8 @@ TEST_F(ShooterTest, Unload) {
     ::aos::Sender<Goal>::Builder builder = shooter_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_shot_power(70.0);
-    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
+    EXPECT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   RunFor(chrono::milliseconds(1500));
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
@@ -567,7 +579,8 @@ TEST_F(ShooterTest, Unload) {
     ::aos::Sender<Goal>::Builder builder = shooter_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_unload_requested(true);
-    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
+    EXPECT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   while (test_event_loop_->monotonic_now() <
@@ -588,7 +601,8 @@ TEST_F(ShooterTest, RezeroWhileUnloading) {
     ::aos::Sender<Goal>::Builder builder = shooter_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_shot_power(70);
-    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
+    EXPECT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   RunFor(chrono::milliseconds(1500));
 
@@ -601,7 +615,8 @@ TEST_F(ShooterTest, RezeroWhileUnloading) {
     ::aos::Sender<Goal>::Builder builder = shooter_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_unload_requested(true);
-    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
+    EXPECT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   while (test_event_loop_->monotonic_now() <
@@ -622,7 +637,8 @@ TEST_F(ShooterTest, UnloadWindupNegative) {
     ::aos::Sender<Goal>::Builder builder = shooter_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_shot_power(70);
-    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
+    EXPECT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   RunFor(chrono::milliseconds(1500));
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
@@ -630,7 +646,8 @@ TEST_F(ShooterTest, UnloadWindupNegative) {
     ::aos::Sender<Goal>::Builder builder = shooter_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_unload_requested(true);
-    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
+    EXPECT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   int kicked_delay = 20;
@@ -665,7 +682,8 @@ TEST_F(ShooterTest, UnloadWindupPositive) {
     ::aos::Sender<Goal>::Builder builder = shooter_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_shot_power(70);
-    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
+    EXPECT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   RunFor(chrono::milliseconds(1500));
   EXPECT_EQ(ShooterMotor::STATE_READY, shooter_motor_.state());
@@ -673,7 +691,8 @@ TEST_F(ShooterTest, UnloadWindupPositive) {
     ::aos::Sender<Goal>::Builder builder = shooter_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_unload_requested(true);
-    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
+    EXPECT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   int kicked_delay = 20;
@@ -713,7 +732,8 @@ TEST_F(ShooterTest, StartsOnDistal) {
     ::aos::Sender<Goal>::Builder builder = shooter_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_shot_power(70.0);
-    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
+    EXPECT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   RunFor(chrono::seconds(2));
   // EXPECT_NEAR(0.0, shooter_motor_.GetPosition(), 0.01);
@@ -734,7 +754,8 @@ TEST_F(ShooterTest, StartsOnProximal) {
     ::aos::Sender<Goal>::Builder builder = shooter_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_shot_power(70.0);
-    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
+    EXPECT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   RunFor(chrono::seconds(3));
   // EXPECT_NEAR(0.0, shooter_motor_.GetPosition(), 0.01);
@@ -765,7 +786,8 @@ TEST_P(ShooterZeroingTest, AllDisparateStartingZero) {
     ::aos::Sender<Goal>::Builder builder = shooter_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_shot_power(120.0);
-    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
+    EXPECT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   while (test_event_loop_->monotonic_now() <
          monotonic_clock::time_point(chrono::seconds(2))) {

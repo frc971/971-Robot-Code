@@ -144,7 +144,7 @@ TEST_P(ShmEventLoopTest, SendBeforeRun) {
     aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
     TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
     builder.add_value(200);
-    msg.Send(builder.Finish());
+    msg.CheckOk(msg.Send(builder.Finish()));
   }
   EXPECT_FALSE(IsRealtime());
 
@@ -185,7 +185,7 @@ TEST_P(ShmEventLoopTest, AllHandlersAreRealtime) {
     aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
     TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
     builder.add_value(200);
-    msg.Send(builder.Finish());
+    msg.CheckOk(msg.Send(builder.Finish()));
   });
 
   factory()->Run();
@@ -280,7 +280,7 @@ TEST_P(ShmEventLoopDeathTest, GetWatcherSharedMemory) {
     auto builder = sender.MakeBuilder();
     TestMessage::Builder test_builder(*builder.fbb());
     test_builder.add_value(1);
-    CHECK(builder.Send(test_builder.Finish()));
+    builder.CheckOk(builder.Send(test_builder.Finish()));
   });
   factory()->Run();
   EXPECT_TRUE(ran);
@@ -317,7 +317,7 @@ TEST_P(ShmEventLoopTest, GetFetcherPrivateMemory) {
     auto builder = sender.MakeBuilder();
     TestMessage::Builder test_builder(*builder.fbb());
     test_builder.add_value(1);
-    CHECK(builder.Send(test_builder.Finish()));
+    builder.CheckOk(builder.Send(test_builder.Finish()));
   }
 
   ASSERT_TRUE(fetcher.Fetch());
@@ -336,13 +336,13 @@ TEST_P(ShmEventLoopDeathTest, OutOfBoundsWrite) {
     EXPECT_DEATH(
         {
           ++static_cast<char *>(sender->data())[-1 - i];
-          sender->Send(0);
+          sender->CheckOk(sender->Send(0));
         },
         "Somebody wrote outside the buffer of their message");
     EXPECT_DEATH(
         {
           ++static_cast<char *>(sender->data())[sender->size() + i];
-          sender->Send(0);
+          sender->CheckOk(sender->Send(0));
         },
         "Somebody wrote outside the buffer of their message");
   }
@@ -361,7 +361,7 @@ TEST_P(ShmEventLoopDeathTest, NextMessageNotAvailable) {
       auto builder = sender.MakeBuilder();
       TestMessage::Builder test_builder(*builder.fbb());
       test_builder.add_value(0);
-      CHECK(builder.Send(test_builder.Finish()));
+      builder.CheckOk(builder.Send(test_builder.Finish()));
     }
     EXPECT_DEATH(fetcher.FetchNext(),
                  "The next message is no longer "
@@ -387,7 +387,7 @@ TEST_P(ShmEventLoopDeathTest, NextMessageNotAvailableNoTimingReports) {
       auto builder = sender.MakeBuilder();
       TestMessage::Builder test_builder(*builder.fbb());
       test_builder.add_value(0);
-      CHECK(builder.Send(test_builder.Finish()));
+      builder.CheckOk(builder.Send(test_builder.Finish()));
     }
     EXPECT_DEATH(fetcher.FetchNext(),
                  "The next message is no longer "
@@ -410,7 +410,7 @@ TEST_P(ShmEventLoopDeathTest, NextMessageNotAvailableNoRun) {
     auto builder = sender.MakeBuilder();
     TestMessage::Builder test_builder(*builder.fbb());
     test_builder.add_value(0);
-    CHECK(builder.Send(test_builder.Finish()));
+    builder.CheckOk(builder.Send(test_builder.Finish()));
   }
   EXPECT_DEATH(fetcher.FetchNext(),
                "The next message is no longer "
@@ -429,7 +429,7 @@ TEST_P(ShmEventLoopDeathTest, NextMessageNotAvailableNoRunNoTimingReports) {
     auto builder = sender.MakeBuilder();
     TestMessage::Builder test_builder(*builder.fbb());
     test_builder.add_value(0);
-    CHECK(builder.Send(test_builder.Finish()));
+    builder.CheckOk(builder.Send(test_builder.Finish()));
   }
   EXPECT_DEATH(fetcher.FetchNext(),
                "The next message is no longer "

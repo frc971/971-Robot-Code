@@ -40,6 +40,9 @@ table ServerConnection {
 // Statistics for all connections to all the clients.
 table ServerStatistics {
   connections:[ServerConnection] (id: 0);
+
+  // Count of timestamp send failures
+  timestamp_send_failures:uint64 (id: 1);
 }
 
 root_type ServerStatistics;

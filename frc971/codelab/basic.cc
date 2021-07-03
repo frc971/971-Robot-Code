@@ -29,7 +29,8 @@ void Basic::RunIteration(const Goal *goal, const Position *position,
     // tests pass.
     builder.add_intake_voltage(0.0);
 
-    output->Send(builder.Finish());
+    // Ignore the return value of Send
+    (void)output->Send(builder.Finish());
   }
 
   if (status) {
@@ -40,7 +41,8 @@ void Basic::RunIteration(const Goal *goal, const Position *position,
     // Look at the definition of Status in basic_status.fbs to find
     // the name of the field.
 
-    status->Send(builder.Finish());
+    // Ignore the return value of Send
+    (void)status->Send(builder.Finish());
   }
 }
 

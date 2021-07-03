@@ -284,7 +284,8 @@ void ADIS16448::DoRun() {
     IMUValuesBatch::Builder imu_values_batch_builder =
         builder.MakeBuilder<IMUValuesBatch>();
     imu_values_batch_builder.add_readings(readings_offset);
-    if (!builder.Send(imu_values_batch_builder.Finish())) {
+    if (builder.Send(imu_values_batch_builder.Finish()) !=
+        aos::RawSender::Error::kOk) {
       AOS_LOG(WARNING, "sending queue message failed\n");
     }
 

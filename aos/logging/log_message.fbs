@@ -22,6 +22,9 @@ table LogMessageFbs {
 
   // Application name
   name:string (id: 3);
+
+  // Total number of LogMessage send failures.
+  send_failures:uint64 (id: 4);
 }
 
 root_type LogMessageFbs;

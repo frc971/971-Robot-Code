@@ -22,8 +22,11 @@ void AosLogToFbs::Initialize(const std::string *name,
               static_cast<::aos::logging::Level>(message_data.level));
           builder.add_source_pid(message_data.source);
           builder.add_name(name_str);
+          if (send_failure_counter_.failures() > 0) {
+            builder.add_send_failures(send_failure_counter_.failures());
+          }
 
-          message.Send(builder.Finish());
+          send_failure_counter_.Count(message.Send(builder.Finish()));
         },
         name);
   }

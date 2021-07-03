@@ -14,6 +14,7 @@
 #include "frc971/control_loops/static_zeroing_single_dof_profiled_subsystem_test_subsystem_goal_generated.h"
 #include "frc971/control_loops/static_zeroing_single_dof_profiled_subsystem_test_subsystem_output_generated.h"
 #include "frc971/zeroing/zeroing.h"
+#include "glog/logging.h"
 #include "gtest/gtest.h"
 
 using ::frc971::control_loops::PositionSensorSimulator;
@@ -171,7 +172,8 @@ class TestIntakeSystemSimulation {
                 &real_position_builder);
     auto position_builder = position.template MakeBuilder<PositionType>();
     position_builder.add_position(position_offset);
-    position.Send(position_builder.Finish());
+    CHECK_EQ(position.Send(position_builder.Finish()),
+             aos::RawSender::Error::kOk);
   }
 
   void set_peak_subsystem_acceleration(double value) {
@@ -331,13 +333,16 @@ class Subsystem
         status->fbb());
     typename StatusType::Builder subsystem_status_builder =
         status->template MakeBuilder<StatusType>();
+
     subsystem_status_builder.add_status(status_offset);
-    status->Send(subsystem_status_builder.Finish());
+    CHECK_EQ(status->Send(subsystem_status_builder.Finish()),
+             aos::RawSender::Error::kOk);
     if (output != nullptr) {
       typename OutputType::Builder output_builder =
           output->template MakeBuilder<OutputType>();
       output_builder.add_output(output_voltage);
-      output->Send(output_builder.Finish());
+      CHECK_EQ(output->Send(output_builder.Finish()),
+               aos::RawSender::Error::kOk);
     }
   }
 
@@ -419,8 +424,9 @@ TYPED_TEST_P(IntakeSystemTest, DoesNothing) {
   // Intake system uses 0.05 to test for 0.
   {
     auto message = this->subsystem_goal_sender_.MakeBuilder();
-    EXPECT_TRUE(message.Send(
-        zeroing::testing::CreateSubsystemGoal(*message.fbb(), 0.05)));
+    EXPECT_EQ(message.Send(
+                  zeroing::testing::CreateSubsystemGoal(*message.fbb(), 0.05)),
+              aos::RawSender::Error::kOk);
   }
   this->RunFor(chrono::seconds(5));
 
@@ -437,8 +443,9 @@ TYPED_TEST_P(IntakeSystemTest, ReachesGoal) {
         message.template MakeBuilder<frc971::ProfileParameters>();
     profile_builder.add_max_velocity(1);
     profile_builder.add_max_acceleration(0.5);
-    EXPECT_TRUE(message.Send(zeroing::testing::CreateSubsystemGoal(
-        *message.fbb(), 0.10, profile_builder.Finish())));
+    EXPECT_EQ(message.Send(zeroing::testing::CreateSubsystemGoal(
+                  *message.fbb(), 0.10, profile_builder.Finish())),
+              aos::RawSender::Error::kOk);
   }
 
   // Give it a lot of time to get there.
@@ -459,8 +466,9 @@ TYPED_TEST_P(IntakeSystemTest, FunctionsWhenProfileDisabled) {
     profile_builder.add_max_velocity(std::numeric_limits<double>::quiet_NaN());
     profile_builder.add_max_acceleration(
         std::numeric_limits<double>::quiet_NaN());
-    EXPECT_TRUE(message.Send(zeroing::testing::CreateSubsystemGoal(
-        *message.fbb(), 0.10, profile_builder.Finish(), 0.0, true)));
+    EXPECT_EQ(message.Send(zeroing::testing::CreateSubsystemGoal(
+                  *message.fbb(), 0.10, profile_builder.Finish(), 0.0, true)),
+              aos::RawSender::Error::kOk);
   }
 
   // Give it a lot of time to get there.
@@ -483,12 +491,14 @@ TYPED_TEST_P(IntakeSystemTest, MaintainConstantVelocityWithoutProfile) {
             message.template MakeBuilder<frc971::ProfileParameters>();
         profile_builder.add_max_velocity(0);
         profile_builder.add_max_acceleration(0);
-        EXPECT_TRUE(message.Send(zeroing::testing::CreateSubsystemGoal(
-            *message.fbb(),
-            kStartingGoal + aos::time::DurationInSeconds(
-                                this->monotonic_now().time_since_epoch()) *
-                                kVelocity,
-            profile_builder.Finish(), kVelocity, true)));
+        EXPECT_EQ(
+            message.Send(zeroing::testing::CreateSubsystemGoal(
+                *message.fbb(),
+                kStartingGoal + aos::time::DurationInSeconds(
+                                    this->monotonic_now().time_since_epoch()) *
+                                    kVelocity,
+                profile_builder.Finish(), kVelocity, true)),
+            aos::RawSender::Error::kOk);
       },
       this->dt());
 
@@ -514,8 +524,9 @@ TYPED_TEST_P(IntakeSystemTest, SaturationTest) {
   // Zero it before we move.
   {
     auto message = this->subsystem_goal_sender_.MakeBuilder();
-    EXPECT_TRUE(message.Send(
-        zeroing::testing::CreateSubsystemGoal(*message.fbb(), kRange.upper)));
+    EXPECT_EQ(message.Send(zeroing::testing::CreateSubsystemGoal(*message.fbb(),
+                                                                 kRange.upper)),
+              aos::RawSender::Error::kOk);
   }
   this->RunFor(chrono::seconds(8));
   this->VerifyNearGoal();
@@ -528,8 +539,9 @@ TYPED_TEST_P(IntakeSystemTest, SaturationTest) {
         message.template MakeBuilder<frc971::ProfileParameters>();
     profile_builder.add_max_velocity(20.0);
     profile_builder.add_max_acceleration(0.1);
-    EXPECT_TRUE(message.Send(zeroing::testing::CreateSubsystemGoal(
-        *message.fbb(), kRange.lower, profile_builder.Finish())));
+    EXPECT_EQ(message.Send(zeroing::testing::CreateSubsystemGoal(
+                  *message.fbb(), kRange.lower, profile_builder.Finish())),
+              aos::RawSender::Error::kOk);
   }
   this->set_peak_subsystem_velocity(23.0);
   this->set_peak_subsystem_acceleration(0.2);
@@ -544,8 +556,9 @@ TYPED_TEST_P(IntakeSystemTest, SaturationTest) {
         message.template MakeBuilder<frc971::ProfileParameters>();
     profile_builder.add_max_velocity(0.1);
     profile_builder.add_max_acceleration(100.0);
-    EXPECT_TRUE(message.Send(zeroing::testing::CreateSubsystemGoal(
-        *message.fbb(), kRange.upper, profile_builder.Finish())));
+    EXPECT_EQ(message.Send(zeroing::testing::CreateSubsystemGoal(
+                  *message.fbb(), kRange.upper, profile_builder.Finish())),
+              aos::RawSender::Error::kOk);
   }
 
   this->set_peak_subsystem_velocity(0.2);
@@ -567,8 +580,9 @@ TYPED_TEST_P(IntakeSystemTest, RespectsRange) {
         message.template MakeBuilder<frc971::ProfileParameters>();
     profile_builder.add_max_velocity(1.0);
     profile_builder.add_max_acceleration(0.5);
-    EXPECT_TRUE(message.Send(zeroing::testing::CreateSubsystemGoal(
-        *message.fbb(), 100.0, profile_builder.Finish())));
+    EXPECT_EQ(message.Send(zeroing::testing::CreateSubsystemGoal(
+                  *message.fbb(), 100.0, profile_builder.Finish())),
+              aos::RawSender::Error::kOk);
   }
   this->RunFor(chrono::seconds(10));
 
@@ -584,8 +598,9 @@ TYPED_TEST_P(IntakeSystemTest, RespectsRange) {
         message.template MakeBuilder<frc971::ProfileParameters>();
     profile_builder.add_max_velocity(1.0);
     profile_builder.add_max_acceleration(0.5);
-    EXPECT_TRUE(message.Send(zeroing::testing::CreateSubsystemGoal(
-        *message.fbb(), -100.0, profile_builder.Finish())));
+    EXPECT_EQ(message.Send(zeroing::testing::CreateSubsystemGoal(
+                  *message.fbb(), -100.0, profile_builder.Finish())),
+              aos::RawSender::Error::kOk);
   }
 
   this->RunFor(chrono::seconds(10));
@@ -606,8 +621,9 @@ TYPED_TEST_P(IntakeSystemTest, ZeroTest) {
         message.template MakeBuilder<frc971::ProfileParameters>();
     profile_builder.add_max_velocity(1.0);
     profile_builder.add_max_acceleration(0.5);
-    EXPECT_TRUE(message.Send(zeroing::testing::CreateSubsystemGoal(
-        *message.fbb(), kRange.upper, profile_builder.Finish())));
+    EXPECT_EQ(message.Send(zeroing::testing::CreateSubsystemGoal(
+                  *message.fbb(), kRange.upper, profile_builder.Finish())),
+              aos::RawSender::Error::kOk);
   }
 
   this->RunFor(chrono::seconds(10));
@@ -628,8 +644,9 @@ TYPED_TEST_P(IntakeSystemTest, LowerHardstopStartup) {
   this->subsystem_plant_.InitializeSubsystemPosition(kRange.lower_hard);
   {
     auto message = this->subsystem_goal_sender_.MakeBuilder();
-    EXPECT_TRUE(message.Send(
-        zeroing::testing::CreateSubsystemGoal(*message.fbb(), kRange.upper)));
+    EXPECT_EQ(message.Send(zeroing::testing::CreateSubsystemGoal(*message.fbb(),
+                                                                 kRange.upper)),
+              aos::RawSender::Error::kOk);
   }
   this->RunFor(chrono::seconds(10));
 
@@ -643,8 +660,9 @@ TYPED_TEST_P(IntakeSystemTest, UpperHardstopStartup) {
   this->subsystem_plant_.InitializeSubsystemPosition(kRange.upper_hard);
   {
     auto message = this->subsystem_goal_sender_.MakeBuilder();
-    EXPECT_TRUE(message.Send(
-        zeroing::testing::CreateSubsystemGoal(*message.fbb(), kRange.upper)));
+    EXPECT_EQ(message.Send(zeroing::testing::CreateSubsystemGoal(*message.fbb(),
+                                                                 kRange.upper)),
+              aos::RawSender::Error::kOk);
   }
   this->RunFor(chrono::seconds(10));
 
@@ -658,8 +676,9 @@ TYPED_TEST_P(IntakeSystemTest, ResetTest) {
   this->subsystem_plant_.InitializeSubsystemPosition(kRange.upper);
   {
     auto message = this->subsystem_goal_sender_.MakeBuilder();
-    EXPECT_TRUE(message.Send(zeroing::testing::CreateSubsystemGoal(
-        *message.fbb(), kRange.upper - 0.1)));
+    EXPECT_EQ(message.Send(zeroing::testing::CreateSubsystemGoal(
+                  *message.fbb(), kRange.upper - 0.1)),
+              aos::RawSender::Error::kOk);
   }
   this->RunFor(chrono::seconds(10));
 
@@ -682,8 +701,9 @@ TYPED_TEST_P(IntakeSystemTest, ResetTest) {
 TYPED_TEST_P(IntakeSystemTest, DisabledGoalTest) {
   {
     auto message = this->subsystem_goal_sender_.MakeBuilder();
-    EXPECT_TRUE(message.Send(zeroing::testing::CreateSubsystemGoal(
-        *message.fbb(), kRange.lower + 0.03)));
+    EXPECT_EQ(message.Send(zeroing::testing::CreateSubsystemGoal(
+                  *message.fbb(), kRange.lower + 0.03)),
+              aos::RawSender::Error::kOk);
   }
 
   // Checks that the subsystem has not moved from its starting position at 0
@@ -700,8 +720,9 @@ TYPED_TEST_P(IntakeSystemTest, DisabledGoalTest) {
 TYPED_TEST_P(IntakeSystemTest, DisabledZeroTest) {
   {
     auto message = this->subsystem_goal_sender_.MakeBuilder();
-    EXPECT_TRUE(message.Send(
-        zeroing::testing::CreateSubsystemGoal(*message.fbb(), kRange.lower)));
+    EXPECT_EQ(message.Send(zeroing::testing::CreateSubsystemGoal(*message.fbb(),
+                                                                 kRange.lower)),
+              aos::RawSender::Error::kOk);
   }
 
   // Run disabled for 2 seconds
@@ -719,8 +740,9 @@ TYPED_TEST_P(IntakeSystemTest, MinPositionTest) {
   this->SetEnabled(true);
   {
     auto message = this->subsystem_goal_sender_.MakeBuilder();
-    EXPECT_TRUE(message.Send(zeroing::testing::CreateSubsystemGoal(
-        *message.fbb(), kRange.lower_hard)));
+    EXPECT_EQ(message.Send(zeroing::testing::CreateSubsystemGoal(
+                  *message.fbb(), kRange.lower_hard)),
+              aos::RawSender::Error::kOk);
   }
   this->RunFor(chrono::seconds(2));
 
@@ -753,8 +775,9 @@ TYPED_TEST_P(IntakeSystemTest, MaxPositionTest) {
 
   {
     auto message = this->subsystem_goal_sender_.MakeBuilder();
-    EXPECT_TRUE(message.Send(zeroing::testing::CreateSubsystemGoal(
-        *message.fbb(), kRange.upper_hard)));
+    EXPECT_EQ(message.Send(zeroing::testing::CreateSubsystemGoal(
+                  *message.fbb(), kRange.upper_hard)),
+              aos::RawSender::Error::kOk);
   }
   this->RunFor(chrono::seconds(2));
 

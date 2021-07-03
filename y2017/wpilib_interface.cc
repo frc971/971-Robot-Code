@@ -222,7 +222,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       position_builder.add_left_speed(
           drivetrain_velocity_translate(drivetrain_left_encoder_->GetPeriod()));
 
-      builder.Send(position_builder.Finish());
+      builder.CheckOk(builder.Send(position_builder.Finish()));
     }
   }
 
@@ -278,7 +278,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
                             Values::kShooterEncoderCountsPerRevolution,
                             Values::kShooterEncoderRatio));
 
-      builder.Send(position_builder.Finish());
+      builder.CheckOk(builder.Send(position_builder.Finish()));
     }
 
     {
@@ -293,7 +293,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
         }
       }
       auto_builder.add_mode(mode);
-      builder.Send(auto_builder.Finish());
+      builder.CheckOk(builder.Send(auto_builder.Finish()));
     }
   }
 

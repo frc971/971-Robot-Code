@@ -87,6 +87,9 @@ table Status {
 
   // Vector of the subsystems that are not at goal and are preventing shooting.
   subsystems_not_ready:[Subsystem] (id: 8);
+
+  // Total number of status send failures.
+  send_failures:uint64 (id: 9);
 }
 
 root_type Status;

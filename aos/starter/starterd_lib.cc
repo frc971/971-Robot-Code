@@ -602,7 +602,7 @@ void Starter::SendStatus() {
 
   aos::starter::Status::Builder status_builder(*builder.fbb());
   status_builder.add_statuses(statuses_fbs);
-  CHECK(builder.Send(status_builder.Finish()));
+  builder.CheckOk(builder.Send(status_builder.Finish()));
 }
 
 }  // namespace starter
