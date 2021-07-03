@@ -1,6 +1,10 @@
 {
-  "channels":
-  [
+  "channels": [
+    {
+      "name": "/aos",
+      "type": "aos.logging.LogMessageFbs",
+      "frequency": 1000
+    },
     {
       "name": "/shooter",
       "type": "y2014.control_loops.shooter.Goal",

@@ -1,6 +1,10 @@
 {
-  "channels":
-  [
+  "channels": [
+    {
+      "name": "/aos",
+      "type": "aos.logging.LogMessageFbs",
+      "frequency": 1500
+    },
     {
       "name": "/superstructure",
       "type": "y2017.control_loops.superstructure.Goal",

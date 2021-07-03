@@ -597,7 +597,7 @@ TEST_F(LocalizedDrivetrainTest, FetchersHandleTimeGap) {
         ASSERT_TRUE(
             builder.Send(ImageMatchResult::Pack(*builder.fbb(), &image)));
       },
-      std::chrono::milliseconds(20));
+      std::chrono::milliseconds(40));
   test_event_loop_
       ->AddTimer([this]() {
         drivetrain_plant_.set_send_messages(true);

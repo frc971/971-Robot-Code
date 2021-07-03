@@ -6,11 +6,13 @@
     },
     {
       "name": "/aos",
-      "type": "aos.logging.LogMessageFbs"
+      "type": "aos.logging.LogMessageFbs",
+      "frequency": 400
     },
     {
       "name": "/aos",
-      "type": "aos.RobotState"
+      "type": "aos.RobotState",
+      "frequency": 250
     },
     {
       "name": "/aos",
@@ -18,27 +20,33 @@
     },
     {
       "name": "/loop",
-      "type": "frc971.control_loops.zeroing.testing.SubsystemGoal"
+      "type": "frc971.control_loops.zeroing.testing.SubsystemGoal",
+      "frequency": 200
     },
     {
       "name": "/loop",
-      "type": "frc971.control_loops.zeroing.testing.SubsystemOutput"
+      "type": "frc971.control_loops.zeroing.testing.SubsystemOutput",
+      "frequency": 200
     },
     {
       "name": "/loop",
-      "type": "frc971.control_loops.zeroing.testing.SubsystemPotAndAbsoluteEncoderProfiledJointStatus"
+      "type": "frc971.control_loops.zeroing.testing.SubsystemPotAndAbsoluteEncoderProfiledJointStatus",
+      "frequency": 200
     },
     {
       "name": "/loop",
-      "type": "frc971.control_loops.zeroing.testing.SubsystemAbsolutePosition"
+      "type": "frc971.control_loops.zeroing.testing.SubsystemAbsolutePosition",
+      "frequency": 200
     },
     {
       "name": "/loop",
-      "type": "frc971.control_loops.zeroing.testing.SubsystemPotAndAbsolutePosition"
+      "type": "frc971.control_loops.zeroing.testing.SubsystemPotAndAbsolutePosition",
+      "frequency": 200
     },
     {
       "name": "/loop",
-      "type": "frc971.control_loops.zeroing.testing.SubsystemAbsoluteEncoderProfiledJointStatus"
+      "type": "frc971.control_loops.zeroing.testing.SubsystemAbsoluteEncoderProfiledJointStatus",
+      "frequency": 200
     }
   ]
 }
