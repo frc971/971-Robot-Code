@@ -199,8 +199,12 @@ flatbuffers::Offset<MessageHeader> PackMessage(
     flatbuffers::FlatBufferBuilder *fbb, const Context &context,
     int channel_index, LogType log_type);
 
+// Reads the last header from a log file.  This handles any duplicate headers
+// that were written.
 std::optional<SizePrefixedFlatbufferVector<LogFileHeader>> ReadHeader(
     std::string_view filename);
+// Reads the Nth message from a log file, excluding the header.  Note: this
+// doesn't handle duplicate headers.
 std::optional<SizePrefixedFlatbufferVector<MessageHeader>> ReadNthMessage(
     std::string_view filename, size_t n);
 
