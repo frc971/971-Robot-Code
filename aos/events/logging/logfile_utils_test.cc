@@ -45,8 +45,11 @@ TEST(SpanReaderTest, ReadWrite) {
   SpanReader reader(logfile);
 
   EXPECT_EQ(reader.filename(), logfile);
+  EXPECT_EQ(reader.PeekMessage(), m1.span());
+  EXPECT_EQ(reader.PeekMessage(), m1.span());
   EXPECT_EQ(reader.ReadMessage(), m1.span());
   EXPECT_EQ(reader.ReadMessage(), m2.span());
+  EXPECT_EQ(reader.PeekMessage(), absl::Span<const uint8_t>());
   EXPECT_EQ(reader.ReadMessage(), absl::Span<const uint8_t>());
 }
 

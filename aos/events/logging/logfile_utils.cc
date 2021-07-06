@@ -325,7 +325,7 @@ SpanReader::SpanReader(std::string_view filename) : filename_(filename) {
   }
 }
 
-absl::Span<const uint8_t> SpanReader::ReadMessage() {
+absl::Span<const uint8_t> SpanReader::PeekMessage() {
   // Make sure we have enough for the size.
   if (data_.size() - consumed_data_ < sizeof(flatbuffers::uoffset_t)) {
     if (!ReadBlock()) {
@@ -355,9 +355,21 @@ absl::Span<const uint8_t> SpanReader::ReadMessage() {
   // And return it, consuming the data.
   const uint8_t *data_ptr = data_.data() + consumed_data_;
 
-  consumed_data_ += data_size;
-
   return absl::Span<const uint8_t>(data_ptr, data_size);
+}
+
+void SpanReader::ConsumeMessage() {
+  consumed_data_ +=
+      flatbuffers::GetPrefixedSize(data_.data() + consumed_data_) +
+      sizeof(flatbuffers::uoffset_t);
+}
+
+absl::Span<const uint8_t> SpanReader::ReadMessage() {
+  absl::Span<const uint8_t> result = PeekMessage();
+  if (result != absl::Span<const uint8_t>()) {
+    ConsumeMessage();
+  }
+  return result;
 }
 
 bool SpanReader::ReadBlock() {

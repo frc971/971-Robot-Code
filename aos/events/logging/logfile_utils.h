@@ -211,9 +211,18 @@ class SpanReader {
 
   std::string_view filename() const { return filename_; }
 
-  // Returns a span with the data for a message from the log file, excluding
-  // the size.
+  // Returns a span with the data for the next message from the log file,
+  // including the size.  The result is only guarenteed to be valid until
+  // ReadMessage() or PeekMessage() is called again.
   absl::Span<const uint8_t> ReadMessage();
+
+  // Returns a span with the data for the next message without consuming it.
+  // Multiple calls to PeekMessage return the same data.  ReadMessage or
+  // ConsumeMessage must be called to get the next message.
+  absl::Span<const uint8_t> PeekMessage();
+  // Consumes the message so the next call to ReadMessage or PeekMessage returns
+  // new data.  This does not invalidate the data.
+  void ConsumeMessage();
 
  private:
   // TODO(austin): Optimization:
