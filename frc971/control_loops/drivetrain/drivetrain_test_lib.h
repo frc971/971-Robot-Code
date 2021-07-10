@@ -1,6 +1,9 @@
 #ifndef FRC971_CONTROL_LOOPS_DRIVETRAIN_DRIVETRAIN_TEST_LIB_H_
 #define FRC971_CONTROL_LOOPS_DRIVETRAIN_DRIVETRAIN_TEST_LIB_H_
 
+#include <queue>
+#include <vector>
+
 #include "aos/events/event_loop.h"
 #include "frc971/control_loops/control_loops_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
@@ -76,16 +79,27 @@ class DrivetrainSimulation {
   // Set whether we should send out the drivetrain Position and IMU messages
   // (this will keep sending the "truth" message).
   void set_send_messages(const bool send_messages) {
+    if (!send_messages && !imu_readings_.empty()) {
+      // Flush current IMU readings
+      SendImuMessage();
+    }
     send_messages_ = send_messages;
   }
 
-  void set_imu_faulted(const bool fault_imu) {
-    imu_faulted_ = fault_imu;
-  }
+  void set_imu_faulted(const bool fault_imu) { imu_faulted_ = fault_imu; }
 
  private:
+  struct ImuReading {
+    Eigen::Vector3d gyro;
+    Eigen::Vector3d accel;
+    int64_t timestamp;
+    bool faulted;
+  };
+
   // Sends out the position queue messages.
   void SendPositionMessage();
+  // Reads and stores the IMU state
+  void ReadImu();
   // Sends out the IMU messages.
   void SendImuMessage();
   // Sends out the "truth" status message.
@@ -108,6 +122,8 @@ class DrivetrainSimulation {
   ::aos::Sender<::frc971::IMUValuesBatch> imu_sender_;
 
   bool imu_faulted_ = false;
+
+  std::queue<ImuReading> imu_readings_;
 
   DrivetrainConfig<double> dt_config_;
 

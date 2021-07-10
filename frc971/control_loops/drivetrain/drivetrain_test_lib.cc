@@ -122,7 +122,6 @@ DrivetrainSimulation::DrivetrainSimulation(
                   dt_config_.make_hybrid_drivetrain_velocity_loop()))) {
   Reinitialize();
   last_U_.setZero();
-
   event_loop_->AddPhasedLoop(
       [this](int) {
         // Skip this the first time.
@@ -144,10 +143,11 @@ DrivetrainSimulation::DrivetrainSimulation(
         first_ = false;
         SendPositionMessage();
         SendTruthMessage();
+        SendImuMessage();
       },
       dt_config_.dt);
-
-  event_loop_->AddPhasedLoop([this](int) { SendImuMessage(); },
+  // TODO(milind): We should be able to get IMU readings at 1 kHz instead of 2.
+  event_loop_->AddPhasedLoop([this](int) { ReadImu(); },
                              std::chrono::microseconds(500));
 }
 
@@ -188,54 +188,78 @@ void DrivetrainSimulation::SendPositionMessage() {
   }
 }
 
-void DrivetrainSimulation::SendImuMessage() {
+void DrivetrainSimulation::ReadImu() {
+  // Don't accumalate readings when we aren't sending them
   if (!send_messages_) {
     return;
   }
-  auto builder = imu_sender_.MakeBuilder();
 
-  frc971::ADIS16470DiagStat::Builder diag_stat_builder =
-      builder.MakeBuilder<frc971::ADIS16470DiagStat>();
-  diag_stat_builder.add_clock_error(false);
-  diag_stat_builder.add_memory_failure(imu_faulted_);
-  diag_stat_builder.add_sensor_failure(false);
-  diag_stat_builder.add_standby_mode(false);
-  diag_stat_builder.add_spi_communication_error(false);
-  diag_stat_builder.add_flash_memory_update_error(false);
-  diag_stat_builder.add_data_path_overrun(false);
-
-  const auto diag_stat_offset = diag_stat_builder.Finish();
-
-  frc971::IMUValues::Builder imu_builder =
-      builder.MakeBuilder<frc971::IMUValues>();
-  imu_builder.add_self_test_diag_stat(diag_stat_offset);
   const Eigen::Vector3d gyro =
       dt_config_.imu_transform.inverse() *
       Eigen::Vector3d(0.0, 0.0,
                       (drivetrain_plant_.X(3, 0) - drivetrain_plant_.X(1, 0)) /
                           (dt_config_.robot_radius * 2.0));
-  imu_builder.add_gyro_x(gyro.x());
-  imu_builder.add_gyro_y(gyro.y());
-  imu_builder.add_gyro_z(gyro.z());
+
   // Acceleration due to gravity, in m/s/s.
   constexpr double kG = 9.807;
   const Eigen::Vector3d accel =
       dt_config_.imu_transform.inverse() *
       Eigen::Vector3d(last_acceleration_.x() / kG, last_acceleration_.y() / kG,
                       1.0);
-  imu_builder.add_accelerometer_x(accel.x());
-  imu_builder.add_accelerometer_y(accel.y());
-  imu_builder.add_accelerometer_z(accel.z());
-  imu_builder.add_monotonic_timestamp_ns(
+  const int64_t timestamp =
       std::chrono::duration_cast<std::chrono::nanoseconds>(
           event_loop_->monotonic_now().time_since_epoch())
-          .count());
-  flatbuffers::Offset<frc971::IMUValues> imu_values_offsets =
-      imu_builder.Finish();
+          .count();
+  imu_readings_.push({.gyro = gyro,
+                      .accel = accel,
+                      .timestamp = timestamp,
+                      .faulted = imu_faulted_});
+}
+
+void DrivetrainSimulation::SendImuMessage() {
+  if (!send_messages_) {
+    return;
+  }
+
+  std::vector<flatbuffers::Offset<IMUValues>> imu_values;
+  auto builder = imu_sender_.MakeBuilder();
+
+  // Send all the IMU readings and pop the ones we have sent
+  while (!imu_readings_.empty()) {
+    const auto imu_reading = imu_readings_.front();
+    imu_readings_.pop();
+
+    frc971::ADIS16470DiagStat::Builder diag_stat_builder =
+        builder.MakeBuilder<frc971::ADIS16470DiagStat>();
+    diag_stat_builder.add_clock_error(false);
+    diag_stat_builder.add_memory_failure(imu_reading.faulted);
+    diag_stat_builder.add_sensor_failure(false);
+    diag_stat_builder.add_standby_mode(false);
+    diag_stat_builder.add_spi_communication_error(false);
+    diag_stat_builder.add_flash_memory_update_error(false);
+    diag_stat_builder.add_data_path_overrun(false);
+
+    const auto diag_stat_offset = diag_stat_builder.Finish();
+
+    frc971::IMUValues::Builder imu_builder =
+        builder.MakeBuilder<frc971::IMUValues>();
+    imu_builder.add_self_test_diag_stat(diag_stat_offset);
+
+    imu_builder.add_gyro_x(imu_reading.gyro.x());
+    imu_builder.add_gyro_y(imu_reading.gyro.y());
+    imu_builder.add_gyro_z(imu_reading.gyro.z());
+
+    imu_builder.add_accelerometer_x(imu_reading.accel.x());
+    imu_builder.add_accelerometer_y(imu_reading.accel.y());
+    imu_builder.add_accelerometer_z(imu_reading.accel.z());
+    imu_builder.add_monotonic_timestamp_ns(imu_reading.timestamp);
+
+    imu_values.push_back(imu_builder.Finish());
+  }
+
   flatbuffers::Offset<
       flatbuffers::Vector<flatbuffers::Offset<frc971::IMUValues>>>
-      imu_values_offset = builder.fbb()->CreateVector(&imu_values_offsets, 1);
-
+      imu_values_offset = builder.fbb()->CreateVector(imu_values);
   frc971::IMUValuesBatch::Builder imu_values_batch_builder =
       builder.MakeBuilder<frc971::IMUValuesBatch>();
   imu_values_batch_builder.add_readings(imu_values_offset);
