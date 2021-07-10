@@ -61,6 +61,11 @@ class GTK_Widget(BaseWindow):
 
         self.curves = []
 
+        try:
+            self.field_png = cairo.ImageSurface.create_from_png("frc971/control_loops/python/field_images/" + FIELD.field_id + ".png")
+        except cairo.Error:
+            self.field_png = None
+
         self.colors = []
 
         for c in palette:
@@ -234,9 +239,17 @@ class GTK_Widget(BaseWindow):
                          mToPx(FIELD.width), mToPx(FIELD.length))
         cr.set_line_join(cairo.LINE_JOIN_ROUND)
         cr.stroke()
-        self.draw_field_elements(cr)
 
-        y = 0
+        if self.field_png:
+            cr.save()
+            cr.translate(-mToPx(FIELD.width) / 2, -mToPx(FIELD.length) / 2)
+            cr.scale(
+                    mToPx(FIELD.width) / self.field_png.get_width(),
+                    mToPx(FIELD.length) / self.field_png.get_height(),
+                    )
+            cr.set_source_surface(self.field_png)
+            cr.paint()
+            cr.restore()
 
         # update everything
 

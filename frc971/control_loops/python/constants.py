@@ -16,7 +16,7 @@ ROBOT_SIDE_TO_HATCH_PANEL = 0.1
 HATCH_PANEL_WIDTH = 0.4826
 
 FieldType = namedtuple(
-    'Field', ['name', 'tags', 'year', 'width', 'length', 'robot', 'json_name'])
+    'Field', ['name', 'tags', 'year', 'width', 'length', 'robot', 'field_id'])
 RobotType = namedtuple(
         "Robot", ['width', 'length'])
 
@@ -43,7 +43,7 @@ FIELDS = {
         width=8.258302,
         length=8.258302,
         robot=Robot2019,
-        json_name="spline_2019.json"),
+        field_id="2019"),
     "2020 Field":
     FieldType(
         "2020 Field",
@@ -52,7 +52,7 @@ FIELDS = {
         width=15.98295,
         length=8.21055,
         robot=Robot2020,
-        json_name="spline_2020.json"),
+        field_id="2020"),
     "2021 Galactic Search BRed":
     FieldType(
         "2021 Galactic Search BRed",
@@ -61,7 +61,7 @@ FIELDS = {
         width=9.144,
         length=4.572,
         robot=Robot2021,
-        json_name="spline_red_b.json"),
+        field_id="red_b"),
     "2021 Galactic Search ARed":
     FieldType(
         "2021 Galactic Search ARed",
@@ -70,7 +70,7 @@ FIELDS = {
         width=9.144,
         length=4.572,
         robot=Robot2021,
-        json_name="spline_red_a.json"),
+        field_id="red_a"),
     "2021 Galactic Search BBlue":
     FieldType(
         "2021 Galactic Search BBlue",
@@ -79,7 +79,7 @@ FIELDS = {
         width=9.144,
         length=4.572,
         robot=Robot2021,
-        json_name="spline_blue_b.json"),
+        field_id="blue_b"),
     "2021 Galactic Search ABlue":
     FieldType(
         "2021 Galactic Search ABlue",
@@ -88,7 +88,7 @@ FIELDS = {
         width=9.144,
         length=4.572,
         robot=Robot2021,
-        json_name="spline_blue_a.json"),
+        field_id="blue_a"),
     "2021 AutoNav Barrel":
     FieldType(
         "2021 AutoNav Barrel",
@@ -97,7 +97,7 @@ FIELDS = {
         width=9.144,
         length=4.572,
         robot=Robot2021,
-        json_name="autonav_barrel.json"),
+        field_id="autonav_barrel"),
     "2021 AutoNav Slalom":
     FieldType(
         "2021 AutoNav Slalom",
@@ -106,7 +106,7 @@ FIELDS = {
         width=9.144,
         length=4.572,
         robot=Robot2021,
-        json_name="autonav_slalom.json"),
+        field_id="autonav_slalom"),
     "2021 AutoNav Bounce":
     FieldType(
         "2021 AutoNav Bounce",
@@ -115,7 +115,7 @@ FIELDS = {
         width=9.144,
         length=4.572,
         robot=Robot2021,
-        json_name="autonav_bounce.json"),
+        field_id="autonav_bounce"),
 }
 
 FIELD = FIELDS["2021 Galactic Search BRed"]
