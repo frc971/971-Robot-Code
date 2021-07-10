@@ -223,20 +223,20 @@ TEST(MessageTest, Sorting) {
 
   Message m1{.channel_index = 0,
              .queue_index = 0,
-             .timestamp = e + chrono::milliseconds(1),
-             .boot_count = 0,
+             .timestamp =
+                 BootTimestamp{.boot = 0, .time = e + chrono::milliseconds(1)},
              .data = SizePrefixedFlatbufferVector<MessageHeader>::Empty()};
   Message m2{.channel_index = 0,
              .queue_index = 0,
-             .timestamp = e + chrono::milliseconds(2),
-             .boot_count = 0,
+             .timestamp =
+                 BootTimestamp{.boot = 0, .time = e + chrono::milliseconds(2)},
              .data = SizePrefixedFlatbufferVector<MessageHeader>::Empty()};
 
   EXPECT_LT(m1, m2);
   EXPECT_GE(m2, m1);
 
-  m1.timestamp = e;
-  m2.timestamp = e;
+  m1.timestamp.time = e;
+  m2.timestamp.time = e;
 
   m1.channel_index = 1;
   m2.channel_index = 2;
@@ -548,10 +548,14 @@ TEST_F(LogPartsSorterTest, Pull) {
 
   ASSERT_TRUE(parts_sorter.Front() == nullptr);
 
-  EXPECT_EQ(output[0].timestamp, e + chrono::milliseconds(1000));
-  EXPECT_EQ(output[1].timestamp, e + chrono::milliseconds(1000));
-  EXPECT_EQ(output[2].timestamp, e + chrono::milliseconds(1901));
-  EXPECT_EQ(output[3].timestamp, e + chrono::milliseconds(2000));
+  EXPECT_EQ(output[0].timestamp.boot, 0);
+  EXPECT_EQ(output[0].timestamp.time, e + chrono::milliseconds(1000));
+  EXPECT_EQ(output[1].timestamp.boot, 0);
+  EXPECT_EQ(output[1].timestamp.time, e + chrono::milliseconds(1000));
+  EXPECT_EQ(output[2].timestamp.boot, 0);
+  EXPECT_EQ(output[2].timestamp.time, e + chrono::milliseconds(1901));
+  EXPECT_EQ(output[3].timestamp.boot, 0);
+  EXPECT_EQ(output[3].timestamp.time, e + chrono::milliseconds(2000));
 }
 
 // Tests that we can pull messages out of a log sorted in order.
@@ -594,11 +598,16 @@ TEST_F(LogPartsSorterTest, WayBeforeStart) {
 
   ASSERT_TRUE(parts_sorter.Front() == nullptr);
 
-  EXPECT_EQ(output[0].timestamp, e - chrono::milliseconds(1000));
-  EXPECT_EQ(output[1].timestamp, e - chrono::milliseconds(500));
-  EXPECT_EQ(output[2].timestamp, e - chrono::milliseconds(10));
-  EXPECT_EQ(output[3].timestamp, e + chrono::milliseconds(1901));
-  EXPECT_EQ(output[4].timestamp, e + chrono::milliseconds(2000));
+  EXPECT_EQ(output[0].timestamp.boot, 0u);
+  EXPECT_EQ(output[0].timestamp.time, e - chrono::milliseconds(1000));
+  EXPECT_EQ(output[1].timestamp.boot, 0u);
+  EXPECT_EQ(output[1].timestamp.time, e - chrono::milliseconds(500));
+  EXPECT_EQ(output[2].timestamp.boot, 0u);
+  EXPECT_EQ(output[2].timestamp.time, e - chrono::milliseconds(10));
+  EXPECT_EQ(output[3].timestamp.boot, 0u);
+  EXPECT_EQ(output[3].timestamp.time, e + chrono::milliseconds(1901));
+  EXPECT_EQ(output[4].timestamp.boot, 0u);
+  EXPECT_EQ(output[4].timestamp.time, e + chrono::milliseconds(2000));
 }
 
 // Tests that messages too far out of order trigger death.
@@ -709,12 +718,18 @@ TEST_F(NodeMergerTest, TwoFileMerger) {
 
   ASSERT_TRUE(merger.Front() == nullptr);
 
-  EXPECT_EQ(output[0].timestamp, e + chrono::milliseconds(1000));
-  EXPECT_EQ(output[1].timestamp, e + chrono::milliseconds(1001));
-  EXPECT_EQ(output[2].timestamp, e + chrono::milliseconds(1002));
-  EXPECT_EQ(output[3].timestamp, e + chrono::milliseconds(2000));
-  EXPECT_EQ(output[4].timestamp, e + chrono::milliseconds(3000));
-  EXPECT_EQ(output[5].timestamp, e + chrono::milliseconds(3002));
+  EXPECT_EQ(output[0].timestamp.boot, 0u);
+  EXPECT_EQ(output[0].timestamp.time, e + chrono::milliseconds(1000));
+  EXPECT_EQ(output[1].timestamp.boot, 0u);
+  EXPECT_EQ(output[1].timestamp.time, e + chrono::milliseconds(1001));
+  EXPECT_EQ(output[2].timestamp.boot, 0u);
+  EXPECT_EQ(output[2].timestamp.time, e + chrono::milliseconds(1002));
+  EXPECT_EQ(output[3].timestamp.boot, 0u);
+  EXPECT_EQ(output[3].timestamp.time, e + chrono::milliseconds(2000));
+  EXPECT_EQ(output[4].timestamp.boot, 0u);
+  EXPECT_EQ(output[4].timestamp.time, e + chrono::milliseconds(3000));
+  EXPECT_EQ(output[5].timestamp.boot, 0u);
+  EXPECT_EQ(output[5].timestamp.time, e + chrono::milliseconds(3002));
 }
 
 // Tests that we can merge timestamps with various combinations of
@@ -776,15 +791,22 @@ TEST_F(NodeMergerTest, TwoFileTimestampMerger) {
   }
   ASSERT_TRUE(merger.Front() == nullptr);
 
-  EXPECT_EQ(output[0].timestamp, e + chrono::milliseconds(101000));
+  EXPECT_EQ(output[0].timestamp.boot, 0u);
+  EXPECT_EQ(output[0].timestamp.time, e + chrono::milliseconds(101000));
   EXPECT_FALSE(output[0].data.message().has_monotonic_timestamp_time());
-  EXPECT_EQ(output[1].timestamp, e + chrono::milliseconds(101001));
+
+  EXPECT_EQ(output[1].timestamp.boot, 0u);
+  EXPECT_EQ(output[1].timestamp.time, e + chrono::milliseconds(101001));
   EXPECT_TRUE(output[1].data.message().has_monotonic_timestamp_time());
   EXPECT_EQ(output[1].data.message().monotonic_timestamp_time(), 971);
-  EXPECT_EQ(output[2].timestamp, e + chrono::milliseconds(101002));
+
+  EXPECT_EQ(output[2].timestamp.boot, 0u);
+  EXPECT_EQ(output[2].timestamp.time, e + chrono::milliseconds(101002));
   EXPECT_TRUE(output[2].data.message().has_monotonic_timestamp_time());
   EXPECT_EQ(output[2].data.message().monotonic_timestamp_time(), 972);
-  EXPECT_EQ(output[3].timestamp, e + chrono::milliseconds(101003));
+
+  EXPECT_EQ(output[3].timestamp.boot, 0u);
+  EXPECT_EQ(output[3].timestamp.time, e + chrono::milliseconds(101003));
   EXPECT_TRUE(output[3].data.message().has_monotonic_timestamp_time());
   EXPECT_EQ(output[3].data.message().monotonic_timestamp_time(), 973);
 }
@@ -862,11 +884,19 @@ TEST_F(TimestampMapperTest, ReadNode0First) {
 
     ASSERT_TRUE(mapper0.Front() == nullptr);
 
-    EXPECT_EQ(output0[0].monotonic_event_time, e + chrono::milliseconds(1000));
+    EXPECT_EQ(output0[0].monotonic_event_time.boot, 0u);
+    EXPECT_EQ(output0[0].monotonic_event_time.time,
+              e + chrono::milliseconds(1000));
     EXPECT_TRUE(output0[0].data.Verify());
-    EXPECT_EQ(output0[1].monotonic_event_time, e + chrono::milliseconds(2000));
+
+    EXPECT_EQ(output0[1].monotonic_event_time.boot, 0u);
+    EXPECT_EQ(output0[1].monotonic_event_time.time,
+              e + chrono::milliseconds(2000));
     EXPECT_TRUE(output0[1].data.Verify());
-    EXPECT_EQ(output0[2].monotonic_event_time, e + chrono::milliseconds(3000));
+
+    EXPECT_EQ(output0[2].monotonic_event_time.boot, 0u);
+    EXPECT_EQ(output0[2].monotonic_event_time.time,
+              e + chrono::milliseconds(3000));
     EXPECT_TRUE(output0[2].data.Verify());
   }
 
@@ -906,13 +936,18 @@ TEST_F(TimestampMapperTest, ReadNode0First) {
     EXPECT_EQ(mapper0_count, 3u);
     EXPECT_EQ(mapper1_count, 3u);
 
-    EXPECT_EQ(output1[0].monotonic_event_time,
+    EXPECT_EQ(output1[0].monotonic_event_time.boot, 0u);
+    EXPECT_EQ(output1[0].monotonic_event_time.time,
               e + chrono::seconds(100) + chrono::milliseconds(1000));
     EXPECT_TRUE(output1[0].data.Verify());
-    EXPECT_EQ(output1[1].monotonic_event_time,
+
+    EXPECT_EQ(output1[1].monotonic_event_time.boot, 0u);
+    EXPECT_EQ(output1[1].monotonic_event_time.time,
               e + chrono::seconds(100) + chrono::milliseconds(2000));
     EXPECT_TRUE(output1[1].data.Verify());
-    EXPECT_EQ(output1[2].monotonic_event_time,
+
+    EXPECT_EQ(output1[2].monotonic_event_time.boot, 0u);
+    EXPECT_EQ(output1[2].monotonic_event_time.time,
               e + chrono::seconds(100) + chrono::milliseconds(3000));
     EXPECT_TRUE(output1[2].data.Verify());
   }
@@ -977,14 +1012,28 @@ TEST_F(TimestampMapperTest, MessageWithTimestampTime) {
 
     ASSERT_TRUE(mapper0.Front() == nullptr);
 
-    EXPECT_EQ(output0[0].monotonic_event_time, e + chrono::milliseconds(1000));
-    EXPECT_EQ(output0[0].monotonic_timestamp_time, monotonic_clock::min_time);
+    EXPECT_EQ(output0[0].monotonic_event_time.boot, 0u);
+    EXPECT_EQ(output0[0].monotonic_event_time.time,
+              e + chrono::milliseconds(1000));
+    EXPECT_EQ(output0[0].monotonic_timestamp_time.boot, 0u);
+    EXPECT_EQ(output0[0].monotonic_timestamp_time.time,
+              monotonic_clock::min_time);
     EXPECT_TRUE(output0[0].data.Verify());
-    EXPECT_EQ(output0[1].monotonic_event_time, e + chrono::milliseconds(2000));
-    EXPECT_EQ(output0[1].monotonic_timestamp_time, monotonic_clock::min_time);
+
+    EXPECT_EQ(output0[1].monotonic_event_time.boot, 0u);
+    EXPECT_EQ(output0[1].monotonic_event_time.time,
+              e + chrono::milliseconds(2000));
+    EXPECT_EQ(output0[1].monotonic_timestamp_time.boot, 0u);
+    EXPECT_EQ(output0[1].monotonic_timestamp_time.time,
+              monotonic_clock::min_time);
     EXPECT_TRUE(output0[1].data.Verify());
-    EXPECT_EQ(output0[2].monotonic_event_time, e + chrono::milliseconds(3000));
-    EXPECT_EQ(output0[2].monotonic_timestamp_time, monotonic_clock::min_time);
+
+    EXPECT_EQ(output0[2].monotonic_event_time.boot, 0u);
+    EXPECT_EQ(output0[2].monotonic_event_time.time,
+              e + chrono::milliseconds(3000));
+    EXPECT_EQ(output0[2].monotonic_timestamp_time.boot, 0u);
+    EXPECT_EQ(output0[2].monotonic_timestamp_time.time,
+              monotonic_clock::min_time);
     EXPECT_TRUE(output0[2].data.Verify());
   }
 
@@ -1000,19 +1049,28 @@ TEST_F(TimestampMapperTest, MessageWithTimestampTime) {
 
     ASSERT_TRUE(mapper1.Front() == nullptr);
 
-    EXPECT_EQ(output1[0].monotonic_event_time,
+    EXPECT_EQ(output1[0].monotonic_event_time.boot, 0u);
+    EXPECT_EQ(output1[0].monotonic_event_time.time,
               e + chrono::seconds(100) + chrono::milliseconds(1000));
-    EXPECT_EQ(output1[0].monotonic_timestamp_time,
+    EXPECT_EQ(output1[0].monotonic_timestamp_time.boot, 0u);
+    EXPECT_EQ(output1[0].monotonic_timestamp_time.time,
               e + chrono::nanoseconds(971));
     EXPECT_TRUE(output1[0].data.Verify());
-    EXPECT_EQ(output1[1].monotonic_event_time,
+
+    EXPECT_EQ(output1[1].monotonic_event_time.boot, 0u);
+    EXPECT_EQ(output1[1].monotonic_event_time.time,
               e + chrono::seconds(100) + chrono::milliseconds(2000));
-    EXPECT_EQ(output1[1].monotonic_timestamp_time,
+    EXPECT_EQ(output1[1].monotonic_timestamp_time.boot, 0u);
+    EXPECT_EQ(output1[1].monotonic_timestamp_time.time,
               e + chrono::nanoseconds(5458));
     EXPECT_TRUE(output1[1].data.Verify());
-    EXPECT_EQ(output1[2].monotonic_event_time,
+
+    EXPECT_EQ(output1[2].monotonic_event_time.boot, 0u);
+    EXPECT_EQ(output1[2].monotonic_event_time.time,
               e + chrono::seconds(100) + chrono::milliseconds(3000));
-    EXPECT_EQ(output1[2].monotonic_timestamp_time, monotonic_clock::min_time);
+    EXPECT_EQ(output1[2].monotonic_timestamp_time.boot, 0u);
+    EXPECT_EQ(output1[2].monotonic_timestamp_time.time,
+              monotonic_clock::min_time);
     EXPECT_TRUE(output1[2].data.Verify());
   }
 
@@ -1085,13 +1143,18 @@ TEST_F(TimestampMapperTest, ReadNode1First) {
 
     ASSERT_TRUE(mapper1.Front() == nullptr);
 
-    EXPECT_EQ(output1[0].monotonic_event_time,
+    EXPECT_EQ(output1[0].monotonic_event_time.boot, 0u);
+    EXPECT_EQ(output1[0].monotonic_event_time.time,
               e + chrono::seconds(100) + chrono::milliseconds(1000));
     EXPECT_TRUE(output1[0].data.Verify());
-    EXPECT_EQ(output1[1].monotonic_event_time,
+
+    EXPECT_EQ(output1[1].monotonic_event_time.boot, 0u);
+    EXPECT_EQ(output1[1].monotonic_event_time.time,
               e + chrono::seconds(100) + chrono::milliseconds(2000));
     EXPECT_TRUE(output1[1].data.Verify());
-    EXPECT_EQ(output1[2].monotonic_event_time,
+
+    EXPECT_EQ(output1[2].monotonic_event_time.boot, 0u);
+    EXPECT_EQ(output1[2].monotonic_event_time.time,
               e + chrono::seconds(100) + chrono::milliseconds(3000));
     EXPECT_TRUE(output1[2].data.Verify());
   }
@@ -1116,11 +1179,19 @@ TEST_F(TimestampMapperTest, ReadNode1First) {
 
     ASSERT_TRUE(mapper0.Front() == nullptr);
 
-    EXPECT_EQ(output0[0].monotonic_event_time, e + chrono::milliseconds(1000));
+    EXPECT_EQ(output0[0].monotonic_event_time.boot, 0u);
+    EXPECT_EQ(output0[0].monotonic_event_time.time,
+              e + chrono::milliseconds(1000));
     EXPECT_TRUE(output0[0].data.Verify());
-    EXPECT_EQ(output0[1].monotonic_event_time, e + chrono::milliseconds(2000));
+
+    EXPECT_EQ(output0[1].monotonic_event_time.boot, 0u);
+    EXPECT_EQ(output0[1].monotonic_event_time.time,
+              e + chrono::milliseconds(2000));
     EXPECT_TRUE(output0[1].data.Verify());
-    EXPECT_EQ(output0[2].monotonic_event_time, e + chrono::milliseconds(3000));
+
+    EXPECT_EQ(output0[2].monotonic_event_time.boot, 0u);
+    EXPECT_EQ(output0[2].monotonic_event_time.time,
+              e + chrono::milliseconds(3000));
     EXPECT_TRUE(output0[2].data.Verify());
   }
 
@@ -1191,13 +1262,18 @@ TEST_F(TimestampMapperTest, ReadMissingDataBefore) {
 
     ASSERT_TRUE(mapper1.Front() == nullptr);
 
-    EXPECT_EQ(output1[0].monotonic_event_time,
+    EXPECT_EQ(output1[0].monotonic_event_time.boot, 0u);
+    EXPECT_EQ(output1[0].monotonic_event_time.time,
               e + chrono::seconds(100) + chrono::milliseconds(1000));
     EXPECT_FALSE(output1[0].data.Verify());
-    EXPECT_EQ(output1[1].monotonic_event_time,
+
+    EXPECT_EQ(output1[1].monotonic_event_time.boot, 0u);
+    EXPECT_EQ(output1[1].monotonic_event_time.time,
               e + chrono::seconds(100) + chrono::milliseconds(2000));
     EXPECT_TRUE(output1[1].data.Verify());
-    EXPECT_EQ(output1[2].monotonic_event_time,
+
+    EXPECT_EQ(output1[2].monotonic_event_time.boot, 0u);
+    EXPECT_EQ(output1[2].monotonic_event_time.time,
               e + chrono::seconds(100) + chrono::milliseconds(3000));
     EXPECT_TRUE(output1[2].data.Verify());
   }
@@ -1269,13 +1345,18 @@ TEST_F(TimestampMapperTest, ReadMissingDataAfter) {
 
     ASSERT_TRUE(mapper1.Front() == nullptr);
 
-    EXPECT_EQ(output1[0].monotonic_event_time,
+    EXPECT_EQ(output1[0].monotonic_event_time.boot, 0u);
+    EXPECT_EQ(output1[0].monotonic_event_time.time,
               e + chrono::seconds(100) + chrono::milliseconds(1000));
     EXPECT_TRUE(output1[0].data.Verify());
-    EXPECT_EQ(output1[1].monotonic_event_time,
+
+    EXPECT_EQ(output1[1].monotonic_event_time.boot, 0u);
+    EXPECT_EQ(output1[1].monotonic_event_time.time,
               e + chrono::seconds(100) + chrono::milliseconds(2000));
     EXPECT_TRUE(output1[1].data.Verify());
-    EXPECT_EQ(output1[2].monotonic_event_time,
+
+    EXPECT_EQ(output1[2].monotonic_event_time.boot, 0u);
+    EXPECT_EQ(output1[2].monotonic_event_time.time,
               e + chrono::seconds(100) + chrono::milliseconds(3000));
     EXPECT_FALSE(output1[2].data.Verify());
   }
@@ -1339,10 +1420,13 @@ TEST_F(TimestampMapperTest, ReadMissingDataMiddle) {
 
     ASSERT_FALSE(mapper1.Front() == nullptr);
 
-    EXPECT_EQ(output1[0].monotonic_event_time,
+    EXPECT_EQ(output1[0].monotonic_event_time.boot, 0u);
+    EXPECT_EQ(output1[0].monotonic_event_time.time,
               e + chrono::seconds(100) + chrono::milliseconds(1000));
     EXPECT_TRUE(output1[0].data.Verify());
-    EXPECT_EQ(output1[1].monotonic_event_time,
+
+    EXPECT_EQ(output1[1].monotonic_event_time.boot, 0u);
+    EXPECT_EQ(output1[1].monotonic_event_time.time,
               e + chrono::seconds(100) + chrono::milliseconds(3000));
     EXPECT_TRUE(output1[1].data.Verify());
   }
@@ -1409,16 +1493,23 @@ TEST_F(TimestampMapperTest, ReadSameTimestamp) {
     }
     ASSERT_TRUE(mapper1.Front() == nullptr);
 
-    EXPECT_EQ(output1[0].monotonic_event_time,
+    EXPECT_EQ(output1[0].monotonic_event_time.boot, 0u);
+    EXPECT_EQ(output1[0].monotonic_event_time.time,
               e + chrono::seconds(100) + chrono::milliseconds(1000));
     EXPECT_TRUE(output1[0].data.Verify());
-    EXPECT_EQ(output1[1].monotonic_event_time,
+
+    EXPECT_EQ(output1[1].monotonic_event_time.boot, 0u);
+    EXPECT_EQ(output1[1].monotonic_event_time.time,
               e + chrono::seconds(100) + chrono::milliseconds(2000));
     EXPECT_TRUE(output1[1].data.Verify());
-    EXPECT_EQ(output1[2].monotonic_event_time,
+
+    EXPECT_EQ(output1[2].monotonic_event_time.boot, 0u);
+    EXPECT_EQ(output1[2].monotonic_event_time.time,
               e + chrono::seconds(100) + chrono::milliseconds(2000));
     EXPECT_TRUE(output1[2].data.Verify());
-    EXPECT_EQ(output1[3].monotonic_event_time,
+
+    EXPECT_EQ(output1[3].monotonic_event_time.boot, 0u);
+    EXPECT_EQ(output1[3].monotonic_event_time.time,
               e + chrono::seconds(100) + chrono::milliseconds(3000));
     EXPECT_TRUE(output1[3].data.Verify());
   }
@@ -1427,7 +1518,7 @@ TEST_F(TimestampMapperTest, ReadSameTimestamp) {
   EXPECT_EQ(mapper1_count, 4u);
 }
 
-// Tests that we properly sort log files with duplicate timestamps.
+// Tests that we properly produce a valid start time.
 TEST_F(TimestampMapperTest, StartTime) {
   const aos::monotonic_clock::time_point e = monotonic_clock::epoch();
   {
@@ -1447,8 +1538,8 @@ TEST_F(TimestampMapperTest, StartTime) {
   mapper0.set_timestamp_callback(
       [&](TimestampedMessage *) { ++mapper0_count; });
 
-  EXPECT_EQ(mapper0.monotonic_start_time(), e + chrono::milliseconds(1));
-  EXPECT_EQ(mapper0.realtime_start_time(),
+  EXPECT_EQ(mapper0.monotonic_start_time(0), e + chrono::milliseconds(1));
+  EXPECT_EQ(mapper0.realtime_start_time(0),
             realtime_clock::time_point(chrono::seconds(1000)));
   EXPECT_EQ(mapper0_count, 0u);
 }
@@ -1502,13 +1593,18 @@ TEST_F(TimestampMapperTest, NoPeer) {
     mapper1.PopFront();
     ASSERT_TRUE(mapper1.Front() == nullptr);
 
-    EXPECT_EQ(output1[0].monotonic_event_time,
+    EXPECT_EQ(output1[0].monotonic_event_time.boot, 0u);
+    EXPECT_EQ(output1[0].monotonic_event_time.time,
               e + chrono::seconds(100) + chrono::milliseconds(1000));
     EXPECT_FALSE(output1[0].data.Verify());
-    EXPECT_EQ(output1[1].monotonic_event_time,
+
+    EXPECT_EQ(output1[1].monotonic_event_time.boot, 0u);
+    EXPECT_EQ(output1[1].monotonic_event_time.time,
               e + chrono::seconds(100) + chrono::milliseconds(2000));
     EXPECT_FALSE(output1[1].data.Verify());
-    EXPECT_EQ(output1[2].monotonic_event_time,
+
+    EXPECT_EQ(output1[2].monotonic_event_time.boot, 0u);
+    EXPECT_EQ(output1[2].monotonic_event_time.time,
               e + chrono::seconds(100) + chrono::milliseconds(3000));
     EXPECT_FALSE(output1[2].data.Verify());
   }
@@ -1568,7 +1664,8 @@ TEST_F(TimestampMapperTest, QueueUntilNode0) {
 
     EXPECT_EQ(mapper0_count, 0u);
     EXPECT_EQ(mapper1_count, 0u);
-    mapper0.QueueUntil(e + chrono::milliseconds(1000));
+    mapper0.QueueUntil(
+        BootTimestamp{.boot = 0, .time = e + chrono::milliseconds(1000)});
     EXPECT_EQ(mapper0_count, 3u);
     EXPECT_EQ(mapper1_count, 0u);
 
@@ -1576,11 +1673,13 @@ TEST_F(TimestampMapperTest, QueueUntilNode0) {
     EXPECT_EQ(mapper0_count, 3u);
     EXPECT_EQ(mapper1_count, 0u);
 
-    mapper0.QueueUntil(e + chrono::milliseconds(1500));
+    mapper0.QueueUntil(
+        BootTimestamp{.boot = 0, .time = e + chrono::milliseconds(1500)});
     EXPECT_EQ(mapper0_count, 3u);
     EXPECT_EQ(mapper1_count, 0u);
 
-    mapper0.QueueUntil(e + chrono::milliseconds(2500));
+    mapper0.QueueUntil(
+        BootTimestamp{.boot = 0, .time = e + chrono::milliseconds(2500)});
     EXPECT_EQ(mapper0_count, 4u);
     EXPECT_EQ(mapper1_count, 0u);
 
@@ -1598,13 +1697,24 @@ TEST_F(TimestampMapperTest, QueueUntilNode0) {
 
     ASSERT_TRUE(mapper0.Front() == nullptr);
 
-    EXPECT_EQ(output0[0].monotonic_event_time, e + chrono::milliseconds(1000));
+    EXPECT_EQ(output0[0].monotonic_event_time.boot, 0u);
+    EXPECT_EQ(output0[0].monotonic_event_time.time,
+              e + chrono::milliseconds(1000));
     EXPECT_TRUE(output0[0].data.Verify());
-    EXPECT_EQ(output0[1].monotonic_event_time, e + chrono::milliseconds(1000));
+
+    EXPECT_EQ(output0[1].monotonic_event_time.boot, 0u);
+    EXPECT_EQ(output0[1].monotonic_event_time.time,
+              e + chrono::milliseconds(1000));
     EXPECT_TRUE(output0[1].data.Verify());
-    EXPECT_EQ(output0[2].monotonic_event_time, e + chrono::milliseconds(2000));
+
+    EXPECT_EQ(output0[2].monotonic_event_time.boot, 0u);
+    EXPECT_EQ(output0[2].monotonic_event_time.time,
+              e + chrono::milliseconds(2000));
     EXPECT_TRUE(output0[2].data.Verify());
-    EXPECT_EQ(output0[3].monotonic_event_time, e + chrono::milliseconds(3000));
+
+    EXPECT_EQ(output0[3].monotonic_event_time.boot, 0u);
+    EXPECT_EQ(output0[3].monotonic_event_time.time,
+              e + chrono::milliseconds(3000));
     EXPECT_TRUE(output0[3].data.Verify());
   }
 
@@ -1614,7 +1724,9 @@ TEST_F(TimestampMapperTest, QueueUntilNode0) {
 
     EXPECT_EQ(mapper0_count, 4u);
     EXPECT_EQ(mapper1_count, 0u);
-    mapper1.QueueUntil(e + chrono::seconds(100) + chrono::milliseconds(1000));
+    mapper1.QueueUntil(BootTimestamp{
+        .boot = 0,
+        .time = e + chrono::seconds(100) + chrono::milliseconds(1000)});
     EXPECT_EQ(mapper0_count, 4u);
     EXPECT_EQ(mapper1_count, 3u);
 
@@ -1622,11 +1734,15 @@ TEST_F(TimestampMapperTest, QueueUntilNode0) {
     EXPECT_EQ(mapper0_count, 4u);
     EXPECT_EQ(mapper1_count, 3u);
 
-    mapper1.QueueUntil(e + chrono::seconds(100) + chrono::milliseconds(1500));
+    mapper1.QueueUntil(BootTimestamp{
+        .boot = 0,
+        .time = e + chrono::seconds(100) + chrono::milliseconds(1500)});
     EXPECT_EQ(mapper0_count, 4u);
     EXPECT_EQ(mapper1_count, 3u);
 
-    mapper1.QueueUntil(e + chrono::seconds(100) + chrono::milliseconds(2500));
+    mapper1.QueueUntil(BootTimestamp{
+        .boot = 0,
+        .time = e + chrono::seconds(100) + chrono::milliseconds(2500)});
     EXPECT_EQ(mapper0_count, 4u);
     EXPECT_EQ(mapper1_count, 4u);
 
@@ -1654,16 +1770,23 @@ TEST_F(TimestampMapperTest, QueueUntilNode0) {
     EXPECT_EQ(mapper0_count, 4u);
     EXPECT_EQ(mapper1_count, 4u);
 
-    EXPECT_EQ(output1[0].monotonic_event_time,
+    EXPECT_EQ(output1[0].monotonic_event_time.boot, 0u);
+    EXPECT_EQ(output1[0].monotonic_event_time.time,
               e + chrono::seconds(100) + chrono::milliseconds(1000));
     EXPECT_TRUE(output1[0].data.Verify());
-    EXPECT_EQ(output1[1].monotonic_event_time,
+
+    EXPECT_EQ(output1[1].monotonic_event_time.boot, 0u);
+    EXPECT_EQ(output1[1].monotonic_event_time.time,
               e + chrono::seconds(100) + chrono::milliseconds(1000));
     EXPECT_TRUE(output1[1].data.Verify());
-    EXPECT_EQ(output1[2].monotonic_event_time,
+
+    EXPECT_EQ(output1[2].monotonic_event_time.boot, 0u);
+    EXPECT_EQ(output1[2].monotonic_event_time.time,
               e + chrono::seconds(100) + chrono::milliseconds(2000));
     EXPECT_TRUE(output1[2].data.Verify());
-    EXPECT_EQ(output1[3].monotonic_event_time,
+
+    EXPECT_EQ(output1[3].monotonic_event_time.boot, 0u);
+    EXPECT_EQ(output1[3].monotonic_event_time.time,
               e + chrono::seconds(100) + chrono::milliseconds(3000));
     EXPECT_TRUE(output1[3].data.Verify());
   }
@@ -1784,14 +1907,15 @@ TEST_F(BootMergerTest, SortAcrossReboot) {
 
   ASSERT_TRUE(merger.Front() == nullptr);
 
-  EXPECT_EQ(output[0].timestamp, e + chrono::milliseconds(1000));
-  EXPECT_EQ(output[0].boot_count, 0u);
-  EXPECT_EQ(output[1].timestamp, e + chrono::milliseconds(2000));
-  EXPECT_EQ(output[1].boot_count, 0u);
-  EXPECT_EQ(output[2].timestamp, e + chrono::milliseconds(100));
-  EXPECT_EQ(output[2].boot_count, 1u);
-  EXPECT_EQ(output[3].timestamp, e + chrono::milliseconds(200));
-  EXPECT_EQ(output[3].boot_count, 1u);
+  EXPECT_EQ(output[0].timestamp.boot, 0u);
+  EXPECT_EQ(output[0].timestamp.time, e + chrono::milliseconds(1000));
+  EXPECT_EQ(output[1].timestamp.boot, 0u);
+  EXPECT_EQ(output[1].timestamp.time, e + chrono::milliseconds(2000));
+
+  EXPECT_EQ(output[2].timestamp.boot, 1u);
+  EXPECT_EQ(output[2].timestamp.time, e + chrono::milliseconds(100));
+  EXPECT_EQ(output[3].timestamp.boot, 1u);
+  EXPECT_EQ(output[3].timestamp.time, e + chrono::milliseconds(200));
 }
 
 }  // namespace testing

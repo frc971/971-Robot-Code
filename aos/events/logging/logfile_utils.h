@@ -18,6 +18,7 @@
 #include "absl/types/span.h"
 #include "aos/containers/resizeable_buffer.h"
 #include "aos/events/event_loop.h"
+#include "aos/events/logging/boot_timestamp.h"
 #include "aos/events/logging/buffer_encoder.h"
 #include "aos/events/logging/logfile_sorting.h"
 #include "aos/events/logging/logger_generated.h"
@@ -348,10 +349,8 @@ struct Message {
   uint32_t channel_index = 0xffffffff;
   // The local queue index.
   uint32_t queue_index = 0xffffffff;
-  // The local timestamp on the monotonic clock.
-  monotonic_clock::time_point timestamp = monotonic_clock::min_time;
-  // The current boot count added on by SortParts.
-  size_t boot_count = 0;
+  // The local timestamp.
+  BootTimestamp timestamp;
 
   // The data (either a timestamp header, or a data header).
   SizePrefixedFlatbufferVector<MessageHeader> data;
@@ -370,15 +369,14 @@ struct TimestampedMessage {
   uint32_t channel_index = 0xffffffff;
 
   uint32_t queue_index = 0xffffffff;
-  monotonic_clock::time_point monotonic_event_time = monotonic_clock::min_time;
+  BootTimestamp monotonic_event_time;
   realtime_clock::time_point realtime_event_time = realtime_clock::min_time;
 
   uint32_t remote_queue_index = 0xffffffff;
-  monotonic_clock::time_point monotonic_remote_time = monotonic_clock::min_time;
+  BootTimestamp monotonic_remote_time;
   realtime_clock::time_point realtime_remote_time = realtime_clock::min_time;
 
-  monotonic_clock::time_point monotonic_timestamp_time =
-      monotonic_clock::min_time;
+  BootTimestamp monotonic_timestamp_time;
 
   SizePrefixedFlatbufferVector<MessageHeader> data;
 };
@@ -511,11 +509,13 @@ class BootMerger {
     return node_mergers_[0]->configuration();
   }
 
-  monotonic_clock::time_point monotonic_start_time() const {
-    return node_mergers_[index_]->monotonic_start_time();
+  monotonic_clock::time_point monotonic_start_time(size_t boot) const {
+    CHECK_LT(boot, node_mergers_.size());
+    return node_mergers_[boot]->monotonic_start_time();
   }
-  realtime_clock::time_point realtime_start_time() const {
-    return node_mergers_[index_]->realtime_start_time();
+  realtime_clock::time_point realtime_start_time(size_t boot) const {
+    CHECK_LT(boot, node_mergers_.size());
+    return node_mergers_[boot]->realtime_start_time();
   }
 
   bool started() const {
@@ -561,14 +561,16 @@ class TimestampMapper {
   const Configuration *configuration() const { return configuration_.get(); }
 
   // Returns which node this is sorting for.
-  size_t node() const { return node_merger_.node(); }
+  size_t node() const { return boot_merger_.node(); }
 
   // The start time of this log.
-  monotonic_clock::time_point monotonic_start_time() const {
-    return node_merger_.monotonic_start_time();
+  // TODO(austin): This concept is probably wrong...  We have start times per
+  // boot, and an order of them.
+  monotonic_clock::time_point monotonic_start_time(size_t boot) const {
+    return boot_merger_.monotonic_start_time(boot);
   }
-  realtime_clock::time_point realtime_start_time() const {
-    return node_merger_.realtime_start_time();
+  realtime_clock::time_point realtime_start_time(size_t boot) const {
+    return boot_merger_.realtime_start_time(boot);
   }
 
   // Uses timestamp_mapper as the peer for its node. Only one mapper may be set
@@ -577,9 +579,7 @@ class TimestampMapper {
   void AddPeer(TimestampMapper *timestamp_mapper);
 
   // Returns true if anything has been queued up.
-  bool started() const {
-    return node_merger_.sorted_until() != monotonic_clock::min_time;
-  }
+  bool started() const { return boot_merger_.started(); }
 
   // Returns the next message for this node.
   TimestampedMessage *Front();
@@ -590,7 +590,7 @@ class TimestampMapper {
   std::string DebugString() const;
 
   // Queues data the provided time.
-  void QueueUntil(monotonic_clock::time_point queue_time);
+  void QueueUntil(BootTimestamp queue_time);
   // Queues until we have time_estimation_buffer of data in the queue.
   void QueueFor(std::chrono::nanoseconds time_estimation_buffer);
 
@@ -653,13 +653,13 @@ class TimestampMapper {
   // Queues up data until we have at least one message >= to time t.
   // Useful for triggering a remote node to read enough data to have the
   // timestamp you care about available.
-  void QueueUnmatchedUntil(monotonic_clock::time_point t);
+  void QueueUnmatchedUntil(BootTimestamp t);
 
   // Queues m into matched_messages_.
   void QueueMessage(Message *m);
 
   // The node merger to source messages from.
-  NodeMerger node_merger_;
+  BootMerger boot_merger_;
 
   std::shared_ptr<const Configuration> configuration_;
 
@@ -686,9 +686,9 @@ class TimestampMapper {
 
   // Timestamp of the last message returned.  Used to make sure nothing goes
   // backwards.
-  monotonic_clock::time_point last_message_time_ = monotonic_clock::min_time;
+  BootTimestamp last_message_time_ = BootTimestamp::min_time();
   // Time this node is queued up until.  Used for caching.
-  monotonic_clock::time_point queued_until_ = monotonic_clock::min_time;
+  BootTimestamp queued_until_ = BootTimestamp::min_time();
 
   std::function<void(TimestampedMessage *)> timestamp_callback_;
 };

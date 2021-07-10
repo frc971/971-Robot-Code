@@ -15,10 +15,12 @@ flatbuffer_cc_library(
 cc_library(
     name = "logfile_utils",
     srcs = [
+        "boot_timestamp.cc",
         "logfile_sorting.cc",
         "logfile_utils.cc",
     ],
     hdrs = [
+        "boot_timestamp.h",
         "logfile_sorting.h",
         "logfile_utils.h",
     ],
