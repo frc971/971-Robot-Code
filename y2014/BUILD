@@ -105,7 +105,6 @@ cc_binary(
     deps = [
         ":constants",
         "//aos:init",
-        "//aos:make_unique",
         "//frc971/control_loops:control_loop",
         "//aos/logging",
         "//frc971/input:robot_state_fbs",

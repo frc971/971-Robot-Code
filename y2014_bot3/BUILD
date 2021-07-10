@@ -39,7 +39,6 @@ cc_binary(
     target_compatible_with = ["//tools/platforms/hardware:roborio"],
     deps = [
         "//aos:init",
-        "//aos:make_unique",
         "//frc971/control_loops:control_loop",
         "//aos/logging",
         "//frc971/input:robot_state_fbs",

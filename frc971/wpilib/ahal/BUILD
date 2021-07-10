@@ -18,7 +18,6 @@ cc_library(
     target_compatible_with = ["//tools/platforms/hardware:roborio"],
     visibility = ["//third_party:__pkg__"],
     deps = [
-        "//aos:make_unique",
         "//aos:realtime",
         "//aos/logging",
         "//third_party:wpilib_hal",

@@ -9,6 +9,7 @@
 #include <functional>
 #include <mutex>
 #include <thread>
+#include <memory>
 
 #include "ctre/phoenix/CANifier.h"
 #include "frc971/wpilib/ahal/AnalogInput.h"
@@ -25,7 +26,6 @@
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 #include "aos/logging/logging.h"
-#include "aos/make_unique.h"
 #include "aos/realtime.h"
 #include "aos/time/time.h"
 #include "aos/util/log_interval.h"
@@ -55,7 +55,7 @@ using ::aos::monotonic_clock;
 using ::y2021_bot3::constants::Values;
 namespace superstructure = ::y2021_bot3::control_loops::superstructure;
 namespace chrono = ::std::chrono;
-using aos::make_unique;
+using std::make_unique;
 
 namespace y2021_bot3 {
 namespace wpilib {

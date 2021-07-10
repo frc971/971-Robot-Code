@@ -8,9 +8,9 @@
 #include "frc971/wpilib/ahal/DriverStation.h"
 
 #include <chrono>
+#include <memory>
 
 #include "FRC_NetworkCommunication/FRCComm.h"
-#include "aos/make_unique.h"
 #include "frc971/wpilib/ahal/AnalogInput.h"
 #include "frc971/wpilib/ahal/Utility.h"
 #include "frc971/wpilib/ahal/WPIErrors.h"
@@ -399,17 +399,17 @@ DriverStation::DriverStation() {
   // DS, and if the DS thinks you don't have robot code, then you can't enable).
   HAL_ObserveUserProgramStarting();
 
-  m_joystickAxes = aos::make_unique<HAL_JoystickAxes[]>(kJoystickPorts);
-  m_joystickPOVs = aos::make_unique<HAL_JoystickPOVs[]>(kJoystickPorts);
-  m_joystickButtons = aos::make_unique<HAL_JoystickButtons[]>(kJoystickPorts);
+  m_joystickAxes = std::make_unique<HAL_JoystickAxes[]>(kJoystickPorts);
+  m_joystickPOVs = std::make_unique<HAL_JoystickPOVs[]>(kJoystickPorts);
+  m_joystickButtons = std::make_unique<HAL_JoystickButtons[]>(kJoystickPorts);
   m_joystickDescriptor =
-      aos::make_unique<HAL_JoystickDescriptor[]>(kJoystickPorts);
-  m_joystickAxesCache = aos::make_unique<HAL_JoystickAxes[]>(kJoystickPorts);
-  m_joystickPOVsCache = aos::make_unique<HAL_JoystickPOVs[]>(kJoystickPorts);
+      std::make_unique<HAL_JoystickDescriptor[]>(kJoystickPorts);
+  m_joystickAxesCache = std::make_unique<HAL_JoystickAxes[]>(kJoystickPorts);
+  m_joystickPOVsCache = std::make_unique<HAL_JoystickPOVs[]>(kJoystickPorts);
   m_joystickButtonsCache =
-      aos::make_unique<HAL_JoystickButtons[]>(kJoystickPorts);
+      std::make_unique<HAL_JoystickButtons[]>(kJoystickPorts);
   m_joystickDescriptorCache =
-      aos::make_unique<HAL_JoystickDescriptor[]>(kJoystickPorts);
+      std::make_unique<HAL_JoystickDescriptor[]>(kJoystickPorts);
 
   // All joysticks should default to having zero axes, povs and buttons, so
   // uninitialized memory doesn't get sent to speed controllers.

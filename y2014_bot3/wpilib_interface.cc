@@ -7,6 +7,7 @@
 #include <functional>
 #include <mutex>
 #include <thread>
+#include <memory>
 
 #include "frc971/wpilib/ahal/AnalogInput.h"
 #include "frc971/wpilib/ahal/Compressor.h"
@@ -21,7 +22,6 @@
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 #include "aos/logging/logging.h"
-#include "aos/make_unique.h"
 #include "aos/stl_mutex/stl_mutex.h"
 #include "aos/time/time.h"
 #include "aos/util/log_interval.h"
@@ -49,7 +49,7 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-using aos::make_unique;
+using std::make_unique;
 using ::aos::util::SimpleLogInterval;
 using ::frc971::wpilib::BufferedPcm;
 using ::frc971::wpilib::BufferedSolenoid;
