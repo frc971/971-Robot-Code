@@ -198,9 +198,8 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
             rotation_state_ = RotationState::ROTATING_LEFT;
             rotation_count_ = kReverseTime;
             break;
-          } else {
-            break;
           }
+          [[fallthrough]];
         case RotationState::STUCK: {
           // Latch being stuck for 80 ms so we kick the box out far enough.
           if (last_stuck_time_ + chrono::milliseconds(80) < monotonic_now) {
