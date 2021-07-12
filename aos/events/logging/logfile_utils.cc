@@ -411,10 +411,7 @@ std::optional<SizePrefixedFlatbufferVector<LogFileHeader>> ReadHeader(
   }
 
   // And copy the config so we have it forever, removing the size prefix.
-  ResizeableBuffer data;
-  data.resize(config_data.size());
-  memcpy(data.data(), config_data.begin(), data.size());
-  SizePrefixedFlatbufferVector<LogFileHeader> result(std::move(data));
+  SizePrefixedFlatbufferVector<LogFileHeader> result(config_data);
   if (!result.Verify()) {
     return std::nullopt;
   }
@@ -435,10 +432,7 @@ std::optional<SizePrefixedFlatbufferVector<MessageHeader>> ReadNthMessage(
   }
 
   // And copy the config so we have it forever, removing the size prefix.
-  ResizeableBuffer data;
-  data.resize(data_span.size());
-  memcpy(data.data(), data_span.begin(), data.size());
-  SizePrefixedFlatbufferVector<MessageHeader> result(std::move(data));
+  SizePrefixedFlatbufferVector<MessageHeader> result(data_span);
   if (!result.Verify()) {
     return std::nullopt;
   }
@@ -480,10 +474,7 @@ MessageReader::ReadMessage() {
     return std::nullopt;
   }
 
-  ResizeableBuffer result_buffer;
-  result_buffer.resize(msg_data.size());
-  memcpy(result_buffer.data(), msg_data.begin(), result_buffer.size());
-  SizePrefixedFlatbufferVector<MessageHeader> result(std::move(result_buffer));
+  SizePrefixedFlatbufferVector<MessageHeader> result(msg_data);
 
   const monotonic_clock::time_point timestamp = monotonic_clock::time_point(
       chrono::nanoseconds(result.message().monotonic_sent_time()));

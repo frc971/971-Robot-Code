@@ -413,9 +413,13 @@ class SizePrefixedFlatbufferVector : public SizePrefixedFlatbuffer<T> {
       : data_(std::move(data)) {}
 
   // Builds a Flatbuffer by copying the data from the other flatbuffer.
-  SizePrefixedFlatbufferVector(const SizePrefixedFlatbuffer<T> &other) {
-    data_.resize(other.span().size());
-    memcpy(data_.data(), other.span().data(), data_.size());
+  SizePrefixedFlatbufferVector(const SizePrefixedFlatbuffer<T> &other)
+      : SizePrefixedFlatbufferVector(other.span()) {}
+
+  // Builds a flatbuffer by copying the data from the provided span.
+  SizePrefixedFlatbufferVector(const absl::Span<const uint8_t> span) {
+    data_.resize(span.size());
+    memcpy(data_.data(), span.data(), data_.size());
   }
 
   // Copy constructor.
