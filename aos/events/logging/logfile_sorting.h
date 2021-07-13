@@ -2,6 +2,7 @@
 #define AOS_EVENTS_LOGGING_LOGFILE_SORTING_H_
 
 #include <iostream>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -11,6 +12,15 @@
 
 namespace aos {
 namespace logger {
+
+struct Boots {
+  // Maps the boot UUID to the boot count.  Since boot UUIDs are unique, we
+  // don't need to be node specific and can do this for all nodes.
+  std::map<std::string, int> boot_count_map;
+
+  // Maps the node index to a set of all boots for that node.
+  std::vector<std::vector<std::string>> boots;
+};
 
 // Datastructure to hold ordered parts.
 struct LogParts {
@@ -42,6 +52,11 @@ struct LogParts {
   // source_boot_uuid's for a node.
   size_t boot_count = 0;
 
+  // Boot number for the node where this data was logged.
+  // This is theoretically redundant with LogFile, except that we quickly end up
+  // using LogParts without the corresponding LogFile datastructure.
+  size_t logger_boot_count = 0;
+
   // Pre-sorted list of parts.
   std::vector<std::string> parts;
 
@@ -49,6 +64,9 @@ struct LogParts {
   // log files with the same config.
   std::string config_sha256;
   std::shared_ptr<const aos::Configuration> config;
+
+  // Information about all the boots that the system has observed.
+  std::shared_ptr<const Boots> boots;
 };
 
 // Datastructure to hold parts from the same run of the logger which have no

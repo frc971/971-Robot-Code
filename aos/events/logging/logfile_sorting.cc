@@ -139,7 +139,10 @@ struct UnsortedLogPartsMap {
   // Name from a log.  All logs below have been confirmed to match.
   std::string name;
 
-  std::map<std::string, UnsortedLogParts> unsorted_parts;
+  // Mapping from parts_uuid, source_boot_uuid -> parts.  We have log files
+  // where the parts_uuid stays constant across reboots.
+  std::map<std::pair<std::string, std::string>, UnsortedLogParts>
+      unsorted_parts;
 };
 
 // Sort part files without UUIDs and part indexes as well.  Extract everything
@@ -167,6 +170,19 @@ struct NodeBootState {
   std::set<std::string> boots;
 };
 
+// This is an intermediate representation of Boots.  The data we have when we
+// are iterating through the log file headers isn't enough to create Boots as we
+// go, so we need to save an intermediate and then rewrite it into the final
+// result once we know everything.
+struct MapBoots {
+  // Maps the boot UUID to the boot count.  Since boot UUIDs are unique, we
+  // don't need to be node specific and can do this for all nodes.
+  std::map<std::string, int> boot_count_map;
+
+  // Maps the node name to a set of all boots for that node.
+  std::map<std::string, std::vector<std::string>> boots;
+};
+
 // Helper class to make it easier to sort a list of log files into
 // std::vector<LogFile>
 struct PartsSorter {
@@ -189,7 +205,7 @@ struct PartsSorter {
   void PopulateFromFiles(const std::vector<std::string> &parts);
 
   // Wrangle parts_list into a map of boot uuids -> boot counts.
-  std::map<std::string, int> ComputeBootCounts();
+  MapBoots ComputeBootCounts();
 
   // Reformats old_parts into a list of logfiles and returns it.  This destroys
   // state in PartsSorter.
@@ -265,6 +281,8 @@ void PartsSorter::PopulateFromFiles(const std::vector<std::string> &parts) {
       }
       continue;
     }
+
+    VLOG(1) << "Header " << FlatbufferToJson(log_header.value()) << " " << part;
 
     if (configuration_sha256.empty()) {
       CHECK(log_header->message().has_configuration())
@@ -351,10 +369,15 @@ void PartsSorter::PopulateFromFiles(const std::vector<std::string> &parts) {
       }
     }
 
-    auto it = log_it->second.unsorted_parts.find(parts_uuid);
+    VLOG(1) << "Parts: " << parts_uuid << ", source boot uuid "
+            << source_boot_uuid;
+    auto it = log_it->second.unsorted_parts.find(
+        std::pair(parts_uuid, std::string(source_boot_uuid)));
     if (it == log_it->second.unsorted_parts.end()) {
       it = log_it->second.unsorted_parts
-               .insert(std::make_pair(parts_uuid, UnsortedLogParts()))
+               .insert(std::make_pair(
+                   std::make_pair(parts_uuid, std::string(source_boot_uuid)),
+                   UnsortedLogParts()))
                .first;
       it->second.monotonic_start_time = monotonic_start_time;
       it->second.realtime_start_time = realtime_start_time;
@@ -364,7 +387,6 @@ void PartsSorter::PopulateFromFiles(const std::vector<std::string> &parts) {
       it->second.source_boot_uuid = source_boot_uuid;
       it->second.config_sha256 = configuration_sha256;
     } else {
-      CHECK_EQ(it->second.source_boot_uuid, source_boot_uuid);
       CHECK_EQ(it->second.config_sha256, configuration_sha256);
     }
 
@@ -450,7 +472,7 @@ std::vector<LogFile> PartsSorter::FormatOldParts() {
   return result;
 }
 
-std::map<std::string, int> PartsSorter::ComputeBootCounts() {
+MapBoots PartsSorter::ComputeBootCounts() {
   std::map<std::string, NodeBootState> boot_constraints;
 
   // TODO(austin): This is the "old" way.  Once we have better ordering info in
@@ -478,8 +500,8 @@ std::map<std::string, int> PartsSorter::ComputeBootCounts() {
              std::vector<std::pair<std::string, std::pair<int, int>>>>
         node_boot_parts_index_ranges;
 
-    for (std::pair<const std::string, UnsortedLogParts> &parts :
-         logs.second.unsorted_parts) {
+    for (std::pair<const std::pair<std::string, std::string>, UnsortedLogParts>
+             &parts : logs.second.unsorted_parts) {
       CHECK_GT(parts.second.parts.size(), 0u);
 
       // Track that this boot exists so we know the overall set of boots we need
@@ -627,15 +649,17 @@ std::map<std::string, int> PartsSorter::ComputeBootCounts() {
   // And now walk the constraint graph we have generated to order the boots.
   // This doesn't need to catch all the cases, it just needs to report when it
   // fails.
-  std::map<std::string, int> boot_count_map;
-
+  MapBoots boots;
   for (std::pair<const std::string, NodeBootState> &node_state :
        boot_constraints) {
     CHECK_GT(node_state.second.boots.size(), 0u)
         << ": Need a boot from each node.";
     if (node_state.second.boots.size() == 1u) {
-      boot_count_map.insert(
+      boots.boot_count_map.insert(
           std::make_pair(*node_state.second.boots.begin(), 0));
+      boots.boots.insert(std::make_pair(
+          node_state.first,
+          std::vector<std::string>{*node_state.second.boots.begin()}));
       continue;
     }
 
@@ -717,18 +741,22 @@ std::map<std::string, int> PartsSorter::ComputeBootCounts() {
 
     VLOG(1) << "Node " << node_state.first;
     size_t boot_count = 0;
+    boots.boots.insert(std::make_pair(node_state.first, sorted_boots));
     for (const std::string &boot : sorted_boots) {
       VLOG(1) << "  Boot " << boot;
-      boot_count_map.insert(std::make_pair(std::move(boot), boot_count));
+      boots.boot_count_map.insert(std::make_pair(std::move(boot), boot_count));
       ++boot_count;
     }
   }
 
-  return boot_count_map;
+  return boots;
 }
 
 std::vector<LogFile> PartsSorter::FormatNewParts() {
-  const std::map<std::string, int> boot_counts = ComputeBootCounts();
+  // Rewrite MapBoots to Boots since we have enough information here.
+  std::shared_ptr<Boots> boot_counts = std::make_shared<Boots>();
+  MapBoots map_boot_counts = ComputeBootCounts();
+  boot_counts->boot_count_map = std::move(map_boot_counts.boot_count_map);
 
   std::map<std::string, std::shared_ptr<const Configuration>>
       copied_config_sha256;
@@ -741,8 +769,9 @@ std::vector<LogFile> PartsSorter::FormatNewParts() {
     new_file.logger_node = logs.second.logger_node;
     new_file.logger_boot_uuid = logs.second.logger_boot_uuid;
     {
-      auto boot_count_it = boot_counts.find(new_file.logger_boot_uuid);
-      CHECK(boot_count_it != boot_counts.end());
+      auto boot_count_it =
+          boot_counts->boot_count_map.find(new_file.logger_boot_uuid);
+      CHECK(boot_count_it != boot_counts->boot_count_map.end());
       new_file.logger_boot_count = boot_count_it->second;
     }
     new_file.monotonic_start_time = logs.second.monotonic_start_time;
@@ -751,8 +780,8 @@ std::vector<LogFile> PartsSorter::FormatNewParts() {
     new_file.corrupted = corrupted;
     bool seen_part = false;
     std::string config_sha256;
-    for (std::pair<const std::string, UnsortedLogParts> &parts :
-         logs.second.unsorted_parts) {
+    for (std::pair<const std::pair<std::string, std::string>, UnsortedLogParts>
+             &parts : logs.second.unsorted_parts) {
       LogParts new_parts;
       new_parts.monotonic_start_time = parts.second.monotonic_start_time;
       new_parts.realtime_start_time = parts.second.realtime_start_time;
@@ -762,14 +791,17 @@ std::vector<LogFile> PartsSorter::FormatNewParts() {
           parts.second.logger_realtime_start_time;
       new_parts.log_event_uuid = logs.first;
       new_parts.source_boot_uuid = parts.second.source_boot_uuid;
-      new_parts.parts_uuid = parts.first;
+      new_parts.parts_uuid = parts.first.first;
       new_parts.node = std::move(parts.second.node);
+      new_parts.boots = boot_counts;
 
       {
-        auto boot_count_it = boot_counts.find(new_parts.source_boot_uuid);
-        CHECK(boot_count_it != boot_counts.end());
+        auto boot_count_it =
+            boot_counts->boot_count_map.find(new_parts.source_boot_uuid);
+        CHECK(boot_count_it != boot_counts->boot_count_map.end());
         new_parts.boot_count = boot_count_it->second;
       }
+      new_parts.logger_boot_count = new_file.logger_boot_count;
 
       std::sort(parts.second.parts.begin(), parts.second.parts.end(),
                 [](const std::pair<std::string, int> &a,
@@ -841,6 +873,26 @@ std::vector<LogFile> PartsSorter::FormatNewParts() {
     }
     result.emplace_back(std::move(new_file));
   }
+
+  {
+    CHECK_EQ(config_sha256_lookup.size() + copied_config_sha256.size(), 1u)
+        << ": We only support log files with 1 config in them.";
+    std::shared_ptr<const aos::Configuration> config =
+        config_sha256_lookup.empty() ? copied_config_sha256.begin()->second
+                                     : config_sha256_lookup.begin()->second;
+
+    boot_counts->boots.resize(configuration::NodesCount(config.get()));
+    for (std::pair<const std::string, std::vector<std::string>> &boots :
+         map_boot_counts.boots) {
+      size_t node_index = 0;
+      if (configuration::MultiNode(config.get())) {
+        node_index = configuration::GetNodeIndex(config.get(), boots.first);
+      }
+
+      boot_counts->boots[node_index] = std::move(boots.second);
+    }
+  }
+
   return result;
 }
 
