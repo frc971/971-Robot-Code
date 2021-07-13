@@ -1261,5 +1261,18 @@ const Application *GetApplication(const Configuration *config,
   return nullptr;
 }
 
+std::vector<size_t> SourceNodeIndex(const Configuration *config) {
+  CHECK(config->has_channels());
+  std::vector<size_t> result;
+  result.resize(config->channels()->size(), 0u);
+  if (MultiNode(config)) {
+    for (size_t i = 0; i < config->channels()->size(); ++i) {
+      result[i] = GetNodeIndex(
+          config, config->channels()->Get(i)->source_node()->string_view());
+    }
+  }
+  return result;
+}
+
 }  // namespace configuration
 }  // namespace aos

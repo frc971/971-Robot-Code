@@ -17,6 +17,12 @@
       "type": ".aos.baz",
       "max_size": 5,
       "source_node": "pi1"
+    },
+    {
+      "name": "/cat",
+      "type": ".aos.baz",
+      "max_size": 5,
+      "source_node": "pi2"
     }
   ],
   "maps": [
