@@ -74,7 +74,6 @@ cc_binary(
     deps = [
         ":status_light_fbs",
         "//aos:init",
-        "//aos:make_unique",
         "//aos:math",
         "//frc971/control_loops:control_loop",
         "//aos/logging",

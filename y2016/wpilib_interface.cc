@@ -22,7 +22,6 @@
 #include "aos/commonmath.h"
 #include "aos/events/shm_event_loop.h"
 #include "aos/logging/logging.h"
-#include "aos/make_unique.h"
 #include "aos/stl_mutex/stl_mutex.h"
 #include "aos/time/time.h"
 #include "aos/util/log_interval.h"
@@ -54,7 +53,7 @@
 #include "y2016/control_loops/superstructure/superstructure_position_generated.h"
 #include "y2016/queues/ball_detector_generated.h"
 
-using aos::make_unique;
+using std::make_unique;
 using ::frc971::wpilib::LoopOutputHandler;
 namespace shooter = ::y2016::control_loops::shooter;
 namespace superstructure = ::y2016::control_loops::superstructure;
