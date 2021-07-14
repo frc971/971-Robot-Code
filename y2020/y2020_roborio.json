@@ -1,6 +1,5 @@
 {
-  "channels":
-  [
+  "channels": [
     {
       "name": "/roborio/aos",
       "type": "aos.JoystickState",
@@ -25,7 +24,7 @@
       "name": "/roborio/aos",
       "type": "aos.logging.LogMessageFbs",
       "source_node": "roborio",
-      "frequency": 400,
+      "frequency": 500,
       "max_size": 344,
       "num_senders": 20
     },
@@ -55,7 +54,7 @@
       "name": "/roborio/aos",
       "type": "aos.message_bridge.ClientStatistics",
       "source_node": "roborio",
-      "frequency": 10,
+      "frequency": 15,
       "max_size": 736,
       "num_senders": 2
     },
@@ -108,7 +107,7 @@
       "name": "/roborio/aos",
       "type": "aos.message_bridge.Timestamp",
       "source_node": "roborio",
-      "frequency": 10,
+      "frequency": 15,
       "num_senders": 2,
       "max_size": 304,
       "destination_nodes": [
@@ -116,35 +115,45 @@
           "name": "pi1",
           "priority": 1,
           "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
-          "timestamp_logger_nodes": ["roborio"],
+          "timestamp_logger_nodes": [
+            "roborio"
+          ],
           "time_to_live": 5000000
         },
         {
           "name": "pi2",
           "priority": 1,
           "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
-          "timestamp_logger_nodes": ["roborio"],
+          "timestamp_logger_nodes": [
+            "roborio"
+          ],
           "time_to_live": 5000000
         },
         {
           "name": "pi3",
           "priority": 1,
           "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
-          "timestamp_logger_nodes": ["roborio"],
+          "timestamp_logger_nodes": [
+            "roborio"
+          ],
           "time_to_live": 5000000
         },
         {
           "name": "pi4",
           "priority": 1,
           "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
-          "timestamp_logger_nodes": ["roborio"],
+          "timestamp_logger_nodes": [
+            "roborio"
+          ],
           "time_to_live": 5000000
         },
         {
           "name": "pi5",
           "priority": 1,
           "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
-          "timestamp_logger_nodes": ["roborio"],
+          "timestamp_logger_nodes": [
+            "roborio"
+          ],
           "time_to_live": 5000000
         }
       ]
@@ -189,7 +198,7 @@
       "name": "/drivetrain",
       "type": "frc971.IMUValuesBatch",
       "source_node": "roborio",
-      "frequency": 200,
+      "frequency": 250,
       "max_size": 2000,
       "num_senders": 2
     },
@@ -286,7 +295,7 @@
       "name": "/roborio/aos",
       "type": "frc971.PDPValues",
       "source_node": "roborio",
-      "frequency": 50,
+      "frequency": 55,
       "max_size": 368
     },
     {
@@ -300,47 +309,65 @@
     {
       "name": "drivetrain",
       "executable_name": "drivetrain.stripped",
-      "nodes": ["roborio"]
+      "nodes": [
+        "roborio"
+      ]
     },
     {
       "name": "trajectory_generator",
       "executable_name": "trajectory_generator.stripped",
-      "nodes": ["roborio"]
+      "nodes": [
+        "roborio"
+      ]
     },
     {
       "name": "superstructure",
       "executable_name": "superstructure.stripped",
-      "nodes": ["roborio"]
+      "nodes": [
+        "roborio"
+      ]
     },
     {
       "name": "joystick_reader",
       "executable_name": "joystick_reader.stripped",
-      "nodes": ["roborio"]
+      "nodes": [
+        "roborio"
+      ]
     },
     {
       "name": "wpilib_interface",
       "executable_name": "wpilib_interface.stripped",
-      "nodes": ["roborio"]
+      "nodes": [
+        "roborio"
+      ]
     },
     {
       "name": "autonomous_action",
       "executable_name": "autonomous_action.stripped",
-      "nodes": ["roborio"]
+      "nodes": [
+        "roborio"
+      ]
     },
     {
       "name": "message_bridge_client",
       "executable_name": "message_bridge_client.stripped",
-      "nodes": ["roborio"]
+      "nodes": [
+        "roborio"
+      ]
     },
     {
       "name": "message_bridge_server",
       "executable_name": "message_bridge_server.stripped",
-      "nodes": ["roborio"]
+      "nodes": [
+        "roborio"
+      ]
     },
     {
       "name": "logger",
       "executable_name": "logger_main.stripped",
-      "nodes": ["roborio"]
+      "nodes": [
+        "roborio"
+      ]
     }
   ],
   "maps": [

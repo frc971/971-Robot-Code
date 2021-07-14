@@ -36,7 +36,8 @@ class EventLoopTestFactory {
     },
     {
       "name": "/test",
-      "type": "aos.TestMessage"
+      "type": "aos.TestMessage",
+      "frequency": 800
     },
     {
       "name": "/test1",
@@ -123,7 +124,8 @@ class EventLoopTestFactory {
       "name": "/test",
       "type": "aos.TestMessage",
       "read_method": "PIN",
-      "num_readers": 10
+      "num_readers": 10,
+      "frequency": 800
     },
     {
       "name": "/test1",

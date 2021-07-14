@@ -100,19 +100,19 @@
       "name": "/pi1/aos",
       "type": "aos.message_bridge.ClientStatistics",
       "source_node": "pi1",
-      "frequency": 2
+      "frequency": 10
     },
     {
       "name": "/pi2/aos",
       "type": "aos.message_bridge.ClientStatistics",
       "source_node": "pi2",
-      "frequency": 2
+      "frequency": 10
     },
     {
       "name": "/pi3/aos",
       "type": "aos.message_bridge.ClientStatistics",
       "source_node": "pi3",
-      "frequency": 2
+      "frequency": 10
     },
     {
       "name": "/pi1/aos/remote_timestamps/pi2/pi1/aos/aos-message_bridge-Timestamp",

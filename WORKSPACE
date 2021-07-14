@@ -705,8 +705,8 @@ local_repository(
 http_file(
     name = "sample_logfile",
     downloaded_file_path = "log.fbs",
-    sha256 = "91c98edee0c90a19992792c711dde4a6743af2d6d7e45b5079ec228fdf51ff11",
-    urls = ["https://www.frc971.org/Build-Dependencies/small_sample_logfile.fbs"],
+    sha256 = "45d1d19fb82786c476d3f21a8d62742abaeeedf4c16a00ec37ae350dcb61f1fc",
+    urls = ["https://www.frc971.org/Build-Dependencies/small_sample_logfile2.fbs"],
 )
 
 http_archive(

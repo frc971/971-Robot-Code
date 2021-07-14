@@ -11,12 +11,12 @@
     {
       "name": "/test",
       "type": "aos.examples.Ping",
-      "frequency": 2000
+      "frequency": 4500
     },
     {
       "name": "/test",
       "type": "aos.examples.Pong",
-      "frequency": 2000
+      "frequency": 4500
     }
   ],
   "imports": [

@@ -90,7 +90,8 @@
       "type": "aos.message_bridge.RemoteMessage",
       "logger": "NOT_LOGGED",
       "num_senders": 2,
-      "source_node": "pi1"
+      "source_node": "pi1",
+      "frequency": 150
     },
     {
       "name": "/pi2/aos/remote_timestamps/pi1",
@@ -109,10 +110,13 @@
           "name": "pi2",
           "priority": 1,
           "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
-          "timestamp_logger_nodes": ["pi1"],
+          "timestamp_logger_nodes": [
+            "pi1"
+          ],
           "time_to_live": 5000000
         }
-      ]
+      ],
+      "frequency": 150
     },
     /* Forwarded back to pi1.
      * The message is logged both on the sending node and the receiving node
@@ -133,11 +137,12 @@
           "timestamp_logger": "LOCAL_LOGGER",
           "time_to_live": 5000000
         }
-      ]
+      ],
+      "frequency": 150
     }
   ],
   "maps": [
-   {
+    {
       "match": {
         "name": "/aos*",
         "source_node": "pi1"

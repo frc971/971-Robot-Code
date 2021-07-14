@@ -1,6 +1,5 @@
 {
-  "channels":
-  [
+  "channels": [
     {
       "name": "/aos",
       "type": "aos.JoystickState",
@@ -9,7 +8,7 @@
     {
       "name": "/aos",
       "type": "aos.RobotState",
-      "frequency": 200
+      "frequency": 250
     }
   ],
   "imports": [

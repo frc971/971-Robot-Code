@@ -11,8 +11,9 @@
     {
       "name": "/aos",
       "type": "aos.logging.LogMessageFbs",
-      "frequency": 200,
-      "num_senders": 20
+      "frequency": 250,
+      "num_senders": 20,
+      "max_size": 512
     },
     {
       "name": "/aos",

@@ -1,11 +1,10 @@
 {
-  "channels":
-  [
+  "channels": [
     {
       "name": "/drivetrain",
       "type": "frc971.IMUValuesBatch",
       "max_size": 2000,
-      "frequency": 200
+      "frequency": 2000
     },
     /* TODO(james): Experiment with size limitations. */
     {
