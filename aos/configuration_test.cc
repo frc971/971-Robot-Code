@@ -857,6 +857,15 @@ TEST_F(ConfigurationTest, GetNodeFromHostnames) {
   EXPECT_EQ(nullptr, GetNodeFromHostname(&config.message(), "3"));
 }
 
+// Tests that SourceNodeIndex reasonably handles a multi-node log file.
+TEST_F(ConfigurationTest, SourceNodeIndex) {
+  FlatbufferDetachedBuffer<Configuration> config =
+      ReadConfig(ArtifactPath("aos/testdata/good_multinode.json"));
+  std::vector<size_t> result = SourceNodeIndex(&config.message());
+
+  EXPECT_THAT(result, ::testing::ElementsAreArray({0, 1, 0, 0}));
+}
+
 }  // namespace testing
 }  // namespace configuration
 }  // namespace aos
