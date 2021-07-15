@@ -38,6 +38,10 @@ DEFINE_double(
     max_out_of_order, -1,
     "If set, this overrides the max out of order duration for a log file.");
 
+DEFINE_bool(workaround_double_headers, true,
+            "Some old log files have two headers at the beginning.  Use the "
+            "last header as the actual header.");
+
 namespace aos::logger {
 
 namespace chrono = std::chrono;
@@ -401,9 +405,8 @@ bool SpanReader::ReadBlock() {
 }
 
 std::optional<SizePrefixedFlatbufferVector<LogFileHeader>> ReadHeader(
-    std::string_view filename) {
-  SpanReader span_reader(filename);
-  absl::Span<const uint8_t> config_data = span_reader.ReadMessage();
+    SpanReader *span_reader) {
+  absl::Span<const uint8_t> config_data = span_reader->ReadMessage();
 
   // Make sure something was read.
   if (config_data == absl::Span<const uint8_t>()) {
@@ -415,7 +418,39 @@ std::optional<SizePrefixedFlatbufferVector<LogFileHeader>> ReadHeader(
   if (!result.Verify()) {
     return std::nullopt;
   }
+
+  if (FLAGS_workaround_double_headers) {
+    while (true) {
+      absl::Span<const uint8_t> maybe_header_data = span_reader->PeekMessage();
+      if (maybe_header_data == absl::Span<const uint8_t>()) {
+        break;
+      }
+
+      aos::SizePrefixedFlatbufferSpan<aos::logger::LogFileHeader> maybe_header(
+          maybe_header_data);
+      if (maybe_header.Verify()) {
+        LOG(WARNING) << "Found duplicate LogFileHeader in "
+                     << span_reader->filename();
+        ResizeableBuffer header_data_copy;
+        header_data_copy.resize(maybe_header_data.size());
+        memcpy(header_data_copy.data(), maybe_header_data.begin(),
+               header_data_copy.size());
+        result = SizePrefixedFlatbufferVector<LogFileHeader>(
+            std::move(header_data_copy));
+
+        span_reader->ConsumeMessage();
+      } else {
+        break;
+      }
+    }
+  }
   return result;
+}
+
+std::optional<SizePrefixedFlatbufferVector<LogFileHeader>> ReadHeader(
+    std::string_view filename) {
+  SpanReader span_reader(filename);
+  return ReadHeader(&span_reader);
 }
 
 std::optional<SizePrefixedFlatbufferVector<MessageHeader>> ReadNthMessage(
@@ -443,19 +478,13 @@ MessageReader::MessageReader(std::string_view filename)
     : span_reader_(filename),
       raw_log_file_header_(
           SizePrefixedFlatbufferVector<LogFileHeader>::Empty()) {
-  // Make sure we have enough to read the size.
-  absl::Span<const uint8_t> header_data = span_reader_.ReadMessage();
+  std::optional<SizePrefixedFlatbufferVector<LogFileHeader>>
+      raw_log_file_header = ReadHeader(&span_reader_);
 
   // Make sure something was read.
-  CHECK(header_data != absl::Span<const uint8_t>())
-      << ": Failed to read header from: " << filename;
+  CHECK(raw_log_file_header) << ": Failed to read header from: " << filename;
 
-  // And copy the header data so we have it forever.
-  ResizeableBuffer header_data_copy;
-  header_data_copy.resize(header_data.size());
-  memcpy(header_data_copy.data(), header_data.begin(), header_data_copy.size());
-  raw_log_file_header_ =
-      SizePrefixedFlatbufferVector<LogFileHeader>(std::move(header_data_copy));
+  raw_log_file_header_ = std::move(*raw_log_file_header);
 
   max_out_of_order_duration_ =
       FLAGS_max_out_of_order > 0
@@ -475,6 +504,8 @@ MessageReader::ReadMessage() {
   }
 
   SizePrefixedFlatbufferVector<MessageHeader> result(msg_data);
+
+  CHECK(result.Verify()) << ": Corrupted message from " << filename();
 
   const monotonic_clock::time_point timestamp = monotonic_clock::time_point(
       chrono::nanoseconds(result.message().monotonic_sent_time()));

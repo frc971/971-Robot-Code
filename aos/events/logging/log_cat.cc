@@ -6,6 +6,7 @@
 #include <string_view>
 #include <vector>
 
+#include "absl/strings/escaping.h"
 #include "aos/configuration.h"
 #include "aos/events/logging/log_reader.h"
 #include "aos/events/simulated_event_loop.h"
@@ -91,20 +92,61 @@ int main(int argc, char **argv) {
     if (argc != 2) {
       LOG(FATAL) << "Expected 1 logfile as an argument.";
     }
-    aos::logger::MessageReader reader(argv[1]);
+    aos::logger::SpanReader reader(argv[1]);
+    absl::Span<const uint8_t> raw_log_file_header_span = reader.ReadMessage();
 
+    if (raw_log_file_header_span == absl::Span<const uint8_t>()) {
+      LOG(WARNING) << "Empty log file on " << reader.filename();
+      return 0;
+    }
+
+    // Now, reproduce the log file header deduplication logic inline so we can
+    // print out all the headers we find.
+    aos::SizePrefixedFlatbufferVector<aos::logger::LogFileHeader>
+        log_file_header(raw_log_file_header_span);
+    if (!log_file_header.Verify()) {
+      LOG(ERROR) << "Header corrupted on " << reader.filename();
+      return 1;
+    }
+    while (true) {
+      absl::Span<const uint8_t> maybe_header_data = reader.PeekMessage();
+      if (maybe_header_data == absl::Span<const uint8_t>()) {
+        break;
+      }
+
+      aos::SizePrefixedFlatbufferSpan<aos::logger::LogFileHeader> maybe_header(
+          maybe_header_data);
+      if (maybe_header.Verify()) {
+        std::cout << aos::FlatbufferToJson(
+                         log_file_header,
+                         {.multi_line = FLAGS_pretty,
+                          .max_vector_size =
+                              static_cast<size_t>(FLAGS_max_vector_size)})
+                  << std::endl;
+        LOG(WARNING) << "Found duplicate LogFileHeader in "
+                     << reader.filename();
+        log_file_header =
+            aos::SizePrefixedFlatbufferVector<aos::logger::LogFileHeader>(
+                maybe_header_data);
+
+        reader.ConsumeMessage();
+      } else {
+        break;
+      }
+    }
+
+    // And now use the final sha256 to match the raw_header.
     std::optional<aos::logger::MessageReader> raw_header_reader;
-    const aos::logger::LogFileHeader *full_header = reader.log_file_header();
+    const aos::logger::LogFileHeader *full_header = &log_file_header.message();
     if (!FLAGS_raw_header.empty()) {
       raw_header_reader.emplace(FLAGS_raw_header);
       std::cout << aos::FlatbufferToJson(
-                       reader.log_file_header(),
-                       {.multi_line = FLAGS_pretty,
-                        .max_vector_size =
-                            static_cast<size_t>(FLAGS_max_vector_size)})
+                       full_header, {.multi_line = FLAGS_pretty,
+                                     .max_vector_size = static_cast<size_t>(
+                                         FLAGS_max_vector_size)})
                 << std::endl;
       CHECK_EQ(
-          reader.log_file_header()->configuration_sha256()->string_view(),
+          full_header->configuration_sha256()->string_view(),
           aos::logger::Sha256(raw_header_reader->raw_log_file_header().span()));
       full_header = raw_header_reader->log_file_header();
     }
@@ -115,46 +157,45 @@ int main(int argc, char **argv) {
               << std::endl;
 
     while (true) {
-      std::optional<
-          aos::SizePrefixedFlatbufferVector<aos::logger::MessageHeader>>
-          message = reader.ReadMessage();
-      if (!message) {
+      const aos::SizePrefixedFlatbufferSpan<aos::logger::MessageHeader> message(
+          reader.ReadMessage());
+      if (message.span() == absl::Span<const uint8_t>()) {
         break;
       }
       const auto *const channels = full_header->configuration()->channels();
-      const size_t channel_index = message.value().message().channel_index();
+      const size_t channel_index = message.message().channel_index();
       CHECK_LT(channel_index, channels->size());
       const aos::Channel *const channel = channels->Get(channel_index);
 
-      if (message.value().message().data() != nullptr) {
+      CHECK(message.Verify()) << absl::BytesToHexString(std::string_view(
+          reinterpret_cast<const char *>(message.span().data()),
+          message.span().size()));
+
+      if (message.message().data() != nullptr) {
         CHECK(channel->has_schema());
 
-        CHECK(flatbuffers::Verify(*channel->schema(),
-                                  *channel->schema()->root_table(),
-                                  message.value().message().data()->data(),
-                                  message.value().message().data()->size()))
+        CHECK(flatbuffers::Verify(
+            *channel->schema(), *channel->schema()->root_table(),
+            message.message().data()->data(), message.message().data()->size()))
             << ": Corrupted flatbuffer on " << channel->name()->c_str() << " "
             << channel->type()->c_str();
       }
 
-      if (FLAGS_format_raw && message.value().message().data() != nullptr) {
+      if (FLAGS_format_raw && message.message().data() != nullptr) {
         std::cout << aos::configuration::StrippedChannelToString(channel) << " "
-                  << aos::FlatbufferToJson(
-                         message.value(),
-                         {.multi_line = FLAGS_pretty, .max_vector_size = 4})
+                  << aos::FlatbufferToJson(message, {.multi_line = FLAGS_pretty,
+                                                     .max_vector_size = 4})
                   << ": "
                   << aos::FlatbufferToJson(
-                         channel->schema(),
-                         message.value().message().data()->data(),
+                         channel->schema(), message.message().data()->data(),
                          {FLAGS_pretty,
                           static_cast<size_t>(FLAGS_max_vector_size)})
                   << std::endl;
       } else {
         std::cout << aos::configuration::StrippedChannelToString(channel) << " "
                   << aos::FlatbufferToJson(
-                         message.value(),
-                         {FLAGS_pretty,
-                          static_cast<size_t>(FLAGS_max_vector_size)})
+                         message, {FLAGS_pretty,
+                                   static_cast<size_t>(FLAGS_max_vector_size)})
                   << std::endl;
       }
     }
