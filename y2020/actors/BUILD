@@ -48,7 +48,6 @@ cc_library(
     deps = [
         "//aos/events:event_loop",
         "//aos/logging",
-        "//frc971/input:joystick_state_fbs",
         "//aos/util:math",
         "//aos/util:phased_loop",
         "//frc971/autonomous:base_autonomous_actor",
@@ -57,6 +56,7 @@ cc_library(
         "//frc971/control_loops/drivetrain:drivetrain_config",
         "//frc971/control_loops/drivetrain:localizer_fbs",
         "//frc971/control_loops/drivetrain:spline",
+        "//frc971/input:joystick_state_fbs",
         "//y2020/control_loops/drivetrain:drivetrain_base",
         "//y2020/control_loops/superstructure:superstructure_goal_fbs",
         "//y2020/control_loops/superstructure:superstructure_status_fbs",

@@ -39,7 +39,6 @@ cc_binary(
     target_compatible_with = ["//tools/platforms/hardware:roborio"],
     deps = [
         "//aos:init",
-        "//frc971/control_loops:control_loop",
         "//aos/events:shm_event_loop",
         "//aos/logging",
         "//aos/stl_mutex",
@@ -47,6 +46,7 @@ cc_binary(
         "//aos/util:log_interval",
         "//aos/util:phased_loop",
         "//aos/util:wrapping_counter",
+        "//frc971/control_loops:control_loop",
         "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_output_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_position_fbs",

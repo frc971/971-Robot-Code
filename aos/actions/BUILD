@@ -16,10 +16,10 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":actions_fbs",
-        "//frc971/control_loops:control_loop",
         "//aos/logging",
         "//aos/time",
         "//aos/util:phased_loop",
+        "//frc971/control_loops:control_loop",
     ],
 )
 

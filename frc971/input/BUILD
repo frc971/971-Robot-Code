@@ -15,8 +15,8 @@ cc_library(
     deps = [
         ":robot_state_fbs",
         "//aos/events:event_loop",
-        "//frc971/input:driver_station_data",
         "//aos/logging",
+        "//frc971/input:driver_station_data",
     ],
 )
 
@@ -32,13 +32,13 @@ cc_library(
     deps = [
         ":robot_state_fbs",
         "//aos:math",
-        "//frc971/input:driver_station_data",
         "//aos/logging",
         "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_config",
         "//frc971/control_loops/drivetrain:drivetrain_goal_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
         "//frc971/control_loops/drivetrain:spline_goal_fbs",
+        "//frc971/input:driver_station_data",
     ],
 )
 
@@ -66,11 +66,11 @@ cc_library(
         ":drivetrain_input",
         "//aos:init",
         "//aos/actions:action_lib",
-        "//frc971/input:joystick_input",
         "//aos/logging",
         "//frc971/autonomous:auto_fbs",
         "//frc971/autonomous:auto_mode_fbs",
         "//frc971/autonomous:base_autonomous_actor",
+        "//frc971/input:joystick_input",
     ],
 )
 

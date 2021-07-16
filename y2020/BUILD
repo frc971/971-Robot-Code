@@ -87,18 +87,18 @@ cc_binary(
         ":constants",
         "//aos:init",
         "//aos:math",
-        "//frc971/control_loops:control_loop",
         "//aos/events:shm_event_loop",
         "//aos/logging",
-        "//frc971/input:robot_state_fbs",
         "//aos/stl_mutex",
         "//aos/time",
         "//aos/util:log_interval",
         "//aos/util:phased_loop",
         "//aos/util:wrapping_counter",
         "//frc971/autonomous:auto_mode_fbs",
+        "//frc971/control_loops:control_loop",
         "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_position_fbs",
+        "//frc971/input:robot_state_fbs",
         "//frc971/wpilib:ADIS16470",
         "//frc971/wpilib:buffered_pcm",
         "//frc971/wpilib:drivetrain_writer",
@@ -128,13 +128,13 @@ cc_binary(
         ":setpoint_fbs",
         "//aos:init",
         "//aos/actions:action_lib",
-        "//frc971/input:action_joystick_input",
-        "//frc971/input:drivetrain_input",
-        "//frc971/input:joystick_input",
         "//aos/logging",
         "//frc971/autonomous:auto_fbs",
         "//frc971/autonomous:base_autonomous_actor",
         "//frc971/control_loops:profiled_subsystem_fbs",
+        "//frc971/input:action_joystick_input",
+        "//frc971/input:drivetrain_input",
+        "//frc971/input:joystick_input",
         "//y2020:constants",
         "//y2020/control_loops/drivetrain:drivetrain_base",
         "//y2020/control_loops/superstructure:superstructure_goal_fbs",
@@ -184,8 +184,8 @@ aos_config(
         visibility = ["//visibility:public"],
         deps = [
             "//aos/events:config",
-            "//frc971/input:config",
             "//frc971/control_loops/drivetrain:config",
+            "//frc971/input:config",
         ],
     )
     for pi in [
@@ -213,8 +213,8 @@ aos_config(
     visibility = ["//visibility:public"],
     deps = [
         "//aos/events:config",
-        "//frc971/input:config",
         "//frc971/control_loops/drivetrain:config",
+        "//frc971/input:config",
     ],
 )
 
@@ -236,9 +236,9 @@ aos_config(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos/events:config",
-        "//frc971/input:config",
         "//frc971/autonomous:config",
         "//frc971/control_loops/drivetrain:config",
+        "//frc971/input:config",
         "//frc971/wpilib:config",
     ],
 )

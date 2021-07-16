@@ -59,8 +59,8 @@ cc_library(
         ":superstructure_output_fbs",
         ":superstructure_position_fbs",
         ":superstructure_status_fbs",
-        "//frc971/control_loops:control_loop",
         "//aos/events:event_loop",
+        "//frc971/control_loops:control_loop",
         "//y2021_bot3:constants",
     ],
 )

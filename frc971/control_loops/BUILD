@@ -250,8 +250,8 @@ cc_test(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":coerce_goal",
-        "//frc971/control_loops:polytope",
         "//aos/testing:googletest",
+        "//frc971/control_loops:polytope",
         "@org_tuxfamily_eigen//:eigen",
     ],
 )
@@ -280,8 +280,8 @@ cc_library(
         ":c2d",
         ":state_feedback_loop",
         "//aos:macros",
-        "//frc971/control_loops:control_loop",
         "//aos/logging",
+        "//frc971/control_loops:control_loop",
         "@org_tuxfamily_eigen//:eigen",
     ],
 )
@@ -367,8 +367,8 @@ cc_library(
         ":profiled_subsystem_fbs",
         ":simple_capped_state_feedback_loop",
         ":state_feedback_loop",
-        "//frc971/control_loops:control_loop",
         "//aos/util:trapezoid_profile",
+        "//frc971/control_loops:control_loop",
         "//frc971/zeroing",
     ],
 )
@@ -613,8 +613,8 @@ cc_test(
         ":static_zeroing_single_dof_profiled_subsystem_test_pot_and_absolute_position_fbs",
         ":static_zeroing_single_dof_profiled_subsystem_test_subsystem_goal_fbs",
         ":static_zeroing_single_dof_profiled_subsystem_test_subsystem_output_fbs",
-        "//frc971/control_loops:control_loop_test",
         "//aos/testing:googletest",
+        "//frc971/control_loops:control_loop_test",
     ],
 )
 
