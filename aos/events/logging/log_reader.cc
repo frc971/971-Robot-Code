@@ -1362,26 +1362,44 @@ void LogReader::RemoteMessageSender::ScheduleTimestamp() {
 void LogReader::RemoteMessageSender::Send(
     FlatbufferDetachedBuffer<RemoteMessage> remote_message,
     monotonic_clock::time_point monotonic_timestamp_time) {
-  // There are 2 cases.  Either we have a monotonic_timestamp_time and need to
-  // resend the timestamp at the correct time, or we don't and can send it
-  // immediately.
+  // There are 2 variants of logs.
+  //   1) Logs without monotonic_timestamp_time
+  //   2) Logs with monotonic_timestamp_time
+  //
+  // As of Jan 2021, we shouldn't have any more logs without
+  // monotonic_timestamp_time.  We don't have data locked up in those logs worth
+  // the effort of saving.
+  //
+  // This gives us 3 cases, 2 of which are undistinguishable.
+  // 1) Old log without monotonic_timestamp_time.
+  // 2) New log with monotonic_timestamp_time where the timestamp was logged
+  //    remotely so we actually have monotonic_timestamp_time.
+  // 3) New log, but the timestamp was logged on the node receiving the message
+  //    so there is no monotonic_timestamp_time.
+  //
+  // Our goal when replaying is to accurately reproduce the state of the world
+  // present when logging.  If a timestamp wasn't sent back across the network,
+  // we shouldn't replay one back across the network.
+  //
+  // Given that we don't really care about 1, we can use the presence of the
+  // timestamp to distinguish 2 and 3, and ignore 1.  If we don't have a
+  // monotonic_timestamp_time, this means the message was logged locally and
+  // remote timestamps can be ignored.
   if (monotonic_timestamp_time == monotonic_clock::min_time) {
-    CHECK(remote_timestamps_.empty())
-        << ": Unsupported mix of timestamps and no timestamps.";
-    sender_.Send(std::move(remote_message));
-  } else {
-    remote_timestamps_.emplace(
-        std::upper_bound(
-            remote_timestamps_.begin(), remote_timestamps_.end(),
-            monotonic_timestamp_time,
-            [](const aos::monotonic_clock::time_point monotonic_timestamp_time,
-               const Timestamp &timestamp) {
-              return monotonic_timestamp_time <
-                     timestamp.monotonic_timestamp_time;
-            }),
-        std::move(remote_message), monotonic_timestamp_time);
-    ScheduleTimestamp();
+    return;
   }
+
+  remote_timestamps_.emplace(
+      std::upper_bound(
+          remote_timestamps_.begin(), remote_timestamps_.end(),
+          monotonic_timestamp_time,
+          [](const aos::monotonic_clock::time_point monotonic_timestamp_time,
+             const Timestamp &timestamp) {
+            return monotonic_timestamp_time <
+                   timestamp.monotonic_timestamp_time;
+          }),
+      std::move(remote_message), monotonic_timestamp_time);
+  ScheduleTimestamp();
 }
 
 void LogReader::RemoteMessageSender::SendTimestamp() {
