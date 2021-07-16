@@ -17,6 +17,16 @@ INSTANTIATE_TEST_SUITE_P(
                        }),
                        ::testing::Range(0, 100)));
 
+INSTANTIATE_TEST_SUITE_P(
+    LzmaThreaded, BufferEncoderTest,
+    ::testing::Combine(::testing::Values([]() {
+                         return std::make_unique<LzmaEncoder>(2);
+                       }),
+                       ::testing::Values([](std::string_view filename) {
+                         return std::make_unique<ThreadedLzmaDecoder>(filename);
+                       }),
+                       ::testing::Range(0, 100)));
+
 // Tests that we return as much of the file as we can read if the end is
 // corrupted.
 TEST_F(BufferEncoderBaseTest, CorruptedBuffer) {

@@ -316,7 +316,7 @@ SpanReader::SpanReader(std::string_view filename) : filename_(filename) {
   static const std::string_view kXz = ".xz";
   if (filename.substr(filename.size() - kXz.size()) == kXz) {
 #if ENABLE_LZMA
-    decoder_ = std::make_unique<LzmaDecoder>(filename);
+    decoder_ = std::make_unique<ThreadedLzmaDecoder>(filename);
 #else
     LOG(FATAL) << "Reading xz-compressed files not supported on this platform";
 #endif
