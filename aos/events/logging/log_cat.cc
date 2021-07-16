@@ -155,6 +155,9 @@ int main(int argc, char **argv) {
                                         .max_vector_size = static_cast<size_t>(
                                             FLAGS_max_vector_size)})
               << std::endl;
+    CHECK(full_header->has_configuration())
+        << ": Missing configuration! You may want to provide the path to the "
+           "logged configuration file using the --raw_header flag.";
 
     while (true) {
       const aos::SizePrefixedFlatbufferSpan<aos::logger::MessageHeader> message(
