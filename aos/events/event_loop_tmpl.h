@@ -238,8 +238,8 @@ inline void PhasedLoopHandler::Call(
   event_loop_->context_.buffer_index = -1;
   event_loop_->context_.remote_boot_uuid = event_loop_->boot_uuid();
 
-  // Compute how many cycles elapsed and schedule the next wakeup.
-  Reschedule(schedule, monotonic_start_time);
+  // Compute how many cycles elapsed
+  cycles_elapsed_ += phased_loop_.Iterate(monotonic_start_time);
 
   ftrace_.FormatMessage(
       "phased: %.*s: start now=%" PRId64 " event=%" PRId64 " cycles=%d",
@@ -260,6 +260,9 @@ inline void PhasedLoopHandler::Call(
   // Call the function with the elapsed cycles.
   fn_(cycles_elapsed_);
   cycles_elapsed_ = 0;
+
+  // Schedule the next wakeup.
+  schedule(phased_loop_.sleep_time());
 
   const monotonic_clock::time_point monotonic_end_time = get_time();
   ftrace_.FormatMessage(

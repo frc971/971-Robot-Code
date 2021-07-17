@@ -217,6 +217,39 @@ TEST_F(PhasedLoopTest, SweepingZero) {
   }
 }
 
+// Tests that the phased loop is correctly adjusting when the offset is
+// decremented multiple times.
+TEST_F(PhasedLoopTest, DecrementingOffset) {
+  constexpr int kCount = 5;
+  constexpr int kIterations = 10;
+  const auto kOffset = milliseconds(400);
+  const auto kInterval = milliseconds(1000);
+  const auto kAllIterationsInterval = kInterval * kIterations;
+
+  PhasedLoop loop(kInterval, monotonic_clock::epoch(), kOffset);
+  auto last_time = monotonic_clock::epoch() + kOffset + (kInterval * 3);
+  ASSERT_EQ(5, loop.Iterate(last_time));
+  for (int i = 1; i < kCount; i++) {
+    const auto offset = kOffset - milliseconds(i);
+    loop.set_interval_and_offset(kInterval, offset);
+    const auto next_time = last_time - milliseconds(1) + kAllIterationsInterval;
+    EXPECT_EQ(kIterations, loop.Iterate(next_time));
+    last_time = next_time;
+  }
+}
+
+// Tests that the phased loop is correctly adjusting when the offset is
+// changed to 0.
+TEST_F(PhasedLoopTest, ChangingOffset) {
+  const auto kOffset = milliseconds(900);
+  const auto kInterval = milliseconds(1000);
+  PhasedLoop loop(kInterval, monotonic_clock::epoch(), kOffset);
+  const auto last_time = monotonic_clock::epoch() + kOffset + (kInterval * 3);
+  ASSERT_EQ(5, loop.Iterate(last_time));
+  loop.set_interval_and_offset(kInterval, milliseconds(0));
+  EXPECT_EQ(4, loop.Iterate((last_time - kOffset) + (kInterval * 4)));
+}
+
 }  // namespace testing
 }  // namespace time
 }  // namespace aos

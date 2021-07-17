@@ -18,6 +18,9 @@ PhasedLoop::PhasedLoop(const monotonic_clock::duration interval,
 void PhasedLoop::set_interval_and_offset(
     const monotonic_clock::duration interval,
     const monotonic_clock::duration offset) {
+  // Update last_time_ to the new offset so that we have an even interval
+  last_time_ += offset - offset_;
+
   interval_ = interval;
   offset_ = offset;
   CHECK(offset_ >= monotonic_clock::duration(0));
@@ -55,6 +58,7 @@ int PhasedLoop::Iterate(const monotonic_clock::time_point now) {
   next_time += offset_;
 
   const monotonic_clock::duration difference = next_time - last_time_;
+
   const int result = difference / interval_;
   CHECK_EQ(
       0, (next_time - offset_).time_since_epoch().count() % interval_.count());
@@ -64,5 +68,5 @@ int PhasedLoop::Iterate(const monotonic_clock::time_point now) {
   return result;
 }
 
-}  // namespace timing
+}  // namespace time
 }  // namespace aos
