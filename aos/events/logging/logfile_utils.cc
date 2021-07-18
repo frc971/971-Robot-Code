@@ -516,7 +516,52 @@ MessageReader::ReadMessage() {
 }
 
 PartsMessageReader::PartsMessageReader(LogParts log_parts)
-    : parts_(std::move(log_parts)), message_reader_(parts_.parts[0]) {}
+    : parts_(std::move(log_parts)), message_reader_(parts_.parts[0]) {
+  ComputeBootCounts();
+}
+
+void PartsMessageReader::ComputeBootCounts() {
+  boot_counts_.assign(configuration::NodesCount(parts_.config.get()),
+                      std::nullopt);
+
+  // We have 3 vintages of log files with different amounts of information.
+  if (log_file_header()->has_boot_uuids()) {
+    // The new hotness with the boots explicitly listed out.  We can use the log
+    // file header to compute the boot count of all relevant nodes.
+    CHECK_EQ(log_file_header()->boot_uuids()->size(), boot_counts_.size());
+    size_t node_index = 0;
+    for (const flatbuffers::String *boot_uuid :
+         *log_file_header()->boot_uuids()) {
+      CHECK(parts_.boots);
+      if (boot_uuid->size() != 0) {
+        auto it = parts_.boots->boot_count_map.find(boot_uuid->str());
+        if (it != parts_.boots->boot_count_map.end()) {
+          boot_counts_[node_index] = it->second;
+        }
+      } else if (parts().boots->boots[node_index].size() == 1u) {
+        boot_counts_[node_index] = 0;
+      }
+      ++node_index;
+    }
+  } else {
+    // Older multi-node logs which are guarenteed to have UUIDs logged, or
+    // single node log files with boot UUIDs in the header.  We only know how to
+    // order certain boots in certain circumstances.
+    if (configuration::MultiNode(parts_.config.get()) || parts_.boots) {
+      for (size_t node_index = 0; node_index < boot_counts_.size();
+           ++node_index) {
+        CHECK(parts_.boots);
+        if (parts().boots->boots[node_index].size() == 1u) {
+          boot_counts_[node_index] = 0;
+        }
+      }
+    } else {
+      // Really old single node logs without any UUIDs.  They can't reboot.
+      CHECK_EQ(boot_counts_.size(), 1u);
+      boot_counts_[0] = 0u;
+    }
+  }
+}
 
 std::optional<SizePrefixedFlatbufferVector<MessageHeader>>
 PartsMessageReader::ReadMessage() {
@@ -557,6 +602,7 @@ void PartsMessageReader::NextLog() {
     return;
   }
   message_reader_ = MessageReader(parts_.parts[next_part_index_]);
+  ComputeBootCounts();
   ++next_part_index_;
 }
 
@@ -625,7 +671,9 @@ std::ostream &operator<<(std::ostream &os, const TimestampedMessage &m) {
 }
 
 LogPartsSorter::LogPartsSorter(LogParts log_parts)
-    : parts_message_reader_(log_parts) {}
+    : parts_message_reader_(log_parts),
+      source_node_index_(configuration::SourceNodeIndex(parts().config.get())) {
+}
 
 Message *LogPartsSorter::Front() {
   // Queue up data until enough data has been queued that the front message is
@@ -633,7 +681,8 @@ Message *LogPartsSorter::Front() {
   // sure the nothing path is checked quickly.
   if (sorted_until() != monotonic_clock::max_time) {
     while (true) {
-      if (!messages_.empty() && messages_.begin()->timestamp.time < sorted_until() &&
+      if (!messages_.empty() &&
+          messages_.begin()->timestamp.time < sorted_until() &&
           sorted_until() >= monotonic_start_time()) {
         break;
       }
@@ -646,6 +695,20 @@ Message *LogPartsSorter::Front() {
         break;
       }
 
+      size_t monotonic_timestamp_boot = 0;
+      if (m.value().message().has_monotonic_timestamp_time()) {
+        monotonic_timestamp_boot = parts().logger_boot_count;
+      }
+      size_t monotonic_remote_boot = 0xffffff;
+
+      if (m.value().message().has_monotonic_remote_time()) {
+        std::optional<size_t> boot = parts_message_reader_.boot_count(
+            source_node_index_[m->message().channel_index()]);
+        CHECK(boot) << ": Failed to find boot for node "
+                    << source_node_index_[m->message().channel_index()];
+        monotonic_remote_boot = *boot;
+      }
+
       messages_.insert(Message{
           .channel_index = m.value().message().channel_index(),
           .queue_index = m.value().message().queue_index(),
@@ -654,6 +717,8 @@ Message *LogPartsSorter::Front() {
                   .boot = parts().boot_count,
                   .time = monotonic_clock::time_point(std::chrono::nanoseconds(
                       m.value().message().monotonic_sent_time()))},
+          .monotonic_remote_boot = monotonic_remote_boot,
+          .monotonic_timestamp_boot = monotonic_timestamp_boot,
           .data = std::move(m.value())});
 
       // Now, update sorted_until_ to match the new message.
@@ -802,9 +867,7 @@ BootMerger::BootMerger(std::vector<LogParts> files) {
 
   // Now, we need to split things out by boot.
   for (size_t i = 0; i < files.size(); ++i) {
-    LOG(INFO) << "Trying file " << i;
     const size_t boot_count = files[i].boot_count;
-    LOG(INFO) << "Boot count " << boot_count;
     if (boot_count + 1 > boots.size()) {
       boots.resize(boot_count + 1);
     }
@@ -813,9 +876,9 @@ BootMerger::BootMerger(std::vector<LogParts> files) {
 
   node_mergers_.reserve(boots.size());
   for (size_t i = 0; i < boots.size(); ++i) {
-    LOG(INFO) << "Boot " << i;
+    VLOG(2) << "Boot " << i;
     for (auto &p : boots[i]) {
-      LOG(INFO) << "Part " << p;
+      VLOG(2) << "Part " << p;
     }
     node_mergers_.emplace_back(
         std::make_unique<NodeMerger>(std::move(boots[i])));
@@ -1005,14 +1068,15 @@ bool TimestampMapper::QueueMatched() {
             std::chrono::nanoseconds(m->data.message().realtime_sent_time())),
         .remote_queue_index = m->data.message().remote_queue_index(),
         .monotonic_remote_time =
-            // TODO(austin): 0 is wrong...
-        {0, monotonic_clock::time_point(std::chrono::nanoseconds(
-                m->data.message().monotonic_remote_time()))},
+            {m->monotonic_remote_boot,
+             monotonic_clock::time_point(std::chrono::nanoseconds(
+                 m->data.message().monotonic_remote_time()))},
         .realtime_remote_time = realtime_clock::time_point(
             std::chrono::nanoseconds(m->data.message().realtime_remote_time())),
         .monotonic_timestamp_time =
-            {0, monotonic_clock::time_point(std::chrono::nanoseconds(
-                    m->data.message().monotonic_timestamp_time()))},
+            {m->monotonic_timestamp_boot,
+             monotonic_clock::time_point(std::chrono::nanoseconds(
+                 m->data.message().monotonic_timestamp_time()))},
         .data = std::move(data.data)});
     CHECK_GE(matched_messages_.back().monotonic_event_time, last_message_time_);
     last_message_time_ = matched_messages_.back().monotonic_event_time;
@@ -1078,7 +1142,7 @@ Message TimestampMapper::MatchingMessageFor(const Message &message) {
   CHECK(message.data.message().has_realtime_remote_time());
 
   const BootTimestamp monotonic_remote_time{
-      .boot = 0,
+      .boot = message.monotonic_remote_boot,
       .time = monotonic_clock::time_point(std::chrono::nanoseconds(
           message.data.message().monotonic_remote_time()))};
   const realtime_clock::time_point realtime_remote_time(
@@ -1096,6 +1160,8 @@ Message TimestampMapper::MatchingMessageFor(const Message &message) {
         .channel_index = message.channel_index,
         .queue_index = remote_queue_index,
         .timestamp = monotonic_remote_time,
+        .monotonic_remote_boot = 0xffffff,
+        .monotonic_timestamp_boot = 0xffffff,
         .data = SizePrefixedFlatbufferVector<MessageHeader>::Empty()};
   }
 
@@ -1110,6 +1176,8 @@ Message TimestampMapper::MatchingMessageFor(const Message &message) {
         .channel_index = message.channel_index,
         .queue_index = remote_queue_index,
         .timestamp = monotonic_remote_time,
+        .monotonic_remote_boot = 0xffffff,
+        .monotonic_timestamp_boot = 0xffffff,
         .data = SizePrefixedFlatbufferVector<MessageHeader>::Empty()};
   }
 
@@ -1119,6 +1187,8 @@ Message TimestampMapper::MatchingMessageFor(const Message &message) {
         .channel_index = message.channel_index,
         .queue_index = remote_queue_index,
         .timestamp = monotonic_remote_time,
+        .monotonic_remote_boot = 0xffffff,
+        .monotonic_timestamp_boot = 0xffffff,
         .data = SizePrefixedFlatbufferVector<MessageHeader>::Empty()};
   }
 
@@ -1153,6 +1223,8 @@ Message TimestampMapper::MatchingMessageFor(const Message &message) {
           .channel_index = message.channel_index,
           .queue_index = remote_queue_index,
           .timestamp = monotonic_remote_time,
+          .monotonic_remote_boot = 0xffffff,
+          .monotonic_timestamp_boot = 0xffffff,
           .data = SizePrefixedFlatbufferVector<MessageHeader>::Empty()};
     }
 

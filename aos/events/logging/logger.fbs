@@ -93,6 +93,10 @@ table LogFileHeader {
 
   // The node the data was logged on, if known and running in a multi-node configuration.
   logger_node:Node (id: 9);
+
+  // The boot UUIDs for all nodes we know them for, or "" for the ones we don't.
+  // TODO(austin): Actually add this in the log writer.
+  boot_uuids:[string] (id: 17);
 }
 
 // Table holding a message.
