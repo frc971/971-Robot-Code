@@ -909,6 +909,8 @@ void TimestampMapper::AddPeer(TimestampMapper *timestamp_mapper) {
     CHECK(timestamp_mapper->nodes_data_[node()].peer == nullptr);
 
     timestamp_mapper->nodes_data_[node()].peer = this;
+
+    node_data->save_for_peer = true;
   }
 }
 
@@ -1199,6 +1201,7 @@ bool TimestampMapper::Queue() {
   }
   for (NodeData &node_data : nodes_data_) {
     if (!node_data.any_delivered) continue;
+    if (!node_data.save_for_peer) continue;
     if (node_data.channels[m->channel_index].delivered) {
       // TODO(austin): This copies the data...  Probably not worth stressing
       // about yet.
