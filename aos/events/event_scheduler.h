@@ -58,6 +58,9 @@ class TimeConverter {
   // node.
   virtual monotonic_clock::time_point FromDistributedClock(
       size_t node_index, distributed_clock::time_point time) = 0;
+
+  // Called whenever time passes this point and we can forget about it.
+  virtual void ObserveTimePassed(distributed_clock::time_point time) = 0;
 };
 
 class EventSchedulerScheduler;
@@ -151,6 +154,8 @@ class EventScheduler {
         size_t /*node_index*/, distributed_clock::time_point time) override {
       return monotonic_clock::epoch() + time.time_since_epoch();
     }
+
+    void ObserveTimePassed(distributed_clock::time_point /*time*/) override {}
   };
 
   UnityConverter unity_converter_;

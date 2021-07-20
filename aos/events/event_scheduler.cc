@@ -50,6 +50,8 @@ void EventScheduler::CallOldestEvent() {
   ::std::function<void()> callback = ::std::move(iter->second);
   events_list_.erase(iter);
   callback();
+
+  converter_->ObserveTimePassed(scheduler_scheduler_->distributed_now());
 }
 
 void EventScheduler::RunOnRun() {
