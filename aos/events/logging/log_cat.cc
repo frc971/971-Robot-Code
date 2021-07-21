@@ -39,6 +39,8 @@ DEFINE_bool(print, true,
             "confirming they can be parsed.");
 DEFINE_bool(print_parts_only, false,
             "If true, only print out the results of logfile sorting.");
+DEFINE_bool(channels, false,
+            "If true, print out all the configured channels for this log.");
 
 // Print the flatbuffer out to stdout, both to remove the unnecessary cruft from
 // glog and to allow the user to readily redirect just the logged output
@@ -226,6 +228,15 @@ int main(int argc, char **argv) {
   }
 
   aos::logger::LogReader reader(logfiles);
+
+  if (FLAGS_channels) {
+    const aos::Configuration *config = reader.configuration();
+    for (const aos::Channel *channel : *config->channels()) {
+      std::cout << channel->name()->c_str() << " " << channel->type()->c_str()
+                << '\n';
+    }
+    return 0;
+  }
 
   aos::FastStringBuilder builder;
 
