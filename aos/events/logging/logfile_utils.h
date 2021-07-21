@@ -633,6 +633,9 @@ class TimestampMapper {
     // bools in delivered below are true.
     bool any_delivered = false;
 
+    // True if we have a peer and therefore should be saving data for it.
+    bool save_for_peer = false;
+
     // Peer pointer.  This node is only to be considered if a peer is set.
     TimestampMapper *peer = nullptr;
 
