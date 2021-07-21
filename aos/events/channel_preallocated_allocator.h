@@ -62,11 +62,12 @@ class ChannelPreallocatedAllocator : public flatbuffers::Allocator {
   uint8_t *reallocate_downward(uint8_t * /*old_p*/, size_t /*old_size*/,
                                size_t new_size, size_t /*in_use_back*/,
                                size_t /*in_use_front*/) override {
-    LOG(FATAL) << "Requested " << new_size << " bytes, max size "
-               << channel_->max_size() << " for channel "
-               << configuration::CleanedChannelToString(channel_)
-               << ".  Increase the memory reserved to at least " << new_size
-               << ".";
+    LOG(FATAL)
+        << "Requested " << new_size
+        << " bytes (includes extra for room to grow even more), max size "
+        << channel_->max_size() << " for channel "
+        << configuration::CleanedChannelToString(channel_)
+        << ".  Increase the memory reserved to at least " << new_size << ".";
     return nullptr;
   }
 
