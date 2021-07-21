@@ -3,8 +3,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#include "gtest/gtest.h"
 #include "glog/logging.h"
+#include "gtest/gtest.h"
 
 namespace aos {
 namespace internal {
@@ -48,22 +48,22 @@ class Pipe {
 };
 
 class EPollTest : public ::testing::Test {
-  public:
-   void RunFor(std::chrono::nanoseconds duration) {
-     TimerFd timerfd;
-     bool did_quit = false;
-     epoll_.OnReadable(timerfd.fd(), [this, &timerfd, &did_quit]() {
-       CHECK(!did_quit);
-       epoll_.Quit();
-       did_quit = true;
-       timerfd.Read();
-     });
-     timerfd.SetTime(monotonic_clock::now() + duration,
-                     monotonic_clock::duration::zero());
-     epoll_.Run();
-     CHECK(did_quit);
-     epoll_.DeleteFd(timerfd.fd());
-   }
+ public:
+  void RunFor(std::chrono::nanoseconds duration) {
+    TimerFd timerfd;
+    bool did_quit = false;
+    epoll_.OnReadable(timerfd.fd(), [this, &timerfd, &did_quit]() {
+      CHECK(!did_quit);
+      epoll_.Quit();
+      did_quit = true;
+      timerfd.Read();
+    });
+    timerfd.SetTime(monotonic_clock::now() + duration,
+                    monotonic_clock::duration::zero());
+    epoll_.Run();
+    CHECK(did_quit);
+    epoll_.DeleteFd(timerfd.fd());
+  }
 
   // Tests should avoid relying on ordering for events closer in time than this,
   // or waiting for longer than this to ensure events happen in order.
@@ -71,7 +71,7 @@ class EPollTest : public ::testing::Test {
     return std::chrono::milliseconds(50);
   }
 
-   EPoll epoll_;
+  EPoll epoll_;
 };
 
 // Test that the basics of OnReadable work.
@@ -199,6 +199,11 @@ TEST_F(EPollTest, WriteableEnableDisable) {
   EXPECT_EQ(number_writes, bytes_in_pipe);
 
   epoll_.DeleteFd(pipe.write_fd());
+}
+
+TEST_F(EPollTest, QuitInBeforeWait) {
+  epoll_.BeforeWait([this]() { epoll_.Quit(); });
+  epoll_.Run();
 }
 
 }  // namespace testing

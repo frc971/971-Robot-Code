@@ -127,7 +127,14 @@ bool EPoll::Poll(bool block) {
   return true;
 }
 
-void EPoll::Quit() { PCHECK(write(quit_signal_fd_, "q", 1) == 1); }
+void EPoll::Quit() {
+  // Shortcut to break us out of infinite loops. We might write more than once
+  // to the pipe, but we'll stop once the first is read on the other end.
+  if (!run_) {
+    return;
+  }
+  PCHECK(write(quit_signal_fd_, "q", 1) == 1);
+}
 
 void EPoll::OnReadable(int fd, ::std::function<void()> function) {
   EventData *event_data = GetEventData(fd);
