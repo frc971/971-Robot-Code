@@ -7,6 +7,7 @@
 #include <string>
 #include <string_view>
 
+#include "absl/container/btree_set.h"
 #include "aos/configuration.h"
 #include "aos/configuration_generated.h"
 #include "aos/events/channel_preallocated_allocator.h"
@@ -20,8 +21,6 @@
 #include "aos/time/time.h"
 #include "aos/util/phased_loop.h"
 #include "aos/uuid.h"
-
-#include "absl/container/btree_set.h"
 #include "flatbuffers/flatbuffers.h"
 #include "glog/logging.h"
 
@@ -115,6 +114,7 @@ class RawFetcher {
 
  protected:
   EventLoop *event_loop() { return event_loop_; }
+  const EventLoop *event_loop() const { return event_loop_; }
 
   Context context_;
 
@@ -190,6 +190,7 @@ class RawSender {
 
  protected:
   EventLoop *event_loop() { return event_loop_; }
+  const EventLoop *event_loop() const { return event_loop_; }
 
   monotonic_clock::time_point monotonic_sent_time_ = monotonic_clock::min_time;
   realtime_clock::time_point realtime_sent_time_ = realtime_clock::min_time;
@@ -473,8 +474,13 @@ class PhasedLoopHandler {
   Ftrace ftrace_;
 };
 
+// Note, it is supported to create only:
+//   multiple fetchers, and (one sender or one watcher) per <name, type>
+//   tuple.
 class EventLoop {
  public:
+  // Holds configuration by reference for the lifetime of this object. It may
+  // never be mutated externally in any way.
   EventLoop(const Configuration *configuration);
 
   virtual ~EventLoop();
@@ -494,10 +500,6 @@ class EventLoop {
   bool HasChannel(const std::string_view channel_name) {
     return GetChannel<T>(channel_name) != nullptr;
   }
-
-  // Note, it is supported to create:
-  //   multiple fetchers, and (one sender or one watcher) per <name, type>
-  //   tuple.
 
   // Makes a class that will always fetch the most recent value
   // sent to the provided channel.
@@ -596,7 +598,7 @@ class EventLoop {
 
   // TODO(austin): OnExit for cleanup.
 
-  // Threadsafe.
+  // May be safely called from any thread.
   bool is_running() const { return is_running_.load(); }
 
   // Sets the scheduler priority to run the event loop at.  This may not be
