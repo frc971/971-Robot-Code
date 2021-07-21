@@ -622,14 +622,14 @@ TEST(LocklessQueueTest, Death) {
           monotonic_clock::time_point monotonic_remote_time;
           realtime_clock::time_point realtime_remote_time;
           uint32_t remote_queue_index;
-          UUID remote_boot_uuid;
+          UUID source_boot_uuid;
           char read_data[1024];
           size_t length;
 
           LocklessQueueReader::Result read_result = reader.Read(
               i, &monotonic_sent_time, &realtime_sent_time,
               &monotonic_remote_time, &realtime_remote_time,
-              &remote_queue_index, &remote_boot_uuid, &length, &(read_data[0]));
+              &remote_queue_index, &source_boot_uuid, &length, &(read_data[0]));
 
           if (read_result != LocklessQueueReader::Result::GOOD) {
             if (read_result == LocklessQueueReader::Result::TOO_OLD) {

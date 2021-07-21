@@ -372,7 +372,7 @@ class SimpleShmFetcher {
         queue_index.index(), &context_.monotonic_event_time,
         &context_.realtime_event_time, &context_.monotonic_remote_time,
         &context_.realtime_remote_time, &context_.remote_queue_index,
-        &context_.remote_boot_uuid, &context_.size, copy_buffer);
+        &context_.source_boot_uuid, &context_.size, copy_buffer);
 
     if (read_result == ipc_lib::LocklessQueueReader::Result::GOOD) {
       if (pin_data()) {
@@ -551,14 +551,14 @@ class ShmSender : public RawSender {
               aos::monotonic_clock::time_point monotonic_remote_time,
               aos::realtime_clock::time_point realtime_remote_time,
               uint32_t remote_queue_index,
-              const UUID &remote_boot_uuid) override {
+              const UUID &source_boot_uuid) override {
     shm_event_loop()->CheckCurrentThread();
     CHECK_LE(length, static_cast<size_t>(channel()->max_size()))
         << ": Sent too big a message on "
         << configuration::CleanedChannelToString(channel());
     CHECK(lockless_queue_sender_.Send(length, monotonic_remote_time,
                                       realtime_remote_time, remote_queue_index,
-                                      remote_boot_uuid, &monotonic_sent_time_,
+                                      source_boot_uuid, &monotonic_sent_time_,
                                       &realtime_sent_time_, &sent_queue_index_))
         << ": Somebody wrote outside the buffer of their message on channel "
         << configuration::CleanedChannelToString(channel());
@@ -572,14 +572,14 @@ class ShmSender : public RawSender {
               aos::monotonic_clock::time_point monotonic_remote_time,
               aos::realtime_clock::time_point realtime_remote_time,
               uint32_t remote_queue_index,
-              const UUID &remote_boot_uuid) override {
+              const UUID &source_boot_uuid) override {
     shm_event_loop()->CheckCurrentThread();
     CHECK_LE(length, static_cast<size_t>(channel()->max_size()))
         << ": Sent too big a message on "
         << configuration::CleanedChannelToString(channel());
     CHECK(lockless_queue_sender_.Send(
         reinterpret_cast<const char *>(msg), length, monotonic_remote_time,
-        realtime_remote_time, remote_queue_index, remote_boot_uuid,
+        realtime_remote_time, remote_queue_index, source_boot_uuid,
         &monotonic_sent_time_, &realtime_sent_time_, &sent_queue_index_))
         << ": Somebody wrote outside the buffer of their message on channel "
         << configuration::CleanedChannelToString(channel());
@@ -1118,6 +1118,7 @@ void ShmEventLoop::Run() {
     }
 
     // Now that we are RT, run all the OnRun handlers.
+    SetTimerContext(monotonic_clock::now());
     for (const auto &run : on_run_) {
       run();
     }

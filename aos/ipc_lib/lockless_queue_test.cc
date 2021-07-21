@@ -251,7 +251,7 @@ TEST_F(LocklessQueueTest, Send) {
     monotonic_clock::time_point monotonic_remote_time;
     realtime_clock::time_point realtime_remote_time;
     uint32_t remote_queue_index;
-    UUID remote_boot_uuid;
+    UUID source_boot_uuid;
     char read_data[1024];
     size_t length;
 
@@ -264,7 +264,7 @@ TEST_F(LocklessQueueTest, Send) {
     LocklessQueueReader::Result read_result = reader.Read(
         index.index(), &monotonic_sent_time, &realtime_sent_time,
         &monotonic_remote_time, &realtime_remote_time, &remote_queue_index,
-        &remote_boot_uuid, &length, &(read_data[0]));
+        &source_boot_uuid, &length, &(read_data[0]));
 
     // This should either return GOOD, or TOO_OLD if it is before the start of
     // the queue.

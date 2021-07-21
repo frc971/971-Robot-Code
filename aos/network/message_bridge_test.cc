@@ -160,7 +160,7 @@ class MessageBridgeParameterizedTest
     pi1_test_event_loop->MakeWatcher(
         "/pi2/aos", [this](const Timestamp &timestamp) {
           VLOG(1) << "/pi2/aos Timestamp " << FlatbufferToJson(&timestamp);
-          EXPECT_EQ(pi1_test_event_loop->context().remote_boot_uuid,
+          EXPECT_EQ(pi1_test_event_loop->context().source_boot_uuid,
                     pi2_boot_uuid_);
         });
   }
@@ -275,7 +275,7 @@ class MessageBridgeParameterizedTest
     pi2_test_event_loop->MakeWatcher(
         "/pi1/aos", [this](const Timestamp &timestamp) {
           VLOG(1) << "/pi1/aos Timestamp " << FlatbufferToJson(&timestamp);
-          EXPECT_EQ(pi2_test_event_loop->context().remote_boot_uuid,
+          EXPECT_EQ(pi2_test_event_loop->context().source_boot_uuid,
                     pi1_boot_uuid_);
         });
     pi2_test_event_loop->MakeWatcher(
@@ -405,7 +405,7 @@ TEST_P(MessageBridgeParameterizedTest, PingPong) {
   int pong_count = 0;
   pong_event_loop.MakeWatcher("/test", [&pong_count, &pong_event_loop,
                                         this](const examples::Ping &ping) {
-    EXPECT_EQ(pong_event_loop.context().remote_boot_uuid, pi1_boot_uuid_);
+    EXPECT_EQ(pong_event_loop.context().source_boot_uuid, pi1_boot_uuid_);
     ++pong_count;
     VLOG(1) << "Got ping back " << FlatbufferToJson(&ping);
   });

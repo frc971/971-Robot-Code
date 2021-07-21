@@ -182,15 +182,7 @@ inline monotonic_clock::time_point TimerHandler::Call(
   CHECK_NOTNULL(timing_.timer);
   const monotonic_clock::time_point monotonic_start_time = get_time();
 
-  event_loop_->context_.monotonic_event_time = event_time;
-  event_loop_->context_.monotonic_remote_time = monotonic_clock::min_time;
-  event_loop_->context_.realtime_remote_time =
-      event_loop_->context_.realtime_event_time = realtime_clock::min_time;
-  event_loop_->context_.queue_index = 0xffffffffu;
-  event_loop_->context_.size = 0;
-  event_loop_->context_.data = nullptr;
-  event_loop_->context_.buffer_index = -1;
-  event_loop_->context_.remote_boot_uuid = event_loop_->boot_uuid();
+  event_loop_->SetTimerContext(event_time);
 
   ftrace_.FormatMessage(
       "timer: %.*s: start now=%" PRId64 " event=%" PRId64,
@@ -228,15 +220,7 @@ inline void PhasedLoopHandler::Call(
   const monotonic_clock::time_point monotonic_start_time = get_time();
 
   // Update the context to hold the desired wakeup time.
-  event_loop_->context_.monotonic_event_time = phased_loop_.sleep_time();
-  event_loop_->context_.monotonic_remote_time = monotonic_clock::min_time;
-  event_loop_->context_.realtime_remote_time =
-      event_loop_->context_.realtime_event_time = realtime_clock::min_time;
-  event_loop_->context_.queue_index = 0xffffffffu;
-  event_loop_->context_.size = 0;
-  event_loop_->context_.data = nullptr;
-  event_loop_->context_.buffer_index = -1;
-  event_loop_->context_.remote_boot_uuid = event_loop_->boot_uuid();
+  event_loop_->SetTimerContext(phased_loop_.sleep_time());
 
   // Compute how many cycles elapsed
   cycles_elapsed_ += phased_loop_.Iterate(monotonic_start_time);

@@ -267,7 +267,7 @@ void QueueRacer::CheckReads(bool race_reads, int write_wrap_count,
     realtime_clock::time_point realtime_sent_time;
     monotonic_clock::time_point monotonic_remote_time;
     realtime_clock::time_point realtime_remote_time;
-    UUID remote_boot_uuid;
+    UUID source_boot_uuid;
     uint32_t remote_queue_index;
     size_t length;
     char read_data[1024];
@@ -279,7 +279,7 @@ void QueueRacer::CheckReads(bool race_reads, int write_wrap_count,
     LocklessQueueReader::Result read_result = reader.Read(
         wrapped_i, &monotonic_sent_time, &realtime_sent_time,
         &monotonic_remote_time, &realtime_remote_time, &remote_queue_index,
-        &remote_boot_uuid, &length, &(read_data[0]));
+        &source_boot_uuid, &length, &(read_data[0]));
 
     if (race_reads) {
       if (read_result == LocklessQueueReader::Result::NOTHING_NEW) {
@@ -302,7 +302,7 @@ void QueueRacer::CheckReads(bool race_reads, int write_wrap_count,
 
     EXPECT_EQ(monotonic_remote_time, aos::monotonic_clock::min_time);
     EXPECT_EQ(realtime_remote_time, aos::realtime_clock::min_time);
-    EXPECT_EQ(remote_boot_uuid, UUID::Zero());
+    EXPECT_EQ(source_boot_uuid, UUID::Zero());
 
     ThreadPlusCount tpc;
     ASSERT_EQ(length, sizeof(ThreadPlusCount));

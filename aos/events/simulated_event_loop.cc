@@ -295,13 +295,13 @@ class SimulatedSender : public RawSender {
               aos::monotonic_clock::time_point monotonic_remote_time,
               aos::realtime_clock::time_point realtime_remote_time,
               uint32_t remote_queue_index,
-              const UUID &remote_boot_uuid) override;
+              const UUID &source_boot_uuid) override;
 
   bool DoSend(const void *msg, size_t size,
               aos::monotonic_clock::time_point monotonic_remote_time,
               aos::realtime_clock::time_point realtime_remote_time,
               uint32_t remote_queue_index,
-              const UUID &remote_boot_uuid) override;
+              const UUID &source_boot_uuid) override;
 
   int buffer_index() override {
     // First, ensure message_ is allocated.
@@ -542,6 +542,7 @@ class SimulatedEventLoop : public EventLoop {
     CHECK(!is_running()) << ": Cannot register OnRun callback while running.";
     scheduler_->ScheduleOnRun([this, on_run = std::move(on_run)]() {
       ScopedMarkRealtimeRestorer rt(priority() > 0);
+      SetTimerContext(monotonic_now());
       on_run();
     });
   }
@@ -852,7 +853,7 @@ bool SimulatedSender::DoSend(size_t length,
                              monotonic_clock::time_point monotonic_remote_time,
                              realtime_clock::time_point realtime_remote_time,
                              uint32_t remote_queue_index,
-                             const UUID &remote_boot_uuid) {
+                             const UUID &source_boot_uuid) {
   // The allocations in here are due to infrastructure and don't count in the
   // no mallocs in RT code.
   ScopedNotRealtime nrt;
@@ -862,7 +863,7 @@ bool SimulatedSender::DoSend(size_t length,
   message_->context.remote_queue_index = remote_queue_index;
   message_->context.realtime_event_time = event_loop_->realtime_now();
   message_->context.realtime_remote_time = realtime_remote_time;
-  message_->context.remote_boot_uuid = remote_boot_uuid;
+  message_->context.source_boot_uuid = source_boot_uuid;
   CHECK_LE(length, message_->context.size);
   message_->context.size = length;
 
@@ -882,7 +883,7 @@ bool SimulatedSender::DoSend(const void *msg, size_t size,
                              monotonic_clock::time_point monotonic_remote_time,
                              realtime_clock::time_point realtime_remote_time,
                              uint32_t remote_queue_index,
-                             const UUID &remote_boot_uuid) {
+                             const UUID &source_boot_uuid) {
   CHECK_LE(size, this->size())
       << ": Attempting to send too big a message on "
       << configuration::CleanedChannelToString(simulated_channel_->channel());
@@ -899,7 +900,7 @@ bool SimulatedSender::DoSend(const void *msg, size_t size,
          msg, size);
 
   return DoSend(size, monotonic_remote_time, realtime_remote_time,
-                remote_queue_index, remote_boot_uuid);
+                remote_queue_index, source_boot_uuid);
 }
 
 SimulatedTimerHandler::SimulatedTimerHandler(
