@@ -177,6 +177,9 @@ class InterpolatedTimeConverter : public TimeConverter {
   monotonic_clock::time_point FromDistributedClock(
       size_t node_index, distributed_clock::time_point time) override;
 
+  // Called whenever time passes this point and we can forget about it.
+  void ObserveTimePassed(distributed_clock::time_point time) override;
+
  private:
   // Returns the next timestamp, or nullopt if there isn't one. It is assumed
   // that if there isn't one, there never will be one.

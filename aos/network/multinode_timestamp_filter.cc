@@ -353,11 +353,26 @@ void InterpolatedTimeConverter::QueueUntil(
 
   CHECK(!times_.empty())
       << ": Found no times to do timestamp estimation, please investigate.";
+}
+
+void InterpolatedTimeConverter::ObserveTimePassed(
+    distributed_clock::time_point time) {
   // Keep at least 500 points and time_estimation_buffer_seconds seconds of
   // time.  This should be enough to handle any reasonable amount of history.
-  while (times_.size() > kHistoryMinCount &&
-         std::get<0>(times_.front()) + time_estimation_buffer_seconds_ <
-             std::get<0>(times_.back())) {
+  while (true) {
+    if (times_.size() < kHistoryMinCount) {
+      return;
+    }
+    if (std::get<0>(times_[1]) + time_estimation_buffer_seconds_ > time) {
+      VLOG(1) << "Not popping because "
+              << std::get<0>(times_[1]) + time_estimation_buffer_seconds_
+              << " > " << time;
+      return;
+    }
+
+    VLOG(1) << "Popping sample because " << times_.size() << " > "
+            << kHistoryMinCount << " && " << std::get<0>(times_[1]) << " < "
+            << time - time_estimation_buffer_seconds_;
     times_.pop_front();
     have_popped_ = true;
   }

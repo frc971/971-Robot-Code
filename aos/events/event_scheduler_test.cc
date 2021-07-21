@@ -41,6 +41,8 @@ class SlopeOffsetTimeConverter final : public TimeConverter {
            distributed_offset_[node_index];
   }
 
+  void ObserveTimePassed(distributed_clock::time_point /*time*/) override {}
+
  private:
   // Offset to the distributed clock.
   //   distributed = monotonic + offset;

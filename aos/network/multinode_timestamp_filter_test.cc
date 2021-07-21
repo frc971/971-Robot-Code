@@ -223,13 +223,8 @@ TEST(InterpolatedTimeConverterDeathTest, ReadLostTime) {
   EXPECT_EQ(me + chrono::milliseconds(10),
             time_converter.FromDistributedClock(0, de + kDt));
 
-  // Force 10.1 seconds now.  This will forget the 0th point at the origin.
-  EXPECT_EQ(
-      de + kDefaultHistoryDuration + kDt,
-      time_converter.ToDistributedClock(0, me + kDefaultHistoryDuration + kDt));
-  EXPECT_EQ(me + kDefaultHistoryDuration + kDt,
-            time_converter.FromDistributedClock(
-                0, de + kDefaultHistoryDuration + kDt));
+  // Now force ourselves to forget.
+  time_converter.ObserveTimePassed(de + kDefaultHistoryDuration + kDt * 3 / 2);
 
   // Yup, can't read the origin anymore.
   EXPECT_DEATH({ LOG(INFO) << time_converter.ToDistributedClock(0, me); },
