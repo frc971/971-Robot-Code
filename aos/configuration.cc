@@ -10,10 +10,14 @@
 
 #include <map>
 #include <set>
+#include <string>
 #include <string_view>
+#include <vector>
 
 #include "absl/container/btree_set.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_join.h"
+#include "absl/strings/str_split.h"
 #include "aos/configuration_generated.h"
 #include "aos/flatbuffer_merge.h"
 #include "aos/json_to_flatbuffer.h"
@@ -131,10 +135,33 @@ std::string AbsolutePath(const std::string_view filename) {
   return buffer;
 }
 
+std::string RemoveDotDots(const std::string_view filename) {
+  std::vector<std::string> split = absl::StrSplit(filename, '/');
+  auto iterator = split.begin();
+  while (iterator != split.end()) {
+    if (iterator->empty()) {
+      iterator = split.erase(iterator);
+    } else if (*iterator == ".") {
+      iterator = split.erase(iterator);
+    } else if (*iterator == "..") {
+      CHECK(iterator != split.begin())
+          << ": Import path may not start with ..: " << filename;
+      auto previous = iterator;
+      --previous;
+      split.erase(iterator);
+      iterator = split.erase(previous);
+    } else {
+      ++iterator;
+    }
+  }
+  return absl::StrJoin(split, "/");
+}
+
 FlatbufferDetachedBuffer<Configuration> ReadConfig(
     const std::string_view path, absl::btree_set<std::string> *visited_paths,
     const std::vector<std::string_view> &extra_import_paths) {
   std::string binary_path = MaybeReplaceExtension(path, ".json", ".bfbs");
+  VLOG(1) << "Looking up: " << path << ", starting with: " << binary_path;
   bool binary_path_exists = util::PathExists(binary_path);
   std::string raw_path(path);
   // For each .json file, look and see if we can find a .bfbs file next to it
@@ -151,13 +178,15 @@ FlatbufferDetachedBuffer<Configuration> ReadConfig(
 
     bool found_path = false;
     for (const auto &import_path : extra_import_paths) {
-      raw_path = std::string(import_path) + "/" + std::string(path);
+      raw_path = std::string(import_path) + "/" + RemoveDotDots(path);
       binary_path = MaybeReplaceExtension(raw_path, ".json", ".bfbs");
+      VLOG(1) << "Checking: " << binary_path;
       binary_path_exists = util::PathExists(binary_path);
       if (binary_path_exists) {
         found_path = true;
         break;
       }
+      VLOG(1) << "Checking: " << raw_path;
       if (util::PathExists(raw_path)) {
         found_path = true;
         break;
@@ -560,11 +589,11 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
 
 FlatbufferDetachedBuffer<Configuration> ReadConfig(
     const std::string_view path,
-    const std::vector<std::string_view> &import_paths) {
+    const std::vector<std::string_view> &extra_import_paths) {
   // We only want to read a file once.  So track the visited files in a set.
   absl::btree_set<std::string> visited_paths;
   FlatbufferDetachedBuffer<Configuration> read_config =
-      ReadConfig(path, &visited_paths, import_paths);
+      ReadConfig(path, &visited_paths, extra_import_paths);
 
   // If we only read one file, and it had a .bfbs extension, it has to be a
   // fully formatted config.  Do a quick verification and return it.
