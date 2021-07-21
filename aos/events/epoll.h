@@ -5,6 +5,7 @@
 #include <sys/epoll.h>
 #include <sys/timerfd.h>
 #include <unistd.h>
+
 #include <atomic>
 #include <functional>
 #include <vector>
@@ -68,20 +69,33 @@ class EPoll {
   // Quits.  Async safe.
   void Quit();
 
-  // Called before waiting on the epoll file descriptor.
+  // Adds a function which will be called before waiting on the epoll file
+  // descriptor.
   void BeforeWait(std::function<void()> function);
 
   // Registers a function to be called if the fd becomes readable.
   // Only one function may be registered for readability on each fd.
+  // A fd may be registered exclusively with OnReadable/OnWriteable/OnError OR
+  // OnEvents.
   void OnReadable(int fd, ::std::function<void()> function);
 
   // Registers a function to be called if the fd reports an error.
   // Only one function may be registered for errors on each fd.
+  // A fd may be registered exclusively with OnReadable/OnWriteable/OnError OR
+  // OnEvents.
   void OnError(int fd, ::std::function<void()> function);
 
   // Registers a function to be called if the fd becomes writeable.
   // Only one function may be registered for writability on each fd.
+  // A fd may be registered exclusively with OnReadable/OnWriteable/OnError OR
+  // OnEvents.
   void OnWriteable(int fd, ::std::function<void()> function);
+
+  // Registers a function to be called when the configured events occur on fd.
+  // Which events occur will be passed to the function.
+  // A fd may be registered exclusively with OnReadable/OnWriteable/OnError OR
+  // OnEvents.
+  void OnEvents(int fd, ::std::function<void(uint32_t)> function);
 
   // Removes fd from the event loop.
   // All Fds must be cleaned up before this class is destroyed.
@@ -100,19 +114,50 @@ class EPoll {
   // writeable.
   void DisableWriteable(int fd) { DisableEvents(fd, kOutEvents); }
 
+  // Sets the epoll events for the given fd. Be careful using this with
+  // OnReadable/OnWriteable/OnError: enabled events which fire with no handler
+  // registered will result in a crash.
+  void SetEvents(int fd, uint32_t events);
+
+  // Returns whether we're currently running. This changes to false when we
+  // start draining events to finish.
+  bool should_run() const { return run_; }
+
  private:
   // Structure whose pointer should be returned by epoll.  Makes looking up the
   // function fast and easy.
   struct EventData {
     EventData(int fd_in) : fd(fd_in) {}
+    virtual ~EventData() = default;
+
     // We use pointers to these objects as persistent identifiers, so they can't
     // be moved.
     EventData(const EventData &) = delete;
     EventData &operator=(const EventData &) = delete;
 
+    // Calls the appropriate callbacks when events are returned from the kernel.
+    virtual void DoCallbacks(uint32_t events) = 0;
+
     const int fd;
     uint32_t events = 0;
+  };
+
+  struct InOutEventData : public EventData {
+    InOutEventData(int fd) : EventData(fd) {}
+    ~InOutEventData() override = default;
+
     std::function<void()> in_fn, out_fn, err_fn;
+
+    void DoCallbacks(uint32_t events) override;
+  };
+
+  struct SingleEventData : public EventData {
+    SingleEventData(int fd) : EventData(fd) {}
+    ~SingleEventData() override = default;
+
+    std::function<void(uint32_t)> fn;
+
+    void DoCallbacks(uint32_t events) override { fn(events); }
   };
 
   void EnableEvents(int fd, uint32_t events);

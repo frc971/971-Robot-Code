@@ -4,6 +4,7 @@
 #include <sys/epoll.h>
 #include <sys/timerfd.h>
 #include <unistd.h>
+
 #include <atomic>
 #include <vector>
 
@@ -109,21 +110,7 @@ bool EPoll::Poll(bool block) {
   }
 
   EventData *const event_data = static_cast<struct EventData *>(event.data.ptr);
-  if (event.events & kInEvents) {
-    CHECK(event_data->in_fn)
-        << ": No handler registered for input events on " << event_data->fd;
-    event_data->in_fn();
-  }
-  if (event.events & kOutEvents) {
-    CHECK(event_data->out_fn)
-        << ": No handler registered for output events on " << event_data->fd;
-    event_data->out_fn();
-  }
-  if (event.events & kErrorEvents) {
-    CHECK(event_data->err_fn)
-        << ": No handler registered for error events on " << event_data->fd;
-    event_data->err_fn();
-  }
+  event_data->DoCallbacks(event.events);
   return true;
 }
 
@@ -139,37 +126,48 @@ void EPoll::Quit() {
 void EPoll::OnReadable(int fd, ::std::function<void()> function) {
   EventData *event_data = GetEventData(fd);
   if (event_data == nullptr) {
-    fns_.emplace_back(std::make_unique<EventData>(fd));
+    fns_.emplace_back(std::make_unique<InOutEventData>(fd));
     event_data = fns_.back().get();
   } else {
-    CHECK(!event_data->in_fn) << ": Duplicate in functions for " << fd;
+    CHECK(!static_cast<InOutEventData *>(event_data)->in_fn)
+        << ": Duplicate in functions for " << fd;
   }
-  event_data->in_fn = ::std::move(function);
+  static_cast<InOutEventData *>(event_data)->in_fn = ::std::move(function);
   DoEpollCtl(event_data, event_data->events | kInEvents);
 }
 
 void EPoll::OnError(int fd, ::std::function<void()> function) {
   EventData *event_data = GetEventData(fd);
   if (event_data == nullptr) {
-    fns_.emplace_back(std::make_unique<EventData>(fd));
+    fns_.emplace_back(std::make_unique<InOutEventData>(fd));
     event_data = fns_.back().get();
   } else {
-    CHECK(!event_data->err_fn) << ": Duplicate in functions for " << fd;
+    CHECK(!static_cast<InOutEventData *>(event_data)->err_fn)
+        << ": Duplicate error functions for " << fd;
   }
-  event_data->err_fn = ::std::move(function);
+  static_cast<InOutEventData *>(event_data)->err_fn = ::std::move(function);
   DoEpollCtl(event_data, event_data->events | kErrorEvents);
 }
 
 void EPoll::OnWriteable(int fd, ::std::function<void()> function) {
   EventData *event_data = GetEventData(fd);
   if (event_data == nullptr) {
-    fns_.emplace_back(std::make_unique<EventData>(fd));
+    fns_.emplace_back(std::make_unique<InOutEventData>(fd));
     event_data = fns_.back().get();
   } else {
-    CHECK(!event_data->out_fn) << ": Duplicate out functions for " << fd;
+    CHECK(!static_cast<InOutEventData *>(event_data)->out_fn)
+        << ": Duplicate out functions for " << fd;
   }
-  event_data->out_fn = ::std::move(function);
+  static_cast<InOutEventData *>(event_data)->out_fn = ::std::move(function);
   DoEpollCtl(event_data, event_data->events | kOutEvents);
+}
+
+void EPoll::OnEvents(int fd, ::std::function<void(uint32_t)> function) {
+  if (GetEventData(fd) != nullptr) {
+    LOG(FATAL) << "May not replace OnEvents handlers";
+  }
+  fns_.emplace_back(std::make_unique<SingleEventData>(fd));
+  static_cast<SingleEventData *>(fns_.back().get())->fn = std::move(function);
 }
 
 void EPoll::ForgetClosedFd(int fd) {
@@ -182,6 +180,10 @@ void EPoll::ForgetClosedFd(int fd) {
     ++element;
   }
   LOG(FATAL) << "fd " << fd << " not found";
+}
+
+void EPoll::SetEvents(int fd, uint32_t events) {
+  DoEpollCtl(CHECK_NOTNULL(GetEventData(fd)), events);
 }
 
 // Removes fd from the event loop.
@@ -197,6 +199,21 @@ void EPoll::DeleteFd(int fd) {
     ++element;
   }
   LOG(FATAL) << "fd " << fd << " not found";
+}
+
+void EPoll::InOutEventData::DoCallbacks(uint32_t events) {
+  if (events & kInEvents) {
+    CHECK(in_fn) << ": No handler registered for input events on " << fd;
+    in_fn();
+  }
+  if (events & kOutEvents) {
+    CHECK(out_fn) << ": No handler registered for output events on " << fd;
+    out_fn();
+  }
+  if (events & kErrorEvents) {
+    CHECK(err_fn) << ": No handler registered for error events on " << fd;
+    err_fn();
+  }
 }
 
 void EPoll::EnableEvents(int fd, uint32_t events) {
@@ -221,12 +238,14 @@ EPoll::EventData *EPoll::GetEventData(int fd) {
 
 void EPoll::DoEpollCtl(EventData *event_data, const uint32_t new_events) {
   const uint32_t old_events = event_data->events;
+  if (old_events == new_events) {
+    // Shortcut without calling into the kernel. This happens often with
+    // external event loop integrations that are emulating poll, so make it
+    // fast.
+    return;
+  }
   event_data->events = new_events;
   if (new_events == 0) {
-    if (old_events == 0) {
-      // Not added, and doesn't need to be. Nothing to do here.
-      return;
-    }
     // It was added, but should now be removed.
     PCHECK(epoll_ctl(epoll_fd_, EPOLL_CTL_DEL, event_data->fd, nullptr) == 0);
     return;
