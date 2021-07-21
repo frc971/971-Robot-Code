@@ -3,12 +3,11 @@
 #include <string_view>
 
 #include "aos/events/event_loop_param_test.h"
+#include "aos/events/test_message_generated.h"
+#include "aos/network/team_number.h"
 #include "aos/realtime.h"
 #include "glog/logging.h"
 #include "gtest/gtest.h"
-
-#include "aos/events/test_message_generated.h"
-#include "aos/network/team_number.h"
 
 namespace aos {
 namespace testing {
@@ -122,6 +121,36 @@ class ShmEventLoopTest : public ::testing::TestWithParam<ReadMethod> {
 };
 
 using ShmEventLoopDeathTest = ShmEventLoopTest;
+
+// Tests that we don't leave the calling thread realtime when calling Send
+// before Run.
+TEST_P(ShmEventLoopTest, SendBeforeRun) {
+  auto loop = factory()->MakePrimary("primary");
+  loop->SetRuntimeRealtimePriority(1);
+
+  auto loop2 = factory()->Make("loop2");
+  loop2->SetRuntimeRealtimePriority(2);
+  loop2->MakeWatcher("/test", [](const TestMessage &) {});
+  // Need the other one running for its watcher to record in SHM that it wants
+  // wakers to boost their priority, so leave it running in a thread for this
+  // test.
+  std::thread loop2_thread(
+      [&loop2]() { static_cast<ShmEventLoop *>(loop2.get())->Run(); });
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+  auto sender = loop->MakeSender<TestMessage>("/test");
+  EXPECT_FALSE(IsRealtime());
+  {
+    aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
+    TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
+    builder.add_value(200);
+    msg.Send(builder.Finish());
+  }
+  EXPECT_FALSE(IsRealtime());
+
+  static_cast<ShmEventLoop *>(loop2.get())->Exit();
+  loop2_thread.join();
+}
 
 // Tests that every handler type is realtime and runs.  There are threads
 // involved and it's easy to miss one.
