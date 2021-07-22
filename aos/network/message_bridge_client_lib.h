@@ -53,6 +53,14 @@ class SctpClientConnection {
   void NodeDisconnected();
   void HandleData(const Message *message);
 
+  // Schedules connect_timer_ for a ways in the future. If one of our messages
+  // gets dropped, the server might be waiting for this, so if we don't hear
+  // from the server for a while we'll try sending it again.
+  void ScheduleConnectTimeout() {
+    connect_timer_->Setup(event_loop_->context().monotonic_event_time +
+                          std::chrono::seconds(1));
+  }
+
   // Event loop to register the server on.
   aos::ShmEventLoop *const event_loop_;
 
@@ -80,10 +88,6 @@ class SctpClientConnection {
 
   // Timer which fires to handle reconnections.
   aos::TimerHandler *connect_timer_;
-
-  // id of the server once known.  This is only valid if connection_ says
-  // connected.
-  sctp_assoc_t remote_assoc_id_ = 0;
 
   // ClientConnection statistics message to modify.  This will be published
   // periodicially.

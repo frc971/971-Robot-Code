@@ -186,24 +186,26 @@ void SctpClientConnection::MessageReceived() {
 }
 
 void SctpClientConnection::SendConnect() {
+  VLOG(1) << "Sending Connect";
   // Try to send the connect message.  If that fails, retry.
-  if (!client_.Send(kConnectStream(),
-                    std::string_view(reinterpret_cast<const char *>(
-                                         connect_message_.span().data()),
-                                     connect_message_.span().size()),
-                    0)) {
+  if (client_.Send(kConnectStream(),
+                   std::string_view(reinterpret_cast<const char *>(
+                                        connect_message_.span().data()),
+                                    connect_message_.span().size()),
+                   0)) {
+    ScheduleConnectTimeout();
+  } else {
     NodeDisconnected();
   }
 }
 
 void SctpClientConnection::NodeConnected(sctp_assoc_t assoc_id) {
-  connect_timer_->Disable();
+  ScheduleConnectTimeout();
 
   // We want to tell the kernel to schedule the packets on this new stream with
   // the priority scheduler.  This only needs to be done once per stream.
   client_.SetPriorityScheduler(assoc_id);
 
-  remote_assoc_id_ = assoc_id;
   connection_->mutate_state(State::CONNECTED);
   client_status_->SampleReset(client_index_);
 }
@@ -212,13 +214,14 @@ void SctpClientConnection::NodeDisconnected() {
   connect_timer_->Setup(
       event_loop_->monotonic_now() + chrono::milliseconds(100),
       chrono::milliseconds(100));
-  remote_assoc_id_ = 0;
   connection_->mutate_state(State::DISCONNECTED);
   connection_->mutate_monotonic_offset(0);
   client_status_->SampleReset(client_index_);
 }
 
 void SctpClientConnection::HandleData(const Message *message) {
+  ScheduleConnectTimeout();
+
   const RemoteData *remote_data =
       flatbuffers::GetSizePrefixedRoot<RemoteData>(message->data());
 
