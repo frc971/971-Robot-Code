@@ -563,7 +563,8 @@ class ShmSender : public RawSender {
         << ": Somebody wrote outside the buffer of their message on channel "
         << configuration::CleanedChannelToString(channel());
 
-    wake_upper_.Wakeup(event_loop()->priority());
+    wake_upper_.Wakeup(event_loop()->is_running() ? event_loop()->priority()
+                                                  : 0);
     return true;
   }
 
@@ -582,7 +583,8 @@ class ShmSender : public RawSender {
         &monotonic_sent_time_, &realtime_sent_time_, &sent_queue_index_))
         << ": Somebody wrote outside the buffer of their message on channel "
         << configuration::CleanedChannelToString(channel());
-    wake_upper_.Wakeup(event_loop()->priority());
+    wake_upper_.Wakeup(event_loop()->is_running() ? event_loop()->priority()
+                                                  : 0);
     // TODO(austin): Return an error if we send too fast.
     return true;
   }
