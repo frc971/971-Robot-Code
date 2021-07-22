@@ -4,11 +4,11 @@
 #include <vector>
 
 #include "absl/types/span.h"
-
 #include "aos/events/epoll.h"
 #include "aos/events/event_loop.h"
 #include "aos/events/event_loop_generated.h"
 #include "aos/ipc_lib/signalfd.h"
+#include "aos/stl_mutex/stl_mutex.h"
 
 DECLARE_string(application_name);
 DECLARE_string(shm_base);
@@ -92,6 +92,7 @@ class ShmEventLoop : public EventLoop {
   // Returns the local mapping of the shared memory used by the provided Sender.
   template <typename T>
   absl::Span<char> GetSenderSharedMemory(aos::Sender<T> *sender) const {
+    CheckCurrentThread();
     return GetShmSenderSharedMemory(GetRawSender(sender));
   }
 
@@ -103,10 +104,29 @@ class ShmEventLoop : public EventLoop {
   template <typename T>
   absl::Span<const char> GetFetcherPrivateMemory(
       aos::Fetcher<T> *fetcher) const {
+    CheckCurrentThread();
     return GetShmFetcherPrivateMemory(GetRawFetcher(fetcher));
   }
 
   int NumberBuffers(const Channel *channel) override;
+
+  // All public-facing APIs will verify this mutex is held when they are called.
+  // For normal use with everything in a single thread, this is unnecessary.
+  //
+  // This is helpful as a safety check when using a ShmEventLoop with external
+  // synchronization across multiple threads. It will NOT reliably catch race
+  // conditions, but if you have a race condition triggered repeatedly it'll
+  // probably catch it eventually.
+  void CheckForMutex(aos::stl_mutex *check_mutex) {
+    check_mutex_ = check_mutex;
+  }
+
+  // All public-facing APIs will verify they are called in this thread.
+  // For normal use with the whole program in a single thread, this is
+  // unnecessary. It's helpful as a safety check for programs with multiple
+  // threads, where the EventLoop should only be interacted with from a single
+  // one.
+  void LockToThread() { check_tid_ = GetTid(); }
 
  private:
   friend class shm_event_loop_internal::ShmWatcherState;
@@ -125,6 +145,8 @@ class ShmEventLoop : public EventLoop {
     }
     return result;
   }
+
+  void CheckCurrentThread() const;
 
   void HandleEvent();
 
@@ -150,6 +172,9 @@ class ShmEventLoop : public EventLoop {
   cpu_set_t affinity_ = DefaultAffinity();
   std::string name_;
   const Node *const node_;
+
+  aos::stl_mutex *check_mutex_ = nullptr;
+  std::optional<pid_t> check_tid_;
 
   internal::EPoll epoll_;
 

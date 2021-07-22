@@ -61,6 +61,11 @@ class stl_mutex {
   bool owner_died() const { return owner_died_; }
   void consistent() { owner_died_ = false; }
 
+  // Returns whether this mutex is locked by the current thread. This is very
+  // hard to use reliably, please think very carefully before using it for
+  // anything beyond probabilistic assertion checks.
+  bool is_locked() const { return mutex_islocked(&native_handle_); }
+
  private:
   aos_mutex native_handle_;
 
@@ -82,7 +87,7 @@ class stl_recursive_mutex {
   constexpr stl_recursive_mutex() {}
 
   void lock() {
-    if (mutex_islocked(mutex_.native_handle())) {
+    if (mutex_.is_locked()) {
       CHECK(!owner_died());
       ++recursive_locks_;
     } else {
@@ -95,7 +100,7 @@ class stl_recursive_mutex {
     }
   }
   bool try_lock() {
-    if (mutex_islocked(mutex_.native_handle())) {
+    if (mutex_.is_locked()) {
       CHECK(!owner_died());
       ++recursive_locks_;
       return true;
