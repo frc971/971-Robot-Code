@@ -225,7 +225,10 @@ cc_binary(
 cc_test(
     name = "pingpong_test",
     srcs = ["pingpong_test.cc"],
-    data = [":pingpong_config"],
+    data = [
+        ":multinode_pingpong_test_split_config",
+        ":pingpong_config",
+    ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":ping_lib",
