@@ -52,8 +52,6 @@ class FieldWidget(Gtk.DrawingArea):
         self.held_x = 0
         self.spline_edit = -1
 
-        self.curves = []
-
         try:
             self.field_png = cairo.ImageSurface.create_from_png(
                 "frc971/control_loops/python/field_images/" + FIELD.field_id +
@@ -185,30 +183,22 @@ class FieldWidget(Gtk.DrawingArea):
 
         if self.mode == Mode.kPlacing or self.mode == Mode.kViewing:
             set_color(cr, palette["BLACK"])
-            plotPoints = self.points.getPoints()
-            if plotPoints:
-                for i, point in enumerate(plotPoints):
-                    draw_px_x(cr, mToPx(point[0]), mToPx(point[1]), 10)
-                    cr.move_to(mToPx(point[0]), mToPx(point[1]) - 15)
-                    display_text(cr, str(i), 0.5, 0.5, 2, 2)
+            for i, point in enumerate(self.points.getPoints()):
+                draw_px_x(cr, mToPx(point[0]), mToPx(point[1]), 10)
             set_color(cr, palette["WHITE"])
-
         elif self.mode == Mode.kEditing:
             set_color(cr, palette["BLACK"])
-            cr.move_to(-SCREEN_SIZE, 170)
-            display_text(cr, "EDITING", 1, 1, 1, 1)
             if self.points.getSplines():
                 self.draw_splines(cr)
                 for i, points in enumerate(self.points.getSplines()):
 
-                    p0 = np.array([mToPx(points[0][0]), mToPx(points[0][1])])
-                    p1 = np.array([mToPx(points[1][0]), mToPx(points[1][1])])
-                    p2 = np.array([mToPx(points[2][0]), mToPx(points[2][1])])
-                    p3 = np.array([mToPx(points[3][0]), mToPx(points[3][1])])
-                    p4 = np.array([mToPx(points[4][0]), mToPx(points[4][1])])
-                    p5 = np.array([mToPx(points[5][0]), mToPx(points[5][1])])
+                    points = [
+                        np.array([mToPx(x), mToPx(y)])
+                        for (x, y) in points
+                    ]
+                    draw_control_points(cr, points)
 
-                    draw_control_points(cr, [p0, p1, p2, p3, p4, p5])
+                    p0, p1, p2, p3, p4, p5 = points
                     first_tangent = p0 + 2.0 * (p1 - p0)
                     second_tangent = p5 + 2.0 * (p4 - p5)
                     cr.set_source_rgb(0, 0.5, 0)
@@ -239,7 +229,6 @@ class FieldWidget(Gtk.DrawingArea):
         print("spent {:.2f} ms drawing the field widget".format(1000 * (time.perf_counter() - start_time)))
 
     def draw_splines(self, cr):
-        holder_spline = []
         for i, points in enumerate(self.points.getSplines()):
             array = np.zeros(shape=(6, 2), dtype=float)
             for j, point in enumerate(points):
@@ -253,15 +242,9 @@ class FieldWidget(Gtk.DrawingArea):
                 cr.line_to(
                     mToPx(spline.Point(k)[0]), mToPx(spline.Point(k)[1]))
                 cr.stroke()
-                holding = [
-                    spline.Point(k - 0.01)[0],
-                    spline.Point(k - 0.01)[1]
-                ]
-                holder_spline.append(holding)
             if i == 0:
                 self.draw_robot_at_point(cr, 0.00, 0.01, spline)
             self.draw_robot_at_point(cr, 1, 0.01, spline)
-        self.curves.append(holder_spline)
 
     def mouse_move(self, event):
         old_x = self.mousex
@@ -274,8 +257,9 @@ class FieldWidget(Gtk.DrawingArea):
 
         if self.mode == Mode.kEditing:
             self.points.updates_for_mouse_move(self.index_of_edit,
-                                               self.spline_edit, self.mousex,
-                                               self.mousey, difs)
+                                               self.spline_edit,
+                                               pxToM(self.mousex),
+                                               pxToM(self.mousey), difs)
 
     def export_json(self, file_name):
         self.path_to_export = os.path.join(
@@ -347,7 +331,8 @@ class FieldWidget(Gtk.DrawingArea):
         self.mousey = event.y
 
         if self.mode == Mode.kPlacing:
-            if self.points.add_point(self.mousex, self.mousey):
+            if self.points.add_point(
+                    pxToM(self.mousex), pxToM(self.mousey)):
                 self.mode = Mode.kEditing
         elif self.mode == Mode.kEditing:
             # Now after index_of_edit is not -1, the point is selected, so
