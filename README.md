@@ -77,7 +77,7 @@ There are a couple options for building code that are given here-- setting up ei
         1. Step 1: Add Bazel distribution URI as a package source
            ```
            sudo apt install curl
-           curl -fsSL https://bazel.build/bazel-release.pub.gpg | apt-key add -
+           curl -fsSL https://bazel.build/bazel-release.pub.gpg | sudo apt-key add -
            echo "deb [arch=amd64] https://storage.googleapis.com/bazel-apt stable jdk1.8" | sudo tee /etc/apt/sources.list.d/bazel.list
            ```
         2. Step 2: Install Bazel
