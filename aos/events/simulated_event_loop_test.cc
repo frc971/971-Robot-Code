@@ -1492,13 +1492,13 @@ TEST_P(RemoteMessageSimulatedEventLoopTest, BootUUIDTest) {
   pi1_remote_timestamp->MakeWatcher(
       "/pi2/aos", [&expected_boot_uuid,
                    &pi1_remote_timestamp](const message_bridge::Timestamp &) {
-        EXPECT_EQ(pi1_remote_timestamp->context().remote_boot_uuid,
+        EXPECT_EQ(pi1_remote_timestamp->context().source_boot_uuid,
                   expected_boot_uuid);
       });
   pi1_remote_timestamp->MakeWatcher(
       "/test",
       [&expected_boot_uuid, &pi1_remote_timestamp](const examples::Pong &) {
-        EXPECT_EQ(pi1_remote_timestamp->context().remote_boot_uuid,
+        EXPECT_EQ(pi1_remote_timestamp->context().source_boot_uuid,
                   expected_boot_uuid);
       });
   pi1_remote_timestamp->MakeWatcher(

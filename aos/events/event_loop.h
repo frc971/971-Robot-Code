@@ -76,7 +76,7 @@ struct Context {
 
   // UUID of the remote node which sent this message, or this node in the case
   // of events which are local to this node.
-  UUID remote_boot_uuid = UUID::Zero();
+  UUID source_boot_uuid = UUID::Zero();
 
   // Efficiently copies the flatbuffer into a FlatbufferVector, allocating
   // memory in the process.  It is vital that T matches the type of the
@@ -154,7 +154,7 @@ class RawSender {
   bool Send(size_t size);
   bool Send(size_t size, monotonic_clock::time_point monotonic_remote_time,
             realtime_clock::time_point realtime_remote_time,
-            uint32_t remote_queue_index, const UUID &remote_boot_uuid);
+            uint32_t remote_queue_index, const UUID &source_boot_uuid);
 
   // Sends a single block of data by copying it.
   // The remote arguments have the same meaning as in Send above.
@@ -162,7 +162,7 @@ class RawSender {
   bool Send(const void *data, size_t size,
             monotonic_clock::time_point monotonic_remote_time,
             realtime_clock::time_point realtime_remote_time,
-            uint32_t remote_queue_index, const UUID &remote_boot_uuid);
+            uint32_t remote_queue_index, const UUID &source_boot_uuid);
 
   const Channel *channel() const { return channel_; }
 
@@ -203,12 +203,12 @@ class RawSender {
                       monotonic_clock::time_point monotonic_remote_time,
                       realtime_clock::time_point realtime_remote_time,
                       uint32_t remote_queue_index,
-                      const UUID &remote_boot_uuid) = 0;
+                      const UUID &source_boot_uuid) = 0;
   virtual bool DoSend(size_t size,
                       monotonic_clock::time_point monotonic_remote_time,
                       realtime_clock::time_point realtime_remote_time,
                       uint32_t remote_queue_index,
-                      const UUID &remote_boot_uuid) = 0;
+                      const UUID &source_boot_uuid) = 0;
 
   EventLoop *const event_loop_;
   const Channel *const channel_;
@@ -738,6 +738,10 @@ class EventLoop {
 
   // If true, don't send AOS_LOG to /aos
   bool skip_logger_ = false;
+
+  // Sets context_ for a timed event which is supposed to happen at the provided
+  // time.
+  void SetTimerContext(monotonic_clock::time_point monotonic_event_time);
 
  private:
   virtual pid_t GetTid() = 0;

@@ -713,7 +713,7 @@ void Logger::LogUntil(monotonic_clock::time_point t) {
         if (our_node_index != f.data_node_index) {
           // And update our boot UUID if the UUID has changed.
           if (node_state_[f.data_node_index].SetBootUUID(
-                  f.fetcher->context().remote_boot_uuid)) {
+                  f.fetcher->context().source_boot_uuid)) {
             MaybeWriteHeader(f.data_node_index);
           }
         }

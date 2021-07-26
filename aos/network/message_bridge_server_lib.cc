@@ -40,7 +40,7 @@ flatbuffers::FlatBufferBuilder ChannelState::PackContext(
                        context.size);
 
   flatbuffers::Offset<flatbuffers::Vector<uint8_t>> boot_uuid_offset =
-      context.remote_boot_uuid.PackVector(&fbb);
+      context.source_boot_uuid.PackVector(&fbb);
 
   RemoteData::Builder remote_data_builder(fbb);
   remote_data_builder.add_channel_index(channel_index_);

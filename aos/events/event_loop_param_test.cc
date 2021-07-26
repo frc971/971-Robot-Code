@@ -274,7 +274,7 @@ TEST_P(AbstractEventLoopTest, FetchWithoutRun) {
   EXPECT_EQ(fetcher.context().monotonic_remote_time, monotonic_clock::min_time);
   EXPECT_EQ(fetcher.context().realtime_event_time, realtime_clock::min_time);
   EXPECT_EQ(fetcher.context().realtime_remote_time, realtime_clock::min_time);
-  EXPECT_EQ(fetcher.context().remote_boot_uuid, UUID::Zero());
+  EXPECT_EQ(fetcher.context().source_boot_uuid, UUID::Zero());
   EXPECT_EQ(fetcher.context().queue_index, 0xffffffffu);
   EXPECT_EQ(fetcher.context().size, 0u);
   EXPECT_EQ(fetcher.context().data, nullptr);
@@ -302,7 +302,7 @@ TEST_P(AbstractEventLoopTest, FetchWithoutRun) {
   EXPECT_LE(fetcher.context().monotonic_event_time, monotonic_now + kEpsilon);
   EXPECT_GE(fetcher.context().realtime_event_time, realtime_now - kEpsilon);
   EXPECT_LE(fetcher.context().realtime_event_time, realtime_now + kEpsilon);
-  EXPECT_EQ(fetcher.context().remote_boot_uuid, loop2->boot_uuid());
+  EXPECT_EQ(fetcher.context().source_boot_uuid, loop2->boot_uuid());
   EXPECT_EQ(fetcher.context().queue_index, 0x0u);
   EXPECT_EQ(fetcher.context().size, 20u);
   EXPECT_NE(fetcher.context().data, nullptr);
@@ -957,7 +957,7 @@ TEST_P(AbstractEventLoopTest, TimerIntervalAndDuration) {
     EXPECT_EQ(loop->context().monotonic_remote_time, monotonic_clock::min_time);
     EXPECT_EQ(loop->context().realtime_event_time, realtime_clock::min_time);
     EXPECT_EQ(loop->context().realtime_remote_time, realtime_clock::min_time);
-    EXPECT_EQ(loop->context().remote_boot_uuid, loop->boot_uuid());
+    EXPECT_EQ(loop->context().source_boot_uuid, loop->boot_uuid());
     EXPECT_EQ(loop->context().queue_index, 0xffffffffu);
     EXPECT_EQ(loop->context().size, 0u);
     EXPECT_EQ(loop->context().data, nullptr);
@@ -1252,7 +1252,7 @@ TEST_P(AbstractEventLoopTest, MessageSendTime) {
               loop1->context().monotonic_event_time);
     EXPECT_EQ(loop1->context().realtime_remote_time,
               loop1->context().realtime_event_time);
-    EXPECT_EQ(loop1->context().remote_boot_uuid, loop1->boot_uuid());
+    EXPECT_EQ(loop1->context().source_boot_uuid, loop1->boot_uuid());
 
     const aos::monotonic_clock::time_point monotonic_now =
         loop1->monotonic_now();
@@ -1300,7 +1300,7 @@ TEST_P(AbstractEventLoopTest, MessageSendTime) {
             fetcher.context().realtime_remote_time);
   EXPECT_EQ(fetcher.context().monotonic_event_time,
             fetcher.context().monotonic_remote_time);
-  EXPECT_EQ(fetcher.context().remote_boot_uuid, loop1->boot_uuid());
+  EXPECT_EQ(fetcher.context().source_boot_uuid, loop1->boot_uuid());
 
   EXPECT_TRUE(monotonic_time_offset > ::std::chrono::milliseconds(-500))
       << ": Got "
@@ -1353,7 +1353,7 @@ TEST_P(AbstractEventLoopTest, MessageSendTimeNoArg) {
               loop1->context().monotonic_event_time);
     EXPECT_EQ(loop1->context().realtime_remote_time,
               loop1->context().realtime_event_time);
-    EXPECT_EQ(loop1->context().remote_boot_uuid, loop1->boot_uuid());
+    EXPECT_EQ(loop1->context().source_boot_uuid, loop1->boot_uuid());
 
     const aos::monotonic_clock::time_point monotonic_now =
         loop1->monotonic_now();
@@ -1387,7 +1387,7 @@ TEST_P(AbstractEventLoopTest, MessageSendTimeNoArg) {
             fetcher.context().realtime_remote_time);
   EXPECT_EQ(fetcher.context().monotonic_event_time,
             fetcher.context().monotonic_remote_time);
-  EXPECT_EQ(fetcher.context().remote_boot_uuid, loop1->boot_uuid());
+  EXPECT_EQ(fetcher.context().source_boot_uuid, loop1->boot_uuid());
 
   EXPECT_TRUE(monotonic_time_offset > ::std::chrono::milliseconds(-500))
       << ": Got "
@@ -1445,7 +1445,7 @@ TEST_P(AbstractEventLoopTest, PhasedLoopTest) {
 
             EXPECT_EQ(loop1->context().monotonic_remote_time,
                       monotonic_clock::min_time);
-            EXPECT_EQ(loop1->context().remote_boot_uuid, loop1->boot_uuid());
+            EXPECT_EQ(loop1->context().source_boot_uuid, loop1->boot_uuid());
             EXPECT_EQ(loop1->context().realtime_event_time,
                       realtime_clock::min_time);
             EXPECT_EQ(loop1->context().realtime_remote_time,
@@ -1956,7 +1956,7 @@ TEST_P(AbstractEventLoopTest, RawRemoteTimes) {
   const aos::realtime_clock::time_point realtime_remote_time =
       aos::realtime_clock::time_point(chrono::seconds(3132));
   const uint32_t remote_queue_index = 0x254971;
-  const UUID remote_boot_uuid = UUID::Random();
+  const UUID source_boot_uuid = UUID::Random();
 
   std::unique_ptr<aos::RawSender> sender =
       loop1->MakeRawSender(configuration::GetChannel(
@@ -1969,20 +1969,20 @@ TEST_P(AbstractEventLoopTest, RawRemoteTimes) {
   loop2->OnRun([&]() {
     EXPECT_TRUE(sender->Send(kMessage.span().data(), kMessage.span().size(),
                              monotonic_remote_time, realtime_remote_time,
-                             remote_queue_index, remote_boot_uuid));
+                             remote_queue_index, source_boot_uuid));
   });
 
   bool happened = false;
   loop2->MakeRawWatcher(
       configuration::GetChannel(loop2->configuration(), "/test",
                                 "aos.TestMessage", "", nullptr),
-      [this, monotonic_remote_time, realtime_remote_time, remote_boot_uuid,
+      [this, monotonic_remote_time, realtime_remote_time, source_boot_uuid,
        remote_queue_index, &fetcher,
        &happened](const Context &context, const void * /*message*/) {
         happened = true;
         EXPECT_EQ(monotonic_remote_time, context.monotonic_remote_time);
         EXPECT_EQ(realtime_remote_time, context.realtime_remote_time);
-        EXPECT_EQ(remote_boot_uuid, context.remote_boot_uuid);
+        EXPECT_EQ(source_boot_uuid, context.source_boot_uuid);
         EXPECT_EQ(remote_queue_index, context.remote_queue_index);
 
         ASSERT_TRUE(fetcher->Fetch());
@@ -2210,6 +2210,35 @@ TEST_P(AbstractEventLoopTest, RealtimeEventLoopWatcher) {
   });
 
   Run();
+}
+
+// Tests that event loop's context's monotonic time is set to a value on OnRun.
+TEST_P(AbstractEventLoopTest, SetContextOnRun) {
+  auto loop = MakePrimary();
+
+  // We want to check that monotonic event time is before monotonic now
+  // called inside of callback, but after time point obtained callback.
+  aos::monotonic_clock::time_point monotonic_event_time_on_run;
+
+  loop->OnRun([&]() {
+    monotonic_event_time_on_run = loop->context().monotonic_event_time;
+    EXPECT_LE(monotonic_event_time_on_run, loop->monotonic_now());
+    EXPECT_EQ(loop->context().monotonic_remote_time, monotonic_clock::min_time);
+    EXPECT_EQ(loop->context().realtime_event_time, realtime_clock::min_time);
+    EXPECT_EQ(loop->context().realtime_remote_time, realtime_clock::min_time);
+    EXPECT_EQ(loop->context().source_boot_uuid, loop->boot_uuid());
+    EXPECT_EQ(loop->context().queue_index, 0xffffffffu);
+    EXPECT_EQ(loop->context().size, 0u);
+    EXPECT_EQ(loop->context().data, nullptr);
+    EXPECT_EQ(loop->context().buffer_index, -1);
+  });
+
+  EndEventLoop(loop.get(), ::std::chrono::milliseconds(200));
+
+  const aos::monotonic_clock::time_point before_run_time =
+      loop->monotonic_now();
+  Run();
+  EXPECT_GE(monotonic_event_time_on_run, before_run_time);
 }
 
 // Tests that watchers fail when created on the wrong node.
