@@ -31,6 +31,15 @@ RawSender::RawSender(EventLoop *event_loop, const Channel *channel)
 
 RawSender::~RawSender() { event_loop_->DeleteSender(this); }
 
+bool RawSender::DoSend(const SharedSpan data,
+                       monotonic_clock::time_point monotonic_remote_time,
+                       realtime_clock::time_point realtime_remote_time,
+                       uint32_t remote_queue_index,
+                       const UUID &source_boot_uuid) {
+  return DoSend(data->data(), data->size(), monotonic_remote_time,
+                realtime_remote_time, remote_queue_index, source_boot_uuid);
+}
+
 RawFetcher::RawFetcher(EventLoop *event_loop, const Channel *channel)
     : event_loop_(event_loop),
       channel_(channel),

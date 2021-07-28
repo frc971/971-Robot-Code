@@ -253,6 +253,8 @@ std::optional<SizePrefixedFlatbufferVector<LogFileHeader>> ReadHeader(
 std::optional<SizePrefixedFlatbufferVector<MessageHeader>> ReadNthMessage(
     std::string_view filename, size_t n);
 
+class UnpackedMessageHeader;
+
 // Class which handles reading the header and messages from the log file.  This
 // handles any per-file state left before merging below.
 class MessageReader {
@@ -284,7 +286,7 @@ class MessageReader {
   }
 
   // Returns the next message if there is one.
-  std::optional<SizePrefixedFlatbufferVector<MessageHeader>> ReadMessage();
+  std::shared_ptr<UnpackedMessageHeader> ReadMessage();
 
   // The time at which we need to read another chunk from the logfile.
   monotonic_clock::time_point queue_data_time() const {
@@ -334,7 +336,7 @@ class PartsMessageReader {
   // Returns the next message if there is one, or nullopt if we have reached the
   // end of all the files.
   // Note: reading the next message may change the max_out_of_order_duration().
-  std::optional<SizePrefixedFlatbufferVector<MessageHeader>> ReadMessage();
+  std::shared_ptr<UnpackedMessageHeader> ReadMessage();
 
   // Returns the boot count for the requested node, or std::nullopt if we don't
   // know.
@@ -377,6 +379,54 @@ class PartsMessageReader {
   std::vector<std::optional<size_t>> boot_counts_;
 };
 
+// Stores MessageHeader as a flat header and inline, aligned block of data.
+class UnpackedMessageHeader {
+ public:
+  UnpackedMessageHeader(const UnpackedMessageHeader &) = delete;
+  UnpackedMessageHeader &operator=(const UnpackedMessageHeader &) = delete;
+
+  // The channel.
+  uint32_t channel_index = 0xffffffff;
+
+  monotonic_clock::time_point monotonic_sent_time;
+  realtime_clock::time_point realtime_sent_time;
+
+  // The local queue index.
+  uint32_t queue_index = 0xffffffff;
+
+  std::optional<std::chrono::nanoseconds> monotonic_remote_time;
+
+  std::optional<realtime_clock::time_point> realtime_remote_time;
+  std::optional<uint32_t> remote_queue_index;
+
+  // This field is defaulted in the flatbuffer, so we need to store both the
+  // possibly defaulted value and whether it is defaulted.
+  monotonic_clock::time_point monotonic_timestamp_time;
+  bool has_monotonic_timestamp_time;
+
+  static std::shared_ptr<UnpackedMessageHeader> MakeMessage(
+      const MessageHeader &message);
+
+  // Note: we are storing a span here because we need something to put in the
+  // SharedSpan pointer that RawSender takes.  We are using the aliasing
+  // constructor of shared_ptr to avoid the allocation, and it needs a nice
+  // pointer to track.
+  absl::Span<const uint8_t> span;
+
+  char actual_data[];
+
+ private:
+  ~UnpackedMessageHeader() {}
+
+  static void DestroyAndFree(UnpackedMessageHeader *p) {
+    p->~UnpackedMessageHeader();
+    free(p);
+  }
+};
+
+std::ostream &operator<<(std::ostream &os,
+                         const UnpackedMessageHeader &message);
+
 // Struct to hold a message as it gets sorted on a single node.
 struct Message {
   // The channel.
@@ -394,8 +444,7 @@ struct Message {
 
   size_t monotonic_timestamp_boot = 0xffffff;
 
-  // The data (either a timestamp header, or a data header).
-  SizePrefixedFlatbufferVector<MessageHeader> data;
+  std::shared_ptr<UnpackedMessageHeader> data;
 
   bool operator<(const Message &m2) const;
   bool operator>=(const Message &m2) const;
@@ -420,7 +469,7 @@ struct TimestampedMessage {
 
   BootTimestamp monotonic_timestamp_time;
 
-  SizePrefixedFlatbufferVector<MessageHeader> data;
+  std::shared_ptr<UnpackedMessageHeader> data;
 };
 
 std::ostream &operator<<(std::ostream &os, const TimestampedMessage &m);

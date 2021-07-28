@@ -39,38 +39,71 @@ class ScopedMarkRealtimeRestorer {
   const bool prior_;
 };
 
+// Holds storage for a span object and the data referenced by that span for
+// compatibility with RawSender::SharedSpan users. If constructed with
+// MakeSharedSpan, span points to only the aligned segment of the entire data.
+struct AlignedOwningSpan {
+  AlignedOwningSpan(const AlignedOwningSpan &) = delete;
+  AlignedOwningSpan &operator=(const AlignedOwningSpan &) = delete;
+  absl::Span<const uint8_t> span;
+  char data[];
+};
+
+// Constructs a span which owns its data through a shared_ptr. The owning span
+// points to a const view of the data; also returns a temporary mutable span
+// which is only valid while the const shared span is kept alive.
+std::pair<RawSender::SharedSpan, absl::Span<uint8_t>> MakeSharedSpan(
+    size_t size) {
+  AlignedOwningSpan *const span = reinterpret_cast<AlignedOwningSpan *>(
+      malloc(sizeof(AlignedOwningSpan) + size + kChannelDataAlignment - 1));
+
+  absl::Span mutable_span(
+      reinterpret_cast<uint8_t *>(RoundChannelData(&span->data[0], size)),
+      size);
+  new (span) AlignedOwningSpan{.span = mutable_span};
+
+  return std::make_pair(
+      RawSender::SharedSpan(
+          std::shared_ptr<AlignedOwningSpan>(span,
+                                             [](AlignedOwningSpan *s) {
+                                               s->~AlignedOwningSpan();
+                                               free(s);
+                                             }),
+          &span->span),
+      mutable_span);
+}
+
 // Container for both a message, and the context for it for simulation.  This
 // makes tracking the timestamps associated with the data easy.
 struct SimulatedMessage final {
   SimulatedMessage(const SimulatedMessage &) = delete;
   SimulatedMessage &operator=(const SimulatedMessage &) = delete;
+  ~SimulatedMessage();
 
   // Creates a SimulatedMessage with size bytes of storage.
   // This is a shared_ptr so we don't have to implement refcounting or copying.
-  static std::shared_ptr<SimulatedMessage> Make(SimulatedChannel *channel);
+  static std::shared_ptr<SimulatedMessage> Make(
+      SimulatedChannel *channel, const RawSender::SharedSpan data);
 
   // Context for the data.
   Context context;
 
   SimulatedChannel *const channel = nullptr;
 
-  // The data.
-  char *data(size_t buffer_size) {
-    return RoundChannelData(&actual_data[0], buffer_size);
-  }
+  // Owning span to this message's data. Depending on the sender may either
+  // represent the data of just the flatbuffer, or max channel size.
+  RawSender::SharedSpan data;
 
-  // Then the data, including padding on the end so we can align the buffer we
-  // actually return from data().
-  char actual_data[];
+  // Mutable view of above data. If empty, this message is not mutable.
+  absl::Span<uint8_t> mutable_data;
 
- private:
+  // Determines whether this message is mutable. Used for Send where the user
+  // fills out a message stored internally then gives us the size of data used.
+  bool is_mutable() const { return data->size() == mutable_data.size(); }
+
+  // Note: this should be private but make_shared requires it to be public.  Use
+  // Make() above to construct.
   SimulatedMessage(SimulatedChannel *channel_in);
-  ~SimulatedMessage();
-
-  static void DestroyAndFree(SimulatedMessage *p) {
-    p->~SimulatedMessage();
-    free(p);
-  }
 };
 
 }  // namespace
@@ -260,19 +293,17 @@ class SimulatedChannel {
 namespace {
 
 std::shared_ptr<SimulatedMessage> SimulatedMessage::Make(
-    SimulatedChannel *channel) {
+    SimulatedChannel *channel, RawSender::SharedSpan data) {
   // The allocations in here are due to infrastructure and don't count in the no
   // mallocs in RT code.
   ScopedNotRealtime nrt;
-  const size_t size = channel->max_size();
-  SimulatedMessage *const message = reinterpret_cast<SimulatedMessage *>(
-      malloc(sizeof(SimulatedMessage) + size + kChannelDataAlignment - 1));
-  new (message) SimulatedMessage(channel);
-  message->context.size = size;
-  message->context.data = message->data(size);
 
-  return std::shared_ptr<SimulatedMessage>(message,
-                                           &SimulatedMessage::DestroyAndFree);
+  auto message = std::make_shared<SimulatedMessage>(channel);
+  message->context.size = data->size();
+  message->context.data = data->data();
+  message->data = std::move(data);
+
+  return message;
 }
 
 SimulatedMessage::SimulatedMessage(SimulatedChannel *channel_in)
@@ -292,9 +323,13 @@ class SimulatedSender : public RawSender {
 
   void *data() override {
     if (!message_) {
-      message_ = SimulatedMessage::Make(simulated_channel_);
+      auto [span, mutable_span] =
+          MakeSharedSpan(simulated_channel_->max_size());
+      message_ = SimulatedMessage::Make(simulated_channel_, span);
+      message_->mutable_data = mutable_span;
     }
-    return message_->data(simulated_channel_->max_size());
+    CHECK(message_->is_mutable());
+    return message_->mutable_data.data();
   }
 
   size_t size() override { return simulated_channel_->max_size(); }
@@ -307,6 +342,12 @@ class SimulatedSender : public RawSender {
   bool DoSend(const void *msg, size_t size,
               monotonic_clock::time_point monotonic_remote_time,
               realtime_clock::time_point realtime_remote_time,
+              uint32_t remote_queue_index,
+              const UUID &source_boot_uuid) override;
+
+  bool DoSend(const SharedSpan data,
+              aos::monotonic_clock::time_point monotonic_remote_time,
+              aos::realtime_clock::time_point realtime_remote_time,
               uint32_t remote_queue_index,
               const UUID &source_boot_uuid) override;
 
@@ -869,8 +910,12 @@ void SimulatedChannel::MakeRawWatcher(SimulatedWatcher *watcher) {
 uint32_t SimulatedChannel::Send(std::shared_ptr<SimulatedMessage> message) {
   const uint32_t queue_index = next_queue_index_.index();
   message->context.queue_index = queue_index;
-  message->context.data = message->data(channel()->max_size()) +
-                          channel()->max_size() - message->context.size;
+
+  // Points to the actual data depending on the size set in context. Data may
+  // allocate more than the actual size of the message, so offset from the back
+  // of that to get the actual start of the data.
+  message->context.data =
+      message->data->data() + message->data->size() - message->context.size;
 
   DCHECK(channel()->has_schema())
       << ": Missing schema for channel "
@@ -959,18 +1004,32 @@ bool SimulatedSender::DoSend(const void *msg, size_t size,
       << ": Attempting to send too big a message on "
       << configuration::CleanedChannelToString(simulated_channel_->channel());
 
-  // This is wasteful, but since flatbuffers fill from the back end of the
-  // queue, we need it to be full sized.
-  message_ = SimulatedMessage::Make(simulated_channel_);
+  // Allocates an aligned buffer in which to copy unaligned msg.
+  auto [span, mutable_span] = MakeSharedSpan(size);
+  message_ = SimulatedMessage::Make(simulated_channel_, span);
 
   // Now fill in the message.  size is already populated above, and
-  // queue_index will be populated in simulated_channel_.  Put this at the
-  // back of the data segment.
-  memcpy(message_->data(simulated_channel_->max_size()) +
-             simulated_channel_->max_size() - size,
-         msg, size);
+  // queue_index will be populated in simulated_channel_.
+  memcpy(mutable_span.data(), msg, size);
 
   return DoSend(size, monotonic_remote_time, realtime_remote_time,
+                remote_queue_index, source_boot_uuid);
+}
+
+bool SimulatedSender::DoSend(const RawSender::SharedSpan data,
+                             monotonic_clock::time_point monotonic_remote_time,
+                             realtime_clock::time_point realtime_remote_time,
+                             uint32_t remote_queue_index,
+                             const UUID &source_boot_uuid) {
+  CHECK_LE(data->size(), this->size())
+      << ": Attempting to send too big a message on "
+      << configuration::CleanedChannelToString(simulated_channel_->channel());
+
+  // Constructs a message sharing the already allocated and aligned message
+  // data.
+  message_ = SimulatedMessage::Make(simulated_channel_, data);
+
+  return DoSend(data->size(), monotonic_remote_time, realtime_remote_time,
                 remote_queue_index, source_boot_uuid);
 }
 

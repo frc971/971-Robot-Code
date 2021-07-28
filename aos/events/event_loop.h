@@ -136,6 +136,8 @@ class RawFetcher {
 // and as a building block to implement typed senders.
 class RawSender {
  public:
+  using SharedSpan = std::shared_ptr<const absl::Span<const uint8_t>>;
+
   RawSender(EventLoop *event_loop, const Channel *channel);
   RawSender(const RawSender &) = delete;
   RawSender &operator=(const RawSender &) = delete;
@@ -163,6 +165,15 @@ class RawSender {
             monotonic_clock::time_point monotonic_remote_time,
             realtime_clock::time_point realtime_remote_time,
             uint32_t remote_queue_index, const UUID &source_boot_uuid);
+
+  // Sends a single block of data by refcounting it to avoid copies.  The data
+  // must not change after being passed into Send. The remote arguments have the
+  // same meaning as in Send above.
+  bool Send(const SharedSpan data);
+  bool Send(const SharedSpan data,
+            monotonic_clock::time_point monotonic_remote_time,
+            realtime_clock::time_point realtime_remote_time,
+            uint32_t remote_queue_index, const UUID &remote_boot_uuid);
 
   const Channel *channel() const { return channel_; }
 
@@ -209,6 +220,11 @@ class RawSender {
                       realtime_clock::time_point realtime_remote_time,
                       uint32_t remote_queue_index,
                       const UUID &source_boot_uuid) = 0;
+  virtual bool DoSend(const SharedSpan data,
+                      monotonic_clock::time_point monotonic_remote_time,
+                      realtime_clock::time_point realtime_remote_time,
+                      uint32_t remote_queue_index,
+                      const UUID &source_boot_uuid);
 
   EventLoop *const event_loop_;
   const Channel *const channel_;

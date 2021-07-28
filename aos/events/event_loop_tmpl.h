@@ -36,8 +36,9 @@ typename Sender<T>::Builder Sender<T>::MakeBuilder() {
 
 template <typename Watch>
 void EventLoop::MakeWatcher(const std::string_view channel_name, Watch &&w) {
-  using MessageType = typename event_loop_internal::watch_message_type_trait<
-      decltype(&Watch::operator())>::message_type;
+  using MessageType =
+      typename event_loop_internal::watch_message_type_trait<decltype(
+          &Watch::operator())>::message_type;
   const Channel *channel = configuration::GetChannel(
       configuration_, channel_name, MessageType::GetFullyQualifiedName(),
       name(), node());
@@ -166,6 +167,31 @@ inline bool RawSender::Send(
     timing_.sender->mutate_count(timing_.sender->count() + 1);
     ftrace_.FormatMessage(
         "%.*s: sent external: event=%" PRId64 " queue=%" PRIu32,
+        static_cast<int>(ftrace_prefix_.size()), ftrace_prefix_.data(),
+        static_cast<int64_t>(monotonic_sent_time().time_since_epoch().count()),
+        sent_queue_index());
+    return true;
+  }
+  return false;
+}
+
+inline bool RawSender::Send(const SharedSpan data) {
+  return Send(std::move(data), monotonic_clock::min_time,
+              realtime_clock::min_time, 0xffffffffu, event_loop_->boot_uuid());
+}
+
+inline bool RawSender::Send(
+    const SharedSpan data,
+    aos::monotonic_clock::time_point monotonic_remote_time,
+    aos::realtime_clock::time_point realtime_remote_time,
+    uint32_t remote_queue_index, const UUID &uuid) {
+  const size_t size = data->size();
+  if (DoSend(std::move(data), monotonic_remote_time, realtime_remote_time,
+             remote_queue_index, uuid)) {
+    timing_.size.Add(size);
+    timing_.sender->mutate_count(timing_.sender->count() + 1);
+    ftrace_.FormatMessage(
+        "%.*s: sent shared: event=%" PRId64 " queue=%" PRIu32,
         static_cast<int>(ftrace_prefix_.size()), ftrace_prefix_.data(),
         static_cast<int64_t>(monotonic_sent_time().time_since_epoch().count()),
         sent_queue_index());
