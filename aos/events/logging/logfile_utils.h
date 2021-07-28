@@ -334,10 +334,19 @@ class PartsMessageReader {
   // Note: reading the next message may change the max_out_of_order_duration().
   std::optional<SizePrefixedFlatbufferVector<MessageHeader>> ReadMessage();
 
+  // Returns the boot count for the requested node, or std::nullopt if we don't
+  // know.
+  std::optional<size_t> boot_count(size_t node_index) const {
+    CHECK_GE(node_index, 0u);
+    CHECK_LT(node_index, boot_counts_.size());
+    return boot_counts_[node_index];
+  }
+
  private:
   // Opens the next log and updates message_reader_.  Sets done_ if there is
   // nothing more to do.
   void NextLog();
+  void ComputeBootCounts();
 
   const LogParts parts_;
   size_t next_part_index_ = 1u;
@@ -354,6 +363,9 @@ class PartsMessageReader {
   bool after_start_ = false;
 
   monotonic_clock::time_point newest_timestamp_ = monotonic_clock::min_time;
+
+  // Per node boot counts.
+  std::vector<std::optional<size_t>> boot_counts_;
 };
 
 // Struct to hold a message as it gets sorted on a single node.
@@ -364,6 +376,11 @@ struct Message {
   uint32_t queue_index = 0xffffffff;
   // The local timestamp.
   BootTimestamp timestamp;
+
+  // Remote boot when this is a timestamp.
+  size_t monotonic_remote_boot = 0xffffff;
+
+  size_t monotonic_timestamp_boot = 0xffffff;
 
   // The data (either a timestamp header, or a data header).
   SizePrefixedFlatbufferVector<MessageHeader> data;
@@ -437,6 +454,10 @@ class LogPartsSorter {
   // Set used for efficient sorting of messages.  We can benchmark and evaluate
   // other data structures if this proves to be the bottleneck.
   absl::btree_set<Message> messages_;
+
+  // Mapping from channel to source node.
+  // TODO(austin): Should we put this in Boots so it can be cached for everyone?
+  std::vector<size_t> source_node_index_;
 };
 
 // Class to run merge sort on the messages from multiple LogPartsSorter
