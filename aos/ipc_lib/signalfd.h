@@ -26,6 +26,11 @@ class SignalFd {
   // will be 0.
   signalfd_siginfo Read();
 
+  // Ensures the destructor will leave the specific signal blocked. This can be
+  // helpful if the signal is sent asynchronously, such that it may arrive after
+  // this object is destroyed, to ensure that doesn't kill the process.
+  void LeaveSignalBlocked(unsigned int signal);
+
  private:
   int fd_ = -1;
 

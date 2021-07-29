@@ -1035,6 +1035,7 @@ void ShmEventLoop::Run() {
 
   if (watchers_.size() > 0) {
     signalfd_.reset(new ipc_lib::SignalFd({ipc_lib::kWakeupSignal}));
+    signalfd_->LeaveSignalBlocked(ipc_lib::kWakeupSignal);
 
     epoll_.OnReadable(signalfd_->fd(), [this]() { HandleEvent(); });
   }

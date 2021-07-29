@@ -76,7 +76,7 @@ SignalFd::SignalFd(::std::initializer_list<unsigned int> signals) {
   CHECK_EQ(0, wrapped_pthread_sigmask(SIG_BLOCK, &blocked_mask_, &old_mask));
   for (int signal : signals) {
     if (sigismember(&old_mask, signal)) {
-      CHECK_EQ(0, sigdelset(&blocked_mask_, signal));
+      LeaveSignalBlocked(signal);
     }
   }
 }
@@ -117,6 +117,10 @@ signalfd_siginfo SignalFd::Read() {
     CHECK_NE(0u, result.ssi_signo);
   }
   return result;
+}
+
+void SignalFd::LeaveSignalBlocked(unsigned int signal) {
+  CHECK_EQ(0, sigdelset(&blocked_mask_, signal));
 }
 
 }  // namespace aos::ipc_lib
