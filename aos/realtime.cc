@@ -207,10 +207,20 @@ void ExpandStackSize() {
 }
 
 namespace {
+// Bool to track if malloc hooks have failed to be configured.
+bool has_malloc_hook = true;
 AOS_THREAD_LOCAL bool is_realtime = false;
 }
 
 bool MarkRealtime(bool realtime) {
+  if (realtime) {
+    // For some applications (generally tools built for the host in Bazel), we
+    // don't have malloc hooks available, but we also don't go realtime.  Delay
+    // complaining in that case until we try to go RT and it matters.
+    CHECK(has_malloc_hook)
+        << ": Failed to register required malloc hooks before going realtime.  "
+           "Disable --die_on_malloc to continue.";
+  }
   const bool prior = is_realtime;
   is_realtime = realtime;
   return prior;
@@ -230,7 +240,10 @@ void NewHook(const void *ptr, size_t size) {
 }
 
 void DeleteHook(const void *ptr) {
-  if (is_realtime) {
+  // It is legal to call free(nullptr) unconditionally and assume that it won't
+  // do anything.  Eigen does this.  So, if we are RT, ignore any of these
+  // calls.
+  if (is_realtime && ptr != nullptr) {
     is_realtime = false;
     RAW_LOG(FATAL, "Delete Hook %p", ptr);
   }
@@ -241,14 +254,12 @@ void RegisterMallocHook() {
     if (&MallocHook_AddNewHook != nullptr) {
       CHECK(MallocHook_AddNewHook(&NewHook));
     } else {
-      LOG(FATAL) << "Failed to register required malloc hooks, disable "
-                    "--die_on_malloc to continue.";
+      has_malloc_hook = false;
     }
     if (&MallocHook_AddDeleteHook != nullptr) {
       CHECK(MallocHook_AddDeleteHook(&DeleteHook));
     } else {
-      LOG(FATAL) << "Failed to register required malloc hooks, disable "
-                    "--die_on_malloc to continue.";
+      has_malloc_hook = false;
     }
   }
 }
