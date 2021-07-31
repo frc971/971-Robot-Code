@@ -275,15 +275,6 @@ cc_library(
     ],
 )
 
-cc_library(
-    name = "make_unique",
-    hdrs = [
-        "make_unique.h",
-    ],
-    target_compatible_with = ["@platforms//os:linux"],
-    visibility = ["//visibility:public"],
-)
-
 flatbuffer_ts_library(
     name = "json_to_flatbuffer_fbs_ts",
     srcs = ["json_to_flatbuffer.fbs"],
