@@ -2161,6 +2161,8 @@ TEST_P(MultinodeLoggerTest, LoggerStartTime) {
 
 // Test that renaming the base, renames the folder.
 TEST_F(MultinodeLoggerTest, LoggerRenameFolder) {
+  util::UnlinkRecursive(tmp_dir_ + "/renamefolder");
+  util::UnlinkRecursive(tmp_dir_ + "/new-good");
   time_converter_.AddMonotonic(
       {monotonic_clock::epoch(),
        monotonic_clock::epoch() + chrono::seconds(1000)});
@@ -2190,6 +2192,7 @@ TEST_P(MultinodeLoggerDeathTest, LoggerRenameFile) {
   time_converter_.AddMonotonic(
       {monotonic_clock::epoch(),
        monotonic_clock::epoch() + chrono::seconds(1000)});
+  util::UnlinkRecursive(tmp_dir_ + "/renamefile");
   logfile_base1_ = tmp_dir_ + "/renamefile/multi_logfile1";
   logfile_base2_ = tmp_dir_ + "/renamefile/multi_logfile2";
   logfiles_ = MakeLogFiles(logfile_base1_, logfile_base2_);
