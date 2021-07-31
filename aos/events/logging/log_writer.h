@@ -202,27 +202,11 @@ class Logger {
   // channel index.
   std::vector<int> event_loop_to_logged_channel_index_;
 
-  struct NodeState {
-    // Tracks if LogNamer has a source boot UUID set or not.
-    bool has_source_node_boot_uuid = false;
-
-    // True if a header has been written to the start of a log file.
-    bool header_written = false;
-    // True if the current written header represents the contents which will
-    // follow.  This is cleared when boot_uuid is known to not match anymore.
-    bool header_valid = false;
-  };
-
   void WriteHeader();
 
   // Makes a template header for all the follower nodes.
   aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> MakeHeader(
       std::string_view config_sha256);
-
-  // Writes the header for the provided node if enough information is valid.
-  void MaybeWriteHeader(int node_index);
-  // Overload for when we already know node as well.
-  void MaybeWriteHeader(int node_index, const Node *node);
 
   bool MaybeUpdateTimestamp(
       const Node *node, int node_index,
@@ -300,8 +284,6 @@ class Logger {
 
   // Fetcher for all the statistics from all the nodes.
   aos::Fetcher<message_bridge::ServerStatistics> server_statistics_fetcher_;
-
-  std::vector<NodeState> node_state_;
 };
 
 }  // namespace logger
