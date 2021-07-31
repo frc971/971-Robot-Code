@@ -2,57 +2,50 @@
 from __future__ import print_function
 import os
 import sys
-import copy
-from color import Color, palette
-import random
+from color import palette
+from graph import Graph
 import gi
 import numpy as np
-import scipy.spatial.distance
 gi.require_version('Gtk', '3.0')
 gi.require_version('Gdk', '3.0')
 from gi.repository import Gdk, Gtk, GLib
 import cairo
-from libspline import Spline, DistanceSpline, Trajectory
+from libspline import Spline
 import enum
 import json
-from basic_window import *
 from constants import *
-from drawing_constants import *
+from drawing_constants import set_color, draw_px_cross, draw_px_x, display_text, draw_control_points
 from points import Points
-from graph import Graph
+import time
 
 
 class Mode(enum.Enum):
     kViewing = 0
     kPlacing = 1
     kEditing = 2
-    kExporting = 3
-    kImporting = 4
 
 
-class GTK_Widget(BaseWindow):
+class FieldWidget(Gtk.DrawingArea):
     """Create a GTK+ widget on which we will draw using Cairo"""
 
     def __init__(self):
-        super(GTK_Widget, self).__init__()
+        super(FieldWidget, self).__init__()
+        self.set_size_request(mToPx(FIELD.width), mToPx(FIELD.length))
 
         self.points = Points()
+        self.graph = Graph()
+        self.set_vexpand(True)
+        self.set_hexpand(True)
 
         # init field drawing
         # add default spline for testing purposes
         # init editing / viewing modes and pointer location
         self.mode = Mode.kPlacing
-        self.x = 0
-        self.y = 0
-        module_path = os.path.dirname(os.path.realpath(sys.argv[0]))
-        self.path_to_export = os.path.join(module_path,
+        self.mousex = 0
+        self.mousey = 0
+        self.module_path = os.path.dirname(os.path.realpath(sys.argv[0]))
+        self.path_to_export = os.path.join(self.module_path,
                                            'points_for_pathedit.json')
-
-        # update list of control points
-        self.point_selected = False
-        # self.adding_spline = False
-        self.index_of_selected = -1
-        self.new_point = []
 
         # For the editing mode
         self.index_of_edit = -1  # Can't be zero beause array starts at 0
@@ -62,58 +55,11 @@ class GTK_Widget(BaseWindow):
         self.curves = []
 
         try:
-            self.field_png = cairo.ImageSurface.create_from_png("frc971/control_loops/python/field_images/" + FIELD.field_id + ".png")
+            self.field_png = cairo.ImageSurface.create_from_png(
+                "frc971/control_loops/python/field_images/" + FIELD.field_id +
+                ".png")
         except cairo.Error:
             self.field_png = None
-
-        self.colors = []
-
-        for c in palette:
-            self.colors.append(palette[c])
-
-        self.reinit_extents()
-
-        self.inStart = None
-        self.inEnd = None
-        self.inValue = None
-        self.startSet = False
-
-        self.module_path = os.path.dirname(os.path.realpath(sys.argv[0]))
-
-    """set extents on images"""
-
-    def reinit_extents(self):
-        self.extents_x_min = -1.0 * SCREEN_SIZE
-        self.extents_x_max = SCREEN_SIZE
-        self.extents_y_min = -1.0 * SCREEN_SIZE
-        self.extents_y_max = SCREEN_SIZE
-
-    # this needs to be rewritten with numpy, i dont think this ought to have
-    # SciPy as a dependecy
-    def get_index_of_nearest_point(self):
-        cur_p = [[self.x, self.y]]
-        distances = scipy.spatial.distance.cdist(cur_p, self.all_controls)
-
-        return np.argmin(distances)
-
-    # return the closest point to the loc of the click event
-    def get_nearest_point(self):
-        return self.all_controls[self.get_index_of_nearest_point()]
-
-    def draw_field_elements(self, cr):
-        if FIELD.year == 2019:
-            draw_HAB(cr)
-            draw_rockets(cr)
-            draw_cargo_ship(cr)
-        elif FIELD.year == 2020:
-            set_color(cr, palette["BLACK"])
-            markers(cr)
-            draw_shield_generator(cr)
-            draw_trench_run(cr)
-            draw_init_lines(cr)
-            draw_control_panel(cr)
-        elif FIELD.year == 2021:
-            draw_at_home_grid(cr)
 
     def draw_robot_at_point(self, cr, i, p, spline):
         p1 = [mToPx(spline.Point(i)[0]), mToPx(spline.Point(i)[1])]
@@ -123,8 +69,10 @@ class GTK_Widget(BaseWindow):
         distance = np.sqrt((p2[1] - p1[1])**2 + (p2[0] - p1[0])**2)
         x_difference_o = p2[0] - p1[0]
         y_difference_o = p2[1] - p1[1]
-        x_difference = x_difference_o * mToPx(FIELD.robot.length / 2) / distance
-        y_difference = y_difference_o * mToPx(FIELD.robot.length / 2) / distance
+        x_difference = x_difference_o * mToPx(
+            FIELD.robot.length / 2) / distance
+        y_difference = y_difference_o * mToPx(
+            FIELD.robot.length / 2) / distance
 
         front_middle = []
         front_middle.append(p1[0] + x_difference)
@@ -212,41 +160,23 @@ class GTK_Widget(BaseWindow):
         cr.stroke()
         cr.set_source_rgba(0, 0, 0, 1)
 
-    def handle_draw(self, cr):  # main
-        # Fill the background color of the window with grey
-        set_color(cr, palette["WHITE"])
-        cr.paint()
+    def do_draw(self, cr):  # main
 
-        # Draw a extents rectangle
-        set_color(cr, palette["WHITE"])
-        cr.rectangle(self.extents_x_min, self.extents_y_min,
-                     (self.extents_x_max - self.extents_x_min),
-                     self.extents_y_max - self.extents_y_min)
-        cr.fill()
-
-        cr.move_to(0, 50)
-        cr.show_text('Press "e" to export')
-        cr.show_text('Press "i" to import')
+        start_time = time.perf_counter()
 
         cr.save()
         set_color(cr, palette["BLACK"])
 
-        if FIELD.year == 2019:  # half field
-            cr.rectangle(0, -SCREEN_SIZE / 2, SCREEN_SIZE, SCREEN_SIZE)
-        else:  # full field
-            cr.translate(mToPx(FIELD.width) / 2.0, 0.0)
-            cr.rectangle(-mToPx(FIELD.width) / 2.0, -mToPx(FIELD.length) / 2.0,
-                         mToPx(FIELD.width), mToPx(FIELD.length))
+        cr.rectangle(0, 0, mToPx(FIELD.width), mToPx(FIELD.length))
         cr.set_line_join(cairo.LINE_JOIN_ROUND)
         cr.stroke()
 
         if self.field_png:
             cr.save()
-            cr.translate(-mToPx(FIELD.width) / 2, -mToPx(FIELD.length) / 2)
             cr.scale(
-                    mToPx(FIELD.width) / self.field_png.get_width(),
-                    mToPx(FIELD.length) / self.field_png.get_height(),
-                    )
+                mToPx(FIELD.width) / self.field_png.get_width(),
+                mToPx(FIELD.length) / self.field_png.get_height(),
+            )
             cr.set_source_surface(self.field_png)
             cr.paint()
             cr.restore()
@@ -255,7 +185,6 @@ class GTK_Widget(BaseWindow):
 
         if self.mode == Mode.kPlacing or self.mode == Mode.kViewing:
             set_color(cr, palette["BLACK"])
-            cr.move_to(-SCREEN_SIZE, 170)
             plotPoints = self.points.getPoints()
             if plotPoints:
                 for i, point in enumerate(plotPoints):
@@ -302,9 +231,12 @@ class GTK_Widget(BaseWindow):
 
         cr.paint_with_alpha(0.2)
 
-        draw_px_cross(cr, self.x, self.y, 10)
+        draw_px_cross(cr, self.mousex, self.mousey, 10)
         cr.restore()
-        mygraph = Graph(cr, self.points)
+        if self.points.getLibsplines():
+            self.graph.recalculate_graph(self.points)
+
+        print("spent {:.2f} ms drawing the field widget".format(1000 * (time.perf_counter() - start_time)))
 
     def draw_splines(self, cr):
         holder_spline = []
@@ -332,17 +264,18 @@ class GTK_Widget(BaseWindow):
         self.curves.append(holder_spline)
 
     def mouse_move(self, event):
-        old_x = self.x
-        old_y = self.y
-        self.x = event.x - mToPx(FIELD.width / 2.0)
-        self.y = event.y
-        dif_x = self.x - old_x
-        dif_y = self.y - old_y
+        old_x = self.mousex
+        old_y = self.mousey
+        self.mousex = event.x
+        self.mousey = event.y
+        dif_x = self.mousex - old_x
+        dif_y = self.mousey - old_y
         difs = np.array([pxToM(dif_x), pxToM(dif_y)])
 
         if self.mode == Mode.kEditing:
-            self.points.updates_for_mouse_move(
-                self.index_of_edit, self.spline_edit, self.x, self.y, difs)
+            self.points.updates_for_mouse_move(self.index_of_edit,
+                                               self.spline_edit, self.mousex,
+                                               self.mousey, difs)
 
     def export_json(self, file_name):
         self.path_to_export = os.path.join(
@@ -351,16 +284,12 @@ class GTK_Widget(BaseWindow):
             get_json_folder(FIELD),  # path from the root
             file_name  # selected file
         )
-        if file_name[-5:] != ".json":
-            print("Error: Filename doesn't end in .json")
-        else:
-            # Will export to json file
-            self.mode = Mode.kEditing
 
-            multi_spline = self.points.toMultiSpline()
-            print(multi_spline)
-            with open(self.path_to_export, mode='w') as points_file:
-                json.dump(multi_spline, points_file)
+        # Will export to json file
+        multi_spline = self.points.toMultiSpline()
+        print(multi_spline)
+        with open(self.path_to_export, mode='w') as points_file:
+            json.dump(multi_spline, points_file)
 
     def import_json(self, file_name):
         self.path_to_export = os.path.join(
@@ -370,47 +299,37 @@ class GTK_Widget(BaseWindow):
             file_name  # selected file
         )
 
-        if file_name[-5:] != ".json":
-            print("Error: Filename doesn't end in .json")
-        else:
-            # import from json file
-            self.mode = Mode.kEditing
-            print("LOADING LOAD FROM " + file_name)  # Load takes a few seconds
-            with open(self.path_to_export) as points_file:
-                multi_spline = json.load(points_file)
+        # import from json file
+        print("LOADING LOAD FROM " + file_name)  # Load takes a few seconds
+        with open(self.path_to_export) as points_file:
+            multi_spline = json.load(points_file)
 
-            # if people messed with the spline json,
-            # it might not be the right length
-            # so give them a nice error message
-            try:  # try to salvage as many segments of the spline as possible
-                self.points.fromMultiSpline(multi_spline)
-            except IndexError:
-                # check if they're both 6+5*(k-1) long
-                expected_length = 6 + 5 * (multi_spline["spline_count"] - 1)
-                x_len = len(multi_spline["spline_x"])
-                y_len = len(multi_spline["spline_x"])
-                if x_len is not expected_length:
-                    print(
-                        "Error: spline x values were not the expected length; expected {} got {}"
-                        .format(expected_length, x_len))
-                elif y_len is not expected_length:
-                    print(
-                        "Error: spline y values were not the expected length; expected {} got {}"
-                        .format(expected_length, y_len))
+        # if people messed with the spline json,
+        # it might not be the right length
+        # so give them a nice error message
+        try:  # try to salvage as many segments of the spline as possible
+            self.points.fromMultiSpline(multi_spline)
+        except IndexError:
+            # check if they're both 6+5*(k-1) long
+            expected_length = 6 + 5 * (multi_spline["spline_count"] - 1)
+            x_len = len(multi_spline["spline_x"])
+            y_len = len(multi_spline["spline_x"])
+            if x_len is not expected_length:
+                print(
+                    "Error: spline x values were not the expected length; expected {} got {}"
+                    .format(expected_length, x_len))
+            elif y_len is not expected_length:
+                print(
+                    "Error: spline y values were not the expected length; expected {} got {}"
+                    .format(expected_length, y_len))
 
-            print("SPLINES LOADED")
+        print("SPLINES LOADED")
+        self.mode = Mode.kEditing
 
-    def do_key_press(self, event, file_name):
+    def key_press(self, event, file_name):
         keyval = Gdk.keyval_to_lower(event.keyval)
-        if keyval == Gdk.KEY_q:
-            print("Found q key and exiting.")
-            quit_main_loop()
-        if keyval == Gdk.KEY_e:
-            export_json(file_name)
 
-        if keyval == Gdk.KEY_i:
-            import_json(file_name)
-
+        # TODO: This should be a button
         if keyval == Gdk.KEY_p:
             self.mode = Mode.kPlacing
             # F0 = A1
@@ -423,16 +342,19 @@ class GTK_Widget(BaseWindow):
                 self.points.getSplines()[len(self.points.getSplines()) - 1][4],
                 self.points.getSplines()[len(self.points.getSplines()) - 1][3])
 
-    def button_press_action(self):
+    def button_press(self, event):
+        self.mousex = event.x
+        self.mousey = event.y
+
         if self.mode == Mode.kPlacing:
-            if self.points.add_point(self.x, self.y):
+            if self.points.add_point(self.mousex, self.mousey):
                 self.mode = Mode.kEditing
         elif self.mode == Mode.kEditing:
             # Now after index_of_edit is not -1, the point is selected, so
             # user can click for new point
-            if self.index_of_edit > -1 and self.held_x != self.x:
+            if self.index_of_edit > -1 and self.held_x != self.mousex:
                 self.points.setSplines(self.spline_edit, self.index_of_edit,
-                                       pxToM(self.x), pxToM(self.y))
+                                       pxToM(self.mousex), pxToM(self.mousey))
 
                 self.points.splineExtrapolate(self.spline_edit)
 
@@ -442,7 +364,7 @@ class GTK_Widget(BaseWindow):
                 # Get clicked point
                 # Find nearest
                 # Move nearest to clicked
-                cur_p = [pxToM(self.x), pxToM(self.y)]
+                cur_p = [pxToM(self.mousex), pxToM(self.mousey)]
                 # Get the distance between each for x and y
                 # Save the index of the point closest
                 nearest = 1  # Max distance away a the selected point can be in meters
@@ -459,10 +381,4 @@ class GTK_Widget(BaseWindow):
                             print("Index: " + str(index_of_closest))
                             self.index_of_edit = index_of_closest
                             self.spline_edit = index_splines
-                            self.held_x = self.x
-
-    def do_button_press(self, event):
-        # Be consistent with the scaling in the drawing_area
-        self.x = event.x * 2 - mToPx(FIELD.width / 2.0)
-        self.y = event.y * 2
-        self.button_press_action()
+                            self.held_x = self.mousex
