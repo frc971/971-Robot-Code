@@ -1,7 +1,7 @@
 from constants import *
 import numpy as np
 from libspline import Spline, DistanceSpline, Trajectory
-
+import copy
 
 class Points():
     def __init__(self):
@@ -20,6 +20,14 @@ class Points():
                 "value": 10
             }
         ]
+
+    def __deepcopy__(self, memo):
+        new_copy = Points()
+        new_copy.points = copy.deepcopy(self.points, memo)
+        new_copy.splines = copy.deepcopy(self.splines, memo)
+        new_copy.constraints = copy.deepcopy(self.constraints, memo)
+        new_copy.update_lib_spline()
+        return new_copy
 
     def getPoints(self):
         return self.points

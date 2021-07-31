@@ -259,7 +259,7 @@ class FieldWidget(Gtk.DrawingArea):
                                                pxToM(self.mousey), difs)
 
             self.points.update_lib_spline()
-            self.graph.recalculate_graph(self.points)
+            self.graph.schedule_recalculate(self.points)
         self.queue_draw()
 
     def export_json(self, file_name):
@@ -374,7 +374,7 @@ class FieldWidget(Gtk.DrawingArea):
                 self.points.splineExtrapolate(self.spline_edit)
 
                 self.points.update_lib_spline()
-                self.graph.recalculate_graph(self.points)
+                self.graph.schedule_recalculate(self.points)
 
                 self.index_of_edit = -1
                 self.spline_edit = -1

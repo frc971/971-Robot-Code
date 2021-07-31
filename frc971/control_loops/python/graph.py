@@ -2,13 +2,15 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 import numpy as np
+import queue
+import threading
+import copy
 from points import Points
 from libspline import Spline, DistanceSpline, Trajectory
 
 from matplotlib.backends.backend_gtk3agg import (FigureCanvasGTK3Agg as
                                                  FigureCanvas)
 from matplotlib.figure import Figure
-
 
 class Graph(Gtk.Bin):
     def __init__(self):
@@ -19,10 +21,31 @@ class Graph(Gtk.Bin):
         canvas.set_vexpand(True)
         canvas.set_size_request(800, 250)
         self.add(canvas)
+        self.queue = queue.Queue(maxsize=1)
+
+        thread = threading.Thread(target=self.worker)
+        thread.daemon = True
+        thread.start()
+
+    def schedule_recalculate(self, points):
+        if not points.getLibsplines() or self.queue.full(): return
+        new_copy = copy.deepcopy(points)
+
+        # empty the queue
+        try:
+            self.queue.get_nowait()
+        except queue.Empty:
+            pass # was already empty
+
+        # replace with new request
+        self.queue.put_nowait(new_copy)
+
+    def worker(self):
+        while True:
+            self.recalculate_graph(self.queue.get())
 
     def recalculate_graph(self, points):
         if not points.getLibsplines(): return
-
         # set the size of a timestep
         dt = 0.00505
 
@@ -32,11 +55,12 @@ class Graph(Gtk.Bin):
         points.addConstraintsToTrajectory(traj)
         traj.Plan()
         XVA = traj.GetPlanXVA(dt)
+        if XVA is None: return
 
         # extract values to be graphed
         total_steps_taken = XVA.shape[1]
         total_time = dt * total_steps_taken
-        time = np.arange(total_time, step=dt)
+        time = np.linspace(0, total_time, num=total_steps_taken)
         position, velocity, acceleration = XVA
         left_voltage, right_voltage = zip(*(traj.Voltage(x) for x in position))
 
@@ -54,4 +78,5 @@ class Graph(Gtk.Bin):
         # the total time to drive the spline
         self.axis.xaxis.set_ticks(np.linspace(0, total_time, num=8))
 
+        # ask to be redrawn
         self.queue_draw()
