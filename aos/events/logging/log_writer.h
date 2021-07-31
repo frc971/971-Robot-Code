@@ -184,11 +184,11 @@ class Logger {
     // logic determining whether each writer should be initialized, we just
     // stash the answer in separate member variables.
     bool wants_writer = false;
-    DetachedBufferWriter *writer = nullptr;
+    NewDataWriter *writer = nullptr;
     bool wants_timestamp_writer = false;
-    DetachedBufferWriter *timestamp_writer = nullptr;
+    NewDataWriter *timestamp_writer = nullptr;
     bool wants_contents_writer = false;
-    DetachedBufferWriter *contents_writer = nullptr;
+    NewDataWriter *contents_writer = nullptr;
 
     // Node which this data is from, or -1 if it is unknown.
     int data_node_index = -1;

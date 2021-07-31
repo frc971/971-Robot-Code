@@ -34,7 +34,7 @@ using aos::message_bridge::RemoteMessage;
 using aos::testing::MessageCounter;
 
 constexpr std::string_view kSingleConfigSha256(
-    "bc8c9c2e31589eae6f0e36d766f6a437643e861d9568b7483106841cf7504dea");
+    "bbe1b563139273b23a5405eebc2f2740cefcda5f96681acd0a84b8ff9ab93ea4");
 
 std::vector<std::vector<std::string>> ToLogReaderVector(
     const std::vector<LogFile> &log_files) {
