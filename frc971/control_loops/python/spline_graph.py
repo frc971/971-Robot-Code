@@ -20,17 +20,6 @@ class GridWindow(Gtk.Window):
 
         self.connect(event, handler)
 
-    def mouse_move(self, event):
-        self.field.mouse_move(event)
-        self.queue_draw()
-
-    def button_press(self, event):
-        self.field.button_press(event)
-
-    def key_press(self, event):
-        self.field.key_press(event, self.file_name_box.get_text())
-        self.queue_draw()
-
     def configure(self, event):
         self.field.window_shape = (event.width, event.height)
 
@@ -77,6 +66,7 @@ class GridWindow(Gtk.Window):
 
         self.eventBox = Gtk.EventBox()
         self.eventBox.set_events(Gdk.EventMask.BUTTON_PRESS_MASK
+                                 | Gdk.EventMask.BUTTON_PRESS_MASK
                                  | Gdk.EventMask.BUTTON_RELEASE_MASK
                                  | Gdk.EventMask.POINTER_MOTION_MASK
                                  | Gdk.EventMask.SCROLL_MASK
@@ -85,10 +75,11 @@ class GridWindow(Gtk.Window):
         self.field = FieldWidget()
 
         self.method_connect("delete-event", basic_window.quit_main_loop)
-        self.method_connect("key-release-event", self.key_press)
-        self.method_connect("button-release-event", self.button_press)
+        self.method_connect("key-release-event", self.field.key_press)
+        self.method_connect("button-press-event", self.field.button_press)
+        self.method_connect("button-release-event", self.field.button_release)
         self.method_connect("configure-event", self.configure)
-        self.method_connect("motion_notify_event", self.mouse_move)
+        self.method_connect("motion_notify_event", self.field.mouse_move)
 
         self.file_name_box = Gtk.Entry()
         self.file_name_box.set_size_request(200, 40)

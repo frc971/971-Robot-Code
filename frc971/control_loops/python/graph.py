@@ -53,3 +53,5 @@ class Graph(Gtk.Bin):
         # renumber the x-axis to include the last point,
         # the total time to drive the spline
         self.axis.xaxis.set_ticks(np.linspace(0, total_time, num=8))
+
+        self.queue_draw()
