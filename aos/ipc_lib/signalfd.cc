@@ -6,6 +6,7 @@
 #include <sanitizer/msan_interface.h>
 #endif
 #include <unistd.h>
+
 #include <initializer_list>
 
 #include "glog/logging.h"
@@ -78,6 +79,16 @@ SignalFd::SignalFd(::std::initializer_list<unsigned int> signals) {
   }
 }
 
+namespace {
+// sizeof(sigset_t) is larger than the bytes actually used to represent all
+// signals. This size is only the bytes initialized. _NSIG is 1-indexed.
+static constexpr size_t kSigSetSize = (_NSIG - 1) / 8;
+
+// If the size of the mask changes, we should check that we still have
+// correct behavior.
+static_assert(kSigSetSize == 8 && kSigSetSize <= sizeof(sigset_t));
+}  // namespace
+
 SignalFd::~SignalFd() {
   // Unwind the constructor. Unblock the signals and close the fd. Verify nobody
   // else unblocked the signals we're supposed to unblock in the meantime.
@@ -85,7 +96,7 @@ SignalFd::~SignalFd() {
   CHECK_EQ(0, wrapped_pthread_sigmask(SIG_UNBLOCK, &blocked_mask_, &old_mask));
   sigset_t unblocked_mask;
   CHECK_EQ(0, wrapped_sigandset(&unblocked_mask, &blocked_mask_, &old_mask));
-  if (memcmp(&unblocked_mask, &blocked_mask_, sizeof(unblocked_mask)) != 0) {
+  if (memcmp(&unblocked_mask, &blocked_mask_, kSigSetSize) != 0) {
     LOG(FATAL) << "Some other code unblocked one or more of our signals";
   }
   PCHECK(close(fd_) == 0);
