@@ -1,16 +1,13 @@
 #include "aos/testing/test_logging.h"
 
-#include <stdio.h>
-
+#include <cstdio>
 #include <vector>
 
-#include "gtest/gtest.h"
-
 #include "absl/base/call_once.h"
-
 #include "aos/logging/implementations.h"
 #include "aos/stl_mutex/stl_mutex.h"
 #include "aos/thread_local.h"
+#include "gtest/gtest.h"
 
 using ::aos::logging::LogMessage;
 

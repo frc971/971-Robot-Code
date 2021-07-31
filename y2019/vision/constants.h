@@ -1,8 +1,8 @@
 #ifndef _Y2019_VISION_CONSTANTS_H_
 #define _Y2019_VISION_CONSTANTS_H_
 
-#include <math.h>
 #include <array>
+#include <cmath>
 #include <string>
 
 namespace y2019 {

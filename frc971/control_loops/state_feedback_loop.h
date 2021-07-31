@@ -1,8 +1,7 @@
 #ifndef FRC971_CONTROL_LOOPS_STATE_FEEDBACK_LOOP_H_
 #define FRC971_CONTROL_LOOPS_STATE_FEEDBACK_LOOP_H_
 
-#include <assert.h>
-
+#include <cassert>
 #include <chrono>
 #include <memory>
 #include <utility>

@@ -1,8 +1,7 @@
 #include "aos/ipc_lib/queue_racer.h"
 
-#include <inttypes.h>
-#include <string.h>
-
+#include <cinttypes>
+#include <cstring>
 #include <limits>
 
 #include "aos/ipc_lib/event.h"

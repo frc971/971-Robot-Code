@@ -1,9 +1,8 @@
 #ifndef FRC971_WPILIB_ADIS16448_H_
 #define FRC971_WPILIB_ADIS16448_H_
 
-#include <stdint.h>
-
 #include <atomic>
+#include <cstdint>
 #include <memory>
 
 #include "frc971/wpilib/ahal/DigitalInput.h"

@@ -1,8 +1,7 @@
 #ifndef AOS_UTIL_BITPACKING_H_
 #define AOS_UTIL_BITPACKING_H_
 
-#include <assert.h>
-
+#include <cassert>
 #include <type_traits>
 
 #include "third_party/GSL/include/gsl/gsl"
@@ -68,7 +67,8 @@ PackBits(const Integer value, const gsl::span<char> destination) {
 
 template <typename Integer, size_t bits, size_t offset>
 typename std::enable_if<std::is_unsigned<Integer>::value &&
-                        sizeof(Integer) * 8 >= bits, Integer>::type
+                            sizeof(Integer) * 8 >= bits,
+                        Integer>::type
 UnpackBits(const gsl::span<const char> source) {
   Integer result = 0;
   assert(static_cast<size_t>(source.size()) * 8u >= bits + offset);

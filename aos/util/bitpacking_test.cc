@@ -1,6 +1,6 @@
 #include "aos/util/bitpacking.h"
 
-#include <stdint.h>
+#include <cstdint>
 
 #include "gtest/gtest.h"
 

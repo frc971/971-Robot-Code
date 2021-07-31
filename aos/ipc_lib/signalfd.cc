@@ -1,7 +1,8 @@
 #include "aos/ipc_lib/signalfd.h"
 
-#include <signal.h>
 #include <sys/types.h>
+
+#include <csignal>
 #if __has_feature(memory_sanitizer)
 #include <sanitizer/msan_interface.h>
 #endif

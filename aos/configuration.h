@@ -1,11 +1,11 @@
 #ifndef AOS_CONFIGURATION_H_
 #define AOS_CONFIGURATION_H_
 
-#include <stdint.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
 
+#include <cstdint>
 #include <string_view>
 
 #include "aos/configuration_generated.h"  // IWYU pragma: export

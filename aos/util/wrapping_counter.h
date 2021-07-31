@@ -1,7 +1,7 @@
 #ifndef AOS_UTIL_WRAPPING_COUNTER_H_
 #define AOS_UTIL_WRAPPING_COUNTER_H_
 
-#include <stdint.h>
+#include <cstdint>
 
 namespace aos {
 namespace util {

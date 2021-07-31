@@ -1,10 +1,10 @@
-#include <inttypes.h>
-#include <stdio.h>
-#include <string.h>
 #include <unistd.h>
 
 #include <array>
 #include <chrono>
+#include <cinttypes>
+#include <cstdio>
+#include <cstring>
 #include <functional>
 #include <mutex>
 #include <thread>
@@ -53,8 +53,8 @@
 #include "y2016/control_loops/superstructure/superstructure_position_generated.h"
 #include "y2016/queues/ball_detector_generated.h"
 
-using std::make_unique;
 using ::frc971::wpilib::LoopOutputHandler;
+using std::make_unique;
 namespace shooter = ::y2016::control_loops::shooter;
 namespace superstructure = ::y2016::control_loops::superstructure;
 

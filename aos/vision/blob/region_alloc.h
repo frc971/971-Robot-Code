@@ -1,9 +1,9 @@
 #ifndef _AOS_VISION_REGION_ALLOC_H_
 #define _AOS_VISION_REGION_ALLOC_H_
 
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
 #include <memory>
 #include <new>
 #include <utility>
@@ -17,7 +17,7 @@ namespace vision {
 class AnalysisAllocator {
  public:
   template <typename T, typename... Args>
-  T *cons_obj(Args &&... args) {
+  T *cons_obj(Args &&...args) {
     uint8_t *ptr = NULL;
     if (sizeof(T) + alignof(T) > block_size_) {
       __builtin_trap();

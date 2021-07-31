@@ -1,4 +1,4 @@
-#include <stdio.h>
+#include <cstdio>
 
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"

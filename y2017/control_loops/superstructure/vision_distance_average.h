@@ -1,8 +1,8 @@
 #ifndef Y2017_CONTROL_LOOPS_SUPERSTRUCTURE_VISION_DISTANCE_AVERAGE_H_
 #define Y2017_CONTROL_LOOPS_SUPERSTRUCTURE_VISION_DISTANCE_AVERAGE_H_
 
-#include <stdint.h>
 #include <chrono>
+#include <cstdint>
 
 #include "aos/containers/ring_buffer.h"
 #include "aos/time/time.h"

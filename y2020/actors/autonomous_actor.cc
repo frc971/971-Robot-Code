@@ -1,8 +1,7 @@
 #include "y2020/actors/autonomous_actor.h"
 
-#include <inttypes.h>
-
 #include <chrono>
+#include <cinttypes>
 #include <cmath>
 
 #include "aos/logging/logging.h"
@@ -89,10 +88,9 @@ void AutonomousActor::Replan() {
                              std::placeholders::_1),
                    SplineDirection::kForward);
   } else if (FLAGS_spline_auto) {
-    test_spline_ =
-        PlanSpline(std::bind(&AutonomousSplines::TestSpline, &auto_splines_,
-                             std::placeholders::_1),
-                   SplineDirection::kForward);
+    test_spline_ = PlanSpline(std::bind(&AutonomousSplines::TestSpline,
+                                        &auto_splines_, std::placeholders::_1),
+                              SplineDirection::kForward);
   }
 }
 
@@ -305,16 +303,16 @@ void AutonomousActor::SendSuperstructureGoal() {
   }
 
   superstructure::Goal::Builder superstructure_builder =
-        builder.MakeBuilder<superstructure::Goal>();
+      builder.MakeBuilder<superstructure::Goal>();
 
   superstructure_builder.add_intake(intake_offset);
   superstructure_builder.add_roller_voltage(roller_voltage_);
-  superstructure_builder.add_roller_speed_compensation(kRollerSpeedCompensation);
+  superstructure_builder.add_roller_speed_compensation(
+      kRollerSpeedCompensation);
 
   if (!builder.Send(superstructure_builder.Finish())) {
     AOS_LOG(ERROR, "Sending superstructure goal failed.\n");
   }
-
 }
 
 void AutonomousActor::RetractIntake() {

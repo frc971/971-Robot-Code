@@ -1,5 +1,5 @@
-#include <stddef.h>
-#include <inttypes.h>
+#include <cinttypes>
+#include <cstddef>
 
 #include "aos/logging/logging.h"
 
@@ -19,7 +19,8 @@ constexpr ::std::chrono::milliseconds ControlLoop<
 
 template <class GoalType, class PositionType, class StatusType,
           class OutputType>
-void ControlLoop<GoalType, PositionType, StatusType, OutputType>::ZeroOutputs() {
+void ControlLoop<GoalType, PositionType, StatusType,
+                 OutputType>::ZeroOutputs() {
   typename ::aos::Sender<OutputType>::Builder builder =
       output_sender_.MakeBuilder();
   builder.Send(Zero(&builder));

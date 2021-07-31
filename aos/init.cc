@@ -1,14 +1,15 @@
 #include "aos/init.h"
 
-#include <stdio.h>
-#include <string.h>
-#include <sys/mman.h>
-#include <errno.h>
 #include <sched.h>
+#include <sys/mman.h>
 #include <sys/resource.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <stdlib.h>
+
+#include <cerrno>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #include "aos/realtime.h"
 #include "gflags/gflags.h"

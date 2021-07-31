@@ -1,8 +1,7 @@
 #include "y2014/actors/autonomous_actor.h"
 
-#include <stdio.h>
-
 #include <chrono>
+#include <cstdio>
 #include <memory>
 
 #include "aos/actions/actions.h"
@@ -272,7 +271,8 @@ bool AutonomousActor::RunAction(
     const double kSelectorStep = (kSelectorMax - kSelectorMin) / 3.0;
     if (auto_mode_fetcher_->voltage() < kSelectorStep + kSelectorMin) {
       auto_version = AutoVersion::kSingleHot;
-    } else if (auto_mode_fetcher_->voltage() < 2 * kSelectorStep + kSelectorMin) {
+    } else if (auto_mode_fetcher_->voltage() <
+               2 * kSelectorStep + kSelectorMin) {
       auto_version = AutoVersion::kStraight;
     } else {
       auto_version = AutoVersion::kDoubleHot;
@@ -331,7 +331,7 @@ bool AutonomousActor::RunAction(
   if (auto_version == AutoVersion::kDoubleHot) {
     if (ShouldCancel()) return true;
     StartDrive(0, first_shot_left ? kTurnAngle : -kTurnAngle,
-                 drive_with_ball_params, kFastTurn);
+               drive_with_ball_params, kFastTurn);
     WaitForDriveProfileDone();
     if (ShouldCancel()) return true;
   } else if (auto_version == AutoVersion::kSingleHot) {

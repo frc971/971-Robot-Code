@@ -1,9 +1,8 @@
 #include "aos/logging/interface.h"
 
-#include <stdarg.h>
-#include <stdio.h>
-#include <string.h>
-
+#include <cstdarg>
+#include <cstdio>
+#include <cstring>
 #include <functional>
 #include <type_traits>
 

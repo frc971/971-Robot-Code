@@ -1,15 +1,15 @@
 #ifndef AOS_LOGGING_IMPLEMENTATIONS_H_
 #define AOS_LOGGING_IMPLEMENTATIONS_H_
 
-#include <limits.h>
-#include <stdarg.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
 
 #include <atomic>
+#include <climits>
+#include <cstdarg>
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
 #include <functional>
 #include <memory>
 #include <string>

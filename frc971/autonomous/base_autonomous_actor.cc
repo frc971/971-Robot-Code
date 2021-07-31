@@ -1,14 +1,12 @@
 #include "frc971/autonomous/base_autonomous_actor.h"
 
-#include <inttypes.h>
-
 #include <chrono>
+#include <cinttypes>
 #include <cmath>
 
+#include "aos/logging/logging.h"
 #include "aos/util/math.h"
 #include "aos/util/phased_loop.h"
-#include "aos/logging/logging.h"
-
 #include "frc971/control_loops/control_loops_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_goal_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
@@ -316,8 +314,9 @@ bool BaseAutonomousActor::WaitForDriveProfileNear(double tolerance) {
         (Eigen::Matrix<double, 7, 1>()
              << initial_drivetrain_.left -
                     drivetrain_status_fetcher_->profiled_left_position_goal(),
-         0.0, initial_drivetrain_.right -
-                  drivetrain_status_fetcher_->profiled_right_position_goal(),
+         0.0,
+         initial_drivetrain_.right -
+             drivetrain_status_fetcher_->profiled_right_position_goal(),
          0.0, 0.0, 0.0, 0.0)
             .finished();
     const Eigen::Matrix<double, 2, 1> linear_error =
@@ -352,8 +351,9 @@ bool BaseAutonomousActor::WaitForTurnProfileNear(double tolerance) {
         (Eigen::Matrix<double, 7, 1>()
              << initial_drivetrain_.left -
                     drivetrain_status_fetcher_->profiled_left_position_goal(),
-         0.0, initial_drivetrain_.right -
-                  drivetrain_status_fetcher_->profiled_right_position_goal(),
+         0.0,
+         initial_drivetrain_.right -
+             drivetrain_status_fetcher_->profiled_right_position_goal(),
          0.0, 0.0, 0.0, 0.0)
             .finished();
     const Eigen::Matrix<double, 2, 1> angular_error =

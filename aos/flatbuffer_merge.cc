@@ -1,6 +1,6 @@
 #include "aos/flatbuffer_merge.h"
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "aos/flatbuffer_utils.h"
 #include "flatbuffers/flatbuffers.h"

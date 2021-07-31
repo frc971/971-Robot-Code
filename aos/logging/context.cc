@@ -7,23 +7,22 @@
 #if __has_feature(memory_sanitizer)
 #include <sanitizer/msan_interface.h>
 #endif
-#include <string.h>
 #include <sys/prctl.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <errno.h>
 
+#include <cerrno>
+#include <cstring>
 #include <string>
 
 extern char *program_invocation_name;
 extern char *program_invocation_short_name;
 
-#include "glog/logging.h"
-
 #include "aos/complex_thread_local.h"
 #include "aos/die.h"
 #include "aos/logging/implementations.h"
 #include "aos/thread_local.h"
+#include "glog/logging.h"
 
 namespace aos {
 namespace logging {

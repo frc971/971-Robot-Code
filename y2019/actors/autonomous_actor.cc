@@ -1,13 +1,11 @@
 #include "y2019/actors/autonomous_actor.h"
 
-#include <inttypes.h>
-
 #include <chrono>
+#include <cinttypes>
 #include <cmath>
 
 #include "aos/logging/logging.h"
 #include "aos/util/phased_loop.h"
-
 #include "frc971/control_loops/drivetrain/localizer_generated.h"
 #include "y2019/actors/auto_splines.h"
 #include "y2019/control_loops/drivetrain/drivetrain_base.h"
@@ -15,8 +13,8 @@
 namespace y2019 {
 namespace actors {
 
-using ::frc971::ProfileParametersT;
 using ::aos::monotonic_clock;
+using ::frc971::ProfileParametersT;
 using frc971::control_loops::drivetrain::LocalizerControl;
 namespace chrono = ::std::chrono;
 

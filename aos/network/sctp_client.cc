@@ -3,9 +3,10 @@
 #include <arpa/inet.h>
 #include <net/if.h>
 #include <netinet/sctp.h>
-#include <stdlib.h>
-#include <string.h>
 #include <sys/socket.h>
+
+#include <cstdlib>
+#include <cstring>
 #include <string_view>
 
 #include "aos/network/sctp_lib.h"

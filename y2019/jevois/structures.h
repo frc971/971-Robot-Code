@@ -1,14 +1,12 @@
 #ifndef Y2019_JEVOIS_STRUCTURES_H_
 #define Y2019_JEVOIS_STRUCTURES_H_
 
-#include <stdint.h>
-
 #include <array>
 #include <bitset>
 #include <chrono>
+#include <cstdint>
 
 #include "Eigen/Dense"
-
 #include "aos/containers/sized_array.h"
 #include "aos/time/time.h"
 #include "third_party/GSL/include/gsl/gsl"
@@ -58,9 +56,7 @@ struct Target {
     }
     return true;
   }
-  bool operator!=(const Target &other) const {
-    return !(*this == other);
-  }
+  bool operator!=(const Target &other) const { return !(*this == other); }
 
   // Distance to the target in meters. Specifically, the distance from the
   // center of the camera's image plane to the center of the target.
@@ -95,9 +91,7 @@ struct CameraFrame {
     }
     return true;
   }
-  bool operator!=(const CameraFrame &other) const {
-    return !(*this == other);
-  }
+  bool operator!=(const CameraFrame &other) const { return !(*this == other); }
 
   // The top most interesting targets found in this frame.
   aos::SizedArray<Target, 3> targets;
@@ -120,9 +114,7 @@ struct RoborioFrame {
     }
     return true;
   }
-  bool operator!=(const RoborioFrame &other) const {
-    return !(*this == other);
-  }
+  bool operator!=(const RoborioFrame &other) const { return !(*this == other); }
 
   // The top most interesting targets found in this frame.
   aos::SizedArray<Target, 3> targets;

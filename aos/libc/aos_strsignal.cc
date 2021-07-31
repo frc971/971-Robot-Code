@@ -1,10 +1,9 @@
 #include "aos/libc/aos_strsignal.h"
 
-#include <signal.h>
-
-#include "glog/logging.h"
+#include <csignal>
 
 #include "aos/thread_local.h"
+#include "glog/logging.h"
 
 const char *aos_strsignal(int signal) {
   AOS_THREAD_LOCAL char buffer[512];

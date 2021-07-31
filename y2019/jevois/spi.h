@@ -1,12 +1,11 @@
 #ifndef Y2019_JEVOIS_SPI_H_
 #define Y2019_JEVOIS_SPI_H_
 
-#include <stdint.h>
-
 #include <array>
+#include <cstdint>
+#include <optional>
 
 #include "third_party/GSL/include/gsl/gsl"
-#include <optional>
 #include "y2019/jevois/structures.h"
 
 // This file manages serializing and deserializing the various structures for

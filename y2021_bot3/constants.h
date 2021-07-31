@@ -1,10 +1,9 @@
 #ifndef Y2021_BOT3_CONSTANTS_H_
 #define Y2021_BOT3_CONSTANTS_H_
 
-#include <math.h>
-#include <stdint.h>
-
 #include <array>
+#include <cmath>
+#include <cstdint>
 
 #include "frc971/constants.h"
 #include "frc971/control_loops/pose.h"

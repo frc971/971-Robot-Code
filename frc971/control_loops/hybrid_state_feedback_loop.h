@@ -1,21 +1,19 @@
 #ifndef FRC971_CONTROL_LOOPS_HYBRID_STATE_FEEDBACK_LOOP_H_
 #define FRC971_CONTROL_LOOPS_HYBRID_STATE_FEEDBACK_LOOP_H_
 
-#include <assert.h>
-
+#include <cassert>
 #include <chrono>
 #include <memory>
 #include <utility>
 #include <vector>
 
 #include "Eigen/Dense"
-#include "unsupported/Eigen/MatrixFunctions"
-
-#include "frc971/control_loops/control_loop.h"
 #include "aos/logging/logging.h"
 #include "aos/macros.h"
 #include "frc971/control_loops/c2d.h"
+#include "frc971/control_loops/control_loop.h"
 #include "frc971/control_loops/state_feedback_loop.h"
+#include "unsupported/Eigen/MatrixFunctions"
 
 template <int number_of_states, int number_of_inputs, int number_of_outputs,
           typename Scalar = double>

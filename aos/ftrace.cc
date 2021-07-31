@@ -1,7 +1,7 @@
 #include "aos/ftrace.h"
 
-#include <stdarg.h>
-#include <stdio.h>
+#include <cstdarg>
+#include <cstdio>
 
 namespace aos {
 

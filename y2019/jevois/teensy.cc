@@ -1,6 +1,5 @@
-#include <inttypes.h>
-#include <stdio.h>
-
+#include <cinttypes>
+#include <cstdio>
 #include <optional>
 
 #include "aos/time/time.h"
@@ -17,8 +16,8 @@
 #include "y2019/jevois/uart.h"
 #include "y2019/vision/constants.h"
 
-using frc971::teensy::InterruptBufferedUart;
 using frc971::teensy::InterruptBufferedSpi;
+using frc971::teensy::InterruptBufferedUart;
 
 // All indices here refer to the ports as numbered on the PCB.
 
@@ -126,7 +125,8 @@ class SpiQueue {
     }
     const auto now = aos::monotonic_clock::now();
     if (TransferTimedOut(now)) {
-      printf("SPI timeout with %d left\n", static_cast<int>(to_receive_.size()));
+      printf("SPI timeout with %d left\n",
+             static_cast<int>(to_receive_.size()));
       WaitForNextTransfer();
       return std::nullopt;
     }
@@ -138,7 +138,8 @@ class SpiQueue {
       }
     }
     if (DeassertHappened(now)) {
-      printf("CS deasserted with %d left\n", static_cast<int>(to_receive_.size()));
+      printf("CS deasserted with %d left\n",
+             static_cast<int>(to_receive_.size()));
       WaitForNextTransfer();
       return std::nullopt;
     }
@@ -441,9 +442,7 @@ void spi0_isr(void) {
   global_spi_instance->HandleInterrupt(disable_interrupts);
 }
 
-void porta_isr(void) {
-  SpiQueue::global_instance->HandleInterrupt();
-}
+void porta_isr(void) { SpiQueue::global_instance->HandleInterrupt(); }
 
 }  // extern "C"
 
@@ -1016,9 +1015,7 @@ int Main() {
 
 extern "C" {
 
-int main(void) {
-  return Main();
-}
+int main(void) { return Main(); }
 
 }  // extern "C"
 

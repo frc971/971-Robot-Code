@@ -1,11 +1,11 @@
 #include "aos/ipc_lib/lockless_queue.h"
 
-#include <inttypes.h>
-#include <signal.h>
 #include <unistd.h>
 #include <wait.h>
 
 #include <chrono>
+#include <cinttypes>
+#include <csignal>
 #include <memory>
 #include <random>
 #include <thread>

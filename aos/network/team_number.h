@@ -1,8 +1,7 @@
 #ifndef AOS_NETWORK_TEAM_NUMBER_H_
 #define AOS_NETWORK_TEAM_NUMBER_H_
 
-#include <stdint.h>
-
+#include <cstdint>
 #include <optional>
 #include <string_view>
 

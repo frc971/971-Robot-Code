@@ -1,7 +1,6 @@
 #include "aos/util/file.h"
 
-#include <stdlib.h>
-
+#include <cstdlib>
 #include <string>
 
 #include "gtest/gtest.h"

@@ -1,7 +1,7 @@
 #ifndef Y2018_CONTROL_LOOPS_SUPERSTRUCTURE_INTAKE_INTAKE_H_
 #define Y2018_CONTROL_LOOPS_SUPERSTRUCTURE_INTAKE_INTAKE_H_
 
-#include <math.h>
+#include <cmath>
 
 #include "aos/commonmath.h"
 #include "frc971/control_loops/control_loop.h"

@@ -1,10 +1,10 @@
 #include <netdb.h>
-#include <stdlib.h>
 #include <unistd.h>
 
 #include <array>
 #include <atomic>
 #include <chrono>
+#include <cstdlib>
 #include <limits>
 #include <memory>
 #include <thread>

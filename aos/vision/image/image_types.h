@@ -1,11 +1,10 @@
 #ifndef _AOS_VISION_IMAGE_IMAGE_TYPES_H_
 #define _AOS_VISION_IMAGE_IMAGE_TYPES_H_
 
-#include <stdint.h>
-#include <string.h>
+#include <cstdint>
+#include <cstring>
 #include <memory>
 #include <sstream>
-
 #include <string_view>
 
 namespace aos {

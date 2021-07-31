@@ -1,9 +1,8 @@
 #ifndef FRC971_WPILIB_GYRO_H_
 #define FRC971_WPILIB_GYRO_H_
 
-#include <stdint.h>
-
 #include <atomic>
+#include <cstdint>
 
 #include "aos/events/event_loop.h"
 #include "aos/events/shm_event_loop.h"

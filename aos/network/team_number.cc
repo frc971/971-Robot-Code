@@ -1,9 +1,10 @@
 #include "aos/network/team_number.h"
 
-#include <inttypes.h>
 #include <netinet/in.h>
-#include <stdlib.h>
 #include <unistd.h>
+
+#include <cinttypes>
+#include <cstdlib>
 
 #include "absl/strings/numbers.h"
 

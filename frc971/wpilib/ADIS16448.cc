@@ -3,9 +3,9 @@
 #include "frc971/wpilib/ahal/InterruptableSensorBase.h"
 #undef ERROR
 
-#include <inttypes.h>
-#include <math.h>
 #include <chrono>
+#include <cinttypes>
+#include <cmath>
 
 #include "aos/init.h"
 #include "aos/time/time.h"
@@ -137,9 +137,9 @@ ADIS16448::ADIS16448(::aos::ShmEventLoop *event_loop, frc::SPI::Port port,
 
   // NI's SPI driver defaults to SCHED_OTHER.  Find it's PID with ps, and change
   // it to a RT priority of 33.
-  AOS_PCHECK(
-      system("busybox ps -ef | grep '\\[spi0\\]' | awk '{print $1}' | xargs chrt -f -p "
-             "33") == 0);
+  AOS_PCHECK(system("busybox ps -ef | grep '\\[spi0\\]' | awk '{print $1}' | "
+                    "xargs chrt -f -p "
+                    "33") == 0);
 
   event_loop->set_name("IMU");
   event_loop_->SetRuntimeRealtimePriority(33);

@@ -1,7 +1,8 @@
 #include "frc971/wpilib/sensor_reader.h"
 
-#include <inttypes.h>
 #include <unistd.h>
+
+#include <cinttypes>
 
 #include "aos/init.h"
 #include "aos/logging/logging.h"

@@ -1,13 +1,11 @@
 #include "y2016/actors/autonomous_actor.h"
 
-#include <inttypes.h>
-
 #include <chrono>
+#include <cinttypes>
 #include <cmath>
 
 #include "aos/logging/logging.h"
 #include "aos/util/phased_loop.h"
-
 #include "y2016/control_loops/drivetrain/drivetrain_base.h"
 #include "y2016/control_loops/shooter/shooter_goal_generated.h"
 #include "y2016/control_loops/shooter/shooter_status_generated.h"
@@ -63,8 +61,7 @@ AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
       vision_align_actor_factory_(
           actors::VisionAlignActor::MakeFactory(event_loop)),
       vision_status_fetcher_(
-          event_loop->MakeFetcher<::y2016::vision::VisionStatus>(
-              "/vision")),
+          event_loop->MakeFetcher<::y2016::vision::VisionStatus>("/vision")),
       ball_detector_fetcher_(
           event_loop->MakeFetcher<::y2016::sensors::BallDetector>(
               "/superstructure")),
@@ -971,7 +968,7 @@ bool AutonomousActor::RunAction(
   if (!WaitForDriveDone()) return true;
 
   AOS_LOG(INFO, "Done %f\n",
-      ::aos::time::DurationInSeconds(monotonic_now() - start_time));
+          ::aos::time::DurationInSeconds(monotonic_now() - start_time));
 
   ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
                                       monotonic_now(),

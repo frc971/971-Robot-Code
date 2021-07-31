@@ -1,9 +1,8 @@
 #include "y2014/control_loops/shooter/shooter.h"
 
-#include <stdio.h>
-
 #include <algorithm>
 #include <chrono>
+#include <cstdio>
 #include <limits>
 
 #include "aos/logging/logging.h"

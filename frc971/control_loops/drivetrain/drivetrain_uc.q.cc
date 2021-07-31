@@ -1,5 +1,6 @@
 #include "frc971/control_loops/drivetrain/drivetrain_uc.q.h"
-#include <inttypes.h>
+
+#include <cinttypes>
 
 namespace frc971 {
 namespace control_loops {

@@ -1,8 +1,7 @@
 #include "y2017/actors/autonomous_actor.h"
 
-#include <inttypes.h>
-
 #include <chrono>
+#include <cinttypes>
 #include <cmath>
 
 #include "aos/logging/logging.h"

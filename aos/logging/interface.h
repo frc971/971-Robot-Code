@@ -1,8 +1,7 @@
 #ifndef AOS_LOGGING_INTERFACE_H_
 #define AOS_LOGGING_INTERFACE_H_
 
-#include <stdarg.h>
-
+#include <cstdarg>
 #include <functional>
 #include <string>
 

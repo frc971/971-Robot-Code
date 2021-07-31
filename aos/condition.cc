@@ -1,8 +1,8 @@
 #include "aos/condition.h"
 
-#include <assert.h>
-#include <inttypes.h>
-#include <time.h>
+#include <cassert>
+#include <cinttypes>
+#include <ctime>
 
 #include "aos/mutex/mutex.h"
 #include "aos/type_traits/type_traits.h"
@@ -51,8 +51,6 @@ Condition::WaitResult Condition::WaitTimed(chrono::nanoseconds timeout) {
 
 void Condition::Signal() { condition_signal(&impl_, &m_->impl_); }
 
-void Condition::Broadcast() {
-  condition_broadcast(&impl_, &m_->impl_);
-}
+void Condition::Broadcast() { condition_broadcast(&impl_, &m_->impl_); }
 
 }  // namespace aos

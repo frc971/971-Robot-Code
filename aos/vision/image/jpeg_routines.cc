@@ -1,13 +1,13 @@
 #include "aos/vision/image/jpeg_routines.h"
 
-#include <errno.h>
-#include <setjmp.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <sys/mman.h>
 #include <unistd.h>
+
+#include <cerrno>
+#include <csetjmp>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
 
 #include "aos/logging/logging.h"
@@ -154,9 +154,10 @@ ImageFormat GetFmt(DataRef data) {
   cinfo.out_color_space = JCS_RGB;
   jpeg_create_decompress(&cinfo);
 
-  jpeg_mem_src(&cinfo, reinterpret_cast<unsigned char *>(
-                           const_cast<char *>(data.data())),
-               data.size());
+  jpeg_mem_src(
+      &cinfo,
+      reinterpret_cast<unsigned char *>(const_cast<char *>(data.data())),
+      data.size());
 
   jpeg_read_header(&cinfo, TRUE);
   fmt.w = cinfo.image_width;
@@ -204,9 +205,10 @@ bool ProcessJpeg(DataRef data, PixelRef *out) {
   cinfo.out_color_space = JCS_RGB;
   jpeg_create_decompress(&cinfo);
 
-  jpeg_mem_src(&cinfo, reinterpret_cast<unsigned char *>(
-                           const_cast<char *>(data.data())),
-               data.size());
+  jpeg_mem_src(
+      &cinfo,
+      reinterpret_cast<unsigned char *>(const_cast<char *>(data.data())),
+      data.size());
 
   jpeg_read_header(&cinfo, TRUE);
   standard_huff_tables(&cinfo);

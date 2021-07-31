@@ -1,6 +1,6 @@
 #include "aos/libc/aos_strerror.h"
 
-#include <errno.h>
+#include <cerrno>
 
 #include "gtest/gtest.h"
 

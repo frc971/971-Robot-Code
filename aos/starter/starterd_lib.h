@@ -1,11 +1,11 @@
 #ifndef AOS_STARTER_STARTERD_LIB_H_
 #define AOS_STARTER_STARTERD_LIB_H_
 
-#include <signal.h>
-#include <stdio.h>
 #include <sys/signalfd.h>
 #include <sys/wait.h>
 
+#include <csignal>
+#include <cstdio>
 #include <string>
 #include <unordered_map>
 #include <vector>

@@ -1,8 +1,8 @@
 #include "aos/mutex/mutex.h"
 
-#include <inttypes.h>
-#include <stdio.h>
-#include <string.h>
+#include <cinttypes>
+#include <cstdio>
+#include <cstring>
 
 #include "aos/type_traits/type_traits.h"
 #include "glog/logging.h"
@@ -24,9 +24,7 @@ bool Mutex::Lock() {
   }
 }
 
-void Mutex::Unlock() {
-  mutex_unlock(&impl_);
-}
+void Mutex::Unlock() { mutex_unlock(&impl_); }
 
 Mutex::State Mutex::TryLock() {
   const int ret = mutex_trylock(&impl_);
@@ -43,8 +41,6 @@ Mutex::State Mutex::TryLock() {
   }
 }
 
-bool Mutex::OwnedBySelf() const {
-  return mutex_islocked(&impl_);
-}
+bool Mutex::OwnedBySelf() const { return mutex_islocked(&impl_); }
 
 }  // namespace aos

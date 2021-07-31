@@ -1,6 +1,6 @@
 #include "frc971/wpilib/buffered_pcm.h"
 
-#include <inttypes.h>
+#include <cinttypes>
 
 #include "aos/logging/logging.h"
 #include "hal/HAL.h"

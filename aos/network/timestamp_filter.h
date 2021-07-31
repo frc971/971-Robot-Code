@@ -1,10 +1,10 @@
 #ifndef AOS_EVENTS_LOGGING_TIMESTAMP_FILTER_H_
 #define AOS_EVENTS_LOGGING_TIMESTAMP_FILTER_H_
 
-#include <stdio.h>
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <cstdio>
 #include <deque>
 
 #include "aos/configuration.h"

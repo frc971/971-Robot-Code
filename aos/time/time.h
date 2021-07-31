@@ -1,11 +1,11 @@
 #ifndef AOS_TIME_H_
 #define AOS_TIME_H_
 
-#include <stdint.h>
 #include <sys/time.h>
-#include <time.h>
 
 #include <chrono>
+#include <cstdint>
+#include <ctime>
 #include <optional>
 #include <ostream>
 #include <thread>

@@ -1,23 +1,23 @@
-#include <errno.h>
 #include <libgen.h>
-#include <stdio.h>
-#include <string.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include <cerrno>
 #include <chrono>
+#include <cstdio>
+#include <cstring>
 #include <string>
 
 #include "aos/die.h"
+#include "aos/ipc_lib/core_lib.h"
 #include "aos/libc/aos_strsignal.h"
 #include "aos/libc/dirname.h"
 #include "aos/logging/logging.h"
 #include "aos/mutex/mutex.h"
+#include "aos/testing/test_shm.h"
 #include "aos/time/time.h"
 #include "aos/type_traits/type_traits.h"
-#include "aos/ipc_lib/core_lib.h"
-#include "aos/testing/test_shm.h"
 
 // This runs all of the IPC-related tests in a bunch of parallel processes for a
 // while and makes sure that they don't fail. It also captures the stdout and
@@ -42,17 +42,17 @@ namespace chrono = ::std::chrono;
 // Using --gtest_filter is a bad idea because it seems to result in a lot of
 // swapping which causes everything to be disk-bound (at least for me).
 static const size_t kTestMaxArgs = 10;
-static const char * kTests[][kTestMaxArgs] = {
-  {"queue_test"},
-  {"condition_test"},
-  {"mutex_test"},
-  {"raw_queue_test"},
+static const char *kTests[][kTestMaxArgs] = {
+    {"queue_test"},
+    {"condition_test"},
+    {"mutex_test"},
+    {"raw_queue_test"},
 };
 static const size_t kTestsLength = sizeof(kTests) / sizeof(kTests[0]);
 // These arguments get inserted before any per-test arguments.
 static const char *kDefaultArgs[] = {
-  "--gtest_repeat=30",
-  "--gtest_shuffle",
+    "--gtest_repeat=30",
+    "--gtest_shuffle",
 };
 
 // How many test processes to run at a time.
@@ -64,7 +64,7 @@ static constexpr monotonic_clock::duration kTestTime = chrono::seconds(30);
 // the child processes.
 struct Shared {
   Shared(const monotonic_clock::time_point stop_time)
-    : stop_time(stop_time), total_iterations(0) {}
+      : stop_time(stop_time), total_iterations(0) {}
 
   // Synchronizes access to stdout/stderr to avoid interleaving failure
   // messages.
@@ -84,8 +84,8 @@ static_assert(shm_ok<Shared>::value,
               "it's going to get shared between forked processes");
 
 // Gets called after each child forks to run a test.
-void __attribute__((noreturn)) DoRunTest(
-    Shared *shared, const char *(*test)[kTestMaxArgs], int pipes[2]) {
+void __attribute__((noreturn))
+DoRunTest(Shared *shared, const char *(*test)[kTestMaxArgs], int pipes[2]) {
   if (close(pipes[0]) == -1) {
     PDie("close(%d) of read end of pipe failed", pipes[0]);
   }
@@ -173,15 +173,15 @@ void DoRun(Shared *shared) {
     if (WIFEXITED(status)) {
       if (WEXITSTATUS(status) != 0) {
         MutexLocker sync(&shared->output_mutex);
-        fprintf(stderr, "Test %s exited with status %d. output:\n",
-                (*test)[0], WEXITSTATUS(status));
+        fprintf(stderr, "Test %s exited with status %d. output:\n", (*test)[0],
+                WEXITSTATUS(status));
         fputs(output.c_str(), stderr);
       }
     } else if (WIFSIGNALED(status)) {
       MutexLocker sync(&shared->output_mutex);
       fprintf(stderr, "Test %s terminated by signal %d: %s.\n", (*test)[0],
               WTERMSIG(status), aos_strsignal(WTERMSIG(status)));
-        fputs(output.c_str(), stderr);
+      fputs(output.c_str(), stderr);
     } else {
       CHECK(WIFSTOPPED(status));
       Die("Test %s was stopped.\n", (*test)[0]);
@@ -218,8 +218,8 @@ int Main(int argc, char **argv) {
   Shared *shared = static_cast<Shared *>(shm_malloc(sizeof(Shared)));
   new (shared) Shared(monotonic_clock::now() + kTestTime);
 
-  if (asprintf(const_cast<char **>(&shared->path),
-               "%s/../tests", ::aos::libc::Dirname(argv[0]).c_str()) == -1) {
+  if (asprintf(const_cast<char **>(&shared->path), "%s/../tests",
+               ::aos::libc::Dirname(argv[0]).c_str()) == -1) {
     PDie("asprintf failed");
   }
 
@@ -251,6 +251,4 @@ int Main(int argc, char **argv) {
 
 }  // namespace aos
 
-int main(int argc, char **argv) {
-  return ::aos::Main(argc, argv);
-}
+int main(int argc, char **argv) { return ::aos::Main(argc, argv); }

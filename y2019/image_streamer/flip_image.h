@@ -1,8 +1,9 @@
 #ifndef Y2019_IMAGE_STREAMER_FLIP_IMAGE_H_
 #define Y2019_IMAGE_STREAMER_FLIP_IMAGE_H_
 
-#include <stddef.h>
-#include <stdio.h>
+#include <cstddef>
+#include <cstdio>
+
 #include "third_party/libjpeg/jerror.h"
 #include "third_party/libjpeg/jpeglib.h"
 

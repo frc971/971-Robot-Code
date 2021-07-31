@@ -1,14 +1,14 @@
 #ifndef AOS_IPC_LIB_LOCKLESS_QUEUE_H_
 #define AOS_IPC_LIB_LOCKLESS_QUEUE_H_
 
-#include <signal.h>
 #include <sys/signalfd.h>
 #include <sys/types.h>
+
+#include <csignal>
 #include <optional>
 #include <vector>
 
 #include "absl/types/span.h"
-
 #include "aos/ipc_lib/aos_sync.h"
 #include "aos/ipc_lib/data_alignment.h"
 #include "aos/ipc_lib/index.h"

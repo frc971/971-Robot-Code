@@ -1,8 +1,7 @@
 #ifndef AOS_COMPLEX_THREAD_LOCAL_H_
 #define AOS_COMPLEX_THREAD_LOCAL_H_
 
-#include <assert.h>
-
+#include <cassert>
 #include <type_traits>
 #include <utility>
 
@@ -71,7 +70,7 @@ class ComplexThreadLocal {
   // already.
   // args are all perfectly forwarded to the constructor.
   template <typename... Args>
-  void Create(Args &&... args) {
+  void Create(Args &&...args) {
     if (initialized) return;
     new (&storage) T(::std::forward<Args>(args)...);
     destructor.function = PlacementDelete;
@@ -93,9 +92,7 @@ class ComplexThreadLocal {
   bool created() const { return initialized; }
 
   // Returns the object currently created in this thread or nullptr.
-  T *operator->() const {
-    return get();
-  }
+  T *operator->() const { return get(); }
   T *get() const {
     if (initialized) {
       return static_cast<T *>(static_cast<void *>(&storage));

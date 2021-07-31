@@ -1,13 +1,11 @@
 #include "aos/logging/implementations.h"
 
-#include <inttypes.h>
-
 #include <chrono>
+#include <cinttypes>
 #include <string>
 
 #include "aos/logging/printf_formats.h"
 #include "aos/time/time.h"
-
 #include "glog/logging.h"
 #include "gtest/gtest.h"
 

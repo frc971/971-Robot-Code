@@ -1,10 +1,9 @@
 #include "aos/time/time.h"
 
-#include <inttypes.h>
-#include <string.h>
-
 #include <algorithm>
 #include <chrono>
+#include <cinttypes>
+#include <cstring>
 #include <ctime>
 #include <iomanip>
 

@@ -1,13 +1,12 @@
 #ifndef AOS_PRINT_FIELD_HELPERS_H_
 #define AOS_PRINT_FIELD_HELPERS_H_
 
-#include <stdint.h>
-
+#include <cstdint>
 #include <type_traits>
 
 namespace aos {
 
-template<typename T>
+template <typename T>
 inline bool PrintInteger(char *buf, T val, size_t *output) {
   static const bool is_signed = ::std::is_signed<T>::value;
   const bool is_negative =

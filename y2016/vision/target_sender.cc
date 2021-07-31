@@ -1,6 +1,7 @@
-#include <stdio.h>
-#include <stdlib.h>
 #include <sys/stat.h>
+
+#include <cstdio>
+#include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -19,22 +20,22 @@
 
 namespace y2016 {
 namespace vision {
-using aos::vision::ImageStreamEvent;
-using aos::vision::DataRef;
-using aos::events::TCPServer;
-using aos::vision::BlobLRef;
-using aos::vision::Vector;
-using aos::vision::Int32Codec;
-using aos::vision::BlobList;
-using aos::vision::RangeImage;
-using aos::vision::PixelRef;
-using aos::vision::ImageValue;
-using aos::vision::HistogramBlobFilter;
-using aos::vision::CornerFinder;
-using aos::vision::Int64Codec;
-using aos::events::TXUdpSocket;
 using aos::events::DataSocket;
+using aos::events::TCPServer;
+using aos::events::TXUdpSocket;
+using aos::vision::BlobList;
+using aos::vision::BlobLRef;
+using aos::vision::CornerFinder;
+using aos::vision::DataRef;
+using aos::vision::HistogramBlobFilter;
 using aos::vision::ImageFormat;
+using aos::vision::ImageStreamEvent;
+using aos::vision::ImageValue;
+using aos::vision::Int32Codec;
+using aos::vision::Int64Codec;
+using aos::vision::PixelRef;
+using aos::vision::RangeImage;
+using aos::vision::Vector;
 
 ::aos::vision::CameraParams GetCameraParams(const Calibration &calibration) {
   ::aos::vision::CameraParams params;

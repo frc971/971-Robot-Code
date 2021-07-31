@@ -6,18 +6,19 @@
 #include "aos/ipc_lib/aos_sync.h"
 
 #include <linux/futex.h>
-#include <unistd.h>
-#include <sys/syscall.h>
-#include <errno.h>
-#include <stdint.h>
-#include <limits.h>
-#include <string.h>
-#include <inttypes.h>
-#include <sys/types.h>
-#include <stddef.h>
-#include <assert.h>
 #include <pthread.h>
 #include <sched.h>
+#include <sys/syscall.h>
+#include <sys/types.h>
+#include <unistd.h>
+
+#include <cassert>
+#include <cerrno>
+#include <cinttypes>
+#include <climits>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
 
 #ifdef AOS_SANITIZER_thread
 #include <sanitizer/tsan_interface_atomic.h>
@@ -27,16 +28,16 @@
 #include <type_traits>
 
 #include "absl/base/call_once.h"
-#include "glog/logging.h"
-
 #include "aos/macros.h"
 #include "aos/thread_local.h"
 #include "aos/util/compiler_memory_barrier.h"
+#include "glog/logging.h"
 
 using ::aos::linux_code::ipc_lib::FutexAccessorObserver;
 
-// This code was originally based on <https://www.akkadia.org/drepper/futex.pdf>,
-// but is has since evolved a lot. However, that still has useful information.
+// This code was originally based on
+// <https://www.akkadia.org/drepper/futex.pdf>, but is has since evolved a lot.
+// However, that still has useful information.
 //
 // Finding information about actually using futexes is really REALLY hard, so
 //   here's a list of the stuff that I've used:
@@ -171,7 +172,8 @@ inline int sys_futex_wake(aos_futex *addr1, int val1) {
 }
 
 inline int sys_futex_cmp_requeue_pi(aos_futex *addr1, int num_wake,
-    int num_requeue, aos_futex *m, uint32_t val) {
+                                    int num_requeue, aos_futex *m,
+                                    uint32_t val) {
 #if ARM_EABI_INLINE_SYSCALL
   register aos_futex *addr1_reg __asm__("r0") = addr1;
   register int op_reg __asm__("r1") = FUTEX_CMP_REQUEUE_PI;
@@ -196,8 +198,7 @@ inline int sys_futex_cmp_requeue_pi(aos_futex *addr1, int num_wake,
 #endif
 }
 
-inline int sys_futex_wait_requeue_pi(aos_condition *addr1,
-                                     uint32_t start_val,
+inline int sys_futex_wait_requeue_pi(aos_condition *addr1, uint32_t start_val,
                                      const struct timespec *timeout,
                                      aos_futex *m) {
 #if ARM_EABI_INLINE_SYSCALL
@@ -463,8 +464,8 @@ inline aos_mutex *next_to_mutex(uintptr_t next) {
     // We don't offset the head pointer, so be careful.
     return reinterpret_cast<aos_mutex *>(next);
   }
-  return reinterpret_cast<aos_mutex *>(
-      (next & ~kRobustListOr) - robust_list_offset);
+  return reinterpret_cast<aos_mutex *>((next & ~kRobustListOr) -
+                                       robust_list_offset);
 }
 
 // Sets up the robust list for each thread.
@@ -758,15 +759,11 @@ void condition_wake(aos_condition *c, aos_mutex *m, int number_requeue) {
 
 }  // namespace
 
-int mutex_lock(aos_mutex *m) {
-  return mutex_get(m, true, NULL);
-}
+int mutex_lock(aos_mutex *m) { return mutex_get(m, true, NULL); }
 int mutex_lock_timeout(aos_mutex *m, const struct timespec *timeout) {
   return mutex_get(m, true, timeout);
 }
-int mutex_grab(aos_mutex *m) {
-  return mutex_get(m, false, NULL);
-}
+int mutex_grab(aos_mutex *m) { return mutex_get(m, false, NULL); }
 
 void mutex_unlock(aos_mutex *m) {
   RunObservers run_observers(m, true);
@@ -887,7 +884,7 @@ void death_notification_release(aos_mutex *m) {
   if (ret != 0) {
     my_robust_list::robust_head.pending_next = 0;
     errno = -ret;
-    PLOG(FATAL)  << "FUTEX_UNLOCK_PI(" << &m->futex << ") failed";
+    PLOG(FATAL) << "FUTEX_UNLOCK_PI(" << &m->futex << ") failed";
   }
 }
 
@@ -1005,9 +1002,7 @@ int futex_set_value(aos_futex *m, uint32_t value) {
   }
 }
 
-int futex_set(aos_futex *m) {
-  return futex_set_value(m, 1);
-}
+int futex_set(aos_futex *m) { return futex_set_value(m, 1); }
 
 int futex_unset(aos_futex *m) {
   return !__atomic_exchange_n(m, 0, __ATOMIC_SEQ_CST);
@@ -1036,9 +1031,7 @@ void SetRobustListOffset(ptrdiff_t offset) {
 
 // Returns true iff there are any mutexes locked by the current thread.
 // This is mainly useful for testing.
-bool HaveLockedMutexes() {
-  return my_robust_list::HaveLockedMutexes();
-}
+bool HaveLockedMutexes() { return my_robust_list::HaveLockedMutexes(); }
 
 }  // namespace ipc_lib
 }  // namespace linux_code

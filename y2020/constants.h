@@ -1,10 +1,9 @@
 #ifndef y2020_CONSTANTS_H_
 #define y2020_CONSTANTS_H_
 
-#include <math.h>
-#include <stdint.h>
-
 #include <array>
+#include <cmath>
+#include <cstdint>
 
 #include "frc971/constants.h"
 #include "frc971/control_loops/static_zeroing_single_dof_profiled_subsystem.h"
@@ -191,10 +190,11 @@ struct Values {
   struct ShotParams {
     // Measured in radians
     double hood_angle;
-    // Angular velocity in radians per second of the slowest (lowest) wheel in the kicker.
-    // Positive is shooting the ball.
+    // Angular velocity in radians per second of the slowest (lowest) wheel in
+    // the kicker. Positive is shooting the ball.
     double accelerator_power;
-    // Angular velocity in radians per seconds of the flywheel. Positive is shooting.
+    // Angular velocity in radians per seconds of the flywheel. Positive is
+    // shooting.
     double finisher_power;
 
     static ShotParams BlendY(double coefficient, ShotParams a1, ShotParams a2) {
@@ -207,8 +207,7 @@ struct Values {
   };
 
   // { distance_to_target, { hood_angle, accelerator_power, finisher_power }}
-  InterpolationTable<ShotParams>
-      shot_interpolation_table;
+  InterpolationTable<ShotParams> shot_interpolation_table;
 };
 
 // Creates (once) a Values instance for ::aos::network::GetTeamNumber() and

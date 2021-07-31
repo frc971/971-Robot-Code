@@ -1,7 +1,7 @@
 #ifndef AOS_VISION_IMAGE_READER_H_
 #define AOS_VISION_IMAGE_READER_H_
 
-#include <inttypes.h>
+#include <cinttypes>
 #include <functional>
 #include <string>
 

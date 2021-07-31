@@ -1,7 +1,8 @@
-#include <math.h>
-#include <stdio.h>
-#include <string.h>
 #include <unistd.h>
+
+#include <cmath>
+#include <cstdio>
+#include <cstring>
 
 #include "aos/actions/actions.h"
 #include "aos/events/shm_event_loop.h"

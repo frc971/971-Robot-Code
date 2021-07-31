@@ -1,9 +1,8 @@
 #ifndef AOS_CONTROL_LOOP_CONTROL_LOOP_H_
 #define AOS_CONTROL_LOOP_CONTROL_LOOP_H_
 
-#include <string.h>
-
 #include <atomic>
+#include <cstring>
 
 #include "aos/events/event_loop.h"
 #include "aos/time/time.h"

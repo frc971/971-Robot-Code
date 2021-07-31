@@ -2,9 +2,10 @@
 #define AOS_VISION_EVENTS_UDP_H_
 
 #include <arpa/inet.h>
-#include <math.h>
 #include <sys/socket.h>
 #include <unistd.h>
+
+#include <cmath>
 #include <string>
 #include <vector>
 

@@ -2,18 +2,18 @@
 #define Y2019_CONSTANTS_H_
 
 #include <array>
-#include <math.h>
-#include <stdint.h>
+#include <cmath>
+#include <cstdint>
 
 #include "frc971/constants.h"
 #include "frc971/control_loops/drivetrain/camera.h"
+#include "frc971/control_loops/pose.h"
 #include "frc971/control_loops/static_zeroing_single_dof_profiled_subsystem.h"
 #include "y2019/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "y2019/control_loops/superstructure/elevator/elevator_plant.h"
 #include "y2019/control_loops/superstructure/intake/intake_plant.h"
 #include "y2019/control_loops/superstructure/stilts/stilts_plant.h"
 #include "y2019/control_loops/superstructure/wrist/wrist_plant.h"
-#include "frc971/control_loops/pose.h"
 
 namespace y2019 {
 namespace constants {
@@ -27,7 +27,6 @@ namespace constants {
 // (encoder counts, voltage, etc) to scaled units (radians, meters, etc).
 //
 // All ratios are from the encoder shaft to the output units.
-
 
 class Field {
  public:

@@ -1,6 +1,6 @@
 #include "aos/testing/random_seed.h"
 
-#include <stdlib.h>
+#include <cstdlib>
 
 namespace aos {
 namespace testing {

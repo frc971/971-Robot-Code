@@ -1,6 +1,7 @@
 #include "aos/json_to_flatbuffer.h"
 
 #include <cstddef>
+#include <cstdio>
 #include <string_view>
 
 #include "aos/flatbuffer_utils.h"
@@ -8,7 +9,6 @@
 #include "flatbuffers/flatbuffers.h"
 #include "flatbuffers/minireflect.h"
 #include "glog/logging.h"
-#include "stdio.h"
 
 // TODO(austin): Can we just do an Offset<void> ?  It doesn't matter, so maybe
 // just say that.

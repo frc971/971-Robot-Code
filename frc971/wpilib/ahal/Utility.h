@@ -11,8 +11,7 @@
  * Contains global utility functions
  */
 
-#include <stdint.h>
-
+#include <cstdint>
 #include <string>
 
 #include "wpi/StringRef.h"

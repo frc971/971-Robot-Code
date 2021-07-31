@@ -1,13 +1,13 @@
-#include <inttypes.h>
-#include <stdio.h>
-#include <string.h>
 #include <unistd.h>
 
 #include <chrono>
+#include <cinttypes>
+#include <cstdio>
+#include <cstring>
 #include <functional>
+#include <memory>
 #include <mutex>
 #include <thread>
-#include <memory>
 
 #include "frc971/wpilib/ahal/AnalogInput.h"
 #include "frc971/wpilib/ahal/Compressor.h"
@@ -49,13 +49,13 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-using std::make_unique;
 using ::aos::util::SimpleLogInterval;
 using ::frc971::wpilib::BufferedPcm;
 using ::frc971::wpilib::BufferedSolenoid;
 using ::frc971::wpilib::GyroSender;
 using ::frc971::wpilib::JoystickSender;
 using ::frc971::wpilib::LoopOutputHandler;
+using std::make_unique;
 
 namespace y2014_bot3 {
 namespace wpilib {

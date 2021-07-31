@@ -1,7 +1,7 @@
 #ifndef FRC971_CONTROL_LOOPS_HALL_EFFECT_H_
 #define FRC971_CONTROL_LOOPS_HALL_EFFECT_H_
 
-#include <stdint.h>
+#include <cstdint>
 
 #include "frc971/control_loops/control_loops_generated.h"
 

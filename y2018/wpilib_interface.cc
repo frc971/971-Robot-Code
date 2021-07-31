@@ -1,15 +1,16 @@
-#include <inttypes.h>
-#include <stdio.h>
-#include <string.h>
 #include <unistd.h>
 
 #include <array>
 #include <chrono>
+#include <cinttypes>
 #include <cmath>
+#include <cstdio>
+#include <cstring>
 #include <functional>
-#include <thread>
 #include <memory>
+#include <thread>
 
+#include "ctre/phoenix/CANifier.h"
 #include "frc971/wpilib/ahal/AnalogInput.h"
 #include "frc971/wpilib/ahal/Counter.h"
 #include "frc971/wpilib/ahal/DigitalGlitchFilter.h"
@@ -18,7 +19,6 @@
 #include "frc971/wpilib/ahal/Relay.h"
 #include "frc971/wpilib/ahal/Servo.h"
 #include "frc971/wpilib/ahal/VictorSP.h"
-#include "ctre/phoenix/CANifier.h"
 #undef ERROR
 
 #include "aos/commonmath.h"
@@ -55,8 +55,8 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-using std::make_unique;
 using ::aos::monotonic_clock;
+using std::make_unique;
 using ::y2018::constants::Values;
 namespace chrono = ::std::chrono;
 namespace superstructure = ::y2018::control_loops::superstructure;
@@ -262,7 +262,8 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     box_back_beambreak_ = ::std::move(input);
   }
 
-  void set_lidar_lite_input(::std::unique_ptr<frc::DigitalInput> lidar_lite_input) {
+  void set_lidar_lite_input(
+      ::std::unique_ptr<frc::DigitalInput> lidar_lite_input) {
     lidar_lite_input_ = ::std::move(lidar_lite_input);
     lidar_lite_.set_input(lidar_lite_input_.get());
   }
@@ -277,17 +278,17 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
       drivetrain_builder.add_left_encoder(
           drivetrain_translate(drivetrain_left_encoder_->GetRaw()));
-      drivetrain_builder.add_left_speed (
+      drivetrain_builder.add_left_speed(
           drivetrain_velocity_translate(drivetrain_left_encoder_->GetPeriod()));
-      drivetrain_builder.add_left_shifter_position (
+      drivetrain_builder.add_left_shifter_position(
           drivetrain_shifter_pot_translate(
               left_drivetrain_shifter_->GetVoltage()));
 
-      drivetrain_builder.add_right_encoder (
+      drivetrain_builder.add_right_encoder(
           -drivetrain_translate(drivetrain_right_encoder_->GetRaw()));
-      drivetrain_builder.add_right_speed (
-          -drivetrain_velocity_translate(drivetrain_right_encoder_->GetPeriod()));
-      drivetrain_builder.add_right_shifter_position (
+      drivetrain_builder.add_right_speed(-drivetrain_velocity_translate(
+          drivetrain_right_encoder_->GetPeriod()));
+      drivetrain_builder.add_right_shifter_position(
           drivetrain_shifter_pot_translate(
               right_drivetrain_shifter_->GetVoltage()));
 
@@ -299,8 +300,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     const auto values = constants::GetValues();
 
     {
-      auto builder =
-          superstructure_position_sender_.MakeBuilder();
+      auto builder = superstructure_position_sender_.MakeBuilder();
 
       // Proximal arm
       frc971::PotAndAbsolutePositionT arm_proximal;
@@ -330,8 +330,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
       // Left intake
       frc971::PotAndAbsolutePositionT left_intake_motor_position;
-      CopyPosition(left_intake_encoder_,
-                   &left_intake_motor_position,
+      CopyPosition(left_intake_encoder_, &left_intake_motor_position,
                    Values::kIntakeMotorEncoderCountsPerRevolution(),
                    Values::kIntakeMotorEncoderRatio(), intake_pot_translate,
                    false, values.left_intake.potentiometer_offset);
@@ -342,15 +341,14 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
       // Right intake
       frc971::PotAndAbsolutePositionT right_intake_motor_position;
-      CopyPosition(right_intake_encoder_,
-                   &right_intake_motor_position,
+      CopyPosition(right_intake_encoder_, &right_intake_motor_position,
                    Values::kIntakeMotorEncoderCountsPerRevolution(),
                    Values::kIntakeMotorEncoderRatio(), intake_pot_translate,
                    true, values.right_intake.potentiometer_offset);
       flatbuffers::Offset<frc971::PotAndAbsolutePosition>
           right_intake_motor_position_offset =
-              frc971::PotAndAbsolutePosition::Pack(*builder.fbb(),
-                                                   &right_intake_motor_position);
+              frc971::PotAndAbsolutePosition::Pack(
+                  *builder.fbb(), &right_intake_motor_position);
 
       superstructure::IntakeElasticSensors::Builder
           left_intake_sensors_builder =
@@ -780,8 +778,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     // Thread 4.
     ::aos::ShmEventLoop imu_event_loop(&config.message());
     auto imu_trigger = make_unique<frc::DigitalInput>(5);
-    ::frc971::wpilib::ADIS16448 imu(&imu_event_loop, frc::SPI::Port::kOnboardCS1,
-                                    imu_trigger.get());
+    ::frc971::wpilib::ADIS16448 imu(
+        &imu_event_loop, frc::SPI::Port::kOnboardCS1, imu_trigger.get());
     imu.SetDummySPI(frc::SPI::Port::kOnboardCS2);
     auto imu_reset = make_unique<frc::DigitalOutput>(6);
     imu.set_reset(imu_reset.get());

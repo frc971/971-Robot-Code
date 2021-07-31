@@ -1,9 +1,10 @@
 #include "frc971/wpilib/spi_rx_clearer.h"
 
 #include <fcntl.h>
-#include <inttypes.h>
 #include <sys/mman.h>
 #include <unistd.h>
+
+#include <cinttypes>
 
 #include "aos/logging/logging.h"
 

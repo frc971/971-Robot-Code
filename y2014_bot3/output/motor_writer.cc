@@ -1,8 +1,8 @@
-#include <stdio.h>
-#include <string.h>
 #include <unistd.h>
 
-#include "frc971/control_loops/output_check.q.h"
+#include <cstdio>
+#include <cstring>
+
 #include "aos/init.h"
 #include "aos/logging/logging.h"
 #include "aos/logging/queue_logging.h"
@@ -11,6 +11,7 @@
 #include "aos/util/log_interval.h"
 #include "bot3/control_loops/drivetrain/drivetrain.q.h"
 #include "bot3/control_loops/rollers/rollers.q.h"
+#include "frc971/control_loops/output_check.q.h"
 
 using ::aos::util::SimpleLogInterval;
 

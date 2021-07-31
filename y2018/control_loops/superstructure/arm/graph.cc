@@ -1,7 +1,7 @@
 #include "y2018/control_loops/superstructure/arm/graph.h"
 
-#include <assert.h>
 #include <algorithm>
+#include <cassert>
 
 namespace y2018 {
 namespace control_loops {

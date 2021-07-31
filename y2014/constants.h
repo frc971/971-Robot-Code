@@ -1,7 +1,7 @@
 #ifndef Y2014_CONSTANTS_H_
 #define Y2014_CONSTANTS_H_
 
-#include <stdint.h>
+#include <cstdint>
 
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/shifter_hall_effect.h"

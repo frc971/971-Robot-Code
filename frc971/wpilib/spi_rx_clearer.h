@@ -1,7 +1,7 @@
 #ifndef FRC971_WPILIB_SPI_RX_CLEARER_H_
 #define FRC971_WPILIB_SPI_RX_CLEARER_H_
 
-#include <stdint.h>
+#include <cstdint>
 
 namespace frc971 {
 namespace wpilib {
@@ -38,4 +38,4 @@ class SpiRxClearer {
 }  // namespace wpilib
 }  // namespace frc971
 
-#endif // FRC971_WPILIB_SPI_RX_CLEARER_H_
+#endif  // FRC971_WPILIB_SPI_RX_CLEARER_H_

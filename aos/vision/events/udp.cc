@@ -1,6 +1,6 @@
 #include "aos/vision/events/udp.h"
 
-#include <string.h>
+#include <cstring>
 
 #include "glog/logging.h"
 

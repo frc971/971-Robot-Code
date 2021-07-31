@@ -1,6 +1,6 @@
 #include "aos/util/wrapping_counter.h"
 
-#include <limits.h>
+#include <climits>
 
 #include "gtest/gtest.h"
 
@@ -36,7 +36,7 @@ void test_wrapping(int16_t start, int16_t step) {
     EXPECT_EQ(i, test_counter.Update(i & 0xFF));
   }
 }
-}
+}  // namespace
 
 // This tests the basic wrapping functionality.
 TEST(WrappingCounterTest, ReasonableWrapping) {

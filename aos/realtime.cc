@@ -1,17 +1,18 @@
 #include "aos/realtime.h"
 
-#include <errno.h>
 #include <malloc.h>
 #include <sched.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <sys/mman.h>
 #include <sys/prctl.h>
 #include <sys/resource.h>
 #include <sys/types.h>
 #include <unistd.h>
+
+#include <cerrno>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #include "aos/thread_local.h"
 #include "glog/logging.h"
@@ -27,14 +28,15 @@ DEFINE_bool(skip_locking_memory, false,
             "If true, skip locking memory.  Pretend that we did it instead.");
 
 extern "C" {
-typedef void (*MallocHook_NewHook)(const void* ptr, size_t size);
+typedef void (*MallocHook_NewHook)(const void *ptr, size_t size);
 int MallocHook_AddNewHook(MallocHook_NewHook hook) __attribute__((weak));
 int MallocHook_RemoveNewHook(MallocHook_NewHook hook) __attribute__((weak));
 
-typedef void (*MallocHook_DeleteHook)(const void* ptr);
+typedef void (*MallocHook_DeleteHook)(const void *ptr);
 int MallocHook_AddDeleteHook(MallocHook_DeleteHook hook) __attribute__((weak));
-int MallocHook_RemoveDeleteHook(MallocHook_DeleteHook hook) __attribute__((weak));
-}   // extern "C"
+int MallocHook_RemoveDeleteHook(MallocHook_DeleteHook hook)
+    __attribute__((weak));
+}  // extern "C"
 
 namespace FLAG__namespace_do_not_use_directly_use_DECLARE_double_instead {
 extern double FLAGS_tcmalloc_release_rate __attribute__((weak));
@@ -210,7 +212,7 @@ namespace {
 // Bool to track if malloc hooks have failed to be configured.
 bool has_malloc_hook = true;
 AOS_THREAD_LOCAL bool is_realtime = false;
-}
+}  // namespace
 
 bool MarkRealtime(bool realtime) {
   if (realtime) {

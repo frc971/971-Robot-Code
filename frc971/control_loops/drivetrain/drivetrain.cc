@@ -1,9 +1,9 @@
 #include "frc971/control_loops/drivetrain/drivetrain.h"
 
 #include <sched.h>
-#include <stdio.h>
 
 #include <cmath>
+#include <cstdio>
 #include <memory>
 
 #include "Eigen/Dense"

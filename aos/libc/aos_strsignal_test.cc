@@ -1,6 +1,6 @@
 #include "aos/libc/aos_strsignal.h"
 
-#include <signal.h>
+#include <csignal>
 #include <thread>
 
 #include "gtest/gtest.h"

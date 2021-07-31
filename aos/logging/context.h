@@ -1,13 +1,13 @@
 #ifndef AOS_LOGGING_CONTEXT_H_
 #define AOS_LOGGING_CONTEXT_H_
 
-#include <inttypes.h>
-#include <limits.h>
-#include <stddef.h>
 #include <sys/types.h>
-#include <memory>
 
 #include <atomic>
+#include <cinttypes>
+#include <climits>
+#include <cstddef>
+#include <memory>
 
 #include "aos/logging/sizes.h"
 

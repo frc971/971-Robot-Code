@@ -1,5 +1,6 @@
-#include <stdlib.h>
 #include <unistd.h>
+
+#include <cstdlib>
 
 int main() {
   void *big_chunk = malloc(500000 + read(-1, nullptr, 0));

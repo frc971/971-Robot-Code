@@ -1,9 +1,8 @@
 #ifndef AOS_EVENTS_EVENT_LOOP_TMPL_H_
 #define AOS_EVENTS_EVENT_LOOP_TMPL_H_
 
-#include <inttypes.h>
-#include <stdint.h>
-
+#include <cinttypes>
+#include <cstdint>
 #include <type_traits>
 
 #include "aos/events/event_loop.h"
@@ -37,9 +36,8 @@ typename Sender<T>::Builder Sender<T>::MakeBuilder() {
 
 template <typename Watch>
 void EventLoop::MakeWatcher(const std::string_view channel_name, Watch &&w) {
-  using MessageType =
-      typename event_loop_internal::watch_message_type_trait<decltype(
-          &Watch::operator())>::message_type;
+  using MessageType = typename event_loop_internal::watch_message_type_trait<
+      decltype(&Watch::operator())>::message_type;
   const Channel *channel = configuration::GetChannel(
       configuration_, channel_name, MessageType::GetFullyQualifiedName(),
       name(), node());

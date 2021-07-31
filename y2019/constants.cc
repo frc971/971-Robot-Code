@@ -1,7 +1,6 @@
 #include "y2019/constants.h"
 
-#include <inttypes.h>
-
+#include <cinttypes>
 #include <map>
 
 #if __has_feature(address_sanitizer)

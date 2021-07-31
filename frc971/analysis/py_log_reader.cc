@@ -17,8 +17,8 @@
 // Note that Python.h needs to be included before anything else.
 #include <Python.h>
 
+#include <cerrno>
 #include <memory>
-#include <errno.h>
 
 #include "aos/configuration.h"
 #include "aos/events/logging/log_reader.h"
@@ -69,7 +69,7 @@ void LogReader_dealloc(LogReaderType *self) {
 }
 
 PyObject *LogReader_new(PyTypeObject *type, PyObject * /*args*/,
-                            PyObject * /*kwds*/) {
+                        PyObject * /*kwds*/) {
   LogReaderType *self;
   self = (LogReaderType *)type->tp_alloc(type, 0);
   if (self != nullptr) {
@@ -117,9 +117,8 @@ int LogReader_init(LogReaderType *self, PyObject *args, PyObject *kwds) {
   return 0;
 }
 
-PyObject *LogReader_get_data_for_channel(LogReaderType *self,
-                                                PyObject *args,
-                                                PyObject *kwds) {
+PyObject *LogReader_get_data_for_channel(LogReaderType *self, PyObject *args,
+                                         PyObject *kwds) {
   const char *kwlist[] = {"name", "type", nullptr};
 
   const char *name;
@@ -140,8 +139,7 @@ PyObject *LogReader_get_data_for_channel(LogReaderType *self,
   for (const auto &channel : tools->channel_data) {
     if (channel.name == name && channel.type == type) {
       PyObject *list = PyList_New(channel.messages.size());
-      for (size_t ii = 0; ii < channel.messages.size(); ++ii)
-      {
+      for (size_t ii = 0; ii < channel.messages.size(); ++ii) {
         const auto &message = channel.messages[ii];
         PyObject *monotonic_time = PyLong_FromLongLong(
             std::chrono::duration_cast<std::chrono::nanoseconds>(
@@ -168,7 +166,7 @@ PyObject *LogReader_get_data_for_channel(LogReaderType *self,
 }
 
 PyObject *LogReader_subscribe(LogReaderType *self, PyObject *args,
-                                     PyObject *kwds) {
+                              PyObject *kwds) {
   const char *kwlist[] = {"name", "type", nullptr};
 
   const char *name;
@@ -192,8 +190,7 @@ PyObject *LogReader_subscribe(LogReaderType *self, PyObject *args,
     return Py_False;
   }
   const int index = tools->channel_data.size();
-  tools->channel_data.push_back(
-      {.name = name, .type = type, .messages = {}});
+  tools->channel_data.push_back({.name = name, .type = type, .messages = {}});
   tools->event_loop->MakeRawWatcher(
       channel, [channel, index, tools](const aos::Context &context,
                                        const void *message) {

@@ -1,11 +1,12 @@
 #include "aos/util/run_command.h"
 
-#include <signal.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include <fcntl.h>
-#include <sys/stat.h>
+
+#include <csignal>
 
 #include "aos/logging/logging.h"
 
@@ -43,19 +44,19 @@ int RunCommand(const char *command) {
   const pid_t pid = fork();
   switch (pid) {
     case 0:  // in child
-      {
-        int new_stdin = open("/dev/null", O_RDONLY);
-        if (new_stdin == -1) _exit(127);
-        int new_stdout = open("/dev/null", O_WRONLY);
-        if (new_stdout == -1) _exit(127);
-        int new_stderr = open("/dev/null", O_WRONLY);
-        if (new_stderr == -1) _exit(127);
-        if (dup2(new_stdin, 0) != 0) _exit(127);
-        if (dup2(new_stdout, 1) != 1) _exit(127);
-        if (dup2(new_stderr, 2) != 2) _exit(127);
-        execl("/bin/sh", "sh", "-c", command, nullptr);
-        _exit(127);
-      }
+    {
+      int new_stdin = open("/dev/null", O_RDONLY);
+      if (new_stdin == -1) _exit(127);
+      int new_stdout = open("/dev/null", O_WRONLY);
+      if (new_stdout == -1) _exit(127);
+      int new_stderr = open("/dev/null", O_WRONLY);
+      if (new_stderr == -1) _exit(127);
+      if (dup2(new_stdin, 0) != 0) _exit(127);
+      if (dup2(new_stdout, 1) != 1) _exit(127);
+      if (dup2(new_stderr, 2) != 2) _exit(127);
+      execl("/bin/sh", "sh", "-c", command, nullptr);
+      _exit(127);
+    }
     case -1:
       return -1;
     default:

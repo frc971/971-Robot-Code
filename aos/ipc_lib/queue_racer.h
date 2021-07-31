@@ -1,7 +1,7 @@
 #ifndef AOS_IPC_LIB_QUEUE_RACER_H_
 #define AOS_IPC_LIB_QUEUE_RACER_H_
 
-#include <string.h>
+#include <cstring>
 
 #include "aos/ipc_lib/lockless_queue.h"
 

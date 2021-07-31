@@ -1,10 +1,9 @@
 #ifndef Y2019_JEVOIS_COBS_H_
 #define Y2019_JEVOIS_COBS_H_
 
-#include <stdint.h>
-
 #include <algorithm>
 #include <array>
+#include <cstdint>
 
 #include "third_party/GSL/include/gsl/gsl"
 

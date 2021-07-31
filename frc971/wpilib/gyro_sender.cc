@@ -1,11 +1,11 @@
 #include "frc971/wpilib/gyro_sender.h"
 
 #include <fcntl.h>
-#include <inttypes.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
 #include <chrono>
+#include <cinttypes>
 
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"

@@ -1,20 +1,20 @@
-#include <stdio.h>
-#include <stdlib.h>
-
-#include <vector>
-#include <memory>
 #include <endian.h>
-#include <sys/stat.h>
-#include <fstream>
 #include <gdk/gdk.h>
 #include <gtk/gtk.h>
+#include <sys/stat.h>
 
-#include "aos/vision/image/reader.h"
-#include "aos/vision/image/jpeg_routines.h"
-#include "aos/vision/image/image_stream.h"
+#include <cstdio>
+#include <cstdlib>
+#include <fstream>
+#include <memory>
+#include <vector>
+
+#include "aos/vision/blob/stream_view.h"
 #include "aos/vision/events/epoll_events.h"
 #include "aos/vision/events/tcp_server.h"
-#include "aos/vision/blob/stream_view.h"
+#include "aos/vision/image/image_stream.h"
+#include "aos/vision/image/jpeg_routines.h"
+#include "aos/vision/image/reader.h"
 #include "y2016/vision/blob_filters.h"
 // #include "y2016/vision/process_targets.h"
 
@@ -22,7 +22,8 @@ namespace y2016 {
 namespace vision {
 using namespace aos::vision;
 
-::aos::vision::Vector<2> CreateCenterFromTarget(double lx, double ly, double rx, double ry) {
+::aos::vision::Vector<2> CreateCenterFromTarget(double lx, double ly, double rx,
+                                                double ry) {
   return ::aos::vision::Vector<2>((lx + rx) / 2.0, (ly + ry) / 2.0);
 }
 
@@ -32,8 +33,8 @@ double TargetWidth(double lx, double ly, double rx, double ry) {
   return ::std::hypot(dx, dy);
 }
 
-void SelectTargets(std::vector<std::pair<Vector<2>, Vector<2>>>& left_target,
-                   std::vector<std::pair<Vector<2>, Vector<2>>>&right_target,
+void SelectTargets(std::vector<std::pair<Vector<2>, Vector<2>>> &left_target,
+                   std::vector<std::pair<Vector<2>, Vector<2>>> &right_target,
                    ::aos::vision::Vector<2> *center_left,
                    ::aos::vision::Vector<2> *center_right) {
   // No good targets. Let the caller decide defaults.
@@ -43,12 +44,12 @@ void SelectTargets(std::vector<std::pair<Vector<2>, Vector<2>>>& left_target,
 
   // Only one option, we have to go with it.
   if (right_target.size() == 1 && left_target.size() == 1) {
-    *center_left =
-        CreateCenterFromTarget(left_target[0].first.x(), left_target[0].first.y(),
-                               left_target[0].second.x(), left_target[0].second.y());
+    *center_left = CreateCenterFromTarget(
+        left_target[0].first.x(), left_target[0].first.y(),
+        left_target[0].second.x(), left_target[0].second.y());
     *center_right = CreateCenterFromTarget(
-        right_target[0].first.x(), right_target[0].first.y(), right_target[0].second.x(),
-        right_target[0].second.y());
+        right_target[0].first.x(), right_target[0].first.y(),
+        right_target[0].second.x(), right_target[0].second.y());
     return;
   }
 
@@ -57,12 +58,10 @@ void SelectTargets(std::vector<std::pair<Vector<2>, Vector<2>>>& left_target,
   int left_index = 0;
   // First pick the widest target from the left.
   for (size_t i = 0; i < left_target.size(); i++) {
-    const double h = left_target[i].first.y() -
-                     left_target[i].second.y();
-    const double wid1 = TargetWidth(left_target[i].first.x(),
-                                    left_target[i].first.y(),
-                                    left_target[i].second.x(),
-                                    left_target[i].second.y());
+    const double h = left_target[i].first.y() - left_target[i].second.y();
+    const double wid1 =
+        TargetWidth(left_target[i].first.x(), left_target[i].first.y(),
+                    left_target[i].second.x(), left_target[i].second.y());
     const double angle = h / wid1;
     if (min_angle == -1.0 || ::std::abs(angle) < ::std::abs(min_angle)) {
       min_angle = angle;
@@ -70,21 +69,20 @@ void SelectTargets(std::vector<std::pair<Vector<2>, Vector<2>>>& left_target,
     }
   }
   // Calculate the angle of the bottom edge for the left.
-  double h = left_target[left_index].first.y() -
-             left_target[left_index].second.y();
+  double h =
+      left_target[left_index].first.y() - left_target[left_index].second.y();
 
   double good_ang = min_angle;
   double min_ang_err = -1.0;
   int right_index = -1;
-  // Now pick the bottom edge angle from the right that lines up best with the left.
+  // Now pick the bottom edge angle from the right that lines up best with the
+  // left.
   for (size_t j = 0; j < right_target.size(); j++) {
-    double wid2 = TargetWidth(right_target[j].first.x(),
-                                right_target[j].first.y(),
-                                right_target[j].second.x(),
-                                right_target[j].second.y());
-    h = right_target[j].first.y() -
-        right_target[j].second.y();
-    double ang = h/ wid2;
+    double wid2 =
+        TargetWidth(right_target[j].first.x(), right_target[j].first.y(),
+                    right_target[j].second.x(), right_target[j].second.y());
+    h = right_target[j].first.y() - right_target[j].second.y();
+    double ang = h / wid2;
     double ang_err = ::std::abs(good_ang - ang);
     if (min_ang_err == -1.0 || min_ang_err > ang_err) {
       min_ang_err = ang_err;
@@ -92,18 +90,14 @@ void SelectTargets(std::vector<std::pair<Vector<2>, Vector<2>>>& left_target,
     }
   }
 
-  *center_left =
-      CreateCenterFromTarget(left_target[left_index].first.x(),
-                             left_target[left_index].first.y(),
-                             left_target[left_index].second.x(),
-                             left_target[left_index].second.y());
-  *center_right =
-      CreateCenterFromTarget(right_target[right_index].first.x(),
-                             right_target[right_index].first.y(),
-                             right_target[right_index].second.x(),
-                             right_target[right_index].second.y());
+  *center_left = CreateCenterFromTarget(
+      left_target[left_index].first.x(), left_target[left_index].first.y(),
+      left_target[left_index].second.x(), left_target[left_index].second.y());
+  *center_right = CreateCenterFromTarget(right_target[right_index].first.x(),
+                                         right_target[right_index].first.y(),
+                                         right_target[right_index].second.x(),
+                                         right_target[right_index].second.y());
 }
-
 
 long GetFileSize(std::string filename) {
   struct stat stat_buf;
@@ -152,9 +146,10 @@ class InputFile {
     prev_ = buf_;
     buf_ += sizeof(uint32_t);
     *timestamp = Int64Codec::Read(&buf_);
-//    auto* buf_tmp = buf_;
+    //    auto* buf_tmp = buf_;
     buf_ = ParseBlobList(blob_list, buf_);
-//    fprintf(stderr, "read frame: %lu, buf_size: %lu\n", *timestamp, buf_ - buf_tmp);
+    //    fprintf(stderr, "read frame: %lu, buf_size: %lu\n", *timestamp, buf_ -
+    //    buf_tmp);
     return true;
   }
 
@@ -217,8 +212,8 @@ class NetworkForwardingImageStream : public aos::events::EpollWait {
         ifs2_(fname2),
         blob_filt_(fmt, 40, 750, 250000),
         finder_(0.25, 35) {
-    text_overlay_.draw_fn =
-        [this](RenderInterface *render, double /*width*/, double /*height*/) {
+    text_overlay_.draw_fn = [this](RenderInterface *render, double /*width*/,
+                                   double /*height*/) {
       render->SetSourceRGB(1.0, 1.0, 1.0);
       if (hud_text) render->Text(20, 20, 0, 0, kHudText);
     };
@@ -418,12 +413,14 @@ class NetworkForwardingImageStream : public aos::events::EpollWait {
   void UpdateNewTime(int new_delta) {
     if (new_delta != ms_event_delta_) {
       ms_event_delta_ = new_delta;
-      SetTime(::std::chrono::milliseconds(ms_event_delta_) + aos::monotonic_clock::now());
+      SetTime(::std::chrono::milliseconds(ms_event_delta_) +
+              aos::monotonic_clock::now());
     }
   }
 
   void Done() override {
-    SetTime(::std::chrono::milliseconds(ms_event_delta_) + aos::monotonic_clock::now());
+    SetTime(::std::chrono::milliseconds(ms_event_delta_) +
+            aos::monotonic_clock::now());
     if (paused && !single_step) return;
     single_step = false;
     frame_count_++;
@@ -481,7 +478,8 @@ class NetworkForwardingImageStream : public aos::events::EpollWait {
 
       if (seeking_target_) {
         if (play_forward) {
-          // Go back to the last time we didn't see a target and play from there.
+          // Go back to the last time we didn't see a target and play from
+          // there.
           TickBackFrame(nano_step);
           seeking_target_ = false;
         } else if (seeking_target_) {
@@ -525,9 +523,9 @@ class NetworkForwardingImageStream : public aos::events::EpollWait {
 
   void DrawCross(PixelLinesOverlay &overlay, Vector<2> center, PixelRef color) {
     overlay.AddLine(Vector<2>(center.x() - 25, center.y()),
-                     Vector<2>(center.x() + 25, center.y()), color);
+                    Vector<2>(center.x() + 25, center.y()), color);
     overlay.AddLine(Vector<2>(center.x(), center.y() - 25),
-                     Vector<2>(center.x(), center.y() + 25), color);
+                    Vector<2>(center.x(), center.y() + 25), color);
   }
 
   void AddTo(aos::events::EpollLoop *loop) {
@@ -542,6 +540,7 @@ class NetworkForwardingImageStream : public aos::events::EpollWait {
 
  private:
   int ms_event_delta_ = 200;
+
  public:
   // basic image size
   ImageFormat fmt_;
@@ -574,8 +573,8 @@ class NetworkForwardingImageStream : public aos::events::EpollWait {
   // count how many frames we miss in a row.
   int missed_count_ = 16;
 };
-}
-}  // namespace y2016::vision
+}  // namespace vision
+}  // namespace y2016
 
 int main(int argc, char *argv[]) {
   using namespace y2016::vision;
@@ -597,8 +596,8 @@ int main(int argc, char *argv[]) {
   printf("file (%s) dbg_lvl (%d)\n", file.c_str(), dbg);
 
   std::string fname_path = file;
-  NetworkForwardingImageStream strm1(
-      fmt, dbg, fname_path + "_0.dat", fname_path + "_1.dat");
+  NetworkForwardingImageStream strm1(fmt, dbg, fname_path + "_0.dat",
+                                     fname_path + "_1.dat");
   fprintf(stderr, "staring main\n");
   strm1.AddTo(&loop);
 

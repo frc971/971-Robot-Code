@@ -1,9 +1,8 @@
 #include "y2018/constants.h"
 
-#include <inttypes.h>
-#include <math.h>
-#include <stdint.h>
-
+#include <cinttypes>
+#include <cmath>
+#include <cstdint>
 #include <map>
 
 #if __has_feature(address_sanitizer)
@@ -13,7 +12,6 @@
 #include "aos/logging/logging.h"
 #include "aos/network/team_number.h"
 #include "aos/stl_mutex/stl_mutex.h"
-
 #include "y2018/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "y2018/control_loops/drivetrain/polydrivetrain_dog_motor_plant.h"
 

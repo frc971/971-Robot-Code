@@ -1,16 +1,17 @@
 #include "aos/vision/image/reader.h"
 
-#include <errno.h>
 #include <fcntl.h>
 #include <malloc.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
+
+#include <cerrno>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #include "aos/logging/logging.h"
 #include "aos/time/time.h"

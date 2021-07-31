@@ -1,10 +1,11 @@
 #include "aos/vision/events/epoll_events.h"
 
 #include <fcntl.h>
-#include <string.h>
 #include <sys/epoll.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+
+#include <cstring>
 #include <vector>
 
 #include "aos/logging/logging.h"
@@ -48,7 +49,8 @@ void EpollLoop::Run() {
         AOS_PCHECK(epoll_wait(epoll_fd(), events, kNumberOfEvents, timeout));
 
     for (int i = 0; i < number_events; i++) {
-      static_cast<EpollEvent *>(events[i].data.ptr)->DirectEvent(events[i].events);
+      static_cast<EpollEvent *>(events[i].data.ptr)
+          ->DirectEvent(events[i].events);
     }
   }
 }

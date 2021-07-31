@@ -1,6 +1,6 @@
 #include "y2019/jevois/spi.h"
 
-#include <stdint.h>
+#include <cstdint>
 
 #include "gtest/gtest.h"
 

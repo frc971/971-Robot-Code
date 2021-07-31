@@ -1,24 +1,23 @@
-#include <stdio.h>
-#include <stdlib.h>
+#include <gtk/gtk.h>
 #include <netdb.h>
 #include <unistd.h>
 
-#include <vector>
+#include <cstdio>
+#include <cstdlib>
 #include <memory>
+#include <vector>
 
-#include <gtk/gtk.h>
-#include "aos/vision/image/image_types.h"
-#include "aos/vision/image/jpeg_routines.h"
+#include "aos/vision/blob/codec.h"
+#include "aos/vision/blob/range_image.h"
+#include "aos/vision/blob/stream_view.h"
+#include "aos/vision/events/epoll_events.h"
 #include "aos/vision/events/socket_types.h"
 #include "aos/vision/events/tcp_client.h"
-#include "aos/vision/events/epoll_events.h"
-#include "aos/vision/blob/range_image.h"
-#include "aos/vision/blob/codec.h"
-#include "aos/vision/blob/stream_view.h"
-
-#include "y2016/vision/vision_data.pb.h"
-#include "y2016/vision/stereo_geometry.h"
+#include "aos/vision/image/image_types.h"
+#include "aos/vision/image/jpeg_routines.h"
 #include "y2016/vision/blob_filters.h"
+#include "y2016/vision/stereo_geometry.h"
+#include "y2016/vision/vision_data.pb.h"
 
 using namespace aos::vision;
 
@@ -69,9 +68,9 @@ class StereoViewer {
  private:
   void DrawCross(PixelLinesOverlay &overlay, Vector<2> center, PixelRef color) {
     overlay.AddLine(Vector<2>(center.x() - 50, center.y()),
-                     Vector<2>(center.x() + 50, center.y()), color);
+                    Vector<2>(center.x() + 50, center.y()), color);
     overlay.AddLine(Vector<2>(center.x(), center.y() - 50),
-                     Vector<2>(center.x(), center.y() + 50), color);
+                    Vector<2>(center.x(), center.y() + 50), color);
   }
 
   // where we darw for debugging
@@ -128,6 +127,7 @@ class BufferedLengthDelimReader {
       img_read_ = -1;
     }
   }
+
  private:
   data_len len_;
   int num_read_;

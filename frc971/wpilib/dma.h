@@ -4,9 +4,8 @@
 // Interface to the roboRIO FPGA's DMA features.
 // TODO(Brian): Make this less wpilib-like and more frc971-like.
 
-#include <stdint.h>
-
 #include <array>
+#include <cstdint>
 #include <memory>
 
 #include "hal/ChipObject.h"

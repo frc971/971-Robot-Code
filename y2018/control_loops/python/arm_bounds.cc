@@ -3,7 +3,8 @@
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Polygon_2_algorithms.h>
 #include <CGAL/squared_distance_2.h>
-#include <math.h>
+
+#include <cmath>
 #include <iostream>
 
 namespace y2018 {

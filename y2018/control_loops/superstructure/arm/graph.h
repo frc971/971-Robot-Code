@@ -1,9 +1,9 @@
 #ifndef Y2018_CONTROL_LOOPS_SUPERSTRUCTURE_ARM_GRAPH_H_
 #define Y2018_CONTROL_LOOPS_SUPERSTRUCTURE_ARM_GRAPH_H_
 
-#include <assert.h>
-#include <stdlib.h>
 #include <algorithm>
+#include <cassert>
+#include <cstdlib>
 #include <limits>
 #include <memory>
 #include <vector>

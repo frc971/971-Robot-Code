@@ -1,10 +1,8 @@
 #include "frc971/input/drivetrain_input.h"
 
-#include <math.h>
-#include <stdio.h>
-#include <string.h>
-
 #include <cmath>
+#include <cstdio>
+#include <cstring>
 
 #include "aos/commonmath.h"
 #include "aos/logging/logging.h"

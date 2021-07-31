@@ -1,16 +1,14 @@
-#include "y2019/vision/target_finder.h"
-
-#include "ceres/ceres.h"
-
-#include <math.h>
+#include <cmath>
 
 #include "aos/util/math.h"
+#include "ceres/ceres.h"
+#include "y2019/vision/target_finder.h"
 
 using ceres::CENTRAL;
 using ceres::CostFunction;
 using ceres::Problem;
-using ceres::Solver;
 using ceres::Solve;
+using ceres::Solver;
 
 namespace y2019 {
 namespace vision {
@@ -75,7 +73,7 @@ Target Project(const Target &target, const IntrinsicParams &intrinsics,
 // Used at runtime on a single image given camera parameters.
 struct PointCostFunctor {
   PointCostFunctor(Vector<2> result, Vector<2> template_pt,
-                     IntrinsicParams intrinsics)
+                   IntrinsicParams intrinsics)
       : result(result), template_pt(template_pt), intrinsics(intrinsics) {}
 
   template <typename T>
@@ -110,7 +108,7 @@ struct LineCostFunctor {
     // Distance from line(P1, P2) to point result
     T dx = p2.x() - p1.x();
     T dy = p2.y() - p1.y();
-    T denom = (p2-p1).norm();
+    T denom = (p2 - p1).norm();
     residual[0] = ceres::abs(dy * result.x() - dx * result.y() +
                              p2.x() * p1.y() - p2.y() * p1.x()) /
                   denom;
@@ -147,8 +145,7 @@ class BottomPointCostFunctor {
     down_axis.normalize();
 
     // Positive means out.
-    const T component =
-        down_axis.transpose() * (bottom_point_ - p1);
+    const T component = down_axis.transpose() * (bottom_point_ - p1);
 
     if (component > T(0)) {
       residual[0] = component * 1.0;
@@ -187,7 +184,7 @@ IntermediateResult TargetFinder::ProcessTargetToResult(const Target &target,
     aos::vision::Vector<2> b = target_value[i];
 
     if (i % 2 == 1) {
-      aos::vision::Vector<2> a2 = template_value[i-1];
+      aos::vision::Vector<2> a2 = template_value[i - 1];
       aos::vision::Segment<2> line = Segment<2>(a, a2);
 
       problem_4point.AddResidualBlock(
@@ -212,8 +209,8 @@ IntermediateResult TargetFinder::ProcessTargetToResult(const Target &target,
   Solver::Summary summary_8point;
   Solve(options, &problem_8point, &summary_8point);
 
-
-  // So, let's sneak up on it.  Start by warm-starting it with where we got on the 8 point solution.
+  // So, let's sneak up on it.  Start by warm-starting it with where we got on
+  // the 8 point solution.
   ExtrinsicParams::get(&params_8point[0]).set(&params_4point[0]);
   // Then solve without the bottom constraint.
   Solver::Summary summary_4point1;
@@ -333,7 +330,6 @@ IntermediateResult TargetFinder::ProcessTargetToResult(const Target &target,
     std::cout << "z = " << IR.backup_extrinsics.z / kInchesToMeters << ";\n";
     std::cout << "r1 = " << IR.backup_extrinsics.r1 * 180 / M_PI << ";\n";
     std::cout << "r2 = " << IR.backup_extrinsics.r2 * 180 / M_PI << ";\n";
-
 
     printf("left upper outer corner angle: %f, top (%f, %f), outer (%f, %f)\n",
            (outer_left_vector.transpose() * top_left_vector)(0),

@@ -1,8 +1,7 @@
 #include "frc971/input/joystick_input.h"
 
-#include <string.h>
-
 #include <atomic>
+#include <cstring>
 
 #include "aos/logging/logging.h"
 #include "frc971/input/robot_state_generated.h"

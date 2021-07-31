@@ -1,9 +1,9 @@
-#include <math.h>
-#include <stdio.h>
-#include <string.h>
 #include <unistd.h>
 
 #include <chrono>
+#include <cmath>
+#include <cstdio>
+#include <cstring>
 
 #include "aos/actions/actions.h"
 #include "aos/init.h"

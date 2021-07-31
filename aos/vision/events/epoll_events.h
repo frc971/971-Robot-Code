@@ -1,11 +1,12 @@
 #ifndef AOS_VISION_EVENTS_EPOLL_EVENTS_H_
 #define AOS_VISION_EVENTS_EPOLL_EVENTS_H_
 
-#include <limits.h>
-#include <stdint.h>
+#include <sys/epoll.h>
+
+#include <climits>
+#include <cstdint>
 #include <memory>
 #include <vector>
-#include <sys/epoll.h>
 
 #include "aos/scoped/scoped_fd.h"
 #include "aos/time/time.h"

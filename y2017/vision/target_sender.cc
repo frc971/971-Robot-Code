@@ -1,8 +1,9 @@
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 #include <google/protobuf/text_format.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <sys/stat.h>
+
+#include <cstdio>
+#include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -28,15 +29,15 @@
 namespace y2017 {
 namespace vision {
 
-using aos::events::TCPServer;
-using aos::vision::DataRef;
-using aos::vision::Int32Codec;
-using aos::vision::ImageValue;
-using aos::vision::Int64Codec;
-using aos::events::TXUdpSocket;
 using aos::events::DataSocket;
+using aos::events::TCPServer;
+using aos::events::TXUdpSocket;
+using aos::vision::DataRef;
 using aos::vision::ImageFormat;
 using aos::vision::ImageStreamEvent;
+using aos::vision::ImageValue;
+using aos::vision::Int32Codec;
+using aos::vision::Int64Codec;
 
 int64_t Nanos(aos::monotonic_clock::duration time_diff) {
   return std::chrono::duration_cast<std::chrono::nanoseconds>(time_diff)

@@ -1,8 +1,7 @@
 #include "y2021_bot3/actors/autonomous_actor.h"
 
-#include <inttypes.h>
-
 #include <chrono>
+#include <cinttypes>
 #include <cmath>
 
 #include "aos/logging/logging.h"

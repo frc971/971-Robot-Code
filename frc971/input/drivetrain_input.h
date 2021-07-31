@@ -1,11 +1,9 @@
 #ifndef AOS_INPUT_DRIVETRAIN_INPUT_H_
 #define AOS_INPUT_DRIVETRAIN_INPUT_H_
 
-#include <math.h>
-#include <stdio.h>
-#include <string.h>
-
 #include <cmath>
+#include <cstdio>
+#include <cstring>
 #include <memory>
 
 #include "aos/logging/logging.h"

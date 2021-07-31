@@ -1,6 +1,6 @@
 #include "y2017/vision/target_finder.h"
 
-#include <math.h>
+#include <cmath>
 
 namespace y2017 {
 namespace vision {
@@ -248,7 +248,7 @@ void RotateAngle(aos::vision::Vector<2> vec, double angle, double *rx,
   *ry = vec.x() * sin_ang + vec.y() * cos_ang;
 }
 
-void TargetFinder::GetAngleDist(const aos::vision::Vector<2>& target,
+void TargetFinder::GetAngleDist(const aos::vision::Vector<2> &target,
                                 double down_angle, double *dist,
                                 double *angle) {
   // TODO(ben): Will put all these numbers in a config file before

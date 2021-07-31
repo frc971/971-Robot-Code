@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <stdint.h>
+#include <cstdint>
 
 #ifdef WPI_ERRORS_DEFINE_STRINGS
 #define S(label, offset, message)            \

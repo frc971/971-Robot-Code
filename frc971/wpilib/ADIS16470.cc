@@ -1,11 +1,10 @@
 #include "frc971/wpilib/ADIS16470.h"
 
-#include <inttypes.h>
-
-#include "glog/logging.h"
+#include <cinttypes>
 
 #include "aos/containers/sized_array.h"
 #include "aos/time/time.h"
+#include "glog/logging.h"
 #include "hal/HAL.h"
 
 namespace frc971 {
@@ -139,23 +138,39 @@ constexpr uint8_t Y_ACCL_LOW = 0x14;
 // position because we don't care if it's one cycle stale.
 constexpr uint8_t kAutospiPacket[] = {
     // X
-    registers::X_GYRO_OUT, 0,
-    registers::X_ACCL_OUT, 0, registers::X_ACCL_LOW, 0,
+    registers::X_GYRO_OUT,
+    0,
+    registers::X_ACCL_OUT,
+    0,
+    registers::X_ACCL_LOW,
+    0,
     // Y
-    registers::Y_GYRO_OUT, 0,
-    registers::Y_ACCL_OUT, 0, registers::Y_ACCL_LOW, 0,
+    registers::Y_GYRO_OUT,
+    0,
+    registers::Y_ACCL_OUT,
+    0,
+    registers::Y_ACCL_LOW,
+    0,
     // Z
-    registers::Z_GYRO_OUT, 0,
-    registers::Z_ACCL_OUT, 0, registers::Z_ACCL_LOW, 0,
+    registers::Z_GYRO_OUT,
+    0,
+    registers::Z_ACCL_OUT,
+    0,
+    registers::Z_ACCL_LOW,
+    0,
     // Other
-    registers::TEMP_OUT, 0, registers::DIAG_STAT, 0,
+    registers::TEMP_OUT,
+    0,
+    registers::DIAG_STAT,
+    0,
 };
 // clang-format on
 
 static_assert((sizeof(kAutospiPacket) % 2) == 0,
               "Need a whole number of register reads");
 
-static constexpr size_t kAutospiDataSize = sizeof(kAutospiPacket) + 1 /* timestamp */;
+static constexpr size_t kAutospiDataSize =
+    sizeof(kAutospiPacket) + 1 /* timestamp */;
 
 // radian/second/LSB for the gyros (for just the 16-bit value).
 constexpr double kGyroLsbRadianSecond =
@@ -195,12 +210,12 @@ ADIS16470::ADIS16470(aos::EventLoop *event_loop, frc::SPI *spi,
 
   // NI's SPI driver defaults to SCHED_OTHER.  Find it's PID with ps, and change
   // it to a RT priority of 33.
-  PCHECK(
-      system("busybox ps -ef | grep '\\[spi0\\]' | awk '{print $1}' | xargs chrt -f -p "
-             "33") == 0);
-  PCHECK(
-      system("busybox ps -ef | grep '\\[spi1\\]' | awk '{print $1}' | xargs chrt -f -p "
-             "33") == 0);
+  PCHECK(system("busybox ps -ef | grep '\\[spi0\\]' | awk '{print $1}' | xargs "
+                "chrt -f -p "
+                "33") == 0);
+  PCHECK(system("busybox ps -ef | grep '\\[spi1\\]' | awk '{print $1}' | xargs "
+                "chrt -f -p "
+                "33") == 0);
 
   event_loop_->OnRun([this]() { BeginInitialization(); });
 }
@@ -271,8 +286,7 @@ void ADIS16470::DoInitializeStep() {
       // margin on top of that.
       initialize_timer_->Setup(event_loop_->monotonic_now() +
                                chrono::milliseconds(250));
-    }
-    break;
+    } break;
 
     case State::kWaitForReset: {
       flatbuffers::Offset<ADIS16470DiagStat> start_diag_stat;
@@ -326,7 +340,7 @@ void ADIS16470::DoInitializeStep() {
                 1 /* toggle CS every 2 8-bit bytes */);
 
             // Read any data queued up by the FPGA.
-            while (true){
+            while (true) {
               uint32_t buffer;
               if (spi_->ReadAutoReceivedData(&buffer, 1, 0 /* don't block */) ==
                   0) {
@@ -380,8 +394,7 @@ void ADIS16470::DoInitializeStep() {
       } else {
         BeginInitialization();
       }
-    }
-    break;
+    } break;
 
     case State::kRunning:
       LOG(FATAL) << "Not a reset state";

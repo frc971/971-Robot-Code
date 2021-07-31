@@ -1,8 +1,7 @@
 #ifndef AOS_CONTAINERS_RESIZEABLE_BUFFER_H_
 #define AOS_CONTAINERS_RESIZEABLE_BUFFER_H_
 
-#include <stdlib.h>
-
+#include <cstdlib>
 #include <memory>
 
 #include "glog/logging.h"

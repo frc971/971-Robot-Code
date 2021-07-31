@@ -5,10 +5,11 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/sctp.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <sys/socket.h>
+
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <memory>
 #include <thread>
 

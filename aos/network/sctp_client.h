@@ -1,8 +1,8 @@
 #ifndef AOS_NETWORK_SCTP_CLIENT_H_
 #define AOS_NETWORK_SCTP_CLIENT_H_
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include <string_view>
 
 #include "aos/network/sctp_lib.h"

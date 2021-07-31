@@ -7,11 +7,11 @@
 
 #include "frc971/wpilib/ahal/ControllerPower.h"
 
-#include <stdint.h>
+#include <cstdint>
 
+#include "frc971/wpilib/ahal/ErrorBase.h"
 #include "hal/HAL.h"
 #include "hal/Power.h"
-#include "frc971/wpilib/ahal/ErrorBase.h"
 
 using namespace frc;
 

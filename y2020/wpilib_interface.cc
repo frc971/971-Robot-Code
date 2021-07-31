@@ -1,15 +1,15 @@
-#include <inttypes.h>
-#include <stdio.h>
-#include <string.h>
 #include <unistd.h>
 
 #include <array>
 #include <chrono>
+#include <cinttypes>
 #include <cmath>
+#include <cstdio>
+#include <cstring>
 #include <functional>
+#include <memory>
 #include <mutex>
 #include <thread>
-#include <memory>
 
 #include "frc971/wpilib/ahal/AnalogInput.h"
 #include "frc971/wpilib/ahal/Counter.h"

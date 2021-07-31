@@ -1,18 +1,18 @@
-#include "aos/ipc_lib/lockless_queue.h"
-
 #include <dlfcn.h>
-#include <inttypes.h>
 #include <linux/futex.h>
 #include <sys/mman.h>
 #include <sys/syscall.h>
 #include <unistd.h>
 #include <wait.h>
+
 #include <chrono>
+#include <cinttypes>
 #include <functional>
 #include <memory>
 #include <thread>
 
 #include "aos/ipc_lib/aos_sync.h"
+#include "aos/ipc_lib/lockless_queue.h"
 #include "aos/ipc_lib/lockless_queue_memory.h"
 #include "aos/libc/aos_strsignal.h"
 #include "aos/realtime.h"

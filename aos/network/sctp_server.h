@@ -6,11 +6,12 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/sctp.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <memory>
 #include <sys/socket.h>
+
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <memory>
 
 #include "aos/network/sctp_lib.h"
 #include "aos/unique_malloc_ptr.h"
@@ -72,7 +73,6 @@ class SctpServer {
 
   int ppid_ = 1;
 };
-
 
 }  // namespace message_bridge
 }  // namespace aos

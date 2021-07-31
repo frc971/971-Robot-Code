@@ -1,11 +1,11 @@
 #include "aos/events/logging/log_reader.h"
 
 #include <fcntl.h>
-#include <limits.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/uio.h>
 
+#include <climits>
 #include <vector>
 
 #include "absl/strings/escaping.h"
@@ -45,7 +45,7 @@ namespace configuration {
 // want to re-implement it.
 void HandleMaps(const flatbuffers::Vector<flatbuffers::Offset<aos::Map>> *maps,
                 std::string *name, std::string_view type, const Node *node);
-}
+}  // namespace configuration
 namespace logger {
 namespace {
 
@@ -396,9 +396,9 @@ void LogReader::Register(SimulatedEventLoopFactory *event_loop_factory) {
   // running until the last node.
 
   for (std::unique_ptr<State> &state : states_) {
-    VLOG(1) << "Start time is " << state->monotonic_start_time(0) << " for node "
-            << MaybeNodeName(state->event_loop()->node()) << "now "
-            << state->monotonic_now();
+    VLOG(1) << "Start time is " << state->monotonic_start_time(0)
+            << " for node " << MaybeNodeName(state->event_loop()->node())
+            << "now " << state->monotonic_now();
     if (state->monotonic_start_time(0) == monotonic_clock::min_time) {
       continue;
     }
@@ -459,9 +459,9 @@ void LogReader::Register(SimulatedEventLoopFactory *event_loop_factory) {
       state->SetRealtimeOffset(state->monotonic_start_time(0),
                                state->realtime_start_time(0));
     }
-    VLOG(1) << "Start time is " << state->monotonic_start_time(0) << " for node "
-            << MaybeNodeName(state->event_loop()->node()) << "now "
-            << state->monotonic_now();
+    VLOG(1) << "Start time is " << state->monotonic_start_time(0)
+            << " for node " << MaybeNodeName(state->event_loop()->node())
+            << "now " << state->monotonic_now();
   }
 
   if (FLAGS_timestamps_to_csv) {
@@ -1188,7 +1188,8 @@ bool LogReader::State::Send(const TimestampedMessage &timestamped_message) {
     } search;
 
     CHECK_EQ(timestamped_message.monotonic_remote_time.boot, 0u);
-    search.monotonic_event_time = timestamped_message.monotonic_remote_time.time;
+    search.monotonic_event_time =
+        timestamped_message.monotonic_remote_time.time;
     search.queue_index = timestamped_message.remote_queue_index;
 
     // Find the sent time if available.

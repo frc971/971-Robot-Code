@@ -1,7 +1,7 @@
 #include "y2014_bot3/actors/autonomous_actor.h"
 
-#include <inttypes.h>
 #include <chrono>
+#include <cinttypes>
 #include <cmath>
 
 #include "aos/events/event_loop.h"

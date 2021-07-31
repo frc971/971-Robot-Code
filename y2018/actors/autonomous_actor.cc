@@ -1,13 +1,11 @@
 #include "y2018/actors/autonomous_actor.h"
 
-#include <inttypes.h>
-
 #include <chrono>
+#include <cinttypes>
 #include <cmath>
 
 #include "aos/logging/logging.h"
 #include "aos/util/phased_loop.h"
-
 #include "y2018/control_loops/drivetrain/drivetrain_base.h"
 
 namespace y2018 {

@@ -1,7 +1,7 @@
 #include "frc971/wpilib/gyro_interface.h"
 
-#include <inttypes.h>
 #include <chrono>
+#include <cinttypes>
 
 #include "aos/logging/logging.h"
 #include "aos/time/time.h"

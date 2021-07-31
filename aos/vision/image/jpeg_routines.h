@@ -1,9 +1,11 @@
 #ifndef _AOS_VISION_IMAGE_JPEGROUTINES_H_
 #define _AOS_VISION_IMAGE_JPEGROUTINES_H_
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
+
+#include <cstdio>
+#include <cstdlib>
+
 #include "aos/vision/image/image_types.h"
 
 namespace aos {

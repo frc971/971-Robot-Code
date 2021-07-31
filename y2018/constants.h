@@ -1,11 +1,10 @@
 #ifndef Y2018_CONSTANTS_H_
 #define Y2018_CONSTANTS_H_
 
-#include <stdint.h>
-#include <math.h>
+#include <cmath>
+#include <cstdint>
 
 #include "frc971/constants.h"
-
 #include "y2018/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "y2018/control_loops/superstructure/arm/dynamics.h"
 #include "y2018/control_loops/superstructure/intake/intake_plant.h"
@@ -43,7 +42,9 @@ struct Values {
   static constexpr double kDrivetrainShifterPotMaxVoltage() { return 3.63; }
   static constexpr double kDrivetrainShifterPotMinVoltage() { return 1.94; }
 
-  static constexpr double kProximalEncoderCountsPerRevolution() { return 4096.0; }
+  static constexpr double kProximalEncoderCountsPerRevolution() {
+    return 4096.0;
+  }
   static constexpr double kProximalEncoderRatio() {
     return (12.0 / 60.0) * (18.0 / 84.0);
   }
@@ -84,8 +85,7 @@ struct Values {
 
   static constexpr ::frc971::constants::Range kIntakeRange() {
     // TODO(austin) Sort this out.
-    return ::frc971::constants::Range{-3.7, (1.25 * M_PI),
-                                      -3.3, M_PI};
+    return ::frc971::constants::Range{-3.7, (1.25 * M_PI), -3.3, M_PI};
   }
 
   struct IntakeSide {

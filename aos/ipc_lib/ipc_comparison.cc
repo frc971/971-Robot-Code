@@ -4,7 +4,6 @@
 #include <netinet/tcp.h>
 #include <pthread.h>
 #include <semaphore.h>
-#include <stdint.h>
 #include <sys/eventfd.h>
 #include <sys/msg.h>
 #include <sys/sem.h>
@@ -15,6 +14,7 @@
 
 #include <atomic>
 #include <chrono>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <thread>

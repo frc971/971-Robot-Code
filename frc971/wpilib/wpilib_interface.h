@@ -1,7 +1,7 @@
 #ifndef FRC971_WPILIB_WPILIB_INTERFACE_H_
 #define FRC971_WPILIB_WPILIB_INTERFACE_H_
 
-#include <stdint.h>
+#include <cstdint>
 
 #include "aos/events/event_loop.h"
 #include "frc971/input/robot_state_generated.h"

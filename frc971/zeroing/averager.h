@@ -3,7 +3,7 @@
 
 #include <algorithm>
 #include <array>
-#include <stdint.h>
+#include <cstdint>
 
 #include "Eigen/Dense"
 #include "glog/logging.h"

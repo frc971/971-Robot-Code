@@ -7,13 +7,12 @@
 
 #pragma once
 
-#include <stdint.h>
-
-#include <memory>
-
 #include <hal/SPITypes.h>
 #include <wpi/ArrayRef.h>
 #include <wpi/deprecated.h>
+
+#include <cstdint>
+#include <memory>
 
 namespace frc {
 
@@ -39,8 +38,8 @@ class SPI final {
 
   ~SPI();
 
-  SPI(SPI&&) = default;
-  SPI& operator=(SPI&&) = default;
+  SPI(SPI &&) = default;
+  SPI &operator=(SPI &&) = default;
 
   /**
    * Configure the rate of the generated clock signal.
@@ -119,7 +118,7 @@ class SPI final {
    * If not running in output only mode, also saves the data received
    * on the MISO input during the transfer into the receive FIFO.
    */
-  virtual int Write(uint8_t* data, int size);
+  virtual int Write(uint8_t *data, int size);
 
   /**
    * Read a word from the receive FIFO.
@@ -134,7 +133,7 @@ class SPI final {
    *                 that data is already in the receive FIFO from a previous
    *                 write.
    */
-  virtual int Read(bool initiate, uint8_t* dataReceived, int size);
+  virtual int Read(bool initiate, uint8_t *dataReceived, int size);
 
   /**
    * Perform a simultaneous read/write transaction with the device
@@ -143,7 +142,7 @@ class SPI final {
    * @param dataReceived Buffer to receive data from the device
    * @param size         The length of the transaction, in bytes
    */
-  virtual int Transaction(uint8_t* dataToSend, uint8_t* dataReceived, int size);
+  virtual int Transaction(uint8_t *dataToSend, uint8_t *dataReceived, int size);
 
   /**
    * Initialize automatic SPI transfer engine.
@@ -191,7 +190,7 @@ class SPI final {
    * @param rising trigger on the rising edge
    * @param falling trigger on the falling edge
    */
-  void StartAutoTrigger(DigitalSource& source, bool rising, bool falling);
+  void StartAutoTrigger(DigitalSource &source, bool rising, bool falling);
 
   /**
    * Stop running the automatic SPI transfer engine.
@@ -222,7 +221,7 @@ class SPI final {
    * @param timeout timeout in seconds (ms resolution)
    * @return Number of words remaining to be read
    */
-  int ReadAutoReceivedData(uint32_t* buffer, int numToRead, double timeout);
+  int ReadAutoReceivedData(uint32_t *buffer, int numToRead, double timeout);
 
   /**
    * Get the number of bytes dropped by the automatic SPI transfer engine due

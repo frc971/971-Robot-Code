@@ -1,7 +1,7 @@
 #include "aos/vision/blob/range_image.h"
 
-#include <math.h>
 #include <algorithm>
+#include <cmath>
 
 namespace aos {
 namespace vision {
@@ -101,8 +101,7 @@ void RangeImage::Flip(int image_width, int image_height) {
 }
 
 void PrintTo(const RangeImage &range, std::ostream *os) {
-  *os << "{min_y=" << range.min_y()
-      << ", ranges={";
+  *os << "{min_y=" << range.min_y() << ", ranges={";
   bool first_row = true;
   for (const auto &row : range) {
     if (first_row) {

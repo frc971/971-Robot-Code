@@ -1,16 +1,16 @@
 #include "aos/die.h"
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <errno.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <string.h>
-#include <signal.h>
-#include <stdint.h>
 
-#include <string>
 #include <atomic>
+#include <cerrno>
+#include <csignal>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <string>
 
 namespace aos {
 
@@ -38,9 +38,10 @@ const std::string GetFilename() {
     free(filename);
     return r;
   } else {
-    fprintf(stderr, "aos fatal: asprintf(%p, \"thingie with %%jd\", %jd)"
-            " failed with %d\n", &filename,
-            static_cast<intmax_t>(getpid()), errno);
+    fprintf(stderr,
+            "aos fatal: asprintf(%p, \"thingie with %%jd\", %jd)"
+            " failed with %d\n",
+            &filename, static_cast<intmax_t>(getpid()), errno);
     return std::string();
   }
 #endif
@@ -78,8 +79,6 @@ void VDie(const char *format, va_list args_in) {
   abort();
 }
 
-void SetDieTestMode(bool new_test_mode) {
-  test_mode.store(new_test_mode);
-}
+void SetDieTestMode(bool new_test_mode) { test_mode.store(new_test_mode); }
 
 }  // namespace aos

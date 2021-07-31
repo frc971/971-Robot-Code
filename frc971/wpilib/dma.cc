@@ -1,8 +1,7 @@
 #include "frc971/wpilib/dma.h"
 
-#include <string.h>
-
 #include <algorithm>
+#include <cstring>
 #include <type_traits>
 
 #include "frc971/wpilib/ahal/AnalogInput.h"
@@ -333,9 +332,7 @@ void DMASample::CalculateTimestamp() {
 #endif
 }
 
-uint64_t DMASample::GetTime() const {
-  return fpga_timestamp_;
-}
+uint64_t DMASample::GetTime() const { return fpga_timestamp_; }
 
 double DMASample::GetTimestamp() const {
   return static_cast<double>(GetTime()) * 0.000001;

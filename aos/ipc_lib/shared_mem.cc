@@ -1,14 +1,15 @@
 #include "aos/ipc_lib/shared_mem.h"
 
-#include <stdio.h>
-#include <string.h>
-#include <sys/mman.h>
 #include <fcntl.h>
-#include <unistd.h>
+#include <sys/mman.h>
 #include <sys/types.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <assert.h>
+#include <unistd.h>
+
+#include <cassert>
+#include <cerrno>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #include "aos/ipc_lib/aos_sync.h"
 #include "aos/ipc_lib/core_lib.h"
@@ -21,7 +22,7 @@
 #define SIZEOFSHMSEG (4096 * 0x800)
 
 void init_shared_mem_core(aos_shm_core *shm_core) {
-  memset(&shm_core->time_offset, 0 , sizeof(shm_core->time_offset));
+  memset(&shm_core->time_offset, 0, sizeof(shm_core->time_offset));
   memset(&shm_core->msg_alloc_lock, 0, sizeof(shm_core->msg_alloc_lock));
   shm_core->queues.pointer = NULL;
   memset(&shm_core->queues.lock, 0, sizeof(shm_core->queues.lock));
@@ -30,9 +31,8 @@ void init_shared_mem_core(aos_shm_core *shm_core) {
 }
 
 ptrdiff_t aos_core_get_mem_usage(void) {
-  return global_core->size -
-      ((ptrdiff_t)global_core->mem_struct->msg_alloc -
-       (ptrdiff_t)global_core->mem_struct);
+  return global_core->size - ((ptrdiff_t)global_core->mem_struct->msg_alloc -
+                              (ptrdiff_t)global_core->mem_struct);
 }
 
 struct aos_core *global_core = NULL;

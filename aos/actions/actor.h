@@ -1,17 +1,16 @@
 #ifndef AOS_ACTIONS_ACTOR_H_
 #define AOS_ACTIONS_ACTOR_H_
 
-#include <inttypes.h>
-#include <stdio.h>
-
 #include <chrono>
+#include <cinttypes>
+#include <cstdio>
 #include <functional>
 
 #include "aos/actions/actions_generated.h"
-#include "frc971/control_loops/control_loop.h"
 #include "aos/logging/logging.h"
 #include "aos/time/time.h"
 #include "aos/util/phased_loop.h"
+#include "frc971/control_loops/control_loop.h"
 
 namespace aos {
 namespace common {
@@ -21,8 +20,8 @@ template <class T>
 class ActorBase {
  public:
   typedef T GoalType;
-  typedef typename std::remove_reference<decltype(
-      *static_cast<GoalType *>(nullptr)->params())>::type ParamType;
+  typedef typename std::remove_reference<
+      decltype(*static_cast<GoalType *>(nullptr)->params())>::type ParamType;
 
   ActorBase(::aos::EventLoop *event_loop, const ::std::string &name)
       : event_loop_(event_loop),

@@ -1,5 +1,4 @@
-#include <signal.h>
-
+#include <csignal>
 #include <future>
 #include <thread>
 

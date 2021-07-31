@@ -1,7 +1,7 @@
 #ifndef Y2017_CONTROL_LOOPS_SUPERSTRUCTURE_VISION_TIME_ADJUSTER_H_
 #define Y2017_CONTROL_LOOPS_SUPERSTRUCTURE_VISION_TIME_ADJUSTER_H_
 
-#include <stdint.h>
+#include <cstdint>
 
 #include "aos/containers/ring_buffer.h"
 #include "aos/events/event_loop.h"

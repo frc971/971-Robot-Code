@@ -2,9 +2,10 @@
 #define _AOS_VISION_EVENTS_SOCKET_TYPES_H_
 
 #include <poll.h>
-#include <stdint.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+
+#include <cstdint>
 
 #include "aos/vision/events/tcp_server.h"
 #include "aos/vision/image/image_types.h"

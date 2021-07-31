@@ -1,17 +1,17 @@
 #ifndef Y2016_CONSTANTS_H_
 #define Y2016_CONSTANTS_H_
 
-#include <stdint.h>
+#include <cstdint>
 
+#include "frc971/constants.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/shifter_hall_effect.h"
-#include "frc971/constants.h"
 
 namespace y2016 {
 namespace constants {
 
-using ::frc971::constants::ShifterHallEffect;
 using ::frc971::constants::PotAndIndexPulseZeroingConstants;
+using ::frc971::constants::ShifterHallEffect;
 
 // Has all of the numbers that change for both robots and makes it easy to
 // retrieve the values for the current one.

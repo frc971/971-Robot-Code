@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <stdint.h>
+#include <cstdint>
 
 #include "frc971/wpilib/ahal/ErrorBase.h"
 

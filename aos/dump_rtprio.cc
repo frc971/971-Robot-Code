@@ -7,13 +7,13 @@
 // exe,name,cpumask,policy,nice,priority,tid,pid,ppid,sid,cpu
 
 #include <sched.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <sys/resource.h>
 #include <sys/time.h>
 #include <unistd.h>
 
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
 #include <string>
 
 #include "aos/logging/implementations.h"

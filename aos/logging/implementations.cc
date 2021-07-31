@@ -1,10 +1,9 @@
 #include "aos/logging/implementations.h"
 
-#include <inttypes.h>
-#include <stdarg.h>
-
 #include <algorithm>
 #include <chrono>
+#include <cinttypes>
+#include <cstdarg>
 
 #include "aos/logging/printf_formats.h"
 #include "aos/time/time.h"

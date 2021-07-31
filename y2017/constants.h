@@ -1,12 +1,11 @@
 #ifndef Y2017_CONSTANTS_H_
 #define Y2017_CONSTANTS_H_
 
-#include <stdint.h>
-#include <math.h>
+#include <cmath>
+#include <cstdint>
 
 #include "frc971/constants.h"
 #include "frc971/shooter_interpolation/interpolation.h"
-
 #include "y2017/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "y2017/control_loops/superstructure/column/column_plant.h"
 #include "y2017/control_loops/superstructure/hood/hood_plant.h"
@@ -90,8 +89,8 @@ struct Values {
       control_loops::superstructure::hood::kOutputRatio /
       constants::Values::kHoodEncoderRatio * kHoodEncoderCountsPerRevolution;
   static constexpr ::frc971::constants::Range kHoodRange{
-      -0.39 * M_PI / 180.0 - 0.01, 37.11 * M_PI / 180.0, (-0.39 + 1.0) * M_PI / 180.0,
-      (37.11 - 1.0) * M_PI / 180.0};
+      -0.39 * M_PI / 180.0 - 0.01, 37.11 * M_PI / 180.0,
+      (-0.39 + 1.0) * M_PI / 180.0, (37.11 - 1.0) * M_PI / 180.0};
 
   static constexpr double kTurretEncoderCountsPerRevolution = 256 * 4;
   static constexpr double kTurretEncoderRatio = 11.0 / 94.0;
