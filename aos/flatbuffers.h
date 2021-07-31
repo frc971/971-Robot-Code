@@ -386,7 +386,7 @@ class SizePrefixedFlatbufferDetachedBuffer final
     flatbuffers::FlatBufferBuilder fbb;
     fbb.ForceDefaults(true);
     const auto end = fbb.EndTable(fbb.StartTable());
-    fbb.Finish(flatbuffers::Offset<flatbuffers::Table>(end));
+    fbb.FinishSizePrefixed(flatbuffers::Offset<flatbuffers::Table>(end));
     flatbuffers::DetachedBuffer result = fbb.Release();
     std::swap(result, buffer_);
     return result;
