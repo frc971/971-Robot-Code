@@ -46,8 +46,6 @@ class NewDataWriter {
     reopen_(this);
   }
 
-  // TODO(austin): Store common header in LogNamer.
-  //
   // TODO(austin): Copy header and add all UUIDs and such when available
   // whenever data is written.
   //
@@ -60,6 +58,13 @@ class NewDataWriter {
   void QueueSizedFlatbuffer(flatbuffers::FlatBufferBuilder *fbb,
                             aos::monotonic_clock::time_point now) {
     writer->QueueSizedFlatbuffer(fbb, now);
+  }
+
+  void QueueHeader(
+      aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> &&header) {
+    // TODO(austin): This triggers a dummy allocation that we don't need as part
+    // of releasing.  Can we skip it?
+    writer->QueueSizedFlatbuffer(header.Release());
   }
 
   std::string_view filename() const { return writer->filename(); }
@@ -91,7 +96,11 @@ class LogNamer {
  public:
   // Constructs a LogNamer with the primary node (ie the one the logger runs on)
   // being node.
-  LogNamer(const Node *node) : node_(node) { nodes_.emplace_back(node_); }
+  LogNamer(const Configuration *configuration, const Node *node)
+      : configuration_(configuration), node_(node) {
+    nodes_.emplace_back(node_);
+    node_states_.resize(configuration::NodesCount(configuration_));
+  }
   virtual ~LogNamer() {}
 
   virtual std::string_view base_name() const = 0;
@@ -109,9 +118,7 @@ class LogNamer {
   // Modifies header to contain the uuid and part number for each writer as it
   // writes it.  Since this is done unconditionally, it does not restore the
   // previous value at the end.
-  virtual void WriteHeader(
-      aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header,
-      const Node *node) = 0;
+  virtual void WriteHeader(const Node *node) = 0;
 
   // Returns a writer for writing data from messages on this channel (on the
   // primary node).
@@ -133,20 +140,14 @@ class LogNamer {
   //
   // The returned pointer will stay valid across rotations, but the object it
   // points to will be assigned to.
-  virtual NewDataWriter *MakeForwardedTimestampWriter(
-      const Channel *channel, const Node *node) = 0;
+  virtual NewDataWriter *MakeForwardedTimestampWriter(const Channel *channel,
+                                                      const Node *node) = 0;
 
-  // Rotates all log files for the provided node.  The provided header will be
-  // modified and written per WriteHeader above.
-  virtual void Rotate(
-      const Node *node,
-      aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header) = 0;
+  // Rotates all log files for the provided node.
+  virtual void Rotate(const Node *node) = 0;
 
-  // Reboots all log files for the provided node.  The provided header will be
-  // modified and written per WriteHeader above.  Resets any parts UUIDs.
-  virtual void Reboot(
-      const Node *node,
-      aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header) = 0;
+  // Reboots all log files for the provided node.  Resets any parts UUIDs.
+  virtual void Reboot(const Node *node) = 0;
 
   // Returns all the nodes that data is being written for.
   const std::vector<const Node *> &nodes() const { return nodes_; }
@@ -159,14 +160,72 @@ class LogNamer {
       aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header,
       std::string_view config_sha256) = 0;
 
- protected:
-  // Modifies the header to have the provided UUID and part id.
-  void UpdateHeader(
-      aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header,
-      const UUID &uuid, int part_id) const;
+  void SetHeaderTemplate(
+      aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> header) {
+    header_ = std::move(header);
+  }
 
+  void SetStartTimes(size_t node_index,
+                     monotonic_clock::time_point monotonic_start_time,
+                     realtime_clock::time_point realtime_start_time,
+                     monotonic_clock::time_point logger_monotonic_start_time,
+                     realtime_clock::time_point logger_realtime_start_time) {
+    node_states_[node_index].monotonic_start_time = monotonic_start_time;
+    node_states_[node_index].realtime_start_time = realtime_start_time;
+    node_states_[node_index].logger_monotonic_start_time =
+        logger_monotonic_start_time;
+    node_states_[node_index].logger_realtime_start_time =
+        logger_realtime_start_time;
+    // TODO(austin): Track that the header has changed and needs to be
+    // rewritten.
+  }
+
+  monotonic_clock::time_point monotonic_start_time(size_t node_index) const {
+    return node_states_[node_index].monotonic_start_time;
+  }
+
+  // TODO(austin): I need to move header writing fully inside NewDataWriter and
+  // delete this method.
+  bool SetBootUUID(size_t node_index, const UUID &uuid) {
+    if (node_states_[node_index].source_node_boot_uuid != uuid) {
+      node_states_[node_index].source_node_boot_uuid = uuid;
+      return true;
+    }
+    return false;
+  }
+
+ protected:
+  // Creates a new header by copying fields out of the template and combining
+  // them with the arguments provided.
+  aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> MakeHeader(
+      size_t node_index, const UUID &source_node_boot_uuid,
+      const UUID &parts_uuid, int parts_index) const;
+
+  const Configuration *const configuration_;
   const Node *const node_;
   std::vector<const Node *> nodes_;
+
+  // Structure with state per node about times and such.
+  // TODO(austin): some of this lives better in NewDataWriter once we move
+  // ownership of deciding when to write headers into LogNamer.
+  struct NodeState {
+    // Time when this node started logging.
+    monotonic_clock::time_point monotonic_start_time =
+        monotonic_clock::min_time;
+    realtime_clock::time_point realtime_start_time = realtime_clock::min_time;
+
+    // Corresponding time on the logger node when it started logging.
+    monotonic_clock::time_point logger_monotonic_start_time =
+        monotonic_clock::min_time;
+    realtime_clock::time_point logger_realtime_start_time =
+        realtime_clock::min_time;
+
+    UUID source_node_boot_uuid = UUID::Zero();
+  };
+  std::vector<NodeState> node_states_;
+
+  aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> header_ =
+      aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader>::Empty();
 };
 
 // Local log namer is a simple version which only names things
@@ -174,8 +233,9 @@ class LogNamer {
 // any other log type.
 class LocalLogNamer : public LogNamer {
  public:
-  LocalLogNamer(std::string_view base_name, const Node *node)
-      : LogNamer(node),
+  LocalLogNamer(std::string_view base_name, const Configuration *configuration,
+                const Node *node)
+      : LogNamer(configuration, node),
         base_name_(base_name),
         data_writer_(
             [this](NewDataWriter *writer) {
@@ -199,24 +259,18 @@ class LocalLogNamer : public LogNamer {
     base_name_ = base_name;
   }
 
-  void WriteHeader(
-      aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header,
-      const Node *node) override;
+  void WriteHeader(const Node *node) override;
 
   NewDataWriter *MakeWriter(const Channel *channel) override;
 
-  void Rotate(const Node *node,
-              aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header)
-      override;
+  void Rotate(const Node *node) override;
 
-  void Reboot(const Node *node,
-              aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header)
-      override;
+  void Reboot(const Node *node) override;
 
   NewDataWriter *MakeTimestampWriter(const Channel *channel) override;
 
-  NewDataWriter *MakeForwardedTimestampWriter(
-      const Channel * /*channel*/, const Node * /*node*/) override;
+  NewDataWriter *MakeForwardedTimestampWriter(const Channel * /*channel*/,
+                                              const Node * /*node*/) override;
 
   void WriteConfiguration(
       aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header,
@@ -273,17 +327,11 @@ class MultiNodeLogNamer : public LogNamer {
     return all_filenames_;
   }
 
-  void WriteHeader(
-      aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header,
-      const Node *node) override;
+  void WriteHeader(const Node *node) override;
 
-  void Rotate(const Node *node,
-              aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header)
-      override;
+  void Rotate(const Node *node) override;
 
-  void Reboot(const Node *node,
-              aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header)
-      override;
+  void Reboot(const Node *node) override;
 
   void WriteConfiguration(
       aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header,
@@ -292,7 +340,7 @@ class MultiNodeLogNamer : public LogNamer {
   NewDataWriter *MakeWriter(const Channel *channel) override;
 
   NewDataWriter *MakeForwardedTimestampWriter(const Channel *channel,
-                                                     const Node *node) override;
+                                              const Node *node) override;
 
   NewDataWriter *MakeTimestampWriter(const Channel *channel) override;
 
@@ -393,10 +441,7 @@ class MultiNodeLogNamer : public LogNamer {
  private:
   // Implements Rotate and Reboot, controlled by the 'reboot' flag.  The only
   // difference between the two is if DataWriter::uuid is reset or not.
-  void DoRotate(
-      const Node *node,
-      aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header,
-      bool reboot);
+  void DoRotate(const Node *node, bool reboot);
 
   // Opens up a writer for timestamps forwarded back.
   void OpenForwardedTimestampWriter(const Channel *channel,
@@ -431,7 +476,6 @@ class MultiNodeLogNamer : public LogNamer {
 
   std::string base_name_;
   std::string old_base_name_;
-  const Configuration *const configuration_;
 
   bool ran_out_of_space_ = false;
   std::vector<std::string> all_filenames_;

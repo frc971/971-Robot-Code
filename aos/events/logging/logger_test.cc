@@ -171,9 +171,11 @@ TEST_F(LoggerDeathTest, ExtraStart) {
     logger_event_loop->OnRun(
         [base_name1, base_name2, &logger_event_loop, &logger]() {
           logger.StartLogging(std::make_unique<LocalLogNamer>(
-              base_name1, logger_event_loop->node()));
+              base_name1, logger_event_loop->configuration(),
+              logger_event_loop->node()));
           EXPECT_DEATH(logger.StartLogging(std::make_unique<LocalLogNamer>(
-                           base_name2, logger_event_loop->node())),
+                           base_name2, logger_event_loop->configuration(),
+                           logger_event_loop->node())),
                        "Already logging");
         });
     event_loop_factory_.RunFor(chrono::milliseconds(20000));
@@ -204,7 +206,8 @@ TEST_F(LoggerDeathTest, ExtraStop) {
     logger.set_polling_period(std::chrono::milliseconds(100));
     logger_event_loop->OnRun([base_name, &logger_event_loop, &logger]() {
       logger.StartLogging(std::make_unique<LocalLogNamer>(
-          base_name, logger_event_loop->node()));
+          base_name, logger_event_loop->configuration(),
+          logger_event_loop->node()));
       logger.StopLogging(aos::monotonic_clock::min_time);
       EXPECT_DEATH(logger.StopLogging(aos::monotonic_clock::min_time),
                    "Not logging right now");
@@ -240,13 +243,15 @@ TEST_F(LoggerTest, StartsTwice) {
     Logger logger(logger_event_loop.get());
     logger.set_separate_config(false);
     logger.set_polling_period(std::chrono::milliseconds(100));
-    logger.StartLogging(
-        std::make_unique<LocalLogNamer>(base_name1, logger_event_loop->node()));
+    logger.StartLogging(std::make_unique<LocalLogNamer>(
+        base_name1, logger_event_loop->configuration(),
+        logger_event_loop->node()));
     event_loop_factory_.RunFor(chrono::milliseconds(10000));
     logger.StopLogging(logger_event_loop->monotonic_now());
     event_loop_factory_.RunFor(chrono::milliseconds(10000));
-    logger.StartLogging(
-        std::make_unique<LocalLogNamer>(base_name2, logger_event_loop->node()));
+    logger.StartLogging(std::make_unique<LocalLogNamer>(
+        base_name2, logger_event_loop->configuration(),
+        logger_event_loop->node()));
     event_loop_factory_.RunFor(chrono::milliseconds(10000));
   }
 

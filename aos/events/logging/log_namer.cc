@@ -9,6 +9,7 @@
 #include "absl/strings/str_cat.h"
 #include "aos/events/logging/logfile_utils.h"
 #include "aos/events/logging/logger_generated.h"
+#include "aos/flatbuffer_merge.h"
 #include "aos/uuid.h"
 #include "flatbuffers/flatbuffers.h"
 #include "glog/logging.h"
@@ -16,22 +17,141 @@
 namespace aos {
 namespace logger {
 
-void LogNamer::UpdateHeader(
-    aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header,
-    const UUID &uuid, int parts_index) const {
-  header->mutable_message()->mutate_parts_index(parts_index);
-  CHECK_EQ(UUID::kStringSize,
-           header->mutable_message()->mutable_parts_uuid()->size());
-  uuid.CopyTo(reinterpret_cast<char *>(
-      header->mutable_message()->mutable_parts_uuid()->Data()));
+aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> LogNamer::MakeHeader(
+    size_t node_index, const UUID &source_node_boot_uuid,
+    const UUID &parts_uuid, int parts_index) const {
+  const Node *const source_node =
+      configuration::GetNode(configuration_, node_index);
+  CHECK_EQ(LogFileHeader::MiniReflectTypeTable()->num_elems, 18u);
+  flatbuffers::FlatBufferBuilder fbb;
+  fbb.ForceDefaults(true);
+
+  flatbuffers::Offset<flatbuffers::String> config_sha256_offset;
+  flatbuffers::Offset<aos::Configuration> configuration_offset;
+  if (header_.message().has_configuration()) {
+    CHECK(!header_.message().has_configuration_sha256());
+    configuration_offset =
+        CopyFlatBuffer(header_.message().configuration(), &fbb);
+  } else {
+    CHECK(!header_.message().has_configuration());
+    CHECK(header_.message().has_configuration_sha256());
+    config_sha256_offset = fbb.CreateString(
+        header_.message().configuration_sha256()->string_view());
+  }
+
+  CHECK(header_.message().has_name());
+  const flatbuffers::Offset<flatbuffers::String> name_offset =
+      fbb.CreateString(header_.message().name()->string_view());
+
+  CHECK(header_.message().has_log_event_uuid());
+  const flatbuffers::Offset<flatbuffers::String> log_event_uuid_offset =
+      fbb.CreateString(header_.message().log_event_uuid()->string_view());
+
+  CHECK(header_.message().has_logger_instance_uuid());
+  const flatbuffers::Offset<flatbuffers::String> logger_instance_uuid_offset =
+      fbb.CreateString(header_.message().logger_instance_uuid()->string_view());
+
+  flatbuffers::Offset<flatbuffers::String> log_start_uuid_offset;
+  if (header_.message().has_log_start_uuid()) {
+    log_start_uuid_offset =
+        fbb.CreateString(header_.message().log_start_uuid()->string_view());
+  }
+
+  CHECK(header_.message().has_logger_node_boot_uuid());
+  const flatbuffers::Offset<flatbuffers::String> logger_node_boot_uuid_offset =
+      fbb.CreateString(
+          header_.message().logger_node_boot_uuid()->string_view());
+
+  CHECK_NE(source_node_boot_uuid, UUID::Zero());
+  const flatbuffers::Offset<flatbuffers::String> source_node_boot_uuid_offset =
+      source_node_boot_uuid.PackString(&fbb);
+
+  const flatbuffers::Offset<flatbuffers::String> parts_uuid_offset =
+      parts_uuid.PackString(&fbb);
+
+  flatbuffers::Offset<Node> node_offset;
+  flatbuffers::Offset<Node> logger_node_offset;
+
+  if (configuration::MultiNode(configuration_)) {
+    node_offset = RecursiveCopyFlatBuffer(source_node, &fbb);
+    logger_node_offset = RecursiveCopyFlatBuffer(node_, &fbb);
+  }
+
+  aos::logger::LogFileHeader::Builder log_file_header_builder(fbb);
+
+  log_file_header_builder.add_name(name_offset);
+
+  // Only add the node if we are running in a multinode configuration.
+  if (!logger_node_offset.IsNull()) {
+    log_file_header_builder.add_node(node_offset);
+    log_file_header_builder.add_logger_node(logger_node_offset);
+  }
+
+  if (!configuration_offset.IsNull()) {
+    log_file_header_builder.add_configuration(configuration_offset);
+  }
+  log_file_header_builder.add_max_out_of_order_duration(
+      header_.message().max_out_of_order_duration());
+
+  log_file_header_builder.add_monotonic_start_time(
+      std::chrono::duration_cast<std::chrono::nanoseconds>(
+          node_states_[node_index].monotonic_start_time.time_since_epoch())
+          .count());
+  if (source_node == node_) {
+    log_file_header_builder.add_realtime_start_time(
+        std::chrono::duration_cast<std::chrono::nanoseconds>(
+            node_states_[node_index].realtime_start_time.time_since_epoch())
+            .count());
+  } else {
+    // Fill out the legacy start times.  Since these were implemented to never
+    // change on reboot, they aren't very helpful in tracking what happened.
+    log_file_header_builder.add_logger_monotonic_start_time(
+        std::chrono::duration_cast<std::chrono::nanoseconds>(
+            node_states_[node_index]
+                .logger_monotonic_start_time.time_since_epoch())
+            .count());
+    log_file_header_builder.add_logger_realtime_start_time(
+        std::chrono::duration_cast<std::chrono::nanoseconds>(
+            node_states_[node_index]
+                .logger_realtime_start_time.time_since_epoch())
+            .count());
+  }
+
+  // TODO(austin): Add more useful times.  When was this part started?  What do
+  // we know about both the logger and remote then?
+
+  log_file_header_builder.add_log_event_uuid(log_event_uuid_offset);
+  log_file_header_builder.add_logger_instance_uuid(logger_instance_uuid_offset);
+  if (!log_start_uuid_offset.IsNull()) {
+    log_file_header_builder.add_log_start_uuid(log_start_uuid_offset);
+  }
+  log_file_header_builder.add_logger_node_boot_uuid(
+      logger_node_boot_uuid_offset);
+  log_file_header_builder.add_source_node_boot_uuid(
+      source_node_boot_uuid_offset);
+
+  log_file_header_builder.add_parts_uuid(parts_uuid_offset);
+  log_file_header_builder.add_parts_index(parts_index);
+
+  if (!config_sha256_offset.IsNull()) {
+    log_file_header_builder.add_configuration_sha256(config_sha256_offset);
+  }
+
+  fbb.FinishSizePrefixed(log_file_header_builder.Finish());
+  aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> result(
+      fbb.Release());
+
+  CHECK(result.Verify()) << ": Built a corrupted header.";
+
+  return result;
 }
 
-void LocalLogNamer::WriteHeader(
-    aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header,
-    const Node *node) {
+void LocalLogNamer::WriteHeader(const Node *node) {
   CHECK_EQ(node, this->node());
-  UpdateHeader(header, data_writer_.uuid(), data_writer_.part_number);
-  data_writer_.writer->QueueSpan(header->span());
+  const size_t node_index = configuration::GetNodeIndex(configuration_, node);
+  data_writer_.QueueHeader(
+      MakeHeader(node_index, node_states_[node_index].source_node_boot_uuid,
+                 data_writer_.uuid(), data_writer_.part_number));
 }
 
 NewDataWriter *LocalLogNamer::MakeWriter(const Channel *channel) {
@@ -40,13 +160,14 @@ NewDataWriter *LocalLogNamer::MakeWriter(const Channel *channel) {
   return &data_writer_;
 }
 
-void LocalLogNamer::Rotate(
-    const Node *node,
-    aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header) {
+void LocalLogNamer::Rotate(const Node *node) {
   CHECK(node == this->node());
+  const size_t node_index = configuration::GetNodeIndex(configuration_, node);
   data_writer_.Rotate();
-  UpdateHeader(header, data_writer_.uuid(), data_writer_.part_number);
-  data_writer_.writer->QueueSpan(header->span());
+
+  data_writer_.QueueHeader(
+      MakeHeader(node_index, node_states_[node_index].source_node_boot_uuid,
+                 data_writer_.uuid(), data_writer_.part_number));
 }
 
 void LocalLogNamer::WriteConfiguration(
@@ -60,9 +181,8 @@ void LocalLogNamer::WriteConfiguration(
   writer->QueueSizedFlatbuffer(header->Release());
 }
 
-void LocalLogNamer::Reboot(
-    const Node * /*node*/,
-    aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> * /*header*/) {
+void LocalLogNamer::Reboot(const Node * /*node*/
+) {
   LOG(FATAL) << "Can't reboot a single node.";
 }
 
@@ -85,10 +205,7 @@ NewDataWriter *LocalLogNamer::MakeForwardedTimestampWriter(
 MultiNodeLogNamer::MultiNodeLogNamer(std::string_view base_name,
                                      const Configuration *configuration,
                                      const Node *node)
-    : LogNamer(node),
-      base_name_(base_name),
-      old_base_name_(),
-      configuration_(configuration) {}
+    : LogNamer(configuration, node), base_name_(base_name), old_base_name_() {}
 
 MultiNodeLogNamer::~MultiNodeLogNamer() {
   if (!ran_out_of_space_) {
@@ -97,43 +214,34 @@ MultiNodeLogNamer::~MultiNodeLogNamer() {
   }
 }
 
-void MultiNodeLogNamer::WriteHeader(
-    aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header,
-    const Node *node) {
+void MultiNodeLogNamer::WriteHeader(const Node *node) {
   if (node == this->node()) {
     if (!data_writer_) {
       OpenDataWriter();
     }
-    UpdateHeader(header, data_writer_->uuid(), data_writer_->part_number);
-    data_writer_->writer->QueueSpan(header->span());
+
+    const size_t node_index = configuration::GetNodeIndex(configuration_, node);
+    data_writer_->QueueHeader(
+        MakeHeader(node_index, node_states_[node_index].source_node_boot_uuid,
+                   data_writer_->uuid(), data_writer_->part_number));
   } else {
+    const size_t node_index = configuration::GetNodeIndex(configuration_, node);
     for (std::pair<const Channel *const, NewDataWriter> &data_writer :
          data_writers_) {
       if (node == data_writer.second.node) {
-        UpdateHeader(header, data_writer.second.uuid(),
-                     data_writer.second.part_number);
-        data_writer.second.writer->QueueSpan(header->span());
+        data_writer.second.QueueHeader(MakeHeader(
+            node_index, node_states_[node_index].source_node_boot_uuid,
+            data_writer.second.uuid(), data_writer.second.part_number));
       }
     }
   }
 }
 
-void MultiNodeLogNamer::Rotate(
-    const Node *node,
-    aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header) {
-  DoRotate(node, header, false);
-}
+void MultiNodeLogNamer::Rotate(const Node *node) { DoRotate(node, false); }
 
-void MultiNodeLogNamer::Reboot(
-    const Node *node,
-    aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header) {
-  DoRotate(node, header, true);
-}
+void MultiNodeLogNamer::Reboot(const Node *node) { DoRotate(node, true); }
 
-void MultiNodeLogNamer::DoRotate(
-    const Node *node,
-    aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header,
-    bool reboot) {
+void MultiNodeLogNamer::DoRotate(const Node *node, bool reboot) {
   if (node == this->node()) {
     if (data_writer_) {
       if (reboot) {
@@ -143,10 +251,15 @@ void MultiNodeLogNamer::DoRotate(
       }
       // TODO(austin): Move this logic down once we have a better ownership
       // model for the header.
-      UpdateHeader(header, data_writer_->uuid(), data_writer_->part_number);
-      data_writer_->writer->QueueSpan(header->span());
+
+      const size_t node_index =
+          configuration::GetNodeIndex(configuration_, node);
+      data_writer_->QueueHeader(
+          MakeHeader(node_index, node_states_[node_index].source_node_boot_uuid,
+                     data_writer_->uuid(), data_writer_->part_number));
     }
   } else {
+    const size_t node_index = configuration::GetNodeIndex(configuration_, node);
     for (std::pair<const Channel *const, NewDataWriter> &data_writer :
          data_writers_) {
       if (node == data_writer.second.node) {
@@ -155,9 +268,9 @@ void MultiNodeLogNamer::DoRotate(
         } else {
           data_writer.second.Rotate();
         }
-        UpdateHeader(header, data_writer.second.uuid(),
-                     data_writer.second.part_number);
-        data_writer.second.writer->QueueSpan(header->span());
+        data_writer.second.QueueHeader(MakeHeader(
+            node_index, node_states_[node_index].source_node_boot_uuid,
+            data_writer.second.uuid(), data_writer.second.part_number));
       }
     }
   }
