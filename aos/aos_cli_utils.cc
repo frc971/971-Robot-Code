@@ -32,7 +32,8 @@ bool EndsWith(std::string_view str, std::string_view ending) {
 
 bool CliUtilInfo::Initialize(
     int *argc, char ***argv,
-    std::function<bool(const aos::Channel *)> channel_filter) {
+    std::function<bool(const aos::Channel *)> channel_filter,
+    bool expect_args) {
   // Don't generate failure output if the config doesn't exist while attempting
   // to autocomplete.
   if (struct stat file_stat;
@@ -113,7 +114,7 @@ bool CliUtilInfo::Initialize(
     for (const aos::Channel *channel : found_channels_now) {
       found_channels.push_back(channel);
     }
-  } while (*argc > 1);
+  } while (expect_args && *argc > 1);
 
   return false;
 }

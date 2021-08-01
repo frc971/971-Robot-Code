@@ -19,11 +19,13 @@ int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
 
   aos::CliUtilInfo cli_info;
-  if (cli_info.Initialize(&argc, &argv,
-                          [&cli_info](const aos::Channel *channel) {
-                            return aos::configuration::ChannelIsSendableOnNode(
-                                channel, cli_info.event_loop->node());
-                          })) {
+  if (cli_info.Initialize(
+          &argc, &argv,
+          [&cli_info](const aos::Channel *channel) {
+            return aos::configuration::ChannelIsSendableOnNode(
+                channel, cli_info.event_loop->node());
+          },
+          false)) {
     return 0;
   }
   if (cli_info.found_channels.size() > 1) {
