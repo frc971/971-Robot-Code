@@ -88,17 +88,11 @@ class ChannelState {
                       uint32_t partial_deliveries,
                       MessageBridgeServerStatus *server_status);
 
-  // Handles (by consuming) failure to deliver a message.
-  void HandleFailure(
-      SizePrefixedFlatbufferDetachedBuffer<RemoteData> &&message);
-
  private:
   const int channel_index_;
   const Channel *const channel_;
 
   std::vector<Peer> peers_;
-
-  std::deque<SizePrefixedFlatbufferDetachedBuffer<RemoteData>> sent_messages_;
 
   // A fetcher to use to send the last message when a node connects and is
   // reliable.

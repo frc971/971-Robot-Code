@@ -90,10 +90,10 @@ void ChannelState::SendData(SctpServer *server, const Context &context) {
 
   if (logged_remotely) {
     if (sent_count == 0) {
-      VLOG(1) << "No clients, rejecting";
-      HandleFailure(fbb.Release());
+      VLOG(1)
+          << "No clients, rejecting. TODO(austin): do backup logging to disk";
     } else {
-      sent_messages_.emplace_back(fbb.Release());
+      VLOG(1) << "TODO(austin): backup log to disk if this fails eventually";
     }
   } else {
     VLOG(1) << "Not bothering to track this message since nobody cares.";
@@ -165,40 +165,8 @@ void ChannelState::HandleDelivery(sctp_assoc_t rcv_assoc_id, uint16_t /*ssn*/,
     }
   }
 
-  while (sent_messages_.size() > 0u) {
-    if (sent_messages_.begin()->message().monotonic_sent_time() ==
-            message_header->monotonic_sent_time() &&
-        sent_messages_.begin()->message().queue_index() ==
-            message_header->queue_index()) {
-      sent_messages_.pop_front();
-      continue;
-    }
-
-    if (sent_messages_.begin()->message().monotonic_sent_time() <
-        message_header->monotonic_sent_time()) {
-      VLOG(1) << "Delivery looks wrong, rejecting";
-      HandleFailure(std::move(sent_messages_.front()));
-      sent_messages_.pop_front();
-      continue;
-    }
-
-    break;
-  }
-}
-
-void ChannelState::HandleFailure(
-    SizePrefixedFlatbufferDetachedBuffer<RemoteData> &&message) {
-  // TODO(austin): Put it in the log queue.
-  if (VLOG_IS_ON(2)) {
-    LOG(INFO) << "Failed to send " << FlatbufferToJson(message);
-  } else if (VLOG_IS_ON(1)) {
-    message.mutable_message()->clear_data();
-    LOG(INFO) << "Failed to send " << FlatbufferToJson(message);
-  }
-
-  // Note: this may be really out of order when we avoid the queue...  We
-  // have the ones we know didn't make it immediately, and the ones which
-  // time out eventually.  Need to sort that out.
+  // TODO(austin): record success of preceding messages, and log to disk if we
+  // don't find this in the list.
 }
 
 void ChannelState::AddPeer(const Connection *connection, int node_index,
