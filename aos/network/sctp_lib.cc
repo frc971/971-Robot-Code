@@ -165,8 +165,13 @@ void LogSctpStatus(int fd, sctp_assoc_t assoc_id) {
   status.sstat_assoc_id = assoc_id;
 
   socklen_t size = sizeof(status);
-  PCHECK(getsockopt(fd, SOL_SCTP, SCTP_STATUS,
-                    reinterpret_cast<void *>(&status), &size) == 0);
+  const int result = getsockopt(fd, SOL_SCTP, SCTP_STATUS,
+                                reinterpret_cast<void *>(&status), &size);
+  if (result == -1 && errno == EINVAL) {
+    LOG(INFO) << "sctp_status) not associated";
+    return;
+  }
+  PCHECK(result == 0);
 
   LOG(INFO) << "sctp_status) sstat_assoc_id:" << status.sstat_assoc_id
             << " sstat_state:" << status.sstat_state
@@ -181,10 +186,6 @@ void LogSctpStatus(int fd, sctp_assoc_t assoc_id) {
 }
 
 aos::unique_c_ptr<Message> ReadSctpMessage(int fd, size_t max_size) {
-  char incmsg[CMSG_SPACE(sizeof(_sctp_cmsg_data_t))];
-  struct iovec iov;
-  struct msghdr inmessage;
-
   aos::unique_c_ptr<Message> result(
       reinterpret_cast<Message *>(malloc(sizeof(Message) + max_size + 1)));
   result->size = 0;
@@ -192,14 +193,17 @@ aos::unique_c_ptr<Message> ReadSctpMessage(int fd, size_t max_size) {
   int count = 0;
   int last_flags = 0;
   for (count = 0; !(last_flags & MSG_EOR); count++) {
+    struct msghdr inmessage;
     memset(&inmessage, 0, sizeof(struct msghdr));
 
+    struct iovec iov;
     iov.iov_len = max_size + 1 - result->size;
     iov.iov_base = result->mutable_data() + result->size;
 
     inmessage.msg_iov = &iov;
     inmessage.msg_iovlen = 1;
 
+    char incmsg[CMSG_SPACE(sizeof(_sctp_cmsg_data_t))];
     inmessage.msg_control = incmsg;
     inmessage.msg_controllen = sizeof(incmsg);
 
@@ -215,7 +219,8 @@ aos::unique_c_ptr<Message> ReadSctpMessage(int fd, size_t max_size) {
       VLOG(1) << "msg_flags: " << inmessage.msg_flags;
       VLOG(1) << "Current size: " << result->size;
       VLOG(1) << "Received size: " << size;
-      CHECK_EQ(MSG_NOTIFICATION & inmessage.msg_flags, MSG_NOTIFICATION & last_flags);
+      CHECK_EQ(MSG_NOTIFICATION & inmessage.msg_flags,
+               MSG_NOTIFICATION & last_flags);
     }
 
     result->size += size;
@@ -225,7 +230,8 @@ aos::unique_c_ptr<Message> ReadSctpMessage(int fd, size_t max_size) {
          scmsg = CMSG_NXTHDR(&inmessage, scmsg)) {
       switch (scmsg->cmsg_type) {
         case SCTP_RCVINFO: {
-          struct sctp_rcvinfo *data = reinterpret_cast<struct sctp_rcvinfo *>(CMSG_DATA(scmsg));
+          struct sctp_rcvinfo *data =
+              reinterpret_cast<struct sctp_rcvinfo *>(CMSG_DATA(scmsg));
           if (count > 0) {
             VLOG(1) << "Got sctp_rcvinfo on continued packet";
             CHECK_EQ(result->header.rcvinfo.rcv_sid, data->rcv_sid);
@@ -241,7 +247,7 @@ aos::unique_c_ptr<Message> ReadSctpMessage(int fd, size_t max_size) {
       }
     }
 
-    CHECK_NE(inmessage.msg_flags & MSG_CTRUNC, MSG_CTRUNC)
+    CHECK_NE(last_flags & MSG_CTRUNC, MSG_CTRUNC)
         << ": Control message truncated.";
 
     CHECK_LE(result->size, max_size) << ": Message overflowed buffer on stream "
@@ -254,7 +260,7 @@ aos::unique_c_ptr<Message> ReadSctpMessage(int fd, size_t max_size) {
     VLOG(1) << "Final size: " << result->size;
   }
 
-  if ((MSG_NOTIFICATION & inmessage.msg_flags)) {
+  if ((MSG_NOTIFICATION & last_flags)) {
     result->message_type = Message::kNotification;
   } else {
     result->message_type = Message::kMessage;
