@@ -453,12 +453,10 @@ class SortingElementTest : public ::testing::Test {
     unlink(logfile1_.c_str());
     unlink(logfile2_.c_str());
     unlink(logfile3_.c_str());
-    queue_index_.resize(kChannels);
+    queue_index_.resize(config_.message().channels()->size());
   }
 
  protected:
-  static constexpr size_t kChannels = 3u;
-
   flatbuffers::DetachedBuffer MakeLogMessage(
       const aos::monotonic_clock::time_point monotonic_now, int channel_index,
       int value) {
@@ -473,6 +471,7 @@ class SortingElementTest : public ::testing::Test {
     context.realtime_event_time = aos::realtime_clock::epoch() +
                                   chrono::seconds(1000) +
                                   monotonic_now.time_since_epoch();
+    CHECK_LT(static_cast<size_t>(channel_index), queue_index_.size());
     context.queue_index = queue_index_[channel_index];
     context.size = message_fbb.GetSize();
     context.data = message_fbb.GetBufferPointer();
