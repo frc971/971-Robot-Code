@@ -44,66 +44,76 @@ bool CliUtilInfo::Initialize(
     return true;
   }
 
-  std::string channel_name;
-  std::string message_type;
-  if (*argc > 1) {
-    channel_name = (*argv)[1];
-    ShiftArgs(argc, argv);
-  }
-  if (*argc > 1) {
-    message_type = (*argv)[1];
-    ShiftArgs(argc, argv);
-  }
-
   config.emplace(aos::configuration::ReadConfig(FLAGS_config));
   event_loop.emplace(&config->message());
   event_loop->SkipTimingReport();
   event_loop->SkipAosLog();
 
-  if (FLAGS__bash_autocomplete) {
-    Autocomplete(channel_name, message_type, channel_filter);
-    return true;
-  }
-
-  const flatbuffers::Vector<flatbuffers::Offset<aos::Channel>> *const channels =
+  const flatbuffers::Vector<flatbuffers::Offset<aos::Channel>> *channels =
       event_loop->configuration()->channels();
-  if (channel_name.empty() && message_type.empty()) {
-    std::cout << "Channels:\n";
+
+  do {
+    std::string channel_name;
+    std::string message_type;
+    if (*argc > 1) {
+      channel_name = (*argv)[1];
+      ShiftArgs(argc, argv);
+    }
+    if (*argc > 1) {
+      message_type = (*argv)[1];
+      ShiftArgs(argc, argv);
+    }
+
+    if (FLAGS__bash_autocomplete) {
+      Autocomplete(channel_name, message_type, channel_filter);
+      return true;
+    }
+
+    if (channel_name.empty() && message_type.empty()) {
+      std::cout << "Channels:\n";
+      for (const aos::Channel *channel : *channels) {
+        if (FLAGS_all || channel_filter(channel)) {
+          std::cout << channel->name()->c_str() << ' '
+                    << channel->type()->c_str() << '\n';
+        }
+      }
+      return true;
+    }
+
+    std::vector<const aos::Channel *> found_channels_now;
+    bool found_exact = false;
     for (const aos::Channel *channel : *channels) {
-      if (FLAGS_all || channel_filter(channel)) {
-        std::cout << channel->name()->c_str() << ' ' << channel->type()->c_str()
-                  << '\n';
+      if (!FLAGS_all && !channel_filter(channel)) {
+        continue;
       }
-    }
-    return true;
-  }
-
-  bool found_exact = false;
-  for (const aos::Channel *channel : *channels) {
-    if (!FLAGS_all && !channel_filter(channel)) {
-      continue;
-    }
-    if (channel->name()->c_str() != channel_name) {
-      continue;
-    }
-    if (channel->type()->string_view() == message_type) {
-      if (!found_exact) {
-        found_channels.clear();
-        found_exact = true;
+      if (channel->name()->c_str() != channel_name) {
+        continue;
       }
-    } else if (!found_exact && channel->type()->string_view().find(
-                                   message_type) != std::string_view::npos) {
-    } else {
-      continue;
+      if (channel->type()->string_view() == message_type) {
+        if (!found_exact) {
+          found_channels_now.clear();
+          found_exact = true;
+        }
+      } else if (!found_exact && channel->type()->string_view().find(
+                                     message_type) != std::string_view::npos) {
+      } else {
+        continue;
+      }
+      found_channels_now.push_back(channel);
     }
-    found_channels.push_back(channel);
-  }
 
-  if (found_channels.empty()) {
-    LOG(FATAL) << "Could not find any channels with the given name and type.";
-  } else if (found_channels.size() > 1 && !message_type.empty()) {
-    LOG(FATAL) << "Multiple channels found with same type";
-  }
+    if (found_channels_now.empty()) {
+      LOG(FATAL)
+          << "Could not find any channels with the given name and type for "
+          << channel_name << " " << message_type;
+    } else if (found_channels_now.size() > 1 && !message_type.empty()) {
+      LOG(FATAL) << "Multiple channels found with same type for "
+                 << channel_name << " " << message_type;
+    }
+    for (const aos::Channel *channel : found_channels_now) {
+      found_channels.push_back(channel);
+    }
+  } while (*argc > 1);
 
   return false;
 }
