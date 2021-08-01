@@ -63,8 +63,8 @@ class StateFeedbackHybridPlant {
   StateFeedbackHybridPlant(
       ::std::vector<::std::unique_ptr<StateFeedbackHybridPlantCoefficients<
           number_of_states, number_of_inputs, number_of_outputs>>>
-          *coefficients)
-      : coefficients_(::std::move(*coefficients)), index_(0) {
+          &&coefficients)
+      : coefficients_(::std::move(coefficients)), index_(0) {
     Reset();
   }
 
@@ -106,14 +106,14 @@ class StateFeedbackHybridPlant {
   Scalar U_max(int i, int j) const { return U_max()(i, j); }
 
   const Eigen::Matrix<Scalar, number_of_states, 1> &X() const { return X_; }
-  Scalar X(int i, int j) const { return X()(i, j); }
+  Scalar X(int i) const { return X()(i); }
   const Eigen::Matrix<Scalar, number_of_outputs, 1> &Y() const { return Y_; }
-  Scalar Y(int i, int j) const { return Y()(i, j); }
+  Scalar Y(int i) const { return Y()(i); }
 
   Eigen::Matrix<Scalar, number_of_states, 1> &mutable_X() { return X_; }
-  Scalar &mutable_X(int i, int j) { return mutable_X()(i, j); }
+  Scalar &mutable_X(int i) { return mutable_X()(i); }
   Eigen::Matrix<Scalar, number_of_outputs, 1> &mutable_Y() { return Y_; }
-  Scalar &mutable_Y(int i, int j) { return mutable_Y()(i, j); }
+  Scalar &mutable_Y(int i) { return mutable_Y()(i); }
 
   const StateFeedbackHybridPlantCoefficients<number_of_states, number_of_inputs,
                                              number_of_outputs, Scalar>
@@ -247,8 +247,12 @@ class HybridKalman {
   explicit HybridKalman(
       ::std::vector<::std::unique_ptr<HybridKalmanCoefficients<
           number_of_states, number_of_inputs, number_of_outputs, Scalar>>>
-          *observers)
-      : coefficients_(::std::move(*observers)) {}
+          &&observers)
+      : coefficients_(::std::move(observers)) {
+    R_.setZero();
+    X_hat_.setZero();
+    P_ = coefficients().P_steady_state;
+  }
 
   HybridKalman(HybridKalman &&other) : index_(other.index_) {
     ::std::swap(coefficients_, other.coefficients_);
@@ -281,22 +285,37 @@ class HybridKalman {
     return X_hat_;
   }
   Eigen::Matrix<Scalar, number_of_states, 1> &mutable_X_hat() { return X_hat_; }
+  Scalar &mutable_X_hat(int i) { return mutable_X_hat()(i); }
+  Scalar X_hat(int i) const { return X_hat_(i); }
 
   void Reset(StateFeedbackHybridPlant<number_of_states, number_of_inputs,
                                       number_of_outputs> *plant) {
     X_hat_.setZero();
     P_ = coefficients().P_steady_state;
-    UpdateQR(plant, ::std::chrono::milliseconds(5));
+    UpdateQR(plant, coefficients().Q_continuous, coefficients().R_continuous,
+             ::std::chrono::milliseconds(5));
   }
 
   void Predict(StateFeedbackHybridPlant<number_of_states, number_of_inputs,
                                         number_of_outputs, Scalar> *plant,
                const Eigen::Matrix<Scalar, number_of_inputs, 1> &new_u,
                ::std::chrono::nanoseconds dt) {
+    Predict(plant, new_u, dt, coefficients().Q_continuous,
+            coefficients().R_continuous);
+  }
+
+  void Predict(
+      StateFeedbackHybridPlant<number_of_states, number_of_inputs,
+                               number_of_outputs, Scalar> *plant,
+      const Eigen::Matrix<Scalar, number_of_inputs, 1> &new_u,
+      ::std::chrono::nanoseconds dt,
+      Eigen::Matrix<Scalar, number_of_states, number_of_states> Q_continuous,
+      Eigen::Matrix<Scalar, number_of_outputs, number_of_outputs>
+          R_continuous) {
     // Trigger the predict step.  This will update A() and B() in the plant.
     mutable_X_hat() = plant->Update(X_hat(), new_u, dt);
 
-    UpdateQR(plant, dt);
+    UpdateQR(plant, Q_continuous, R_continuous, dt);
     P_ = plant->A() * P_ * plant->A().transpose() + Q_;
   }
 
@@ -305,18 +324,29 @@ class HybridKalman {
                                      number_of_outputs, Scalar> &plant,
       const Eigen::Matrix<Scalar, number_of_inputs, 1> &U,
       const Eigen::Matrix<Scalar, number_of_outputs, 1> &Y) {
+    DynamicCorrect(plant.C(), plant.D(), U, Y, R_);
+  }
+
+  // Corrects based on the sensor information available.
+  template <int number_of_measurements>
+  void DynamicCorrect(
+      const Eigen::Matrix<Scalar, number_of_measurements, number_of_states> &C,
+      const Eigen::Matrix<Scalar, number_of_measurements, number_of_inputs> &D,
+      const Eigen::Matrix<Scalar, number_of_inputs, 1> &U,
+      const Eigen::Matrix<Scalar, number_of_outputs, 1> &Y,
+      const Eigen::Matrix<Scalar, number_of_outputs, number_of_outputs> &R) {
     Eigen::Matrix<Scalar, number_of_outputs, 1> Y_bar =
-        Y - (plant.C() * X_hat_ + plant.D() * U);
+        Y - (C * X_hat_ + D * U);
     Eigen::Matrix<Scalar, number_of_outputs, number_of_outputs> S =
-        plant.C() * P_ * plant.C().transpose() + R_;
+        C * P_ * C.transpose() + R;
     Eigen::Matrix<Scalar, number_of_states, number_of_outputs> KalmanGain;
-    KalmanGain =
-        (S.transpose().ldlt().solve((P() * plant.C().transpose()).transpose()))
-            .transpose();
+    KalmanGain = (S.transpose().ldlt().solve((P() * C.transpose()).transpose()))
+                     .transpose();
     X_hat_ = X_hat_ + KalmanGain * Y_bar;
-    P_ = (plant.coefficients().A_continuous.Identity() -
-          KalmanGain * plant.C()) *
-         P();
+    P_ =
+        (Eigen::Matrix<Scalar, number_of_states, number_of_states>::Identity() -
+         KalmanGain * C) *
+        P();
   }
 
   // Sets the current controller to be index, clamped to be within range.
@@ -345,17 +375,17 @@ class HybridKalman {
   }
 
  private:
-  void UpdateQR(StateFeedbackHybridPlant<number_of_states, number_of_inputs,
-                                         number_of_outputs> *plant,
-                ::std::chrono::nanoseconds dt) {
-    ::frc971::controls::DiscretizeQ(coefficients().Q_continuous,
-                                    plant->coefficients().A_continuous, dt,
-                                    &Q_);
+  void UpdateQR(
+      StateFeedbackHybridPlant<number_of_states, number_of_inputs,
+                               number_of_outputs> *plant,
+      Eigen::Matrix<Scalar, number_of_states, number_of_states> Q_continuous,
+      Eigen::Matrix<Scalar, number_of_outputs, number_of_outputs> R_continuous,
+      ::std::chrono::nanoseconds dt) {
+    frc971::controls::DiscretizeQ(Q_continuous,
+                                  plant->coefficients().A_continuous, dt, &Q_);
 
     Eigen::Matrix<Scalar, number_of_outputs, number_of_outputs> Rtemp =
-        (coefficients().R_continuous +
-         coefficients().R_continuous.transpose()) /
-        static_cast<Scalar>(2.0);
+        (R_continuous + R_continuous.transpose()) / static_cast<Scalar>(2.0);
 
     R_ = Rtemp / ::aos::time::TypedDurationInSeconds<Scalar>(dt);
   }

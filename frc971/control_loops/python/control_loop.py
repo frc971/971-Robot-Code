@@ -216,7 +216,7 @@ class ControlLoopWriter(object):
                 fd.write('  plants[%d] = ::std::unique_ptr<%s>(new %s(%s));\n'
                          % (index, self._PlantCoeffType(),
                             self._PlantCoeffType(), loop.PlantFunction()))
-            fd.write('  return %s(&plants);\n' % self._PlantType())
+            fd.write('  return %s(std::move(plants));\n' % self._PlantType())
             fd.write('}\n\n')
 
             fd.write('%s Make%sController() {\n' % (self._ControllerType(),
@@ -229,7 +229,8 @@ class ControlLoopWriter(object):
                     '  controllers[%d] = ::std::unique_ptr<%s>(new %s(%s));\n'
                     % (index, self._ControllerCoeffType(),
                        self._ControllerCoeffType(), loop.ControllerFunction()))
-            fd.write('  return %s(&controllers);\n' % self._ControllerType())
+            fd.write('  return %s(std::move(controllers));\n' %
+                     self._ControllerType())
             fd.write('}\n\n')
 
             fd.write('%s Make%sObserver() {\n' % (self._ObserverType(),
@@ -241,7 +242,8 @@ class ControlLoopWriter(object):
                     '  observers[%d] = ::std::unique_ptr<%s>(new %s(%s));\n'
                     % (index, self._ObserverCoeffType(),
                        self._ObserverCoeffType(), loop.ObserverFunction()))
-            fd.write('  return %s(&observers);\n' % self._ObserverType())
+            fd.write(
+                '  return %s(std::move(observers));\n' % self._ObserverType())
             fd.write('}\n\n')
 
             fd.write('%s Make%sLoop() {\n' % (self._LoopType(),
