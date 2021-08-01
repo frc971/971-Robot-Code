@@ -170,12 +170,10 @@ TEST_F(LoggerDeathTest, ExtraStart) {
     logger.set_polling_period(std::chrono::milliseconds(100));
     logger_event_loop->OnRun(
         [base_name1, base_name2, &logger_event_loop, &logger]() {
-          logger.StartLogging(std::make_unique<LocalLogNamer>(
-              base_name1, logger_event_loop->configuration(),
-              logger_event_loop->node()));
+          logger.StartLogging(
+              std::make_unique<LocalLogNamer>(base_name1, logger_event_loop.get()));
           EXPECT_DEATH(logger.StartLogging(std::make_unique<LocalLogNamer>(
-                           base_name2, logger_event_loop->configuration(),
-                           logger_event_loop->node())),
+                           base_name2, logger_event_loop.get())),
                        "Already logging");
         });
     event_loop_factory_.RunFor(chrono::milliseconds(20000));
@@ -205,9 +203,8 @@ TEST_F(LoggerDeathTest, ExtraStop) {
     logger.set_separate_config(false);
     logger.set_polling_period(std::chrono::milliseconds(100));
     logger_event_loop->OnRun([base_name, &logger_event_loop, &logger]() {
-      logger.StartLogging(std::make_unique<LocalLogNamer>(
-          base_name, logger_event_loop->configuration(),
-          logger_event_loop->node()));
+      logger.StartLogging(
+          std::make_unique<LocalLogNamer>(base_name, logger_event_loop.get()));
       logger.StopLogging(aos::monotonic_clock::min_time);
       EXPECT_DEATH(logger.StopLogging(aos::monotonic_clock::min_time),
                    "Not logging right now");
@@ -243,15 +240,13 @@ TEST_F(LoggerTest, StartsTwice) {
     Logger logger(logger_event_loop.get());
     logger.set_separate_config(false);
     logger.set_polling_period(std::chrono::milliseconds(100));
-    logger.StartLogging(std::make_unique<LocalLogNamer>(
-        base_name1, logger_event_loop->configuration(),
-        logger_event_loop->node()));
+    logger.StartLogging(
+        std::make_unique<LocalLogNamer>(base_name1, logger_event_loop.get()));
     event_loop_factory_.RunFor(chrono::milliseconds(10000));
     logger.StopLogging(logger_event_loop->monotonic_now());
     event_loop_factory_.RunFor(chrono::milliseconds(10000));
-    logger.StartLogging(std::make_unique<LocalLogNamer>(
-        base_name2, logger_event_loop->configuration(),
-        logger_event_loop->node()));
+    logger.StartLogging(
+        std::make_unique<LocalLogNamer>(base_name2, logger_event_loop.get()));
     event_loop_factory_.RunFor(chrono::milliseconds(10000));
   }
 
@@ -695,9 +690,8 @@ class MultinodeLoggerTest : public ::testing::TestWithParam<struct Param> {
         "name_prefix_", logger->event_loop->node()->name()->str()));
     logger->event_loop->OnRun([logger, logfile_base, compress]() {
       std::unique_ptr<MultiNodeLogNamer> namer =
-          std::make_unique<MultiNodeLogNamer>(
-              logfile_base, logger->event_loop->configuration(),
-              logger->event_loop->node());
+          std::make_unique<MultiNodeLogNamer>(logfile_base,
+                                              logger->event_loop.get());
       if (compress) {
 #ifdef LZMA
         namer->set_extension(".xz");

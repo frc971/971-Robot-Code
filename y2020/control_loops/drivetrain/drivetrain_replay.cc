@@ -33,7 +33,7 @@ class LoggerState {
         namer_(std::make_unique<aos::logger::MultiNodeLogNamer>(
             absl::StrCat(FLAGS_output_folder, "/", node->name()->string_view(),
                          "/"),
-            event_loop_->configuration(), node)),
+            event_loop_.get())),
         logger_(std::make_unique<aos::logger::Logger>(event_loop_.get())) {
     event_loop_->SkipTimingReport();
     event_loop_->SkipAosLog();

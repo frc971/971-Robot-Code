@@ -149,8 +149,7 @@ class Logger {
   // starts.
   void StartLoggingLocalNamerOnRun(std::string base_name) {
     event_loop_->OnRun([this, base_name]() {
-      StartLogging(std::make_unique<LocalLogNamer>(
-          base_name, event_loop_->configuration(), event_loop_->node()));
+      StartLogging(std::make_unique<LocalLogNamer>(base_name, event_loop_));
     });
   }
 
@@ -158,8 +157,7 @@ class Logger {
   // processing starts.
   void StartLoggingOnRun(std::string base_name) {
     event_loop_->OnRun([this, base_name]() {
-      StartLogging(std::make_unique<MultiNodeLogNamer>(
-          base_name, event_loop_->configuration(), event_loop_->node()));
+      StartLogging(std::make_unique<MultiNodeLogNamer>(base_name, event_loop_));
     });
   }
 

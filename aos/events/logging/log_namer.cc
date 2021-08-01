@@ -125,7 +125,7 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> LogNamer::MakeHeader(
   const UUID &source_node_boot_uuid = boot_uuids[node_index];
   const Node *const source_node =
       configuration::GetNode(configuration_, node_index);
-  CHECK_EQ(LogFileHeader::MiniReflectTypeTable()->num_elems, 18u);
+  CHECK_EQ(LogFileHeader::MiniReflectTypeTable()->num_elems, 20u);
   flatbuffers::FlatBufferBuilder fbb;
   fbb.ForceDefaults(true);
 
@@ -255,6 +255,14 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> LogNamer::MakeHeader(
   }
 
   log_file_header_builder.add_boot_uuids(boot_uuids_offset);
+  log_file_header_builder.add_logger_part_monotonic_start_time(
+      std::chrono::duration_cast<std::chrono::nanoseconds>(
+          event_loop_->monotonic_now().time_since_epoch())
+          .count());
+  log_file_header_builder.add_logger_part_realtime_start_time(
+      std::chrono::duration_cast<std::chrono::nanoseconds>(
+          event_loop_->realtime_now().time_since_epoch())
+          .count());
   fbb.FinishSizePrefixed(log_file_header_builder.Finish());
   aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> result(
       fbb.Release());
@@ -303,9 +311,8 @@ NewDataWriter *LocalLogNamer::MakeForwardedTimestampWriter(
 }
 
 MultiNodeLogNamer::MultiNodeLogNamer(std::string_view base_name,
-                                     const Configuration *configuration,
-                                     const Node *node)
-    : LogNamer(configuration, node), base_name_(base_name), old_base_name_() {}
+                                     EventLoop *event_loop)
+    : LogNamer(event_loop), base_name_(base_name), old_base_name_() {}
 
 MultiNodeLogNamer::~MultiNodeLogNamer() {
   if (!ran_out_of_space_) {

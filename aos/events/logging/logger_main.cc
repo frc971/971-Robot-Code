@@ -31,8 +31,7 @@ int main(int argc, char *argv[]) {
 
   std::unique_ptr<aos::logger::LogNamer> log_namer;
   log_namer = std::make_unique<aos::logger::MultiNodeLogNamer>(
-      absl::StrCat(aos::logging::GetLogName("fbs_log"), "/"),
-      event_loop.configuration(), event_loop.node());
+      absl::StrCat(aos::logging::GetLogName("fbs_log"), "/"), &event_loop);
 
   aos::logger::Logger logger(&event_loop);
   event_loop.OnRun([&log_namer, &logger]() {
