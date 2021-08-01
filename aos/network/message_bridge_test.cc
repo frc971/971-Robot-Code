@@ -679,10 +679,12 @@ TEST_P(MessageBridgeParameterizedTest, PingPong) {
 
   // Make sure the offset in one direction is less than a second.
   EXPECT_GT(
-      client_statistics_fetcher->connections()->Get(0)->monotonic_offset(), 0);
+      client_statistics_fetcher->connections()->Get(0)->monotonic_offset(), 0)
+      << aos::FlatbufferToJson(client_statistics_fetcher.get());
   EXPECT_LT(
       client_statistics_fetcher->connections()->Get(0)->monotonic_offset(),
-      1000000000);
+      1000000000)
+      << aos::FlatbufferToJson(client_statistics_fetcher.get());
 
   EXPECT_GE(pi1_server_statistics_count, 2);
   EXPECT_GE(pi2_server_statistics_count, 2);
