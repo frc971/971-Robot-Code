@@ -38,17 +38,6 @@ SctpClient::SctpClient(std::string_view remote_host, int remote_port,
     PCHECK(setsockopt(fd(), IPPROTO_SCTP, SCTP_NODELAY, &on, sizeof(int)) == 0);
   }
 
-  {
-    // TODO(austin): This is the old style registration...  But, the sctp
-    // stack out in the wild for linux is old and primitive.
-    struct sctp_event_subscribe subscribe;
-    memset(&subscribe, 0, sizeof(subscribe));
-    subscribe.sctp_association_event = 1;
-    subscribe.sctp_stream_change_event = 1;
-    PCHECK(setsockopt(fd(), SOL_SCTP, SCTP_EVENTS, (char *)&subscribe,
-                      sizeof(subscribe)) == 0);
-  }
-
   PCHECK(bind(fd(), (struct sockaddr *)&sockaddr_local_,
               sockaddr_local_.ss_family == AF_INET6
                   ? sizeof(struct sockaddr_in6)

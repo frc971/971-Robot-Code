@@ -329,7 +329,6 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop)
 
     if (configuration::ChannelIsSendableOnNode(channel, event_loop_->node()) &&
         channel->has_destination_nodes()) {
-
       bool any_reliable = false;
       for (const Connection *connection : *channel->destination_nodes()) {
         if (connection->time_to_live() == 0) {
@@ -432,6 +431,9 @@ void MessageBridgeServer::NodeDisconnected(sctp_assoc_t assoc_id) {
 
 void MessageBridgeServer::MessageReceived() {
   aos::unique_c_ptr<Message> message = server_.Read();
+  if (!message) {
+    return;
+  }
 
   if (message->message_type == Message::kNotification) {
     const union sctp_notification *snp =
@@ -472,6 +474,10 @@ void MessageBridgeServer::HandleData(const Message *message) {
   if (message->header.rcvinfo.rcv_sid == kConnectStream()) {
     // Control channel!
     const Connect *connect = flatbuffers::GetRoot<Connect>(message->data());
+    {
+      flatbuffers::Verifier verifier(message->data(), message->size);
+      CHECK(connect->Verify(verifier));
+    }
     VLOG(1) << FlatbufferToJson(connect);
 
     // Account for the control channel and delivery times channel.
@@ -516,6 +522,10 @@ void MessageBridgeServer::HandleData(const Message *message) {
     // Message delivery
     const logger::MessageHeader *message_header =
         flatbuffers::GetRoot<logger::MessageHeader>(message->data());
+    {
+      flatbuffers::Verifier verifier(message->data(), message->size);
+      CHECK(message_header->Verify(verifier));
+    }
 
     CHECK_LT(message_header->channel_index(), channels_.size());
     CHECK_NOTNULL(channels_[message_header->channel_index()])

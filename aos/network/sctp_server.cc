@@ -26,16 +26,6 @@ SctpServer::SctpServer(std::string_view local_host, int local_port)
     sctp_.OpenSocket(sockaddr_local_);
 
     {
-      struct sctp_event_subscribe subscribe;
-      memset(&subscribe, 0, sizeof(subscribe));
-      subscribe.sctp_association_event = 1;
-      subscribe.sctp_send_failure_event = 1;
-      subscribe.sctp_partial_delivery_event = 1;
-
-      PCHECK(setsockopt(fd(), SOL_SCTP, SCTP_EVENTS, (char *)&subscribe,
-                        sizeof(subscribe)) == 0);
-    }
-    {
       // Turn off the NAGLE algorithm.
       int on = 1;
       PCHECK(setsockopt(fd(), IPPROTO_SCTP, SCTP_NODELAY, &on, sizeof(int)) ==
