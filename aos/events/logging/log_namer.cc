@@ -25,6 +25,9 @@ NewDataWriter::NewDataWriter(LogNamer *log_namer, const Node *node,
       log_namer_(log_namer),
       reopen_(std::move(reopen)),
       close_(std::move(close)) {
+  boot_uuids_.resize(configuration::NodesCount(log_namer->configuration_),
+                     UUID::Zero());
+  CHECK_LT(node_index_, boot_uuids_.size());
   reopen_(this);
 }
 
@@ -35,11 +38,13 @@ NewDataWriter::~NewDataWriter() {
 }
 
 void NewDataWriter::Rotate() {
-  ++parts_index_;
-  reopen_(this);
-  header_written_ = false;
-  QueueHeader(log_namer_->MakeHeader(node_index_, source_node_boot_uuid_,
-                                     parts_uuid(), parts_index_));
+  // No need to rotate if nothing has been written.
+  if (header_written_) {
+    ++parts_index_;
+    reopen_(this);
+    header_written_ = false;
+    QueueHeader(MakeHeader());
+  }
 }
 
 void NewDataWriter::Reboot() {
@@ -49,22 +54,49 @@ void NewDataWriter::Reboot() {
   header_written_ = false;
 }
 
-void NewDataWriter::QueueSizedFlatbuffer(flatbuffers::FlatBufferBuilder *fbb,
-                                         const UUID &source_node_boot_uuid,
-                                         aos::monotonic_clock::time_point now) {
+void NewDataWriter::UpdateRemote(size_t remote_node_index,
+                                 const UUID &remote_node_boot_uuid) {
+  CHECK_LT(remote_node_index, boot_uuids_.size());
+  if (boot_uuids_[remote_node_index] != remote_node_boot_uuid) {
+    VLOG(1) << filename() << " Remote " << remote_node_index << " updated to "
+              << remote_node_boot_uuid << " from "
+              << boot_uuids_[remote_node_index];
+    boot_uuids_[remote_node_index] = remote_node_boot_uuid;
+    Rotate();
+  }
+}
+
+void NewDataWriter::QueueMessage(flatbuffers::FlatBufferBuilder *fbb,
+                                 const UUID &source_node_boot_uuid,
+                                 aos::monotonic_clock::time_point now) {
   // TODO(austin): Handle remote nodes changing too, not just the source node.
-  if (source_node_boot_uuid_ != source_node_boot_uuid) {
+  if (boot_uuids_[node_index_] != source_node_boot_uuid) {
+    boot_uuids_[node_index_] = source_node_boot_uuid;
     if (header_written_) {
       Reboot();
     }
 
-    QueueHeader(log_namer_->MakeHeader(node_index_, source_node_boot_uuid,
-                                       parts_uuid(), parts_index_));
+    QueueHeader(MakeHeader());
   }
-  CHECK_EQ(source_node_boot_uuid_, source_node_boot_uuid);
+  CHECK_EQ(boot_uuids_[node_index_], source_node_boot_uuid);
   CHECK(header_written_) << ": Attempting to write message before header to "
                          << writer->filename();
   writer->QueueSizedFlatbuffer(fbb, now);
+}
+
+aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader>
+NewDataWriter::MakeHeader() {
+  const size_t logger_node_index = log_namer_->logger_node_index();
+  const UUID &logger_node_boot_uuid = log_namer_->logger_node_boot_uuid();
+  if (boot_uuids_[logger_node_index] == UUID::Zero()) {
+    VLOG(1) << filename() << " Logger node is " << logger_node_index
+            << " and uuid is " << logger_node_boot_uuid;
+    boot_uuids_[logger_node_index] = logger_node_boot_uuid;
+  } else {
+    CHECK_EQ(boot_uuids_[logger_node_index], logger_node_boot_uuid);
+  }
+  return log_namer_->MakeHeader(node_index_, boot_uuids_, parts_uuid(),
+                                parts_index_);
 }
 
 void NewDataWriter::QueueHeader(
@@ -72,8 +104,8 @@ void NewDataWriter::QueueHeader(
   CHECK(!header_written_) << ": Attempting to write duplicate header to "
                           << writer->filename();
   CHECK(header.message().has_source_node_boot_uuid());
-  source_node_boot_uuid_ =
-      UUID::FromString(header.message().source_node_boot_uuid());
+  CHECK_EQ(boot_uuids_[node_index_],
+           UUID::FromString(header.message().source_node_boot_uuid()));
   // TODO(austin): This triggers a dummy allocation that we don't need as part
   // of releasing.  Can we skip it?
   writer->QueueSizedFlatbuffer(header.Release());
@@ -88,8 +120,9 @@ void NewDataWriter::Close() {
 }
 
 aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> LogNamer::MakeHeader(
-    size_t node_index, const UUID &source_node_boot_uuid,
+    size_t node_index, const std::vector<UUID> &boot_uuids,
     const UUID &parts_uuid, int parts_index) const {
+  const UUID &source_node_boot_uuid = boot_uuids[node_index];
   const Node *const source_node =
       configuration::GetNode(configuration_, node_index);
   CHECK_EQ(LogFileHeader::MiniReflectTypeTable()->num_elems, 18u);
@@ -146,6 +179,20 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> LogNamer::MakeHeader(
     node_offset = RecursiveCopyFlatBuffer(source_node, &fbb);
     logger_node_offset = RecursiveCopyFlatBuffer(node_, &fbb);
   }
+
+  std::vector<flatbuffers::Offset<flatbuffers::String>> boot_uuid_offsets;
+  boot_uuid_offsets.reserve(boot_uuids.size());
+  for (const UUID &uuid : boot_uuids) {
+    if (uuid != UUID::Zero()) {
+      boot_uuid_offsets.emplace_back(uuid.PackString(&fbb));
+    } else {
+      boot_uuid_offsets.emplace_back(fbb.CreateString(""));
+    }
+  }
+
+  flatbuffers::Offset<
+      flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>>
+      boot_uuids_offset = fbb.CreateVector(boot_uuid_offsets);
 
   aos::logger::LogFileHeader::Builder log_file_header_builder(fbb);
 
@@ -207,6 +254,7 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> LogNamer::MakeHeader(
     log_file_header_builder.add_configuration_sha256(config_sha256_offset);
   }
 
+  log_file_header_builder.add_boot_uuids(boot_uuids_offset);
   fbb.FinishSizePrefixed(log_file_header_builder.Finish());
   aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> result(
       fbb.Release());

@@ -50,16 +50,15 @@ class NewDataWriter {
   // TODO(austin): Add known timestamps for each node every time we cycle a log
   // for sorting.
 
+  void UpdateRemote(size_t remote_node_index,
+                    const UUID &remote_node_boot_uuid);
   // Queues up a message with the provided boot UUID.
-  void QueueSizedFlatbuffer(flatbuffers::FlatBufferBuilder *fbb,
-                            const UUID &source_node_boot_uuid,
-                            aos::monotonic_clock::time_point now);
+  void QueueMessage(flatbuffers::FlatBufferBuilder *fbb,
+                    const UUID &node_boot_uuid,
+                    aos::monotonic_clock::time_point now);
 
   // Returns the filename of the writer.
   std::string_view filename() const { return writer->filename(); }
-
-  // Signals that a node has rebooted.
-  void Reboot();
 
   void Close();
 
@@ -71,11 +70,16 @@ class NewDataWriter {
   const Node *node() const { return node_; }
 
  private:
+  // Signals that a node has rebooted.
+  void Reboot();
+
   void QueueHeader(
       aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> &&header);
 
+  aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> MakeHeader();
+
   const Node *const node_ = nullptr;
-  size_t node_index_ = 0;
+  const size_t node_index_ = 0;
   LogNamer *log_namer_;
   UUID parts_uuid_ = UUID::Random();
   size_t parts_index_ = 0;
@@ -83,7 +87,8 @@ class NewDataWriter {
   std::function<void(NewDataWriter *)> reopen_;
   std::function<void(NewDataWriter *)> close_;
   bool header_written_ = false;
-  UUID source_node_boot_uuid_ = UUID::Zero();
+
+  std::vector<UUID> boot_uuids_;
 };
 
 // Interface describing how to name, track, and add headers to log file parts.
@@ -92,7 +97,9 @@ class LogNamer {
   // Constructs a LogNamer with the primary node (ie the one the logger runs on)
   // being node.
   LogNamer(const Configuration *configuration, const Node *node)
-      : configuration_(configuration), node_(node) {
+      : configuration_(configuration),
+        node_(node),
+        logger_node_index_(configuration::GetNodeIndex(configuration_, node)) {
     nodes_.emplace_back(node_);
     node_states_.resize(configuration::NodesCount(configuration_));
   }
@@ -138,6 +145,8 @@ class LogNamer {
 
   // Returns the node the logger is running on.
   const Node *node() const { return node_; }
+  const UUID &logger_node_boot_uuid() const { return logger_node_boot_uuid_; }
+  size_t logger_node_index() const { return logger_node_index_; }
 
   // Writes out the nested Configuration object to the config file location.
   virtual void WriteConfiguration(
@@ -147,6 +156,8 @@ class LogNamer {
   void SetHeaderTemplate(
       aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> header) {
     header_ = std::move(header);
+    logger_node_boot_uuid_ =
+        UUID::FromString(header_.message().logger_node_boot_uuid());
   }
 
   void SetStartTimes(size_t node_index,
@@ -173,11 +184,13 @@ class LogNamer {
   // Creates a new header by copying fields out of the template and combining
   // them with the arguments provided.
   aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> MakeHeader(
-      size_t node_index, const UUID &source_node_boot_uuid,
+      size_t node_index, const std::vector<UUID> &boot_uuids,
       const UUID &parts_uuid, int parts_index) const;
 
   const Configuration *const configuration_;
   const Node *const node_;
+  const size_t logger_node_index_;
+  UUID logger_node_boot_uuid_;
   std::vector<const Node *> nodes_;
 
   friend NewDataWriter;

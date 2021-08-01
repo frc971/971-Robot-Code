@@ -111,14 +111,20 @@ Logger::Logger(EventLoop *event_loop, const Configuration *configuration,
         fs.wants_timestamp_writer = true;
         fs.timestamp_node_index = our_node_index;
       }
-      if (log_message) {
-        VLOG(1) << "  Data";
-        fs.wants_writer = true;
+      // Both the timestamp and data writers want data_node_index so it knows
+      // what the source node is.
+      if (log_message || log_delivery_times) {
         if (!is_local) {
           const Node *source_node = configuration::GetNode(
               configuration_, channel->source_node()->string_view());
           fs.data_node_index =
               configuration::GetNodeIndex(configuration_, source_node);
+        }
+      }
+      if (log_message) {
+        VLOG(1) << "  Data";
+        fs.wants_writer = true;
+        if (!is_local) {
           fs.log_type = LogType::kLogRemoteMessage;
         } else {
           fs.data_node_index = our_node_index;
@@ -590,7 +596,7 @@ void Logger::LogUntil(monotonic_clock::time_point t) {
 
         max_header_size_ = std::max(max_header_size_,
                                     fbb.GetSize() - f.fetcher->context().size);
-        f.writer->QueueSizedFlatbuffer(&fbb, source_node_boot_uuid, end);
+        f.writer->QueueMessage(&fbb, source_node_boot_uuid, end);
       }
 
       if (f.timestamp_writer != nullptr) {
@@ -613,11 +619,10 @@ void Logger::LogUntil(monotonic_clock::time_point t) {
                        flatbuffers::GetSizePrefixedRoot<MessageHeader>(
                            fbb.GetBufferPointer()));
 
-        // TODO(austin): How do I track remote timestamp boot UUIDs?  I need to
-        // update the uuid list in the header when one changes and track
-        // timestamps.
-        f.timestamp_writer->QueueSizedFlatbuffer(&fbb, event_loop_->boot_uuid(),
-                                                 end);
+        // Tell our writer that we know something about the remote boot.
+        f.timestamp_writer->UpdateRemote(f.data_node_index,
+                                         f.fetcher->context().source_boot_uuid);
+        f.timestamp_writer->QueueMessage(&fbb, event_loop_->boot_uuid(), end);
       }
 
       if (f.contents_writer != nullptr) {
@@ -671,7 +676,7 @@ void Logger::LogUntil(monotonic_clock::time_point t) {
         const auto end = event_loop_->monotonic_now();
         RecordCreateMessageTime(start, end, &f);
 
-        f.contents_writer->QueueSizedFlatbuffer(
+        f.contents_writer->QueueMessage(
             &fbb, UUID::FromVector(msg->boot_uuid()), end);
       }
 

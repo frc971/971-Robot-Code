@@ -483,18 +483,26 @@ class MultinodeLoggerTest : public ::testing::TestWithParam<struct Param> {
   bool shared() const { return GetParam().shared; }
 
   std::vector<std::string> MakeLogFiles(std::string logfile_base1,
-                                        std::string logfile_base2) {
+                                        std::string logfile_base2,
+                                        size_t pi1_data_count = 2,
+                                        size_t pi2_data_count = 2) {
     std::vector<std::string> result;
     result.emplace_back(
         absl::StrCat(logfile_base1, "_", GetParam().sha256, ".bfbs"));
     result.emplace_back(
         absl::StrCat(logfile_base2, "_", GetParam().sha256, ".bfbs"));
-    result.emplace_back(logfile_base1 + "_pi1_data.part0.bfbs");
+    for (size_t i = 0; i < pi1_data_count; ++i) {
+      result.emplace_back(
+          absl::StrCat(logfile_base1, "_pi1_data.part", i, ".bfbs"));
+    }
     result.emplace_back(logfile_base1 +
                         "_pi2_data/test/aos.examples.Pong.part0.bfbs");
     result.emplace_back(logfile_base1 +
                         "_pi2_data/test/aos.examples.Pong.part1.bfbs");
-    result.emplace_back(logfile_base2 + "_pi2_data.part0.bfbs");
+    for (size_t i = 0; i < pi2_data_count; ++i) {
+      result.emplace_back(
+          absl::StrCat(logfile_base2, "_pi2_data.part", i, ".bfbs"));
+    }
     result.emplace_back(
         logfile_base2 +
         "_pi1_data/pi1/aos/aos.message_bridge.Timestamp.part0.bfbs");
@@ -553,6 +561,8 @@ class MultinodeLoggerTest : public ::testing::TestWithParam<struct Param> {
   std::vector<std::string> MakePi1RebootLogfiles() {
     std::vector<std::string> result;
     result.emplace_back(logfile_base1_ + "_pi1_data.part0.bfbs");
+    result.emplace_back(logfile_base1_ + "_pi1_data.part1.bfbs");
+    result.emplace_back(logfile_base1_ + "_pi1_data.part2.bfbs");
     result.emplace_back(logfile_base1_ +
                         "_pi2_data/test/aos.examples.Pong.part0.bfbs");
     result.emplace_back(logfile_base1_ +
@@ -640,17 +650,17 @@ class MultinodeLoggerTest : public ::testing::TestWithParam<struct Param> {
 
   std::vector<std::vector<std::string>> StructureLogFiles() {
     std::vector<std::vector<std::string>> result{
-        std::vector<std::string>{logfiles_[2]},
-        std::vector<std::string>{logfiles_[3], logfiles_[4]},
-        std::vector<std::string>{logfiles_[5]},
+        std::vector<std::string>{logfiles_[2], logfiles_[3]},
+        std::vector<std::string>{logfiles_[4], logfiles_[5]},
         std::vector<std::string>{logfiles_[6], logfiles_[7]},
         std::vector<std::string>{logfiles_[8], logfiles_[9]},
         std::vector<std::string>{logfiles_[10], logfiles_[11]},
-        std::vector<std::string>{logfiles_[12], logfiles_[13]}};
+        std::vector<std::string>{logfiles_[12], logfiles_[13]},
+        std::vector<std::string>{logfiles_[14], logfiles_[15]}};
 
     if (!shared()) {
       result.emplace_back(
-          std::vector<std::string>{logfiles_[14], logfiles_[15]});
+          std::vector<std::string>{logfiles_[16], logfiles_[17]});
     }
 
     return result;
@@ -929,27 +939,29 @@ TEST_P(MultinodeLoggerTest, SimpleMultiNode) {
 
     // And confirm everything is on the correct node.
     EXPECT_EQ(log_header[2].message().node()->name()->string_view(), "pi1");
-    EXPECT_EQ(log_header[3].message().node()->name()->string_view(), "pi2");
+    EXPECT_EQ(log_header[3].message().node()->name()->string_view(), "pi1");
     EXPECT_EQ(log_header[4].message().node()->name()->string_view(), "pi2");
     EXPECT_EQ(log_header[5].message().node()->name()->string_view(), "pi2");
-    EXPECT_EQ(log_header[6].message().node()->name()->string_view(), "pi1");
-    EXPECT_EQ(log_header[7].message().node()->name()->string_view(), "pi1");
-    EXPECT_EQ(log_header[8].message().node()->name()->string_view(), "pi2");
-    EXPECT_EQ(log_header[9].message().node()->name()->string_view(), "pi2");
+    EXPECT_EQ(log_header[6].message().node()->name()->string_view(), "pi2");
+    EXPECT_EQ(log_header[7].message().node()->name()->string_view(), "pi2");
+    EXPECT_EQ(log_header[8].message().node()->name()->string_view(), "pi1");
+    EXPECT_EQ(log_header[9].message().node()->name()->string_view(), "pi1");
     EXPECT_EQ(log_header[10].message().node()->name()->string_view(), "pi2");
     EXPECT_EQ(log_header[11].message().node()->name()->string_view(), "pi2");
-    EXPECT_EQ(log_header[12].message().node()->name()->string_view(), "pi1");
-    EXPECT_EQ(log_header[13].message().node()->name()->string_view(), "pi1");
+    EXPECT_EQ(log_header[12].message().node()->name()->string_view(), "pi2");
+    EXPECT_EQ(log_header[13].message().node()->name()->string_view(), "pi2");
+    EXPECT_EQ(log_header[14].message().node()->name()->string_view(), "pi1");
+    EXPECT_EQ(log_header[15].message().node()->name()->string_view(), "pi1");
     if (!shared()) {
-      EXPECT_EQ(log_header[14].message().node()->name()->string_view(), "pi2");
-      EXPECT_EQ(log_header[15].message().node()->name()->string_view(), "pi2");
+      EXPECT_EQ(log_header[16].message().node()->name()->string_view(), "pi2");
+      EXPECT_EQ(log_header[17].message().node()->name()->string_view(), "pi2");
     }
 
     // And the parts index matches.
     EXPECT_EQ(log_header[2].message().parts_index(), 0);
-    EXPECT_EQ(log_header[3].message().parts_index(), 0);
-    EXPECT_EQ(log_header[4].message().parts_index(), 1);
-    EXPECT_EQ(log_header[5].message().parts_index(), 0);
+    EXPECT_EQ(log_header[3].message().parts_index(), 1);
+    EXPECT_EQ(log_header[4].message().parts_index(), 0);
+    EXPECT_EQ(log_header[5].message().parts_index(), 1);
     EXPECT_EQ(log_header[6].message().parts_index(), 0);
     EXPECT_EQ(log_header[7].message().parts_index(), 1);
     EXPECT_EQ(log_header[8].message().parts_index(), 0);
@@ -958,9 +970,11 @@ TEST_P(MultinodeLoggerTest, SimpleMultiNode) {
     EXPECT_EQ(log_header[11].message().parts_index(), 1);
     EXPECT_EQ(log_header[12].message().parts_index(), 0);
     EXPECT_EQ(log_header[13].message().parts_index(), 1);
+    EXPECT_EQ(log_header[14].message().parts_index(), 0);
+    EXPECT_EQ(log_header[15].message().parts_index(), 1);
     if (!shared()) {
-      EXPECT_EQ(log_header[14].message().parts_index(), 0);
-      EXPECT_EQ(log_header[15].message().parts_index(), 1);
+      EXPECT_EQ(log_header[16].message().parts_index(), 0);
+      EXPECT_EQ(log_header[17].message().parts_index(), 1);
     }
   }
 
@@ -974,161 +988,178 @@ TEST_P(MultinodeLoggerTest, SimpleMultiNode) {
     EXPECT_THAT(
         CountChannelsData(config, logfiles_[2]),
         UnorderedElementsAre(
+            std::make_tuple("/pi1/aos", "aos.message_bridge.ServerStatistics",
+                            1),
+            std::make_tuple("/test", "aos.examples.Ping", 1)))
+        << " : " << logfiles_[2];
+    EXPECT_THAT(
+        CountChannelsData(config, logfiles_[3]),
+        UnorderedElementsAre(
             std::make_tuple("/pi1/aos", "aos.message_bridge.Timestamp", 200),
             std::make_tuple("/pi1/aos", "aos.message_bridge.ServerStatistics",
-                            21),
+                            20),
             std::make_tuple("/pi1/aos", "aos.message_bridge.ClientStatistics",
                             200),
             std::make_tuple("/pi1/aos", "aos.timing.Report", 40),
-            std::make_tuple("/test", "aos.examples.Ping", 2001)))
-        << " : " << logfiles_[2];
+            std::make_tuple("/test", "aos.examples.Ping", 2000)))
+        << " : " << logfiles_[3];
     // Timestamps for pong
+    EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[2]),
+                UnorderedElementsAre())
+        << " : " << logfiles_[2];
     EXPECT_THAT(
-        CountChannelsTimestamp(config, logfiles_[2]),
+        CountChannelsTimestamp(config, logfiles_[3]),
         UnorderedElementsAre(
             std::make_tuple("/test", "aos.examples.Pong", 2001),
             std::make_tuple("/pi2/aos", "aos.message_bridge.Timestamp", 200)))
-        << " : " << logfiles_[2];
+        << " : " << logfiles_[3];
 
     // Pong data.
     EXPECT_THAT(
-        CountChannelsData(config, logfiles_[3]),
+        CountChannelsData(config, logfiles_[4]),
         UnorderedElementsAre(std::make_tuple("/test", "aos.examples.Pong", 91)))
-        << " : " << logfiles_[3];
-    EXPECT_THAT(CountChannelsData(config, logfiles_[4]),
+        << " : " << logfiles_[4];
+    EXPECT_THAT(CountChannelsData(config, logfiles_[5]),
                 UnorderedElementsAre(
                     std::make_tuple("/test", "aos.examples.Pong", 1910)))
-        << " : " << logfiles_[3];
+        << " : " << logfiles_[5];
 
     // No timestamps
-    EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[3]),
-                UnorderedElementsAre())
-        << " : " << logfiles_[3];
     EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[4]),
                 UnorderedElementsAre())
         << " : " << logfiles_[4];
+    EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[5]),
+                UnorderedElementsAre())
+        << " : " << logfiles_[5];
 
     // Timing reports and pongs.
+    EXPECT_THAT(CountChannelsData(config, logfiles_[6]),
+                UnorderedElementsAre(std::make_tuple(
+                    "/pi2/aos", "aos.message_bridge.ServerStatistics", 1)))
+        << " : " << logfiles_[6];
     EXPECT_THAT(
-        CountChannelsData(config, logfiles_[5]),
+        CountChannelsData(config, logfiles_[7]),
         UnorderedElementsAre(
             std::make_tuple("/pi2/aos", "aos.message_bridge.Timestamp", 200),
             std::make_tuple("/pi2/aos", "aos.message_bridge.ServerStatistics",
-                            21),
+                            20),
             std::make_tuple("/pi2/aos", "aos.message_bridge.ClientStatistics",
                             200),
             std::make_tuple("/pi2/aos", "aos.timing.Report", 40),
             std::make_tuple("/test", "aos.examples.Pong", 2001)))
-        << " : " << logfiles_[5];
+        << " : " << logfiles_[7];
     // And ping timestamps.
-    EXPECT_THAT(
-        CountChannelsTimestamp(config, logfiles_[5]),
-        UnorderedElementsAre(
-            std::make_tuple("/test", "aos.examples.Ping", 2001),
-            std::make_tuple("/pi1/aos", "aos.message_bridge.Timestamp", 200)))
-        << " : " << logfiles_[5];
-
-    // And then test that the remotely logged timestamp data files only have
-    // timestamps in them.
     EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[6]),
                 UnorderedElementsAre())
         << " : " << logfiles_[6];
-    EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[7]),
-                UnorderedElementsAre())
+    EXPECT_THAT(
+        CountChannelsTimestamp(config, logfiles_[7]),
+        UnorderedElementsAre(
+            std::make_tuple("/test", "aos.examples.Ping", 2001),
+            std::make_tuple("/pi1/aos", "aos.message_bridge.Timestamp", 200)))
         << " : " << logfiles_[7];
+
+    // And then test that the remotely logged timestamp data files only have
+    // timestamps in them.
     EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[8]),
                 UnorderedElementsAre())
         << " : " << logfiles_[8];
     EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[9]),
                 UnorderedElementsAre())
         << " : " << logfiles_[9];
-
-    EXPECT_THAT(CountChannelsData(config, logfiles_[6]),
-                UnorderedElementsAre(std::make_tuple(
-                    "/pi1/aos", "aos.message_bridge.Timestamp", 9)))
-        << " : " << logfiles_[6];
-    EXPECT_THAT(CountChannelsData(config, logfiles_[7]),
-                UnorderedElementsAre(std::make_tuple(
-                    "/pi1/aos", "aos.message_bridge.Timestamp", 191)))
-        << " : " << logfiles_[7];
+    EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[10]),
+                UnorderedElementsAre())
+        << " : " << logfiles_[10];
+    EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[11]),
+                UnorderedElementsAre())
+        << " : " << logfiles_[11];
 
     EXPECT_THAT(CountChannelsData(config, logfiles_[8]),
                 UnorderedElementsAre(std::make_tuple(
-                    "/pi2/aos", "aos.message_bridge.Timestamp", 9)))
+                    "/pi1/aos", "aos.message_bridge.Timestamp", 9)))
         << " : " << logfiles_[8];
     EXPECT_THAT(CountChannelsData(config, logfiles_[9]),
                 UnorderedElementsAre(std::make_tuple(
-                    "/pi2/aos", "aos.message_bridge.Timestamp", 191)))
+                    "/pi1/aos", "aos.message_bridge.Timestamp", 191)))
         << " : " << logfiles_[9];
 
-    // Timestamps from pi2 on pi1, and the other way.
     EXPECT_THAT(CountChannelsData(config, logfiles_[10]),
-                UnorderedElementsAre())
+                UnorderedElementsAre(std::make_tuple(
+                    "/pi2/aos", "aos.message_bridge.Timestamp", 9)))
         << " : " << logfiles_[10];
     EXPECT_THAT(CountChannelsData(config, logfiles_[11]),
-                UnorderedElementsAre())
+                UnorderedElementsAre(std::make_tuple(
+                    "/pi2/aos", "aos.message_bridge.Timestamp", 191)))
         << " : " << logfiles_[11];
+
+    // Timestamps from pi2 on pi1, and the other way.
     EXPECT_THAT(CountChannelsData(config, logfiles_[12]),
                 UnorderedElementsAre())
         << " : " << logfiles_[12];
     EXPECT_THAT(CountChannelsData(config, logfiles_[13]),
                 UnorderedElementsAre())
         << " : " << logfiles_[13];
+    EXPECT_THAT(CountChannelsData(config, logfiles_[14]),
+                UnorderedElementsAre())
+        << " : " << logfiles_[14];
+    EXPECT_THAT(CountChannelsData(config, logfiles_[15]),
+                UnorderedElementsAre())
+        << " : " << logfiles_[15];
     if (!shared()) {
-      EXPECT_THAT(CountChannelsData(config, logfiles_[14]),
+      EXPECT_THAT(CountChannelsData(config, logfiles_[16]),
                   UnorderedElementsAre())
-          << " : " << logfiles_[14];
-      EXPECT_THAT(CountChannelsData(config, logfiles_[15]),
+          << " : " << logfiles_[16];
+      EXPECT_THAT(CountChannelsData(config, logfiles_[17]),
                   UnorderedElementsAre())
-          << " : " << logfiles_[15];
+          << " : " << logfiles_[17];
     }
 
     if (shared()) {
       EXPECT_THAT(
-          CountChannelsTimestamp(config, logfiles_[10]),
+          CountChannelsTimestamp(config, logfiles_[12]),
           UnorderedElementsAre(
               std::make_tuple("/pi1/aos", "aos.message_bridge.Timestamp", 9),
               std::make_tuple("/test", "aos.examples.Ping", 91)))
-          << " : " << logfiles_[10];
+          << " : " << logfiles_[12];
       EXPECT_THAT(
-          CountChannelsTimestamp(config, logfiles_[11]),
+          CountChannelsTimestamp(config, logfiles_[13]),
           UnorderedElementsAre(
               std::make_tuple("/pi1/aos", "aos.message_bridge.Timestamp", 191),
               std::make_tuple("/test", "aos.examples.Ping", 1910)))
-          << " : " << logfiles_[11];
-      EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[12]),
-                  UnorderedElementsAre(std::make_tuple(
-                      "/pi2/aos", "aos.message_bridge.Timestamp", 9)))
-          << " : " << logfiles_[12];
-      EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[13]),
-                  UnorderedElementsAre(std::make_tuple(
-                      "/pi2/aos", "aos.message_bridge.Timestamp", 191)))
-          << " : " << logfiles_[13];
-    } else {
-      EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[10]),
-                  UnorderedElementsAre(std::make_tuple(
-                      "/pi1/aos", "aos.message_bridge.Timestamp", 9)))
-          << " : " << logfiles_[10];
-      EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[11]),
-                  UnorderedElementsAre(std::make_tuple(
-                      "/pi1/aos", "aos.message_bridge.Timestamp", 191)))
-          << " : " << logfiles_[11];
-      EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[12]),
-                  UnorderedElementsAre(std::make_tuple(
-                      "/pi2/aos", "aos.message_bridge.Timestamp", 9)))
-          << " : " << logfiles_[12];
-      EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[13]),
-                  UnorderedElementsAre(std::make_tuple(
-                      "/pi2/aos", "aos.message_bridge.Timestamp", 191)))
           << " : " << logfiles_[13];
       EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[14]),
-                  UnorderedElementsAre(
-                      std::make_tuple("/test", "aos.examples.Ping", 91)))
+                  UnorderedElementsAre(std::make_tuple(
+                      "/pi2/aos", "aos.message_bridge.Timestamp", 9)))
           << " : " << logfiles_[14];
       EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[15]),
+                  UnorderedElementsAre(std::make_tuple(
+                      "/pi2/aos", "aos.message_bridge.Timestamp", 191)))
+          << " : " << logfiles_[15];
+    } else {
+      EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[12]),
+                  UnorderedElementsAre(std::make_tuple(
+                      "/pi1/aos", "aos.message_bridge.Timestamp", 9)))
+          << " : " << logfiles_[12];
+      EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[13]),
+                  UnorderedElementsAre(std::make_tuple(
+                      "/pi1/aos", "aos.message_bridge.Timestamp", 191)))
+          << " : " << logfiles_[13];
+      EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[14]),
+                  UnorderedElementsAre(std::make_tuple(
+                      "/pi2/aos", "aos.message_bridge.Timestamp", 9)))
+          << " : " << logfiles_[14];
+      EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[15]),
+                  UnorderedElementsAre(std::make_tuple(
+                      "/pi2/aos", "aos.message_bridge.Timestamp", 191)))
+          << " : " << logfiles_[15];
+      EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[16]),
+                  UnorderedElementsAre(
+                      std::make_tuple("/test", "aos.examples.Ping", 91)))
+          << " : " << logfiles_[16];
+      EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[17]),
                   UnorderedElementsAre(
                       std::make_tuple("/test", "aos.examples.Ping", 1910)))
-          << " : " << logfiles_[15];
+          << " : " << logfiles_[17];
     }
   }
 
@@ -1336,7 +1367,10 @@ TEST_P(MultinodeLoggerTest, StaggeredStart) {
     event_loop_factory_.RunFor(chrono::milliseconds(20000));
   }
 
-  LogReader reader(SortParts(logfiles_));
+  // Since we delay starting pi2, it already knows about all the timestamps so
+  // we don't end up with extra parts.
+  LogReader reader(
+      SortParts(MakeLogFiles(logfile_base1_, logfile_base2_, 2, 1)));
 
   SimulatedEventLoopFactory log_reader_factory(reader.configuration());
   log_reader_factory.set_send_delay(chrono::microseconds(0));
