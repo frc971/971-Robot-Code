@@ -165,8 +165,13 @@ void LogSctpStatus(int fd, sctp_assoc_t assoc_id) {
   status.sstat_assoc_id = assoc_id;
 
   socklen_t size = sizeof(status);
-  PCHECK(getsockopt(fd, SOL_SCTP, SCTP_STATUS,
-                    reinterpret_cast<void *>(&status), &size) == 0);
+  const int result = getsockopt(fd, SOL_SCTP, SCTP_STATUS,
+                                reinterpret_cast<void *>(&status), &size);
+  if (result == -1 && errno == EINVAL) {
+    LOG(INFO) << "sctp_status) not associated";
+    return;
+  }
+  PCHECK(result == 0);
 
   LOG(INFO) << "sctp_status) sstat_assoc_id:" << status.sstat_assoc_id
             << " sstat_state:" << status.sstat_state
