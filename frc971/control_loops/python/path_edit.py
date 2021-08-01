@@ -413,3 +413,42 @@ class FieldWidget(Gtk.DrawingArea):
 
                 self.index_of_edit = -1
                 self.spline_edit = -1
+
+    def mouse_scroll(self, event):
+        self.mousex, self.mousey = self.input_transform.transform_point(
+            event.x, event.y)
+
+        step_size = 20  # px
+
+        if event.direction == Gdk.ScrollDirection.UP:
+            # zoom out
+            scale_by = step_size
+        elif event.direction == Gdk.ScrollDirection.DOWN:
+            # zoom in
+            scale_by = -step_size
+        else:
+            return
+
+        apparent_width, apparent_height = self.transform.transform_distance(
+            self.mToPx(FIELD.width), self.mToPx(FIELD.length))
+        scale = (apparent_width + scale_by) / apparent_width
+
+        # scale from point in field coordinates
+        point = self.mousex, self.mousey
+
+        # move the origin to point
+        self.transform.translate(point[0], point[1])
+
+        # scale from new origin
+        self.transform.scale(scale, scale)
+
+        # move back
+        self.transform.translate(-point[0], -point[1])
+
+        # snap to the edge when near 1x scaling
+        if 0.99 < self.transform.xx < 1.01 and -50 < self.transform.x0 < 50:
+            self.transform.x0 = 0
+            self.transform.y0 = 0
+            print("snap")
+
+        self.queue_draw()

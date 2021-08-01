@@ -80,6 +80,7 @@ class GridWindow(Gtk.Window):
         self.method_connect("button-release-event", self.field.button_release)
         self.method_connect("configure-event", self.configure)
         self.method_connect("motion_notify_event", self.field.mouse_move)
+        self.method_connect("scroll_event", self.field.mouse_scroll)
 
         self.file_name_box = Gtk.Entry()
         self.file_name_box.set_size_request(200, 40)
