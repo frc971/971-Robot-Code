@@ -68,11 +68,9 @@ void AllocateLogName(char **filename, const char *directory,
   if (asprintf(filename, "%s/%s-%03d", directory, basename, fileindex) == -1) {
     PLOG(FATAL) << "couldn't create final name";
   }
-  LOG(INFO) << "Created log file (" << basename << "-" << fileindex
-            << ") in directory (" << directory
-            << "). Previous file "
-               "was ("
-            << previous << ").";
+  // Fix basename formatting.
+  LOG(INFO) << "Created log file (" << filename << "). Previous file was ("
+            << directory << "/" << previous << ").";
 }
 
 bool FoundThumbDrive(const char *path) {
