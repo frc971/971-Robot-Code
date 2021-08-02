@@ -8,8 +8,6 @@
 #include "aos/init.h"
 #include "y2020/vision/vision_generated.h"
 
-DEFINE_string(config, "y2020/config.json", "Path to the config file to use.");
-DEFINE_string(logfile, "", "Path to the log file to use.");
 DEFINE_string(node, "pi1", "Node name to replay.");
 DEFINE_string(image_save_prefix, "/tmp/img",
               "Prefix to use for saving images from the logfile.");
@@ -18,13 +16,12 @@ namespace frc971 {
 namespace vision {
 namespace {
 
-void ViewerMain() {
-  CHECK(!FLAGS_logfile.empty()) << "You forgot to specify a logfile.";
+void ViewerMain(int argc, char *argv[]) {
+  std::vector<std::string> unsorted_logfiles =
+      aos::logger::FindLogs(argc, argv);
 
-  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
-      aos::configuration::ReadConfig(FLAGS_config);
-
-  aos::logger::LogReader reader(FLAGS_logfile, &config.message());
+  // open logfiles
+  aos::logger::LogReader reader(aos::logger::SortParts(unsorted_logfiles));
   reader.Register();
   const aos::Node *node = nullptr;
   if (aos::configuration::MultiNode(reader.configuration())) {
@@ -61,5 +58,5 @@ void ViewerMain() {
 // Quick and lightweight grayscale viewer for images
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
-  frc971::vision::ViewerMain();
+  frc971::vision::ViewerMain(argc, argv);
 }
