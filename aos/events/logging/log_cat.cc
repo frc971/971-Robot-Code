@@ -37,6 +37,10 @@ DEFINE_bool(pretty, false,
 DEFINE_bool(print, true,
             "If true, actually print the messages.  If false, discard them, "
             "confirming they can be parsed.");
+DEFINE_uint64(
+    count, 0,
+    "If >0, log_cat will exit after printing this many messages.  This "
+    "includes messages from before the start of the log if --fetch is set.");
 DEFINE_bool(print_parts_only, false,
             "If true, only print out the results of logfile sorting.");
 DEFINE_bool(channels, false,
@@ -247,6 +251,8 @@ int main(int argc, char **argv) {
 
   bool found_channel = false;
 
+  uint64_t message_print_counter = 0;
+
   for (const aos::Node *node :
        aos::configuration::GetNodes(event_loop_factory.configuration())) {
     std::unique_ptr<aos::EventLoop> printer_event_loop =
@@ -309,10 +315,15 @@ int main(int argc, char **argv) {
         }
 
         printer_event_loop->MakeRawWatcher(
-            channel, [channel, node_name, &builder](const aos::Context &context,
-                                                    const void * /*message*/) {
+            channel, [channel, node_name, &builder, &event_loop_factory,
+                      &message_print_counter](const aos::Context &context,
+                                               const void * /*message*/) {
               if (FLAGS_print) {
                 PrintMessage(node_name, channel, context, &builder);
+                ++message_print_counter;
+                if (FLAGS_count > 0 && message_print_counter >= FLAGS_count) {
+                  event_loop_factory.Exit();
+                }
               }
             });
         found_channel = true;
@@ -325,6 +336,12 @@ int main(int argc, char **argv) {
       if (FLAGS_print) {
         PrintMessage(message.node_name, message.fetcher->channel(),
                      message.fetcher->context(), &builder);
+        ++message_print_counter;
+        if (FLAGS_count > 0 && message_print_counter >= FLAGS_count) {
+          // We are done.  Clean up and exit.
+          reader.Deregister();
+          return 0;
+        }
       }
     }
     printer_event_loops.emplace_back(std::move(printer_event_loop));
