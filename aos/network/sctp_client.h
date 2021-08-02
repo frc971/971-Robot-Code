@@ -49,8 +49,12 @@ class SctpClient {
     // one full sized packet in flight.
     max_size = max_size * 10;
 
-    CHECK_GE(ReadRMemMax(), max_size);
-    CHECK_GE(ReadWMemMax(), max_size);
+    CHECK_GE(ReadRMemMax(), max_size)
+        << "rmem_max is too low. To increase rmem_max temporarily, do sysctl "
+           "-w net.core.rmem_max=NEW_SIZE";
+    CHECK_GE(ReadWMemMax(), max_size)
+        << "wmem_max is too low. To increase wmem_max temporarily, do sysctl "
+           "-w net.core.wmem_max=NEW_SIZE";
     PCHECK(setsockopt(fd_, SOL_SOCKET, SO_RCVBUF, &max_size,
                       sizeof(max_size)) == 0);
     PCHECK(setsockopt(fd_, SOL_SOCKET, SO_SNDBUF, &max_size,
