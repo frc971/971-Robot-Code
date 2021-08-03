@@ -36,6 +36,12 @@ typedef void (*MallocHook_DeleteHook)(const void *ptr);
 int MallocHook_AddDeleteHook(MallocHook_DeleteHook hook) __attribute__((weak));
 int MallocHook_RemoveDeleteHook(MallocHook_DeleteHook hook)
     __attribute__((weak));
+
+// Declare tc_malloc weak so we can check if it exists.
+void *tc_malloc(size_t size) __attribute__((weak));
+
+void *__libc_malloc(size_t size);
+void __libc_free(void *ptr);
 }  // extern "C"
 
 namespace FLAG__namespace_do_not_use_directly_use_DECLARE_double_instead {
@@ -251,17 +257,57 @@ void DeleteHook(const void *ptr) {
   }
 }
 
+extern "C" {
+
+// malloc hooks for libc. Tcmalloc will replace everything it finds (malloc,
+// __libc_malloc, etc.), so we need its specific hook above as well.
+void *aos_malloc_hook(size_t size) {
+  if (FLAGS_die_on_malloc && aos::is_realtime) {
+    aos::is_realtime = false;
+    RAW_LOG(FATAL, "Malloced %zu bytes", size);
+    return nullptr;
+  } else {
+    return __libc_malloc(size);
+  }
+}
+
+void aos_free_hook(void *ptr) {
+  if (FLAGS_die_on_malloc && aos::is_realtime && ptr != nullptr) {
+    aos::is_realtime = false;
+    RAW_LOG(FATAL, "Deleted %p", ptr);
+  } else {
+    __libc_free(ptr);
+  }
+}
+
+void *malloc(size_t size) __attribute__((weak, alias("aos_malloc_hook")));
+void free(void *ptr) __attribute__((weak, alias("aos_free_hook")));
+
+}
+
 void RegisterMallocHook() {
   if (FLAGS_die_on_malloc) {
-    if (&MallocHook_AddNewHook != nullptr) {
-      CHECK(MallocHook_AddNewHook(&NewHook));
+    // tcmalloc redefines __libc_malloc, so use this as a feature test.
+    if (&__libc_malloc == &tc_malloc) {
+      RAW_LOG(INFO, "Hooking tcmalloc for die_on_malloc");
+      if (&MallocHook_AddNewHook != nullptr) {
+        CHECK(MallocHook_AddNewHook(&NewHook));
+      } else {
+        has_malloc_hook = false;
+      }
+      if (&MallocHook_AddDeleteHook != nullptr) {
+        CHECK(MallocHook_AddDeleteHook(&DeleteHook));
+      } else {
+        has_malloc_hook = false;
+      }
     } else {
-      has_malloc_hook = false;
-    }
-    if (&MallocHook_AddDeleteHook != nullptr) {
-      CHECK(MallocHook_AddDeleteHook(&DeleteHook));
-    } else {
-      has_malloc_hook = false;
+      RAW_LOG(INFO, "Replacing glibc malloc");
+      if (&malloc != &aos_malloc_hook) {
+        has_malloc_hook = false;
+      }
+      if (&free != &aos_free_hook) {
+        has_malloc_hook = false;
+      }
     }
   }
 }
