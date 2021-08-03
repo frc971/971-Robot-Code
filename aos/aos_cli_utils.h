@@ -13,7 +13,8 @@ struct CliUtilInfo {
   // If this returns false, the other fields will be filled out appropriately.
   // event_loop will be filled out before channel_filter is called.
   bool Initialize(int *argc, char ***argv,
-                  std::function<bool(const aos::Channel *)> channel_filter);
+                  std::function<bool(const aos::Channel *)> channel_filter,
+                  bool expect_args);
 
   std::optional<aos::FlatbufferDetachedBuffer<aos::Configuration>> config;
   std::optional<aos::ShmEventLoop> event_loop;
