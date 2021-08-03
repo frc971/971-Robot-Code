@@ -12,6 +12,7 @@ import cairo
 import basic_window
 import os
 
+
 class GridWindow(Gtk.Window):
     def method_connect(self, event, cb):
         def handler(obj, *args):

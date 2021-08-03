@@ -70,7 +70,7 @@ class Points():
 
     def updates_for_mouse_move(self, index_of_edit, spline_edit, x, y, difs):
         if index_of_edit > -1:
-            self.splines[spline_edit][index_of_edit] = [pxToM(x), pxToM(y)]
+            self.splines[spline_edit][index_of_edit] = [x, y]
 
             if index_of_edit == 5:
                 self.splines[spline_edit][
@@ -150,7 +150,7 @@ class Points():
 
     def add_point(self, x, y):
         if (len(self.points) < 6):
-            self.points.append([pxToM(x), pxToM(y)])
+            self.points.append([x, y])
         if (len(self.points) == 6):
             self.splines.append(np.array(self.points))
             self.points = []
