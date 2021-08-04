@@ -5,6 +5,7 @@
 #include <netinet/sctp.h>
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 
@@ -71,8 +72,45 @@ std::string GetHostname();
 // Gets and logs the contents of the sctp_status message.
 void LogSctpStatus(int fd, sctp_assoc_t assoc_id);
 
-// Read and allocate a message.
-aos::unique_c_ptr<Message> ReadSctpMessage(int fd, size_t max_size);
+// Manages reading and writing SCTP messages.
+class SctpReadWrite {
+ public:
+  SctpReadWrite() = default;
+  ~SctpReadWrite() { CloseSocket(); }
+
+  // Opens a new socket.
+  void OpenSocket(const struct sockaddr_storage &sockaddr_local);
+
+  // Sends a message to the kernel.
+  // Returns true for success. Will not send a partial message on failure.
+  bool SendMessage(int stream, std::string_view data, int time_to_live,
+                   std::optional<struct sockaddr_storage> sockaddr_remote,
+                   sctp_assoc_t snd_assoc_id);
+
+  // Reads from the kernel until a complete message is received or it blocks.
+  // Returns nullptr if the kernel blocks before returning a complete message.
+  aos::unique_c_ptr<Message> ReadMessage();
+
+  int fd() const { return fd_; }
+
+  void SetMaxSize(size_t max_size) {
+    max_size_ = max_size;
+    if (fd_ != -1) {
+      DoSetMaxSize();
+    }
+  }
+
+ private:
+  void CloseSocket();
+  void DoSetMaxSize();
+
+  int fd_ = -1;
+
+  // We use this as a unique identifier that just increments for each message.
+  uint32_t send_ppid_ = 0;
+
+  size_t max_size_ = 1000;
+};
 
 // Returns the max network buffer available for reading for a socket.
 size_t ReadRMemMax();

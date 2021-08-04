@@ -18,18 +18,18 @@ class SctpClient {
   SctpClient(std::string_view remote_host, int remote_port, int streams,
              std::string_view local_host = "0.0.0.0", int local_port = 9971);
 
-  ~SctpClient() {
-    LOG(INFO) << "close(" << fd_ << ")";
-    PCHECK(close(fd_) == 0);
-  }
+  ~SctpClient() {}
 
   // Receives the next packet from the remote.
-  aos::unique_c_ptr<Message> Read();
+  aos::unique_c_ptr<Message> Read() { return sctp_.ReadMessage(); }
 
   // Sends a block of data on a stream with a TTL.
-  bool Send(int stream, std::string_view data, int time_to_live);
+  // TODO(austin): time_to_live should be a chrono::duration
+  bool Send(int stream, std::string_view data, int time_to_live) {
+    return sctp_.SendMessage(stream, data, time_to_live, sockaddr_remote_, 0);
+  }
 
-  int fd() { return fd_; }
+  int fd() { return sctp_.fd(); }
 
   // Enables the priority scheduler.  This is a SCTP feature which lets us
   // configure the priority per stream so that higher priority packets don't get
@@ -43,30 +43,12 @@ class SctpClient {
 
   void LogSctpStatus(sctp_assoc_t assoc_id);
 
-  void SetMaxSize(size_t max_size) {
-    max_size_ = max_size;
-    // Have the kernel give us a factor of 10 more.  This lets us have more than
-    // one full sized packet in flight.
-    max_size = max_size * 10;
-
-    CHECK_GE(ReadRMemMax(), max_size)
-        << "rmem_max is too low. To increase rmem_max temporarily, do sysctl "
-           "-w net.core.rmem_max=NEW_SIZE";
-    CHECK_GE(ReadWMemMax(), max_size)
-        << "wmem_max is too low. To increase wmem_max temporarily, do sysctl "
-           "-w net.core.wmem_max=NEW_SIZE";
-    PCHECK(setsockopt(fd_, SOL_SOCKET, SO_RCVBUF, &max_size,
-                      sizeof(max_size)) == 0);
-    PCHECK(setsockopt(fd_, SOL_SOCKET, SO_SNDBUF, &max_size,
-                      sizeof(max_size)) == 0);
-  }
+  void SetMaxSize(size_t max_size) { sctp_.SetMaxSize(max_size); }
 
  private:
   struct sockaddr_storage sockaddr_remote_;
   struct sockaddr_storage sockaddr_local_;
-  int fd_;
-
-  size_t max_size_ = 1000;
+  SctpReadWrite sctp_;
 };
 
 }  // namespace message_bridge

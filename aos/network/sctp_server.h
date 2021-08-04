@@ -24,23 +24,23 @@ class SctpServer {
  public:
   SctpServer(std::string_view local_host = "0.0.0.0", int local_port = 9971);
 
-  ~SctpServer() {
-    LOG(INFO) << "close(" << fd_ << ")";
-    PCHECK(close(fd_) == 0);
-  }
+  ~SctpServer() {}
 
   // Receives the next packet from the remote.
-  aos::unique_c_ptr<Message> Read();
+  aos::unique_c_ptr<Message> Read() { return sctp_.ReadMessage(); }
 
   // Sends a block of data to a client on a stream with a TTL.  Returns true on
   // success.
   bool Send(std::string_view data, sctp_assoc_t snd_assoc_id, int stream,
-            int timetolive);
+            int time_to_live) {
+    return sctp_.SendMessage(stream, data, time_to_live, std::nullopt,
+                             snd_assoc_id);
+  }
 
   // Aborts a connection.  Returns true on success.
   bool Abort(sctp_assoc_t snd_assoc_id);
 
-  int fd() { return fd_; }
+  int fd() { return sctp_.fd(); }
 
   // Enables the priority scheduler.  This is a SCTP feature which lets us
   // configure the priority per stream so that higher priority packets don't get
@@ -51,27 +51,11 @@ class SctpServer {
   void SetStreamPriority(sctp_assoc_t assoc_id, int stream_id,
                          uint16_t priority);
 
-  void SetMaxSize(size_t max_size) {
-    max_size_ = max_size;
-    // Have the kernel give us a factor of 10 more.  This lets us have more than
-    // one full sized packet in flight.
-    max_size = max_size * 10;
-
-    CHECK_GE(ReadRMemMax(), max_size);
-    CHECK_GE(ReadWMemMax(), max_size);
-    PCHECK(setsockopt(fd_, SOL_SOCKET, SO_RCVBUF, &max_size,
-                      sizeof(max_size)) == 0);
-    PCHECK(setsockopt(fd_, SOL_SOCKET, SO_SNDBUF, &max_size,
-                      sizeof(max_size)) == 0);
-  }
+  void SetMaxSize(size_t max_size) { sctp_.SetMaxSize(max_size); }
 
  private:
   struct sockaddr_storage sockaddr_local_;
-  int fd_;
-
-  size_t max_size_ = 1000;
-
-  int ppid_ = 1;
+  SctpReadWrite sctp_;
 };
 
 }  // namespace message_bridge
