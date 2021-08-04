@@ -90,7 +90,6 @@ MakeMessageHeaderReply() {
   return fbb.Release();
 }
 
-
 }  // namespace
 
 SctpClientConnection::SctpClientConnection(
@@ -150,6 +149,9 @@ SctpClientConnection::SctpClientConnection(
 void SctpClientConnection::MessageReceived() {
   // Dispatch the message to the correct receiver.
   aos::unique_c_ptr<Message> message = client_.Read();
+  if (!message) {
+    return;
+  }
 
   if (message->message_type == Message::kNotification) {
     const union sctp_notification *snp =
@@ -228,9 +230,14 @@ void SctpClientConnection::HandleData(const Message *message) {
   VLOG(1) << "Got a message of size " << message->size;
   CHECK_EQ(message->size, flatbuffers::GetPrefixedSize(message->data()) +
                               sizeof(flatbuffers::uoffset_t));
+  {
+    flatbuffers::Verifier verifier(message->data(), message->size);
+    CHECK(remote_data->Verify(verifier));
+  }
 
   const int stream = message->header.rcvinfo.rcv_sid - kControlStreams();
-  SctpClientChannelState *channel_state = &((*channels_)[stream_to_channel_[stream]]);
+  SctpClientChannelState *channel_state =
+      &((*channels_)[stream_to_channel_[stream]]);
 
   if (remote_data->queue_index() == channel_state->last_queue_index &&
       monotonic_clock::time_point(

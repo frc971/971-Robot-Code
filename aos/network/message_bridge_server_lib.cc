@@ -90,10 +90,10 @@ void ChannelState::SendData(SctpServer *server, const Context &context) {
 
   if (logged_remotely) {
     if (sent_count == 0) {
-      VLOG(1) << "No clients, rejecting";
-      HandleFailure(fbb.Release());
+      VLOG(1)
+          << "No clients, rejecting. TODO(austin): do backup logging to disk";
     } else {
-      sent_messages_.emplace_back(fbb.Release());
+      VLOG(1) << "TODO(austin): backup log to disk if this fails eventually";
     }
   } else {
     VLOG(1) << "Not bothering to track this message since nobody cares.";
@@ -165,40 +165,8 @@ void ChannelState::HandleDelivery(sctp_assoc_t rcv_assoc_id, uint16_t /*ssn*/,
     }
   }
 
-  while (sent_messages_.size() > 0u) {
-    if (sent_messages_.begin()->message().monotonic_sent_time() ==
-            message_header->monotonic_sent_time() &&
-        sent_messages_.begin()->message().queue_index() ==
-            message_header->queue_index()) {
-      sent_messages_.pop_front();
-      continue;
-    }
-
-    if (sent_messages_.begin()->message().monotonic_sent_time() <
-        message_header->monotonic_sent_time()) {
-      VLOG(1) << "Delivery looks wrong, rejecting";
-      HandleFailure(std::move(sent_messages_.front()));
-      sent_messages_.pop_front();
-      continue;
-    }
-
-    break;
-  }
-}
-
-void ChannelState::HandleFailure(
-    SizePrefixedFlatbufferDetachedBuffer<RemoteData> &&message) {
-  // TODO(austin): Put it in the log queue.
-  if (VLOG_IS_ON(2)) {
-    LOG(INFO) << "Failed to send " << FlatbufferToJson(message);
-  } else if (VLOG_IS_ON(1)) {
-    message.mutable_message()->clear_data();
-    LOG(INFO) << "Failed to send " << FlatbufferToJson(message);
-  }
-
-  // Note: this may be really out of order when we avoid the queue...  We
-  // have the ones we know didn't make it immediately, and the ones which
-  // time out eventually.  Need to sort that out.
+  // TODO(austin): record success of preceding messages, and log to disk if we
+  // don't find this in the list.
 }
 
 void ChannelState::AddPeer(const Connection *connection, int node_index,
@@ -329,7 +297,6 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop)
 
     if (configuration::ChannelIsSendableOnNode(channel, event_loop_->node()) &&
         channel->has_destination_nodes()) {
-
       bool any_reliable = false;
       for (const Connection *connection : *channel->destination_nodes()) {
         if (connection->time_to_live() == 0) {
@@ -432,6 +399,9 @@ void MessageBridgeServer::NodeDisconnected(sctp_assoc_t assoc_id) {
 
 void MessageBridgeServer::MessageReceived() {
   aos::unique_c_ptr<Message> message = server_.Read();
+  if (!message) {
+    return;
+  }
 
   if (message->message_type == Message::kNotification) {
     const union sctp_notification *snp =
@@ -472,6 +442,10 @@ void MessageBridgeServer::HandleData(const Message *message) {
   if (message->header.rcvinfo.rcv_sid == kConnectStream()) {
     // Control channel!
     const Connect *connect = flatbuffers::GetRoot<Connect>(message->data());
+    {
+      flatbuffers::Verifier verifier(message->data(), message->size);
+      CHECK(connect->Verify(verifier));
+    }
     VLOG(1) << FlatbufferToJson(connect);
 
     // Account for the control channel and delivery times channel.
@@ -516,6 +490,10 @@ void MessageBridgeServer::HandleData(const Message *message) {
     // Message delivery
     const logger::MessageHeader *message_header =
         flatbuffers::GetRoot<logger::MessageHeader>(message->data());
+    {
+      flatbuffers::Verifier verifier(message->data(), message->size);
+      CHECK(message_header->Verify(verifier));
+    }
 
     CHECK_LT(message_header->channel_index(), channels_.size());
     CHECK_NOTNULL(channels_[message_header->channel_index()])
