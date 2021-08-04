@@ -41,7 +41,7 @@ StateFeedbackPlant<4, 2, 2, double> MakePlantFromConfig(
     coefs.emplace_back(new StateFeedbackPlantCoefficients<4, 2, 2, double>(
         dt_config.make_drivetrain_loop().plant().coefficients(ii)));
   }
-  return StateFeedbackPlant<4, 2, 2, double>(&coefs);
+  return StateFeedbackPlant<4, 2, 2, double>(std::move(coefs));
 }
 
 }  // namespace

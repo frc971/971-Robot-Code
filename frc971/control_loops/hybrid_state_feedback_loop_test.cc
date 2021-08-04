@@ -84,7 +84,7 @@ StateFeedbackHybridPlant<3, 1, 1> MakeIntegralShooterPlant() {
   plants[0] = ::std::unique_ptr<StateFeedbackHybridPlantCoefficients<3, 1, 1>>(
       new StateFeedbackHybridPlantCoefficients<3, 1, 1>(
           MakeIntegralShooterPlantCoefficients()));
-  return StateFeedbackHybridPlant<3, 1, 1>(&plants);
+  return StateFeedbackHybridPlant<3, 1, 1>(std::move(plants));
 }
 
 StateFeedbackController<3, 1, 1> MakeIntegralShooterController() {
@@ -94,7 +94,7 @@ StateFeedbackController<3, 1, 1> MakeIntegralShooterController() {
       ::std::unique_ptr<StateFeedbackControllerCoefficients<3, 1, 1>>(
           new StateFeedbackControllerCoefficients<3, 1, 1>(
               MakeIntegralShooterControllerCoefficients()));
-  return StateFeedbackController<3, 1, 1>(&controllers);
+  return StateFeedbackController<3, 1, 1>(std::move(controllers));
 }
 
 HybridKalman<3, 1, 1> MakeIntegralShooterObserver() {
@@ -103,7 +103,7 @@ HybridKalman<3, 1, 1> MakeIntegralShooterObserver() {
   observers[0] = ::std::unique_ptr<HybridKalmanCoefficients<3, 1, 1>>(
       new HybridKalmanCoefficients<3, 1, 1>(
           MakeIntegralShooterObserverCoefficients()));
-  return HybridKalman<3, 1, 1>(&observers);
+  return HybridKalman<3, 1, 1>(std::move(observers));
 }
 
 StateFeedbackLoop<3, 1, 1, double, StateFeedbackHybridPlant<3, 1, 1>,
@@ -134,7 +134,7 @@ TEST(StateFeedbackLoopTest, UnequalSizes) {
       v_plant;
   v_plant.emplace_back(
       new StateFeedbackPlantCoefficients<2, 4, 7>(coefficients));
-  StateFeedbackPlant<2, 4, 7> plant(&v_plant);
+  StateFeedbackPlant<2, 4, 7> plant(std::move(v_plant));
   plant.Update(Eigen::Matrix<double, 4, 1>::Zero());
   plant.Reset();
   plant.CheckU(Eigen::Matrix<double, 4, 1>::Zero());
@@ -145,7 +145,7 @@ TEST(StateFeedbackLoopTest, UnequalSizes) {
   v_controller.emplace_back(new StateFeedbackControllerCoefficients<2, 4, 7>(
       Eigen::Matrix<double, 4, 2>::Identity(),
       Eigen::Matrix<double, 4, 2>::Identity()));
-  StateFeedbackController<2, 4, 7> controller(&v_controller);
+  StateFeedbackController<2, 4, 7> controller(std::move(v_controller));
 
   ::std::vector<::std::unique_ptr<StateFeedbackObserverCoefficients<2, 4, 7>>>
       v_observer;
@@ -153,7 +153,7 @@ TEST(StateFeedbackLoopTest, UnequalSizes) {
       Eigen::Matrix<double, 2, 7>::Identity(),
       Eigen::Matrix<double, 2, 2>::Identity(),
       Eigen::Matrix<double, 7, 7>::Identity()));
-  StateFeedbackObserver<2, 4, 7> observer(&v_observer);
+  StateFeedbackObserver<2, 4, 7> observer(std::move(v_observer));
 
   StateFeedbackLoop<2, 4, 7> test_loop(
       ::std::move(plant), ::std::move(controller), ::std::move(observer));

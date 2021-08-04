@@ -69,8 +69,8 @@ class StateFeedbackPlant {
   StateFeedbackPlant(
       ::std::vector<::std::unique_ptr<StateFeedbackPlantCoefficients<
           number_of_states, number_of_inputs, number_of_outputs, Scalar>>>
-          *coefficients)
-      : coefficients_(::std::move(*coefficients)), index_(0) {
+          &&coefficients)
+      : coefficients_(::std::move(coefficients)), index_(0) {
     Reset();
   }
 
@@ -222,8 +222,8 @@ class StateFeedbackController {
   explicit StateFeedbackController(
       ::std::vector<::std::unique_ptr<StateFeedbackControllerCoefficients<
           number_of_states, number_of_inputs, number_of_outputs, Scalar>>>
-          *controllers)
-      : coefficients_(::std::move(*controllers)) {}
+          &&controllers)
+      : coefficients_(::std::move(controllers)) {}
 
   StateFeedbackController(StateFeedbackController &&other)
       : index_(other.index_) {
@@ -300,8 +300,8 @@ class StateFeedbackObserver {
   explicit StateFeedbackObserver(
       ::std::vector<::std::unique_ptr<StateFeedbackObserverCoefficients<
           number_of_states, number_of_inputs, number_of_outputs, Scalar>>>
-          *observers)
-      : coefficients_(::std::move(*observers)) {}
+          &&observers)
+      : coefficients_(::std::move(observers)) {}
 
   StateFeedbackObserver(StateFeedbackObserver &&other)
       : X_hat_(other.X_hat_), index_(other.index_) {
