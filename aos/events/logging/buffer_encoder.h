@@ -2,9 +2,8 @@
 #define AOS_EVENTS_LOGGING_BUFFER_ENCODER_H_
 
 #include "absl/types/span.h"
-#include "flatbuffers/flatbuffers.h"
-
 #include "aos/events/logging/logger_generated.h"
+#include "flatbuffers/flatbuffers.h"
 
 namespace aos::logger {
 
@@ -89,6 +88,9 @@ class DataDecoder {
   // Returns less than end-begin if all bytes have been read. Otherwise, this
   // will always fill the whole range.
   virtual size_t Read(uint8_t *begin, uint8_t *end) = 0;
+
+  // Returns the underlying filename, for debugging purposes.
+  virtual std::string_view filename() const = 0;
 };
 
 // Simply reads the contents of the file into the target buffer.
@@ -102,8 +104,11 @@ class DummyDecoder final : public DataDecoder {
   ~DummyDecoder() override;
 
   size_t Read(uint8_t *begin, uint8_t *end) final;
+  std::string_view filename() const final { return filename_; }
 
  private:
+  const std::string filename_;
+
   // File descriptor for the log file.
   int fd_;
 

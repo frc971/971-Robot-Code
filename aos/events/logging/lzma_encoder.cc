@@ -149,8 +149,9 @@ void LzmaEncoder::RunLzmaCode(lzma_action action) {
   total_bytes_ += last_avail_out - stream_.avail_out;
 }
 
-LzmaDecoder::LzmaDecoder(std::string_view filename)
-    : dummy_decoder_(filename), stream_(LZMA_STREAM_INIT), filename_(filename) {
+LzmaDecoder::LzmaDecoder(std::unique_ptr<DataDecoder> underlying_decoder)
+    : underlying_decoder_(std::move(underlying_decoder)),
+      stream_(LZMA_STREAM_INIT) {
   compressed_data_.resize(kBufSize);
 
   lzma_ret status =
@@ -174,8 +175,8 @@ size_t LzmaDecoder::Read(uint8_t *begin, uint8_t *end) {
   while (stream_.avail_out > 0) {
     if (action_ == LZMA_RUN && stream_.avail_in == 0) {
       // Read more bytes from the file if we're all out.
-      const size_t count =
-          dummy_decoder_.Read(compressed_data_.begin(), compressed_data_.end());
+      const size_t count = underlying_decoder_->Read(compressed_data_.begin(),
+                                                     compressed_data_.end());
       if (count == 0) {
         // No more data to read in the file, begin the finishing operation.
         action_ = LZMA_FINISH;
@@ -196,17 +197,18 @@ size_t LzmaDecoder::Read(uint8_t *begin, uint8_t *end) {
 
     // If we fail to decompress, give up.  Return everything that has been
     // produced so far.
-    if (!LzmaCodeIsOk(status, filename_)) {
+    if (!LzmaCodeIsOk(status, filename())) {
       finished_ = true;
-      LOG(WARNING) << filename_ << " is truncated or corrupted.";
+      LOG(WARNING) << filename() << " is truncated or corrupted.";
       return (end - begin) - stream_.avail_out;
     }
   }
   return end - begin;
 }
 
-ThreadedLzmaDecoder::ThreadedLzmaDecoder(std::string_view filename)
-    : decoder_(filename), decode_thread_([this] {
+ThreadedLzmaDecoder::ThreadedLzmaDecoder(
+    std::unique_ptr<DataDecoder> underlying_decoder)
+    : decoder_(std::move(underlying_decoder)), decode_thread_([this] {
         std::unique_lock lock(decode_mutex_);
         while (true) {
           // Wake if the queue is too small or we are finished.

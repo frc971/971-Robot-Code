@@ -39,7 +39,7 @@ size_t DummyEncoder::queued_bytes() const {
 }
 
 DummyDecoder::DummyDecoder(std::string_view filename)
-    : fd_(open(std::string(filename).c_str(), O_RDONLY | O_CLOEXEC)) {
+    : filename_(filename), fd_(open(filename_.c_str(), O_RDONLY | O_CLOEXEC)) {
   PCHECK(fd_ != -1) << ": Failed to open " << filename;
 }
 
