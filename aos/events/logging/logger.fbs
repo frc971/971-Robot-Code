@@ -97,6 +97,10 @@ table LogFileHeader {
   // The boot UUIDs for all nodes we know them for, or "" for the ones we don't.
   // TODO(austin): Actually add this in the log writer.
   boot_uuids:[string] (id: 17);
+
+  // Timestamps that the header on this part file was written on the logger node.
+  logger_part_monotonic_start_time:int64 = -9223372036854775808 (id: 18);
+  logger_part_realtime_start_time:int64 = -9223372036854775808 (id: 19);
 }
 
 // Table holding a message.

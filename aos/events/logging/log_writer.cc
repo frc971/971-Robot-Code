@@ -111,14 +111,20 @@ Logger::Logger(EventLoop *event_loop, const Configuration *configuration,
         fs.wants_timestamp_writer = true;
         fs.timestamp_node_index = our_node_index;
       }
-      if (log_message) {
-        VLOG(1) << "  Data";
-        fs.wants_writer = true;
+      // Both the timestamp and data writers want data_node_index so it knows
+      // what the source node is.
+      if (log_message || log_delivery_times) {
         if (!is_local) {
           const Node *source_node = configuration::GetNode(
               configuration_, channel->source_node()->string_view());
           fs.data_node_index =
               configuration::GetNodeIndex(configuration_, source_node);
+        }
+      }
+      if (log_message) {
+        VLOG(1) << "  Data";
+        fs.wants_writer = true;
+        if (!is_local) {
           fs.log_type = LogType::kLogRemoteMessage;
         } else {
           fs.data_node_index = our_node_index;
@@ -254,16 +260,7 @@ void Logger::StartLogging(std::unique_ptr<LogNamer> log_namer,
     }
   }
 
-  CHECK(node_state_.empty());
-  node_state_.resize(configuration::MultiNode(configuration_)
-                         ? configuration_->nodes()->size()
-                         : 1u);
-
-  for (const Node *node : log_namer_->nodes()) {
-    const int node_index = configuration::GetNodeIndex(configuration_, node);
-
-    node_state_[node_index].log_file_header = MakeHeader(node, config_sha256);
-  }
+  log_namer_->SetHeaderTemplate(MakeHeader(config_sha256));
 
   const aos::monotonic_clock::time_point beginning_time =
       event_loop_->monotonic_now();
@@ -282,9 +279,10 @@ void Logger::StartLogging(std::unique_ptr<LogNamer> log_namer,
   }
 
   // Clear out any old timestamps in case we are re-starting logging.
-  for (size_t i = 0; i < node_state_.size(); ++i) {
-    SetStartTime(i, monotonic_clock::min_time, realtime_clock::min_time,
-                 monotonic_clock::min_time, realtime_clock::min_time);
+  for (size_t i = 0; i < configuration::NodesCount(configuration_); ++i) {
+    log_namer_->SetStartTimes(
+        i, monotonic_clock::min_time, realtime_clock::min_time,
+        monotonic_clock::min_time, realtime_clock::min_time);
   }
 
   const aos::monotonic_clock::time_point fetch_time =
@@ -333,7 +331,6 @@ std::unique_ptr<LogNamer> Logger::StopLogging(
     f.timestamp_writer = nullptr;
     f.contents_writer = nullptr;
   }
-  node_state_.clear();
 
   log_event_uuid_ = UUID::Zero();
   log_start_uuid_ = std::nullopt;
@@ -346,9 +343,9 @@ void Logger::WriteHeader() {
     server_statistics_fetcher_.Fetch();
   }
 
-  aos::monotonic_clock::time_point monotonic_start_time =
+  const aos::monotonic_clock::time_point monotonic_start_time =
       event_loop_->monotonic_now();
-  aos::realtime_clock::time_point realtime_start_time =
+  const aos::realtime_clock::time_point realtime_start_time =
       event_loop_->realtime_now();
 
   // We need to pick a point in time to declare the log file "started".  This
@@ -361,51 +358,7 @@ void Logger::WriteHeader() {
     const int node_index = configuration::GetNodeIndex(configuration_, node);
     MaybeUpdateTimestamp(node, node_index, monotonic_start_time,
                          realtime_start_time);
-    MaybeWriteHeader(node_index, node);
   }
-}
-
-void Logger::MaybeWriteHeader(int node_index) {
-  if (configuration::MultiNode(configuration_)) {
-    return MaybeWriteHeader(node_index,
-                            configuration_->nodes()->Get(node_index));
-  } else {
-    return MaybeWriteHeader(node_index, nullptr);
-  }
-}
-
-void Logger::MaybeWriteHeader(int node_index, const Node *node) {
-  // This function is responsible for writing the header when the header both
-  // has valid data, and when it needs to be written.
-  if (node_state_[node_index].header_written &&
-      node_state_[node_index].header_valid) {
-    // The header has been written and is valid, nothing to do.
-    return;
-  }
-  if (!node_state_[node_index].has_source_node_boot_uuid) {
-    // Can't write a header if we don't have the boot UUID.
-    return;
-  }
-
-  // WriteHeader writes the first header in a log file.  We want to do this only
-  // once.
-  //
-  // Rotate rewrites the same header with a new part ID, but keeps the same part
-  // UUID.  We don't want that when things reboot, because that implies that
-  // parts go together across a reboot.
-  //
-  // Reboot resets the parts UUID.  So, once we've written a header the first
-  // time, we want to use Reboot to rotate the log and reset the parts UUID.
-  //
-  // header_valid is cleared whenever the remote reboots.
-  if (node_state_[node_index].header_written) {
-    log_namer_->Reboot(node, &node_state_[node_index].log_file_header);
-  } else {
-    log_namer_->WriteHeader(&node_state_[node_index].log_file_header, node);
-
-    node_state_[node_index].header_written = true;
-  }
-  node_state_[node_index].header_valid = true;
 }
 
 void Logger::WriteMissingTimestamps() {
@@ -425,61 +378,9 @@ void Logger::WriteMissingTimestamps() {
             node, node_index,
             server_statistics_fetcher_.context().monotonic_event_time,
             server_statistics_fetcher_.context().realtime_event_time)) {
-      CHECK(node_state_[node_index].header_written);
-      CHECK(node_state_[node_index].header_valid);
-      log_namer_->Rotate(node, &node_state_[node_index].log_file_header);
-    } else {
-      MaybeWriteHeader(node_index, node);
+      VLOG(1) << "Rotating because timestamps changed";
+      log_namer_->Rotate(node);
     }
-  }
-}
-
-void Logger::SetStartTime(
-    size_t node_index, aos::monotonic_clock::time_point monotonic_start_time,
-    aos::realtime_clock::time_point realtime_start_time,
-    aos::monotonic_clock::time_point logger_monotonic_start_time,
-    aos::realtime_clock::time_point logger_realtime_start_time) {
-  node_state_[node_index].monotonic_start_time = monotonic_start_time;
-  node_state_[node_index].realtime_start_time = realtime_start_time;
-  node_state_[node_index]
-      .log_file_header.mutable_message()
-      ->mutate_monotonic_start_time(
-          std::chrono::duration_cast<std::chrono::nanoseconds>(
-              monotonic_start_time.time_since_epoch())
-              .count());
-
-  // Add logger start times if they are available in the log file header.
-  if (node_state_[node_index]
-          .log_file_header.mutable_message()
-          ->has_logger_monotonic_start_time()) {
-    node_state_[node_index]
-        .log_file_header.mutable_message()
-        ->mutate_logger_monotonic_start_time(
-            std::chrono::duration_cast<std::chrono::nanoseconds>(
-                logger_monotonic_start_time.time_since_epoch())
-                .count());
-  }
-
-  if (node_state_[node_index]
-          .log_file_header.mutable_message()
-          ->has_logger_realtime_start_time()) {
-    node_state_[node_index]
-        .log_file_header.mutable_message()
-        ->mutate_logger_realtime_start_time(
-            std::chrono::duration_cast<std::chrono::nanoseconds>(
-                logger_realtime_start_time.time_since_epoch())
-                .count());
-  }
-
-  if (node_state_[node_index]
-          .log_file_header.mutable_message()
-          ->has_realtime_start_time()) {
-    node_state_[node_index]
-        .log_file_header.mutable_message()
-        ->mutate_realtime_start_time(
-            std::chrono::duration_cast<std::chrono::nanoseconds>(
-                realtime_start_time.time_since_epoch())
-                .count());
   }
 }
 
@@ -488,16 +389,16 @@ bool Logger::MaybeUpdateTimestamp(
     aos::monotonic_clock::time_point monotonic_start_time,
     aos::realtime_clock::time_point realtime_start_time) {
   // Bail early if the start times are already set.
-  if (node_state_[node_index].monotonic_start_time !=
+  if (log_namer_->monotonic_start_time(node_index) !=
       monotonic_clock::min_time) {
     return false;
   }
   if (event_loop_->node() == node ||
       !configuration::MultiNode(configuration_)) {
     // There are no offsets to compute for ourself, so always succeed.
-    SetStartTime(node_index, monotonic_start_time, realtime_start_time,
-                 monotonic_start_time, realtime_start_time);
-    node_state_[node_index].SetBootUUID(event_loop_->boot_uuid());
+    log_namer_->SetStartTimes(node_index, monotonic_start_time,
+                              realtime_start_time, monotonic_start_time,
+                              realtime_start_time);
     return true;
   } else if (server_statistics_fetcher_.get() != nullptr) {
     // We must be a remote node now.  Look for the connection and see if it is
@@ -523,11 +424,11 @@ bool Logger::MaybeUpdateTimestamp(
       }
 
       // Found it and it is connected.  Compensate and go.
-      SetStartTime(node_index,
-                   monotonic_start_time +
-                       std::chrono::nanoseconds(connection->monotonic_offset()),
-                   realtime_start_time, monotonic_start_time,
-                   realtime_start_time);
+      log_namer_->SetStartTimes(
+          node_index,
+          monotonic_start_time +
+              std::chrono::nanoseconds(connection->monotonic_offset()),
+          realtime_start_time, monotonic_start_time, realtime_start_time);
       return true;
     }
   }
@@ -535,8 +436,7 @@ bool Logger::MaybeUpdateTimestamp(
 }
 
 aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> Logger::MakeHeader(
-    const Node *node, std::string_view config_sha256) {
-  // Now write the header with this timestamp in it.
+    std::string_view config_sha256) {
   flatbuffers::FlatBufferBuilder fbb;
   fbb.ForceDefaults(true);
 
@@ -570,17 +470,9 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> Logger::MakeHeader(
   const flatbuffers::Offset<flatbuffers::String> logger_node_boot_uuid_offset =
       event_loop_->boot_uuid().PackString(&fbb);
 
-  const flatbuffers::Offset<flatbuffers::String> source_node_boot_uuid_offset =
-      event_loop_->boot_uuid().PackString(&fbb);
-
-  const flatbuffers::Offset<flatbuffers::String> parts_uuid_offset =
-      fbb.CreateString("00000000-0000-4000-8000-000000000000");
-
-  flatbuffers::Offset<Node> node_offset;
   flatbuffers::Offset<Node> logger_node_offset;
 
   if (configuration::MultiNode(configuration_)) {
-    node_offset = RecursiveCopyFlatBuffer(node, &fbb);
     logger_node_offset = RecursiveCopyFlatBuffer(event_loop_->node(), &fbb);
   }
 
@@ -589,8 +481,7 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> Logger::MakeHeader(
   log_file_header_builder.add_name(name_offset);
 
   // Only add the node if we are running in a multinode configuration.
-  if (node != nullptr) {
-    log_file_header_builder.add_node(node_offset);
+  if (configuration::MultiNode(configuration_)) {
     log_file_header_builder.add_logger_node(logger_node_offset);
   }
 
@@ -605,26 +496,6 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> Logger::MakeHeader(
   log_file_header_builder.add_max_out_of_order_duration(
       std::chrono::nanoseconds(3 * polling_period_).count());
 
-  log_file_header_builder.add_monotonic_start_time(
-      std::chrono::duration_cast<std::chrono::nanoseconds>(
-          monotonic_clock::min_time.time_since_epoch())
-          .count());
-  if (node == event_loop_->node()) {
-    log_file_header_builder.add_realtime_start_time(
-        std::chrono::duration_cast<std::chrono::nanoseconds>(
-            realtime_clock::min_time.time_since_epoch())
-            .count());
-  } else {
-    log_file_header_builder.add_logger_monotonic_start_time(
-        std::chrono::duration_cast<std::chrono::nanoseconds>(
-            monotonic_clock::min_time.time_since_epoch())
-            .count());
-    log_file_header_builder.add_logger_realtime_start_time(
-        std::chrono::duration_cast<std::chrono::nanoseconds>(
-            realtime_clock::min_time.time_since_epoch())
-            .count());
-  }
-
   log_file_header_builder.add_log_event_uuid(log_event_uuid_offset);
   log_file_header_builder.add_logger_instance_uuid(logger_instance_uuid_offset);
   if (!log_start_uuid_offset.IsNull()) {
@@ -632,13 +503,6 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> Logger::MakeHeader(
   }
   log_file_header_builder.add_logger_node_boot_uuid(
       logger_node_boot_uuid_offset);
-  log_file_header_builder.add_source_node_boot_uuid(
-      source_node_boot_uuid_offset);
-
-  log_file_header_builder.add_parts_uuid(parts_uuid_offset);
-  log_file_header_builder.add_parts_index(0);
-
-  log_file_header_builder.add_configuration_sha256(0);
 
   if (!config_sha256_offset.IsNull()) {
     log_file_header_builder.add_configuration_sha256(config_sha256_offset);
@@ -672,8 +536,7 @@ void Logger::ResetStatisics() {
 
 void Logger::Rotate() {
   for (const Node *node : log_namer_->nodes()) {
-    const int node_index = configuration::GetNodeIndex(configuration_, node);
-    log_namer_->Rotate(node, &node_state_[node_index].log_file_header);
+    log_namer_->Rotate(node);
   }
 }
 
@@ -708,16 +571,10 @@ void Logger::LogUntil(monotonic_clock::time_point t) {
         break;
       }
       if (f.writer != nullptr) {
-        // Only check if the boot UUID has changed if this is data from another
-        // node.  Our UUID can't change without restarting the application.
-        if (our_node_index != f.data_node_index) {
-          // And update our boot UUID if the UUID has changed.
-          if (node_state_[f.data_node_index].SetBootUUID(
-                  f.fetcher->context().source_boot_uuid)) {
-            MaybeWriteHeader(f.data_node_index);
-          }
-        }
-
+        const UUID source_node_boot_uuid =
+            our_node_index != f.data_node_index
+                ? f.fetcher->context().source_boot_uuid
+                : event_loop_->boot_uuid();
         // Write!
         const auto start = event_loop_->monotonic_now();
         flatbuffers::FlatBufferBuilder fbb(f.fetcher->context().size +
@@ -739,10 +596,7 @@ void Logger::LogUntil(monotonic_clock::time_point t) {
 
         max_header_size_ = std::max(max_header_size_,
                                     fbb.GetSize() - f.fetcher->context().size);
-        CHECK(node_state_[f.data_node_index].header_valid)
-            << ": Can't write data before the header on channel "
-            << configuration::CleanedChannelToString(f.fetcher->channel());
-        f.writer->QueueSizedFlatbuffer(&fbb, end);
+        f.writer->QueueMessage(&fbb, source_node_boot_uuid, end);
       }
 
       if (f.timestamp_writer != nullptr) {
@@ -765,10 +619,10 @@ void Logger::LogUntil(monotonic_clock::time_point t) {
                        flatbuffers::GetSizePrefixedRoot<MessageHeader>(
                            fbb.GetBufferPointer()));
 
-        CHECK(node_state_[f.timestamp_node_index].header_valid)
-            << ": Can't write data before the header on channel "
-            << configuration::CleanedChannelToString(f.fetcher->channel());
-        f.timestamp_writer->QueueSizedFlatbuffer(&fbb, end);
+        // Tell our writer that we know something about the remote boot.
+        f.timestamp_writer->UpdateRemote(f.data_node_index,
+                                         f.fetcher->context().source_boot_uuid);
+        f.timestamp_writer->QueueMessage(&fbb, event_loop_->boot_uuid(), end);
       }
 
       if (f.contents_writer != nullptr) {
@@ -784,10 +638,6 @@ void Logger::LogUntil(monotonic_clock::time_point t) {
             flatbuffers::GetRoot<RemoteMessage>(f.fetcher->context().data);
 
         CHECK(msg->has_boot_uuid()) << ": " << aos::FlatbufferToJson(msg);
-        if (node_state_[f.contents_node_index].SetBootUUID(
-                UUID::FromVector(msg->boot_uuid()))) {
-          MaybeWriteHeader(f.contents_node_index);
-        }
 
         logger::MessageHeader::Builder message_header_builder(fbb);
 
@@ -826,10 +676,8 @@ void Logger::LogUntil(monotonic_clock::time_point t) {
         const auto end = event_loop_->monotonic_now();
         RecordCreateMessageTime(start, end, &f);
 
-        CHECK(node_state_[f.contents_node_index].header_valid)
-            << ": Can't write data before the header on channel "
-            << configuration::CleanedChannelToString(f.fetcher->channel());
-        f.contents_writer->QueueSizedFlatbuffer(&fbb, end);
+        f.contents_writer->QueueMessage(
+            &fbb, UUID::FromVector(msg->boot_uuid()), end);
       }
 
       f.written = true;
