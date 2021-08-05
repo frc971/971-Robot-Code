@@ -44,14 +44,10 @@ class NewDataWriter {
   // Rotates the log file, delaying writing the new header until data arrives.
   void Rotate();
 
-  // TODO(austin): Copy header and add all UUIDs and such when available
-  // whenever data is written.
-  //
-  // TODO(austin): Add known timestamps for each node every time we cycle a log
-  // for sorting.
-
-  void UpdateRemote(size_t remote_node_index,
-                    const UUID &remote_node_boot_uuid);
+  void UpdateRemote(size_t remote_node_index, const UUID &remote_node_boot_uuid,
+                    monotonic_clock::time_point monotonic_remote_time,
+                    monotonic_clock::time_point monotonic_event_time,
+                    bool reliable);
   // Queues up a message with the provided boot UUID.
   void QueueMessage(flatbuffers::FlatBufferBuilder *fbb,
                     const UUID &node_boot_uuid,
@@ -68,6 +64,28 @@ class NewDataWriter {
   const UUID &parts_uuid() const { return parts_uuid_; }
   size_t parts_index() const { return parts_index_; }
   const Node *node() const { return node_; }
+
+  // Datastructure used to capture all the information about a remote node.
+  struct State {
+    // Boot UUID of the node.
+    UUID boot_uuid = UUID::Zero();
+    // Timestamp on the remote monotonic clock of the oldest message sent to
+    // node_index_.
+    monotonic_clock::time_point oldest_remote_monotonic_timestamp =
+        monotonic_clock::max_time;
+    // Timestamp on the local monotonic clock of the message in
+    // oldest_remote_monotonic_timestamp.
+    monotonic_clock::time_point oldest_local_monotonic_timestamp =
+        monotonic_clock::max_time;
+    // Timestamp on the remote monotonic clock of the oldest message sent to
+    // node_index_, excluding messages forwarded with time_to_live() == 0.
+    monotonic_clock::time_point oldest_remote_unreliable_monotonic_timestamp =
+        monotonic_clock::max_time;
+    // Timestamp on the local monotonic clock of the message in
+    // oldest_local_unreliable_monotonic_timestamp.
+    monotonic_clock::time_point oldest_local_unreliable_monotonic_timestamp =
+        monotonic_clock::max_time;
+  };
 
  private:
   // Signals that a node has rebooted.
@@ -88,7 +106,7 @@ class NewDataWriter {
   std::function<void(NewDataWriter *)> close_;
   bool header_written_ = false;
 
-  std::vector<UUID> boot_uuids_;
+  std::vector<State> state_;
 };
 
 // Interface describing how to name, track, and add headers to log file parts.
@@ -185,7 +203,7 @@ class LogNamer {
   // Creates a new header by copying fields out of the template and combining
   // them with the arguments provided.
   aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> MakeHeader(
-      size_t node_index, const std::vector<UUID> &boot_uuids,
+      size_t node_index, const std::vector<NewDataWriter::State> &state,
       const UUID &parts_uuid, int parts_index) const;
 
   EventLoop *event_loop_;

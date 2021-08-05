@@ -92,8 +92,19 @@ Logger::Logger(EventLoop *event_loop, const Configuration *configuration,
 
     bool log_delivery_times = false;
     if (event_loop_->node() != nullptr) {
+      const aos::Connection *connection =
+          configuration::ConnectionToNode(channel, event_loop_->node());
+
       log_delivery_times = configuration::ConnectionDeliveryTimeIsLoggedOnNode(
-          channel, event_loop_->node(), event_loop_->node());
+          connection, event_loop_->node());
+
+      CHECK_EQ(log_delivery_times,
+               configuration::ConnectionDeliveryTimeIsLoggedOnNode(
+                   channel, event_loop_->node(), event_loop_->node()));
+
+      if (connection) {
+        fs.reliable_forwarding = (connection->time_to_live() == 0);
+      }
     }
 
     // Now, detect a RemoteMessage timestamp logger where we should just log the
@@ -620,8 +631,10 @@ void Logger::LogUntil(monotonic_clock::time_point t) {
                            fbb.GetBufferPointer()));
 
         // Tell our writer that we know something about the remote boot.
-        f.timestamp_writer->UpdateRemote(f.data_node_index,
-                                         f.fetcher->context().source_boot_uuid);
+        f.timestamp_writer->UpdateRemote(
+            f.data_node_index, f.fetcher->context().source_boot_uuid,
+            f.fetcher->context().monotonic_remote_time,
+            f.fetcher->context().monotonic_event_time, f.reliable_forwarding);
         f.timestamp_writer->QueueMessage(&fbb, event_loop_->boot_uuid(), end);
       }
 

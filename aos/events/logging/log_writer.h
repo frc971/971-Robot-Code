@@ -194,6 +194,9 @@ class Logger {
     int timestamp_node_index = -1;
     // Node that the contents this contents_writer will log are from.
     int contents_node_index = -1;
+
+    // If true, this message is being sent over a reliable channel.
+    bool reliable_forwarding = false;
   };
 
   // Vector mapping from the channel index from the event loop to the logged

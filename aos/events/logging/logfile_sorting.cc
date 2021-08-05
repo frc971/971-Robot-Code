@@ -33,7 +33,7 @@ bool FileExists(std::string filename) {
 }
 
 bool ConfigOnly(const LogFileHeader *header) {
-  CHECK_EQ(LogFileHeader::MiniReflectTypeTable()->num_elems, 20u);
+  CHECK_EQ(LogFileHeader::MiniReflectTypeTable()->num_elems, 24u);
   if (header->has_monotonic_start_time()) return false;
   if (header->has_realtime_start_time()) return false;
   if (header->has_max_out_of_order_duration()) return false;
@@ -53,6 +53,10 @@ bool ConfigOnly(const LogFileHeader *header) {
   if (header->has_boot_uuids()) return false;
   if (header->has_logger_part_monotonic_start_time()) return false;
   if (header->has_logger_part_realtime_start_time()) return false;
+  if (header->has_oldest_remote_monotonic_timestamps()) return false;
+  if (header->has_oldest_local_monotonic_timestamps()) return false;
+  if (header->has_oldest_remote_unreliable_monotonic_timestamps()) return false;
+  if (header->has_oldest_local_unreliable_monotonic_timestamps()) return false;
 
   return header->has_configuration();
 }
