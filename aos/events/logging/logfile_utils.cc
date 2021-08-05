@@ -17,9 +17,9 @@
 #include "glog/logging.h"
 
 #if defined(__x86_64__)
-#define ENABLE_LZMA 1
+#define ENABLE_LZMA (!__has_feature(memory_sanitizer))
 #elif defined(__aarch64__)
-#define ENABLE_LZMA 1
+#define ENABLE_LZMA (!__has_feature(memory_sanitizer))
 #else
 #define ENABLE_LZMA 0
 #endif
@@ -317,15 +317,15 @@ flatbuffers::Offset<MessageHeader> PackMessage(
 }
 
 SpanReader::SpanReader(std::string_view filename) : filename_(filename) {
-  static const std::string_view kXz = ".xz";
+  decoder_ = std::make_unique<DummyDecoder>(filename);
+
+  static constexpr std::string_view kXz = ".xz";
   if (filename.substr(filename.size() - kXz.size()) == kXz) {
 #if ENABLE_LZMA
-    decoder_ = std::make_unique<ThreadedLzmaDecoder>(filename);
+    decoder_ = std::make_unique<ThreadedLzmaDecoder>(std::move(decoder_));
 #else
     LOG(FATAL) << "Reading xz-compressed files not supported on this platform";
 #endif
-  } else {
-    decoder_ = std::make_unique<DummyDecoder>(filename);
   }
 }
 

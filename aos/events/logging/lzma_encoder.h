@@ -1,6 +1,7 @@
 #ifndef AOS_EVENTS_LOGGING_LZMA_ENCODER_H_
 #define AOS_EVENTS_LOGGING_LZMA_ENCODER_H_
 
+#include <string_view>
 #include <condition_variable>
 #include <mutex>
 #include <thread>
@@ -51,7 +52,9 @@ class LzmaEncoder final : public DetachedBufferEncoder {
 // Decompresses data with liblzma.
 class LzmaDecoder final : public DataDecoder {
  public:
-  explicit LzmaDecoder(std::string_view filename);
+  explicit LzmaDecoder(std::unique_ptr<DataDecoder> underlying_decoder);
+  explicit LzmaDecoder(std::string_view filename)
+      : LzmaDecoder(std::make_unique<DummyDecoder>(filename)) {}
   LzmaDecoder(const LzmaDecoder &) = delete;
   LzmaDecoder(LzmaDecoder &&other) = delete;
   LzmaDecoder &operator=(const LzmaDecoder &) = delete;
@@ -59,6 +62,9 @@ class LzmaDecoder final : public DataDecoder {
   ~LzmaDecoder();
 
   size_t Read(uint8_t *begin, uint8_t *end) final;
+  std::string_view filename() const final {
+    return underlying_decoder_->filename();
+  }
 
  private:
   // Size of temporary buffer to use.
@@ -67,7 +73,7 @@ class LzmaDecoder final : public DataDecoder {
   // Temporary buffer for storing compressed data.
   ResizeableBuffer compressed_data_;
   // Used for reading data from the file.
-  DummyDecoder dummy_decoder_;
+  std::unique_ptr<DataDecoder> underlying_decoder_;
   // Stream for decompression.
   lzma_stream stream_;
   // The current action. This is LZMA_RUN until we've run out of data to read
@@ -76,9 +82,6 @@ class LzmaDecoder final : public DataDecoder {
   // Flag that represents whether or not all the data from the file has been
   // successfully decoded.
   bool finished_ = false;
-
-  // Filename we are decompressing.
-  std::string filename_;
 };
 
 // Decompresses data with liblzma in a new thread, up to a maximum queue
@@ -86,13 +89,17 @@ class LzmaDecoder final : public DataDecoder {
 // or block until more data is queued or the stream finishes.
 class ThreadedLzmaDecoder : public DataDecoder {
  public:
-  explicit ThreadedLzmaDecoder(std::string_view filename);
+  explicit ThreadedLzmaDecoder(std::string_view filename)
+      : ThreadedLzmaDecoder(std::make_unique<DummyDecoder>(filename)) {}
+  explicit ThreadedLzmaDecoder(std::unique_ptr<DataDecoder> underlying_decoder);
   ThreadedLzmaDecoder(const ThreadedLzmaDecoder &) = delete;
   ThreadedLzmaDecoder &operator=(const ThreadedLzmaDecoder &) = delete;
 
   ~ThreadedLzmaDecoder();
 
   size_t Read(uint8_t *begin, uint8_t *end) final;
+
+  std::string_view filename() const final { return decoder_.filename(); }
 
  private:
   static constexpr size_t kBufSize{256 * 1024};
