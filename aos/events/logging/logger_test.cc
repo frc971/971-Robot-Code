@@ -619,28 +619,20 @@ class MultinodeLoggerTest : public ::testing::TestWithParam<struct Param> {
   std::vector<std::string> MakePi1SingleDirectionLogfiles() {
     std::vector<std::string> result;
     result.emplace_back(logfile_base1_ + "_pi1_data.part0.bfbs");
-    result.emplace_back(logfile_base1_ +
-                        "_pi2_data/test/aos.examples.Pong.part0.bfbs");
+    result.emplace_back(logfile_base1_ + "_pi1_data.part1.bfbs");
     result.emplace_back(
         logfile_base1_ +
         "_pi2_data/pi2/aos/aos.message_bridge.Timestamp.part0.bfbs");
     result.emplace_back(
         absl::StrCat(logfile_base1_, "_", GetParam().sha256, ".bfbs"));
+    return result;
+  }
 
-    if (shared()) {
-      result.emplace_back(logfile_base1_ +
-                          "_timestamps/pi1/aos/remote_timestamps/pi2/"
-                          "aos.message_bridge.RemoteMessage.part0.bfbs");
-    } else {
-      result.emplace_back(logfile_base1_ +
-                          "_timestamps/pi1/aos/remote_timestamps/pi2/pi1/aos/"
-                          "aos-message_bridge-Timestamp/"
-                          "aos.message_bridge.RemoteMessage.part0.bfbs");
-      result.emplace_back(logfile_base1_ +
-                          "_timestamps/pi1/aos/remote_timestamps/pi2/test/"
-                          "aos-examples-Ping/"
-                          "aos.message_bridge.RemoteMessage.part0.bfbs");
-    }
+  std::vector<std::string> MakePi1DeadNodeLogfiles() {
+    std::vector<std::string> result;
+    result.emplace_back(logfile_base1_ + "_pi1_data.part0.bfbs");
+    result.emplace_back(
+        absl::StrCat(logfile_base1_, "_", GetParam().sha256, ".bfbs"));
     return result;
   }
 
@@ -2471,7 +2463,7 @@ TEST_P(MultinodeLoggerTest, DeadNode) {
 
   // Confirm that we can parse the result.  LogReader has enough internal CHECKs
   // to confirm the right thing happened.
-  ConfirmReadable(pi1_single_direction_logfiles_);
+  ConfirmReadable(MakePi1DeadNodeLogfiles());
 }
 
 constexpr std::string_view kCombinedConfigSha1(

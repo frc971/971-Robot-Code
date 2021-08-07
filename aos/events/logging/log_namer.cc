@@ -27,7 +27,6 @@ NewDataWriter::NewDataWriter(LogNamer *log_namer, const Node *node,
       close_(std::move(close)) {
   state_.resize(configuration::NodesCount(log_namer->configuration_));
   CHECK_LT(node_index_, state_.size());
-  reopen_(this);
 }
 
 NewDataWriter::~NewDataWriter() {
@@ -110,6 +109,7 @@ void NewDataWriter::QueueMessage(flatbuffers::FlatBufferBuilder *fbb,
   CHECK_EQ(state_[node_index_].boot_uuid, source_node_boot_uuid);
   CHECK(header_written_) << ": Attempting to write message before header to "
                          << writer->filename();
+  CHECK(writer);
   writer->QueueSizedFlatbuffer(fbb, now);
 }
 
@@ -135,8 +135,13 @@ void NewDataWriter::QueueHeader(
   CHECK(header.message().has_source_node_boot_uuid());
   CHECK_EQ(state_[node_index_].boot_uuid,
            UUID::FromString(header.message().source_node_boot_uuid()));
+  if (!writer) {
+    reopen_(this);
+  }
+
   // TODO(austin): This triggers a dummy allocation that we don't need as part
   // of releasing.  Can we skip it?
+  CHECK(writer);
   writer->QueueSizedFlatbuffer(header.Release());
   header_written_ = true;
 }
