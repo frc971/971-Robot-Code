@@ -9,8 +9,6 @@ import target_definition
 import camera_definition
 
 ### DEFINITIONS
-target_definition.USE_BAZEL = False
-camera_definition.USE_BAZEL = False
 target_list = target_definition.compute_target_definition()
 camera_list = camera_definition.load_camera_definitions()
 
