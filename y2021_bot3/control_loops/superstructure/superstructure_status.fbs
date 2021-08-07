@@ -10,6 +10,13 @@ table Status {
   // If true, we have aborted. This is the or of all subsystem estops.
   estopped:bool (id: 1);
 
+  // Intake speed for the intake, positive number means it is intaking balls
+  intake_speed:double (id:2);
+
+  // Outtake speed for the outtake roller, positive number outtakes balls
+  outtake_speed:double (id:3);
+
+  // TODO: Add climber
 }
 
 root_type Status;

@@ -3,6 +3,13 @@ include "frc971/control_loops/profiled_subsystem.fbs";
 namespace y2021_bot3.control_loops.superstructure;
 
 table Goal {
+  // Intake speed for the intake, positive number pulls balls into the robot
+  intake_speed:double (id:0);
+
+  // Outtake speed for the outtake roller, positive number means it is outtaking balls
+  outtake_speed:double (id:1);
+
+  // TODO: Add climber
 
 }
 
