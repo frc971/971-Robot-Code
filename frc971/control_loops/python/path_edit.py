@@ -57,6 +57,12 @@ class FieldWidget(Gtk.DrawingArea):
 
         self.transform = cairo.Matrix()
 
+        self.set_events(Gdk.EventMask.BUTTON_PRESS_MASK
+                        | Gdk.EventMask.BUTTON_PRESS_MASK
+                        | Gdk.EventMask.BUTTON_RELEASE_MASK
+                        | Gdk.EventMask.POINTER_MOTION_MASK
+                        | Gdk.EventMask.SCROLL_MASK)
+
         try:
             self.field_png = cairo.ImageSurface.create_from_png(
                 "frc971/control_loops/python/field_images/" + FIELD.field_id +
@@ -258,12 +264,7 @@ class FieldWidget(Gtk.DrawingArea):
         cr.restore()
 
     def draw_splines(self, cr):
-        for i, points in enumerate(self.points.getSplines()):
-            array = np.zeros(shape=(6, 2), dtype=float)
-            for j, point in enumerate(points):
-                array[j, 0] = point[0]
-                array[j, 1] = point[1]
-            spline = Spline(np.ascontiguousarray(np.transpose(array)))
+        for i, spline in enumerate(self.points.getLibsplines()):
             for k in np.linspace(0.01, 1, 100):
                 cr.move_to(
                     self.mToPx(spline.Point(k - 0.01)[0]),
@@ -275,25 +276,6 @@ class FieldWidget(Gtk.DrawingArea):
             if i == 0:
                 self.draw_robot_at_point(cr, 0.00, 0.01, spline)
             self.draw_robot_at_point(cr, 1, 0.01, spline)
-
-    def mouse_move(self, event):
-        old_x = self.mousex
-        old_y = self.mousey
-        self.mousex, self.mousey = self.input_transform.transform_point(
-            event.x, event.y)
-        dif_x = self.mousex - old_x
-        dif_y = self.mousey - old_y
-        difs = np.array([self.pxToM(dif_x), self.pxToM(dif_y)])
-
-        if self.mode == Mode.kEditing and self.spline_edit != -1:
-            self.points.updates_for_mouse_move(self.index_of_edit,
-                                               self.spline_edit,
-                                               self.pxToM(self.mousex),
-                                               self.pxToM(self.mousey), difs)
-
-            self.points.update_lib_spline()
-            self.graph.schedule_recalculate(self.points)
-        self.queue_draw()
 
     def export_json(self, file_name):
         self.path_to_export = os.path.join(
@@ -343,8 +325,10 @@ class FieldWidget(Gtk.DrawingArea):
 
         print("SPLINES LOADED")
         self.mode = Mode.kEditing
+        self.queue_draw()
+        self.graph.schedule_recalculate(self.points)
 
-    def key_press(self, event):
+    def do_key_press_event(self, event):
         keyval = Gdk.keyval_to_lower(event.keyval)
 
         # TODO: This should be a button
@@ -361,7 +345,25 @@ class FieldWidget(Gtk.DrawingArea):
                 self.points.getSplines()[len(self.points.getSplines()) - 1][3])
             self.queue_draw()
 
-    def button_press(self, event):
+    def do_button_release_event(self, event):
+        self.mousex, self.mousey = self.input_transform.transform_point(
+            event.x, event.y)
+        if self.mode == Mode.kEditing:
+            if self.index_of_edit > -1 and self.held_x != self.mousex:
+
+                self.points.setSplines(self.spline_edit, self.index_of_edit,
+                                       self.pxToM(self.mousex),
+                                       self.pxToM(self.mousey))
+
+                self.points.splineExtrapolate(self.spline_edit)
+
+                self.points.update_lib_spline()
+                self.graph.schedule_recalculate(self.points)
+
+                self.index_of_edit = -1
+                self.spline_edit = -1
+
+    def do_button_press_event(self, event):
         self.mousex, self.mousey = self.input_transform.transform_point(
             event.x, event.y)
 
@@ -369,6 +371,7 @@ class FieldWidget(Gtk.DrawingArea):
             if self.points.add_point(
                     self.pxToM(self.mousex), self.pxToM(self.mousey)):
                 self.mode = Mode.kEditing
+                self.graph.schedule_recalculate(self.points)
         elif self.mode == Mode.kEditing:
             # Now after index_of_edit is not -1, the point is selected, so
             # user can click for new point
@@ -396,25 +399,26 @@ class FieldWidget(Gtk.DrawingArea):
                             self.held_x = self.mousex
         self.queue_draw()
 
-    def button_release(self, event):
+    def do_motion_notify_event(self, event):
+        old_x = self.mousex
+        old_y = self.mousey
         self.mousex, self.mousey = self.input_transform.transform_point(
             event.x, event.y)
-        if self.mode == Mode.kEditing:
-            if self.index_of_edit > -1 and self.held_x != self.mousex:
+        dif_x = self.mousex - old_x
+        dif_y = self.mousey - old_y
+        difs = np.array([self.pxToM(dif_x), self.pxToM(dif_y)])
 
-                self.points.setSplines(self.spline_edit, self.index_of_edit,
-                                       self.pxToM(self.mousex),
-                                       self.pxToM(self.mousey))
+        if self.mode == Mode.kEditing and self.spline_edit != -1:
+            self.points.updates_for_mouse_move(self.index_of_edit,
+                                               self.spline_edit,
+                                               self.pxToM(self.mousex),
+                                               self.pxToM(self.mousey), difs)
 
-                self.points.splineExtrapolate(self.spline_edit)
+            self.points.update_lib_spline()
+            self.graph.schedule_recalculate(self.points)
+        self.queue_draw()
 
-                self.points.update_lib_spline()
-                self.graph.schedule_recalculate(self.points)
-
-                self.index_of_edit = -1
-                self.spline_edit = -1
-
-    def mouse_scroll(self, event):
+    def do_scroll_event(self, event):
         self.mousex, self.mousey = self.input_transform.transform_point(
             event.x, event.y)
 

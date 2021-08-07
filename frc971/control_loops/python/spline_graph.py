@@ -20,9 +20,6 @@ class GridWindow(Gtk.Window):
 
         self.connect(event, handler)
 
-    def configure(self, event):
-        self.field.window_shape = (event.width, event.height)
-
     def output_json_clicked(self, button):
         self.field.export_json(self.file_name_box.get_text())
 
@@ -37,10 +34,12 @@ class GridWindow(Gtk.Window):
     def long_changed(self, button):
         value = self.long_input.get_value()
         self.field.points.setConstraint("LONGITUDINAL_ACCELERATION", value)
+        self.field.graph.schedule_recalculate(self.field.points)
 
     def lat_changed(self, button):
         value = self.lat_input.get_value()
         self.field.points.setConstraint("LATERAL_ACCELERATION", value)
+        self.field.graph.schedule_recalculate(self.field.points)
 
     def vel_changed(self, button):
         value = self.vel_input.get_value()
@@ -48,6 +47,7 @@ class GridWindow(Gtk.Window):
     def vol_changed(self, button):
         value = self.vol_input.get_value()
         self.field.points.setConstraint("VOLTAGE", value)
+        self.field.graph.schedule_recalculate(self.field.points)
 
     def input_combobox_choice(self, combo):
         text = combo.get_active_text()
@@ -64,23 +64,10 @@ class GridWindow(Gtk.Window):
         container.set_vexpand(True)
         self.add(container)
 
-        self.eventBox = Gtk.EventBox()
-        self.eventBox.set_events(Gdk.EventMask.BUTTON_PRESS_MASK
-                                 | Gdk.EventMask.BUTTON_PRESS_MASK
-                                 | Gdk.EventMask.BUTTON_RELEASE_MASK
-                                 | Gdk.EventMask.POINTER_MOTION_MASK
-                                 | Gdk.EventMask.SCROLL_MASK
-                                 | Gdk.EventMask.KEY_PRESS_MASK)
-
         self.field = FieldWidget()
 
         self.method_connect("delete-event", basic_window.quit_main_loop)
-        self.method_connect("key-release-event", self.field.key_press)
-        self.method_connect("button-press-event", self.field.button_press)
-        self.method_connect("button-release-event", self.field.button_release)
-        self.method_connect("configure-event", self.configure)
-        self.method_connect("motion_notify_event", self.field.mouse_move)
-        self.method_connect("scroll_event", self.field.mouse_scroll)
+        self.method_connect("key-release-event", self.field.do_key_press_event)
 
         self.file_name_box = Gtk.Entry()
         self.file_name_box.set_size_request(200, 40)
@@ -156,7 +143,8 @@ class GridWindow(Gtk.Window):
         for game in FIELDS.keys():
             self.game_combo.append_text(game)
 
-        self.game_combo.set_active(0)
+        if FIELD in FIELDS.values():
+            self.game_combo.set_active(list(FIELDS.values()).index(FIELD))
         self.game_combo.set_size_request(100, 40)
 
         limitControls = Gtk.FlowBox()
@@ -186,8 +174,7 @@ class GridWindow(Gtk.Window):
         container.attach(self.label, 4, 0, 1, 1)
         container.attach(self.game_combo, 5, 0, 1, 1)
 
-        self.eventBox.add(self.field)
-        container.attach(self.eventBox, 1, 1, 4, 4)
+        container.attach(self.field, 1, 1, 4, 4)
 
         container.attach(self.field.graph, 0, 10, 10, 1)
 

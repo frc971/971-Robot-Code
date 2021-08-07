@@ -118,7 +118,7 @@ FIELDS = {
         field_id="autonav_bounce"),
 }
 
-FIELD = FIELDS["2021 Galactic Search BRed"]
+FIELD = FIELDS["2020 Field"]
 
 
 def get_json_folder(field):
