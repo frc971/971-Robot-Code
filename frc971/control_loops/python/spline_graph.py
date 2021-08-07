@@ -53,7 +53,7 @@ class GridWindow(Gtk.Window):
         text = combo.get_active_text()
         if text is not None:
             print("Combo Clicked on: " + text)
-            #set_field(text)
+            self.field.set_field(FIELDS[text])
 
     def __init__(self):
         Gtk.Window.__init__(self)
