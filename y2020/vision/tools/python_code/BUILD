@@ -1,14 +1,77 @@
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_py_library")
 load("//tools:platforms.bzl", "platforms")
 
+py_library(
+    name = "train_and_match",
+    srcs = ["train_and_match.py"],
+    data = [
+        "@python_repo//:scipy",
+    ],
+    deps = [
+        "//external:python-glog",
+        "@opencv_contrib_nonfree_amd64//:python_opencv",
+    ],
+)
+
+py_library(
+    name = "define_training_data",
+    srcs = [
+        "define_training_data.py",
+    ],
+    data = [
+        "@python_repo//:scipy",
+    ],
+    deps = [
+        ":train_and_match",
+        "//external:python-glog",
+        "@opencv_contrib_nonfree_amd64//:python_opencv",
+    ],
+)
+
+py_library(
+    name = "camera_definition",
+    srcs = [
+        "camera_definition.py",
+    ],
+    deps = [
+        ":define_training_data",
+        "//external:python-glog",
+    ],
+)
+
+py_library(
+    name = "target_definition",
+    srcs = [
+        "target_definition.py",
+    ],
+    deps = [
+        ":camera_definition",
+        ":define_training_data",
+        ":train_and_match",
+        "//external:python-glog",
+        "@opencv_contrib_nonfree_amd64//:python_opencv",
+    ],
+)
+
+py_binary(
+    name = "target_definition_main",
+    srcs = ["target_definition.py"],
+    data = glob(["calib_files/*.json"]) + glob([
+        "test_images/*.png",
+    ]),
+    main = "target_definition.py",
+    python_version = "PY3",
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":target_definition",
+        "@bazel_tools//tools/python/runfiles",
+    ],
+)
+
 py_binary(
     name = "load_sift_training",
     srcs = [
-        "camera_definition.py",
-        "define_training_data.py",
         "load_sift_training.py",
-        "target_definition.py",
-        "train_and_match.py",
     ],
     args = [
         "sift_training_data.h",
@@ -17,9 +80,30 @@ py_binary(
         "test_images/*.png",
     ]),
     python_version = "PY3",
-    srcs_version = "PY2AND3",
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
+        ":camera_definition",
+        ":target_definition",
+        "//external:python-glog",
+        "//y2020/vision/sift:sift_fbs_python",
+        "@bazel_tools//tools/python/runfiles",
+        "@opencv_contrib_nonfree_amd64//:python_opencv",
+    ],
+)
+
+py_binary(
+    name = "image_match_test",
+    srcs = [
+        "image_match_test.py",
+    ],
+    data = glob(["calib_files/*.json"]) + glob([
+        "test_images/*.png",
+    ]),
+    python_version = "PY3",
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":camera_definition",
+        ":target_definition",
         "//external:python-glog",
         "//y2020/vision/sift:sift_fbs_python",
         "@bazel_tools//tools/python/runfiles",
