@@ -67,7 +67,8 @@ table LogFileHeader {
   source_node_boot_uuid: string (id: 13);
 
   // Timestamps that this logfile started at on the logger's clocks.  This is
-  // mostly useful when trying to deduce the order of node reboots.
+  // mostly useful when trying to deduce the order of node reboots.  These
+  // timestamps don't change on reboot, so they can't be used reliably.
   logger_monotonic_start_time:int64 = -9223372036854775808 (id: 14);
   logger_realtime_start_time:int64 = -9223372036854775808 (id: 15);
 
@@ -95,12 +96,53 @@ table LogFileHeader {
   logger_node:Node (id: 9);
 
   // The boot UUIDs for all nodes we know them for, or "" for the ones we don't.
-  // TODO(austin): Actually add this in the log writer.
   boot_uuids:[string] (id: 17);
 
   // Timestamps that the header on this part file was written on the logger node.
   logger_part_monotonic_start_time:int64 = -9223372036854775808 (id: 18);
   logger_part_realtime_start_time:int64 = -9223372036854775808 (id: 19);
+
+  // These timestamps provide summary information about the oldest messages we
+  // know which crossed the network.  The goal is to enable log file sorting
+  // to determine the order of all boots by observing corresponding times
+  // across the network and using those to determine constraints so we can sort
+  // a DAG.
+  //
+  // There are 2 main problem cases.  Let's say we have 2 channels.  /a which
+  // is reliable, and /b which isn't, both sent from the same remote node.
+  //
+  // case 1:  /a -> boot 0 received on boot 0.
+  //          /b -> boot 1 received on boot 0.
+  //  We start logging after both messages arrive.
+  //
+  // case 2:  /a -> boot 0 received on boot 0.
+  //          /b -> boot 0 received on boot 0.
+  //  We log for a bit, then reboot.  More messages show up when we reconnect.
+  //          /a -> boot 0 received on boot 1.
+  //          /b -> boot 0 received on boot 1.
+  //
+  // In case 1: we only have a reliable timestamp from boot 0, but that
+  // reliable timestamp makes it clear that /a was before /b, so boot 0 was
+  // before boot 1.
+  //
+  // In case 2: we have the same reliable timestamp, so that tells us nothing.
+  // The unreliable timestamps though tell a different story.  /b will be after
+  // /a, since any messages on /b generated before the reboot won't get
+  // delivered.  So, we get an ordering constraint saying that any sent /b's
+  // on the second boot were after /b on the first boot.
+  //
+  // We believe that any other cases are covered by the same mechanism.
+  //
+  // For all channels sent from a specific node, these vectors hold the
+  // timestamp of the oldest known message from that node, and the
+  // corresponding monotonic timestamp for when that was received on our node.
+  oldest_remote_monotonic_timestamps:[int64] (id: 20);
+  oldest_local_monotonic_timestamps:[int64] (id: 21);
+
+  // For all channels *excluding* the reliable channels (ttl == 0), record the
+  // same quantity.
+  oldest_remote_unreliable_monotonic_timestamps:[int64] (id: 22);
+  oldest_local_unreliable_monotonic_timestamps:[int64] (id: 23);
 }
 
 // Table holding a message.

@@ -1137,15 +1137,15 @@ const Connection *ConnectionToNode(const Channel *channel, const Node *node) {
 bool ConnectionDeliveryTimeIsLoggedOnNode(const Channel *channel,
                                           const Node *node,
                                           const Node *logger_node) {
-  const Connection *connection = ConnectionToNode(channel, node);
-  if (connection == nullptr) {
-    return false;
-  }
-  return ConnectionDeliveryTimeIsLoggedOnNode(connection, logger_node);
+  return ConnectionDeliveryTimeIsLoggedOnNode(ConnectionToNode(channel, node),
+                                              logger_node);
 }
 
 bool ConnectionDeliveryTimeIsLoggedOnNode(const Connection *connection,
                                           const Node *node) {
+  if (connection == nullptr) {
+    return false;
+  }
   switch (connection->timestamp_logger()) {
     case LoggerConfig::LOCAL_AND_REMOTE_LOGGER:
       CHECK(connection->has_timestamp_logger_nodes());
