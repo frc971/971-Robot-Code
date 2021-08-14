@@ -614,3 +614,21 @@ cc_test(
         "//aos/testing:googletest",
     ],
 )
+
+cc_binary(
+    name = "aos_graph_channels",
+    srcs = [
+        "aos_graph_channels.cc",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        "//aos:configuration",
+        "//aos:init",
+        "//aos:json_to_flatbuffer",
+        "//aos/events:simulated_event_loop",
+        "//aos/events/logging:log_reader",
+        "//aos/time",
+        "@com_github_gflags_gflags//:gflags",
+        "@com_github_google_glog//:glog",
+    ],
+)
