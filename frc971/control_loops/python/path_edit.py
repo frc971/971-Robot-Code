@@ -13,7 +13,9 @@ import cairo
 from libspline import Spline
 import enum
 import json
-from constants import *
+from constants import FIELD
+from constants import get_json_folder
+from constants import ROBOT_SIDE_TO_BALL_CENTER, ROBOT_SIDE_TO_HATCH_PANEL, HATCH_PANEL_WIDTH, BALL_RADIUS
 from drawing_constants import set_color, draw_px_cross, draw_px_x, display_text, draw_control_points
 from points import Points
 import time
@@ -30,7 +32,8 @@ class FieldWidget(Gtk.DrawingArea):
 
     def __init__(self):
         super(FieldWidget, self).__init__()
-        self.set_size_request(mToPx(FIELD.width), mToPx(FIELD.length))
+        self.set_size_request(
+            self.mToPx(FIELD.width), self.mToPx(FIELD.length))
 
         self.points = Points()
         self.graph = Graph()
@@ -52,6 +55,8 @@ class FieldWidget(Gtk.DrawingArea):
         self.held_x = 0
         self.spline_edit = -1
 
+        self.transform = cairo.Matrix()
+
         try:
             self.field_png = cairo.ImageSurface.create_from_png(
                 "frc971/control_loops/python/field_images/" + FIELD.field_id +
@@ -59,17 +64,41 @@ class FieldWidget(Gtk.DrawingArea):
         except cairo.Error:
             self.field_png = None
 
+    # returns the transform from widget space to field space
+    @property
+    def input_transform(self):
+        xx, yx, xy, yy, x0, y0 = self.transform
+        matrix = cairo.Matrix(xx, yx, xy, yy, x0, y0)
+        # the transform for input needs to be the opposite of the transform for drawing
+        matrix.invert()
+        return matrix
+
+    # returns the scale from pixels in field space to meters in field space
+    def pxToM_scale(self):
+        available_space = self.get_allocation()
+        return np.maximum(FIELD.width / available_space.width,
+                          FIELD.length / available_space.height)
+
+    def pxToM(self, p):
+        return p * self.pxToM_scale()
+
+    def mToPx(self, m):
+        return m / self.pxToM_scale()
+
     def draw_robot_at_point(self, cr, i, p, spline):
-        p1 = [mToPx(spline.Point(i)[0]), mToPx(spline.Point(i)[1])]
-        p2 = [mToPx(spline.Point(i + p)[0]), mToPx(spline.Point(i + p)[1])]
+        p1 = [self.mToPx(spline.Point(i)[0]), self.mToPx(spline.Point(i)[1])]
+        p2 = [
+            self.mToPx(spline.Point(i + p)[0]),
+            self.mToPx(spline.Point(i + p)[1])
+        ]
 
         #Calculate Robot
         distance = np.sqrt((p2[1] - p1[1])**2 + (p2[0] - p1[0])**2)
         x_difference_o = p2[0] - p1[0]
         y_difference_o = p2[1] - p1[1]
-        x_difference = x_difference_o * mToPx(
+        x_difference = x_difference_o * self.mToPx(
             FIELD.robot.length / 2) / distance
-        y_difference = y_difference_o * mToPx(
+        y_difference = y_difference_o * self.mToPx(
             FIELD.robot.length / 2) / distance
 
         front_middle = []
@@ -83,8 +112,8 @@ class FieldWidget(Gtk.DrawingArea):
         slope = [-(1 / x_difference_o) / (1 / y_difference_o)]
         angle = np.arctan(slope)
 
-        x_difference = np.sin(angle[0]) * mToPx(FIELD.robot.width / 2)
-        y_difference = np.cos(angle[0]) * mToPx(FIELD.robot.width / 2)
+        x_difference = np.sin(angle[0]) * self.mToPx(FIELD.robot.width / 2)
+        y_difference = np.cos(angle[0]) * self.mToPx(FIELD.robot.width / 2)
 
         front_1 = []
         front_1.append(front_middle[0] - x_difference)
@@ -102,9 +131,9 @@ class FieldWidget(Gtk.DrawingArea):
         back_2.append(back_middle[0] + x_difference)
         back_2.append(back_middle[1] + y_difference)
 
-        x_difference = x_difference_o * mToPx(
+        x_difference = x_difference_o * self.mToPx(
             FIELD.robot.length / 2 + ROBOT_SIDE_TO_BALL_CENTER) / distance
-        y_difference = y_difference_o * mToPx(
+        y_difference = y_difference_o * self.mToPx(
             FIELD.robot.length / 2 + ROBOT_SIDE_TO_BALL_CENTER) / distance
 
         #Calculate Ball
@@ -112,9 +141,9 @@ class FieldWidget(Gtk.DrawingArea):
         ball_center.append(p1[0] + x_difference)
         ball_center.append(p1[1] + y_difference)
 
-        x_difference = x_difference_o * mToPx(
+        x_difference = x_difference_o * self.mToPx(
             FIELD.robot.length / 2 + ROBOT_SIDE_TO_HATCH_PANEL) / distance
-        y_difference = y_difference_o * mToPx(
+        y_difference = y_difference_o * self.mToPx(
             FIELD.robot.length / 2 + ROBOT_SIDE_TO_HATCH_PANEL) / distance
 
         #Calculate Panel
@@ -122,8 +151,8 @@ class FieldWidget(Gtk.DrawingArea):
         panel_center.append(p1[0] + x_difference)
         panel_center.append(p1[1] + y_difference)
 
-        x_difference = np.sin(angle[0]) * mToPx(HATCH_PANEL_WIDTH / 2)
-        y_difference = np.cos(angle[0]) * mToPx(HATCH_PANEL_WIDTH / 2)
+        x_difference = np.sin(angle[0]) * self.mToPx(HATCH_PANEL_WIDTH / 2)
+        y_difference = np.cos(angle[0]) * self.mToPx(HATCH_PANEL_WIDTH / 2)
 
         panel_1 = []
         panel_1.append(panel_center[0] + x_difference)
@@ -146,7 +175,7 @@ class FieldWidget(Gtk.DrawingArea):
         set_color(cr, palette["ORANGE"], 0.5)
         cr.move_to(back_middle[0], back_middle[1])
         cr.line_to(ball_center[0], ball_center[1])
-        cr.arc(ball_center[0], ball_center[1], mToPx(BALL_RADIUS), 0,
+        cr.arc(ball_center[0], ball_center[1], self.mToPx(BALL_RADIUS), 0,
                2 * np.pi)
         cr.stroke()
 
@@ -162,18 +191,22 @@ class FieldWidget(Gtk.DrawingArea):
 
         start_time = time.perf_counter()
 
+        cr.set_matrix(self.transform.multiply(cr.get_matrix()))
+
         cr.save()
+
         set_color(cr, palette["BLACK"])
 
-        cr.rectangle(0, 0, mToPx(FIELD.width), mToPx(FIELD.length))
+        cr.set_line_width(1.0)
+        cr.rectangle(0, 0, self.mToPx(FIELD.width), self.mToPx(FIELD.length))
         cr.set_line_join(cairo.LINE_JOIN_ROUND)
         cr.stroke()
 
         if self.field_png:
             cr.save()
             cr.scale(
-                mToPx(FIELD.width) / self.field_png.get_width(),
-                mToPx(FIELD.length) / self.field_png.get_height(),
+                self.mToPx(FIELD.width) / self.field_png.get_width(),
+                self.mToPx(FIELD.length) / self.field_png.get_height(),
             )
             cr.set_source_surface(self.field_png)
             cr.paint()
@@ -181,10 +214,11 @@ class FieldWidget(Gtk.DrawingArea):
 
         # update everything
 
+        cr.set_line_width(2.0)
         if self.mode == Mode.kPlacing or self.mode == Mode.kViewing:
             set_color(cr, palette["BLACK"])
             for i, point in enumerate(self.points.getPoints()):
-                draw_px_x(cr, mToPx(point[0]), mToPx(point[1]), 10)
+                draw_px_x(cr, self.mToPx(point[0]), self.mToPx(point[1]), 10)
             set_color(cr, palette["WHITE"])
         elif self.mode == Mode.kEditing:
             set_color(cr, palette["BLACK"])
@@ -193,7 +227,7 @@ class FieldWidget(Gtk.DrawingArea):
                 for i, points in enumerate(self.points.getSplines()):
 
                     points = [
-                        np.array([mToPx(x), mToPx(y)])
+                        np.array([self.mToPx(x), self.mToPx(y)])
                         for (x, y) in points
                     ]
                     draw_control_points(cr, points)
@@ -216,15 +250,12 @@ class FieldWidget(Gtk.DrawingArea):
 
                     cr.stroke()
                     cr.set_line_width(2.0)
-            self.points.update_lib_spline()
             set_color(cr, palette["WHITE"])
 
         cr.paint_with_alpha(0.2)
 
         draw_px_cross(cr, self.mousex, self.mousey, 10)
         cr.restore()
-
-        print("spent {:.2f} ms drawing the field widget".format(1000 * (time.perf_counter() - start_time)))
 
     def draw_splines(self, cr):
         for i, points in enumerate(self.points.getSplines()):
@@ -235,10 +266,11 @@ class FieldWidget(Gtk.DrawingArea):
             spline = Spline(np.ascontiguousarray(np.transpose(array)))
             for k in np.linspace(0.01, 1, 100):
                 cr.move_to(
-                    mToPx(spline.Point(k - 0.01)[0]),
-                    mToPx(spline.Point(k - 0.01)[1]))
+                    self.mToPx(spline.Point(k - 0.01)[0]),
+                    self.mToPx(spline.Point(k - 0.01)[1]))
                 cr.line_to(
-                    mToPx(spline.Point(k)[0]), mToPx(spline.Point(k)[1]))
+                    self.mToPx(spline.Point(k)[0]),
+                    self.mToPx(spline.Point(k)[1]))
                 cr.stroke()
             if i == 0:
                 self.draw_robot_at_point(cr, 0.00, 0.01, spline)
@@ -247,16 +279,17 @@ class FieldWidget(Gtk.DrawingArea):
     def mouse_move(self, event):
         old_x = self.mousex
         old_y = self.mousey
-        self.mousex, self.mousey = event.x, event.y
+        self.mousex, self.mousey = self.input_transform.transform_point(
+            event.x, event.y)
         dif_x = self.mousex - old_x
         dif_y = self.mousey - old_y
-        difs = np.array([pxToM(dif_x), pxToM(dif_y)])
+        difs = np.array([self.pxToM(dif_x), self.pxToM(dif_y)])
 
         if self.mode == Mode.kEditing and self.spline_edit != -1:
             self.points.updates_for_mouse_move(self.index_of_edit,
                                                self.spline_edit,
-                                               pxToM(self.mousex),
-                                               pxToM(self.mousey), difs)
+                                               self.pxToM(self.mousex),
+                                               self.pxToM(self.mousey), difs)
 
             self.points.update_lib_spline()
             self.graph.schedule_recalculate(self.points)
@@ -329,11 +362,12 @@ class FieldWidget(Gtk.DrawingArea):
             self.queue_draw()
 
     def button_press(self, event):
-        self.mousex, self.mousey = event.x, event.y
+        self.mousex, self.mousey = self.input_transform.transform_point(
+            event.x, event.y)
 
         if self.mode == Mode.kPlacing:
             if self.points.add_point(
-                    pxToM(self.mousex), pxToM(self.mousey)):
+                    self.pxToM(self.mousex), self.pxToM(self.mousey)):
                 self.mode = Mode.kEditing
         elif self.mode == Mode.kEditing:
             # Now after index_of_edit is not -1, the point is selected, so
@@ -342,7 +376,7 @@ class FieldWidget(Gtk.DrawingArea):
                 # Get clicked point
                 # Find nearest
                 # Move nearest to clicked
-                cur_p = [pxToM(self.mousex), pxToM(self.mousey)]
+                cur_p = [self.pxToM(self.mousex), self.pxToM(self.mousey)]
                 # Get the distance between each for x and y
                 # Save the index of the point closest
                 nearest = 1  # Max distance away a the selected point can be in meters
@@ -363,13 +397,14 @@ class FieldWidget(Gtk.DrawingArea):
         self.queue_draw()
 
     def button_release(self, event):
-        self.mousex, self.mousey = event.x, event.y
+        self.mousex, self.mousey = self.input_transform.transform_point(
+            event.x, event.y)
         if self.mode == Mode.kEditing:
             if self.index_of_edit > -1 and self.held_x != self.mousex:
 
                 self.points.setSplines(self.spline_edit, self.index_of_edit,
-                                       pxToM(self.mousex),
-                                       pxToM(self.mousey))
+                                       self.pxToM(self.mousex),
+                                       self.pxToM(self.mousey))
 
                 self.points.splineExtrapolate(self.spline_edit)
 
