@@ -31,6 +31,7 @@
 #include "aos/util/log_interval.h"
 #include "aos/util/phased_loop.h"
 #include "aos/util/wrapping_counter.h"
+#include "ctre/phoenix/motorcontrol/can/TalonFX.h"
 #include "ctre/phoenix/motorcontrol/can/TalonSRX.h"
 #include "frc971/autonomous/auto_mode_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_position_generated.h"
@@ -192,10 +193,42 @@ class SuperstructureWriter
       : ::frc971::wpilib::LoopOutputHandler<superstructure::Output>(
             event_loop, "/superstructure") {}
 
+  void set_intake_falcon(
+      ::std::unique_ptr<::ctre::phoenix::motorcontrol::can::TalonFX> t) {
+    intake_falcon_ = ::std::move(t);
+    ConfigureFalcon(intake_falcon_.get());
+  }
+
+  void set_outtake_falcon(
+      ::std::unique_ptr<::ctre::phoenix::motorcontrol::can::TalonFX> t) {
+    outtake_falcon_ = ::std::move(t);
+    ConfigureFalcon(outtake_falcon_.get());
+  }
+
  private:
-  void Write(const superstructure::Output & /*output*/) override {}
+  void ConfigureFalcon(::ctre::phoenix::motorcontrol::can::TalonFX *falcon) {
+    falcon->ConfigSupplyCurrentLimit({true, Values::kRollerSupplyCurrentLimit(),
+                                      Values::kRollerSupplyCurrentLimit(), 0});
+    falcon->ConfigStatorCurrentLimit({true, Values::kRollerStatorCurrentLimit(),
+                                      Values::kRollerStatorCurrentLimit(), 0});
+  }
+
+  void WriteToFalcon(const double voltage,
+                     ::ctre::phoenix::motorcontrol::can::TalonFX *falcon) {
+    falcon->Set(
+        ctre::phoenix::motorcontrol::ControlMode::PercentOutput,
+        std::clamp(voltage, -kMaxBringupPower, kMaxBringupPower) / 12.0);
+  }
+
+  void Write(const superstructure::Output &output) override {
+    WriteToFalcon(output.intake_volts(), intake_falcon_.get());
+    WriteToFalcon(output.outtake_volts(), outtake_falcon_.get());
+  }
 
   void Stop() override { AOS_LOG(WARNING, "Superstructure output too old.\n"); }
+
+  ::std::unique_ptr<::ctre::phoenix::motorcontrol::can::TalonFX> intake_falcon_,
+      outtake_falcon_;
 };
 
 class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
@@ -237,6 +270,10 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(1)), false);
 
     SuperstructureWriter superstructure_writer(&output_event_loop);
+    superstructure_writer.set_intake_falcon(
+        make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(0));
+    superstructure_writer.set_outtake_falcon(
+        make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(1));
 
     AddLoop(&output_event_loop);
 
