@@ -156,6 +156,11 @@ int main(int argc, char **argv) {
           aos::logger::Sha256(raw_header_reader->raw_log_file_header().span()));
       full_header = raw_header_reader->log_file_header();
     }
+
+    if (!FLAGS_print) {
+      return 0;
+    }
+
     std::cout << aos::FlatbufferToJson(full_header,
                                        {.multi_line = FLAGS_pretty,
                                         .max_vector_size = static_cast<size_t>(
