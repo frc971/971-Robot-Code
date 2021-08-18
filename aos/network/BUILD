@@ -505,6 +505,7 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos:configuration",
+        "//aos/events/logging:boot_timestamp",
         "//aos/time",
         "@com_google_absl//absl/strings",
     ],

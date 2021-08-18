@@ -13,20 +13,30 @@ flatbuffer_cc_library(
 )
 
 cc_library(
+    name = "boot_timestamp",
+    srcs = ["boot_timestamp.cc"],
+    hdrs = ["boot_timestamp.h"],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aos/time",
+    ],
+)
+
+cc_library(
     name = "logfile_utils",
     srcs = [
-        "boot_timestamp.cc",
         "logfile_sorting.cc",
         "logfile_utils.cc",
     ],
     hdrs = [
-        "boot_timestamp.h",
         "logfile_sorting.h",
         "logfile_utils.h",
     ],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
+        ":boot_timestamp",
         ":buffer_encoder",
         ":logger_fbs",
         "//aos:uuid",

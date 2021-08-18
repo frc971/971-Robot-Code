@@ -43,12 +43,8 @@ class TimestampProblem {
   size_t solution_node() const { return solution_node_; }
 
   // Sets and gets the base time for a node.
-  void set_base_clock(size_t i, monotonic_clock::time_point t) {
-    base_clock_[i] = t;
-  }
-  monotonic_clock::time_point base_clock(size_t i) const {
-    return base_clock_[i];
-  }
+  void set_base_clock(size_t i, logger::BootTimestamp t) { base_clock_[i] = t; }
+  logger::BootTimestamp base_clock(size_t i) const { return base_clock_[i]; }
 
   // Adds a timestamp filter from a -> b.
   //   filter[a_index]->Offset(ta) + ta => t(b_index);
@@ -59,11 +55,11 @@ class TimestampProblem {
 
   // Solves the optimization problem phrased using the symmetric Netwon's method
   // solver and returns the optimal time on each node.
-  std::vector<monotonic_clock::time_point> SolveNewton();
+  std::vector<logger::BootTimestamp> SolveNewton();
 
   // Validates the solution, returning true if it meets all the constraints, and
   // false otherwise.
-  bool ValidateSolution(std::vector<monotonic_clock::time_point> solution);
+  bool ValidateSolution(std::vector<logger::BootTimestamp> solution);
 
   // LOGs a representation of the problem.
   void Debug();
@@ -127,7 +123,7 @@ class TimestampProblem {
   // The optimization problem is solved as base_clock + time_offsets to minimize
   // numerical precision problems.  This contains all the base times.  The base
   // time corresponding to solution_node is fixed and not solved.
-  std::vector<monotonic_clock::time_point> base_clock_;
+  std::vector<logger::BootTimestamp> base_clock_;
   std::vector<bool> live_;
 
   // True if both node_mapping_ and live_nodes_ are valid.
@@ -187,7 +183,7 @@ class InterpolatedTimeConverter : public TimeConverter {
   // on every monotonic clock for all the nodes in the factory that this will be
   // hooked up to.
   virtual std::optional<std::tuple<distributed_clock::time_point,
-                                   std::vector<monotonic_clock::time_point>>>
+                                   std::vector<logger::BootTimestamp>>>
   NextTimestamp() = 0;
 
   // Queues timestamps util the last time in the queue matches the provided
@@ -226,21 +222,21 @@ class InterpolatedTimeConverter : public TimeConverter {
 enum class TimeComparison { kBefore, kAfter, kInvalid, kEq };
 
 // Compares two sets of times, optionally ignoring times that are min_time
-TimeComparison CompareTimes(const std::vector<monotonic_clock::time_point> &ta,
-                            const std::vector<monotonic_clock::time_point> &tb);
+TimeComparison CompareTimes(const std::vector<logger::BootTimestamp> &ta,
+                            const std::vector<logger::BootTimestamp> &tb);
 
 // Returns the maximum amount of elapsed time between the two samples in time.
 std::chrono::nanoseconds MaxElapsedTime(
-    const std::vector<monotonic_clock::time_point> &ta,
-    const std::vector<monotonic_clock::time_point> &tb);
+    const std::vector<logger::BootTimestamp> &ta,
+    const std::vector<logger::BootTimestamp> &tb);
 
 // Returns the amount of time by which ta and tb are out of order.  The primary
 // direction is defined to be the direction of the average of the offsets.  So,
 // if the average is +, and we get a -ve outlier, the absolute value of that -ve
 // outlier is the invalid distance.
 std::chrono::nanoseconds InvalidDistance(
-    const std::vector<monotonic_clock::time_point> &ta,
-    const std::vector<monotonic_clock::time_point> &tb);
+    const std::vector<logger::BootTimestamp> &ta,
+    const std::vector<logger::BootTimestamp> &tb);
 
 // Class to hold a NoncausalOffsetEstimator per pair of communicating nodes, and
 // to estimate and set the overall time of all nodes.
@@ -283,7 +279,7 @@ class MultiNodeNoncausalOffsetEstimator final
       std::vector<logger::TimestampMapper *> timestamp_mappers);
 
   std::optional<std::tuple<distributed_clock::time_point,
-                           std::vector<monotonic_clock::time_point>>>
+                           std::vector<logger::BootTimestamp>>>
   NextTimestamp() override;
 
   // Checks that all the nodes in the graph are connected.  Needs all filters to
@@ -315,10 +311,10 @@ class MultiNodeNoncausalOffsetEstimator final
  private:
   TimestampProblem MakeProblem();
 
-  std::tuple<NoncausalTimestampFilter *,
-             std::vector<aos::monotonic_clock::time_point>, int>
+  std::tuple<NoncausalTimestampFilter *, std::vector<logger::BootTimestamp>,
+             int>
   NextSolution(TimestampProblem *problem,
-               const std::vector<aos::monotonic_clock::time_point> &base_times);
+               const std::vector<logger::BootTimestamp> &base_times);
 
   const Configuration *configuration_;
   const Configuration *logged_configuration_;
@@ -343,7 +339,7 @@ class MultiNodeNoncausalOffsetEstimator final
   std::vector<std::vector<FilterPair>> filters_per_node_;
 
   distributed_clock::time_point last_distributed_ = distributed_clock::epoch();
-  std::vector<aos::monotonic_clock::time_point> last_monotonics_;
+  std::vector<logger::BootTimestamp> last_monotonics_;
 
   // A mapping from node and channel to the relevant estimator.
   std::vector<std::vector<NoncausalOffsetEstimator *>> filters_per_channel_;

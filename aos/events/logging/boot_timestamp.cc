@@ -11,4 +11,10 @@ std::ostream &operator<<(std::ostream &os,
             << "}";
 }
 
+std::ostream &operator<<(std::ostream &os,
+                         const struct BootDuration &duration) {
+  return os << "{.boot=" << duration.boot
+            << ", .duration=" << duration.duration.count() << "ns}";
+}
+
 }  // namespace aos::logger

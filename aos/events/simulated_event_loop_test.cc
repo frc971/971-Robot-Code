@@ -73,10 +73,10 @@ auto CommonParameters() {
 }
 
 INSTANTIATE_TEST_SUITE_P(SimulatedEventLoopCommonTest, AbstractEventLoopTest,
-                        CommonParameters());
+                         CommonParameters());
 
 INSTANTIATE_TEST_SUITE_P(SimulatedEventLoopCommonDeathTest,
-                        AbstractEventLoopDeathTest, CommonParameters());
+                         AbstractEventLoopDeathTest, CommonParameters());
 
 // Parameters to run all the tests with.
 struct Param {
@@ -785,8 +785,8 @@ TEST(SimulatedEventLoopTest, MultinodePingPongWithOffset) {
   constexpr chrono::milliseconds kOffset{1501};
   time.AddNextTimestamp(
       distributed_clock::epoch(),
-      {monotonic_clock::epoch(), monotonic_clock::epoch() + kOffset,
-       monotonic_clock::epoch()});
+      {logger::BootTimestamp::epoch(), logger::BootTimestamp::epoch() + kOffset,
+       logger::BootTimestamp::epoch()});
 
   std::unique_ptr<EventLoop> ping_event_loop =
       simulated_event_loop_factory.MakeEventLoop("ping", pi1);
@@ -1293,13 +1293,13 @@ TEST(SimulatedEventLoopTest, MultinodePingPongWithOffsetAndSlope) {
   constexpr chrono::milliseconds kOffset{150100};
   time.AddNextTimestamp(
       distributed_clock::epoch(),
-      {monotonic_clock::epoch(), monotonic_clock::epoch() + kOffset,
-       monotonic_clock::epoch()});
+      {logger::BootTimestamp::epoch(), logger::BootTimestamp::epoch() + kOffset,
+       logger::BootTimestamp::epoch()});
   time.AddNextTimestamp(
       distributed_clock::epoch() + chrono::seconds(10),
-      {monotonic_clock::epoch() + chrono::milliseconds(9999),
-       monotonic_clock::epoch() + kOffset + chrono::seconds(10),
-       monotonic_clock::epoch() + chrono::milliseconds(9999)});
+      {logger::BootTimestamp::epoch() + chrono::milliseconds(9999),
+       logger::BootTimestamp::epoch() + kOffset + chrono::seconds(10),
+       logger::BootTimestamp::epoch() + chrono::milliseconds(9999)});
 
   std::unique_ptr<EventLoop> ping_event_loop =
       simulated_event_loop_factory.MakeEventLoop("ping", pi1);

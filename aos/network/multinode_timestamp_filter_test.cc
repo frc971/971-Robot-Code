@@ -15,21 +15,22 @@ namespace testing {
 
 namespace chrono = std::chrono;
 using aos::monotonic_clock;
+using aos::logger::BootTimestamp;
 
 // Tests solution time(s) comparison and measure of invalid / inconsistent times
 TEST(TimestampProblemTest, CompareTimes) {
-  const monotonic_clock::time_point e = monotonic_clock::epoch();
+  const BootTimestamp e = BootTimestamp::epoch();
 
   // Create two sets of times, offset by 1000ns
-  std::vector<monotonic_clock::time_point> time_list;
+  std::vector<BootTimestamp> time_list;
   for (int i = 0; i < 10; i++) {
     time_list.push_back(e + std::chrono::nanoseconds(i * 1000));
   }
 
-  std::vector<monotonic_clock::time_point> times_a = {time_list.begin(),
-                                                      time_list.end() - 1u};
-  std::vector<monotonic_clock::time_point> times_b = {time_list.begin() + 1u,
-                                                      time_list.end()};
+  std::vector<BootTimestamp> times_a = {time_list.begin(),
+                                        time_list.end() - 1u};
+  std::vector<BootTimestamp> times_b = {time_list.begin() + 1u,
+                                        time_list.end()};
 
   CHECK_EQ(static_cast<int>(CompareTimes(times_a, times_b)),
            static_cast<int>(TimeComparison::kBefore));
@@ -41,8 +42,8 @@ TEST(TimestampProblemTest, CompareTimes) {
            static_cast<int>(TimeComparison::kEq));
 
   // Now try one of the times being min_time.
-  std::vector<monotonic_clock::time_point> times_b_min = times_b;
-  times_b_min[5] = monotonic_clock::min_time;
+  std::vector<BootTimestamp> times_b_min = times_b;
+  times_b_min[5] = BootTimestamp::min_time();
 
   CHECK_EQ(static_cast<int>(CompareTimes(times_a, times_b_min)),
            static_cast<int>(TimeComparison::kBefore));
@@ -50,7 +51,7 @@ TEST(TimestampProblemTest, CompareTimes) {
            static_cast<int>(TimeComparison::kAfter));
 
   // Test if one of the elements is equal
-  std::vector<monotonic_clock::time_point> times_b_some_eq = times_b_min;
+  std::vector<BootTimestamp> times_b_some_eq = times_b_min;
   times_b_some_eq[2] = times_a[2];
 
   CHECK_EQ(static_cast<int>(CompareTimes(times_a, times_b_some_eq)),
@@ -59,7 +60,7 @@ TEST(TimestampProblemTest, CompareTimes) {
            static_cast<int>(TimeComparison::kInvalid));
 
   // Test if elements are out of order
-  std::vector<monotonic_clock::time_point> times_b_mixed = times_b_min;
+  std::vector<BootTimestamp> times_b_mixed = times_b_min;
   times_b_mixed[3] = times_a[0];
 
   CHECK_EQ(static_cast<int>(CompareTimes(times_a, times_b_mixed)),
@@ -86,8 +87,9 @@ TEST(InterpolatedTimeConverterTest, OneTime) {
   TestingTimeConverter time_converter(3u);
   time_converter.AddNextTimestamp(
       de + chrono::seconds(0),
-      {me + chrono::seconds(1), me + chrono::seconds(10),
-       me + chrono::seconds(1000)});
+      {{.boot = 0, .time = me + chrono::seconds(1)},
+       {.boot = 0, .time = me + chrono::seconds(10)},
+       {.boot = 0, .time = me + chrono::seconds(1000)}});
 
   EXPECT_EQ(time_converter.FromDistributedClock(0, de - chrono::seconds(1)),
             me + chrono::seconds(0));
@@ -123,12 +125,14 @@ TEST(InterpolatedTimeConverterTest, Interpolation) {
   // Test that 2 timestamps interpolate correctly.
   time_converter.AddNextTimestamp(
       de + chrono::seconds(0),
-      {me + chrono::seconds(1), me + chrono::seconds(10),
-       me + chrono::seconds(1000)});
+      {{.boot = 0, .time = me + chrono::seconds(1)},
+       {.boot = 0, .time = me + chrono::seconds(10)},
+       {.boot = 0, .time = me + chrono::seconds(1000)}});
   time_converter.AddNextTimestamp(
       de + chrono::seconds(1),
-      {me + chrono::seconds(2), me + chrono::seconds(11),
-       me + chrono::seconds(1001)});
+      {{.boot = 0, .time = me + chrono::seconds(2)},
+       {.boot = 0, .time = me + chrono::seconds(11)},
+       {.boot = 0, .time = me + chrono::seconds(1001)}});
 
   EXPECT_EQ(
       time_converter.FromDistributedClock(0, de + chrono::milliseconds(500)),
@@ -152,15 +156,16 @@ TEST(InterpolatedTimeConverterTest, Interpolation) {
   // And that we can interpolate between points not at the start.
   time_converter.AddNextTimestamp(
       de + chrono::seconds(2),
-      {me + chrono::seconds(3) - chrono::milliseconds(2),
-       me + chrono::seconds(12) - chrono::milliseconds(2),
-       me + chrono::seconds(1002)});
+      {{.boot = 0, .time = me + chrono::seconds(3) - chrono::milliseconds(2)},
+       {.boot = 0, .time = me + chrono::seconds(12) - chrono::milliseconds(2)},
+       {.boot = 0, .time = me + chrono::seconds(1002)}});
 
   time_converter.AddNextTimestamp(
       de + chrono::seconds(3),
-      {me + chrono::seconds(4) - chrono::milliseconds(4),
-       me + chrono::seconds(13) - chrono::milliseconds(2),
-       me + chrono::seconds(1003) - chrono::milliseconds(2)});
+      {{.boot = 0, .time = me + chrono::seconds(4) - chrono::milliseconds(4)},
+       {.boot = 0, .time = me + chrono::seconds(13) - chrono::milliseconds(2)},
+       {.boot = 0,
+        .time = me + chrono::seconds(1003) - chrono::milliseconds(2)}});
 
   EXPECT_EQ(
       time_converter.FromDistributedClock(0, de + chrono::milliseconds(2500)),
@@ -243,8 +248,8 @@ TEST(InterpolatedTimeConverterTest, SingleNodeTime) {
   const monotonic_clock::time_point me = monotonic_clock::epoch();
 
   TestingTimeConverter time_converter(1u);
-  time_converter.AddNextTimestamp(de + chrono::seconds(0),
-                                  {me + chrono::seconds(1)});
+  time_converter.AddNextTimestamp(
+      de + chrono::seconds(0), {{.boot = 0, .time = me + chrono::seconds(1)}});
 
   EXPECT_EQ(time_converter.FromDistributedClock(0, de), me);
   EXPECT_EQ(time_converter.FromDistributedClock(0, de + chrono::seconds(100)),
@@ -265,20 +270,20 @@ TEST(TimestampProblemTest, SolveNewton) {
       JsonToFlatbuffer<Node>("{\"name\": \"test_b\"}");
   const Node *const node_b = &node_b_buffer.message();
 
-  const monotonic_clock::time_point e = monotonic_clock::epoch();
-  const monotonic_clock::time_point ta = e + chrono::milliseconds(500);
+  const BootTimestamp e{0, monotonic_clock::epoch()};
+  const BootTimestamp ta = e + chrono::milliseconds(500);
 
   // Setup a time problem with an interesting shape that isn't simple and
   // parallel.
   NoncausalTimestampFilter a(node_a, node_b);
-  a.Sample(e, chrono::milliseconds(1002));
-  a.Sample(e + chrono::milliseconds(1000), chrono::milliseconds(1001));
-  a.Sample(e + chrono::milliseconds(3000), chrono::milliseconds(999));
+  a.Sample(e, {0, chrono::milliseconds(1002)});
+  a.Sample(e + chrono::milliseconds(1000), {0, chrono::milliseconds(1001)});
+  a.Sample(e + chrono::milliseconds(3000), {0, chrono::milliseconds(999)});
 
   NoncausalTimestampFilter b(node_b, node_a);
-  b.Sample(e + chrono::milliseconds(1000), -chrono::milliseconds(999));
-  b.Sample(e + chrono::milliseconds(2000), -chrono::milliseconds(1000));
-  b.Sample(e + chrono::milliseconds(4000), -chrono::milliseconds(1002));
+  b.Sample(e + chrono::milliseconds(1000), {0, -chrono::milliseconds(999)});
+  b.Sample(e + chrono::milliseconds(2000), {0, -chrono::milliseconds(1000)});
+  b.Sample(e + chrono::milliseconds(4000), {0, -chrono::milliseconds(1002)});
 
   TimestampProblem problem(2);
   problem.set_base_clock(0, ta);
@@ -293,11 +298,11 @@ TEST(TimestampProblemTest, SolveNewton) {
   problem.set_base_clock(1, e);
 
   problem.set_solution_node(0);
-  std::vector<monotonic_clock::time_point> result1 = problem.SolveNewton();
+  std::vector<BootTimestamp> result1 = problem.SolveNewton();
 
   problem.set_base_clock(1, result1[1]);
   problem.set_solution_node(1);
-  std::vector<monotonic_clock::time_point> result2 = problem.SolveNewton();
+  std::vector<BootTimestamp> result2 = problem.SolveNewton();
 
   EXPECT_EQ(result1[0], e + chrono::seconds(1));
   EXPECT_EQ(result1[0], result2[0]);
