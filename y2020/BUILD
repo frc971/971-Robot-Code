@@ -7,12 +7,14 @@ load("//tools/build_rules:template.bzl", "jinja2_template")
 robot_downloader(
     binaries = [
         ":setpoint_setter",
+        "//aos/network:web_proxy_main",
     ],
     data = [
         ":config",
     ],
     dirs = [
         "//y2020/actors:splines",
+        "//y2020/www:www_files",
     ],
     start_binaries = [
         "//aos/events/logging:logger_main",

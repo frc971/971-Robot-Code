@@ -224,7 +224,7 @@
       "frequency": 4,
       "num_senders": 2,
       "read_method": "PIN",
-      "num_readers": 6
+      "num_readers": 10
     },
     {
       "name": "/drivetrain",
@@ -344,6 +344,13 @@
     {
       "name": "autonomous_action",
       "executable_name": "autonomous_action.stripped",
+      "nodes": [
+        "roborio"
+      ]
+    },
+    {
+      "name": "web_proxy",
+      "executable_name": "web_proxy_main.stripped",
       "nodes": [
         "roborio"
       ]
