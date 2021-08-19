@@ -32,8 +32,9 @@ class FieldWidget(Gtk.DrawingArea):
 
     def __init__(self):
         super(FieldWidget, self).__init__()
+        self.set_field(FIELD)
         self.set_size_request(
-            self.mToPx(FIELD.width), self.mToPx(FIELD.length))
+            self.mToPx(self.field.width), self.mToPx(self.field.length))
 
         self.points = Points()
         self.graph = Graph()
@@ -57,12 +58,21 @@ class FieldWidget(Gtk.DrawingArea):
 
         self.transform = cairo.Matrix()
 
+        self.set_events(Gdk.EventMask.BUTTON_PRESS_MASK
+                        | Gdk.EventMask.BUTTON_PRESS_MASK
+                        | Gdk.EventMask.BUTTON_RELEASE_MASK
+                        | Gdk.EventMask.POINTER_MOTION_MASK
+                        | Gdk.EventMask.SCROLL_MASK)
+
+    def set_field(self, field):
+        self.field = field
         try:
             self.field_png = cairo.ImageSurface.create_from_png(
-                "frc971/control_loops/python/field_images/" + FIELD.field_id +
-                ".png")
+                "frc971/control_loops/python/field_images/" +
+                self.field.field_id + ".png")
         except cairo.Error:
             self.field_png = None
+        self.queue_draw()
 
     # returns the transform from widget space to field space
     @property
@@ -76,8 +86,8 @@ class FieldWidget(Gtk.DrawingArea):
     # returns the scale from pixels in field space to meters in field space
     def pxToM_scale(self):
         available_space = self.get_allocation()
-        return np.maximum(FIELD.width / available_space.width,
-                          FIELD.length / available_space.height)
+        return np.maximum(self.field.width / available_space.width,
+                          self.field.length / available_space.height)
 
     def pxToM(self, p):
         return p * self.pxToM_scale()
@@ -97,9 +107,9 @@ class FieldWidget(Gtk.DrawingArea):
         x_difference_o = p2[0] - p1[0]
         y_difference_o = p2[1] - p1[1]
         x_difference = x_difference_o * self.mToPx(
-            FIELD.robot.length / 2) / distance
+            self.field.robot.length / 2) / distance
         y_difference = y_difference_o * self.mToPx(
-            FIELD.robot.length / 2) / distance
+            self.field.robot.length / 2) / distance
 
         front_middle = []
         front_middle.append(p1[0] + x_difference)
@@ -112,8 +122,10 @@ class FieldWidget(Gtk.DrawingArea):
         slope = [-(1 / x_difference_o) / (1 / y_difference_o)]
         angle = np.arctan(slope)
 
-        x_difference = np.sin(angle[0]) * self.mToPx(FIELD.robot.width / 2)
-        y_difference = np.cos(angle[0]) * self.mToPx(FIELD.robot.width / 2)
+        x_difference = np.sin(angle[0]) * self.mToPx(
+            self.field.robot.width / 2)
+        y_difference = np.cos(angle[0]) * self.mToPx(
+            self.field.robot.width / 2)
 
         front_1 = []
         front_1.append(front_middle[0] - x_difference)
@@ -132,9 +144,9 @@ class FieldWidget(Gtk.DrawingArea):
         back_2.append(back_middle[1] + y_difference)
 
         x_difference = x_difference_o * self.mToPx(
-            FIELD.robot.length / 2 + ROBOT_SIDE_TO_BALL_CENTER) / distance
+            self.field.robot.length / 2 + ROBOT_SIDE_TO_BALL_CENTER) / distance
         y_difference = y_difference_o * self.mToPx(
-            FIELD.robot.length / 2 + ROBOT_SIDE_TO_BALL_CENTER) / distance
+            self.field.robot.length / 2 + ROBOT_SIDE_TO_BALL_CENTER) / distance
 
         #Calculate Ball
         ball_center = []
@@ -142,9 +154,9 @@ class FieldWidget(Gtk.DrawingArea):
         ball_center.append(p1[1] + y_difference)
 
         x_difference = x_difference_o * self.mToPx(
-            FIELD.robot.length / 2 + ROBOT_SIDE_TO_HATCH_PANEL) / distance
+            self.field.robot.length / 2 + ROBOT_SIDE_TO_HATCH_PANEL) / distance
         y_difference = y_difference_o * self.mToPx(
-            FIELD.robot.length / 2 + ROBOT_SIDE_TO_HATCH_PANEL) / distance
+            self.field.robot.length / 2 + ROBOT_SIDE_TO_HATCH_PANEL) / distance
 
         #Calculate Panel
         panel_center = []
@@ -188,9 +200,6 @@ class FieldWidget(Gtk.DrawingArea):
         cr.set_source_rgba(0, 0, 0, 1)
 
     def do_draw(self, cr):  # main
-
-        start_time = time.perf_counter()
-
         cr.set_matrix(self.transform.multiply(cr.get_matrix()))
 
         cr.save()
@@ -198,15 +207,16 @@ class FieldWidget(Gtk.DrawingArea):
         set_color(cr, palette["BLACK"])
 
         cr.set_line_width(1.0)
-        cr.rectangle(0, 0, self.mToPx(FIELD.width), self.mToPx(FIELD.length))
+        cr.rectangle(0, 0, self.mToPx(self.field.width),
+                     self.mToPx(self.field.length))
         cr.set_line_join(cairo.LINE_JOIN_ROUND)
         cr.stroke()
 
         if self.field_png:
             cr.save()
             cr.scale(
-                self.mToPx(FIELD.width) / self.field_png.get_width(),
-                self.mToPx(FIELD.length) / self.field_png.get_height(),
+                self.mToPx(self.field.width) / self.field_png.get_width(),
+                self.mToPx(self.field.length) / self.field_png.get_height(),
             )
             cr.set_source_surface(self.field_png)
             cr.paint()
@@ -258,12 +268,7 @@ class FieldWidget(Gtk.DrawingArea):
         cr.restore()
 
     def draw_splines(self, cr):
-        for i, points in enumerate(self.points.getSplines()):
-            array = np.zeros(shape=(6, 2), dtype=float)
-            for j, point in enumerate(points):
-                array[j, 0] = point[0]
-                array[j, 1] = point[1]
-            spline = Spline(np.ascontiguousarray(np.transpose(array)))
+        for i, spline in enumerate(self.points.getLibsplines()):
             for k in np.linspace(0.01, 1, 100):
                 cr.move_to(
                     self.mToPx(spline.Point(k - 0.01)[0]),
@@ -276,30 +281,11 @@ class FieldWidget(Gtk.DrawingArea):
                 self.draw_robot_at_point(cr, 0.00, 0.01, spline)
             self.draw_robot_at_point(cr, 1, 0.01, spline)
 
-    def mouse_move(self, event):
-        old_x = self.mousex
-        old_y = self.mousey
-        self.mousex, self.mousey = self.input_transform.transform_point(
-            event.x, event.y)
-        dif_x = self.mousex - old_x
-        dif_y = self.mousey - old_y
-        difs = np.array([self.pxToM(dif_x), self.pxToM(dif_y)])
-
-        if self.mode == Mode.kEditing and self.spline_edit != -1:
-            self.points.updates_for_mouse_move(self.index_of_edit,
-                                               self.spline_edit,
-                                               self.pxToM(self.mousex),
-                                               self.pxToM(self.mousey), difs)
-
-            self.points.update_lib_spline()
-            self.graph.schedule_recalculate(self.points)
-        self.queue_draw()
-
     def export_json(self, file_name):
         self.path_to_export = os.path.join(
             self.module_path,  # position of the python
             "../../..",  # root of the repository
-            get_json_folder(FIELD),  # path from the root
+            get_json_folder(self.field),  # path from the root
             file_name  # selected file
         )
 
@@ -313,7 +299,7 @@ class FieldWidget(Gtk.DrawingArea):
         self.path_to_export = os.path.join(
             self.module_path,  # position of the python
             "../../..",  # root of the repository
-            get_json_folder(FIELD),  # path from the root
+            get_json_folder(self.field),  # path from the root
             file_name  # selected file
         )
 
@@ -343,8 +329,10 @@ class FieldWidget(Gtk.DrawingArea):
 
         print("SPLINES LOADED")
         self.mode = Mode.kEditing
+        self.queue_draw()
+        self.graph.schedule_recalculate(self.points)
 
-    def key_press(self, event):
+    def do_key_press_event(self, event):
         keyval = Gdk.keyval_to_lower(event.keyval)
 
         # TODO: This should be a button
@@ -361,7 +349,25 @@ class FieldWidget(Gtk.DrawingArea):
                 self.points.getSplines()[len(self.points.getSplines()) - 1][3])
             self.queue_draw()
 
-    def button_press(self, event):
+    def do_button_release_event(self, event):
+        self.mousex, self.mousey = self.input_transform.transform_point(
+            event.x, event.y)
+        if self.mode == Mode.kEditing:
+            if self.index_of_edit > -1 and self.held_x != self.mousex:
+
+                self.points.setSplines(self.spline_edit, self.index_of_edit,
+                                       self.pxToM(self.mousex),
+                                       self.pxToM(self.mousey))
+
+                self.points.splineExtrapolate(self.spline_edit)
+
+                self.points.update_lib_spline()
+                self.graph.schedule_recalculate(self.points)
+
+                self.index_of_edit = -1
+                self.spline_edit = -1
+
+    def do_button_press_event(self, event):
         self.mousex, self.mousey = self.input_transform.transform_point(
             event.x, event.y)
 
@@ -369,6 +375,7 @@ class FieldWidget(Gtk.DrawingArea):
             if self.points.add_point(
                     self.pxToM(self.mousex), self.pxToM(self.mousey)):
                 self.mode = Mode.kEditing
+                self.graph.schedule_recalculate(self.points)
         elif self.mode == Mode.kEditing:
             # Now after index_of_edit is not -1, the point is selected, so
             # user can click for new point
@@ -396,25 +403,26 @@ class FieldWidget(Gtk.DrawingArea):
                             self.held_x = self.mousex
         self.queue_draw()
 
-    def button_release(self, event):
+    def do_motion_notify_event(self, event):
+        old_x = self.mousex
+        old_y = self.mousey
         self.mousex, self.mousey = self.input_transform.transform_point(
             event.x, event.y)
-        if self.mode == Mode.kEditing:
-            if self.index_of_edit > -1 and self.held_x != self.mousex:
+        dif_x = self.mousex - old_x
+        dif_y = self.mousey - old_y
+        difs = np.array([self.pxToM(dif_x), self.pxToM(dif_y)])
 
-                self.points.setSplines(self.spline_edit, self.index_of_edit,
-                                       self.pxToM(self.mousex),
-                                       self.pxToM(self.mousey))
+        if self.mode == Mode.kEditing and self.spline_edit != -1:
+            self.points.updates_for_mouse_move(self.index_of_edit,
+                                               self.spline_edit,
+                                               self.pxToM(self.mousex),
+                                               self.pxToM(self.mousey), difs)
 
-                self.points.splineExtrapolate(self.spline_edit)
+            self.points.update_lib_spline()
+            self.graph.schedule_recalculate(self.points)
+        self.queue_draw()
 
-                self.points.update_lib_spline()
-                self.graph.schedule_recalculate(self.points)
-
-                self.index_of_edit = -1
-                self.spline_edit = -1
-
-    def mouse_scroll(self, event):
+    def do_scroll_event(self, event):
         self.mousex, self.mousey = self.input_transform.transform_point(
             event.x, event.y)
 

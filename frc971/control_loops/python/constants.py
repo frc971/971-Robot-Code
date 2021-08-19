@@ -118,7 +118,7 @@ FIELDS = {
         field_id="autonav_bounce"),
 }
 
-FIELD = FIELDS["2021 Galactic Search BRed"]
+FIELD = FIELDS["2020 Field"]
 
 
 def get_json_folder(field):
@@ -126,15 +126,6 @@ def get_json_folder(field):
         return "y2020/actors/splines"
     else:
         return "frc971/control_loops/python/spline_jsons"
-
-
-def pxToM(p):
-    return p * FIELD.width / SCREEN_SIZE
-
-
-def mToPx(m):
-    return (m * SCREEN_SIZE / FIELD.width)
-
 
 def inToM(i):
     return (i * 0.0254)
