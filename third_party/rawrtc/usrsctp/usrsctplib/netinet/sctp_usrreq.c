@@ -196,16 +196,18 @@ sctp_finish(void)
 	sctp_stop_main_timer();
 #endif
 #if defined(__Userspace__)
+#if defined(THREAD_SUPPORT)
 #if defined(INET) || defined(INET6)
 	recv_thread_destroy();
-#endif
+#endif  // INIT || INET6
+// TODO(jkuszmaul): The corresponding #if in recv_thread_init() actually uses Darwin || DragonFly || FreeBSD--not !Windows.
 #if !defined(__Userspace_os_Windows)
 #if defined(INET) || defined(INET6)
 	if (SCTP_BASE_VAR(userspace_route) != -1) {
 		pthread_join(SCTP_BASE_VAR(recvthreadroute), NULL);
 	}
-#endif
-#endif
+#endif  // INIT || INET6
+#endif // !__Userspace_os_Windows
 #ifdef INET
 	if (SCTP_BASE_VAR(userspace_rawsctp) != -1) {
 #if defined(__Userspace_os_Windows)
@@ -213,7 +215,7 @@ sctp_finish(void)
 		CloseHandle(SCTP_BASE_VAR(recvthreadraw));
 #else
 		pthread_join(SCTP_BASE_VAR(recvthreadraw), NULL);
-#endif
+#endif // __Userspace_os_Windows
 	}
 	if (SCTP_BASE_VAR(userspace_udpsctp) != -1) {
 #if defined(__Userspace_os_Windows)
@@ -221,9 +223,9 @@ sctp_finish(void)
 		CloseHandle(SCTP_BASE_VAR(recvthreadudp));
 #else
 		pthread_join(SCTP_BASE_VAR(recvthreadudp), NULL);
-#endif
+#endif // __Userspace_os_Windows
 	}
-#endif
+#endif // INET
 #ifdef INET6
 	if (SCTP_BASE_VAR(userspace_rawsctp6) != -1) {
 #if defined(__Userspace_os_Windows)
@@ -231,7 +233,7 @@ sctp_finish(void)
 		CloseHandle(SCTP_BASE_VAR(recvthreadraw6));
 #else
 		pthread_join(SCTP_BASE_VAR(recvthreadraw6), NULL);
-#endif
+#endif // __Userspace_os_Windows
 	}
 	if (SCTP_BASE_VAR(userspace_udpsctp6) != -1) {
 #if defined(__Userspace_os_Windows)
@@ -239,17 +241,18 @@ sctp_finish(void)
 		CloseHandle(SCTP_BASE_VAR(recvthreadudp6));
 #else
 		pthread_join(SCTP_BASE_VAR(recvthreadudp6), NULL);
-#endif
+#endif // __Userspace_os_Windows
 	}
-#endif
+#endif // INET6
 	SCTP_BASE_VAR(timer_thread_should_exit) = 1;
 #if defined(__Userspace_os_Windows)
 	WaitForSingleObject(SCTP_BASE_VAR(timer_thread), INFINITE);
 	CloseHandle(SCTP_BASE_VAR(timer_thread));
 #else
 	pthread_join(SCTP_BASE_VAR(timer_thread), NULL);
-#endif
-#endif
+#endif // __Userspace_os_Windows
+#endif // THREAD_SUPPORT
+#endif // __Userspace__
 	sctp_pcb_finish();
 #if defined(__Windows__)
 	sctp_finish_sysctls();
