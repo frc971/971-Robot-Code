@@ -6,6 +6,7 @@
 #include <string_view>
 
 #include "Eigen/Dense"
+#include "absl/container/btree_set.h"
 #include "aos/configuration.h"
 #include "aos/events/logging/logfile_utils.h"
 #include "aos/events/simulated_event_loop.h"
@@ -165,6 +166,7 @@ class InterpolatedTimeConverter : public TimeConverter {
 
   // Converts a time to the distributed clock for scheduling and cross-node
   // time measurement.
+  // TODO(austin): Need to pass in boot.
   distributed_clock::time_point ToDistributedClock(
       size_t node_index, monotonic_clock::time_point time) override;
 
@@ -175,6 +177,12 @@ class InterpolatedTimeConverter : public TimeConverter {
 
   // Called whenever time passes this point and we can forget about it.
   void ObserveTimePassed(distributed_clock::time_point time) override;
+
+  // Queues 1 more timestammp in the interpolation list.  This is public for
+  // timestamp_extractor so it can hammer on the log until everything is queued.
+  std::optional<const std::tuple<distributed_clock::time_point,
+                                 std::vector<logger::BootTimestamp>> *>
+  QueueNextTimestamp();
 
  private:
   // Returns the next timestamp, or nullopt if there isn't one. It is assumed
@@ -191,22 +199,22 @@ class InterpolatedTimeConverter : public TimeConverter {
   void QueueUntil(
       std::function<
           bool(const std::tuple<distributed_clock::time_point,
-                                std::vector<monotonic_clock::time_point>> &)>
+                                std::vector<logger::BootTimestamp>> &)>
           not_done);
 
   // The number of nodes to enforce.
   const size_t node_count_;
 
+ protected:
   // List of timestamps.
   std::deque<std::tuple<distributed_clock::time_point,
-                        std::vector<monotonic_clock::time_point>>>
+                        std::vector<logger::BootTimestamp>>>
       times_;
 
   // If true, we have popped data from times_, so anything before the start is
   // unknown.
   bool have_popped_ = false;
 
- protected:
   // The amount of time to buffer when estimating.  We care so we don't throw
   // data out of our queue too soon.  This time is indicative of how much to
   // buffer everywhere, so let's latch onto it as well until proven that there
@@ -237,6 +245,13 @@ std::chrono::nanoseconds MaxElapsedTime(
 std::chrono::nanoseconds InvalidDistance(
     const std::vector<logger::BootTimestamp> &ta,
     const std::vector<logger::BootTimestamp> &tb);
+
+// Interpolates a monotonic time to a distributed time without loss of
+// precision.  Implements (d1 - d0) / (t1 - t0) * (time - t0) + d0;
+distributed_clock::time_point ToDistributedClock(
+    distributed_clock::time_point d0, distributed_clock::time_point d1,
+    monotonic_clock::time_point t0, monotonic_clock::time_point t1,
+    monotonic_clock::time_point time);
 
 // Class to hold a NoncausalOffsetEstimator per pair of communicating nodes, and
 // to estimate and set the overall time of all nodes.
@@ -316,6 +331,9 @@ class MultiNodeNoncausalOffsetEstimator final
   NextSolution(TimestampProblem *problem,
                const std::vector<logger::BootTimestamp> &base_times);
 
+  // Writes all samples to disk.
+  void FlushAllSamples(bool finish);
+
   const Configuration *configuration_;
   const Configuration *logged_configuration_;
 
@@ -349,7 +367,39 @@ class MultiNodeNoncausalOffsetEstimator final
   bool first_solution_ = true;
   bool all_done_ = false;
 
+  // Optional file pointers to save the results of the noncausal filter in. This
+  // lives here so we can give each sample a distributed clock.
+  std::vector<std::vector<FILE *>> filter_fps_;
+  // Optional file pointers to save all the samples into.
+  std::vector<std::vector<FILE *>> sample_fps_;
+
   FILE *fp_ = NULL;
+
+  struct SingleNodeSamples {
+    struct CompareTimestamps {
+      bool operator()(
+          const std::pair<logger::BootTimestamp, logger::BootTimestamp> &a,
+          const std::pair<logger::BootTimestamp, logger::BootTimestamp> &b)
+          const {
+        return a.first < b.first;
+      }
+    };
+
+    // Delivered, sent timestamps for each message.
+    absl::btree_set<std::pair<logger::BootTimestamp, logger::BootTimestamp>,
+                    CompareTimestamps>
+        messages;
+  };
+
+  struct NodeSamples {
+    // List of nodes sending.
+    std::vector<SingleNodeSamples> nodes;
+  };
+
+  // List of nodes where data is delivered.
+  std::vector<NodeSamples> node_samples_;
+  // Mapping from channel to the node_index of the source node.
+  std::vector<size_t> source_node_index_;
 };
 
 }  // namespace message_bridge

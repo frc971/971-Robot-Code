@@ -254,15 +254,8 @@ class NoncausalTimestampFilter {
     node_b_ = other.node_b_;
     other.node_b_ = nullptr;
 
-    saved_samples_ = std::move(other.saved_samples_);
-    fp_ = other.fp_;
-    other.fp_ = nullptr;
-    samples_fp_ = other.samples_fp_;
-    other.samples_fp_ = nullptr;
-
     filters_ = std::move(other.filters_);
     current_filter_ = other.current_filter_;
-    first_time_ = other.first_time_;
     return *this;
   }
   NoncausalTimestampFilter(const NoncausalTimestampFilter &) = delete;
@@ -312,11 +305,6 @@ class NoncausalTimestampFilter {
       filter.filter.Debug();
     }
   }
-
-  // Sets the starting point and filename to log samples to.  These functions
-  // are only used when doing CSV file logging to debug the filter.
-  void SetFirstTime(aos::monotonic_clock::time_point time);
-  void SetCsvFileName(std::string_view name);
 
   // Marks all line segments up until the provided time on the provided node as
   // used.
@@ -601,25 +589,11 @@ class NoncausalTimestampFilter {
   // Removes the oldest timestamp.
   void PopFront();
 
-  // Writes a timestamp to the file if it is reasonable.
-  void MaybeWriteTimestamp(
-      std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>
-          timestamp);
-
   // Writes any saved timestamps to file.
   void FlushSavedSamples();
 
   const Node *node_a_;
   const Node *node_b_;
-
-  // Holds any timestamps from before the start of the log to be flushed when we
-  // know when the log starts.
-  std::vector<
-      std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>>
-      saved_samples_;
-
-  FILE *fp_ = nullptr;
-  FILE *samples_fp_ = nullptr;
 
   // Returns a debug string with the nodes this filter represents.
   std::string NodeNames() const;
@@ -699,8 +673,6 @@ class NoncausalTimestampFilter {
   std::vector<BootFilter> filters_;
 
   size_t current_filter_ = 0;
-
-  aos::monotonic_clock::time_point first_time_ = aos::monotonic_clock::min_time;
 };
 
 // This class holds 2 NoncausalTimestampFilter's and handles averaging the
@@ -743,15 +715,6 @@ class NoncausalOffsetEstimator {
   // Removes old data points from a node before the provided time.
   // Returns true if any points were popped.
   bool Pop(const Node *node, logger::BootTimestamp node_monotonic_now);
-
-  void SetFirstFwdTime(monotonic_clock::time_point time) {
-    a_.SetFirstTime(time);
-  }
-  void SetFwdCsvFileName(std::string_view name) { a_.SetCsvFileName(name); }
-  void SetFirstRevTime(monotonic_clock::time_point time) {
-    b_.SetFirstTime(time);
-  }
-  void SetRevCsvFileName(std::string_view name) { b_.SetCsvFileName(name); }
 
  private:
   NoncausalTimestampFilter a_;

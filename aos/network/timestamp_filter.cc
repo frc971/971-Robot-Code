@@ -35,15 +35,6 @@ void ClippedAverageFilterPrintHeader(FILE *fp) {
           "sample_contribution, time_contribution\n");
 }
 
-void PrintNoncausalTimestampFilterHeader(FILE *fp) {
-  fprintf(fp, "time_since_start,sample_ns,filtered_offset\n");
-}
-
-void PrintNoncausalTimestampFilterSamplesHeader(FILE *fp) {
-  fprintf(fp,
-          "time_since_start,sample_ns,monotonic,monotonic+offset(remote)\n");
-}
-
 void NormalizeTimestamps(monotonic_clock::time_point *ta_base, double *ta) {
   chrono::nanoseconds ta_digits(static_cast<int64_t>(std::floor(*ta)));
   *ta_base += ta_digits;
@@ -472,51 +463,14 @@ void ClippedAverageFilter::Update(
   }
 }
 
-NoncausalTimestampFilter::SingleFilter::~SingleFilter() {
-  CHECK_EQ(timestamps_.size(), 0u)
-      << ": Parent didn't pop all timestamps before being destroyed";
-}
+NoncausalTimestampFilter::SingleFilter::~SingleFilter() {}
 
-NoncausalTimestampFilter::~NoncausalTimestampFilter() {
-  for (auto &f : filters_) {
-    while (f.filter.timestamps_size() > 0u) {
-      MaybeWriteTimestamp(f.filter.timestamp(0));
-      f.filter.PopFront();
-    }
-  }
-  if (fp_) {
-    fclose(fp_);
-  }
-
-  if (samples_fp_) {
-    fclose(samples_fp_);
-  }
-}
+NoncausalTimestampFilter::~NoncausalTimestampFilter() {}
 
 std::tuple<monotonic_clock::time_point, chrono::nanoseconds> TrimTuple(
     std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds, bool>
         t) {
   return std::make_tuple(std::get<0>(t), std::get<1>(t));
-}
-
-void NoncausalTimestampFilter::FlushSavedSamples() {
-  for (const std::tuple<aos::monotonic_clock::time_point,
-                        std::chrono::nanoseconds> &sample : saved_samples_) {
-    fprintf(samples_fp_, "%.9f, %.9f, %.9f, %.9f\n",
-            chrono::duration_cast<chrono::duration<double>>(
-                std::get<0>(sample) - first_time_)
-                .count(),
-            chrono::duration_cast<chrono::duration<double>>(std::get<1>(sample))
-                .count(),
-            chrono::duration_cast<chrono::duration<double>>(
-                std::get<0>(sample).time_since_epoch())
-                .count(),
-            chrono::duration_cast<chrono::duration<double>>(
-                (std::get<0>(sample) + std::get<1>(sample)).time_since_epoch())
-                .count());
-  }
-  fflush(samples_fp_);
-  saved_samples_.clear();
 }
 
 std::pair<std::tuple<logger::BootTimestamp, logger::BootDuration>,
@@ -878,14 +832,6 @@ bool NoncausalTimestampFilter::SingleFilter::ValidateSolution(
 
 void NoncausalTimestampFilter::Sample(logger::BootTimestamp monotonic_now_all,
                                       logger::BootDuration sample_ns) {
-  if (samples_fp_) {
-    saved_samples_.emplace_back(
-        std::make_pair(monotonic_now_all.time, sample_ns.duration));
-    if (first_time_ != aos::monotonic_clock::min_time) {
-      FlushSavedSamples();
-    }
-  }
-
   filter(monotonic_now_all.boot, sample_ns.boot)
       ->Sample(monotonic_now_all.time, sample_ns.duration);
 }
@@ -1178,7 +1124,6 @@ bool NoncausalTimestampFilter::Pop(logger::BootTimestamp time) {
   // drop it off the list.  Hence the >=
   while (f->timestamps_size() >= 2 &&
          time.time >= std::get<0>(f->timestamp(1))) {
-    MaybeWriteTimestamp(f->timestamp(0));
     f->PopFront();
     removed = true;
   }
@@ -1292,27 +1237,6 @@ void NoncausalTimestampFilter::SingleFilter::FreezeUntilRemote(
   }
 }
 
-void NoncausalTimestampFilter::SetFirstTime(
-    aos::monotonic_clock::time_point time) {
-  first_time_ = time;
-  if (fp_) {
-    fp_ = freopen(NULL, "wb", fp_);
-    PrintNoncausalTimestampFilterHeader(fp_);
-  }
-  if (samples_fp_) {
-    samples_fp_ = freopen(NULL, "wb", samples_fp_);
-    PrintNoncausalTimestampFilterSamplesHeader(samples_fp_);
-    FlushSavedSamples();
-  }
-}
-
-void NoncausalTimestampFilter::SetCsvFileName(std::string_view name) {
-  fp_ = fopen(absl::StrCat(name, ".csv").c_str(), "w");
-  samples_fp_ = fopen(absl::StrCat(name, "_samples.csv").c_str(), "w");
-  PrintNoncausalTimestampFilterHeader(fp_);
-  PrintNoncausalTimestampFilterSamplesHeader(samples_fp_);
-}
-
 void NoncausalTimestampFilter::SingleFilter::PopFront() {
   // If we drop data, we shouldn't add anything before that point.
   frozen_time_ = std::max(frozen_time_, std::get<0>(timestamp(0)));
@@ -1320,24 +1244,6 @@ void NoncausalTimestampFilter::SingleFilter::PopFront() {
   has_popped_ = true;
   if (next_to_consume_ > 0u) {
     next_to_consume_--;
-  }
-}
-
-void NoncausalTimestampFilter::MaybeWriteTimestamp(
-    std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>
-        timestamp) {
-  if (fp_ && first_time_ != aos::monotonic_clock::min_time) {
-    fprintf(fp_, "%.9f, %.9f, %.9f\n",
-            std::chrono::duration_cast<std::chrono::duration<double>>(
-                std::get<0>(timestamp) - first_time_)
-                .count(),
-            std::chrono::duration_cast<std::chrono::duration<double>>(
-                std::get<0>(timestamp).time_since_epoch())
-                .count(),
-            std::chrono::duration_cast<std::chrono::duration<double>>(
-                std::get<1>(timestamp))
-                .count());
-    fflush(fp_);
   }
 }
 

@@ -119,36 +119,37 @@ int Main(int argc, char **argv) {
 
   // Don't get clever. Use the first time as the start time.  Note: this is
   // different than how log_cat and others work.
-  std::optional<
-      std::tuple<distributed_clock::time_point, std::vector<BootTimestamp>>>
-      next_timestamp = multinode_estimator.NextTimestamp();
+  std::optional<const std::tuple<distributed_clock::time_point,
+                                 std::vector<BootTimestamp>> *>
+      next_timestamp = multinode_estimator.QueueNextTimestamp();
   CHECK(next_timestamp);
   LOG(INFO) << "Starting at:";
   for (const Node *node : configuration::GetNodes(config)) {
     const size_t node_index = configuration::GetNodeIndex(config, node);
     LOG(INFO) << "  " << node->name()->string_view() << " -> "
-              << std::get<1>(*next_timestamp)[node_index].time;
+              << std::get<1>(*next_timestamp.value())[node_index].time;
   }
 
   std::vector<monotonic_clock::time_point> just_monotonic(
-      std::get<1>(*next_timestamp).size());
+      std::get<1>(*next_timestamp.value()).size());
   for (size_t i = 0; i < just_monotonic.size(); ++i) {
-    CHECK_EQ(std::get<1>(*next_timestamp)[i].boot, 0u);
-    just_monotonic[i] = std::get<1>(*next_timestamp)[i].time;
+    CHECK_EQ(std::get<1>(*next_timestamp.value())[i].boot, 0u);
+    just_monotonic[i] = std::get<1>(*next_timestamp.value())[i].time;
   }
   multinode_estimator.Start(just_monotonic);
 
   // As we pull off all the timestamps, the time problem is continually solved,
   // filling in the CSV files.
   while (true) {
-    std::optional<
-        std::tuple<distributed_clock::time_point, std::vector<BootTimestamp>>>
-        next_timestamp = multinode_estimator.NextTimestamp();
-    // TODO(austin): Figure out how to make the plot work across reboots.
+    std::optional<const std::tuple<distributed_clock::time_point,
+                                   std::vector<BootTimestamp>> *>
+        next_timestamp = multinode_estimator.QueueNextTimestamp();
     if (!next_timestamp) {
       break;
     }
   }
+
+  LOG(INFO) << "Done";
 
   return 0;
 }
