@@ -61,6 +61,13 @@ void EventScheduler::RunOnRun() {
   on_run_.clear();
 }
 
+void EventScheduler::RunOnStartup() {
+  for (size_t i = 0; i < on_startup_.size(); ++i) {
+    on_startup_[i]();
+  }
+  on_startup_.clear();
+}
+
 std::ostream &operator<<(std::ostream &stream,
                          const aos::distributed_clock::time_point &now) {
   // Print it the same way we print a monotonic time.  Literally.

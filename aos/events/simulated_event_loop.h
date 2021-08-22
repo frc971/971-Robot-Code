@@ -26,6 +26,7 @@ namespace aos {
 class SimulatedChannel;
 
 class NodeEventLoopFactory;
+class SimulatedEventLoop;
 namespace message_bridge {
 class SimulatedMessageBridge;
 }
@@ -72,6 +73,7 @@ class SimulatedEventLoopFactory {
   // NodeEventLoopFactory is owned by the SimulatedEventLoopFactory and has a
   // lifetime identical to the factory.
   NodeEventLoopFactory *GetNodeEventLoopFactory(const Node *node);
+  NodeEventLoopFactory *GetNodeEventLoopFactory(std::string_view node);
 
   // Sets the time converter for all nodes.
   void SetTimeConverter(TimeConverter *time_converter);
@@ -122,11 +124,6 @@ class SimulatedEventLoopFactory {
 
   const Configuration *const configuration_;
   EventSchedulerScheduler scheduler_scheduler_;
-  // List of event loops to manage running and not running for.
-  // The function is a callback used to set and clear the running bool on each
-  // event loop.
-  std::vector<std::pair<EventLoop *, std::function<void(bool)>>>
-      raw_event_loops_;
 
   std::chrono::nanoseconds send_delay_ = std::chrono::microseconds(50);
   std::chrono::nanoseconds network_delay_ = std::chrono::microseconds(100);
@@ -141,7 +138,9 @@ class SimulatedEventLoopFactory {
 // This class holds all the state required to be a single node.
 class NodeEventLoopFactory {
  public:
-  ::std::unique_ptr<EventLoop> MakeEventLoop(std::string_view name);
+  ~NodeEventLoopFactory();
+
+  std::unique_ptr<EventLoop> MakeEventLoop(std::string_view name);
 
   // Returns the node that this factory is running as, or nullptr if this is a
   // single node setup.
@@ -212,11 +211,8 @@ class NodeEventLoopFactory {
 
  private:
   friend class SimulatedEventLoopFactory;
-  NodeEventLoopFactory(
-      EventSchedulerScheduler *scheduler_scheduler,
-      SimulatedEventLoopFactory *factory, const Node *node,
-      std::vector<std::pair<EventLoop *, std::function<void(bool)>>>
-          *raw_event_loops);
+  NodeEventLoopFactory(EventSchedulerScheduler *scheduler_scheduler,
+                       SimulatedEventLoopFactory *factory, const Node *node);
 
   EventScheduler scheduler_;
   SimulatedEventLoopFactory *const factory_;
@@ -225,8 +221,7 @@ class NodeEventLoopFactory {
 
   const Node *const node_;
 
-  std::vector<std::pair<EventLoop *, std::function<void(bool)>>>
-      *const raw_event_loops_;
+  std::vector<SimulatedEventLoop *> event_loops_;
 
   std::chrono::nanoseconds realtime_offset_ = std::chrono::seconds(0);
 

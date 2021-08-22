@@ -21,6 +21,14 @@ class SimulatedChannel;
 
 namespace {
 
+std::string NodeName(const Node *node) {
+  if (node == nullptr) {
+    return "";
+  }
+
+  return absl::StrCat(node->name()->string_view(), " ");
+}
+
 class ScopedMarkRealtimeRestorer {
  public:
   ScopedMarkRealtimeRestorer(bool rt) : rt_(rt), prior_(MarkRealtime(rt)) {}
@@ -461,24 +469,21 @@ class SimulatedEventLoop : public EventLoop {
       absl::btree_map<SimpleChannel, std::unique_ptr<SimulatedChannel>>
           *channels,
       const Configuration *configuration,
-      std::vector<std::pair<EventLoop *, std::function<void(bool)>>>
-          *raw_event_loops,
-      const Node *node, pid_t tid)
+      std::vector<SimulatedEventLoop *> *event_loops_, const Node *node,
+      pid_t tid)
       : EventLoop(CHECK_NOTNULL(configuration)),
         scheduler_(scheduler),
         node_event_loop_factory_(node_event_loop_factory),
         channels_(channels),
-        raw_event_loops_(raw_event_loops),
+        event_loops_(event_loops_),
         node_(node),
         tid_(tid) {
-    raw_event_loops_->push_back(std::make_pair(this, [this](bool value) {
-      if (!has_setup_) {
-        Setup();
-        has_setup_ = true;
-      }
-      set_is_running(value);
-      has_run_ = true;
-    }));
+    scheduler_->ScheduleOnStartup([this]() {
+      Setup();
+      has_setup_ = true;
+    });
+
+    event_loops_->push_back(this);
   }
   ~SimulatedEventLoop() override {
     // Trigger any remaining senders or fetchers to be cleared before destroying
@@ -490,13 +495,20 @@ class SimulatedEventLoop : public EventLoop {
     phased_loops_.clear();
     watchers_.clear();
 
-    for (auto it = raw_event_loops_->begin(); it != raw_event_loops_->end();
+    for (auto it = event_loops_->begin(); it != event_loops_->end();
          ++it) {
-      if (it->first == this) {
-        raw_event_loops_->erase(it);
+      if (*it == this) {
+        event_loops_->erase(it);
         break;
       }
     }
+  }
+
+  void SetIsRunning(bool running) {
+    CHECK(has_setup_);
+
+    set_is_running(running);
+    has_run_ = true;
   }
 
   bool has_run() const { return has_run_; }
@@ -602,8 +614,7 @@ class SimulatedEventLoop : public EventLoop {
   EventScheduler *scheduler_;
   NodeEventLoopFactory *node_event_loop_factory_;
   absl::btree_map<SimpleChannel, std::unique_ptr<SimulatedChannel>> *channels_;
-  std::vector<std::pair<EventLoop *, std::function<void(bool)>>>
-      *raw_event_loops_;
+  std::vector<SimulatedEventLoop *> *event_loops_;
 
   ::std::string name_;
 
@@ -625,10 +636,12 @@ class SimulatedEventLoop : public EventLoop {
 void SimulatedEventLoopFactory::set_send_delay(
     std::chrono::nanoseconds send_delay) {
   send_delay_ = send_delay;
-  for (std::pair<EventLoop *, std::function<void(bool)>> &loop :
-       raw_event_loops_) {
-    reinterpret_cast<SimulatedEventLoop *>(loop.first)
-        ->set_send_delay(send_delay_);
+  for (std::unique_ptr<NodeEventLoopFactory> & node : node_factories_) {
+    if (node) {
+      for (SimulatedEventLoop *loop : node->event_loops_) {
+        loop->set_send_delay(send_delay_);
+      }
+    }
   }
 }
 
@@ -637,11 +650,16 @@ void SimulatedEventLoop::MakeRawWatcher(
     std::function<void(const Context &channel, const void *message)> watcher) {
   TakeWatcher(channel);
 
-  std::unique_ptr<SimulatedWatcher> shm_watcher(
-      new SimulatedWatcher(this, scheduler_, channel, std::move(watcher)));
+  std::unique_ptr<SimulatedWatcher> shm_watcher =
+      std::make_unique<SimulatedWatcher>(this, scheduler_, channel,
+                                         std::move(watcher));
 
   GetSimulatedChannel(channel)->MakeRawWatcher(shm_watcher.get());
+
   NewWatcher(std::move(shm_watcher));
+  VLOG(1) << monotonic_now() << " " << NodeName(node()) << name()
+          << " MakeRawWatcher "
+          << configuration::StrippedChannelToString(channel);
 
   // Order of operations gets kinda wonky if we let people make watchers after
   // running once.  If someone has a valid use case, we can reconsider.
@@ -652,6 +670,9 @@ std::unique_ptr<RawSender> SimulatedEventLoop::MakeRawSender(
     const Channel *channel) {
   TakeSender(channel);
 
+  VLOG(1) << monotonic_now() << " " << NodeName(node()) << name()
+          << " MakeRawSender "
+          << configuration::StrippedChannelToString(channel);
   return GetSimulatedChannel(channel)->MakeRawSender(this);
 }
 
@@ -666,6 +687,9 @@ std::unique_ptr<RawFetcher> SimulatedEventLoop::MakeRawFetcher(
                   "configuration.";
   }
 
+  VLOG(1) << monotonic_now() << " " << NodeName(node()) << name()
+          << " MakeRawFetcher "
+          << configuration::StrippedChannelToString(channel);
   return GetSimulatedChannel(channel)->MakeRawFetcher(this);
 }
 
@@ -701,6 +725,10 @@ SimulatedWatcher::SimulatedWatcher(
       token_(scheduler_->InvalidToken()) {}
 
 SimulatedWatcher::~SimulatedWatcher() {
+  VLOG(1) << simulated_event_loop_->monotonic_now() << " "
+          << NodeName(simulated_event_loop_->node())
+          << simulated_event_loop_->name() << " Stopped Watching "
+          << configuration::StrippedChannelToString(channel_);
   simulated_event_loop_->RemoveEvent(&event_);
   if (token_ != scheduler_->InvalidToken()) {
     scheduler_->Deschedule(token_);
@@ -729,11 +757,13 @@ void SimulatedWatcher::Schedule(std::shared_ptr<SimulatedMessage> message) {
 }
 
 void SimulatedWatcher::HandleEvent() {
-  VLOG(1) << "Watcher " << configuration::CleanedChannelToString(channel_);
-  CHECK_NE(msgs_.size(), 0u) << ": No events to handle.";
-
   const monotonic_clock::time_point monotonic_now =
       simulated_event_loop_->monotonic_now();
+  VLOG(1) << monotonic_now << " " << NodeName(simulated_event_loop_->node())
+          << "Watcher " << simulated_event_loop_->name() << ", "
+          << configuration::StrippedChannelToString(channel_);
+  CHECK_NE(msgs_.size(), 0u) << ": No events to handle.";
+
   logging::ScopedLogRestorer prev_logger;
   if (simulated_event_loop_->log_impl_) {
     prev_logger.Swap(simulated_event_loop_->log_impl_);
@@ -854,6 +884,9 @@ bool SimulatedSender::DoSend(size_t length,
                              realtime_clock::time_point realtime_remote_time,
                              uint32_t remote_queue_index,
                              const UUID &source_boot_uuid) {
+  VLOG(1) << event_loop_->monotonic_now() << " "
+          << NodeName(event_loop_->node()) << event_loop_->name()
+          << " Send " << configuration::StrippedChannelToString(channel());
   // The allocations in here are due to infrastructure and don't count in the
   // no mallocs in RT code.
   ScopedNotRealtime nrt;
@@ -932,9 +965,11 @@ void SimulatedTimerHandler::Setup(monotonic_clock::time_point base,
 }
 
 void SimulatedTimerHandler::HandleEvent() {
-  VLOG(1) << "Timer " << name();
   const ::aos::monotonic_clock::time_point monotonic_now =
       simulated_event_loop_->monotonic_now();
+  VLOG(1) << monotonic_now << " " << NodeName(simulated_event_loop_->node())
+          << "Timer '" << simulated_event_loop_->name() << "', '" << name()
+          << "'";
   logging::ScopedLogRestorer prev_logger;
   if (simulated_event_loop_->log_impl_) {
     prev_logger.Swap(simulated_event_loop_->log_impl_);
@@ -988,9 +1023,10 @@ SimulatedPhasedLoopHandler::~SimulatedPhasedLoopHandler() {
 }
 
 void SimulatedPhasedLoopHandler::HandleEvent() {
-  VLOG(1) << "Phased loop " << name();
   monotonic_clock::time_point monotonic_now =
       simulated_event_loop_->monotonic_now();
+  VLOG(1) << monotonic_now << " Phased loop " << simulated_event_loop_->name()
+          << ", " << name();
   logging::ScopedLogRestorer prev_logger;
   if (simulated_event_loop_->log_impl_) {
     prev_logger.Swap(simulated_event_loop_->log_impl_);
@@ -1023,15 +1059,6 @@ void SimulatedPhasedLoopHandler::Schedule(
   simulated_event_loop_->AddEvent(&event_);
 }
 
-NodeEventLoopFactory::NodeEventLoopFactory(
-    EventSchedulerScheduler *scheduler_scheduler,
-    SimulatedEventLoopFactory *factory, const Node *node,
-    std::vector<std::pair<EventLoop *, std::function<void(bool)>>>
-        *raw_event_loops)
-    : factory_(factory), node_(node), raw_event_loops_(raw_event_loops) {
-  scheduler_scheduler->AddEventScheduler(&scheduler_);
-}
-
 SimulatedEventLoopFactory::SimulatedEventLoopFactory(
     const Configuration *configuration)
     : configuration_(CHECK_NOTNULL(configuration)),
@@ -1039,7 +1066,7 @@ SimulatedEventLoopFactory::SimulatedEventLoopFactory(
   CHECK(IsInitialized()) << ": Need to initialize AOS first.";
   for (const Node *node : nodes_) {
     node_factories_.emplace_back(new NodeEventLoopFactory(
-        &scheduler_scheduler_, this, node, &raw_event_loops_));
+        &scheduler_scheduler_, this, node));
   }
 
   if (configuration::MultiNode(configuration)) {
@@ -1048,6 +1075,11 @@ SimulatedEventLoopFactory::SimulatedEventLoopFactory(
 }
 
 SimulatedEventLoopFactory::~SimulatedEventLoopFactory() {}
+
+NodeEventLoopFactory *SimulatedEventLoopFactory::GetNodeEventLoopFactory(
+    std::string_view node) {
+  return GetNodeEventLoopFactory(configuration::GetNode(configuration(), node));
+}
 
 NodeEventLoopFactory *SimulatedEventLoopFactory::GetNodeEventLoopFactory(
     const Node *node) {
@@ -1082,6 +1114,17 @@ void SimulatedEventLoopFactory::SetTimeConverter(
   return GetNodeEventLoopFactory(node)->MakeEventLoop(name);
 }
 
+NodeEventLoopFactory::NodeEventLoopFactory(
+    EventSchedulerScheduler *scheduler_scheduler,
+    SimulatedEventLoopFactory *factory, const Node *node)
+    : factory_(factory), node_(node) {
+  scheduler_scheduler->AddEventScheduler(&scheduler_);
+}
+
+NodeEventLoopFactory::~NodeEventLoopFactory() {
+  CHECK_EQ(event_loops_.size(), 0u) << "Event loop didn't exit";
+}
+
 ::std::unique_ptr<EventLoop> NodeEventLoopFactory::MakeEventLoop(
     std::string_view name) {
   CHECK(!scheduler_.is_running())
@@ -1090,8 +1133,8 @@ void SimulatedEventLoopFactory::SetTimeConverter(
   pid_t tid = tid_;
   ++tid_;
   ::std::unique_ptr<SimulatedEventLoop> result(new SimulatedEventLoop(
-      &scheduler_, this, &channels_, factory_->configuration(),
-      raw_event_loops_, node_, tid));
+      &scheduler_, this, &channels_, factory_->configuration(), &event_loops_,
+      node_, tid));
   result->set_name(name);
   result->set_send_delay(factory_->send_delay());
   return std::move(result);
@@ -1100,31 +1143,46 @@ void SimulatedEventLoopFactory::SetTimeConverter(
 void NodeEventLoopFactory::Disconnect(const Node *other) {
   factory_->bridge_->Disconnect(node_, other);
 }
+
 void NodeEventLoopFactory::Connect(const Node *other) {
   factory_->bridge_->Connect(node_, other);
 }
 
 void SimulatedEventLoopFactory::RunFor(monotonic_clock::duration duration) {
-  for (const std::pair<EventLoop *, std::function<void(bool)>> &event_loop :
-       raw_event_loops_) {
-    event_loop.second(true);
+  scheduler_scheduler_.RunOnStartup();
+  for (std::unique_ptr<NodeEventLoopFactory> &node : node_factories_) {
+    if (node) {
+      for (SimulatedEventLoop *loop : node->event_loops_) {
+        loop->SetIsRunning(true);
+      }
+    }
   }
   scheduler_scheduler_.RunFor(duration);
-  for (const std::pair<EventLoop *, std::function<void(bool)>> &event_loop :
-       raw_event_loops_) {
-    event_loop.second(false);
+  for (std::unique_ptr<NodeEventLoopFactory> &node : node_factories_) {
+    if (node) {
+      for (SimulatedEventLoop *loop : node->event_loops_) {
+        loop->SetIsRunning(false);
+      }
+    }
   }
 }
 
 void SimulatedEventLoopFactory::Run() {
-  for (const std::pair<EventLoop *, std::function<void(bool)>> &event_loop :
-       raw_event_loops_) {
-    event_loop.second(true);
+  scheduler_scheduler_.RunOnStartup();
+  for (std::unique_ptr<NodeEventLoopFactory> &node : node_factories_) {
+    if (node) {
+      for (SimulatedEventLoop *loop : node->event_loops_) {
+        loop->SetIsRunning(true);
+      }
+    }
   }
   scheduler_scheduler_.Run();
-  for (const std::pair<EventLoop *, std::function<void(bool)>> &event_loop :
-       raw_event_loops_) {
-    event_loop.second(false);
+  for (std::unique_ptr<NodeEventLoopFactory> &node : node_factories_) {
+    if (node) {
+      for (SimulatedEventLoop *loop : node->event_loops_) {
+        loop->SetIsRunning(false);
+      }
+    }
   }
 }
 

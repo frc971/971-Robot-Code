@@ -88,6 +88,11 @@ class EventScheduler {
     on_run_.emplace_back(std::move(callback));
   }
 
+  // Schedules a callback when the event scheduler starts.
+  void ScheduleOnStartup(std::function<void()> callback) {
+    on_startup_.emplace_back(std::move(callback));
+  }
+
   Token InvalidToken() { return events_list_.end(); }
 
   // Deschedule an event by its iterator
@@ -95,6 +100,9 @@ class EventScheduler {
 
   // Runs the OnRun callbacks.
   void RunOnRun();
+
+  // Runs the OnStartup callbacks.
+  void RunOnStartup();
 
   // Returns true if events are being handled.
   inline bool is_running() const;
@@ -129,6 +137,7 @@ class EventScheduler {
 
   // List of functions to run (once) when running.
   std::vector<std::function<void()>> on_run_;
+  std::vector<std::function<void()>> on_startup_;
 
   // Multimap holding times to run functions.  These are stored in order, and
   // the order is the callback tree.
@@ -195,6 +204,13 @@ class EventSchedulerScheduler {
 
   // Returns the current distributed time.
   distributed_clock::time_point distributed_now() const { return now_; }
+
+  void RunOnStartup() {
+    CHECK(!is_running_);
+    for (EventScheduler *scheduler : schedulers_) {
+      scheduler->RunOnStartup();
+    }
+  }
 
  private:
   // Handles running the OnRun functions.
