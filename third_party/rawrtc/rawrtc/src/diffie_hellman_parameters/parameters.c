@@ -20,6 +20,12 @@ static enum rawrtc_code set_dh_parameters(
     struct ssl_ctx_st* const ssl_context,  // not checked
     DH const* const dh  // not checked
 ) {
+
+  // Running DH_check on the roborio is obnoxious expensive (~40-50 seconds,
+  // optimized); just YOLO it. Note that this could probably be moved to
+  // somewhere where the cost could be incurred at startup instead of
+  // on connection (or even cached at build-time).
+#ifndef AOS_ARCHITECTURE_arm_frc
     int codes;
 
     // Check that the parameters are "likely enough to be valid"
@@ -70,6 +76,9 @@ static enum rawrtc_code set_dh_parameters(
 #endif
         return RAWRTC_CODE_INVALID_ARGUMENT;
     }
+#else
+    dbg_warning("Skipping DH_check() due to performance concerns.\n");
+#endif
 
     // Apply Diffie-Hellman parameters
     if (!SSL_CTX_set_tmp_dh(ssl_context, dh)) {
