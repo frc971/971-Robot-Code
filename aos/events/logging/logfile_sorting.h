@@ -102,6 +102,7 @@ struct LogFile {
   // object for log files with the same config.
   std::string config_sha256;
   std::shared_ptr<const aos::Configuration> config;
+  std::shared_ptr<const Boots> boots;
 };
 
 std::ostream &operator<<(std::ostream &stream, const LogFile &file);

@@ -16,55 +16,192 @@ namespace message_bridge {
 // fetcher to manage the queue of data, and a timer to schedule the sends.
 class RawMessageDelayer {
  public:
-  RawMessageDelayer(aos::NodeEventLoopFactory *fetch_node_factory,
+  RawMessageDelayer(const Channel *channel, const Connection *connection,
+                    aos::NodeEventLoopFactory *fetch_node_factory,
                     aos::NodeEventLoopFactory *send_node_factory,
-                    aos::EventLoop *fetch_event_loop,
-                    aos::EventLoop *send_event_loop,
-                    std::unique_ptr<aos::RawFetcher> fetcher,
-                    std::unique_ptr<aos::RawSender> sender,
-                    MessageBridgeServerStatus *server_status,
-                    size_t destination_node_index,
-                    ServerConnection *server_connection, int client_index,
-                    MessageBridgeClientStatus *client_status,
-                    size_t channel_index,
-                    aos::Sender<RemoteMessage> *timestamp_logger)
-      : fetch_node_factory_(fetch_node_factory),
+                    size_t destination_node_index, bool delivery_time_is_logged)
+      : channel_(channel),
+        connection_(connection),
+        fetch_node_factory_(fetch_node_factory),
         send_node_factory_(send_node_factory),
-        fetch_event_loop_(fetch_event_loop),
-        send_event_loop_(send_event_loop),
-        fetcher_(std::move(fetcher)),
-        sender_(std::move(sender)),
-        server_status_(server_status),
         destination_node_index_(destination_node_index),
-        server_connection_(server_connection),
-        client_status_(client_status),
-        client_index_(client_index),
-        client_connection_(client_status_->GetClientConnection(client_index)),
-        channel_index_(channel_index),
-        timestamp_logger_(timestamp_logger) {
-    timer_ = send_event_loop_->AddTimer([this]() { Send(); });
-    std::string timer_name =
-        absl::StrCat(send_event_loop_->node()->name()->string_view(), " ",
-                     fetcher_->channel()->name()->string_view(), " ",
-                     fetcher_->channel()->type()->string_view());
-    timer_->set_name(timer_name);
-    timestamp_timer_ =
-        fetch_event_loop_->AddTimer([this]() { SendTimestamp(); });
-    timestamp_timer_->set_name(absl::StrCat(timer_name, " timestamps"));
+        channel_index_(configuration::ChannelIndex(
+            fetch_node_factory_->configuration(), channel_)),
+        delivery_time_is_logged_(delivery_time_is_logged) {}
 
-    Schedule();
+  bool forwarding_disabled() const { return forwarding_disabled_; }
+  void set_forwarding_disabled(bool forwarding_disabled) {
+    forwarding_disabled_ = forwarding_disabled;
   }
 
-  const Channel *channel() const { return fetcher_->channel(); }
+  void SetFetchEventLoop(aos::EventLoop *fetch_event_loop,
+                         MessageBridgeServerStatus *server_status,
+                         ChannelTimestampSender *timestamp_loggers) {
+    sent_ = false;
+    fetch_event_loop_ = fetch_event_loop;
+    if (fetch_event_loop_) {
+      fetcher_ = fetch_event_loop_->MakeRawFetcher(channel_);
+    } else {
+      fetcher_ = nullptr;
+    }
+
+    server_status_ = server_status;
+    if (server_status) {
+      server_connection_ =
+          server_status_->FindServerConnection(send_node_factory_->node());
+    }
+    if (delivery_time_is_logged_ && timestamp_loggers != nullptr) {
+      timestamp_logger_ =
+          timestamp_loggers->SenderForChannel(channel_, connection_);
+    } else {
+      timestamp_logger_ = nullptr;
+    }
+
+    if (fetch_event_loop_) {
+      timestamp_timer_ =
+          fetch_event_loop_->AddTimer([this]() { SendTimestamp(); });
+      if (send_event_loop_) {
+        std::string timer_name = absl::StrCat(
+            send_event_loop_->node()->name()->string_view(), " ",
+            fetcher_->channel()->name()->string_view(), " ",
+            fetcher_->channel()->type()->string_view());
+        if (timer_) {
+          timer_->set_name(timer_name);
+        }
+        timestamp_timer_->set_name(absl::StrCat(timer_name, " timestamps"));
+      }
+    } else {
+      timestamp_timer_ = nullptr;
+    }
+  }
+
+  void SetSendEventLoop(aos::EventLoop *send_event_loop,
+                        MessageBridgeClientStatus *client_status) {
+    sent_ = false;
+    send_event_loop_ = send_event_loop;
+    if (send_event_loop_) {
+      sender_ = send_event_loop_->MakeRawSender(channel_);
+    } else {
+      sender_ = nullptr;
+    }
+
+    client_status_ = client_status;
+    if (client_status_) {
+      client_index_ = client_status_->FindClientIndex(
+          channel_->source_node()->string_view());
+      client_connection_ = client_status_->GetClientConnection(client_index_);
+    } else {
+      client_index_ = -1;
+      client_connection_ = nullptr;
+    }
+
+    if (send_event_loop_) {
+      timer_ = send_event_loop_->AddTimer([this]() { Send(); });
+      if (fetcher_) {
+        std::string timer_name =
+            absl::StrCat(send_event_loop_->node()->name()->string_view(), " ",
+                         fetcher_->channel()->name()->string_view(), " ",
+                         fetcher_->channel()->type()->string_view());
+        timer_->set_name(timer_name);
+        if (timestamp_timer_) {
+          timestamp_timer_->set_name(absl::StrCat(timer_name, " timestamps"));
+        }
+      }
+    } else {
+      timer_ = nullptr;
+    }
+  }
+
+  const Channel *channel() const { return channel_; }
 
   uint32_t time_to_live() {
-    return configuration::ConnectionToNode(sender_->channel(),
-                                           send_node_factory_->node())
+    return configuration::ConnectionToNode(channel_, send_node_factory_->node())
         ->time_to_live();
   }
 
+  void ScheduleReliable() {
+    if (forwarding_disabled()) return;
+
+    if (!fetcher_) {
+      return;
+    }
+    if (fetcher_->context().data == nullptr || sent_) {
+      sent_ = !fetcher_->Fetch();
+    }
+
+    FetchNext();
+    if (fetcher_->context().data == nullptr || sent_) {
+      return;
+    }
+    CHECK(!timer_scheduled_);
+
+    // Send at startup.  It is the best we can do.
+    const monotonic_clock::time_point monotonic_delivered_time =
+        send_node_factory_->monotonic_now() +
+        send_node_factory_->network_delay();
+
+    CHECK_GE(monotonic_delivered_time, send_node_factory_->monotonic_now())
+        << ": Trying to deliver message in the past on channel "
+        << configuration::StrippedChannelToString(fetcher_->channel())
+        << " to node " << send_event_loop_->node()->name()->string_view()
+        << " sent from " << fetcher_->channel()->source_node()->string_view()
+        << " at " << fetch_node_factory_->monotonic_now();
+
+    if (timer_) {
+      server_connection_->mutate_sent_packets(
+          server_connection_->sent_packets() + 1);
+      timer_->Setup(monotonic_delivered_time);
+      timer_scheduled_ = true;
+    } else {
+      server_connection_->mutate_dropped_packets(
+          server_connection_->dropped_packets() + 1);
+      sent_ = true;
+    }
+  }
+
+  bool timer_scheduled_ = false;
+
   // Kicks us to re-fetch and schedule the timer.
   void Schedule() {
+    CHECK(!forwarding_disabled());
+    if (!fetcher_) {
+      return;
+    }
+    if (timer_scheduled_) {
+      return;
+    }
+    FetchNext();
+    if (fetcher_->context().data == nullptr || sent_) {
+      return;
+    }
+
+    // Compute the time to publish this message.
+    const monotonic_clock::time_point monotonic_delivered_time =
+        DeliveredTime(fetcher_->context());
+
+    CHECK_GE(monotonic_delivered_time, send_node_factory_->monotonic_now())
+        << ": Trying to deliver message in the past on channel "
+        << configuration::StrippedChannelToString(fetcher_->channel())
+        << " to node " << send_event_loop_->node()->name()->string_view()
+        << " sent from " << fetcher_->channel()->source_node()->string_view()
+        << " at " << fetch_node_factory_->monotonic_now();
+
+    if (timer_) {
+      server_connection_->mutate_sent_packets(
+          server_connection_->sent_packets() + 1);
+      timer_->Setup(monotonic_delivered_time);
+      timer_scheduled_ = true;
+    } else {
+      server_connection_->mutate_dropped_packets(
+          server_connection_->dropped_packets() + 1);
+      sent_ = true;
+      Schedule();
+    }
+  }
+
+ private:
+  void FetchNext() {
+    CHECK(server_connection_);
     // Keep pulling messages out of the fetcher until we find one in the future.
     while (true) {
       if (fetcher_->context().data == nullptr || sent_) {
@@ -82,9 +219,10 @@ class RawMessageDelayer {
       }
 
       if (fetcher_->context().monotonic_event_time +
-              send_node_factory_->network_delay() +
-              send_node_factory_->send_delay() >
-          fetch_node_factory_->monotonic_now()) {
+                  send_node_factory_->network_delay() +
+                  send_node_factory_->send_delay() >
+              fetch_node_factory_->monotonic_now() ||
+          time_to_live() == 0) {
         break;
       }
 
@@ -99,34 +237,13 @@ class RawMessageDelayer {
       server_connection_->mutate_dropped_packets(
           server_connection_->dropped_packets() + 1);
     }
-
-    if (fetcher_->context().data == nullptr) {
-      return;
-    }
-
-    if (sent_) {
-      return;
-    }
-
-    // Compute the time to publish this message.
-    const monotonic_clock::time_point monotonic_delivered_time =
-        DeliveredTime(fetcher_->context());
-
-    CHECK_GE(monotonic_delivered_time, send_node_factory_->monotonic_now())
-        << ": Trying to deliver message in the past on channel "
-        << configuration::StrippedChannelToString(fetcher_->channel())
-        << " to node " << send_event_loop_->node()->name()->string_view()
-        << " sent from " << fetcher_->channel()->source_node()->string_view()
-        << " at " << fetch_node_factory_->monotonic_now();
-
-    server_connection_->mutate_sent_packets(server_connection_->sent_packets() +
-                                            1);
-    timer_->Setup(monotonic_delivered_time);
   }
 
- private:
-  // Acutally sends the message, and reschedules.
+  // Actually sends the message, and reschedules.
   void Send() {
+    timer_scheduled_ = false;
+    CHECK(sender_);
+    CHECK(client_status_);
     if (server_connection_->state() != State::CONNECTED) {
       sent_ = true;
       Schedule();
@@ -238,23 +355,28 @@ class RawMessageDelayer {
     const distributed_clock::time_point distributed_sent_time =
         fetch_node_factory_->ToDistributedClock(context.monotonic_event_time);
 
-    return send_node_factory_->FromDistributedClock(
+    const logger::BootTimestamp t = send_node_factory_->FromDistributedClock(
         distributed_sent_time + send_node_factory_->network_delay() +
         send_node_factory_->send_delay());
+    CHECK_EQ(t.boot, send_node_factory_->boot_count());
+    return t.time;
   }
+
+  const Channel *channel_;
+  const Connection *connection_;
 
   // Factories used for time conversion.
   aos::NodeEventLoopFactory *fetch_node_factory_;
   aos::NodeEventLoopFactory *send_node_factory_;
 
   // Event loop which fetching and sending timestamps are scheduled on.
-  aos::EventLoop *fetch_event_loop_;
+  aos::EventLoop *fetch_event_loop_ = nullptr;
   // Event loop which sending is scheduled on.
-  aos::EventLoop *send_event_loop_;
+  aos::EventLoop *send_event_loop_ = nullptr;
   // Timer used to send.
-  aos::TimerHandler *timer_;
+  aos::TimerHandler *timer_ = nullptr;
   // Timer used to send timestamps out.
-  aos::TimerHandler *timestamp_timer_;
+  aos::TimerHandler *timestamp_timer_ = nullptr;
   // Time that the timer is scheduled for.  Used to track if it needs to be
   // rescheduled.
   monotonic_clock::time_point scheduled_time_ = monotonic_clock::min_time;
@@ -264,14 +386,14 @@ class RawMessageDelayer {
   // Sender to send them back out.
   std::unique_ptr<aos::RawSender> sender_;
 
-  MessageBridgeServerStatus *server_status_;
+  MessageBridgeServerStatus *server_status_ = nullptr;
   const size_t destination_node_index_;
   // True if we have sent the message in the fetcher.
   bool sent_ = false;
 
   ServerConnection *server_connection_ = nullptr;
   MessageBridgeClientStatus *client_status_ = nullptr;
-  int client_index_;
+  int client_index_ = -1;
   ClientConnection *client_connection_ = nullptr;
 
   size_t channel_index_;
@@ -287,6 +409,10 @@ class RawMessageDelayer {
   };
 
   std::deque<Timestamp> remote_timestamps_;
+
+  bool delivery_time_is_logged_;
+
+  bool forwarding_disabled_ = false;
 };
 
 SimulatedMessageBridge::SimulatedMessageBridge(
@@ -296,56 +422,43 @@ SimulatedMessageBridge::SimulatedMessageBridge(
 
   // Pre-build up event loops for every node.  They are pretty cheap anyways.
   for (const Node *node : simulated_event_loop_factory->nodes()) {
-    auto it = event_loop_map_.emplace(std::make_pair(
-        node,
-        simulated_event_loop_factory->MakeEventLoop("message_bridge", node)));
-
+    NodeEventLoopFactory *node_factory =
+        simulated_event_loop_factory->GetNodeEventLoopFactory(node);
+    auto it = event_loop_map_.emplace(node, node_factory);
     CHECK(it.second);
 
-    it.first->second.event_loop->SkipTimingReport();
-    it.first->second.event_loop->SkipAosLog();
+    node_factory->OnStartup(
+        [this, simulated_event_loop_factory, node_state = &it.first->second]() {
+          node_state->MakeEventLoop();
+          const size_t my_node_index = configuration::GetNodeIndex(
+              simulated_event_loop_factory->configuration(),
+              node_state->event_loop->node());
 
-    for (ServerConnection *connection :
-         it.first->second.server_status.server_connection()) {
-      if (connection == nullptr) continue;
+          size_t node_index = 0;
+          for (ServerConnection *connection :
+               node_state->server_status->server_connection()) {
+            if (connection != nullptr) {
+              node_state->server_status->ResetFilter(node_index);
+            }
+            ++node_index;
+          }
 
-      connection->mutate_state(message_bridge::State::CONNECTED);
-    }
+          for (const ClientConnection *client_connections :
+               *node_state->client_status->mutable_client_statistics()
+                    ->connections()) {
+            const Node *client_node = configuration::GetNode(
+                simulated_event_loop_factory->configuration(),
+                client_connections->node()->name()->string_view());
 
-    for (size_t i = 0;
-         i < it.first->second.client_status.mutable_client_statistics()
-                 ->mutable_connections()
-                 ->size();
-         ++i) {
-      ClientConnection *connection =
-          it.first->second.client_status.mutable_client_statistics()
-              ->mutable_connections()
-              ->GetMutableObject(i);
-      if (connection == nullptr) continue;
+            auto client_event_loop = event_loop_map_.find(client_node);
+            client_event_loop->second.SetBootUUID(
+                my_node_index, node_state->event_loop->boot_uuid());
+          }
+        });
 
-      connection->mutate_state(message_bridge::State::CONNECTED);
-    }
-  }
-
-  for (const Node *node : simulated_event_loop_factory->nodes()) {
-    auto it = event_loop_map_.find(node);
-
-    CHECK(it != event_loop_map_.end());
-
-    size_t node_index = 0;
-    for (ServerConnection *connection :
-         it->second.server_status.server_connection()) {
-      if (connection != nullptr) {
-        const Node *client_node =
-            simulated_event_loop_factory->configuration()->nodes()->Get(
-                node_index);
-        auto client_event_loop = event_loop_map_.find(client_node);
-        it->second.server_status.ResetFilter(node_index);
-        it->second.server_status.SetBootUUID(
-            node_index, client_event_loop->second.event_loop->boot_uuid());
-      }
-      ++node_index;
-    }
+    node_factory->OnShutdown([node_state = &it.first->second]() {
+      node_state->SetEventLoop(nullptr);
+    });
   }
 
   for (const Channel *channel :
@@ -355,10 +468,10 @@ SimulatedMessageBridge::SimulatedMessageBridge(
     }
 
     // Find the sending node.
-    const Node *node =
+    const Node *source_node =
         configuration::GetNode(simulated_event_loop_factory->configuration(),
                                channel->source_node()->string_view());
-    auto source_event_loop = event_loop_map_.find(node);
+    auto source_event_loop = event_loop_map_.find(source_node);
     CHECK(source_event_loop != event_loop_map_.end());
 
     std::unique_ptr<DelayersVector> delayers =
@@ -372,72 +485,39 @@ SimulatedMessageBridge::SimulatedMessageBridge(
       auto destination_event_loop = event_loop_map_.find(destination_node);
       CHECK(destination_event_loop != event_loop_map_.end());
 
-      ServerConnection *server_connection =
-          source_event_loop->second.server_status.FindServerConnection(
-              connection->name()->string_view());
-
-      int client_index =
-          destination_event_loop->second.client_status.FindClientIndex(
-              channel->source_node()->string_view());
-
       const size_t destination_node_index = configuration::GetNodeIndex(
           simulated_event_loop_factory->configuration(), destination_node);
 
       const bool delivery_time_is_logged =
-          configuration::ConnectionDeliveryTimeIsLoggedOnNode(
-              connection, source_event_loop->second.event_loop->node());
+          configuration::ConnectionDeliveryTimeIsLoggedOnNode(connection,
+                                                              source_node);
 
-      delayers->emplace_back(std::make_unique<RawMessageDelayer>(
-          simulated_event_loop_factory->GetNodeEventLoopFactory(node),
+      delayers->v.emplace_back(std::make_unique<RawMessageDelayer>(
+          channel, connection,
+          simulated_event_loop_factory->GetNodeEventLoopFactory(source_node),
           simulated_event_loop_factory->GetNodeEventLoopFactory(
               destination_node),
-          source_event_loop->second.event_loop.get(),
-          destination_event_loop->second.event_loop.get(),
-          source_event_loop->second.event_loop->MakeRawFetcher(channel),
-          destination_event_loop->second.event_loop->MakeRawSender(channel),
-          &source_event_loop->second.server_status, destination_node_index,
-          server_connection, client_index,
-          &destination_event_loop->second.client_status,
-          configuration::ChannelIndex(
-              source_event_loop->second.event_loop->configuration(), channel),
-          delivery_time_is_logged
-              ? source_event_loop->second.timestamp_loggers.SenderForChannel(
-                    channel, connection)
-              : nullptr));
+          destination_node_index, delivery_time_is_logged));
+
+      source_event_loop->second.AddSourceDelayer(delayers->v.back().get());
+      destination_event_loop->second.AddDestinationDelayer(
+          delayers->v.back().get());
     }
 
     const Channel *const timestamp_channel = configuration::GetChannel(
         simulated_event_loop_factory->configuration(), "/aos",
-        Timestamp::GetFullyQualifiedName(),
-        source_event_loop->second.event_loop->name(), node);
+        Timestamp::GetFullyQualifiedName(), "message_bridge", source_node);
 
     if (channel == timestamp_channel) {
-      source_event_loop->second.server_status.set_send_data(
+      source_event_loop->second.SetSendData(
           [captured_delayers = delayers.get()](const Context &) {
             for (std::unique_ptr<RawMessageDelayer> &delayer :
-                 *captured_delayers) {
+                 captured_delayers->v) {
               delayer->Schedule();
             }
           });
     } else {
-      // And register every delayer to be poked when a new message shows up.
-
-      source_event_loop->second.event_loop->OnRun([captured_delayers =
-                                                       delayers.get()]() {
-        // Poke all the reliable delayers so they send any queued messages.
-        for (std::unique_ptr<RawMessageDelayer> &delayer : *captured_delayers) {
-          if (delayer->time_to_live() == 0) {
-            delayer->Schedule();
-          }
-        }
-      });
-      source_event_loop->second.event_loop->MakeRawNoArgWatcher(
-          channel, [captured_delayers = delayers.get()](const Context &) {
-            for (std::unique_ptr<RawMessageDelayer> &delayer :
-                 *captured_delayers) {
-              delayer->Schedule();
-            }
-          });
+      source_event_loop->second.AddDelayerWatcher(channel, delayers.get());
     }
     delayers_list_.emplace_back(std::move(delayers));
   }
@@ -446,17 +526,13 @@ SimulatedMessageBridge::SimulatedMessageBridge(
 SimulatedMessageBridge::~SimulatedMessageBridge() {}
 
 void SimulatedMessageBridge::DisableForwarding(const Channel *channel) {
-  for (std::unique_ptr<std::vector<std::unique_ptr<RawMessageDelayer>>>
-           &delayers : delayers_list_) {
-    if (delayers->size() > 0) {
-      if ((*delayers)[0]->channel() == channel) {
-        for (std::unique_ptr<RawMessageDelayer> &delayer : *delayers) {
-          CHECK(delayer->channel() == channel);
+  for (std::unique_ptr<DelayersVector> &delayers : delayers_list_) {
+    if (delayers->v.size() > 0) {
+      if (delayers->v[0]->channel() == channel) {
+        delayers->disable_forwarding = true;
+        for (std::unique_ptr<RawMessageDelayer> &delayer : delayers->v) {
+          delayer->set_forwarding_disabled(true);
         }
-
-        // If we clear the delayers list, nothing will be scheduled.  Which is a
-        // success!
-        delayers->clear();
       }
     }
   }
@@ -476,45 +552,115 @@ void SimulatedMessageBridge::SetState(const Node *source,
                                       message_bridge::State state) {
   auto source_state = event_loop_map_.find(source);
   CHECK(source_state != event_loop_map_.end());
-
-  ServerConnection *server_connection =
-      source_state->second.server_status.FindServerConnection(destination);
-  if (!server_connection) {
-    return;
-  }
-  server_connection->mutate_state(state);
+  source_state->second.SetServerState(destination, state);
 
   auto destination_state = event_loop_map_.find(destination);
   CHECK(destination_state != event_loop_map_.end());
-  ClientConnection *client_connection =
-      destination_state->second.client_status.GetClientConnection(source);
-  if (!client_connection) {
-    return;
-  }
-  client_connection->mutate_state(state);
+  destination_state->second.SetClientState(source, state);
 }
 
 void SimulatedMessageBridge::DisableStatistics() {
   for (std::pair<const Node *const, State> &state : event_loop_map_) {
-    state.second.server_status.DisableStatistics();
-    state.second.client_status.DisableStatistics();
+    state.second.DisableStatistics();
   }
 }
 
 void SimulatedMessageBridge::SkipTimingReport() {
+  // TODO(austin): I think this can be deleted...
   for (std::pair<const Node *const, State> &state : event_loop_map_) {
     state.second.event_loop->SkipTimingReport();
   }
 }
 
-SimulatedMessageBridge::State::State(
-    std::unique_ptr<aos::EventLoop> &&new_event_loop)
-    : event_loop(std::move(new_event_loop)),
-      timestamp_loggers(event_loop.get()),
-      server_status(event_loop.get()),
-      client_status(event_loop.get()) {
+void SimulatedMessageBridge::State::SetEventLoop(
+    std::unique_ptr<aos::EventLoop> loop) {
+  if (!loop) {
+    timestamp_loggers = ChannelTimestampSender(nullptr);
+    server_status.reset();
+    client_status.reset();
+    for (RawMessageDelayer *source_delayer : source_delayers_) {
+      source_delayer->SetFetchEventLoop(nullptr, nullptr, nullptr);
+    }
+    for (RawMessageDelayer *destination_delayer : destination_delayers_) {
+      destination_delayer->SetSendEventLoop(nullptr, nullptr);
+    }
+    event_loop = std::move(loop);
+    return;
+  } else {
+    CHECK(!event_loop);
+  }
+  event_loop = std::move(loop);
 
-  // Find all nodes which log timestamps back to us (from us).
+  event_loop->SkipTimingReport();
+  event_loop->SkipAosLog();
+
+  for (std::pair<const Channel *, DelayersVector *> &watcher :
+       delayer_watchers_) {
+    // Don't register watchers if we know we aren't forwarding.
+    if (watcher.second->disable_forwarding) continue;
+    event_loop->MakeRawNoArgWatcher(
+        watcher.first, [captured_delayers = watcher.second](const Context &) {
+          // We might get told after registering, so don't forward at that point
+          // too.
+          for (std::unique_ptr<RawMessageDelayer> &delayer :
+               captured_delayers->v) {
+            delayer->Schedule();
+          }
+        });
+  }
+
+  timestamp_loggers = ChannelTimestampSender(event_loop.get());
+  server_status = std::make_unique<MessageBridgeServerStatus>(event_loop.get());
+
+  {
+    size_t node_index = 0;
+    for (ServerConnection *connection : server_status->server_connection()) {
+      if (connection) {
+        if (boot_uuids_[node_index] != UUID::Zero()) {
+          connection->mutate_state(server_state_[node_index]);
+        } else {
+          connection->mutate_state(message_bridge::State::DISCONNECTED);
+        }
+      }
+      ++node_index;
+    }
+  }
+
+  for (size_t i = 0; i < boot_uuids_.size(); ++i) {
+    if (boot_uuids_[i] != UUID::Zero()) {
+      server_status->SetBootUUID(i, boot_uuids_[i]);
+    }
+  }
+  if (disable_statistics_) {
+    server_status->DisableStatistics();
+  }
+  if (fn_) {
+    server_status->set_send_data(fn_);
+  }
+  client_status = std::make_unique<MessageBridgeClientStatus>(event_loop.get());
+  if (disable_statistics_) {
+    client_status->DisableStatistics();
+  }
+
+  for (size_t i = 0;
+       i < client_status->mutable_client_statistics()->connections()->size();
+       ++i) {
+    ClientConnection *client_connection =
+        client_status->mutable_client_statistics()
+            ->mutable_connections()
+            ->GetMutableObject(i);
+    const Node *client_node = configuration::GetNode(
+        node_factory_->configuration(),
+        client_connection->node()->name()->string_view());
+    const size_t client_node_index = configuration::GetNodeIndex(
+        node_factory_->configuration(), client_node);
+    if (boot_uuids_[client_node_index] != UUID::Zero()) {
+      client_connection->mutate_state(client_state_[client_node_index]);
+    } else {
+      client_connection->mutate_state(message_bridge::State::DISCONNECTED);
+    }
+  }
+
   for (const Channel *channel : *event_loop->configuration()->channels()) {
     CHECK(channel->has_source_node());
 
@@ -535,6 +681,22 @@ SimulatedMessageBridge::State::State(
       }
     }
   }
+
+  for (RawMessageDelayer *source_delayer : source_delayers_) {
+    source_delayer->SetFetchEventLoop(event_loop.get(), server_status.get(),
+                                      &timestamp_loggers);
+  }
+  for (RawMessageDelayer *destination_delayer : destination_delayers_) {
+    destination_delayer->SetSendEventLoop(event_loop.get(),
+                                          client_status.get());
+  }
+  event_loop->OnRun([this]() {
+    for (RawMessageDelayer *destination_delayer : destination_delayers_) {
+      if (destination_delayer->time_to_live() == 0) {
+        destination_delayer->ScheduleReliable();
+      }
+    }
+  });
 }
 
 }  // namespace message_bridge

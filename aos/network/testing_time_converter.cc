@@ -71,6 +71,22 @@ chrono::nanoseconds TestingTimeConverter::AddMonotonic(
   return dt;
 }
 
+void TestingTimeConverter::RebootAt(size_t node_index,
+                                    distributed_clock::time_point t) {
+  CHECK(!first_);
+  const chrono::nanoseconds dt = t - last_distributed_;
+
+  for (size_t i = 0; i < last_monotonic_.size(); ++i) {
+    last_monotonic_[i].time += dt;
+  }
+
+  ++last_monotonic_[node_index].boot;
+  last_monotonic_[node_index].time = monotonic_clock::epoch();
+
+  last_distributed_ = t;
+  ts_.emplace_back(std::make_tuple(last_distributed_, last_monotonic_));
+}
+
 void TestingTimeConverter::AddNextTimestamp(
     distributed_clock::time_point time,
     std::vector<logger::BootTimestamp> times) {

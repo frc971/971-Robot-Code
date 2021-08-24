@@ -64,6 +64,12 @@ class SimulatedEventLoopFactory {
   SimulatedEventLoopFactory(const Configuration *configuration);
   ~SimulatedEventLoopFactory();
 
+  SimulatedEventLoopFactory(const SimulatedEventLoopFactory &) = delete;
+  SimulatedEventLoopFactory &operator=(const SimulatedEventLoopFactory &) =
+      delete;
+  SimulatedEventLoopFactory(SimulatedEventLoopFactory &&) = delete;
+  SimulatedEventLoopFactory &operator=(SimulatedEventLoopFactory &&) = delete;
+
   // Creates an event loop.  If running in a multi-node environment, node needs
   // to point to the node to create this event loop on.
   ::std::unique_ptr<EventLoop> MakeEventLoop(std::string_view name,
@@ -78,7 +84,8 @@ class SimulatedEventLoopFactory {
   // Sets the time converter for all nodes.
   void SetTimeConverter(TimeConverter *time_converter);
 
-  // Starts executing the event loops unconditionally.
+  // Starts executing the event loops unconditionally until Exit is called or
+  // all the nodes have shut down.
   void Run();
   // Executes the event loops for a duration.
   void RunFor(distributed_clock::duration duration);
@@ -128,11 +135,11 @@ class SimulatedEventLoopFactory {
   std::chrono::nanoseconds send_delay_ = std::chrono::microseconds(50);
   std::chrono::nanoseconds network_delay_ = std::chrono::microseconds(100);
 
+  std::unique_ptr<message_bridge::SimulatedMessageBridge> bridge_;
+
   std::vector<std::unique_ptr<NodeEventLoopFactory>> node_factories_;
 
   std::vector<const Node *> nodes_;
-
-  std::unique_ptr<message_bridge::SimulatedMessageBridge> bridge_;
 };
 
 // This class holds all the state required to be a single node.
@@ -156,10 +163,36 @@ class NodeEventLoopFactory {
   // Returns the current time on both clocks.
   inline monotonic_clock::time_point monotonic_now() const;
   inline realtime_clock::time_point realtime_now() const;
+  inline distributed_clock::time_point distributed_now() const;
 
   const Configuration *configuration() const {
     return factory_->configuration();
   }
+
+  // Starts the node up by calling the OnStartup handlers.  These get called
+  // every time a node is started.
+
+  // Called when a node has started.  This is typically when a log file starts
+  // for a node.
+  void OnStartup(std::function<void()> &&fn);
+
+  // Called when a node shuts down.  These get called every time a node is shut
+  // down.  All applications are destroyed right after the last OnShutdown
+  // callback is called.
+  void OnShutdown(std::function<void()> &&fn);
+
+  // Starts an application if the configuration says it should be started on
+  // this node.  name is the name of the application.  args are the constructor
+  // args for the Main class.  Returns a pointer to the class that was started
+  // if it was started, or nullptr.
+  template <class Main, class... Args>
+  Main *MaybeStart(std::string_view name, Args &&... args);
+
+  // Starts an application regardless of if the config says to or not.  name is
+  // the name of the application, and args are the constructor args for the
+  // application.  Returns a pointer to the class that was started.
+  template <class Main, class... Args>
+  Main *AlwaysStart(std::string_view name, Args &&... args);
 
   // Returns the simulated network delay for messages forwarded between nodes.
   std::chrono::nanoseconds network_delay() const {
@@ -169,6 +202,8 @@ class NodeEventLoopFactory {
   // node.
   std::chrono::nanoseconds send_delay() const { return factory_->send_delay(); }
 
+  size_t boot_count() const { return scheduler_.boot_count(); }
+
   // TODO(austin): Private for the following?
 
   // Converts a time to the distributed clock for scheduling and cross-node time
@@ -177,7 +212,7 @@ class NodeEventLoopFactory {
   // replaying logs.  Only convert times in the present or near past.
   inline distributed_clock::time_point ToDistributedClock(
       monotonic_clock::time_point time) const;
-  inline monotonic_clock::time_point FromDistributedClock(
+  inline logger::BootTimestamp FromDistributedClock(
       distributed_clock::time_point time) const;
 
   // Sets the class used to convert time.  This pointer must out-live the
@@ -188,19 +223,13 @@ class NodeEventLoopFactory {
         time_converter);
   }
 
-  // Sets the boot UUID for this node.  This typically should only be used by
-  // the log reader.
-  void set_boot_uuid(std::string_view uuid) {
-    boot_uuid_ = UUID::FromString(uuid);
-  }
   // Returns the boot UUID for this node.
-  const UUID &boot_uuid() const { return boot_uuid_; }
-
-  // Reboots the node.  This just resets the boot_uuid_, nothing else.
-  // TODO(austin): This is here for a test case or two, not for general
-  // consumption.  The interactions with the rest of the system need to be
-  // worked out better.  Don't use this for anything real yet.
-  void Reboot() { boot_uuid_ = UUID::Random(); }
+  const UUID &boot_uuid() {
+    if (boot_uuid_ == UUID::Zero()) {
+      boot_uuid_ = scheduler_.boot_uuid();
+    }
+    return boot_uuid_;
+  }
 
   // Stops forwarding messages to the other node, and reports disconnected in
   // the ServerStatistics message for this node, and the ClientStatistics for
@@ -214,10 +243,15 @@ class NodeEventLoopFactory {
   NodeEventLoopFactory(EventSchedulerScheduler *scheduler_scheduler,
                        SimulatedEventLoopFactory *factory, const Node *node);
 
+  // Helpers to restart.
+  void ScheduleStartup();
+  void Startup();
+  void Shutdown();
+
   EventScheduler scheduler_;
   SimulatedEventLoopFactory *const factory_;
 
-  UUID boot_uuid_ = UUID::Random();
+  UUID boot_uuid_ = UUID::Zero();
 
   const Node *const node_;
 
@@ -230,7 +264,71 @@ class NodeEventLoopFactory {
 
   // pid so we get unique timing reports.
   pid_t tid_ = 0;
+
+  // True if we are started.
+  bool started_ = false;
+
+  std::vector<std::function<void()>> pending_on_startup_;
+  std::vector<std::function<void()>> on_startup_;
+  std::vector<std::function<void()>> on_shutdown_;
+
+  // Base class for an application to start.  This shouldn't be used directly.
+  struct Application {
+    Application(NodeEventLoopFactory *node_factory, std::string_view name)
+        : event_loop(node_factory->MakeEventLoop(name)) {}
+    virtual ~Application() {}
+
+    std::unique_ptr<EventLoop> event_loop;
+  };
+
+  // Subclass to do type erasure for the base class.  Holds an instance of a
+  // specific class.  Use SimulationStarter instead.
+  template <typename Main>
+  struct TypedApplication : public Application {
+    // Constructs an Application by delegating the arguments used to construct
+    // the event loop to Application and the rest of the args to the actual
+    // application.
+    template <class... Args>
+    TypedApplication(NodeEventLoopFactory *node_factory, std::string_view name,
+                     Args &&... args)
+        : Application(node_factory, name),
+          main(event_loop.get(), std::forward<Args>(args)...) {
+      VLOG(1) << node_factory->scheduler_.distributed_now() << " "
+              << (node_factory->node() == nullptr
+                      ? ""
+                      : node_factory->node()->name()->str() + " ")
+              << node_factory->monotonic_now() << " Starting Application \""
+              << name << "\"";
+    }
+    ~TypedApplication() override {}
+
+    Main main;
+  };
+
+  std::vector<std::unique_ptr<Application>> applications_;
 };
+
+template <class Main, class... Args>
+Main *NodeEventLoopFactory::MaybeStart(std::string_view name, Args &&... args) {
+  const aos::Application *application =
+      configuration::GetApplication(configuration(), node(), name);
+
+  if (application != nullptr) {
+    return AlwaysStart<Main>(name, std::forward<Args>(args)...);
+  }
+  return nullptr;
+}
+
+template <class Main, class... Args>
+Main *NodeEventLoopFactory::AlwaysStart(std::string_view name,
+                                        Args &&... args) {
+  std::unique_ptr<TypedApplication<Main>> app =
+      std::make_unique<TypedApplication<Main>>(this, name,
+                                               std::forward<Args>(args)...);
+  Main *main_ptr = &app->main;
+  applications_.emplace_back(std::move(app));
+  return main_ptr;
+}
 
 inline monotonic_clock::time_point NodeEventLoopFactory::monotonic_now() const {
   // TODO(austin): Confirm that time never goes backwards?
@@ -242,7 +340,12 @@ inline realtime_clock::time_point NodeEventLoopFactory::realtime_now() const {
                                     realtime_offset_);
 }
 
-inline monotonic_clock::time_point NodeEventLoopFactory::FromDistributedClock(
+inline distributed_clock::time_point NodeEventLoopFactory::distributed_now()
+    const {
+  return scheduler_.distributed_now();
+}
+
+inline logger::BootTimestamp NodeEventLoopFactory::FromDistributedClock(
     distributed_clock::time_point time) const {
   return scheduler_.FromDistributedClock(time);
 }

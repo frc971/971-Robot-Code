@@ -70,9 +70,47 @@ struct BootTimestamp {
   }
 };
 
+// Structure to hold both a boot and queue index.  Queue indices reset after
+// reboot, so we need to track them.
+struct BootQueueIndex {
+  // Boot number for this queue index.
+  size_t boot = std::numeric_limits<size_t>::max();
+  // Queue index.
+  uint32_t index = std::numeric_limits<uint32_t>::max();
+
+  // Returns a QueueIndex representing an invalid index.  Since
+  // std::numeric_limits<uint32_t>::max() is never used in the QueueIndex code
+  // and is reserved as an Invalid value, this will never collide.
+  static BootQueueIndex Invalid() {
+    return {.boot = std::numeric_limits<size_t>::max(),
+            .index = std::numeric_limits<uint32_t>::max()};
+  }
+
+  bool operator==(const BootQueueIndex &b2) const {
+    return index == b2.index && boot == b2.boot;
+  }
+  bool operator!=(const BootQueueIndex &b2) const {
+    return index != b2.index || boot != b2.boot;
+  }
+  bool operator<(const BootQueueIndex &b2) const {
+    if (boot == b2.boot) {
+      return index < b2.index;
+    }
+    return boot < b2.boot;
+  }
+  bool operator>(const BootQueueIndex &b2) const {
+    if (boot == b2.boot) {
+      return index > b2.index;
+    }
+    return boot > b2.boot;
+  }
+};
+
 std::ostream &operator<<(std::ostream &os,
                          const struct BootTimestamp &timestamp);
 std::ostream &operator<<(std::ostream &os, const struct BootDuration &duration);
+std::ostream &operator<<(std::ostream &os,
+                         const struct BootQueueIndex &queue_index);
 
 inline bool BootTimestamp::operator<(const BootTimestamp &m2) const {
   if (boot != m2.boot) {

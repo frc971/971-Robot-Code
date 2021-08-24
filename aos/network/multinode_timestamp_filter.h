@@ -8,6 +8,7 @@
 #include "Eigen/Dense"
 #include "absl/container/btree_set.h"
 #include "aos/configuration.h"
+#include "aos/events/logging/boot_timestamp.h"
 #include "aos/events/logging/logfile_utils.h"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/network/timestamp_filter.h"
@@ -166,16 +167,17 @@ class InterpolatedTimeConverter : public TimeConverter {
 
   // Converts a time to the distributed clock for scheduling and cross-node
   // time measurement.
-  // TODO(austin): Need to pass in boot.
   distributed_clock::time_point ToDistributedClock(
-      size_t node_index, monotonic_clock::time_point time) override;
+      size_t node_index, logger::BootTimestamp time) override;
 
   // Takes the distributed time and converts it to the monotonic clock for this
   // node.
-  monotonic_clock::time_point FromDistributedClock(
-      size_t node_index, distributed_clock::time_point time) override;
+  logger::BootTimestamp FromDistributedClock(size_t node_index,
+                                             distributed_clock::time_point time,
+                                             size_t boot_count) override;
 
   // Called whenever time passes this point and we can forget about it.
+  // TODO(austin): Pop here instead of in log reader.
   void ObserveTimePassed(distributed_clock::time_point time) override;
 
   // Queues 1 more timestammp in the interpolation list.  This is public for
@@ -283,7 +285,8 @@ class MultiNodeNoncausalOffsetEstimator final
  public:
   MultiNodeNoncausalOffsetEstimator(
       const Configuration *configuration,
-      const Configuration *logged_configuration, bool skip_order_validation,
+      const Configuration *logged_configuration,
+      std::shared_ptr<const logger::Boots> boots, bool skip_order_validation,
       std::chrono::nanoseconds time_estimation_buffer_seconds);
 
   ~MultiNodeNoncausalOffsetEstimator() override;
@@ -296,6 +299,8 @@ class MultiNodeNoncausalOffsetEstimator final
   std::optional<std::tuple<distributed_clock::time_point,
                            std::vector<logger::BootTimestamp>>>
   NextTimestamp() override;
+
+  UUID boot_uuid(size_t node_index, size_t boot_count) override;
 
   // Checks that all the nodes in the graph are connected.  Needs all filters to
   // be constructed first.
@@ -336,6 +341,8 @@ class MultiNodeNoncausalOffsetEstimator final
 
   const Configuration *configuration_;
   const Configuration *logged_configuration_;
+
+  std::shared_ptr<const logger::Boots> boots_;
 
   // If true, skip any validation which would trigger if we see evidance that
   // time estimation between nodes was incorrect.

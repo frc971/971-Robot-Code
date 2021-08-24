@@ -17,4 +17,10 @@ std::ostream &operator<<(std::ostream &os,
             << ", .duration=" << duration.duration.count() << "ns}";
 }
 
+std::ostream &operator<<(std::ostream &os,
+                         const struct BootQueueIndex &queue_index) {
+  return os << "{.boot=" << queue_index.boot
+            << ", .index=" << queue_index.index << "}";
+}
+
 }  // namespace aos::logger

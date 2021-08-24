@@ -14,6 +14,8 @@ namespace aos {
 namespace message_bridge {
 namespace {
 namespace chrono = std::chrono;
+using logger::BootDuration;
+using logger::BootTimestamp;
 
 std::string TimeString(const aos::monotonic_clock::time_point t,
                        std::chrono::nanoseconds o) {
@@ -55,7 +57,7 @@ void NormalizeTimestamps(monotonic_clock::time_point *ta_base, double *ta) {
   CHECK_GE(*ta, 0.0);
   CHECK_LT(*ta, 1.0);
 }
-void NormalizeTimestamps(logger::BootTimestamp *ta_base, double *ta) {
+void NormalizeTimestamps(BootTimestamp *ta_base, double *ta) {
   NormalizeTimestamps(&ta_base->time, ta);
 }
 
@@ -473,10 +475,10 @@ std::tuple<monotonic_clock::time_point, chrono::nanoseconds> TrimTuple(
   return std::make_tuple(std::get<0>(t), std::get<1>(t));
 }
 
-std::pair<std::tuple<logger::BootTimestamp, logger::BootDuration>,
-          std::tuple<logger::BootTimestamp, logger::BootDuration>>
-NoncausalTimestampFilter::FindTimestamps(logger::BootTimestamp ta_base,
-                                         double ta, size_t sample_boot) const {
+std::pair<std::tuple<BootTimestamp, BootDuration>,
+          std::tuple<BootTimestamp, BootDuration>>
+NoncausalTimestampFilter::FindTimestamps(BootTimestamp ta_base, double ta,
+                                         size_t sample_boot) const {
   CHECK_GE(ta, 0.0);
   CHECK_LT(ta, 1.0);
 
@@ -731,9 +733,11 @@ double NoncausalTimestampFilter::SingleFilter::OffsetError(
          ((tb - ta) - offset.second);
 }
 
-std::string NoncausalTimestampFilter::DebugOffsetError(
-    logger::BootTimestamp ta_base, double ta, logger::BootTimestamp tb_base,
-    double tb, size_t node_a, size_t node_b) const {
+std::string NoncausalTimestampFilter::DebugOffsetError(BootTimestamp ta_base,
+                                                       double ta,
+                                                       BootTimestamp tb_base,
+                                                       double tb, size_t node_a,
+                                                       size_t node_b) const {
   NormalizeTimestamps(&ta_base, &ta);
   NormalizeTimestamps(&tb_base, &tb);
 
@@ -830,8 +834,8 @@ bool NoncausalTimestampFilter::SingleFilter::ValidateSolution(
   return true;
 }
 
-void NoncausalTimestampFilter::Sample(logger::BootTimestamp monotonic_now_all,
-                                      logger::BootDuration sample_ns) {
+void NoncausalTimestampFilter::Sample(BootTimestamp monotonic_now_all,
+                                      BootDuration sample_ns) {
   filter(monotonic_now_all.boot, sample_ns.boot)
       ->Sample(monotonic_now_all.time, sample_ns.duration);
 }
@@ -1114,20 +1118,47 @@ void NoncausalTimestampFilter::SingleFilter::Sample(
   }
 }
 
-bool NoncausalTimestampFilter::Pop(logger::BootTimestamp time) {
-  // TODO(austin): Auto compute the second boot.
-  CHECK_LE(filters_.size(), 1u);
-  SingleFilter *f = filter(time.boot, 0);
+bool NoncausalTimestampFilter::Pop(BootTimestamp time) {
+  CHECK_GE(filters_.size(), 1u);
+
   VLOG(1) << NodeNames() << " Pop(" << time << ")";
   bool removed = false;
-  // When the timestamp which is the end of the line is popped, we want to
-  // drop it off the list.  Hence the >=
-  while (f->timestamps_size() >= 2 &&
-         time.time >= std::get<0>(f->timestamp(1))) {
-    f->PopFront();
-    removed = true;
+  while (true) {
+    DCHECK_LT(pop_filter_, filters_.size());
+    BootFilter *boot_filter = &filters_[pop_filter_];
+    CHECK(boot_filter != nullptr);
+    size_t timestamps_size = 0;
+    while ((timestamps_size = boot_filter->filter.timestamps_size()) > 2) {
+      // When the timestamp which is the end of the line is popped, we want to
+      // drop it off the list.  Hence the <
+      if (time < BootTimestamp{
+                     .boot = static_cast<size_t>(boot_filter->boot.first),
+                     .time = std::get<0>(boot_filter->filter.timestamp(1))}) {
+        return removed;
+      }
+      boot_filter->filter.PopFront();
+      removed = true;
+    }
+
+    if (timestamps_size == 2) {
+      if (pop_filter_ + 1u >= filters_.size()) {
+        return removed;
+      }
+
+      // There is 1 more filter, see if there is enough data in it to switch
+      // over to it.
+      if (filters_[pop_filter_ + 1].filter.timestamps_size() < 2u) {
+        return removed;
+      }
+      if (time <
+          BootTimestamp{.boot = static_cast<size_t>(boot_filter->boot.first),
+                        .time = std::get<0>(
+                            filters_[pop_filter_ + 1].filter.timestamp(1))}) {
+        return removed;
+      }
+    }
+    ++pop_filter_;
   }
-  return removed;
 }
 
 void NoncausalTimestampFilter::SingleFilter::Debug() const {
@@ -1247,9 +1278,9 @@ void NoncausalTimestampFilter::SingleFilter::PopFront() {
   }
 }
 
-void NoncausalOffsetEstimator::Sample(
-    const Node *node, logger::BootTimestamp node_delivered_time,
-    logger::BootTimestamp other_node_sent_time) {
+void NoncausalOffsetEstimator::Sample(const Node *node,
+                                      BootTimestamp node_delivered_time,
+                                      BootTimestamp other_node_sent_time) {
   VLOG(1) << "Sample delivered         " << node_delivered_time << " sent "
           << other_node_sent_time << " " << node->name()->string_view()
           << " -> "
@@ -1268,8 +1299,8 @@ void NoncausalOffsetEstimator::Sample(
 }
 
 void NoncausalOffsetEstimator::ReverseSample(
-    const Node *node, logger::BootTimestamp node_sent_time,
-    logger::BootTimestamp other_node_delivered_time) {
+    const Node *node, BootTimestamp node_sent_time,
+    BootTimestamp other_node_delivered_time) {
   VLOG(1) << "Reverse sample delivered " << other_node_delivered_time
           << " sent " << node_sent_time << " "
           << ((node == node_a_) ? node_b_ : node_a_)->name()->string_view()
@@ -1285,28 +1316,6 @@ void NoncausalOffsetEstimator::ReverseSample(
   } else {
     LOG(FATAL) << "Unknown node " << node->name()->string_view();
   }
-}
-
-bool NoncausalOffsetEstimator::Pop(const Node *node,
-                                   logger::BootTimestamp node_monotonic_now) {
-  if (node == node_a_) {
-    if (a_.Pop(node_monotonic_now)) {
-      VLOG(1) << "Popping forward sample to " << node_a_->name()->string_view()
-              << " from " << node_b_->name()->string_view() << " at "
-              << node_monotonic_now;
-      return true;
-    }
-  } else if (node == node_b_) {
-    if (b_.Pop(node_monotonic_now)) {
-      VLOG(1) << "Popping reverse sample to " << node_b_->name()->string_view()
-              << " from " << node_a_->name()->string_view() << " at "
-              << node_monotonic_now;
-      return true;
-    }
-  } else {
-    LOG(FATAL) << "Unknown node " << node->name()->string_view();
-  }
-  return false;
 }
 
 }  // namespace message_bridge

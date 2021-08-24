@@ -347,8 +347,26 @@ InterpolatedTimeConverter::QueueNextTimestamp() {
     VLOG(1) << "  " << t;
   }
 
-  // TODO(austin): Figure out how to communicate the reboot up to the factory.
   CHECK_EQ(node_count_, std::get<1>(*next_time).size());
+
+  if (times_.empty()) {
+    for (BootTimestamp t : std::get<1>(*next_time)) {
+      CHECK_EQ(t.boot, 0u);
+    }
+  } else {
+    bool rebooted = false;
+    for (size_t i = 0; i < node_count_; ++i) {
+      if (std::get<1>(times_.back())[i].boot !=
+          std::get<1>(*next_time)[i].boot) {
+        rebooted = true;
+        break;
+      }
+    }
+    if (rebooted) {
+      CHECK(reboot_found_);
+      reboot_found_(std::get<0>(*next_time), std::get<1>(*next_time));
+    }
+  }
   times_.emplace_back(std::move(*next_time));
   return &times_.back();
 }
@@ -413,7 +431,7 @@ distributed_clock::time_point ToDistributedClock(
 }
 
 distributed_clock::time_point InterpolatedTimeConverter::ToDistributedClock(
-    size_t node_index, monotonic_clock::time_point time) {
+    size_t node_index, BootTimestamp time) {
   CHECK_LT(node_index, node_count_);
   // If there is only one node, time estimation makes no sense.  Just return
   // unity time.
@@ -425,19 +443,21 @@ distributed_clock::time_point InterpolatedTimeConverter::ToDistributedClock(
   QueueUntil(
       [time, node_index](const std::tuple<distributed_clock::time_point,
                                           std::vector<BootTimestamp>> &t) {
-        return std::get<1>(t)[node_index].time < time;
+        return std::get<1>(t)[node_index] < time;
       });
 
   // Before the beginning needs to have 0 slope otherwise time jumps when
   // timestamp 2 happens.
-  if (times_.size() == 1u || time < std::get<1>(times_[0])[node_index].time) {
-    if (time < std::get<1>(times_[0])[node_index].time) {
+  if (times_.size() == 1u || time < std::get<1>(times_[0])[node_index]) {
+    if (time < std::get<1>(times_[0])[node_index]) {
       CHECK(!have_popped_)
           << ": Trying to interpolate time " << time
           << " but we have forgotten the relevant points already.";
     }
+    CHECK_EQ(time.boot, std::get<1>(times_[0])[node_index].boot);
     const distributed_clock::time_point result =
-        time - std::get<1>(times_[0])[node_index].time + std::get<0>(times_[0]);
+        time.time - std::get<1>(times_[0])[node_index].time +
+        std::get<0>(times_[0]);
     VLOG(2) << "ToDistributedClock(" << node_index << ", " << time << ") -> "
             << result;
     return result;
@@ -448,7 +468,9 @@ distributed_clock::time_point InterpolatedTimeConverter::ToDistributedClock(
   size_t index = times_.size() - 2u;
   while (index > 0u) {
     // TODO(austin): Binary search.
-    if (std::get<1>(times_[index])[node_index].time <= time) {
+    //LOG(INFO) << std::get<1>(times_[index])[node_index] << " <= " << time
+              //<< "?";
+    if (std::get<1>(times_[index])[node_index] <= time) {
       break;
     }
     --index;
@@ -457,38 +479,54 @@ distributed_clock::time_point InterpolatedTimeConverter::ToDistributedClock(
   // Interpolate with the two of these.
   const distributed_clock::time_point d0 = std::get<0>(times_[index]);
   const distributed_clock::time_point d1 = std::get<0>(times_[index + 1]);
+  const BootTimestamp t0 = std::get<1>(times_[index])[node_index];
+  const BootTimestamp t1 = std::get<1>(times_[index + 1])[node_index];
 
-  // TODO(austin): We should extrapolate if the boot changes.
-  CHECK_EQ(std::get<1>(times_[index])[node_index].boot,
-           std::get<1>(times_[index + 1])[node_index].boot);
-  const monotonic_clock::time_point t0 =
-      std::get<1>(times_[index])[node_index].time;
-  const monotonic_clock::time_point t1 =
-      std::get<1>(times_[index + 1])[node_index].time;
+  if (time > t1) {
+    const distributed_clock::time_point result = (time.time - t1.time) + d1;
+    VLOG(2) << "ToDistributedClock(" << node_index << ", " << time << ") -> "
+            << result;
+    return result;
+  }
+
+  if (t0.boot != t1.boot) {
+    if (t0.boot == time.boot) {
+      const distributed_clock::time_point result = (time.time - t0.time) + d0;
+      VLOG(2) << "ToDistributedClock(" << node_index << ", " << time << ") -> "
+              << result;
+      return result;
+    } else if (t1.boot == time.boot) {
+      const distributed_clock::time_point result = (time.time - t1.time) + d1;
+      VLOG(2) << "ToDistributedClock(" << node_index << ", " << time << ") -> "
+              << result;
+      return result;
+    } else {
+      LOG(FATAL) << t0 << " <= " << time << " <= " << t1;
+    }
+  }
 
   const distributed_clock::time_point result =
-      message_bridge::ToDistributedClock(d0, d1, t0, t1, time);
+      message_bridge::ToDistributedClock(d0, d1, t0.time, t1.time, time.time);
 
   VLOG(2) << "ToDistributedClock(" << node_index << ", " << time << ") -> "
           << result;
   return result;
 }
 
-monotonic_clock::time_point InterpolatedTimeConverter::FromDistributedClock(
-    size_t node_index, distributed_clock::time_point time) {
+BootTimestamp InterpolatedTimeConverter::FromDistributedClock(
+    size_t node_index, distributed_clock::time_point time, size_t boot_count) {
   CHECK_LT(node_index, node_count_);
   // If there is only one node, time estimation makes no sense.  Just return
   // unity time.
   if (node_count_ == 1u) {
-    return monotonic_clock::epoch() + time.time_since_epoch();
+    return BootTimestamp::epoch() + time.time_since_epoch();
   }
 
   // Make sure there are enough timestamps in the queue.
-  QueueUntil(
-      [time](const std::tuple<distributed_clock::time_point,
-                              std::vector<BootTimestamp>> &t) {
-        return std::get<0>(t) < time;
-      });
+  QueueUntil([time](const std::tuple<distributed_clock::time_point,
+                                     std::vector<BootTimestamp>> &t) {
+    return std::get<0>(t) < time;
+  });
 
   if (times_.size() == 1u || time < std::get<0>(times_[0])) {
     if (time < std::get<0>(times_[0])) {
@@ -498,16 +536,21 @@ monotonic_clock::time_point InterpolatedTimeConverter::FromDistributedClock(
     }
     monotonic_clock::time_point result =
         time - std::get<0>(times_[0]) + std::get<1>(times_[0])[node_index].time;
-    VLOG(2) << "FromDistributedClock(" << node_index << ", " << time << ") -> "
-            << result;
-    return result;
+    VLOG(2) << "FromDistributedClock(" << node_index << ", " << time << ", "
+            << boot_count << ") -> " << result;
+    return {.boot = std::get<1>(times_[0])[node_index].boot, .time = result};
   }
 
   // Now, find the corresponding timestamps.  Search from the back since that's
   // where most of the times we care about will be.
   size_t index = times_.size() - 2u;
   while (index > 0u) {
-    if (std::get<0>(times_[index]) <= time) {
+    //LOG(INFO) << "Considering " << std::get<0>(times_[index + 1]) << " index "
+              //<< index << " vs " << time;
+    // If we are searching across a reboot, we want both the before and after
+    // time.  We will be asked to solve for the after, so make sure when a time
+    // matches exactly, we pick the time before, not the time after.
+    if (std::get<0>(times_[index]) < time) {
       break;
     }
     --index;
@@ -516,13 +559,39 @@ monotonic_clock::time_point InterpolatedTimeConverter::FromDistributedClock(
   // Interpolate with the two of these.
   const distributed_clock::time_point d0 = std::get<0>(times_[index]);
   const distributed_clock::time_point d1 = std::get<0>(times_[index + 1]);
+  const BootTimestamp t0 = std::get<1>(times_[index])[node_index];
+  const BootTimestamp t1 = std::get<1>(times_[index + 1])[node_index];
 
-  CHECK_EQ(std::get<1>(times_[index])[node_index].boot,
-           std::get<1>(times_[index + 1])[node_index].boot);
-  const monotonic_clock::time_point t0 =
-      std::get<1>(times_[index])[node_index].time;
-  const monotonic_clock::time_point t1 =
-      std::get<1>(times_[index + 1])[node_index].time;
+  if (time == d1) {
+    if (boot_count == t1.boot) {
+      const BootTimestamp result = t1 + (time - d1);
+      VLOG(2) << "FromDistributedClock(" << node_index << ", " << time << ", "
+              << boot_count << ") -> " << result;
+      return result;
+    } else {
+      CHECK_EQ(boot_count, t0.boot);
+      const BootTimestamp result = t0 + (time - d0);
+      VLOG(2) << "FromDistributedClock(" << node_index << ", " << time << ", "
+              << boot_count << ") -> " << result;
+      return result;
+    }
+  }
+
+  //LOG(INFO) << "d0 " << d0 << " time " << time << " d1 " << d1 << " t0 " << t0
+            //<< " t1 " << t1;
+  if (time > d1) {
+    const BootTimestamp result = t1 + (time - d1);
+    VLOG(2) << "FromDistributedClock(" << node_index << ", " << time << ", "
+            << boot_count << ") -> " << result;
+    return result;
+  }
+
+  if (t0.boot != t1.boot) {
+    const BootTimestamp result = t0 + (time - d0);
+    VLOG(2) << "FromDistributedClock(" << node_index << ", " << time << ", "
+            << boot_count << ") -> " << result;
+    return result;
+  }
 
   const chrono::nanoseconds dd = d1 - d0;
 
@@ -538,21 +607,23 @@ monotonic_clock::time_point InterpolatedTimeConverter::FromDistributedClock(
   // and subtract when < 0 so we round correctly.  Multiply before dividing so
   // we don't round early, and use 128 bit arithmetic to guarantee that 64 bit
   // multiplication fits.
-  absl::int128 numerator =
-      absl::int128((time - d0).count()) * absl::int128((t1 - t0).count());
+  absl::int128 numerator = absl::int128((time - d0).count()) *
+                           absl::int128((t1.time - t0.time).count());
   numerator += numerator > 0 ? absl::int128(dd.count() / 2)
                              : -absl::int128(dd.count() / 2);
 
   const monotonic_clock::time_point result =
-      t0 + std::chrono::nanoseconds(
-               static_cast<int64_t>(numerator / absl::int128(dd.count())));
-  VLOG(2) << "FromDistributedClock(" << node_index << ", " << time << ") -> "
-          << result;
-  return result;
+      t0.time + std::chrono::nanoseconds(
+                    static_cast<int64_t>(numerator / absl::int128(dd.count())));
+  VLOG(2) << "FromDistributedClock(" << node_index << ", " << time << ", "
+          << boot_count << ") -> " << result;
+  return {.boot = t0.boot, .time = result};
 }
+
 MultiNodeNoncausalOffsetEstimator::MultiNodeNoncausalOffsetEstimator(
     const Configuration *configuration,
-    const Configuration *logged_configuration, bool skip_order_validation,
+    const Configuration *logged_configuration,
+    std::shared_ptr<const logger::Boots> boots, bool skip_order_validation,
     chrono::nanoseconds time_estimation_buffer_seconds)
     : InterpolatedTimeConverter(!configuration::MultiNode(logged_configuration)
                                     ? 1u
@@ -560,11 +631,26 @@ MultiNodeNoncausalOffsetEstimator::MultiNodeNoncausalOffsetEstimator(
                                 time_estimation_buffer_seconds),
       configuration_(configuration),
       logged_configuration_(logged_configuration),
+      boots_(boots),
       skip_order_validation_(skip_order_validation) {
+  const bool multi_node = configuration::MultiNode(logged_configuration);
+  if (!boots_ && !multi_node) {
+    // This is a super old log.  Fake out boots by making them up.
+    LOG(WARNING) << "Old single node log without boot UUIDs, generating a "
+                    "random boot UUID.";
+    std::shared_ptr<logger::Boots> boots = std::make_shared<logger::Boots>();
+    const UUID random_boot_uuid = UUID::Random();
+    boots->boot_count_map.emplace(random_boot_uuid.ToString(), 0);
+    boots->boots =
+        std::vector<std::vector<std::string>>{{random_boot_uuid.ToString()}};
+    boots_ = boots;
+  }
+
+  CHECK(boots_) << ": Missing boots for " << NodesCount();
+  CHECK_EQ(boots_->boots.size(), NodesCount());
   filters_per_node_.resize(NodesCount());
   last_monotonics_.resize(NodesCount(), BootTimestamp::epoch());
-  if (FLAGS_timestamps_to_csv &&
-      configuration::MultiNode(logged_configuration)) {
+  if (FLAGS_timestamps_to_csv && multi_node) {
     fp_ = fopen("/tmp/timestamp_noncausal_offsets.csv", "w");
     fprintf(fp_, "# distributed");
     for (const Node *node : configuration::GetNodes(logged_configuration)) {
@@ -637,9 +723,20 @@ MultiNodeNoncausalOffsetEstimator::~MultiNodeNoncausalOffsetEstimator() {
   if (!node_samples_.empty()) {
     for (NodeSamples &node : node_samples_) {
       for (SingleNodeSamples &timestamps : node.nodes) {
-        CHECK (timestamps.messages.empty());
+        CHECK(timestamps.messages.empty());
       }
     }
+  }
+}
+
+UUID MultiNodeNoncausalOffsetEstimator::boot_uuid(size_t node_index,
+                                                  size_t boot_count) {
+  CHECK(boots_);
+  CHECK_LT(node_index, boots_->boots.size());
+  if (boot_count < boots_->boots[node_index].size()) {
+    return UUID::FromString(boots_->boots[node_index][boot_count]);
+  } else {
+    return UUID::Random();
   }
 }
 
@@ -1290,7 +1387,12 @@ MultiNodeNoncausalOffsetEstimator::NextSolution(
                       << "ns";
             }
             VLOG(1) << "Ignoring because it is close enough.";
-            next_node_filter->Consume();
+            std::optional<
+                std::tuple<logger::BootTimestamp, logger::BootDuration>>
+                result = next_node_filter->Consume();
+            CHECK(result);
+            next_node_filter->Pop(std::get<0>(*result) -
+                                  time_estimation_buffer_seconds_);
             break;
           }
           // Somehow the new solution is better *and* worse than the old
@@ -1307,7 +1409,12 @@ MultiNodeNoncausalOffsetEstimator::NextSolution(
           }
 
           if (skip_order_validation_) {
-            next_node_filter->Consume();
+            std::optional<
+                std::tuple<logger::BootTimestamp, logger::BootDuration>>
+                result = next_node_filter->Consume();
+            CHECK(result);
+            next_node_filter->Pop(std::get<0>(*result) -
+                                  time_estimation_buffer_seconds_);
             LOG(ERROR) << "Skipping because --skip_order_validation";
             break;
           } else {
@@ -1396,8 +1503,10 @@ MultiNodeNoncausalOffsetEstimator::NextTimestamp() {
       }
     }
     sample = *next_filter->Consume();
+    next_filter->Pop(std::get<0>(sample) - time_estimation_buffer_seconds_);
   } else {
     sample = *next_filter->Consume();
+    next_filter->Pop(std::get<0>(sample) - time_estimation_buffer_seconds_);
     // We found a good sample, so consume it.  If it is a duplicate, we still
     // want to consume it.  But, if this is the first time around, we want to
     // re-solve by recursing (once) to pickup the better base.
