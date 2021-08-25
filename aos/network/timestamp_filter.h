@@ -8,6 +8,7 @@
 #include <deque>
 
 #include "aos/configuration.h"
+#include "aos/events/logging/boot_timestamp.h"
 #include "aos/time/time.h"
 #include "glog/logging.h"
 
@@ -240,139 +241,197 @@ class NoncausalTimestampFilter {
  public:
   NoncausalTimestampFilter(const Node *node_a, const Node *node_b)
       : node_a_(node_a), node_b_(node_b) {}
+
+  NoncausalTimestampFilter(NoncausalTimestampFilter &&) noexcept = default;
+  NoncausalTimestampFilter &operator=(
+      NoncausalTimestampFilter &&other) noexcept {
+    // Sigh, std::vector really prefers to copy than move.  We don't want to
+    // copy this class or we will end up with double counted samples or put
+    // something in the file twice.  The only way it will move instead of copy
+    // is if we implement a noexcept move assignment operator.
+    node_a_ = other.node_a_;
+    other.node_a_ = nullptr;
+    node_b_ = other.node_b_;
+    other.node_b_ = nullptr;
+
+    filters_ = std::move(other.filters_);
+    current_filter_ = other.current_filter_;
+    return *this;
+  }
+  NoncausalTimestampFilter(const NoncausalTimestampFilter &) = delete;
+  NoncausalTimestampFilter &operator=(const NoncausalTimestampFilter &) =
+      delete;
   ~NoncausalTimestampFilter();
-
-  // Check whether the given timestamp falls within our current samples
-  bool IsOutsideSamples(monotonic_clock::time_point ta_base, double ta) const;
-
-  // Check whether the given timestamp lies after our current samples
-  bool IsAfterSamples(monotonic_clock::time_point ta_base, double ta) const;
-
-  std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>
-  GetReferenceTimestamp(monotonic_clock::time_point ta_base, double ta) const;
-
-  // Returns the offset for the point in time, using the timestamps in the deque
-  // to form a polyline used to interpolate.
-  std::chrono::nanoseconds Offset(monotonic_clock::time_point ta) const;
-  std::pair<std::chrono::nanoseconds, double> Offset(
-      monotonic_clock::time_point ta_base, double ta) const;
 
   // Returns the error between the offset in the provided timestamps, and the
   // offset at ta.
-  double OffsetError(aos::monotonic_clock::time_point ta_base, double ta,
-                     aos::monotonic_clock::time_point tb_base, double tb) const;
+  double OffsetError(logger::BootTimestamp ta_base, double ta,
+                     logger::BootTimestamp tb_base, double tb) const {
+    return filter(ta_base.boot, tb_base.boot)
+        ->OffsetError(ta_base.time, ta, tb_base.time, tb);
+  }
   // Returns the string representation of 2 * OffsetError(ta, tb)
-  std::string DebugOffsetError(aos::monotonic_clock::time_point ta_base,
-                               double ta,
-                               aos::monotonic_clock::time_point tb_base,
-                               double tb, size_t node_a, size_t node_b) const;
+  std::string DebugOffsetError(logger::BootTimestamp ta_base, double ta,
+                               logger::BootTimestamp tb_base, double tb,
+                               size_t node_a, size_t node_b) const;
 
   // Confirms that the solution meets the constraints.  Returns true on success.
-  bool ValidateSolution(aos::monotonic_clock::time_point ta,
-                        aos::monotonic_clock::time_point tb) const;
-
-  double Convert(double ta) const {
-    return ta +
-           static_cast<double>(
-               Offset(monotonic_clock::epoch(), ta).first.count()) +
-           Offset(monotonic_clock::epoch(), ta).second;
+  bool ValidateSolution(logger::BootTimestamp ta,
+                        logger::BootTimestamp tb) const {
+    return filter(ta.boot, tb.boot)->ValidateSolution(ta.time, tb.time);
   }
 
   // Adds a new sample to our filtered timestamp list.
-  void Sample(aos::monotonic_clock::time_point monotonic_now,
-              std::chrono::nanoseconds sample_ns);
+  void Sample(logger::BootTimestamp monotonic_now,
+              logger::BootDuration sample_ns);
 
   // Removes any old timestamps from our timestamps list.
   // Returns true if any points were popped.
-  bool Pop(aos::monotonic_clock::time_point time);
+  bool Pop(logger::BootTimestamp time);
 
-  std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>
-  timestamp(size_t i) const {
-    if (i == 0u && timestamps_.size() >= 2u && !has_popped_) {
-      std::chrono::nanoseconds dt =
-          std::get<0>(timestamps_[1]) - std::get<0>(timestamps_[0]);
-      std::chrono::nanoseconds doffset =
-          std::get<1>(timestamps_[1]) - std::get<1>(timestamps_[0]);
-
-      // If we are early in the log file, the filter hasn't had time to get
-      // started.  We might only have 2 samples, and the first sample was
-      // incredibly delayed, violating our velocity constraint.  In that case,
-      // modify the first sample (rather than remove it) to retain the knowledge
-      // of the velocity, but adhere to the constraints.
-      //
-      // We are doing this here so as points get added in any order, we don't
-      // confuse ourselves about what really happened.
-      if (doffset > dt * kMaxVelocity()) {
-        const aos::monotonic_clock::duration adjusted_initial_time =
-            std::get<1>(timestamps_[1]) -
-            aos::monotonic_clock::duration(
-                static_cast<aos::monotonic_clock::duration::rep>(
-                    dt.count() * kMaxVelocity()));
-
-        return std::make_tuple(std::get<0>(timestamps_[0]),
-                               adjusted_initial_time);
-      }
+  size_t timestamps_size() const {
+    size_t result = 0u;
+    for (const BootFilter &filter : filters_) {
+      result += filter.filter.timestamps_size();
     }
-    return std::make_tuple(std::get<0>(timestamps_[i]),
-                           std::get<1>(timestamps_[i]));
+    return result;
   }
 
-  // Returns if the timestamp is frozen or not.
-  bool frozen(size_t index) const {
-    return fully_frozen_ || std::get<0>(timestamps_[index]) <= frozen_time_;
+  // For testing only:
+  void Debug() const {
+    for (const BootFilter &filter : filters_) {
+      LOG(INFO) << NodeNames() << " boota: " << filter.boot.first << ", "
+                << filter.boot.second;
+      filter.filter.Debug();
+    }
   }
-
-  bool frozen(aos::monotonic_clock::time_point t) const {
-    return t <= frozen_time_;
-  }
-
-  size_t timestamps_size() const { return timestamps_.size(); }
-
-  // Returns a debug string with the nodes this filter represents.
-  std::string NodeNames() const;
-
-  void Debug();
-
-  // Sets the starting point and filename to log samples to.  These functions
-  // are only used when doing CSV file logging to debug the filter.
-  void SetFirstTime(aos::monotonic_clock::time_point time);
-  void SetCsvFileName(std::string_view name);
 
   // Marks all line segments up until the provided time on the provided node as
   // used.
-  void FreezeUntil(aos::monotonic_clock::time_point node_monotonic_now);
-  void FreezeUntilRemote(aos::monotonic_clock::time_point remote_monotonic_now);
+  void FreezeUntil(logger::BootTimestamp node_monotonic_now,
+                   logger::BootTimestamp remote_monotonic_now) {
+    // TODO(austin): CHECK that all older boots are fully frozen.
+    filter(node_monotonic_now.boot, remote_monotonic_now.boot)
+        ->FreezeUntil(node_monotonic_now.time);
+    filter(node_monotonic_now.boot, remote_monotonic_now.boot)
+        ->FreezeUntilRemote(remote_monotonic_now.time);
+  }
 
   // Returns true if there is a full line which hasn't been observed.
-  bool has_unobserved_line() const;
+  bool has_unobserved_line() const {
+    return filters_.back().filter.has_unobserved_line();
+  }
   // Returns the time of the second point in the unobserved line, or min_time if
   // there is no line.
-  monotonic_clock::time_point unobserved_line_end() const;
+  logger::BootTimestamp unobserved_line_end() const {
+    auto &f = filters_.back();
+    return {static_cast<size_t>(f.boot.first), f.filter.unobserved_line_end()};
+  }
   // Returns the time of the second point in the unobserved line on the remote
   // node, or min_time if there is no line.
-  monotonic_clock::time_point unobserved_line_remote_end() const;
+  logger::BootTimestamp unobserved_line_remote_end() const {
+    auto &f = filters_.back();
+    return {static_cast<size_t>(f.boot.second),
+            f.filter.unobserved_line_remote_end()};
+  }
 
   // Returns the next timestamp in the queue if available without incrementing
   // the pointer.  This, Consume, and FreezeUntil work together to allow
   // tracking and freezing timestamps which have been combined externally.
-  std::optional<
-      std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>>
-  Observe() const;
+  std::optional<std::tuple<logger::BootTimestamp, logger::BootDuration>>
+  Observe() const {
+    if (filters_.size() == 0u) {
+      return std::nullopt;
+    }
+
+    size_t current_filter = current_filter_;
+    while (true) {
+      const BootFilter &filter = filters_[current_filter];
+      std::optional<
+          std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>>
+          result = filter.filter.Observe();
+      if (!result) {
+        if (current_filter + 1 == filters_.size()) {
+          return std::nullopt;
+        } else {
+          ++current_filter;
+          continue;
+        }
+      }
+      return std::make_tuple(
+          logger::BootTimestamp{static_cast<size_t>(filter.boot.first),
+                                std::get<0>(*result)},
+          logger::BootDuration{static_cast<size_t>(filter.boot.second),
+                               std::get<1>(*result)});
+    }
+  }
   // Returns the next timestamp in the queue if available, incrementing the
   // pointer.
-  std::optional<
-      std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>>
-  Consume();
+  std::optional<std::tuple<logger::BootTimestamp, logger::BootDuration>>
+  Consume() {
+    if (filters_.size() == 0u) {
+      return std::nullopt;
+    }
+    DCHECK_LT(current_filter_, filters_.size());
+
+    while (true) {
+      BootFilter &filter = filters_[current_filter_];
+      std::optional<
+          std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>>
+          result = filter.filter.Consume();
+      if (!result) {
+        if (current_filter_ + 1 == filters_.size()) {
+          return std::nullopt;
+        } else {
+          ++current_filter_;
+          continue;
+        }
+      }
+      return std::make_tuple(
+          logger::BootTimestamp{static_cast<size_t>(filter.boot.first),
+                                std::get<0>(*result)},
+          logger::BootDuration{static_cast<size_t>(filter.boot.second),
+                               std::get<1>(*result)});
+    }
+  }
 
   // Public for testing.
+  // Returns the offset for the point in time, using the timestamps in the deque
+  // to form a polyline used to interpolate.
+  logger::BootDuration Offset(logger::BootTimestamp ta,
+                              size_t sample_boot) const {
+    return {sample_boot, filter(ta.boot, sample_boot)->Offset(ta.time)};
+  }
+
+  std::pair<logger::BootDuration, double> Offset(logger::BootTimestamp ta_base,
+                                                 double ta,
+                                                 size_t sample_boot) const {
+    std::pair<std::chrono::nanoseconds, double> result =
+        filter(ta_base.boot, sample_boot)->Offset(ta_base.time, ta);
+    return std::make_pair(logger::BootDuration{sample_boot, result.first},
+                          result.second);
+  }
+
   // Assuming that there are at least 2 points in timestamps_, finds the 2
   // matching points.
-  std::pair<std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>,
-            std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>>
-  FindTimestamps(monotonic_clock::time_point ta) const;
-  std::pair<std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>,
-            std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>>
-  FindTimestamps(monotonic_clock::time_point ta_base, double ta) const;
+  std::pair<std::tuple<logger::BootTimestamp, logger::BootDuration>,
+            std::tuple<logger::BootTimestamp, logger::BootDuration>>
+  FindTimestamps(logger::BootTimestamp ta, size_t sample_boot) const {
+    std::pair<std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>,
+              std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>>
+        result = filter(ta.boot, sample_boot)->FindTimestamps(ta.time);
+    return std::make_pair(
+        std::make_tuple(
+            logger::BootTimestamp{ta.boot, std::get<0>(result.first)},
+            logger::BootDuration{sample_boot, std::get<1>(result.first)}),
+        std::make_tuple(
+            logger::BootTimestamp{ta.boot, std::get<0>(result.second)},
+            logger::BootDuration{sample_boot, std::get<1>(result.second)}));
+  }
+  std::pair<std::tuple<logger::BootTimestamp, logger::BootDuration>,
+            std::tuple<logger::BootTimestamp, logger::BootDuration>>
+  FindTimestamps(logger::BootTimestamp ta_base, double ta,
+                 size_t sample_boot) const;
 
   static std::chrono::nanoseconds InterpolateOffset(
       std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> p0,
@@ -405,47 +464,215 @@ class NoncausalTimestampFilter {
   const Node *node_b() const { return node_b_; }
 
  private:
+  // This class holds all the state for the filter for a single pair of boots.
+  class SingleFilter {
+   public:
+    SingleFilter(std::string node_names) : node_names_(std::move(node_names)) {}
+    SingleFilter(SingleFilter &&other) noexcept
+        : node_names_(std::move(other.node_names_)),
+          timestamps_(std::move(other.timestamps_)),
+          frozen_time_(other.frozen_time_),
+          next_to_consume_(other.next_to_consume_),
+          fully_frozen_(other.fully_frozen_),
+          has_popped_(other.has_popped_) {}
+
+    SingleFilter &operator=(SingleFilter &&other) noexcept = default;
+    SingleFilter(const SingleFilter &) = delete;
+    SingleFilter operator=(const SingleFilter &) = delete;
+    ~SingleFilter();
+
+    std::pair<std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>,
+              std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>>
+    FindTimestamps(monotonic_clock::time_point ta) const;
+    std::pair<std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>,
+              std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>>
+    FindTimestamps(monotonic_clock::time_point ta_base, double ta) const;
+
+    // Check whether the given timestamp falls within our current samples
+    bool IsOutsideSamples(monotonic_clock::time_point ta_base, double ta) const;
+    // Check whether the given timestamp lies after our current samples
+    bool IsAfterSamples(monotonic_clock::time_point ta_base, double ta) const;
+    std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>
+    GetReferenceTimestamp(monotonic_clock::time_point ta_base, double ta) const;
+
+    std::chrono::nanoseconds Offset(monotonic_clock::time_point ta) const;
+    std::pair<std::chrono::nanoseconds, double> Offset(
+        monotonic_clock::time_point ta_base, double ta) const;
+    double OffsetError(aos::monotonic_clock::time_point ta_base, double ta,
+                       aos::monotonic_clock::time_point tb_base,
+                       double tb) const;
+    bool has_unobserved_line() const;
+    monotonic_clock::time_point unobserved_line_end() const;
+    monotonic_clock::time_point unobserved_line_remote_end() const;
+    std::optional<
+        std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>>
+    Observe() const;
+    std::optional<
+        std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>>
+    Consume();
+    void FreezeUntil(aos::monotonic_clock::time_point node_monotonic_now);
+    void FreezeUntilRemote(
+        aos::monotonic_clock::time_point remote_monotonic_now);
+    void PopFront();
+    void Debug() const;
+
+    // Returns if the timestamp is frozen or not.
+    bool frozen(size_t index) const {
+      return fully_frozen_ || std::get<0>(timestamps_[index]) <= frozen_time_;
+    }
+
+    bool frozen(aos::monotonic_clock::time_point t) const {
+      return t <= frozen_time_;
+    }
+
+    size_t timestamps_size() const { return timestamps_.size(); }
+
+    std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>
+    timestamp(size_t i) const {
+      if (i == 0u && timestamps_.size() >= 2u && !has_popped_) {
+        std::chrono::nanoseconds dt =
+            std::get<0>(timestamps_[1]) - std::get<0>(timestamps_[0]);
+        std::chrono::nanoseconds doffset =
+            std::get<1>(timestamps_[1]) - std::get<1>(timestamps_[0]);
+
+        // If we are early in the log file, the filter hasn't had time to get
+        // started.  We might only have 2 samples, and the first sample was
+        // incredibly delayed, violating our velocity constraint.  In that case,
+        // modify the first sample (rather than remove it) to retain the
+        // knowledge of the velocity, but adhere to the constraints.
+        //
+        // We are doing this here so as points get added in any order, we don't
+        // confuse ourselves about what really happened.
+        if (doffset > dt * kMaxVelocity()) {
+          const aos::monotonic_clock::duration adjusted_initial_time =
+              std::get<1>(timestamps_[1]) -
+              aos::monotonic_clock::duration(
+                  static_cast<aos::monotonic_clock::duration::rep>(
+                      dt.count() * kMaxVelocity()));
+
+          return std::make_tuple(std::get<0>(timestamps_[0]),
+                                 adjusted_initial_time);
+        }
+      }
+      return std::make_tuple(std::get<0>(timestamps_[i]),
+                             std::get<1>(timestamps_[i]));
+    }
+    // Confirms that the solution meets the constraints.  Returns true on
+    // success.
+    bool ValidateSolution(aos::monotonic_clock::time_point ta,
+                          aos::monotonic_clock::time_point tb) const;
+
+    void Sample(monotonic_clock::time_point monotonic_now,
+                std::chrono::nanoseconds sample_ns);
+
+   private:
+    std::string node_names_;
+
+    // Timestamp, offest, and then a boolean representing if this sample is
+    // frozen and can't be modified or not.
+    std::deque<
+        std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>>
+        timestamps_;
+
+    aos::monotonic_clock::time_point frozen_time_ =
+        aos::monotonic_clock::min_time;
+
+    // The index of the next element in timestamps to consume.  0 means none
+    // have been consumed, and size() means all have been consumed.
+    size_t next_to_consume_ = 0;
+
+    bool fully_frozen_ = false;
+
+    bool has_popped_ = false;
+  };
+
   // Removes the oldest timestamp.
   void PopFront();
-
-  // Writes a timestamp to the file if it is reasonable.
-  void MaybeWriteTimestamp(
-      std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>
-          timestamp);
 
   // Writes any saved timestamps to file.
   void FlushSavedSamples();
 
-  const Node *const node_a_;
-  const Node *const node_b_;
+  const Node *node_a_;
+  const Node *node_b_;
 
-  // Timestamp, offest, and then a boolean representing if this sample is frozen
-  // and can't be modified or not.
-  std::deque<
-      std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>>
-      timestamps_;
+  // Returns a debug string with the nodes this filter represents.
+  std::string NodeNames() const;
 
-  aos::monotonic_clock::time_point frozen_time_ =
-      aos::monotonic_clock::min_time;
+  struct BootFilter {
+    BootFilter(std::pair<int, int> new_boot, std::string node_names)
+        : boot(new_boot), filter(std::move(node_names)) {}
 
-  // The index of the next element in timestamps to consume.  0 means none have
-  // been consumed, and size() means all have been consumed.
-  size_t next_to_consume_ = 0;
+    BootFilter(BootFilter &&other) noexcept = default;
+    BootFilter &operator=(BootFilter &&other) noexcept = default;
+    BootFilter(const BootFilter &) = delete;
+    void operator=(const BootFilter &) = delete;
+    std::pair<int, int> boot;
+    SingleFilter filter;
+  };
 
-  // Holds any timestamps from before the start of the log to be flushed when we
-  // know when the log starts.
-  std::vector<
-      std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>>
-      saved_samples_;
+  static bool FilterLessThanUpper(const std::pair<int, int> &l,
+                                  const BootFilter &r) {
+    return l < r.boot;
+  }
+  static bool FilterLessThanLower(const BootFilter &l,
+                                  const std::pair<int, int> &r) {
+    return l.boot < r;
+  }
 
-  FILE *fp_ = nullptr;
-  FILE *samples_fp_ = nullptr;
+ protected:
+  SingleFilter *filter(int boota, int bootb) {
+    auto it =
+        std::lower_bound(filters_.begin(), filters_.end(),
+                         std::make_pair(boota, bootb), FilterLessThanLower);
+    if (it != filters_.end() && it->boot == std::make_pair(boota, bootb)) {
+      return &it->filter;
+    }
 
-  bool fully_frozen_ = false;
+    if (!filters_.empty()) {
+      CHECK_LT(current_filter_, filters_.size());
+      CHECK_GE(boota, filters_[current_filter_].boot.first);
+      CHECK_GE(bootb, filters_[current_filter_].boot.second);
+    }
+    SingleFilter *result =
+        &filters_
+             .emplace(std::upper_bound(filters_.begin(), filters_.end(),
+                                       std::make_pair(boota, bootb),
+                                       FilterLessThanUpper),
+                      std::make_pair(boota, bootb), NodeNames())
+             ->filter;
 
-  bool has_popped_ = false;
+    {
+      // Confirm we don't have boots go backwards.
+      // It is impossible for us to get (0, 0), (0, 1), (1, 0), (1, 1).  That
+      // means that both boots on both devices talked to both other boots.
+      int last_boota = -1;
+      int last_bootb = -1;
+      for (const BootFilter &filter : filters_) {
+        CHECK(filter.boot.first != last_boota ||
+              filter.boot.second != last_bootb)
+            << ": Boots didn't increase.";
+        CHECK_GE(filter.boot.first, last_boota);
+        CHECK_GE(filter.boot.second, last_bootb);
+        last_boota = filter.boot.first;
+        last_bootb = filter.boot.second;
+      }
+    }
+    return result;
+  }
 
-  aos::monotonic_clock::time_point first_time_ = aos::monotonic_clock::min_time;
+  const SingleFilter *filter(int boota, int bootb) const {
+    auto it =
+        std::lower_bound(filters_.begin(), filters_.end(),
+                         std::make_pair(boota, bootb), FilterLessThanLower);
+    CHECK(it != filters_.end());
+    CHECK(it->boot == std::make_pair(boota, bootb));
+    return &it->filter;
+  }
+
+ private:
+  std::vector<BootFilter> filters_;
+
+  size_t current_filter_ = 0;
 };
 
 // This class holds 2 NoncausalTimestampFilter's and handles averaging the
@@ -457,6 +684,12 @@ class NoncausalOffsetEstimator {
         b_(node_b, node_a),
         node_a_(node_a),
         node_b_(node_b) {}
+  NoncausalOffsetEstimator(NoncausalOffsetEstimator &&) noexcept = default;
+  NoncausalOffsetEstimator &operator=(
+      NoncausalOffsetEstimator &&other) noexcept = default;
+  NoncausalOffsetEstimator(const NoncausalOffsetEstimator &) = delete;
+  NoncausalOffsetEstimator &operator=(const NoncausalOffsetEstimator &) =
+      delete;
 
   NoncausalTimestampFilter *GetFilter(const Node *n) {
     if (n == node_a_) {
@@ -472,39 +705,23 @@ class NoncausalOffsetEstimator {
 
   // Updates the filter for the provided node based on a sample from the
   // provided node to the other node.
-  void Sample(const Node *node,
-              aos::monotonic_clock::time_point node_delivered_time,
-              aos::monotonic_clock::time_point other_node_sent_time);
+  void Sample(const Node *node, logger::BootTimestamp node_delivered_time,
+              logger::BootTimestamp other_node_sent_time);
   // Updates the filter for the provided node based on a sample going to the
   // provided node from the other node.
-  void ReverseSample(
-      const Node *node, aos::monotonic_clock::time_point node_sent_time,
-      aos::monotonic_clock::time_point other_node_delivered_time);
+  void ReverseSample(const Node *node, logger::BootTimestamp node_sent_time,
+                     logger::BootTimestamp other_node_delivered_time);
 
   // Removes old data points from a node before the provided time.
   // Returns true if any points were popped.
-  bool Pop(const Node *node,
-           aos::monotonic_clock::time_point node_monotonic_now);
-
-  // Returns the data points from each filter.
-  size_t a_timestamps_size() const { return a_.timestamps_size(); }
-  size_t b_timestamps_size() const { return b_.timestamps_size(); }
-
-  void SetFirstFwdTime(monotonic_clock::time_point time) {
-    a_.SetFirstTime(time);
-  }
-  void SetFwdCsvFileName(std::string_view name) { a_.SetCsvFileName(name); }
-  void SetFirstRevTime(monotonic_clock::time_point time) {
-    b_.SetFirstTime(time);
-  }
-  void SetRevCsvFileName(std::string_view name) { b_.SetCsvFileName(name); }
+  bool Pop(const Node *node, logger::BootTimestamp node_monotonic_now);
 
  private:
   NoncausalTimestampFilter a_;
   NoncausalTimestampFilter b_;
 
-  const Node *const node_a_;
-  const Node *const node_b_;
+  const Node *node_a_;
+  const Node *node_b_;
 };
 
 }  // namespace message_bridge

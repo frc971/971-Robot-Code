@@ -24,6 +24,7 @@ namespace control_loops {
 namespace drivetrain {
 namespace testing {
 
+using aos::logger::BootTimestamp;
 using frc971::control_loops::drivetrain::DrivetrainConfig;
 using frc971::control_loops::drivetrain::Goal;
 using frc971::control_loops::drivetrain::LocalizerControl;
@@ -133,13 +134,13 @@ class LocalizedDrivetrainTest : public frc971::testing::ControlLoopTest {
     event_loop_factory()->SetTimeConverter(&time_converter_);
     CHECK_EQ(aos::configuration::GetNodeIndex(configuration(), roborio_), 6);
     CHECK_EQ(aos::configuration::GetNodeIndex(configuration(), pi1_), 1);
-    time_converter_.AddMonotonic({monotonic_clock::epoch() + kPiTimeOffset,
-                                  monotonic_clock::epoch() + kPiTimeOffset,
-                                  monotonic_clock::epoch() + kPiTimeOffset,
-                                  monotonic_clock::epoch() + kPiTimeOffset,
-                                  monotonic_clock::epoch() + kPiTimeOffset,
-                                  monotonic_clock::epoch() + kPiTimeOffset,
-                                  monotonic_clock::epoch()});
+    time_converter_.AddMonotonic({BootTimestamp::epoch() + kPiTimeOffset,
+                                  BootTimestamp::epoch() + kPiTimeOffset,
+                                  BootTimestamp::epoch() + kPiTimeOffset,
+                                  BootTimestamp::epoch() + kPiTimeOffset,
+                                  BootTimestamp::epoch() + kPiTimeOffset,
+                                  BootTimestamp::epoch() + kPiTimeOffset,
+                                  BootTimestamp::epoch()});
     set_team_id(frc971::control_loops::testing::kTeamNumber);
     set_battery_voltage(12.0);
 

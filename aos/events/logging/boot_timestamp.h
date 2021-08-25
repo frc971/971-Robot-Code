@@ -7,6 +7,23 @@
 
 namespace aos::logger {
 
+// Simple class representing a duration in time and a boot it is from.  This
+// gives us something to use for storing the time offset when filtering.
+struct BootDuration {
+  // Boot number for this timestamp.
+  size_t boot = 0u;
+  // Monotonic time in that boot.
+  monotonic_clock::duration duration{0};
+
+  BootDuration operator+(monotonic_clock::duration d) const {
+    return {boot, duration + d};
+  }
+
+  bool operator==(const BootDuration &m2) const {
+    return boot == m2.boot && duration == m2.duration;
+  }
+};
+
 // Simple class representing which boot and what monotonic time in that boot.
 // Boots are assumed to be sequential, and the monotonic clock resets on reboot
 // for all the compare operations.
@@ -16,12 +33,20 @@ struct BootTimestamp {
   // Monotonic time in that boot.
   monotonic_clock::time_point time = monotonic_clock::min_time;
 
+  monotonic_clock::duration time_since_epoch() const {
+    return time.time_since_epoch();
+  }
+
   static constexpr BootTimestamp min_time() {
-    return BootTimestamp{.boot = 0u, .time = monotonic_clock::min_time};
+    return BootTimestamp{.boot = std::numeric_limits<size_t>::min(),
+                         .time = monotonic_clock::min_time};
   }
   static constexpr BootTimestamp max_time() {
     return BootTimestamp{.boot = std::numeric_limits<size_t>::max(),
                          .time = monotonic_clock::max_time};
+  }
+  static constexpr BootTimestamp epoch() {
+    return BootTimestamp{.boot = 0, .time = monotonic_clock::epoch()};
   }
 
   // Compare operators.  These are implemented such that earlier boots always
@@ -33,10 +58,21 @@ struct BootTimestamp {
   bool operator>(const BootTimestamp &m2) const;
   bool operator==(const BootTimestamp &m2) const;
   bool operator!=(const BootTimestamp &m2) const;
+
+  BootTimestamp operator+(monotonic_clock::duration d) const {
+    return {boot, time + d};
+  }
+  BootTimestamp operator-(monotonic_clock::duration d) const {
+    return {boot, time - d};
+  }
+  BootTimestamp operator+(BootDuration d) const {
+    return {boot, time + d.duration};
+  }
 };
 
 std::ostream &operator<<(std::ostream &os,
                          const struct BootTimestamp &timestamp);
+std::ostream &operator<<(std::ostream &os, const struct BootDuration &duration);
 
 inline bool BootTimestamp::operator<(const BootTimestamp &m2) const {
   if (boot != m2.boot) {

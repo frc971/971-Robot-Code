@@ -6,6 +6,7 @@
 #include <string_view>
 
 #include "Eigen/Dense"
+#include "absl/container/btree_set.h"
 #include "aos/configuration.h"
 #include "aos/events/logging/logfile_utils.h"
 #include "aos/events/simulated_event_loop.h"
@@ -43,12 +44,8 @@ class TimestampProblem {
   size_t solution_node() const { return solution_node_; }
 
   // Sets and gets the base time for a node.
-  void set_base_clock(size_t i, monotonic_clock::time_point t) {
-    base_clock_[i] = t;
-  }
-  monotonic_clock::time_point base_clock(size_t i) const {
-    return base_clock_[i];
-  }
+  void set_base_clock(size_t i, logger::BootTimestamp t) { base_clock_[i] = t; }
+  logger::BootTimestamp base_clock(size_t i) const { return base_clock_[i]; }
 
   // Adds a timestamp filter from a -> b.
   //   filter[a_index]->Offset(ta) + ta => t(b_index);
@@ -59,11 +56,11 @@ class TimestampProblem {
 
   // Solves the optimization problem phrased using the symmetric Netwon's method
   // solver and returns the optimal time on each node.
-  std::vector<monotonic_clock::time_point> SolveNewton();
+  std::vector<logger::BootTimestamp> SolveNewton();
 
   // Validates the solution, returning true if it meets all the constraints, and
   // false otherwise.
-  bool ValidateSolution(std::vector<monotonic_clock::time_point> solution);
+  bool ValidateSolution(std::vector<logger::BootTimestamp> solution);
 
   // LOGs a representation of the problem.
   void Debug();
@@ -127,7 +124,7 @@ class TimestampProblem {
   // The optimization problem is solved as base_clock + time_offsets to minimize
   // numerical precision problems.  This contains all the base times.  The base
   // time corresponding to solution_node is fixed and not solved.
-  std::vector<monotonic_clock::time_point> base_clock_;
+  std::vector<logger::BootTimestamp> base_clock_;
   std::vector<bool> live_;
 
   // True if both node_mapping_ and live_nodes_ are valid.
@@ -169,6 +166,7 @@ class InterpolatedTimeConverter : public TimeConverter {
 
   // Converts a time to the distributed clock for scheduling and cross-node
   // time measurement.
+  // TODO(austin): Need to pass in boot.
   distributed_clock::time_point ToDistributedClock(
       size_t node_index, monotonic_clock::time_point time) override;
 
@@ -180,6 +178,12 @@ class InterpolatedTimeConverter : public TimeConverter {
   // Called whenever time passes this point and we can forget about it.
   void ObserveTimePassed(distributed_clock::time_point time) override;
 
+  // Queues 1 more timestammp in the interpolation list.  This is public for
+  // timestamp_extractor so it can hammer on the log until everything is queued.
+  std::optional<const std::tuple<distributed_clock::time_point,
+                                 std::vector<logger::BootTimestamp>> *>
+  QueueNextTimestamp();
+
  private:
   // Returns the next timestamp, or nullopt if there isn't one. It is assumed
   // that if there isn't one, there never will be one.
@@ -187,7 +191,7 @@ class InterpolatedTimeConverter : public TimeConverter {
   // on every monotonic clock for all the nodes in the factory that this will be
   // hooked up to.
   virtual std::optional<std::tuple<distributed_clock::time_point,
-                                   std::vector<monotonic_clock::time_point>>>
+                                   std::vector<logger::BootTimestamp>>>
   NextTimestamp() = 0;
 
   // Queues timestamps util the last time in the queue matches the provided
@@ -195,22 +199,22 @@ class InterpolatedTimeConverter : public TimeConverter {
   void QueueUntil(
       std::function<
           bool(const std::tuple<distributed_clock::time_point,
-                                std::vector<monotonic_clock::time_point>> &)>
+                                std::vector<logger::BootTimestamp>> &)>
           not_done);
 
   // The number of nodes to enforce.
   const size_t node_count_;
 
+ protected:
   // List of timestamps.
   std::deque<std::tuple<distributed_clock::time_point,
-                        std::vector<monotonic_clock::time_point>>>
+                        std::vector<logger::BootTimestamp>>>
       times_;
 
   // If true, we have popped data from times_, so anything before the start is
   // unknown.
   bool have_popped_ = false;
 
- protected:
   // The amount of time to buffer when estimating.  We care so we don't throw
   // data out of our queue too soon.  This time is indicative of how much to
   // buffer everywhere, so let's latch onto it as well until proven that there
@@ -226,21 +230,28 @@ class InterpolatedTimeConverter : public TimeConverter {
 enum class TimeComparison { kBefore, kAfter, kInvalid, kEq };
 
 // Compares two sets of times, optionally ignoring times that are min_time
-TimeComparison CompareTimes(const std::vector<monotonic_clock::time_point> &ta,
-                            const std::vector<monotonic_clock::time_point> &tb);
+TimeComparison CompareTimes(const std::vector<logger::BootTimestamp> &ta,
+                            const std::vector<logger::BootTimestamp> &tb);
 
 // Returns the maximum amount of elapsed time between the two samples in time.
 std::chrono::nanoseconds MaxElapsedTime(
-    const std::vector<monotonic_clock::time_point> &ta,
-    const std::vector<monotonic_clock::time_point> &tb);
+    const std::vector<logger::BootTimestamp> &ta,
+    const std::vector<logger::BootTimestamp> &tb);
 
 // Returns the amount of time by which ta and tb are out of order.  The primary
 // direction is defined to be the direction of the average of the offsets.  So,
 // if the average is +, and we get a -ve outlier, the absolute value of that -ve
 // outlier is the invalid distance.
 std::chrono::nanoseconds InvalidDistance(
-    const std::vector<monotonic_clock::time_point> &ta,
-    const std::vector<monotonic_clock::time_point> &tb);
+    const std::vector<logger::BootTimestamp> &ta,
+    const std::vector<logger::BootTimestamp> &tb);
+
+// Interpolates a monotonic time to a distributed time without loss of
+// precision.  Implements (d1 - d0) / (t1 - t0) * (time - t0) + d0;
+distributed_clock::time_point ToDistributedClock(
+    distributed_clock::time_point d0, distributed_clock::time_point d1,
+    monotonic_clock::time_point t0, monotonic_clock::time_point t1,
+    monotonic_clock::time_point time);
 
 // Class to hold a NoncausalOffsetEstimator per pair of communicating nodes, and
 // to estimate and set the overall time of all nodes.
@@ -283,7 +294,7 @@ class MultiNodeNoncausalOffsetEstimator final
       std::vector<logger::TimestampMapper *> timestamp_mappers);
 
   std::optional<std::tuple<distributed_clock::time_point,
-                           std::vector<monotonic_clock::time_point>>>
+                           std::vector<logger::BootTimestamp>>>
   NextTimestamp() override;
 
   // Checks that all the nodes in the graph are connected.  Needs all filters to
@@ -315,10 +326,13 @@ class MultiNodeNoncausalOffsetEstimator final
  private:
   TimestampProblem MakeProblem();
 
-  std::tuple<NoncausalTimestampFilter *,
-             std::vector<aos::monotonic_clock::time_point>, int>
+  std::tuple<NoncausalTimestampFilter *, std::vector<logger::BootTimestamp>,
+             int>
   NextSolution(TimestampProblem *problem,
-               const std::vector<aos::monotonic_clock::time_point> &base_times);
+               const std::vector<logger::BootTimestamp> &base_times);
+
+  // Writes all samples to disk.
+  void FlushAllSamples(bool finish);
 
   const Configuration *configuration_;
   const Configuration *logged_configuration_;
@@ -343,7 +357,7 @@ class MultiNodeNoncausalOffsetEstimator final
   std::vector<std::vector<FilterPair>> filters_per_node_;
 
   distributed_clock::time_point last_distributed_ = distributed_clock::epoch();
-  std::vector<aos::monotonic_clock::time_point> last_monotonics_;
+  std::vector<logger::BootTimestamp> last_monotonics_;
 
   // A mapping from node and channel to the relevant estimator.
   std::vector<std::vector<NoncausalOffsetEstimator *>> filters_per_channel_;
@@ -353,7 +367,39 @@ class MultiNodeNoncausalOffsetEstimator final
   bool first_solution_ = true;
   bool all_done_ = false;
 
+  // Optional file pointers to save the results of the noncausal filter in. This
+  // lives here so we can give each sample a distributed clock.
+  std::vector<std::vector<FILE *>> filter_fps_;
+  // Optional file pointers to save all the samples into.
+  std::vector<std::vector<FILE *>> sample_fps_;
+
   FILE *fp_ = NULL;
+
+  struct SingleNodeSamples {
+    struct CompareTimestamps {
+      bool operator()(
+          const std::pair<logger::BootTimestamp, logger::BootTimestamp> &a,
+          const std::pair<logger::BootTimestamp, logger::BootTimestamp> &b)
+          const {
+        return a.first < b.first;
+      }
+    };
+
+    // Delivered, sent timestamps for each message.
+    absl::btree_set<std::pair<logger::BootTimestamp, logger::BootTimestamp>,
+                    CompareTimestamps>
+        messages;
+  };
+
+  struct NodeSamples {
+    // List of nodes sending.
+    std::vector<SingleNodeSamples> nodes;
+  };
+
+  // List of nodes where data is delivered.
+  std::vector<NodeSamples> node_samples_;
+  // Mapping from channel to the node_index of the source node.
+  std::vector<size_t> source_node_index_;
 };
 
 }  // namespace message_bridge

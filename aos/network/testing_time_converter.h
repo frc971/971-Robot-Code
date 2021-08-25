@@ -32,27 +32,27 @@ class TestingTimeConverter final : public InterpolatedTimeConverter {
   // duration that the distributed clock elapsed by.  Note: time must always go
   // forwards.
   std::chrono::nanoseconds AddMonotonic(
-      std::vector<monotonic_clock::time_point> times);
+      std::vector<logger::BootTimestamp> times);
 
   // Adds a distributed to monotonic clock mapping to the queue.
   void AddNextTimestamp(distributed_clock::time_point time,
-                        std::vector<monotonic_clock::time_point> times);
+                        std::vector<logger::BootTimestamp> times);
 
   std::optional<std::tuple<distributed_clock::time_point,
-                           std::vector<monotonic_clock::time_point>>>
+                           std::vector<logger::BootTimestamp>>>
   NextTimestamp() override;
 
  private:
   // List of timestamps.
   std::deque<std::tuple<distributed_clock::time_point,
-                        std::vector<monotonic_clock::time_point>>>
+                        std::vector<logger::BootTimestamp>>>
       ts_;
 
   // True if there is no time queued.
   bool first_ = true;
   // The last times returned on all clocks.
   distributed_clock::time_point last_distributed_ = distributed_clock::epoch();
-  std::vector<monotonic_clock::time_point> last_monotonic_;
+  std::vector<logger::BootTimestamp> last_monotonic_;
 };
 
 }  // namespace message_bridge

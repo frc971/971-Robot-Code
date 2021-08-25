@@ -1466,8 +1466,8 @@ TEST_P(MultinodeLoggerTest, MismatchedClocks) {
   // TODO(austin): Negate...
   const chrono::nanoseconds initial_pi2_offset = chrono::seconds(1000);
 
-  time_converter_.AddMonotonic({monotonic_clock::epoch(),
-                                monotonic_clock::epoch() + initial_pi2_offset});
+  time_converter_.AddMonotonic(
+      {BootTimestamp::epoch(), BootTimestamp::epoch() + initial_pi2_offset});
   // Wait for 95 ms, (~0.1 seconds - 1/2 of the ping/pong period), and set the
   // skew to be 200 uS/s
   const chrono::nanoseconds startup_sleep1 = time_converter_.AddMonotonic(
@@ -2169,8 +2169,8 @@ TEST_P(MultinodeLoggerTest, MessageHeader) {
 // up a clock difference between 2 nodes and looking at the resulting parts.
 TEST_P(MultinodeLoggerTest, LoggerStartTime) {
   time_converter_.AddMonotonic(
-      {monotonic_clock::epoch(),
-       monotonic_clock::epoch() + chrono::seconds(1000)});
+      {BootTimestamp::epoch(),
+       BootTimestamp::epoch() + chrono::seconds(1000)});
   {
     LoggerState pi1_logger = MakeLogger(pi1_);
     LoggerState pi2_logger = MakeLogger(pi2_);
@@ -2208,8 +2208,8 @@ TEST_F(MultinodeLoggerTest, LoggerRenameFolder) {
   util::UnlinkRecursive(tmp_dir_ + "/renamefolder");
   util::UnlinkRecursive(tmp_dir_ + "/new-good");
   time_converter_.AddMonotonic(
-      {monotonic_clock::epoch(),
-       monotonic_clock::epoch() + chrono::seconds(1000)});
+      {BootTimestamp::epoch(),
+       BootTimestamp::epoch() + chrono::seconds(1000)});
   logfile_base1_ = tmp_dir_ + "/renamefolder/multi_logfile1";
   logfile_base2_ = tmp_dir_ + "/renamefolder/multi_logfile2";
   logfiles_ = MakeLogFiles(logfile_base1_, logfile_base2_);
@@ -2234,8 +2234,8 @@ TEST_F(MultinodeLoggerTest, LoggerRenameFolder) {
 // Test that renaming the file base dies.
 TEST_P(MultinodeLoggerDeathTest, LoggerRenameFile) {
   time_converter_.AddMonotonic(
-      {monotonic_clock::epoch(),
-       monotonic_clock::epoch() + chrono::seconds(1000)});
+      {BootTimestamp::epoch(),
+       BootTimestamp::epoch() + chrono::seconds(1000)});
   util::UnlinkRecursive(tmp_dir_ + "/renamefile");
   logfile_base1_ = tmp_dir_ + "/renamefile/multi_logfile1";
   logfile_base2_ = tmp_dir_ + "/renamefile/multi_logfile2";
@@ -2413,8 +2413,8 @@ TEST_P(MultinodeLoggerDeathTest, RemoteReboot) {
 TEST_P(MultinodeLoggerTest, OneDirectionWithNegativeSlope) {
   event_loop_factory_.GetNodeEventLoopFactory(pi1_)->Disconnect(pi2_);
   time_converter_.AddMonotonic(
-      {monotonic_clock::epoch(),
-       monotonic_clock::epoch() + chrono::seconds(1000)});
+      {BootTimestamp::epoch(),
+       BootTimestamp::epoch() + chrono::seconds(1000)});
 
   time_converter_.AddMonotonic(
       {chrono::milliseconds(10000),
@@ -2439,8 +2439,8 @@ TEST_P(MultinodeLoggerTest, OneDirectionWithNegativeSlope) {
 TEST_P(MultinodeLoggerTest, OneDirectionWithPositiveSlope) {
   event_loop_factory_.GetNodeEventLoopFactory(pi1_)->Disconnect(pi2_);
   time_converter_.AddMonotonic(
-      {monotonic_clock::epoch(),
-       monotonic_clock::epoch() + chrono::seconds(500)});
+      {BootTimestamp::epoch(),
+       BootTimestamp::epoch() + chrono::seconds(500)});
 
   time_converter_.AddMonotonic(
       {chrono::milliseconds(10000),
@@ -2466,8 +2466,8 @@ TEST_P(MultinodeLoggerTest, DeadNode) {
   event_loop_factory_.GetNodeEventLoopFactory(pi1_)->Disconnect(pi2_);
   event_loop_factory_.GetNodeEventLoopFactory(pi2_)->Disconnect(pi1_);
   time_converter_.AddMonotonic(
-      {monotonic_clock::epoch(),
-       monotonic_clock::epoch() + chrono::seconds(1000)});
+      {BootTimestamp::epoch(),
+       BootTimestamp::epoch() + chrono::seconds(1000)});
   {
     LoggerState pi1_logger = MakeLogger(pi1_);
 

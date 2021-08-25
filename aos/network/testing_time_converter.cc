@@ -16,7 +16,7 @@ namespace chrono = std::chrono;
 
 TestingTimeConverter ::TestingTimeConverter(size_t node_count)
     : InterpolatedTimeConverter(node_count),
-      last_monotonic_(node_count, monotonic_clock::epoch()) {
+      last_monotonic_(node_count, logger::BootTimestamp::epoch()) {
   CHECK_GE(node_count, 1u);
 }
 
@@ -37,7 +37,7 @@ chrono::nanoseconds TestingTimeConverter::AddMonotonic(
   CHECK_EQ(times.size(), last_monotonic_.size());
   for (size_t i = 0; i < times.size(); ++i) {
     CHECK_GT(times[i].count(), 0);
-    last_monotonic_[i] += times[i];
+    last_monotonic_[i].time += times[i];
   }
   chrono::nanoseconds dt(0);
   if (!first_) {
@@ -51,14 +51,15 @@ chrono::nanoseconds TestingTimeConverter::AddMonotonic(
 }
 
 chrono::nanoseconds TestingTimeConverter::AddMonotonic(
-    std::vector<monotonic_clock::time_point> times) {
+    std::vector<logger::BootTimestamp> times) {
   CHECK_EQ(times.size(), last_monotonic_.size());
   chrono::nanoseconds dt(0);
   if (!first_) {
-    dt = times[0] - last_monotonic_[0];
+    CHECK_EQ(times[0].boot, last_monotonic_[0].boot);
+    dt = times[0].time - last_monotonic_[0].time;
     for (size_t i = 0; i < times.size(); ++i) {
       CHECK_GT(times[i], last_monotonic_[i]);
-      dt = std::max(dt, times[i] - times[0]);
+      dt = std::max(dt, times[i].time - times[0].time);
     }
     last_distributed_ += dt;
     last_monotonic_ = times;
@@ -72,7 +73,7 @@ chrono::nanoseconds TestingTimeConverter::AddMonotonic(
 
 void TestingTimeConverter::AddNextTimestamp(
     distributed_clock::time_point time,
-    std::vector<monotonic_clock::time_point> times) {
+    std::vector<logger::BootTimestamp> times) {
   CHECK_EQ(times.size(), last_monotonic_.size());
   if (!first_) {
     CHECK_GT(time, last_distributed_);
@@ -89,7 +90,7 @@ void TestingTimeConverter::AddNextTimestamp(
 }
 
 std::optional<std::tuple<distributed_clock::time_point,
-                         std::vector<monotonic_clock::time_point>>>
+                         std::vector<logger::BootTimestamp>>>
 TestingTimeConverter::NextTimestamp() {
   CHECK(!first_) << ": Tried to pull a timestamp before one was added.  This "
                     "is unlikely to be what you want.";

@@ -1484,7 +1484,8 @@ TimestampedMessage LogReader::State::PopOldest() {
 
     // TODO(austin): We probably want to push this down into the timestamp
     // mapper directly.
-    filter->Pop(event_loop_->node(), event_loop_->monotonic_now());
+    // TODO(austin): This hard-codes the boot to 0.  We need to fix that.
+    filter->Pop(event_loop_->node(), {0, event_loop_->monotonic_now()});
   }
   VLOG(1) << "Popped " << result
           << configuration::CleanedChannelToString(

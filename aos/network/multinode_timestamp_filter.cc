@@ -24,6 +24,7 @@ namespace aos {
 namespace message_bridge {
 namespace {
 namespace chrono = std::chrono;
+using aos::logger::BootDuration;
 using aos::logger::BootTimestamp;
 
 const Eigen::IOFormat kHeavyFormat(Eigen::StreamPrecision, Eigen::DontAlignCols,
@@ -45,8 +46,7 @@ TimestampProblem::TimestampProblem(size_t count) {
 // ms/s.  Figure out how to define it.  Do this last.  This lets us handle
 // constraints going away, and constraints close in time.
 
-bool TimestampProblem::ValidateSolution(
-    std::vector<monotonic_clock::time_point> solution) {
+bool TimestampProblem::ValidateSolution(std::vector<BootTimestamp> solution) {
   bool success = true;
   for (size_t i = 0u; i < filters_.size(); ++i) {
     for (const struct FilterPair &filter : filters_[i]) {
@@ -199,7 +199,7 @@ Eigen::VectorXd TimestampProblem::Newton(
   return a.colPivHouseholderQr().solve(b);
 }
 
-std::vector<monotonic_clock::time_point> TimestampProblem::SolveNewton() {
+std::vector<BootTimestamp> TimestampProblem::SolveNewton() {
   constexpr int kMaxIterations = 200;
   MaybeUpdateNodeMapping();
   VLOG(1) << "Solving for node " << solution_node_ << " at "
@@ -255,7 +255,7 @@ std::vector<monotonic_clock::time_point> TimestampProblem::SolveNewton() {
           std::abs(data(solution_index)) > 1000) {
         int64_t dsolution =
             static_cast<int64_t>(std::round(data(solution_index)));
-        base_clock_[j] += chrono::nanoseconds(dsolution);
+        base_clock_[j].time += chrono::nanoseconds(dsolution);
         data(solution_index) -= dsolution;
       }
     }
@@ -270,16 +270,17 @@ std::vector<monotonic_clock::time_point> TimestampProblem::SolveNewton() {
   VLOG(1) << "Solving for node " << solution_node_ << " of "
           << base_clock(solution_node_) << " in " << solution_number
           << " cycles";
-  std::vector<monotonic_clock::time_point> result(size());
+  std::vector<BootTimestamp> result(size());
   for (size_t i = 0; i < size(); ++i) {
     if (live(i)) {
-      result[i] =
-          base_clock(i) + std::chrono::nanoseconds(static_cast<int64_t>(
-                              std::round(data(NodeToFullSolutionIndex(i)))));
+      result[i].boot = base_clock(i).boot;
+      result[i].time = base_clock(i).time +
+                       std::chrono::nanoseconds(static_cast<int64_t>(
+                           std::round(data(NodeToFullSolutionIndex(i)))));
       VLOG(1) << "live  " << result[i] << " "
               << data(NodeToFullSolutionIndex(i));
     } else {
-      result[i] = monotonic_clock::min_time;
+      result[i] = BootTimestamp::min_time();
       VLOG(1) << "dead  " << result[i];
     }
   }
@@ -328,27 +329,36 @@ void TimestampProblem::Debug() {
   }
 }
 
+std::optional<const std::tuple<distributed_clock::time_point,
+                               std::vector<BootTimestamp>> *>
+InterpolatedTimeConverter::QueueNextTimestamp() {
+  std::optional<
+      std::tuple<distributed_clock::time_point, std::vector<BootTimestamp>>>
+      next_time = NextTimestamp();
+  if (!next_time) {
+    VLOG(1) << "Last timestamp, calling it quits";
+    at_end_ = true;
+    return std::nullopt;
+  }
+
+  VLOG(1) << "Fetched next timestamp while solving: " << std::get<0>(*next_time)
+          << " ->";
+  for (BootTimestamp t : std::get<1>(*next_time)) {
+    VLOG(1) << "  " << t;
+  }
+
+  // TODO(austin): Figure out how to communicate the reboot up to the factory.
+  CHECK_EQ(node_count_, std::get<1>(*next_time).size());
+  times_.emplace_back(std::move(*next_time));
+  return &times_.back();
+}
+
 void InterpolatedTimeConverter::QueueUntil(
-    std::function<
-        bool(const std::tuple<distributed_clock::time_point,
-                              std::vector<monotonic_clock::time_point>> &)>
+    std::function<bool(const std::tuple<distributed_clock::time_point,
+                                        std::vector<BootTimestamp>> &)>
         not_done) {
   while (!at_end_ && (times_.empty() || not_done(times_.back()))) {
-    std::optional<std::tuple<distributed_clock::time_point,
-                             std::vector<monotonic_clock::time_point>>>
-        next_time = NextTimestamp();
-    if (!next_time) {
-      VLOG(1) << "Last timestamp, calling it quits";
-      at_end_ = true;
-      break;
-    }
-    VLOG(1) << "Fetched next timestamp while solving: "
-            << std::get<0>(*next_time) << " ->";
-    for (monotonic_clock::time_point t : std::get<1>(*next_time)) {
-      VLOG(1) << "  " << t;
-    }
-    CHECK_EQ(node_count_, std::get<1>(*next_time).size());
-    times_.emplace_back(std::move(*next_time));
+    QueueNextTimestamp();
   }
 
   CHECK(!times_.empty())
@@ -378,56 +388,10 @@ void InterpolatedTimeConverter::ObserveTimePassed(
   }
 }
 
-distributed_clock::time_point InterpolatedTimeConverter::ToDistributedClock(
-    size_t node_index, monotonic_clock::time_point time) {
-  CHECK_LT(node_index, node_count_);
-  // If there is only one node, time estimation makes no sense.  Just return
-  // unity time.
-  if (node_count_ == 1u) {
-    return distributed_clock::epoch() + time.time_since_epoch();
-  }
-
-  // Make sure there are enough timestamps in the queue.
-  QueueUntil(
-      [time, node_index](
-          const std::tuple<distributed_clock::time_point,
-                           std::vector<monotonic_clock::time_point>> &t) {
-        return std::get<1>(t)[node_index] < time;
-      });
-
-  // Before the beginning needs to have 0 slope otherwise time jumps when
-  // timestamp 2 happens.
-  if (times_.size() == 1u || time < std::get<1>(times_[0])[node_index]) {
-    if (time < std::get<1>(times_[0])[node_index]) {
-      CHECK(!have_popped_)
-          << ": Trying to interpolate time " << time
-          << " but we have forgotten the relevant points already.";
-    }
-    const distributed_clock::time_point result =
-        time - std::get<1>(times_[0])[node_index] + std::get<0>(times_[0]);
-    VLOG(2) << "ToDistributedClock(" << node_index << ", " << time << ") -> "
-            << result;
-    return result;
-  }
-
-  // Now, find the corresponding timestamps.  Search from the back since that's
-  // where most of the times we care about will be.
-  size_t index = times_.size() - 2u;
-  while (index > 0u) {
-    if (std::get<1>(times_[index])[node_index] <= time) {
-      break;
-    }
-    --index;
-  }
-
-  // Interpolate with the two of these.
-  const distributed_clock::time_point d0 = std::get<0>(times_[index]);
-  const distributed_clock::time_point d1 = std::get<0>(times_[index + 1]);
-
-  const monotonic_clock::time_point t0 = std::get<1>(times_[index])[node_index];
-  const monotonic_clock::time_point t1 =
-      std::get<1>(times_[index + 1])[node_index];
-
+distributed_clock::time_point ToDistributedClock(
+    distributed_clock::time_point d0, distributed_clock::time_point d1,
+    monotonic_clock::time_point t0, monotonic_clock::time_point t1,
+    monotonic_clock::time_point time) {
   const chrono::nanoseconds dt = (t1 - t0);
 
   CHECK_NE(dt.count(), 0u) << " t0 " << t0 << " t1 " << t1 << " d0 " << d0
@@ -444,9 +408,67 @@ distributed_clock::time_point InterpolatedTimeConverter::ToDistributedClock(
       absl::int128((time - t0).count()) * absl::int128((d1 - d0).count());
   numerator += numerator > 0 ? absl::int128(dt.count() / 2)
                              : -absl::int128(dt.count() / 2);
+  return d0 + std::chrono::nanoseconds(
+                  static_cast<int64_t>(numerator / absl::int128(dt.count())));
+}
+
+distributed_clock::time_point InterpolatedTimeConverter::ToDistributedClock(
+    size_t node_index, monotonic_clock::time_point time) {
+  CHECK_LT(node_index, node_count_);
+  // If there is only one node, time estimation makes no sense.  Just return
+  // unity time.
+  if (node_count_ == 1u) {
+    return distributed_clock::epoch() + time.time_since_epoch();
+  }
+
+  // Make sure there are enough timestamps in the queue.
+  QueueUntil(
+      [time, node_index](const std::tuple<distributed_clock::time_point,
+                                          std::vector<BootTimestamp>> &t) {
+        return std::get<1>(t)[node_index].time < time;
+      });
+
+  // Before the beginning needs to have 0 slope otherwise time jumps when
+  // timestamp 2 happens.
+  if (times_.size() == 1u || time < std::get<1>(times_[0])[node_index].time) {
+    if (time < std::get<1>(times_[0])[node_index].time) {
+      CHECK(!have_popped_)
+          << ": Trying to interpolate time " << time
+          << " but we have forgotten the relevant points already.";
+    }
+    const distributed_clock::time_point result =
+        time - std::get<1>(times_[0])[node_index].time + std::get<0>(times_[0]);
+    VLOG(2) << "ToDistributedClock(" << node_index << ", " << time << ") -> "
+            << result;
+    return result;
+  }
+
+  // Now, find the corresponding timestamps.  Search from the back since that's
+  // where most of the times we care about will be.
+  size_t index = times_.size() - 2u;
+  while (index > 0u) {
+    // TODO(austin): Binary search.
+    if (std::get<1>(times_[index])[node_index].time <= time) {
+      break;
+    }
+    --index;
+  }
+
+  // Interpolate with the two of these.
+  const distributed_clock::time_point d0 = std::get<0>(times_[index]);
+  const distributed_clock::time_point d1 = std::get<0>(times_[index + 1]);
+
+  // TODO(austin): We should extrapolate if the boot changes.
+  CHECK_EQ(std::get<1>(times_[index])[node_index].boot,
+           std::get<1>(times_[index + 1])[node_index].boot);
+  const monotonic_clock::time_point t0 =
+      std::get<1>(times_[index])[node_index].time;
+  const monotonic_clock::time_point t1 =
+      std::get<1>(times_[index + 1])[node_index].time;
+
   const distributed_clock::time_point result =
-      d0 + std::chrono::nanoseconds(
-               static_cast<int64_t>(numerator / absl::int128(dt.count())));
+      message_bridge::ToDistributedClock(d0, d1, t0, t1, time);
+
   VLOG(2) << "ToDistributedClock(" << node_index << ", " << time << ") -> "
           << result;
   return result;
@@ -464,7 +486,7 @@ monotonic_clock::time_point InterpolatedTimeConverter::FromDistributedClock(
   // Make sure there are enough timestamps in the queue.
   QueueUntil(
       [time](const std::tuple<distributed_clock::time_point,
-                              std::vector<monotonic_clock::time_point>> &t) {
+                              std::vector<BootTimestamp>> &t) {
         return std::get<0>(t) < time;
       });
 
@@ -475,7 +497,7 @@ monotonic_clock::time_point InterpolatedTimeConverter::FromDistributedClock(
           << " but we have forgotten the relevant points already.";
     }
     monotonic_clock::time_point result =
-        time - std::get<0>(times_[0]) + std::get<1>(times_[0])[node_index];
+        time - std::get<0>(times_[0]) + std::get<1>(times_[0])[node_index].time;
     VLOG(2) << "FromDistributedClock(" << node_index << ", " << time << ") -> "
             << result;
     return result;
@@ -495,9 +517,12 @@ monotonic_clock::time_point InterpolatedTimeConverter::FromDistributedClock(
   const distributed_clock::time_point d0 = std::get<0>(times_[index]);
   const distributed_clock::time_point d1 = std::get<0>(times_[index + 1]);
 
-  const monotonic_clock::time_point t0 = std::get<1>(times_[index])[node_index];
+  CHECK_EQ(std::get<1>(times_[index])[node_index].boot,
+           std::get<1>(times_[index + 1])[node_index].boot);
+  const monotonic_clock::time_point t0 =
+      std::get<1>(times_[index])[node_index].time;
   const monotonic_clock::time_point t1 =
-      std::get<1>(times_[index + 1])[node_index];
+      std::get<1>(times_[index + 1])[node_index].time;
 
   const chrono::nanoseconds dd = d1 - d0;
 
@@ -537,7 +562,7 @@ MultiNodeNoncausalOffsetEstimator::MultiNodeNoncausalOffsetEstimator(
       logged_configuration_(logged_configuration),
       skip_order_validation_(skip_order_validation) {
   filters_per_node_.resize(NodesCount());
-  last_monotonics_.resize(NodesCount(), aos::monotonic_clock::epoch());
+  last_monotonics_.resize(NodesCount(), BootTimestamp::epoch());
   if (FLAGS_timestamps_to_csv &&
       configuration::MultiNode(logged_configuration)) {
     fp_ = fopen("/tmp/timestamp_noncausal_offsets.csv", "w");
@@ -546,21 +571,54 @@ MultiNodeNoncausalOffsetEstimator::MultiNodeNoncausalOffsetEstimator(
       fprintf(fp_, ", %s", node->name()->c_str());
     }
     fprintf(fp_, "\n");
+    filter_fps_.resize(NodesCount());
+    for (auto &filter_fp : filter_fps_) {
+      filter_fp.resize(NodesCount(), nullptr);
+    }
+    sample_fps_.resize(NodesCount());
+    for (auto &sample_fp : sample_fps_) {
+      sample_fp.resize(NodesCount(), nullptr);
+    }
+
+    node_samples_.resize(NodesCount());
+    for (NodeSamples &node_samples : node_samples_) {
+      node_samples.nodes.resize(NodesCount());
+    }
+
+    source_node_index_ = configuration::SourceNodeIndex(logged_configuration);
   }
 }
 
 MultiNodeNoncausalOffsetEstimator::~MultiNodeNoncausalOffsetEstimator() {
+  FlushAllSamples(true);
   if (fp_) {
     fclose(fp_);
     fp_ = NULL;
+  }
+  if (filter_fps_.size() != 0) {
+    for (std::vector<FILE *> &filter_fp : filter_fps_) {
+      for (FILE *&fp : filter_fp) {
+        if (fp != nullptr) {
+          fclose(fp);
+        }
+      }
+    }
+  }
+  if (sample_fps_.size() != 0) {
+    for (std::vector<FILE *> &filter_fp : sample_fps_) {
+      for (FILE *&fp : filter_fp) {
+        if (fp != nullptr) {
+          fclose(fp);
+        }
+      }
+    }
   }
   if (all_done_) {
     size_t node_a_index = 0;
     for (const auto &filters : filters_per_node_) {
       for (const auto &filter : filters) {
-        std::optional<
-            std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>>
-            next = filter.filter->Consume();
+        std::optional<std::tuple<BootTimestamp, BootDuration>> next =
+            filter.filter->Consume();
         if (next) {
           skip_order_validation_
               ? LOG(WARNING)
@@ -572,6 +630,15 @@ MultiNodeNoncausalOffsetEstimator::~MultiNodeNoncausalOffsetEstimator() {
         }
       }
       ++node_a_index;
+    }
+  }
+
+  // Make sure everything is flushed to disk.
+  if (!node_samples_.empty()) {
+    for (NodeSamples &node : node_samples_) {
+      for (SingleNodeSamples &timestamps : node.nodes) {
+        CHECK (timestamps.messages.empty());
+      }
     }
   }
 }
@@ -587,19 +654,6 @@ void MultiNodeNoncausalOffsetEstimator::Start(
 
 void MultiNodeNoncausalOffsetEstimator::Start(
     std::vector<monotonic_clock::time_point> times) {
-  for (std::pair<const std::tuple<const Node *, const Node *>,
-                 message_bridge::NoncausalOffsetEstimator> &filter : filters_) {
-    const Node *const node_a = std::get<0>(filter.first);
-    const size_t node_a_index =
-        configuration::GetNodeIndex(configuration_, node_a);
-    const Node *const node_b = std::get<1>(filter.first);
-    const size_t node_b_index =
-        configuration::GetNodeIndex(configuration_, node_b);
-
-    filter.second.SetFirstFwdTime(times[node_a_index]);
-    filter.second.SetFirstRevTime(times[node_b_index]);
-  }
-
   std::fstream s("/tmp/timestamp_noncausal_starttime.csv", s.trunc | s.out);
   CHECK(s.is_open());
   for (const Node *node : configuration::GetNodes(configuration())) {
@@ -629,9 +683,8 @@ MultiNodeNoncausalOffsetEstimator::GetFilter(const Node *node_a,
 
   if (it == filters_.end()) {
     auto &x = filters_
-                  .insert(std::make_pair(
-                      tuple,
-                      message_bridge::NoncausalOffsetEstimator(node_a, node_b)))
+                  .emplace(tuple, message_bridge::NoncausalOffsetEstimator(
+                                      node_a, node_b))
                   .first->second;
 
     const size_t node_a_index =
@@ -644,16 +697,6 @@ MultiNodeNoncausalOffsetEstimator::GetFilter(const Node *node_a,
                                                  node_b_index);
     filters_per_node_[node_b_index].emplace_back(x.GetFilter(node_b),
                                                  node_a_index);
-
-    if (FLAGS_timestamps_to_csv) {
-      x.SetFwdCsvFileName(absl::StrCat("/tmp/timestamp_noncausal_",
-                                       node_a->name()->string_view(), "_",
-                                       node_b->name()->string_view()));
-      x.SetRevCsvFileName(absl::StrCat("/tmp/timestamp_noncausal_",
-                                       node_b->name()->string_view(), "_",
-                                       node_a->name()->string_view()));
-    }
-
     return &x;
   } else {
     return &it->second;
@@ -695,9 +738,7 @@ void MultiNodeNoncausalOffsetEstimator::SetTimestampMappers(
           << ": Timestamps queued before we registered the timestamp hooks.";
       timestamp_mapper->set_timestamp_callback(
           [this, node_index](logger::TimestampedMessage *msg) {
-            // TODO(austin): Funnel the boot index through the offset estimator.
-            CHECK_EQ(msg->monotonic_remote_time.boot, 0u);
-            if (msg->monotonic_remote_time.time != monotonic_clock::min_time) {
+            if (msg->monotonic_remote_time != BootTimestamp::min_time()) {
               // Got a forwarding timestamp!
               NoncausalOffsetEstimator *filter =
                   filters_per_channel_[node_index][msg->channel_index];
@@ -706,18 +747,41 @@ void MultiNodeNoncausalOffsetEstimator::SetTimestampMappers(
 
               // Call the correct method depending on if we are the forward or
               // reverse direction here.
-              CHECK_EQ(msg->monotonic_event_time.boot, 0u);
-              filter->Sample(node, msg->monotonic_event_time.time,
-                             msg->monotonic_remote_time.time);
+              filter->Sample(node, msg->monotonic_event_time,
+                             msg->monotonic_remote_time);
 
-              CHECK_EQ(msg->monotonic_timestamp_time.boot, 0u);
-              if (msg->monotonic_timestamp_time.time !=
-                  monotonic_clock::min_time) {
+              if (!node_samples_.empty()) {
+                const size_t sending_node_index =
+                    source_node_index_[msg->channel_index];
+                // The message went from node sending_node_index to
+                // node_index.  monotonic_remote_time is the time it was sent,
+                // and monotonic_event_time was the time it was received.
+                node_samples_[node_index]
+                    .nodes[sending_node_index]
+                    .messages.emplace(std::make_pair(
+                        msg->monotonic_event_time, msg->monotonic_remote_time));
+              }
+
+              if (msg->monotonic_timestamp_time != BootTimestamp::min_time()) {
                 // TODO(austin): This assumes that this timestamp is only logged
                 // on the node which sent the data.  That is correct for now,
                 // but should be explicitly checked somewhere.
-                filter->ReverseSample(node, msg->monotonic_event_time.time,
-                                      msg->monotonic_timestamp_time.time);
+                filter->ReverseSample(node, msg->monotonic_event_time,
+                                      msg->monotonic_timestamp_time);
+
+                if (!node_samples_.empty()) {
+                  const size_t sending_node_index =
+                      source_node_index_[msg->channel_index];
+                  // The timestamp then went back from node node_index to
+                  // sending_node_index.  monotonic_event_time is the time it
+                  // was sent, and monotonic_timestamp_time was the time it was
+                  // received.
+                  node_samples_[sending_node_index]
+                      .nodes[node_index]
+                      .messages.emplace(
+                          std::make_pair(msg->monotonic_timestamp_time,
+                                         msg->monotonic_event_time));
+                }
               }
             }
           });
@@ -728,9 +792,8 @@ void MultiNodeNoncausalOffsetEstimator::SetTimestampMappers(
   timestamp_mappers_ = std::move(timestamp_mappers);
 }
 
-TimeComparison CompareTimes(
-    const std::vector<monotonic_clock::time_point> &ta,
-    const std::vector<monotonic_clock::time_point> &tb) {
+TimeComparison CompareTimes(const std::vector<BootTimestamp> &ta,
+                            const std::vector<BootTimestamp> &tb) {
   if (ta.size() != tb.size() || ta.empty()) {
     return TimeComparison::kInvalid;
   }
@@ -739,14 +802,17 @@ TimeComparison CompareTimes(
   bool is_eq = true;
   bool some_eq = false;
   for (size_t i = 0; i < ta.size(); ++i) {
-    if (tb[i] == monotonic_clock::min_time ||
-        ta[i] == monotonic_clock::min_time) {
+    if (tb[i] == BootTimestamp::min_time() ||
+        ta[i] == BootTimestamp::min_time()) {
       continue;
     }
-    if (ta[i] < tb[i]) {
+    if (ta[i].boot != tb[i].boot) {
+      continue;
+    }
+    if (ta[i].time < tb[i].time) {
       is_less = true;
       is_eq = false;
-    } else if (ta[i] > tb[i]) {
+    } else if (ta[i].time > tb[i].time) {
       is_greater = true;
       is_eq = false;
     } else {
@@ -776,41 +842,44 @@ TimeComparison CompareTimes(
   }
 }
 
-chrono::nanoseconds MaxElapsedTime(
-    const std::vector<monotonic_clock::time_point> &ta,
-    const std::vector<monotonic_clock::time_point> &tb) {
+chrono::nanoseconds MaxElapsedTime(const std::vector<BootTimestamp> &ta,
+                                   const std::vector<BootTimestamp> &tb) {
   CHECK_EQ(ta.size(), tb.size());
   CHECK(!ta.empty());
   bool first = true;
   chrono::nanoseconds dt;
   for (size_t i = 0; i < ta.size(); ++i) {
     // Skip any invalid timestamps.
-    if (ta[i] == monotonic_clock::min_time ||
-        tb[i] == monotonic_clock::min_time) {
+    if (ta[i] == BootTimestamp::min_time() ||
+        tb[i] == BootTimestamp::min_time()) {
       continue;
     }
 
-    const chrono::nanoseconds dti = tb[i] - ta[i];
-    if (first || dti > dt) {
-      dt = dti;
+    if (ta[i].boot == tb[i].boot) {
+      const chrono::nanoseconds dti = tb[i].time - ta[i].time;
+      if (first || dti > dt) {
+        dt = dti;
+      }
+      first = false;
     }
-    first = false;
   }
+  CHECK(!first);
   return dt;
 }
 
-chrono::nanoseconds InvalidDistance(
-    const std::vector<monotonic_clock::time_point> &ta,
-    const std::vector<monotonic_clock::time_point> &tb) {
+chrono::nanoseconds InvalidDistance(const std::vector<BootTimestamp> &ta,
+                                    const std::vector<BootTimestamp> &tb) {
   // Use an int128 so we have no concern about number of times or size of the
   // difference.
   absl::int128 sum = 0;
   for (size_t i = 0; i < ta.size(); ++i) {
-    if (ta[i] == monotonic_clock::min_time ||
-        tb[i] == monotonic_clock::min_time) {
+    if (ta[i] == BootTimestamp::min_time() ||
+        tb[i] == BootTimestamp::min_time()) {
       continue;
     }
-    sum += (ta[i] - tb[i]).count();
+    if (ta[i].boot == tb[i].boot) {
+      sum += (ta[i].time - tb[i].time).count();
+    }
   }
   // Pick the direction and sign to return.
   if (sum < 0) {
@@ -1020,17 +1089,14 @@ TimestampProblem MultiNodeNoncausalOffsetEstimator::MakeProblem() {
             // invalidate the point.  Do this for both nodes to pick up all the
             // timestamps.
             if (filter.filter->has_unobserved_line()) {
-              // TODO(austin): Handle boots properly...
               timestamp_mappers_[node_a_index]->QueueUntil(
-                  BootTimestamp{.boot = 0u,
-                                .time = filter.filter->unobserved_line_end() +
-                                        time_estimation_buffer_seconds_});
+                  filter.filter->unobserved_line_end() +
+                  time_estimation_buffer_seconds_);
 
               if (timestamp_mappers_[node_b_index] != nullptr) {
-                timestamp_mappers_[node_b_index]->QueueUntil(BootTimestamp{
-                    .boot = 0u,
-                    .time = filter.filter->unobserved_line_remote_end() +
-                            time_estimation_buffer_seconds_});
+                timestamp_mappers_[node_b_index]->QueueUntil(
+                    filter.filter->unobserved_line_remote_end() +
+                    time_estimation_buffer_seconds_);
               }
             }
           }
@@ -1091,52 +1157,73 @@ TimestampProblem MultiNodeNoncausalOffsetEstimator::MakeProblem() {
   return problem;
 }
 
-std::tuple<NoncausalTimestampFilter *,
-           std::vector<aos::monotonic_clock::time_point>, int>
+std::tuple<NoncausalTimestampFilter *, std::vector<BootTimestamp>, int>
 MultiNodeNoncausalOffsetEstimator::NextSolution(
-    TimestampProblem *problem,
-    const std::vector<aos::monotonic_clock::time_point> &base_times) {
+    TimestampProblem *problem, const std::vector<BootTimestamp> &base_times) {
   // Ok, now solve for the minimum time on each channel.
-  std::vector<aos::monotonic_clock::time_point> result_times;
+  std::vector<BootTimestamp> result_times;
   NoncausalTimestampFilter *next_filter = nullptr;
   size_t solution_index = 0;
   {
     size_t node_a_index = 0;
     for (const auto &filters : filters_per_node_) {
       VLOG(1) << "Investigating filter for node " << node_a_index;
-      monotonic_clock::time_point next_node_time = monotonic_clock::max_time;
+      BootTimestamp next_node_time = BootTimestamp::max_time();
+      BootDuration next_node_duration;
       NoncausalTimestampFilter *next_node_filter = nullptr;
       // Find the oldest time for each node in each filter, and solve for that
       // time.  That gives us the next timestamp for this node.
+      size_t filter_index = 0;
       for (const auto &filter : filters) {
-        std::optional<
-            std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>>
-            candidate = filter.filter->Observe();
+        std::optional<std::tuple<BootTimestamp, BootDuration>> candidate =
+            filter.filter->Observe();
 
         if (candidate) {
+          VLOG(1) << "Candidate for node " << node_a_index << " filter "
+                  << filter_index << " is " << std::get<0>(*candidate);
           if (std::get<0>(*candidate) < next_node_time) {
             next_node_time = std::get<0>(*candidate);
+            next_node_duration = std::get<1>(*candidate);
             next_node_filter = filter.filter;
           }
         }
+        ++filter_index;
       }
 
       // Found no active filters.  Either this node is off, or disconnected, or
       // we are before the log file starts or after the log file ends.
-      if (next_node_time == monotonic_clock::max_time) {
+      if (next_node_time == BootTimestamp::max_time()) {
         ++node_a_index;
         continue;
       }
+      VLOG(1) << "Trying " << next_node_time << " " << next_node_duration
+              << " for node " << node_a_index;
 
-      // Optimize, and save the time into times if earlier than time.
-      for (size_t node_index = 0; node_index < base_times.size();
-           ++node_index) {
-        // Offset everything based on the elapsed time since the last solution
-        // on the node we are solving for.  The rate that time elapses should be
-        // ~1.
-        problem->set_base_clock(
-            node_index, base_times[node_index] +
-                            (next_node_time - base_times[node_a_index]));
+      // TODO(austin): If we start supporting only having 1 direction of
+      // timestamps, we might need to change our assumptions around
+      // BootTimestamp and BootDuration.
+
+      // If we haven't rebooted, we can seed the optimization problem with a
+      // pretty good initial guess.
+      if (next_node_time.boot == base_times[node_a_index].boot) {
+        // Optimize, and save the time into times if earlier than time.
+        for (size_t node_index = 0; node_index < base_times.size();
+             ++node_index) {
+          // Offset everything based on the elapsed time since the last solution
+          // on the node we are solving for.  The rate that time elapses should
+          // be ~1.
+          problem->set_base_clock(
+              node_index,
+              {base_times[node_index].boot,
+               base_times[node_index].time +
+                   (next_node_time.time - base_times[node_a_index].time)});
+        }
+      } else {
+        // Otherwise just pick the base time from before to try.
+        for (size_t node_index = 0; node_index < base_times.size();
+             ++node_index) {
+          problem->set_base_clock(node_index, base_times[node_index]);
+        }
       }
 
       problem->set_solution_node(node_a_index);
@@ -1144,9 +1231,8 @@ MultiNodeNoncausalOffsetEstimator::NextSolution(
       if (VLOG_IS_ON(2)) {
         problem->Debug();
       }
-      // TODO(austin): Can we cache?  Solving is expensive.
-      std::vector<monotonic_clock::time_point> solution =
-          problem->SolveNewton();
+      // TODO(austin): Solve all problems at once :)
+      std::vector<BootTimestamp> solution = problem->SolveNewton();
 
       // Bypass checking if order validation is turned off.  This lets us dump a
       // CSV file so we can view the problem and figure out what to do.  The
@@ -1199,7 +1285,8 @@ MultiNodeNoncausalOffsetEstimator::NextSolution(
                     << "ns";
             for (size_t i = 0; i < result_times.size(); ++i) {
               VLOG(1) << "  " << result_times[i] << " vs " << solution[i]
-                      << " -> " << (result_times[i] - solution[i]).count()
+                      << " -> "
+                      << (result_times[i].time - solution[i].time).count()
                       << "ns";
             }
             VLOG(1) << "Ignoring because it is close enough.";
@@ -1210,11 +1297,12 @@ MultiNodeNoncausalOffsetEstimator::NextSolution(
           // solution...  This is an internal failure because that means time
           // goes backwards on a node.
           CHECK_EQ(result_times.size(), solution.size());
-          LOG(INFO) << "Times can't be compared by "
-                    << InvalidDistance(result_times, solution).count() << "ns";
+          LOG(INFO) << "Times can't be compared by " << invalid_distance.count()
+                    << "ns";
           for (size_t i = 0; i < result_times.size(); ++i) {
             LOG(INFO) << "  " << result_times[i] << " vs " << solution[i]
-                      << " -> " << (result_times[i] - solution[i]).count()
+                      << " -> "
+                      << (result_times[i].time - solution[i].time).count()
                       << "ns";
           }
 
@@ -1240,15 +1328,15 @@ MultiNodeNoncausalOffsetEstimator::NextSolution(
   return std::make_tuple(next_filter, std::move(result_times), solution_index);
 }
 
-std::optional<std::tuple<distributed_clock::time_point,
-                         std::vector<monotonic_clock::time_point>>>
+std::optional<
+    std::tuple<distributed_clock::time_point, std::vector<BootTimestamp>>>
 MultiNodeNoncausalOffsetEstimator::NextTimestamp() {
   // TODO(austin): Detect and handle there being fewer nodes in the log file
   // than in replay, or them being in a different order.
   TimestampProblem problem = MakeProblem();
 
   // Ok, now solve for the minimum time on each channel.
-  std::vector<aos::monotonic_clock::time_point> result_times;
+  std::vector<BootTimestamp> result_times;
   NoncausalTimestampFilter *next_filter = nullptr;
   int solution_node_index = 0;
   std::tie(next_filter, result_times, solution_node_index) =
@@ -1272,9 +1360,9 @@ MultiNodeNoncausalOffsetEstimator::NextTimestamp() {
         }
         fprintf(fp_, "\n");
       }
-      return std::make_tuple(distributed_clock::epoch(),
-                             std::vector<monotonic_clock::time_point>(
-                                 NodesCount(), monotonic_clock::epoch()));
+      return std::make_tuple(
+          distributed_clock::epoch(),
+          std::vector<BootTimestamp>(NodesCount(), BootTimestamp::epoch()));
     }
     if (VLOG_IS_ON(1)) {
       LOG(INFO) << "Found no more timestamps.";
@@ -1295,31 +1383,21 @@ MultiNodeNoncausalOffsetEstimator::NextTimestamp() {
     return std::nullopt;
   }
 
+
+  std::tuple<logger::BootTimestamp, logger::BootDuration> sample;
   if (first_solution_) {
-    std::vector<aos::monotonic_clock::time_point> resolved_times;
-    NoncausalTimestampFilter *resolved_next_filter = nullptr;
-    int resolved_solution_node_index = 0;
-
-    VLOG(1) << "Resolving with updated base times for accuracy.";
-    std::tie(resolved_next_filter, resolved_times,
-             resolved_solution_node_index) =
-        NextSolution(&problem, result_times);
-
     first_solution_ = false;
-    next_filter = resolved_next_filter;
-    solution_node_index = resolved_solution_node_index;
 
     // Force any unknown nodes to track the distributed clock (which starts at 0
     // too).
-    for (monotonic_clock::time_point &time : result_times) {
-      if (time == monotonic_clock::min_time) {
-        time = monotonic_clock::epoch();
+    for (BootTimestamp &time : result_times) {
+      if (time == BootTimestamp::min_time()) {
+        time = BootTimestamp::epoch();
       }
     }
-    result_times = std::move(resolved_times);
-    next_filter->Consume();
+    sample = *next_filter->Consume();
   } else {
-    next_filter->Consume();
+    sample = *next_filter->Consume();
     // We found a good sample, so consume it.  If it is a duplicate, we still
     // want to consume it.  But, if this is the first time around, we want to
     // re-solve by recursing (once) to pickup the better base.
@@ -1332,7 +1410,8 @@ MultiNodeNoncausalOffsetEstimator::NextTimestamp() {
         problem.Debug();
         for (size_t i = 0; i < result_times.size(); ++i) {
           LOG(INFO) << "  " << last_monotonics_[i] << " vs " << result_times[i]
-                    << " -> " << (last_monotonics_[i] - result_times[i]).count()
+                    << " -> "
+                    << (last_monotonics_[i].time - result_times[i].time).count()
                     << "ns";
         }
         LOG(FATAL)
@@ -1353,7 +1432,8 @@ MultiNodeNoncausalOffsetEstimator::NextTimestamp() {
         CHECK_EQ(last_monotonics_.size(), result_times.size());
         for (size_t i = 0; i < result_times.size(); ++i) {
           LOG(INFO) << "  " << last_monotonics_[i] << " vs " << result_times[i]
-                    << " -> " << (last_monotonics_[i] - result_times[i]).count()
+                    << " -> "
+                    << (last_monotonics_[i].time - result_times[i].time).count()
                     << "ns";
         }
         LOG(FATAL) << "Please investigate.  Use --max_invalid_distance_ns="
@@ -1368,7 +1448,7 @@ MultiNodeNoncausalOffsetEstimator::NextTimestamp() {
   const chrono::nanoseconds dt = MaxElapsedTime(last_monotonics_, result_times);
   last_distributed_ += dt;
   for (size_t i = 0; i < result_times.size(); ++i) {
-    if (result_times[i] == monotonic_clock::min_time) {
+    if (result_times[i] == BootTimestamp::min_time()) {
       // Found an unknown node.  Move its time along by the amount the
       // distributed clock moved.
       result_times[i] = last_monotonics_[i] + dt;
@@ -1381,25 +1461,146 @@ MultiNodeNoncausalOffsetEstimator::NextTimestamp() {
     size_t node_index = 0;
     for (const auto &filters : filters_per_node_) {
       for (const auto &filter : filters) {
-        filter.filter->FreezeUntil(last_monotonics_[node_index]);
-        filter.filter->FreezeUntilRemote(last_monotonics_[filter.b_index]);
+        filter.filter->FreezeUntil(last_monotonics_[node_index],
+                                   last_monotonics_[filter.b_index]);
       }
       ++node_index;
     }
+  }
+
+  if (filter_fps_.size() > 0) {
+    const int node_a_index =
+        configuration::GetNodeIndex(configuration(), next_filter->node_a());
+    const int node_b_index =
+        configuration::GetNodeIndex(configuration(), next_filter->node_b());
+
+    FILE *fp = filter_fps_[node_a_index][node_b_index];
+    if (fp == nullptr) {
+      fp = filter_fps_[node_a_index][node_b_index] = fopen(
+          absl::StrCat("/tmp/timestamp_noncausal_",
+                       next_filter->node_a()->name()->string_view(), "_",
+                       next_filter->node_b()->name()->string_view(), ".csv")
+              .c_str(),
+          "w");
+      fprintf(fp, "time_since_start,sample_ns,filtered_offset\n");
+    }
+
+    fprintf(fp, "%.9f, %.9f, %.9f\n",
+            std::chrono::duration_cast<std::chrono::duration<double>>(
+                last_distributed_.time_since_epoch())
+                .count(),
+            std::chrono::duration_cast<std::chrono::duration<double>>(
+                std::get<0>(sample).time.time_since_epoch())
+                .count(),
+            std::chrono::duration_cast<std::chrono::duration<double>>(
+                std::get<1>(sample).duration)
+                .count());
   }
 
   if (fp_) {
     fprintf(
         fp_, "%.9f",
         chrono::duration<double>(last_distributed_.time_since_epoch()).count());
-    for (const monotonic_clock::time_point t : last_monotonics_) {
+    for (const BootTimestamp t : last_monotonics_) {
       fprintf(fp_, ", %.9f",
-              chrono::duration<double>(t.time_since_epoch()).count());
+              chrono::duration<double>(t.time.time_since_epoch()).count());
     }
     fprintf(fp_, "\n");
   }
-
+  FlushAllSamples(false);
   return std::make_tuple(last_distributed_, last_monotonics_);
+}
+
+void MultiNodeNoncausalOffsetEstimator::FlushAllSamples(bool finish) {
+  size_t node_index = 0;
+  for (NodeSamples &node_samples : node_samples_) {
+    size_t sending_node_index = 0;
+    for (SingleNodeSamples &samples : node_samples.nodes) {
+      if (samples.messages.size() == 0) {
+        ++sending_node_index;
+        continue;
+      }
+
+      FILE *samples_fp = sample_fps_[node_index][sending_node_index];
+      if (samples_fp == nullptr) {
+        samples_fp = sample_fps_[node_index][sending_node_index] =
+            fopen(absl::StrCat("/tmp/timestamp_noncausal_",
+                               logged_configuration()
+                                   ->nodes()
+                                   ->Get(node_index)
+                                   ->name()
+                                   ->string_view(),
+                               "_",
+                               logged_configuration()
+                                   ->nodes()
+                                   ->Get(sending_node_index)
+                                   ->name()
+                                   ->string_view(),
+                               "_samples.csv")
+                      .c_str(),
+                  "w");
+        fprintf(samples_fp,
+                "time_since_start,sample_ns,monotonic,monotonic+offset("
+                "remote)\n");
+      }
+
+      auto times_it = times_.begin();
+      while (!samples.messages.empty() && times_it != times_.end()) {
+        const std::pair<BootTimestamp, BootTimestamp> &message =
+            *samples.messages.begin();
+        auto next = times_it + 1;
+        while (next != times_.end()) {
+          if (std::get<1>(*next)[node_index] < message.first) {
+            times_it = next;
+            next = times_it + 1;
+          } else {
+            break;
+          }
+        }
+
+        distributed_clock::time_point distributed;
+        const distributed_clock::time_point d0 = std::get<0>(*times_it);
+        const BootTimestamp t0 = std::get<1>(*times_it)[node_index];
+        if (next == times_.end()) {
+          if (!finish) {
+            break;
+          }
+          CHECK_EQ(t0.boot, message.first.boot);
+          distributed = message.first.time - t0.time + d0;
+        } else {
+          const distributed_clock::time_point d1 = std::get<0>(*next);
+          const BootTimestamp t1 = std::get<1>(*next)[node_index];
+          if (t0.boot == t1.boot) {
+            distributed = ::aos::message_bridge::ToDistributedClock(
+                d0, d1, t0.time, t1.time, message.first.time);
+          } else if (t0.boot == message.first.boot) {
+            distributed = message.first.time - t0.time + d0;
+          } else if (t1.boot == message.first.boot) {
+            distributed = message.first.time - t1.time + d1;
+          } else {
+            LOG(FATAL) << "Boots don't match";
+          }
+        }
+        fprintf(samples_fp, "%.9f, %.9f, %.9f, %.9f\n",
+                std::chrono::duration_cast<std::chrono::duration<double>>(
+                    distributed.time_since_epoch())
+                    .count(),
+                std::chrono::duration_cast<std::chrono::duration<double>>(
+                    message.second.time - message.first.time)
+                    .count(),
+                std::chrono::duration_cast<std::chrono::duration<double>>(
+                    message.first.time.time_since_epoch())
+                    .count(),
+                std::chrono::duration_cast<std::chrono::duration<double>>(
+                    message.second.time.time_since_epoch())
+                    .count());
+
+        samples.messages.erase(samples.messages.begin());
+      }
+      ++sending_node_index;
+    }
+    ++node_index;
+  }
 }
 
 }  // namespace message_bridge
