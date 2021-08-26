@@ -107,9 +107,9 @@ void NewDataWriter::QueueMessage(flatbuffers::FlatBufferBuilder *fbb,
     QueueHeader(MakeHeader());
   }
   CHECK_EQ(state_[node_index_].boot_uuid, source_node_boot_uuid);
+  CHECK(writer);
   CHECK(header_written_) << ": Attempting to write message before header to "
                          << writer->filename();
-  CHECK(writer);
   writer->QueueSizedFlatbuffer(fbb, now);
 }
 
