@@ -722,6 +722,19 @@ filegroup(
     url = "https://www.frc971.org/Build-Dependencies/2021-03-20_drivetrain_spin_wheels.tar.gz",
 )
 
+http_archive(
+    name = "superstructure_replay",
+    build_file_content = """
+filegroup(
+    name = "superstructure_replay",
+    srcs = glob(["**/*.bfbs"]),
+    visibility = ["//visibility:public"],
+)
+    """,
+    sha256 = "e7037a374a7bf315b25058f0e9fbbf3e99c425e3a8e7d51edfc50e3f2a36a182",
+    url = "https://www.frc971.org/Build-Dependencies/2021-09-04_superstructure_shoot_balls.tar.gz",
+)
+
 # OpenCV armhf (for raspberry pi)
 http_archive(
     name = "opencv_armhf",

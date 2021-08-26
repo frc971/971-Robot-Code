@@ -108,6 +108,7 @@ cc_test(
     ],
     data = [
         "//y2020:config",
+        "@superstructure_replay",
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
@@ -117,7 +118,9 @@ cc_test(
         ":superstructure_position_fbs",
         ":superstructure_status_fbs",
         "//aos:math",
+        "//aos/events/logging:log_reader",
         "//aos/events/logging:log_writer",
+        "//aos/network:team_number",
         "//aos/testing:googletest",
         "//aos/time",
         "//frc971/control_loops:capped_test_plant",

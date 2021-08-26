@@ -34,6 +34,16 @@ export function plotFinisher(conn: Connection, element: Element) : void {
   velocityPlot.addMessageLine(status, ['shooter', 'ready']).setColor(BLACK).setPointSize(0.0);
   velocityPlot.addMessageLine(status, ['shooter', 'finisher', 'dt_angular_velocity']).setColor(PINK).setPointSize(0.0);
 
+  const ballsShotPlot =
+      aosPlotter.addPlot(element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT / 2]);
+  currentTop += DEFAULT_HEIGHT / 2;
+  ballsShotPlot.plot.getAxisLabels().setTitle('Balls Shot');
+  ballsShotPlot.plot.getAxisLabels().setXLabel(TIME);
+  ballsShotPlot.plot.getAxisLabels().setYLabel('Balls');
+  ballsShotPlot.plot.setDefaultYRange([0.0, 20.0]);
+  ballsShotPlot.addMessageLine(status, ['shooter', 'balls_shot']).setColor(BLUE).setPointSize(0.0);
+
+
   const voltagePlot =
       aosPlotter.addPlot(element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT / 2]);
   currentTop += DEFAULT_HEIGHT / 2;
