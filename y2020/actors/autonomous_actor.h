@@ -43,6 +43,7 @@ class AutonomousActor : public frc971::autonomous::BaseAutonomousActor {
   void AutoNavBarrel();
   void AutoNavSlalom();
   bool DriveFwd();
+  bool WaitForBallsShot(int num_shot);
 
   void Replan();
 
@@ -56,6 +57,8 @@ class AutonomousActor : public frc971::autonomous::BaseAutonomousActor {
       superstructure_goal_sender_;
   aos::Fetcher<aos::JoystickState> joystick_state_fetcher_;
   aos::Fetcher<y2020::vision::GalacticSearchPath> path_fetcher_;
+  aos::Fetcher<y2020::control_loops::superstructure::Status>
+      superstructure_status_fetcher_;
 
   aos::TimerHandler *replan_timer_;
 
