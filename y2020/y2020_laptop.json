@@ -29,7 +29,9 @@
         {
           "name": "laptop",
           "priority": 1,
-          "time_to_live": 5000000
+          "time_to_live": 5000000,
+          "timestamp_logger" : "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes" : ["roborio"]
         }
       ]
     },
@@ -161,6 +163,8 @@
     {
       "name": "/laptop/aos",
       "type": "aos.message_bridge.Timestamp",
+      "logger_nodes": ["roborio"],
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
       "source_node": "laptop",
       "frequency": 15,
       "num_senders": 2,
