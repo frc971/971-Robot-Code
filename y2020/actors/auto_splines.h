@@ -40,7 +40,15 @@ class AutonomousSplines {
         autonav_barrel_(aos::JsonFileToFlatbuffer<frc971::MultiSpline>(
             "splines/autonav_barrel.json")),
         autonav_slalom_(aos::JsonFileToFlatbuffer<frc971::MultiSpline>(
-            "splines/autonav_slalom.json")) {}
+            "splines/autonav_slalom.json")),
+        target_aligned_1_(aos::JsonFileToFlatbuffer<frc971::MultiSpline>(
+            "splines/target_aligned_1.json")),
+        target_aligned_2_(aos::JsonFileToFlatbuffer<frc971::MultiSpline>(
+            "splines/target_aligned_2.json")),
+        target_offset_1_(aos::JsonFileToFlatbuffer<frc971::MultiSpline>(
+            "splines/target_offset_1.json")),
+        target_offset_2_(aos::JsonFileToFlatbuffer<frc971::MultiSpline>(
+            "splines/target_offset_2.json")) {}
 
   static flatbuffers::Offset<frc971::MultiSpline> BasicSSpline(
       aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
@@ -117,6 +125,31 @@ class AutonomousSplines {
                                                     builder->fbb());
   }
 
+  flatbuffers::Offset<frc971::MultiSpline> TargetAligned1(
+      aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+          *builder) {
+    return aos::CopyFlatBuffer<frc971::MultiSpline>(target_aligned_1_,
+                                                    builder->fbb());
+  }
+  flatbuffers::Offset<frc971::MultiSpline> TargetAligned2(
+      aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+          *builder) {
+    return aos::CopyFlatBuffer<frc971::MultiSpline>(target_aligned_2_,
+                                                    builder->fbb());
+  }
+  flatbuffers::Offset<frc971::MultiSpline> TargetOffset1(
+      aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+          *builder) {
+    return aos::CopyFlatBuffer<frc971::MultiSpline>(target_offset_1_,
+                                                    builder->fbb());
+  }
+  flatbuffers::Offset<frc971::MultiSpline> TargetOffset2(
+      aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+          *builder) {
+    return aos::CopyFlatBuffer<frc971::MultiSpline>(target_offset_2_,
+                                                    builder->fbb());
+  }
+
  private:
   aos::FlatbufferDetachedBuffer<frc971::MultiSpline> test_spline_;
   aos::FlatbufferDetachedBuffer<frc971::MultiSpline> spline_red_a_;
@@ -129,6 +162,10 @@ class AutonomousSplines {
   aos::FlatbufferDetachedBuffer<frc971::MultiSpline> autonav_bounce_4_;
   aos::FlatbufferDetachedBuffer<frc971::MultiSpline> autonav_barrel_;
   aos::FlatbufferDetachedBuffer<frc971::MultiSpline> autonav_slalom_;
+  aos::FlatbufferDetachedBuffer<frc971::MultiSpline> target_aligned_1_;
+  aos::FlatbufferDetachedBuffer<frc971::MultiSpline> target_aligned_2_;
+  aos::FlatbufferDetachedBuffer<frc971::MultiSpline> target_offset_1_;
+  aos::FlatbufferDetachedBuffer<frc971::MultiSpline> target_offset_2_;
 };
 
 }  // namespace actors

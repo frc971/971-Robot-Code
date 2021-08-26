@@ -36,8 +36,13 @@ class AutonomousActor : public frc971::autonomous::BaseAutonomousActor {
   void set_roller_voltage(double roller_voltage) {
     roller_voltage_ = roller_voltage;
   }
+  void set_shooter_tracking(bool shooter_tracking) {
+    shooter_tracking_ = shooter_tracking;
+  }
+  void set_shooting(bool shooting) { shooting_ = shooting; }
 
   void SendSuperstructureGoal();
+  void ExtendIntake();
   void RetractIntake();
   void SplineAuto();
   void SendStartingPosition(const Eigen::Vector3d &start);
@@ -45,6 +50,9 @@ class AutonomousActor : public frc971::autonomous::BaseAutonomousActor {
   void AutoNavBounce();
   void AutoNavBarrel();
   void AutoNavSlalom();
+  void TargetAligned();
+  void TargetOffset();
+  void JustShoot();
   bool DriveFwd();
   bool WaitForBallsShot(int num_shot);
 
@@ -53,6 +61,8 @@ class AutonomousActor : public frc971::autonomous::BaseAutonomousActor {
   double intake_goal_ = 0.0;
   double roller_voltage_ = 0.0;
   bool intake_preloading_ = false;
+  bool shooting_ = false;
+  bool shooter_tracking_ = false;
   const float kRollerSpeedCompensation = 2.0;
 
   aos::Sender<frc971::control_loops::drivetrain::LocalizerControl>
@@ -67,6 +77,8 @@ class AutonomousActor : public frc971::autonomous::BaseAutonomousActor {
   aos::TimerHandler *replan_timer_;
 
   std::optional<std::array<SplineHandle, 4>> bounce_splines_;
+  std::optional<std::array<SplineHandle, 2>> target_offset_splines_;
+  std::optional<std::array<SplineHandle, 2>> target_aligned_splines_;
 
   struct GalacticSearchSplines {
     SplineHandle red_a;

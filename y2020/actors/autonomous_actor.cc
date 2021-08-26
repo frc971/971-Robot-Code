@@ -16,7 +16,15 @@ DEFINE_bool(galactic_search, false,
             "If true, do the galactic search autonomous");
 DEFINE_bool(bounce, false, "If true, run the AutoNav Bounce autonomous");
 DEFINE_bool(barrel, false, "If true, run the AutoNav Barrel autonomous");
-DEFINE_bool(slalom, true, "If true, run the AutoNav Slalom autonomous");
+DEFINE_bool(slalom, false, "If true, run the AutoNav Slalom autonomous");
+DEFINE_bool(infinite_recharge_target_aligned, false,
+            "If true, run the Infinite Recharge autonomous that starts aligned "
+            "with the target");
+DEFINE_bool(infinite_recharge_target_offset, false,
+            "If true, run the Infinite Recharge autonomous that starts offset "
+            "from the target");
+DEFINE_bool(just_shoot, false,
+            "If true, run the autonomous that just shoots balls.");
 
 namespace y2020 {
 namespace actors {
@@ -94,6 +102,22 @@ void AutonomousActor::Replan() {
     test_spline_ = PlanSpline(std::bind(&AutonomousSplines::TestSpline,
                                         &auto_splines_, std::placeholders::_1),
                               SplineDirection::kForward);
+  } else if (FLAGS_infinite_recharge_target_offset) {
+    target_offset_splines_ = {
+        PlanSpline(std::bind(&AutonomousSplines::TargetOffset1, &auto_splines_,
+                             std::placeholders::_1),
+                   SplineDirection::kForward),
+        PlanSpline(std::bind(&AutonomousSplines::TargetOffset2, &auto_splines_,
+                             std::placeholders::_1),
+                   SplineDirection::kBackward)};
+  } else if (FLAGS_infinite_recharge_target_aligned) {
+    target_aligned_splines_ = {
+        PlanSpline(std::bind(&AutonomousSplines::TargetAligned1, &auto_splines_,
+                             std::placeholders::_1),
+                   SplineDirection::kForward),
+        PlanSpline(std::bind(&AutonomousSplines::TargetAligned2, &auto_splines_,
+                             std::placeholders::_1),
+                   SplineDirection::kBackward)};
   }
 }
 
@@ -129,6 +153,12 @@ bool AutonomousActor::RunAction(
     AutoNavBarrel();
   } else if (FLAGS_slalom) {
     AutoNavSlalom();
+  } else if (FLAGS_infinite_recharge_target_aligned) {
+    TargetAligned();
+  } else if (FLAGS_infinite_recharge_target_offset) {
+    TargetOffset();
+  } else if (FLAGS_just_shoot) {
+    JustShoot();
   } else if (FLAGS_spline_auto) {
     SplineAuto();
   } else {
@@ -196,10 +226,7 @@ void AutonomousActor::GalacticSearch() {
 
   SendStartingPosition(spline->starting_position());
 
-  set_intake_goal(1.25);
-  set_roller_voltage(12.0);
-  set_intake_preloading(true);
-  SendSuperstructureGoal();
+  ExtendIntake();
 
   if (!spline->WaitForPlan()) return;
   spline->Start();
@@ -258,6 +285,92 @@ void AutonomousActor::AutoNavSlalom() {
   if (!slalom_spline_->WaitForSplineDistanceRemaining(0.02)) return;
 }
 
+void AutonomousActor::TargetAligned() {
+  CHECK(target_aligned_splines_);
+  auto &splines = *target_aligned_splines_;
+  SendStartingPosition(splines[0].starting_position());
+
+  // shoot pre-loaded balls
+  set_shooter_tracking(true);
+  set_shooting(true);
+  SendSuperstructureGoal();
+
+  if (!WaitForBallsShot(3)) return;
+
+  set_shooting(false);
+  SendSuperstructureGoal();
+
+  ExtendIntake();
+
+  // pickup 3 more balls
+  if (!splines[0].WaitForPlan()) return;
+  splines[0].Start();
+
+  if (!splines[0].WaitForSplineDistanceRemaining(0.02)) return;
+  RetractIntake();
+
+  if (!splines[1].WaitForPlan()) return;
+  splines[1].Start();
+
+  if (!splines[1].WaitForSplineDistanceRemaining(0.02)) return;
+
+  // shoot the new balls in front of the goal.
+  set_shooting(true);
+  SendSuperstructureGoal();
+
+  if (!WaitForBallsShot(3)) return;
+
+  set_shooting(false);
+  set_shooter_tracking(false);
+  SendSuperstructureGoal();
+}
+
+void AutonomousActor::JustShoot() {
+  // shoot pre-loaded balls
+  set_shooter_tracking(true);
+  set_shooting(true);
+  SendSuperstructureGoal();
+
+  if (!WaitForBallsShot(3)) return;
+
+  set_shooting(false);
+  set_shooter_tracking(true);
+  SendSuperstructureGoal();
+}
+
+void AutonomousActor::TargetOffset() {
+  CHECK(target_offset_splines_);
+  auto &splines = *target_offset_splines_;
+  SendStartingPosition(splines[0].starting_position());
+
+  // spin up shooter
+  set_shooter_tracking(true);
+  SendSuperstructureGoal();
+  ExtendIntake();
+
+  // pickup 2 more balls in front of the trench run
+  if (!splines[0].WaitForPlan()) return;
+  splines[0].Start();
+
+  if (!splines[0].WaitForSplineDistanceRemaining(0.02)) return;
+  RetractIntake();
+
+  if (!splines[1].WaitForPlan()) return;
+  splines[1].Start();
+
+  if (!splines[1].WaitForSplineDistanceRemaining(0.02)) return;
+
+  // shoot the balls from in front of the goal.
+  set_shooting(true);
+  SendSuperstructureGoal();
+
+  if (!WaitForBallsShot(5)) return;
+
+  set_shooting(false);
+  set_shooter_tracking(false);
+  SendSuperstructureGoal();
+}
+
 void AutonomousActor::SplineAuto() {
   CHECK(test_spline_);
 
@@ -314,10 +427,21 @@ void AutonomousActor::SendSuperstructureGoal() {
   superstructure_builder.add_roller_voltage(roller_voltage_);
   superstructure_builder.add_roller_speed_compensation(
       kRollerSpeedCompensation);
+  superstructure_builder.add_hood_tracking(shooter_tracking_);
+  superstructure_builder.add_turret_tracking(shooter_tracking_);
+  superstructure_builder.add_shooter_tracking(shooter_tracking_);
+  superstructure_builder.add_shooting(shooting_);
 
   if (!builder.Send(superstructure_builder.Finish())) {
     AOS_LOG(ERROR, "Sending superstructure goal failed.\n");
   }
+}
+
+void AutonomousActor::ExtendIntake() {
+  set_intake_goal(1.25);
+  set_roller_voltage(12.0);
+  set_intake_preloading(true);
+  SendSuperstructureGoal();
 }
 
 void AutonomousActor::RetractIntake() {
