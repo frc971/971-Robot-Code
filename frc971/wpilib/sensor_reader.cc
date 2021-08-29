@@ -7,7 +7,6 @@
 #include "aos/init.h"
 #include "aos/logging/logging.h"
 #include "aos/util/compiler_memory_barrier.h"
-#include "aos/util/phased_loop.h"
 #include "frc971/wpilib/ahal/DigitalInput.h"
 #include "frc971/wpilib/ahal/DriverStation.h"
 #include "frc971/wpilib/ahal/Utility.h"
@@ -31,9 +30,8 @@ SensorReader::SensorReader(::aos::ShmEventLoop *event_loop)
   event_loop->SetRuntimeRealtimePriority(40);
 
   // Fill in the no pwm trigger defaults.
-  phased_loop_handler_ =
-      event_loop_->AddPhasedLoop([this](int iterations) { Loop(iterations); },
-                                 period_, chrono::milliseconds(4));
+  timer_handler_ = event_loop_->AddTimer([this]() { Loop(); });
+  timer_handler_->set_name("SensorReader Loop");
 
   event_loop->set_name("SensorReader");
   event_loop->OnRun([this]() { DoStart(); });
@@ -94,18 +92,15 @@ void SensorReader::DoStart() {
   }
 
   // Now that we are configured, actually fill in the defaults.
-  phased_loop_handler_->set_interval_and_offset(
-      period_,
-      pwm_trigger_ ? ::std::chrono::milliseconds(3) : chrono::milliseconds(4));
+  timer_handler_->Setup(
+      event_loop_->monotonic_now() +
+          (pwm_trigger_ ? chrono::milliseconds(3) : chrono::milliseconds(4)),
+      period_);
 
   last_monotonic_now_ = monotonic_clock::now();
 }
 
-void SensorReader::Loop(const int iterations) {
-  if (iterations != 1) {
-    AOS_LOG(WARNING, "SensorReader skipped %d iterations\n", iterations - 1);
-  }
-
+void SensorReader::Loop() {
   const monotonic_clock::time_point monotonic_now =
       event_loop_->monotonic_now();
 
@@ -142,11 +137,10 @@ void SensorReader::Loop(const int iterations) {
     // after the falling edge.  This gives us a little bit of buffer for
     // errors in waking up.  The PWM cycle starts at the falling edge of the
     // PWM pulse.
-    chrono::nanoseconds new_offset =
-        ::aos::time::PhasedLoop::OffsetFromIntervalAndTime(
-            period_, last_tick_timepoint + chrono::microseconds(50));
+    const auto next_time =
+        last_tick_timepoint + period_ + chrono::microseconds(50);
 
-    phased_loop_handler_->set_interval_and_offset(period_, new_offset);
+    timer_handler_->Setup(next_time, period_);
   }
 }
 
