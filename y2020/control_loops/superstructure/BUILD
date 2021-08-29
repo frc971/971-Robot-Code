@@ -1,6 +1,6 @@
 package(default_visibility = ["//visibility:public"])
 
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_ts_library")
 load("@npm_bazel_typescript//:defs.bzl", "ts_library")
 
 flatbuffer_cc_library(
@@ -22,6 +22,18 @@ flatbuffer_cc_library(
         "superstructure_output.fbs",
     ],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
+)
+
+flatbuffer_ts_library(
+    name = "superstructure_status_ts_fbs",
+    srcs = [
+        "superstructure_status.fbs",
+    ],
+    includes = [
+        "//frc971/control_loops:control_loops_fbs_includes",
+        "//frc971/control_loops:profiled_subsystem_fbs_includes",
+    ],
     target_compatible_with = ["@platforms//os:linux"],
 )
 
