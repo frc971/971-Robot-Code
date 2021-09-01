@@ -364,16 +364,15 @@ int main(int argc, char **argv) {
 
   aos::FastStringBuilder builder;
 
-  aos::SimulatedEventLoopFactory event_loop_factory(reader.configuration());
-
-  reader.RegisterWithoutStarting(&event_loop_factory);
-
   uint64_t message_print_counter = 0;
 
   std::vector<NodePrinter *> printers;
-  printers.resize(
-      aos::configuration::NodesCount(event_loop_factory.configuration()),
-      nullptr);
+  printers.resize(aos::configuration::NodesCount(reader.configuration()),
+                  nullptr);
+
+  aos::SimulatedEventLoopFactory event_loop_factory(reader.configuration());
+
+  reader.RegisterWithoutStarting(&event_loop_factory);
 
   for (const aos::Node *node :
        aos::configuration::GetNodes(event_loop_factory.configuration())) {
