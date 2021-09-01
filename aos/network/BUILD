@@ -520,6 +520,7 @@ cc_library(
         ":timestamp_filter",
         "//aos:configuration",
         "//aos/events:simulated_event_loop",
+        "//aos/events/logging:boot_timestamp",
         "//aos/events/logging:logfile_utils",
         "//aos/time",
         "@org_tuxfamily_eigen//:eigen",
@@ -547,6 +548,7 @@ cc_library(
     deps = [
         ":multinode_timestamp_filter",
         "//aos/events:simulated_event_loop",
+        "//aos/events/logging:boot_timestamp",
         "//aos/time",
     ],
 )

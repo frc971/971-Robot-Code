@@ -127,6 +127,7 @@ void MessageBridgeClientStatus::SendStatistics() {
 }
 
 int MessageBridgeClientStatus::FindClientIndex(std::string_view node_name) {
+  CHECK(statistics_.message().has_connections());
   for (size_t i = 0; i < statistics_.message().connections()->size(); ++i) {
     const ClientConnection *client_connection =
         statistics_.message().connections()->Get(i);

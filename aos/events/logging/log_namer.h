@@ -7,6 +7,7 @@
 #include <string_view>
 #include <vector>
 
+#include "absl/container/btree_map.h"
 #include "aos/events/logging/logfile_utils.h"
 #include "aos/events/logging/logger_generated.h"
 #include "aos/uuid.h"
@@ -22,6 +23,11 @@ class LogNamer;
 //
 // Class to manage writing data to log files.  This lets us track which boot the
 // written header has in it, and if the header has been written or not.
+//
+// The design of this class is that instead of being notified when any of the
+// header data changes, it polls and owns that decision.  This makes it much
+// harder to write corrupted data.  If that becomes a performance problem, we
+// can DCHECK and take it out of production binaries.
 class NewDataWriter {
  public:
   // Constructs a NewDataWriter.
@@ -54,7 +60,9 @@ class NewDataWriter {
                     aos::monotonic_clock::time_point now);
 
   // Returns the filename of the writer.
-  std::string_view filename() const { return writer->filename(); }
+  std::string_view filename() const {
+    return writer ? writer->filename() : "(closed)";
+  }
 
   void Close();
 
@@ -96,6 +104,8 @@ class NewDataWriter {
 
   aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> MakeHeader();
 
+  monotonic_clock::time_point monotonic_start_time_ = monotonic_clock::min_time;
+
   const Node *const node_ = nullptr;
   const size_t node_index_ = 0;
   LogNamer *log_namer_;
@@ -121,7 +131,6 @@ class LogNamer {
         node_(node),
         logger_node_index_(configuration::GetNodeIndex(configuration_, node_)) {
     nodes_.emplace_back(node_);
-    node_states_.resize(configuration::NodesCount(configuration_));
   }
   virtual ~LogNamer() {}
 
@@ -180,45 +189,35 @@ class LogNamer {
         UUID::FromString(header_.message().logger_node_boot_uuid());
   }
 
-  void SetStartTimes(size_t node_index,
+  void ClearStartTimes() {
+    node_states_.clear();
+  }
+
+  void SetStartTimes(size_t node_index, const UUID &boot_uuid,
                      monotonic_clock::time_point monotonic_start_time,
                      realtime_clock::time_point realtime_start_time,
                      monotonic_clock::time_point logger_monotonic_start_time,
                      realtime_clock::time_point logger_realtime_start_time) {
-    node_states_[node_index].monotonic_start_time = monotonic_start_time;
-    node_states_[node_index].realtime_start_time = realtime_start_time;
-    node_states_[node_index].logger_monotonic_start_time =
-        logger_monotonic_start_time;
-    node_states_[node_index].logger_realtime_start_time =
-        logger_realtime_start_time;
-
-    // TODO(austin): Track that the header has changed and needs to be
-    // rewritten down here rather than up in log_writer.
+    VLOG(1) << "Setting node " << node_index << " to start time "
+            << monotonic_start_time << " rt " << realtime_start_time << " UUID "
+            << boot_uuid;
+    NodeState *node_state = GetNodeState(node_index, boot_uuid);
+    node_state->monotonic_start_time = monotonic_start_time;
+    node_state->realtime_start_time = realtime_start_time;
+    node_state->logger_monotonic_start_time = logger_monotonic_start_time;
+    node_state->logger_realtime_start_time = logger_realtime_start_time;
   }
 
-  monotonic_clock::time_point monotonic_start_time(size_t node_index) const {
-    return node_states_[node_index].monotonic_start_time;
+  monotonic_clock::time_point monotonic_start_time(size_t node_index,
+                                                   const UUID &boot_uuid) {
+    DCHECK_NE(boot_uuid, UUID::Zero());
+
+    NodeState *node_state = GetNodeState(node_index, boot_uuid);
+    return node_state->monotonic_start_time;
   }
 
  protected:
-  // Creates a new header by copying fields out of the template and combining
-  // them with the arguments provided.
-  aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> MakeHeader(
-      size_t node_index, const std::vector<NewDataWriter::State> &state,
-      const UUID &parts_uuid, int parts_index) const;
-
-  EventLoop *event_loop_;
-  const Configuration *const configuration_;
-  const Node *const node_;
-  const size_t logger_node_index_;
-  UUID logger_node_boot_uuid_;
-  std::vector<const Node *> nodes_;
-
-  friend NewDataWriter;
-
   // Structure with state per node about times and such.
-  // TODO(austin): some of this lives better in NewDataWriter once we move
-  // ownership of deciding when to write headers into LogNamer.
   struct NodeState {
     // Time when this node started logging.
     monotonic_clock::time_point monotonic_start_time =
@@ -231,7 +230,28 @@ class LogNamer {
     realtime_clock::time_point logger_realtime_start_time =
         realtime_clock::min_time;
   };
-  std::vector<NodeState> node_states_;
+
+  // Creates a new header by copying fields out of the template and combining
+  // them with the arguments provided.
+  aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> MakeHeader(
+      size_t node_index, const std::vector<NewDataWriter::State> &state,
+      const UUID &parts_uuid, int parts_index);
+
+  EventLoop *event_loop_;
+  const Configuration *const configuration_;
+  const Node *const node_;
+  const size_t logger_node_index_;
+  UUID logger_node_boot_uuid_;
+  std::vector<const Node *> nodes_;
+
+  friend NewDataWriter;
+
+  // Returns the start/stop time state structure for a node and boot.  We can
+  // have data from multiple boots, and it makes sense to reuse the start/stop
+  // times if we get data from the same boot again.
+  NodeState *GetNodeState(size_t node_index, const UUID &boot_uuid);
+
+  absl::btree_map<std::pair<size_t, UUID>, NodeState> node_states_;
 
   aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> header_ =
       aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader>::Empty();

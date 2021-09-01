@@ -84,6 +84,13 @@ EventLoop::EventLoop(const Configuration *configuration)
       configuration_(configuration) {}
 
 EventLoop::~EventLoop() {
+  if(!senders_.empty()) {
+    for (const RawSender *sender : senders_) {
+      LOG(ERROR) << "  Sender "
+                 << configuration::StrippedChannelToString(sender->channel())
+                 << " still open";
+    }
+  }
   CHECK_EQ(senders_.size(), 0u) << ": Not all senders destroyed";
   CHECK_EQ(events_.size(), 0u) << ": Not all events unregistered";
 }

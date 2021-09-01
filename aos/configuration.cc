@@ -1122,6 +1122,13 @@ bool ChannelMessageIsLoggedOnNode(const Channel *channel,
   LOG(FATAL) << "Unknown logger config " << static_cast<int>(channel->logger());
 }
 
+size_t ConnectionCount(const Channel *channel) {
+  if (!channel->has_destination_nodes()) {
+    return 0;
+  }
+  return channel->destination_nodes()->size();
+}
+
 const Connection *ConnectionToNode(const Channel *channel, const Node *node) {
   if (!channel->has_destination_nodes()) {
     return nullptr;

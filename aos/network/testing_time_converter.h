@@ -6,6 +6,7 @@
 #include <tuple>
 
 #include "aos/events/event_scheduler.h"
+#include "aos/events/logging/boot_timestamp.h"
 #include "aos/network/multinode_timestamp_filter.h"
 #include "aos/time/time.h"
 
@@ -34,6 +35,8 @@ class TestingTimeConverter final : public InterpolatedTimeConverter {
   std::chrono::nanoseconds AddMonotonic(
       std::vector<logger::BootTimestamp> times);
 
+  void RebootAt(size_t node_index, distributed_clock::time_point t);
+
   // Adds a distributed to monotonic clock mapping to the queue.
   void AddNextTimestamp(distributed_clock::time_point time,
                         std::vector<logger::BootTimestamp> times);
@@ -41,6 +44,23 @@ class TestingTimeConverter final : public InterpolatedTimeConverter {
   std::optional<std::tuple<distributed_clock::time_point,
                            std::vector<logger::BootTimestamp>>>
   NextTimestamp() override;
+
+  void set_boot_uuid(size_t node_index, size_t boot_count, UUID uuid) {
+    CHECK(boot_uuids_
+              .emplace(std::make_pair(node_index, boot_count), std ::move(uuid))
+              .second)
+        << ": Duplicate boot";
+  }
+
+  UUID boot_uuid(size_t node_index, size_t boot_count) override {
+    auto it = boot_uuids_.find(std::make_pair(node_index, boot_count));
+    if (it != boot_uuids_.end()) return it->second;
+
+    auto new_it = boot_uuids_.emplace(std::make_pair(node_index, boot_count),
+                                      UUID::Random());
+    CHECK(new_it.second);
+    return new_it.first->second;
+  }
 
  private:
   // List of timestamps.
@@ -53,6 +73,8 @@ class TestingTimeConverter final : public InterpolatedTimeConverter {
   // The last times returned on all clocks.
   distributed_clock::time_point last_distributed_ = distributed_clock::epoch();
   std::vector<logger::BootTimestamp> last_monotonic_;
+
+  std::map<std::pair<size_t, size_t>, UUID> boot_uuids_;
 };
 
 }  // namespace message_bridge

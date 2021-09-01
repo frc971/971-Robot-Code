@@ -554,6 +554,7 @@ class NoncausalTimestampFilter {
                                  adjusted_initial_time);
         }
       }
+      CHECK_LT(i, timestamps_.size());
       return std::make_tuple(std::get<0>(timestamps_[i]),
                              std::get<1>(timestamps_[i]));
     }
@@ -673,6 +674,9 @@ class NoncausalTimestampFilter {
   std::vector<BootFilter> filters_;
 
   size_t current_filter_ = 0;
+
+  // The filter to resume popping from.
+  size_t pop_filter_ = 0;
 };
 
 // This class holds 2 NoncausalTimestampFilter's and handles averaging the
@@ -711,10 +715,6 @@ class NoncausalOffsetEstimator {
   // provided node from the other node.
   void ReverseSample(const Node *node, logger::BootTimestamp node_sent_time,
                      logger::BootTimestamp other_node_delivered_time);
-
-  // Removes old data points from a node before the provided time.
-  // Returns true if any points were popped.
-  bool Pop(const Node *node, logger::BootTimestamp node_monotonic_now);
 
  private:
   NoncausalTimestampFilter a_;

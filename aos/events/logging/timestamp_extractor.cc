@@ -63,7 +63,20 @@ int Main(int argc, char **argv) {
 
   // Now, build up the estimator used to solve for time.
   message_bridge::MultiNodeNoncausalOffsetEstimator multinode_estimator(
-      config, config, FLAGS_skip_order_validation, chrono::seconds(0));
+      config, config, log_files[0].boots, FLAGS_skip_order_validation,
+      chrono::seconds(0));
+  multinode_estimator.set_reboot_found(
+      [config](distributed_clock::time_point reboot_time,
+               const std::vector<logger::BootTimestamp> &node_times) {
+        LOG(INFO) << "Rebooted at distributed " << reboot_time;
+        size_t node_index = 0;
+        for (const logger::BootTimestamp &time : node_times) {
+          LOG(INFO) << "  "
+                    << config->nodes()->Get(node_index)->name()->string_view()
+                    << " " << time;
+          ++node_index;
+        }
+      });
 
   {
     std::vector<TimestampMapper *> timestamp_mappers;

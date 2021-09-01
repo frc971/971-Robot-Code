@@ -299,15 +299,14 @@ class SimulatedSender : public RawSender {
 
   size_t size() override { return simulated_channel_->max_size(); }
 
-  bool DoSend(size_t length,
-              aos::monotonic_clock::time_point monotonic_remote_time,
-              aos::realtime_clock::time_point realtime_remote_time,
+  bool DoSend(size_t length, monotonic_clock::time_point monotonic_remote_time,
+              realtime_clock::time_point realtime_remote_time,
               uint32_t remote_queue_index,
               const UUID &source_boot_uuid) override;
 
   bool DoSend(const void *msg, size_t size,
-              aos::monotonic_clock::time_point monotonic_remote_time,
-              aos::realtime_clock::time_point realtime_remote_time,
+              monotonic_clock::time_point monotonic_remote_time,
+              realtime_clock::time_point realtime_remote_time,
               uint32_t remote_queue_index,
               const UUID &source_boot_uuid) override;
 
@@ -319,7 +318,7 @@ class SimulatedSender : public RawSender {
 
  private:
   SimulatedChannel *simulated_channel_;
-  SimulatedEventLoop *event_loop_;
+  SimulatedEventLoop *simulated_event_loop_;
 
   std::shared_ptr<SimulatedMessage> message_;
 };
@@ -386,10 +385,10 @@ class SimulatedFetcher : public RawFetcher {
     if (context_.remote_queue_index == 0xffffffffu) {
       context_.remote_queue_index = context_.queue_index;
     }
-    if (context_.monotonic_remote_time == aos::monotonic_clock::min_time) {
+    if (context_.monotonic_remote_time == monotonic_clock::min_time) {
       context_.monotonic_remote_time = context_.monotonic_event_time;
     }
-    if (context_.realtime_remote_time == aos::realtime_clock::min_time) {
+    if (context_.realtime_remote_time == realtime_clock::min_time) {
       context_.realtime_remote_time = context_.realtime_event_time;
     }
   }
@@ -477,14 +476,19 @@ class SimulatedEventLoop : public EventLoop {
         channels_(channels),
         event_loops_(event_loops_),
         node_(node),
-        tid_(tid) {
-    scheduler_->ScheduleOnStartup([this]() {
-      Setup();
-      has_setup_ = true;
+        tid_(tid),
+        startup_tracker_(std::make_shared<StartupTracker>()) {
+    startup_tracker_->loop = this;
+    scheduler_->ScheduleOnStartup([startup_tracker = startup_tracker_]() {
+      if (startup_tracker->loop) {
+        startup_tracker->loop->Setup();
+        startup_tracker->has_setup = true;
+      }
     });
 
     event_loops_->push_back(this);
   }
+
   ~SimulatedEventLoop() override {
     // Trigger any remaining senders or fetchers to be cleared before destroying
     // the event loop so the book keeping matches.
@@ -495,20 +499,27 @@ class SimulatedEventLoop : public EventLoop {
     phased_loops_.clear();
     watchers_.clear();
 
-    for (auto it = event_loops_->begin(); it != event_loops_->end();
-         ++it) {
+    for (auto it = event_loops_->begin(); it != event_loops_->end(); ++it) {
       if (*it == this) {
         event_loops_->erase(it);
         break;
       }
     }
+    VLOG(1) << scheduler_->distributed_now() << " " << NodeName(node())
+            << monotonic_now() << " ~SimulatedEventLoop(\"" << name_ << "\")";
+    startup_tracker_->loop = nullptr;
   }
 
   void SetIsRunning(bool running) {
-    CHECK(has_setup_);
+    VLOG(1) << scheduler_->distributed_now() << " " << NodeName(node())
+            << monotonic_now() << " " << name_ << " set_is_running(" << running
+            << ")";
+    CHECK(startup_tracker_->has_setup);
 
     set_is_running(running);
-    has_run_ = true;
+    if (running) {
+      has_run_ = true;
+    }
   }
 
   bool has_run() const { return has_run_; }
@@ -518,17 +529,21 @@ class SimulatedEventLoop : public EventLoop {
     send_delay_ = send_delay;
   }
 
-  ::aos::monotonic_clock::time_point monotonic_now() override {
+  monotonic_clock::time_point monotonic_now() override {
     return node_event_loop_factory_->monotonic_now();
   }
 
-  ::aos::realtime_clock::time_point realtime_now() override {
+  realtime_clock::time_point realtime_now() override {
     return node_event_loop_factory_->realtime_now();
   }
 
-  ::std::unique_ptr<RawSender> MakeRawSender(const Channel *channel) override;
+  distributed_clock::time_point distributed_now() {
+    return scheduler_->distributed_now();
+  }
 
-  ::std::unique_ptr<RawFetcher> MakeRawFetcher(const Channel *channel) override;
+  std::unique_ptr<RawSender> MakeRawSender(const Channel *channel) override;
+
+  std::unique_ptr<RawFetcher> MakeRawFetcher(const Channel *channel) override;
 
   void MakeRawWatcher(
       const Channel *channel,
@@ -598,6 +613,16 @@ class SimulatedEventLoop : public EventLoop {
   friend class SimulatedPhasedLoopHandler;
   friend class SimulatedWatcher;
 
+  // We have a condition where we register a startup handler, but then get shut
+  // down before it runs.  This results in a segfault if we are lucky, and
+  // corruption otherwise.  To handle that, allocate a small object which points
+  // back to us and can be freed when the function is freed.  That object can
+  // then be updated when we get destroyed so setup is not called.
+  struct StartupTracker {
+    SimulatedEventLoop *loop = nullptr;
+    bool has_setup = false;
+  };
+
   void HandleEvent() {
     while (true) {
       if (EventCount() == 0 || PeekEvent()->event_time() > monotonic_now()) {
@@ -620,8 +645,6 @@ class SimulatedEventLoop : public EventLoop {
 
   int priority_ = 0;
 
-  bool has_setup_ = false;
-
   std::chrono::nanoseconds send_delay_;
 
   const Node *const node_;
@@ -631,12 +654,14 @@ class SimulatedEventLoop : public EventLoop {
   std::shared_ptr<logging::LogImplementation> log_impl_ = nullptr;
 
   bool has_run_ = false;
+
+  std::shared_ptr<StartupTracker> startup_tracker_;
 };
 
 void SimulatedEventLoopFactory::set_send_delay(
     std::chrono::nanoseconds send_delay) {
   send_delay_ = send_delay;
-  for (std::unique_ptr<NodeEventLoopFactory> & node : node_factories_) {
+  for (std::unique_ptr<NodeEventLoopFactory> &node : node_factories_) {
     if (node) {
       for (SimulatedEventLoop *loop : node->event_loops_) {
         loop->set_send_delay(send_delay_);
@@ -657,9 +682,9 @@ void SimulatedEventLoop::MakeRawWatcher(
   GetSimulatedChannel(channel)->MakeRawWatcher(shm_watcher.get());
 
   NewWatcher(std::move(shm_watcher));
-  VLOG(1) << monotonic_now() << " " << NodeName(node()) << name()
-          << " MakeRawWatcher "
-          << configuration::StrippedChannelToString(channel);
+  VLOG(1) << distributed_now() << " " << NodeName(node()) << monotonic_now()
+          << " " << name() << " MakeRawWatcher(\""
+          << configuration::StrippedChannelToString(channel) << "\")";
 
   // Order of operations gets kinda wonky if we let people make watchers after
   // running once.  If someone has a valid use case, we can reconsider.
@@ -670,9 +695,9 @@ std::unique_ptr<RawSender> SimulatedEventLoop::MakeRawSender(
     const Channel *channel) {
   TakeSender(channel);
 
-  VLOG(1) << monotonic_now() << " " << NodeName(node()) << name()
-          << " MakeRawSender "
-          << configuration::StrippedChannelToString(channel);
+  VLOG(1) << distributed_now() << " " << NodeName(node()) << monotonic_now()
+          << " " << name() << " MakeRawSender(\""
+          << configuration::StrippedChannelToString(channel) << "\")";
   return GetSimulatedChannel(channel)->MakeRawSender(this);
 }
 
@@ -687,9 +712,9 @@ std::unique_ptr<RawFetcher> SimulatedEventLoop::MakeRawFetcher(
                   "configuration.";
   }
 
-  VLOG(1) << monotonic_now() << " " << NodeName(node()) << name()
-          << " MakeRawFetcher "
-          << configuration::StrippedChannelToString(channel);
+  VLOG(1) << distributed_now() << " " << NodeName(node()) << monotonic_now()
+          << " " << name() << " MakeRawFetcher(\""
+          << configuration::StrippedChannelToString(channel) << "\")";
   return GetSimulatedChannel(channel)->MakeRawFetcher(this);
 }
 
@@ -722,12 +747,19 @@ SimulatedWatcher::SimulatedWatcher(
       channel_(channel),
       scheduler_(scheduler),
       event_(this),
-      token_(scheduler_->InvalidToken()) {}
+      token_(scheduler_->InvalidToken()) {
+  VLOG(1) << simulated_event_loop_->distributed_now() << " "
+          << NodeName(simulated_event_loop_->node())
+          << simulated_event_loop_->monotonic_now() << " "
+          << simulated_event_loop_->name() << " Watching "
+          << configuration::StrippedChannelToString(channel_);
+}
 
 SimulatedWatcher::~SimulatedWatcher() {
-  VLOG(1) << simulated_event_loop_->monotonic_now() << " "
+  VLOG(1) << simulated_event_loop_->distributed_now() << " "
           << NodeName(simulated_event_loop_->node())
-          << simulated_event_loop_->name() << " Stopped Watching "
+          << simulated_event_loop_->monotonic_now() << " "
+          << simulated_event_loop_->name() << " ~Watching "
           << configuration::StrippedChannelToString(channel_);
   simulated_event_loop_->RemoveEvent(&event_);
   if (token_ != scheduler_->InvalidToken()) {
@@ -759,8 +791,10 @@ void SimulatedWatcher::Schedule(std::shared_ptr<SimulatedMessage> message) {
 void SimulatedWatcher::HandleEvent() {
   const monotonic_clock::time_point monotonic_now =
       simulated_event_loop_->monotonic_now();
-  VLOG(1) << monotonic_now << " " << NodeName(simulated_event_loop_->node())
-          << "Watcher " << simulated_event_loop_->name() << ", "
+  VLOG(1) << simulated_event_loop_->distributed_now() << " "
+          << NodeName(simulated_event_loop_->node())
+          << simulated_event_loop_->monotonic_now() << " "
+          << simulated_event_loop_->name() << " Watcher "
           << configuration::StrippedChannelToString(channel_);
   CHECK_NE(msgs_.size(), 0u) << ": No events to handle.";
 
@@ -776,10 +810,10 @@ void SimulatedWatcher::HandleEvent() {
   if (context.remote_queue_index == 0xffffffffu) {
     context.remote_queue_index = context.queue_index;
   }
-  if (context.monotonic_remote_time == aos::monotonic_clock::min_time) {
+  if (context.monotonic_remote_time == monotonic_clock::min_time) {
     context.monotonic_remote_time = context.monotonic_event_time;
   }
-  if (context.realtime_remote_time == aos::realtime_clock::min_time) {
+  if (context.realtime_remote_time == realtime_clock::min_time) {
     context.realtime_remote_time = context.realtime_event_time;
   }
 
@@ -871,7 +905,7 @@ SimulatedSender::SimulatedSender(SimulatedChannel *simulated_channel,
                                  SimulatedEventLoop *event_loop)
     : RawSender(event_loop, simulated_channel->channel()),
       simulated_channel_(simulated_channel),
-      event_loop_(event_loop) {
+      simulated_event_loop_(event_loop) {
   simulated_channel_->CountSenderCreated();
 }
 
@@ -884,17 +918,21 @@ bool SimulatedSender::DoSend(size_t length,
                              realtime_clock::time_point realtime_remote_time,
                              uint32_t remote_queue_index,
                              const UUID &source_boot_uuid) {
-  VLOG(1) << event_loop_->monotonic_now() << " "
-          << NodeName(event_loop_->node()) << event_loop_->name()
-          << " Send " << configuration::StrippedChannelToString(channel());
+  VLOG(1) << simulated_event_loop_->distributed_now() << " "
+          << NodeName(simulated_event_loop_->node())
+          << simulated_event_loop_->monotonic_now() << " "
+          << simulated_event_loop_->name() << " Send "
+          << configuration::StrippedChannelToString(channel());
+
   // The allocations in here are due to infrastructure and don't count in the
   // no mallocs in RT code.
   ScopedNotRealtime nrt;
   CHECK_LE(length, size()) << ": Attempting to send too big a message.";
-  message_->context.monotonic_event_time = event_loop_->monotonic_now();
+  message_->context.monotonic_event_time =
+      simulated_event_loop_->monotonic_now();
   message_->context.monotonic_remote_time = monotonic_remote_time;
   message_->context.remote_queue_index = remote_queue_index;
-  message_->context.realtime_event_time = event_loop_->realtime_now();
+  message_->context.realtime_event_time = simulated_event_loop_->realtime_now();
   message_->context.realtime_remote_time = realtime_remote_time;
   message_->context.source_boot_uuid = source_boot_uuid;
   CHECK_LE(length, message_->context.size);
@@ -902,8 +940,8 @@ bool SimulatedSender::DoSend(size_t length,
 
   // TODO(austin): Track sending too fast.
   sent_queue_index_ = simulated_channel_->Send(message_);
-  monotonic_sent_time_ = event_loop_->monotonic_now();
-  realtime_sent_time_ = event_loop_->realtime_now();
+  monotonic_sent_time_ = simulated_event_loop_->monotonic_now();
+  realtime_sent_time_ = simulated_event_loop_->realtime_now();
 
   // Drop the reference to the message so that we allocate a new message for
   // next time.  Otherwise we will continue to reuse the same memory for all
@@ -951,7 +989,7 @@ void SimulatedTimerHandler::Setup(monotonic_clock::time_point base,
   // mallocs in RT code.
   ScopedNotRealtime nrt;
   Disable();
-  const ::aos::monotonic_clock::time_point monotonic_now =
+  const monotonic_clock::time_point monotonic_now =
       simulated_event_loop_->monotonic_now();
   base_ = base;
   repeat_offset_ = repeat_offset;
@@ -965,11 +1003,11 @@ void SimulatedTimerHandler::Setup(monotonic_clock::time_point base,
 }
 
 void SimulatedTimerHandler::HandleEvent() {
-  const ::aos::monotonic_clock::time_point monotonic_now =
+  const monotonic_clock::time_point monotonic_now =
       simulated_event_loop_->monotonic_now();
-  VLOG(1) << monotonic_now << " " << NodeName(simulated_event_loop_->node())
-          << "Timer '" << simulated_event_loop_->name() << "', '" << name()
-          << "'";
+  VLOG(1) << simulated_event_loop_->distributed_now() << " "
+          << NodeName(simulated_event_loop_->node()) << monotonic_now << " "
+          << simulated_event_loop_->name() << " Timer '" << name() << "'";
   logging::ScopedLogRestorer prev_logger;
   if (simulated_event_loop_->log_impl_) {
     prev_logger.Swap(simulated_event_loop_->log_impl_);
@@ -978,7 +1016,7 @@ void SimulatedTimerHandler::HandleEvent() {
     scheduler_->Deschedule(token_);
     token_ = scheduler_->InvalidToken();
   }
-  if (repeat_offset_ != ::aos::monotonic_clock::zero()) {
+  if (repeat_offset_ != monotonic_clock::zero()) {
     // Reschedule.
     while (base_ <= monotonic_now) base_ += repeat_offset_;
     token_ = scheduler_->Schedule(base_, [this]() {
@@ -1065,8 +1103,8 @@ SimulatedEventLoopFactory::SimulatedEventLoopFactory(
       nodes_(configuration::GetNodes(configuration_)) {
   CHECK(IsInitialized()) << ": Need to initialize AOS first.";
   for (const Node *node : nodes_) {
-    node_factories_.emplace_back(new NodeEventLoopFactory(
-        &scheduler_scheduler_, this, node));
+    node_factories_.emplace_back(
+        new NodeEventLoopFactory(&scheduler_scheduler_, this, node));
   }
 
   if (configuration::MultiNode(configuration)) {
@@ -1100,6 +1138,7 @@ void SimulatedEventLoopFactory::SetTimeConverter(
   for (std::unique_ptr<NodeEventLoopFactory> &factory : node_factories_) {
     factory->SetTimeConverter(time_converter);
   }
+  scheduler_scheduler_.SetTimeConverter(time_converter);
 }
 
 ::std::unique_ptr<EventLoop> SimulatedEventLoopFactory::MakeEventLoop(
@@ -1117,46 +1156,113 @@ void SimulatedEventLoopFactory::SetTimeConverter(
 NodeEventLoopFactory::NodeEventLoopFactory(
     EventSchedulerScheduler *scheduler_scheduler,
     SimulatedEventLoopFactory *factory, const Node *node)
-    : factory_(factory), node_(node) {
+    : scheduler_(configuration::GetNodeIndex(factory->configuration(), node)),
+      factory_(factory),
+      node_(node) {
   scheduler_scheduler->AddEventScheduler(&scheduler_);
+  scheduler_.set_started([this]() {
+    started_ = true;
+    for (SimulatedEventLoop *event_loop : event_loops_) {
+      event_loop->SetIsRunning(true);
+    }
+  });
+  scheduler_.set_on_shutdown([this]() {
+    VLOG(1) << scheduler_.distributed_now() << " " << NodeName(this->node())
+            << monotonic_now() << " Shutting down node.";
+    Shutdown();
+    ScheduleStartup();
+  });
+  ScheduleStartup();
 }
 
 NodeEventLoopFactory::~NodeEventLoopFactory() {
+  if (started_) {
+    for (std::function<void()> &fn : on_shutdown_) {
+      fn();
+    }
+
+    VLOG(1) << scheduler_.distributed_now() << " " << NodeName(node())
+            << monotonic_now() << " Shutting down applications.";
+    applications_.clear();
+    started_ = false;
+  }
+
+  if (event_loops_.size() != 0u) {
+    for (SimulatedEventLoop *event_loop : event_loops_) {
+      LOG(ERROR) << scheduler_.distributed_now() << " " << NodeName(node())
+                 << monotonic_now() << " Event loop '" << event_loop->name()
+                 << "' failed to shut down";
+    }
+  }
   CHECK_EQ(event_loops_.size(), 0u) << "Event loop didn't exit";
 }
 
-::std::unique_ptr<EventLoop> NodeEventLoopFactory::MakeEventLoop(
-    std::string_view name) {
+void NodeEventLoopFactory::OnStartup(std::function<void()> &&fn) {
   CHECK(!scheduler_.is_running())
-      << ": Can't create an event loop while running";
-
-  pid_t tid = tid_;
-  ++tid_;
-  ::std::unique_ptr<SimulatedEventLoop> result(new SimulatedEventLoop(
-      &scheduler_, this, &channels_, factory_->configuration(), &event_loops_,
-      node_, tid));
-  result->set_name(name);
-  result->set_send_delay(factory_->send_delay());
-  return std::move(result);
+      << ": Can only register OnStartup handlers when not running.";
+  on_startup_.emplace_back(std::move(fn));
+  if (started_) {
+    size_t on_startup_index = on_startup_.size() - 1;
+    scheduler_.ScheduleOnStartup(
+        [this, on_startup_index]() { on_startup_[on_startup_index](); });
+  }
 }
 
-void NodeEventLoopFactory::Disconnect(const Node *other) {
-  factory_->bridge_->Disconnect(node_, other);
+void NodeEventLoopFactory::OnShutdown(std::function<void()> &&fn) {
+  on_shutdown_.emplace_back(std::move(fn));
 }
 
-void NodeEventLoopFactory::Connect(const Node *other) {
-  factory_->bridge_->Connect(node_, other);
+void NodeEventLoopFactory::ScheduleStartup() {
+  scheduler_.ScheduleOnStartup([this]() {
+    UUID next_uuid = scheduler_.boot_uuid();
+    if (boot_uuid_ != next_uuid) {
+      CHECK_EQ(boot_uuid_, UUID::Zero());
+      boot_uuid_ = next_uuid;
+    }
+    VLOG(1) << scheduler_.distributed_now() << " " << NodeName(this->node())
+            << monotonic_now() << " Starting up node on boot " << boot_uuid_;
+    Startup();
+  });
+}
+
+void NodeEventLoopFactory::Startup() {
+  CHECK(!started_);
+  for (size_t i = 0; i < on_startup_.size(); ++i) {
+    on_startup_[i]();
+  }
+}
+
+void NodeEventLoopFactory::Shutdown() {
+  for (SimulatedEventLoop *event_loop : event_loops_) {
+    event_loop->SetIsRunning(false);
+  }
+
+  CHECK(started_);
+  started_ = false;
+  for (std::function<void()> &fn : on_shutdown_) {
+    fn();
+  }
+
+  VLOG(1) << scheduler_.distributed_now() << " " << NodeName(node())
+          << monotonic_now() << " Shutting down applications.";
+  applications_.clear();
+
+  if (event_loops_.size() != 0u) {
+    for (SimulatedEventLoop *event_loop : event_loops_) {
+      LOG(ERROR) << scheduler_.distributed_now() << " " << NodeName(node())
+                 << monotonic_now() << " Event loop '" << event_loop->name()
+                 << "' failed to shut down";
+    }
+  }
+  CHECK_EQ(event_loops_.size(), 0u) << "Not all event loops shut down";
+  boot_uuid_ = UUID::Zero();
+
+  channels_.clear();
 }
 
 void SimulatedEventLoopFactory::RunFor(monotonic_clock::duration duration) {
+  // This sets running to true too.
   scheduler_scheduler_.RunOnStartup();
-  for (std::unique_ptr<NodeEventLoopFactory> &node : node_factories_) {
-    if (node) {
-      for (SimulatedEventLoop *loop : node->event_loops_) {
-        loop->SetIsRunning(true);
-      }
-    }
-  }
   scheduler_scheduler_.RunFor(duration);
   for (std::unique_ptr<NodeEventLoopFactory> &node : node_factories_) {
     if (node) {
@@ -1168,14 +1274,8 @@ void SimulatedEventLoopFactory::RunFor(monotonic_clock::duration duration) {
 }
 
 void SimulatedEventLoopFactory::Run() {
+  // This sets running to true too.
   scheduler_scheduler_.RunOnStartup();
-  for (std::unique_ptr<NodeEventLoopFactory> &node : node_factories_) {
-    if (node) {
-      for (SimulatedEventLoop *loop : node->event_loops_) {
-        loop->SetIsRunning(true);
-      }
-    }
-  }
   scheduler_scheduler_.Run();
   for (std::unique_ptr<NodeEventLoopFactory> &node : node_factories_) {
     if (node) {
@@ -1201,6 +1301,32 @@ void SimulatedEventLoopFactory::DisableStatistics() {
 void SimulatedEventLoopFactory::SkipTimingReport() {
   CHECK(bridge_) << ": Can't skip timing reports without a message bridge.";
   bridge_->SkipTimingReport();
+}
+
+::std::unique_ptr<EventLoop> NodeEventLoopFactory::MakeEventLoop(
+    std::string_view name) {
+  CHECK(!scheduler_.is_running() || !started_)
+      << ": Can't create an event loop while running";
+
+  pid_t tid = tid_;
+  ++tid_;
+  ::std::unique_ptr<SimulatedEventLoop> result(new SimulatedEventLoop(
+      &scheduler_, this, &channels_, factory_->configuration(), &event_loops_,
+      node_, tid));
+  result->set_name(name);
+  result->set_send_delay(factory_->send_delay());
+
+  VLOG(1) << scheduler_.distributed_now() << " " << NodeName(node())
+          << monotonic_now() << " MakeEventLoop(\"" << result->name() << "\")";
+  return std::move(result);
+}
+
+void NodeEventLoopFactory::Disconnect(const Node *other) {
+  factory_->bridge_->Disconnect(node_, other);
+}
+
+void NodeEventLoopFactory::Connect(const Node *other) {
+  factory_->bridge_->Connect(node_, other);
 }
 
 }  // namespace aos

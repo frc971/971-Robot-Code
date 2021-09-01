@@ -43,6 +43,11 @@ class ChannelTimestampFinder {
 class ChannelTimestampSender {
  public:
   ChannelTimestampSender(aos::EventLoop *event_loop);
+  ChannelTimestampSender() : event_loop_(nullptr) {}
+
+  ChannelTimestampSender(ChannelTimestampSender &&other) noexcept = default;
+  ChannelTimestampSender &operator=(ChannelTimestampSender &&other) noexcept =
+      default;
 
   aos::Sender<RemoteMessage> *SenderForChannel(const Channel *channel,
                                                const Connection *connection);

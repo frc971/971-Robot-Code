@@ -1098,16 +1098,16 @@ TEST(NoncausalOffsetEstimatorTest, FullEstimator) {
   EXPECT_EQ(estimator.GetFilter(node_a)->timestamps_size(), 3u);
   EXPECT_EQ(estimator.GetFilter(node_b)->timestamps_size(), 3u);
 
-  estimator.Pop(node_a, ta2);
-  estimator.Pop(node_b, tb2);
+  estimator.GetFilter(node_a)->Pop(ta2);
+  estimator.GetFilter(node_b)->Pop(tb2);
   EXPECT_EQ(estimator.GetFilter(node_a)->timestamps_size(), 2u);
   EXPECT_EQ(estimator.GetFilter(node_b)->timestamps_size(), 2u);
 
-  // And dropping down to 1 point means 0 slope.
-  estimator.Pop(node_a, ta3);
-  estimator.Pop(node_b, tb3);
-  EXPECT_EQ(estimator.GetFilter(node_a)->timestamps_size(), 1u);
-  EXPECT_EQ(estimator.GetFilter(node_b)->timestamps_size(), 1u);
+  // And confirm we won't drop down to 1 point.
+  estimator.GetFilter(node_a)->Pop(ta3);
+  estimator.GetFilter(node_b)->Pop(tb3);
+  EXPECT_EQ(estimator.GetFilter(node_a)->timestamps_size(), 2u);
+  EXPECT_EQ(estimator.GetFilter(node_b)->timestamps_size(), 2u);
 }
 
 }  // namespace testing

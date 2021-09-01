@@ -785,6 +785,7 @@ std::vector<LogFile> PartsSorter::FormatNewParts() {
     new_file.realtime_start_time = logs.second.realtime_start_time;
     new_file.name = logs.second.name;
     new_file.corrupted = corrupted;
+    new_file.boots = boot_counts;
     bool seen_part = false;
     std::string config_sha256;
     for (std::pair<const std::pair<std::string, std::string>, UnsortedLogParts>

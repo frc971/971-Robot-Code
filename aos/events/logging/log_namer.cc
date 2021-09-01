@@ -38,6 +38,7 @@ NewDataWriter::~NewDataWriter() {
 void NewDataWriter::Rotate() {
   // No need to rotate if nothing has been written.
   if (header_written_) {
+    VLOG(1) << "Rotated " << filename();
     ++parts_index_;
     reopen_(this);
     header_written_ = false;
@@ -57,9 +58,12 @@ void NewDataWriter::UpdateRemote(
     const monotonic_clock::time_point monotonic_remote_time,
     const monotonic_clock::time_point monotonic_event_time,
     const bool reliable) {
+  // Trigger rotation if anything in the header changes.
   bool rotate = false;
   CHECK_LT(remote_node_index, state_.size());
   State &state = state_[remote_node_index];
+
+  // Did the remote boot UUID change?
   if (state.boot_uuid != remote_node_boot_uuid) {
     VLOG(1) << filename() << " Remote " << remote_node_index << " updated to "
             << remote_node_boot_uuid << " from " << state.boot_uuid;
@@ -73,9 +77,15 @@ void NewDataWriter::UpdateRemote(
     rotate = true;
   }
 
+
+  // Did the unreliable timestamps change?
   if (!reliable) {
     if (state.oldest_remote_unreliable_monotonic_timestamp >
         monotonic_remote_time) {
+      VLOG(1) << filename() << " Remote " << remote_node_index
+              << " oldest_remote_unreliable_monotonic_timestamp updated from "
+              << state.oldest_remote_unreliable_monotonic_timestamp << " to "
+              << monotonic_remote_time;
       state.oldest_remote_unreliable_monotonic_timestamp =
           monotonic_remote_time;
       state.oldest_local_unreliable_monotonic_timestamp = monotonic_event_time;
@@ -83,7 +93,12 @@ void NewDataWriter::UpdateRemote(
     }
   }
 
+  // Did any of the timestamps change?
   if (state.oldest_remote_monotonic_timestamp > monotonic_remote_time) {
+    VLOG(1) << filename() << " Remote " << remote_node_index
+            << " oldest_remote_monotonic_timestamp updated from "
+            << state.oldest_remote_monotonic_timestamp << " to "
+            << monotonic_remote_time;
     state.oldest_remote_monotonic_timestamp = monotonic_remote_time;
     state.oldest_local_monotonic_timestamp = monotonic_event_time;
     rotate = true;
@@ -97,7 +112,7 @@ void NewDataWriter::UpdateRemote(
 void NewDataWriter::QueueMessage(flatbuffers::FlatBufferBuilder *fbb,
                                  const UUID &source_node_boot_uuid,
                                  aos::monotonic_clock::time_point now) {
-  // TODO(austin): Handle remote nodes changing too, not just the source node.
+  // Trigger a reboot if we detect the boot UUID change.
   if (state_[node_index_].boot_uuid != source_node_boot_uuid) {
     state_[node_index_].boot_uuid = source_node_boot_uuid;
     if (header_written_) {
@@ -106,6 +121,16 @@ void NewDataWriter::QueueMessage(flatbuffers::FlatBufferBuilder *fbb,
 
     QueueHeader(MakeHeader());
   }
+
+  // If the start time has changed for this node, trigger a rotation.
+  if (log_namer_->monotonic_start_time(node_index_, source_node_boot_uuid) !=
+           monotonic_start_time_) {
+    CHECK(header_written_);
+    Rotate();
+  }
+
+  CHECK_EQ(log_namer_->monotonic_start_time(node_index_, source_node_boot_uuid),
+           monotonic_start_time_);
   CHECK_EQ(state_[node_index_].boot_uuid, source_node_boot_uuid);
   CHECK(header_written_) << ": Attempting to write message before header to "
                          << writer->filename();
@@ -139,11 +164,17 @@ void NewDataWriter::QueueHeader(
     reopen_(this);
   }
 
+  VLOG(1) << "Writing to " << filename() << " "
+          << aos::FlatbufferToJson(
+                 header, {.multi_line = false, .max_vector_size = 100});
+
   // TODO(austin): This triggers a dummy allocation that we don't need as part
   // of releasing.  Can we skip it?
   CHECK(writer);
   writer->QueueSizedFlatbuffer(header.Release());
   header_written_ = true;
+  monotonic_start_time_ = log_namer_->monotonic_start_time(
+      node_index_, state_[node_index_].boot_uuid);
 }
 
 void NewDataWriter::Close() {
@@ -153,9 +184,20 @@ void NewDataWriter::Close() {
   header_written_ = false;
 }
 
+LogNamer::NodeState *LogNamer::GetNodeState(size_t node_index,
+                                            const UUID &boot_uuid) {
+  auto it = node_states_.find(std::make_pair(node_index, boot_uuid));
+  if (it == node_states_.end()) {
+    it =
+        node_states_.emplace(std::make_pair(node_index, boot_uuid), NodeState())
+            .first;
+  }
+  return &it->second;
+}
+
 aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> LogNamer::MakeHeader(
     size_t node_index, const std::vector<NewDataWriter::State> &state,
-    const UUID &parts_uuid, int parts_index) const {
+    const UUID &parts_uuid, int parts_index) {
   const UUID &source_node_boot_uuid = state[node_index].boot_uuid;
   const Node *const source_node =
       configuration::GetNode(configuration_, node_index);
@@ -281,27 +323,26 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> LogNamer::MakeHeader(
   log_file_header_builder.add_max_out_of_order_duration(
       header_.message().max_out_of_order_duration());
 
+  NodeState *node_state = GetNodeState(node_index, source_node_boot_uuid);
   log_file_header_builder.add_monotonic_start_time(
       std::chrono::duration_cast<std::chrono::nanoseconds>(
-          node_states_[node_index].monotonic_start_time.time_since_epoch())
+          node_state->monotonic_start_time.time_since_epoch())
           .count());
   if (source_node == node_) {
     log_file_header_builder.add_realtime_start_time(
         std::chrono::duration_cast<std::chrono::nanoseconds>(
-            node_states_[node_index].realtime_start_time.time_since_epoch())
+            node_state->realtime_start_time.time_since_epoch())
             .count());
   } else {
     // Fill out the legacy start times.  Since these were implemented to never
     // change on reboot, they aren't very helpful in tracking what happened.
     log_file_header_builder.add_logger_monotonic_start_time(
         std::chrono::duration_cast<std::chrono::nanoseconds>(
-            node_states_[node_index]
-                .logger_monotonic_start_time.time_since_epoch())
+            node_state->logger_monotonic_start_time.time_since_epoch())
             .count());
     log_file_header_builder.add_logger_realtime_start_time(
         std::chrono::duration_cast<std::chrono::nanoseconds>(
-            node_states_[node_index]
-                .logger_realtime_start_time.time_since_epoch())
+            node_state->logger_realtime_start_time.time_since_epoch())
             .count());
   }
 

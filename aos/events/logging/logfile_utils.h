@@ -373,7 +373,10 @@ struct Message {
   // The channel.
   uint32_t channel_index = 0xffffffff;
   // The local queue index.
-  uint32_t queue_index = 0xffffffff;
+  // TODO(austin): Technically the boot inside queue_index is redundant with
+  // timestamp.  In practice, it is less error-prone to duplicate it.  Maybe a
+  // function to return the combined struct?
+  BootQueueIndex queue_index;
   // The local timestamp.
   BootTimestamp timestamp;
 
@@ -398,11 +401,11 @@ std::ostream &operator<<(std::ostream &os, const Message &m);
 struct TimestampedMessage {
   uint32_t channel_index = 0xffffffff;
 
-  uint32_t queue_index = 0xffffffff;
+  BootQueueIndex queue_index;
   BootTimestamp monotonic_event_time;
   realtime_clock::time_point realtime_event_time = realtime_clock::min_time;
 
-  uint32_t remote_queue_index = 0xffffffff;
+  BootQueueIndex remote_queue_index;
   BootTimestamp monotonic_remote_time;
   realtime_clock::time_point realtime_remote_time = realtime_clock::min_time;
 
@@ -598,8 +601,6 @@ class TimestampMapper {
   size_t node() const { return boot_merger_.node(); }
 
   // The start time of this log.
-  // TODO(austin): This concept is probably wrong...  We have start times per
-  // boot, and an order of them.
   monotonic_clock::time_point monotonic_start_time(size_t boot) const {
     return boot_merger_.monotonic_start_time(boot);
   }
@@ -694,6 +695,15 @@ class TimestampMapper {
 
   // Queues m into matched_messages_.
   void QueueMessage(Message *m);
+
+  // Returns the name of the node this class is sorting for.
+  std::string_view node_name() const {
+    return configuration_->has_nodes() ? configuration_->nodes()
+                                             ->Get(boot_merger_.node())
+                                             ->name()
+                                             ->string_view()
+                                       : "(single node)";
+  }
 
   // The node merger to source messages from.
   BootMerger boot_merger_;

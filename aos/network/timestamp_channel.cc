@@ -65,11 +65,15 @@ const Channel *ChannelTimestampFinder::ForChannel(
 
 ChannelTimestampSender::ChannelTimestampSender(aos::EventLoop *event_loop)
     : event_loop_(event_loop) {
-  CHECK(configuration::MultiNode(event_loop_->configuration()));
+  if (event_loop_) {
+    CHECK(configuration::MultiNode(event_loop_->configuration()));
+  }
 }
 
 aos::Sender<RemoteMessage> *ChannelTimestampSender::SenderForChannel(
     const Channel *channel, const Connection *connection) {
+  CHECK(event_loop_);
+
   ChannelTimestampFinder finder(event_loop_);
   // Look at any pre-created channel/connection pairs.
   {

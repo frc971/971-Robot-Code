@@ -58,6 +58,7 @@ class UUID {
   }
 
   bool operator==(const UUID &other) const { return other.span() == span(); }
+  bool operator<(const UUID &other) const { return other.span() < span(); }
   bool operator!=(const UUID &other) const { return other.span() != span(); }
 
  private:

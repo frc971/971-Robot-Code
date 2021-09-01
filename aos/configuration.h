@@ -134,6 +134,9 @@ bool ChannelMessageIsLoggedOnNode(const Channel *channel, const Node *node);
 bool ChannelMessageIsLoggedOnNode(const Channel *channel,
                                   std::string_view node_name);
 
+// Returns the number of connections.
+size_t ConnectionCount(const Channel *channel);
+
 const Connection *ConnectionToNode(const Channel *channel, const Node *node);
 // Returns true if the delivery timestamps are supposed to be logged on this
 // node.

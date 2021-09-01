@@ -33,6 +33,7 @@ Logger::Logger(EventLoop *event_loop, const Configuration *configuration,
               ? event_loop_->MakeFetcher<message_bridge::ServerStatistics>(
                     "/aos")
               : aos::Fetcher<message_bridge::ServerStatistics>()) {
+  timer_handler_->set_name("channel_poll");
   VLOG(1) << "Creating logger for " << FlatbufferToJson(node_);
 
   std::map<const Channel *, const Node *> timestamp_logger_channels;
@@ -289,9 +290,7 @@ void Logger::StartLogging(std::unique_ptr<LogNamer> log_namer,
 
   // Clear out any old timestamps in case we are re-starting logging.
   for (size_t i = 0; i < configuration::NodesCount(configuration_); ++i) {
-    log_namer_->SetStartTimes(
-        i, monotonic_clock::min_time, realtime_clock::min_time,
-        monotonic_clock::min_time, realtime_clock::min_time);
+    log_namer_->ClearStartTimes();
   }
 
   const aos::monotonic_clock::time_point fetch_time =
@@ -387,8 +386,7 @@ void Logger::WriteMissingTimestamps() {
             node, node_index,
             server_statistics_fetcher_.context().monotonic_event_time,
             server_statistics_fetcher_.context().realtime_event_time)) {
-      VLOG(1) << "Rotating because timestamps changed";
-      log_namer_->Rotate(node);
+      VLOG(1) << "Timestamps changed on " << aos::FlatbufferToJson(node);
     }
   }
 }
@@ -398,16 +396,16 @@ bool Logger::MaybeUpdateTimestamp(
     aos::monotonic_clock::time_point monotonic_start_time,
     aos::realtime_clock::time_point realtime_start_time) {
   // Bail early if the start times are already set.
-  if (log_namer_->monotonic_start_time(node_index) !=
-      monotonic_clock::min_time) {
-    return false;
-  }
-  if (node_ == node ||
-      !configuration::MultiNode(configuration_)) {
+  if (node_ == node || !configuration::MultiNode(configuration_)) {
+    if (log_namer_->monotonic_start_time(node_index,
+                                         event_loop_->boot_uuid()) !=
+        monotonic_clock::min_time) {
+      return false;
+    }
     // There are no offsets to compute for ourself, so always succeed.
-    log_namer_->SetStartTimes(node_index, monotonic_start_time,
-                              realtime_start_time, monotonic_start_time,
-                              realtime_start_time);
+    log_namer_->SetStartTimes(node_index, event_loop_->boot_uuid(),
+                              monotonic_start_time, realtime_start_time,
+                              monotonic_start_time, realtime_start_time);
     return true;
   } else if (server_statistics_fetcher_.get() != nullptr) {
     // We must be a remote node now.  Look for the connection and see if it is
@@ -432,9 +430,20 @@ bool Logger::MaybeUpdateTimestamp(
         break;
       }
 
+      const UUID boot_uuid =
+          UUID::FromString(connection->boot_uuid()->string_view());
+
+      if (log_namer_->monotonic_start_time(node_index, boot_uuid) !=
+          monotonic_clock::min_time) {
+        break;
+      }
+
+      VLOG(1) << "Updating start time for "
+              << aos::FlatbufferToJson(connection);
+
       // Found it and it is connected.  Compensate and go.
       log_namer_->SetStartTimes(
-          node_index,
+          node_index, boot_uuid,
           monotonic_start_time +
               std::chrono::nanoseconds(connection->monotonic_offset()),
           realtime_start_time, monotonic_start_time, realtime_start_time);
