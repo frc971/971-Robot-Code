@@ -796,10 +796,20 @@ NodeMerger::NodeMerger(std::vector<LogParts> parts) {
   monotonic_start_time_ = monotonic_clock::max_time;
   realtime_start_time_ = realtime_clock::max_time;
   for (const LogPartsSorter &parts_sorter : parts_sorters_) {
-    if (parts_sorter.monotonic_start_time() < monotonic_start_time_) {
+    // We want to capture the earliest meaningful start time here. The start
+    // time defaults to min_time when there's no meaningful value to report, so
+    // let's ignore those.
+    if (parts_sorter.monotonic_start_time() != monotonic_clock::min_time &&
+        parts_sorter.monotonic_start_time() < monotonic_start_time_) {
       monotonic_start_time_ = parts_sorter.monotonic_start_time();
       realtime_start_time_ = parts_sorter.realtime_start_time();
     }
+  }
+
+  // If there was no meaningful start time reported, just use min_time.
+  if (monotonic_start_time_ == monotonic_clock::max_time) {
+    monotonic_start_time_ = monotonic_clock::min_time;
+    realtime_start_time_ = realtime_clock::min_time;
   }
 }
 
@@ -1150,7 +1160,7 @@ Message TimestampMapper::MatchingMessageFor(const Message &message) {
   CHECK(message.data.message().has_remote_queue_index());
   const BootQueueIndex remote_queue_index =
       BootQueueIndex{.boot = message.monotonic_remote_boot,
-                    .index = message.data.message().remote_queue_index()};
+                     .index = message.data.message().remote_queue_index()};
 
   CHECK(message.data.message().has_monotonic_remote_time());
   CHECK(message.data.message().has_realtime_remote_time());
