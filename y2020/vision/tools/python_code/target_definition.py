@@ -243,6 +243,7 @@ def load_training_data():
         power_port_red_main_panel_polygon_points_2d)
     ideal_power_port_red.polygon_list_3d.append(
         power_port_red_main_panel_polygon_points_3d)
+    # NOTE: We are currently not using the wing, since our actual targets are all planar
 
     # Define the pose of the target
     # Location is on the ground, at the center of the target
@@ -422,28 +423,32 @@ def load_training_data():
     training_target_loading_bay_blue.target_radius = target_radius_default
 
     ######################################################################
-    # Generate lists of ideal and training targets based on all the
-    # definitions above
+    # DEFINE the targets here.  Generate lists of ideal and training
+    # targets based on all the definitions above
     ######################################################################
 
-    ### Taped power port
-    ideal_target_list.append(ideal_power_port_taped)
-    training_target_list.append(training_target_power_port_taped)
+    ### Taped power port (not currently used)
+    #glog.info("Adding hacked/taped up power port to the model list")
+    #ideal_target_list.append(ideal_power_port_taped)
+    #training_target_list.append(training_target_power_port_taped)
 
     ### Red Power Port
-    ### NOTE: Temporarily taking this out of the list
-    #ideal_target_list.append(ideal_power_port_red)
-    #training_target_list.append(training_target_power_port_red)
+    glog.info("Adding red power port to the model list")
+    ideal_target_list.append(ideal_power_port_red)
+    training_target_list.append(training_target_power_port_red)
 
     ### Red Loading Bay
+    glog.info("Adding red loading bay to the model list")
     ideal_target_list.append(ideal_loading_bay_red)
     training_target_list.append(training_target_loading_bay_red)
 
     ### Blue Power Port
+    #glog.info("Adding blue power port to the model list")
     #ideal_target_list.append(ideal_power_port_blue)
     #training_target_list.append(training_target_power_port_blue)
 
     ### Blue Loading Bay
+    glog.info("Adding blue loading bay to the model list")
     ideal_target_list.append(ideal_loading_bay_blue)
     training_target_list.append(training_target_loading_bay_blue)
 
