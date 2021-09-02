@@ -76,3 +76,29 @@ cc_binary(
         "//aos/events:shm_event_loop",
     ],
 )
+
+cc_test(
+    name = "superstructure_lib_test",
+    srcs = [
+        "superstructure_lib_test.cc",
+    ],
+    data = [
+        "//y2021_bot3:config",
+    ],
+    deps = [
+        ":superstructure_goal_fbs",
+        ":superstructure_lib",
+        ":superstructure_output_fbs",
+        ":superstructure_position_fbs",
+        ":superstructure_status_fbs",
+        "//aos:math",
+        "//aos/events/logging:log_writer",
+        "//aos/testing:googletest",
+        "//aos/time",
+        "//frc971/control_loops:capped_test_plant",
+        "//frc971/control_loops:control_loop_test",
+        "//frc971/control_loops:position_sensor_sim",
+        "//frc971/control_loops:team_number_test_environment",
+        "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
+    ],
+)
