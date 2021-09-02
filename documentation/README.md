@@ -12,3 +12,4 @@ as a set of markdown files.
 * [Submitting code for review](tutorials/submitting-code-for-a-review.md)
 * [Create a new autonomous routine](tutorials/create-a-new-autonomous.md)
 * [Tune an autonomous](tutorials/tune-an-autonomous.md)
+* [Set up access to the build server using vscode](tutorials/setup-ssh-vscode.md)
