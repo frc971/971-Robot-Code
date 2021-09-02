@@ -1480,6 +1480,11 @@ TEST_P(RemoteMessageSimulatedEventLoopTest, MultinodeStartupTesting) {
 // Tests that rebooting a node changes the ServerStatistics message and the
 // RemoteTimestamp message.
 TEST_P(RemoteMessageSimulatedEventLoopTest, BootUUIDTest) {
+  const UUID pi1_boot0 = UUID::Random();
+  const UUID pi2_boot0 = UUID::Random();
+  const UUID pi2_boot1 = UUID::Random();
+  const UUID pi3_boot0 = UUID::Random();
+  UUID expected_boot_uuid = pi2_boot0;
 
   message_bridge::TestingTimeConverter time(
       configuration::NodesCount(&config.message()));
@@ -1493,10 +1498,6 @@ TEST_P(RemoteMessageSimulatedEventLoopTest, BootUUIDTest) {
   const size_t pi3_index =
       configuration::GetNodeIndex(&config.message(), "pi3");
 
-  const UUID pi1_boot0 = UUID::Random();
-  const UUID pi2_boot0 = UUID::Random();
-  const UUID pi2_boot1 = UUID::Random();
-  const UUID pi3_boot0 = UUID::Random();
   {
     time.AddNextTimestamp(distributed_clock::epoch(),
                           {BootTimestamp::epoch(), BootTimestamp::epoch(),
@@ -1524,7 +1525,6 @@ TEST_P(RemoteMessageSimulatedEventLoopTest, BootUUIDTest) {
 
   std::unique_ptr<EventLoop> pi1_remote_timestamp =
       pi1->MakeEventLoop("pi1_remote_timestamp");
-  UUID expected_boot_uuid = pi2_boot0;
 
   int timestamp_count = 0;
   pi1_remote_timestamp->MakeWatcher(
@@ -1625,6 +1625,11 @@ TEST(SimulatedEventLoopTest, MultinodePingPongStartup) {
       aos::configuration::ReadConfig(
           ArtifactPath("aos/events/multinode_pingpong_test_split_config.json"));
 
+  size_t pi1_shutdown_counter = 0;
+  size_t pi2_shutdown_counter = 0;
+  MessageCounter<examples::Pong> *pi1_pong_counter = nullptr;
+  MessageCounter<examples::Ping> *pi2_ping_counter = nullptr;
+
   message_bridge::TestingTimeConverter time(
       configuration::NodesCount(&config.message()));
   SimulatedEventLoopFactory factory(&config.message());
@@ -1659,13 +1664,8 @@ TEST(SimulatedEventLoopTest, MultinodePingPongStartup) {
   pi2->OnStartup([&pi2_startup_counter]() { ++pi2_startup_counter; });
 
   // Shutdown just counts.
-  size_t pi1_shutdown_counter = 0;
-  size_t pi2_shutdown_counter = 0;
   pi1->OnShutdown([&pi1_shutdown_counter]() { ++pi1_shutdown_counter; });
   pi2->OnShutdown([&pi2_shutdown_counter]() { ++pi2_shutdown_counter; });
-
-  MessageCounter<examples::Pong> *pi1_pong_counter = nullptr;
-  MessageCounter<examples::Ping> *pi2_ping_counter = nullptr;
 
   // Automatically make counters on startup.
   pi1->OnStartup([&pi1_pong_counter, pi1]() {
@@ -1758,6 +1758,11 @@ TEST(SimulatedEventLoopTest, OnStartupShutdownAllRestarts) {
       aos::configuration::ReadConfig(
           ArtifactPath("aos/events/multinode_pingpong_test_split_config.json"));
 
+  int startup_count0 = 0;
+  int shutdown_count0 = 0;
+  int startup_count1 = 0;
+  int shutdown_count1 = 0;
+
   message_bridge::TestingTimeConverter time(
       configuration::NodesCount(&config.message()));
   SimulatedEventLoopFactory factory(&config.message());
@@ -1769,11 +1774,6 @@ TEST(SimulatedEventLoopTest, OnStartupShutdownAllRestarts) {
   time.RebootAt(0, distributed_clock::epoch() + 2 * dt);
 
   NodeEventLoopFactory *pi1 = factory.GetNodeEventLoopFactory("pi1");
-
-  int startup_count0 = 0;
-  int shutdown_count0 = 0;
-  int startup_count1 = 0;
-  int shutdown_count1 = 0;
 
   pi1->OnStartup([&]() { ++startup_count0; });
   pi1->OnShutdown([&]() { ++shutdown_count0; });
