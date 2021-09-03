@@ -256,6 +256,12 @@ void Subscriber::AddListener(std::shared_ptr<ScopedDataChannel> data_channel,
   ChannelInformation info;
   info.transfer_method = transfer_method;
 
+  // If we aren't keeping a buffer and there are no existing listeners, call
+  // Fetch() to avoid falling behind on future calls to FetchNext().
+  if (channels_.empty() && buffer_size_ == 0) {
+    fetcher_->Fetch();
+  }
+
   channels_.emplace(data_channel, info);
 }
 
@@ -542,7 +548,14 @@ void ApplicationConnection::HandleSignallingData(
         configuration::GetChannel(event_loop_->configuration(), channel,
                                   event_loop_->name(), event_loop_->node());
     if (comparison_channel == nullptr) {
-      LOG(ERROR) << "Channel not available: "
+      LOG(ERROR) << "Channel does not exist: "
+                 << configuration::StrippedChannelToString(channel);
+      continue;
+    }
+    if (!configuration::ChannelIsReadableOnNode(comparison_channel,
+                                                event_loop_->node())) {
+      LOG(ERROR) << "Channel not available on node "
+                 << event_loop_->node()->name()->string_view() << ": "
                  << configuration::StrippedChannelToString(channel);
       continue;
     }

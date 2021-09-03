@@ -16,6 +16,7 @@ robot_downloader(
     ],
     start_binaries = [
         "//aos/events/logging:logger_main",
+        "//aos/network:web_proxy_main",
         ":joystick_reader",
         ":wpilib_interface",
         "//aos/network:message_bridge_client",
@@ -248,6 +249,19 @@ py_library(
     srcs = ["__init__.py"],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
+)
+
+sh_binary(
+    name = "log_web_proxy",
+    srcs = ["log_web_proxy.sh"],
+    data = [
+        ":config",
+        "//aos/network:log_web_proxy_main",
+        "//y2020/www:camera_main_bundle.min.js",
+        "//y2020/www:field_main_bundle.min.js",
+        "//y2020/www:files",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 sh_binary(

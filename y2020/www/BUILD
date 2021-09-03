@@ -35,6 +35,7 @@ ts_library(
         "//aos/network:web_proxy_ts_fbs",
         "//aos/network/www:proxy",
         "//frc971/control_loops/drivetrain:drivetrain_status_ts_fbs",
+        "//y2020/control_loops/superstructure:superstructure_status_ts_fbs",
         "//y2020/vision/sift:sift_ts_fbs",
         "@com_github_google_flatbuffers//ts:flatbuffers_ts",
     ],

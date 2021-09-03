@@ -5,8 +5,10 @@ import {ByteBuffer} from 'org_frc971/external/com_github_google_flatbuffers/ts/b
 import * as drivetrain from 'org_frc971/frc971/control_loops/drivetrain/drivetrain_status_generated';
 import * as sift from 'org_frc971/y2020/vision/sift/sift_generated';
 import * as web_proxy from 'org_frc971/aos/network/web_proxy_generated';
+import * as ss from 'org_frc971/y2020/control_loops/superstructure/superstructure_status_generated'
 
 import DrivetrainStatus = drivetrain.frc971.control_loops.drivetrain.Status;
+import SuperstructureStatus = ss.y2020.control_loops.superstructure.Status;
 import ImageMatchResult = sift.frc971.vision.sift.ImageMatchResult;
 import Channel = configuration.aos.Channel;
 import SubscriberRequest = web_proxy.aos.web_proxy.SubscriberRequest;
@@ -59,35 +61,55 @@ const LOADING_ZONE_WIDTH = 60 * IN_TO_M;
 const ROBOT_WIDTH = 28 * IN_TO_M;
 const ROBOT_LENGTH = 30 * IN_TO_M;
 
+
 export class FieldHandler {
   private canvas = document.createElement('canvas');
-  private imageMatchResult: ImageMatchResult|null = null;
+  private imageMatchResult =  new Map<string, ImageMatchResult>();
   private drivetrainStatus: DrivetrainStatus|null = null;
+  private superstructureStatus: SuperstructureStatus|null = null;
 
   constructor(private readonly connection: Connection) {
     document.body.appendChild(this.canvas);
 
     this.connection.addConfigHandler(() => {
-      this.connection.addHandler(
-          '/camera', ImageMatchResult.getFullyQualifiedName(), (res) => {
-            this.handleImageMatchResult(res);
-          });
+      // Go through and register handlers for both all the individual pis as
+      // well as the local pi. Depending on the node that we are running on,
+      // different subsets of these will be available.
+      for (const prefix of ['', '/pi1', '/pi2', '/pi3', '/pi4']) {
+        this.connection.addHandler(
+            prefix + '/camera', ImageMatchResult.getFullyQualifiedName(), (res) => {
+              this.handleImageMatchResult(prefix, res);
+            });
+      }
       this.connection.addHandler(
           '/drivetrain', DrivetrainStatus.getFullyQualifiedName(), (data) => {
             this.handleDrivetrainStatus(data);
           });
+      this.connection.addHandler(
+          '/superstructure', SuperstructureStatus.getFullyQualifiedName(),
+          (data) => {
+            this.handleSuperstructureStatus(data);
+          });
     });
   }
 
-  private handleImageMatchResult(data: Uint8Array): void {
+  private handleImageMatchResult(prefix: string, data: Uint8Array): void {
     const fbBuffer = new ByteBuffer(data);
-    this.imageMatchResult = ImageMatchResult.getRootAsImageMatchResult(
-        fbBuffer as unknown as flatbuffers.ByteBuffer);
+    this.imageMatchResult.set(
+        prefix,
+        ImageMatchResult.getRootAsImageMatchResult(
+            fbBuffer as unknown as flatbuffers.ByteBuffer));
   }
 
   private handleDrivetrainStatus(data: Uint8Array): void {
     const fbBuffer = new ByteBuffer(data);
     this.drivetrainStatus = DrivetrainStatus.getRootAsStatus(
+        fbBuffer as unknown as flatbuffers.ByteBuffer);
+  }
+
+  private handleSuperstructureStatus(data: Uint8Array): void {
+    const fbBuffer = new ByteBuffer(data);
+    this.superstructureStatus = SuperstructureStatus.getRootAsStatus(
         fbBuffer as unknown as flatbuffers.ByteBuffer);
   }
 
@@ -177,13 +199,29 @@ export class FieldHandler {
     ctx.restore();
   }
 
-  drawRobot(x: number, y: number, theta: number): void {
+  drawRobot(x: number, y: number, theta: number, turret: number|null): void {
     const ctx = this.canvas.getContext('2d');
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(theta);
     ctx.rect(-ROBOT_LENGTH / 2, -ROBOT_WIDTH / 2, ROBOT_LENGTH, ROBOT_WIDTH);
     ctx.stroke();
+    if (turret) {
+      ctx.save();
+      ctx.rotate(turret + Math.PI);
+      const turretRadius = ROBOT_WIDTH / 4.0;
+      ctx.strokeStyle = "red";
+      // Draw circle for turret.
+      ctx.beginPath();
+      ctx.arc(0, 0, turretRadius, 0, 2.0 * Math.PI);
+      ctx.stroke();
+      // Draw line in circle to show forwards.
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(turretRadius, 0);
+      ctx.stroke();
+      ctx.restore();
+    }
     ctx.beginPath();
     ctx.moveTo(0, 0);
     ctx.lineTo(ROBOT_LENGTH / 2, 0);
@@ -195,15 +233,19 @@ export class FieldHandler {
     this.reset();
     this.drawField();
     // draw cameras
-    if (this.imageMatchResult) {
-      for (let i = 0; i < this.imageMatchResult.cameraPosesLength(); i++) {
-        const pose = this.imageMatchResult.cameraPoses(i);
+    for (const keyPair of this.imageMatchResult) {
+      const value = keyPair[1];
+      for (let i = 0; i < value.cameraPosesLength(); i++) {
+        const pose = value.cameraPoses(i);
         const mat = pose.fieldToCamera();
+        // Matrix layout:
+        // [0,  1,  2,  3]
+        // [4,  5,  6,  7]
+        // [8,  9,  10, 11]
+        // [12, 13, 14, 15]
         const x = mat.data(3);
         const y = mat.data(7);
-        const theta = Math.atan2(
-            -mat.data(8),
-            Math.sqrt(Math.pow(mat.data(9), 2) + Math.pow(mat.data(10), 2)));
+        const theta = Math.atan2(mat.data(6), mat.data(2));
         this.drawCamera(x, y, theta);
       }
     }
@@ -211,7 +253,10 @@ export class FieldHandler {
     if (this.drivetrainStatus) {
       this.drawRobot(
           this.drivetrainStatus.x(), this.drivetrainStatus.y(),
-          this.drivetrainStatus.theta());
+          this.drivetrainStatus.theta(),
+          this.superstructureStatus ?
+              this.superstructureStatus.turret().position() :
+              null);
     }
 
     window.requestAnimationFrame(() => this.draw());
