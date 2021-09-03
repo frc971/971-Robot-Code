@@ -705,9 +705,13 @@ Message *LogPartsSorter::Front() {
       size_t monotonic_remote_boot = 0xffffff;
 
       if (m.value().message().has_monotonic_remote_time()) {
+        const Node *node = parts().config->nodes()->Get(
+            source_node_index_[m->message().channel_index()]);
+
         std::optional<size_t> boot = parts_message_reader_.boot_count(
             source_node_index_[m->message().channel_index()]);
-        CHECK(boot) << ": Failed to find boot for node "
+        CHECK(boot) << ": Failed to find boot for node " << MaybeNodeName(node)
+                    << ", with index "
                     << source_node_index_[m->message().channel_index()];
         monotonic_remote_boot = *boot;
       }

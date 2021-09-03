@@ -132,9 +132,9 @@ void NewDataWriter::QueueMessage(flatbuffers::FlatBufferBuilder *fbb,
   CHECK_EQ(log_namer_->monotonic_start_time(node_index_, source_node_boot_uuid),
            monotonic_start_time_);
   CHECK_EQ(state_[node_index_].boot_uuid, source_node_boot_uuid);
+  CHECK(writer);
   CHECK(header_written_) << ": Attempting to write message before header to "
                          << writer->filename();
-  CHECK(writer);
   writer->QueueSizedFlatbuffer(fbb, now);
 }
 
