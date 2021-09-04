@@ -84,6 +84,9 @@ std::vector<Eigen::Matrix<double, 4, 4>> TargetLocations() {
   H.block<3, 1>(0, 3) << 10.0, 0, 0;
   locations.push_back(H);
   H.block<3, 1>(0, 3) << -10.0, 0, 0;
+  H.block<3, 3>(0, 0) =
+      Eigen::AngleAxis<double>(1.1, Eigen::Vector3d::UnitZ()) *
+      H.block<3, 3>(0, 0);
   locations.push_back(H);
   return locations;
 }
