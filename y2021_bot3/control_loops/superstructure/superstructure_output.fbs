@@ -1,6 +1,13 @@
 namespace y2021_bot3.control_loops.superstructure;
 
 table Output {
+  // Voltage for intake motor, positive number is intaking balls
+  intake_volts:double (id:0);
+
+  // Voltage for outtake motor, positive number is outtaking balls
+  outtake_volts:double (id:1);
+
+  // TODO: Add climber
 
 }
 
