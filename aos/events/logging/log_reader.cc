@@ -825,6 +825,9 @@ void LogReader::RegisterDuringStartup(EventLoop *event_loop, const Node *node) {
         // all.  Read the rest of the messages and drop them on the floor while
         // doing some basic validation.
         while (state->OldestMessageTime() != BootTimestamp::max_time()) {
+          // TODO(austin): This force queues up the rest of the log file for all
+          // the other nodes.  We should do this through the timer instead to
+          // keep memory usage down.
           TimestampedMessage next = state->PopOldest();
           // Make sure that once we have seen the last message on a channel,
           // data doesn't start back up again.  If the user wants to play
