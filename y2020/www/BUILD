@@ -78,6 +78,7 @@ aos_downloader_dir(
         ":camera_main_bundle",
         ":field_main_bundle",
         ":files",
+        "//frc971/analysis:plot_index_bundle.min.js",
     ],
     dir = "www",
     target_compatible_with = ["@platforms//os:linux"],
