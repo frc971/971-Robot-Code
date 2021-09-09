@@ -6,6 +6,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/btree_map.h"
 #include "aos/events/logging/logfile_utils.h"
 #include "aos/flatbuffer_merge.h"
 #include "aos/flatbuffers.h"
@@ -59,6 +60,20 @@ bool ConfigOnly(const LogFileHeader *header) {
   if (header->has_oldest_local_unreliable_monotonic_timestamps()) return false;
 
   return header->has_configuration();
+}
+
+bool HasNewTimestamps(const LogFileHeader *header) {
+  if (header->has_oldest_remote_monotonic_timestamps()) {
+    CHECK(header->has_oldest_local_monotonic_timestamps());
+    CHECK(header->has_oldest_remote_unreliable_monotonic_timestamps());
+    CHECK(header->has_oldest_local_unreliable_monotonic_timestamps());
+    return true;
+  } else {
+    CHECK(!header->has_oldest_local_monotonic_timestamps());
+    CHECK(!header->has_oldest_remote_unreliable_monotonic_timestamps());
+    CHECK(!header->has_oldest_local_unreliable_monotonic_timestamps());
+    return false;
+  }
 }
 
 }  // namespace
@@ -190,6 +205,32 @@ struct MapBoots {
   std::map<std::string, std::vector<std::string>> boots;
 };
 
+// For a pair of nodes, this holds the oldest times that messages were
+// transfered.
+struct BootPairTimes {
+  // Pair of local and remote timestamps for the oldest message forwarded to
+  // this node.
+  monotonic_clock::time_point oldest_remote_monotonic_timestamp;
+  monotonic_clock::time_point oldest_local_monotonic_timestamp;
+
+  // Pair of local and remote timestamps for the oldest unreliable message
+  // forwarded to this node.
+  monotonic_clock::time_point oldest_remote_unreliable_monotonic_timestamp;
+  monotonic_clock::time_point oldest_local_unreliable_monotonic_timestamp;
+};
+
+std::ostream &operator<<(std::ostream &out, const BootPairTimes &time) {
+  out << "{.oldest_remote_monotonic_timestamp="
+      << time.oldest_remote_monotonic_timestamp
+      << ", .oldest_local_monotonic_timestamp="
+      << time.oldest_local_monotonic_timestamp
+      << ", .oldest_remote_unreliable_monotonic_timestamp="
+      << time.oldest_remote_unreliable_monotonic_timestamp
+      << ", .oldest_local_unreliable_monotonic_timestamp="
+      << time.oldest_local_unreliable_monotonic_timestamp << "}";
+  return out;
+}
+
 // Helper class to make it easier to sort a list of log files into
 // std::vector<LogFile>
 struct PartsSorter {
@@ -199,6 +240,19 @@ struct PartsSorter {
   // Map from sha256 to the config.
   std::map<std::string, std::shared_ptr<const Configuration>>
       config_sha256_lookup;
+
+  // List of all config sha256's we have found.
+  std::set<std::string> config_sha256_list;
+
+  // Map from a observed pair of boots to the associated timestamps.
+  // logger_node -> logger_node_boot_uuid -> destination_node index ->
+  // destination_boot_uuid -> times.
+  absl::btree_map<
+      std::string,
+      absl::btree_map<
+          std::string,
+          absl::btree_map<size_t, absl::btree_map<std::string, BootPairTimes>>>>
+      boot_times;
 
   // Map holding the log_event_uuid -> second map.  The second map holds the
   // parts_uuid -> list of parts for sorting.
@@ -211,8 +265,12 @@ struct PartsSorter {
   // Populates the class's datastructures from the input file list.
   void PopulateFromFiles(const std::vector<std::string> &parts);
 
-  // Wrangle parts_list into a map of boot uuids -> boot counts.
+  // Wrangles everything into a map of boot uuids -> boot counts.
   MapBoots ComputeBootCounts();
+
+  // Computes the boot constraints to solve for old and new logs.
+  std::map<std::string, NodeBootState> ComputeOldBootConstraints();
+  std::map<std::string, NodeBootState> ComputeNewBootConstraints();
 
   // Reformats old_parts into a list of logfiles and returns it.  This destroys
   // state in PartsSorter.
@@ -270,9 +328,9 @@ void PartsSorter::PopulateFromFiles(const std::vector<std::string> &parts) {
             ? log_header->message().source_node_boot_uuid()->string_view()
             : "";
 
-    const std::string_view configuration_sha256 =
+    std::string configuration_sha256 =
         log_header->message().has_configuration_sha256()
-            ? log_header->message().configuration_sha256()->string_view()
+            ? log_header->message().configuration_sha256()->str()
             : "";
 
     if (ConfigOnly(&log_header->message())) {
@@ -286,6 +344,7 @@ void PartsSorter::PopulateFromFiles(const std::vector<std::string> &parts) {
             hash, std::shared_ptr<const Configuration>(
                       header, header->message().configuration()));
       }
+      config_sha256_list.emplace(hash);
       continue;
     }
 
@@ -294,9 +353,34 @@ void PartsSorter::PopulateFromFiles(const std::vector<std::string> &parts) {
     if (configuration_sha256.empty()) {
       CHECK(log_header->message().has_configuration())
           << ": Failed to find header on " << part;
+      // If we don't have a configuration_sha256, we need to have a
+      // configuration directly inside the header.  This ends up being a bit
+      // unwieldy to deal with, so let's instead copy the configuration, hash
+      // it, and then use the configuration_sha256 that we found to continue
+      // down the old code path.
+
+      // Do a recursive copy to normalize the flatbuffer.  Different
+      // configurations can be built different ways, and can even have their
+      // vtable out of order.  Don't think and just trigger a copy.
+      const FlatbufferDetachedBuffer<Configuration> config_copy =
+          RecursiveCopyFlatBuffer(log_header->message().configuration());
+      std::string config_copy_sha256 = Sha256(config_copy.span());
+
+      if (config_sha256_lookup.find(config_copy_sha256) ==
+          config_sha256_lookup.end()) {
+        auto header =
+            std::make_shared<SizePrefixedFlatbufferVector<LogFileHeader>>(
+                *log_header);
+        config_sha256_lookup.emplace(
+            config_copy_sha256, std::shared_ptr<const Configuration>(
+                                    header, header->message().configuration()));
+      }
+      config_sha256_list.emplace(config_copy_sha256);
+      configuration_sha256 = std::move(config_copy_sha256);
     } else {
       CHECK(!log_header->message().has_configuration())
           << ": Found header where one shouldn't be on " << part;
+      config_sha256_list.emplace(configuration_sha256);
     }
 
     // Looks like an old log.  No UUID, index, and also single node.  We have
@@ -327,6 +411,7 @@ void PartsSorter::PopulateFromFiles(const std::vector<std::string> &parts) {
         old_parts.emplace_back();
         old_parts.back().parts.monotonic_start_time = monotonic_start_time;
         old_parts.back().parts.realtime_start_time = realtime_start_time;
+        old_parts.back().parts.config_sha256 = configuration_sha256;
         old_parts.back().unsorted_parts.emplace_back(
             std::make_pair(first_message_time, part));
         old_parts.back().name = name;
@@ -334,6 +419,7 @@ void PartsSorter::PopulateFromFiles(const std::vector<std::string> &parts) {
         result->unsorted_parts.emplace_back(
             std::make_pair(first_message_time, part));
         CHECK_EQ(result->name, name);
+        CHECK_EQ(result->parts.config_sha256, configuration_sha256);
       }
       continue;
     }
@@ -377,7 +463,7 @@ void PartsSorter::PopulateFromFiles(const std::vector<std::string> &parts) {
     }
 
     VLOG(1) << "Parts: " << parts_uuid << ", source boot uuid "
-            << source_boot_uuid;
+            << source_boot_uuid << " " << parts_index;
     auto it = log_it->second.unsorted_parts.find(
         std::pair(parts_uuid, std::string(source_boot_uuid)));
     if (it == log_it->second.unsorted_parts.end()) {
@@ -395,6 +481,135 @@ void PartsSorter::PopulateFromFiles(const std::vector<std::string> &parts) {
       it->second.config_sha256 = configuration_sha256;
     } else {
       CHECK_EQ(it->second.config_sha256, configuration_sha256);
+    }
+
+    // We've got a newer log with boot_uuids, and oldest timestamps.  Fill in
+    // this->boot_times with the info we have found.
+    if (HasNewTimestamps(&log_header->message())) {
+      auto node_boot_times_it = boot_times.find(logger_node);
+      if (node_boot_times_it == boot_times.end()) {
+        node_boot_times_it =
+            boot_times
+                .emplace(
+                    logger_node,
+                    absl::btree_map<
+                        std::string,
+                        absl::btree_map<
+                            size_t,
+                            absl::btree_map<std::string, BootPairTimes>>>())
+                .first;
+      }
+      auto source_boot_times_it =
+          node_boot_times_it->second.find(std::string(logger_boot_uuid));
+
+      if (source_boot_times_it == node_boot_times_it->second.end()) {
+        source_boot_times_it =
+            node_boot_times_it->second
+                .emplace(
+                    logger_boot_uuid,
+                    absl::btree_map<
+                        size_t, absl::btree_map<std::string, BootPairTimes>>())
+                .first;
+      }
+
+      // Older logs don't have our fancy new boot_uuids and oldest timestamps.
+      // So only fill those out when we find them.
+      CHECK(log_header->message().has_boot_uuids());
+      const size_t boot_uuids_size = log_header->message().boot_uuids()->size();
+      CHECK_EQ(
+          boot_uuids_size,
+          log_header->message().oldest_local_monotonic_timestamps()->size());
+      CHECK_EQ(
+          boot_uuids_size,
+          log_header->message().oldest_remote_monotonic_timestamps()->size());
+      CHECK_EQ(boot_uuids_size,
+               log_header->message()
+                   .oldest_local_unreliable_monotonic_timestamps()
+                   ->size());
+      CHECK_EQ(boot_uuids_size,
+               log_header->message()
+                   .oldest_remote_unreliable_monotonic_timestamps()
+                   ->size());
+      CHECK(!logger_boot_uuid.empty());
+      for (size_t node_index = 0; node_index < boot_uuids_size; ++node_index) {
+        const std::string_view boot_uuid =
+            log_header->message().boot_uuids()->Get(node_index)->string_view();
+
+        const monotonic_clock::time_point oldest_local_monotonic_timestamp(
+            chrono::nanoseconds(
+                log_header->message().oldest_local_monotonic_timestamps()->Get(
+                    node_index)));
+        const monotonic_clock::time_point oldest_remote_monotonic_timestamp(
+            chrono::nanoseconds(
+                log_header->message().oldest_remote_monotonic_timestamps()->Get(
+                    node_index)));
+        const monotonic_clock::time_point
+            oldest_local_unreliable_monotonic_timestamp(chrono::nanoseconds(
+                log_header->message()
+                    .oldest_local_unreliable_monotonic_timestamps()
+                    ->Get(node_index)));
+        const monotonic_clock::time_point
+            oldest_remote_unreliable_monotonic_timestamp(chrono::nanoseconds(
+                log_header->message()
+                    .oldest_remote_unreliable_monotonic_timestamps()
+                    ->Get(node_index)));
+        if (boot_uuid.empty() || boot_uuid == logger_boot_uuid) {
+          CHECK_EQ(oldest_local_monotonic_timestamp, monotonic_clock::max_time);
+          CHECK_EQ(oldest_remote_monotonic_timestamp,
+                   monotonic_clock::max_time);
+          CHECK_EQ(oldest_local_unreliable_monotonic_timestamp,
+                   monotonic_clock::max_time);
+          CHECK_EQ(oldest_remote_unreliable_monotonic_timestamp,
+                   monotonic_clock::max_time);
+          continue;
+        }
+
+        // Now, we have a valid pairing.
+        auto destination_boot_times_it =
+            source_boot_times_it->second.find(node_index);
+        if (destination_boot_times_it == source_boot_times_it->second.end()) {
+          destination_boot_times_it =
+              source_boot_times_it->second
+                  .emplace(node_index,
+                           absl::btree_map<std::string, BootPairTimes>())
+                  .first;
+        }
+
+        auto boot_times_it =
+            destination_boot_times_it->second.find(std::string(boot_uuid));
+
+        if (boot_times_it == destination_boot_times_it->second.end()) {
+          // We have a new boot UUID pairing.  Copy over the data we have.
+          destination_boot_times_it->second.emplace(
+              boot_uuid,
+              BootPairTimes{.oldest_remote_monotonic_timestamp =
+                                oldest_remote_monotonic_timestamp,
+                            .oldest_local_monotonic_timestamp =
+                                oldest_local_monotonic_timestamp,
+                            .oldest_remote_unreliable_monotonic_timestamp =
+                                oldest_remote_unreliable_monotonic_timestamp,
+                            .oldest_local_unreliable_monotonic_timestamp =
+                                oldest_local_unreliable_monotonic_timestamp});
+        } else {
+          // If we found an existing entry, update the min to be the min of all
+          // records.  This lets us combine info from multiple part files.
+          if (oldest_remote_monotonic_timestamp <
+              boot_times_it->second.oldest_remote_monotonic_timestamp) {
+            boot_times_it->second.oldest_remote_monotonic_timestamp =
+                oldest_remote_monotonic_timestamp;
+            boot_times_it->second.oldest_local_monotonic_timestamp =
+                oldest_local_monotonic_timestamp;
+          }
+          if (oldest_remote_unreliable_monotonic_timestamp <
+              boot_times_it->second
+                  .oldest_remote_unreliable_monotonic_timestamp) {
+            boot_times_it->second.oldest_remote_unreliable_monotonic_timestamp =
+                oldest_remote_unreliable_monotonic_timestamp;
+            boot_times_it->second.oldest_local_unreliable_monotonic_timestamp =
+                oldest_local_unreliable_monotonic_timestamp;
+          }
+        }
+      }
     }
 
     // First part might be min_time.  If it is, try to put a better time on it.
@@ -421,8 +636,6 @@ void PartsSorter::PopulateFromFiles(const std::vector<std::string> &parts) {
 
 std::vector<LogFile> PartsSorter::FormatOldParts() {
   // Now reformat old_parts to be in the right datastructure to report.
-  std::map<std::string, std::shared_ptr<const Configuration>>
-      copied_config_sha256;
   CHECK(!old_parts.empty());
 
   std::vector<LogFile> result;
@@ -452,16 +665,11 @@ std::vector<LogFile> PartsSorter::FormatOldParts() {
 
     std::string config_copy_sha256 = Sha256(config_copy.span());
 
-    auto it = copied_config_sha256.find(config_copy_sha256);
-    if (it != copied_config_sha256.end()) {
-      log_file.config = it->second;
-    } else {
-      std::shared_ptr<const Configuration> config(
-          header, header->message().configuration());
+    auto it = config_sha256_lookup.find(p.parts.config_sha256);
+    CHECK(it != config_sha256_lookup.end());
 
-      copied_config_sha256.emplace(std::move(config_copy_sha256), config);
-      log_file.config = config;
-    }
+    log_file.config = it->second;
+    log_file.config_sha256 = p.parts.config_sha256;
 
     for (std::pair<monotonic_clock::time_point, std::string> &f :
          p.unsorted_parts) {
@@ -479,11 +687,140 @@ std::vector<LogFile> PartsSorter::FormatOldParts() {
   return result;
 }
 
-MapBoots PartsSorter::ComputeBootCounts() {
+std::map<std::string, NodeBootState> PartsSorter::ComputeNewBootConstraints() {
   std::map<std::string, NodeBootState> boot_constraints;
 
-  // TODO(austin): This is the "old" way.  Once we have better ordering info in
-  // headers, we should use it.
+  CHECK_EQ(config_sha256_list.size(), 1u) << ": Found more than one config";
+  auto config_it = config_sha256_lookup.find(*config_sha256_list.begin());
+  CHECK(config_it != config_sha256_lookup.end())
+      << ": Failed to find a config with a sha256 of "
+      << *config_sha256_list.begin();
+  const Configuration *config = config_it->second.get();
+
+  for (const auto &node_boot_times : boot_times) {
+    const std::string &logger_node_name = node_boot_times.first;
+
+    // We know nothing about the order of the logger node's boot, but we
+    // know it happened.  If there is only 1 single boot, the constraint
+    // code will happily mark it as boot 0.  Otherwise we'll get the
+    // appropriate boot count if it can be computed or an error.
+    //
+    // Add it to the boots list to kick this off.
+    auto logger_node_boot_constraints_it =
+        boot_constraints.find(logger_node_name);
+    if (logger_node_boot_constraints_it == boot_constraints.end()) {
+      logger_node_boot_constraints_it =
+          boot_constraints
+              .insert(std::make_pair(logger_node_name, NodeBootState()))
+              .first;
+    }
+
+    for (const auto &source_boot_time : node_boot_times.second) {
+      const std::string &logger_boot_uuid = source_boot_time.first;
+      logger_node_boot_constraints_it->second.boots.insert(logger_boot_uuid);
+
+      for (const auto &source_nodes : source_boot_time.second) {
+        const std::string source_node_name =
+            config->nodes()->Get(source_nodes.first)->name()->str();
+
+        // Now, we have a bunch of remote boots for the same local boot and
+        // remote node.  We want to sort them by observed local time.  This will
+        // tell us which ones happened first.
+        std::vector<std::pair<std::string, BootPairTimes>> source_boot_times;
+        for (const auto &boot_time : source_nodes.second) {
+          source_boot_times.emplace_back(boot_time);
+        }
+        std::sort(
+            source_boot_times.begin(), source_boot_times.end(),
+            [](const std::pair<std::string, BootPairTimes> &a,
+               const std::pair<std::string, BootPairTimes> &b) {
+              // There are cases where we will only have a reliable timestamp.
+              // In that case, we need to use oldest_local_monotonic_timestamp.
+              // But, that may result in collisions if the same message gets
+              // forwarded to both boots, so it will have the same timestamp.
+              // Solve that by breaking the tie with the unreliable messages.
+              if (a.second.oldest_local_monotonic_timestamp ==
+                  b.second.oldest_local_monotonic_timestamp) {
+                CHECK_NE(a.second.oldest_local_unreliable_monotonic_timestamp,
+                         b.second.oldest_local_unreliable_monotonic_timestamp);
+                return a.second.oldest_local_unreliable_monotonic_timestamp <
+                       b.second.oldest_local_unreliable_monotonic_timestamp;
+              } else {
+                return a.second.oldest_local_monotonic_timestamp <
+                       b.second.oldest_local_monotonic_timestamp;
+              }
+            });
+
+        // Now take our sorted list and build up constraints so we can solve.
+        for (size_t boot_id = 0; boot_id < source_boot_times.size();
+             ++boot_id) {
+          const std::pair<std::string, BootPairTimes> &boot_time =
+              source_boot_times[boot_id];
+          const std::string &source_boot_uuid = boot_time.first;
+
+          auto source_node_boot_constraints_it =
+              boot_constraints.find(source_node_name);
+          if (source_node_boot_constraints_it == boot_constraints.end()) {
+            source_node_boot_constraints_it =
+                boot_constraints
+                    .insert(std::make_pair(source_node_name, NodeBootState()))
+                    .first;
+          }
+
+          // Track that this boot happened.
+          source_node_boot_constraints_it->second.boots.insert(
+              source_boot_uuid);
+
+          if (boot_id > 0) {
+            // And now add the constraints.  The vector is in order, so all we
+            // need to do is to iterate through it and put pairwise constraints
+            // in there.
+            std::map<std::string, std::vector<std::pair<std::string, bool>>>
+                &per_node_boot_constraints =
+                    source_node_boot_constraints_it->second.constraints;
+
+            const std::pair<std::string, BootPairTimes> &prior_boot_time =
+                source_boot_times[boot_id - 1];
+            const std::string &prior_boot_uuid = prior_boot_time.first;
+
+            auto first_per_boot_constraints =
+                per_node_boot_constraints.find(prior_boot_uuid);
+            if (first_per_boot_constraints == per_node_boot_constraints.end()) {
+              first_per_boot_constraints =
+                  per_node_boot_constraints
+                      .insert(std::make_pair(
+                          prior_boot_uuid,
+                          std::vector<std::pair<std::string, bool>>()))
+                      .first;
+            }
+
+            auto second_per_boot_constraints =
+                per_node_boot_constraints.find(source_boot_uuid);
+            if (second_per_boot_constraints ==
+                per_node_boot_constraints.end()) {
+              second_per_boot_constraints =
+                  per_node_boot_constraints
+                      .insert(std::make_pair(
+                          source_boot_uuid,
+                          std::vector<std::pair<std::string, bool>>()))
+                      .first;
+            }
+
+            first_per_boot_constraints->second.emplace_back(
+                std::make_pair(source_boot_uuid, true));
+            second_per_boot_constraints->second.emplace_back(
+                std::make_pair(prior_boot_uuid, false));
+          }
+        }
+      }
+    }
+  }
+
+  return boot_constraints;
+}
+
+std::map<std::string, NodeBootState> PartsSorter::ComputeOldBootConstraints() {
+  std::map<std::string, NodeBootState> boot_constraints;
   for (std::pair<const std::string, UnsortedLogPartsMap> &logs : parts_list) {
     {
       // We know nothing about the order of the logger node's boot, but we know
@@ -596,7 +933,10 @@ MapBoots PartsSorter::ComputeBootCounts() {
       for (size_t i = 1; i < boot_parts_index_ranges.second.size(); ++i) {
         CHECK_LT(boot_parts_index_ranges.second[i - 1].second.second,
                  boot_parts_index_ranges.second[i].second.first)
-            << ": Overlapping parts_index, please investigate";
+            << ": Overlapping parts_index, please investigate "
+            << boot_parts_index_ranges.first << " "
+            << boot_parts_index_ranges.second[i - 1].first << " "
+            << boot_parts_index_ranges.second[i].first;
         auto first_per_boot_constraints = per_node_boot_constraints.find(
             boot_parts_index_ranges.second[i - 1].first);
         if (first_per_boot_constraints == per_node_boot_constraints.end()) {
@@ -626,6 +966,13 @@ MapBoots PartsSorter::ComputeBootCounts() {
       }
     }
   }
+  return boot_constraints;
+}
+
+MapBoots PartsSorter::ComputeBootCounts() {
+  const std::map<std::string, NodeBootState> boot_constraints =
+      boot_times.empty() ? ComputeOldBootConstraints()
+                         : ComputeNewBootConstraints();
 
   // Print out our discovered constraints on request.
   if (VLOG_IS_ON(2)) {
@@ -657,7 +1004,7 @@ MapBoots PartsSorter::ComputeBootCounts() {
   // This doesn't need to catch all the cases, it just needs to report when it
   // fails.
   MapBoots boots;
-  for (std::pair<const std::string, NodeBootState> &node_state :
+  for (const std::pair<const std::string, NodeBootState> &node_state :
        boot_constraints) {
     CHECK_GT(node_state.second.boots.size(), 0u)
         << ": Need a boot from each node.";
@@ -765,8 +1112,6 @@ std::vector<LogFile> PartsSorter::FormatNewParts() {
   MapBoots map_boot_counts = ComputeBootCounts();
   boot_counts->boot_count_map = std::move(map_boot_counts.boot_count_map);
 
-  std::map<std::string, std::shared_ptr<const Configuration>>
-      copied_config_sha256;
   // Now, sort them and produce the final vector form.
   std::vector<LogFile> result;
   result.reserve(parts_list.size());
@@ -821,59 +1166,22 @@ std::vector<LogFile> PartsSorter::FormatNewParts() {
         new_parts.parts.emplace_back(std::move(p.first));
       }
 
-      if (!parts.second.config_sha256.empty()) {
-        // The easy case.  We've got a sha256 to point to, so go look it up.
-        // Abort if it doesn't exist.
-        auto it = config_sha256_lookup.find(parts.second.config_sha256);
-        CHECK(it != config_sha256_lookup.end())
-            << ": Failed to find a matching config with a SHA256 of "
-            << parts.second.config_sha256;
-        new_parts.config_sha256 = std::move(parts.second.config_sha256);
-        new_parts.config = it->second;
-        if (!seen_part) {
-          new_file.config_sha256 = new_parts.config_sha256;
-          new_file.config = new_parts.config;
-          config_sha256 = new_file.config_sha256;
-        } else {
-          CHECK_EQ(config_sha256, new_file.config_sha256)
-              << ": Mismatched configs in " << new_file;
-        }
+      CHECK(!parts.second.config_sha256.empty());
+      // The easy case.  We've got a sha256 to point to, so go look it up.
+      // Abort if it doesn't exist.
+      auto it = config_sha256_lookup.find(parts.second.config_sha256);
+      CHECK(it != config_sha256_lookup.end())
+          << ": Failed to find a matching config with a SHA256 of "
+          << parts.second.config_sha256;
+      new_parts.config_sha256 = std::move(parts.second.config_sha256);
+      new_parts.config = it->second;
+      if (!seen_part) {
+        new_file.config_sha256 = new_parts.config_sha256;
+        new_file.config = new_parts.config;
+        config_sha256 = new_file.config_sha256;
       } else {
-        CHECK(config_sha256.empty())
-            << ": Part " << new_parts
-            << " is missing a sha256 but other parts have one.";
-        if (!seen_part) {
-          // We want to use a single Configuration flatbuffer for all the parts
-          // to make downstream easier.  Since this is an old log, it doesn't
-          // have a SHA256 in the header to rely on, so we need a way to detect
-          // duplicates.
-          //
-          // SHA256 is decently fast, so use that as a representative hash of
-          // the header.
-          auto header =
-              std::make_shared<SizePrefixedFlatbufferVector<LogFileHeader>>(
-                  std::move(*ReadHeader(new_parts.parts[0])));
-
-          // Do a recursive copy to normalize the flatbuffer.  Different
-          // configurations can be built different ways, and can even have their
-          // vtable out of order.  Don't think and just trigger a copy.
-          FlatbufferDetachedBuffer<Configuration> config_copy =
-              RecursiveCopyFlatBuffer(header->message().configuration());
-
-          std::string config_copy_sha256 = Sha256(config_copy.span());
-
-          auto it = copied_config_sha256.find(config_copy_sha256);
-          if (it != copied_config_sha256.end()) {
-            new_file.config = it->second;
-          } else {
-            std::shared_ptr<const Configuration> config(
-                header, header->message().configuration());
-
-            copied_config_sha256.emplace(std::move(config_copy_sha256), config);
-            new_file.config = config;
-          }
-        }
-        new_parts.config = new_file.config;
+        CHECK_EQ(config_sha256, new_file.config_sha256)
+            << ": Mismatched configs in " << new_file;
       }
       seen_part = true;
 
@@ -883,11 +1191,10 @@ std::vector<LogFile> PartsSorter::FormatNewParts() {
   }
 
   {
-    CHECK_EQ(config_sha256_lookup.size() + copied_config_sha256.size(), 1u)
+    CHECK_EQ(config_sha256_lookup.size(), 1u)
         << ": We only support log files with 1 config in them.";
     std::shared_ptr<const aos::Configuration> config =
-        config_sha256_lookup.empty() ? copied_config_sha256.begin()->second
-                                     : config_sha256_lookup.begin()->second;
+        config_sha256_lookup.begin()->second;
 
     boot_counts->boots.resize(configuration::NodesCount(config.get()));
     for (std::pair<const std::string, std::vector<std::string>> &boots :
