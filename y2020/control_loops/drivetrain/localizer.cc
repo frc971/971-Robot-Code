@@ -28,8 +28,7 @@ const std::array<std::string, 5> kPisToUse{"pi1", "pi2", "pi3", "pi4", "pi5"};
 
 // Calculates the pose implied by the camera target, just based on
 // distance/heading components.
-Eigen::Vector3f CalculateImpliedPose(const Localizer::State &X,
-                                     const Eigen::Matrix4f &H_field_target,
+Eigen::Vector3f CalculateImpliedPose(const Eigen::Matrix4f &H_field_target,
                                      const Localizer::Pose &pose_robot_target) {
   // This code overrides the pose sent directly from the camera code and
   // effectively distills it down to just a distance + heading estimate, on
@@ -47,8 +46,12 @@ Eigen::Vector3f CalculateImpliedPose(const Localizer::State &X,
   // an accurate distance + heading to the goal.
 
   // Calculate the heading to the robot in the target's coordinate frame.
+  // Reminder on what the numbers mean:
+  // rel_theta: The orientation of the target in the robot frame.
+  // heading: heading from the robot to the target in the robot frame. I.e.,
+  //   atan2(y, x) for x/y of the target in the robot frame.
   const float implied_heading_from_target = aos::math::NormalizeAngle(
-      pose_robot_target.heading() + M_PI + X(Localizer::StateIdx::kTheta));
+      M_PI - pose_robot_target.rel_theta() + pose_robot_target.heading());
   const float implied_distance = pose_robot_target.xy_norm();
   const Eigen::Vector4f robot_pose_in_target_frame(
       implied_distance * std::cos(implied_heading_from_target),
@@ -302,8 +305,8 @@ void Localizer::HandleImageMatch(
         Eigen::Vector3f::Zero(), &U, {},
         [H, H_field_target, pose_robot_target, state_at_capture](
             const State &, const Input &) -> Eigen::Vector3f {
-          const Eigen::Vector3f Z = CalculateImpliedPose(
-              state_at_capture.value(), H_field_target, pose_robot_target);
+          const Eigen::Vector3f Z =
+              CalculateImpliedPose(H_field_target, pose_robot_target);
           // Just in case we ever do encounter any, drop measurements if they
           // have non-finite numbers.
           if (!Z.allFinite()) {
