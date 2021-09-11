@@ -21,6 +21,8 @@ DEFINE_bool(skip_sift, false,
             "If true don't run any feature extraction.  Just forward images.");
 DEFINE_bool(ransac_pose, false,
             "If true, do pose estimate with RANSAC; else, use ITERATIVE mode.");
+DEFINE_bool(use_prev_pose, true,
+            "If true, use previous pose estimate as seed for next estimate.");
 
 namespace frc971 {
 namespace vision {
@@ -41,7 +43,9 @@ class CameraReader {
             event_loop->MakeSender<sift::ImageMatchResult>("/camera")),
         detailed_result_sender_(
             event_loop->MakeSender<sift::ImageMatchResult>("/camera/detailed")),
-        read_image_timer_(event_loop->AddTimer([this]() { ReadImage(); })) {
+        read_image_timer_(event_loop->AddTimer([this]() { ReadImage(); })),
+        prev_R_camera_field_vec_(cv::Mat::zeros(3, 1, CV_32F)),
+        prev_T_camera_field_(cv::Mat::zeros(3, 1, CV_32F)) {
     CopyTrainingFeatures();
     // Technically we don't need to do this, but doing it now avoids the first
     // match attempt being slow.
@@ -157,6 +161,10 @@ class CameraReader {
   // We schedule this immediately to read an image. Having it on a timer means
   // other things can run on the event loop in between.
   aos::TimerHandler *const read_image_timer_;
+
+  // Storage for when we want to use the previous estimates of pose
+  cv::Mat prev_R_camera_field_vec_;
+  cv::Mat prev_T_camera_field_;
 
   const std::unique_ptr<frc971::vision::SIFT971_Impl> sift_{
       new frc971::vision::SIFT971_Impl()};
@@ -437,27 +445,35 @@ void CameraReader::ProcessImage(const CameraImage &image) {
     // global (field) reference frame
     cv::Mat R_field_camera_vec, R_field_camera, T_field_camera;
 
+    // Using the previous pose helps to stabilize the estimate, since
+    // it's sometimes bouncing between two possible poses.  Putting it
+    // near the previous pose helps it converge to the previous pose
+    // estimate (assuming it's valid).
+    if (FLAGS_use_prev_pose) {
+      R_camera_field_vec = prev_R_camera_field_vec_;
+      T_camera_field = prev_T_camera_field_;
+    }
+
     // Compute the pose of the camera (global origin relative to camera)
     if (FLAGS_ransac_pose) {
       // RANSAC computation is designed to be more robust to outliers.
       // But, we found it bounces around a lot, even with identical points
       cv::solvePnPRansac(per_image_good_match.training_points_3d,
                          per_image_good_match.query_points, CameraIntrinsics(),
-                         CameraDistCoeffs(), R_camera_field_vec,
-                         T_camera_field);
+                         CameraDistCoeffs(), R_camera_field_vec, T_camera_field,
+                         FLAGS_use_prev_pose);
     } else {
       // ITERATIVE mode is potentially less robust to outliers, but we
       // found it to be more stable
       //
-      // TODO<Jim>: We should explore feeding an initial estimate into
-      // the pose calculations.  I found this to help guide the solution
-      // to something hearby, but it also can lock it into an incorrect
-      // solution
       cv::solvePnP(per_image_good_match.training_points_3d,
                    per_image_good_match.query_points, CameraIntrinsics(),
                    CameraDistCoeffs(), R_camera_field_vec, T_camera_field,
-                   false, CV_ITERATIVE);
+                   FLAGS_use_prev_pose, CV_ITERATIVE);
     }
+
+    prev_R_camera_field_vec_ = R_camera_field_vec;
+    prev_T_camera_field_ = T_camera_field;
 
     CHECK_EQ(cv::Size(1, 3), T_camera_field.size());
 
