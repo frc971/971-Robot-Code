@@ -223,6 +223,13 @@ void Subscriber::RunIteration() {
           std::shared_ptr<struct mbuf>(mbuffer, mem_deref));
     }
     message_buffer_.push_back(std::move(message));
+    // If we aren't keeping a buffer, then we should only do one iteration of
+    // the while loop--otherwise, if additional messages arrive between the
+    // first FetchNext() and the second iteration then we can end up behaving
+    // poorly (since we do a Fetch() when buffer_size_ == 0).
+    if (buffer_size_ == 0) {
+      break;
+    }
   }
   for (auto &conn : channels_) {
     std::shared_ptr<ScopedDataChannel> rtc_channel = conn.first;
