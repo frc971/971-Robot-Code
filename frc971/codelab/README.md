@@ -24,7 +24,7 @@ When this codelab is run, it performs a series of tests to check whether the cod
 
 In order to run the tests, execute the following command in the terminal in the 971-Robot-Code folder:
 ```
-bazel run frc971/codelab:basic_test -- --gtest_color=yes
+bazel run //frc971/codelab:basic_test -- --gtest_color=yes
 ```
 
 In total, there are 7 tests, 3 of which will fail when you first run them. As each tests fails, it will print out the details of how each test result differed from the expected value. At the bottom, it will summarize the number of passed and failed tests.
