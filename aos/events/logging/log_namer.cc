@@ -293,6 +293,17 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> LogNamer::MakeHeader(
               state.size(), &oldest_local_unreliable_monotonic_timestamps);
 
   for (size_t i = 0; i < state.size(); ++i) {
+    if (state[i].boot_uuid == UUID::Zero()) {
+      CHECK_EQ(state[i].oldest_remote_monotonic_timestamp,
+               monotonic_clock::max_time);
+      CHECK_EQ(state[i].oldest_local_monotonic_timestamp,
+               monotonic_clock::max_time);
+      CHECK_EQ(state[i].oldest_remote_unreliable_monotonic_timestamp,
+               monotonic_clock::max_time);
+      CHECK_EQ(state[i].oldest_local_unreliable_monotonic_timestamp,
+               monotonic_clock::max_time);
+    }
+
     oldest_remote_monotonic_timestamps[i] =
         state[i].oldest_remote_monotonic_timestamp.time_since_epoch().count();
     oldest_local_monotonic_timestamps[i] =
