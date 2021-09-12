@@ -586,6 +586,8 @@ class EventLoop {
 
   // Creates a timer that executes callback when the timer expires
   // Returns a TimerHandle for configuration of the timer
+  // TODO(milind): callback should take the number of cycles elapsed as a
+  // parameter.
   virtual TimerHandler *AddTimer(::std::function<void()> callback) = 0;
 
   // Creates a timer that executes callback periodically at the specified

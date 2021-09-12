@@ -221,7 +221,7 @@ class SensorReader {
   void DoStart();
 
   // Runs a single iteration.
-  void Loop(int iterations);
+  void Loop();
 
   // Returns the monotonic time of the start of the first PWM cycle.
   // Returns min_time if no start time could be calculated.
@@ -236,8 +236,8 @@ class SensorReader {
 
   const int32_t my_pid_;
 
-  // Pointer to the phased loop handler used to modify the wakeup.
-  ::aos::PhasedLoopHandler *phased_loop_handler_;
+  // Pointer to the timer handler used to modify the wakeup.
+  ::aos::TimerHandler *timer_handler_;
 
   // Last time we got called.
   ::aos::monotonic_clock::time_point last_monotonic_now_ =
