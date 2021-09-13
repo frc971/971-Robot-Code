@@ -115,17 +115,24 @@ const bool kPrintOperations = false;
 // result or a negated errno value. -1..-4095 mean errors and not successful
 // results, which is guaranteed by the kernel.
 //
-// They each have optimized versions for ARM EABI (the syscall interface is
-// different for non-EABI ARM, so that is the right thing to test for) that
-// don't go through syscall(2) or errno.
-// These use register variables to get the values in the right registers to
-// actually make the syscall.
+// They each have optimized versions for some architectures which don't go
+// through syscall(2) or errno. These use register variables to get the values
+// in the right registers to actually make the syscall.
 
-// The actual macro that we key off of to use the inline versions or not.
+// The actual macros that we key off of to use the inline versions or not.
 #if defined(__ARM_EABI__)
+// The syscall interface is different for non-EABI ARM, so we test specifically
+// for EABI.
 #define ARM_EABI_INLINE_SYSCALL 1
+#define AARCH64_INLINE_SYSCALL 0
+#elif defined(__aarch64__)
+// Linux only has one supported syscall ABI on aarch64, which is the one we
+// support.
+#define ARM_EABI_INLINE_SYSCALL 0
+#define AARCH64_INLINE_SYSCALL 1
 #else
 #define ARM_EABI_INLINE_SYSCALL 0
+#define AARCH64_INLINE_SYSCALL 0
 #endif
 
 // Used for FUTEX_WAIT, FUTEX_LOCK_PI, and FUTEX_TRYLOCK_PI.
@@ -139,6 +146,19 @@ inline int sys_futex_wait(int op, aos_futex *addr1, int val1,
   register int syscall_number __asm__("r7") = SYS_futex;
   register int result __asm__("r0");
   __asm__ volatile("swi #0"
+                   : "=r"(result)
+                   : "r"(addr1_reg), "r"(op_reg), "r"(val1_reg),
+                     "r"(timeout_reg), "r"(syscall_number)
+                   : "memory");
+  return result;
+#elif AARCH64_INLINE_SYSCALL
+  register aos_futex *addr1_reg __asm__("x0") = addr1;
+  register int op_reg __asm__("x1") = op;
+  register int val1_reg __asm__("x2") = val1;
+  register const struct timespec *timeout_reg __asm__("x3") = timeout;
+  register int syscall_number __asm__("x8") = SYS_futex;
+  register int result __asm__("x0");
+  __asm__ volatile("svc #0"
                    : "=r"(result)
                    : "r"(addr1_reg), "r"(op_reg), "r"(val1_reg),
                      "r"(timeout_reg), "r"(syscall_number)
@@ -159,6 +179,18 @@ inline int sys_futex_wake(aos_futex *addr1, int val1) {
   register int syscall_number __asm__("r7") = SYS_futex;
   register int result __asm__("r0");
   __asm__ volatile("swi #0"
+                   : "=r"(result)
+                   : "r"(addr1_reg), "r"(op_reg), "r"(val1_reg),
+                     "r"(syscall_number)
+                   : "memory");
+  return result;
+#elif AARCH64_INLINE_SYSCALL
+  register aos_futex *addr1_reg __asm__("x0") = addr1;
+  register int op_reg __asm__("x1") = FUTEX_WAKE;
+  register int val1_reg __asm__("x2") = val1;
+  register int syscall_number __asm__("x8") = SYS_futex;
+  register int result __asm__("x0");
+  __asm__ volatile("svc #0"
                    : "=r"(result)
                    : "r"(addr1_reg), "r"(op_reg), "r"(val1_reg),
                      "r"(syscall_number)
@@ -190,6 +222,22 @@ inline int sys_futex_cmp_requeue_pi(aos_futex *addr1, int num_wake,
                      "r"(syscall_number)
                    : "memory");
   return result;
+#elif AARCH64_INLINE_SYSCALL
+  register aos_futex *addr1_reg __asm__("x0") = addr1;
+  register int op_reg __asm__("x1") = FUTEX_CMP_REQUEUE_PI;
+  register int num_wake_reg __asm__("x2") = num_wake;
+  register int num_requeue_reg __asm__("x3") = num_requeue;
+  register aos_futex *m_reg __asm__("x4") = m;
+  register uint32_t val_reg __asm__("x5") = val;
+  register int syscall_number __asm__("x8") = SYS_futex;
+  register int result __asm__("x0");
+  __asm__ volatile("svc #0"
+                   : "=r"(result)
+                   : "r"(addr1_reg), "r"(op_reg), "r"(num_wake_reg),
+                     "r"(num_requeue_reg), "r"(m_reg), "r"(val_reg),
+                     "r"(syscall_number)
+                   : "memory");
+  return result;
 #else
   const int r = syscall(SYS_futex, addr1, FUTEX_CMP_REQUEUE_PI, num_wake,
                         num_requeue, m, val);
@@ -215,6 +263,20 @@ inline int sys_futex_wait_requeue_pi(aos_condition *addr1, uint32_t start_val,
                      "r"(timeout_reg), "r"(m_reg), "r"(syscall_number)
                    : "memory");
   return result;
+#elif AARCH64_INLINE_SYSCALL
+  register aos_condition *addr1_reg __asm__("x0") = addr1;
+  register int op_reg __asm__("x1") = FUTEX_WAIT_REQUEUE_PI;
+  register uint32_t start_val_reg __asm__("x2") = start_val;
+  register const struct timespec *timeout_reg __asm__("x3") = timeout;
+  register aos_futex *m_reg __asm__("x4") = m;
+  register int syscall_number __asm__("x8") = SYS_futex;
+  register int result __asm__("x0");
+  __asm__ volatile("svc #0"
+                   : "=r"(result)
+                   : "r"(addr1_reg), "r"(op_reg), "r"(start_val_reg),
+                     "r"(timeout_reg), "r"(m_reg), "r"(syscall_number)
+                   : "memory");
+  return result;
 #else
   const int r =
       syscall(SYS_futex, addr1, FUTEX_WAIT_REQUEUE_PI, start_val, timeout, m);
@@ -230,6 +292,16 @@ inline int sys_futex_unlock_pi(aos_futex *addr1) {
   register int syscall_number __asm__("r7") = SYS_futex;
   register int result __asm__("r0");
   __asm__ volatile("swi #0"
+                   : "=r"(result)
+                   : "r"(addr1_reg), "r"(op_reg), "r"(syscall_number)
+                   : "memory");
+  return result;
+#elif AARCH64_INLINE_SYSCALL
+  register aos_futex *addr1_reg __asm__("x0") = addr1;
+  register int op_reg __asm__("x1") = FUTEX_UNLOCK_PI;
+  register int syscall_number __asm__("x8") = SYS_futex;
+  register int result __asm__("x0");
+  __asm__ volatile("svc #0"
                    : "=r"(result)
                    : "r"(addr1_reg), "r"(op_reg), "r"(syscall_number)
                    : "memory");
