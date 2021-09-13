@@ -150,6 +150,17 @@ cc_library(
 )
 
 ts_library(
+    name = "turret_plotter",
+    srcs = ["turret_plotter.ts"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        "//aos/network/www:aos_plotter",
+        "//aos/network/www:colors",
+        "//aos/network/www:proxy",
+    ],
+)
+
+ts_library(
     name = "finisher_plotter",
     srcs = ["finisher_plotter.ts"],
     target_compatible_with = ["@platforms//os:linux"],
