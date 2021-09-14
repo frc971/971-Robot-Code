@@ -39,6 +39,7 @@ struct LogParts {
   // UUIDs if available.
   std::string log_event_uuid;
   std::string parts_uuid;
+  std::string logger_instance_uuid;
 
   // The node this represents, or empty if we are in a single node world.
   std::string node;
