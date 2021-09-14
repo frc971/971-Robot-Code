@@ -146,8 +146,9 @@ std::ostream &operator<<(std::ostream &stream,
   std::tm tm;
   std::chrono::seconds seconds =
       now < realtime_clock::epoch()
-          ? std::chrono::duration_cast<std::chrono::seconds>(
-                now.time_since_epoch() - std::chrono::nanoseconds(999999999))
+          ? (std::chrono::duration_cast<std::chrono::seconds>(
+                 now.time_since_epoch() + std::chrono::nanoseconds(1)) -
+             std::chrono::seconds(1))
           : std::chrono::duration_cast<std::chrono::seconds>(
                 now.time_since_epoch());
 

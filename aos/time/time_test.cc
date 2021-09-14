@@ -3,6 +3,7 @@
 #include <thread>
 
 #include "gtest/gtest.h"
+#include "glog/logging.h"
 
 #include "aos/macros.h"
 #include "aos/util/death_test_log_implementation.h"
@@ -200,6 +201,27 @@ TEST(TimeTest, OperatorStreamRealtimeNegative) {
     s << t;
 
     EXPECT_EQ(s.str(), "1969-12-27_00-00-10.995000000");
+    EXPECT_EQ(realtime_clock::FromString(s.str()).value(), t);
+  }
+
+  {
+    const realtime_clock::time_point t = realtime_clock::min_time;
+
+    std::stringstream s;
+    s << t;
+
+    EXPECT_EQ(s.str(), "1677-09-21_00-12-43.145224192");
+    EXPECT_EQ(realtime_clock::FromString(s.str()).value(), t);
+  }
+
+  {
+    const realtime_clock::time_point t =
+        realtime_clock::min_time + std::chrono::nanoseconds(999999999);
+
+    std::stringstream s;
+    s << t;
+
+    EXPECT_EQ(s.str(), "1677-09-21_00-12-44.145224191");
     EXPECT_EQ(realtime_clock::FromString(s.str()).value(), t);
   }
 }
