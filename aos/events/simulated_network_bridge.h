@@ -37,10 +37,6 @@ class SimulatedMessageBridge {
   // messages.
   void DisableStatistics();
 
-  // Calls SkipTimingReport() on all EventLoops used in the implementation. This
-  // may improve the performance of long-simulated-duration tests.
-  void SkipTimingReport();
-
  private:
   struct DelayersVector {
     std::vector<std::unique_ptr<RawMessageDelayer>> v;

@@ -565,13 +565,6 @@ void SimulatedMessageBridge::DisableStatistics() {
   }
 }
 
-void SimulatedMessageBridge::SkipTimingReport() {
-  // TODO(austin): I think this can be deleted...
-  for (std::pair<const Node *const, State> &state : event_loop_map_) {
-    state.second.event_loop->SkipTimingReport();
-  }
-}
-
 void SimulatedMessageBridge::State::SetEventLoop(
     std::unique_ptr<aos::EventLoop> loop) {
   if (!loop) {

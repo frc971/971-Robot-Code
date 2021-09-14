@@ -1300,7 +1300,6 @@ void SimulatedEventLoopFactory::DisableStatistics() {
 
 void SimulatedEventLoopFactory::SkipTimingReport() {
   CHECK(bridge_) << ": Can't skip timing reports without a message bridge.";
-  bridge_->SkipTimingReport();
 }
 
 ::std::unique_ptr<EventLoop> NodeEventLoopFactory::MakeEventLoop(
