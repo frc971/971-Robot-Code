@@ -1,7 +1,11 @@
 #include <dlfcn.h>
+#include <elf.h>
 #include <linux/futex.h>
 #include <sys/mman.h>
+#include <sys/procfs.h>
+#include <sys/ptrace.h>
 #include <sys/syscall.h>
+#include <sys/uio.h>
 #include <unistd.h>
 #include <wait.h>
 
@@ -125,14 +129,6 @@ struct GlobalState {
 };
 ::std::atomic<GlobalState *> global_state;
 
-#ifndef __ARM_EABI__
-#ifndef __x86_64__
-#error This code only works on amd64.
-#endif
-
-// The "trap bit" which enables single-stepping for x86.
-const greg_t kTrapFlag = 1 << 8;
-
 // Returns true if the address is in the queue memory chunk.
 bool IsInLocklessQueueMemory(void *address) {
   GlobalState *my_global_state = global_state.load(::std::memory_order_relaxed);
@@ -200,7 +196,6 @@ void segv_handler(int signal, siginfo_t *siginfo, void *context_void) {
   const int saved_errno = errno;
   SIMPLE_ASSERT(signal == SIGSEGV, "wrong signal for SIGSEGV handler");
 
-  ucontext_t *const context = static_cast<ucontext_t *>(context_void);
   // Only process memory addresses in our shared memory block.
   if (!IsInLocklessQueueMemory(siginfo->si_addr)) {
     if (CallChainedAction(old_segv_handler, signal, siginfo, context_void)) {
@@ -216,9 +211,16 @@ void segv_handler(int signal, siginfo_t *siginfo, void *context_void) {
   HandleWrite(siginfo->si_addr);
 
   ShmProtectOrDie(PROT_READ | PROT_WRITE);
-  context->uc_mcontext.gregs[REG_EFL] |= kTrapFlag;
   my_global_state->state = DieAtState::kWriting;
   errno = saved_errno;
+
+#if defined(__x86_64__)
+  __asm__ __volatile__("int $3" ::: "memory", "cc");
+#elif defined(__aarch64__)
+  __asm__ __volatile__("brk #0" ::: "memory", "cc");
+#else
+#error Unhandled architecture
+#endif
 }
 
 // A mutex lock is about to happen.  Mark the memory rw, and check to see if we
@@ -235,14 +237,12 @@ void futex_before(void *address, bool) {
 
 // The SEGV handler has set a breakpoint 1 instruction in the future.  This
 // clears it, marks memory readonly, and continues.
-void trap_handler(int signal, siginfo_t *, void *context_void) {
+void trap_handler(int signal, siginfo_t *, void * /*context*/) {
   GlobalState *my_global_state = global_state.load(::std::memory_order_relaxed);
   const int saved_errno = errno;
   SIMPLE_ASSERT(signal == SIGTRAP, "wrong signal for SIGTRAP handler");
 
-  ucontext_t *const context = static_cast<ucontext_t *>(context_void);
-
-  context->uc_mcontext.gregs[REG_EFL] &= ~kTrapFlag;
+  my_global_state->state = DieAtState::kWriting;
   SIMPLE_ASSERT(my_global_state->state == DieAtState::kWriting,
                 "bad state for SIGTRAP");
   ShmProtectOrDie(PROT_READ);
@@ -268,7 +268,9 @@ void InstallHandler(int signal, void (*handler)(int, siginfo_t *, void *),
   struct sigaction action;
   memset(&action, 0, sizeof(action));
   action.sa_sigaction = handler;
-  action.sa_flags = SA_RESTART | SA_SIGINFO;
+  // We don't do a full normal signal handler exit with ptrace, so SA_NODEFER is
+  // necessary to keep our signal handler active.
+  action.sa_flags = SA_RESTART | SA_SIGINFO | SA_NODEFER;
 #ifdef AOS_SANITIZER_thread
   // Tsan messes with signal handlers to check for race conditions, and it
   // causes problems, so we have to work around it for SIGTRAP.
@@ -287,8 +289,6 @@ void InstallHandler(int signal, void (*handler)(int, siginfo_t *, void *),
   PCHECK(sigaction(signal, &action, old_action) == 0);
 }
 
-#endif  // ifndef __ARM_EABI__
-
 // gtest only allows creating fatal failures in functions returning void...
 // status is from wait(2).
 void DetectFatalFailures(int status) {
@@ -299,7 +299,7 @@ void DetectFatalFailures(int status) {
     FAIL() << " child exited because of signal "
            << aos_strsignal(WTERMSIG(status));
   } else {
-    FAIL() << "child exited with status " << ::std::hex << status;
+    FAIL() << " child exited with status " << ::std::hex << status;
   }
 }
 
@@ -335,6 +335,7 @@ bool RunFunctionDieAt(::std::function<void(void *)> prepare,
     CHECK_EQ(old_trap_handler.sa_handler, SIG_DFL);
     linux_code::ipc_lib::SetShmAccessorObservers(futex_before, futex_after);
 
+    PCHECK(ptrace(PTRACE_TRACEME, 0, 0, 0) == 0);
     ShmProtectOrDie(PROT_READ);
     my_global_state->state = DieAtState::kRunning;
 
@@ -343,19 +344,84 @@ bool RunFunctionDieAt(::std::function<void(void *)> prepare,
     ShmProtectOrDie(PROT_READ | PROT_WRITE);
     _exit(0);
   } else {
+    // Annoying wrapper type because elf_gregset_t is an array, which C++
+    // handles poorly.
+    struct RestoreState {
+      RestoreState(elf_gregset_t regs_in) {
+        memcpy(regs, regs_in, sizeof(regs));
+      }
+      elf_gregset_t regs;
+    };
+    std::optional<RestoreState> restore_regs;
+    bool pass_trap = false;
     // Wait until the child process dies.
     while (true) {
       int status;
       pid_t waited_on = waitpid(pid, &status, 0);
       if (waited_on == -1) {
         if (errno == EINTR) continue;
-        PCHECK(false) << ": waitpid(" << static_cast<intmax_t>(pid) << ", "
-                      << &status << ", 0) failed";
+        PCHECK(false) << ": waitpid(" << pid << ", " << &status
+                      << ", 0) failed";
       }
-      if (waited_on != pid) {
-        PCHECK(false) << ": waitpid got child "
-                      << static_cast<intmax_t>(waited_on) << " instead of "
-                      << static_cast<intmax_t>(pid);
+      CHECK_EQ(waited_on, pid)
+          << ": waitpid got child " << waited_on << " instead of " << pid;
+      if (WIFSTOPPED(status)) {
+        // The child was stopped via ptrace.
+        const int stop_signal = WSTOPSIG(status);
+        elf_gregset_t regs;
+        {
+          struct iovec iov;
+          iov.iov_base = &regs;
+          iov.iov_len = sizeof(regs);
+          PCHECK(ptrace(PTRACE_GETREGSET, pid, NT_PRSTATUS, &iov) == 0);
+          CHECK_EQ(iov.iov_len, sizeof(regs))
+              << ": ptrace regset is the wrong size";
+        }
+        if (stop_signal == SIGSEGV) {
+          // It's a SEGV, hopefully due to writing to the shared memory which is
+          // marked read-only. We record the instruction that faulted so we can
+          // look for it while single-stepping, then deliver the signal so the
+          // child can mark it read-write and then poke us to single-step that
+          // instruction.
+
+          CHECK(!restore_regs)
+              << ": Traced child got a SEGV while single-stepping";
+          // Save all the registers to resume execution at the current location
+          // in the child.
+          restore_regs = RestoreState(regs);
+          PCHECK(ptrace(PTRACE_CONT, pid, nullptr, SIGSEGV) == 0);
+          continue;
+        }
+        if (stop_signal == SIGTRAP) {
+          if (pass_trap) {
+            // This is the new SIGTRAP we generated, which we just want to pass
+            // through so the child's signal handler can restore the memory to
+            // read-only
+            PCHECK(ptrace(PTRACE_CONT, pid, nullptr, SIGTRAP) == 0);
+            pass_trap = false;
+            continue;
+          }
+          if (restore_regs) {
+            // Restore the state we saved before delivering the SEGV, and then
+            // single-step that one instruction.
+            struct iovec iov;
+            iov.iov_base = &restore_regs->regs;
+            iov.iov_len = sizeof(restore_regs->regs);
+            PCHECK(ptrace(PTRACE_SETREGSET, pid, NT_PRSTATUS, &iov) == 0);
+            restore_regs = std::nullopt;
+            PCHECK(ptrace(PTRACE_SINGLESTEP, pid, nullptr, nullptr) == 0);
+            continue;
+          }
+          // We executed the single instruction that originally faulted, so
+          // now deliver a SIGTRAP to the child so it can mark the memory
+          // read-only again.
+          pass_trap = true;
+          PCHECK(kill(pid, SIGTRAP) == 0);
+          PCHECK(ptrace(PTRACE_CONT, pid, nullptr, nullptr) == 0);
+          continue;
+        }
+        LOG(FATAL) << "Traced child was stopped with unexpected signal: "
+                   << static_cast<int>(WSTOPSIG(status));
       }
       if (WIFEXITED(status)) {
         if (WEXITSTATUS(status) == 0) return true;
@@ -466,6 +532,7 @@ void TestShmRobustness(const LocklessQueueConfiguration &config,
     if (RunFunctionDieAtAndCheck(config, prepare, function, check, &test_failed,
                                  die_at, prepare_in_child, expected_writes,
                                  nullptr)) {
+      LOG(INFO) << "Tested " << die_at << " death points";
       return;
     }
     if (test_failed) {
@@ -567,7 +634,7 @@ TEST(LocklessQueueTest, Death) {
         }
 
         if (print) {
-          printf("Bad version:\n");
+          LOG(INFO) << "Bad version:";
           PrintLocklessQueueMemory(memory);
         }
 
@@ -575,7 +642,7 @@ TEST(LocklessQueueTest, Death) {
         LocklessQueueSender::Make(queue).value();
 
         if (print) {
-          printf("Cleaned up version:\n");
+          LOG(INFO) << "Cleaned up version:";
           PrintLocklessQueueMemory(memory);
         }
 
