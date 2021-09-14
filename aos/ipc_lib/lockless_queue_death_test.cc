@@ -14,6 +14,7 @@
 #include "aos/ipc_lib/aos_sync.h"
 #include "aos/ipc_lib/lockless_queue.h"
 #include "aos/ipc_lib/lockless_queue_memory.h"
+#include "aos/ipc_lib/shm_observers.h"
 #include "aos/libc/aos_strsignal.h"
 #include "aos/realtime.h"
 #include "aos/testing/prevent_exit.h"
@@ -332,7 +333,7 @@ bool RunFunctionDieAt(::std::function<void(void *)> prepare,
     InstallHandler(SIGSEGV, segv_handler, &old_segv_handler);
     InstallHandler(SIGTRAP, trap_handler, &old_trap_handler);
     CHECK_EQ(old_trap_handler.sa_handler, SIG_DFL);
-    linux_code::ipc_lib::SetFutexAccessorObservers(futex_before, futex_after);
+    linux_code::ipc_lib::SetShmAccessorObservers(futex_before, futex_after);
 
     ShmProtectOrDie(PROT_READ);
     my_global_state->state = DieAtState::kRunning;

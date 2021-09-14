@@ -12,6 +12,7 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
+        ":shm_observers",
         "//aos:macros",
         "//aos:thread_local",
         "//aos/util:compiler_memory_barrier",
@@ -146,6 +147,7 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
+        ":shm_observers",
         "@com_github_google_glog//:glog",
     ],
 )
@@ -225,6 +227,7 @@ cc_test(
         ":event",
         ":lockless_queue",
         ":queue_racer",
+        ":shm_observers",
         ":signalfd",
         "//aos/events:epoll",
         "//aos/libc:aos_strsignal",
@@ -357,5 +360,15 @@ cc_test(
         "//aos/testing:googletest",
         "//aos/testing:test_logging",
         "//aos/time",
+    ],
+)
+
+cc_library(
+    name = "shm_observers",
+    srcs = [
+        "shm_observers.cc",
+    ],
+    hdrs = [
+        "shm_observers.h",
     ],
 )
