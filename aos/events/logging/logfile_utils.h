@@ -199,15 +199,6 @@ flatbuffers::Offset<MessageHeader> PackMessage(
     flatbuffers::FlatBufferBuilder *fbb, const Context &context,
     int channel_index, LogType log_type);
 
-// Reads the last header from a log file.  This handles any duplicate headers
-// that were written.
-std::optional<SizePrefixedFlatbufferVector<LogFileHeader>> ReadHeader(
-    std::string_view filename);
-// Reads the Nth message from a log file, excluding the header.  Note: this
-// doesn't handle duplicate headers.
-std::optional<SizePrefixedFlatbufferVector<MessageHeader>> ReadNthMessage(
-    std::string_view filename, size_t n);
-
 // Class to read chunks out of a log file.
 class SpanReader {
  public:
@@ -250,6 +241,17 @@ class SpanReader {
   // Amount of data consumed already in data_.
   size_t consumed_data_ = 0;
 };
+
+// Reads the last header from a log file.  This handles any duplicate headers
+// that were written.
+std::optional<SizePrefixedFlatbufferVector<LogFileHeader>> ReadHeader(
+    SpanReader *span_reader);
+std::optional<SizePrefixedFlatbufferVector<LogFileHeader>> ReadHeader(
+    std::string_view filename);
+// Reads the Nth message from a log file, excluding the header.  Note: this
+// doesn't handle duplicate headers.
+std::optional<SizePrefixedFlatbufferVector<MessageHeader>> ReadNthMessage(
+    std::string_view filename, size_t n);
 
 // Class which handles reading the header and messages from the log file.  This
 // handles any per-file state left before merging below.
@@ -352,6 +354,13 @@ class PartsMessageReader {
   size_t next_part_index_ = 1u;
   bool done_ = false;
   MessageReader message_reader_;
+  // We instantiate the next one early, to allow implementations to prefetch.
+  // TODO(Brian): To get optimal performance when downloading, this needs more
+  // communication with the implementation to prioritize the next part and add
+  // more parallelism when it helps. Maybe some kind of a queue of parts in
+  // order, and the implementation gets to pull however many make sense off the
+  // front?
+  std::optional<MessageReader> next_message_reader_;
 
   // True after we have seen a message after the start of the log.  The
   // guarentees on logging essentially are that all data from before the
