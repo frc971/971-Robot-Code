@@ -841,9 +841,11 @@ void LogReader::RegisterDuringStartup(EventLoop *event_loop, const Node *node) {
               LOG(FATAL)
                   << "Found missing data in the middle of the log file on "
                      "channel "
-                  << next.channel_index << " " << next << " Last "
-                  << last_message[next.channel_index] << " "
-                  << state->DebugString();
+                  << next.channel_index << " "
+                  << configuration::StrippedChannelToString(
+                         logged_configuration()->channels()->Get(
+                             next.channel_index))
+                  << " " << next << " " << state->DebugString();
             }
           }
         }

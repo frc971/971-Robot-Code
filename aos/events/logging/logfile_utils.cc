@@ -1324,7 +1324,7 @@ bool TimestampMapper::Queue() {
 
 std::string TimestampMapper::DebugString() const {
   std::stringstream ss;
-  ss << "node " << node() << " [\n";
+  ss << "node " << node() << " (" << node_name() << ") [\n";
   for (const Message &message : messages_) {
     ss << "  " << message << "\n";
   }
