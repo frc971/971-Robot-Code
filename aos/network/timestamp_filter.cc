@@ -1124,7 +1124,7 @@ bool NoncausalTimestampFilter::Pop(BootTimestamp time) {
   VLOG(1) << NodeNames() << " Pop(" << time << ")";
   bool removed = false;
   while (true) {
-    DCHECK_LT(pop_filter_, filters_.size());
+    CHECK_LT(pop_filter_, filters_.size());
     BootFilter *boot_filter = &filters_[pop_filter_];
     CHECK(boot_filter != nullptr);
     size_t timestamps_size = 0;
@@ -1157,7 +1157,11 @@ bool NoncausalTimestampFilter::Pop(BootTimestamp time) {
         return removed;
       }
     }
+    VLOG(1) << NodeNames() << " Incrementing pop filter";
     ++pop_filter_;
+    if (pop_filter_ == filters_.size()) {
+      return removed;
+    }
   }
 }
 
