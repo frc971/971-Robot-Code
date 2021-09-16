@@ -131,28 +131,28 @@ def load_training_data():
     # NOTE: Since we don't have an "ideal" (e.g., graphic) version, we're
     # just using the same image as the training image.
     ideal_power_port_taped = TargetData(
-        'test_images/train_power_port_taped-2020-08-20-13-27-50.png')
+        'test_images/partial_971_power_port_red.png')
 
     # Start at lower left corner, and work around clockwise
     # These are taken by manually finding the points in gimp for this image
-    power_port_taped_main_panel_polygon_points_2d = [(181, 423), (186, 192),
-                                                     (45, 191), (188, 93),
-                                                     (310, 99), (314, 196),
-                                                     (321, 414)]
+    power_port_taped_main_panel_polygon_points_2d = [(220, 449), (220, 162),
+                                                     (37, 169), (210, 43),
+                                                     (371, 35), (378, 147),
+                                                     (400, 456)]
 
     # These are "virtual" 3D points based on the expected geometry
     power_port_taped_main_panel_polygon_points_3d = [
-        (field_length / 2., -c_power_port_edge_y, 0.),
-        (field_length / 2., -c_power_port_edge_y,
+        (-field_length / 2., c_power_port_edge_y, 0.),
+        (-field_length / 2., c_power_port_edge_y,
          c_power_port_bottom_wing_height),
-        (field_length / 2., -c_power_port_edge_y + c_power_port_wing_width,
+        (-field_length / 2., c_power_port_edge_y - c_power_port_wing_width,
          c_power_port_bottom_wing_height),
-        (field_length / 2., -c_power_port_edge_y, c_power_port_total_height),
-        (field_length / 2., -c_power_port_edge_y - c_power_port_width,
+        (-field_length / 2., c_power_port_edge_y, c_power_port_total_height),
+        (-field_length / 2., c_power_port_edge_y + c_power_port_width,
          c_power_port_total_height),
-        (field_length / 2., -c_power_port_edge_y - c_power_port_width,
+        (-field_length / 2., c_power_port_edge_y + c_power_port_width,
          c_power_port_bottom_wing_height),
-        (field_length / 2., -c_power_port_edge_y - c_power_port_width, 0.)
+        (-field_length / 2., c_power_port_edge_y + c_power_port_width, 0.)
     ]
 
     power_port_taped_wing_panel_polygon_points_2d = [(312, 99), (438, 191),
@@ -176,22 +176,22 @@ def load_training_data():
     ideal_power_port_taped.polygon_list_3d.append(
         power_port_taped_main_panel_polygon_points_3d)
     # Including the wing panel
-    ideal_power_port_taped.polygon_list.append(
-        power_port_taped_wing_panel_polygon_points_2d)
-    ideal_power_port_taped.polygon_list_3d.append(
-        power_port_taped_wing_panel_polygon_points_3d)
+    #ideal_power_port_taped.polygon_list.append(
+    #    power_port_taped_wing_panel_polygon_points_2d)
+    #ideal_power_port_taped.polygon_list_3d.append(
+    #    power_port_taped_wing_panel_polygon_points_3d)
 
     # Location of target.  Rotation is pointing in -x direction
-    ideal_power_port_taped.target_rotation = np.identity(3, np.double)
+    ideal_power_port_taped.target_rotation = -np.identity(3, np.double)
     ideal_power_port_taped.target_position = np.array([
-        field_length / 2., -c_power_port_edge_y - c_power_port_width / 2.,
+        -field_length / 2., c_power_port_edge_y + c_power_port_width / 2.,
         c_power_port_target_height
     ])
-    ideal_power_port_taped.target_point_2d = np.float32([[250, 146]]).reshape(
+    ideal_power_port_taped.target_point_2d = np.float32([[292, 106]]).reshape(
         -1, 1, 2)  # train_power_port_taped-2020-08-20-13-27-50.png
 
     training_target_power_port_taped = TargetData(
-        'test_images/train_power_port_taped-2020-08-20-13-27-50.png')
+        'test_images/partial_971_power_port_red.png')
     training_target_power_port_taped.target_rotation = ideal_power_port_taped.target_rotation
     training_target_power_port_taped.target_position = ideal_power_port_taped.target_position
     training_target_power_port_taped.target_radius = target_radius_default
@@ -267,7 +267,7 @@ def load_training_data():
 
     # And add the training image we'll actually use to the training list
     training_target_power_port_red = TargetData(
-        'test_images/train_power_port_red_webcam.png')
+        'test_images/train_power_port_red.png')
     #'test_images/train_power_port_red_pi-7971-3.png')
     training_target_power_port_red.target_rotation = ideal_power_port_red.target_rotation
     training_target_power_port_red.target_position = ideal_power_port_red.target_position
@@ -427,10 +427,10 @@ def load_training_data():
     # targets based on all the definitions above
     ######################################################################
 
-    ### Taped power port (not currently used)
-    #glog.info("Adding hacked/taped up power port to the model list")
-    #ideal_target_list.append(ideal_power_port_taped)
-    #training_target_list.append(training_target_power_port_taped)
+    ### Taped power port
+    glog.info("Adding hacked/taped up power port to the model list")
+    ideal_target_list.append(ideal_power_port_taped)
+    training_target_list.append(training_target_power_port_taped)
 
     ### Red Power Port
     glog.info("Adding red power port to the model list")
