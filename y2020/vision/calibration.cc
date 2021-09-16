@@ -29,6 +29,7 @@ DEFINE_string(pi, "pi-7971-1", "Pi name to calibrate.");
 DEFINE_string(calibration_folder, "y2020/vision/tools/python_code/calib_files",
               "Folder to place calibration files.");
 DEFINE_bool(large_board, true, "If true, use the large calibration board.");
+DEFINE_bool(coarse_pattern, true, "If true, use coarse arucos; else, use fine");
 DEFINE_bool(display_undistorted, false,
             "If true, display the undistorted image.");
 DEFINE_string(board_template_path, "",
@@ -105,12 +106,24 @@ void ViewerMain() {
 
   cv::Ptr<cv::aruco::Dictionary> dictionary =
       cv::aruco::getPredefinedDictionary(FLAGS_large_board
-                                             ? cv::aruco::DICT_5X5_100
+                                             ? cv::aruco::DICT_5X5_250
                                              : cv::aruco::DICT_6X6_250);
+
+  LOG(INFO) << "Using " << (FLAGS_large_board ? "large" : "small")
+            << " board with " << (FLAGS_coarse_pattern ? "coarse" : "fine")
+            << " pattern";
   cv::Ptr<cv::aruco::CharucoBoard> board =
       FLAGS_large_board
-          ? cv::aruco::CharucoBoard::create(12, 9, 0.06, 0.045, dictionary)
-          : cv::aruco::CharucoBoard::create(7, 5, 0.04, 0.025, dictionary);
+          ? (FLAGS_coarse_pattern ? cv::aruco::CharucoBoard::create(
+                                        12, 9, 0.06, 0.04666, dictionary)
+                                  : cv::aruco::CharucoBoard::create(
+                                        25, 18, 0.03, 0.0233, dictionary))
+          : (FLAGS_coarse_pattern ? cv::aruco::CharucoBoard::create(
+                                        7, 5, 0.04, 0.025, dictionary)
+                                  // TODO: Need to figure out what size is
+                                  // for small board, fine pattern
+                                  : cv::aruco::CharucoBoard::create(
+                                        7, 5, 0.03, 0.0233, dictionary));
 
   if (!FLAGS_board_template_path.empty()) {
     cv::Mat board_image;
