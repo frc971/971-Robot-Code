@@ -27,10 +27,65 @@ bool EndsWith(std::string_view str, std::string_view ending) {
          str.substr(str.size() - ending.size()) == ending;
 }
 
-bool FileExists(std::string filename) {
-  struct stat stat_results;
-  int error = stat(filename.c_str(), &stat_results);
-  return error == 0;
+class FileOperations {
+ public:
+  virtual ~FileOperations() = default;
+
+  virtual bool Exists() = 0;
+  virtual void FindLogs(std::vector<std::string> *files) = 0;
+};
+
+// Implements FileOperations with standard POSIX filesystem APIs. These work on
+// files local to the machine they're running on.
+class LocalFileOperations final : public FileOperations {
+ public:
+  LocalFileOperations(std::string_view filename) : filename_(filename) {}
+
+  bool Exists() override {
+    struct stat stat_results;
+    int error = stat(filename_.c_str(), &stat_results);
+    return error == 0;
+  }
+
+  void FindLogs(std::vector<std::string> *files) override;
+
+ private:
+  std::string filename_;
+};
+
+bool IsValidFilename(std::string_view filename) {
+  return EndsWith(filename, ".bfbs") || EndsWith(filename, ".bfbs.xz");
+}
+
+std::unique_ptr<FileOperations> MakeFileOperations(std::string_view filename) {
+  if (filename.find("://") != filename.npos) {
+    LOG(FATAL) << "This looks like a URL of an unknown type: " << filename;
+  }
+  return std::make_unique<LocalFileOperations>(filename);
+}
+
+void LocalFileOperations::FindLogs(std::vector<std::string> *files) {
+  DIR *directory = opendir(filename_.c_str());
+
+  if (directory == nullptr) {
+    if (IsValidFilename(filename_)) {
+      files->emplace_back(filename_);
+    }
+    return;
+  }
+
+  struct dirent *directory_entry;
+  while ((directory_entry = readdir(directory)) != nullptr) {
+    std::string next_filename = directory_entry->d_name;
+    if (next_filename == "." || next_filename == "..") {
+      continue;
+    }
+
+    std::string path = filename_ + "/" + next_filename;
+    std::make_unique<LocalFileOperations>(path)->FindLogs(files);
+  }
+
+  closedir(directory);
 }
 
 bool ConfigOnly(const LogFileHeader *header) {
@@ -79,27 +134,7 @@ bool HasNewTimestamps(const LogFileHeader *header) {
 }  // namespace
 
 void FindLogs(std::vector<std::string> *files, std::string filename) {
-  DIR *directory = opendir(filename.c_str());
-
-  if (directory == nullptr) {
-    if (EndsWith(filename, ".bfbs") || EndsWith(filename, ".bfbs.xz")) {
-      files->emplace_back(filename);
-    }
-    return;
-  }
-
-  struct dirent *directory_entry;
-  while ((directory_entry = readdir(directory)) != nullptr) {
-    std::string next_filename = directory_entry->d_name;
-    if (next_filename == "." || next_filename == "..") {
-      continue;
-    }
-
-    std::string path = filename + "/" + next_filename;
-    FindLogs(files, path);
-  }
-
-  closedir(directory);
+  MakeFileOperations(filename)->FindLogs(files);
 }
 
 std::vector<std::string> FindLogs(std::string filename) {
@@ -113,8 +148,9 @@ std::vector<std::string> FindLogs(int argc, char **argv) {
 
   for (int i = 1; i < argc; i++) {
     std::string filename = argv[i];
-    if (FileExists(filename)) {
-      aos::logger::FindLogs(&found_logfiles, filename);
+    const auto file_operations = MakeFileOperations(filename);
+    if (file_operations->Exists()) {
+      file_operations->FindLogs(&found_logfiles);
     } else {
       LOG(FATAL) << "File " << filename << " does not exist";
     }
@@ -274,6 +310,10 @@ struct PartsSorter {
   // There are enough of these in the wild that this is worth supporting.
   std::vector<UnsortedOldParts> old_parts;
 
+  // Some implementations have slow destructors, so save those for later to let
+  // the slow parts can mostly run in parallel.
+  std::vector<SpanReader> part_readers;
+
   // Populates the class's datastructures from the input file list.
   void PopulateFromFiles(const std::vector<std::string> &parts);
 
@@ -296,8 +336,14 @@ struct PartsSorter {
 void PartsSorter::PopulateFromFiles(const std::vector<std::string> &parts) {
   // Now extract everything into our datastructures above for sorting.
   for (const std::string &part : parts) {
+    if (part_readers.size() > 200) {
+      // Don't leave arbitrary numbers of readers open, because they each take
+      // resources, so close a big batch at once periodically.
+      part_readers.clear();
+    }
+    part_readers.emplace_back(part);
     std::optional<SizePrefixedFlatbufferVector<LogFileHeader>> log_header =
-        ReadHeader(part);
+        ReadHeader(&part_readers.back());
     if (!log_header) {
       LOG(WARNING) << "Skipping " << part << " without a header";
       corrupted.emplace_back(part);
@@ -1013,7 +1059,7 @@ MapBoots PartsSorter::ComputeBootCounts() {
       for (const std::string &boot : node_state.second.boots) {
         LOG(INFO) << "  boot " << boot;
       }
-      for (const std::pair<std::string,
+      for (const std::pair<const std::string,
                            std::vector<std::pair<std::string, bool>>>
                &constraints : node_state.second.constraints) {
         for (const std::pair<std::string, bool> &constraint :

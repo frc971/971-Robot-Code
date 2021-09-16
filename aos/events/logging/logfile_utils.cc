@@ -520,6 +520,9 @@ MessageReader::ReadMessage() {
 
 PartsMessageReader::PartsMessageReader(LogParts log_parts)
     : parts_(std::move(log_parts)), message_reader_(parts_.parts[0]) {
+  if (parts_.parts.size() >= 2) {
+    next_message_reader_.emplace(parts_.parts[1]);
+  }
   ComputeBootCounts();
 }
 
@@ -601,11 +604,18 @@ PartsMessageReader::ReadMessage() {
 
 void PartsMessageReader::NextLog() {
   if (next_part_index_ == parts_.parts.size()) {
+    CHECK(!next_message_reader_);
     done_ = true;
     return;
   }
-  message_reader_ = MessageReader(parts_.parts[next_part_index_]);
+  CHECK(next_message_reader_);
+  message_reader_ = std::move(*next_message_reader_);
   ComputeBootCounts();
+  if (next_part_index_ + 1 < parts_.parts.size()) {
+    next_message_reader_.emplace(parts_.parts[next_part_index_ + 1]);
+  } else {
+    next_message_reader_.reset();
+  }
   ++next_part_index_;
 }
 
