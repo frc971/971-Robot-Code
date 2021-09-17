@@ -173,6 +173,9 @@ class LogReader {
     return channel->logger() != LoggerConfig::NOT_LOGGED;
   }
 
+  // Returns a list of all the original channels from remapping.
+  std::vector<const Channel *> RemappedChannels() const;
+
   SimulatedEventLoopFactory *event_loop_factory() {
     return event_loop_factory_;
   }
