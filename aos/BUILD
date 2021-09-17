@@ -409,6 +409,7 @@ cc_library(
     deps = [
         "//aos:macros",
         "//aos/containers:resizeable_buffer",
+        "//aos/util:file",
         "@com_github_google_flatbuffers//:flatbuffers",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/strings",
@@ -581,6 +582,7 @@ cc_test(
         ":json_to_flatbuffer",
         ":json_to_flatbuffer_fbs",
         "//aos/testing:googletest",
+        "//aos/testing:tmpdir",
     ],
 )
 

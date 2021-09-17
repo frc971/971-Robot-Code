@@ -2,9 +2,12 @@
 #define AOS_UTIL_FILE_H_
 
 #include <sys/stat.h>
+
+#include <memory>
 #include <string>
 #include <string_view>
 
+#include "absl/types/span.h"
 #include "glog/logging.h"
 
 namespace aos {
@@ -31,6 +34,9 @@ bool PathExists(std::string_view path);
 // Recursively removes everything in the provided path.  Ignores any errors it
 // runs across.
 void UnlinkRecursive(std::string_view path);
+
+// Maps file from disk into memory
+std::shared_ptr<absl::Span<uint8_t>> MMapFile(const std::string &path);
 
 }  // namespace util
 }  // namespace aos
