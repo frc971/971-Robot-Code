@@ -235,7 +235,6 @@ class FieldWidget(Gtk.DrawingArea):
             if self.points.getSplines():
                 self.draw_splines(cr)
                 for i, points in enumerate(self.points.getSplines()):
-
                     points = [
                         np.array([self.mToPx(x), self.mToPx(y)])
                         for (x, y) in points
@@ -332,6 +331,17 @@ class FieldWidget(Gtk.DrawingArea):
         self.queue_draw()
         self.graph.schedule_recalculate(self.points)
 
+    def clear_graph(self):
+        self.points = Points()
+        #recalulate graph using new points
+        self.graph.axis.clear()
+        self.graph.queue_draw()
+        #allow placing again
+        self.mode = Mode.kPlacing
+        #redraw entire graph
+        self.queue_draw()
+        #TODO: Make a way to undo clear
+
     def do_key_press_event(self, event):
         keyval = Gdk.keyval_to_lower(event.keyval)
 
@@ -354,7 +364,6 @@ class FieldWidget(Gtk.DrawingArea):
             event.x, event.y)
         if self.mode == Mode.kEditing:
             if self.index_of_edit > -1 and self.held_x != self.mousex:
-
                 self.points.setSplines(self.spline_edit, self.index_of_edit,
                                        self.pxToM(self.mousex),
                                        self.pxToM(self.mousey))
