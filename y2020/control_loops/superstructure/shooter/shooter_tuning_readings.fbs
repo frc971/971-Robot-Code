@@ -1,0 +1,14 @@
+namespace y2020.control_loops.superstructure.shooter;
+
+// Contains the readings used to tune the accelerator
+// and finisher velocities to minimize variation in ball velocity.
+// We have two sensors, and find the time that the ball takes to
+// pass between the two to find its velocity.
+// This will be sent each time a ball is detected.
+table TuningReadings {
+  // The velocity (m/s) of the last ball passing between the two
+  // sensors
+  velocity_ball:double (id: 0);
+}
+
+root_type TuningReadings;

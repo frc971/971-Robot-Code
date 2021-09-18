@@ -48,9 +48,15 @@
 #include "frc971/wpilib/pdp_fetcher.h"
 #include "frc971/wpilib/sensor_reader.h"
 #include "frc971/wpilib/wpilib_robot_base.h"
+#include "gflags/gflags.h"
 #include "y2020/constants.h"
+#include "y2020/control_loops/superstructure/shooter/shooter_tuning_readings_generated.h"
 #include "y2020/control_loops/superstructure/superstructure_output_generated.h"
 #include "y2020/control_loops/superstructure/superstructure_position_generated.h"
+
+DEFINE_bool(shooter_tuning, true,
+            "If true, reads from ball beambreak sensors and sends shooter "
+            "tuning readings");
 
 using ::aos::monotonic_clock;
 using ::y2020::constants::Values;
@@ -119,7 +125,10 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
         drivetrain_position_sender_(
             event_loop
                 ->MakeSender<::frc971::control_loops::drivetrain::Position>(
-                    "/drivetrain")) {
+                    "/drivetrain")),
+        shooter_tuning_readings_sender_(
+            event_loop->MakeSender<superstructure::shooter::TuningReadings>(
+                "/superstructure")) {
     // Set to filter out anything shorter than 1/4 of the minimum pulse width
     // we should ever see.
     UpdateFastEncoderFilterHz(kMaxFastEncoderPulsesPerSecond);
@@ -193,6 +202,20 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   }
 
   void set_imu(frc971::wpilib::ADIS16470 *imu) { imu_ = imu; }
+
+  void set_ball_beambreak_inputs(::std::unique_ptr<frc::DigitalInput> sensor1,
+                                 ::std::unique_ptr<frc::DigitalInput> sensor2) {
+    ball_beambreak_inputs_[0] = ::std::move(sensor1);
+    ball_beambreak_inputs_[1] = ::std::move(sensor2);
+    ball_beambreak_reader_.set_input_one(sensor1.get());
+    ball_beambreak_reader_.set_input_two(sensor2.get());
+  }
+
+  void Start() override {
+    if (FLAGS_shooter_tuning) {
+      AddToDMA(&ball_beambreak_reader_);
+    }
+  }
 
   void RunIteration() override {
     CHECK_NOTNULL(imu_)->DoReads();
@@ -292,6 +315,21 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
       builder.Send(auto_mode_builder.Finish());
     }
+
+    if (FLAGS_shooter_tuning &&
+        ball_beambreak_reader_.pulses_detected() > balls_detected_) {
+      balls_detected_ = ball_beambreak_reader_.pulses_detected();
+
+      // Distance between beambreak sensors, in meters.
+      constexpr double kDistanceBetweenBeambreaks = 0.4813;
+
+      auto builder = shooter_tuning_readings_sender_.MakeBuilder();
+      auto shooter_tuning_readings_builder =
+          builder.MakeBuilder<superstructure::shooter::TuningReadings>();
+      shooter_tuning_readings_builder.add_velocity_ball(
+          kDistanceBetweenBeambreaks / ball_beambreak_reader_.last_width());
+      builder.Send(shooter_tuning_readings_builder.Finish());
+    }
   }
 
  private:
@@ -299,6 +337,8 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   ::aos::Sender<superstructure::Position> superstructure_position_sender_;
   ::aos::Sender<::frc971::control_loops::drivetrain::Position>
       drivetrain_position_sender_;
+  ::aos::Sender<superstructure::shooter::TuningReadings>
+      shooter_tuning_readings_sender_;
 
   ::frc971::wpilib::AbsoluteEncoderAndPotentiometer turret_encoder_;
 
@@ -311,6 +351,14 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   ::std::array<::std::unique_ptr<frc::DigitalInput>, 2> autonomous_modes_;
 
   frc971::wpilib::ADIS16470 *imu_ = nullptr;
+
+  // Used to interface with the two beam break sensors that the ball for tuning
+  // shooter parameters has to pass through.
+  // We will time how long it takes to pass between the two sensors to get its
+  // velocity.
+  std::array<std::unique_ptr<frc::DigitalInput>, 2> ball_beambreak_inputs_;
+  frc971::wpilib::DMAPulseSeparationReader ball_beambreak_reader_;
+  int balls_detected_ = 0;
 };
 
 class SuperstructureWriter
@@ -517,6 +565,11 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         make_unique<frc::Encoder>(3, 2, false, frc::Encoder::k4X));
     sensor_reader.set_left_accelerator_encoder(make_encoder(4));
     sensor_reader.set_right_accelerator_encoder(make_encoder(3));
+
+    if (FLAGS_shooter_tuning) {
+      sensor_reader.set_ball_beambreak_inputs(
+          make_unique<frc::DigitalInput>(6), make_unique<frc::DigitalInput>(7));
+    }
 
     // Note: If ADIS16470 is plugged in directly to the roboRIO SPI port without
     // the Spartan Board, then trigger is on 26, reset 27, and chip select is
