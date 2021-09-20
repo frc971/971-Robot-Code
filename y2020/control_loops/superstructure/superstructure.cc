@@ -164,11 +164,16 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
   if (output != nullptr) {
     // Friction is a pain and putting a really high burden on the integrator.
+    // TODO(james): I'm not sure how helpful this gain is.
     const double turret_velocity_sign =
         turret_status->velocity() * kTurretFrictionGain;
     output_struct.turret_voltage +=
         std::clamp(turret_velocity_sign, -kTurretFrictionVoltageLimit,
                    kTurretFrictionVoltageLimit);
+    const double time_sec =
+        aos::time::DurationInSeconds(position_timestamp.time_since_epoch());
+    output_struct.turret_voltage +=
+        kTurretDitherGain * std::sin(2.0 * M_PI * time_sec * 30.0);
     output_struct.turret_voltage =
         std::clamp(output_struct.turret_voltage, -turret_.operating_voltage(),
                    turret_.operating_voltage());

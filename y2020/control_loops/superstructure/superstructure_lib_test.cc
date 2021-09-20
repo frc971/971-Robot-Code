@@ -742,7 +742,7 @@ TEST_F(SuperstructureTest, SaturationTest) {
   superstructure_plant_.set_peak_intake_acceleration(0.2);
 
   superstructure_plant_.set_peak_turret_velocity(23.0);
-  superstructure_plant_.set_peak_turret_acceleration(0.2);
+  superstructure_plant_.set_peak_turret_acceleration(6.0);
 
   // Intake needs over 9 seconds to reach the goal
   RunFor(chrono::seconds(10));
@@ -971,7 +971,7 @@ TEST_P(SuperstructureAllianceTest, TurretAutoAim) {
 
   superstructure_status_fetcher_.Fetch();
   EXPECT_NEAR(kShotAngle, superstructure_status_fetcher_->turret()->position(),
-              1e-4);
+              5e-4);
   EXPECT_FLOAT_EQ(kShotAngle,
                   superstructure_status_fetcher_->aimer()->turret_position());
   EXPECT_FLOAT_EQ(0,

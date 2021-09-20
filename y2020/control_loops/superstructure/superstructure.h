@@ -28,6 +28,7 @@ class Superstructure
   // voltage cap.
   static constexpr double kTurretFrictionGain = 10.0;
   static constexpr double kTurretFrictionVoltageLimit = 1.5;
+  static constexpr double kTurretDitherGain = 0.4;
 
   using PotAndAbsoluteEncoderSubsystem =
       ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystem<
