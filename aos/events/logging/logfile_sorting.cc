@@ -1238,8 +1238,15 @@ std::vector<LogFile> PartsSorter::FormatNewParts() {
                   return a.second < b.second;
                 });
       new_parts.parts.reserve(parts.second.parts.size());
-      for (std::pair<std::string, int> &p : parts.second.parts) {
-        new_parts.parts.emplace_back(std::move(p.first));
+      {
+        int last_parts_index = -1;
+        for (std::pair<std::string, int> &p : parts.second.parts) {
+          CHECK_LT(last_parts_index, p.second)
+              << ": Found duplicate parts in '" << new_parts.parts.back()
+              << "' and '" << p.first << "'";
+          last_parts_index = p.second;
+          new_parts.parts.emplace_back(std::move(p.first));
+        }
       }
 
       CHECK(!parts.second.config_sha256.empty());

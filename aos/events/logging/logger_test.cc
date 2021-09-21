@@ -2501,6 +2501,30 @@ TEST_P(MultinodeLoggerTest, OneDirectionWithPositiveSlope) {
   ConfirmReadable(pi1_single_direction_logfiles_);
 }
 
+// Tests that we explode if someone passes in a part file twice with a better
+// error than an out of order error.
+TEST_P(MultinodeLoggerTest, DuplicateLogFiles) {
+  time_converter_.AddMonotonic(
+      {BootTimestamp::epoch(),
+       BootTimestamp::epoch() + chrono::seconds(1000)});
+  {
+    LoggerState pi1_logger = MakeLogger(pi1_);
+
+    event_loop_factory_.RunFor(chrono::milliseconds(95));
+
+    StartLogger(&pi1_logger);
+
+    event_loop_factory_.RunFor(chrono::milliseconds(10000));
+  }
+
+  std::vector<std::string> duplicates;
+  for (const std::string &f : pi1_single_direction_logfiles_) {
+    duplicates.emplace_back(f);
+    duplicates.emplace_back(f);
+  }
+  EXPECT_DEATH({ SortParts(duplicates); }, "Found duplicate parts in");
+}
+
 // Tests that we properly handle a dead node.  Do this by just disconnecting it
 // and only using one nodes of logs.
 TEST_P(MultinodeLoggerTest, DeadNode) {
