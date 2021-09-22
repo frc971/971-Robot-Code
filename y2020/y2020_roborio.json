@@ -198,6 +198,14 @@
     },
     {
       "name": "/superstructure",
+      "type": "y2020.control_loops.superstructure.shooter.TuningParams",
+      "source_node": "roborio",
+      "frequency": 5,
+      "num_senders": 2,
+      "max_size": 256
+    },
+    {
+      "name": "/superstructure",
       "type": "y2020.joysticks.Setpoint",
       "source_node": "roborio",
       "num_senders": 2

@@ -1,0 +1,26 @@
+namespace y2020.control_loops.superstructure.shooter;
+
+// Parameters for tuning a flywheel's velocity.
+// Using this for the parameters of the accelerators and the finisher.
+table FlywheelTuningParams {
+  // Shoot balls at
+  // velocity_initial, velocity_initial + velocity_increment, ...,
+  // up to velocity_final, randomizing the order of these velocities.
+  velocity_initial:double (id: 0);
+  velocity_final:double (id: 1);
+  velocity_increment:double (id: 2);
+}
+
+// Parameters for the auto mode that tunes the shooter
+table TuningParams {
+  // Parameters for the flywheels
+  accelerator:FlywheelTuningParams (id: 0);
+  finisher:FlywheelTuningParams (id: 1);
+
+  // Number of balls to shooter at each iteration in
+  // the sweep of all possible accelerator and finisher
+  // velocities.
+  balls_per_iteration:int (id: 2);
+}
+
+root_type TuningParams;

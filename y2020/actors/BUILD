@@ -77,3 +77,22 @@ cc_binary(
         "//frc971/autonomous:auto_fbs",
     ],
 )
+
+cc_binary(
+    name = "shooter_tuning_action",
+    srcs = [
+        "shooter_tuning_actor.cc",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        "//aos/events:shm_event_loop",
+        "//aos:init",
+        "//frc971/autonomous:base_autonomous_actor",
+        "//frc971/control_loops:control_loops_fbs",
+        "//frc971/control_loops:profiled_subsystem_fbs",
+        "//y2020/control_loops/drivetrain:drivetrain_base",
+        "//y2020/control_loops/superstructure/shooter:shooter_tuning_params_fbs",
+        "//y2020/control_loops/superstructure/shooter:shooter_tuning_readings_fbs",
+        "//y2020/control_loops/superstructure:superstructure_goal_fbs",
+    ],
+)
