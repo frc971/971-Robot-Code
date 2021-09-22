@@ -201,7 +201,7 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> LogNamer::MakeHeader(
   const UUID &source_node_boot_uuid = state[node_index].boot_uuid;
   const Node *const source_node =
       configuration::GetNode(configuration_, node_index);
-  CHECK_EQ(LogFileHeader::MiniReflectTypeTable()->num_elems, 24u);
+  CHECK_EQ(LogFileHeader::MiniReflectTypeTable()->num_elems, 28u);
   flatbuffers::FlatBufferBuilder fbb;
   fbb.ForceDefaults(true);
 
@@ -258,41 +258,32 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> LogNamer::MakeHeader(
 
   std::vector<flatbuffers::Offset<flatbuffers::String>> boot_uuid_offsets;
   boot_uuid_offsets.reserve(state.size());
-  for (const NewDataWriter::State &state : state) {
-    if (state.boot_uuid != UUID::Zero()) {
-      boot_uuid_offsets.emplace_back(state.boot_uuid.PackString(&fbb));
-    } else {
-      boot_uuid_offsets.emplace_back(fbb.CreateString(""));
-    }
-  }
 
-  flatbuffers::Offset<
-      flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>>
-      boot_uuids_offset = fbb.CreateVector(boot_uuid_offsets);
-
-  int64_t *oldest_remote_monotonic_timestamps;
+  int64_t *unused;
   flatbuffers::Offset<flatbuffers::Vector<int64_t>>
       oldest_remote_monotonic_timestamps_offset = fbb.CreateUninitializedVector(
-          state.size(), &oldest_remote_monotonic_timestamps);
+          state.size(), &unused);
 
-  int64_t *oldest_local_monotonic_timestamps;
   flatbuffers::Offset<flatbuffers::Vector<int64_t>>
       oldest_local_monotonic_timestamps_offset = fbb.CreateUninitializedVector(
-          state.size(), &oldest_local_monotonic_timestamps);
+          state.size(), &unused);
 
-  int64_t *oldest_remote_unreliable_monotonic_timestamps;
   flatbuffers::Offset<flatbuffers::Vector<int64_t>>
       oldest_remote_unreliable_monotonic_timestamps_offset =
           fbb.CreateUninitializedVector(
-              state.size(), &oldest_remote_unreliable_monotonic_timestamps);
+              state.size(), &unused);
 
-  int64_t *oldest_local_unreliable_monotonic_timestamps;
   flatbuffers::Offset<flatbuffers::Vector<int64_t>>
       oldest_local_unreliable_monotonic_timestamps_offset =
           fbb.CreateUninitializedVector(
-              state.size(), &oldest_local_unreliable_monotonic_timestamps);
+              state.size(), &unused);
 
   for (size_t i = 0; i < state.size(); ++i) {
+    if (state[i].boot_uuid != UUID::Zero()) {
+      boot_uuid_offsets.emplace_back(state[i].boot_uuid.PackString(&fbb));
+    } else {
+      boot_uuid_offsets.emplace_back(fbb.CreateString(""));
+    }
     if (state[i].boot_uuid == UUID::Zero()) {
       CHECK_EQ(state[i].oldest_remote_monotonic_timestamp,
                monotonic_clock::max_time);
@@ -304,19 +295,31 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> LogNamer::MakeHeader(
                monotonic_clock::max_time);
     }
 
-    oldest_remote_monotonic_timestamps[i] =
-        state[i].oldest_remote_monotonic_timestamp.time_since_epoch().count();
-    oldest_local_monotonic_timestamps[i] =
-        state[i].oldest_local_monotonic_timestamp.time_since_epoch().count();
-    oldest_remote_unreliable_monotonic_timestamps[i] =
-        state[i]
-            .oldest_remote_unreliable_monotonic_timestamp.time_since_epoch()
-            .count();
-    oldest_local_unreliable_monotonic_timestamps[i] =
-        state[i]
-            .oldest_local_unreliable_monotonic_timestamp.time_since_epoch()
-            .count();
+    flatbuffers::GetMutableTemporaryPointer(
+        fbb, oldest_remote_monotonic_timestamps_offset)
+        ->Mutate(i, state[i]
+                        .oldest_remote_monotonic_timestamp.time_since_epoch()
+                        .count());
+    flatbuffers::GetMutableTemporaryPointer(
+        fbb, oldest_local_monotonic_timestamps_offset)
+        ->Mutate(i, state[i]
+                        .oldest_local_monotonic_timestamp.time_since_epoch()
+                        .count());
+    flatbuffers::GetMutableTemporaryPointer(
+        fbb, oldest_remote_unreliable_monotonic_timestamps_offset)
+        ->Mutate(i, state[i]
+                        .oldest_remote_unreliable_monotonic_timestamp.time_since_epoch()
+                        .count());
+    flatbuffers::GetMutableTemporaryPointer(
+        fbb, oldest_local_unreliable_monotonic_timestamps_offset)
+        ->Mutate(i, state[i]
+                        .oldest_local_unreliable_monotonic_timestamp.time_since_epoch()
+                        .count());
   }
+
+  flatbuffers::Offset<
+      flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>>
+      boot_uuids_offset = fbb.CreateVector(boot_uuid_offsets);
 
   aos::logger::LogFileHeader::Builder log_file_header_builder(fbb);
 

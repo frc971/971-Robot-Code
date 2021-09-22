@@ -136,13 +136,17 @@ table LogFileHeader {
   // For all channels sent from a specific node, these vectors hold the
   // timestamp of the oldest known message from that node, and the
   // corresponding monotonic timestamp for when that was received on our node.
-  oldest_remote_monotonic_timestamps:[int64] (id: 20);
-  oldest_local_monotonic_timestamps:[int64] (id: 21);
+  corrupted_oldest_remote_monotonic_timestamps:[int64] (id: 20, deprecated);
+  corrupted_oldest_local_monotonic_timestamps:[int64] (id: 21, deprecated);
+  oldest_remote_monotonic_timestamps:[int64] (id: 24);
+  oldest_local_monotonic_timestamps:[int64] (id: 25);
 
   // For all channels *excluding* the reliable channels (ttl == 0), record the
   // same quantity.
-  oldest_remote_unreliable_monotonic_timestamps:[int64] (id: 22);
-  oldest_local_unreliable_monotonic_timestamps:[int64] (id: 23);
+  corrupted_oldest_remote_unreliable_monotonic_timestamps:[int64] (id: 22, deprecated);
+  corrupted_oldest_local_unreliable_monotonic_timestamps:[int64] (id: 23, deprecated);
+  oldest_remote_unreliable_monotonic_timestamps:[int64] (id: 26);
+  oldest_local_unreliable_monotonic_timestamps:[int64] (id: 27);
 }
 
 // Table holding a message.
