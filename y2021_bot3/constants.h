@@ -29,6 +29,9 @@ struct Values {
   }
   static constexpr double kRollerSupplyCurrentLimit() { return 30.0; }
   static constexpr double kRollerStatorCurrentLimit() { return 40.0; }
+
+  // Climber
+  static constexpr double kClimberSupplyCurrentLimit() { return 60.0; }
 };
 
 // Creates (once) a Values instance for ::aos::network::GetTeamNumber() and
