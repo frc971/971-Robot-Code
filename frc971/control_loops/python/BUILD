@@ -112,6 +112,7 @@ py_library(
         ":drivetrain",
         ":python_init",
         "//external:python-glog",
+        "@matplotlib_repo//:matplotlib3",
     ],
 )
 

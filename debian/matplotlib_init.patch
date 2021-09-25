@@ -26,7 +26,7 @@
 +
 +# Tell fontconfig where to find matplotlib's sandboxed font files.
 +os.environ["FONTCONFIG_PATH"] = os.path.join(_matplotlib_base, "etc/fonts")
-+os.environ["FONTCONFIG_FILE"] = os.path.join(_matplotlib_base, "etc/fonts/fonts.conf")
++os.environ["FONTCONFIG_FILE"] = "fonts.conf"
 +os.environ["FONTCONFIG_SYSROOT"] = _matplotlib_base
 +
  try:

@@ -185,11 +185,19 @@ def build_matplotlib(version, tkinter_py_version = None, copy_shared_files = Tru
         name = "matplotlib" + version,
         srcs = _src_copied + [
             version + "/matplotlib/__init__.py",
-        ],
+        ] + native.glob(
+            include = ["usr/lib/python" + tkinter_py_version + "/**/*.py"],
+        ),
         data = _data_files + _builtin_so_copied + _system_so_copied + [
             ":usr/share/matplotlib/mpl-data/matplotlibrc",
-        ] + native.glob(["etc/**"]),
-        imports = ["usr/lib/python" + version + "/dist-packages", version, "."],
+        ] + native.glob(["etc/**", "usr/share/fonts/**"]),
+        imports = [
+            "rpathed3/usr/lib/python" + version + "/dist-packages",
+            "rpathed3/usr/lib/python" + version + ".7/lib-dynload",
+            version,
+            ".",
+            "usr/lib/python" + tkinter_py_version,
+        ],
         target_compatible_with = ["@platforms//cpu:x86_64"],
         visibility = ["//visibility:public"],
     )
