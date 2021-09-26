@@ -32,6 +32,8 @@ import {plotFinisher} from
     'org_frc971/y2020/control_loops/superstructure/finisher_plotter'
 import {plotTurret} from
     'org_frc971/y2020/control_loops/superstructure/turret_plotter'
+import {plotLocalizer} from
+    'org_frc971/y2020/control_loops/drivetrain/localizer_plotter'
 import {plotAccelerator} from
     'org_frc971/y2020/control_loops/superstructure/accelerator_plotter'
 import {plotHood} from
@@ -100,6 +102,7 @@ const plotIndex = new Map<string, PlotState>([
   ['Accelerator', new PlotState(plotDiv, plotAccelerator)],
   ['Hood', new PlotState(plotDiv, plotHood)],
   ['Turret', new PlotState(plotDiv, plotTurret)],
+  ['2020 Localizer', new PlotState(plotDiv, plotLocalizer)],
   ['C++ Plotter', new PlotState(plotDiv, plotData)],
 ]);
 

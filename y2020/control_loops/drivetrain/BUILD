@@ -1,6 +1,7 @@
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 load("//aos:config.bzl", "aos_config")
 load("//tools/build_rules:select.bzl", "compiler_select", "cpu_select")
+load("@npm_bazel_typescript//:defs.bzl", "ts_library")
 
 genrule(
     name = "genrule_drivetrain",
@@ -202,5 +203,21 @@ cc_binary(
         "//y2020/control_loops/superstructure:superstructure_lib",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
+    ],
+)
+
+ts_library(
+    name = "localizer_plotter",
+    srcs = ["localizer_plotter.ts"],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aos:configuration_ts_fbs",
+        "//aos/network/www:aos_plotter",
+        "//aos/network/www:colors",
+        "//aos/network/www:plotter",
+        "//aos/network/www:proxy",
+        "//aos/network/www:reflection_ts",
+        "@com_github_google_flatbuffers//ts:flatbuffers_ts",
     ],
 )
