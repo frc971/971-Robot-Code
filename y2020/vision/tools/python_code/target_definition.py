@@ -10,7 +10,7 @@ import define_training_data as dtd
 import train_and_match as tam
 
 # TODO<Jim>: Allow command-line setting of logging level
-glog.setLevel("WARN")
+glog.setLevel("INFO")
 global VISUALIZE_KEYPOINTS
 VISUALIZE_KEYPOINTS = False
 
@@ -62,8 +62,8 @@ class TargetData:
             # Filter and project points for each polygon in the list
             filtered_keypoints, _, _, _, keep_list = dtd.filter_keypoints_by_polygons(
                 keypoint_list, None, [self.polygon_list[poly_ind]])
-            glog.info("Filtering kept %d of %d features" %
-                      (len(keep_list), len(keypoint_list)))
+            glog.debug("Filtering kept %d of %d features" %
+                       (len(keep_list), len(keypoint_list)))
             filtered_point_array = np.asarray([
                 (keypoint.pt[0], keypoint.pt[1])
                 for keypoint in filtered_keypoints
@@ -131,14 +131,14 @@ def load_training_data():
     # NOTE: Since we don't have an "ideal" (e.g., graphic) version, we're
     # just using the same image as the training image.
     ideal_power_port_taped = TargetData(
-        'test_images/partial_971_power_port_red.png')
+        'test_images/partial_971_power_port_red_daytime.png')
 
     # Start at lower left corner, and work around clockwise
     # These are taken by manually finding the points in gimp for this image
-    power_port_taped_main_panel_polygon_points_2d = [(220, 449), (220, 162),
-                                                     (37, 169), (210, 43),
-                                                     (371, 35), (378, 147),
-                                                     (400, 456)]
+    power_port_taped_main_panel_polygon_points_2d = [(198, 473), (203, 154),
+                                                     (23, 156), (204, 19),
+                                                     (374, 16), (381, 152),
+                                                     (397, 467)]
 
     # These are "virtual" 3D points based on the expected geometry
     power_port_taped_main_panel_polygon_points_3d = [
@@ -187,11 +187,11 @@ def load_training_data():
         -field_length / 2., c_power_port_edge_y + c_power_port_width / 2.,
         c_power_port_target_height
     ])
-    ideal_power_port_taped.target_point_2d = np.float32([[292, 106]]).reshape(
-        -1, 1, 2)  # train_power_port_taped-2020-08-20-13-27-50.png
+    ideal_power_port_taped.target_point_2d = np.float32([[290, 87]]).reshape(
+        -1, 1, 2)  # partial_971_power_port_red_daytime.png
 
     training_target_power_port_taped = TargetData(
-        'test_images/partial_971_power_port_red.png')
+        'test_images/partial_971_power_port_red_daytime.png')
     training_target_power_port_taped.target_rotation = ideal_power_port_taped.target_rotation
     training_target_power_port_taped.target_position = ideal_power_port_taped.target_position
     training_target_power_port_taped.target_radius = target_radius_default
@@ -438,9 +438,9 @@ def load_training_data():
     training_target_list.append(training_target_power_port_red)
 
     ### Red Loading Bay
-    glog.info("Adding red loading bay to the model list")
-    ideal_target_list.append(ideal_loading_bay_red)
-    training_target_list.append(training_target_loading_bay_red)
+    #glog.info("Adding red loading bay to the model list")
+    #ideal_target_list.append(ideal_loading_bay_red)
+    #training_target_list.append(training_target_loading_bay_red)
 
     ### Blue Power Port
     #glog.info("Adding blue power port to the model list")
@@ -448,9 +448,9 @@ def load_training_data():
     #training_target_list.append(training_target_power_port_blue)
 
     ### Blue Loading Bay
-    glog.info("Adding blue loading bay to the model list")
-    ideal_target_list.append(ideal_loading_bay_blue)
-    training_target_list.append(training_target_loading_bay_blue)
+    #glog.info("Adding blue loading bay to the model list")
+    #ideal_target_list.append(ideal_loading_bay_blue)
+    #training_target_list.append(training_target_loading_bay_blue)
 
     return ideal_target_list, training_target_list
 
@@ -461,12 +461,12 @@ def compute_target_definition():
     # Create feature extractor
     feature_extractor = tam.load_feature_extractor()
 
-    # Use webcam parameters for now
+    # Use default parameters for now
     camera_params = camera_definition.load_camera_definitions()[0]
 
     for ideal_target in ideal_target_list:
-        glog.info("\nPreparing target for image %s" %
-                  ideal_target.image_filename)
+        glog.debug("\nPreparing target for image %s" %
+                   ideal_target.image_filename)
         ideal_target.extract_features(feature_extractor)
         ideal_target.filter_keypoints_by_polygons()
         ideal_target.compute_reprojection_maps()
@@ -515,8 +515,8 @@ def compute_target_definition():
     AUTO_PROJECTION = True
 
     if AUTO_PROJECTION:
-        glog.info(
-            "\n\nAuto projection of training keypoints to 3D using ideal images"
+        glog.debug(
+            "Doing auto projection of training keypoints to 3D using ideal images"
         )
         # Match the captured training image against the "ideal" training image
         # and use those matches to pin down the 3D locations of the keypoints
@@ -526,8 +526,8 @@ def compute_target_definition():
             training_target = training_target_list[target_ind]
             ideal_target = ideal_target_list[target_ind]
 
-            glog.info("\nPreparing target for image %s" %
-                      training_target.image_filename)
+            glog.debug("\nPreparing target for image %s" %
+                       training_target.image_filename)
             # Extract keypoints and descriptors for model
             training_target.extract_features(feature_extractor)
 
@@ -562,14 +562,14 @@ def compute_target_definition():
             training_target.target_point_2d = training_target_point_2d.reshape(
                 -1, 1, 2)
 
-            glog.info("Started with %d keypoints" %
-                      len(training_target.keypoint_list))
+            glog.debug("Started with %d keypoints" %
+                       len(training_target.keypoint_list))
 
             training_target.keypoint_list, training_target.descriptor_list, rejected_keypoint_list, rejected_descriptor_list, _ = dtd.filter_keypoints_by_polygons(
                 training_target.keypoint_list, training_target.descriptor_list,
                 training_target.polygon_list)
-            glog.info("After filtering by polygons, had %d keypoints" %
-                      len(training_target.keypoint_list))
+            glog.debug("After filtering by polygons, had %d keypoints" %
+                       len(training_target.keypoint_list))
             if VISUALIZE_KEYPOINTS:
                 tam.show_keypoints(training_target.image,
                                    training_target.keypoint_list)
