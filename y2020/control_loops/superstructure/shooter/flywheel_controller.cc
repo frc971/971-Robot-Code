@@ -41,7 +41,7 @@ class CurrentLimitedStateFeedbackController
     // And we have a quadratic!
     const double a = 1;
     const double b = -bemf_voltage;
-    const double c = -60.0 * 12.0 * resistance_;
+    const double c = -70.0 * 12.0 * resistance_;
 
     // Root is always positive.
     const double root = std::sqrt(b * b - 4.0 * a * c);
