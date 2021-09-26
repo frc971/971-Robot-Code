@@ -1,0 +1,23 @@
+{
+ "node_name": "reference",
+ "team_number": 1971,
+ "intrinsics": [
+  388.0,
+  0.0,
+  320.0,
+  0.0,
+  388.0,
+  240.0,
+  0.0,
+  0.0,
+  1.0
+ ],
+ "dist_coeffs": [
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0
+ ],
+ "calibration_timestamp": 1597994992500905688
+}
