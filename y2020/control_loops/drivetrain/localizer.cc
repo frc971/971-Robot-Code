@@ -72,7 +72,11 @@ Localizer::Localizer(
       ekf_(dt_config),
       clock_offset_fetcher_(
           event_loop_->MakeFetcher<aos::message_bridge::ServerStatistics>(
-              "/aos")) {
+              "/aos")),
+      debug_sender_(
+          event_loop_
+              ->MakeSender<y2020::control_loops::drivetrain::LocalizerDebug>(
+                  "/drivetrain")) {
   // TODO(james): The down estimator has trouble handling situations where the
   // robot is constantly wiggling but not actually moving much, and can cause
   // drift when using accelerometer readings.
@@ -145,17 +149,32 @@ void Localizer::Update(const Eigen::Matrix<double, 2, 1> &U,
                        double gyro_rate, const Eigen::Vector3d &accel) {
   ekf_.UpdateEncodersAndGyro(left_encoder, right_encoder, gyro_rate,
                              U.cast<float>(), accel.cast<float>(), now);
+  auto builder = debug_sender_.MakeBuilder();
+  aos::SizedArray<flatbuffers::Offset<ImageMatchDebug>, 25> debug_offsets;
   for (size_t ii = 0; ii < kPisToUse.size(); ++ii) {
     auto &image_fetcher = image_fetchers_[ii];
     while (image_fetcher.FetchNext()) {
-      HandleImageMatch(kPisToUse[ii], *image_fetcher, now);
+      const auto offsets = HandleImageMatch(ii, kPisToUse[ii], *image_fetcher,
+                                            now, builder.fbb());
+      for (const auto offset : offsets) {
+        debug_offsets.push_back(offset);
+      }
     }
   }
+  const auto vector_offset =
+      builder.fbb()->CreateVector(debug_offsets.data(), debug_offsets.size());
+  LocalizerDebug::Builder debug_builder = builder.MakeBuilder<LocalizerDebug>();
+  debug_builder.add_matches(vector_offset);
+  CHECK(builder.Send(debug_builder.Finish()));
 }
 
-void Localizer::HandleImageMatch(
-    std::string_view pi, const frc971::vision::sift::ImageMatchResult &result,
-    aos::monotonic_clock::time_point now) {
+aos::SizedArray<flatbuffers::Offset<ImageMatchDebug>, 5>
+Localizer::HandleImageMatch(
+    size_t camera_index, std::string_view pi,
+    const frc971::vision::sift::ImageMatchResult &result,
+    aos::monotonic_clock::time_point now, flatbuffers::FlatBufferBuilder *fbb) {
+  aos::SizedArray<flatbuffers::Offset<ImageMatchDebug>, 5> debug_offsets;
+
   std::chrono::nanoseconds monotonic_offset(0);
   clock_offset_fetcher_.Fetch();
   if (clock_offset_fetcher_.get() != nullptr) {
@@ -177,11 +196,21 @@ void Localizer::HandleImageMatch(
           << capture_time;
   if (capture_time > now) {
     LOG(WARNING) << "Got camera frame from the future.";
-    return;
+    ImageMatchDebug::Builder builder(*fbb);
+    builder.add_camera(camera_index);
+    builder.add_accepted(false);
+    builder.add_rejection_reason(RejectionReason::IMAGE_FROM_FUTURE);
+    debug_offsets.push_back(builder.Finish());
+    return debug_offsets;
   }
   if (!result.has_camera_calibration()) {
     LOG(WARNING) << "Got camera frame without calibration data.";
-    return;
+    ImageMatchDebug::Builder builder(*fbb);
+    builder.add_camera(camera_index);
+    builder.add_accepted(false);
+    builder.add_rejection_reason(RejectionReason::NO_CALIBRATION);
+    debug_offsets.push_back(builder.Finish());
+    return debug_offsets;
   }
   // Per the ImageMatchResult specification, we can actually determine whether
   // the camera is the turret camera just from the presence of the
@@ -194,7 +223,12 @@ void Localizer::HandleImageMatch(
   // seems reasonable, but may be unnecessarily low or high.
   constexpr float kMaxTurretVelocity = 1.0;
   if (is_turret && std::abs(turret_data.velocity) > kMaxTurretVelocity) {
-    return;
+    ImageMatchDebug::Builder builder(*fbb);
+    builder.add_camera(camera_index);
+    builder.add_accepted(false);
+    builder.add_rejection_reason(RejectionReason::TURRET_TOO_FAST);
+    debug_offsets.push_back(builder.Finish());
+    return debug_offsets;
   }
   CHECK(result.camera_calibration()->has_fixed_extrinsics());
   const Eigen::Matrix<float, 4, 4> fixed_extrinsics =
@@ -212,13 +246,32 @@ void Localizer::HandleImageMatch(
   }
 
   if (!result.has_camera_poses()) {
-    return;
+    ImageMatchDebug::Builder builder(*fbb);
+    builder.add_camera(camera_index);
+    builder.add_accepted(false);
+    builder.add_rejection_reason(RejectionReason::NO_RESULTS);
+    debug_offsets.push_back(builder.Finish());
+    return debug_offsets;
   }
 
+  int index = -1;
   for (const frc971::vision::sift::CameraPose *vision_result :
        *result.camera_poses()) {
+    ++index;
+
+    ImageMatchDebug::Builder builder(*fbb);
+    builder.add_camera(camera_index);
+    builder.add_pose_index(index);
+    builder.add_local_image_capture_time_ns(result.image_monotonic_timestamp_ns());
+    builder.add_roborio_image_capture_time_ns(
+        capture_time.time_since_epoch().count());
+    builder.add_image_age_sec(aos::time::DurationInSeconds(now - capture_time));
+
     if (!vision_result->has_camera_to_target() ||
         !vision_result->has_field_to_target()) {
+      builder.add_accepted(false);
+      builder.add_rejection_reason(RejectionReason::NO_TRANSFORMS);
+      debug_offsets.push_back(builder.Finish());
       continue;
     }
     const Eigen::Matrix<float, 4, 4> H_camera_target =
@@ -282,6 +335,9 @@ void Localizer::HandleImageMatch(
     // and don't use the correction.
     if (std::abs(aos::math::DiffAngle<float>(theta(), Z(2))) > M_PI_2) {
       AOS_LOG(WARNING, "Dropped image match due to heading mismatch.\n");
+      builder.add_accepted(false);
+      builder.add_rejection_reason(RejectionReason::HIGH_THETA_DIFFERENCE);
+      debug_offsets.push_back(builder.Finish());
       continue;
     }
     // In order to do the EKF correction, we determine the expected state based
@@ -293,17 +349,32 @@ void Localizer::HandleImageMatch(
         ekf_.LastStateBeforeTime(capture_time);
     if (!state_at_capture.has_value()) {
       AOS_LOG(WARNING, "Dropped image match due to age of image.\n");
+      builder.add_accepted(false);
+      builder.add_rejection_reason(RejectionReason::IMAGE_TOO_OLD);
+      debug_offsets.push_back(builder.Finish());
       continue;
     }
+
+    builder.add_implied_robot_x(Z(0));
+    builder.add_implied_robot_y(Z(1));
+    builder.add_implied_robot_theta(Z(2));
+
+    // Turret is zero when pointed backwards.
+    builder.add_implied_turret_goal(
+        aos::math::NormalizeAngle(M_PI + pose_robot_target.heading()));
+
+    std::optional<RejectionReason> correction_rejection;
     const Input U = ekf_.MostRecentInput();
     // For the correction step, instead of passing in the measurement directly,
     // we pass in (0, 0, 0) as the measurement and then for the expected
     // measurement (Zhat) we calculate the error between the implied and actual
     // poses. This doesn't affect any of the math, it just makes the code a bit
     // more convenient to write given the Correct() interface we already have.
+    // Note: If we start going back to doing back-in-time rewinds, then we can't
+    // get away with passing things by reference.
     ekf_.Correct(
         Eigen::Vector3f::Zero(), &U, {},
-        [H, H_field_target, pose_robot_target, state_at_capture](
+        [H, H_field_target, pose_robot_target, state_at_capture, &correction_rejection](
             const State &, const Input &) -> Eigen::Vector3f {
           const Eigen::Vector3f Z =
               CalculateImpliedPose(H_field_target, pose_robot_target);
@@ -311,6 +382,7 @@ void Localizer::HandleImageMatch(
           // have non-finite numbers.
           if (!Z.allFinite()) {
             AOS_LOG(WARNING, "Got measurement with infinites or NaNs.\n");
+            correction_rejection = RejectionReason::NONFINITE_MEASUREMENT;
             return Eigen::Vector3f::Zero();
           }
           Eigen::Vector3f Zhat = H * state_at_capture.value() - Z;
@@ -324,12 +396,21 @@ void Localizer::HandleImageMatch(
           // because I primarily introduced it to make sure that any grossly
           // invalid measurements get thrown out.
           if (Zhat.squaredNorm() > std::pow(10.0, 2)) {
+            correction_rejection = RejectionReason::CORRECTION_TOO_LARGE;
             return Eigen::Vector3f::Zero();
           }
           return Zhat;
         },
         [H](const State &) { return H; }, R, now);
+    if (correction_rejection) {
+      builder.add_accepted(false);
+      builder.add_rejection_reason(*correction_rejection);
+    } else {
+      builder.add_accepted(true);
+    }
+    debug_offsets.push_back(builder.Finish());
   }
+  return debug_offsets;
 }
 
 }  // namespace drivetrain

@@ -1,0 +1,34 @@
+namespace y2020.control_loops.drivetrain;
+
+enum RejectionReason : byte {
+  IMAGE_FROM_FUTURE = 0,
+  NO_CALIBRATION = 1,
+  TURRET_TOO_FAST = 2,
+  NO_RESULTS = 3,
+  NO_TRANSFORMS = 4,
+  HIGH_THETA_DIFFERENCE = 5,
+  IMAGE_TOO_OLD = 6,
+  NONFINITE_MEASUREMENT = 7,
+  CORRECTION_TOO_LARGE = 8,
+}
+
+table ImageMatchDebug {
+  camera:uint8 (id: 0);
+  pose_index: uint8 (id: 1);
+  local_image_capture_time_ns:long (id: 2);
+  roborio_image_capture_time_ns:long (id: 3);
+  implied_robot_x:float (id: 4);
+  implied_robot_y:float (id: 5);
+  implied_robot_theta:float (id: 6);
+  implied_turret_goal:float (id: 7);
+  accepted:bool (id: 8);
+  rejection_reason:RejectionReason  (id: 9);
+  // Image age (more human-readable than trying to interpret roborio_image_capture_time_ns).
+  image_age_sec:float (id: 10);
+}
+
+table LocalizerDebug {
+  matches:[ImageMatchDebug] (id: 0);
+}
+
+root_type LocalizerDebug;

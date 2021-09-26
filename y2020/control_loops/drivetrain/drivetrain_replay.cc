@@ -75,6 +75,8 @@ int main(int argc, char **argv) {
                             "frc971.control_loops.drivetrain.Status");
   reader.RemapLoggedChannel("/drivetrain",
                             "frc971.control_loops.drivetrain.Output");
+  reader.RemapLoggedChannel("/drivetrain",
+                            "y2020.control_loops.drivetrain.LocalizerDebug");
   reader.RemapLoggedChannel("/superstructure",
                             "y2020.control_loops.superstructure.Status");
   reader.RemapLoggedChannel("/superstructure",

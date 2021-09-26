@@ -56,13 +56,22 @@ cc_library(
     ],
 )
 
+flatbuffer_cc_library(
+    name = "localizer_debug_fbs",
+    srcs = ["localizer_debug.fbs"],
+    gen_reflections = 1,
+    visibility = ["//visibility:public"],
+)
+
 cc_library(
     name = "localizer",
     srcs = ["localizer.cc"],
     hdrs = ["localizer.h"],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
+        ":localizer_debug_fbs",
         "//aos/containers:ring_buffer",
+        "//aos/containers:sized_array",
         "//aos/network:message_bridge_server_fbs",
         "//frc971/control_loops:profiled_subsystem_fbs",
         "//frc971/control_loops/drivetrain:hybrid_ekf",

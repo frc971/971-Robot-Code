@@ -232,6 +232,7 @@ aos_config(
         "//aos/network:timestamp_fbs",
         "//y2020/control_loops/superstructure:superstructure_goal_fbs",
         "//y2019/control_loops/drivetrain:target_selector_fbs",
+        "//y2020/control_loops/drivetrain:localizer_debug_fbs",
         "//y2020/control_loops/superstructure:superstructure_output_fbs",
         "//y2020/control_loops/superstructure:superstructure_position_fbs",
         "//y2020/control_loops/superstructure:superstructure_status_fbs",

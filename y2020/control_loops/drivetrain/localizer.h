@@ -4,11 +4,13 @@
 #include <string_view>
 
 #include "aos/containers/ring_buffer.h"
+#include "aos/containers/sized_array.h"
 #include "aos/events/event_loop.h"
 #include "aos/network/message_bridge_server_generated.h"
 #include "frc971/control_loops/drivetrain/hybrid_ekf.h"
 #include "frc971/control_loops/drivetrain/localizer.h"
 #include "y2020/control_loops/superstructure/superstructure_status_generated.h"
+#include "y2020/control_loops/drivetrain/localizer_debug_generated.h"
 #include "y2020/vision/sift/sift_generated.h"
 
 namespace y2020 {
@@ -77,9 +79,11 @@ class Localizer : public frc971::control_loops::drivetrain::LocalizerInterface {
   };
 
   // Processes new image data from the given pi and updates the EKF.
-  void HandleImageMatch(std::string_view pi,
-                        const frc971::vision::sift::ImageMatchResult &result,
-                        aos::monotonic_clock::time_point now);
+  aos::SizedArray<flatbuffers::Offset<ImageMatchDebug>, 5> HandleImageMatch(
+      size_t camera_index, std::string_view pi,
+      const frc971::vision::sift::ImageMatchResult &result,
+      aos::monotonic_clock::time_point now,
+      flatbuffers::FlatBufferBuilder *fbb);
 
   // Processes the most recent turret position and stores it in the turret_data_
   // buffer.
@@ -97,6 +101,8 @@ class Localizer : public frc971::control_loops::drivetrain::LocalizerInterface {
       image_fetchers_;
 
   aos::Fetcher<aos::message_bridge::ServerStatistics> clock_offset_fetcher_;
+
+  aos::Sender<y2020::control_loops::drivetrain::LocalizerDebug> debug_sender_;
 
   // Buffer of recent turret data--this is used so that when we receive a camera
   // frame from the turret, we can back out what the turret angle was at that

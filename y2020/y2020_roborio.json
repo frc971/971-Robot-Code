@@ -196,6 +196,14 @@
     },
     {
       "name": "/drivetrain",
+      "type": "y2020.control_loops.drivetrain.LocalizerDebug",
+      "source_node": "roborio",
+      "frequency": 250,
+      "max_size": 512,
+      "num_senders": 2
+    },
+    {
+      "name": "/drivetrain",
       "type": "frc971.IMUValuesBatch",
       "source_node": "roborio",
       "frequency": 250,
