@@ -207,8 +207,8 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
                                  ::std::unique_ptr<frc::DigitalInput> sensor2) {
     ball_beambreak_inputs_[0] = ::std::move(sensor1);
     ball_beambreak_inputs_[1] = ::std::move(sensor2);
-    ball_beambreak_reader_.set_input_one(sensor1.get());
-    ball_beambreak_reader_.set_input_two(sensor2.get());
+    ball_beambreak_reader_.set_input_one(ball_beambreak_inputs_[0].get());
+    ball_beambreak_reader_.set_input_two(ball_beambreak_inputs_[1].get());
   }
 
   void Start() override {
@@ -316,19 +316,20 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       builder.Send(auto_mode_builder.Finish());
     }
 
-    if (FLAGS_shooter_tuning &&
-        ball_beambreak_reader_.pulses_detected() > balls_detected_) {
-      balls_detected_ = ball_beambreak_reader_.pulses_detected();
-
+    if (FLAGS_shooter_tuning) {
       // Distance between beambreak sensors, in meters.
       constexpr double kDistanceBetweenBeambreaks = 0.4813;
 
-      auto builder = shooter_tuning_readings_sender_.MakeBuilder();
-      auto shooter_tuning_readings_builder =
-          builder.MakeBuilder<superstructure::shooter::TuningReadings>();
-      shooter_tuning_readings_builder.add_velocity_ball(
-          kDistanceBetweenBeambreaks / ball_beambreak_reader_.last_width());
-      builder.Send(shooter_tuning_readings_builder.Finish());
+      if (ball_beambreak_reader_.pulses_detected() > balls_detected_) {
+        balls_detected_ = ball_beambreak_reader_.pulses_detected();
+
+        auto builder = shooter_tuning_readings_sender_.MakeBuilder();
+        auto shooter_tuning_readings_builder =
+            builder.MakeBuilder<superstructure::shooter::TuningReadings>();
+        shooter_tuning_readings_builder.add_velocity_ball(
+            kDistanceBetweenBeambreaks / ball_beambreak_reader_.last_width());
+        builder.Send(shooter_tuning_readings_builder.Finish());
+      }
     }
   }
 

@@ -71,7 +71,7 @@ class DMAPulseWidthReader : public DMASampleHandlerInterface {
 };
 
 // Takes two digital inputs and times the difference between the first one going
-// high and the second one going high.
+// low and the second one going low.
 class DMAPulseSeparationReader : public DMASampleHandlerInterface {
  public:
   DMAPulseSeparationReader(frc::DigitalInput *input_one,
@@ -94,7 +94,7 @@ class DMAPulseSeparationReader : public DMASampleHandlerInterface {
     dma->Add(input_one_);
     dma->SetExternalTrigger(input_one_, true, true);
     dma->Add(input_two_);
-    dma->SetExternalTrigger(input_two_, true, false);
+    dma->SetExternalTrigger(input_two_, false, true);
   }
 
   static constexpr double kSampleTimeoutSeconds = 0.1;
@@ -107,7 +107,7 @@ class DMAPulseSeparationReader : public DMASampleHandlerInterface {
   // Whether or not we actually have anything in prev_sample_.
   bool have_prev_sample_ = false;
 
-  // the time when the input one went high.
+  // the time when the input one went low.
   std::optional<double> input_one_time_;
 
   int pulses_detected_ = 0;
