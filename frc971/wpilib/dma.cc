@@ -7,6 +7,7 @@
 #include "frc971/wpilib/ahal/AnalogInput.h"
 #include "frc971/wpilib/ahal/DigitalSource.h"
 #include "frc971/wpilib/ahal/Encoder.h"
+#include "glog/logging.h"
 #include "hal/HAL.h"
 
 // Interface to the roboRIO FPGA's DMA features.
@@ -142,6 +143,7 @@ void DMA::Add(frc::AnalogInput *input) {
 
 void DMA::SetExternalTrigger(frc::DigitalSource *input, bool rising,
                              bool falling) {
+  CHECK(input);
   tRioStatusCode status = 0;
 
   if (manager_) {
