@@ -23,6 +23,10 @@ Eigen::Matrix<float, 4, 4> FlatbufferToTransformationMatrix(
   return result;
 }
 
+// Offset to add to the pi's yaw in its extrinsics, to account for issues in the
+// calibrated extrinsics.
+constexpr double kTurretPiOffset = 0.0;
+
 // Indices of the pis to use.
 const std::array<std::string, 5> kPisToUse{"pi1", "pi2", "pi3", "pi4", "pi5"};
 
@@ -240,7 +244,7 @@ Localizer::HandleImageMatch(
   if (is_turret) {
     H_robot_camera = H_robot_camera *
                      frc971::control_loops::TransformationMatrixForYaw<float>(
-                         turret_data.position) *
+                         turret_data.position + kTurretPiOffset) *
                      FlatbufferToTransformationMatrix(
                          *result.camera_calibration()->turret_extrinsics());
   }
@@ -310,7 +314,7 @@ Localizer::HandleImageMatch(
     // populating some cross-correlation terms.
     // Note that these are the noise standard deviations (they are squared below
     // to get variances).
-    Eigen::Matrix<float, 3, 1> noises(2.0, 2.0, 0.2);
+    Eigen::Matrix<float, 3, 1> noises(2.0, 2.0, 0.5);
     // Augment the noise by the approximate rotational speed of the
     // camera. This should help account for the fact that, while we are
     // spinning, slight timing errors in the camera/turret data will tend to
@@ -324,9 +328,7 @@ Localizer::HandleImageMatch(
     H.setZero();
     H(0, StateIdx::kX) = 1;
     H(1, StateIdx::kY) = 1;
-    // This is currently set to zero because we ignore the heading implied by
-    // the camera.
-    H(2, StateIdx::kTheta) = 0;
+    H(2, StateIdx::kTheta) = 1;
     VLOG(1) << "Pose implied by target: " << Z.transpose()
             << " and current pose " << x() << ", " << y() << ", " << theta()
             << " Heading/dist/skew implied by target: "
@@ -374,10 +376,12 @@ Localizer::HandleImageMatch(
     // get away with passing things by reference.
     ekf_.Correct(
         Eigen::Vector3f::Zero(), &U, {},
-        [H, H_field_target, pose_robot_target, state_at_capture, &correction_rejection](
+        [H, H_field_target, pose_robot_target, state_at_capture, Z, &correction_rejection](
             const State &, const Input &) -> Eigen::Vector3f {
-          const Eigen::Vector3f Z =
+          // TODO(james): Figure out how to use the implied pose for...
+          const Eigen::Vector3f Z_implied =
               CalculateImpliedPose(H_field_target, pose_robot_target);
+          (void)Z_implied;
           // Just in case we ever do encounter any, drop measurements if they
           // have non-finite numbers.
           if (!Z.allFinite()) {
