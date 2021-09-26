@@ -154,9 +154,13 @@ ts_library(
     srcs = ["turret_plotter.ts"],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
+        "//aos:configuration_ts_fbs",
         "//aos/network/www:aos_plotter",
         "//aos/network/www:colors",
+        "//aos/network/www:plotter",
         "//aos/network/www:proxy",
+        "//aos/network/www:reflection_ts",
+        "@com_github_google_flatbuffers//ts:flatbuffers_ts",
     ],
 )
 
