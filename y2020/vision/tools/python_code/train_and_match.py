@@ -183,7 +183,7 @@ def compute_homographies(train_keypoint_lists, query_keypoint_lists,
             matches_mask_list.append([])
             continue
 
-        glog.info(
+        glog.debug(
             "Got good number of matches for model %d: %d (needed only %d)" %
             (i, len(good_matches), MIN_MATCH_COUNT))
         # Extract and bundle keypoint locations for computations
