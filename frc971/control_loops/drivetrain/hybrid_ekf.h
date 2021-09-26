@@ -137,7 +137,7 @@ class HybridEkf {
   };
   static constexpr int kNInputs = 4;
   // Number of previous samples to save.
-  static constexpr int kSaveSamples = 50;
+  static constexpr int kSaveSamples = 80;
   // Whether we should completely rerun the entire stored history of
   // kSaveSamples on every correction. Enabling this will increase overall CPU
   // usage substantially; however, leaving it disabled makes it so that we are
