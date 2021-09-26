@@ -444,6 +444,12 @@ class FieldWidget(Gtk.DrawingArea):
         # scale from point in field coordinates
         point = self.mousex, self.mousey
 
+        # This restricts the amount it can be scaled.
+        if self.transform.xx <= 0.4:
+            scale = max(scale, 1)
+        elif self.transform.xx >= 4:
+            scale = min(scale, 1)
+
         # move the origin to point
         self.transform.translate(point[0], point[1])
 
