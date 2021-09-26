@@ -84,12 +84,11 @@ ShooterTuningActor::ShooterTuningActor(aos::EventLoop *event_loop)
   // Randomize the ordering of the velocities
   std::srand(std::time(nullptr));
   std::random_shuffle(velocities_.begin(), velocities_.end());
-
-  fout_.open("shooter_tuning_data.csv", std::ios_base::app);
 }
 
 bool ShooterTuningActor::RunAction(
     const frc971::autonomous::AutonomousActionParams * /*params*/) {
+  fout_.open("shooter_tuning_data.csv", std::ios_base::app);
   LOG(INFO) << "velocity_accelerator,velocity_finisher,velocity_ball";
 
   shooting_ = true;
@@ -106,6 +105,8 @@ bool ShooterTuningActor::RunAction(
   velocity_finisher_ = 0.0;
   velocity_accelerator_ = 0.0;
   SendSuperstructureGoal();
+  fout_.close();
+  LOG(INFO) << "Done!";
   return true;
 }
 
