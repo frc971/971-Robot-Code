@@ -101,6 +101,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
 
     double hood_pos = constants::Values::kHoodRange().middle();
     double intake_pos = -0.89;
+    double turret_pos = 0.0;
     float roller_speed = 0.0f;
     float roller_speed_compensation = 0.0f;
     double accelerator_speed = 0.0;
@@ -117,6 +118,12 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       } else {
         hood_pos = 0.58;
       }
+    }
+
+    if (setpoint_fetcher_.get()) {
+      turret_pos = setpoint_fetcher_->turret();
+    } else {
+      turret_pos = 0.0;
     }
 
     if (data.IsPressed(kShootFast)) {
@@ -175,7 +182,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
 
       flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
           turret_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-              *builder.fbb(), 0.0,
+              *builder.fbb(), turret_pos,
               CreateProfileParameters(*builder.fbb(), 6.0, 20.0));
 
       flatbuffers::Offset<superstructure::ShooterGoal> shooter_offset =

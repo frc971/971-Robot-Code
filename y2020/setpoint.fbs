@@ -6,6 +6,8 @@ table Setpoint {
   finisher:double (id: 1);
 
   hood:double (id: 2);
+
+  turret:double (id: 3);
 }
 
 root_type Setpoint;
