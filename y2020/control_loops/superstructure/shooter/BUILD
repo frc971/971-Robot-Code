@@ -57,3 +57,26 @@ flatbuffer_cc_library(
     gen_reflections = 1,
     target_compatible_with = ["@platforms//os:linux"],
 )
+
+flatbuffer_cc_library(
+    name = "shooter_tuning_params_fbs",
+    srcs = [
+        "shooter_tuning_params.fbs",
+    ],
+    gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
+)
+
+cc_binary(
+    name = "shooter_tuning_params_setter",
+    srcs = ["shooter_tuning_params_setter.cc"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":shooter_tuning_params_fbs",
+        ":shooter_tuning_readings_fbs",
+        "//aos:init",
+        "//aos/events:shm_event_loop",
+        "@com_github_gflags_gflags//:gflags",
+        "@com_github_google_glog//:glog",
+    ],
+)

@@ -231,6 +231,7 @@ aos_config(
         "//aos/network:message_bridge_client_fbs",
         "//aos/network:message_bridge_server_fbs",
         "//aos/network:timestamp_fbs",
+        "//y2020/control_loops/superstructure/shooter:shooter_tuning_params_fbs",
         "//y2020/control_loops/superstructure/shooter:shooter_tuning_readings_fbs",
         "//y2020/control_loops/superstructure:superstructure_goal_fbs",
         "//y2019/control_loops/drivetrain:target_selector_fbs",
