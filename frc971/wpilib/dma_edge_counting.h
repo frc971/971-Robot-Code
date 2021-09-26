@@ -2,6 +2,7 @@
 #define FRC971_WPILIB_DMA_EDGE_COUNTING_H_
 
 #include <memory>
+#include <optional>
 #include <vector>
 
 #include "aos/macros.h"
@@ -67,6 +68,53 @@ class DMAPulseWidthReader : public DMASampleHandlerInterface {
   double last_width_ = ::std::numeric_limits<double>::quiet_NaN();
 
   DISALLOW_COPY_AND_ASSIGN(DMAPulseWidthReader);
+};
+
+// Takes two digital inputs and times the difference between the first one going
+// high and the second one going high.
+class DMAPulseSeparationReader : public DMASampleHandlerInterface {
+ public:
+  DMAPulseSeparationReader(frc::DigitalInput *input_one,
+                           frc::DigitalInput *input_two)
+      : input_one_(input_one), input_two_(input_two) {}
+  DMAPulseSeparationReader() = default;
+
+  void set_input_one(frc::DigitalInput *input) { input_one_ = input; }
+  void set_input_two(frc::DigitalInput *input) { input_two_ = input; }
+
+  double last_width() const { return last_width_; }
+  double pulses_detected() const { return pulses_detected_; }
+
+ private:
+  void UpdateFromSample(const DMASample & /*sample*/) override;
+  void UpdatePolledValue() override {}
+
+  void PollFromSample(const DMASample & /*sample*/) override {}
+  void AddToDMA(DMA *dma) override {
+    dma->Add(input_one_);
+    dma->SetExternalTrigger(input_one_, true, true);
+    dma->Add(input_two_);
+    dma->SetExternalTrigger(input_two_, true, false);
+  }
+
+  static constexpr double kSampleTimeoutSeconds = 0.1;
+
+  frc::DigitalInput *input_one_ = nullptr;
+  frc::DigitalInput *input_two_ = nullptr;
+
+  // The last DMA reading we got.
+  DMASample prev_sample_;
+  // Whether or not we actually have anything in prev_sample_.
+  bool have_prev_sample_ = false;
+
+  // the time when the input one went high.
+  std::optional<double> input_one_time_;
+
+  int pulses_detected_ = 0;
+
+  double last_width_ = ::std::numeric_limits<double>::quiet_NaN();
+
+  DISALLOW_COPY_AND_ASSIGN(DMAPulseSeparationReader);
 };
 
 // Counts edges on a sensor using DMA data and latches encoder values

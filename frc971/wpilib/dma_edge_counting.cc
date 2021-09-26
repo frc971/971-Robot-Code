@@ -32,6 +32,25 @@ void DMAPulseWidthReader::UpdateFromSample(const DMASample &sample) {
   prev_sample_ = sample;
 }
 
+void DMAPulseSeparationReader::UpdateFromSample(const DMASample &sample) {
+  // save the time of the rising edge of the input one
+  if (have_prev_sample_ && sample.Get(input_one_) &&
+      !prev_sample_.Get(input_one_)) {
+    input_one_time_ = sample.GetTimestamp();
+  }
+
+  have_prev_sample_ = true;
+  prev_sample_ = sample;
+
+  // take the difference in time between the rising edge of the input one and
+  // the rising edge of the input two
+  if (sample.Get(input_two_) && input_one_time_.has_value()) {
+    last_width_ = sample.GetTimestamp() - input_one_time_.value();
+    pulses_detected_++;
+    input_one_time_.reset();
+  }
+}
+
 void DMASynchronizer::CheckDMA() {
   DMASample current_sample;
 
