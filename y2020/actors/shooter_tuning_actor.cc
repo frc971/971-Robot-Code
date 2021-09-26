@@ -93,9 +93,11 @@ bool ShooterTuningActor::RunAction(
   LOG(INFO) << "velocity_accelerator,velocity_finisher,velocity_ball";
 
   shooting_ = true;
-  for (const auto &velocity_pair : velocities_) {
-    velocity_accelerator_ = velocity_pair.first;
-    velocity_finisher_ = velocity_pair.second;
+  for (size_t i = 0; i < velocities_.size(); i++) {
+    LOG(INFO) << "Shooting ball " << (i + 1) << " out of "
+              << velocities_.size();
+    velocity_accelerator_ = velocities_[i].first;
+    velocity_finisher_ = velocities_[i].second;
     SendSuperstructureGoal();
     WaitAndWriteBallData();
   }
@@ -158,11 +160,6 @@ int main(int argc, char *argv[]) {
   aos::ShmEventLoop event_loop(&config.message());
   y2020::actors::ShooterTuningActor actor(&event_loop);
 
-  event_loop.OnRun([&]() {
-    actor.RunAction(nullptr);
-    LOG(INFO) << "Finished shooter tuning action";
-    event_loop.Exit();
-  });
   event_loop.Run();
 
   return 0;
