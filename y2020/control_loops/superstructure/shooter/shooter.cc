@@ -12,7 +12,7 @@ namespace superstructure {
 namespace shooter {
 
 namespace {
-const double kVelocityTolerance = 20.0;
+const double kVelocityTolerance = 2.0;
 }  // namespace
 
 Shooter::Shooter()
@@ -86,6 +86,7 @@ flatbuffers::Offset<ShooterStatus> Shooter::RunIteration(
   status_builder.add_finisher(finisher_status_offset);
   status_builder.add_accelerator_left(accelerator_left_status_offset);
   status_builder.add_accelerator_right(accelerator_right_status_offset);
+  status_builder.add_ready(ready());
 
   if (output) {
     output->finisher_voltage = finisher_.voltage();

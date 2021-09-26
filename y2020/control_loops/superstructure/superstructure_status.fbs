@@ -33,6 +33,10 @@ table ShooterStatus {
   // Velocity is the fastest (top) wheel
   accelerator_left:FlywheelControllerStatus (id: 1);
   accelerator_right:FlywheelControllerStatus (id: 2);
+
+  // If the shooter is ready, this is true.  Note: don't use this for status
+  // checking, only for plotting.  Changes in goal take time to impact this.
+  ready:bool (id: 3);
 }
 
 table AimerStatus {

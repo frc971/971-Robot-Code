@@ -33,7 +33,7 @@ def ScaleKv(motor, scale):
 # The position and velocity are measured for the final wheel.
 kFinisher = flywheel.FlywheelParams(
     name='Finisher',
-    motor=AddResistance(control_loop.NMotor(control_loop.Falcon(), 2), 0.01),
+    motor=AddResistance(control_loop.NMotor(control_loop.Falcon(), 2), 0.03),
     G=G,
     J=J,
     q_pos=0.01,

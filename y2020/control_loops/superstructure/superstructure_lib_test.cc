@@ -286,7 +286,7 @@ class SuperstructureSimulation {
 
     // Confirm that we aren't drawing too much current.
     CHECK_NEAR(accelerator_left_plant_->battery_current(accelerator_left_U),
-               0.0, 70.0);
+               0.0, 75.0);
 
     ::Eigen::Matrix<double, 1, 1> accelerator_right_U;
     accelerator_right_U
@@ -295,7 +295,7 @@ class SuperstructureSimulation {
 
     // Confirm that we aren't drawing too much current.
     CHECK_NEAR(accelerator_right_plant_->battery_current(accelerator_right_U),
-               0.0, 70.0);
+               0.0, 75.0);
 
     ::Eigen::Matrix<double, 1, 1> finisher_U;
     finisher_U << superstructure_output_fetcher_->finisher_voltage() +
@@ -819,7 +819,7 @@ TEST_F(SuperstructureTest, SpinUp) {
   }
 
   // Give it a lot of time to get there.
-  RunFor(chrono::seconds(15));
+  RunFor(chrono::seconds(25));
 
   VerifyNearGoal();
 }

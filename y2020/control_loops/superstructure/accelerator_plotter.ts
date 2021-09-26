@@ -1,7 +1,7 @@
 // Provides a plot for debugging robot state-related issues.
 import {AosPlotter} from 'org_frc971/aos/network/www/aos_plotter';
 import * as proxy from 'org_frc971/aos/network/www/proxy';
-import {BLUE, BROWN, CYAN, GREEN, PINK, RED, WHITE} from 'org_frc971/aos/network/www/colors';
+import {BLUE, BROWN, CYAN, GREEN, PINK, RED, WHITE, BLACK} from 'org_frc971/aos/network/www/colors';
 
 import Connection = proxy.Connection;
 
@@ -26,13 +26,14 @@ export function plotAccelerator(conn: Connection, element: Element) : void {
   velocityPlot.plot.getAxisLabels().setTitle('Velocity');
   velocityPlot.plot.getAxisLabels().setXLabel(TIME);
   velocityPlot.plot.getAxisLabels().setYLabel('rad/s');
-  velocityPlot.plot.setDefaultYRange([0.0, 450.0]);
+  velocityPlot.plot.setDefaultYRange([0.0, 600.0]);
 
   velocityPlot.addMessageLine(goal, ['shooter', 'velocity_accelerator']).setColor(BLUE).setPointSize(0.0);
   velocityPlot.addMessageLine(status, ['shooter', 'accelerator_left', 'avg_angular_velocity']).setColor(RED).setPointSize(0.0);
   velocityPlot.addMessageLine(status, ['shooter', 'accelerator_right', 'avg_angular_velocity']).setColor(PINK).setPointSize(0.0);
   velocityPlot.addMessageLine(status, ['shooter', 'accelerator_left', 'angular_velocity']).setColor(GREEN).setPointSize(0.0);
   velocityPlot.addMessageLine(status, ['shooter', 'accelerator_right', 'angular_velocity']).setColor(CYAN).setPointSize(0.0);
+  velocityPlot.addMessageLine(status, ['shooter', 'ready']).setColor(BLACK).setPointSize(0.0);
   velocityPlot.addMessageLine(status, ['shooter', 'accelerator_left', 'dt_angular_velocity']).setColor(PINK).setPointSize(0.0);
   velocityPlot.addMessageLine(status, ['shooter', 'accelerator_right', 'dt_angular_velocity']).setColor(BLUE).setPointSize(0.0);
 
