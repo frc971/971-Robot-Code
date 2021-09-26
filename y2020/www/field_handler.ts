@@ -191,6 +191,8 @@ export class FieldHandler {
     ctx.beginPath();
     ctx.moveTo(0.5, 0.5);
     ctx.lineTo(0, 0);
+    ctx.lineTo(100.0, 0);
+    ctx.lineTo(0, 0);
     ctx.lineTo(0.5, -0.5);
     ctx.stroke();
     ctx.beginPath();
@@ -218,13 +220,13 @@ export class FieldHandler {
       // Draw line in circle to show forwards.
       ctx.beginPath();
       ctx.moveTo(0, 0);
-      ctx.lineTo(turretRadius, 0);
+      ctx.lineTo(1000.0 * turretRadius, 0);
       ctx.stroke();
       ctx.restore();
     }
     ctx.beginPath();
     ctx.moveTo(0, 0);
-    ctx.lineTo(ROBOT_LENGTH / 2, 0);
+    ctx.lineTo(100.0 * ROBOT_LENGTH / 2, 0);
     ctx.stroke();
     ctx.restore();
   }
