@@ -1085,7 +1085,9 @@ TEST_P(SuperstructureAllianceTest, ShooterInterpolationOutOfRange) {
               constants::Values::kHoodRange().upper, 0.001);
 }
 
-TEST_P(SuperstructureAllianceTest, ShooterInterpolationInRange) {
+// TODO(milind): Add correct values and enable this once interpolation tables
+// have been filled out
+TEST_P(SuperstructureAllianceTest, DISABLED_ShooterInterpolationInRange) {
   SetEnabled(true);
   const frc971::control_loops::Pose target = turret::OuterPortPose(GetParam());
   WaitUntilZeroed();
