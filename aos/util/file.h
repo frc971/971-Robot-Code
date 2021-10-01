@@ -35,8 +35,11 @@ bool PathExists(std::string_view path);
 // runs across.
 void UnlinkRecursive(std::string_view path);
 
+enum class FileOptions { kReadable, kWriteable };
+
 // Maps file from disk into memory
-std::shared_ptr<absl::Span<uint8_t>> MMapFile(const std::string &path);
+std::shared_ptr<absl::Span<uint8_t>> MMapFile(
+    const std::string &path, FileOptions options = FileOptions::kReadable);
 
 }  // namespace util
 }  // namespace aos

@@ -55,5 +55,26 @@ TEST(FlatbufferMMapTest, Verify) {
     ASSERT_EQ(fb_mmap3.message().foo_int(), 3);
   }
 }
+
+// Tests the ability to modify a flatbuffer mmaped from on disk in memory
+TEST(FlatbufferMMapTest, Writeable) {
+  FlatbufferDetachedBuffer<Configuration> fb =
+      JsonToFlatbuffer<Configuration>("{\"foo_int\": 3}");
+
+  const std::string fb_path = absl::StrCat(TestTmpDir(), "/fb.bfbs");
+  WriteFlatbufferToFile(fb_path, fb);
+
+  {
+    FlatbufferMMap<Configuration> fb_mmap(fb_path,
+                                          util::FileOptions::kWriteable);
+    fb_mmap.mutable_message()->mutate_foo_int(5);
+  }
+
+  {
+    FlatbufferMMap<Configuration> fb_mmap(fb_path);
+    EXPECT_EQ(fb_mmap.message().foo_int(), 5);
+  }
+}
+
 }  // namespace testing
 }  // namespace aos
