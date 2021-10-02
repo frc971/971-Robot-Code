@@ -456,7 +456,7 @@ class SuperstructureWriter
                    kMaxBringupPower) /
             12.0);
 
-    turret_victor_->SetSpeed(std::clamp(-output.turret_voltage(),
+    turret_victor_->SetSpeed(std::clamp(output.turret_voltage(),
                                         -kMaxBringupPower, kMaxBringupPower) /
                              12.0);
 

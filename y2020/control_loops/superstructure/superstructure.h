@@ -26,9 +26,9 @@ class Superstructure
 
   // Terms to control the velocity gain for the friction compensation, and the
   // voltage cap.
-  static constexpr double kTurretFrictionGain = 10.0;
+  static constexpr double kTurretFrictionGain = 0.0;
   static constexpr double kTurretFrictionVoltageLimit = 1.5;
-  static constexpr double kTurretDitherGain = 0.4;
+  static constexpr double kTurretDitherGain = 0.0;
 
   using PotAndAbsoluteEncoderSubsystem =
       ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystem<
