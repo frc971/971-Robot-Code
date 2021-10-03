@@ -32,12 +32,12 @@ class CameraReader {
  public:
   CameraReader(aos::EventLoop *event_loop,
                const sift::TrainingData *training_data, V4L2Reader *reader,
-               cv::FlannBasedMatcher *matcher)
+               const cv::Ptr<cv::flann::IndexParams> &index_params,
+               const cv::Ptr<cv::flann::SearchParams> &search_params)
       : event_loop_(event_loop),
         training_data_(training_data),
         camera_calibration_(FindCameraCalibration()),
         reader_(reader),
-        matcher_(matcher),
         image_sender_(event_loop->MakeSender<CameraImage>("/camera")),
         result_sender_(
             event_loop->MakeSender<sift::ImageMatchResult>("/camera")),
@@ -46,10 +46,16 @@ class CameraReader {
         read_image_timer_(event_loop->AddTimer([this]() { ReadImage(); })),
         prev_R_camera_field_vec_(cv::Mat::zeros(3, 1, CV_32F)),
         prev_T_camera_field_(cv::Mat::zeros(3, 1, CV_32F)) {
+
+    for (int ii = 0; ii < number_training_images(); ++ii) {
+      matchers_.push_back(cv::FlannBasedMatcher(index_params, search_params));
+    }
+
     CopyTrainingFeatures();
-    // Technically we don't need to do this, but doing it now avoids the first
-    // match attempt being slow.
-    matcher_->train();
+
+    for (auto &matcher : matchers_) {
+      matcher.train();
+    }
 
     event_loop->OnRun(
         [this]() { read_image_timer_->Setup(event_loop_->monotonic_now()); });
@@ -155,7 +161,7 @@ class CameraReader {
   const sift::TrainingData *const training_data_;
   const sift::CameraCalibration *const camera_calibration_;
   V4L2Reader *const reader_;
-  cv::FlannBasedMatcher *const matcher_;
+  std::vector<cv::FlannBasedMatcher> matchers_;
   aos::Sender<CameraImage> image_sender_;
   aos::Sender<sift::ImageMatchResult> result_sender_;
   aos::Sender<sift::ImageMatchResult> detailed_result_sender_;
@@ -189,6 +195,7 @@ const sift::CameraCalibration *CameraReader::FindCameraCalibration() const {
 }
 
 void CameraReader::CopyTrainingFeatures() {
+  int training_image_index = 0;
   for (const sift::TrainingImage *training_image : *training_data_->images()) {
     cv::Mat features(training_image->features()->size(), 128, CV_32F);
     for (size_t i = 0; i < training_image->features()->size(); ++i) {
@@ -207,7 +214,8 @@ void CameraReader::CopyTrainingFeatures() {
       const auto out_mat = features(cv::Range(i, i + 1), cv::Range(0, 128));
       in_mat.convertTo(out_mat, CV_32F);
     }
-    matcher_->add(features);
+    matchers_[training_image_index].add(features);
+    ++training_image_index;
   }
 }
 
@@ -304,14 +312,8 @@ void CameraReader::ProcessImage(const CameraImage &image) {
     sift_->detectAndCompute(image_mat, cv::noArray(), keypoints, descriptors);
   }
 
-  // Then, match those features against our training data.
-  std::vector<std::vector<cv::DMatch>> matches;
-  if (!FLAGS_skip_sift) {
-    matcher_->knnMatch(/* queryDescriptors */ descriptors, matches, /* k */ 2);
-  }
-
   struct PerImageMatches {
-    std::vector<const std::vector<cv::DMatch> *> matches;
+    std::vector<std::vector<cv::DMatch>> matches;
     std::vector<cv::Point3f> training_points_3d;
     std::vector<cv::Point2f> query_points;
     std::vector<cv::Point2f> training_points;
@@ -319,32 +321,43 @@ void CameraReader::ProcessImage(const CameraImage &image) {
   };
   std::vector<PerImageMatches> per_image_matches(number_training_images());
 
-  // Pull out the good matches which we want for each image.
-  // Discard the bad matches per Lowe's ratio test.
-  // (Lowe originally proposed 0.7 ratio, but 0.75 was later proposed as a
-  // better option.  We'll go with the more conservative (fewer, better matches)
-  // for now).
-  for (const std::vector<cv::DMatch> &match : matches) {
-    CHECK_EQ(2u, match.size());
-    CHECK_LE(match[0].distance, match[1].distance);
-    CHECK_LT(match[0].imgIdx, number_training_images());
-    CHECK_LT(match[1].imgIdx, number_training_images());
-    CHECK_EQ(match[0].queryIdx, match[1].queryIdx);
-    if (!(match[0].distance < 0.7 * match[1].distance)) {
-      continue;
+  for (int image_idx = 0; image_idx < number_training_images(); ++image_idx) {
+    // Then, match those features against our training data.
+    std::vector<std::vector<cv::DMatch>> matches;
+    if (!FLAGS_skip_sift) {
+      matchers_[image_idx].knnMatch(/* queryDescriptors */ descriptors, matches,
+                                    /* k */ 2);
     }
 
-    const int training_image = match[0].imgIdx;
-    CHECK_LT(training_image, static_cast<int>(per_image_matches.size()));
-    PerImageMatches *const per_image = &per_image_matches[training_image];
-    per_image->matches.push_back(&match);
-    per_image->training_points.push_back(
-        Training2dPoint(training_image, match[0].trainIdx));
-    per_image->training_points_3d.push_back(
-        Training3dPoint(training_image, match[0].trainIdx));
+    // Pull out the good matches which we want for each image.
+    // Discard the bad matches per Lowe's ratio test.
+    // (Lowe originally proposed 0.7 ratio, but 0.75 was later proposed as a
+    // better option.  We'll go with the more conservative (fewer, better
+    // matches) for now).
+    for (const std::vector<cv::DMatch> &match : matches) {
+      CHECK_EQ(2u, match.size());
+      CHECK_LE(match[0].distance, match[1].distance);
+      CHECK_EQ(match[0].imgIdx, 0);
+      CHECK_EQ(match[1].imgIdx, 0);
+      CHECK_EQ(match[0].queryIdx, match[1].queryIdx);
+      if (!(match[0].distance < 0.7 * match[1].distance)) {
+        continue;
+      }
 
-    const cv::KeyPoint &keypoint = keypoints[match[0].queryIdx];
-    per_image->query_points.push_back(keypoint.pt);
+      const int training_image = image_idx;
+      CHECK_LT(training_image, static_cast<int>(per_image_matches.size()));
+      PerImageMatches *const per_image = &per_image_matches[training_image];
+      per_image->matches.push_back(match);
+      per_image->matches.back()[0].imgIdx = image_idx;
+      per_image->matches.back()[1].imgIdx = image_idx;
+      per_image->training_points.push_back(
+          Training2dPoint(training_image, match[0].trainIdx));
+      per_image->training_points_3d.push_back(
+          Training3dPoint(training_image, match[0].trainIdx));
+
+      const cv::KeyPoint &keypoint = keypoints[match[0].queryIdx];
+      per_image->query_points.push_back(keypoint.pt);
+    }
   }
 
   // The minimum number of matches in a training image for us to use it.
@@ -395,8 +408,7 @@ void CameraReader::ProcessImage(const CameraImage &image) {
       }
 
       // Add this to our collection of all matches that passed our criteria
-      all_good_matches.push_back(
-          static_cast<std::vector<cv::DMatch>>(*per_image.matches[j]));
+      all_good_matches.push_back(per_image.matches[j]);
 
       // Fill out the data for matches per image that made it past
       // homography check, for later use
@@ -418,8 +430,7 @@ void CameraReader::ProcessImage(const CameraImage &image) {
     // Collect training target location, so we can map it to matched image
     cv::Point2f target_point;
     float target_radius;
-    TargetLocation((*(per_image_good_match.matches[0]))[0].imgIdx, target_point,
-                   target_radius);
+    TargetLocation(i, target_point, target_radius);
 
     // Store target_point in vector for use by perspectiveTransform
     std::vector<cv::Point2f> src_target_pt;
@@ -661,7 +672,7 @@ void CameraReaderMain() {
 
   V4L2Reader v4l2_reader(&event_loop, "/dev/video0");
   CameraReader camera_reader(&event_loop, &training_data.message(),
-                             &v4l2_reader, &matcher);
+                             &v4l2_reader, index_params, search_params);
 
   event_loop.Run();
 }
