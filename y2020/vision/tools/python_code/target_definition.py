@@ -354,10 +354,10 @@ def load_training_data():
     ]
 
     # Populate the blue power port
-    #    ideal_power_port_blue.polygon_list.append(
-    #        power_port_blue_main_panel_polygon_points_2d)
-    #    ideal_power_port_blue.polygon_list_3d.append(
-    #        power_port_blue_main_panel_polygon_points_3d)
+    ideal_power_port_blue.polygon_list.append(
+        power_port_blue_main_panel_polygon_points_2d)
+    ideal_power_port_blue.polygon_list_3d.append(
+        power_port_blue_main_panel_polygon_points_3d)
     # Including the wing panel
     ideal_power_port_blue.polygon_list.append(
         power_port_blue_wing_panel_polygon_points_2d)
@@ -375,7 +375,6 @@ def load_training_data():
 
     training_target_power_port_blue = TargetData(
         'test_images/train_power_port_blue.png')
-    #        'test_images/image_from_ios-scaled.jpg')
     training_target_power_port_blue.target_rotation = ideal_power_port_blue.target_rotation
     training_target_power_port_blue.target_position = ideal_power_port_blue.target_position
     training_target_power_port_blue.target_radius = target_radius_default
@@ -443,9 +442,9 @@ def load_training_data():
     #training_target_list.append(training_target_loading_bay_red)
 
     ### Blue Power Port
-    #glog.info("Adding blue power port to the model list")
-    #ideal_target_list.append(ideal_power_port_blue)
-    #training_target_list.append(training_target_power_port_blue)
+    glog.info("Adding blue power port to the model list")
+    ideal_target_list.append(ideal_power_port_blue)
+    training_target_list.append(training_target_power_port_blue)
 
     ### Blue Loading Bay
     #glog.info("Adding blue loading bay to the model list")
