@@ -50,7 +50,7 @@ class CurrentLimitedStateFeedbackController
 
     // Limit to the battery voltage and the current limit voltage.
     mutable_U(0, 0) = std::clamp(U(0, 0), lower_limit, upper_limit);
-    mutable_U(0, 0) = std::clamp(U(0, 0), -12.0, 12.0);
+    mutable_U(0, 0) = std::clamp(U(0, 0), 0.0, 12.0);
   }
 
  private:
