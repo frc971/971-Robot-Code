@@ -82,6 +82,7 @@ class CameraReader {
                             const std::vector<cv::Mat> &field_camera_list,
                             const std::vector<cv::Point2f> &target_point_vector,
                             const std::vector<float> &target_radius_vector,
+                            const std::vector<int> &training_image_indices,
                             aos::Sender<sift::ImageMatchResult> *result_sender,
                             bool send_details);
 
@@ -218,6 +219,7 @@ void CameraReader::SendImageMatchResult(
     const std::vector<cv::Mat> &field_camera_list,
     const std::vector<cv::Point2f> &target_point_vector,
     const std::vector<float> &target_radius_vector,
+    const std::vector<int> &training_image_indices,
     aos::Sender<sift::ImageMatchResult> *result_sender, bool send_details) {
   auto builder = result_sender->MakeBuilder();
   const auto camera_calibration_offset =
@@ -252,8 +254,8 @@ void CameraReader::SendImageMatchResult(
         sift::CreateTransformationMatrix(*builder.fbb(), fc_data_offset);
 
     const flatbuffers::Offset<sift::TransformationMatrix>
-        field_to_target_offset =
-            aos::RecursiveCopyFlatBuffer(FieldToTarget(i), builder.fbb());
+        field_to_target_offset = aos::RecursiveCopyFlatBuffer(
+            FieldToTarget(training_image_indices[i]), builder.fbb());
 
     sift::CameraPose::Builder pose_builder(*builder.fbb());
     pose_builder.add_camera_to_target(transform_offset);
@@ -355,12 +357,13 @@ void CameraReader::ProcessImage(const CameraImage &image) {
   // Build list of target point and radius for each good match
   std::vector<cv::Point2f> target_point_vector;
   std::vector<float> target_radius_vector;
+  std::vector<int> training_image_indices;
 
   // Iterate through matches for each training image
   for (size_t i = 0; i < per_image_matches.size(); ++i) {
     const PerImageMatches &per_image = per_image_matches[i];
 
-    VLOG(2) << "Number of matches to start: " << per_image_matches.size()
+    VLOG(2) << "Number of matches to start: " << per_image.matches.size()
             << "\n";
     // If we don't have enough matches to start, skip this set of matches
     if (per_image.matches.size() < kMinimumMatchCount) {
@@ -494,6 +497,8 @@ void CameraReader::ProcessImage(const CameraImage &image) {
                                  const_cast<void *>(static_cast<const void *>(
                                      FieldToTarget(i)->data()->data())));
 
+    training_image_indices.push_back(i);
+
     const cv::Mat R_field_target =
         H_field_target(cv::Range(0, 3), cv::Range(0, 3));
     const cv::Mat T_field_target =
@@ -532,11 +537,11 @@ void CameraReader::ProcessImage(const CameraImage &image) {
   SendImageMatchResult(image, keypoints, descriptors, all_good_matches,
                        camera_target_list, field_camera_list,
                        target_point_vector, target_radius_vector,
-                       &detailed_result_sender_, true);
+                       training_image_indices, &detailed_result_sender_, true);
   SendImageMatchResult(image, keypoints, descriptors, all_good_matches,
                        camera_target_list, field_camera_list,
                        target_point_vector, target_radius_vector,
-                       &result_sender_, false);
+                       training_image_indices, &result_sender_, false);
 }
 
 void CameraReader::ReadImage() {
