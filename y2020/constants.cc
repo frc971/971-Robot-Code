@@ -38,14 +38,26 @@ const Values *DoGetValuesForTeam(uint16_t team) {
   // Rounded up from exact estimate, since I'm not sure if the original estimate
   // includes bumpers.
   constexpr double kRobotLength = 0.9;
-  // { distance_to_target, { hood_angle, accelerator_power, finisher_power }}
-  // Current settings based on
-  // https://docs.google.com/document/d/1NR9F-ntlSoqZ9LqDzLjn-c14t8ZrppawCCG7wQy47RU/edit
+  // We found that the finisher velocity does not change ball velocity much, so
+  // keep it constant.
+  constexpr double kVelocityFinisher = 350.0;
   r->shot_interpolation_table = InterpolationTable<Values::ShotParams>(
-      {{7.6 * kFeetToMeters - kRobotLength, {0.115, 197.0, 175.0}},
-       {7.6 * kFeetToMeters + kRobotLength, {0.31, 265.0, 235.0}},
-       {12.6 * kFeetToMeters + kRobotLength, {0.4, 292.0, 260.0}},
-       {17.6 * kFeetToMeters + kRobotLength, {0.52, 365.0, 325.0}}});
+      {{7.6 * kFeetToMeters + kRobotLength, {0.31, 16.9}},
+       {12.6 * kFeetToMeters + kRobotLength, {0.4, 20.4}}});
+
+  r->flywheel_shot_interpolation_table =
+      InterpolationTable<Values::FlywheelShotParams>(
+          {{10.6, {250.0, kVelocityFinisher}},
+           {12.0, {275.0, kVelocityFinisher}},
+           {13.2, {300.0, kVelocityFinisher}},
+           {14.0, {325.0, kVelocityFinisher}},
+           {14.6, {350.0, kVelocityFinisher}},
+           {15.2, {375.0, kVelocityFinisher}},
+           {15.6, {400.0, kVelocityFinisher}},
+           {16.1, {425.0, kVelocityFinisher}},
+           {16.3, {450.0, kVelocityFinisher}},
+           {16.6, {475.0, kVelocityFinisher}},
+           {17.0, {500.0, kVelocityFinisher}}});
 
   // Hood constants.
   hood->zeroing_voltage = 2.0;

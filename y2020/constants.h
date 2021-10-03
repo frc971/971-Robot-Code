@@ -190,24 +190,37 @@ struct Values {
   struct ShotParams {
     // Measured in radians
     double hood_angle;
-    // Angular velocity in radians per second of the slowest (lowest) wheel in
-    // the kicker. Positive is shooting the ball.
-    double accelerator_power;
-    // Angular velocity in radians per seconds of the flywheel. Positive is
-    // shooting.
-    double finisher_power;
+    // Muzzle velocity (m/s) of the ball as it is shot out of the shooter.
+    double velocity_ball;
 
     static ShotParams BlendY(double coefficient, ShotParams a1, ShotParams a2) {
       using ::frc971::shooter_interpolation::Blend;
-      return ShotParams{
-          Blend(coefficient, a1.hood_angle, a2.hood_angle),
-          Blend(coefficient, a1.accelerator_power, a2.accelerator_power),
-          Blend(coefficient, a1.finisher_power, a2.finisher_power)};
+      return ShotParams{Blend(coefficient, a1.hood_angle, a2.hood_angle),
+                        Blend(coefficient, a1.velocity_ball, a2.velocity_ball)};
     }
   };
 
-  // { distance_to_target, { hood_angle, accelerator_power, finisher_power }}
+  struct FlywheelShotParams {
+    // Angular velocity in radians per second of the slowest (lowest) wheel in
+    // the kicker. Positive is shooting the ball.
+    double velocity_accelerator;
+    // Angular velocity in radians per seconds of the flywheel. Positive is
+    // shooting.
+    double velocity_finisher;
+
+    static FlywheelShotParams BlendY(double coefficient, FlywheelShotParams a1,
+                                     FlywheelShotParams a2) {
+      using ::frc971::shooter_interpolation::Blend;
+      return FlywheelShotParams{
+          Blend(coefficient, a1.velocity_accelerator, a2.velocity_accelerator),
+          Blend(coefficient, a1.velocity_finisher, a2.velocity_finisher)};
+    }
+  };
+
+  // { distance_to_target, { hood_angle, velocity_ball }}
   InterpolationTable<ShotParams> shot_interpolation_table;
+  // { velocity_ball, { velocity_accelerator, velocity_finisher }}
+  InterpolationTable<FlywheelShotParams> flywheel_shot_interpolation_table;
 };
 
 // Creates (once) a Values instance for ::aos::network::GetTeamNumber() and
