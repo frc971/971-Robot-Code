@@ -20,14 +20,14 @@ except gflags.DuplicateFlagError:
 
 kTurret = angular_system.AngularSystemParams(
     name='Turret',
-    motor=control_loop.Vex775Pro(),
-    G=(6.0 / 60.0) * (26.0 / 150.0),
+    motor=control_loop.MiniCIM(),
+    G=(26.0 / 150.0) * (14.0 / 60.0) * (20.0 / 60.0),
     J=0.20,
     q_pos=0.30,
     q_vel=4.5,
     kalman_q_pos=0.12,
     kalman_q_vel=10.0,
-    kalman_q_voltage=12.0,
+    kalman_q_voltage=20.0,
     kalman_r_position=0.05)
 
 def main(argv):

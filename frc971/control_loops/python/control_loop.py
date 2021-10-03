@@ -588,6 +588,9 @@ class MiniCIM(object):
         # Torque constant
         self.Kt = self.stall_torque / self.stall_current
 
+        # Motor inertia in kg m^2
+        self.motor_inertia = 0.0001634
+
 
 class NMotor(object):
     def __init__(self, motor, n):
