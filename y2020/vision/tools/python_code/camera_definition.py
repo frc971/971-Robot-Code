@@ -57,7 +57,7 @@ def load_camera_definitions():
     turret_cam_ext.R = np.array(
         camera_pitch_matrix *
         np.matrix([[0., 0., 1.], [-1, 0, 0], [0, -1., 0]]))
-    turret_cam_ext.T = np.array([15.0 * 0.0254, 15.0 * 0.0254, 41.0 * 0.0254])
+    turret_cam_ext.T = np.array([7.5 * 0.0254, -5.5 * 0.0254, 41.0 * 0.0254])
     default_cam_ext = CameraExtrinsics()
     default_cam_ext.R = np.array([[-1.0, 0.0, 0.0], [0.0, -1.0, 0.0],
                                   [0.0, 0.0, 1.0]])

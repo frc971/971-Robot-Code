@@ -138,9 +138,11 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           1.42977866919024 - Values::kIntakeZero();
 
       turret->potentiometer_offset = 5.52519370141247 + 0.00853506822980376 +
-                                     0.0109413725126625 - 0.223719825811759;
+                                     0.0109413725126625 - 0.223719825811759 +
+                                     0.261356551915472;
+      ;
       turret_params->zeroing_constants.measured_absolute_position =
-          0.547478339799516;
+          0.588553036694566;
 
       hood->zeroing_constants.measured_absolute_position = 0.0344482433884915;
       hood->zeroing_constants.single_turn_measured_absolute_position =
