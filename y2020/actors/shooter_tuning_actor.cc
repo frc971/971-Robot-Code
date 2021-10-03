@@ -69,6 +69,13 @@ ShooterTuningActor::ShooterTuningActor(aos::EventLoop *event_loop)
   const auto finisher = tuning_params_->finisher();
   const auto accelerator = tuning_params_->accelerator();
 
+  LOG(INFO) << "Tuning with fininisher from " << finisher->velocity_initial()
+            << " to " << finisher->velocity_final() << " by "
+            << finisher->velocity_increment();
+  LOG(INFO) << "Tuning with accelerator from "
+            << accelerator->velocity_initial() << " to "
+            << accelerator->velocity_final() << " by "
+            << accelerator->velocity_increment();
   // Add the velocities for the sweep
   for (velocity_finisher_ = finisher->velocity_initial();
        velocity_finisher_ <= finisher->velocity_final();
@@ -99,6 +106,16 @@ bool ShooterTuningActor::RunAction(
     velocity_finisher_ = velocities_[i].second;
     SendSuperstructureGoal();
     WaitAndWriteBallData();
+
+    if (i % 100 == 0 && i != 0) {
+      LOG(INFO) << "Pausing to cool for 2 minutes";
+      shooting_ = false;
+      velocity_accelerator_ = 0.0;
+      velocity_finisher_ = 0.0;
+      SendSuperstructureGoal();
+      std::this_thread::sleep_for(std::chrono::seconds(120));
+      shooting_ = true;
+    }
   }
 
   shooting_ = false;
