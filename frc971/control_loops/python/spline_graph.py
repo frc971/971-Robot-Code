@@ -20,6 +20,9 @@ class GridWindow(Gtk.Window):
 
         self.connect(event, handler)
 
+    def clear_clicked(self, button):
+        self.field.clear_graph()
+
     def output_json_clicked(self, button):
         self.field.export_json(self.file_name_box.get_text())
 
@@ -129,6 +132,9 @@ class GridWindow(Gtk.Window):
         self.input_json.set_size_request(100, 40)
         self.input_json.connect("clicked", self.input_json_clicked)
 
+        self.clear = Gtk.Button.new_with_label("Clear")
+        self.clear.set_size_request(100, 40)
+        self.clear.connect("clicked", self.clear_clicked)
         #Dropdown feature
         self.label = Gtk.Label()
         self.label.set_text("Change Field:")
@@ -169,6 +175,7 @@ class GridWindow(Gtk.Window):
         jsonControls.add(self.file_name_box)
         jsonControls.add(self.output_json)
         jsonControls.add(self.input_json)
+        jsonControls.add(self.clear)
         container.attach(jsonControls, 1, 0, 1, 1)
 
         container.attach(self.label, 4, 0, 1, 1)
