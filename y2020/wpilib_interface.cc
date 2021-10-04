@@ -349,6 +349,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
   ::std::unique_ptr<::frc::Encoder> finisher_encoder_,
       left_accelerator_encoder_, right_accelerator_encoder_;
+
   ::std::array<::std::unique_ptr<frc::DigitalInput>, 2> autonomous_modes_;
 
   frc971::wpilib::ADIS16470 *imu_ = nullptr;
@@ -415,6 +416,11 @@ class SuperstructureWriter
     }
   }
 
+  void set_washing_machine_control_panel_victor(
+      ::std::unique_ptr<::frc::VictorSP> t) {
+    washing_machine_control_panel_victor_ = ::std::move(t);
+  }
+
   void set_accelerator_left_falcon(::std::unique_ptr<::frc::TalonFX> t) {
     accelerator_left_falcon_ = ::std::move(t);
   }
@@ -464,6 +470,12 @@ class SuperstructureWriter
                         std::clamp(output.feeder_voltage(), -kMaxBringupPower,
                                    kMaxBringupPower) /
                             12.0);
+    if (washing_machine_control_panel_victor_) {
+      washing_machine_control_panel_victor_->SetSpeed(
+          std::clamp(-output.washing_machine_spinner_voltage(),
+                     -kMaxBringupPower, kMaxBringupPower) /
+          12.0);
+    }
 
     accelerator_left_falcon_->SetSpeed(
         std::clamp(-output.accelerator_left_voltage(), -kMaxBringupPower,
@@ -498,6 +510,9 @@ class SuperstructureWriter
     hood_victor_->SetDisabled();
     intake_joint_victor_->SetDisabled();
     turret_victor_->SetDisabled();
+    if (washing_machine_control_panel_victor_) {
+      washing_machine_control_panel_victor_->SetDisabled();
+    }
     accelerator_left_falcon_->SetDisabled();
     accelerator_right_falcon_->SetDisabled();
     finisher_falcon0_->SetDisabled();
@@ -509,7 +524,7 @@ class SuperstructureWriter
   }
 
   ::std::unique_ptr<::frc::VictorSP> hood_victor_, intake_joint_victor_,
-      turret_victor_;
+      turret_victor_, washing_machine_control_panel_victor_;
 
   ::std::unique_ptr<::frc::TalonFX> accelerator_left_falcon_,
       accelerator_right_falcon_, finisher_falcon0_, finisher_falcon1_;
@@ -611,6 +626,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     superstructure_writer.set_turret_victor(make_unique<frc::VictorSP>(7));
     superstructure_writer.set_feeder_falcon(
         make_unique<ctre::phoenix::motorcontrol::can::TalonFX>(1));
+    superstructure_writer.set_washing_machine_control_panel_victor(
+        make_unique<frc::VictorSP>(6));
     superstructure_writer.set_accelerator_left_falcon(
         make_unique<::frc::TalonFX>(5));
     superstructure_writer.set_accelerator_right_falcon(
