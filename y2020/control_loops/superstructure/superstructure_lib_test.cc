@@ -1085,9 +1085,8 @@ TEST_P(SuperstructureAllianceTest, ShooterInterpolationOutOfRange) {
               constants::Values::kHoodRange().upper, 0.001);
 }
 
-// TODO(milind): Add correct values and enable this once interpolation tables
-// have been filled out
-TEST_P(SuperstructureAllianceTest, DISABLED_ShooterInterpolationInRange) {
+// Test a value in range with auto tracking
+TEST_P(SuperstructureAllianceTest, ShooterInterpolationInRange) {
   SetEnabled(true);
   const frc971::control_loops::Pose target = turret::OuterPortPose(GetParam());
   WaitUntilZeroed();
@@ -1142,15 +1141,15 @@ TEST_P(SuperstructureAllianceTest, DISABLED_ShooterInterpolationInRange) {
   EXPECT_GE(superstructure_status_fetcher_->shooter()
                 ->accelerator_left()
                 ->angular_velocity_goal(),
-            100.0);
+            250.0);
   EXPECT_GE(superstructure_status_fetcher_->shooter()
                 ->accelerator_right()
                 ->angular_velocity_goal(),
-            100.0);
-  EXPECT_GE(superstructure_status_fetcher_->shooter()
-                ->finisher()
-                ->angular_velocity_goal(),
-            100.0);
+            250.0);
+  EXPECT_DOUBLE_EQ(superstructure_status_fetcher_->shooter()
+                       ->finisher()
+                       ->angular_velocity_goal(),
+                   350.0);
   EXPECT_GE(superstructure_status_fetcher_->hood()->position(),
             constants::Values::kHoodRange().lower);
 }
