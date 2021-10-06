@@ -876,6 +876,30 @@ cc_test(
     ],
 )
 
+cc_binary(
+    name = "ping",
+    srcs = [
+        "ping.cc",
+    ],
+    deps = [
+        ":sctp_server",
+        "//aos:init",
+        "//aos/events:shm_event_loop",
+    ],
+)
+
+cc_binary(
+    name = "pong",
+    srcs = [
+        "pong.cc",
+    ],
+    deps = [
+        ":sctp_client",
+        "//aos:init",
+        "//aos/events:shm_event_loop",
+    ],
+)
+
 cc_test(
     name = "timestamp_channel_test",
     srcs = ["timestamp_channel_test.cc"],
