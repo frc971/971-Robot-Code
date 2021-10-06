@@ -194,14 +194,18 @@ int ChannelState::NodeDisconnected(sctp_assoc_t assoc_id) {
 
 int ChannelState::NodeConnected(const Node *node, sctp_assoc_t assoc_id,
                                 int stream, SctpServer *server) {
-  VLOG(1) << "Connected to assoc_id: " << assoc_id;
+  VLOG(1) << "Connected to assoc_id: " << assoc_id << " for stream " << stream;
   for (ChannelState::Peer &peer : peers_) {
     if (peer.connection->name()->string_view() == node->name()->string_view()) {
       // There's a peer already connected.  Disconnect them and take over.
       if (peer.sac_assoc_id != 0) {
-        LOG(WARNING) << "Peer " << peer.sac_assoc_id
-                     << " already connected, aborting old connection.";
-        server->Abort(peer.sac_assoc_id);
+        if (peer.sac_assoc_id == assoc_id) {
+          LOG(WARNING) << "Reconnecting with the same ID, something got lost";
+        } else {
+          LOG(WARNING) << "Peer " << peer.sac_assoc_id
+                       << " already connected, aborting old connection.";
+          server->Abort(peer.sac_assoc_id);
+        }
       }
 
       peer.sac_assoc_id = assoc_id;
