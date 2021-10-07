@@ -52,6 +52,7 @@ ts_library(
         "//y2020/control_loops/superstructure:finisher_plotter",
         "//y2020/control_loops/superstructure:hood_plotter",
         "//y2020/control_loops/superstructure:turret_plotter",
+        "//y2021_bot3/control_loops/superstructure:superstructure_plotter",
     ],
 )
 

@@ -1,6 +1,7 @@
 package(default_visibility = ["//visibility:public"])
 
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+load("@npm_bazel_typescript//:defs.bzl", "ts_library")
 
 flatbuffer_cc_library(
     name = "superstructure_goal_fbs",
@@ -100,5 +101,16 @@ cc_test(
         "//frc971/control_loops:position_sensor_sim",
         "//frc971/control_loops:team_number_test_environment",
         "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
+    ],
+)
+
+ts_library(
+    name = "superstructure_plotter",
+    srcs = ["superstructure_plotter.ts"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        "//aos/network/www:aos_plotter",
+        "//aos/network/www:colors",
+        "//aos/network/www:proxy",
     ],
 )
