@@ -1075,10 +1075,16 @@ class SuperstructureReplayTest : public ::testing::Test {
     test_event_loop_ = reader_.event_loop_factory()->MakeEventLoop(
         "superstructure_replay_test", roborio_);
 
-    status_fetcher_ =
-        test_event_loop_
-            ->MakeFetcher<y2020::control_loops::superstructure::Status>(
-                "/superstructure");
+    status_fetcher_ = test_event_loop_->MakeFetcher<Status>("/superstructure");
+    goal_sender_ = test_event_loop_->MakeSender<Goal>("/superstructure");
+
+    if (!FLAGS_output_file.empty()) {
+      unlink(FLAGS_output_file.c_str());
+      logger_event_loop_ =
+          reader_.event_loop_factory()->MakeEventLoop("logger", roborio_);
+      logger_ = std::make_unique<aos::logger::Logger>(logger_event_loop_.get());
+      logger_->StartLoggingOnRun(FLAGS_output_file);
+    }
   }
 
   const aos::FlatbufferDetachedBuffer<aos::Configuration> config_;
@@ -1088,14 +1094,31 @@ class SuperstructureReplayTest : public ::testing::Test {
   std::unique_ptr<aos::EventLoop> superstructure_event_loop_;
   std::unique_ptr<aos::EventLoop> test_event_loop_;
 
+  std::unique_ptr<aos::EventLoop> logger_event_loop_;
+  std::unique_ptr<aos::logger::Logger> logger_;
+
+  aos::Sender<y2020::control_loops::superstructure::Goal> goal_sender_;
   aos::Fetcher<y2020::control_loops::superstructure::Status> status_fetcher_;
 };
 
-// Tests that balls_shot is updated correctly with a real log
-// that had target tracking constantly changing the finisher goal by small
-// amounts.
-TEST_F(SuperstructureReplayTest, BallsShotWithTargetTracking) {
+// Tests that balls_shot is updated correctly with a real log.
+TEST_F(SuperstructureReplayTest, BallsShotReplay) {
   Superstructure superstructure(superstructure_event_loop_.get());
+  // TODO(milind): remove this after the new log is uploaded
+  test_event_loop_->AddPhasedLoop(
+      [&](int) {
+        auto builder = goal_sender_.MakeBuilder();
+        auto shooter_goal_builder = builder.MakeBuilder<ShooterGoal>();
+        shooter_goal_builder.add_velocity_finisher(304);
+        const auto shooter_goal_offset = shooter_goal_builder.Finish();
+
+        auto goal_builder = builder.MakeBuilder<Goal>();
+        goal_builder.add_shooter(shooter_goal_offset);
+        goal_builder.add_shooter_tracking(false);
+        builder.Send(goal_builder.Finish());
+      },
+      frc971::controls::kLoopFrequency);
+
   reader_.event_loop_factory()->Run();
 
   ASSERT_TRUE(status_fetcher_.Fetch());
