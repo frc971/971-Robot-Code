@@ -140,10 +140,9 @@ const Values *DoGetValuesForTeam(uint16_t team) {
 
       turret->potentiometer_offset = 5.52519370141247 + 0.00853506822980376 +
                                      0.0109413725126625 - 0.223719825811759 +
-                                     0.261356551915472;
-      ;
+                                     0.261356551915472 - 0.0490168170767848;
       turret_params->zeroing_constants.measured_absolute_position =
-          0.588553036694566;
+          2.37257083307489;
 
       hood->zeroing_constants.measured_absolute_position = 0.0344482433884915;
       hood->zeroing_constants.single_turn_measured_absolute_position =
