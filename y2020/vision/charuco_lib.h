@@ -11,6 +11,7 @@
 
 #include "absl/types/span.h"
 #include "aos/events/event_loop.h"
+#include "aos/network/message_bridge_server_generated.h"
 #include "y2020/vision/sift/sift_generated.h"
 #include "y2020/vision/sift/sift_training_generated.h"
 
@@ -45,12 +46,15 @@ class CameraCalibration {
 // view the image.
 class ImageCallback {
  public:
-  ImageCallback(aos::EventLoop *event_loop, std::string_view channel,
-                std::function<void(cv::Mat, double)> &&fn);
+  ImageCallback(
+      aos::EventLoop *event_loop, std::string_view channel,
+      std::function<void(cv::Mat, aos::monotonic_clock::time_point)> &&fn);
 
  private:
   aos::EventLoop *event_loop_;
-  std::function<void(cv::Mat, double)> handle_image_;
+  aos::Fetcher<aos::message_bridge::ServerStatistics> server_fetcher_;
+  const aos::Node *source_node_;
+  std::function<void(cv::Mat, aos::monotonic_clock::time_point)> handle_image_;
 };
 
 // Class which calls a callback each time an image arrives with the information
@@ -59,17 +63,18 @@ class CharucoExtractor {
  public:
   // The callback takes the following arguments:
   //   cv::Mat -> image with overlays drawn on it.
-  //   const double -> Duration between when the image was captured and this
-  //                   callback was called.
+  //   monotonic_clock::time_point -> Time on this node when this image was
+  //                                  captured.
   //   std::vector<int> -> charuco_ids
   //   std::vector<cv::Point2f> -> charuco_corners
   //   bool -> true if rvec/tvec is valid.
   //   Eigen::Vector3d -> rvec
   //   Eigen::Vector3d -> tvec
-  CharucoExtractor(aos::EventLoop *event_loop, std::string_view pi,
-                   std::function<void(cv::Mat, const double, std::vector<int>,
-                                      std::vector<cv::Point2f>, bool,
-                                      Eigen::Vector3d, Eigen::Vector3d)> &&fn);
+  CharucoExtractor(
+      aos::EventLoop *event_loop, std::string_view pi,
+      std::function<void(cv::Mat, aos::monotonic_clock::time_point,
+                         std::vector<int>, std::vector<cv::Point2f>, bool,
+                         Eigen::Vector3d, Eigen::Vector3d)> &&fn);
 
   // Returns the aruco dictionary in use.
   cv::Ptr<cv::aruco::Dictionary> dictionary() const { return dictionary_; }
@@ -82,10 +87,10 @@ class CharucoExtractor {
   const cv::Mat dist_coeffs() const { return dist_coeffs_; }
 
  private:
-  // Handles the image by detecting the charuco board in it and calling the
-  // callback with the extracted board corners, corresponding IDs, and pose.
-  void HandleImage(cv::Mat rgb_image, const double age_double);
+  // Handles the image by detecting the charuco board in it.
+  void HandleImage(cv::Mat rgb_image, aos::monotonic_clock::time_point eof);
 
+  aos::EventLoop *event_loop_;
   CameraCalibration calibration_;
 
   cv::Ptr<cv::aruco::Dictionary> dictionary_;
@@ -100,9 +105,9 @@ class CharucoExtractor {
   ImageCallback image_callback_;
 
   // Function to call.
-  std::function<void(cv::Mat, const double, std::vector<int>,
-                     std::vector<cv::Point2f>, bool, Eigen::Vector3d,
-                     Eigen::Vector3d)>
+  std::function<void(cv::Mat, aos::monotonic_clock::time_point,
+                     std::vector<int>, std::vector<cv::Point2f>, bool,
+                     Eigen::Vector3d, Eigen::Vector3d)>
       handle_charuco_;
 };
 

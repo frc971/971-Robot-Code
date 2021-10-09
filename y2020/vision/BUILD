@@ -101,6 +101,7 @@ cc_library(
         ":vision_fbs",
         "//aos:flatbuffers",
         "//aos/events:event_loop",
+        "//aos/network:message_bridge_server_fbs",
         "//aos/network:team_number",
         "//frc971/control_loops:quaternion_utils",
         "//third_party:opencv",

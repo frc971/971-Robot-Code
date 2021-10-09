@@ -31,18 +31,19 @@ class Calibration {
         pi_number_(aos::network::ParsePiNumber(pi)),
         charuco_extractor_(
             event_loop, pi,
-            [this](cv::Mat rgb_image, const double age_double,
+            [this](cv::Mat rgb_image, const aos::monotonic_clock::time_point eof,
                    std::vector<int> charuco_ids,
                    std::vector<cv::Point2f> charuco_corners, bool valid,
                    Eigen::Vector3d rvec_eigen, Eigen::Vector3d tvec_eigen) {
-              HandleCharuco(rgb_image, age_double, charuco_ids, charuco_corners,
+              HandleCharuco(rgb_image, eof, charuco_ids, charuco_corners,
                             valid, rvec_eigen, tvec_eigen);
             }) {
     CHECK(pi_number_) << ": Invalid pi number " << pi
                       << ", failed to parse pi number";
   }
 
-  void HandleCharuco(cv::Mat rgb_image, const double /*age_double*/,
+  void HandleCharuco(cv::Mat rgb_image,
+                     const aos::monotonic_clock::time_point /*eof*/,
                      std::vector<int> charuco_ids,
                      std::vector<cv::Point2f> charuco_corners, bool valid,
                      Eigen::Vector3d /*rvec_eigen*/,
