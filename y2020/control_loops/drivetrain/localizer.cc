@@ -30,39 +30,50 @@ constexpr double kTurretPiOffset = 0.0;
 // Indices of the pis to use.
 const std::array<std::string, 5> kPisToUse{"pi1", "pi2", "pi3", "pi4", "pi5"};
 
+float CalculateYaw(const Eigen::Matrix4f &transform) {
+  const Eigen::Vector2f yaw_coords =
+      (transform * Eigen::Vector4f(1, 0, 0, 0)).topRows<2>();
+  return std::atan2(yaw_coords(1), yaw_coords(0));
+}
+
 // Calculates the pose implied by the camera target, just based on
 // distance/heading components.
-Eigen::Vector3f CalculateImpliedPose(const Eigen::Matrix4f &H_field_target,
+Eigen::Vector3f CalculateImpliedPose(const float correction_robot_theta,
+                                     const Eigen::Matrix4f &H_field_target,
                                      const Localizer::Pose &pose_robot_target) {
   // This code overrides the pose sent directly from the camera code and
   // effectively distills it down to just a distance + heading estimate, on
   // the presumption that these signals will tend to be much lower noise and
   // better-conditioned than other portions of the robot pose.
-  // As such, this code assumes that the current estimate of the robot
+  // As such, this code assumes that the provided estimate of the robot
   // heading is correct and then, given the heading from the camera to the
   // target and the distance from the camera to the target, calculates the
   // position that the robot would have to be at to make the current camera
   // heading + distance correct. This X/Y implied robot position is then
   // used as the measurement in the EKF, rather than the X/Y that is
-  // directly returned from the vision processing. This means that
-  // the cameras will not correct any drift in the robot heading estimate
-  // but will compensate for X/Y position in a way that prioritizes keeping
-  // an accurate distance + heading to the goal.
+  // directly returned from the vision processing. If the provided
+  // correction_robot_theta is exactly identical to the current estimated robot
+  // yaw, then this means that the image corrections will not do anything to
+  // correct gyro drift; however, by making that tradeoff we can prioritize
+  // getting the turret angle to the target correct (without adding any new
+  // non-linearities to the EKF itself).
 
   // Calculate the heading to the robot in the target's coordinate frame.
   // Reminder on what the numbers mean:
   // rel_theta: The orientation of the target in the robot frame.
   // heading: heading from the robot to the target in the robot frame. I.e.,
   //   atan2(y, x) for x/y of the target in the robot frame.
+  const float implied_rel_theta =
+      CalculateYaw(H_field_target) - correction_robot_theta;
   const float implied_heading_from_target = aos::math::NormalizeAngle(
-      M_PI - pose_robot_target.rel_theta() + pose_robot_target.heading());
+      M_PI - implied_rel_theta + pose_robot_target.heading());
   const float implied_distance = pose_robot_target.xy_norm();
   const Eigen::Vector4f robot_pose_in_target_frame(
       implied_distance * std::cos(implied_heading_from_target),
       implied_distance * std::sin(implied_heading_from_target), 0, 1);
-  const Eigen::Vector4f implied_pose =
-      H_field_target * robot_pose_in_target_frame;
-  return implied_pose.topRows<3>();
+  const Eigen::Vector2f implied_xy =
+      (H_field_target * robot_pose_in_target_frame).topRows<2>();
+  return {implied_xy.x(), implied_xy.y(), correction_robot_theta};
 }
 
 }  // namespace
@@ -376,12 +387,21 @@ Localizer::HandleImageMatch(
     // get away with passing things by reference.
     ekf_.Correct(
         Eigen::Vector3f::Zero(), &U, {},
-        [H, H_field_target, pose_robot_target, state_at_capture, Z, &correction_rejection](
-            const State &, const Input &) -> Eigen::Vector3f {
-          // TODO(james): Figure out how to use the implied pose for...
+        [H, H_field_target, pose_robot_target, state_at_capture, Z,
+         &correction_rejection](const State &,
+                                const Input &) -> Eigen::Vector3f {
+          // Weighting for how much to use the current robot heading estimate
+          // vs. the heading estimate from the image results. A value of 1.0
+          // completely ignores the measured heading, but will prioritize turret
+          // aiming above all else. A value of 0.0 will prioritize correcting
+          // any gyro heading drift.
+          constexpr float kImpliedWeight = 0.99;
+          const float z_yaw_diff = aos::math::NormalizeAngle(
+              state_at_capture.value()(Localizer::StateIdx::kTheta) - Z(2));
+          const float z_yaw = Z(2) + kImpliedWeight * z_yaw_diff;
           const Eigen::Vector3f Z_implied =
-              CalculateImpliedPose(H_field_target, pose_robot_target);
-          (void)Z_implied;
+              CalculateImpliedPose(z_yaw, H_field_target, pose_robot_target);
+          const Eigen::Vector3f Z_used = Z_implied;
           // Just in case we ever do encounter any, drop measurements if they
           // have non-finite numbers.
           if (!Z.allFinite()) {
@@ -389,7 +409,7 @@ Localizer::HandleImageMatch(
             correction_rejection = RejectionReason::NONFINITE_MEASUREMENT;
             return Eigen::Vector3f::Zero();
           }
-          Eigen::Vector3f Zhat = H * state_at_capture.value() - Z;
+          Eigen::Vector3f Zhat = H * state_at_capture.value() - Z_used;
           // Rewrap angle difference to put it back in range. Note that this
           // component of the error is currently ignored (see definition of H
           // above).

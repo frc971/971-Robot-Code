@@ -22,6 +22,10 @@ export function plotLocalizer(conn: Connection, element: Element) : void {
       aosPlotter.addMessageSource('/drivetrain', 'y2020.control_loops.drivetrain.LocalizerDebug');
   const imageMatch =
       aosPlotter.addMessageSource('/pi1/camera', 'frc971.vision.sift.ImageMatchResult');
+  const drivetrainStatus = aosPlotter.addMessageSource(
+      '/drivetrain', 'frc971.control_loops.drivetrain.Status');
+  const superstructureStatus = aosPlotter.addMessageSource(
+      '/superstructure', 'y2020.control_loops.superstructure.Status');
 
   var currentTop = 0;
 
@@ -50,6 +54,9 @@ export function plotLocalizer(conn: Connection, element: Element) : void {
   impliedXPlot.addMessageLine(imageMatch, ['camera_poses[]', 'field_to_camera', 'data[3]'])
       .setColor(BLUE)
       .setDrawLine(false);
+  impliedXPlot.addMessageLine(drivetrainStatus, ['x'])
+      .setColor(GREEN)
+      .setLabel('Localizer X');
 
   const impliedYPlot = aosPlotter.addPlot(
       element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT]);
@@ -64,6 +71,9 @@ export function plotLocalizer(conn: Connection, element: Element) : void {
   impliedYPlot.addMessageLine(imageMatch, ['camera_poses[]', 'field_to_camera', 'data[7]'])
       .setColor(BLUE)
       .setDrawLine(false);
+  impliedYPlot.addMessageLine(drivetrainStatus, ['y'])
+      .setColor(GREEN)
+      .setLabel('Localizer Y');
 
   const impliedHeadingPlot = aosPlotter.addPlot(
       element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT]);
@@ -75,6 +85,9 @@ export function plotLocalizer(conn: Connection, element: Element) : void {
   impliedHeadingPlot.addMessageLine(localizerDebug, ['matches[]', 'implied_robot_theta'])
       .setColor(RED)
       .setDrawLine(false);
+  impliedHeadingPlot.addMessageLine(drivetrainStatus, ['theta'])
+      .setColor(GREEN)
+      .setLabel('Localizer Theta');
 
   const impliedTurretGoalPlot = aosPlotter.addPlot(
       element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT]);
@@ -86,6 +99,8 @@ export function plotLocalizer(conn: Connection, element: Element) : void {
   impliedTurretGoalPlot.addMessageLine(localizerDebug, ['matches[]', 'implied_turret_goal'])
       .setColor(RED)
       .setDrawLine(false);
+  impliedTurretGoalPlot.addMessageLine(superstructureStatus, ['aimer', 'turret_position'])
+      .setColor(GREEN);
 
   const imageTimingPlot = aosPlotter.addPlot(
       element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT]);
