@@ -211,6 +211,10 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     ball_beambreak_reader_.set_input_two(ball_beambreak_inputs_[1].get());
   }
 
+  void set_ball_intake_beambreak(::std::unique_ptr<frc::DigitalInput> sensor) {
+    ball_intake_beambreak_ = ::std::move(sensor);
+  }
+
   void Start() override {
     if (FLAGS_shooter_tuning) {
       AddToDMA(&ball_beambreak_reader_);
@@ -294,6 +298,8 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       position_builder.add_intake_joint(intake_joint_offset);
       position_builder.add_turret(turret_offset);
       position_builder.add_shooter(shooter_offset);
+      position_builder.add_intake_beambreak_triggered(
+          !ball_intake_beambreak_->Get());
 
       builder.Send(position_builder.Finish());
     }
@@ -353,6 +359,8 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   ::std::array<::std::unique_ptr<frc::DigitalInput>, 2> autonomous_modes_;
 
   frc971::wpilib::ADIS16470 *imu_ = nullptr;
+
+  std::unique_ptr<frc::DigitalInput> ball_intake_beambreak_;
 
   // Used to interface with the two beam break sensors that the ball for tuning
   // shooter parameters has to pass through.
@@ -581,6 +589,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         make_unique<frc::Encoder>(3, 2, false, frc::Encoder::k4X));
     sensor_reader.set_left_accelerator_encoder(make_encoder(4));
     sensor_reader.set_right_accelerator_encoder(make_encoder(3));
+
+    sensor_reader.set_ball_intake_beambreak(make_unique<frc::DigitalInput>(4));
 
     if (FLAGS_shooter_tuning) {
       sensor_reader.set_ball_beambreak_inputs(

@@ -209,26 +209,30 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   status->Send(status_builder.Finish());
 
   if (output != nullptr) {
+    output_struct.washing_machine_spinner_voltage = 0.0;
+    output_struct.feeder_voltage = 0.0;
+    output_struct.intake_roller_voltage = 0.0;
     if (unsafe_goal) {
-      output_struct.washing_machine_spinner_voltage = 0.0;
+      if ((unsafe_goal->shooting() || unsafe_goal->intake_preloading()) &&
+          !position->intake_beambreak_triggered()) {
+        output_struct.washing_machine_spinner_voltage = 5.0;
+        output_struct.feeder_voltage = 12.0;
+      }
+
       if (unsafe_goal->shooting()) {
         if (shooter_.ready() && shooter_.finisher_goal() > 10.0 &&
             shooter_.accelerator_goal() > 10.0) {
           output_struct.feeder_voltage = 12.0;
-        } else {
-          output_struct.feeder_voltage = 0.0;
         }
         output_struct.washing_machine_spinner_voltage = 5.0;
         output_struct.intake_roller_voltage = 3.0;
       } else {
-        output_struct.feeder_voltage = 0.0;
         output_struct.intake_roller_voltage =
             unsafe_goal->roller_voltage() +
             std::max(velocity * unsafe_goal->roller_speed_compensation(), 0.0f);
       }
-    } else {
-      output_struct.intake_roller_voltage = 0.0;
     }
+
     output->Send(Output::Pack(*output->fbb(), &output_struct));
   }
 }

@@ -195,6 +195,7 @@ void AutonomousActor::GalacticSearch() {
 
   set_intake_goal(1.25);
   set_roller_voltage(12.0);
+  set_intake_preloading(true);
   SendSuperstructureGoal();
 
   if (!spline->WaitForPlan()) return;
@@ -306,6 +307,7 @@ void AutonomousActor::SendSuperstructureGoal() {
       builder.MakeBuilder<superstructure::Goal>();
 
   superstructure_builder.add_intake(intake_offset);
+  superstructure_builder.add_intake_preloading(intake_preloading_);
   superstructure_builder.add_roller_voltage(roller_voltage_);
   superstructure_builder.add_roller_speed_compensation(
       kRollerSpeedCompensation);
@@ -318,6 +320,7 @@ void AutonomousActor::SendSuperstructureGoal() {
 void AutonomousActor::RetractIntake() {
   set_intake_goal(-0.89);
   set_roller_voltage(0.0);
+  set_intake_preloading(false);
   SendSuperstructureGoal();
 }
 

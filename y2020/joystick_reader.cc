@@ -107,6 +107,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     double accelerator_speed = 0.0;
     double finisher_speed = 0.0;
     double climber_speed = 0.0;
+    bool preload_intake = false;
 
     const bool auto_track = data.IsPressed(kAutoTrack);
 
@@ -143,6 +144,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       intake_pos = 1.2;
       roller_speed = 7.0f;
       roller_speed_compensation = 2.0f;
+      preload_intake = true;
     }
 
     if (superstructure_status_fetcher_.get() &&
@@ -154,6 +156,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     if (data.IsPressed(kIntakeIn)) {
       roller_speed = 6.0f;
       roller_speed_compensation = 2.0f;
+      preload_intake = true;
     } else if (data.IsPressed(kSpit)) {
       roller_speed = -6.0f;
     }
@@ -205,6 +208,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       superstructure_goal_builder.add_turret_tracking(auto_track);
       superstructure_goal_builder.add_hood_tracking(auto_track);
       superstructure_goal_builder.add_shooter_tracking(auto_track);
+      superstructure_goal_builder.add_intake_preloading(preload_intake);
 
       if (!builder.Send(superstructure_goal_builder.Finish())) {
         AOS_LOG(ERROR, "Sending superstructure goal failed.\n");

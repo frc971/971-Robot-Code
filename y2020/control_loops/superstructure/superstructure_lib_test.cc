@@ -204,6 +204,8 @@ class SuperstructureSimulation {
     position_builder.add_intake_joint(intake_offset);
     position_builder.add_turret(turret_offset);
     position_builder.add_shooter(shooter_offset);
+    position_builder.add_intake_beambreak_triggered(
+        intake_beambreak_triggered_);
 
     builder.Send(position_builder.Finish());
   }
@@ -384,6 +386,10 @@ class SuperstructureSimulation {
     finisher_plant_->set_voltage_offset(value);
   }
 
+  void set_intake_beambreak_triggered(bool triggered) {
+    intake_beambreak_triggered_ = triggered;
+  }
+
  private:
   ::aos::EventLoop *event_loop_;
   const chrono::nanoseconds dt_;
@@ -419,6 +425,8 @@ class SuperstructureSimulation {
   double peak_turret_velocity_ = 1e10;
 
   float climber_voltage_ = 0.0f;
+
+  bool intake_beambreak_triggered_ = false;
 };
 
 class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
@@ -932,6 +940,51 @@ TEST_F(SuperstructureTest, Climber) {
   RunFor(chrono::seconds(1));
   // But forwards works.
   EXPECT_EQ(superstructure_plant_.climber_voltage(), 10.0);
+
+  VerifyNearGoal();
+}
+
+// Tests that preserializing balls works.
+TEST_F(SuperstructureTest, Preserializing) {
+  SetEnabled(true);
+  // Set a reasonable goal.
+
+  WaitUntilZeroed();
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_intake_preloading(true);
+
+    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+  }
+
+  superstructure_plant_.set_intake_beambreak_triggered(false);
+
+  // Give it time to stabilize.
+  RunFor(chrono::seconds(1));
+
+  // Preloads balls.
+  superstructure_output_fetcher_.Fetch();
+  ASSERT_TRUE(superstructure_output_fetcher_.get() != nullptr);
+  EXPECT_EQ(superstructure_output_fetcher_->feeder_voltage(), 12.0);
+  EXPECT_EQ(superstructure_output_fetcher_->washing_machine_spinner_voltage(),
+            5.0);
+
+  VerifyNearGoal();
+
+  superstructure_plant_.set_intake_beambreak_triggered(true);
+
+  // Give it time to stabilize.
+  RunFor(chrono::seconds(1));
+
+  // Stops preloading balls once one ball is in place
+  superstructure_output_fetcher_.Fetch();
+  ASSERT_TRUE(superstructure_output_fetcher_.get() != nullptr);
+  EXPECT_EQ(superstructure_output_fetcher_->feeder_voltage(), 0.0);
+  EXPECT_EQ(superstructure_output_fetcher_->washing_machine_spinner_voltage(),
+            0.0);
 
   VerifyNearGoal();
 }
