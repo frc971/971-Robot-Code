@@ -1,6 +1,7 @@
 #include "y2020/control_loops/superstructure/shooter/shooter.h"
 
 #include <chrono>
+#include <cmath>
 
 #include "aos/logging/logging.h"
 #include "y2020/control_loops/superstructure/accelerator/accelerator_plant.h"
@@ -47,6 +48,8 @@ flatbuffers::Offset<ShooterStatus> Shooter::RunIteration(
     const ShooterGoal *goal, const ShooterPosition *position,
     flatbuffers::FlatBufferBuilder *fbb, OutputT *output,
     const aos::monotonic_clock::time_point position_timestamp) {
+  const double last_finisher_velocity = finisher_.velocity();
+
   // Update position, output, and status for our two shooter sides.
   finisher_.set_position(position->theta_finisher(), position_timestamp);
   accelerator_left_.set_position(position->theta_accelerator_left(),
@@ -56,6 +59,12 @@ flatbuffers::Offset<ShooterStatus> Shooter::RunIteration(
 
   // Update goal.
   if (goal) {
+    if (std::abs(goal->velocity_finisher() - finisher_goal()) >=
+        kVelocityTolerance) {
+      finisher_goal_changed_ = true;
+      last_finisher_velocity_max_ = 0.0;
+    }
+
     finisher_.set_goal(goal->velocity_finisher());
     accelerator_left_.set_goal(goal->velocity_accelerator());
     accelerator_right_.set_goal(goal->velocity_accelerator());
@@ -87,6 +96,41 @@ flatbuffers::Offset<ShooterStatus> Shooter::RunIteration(
   status_builder.add_accelerator_left(accelerator_left_status_offset);
   status_builder.add_accelerator_right(accelerator_right_status_offset);
   status_builder.add_ready(ready());
+
+  if (finisher_goal_changed_) {
+    // If we have caught up to the new goal, we can start detecting if a ball
+    // was shot.
+    finisher_goal_changed_ =
+        (std::abs(finisher_.velocity() - finisher_goal()) > kVelocityTolerance);
+  }
+
+  if (!finisher_goal_changed_) {
+    const bool finisher_was_accelerating = finisher_accelerating_;
+    finisher_accelerating_ = (finisher_.velocity() > last_finisher_velocity);
+    if (finisher_was_accelerating && !finisher_accelerating_) {
+      last_finisher_velocity_max_ = std::min(
+          last_finisher_velocity, static_cast<double>(finisher_goal()));
+    }
+
+    const double finisher_velocity_dip =
+        last_finisher_velocity_max_ - finisher_.velocity();
+
+    if (finisher_velocity_dip < kVelocityTolerance && ball_in_finisher_) {
+      // If we detected a ball in the flywheel and now the angular velocity has
+      // come back up close to the last local maximum or is greater than it, the
+      // ball has been shot.
+      balls_shot_++;
+      ball_in_finisher_ = false;
+    } else if (!ball_in_finisher_ && (finisher_goal() > kVelocityTolerance)) {
+      // There is probably a ball in the flywheel if the angular
+      // velocity is atleast kMinVelocityErrorWithBall less than the last local
+      // maximum.
+      ball_in_finisher_ =
+          (finisher_velocity_dip >= kMinFinisherVelocityDipWithBall);
+    }
+  }
+
+  status_builder.add_balls_shot(balls_shot_);
 
   if (output) {
     output->finisher_voltage = finisher_.voltage();

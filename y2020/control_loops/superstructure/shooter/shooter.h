@@ -30,10 +30,25 @@ class Shooter {
   float accelerator_goal() const { return accelerator_left_.goal(); }
 
  private:
+  // Minumum difference between the last local maximum finisher angular velocity
+  // and the current finisher angular velocity when we have a ball in the
+  // flywheel, in radians/s. This arises because the flywheel slows down when
+  // there is a ball in it. We can use this to determine when a ball is in the
+  // flywheel and when it gets shot.
+  static constexpr double kMinFinisherVelocityDipWithBall = 5.0;
+
   FlywheelController finisher_, accelerator_left_, accelerator_right_;
 
   bool UpToSpeed(const ShooterGoal *goal);
   bool ready_ = false;
+
+  int balls_shot_ = 0;
+  bool finisher_goal_changed_ = false;
+  bool ball_in_finisher_ = false;
+  // Last local maximum in the finisher angular velocity
+  double last_finisher_velocity_max_ = 0.0;
+  // True if the finisher's average acceleration over the last dt is positive
+  bool finisher_accelerating_ = false;
 
   DISALLOW_COPY_AND_ASSIGN(Shooter);
 };

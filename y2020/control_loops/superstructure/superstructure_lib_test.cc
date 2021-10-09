@@ -3,7 +3,9 @@
 #include <chrono>
 #include <memory>
 
+#include "aos/events/logging/log_reader.h"
 #include "aos/events/logging/log_writer.h"
+#include "aos/network/team_number.h"
 #include "frc971/control_loops/capped_test_plant.h"
 #include "frc971/control_loops/control_loop_test.h"
 #include "frc971/control_loops/position_sensor_sim.h"
@@ -18,6 +20,10 @@
 
 DEFINE_string(output_file, "",
               "If set, logs all channels to the provided logfile.");
+DEFINE_string(replay_logfile, "external/superstructure_replay/",
+              "Name of the logfile to read from and replay.");
+DEFINE_string(config, "y2020/config.json",
+              "Name of the config file to replay using.");
 
 namespace y2020 {
 namespace control_loops {
@@ -374,6 +380,9 @@ class SuperstructureSimulation {
     peak_turret_acceleration_ = value;
   }
   void set_peak_turret_velocity(double value) { peak_turret_velocity_ = value; }
+  void set_finisher_voltage_offset(double value) {
+    finisher_plant_->set_voltage_offset(value);
+  }
 
  private:
   ::aos::EventLoop *event_loop_;
@@ -444,7 +453,7 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
       unlink(FLAGS_output_file.c_str());
       logger_event_loop_ = MakeEventLoop("logger", roborio_);
       logger_ = std::make_unique<aos::logger::Logger>(logger_event_loop_.get());
-      logger_->StartLoggingLocalNamerOnRun(FLAGS_output_file);
+      logger_->StartLoggingOnRun(FLAGS_output_file);
     }
   }
 
@@ -552,6 +561,47 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
               expected_voltage);
   }
 
+  void StartSendingFinisherGoals() {
+    test_event_loop_->AddPhasedLoop(
+        [this](int) {
+          auto builder = superstructure_goal_sender_.MakeBuilder();
+          auto shooter_goal_builder = builder.MakeBuilder<ShooterGoal>();
+          shooter_goal_builder.add_velocity_finisher(finisher_goal_);
+          const auto shooter_goal_offset = shooter_goal_builder.Finish();
+
+          Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+          goal_builder.add_shooter(shooter_goal_offset);
+          ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+        },
+        dt());
+  }
+
+  // Sets the finisher velocity goal (radians/s)
+  void SetFinisherGoalAfter(const double velocity_finisher,
+                            const monotonic_clock::duration time_offset) {
+    test_event_loop_
+        ->AddTimer(
+            [this, velocity_finisher] { finisher_goal_ = velocity_finisher; })
+        ->Setup(test_event_loop_->monotonic_now() + time_offset);
+  }
+
+  // Simulates the friction of a ball in the flywheel
+  void ApplyFrictionToFinisherAfter(
+      const double voltage_offset, const bool ball_in_finisher,
+      const monotonic_clock::duration time_offset) {
+    test_event_loop_
+        ->AddTimer([this, voltage_offset, ball_in_finisher] {
+          superstructure_plant_.set_finisher_voltage_offset(voltage_offset);
+          ball_in_finisher_ = ball_in_finisher;
+        })
+        ->Setup(test_event_loop_->monotonic_now() + time_offset);
+    test_event_loop_
+        ->AddTimer(
+            [this] { superstructure_plant_.set_finisher_voltage_offset(0); })
+        ->Setup(test_event_loop_->monotonic_now() + time_offset +
+                chrono::seconds(1));
+  }
+
   const aos::Node *const roborio_;
 
   ::std::unique_ptr<::aos::EventLoop> test_event_loop_;
@@ -573,6 +623,9 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
 
   std::unique_ptr<aos::EventLoop> logger_event_loop_;
   std::unique_ptr<aos::logger::Logger> logger_;
+
+  double finisher_goal_ = 0;
+  bool ball_in_finisher_ = false;
 };
 
 // Tests that the superstructure does nothing when the goal is to remain
@@ -905,6 +958,148 @@ TEST_F(SuperstructureTest, PositiveRollerSpeedCompensation) {
 // shooter at at the goal)
 TEST_F(SuperstructureTest, WhenShooting) {
   TestIntakeRollerVoltage(0.0f, 0.0f, true, 3.0);
+}
+
+// Tests that we detect that a ball was shot whenever the  average angular
+// velocity is lower than a certain threshold compared to the goal.
+TEST_F(SuperstructureTest, BallsShot) {
+  SetEnabled(true);
+  WaitUntilZeroed();
+
+  int balls_shot = 0;
+  // When there is a ball in the flywheel, the finisher velocity should drop
+  // below the goal
+  bool finisher_velocity_below_goal = false;
+
+  StartSendingFinisherGoals();
+
+  constexpr double kVelocityTolerance = 2.0;
+  test_event_loop_->AddPhasedLoop(
+      [&](int) {
+        ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+        const double finisher_velocity =
+            superstructure_status_fetcher_->shooter()
+                ->finisher()
+                ->angular_velocity();
+        const double finisher_velocity_dip = finisher_goal_ - finisher_velocity;
+        if (ball_in_finisher_ && finisher_velocity_dip >= kVelocityTolerance) {
+          finisher_velocity_below_goal = true;
+        }
+        if (ball_in_finisher_ && finisher_velocity_below_goal &&
+            finisher_velocity_dip < kVelocityTolerance) {
+          ball_in_finisher_ = false;
+          finisher_velocity_below_goal = false;
+          balls_shot++;
+        }
+        // Since here we are calculating the dip from the goal instead of the
+        // local maximum, the shooter could have calculated that a ball was shot
+        // slightly before we did if the local maximum was slightly below the
+        // goal.
+        EXPECT_TRUE((superstructure_status_fetcher_->shooter()->balls_shot() ==
+                     balls_shot) ||
+                    ((superstructure_status_fetcher_->shooter()->balls_shot() ==
+                      balls_shot + 1) &&
+                     (finisher_velocity_dip - kVelocityTolerance < 0.1)));
+      },
+      dt());
+
+  constexpr int kFastShootingSpeed = 500;
+  constexpr int kSlowShootingSpeed = 300;
+
+  // Maximum (since it is negative) flywheel voltage offsets for simulating the
+  // friction of a ball at different finisher speeds.
+  // Slower speeds require a higher magnitude of voltage offset.
+  static constexpr double kFastSpeedVoltageOffsetWithBall = -4.1;
+  static constexpr double kSlowSpeedVoltageOffsetWithBall = -4.5;
+
+  SetFinisherGoalAfter(kFastShootingSpeed, chrono::seconds(1));
+  // Simulate shooting balls by applying friction to the finisher
+  ApplyFrictionToFinisherAfter(kFastSpeedVoltageOffsetWithBall, true,
+                               chrono::seconds(3));
+  ApplyFrictionToFinisherAfter(kFastSpeedVoltageOffsetWithBall, true,
+                               chrono::seconds(6));
+
+  SetFinisherGoalAfter(0, chrono::seconds(10));
+  SetFinisherGoalAfter(kFastShootingSpeed, chrono::seconds(15));
+  ApplyFrictionToFinisherAfter(kFastSpeedVoltageOffsetWithBall, true,
+                               chrono::seconds(18));
+  ApplyFrictionToFinisherAfter(kFastSpeedVoltageOffsetWithBall, true,
+                               chrono::seconds(21));
+
+  SetFinisherGoalAfter(kSlowShootingSpeed, chrono::seconds(25));
+  ApplyFrictionToFinisherAfter(kSlowSpeedVoltageOffsetWithBall, true,
+                               chrono::seconds(28));
+  ApplyFrictionToFinisherAfter(kSlowSpeedVoltageOffsetWithBall, true,
+                               chrono::seconds(31));
+  // This smaller decrease in velocity shouldn't be counted as a ball
+  ApplyFrictionToFinisherAfter(kSlowSpeedVoltageOffsetWithBall / 2, false,
+                               chrono::seconds(34));
+
+  SetFinisherGoalAfter(kFastShootingSpeed, chrono::seconds(38));
+  ApplyFrictionToFinisherAfter(kFastSpeedVoltageOffsetWithBall, true,
+                               chrono::seconds(41));
+  ApplyFrictionToFinisherAfter(kFastSpeedVoltageOffsetWithBall, true,
+                               chrono::seconds(44));
+  // This slow positive voltage offset that speeds up the flywheel instead of
+  // slowing it down shouldn't be counted as a ball.
+  // We wouldn't expect a positive voltage offset of more than ~2 volts.
+  ApplyFrictionToFinisherAfter(2, false, chrono::seconds(47));
+
+  RunFor(chrono::seconds(50));
+
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+  EXPECT_EQ(superstructure_status_fetcher_->shooter()->balls_shot(), 8);
+}
+
+class SuperstructureReplayTest : public ::testing::Test {
+ public:
+  SuperstructureReplayTest()
+      : config_(aos::configuration::ReadConfig(FLAGS_config)),
+        reader_(
+            aos::logger::SortParts(aos::logger::FindLogs(FLAGS_replay_logfile)),
+            &config_.message()) {
+    aos::network::OverrideTeamNumber(971);
+
+    reader_.RemapLoggedChannel("/superstructure",
+                               "y2020.control_loops.superstructure.Status");
+    reader_.RemapLoggedChannel("/superstructure",
+                               "y2020.control_loops.superstructure.Output");
+    reader_.Register();
+
+    roborio_ = aos::configuration::GetNode(reader_.configuration(), "roborio");
+
+    superstructure_event_loop_ =
+        reader_.event_loop_factory()->MakeEventLoop("superstructure", roborio_);
+    superstructure_event_loop_->SkipTimingReport();
+
+    test_event_loop_ = reader_.event_loop_factory()->MakeEventLoop(
+        "superstructure_replay_test", roborio_);
+
+    status_fetcher_ =
+        test_event_loop_
+            ->MakeFetcher<y2020::control_loops::superstructure::Status>(
+                "/superstructure");
+  }
+
+  const aos::FlatbufferDetachedBuffer<aos::Configuration> config_;
+  aos::logger::LogReader reader_;
+  const aos::Node *roborio_;
+
+  std::unique_ptr<aos::EventLoop> superstructure_event_loop_;
+  std::unique_ptr<aos::EventLoop> test_event_loop_;
+
+  aos::Fetcher<y2020::control_loops::superstructure::Status> status_fetcher_;
+};
+
+// Tests that balls_shot is updated correctly with a real log
+// that had target tracking constantly changing the finisher goal by small
+// amounts.
+TEST_F(SuperstructureReplayTest, BallsShotWithTargetTracking) {
+  Superstructure superstructure(superstructure_event_loop_.get());
+  reader_.event_loop_factory()->Run();
+
+  ASSERT_TRUE(status_fetcher_.Fetch());
+  EXPECT_EQ(status_fetcher_->shooter()->balls_shot(), 3);
 }
 
 class SuperstructureAllianceTest

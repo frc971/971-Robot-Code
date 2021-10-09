@@ -37,6 +37,9 @@ table ShooterStatus {
   // If the shooter is ready, this is true.  Note: don't use this for status
   // checking, only for plotting.  Changes in goal take time to impact this.
   ready:bool (id: 3);
+
+  // The total number of balls we have shot
+  balls_shot:int (id: 4);
 }
 
 table AimerStatus {
