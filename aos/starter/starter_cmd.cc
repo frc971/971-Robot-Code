@@ -85,7 +85,7 @@ bool InteractWithProgram(int argc, char **argv,
   const aos::starter::Command command = command_search->second;
   const auto application_name = aos::starter::FindApplication(argv[1], config);
   if (aos::starter::SendCommandBlocking(command, application_name, config,
-                                        chrono::seconds(3))) {
+                                        chrono::seconds(5))) {
     switch (command) {
       case aos::starter::Command::START:
         std::cout << "Successfully started " << application_name << '\n';
@@ -118,7 +118,7 @@ bool RestartAll(int argc, char **, const aos::Configuration *config) {
 
         if (aos::starter::SendCommandBlocking(aos::starter::Command::RESTART,
                                               application_name, config,
-                                              chrono::seconds(3))) {
+                                              chrono::seconds(5))) {
           std::cout << "Successfully restarted " << application_name << '\n';
         } else {
           std::cout << "Failed to restart " << application_name << '\n';
