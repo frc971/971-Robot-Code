@@ -12,10 +12,6 @@ namespace control_loops {
 namespace superstructure {
 namespace shooter {
 
-namespace {
-const double kVelocityTolerance = 2.0;
-}  // namespace
-
 Shooter::Shooter()
     : finisher_(
           finisher::MakeIntegralFinisherLoop(), finisher::kBemf,
@@ -30,18 +26,19 @@ Shooter::Shooter()
 bool Shooter::UpToSpeed(const ShooterGoal *goal) {
   return (
       std::abs(goal->velocity_finisher() - finisher_.avg_angular_velocity()) <
-          kVelocityTolerance &&
+          kVelocityToleranceFinisher &&
       std::abs(goal->velocity_accelerator() -
-               accelerator_left_.avg_angular_velocity()) < kVelocityTolerance &&
+               accelerator_left_.avg_angular_velocity()) <
+          kVelocityToleranceAccelerator &&
       std::abs(goal->velocity_accelerator() -
                accelerator_right_.avg_angular_velocity()) <
-          kVelocityTolerance &&
+          kVelocityToleranceAccelerator &&
       std::abs(goal->velocity_finisher() - finisher_.velocity()) <
-          kVelocityTolerance &&
+          kVelocityToleranceFinisher &&
       std::abs(goal->velocity_accelerator() - accelerator_left_.velocity()) <
-          kVelocityTolerance &&
+          kVelocityToleranceAccelerator &&
       std::abs(goal->velocity_accelerator() - accelerator_right_.velocity()) <
-          kVelocityTolerance);
+          kVelocityToleranceAccelerator);
 }
 
 flatbuffers::Offset<ShooterStatus> Shooter::RunIteration(
@@ -60,7 +57,7 @@ flatbuffers::Offset<ShooterStatus> Shooter::RunIteration(
   // Update goal.
   if (goal) {
     if (std::abs(goal->velocity_finisher() - finisher_goal()) >=
-        kVelocityTolerance) {
+        kVelocityToleranceFinisher) {
       finisher_goal_changed_ = true;
       last_finisher_velocity_max_ = 0.0;
     }
@@ -75,8 +72,9 @@ flatbuffers::Offset<ShooterStatus> Shooter::RunIteration(
   accelerator_right_.Update(output == nullptr);
 
   if (goal) {
-    if (UpToSpeed(goal) && goal->velocity_finisher() > kVelocityTolerance &&
-        goal->velocity_accelerator() > kVelocityTolerance) {
+    if (UpToSpeed(goal) &&
+        goal->velocity_finisher() > kVelocityToleranceFinisher &&
+        goal->velocity_accelerator() > kVelocityToleranceAccelerator) {
       ready_ = true;
     } else {
       ready_ = false;
@@ -100,8 +98,8 @@ flatbuffers::Offset<ShooterStatus> Shooter::RunIteration(
   if (finisher_goal_changed_) {
     // If we have caught up to the new goal, we can start detecting if a ball
     // was shot.
-    finisher_goal_changed_ =
-        (std::abs(finisher_.velocity() - finisher_goal()) > kVelocityTolerance);
+    finisher_goal_changed_ = (std::abs(finisher_.velocity() - finisher_goal()) >
+                              kVelocityToleranceFinisher);
   }
 
   if (!finisher_goal_changed_) {
@@ -115,13 +113,15 @@ flatbuffers::Offset<ShooterStatus> Shooter::RunIteration(
     const double finisher_velocity_dip =
         last_finisher_velocity_max_ - finisher_.velocity();
 
-    if (finisher_velocity_dip < kVelocityTolerance && ball_in_finisher_) {
+    if (finisher_velocity_dip < kVelocityToleranceFinisher &&
+        ball_in_finisher_) {
       // If we detected a ball in the flywheel and now the angular velocity has
       // come back up close to the last local maximum or is greater than it, the
       // ball has been shot.
       balls_shot_++;
       ball_in_finisher_ = false;
-    } else if (!ball_in_finisher_ && (finisher_goal() > kVelocityTolerance)) {
+    } else if (!ball_in_finisher_ &&
+               (finisher_goal() > kVelocityToleranceFinisher)) {
       // There is probably a ball in the flywheel if the angular
       // velocity is atleast kMinVelocityErrorWithBall less than the last local
       // maximum.

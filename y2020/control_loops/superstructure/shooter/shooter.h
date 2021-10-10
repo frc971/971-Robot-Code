@@ -17,6 +17,9 @@ namespace shooter {
 // Handles all flywheels together.
 class Shooter {
  public:
+  static constexpr double kVelocityToleranceFinisher = 3.0;
+  static constexpr double kVelocityToleranceAccelerator = 4.0;
+
   Shooter();
 
   flatbuffers::Offset<ShooterStatus> RunIteration(
