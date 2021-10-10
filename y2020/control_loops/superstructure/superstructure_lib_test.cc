@@ -973,7 +973,6 @@ TEST_F(SuperstructureTest, BallsShot) {
 
   StartSendingFinisherGoals();
 
-  constexpr double kVelocityTolerance = 2.0;
   test_event_loop_->AddPhasedLoop(
       [&](int) {
         ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
@@ -982,11 +981,14 @@ TEST_F(SuperstructureTest, BallsShot) {
                 ->finisher()
                 ->angular_velocity();
         const double finisher_velocity_dip = finisher_goal_ - finisher_velocity;
-        if (ball_in_finisher_ && finisher_velocity_dip >= kVelocityTolerance) {
+        if (ball_in_finisher_ &&
+            finisher_velocity_dip >=
+                shooter::Shooter::kVelocityToleranceFinisher) {
           finisher_velocity_below_goal = true;
         }
         if (ball_in_finisher_ && finisher_velocity_below_goal &&
-            finisher_velocity_dip < kVelocityTolerance) {
+            finisher_velocity_dip <
+                shooter::Shooter::kVelocityToleranceFinisher) {
           ball_in_finisher_ = false;
           finisher_velocity_below_goal = false;
           balls_shot++;
@@ -999,7 +1001,9 @@ TEST_F(SuperstructureTest, BallsShot) {
                      balls_shot) ||
                     ((superstructure_status_fetcher_->shooter()->balls_shot() ==
                       balls_shot + 1) &&
-                     (finisher_velocity_dip - kVelocityTolerance < 0.1)));
+                     (finisher_velocity_dip -
+                          shooter::Shooter::kVelocityToleranceFinisher <
+                      0.2)));
       },
       dt());
 
