@@ -36,6 +36,7 @@
 #include "frc971/autonomous/auto_mode_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_position_generated.h"
 #include "frc971/input/robot_state_generated.h"
+#include "frc971/wpilib/ADIS16448.h"
 #include "frc971/wpilib/ADIS16470.h"
 #include "frc971/wpilib/buffered_pcm.h"
 #include "frc971/wpilib/buffered_solenoid.h"
@@ -220,7 +221,9 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   }
 
   void RunIteration() override {
-    CHECK_NOTNULL(imu_)->DoReads();
+    if (imu_ != nullptr) {
+      imu_->DoReads();
+    }
 
     {
       auto builder = drivetrain_position_sender_.MakeBuilder();
@@ -589,10 +592,14 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
           make_unique<frc::DigitalInput>(6), make_unique<frc::DigitalInput>(7));
     }
 
+    AddLoop(&sensor_reader_event_loop);
+
     // Note: If ADIS16470 is plugged in directly to the roboRIO SPI port without
     // the Spartan Board, then trigger is on 26, reset 27, and chip select is
     // CS0.
-    frc::SPI::Port spi_port = frc::SPI::Port::kOnboardCS2;
+    // TODO(james): Double check whether the above is still accurate/useful with
+    // the ADIS16448. No reason it shouldn't be.
+    frc::SPI::Port spi_port = frc::SPI::Port::kOnboardCS1;
     std::unique_ptr<frc::DigitalInput> imu_trigger;
     std::unique_ptr<frc::DigitalOutput> imu_reset;
     if (::aos::network::GetTeamNumber() ==
@@ -604,11 +611,23 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
       imu_trigger = make_unique<frc::DigitalInput>(9);
       imu_reset = make_unique<frc::DigitalOutput>(8);
     }
-    auto spi = make_unique<frc::SPI>(spi_port);
-    frc971::wpilib::ADIS16470 imu(&sensor_reader_event_loop, spi.get(),
-                                  imu_trigger.get(), imu_reset.get());
-    sensor_reader.set_imu(&imu);
-    AddLoop(&sensor_reader_event_loop);
+    ::aos::ShmEventLoop imu_event_loop(&config.message());
+    std::unique_ptr<frc971::wpilib::ADIS16448> old_imu;
+    std::unique_ptr<frc971::wpilib::ADIS16470> new_imu;
+    std::unique_ptr<frc::SPI> imu_spi;
+    if (::aos::network::GetTeamNumber() ==
+        constants::Values::kCompTeamNumber) {
+      old_imu = make_unique<frc971::wpilib::ADIS16448>(
+          &imu_event_loop, spi_port, imu_trigger.get());
+      old_imu->SetDummySPI(frc::SPI::Port::kOnboardCS2);
+      old_imu->set_reset(imu_reset.get());
+    } else {
+      imu_spi = make_unique<frc::SPI>(spi_port);
+      new_imu = make_unique<frc971::wpilib::ADIS16470>(
+          &imu_event_loop, imu_spi.get(), imu_trigger.get(), imu_reset.get());
+      sensor_reader.set_imu(new_imu.get());
+    }
+    AddLoop(&imu_event_loop);
 
     // Thread 4.
     ::aos::ShmEventLoop output_event_loop(&config.message());

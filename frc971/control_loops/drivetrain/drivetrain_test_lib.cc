@@ -148,7 +148,7 @@ DrivetrainSimulation::DrivetrainSimulation(
       dt_config_.dt);
   // TODO(milind): We should be able to get IMU readings at 1 kHz instead of 2.
   event_loop_->AddPhasedLoop([this](int) { ReadImu(); },
-                             std::chrono::microseconds(500));
+                             std::chrono::milliseconds(5));
 }
 
 void DrivetrainSimulation::Reinitialize() {

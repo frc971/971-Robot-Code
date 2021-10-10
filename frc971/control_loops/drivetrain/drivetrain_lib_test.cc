@@ -75,8 +75,8 @@ class DrivetrainTest : public ::frc971::testing::ControlLoopTest {
     }
 
     // Run for enough time to allow the gyro/imu zeroing code to run.
-    RunFor(std::chrono::seconds(10));
-    drivetrain_status_fetcher_.Fetch();
+    RunFor(std::chrono::seconds(15));
+    CHECK(drivetrain_status_fetcher_.Fetch());
     EXPECT_TRUE(CHECK_NOTNULL(drivetrain_status_fetcher_->zeroing())->zeroed());
   }
   virtual ~DrivetrainTest() {}
@@ -91,10 +91,10 @@ class DrivetrainTest : public ::frc971::testing::ControlLoopTest {
                 drivetrain_plant_.GetRightPosition(), 1e-2);
   }
 
-  void VerifyNearPosition(double x, double y) {
+  void VerifyNearPosition(double x, double y, double eps = 1e-2) {
     auto actual = drivetrain_plant_.GetPosition();
-    EXPECT_NEAR(actual(0), x, 1e-2);
-    EXPECT_NEAR(actual(1), y, 1e-2);
+    EXPECT_NEAR(actual(0), x, eps);
+    EXPECT_NEAR(actual(1), y, eps);
   }
 
   void VerifyNearSplineGoal() {
@@ -213,6 +213,9 @@ TEST_F(DrivetrainTest, DisablesOnImuError) {
 
   // Fault the IMU and confirm that we disable the outputs.
   drivetrain_plant_.set_imu_faulted(true);
+
+  // Ensure the fault has time to propagate.
+  RunFor(2 * dt());
 
   for (int i = 0; i < 500; ++i) {
     RunFor(dt());
@@ -1261,7 +1264,7 @@ TEST_F(DrivetrainTest, CancelSplineBeforeExecuting) {
 
   WaitForTrajectoryExecution();
   VerifyNearSplineGoal();
-  VerifyNearPosition(1.0, 2.0);
+  VerifyNearPosition(1.0, 2.0, 5e-2);
 }
 
 // Tests that splines can excecute and plan at the same time.
@@ -1413,7 +1416,7 @@ TEST_F(DrivetrainTest, SplineExecuteAfterPlan) {
   }
   WaitForTrajectoryExecution();
 
-  VerifyNearPosition(1.0, 1.0);
+  VerifyNearPosition(1.0, 1.0, 5e-2);
 }
 
 // Tests that when we send a bunch of splines we properly evict old splines from
