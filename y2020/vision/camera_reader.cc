@@ -1,3 +1,5 @@
+#include <math.h>
+
 #include <opencv2/calib3d.hpp>
 #include <opencv2/features2d.hpp>
 #include <opencv2/imgproc.hpp>
@@ -46,7 +48,6 @@ class CameraReader {
         read_image_timer_(event_loop->AddTimer([this]() { ReadImage(); })),
         prev_R_camera_field_vec_(cv::Mat::zeros(3, 1, CV_32F)),
         prev_T_camera_field_(cv::Mat::zeros(3, 1, CV_32F)) {
-
     for (int ii = 0; ii < number_training_images(); ++ii) {
       matchers_.push_back(cv::FlannBasedMatcher(index_params, search_params));
     }
@@ -484,6 +485,18 @@ void CameraReader::ProcessImage(const CameraImage &image) {
                    per_image_good_match.query_points, CameraIntrinsics(),
                    CameraDistCoeffs(), R_camera_field_vec, T_camera_field,
                    FLAGS_use_prev_pose, CV_ITERATIVE);
+    }
+
+    // We are occasionally seeing NaN in the prior estimate, so checking for
+    // this If we sit, just bail the pose estimate
+    if (isnan(T_camera_field.at<double>(0, 0))) {
+      LOG(ERROR)
+          << "NAN ERROR in solving for Pose (SolvePnP). Pose returned as: T: "
+          << T_camera_field << "\nR: " << R_camera_field_vec
+          << "\nNumber of matches is: "
+          << per_image_good_match.query_points.size();
+
+      return;
     }
 
     prev_R_camera_field_vec_ = R_camera_field_vec;
