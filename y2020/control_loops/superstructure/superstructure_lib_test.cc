@@ -421,6 +421,16 @@ class SuperstructureSimulation {
   float climber_voltage_ = 0.0f;
 };
 
+class SuperstructureTestEnvironment : public ::testing::Environment {
+ public:
+  void SetUp() override { constants::InitValues(); }
+};
+
+namespace {
+const auto kTestEnv =
+    ::testing::AddGlobalTestEnvironment(new SuperstructureTestEnvironment());
+}
+
 class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
  protected:
   SuperstructureTest()

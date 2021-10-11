@@ -174,36 +174,25 @@ const Values *DoGetValuesForTeam(uint16_t team) {
   return r;
 }
 
-void DoGetValues(const Values **result) {
+const Values *values = nullptr;
+
+void DoGetValues() {
   uint16_t team = ::aos::network::GetTeamNumber();
   AOS_LOG(INFO, "creating a Constants for team %" PRIu16 "\n", team);
-  *result = DoGetValuesForTeam(team);
+  values = DoGetValuesForTeam(team);
 }
 
 }  // namespace
 
-const Values &GetValues() {
+void InitValues() {
   static absl::once_flag once;
-  static const Values *result;
-  absl::call_once(once, DoGetValues, &result);
-  return *result;
+  absl::call_once(once, DoGetValues);
 }
 
-const Values &GetValuesForTeam(uint16_t team_number) {
-  static aos::stl_mutex mutex;
-  std::unique_lock<aos::stl_mutex> locker(mutex);
-
-  // IMPORTANT: This declaration has to stay after the mutex is locked to
-  // avoid race conditions.
-  static ::std::map<uint16_t, const Values *> values;
-
-  if (values.count(team_number) == 0) {
-    values[team_number] = DoGetValuesForTeam(team_number);
-#if __has_feature(address_sanitizer)
-    __lsan_ignore_object(values[team_number]);
-#endif
-  }
-  return *values[team_number];
+const Values &GetValues() {
+  CHECK(values)
+      << "Values are uninitialized. Call InitValues before accessing them.";
+  return *values;
 }
 
 }  // namespace constants

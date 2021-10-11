@@ -223,13 +223,14 @@ struct Values {
   InterpolationTable<FlywheelShotParams> flywheel_shot_interpolation_table;
 };
 
-// Creates (once) a Values instance for ::aos::network::GetTeamNumber() and
-// returns a reference to it.
-const Values &GetValues();
+// Creates (once) a Values instance for ::aos::network::GetTeamNumber(). Should
+// be called before realtime because this allocates memory.
+void InitValues();
 
-// Creates Values instances for each team number it is called with and
-// returns them.
-const Values &GetValuesForTeam(uint16_t team_number);
+// Returns a reference to the Values instance for
+// ::aos::network::GetTeamNumber(). Values must be initialized through
+// InitValues() before calling this.
+const Values &GetValues();
 
 }  // namespace constants
 }  // namespace y2020

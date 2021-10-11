@@ -133,6 +133,8 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     // we should ever see.
     UpdateFastEncoderFilterHz(kMaxFastEncoderPulsesPerSecond);
     UpdateMediumEncoderFilterHz(kMaxMediumEncoderPulsesPerSecond);
+
+    constants::InitValues();
   }
 
   // Hood

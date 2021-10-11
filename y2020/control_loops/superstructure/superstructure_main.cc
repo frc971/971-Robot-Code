@@ -1,3 +1,4 @@
+#include "y2020/constants.h"
 #include "y2020/control_loops/superstructure/superstructure.h"
 
 #include "aos/events/shm_event_loop.h"
@@ -10,6 +11,7 @@ int main(int argc, char **argv) {
       aos::configuration::ReadConfig("config.json");
 
   ::aos::ShmEventLoop event_loop(&config.message());
+  ::y2020::constants::InitValues();
   ::y2020::control_loops::superstructure::Superstructure superstructure(
       &event_loop);
 
