@@ -586,9 +586,7 @@ void LogReader::RegisterDuringStartup(EventLoop *event_loop, const Node *node) {
         event_loop, node,
         logged_configuration()->channels()->Get(logged_channel_index));
 
-    if (channel->logger() == LoggerConfig::NOT_LOGGED) {
-      continue;
-    }
+    const bool logged = channel->logger() != LoggerConfig::NOT_LOGGED;
 
     message_bridge::NoncausalOffsetEstimator *filter = nullptr;
 
@@ -611,12 +609,13 @@ void LogReader::RegisterDuringStartup(EventLoop *event_loop, const Node *node) {
         configuration::ChannelIsSendableOnNode(channel, node) &&
         configuration::ConnectionCount(channel);
 
-    state->SetChannel(logged_channel_index,
-                      configuration::ChannelIndex(configuration(), channel),
-                      event_loop ? event_loop->MakeRawSender(channel) : nullptr,
-                      filter, is_forwarded, source_state);
+    state->SetChannel(
+        logged_channel_index,
+        configuration::ChannelIndex(configuration(), channel),
+        event_loop && logged ? event_loop->MakeRawSender(channel) : nullptr,
+        filter, is_forwarded, source_state);
 
-    if (is_forwarded) {
+    if (is_forwarded && logged) {
       const Node *source_node = configuration::GetNode(
           configuration(), channel->source_node()->string_view());
 
