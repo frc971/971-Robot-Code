@@ -7,7 +7,8 @@
       "source_node": "pi2",
       "destination_nodes": [
         {
-          "name": "pi1"
+          "name": "pi1",
+          "time_to_live": 5
         }
       ]
     },

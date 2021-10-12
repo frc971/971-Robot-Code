@@ -4,7 +4,13 @@
       "name": "/foo",
       "type": ".aos.bar",
       "max_size": 7,
-      "source_node": "pi1"
+      "source_node": "pi1",
+      "destination_nodes": [
+        {
+         "name": "pi1",
+         "time_to_live": 7
+        }
+      ]
     },
     {
       "name": "/foo3",
