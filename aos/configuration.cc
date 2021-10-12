@@ -349,16 +349,43 @@ void ValidateConfiguration(const Flatbuffer<Configuration> &config) {
                    << ", can only use [-a-zA-Z0-9_/]";
       }
 
-      // There is no good use case today for logging timestamps but not the
-      // corresponding data.  Instead of plumbing through all of this on the
-      // reader side, let'd just disallow it for now.
-      if (c->logger() == LoggerConfig::NOT_LOGGED &&
-          c->has_destination_nodes()) {
+      if (c->has_logger_nodes()) {
+        // Confirm that we don't have duplicate logger nodes.
+        absl::btree_set<std::string_view> logger_nodes;
+        for (const flatbuffers::String *s : *c->logger_nodes()) {
+          logger_nodes.insert(s->string_view());
+        }
+        CHECK_EQ(static_cast<size_t>(logger_nodes.size()),
+                 c->logger_nodes()->size())
+            << ": Found duplicate logger_nodes in "
+            << CleanedChannelToString(c);
+      }
+
+      if (c->has_destination_nodes()) {
+        // Confirm that we don't have duplicate timestamp logger nodes.
         for (const Connection *d : *c->destination_nodes()) {
-          CHECK(d->timestamp_logger() == LoggerConfig::NOT_LOGGED)
-              << ": Logging timestamps without data is not supported.  If you "
-                 "have a good use case, let's talk.  "
-              << CleanedChannelToString(c);
+          if (d->has_timestamp_logger_nodes()) {
+            absl::btree_set<std::string_view> timestamp_logger_nodes;
+            for (const flatbuffers::String *s : *d->timestamp_logger_nodes()) {
+              timestamp_logger_nodes.insert(s->string_view());
+            }
+            CHECK_EQ(static_cast<size_t>(timestamp_logger_nodes.size()),
+                     d->timestamp_logger_nodes()->size())
+                << ": Found duplicate timestamp_logger_nodes in "
+                << CleanedChannelToString(c);
+          }
+        }
+
+        // There is no good use case today for logging timestamps but not the
+        // corresponding data.  Instead of plumbing through all of this on the
+        // reader side, let'd just disallow it for now.
+        if (c->logger() == LoggerConfig::NOT_LOGGED) {
+          for (const Connection *d : *c->destination_nodes()) {
+            CHECK(d->timestamp_logger() == LoggerConfig::NOT_LOGGED)
+                << ": Logging timestamps without data is not supported.  If "
+                   "you have a good use case, let's talk.  "
+                << CleanedChannelToString(c);
+          }
         }
       }
 

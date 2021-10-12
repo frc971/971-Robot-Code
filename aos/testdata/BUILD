@@ -10,6 +10,8 @@ filegroup(
         "config2.json",
         "config2_multinode.json",
         "config3.json",
+        "duplicate_destination_nodes.json",
+        "duplicate_logger_nodes.json",
         "expected.json",
         "expected_merge_with.json",
         "expected_multinode.json",

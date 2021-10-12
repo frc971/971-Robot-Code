@@ -10,17 +10,7 @@
         {
           "name": "pi1",
           "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
-          "timestamp_logger_nodes": ["pi2"]
-        }
-      ]
-    },
-    {
-      "name": "/foo2",
-      "type": ".aos.bar",
-      "source_node": "pi1",
-      "destination_nodes": [
-        {
-          "name": "pi2"
+          "timestamp_logger_nodes": ["pi2", "pi2"]
         }
       ]
     }

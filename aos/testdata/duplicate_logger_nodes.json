@@ -5,22 +5,14 @@
       "type": ".aos.bar",
       "max_size": 5,
       "source_node": "pi2",
-      "logger": "NOT_LOGGED",
+      "logger": "REMOTE_LOGGER",
+      "logger_nodes": ["pi1", "pi2", "pi2"],
       "destination_nodes": [
         {
-          "name": "pi1",
-          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
-          "timestamp_logger_nodes": ["pi2"]
-        }
-      ]
-    },
-    {
-      "name": "/foo2",
-      "type": ".aos.bar",
-      "source_node": "pi1",
-      "destination_nodes": [
+          "name": "pi1"
+        },
         {
-          "name": "pi2"
+          "name": "pi3"
         }
       ]
     }
@@ -33,6 +25,10 @@
    {
      "name": "pi2",
      "hostname": "raspberrypi2"
+   },
+   {
+     "name": "pi3",
+     "hostname": "raspberrypi3"
    }
   ]
 }

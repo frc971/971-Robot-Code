@@ -876,6 +876,27 @@ TEST_F(ConfigurationDeathTest, InvalidLoggerConfig) {
       "Logging timestamps without data");
 }
 
+// Tests that we reject duplicate timestamp destination node configurations.
+TEST_F(ConfigurationDeathTest, DuplicateTimestampDestinationNodes) {
+  EXPECT_DEATH(
+      {
+        FlatbufferDetachedBuffer<Configuration> config = ReadConfig(
+            ArtifactPath("aos/testdata/duplicate_destination_nodes.json"));
+      },
+      "Found duplicate timestamp_logger_nodes in");
+}
+
+// Tests that we reject duplicate logger node configurations for a channel's
+// data.
+TEST_F(ConfigurationDeathTest, DuplicateLoggerNodes) {
+  EXPECT_DEATH(
+      {
+        FlatbufferDetachedBuffer<Configuration> config = ReadConfig(
+            ArtifactPath("aos/testdata/duplicate_logger_nodes.json"));
+      },
+      "Found duplicate logger_nodes in");
+}
+
 }  // namespace testing
 }  // namespace configuration
 }  // namespace aos
