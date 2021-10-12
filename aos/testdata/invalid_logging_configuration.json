@@ -5,10 +5,12 @@
       "type": ".aos.bar",
       "max_size": 5,
       "source_node": "pi2",
+      "logger": "NOT_LOGGED",
       "destination_nodes": [
         {
           "name": "pi1",
-          "time_to_live": 5
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": ["pi2"]
         }
       ]
     },
@@ -23,31 +25,14 @@
       ]
     }
   ],
-  "applications": [
-    {
-      "name": "app1"
-    },
-    {
-      "name": "app2"
-    }
-  ],
-  "maps": [
-    {
-      "match": {
-        "name": "/batman"
-      },
-      "rename": {
-        "name": "/foo"
-      }
-    }
-  ],
   "nodes": [
+   {
+     "name": "pi1",
+     "hostname": "raspberrypi1"
+   },
    {
      "name": "pi2",
      "hostname": "raspberrypi2"
    }
-  ],
-  "imports": [
-    "config2_multinode.json"
   ]
 }

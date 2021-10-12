@@ -91,6 +91,18 @@ bool operator==(const FlatbufferDetachedBuffer<Channel> &lhs,
              rhs.message().type()->string_view();
 }
 
+bool operator<(const FlatbufferDetachedBuffer<Connection> &lhs,
+               const FlatbufferDetachedBuffer<Connection> &rhs) {
+  return lhs.message().name()->string_view() <
+         rhs.message().name()->string_view();
+}
+
+bool operator==(const FlatbufferDetachedBuffer<Connection> &lhs,
+                const FlatbufferDetachedBuffer<Connection> &rhs) {
+  return lhs.message().name()->string_view() ==
+         rhs.message().name()->string_view();
+}
+
 bool operator==(const FlatbufferDetachedBuffer<Application> &lhs,
                 const FlatbufferDetachedBuffer<Application> &rhs) {
   return lhs.message().name()->string_view() ==
@@ -337,6 +349,46 @@ void ValidateConfiguration(const Flatbuffer<Configuration> &config) {
                    << ", can only use [-a-zA-Z0-9_/]";
       }
 
+      if (c->has_logger_nodes()) {
+        // Confirm that we don't have duplicate logger nodes.
+        absl::btree_set<std::string_view> logger_nodes;
+        for (const flatbuffers::String *s : *c->logger_nodes()) {
+          logger_nodes.insert(s->string_view());
+        }
+        CHECK_EQ(static_cast<size_t>(logger_nodes.size()),
+                 c->logger_nodes()->size())
+            << ": Found duplicate logger_nodes in "
+            << CleanedChannelToString(c);
+      }
+
+      if (c->has_destination_nodes()) {
+        // Confirm that we don't have duplicate timestamp logger nodes.
+        for (const Connection *d : *c->destination_nodes()) {
+          if (d->has_timestamp_logger_nodes()) {
+            absl::btree_set<std::string_view> timestamp_logger_nodes;
+            for (const flatbuffers::String *s : *d->timestamp_logger_nodes()) {
+              timestamp_logger_nodes.insert(s->string_view());
+            }
+            CHECK_EQ(static_cast<size_t>(timestamp_logger_nodes.size()),
+                     d->timestamp_logger_nodes()->size())
+                << ": Found duplicate timestamp_logger_nodes in "
+                << CleanedChannelToString(c);
+          }
+        }
+
+        // There is no good use case today for logging timestamps but not the
+        // corresponding data.  Instead of plumbing through all of this on the
+        // reader side, let'd just disallow it for now.
+        if (c->logger() == LoggerConfig::NOT_LOGGED) {
+          for (const Connection *d : *c->destination_nodes()) {
+            CHECK(d->timestamp_logger() == LoggerConfig::NOT_LOGGED)
+                << ": Logging timestamps without data is not supported.  If "
+                   "you have a good use case, let's talk.  "
+                << CleanedChannelToString(c);
+          }
+        }
+      }
+
       // Make sure everything is sorted while we are here...  If this fails,
       // there will be a bunch of weird errors.
       if (last_channel != nullptr) {
@@ -482,8 +534,45 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
       auto result = channels.insert(RecursiveCopyFlatBuffer(c));
       if (!result.second) {
         // Already there, so merge the new table into the original.
-        *result.first =
+        auto merged =
             MergeFlatBuffers(*result.first, RecursiveCopyFlatBuffer(c));
+
+        if (merged.message().has_destination_nodes()) {
+          absl::btree_set<FlatbufferDetachedBuffer<Connection>> connections;
+          for (const Connection *connection :
+               *merged.message().destination_nodes()) {
+            auto connection_result =
+                connections.insert(RecursiveCopyFlatBuffer(connection));
+            if (!connection_result.second) {
+              *connection_result.first =
+                  MergeFlatBuffers(*connection_result.first,
+                                   RecursiveCopyFlatBuffer(connection));
+            }
+          }
+          if (static_cast<size_t>(connections.size()) !=
+              merged.message().destination_nodes()->size()) {
+            merged.mutable_message()->clear_destination_nodes();
+            flatbuffers::FlatBufferBuilder fbb;
+            fbb.ForceDefaults(true);
+            std::vector<flatbuffers::Offset<Connection>> connection_offsets;
+            for (const FlatbufferDetachedBuffer<Connection> &connection :
+                 connections) {
+              connection_offsets.push_back(
+                  RecursiveCopyFlatBuffer(&connection.message(), &fbb));
+            }
+            flatbuffers::Offset<
+                flatbuffers::Vector<flatbuffers::Offset<Connection>>>
+                destination_nodes_offset = fbb.CreateVector(connection_offsets);
+            Channel::Builder channel_builder(fbb);
+            channel_builder.add_destination_nodes(destination_nodes_offset);
+            fbb.Finish(channel_builder.Finish());
+            FlatbufferDetachedBuffer<Channel> destinations_channel(
+                fbb.Release());
+            merged = MergeFlatBuffers(merged, destinations_channel);
+          }
+        }
+
+        *result.first = std::move(merged);
       }
     }
   }
