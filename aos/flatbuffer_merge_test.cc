@@ -258,6 +258,28 @@ class FlatbufferMerge : public ::testing::Test {
     }
 
     {
+      flatbuffers::FlatBufferBuilder aos_flatbuffer_copy_fbb;
+      aos_flatbuffer_copy_fbb.ForceDefaults(false);
+
+      LOG(INFO) << "Copying without defaults " << in1 << " "
+                << absl::BytesToHexString(FromFbb(fb1)) << " at "
+                << reinterpret_cast<const void *>(fb1.span().data()) << " size "
+                << fb1.span().size();
+      aos_flatbuffer_copy_fbb.Finish(CopyFlatBuffer<Configuration>(
+          &fb1.message(), &aos_flatbuffer_copy_fbb));
+
+      const aos::FlatbufferDetachedBuffer<Configuration> fb_copy(
+          aos_flatbuffer_copy_fbb.Release());
+      ASSERT_NE(fb_copy.span().size(), 0u);
+
+      EXPECT_TRUE(fb1.Verify());
+
+      ASSERT_TRUE(fb_copy.Verify()) << in1;
+
+      EXPECT_EQ(in1, FlatbufferToJson(fb_copy));
+    }
+
+    {
       flatbuffers::FlatBufferBuilder aos_flatbuffer_copy_message_ptr_fbb;
       aos_flatbuffer_copy_message_ptr_fbb.ForceDefaults(true);
 

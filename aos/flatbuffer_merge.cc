@@ -38,9 +38,9 @@ void MergeElement(flatbuffers::voffset_t field_offset,
   const bool t2_has = val2 != nullptr;
 
   if (t2_has) {
-    fbb->AddElement<T>(field_offset, flatbuffers::ReadScalar<T>(val2), 0);
+    fbb->AddElement<T>(field_offset, flatbuffers::ReadScalar<T>(val2));
   } else if (t1_has) {
-    fbb->AddElement<T>(field_offset, flatbuffers::ReadScalar<T>(val1), 0);
+    fbb->AddElement<T>(field_offset, flatbuffers::ReadScalar<T>(val1));
   }
 }
 
