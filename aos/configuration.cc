@@ -337,6 +337,19 @@ void ValidateConfiguration(const Flatbuffer<Configuration> &config) {
                    << ", can only use [-a-zA-Z0-9_/]";
       }
 
+      // There is no good use case today for logging timestamps but not the
+      // corresponding data.  Instead of plumbing through all of this on the
+      // reader side, let'd just disallow it for now.
+      if (c->logger() == LoggerConfig::NOT_LOGGED &&
+          c->has_destination_nodes()) {
+        for (const Connection *d : *c->destination_nodes()) {
+          CHECK(d->timestamp_logger() == LoggerConfig::NOT_LOGGED)
+              << ": Logging timestamps without data is not supported.  If you "
+                 "have a good use case, let's talk.  "
+              << CleanedChannelToString(c);
+        }
+      }
+
       // Make sure everything is sorted while we are here...  If this fails,
       // there will be a bunch of weird errors.
       if (last_channel != nullptr) {

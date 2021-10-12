@@ -866,6 +866,16 @@ TEST_F(ConfigurationTest, SourceNodeIndex) {
   EXPECT_THAT(result, ::testing::ElementsAreArray({0, 1, 0, 0}));
 }
 
+// Tests that we reject invalid logging configurations.
+TEST_F(ConfigurationDeathTest, InvalidLoggerConfig) {
+  EXPECT_DEATH(
+      {
+        FlatbufferDetachedBuffer<Configuration> config =
+            ReadConfig(ArtifactPath("aos/testdata/invalid_logging_configuration.json"));
+      },
+      "Logging timestamps without data");
+}
+
 }  // namespace testing
 }  // namespace configuration
 }  // namespace aos
