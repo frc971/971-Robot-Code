@@ -444,22 +444,19 @@ void SctpReadWrite::CloseSocket() {
 }
 
 void SctpReadWrite::DoSetMaxSize() {
-  // Have the kernel give us a factor of 10 more.  This lets us have more than
-  // one full sized packet in flight.
-  size_t max_size = max_size_ * 10;
+  size_t max_size = max_size_;
 
-  CHECK_GE(ReadRMemMax(), max_size)
-      << "rmem_max is too low. To increase rmem_max temporarily, do sysctl "
-         "-w net.core.rmem_max="
-      << max_size;
+  // This sets the max packet size that we can send.
   CHECK_GE(ReadWMemMax(), max_size)
       << "wmem_max is too low. To increase wmem_max temporarily, do sysctl "
          "-w net.core.wmem_max="
       << max_size;
-  PCHECK(setsockopt(fd(), SOL_SOCKET, SO_RCVBUF, &max_size, sizeof(max_size)) ==
-         0);
   PCHECK(setsockopt(fd(), SOL_SOCKET, SO_SNDBUF, &max_size, sizeof(max_size)) ==
          0);
+
+  // The SO_RCVBUF option (also controlled by net.core.rmem_default) needs to be
+  // decently large but the actual size can be measured by tuning.  The defaults
+  // should be fine.  If it isn't big enough, transmission will fail.
 }
 
 bool SctpReadWrite::ProcessNotification(const Message *message) {
