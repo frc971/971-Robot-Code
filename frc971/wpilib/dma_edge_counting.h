@@ -7,6 +7,7 @@
 
 #include "aos/macros.h"
 
+#include "aos/containers/sized_array.h"
 #include "frc971/wpilib/dma.h"
 
 #include "frc971/wpilib/ahal/AnalogInput.h"
@@ -239,7 +240,7 @@ class DMASynchronizer {
   // Start().
   void Add(DMASampleHandlerInterface *handler) {
     handler->AddToDMA(dma_.get());
-    handlers_.emplace_back(handler);
+    handlers_.push_back(handler);
   }
 
   // Actually starts watching for DMA samples.
@@ -266,7 +267,7 @@ class DMASynchronizer {
   void CheckDMA();
 
   const ::std::unique_ptr<DMA> dma_;
-  ::std::vector<DMASampleHandlerInterface *> handlers_;
+  aos::SizedArray<DMASampleHandlerInterface *, 4> handlers_;
 
   // The time at which we most recently read the sensor values.
   int64_t sample_time_ = 0;

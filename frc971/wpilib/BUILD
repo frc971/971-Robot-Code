@@ -42,6 +42,7 @@ cc_library(
     target_compatible_with = ["//tools/platforms/hardware:roborio"],
     deps = [
         ":dma",
+        "//aos/containers:sized_array",
         "//aos/logging",
         "//third_party:wpilib",
     ],

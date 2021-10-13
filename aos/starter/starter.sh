@@ -1,7 +1,8 @@
 #!/bin/bash
 
-
 if [[ "$(hostname)" == "roboRIO"* ]]; then
+  /usr/local/natinst/etc/init.d/systemWebServer stop
+
   ROBOT_CODE="/home/admin/robot_code"
 
   ln -s /var/local/natinst/log/FRC_UserProgram.log /tmp/FRC_UserProgram.log
