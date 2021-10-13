@@ -780,11 +780,23 @@ TEST_P(AbstractEventLoopDeathTest, SetRuntimeRealtimePriority) {
 
 // Verify that SetRuntimeAffinity fails while running.
 TEST_P(AbstractEventLoopDeathTest, SetRuntimeAffinity) {
+  const cpu_set_t available = GetCurrentThreadAffinity();
+  int first_cpu = -1;
+  for (int i = 0; i < CPU_SETSIZE; ++i) {
+    if (CPU_ISSET(i, &available)) {
+      first_cpu = i;
+      break;
+      continue;
+    }
+  }
+  CHECK_NE(first_cpu, -1) << ": Default affinity has no CPUs?";
+
   auto loop = MakePrimary();
   // Confirm that runtime priority calls work when not running.
-  loop->SetRuntimeAffinity(MakeCpusetFromCpus({0}));
+  loop->SetRuntimeAffinity(MakeCpusetFromCpus({first_cpu}));
 
-  loop->OnRun([&]() { loop->SetRuntimeAffinity(MakeCpusetFromCpus({1})); });
+  loop->OnRun(
+      [&]() { loop->SetRuntimeAffinity(MakeCpusetFromCpus({first_cpu})); });
 
   EXPECT_DEATH(Run(), "Cannot set affinity while running");
 }

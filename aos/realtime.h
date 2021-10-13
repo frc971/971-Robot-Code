@@ -2,6 +2,7 @@
 #define AOS_REALTIME_H_
 
 #include <sched.h>
+
 #include <string_view>
 
 #include "glog/logging.h"
@@ -36,6 +37,9 @@ inline cpu_set_t MakeCpusetFromCpus(std::initializer_list<int> cpus) {
   }
   return result;
 }
+
+// Returns the current thread's CPU affinity.
+cpu_set_t GetCurrentThreadAffinity();
 
 // Sets the current thread's scheduling affinity.
 void SetCurrentThreadAffinity(const cpu_set_t &cpuset);
