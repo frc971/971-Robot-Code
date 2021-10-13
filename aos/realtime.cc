@@ -176,6 +176,12 @@ void SetCurrentThreadName(const std::string_view name) {
   }
 }
 
+cpu_set_t GetCurrentThreadAffinity() {
+  cpu_set_t result;
+  PCHECK(sched_getaffinity(0, sizeof(result), &result) == 0);
+  return result;
+}
+
 void SetCurrentThreadRealtimePriority(int priority) {
   if (FLAGS_skip_realtime_scheduler) {
     LOG(WARNING) << "Ignoring request to switch to the RT scheduler due to "
