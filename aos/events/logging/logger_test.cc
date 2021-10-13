@@ -1774,6 +1774,11 @@ TEST_P(MultinodeLoggerTest, RemapLoggedChannel) {
   SimulatedEventLoopFactory log_reader_factory(reader.configuration());
   log_reader_factory.set_send_delay(chrono::microseconds(0));
 
+  std::vector<const Channel *> remapped_channels = reader.RemappedChannels();
+  ASSERT_EQ(remapped_channels.size(), 1u);
+  EXPECT_EQ(remapped_channels[0]->name()->string_view(), "/original/pi1/aos");
+  EXPECT_EQ(remapped_channels[0]->type()->string_view(), "aos.timing.Report");
+
   reader.Register(&log_reader_factory);
 
   const Node *pi1 =

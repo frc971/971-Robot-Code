@@ -49,6 +49,24 @@ void HandleMaps(const flatbuffers::Vector<flatbuffers::Offset<aos::Map>> *maps,
 namespace logger {
 namespace {
 
+bool CompareChannels(const Channel *c,
+                     ::std::pair<std::string_view, std::string_view> p) {
+  int name_compare = c->name()->string_view().compare(p.first);
+  if (name_compare == 0) {
+    return c->type()->string_view() < p.second;
+  } else if (name_compare < 0) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+bool EqualsChannels(const Channel *c,
+                    ::std::pair<std::string_view, std::string_view> p) {
+  return c->name()->string_view() == p.first &&
+         c->type()->string_view() == p.second;
+}
+
 // Copies the channel, removing the schema as we go.  If new_name is provided,
 // it is used instead of the name inside the channel.  If new_type is provided,
 // it is used instead of the type in the channel.
@@ -1229,6 +1247,30 @@ void LogReader::MakeRemappedConfig() {
   remapped_configuration_ = &remapped_configuration_buffer_->message();
 
   // TODO(austin): Lazily re-build to save CPU?
+}
+
+std::vector<const Channel *> LogReader::RemappedChannels() const {
+  std::vector<const Channel *> result;
+  result.reserve(remapped_channels_.size());
+  for (auto &pair : remapped_channels_) {
+    const Channel *const logged_channel =
+        CHECK_NOTNULL(logged_configuration()->channels()->Get(pair.first));
+
+    auto channel_iterator = std::lower_bound(
+        remapped_configuration_->channels()->cbegin(),
+        remapped_configuration_->channels()->cend(),
+        std::make_pair(std::string_view(pair.second.remapped_name),
+                       logged_channel->type()->string_view()),
+        CompareChannels);
+
+    CHECK(channel_iterator != remapped_configuration_->channels()->cend());
+    CHECK(EqualsChannels(
+        *channel_iterator,
+        std::make_pair(std::string_view(pair.second.remapped_name),
+                       logged_channel->type()->string_view())));
+    result.push_back(*channel_iterator);
+  }
+  return result;
 }
 
 const Channel *LogReader::RemapChannel(const EventLoop *event_loop,
