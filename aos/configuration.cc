@@ -534,6 +534,10 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
       auto result = channels.insert(RecursiveCopyFlatBuffer(c));
       if (!result.second) {
         // Already there, so merge the new table into the original.
+        // Schemas merge poorly, so pick the newest one.
+        if (result.first->message().has_schema() && c->has_schema()) {
+          result.first->mutable_message()->clear_schema();
+        }
         auto merged =
             MergeFlatBuffers(*result.first, RecursiveCopyFlatBuffer(c));
 
