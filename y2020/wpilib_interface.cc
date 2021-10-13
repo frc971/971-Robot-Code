@@ -238,7 +238,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
       builder.Send(drivetrain_builder.Finish());
     }
-    const auto values = constants::GetValues();
+    const constants::Values &values = constants::GetValues();
 
     {
       auto builder = superstructure_position_sender_.MakeBuilder();
