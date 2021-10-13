@@ -95,6 +95,8 @@ class Application {
       const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>
           &args);
 
+  bool autostart() const { return autostart_; }
+
  private:
   void DoStart();
 
@@ -124,6 +126,7 @@ class Application {
   aos::monotonic_clock::time_point start_time_, exit_time_;
   bool queue_restart_ = false;
   bool terminating_ = false;
+  bool autostart_ = true;
 
   aos::starter::State status_ = aos::starter::State::STOPPED;
   aos::starter::LastStopReason stop_reason_ =

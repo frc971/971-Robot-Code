@@ -143,6 +143,9 @@ table Application {
 
   // List of arguments to be passed to application
   args:[string] (id: 4);
+
+  // Indicates that application should be executed on boot.
+  autostart:bool = true (id: 6);
 }
 
 // Per node data and connection information.

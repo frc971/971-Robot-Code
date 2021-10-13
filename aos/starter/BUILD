@@ -34,6 +34,7 @@ cc_test(
         "//aos/events:pingpong_config",
         "//aos/events:pong",
     ],
+    shard_count = 3,
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":starter_rpc_lib",
