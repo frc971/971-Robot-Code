@@ -23,6 +23,7 @@ Application::Application(const aos::Application *application,
       args_(1),
       user_(application->has_user() ? FindUid(application->user()->c_str())
                                     : std::nullopt),
+      autostart_(application->autostart()),
       event_loop_(event_loop),
       start_timer_(event_loop_->AddTimer([this] {
         status_ = aos::starter::State::RUNNING;
@@ -33,9 +34,7 @@ Application::Application(const aos::Application *application,
         if (kill(pid_, SIGKILL) == 0) {
           LOG(WARNING) << "Sent SIGKILL to " << name_ << " pid: " << pid_;
         }
-      }))
-
-{}
+      })) {}
 
 void Application::DoStart() {
   if (status_ != aos::starter::State::WAITING) {
@@ -481,7 +480,9 @@ void Starter::Run() {
 #endif
 
   for (auto &application : applications_) {
-    application.second.Start();
+    if (application.second.autostart()) {
+      application.second.Start();
+    }
   }
 
   event_loop_.Run();

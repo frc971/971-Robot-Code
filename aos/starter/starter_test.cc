@@ -12,6 +12,9 @@
 
 using aos::testing::ArtifactPath;
 
+namespace aos {
+namespace starter {
+
 TEST(StarterdTest, StartStopTest) {
   const std::string config_file =
       ArtifactPath("aos/events/pingpong_config.json");
@@ -69,7 +72,8 @@ TEST(StarterdTest, StartStopTest) {
               ASSERT_TRUE(aos::starter::SendCommandBlocking(
                   aos::starter::Command::STOP, "ping", config_msg,
                   std::chrono::seconds(3)));
-            }).detach();
+            })
+                .detach();
             test_stage = 3;
             break;
           }
@@ -196,3 +200,78 @@ TEST(StarterdTest, DeathTest) {
   starter.Cleanup();
   starterd_thread.join();
 }
+
+TEST(StarterdTest, Autostart) {
+  const std::string config_file =
+      ArtifactPath("aos/events/pingpong_config.json");
+
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+      aos::configuration::ReadConfig(config_file);
+
+  const std::string test_dir = aos::testing::TestTmpDir();
+
+  auto new_config = aos::configuration::MergeWithConfig(
+      &config.message(), absl::StrFormat(
+                             R"({"applications": [
+                                  {
+                                    "name": "ping",
+                                    "executable_name": "%s",
+                                    "args": ["--shm_base", "%s/aos"],
+                                    "autostart": false
+                                  },
+                                  {
+                                    "name": "pong",
+                                    "executable_name": "%s",
+                                    "args": ["--shm_base", "%s/aos"]
+                                  }
+                                ]})",
+                             ArtifactPath("aos/events/ping"), test_dir,
+                             ArtifactPath("aos/events/pong"), test_dir));
+
+  const aos::Configuration *config_msg = &new_config.message();
+
+  // Set up starter with config file
+  aos::starter::Starter starter(config_msg);
+
+  // Create an event loop to watch for the application starting up.
+  aos::ShmEventLoop watcher_loop(config_msg);
+  watcher_loop.SkipAosLog();
+
+  watcher_loop
+      .AddTimer([&watcher_loop] {
+        watcher_loop.Exit();
+        FAIL();
+      })
+      ->Setup(watcher_loop.monotonic_now() + std::chrono::seconds(7));
+
+  watcher_loop.MakeWatcher(
+      "/aos", [&watcher_loop](const aos::starter::Status &status) {
+        const aos::starter::ApplicationStatus *ping_app_status =
+            FindApplicationStatus(status, "ping");
+        const aos::starter::ApplicationStatus *pong_app_status =
+            FindApplicationStatus(status, "pong");
+        if (ping_app_status == nullptr || pong_app_status == nullptr) {
+          return;
+        }
+
+        if (ping_app_status->has_state() &&
+            ping_app_status->state() != aos::starter::State::STOPPED) {
+          watcher_loop.Exit();
+          FAIL();
+        }
+        if (pong_app_status->has_state() &&
+            pong_app_status->state() == aos::starter::State::RUNNING) {
+          watcher_loop.Exit();
+          SUCCEED();
+        }
+      });
+
+  std::thread starterd_thread([&starter] { starter.Run(); });
+  watcher_loop.Run();
+
+  starter.Cleanup();
+  starterd_thread.join();
+}
+
+}  // namespace starter
+}  // namespace aos
