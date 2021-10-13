@@ -804,15 +804,39 @@ NodeMerger::NodeMerger(std::vector<LogParts> parts) {
   }
 
   monotonic_start_time_ = monotonic_clock::max_time;
-  realtime_start_time_ = realtime_clock::max_time;
+  realtime_start_time_ = realtime_clock::min_time;
   for (const LogPartsSorter &parts_sorter : parts_sorters_) {
     // We want to capture the earliest meaningful start time here. The start
     // time defaults to min_time when there's no meaningful value to report, so
     // let's ignore those.
-    if (parts_sorter.monotonic_start_time() != monotonic_clock::min_time &&
-        parts_sorter.monotonic_start_time() < monotonic_start_time_) {
-      monotonic_start_time_ = parts_sorter.monotonic_start_time();
-      realtime_start_time_ = parts_sorter.realtime_start_time();
+    if (parts_sorter.monotonic_start_time() != monotonic_clock::min_time) {
+      bool accept = false;
+      // We want to prioritize start times from the logger node.  Really, we
+      // want to prioritize start times with a valid realtime_clock time.  So,
+      // if we have a start time without a RT clock, prefer a start time with a
+      // RT clock, even it if is later.
+      if (parts_sorter.realtime_start_time() != realtime_clock::min_time) {
+        // We've got a good one.  See if the current start time has a good RT
+        // clock, or if we should use this one instead.
+        if (parts_sorter.monotonic_start_time() < monotonic_start_time_) {
+          accept = true;
+        } else if (realtime_start_time_ == realtime_clock::min_time) {
+          // The previous start time doesn't have a good RT time, so it is very
+          // likely the start time from a remote part file.  We just found a
+          // better start time with a real RT time, so switch to that instead.
+          accept = true;
+        }
+      } else if (realtime_start_time_ == realtime_clock::min_time) {
+        // We don't have a RT time, so take the oldest.
+        if (parts_sorter.monotonic_start_time() < monotonic_start_time_) {
+          accept = true;
+        }
+      }
+
+      if (accept) {
+        monotonic_start_time_ = parts_sorter.monotonic_start_time();
+        realtime_start_time_ = parts_sorter.realtime_start_time();
+      }
     }
   }
 
