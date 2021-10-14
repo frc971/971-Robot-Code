@@ -109,6 +109,7 @@ class Application {
       const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> &v);
 
   static std::optional<uid_t> FindUid(const char *name);
+  static std::optional<gid_t> FindPrimaryGidForUser(const char *name);
 
   // Next unique id for all applications
   static inline uint64_t next_id_ = 0;
@@ -117,6 +118,7 @@ class Application {
   std::string path_;
   std::vector<char *> args_;
   std::optional<uid_t> user_;
+  std::optional<gid_t> group_;
 
   pid_t pid_ = -1;
   ScopedPipe::ScopedReadPipe read_pipe_;

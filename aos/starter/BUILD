@@ -4,8 +4,8 @@ load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 filegroup(
     name = "starter",
     srcs = [
+        "aos_starter",
         "starter.sh",
-        "starter_cmd",
         "starterd",
     ],
     visibility = ["//visibility:public"],
@@ -51,6 +51,7 @@ cc_binary(
     name = "starterd",
     srcs = ["starterd.cc"],
     target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
     deps = [
         ":starterd_lib",
         "//aos:init",
@@ -72,9 +73,10 @@ cc_library(
 )
 
 cc_binary(
-    name = "starter_cmd",
+    name = "aos_starter",
     srcs = ["starter_cmd.cc"],
     target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
     deps = [
         ":starter_rpc_lib",
         "//aos/time",
@@ -107,10 +109,10 @@ py_binary(
         "\"$(rootpaths //aos/events:pingpong_config)\"",
         "$(rootpath //aos/events:ping)",
         "$(rootpath //aos/events:pong)",
-        "$(rootpath :starter_cmd)",
+        "$(rootpath :aos_starter)",
     ],
     data = [
-        ":starter_cmd",
+        ":aos_starter",
         ":starterd",
         "//aos/events:ping",
         "//aos/events:pingpong_config",

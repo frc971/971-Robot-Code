@@ -42,7 +42,10 @@ enum LastStopReason : uint {
   // Failed to execute application - likely due to a missing executable or
   // invalid permissions. This is not reported if an application dies for
   // another reason after it is already running.
-  EXECV_ERR
+  EXECV_ERR,
+
+  // Failed to change to the requested group
+  SET_GRP_ERR
 }
 
 table Status {
