@@ -27,6 +27,10 @@ table Position {
 
    // Position of the control panel, relative to start, positive counterclockwise from above.
   control_panel:frc971.RelativePosition (id: 4);
+
+  // Value of the beambreak sensor detecting when
+  // a ball is just below the accelerator tower; true is a ball.
+  intake_beambreak_triggered:bool (id: 5);
 }
 
 root_type Position;

@@ -49,6 +49,10 @@ table Goal {
   // Whether the kicker and flywheel should choose a velocity automatically.
   shooter_tracking:bool (id: 9);
 
+  // Whether to serialize a ball under the accelerator tower
+  // so it is ready to shoot.
+  intake_preloading:bool (id: 12);
+
   // Positive is deploying climber and to climb; cannot run in reverse
   climber_voltage:float (id: 10);
 }

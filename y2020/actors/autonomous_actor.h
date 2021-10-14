@@ -8,9 +8,9 @@
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
 #include "frc971/control_loops/drivetrain/localizer_generated.h"
 #include "y2020/actors/auto_splines.h"
-#include "y2020/vision/galactic_search_path_generated.h"
 #include "y2020/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2020/control_loops/superstructure/superstructure_status_generated.h"
+#include "y2020/vision/galactic_search_path_generated.h"
 
 namespace y2020 {
 namespace actors {
@@ -30,6 +30,9 @@ class AutonomousActor : public frc971::autonomous::BaseAutonomousActor {
   void Reset();
 
   void set_intake_goal(double intake_goal) { intake_goal_ = intake_goal; }
+  void set_intake_preloading(bool intake_preloading) {
+    intake_preloading_ = intake_preloading;
+  }
   void set_roller_voltage(double roller_voltage) {
     roller_voltage_ = roller_voltage;
   }
@@ -48,6 +51,7 @@ class AutonomousActor : public frc971::autonomous::BaseAutonomousActor {
 
   double intake_goal_ = 0.0;
   double roller_voltage_ = 0.0;
+  bool intake_preloading_ = false;
   const float kRollerSpeedCompensation = 2.0;
 
   aos::Sender<frc971::control_loops::drivetrain::LocalizerControl>
