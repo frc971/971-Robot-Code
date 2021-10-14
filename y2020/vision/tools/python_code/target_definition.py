@@ -197,6 +197,113 @@ def load_training_data():
     training_target_power_port_taped.target_radius = target_radius_default
 
     ###
+    ### Taped power port -- far away image
+    ###
+
+    # Create the reference "ideal" image.
+    # NOTE: Since we don't have an "ideal" (e.g., graphic) version, we're
+    # just using the same image as the training image.
+    ideal_power_port_taped_far = TargetData(
+        'test_images/partial_971_power_port_red_daytime_far.png')
+
+    # Start at lower left corner, and work around clockwise
+    # These are taken by manually finding the points in gimp for this image
+    power_port_taped_far_main_panel_polygon_points_2d = [
+        (259, 363), (255, 230), (178, 234), (255, 169), (329, 164), (334, 225),
+        (341, 361)
+    ]
+
+    # These are "virtual" 3D points based on the expected geometry
+    power_port_taped_far_main_panel_polygon_points_3d = [
+        (-field_length / 2., c_power_port_edge_y, 0.),
+        (-field_length / 2., c_power_port_edge_y,
+         c_power_port_bottom_wing_height),
+        (-field_length / 2., c_power_port_edge_y - c_power_port_wing_width,
+         c_power_port_bottom_wing_height),
+        (-field_length / 2., c_power_port_edge_y, c_power_port_total_height),
+        (-field_length / 2., c_power_port_edge_y + c_power_port_width,
+         c_power_port_total_height),
+        (-field_length / 2., c_power_port_edge_y + c_power_port_width,
+         c_power_port_bottom_wing_height),
+        (-field_length / 2., c_power_port_edge_y + c_power_port_width, 0.)
+    ]
+
+    # Populate the taped power port
+    ideal_power_port_taped_far.polygon_list.append(
+        power_port_taped_far_main_panel_polygon_points_2d)
+    ideal_power_port_taped_far.polygon_list_3d.append(
+        power_port_taped_far_main_panel_polygon_points_3d)
+
+    # Location of target.  Rotation is pointing in -x direction
+    ideal_power_port_taped_far.target_rotation = -np.identity(3, np.double)
+    ideal_power_port_taped_far.target_position = np.array([
+        -field_length / 2., c_power_port_edge_y + c_power_port_width / 2.,
+        c_power_port_target_height
+    ])
+    ideal_power_port_taped_far.target_point_2d = np.float32(
+        [[294, 198]]).reshape(-1, 1,
+                              2)  # partial_971_power_port_red_daytime.png
+
+    training_target_power_port_taped_far = TargetData(
+        'test_images/partial_971_power_port_red_daytime_far.png')
+    training_target_power_port_taped_far.target_rotation = ideal_power_port_taped_far.target_rotation
+    training_target_power_port_taped_far.target_position = ideal_power_port_taped_far.target_position
+    training_target_power_port_taped_far.target_radius = target_radius_default
+
+    ###
+    ### Taped power port night image
+    ###
+
+    # Create the reference "ideal" image.
+    # NOTE: Since we don't have an "ideal" (e.g., graphic) version, we're
+    # just using the same image as the training image.
+    ideal_power_port_taped_night = TargetData(
+        'test_images/partial_971_power_port_red_nighttime.png')
+
+    # Start at lower left corner, and work around clockwise
+    # These are taken by manually finding the points in gimp for this image
+    power_port_taped_night_main_panel_polygon_points_2d = [
+        (217, 425), (215, 187), (78, 189), (212, 80), (344, 74), (347, 180),
+        (370, 421)
+    ]
+
+    # These are "virtual" 3D points based on the expected geometry
+    power_port_taped_night_main_panel_polygon_points_3d = [
+        (-field_length / 2., c_power_port_edge_y, 0.),
+        (-field_length / 2., c_power_port_edge_y,
+         c_power_port_bottom_wing_height),
+        (-field_length / 2., c_power_port_edge_y - c_power_port_wing_width,
+         c_power_port_bottom_wing_height),
+        (-field_length / 2., c_power_port_edge_y, c_power_port_total_height),
+        (-field_length / 2., c_power_port_edge_y + c_power_port_width,
+         c_power_port_total_height),
+        (-field_length / 2., c_power_port_edge_y + c_power_port_width,
+         c_power_port_bottom_wing_height),
+        (-field_length / 2., c_power_port_edge_y + c_power_port_width, 0.)
+    ]
+
+    # Populate the taped power port
+    ideal_power_port_taped_night.polygon_list.append(
+        power_port_taped_night_main_panel_polygon_points_2d)
+    ideal_power_port_taped_night.polygon_list_3d.append(
+        power_port_taped_night_main_panel_polygon_points_3d)
+
+    # Location of target.  Rotation is pointing in -x direction
+    ideal_power_port_taped_night.target_rotation = -np.identity(3, np.double)
+    ideal_power_port_taped_night.target_position = np.array([
+        -field_length / 2., c_power_port_edge_y + c_power_port_width / 2.,
+        c_power_port_target_height
+    ])
+    ideal_power_port_taped_night.target_point_2d = np.float32(
+        [[282, 132]]).reshape(-1, 1, 2)  # partial_971_power_port_red_night.png
+
+    training_target_power_port_taped_night = TargetData(
+        'test_images/partial_971_power_port_red_nighttime.png')
+    training_target_power_port_taped_night.target_rotation = ideal_power_port_taped_night.target_rotation
+    training_target_power_port_taped_night.target_position = ideal_power_port_taped_night.target_position
+    training_target_power_port_taped_night.target_radius = target_radius_default
+
+    ###
     ### Red Power Port
     ###
 
@@ -431,10 +538,23 @@ def load_training_data():
     ideal_target_list.append(ideal_power_port_taped)
     training_target_list.append(training_target_power_port_taped)
 
+    ### Taped power port far
+    glog.info(
+        "Adding hacked/taped up far away view of the power port to the model list"
+    )
+    ideal_target_list.append(ideal_power_port_taped_far)
+    training_target_list.append(training_target_power_port_taped_far)
+
+    ### Taped power port night
+    glog.info(
+        "Adding hacked/taped up of the power port at night to the model list")
+    ideal_target_list.append(ideal_power_port_taped_night)
+    training_target_list.append(training_target_power_port_taped_night)
+
     ### Red Power Port
-    glog.info("Adding red power port to the model list")
-    ideal_target_list.append(ideal_power_port_red)
-    training_target_list.append(training_target_power_port_red)
+    #glog.info("Adding red power port to the model list")
+    #ideal_target_list.append(ideal_power_port_red)
+    #training_target_list.append(training_target_power_port_red)
 
     ### Red Loading Bay
     #glog.info("Adding red loading bay to the model list")

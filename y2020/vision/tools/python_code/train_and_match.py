@@ -208,7 +208,7 @@ def compute_homographies(train_keypoint_lists, query_keypoint_lists,
 # Also shows image with query unwarped (to match training image) and target pt
 def show_results(training_images, train_keypoint_lists, query_images,
                  query_keypoint_lists, target_point_list, good_matches_list):
-    glog.info("Showing results for ", len(training_images), " training images")
+    glog.info("Showing results for %d training images" % len(training_images))
 
     homography_list, matches_mask_list = compute_homographies(
         train_keypoint_lists, query_keypoint_lists, good_matches_list)
@@ -219,14 +219,14 @@ def show_results(training_images, train_keypoint_lists, query_images,
         glog.debug("Showing results for model ", i)
         matches_mask_count = matches_mask_list[i].count(1)
         if matches_mask_count != len(good_matches):
-            glog.info("Homography rejected some matches!  From ",
-                      len(good_matches), ", only ", matches_mask_count,
-                      " were used")
+            glog.info(
+                "Homography rejected some matches!  From %d, only %d were used"
+                % (len(good_matches), matches_mask_count))
 
         if matches_mask_count < MIN_MATCH_COUNT:
             glog.info(
-                "Skipping match because homography rejected matches down to below ",
-                MIN_MATCH_COUNT)
+                "Skipping match because homography rejected matches down to below %d "
+                % MIN_MATCH_COUNT)
             continue
 
         # Create a box based on the training image to map onto the query img
