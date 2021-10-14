@@ -213,10 +213,22 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
     output_struct.feeder_voltage = 0.0;
     output_struct.intake_roller_voltage = 0.0;
     if (unsafe_goal) {
-      if ((unsafe_goal->shooting() || unsafe_goal->intake_preloading()) &&
+      if (unsafe_goal->shooting() || unsafe_goal->intake_preloading()) {
+        preloading_timeout_ = position_timestamp + kPreloadingTimeout;
+      }
+
+      if (position_timestamp <= preloading_timeout_ &&
           !position->intake_beambreak_triggered()) {
         output_struct.washing_machine_spinner_voltage = 5.0;
         output_struct.feeder_voltage = 12.0;
+
+        preloading_backpower_timeout_ =
+            position_timestamp + kPreloadingBackpowerDuration;
+      }
+
+      if (position->intake_beambreak_triggered() &&
+          position_timestamp <= preloading_backpower_timeout_) {
+        output_struct.feeder_voltage = -12.0;
       }
 
       if (unsafe_goal->shooting()) {
