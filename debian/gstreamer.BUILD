@@ -170,11 +170,13 @@ cc_library(
     includes = cpu_select({
         "amd64": [
             "usr/lib/x86_64-linux-gnu/glib-2.0/include",
+            "usr/include",
             "usr/include/glib-2.0",
             "usr/include/gstreamer-1.0",
         ],
         "armhf": [
             "usr/lib/arm-linux-gnueabihf/glib-2.0/include",
+            "usr/include",
             "usr/include/glib-2.0",
             "usr/include/gstreamer-1.0",
         ],

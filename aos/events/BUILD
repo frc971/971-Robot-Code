@@ -424,3 +424,38 @@ cc_library(
         ":event_loop",
     ],
 )
+
+cc_library(
+    name = "glib_main_loop",
+    srcs = [
+        "glib_main_loop.cc",
+    ],
+    hdrs = [
+        "glib_main_loop.h",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aos/events:shm_event_loop",
+        "//third_party:gstreamer",
+        "@com_github_google_glog//:glog",
+    ],
+)
+
+cc_test(
+    name = "glib_main_loop_test",
+    srcs = [
+        "glib_main_loop_test.cc",
+    ],
+    data = [
+        ":config",
+    ],
+    deps = [
+        ":glib_main_loop",
+        "//aos:configuration",
+        "//aos/events:shm_event_loop",
+        "//aos/testing:googletest",
+        "//aos/testing:path",
+        "//third_party:gstreamer",
+        "@com_github_google_glog//:glog",
+    ],
+)
