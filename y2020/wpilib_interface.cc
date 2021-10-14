@@ -301,7 +301,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       position_builder.add_turret(turret_offset);
       position_builder.add_shooter(shooter_offset);
       position_builder.add_intake_beambreak_triggered(
-          !ball_intake_beambreak_->Get());
+          ball_intake_beambreak_->Get());
 
       builder.Send(position_builder.Finish());
     }
