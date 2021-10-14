@@ -156,7 +156,7 @@ TEST(StarterdTest, DeathTest) {
         watcher_loop.Exit();
         FAIL();
       })
-      ->Setup(watcher_loop.monotonic_now() + std::chrono::seconds(7));
+      ->Setup(watcher_loop.monotonic_now() + std::chrono::seconds(11));
 
   int test_stage = 0;
   uint64_t id;
@@ -173,6 +173,7 @@ TEST(StarterdTest, DeathTest) {
       case 0: {
         if (app_status->has_state() &&
             app_status->state() == aos::starter::State::RUNNING) {
+          LOG(INFO) << "Ping is running";
           test_stage = 1;
           ASSERT_TRUE(app_status->has_pid());
           ASSERT_TRUE(kill(app_status->pid(), SIGINT) != -1);
@@ -186,6 +187,7 @@ TEST(StarterdTest, DeathTest) {
         if (app_status->has_state() &&
             app_status->state() == aos::starter::State::RUNNING &&
             app_status->has_id() && app_status->id() != id) {
+          LOG(INFO) << "Ping restarted";
           watcher_loop.Exit();
           SUCCEED();
         }

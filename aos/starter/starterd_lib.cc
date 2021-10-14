@@ -155,8 +155,8 @@ void Application::DoStop(bool restart) {
 void Application::QueueStart() {
   status_ = aos::starter::State::WAITING;
 
-  LOG(INFO) << "Restarting " << name_ << " in 1 second";
-  restart_timer_->Setup(event_loop_->monotonic_now() + std::chrono::seconds(1));
+  LOG(INFO) << "Restarting " << name_ << " in 3 seconds";
+  restart_timer_->Setup(event_loop_->monotonic_now() + std::chrono::seconds(3));
   start_timer_->Disable();
   stop_timer_->Disable();
 }
