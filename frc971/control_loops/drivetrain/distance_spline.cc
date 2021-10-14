@@ -15,7 +15,7 @@ namespace drivetrain {
 
   if (splines_.size() > 1) {
     // We've got a multispline to follow!
-    // Confirm that the ends line up to the correct number of derivitives.
+    // Confirm that the ends line up to the correct number of derivatives.
     for (size_t i = 1; i < splines_.size(); ++i) {
       const Spline &spline0 = splines_[i - 1];
       const Spline &spline1 = splines_[i];
@@ -36,7 +36,7 @@ namespace drivetrain {
       if (!dend0.isApprox(dstart1, 1e-6)) {
         AOS_LOG(
             ERROR,
-            "Splines %d and %d don't line up in the first derivitive.  [%f, "
+            "Splines %d and %d don't line up in the first derivative.  [%f, "
             "%f] != [%f, %f]\n",
             static_cast<int>(i - 1), static_cast<int>(i), dend0(0, 0),
             dend0(1, 0), dstart1(0, 0), dstart1(1, 0));
@@ -48,7 +48,7 @@ namespace drivetrain {
       if (!ddend0.isApprox(ddstart1, 1e-6)) {
         AOS_LOG(
             ERROR,
-            "Splines %d and %d don't line up in the second derivitive.  [%f, "
+            "Splines %d and %d don't line up in the second derivative.  [%f, "
             "%f] != [%f, %f]\n",
             static_cast<int>(i - 1), static_cast<int>(i), ddend0(0, 0),
             ddend0(1, 0), ddstart1(0, 0), ddstart1(1, 0));
