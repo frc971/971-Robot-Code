@@ -30,7 +30,7 @@ class Superstructure
   static constexpr double kTurretFrictionVoltageLimit = 1.5;
   static constexpr double kTurretDitherGain = 0.0;
   static constexpr std::chrono::milliseconds kPreloadingTimeout =
-      std::chrono::seconds(5);
+      std::chrono::seconds(2);
   static constexpr std::chrono::milliseconds kPreloadingBackpowerDuration =
       std::chrono::milliseconds(50);
 

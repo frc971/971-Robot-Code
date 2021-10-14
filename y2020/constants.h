@@ -103,8 +103,8 @@ struct Values {
   static constexpr double kIntakeRollerSupplyCurrentLimit() { return 30.0; }
   static constexpr double kIntakeRollerStatorCurrentLimit() { return 40.0; }
 
-  static constexpr double kFeederSupplyCurrentLimit() { return 30.0; }
-  static constexpr double kFeederStatorCurrentLimit() { return 40.0; }
+  static constexpr double kFeederSupplyCurrentLimit() { return 40.0; }
+  static constexpr double kFeederStatorCurrentLimit() { return 50.0; }
 
   // Turret
   static constexpr double kTurretEncoderCountsPerRevolution() { return 4096.0; }
