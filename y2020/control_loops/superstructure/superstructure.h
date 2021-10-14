@@ -1,8 +1,8 @@
 #ifndef y2020_CONTROL_LOOPS_SUPERSTRUCTURE_SUPERSTRUCTURE_H_
 #define y2020_CONTROL_LOOPS_SUPERSTRUCTURE_SUPERSTRUCTURE_H_
 
-#include "frc971/control_loops/control_loop.h"
 #include "aos/events/event_loop.h"
+#include "frc971/control_loops/control_loop.h"
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "frc971/input/joystick_state_generated.h"
 #include "y2020/constants.h"
@@ -29,6 +29,10 @@ class Superstructure
   static constexpr double kTurretFrictionGain = 0.0;
   static constexpr double kTurretFrictionVoltageLimit = 1.5;
   static constexpr double kTurretDitherGain = 0.0;
+  static constexpr std::chrono::milliseconds kPreloadingTimeout =
+      std::chrono::seconds(5);
+  static constexpr std::chrono::milliseconds kPreloadingBackpowerDuration =
+      std::chrono::milliseconds(50);
 
   using PotAndAbsoluteEncoderSubsystem =
       ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystem<
@@ -69,6 +73,10 @@ class Superstructure
   Climber climber_;
 
   aos::monotonic_clock::time_point shooting_start_time_ =
+      aos::monotonic_clock::min_time;
+  aos::monotonic_clock::time_point preloading_timeout_ =
+      aos::monotonic_clock::min_time;
+  aos::monotonic_clock::time_point preloading_backpower_timeout_ =
       aos::monotonic_clock::min_time;
 
   DISALLOW_COPY_AND_ASSIGN(Superstructure);
