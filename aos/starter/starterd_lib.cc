@@ -23,6 +23,9 @@ Application::Application(const aos::Application *application,
       args_(1),
       user_(application->has_user() ? FindUid(application->user()->c_str())
                                     : std::nullopt),
+      group_(application->has_user()
+                 ? FindPrimaryGidForUser(application->user()->c_str())
+                 : std::nullopt),
       autostart_(application->autostart()),
       event_loop_(event_loop),
       start_timer_(event_loop_->AddTimer([this] {
@@ -82,6 +85,14 @@ void Application::DoStart() {
     PLOG(FATAL) << "Could not set PR_SET_PDEATHSIG to SIGKILL";
   }
 
+  if (group_) {
+    if (setgid(*group_) == -1) {
+      write_pipe_.Write(
+          static_cast<uint32_t>(aos::starter::LastStopReason::SET_GRP_ERR));
+      PLOG(FATAL) << "Could not set group for " << name_ << " to " << *group_;
+    }
+  }
+
   if (user_) {
     if (setuid(*user_) == -1) {
       write_pipe_.Write(
@@ -93,7 +104,7 @@ void Application::DoStart() {
   // argv[0] should be the program name
   args_.insert(args_.begin(), path_.data());
 
-  execv(path_.c_str(), args_.data());
+  execvp(path_.c_str(), args_.data());
 
   // If we got here, something went wrong
   write_pipe_.Write(
@@ -172,9 +183,21 @@ void Application::set_args(
 }
 
 std::optional<uid_t> Application::FindUid(const char *name) {
+  // TODO(austin): Use the reentrant version.  This should be safe.
   struct passwd *user_data = getpwnam(name);
   if (user_data != nullptr) {
     return user_data->pw_uid;
+  } else {
+    LOG(FATAL) << "Could not find user " << name;
+    return std::nullopt;
+  }
+}
+
+std::optional<gid_t> Application::FindPrimaryGidForUser(const char *name) {
+  // TODO(austin): Use the reentrant version.  This should be safe.
+  struct passwd *user_data = getpwnam(name);
+  if (user_data != nullptr) {
+    return user_data->pw_gid;
   } else {
     LOG(FATAL) << "Could not find user " << name;
     return std::nullopt;
