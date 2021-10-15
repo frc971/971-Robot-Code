@@ -153,9 +153,9 @@ class SimulatedChannel {
       : channel_(channel),
         channel_storage_duration_(channel_storage_duration),
         next_queue_index_(ipc_lib::QueueIndex::Zero(number_buffers())) {
-    available_buffer_indices_.reserve(number_buffers());
+    available_buffer_indices_.resize(number_buffers());
     for (int i = 0; i < number_buffers(); ++i) {
-      available_buffer_indices_.push_back(i);
+      available_buffer_indices_[i] = i;
     }
   }
 
