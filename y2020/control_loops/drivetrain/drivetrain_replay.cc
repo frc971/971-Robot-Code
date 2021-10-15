@@ -14,6 +14,7 @@
 #include "frc971/control_loops/drivetrain/drivetrain.h"
 #include "frc971/control_loops/drivetrain/trajectory_generator.h"
 #include "gflags/gflags.h"
+#include "y2020/constants.h"
 #include "y2020/control_loops/drivetrain/drivetrain_base.h"
 #include "y2020/control_loops/drivetrain/localizer.h"
 #include "y2020/control_loops/superstructure/superstructure.h"
@@ -37,9 +38,7 @@ class LoggerState {
         logger_(std::make_unique<aos::logger::Logger>(event_loop_.get())) {
     event_loop_->SkipTimingReport();
     event_loop_->SkipAosLog();
-    event_loop_->OnRun([this]() {
-      logger_->StartLogging(std::move(namer_));
-    });
+    event_loop_->OnRun([this]() { logger_->StartLogging(std::move(namer_)); });
   }
 
  private:
@@ -108,6 +107,8 @@ int main(int argc, char **argv) {
   std::unique_ptr<aos::EventLoop> trajectory_generator_event_loop =
       reader.event_loop_factory()->MakeEventLoop("trajectory_generator", node);
   trajectory_generator_event_loop->SkipTimingReport();
+
+  y2020::constants::InitValues();
 
   frc971::control_loops::drivetrain::TrajectoryGenerator trajectory_generator(
       trajectory_generator_event_loop.get(),

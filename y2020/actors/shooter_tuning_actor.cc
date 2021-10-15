@@ -9,6 +9,7 @@
 #include "frc971/autonomous/base_autonomous_actor.h"
 #include "frc971/control_loops/control_loops_generated.h"
 #include "glog/logging.h"
+#include "y2020/constants.h"
 #include "y2020/control_loops/drivetrain/drivetrain_base.h"
 #include "y2020/control_loops/superstructure/shooter/shooter_tuning_params_generated.h"
 #include "y2020/control_loops/superstructure/shooter/shooter_tuning_readings_generated.h"
@@ -176,6 +177,7 @@ int main(int argc, char *argv[]) {
       aos::configuration::ReadConfig("config.json");
 
   aos::ShmEventLoop event_loop(&config.message());
+  y2020::constants::InitValues();
   y2020::actors::ShooterTuningActor actor(&event_loop);
 
   event_loop.Run();

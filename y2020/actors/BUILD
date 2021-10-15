@@ -75,6 +75,7 @@ cc_binary(
         "//aos:init",
         "//aos/events:shm_event_loop",
         "//frc971/autonomous:auto_fbs",
+        "//y2020:constants",
     ],
 )
 
@@ -90,6 +91,7 @@ cc_binary(
         "//frc971/autonomous:base_autonomous_actor",
         "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops:profiled_subsystem_fbs",
+        "//y2020:constants",
         "//y2020/control_loops/drivetrain:drivetrain_base",
         "//y2020/control_loops/superstructure/shooter:shooter_tuning_params_fbs",
         "//y2020/control_loops/superstructure/shooter:shooter_tuning_readings_fbs",
