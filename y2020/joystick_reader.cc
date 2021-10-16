@@ -39,10 +39,12 @@ namespace superstructure = y2020::control_loops::superstructure;
 // TODO(sabina): fix button locations.
 
 const ButtonLocation kShootFast(3, 16);
-const ButtonLocation kAutoTrack(3, 15);
-const ButtonLocation kHood(3, 3);
+const ButtonLocation kAutoTrack(3, 3);
+const ButtonLocation kAutoNoHood(3, 5);
+const ButtonLocation kHood(3, 4);
 const ButtonLocation kShootSlow(4, 2);
 const ButtonLocation kFeed(4, 1);
+const ButtonLocation kFeedDriver(1, 2);
 const ButtonLocation kIntakeExtend(3, 9);
 const ButtonLocation kIntakeIn(4, 4);
 const ButtonLocation kSpit(4, 3);
@@ -109,7 +111,8 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     double climber_speed = 0.0;
     bool preload_intake = false;
 
-    const bool auto_track = data.IsPressed(kAutoTrack);
+    const bool auto_track =
+        data.IsPressed(kAutoTrack) || data.IsPressed(kAutoNoHood);
 
     if (data.IsPressed(kHood)) {
       hood_pos = 0.45;
@@ -202,11 +205,13 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       superstructure_goal_builder.add_roller_speed_compensation(
           roller_speed_compensation);
       superstructure_goal_builder.add_shooter(shooter_offset);
-      superstructure_goal_builder.add_shooting(data.IsPressed(kFeed));
+      superstructure_goal_builder.add_shooting(data.IsPressed(kFeed) ||
+                                               data.IsPressed(kFeedDriver));
       superstructure_goal_builder.add_climber_voltage(climber_speed);
 
       superstructure_goal_builder.add_turret_tracking(auto_track);
-      superstructure_goal_builder.add_hood_tracking(auto_track);
+      superstructure_goal_builder.add_hood_tracking(
+          auto_track && !data.IsPressed(kAutoNoHood));
       superstructure_goal_builder.add_shooter_tracking(auto_track);
       superstructure_goal_builder.add_intake_preloading(preload_intake);
 
