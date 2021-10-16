@@ -105,7 +105,7 @@ def main(argv):
 
     if not recursive:
         subprocess.check_call((ssh_path, ssh_target, "&&".join([
-            "chmod u+s %s/starterd" % target_dir,
+            "chmod u+s %s/starterd.stripped" % target_dir,
             "echo \'Done moving new executables into place\'",
             "bash -c \'sync && sync && sync\'",
         ])))

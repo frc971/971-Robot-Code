@@ -27,7 +27,7 @@ filegroup(
         "//aos:aos_dump.stripped",
         "//aos:aos_dump_autocomplete.sh",
         "//aos:aos_send.stripped",
-        "//aos/starter",
+        "//aos/starter:starter_stripped",
     ],
     visibility = ["//visibility:public"],
 )
