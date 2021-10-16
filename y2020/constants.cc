@@ -29,18 +29,18 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       ::frc971::zeroing::AbsoluteAndAbsoluteEncoderZeroingEstimator>
       *const hood = &r->hood;
 
-  constexpr double kInchesToMeters = 0.0254;
-  // Approximate length from the front bumpers to the middle of the robot.
-  constexpr double kHalfRobotLength = (36.00 / 2) * kInchesToMeters;
   // We found that the finisher velocity does not change ball velocity much, so
   // keep it constant.
   constexpr double kVelocityFinisher = 350.0;
-  r->shot_interpolation_table = InterpolationTable<Values::ShotParams>(
-      {{40.00 * kInchesToMeters + kHalfRobotLength, {0.1, 10.6}},
-       {113.5 * kInchesToMeters + kHalfRobotLength, {0.42, 13.2}},
-       {168.5 * kInchesToMeters + kHalfRobotLength, {0.51, 13.2}},
-       {231.3 * kInchesToMeters + kHalfRobotLength, {0.51, 13.2}},
-       {276.5 * kInchesToMeters + kHalfRobotLength, {0.53, 13.2}}});
+  r->shot_interpolation_table =
+      InterpolationTable<Values::ShotParams>({{1.4732, {0.10, 10.6}},
+                                              {3.50, {0.48, 13.2}},
+                                              {4.7371, {0.535, 14.2}},
+                                              {5.27, {0.53, 14.55}},
+                                              {6.332, {0.53, 15.2}},
+                                              {7.48, {0.55, 17.0}},
+                                              {8.30, {0.565, 17.0}},
+                                              {9.20, {0.535, 17.0}}});
 
   r->flywheel_shot_interpolation_table =
       InterpolationTable<Values::FlywheelShotParams>(
