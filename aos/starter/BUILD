@@ -6,7 +6,17 @@ filegroup(
     srcs = [
         "aos_starter",
         "starter.sh",
-        "starterd",
+        "starterd.stripped",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "starter_stripped",
+    srcs = [
+        "aos_starter.stripped",
+        "starter.sh",
+        "starterd.stripped",
     ],
     visibility = ["//visibility:public"],
 )
