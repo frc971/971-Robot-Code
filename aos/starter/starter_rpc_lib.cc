@@ -42,84 +42,119 @@ std::string_view FindApplication(const std::string_view &name,
 bool SendCommandBlocking(aos::starter::Command command, std::string_view name,
                          const aos::Configuration *config,
                          std::chrono::milliseconds timeout) {
+  return SendCommandBlocking(
+      std::vector<std::pair<aos::starter::Command, std::string_view>>{
+          {command, name}},
+      config, timeout);
+}
+
+bool SendCommandBlocking(
+    std::vector<std::pair<aos::starter::Command, std::string_view>> commands,
+    const aos::Configuration *config, std::chrono::milliseconds timeout) {
   aos::ShmEventLoop event_loop(config);
   event_loop.SkipAosLog();
 
   ::aos::Sender<aos::starter::StarterRpc> cmd_sender =
       event_loop.MakeSender<aos::starter::StarterRpc>("/aos");
 
-  // Wait until event loop starts to send command so watcher is ready
-  event_loop.OnRun([&cmd_sender, command, name] {
-    aos::Sender<aos::starter::StarterRpc>::Builder builder =
-        cmd_sender.MakeBuilder();
+  // Wait until event loop starts to send all commands so the watcher is ready
+  event_loop.OnRun([&cmd_sender, &commands] {
+    for (const std::pair<aos::starter::Command, std::string_view>
+             &command_pair : commands) {
+      const aos::starter::Command command = command_pair.first;
+      const std::string_view name = command_pair.second;
+      aos::Sender<aos::starter::StarterRpc>::Builder builder =
+          cmd_sender.MakeBuilder();
 
-    auto name_str = builder.fbb()->CreateString(name);
+      auto name_str = builder.fbb()->CreateString(name);
 
-    aos::starter::StarterRpc::Builder cmd_builder =
-        builder.MakeBuilder<aos::starter::StarterRpc>();
+      aos::starter::StarterRpc::Builder cmd_builder =
+          builder.MakeBuilder<aos::starter::StarterRpc>();
 
-    cmd_builder.add_name(name_str);
-    cmd_builder.add_command(command);
+      cmd_builder.add_name(name_str);
+      cmd_builder.add_command(command);
 
-    builder.Send(cmd_builder.Finish());
+      builder.Send(cmd_builder.Finish());
+    }
   });
 
   // If still waiting after timeout milliseconds, exit the loop
   event_loop.AddTimer([&event_loop] { event_loop.Exit(); })
       ->Setup(event_loop.monotonic_now() + timeout);
 
-  // Fetch the last list of statuses to compare the requested application's id
-  // against for commands such as restart.
+  // Fetch the last list of statuses.  The id field changes every time the
+  // application restarts.  By detecting when the application is running with a
+  // different ID, we can detect restarts.
   auto initial_status_fetcher =
       event_loop.MakeFetcher<aos::starter::Status>("/aos");
   initial_status_fetcher.Fetch();
-  auto initial_status =
-      initial_status_fetcher.get()
-          ? FindApplicationStatus(*initial_status_fetcher, name)
-          : nullptr;
 
-  const std::optional<uint64_t> initial_id =
-      (initial_status != nullptr && initial_status->has_id())
-          ? std::make_optional(initial_status->id())
-          : std::nullopt;
+  std::vector<std::optional<uint64_t>> initial_ids;
 
+  for (const std::pair<aos::starter::Command, std::string_view> &command_pair :
+       commands) {
+    const std::string_view name = command_pair.second;
+    auto initial_status =
+        initial_status_fetcher.get()
+            ? FindApplicationStatus(*initial_status_fetcher, name)
+            : nullptr;
+
+    initial_ids.emplace_back(
+        (initial_status != nullptr && initial_status->has_id())
+            ? std::make_optional(initial_status->id())
+            : std::nullopt);
+  }
+
+  std::vector<bool> successes(commands.size(), false);
   bool success = false;
-  event_loop.MakeWatcher(
-      "/aos", [&event_loop, command, name, initial_id,
-               &success](const aos::starter::Status &status) {
-        const aos::starter::ApplicationStatus *app_status =
-            FindApplicationStatus(status, name);
+  event_loop.MakeWatcher("/aos", [&event_loop, &commands, &initial_ids, &success,
+                                  &successes](
+                                     const aos::starter::Status &status) {
+    size_t index = 0;
+    for (const std::pair<aos::starter::Command, std::string_view>
+             &command_pair : commands) {
+      const aos::starter::Command command = command_pair.first;
+      const std::string_view name = command_pair.second;
 
-        const std::optional<aos::starter::State> state =
-            (app_status != nullptr && app_status->has_state())
-                ? std::make_optional(app_status->state())
-                : std::nullopt;
+      const aos::starter::ApplicationStatus *app_status =
+          FindApplicationStatus(status, name);
 
-        switch (command) {
-          case aos::starter::Command::START: {
-            if (state == aos::starter::State::RUNNING) {
-              success = true;
-              event_loop.Exit();
-            }
-            break;
+      const std::optional<aos::starter::State> state =
+          (app_status != nullptr && app_status->has_state())
+              ? std::make_optional(app_status->state())
+              : std::nullopt;
+
+      switch (command) {
+        case aos::starter::Command::START: {
+          if (state == aos::starter::State::RUNNING) {
+            successes[index] = true;
           }
-          case aos::starter::Command::STOP: {
-            if (state == aos::starter::State::STOPPED) {
-              success = true;
-              event_loop.Exit();
-            }
-            break;
-          }
-          case aos::starter::Command::RESTART: {
-            if (state == aos::starter::State::RUNNING && app_status->has_id() &&
-                app_status->id() != initial_id) {
-              success = true;
-              event_loop.Exit();
-            }
-            break;
-          }
+          break;
         }
-      });
+        case aos::starter::Command::STOP: {
+          if (state == aos::starter::State::STOPPED) {
+            successes[index] = true;
+          }
+          break;
+        }
+        case aos::starter::Command::RESTART: {
+          if (state == aos::starter::State::RUNNING && app_status->has_id() &&
+              app_status->id() != initial_ids[index]) {
+            successes[index] = true;
+          }
+          break;
+        }
+      }
+      ++index;
+    }
+
+    // Wait until all applications are ready.
+    if (std::count(successes.begin(), successes.end(), true) ==
+        static_cast<ssize_t>(successes.size())) {
+      event_loop.Exit();
+      success = true;
+    }
+  });
 
   event_loop.Run();
 

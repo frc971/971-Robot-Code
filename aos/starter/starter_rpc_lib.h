@@ -30,6 +30,14 @@ bool SendCommandBlocking(aos::starter::Command, std::string_view name,
                          const aos::Configuration *config,
                          std::chrono::milliseconds timeout);
 
+// Sends lots of commands and waits for them all to succeed.  There must not be
+// more than 1 conflicting command in here which modifies the state of a single
+// application otherwise it will never succeed.  An example is having both a
+// start and stop command for a single application.
+bool SendCommandBlocking(
+    std::vector<std::pair<aos::starter::Command, std::string_view>> commands,
+    const aos::Configuration *config, std::chrono::milliseconds timeout);
+
 // Fetches the status of the application with the given name. Creates a
 // temporary event loop from the provided config for fetching. Returns an empty
 // flatbuffer if the application is not found.
