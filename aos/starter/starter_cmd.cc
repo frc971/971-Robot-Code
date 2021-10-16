@@ -23,6 +23,32 @@ static const std::unordered_map<std::string, aos::starter::Command>
                         {"stop", aos::starter::Command::STOP},
                         {"restart", aos::starter::Command::RESTART}};
 
+const aos::Node *MaybeMyNode(const aos::Configuration *configuration) {
+  if (!configuration->has_nodes()) {
+    return nullptr;
+  }
+
+  return aos::configuration::GetMyNode(configuration);
+}
+
+bool ValidApplication(const aos::Configuration *config,
+                      std::string_view application_name) {
+  const aos::Node *node = MaybeMyNode(config);
+  const aos::Application *application =
+      aos::configuration::GetApplication(config, node, application_name);
+  if (application == nullptr) {
+    if (node) {
+      std::cout << "Unknown application '" << application_name << "' on node '"
+                << node->name()->string_view() << "'" << std::endl;
+    } else {
+      std::cout << "Unknown application '" << application_name << "'"
+                << std::endl;
+    }
+    return false;
+  }
+  return true;
+}
+
 void PrintKey() {
   absl::PrintF("%-30s %-8s %-6s %-9s\n", "Name", "State", "PID", "Uptime");
 }
@@ -43,8 +69,8 @@ void PrintApplicationStatus(const aos::starter::ApplicationStatus *app_status,
   }
 }
 
-bool GetStarterStatus(int argc, char **argv, const aos::Configuration *config) {
-  if (argc == 1) {
+// Prints the status for all applications.
+void GetAllStarterStatus(const aos::Configuration *config) {
     // Print status for all processes.
     const auto optional_status = aos::starter::GetStarterStatus(config);
     if (optional_status) {
@@ -58,10 +84,25 @@ bool GetStarterStatus(int argc, char **argv, const aos::Configuration *config) {
     } else {
       LOG(WARNING) << "No status found";
     }
+}
+
+// Handles the "status" command.  Returns true if the help message should be
+// printed.
+bool GetStarterStatus(int argc, char **argv, const aos::Configuration *config) {
+  if (argc == 1) {
+    GetAllStarterStatus(config);
   } else if (argc == 2) {
     // Print status for the specified process.
     const auto application_name =
         aos::starter::FindApplication(argv[1], config);
+    if (application_name == "all") {
+      GetAllStarterStatus(config);
+      return false;
+    }
+
+    if (!ValidApplication(config, application_name)) {
+      return false;
+    }
     auto status = aos::starter::GetStatus(application_name, config);
     PrintKey();
     PrintApplicationStatus(&status.message(), aos::monotonic_clock::now());
@@ -72,12 +113,63 @@ bool GetStarterStatus(int argc, char **argv, const aos::Configuration *config) {
   return false;
 }
 
+// Sends the provided command to all applications.  Prints the success text on
+// success, and failure text on failure.
+void InteractWithAll(const aos::Configuration *config,
+                     const aos::starter::Command command,
+                     std::string_view success_text,
+                     std::string_view failure_text) {
+  const auto optional_status = aos::starter::GetStarterStatus(config);
+  if (optional_status) {
+    auto status = *optional_status;
+    const aos::Node *my_node = MaybeMyNode(config);
+    std::vector<std::pair<aos::starter::Command, std::string_view>> commands;
+
+    for (const aos::Application *application : *config->applications()) {
+      // Ignore any applications which aren't supposed to be started on this
+      // node.
+      if (!aos::configuration::ApplicationShouldStart(config, my_node,
+                                                      application)) {
+        continue;
+      }
+
+      const std::string_view application_name =
+          application->name()->string_view();
+      if (!application->autostart()) {
+        const aos::starter::ApplicationStatus *application_status =
+            aos::starter::FindApplicationStatus(status.message(),
+                                                application_name);
+        if (application_status->state() == aos::starter::State::STOPPED) {
+          std::cout << "Skipping " << application_name
+                    << " because it is STOPPED\n";
+          continue;
+        }
+      }
+
+      commands.emplace_back(command, application_name);
+    }
+
+    // Restart each running process
+    if (aos::starter::SendCommandBlocking(commands, config,
+                                          chrono::seconds(5))) {
+      std::cout << success_text << "all \n";
+    } else {
+      std::cout << failure_text << "all \n";
+    }
+  } else {
+    LOG(WARNING) << "Starter not running";
+  }
+}
+
+// Handles the "start", "stop", and "restart" commands.  Returns true if the
+// help message should be printed.
 bool InteractWithProgram(int argc, char **argv,
                          const aos::Configuration *config) {
   const char *command_string = argv[0];
   if (argc != 2) {
-    LOG(ERROR) << "The \"" << command_string
-               << "\" command requires an application name as an argument.";
+    LOG(ERROR)
+        << "The \"" << command_string
+        << "\" command requires an application name or 'all' as an argument.";
     return true;
   }
 
@@ -85,56 +177,38 @@ bool InteractWithProgram(int argc, char **argv,
   CHECK(command_search != kCommandConversions.end())
       << "Internal error: \"" << command_string
       << "\" is not in kCommandConversions.";
-
   const aos::starter::Command command = command_search->second;
-  const auto application_name = aos::starter::FindApplication(argv[1], config);
+
+  std::string_view success_text;
+  const std::string failure_text =
+      std::string("Failed to ") + std::string(command_string) + " ";
+  switch (command) {
+    case aos::starter::Command::START:
+      success_text = "Successfully started ";
+      break;
+    case aos::starter::Command::STOP:
+      success_text = "Successfully stopped ";
+      break;
+    case aos::starter::Command::RESTART:
+      success_text = "Successfully restarted ";
+      break;
+  }
+
+  const std::string_view application_name =
+      aos::starter::FindApplication(argv[1], config);
+  if (application_name == "all") {
+    InteractWithAll(config, command, success_text, failure_text);
+    return false;
+  }
+  if (!ValidApplication(config, application_name)) {
+    return false;
+  }
+
   if (aos::starter::SendCommandBlocking(command, application_name, config,
                                         chrono::seconds(5))) {
-    switch (command) {
-      case aos::starter::Command::START:
-        std::cout << "Successfully started " << application_name << '\n';
-        break;
-      case aos::starter::Command::STOP:
-        std::cout << "Successfully stopped " << application_name << '\n';
-        break;
-      case aos::starter::Command::RESTART:
-        std::cout << "Successfully restarted " << application_name << '\n';
-        break;
-    }
+    std::cout << success_text << application_name << '\n';
   } else {
-    std::cout << "Failed to " << command_string << ' ' << application_name
-              << '\n';
-  }
-  return false;
-}
-
-bool RestartAll(int argc, char **, const aos::Configuration *config) {
-  if (argc == 1) {
-    const auto optional_status = aos::starter::GetStarterStatus(config);
-    if (optional_status) {
-      auto status = *optional_status;
-      for (const aos::starter::ApplicationStatus *app_status :
-           *status.message().statuses()) {
-        const auto application_name = aos::starter::FindApplication(
-            app_status->name()->string_view(), config);
-
-        // Restart each running process
-
-        if (aos::starter::SendCommandBlocking(aos::starter::Command::RESTART,
-                                              application_name, config,
-                                              chrono::seconds(5))) {
-          std::cout << "Successfully restarted " << application_name << '\n';
-        } else {
-          std::cout << "Failed to restart " << application_name << '\n';
-          return true;
-        }
-      }
-    } else {
-      LOG(WARNING) << "No processes found";
-    }
-  } else {
-    LOG(ERROR) << "The \"restart_all\" command requires only zero arguments.";
-    return true;
+    std::cout << failure_text << application_name << '\n';
   }
   return false;
 }
@@ -151,8 +225,7 @@ static const std::unordered_map<
     kCommands{{"status", GetStarterStatus},
               {"start", InteractWithProgram},
               {"stop", InteractWithProgram},
-              {"restart", InteractWithProgram},
-              {"restart_all", RestartAll}};
+              {"restart", InteractWithProgram}};
 
 }  // namespace
 
