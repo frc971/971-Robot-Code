@@ -29,7 +29,7 @@ static void initializePower(int32_t* status) {
 
 namespace hal {
 namespace init {
-void InitializePower() {}
+void InitializePower() { initializePower(nullptr); }
 }  // namespace init
 }  // namespace hal
 
