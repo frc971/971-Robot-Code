@@ -63,9 +63,9 @@ void PrintApplicationStatus(const aos::starter::ApplicationStatus *app_status,
     absl::PrintF("%-30s %-8s\n", app_status->name()->string_view(),
                  aos::starter::EnumNameState(app_status->state()));
   } else {
-    absl::PrintF("%-30s %-8s %-6d %-9ds\n", app_status->name()->string_view(),
+    absl::PrintF("%-30s %-8s %-6d %-9s\n", app_status->name()->string_view(),
                  aos::starter::EnumNameState(app_status->state()),
-                 app_status->pid(), time_running.count());
+                 app_status->pid(), std::to_string(time_running.count()) + 's');
   }
 }
 
