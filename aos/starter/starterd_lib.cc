@@ -30,12 +30,13 @@ Application::Application(const aos::Application *application,
       event_loop_(event_loop),
       start_timer_(event_loop_->AddTimer([this] {
         status_ = aos::starter::State::RUNNING;
-        LOG(INFO) << "Started " << name_;
+        LOG(INFO) << "Started '" << name_ << "' pid: " << pid_;
       })),
       restart_timer_(event_loop_->AddTimer([this] { DoStart(); })),
       stop_timer_(event_loop_->AddTimer([this] {
         if (kill(pid_, SIGKILL) == 0) {
-          LOG(WARNING) << "Sent SIGKILL to " << name_ << " pid: " << pid_;
+          LOG(WARNING) << "Failed to stop, sending SIGKILL to '" << name_
+                       << "' pid: " << pid_;
         }
       })) {}
 
@@ -47,15 +48,13 @@ void Application::DoStart() {
   start_timer_->Disable();
   restart_timer_->Disable();
 
-  LOG(INFO) << "Starting " << name_;
-
   std::tie(read_pipe_, write_pipe_) = ScopedPipe::MakePipe();
 
   const pid_t pid = fork();
 
   if (pid != 0) {
     if (pid == -1) {
-      PLOG(WARNING) << "Failed to fork";
+      PLOG(WARNING) << "Failed to fork '" << name_ << "'";
       stop_reason_ = aos::starter::LastStopReason::FORK_ERR;
       status_ = aos::starter::State::STOPPED;
     } else {
@@ -63,6 +62,7 @@ void Application::DoStart() {
       id_ = next_id_++;
       start_time_ = event_loop_->monotonic_now();
       status_ = aos::starter::State::STARTING;
+      LOG(INFO) << "Starting '" << name_ << "' pid " << pid_;
 
       // Setup timer which moves application to RUNNING state if it is still
       // alive in 1 second.
@@ -123,7 +123,8 @@ void Application::DoStop(bool restart) {
   switch (status_) {
     case aos::starter::State::STARTING:
     case aos::starter::State::RUNNING: {
-      LOG(INFO) << "Killing " << name_ << " pid: " << pid_;
+      LOG(INFO) << "Stopping '" << name_ << "' pid: " << pid_ << " with signal "
+                << SIGINT;
       status_ = aos::starter::State::STOPPING;
 
       kill(pid_, SIGINT);
@@ -290,17 +291,20 @@ bool Application::MaybeHandleSignal() {
 
   switch (status_) {
     case aos::starter::State::STARTING: {
-      LOG(WARNING) << "Failed to start " << name_ << " on pid " << pid_
+      LOG(WARNING) << "Failed to start '" << name_ << "' on pid " << pid_
                    << " : Exited with status " << exit_code_;
       QueueStart();
       break;
     }
     case aos::starter::State::RUNNING: {
+      LOG(WARNING) << "Application '" << name_ << "' pid " << pid_
+                   << " exited unexpectedly with status " << exit_code_;
       QueueStart();
       break;
     }
     case aos::starter::State::STOPPING: {
-      LOG(INFO) << "Successfully stopped " << name_;
+      LOG(INFO) << "Successfully stopped '" << name_ << "' pid: " << pid_
+                << " with status " << exit_code_;
       status_ = aos::starter::State::STOPPED;
 
       // Disable force stop timer since the process already died
@@ -320,8 +324,8 @@ bool Application::MaybeHandleSignal() {
     case aos::starter::State::WAITING:
     case aos::starter::State::STOPPED: {
       LOG(FATAL)
-          << "Received signal on process that was already stopped : name: "
-          << name_ << " pid: " << pid_;
+          << "Received signal on process that was already stopped : name: '"
+          << name_ << "' pid: " << pid_;
       break;
     }
   }
@@ -461,8 +465,6 @@ void Starter::Cleanup() {
 }
 
 void Starter::OnSignal(signalfd_siginfo info) {
-  LOG(INFO) << "Received signal " << strsignal(info.ssi_signo);
-
   if (info.ssi_signo == SIGCHLD) {
     // SIGCHLD messages can be collapsed if multiple are received, so all
     // applications must check their status.
@@ -477,10 +479,14 @@ void Starter::OnSignal(signalfd_siginfo info) {
     if (exiting_ && applications_.empty()) {
       event_loop_.Exit();
     }
-  } else if (std::find(kStarterDeath.begin(), kStarterDeath.end(),
-                       info.ssi_signo) != kStarterDeath.end()) {
-    LOG(WARNING) << "Starter shutting down";
-    Cleanup();
+  } else {
+    LOG(INFO) << "Received signal '" << strsignal(info.ssi_signo) << "'";
+
+    if (std::find(kStarterDeath.begin(), kStarterDeath.end(), info.ssi_signo) !=
+        kStarterDeath.end()) {
+      LOG(WARNING) << "Starter shutting down";
+      Cleanup();
+    }
   }
 }
 
