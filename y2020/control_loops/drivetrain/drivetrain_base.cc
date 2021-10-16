@@ -25,8 +25,9 @@ const DrivetrainConfig<double> &GetDrivetrainConfig() {
   static DrivetrainConfig<double> kDrivetrainConfig{
       ::frc971::control_loops::drivetrain::ShifterType::SIMPLE_SHIFTER,
       ::frc971::control_loops::drivetrain::LoopType::CLOSED_LOOP,
-      ::frc971::control_loops::drivetrain::GyroType::IMU_X_GYRO,
-      ::frc971::control_loops::drivetrain::IMUType::IMU_Z,
+      ::frc971::control_loops::drivetrain::GyroType::IMU_Z_GYRO,
+      // TODO(james): CHECK IF THIS IS IMU_X or IMU_FLIPPED_X.
+      ::frc971::control_loops::drivetrain::IMUType::IMU_X,
 
       drivetrain::MakeDrivetrainLoop,
       drivetrain::MakeVelocityDrivetrainLoop,
@@ -53,8 +54,9 @@ const DrivetrainConfig<double> &GetDrivetrainConfig() {
       1.2 /* quickturn_wheel_multiplier */,
       1.2 /* wheel_multiplier */,
       true /*pistol_grip_shift_enables_line_follow*/,
-      (Eigen::Matrix<double, 3, 3>() << 0.0, 0.0, 1.0, 0.0, -1.0, 0.0, 1.0, 0.0,
-       0.0)
+      // TODO(james): Check X/Y axis transformations.
+      (Eigen::Matrix<double, 3, 3>() << 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0,
+       1.0)
           .finished() /*imu_transform*/,
   };
 

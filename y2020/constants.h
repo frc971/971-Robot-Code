@@ -22,7 +22,10 @@ namespace y2020 {
 namespace constants {
 
 struct Values {
+  static const uint16_t kCompTeamNumber = 971;
+  static const uint16_t kPracticeTeamNumber = 9971;
   static const uint16_t kCodingRobotTeamNumber = 7971;
+  static const uint16_t kSpareRoborioTeamNumber = 6971;
 
   static const int kZeroingSampleSize = 200;
 

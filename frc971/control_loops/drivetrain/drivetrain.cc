@@ -142,21 +142,23 @@ void DrivetrainFilters::Correct(aos::monotonic_clock::time_point monotonic_now,
     imu_zeroer_.ProcessMeasurements();
     got_imu_reading = true;
     CHECK(imu_values_fetcher_->has_readings());
-    const IMUValues *value = imu_values_fetcher_->readings()->Get(
-        imu_values_fetcher_->readings()->size() - 1);
-    switch (dt_config_.imu_type) {
-      case IMUType::IMU_X:
-        last_accel_ = -value->accelerometer_x();
-        break;
-      case IMUType::IMU_FLIPPED_X:
-        last_accel_ = value->accelerometer_x();
-        break;
-      case IMUType::IMU_Y:
-        last_accel_ = -value->accelerometer_y();
-        break;
-      case IMUType::IMU_Z:
-        last_accel_ = value->accelerometer_z();
-        break;
+    if (imu_values_fetcher_->readings()->size() > 0) {
+      const IMUValues *value = imu_values_fetcher_->readings()->Get(
+          imu_values_fetcher_->readings()->size() - 1);
+      switch (dt_config_.imu_type) {
+        case IMUType::IMU_X:
+          last_accel_ = -value->accelerometer_x();
+          break;
+        case IMUType::IMU_FLIPPED_X:
+          last_accel_ = value->accelerometer_x();
+          break;
+        case IMUType::IMU_Y:
+          last_accel_ = -value->accelerometer_y();
+          break;
+        case IMUType::IMU_Z:
+          last_accel_ = value->accelerometer_z();
+          break;
+      }
     }
   }
 

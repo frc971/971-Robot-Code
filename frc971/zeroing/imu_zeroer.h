@@ -16,7 +16,7 @@ class ImuZeroer {
   // constant number of samples...
   // TODO(james): Run average and GetRange calculations over every sample on
   // every timestep, to provide consistent timing.
-  static constexpr size_t kSamplesToAverage = 1000;
+  static constexpr size_t kSamplesToAverage = 200;
   static constexpr size_t kRequiredZeroPoints = 10;
 
   ImuZeroer();

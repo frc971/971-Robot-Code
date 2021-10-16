@@ -23,10 +23,6 @@ const int Values::kZeroingSampleSize;
 
 namespace {
 
-const uint16_t kCompTeamNumber = 971;
-const uint16_t kPracticeTeamNumber = 9971;
-const uint16_t kSpareRoborioTeamNumber = 6971;
-
 const Values *DoGetValuesForTeam(uint16_t team) {
   Values *const r = new Values();
   ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<
@@ -131,10 +127,10 @@ const Values *DoGetValuesForTeam(uint16_t team) {
   switch (team) {
     // A set of constants for tests.
     case 1:
-    case kSpareRoborioTeamNumber:
+    case Values::kSpareRoborioTeamNumber:
       break;
 
-    case kCompTeamNumber:
+    case Values::kCompTeamNumber:
       intake->zeroing_constants.measured_absolute_position =
           1.42977866919024 - Values::kIntakeZero();
 
@@ -149,7 +145,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
           0.31055891442198;
       break;
 
-    case kPracticeTeamNumber:
+    case Values::kPracticeTeamNumber:
       hood->zeroing_constants.measured_absolute_position = 0.0;
 
       intake->zeroing_constants.measured_absolute_position = 0.347;

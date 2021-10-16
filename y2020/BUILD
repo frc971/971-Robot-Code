@@ -102,6 +102,7 @@ cc_binary(
         "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_position_fbs",
         "//frc971/input:robot_state_fbs",
+        "//frc971/wpilib:ADIS16448",
         "//frc971/wpilib:ADIS16470",
         "//frc971/wpilib:buffered_pcm",
         "//frc971/wpilib:drivetrain_writer",
@@ -116,9 +117,9 @@ cc_binary(
         "//frc971/wpilib:wpilib_robot_base",
         "//third_party:phoenix",
         "//third_party:wpilib",
-        "//y2020/control_loops/superstructure/shooter:shooter_tuning_readings_fbs",
         "//y2020/control_loops/superstructure:superstructure_output_fbs",
         "//y2020/control_loops/superstructure:superstructure_position_fbs",
+        "//y2020/control_loops/superstructure/shooter:shooter_tuning_readings_fbs",
     ],
 )
 
