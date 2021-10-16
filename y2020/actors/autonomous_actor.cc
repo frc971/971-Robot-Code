@@ -11,16 +11,10 @@
 #include "y2020/control_loops/drivetrain/drivetrain_base.h"
 
 DEFINE_bool(spline_auto, false, "If true, define a spline autonomous mode");
-DEFINE_bool(ignore_vision, false, "If true, ignore vision");
-DEFINE_bool(galactic_search, false,
-            "If true, do the galactic search autonomous");
-DEFINE_bool(bounce, false, "If true, run the AutoNav Bounce autonomous");
-DEFINE_bool(barrel, false, "If true, run the AutoNav Barrel autonomous");
-DEFINE_bool(slalom, false, "If true, run the AutoNav Slalom autonomous");
-DEFINE_bool(infinite_recharge_target_aligned, false,
+DEFINE_bool(target_aligned, false,
             "If true, run the Infinite Recharge autonomous that starts aligned "
             "with the target");
-DEFINE_bool(infinite_recharge_target_offset, false,
+DEFINE_bool(target_offset, false,
             "If true, run the Infinite Recharge autonomous that starts offset "
             "from the target");
 DEFINE_bool(just_shoot, false,
@@ -46,8 +40,6 @@ AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
               "/superstructure")),
       joystick_state_fetcher_(
           event_loop->MakeFetcher<aos::JoystickState>("/aos")),
-      path_fetcher_(event_loop->MakeFetcher<y2020::vision::GalacticSearchPath>(
-          "/pi2/camera")),
       superstructure_status_fetcher_(
           event_loop->MakeFetcher<y2020::control_loops::superstructure::Status>(
               "/superstructure")),
@@ -60,49 +52,11 @@ AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
 }
 
 void AutonomousActor::Replan() {
-  if (FLAGS_galactic_search) {
-    galactic_search_splines_ = {
-        .red_a = PlanSpline(std::bind(&AutonomousSplines::SplineRedA,
-                                      &auto_splines_, std::placeholders::_1),
-                            SplineDirection::kForward),
-        .red_b = PlanSpline(std::bind(&AutonomousSplines::SplineRedB,
-                                      &auto_splines_, std::placeholders::_1),
-                            SplineDirection::kForward),
-        .blue_a = PlanSpline(std::bind(&AutonomousSplines::SplineBlueA,
-                                       &auto_splines_, std::placeholders::_1),
-                             SplineDirection::kForward),
-        .blue_b = PlanSpline(std::bind(&AutonomousSplines::SplineBlueB,
-                                       &auto_splines_, std::placeholders::_1),
-                             SplineDirection::kForward)};
-  } else if (FLAGS_bounce) {
-    bounce_splines_ = {
-        PlanSpline(std::bind(&AutonomousSplines::AutoNavBounce1, &auto_splines_,
-                             std::placeholders::_1),
-                   SplineDirection::kForward),
-        PlanSpline(std::bind(&AutonomousSplines::AutoNavBounce2, &auto_splines_,
-                             std::placeholders::_1),
-                   SplineDirection::kBackward),
-        PlanSpline(std::bind(&AutonomousSplines::AutoNavBounce3, &auto_splines_,
-                             std::placeholders::_1),
-                   SplineDirection::kForward),
-        PlanSpline(std::bind(&AutonomousSplines::AutoNavBounce4, &auto_splines_,
-                             std::placeholders::_1),
-                   SplineDirection::kBackward)};
-  } else if (FLAGS_barrel) {
-    barrel_spline_ =
-        PlanSpline(std::bind(&AutonomousSplines::AutoNavBarrel, &auto_splines_,
-                             std::placeholders::_1),
-                   SplineDirection::kForward);
-  } else if (FLAGS_slalom) {
-    slalom_spline_ =
-        PlanSpline(std::bind(&AutonomousSplines::AutoNavSlalom, &auto_splines_,
-                             std::placeholders::_1),
-                   SplineDirection::kForward);
-  } else if (FLAGS_spline_auto) {
+  if (FLAGS_spline_auto) {
     test_spline_ = PlanSpline(std::bind(&AutonomousSplines::TestSpline,
                                         &auto_splines_, std::placeholders::_1),
                               SplineDirection::kForward);
-  } else if (FLAGS_infinite_recharge_target_offset) {
+  } else if (FLAGS_target_offset) {
     target_offset_splines_ = {
         PlanSpline(std::bind(&AutonomousSplines::TargetOffset1, &auto_splines_,
                              std::placeholders::_1),
@@ -110,7 +64,7 @@ void AutonomousActor::Replan() {
         PlanSpline(std::bind(&AutonomousSplines::TargetOffset2, &auto_splines_,
                              std::placeholders::_1),
                    SplineDirection::kBackward)};
-  } else if (FLAGS_infinite_recharge_target_aligned) {
+  } else if (FLAGS_target_aligned) {
     target_aligned_splines_ = {
         PlanSpline(std::bind(&AutonomousSplines::TargetAligned1, &auto_splines_,
                              std::placeholders::_1),
@@ -145,17 +99,9 @@ bool AutonomousActor::RunAction(
     AOS_LOG(INFO, "Aborting autonomous due to invalid alliance selection.");
     return false;
   }
-  if (FLAGS_galactic_search) {
-    GalacticSearch();
-  } else if (FLAGS_bounce) {
-    AutoNavBounce();
-  } else if (FLAGS_barrel) {
-    AutoNavBarrel();
-  } else if (FLAGS_slalom) {
-    AutoNavSlalom();
-  } else if (FLAGS_infinite_recharge_target_aligned) {
+  if (FLAGS_target_aligned) {
     TargetAligned();
-  } else if (FLAGS_infinite_recharge_target_offset) {
+  } else if (FLAGS_target_offset) {
     TargetOffset();
   } else if (FLAGS_just_shoot) {
     JustShoot();
@@ -183,106 +129,6 @@ void AutonomousActor::SendStartingPosition(const Eigen::Vector3d &start) {
   if (!builder.Send(localizer_control_builder.Finish())) {
     AOS_LOG(ERROR, "Failed to reset localizer.\n");
   }
-}
-
-void AutonomousActor::GalacticSearch() {
-  CHECK(galactic_search_splines_);
-
-  path_fetcher_.Fetch();
-  SplineHandle *spline = nullptr;
-  if (path_fetcher_.get()) {
-    if (path_fetcher_->alliance() == y2020::vision::Alliance::kUnknown) {
-      AOS_LOG(ERROR, "The galactic search path is unknown, doing nothing.");
-      return;
-    }
-    if (path_fetcher_->alliance() == y2020::vision::Alliance::kRed) {
-      if (path_fetcher_->letter() == y2020::vision::Letter::kA) {
-        LOG(INFO) << "Red A";
-        spline = &galactic_search_splines_->red_a;
-      } else {
-        LOG(INFO) << "Red B";
-        CHECK(path_fetcher_->letter() == y2020::vision::Letter::kB);
-        spline = &galactic_search_splines_->red_b;
-      }
-    } else {
-      if (path_fetcher_->letter() == y2020::vision::Letter::kA) {
-        LOG(INFO) << "Blue A";
-        spline = &galactic_search_splines_->blue_a;
-      } else {
-        LOG(INFO) << "Blue B";
-        CHECK(path_fetcher_->letter() == y2020::vision::Letter::kB);
-        spline = &galactic_search_splines_->blue_b;
-      }
-    }
-  }
-  if (FLAGS_ignore_vision) {
-    LOG(INFO) << "Forcing Red B";
-    spline = &galactic_search_splines_->red_b;
-  }
-
-  CHECK(spline != nullptr)
-      << "Expect at least one GalacticSearchPath message before running "
-         "auto...";
-
-  SendStartingPosition(spline->starting_position());
-
-  ExtendIntake();
-
-  if (!spline->WaitForPlan()) return;
-  spline->Start();
-
-  if (!spline->WaitForSplineDistanceRemaining(0.02)) return;
-  RetractIntake();
-}
-
-void AutonomousActor::AutoNavBounce() {
-  CHECK(bounce_splines_);
-
-  auto &splines = *bounce_splines_;
-
-  SendStartingPosition(splines[0].starting_position());
-
-  if (!splines[0].WaitForPlan()) return;
-  splines[0].Start();
-
-  if (!splines[0].WaitForSplineDistanceRemaining(0.02)) return;
-
-  if (!splines[1].WaitForPlan()) return;
-  splines[1].Start();
-
-  if (!splines[1].WaitForSplineDistanceRemaining(0.02)) return;
-
-  if (!splines[2].WaitForPlan()) return;
-  splines[2].Start();
-
-  if (!splines[2].WaitForSplineDistanceRemaining(0.02)) return;
-
-  if (!splines[3].WaitForPlan()) return;
-  splines[3].Start();
-
-  if (!splines[3].WaitForSplineDistanceRemaining(0.02)) return;
-}
-
-void AutonomousActor::AutoNavBarrel() {
-  CHECK(barrel_spline_);
-
-  SendStartingPosition(barrel_spline_->starting_position());
-
-  if (!barrel_spline_->WaitForPlan()) return;
-  barrel_spline_->Start();
-
-  if (!barrel_spline_->WaitForSplineDistanceRemaining(0.02)) return;
-}
-
-void AutonomousActor::AutoNavSlalom() {
-  CHECK(slalom_spline_);
-
-  SendStartingPosition(slalom_spline_->starting_position());
-
-  if (!slalom_spline_->WaitForPlan()) return;
-  slalom_spline_->Start();
-
-  if (!slalom_spline_->WaitForSplineDistanceRemaining(0.02)) return;
 }
 
 void AutonomousActor::TargetAligned() {

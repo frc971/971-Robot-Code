@@ -10,7 +10,6 @@
 #include "y2020/actors/auto_splines.h"
 #include "y2020/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2020/control_loops/superstructure/superstructure_status_generated.h"
-#include "y2020/vision/galactic_search_path_generated.h"
 
 namespace y2020 {
 namespace actors {
@@ -46,10 +45,6 @@ class AutonomousActor : public frc971::autonomous::BaseAutonomousActor {
   void RetractIntake();
   void SplineAuto();
   void SendStartingPosition(const Eigen::Vector3d &start);
-  void GalacticSearch();
-  void AutoNavBounce();
-  void AutoNavBarrel();
-  void AutoNavSlalom();
   void TargetAligned();
   void TargetOffset();
   void JustShoot();
@@ -70,23 +65,13 @@ class AutonomousActor : public frc971::autonomous::BaseAutonomousActor {
   aos::Sender<y2020::control_loops::superstructure::Goal>
       superstructure_goal_sender_;
   aos::Fetcher<aos::JoystickState> joystick_state_fetcher_;
-  aos::Fetcher<y2020::vision::GalacticSearchPath> path_fetcher_;
   aos::Fetcher<y2020::control_loops::superstructure::Status>
       superstructure_status_fetcher_;
 
   aos::TimerHandler *replan_timer_;
 
-  std::optional<std::array<SplineHandle, 4>> bounce_splines_;
   std::optional<std::array<SplineHandle, 2>> target_offset_splines_;
   std::optional<std::array<SplineHandle, 2>> target_aligned_splines_;
-
-  struct GalacticSearchSplines {
-    SplineHandle red_a;
-    SplineHandle red_b;
-    SplineHandle blue_a;
-    SplineHandle blue_b;
-  };
-  std::optional<GalacticSearchSplines> galactic_search_splines_;
 
   std::optional<SplineHandle> barrel_spline_;
   std::optional<SplineHandle> slalom_spline_;
