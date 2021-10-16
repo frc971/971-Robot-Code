@@ -403,7 +403,6 @@ Starter::Starter(const aos::Configuration *event_loop_config)
       cleanup_timer_(event_loop_.AddTimer([this] { event_loop_.Exit(); })),
       listener_(&event_loop_,
                 [this](signalfd_siginfo signal) { OnSignal(signal); }) {
-  event_loop_.SkipTimingReport();
   event_loop_.SkipAosLog();
 
   event_loop_.OnRun([this] {
