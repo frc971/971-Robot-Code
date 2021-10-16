@@ -465,8 +465,8 @@ void CameraReader::ProcessImage(const CameraImage &image) {
     // near the previous pose helps it converge to the previous pose
     // estimate (assuming it's valid).
     if (FLAGS_use_prev_pose) {
-      R_camera_field_vec = prev_R_camera_field_vec_;
-      T_camera_field = prev_T_camera_field_;
+      R_camera_field_vec = prev_R_camera_field_vec_.clone();
+      T_camera_field = prev_T_camera_field_.clone();
     }
 
     // Compute the pose of the camera (global origin relative to camera)
@@ -495,12 +495,14 @@ void CameraReader::ProcessImage(const CameraImage &image) {
           << T_camera_field << "\nR: " << R_camera_field_vec
           << "\nNumber of matches is: "
           << per_image_good_match.query_points.size();
+      LOG(INFO) << "Resetting previous values to zero, from: R_prev: "
+                << prev_R_camera_field_vec_
+                << ", T_prev: " << prev_T_camera_field_;
+      prev_R_camera_field_vec_ = cv::Mat::zeros(3, 1, CV_32F);
+      prev_T_camera_field_ = cv::Mat::zeros(3, 1, CV_32F);
 
-      return;
+      continue;
     }
-
-    prev_R_camera_field_vec_ = R_camera_field_vec;
-    prev_T_camera_field_ = T_camera_field;
 
     CHECK_EQ(cv::Size(1, 3), T_camera_field.size());
 
@@ -555,6 +557,27 @@ void CameraReader::ProcessImage(const CameraImage &image) {
       CHECK(H_field_camera.isContinuous());
       field_camera_list.push_back(H_field_camera.clone());
     }
+
+    // We also sometimes see estimates where the target is behind the camera
+    // or where we have very large pose estimates.
+    // This will generally lead to an estimate that is off the field, and also
+    // will mess up the
+    if (T_camera_target.at<float>(0, 2) < 0.0 ||
+        T_camera_target.at<float>(0, 2) > 100.0) {
+      LOG(ERROR) << "Pose returned non-physical pose with camera to target z. "
+                    "T_camera_target = "
+                 << T_camera_target
+                 << "\nAnd T_field_camera = " << T_field_camera;
+      LOG(INFO) << "Resetting previous values to zero, from: R_prev: "
+                << prev_R_camera_field_vec_
+                << ", T_prev: " << prev_T_camera_field_;
+      prev_R_camera_field_vec_ = cv::Mat::zeros(3, 1, CV_32F);
+      prev_T_camera_field_ = cv::Mat::zeros(3, 1, CV_32F);
+      continue;
+    }
+
+    prev_R_camera_field_vec_ = R_camera_field_vec.clone();
+    prev_T_camera_field_ = T_camera_field.clone();
   }
   // Now, send our two messages-- one large, with details for remote
   // debugging(features), and one smaller
