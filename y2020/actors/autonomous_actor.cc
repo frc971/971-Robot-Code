@@ -40,6 +40,9 @@ AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
           event_loop->MakeFetcher<aos::JoystickState>("/aos")),
       path_fetcher_(event_loop->MakeFetcher<y2020::vision::GalacticSearchPath>(
           "/pi2/camera")),
+      superstructure_status_fetcher_(
+          event_loop->MakeFetcher<y2020::control_loops::superstructure::Status>(
+              "/superstructure")),
       auto_splines_() {
   set_max_drivetrain_voltage(2.0);
   replan_timer_ = event_loop->AddTimer([this]() { Replan(); });
@@ -322,6 +325,29 @@ void AutonomousActor::RetractIntake() {
   set_roller_voltage(0.0);
   set_intake_preloading(false);
   SendSuperstructureGoal();
+}
+
+bool AutonomousActor::WaitForBallsShot(int num_wanted) {
+  superstructure_status_fetcher_.Fetch();
+  CHECK(superstructure_status_fetcher_.get() != nullptr);
+  const int initial_balls_shot =
+      superstructure_status_fetcher_->shooter()->balls_shot();
+  int balls_shot = initial_balls_shot;
+
+  ::aos::time::PhasedLoop phased_loop(frc971::controls::kLoopFrequency,
+                                      event_loop()->monotonic_now(),
+                                      frc971::controls::kLoopFrequency / 2);
+  while (true) {
+    if (ShouldCancel()) {
+      return false;
+    }
+    phased_loop.SleepUntilNext();
+    superstructure_status_fetcher_.Fetch();
+    balls_shot = superstructure_status_fetcher_->shooter()->balls_shot();
+    if ((balls_shot - initial_balls_shot) >= num_wanted) {
+      return true;
+    }
+  }
 }
 
 }  // namespace actors
