@@ -15,7 +15,8 @@ namespace aos {
 namespace starter {
 
 Application::Application(const aos::Application *application,
-                         aos::ShmEventLoop *event_loop)
+                         aos::ShmEventLoop *event_loop,
+                         std::function<void()> on_change)
     : name_(application->name()->string_view()),
       path_(application->has_executable_name()
                 ? application->executable_name()->string_view()
@@ -38,7 +39,8 @@ Application::Application(const aos::Application *application,
           LOG(WARNING) << "Failed to stop, sending SIGKILL to '" << name_
                        << "' pid: " << pid_;
         }
-      })) {}
+      })),
+      on_change_(on_change) {}
 
 void Application::DoStart() {
   if (status_ != aos::starter::State::WAITING) {
@@ -69,6 +71,7 @@ void Application::DoStart() {
       start_timer_->Setup(event_loop_->monotonic_now() +
                           std::chrono::seconds(1));
     }
+    on_change_();
     return;
   }
 
@@ -134,6 +137,7 @@ void Application::DoStop(bool restart) {
       stop_timer_->Setup(event_loop_->monotonic_now() +
                          std::chrono::seconds(1));
       queue_restart_ = restart;
+      on_change_();
       break;
     }
     case aos::starter::State::WAITING: {
@@ -144,6 +148,7 @@ void Application::DoStop(bool restart) {
         DoStart();
       } else {
         status_ = aos::starter::State::STOPPED;
+        on_change_();
       }
       break;
     }
@@ -171,6 +176,7 @@ void Application::QueueStart() {
   restart_timer_->Setup(event_loop_->monotonic_now() + std::chrono::seconds(3));
   start_timer_->Disable();
   stop_timer_->Disable();
+  on_change_();
 }
 
 void Application::set_args(
@@ -310,6 +316,7 @@ bool Application::MaybeHandleSignal() {
       // Disable force stop timer since the process already died
       stop_timer_->Disable();
 
+      on_change_();
       if (terminating_) {
         return true;
       }
@@ -403,15 +410,21 @@ Starter::Starter(const aos::Configuration *event_loop_config)
     : config_msg_(event_loop_config),
       event_loop_(event_loop_config),
       status_sender_(event_loop_.MakeSender<aos::starter::Status>("/aos")),
-      status_timer_(event_loop_.AddTimer([this] { SendStatus(); })),
+      status_timer_(event_loop_.AddTimer([this] {
+        SendStatus();
+        status_count_ = 0;
+      })),
       cleanup_timer_(event_loop_.AddTimer([this] { event_loop_.Exit(); })),
+      max_status_count_(
+          event_loop_.GetChannel<aos::starter::Status>("/aos")->frequency() -
+          1),
       listener_(&event_loop_,
                 [this](signalfd_siginfo signal) { OnSignal(signal); }) {
   event_loop_.SkipAosLog();
 
   event_loop_.OnRun([this] {
     status_timer_->Setup(event_loop_.monotonic_now(),
-                         std::chrono::milliseconds(500));
+                         std::chrono::milliseconds(1000));
   });
 
   event_loop_.MakeWatcher("/aos", [this](const aos::starter::StarterRpc &cmd) {
@@ -449,6 +462,15 @@ Starter::Starter(const aos::Configuration *event_loop_config)
         AddApplication(application);
       }
     }
+  }
+}
+
+void Starter::MaybeSendStatus() {
+  if (status_count_ < max_status_count_) {
+    SendStatus();
+    ++status_count_;
+  } else {
+    VLOG(1) << "That's enough " << status_count_ << " " << max_status_count_;
   }
 }
 
@@ -491,8 +513,9 @@ void Starter::OnSignal(signalfd_siginfo info) {
 }
 
 Application *Starter::AddApplication(const aos::Application *application) {
-  auto [iter, success] = applications_.try_emplace(application->name()->str(),
-                                                   application, &event_loop_);
+  auto [iter, success] =
+      applications_.try_emplace(application->name()->str(), application,
+                                &event_loop_, [this]() { MaybeSendStatus(); });
   if (success) {
     if (application->has_args()) {
       iter->second.set_args(*application->args());

@@ -68,7 +68,7 @@ class ScopedPipe::ScopedWritePipe : public ScopedPipe {
 class Application {
  public:
   Application(const aos::Application *application,
-              aos::ShmEventLoop *event_loop);
+              aos::ShmEventLoop *event_loop, std::function<void()> on_change);
 
   flatbuffers::Offset<aos::starter::ApplicationStatus> PopulateStatus(
       flatbuffers::FlatBufferBuilder *builder);
@@ -137,6 +137,8 @@ class Application {
   aos::ShmEventLoop *event_loop_;
   aos::TimerHandler *start_timer_, *restart_timer_, *stop_timer_;
 
+  std::function<void()> on_change_;
+
   DISALLOW_COPY_AND_ASSIGN(Application);
 };
 
@@ -179,6 +181,9 @@ class Starter {
 
   void OnSignal(signalfd_siginfo signal);
 
+  // Sends the Status message if it wouldn't exceed the rate limit.
+  void MaybeSendStatus();
+
   void SendStatus();
 
   const std::string config_path_;
@@ -188,6 +193,9 @@ class Starter {
   aos::Sender<aos::starter::Status> status_sender_;
   aos::TimerHandler *status_timer_;
   aos::TimerHandler *cleanup_timer_;
+
+  int status_count_ = 0;
+  const int max_status_count_;
 
   std::unordered_map<std::string, Application> applications_;
 
