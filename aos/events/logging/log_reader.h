@@ -291,7 +291,7 @@ class LogReader {
         RunOnStart();
         return;
       }
-      CHECK_GT(start_time, event_loop_->monotonic_now());
+      CHECK_GE(start_time, event_loop_->monotonic_now());
       startup_timer_->Setup(start_time);
     }
 
