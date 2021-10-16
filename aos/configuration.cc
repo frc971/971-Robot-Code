@@ -1364,6 +1364,23 @@ std::vector<const Node *> TimestampNodes(const Configuration *config,
   return result;
 }
 
+bool ApplicationShouldStart(const Configuration *config, const Node *my_node,
+                            const Application *application) {
+  if (MultiNode(config)) {
+    // Ok, we need
+    CHECK(application->has_nodes());
+    CHECK(my_node != nullptr);
+    for (const flatbuffers::String *str : *application->nodes()) {
+      if (str->string_view() == my_node->name()->string_view()) {
+        return true;
+      }
+    }
+    return false;
+  } else {
+    return true;
+  }
+}
+
 const Application *GetApplication(const Configuration *config,
                                   const Node *my_node,
                                   std::string_view application_name) {
@@ -1373,16 +1390,7 @@ const Application *GetApplication(const Configuration *config,
         application_name, CompareApplications);
     if (application_iterator != config->applications()->cend() &&
         EqualsApplications(*application_iterator, application_name)) {
-      if (MultiNode(config)) {
-        // Ok, we need
-        CHECK(application_iterator->has_nodes());
-        CHECK(my_node != nullptr);
-        for (const flatbuffers::String *str : *application_iterator->nodes()) {
-          if (str->string_view() == my_node->name()->string_view()) {
-            return *application_iterator;
-          }
-        }
-      } else {
+      if (ApplicationShouldStart(config, my_node, *application_iterator)) {
         return *application_iterator;
       }
     }

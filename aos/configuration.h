@@ -172,6 +172,10 @@ const Application *GetApplication(const Configuration *config,
                                   const Node *my_node,
                                   std::string_view application_name);
 
+// Returns true if the provided application should start on the provided node.
+bool ApplicationShouldStart(const Configuration *config, const Node *my_node,
+                            const Application *application);
+
 // TODO(austin): GetSchema<T>(const Flatbuffer<Configuration> &config);
 
 }  // namespace configuration
