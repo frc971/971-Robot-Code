@@ -24,8 +24,7 @@ static const std::unordered_map<std::string, aos::starter::Command>
                         {"restart", aos::starter::Command::RESTART}};
 
 void PrintKey() {
-  absl::PrintF("%-30s %-30s %s\n\n", "Name", "Time since last started",
-               "State");
+  absl::PrintF("%-30s %-8s %-6s %-9s\n", "Name", "State", "PID", "Uptime");
 }
 
 void PrintApplicationStatus(const aos::starter::ApplicationStatus *app_status,
@@ -34,9 +33,14 @@ void PrintApplicationStatus(const aos::starter::ApplicationStatus *app_status,
       chrono::nanoseconds(app_status->last_start_time()));
   const auto time_running =
       chrono::duration_cast<chrono::seconds>(time - last_start_time);
-  absl::PrintF("%-30s %-30s %s\n", app_status->name()->string_view(),
-               std::to_string(time_running.count()) + 's',
-               aos::starter::EnumNameState(app_status->state()));
+  if (app_status->state() == aos::starter::State::STOPPED) {
+    absl::PrintF("%-30s %-8s\n", app_status->name()->string_view(),
+                 aos::starter::EnumNameState(app_status->state()));
+  } else {
+    absl::PrintF("%-30s %-8s %-6d %-9ds\n", app_status->name()->string_view(),
+                 aos::starter::EnumNameState(app_status->state()),
+                 app_status->pid(), time_running.count());
+  }
 }
 
 bool GetStarterStatus(int argc, char **argv, const aos::Configuration *config) {
