@@ -410,6 +410,7 @@ bool Logger::MaybeUpdateTimestamp(
   } else if (server_statistics_fetcher_.get() != nullptr) {
     // We must be a remote node now.  Look for the connection and see if it is
     // connected.
+    CHECK(server_statistics_fetcher_->has_connections());
 
     for (const message_bridge::ServerConnection *connection :
          *server_statistics_fetcher_->connections()) {
@@ -430,6 +431,7 @@ bool Logger::MaybeUpdateTimestamp(
         break;
       }
 
+      CHECK(connection->has_boot_uuid());
       const UUID boot_uuid =
           UUID::FromString(connection->boot_uuid()->string_view());
 
