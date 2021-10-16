@@ -213,19 +213,43 @@ bool InteractWithProgram(int argc, char **argv,
   return false;
 }
 
+bool Help(int /*argc*/, char ** /*argv*/,
+          const aos::Configuration * /*config*/);
+
 // This is the set of subcommands we support. Each subcommand accepts argc and
 // argv from its own point of view. So argv[0] is always the name of the
 // subcommand. argv[1] and up are the arguments to the subcommand.
 // The subcommand returns true if there was an error parsing the command line
 // arguments. It returns false when the command line arguments are parsed
 // successfully.
-static const std::unordered_map<
-    std::string, std::function<bool(int argc, char **argv,
-                                    const aos::Configuration *config)>>
-    kCommands{{"status", GetStarterStatus},
-              {"start", InteractWithProgram},
-              {"stop", InteractWithProgram},
-              {"restart", InteractWithProgram}};
+static const std::vector<
+    std::tuple<std::string,
+               std::function<bool(int argc, char **argv,
+                                  const aos::Configuration *config)>,
+               std::string_view>>
+    kCommands{
+        {"help", Help, ""},
+        {"status", GetStarterStatus,
+         " [application], Returns the status of the provided application, "
+         "or all applications by default"},
+        {"start", InteractWithProgram,
+         " application, Starts the provided application, "
+         "or all applications if all is provided"},
+        {"stop", InteractWithProgram,
+         " application, Stops the provided application, "
+         "or all applications if all is provided"},
+        {"restart", InteractWithProgram,
+         " application, Restarts the provided application, "
+         "or all applications if all is provided"}};
+
+bool Help(int /*argc*/, char ** /*argv*/,
+          const aos::Configuration * /*config*/) {
+  std::cout << "Valid commands are:" << std::endl;
+  for (auto entry : kCommands) {
+    std::cout << " - " << std::get<0>(entry) << std::get<2>(entry) << std::endl;
+  }
+  return false;
+}
 
 }  // namespace
 
@@ -241,19 +265,23 @@ int main(int argc, char **argv) {
     parsing_failed = true;
   } else {
     const char *command = argv[1];
-    auto it = kCommands.find(command);
+    auto it = std::find_if(
+        kCommands.begin(), kCommands.end(),
+        [command](const std::tuple<
+                  std::string,
+                  std::function<bool(int argc, char **argv,
+                                     const aos::Configuration *config)>,
+                  std::string_view> &t) { return std::get<0>(t) == command; });
+
     if (it == kCommands.end()) {
       parsing_failed = true;
     } else {
-      parsing_failed = it->second(argc - 1, argv + 1, &config.message());
+      parsing_failed = std::get<1>(*it)(argc - 1, argv + 1, &config.message());
     }
   }
 
   if (parsing_failed) {
-    LOG(ERROR) << "Parsing failed. Valid commands are:";
-    for (auto entry : kCommands) {
-      LOG(ERROR) << " - " << entry.first;
-    }
+    Help(argc - 1, argv + 1, &config.message());
     return 1;
   }
 
