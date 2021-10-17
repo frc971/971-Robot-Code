@@ -20,8 +20,7 @@ def compute_target_definition():
     for i in range(len(target_data_test_1.keypoint_list)):
         kp_3d.append((i, i, i))
 
-    target_data_test_1.keypoint_list_3d = np.asarray(
-        np.float32(kp_3d)).reshape(-1, 1, 3)
+    target_data_test_1.keypoint_list_3d = np.asarray(np.float32(kp_3d))
 
     target_data_test_1.target_rotation = np.identity(3, np.double)
     target_data_test_1.target_position = np.array([0., 1., 2.])

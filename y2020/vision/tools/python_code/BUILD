@@ -44,6 +44,7 @@ py_library(
     srcs = [
         "target_definition.py",
     ],
+    data = glob(["target_definitions/*.json"]),
     deps = [
         ":camera_definition",
         ":define_training_data",

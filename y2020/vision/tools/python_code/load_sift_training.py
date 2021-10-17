@@ -104,7 +104,7 @@ def main():
             Feature.FeatureAddOctave(fbb, keypoint.octave)
 
             keypoint_3d_location = KeypointFieldLocation.CreateKeypointFieldLocation(
-                fbb, keypoint_3d[0][0], keypoint_3d[0][1], keypoint_3d[0][2])
+                fbb, keypoint_3d[0], keypoint_3d[1], keypoint_3d[2])
 
             Feature.FeatureAddFieldLocation(fbb, keypoint_3d_location)
 
