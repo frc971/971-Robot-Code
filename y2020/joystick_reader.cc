@@ -43,9 +43,11 @@ const ButtonLocation kAutoTrack(3, 3);
 const ButtonLocation kAutoNoHood(3, 5);
 const ButtonLocation kHood(3, 4);
 const ButtonLocation kShootSlow(4, 2);
+const ButtonLocation kFixedTurret(3, 1);
 const ButtonLocation kFeed(4, 1);
 const ButtonLocation kFeedDriver(1, 2);
 const ButtonLocation kIntakeExtend(3, 9);
+const ButtonLocation kIntakeExtendDriver(1, 4);
 const ButtonLocation kIntakeIn(4, 4);
 const ButtonLocation kSpit(4, 3);
 const ButtonLocation kLocalizerReset(3, 8);
@@ -111,8 +113,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     double climber_speed = 0.0;
     bool preload_intake = false;
 
-    const bool auto_track =
-        data.IsPressed(kAutoTrack) || data.IsPressed(kAutoNoHood);
+    const bool auto_track = data.IsPressed(kAutoTrack);
 
     if (data.IsPressed(kHood)) {
       hood_pos = 0.45;
@@ -130,7 +131,12 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       turret_pos = 0.0;
     }
 
-    if (data.IsPressed(kShootFast)) {
+    if (data.IsPressed(kAutoNoHood)) {
+      if (setpoint_fetcher_.get()) {
+        accelerator_speed = setpoint_fetcher_->accelerator();
+        finisher_speed = setpoint_fetcher_->finisher();
+      }
+    } else if (data.IsPressed(kShootFast)) {
       if (setpoint_fetcher_.get()) {
         accelerator_speed = setpoint_fetcher_->accelerator();
         finisher_speed = setpoint_fetcher_->finisher();
@@ -143,7 +149,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       finisher_speed = 300.0;
     }
 
-    if (data.IsPressed(kIntakeExtend)) {
+    if (data.IsPressed(kIntakeExtend) || data.IsPressed(kIntakeExtendDriver)) {
       intake_pos = 1.2;
       roller_speed = 7.0f;
       roller_speed_compensation = 2.0f;
@@ -210,10 +216,14 @@ class Reader : public ::frc971::input::ActionJoystickInput {
                                                data.IsPressed(kFeedDriver));
       superstructure_goal_builder.add_climber_voltage(climber_speed);
 
-      superstructure_goal_builder.add_turret_tracking(auto_track);
+      superstructure_goal_builder.add_turret_tracking(
+          !data.IsPressed(kFixedTurret));
       superstructure_goal_builder.add_hood_tracking(
-          auto_track && !data.IsPressed(kAutoNoHood));
-      superstructure_goal_builder.add_shooter_tracking(auto_track);
+          !data.IsPressed(kFixedTurret) && !data.IsPressed(kAutoNoHood));
+      superstructure_goal_builder.add_shooter_tracking(
+          auto_track ||
+          (!data.IsPressed(kFixedTurret) && !data.IsPressed(kAutoNoHood) &&
+           data.IsPressed(kFeedDriver)));
       superstructure_goal_builder.add_intake_preloading(preload_intake);
 
       if (!builder.Send(superstructure_goal_builder.Finish())) {

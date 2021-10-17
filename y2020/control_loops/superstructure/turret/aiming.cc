@@ -72,7 +72,7 @@ constexpr double kBallSpeedOverGround = 15.0;  // m/s
 // Minimum distance that we must be from the inner port in order to attempt the
 // shot--this is to account for the fact that if we are too close to the target,
 // then we won't have a clear shot on the inner port.
-constexpr double kMinimumInnerPortShotDistance = 3.5;
+constexpr double kMinimumInnerPortShotDistance = 3.9;
 
 // Amount of buffer, in radians, to leave to help avoid wrapping. I.e., any time
 // that we are in kAvoidEdges mode, we will keep ourselves at least
@@ -165,13 +165,13 @@ void Aimer::Update(const Status *status, aos::Alliance alliance,
   const double ydot = linear_angular(0) * std::sin(status->theta());
 
   const double inner_port_angle = robot_pose_from_inner_port.heading();
-  const double inner_port_distance = robot_pose_from_inner_port.xy_norm();
+  const double inner_port_distance = robot_pose_from_inner_port.rel_pos().x();
   // Add a bit of hysteresis so that we don't jump between aiming for the inner
   // and outer ports.
   const double max_inner_port_angle =
       aiming_for_inner_port_ ? 1.2 * kMaxInnerPortAngle : kMaxInnerPortAngle;
   const double min_inner_port_distance =
-      aiming_for_inner_port_ ? 0.8 * kMinimumInnerPortShotDistance
+      aiming_for_inner_port_ ? (kMinimumInnerPortShotDistance - 0.3)
                              : kMinimumInnerPortShotDistance;
   aiming_for_inner_port_ =
       (std::abs(inner_port_angle) < max_inner_port_angle) &&

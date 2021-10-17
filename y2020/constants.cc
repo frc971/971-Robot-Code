@@ -33,8 +33,11 @@ const Values *DoGetValuesForTeam(uint16_t team) {
   // keep it constant.
   constexpr double kVelocityFinisher = 350.0;
   r->shot_interpolation_table =
-      InterpolationTable<Values::ShotParams>({{1.4732, {0.10, 10.6}},
-                                              {3.50, {0.48, 13.2}},
+      InterpolationTable<Values::ShotParams>({{1.0, {0.01, 10.7}},
+                                              {1.2, {0.01, 10.7}},
+                                              {1.4732, {0.10, 10.6}},
+                                              {2.5, {0.36, 12.0}},
+                                              {3.50, {0.43, 13.2}},
                                               {4.7371, {0.535, 14.2}},
                                               {5.27, {0.53, 14.55}},
                                               {6.332, {0.53, 15.2}},
