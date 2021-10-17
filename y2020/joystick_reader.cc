@@ -191,7 +191,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
           intake_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
               *builder.fbb(), intake_pos,
-              CreateProfileParameters(*builder.fbb(), 10.0, 30.0));
+              CreateProfileParameters(*builder.fbb(), 20.0, 70.0));
 
       flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
           turret_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(

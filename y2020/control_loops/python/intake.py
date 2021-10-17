@@ -20,8 +20,8 @@ except gflags.DuplicateFlagError:
 kIntake = angular_system.AngularSystemParams(
     name='Intake',
     motor=control_loop.BAG(),
-    G=(12.0 / 24.0) * (1.0 / 7.0) * (1.0 / 7.0) * (16.0 / 32.0),
-    J=6 * 0.139 * 0.139,
+    G=(12.0 / 24.0) * (1.0 / 5.0) * (1.0 / 5.0) * (16.0 / 32.0),
+    J=8 * 0.139 * 0.139,
     q_pos=0.40,
     q_vel=20.0,
     kalman_q_pos=0.12,
