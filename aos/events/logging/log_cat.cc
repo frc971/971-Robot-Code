@@ -20,6 +20,7 @@ DEFINE_string(
 DEFINE_string(type, "",
               "Channel type to match for printing out channels. Empty means no "
               "type filter.");
+DEFINE_bool(json, false, "If true, print fully valid JSON");
 DEFINE_bool(fetch, false,
             "If true, also print out the messages from before the start of the "
             "log file");
@@ -46,6 +47,30 @@ DEFINE_bool(print_parts_only, false,
 DEFINE_bool(channels, false,
             "If true, print out all the configured channels for this log.");
 
+using aos::monotonic_clock;
+namespace chrono = std::chrono;
+
+void StreamSeconds(std::ostream &stream,
+                   const aos::monotonic_clock::time_point now) {
+  if (now < monotonic_clock::epoch()) {
+    chrono::seconds seconds =
+        chrono::duration_cast<chrono::seconds>(now.time_since_epoch());
+
+    stream << "-" << -seconds.count() << "." << std::setfill('0')
+           << std::setw(9)
+           << chrono::duration_cast<chrono::nanoseconds>(seconds -
+                                                         now.time_since_epoch())
+                  .count();
+  } else {
+    chrono::seconds seconds =
+        chrono::duration_cast<chrono::seconds>(now.time_since_epoch());
+    stream << seconds.count() << "." << std::setfill('0') << std::setw(9)
+           << chrono::duration_cast<chrono::nanoseconds>(
+                  now.time_since_epoch() - seconds)
+                  .count();
+  }
+}
+
 // Print the flatbuffer out to stdout, both to remove the unnecessary cruft from
 // glog and to allow the user to readily redirect just the logged output
 // independent of any debugging information on stderr.
@@ -64,18 +89,43 @@ void PrintMessage(const std::string_view node_name, const aos::Channel *channel,
       builder, channel->schema(), static_cast<const uint8_t *>(context.data),
       {FLAGS_pretty, static_cast<size_t>(FLAGS_max_vector_size)});
 
-  if (context.monotonic_remote_time != context.monotonic_event_time) {
-    std::cout << node_name << context.realtime_event_time << " ("
-              << context.monotonic_event_time << ") sent "
-              << context.realtime_remote_time << " ("
-              << context.monotonic_remote_time << ") "
-              << channel->name()->c_str() << ' ' << channel->type()->c_str()
-              << ": " << *builder << std::endl;
+  if (FLAGS_json) {
+    std::cout << "{";
+    if (!node_name.empty()) {
+      std::cout << "\"node\": \"" << node_name << "\", ";
+    }
+    std::cout << "\"monotonic_event_time\": ";
+    StreamSeconds(std::cout, context.monotonic_event_time);
+    std::cout << ", \"realtime_event_time\": \"" << context.realtime_event_time
+              << "\", ";
+
+    if (context.monotonic_remote_time != context.monotonic_event_time) {
+      std::cout << "\"monotonic_remote_time\": ";
+      StreamSeconds(std::cout, context.monotonic_remote_time);
+      std::cout << ", \"realtime_remote_time\": \""
+                << context.realtime_remote_time << "\", ";
+    }
+
+    std::cout << "\"channel\": "
+              << aos::configuration::StrippedChannelToString(channel)
+              << ", \"data\": " << *builder << "}" << std::endl;
   } else {
-    std::cout << node_name << context.realtime_event_time << " ("
-              << context.monotonic_event_time << ") "
-              << channel->name()->c_str() << ' ' << channel->type()->c_str()
-              << ": " << *builder << std::endl;
+    if (!node_name.empty()) {
+      std::cout << node_name << " ";
+    }
+    if (context.monotonic_remote_time != context.monotonic_event_time) {
+      std::cout << context.realtime_event_time << " ("
+                << context.monotonic_event_time << ") sent "
+                << context.realtime_remote_time << " ("
+                << context.monotonic_remote_time << ") "
+                << channel->name()->c_str() << ' ' << channel->type()->c_str()
+                << ": " << *builder << std::endl;
+    } else {
+      std::cout << context.realtime_event_time << " ("
+                << context.monotonic_event_time << ") "
+                << channel->name()->c_str() << ' ' << channel->type()->c_str()
+                << ": " << *builder << std::endl;
+    }
   }
 }
 
@@ -214,7 +264,7 @@ class NodePrinter {
         node_name_(
             event_loop_->node() == nullptr
                 ? ""
-                : std::string(event_loop->node()->name()->string_view()) + " "),
+                : std::string(event_loop->node()->name()->string_view())),
         builder_(builder) {
     event_loop_->SkipTimingReport();
     event_loop_->SkipAosLog();
@@ -259,6 +309,9 @@ class NodePrinter {
   void SetStarted(bool started, aos::monotonic_clock::time_point monotonic_now,
                   aos::realtime_clock::time_point realtime_now) {
     started_ = started;
+    if (FLAGS_json) {
+      return;
+    }
     if (started_) {
       std::cout << std::endl;
       std::cout << (event_loop_->node() != nullptr

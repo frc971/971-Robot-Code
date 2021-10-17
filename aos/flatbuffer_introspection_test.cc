@@ -362,7 +362,7 @@ TEST_F(FlatbufferIntrospectionTest, TrimmedVector) {
   std::string out =
       FlatbufferToJson(schema_, builder.GetBufferPointer(),
                        {.multi_line = false, .max_vector_size = 100});
-  EXPECT_EQ(out, "{\"vector_foo_int\": [ ... 101 elements ... ]}");
+  EXPECT_EQ(out, "{\"vector_foo_int\": [ \"... 101 elements ...\" ]}");
 }
 
 TEST_F(FlatbufferIntrospectionTest, MultilineTest) {

@@ -200,9 +200,9 @@ void FieldToString(
         reflection::BaseType elem_type = type->element();
 
         if (vector->size() > json_options.max_vector_size) {
-          out->Append("[ ... ");
+          out->Append("[ \"... ");
           out->AppendInt(vector->size());
-          out->Append(" elements ... ]");
+          out->Append(" elements ...\" ]");
           break;
         }
 

@@ -840,7 +840,7 @@ class TruncatingStringVisitor : public flatbuffers::IterationVisitor {
     }
     if (size > max_vector_size_) {
       ++skip_levels_;
-      to_string_.s += "[ ... " + std::to_string(size) + " elements ... ]";
+      to_string_.s += "[ \"... " + std::to_string(size) + " elements ...\" ]";
       return;
     }
     to_string_.StartVector(size);

@@ -270,9 +270,9 @@ TEST_F(JsonToFlatbufferTest, TrimmedVector) {
 
   EXPECT_EQ(json_short, back_json_short_typetable);
   EXPECT_EQ(json_short, back_json_short_reflection);
-  EXPECT_EQ("{ \"vector_foo_int\": [ ... 101 elements ... ] }",
+  EXPECT_EQ("{ \"vector_foo_int\": [ \"... 101 elements ...\" ] }",
             back_json_long_typetable);
-  EXPECT_EQ("{ \"vector_foo_int\": [ ... 101 elements ... ] }",
+  EXPECT_EQ("{ \"vector_foo_int\": [ \"... 101 elements ...\" ] }",
             back_json_long_reflection);
 }
 
