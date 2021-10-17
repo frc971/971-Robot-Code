@@ -3,6 +3,12 @@ include "frc971/control_loops/profiled_subsystem.fbs";
 
 namespace y2020.control_loops.superstructure;
 
+enum Subsystem:byte {
+  FINISHER,
+  ACCELERATOR,
+  TURRET
+}
+
 table FlywheelControllerStatus {
   // The current average velocity in radians/second over the last kHistoryLength
   // in shooter.h
@@ -76,6 +82,9 @@ table Status {
 
   // Status of the vision auto-tracking.
   aimer:AimerStatus (id: 7);
+
+  // Vector of the subsystems that are not at goal and are preventing shooting.
+  subsystems_not_ready:[Subsystem] (id: 8);
 }
 
 root_type Status;

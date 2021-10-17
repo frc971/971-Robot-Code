@@ -536,6 +536,7 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
                       ->avg_angular_velocity(),
                   0.001);
     }
+    EXPECT_FALSE(superstructure_status_fetcher_->has_subsystems_not_ready());
   }
 
   void CheckIfZeroed() {
@@ -855,9 +856,25 @@ TEST_F(SuperstructureTest, SpinUp) {
     goal_builder.add_hood(hood_offset);
     goal_builder.add_intake(intake_offset);
     goal_builder.add_shooter(shooter_offset);
+    goal_builder.add_shooting(true);
 
     ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
+
+  // In the beginning, the finisher and accelerator should not be ready
+  test_event_loop_
+      ->AddTimer([&]() {
+        ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+        ASSERT_TRUE(superstructure_status_fetcher_->has_subsystems_not_ready());
+        const auto subsystems_not_ready =
+            superstructure_status_fetcher_->subsystems_not_ready();
+        ASSERT_EQ(subsystems_not_ready->size(), 2);
+        EXPECT_TRUE((subsystems_not_ready->Get(0) == Subsystem::FINISHER) !=
+                    (subsystems_not_ready->Get(1) == Subsystem::FINISHER));
+        EXPECT_TRUE((subsystems_not_ready->Get(0) == Subsystem::ACCELERATOR) !=
+                    (subsystems_not_ready->Get(1) == Subsystem::ACCELERATOR));
+      })
+      ->Setup(test_event_loop_->monotonic_now() + chrono::milliseconds(1));
 
   // Give it a lot of time to get there.
   RunFor(chrono::seconds(8));

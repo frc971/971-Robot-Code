@@ -24,21 +24,23 @@ Shooter::Shooter()
                          accelerator::kBemf, accelerator::kResistance) {}
 
 bool Shooter::UpToSpeed(const ShooterGoal *goal) {
-  return (
-      std::abs(goal->velocity_finisher() - finisher_.avg_angular_velocity()) <
-          kVelocityToleranceFinisher &&
-      std::abs(goal->velocity_accelerator() -
-               accelerator_left_.avg_angular_velocity()) <
-          kVelocityToleranceAccelerator &&
-      std::abs(goal->velocity_accelerator() -
-               accelerator_right_.avg_angular_velocity()) <
-          kVelocityToleranceAccelerator &&
-      std::abs(goal->velocity_finisher() - finisher_.velocity()) <
-          kVelocityToleranceFinisher &&
-      std::abs(goal->velocity_accelerator() - accelerator_left_.velocity()) <
-          kVelocityToleranceAccelerator &&
-      std::abs(goal->velocity_accelerator() - accelerator_right_.velocity()) <
-          kVelocityToleranceAccelerator);
+  finisher_ready_ =
+      (std::abs(goal->velocity_finisher() - finisher_.avg_angular_velocity()) <
+           kVelocityToleranceFinisher &&
+       std::abs(goal->velocity_finisher() - finisher_.velocity()) <
+           kVelocityToleranceFinisher);
+  accelerator_ready_ =
+      (std::abs(goal->velocity_accelerator() -
+                accelerator_left_.avg_angular_velocity()) <
+           kVelocityToleranceAccelerator &&
+       std::abs(goal->velocity_accelerator() -
+                accelerator_right_.avg_angular_velocity()) <
+           kVelocityToleranceAccelerator &&
+       std::abs(goal->velocity_accelerator() - accelerator_left_.velocity()) <
+           kVelocityToleranceAccelerator &&
+       std::abs(goal->velocity_accelerator() - accelerator_right_.velocity()) <
+           kVelocityToleranceAccelerator);
+  return (finisher_ready_ && accelerator_ready_);
 }
 
 flatbuffers::Offset<ShooterStatus> Shooter::RunIteration(
@@ -78,6 +80,8 @@ flatbuffers::Offset<ShooterStatus> Shooter::RunIteration(
       ready_ = true;
     } else {
       ready_ = false;
+      finisher_ready_ = false;
+      accelerator_ready_ = false;
     }
   }
 

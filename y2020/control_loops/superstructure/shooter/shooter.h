@@ -27,7 +27,9 @@ class Shooter {
       flatbuffers::FlatBufferBuilder *fbb, OutputT *output,
       const aos::monotonic_clock::time_point position_timestamp);
 
-  bool ready() { return ready_; }
+  bool ready() const { return ready_; }
+  bool finisher_ready() const { return finisher_ready_; }
+  bool accelerator_ready() const { return accelerator_ready_; }
 
   float finisher_goal() const { return finisher_.goal(); }
   float accelerator_goal() const { return accelerator_left_.goal(); }
@@ -43,6 +45,8 @@ class Shooter {
   FlywheelController finisher_, accelerator_left_, accelerator_right_;
 
   bool UpToSpeed(const ShooterGoal *goal);
+  bool finisher_ready_ = false;
+  bool accelerator_ready_ = false;
   bool ready_ = false;
 
   int balls_shot_ = 0;

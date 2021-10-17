@@ -1,5 +1,6 @@
 #include "y2020/control_loops/superstructure/superstructure.h"
 
+#include "aos/containers/sized_array.h"
 #include "aos/events/event_loop.h"
 
 namespace y2020 {
@@ -195,6 +196,28 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
                turret_status->estopped();
   }
 
+  flatbuffers::Offset<flatbuffers::Vector<Subsystem>>
+      subsystems_not_ready_offset;
+  const bool turret_ready =
+      (std::abs(turret_.goal(0) - turret_.position()) < 0.025);
+  if (unsafe_goal && unsafe_goal->shooting() &&
+      (!shooter_.ready() || !turret_ready)) {
+    aos::SizedArray<Subsystem, 3> subsystems_not_ready;
+    if (!shooter_.finisher_ready()) {
+      subsystems_not_ready.push_back(Subsystem::FINISHER);
+    }
+    if (!shooter_.accelerator_ready()) {
+      subsystems_not_ready.push_back(Subsystem::ACCELERATOR);
+    }
+    if (!turret_ready) {
+      subsystems_not_ready.push_back(Subsystem::TURRET);
+    }
+
+    subsystems_not_ready_offset =
+        status->fbb()->CreateVector(subsystems_not_ready.backing_array().data(),
+                                    subsystems_not_ready.size());
+  }
+
   Status::Builder status_builder = status->MakeBuilder<Status>();
 
   status_builder.add_zeroed(zeroed);
@@ -205,6 +228,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   status_builder.add_turret(turret_status_offset);
   status_builder.add_shooter(shooter_status_offset);
   status_builder.add_aimer(aimer_status_offset);
+  status_builder.add_subsystems_not_ready(subsystems_not_ready_offset);
 
   status->Send(status_builder.Finish());
 
@@ -232,9 +256,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       }
 
       if (unsafe_goal->shooting()) {
-        if (shooter_.ready() && shooter_.finisher_goal() > 10.0 &&
-            shooter_.accelerator_goal() > 10.0 &&
-            std::abs(turret_.goal(0) - turret_.position()) < 0.025) {
+        if (shooter_.ready() && turret_ready) {
           output_struct.feeder_voltage = 12.0;
         }
         output_struct.washing_machine_spinner_voltage = 5.0;
