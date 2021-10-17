@@ -151,6 +151,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     }
 
     if (superstructure_status_fetcher_.get() &&
+        superstructure_status_fetcher_->intake()->zeroed() &&
         superstructure_status_fetcher_->intake()->position() > -0.5) {
       roller_speed = std::max(roller_speed, 6.0f);
       roller_speed_compensation = 2.0f;
