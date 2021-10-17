@@ -233,7 +233,8 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
       if (unsafe_goal->shooting()) {
         if (shooter_.ready() && shooter_.finisher_goal() > 10.0 &&
-            shooter_.accelerator_goal() > 10.0) {
+            shooter_.accelerator_goal() > 10.0 &&
+            std::abs(turret_.goal(0) - turret_.position()) < 0.025) {
           output_struct.feeder_voltage = 12.0;
         }
         output_struct.washing_machine_spinner_voltage = 5.0;
