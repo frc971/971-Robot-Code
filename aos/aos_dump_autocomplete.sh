@@ -7,3 +7,5 @@ complete -F _aosdump_completions -o default aos_dump
 complete -F _aosdump_completions -o default aos_dump.stripped
 complete -F _aosdump_completions -o default aos_send
 complete -F _aosdump_completions -o default aos_send.stripped
+complete -F _aosdump_completions -o default aos_starter
+complete -F _aosdump_completions -o default aos_starter.stripped

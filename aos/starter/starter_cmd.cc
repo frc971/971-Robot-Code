@@ -14,6 +14,12 @@
 
 DEFINE_string(config, "./config.json", "File path of aos configuration");
 
+DEFINE_bool(_bash_autocomplete, false,
+            "Internal use: Outputs commands or applications for use with "
+            "autocomplete script.");
+DEFINE_string(_bash_autocomplete_word, "",
+              "Internal use: Current word being autocompleted");
+
 namespace {
 
 namespace chrono = std::chrono;
@@ -71,19 +77,19 @@ void PrintApplicationStatus(const aos::starter::ApplicationStatus *app_status,
 
 // Prints the status for all applications.
 void GetAllStarterStatus(const aos::Configuration *config) {
-    // Print status for all processes.
-    const auto optional_status = aos::starter::GetStarterStatus(config);
-    if (optional_status) {
-      auto status = *optional_status;
-      const auto time = aos::monotonic_clock::now();
-      PrintKey();
-      for (const aos::starter::ApplicationStatus *app_status :
-           *status.message().statuses()) {
-        PrintApplicationStatus(app_status, time);
-      }
-    } else {
-      LOG(WARNING) << "No status found";
+  // Print status for all processes.
+  const auto optional_status = aos::starter::GetStarterStatus(config);
+  if (optional_status) {
+    auto status = *optional_status;
+    const auto time = aos::monotonic_clock::now();
+    PrintKey();
+    for (const aos::starter::ApplicationStatus *app_status :
+         *status.message().statuses()) {
+      PrintApplicationStatus(app_status, time);
     }
+  } else {
+    LOG(WARNING) << "No status found";
+  }
 }
 
 // Handles the "status" command.  Returns true if the help message should be
@@ -251,6 +257,34 @@ bool Help(int /*argc*/, char ** /*argv*/,
   return false;
 }
 
+void Autocomplete(int argc, char **argv, const aos::Configuration *config) {
+  const std::string_view command = (argc >= 2 ? argv[1] : "");
+  const std::string_view app_name = (argc >= 3 ? argv[2] : "");
+
+  std::cout << "COMPREPLY=(";
+  if (FLAGS__bash_autocomplete_word == command) {
+    // Autocomplete the starter command
+    for (const auto &entry : kCommands) {
+      if (std::get<0>(entry).find(command) == 0) {
+        std::cout << '\'' << std::get<0>(entry) << "' ";
+      }
+    }
+  } else {
+    // Autocomplete the app name
+    for (const auto *app : *config->applications()) {
+      if (app->has_name() && app->name()->string_view().find(app_name) == 0) {
+        std::cout << '\'' << app->name()->string_view() << "' ";
+      }
+    }
+
+    // Autocomplete with "all"
+    if (std::string_view("all").find(FLAGS__bash_autocomplete_word) == 0) {
+      std::cout << "'all'";
+    }
+  }
+  std::cout << ')';
+}
+
 }  // namespace
 
 int main(int argc, char **argv) {
@@ -258,6 +292,11 @@ int main(int argc, char **argv) {
 
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig(FLAGS_config);
+
+  if (FLAGS__bash_autocomplete) {
+    Autocomplete(argc, argv, &config.message());
+    return 0;
+  }
 
   bool parsing_failed = false;
 
