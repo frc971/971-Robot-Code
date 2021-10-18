@@ -34,6 +34,57 @@ class CameraParameters:
         self.timestamp = 0
 
 
+def compute_extrinsic(camera_pitch, T_camera, is_turret):
+    # Compute the extrinsic calibration based on pitch and translation
+    # Includes camera rotation from robot x,y,z to opencv (z, -x, -y)
+
+    # Also, handle extrinsics for the turret
+    # The basic camera pose is relative to the center, base of the turret
+    # TODO<Jim>: Maybe store these to .json files, like with intrinsics?
+    base_cam_ext = CameraExtrinsics()
+    turret_cam_ext = CameraExtrinsics()
+
+    camera_pitch_matrix = np.array(
+        [[np.cos(camera_pitch), 0.0, -np.sin(camera_pitch)], [0.0, 1.0, 0.0],
+         [np.sin(camera_pitch), 0.0,
+          np.cos(camera_pitch)]])
+
+    robot_to_camera_rotation = np.array([[0., 0., 1.], [-1, 0, 0], [0, -1.,
+                                                                    0]])
+
+    if is_turret:
+        # Turret camera has default heading 180 deg away from the robot x
+        base_cam_ext.R = np.array([[-1.0, 0.0, 0.0], [0.0, -1.0, 0.0],
+                                   [0.0, 0.0, 1.0]])
+        base_cam_ext.T = np.array([0.0, 0.0, 0.0])
+        turret_cam_ext.R = camera_pitch_matrix @ robot_to_camera_rotation
+        turret_cam_ext.T = T_camera
+    else:
+        base_cam_ext.R = camera_pitch_matrix @ robot_to_camera_rotation
+        base_cam_ext.T = T_camera
+        turret_cam_ext = None
+
+    return base_cam_ext, turret_cam_ext
+
+
+def compute_extrinsic_by_pi(pi_number):
+    # Defaults for non-turret camera
+    camera_pitch = 20.0 * np.pi / 180.0
+    is_turret = False
+    # Default camera location to robot origin
+    T = np.array([0.0, 0.0, 0.0])
+
+    if pi_number == "pi1":
+        # This is the turret camera
+        camera_pitch = 34.0 * np.pi / 180.0
+        is_turret = True
+        T = np.array([7.5 * 0.0254, -5.5 * 0.0254, 41.0 * 0.0254])
+    elif pi_number == "pi2":
+        T = np.array([4.5 * 0.0254, 3.75 * 0.0254, 26.0 * 0.0254])
+
+    return compute_extrinsic(camera_pitch, T, is_turret)
+
+
 def load_camera_definitions():
     ### CAMERA DEFINITIONS
     # We only load in cameras that have a calibration file
@@ -43,36 +94,11 @@ def load_camera_definitions():
     # Or better yet, use //y2020/vision:calibration to calibrate the camera
     #   using a Charuco target board
 
-    # Extrinsic definition
-    # Camera rotation from robot x,y,z to opencv (z, -x, -y)
-    # This is extrinsics for the turret camera
-    # camera pose relative to center, base of the turret
-    # TODO<Jim>: Need to implement per-camera calibration, like with intrinsics
-    camera_pitch = 34.0 * np.pi / 180.0
-    camera_pitch_matrix = np.matrix(
-        [[np.cos(camera_pitch), 0.0, -np.sin(camera_pitch)], [0.0, 1.0, 0.0],
-         [np.sin(camera_pitch), 0.0,
-          np.cos(camera_pitch)]])
-    turret_cam_ext = CameraExtrinsics()
-    turret_cam_ext.R = np.array(
-        camera_pitch_matrix *
-        np.matrix([[0., 0., 1.], [-1, 0, 0], [0, -1., 0]]))
-    turret_cam_ext.T = np.array([7.5 * 0.0254, -5.5 * 0.0254, 41.0 * 0.0254])
-    default_cam_ext = CameraExtrinsics()
-    default_cam_ext.R = np.array([[-1.0, 0.0, 0.0], [0.0, -1.0, 0.0],
-                                  [0.0, 0.0, 1.0]])
-    default_cam_ext.T = np.array([0.0, 0.0, 0.0])
-
-    default_cam_params = CameraParameters()
-    # Currently, all cameras have this same set of extrinsics
-    default_cam_params.camera_ext = default_cam_ext
-    default_cam_params.turret_ext = turret_cam_ext
-
     camera_list = []
 
     dir_name = dtd.bazel_name_fix('calib_files')
     glog.debug("Searching for calibration files in " + dir_name)
-    for filename in os.listdir(dir_name):
+    for filename in sorted(os.listdir(dir_name)):
         glog.debug("Inspecting %s", filename)
         if ("cam-calib-int" in filename
                 or 'calibration' in filename) and filename.endswith(".json"):
@@ -104,11 +130,15 @@ def load_camera_definitions():
 
             glog.info("Found calib for " + node_name + ", team #" +
                       str(team_number))
-            camera_base = copy.deepcopy(default_cam_params)
-            camera_base.node_name = node_name
-            camera_base.team_number = team_number
-            camera_base.camera_int.camera_matrix = copy.copy(camera_matrix)
-            camera_base.camera_int.dist_coeffs = copy.copy(dist_coeffs)
-            camera_list.append(camera_base)
+
+            camera_params = CameraParameters()
+            camera_params.camera_ext, camera_params.turret_ext = compute_extrinsic_by_pi(
+                node_name)
+
+            camera_params.node_name = node_name
+            camera_params.team_number = team_number
+            camera_params.camera_int.camera_matrix = copy.copy(camera_matrix)
+            camera_params.camera_int.dist_coeffs = copy.copy(dist_coeffs)
+            camera_list.append(camera_params)
 
     return camera_list
