@@ -65,6 +65,11 @@ class ActionJoystickInput : public ::frc971::input::JoystickInput {
     return drivetrain_input_reader_->robot_velocity();
   }
 
+  // Returns the current drivetrain status.
+  const control_loops::drivetrain::Status *drivetrain_status() const {
+    return drivetrain_input_reader_->drivetrain_status();
+  }
+
   // Returns the drivetrain config.
   const ::frc971::control_loops::drivetrain::DrivetrainConfig<double>
   dt_config() const {

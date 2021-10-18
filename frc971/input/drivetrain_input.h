@@ -94,6 +94,11 @@ class DrivetrainInputReader {
   // Returns the current robot velocity in m/s.
   double robot_velocity() const { return robot_velocity_; }
 
+  // Returns the current drivetrain status.
+  const control_loops::drivetrain::Status *drivetrain_status() const {
+    return drivetrain_status_fetcher_.get();
+  }
+
   void set_vision_align_fn(
       ::std::function<bool(const ::frc971::input::driver_station::Data &data)>
           vision_align_fn) {

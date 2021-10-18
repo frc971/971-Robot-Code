@@ -140,6 +140,7 @@ cc_binary(
         "//frc971/input:action_joystick_input",
         "//frc971/input:drivetrain_input",
         "//frc971/input:joystick_input",
+        "//frc971/zeroing:wrap",
         "//y2020:constants",
         "//y2020/control_loops/drivetrain:drivetrain_base",
         "//y2020/control_loops/superstructure:superstructure_goal_fbs",
