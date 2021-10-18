@@ -67,9 +67,20 @@ export class FieldHandler {
   private imageMatchResult =  new Map<string, ImageMatchResult>();
   private drivetrainStatus: DrivetrainStatus|null = null;
   private superstructureStatus: SuperstructureStatus|null = null;
+  private x: HTMLDivElement = (document.getElementById('x') as HTMLDivElement);
+  private y: HTMLDivElement = (document.getElementById('y') as HTMLDivElement);
+  private theta: HTMLDivElement = (document.getElementById('theta') as HTMLDivElement);
+  private shotDistance: HTMLDivElement = (document.getElementById('shot_distance') as HTMLDivElement);
+  private finisher: HTMLDivElement = (document.getElementById('finisher') as HTMLDivElement);
+  private leftAccelerator: HTMLDivElement = (document.getElementById('left_accelerator') as HTMLDivElement);
+  private rightAccelerator: HTMLDivElement = (document.getElementById('right_accelerator') as HTMLDivElement);
+  private innerPort: HTMLDivElement = (document.getElementById('inner_port') as HTMLDivElement);
+  private hood: HTMLDivElement = (document.getElementById('hood') as HTMLDivElement);
+  private turret: HTMLDivElement = (document.getElementById('turret') as HTMLDivElement);
+  private intake: HTMLDivElement = (document.getElementById('intake') as HTMLDivElement);
 
   constructor(private readonly connection: Connection) {
-    document.body.appendChild(this.canvas);
+    (document.getElementById('field') as HTMLElement).appendChild(this.canvas);
 
     this.connection.addConfigHandler(() => {
       // Go through and register handlers for both all the individual pis as
@@ -231,6 +242,22 @@ export class FieldHandler {
     ctx.restore();
   }
 
+  setZeroing(div: HTMLDivElement): void {
+        div.innerHTML = "zeroing";
+        div.classList.remove("faulted");
+        div.classList.add("zeroing");
+  }
+  setEstopped(div: HTMLDivElement): void {
+        div.innerHTML = "estopped";
+        div.classList.add("faulted");
+        div.classList.remove("zeroing");
+  }
+  setValue(div: HTMLDivElement, val: Number): void {
+        div.innerHTML = val.toFixed(4);
+        div.classList.remove("faulted");
+        div.classList.remove("zeroing");
+  }
+
   draw(): void {
     this.reset();
     this.drawField();
@@ -253,6 +280,50 @@ export class FieldHandler {
     }
 
     if (this.drivetrainStatus) {
+      if (!this.drivetrainStatus.zeroing().zeroed()) {
+        this.setZeroing(this.x);
+        this.setZeroing(this.y);
+        this.setZeroing(this.theta);
+      } else if (this.drivetrainStatus.zeroing().faulted()) {
+        this.setEstopped(this.x);
+        this.setEstopped(this.y);
+        this.setEstopped(this.theta);
+      } else {
+        this.setValue(this.x, this.drivetrainStatus.x());
+        this.setValue(this.y, this.drivetrainStatus.y());
+        this.setValue(this.theta, this.drivetrainStatus.theta());
+      }
+
+      this.shotDistance.innerHTML = this.superstructureStatus.aimer().shotDistance().toFixed(2);
+      this.finisher.innerHTML = this.superstructureStatus.shooter().finisher().angularVelocity().toFixed(2);
+      this.leftAccelerator.innerHTML = this.superstructureStatus.shooter().acceleratorLeft().angularVelocity().toFixed(2);
+      this.rightAccelerator.innerHTML = this.superstructureStatus.shooter().acceleratorRight().angularVelocity().toFixed(2);
+      if (this.superstructureStatus.aimer().aimingForInnerPort()) {
+        this.innerPort.innerHTML = "true";
+      } else {
+        this.innerPort.innerHTML = "false";
+      }
+      if (!this.superstructureStatus.hood().zeroed()) {
+        this.setZeroing(this.hood);
+      } else if (this.superstructureStatus.hood().estopped()) {
+        this.setEstopped(this.hood);
+      } else {
+        this.setValue(this.hood, this.superstructureStatus.hood().estimatorState().position());
+      }
+      if (!this.superstructureStatus.turret().zeroed()) {
+        this.setZeroing(this.turret);
+      } else if (this.superstructureStatus.turret().estopped()) {
+        this.setEstopped(this.turret);
+      } else {
+        this.setValue(this.turret, this.superstructureStatus.turret().estimatorState().position());
+      }
+      if (!this.superstructureStatus.intake().zeroed()) {
+        this.setZeroing(this.intake);
+      } else if (this.superstructureStatus.intake().estopped()) {
+        this.setEstopped(this.intake);
+      } else {
+        this.setValue(this.intake, this.superstructureStatus.intake().estimatorState().position());
+      }
       this.drawRobot(
           this.drivetrainStatus.x(), this.drivetrainStatus.y(),
           this.drivetrainStatus.theta(),

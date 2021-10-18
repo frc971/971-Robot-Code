@@ -3,3 +3,31 @@
   border-bottom: 1px solid;
   font-size: 24px;
 }
+#field {
+  display: inline-block
+}
+#readouts {
+  display: inline-block;
+  vertical-align: top;
+  float: right;
+}
+
+#readouts > div {
+  display: table-row;
+  padding: 5px;
+}
+#readouts > div > div {
+  display: table-cell;
+  padding: 5px;
+  text-align: right;
+}
+
+.zeroing {
+  background-color: yellow;
+  border-radius: 10px;
+}
+
+.faulted {
+  background-color: red;
+  border-radius: 10px;
+}
