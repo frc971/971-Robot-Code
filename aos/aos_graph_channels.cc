@@ -185,7 +185,7 @@ int main(int argc, char **argv) {
   // Now generate graphvis compatible output.
   std::stringstream graph_out;
   graph_out << "digraph g {" << std::endl;
-  for (const std::pair<const aos::Channel *, ChannelConnections> &c :
+  for (const std::pair<const aos::Channel *const, ChannelConnections> &c :
        connections) {
     const std::string channel = absl::StrCat(
         c.first->name()->string_view(), "\n", c.first->type()->string_view());
