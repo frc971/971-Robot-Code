@@ -28,6 +28,7 @@ DEFINE_string(board_template_path, "",
 namespace frc971 {
 namespace vision {
 namespace chrono = std::chrono;
+using aos::monotonic_clock;
 
 CameraCalibration::CameraCalibration(
     const absl::Span<const uint8_t> training_data_bfbs, std::string_view pi) {
@@ -84,14 +85,56 @@ const sift::CameraCalibration *CameraCalibration::FindCameraCalibration(
              << " on " << team_number.value();
 }
 
-ImageCallback::ImageCallback(aos::EventLoop *event_loop,
-                             std::string_view channel,
-                             std::function<void(cv::Mat, double)> &&fn)
-    : event_loop_(event_loop), handle_image_(std::move(fn)) {
+ImageCallback::ImageCallback(
+    aos::EventLoop *event_loop, std::string_view channel,
+    std::function<void(cv::Mat, monotonic_clock::time_point)> &&fn)
+    : event_loop_(event_loop),
+      server_fetcher_(
+          event_loop_->MakeFetcher<aos::message_bridge::ServerStatistics>(
+              "/aos")),
+      source_node_(aos::configuration::GetNode(
+          event_loop_->configuration(),
+          event_loop_->GetChannel<CameraImage>(channel)
+              ->source_node()
+              ->string_view())),
+      handle_image_(std::move(fn)) {
   event_loop_->MakeWatcher(channel, [this](const CameraImage &image) {
-    const aos::monotonic_clock::duration age =
-        event_loop_->monotonic_now() -
-        event_loop_->context().monotonic_event_time;
+    const monotonic_clock::time_point eof_source_node =
+        monotonic_clock::time_point(
+            chrono::nanoseconds(image.monotonic_timestamp_ns()));
+    server_fetcher_.Fetch();
+    if (!server_fetcher_.get()) {
+      return;
+    }
+
+    chrono::nanoseconds offset{0};
+    if (source_node_ != event_loop_->node()) {
+      // If we are viewing this image from another node, convert to our
+      // monotonic clock.
+      const aos::message_bridge::ServerConnection *server_connection = nullptr;
+
+      for (const aos::message_bridge::ServerConnection *connection :
+           *server_fetcher_->connections()) {
+        CHECK(connection->has_node());
+        if (connection->node()->name()->string_view() ==
+            source_node_->name()->string_view()) {
+          server_connection = connection;
+          break;
+        }
+      }
+
+      CHECK(server_connection != nullptr) << ": Failed to find client";
+      if (!server_connection->has_monotonic_offset()) {
+        VLOG(1) << "No offset yet.";
+        return;
+      }
+      offset = chrono::nanoseconds(server_connection->monotonic_offset());
+    }
+
+    const monotonic_clock::time_point eof = eof_source_node - offset;
+
+    const monotonic_clock::duration age =
+        event_loop_->monotonic_now() - eof;
     const double age_double =
         std::chrono::duration_cast<std::chrono::duration<double>>(age).count();
     if (age > std::chrono::milliseconds(100)) {
@@ -104,16 +147,17 @@ ImageCallback::ImageCallback(aos::EventLoop *event_loop,
     const cv::Size image_size(image.cols(), image.rows());
     cv::Mat rgb_image(image_size, CV_8UC3);
     cv::cvtColor(image_color_mat, rgb_image, CV_YUV2BGR_YUYV);
-    handle_image_(rgb_image, age_double);
+    handle_image_(rgb_image, eof);
   });
 }
 
 CharucoExtractor::CharucoExtractor(
     aos::EventLoop *event_loop, std::string_view pi,
-    std::function<void(cv::Mat, const double, std::vector<int>,
+    std::function<void(cv::Mat, monotonic_clock::time_point, std::vector<int>,
                        std::vector<cv::Point2f>, bool, Eigen::Vector3d,
                        Eigen::Vector3d)> &&fn)
-    : calibration_(SiftTrainingData(), pi),
+    : event_loop_(event_loop),
+      calibration_(SiftTrainingData(), pi),
       dictionary_(cv::aruco::getPredefinedDictionary(
           FLAGS_large_board ? cv::aruco::DICT_5X5_250
                             : cv::aruco::DICT_6X6_250)),
@@ -136,8 +180,8 @@ CharucoExtractor::CharucoExtractor(
       image_callback_(
           event_loop,
           absl::StrCat("/pi", std::to_string(pi_number_.value()), "/camera"),
-          [this](cv::Mat rgb_image, const double age_double) {
-            HandleImage(rgb_image, age_double);
+          [this](cv::Mat rgb_image, const monotonic_clock::time_point eof) {
+            HandleImage(rgb_image, eof);
           }),
       handle_charuco_(std::move(fn)) {
   LOG(INFO) << "Using " << (FLAGS_large_board ? "large" : "small")
@@ -158,7 +202,12 @@ CharucoExtractor::CharucoExtractor(
   LOG(INFO) << "Connecting to channel /pi" << pi_number_.value() << "/camera";
 }
 
-void CharucoExtractor::HandleImage(cv::Mat rgb_image, const double age_double) {
+void CharucoExtractor::HandleImage(cv::Mat rgb_image,
+                                   const monotonic_clock::time_point eof) {
+  const double age_double =
+      std::chrono::duration_cast<std::chrono::duration<double>>(
+          event_loop_->monotonic_now() - eof)
+          .count();
   std::vector<int> marker_ids;
   std::vector<std::vector<cv::Point2f>> marker_corners;
 
@@ -167,6 +216,10 @@ void CharucoExtractor::HandleImage(cv::Mat rgb_image, const double age_double) {
 
   std::vector<cv::Point2f> charuco_corners;
   std::vector<int> charuco_ids;
+  bool valid = false;
+  Eigen::Vector3d rvec_eigen = Eigen::Vector3d::Zero();
+  Eigen::Vector3d tvec_eigen = Eigen::Vector3d::Zero();
+
   // If at least one marker detected
   if (marker_ids.size() >= FLAGS_min_targets) {
     // Run everything twice, once with the calibration, and once
@@ -190,14 +243,12 @@ void CharucoExtractor::HandleImage(cv::Mat rgb_image, const double age_double) {
                                             charuco_ids, cv::Scalar(255, 0, 0));
 
       cv::Vec3d rvec, tvec;
-      const bool valid = cv::aruco::estimatePoseCharucoBoard(
+      valid = cv::aruco::estimatePoseCharucoBoard(
           charuco_corners_with_calibration, charuco_ids_with_calibration,
           board_, camera_matrix_, dist_coeffs_, rvec, tvec);
 
       // if charuco pose is valid
       if (valid) {
-        Eigen::Vector3d rvec_eigen;
-        Eigen::Vector3d tvec_eigen;
         cv::cv2eigen(rvec, rvec_eigen);
         cv::cv2eigen(tvec, tvec_eigen);
 
@@ -218,30 +269,21 @@ void CharucoExtractor::HandleImage(cv::Mat rgb_image, const double age_double) {
 
         cv::aruco::drawAxis(rgb_image, camera_matrix_, dist_coeffs_, rvec, tvec,
                             0.1);
-
-        handle_charuco_(rgb_image, age_double, charuco_ids, charuco_corners,
-
-                        true, rvec_eigen, tvec_eigen);
       } else {
         LOG(INFO) << "Age: " << age_double << ", invalid pose";
-        handle_charuco_(rgb_image, age_double, charuco_ids, charuco_corners,
-
-                        false, Eigen::Vector3d::Zero(),
-                        Eigen::Vector3d::Zero());
       }
     } else {
-      LOG(INFO) << "Age: " << age_double << ", no charuco IDs.";
-      handle_charuco_(rgb_image, age_double, charuco_ids, charuco_corners,
-
-                      false, Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero());
+      LOG(INFO) << "Age: " << age_double << ", not enough charuco IDs, got "
+                << charuco_ids.size() << ", needed " << FLAGS_min_targets;
     }
   } else {
-    LOG(INFO) << "Age: " << age_double << ", no marker IDs";
+    LOG(INFO) << "Age: " << age_double << ", not enough marker IDs, got "
+              << marker_ids.size() << ", needed " << FLAGS_min_targets;
     cv::aruco::drawDetectedMarkers(rgb_image, marker_corners, marker_ids);
-
-    handle_charuco_(rgb_image, age_double, charuco_ids, charuco_corners, false,
-                    Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero());
   }
+
+  handle_charuco_(rgb_image, eof, charuco_ids, charuco_corners, valid,
+                  rvec_eigen, tvec_eigen);
 }
 
 }  // namespace vision
