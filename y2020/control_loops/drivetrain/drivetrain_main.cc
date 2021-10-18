@@ -15,11 +15,13 @@ int main(int argc, char *argv[]) {
       aos::configuration::ReadConfig("config.json");
 
   ::aos::ShmEventLoop event_loop(&config.message());
-  ::y2020::control_loops::drivetrain::Localizer localizer(
-      &event_loop, ::y2020::control_loops::drivetrain::GetDrivetrainConfig());
+  std::unique_ptr<::y2020::control_loops::drivetrain::Localizer> localizer =
+      std::make_unique<y2020::control_loops::drivetrain::Localizer>(
+          &event_loop,
+          ::y2020::control_loops::drivetrain::GetDrivetrainConfig());
   std::unique_ptr<DrivetrainLoop> drivetrain = std::make_unique<DrivetrainLoop>(
       ::y2020::control_loops::drivetrain::GetDrivetrainConfig(), &event_loop,
-      &localizer);
+      localizer.get());
 
   event_loop.Run();
 

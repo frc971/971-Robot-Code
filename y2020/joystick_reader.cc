@@ -15,6 +15,7 @@
 #include "frc971/input/driver_station_data.h"
 #include "frc971/input/drivetrain_input.h"
 #include "frc971/input/joystick_input.h"
+#include "frc971/zeroing/wrap.h"
 #include "y2020/constants.h"
 #include "y2020/control_loops/drivetrain/drivetrain_base.h"
 #include "y2020/control_loops/superstructure/superstructure_goal_generated.h"
@@ -48,6 +49,8 @@ const ButtonLocation kFeed(4, 1);
 const ButtonLocation kFeedDriver(1, 2);
 const ButtonLocation kIntakeExtend(3, 9);
 const ButtonLocation kIntakeExtendDriver(1, 4);
+const ButtonLocation kRedLocalizerReset(3, 13);
+const ButtonLocation kBlueLocalizerReset(3, 14);
 const ButtonLocation kIntakeIn(4, 4);
 const ButtonLocation kSpit(4, 3);
 const ButtonLocation kLocalizerReset(3, 8);
@@ -76,7 +79,46 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     AOS_LOG(INFO, "Auto ended, assuming disc and have piece\n");
   }
 
+  void BlueResetLocalizer() {
+    auto builder = localizer_control_sender_.MakeBuilder();
+
+    frc971::control_loops::drivetrain::LocalizerControl::Builder
+        localizer_control_builder = builder.MakeBuilder<
+            frc971::control_loops::drivetrain::LocalizerControl>();
+    localizer_control_builder.add_x(7.4);
+    localizer_control_builder.add_y(-1.7);
+    localizer_control_builder.add_theta_uncertainty(10.0);
+    localizer_control_builder.add_theta(0.0);
+    localizer_control_builder.add_keep_current_theta(false);
+    if (!builder.Send(localizer_control_builder.Finish())) {
+      AOS_LOG(ERROR, "Failed to reset blue localizer.\n");
+    }
+  }
+
+  void RedResetLocalizer() {
+    auto builder = localizer_control_sender_.MakeBuilder();
+
+    frc971::control_loops::drivetrain::LocalizerControl::Builder
+        localizer_control_builder = builder.MakeBuilder<
+            frc971::control_loops::drivetrain::LocalizerControl>();
+    localizer_control_builder.add_x(-7.4);
+    localizer_control_builder.add_y(1.7);
+    localizer_control_builder.add_theta_uncertainty(10.0);
+    localizer_control_builder.add_theta(M_PI);
+    localizer_control_builder.add_keep_current_theta(false);
+    if (!builder.Send(localizer_control_builder.Finish())) {
+      AOS_LOG(ERROR, "Failed to reset red localizer.\n");
+    }
+  }
+
   void ResetLocalizer() {
+    const frc971::control_loops::drivetrain::Status *drivetrain_status =
+        this->drivetrain_status();
+    if (drivetrain_status == nullptr) {
+      return;
+    }
+    // Get the current position
+    // Snap to heading.
     auto builder = localizer_control_sender_.MakeBuilder();
 
     // Start roughly in front of the red-team goal, robot pointed away from
@@ -84,10 +126,12 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     frc971::control_loops::drivetrain::LocalizerControl::Builder
         localizer_control_builder = builder.MakeBuilder<
             frc971::control_loops::drivetrain::LocalizerControl>();
-    localizer_control_builder.add_x(5.0);
-    localizer_control_builder.add_y(-2.0);
-    localizer_control_builder.add_theta(M_PI);
-    localizer_control_builder.add_theta_uncertainty(0.01);
+    localizer_control_builder.add_x(drivetrain_status->x());
+    localizer_control_builder.add_y(drivetrain_status->y());
+    const double new_theta =
+        frc971::zeroing::Wrap(drivetrain_status->theta(), 0, M_PI);
+    localizer_control_builder.add_theta(new_theta);
+    localizer_control_builder.add_theta_uncertainty(10.0);
     if (!builder.Send(localizer_control_builder.Finish())) {
       AOS_LOG(ERROR, "Failed to reset localizer.\n");
     }
@@ -175,8 +219,15 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       climber_speed = 12.0f;
     }
 
-    if (data.IsPressed(kLocalizerReset)) {
+    if (data.PosEdge(kLocalizerReset)) {
       ResetLocalizer();
+    }
+
+    if (data.PosEdge(kRedLocalizerReset)) {
+      RedResetLocalizer();
+    }
+    if (data.PosEdge(kBlueLocalizerReset)) {
+      BlueResetLocalizer();
     }
 
     auto builder = superstructure_goal_sender_.MakeBuilder();
