@@ -28,23 +28,23 @@ def install(ssh_target, pkg, ssh_path, scp_path):
 
 def main(argv):
     parser = argparse.ArgumentParser()
-    parser.add_argument("--target",
-                        type=str,
-                        default="roborio-971-frc.local",
-                        help="Target to deploy code to.")
-    parser.add_argument("--type",
-                        type=str,
-                        choices=["roborio", "pi"],
-                        required=True,
-                        help="Target type for deployment")
+    parser.add_argument(
+        "--target",
+        type=str,
+        default="roborio-971-frc.local",
+        help="Target to deploy code to.")
+    parser.add_argument(
+        "--type",
+        type=str,
+        choices=["roborio", "pi"],
+        required=True,
+        help="Target type for deployment")
     parser.add_argument(
         "--dir",
         type=str,
         help="Directory within robot_code to copy the files to.")
-    parser.add_argument("srcs",
-                        type=str,
-                        nargs='+',
-                        help="List of files to copy over")
+    parser.add_argument(
+        "srcs", type=str, nargs='+', help="List of files to copy over")
     args = parser.parse_args(argv[1:])
 
     relative_dir = ""
@@ -59,8 +59,9 @@ def main(argv):
 
     result = re.match("(?:([^:@]+)@)?([^:@]+)(?::([^:@]+))?", destination)
     if not result:
-        print("Not sure how to parse destination \"%s\"!" % destination,
-              file=sys.stderr)
+        print(
+            "Not sure how to parse destination \"%s\"!" % destination,
+            file=sys.stderr)
         return 1
     user = None
     if result.group(1):
@@ -82,12 +83,20 @@ def main(argv):
     ssh_path = "external/ssh/ssh"
     scp_path = "external/ssh/scp"
 
-    subprocess.check_call([ssh_path, ssh_target, "mkdir", "-p", target_dir])
-
     rsync_cmd = ([
         "external/rsync/usr/bin/rsync", "-e", ssh_path, "-c", "-v", "-z",
         "--perms", "--copy-links"
-    ] + srcs + ["%s:%s/%s" % (ssh_target, target_dir, relative_dir)])
+    ] + srcs)
+
+    # If there is only 1 file to transfer, we would overwrite the destination
+    # folder.  In that case, specify the full path to the target.
+    if len(srcs) == 1:
+        rsync_cmd += [
+            "%s:%s/%s/%s" % (ssh_target, target_dir, relative_dir, srcs[0])
+        ]
+    else:
+        rsync_cmd += ["%s:%s/%s" % (ssh_target, target_dir, relative_dir)]
+
     try:
         subprocess.check_call(rsync_cmd)
     except subprocess.CalledProcessError as e:
@@ -100,6 +109,11 @@ def main(argv):
             install(ssh_target, "rsync_3.1.0-r0.7_cortexa9-vfpv3.ipk",
                     ssh_path, scp_path)
             subprocess.check_call(rsync_cmd)
+        elif e.returncode == 11:
+            # Directory wasn't created, make it and try again.  This keeps the happy path fast.
+            subprocess.check_call(
+                [ssh_path, ssh_target, "mkdir", "-p", target_dir])
+            subprocess.check_call(rsync_cmd)
         else:
             raise e
 
@@ -107,7 +121,7 @@ def main(argv):
         subprocess.check_call((ssh_path, ssh_target, "&&".join([
             "chmod u+s %s/starterd.stripped" % target_dir,
             "echo \'Done moving new executables into place\'",
-            "bash -c \'sync && sync && sync\'",
+            "bash -c \'sync\'",
         ])))
 
 
