@@ -29,7 +29,12 @@ static void initializePower(int32_t* status) {
 
 namespace hal {
 namespace init {
-void InitializePower() {}
+void InitializePower() {
+  if (power == nullptr) {
+    int32_t status = 0;
+    power.reset(tPower::create(&status));
+  }
+}
 }  // namespace init
 }  // namespace hal
 
