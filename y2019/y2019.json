@@ -44,35 +44,35 @@
   "applications": [
     {
       "name": "drivetrain",
-      "executable_name": "drivetrain.stripped"
+      "executable_name": "drivetrain"
     },
     {
       "name": "trajectory_generator",
-      "executable_name": "trajectory_generator.stripped"
+      "executable_name": "trajectory_generator"
     },
     {
       "name": "superstructure",
-      "executable_name": "superstructure.stripped"
+      "executable_name": "superstructure"
     },
     {
       "name": "server",
-      "executable_name": "server.stripped"
+      "executable_name": "server"
     },
     {
       "name": "logger_main",
-      "executable_name": "logger_main.stripped"
+      "executable_name": "logger_main"
     },
     {
       "name": "joystick_reader",
-      "executable_name": "joystick_reader.stripped"
+      "executable_name": "joystick_reader"
     },
     {
       "name": "autonomous_action",
-      "executable_name": "autonomous_action.stripped"
+      "executable_name": "autonomous_action"
     },
     {
       "name": "wpilib_interface",
-      "executable_name": "wpilib_interface.stripped"
+      "executable_name": "wpilib_interface"
     }
   ],
   "imports": [

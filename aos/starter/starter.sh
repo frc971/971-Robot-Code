@@ -17,5 +17,5 @@ fi
 cd "${ROBOT_CODE}"
 export PATH="${PATH}:${ROBOT_CODE}"
 while true; do
-	starterd.stripped 2>&1
+	starterd 2>&1
 done

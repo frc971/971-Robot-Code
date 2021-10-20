@@ -1,5 +1,12 @@
 def _aos_downloader_impl(ctx):
     all_files = ctx.files.srcs + ctx.files.start_srcs + [ctx.outputs._startlist]
+    target_files = []
+
+    # downloader looks for : in the inputs and uses the part after the : as
+    # the directory to copy to.
+    for d in ctx.attr.dirs:
+        target_files += [src.short_path + ":" + d.downloader_dir for src in d.downloader_srcs]
+
     ctx.actions.write(
         output = ctx.outputs.executable,
         is_executable = True,
@@ -7,16 +14,12 @@ def _aos_downloader_impl(ctx):
             "#!/bin/bash",
             "set -e",
             'cd "${BASH_SOURCE[0]}.runfiles/%s"' % ctx.workspace_name,
-        ] + ['%s --dir %s --target "$@" --type %s %s' % (
-            ctx.executable._downloader.short_path,
-            d.downloader_dir,
-            ctx.attr.target_type,
-            " ".join([src.short_path for src in d.downloader_srcs]),
-        ) for d in ctx.attr.dirs] + [
-            'exec %s --target "$@" --type %s %s' % (
+        ] + [
+            'exec %s --target "$@" --type %s %s %s' % (
                 ctx.executable._downloader.short_path,
                 ctx.attr.target_type,
                 " ".join([src.short_path for src in all_files]),
+                " ".join(target_files),
             ),
         ]),
     )

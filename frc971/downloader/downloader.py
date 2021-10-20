@@ -6,9 +6,12 @@ from __future__ import print_function
 
 import argparse
 import sys
+from tempfile import TemporaryDirectory
 import subprocess
 import re
+import stat
 import os
+import shutil
 
 
 def install(ssh_target, pkg, ssh_path, scp_path):
@@ -40,20 +43,10 @@ def main(argv):
         required=True,
         help="Target type for deployment")
     parser.add_argument(
-        "--dir",
-        type=str,
-        help="Directory within robot_code to copy the files to.")
-    parser.add_argument(
         "srcs", type=str, nargs='+', help="List of files to copy over")
     args = parser.parse_args(argv[1:])
 
-    relative_dir = ""
-    recursive = False
-
     srcs = args.srcs
-    if args.dir is not None:
-        relative_dir = args.dir
-        recursive = True
 
     destination = args.target
 
@@ -83,46 +76,74 @@ def main(argv):
     ssh_path = "external/ssh/ssh"
     scp_path = "external/ssh/scp"
 
-    rsync_cmd = ([
-        "external/rsync/usr/bin/rsync", "-e", ssh_path, "-c", "-v", "-z",
-        "--perms", "--copy-links"
-    ] + srcs)
+    # Since rsync is pretty fixed in what it can do, build up a temporary
+    # directory with the exact contents we want the target to have.  This
+    # is faster than multiple SSH connections.
+    with TemporaryDirectory() as temp_dir:
+        pwd = os.getcwd()
+        # Bazel gives us the same file twice, so dedup here rather than
+        # in starlark
+        copied = set()
+        for s in srcs:
+            if ":" in s:
+                folder = os.path.join(temp_dir, s[s.find(":") + 1:])
+                os.makedirs(folder, exist_ok=True)
+                s = os.path.join(pwd, s[:s.find(":")])
+                destination = os.path.join(folder, os.path.basename(s))
+            else:
+                s = os.path.join(pwd, s)
+                destination = os.path.join(temp_dir, os.path.basename(s))
 
-    # If there is only 1 file to transfer, we would overwrite the destination
-    # folder.  In that case, specify the full path to the target.
-    if len(srcs) == 1:
-        rsync_cmd += [
-            "%s:%s/%s/%s" % (ssh_target, target_dir, relative_dir, srcs[0])
-        ]
-    else:
-        rsync_cmd += ["%s:%s/%s" % (ssh_target, target_dir, relative_dir)]
+            if s in copied:
+                continue
+            copied.add(s)
+            if s.endswith(".stripped"):
+                destination = destination[:destination.find(".stripped")]
+            shutil.copy2(s, destination)
+        # Make sure the folder that gets created on the roboRIO has open
+        # permissions or the executables won't be visible to init.
+        os.chmod(temp_dir, 0o775)
+        # Starter needs to be SUID so we transition from lvuser to admin.
+        os.chmod(os.path.join(temp_dir, "starterd"), 0o775 | stat.S_ISUID)
 
-    try:
-        subprocess.check_call(rsync_cmd)
-    except subprocess.CalledProcessError as e:
-        if e.returncode == 127 or e.returncode == 12:
-            print("Unconfigured roboRIO, installing rsync.")
-            install(ssh_target, "libattr1_2.4.47-r0.36_cortexa9-vfpv3.ipk",
-                    ssh_path, scp_path)
-            install(ssh_target, "libacl1_2.2.52-r0.36_cortexa9-vfpv3.ipk",
-                    ssh_path, scp_path)
-            install(ssh_target, "rsync_3.1.0-r0.7_cortexa9-vfpv3.ipk",
-                    ssh_path, scp_path)
-            subprocess.check_call(rsync_cmd)
-        elif e.returncode == 11:
-            # Directory wasn't created, make it and try again.  This keeps the happy path fast.
-            subprocess.check_call(
-                [ssh_path, ssh_target, "mkdir", "-p", target_dir])
-            subprocess.check_call(rsync_cmd)
+        rsync_cmd = ([
+            "external/rsync/usr/bin/rsync",
+            "-e",
+            ssh_path,
+            "-c",
+            "-r",
+            "-v",
+            "--perms",
+            "-l",
+            temp_dir + "/",
+        ])
+
+        # If there is only 1 file to transfer, we would overwrite the destination
+        # folder.  In that case, specify the full path to the target.
+        if len(srcs) == 1:
+            rsync_cmd += ["%s:%s/%s" % (ssh_target, target_dir, srcs[0])]
         else:
-            raise e
+            rsync_cmd += ["%s:%s" % (ssh_target, target_dir)]
 
-    if not recursive:
-        subprocess.check_call((ssh_path, ssh_target, "&&".join([
-            "chmod u+s %s/starterd.stripped" % target_dir,
-            "echo \'Done moving new executables into place\'",
-            "bash -c \'sync\'",
-        ])))
+        try:
+            subprocess.check_call(rsync_cmd)
+        except subprocess.CalledProcessError as e:
+            if e.returncode == 127 or e.returncode == 12:
+                print("Unconfigured roboRIO, installing rsync.")
+                install(ssh_target, "libattr1_2.4.47-r0.36_cortexa9-vfpv3.ipk",
+                        ssh_path, scp_path)
+                install(ssh_target, "libacl1_2.2.52-r0.36_cortexa9-vfpv3.ipk",
+                        ssh_path, scp_path)
+                install(ssh_target, "rsync_3.1.0-r0.7_cortexa9-vfpv3.ipk",
+                        ssh_path, scp_path)
+                subprocess.check_call(rsync_cmd)
+            elif e.returncode == 11:
+                # Directory wasn't created, make it and try again.  This keeps the happy path fast.
+                subprocess.check_call(
+                    [ssh_path, ssh_target, "mkdir", "-p", target_dir])
+                subprocess.check_call(rsync_cmd)
+            else:
+                raise e
 
 
 if __name__ == "__main__":
