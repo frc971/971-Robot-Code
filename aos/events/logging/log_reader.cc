@@ -706,7 +706,7 @@ void LogReader::RegisterDuringStartup(EventLoop *event_loop, const Node *node) {
             state->monotonic_start_time(
                 timestamped_message.monotonic_event_time.boot) ||
         event_loop_factory_ != nullptr) {
-      if (timestamped_message.data.span().size() != 0u) {
+      if (timestamped_message.data != nullptr) {
         if (timestamped_message.monotonic_remote_time !=
             BootTimestamp::min_time()) {
           // Confirm that the message was sent on the sending node before the
@@ -851,7 +851,7 @@ void LogReader::RegisterDuringStartup(EventLoop *event_loop, const Node *node) {
           // through events like this, they can set
           // --skip_missing_forwarding_entries or ignore_missing_data_.
           CHECK_LT(next.channel_index, last_message.size());
-          if (next.data.span().size() == 0u) {
+          if (next.data == nullptr) {
             last_message[next.channel_index] = true;
           } else {
             if (last_message[next.channel_index]) {
@@ -874,9 +874,7 @@ void LogReader::RegisterDuringStartup(EventLoop *event_loop, const Node *node) {
                           .count()
                    << " start "
                    << monotonic_start_time().time_since_epoch().count() << " "
-                   << FlatbufferToJson(
-                          timestamped_message.data,
-                          {.multi_line = false, .max_vector_size = 100});
+                   << *timestamped_message.data;
     }
 
     const BootTimestamp next_time = state->OldestMessageTime();
@@ -1421,8 +1419,8 @@ bool LogReader::State::Send(const TimestampedMessage &timestamped_message) {
   // Send!  Use the replayed queue index here instead of the logged queue index
   // for the remote queue index.  This makes re-logging work.
   const bool sent = sender->Send(
-      timestamped_message.data.message().data()->Data(),
-      timestamped_message.data.message().data()->size(),
+      RawSender::SharedSpan(timestamped_message.data,
+                            &timestamped_message.data->span),
       timestamped_message.monotonic_remote_time.time,
       timestamped_message.realtime_remote_time, remote_queue_index,
       (channel_source_state_[timestamped_message.channel_index] != nullptr
