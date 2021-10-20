@@ -160,3 +160,27 @@ cc_binary(
         "//third_party:opencv",
     ],
 )
+
+cc_binary(
+    name = "extrinsics_calibration",
+    srcs = [
+        "extrinsics_calibration.cc",
+    ],
+    data = [
+        "//y2020:config",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//y2020:__subpackages__"],
+    deps = [
+        ":charuco_lib",
+        "//aos:init",
+        "//aos/events:shm_event_loop",
+        "//aos/events/logging:log_reader",
+        "//frc971/control_loops/drivetrain:improved_down_estimator",
+        "//frc971/wpilib:imu_batch_fbs",
+        "//frc971/wpilib:imu_fbs",
+        "//third_party:opencv",
+        "@com_google_absl//absl/strings:str_format",
+        "@org_tuxfamily_eigen//:eigen",
+    ],
+)
