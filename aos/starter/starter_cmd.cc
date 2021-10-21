@@ -278,7 +278,7 @@ void Autocomplete(int argc, char **argv, const aos::Configuration *config) {
     }
 
     // Autocomplete with "all"
-    if (std::string_view("all").find(FLAGS__bash_autocomplete_word) == 0) {
+    if (std::string_view("all").find(app_name) == 0) {
       std::cout << "'all'";
     }
   }
