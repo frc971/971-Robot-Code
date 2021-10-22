@@ -35,6 +35,15 @@ void AbsoluteAndAbsoluteEncoderZeroingEstimator::Reset() {
   error_ = false;
 }
 
+double
+AbsoluteAndAbsoluteEncoderZeroingEstimator::AdjustedSingleTurnAbsoluteEncoder(
+    const PositionStruct &sample) const {
+  return UnWrap(constants_.single_turn_middle_position,
+                sample.single_turn_absolute_encoder -
+                    constants_.single_turn_measured_absolute_position,
+                constants_.single_turn_one_revolution_distance);
+}
+
 // So, this needs to be a multistep process. We need to first estimate the
 // offset between the absolute encoder and the relative encoder. That process
 // should get us an absolute number which is off by integer multiples of the
@@ -137,10 +146,7 @@ void AbsoluteAndAbsoluteEncoderZeroingEstimator::UpdateEstimate(
     }
 
     const double adjusted_single_turn_absolute_encoder =
-        UnWrap(constants_.single_turn_middle_position,
-               sample.single_turn_absolute_encoder -
-                   constants_.single_turn_measured_absolute_position,
-               constants_.single_turn_one_revolution_distance);
+        AdjustedSingleTurnAbsoluteEncoder(sample);
 
     // Now compute the offset between the pot and relative encoder.
     if (offset_samples_.size() < constants_.average_filter_size) {

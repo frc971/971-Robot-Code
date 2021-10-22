@@ -44,16 +44,18 @@ struct Values {
   // Hood
   static constexpr double kHoodEncoderCountsPerRevolution() { return 4096.0; }
 
-  static constexpr double kHoodEncoderRatio() {
-    // TODO: This math is not quite right
-    // 10.211 in of travel gets you 1 radian on the output
-    const double radians_per_in_travel = 1.0 / 10.211;
+  // TODO: This math is not quite right
+  // 10.211 in of travel gets you 1 radian on the output
+  static constexpr double kHoodEncoderRadiansPerInTravel() {
+    return 1.0 / 10.211;
+  }
 
+  static constexpr double kHoodEncoderRatio() {
     // one turn on the leadscrew gets you 0.5 in travel
     const double in_travel_per_radian = 0.5 / (2.0 * M_PI);
 
     // units reduce; radians on the encoder * this number = radians on the hood
-    return in_travel_per_radian * radians_per_in_travel;
+    return in_travel_per_radian * kHoodEncoderRadiansPerInTravel();
   }
 
   static constexpr double kHoodSingleTurnEncoderRatio() { return 8.0 / 72.0; }
@@ -73,9 +75,24 @@ struct Values {
     };
   }
 
+  struct HoodGeometry {
+    // Measurements for hood zeroing calculations (all lengths in meters and
+    // angles in radians)
+
+    // Measurements when hood is at 0
+    double theta_0;
+    double screw_length_0;
+
+    double radius;
+    double diagonal_length;
+    double back_plate_diagonal_length;
+  };
+
   ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<
       ::frc971::zeroing::AbsoluteAndAbsoluteEncoderZeroingEstimator>
       hood;
+
+  HoodGeometry hood_geometry;
 
   // Intake
   static constexpr double kIntakeEncoderCountsPerRevolution() { return 4096.0; }

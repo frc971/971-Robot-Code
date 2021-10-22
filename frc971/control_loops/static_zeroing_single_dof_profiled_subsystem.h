@@ -39,11 +39,12 @@ struct StaticZeroingSingleDOFProfiledSubsystemParams {
 
 // Class for controlling and motion profiling a single degree of freedom
 // subsystem with a zeroing strategy of not moving.
-template <typename TZeroingEstimator, typename TProfiledJointStatus>
+template <typename TZeroingEstimator, typename TProfiledJointStatus,
+          typename TSubsystemParams = TZeroingEstimator>
 class StaticZeroingSingleDOFProfiledSubsystem {
  public:
   StaticZeroingSingleDOFProfiledSubsystem(
-      const StaticZeroingSingleDOFProfiledSubsystemParams<TZeroingEstimator>
+      const StaticZeroingSingleDOFProfiledSubsystemParams<TSubsystemParams>
           &params);
 
   using ZeroingEstimator = TZeroingEstimator;
@@ -99,16 +100,18 @@ class StaticZeroingSingleDOFProfiledSubsystem {
   State state_ = State::UNINITIALIZED;
   double min_position_, max_position_;
 
-  const StaticZeroingSingleDOFProfiledSubsystemParams<ZeroingEstimator> params_;
+  const StaticZeroingSingleDOFProfiledSubsystemParams<TSubsystemParams> params_;
 
   ::frc971::control_loops::SingleDOFProfiledSubsystem<ZeroingEstimator>
       profiled_subsystem_;
 };
 
-template <typename ZeroingEstimator, typename ProfiledJointStatus>
-StaticZeroingSingleDOFProfiledSubsystem<ZeroingEstimator, ProfiledJointStatus>::
+template <typename ZeroingEstimator, typename ProfiledJointStatus,
+          typename SubsystemParams>
+StaticZeroingSingleDOFProfiledSubsystem<ZeroingEstimator, ProfiledJointStatus,
+                                        SubsystemParams>::
     StaticZeroingSingleDOFProfiledSubsystem(
-        const StaticZeroingSingleDOFProfiledSubsystemParams<ZeroingEstimator>
+        const StaticZeroingSingleDOFProfiledSubsystemParams<SubsystemParams>
             &params)
     : params_(params),
       profiled_subsystem_(
@@ -122,18 +125,21 @@ StaticZeroingSingleDOFProfiledSubsystem<ZeroingEstimator, ProfiledJointStatus>::
   Reset();
 };
 
-template <typename ZeroingEstimator, typename ProfiledJointStatus>
-void StaticZeroingSingleDOFProfiledSubsystem<ZeroingEstimator,
-                                             ProfiledJointStatus>::Reset() {
+template <typename ZeroingEstimator, typename ProfiledJointStatus,
+          typename SubsystemParams>
+void StaticZeroingSingleDOFProfiledSubsystem<
+    ZeroingEstimator, ProfiledJointStatus, SubsystemParams>::Reset() {
   state_ = State::UNINITIALIZED;
   clear_min_position();
   clear_max_position();
   profiled_subsystem_.Reset();
 }
 
-template <typename ZeroingEstimator, typename ProfiledJointStatus>
+template <typename ZeroingEstimator, typename ProfiledJointStatus,
+          typename SubsystemParams>
 flatbuffers::Offset<ProfiledJointStatus>
-StaticZeroingSingleDOFProfiledSubsystem<ZeroingEstimator, ProfiledJointStatus>::
+StaticZeroingSingleDOFProfiledSubsystem<ZeroingEstimator, ProfiledJointStatus,
+                                        SubsystemParams>::
     Iterate(const StaticZeroingSingleDOFProfiledSubsystemGoal *goal,
             const typename ZeroingEstimator::Position *position, double *output,
             flatbuffers::FlatBufferBuilder *status_fbb) {

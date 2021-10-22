@@ -48,7 +48,7 @@ class AbsoluteAndAbsoluteEncoderZeroingEstimator
   virtual flatbuffers::Offset<State> GetEstimatorState(
       flatbuffers::FlatBufferBuilder *fbb) const override;
 
- private:
+ protected:
   struct PositionStruct {
     PositionStruct(const AbsoluteAndAbsolutePosition &position_buffer)
         : single_turn_absolute_encoder(
@@ -60,6 +60,12 @@ class AbsoluteAndAbsoluteEncoderZeroingEstimator
     double encoder;
   };
 
+  // Returns an adjusted single turn absolute encoder reading.
+  // Filled in by default but can be overriden.
+  virtual double AdjustedSingleTurnAbsoluteEncoder(
+      const PositionStruct &sample) const;
+
+ private:
   // The zeroing constants used to describe the configuration of the system.
   const constants::AbsoluteAndAbsoluteEncoderZeroingConstants constants_;
 

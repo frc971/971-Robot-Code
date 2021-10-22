@@ -32,3 +32,18 @@ cc_library(
         "//frc971/control_loops:state_feedback_loop",
     ],
 )
+
+cc_library(
+    name = "hood_encoder_zeroing_estimator",
+    srcs = [
+        "hood_encoder_zeroing_estimator.cc",
+    ],
+    hdrs = [
+        "hood_encoder_zeroing_estimator.h",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        "//frc971/zeroing:zeroing",
+        "//y2020:constants",
+    ],
+)
