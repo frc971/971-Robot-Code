@@ -333,6 +333,13 @@ Localizer::HandleImageMatch(
     noises *= 1.0 + std::abs((right_velocity() - left_velocity()) /
                                  (2.0 * dt_config_.robot_radius) +
                              (is_turret ? turret_data.velocity : 0.0));
+
+    // Pay less attention to cameras that aren't actually on the turret, since they
+    // are less useful when it comes to actually making shots.
+    if (!is_turret) {
+      noises *= 3.0;
+    }
+
     Eigen::Matrix3f R = Eigen::Matrix3f::Zero();
     R.diagonal() = noises.cwiseAbs2();
     Eigen::Matrix<float, HybridEkf::kNOutputs, HybridEkf::kNStates> H;
