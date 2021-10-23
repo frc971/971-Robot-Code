@@ -54,6 +54,7 @@ const ButtonLocation kBlueLocalizerReset(3, 14);
 const ButtonLocation kIntakeIn(4, 4);
 const ButtonLocation kSpit(4, 3);
 const ButtonLocation kLocalizerReset(3, 8);
+const ButtonLocation kIntakeSlightlyOut(3, 7);
 
 const ButtonLocation kWinch(3, 14);
 
@@ -213,6 +214,10 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       preload_intake = true;
     } else if (data.IsPressed(kSpit)) {
       roller_speed = -6.0f;
+    } else if (data.IsPressed(kIntakeSlightlyOut)) {
+      intake_pos = -0.426585;
+      roller_speed = 6.0f;
+      preload_intake = true;
     }
 
     if (data.IsPressed(kWinch)) {
