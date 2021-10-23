@@ -60,6 +60,8 @@ table AimerStatus {
   // The current "shot distance." When shooting on the fly, this may be
   // different from the static distance to the target.
   shot_distance:double (id: 4);
+  // Amount the shot is off from being dead-straight relative to the inner port.
+  inner_port_angle:double (id: 5);
 }
 
 table Status {
