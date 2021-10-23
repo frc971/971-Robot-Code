@@ -90,6 +90,7 @@ class CameraReader {
                             const std::vector<cv::Point2f> &target_point_vector,
                             const std::vector<float> &target_radius_vector,
                             const std::vector<int> &training_image_indices,
+                            const std::vector<int> &homography_feature_counts,
                             aos::Sender<sift::ImageMatchResult> *result_sender,
                             bool send_details);
 
@@ -229,6 +230,7 @@ void CameraReader::SendImageMatchResult(
     const std::vector<cv::Point2f> &target_point_vector,
     const std::vector<float> &target_radius_vector,
     const std::vector<int> &training_image_indices,
+    const std::vector<int> &homography_feature_counts,
     aos::Sender<sift::ImageMatchResult> *result_sender, bool send_details) {
   auto builder = result_sender->MakeBuilder();
   const auto camera_calibration_offset =
@@ -273,6 +275,8 @@ void CameraReader::SendImageMatchResult(
     pose_builder.add_query_target_point_x(target_point_vector[i].x);
     pose_builder.add_query_target_point_y(target_point_vector[i].y);
     pose_builder.add_query_target_point_radius(target_radius_vector[i]);
+    pose_builder.add_homography_feature_count(homography_feature_counts[i]);
+    pose_builder.add_training_image_index(training_image_indices[i]);
     camera_poses.emplace_back(pose_builder.Finish());
   }
   const auto camera_poses_offset = builder.fbb()->CreateVector(camera_poses);
@@ -372,6 +376,7 @@ void CameraReader::ProcessImage(const CameraImage &image) {
   std::vector<cv::Point2f> target_point_vector;
   std::vector<float> target_radius_vector;
   std::vector<int> training_image_indices;
+  std::vector<int> homography_feature_counts;
 
   // Iterate through matches for each training image
   for (size_t i = 0; i < per_image_matches.size(); ++i) {
@@ -390,10 +395,12 @@ void CameraReader::ProcessImage(const CameraImage &image) {
         cv::findHomography(per_image.training_points, per_image.query_points,
                            CV_RANSAC, 3.0, mask);
 
+    const int homography_feature_count = cv::countNonZero(mask);
     // If mask doesn't have enough leftover matches, skip these matches
-    if (cv::countNonZero(mask) < kMinimumMatchCount) {
+    if (homography_feature_count < kMinimumMatchCount) {
       continue;
     }
+    homography_feature_counts.push_back(homography_feature_count);
 
     VLOG(2) << "Number of matches after homography: " << cv::countNonZero(mask)
             << "\n";
@@ -584,11 +591,13 @@ void CameraReader::ProcessImage(const CameraImage &image) {
   SendImageMatchResult(image, keypoints, descriptors, all_good_matches,
                        camera_target_list, field_camera_list,
                        target_point_vector, target_radius_vector,
-                       training_image_indices, &detailed_result_sender_, true);
+                       training_image_indices, homography_feature_counts,
+                       &detailed_result_sender_, true);
   SendImageMatchResult(image, keypoints, descriptors, all_good_matches,
                        camera_target_list, field_camera_list,
                        target_point_vector, target_radius_vector,
-                       training_image_indices, &result_sender_, false);
+                       training_image_indices, homography_feature_counts,
+                       &result_sender_, false);
 }
 
 void CameraReader::ReadImage() {

@@ -143,6 +143,10 @@ table CameraPose {
   query_target_point_y:float (id: 4);
   // Perceived radius of target circle
   query_target_point_radius:float (id: 5);
+  // Number of features used in this match.
+  homography_feature_count:int (id: 6);
+  // Training image used for this pose.
+  training_image_index:int (id: 7);
 }
 
 table ImageMatchResult {
