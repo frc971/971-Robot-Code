@@ -9,7 +9,8 @@ table Goal {
   // Outtake speed for the outtake roller, positive number means it is outtaking balls
   outtake_speed:double (id:1);
 
-  // TODO: Add climber
+  // Positive is deploying climber and to climb; cannot run in reverse
+  climber_speed:double (id: 2);
 
 }
 

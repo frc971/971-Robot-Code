@@ -7,8 +7,8 @@ table Output {
   // Voltage for outtake motor, positive number is outtaking balls
   outtake_volts:double (id:1);
 
-  // TODO: Add climber
-
+  // Positive is deploying climber and to climb; cannot run in reverse
+  climber_volts:double (id:2);
 }
 
 root_type Output;

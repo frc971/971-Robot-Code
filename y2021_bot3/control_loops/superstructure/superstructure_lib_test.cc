@@ -43,15 +43,18 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
   }
 
   void VerifyResults(double intake_voltage, double outtake_voltage,
-                     double intake_speed, double outtake_speed) {
+                     double climber_voltage, double intake_speed,
+                     double outtake_speed, double climber_speed) {
     superstructure_output_fetcher_.Fetch();
     superstructure_status_fetcher_.Fetch();
     ASSERT_TRUE(superstructure_output_fetcher_.get() != nullptr);
     ASSERT_TRUE(superstructure_status_fetcher_.get() != nullptr);
     EXPECT_EQ(superstructure_output_fetcher_->intake_volts(), intake_voltage);
     EXPECT_EQ(superstructure_output_fetcher_->outtake_volts(), outtake_voltage);
+    EXPECT_EQ(superstructure_output_fetcher_->climber_volts(), climber_voltage);
     EXPECT_EQ(superstructure_status_fetcher_->intake_speed(), intake_speed);
     EXPECT_EQ(superstructure_status_fetcher_->outtake_speed(), outtake_speed);
+    EXPECT_EQ(superstructure_status_fetcher_->climber_speed(), climber_speed);
     EXPECT_EQ(superstructure_status_fetcher_->estopped(), false);
     EXPECT_EQ(superstructure_status_fetcher_->zeroed(), true);
   }
@@ -83,7 +86,7 @@ TEST_F(SuperstructureTest, RunIntakeOrOuttake) {
     ASSERT_TRUE(builder.Send(goal_builder.Finish()));
     SendPositionMessage();
     RunFor(dt() * 2);
-    VerifyResults(10.0, 0.0, 10.0, 0.0);
+    VerifyResults(10.0, 0.0, 0.0, 10.0, 0.0, 0.0);
   }
 
   {
@@ -92,8 +95,17 @@ TEST_F(SuperstructureTest, RunIntakeOrOuttake) {
     goal_builder.add_outtake_speed(10.0);
     ASSERT_TRUE(builder.Send(goal_builder.Finish()));
     RunFor(dt() * 2);
-    VerifyResults(0.0, 10.0, 0.0, 10.0);
+    VerifyResults(0.0, 10.0, 0.0, 0.0, 10.0, 0.0);
   }
+}
+
+TEST_F(SuperstructureTest, RunClimber) {
+  auto builder = superstructure_goal_sender_.MakeBuilder();
+  Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+  goal_builder.add_climber_speed(4.0);
+  ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+  RunFor(dt() * 2);
+  VerifyResults(0.0, 0.0, 4.0, 0.0, 0.0, 4.0);
 }
 
 // Tests running both the intake and the outtake simultaneously
@@ -104,7 +116,7 @@ TEST_F(SuperstructureTest, RunIntakeAndOuttake) {
   goal_builder.add_outtake_speed(5.0);
   ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   RunFor(dt() * 2);
-  VerifyResults(10.0, 5.0, 10.0, 5.0);
+  VerifyResults(10.0, 5.0, 0.0, 10.0, 5.0, 0.0);
 }
 
 // Tests for an invalid voltage (over 12 or under -12) to check that it defaults
@@ -115,9 +127,10 @@ TEST_F(SuperstructureTest, InvalidVoltage) {
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_intake_speed(20.0);
     goal_builder.add_outtake_speed(15.0);
+    goal_builder.add_climber_speed(18.0);
     ASSERT_TRUE(builder.Send(goal_builder.Finish()));
     RunFor(dt() * 2);
-    VerifyResults(12.0, 12.0, 20.0, 15.0);
+    VerifyResults(12.0, 12.0, 12.0, 20.0, 15.0, 18.0);
   }
 
   {
@@ -125,9 +138,10 @@ TEST_F(SuperstructureTest, InvalidVoltage) {
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_intake_speed(-20.0);
     goal_builder.add_outtake_speed(-15.0);
+    goal_builder.add_climber_speed(-18.0);
     ASSERT_TRUE(builder.Send(goal_builder.Finish()));
     RunFor(dt() * 2);
-    VerifyResults(-12.0, -12.0, -20.0, -15.0);
+    VerifyResults(-12.0, -12.0, -12.0, -20.0, -15.0, -18.0);
   }
 }
 
@@ -137,7 +151,7 @@ TEST_F(SuperstructureTest, GoalIsNull) {
   Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
   ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   RunFor(dt() * 2);
-  VerifyResults(0.0, 0.0, 0.0, 0.0);
+  VerifyResults(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
 }
 
 // Tests that the robot behaves properly when disabled
@@ -146,10 +160,11 @@ TEST_F(SuperstructureTest, Disabled) {
   Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
   goal_builder.add_intake_speed(6.0);
   goal_builder.add_outtake_speed(5.0);
+  goal_builder.add_climber_speed(4.0);
   ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   SetEnabled(false);
   RunFor(dt() * 2);
-  VerifyResults(0.0, 0.0, 6.0, 5.0);
+  VerifyResults(0.0, 0.0, 0.0, 6.0, 5.0, 4.0);
 }
 
 }  // namespace testing

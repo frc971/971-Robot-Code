@@ -31,6 +31,8 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
         std::clamp(unsafe_goal->intake_speed(), -12.0, 12.0);
     output_struct.outtake_volts =
         std::clamp(unsafe_goal->outtake_speed(), -12.0, 12.0);
+    output_struct.climber_volts =
+        std::clamp(unsafe_goal->climber_speed(), -12.0, 12.0);
     output->Send(Output::Pack(*output->fbb(), &output_struct));
   }
 
@@ -42,6 +44,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   if (unsafe_goal != nullptr) {
     status_builder.add_intake_speed(unsafe_goal->intake_speed());
     status_builder.add_outtake_speed(unsafe_goal->outtake_speed());
+    status_builder.add_climber_speed(unsafe_goal->climber_speed());
   }
 
   status->Send(status_builder.Finish());
