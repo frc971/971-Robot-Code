@@ -48,7 +48,7 @@ constexpr double kPortHeight = 2.494;
 // exactly perpendicular to the target. Larger numbers allow us to aim at the
 // inner port more aggressively, at the risk of being more likely to miss the
 // outer port entirely.
-constexpr double kMaxInnerPortAngle = 20.0 * M_PI / 180.0;
+constexpr double kMaxInnerPortAngle = 10.0 * M_PI / 180.0;
 
 // Distance (in meters) from the edge of the field to the port, with some
 // compensation to ensure that our definition of where the target is matches
@@ -164,7 +164,7 @@ void Aimer::Update(const Status *status, aos::Alliance alliance,
   const double xdot = linear_angular(0) * std::cos(status->theta());
   const double ydot = linear_angular(0) * std::sin(status->theta());
 
-  const double inner_port_angle = robot_pose_from_inner_port.heading();
+  inner_port_angle_ = robot_pose_from_inner_port.heading();
   const double inner_port_distance = robot_pose_from_inner_port.rel_pos().x();
   // Add a bit of hysteresis so that we don't jump between aiming for the inner
   // and outer ports.
@@ -174,7 +174,7 @@ void Aimer::Update(const Status *status, aos::Alliance alliance,
       aiming_for_inner_port_ ? (kMinimumInnerPortShotDistance - 0.3)
                              : kMinimumInnerPortShotDistance;
   aiming_for_inner_port_ =
-      (std::abs(inner_port_angle) < max_inner_port_angle) &&
+      (std::abs(inner_port_angle_) < max_inner_port_angle) &&
       (inner_port_distance > min_inner_port_distance);
 
   // This code manages compensating the goal turret heading for the robot's
@@ -262,6 +262,7 @@ flatbuffers::Offset<AimerStatus> Aimer::PopulateStatus(
   builder.add_turret_velocity(goal_.message().goal_velocity());
   builder.add_aiming_for_inner_port(aiming_for_inner_port_);
   builder.add_target_distance(target_distance_);
+  builder.add_inner_port_angle(inner_port_angle_);
   builder.add_shot_distance(DistanceToGoal());
   return builder.Finish();
 }
