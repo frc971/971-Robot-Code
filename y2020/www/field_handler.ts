@@ -3,11 +3,15 @@ import {Connection} from 'org_frc971/aos/network/www/proxy';
 import * as flatbuffers_builder from 'org_frc971/external/com_github_google_flatbuffers/ts/builder';
 import {ByteBuffer} from 'org_frc971/external/com_github_google_flatbuffers/ts/byte-buffer';
 import * as drivetrain from 'org_frc971/frc971/control_loops/drivetrain/drivetrain_status_generated';
+import * as localizer from 'org_frc971/y2020/control_loops/drivetrain/localizer_debug_generated';
 import * as sift from 'org_frc971/y2020/vision/sift/sift_generated';
 import * as web_proxy from 'org_frc971/aos/network/web_proxy_generated';
 import * as ss from 'org_frc971/y2020/control_loops/superstructure/superstructure_status_generated'
 
 import DrivetrainStatus = drivetrain.frc971.control_loops.drivetrain.Status;
+import LocalizerDebug = localizer.y2020.control_loops.drivetrain.LocalizerDebug;
+import RejectionReason = localizer.y2020.control_loops.drivetrain.RejectionReason;
+import ImageMatchDebug = localizer.y2020.control_loops.drivetrain.ImageMatchDebug;
 import SuperstructureStatus = ss.y2020.control_loops.superstructure.Status;
 import ImageMatchResult = sift.frc971.vision.sift.ImageMatchResult;
 import Channel = configuration.aos.Channel;
@@ -67,6 +71,9 @@ export class FieldHandler {
   private imageMatchResult =  new Map<string, ImageMatchResult>();
   private drivetrainStatus: DrivetrainStatus|null = null;
   private superstructureStatus: SuperstructureStatus|null = null;
+  // Image information indexed by timestamp (seconds since the epoch), so that
+  // we can stop displaying images after a certain amount of time.
+  private localizerImageMatches = new Map<number, LocalizerDebug>();
   private x: HTMLDivElement = (document.getElementById('x') as HTMLDivElement);
   private y: HTMLDivElement = (document.getElementById('y') as HTMLDivElement);
   private theta: HTMLDivElement = (document.getElementById('theta') as HTMLDivElement);
@@ -78,9 +85,29 @@ export class FieldHandler {
   private hood: HTMLDivElement = (document.getElementById('hood') as HTMLDivElement);
   private turret: HTMLDivElement = (document.getElementById('turret') as HTMLDivElement);
   private intake: HTMLDivElement = (document.getElementById('intake') as HTMLDivElement);
+  private imagesAcceptedCounter: HTMLDivElement = (document.getElementById('images_accepted') as HTMLDivElement);
+  private imagesRejectedCounter: HTMLDivElement = (document.getElementById('images_rejected') as HTMLDivElement);
+  private rejectionReasonCells: HTMLDivElement[] = [];
 
   constructor(private readonly connection: Connection) {
     (document.getElementById('field') as HTMLElement).appendChild(this.canvas);
+
+    for (const value in RejectionReason) {
+      // Typescript generates an iterator that produces both numbers and
+      // strings... don't do anything on the string iterations.
+      if (isNaN(Number(value))) {
+        continue;
+      }
+      const row = document.createElement("div");
+      const nameCell = document.createElement("div");
+      nameCell.innerHTML = RejectionReason[value];
+      row.appendChild(nameCell);
+      const valueCell = document.createElement("div");
+      valueCell.innerHTML = "NA";
+      this.rejectionReasonCells.push(valueCell);
+      row.appendChild(valueCell);
+      document.getElementById('readouts').appendChild(row);
+    }
 
     this.connection.addConfigHandler(() => {
       // Go through and register handlers for both all the individual pis as
@@ -92,6 +119,10 @@ export class FieldHandler {
               this.handleImageMatchResult(prefix, res);
             });
       }
+      this.connection.addHandler(
+          '/drivetrain', LocalizerDebug.getFullyQualifiedName(), (data) => {
+            this.handleLocalizerDebug(data);
+          });
       this.connection.addHandler(
           '/drivetrain', DrivetrainStatus.getFullyQualifiedName(), (data) => {
             this.handleDrivetrainStatus(data);
@@ -110,6 +141,41 @@ export class FieldHandler {
         prefix,
         ImageMatchResult.getRootAsImageMatchResult(
             fbBuffer as unknown as flatbuffers.ByteBuffer));
+  }
+
+  private handleLocalizerDebug(data: Uint8Array): void {
+    const now = Date.now() / 1000.0;
+
+    const fbBuffer = new ByteBuffer(data);
+    this.localizerImageMatches.set(
+        now,
+        LocalizerDebug.getRootAsLocalizerDebug(
+            fbBuffer as unknown as flatbuffers.ByteBuffer));
+
+    const debug = this.localizerImageMatches.get(now);
+
+    if (debug.statistics()) {
+      this.imagesAcceptedCounter.innerHTML =
+          debug.statistics().totalAccepted().toString();
+      this.imagesRejectedCounter.innerHTML =
+          (debug.statistics().totalCandidates() -
+           debug.statistics().totalAccepted())
+              .toString();
+      if (debug.statistics().rejectionReasonCountLength() ==
+          this.rejectionReasonCells.length) {
+        for (let ii = 0; ii < debug.statistics().rejectionReasonCountLength();
+             ++ii) {
+          this.rejectionReasonCells[ii].innerHTML =
+              debug.statistics().rejectionReasonCount(ii).toString();
+        }
+      } else {
+        console.error("Unexpected number of rejection reasons in counter.");
+      }
+      this.imagesRejectedCounter.innerHTML =
+          (debug.statistics().totalCandidates() -
+           debug.statistics().totalAccepted())
+              .toString();
+    }
   }
 
   private handleDrivetrainStatus(data: Uint8Array): void {
@@ -194,16 +260,21 @@ export class FieldHandler {
     ctx.stroke();
   }
 
-  drawCamera(x: number, y: number, theta: number): void {
+  drawCamera(
+      x: number, y: number, theta: number, color: string = 'blue',
+      extendLines: boolean = true): void {
     const ctx = this.canvas.getContext('2d');
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(theta);
+    ctx.strokeStyle = color;
     ctx.beginPath();
     ctx.moveTo(0.5, 0.5);
     ctx.lineTo(0, 0);
-    ctx.lineTo(100.0, 0);
-    ctx.lineTo(0, 0);
+    if (extendLines) {
+      ctx.lineTo(100.0, 0);
+      ctx.lineTo(0, 0);
+    }
     ctx.lineTo(0.5, -0.5);
     ctx.stroke();
     ctx.beginPath();
@@ -212,13 +283,34 @@ export class FieldHandler {
     ctx.restore();
   }
 
-  drawRobot(x: number, y: number, theta: number, turret: number|null): void {
+  drawRobot(
+      x: number, y: number, theta: number, turret: number|null,
+      color: string = 'blue', dashed: boolean = false,
+      extendLines: boolean = true): void {
     const ctx = this.canvas.getContext('2d');
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(theta);
+    ctx.strokeStyle = color;
+    if (dashed) {
+      ctx.setLineDash([0.05, 0.05]);
+    } else {
+      // Empty array = solid line.
+      ctx.setLineDash([]);
+    }
     ctx.rect(-ROBOT_LENGTH / 2, -ROBOT_WIDTH / 2, ROBOT_LENGTH, ROBOT_WIDTH);
     ctx.stroke();
+
+    // Draw line indicating which direction is forwards on the robot.
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    if (extendLines) {
+      ctx.lineTo(1000.0, 0);
+    } else {
+      ctx.lineTo(ROBOT_LENGTH / 2.0, 0);
+    }
+    ctx.stroke();
+
     if (turret) {
       ctx.save();
       ctx.rotate(turret + Math.PI);
@@ -231,14 +323,14 @@ export class FieldHandler {
       // Draw line in circle to show forwards.
       ctx.beginPath();
       ctx.moveTo(0, 0);
-      ctx.lineTo(1000.0 * turretRadius, 0);
+      if (extendLines) {
+        ctx.lineTo(1000.0, 0);
+      } else {
+        ctx.lineTo(turretRadius, 0);
+      }
       ctx.stroke();
       ctx.restore();
     }
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(100.0 * ROBOT_LENGTH / 2, 0);
-    ctx.stroke();
     ctx.restore();
   }
 
@@ -261,7 +353,38 @@ export class FieldHandler {
   draw(): void {
     this.reset();
     this.drawField();
-    // draw cameras
+
+    // Draw the matches with debugging information from the localizer.
+    const now = Date.now() / 1000.0;
+    for (const [time, value] of this.localizerImageMatches) {
+      const age = now - time;
+      const kRemovalAge = 2.0;
+      if (age > kRemovalAge) {
+        this.localizerImageMatches.delete(time);
+        continue;
+      }
+      const ageAlpha = (kRemovalAge - age) / kRemovalAge
+      for (let i = 0; i < value.matchesLength(); i++) {
+        const imageDebug = value.matches(i);
+        const x = imageDebug.impliedRobotX();
+        const y = imageDebug.impliedRobotY();
+        const theta = imageDebug.impliedRobotTheta();
+        const cameraX = imageDebug.cameraX();
+        const cameraY = imageDebug.cameraY();
+        const cameraTheta = imageDebug.cameraTheta();
+        const accepted = imageDebug.accepted();
+        // Make camera readings fade over time.
+        const alpha = Math.round(255 * ageAlpha).toString(16).padStart(2, '0');
+        const dashed = false;
+        const rgb = accepted ? "#00FF00" : "#FF0000";
+        const rgba = rgb + alpha;
+        this.drawRobot(x, y, theta, null, rgba, dashed, false);
+        this.drawCamera(cameraX, cameraY, cameraTheta, rgba, false);
+      }
+    }
+
+    // draw cameras from ImageMatchResults directly (helpful when viewing page
+    // on the pis individually).
     for (const keyPair of this.imageMatchResult) {
       const value = keyPair[1];
       for (let i = 0; i < value.cameraPosesLength(); i++) {
@@ -294,35 +417,53 @@ export class FieldHandler {
         this.setValue(this.theta, this.drivetrainStatus.theta());
       }
 
-      this.shotDistance.innerHTML = this.superstructureStatus.aimer().shotDistance().toFixed(2);
-      this.finisher.innerHTML = this.superstructureStatus.shooter().finisher().angularVelocity().toFixed(2);
-      this.leftAccelerator.innerHTML = this.superstructureStatus.shooter().acceleratorLeft().angularVelocity().toFixed(2);
-      this.rightAccelerator.innerHTML = this.superstructureStatus.shooter().acceleratorRight().angularVelocity().toFixed(2);
-      if (this.superstructureStatus.aimer().aimingForInnerPort()) {
-        this.innerPort.innerHTML = "true";
-      } else {
-        this.innerPort.innerHTML = "false";
-      }
-      if (!this.superstructureStatus.hood().zeroed()) {
-        this.setZeroing(this.hood);
-      } else if (this.superstructureStatus.hood().estopped()) {
-        this.setEstopped(this.hood);
-      } else {
-        this.setValue(this.hood, this.superstructureStatus.hood().estimatorState().position());
-      }
-      if (!this.superstructureStatus.turret().zeroed()) {
-        this.setZeroing(this.turret);
-      } else if (this.superstructureStatus.turret().estopped()) {
-        this.setEstopped(this.turret);
-      } else {
-        this.setValue(this.turret, this.superstructureStatus.turret().estimatorState().position());
-      }
-      if (!this.superstructureStatus.intake().zeroed()) {
-        this.setZeroing(this.intake);
-      } else if (this.superstructureStatus.intake().estopped()) {
-        this.setEstopped(this.intake);
-      } else {
-        this.setValue(this.intake, this.superstructureStatus.intake().estimatorState().position());
+      if (this.superstructureStatus) {
+        this.shotDistance.innerHTML =
+            this.superstructureStatus.aimer().shotDistance().toFixed(2);
+        this.finisher.innerHTML = this.superstructureStatus.shooter()
+                                      .finisher()
+                                      .angularVelocity()
+                                      .toFixed(2);
+        this.leftAccelerator.innerHTML = this.superstructureStatus.shooter()
+                                             .acceleratorLeft()
+                                             .angularVelocity()
+                                             .toFixed(2);
+        this.rightAccelerator.innerHTML = this.superstructureStatus.shooter()
+                                              .acceleratorRight()
+                                              .angularVelocity()
+                                              .toFixed(2);
+        if (this.superstructureStatus.aimer().aimingForInnerPort()) {
+          this.innerPort.innerHTML = 'true';
+        } else {
+          this.innerPort.innerHTML = 'false';
+        }
+        if (!this.superstructureStatus.hood().zeroed()) {
+          this.setZeroing(this.hood);
+        } else if (this.superstructureStatus.hood().estopped()) {
+          this.setEstopped(this.hood);
+        } else {
+          this.setValue(
+              this.hood,
+              this.superstructureStatus.hood().estimatorState().position());
+        }
+        if (!this.superstructureStatus.turret().zeroed()) {
+          this.setZeroing(this.turret);
+        } else if (this.superstructureStatus.turret().estopped()) {
+          this.setEstopped(this.turret);
+        } else {
+          this.setValue(
+              this.turret,
+              this.superstructureStatus.turret().estimatorState().position());
+        }
+        if (!this.superstructureStatus.intake().zeroed()) {
+          this.setZeroing(this.intake);
+        } else if (this.superstructureStatus.intake().estopped()) {
+          this.setEstopped(this.intake);
+        } else {
+          this.setValue(
+              this.intake,
+              this.superstructureStatus.intake().estimatorState().position());
+        }
       }
       this.drawRobot(
           this.drivetrainStatus.x(), this.drivetrainStatus.y(),
