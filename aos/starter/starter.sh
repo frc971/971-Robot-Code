@@ -8,8 +8,9 @@ if [[ "$(hostname)" == "roboRIO"* ]]; then
   ln -s /var/local/natinst/log/FRC_UserProgram.log /tmp/FRC_UserProgram.log
   ln -s /var/local/natinst/log/FRC_UserProgram.log "${ROBOT_CODE}/FRC_UserProgram.log"
 elif [[ "$(hostname)" == "pi-"* ]]; then
-  ROBOT_CODE="/home/pi/robot_code"
-
+  # We have systemd configured to handle restarting, so just exec.
+  export PATH="${PATH}:/home/pi/robot_code"
+  exec starterd
 else
   ROBOT_CODE="${HOME}/robot_code"
 fi

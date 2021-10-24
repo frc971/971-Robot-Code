@@ -2,8 +2,16 @@
 Description=Start up 971 robot code
 
 [Service]
-Type=oneshot
-ExecStart=su pi -c /home/pi/robot_code/starter.sh
+User=pi
+Group=pi
+Type=simple
+WorkingDirectory=/home/pi/robot_code
+ExecStart=/home/pi/robot_code/starter.sh
+KillMode=mixed
+TimeoutStopSec=10
+
+Restart=always
+RestartSec=5s
 
 [Install]
 WantedBy=multi-user.target
