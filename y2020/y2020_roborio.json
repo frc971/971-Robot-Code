@@ -26,6 +26,8 @@
       "source_node": "roborio",
       "frequency": 500,
       "max_size": 344,
+      /* Due to potential for burst load, don't log. */
+      "logger": "NOT_LOGGED",
       "num_senders": 20
     },
     {
@@ -248,7 +250,9 @@
       "frequency": 4,
       "num_senders": 2,
       "read_method": "PIN",
-      "num_readers": 10
+      "num_readers": 10,
+      /* Trajectory creates a very peaky load on the logger. */
+      "logger": "NOT_LOGGED"
     },
     {
       "name": "/drivetrain",
