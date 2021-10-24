@@ -2,6 +2,7 @@ import argparse
 import cv2
 # TODO<Jim>: Add gflags for handling command-line flags
 import glog
+import json
 import math
 import numpy as np
 
@@ -11,18 +12,20 @@ import train_and_match as tam
 
 # TODO<Jim>: Allow command-line setting of logging level
 glog.setLevel("INFO")
-global VISUALIZE_KEYPOINTS
+global VISUALIZE_KEYPOINTS, AUTO_PROJECTION
 VISUALIZE_KEYPOINTS = False
+AUTO_PROJECTION = False
 
 # For now, just have a 12 pixel radius, based on captured (taped) training image
 target_radius_default = 12.
 
 
 class TargetData:
-    def __init__(self, filename):
-        self.image_filename = dtd.bazel_name_fix(filename)
-        # Load an image (will come in as a 1-element list)
-        self.image = tam.load_images([self.image_filename])[0]
+    def __init__(self, filename=None):
+        if filename:
+            self.image_filename = dtd.bazel_name_fix(filename)
+            # Load an image (will come in as a 1-element list)
+            self.image = tam.load_images([self.image_filename])[0]
         self.polygon_list = []
         self.polygon_list_3d = []
         self.reprojection_map_list = []
@@ -33,6 +36,52 @@ class TargetData:
         self.target_position = None
         self.target_point_2d = None
         self.target_radius = target_radius_default
+
+    @classmethod
+    def from_json(cls, filename):
+        data = None
+        with open(dtd.bazel_name_fix(filename), 'r') as fd:
+            data = json.load(fd)
+        # Convert lists that should be np arrays
+        data["target_rotation"] = np.array(data["target_rotation"])
+        data["target_position"] = np.array(data["target_position"])
+        if "target_point_2d" in data:
+            data["target_point_2d"] = np.array(data["target_point_2d"])
+        # Load an image (will come in as a 1-element list)
+        if not data["image_filename"].startswith("org_frc971"):
+            data["image_filename"] = dtd.bazel_name_fix(data["image_filename"])
+        data["image"] = tam.load_images([data["image_filename"]])[0]
+        data["reprojection_map_list"] = []
+        data["keypoint_list"] = []
+        data["keypoint_list_3d"] = None  # numpy array of 3D points
+        data["descriptor_list"] = []
+        td = cls()
+        td.__dict__ = data
+        return td
+
+    @staticmethod
+    def from_jsons(*filenames):
+        tds = []
+        for filename in filenames:
+            tds.append(TargetData.from_json(filename))
+        return tds
+
+    def write_to_json(self, filename):
+        with open(filename, 'w') as fd:
+            # Convert np arrays to lists, which are json serializable
+            data = self.__dict__.copy()
+            data["target_rotation"] = self.target_rotation.tolist()
+            data["target_position"] = self.target_position.tolist()
+            if self.target_point_2d is not None:
+                data["target_point_2d"] = self.target_point_2d.tolist()
+            # Don't store the large image since we have its filename,
+            # and the data that is always blank at this point
+            for field in [
+                    "image", "reprojection_map_list", "keypoint_list",
+                    "keypoint_list_3d", "descriptor_list"
+            ]:
+                data.pop(field)
+            json.dump(data, fd)
 
     def extract_features(self, feature_extractor=None):
         if feature_extractor is None:
@@ -77,500 +126,18 @@ class TargetData:
 
 
 def load_training_data():
-    ############################################################
-    # TARGET DEFINITIONS
-    ############################################################
-
-    ideal_target_list = []
-    training_target_list = []
-
-    # Using coordinate system as defined in sift.fbs:
-    # field origin (0, 0, 0) at floor height at center of field
-    # Robot orientation with x-axis pointing towards RED ALLIANCE player station
-    # y-axis to left and z-axis up (right-hand coordinate system)
-    # Thus, the red power port target location will be at (-15.98/2,1.67,0),
-    # with orientation (facing out of the field) of M_PI
-
-    # Field constants
-    field_length = 15.983
-    power_port_total_height = 3.10
-    power_port_edge_y = 1.089
-    power_port_width = 1.225
-    power_port_bottom_wing_height = 1.828
-    power_port_wing_width = 1.83
-    loading_bay_edge_y = 0.784
-    loading_bay_width = 1.524
-    loading_bay_height = 0.933
-    # Wing angle on actual field target
-    # wing_angle = 20. * math.pi / 180.
-    ### NOTE: Setting wing angle to zero to match current FRC971 target
-    wing_angle = 0
-
-    # Pick the target center location at halfway between top and bottom of the top panel
-    power_port_target_height = (power_port_total_height +
-                                power_port_bottom_wing_height) / 2.
-
-    ### Taped up FRC target definition
-    inch_to_meter = 0.0254
-    c_power_port_total_height = (79.5 + 39.5) * inch_to_meter
-    c_power_port_edge_y = 1.089
-    c_power_port_width = 4.0 * 12 * inch_to_meter
-    c_power_port_bottom_wing_height = 79.5 * inch_to_meter
-    c_power_port_wing_width = 47.5 * inch_to_meter
-    c_power_port_white_marker_z = (79.5 - 19.5) * inch_to_meter
-
-    # Pick the target center location at halfway between top and bottom of the top panel
-    c_power_port_target_height = (power_port_total_height +
-                                  power_port_bottom_wing_height) / 2.
-
-    ###
-    ### Taped power port
-    ###
-
-    # Create the reference "ideal" image.
-    # NOTE: Since we don't have an "ideal" (e.g., graphic) version, we're
-    # just using the same image as the training image.
-    ideal_power_port_taped = TargetData(
-        'test_images/partial_971_power_port_red_daytime.png')
-
-    # Start at lower left corner, and work around clockwise
-    # These are taken by manually finding the points in gimp for this image
-    power_port_taped_main_panel_polygon_points_2d = [(198, 473), (203, 154),
-                                                     (23, 156), (204, 19),
-                                                     (374, 16), (381, 152),
-                                                     (397, 467)]
-
-    # These are "virtual" 3D points based on the expected geometry
-    power_port_taped_main_panel_polygon_points_3d = [
-        (-field_length / 2., c_power_port_edge_y, 0.),
-        (-field_length / 2., c_power_port_edge_y,
-         c_power_port_bottom_wing_height),
-        (-field_length / 2., c_power_port_edge_y - c_power_port_wing_width,
-         c_power_port_bottom_wing_height),
-        (-field_length / 2., c_power_port_edge_y, c_power_port_total_height),
-        (-field_length / 2., c_power_port_edge_y + c_power_port_width,
-         c_power_port_total_height),
-        (-field_length / 2., c_power_port_edge_y + c_power_port_width,
-         c_power_port_bottom_wing_height),
-        (-field_length / 2., c_power_port_edge_y + c_power_port_width, 0.)
-    ]
-
-    power_port_taped_wing_panel_polygon_points_2d = [(312, 99), (438, 191),
-                                                     (315, 195)]
-
-    # These are "virtual" 3D points based on the expected geometry
-    power_port_taped_wing_panel_polygon_points_3d = [
-        (field_length / 2., -power_port_edge_y - power_port_width,
-         power_port_total_height),
-        (field_length / 2. - power_port_wing_width * math.sin(wing_angle),
-         -power_port_edge_y - power_port_width -
-         power_port_wing_width * math.cos(wing_angle),
-         power_port_bottom_wing_height),
-        (field_length / 2., -power_port_edge_y - power_port_width,
-         power_port_bottom_wing_height)
-    ]
-
-    # Populate the taped power port
-    ideal_power_port_taped.polygon_list.append(
-        power_port_taped_main_panel_polygon_points_2d)
-    ideal_power_port_taped.polygon_list_3d.append(
-        power_port_taped_main_panel_polygon_points_3d)
-    # Including the wing panel
-    #ideal_power_port_taped.polygon_list.append(
-    #    power_port_taped_wing_panel_polygon_points_2d)
-    #ideal_power_port_taped.polygon_list_3d.append(
-    #    power_port_taped_wing_panel_polygon_points_3d)
-
-    # Location of target.  Rotation is pointing in -x direction
-    ideal_power_port_taped.target_rotation = -np.identity(3, np.double)
-    ideal_power_port_taped.target_position = np.array([
-        -field_length / 2., c_power_port_edge_y + c_power_port_width / 2.,
-        c_power_port_target_height
-    ])
-    ideal_power_port_taped.target_point_2d = np.float32([[290, 87]]).reshape(
-        -1, 1, 2)  # partial_971_power_port_red_daytime.png
-
-    training_target_power_port_taped = TargetData(
-        'test_images/partial_971_power_port_red_daytime.png')
-    training_target_power_port_taped.target_rotation = ideal_power_port_taped.target_rotation
-    training_target_power_port_taped.target_position = ideal_power_port_taped.target_position
-    training_target_power_port_taped.target_radius = target_radius_default
-
-    ###
-    ### Taped power port -- far away image
-    ###
-
-    # Create the reference "ideal" image.
-    # NOTE: Since we don't have an "ideal" (e.g., graphic) version, we're
-    # just using the same image as the training image.
-    ideal_power_port_taped_far = TargetData(
-        'test_images/partial_971_power_port_red_daytime_far.png')
-
-    # Start at lower left corner, and work around clockwise
-    # These are taken by manually finding the points in gimp for this image
-    power_port_taped_far_main_panel_polygon_points_2d = [
-        (259, 363), (255, 230), (178, 234), (255, 169), (329, 164), (334, 225),
-        (341, 361)
-    ]
-
-    # These are "virtual" 3D points based on the expected geometry
-    power_port_taped_far_main_panel_polygon_points_3d = [
-        (-field_length / 2., c_power_port_edge_y, 0.),
-        (-field_length / 2., c_power_port_edge_y,
-         c_power_port_bottom_wing_height),
-        (-field_length / 2., c_power_port_edge_y - c_power_port_wing_width,
-         c_power_port_bottom_wing_height),
-        (-field_length / 2., c_power_port_edge_y, c_power_port_total_height),
-        (-field_length / 2., c_power_port_edge_y + c_power_port_width,
-         c_power_port_total_height),
-        (-field_length / 2., c_power_port_edge_y + c_power_port_width,
-         c_power_port_bottom_wing_height),
-        (-field_length / 2., c_power_port_edge_y + c_power_port_width, 0.)
-    ]
-
-    # Populate the taped power port
-    ideal_power_port_taped_far.polygon_list.append(
-        power_port_taped_far_main_panel_polygon_points_2d)
-    ideal_power_port_taped_far.polygon_list_3d.append(
-        power_port_taped_far_main_panel_polygon_points_3d)
-
-    # Location of target.  Rotation is pointing in -x direction
-    ideal_power_port_taped_far.target_rotation = -np.identity(3, np.double)
-    ideal_power_port_taped_far.target_position = np.array([
-        -field_length / 2., c_power_port_edge_y + c_power_port_width / 2.,
-        c_power_port_target_height
-    ])
-    ideal_power_port_taped_far.target_point_2d = np.float32(
-        [[294, 198]]).reshape(-1, 1,
-                              2)  # partial_971_power_port_red_daytime.png
-
-    training_target_power_port_taped_far = TargetData(
-        'test_images/partial_971_power_port_red_daytime_far.png')
-    training_target_power_port_taped_far.target_rotation = ideal_power_port_taped_far.target_rotation
-    training_target_power_port_taped_far.target_position = ideal_power_port_taped_far.target_position
-    training_target_power_port_taped_far.target_radius = target_radius_default
-
-    ###
-    ### Taped power port night image
-    ###
-
-    # Create the reference "ideal" image.
-    # NOTE: Since we don't have an "ideal" (e.g., graphic) version, we're
-    # just using the same image as the training image.
-    ideal_power_port_taped_night = TargetData(
-        'test_images/partial_971_power_port_red_nighttime.png')
-
-    # Start at lower left corner, and work around clockwise
-    # These are taken by manually finding the points in gimp for this image
-    power_port_taped_night_main_panel_polygon_points_2d = [
-        (217, 425), (215, 187), (78, 189), (212, 80), (344, 74), (347, 180),
-        (370, 421)
-    ]
-
-    # These are "virtual" 3D points based on the expected geometry
-    power_port_taped_night_main_panel_polygon_points_3d = [
-        (-field_length / 2., c_power_port_edge_y, 0.),
-        (-field_length / 2., c_power_port_edge_y,
-         c_power_port_bottom_wing_height),
-        (-field_length / 2., c_power_port_edge_y - c_power_port_wing_width,
-         c_power_port_bottom_wing_height),
-        (-field_length / 2., c_power_port_edge_y, c_power_port_total_height),
-        (-field_length / 2., c_power_port_edge_y + c_power_port_width,
-         c_power_port_total_height),
-        (-field_length / 2., c_power_port_edge_y + c_power_port_width,
-         c_power_port_bottom_wing_height),
-        (-field_length / 2., c_power_port_edge_y + c_power_port_width, 0.)
-    ]
-
-    # Populate the taped power port
-    ideal_power_port_taped_night.polygon_list.append(
-        power_port_taped_night_main_panel_polygon_points_2d)
-    ideal_power_port_taped_night.polygon_list_3d.append(
-        power_port_taped_night_main_panel_polygon_points_3d)
-
-    # Location of target.  Rotation is pointing in -x direction
-    ideal_power_port_taped_night.target_rotation = -np.identity(3, np.double)
-    ideal_power_port_taped_night.target_position = np.array([
-        -field_length / 2., c_power_port_edge_y + c_power_port_width / 2.,
-        c_power_port_target_height
-    ])
-    ideal_power_port_taped_night.target_point_2d = np.float32(
-        [[282, 132]]).reshape(-1, 1, 2)  # partial_971_power_port_red_night.png
-
-    training_target_power_port_taped_night = TargetData(
-        'test_images/partial_971_power_port_red_nighttime.png')
-    training_target_power_port_taped_night.target_rotation = ideal_power_port_taped_night.target_rotation
-    training_target_power_port_taped_night.target_position = ideal_power_port_taped_night.target_position
-    training_target_power_port_taped_night.target_radius = target_radius_default
-
-    ###
-    ### Red Power Port
-    ###
-
-    # Create the reference "ideal" image
-    ideal_power_port_red = TargetData('test_images/ideal_power_port_red.png')
-
-    # Start at lower left corner, and work around clockwise
-    # These are taken by manually finding the points in gimp for this image
-    power_port_red_main_panel_polygon_points_2d = [(451, 679), (451, 304),
-                                                   (100, 302), (451, 74),
-                                                   (689, 74), (689, 302),
-                                                   (689, 679)]
-
-    # These are "virtual" 3D points based on the expected geometry
-    power_port_red_main_panel_polygon_points_3d = [
-        (-field_length / 2., power_port_edge_y, 0.),
-        (-field_length / 2., power_port_edge_y, power_port_bottom_wing_height),
-        (-field_length / 2., power_port_edge_y - power_port_wing_width,
-         power_port_bottom_wing_height),
-        (-field_length / 2., power_port_edge_y, power_port_total_height),
-        (-field_length / 2., power_port_edge_y + power_port_width,
-         power_port_total_height),
-        (-field_length / 2., power_port_edge_y + power_port_width,
-         power_port_bottom_wing_height),
-        (-field_length / 2., power_port_edge_y + power_port_width, 0.)
-    ]
-
-    power_port_red_wing_panel_polygon_points_2d = [(689, 74), (1022, 302),
-                                                   (689, 302)]
-    # These are "virtual" 3D points based on the expected geometry
-    power_port_red_wing_panel_polygon_points_3d = [
-        (-field_length / 2., power_port_edge_y + power_port_width,
-         power_port_total_height),
-        (-field_length / 2. + power_port_wing_width * math.sin(wing_angle),
-         power_port_edge_y + power_port_width +
-         power_port_wing_width * math.cos(wing_angle),
-         power_port_bottom_wing_height),
-        (-field_length / 2., power_port_edge_y + power_port_width,
-         power_port_bottom_wing_height)
-    ]
-
-    # Populate the red power port
-    ideal_power_port_red.polygon_list.append(
-        power_port_red_main_panel_polygon_points_2d)
-    ideal_power_port_red.polygon_list_3d.append(
-        power_port_red_main_panel_polygon_points_3d)
-    # NOTE: We are currently not using the wing, since our actual targets are all planar
-
-    # Define the pose of the target
-    # Location is on the ground, at the center of the target
-    # Orientation is with "x" pointing out of the field, and "z" up
-    # This way, if robot is facing target directly, the x-axes are aligned
-    # and the skew to target is zero
-    ideal_power_port_red.target_rotation = -np.identity(3, np.double)
-    ideal_power_port_red.target_rotation[2][2] = 1.
-    ideal_power_port_red.target_position = np.array([
-        -field_length / 2., power_port_edge_y + power_port_width / 2.,
-        power_port_target_height
-    ])
-
-    # Target point on the image -- needs to match training image
-    # These are manually captured by examining the images,
-    # and entering the pixel values from the target center for each image.
-    # These are currently only used for visualization of the target
-    ideal_power_port_red.target_point_2d = np.float32([[570, 192]]).reshape(
-        -1, 1, 2)  # ideal_power_port_red.png
-    # np.float32([[305, 97]]).reshape(-1, 1, 2),  #train_power_port_red_webcam.png
-
-    # And add the training image we'll actually use to the training list
-    training_target_power_port_red = TargetData(
-        'test_images/train_power_port_red.png')
-    #'test_images/train_power_port_red_pi-7971-3.png')
-    training_target_power_port_red.target_rotation = ideal_power_port_red.target_rotation
-    training_target_power_port_red.target_position = ideal_power_port_red.target_position
-    training_target_power_port_red.target_radius = target_radius_default
-
-    ###
-    ### Red Loading Bay
-    ###
-
-    ideal_loading_bay_red = TargetData('test_images/ideal_loading_bay_red.png')
-
-    # Start at lower left corner, and work around clockwise
-    # These are taken by manually finding the points in gimp for this image
-    loading_bay_red_polygon_points_2d = [(42, 406), (42, 35), (651, 34),
-                                         (651, 406)]
-
-    # These are "virtual" 3D points based on the expected geometry
-    loading_bay_red_polygon_points_3d = [
-        (field_length / 2., loading_bay_edge_y + loading_bay_width, 0.),
-        (field_length / 2., loading_bay_edge_y + loading_bay_width,
-         loading_bay_height),
-        (field_length / 2., loading_bay_edge_y, loading_bay_height),
-        (field_length / 2., loading_bay_edge_y, 0.)
-    ]
-
-    ideal_loading_bay_red.polygon_list.append(
-        loading_bay_red_polygon_points_2d)
-    ideal_loading_bay_red.polygon_list_3d.append(
-        loading_bay_red_polygon_points_3d)
-    # Location of target
-    ideal_loading_bay_red.target_rotation = np.identity(3, np.double)
-    ideal_loading_bay_red.target_position = np.array([
-        field_length / 2., loading_bay_edge_y + loading_bay_width / 2.,
-        loading_bay_height / 2.
-    ])
-    ideal_loading_bay_red.target_point_2d = np.float32([[366, 236]]).reshape(
-        -1, 1, 2)  # ideal_loading_bay_red.png
-
-    training_target_loading_bay_red = TargetData(
-        'test_images/train_loading_bay_red.png')
-    training_target_loading_bay_red.target_rotation = ideal_loading_bay_red.target_rotation
-    training_target_loading_bay_red.target_position = ideal_loading_bay_red.target_position
-    training_target_loading_bay_red.target_radius = target_radius_default
-
-    ###
-    ### Blue Power Port
-    ###
-
-    ideal_power_port_blue = TargetData('test_images/ideal_power_port_blue.png')
-
-    # Start at lower left corner, and work around clockwise
-    # These are taken by manually finding the points in gimp for this image
-    power_port_blue_main_panel_polygon_points_2d = [(438, 693), (438, 285),
-                                                    (93, 285), (440, 50),
-                                                    (692, 50), (692, 285),
-                                                    (692, 693)]
-
-    # These are "virtual" 3D points based on the expected geometry
-    power_port_blue_main_panel_polygon_points_3d = [
-        (field_length / 2., -power_port_edge_y, 0.),
-        (field_length / 2., -power_port_edge_y, power_port_bottom_wing_height),
-        (field_length / 2., -power_port_edge_y + power_port_wing_width,
-         power_port_bottom_wing_height),
-        (field_length / 2., -power_port_edge_y, power_port_total_height),
-        (field_length / 2., -power_port_edge_y - power_port_width,
-         power_port_total_height),
-        (field_length / 2., -power_port_edge_y - power_port_width,
-         power_port_bottom_wing_height),
-        (field_length / 2., -power_port_edge_y - power_port_width, 0.)
-    ]
-
-    power_port_blue_wing_panel_polygon_points_2d = [(692, 50), (1047, 285),
-                                                    (692, 285)]
-    # These are "virtual" 3D points based on the expected geometry
-    power_port_blue_wing_panel_polygon_points_3d = [
-        (field_length / 2., -power_port_edge_y - power_port_width,
-         power_port_total_height),
-        (field_length / 2. - power_port_wing_width * math.sin(wing_angle),
-         -power_port_edge_y - power_port_width -
-         power_port_wing_width * math.cos(wing_angle),
-         power_port_bottom_wing_height),
-        (field_length / 2., -power_port_edge_y - power_port_width,
-         power_port_bottom_wing_height)
-    ]
-
-    # Populate the blue power port
-    ideal_power_port_blue.polygon_list.append(
-        power_port_blue_main_panel_polygon_points_2d)
-    ideal_power_port_blue.polygon_list_3d.append(
-        power_port_blue_main_panel_polygon_points_3d)
-    # Including the wing panel
-    ideal_power_port_blue.polygon_list.append(
-        power_port_blue_wing_panel_polygon_points_2d)
-    ideal_power_port_blue.polygon_list_3d.append(
-        power_port_blue_wing_panel_polygon_points_3d)
-
-    # Location of target.  Rotation is pointing in -x direction
-    ideal_power_port_blue.target_rotation = np.identity(3, np.double)
-    ideal_power_port_blue.target_position = np.array([
-        field_length / 2., -power_port_edge_y - power_port_width / 2.,
-        power_port_target_height
-    ])
-    ideal_power_port_blue.target_point_2d = np.float32([[567, 180]]).reshape(
-        -1, 1, 2)  # ideal_power_port_blue.png
-
-    training_target_power_port_blue = TargetData(
-        'test_images/train_power_port_blue.png')
-    training_target_power_port_blue.target_rotation = ideal_power_port_blue.target_rotation
-    training_target_power_port_blue.target_position = ideal_power_port_blue.target_position
-    training_target_power_port_blue.target_radius = target_radius_default
-
-    ###
-    ### Blue Loading Bay
-    ###
-
-    ideal_loading_bay_blue = TargetData(
-        'test_images/ideal_loading_bay_blue.png')
-
-    # Start at lower left corner, and work around clockwise
-    # These are taken by manually finding the points in gimp for this image
-    loading_bay_blue_polygon_points_2d = [(7, 434), (7, 1), (729, 1),
-                                          (729, 434)]
-
-    # These are "virtual" 3D points based on the expected geometry
-    loading_bay_blue_polygon_points_3d = [
-        (-field_length / 2., -loading_bay_edge_y - loading_bay_width, 0.),
-        (-field_length / 2., -loading_bay_edge_y - loading_bay_width,
-         loading_bay_height),
-        (-field_length / 2., -loading_bay_edge_y, loading_bay_height),
-        (-field_length / 2., -loading_bay_edge_y, 0.)
-    ]
-
-    ideal_loading_bay_blue.polygon_list.append(
-        loading_bay_blue_polygon_points_2d)
-    ideal_loading_bay_blue.polygon_list_3d.append(
-        loading_bay_blue_polygon_points_3d)
-
-    # Location of target
-    ideal_loading_bay_blue.target_rotation = -np.identity(3, np.double)
-    ideal_loading_bay_blue.target_rotation[2][2] = 1.
-    ideal_loading_bay_blue.target_position = np.array([
-        -field_length / 2., -loading_bay_edge_y - loading_bay_width / 2.,
-        loading_bay_height / 2.
-    ])
-    ideal_loading_bay_blue.target_point_2d = np.float32([[366, 236]]).reshape(
-        -1, 1, 2)  # ideal_loading_bay_blue.png
-
-    training_target_loading_bay_blue = TargetData(
-        'test_images/train_loading_bay_blue.png')
-    training_target_loading_bay_blue.target_rotation = ideal_loading_bay_blue.target_rotation
-    training_target_loading_bay_blue.target_position = ideal_loading_bay_blue.target_position
-    training_target_loading_bay_blue.target_radius = target_radius_default
-
     ######################################################################
     # DEFINE the targets here.  Generate lists of ideal and training
-    # targets based on all the definitions above
+    # targets based on the json files in target_definitions
     ######################################################################
-
-    ### Taped power port
-    glog.info("Adding hacked/taped up power port to the model list")
-    ideal_target_list.append(ideal_power_port_taped)
-    training_target_list.append(training_target_power_port_taped)
-
-    ### Taped power port far
-    glog.info(
-        "Adding hacked/taped up far away view of the power port to the model list"
-    )
-    ideal_target_list.append(ideal_power_port_taped_far)
-    training_target_list.append(training_target_power_port_taped_far)
-
-    ### Taped power port night
-    glog.info(
-        "Adding hacked/taped up of the power port at night to the model list")
-    ideal_target_list.append(ideal_power_port_taped_night)
-    training_target_list.append(training_target_power_port_taped_night)
-
-    ### Red Power Port
-    #glog.info("Adding red power port to the model list")
-    #ideal_target_list.append(ideal_power_port_red)
-    #training_target_list.append(training_target_power_port_red)
-
-    ### Red Loading Bay
-    #glog.info("Adding red loading bay to the model list")
-    #ideal_target_list.append(ideal_loading_bay_red)
-    #training_target_list.append(training_target_loading_bay_red)
-
-    ### Blue Power Port
-    glog.info("Adding blue power port to the model list")
-    ideal_target_list.append(ideal_power_port_blue)
-    training_target_list.append(training_target_power_port_blue)
-
-    ### Blue Loading Bay
-    #glog.info("Adding blue loading bay to the model list")
-    #ideal_target_list.append(ideal_loading_bay_blue)
-    #training_target_list.append(training_target_loading_bay_blue)
-
+    ideal_target_list = TargetData.from_jsons(
+        "target_definitions/ideal_power_port_taped.json",
+        "target_definitions/ideal_power_port_red.json",
+        "target_definitions/ideal_power_port_blue.json")
+    training_target_list = TargetData.from_jsons(
+        "target_definitions/training_target_power_port_taped.json",
+        "target_definitions/training_target_power_port_red.json",
+        "target_definitions/training_target_power_port_blue.json")
     return ideal_target_list, training_target_list
 
 
@@ -583,39 +150,40 @@ def compute_target_definition():
     # Use default parameters for now
     camera_params = camera_definition.load_camera_definitions()[0]
 
-    for ideal_target in ideal_target_list:
-        glog.debug("\nPreparing target for image %s" %
-                   ideal_target.image_filename)
-        ideal_target.extract_features(feature_extractor)
-        ideal_target.filter_keypoints_by_polygons()
-        ideal_target.compute_reprojection_maps()
-        ideal_target.keypoint_list_3d = ideal_target.project_keypoint_to_3d_by_polygon(
-            ideal_target.keypoint_list)
+    # Extract features from ideal targets if we are going to auto-project,
+    # otherwise get them directly from the training targets.
+    for target in (ideal_target_list
+                   if AUTO_PROJECTION else training_target_list):
+        glog.debug("\nPreparing target for image %s" % target.image_filename)
+        target.extract_features(feature_extractor)
+        target.filter_keypoints_by_polygons()
+        target.compute_reprojection_maps()
+        target.keypoint_list_3d = target.project_keypoint_to_3d_by_polygon(
+            target.keypoint_list)
 
         if VISUALIZE_KEYPOINTS:
-            for i in range(len(ideal_target.polygon_list)):
-                ideal_pts_tmp = np.asarray(
-                    ideal_target.polygon_list[i]).reshape(-1, 2)
-                ideal_pts_3d_tmp = np.asarray(
-                    ideal_target.polygon_list_3d[i]).reshape(-1, 3)
+            for i in range(len(target.polygon_list)):
+                pts_tmp = np.asarray(target.polygon_list[i]).reshape(-1, 2)
+                pts_3d_tmp = np.asarray(target.polygon_list_3d[i]).reshape(
+                    -1, 3)
                 # We can only compute pose if we have at least 4 points
                 # Only matters for reprojection for visualization
                 # Keeping this code here, since it's helpful when testing
-                if (len(ideal_target.polygon_list[i]) >= 4):
-                    img_copy = dtd.draw_polygon(ideal_target.image.copy(),
-                                                ideal_target.polygon_list[i],
+                if (len(target.polygon_list[i]) >= 4):
+                    img_copy = dtd.draw_polygon(target.image.copy(),
+                                                target.polygon_list[i],
                                                 (0, 255, 0), True)
                     dtd.visualize_reprojections(
-                        img_copy, ideal_pts_tmp, ideal_pts_3d_tmp,
+                        img_copy, pts_tmp, pts_3d_tmp,
                         camera_params.camera_int.camera_matrix,
                         camera_params.camera_int.dist_coeffs)
 
-            for polygon in ideal_target.polygon_list:
-                img_copy = ideal_target.image.copy()
+            for polygon in target.polygon_list:
+                img_copy = target.image.copy()
                 kp_in_poly2d = []
                 kp_in_poly3d = []
-                for kp, kp_3d in zip(ideal_target.keypoint_list,
-                                     ideal_target.keypoint_list_3d):
+                for kp, kp_3d in zip(target.keypoint_list,
+                                     target.keypoint_list_3d):
                     if dtd.point_in_polygons((kp.pt[0], kp.pt[1]), [polygon]):
                         kp_in_poly2d.append((kp.pt[0], kp.pt[1]))
                         kp_in_poly3d.append(kp_3d)
@@ -629,10 +197,7 @@ def compute_target_definition():
 
     ###############
     ### Compute 3D points on actual training images
-    ### TODO: Add code to do manual point selection
     ###############
-    AUTO_PROJECTION = True
-
     if AUTO_PROJECTION:
         glog.debug(
             "Doing auto projection of training keypoints to 3D using ideal images"
@@ -643,6 +208,10 @@ def compute_target_definition():
         for target_ind in range(len(training_target_list)):
             # Assumes we have 1 ideal view for each training target
             training_target = training_target_list[target_ind]
+            glog.check_eq(
+                len(training_target.polygon_list), 0,
+                "Expected training target with emty polygon list for auto projection"
+            )
             ideal_target = ideal_target_list[target_ind]
 
             glog.debug("\nPreparing target for image %s" %
@@ -718,8 +287,7 @@ def compute_target_definition():
                             ideal_target.reprojection_map_list[poly_ind])
                         training_3d_list.append(training_3d_pt)
 
-            training_target.keypoint_list_3d = np.asarray(
-                training_3d_list).reshape(-1, 1, 3)
+            training_target.keypoint_list_3d = np.asarray(training_3d_list)
 
             if VISUALIZE_KEYPOINTS:
                 # Sanity check these:
@@ -746,10 +314,20 @@ if __name__ == '__main__':
                     help="Whether to visualize the results",
                     default=False,
                     action='store_true')
+    ap.add_argument(
+        "--auto_projection",
+        help=
+        "Whether to auto-project 2d points from the ideal targets to the training ones",
+        default=False,
+        action="store_true")
     args = vars(ap.parse_args())
 
     VISUALIZE_KEYPOINTS = args["visualize"]
-    if args["visualize"]:
+    if VISUALIZE_KEYPOINTS:
         glog.info("Visualizing results")
+
+    AUTO_PROJECTION = args["auto_projection"]
+    if AUTO_PROJECTION:
+        glog.info("Auto projecting points")
 
     compute_target_definition()
