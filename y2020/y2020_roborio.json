@@ -382,6 +382,7 @@
     {
       "name": "message_bridge_client",
       "executable_name": "message_bridge_client",
+      "args": ["--rt_priority=5"],
       "nodes": [
         "roborio"
       ]
@@ -389,6 +390,7 @@
     {
       "name": "message_bridge_server",
       "executable_name": "message_bridge_server",
+      "args": ["--rt_priority=5"],
       "nodes": [
         "roborio"
       ]

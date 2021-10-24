@@ -9,6 +9,9 @@ WorkingDirectory=/home/pi/robot_code
 ExecStart=/home/pi/robot_code/starter.sh
 KillMode=mixed
 TimeoutStopSec=10
+LimitRTPRIO=60
+LimitNICE=-20
+LimitMEMLOCK=infinity
 
 Restart=always
 RestartSec=5s

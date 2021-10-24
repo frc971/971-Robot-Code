@@ -5,6 +5,7 @@
 #include "glog/logging.h"
 
 DEFINE_string(config, "config.json", "Path to the config.");
+DEFINE_int32(rt_priority, -1, "If > 0, run as this RT priority");
 
 namespace aos {
 namespace message_bridge {
@@ -14,6 +15,9 @@ int Main() {
       aos::configuration::ReadConfig(FLAGS_config);
 
   aos::ShmEventLoop event_loop(&config.message());
+  if (FLAGS_rt_priority > 0) {
+    event_loop.SetRuntimeRealtimePriority(FLAGS_rt_priority);
+  }
 
   MessageBridgeServer app(&event_loop);
 
