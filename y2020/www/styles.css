@@ -12,6 +12,10 @@
   float: right;
 }
 
+#legend {
+  display: inline-block;
+}
+
 #readouts > div {
   display: table-row;
   padding: 5px;

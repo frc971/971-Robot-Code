@@ -65,6 +65,7 @@ const LOADING_ZONE_WIDTH = 60 * IN_TO_M;
 const ROBOT_WIDTH = 28 * IN_TO_M;
 const ROBOT_LENGTH = 30 * IN_TO_M;
 
+const PI_COLORS = ["#ff00ff", "#ffff00", "#000000", "#00ffff", "#ffa500"];
 
 export class FieldHandler {
   private canvas = document.createElement('canvas');
@@ -109,13 +110,21 @@ export class FieldHandler {
       document.getElementById('readouts').appendChild(row);
     }
 
+    for (let ii = 0; ii < PI_COLORS.length; ++ii) {
+      const legendEntry = document.createElement("div");
+      legendEntry.style.color = PI_COLORS[ii];
+      legendEntry.innerHTML = "PI" + (ii + 1).toString()
+      document.getElementById("legend").appendChild(legendEntry);
+    }
+
     this.connection.addConfigHandler(() => {
       // Go through and register handlers for both all the individual pis as
       // well as the local pi. Depending on the node that we are running on,
       // different subsets of these will be available.
-      for (const prefix of ['', '/pi1', '/pi2', '/pi3', '/pi4']) {
+      for (const prefix of ['', '/pi1', '/pi2', '/pi3', '/pi4', '/pi5']) {
         this.connection.addHandler(
-            prefix + '/camera', ImageMatchResult.getFullyQualifiedName(), (res) => {
+            prefix + '/camera', ImageMatchResult.getFullyQualifiedName(),
+            (res) => {
               this.handleImageMatchResult(prefix, res);
             });
       }
@@ -376,10 +385,12 @@ export class FieldHandler {
         // Make camera readings fade over time.
         const alpha = Math.round(255 * ageAlpha).toString(16).padStart(2, '0');
         const dashed = false;
-        const rgb = accepted ? "#00FF00" : "#FF0000";
-        const rgba = rgb + alpha;
-        this.drawRobot(x, y, theta, null, rgba, dashed, false);
-        this.drawCamera(cameraX, cameraY, cameraTheta, rgba, false);
+        const acceptedRgb = accepted ? "#00FF00" : "#FF0000";
+        const acceptedRgba = acceptedRgb + alpha;
+        const cameraRgb = PI_COLORS[imageDebug.camera()];
+        const cameraRgba = cameraRgb + alpha;
+        this.drawRobot(x, y, theta, null, acceptedRgba, dashed, false);
+        this.drawCamera(cameraX, cameraY, cameraTheta, cameraRgba, false);
       }
     }
 
@@ -398,7 +409,10 @@ export class FieldHandler {
         const x = mat.data(3);
         const y = mat.data(7);
         const theta = Math.atan2(mat.data(6), mat.data(2));
-        this.drawCamera(x, y, theta);
+        const cameraColor = (keyPair[0].length > 0) ?
+            PI_COLORS[Number(keyPair[0][3]) - 1] :
+            'blue';
+        this.drawCamera(x, y, theta, cameraColor);
       }
     }
 
