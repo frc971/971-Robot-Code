@@ -14,13 +14,15 @@ def _aos_downloader_impl(ctx):
             "#!/bin/bash",
             "set -e",
             'cd "${BASH_SOURCE[0]}.runfiles/%s"' % ctx.workspace_name,
-        ] + [
-            'exec %s --target "$@" --type %s %s %s' % (
+            'for T in "$@";',
+            'do',
+            '  time %s --target "${T}" --type %s %s %s' % (
                 ctx.executable._downloader.short_path,
                 ctx.attr.target_type,
                 " ".join([src.short_path for src in all_files]),
                 " ".join(target_files),
             ),
+            'done'
         ]),
     )
 
