@@ -30,6 +30,9 @@ table RobotState {
   // From the DriverStation object, aka what FMS sees and what shows up on the
   // actual driver's station.
   voltage_battery:double (id: 8);
+
+  // User button state
+  user_button:bool (id: 9);
 }
 
 root_type RobotState;

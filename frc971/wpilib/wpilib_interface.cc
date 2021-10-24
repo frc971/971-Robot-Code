@@ -3,6 +3,7 @@
 #include "aos/events/event_loop.h"
 #include "aos/logging/logging.h"
 #include "frc971/input/robot_state_generated.h"
+#include "frc971/wpilib/ahal/Utility.h"
 #include "hal/HAL.h"
 
 namespace frc971 {
@@ -26,6 +27,7 @@ flatbuffers::Offset<aos::RobotState> PopulateRobotState(
 
   robot_state_builder.add_voltage_roborio_in(HAL_GetVinVoltage(&status));
   robot_state_builder.add_voltage_battery(HAL_GetVinVoltage(&status));
+  robot_state_builder.add_user_button(frc::GetUserButton());
 
   if (status != 0) {
     AOS_LOG(FATAL, "Failed to get robot state: %d\n", status);
