@@ -42,7 +42,7 @@ namespace superstructure = y2020::control_loops::superstructure;
 const ButtonLocation kShootFast(3, 16);
 const ButtonLocation kAutoTrack(3, 3);
 const ButtonLocation kAutoNoHood(3, 5);
-const ButtonLocation kHood(3, 4);
+const ButtonLocation kHood(3, 2);
 const ButtonLocation kShootSlow(4, 2);
 const ButtonLocation kFixedTurret(3, 1);
 const ButtonLocation kFeed(4, 1);
@@ -56,7 +56,8 @@ const ButtonLocation kSpit(4, 3);
 const ButtonLocation kLocalizerReset(3, 8);
 const ButtonLocation kIntakeSlightlyOut(3, 7);
 
-const ButtonLocation kWinch(3, 14);
+const ButtonLocation kWinch(3, 4);
+const ButtonLocation kUnWinch(3, 6);
 
 class Reader : public ::frc971::input::ActionJoystickInput {
  public:
@@ -138,6 +139,8 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     }
   }
 
+  bool latched_climbing_ = false;
+
   void HandleTeleop(
       const ::frc971::input::driver_station::Data &data) override {
     superstructure_status_fetcher_.Fetch();
@@ -157,6 +160,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     double finisher_speed = 0.0;
     double climber_speed = 0.0;
     bool preload_intake = false;
+    bool turret_tracking = false;
 
     const bool auto_track = data.IsPressed(kAutoTrack);
 
@@ -174,6 +178,10 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       turret_pos = setpoint_fetcher_->turret();
     } else {
       turret_pos = 0.0;
+    }
+
+    if (!data.IsPressed(kFixedTurret)) {
+      turret_tracking = true;
     }
 
     if (data.IsPressed(kAutoNoHood)) {
@@ -222,6 +230,21 @@ class Reader : public ::frc971::input::ActionJoystickInput {
 
     if (data.IsPressed(kWinch)) {
       climber_speed = 12.0f;
+      latched_climbing_ = true;
+    }
+
+    if (data.IsPressed(kUnWinch)) {
+      climber_speed = -12.0f;
+      latched_climbing_ = true;
+    }
+
+    if (data.IsPressed(kWinch) && data.IsPressed(kUnWinch)) {
+      latched_climbing_ = false;
+    }
+
+    if (latched_climbing_) {
+      turret_tracking = false;
+      turret_pos = -M_PI / 2.0;
     }
 
     if (data.PosEdge(kLocalizerReset)) {
@@ -272,8 +295,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
                                                data.IsPressed(kFeedDriver));
       superstructure_goal_builder.add_climber_voltage(climber_speed);
 
-      superstructure_goal_builder.add_turret_tracking(
-          !data.IsPressed(kFixedTurret));
+      superstructure_goal_builder.add_turret_tracking(turret_tracking);
       superstructure_goal_builder.add_hood_tracking(
           !data.IsPressed(kFixedTurret) && !data.IsPressed(kAutoNoHood));
       superstructure_goal_builder.add_shooter_tracking(

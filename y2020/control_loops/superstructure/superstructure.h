@@ -6,7 +6,6 @@
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "frc971/input/joystick_state_generated.h"
 #include "y2020/constants.h"
-#include "y2020/control_loops/superstructure/climber.h"
 #include "y2020/control_loops/superstructure/shooter/shooter.h"
 #include "y2020/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2020/control_loops/superstructure/superstructure_output_generated.h"
@@ -69,8 +68,6 @@ class Superstructure
   aos::Fetcher<frc971::control_loops::drivetrain::Status>
       drivetrain_status_fetcher_;
   aos::Fetcher<aos::JoystickState> joystick_state_fetcher_;
-
-  Climber climber_;
 
   aos::monotonic_clock::time_point shooting_start_time_ =
       aos::monotonic_clock::min_time;

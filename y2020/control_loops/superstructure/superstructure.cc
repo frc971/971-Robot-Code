@@ -158,8 +158,6 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
           position->shooter(), status->fbb(),
           output != nullptr ? &(output_struct) : nullptr, position_timestamp);
 
-  climber_.Iterate(unsafe_goal, output != nullptr ? &(output_struct) : nullptr);
-
   const AbsoluteAndAbsoluteEncoderProfiledJointStatus *const hood_status =
       GetMutableTemporaryPointer(*status->fbb(), hood_status_offset);
 
@@ -237,6 +235,9 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
     output_struct.feeder_voltage = 0.0;
     output_struct.intake_roller_voltage = 0.0;
     if (unsafe_goal) {
+      output_struct.climber_voltage =
+          std::clamp(unsafe_goal->climber_voltage(), -12.0f, 12.0f);
+
       if (unsafe_goal->shooting() || unsafe_goal->intake_preloading()) {
         preloading_timeout_ = position_timestamp + kPreloadingTimeout;
       }
