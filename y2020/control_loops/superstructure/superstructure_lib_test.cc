@@ -952,8 +952,8 @@ TEST_F(SuperstructureTest, Climber) {
   // Give it time to stabilize.
   RunFor(chrono::seconds(1));
 
-  // Can't go backwards.
-  EXPECT_EQ(superstructure_plant_.climber_voltage(), 0.0);
+  // Can go backwards.
+  EXPECT_EQ(superstructure_plant_.climber_voltage(), -10.0);
 
   {
     auto builder = superstructure_goal_sender_.MakeBuilder();
@@ -965,7 +965,8 @@ TEST_F(SuperstructureTest, Climber) {
     ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
   RunFor(chrono::seconds(1));
-  // But forwards works.
+
+  // And forwards too.
   EXPECT_EQ(superstructure_plant_.climber_voltage(), 10.0);
 
   VerifyNearGoal();

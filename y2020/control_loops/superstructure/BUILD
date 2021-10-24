@@ -73,7 +73,6 @@ cc_library(
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
-        ":climber",
         ":superstructure_goal_fbs",
         ":superstructure_output_fbs",
         ":superstructure_position_fbs",
@@ -132,24 +131,6 @@ cc_test(
         "//y2020/control_loops/superstructure/hood:hood_plants",
         "//y2020/control_loops/superstructure/intake:intake_plants",
         "//y2020/control_loops/superstructure/shooter:shooter_plants",
-    ],
-)
-
-cc_library(
-    name = "climber",
-    srcs = [
-        "climber.cc",
-    ],
-    hdrs = [
-        "climber.h",
-    ],
-    target_compatible_with = ["@platforms//os:linux"],
-    deps = [
-        ":superstructure_goal_fbs",
-        ":superstructure_output_fbs",
-        "//frc971/control_loops:control_loop",
-        "//frc971/control_loops:control_loops_fbs",
-        "//frc971/control_loops:profiled_subsystem_fbs",
     ],
 )
 
