@@ -2,6 +2,10 @@
 
 #include "y2020/constants.h"
 
+DEFINE_bool(send_empty_debug, false,
+            "If true, send LocalizerDebug messages on every tick, even if "
+            "they would be empty.");
+
 namespace y2020 {
 namespace control_loops {
 namespace drivetrain {
@@ -92,6 +96,7 @@ Localizer::Localizer(
           event_loop_
               ->MakeSender<y2020::control_loops::drivetrain::LocalizerDebug>(
                   "/drivetrain")) {
+  statistics_.rejection_counts.fill(0);
   // TODO(james): The down estimator has trouble handling situations where the
   // robot is constantly wiggling but not actually moving much, and can cause
   // drift when using accelerometer readings.
@@ -176,11 +181,26 @@ void Localizer::Update(const Eigen::Matrix<double, 2, 1> &U,
       }
     }
   }
-  const auto vector_offset =
-      builder.fbb()->CreateVector(debug_offsets.data(), debug_offsets.size());
-  LocalizerDebug::Builder debug_builder = builder.MakeBuilder<LocalizerDebug>();
-  debug_builder.add_matches(vector_offset);
-  CHECK(builder.Send(debug_builder.Finish()));
+  if (FLAGS_send_empty_debug || !debug_offsets.empty()) {
+    const auto vector_offset =
+        builder.fbb()->CreateVector(debug_offsets.data(), debug_offsets.size());
+    const auto rejections_offset =
+        builder.fbb()->CreateVector(statistics_.rejection_counts.data(),
+                                    statistics_.rejection_counts.size());
+
+    CumulativeStatistics::Builder stats_builder =
+        builder.MakeBuilder<CumulativeStatistics>();
+    stats_builder.add_total_accepted(statistics_.total_accepted);
+    stats_builder.add_total_candidates(statistics_.total_candidates);
+    stats_builder.add_rejection_reason_count(rejections_offset);
+    const auto stats_offset = stats_builder.Finish();
+
+    LocalizerDebug::Builder debug_builder =
+        builder.MakeBuilder<LocalizerDebug>();
+    debug_builder.add_matches(vector_offset);
+    debug_builder.add_statistics(stats_offset);
+    CHECK(builder.Send(debug_builder.Finish()));
+  }
 }
 
 aos::SizedArray<flatbuffers::Offset<ImageMatchDebug>, 5>
@@ -209,14 +229,10 @@ Localizer::HandleImageMatch(
           << aos::time::DurationInSeconds(monotonic_offset)
           << " when at time of " << now << " and capture time estimate of "
           << capture_time;
+  std::optional<RejectionReason> rejection_reason;
   if (capture_time > now) {
     LOG(WARNING) << "Got camera frame from the future.";
-    ImageMatchDebug::Builder builder(*fbb);
-    builder.add_camera(camera_index);
-    builder.add_accepted(false);
-    builder.add_rejection_reason(RejectionReason::IMAGE_FROM_FUTURE);
-    debug_offsets.push_back(builder.Finish());
-    return debug_offsets;
+    rejection_reason = RejectionReason::IMAGE_FROM_FUTURE;
   }
   if (!result.has_camera_calibration()) {
     LOG(WARNING) << "Got camera frame without calibration data.";
@@ -225,6 +241,8 @@ Localizer::HandleImageMatch(
     builder.add_accepted(false);
     builder.add_rejection_reason(RejectionReason::NO_CALIBRATION);
     debug_offsets.push_back(builder.Finish());
+    statistics_.rejection_counts[static_cast<size_t>(
+        RejectionReason::NO_CALIBRATION)]++;
     return debug_offsets;
   }
   // Per the ImageMatchResult specification, we can actually determine whether
@@ -238,12 +256,7 @@ Localizer::HandleImageMatch(
   // seems reasonable, but may be unnecessarily low or high.
   constexpr float kMaxTurretVelocity = 1.0;
   if (is_turret && std::abs(turret_data.velocity) > kMaxTurretVelocity) {
-    ImageMatchDebug::Builder builder(*fbb);
-    builder.add_camera(camera_index);
-    builder.add_accepted(false);
-    builder.add_rejection_reason(RejectionReason::TURRET_TOO_FAST);
-    debug_offsets.push_back(builder.Finish());
-    return debug_offsets;
+    rejection_reason = RejectionReason::TURRET_TOO_FAST;
   }
   CHECK(result.camera_calibration()->has_fixed_extrinsics());
   const Eigen::Matrix<float, 4, 4> fixed_extrinsics =
@@ -266,12 +279,15 @@ Localizer::HandleImageMatch(
     builder.add_accepted(false);
     builder.add_rejection_reason(RejectionReason::NO_RESULTS);
     debug_offsets.push_back(builder.Finish());
+    statistics_
+        .rejection_counts[static_cast<size_t>(RejectionReason::NO_RESULTS)]++;
     return debug_offsets;
   }
 
   int index = -1;
   for (const frc971::vision::sift::CameraPose *vision_result :
        *result.camera_poses()) {
+    ++statistics_.total_candidates;
     ++index;
 
     ImageMatchDebug::Builder builder(*fbb);
@@ -286,6 +302,8 @@ Localizer::HandleImageMatch(
         !vision_result->has_field_to_target()) {
       builder.add_accepted(false);
       builder.add_rejection_reason(RejectionReason::NO_TRANSFORMS);
+      statistics_.rejection_counts[static_cast<size_t>(
+          RejectionReason::NO_TRANSFORMS)]++;
       debug_offsets.push_back(builder.Finish());
       continue;
     }
@@ -294,11 +312,21 @@ Localizer::HandleImageMatch(
 
     const Eigen::Matrix<float, 4, 4> H_field_target =
         FlatbufferToTransformationMatrix(*vision_result->field_to_target());
+    const Eigen::Matrix<float, 4, 4> H_field_camera =
+        H_field_target * H_camera_target.inverse();
     // Back out the robot position that is implied by the current camera
     // reading. Note that the Pose object ignores any roll/pitch components, so
     // if the camera's extrinsics for pitch/roll are off, this should just
     // ignore it.
-    const Pose measured_camera_pose(H_field_target * H_camera_target.inverse());
+    const Pose measured_camera_pose(H_field_camera);
+    builder.add_camera_x(measured_camera_pose.rel_pos().x());
+    builder.add_camera_y(measured_camera_pose.rel_pos().y());
+    // Because the camera uses Z as forwards rather than X, just calculate the
+    // debugging theta value using the transformation matrix directly (note that
+    // the rest of this file deliberately does not care what convention the
+    // camera uses, since that is encoded in the extrinsics themselves).
+    builder.add_camera_theta(
+        std::atan2(H_field_camera(1, 2), H_field_camera(0, 2)));
     // Calculate the camera-to-robot transformation matrix ignoring the
     // pitch/roll of the camera.
     // TODO(james): This could probably be made a bit more efficient, but I
@@ -313,12 +341,30 @@ Localizer::HandleImageMatch(
     const Eigen::Matrix<float, 3, 1> Z(measured_pose.rel_pos().x(),
                                        measured_pose.rel_pos().y(),
                                        measured_pose.rel_theta());
+    builder.add_implied_robot_x(Z(0));
+    builder.add_implied_robot_y(Z(1));
+    builder.add_implied_robot_theta(Z(2));
     // Pose of the target in the robot frame.
     // Note that we use measured_pose's transformation matrix rather than just
     // doing H_robot_camera * H_camera_target because measured_pose ignores
     // pitch/roll.
     Pose pose_robot_target(measured_pose.AsTransformationMatrix().inverse() *
                            H_field_target);
+
+    // Turret is zero when pointed backwards.
+    builder.add_implied_turret_goal(
+        aos::math::NormalizeAngle(M_PI + pose_robot_target.heading()));
+
+    // Since we've now built up all the information that is useful to include in
+    // the debug message, bail if we have reason to do so.
+    if (rejection_reason) {
+      builder.add_rejection_reason(*rejection_reason);
+      statistics_.rejection_counts[static_cast<size_t>(*rejection_reason)]++;
+      builder.add_accepted(false);
+      debug_offsets.push_back(builder.Finish());
+      continue;
+    }
+
     // TODO(james): Figure out how to properly handle calculating the
     // noise. Currently, the values are deliberately tuned so that image updates
     // will not be trusted overly much. In theory, we should probably also be
@@ -357,6 +403,8 @@ Localizer::HandleImageMatch(
       AOS_LOG(WARNING, "Dropped image match due to heading mismatch.\n");
       builder.add_accepted(false);
       builder.add_rejection_reason(RejectionReason::HIGH_THETA_DIFFERENCE);
+      statistics_.rejection_counts[static_cast<size_t>(
+          RejectionReason::HIGH_THETA_DIFFERENCE)]++;
       debug_offsets.push_back(builder.Finish());
       continue;
     }
@@ -371,17 +419,11 @@ Localizer::HandleImageMatch(
       AOS_LOG(WARNING, "Dropped image match due to age of image.\n");
       builder.add_accepted(false);
       builder.add_rejection_reason(RejectionReason::IMAGE_TOO_OLD);
+      statistics_.rejection_counts[static_cast<size_t>(
+          RejectionReason::IMAGE_TOO_OLD)]++;
       debug_offsets.push_back(builder.Finish());
       continue;
     }
-
-    builder.add_implied_robot_x(Z(0));
-    builder.add_implied_robot_y(Z(1));
-    builder.add_implied_robot_theta(Z(2));
-
-    // Turret is zero when pointed backwards.
-    builder.add_implied_turret_goal(
-        aos::math::NormalizeAngle(M_PI + pose_robot_target.heading()));
 
     std::optional<RejectionReason> correction_rejection;
     const Input U = ekf_.MostRecentInput();
@@ -436,8 +478,11 @@ Localizer::HandleImageMatch(
     if (correction_rejection) {
       builder.add_accepted(false);
       builder.add_rejection_reason(*correction_rejection);
+      statistics_
+          .rejection_counts[static_cast<size_t>(*correction_rejection)]++;
     } else {
       builder.add_accepted(true);
+      statistics_.total_accepted++;
     }
     debug_offsets.push_back(builder.Finish());
   }

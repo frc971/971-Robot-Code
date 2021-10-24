@@ -78,6 +78,23 @@ class Localizer : public frc971::control_loops::drivetrain::LocalizerInterface {
     double velocity = 0.0;  // rad/sec
   };
 
+  static constexpr size_t kNumRejectionReasons =
+      static_cast<int>(RejectionReason::MAX) -
+      static_cast<int>(RejectionReason::MIN) + 1;
+
+  struct Statistics {
+    int total_accepted = 0;
+    int total_candidates = 0;
+    static_assert(0 == static_cast<int>(RejectionReason::MIN));
+    static_assert(
+        kNumRejectionReasons ==
+            sizeof(
+                std::invoke_result<decltype(EnumValuesRejectionReason)>::type) /
+                sizeof(RejectionReason),
+        "RejectionReason has non-contiguous error values.");
+    std::array<int, kNumRejectionReasons> rejection_counts;
+  };
+
   // Processes new image data from the given pi and updates the EKF.
   aos::SizedArray<flatbuffers::Offset<ImageMatchDebug>, 5> HandleImageMatch(
       size_t camera_index, std::string_view pi,
@@ -111,6 +128,8 @@ class Localizer : public frc971::control_loops::drivetrain::LocalizerInterface {
 
   // Target selector to allow us to satisfy the LocalizerInterface requirements.
   frc971::control_loops::drivetrain::TrivialTargetSelector target_selector_;
+
+  Statistics statistics_;
 };
 
 }  // namespace drivetrain

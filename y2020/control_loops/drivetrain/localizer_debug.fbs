@@ -17,6 +17,9 @@ table ImageMatchDebug {
   pose_index: uint8 (id: 1);
   local_image_capture_time_ns:long (id: 2);
   roborio_image_capture_time_ns:long (id: 3);
+  camera_x:float (id: 11);
+  camera_y:float (id: 12);
+  camera_theta:float (id: 13);
   implied_robot_x:float (id: 4);
   implied_robot_y:float (id: 5);
   implied_robot_theta:float (id: 6);
@@ -27,8 +30,16 @@ table ImageMatchDebug {
   image_age_sec:float (id: 10);
 }
 
+table CumulativeStatistics {
+  total_accepted:int (id: 0);
+  total_candidates:int (id: 1);
+  // Indexed by integer value of RejectionReason enum.
+  rejection_reason_count:[int] (id: 2);
+}
+
 table LocalizerDebug {
   matches:[ImageMatchDebug] (id: 0);
+  statistics:CumulativeStatistics (id: 1);
 }
 
 root_type LocalizerDebug;
