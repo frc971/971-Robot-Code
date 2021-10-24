@@ -34,7 +34,7 @@ class CameraParameters:
         self.timestamp = 0
 
 
-def compute_extrinsic(camera_pitch, T_camera, is_turret):
+def compute_extrinsic(camera_pitch, camera_yaw, T_camera, is_turret):
     # Compute the extrinsic calibration based on pitch and translation
     # Includes camera rotation from robot x,y,z to opencv (z, -x, -y)
 
@@ -45,9 +45,14 @@ def compute_extrinsic(camera_pitch, T_camera, is_turret):
     turret_cam_ext = CameraExtrinsics()
 
     camera_pitch_matrix = np.array(
-        [[np.cos(camera_pitch), 0.0, -np.sin(camera_pitch)], [0.0, 1.0, 0.0],
-         [np.sin(camera_pitch), 0.0,
+        [[np.cos(camera_pitch), 0.0,
+          np.sin(camera_pitch)], [0.0, 1.0, 0.0],
+         [-np.sin(camera_pitch), 0.0,
           np.cos(camera_pitch)]])
+
+    camera_yaw_matrix = np.array(
+        [[np.cos(camera_yaw), -np.sin(camera_yaw), 0.0],
+         [np.sin(camera_yaw), np.cos(camera_yaw), 0.0], [0.0, 0.0, 1.0]])
 
     robot_to_camera_rotation = np.array([[0., 0., 1.], [-1, 0, 0], [0, -1.,
                                                                     0]])
@@ -57,10 +62,10 @@ def compute_extrinsic(camera_pitch, T_camera, is_turret):
         base_cam_ext.R = np.array([[-1.0, 0.0, 0.0], [0.0, -1.0, 0.0],
                                    [0.0, 0.0, 1.0]])
         base_cam_ext.T = np.array([0.0, 0.0, 0.0])
-        turret_cam_ext.R = camera_pitch_matrix @ robot_to_camera_rotation
+        turret_cam_ext.R = camera_yaw_matrix @ camera_pitch_matrix @ robot_to_camera_rotation
         turret_cam_ext.T = T_camera
     else:
-        base_cam_ext.R = camera_pitch_matrix @ robot_to_camera_rotation
+        base_cam_ext.R = camera_yaw_matrix @ camera_pitch_matrix @ robot_to_camera_rotation
         base_cam_ext.T = T_camera
         turret_cam_ext = None
 
@@ -70,19 +75,29 @@ def compute_extrinsic(camera_pitch, T_camera, is_turret):
 def compute_extrinsic_by_pi(pi_number):
     # Defaults for non-turret camera
     camera_pitch = 20.0 * np.pi / 180.0
+    camera_yaw = 0.0
     is_turret = False
     # Default camera location to robot origin
     T = np.array([0.0, 0.0, 0.0])
 
     if pi_number == "pi1":
         # This is the turret camera
-        camera_pitch = 34.0 * np.pi / 180.0
+        camera_pitch = 10.0 * np.pi / 180.0
         is_turret = True
         T = np.array([7.5 * 0.0254, -5.5 * 0.0254, 41.0 * 0.0254])
     elif pi_number == "pi2":
         T = np.array([4.5 * 0.0254, 3.75 * 0.0254, 26.0 * 0.0254])
+    elif pi_number == "pi3":
+        camera_yaw = 90.0 * np.pi / 180.0
+        T = np.array([-2.75 * 0.0254, 5.25 * 0.0254, 25.25 * 0.0254])
+    elif pi_number == "pi4":
+        camera_yaw = -90.0 * np.pi / 180.0
+        T = np.array([-2.75 * 0.0254, -6 * 0.0254, 26 * 0.0254])
+    elif pi_number == "pi5":
+        camera_yaw = 180.0 * np.pi / 180.0
+        T = np.array([-7.25 * 0.0254, -4.24 * 0.0254, 16.5 * 0.0254])
 
-    return compute_extrinsic(camera_pitch, T, is_turret)
+    return compute_extrinsic(camera_pitch, camera_yaw, T, is_turret)
 
 
 def load_camera_definitions():
