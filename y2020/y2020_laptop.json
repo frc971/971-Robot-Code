@@ -1,5 +1,6 @@
 {
   "channels": [
+    /*
     {
       "name": "/roborio/aos",
       "type": "aos.RobotState",
@@ -17,6 +18,7 @@
         }
       ]
     },
+    */
     {
       "name": "/roborio/aos",
       "type": "aos.message_bridge.Timestamp",
@@ -35,6 +37,7 @@
         }
       ]
     },
+    /*
     {
       "name": "/drivetrain",
       "type": "frc971.IMUValuesBatch",
@@ -51,6 +54,7 @@
         }
       ]
     },
+    */
     {
       "name": "/pi1/aos",
       "type": "aos.message_bridge.Timestamp",
