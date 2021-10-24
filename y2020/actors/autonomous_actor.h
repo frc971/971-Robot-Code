@@ -51,6 +51,8 @@ class AutonomousActor : public frc971::autonomous::BaseAutonomousActor {
   bool DriveFwd();
   bool WaitForBallsShot(int num_shot);
 
+  void MaybeSendStartingPosition();
+
   void Replan();
 
   double intake_goal_ = 0.0;
@@ -79,6 +81,10 @@ class AutonomousActor : public frc971::autonomous::BaseAutonomousActor {
 
   aos::Alliance alliance_ = aos::Alliance::kInvalid;
   AutonomousSplines auto_splines_;
+  bool user_indicated_safe_to_reset_ = false;
+  bool sent_starting_position_ = false;
+
+  std::optional<Eigen::Vector3d> starting_position_;
 };
 
 }  // namespace actors

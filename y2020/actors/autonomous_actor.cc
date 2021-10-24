@@ -49,13 +49,34 @@ AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
   event_loop->OnRun([this, event_loop]() {
     replan_timer_->Setup(event_loop->monotonic_now());
   });
+  event_loop->MakeWatcher("/aos", [this](const aos::RobotState &msg) {
+    if (msg.user_button()) {
+      user_indicated_safe_to_reset_ = true;
+      MaybeSendStartingPosition();
+    }
+  });
+  event_loop->MakeWatcher("/aos", [this](const aos::JoystickState &msg) {
+    if (msg.has_alliance() && (msg.alliance() != alliance_)) {
+      alliance_ = msg.alliance();
+      Replan();
+    }
+  });
+}
+
+void AutonomousActor::MaybeSendStartingPosition() {
+  if (user_indicated_safe_to_reset_ && !sent_starting_position_) {
+    CHECK(starting_position_);
+    SendStartingPosition(starting_position_.value());
+  }
 }
 
 void AutonomousActor::Replan() {
+  sent_starting_position_ = false;
   if (FLAGS_spline_auto) {
     test_spline_ = PlanSpline(std::bind(&AutonomousSplines::TestSpline,
                                         &auto_splines_, std::placeholders::_1),
                               SplineDirection::kForward);
+    starting_position_ = test_spline_->starting_position();
   } else if (FLAGS_target_offset) {
     target_offset_splines_ = {
         PlanSpline(std::bind(&AutonomousSplines::TargetOffset1, &auto_splines_,
@@ -64,6 +85,7 @@ void AutonomousActor::Replan() {
         PlanSpline(std::bind(&AutonomousSplines::TargetOffset2, &auto_splines_,
                              std::placeholders::_1),
                    SplineDirection::kBackward)};
+    starting_position_ = target_offset_splines_.value()[0].starting_position();
   } else if (FLAGS_target_aligned) {
     target_aligned_splines_ = {
         PlanSpline(std::bind(&AutonomousSplines::TargetAligned1, &auto_splines_,
@@ -72,7 +94,11 @@ void AutonomousActor::Replan() {
         PlanSpline(std::bind(&AutonomousSplines::TargetAligned2, &auto_splines_,
                              std::placeholders::_1),
                    SplineDirection::kBackward)};
+    starting_position_ = target_aligned_splines_.value()[0].starting_position();
+  } else {
+    starting_position_ = Eigen::Vector3d::Zero();
   }
+  MaybeSendStartingPosition();
 }
 
 void AutonomousActor::Reset() {
@@ -89,6 +115,10 @@ void AutonomousActor::Reset() {
 bool AutonomousActor::RunAction(
     const ::frc971::autonomous::AutonomousActionParams *params) {
   Reset();
+  if (!user_indicated_safe_to_reset_) {
+    AOS_LOG(WARNING, "Didn't send starting position prior to starting auto.");
+    SendStartingPosition(starting_position_.value());
+  }
 
   // Queue up a replan to occur as soon as this action completes.
   // TODO(james): Modify this so we don't replan during teleop.
@@ -134,7 +164,6 @@ void AutonomousActor::SendStartingPosition(const Eigen::Vector3d &start) {
 void AutonomousActor::TargetAligned() {
   CHECK(target_aligned_splines_);
   auto &splines = *target_aligned_splines_;
-  SendStartingPosition(splines[0].starting_position());
 
   // shoot pre-loaded balls
   set_shooter_tracking(true);
@@ -187,7 +216,6 @@ void AutonomousActor::JustShoot() {
 void AutonomousActor::TargetOffset() {
   CHECK(target_offset_splines_);
   auto &splines = *target_offset_splines_;
-  SendStartingPosition(splines[0].starting_position());
 
   // spin up shooter
   set_shooter_tracking(true);
@@ -220,8 +248,6 @@ void AutonomousActor::TargetOffset() {
 void AutonomousActor::SplineAuto() {
   CHECK(test_spline_);
 
-  SendStartingPosition(test_spline_->starting_position());
-
   if (!test_spline_->WaitForPlan()) return;
   test_spline_->Start();
 
@@ -237,7 +263,6 @@ ProfileParametersT MakeProfileParametersT(const float max_velocity,
 }
 
 bool AutonomousActor::DriveFwd() {
-  SendStartingPosition({0, 0, 0});
   const ProfileParametersT kDrive = MakeProfileParametersT(0.3f, 1.0f);
   const ProfileParametersT kTurn = MakeProfileParametersT(5.0f, 15.0f);
   StartDrive(1.0, 0.0, kDrive, kTurn);
