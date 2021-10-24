@@ -66,7 +66,7 @@ class FlywheelController {
   ptrdiff_t history_position_ = 0;
 
   // Average velocity logging.
-  double avg_angular_velocity_;
+  double avg_angular_velocity_ = 0;
 
   double last_goal_ = 0;
 
