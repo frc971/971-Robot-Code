@@ -62,8 +62,8 @@ const TARGET_ZONE_TIP_X = FIELD_EDGE_X - 30 * IN_TO_M;
 const TARGET_ZONE_WIDTH = 48 * IN_TO_M;
 const LOADING_ZONE_WIDTH = 60 * IN_TO_M;
 
-const ROBOT_WIDTH = 28 * IN_TO_M;
-const ROBOT_LENGTH = 30 * IN_TO_M;
+const ROBOT_WIDTH = 34 * IN_TO_M;
+const ROBOT_LENGTH = 36 * IN_TO_M;
 
 const PI_COLORS = ["#ff00ff", "#ffff00", "#000000", "#00ffff", "#ffa500"];
 
