@@ -142,6 +142,9 @@ class ChannelStats {
   size_t avg_message_size() const {
     return total_message_size_ / total_num_messages_;
   }
+  size_t avg_message_bandwidth() const {
+    return total_message_size_ / SecondsActive();
+  }
 
   aos::realtime_clock::time_point channel_end_time() const {
     return channel_end_time_;
@@ -298,7 +301,9 @@ int main(int argc, char **argv) {
                     << "hz max";
         }
         std::cout << " " << channel_stats[i].avg_message_size()
-                  << " bytes avg, " << channel_stats[i].max_message_size()
+                  << " bytes avg, "
+                  << channel_stats[i].avg_message_bandwidth()
+                  << " bytes/sec avg, " << channel_stats[i].max_message_size()
                   << " bytes max / " << channel_stats[i].channel()->max_size()
                   << "bytes " << channel_stats[i].Percentile();
         std::cout << std::endl;
