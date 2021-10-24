@@ -10,6 +10,7 @@ enum RejectionReason : byte {
   IMAGE_TOO_OLD = 6,
   NONFINITE_MEASUREMENT = 7,
   CORRECTION_TOO_LARGE = 8,
+  MESSAGE_BRIDGE_DISCONNECTED = 9,
 }
 
 table ImageMatchDebug {
