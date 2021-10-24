@@ -54,12 +54,12 @@ def main():
 
     if len(sys.argv) > 2:
         if sys.argv[2] == "test":
-            glog.debug("Loading test data")
+            glog.info("Loading test data")
             import camera_definition_test
             import target_definition_test
-            target_data_list = target_definition_test.compute_target_definition(
-            )
             camera_calib_list = camera_definition_test.camera_list
+            target_data_list = target_definition_test.compute_target_definition(
+                camera_calib_list[0])
         else:
             glog.error("Unhandled arguments: '%s'" % sys.argv[2])
             quit()
@@ -67,8 +67,9 @@ def main():
         glog.debug("Loading target configuration data")
         import camera_definition
         import target_definition
-        target_data_list = target_definition.compute_target_definition()
         camera_calib_list = camera_definition.load_camera_definitions()
+        target_data_list = target_definition.compute_target_definition(
+            camera_definition.load_pi1_camera_params(camera_calib_list))
 
     glog.info("Writing file to %s", output_path)
 
@@ -80,7 +81,6 @@ def main():
     for target_data in target_data_list:
 
         features_vector = []
-
         # Iterate over all the keypoints
         for keypoint, keypoint_3d, descriptor in zip(
                 target_data.keypoint_list, target_data.keypoint_list_3d,

@@ -23,19 +23,7 @@ flags.DEFINE_string("output_json_filename", None,
 
 FLAGS = flags.FLAGS
 
-
-def load_pi1_camera_params():
-    camera_params = None
-    for camera in camera_definition.load_camera_definitions():
-        if camera.team_number == 971 and camera.node_name == "pi1":
-            camera_params = camera
-            break
-    glog.check_notnone(camera_params,
-                       "Could not find camera params for team 971 pi1")
-    return camera_params
-
-
-_camera_params = load_pi1_camera_params()
+_camera_params = camera_definition.load_pi1_camera_params()
 
 
 def project_to_image_coords(robot_pos_x, robot_pos_y, robot_heading_degrees,

@@ -112,7 +112,11 @@ def load_camera_definitions():
     camera_list = []
 
     dir_name = dtd.bazel_name_fix('calib_files')
-    glog.debug("Searching for calibration files in " + dir_name)
+    if dir_name is not None:
+        glog.debug("Searching for calibration files in " + dir_name)
+    else:
+        glog.fatal("Failed to find calib_files directory")
+
     for filename in sorted(os.listdir(dir_name)):
         glog.debug("Inspecting %s", filename)
         if ("cam-calib-int" in filename
@@ -157,3 +161,18 @@ def load_camera_definitions():
             camera_list.append(camera_params)
 
     return camera_list
+
+
+def load_pi1_camera_params(camera_param_list=None):
+    """ Helper function to pick the camera parameters for pi-971-1.  If list not provided, go and build it"""
+
+    if camera_param_list is None:
+        camera_param_list = load_camera_definitions()
+    camera_params = None
+    for camera in camera_param_list:
+        if camera.team_number == 971 and camera.node_name == "pi1":
+            camera_params = camera
+            break
+    if camera_params is None:
+        glog.fatal("Could not find camera params for team 971 pi1")
+    return camera_params
