@@ -210,14 +210,22 @@ Localizer::HandleImageMatch(
     aos::monotonic_clock::time_point now, flatbuffers::FlatBufferBuilder *fbb) {
   aos::SizedArray<flatbuffers::Offset<ImageMatchDebug>, 5> debug_offsets;
 
-  std::chrono::nanoseconds monotonic_offset(0);
+  std::chrono::nanoseconds monotonic_offset{0};
+  bool message_bridge_connected = true;
   clock_offset_fetcher_.Fetch();
   if (clock_offset_fetcher_.get() != nullptr) {
     for (const auto connection : *clock_offset_fetcher_->connections()) {
       if (connection->has_node() && connection->node()->has_name() &&
           connection->node()->name()->string_view() == pi) {
-        monotonic_offset =
-            std::chrono::nanoseconds(connection->monotonic_offset());
+        if (connection->has_monotonic_offset()) {
+          monotonic_offset =
+              std::chrono::nanoseconds(connection->monotonic_offset());
+        } else {
+          // If we don't have a monotonic offset, that means we aren't
+          // connected, in which case we should break the loop but shouldn't
+          // populate the offset.
+          message_bridge_connected = false;
+        }
         break;
       }
     }
@@ -230,8 +238,9 @@ Localizer::HandleImageMatch(
           << " when at time of " << now << " and capture time estimate of "
           << capture_time;
   std::optional<RejectionReason> rejection_reason;
-  if (capture_time > now) {
-    LOG(WARNING) << "Got camera frame from the future.";
+  if (!message_bridge_connected) {
+    rejection_reason = RejectionReason::MESSAGE_BRIDGE_DISCONNECTED;
+  } else if (capture_time > now) {
     rejection_reason = RejectionReason::IMAGE_FROM_FUTURE;
   }
   if (!result.has_camera_calibration()) {
@@ -255,7 +264,8 @@ Localizer::HandleImageMatch(
   // Note that the current number here is chosen pretty arbitrarily--1 rad / sec
   // seems reasonable, but may be unnecessarily low or high.
   constexpr float kMaxTurretVelocity = 1.0;
-  if (is_turret && std::abs(turret_data.velocity) > kMaxTurretVelocity) {
+  if (is_turret && std::abs(turret_data.velocity) > kMaxTurretVelocity &&
+      !rejection_reason) {
     rejection_reason = RejectionReason::TURRET_TOO_FAST;
   }
   CHECK(result.camera_calibration()->has_fixed_extrinsics());
