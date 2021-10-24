@@ -11,13 +11,14 @@
 #include "gtest/gtest.h"
 
 #include "aos/configuration.h"
-#include "aos/events/logging/log_writer.h"
 #include "aos/events/logging/log_reader.h"
+#include "aos/events/logging/log_writer.h"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/init.h"
 #include "aos/json_to_flatbuffer.h"
 #include "aos/network/team_number.h"
 #include "frc971/control_loops/drivetrain/drivetrain.h"
+#include "frc971/control_loops/drivetrain/trajectory_schema.h"
 #include "gflags/gflags.h"
 #include "y2020/control_loops/drivetrain/drivetrain_base.h"
 
@@ -36,9 +37,7 @@ namespace testing {
 class DrivetrainReplayTest : public ::testing::Test {
  public:
   DrivetrainReplayTest()
-      : config_(aos::configuration::ReadConfig(FLAGS_config)),
-        reader_(aos::logger::SortParts(aos::logger::FindLogs(FLAGS_logfile)),
-                &config_.message()) {
+      : reader_(aos::logger::SortParts(aos::logger::FindLogs(FLAGS_logfile))) {
     aos::network::OverrideTeamNumber(971);
 
     // TODO(james): Actually enforce not sending on the same buses as the
@@ -47,12 +46,38 @@ class DrivetrainReplayTest : public ::testing::Test {
                               "frc971.control_loops.drivetrain.Status");
     reader_.RemapLoggedChannel("/drivetrain",
                               "frc971.control_loops.drivetrain.Output");
-    reader_.Register();
+
+    // Patch in any new channels.
+    updated_config_ = aos::configuration::MergeWithConfig(
+        reader_.configuration(),
+        aos::configuration::AddSchema(
+            R"channel({
+  "channels": [
+    {
+      "name": "/drivetrain",
+      "type": "frc971.control_loops.drivetrain.fb.Trajectory",
+      "source_node": "roborio",
+      "max_size": 600000,
+      "frequency": 4,
+      "num_senders": 2,
+      "read_method": "PIN",
+      "num_readers": 10,
+      "logger": "NOT_LOGGED"
+    }
+  ]
+})channel",
+            {aos::FlatbufferVector<
+                reflection::Schema>(aos::FlatbufferSpan<reflection::Schema>(
+                frc971::control_loops::drivetrain::fb::TrajectorySchema()))}));
+
+    factory_ = std::make_unique<aos::SimulatedEventLoopFactory>(
+        &updated_config_.message());
+
+    reader_.Register(factory_.get());
 
     roborio_ = aos::configuration::GetNode(reader_.configuration(), "roborio");
 
-    drivetrain_event_loop_ =
-        reader_.event_loop_factory()->MakeEventLoop("drivetrain", roborio_);
+    drivetrain_event_loop_ = factory_->MakeEventLoop("drivetrain", roborio_);
     drivetrain_event_loop_->SkipTimingReport();
 
     frc971::control_loops::drivetrain::DrivetrainConfig<double> config =
@@ -65,16 +90,24 @@ class DrivetrainReplayTest : public ::testing::Test {
         std::make_unique<frc971::control_loops::drivetrain::DrivetrainLoop>(
             config, drivetrain_event_loop_.get(), localizer_.get());
 
-    test_event_loop_ =
-        reader_.event_loop_factory()->MakeEventLoop("drivetrain_test", roborio_);
+    test_event_loop_ = factory_->MakeEventLoop("drivetrain_test", roborio_);
 
-    status_fetcher_ = test_event_loop_->MakeFetcher<
-        frc971::control_loops::drivetrain::Status>("/drivetrain");
+    status_fetcher_ =
+        test_event_loop_
+            ->MakeFetcher<frc971::control_loops::drivetrain::Status>(
+                "/drivetrain");
   }
 
-  const aos::FlatbufferDetachedBuffer<aos::Configuration> config_;
+  ~DrivetrainReplayTest() {
+    reader_.Deregister();
+  }
+
   aos::logger::LogReader reader_;
   const aos::Node *roborio_;
+
+  aos::FlatbufferDetachedBuffer<aos::Configuration> updated_config_ =
+      aos::FlatbufferDetachedBuffer<aos::Configuration>::Empty();
+  std::unique_ptr<aos::SimulatedEventLoopFactory> factory_;
 
   std::unique_ptr<aos::EventLoop> drivetrain_event_loop_;
   std::unique_ptr<frc971::control_loops::drivetrain::DeadReckonEkf> localizer_;

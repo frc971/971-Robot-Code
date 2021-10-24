@@ -1139,10 +1139,8 @@ TEST_F(SuperstructureTest, BallsShot) {
 class SuperstructureReplayTest : public ::testing::Test {
  public:
   SuperstructureReplayTest()
-      : config_(aos::configuration::ReadConfig(FLAGS_config)),
-        reader_(
-            aos::logger::SortParts(aos::logger::FindLogs(FLAGS_replay_logfile)),
-            &config_.message()) {
+      : reader_(aos::logger::SortParts(
+            aos::logger::FindLogs(FLAGS_replay_logfile))) {
     aos::network::OverrideTeamNumber(971);
 
     reader_.RemapLoggedChannel("/superstructure",
@@ -1172,7 +1170,6 @@ class SuperstructureReplayTest : public ::testing::Test {
     }
   }
 
-  const aos::FlatbufferDetachedBuffer<aos::Configuration> config_;
   aos::logger::LogReader reader_;
   const aos::Node *roborio_;
 

@@ -162,7 +162,7 @@ aos_config(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
-        ":config_laptop",
+        ":config_logger",
         ":config_pi1",
         ":config_pi2",
         ":config_pi3",
@@ -204,8 +204,8 @@ aos_config(
 ]
 
 aos_config(
-    name = "config_laptop",
-    src = "y2020_laptop.json",
+    name = "config_logger",
+    src = "y2020_logger.json",
     flatbuffers = [
         "//aos/network:message_bridge_client_fbs",
         "//aos/network:message_bridge_server_fbs",

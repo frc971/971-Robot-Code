@@ -7,11 +7,11 @@
       "source_node": "roborio",
       "logger": "LOCAL_AND_REMOTE_LOGGER",
       "logger_nodes": [
-        "laptop"
+        "logger"
       ],
       "destination_nodes": [
         {
-          "name": "laptop",
+          "name": "logger",
           "priority": 2,
           "timestamp_logger": "LOCAL_LOGGER",
           "time_to_live": 10000000
@@ -25,11 +25,11 @@
       "source_node": "roborio",
       "logger": "LOCAL_AND_REMOTE_LOGGER",
       "logger_nodes": [
-        "laptop"
+        "logger"
       ],
       "destination_nodes": [
         {
-          "name": "laptop",
+          "name": "logger",
           "priority": 1,
           "time_to_live": 5000000,
           "timestamp_logger" : "LOCAL_AND_REMOTE_LOGGER",
@@ -44,11 +44,11 @@
       "source_node": "roborio",
       "logger": "LOCAL_AND_REMOTE_LOGGER",
       "logger_nodes": [
-        "laptop"
+        "logger"
       ],
       "destination_nodes": [
         {
-          "name": "laptop",
+          "name": "logger",
           "priority": 2,
           "time_to_live": 50000000
         }
@@ -61,11 +61,11 @@
       "source_node": "pi1",
       "logger": "LOCAL_AND_REMOTE_LOGGER",
       "logger_nodes": [
-        "laptop"
+        "logger"
       ],
       "destination_nodes": [
         {
-          "name": "laptop",
+          "name": "logger",
           "priority": 1,
           "time_to_live": 5000000
         }
@@ -77,11 +77,11 @@
       "source_node": "pi2",
       "logger": "LOCAL_AND_REMOTE_LOGGER",
       "logger_nodes": [
-        "laptop"
+        "logger"
       ],
       "destination_nodes": [
         {
-          "name": "laptop",
+          "name": "logger",
           "priority": 1,
           "time_to_live": 5000000
         }
@@ -93,11 +93,11 @@
       "source_node": "pi3",
       "logger": "LOCAL_AND_REMOTE_LOGGER",
       "logger_nodes": [
-        "laptop"
+        "logger"
       ],
       "destination_nodes": [
         {
-          "name": "laptop",
+          "name": "logger",
           "priority": 1,
           "time_to_live": 5000000
         }
@@ -109,11 +109,11 @@
       "source_node": "pi4",
       "logger": "LOCAL_AND_REMOTE_LOGGER",
       "logger_nodes": [
-        "laptop"
+        "logger"
       ],
       "destination_nodes": [
         {
-          "name": "laptop",
+          "name": "logger",
           "priority": 1,
           "time_to_live": 5000000
         }
@@ -125,51 +125,66 @@
       "source_node": "pi5",
       "logger": "LOCAL_AND_REMOTE_LOGGER",
       "logger_nodes": [
-        "laptop"
+        "logger"
       ],
       "destination_nodes": [
         {
-          "name": "laptop",
+          "name": "logger",
           "priority": 1,
           "time_to_live": 5000000
         }
       ]
     },
     {
-      "name": "/laptop/aos",
+      "name": "/logger/aos",
       "type": "aos.timing.Report",
-      "source_node": "laptop",
+      "source_node": "logger",
       "frequency": 50,
       "num_senders": 20,
       "max_size": 4096
     },
     {
-      "name": "/laptop/aos",
+      "name": "/logger/aos",
       "type": "aos.logging.LogMessageFbs",
-      "source_node": "laptop",
+      "source_node": "logger",
       "frequency": 400,
       "num_senders": 20
     },
     {
-      "name": "/laptop/aos",
+      "name": "/logger/aos",
       "type": "aos.message_bridge.ServerStatistics",
-      "source_node": "laptop",
+      "source_node": "logger",
       "frequency": 10,
       "num_senders": 2
     },
     {
-      "name": "/laptop/aos",
+      "name": "/logger/aos",
       "type": "aos.message_bridge.ClientStatistics",
-      "source_node": "laptop",
+      "source_node": "logger",
       "frequency": 10,
       "num_senders": 2
     },
     {
-      "name": "/laptop/aos",
+      "name": "/logger/aos",
+      "type": "aos.starter.Status",
+      "source_node": "logger",
+      "frequency": 50,
+      "num_senders": 20
+    },
+    {
+      "name": "/logger/aos",
+      "type": "aos.starter.StarterRpc",
+      "source_node": "logger",
+      "frequency": 10,
+      "max_size": 72,
+      "num_senders": 2
+    },
+    {
+      "name": "/logger/aos",
       "type": "aos.message_bridge.Timestamp",
       "logger_nodes": ["roborio"],
       "logger": "LOCAL_AND_REMOTE_LOGGER",
-      "source_node": "laptop",
+      "source_node": "logger",
       "frequency": 15,
       "num_senders": 2,
       "max_size": 400,
@@ -180,7 +195,7 @@
           "time_to_live": 5000000,
           "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
           "timestamp_logger_nodes": [
-            "laptop"
+            "logger"
           ]
         },
         {
@@ -189,7 +204,7 @@
           "time_to_live": 5000000,
           "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
           "timestamp_logger_nodes": [
-            "laptop"
+            "logger"
           ]
         },
         {
@@ -198,7 +213,7 @@
           "time_to_live": 5000000,
           "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
           "timestamp_logger_nodes": [
-            "laptop"
+            "logger"
           ]
         },
         {
@@ -207,7 +222,7 @@
           "time_to_live": 5000000,
           "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
           "timestamp_logger_nodes": [
-            "laptop"
+            "logger"
           ]
         },
         {
@@ -216,7 +231,7 @@
           "time_to_live": 5000000,
           "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
           "timestamp_logger_nodes": [
-            "laptop"
+            "logger"
           ]
         },
         {
@@ -225,60 +240,60 @@
           "time_to_live": 5000000,
           "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
           "timestamp_logger_nodes": [
-            "laptop"
+            "logger"
           ]
         }
       ]
     },
     {
-      "name": "/laptop/aos/remote_timestamps/roborio/laptop/aos/aos-message_bridge-Timestamp",
+      "name": "/logger/aos/remote_timestamps/roborio/logger/aos/aos-message_bridge-Timestamp",
       "type": "aos.message_bridge.RemoteMessage",
-      "source_node": "laptop",
+      "source_node": "logger",
       "logger": "NOT_LOGGED",
       "frequency": 20,
       "num_senders": 2,
       "max_size": 200
     },
     {
-      "name": "/laptop/aos/remote_timestamps/pi1/laptop/aos/aos-message_bridge-Timestamp",
+      "name": "/logger/aos/remote_timestamps/pi1/logger/aos/aos-message_bridge-Timestamp",
       "type": "aos.message_bridge.RemoteMessage",
-      "source_node": "laptop",
+      "source_node": "logger",
       "logger": "NOT_LOGGED",
       "frequency": 20,
       "num_senders": 2,
       "max_size": 200
     },
     {
-      "name": "/laptop/aos/remote_timestamps/pi2/laptop/aos/aos-message_bridge-Timestamp",
+      "name": "/logger/aos/remote_timestamps/pi2/logger/aos/aos-message_bridge-Timestamp",
       "type": "aos.message_bridge.RemoteMessage",
-      "source_node": "laptop",
+      "source_node": "logger",
       "logger": "NOT_LOGGED",
       "frequency": 20,
       "num_senders": 2,
       "max_size": 200
     },
     {
-      "name": "/laptop/aos/remote_timestamps/pi3/laptop/aos/aos-message_bridge-Timestamp",
+      "name": "/logger/aos/remote_timestamps/pi3/logger/aos/aos-message_bridge-Timestamp",
       "type": "aos.message_bridge.RemoteMessage",
-      "source_node": "laptop",
+      "source_node": "logger",
       "logger": "NOT_LOGGED",
       "frequency": 20,
       "num_senders": 2,
       "max_size": 200
     },
     {
-      "name": "/laptop/aos/remote_timestamps/pi4/laptop/aos/aos-message_bridge-Timestamp",
+      "name": "/logger/aos/remote_timestamps/pi4/logger/aos/aos-message_bridge-Timestamp",
       "type": "aos.message_bridge.RemoteMessage",
-      "source_node": "laptop",
+      "source_node": "logger",
       "logger": "NOT_LOGGED",
       "frequency": 20,
       "num_senders": 2,
       "max_size": 200
     },
     {
-      "name": "/laptop/aos/remote_timestamps/pi5/laptop/aos/aos-message_bridge-Timestamp",
+      "name": "/logger/aos/remote_timestamps/pi5/logger/aos/aos-message_bridge-Timestamp",
       "type": "aos.message_bridge.RemoteMessage",
-      "source_node": "laptop",
+      "source_node": "logger",
       "logger": "NOT_LOGGED",
       "frequency": 20,
       "num_senders": 2,
@@ -290,11 +305,11 @@
       "source_node": "pi1",
       "logger": "LOCAL_AND_REMOTE_LOGGER",
       "logger_nodes": [
-        "laptop"
+        "logger"
       ],
       "destination_nodes": [
         {
-          "name": "laptop",
+          "name": "logger",
           "priority": 1,
           "time_to_live": 5000000
         }
@@ -306,11 +321,11 @@
       "source_node": "pi1",
       "logger": "LOCAL_AND_REMOTE_LOGGER",
       "logger_nodes": [
-        "laptop"
+        "logger"
       ],
       "destination_nodes": [
         {
-          "name": "laptop",
+          "name": "logger",
           "priority": 1,
           "time_to_live": 5000000
         }
@@ -322,11 +337,11 @@
       "source_node": "pi2",
       "logger": "LOCAL_AND_REMOTE_LOGGER",
       "logger_nodes": [
-        "laptop"
+        "logger"
       ],
       "destination_nodes": [
         {
-          "name": "laptop",
+          "name": "logger",
           "priority": 1,
           "time_to_live": 5000000
         }
@@ -338,11 +353,11 @@
       "source_node": "pi2",
       "logger": "LOCAL_AND_REMOTE_LOGGER",
       "logger_nodes": [
-        "laptop"
+        "logger"
       ],
       "destination_nodes": [
         {
-          "name": "laptop",
+          "name": "logger",
           "priority": 1,
           "time_to_live": 5000000
         }
@@ -354,11 +369,11 @@
       "source_node": "pi3",
       "logger": "LOCAL_AND_REMOTE_LOGGER",
       "logger_nodes": [
-        "laptop"
+        "logger"
       ],
       "destination_nodes": [
         {
-          "name": "laptop",
+          "name": "logger",
           "priority": 1,
           "time_to_live": 5000000
         }
@@ -370,11 +385,11 @@
       "source_node": "pi3",
       "logger": "LOCAL_AND_REMOTE_LOGGER",
       "logger_nodes": [
-        "laptop"
+        "logger"
       ],
       "destination_nodes": [
         {
-          "name": "laptop",
+          "name": "logger",
           "priority": 1,
           "time_to_live": 5000000
         }
@@ -386,11 +401,11 @@
       "source_node": "pi4",
       "logger": "LOCAL_AND_REMOTE_LOGGER",
       "logger_nodes": [
-        "laptop"
+        "logger"
       ],
       "destination_nodes": [
         {
-          "name": "laptop",
+          "name": "logger",
           "priority": 1,
           "time_to_live": 5000000
         }
@@ -402,11 +417,11 @@
       "source_node": "pi4",
       "logger": "LOCAL_AND_REMOTE_LOGGER",
       "logger_nodes": [
-        "laptop"
+        "logger"
       ],
       "destination_nodes": [
         {
-          "name": "laptop",
+          "name": "logger",
           "priority": 1,
           "time_to_live": 5000000
         }
@@ -418,11 +433,11 @@
       "source_node": "pi5",
       "logger": "LOCAL_AND_REMOTE_LOGGER",
       "logger_nodes": [
-        "laptop"
+        "logger"
       ],
       "destination_nodes": [
         {
-          "name": "laptop",
+          "name": "logger",
           "priority": 1,
           "time_to_live": 5000000
         }
@@ -434,11 +449,11 @@
       "source_node": "pi5",
       "logger": "LOCAL_AND_REMOTE_LOGGER",
       "logger_nodes": [
-        "laptop"
+        "logger"
       ],
       "destination_nodes": [
         {
-          "name": "laptop",
+          "name": "logger",
           "priority": 1,
           "time_to_live": 5000000
         }
@@ -449,18 +464,35 @@
     {
       "match": {
         "name": "/aos*",
-        "source_node": "laptop"
+        "source_node": "logger"
       },
       "rename": {
-        "name": "/laptop/aos"
+        "name": "/logger/aos"
       }
+    }
+  ],
+  "applications": [
+    {
+      "name": "message_bridge_client",
+      "executable_name": "message_bridge_client",
+      "nodes": [
+        "logger"
+      ]
+    },
+    {
+      "name": "message_bridge_server",
+      "executable_name": "message_bridge_server",
+      "nodes": [
+        "logger"
+      ]
     }
   ],
   "nodes": [
     {
-      "name": "laptop",
-      "hostname": "laptop",
+      "name": "logger",
+      "hostname": "logger",
       "hostnames": [
+        "pi-971-6",
         "ASchuh-T480s",
         "aschuh-3950x"
       ],
