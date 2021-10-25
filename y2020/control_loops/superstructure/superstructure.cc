@@ -234,14 +234,19 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
     output_struct.washing_machine_spinner_voltage = 0.0;
     output_struct.feeder_voltage = 0.0;
     output_struct.intake_roller_voltage = 0.0;
+    output_struct.climber_voltage = 0.0;
     if (unsafe_goal) {
-      output_struct.climber_voltage =
-          std::clamp(unsafe_goal->climber_voltage(), -12.0f, 12.0f);
+      if (unsafe_goal->has_turret()) {
+        output_struct.climber_voltage =
+            std::clamp(unsafe_goal->climber_voltage(), -12.0f, 12.0f);
 
-      // Make sure the turret is relatively close to the goal before turning the
-      // climber on.
-      if (std::abs(turret_.goal(0) - turret_.position()) > 0.1) {
-        output_struct.climber_voltage = 0;
+        // Make sure the turret is relatively close to the goal before turning
+        // the climber on.
+        CHECK(unsafe_goal->has_turret());
+        if (std::abs(unsafe_goal->turret()->unsafe_goal() -
+                     turret_.position()) > 0.1) {
+          output_struct.climber_voltage = 0;
+        }
       }
 
       if (unsafe_goal->shooting() || unsafe_goal->intake_preloading()) {
