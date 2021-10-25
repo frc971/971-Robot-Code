@@ -5,6 +5,9 @@
 namespace y2020 {
 namespace actors {
 
+constexpr double kFieldLength = 15.983;
+constexpr double kFieldWidth = 8.212;
+
 void MaybeFlipSpline(
     aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
         *builder,
@@ -18,6 +21,34 @@ void MaybeFlipSpline(
       spline_y->Mutate(i, -spline_y->Get(i));
     }
   }
+}
+
+flatbuffers::Offset<frc971::MultiSpline> FixSpline(
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder,
+    flatbuffers::Offset<frc971::MultiSpline> spline_offset,
+    aos::Alliance alliance) {
+  frc971::MultiSpline *spline =
+      GetMutableTemporaryPointer(*builder->fbb(), spline_offset);
+  flatbuffers::Vector<float> *spline_x = spline->mutable_spline_x();
+  flatbuffers::Vector<float> *spline_y = spline->mutable_spline_y();
+
+  for (size_t ii = 0; ii < spline_x->size(); ++ii) {
+    spline_x->Mutate(ii, spline_x->Get(ii) - kFieldLength / 2.0);
+  }
+  for (size_t ii = 0; ii < spline_y->size(); ++ii) {
+    spline_y->Mutate(ii, kFieldWidth / 2.0 - spline_y->Get(ii));
+  }
+
+  if (alliance == aos::Alliance::kBlue) {
+    for (size_t ii = 0; ii < spline_x->size(); ++ii) {
+      spline_x->Mutate(ii, -spline_x->Get(ii));
+    }
+    for (size_t ii = 0; ii < spline_y->size(); ++ii) {
+      spline_y->Mutate(ii, -spline_y->Get(ii));
+    }
+  }
+  return spline_offset;
 }
 
 flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::BasicSSpline(
@@ -88,6 +119,26 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::BasicSSpline(
   multispline_builder.add_spline_y(spline_y_offset);
 
   return multispline_builder.Finish();
+}
+
+flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::TargetAligned1(
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder,
+    aos::Alliance alliance) {
+  return FixSpline(builder,
+                   aos::CopyFlatBuffer<frc971::MultiSpline>(target_aligned_1_,
+                                                            builder->fbb()),
+                   alliance);
+}
+
+flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::TargetAligned2(
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder,
+    aos::Alliance alliance) {
+  return FixSpline(builder,
+                   aos::CopyFlatBuffer<frc971::MultiSpline>(target_aligned_2_,
+                                                            builder->fbb()),
+                   alliance);
 }
 
 flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::StraightLine(

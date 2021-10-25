@@ -29,8 +29,12 @@ class AutonomousActor : public frc971::autonomous::BaseAutonomousActor {
   void Reset();
 
   void set_intake_goal(double intake_goal) { intake_goal_ = intake_goal; }
-  void set_intake_preloading(bool intake_preloading) {
-    intake_preloading_ = intake_preloading;
+  void set_roller(bool roller) {
+    if (roller) {
+      roller_voltage_ = 6.0;
+    } else {
+      roller_voltage_ = 0.0;
+    }
   }
   void set_roller_voltage(double roller_voltage) {
     roller_voltage_ = roller_voltage;
@@ -50,6 +54,8 @@ class AutonomousActor : public frc971::autonomous::BaseAutonomousActor {
   void JustShoot();
   bool DriveFwd();
   bool WaitForBallsShot(int num_shot);
+  int Balls();
+  bool WaitUntilAbsoluteBallsShot(int absolute_balls);
 
   void MaybeSendStartingPosition();
 
@@ -57,9 +63,8 @@ class AutonomousActor : public frc971::autonomous::BaseAutonomousActor {
 
   double intake_goal_ = 0.0;
   double roller_voltage_ = 0.0;
-  bool intake_preloading_ = false;
   bool shooting_ = false;
-  bool shooter_tracking_ = false;
+  bool shooter_tracking_ = true;
   const float kRollerSpeedCompensation = 2.0;
 
   aos::Sender<frc971::control_loops::drivetrain::LocalizerControl>

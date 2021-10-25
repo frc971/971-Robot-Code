@@ -11,7 +11,7 @@
 #include "y2020/control_loops/drivetrain/drivetrain_base.h"
 
 DEFINE_bool(spline_auto, false, "If true, define a spline autonomous mode");
-DEFINE_bool(target_aligned, false,
+DEFINE_bool(target_aligned, true,
             "If true, run the Infinite Recharge autonomous that starts aligned "
             "with the target");
 DEFINE_bool(target_offset, false,
@@ -44,7 +44,7 @@ AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
           event_loop->MakeFetcher<y2020::control_loops::superstructure::Status>(
               "/superstructure")),
       auto_splines_() {
-  set_max_drivetrain_voltage(2.0);
+  set_max_drivetrain_voltage(12.0);
   replan_timer_ = event_loop->AddTimer([this]() { Replan(); });
   event_loop->OnRun([this, event_loop]() {
     replan_timer_->Setup(event_loop->monotonic_now());
@@ -72,11 +72,23 @@ void AutonomousActor::MaybeSendStartingPosition() {
 
 void AutonomousActor::Replan() {
   sent_starting_position_ = false;
+  if (alliance_ == aos::Alliance::kInvalid) {
+    return;
+  }
   if (FLAGS_spline_auto) {
     test_spline_ = PlanSpline(std::bind(&AutonomousSplines::TestSpline,
                                         &auto_splines_, std::placeholders::_1),
                               SplineDirection::kForward);
     starting_position_ = test_spline_->starting_position();
+  } else if (FLAGS_target_aligned) {
+    target_aligned_splines_ = {
+        PlanSpline(std::bind(&AutonomousSplines::TargetAligned1, &auto_splines_,
+                             std::placeholders::_1, alliance_),
+                   SplineDirection::kForward),
+        PlanSpline(std::bind(&AutonomousSplines::TargetAligned2, &auto_splines_,
+                             std::placeholders::_1, alliance_),
+                   SplineDirection::kBackward)};
+    starting_position_ = target_aligned_splines_.value()[0].starting_position();
   } else if (FLAGS_target_offset) {
     target_offset_splines_ = {
         PlanSpline(std::bind(&AutonomousSplines::TargetOffset1, &auto_splines_,
@@ -86,15 +98,6 @@ void AutonomousActor::Replan() {
                              std::placeholders::_1),
                    SplineDirection::kBackward)};
     starting_position_ = target_offset_splines_.value()[0].starting_position();
-  } else if (FLAGS_target_aligned) {
-    target_aligned_splines_ = {
-        PlanSpline(std::bind(&AutonomousSplines::TargetAligned1, &auto_splines_,
-                             std::placeholders::_1),
-                   SplineDirection::kForward),
-        PlanSpline(std::bind(&AutonomousSplines::TargetAligned2, &auto_splines_,
-                             std::placeholders::_1),
-                   SplineDirection::kBackward)};
-    starting_position_ = target_aligned_splines_.value()[0].starting_position();
   } else {
     starting_position_ = Eigen::Vector3d::Zero();
   }
@@ -129,14 +132,14 @@ bool AutonomousActor::RunAction(
     AOS_LOG(INFO, "Aborting autonomous due to invalid alliance selection.");
     return false;
   }
-  if (FLAGS_target_aligned) {
+  if (FLAGS_spline_auto) {
+    SplineAuto();
+  } else if (FLAGS_target_aligned) {
     TargetAligned();
   } else if (FLAGS_target_offset) {
     TargetOffset();
   } else if (FLAGS_just_shoot) {
     JustShoot();
-  } else if (FLAGS_spline_auto) {
-    SplineAuto();
   } else {
     return DriveFwd();
   }
@@ -162,42 +165,64 @@ void AutonomousActor::SendStartingPosition(const Eigen::Vector3d &start) {
 }
 
 void AutonomousActor::TargetAligned() {
+  aos::monotonic_clock::time_point start_time = aos::monotonic_clock::now();
   CHECK(target_aligned_splines_);
   auto &splines = *target_aligned_splines_;
 
-  // shoot pre-loaded balls
-  set_shooter_tracking(true);
+  // Spin up.
   set_shooting(true);
   SendSuperstructureGoal();
-
   if (!WaitForBallsShot(3)) return;
 
   set_shooting(false);
+  ExtendIntake();
   SendSuperstructureGoal();
 
-  ExtendIntake();
-
-  // pickup 3 more balls
   if (!splines[0].WaitForPlan()) return;
   splines[0].Start();
 
   if (!splines[0].WaitForSplineDistanceRemaining(0.02)) return;
+  std::this_thread::sleep_for(chrono::milliseconds(200));
   RetractIntake();
 
   if (!splines[1].WaitForPlan()) return;
   splines[1].Start();
 
-  if (!splines[1].WaitForSplineDistanceRemaining(0.02)) return;
+  if (!splines[1].WaitForSplineDistanceRemaining(2.0)) return;
+  // Reverse the rollers for a moment to try to unjam any jammed balls.  Since
+  // we are moving here, this is free to try.
+  set_roller_voltage(-12.0);
+  std::this_thread::sleep_for(chrono::milliseconds(300));
+  set_roller_voltage(0.0);
 
-  // shoot the new balls in front of the goal.
+  // Once we come to a stop, give the robot a moment to settle down.  This makes
+  // the shot more accurate.
+  if (!splines[1].WaitForSplineDistanceRemaining(0.02)) return;
+  std::this_thread::sleep_for(chrono::milliseconds(1500));
+  set_shooting(true);
+  const int balls = Balls();
+
+  SendSuperstructureGoal();
+
+  std::this_thread::sleep_for(chrono::milliseconds(1500));
+
+  // We have been seeing balls get stuck on the intake roller.  Reverse the
+  // roller again for a moment to unjam it.
+  set_shooting(false);
+  set_roller_voltage(-12.0);
+  SendSuperstructureGoal();
+  std::this_thread::sleep_for(chrono::milliseconds(250));
+
+  set_roller_voltage(0.0);
   set_shooting(true);
   SendSuperstructureGoal();
 
-  if (!WaitForBallsShot(3)) return;
+  if (!WaitUntilAbsoluteBallsShot(3 + balls)) return;
 
-  set_shooting(false);
-  set_shooter_tracking(false);
-  SendSuperstructureGoal();
+  LOG(INFO) << "Took "
+            << chrono::duration<double>(aos::monotonic_clock::now() -
+                                        start_time)
+                   .count();
 }
 
 void AutonomousActor::JustShoot() {
@@ -294,7 +319,7 @@ void AutonomousActor::SendSuperstructureGoal() {
       builder.MakeBuilder<superstructure::Goal>();
 
   superstructure_builder.add_intake(intake_offset);
-  superstructure_builder.add_intake_preloading(intake_preloading_);
+  superstructure_builder.add_intake_preloading(true);
   superstructure_builder.add_roller_voltage(roller_voltage_);
   superstructure_builder.add_roller_speed_compensation(
       kRollerSpeedCompensation);
@@ -309,26 +334,24 @@ void AutonomousActor::SendSuperstructureGoal() {
 }
 
 void AutonomousActor::ExtendIntake() {
-  set_intake_goal(1.25);
-  set_roller_voltage(12.0);
-  set_intake_preloading(true);
+  set_intake_goal(1.30);
+  set_roller_voltage(6.0);
   SendSuperstructureGoal();
 }
 
 void AutonomousActor::RetractIntake() {
   set_intake_goal(-0.89);
-  set_roller_voltage(0.0);
-  set_intake_preloading(false);
+  set_roller_voltage(6.0);
   SendSuperstructureGoal();
 }
 
-bool AutonomousActor::WaitForBallsShot(int num_wanted) {
+int AutonomousActor::Balls() {
   superstructure_status_fetcher_.Fetch();
   CHECK(superstructure_status_fetcher_.get() != nullptr);
-  const int initial_balls_shot =
-      superstructure_status_fetcher_->shooter()->balls_shot();
-  int balls_shot = initial_balls_shot;
+  return superstructure_status_fetcher_->shooter()->balls_shot();
+}
 
+bool AutonomousActor::WaitUntilAbsoluteBallsShot(int absolute_balls) {
   ::aos::time::PhasedLoop phased_loop(frc971::controls::kLoopFrequency,
                                       event_loop()->monotonic_now(),
                                       frc971::controls::kLoopFrequency / 2);
@@ -338,11 +361,16 @@ bool AutonomousActor::WaitForBallsShot(int num_wanted) {
     }
     phased_loop.SleepUntilNext();
     superstructure_status_fetcher_.Fetch();
-    balls_shot = superstructure_status_fetcher_->shooter()->balls_shot();
-    if ((balls_shot - initial_balls_shot) >= num_wanted) {
+    CHECK(superstructure_status_fetcher_.get() != nullptr);
+    if (superstructure_status_fetcher_->shooter()->balls_shot() >=
+        absolute_balls) {
       return true;
     }
   }
+}
+
+bool AutonomousActor::WaitForBallsShot(int num_wanted) {
+  return WaitUntilAbsoluteBallsShot(Balls() + num_wanted);
 }
 
 }  // namespace actors

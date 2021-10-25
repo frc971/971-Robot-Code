@@ -120,8 +120,8 @@ struct Values {
       ::frc971::zeroing::AbsoluteEncoderZeroingEstimator>
       intake;
 
-  static constexpr double kIntakeRollerSupplyCurrentLimit() { return 30.0; }
-  static constexpr double kIntakeRollerStatorCurrentLimit() { return 40.0; }
+  static constexpr double kIntakeRollerSupplyCurrentLimit() { return 40.0; }
+  static constexpr double kIntakeRollerStatorCurrentLimit() { return 60.0; }
 
   static constexpr double kFeederSupplyCurrentLimit() { return 40.0; }
   static constexpr double kFeederStatorCurrentLimit() { return 50.0; }

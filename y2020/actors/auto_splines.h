@@ -47,16 +47,12 @@ class AutonomousSplines {
 
   flatbuffers::Offset<frc971::MultiSpline> TargetAligned1(
       aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
-          *builder) {
-    return aos::CopyFlatBuffer<frc971::MultiSpline>(target_aligned_1_,
-                                                    builder->fbb());
-  }
+          *builder,
+      aos::Alliance alliance);
   flatbuffers::Offset<frc971::MultiSpline> TargetAligned2(
       aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
-          *builder) {
-    return aos::CopyFlatBuffer<frc971::MultiSpline>(target_aligned_2_,
-                                                    builder->fbb());
-  }
+          *builder,
+      aos::Alliance alliance);
   flatbuffers::Offset<frc971::MultiSpline> TargetOffset1(
       aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
           *builder) {
