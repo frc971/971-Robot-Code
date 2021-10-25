@@ -38,10 +38,11 @@ const Values *DoGetValuesForTeam(uint16_t team) {
                                               {1.4732, {0.10, 10.6}},
                                               {2.5, {0.36, 12.0}},
                                               {3.50, {0.43, 13.2}},
-                                              {4.7371, {0.535, 14.2}},
-                                              {5.27, {0.53, 14.55}},
-                                              {6.332, {0.53, 15.2}},
-                                              {7.48, {0.55, 17.0}},
+                                              {3.93, {0.44, 13.2}},
+                                              {4.7371, {0.475, 14.2}},
+                                              {5.31, {0.51, 14.6}},
+                                              {6.332, {0.525, 15.2}},
+                                              {7.35, {0.52, 17.0}},
                                               {8.30, {0.565, 17.0}},
                                               {9.20, {0.535, 17.0}}});
 
@@ -57,7 +58,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
            {16.1, {425.0, kVelocityFinisher}},
            {16.3, {450.0, kVelocityFinisher}},
            {16.6, {475.0, kVelocityFinisher}},
-           {17.0, {500.0, kVelocityFinisher}}});
+           {17.0, {500.0, kVelocityFinisher + 25}}});
 
   // Hood constants.
   hood->zeroing_voltage = 2.0;
