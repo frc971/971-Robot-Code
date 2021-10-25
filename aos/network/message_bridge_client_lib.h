@@ -31,6 +31,7 @@ struct SctpClientChannelState {
 // transmit messages.
 class SctpClientConnection {
  public:
+  static constexpr std::chrono::seconds kReconnectTimeout{3};
   SctpClientConnection(aos::ShmEventLoop *const event_loop,
                        std::string_view remote_name, const Node *my_node,
                        std::string_view local_host,
@@ -58,7 +59,7 @@ class SctpClientConnection {
   // from the server for a while we'll try sending it again.
   void ScheduleConnectTimeout() {
     connect_timer_->Setup(event_loop_->context().monotonic_event_time +
-                          std::chrono::seconds(1));
+                          kReconnectTimeout);
   }
 
   // Event loop to register the server on.

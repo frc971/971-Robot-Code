@@ -22,7 +22,7 @@ class MessageBridgeServerStatus {
   // the filter.
   static constexpr std::chrono::seconds kClientStatisticsStaleTimeout{1};
   // Time after which we consider the timestamp stale, and reset the filter.
-  static constexpr std::chrono::milliseconds kTimestampStaleTimeout{250};
+  static constexpr std::chrono::milliseconds kTimestampStaleTimeout{1000};
 
   MessageBridgeServerStatus(aos::EventLoop *event_loop,
                             std::function<void(const Context &)> send_data =
