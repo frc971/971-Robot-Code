@@ -238,6 +238,12 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       output_struct.climber_voltage =
           std::clamp(unsafe_goal->climber_voltage(), -12.0f, 12.0f);
 
+      // Make sure the turret is relatively close to the goal before turning the
+      // climber on.
+      if (std::abs(turret_.goal(0) - turret_.position()) > 0.1) {
+        output_struct.climber_voltage = 0;
+      }
+
       if (unsafe_goal->shooting() || unsafe_goal->intake_preloading()) {
         preloading_timeout_ = position_timestamp + kPreloadingTimeout;
       }
