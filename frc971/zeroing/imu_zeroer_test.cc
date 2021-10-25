@@ -163,7 +163,7 @@ TEST(ImuZeroerTest, FaultOnNewZero) {
       << "We should not fault until we complete a second cycle of zeroing.";
   for (size_t ii = 0; ii < kMinSamplesToZero; ++ii) {
     zeroer.InsertAndProcessMeasurement(
-        MakeMeasurement({0.01, 0.05, 0.03}, {4, 5, 6}).message());
+        MakeMeasurement({0.01, -0.05, 0.03}, {4, 5, 6}).message());
   }
   ASSERT_TRUE(zeroer.Faulted());
   ASSERT_FALSE(zeroer.Zeroed());

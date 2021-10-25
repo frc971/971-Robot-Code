@@ -47,7 +47,7 @@ class ImuZeroer {
   static constexpr double kAccelMaxVariation = 0.05;    // g's
   // If we ever are able to rezero and get a zero that is more than
   // kGyroFaultVariation away from the original zeroing, fault.
-  static constexpr double kGyroFaultVariation = 0.005;  // rad / sec
+  static constexpr double kGyroFaultVariation = 0.05;  // rad / sec
 
   bool GyroZeroReady() const;
   bool AccelZeroReady() const;
