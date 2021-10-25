@@ -48,7 +48,7 @@ constexpr double kPortHeight = 2.494;
 // exactly perpendicular to the target. Larger numbers allow us to aim at the
 // inner port more aggressively, at the risk of being more likely to miss the
 // outer port entirely.
-constexpr double kMaxInnerPortAngle = 10.0 * M_PI / 180.0;
+constexpr double kMaxInnerPortAngle = 15.0 * M_PI / 180.0;
 
 // Distance (in meters) from the edge of the field to the port, with some
 // compensation to ensure that our definition of where the target is matches
