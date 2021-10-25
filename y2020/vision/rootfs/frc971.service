@@ -1,5 +1,7 @@
 [Unit]
 Description=Start up 971 robot code
+Requires=network-online.target
+After=network-online.target
 
 [Service]
 User=pi
