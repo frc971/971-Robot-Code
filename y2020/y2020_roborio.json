@@ -398,6 +398,7 @@
     {
       "name": "logger",
       "executable_name": "logger_main",
+      "autostart": false,
       "nodes": [
         "roborio"
       ]
