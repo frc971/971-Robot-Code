@@ -91,7 +91,7 @@ _on_click_id = None
 
 
 def on_click(event, fig, ax, timer, text, td):
-    point2d = [round(event.xdata), round(event.ydata)]
+    point2d = [int(round(event.xdata)), int(round(event.ydata))]
     # They clicked on the target point after finishing polygon points
     if len(td.polygon_list[0]) == len(td.polygon_list_3d[0]):
         # Disconnect the on click so that nothing gets called if the user
