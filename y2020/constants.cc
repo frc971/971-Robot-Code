@@ -145,7 +145,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       turret_params->zeroing_constants.measured_absolute_position =
           2.75051496009509;
 
-      hood->zeroing_constants.measured_absolute_position = 0.0482502438525903,
+      hood->zeroing_constants.measured_absolute_position = 0.0102882878327271;
       hood->zeroing_constants.single_turn_measured_absolute_position =
           0.302574797776192;
       break;
