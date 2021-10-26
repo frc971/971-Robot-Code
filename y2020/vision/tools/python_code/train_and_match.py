@@ -248,10 +248,10 @@ def show_results(training_images, train_keypoint_lists, query_images,
         # Draw training box and target points on the query image
         query_image = cv2.polylines(query_image, [np.int32(query_box_pts)],
                                     True, (0, 255, 0), 3, cv2.LINE_AA)
-        query_image = cv2.circle(
-            query_image,
-            (transformed_target.flatten()[0], transformed_target.flatten()[1]),
-            radius, (0, 255, 0), 3)
+        query_image = cv2.circle(query_image,
+                                 (int(transformed_target.flatten()[0]),
+                                  int(transformed_target.flatten()[1])),
+                                 radius, (0, 255, 0), 3)
 
         # Draw the matches and show it
         draw_params = dict(

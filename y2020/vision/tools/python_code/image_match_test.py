@@ -9,11 +9,8 @@ import target_definition
 import camera_definition
 
 ### DEFINITIONS
-target_list = target_definition.compute_target_definition()
-camera_list = camera_definition.load_camera_definitions()
-
-# For now, just use the first one
-camera_params = camera_list[0]
+camera_params = camera_definition.load_pi1_camera_params()
+target_list = target_definition.compute_target_definition(camera_params)
 
 # Put list of all possible images we want to test, and then we'll select one
 # Note, if you query on the same image as training, only that image will match

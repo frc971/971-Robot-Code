@@ -7,7 +7,7 @@ import target_definition
 import train_and_match as tam
 
 
-def compute_target_definition():
+def compute_target_definition(camera_params):
     target_data_list = []
     target_data_test_1 = target_definition.TargetData(
         'test_images/train_power_port_red.png')

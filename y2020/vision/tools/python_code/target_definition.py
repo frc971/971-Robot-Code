@@ -141,14 +141,14 @@ def load_training_data():
     return ideal_target_list, training_target_list
 
 
-def compute_target_definition():
+def compute_target_definition(camera_params=None):
+    if camera_params is None:
+        camera_params = camera_definition.load_pi1_camera_params()
+
     ideal_target_list, training_target_list = load_training_data()
 
     # Create feature extractor
     feature_extractor = tam.load_feature_extractor()
-
-    # Use default parameters for now
-    camera_params = camera_definition.load_camera_definitions()[0]
 
     # Extract features from ideal targets if we are going to auto-project,
     # otherwise get them directly from the training targets.
@@ -330,4 +330,5 @@ if __name__ == '__main__':
     if AUTO_PROJECTION:
         glog.info("Auto projecting points")
 
+    # Computes target defintion using default (pi1) camera params
     compute_target_definition()
