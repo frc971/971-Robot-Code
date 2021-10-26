@@ -192,6 +192,9 @@ class SingleDOFProfiledSubsystem
 
   const ::frc971::constants::Range &range() const { return range_; }
 
+  double default_velocity() const { return default_velocity_; }
+  double default_acceleration() const { return default_acceleration_; }
+
  protected:
   // Limits the provided goal to the soft limits.  Prints "name" when it fails
   // to aid debugging.

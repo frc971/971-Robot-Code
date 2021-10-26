@@ -113,6 +113,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
     }
 
     if (unsafe_goal->shooting()) {
+      intake_joint_.set_max_acceleration(30.0);
       constexpr std::chrono::milliseconds kPeriod =
           std::chrono::milliseconds(250);
       if ((position_timestamp - shooting_start_time_) % (kPeriod * 2) <
@@ -122,6 +123,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
         intake_joint_.set_min_position(-0.75);
       }
     } else {
+      intake_joint_.clear_max_acceleration();
       intake_joint_.clear_min_position();
     }
 

@@ -64,6 +64,16 @@ class StaticZeroingSingleDOFProfiledSubsystem {
 
   void set_max_position(double max_position) { max_position_ = max_position; }
 
+  // Sets a temporary acceleration limit.  No accelerations faster than this may
+  // be commanded.
+  void set_max_acceleration(double max_acceleration) {
+    max_acceleration_ = max_acceleration;
+  }
+  // Clears the acceleration limit.
+  void clear_max_acceleration() {
+    max_acceleration_ = std::numeric_limits<float>::infinity();
+  }
+
   // Resets constrained min/max position
   void clear_min_position() { min_position_ = params_.range.lower_hard; }
 
@@ -99,6 +109,7 @@ class StaticZeroingSingleDOFProfiledSubsystem {
  private:
   State state_ = State::UNINITIALIZED;
   double min_position_, max_position_;
+  float max_acceleration_ = std::numeric_limits<float>::infinity();
 
   const StaticZeroingSingleDOFProfiledSubsystemParams<TSubsystemParams> params_;
 
@@ -198,7 +209,17 @@ StaticZeroingSingleDOFProfiledSubsystem<ZeroingEstimator, ProfiledJointStatus,
       }
 
       if (goal) {
-        profiled_subsystem_.AdjustProfile(goal->profile_params());
+        if (goal->profile_params()) {
+          profiled_subsystem_.AdjustProfile(
+              goal->profile_params()->max_velocity(),
+              std::min(goal->profile_params()->max_acceleration(),
+                       max_acceleration_));
+        } else {
+          profiled_subsystem_.AdjustProfile(
+              profiled_subsystem_.default_velocity(),
+              std::min(profiled_subsystem_.default_acceleration(),
+                       static_cast<double>(max_acceleration_)));
+        }
 
         double safe_goal = goal->unsafe_goal();
         if (safe_goal < min_position_) {
