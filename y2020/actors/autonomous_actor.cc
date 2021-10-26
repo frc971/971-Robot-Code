@@ -38,27 +38,33 @@ AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
       superstructure_goal_sender_(
           event_loop->MakeSender<control_loops::superstructure::Goal>(
               "/superstructure")),
-      joystick_state_fetcher_(
-          event_loop->MakeFetcher<aos::JoystickState>("/aos")),
       superstructure_status_fetcher_(
           event_loop->MakeFetcher<y2020::control_loops::superstructure::Status>(
               "/superstructure")),
+      joystick_state_fetcher_(
+          event_loop->MakeFetcher<aos::JoystickState>("/aos")),
+      robot_state_fetcher_(event_loop->MakeFetcher<aos::RobotState>("/aos")),
       auto_splines_() {
   set_max_drivetrain_voltage(12.0);
   replan_timer_ = event_loop->AddTimer([this]() { Replan(); });
   event_loop->OnRun([this, event_loop]() {
     replan_timer_->Setup(event_loop->monotonic_now());
+    button_poll_->Setup(event_loop->monotonic_now(), chrono::milliseconds(50));
   });
-  event_loop->MakeWatcher("/aos", [this](const aos::RobotState &msg) {
-    if (msg.user_button()) {
-      user_indicated_safe_to_reset_ = true;
-      MaybeSendStartingPosition();
+
+  button_poll_ = event_loop->AddTimer([this]() {
+    if (robot_state_fetcher_.Fetch()) {
+      if (robot_state_fetcher_->user_button()) {
+        user_indicated_safe_to_reset_ = true;
+        MaybeSendStartingPosition();
+      }
     }
-  });
-  event_loop->MakeWatcher("/aos", [this](const aos::JoystickState &msg) {
-    if (msg.has_alliance() && (msg.alliance() != alliance_)) {
-      alliance_ = msg.alliance();
-      Replan();
+    if (joystick_state_fetcher_.Fetch()) {
+      if (joystick_state_fetcher_->has_alliance() &&
+          (joystick_state_fetcher_->alliance() != alliance_)) {
+        alliance_ = joystick_state_fetcher_->alliance();
+        Replan();
+      }
     }
   });
 }

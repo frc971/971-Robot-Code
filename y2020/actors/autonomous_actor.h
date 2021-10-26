@@ -71,11 +71,13 @@ class AutonomousActor : public frc971::autonomous::BaseAutonomousActor {
       localizer_control_sender_;
   aos::Sender<y2020::control_loops::superstructure::Goal>
       superstructure_goal_sender_;
-  aos::Fetcher<aos::JoystickState> joystick_state_fetcher_;
   aos::Fetcher<y2020::control_loops::superstructure::Status>
       superstructure_status_fetcher_;
+  aos::Fetcher<aos::JoystickState> joystick_state_fetcher_;
+  aos::Fetcher<aos::RobotState> robot_state_fetcher_;
 
   aos::TimerHandler *replan_timer_;
+  aos::TimerHandler *button_poll_;
 
   std::optional<std::array<SplineHandle, 2>> target_offset_splines_;
   std::optional<std::array<SplineHandle, 2>> target_aligned_splines_;
