@@ -214,8 +214,8 @@
       "name": "/drivetrain",
       "type": "y2020.control_loops.drivetrain.LocalizerDebug",
       "source_node": "roborio",
-      "frequency": 250,
-      "max_size": 512,
+      "frequency": 100,
+      "max_size": 1024,
       "num_senders": 2
     },
     {
