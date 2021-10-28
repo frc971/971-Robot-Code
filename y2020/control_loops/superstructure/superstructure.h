@@ -6,6 +6,7 @@
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "frc971/input/joystick_state_generated.h"
 #include "y2020/constants.h"
+#include "y2020/control_loops/superstructure/hood/hood_encoder_zeroing_estimator.h"
 #include "y2020/control_loops/superstructure/shooter/shooter.h"
 #include "y2020/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2020/control_loops/superstructure/superstructure_output_generated.h"
@@ -43,9 +44,10 @@ class Superstructure
           ::frc971::control_loops::AbsoluteEncoderProfiledJointStatus>;
   using AbsoluteAndAbsoluteEncoderSubsystem =
       ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystem<
-          ::frc971::zeroing::AbsoluteAndAbsoluteEncoderZeroingEstimator,
+          hood::HoodEncoderZeroingEstimator,
           ::frc971::control_loops::
-              AbsoluteAndAbsoluteEncoderProfiledJointStatus>;
+              AbsoluteAndAbsoluteEncoderProfiledJointStatus,
+          frc971::zeroing::AbsoluteAndAbsoluteEncoderZeroingEstimator>;
 
   const AbsoluteAndAbsoluteEncoderSubsystem &hood() const { return hood_; }
   const AbsoluteEncoderSubsystem &intake_joint() const { return intake_joint_; }

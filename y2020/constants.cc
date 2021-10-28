@@ -28,9 +28,10 @@ const Values *DoGetValuesForTeam(uint16_t team) {
   ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<
       ::frc971::zeroing::AbsoluteAndAbsoluteEncoderZeroingEstimator>
       *const hood = &r->hood;
+  Values::HoodGeometry *const hood_geometry = &r->hood_geometry;
 
-  // We found that the finisher velocity does not change ball velocity much, so
-  // keep it constant.
+  // We found that the finisher velocity does not change ball velocity much,
+  // so keep it constant.
   constexpr double kVelocityFinisher = 350.0;
   r->shot_interpolation_table =
       InterpolationTable<Values::ShotParams>({{1.0, {0.01, 10.7}},
@@ -80,6 +81,14 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       M_PI * 2.0 * constants::Values::kHoodSingleTurnEncoderRatio();
   hood->zeroing_constants.measured_absolute_position = 0;
   hood->zeroing_constants.single_turn_measured_absolute_position = 0;
+
+  constexpr double kDegToRad = M_PI / 180.0;
+  constexpr double kMmToM = 1.0 / 1000.0;
+  hood_geometry->theta_0 = 22.98004 * kDegToRad;
+  hood_geometry->screw_length_0 = 110.33888 * kMmToM;
+  hood_geometry->radius = 269.6262 * kMmToM;
+  hood_geometry->diagonal_length = 288.4353 * kMmToM;
+  hood_geometry->back_plate_diagonal_length = 22.86 * kMmToM;
 
   ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<
       ::frc971::zeroing::AbsoluteEncoderZeroingEstimator> *const intake =
