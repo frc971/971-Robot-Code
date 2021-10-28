@@ -864,3 +864,8 @@ cc_library(
     sha256 = "18db35669ee49a5f8324a344071dd4ab553e716f385fb75747b909bd1de959f5",
     urls = ["https://www.frc971.org/Build-Dependencies/lzma_arm64.tar.gz"],
 )
+
+local_repository(
+    name = "snappy",
+    path = "third_party/snappy",
+)
