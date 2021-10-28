@@ -6,59 +6,95 @@
   <body>
     <div id="field"> </div>
     <div id="legend"> </div>
+    <div id="targets">
+      <div id="outer_target">
+        <div id="inner_target"></div>
+      </div>
+    </div>
     <div id="readouts">
-      <div>
-        <div> X </div>
-        <div id="x"> NA </div>
-      </div>
-      <div>
-        <div> Y </div>
-        <div id="y"> NA </div>
-      </div>
-      <div>
-        <div> Theta </div>
-        <div id="theta"> NA </div>
-      </div>
-      <div>
-        <div> Shot Distance </div>
-        <div id="shot_distance"> NA </div>
-      </div>
-      <div>
-        <div> Finisher </div>
-        <div id="finisher"> NA </div>
-      </div>
-      <div>
-        <div> Left Accelerator </div>
-        <div id="left_accelerator"> NA </div>
-      </div>
-      <div>
-        <div> Right Accelerator </div>
-        <div id="right_accelerator"> NA </div>
-      </div>
-      <div>
-        <div> Inner Port </div>
-        <div id="inner_port"> NA </div>
-      </div>
-      <div>
-        <div> Hood </div>
-        <div id="hood"> NA </div>
-      </div>
-      <div>
-        <div> Turret </div>
-        <div id="turret"> NA </div>
-      </div>
-      <div>
-        <div> Intake </div>
-        <div id="intake"> NA </div>
-      </div>
-      <div>
-        <div> Images Accepted </div>
-        <div id="images_accepted"> NA </div>
-      </div>
-      <div>
-        <div> Images Rejected </div>
-        <div id="images_rejected"> NA </div>
-      </div>
+      <table>
+        <tr>
+          <th colspan="2">Robot State</th>
+        </tr>
+        <tr>
+          <td>X</td>
+          <td id="x"> NA </td>
+        </tr>
+        <tr>
+          <td>Y</td>
+          <td id="y"> NA </td>
+        </tr>
+        <tr>
+          <td>Theta</td>
+          <td id="theta"> NA </td>
+        </tr>
+      </table>
+
+      <table>
+        <tr>
+          <th colspan="2">Aiming</th>
+        </tr>
+        <tr>
+          <td>Shot distance</td>
+          <td id="shot_distance"> NA </td>
+        </tr>
+        <tr>
+          <td>Inner Port</td>
+          <td id="inner_port"> NA </td>
+        </tr>
+        <tr>
+          <td>Hood</td>
+          <td id="hood"> NA </td>
+        </tr>
+        <tr>
+          <td>Turret</td>
+          <td id="turret"> NA </td>
+        </tr>
+      </table>
+
+      <table>
+        <tr>
+          <th colspan="2">Shooter speeds</th>
+        </tr>
+        <tr>
+          <td>Finisher</td>
+          <td id="finisher"> NA </td>
+        </tr>
+        <tr>
+          <td>Left Accelerator</td>
+          <td id="left_accelerator"> NA </td>
+        </tr>
+        <tr>
+          <td>Right Accelerator</td>
+          <td id="right_accelerator"> NA </td>
+        </tr>
+      </table>
+
+      <table>
+        <tr>
+          <th colspan="2">Intake</th>
+        </tr>
+        <tr>
+          <td>Intake</td>
+          <td id="intake"> NA </td>
+        </tr>
+      </table>
+
+      <table>
+        <tr>
+          <th colspan="2">Images</th>
+        </tr>
+        <tr>
+          <td> Images Accepted </td>
+          <td id="images_accepted"> NA </td>
+        </tr>
+        <tr>
+          <td> Images Rejected </td>
+          <td id="images_rejected"> NA </td>
+        </tr>
+      </table>
+    </div>
+    <div id="vision_readouts">
     </div>
   </body>
 </html>
