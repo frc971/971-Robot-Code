@@ -59,7 +59,7 @@
       "num_senders": 2
     },
     {
-      "name": "/roborio/aos/remote_timestamps/laptop/roborio/aos/aos-message_bridge-Timestamp",
+      "name": "/roborio/aos/remote_timestamps/logger/roborio/aos/aos-message_bridge-Timestamp",
       "type": "aos.message_bridge.RemoteMessage",
       "frequency": 200,
       "logger": "NOT_LOGGED",

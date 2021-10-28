@@ -3,6 +3,7 @@ package(default_visibility = ["//visibility:public"])
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_ts_library")
 load("//aos:config.bzl", "aos_config")
 load("//tools/build_rules:select.bzl", "cpu_select")
+load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
 load("@npm_bazel_typescript//:defs.bzl", "ts_library")
 
 flatbuffer_cc_library(
@@ -46,6 +47,13 @@ flatbuffer_cc_library(
     srcs = ["trajectory.fbs"],
     gen_reflections = 1,
     includes = ["//frc971/control_loops:control_loops_fbs_includes"],
+)
+
+cc_static_flatbuffer(
+    name = "trajectory_schema",
+    function = "frc971::control_loops::drivetrain::fb::TrajectorySchema",
+    target = ":trajectory_fbs_reflection_out",
+    visibility = ["//visibility:public"],
 )
 
 flatbuffer_ts_library(

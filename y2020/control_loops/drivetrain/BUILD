@@ -186,6 +186,7 @@ cc_test(
         "//aos/events/logging:log_writer",
         "//aos/testing:googletest",
         "//frc971/control_loops/drivetrain:drivetrain_lib",
+        "//frc971/control_loops/drivetrain:trajectory_schema",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
     ],

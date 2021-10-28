@@ -38,9 +38,9 @@ else
   echo -e "${IP_BASE}.2\troborio" >> /etc/hosts
 fi
 
-if grep '^10\.[0-9]*\.[0-9]*\.13\s*laptop$' /etc/hosts >/dev/null;
+if grep '^10\.[0-9]*\.[0-9]*\.13\s*logger$' /etc/hosts >/dev/null;
 then
-  sed -i "s/^10\.[0-9]*\.[0-9]*\(\.13\s*laptop\)$/${IP_BASE}\1/" /etc/hosts
+  sed -i "s/^10\.[0-9]*\.[0-9]*\(\.13\s*logger\)$/${IP_BASE}\1/" /etc/hosts
 else
-  echo -e "${IP_BASE}.13\tlaptop" >> /etc/hosts
+  echo -e "${IP_BASE}.13\tlogger" >> /etc/hosts
 fi
