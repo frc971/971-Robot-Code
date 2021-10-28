@@ -942,25 +942,39 @@ TEST_F(SuperstructureTest, Climber) {
   {
     auto builder = superstructure_goal_sender_.MakeBuilder();
 
+    // Since there is a turret lockout, we need to set a turret goal...
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        turret_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), M_PI / 2.0);
+
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
 
     goal_builder.add_climber_voltage(-10.0);
+    goal_builder.add_turret(turret_offset);
 
     ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
 
-  // Give it time to stabilize.
-  RunFor(chrono::seconds(1));
+  // The turret needs to move out of the way first.  This takes some time.
+  RunFor(chrono::milliseconds(100));
+  EXPECT_EQ(superstructure_plant_.climber_voltage(), 0.0);
 
-  // Can go backwards.
+  // Now, we should be far enough that it should work.
+  RunFor(chrono::seconds(10));
   EXPECT_EQ(superstructure_plant_.climber_voltage(), -10.0);
 
   {
     auto builder = superstructure_goal_sender_.MakeBuilder();
 
+    // Since there is a turret lockout, we need to set a turret goal...
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        turret_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), M_PI / 2.0);
+
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
 
     goal_builder.add_climber_voltage(10.0);
+    goal_builder.add_turret(turret_offset);
 
     ASSERT_TRUE(builder.Send(goal_builder.Finish()));
   }
