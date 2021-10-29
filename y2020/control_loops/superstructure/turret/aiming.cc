@@ -53,7 +53,7 @@ constexpr double kMaxInnerPortAngle = 15.0 * M_PI / 180.0;
 // Distance (in meters) from the edge of the field to the port, with some
 // compensation to ensure that our definition of where the target is matches
 // that reported by the cameras.
-constexpr double kEdgeOfFieldToPort = 2.404 + .0034;
+constexpr double kEdgeOfFieldToPort = 2.347;
 
 // The amount (in meters) that the inner port is set back from the outer port.
 constexpr double kInnerPortBackset = 0.743;
