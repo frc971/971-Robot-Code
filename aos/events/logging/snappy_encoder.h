@@ -63,6 +63,8 @@ class SnappyEncoder final : public DetachedBufferEncoder {
 // Decompresses data with snappy.
 class SnappyDecoder final : public DataDecoder {
  public:
+  static constexpr std::string_view kExtension = ".sz";
+
   explicit SnappyDecoder(std::unique_ptr<DataDecoder> underlying_decoder)
       : underlying_decoder_(std::move(underlying_decoder)) {}
   explicit SnappyDecoder(std::string_view filename)

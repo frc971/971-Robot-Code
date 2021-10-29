@@ -37,6 +37,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":boot_timestamp",
+        ":snappy_encoder",
         ":buffer_encoder",
         ":logger_fbs",
         "//aos:uuid",
@@ -360,6 +361,7 @@ cc_binary(
     visibility = ["//visibility:public"],
     deps = [
         ":log_writer",
+        ":snappy_encoder",
         "//aos:configuration",
         "//aos:init",
         "//aos/events:shm_event_loop",
@@ -412,11 +414,12 @@ cc_test(
         ":multinode_pingpong_split_config",
         "//aos/events:pingpong_config",
     ],
-    shard_count = 5,
+    shard_count = 10,
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":log_reader",
         ":log_writer",
+        ":snappy_encoder",
         "//aos/events:message_counter",
         "//aos/events:ping_lib",
         "//aos/events:pong_lib",
