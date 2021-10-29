@@ -70,7 +70,9 @@ TEST_P(BufferEncoderTest, RoundTrip) {
           decoder->Read(chunk.data(), chunk.data() + chunk_size);
       if (read_result + total_decoded_size != total_encoded_size) {
         // We didn't read anything, so we should've read the complete chunk.
-        ASSERT_EQ(read_result, chunk_size);
+        ASSERT_EQ(read_result, chunk_size)
+            << "Read " << read_result + total_decoded_size << " of "
+            << total_encoded_size << " expected bytes.";
       }
       // Eventually we'll get here, once the decoder is really sure it's done.
       if (read_result == 0) {

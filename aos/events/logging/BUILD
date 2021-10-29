@@ -122,6 +122,44 @@ cc_test(
 )
 
 cc_library(
+    name = "snappy_encoder",
+    srcs = [
+        "snappy_encoder.cc",
+    ],
+    hdrs = [
+        "snappy_encoder.h",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":buffer_encoder",
+        ":crc32",
+        ":logger_fbs",
+        "//aos:configuration_fbs",
+        "//aos/containers:resizeable_buffer",
+        "@com_github_google_flatbuffers//:flatbuffers",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/types:span",
+        "@snappy//:snappy",
+    ],
+)
+
+cc_test(
+    name = "snappy_encoder_test",
+    srcs = [
+        "snappy_encoder_test.cc",
+    ],
+    shard_count = 4,
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":buffer_encoder_param_test",
+        ":snappy_encoder",
+        "//aos/testing:googletest",
+        "@com_github_google_glog//:glog",
+    ],
+)
+
+cc_library(
     name = "lzma_encoder",
     srcs = [
         "lzma_encoder.cc",
@@ -407,4 +445,13 @@ flatbuffer_cc_library(
     srcs = ["test_message.fbs"],
     gen_reflections = 1,
     target_compatible_with = ["@platforms//os:linux"],
+)
+
+cc_library(
+    name = "crc32",
+    srcs = ["crc32.cc"],
+    hdrs = ["crc32.h"],
+    deps = [
+        "@com_google_absl//absl/types:span",
+    ],
 )

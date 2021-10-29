@@ -19,4 +19,5 @@ cc_library(
         "snappy-stubs-public.h",
     ],
     copts = ["-Wno-sign-compare"],
+    visibility = ["//visibility:public"],
 )
