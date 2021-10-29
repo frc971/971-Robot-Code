@@ -143,10 +143,10 @@ struct Values {
 
   static constexpr ::frc971::constants::Range kTurretRange() {
     return ::frc971::constants::Range{
-        -4.6,   // Back Hard
-        4.85,   // Front Hard
-        -4.3,   // Back Soft
-        4.7123  // Front Soft
+        -3.45,  // Back Hard
+        3.45,   // Front Hard
+        -3.3,   // Back Soft
+        3.3     // Front Soft
     };
   }
 
