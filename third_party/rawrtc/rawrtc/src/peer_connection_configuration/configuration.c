@@ -258,3 +258,18 @@ enum rawrtc_code rawrtc_peer_connection_configuration_set_sctp_mtu_discovery(
     configuration->sctp.mtu_discovery = on;
     return RAWRTC_CODE_SUCCESS;
 }
+
+enum rawrtc_code rawrtc_peer_connection_configuration_set_ice_udp_port_range(
+    struct rawrtc_peer_connection_configuration* configuration,
+    uint16_t min_port,
+    uint16_t max_port) {
+    if (!configuration) {
+        return RAWRTC_CODE_INVALID_ARGUMENT;
+    }
+    if (max_port <= min_port) {
+        return RAWRTC_CODE_INVALID_ARGUMENT;
+    }
+    configuration->ice_udp_port_range.min = min_port;
+    configuration->ice_udp_port_range.max = max_port;
+    return RAWRTC_CODE_SUCCESS;
+}

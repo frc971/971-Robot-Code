@@ -43,6 +43,25 @@ enum rawrtc_code rawrtc_ice_gather_options_create(
     return RAWRTC_CODE_SUCCESS;
 }
 
+enum rawrtc_code rawrtc_ice_gather_options_set_udp_port_range(
+    struct rawrtc_ice_gather_options* const options,
+    uint16_t min_udp_port,
+    uint16_t max_udp_port) {
+
+    if (!options) {
+        return RAWRTC_CODE_INVALID_ARGUMENT;
+    }
+
+    if (max_udp_port <= min_udp_port) {
+        return RAWRTC_CODE_INVALID_ARGUMENT;
+    }
+
+    options->udp_port_range.min = min_udp_port;
+    options->udp_port_range.max = max_udp_port;
+
+    return RAWRTC_CODE_SUCCESS;
+}
+
 /*
  * Add an ICE server instance to the gather options.
  */

@@ -405,6 +405,7 @@
     {
       "name": "web_proxy",
       "executable_name": "web_proxy_main",
+      "args": ["--min_ice_port=5800", "--max_ice_port=5810"],
       "nodes": [
         "roborio"
       ]
