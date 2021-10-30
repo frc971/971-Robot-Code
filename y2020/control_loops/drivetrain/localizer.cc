@@ -394,6 +394,8 @@ Localizer::HandleImageMatch(
     // are less useful when it comes to actually making shots.
     if (!is_turret) {
       noises *= 3.0;
+    } else {
+      noises /= 5.0;
     }
 
     Eigen::Matrix3f R = Eigen::Matrix3f::Zero();
