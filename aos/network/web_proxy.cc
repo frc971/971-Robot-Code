@@ -140,7 +140,7 @@ WebProxy::WebProxy(aos::EventLoop *event_loop, aos::internal::EPoll *epoll,
   epoll->BeforeWait([]() {
     const uint64_t to = tmr_next_timeout(tmrl_get());
     if (to != 0) {
-      VLOG(1) << "Next timeout " << to;
+      VLOG(3) << "Next timeout " << to;
     }
     // Note: this only works because we are spinning on it...
     // TODO(austin): If we choose to actually sleep, use a timerfd reserved just
