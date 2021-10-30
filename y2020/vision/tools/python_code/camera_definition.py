@@ -147,8 +147,8 @@ def load_camera_definitions():
                 dist_coeffs = np.asarray(calib_dict["dist_coeffs"]).reshape(
                     (1, 5))
 
-            glog.info("Found calib for " + node_name + ", team #" +
-                      str(team_number))
+            glog.debug("Found calib for " + node_name + ", team #" +
+                       str(team_number))
 
             camera_params = CameraParameters()
             camera_params.camera_ext, camera_params.turret_ext = compute_extrinsic_by_pi(

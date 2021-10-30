@@ -5,6 +5,7 @@ import glog
 import json
 import math
 import numpy as np
+import os
 
 import camera_definition
 import define_training_data as dtd
@@ -154,7 +155,10 @@ def compute_target_definition(camera_params=None):
     # otherwise get them directly from the training targets.
     for target in (ideal_target_list
                    if AUTO_PROJECTION else training_target_list):
-        glog.debug("\nPreparing target for image %s" % target.image_filename)
+        # TODO<Jim>: Save this info to flatbuffer and publish on start
+        # And then, make this debug message again
+        glog.debug("\nPreparing target for image %s" %
+                   os.path.basename(target.image_filename))
         target.extract_features(feature_extractor)
         target.filter_keypoints_by_polygons()
         target.compute_reprojection_maps()
