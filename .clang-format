@@ -6,3 +6,8 @@ Language:        Cpp
 DerivePointerAlignment: false
 PointerAlignment: Right
 Standard: Cpp11
+
+---
+Language:        JavaScript
+BasedOnStyle:    Google
+ColumnLimit:     80
