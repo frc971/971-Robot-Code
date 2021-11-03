@@ -10,6 +10,7 @@ if [[ "$(hostname)" == "roboRIO"* ]]; then
 elif [[ "$(hostname)" == "pi-"* ]]; then
   # We have systemd configured to handle restarting, so just exec.
   export PATH="${PATH}:/home/pi/robot_code"
+  rm -rf /dev/shm/aos
   exec starterd
 else
   ROBOT_CODE="${HOME}/robot_code"
@@ -18,5 +19,6 @@ fi
 cd "${ROBOT_CODE}"
 export PATH="${PATH}:${ROBOT_CODE}"
 while true; do
-	starterd 2>&1
+  rm -rf /dev/shm/aos
+  starterd 2>&1
 done
