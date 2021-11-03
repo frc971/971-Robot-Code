@@ -244,7 +244,8 @@ int ChannelState::NodeConnected(const Node *node, sctp_assoc_t assoc_id,
 MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop)
     : event_loop_(event_loop),
       timestamp_loggers_(event_loop_),
-      server_("::", event_loop->node()->port()),
+      server_(max_channels() + kControlStreams(),
+              "::", event_loop->node()->port()),
       server_status_(event_loop, [this](const Context &context) {
         timestamp_state_->SendData(&server_, context);
       }) {
@@ -447,6 +448,10 @@ void MessageBridgeServer::HandleData(const Message *message) {
       CHECK(connect->Verify(verifier));
     }
     VLOG(1) << FlatbufferToJson(connect);
+
+    CHECK_LE(connect->channels_to_transfer()->size(),
+             static_cast<size_t>(max_channels()))
+        << ": Client has more channels than we do";
 
     // Account for the control channel and delivery times channel.
     size_t channel_index = kControlStreams();

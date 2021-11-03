@@ -120,6 +120,13 @@ class MessageBridgeServer {
   // received.
   void HandleData(const Message *message);
 
+  // The maximum number of channels we support on a single connection. We need
+  // to configure the SCTP socket with this before any clients connect, so we
+  // need an upper bound on the number of channels any of them will use.
+  int max_channels() const {
+    return event_loop_->configuration()->channels()->size();
+  }
+
   // Event loop to schedule everything on.
   aos::ShmEventLoop *event_loop_;
 

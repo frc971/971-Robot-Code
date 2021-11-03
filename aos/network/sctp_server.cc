@@ -20,10 +20,19 @@
 namespace aos {
 namespace message_bridge {
 
-SctpServer::SctpServer(std::string_view local_host, int local_port)
+SctpServer::SctpServer(int streams, std::string_view local_host, int local_port)
     : sockaddr_local_(ResolveSocket(local_host, local_port)) {
   while (true) {
     sctp_.OpenSocket(sockaddr_local_);
+
+    {
+      struct sctp_initmsg initmsg;
+      memset(&initmsg, 0, sizeof(struct sctp_initmsg));
+      initmsg.sinit_num_ostreams = streams;
+      initmsg.sinit_max_instreams = streams;
+      PCHECK(setsockopt(fd(), IPPROTO_SCTP, SCTP_INITMSG, &initmsg,
+                        sizeof(struct sctp_initmsg)) == 0);
+    }
 
     {
       // Turn off the NAGLE algorithm.
