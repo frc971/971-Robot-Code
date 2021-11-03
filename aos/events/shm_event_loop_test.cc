@@ -77,10 +77,10 @@ auto CommonParameters() {
 }
 
 INSTANTIATE_TEST_SUITE_P(ShmEventLoopCommonTest, AbstractEventLoopTest,
-                        CommonParameters());
+                         CommonParameters());
 
-INSTANTIATE_TEST_SUITE_P(ShmEventLoopCommonDeathTest, AbstractEventLoopDeathTest,
-                        CommonParameters());
+INSTANTIATE_TEST_SUITE_P(ShmEventLoopCommonDeathTest,
+                         AbstractEventLoopDeathTest, CommonParameters());
 
 }  // namespace
 
@@ -348,16 +348,104 @@ TEST_P(ShmEventLoopDeathTest, OutOfBoundsWrite) {
   }
 }
 
+// Tests that the next message not being available prints a helpful error in the
+// normal case.
+TEST_P(ShmEventLoopDeathTest, NextMessageNotAvailable) {
+  auto loop1 = factory()->MakePrimary("loop1");
+  auto fetcher = loop1->MakeFetcher<TestMessage>("/test");
+  auto loop2 = factory()->Make("loop2");
+  auto sender = loop2->MakeSender<TestMessage>("/test");
+  bool ran = false;
+  loop1->OnRun([this, &sender, &fetcher, &ran]() {
+    for (int i = 0; i < 2000; ++i) {
+      auto builder = sender.MakeBuilder();
+      TestMessage::Builder test_builder(*builder.fbb());
+      test_builder.add_value(0);
+      CHECK(builder.Send(test_builder.Finish()));
+    }
+    EXPECT_DEATH(fetcher.FetchNext(),
+                 "The next message is no longer "
+                 "available.*\"/test\".*\"aos\\.TestMessage\"");
+    factory()->Exit();
+    ran = true;
+  });
+  factory()->Run();
+  EXPECT_TRUE(ran);
+}
+
+// Tests that the next message not being available prints a helpful error with
+// timing reports disabled.
+TEST_P(ShmEventLoopDeathTest, NextMessageNotAvailableNoTimingReports) {
+  auto loop1 = factory()->MakePrimary("loop1");
+  loop1->SkipTimingReport();
+  auto fetcher = loop1->MakeFetcher<TestMessage>("/test");
+  auto loop2 = factory()->Make("loop2");
+  auto sender = loop2->MakeSender<TestMessage>("/test");
+  bool ran = false;
+  loop1->OnRun([this, &sender, &fetcher, &ran]() {
+    for (int i = 0; i < 2000; ++i) {
+      auto builder = sender.MakeBuilder();
+      TestMessage::Builder test_builder(*builder.fbb());
+      test_builder.add_value(0);
+      CHECK(builder.Send(test_builder.Finish()));
+    }
+    EXPECT_DEATH(fetcher.FetchNext(),
+                 "The next message is no longer "
+                 "available.*\"/test\".*\"aos\\.TestMessage\"");
+    factory()->Exit();
+    ran = true;
+  });
+  factory()->Run();
+  EXPECT_TRUE(ran);
+}
+
+// Tests that the next message not being available prints a helpful error even
+// when Run is never called.
+TEST_P(ShmEventLoopDeathTest, NextMessageNotAvailableNoRun) {
+  auto loop1 = factory()->MakePrimary("loop1");
+  auto fetcher = loop1->MakeFetcher<TestMessage>("/test");
+  auto loop2 = factory()->Make("loop2");
+  auto sender = loop2->MakeSender<TestMessage>("/test");
+  for (int i = 0; i < 2000; ++i) {
+    auto builder = sender.MakeBuilder();
+    TestMessage::Builder test_builder(*builder.fbb());
+    test_builder.add_value(0);
+    CHECK(builder.Send(test_builder.Finish()));
+  }
+  EXPECT_DEATH(fetcher.FetchNext(),
+               "The next message is no longer "
+               "available.*\"/test\".*\"aos\\.TestMessage\"");
+}
+
+// Tests that the next message not being available prints a helpful error even
+// when Run is never called without timing reports.
+TEST_P(ShmEventLoopDeathTest, NextMessageNotAvailableNoRunNoTimingReports) {
+  auto loop1 = factory()->MakePrimary("loop1");
+  loop1->SkipTimingReport();
+  auto fetcher = loop1->MakeFetcher<TestMessage>("/test");
+  auto loop2 = factory()->Make("loop2");
+  auto sender = loop2->MakeSender<TestMessage>("/test");
+  for (int i = 0; i < 2000; ++i) {
+    auto builder = sender.MakeBuilder();
+    TestMessage::Builder test_builder(*builder.fbb());
+    test_builder.add_value(0);
+    CHECK(builder.Send(test_builder.Finish()));
+  }
+  EXPECT_DEATH(fetcher.FetchNext(),
+               "The next message is no longer "
+               "available.*\"/test\".*\"aos\\.TestMessage\"");
+}
+
 // TODO(austin): Test that missing a deadline with a timer recovers as expected.
 
 INSTANTIATE_TEST_SUITE_P(ShmEventLoopCopyTest, ShmEventLoopTest,
-                        ::testing::Values(ReadMethod::COPY));
+                         ::testing::Values(ReadMethod::COPY));
 INSTANTIATE_TEST_SUITE_P(ShmEventLoopPinTest, ShmEventLoopTest,
-                        ::testing::Values(ReadMethod::PIN));
+                         ::testing::Values(ReadMethod::PIN));
 INSTANTIATE_TEST_SUITE_P(ShmEventLoopCopyDeathTest, ShmEventLoopDeathTest,
-                        ::testing::Values(ReadMethod::COPY));
+                         ::testing::Values(ReadMethod::COPY));
 INSTANTIATE_TEST_SUITE_P(ShmEventLoopPinDeathTest, ShmEventLoopDeathTest,
-                        ::testing::Values(ReadMethod::PIN));
+                         ::testing::Values(ReadMethod::PIN));
 
 }  // namespace testing
 }  // namespace aos

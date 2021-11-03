@@ -734,7 +734,9 @@ class EventLoop {
   std::vector<std::unique_ptr<PhasedLoopHandler>> phased_loops_;
   std::vector<std::unique_ptr<WatcherState>> watchers_;
 
+  // Does nothing if timing reports are disabled.
   void SendTimingReport();
+
   void UpdateTimingReport();
   void MaybeScheduleTimingReports();
 
