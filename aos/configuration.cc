@@ -60,7 +60,7 @@ FlatbufferDetachedBuffer<Configuration> ReadConfigFile(std::string_view path,
   flatbuffers::DetachedBuffer buffer = JsonToFlatbuffer(
       util::ReadFileToStringOrDie(path), ConfigurationTypeTable());
 
-  CHECK_GT(buffer.size(), 0u) << ": Failed to parse JSON file";
+  CHECK_GT(buffer.size(), 0u) << ": Failed to parse JSON file: " << path;
 
   return FlatbufferDetachedBuffer<Configuration>(std::move(buffer));
 }
