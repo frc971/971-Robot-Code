@@ -32,9 +32,9 @@ SctpClient::SctpClient(std::string_view remote_host, int remote_port,
   }
 
   {
-    // Servers send promptly.  Clients don't.
-    // TODO(austin): Revisit this assumption when we have time sync.
-    int on = 0;
+    // Turn off the NAGLE algorithm so the timestamps heading back across the
+    // network arrive promptly.
+    int on = 1;
     PCHECK(setsockopt(fd(), IPPROTO_SCTP, SCTP_NODELAY, &on, sizeof(int)) == 0);
   }
 
