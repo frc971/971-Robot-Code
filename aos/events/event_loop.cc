@@ -202,6 +202,11 @@ void EventLoop::TakeSender(const Channel *channel) {
 }
 
 void EventLoop::SendTimingReport() {
+  if (!timing_report_sender_) {
+    // Timing reports are disabled, so nothing for us to do.
+    return;
+  }
+
   // We need to do a fancy dance here to get all the accounting to work right.
   // We want to copy the memory here, but then send after resetting. Otherwise
   // the send for the timing report won't be counted in the timing report.
