@@ -153,7 +153,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     double intake_pos = -0.89;
     double turret_pos = 0.0;
     float roller_speed = 0.0f;
-    float roller_speed_compensation = 0.0f;
+    bool roller_speed_compensation = false;
     double accelerator_speed = 0.0;
     double finisher_speed = 0.0;
     double climber_speed = 0.0;
@@ -192,7 +192,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     if (data.IsPressed(kIntakeExtend) || data.IsPressed(kIntakeExtendDriver)) {
       intake_pos = 1.2;
       roller_speed = 7.0f;
-      roller_speed_compensation = 2.0f;
+      roller_speed_compensation = true;
       preload_intake = true;
     }
 
@@ -200,12 +200,12 @@ class Reader : public ::frc971::input::ActionJoystickInput {
         superstructure_status_fetcher_->intake()->zeroed() &&
         superstructure_status_fetcher_->intake()->position() > -0.5) {
       roller_speed = std::max(roller_speed, 6.0f);
-      roller_speed_compensation = 2.0f;
+      roller_speed_compensation = true;
     }
 
     if (data.IsPressed(kIntakeIn)) {
-      roller_speed = 6.0f;
-      roller_speed_compensation = 2.0f;
+      roller_speed = 5.0f;
+      roller_speed_compensation = true;
       preload_intake = true;
     } else if (data.IsPressed(kSpit)) {
       roller_speed = -6.0f;
@@ -276,7 +276,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       superstructure_goal_builder.add_turret(turret_offset);
       superstructure_goal_builder.add_roller_voltage(roller_speed);
       superstructure_goal_builder.add_roller_speed_compensation(
-          roller_speed_compensation);
+          roller_speed_compensation ? 1.5f : 0.0f);
       superstructure_goal_builder.add_shooter(shooter_offset);
       superstructure_goal_builder.add_shooting(data.IsPressed(kFeed) ||
                                                data.IsPressed(kFeedDriver));
