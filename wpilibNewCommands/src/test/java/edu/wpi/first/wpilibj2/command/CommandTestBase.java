@@ -1,27 +1,21 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2018-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 package edu.wpi.first.wpilibj2.command;
-
-import java.util.Set;
-
-import org.junit.jupiter.api.BeforeEach;
-
-import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.simulation.DriverStationSim;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-/**
- * Basic setup for all {@link Command tests}."
- */
-@SuppressWarnings("PMD.AbstractClassWithoutAbstractMethod")
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.simulation.DriverStationSim;
+import java.util.Set;
+import org.junit.jupiter.api.BeforeEach;
+
+/** Basic setup for all {@link Command tests}." */
 public abstract class CommandTestBase {
+  protected CommandTestBase() {}
+
   @BeforeEach
   void commandSetup() {
     CommandScheduler.getInstance().cancelAll();
@@ -37,8 +31,8 @@ public abstract class CommandTestBase {
 
     DriverStationSim.setEnabled(enabled);
     DriverStationSim.notifyNewData();
-    DriverStation.getInstance().isNewControlData();
-    while (DriverStation.getInstance().isEnabled() != enabled) {
+    DriverStation.isNewControlData();
+    while (DriverStation.isEnabled() != enabled) {
       try {
         Thread.sleep(1);
       } catch (InterruptedException exception) {
@@ -47,10 +41,9 @@ public abstract class CommandTestBase {
     }
   }
 
-  public class TestSubsystem extends SubsystemBase {
-  }
+  public static class TestSubsystem extends SubsystemBase {}
 
-  public class MockCommandHolder {
+  public static class MockCommandHolder {
     private final Command m_mockCommand = mock(Command.class);
 
     public MockCommandHolder(boolean runWhenDisabled, Subsystem... requirements) {
@@ -66,10 +59,9 @@ public abstract class CommandTestBase {
     public void setFinished(boolean finished) {
       when(m_mockCommand.isFinished()).thenReturn(finished);
     }
-
   }
 
-  public class Counter {
+  public static class Counter {
     public int m_counter;
 
     public void increment() {
@@ -77,7 +69,7 @@ public abstract class CommandTestBase {
     }
   }
 
-  public class ConditionHolder {
+  public static class ConditionHolder {
     private boolean m_condition;
 
     public void setCondition(boolean condition) {

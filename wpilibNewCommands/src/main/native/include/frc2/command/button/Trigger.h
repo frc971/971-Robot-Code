@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
@@ -12,7 +9,8 @@
 #include <memory>
 #include <utility>
 
-#include <wpi/ArrayRef.h>
+#include <units/time.h>
+#include <wpi/span.h>
 
 #include "frc2/command/Command.h"
 #include "frc2/command/CommandScheduler.h"
@@ -92,7 +90,7 @@ class Trigger {
    * Binds a runnable to execute when the trigger becomes active.
    *
    * @param toRun the runnable to execute.
-   * @paaram requirements the required subsystems.
+   * @param requirements the required subsystems.
    */
   Trigger WhenActive(std::function<void()> toRun,
                      std::initializer_list<Subsystem*> requirements);
@@ -101,10 +99,10 @@ class Trigger {
    * Binds a runnable to execute when the trigger becomes active.
    *
    * @param toRun the runnable to execute.
-   * @paaram requirements the required subsystems.
+   * @param requirements the required subsystems.
    */
   Trigger WhenActive(std::function<void()> toRun,
-                     wpi::ArrayRef<Subsystem*> requirements = {});
+                     wpi::span<Subsystem* const> requirements = {});
 
   /**
    * Binds a command to be started repeatedly while the trigger is active, and
@@ -164,7 +162,7 @@ class Trigger {
    * @param requirements the required subsystems.
    */
   Trigger WhileActiveContinous(std::function<void()> toRun,
-                               wpi::ArrayRef<Subsystem*> requirements = {});
+                               wpi::span<Subsystem* const> requirements = {});
 
   /**
    * Binds a command to be started when the trigger becomes active, and
@@ -264,7 +262,7 @@ class Trigger {
    * @param requirements the required subsystems.
    */
   Trigger WhenInactive(std::function<void()> toRun,
-                       wpi::ArrayRef<Subsystem*> requirements = {});
+                       wpi::span<Subsystem* const> requirements = {});
 
   /**
    * Binds a command to start when the trigger becomes active, and be canceled
@@ -347,6 +345,15 @@ class Trigger {
   Trigger operator!() {
     return Trigger([*this] { return !m_isActive(); });
   }
+
+  /**
+   * Creates a new debounced trigger from this trigger - it will become active
+   * when this trigger has been active for longer than the specified period.
+   *
+   * @param debounceTime the debounce period
+   * @return the debounced trigger
+   */
+  Trigger Debounce(units::second_t debounceTime);
 
  private:
   std::function<bool()> m_isActive;

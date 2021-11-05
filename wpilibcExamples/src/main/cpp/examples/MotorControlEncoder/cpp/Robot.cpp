@@ -1,16 +1,13 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2017-2019 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include <frc/Encoder.h>
 #include <frc/Joystick.h>
-#include <frc/PWMVictorSPX.h>
 #include <frc/TimedRobot.h>
+#include <frc/motorcontrol/PWMSparkMax.h>
 #include <frc/smartdashboard/SmartDashboard.h>
-#include <wpi/math>
+#include <wpi/numbers>
 
 /**
  * This sample program shows how to control a motor using a joystick. In the
@@ -38,15 +35,17 @@ class Robot : public frc::TimedRobot {
   void RobotInit() override {
     // Use SetDistancePerPulse to set the multiplier for GetDistance
     // This is set up assuming a 6 inch wheel with a 360 CPR encoder.
-    m_encoder.SetDistancePerPulse((wpi::math::pi * 6) / 360.0);
+    m_encoder.SetDistancePerPulse((wpi::numbers::pi * 6) / 360.0);
   }
 
  private:
   frc::Joystick m_stick{0};
-  frc::PWMVictorSPX m_motor{0};
+  frc::PWMSparkMax m_motor{0};
   frc::Encoder m_encoder{0, 1};
 };
 
 #ifndef RUNNING_FRC_TESTS
-int main() { return frc::StartRobot<Robot>(); }
+int main() {
+  return frc::StartRobot<Robot>();
+}
 #endif

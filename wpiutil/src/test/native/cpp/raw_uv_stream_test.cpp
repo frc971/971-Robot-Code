@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2018 FIRST. All Rights Reserved.                             */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "wpi/raw_uv_ostream.h"  // NOLINT(build/include_order)
 
@@ -22,6 +19,10 @@ TEST(RawUvStreamTest, BasicWrite) {
   ASSERT_EQ(bufs[0].base[1], '2');
   ASSERT_EQ(bufs[0].base[2], '3');
   ASSERT_EQ(bufs[0].base[3], '4');
+
+  for (auto& buf : bufs) {
+    buf.Deallocate();
+  }
 }
 
 TEST(RawUvStreamTest, BoundaryWrite) {
@@ -34,6 +35,10 @@ TEST(RawUvStreamTest, BoundaryWrite) {
   ASSERT_EQ(bufs.size(), 1u);
   os << "56";
   ASSERT_EQ(bufs.size(), 2u);
+
+  for (auto& buf : bufs) {
+    buf.Deallocate();
+  }
 }
 
 TEST(RawUvStreamTest, LargeWrite) {
@@ -43,6 +48,10 @@ TEST(RawUvStreamTest, LargeWrite) {
   ASSERT_EQ(bufs.size(), 2u);
   ASSERT_EQ(bufs[1].len, 2u);
   ASSERT_EQ(bufs[1].base[0], '5');
+
+  for (auto& buf : bufs) {
+    buf.Deallocate();
+  }
 }
 
 TEST(RawUvStreamTest, PrevDataWrite) {
@@ -53,6 +62,10 @@ TEST(RawUvStreamTest, PrevDataWrite) {
   ASSERT_EQ(bufs.size(), 2u);
   ASSERT_EQ(bufs[0].len, 1024u);
   ASSERT_EQ(bufs[1].len, 4u);
+
+  for (auto& buf : bufs) {
+    buf.Deallocate();
+  }
 }
 
 }  // namespace wpi

@@ -1,11 +1,10 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019 FIRST. All Rights Reserved.                             */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "frc2/command/SequentialCommandGroup.h"
+
+#include "frc2/command/InstantCommand.h"
 
 using namespace frc2;
 
@@ -23,7 +22,9 @@ void SequentialCommandGroup::Initialize() {
 }
 
 void SequentialCommandGroup::Execute() {
-  if (m_commands.empty()) return;
+  if (m_commands.empty()) {
+    return;
+  }
 
   auto& currentCommand = m_commands[m_currentCommandIndex];
 
@@ -61,9 +62,9 @@ void SequentialCommandGroup::AddCommands(
   }
 
   if (m_currentCommandIndex != invalid_index) {
-    wpi_setWPIErrorWithContext(CommandIllegalUse,
-                               "Commands cannot be added to a CommandGroup "
-                               "while the group is running");
+    throw FRC_MakeError(frc::err::CommandIllegalUse, "{}",
+                        "Commands cannot be added to a CommandGroup "
+                        "while the group is running");
   }
 
   for (auto&& command : commands) {
@@ -72,4 +73,34 @@ void SequentialCommandGroup::AddCommands(
     m_runWhenDisabled &= command->RunsWhenDisabled();
     m_commands.emplace_back(std::move(command));
   }
+}
+
+SequentialCommandGroup SequentialCommandGroup::BeforeStarting(
+    std::function<void()> toRun, wpi::span<Subsystem* const> requirements) && {
+  // store all the commands
+  std::vector<std::unique_ptr<Command>> tmp;
+  tmp.emplace_back(
+      std::make_unique<InstantCommand>(std::move(toRun), requirements));
+  for (auto&& command : m_commands) {
+    command->SetGrouped(false);
+    tmp.emplace_back(std::move(command));
+  }
+
+  // reset current state
+  m_commands.clear();
+  m_requirements.clear();
+  m_runWhenDisabled = true;
+
+  // add the commands back
+  AddCommands(std::move(tmp));
+  return std::move(*this);
+}
+
+SequentialCommandGroup SequentialCommandGroup::AndThen(
+    std::function<void()> toRun, wpi::span<Subsystem* const> requirements) && {
+  std::vector<std::unique_ptr<Command>> tmp;
+  tmp.emplace_back(
+      std::make_unique<InstantCommand>(std::move(toRun), requirements));
+  AddCommands(std::move(tmp));
+  return std::move(*this);
 }

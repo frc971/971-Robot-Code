@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2015-2018 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #ifndef NTCORE_MESSAGE_H_
 #define NTCORE_MESSAGE_H_
@@ -11,6 +8,7 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <string_view>
 
 #include "networktables/NetworkTableValue.h"
 
@@ -39,18 +37,17 @@ class Message {
     kExecuteRpc = 0x20,
     kRpcResponse = 0x21
   };
-  typedef std::function<NT_Type(unsigned int id)> GetEntryTypeFunc;
+  using GetEntryTypeFunc = std::function<NT_Type(unsigned int id)>;
 
-  Message() : m_type(kUnknown), m_id(0), m_flags(0), m_seq_num_uid(0) {}
-  Message(MsgType type, const private_init&)
-      : m_type(type), m_id(0), m_flags(0), m_seq_num_uid(0) {}
+  Message() = default;
+  Message(MsgType type, const private_init&) : m_type(type) {}
 
   MsgType type() const { return m_type; }
   bool Is(MsgType type) const { return type == m_type; }
 
   // Message data accessors.  Callers are responsible for knowing what data is
   // actually provided for a particular message.
-  wpi::StringRef str() const { return m_str; }
+  std::string_view str() const { return m_str; }
   std::shared_ptr<Value> value() const { return m_value; }
   unsigned int id() const { return m_id; }
   unsigned int flags() const { return m_flags; }
@@ -79,10 +76,10 @@ class Message {
   }
 
   // Create messages with data
-  static std::shared_ptr<Message> ClientHello(wpi::StringRef self_id);
+  static std::shared_ptr<Message> ClientHello(std::string_view self_id);
   static std::shared_ptr<Message> ServerHello(unsigned int flags,
-                                              wpi::StringRef self_id);
-  static std::shared_ptr<Message> EntryAssign(wpi::StringRef name,
+                                              std::string_view self_id);
+  static std::shared_ptr<Message> EntryAssign(std::string_view name,
                                               unsigned int id,
                                               unsigned int seq_num,
                                               std::shared_ptr<Value> value,
@@ -94,22 +91,22 @@ class Message {
                                               unsigned int flags);
   static std::shared_ptr<Message> EntryDelete(unsigned int id);
   static std::shared_ptr<Message> ExecuteRpc(unsigned int id, unsigned int uid,
-                                             wpi::StringRef params);
+                                             std::string_view params);
   static std::shared_ptr<Message> RpcResponse(unsigned int id, unsigned int uid,
-                                              wpi::StringRef result);
+                                              std::string_view result);
 
   Message(const Message&) = delete;
   Message& operator=(const Message&) = delete;
 
  private:
-  MsgType m_type;
+  MsgType m_type{kUnknown};
 
   // Message data.  Use varies by message type.
   std::string m_str;
   std::shared_ptr<Value> m_value;
-  unsigned int m_id;  // also used for proto_rev
-  unsigned int m_flags;
-  unsigned int m_seq_num_uid;
+  unsigned int m_id{0};  // also used for proto_rev
+  unsigned int m_flags{0};
+  unsigned int m_seq_num_uid{0};
 };
 
 }  // namespace nt

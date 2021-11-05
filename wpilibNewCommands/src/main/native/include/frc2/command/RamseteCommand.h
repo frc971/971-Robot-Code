@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
@@ -11,6 +8,7 @@
 #include <initializer_list>
 #include <memory>
 
+#include <frc/Timer.h>
 #include <frc/controller/PIDController.h>
 #include <frc/controller/RamseteController.h>
 #include <frc/controller/SimpleMotorFeedforward.h>
@@ -19,9 +17,8 @@
 #include <frc/trajectory/Trajectory.h>
 #include <units/length.h>
 #include <units/voltage.h>
-#include <wpi/ArrayRef.h>
+#include <wpi/span.h>
 
-#include "frc2/Timer.h"
 #include "frc2/command/CommandBase.h"
 #include "frc2/command/CommandHelper.h"
 
@@ -117,7 +114,7 @@ class RamseteCommand : public CommandHelper<CommandBase, RamseteCommand> {
                  frc2::PIDController leftController,
                  frc2::PIDController rightController,
                  std::function<void(units::volt_t, units::volt_t)> output,
-                 wpi::ArrayRef<Subsystem*> requirements = {});
+                 wpi::span<Subsystem* const> requirements = {});
 
   /**
    * Constructs a new RamseteCommand that, when executed, will follow the
@@ -165,7 +162,7 @@ class RamseteCommand : public CommandHelper<CommandBase, RamseteCommand> {
                  std::function<void(units::meters_per_second_t,
                                     units::meters_per_second_t)>
                      output,
-                 wpi::ArrayRef<Subsystem*> requirements = {});
+                 wpi::span<Subsystem* const> requirements = {});
 
   void Initialize() override;
 
@@ -188,7 +185,7 @@ class RamseteCommand : public CommandHelper<CommandBase, RamseteCommand> {
   std::function<void(units::meters_per_second_t, units::meters_per_second_t)>
       m_outputVel;
 
-  Timer m_timer;
+  frc::Timer m_timer;
   units::second_t m_prevTime;
   frc::DifferentialDriveWheelSpeeds m_prevSpeeds;
   bool m_usePID;

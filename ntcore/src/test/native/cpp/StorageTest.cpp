@@ -1,12 +1,11 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2015-2019 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "StorageTest.h"
 
+#include <wpi/SmallString.h>
+#include <wpi/StringExtras.h>
 #include <wpi/raw_istream.h>
 #include <wpi/raw_ostream.h>
 
@@ -25,10 +24,10 @@ using ::testing::Return;
 
 namespace nt {
 
-class StorageTestEmpty : public StorageTest,
+class StorageEmptyTest : public StorageTest,
                          public ::testing::TestWithParam<bool> {
  public:
-  StorageTestEmpty() {
+  StorageEmptyTest() {
     HookOutgoing(GetParam());
     EXPECT_CALL(notifier, local_notifiers())
         .Times(AnyNumber())
@@ -36,9 +35,9 @@ class StorageTestEmpty : public StorageTest,
   }
 };
 
-class StorageTestPopulateOne : public StorageTestEmpty {
+class StoragePopulateOneTest : public StorageEmptyTest {
  public:
-  StorageTestPopulateOne() {
+  StoragePopulateOneTest() {
     EXPECT_CALL(dispatcher, QueueOutgoing(_, _, _)).Times(AnyNumber());
     EXPECT_CALL(notifier, NotifyEntry(_, _, _, _, _)).Times(AnyNumber());
     EXPECT_CALL(notifier, local_notifiers())
@@ -53,9 +52,9 @@ class StorageTestPopulateOne : public StorageTestEmpty {
   }
 };
 
-class StorageTestPopulated : public StorageTestEmpty {
+class StoragePopulatedTest : public StorageEmptyTest {
  public:
-  StorageTestPopulated() {
+  StoragePopulatedTest() {
     EXPECT_CALL(dispatcher, QueueOutgoing(_, _, _)).Times(AnyNumber());
     EXPECT_CALL(notifier, NotifyEntry(_, _, _, _, _)).Times(AnyNumber());
     EXPECT_CALL(notifier, local_notifiers())
@@ -73,9 +72,9 @@ class StorageTestPopulated : public StorageTestEmpty {
   }
 };
 
-class StorageTestPersistent : public StorageTestEmpty {
+class StoragePersistentTest : public StorageEmptyTest {
  public:
-  StorageTestPersistent() {
+  StoragePersistentTest() {
     EXPECT_CALL(dispatcher, QueueOutgoing(_, _, _)).Times(AnyNumber());
     EXPECT_CALL(notifier, NotifyEntry(_, _, _, _, _)).Times(AnyNumber());
     EXPECT_CALL(notifier, local_notifiers())
@@ -88,13 +87,13 @@ class StorageTestPersistent : public StorageTestEmpty {
     storage.SetEntryTypeValue("double/big", Value::MakeDouble(1.3e8));
     storage.SetEntryTypeValue("string/empty", Value::MakeString(""));
     storage.SetEntryTypeValue("string/normal", Value::MakeString("hello"));
-    storage.SetEntryTypeValue("string/special",
-                              Value::MakeString(StringRef("\0\3\5\n", 4)));
+    storage.SetEntryTypeValue(
+        "string/special", Value::MakeString(std::string_view("\0\3\5\n", 4)));
     storage.SetEntryTypeValue("string/quoted", Value::MakeString("\"a\""));
     storage.SetEntryTypeValue("raw/empty", Value::MakeRaw(""));
     storage.SetEntryTypeValue("raw/normal", Value::MakeRaw("hello"));
     storage.SetEntryTypeValue("raw/special",
-                              Value::MakeRaw(StringRef("\0\3\5\n", 4)));
+                              Value::MakeRaw(std::string_view("\0\3\5\n", 4)));
     storage.SetEntryTypeValue("booleanarr/empty",
                               Value::MakeBooleanArray(std::vector<int>{}));
     storage.SetEntryTypeValue("booleanarr/one",
@@ -116,7 +115,7 @@ class StorageTestPersistent : public StorageTestEmpty {
     storage.SetEntryTypeValue(
         "stringarr/two",
         Value::MakeStringArray(std::vector<std::string>{"hello", "world\n"}));
-    storage.SetEntryTypeValue(StringRef("\0\3\5\n", 4),
+    storage.SetEntryTypeValue(std::string_view("\0\3\5\n", 4),
                               Value::MakeBoolean(true));
     storage.SetEntryTypeValue("=", Value::MakeBoolean(true));
     ::testing::Mock::VerifyAndClearExpectations(&dispatcher);
@@ -129,15 +128,15 @@ class StorageTestPersistent : public StorageTestEmpty {
 
 class MockLoadWarn {
  public:
-  MOCK_METHOD2(Warn, void(size_t line, wpi::StringRef msg));
+  MOCK_METHOD2(Warn, void(size_t line, std::string_view msg));
 };
 
-TEST_P(StorageTestEmpty, Construct) {
+TEST_P(StorageEmptyTest, Construct) {
   EXPECT_TRUE(entries().empty());
   EXPECT_TRUE(idmap().empty());
 }
 
-TEST_P(StorageTestEmpty, StorageEntryInit) {
+TEST_P(StorageEmptyTest, StorageEntryInit) {
   auto entry = GetEntry("foo");
   EXPECT_FALSE(entry->value);
   EXPECT_EQ(0u, entry->flags);
@@ -146,13 +145,13 @@ TEST_P(StorageTestEmpty, StorageEntryInit) {
   EXPECT_EQ(SequenceNumber(), entry->seq_num);
 }
 
-TEST_P(StorageTestEmpty, GetEntryValueNotExist) {
+TEST_P(StorageEmptyTest, GetEntryValueNotExist) {
   EXPECT_FALSE(storage.GetEntryValue("foo"));
   EXPECT_TRUE(entries().empty());
   EXPECT_TRUE(idmap().empty());
 }
 
-TEST_P(StorageTestEmpty, GetEntryValueExist) {
+TEST_P(StorageEmptyTest, GetEntryValueExist) {
   auto value = Value::MakeBoolean(true);
   EXPECT_CALL(dispatcher, QueueOutgoing(_, IsNull(), IsNull()));
   EXPECT_CALL(notifier, NotifyEntry(_, _, _, _, _));
@@ -160,7 +159,7 @@ TEST_P(StorageTestEmpty, GetEntryValueExist) {
   EXPECT_EQ(value, storage.GetEntryValue("foo"));
 }
 
-TEST_P(StorageTestEmpty, SetEntryTypeValueAssignNew) {
+TEST_P(StorageEmptyTest, SetEntryTypeValueAssignNew) {
   // brand new entry
   auto value = Value::MakeBoolean(true);
   // id assigned if server
@@ -168,7 +167,7 @@ TEST_P(StorageTestEmpty, SetEntryTypeValueAssignNew) {
               QueueOutgoing(MessageEq(Message::EntryAssign(
                                 "foo", GetParam() ? 0 : 0xffff, 1, value, 0)),
                             IsNull(), IsNull()));
-  EXPECT_CALL(notifier, NotifyEntry(0, StringRef("foo"), value,
+  EXPECT_CALL(notifier, NotifyEntry(0, std::string_view("foo"), value,
                                     NT_NOTIFY_NEW | NT_NOTIFY_LOCAL, UINT_MAX));
 
   storage.SetEntryTypeValue("foo", value);
@@ -181,7 +180,7 @@ TEST_P(StorageTestEmpty, SetEntryTypeValueAssignNew) {
   }
 }
 
-TEST_P(StorageTestPopulateOne, SetEntryTypeValueAssignTypeChange) {
+TEST_P(StoragePopulateOneTest, SetEntryTypeValueAssignTypeChange) {
   // update with different type results in assignment message
   auto value = Value::MakeDouble(0.0);
 
@@ -191,14 +190,14 @@ TEST_P(StorageTestPopulateOne, SetEntryTypeValueAssignTypeChange) {
                                 "foo", GetParam() ? 0 : 0xffff, 2, value, 0)),
                             IsNull(), IsNull()));
   EXPECT_CALL(notifier,
-              NotifyEntry(0, StringRef("foo"), value,
+              NotifyEntry(0, std::string_view("foo"), value,
                           NT_NOTIFY_UPDATE | NT_NOTIFY_LOCAL, UINT_MAX));
 
   storage.SetEntryTypeValue("foo", value);
   EXPECT_EQ(value, GetEntry("foo")->value);
 }
 
-TEST_P(StorageTestPopulateOne, SetEntryTypeValueEqualValue) {
+TEST_P(StoragePopulateOneTest, SetEntryTypeValueEqualValue) {
   // update with same type and same value: change value contents but no update
   // message is issued (minimizing bandwidth usage)
   auto value = Value::MakeBoolean(true);
@@ -206,7 +205,7 @@ TEST_P(StorageTestPopulateOne, SetEntryTypeValueEqualValue) {
   EXPECT_EQ(value, GetEntry("foo")->value);
 }
 
-TEST_P(StorageTestPopulated, SetEntryTypeValueDifferentValue) {
+TEST_P(StoragePopulatedTest, SetEntryTypeValueDifferentValue) {
   // update with same type and different value results in value update message
   auto value = Value::MakeDouble(1.0);
 
@@ -218,7 +217,7 @@ TEST_P(StorageTestPopulated, SetEntryTypeValueDifferentValue) {
                               IsNull(), IsNull()));
   }
   EXPECT_CALL(notifier,
-              NotifyEntry(1, StringRef("foo2"), value,
+              NotifyEntry(1, std::string_view("foo2"), value,
                           NT_NOTIFY_UPDATE | NT_NOTIFY_LOCAL, UINT_MAX));
   storage.SetEntryTypeValue("foo2", value);
   EXPECT_EQ(value, GetEntry("foo2")->value);
@@ -229,20 +228,20 @@ TEST_P(StorageTestPopulated, SetEntryTypeValueDifferentValue) {
   }
 }
 
-TEST_P(StorageTestEmpty, SetEntryTypeValueEmptyName) {
+TEST_P(StorageEmptyTest, SetEntryTypeValueEmptyName) {
   auto value = Value::MakeBoolean(true);
   storage.SetEntryTypeValue("", value);
   EXPECT_TRUE(entries().empty());
   EXPECT_TRUE(idmap().empty());
 }
 
-TEST_P(StorageTestEmpty, SetEntryTypeValueEmptyValue) {
+TEST_P(StorageEmptyTest, SetEntryTypeValueEmptyValue) {
   storage.SetEntryTypeValue("foo", nullptr);
   EXPECT_TRUE(entries().empty());
   EXPECT_TRUE(idmap().empty());
 }
 
-TEST_P(StorageTestEmpty, SetEntryValueAssignNew) {
+TEST_P(StorageEmptyTest, SetEntryValueAssignNew) {
   // brand new entry
   auto value = Value::MakeBoolean(true);
 
@@ -251,14 +250,14 @@ TEST_P(StorageTestEmpty, SetEntryValueAssignNew) {
               QueueOutgoing(MessageEq(Message::EntryAssign(
                                 "foo", GetParam() ? 0 : 0xffff, 1, value, 0)),
                             IsNull(), IsNull()));
-  EXPECT_CALL(notifier, NotifyEntry(0, StringRef("foo"), value,
+  EXPECT_CALL(notifier, NotifyEntry(0, std::string_view("foo"), value,
                                     NT_NOTIFY_NEW | NT_NOTIFY_LOCAL, UINT_MAX));
 
   EXPECT_TRUE(storage.SetEntryValue("foo", value));
   EXPECT_EQ(value, GetEntry("foo")->value);
 }
 
-TEST_P(StorageTestPopulateOne, SetEntryValueAssignTypeChange) {
+TEST_P(StoragePopulateOneTest, SetEntryValueAssignTypeChange) {
   // update with different type results in error and no message or notification
   auto value = Value::MakeDouble(0.0);
   EXPECT_FALSE(storage.SetEntryValue("foo", value));
@@ -266,7 +265,7 @@ TEST_P(StorageTestPopulateOne, SetEntryValueAssignTypeChange) {
   EXPECT_NE(value, entry->value);
 }
 
-TEST_P(StorageTestPopulateOne, SetEntryValueEqualValue) {
+TEST_P(StoragePopulateOneTest, SetEntryValueEqualValue) {
   // update with same type and same value: change value contents but no update
   // message is issued (minimizing bandwidth usage)
   auto value = Value::MakeBoolean(true);
@@ -275,7 +274,7 @@ TEST_P(StorageTestPopulateOne, SetEntryValueEqualValue) {
   EXPECT_EQ(value, entry->value);
 }
 
-TEST_P(StorageTestPopulated, SetEntryValueDifferentValue) {
+TEST_P(StoragePopulatedTest, SetEntryValueDifferentValue) {
   // update with same type and different value results in value update message
   auto value = Value::MakeDouble(1.0);
 
@@ -287,7 +286,7 @@ TEST_P(StorageTestPopulated, SetEntryValueDifferentValue) {
                               IsNull(), IsNull()));
   }
   EXPECT_CALL(notifier,
-              NotifyEntry(1, StringRef("foo2"), value,
+              NotifyEntry(1, std::string_view("foo2"), value,
                           NT_NOTIFY_UPDATE | NT_NOTIFY_LOCAL, UINT_MAX));
 
   EXPECT_TRUE(storage.SetEntryValue("foo2", value));
@@ -300,20 +299,20 @@ TEST_P(StorageTestPopulated, SetEntryValueDifferentValue) {
   }
 }
 
-TEST_P(StorageTestEmpty, SetEntryValueEmptyName) {
+TEST_P(StorageEmptyTest, SetEntryValueEmptyName) {
   auto value = Value::MakeBoolean(true);
   EXPECT_TRUE(storage.SetEntryValue("", value));
   EXPECT_TRUE(entries().empty());
   EXPECT_TRUE(idmap().empty());
 }
 
-TEST_P(StorageTestEmpty, SetEntryValueEmptyValue) {
+TEST_P(StorageEmptyTest, SetEntryValueEmptyValue) {
   EXPECT_TRUE(storage.SetEntryValue("foo", nullptr));
   EXPECT_TRUE(entries().empty());
   EXPECT_TRUE(idmap().empty());
 }
 
-TEST_P(StorageTestEmpty, SetDefaultEntryAssignNew) {
+TEST_P(StorageEmptyTest, SetDefaultEntryAssignNew) {
   // brand new entry
   auto value = Value::MakeBoolean(true);
 
@@ -322,7 +321,7 @@ TEST_P(StorageTestEmpty, SetDefaultEntryAssignNew) {
               QueueOutgoing(MessageEq(Message::EntryAssign(
                                 "foo", GetParam() ? 0 : 0xffff, 1, value, 0)),
                             IsNull(), IsNull()));
-  EXPECT_CALL(notifier, NotifyEntry(0, StringRef("foo"), value,
+  EXPECT_CALL(notifier, NotifyEntry(0, std::string_view("foo"), value,
                                     NT_NOTIFY_NEW | NT_NOTIFY_LOCAL, UINT_MAX));
 
   auto ret_val = storage.SetDefaultEntryValue("foo", value);
@@ -330,7 +329,7 @@ TEST_P(StorageTestEmpty, SetDefaultEntryAssignNew) {
   EXPECT_EQ(value, GetEntry("foo")->value);
 }
 
-TEST_P(StorageTestPopulateOne, SetDefaultEntryExistsSameType) {
+TEST_P(StoragePopulateOneTest, SetDefaultEntryExistsSameType) {
   // existing entry
   auto value = Value::MakeBoolean(true);
   auto ret_val = storage.SetDefaultEntryValue("foo", value);
@@ -338,7 +337,7 @@ TEST_P(StorageTestPopulateOne, SetDefaultEntryExistsSameType) {
   EXPECT_NE(value, GetEntry("foo")->value);
 }
 
-TEST_P(StorageTestPopulateOne, SetDefaultEntryExistsDifferentType) {
+TEST_P(StoragePopulateOneTest, SetDefaultEntryExistsDifferentType) {
   // existing entry is boolean
   auto value = Value::MakeDouble(2.0);
   auto ret_val = storage.SetDefaultEntryValue("foo", value);
@@ -347,7 +346,7 @@ TEST_P(StorageTestPopulateOne, SetDefaultEntryExistsDifferentType) {
   EXPECT_NE(value, GetEntry("foo")->value);
 }
 
-TEST_P(StorageTestEmpty, SetDefaultEntryEmptyName) {
+TEST_P(StorageEmptyTest, SetDefaultEntryEmptyName) {
   auto value = Value::MakeBoolean(true);
   auto ret_val = storage.SetDefaultEntryValue("", value);
   EXPECT_FALSE(ret_val);
@@ -361,7 +360,7 @@ TEST_P(StorageTestEmpty, SetDefaultEntryEmptyName) {
   EXPECT_TRUE(idmap().empty());
 }
 
-TEST_P(StorageTestEmpty, SetDefaultEntryEmptyValue) {
+TEST_P(StorageEmptyTest, SetDefaultEntryEmptyValue) {
   auto value = Value::MakeBoolean(true);
   auto ret_val = storage.SetDefaultEntryValue("", nullptr);
   EXPECT_FALSE(ret_val);
@@ -375,38 +374,40 @@ TEST_P(StorageTestEmpty, SetDefaultEntryEmptyValue) {
   EXPECT_TRUE(idmap().empty());
 }
 
-TEST_P(StorageTestPopulated, SetDefaultEntryEmptyName) {
+TEST_P(StoragePopulatedTest, SetDefaultEntryEmptyName) {
   auto value = Value::MakeBoolean(true);
   auto ret_val = storage.SetDefaultEntryValue("", value);
   EXPECT_FALSE(ret_val);
   // assert that no entries get added
   EXPECT_EQ(4u, entries().size());
-  if (GetParam())
+  if (GetParam()) {
     EXPECT_EQ(4u, idmap().size());
-  else
+  } else {
     EXPECT_EQ(0u, idmap().size());
+  }
 }
 
-TEST_P(StorageTestPopulated, SetDefaultEntryEmptyValue) {
+TEST_P(StoragePopulatedTest, SetDefaultEntryEmptyValue) {
   auto value = Value::MakeBoolean(true);
   auto ret_val = storage.SetDefaultEntryValue("", nullptr);
   EXPECT_FALSE(ret_val);
   // assert that no entries get added
   EXPECT_EQ(4u, entries().size());
-  if (GetParam())
+  if (GetParam()) {
     EXPECT_EQ(4u, idmap().size());
-  else
+  } else {
     EXPECT_EQ(0u, idmap().size());
+  }
 }
 
-TEST_P(StorageTestEmpty, SetEntryFlagsNew) {
+TEST_P(StorageEmptyTest, SetEntryFlagsNew) {
   // flags setting doesn't create an entry
   storage.SetEntryFlags("foo", 0u);
   EXPECT_TRUE(entries().empty());
   EXPECT_TRUE(idmap().empty());
 }
 
-TEST_P(StorageTestPopulateOne, SetEntryFlagsEqualValue) {
+TEST_P(StoragePopulateOneTest, SetEntryFlagsEqualValue) {
   // update with same value: no update message is issued (minimizing bandwidth
   // usage)
   storage.SetEntryFlags("foo", 0u);
@@ -414,7 +415,7 @@ TEST_P(StorageTestPopulateOne, SetEntryFlagsEqualValue) {
   EXPECT_EQ(0u, entry->flags);
 }
 
-TEST_P(StorageTestPopulated, SetEntryFlagsDifferentValue) {
+TEST_P(StoragePopulatedTest, SetEntryFlagsDifferentValue) {
   // update with different value results in flags update message
   // client shouldn't send an update as id not assigned yet
   if (GetParam()) {
@@ -423,25 +424,25 @@ TEST_P(StorageTestPopulated, SetEntryFlagsDifferentValue) {
                                           IsNull(), IsNull()));
   }
   EXPECT_CALL(notifier,
-              NotifyEntry(1, StringRef("foo2"), _,
+              NotifyEntry(1, std::string_view("foo2"), _,
                           NT_NOTIFY_FLAGS | NT_NOTIFY_LOCAL, UINT_MAX));
   storage.SetEntryFlags("foo2", 1u);
   EXPECT_EQ(1u, GetEntry("foo2")->flags);
 }
 
-TEST_P(StorageTestEmpty, SetEntryFlagsEmptyName) {
+TEST_P(StorageEmptyTest, SetEntryFlagsEmptyName) {
   storage.SetEntryFlags("", 0u);
   EXPECT_TRUE(entries().empty());
   EXPECT_TRUE(idmap().empty());
 }
 
-TEST_P(StorageTestEmpty, GetEntryFlagsNotExist) {
+TEST_P(StorageEmptyTest, GetEntryFlagsNotExist) {
   EXPECT_EQ(0u, storage.GetEntryFlags("foo"));
   EXPECT_TRUE(entries().empty());
   EXPECT_TRUE(idmap().empty());
 }
 
-TEST_P(StorageTestPopulateOne, GetEntryFlagsExist) {
+TEST_P(StoragePopulateOneTest, GetEntryFlagsExist) {
   EXPECT_CALL(dispatcher, QueueOutgoing(_, _, _)).Times(AnyNumber());
   EXPECT_CALL(notifier, NotifyEntry(_, _, _, _, _));
   storage.SetEntryFlags("foo", 1u);
@@ -449,18 +450,21 @@ TEST_P(StorageTestPopulateOne, GetEntryFlagsExist) {
   EXPECT_EQ(1u, storage.GetEntryFlags("foo"));
 }
 
-TEST_P(StorageTestEmpty, DeleteEntryNotExist) { storage.DeleteEntry("foo"); }
+TEST_P(StorageEmptyTest, DeleteEntryNotExist) {
+  storage.DeleteEntry("foo");
+}
 
-TEST_P(StorageTestPopulated, DeleteEntryExist) {
+TEST_P(StoragePopulatedTest, DeleteEntryExist) {
   // client shouldn't send an update as id not assigned yet
   if (GetParam()) {
     // id assigned as this is the server
     EXPECT_CALL(dispatcher, QueueOutgoing(MessageEq(Message::EntryDelete(1)),
                                           IsNull(), IsNull()));
   }
-  EXPECT_CALL(notifier,
-              NotifyEntry(1, StringRef("foo2"), ValueEq(Value::MakeDouble(0)),
-                          NT_NOTIFY_DELETE | NT_NOTIFY_LOCAL, UINT_MAX));
+  EXPECT_CALL(
+      notifier,
+      NotifyEntry(1, std::string_view("foo2"), ValueEq(Value::MakeDouble(0)),
+                  NT_NOTIFY_DELETE | NT_NOTIFY_LOCAL, UINT_MAX));
 
   storage.DeleteEntry("foo2");
   ASSERT_EQ(1u, entries().count("foo2"));
@@ -473,12 +477,12 @@ TEST_P(StorageTestPopulated, DeleteEntryExist) {
   }
 }
 
-TEST_P(StorageTestEmpty, DeleteAllEntriesEmpty) {
+TEST_P(StorageEmptyTest, DeleteAllEntriesEmpty) {
   storage.DeleteAllEntries();
   ASSERT_TRUE(entries().empty());
 }
 
-TEST_P(StorageTestPopulated, DeleteAllEntries) {
+TEST_P(StoragePopulatedTest, DeleteAllEntries) {
   EXPECT_CALL(dispatcher, QueueOutgoing(MessageEq(Message::ClearEntries()),
                                         IsNull(), IsNull()));
   EXPECT_CALL(notifier, NotifyEntry(_, _, _, NT_NOTIFY_DELETE | NT_NOTIFY_LOCAL,
@@ -490,7 +494,7 @@ TEST_P(StorageTestPopulated, DeleteAllEntries) {
   EXPECT_EQ(nullptr, entries()["foo2"]->value);
 }
 
-TEST_P(StorageTestPopulated, DeleteAllEntriesPersistent) {
+TEST_P(StoragePopulatedTest, DeleteAllEntriesPersistent) {
   GetEntry("foo2")->flags = NT_PERSISTENT;
 
   EXPECT_CALL(dispatcher, QueueOutgoing(MessageEq(Message::ClearEntries()),
@@ -504,12 +508,12 @@ TEST_P(StorageTestPopulated, DeleteAllEntriesPersistent) {
   EXPECT_NE(nullptr, entries()["foo2"]->value);
 }
 
-TEST_P(StorageTestPopulated, GetEntryInfoAll) {
+TEST_P(StoragePopulatedTest, GetEntryInfoAll) {
   auto info = storage.GetEntryInfo(0, "", 0u);
   ASSERT_EQ(4u, info.size());
 }
 
-TEST_P(StorageTestPopulated, GetEntryInfoPrefix) {
+TEST_P(StoragePopulatedTest, GetEntryInfoPrefix) {
   auto info = storage.GetEntryInfo(0, "foo", 0u);
   ASSERT_EQ(2u, info.size());
   if (info[0].name == "foo") {
@@ -525,7 +529,7 @@ TEST_P(StorageTestPopulated, GetEntryInfoPrefix) {
   }
 }
 
-TEST_P(StorageTestPopulated, GetEntryInfoTypes) {
+TEST_P(StoragePopulatedTest, GetEntryInfoTypes) {
   auto info = storage.GetEntryInfo(0, "", NT_DOUBLE);
   ASSERT_EQ(2u, info.size());
   EXPECT_EQ(NT_DOUBLE, info[0].type);
@@ -539,101 +543,103 @@ TEST_P(StorageTestPopulated, GetEntryInfoTypes) {
   }
 }
 
-TEST_P(StorageTestPopulated, GetEntryInfoPrefixTypes) {
+TEST_P(StoragePopulatedTest, GetEntryInfoPrefixTypes) {
   auto info = storage.GetEntryInfo(0, "bar", NT_BOOLEAN);
   ASSERT_EQ(1u, info.size());
   EXPECT_EQ("bar2", info[0].name);
   EXPECT_EQ(NT_BOOLEAN, info[0].type);
 }
 
-TEST_P(StorageTestPersistent, SavePersistentEmpty) {
+TEST_P(StoragePersistentTest, SavePersistentEmpty) {
   wpi::SmallString<256> buf;
   wpi::raw_svector_ostream oss(buf);
   storage.SavePersistent(oss, false);
   ASSERT_EQ("[NetworkTables Storage 3.0]\n", oss.str());
 }
 
-TEST_P(StorageTestPersistent, SavePersistent) {
-  for (auto& i : entries()) i.getValue()->flags = NT_PERSISTENT;
+TEST_P(StoragePersistentTest, SavePersistent) {
+  for (auto& i : entries()) {
+    i.getValue()->flags = NT_PERSISTENT;
+  }
   wpi::SmallString<256> buf;
   wpi::raw_svector_ostream oss(buf);
   storage.SavePersistent(oss, false);
-  wpi::StringRef out = oss.str();
+  std::string_view out = oss.str();
   // std::fputs(out.c_str(), stderr);
-  wpi::StringRef line, rem = out;
-  std::tie(line, rem) = rem.split('\n');
+  std::string_view line, rem = out;
+  std::tie(line, rem) = wpi::split(rem, '\n');
   ASSERT_EQ("[NetworkTables Storage 3.0]", line);
-  std::tie(line, rem) = rem.split('\n');
+  std::tie(line, rem) = wpi::split(rem, '\n');
   ASSERT_EQ("boolean \"\\x00\\x03\\x05\\n\"=true", line);
-  std::tie(line, rem) = rem.split('\n');
+  std::tie(line, rem) = wpi::split(rem, '\n');
   ASSERT_EQ("boolean \"\\x3D\"=true", line);
-  std::tie(line, rem) = rem.split('\n');
+  std::tie(line, rem) = wpi::split(rem, '\n');
   ASSERT_EQ("boolean \"boolean/false\"=false", line);
-  std::tie(line, rem) = rem.split('\n');
+  std::tie(line, rem) = wpi::split(rem, '\n');
   ASSERT_EQ("boolean \"boolean/true\"=true", line);
-  std::tie(line, rem) = rem.split('\n');
+  std::tie(line, rem) = wpi::split(rem, '\n');
   ASSERT_EQ("array boolean \"booleanarr/empty\"=", line);
-  std::tie(line, rem) = rem.split('\n');
+  std::tie(line, rem) = wpi::split(rem, '\n');
   ASSERT_EQ("array boolean \"booleanarr/one\"=true", line);
-  std::tie(line, rem) = rem.split('\n');
+  std::tie(line, rem) = wpi::split(rem, '\n');
   ASSERT_EQ("array boolean \"booleanarr/two\"=true,false", line);
-  std::tie(line, rem) = rem.split('\n');
+  std::tie(line, rem) = wpi::split(rem, '\n');
   ASSERT_EQ("double \"double/big\"=1.3e+08", line);
-  std::tie(line, rem) = rem.split('\n');
+  std::tie(line, rem) = wpi::split(rem, '\n');
   ASSERT_EQ("double \"double/neg\"=-1.5", line);
-  std::tie(line, rem) = rem.split('\n');
+  std::tie(line, rem) = wpi::split(rem, '\n');
   ASSERT_EQ("double \"double/zero\"=0", line);
-  std::tie(line, rem) = rem.split('\n');
+  std::tie(line, rem) = wpi::split(rem, '\n');
   ASSERT_EQ("array double \"doublearr/empty\"=", line);
-  std::tie(line, rem) = rem.split('\n');
+  std::tie(line, rem) = wpi::split(rem, '\n');
   ASSERT_EQ("array double \"doublearr/one\"=0.5", line);
-  std::tie(line, rem) = rem.split('\n');
+  std::tie(line, rem) = wpi::split(rem, '\n');
   ASSERT_EQ("array double \"doublearr/two\"=0.5,-0.25", line);
-  std::tie(line, rem) = rem.split('\n');
+  std::tie(line, rem) = wpi::split(rem, '\n');
   ASSERT_EQ("raw \"raw/empty\"=", line);
-  std::tie(line, rem) = rem.split('\n');
+  std::tie(line, rem) = wpi::split(rem, '\n');
   ASSERT_EQ("raw \"raw/normal\"=aGVsbG8=", line);
-  std::tie(line, rem) = rem.split('\n');
+  std::tie(line, rem) = wpi::split(rem, '\n');
   ASSERT_EQ("raw \"raw/special\"=AAMFCg==", line);
-  std::tie(line, rem) = rem.split('\n');
+  std::tie(line, rem) = wpi::split(rem, '\n');
   ASSERT_EQ("string \"string/empty\"=\"\"", line);
-  std::tie(line, rem) = rem.split('\n');
+  std::tie(line, rem) = wpi::split(rem, '\n');
   ASSERT_EQ("string \"string/normal\"=\"hello\"", line);
-  std::tie(line, rem) = rem.split('\n');
+  std::tie(line, rem) = wpi::split(rem, '\n');
   ASSERT_EQ("string \"string/quoted\"=\"\\\"a\\\"\"", line);
-  std::tie(line, rem) = rem.split('\n');
+  std::tie(line, rem) = wpi::split(rem, '\n');
   ASSERT_EQ("string \"string/special\"=\"\\x00\\x03\\x05\\n\"", line);
-  std::tie(line, rem) = rem.split('\n');
+  std::tie(line, rem) = wpi::split(rem, '\n');
   ASSERT_EQ("array string \"stringarr/empty\"=", line);
-  std::tie(line, rem) = rem.split('\n');
+  std::tie(line, rem) = wpi::split(rem, '\n');
   ASSERT_EQ("array string \"stringarr/one\"=\"hello\"", line);
-  std::tie(line, rem) = rem.split('\n');
+  std::tie(line, rem) = wpi::split(rem, '\n');
   ASSERT_EQ("array string \"stringarr/two\"=\"hello\",\"world\\n\"", line);
-  std::tie(line, rem) = rem.split('\n');
+  std::tie(line, rem) = wpi::split(rem, '\n');
   ASSERT_EQ("", line);
 }
 
-TEST_P(StorageTestEmpty, LoadPersistentBadHeader) {
+TEST_P(StorageEmptyTest, LoadPersistentBadHeader) {
   MockLoadWarn warn;
   auto warn_func = [&](size_t line, const char* msg) { warn.Warn(line, msg); };
 
   wpi::raw_mem_istream iss("");
   EXPECT_CALL(
       warn,
-      Warn(1, wpi::StringRef("header line mismatch, ignoring rest of file")));
+      Warn(1, std::string_view("header line mismatch, ignoring rest of file")));
   EXPECT_FALSE(storage.LoadEntries(iss, "", true, warn_func));
 
   wpi::raw_mem_istream iss2("[NetworkTables");
   EXPECT_CALL(
       warn,
-      Warn(1, wpi::StringRef("header line mismatch, ignoring rest of file")));
+      Warn(1, std::string_view("header line mismatch, ignoring rest of file")));
 
   EXPECT_FALSE(storage.LoadEntries(iss2, "", true, warn_func));
   EXPECT_TRUE(entries().empty());
   EXPECT_TRUE(idmap().empty());
 }
 
-TEST_P(StorageTestEmpty, LoadPersistentCommentHeader) {
+TEST_P(StorageEmptyTest, LoadPersistentCommentHeader) {
   MockLoadWarn warn;
   auto warn_func = [&](size_t line, const char* msg) { warn.Warn(line, msg); };
 
@@ -644,7 +650,7 @@ TEST_P(StorageTestEmpty, LoadPersistentCommentHeader) {
   EXPECT_TRUE(idmap().empty());
 }
 
-TEST_P(StorageTestEmpty, LoadPersistentEmptyName) {
+TEST_P(StorageEmptyTest, LoadPersistentEmptyName) {
   MockLoadWarn warn;
   auto warn_func = [&](size_t line, const char* msg) { warn.Warn(line, msg); };
 
@@ -654,7 +660,7 @@ TEST_P(StorageTestEmpty, LoadPersistentEmptyName) {
   EXPECT_TRUE(idmap().empty());
 }
 
-TEST_P(StorageTestEmpty, LoadPersistentAssign) {
+TEST_P(StorageEmptyTest, LoadPersistentAssign) {
   MockLoadWarn warn;
   auto warn_func = [&](size_t line, const char* msg) { warn.Warn(line, msg); };
 
@@ -665,7 +671,7 @@ TEST_P(StorageTestEmpty, LoadPersistentAssign) {
                                             "foo", GetParam() ? 0 : 0xffff, 1,
                                             value, NT_PERSISTENT)),
                                         IsNull(), IsNull()));
-  EXPECT_CALL(notifier, NotifyEntry(0, StringRef("foo"),
+  EXPECT_CALL(notifier, NotifyEntry(0, std::string_view("foo"),
                                     ValueEq(Value::MakeBoolean(true)),
                                     NT_NOTIFY_NEW | NT_NOTIFY_LOCAL, UINT_MAX));
 
@@ -677,7 +683,7 @@ TEST_P(StorageTestEmpty, LoadPersistentAssign) {
   EXPECT_EQ(NT_PERSISTENT, entry->flags);
 }
 
-TEST_P(StorageTestPopulated, LoadPersistentUpdateFlags) {
+TEST_P(StoragePopulatedTest, LoadPersistentUpdateFlags) {
   MockLoadWarn warn;
   auto warn_func = [&](size_t line, const char* msg) { warn.Warn(line, msg); };
 
@@ -688,9 +694,10 @@ TEST_P(StorageTestPopulated, LoadPersistentUpdateFlags) {
                 QueueOutgoing(MessageEq(Message::FlagsUpdate(1, NT_PERSISTENT)),
                               IsNull(), IsNull()));
   }
-  EXPECT_CALL(notifier,
-              NotifyEntry(1, StringRef("foo2"), ValueEq(Value::MakeDouble(0)),
-                          NT_NOTIFY_FLAGS | NT_NOTIFY_LOCAL, UINT_MAX));
+  EXPECT_CALL(
+      notifier,
+      NotifyEntry(1, std::string_view("foo2"), ValueEq(Value::MakeDouble(0)),
+                  NT_NOTIFY_FLAGS | NT_NOTIFY_LOCAL, UINT_MAX));
 
   wpi::raw_mem_istream iss(
       "[NetworkTables Storage 3.0]\ndouble \"foo2\"=0.0\n");
@@ -700,7 +707,7 @@ TEST_P(StorageTestPopulated, LoadPersistentUpdateFlags) {
   EXPECT_EQ(NT_PERSISTENT, entry->flags);
 }
 
-TEST_P(StorageTestPopulated, LoadPersistentUpdateValue) {
+TEST_P(StoragePopulatedTest, LoadPersistentUpdateValue) {
   MockLoadWarn warn;
   auto warn_func = [&](size_t line, const char* msg) { warn.Warn(line, msg); };
 
@@ -715,9 +722,10 @@ TEST_P(StorageTestPopulated, LoadPersistentUpdateValue) {
                 QueueOutgoing(MessageEq(Message::EntryUpdate(1, 2, value)),
                               IsNull(), IsNull()));
   }
-  EXPECT_CALL(notifier,
-              NotifyEntry(1, StringRef("foo2"), ValueEq(Value::MakeDouble(1)),
-                          NT_NOTIFY_UPDATE | NT_NOTIFY_LOCAL, UINT_MAX));
+  EXPECT_CALL(
+      notifier,
+      NotifyEntry(1, std::string_view("foo2"), ValueEq(Value::MakeDouble(1)),
+                  NT_NOTIFY_UPDATE | NT_NOTIFY_LOCAL, UINT_MAX));
 
   wpi::raw_mem_istream iss(
       "[NetworkTables Storage 3.0]\ndouble \"foo2\"=1.0\n");
@@ -732,7 +740,7 @@ TEST_P(StorageTestPopulated, LoadPersistentUpdateValue) {
   }
 }
 
-TEST_P(StorageTestPopulated, LoadPersistentUpdateValueFlags) {
+TEST_P(StoragePopulatedTest, LoadPersistentUpdateValueFlags) {
   MockLoadWarn warn;
   auto warn_func = [&](size_t line, const char* msg) { warn.Warn(line, msg); };
 
@@ -748,10 +756,11 @@ TEST_P(StorageTestPopulated, LoadPersistentUpdateValueFlags) {
                 QueueOutgoing(MessageEq(Message::FlagsUpdate(1, NT_PERSISTENT)),
                               IsNull(), IsNull()));
   }
-  EXPECT_CALL(notifier,
-              NotifyEntry(1, StringRef("foo2"), ValueEq(Value::MakeDouble(1)),
-                          NT_NOTIFY_FLAGS | NT_NOTIFY_UPDATE | NT_NOTIFY_LOCAL,
-                          UINT_MAX));
+  EXPECT_CALL(
+      notifier,
+      NotifyEntry(1, std::string_view("foo2"), ValueEq(Value::MakeDouble(1)),
+                  NT_NOTIFY_FLAGS | NT_NOTIFY_UPDATE | NT_NOTIFY_LOCAL,
+                  UINT_MAX));
 
   wpi::raw_mem_istream iss(
       "[NetworkTables Storage 3.0]\ndouble \"foo2\"=1.0\n");
@@ -766,7 +775,7 @@ TEST_P(StorageTestPopulated, LoadPersistentUpdateValueFlags) {
   }
 }
 
-TEST_P(StorageTestEmpty, LoadPersistent) {
+TEST_P(StorageEmptyTest, LoadPersistent) {
   MockLoadWarn warn;
   auto warn_func = [&](size_t line, const char* msg) { warn.Warn(line, msg); };
 
@@ -813,13 +822,13 @@ TEST_P(StorageTestEmpty, LoadPersistent) {
   EXPECT_EQ(*Value::MakeString(""), *storage.GetEntryValue("string/empty"));
   EXPECT_EQ(*Value::MakeString("hello"),
             *storage.GetEntryValue("string/normal"));
-  EXPECT_EQ(*Value::MakeString(StringRef("\0\3\5\n", 4)),
+  EXPECT_EQ(*Value::MakeString(std::string_view("\0\3\5\n", 4)),
             *storage.GetEntryValue("string/special"));
   EXPECT_EQ(*Value::MakeString("\"a\""),
             *storage.GetEntryValue("string/quoted"));
   EXPECT_EQ(*Value::MakeRaw(""), *storage.GetEntryValue("raw/empty"));
   EXPECT_EQ(*Value::MakeRaw("hello"), *storage.GetEntryValue("raw/normal"));
-  EXPECT_EQ(*Value::MakeRaw(StringRef("\0\3\5\n", 4)),
+  EXPECT_EQ(*Value::MakeRaw(std::string_view("\0\3\5\n", 4)),
             *storage.GetEntryValue("raw/special"));
   EXPECT_EQ(*Value::MakeBooleanArray(std::vector<int>{}),
             *storage.GetEntryValue("booleanarr/empty"));
@@ -841,18 +850,18 @@ TEST_P(StorageTestEmpty, LoadPersistent) {
       *Value::MakeStringArray(std::vector<std::string>{"hello", "world\n"}),
       *storage.GetEntryValue("stringarr/two"));
   EXPECT_EQ(*Value::MakeBoolean(true),
-            *storage.GetEntryValue(StringRef("\0\3\5\n", 4)));
+            *storage.GetEntryValue(std::string_view("\0\3\5\n", 4)));
   EXPECT_EQ(*Value::MakeBoolean(true), *storage.GetEntryValue("="));
 }
 
-TEST_P(StorageTestEmpty, LoadPersistentWarn) {
+TEST_P(StorageEmptyTest, LoadPersistentWarn) {
   MockLoadWarn warn;
   auto warn_func = [&](size_t line, const char* msg) { warn.Warn(line, msg); };
 
   wpi::raw_mem_istream iss(
       "[NetworkTables Storage 3.0]\nboolean \"foo\"=foo\n");
   EXPECT_CALL(
-      warn, Warn(2, wpi::StringRef(
+      warn, Warn(2, std::string_view(
                         "unrecognized boolean value, not 'true' or 'false'")));
   EXPECT_TRUE(storage.LoadEntries(iss, "", true, warn_func));
 
@@ -860,7 +869,7 @@ TEST_P(StorageTestEmpty, LoadPersistentWarn) {
   EXPECT_TRUE(idmap().empty());
 }
 
-TEST_P(StorageTestEmpty, ProcessIncomingEntryAssign) {
+TEST_P(StorageEmptyTest, ProcessIncomingEntryAssign) {
   auto conn = std::make_shared<MockNetworkConnection>();
   auto value = Value::MakeDouble(1.0);
   if (GetParam()) {
@@ -870,7 +879,7 @@ TEST_P(StorageTestEmpty, ProcessIncomingEntryAssign) {
         QueueOutgoing(MessageEq(Message::EntryAssign("foo", 0, 0, value, 0)),
                       IsNull(), IsNull()));
   }
-  EXPECT_CALL(notifier, NotifyEntry(0, StringRef("foo"), ValueEq(value),
+  EXPECT_CALL(notifier, NotifyEntry(0, std::string_view("foo"), ValueEq(value),
                                     NT_NOTIFY_NEW, UINT_MAX));
 
   storage.ProcessIncoming(
@@ -878,7 +887,7 @@ TEST_P(StorageTestEmpty, ProcessIncomingEntryAssign) {
       conn.get(), conn);
 }
 
-TEST_P(StorageTestPopulateOne, ProcessIncomingEntryAssign) {
+TEST_P(StoragePopulateOneTest, ProcessIncomingEntryAssign) {
   auto conn = std::make_shared<MockNetworkConnection>();
   auto value = Value::MakeDouble(1.0);
   EXPECT_CALL(*conn, proto_rev()).WillRepeatedly(Return(0x0300u));
@@ -889,21 +898,21 @@ TEST_P(StorageTestPopulateOne, ProcessIncomingEntryAssign) {
         QueueOutgoing(MessageEq(Message::EntryAssign("foo", 0, 1, value, 0)),
                       IsNull(), conn.get()));
   }
-  EXPECT_CALL(notifier, NotifyEntry(0, StringRef("foo"), ValueEq(value),
+  EXPECT_CALL(notifier, NotifyEntry(0, std::string_view("foo"), ValueEq(value),
                                     NT_NOTIFY_UPDATE, UINT_MAX));
 
   storage.ProcessIncoming(Message::EntryAssign("foo", 0, 1, value, 0),
                           conn.get(), conn);
 }
 
-TEST_P(StorageTestPopulateOne, ProcessIncomingEntryAssignIgnore) {
+TEST_P(StoragePopulateOneTest, ProcessIncomingEntryAssignIgnore) {
   auto conn = std::make_shared<MockNetworkConnection>();
   auto value = Value::MakeDouble(1.0);
   storage.ProcessIncoming(Message::EntryAssign("foo", 0xffff, 1, value, 0),
                           conn.get(), conn);
 }
 
-TEST_P(StorageTestPopulateOne, ProcessIncomingEntryAssignWithFlags) {
+TEST_P(StoragePopulateOneTest, ProcessIncomingEntryAssignWithFlags) {
   auto conn = std::make_shared<MockNetworkConnection>();
   auto value = Value::MakeDouble(1.0);
   EXPECT_CALL(*conn, proto_rev()).WillRepeatedly(Return(0x0300u));
@@ -914,22 +923,23 @@ TEST_P(StorageTestPopulateOne, ProcessIncomingEntryAssignWithFlags) {
         QueueOutgoing(MessageEq(Message::EntryAssign("foo", 0, 1, value, 0x2)),
                       IsNull(), conn.get()));
     EXPECT_CALL(notifier,
-                NotifyEntry(0, StringRef("foo"), ValueEq(value),
+                NotifyEntry(0, std::string_view("foo"), ValueEq(value),
                             NT_NOTIFY_UPDATE | NT_NOTIFY_FLAGS, UINT_MAX));
   } else {
     // client forces flags back when an assign message is received for an
     // existing entry with different flags
     EXPECT_CALL(dispatcher, QueueOutgoing(MessageEq(Message::FlagsUpdate(0, 0)),
                                           IsNull(), IsNull()));
-    EXPECT_CALL(notifier, NotifyEntry(0, StringRef("foo"), ValueEq(value),
-                                      NT_NOTIFY_UPDATE, UINT_MAX));
+    EXPECT_CALL(notifier,
+                NotifyEntry(0, std::string_view("foo"), ValueEq(value),
+                            NT_NOTIFY_UPDATE, UINT_MAX));
   }
 
   storage.ProcessIncoming(Message::EntryAssign("foo", 0, 1, value, 0x2),
                           conn.get(), conn);
 }
 
-TEST_P(StorageTestPopulateOne, DeleteCheckHandle) {
+TEST_P(StoragePopulateOneTest, DeleteCheckHandle) {
   EXPECT_CALL(dispatcher, QueueOutgoing(_, _, _)).Times(AnyNumber());
   EXPECT_CALL(notifier, NotifyEntry(_, _, _, _, _)).Times(AnyNumber());
   auto handle = storage.GetEntry("foo");
@@ -942,7 +952,7 @@ TEST_P(StorageTestPopulateOne, DeleteCheckHandle) {
   ASSERT_EQ(handle, handle2);
 }
 
-TEST_P(StorageTestPopulateOne, DeletedEntryFlags) {
+TEST_P(StoragePopulateOneTest, DeletedEntryFlags) {
   EXPECT_CALL(dispatcher, QueueOutgoing(_, _, _)).Times(AnyNumber());
   EXPECT_CALL(notifier, NotifyEntry(_, _, _, _, _)).Times(AnyNumber());
   auto handle = storage.GetEntry("foo");
@@ -959,7 +969,7 @@ TEST_P(StorageTestPopulateOne, DeletedEntryFlags) {
   EXPECT_EQ(storage.GetEntryFlags(handle), 0u);
 }
 
-TEST_P(StorageTestPopulateOne, DeletedDeleteAllEntries) {
+TEST_P(StoragePopulateOneTest, DeletedDeleteAllEntries) {
   EXPECT_CALL(dispatcher, QueueOutgoing(_, _, _)).Times(AnyNumber());
   EXPECT_CALL(notifier, NotifyEntry(_, _, _, _, _)).Times(AnyNumber());
   storage.DeleteEntry("foo");
@@ -971,7 +981,7 @@ TEST_P(StorageTestPopulateOne, DeletedDeleteAllEntries) {
   storage.DeleteAllEntries();
 }
 
-TEST_P(StorageTestPopulateOne, DeletedGetEntries) {
+TEST_P(StoragePopulateOneTest, DeletedGetEntries) {
   EXPECT_CALL(dispatcher, QueueOutgoing(_, _, _)).Times(AnyNumber());
   EXPECT_CALL(notifier, NotifyEntry(_, _, _, _, _)).Times(AnyNumber());
   storage.DeleteEntry("foo");
@@ -981,13 +991,13 @@ TEST_P(StorageTestPopulateOne, DeletedGetEntries) {
   EXPECT_TRUE(storage.GetEntries("", 0).empty());
 }
 
-INSTANTIATE_TEST_SUITE_P(StorageTestsEmpty, StorageTestEmpty,
+INSTANTIATE_TEST_SUITE_P(StorageEmptyTests, StorageEmptyTest,
                          ::testing::Bool());
-INSTANTIATE_TEST_SUITE_P(StorageTestsPopulateOne, StorageTestPopulateOne,
+INSTANTIATE_TEST_SUITE_P(StoragePopulateOneTests, StoragePopulateOneTest,
                          ::testing::Bool());
-INSTANTIATE_TEST_SUITE_P(StorageTestsPopulated, StorageTestPopulated,
+INSTANTIATE_TEST_SUITE_P(StoragePopulatedTests, StoragePopulatedTest,
                          ::testing::Bool());
-INSTANTIATE_TEST_SUITE_P(StorageTestsPersistent, StorageTestPersistent,
+INSTANTIATE_TEST_SUITE_P(StoragePersistentTests, StoragePersistentTest,
                          ::testing::Bool());
 
 }  // namespace nt

@@ -1,13 +1,11 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2015-2019 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "DsClient.h"
 
 #include <wpi/SmallString.h>
+#include <wpi/StringExtras.h>
 #include <wpi/TCPConnector.h>
 #include <wpi/raw_ostream.h>
 #include <wpi/raw_socket_istream.h>
@@ -22,7 +20,7 @@ class DsClient::Thread : public wpi::SafeThread {
   Thread(Dispatcher& dispatcher, wpi::Logger& logger, unsigned int port)
       : m_dispatcher(dispatcher), m_logger(logger), m_port(port) {}
 
-  void Main();
+  void Main() override;
 
   Dispatcher& m_dispatcher;
   wpi::Logger& m_logger;
@@ -35,10 +33,11 @@ DsClient::DsClient(Dispatcher& dispatcher, wpi::Logger& logger)
 
 void DsClient::Start(unsigned int port) {
   auto thr = m_owner.GetThread();
-  if (!thr)
+  if (!thr) {
     m_owner.Start(m_dispatcher, m_logger, port);
-  else
+  } else {
     thr->m_port = port;
+  }
 }
 
 void DsClient::Stop() {
@@ -47,7 +46,9 @@ void DsClient::Stop() {
     auto thr = m_owner.GetThread();
     if (thr) {
       thr->m_active = false;
-      if (thr->m_stream) thr->m_stream->close();
+      if (thr->m_stream) {
+        thr->m_stream->close();
+      }
     }
   }
   m_owner.Stop();
@@ -67,14 +68,20 @@ void DsClient::Thread::Main() {
       m_cond.wait_until(lock, timeout_time, [&] { return !m_active; });
       port = m_port;
     }
-    if (!m_active) goto done;
+    if (!m_active) {
+      goto done;
+    }
 
     // Try to connect to DS on the local machine
     m_stream = wpi::TCPConnector::connect("127.0.0.1", 1742, nolog, 1);
-    if (!m_active) goto done;
-    if (!m_stream) continue;
+    if (!m_active) {
+      goto done;
+    }
+    if (!m_stream) {
+      continue;
+    }
 
-    DEBUG3("connected to DS");
+    DEBUG3("{}", "connected to DS");
     wpi::raw_socket_istream is(*m_stream);
 
     while (m_active && !is.has_error()) {
@@ -86,8 +93,12 @@ void DsClient::Thread::Main() {
       // Throw away characters until {
       do {
         is.read(ch);
-        if (is.has_error()) break;
-        if (!m_active) goto done;
+        if (is.has_error()) {
+          break;
+        }
+        if (!m_active) {
+          goto done;
+        }
       } while (ch != '{');
       json += '{';
 
@@ -99,8 +110,12 @@ void DsClient::Thread::Main() {
       // Read characters until }
       do {
         is.read(ch);
-        if (is.has_error()) break;
-        if (!m_active) goto done;
+        if (is.has_error()) {
+          break;
+        }
+        if (!m_active) {
+          goto done;
+        }
         json += ch;
       } while (ch != '}');
 
@@ -108,20 +123,29 @@ void DsClient::Thread::Main() {
         m_stream = nullptr;
         break;
       }
-      DEBUG3("json=" << json);
+      DEBUG3("json={}", json);
 
       // Look for "robotIP":12345, and get 12345 portion
       size_t pos = json.find("\"robotIP\"");
-      if (pos == wpi::StringRef::npos) continue;  // could not find?
+      if (pos == std::string_view::npos) {
+        continue;  // could not find?
+      }
       pos += 9;
       pos = json.find(':', pos);
-      if (pos == wpi::StringRef::npos) continue;  // could not find?
+      if (pos == std::string_view::npos) {
+        continue;  // could not find?
+      }
       size_t endpos = json.find_first_not_of("0123456789", pos + 1);
-      DEBUG3("found robotIP=" << json.slice(pos + 1, endpos));
+      DEBUG3("found robotIP={}", wpi::slice(json, pos + 1, endpos));
 
       // Parse into number
       unsigned int ip = 0;
-      if (json.slice(pos + 1, endpos).getAsInteger(10, ip)) continue;  // error
+      if (auto v = wpi::parse_integer<unsigned int>(
+              wpi::slice(json, pos + 1, endpos), 10)) {
+        ip = v.value();
+      } else {
+        continue;  // error
+      }
 
       // If zero, clear the server override
       if (ip == 0) {
@@ -131,16 +155,16 @@ void DsClient::Thread::Main() {
       }
 
       // If unchanged, don't reconnect
-      if (ip == oldip) continue;
+      if (ip == oldip) {
+        continue;
+      }
       oldip = ip;
 
       // Convert number into dotted quad
-      json.clear();
-      wpi::raw_svector_ostream os{json};
-      os << ((ip >> 24) & 0xff) << "." << ((ip >> 16) & 0xff) << "."
-         << ((ip >> 8) & 0xff) << "." << (ip & 0xff);
-      INFO("client: DS overriding server IP to " << os.str());
-      m_dispatcher.SetServerOverride(json.c_str(), port);
+      auto newip = fmt::format("{}.{}.{}.{}", (ip >> 24) & 0xff,
+                               (ip >> 16) & 0xff, (ip >> 8) & 0xff, ip & 0xff);
+      INFO("client: DS overriding server IP to {}", newip);
+      m_dispatcher.SetServerOverride(newip.c_str(), port);
     }
 
     // We disconnected from the DS, clear the server override

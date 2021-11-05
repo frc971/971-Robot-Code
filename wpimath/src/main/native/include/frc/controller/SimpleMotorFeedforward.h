@@ -1,14 +1,14 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
 #include <wpi/MathExtras.h>
 
+#include "Eigen/Core"
+#include "frc/controller/LinearPlantInversionFeedforward.h"
+#include "frc/system/plant/LinearSystemId.h"
 #include "units/time.h"
 #include "units/voltage.h"
 
@@ -53,6 +53,28 @@ class SimpleMotorFeedforward {
                                     units::unit_t<Acceleration> acceleration =
                                         units::unit_t<Acceleration>(0)) const {
     return kS * wpi::sgn(velocity) + kV * velocity + kA * acceleration;
+  }
+
+  /**
+   * Calculates the feedforward from the gains and setpoints.
+   *
+   * @param currentVelocity The current velocity setpoint, in distance per
+   *                        second.
+   * @param nextVelocity    The next velocity setpoint, in distance per second.
+   * @param dt              Time between velocity setpoints in seconds.
+   * @return The computed feedforward, in volts.
+   */
+  units::volt_t Calculate(units::unit_t<Velocity> currentVelocity,
+                          units::unit_t<Velocity> nextVelocity,
+                          units::second_t dt) const {
+    auto plant = LinearSystemId::IdentifyVelocitySystem<Distance>(kV, kA);
+    LinearPlantInversionFeedforward<1, 1> feedforward{plant, dt};
+
+    Eigen::Vector<double, 1> r{currentVelocity.value()};
+    Eigen::Vector<double, 1> nextR{nextVelocity.value()};
+
+    return kS * wpi::sgn(currentVelocity.value()) +
+           units::volt_t{feedforward.Calculate(r, nextR)(0)};
   }
 
   // Rearranging the main equation from the calculate() method yields the

@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019 FIRST. All Rights Reserved.                             */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "subsystems/ArmSubsystem.h"
 
@@ -19,7 +16,7 @@ ArmSubsystem::ArmSubsystem()
       m_motor(kMotorPort),
       m_encoder(kEncoderPorts[0], kEncoderPorts[1]),
       m_feedforward(kS, kCos, kV, kA) {
-  m_encoder.SetDistancePerPulse(kEncoderDistancePerPulse.to<double>());
+  m_encoder.SetDistancePerPulse(kEncoderDistancePerPulse.value());
   // Start arm in neutral position
   SetGoal(State{kArmOffset, 0_rad_per_s});
 }

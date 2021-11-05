@@ -1,24 +1,29 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2016-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
 #include <functional>
 #include <vector>
 
-#include "frc/SpeedController.h"
-#include "frc/smartdashboard/Sendable.h"
-#include "frc/smartdashboard/SendableHelper.h"
+#include <wpi/deprecated.h>
+#include <wpi/sendable/Sendable.h>
+#include <wpi/sendable/SendableHelper.h>
+
+#include "frc/motorcontrol/MotorController.h"
 
 namespace frc {
 
-class SpeedControllerGroup : public Sendable,
-                             public SpeedController,
-                             public SendableHelper<SpeedControllerGroup> {
+/**
+ * Allows multiple SpeedController objects to be linked together.
+ *
+ * @deprecated Use MotorControllerGroup.
+ */
+class WPI_DEPRECATED("use MotorControllerGroup") SpeedControllerGroup
+    : public wpi::Sendable,
+      public MotorController,
+      public wpi::SendableHelper<SpeedControllerGroup> {
  public:
   template <class... SpeedControllers>
   explicit SpeedControllerGroup(SpeedController& speedController,
@@ -35,9 +40,8 @@ class SpeedControllerGroup : public Sendable,
   bool GetInverted() const override;
   void Disable() override;
   void StopMotor() override;
-  void PIDWrite(double output) override;
 
-  void InitSendable(SendableBuilder& builder) override;
+  void InitSendable(wpi::SendableBuilder& builder) override;
 
  private:
   bool m_isInverted = false;

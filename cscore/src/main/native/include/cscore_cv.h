@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2015-2019 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #ifndef CSCORE_CSCORE_CV_H_
 #define CSCORE_CSCORE_CV_H_
@@ -85,7 +82,7 @@ class CvSource : public ImageSource {
    * @param name Source name (arbitrary unique identifier)
    * @param mode Video mode being generated
    */
-  CvSource(const wpi::Twine& name, const VideoMode& mode);
+  CvSource(std::string_view name, const VideoMode& mode);
 
   /**
    * Create an OpenCV source.
@@ -96,8 +93,8 @@ class CvSource : public ImageSource {
    * @param height height
    * @param fps fps
    */
-  CvSource(const wpi::Twine& name, VideoMode::PixelFormat pixelFormat,
-           int width, int height, int fps);
+  CvSource(std::string_view name, VideoMode::PixelFormat pixelFormat, int width,
+           int height, int fps);
 
   /**
    * Put an OpenCV image and notify sinks.
@@ -129,7 +126,7 @@ class CvSink : public ImageSink {
    *
    * @param name Source name (arbitrary unique identifier)
    */
-  explicit CvSink(const wpi::Twine& name);
+  explicit CvSink(std::string_view name);
 
   /**
    * Create a sink for accepting OpenCV images in a separate thread.
@@ -143,7 +140,7 @@ class CvSink : public ImageSink {
    *        or GetError() as needed, but should not call (except in very
    *        unusual circumstances) WaitForImage().
    */
-  CvSink(const wpi::Twine& name,
+  CvSink(std::string_view name,
          std::function<void(uint64_t time)> processFrame);
 
   /**
@@ -155,7 +152,8 @@ class CvSink : public ImageSink {
    *         message); the frame time is in the same time base as wpi::Now(),
    *         and is in 1 us increments.
    */
-  uint64_t GrabFrame(cv::Mat& image, double timeout = 0.225) const;
+  [[nodiscard]] uint64_t GrabFrame(cv::Mat& image,
+                                   double timeout = 0.225) const;
 
   /**
    * Wait for the next frame and get the image.  May block forever.
@@ -165,14 +163,14 @@ class CvSink : public ImageSink {
    *         message); the frame time is in the same time base as wpi::Now(),
    *         and is in 1 us increments.
    */
-  uint64_t GrabFrameNoTimeout(cv::Mat& image) const;
+  [[nodiscard]] uint64_t GrabFrameNoTimeout(cv::Mat& image) const;
 };
 
-inline CvSource::CvSource(const wpi::Twine& name, const VideoMode& mode) {
+inline CvSource::CvSource(std::string_view name, const VideoMode& mode) {
   m_handle = CreateCvSource(name, mode, &m_status);
 }
 
-inline CvSource::CvSource(const wpi::Twine& name, VideoMode::PixelFormat format,
+inline CvSource::CvSource(std::string_view name, VideoMode::PixelFormat format,
                           int width, int height, int fps) {
   m_handle =
       CreateCvSource(name, VideoMode{format, width, height, fps}, &m_status);
@@ -183,11 +181,11 @@ inline void CvSource::PutFrame(cv::Mat& image) {
   PutSourceFrame(m_handle, image, &m_status);
 }
 
-inline CvSink::CvSink(const wpi::Twine& name) {
+inline CvSink::CvSink(std::string_view name) {
   m_handle = CreateCvSink(name, &m_status);
 }
 
-inline CvSink::CvSink(const wpi::Twine& name,
+inline CvSink::CvSink(std::string_view name,
                       std::function<void(uint64_t time)> processFrame) {
   m_handle = CreateCvSinkCallback(name, processFrame, &m_status);
 }

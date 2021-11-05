@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2018 FIRST. All Rights Reserved.                             */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "wpi/uv/Stream.h"
 
@@ -15,10 +12,11 @@ using namespace wpi::uv;
 namespace {
 class CallbackWriteReq : public WriteReq {
  public:
-  CallbackWriteReq(ArrayRef<Buffer> bufs,
-                   std::function<void(MutableArrayRef<Buffer>, Error)> callback)
+  CallbackWriteReq(span<const Buffer> bufs,
+                   std::function<void(span<Buffer>, Error)> callback)
       : m_bufs{bufs.begin(), bufs.end()} {
-    finish.connect([=](Error err) { callback(m_bufs, err); });
+    finish.connect(
+        [this, f = std::move(callback)](Error err) { f(m_bufs, err); });
   }
 
  private:
@@ -26,8 +24,7 @@ class CallbackWriteReq : public WriteReq {
 };
 }  // namespace
 
-namespace wpi {
-namespace uv {
+namespace wpi::uv {
 
 ShutdownReq::ShutdownReq() {
   error = [this](Error err) { GetStream().error(err); };
@@ -41,18 +38,22 @@ void Stream::Shutdown(const std::shared_ptr<ShutdownReq>& req) {
   if (Invoke(&uv_shutdown, req->GetRaw(), GetRawStream(),
              [](uv_shutdown_t* req, int status) {
                auto& h = *static_cast<ShutdownReq*>(req->data);
-               if (status < 0)
+               if (status < 0) {
                  h.ReportError(status);
-               else
+               } else {
                  h.complete();
+               }
                h.Release();  // this is always a one-shot
-             }))
+             })) {
     req->Keep();
+  }
 }
 
 void Stream::Shutdown(std::function<void()> callback) {
   auto req = std::make_shared<ShutdownReq>();
-  if (callback) req->complete.connect(callback);
+  if (callback) {
+    req->complete.connect(std::move(callback));
+  }
   Shutdown(req);
 }
 
@@ -63,37 +64,40 @@ void Stream::StartRead() {
            Buffer data = *buf;
 
            // nread=0 is simply ignored
-           if (nread == UV_EOF)
+           if (nread == UV_EOF) {
              h.end();
-           else if (nread > 0)
+           } else if (nread > 0) {
              h.data(data, static_cast<size_t>(nread));
-           else if (nread < 0)
+           } else if (nread < 0) {
              h.ReportError(nread);
+           }
 
            // free the buffer
            h.FreeBuf(data);
          });
 }
 
-void Stream::Write(ArrayRef<Buffer> bufs,
+void Stream::Write(span<const Buffer> bufs,
                    const std::shared_ptr<WriteReq>& req) {
   if (Invoke(&uv_write, req->GetRaw(), GetRawStream(), bufs.data(), bufs.size(),
              [](uv_write_t* r, int status) {
                auto& h = *static_cast<WriteReq*>(r->data);
-               if (status < 0) h.ReportError(status);
+               if (status < 0) {
+                 h.ReportError(status);
+               }
                h.finish(Error(status));
                h.Release();  // this is always a one-shot
-             }))
+             })) {
     req->Keep();
+  }
 }
 
-void Stream::Write(
-    ArrayRef<Buffer> bufs,
-    std::function<void(MutableArrayRef<Buffer>, Error)> callback) {
-  Write(bufs, std::make_shared<CallbackWriteReq>(bufs, callback));
+void Stream::Write(span<const Buffer> bufs,
+                   std::function<void(span<Buffer>, Error)> callback) {
+  Write(bufs, std::make_shared<CallbackWriteReq>(bufs, std::move(callback)));
 }
 
-int Stream::TryWrite(ArrayRef<Buffer> bufs) {
+int Stream::TryWrite(span<const Buffer> bufs) {
   int val = uv_try_write(GetRawStream(), bufs.data(), bufs.size());
   if (val < 0) {
     this->ReportError(val);
@@ -102,5 +106,4 @@ int Stream::TryWrite(ArrayRef<Buffer> bufs) {
   return val;
 }
 
-}  // namespace uv
-}  // namespace wpi
+}  // namespace wpi::uv

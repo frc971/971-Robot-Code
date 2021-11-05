@@ -1,11 +1,10 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
+
+#include <wpi/SymbolExports.h>
 
 #include "units/angle.h"
 
@@ -19,7 +18,7 @@ namespace frc {
  * A rotation in a 2d coordinate frame represented a point on the unit circle
  * (cosine and sine).
  */
-class Rotation2d {
+class WPILIB_DLLEXPORT Rotation2d {
  public:
   /**
    * Constructs a Rotation2d with a default angle of 0 degrees.
@@ -31,14 +30,14 @@ class Rotation2d {
    *
    * @param value The value of the angle in radians.
    */
-  Rotation2d(units::radian_t value);  // NOLINT(runtime/explicit)
+  Rotation2d(units::radian_t value);  // NOLINT
 
   /**
    * Constructs a Rotation2d with the given degree value.
    *
    * @param value The value of the angle in degrees.
    */
-  Rotation2d(units::degree_t value);  // NOLINT(runtime/explicit)
+  Rotation2d(units::degree_t value);  // NOLINT
 
   /**
    * Constructs a Rotation2d with the given x and y (cosine and sine)
@@ -63,18 +62,6 @@ class Rotation2d {
   Rotation2d operator+(const Rotation2d& other) const;
 
   /**
-   * Adds a rotation to the current rotation.
-   *
-   * This is similar to the + operator except that it mutates the current
-   * object.
-   *
-   * @param other The rotation to add.
-   *
-   * @return The reference to the new mutated object.
-   */
-  Rotation2d& operator+=(const Rotation2d& other);
-
-  /**
    * Subtracts the new rotation from the current rotation and returns the new
    * rotation.
    *
@@ -86,18 +73,6 @@ class Rotation2d {
    * @return The difference between the two rotations.
    */
   Rotation2d operator-(const Rotation2d& other) const;
-
-  /**
-   * Subtracts the new rotation from the current rotation.
-   *
-   * This is similar to the - operator except that it mutates the current
-   * object.
-   *
-   * @param other The rotation to subtract.
-   *
-   * @return The reference to the new mutated object.
-   */
-  Rotation2d& operator-=(const Rotation2d& other);
 
   /**
    * Takes the inverse of the current rotation. This is simply the negative of
@@ -134,10 +109,11 @@ class Rotation2d {
   /**
    * Adds the new rotation to the current rotation using a rotation matrix.
    *
+   * <pre>
    * [cos_new]   [other.cos, -other.sin][cos]
    * [sin_new] = [other.sin,  other.cos][sin]
-   *
-   * value_new = std::atan2(cos_new, sin_new)
+   * value_new = std::atan2(sin_new, cos_new)
+   * </pre>
    *
    * @param other The rotation to rotate by.
    *
@@ -186,8 +162,10 @@ class Rotation2d {
   double m_sin = 0;
 };
 
+WPILIB_DLLEXPORT
 void to_json(wpi::json& json, const Rotation2d& rotation);
 
+WPILIB_DLLEXPORT
 void from_json(const wpi::json& json, Rotation2d& rotation);
 
 }  // namespace frc

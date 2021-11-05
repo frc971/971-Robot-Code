@@ -1,19 +1,16 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2015-2018 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #ifndef NTCORE_ISTORAGE_H_
 #define NTCORE_ISTORAGE_H_
 
 #include <functional>
 #include <memory>
+#include <string_view>
 #include <vector>
 
-#include <wpi/ArrayRef.h>
-#include <wpi/Twine.h>
+#include <wpi/span.h>
 
 #include "Message.h"
 #include "ntcore_cpp.h"
@@ -48,15 +45,15 @@ class IStorage {
       INetworkConnection& conn,
       std::vector<std::shared_ptr<Message>>* msgs) = 0;
   virtual void ApplyInitialAssignments(
-      INetworkConnection& conn, wpi::ArrayRef<std::shared_ptr<Message>> msgs,
+      INetworkConnection& conn, wpi::span<std::shared_ptr<Message>> msgs,
       bool new_server, std::vector<std::shared_ptr<Message>>* out_msgs) = 0;
 
   // Filename-based save/load functions.  Used both by periodic saves and
   // accessible directly via the user API.
-  virtual const char* SavePersistent(const Twine& filename,
+  virtual const char* SavePersistent(std::string_view filename,
                                      bool periodic) const = 0;
   virtual const char* LoadPersistent(
-      const Twine& filename,
+      std::string_view filename,
       std::function<void(size_t line, const char* msg)> warn) = 0;
 };
 

@@ -12,7 +12,7 @@
   },
   {
     "name": "Tank Drive",
-    "description": "Demonstrate the use of the RobotDrive class doing teleop driving with tank steering",
+    "description": "Demonstrate the use of the DifferentialDrive class doing teleop driving with tank steering",
     "tags": [
       "Actuators",
       "Joystick",
@@ -37,7 +37,7 @@
   },
   {
     "name": "Mecanum Drive",
-    "description": "Demonstrate the use of the RobotDrive class doing teleop driving with Mecanum steering",
+    "description": "Demonstrate the use of the MecanumDrive class doing teleop driving with Mecanum steering",
     "tags": [
       "Actuators",
       "Joystick",
@@ -209,6 +209,14 @@
     "mainclass": "Main",
     "commandversion": 2
   },
+  {"name": "Mechanism2d",
+    "description": "An example usage of Mechanism2d to display mechanism states on a dashboard.",
+    "tags": ["Mechanism2d"],
+    "foldername": "mechanism2d",
+    "gradlebase": "java",
+    "mainclass": "Main",
+    "commandversion": 2
+  },
   {
     "name": "Motor Controller",
     "description": "Demonstrate controlling a single motor with a joystick",
@@ -250,17 +258,6 @@
     "commandversion": 2
   },
   {
-    "name": "PacGoat",
-    "description": "A fully functional example CommandBased program for FRC Team 190's 2014 robot. This code can run on your computer if it supports simulation.",
-    "tags": [
-      "Complete Robot"
-    ],
-    "foldername": "pacgoat",
-    "gradlebase": "java",
-    "mainclass": "Main",
-    "commandversion": 1
-  },
-  {
     "name": "Simple Vision",
     "description": "Demonstrate the use of the CameraServer class to stream from a USB Webcam without processing the images.",
     "tags": [
@@ -274,7 +271,7 @@
   },
   {
     "name": "Intermediate Vision",
-    "description": "Demonstrate the use of the NIVision class to capture image from a Webcam, process them, and then send them to the dashboard.",
+    "description": "An example program that acquires images from an attached USB camera and adds some annotation to the image as you might do for showing operators the result of some image recognition, and sends it to the dashboard for display.",
     "tags": [
       "Vision",
       "Complete List"
@@ -484,6 +481,17 @@
     "commandversion": 2
   },
   {
+    "name": "DMA",
+    "description": "Demonstrates the use of the DMA class",
+    "tags": [
+      "Advanced Java"
+    ],
+    "foldername": "dma",
+    "gradlebase": "java",
+    "mainclass": "Main",
+    "commandversion": 2
+  },
+  {
     "name": "ArmBot",
     "description": "An example command-based robot demonstrating the use of a ProfiledPIDSubsystem to control an arm.",
     "tags": [
@@ -633,6 +641,23 @@
     "commandversion": 2
   },
   {
+    "name": "SimpleDifferentialDriveSimulation",
+    "description": "An example of a minimal drivetrain simulation project without the command-based library.",
+    "tags": [
+      "Drivetrain",
+      "State space",
+      "Digital",
+      "Sensors",
+      "Actuators",
+      "Joystick",
+      "Simulation"
+    ],
+    "foldername": "simpledifferentialdrivesimulation",
+    "gradlebase": "java",
+    "mainclass": "Main",
+    "commandversion": 2
+  },
+  {
     "name": "StateSpaceDriveSimulation",
     "description": "An example of drivetrain simulation in combination with a RAMSETE path following controller and the Field2d class.",
     "tags": [
@@ -658,7 +683,8 @@
       "Digital",
       "Sensors",
       "Simulation",
-      "Physics"
+      "Physics",
+      "Mechanism2d"
     ],
     "foldername": "elevatorsimulation",
     "gradlebase": "java",
@@ -674,10 +700,74 @@
       "Digital",
       "Sensors",
       "Simulation",
-      "Physics"
+      "Physics",
+      "Mechanism2d"
     ],
     "foldername": "armsimulation",
     "gradlebase": "java",
+    "mainclass": "Main",
+    "commandversion": 2
+  },
+  {
+    "name": "DifferentialDrivePoseEstimator",
+    "description": "Demonstrates the use of the DifferentialDrivePoseEstimator as a replacement for differential drive odometry.",
+    "tags": [
+      "Drivetrain",
+      "State space",
+      "Vision",
+      "Filter",
+      "Odometry",
+      "Pose",
+      "Differential drive"
+    ],
+    "foldername": "differentialdriveposeestimator",
+    "gradlebase": "java",
+    "mainclass": "Main",
+    "commandversion": 2
+  },
+  {
+    "name": "MecanumDrivePoseEstimator",
+    "description": "Demonstrates the use of the MecanumDrivePoseEstimator as a replacement for mecanum drive odometry.",
+    "tags": [
+      "Drivetrain",
+      "State space",
+      "Vision",
+      "Filter",
+      "Odometry",
+      "Pose",
+      "Mecanum"
+    ],
+    "foldername": "mecanumdriveposeestimator",
+    "gradlebase": "java",
+    "mainclass": "Main",
+    "commandversion": 2
+  },
+  {
+    "name": "SwerveDrivePoseEstimator",
+    "description": "Demonstrates the use of the SwerveDrivePoseEstimator as a replacement for swerve drive odometry.",
+    "tags": [
+      "Drivetrain",
+      "State space",
+      "Vision",
+      "Filter",
+      "Odometry",
+      "Pose",
+      "Swerve"
+    ],
+    "foldername": "swervedriveposeestimator",
+    "gradlebase": "java",
+    "mainclass": "Main",
+    "commandversion": 2
+  },
+  {
+    "name": "RomiReference",
+    "description": "An example command-based robot program that can be used with the Romi reference robot design.",
+    "tags": [
+      "Drivetrain",
+      "Romi"
+    ],
+    "foldername": "romireference",
+    "gradlebase": "javaromi",
     "mainclass": "Main",
     "commandversion": 2
   }

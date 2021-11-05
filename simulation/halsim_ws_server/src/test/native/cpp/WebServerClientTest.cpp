@@ -1,16 +1,13 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2020 FIRST. All Rights Reserved.                             */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "WebServerClientTest.h"
 
-#include <sstream>
+#include <cstdio>
 
+#include <fmt/format.h>
 #include <wpi/SmallString.h>
-#include <wpi/raw_ostream.h>
 #include <wpi/raw_uv_ostream.h>
 #include <wpi/uv/util.h>
 
@@ -23,14 +20,12 @@ namespace wpilibws {
 // Create Web Socket and specify event callbacks
 void WebServerClientTest::InitializeWebSocket(const std::string& host, int port,
                                               const std::string& uri) {
-  std::stringstream ss;
-  ss << host << ":" << port;
-  wpi::outs() << "Will attempt to connect to: " << ss.str() << uri << "\n";
-  m_websocket =
-      wpi::WebSocket::CreateClient(*m_tcp_client.get(), uri, ss.str());
+  fmt::print("Will attempt to connect to: {}:{}{}\n", host, port, uri);
+  m_websocket = wpi::WebSocket::CreateClient(*m_tcp_client.get(), uri,
+                                             fmt::format("{}:{}", host, port));
 
   // Hook up events
-  m_websocket->open.connect_extended([this](auto conn, wpi::StringRef) {
+  m_websocket->open.connect_extended([this](auto conn, auto) {
     conn.disconnect();
     m_buffers = std::make_unique<BufferPool>();
 
@@ -41,17 +36,17 @@ void WebServerClientTest::InitializeWebSocket(const std::string& host, int port,
                                 });
 
     m_ws_connected = true;
-    wpi::errs() << "WebServerClientTest: WebSocket Connected\n";
+    std::fputs("WebServerClientTest: WebSocket Connected\n", stderr);
   });
 
-  m_websocket->text.connect([this](wpi::StringRef msg, bool) {
+  m_websocket->text.connect([this](auto msg, bool) {
     wpi::json j;
     try {
       j = wpi::json::parse(msg);
     } catch (const wpi::json::parse_error& e) {
       std::string err("JSON parse failed: ");
       err += e.what();
-      wpi::errs() << err << "\n";
+      fmt::print(stderr, "{}\n", err);
       m_websocket->Fail(1003, err);
       return;
     }
@@ -59,9 +54,9 @@ void WebServerClientTest::InitializeWebSocket(const std::string& host, int port,
     m_json = j;
   });
 
-  m_websocket->closed.connect([this](uint16_t, wpi::StringRef) {
+  m_websocket->closed.connect([this](uint16_t, auto) {
     if (m_ws_connected) {
-      wpi::errs() << "WebServerClientTest: Websocket Disconnected\n";
+      std::fputs("WebServerClientTest: Websocket Disconnected\n", stderr);
       m_ws_connected = false;
     }
   });
@@ -70,11 +65,11 @@ void WebServerClientTest::InitializeWebSocket(const std::string& host, int port,
 // Create tcp client, specify callbacks, and create timers for loop
 bool WebServerClientTest::Initialize() {
   m_loop.error.connect(
-      [](uv::Error err) { wpi::errs() << "uv Error: " << err.str() << "\n"; });
+      [](uv::Error err) { fmt::print(stderr, "uv Error: {}\n", err.str()); });
 
   m_tcp_client = uv::Tcp::Create(m_loop);
   if (!m_tcp_client) {
-    wpi::errs() << "ERROR: Could not create TCP Client\n";
+    std::fputs("ERROR: Could not create TCP Client\n", stderr);
     return false;
   }
 
@@ -93,7 +88,7 @@ bool WebServerClientTest::Initialize() {
       });
 
   m_tcp_client->closed.connect(
-      []() { wpi::errs() << "TCP connection closed\n"; });
+      []() { std::fputs("TCP connection closed\n", stderr); });
 
   // Set up the connection timer
   m_connect_timer = uv::Timer::Create(m_loop);
@@ -104,33 +99,32 @@ bool WebServerClientTest::Initialize() {
   m_connect_timer->timeout.connect([this] { AttemptConnect(); });
   m_connect_timer->Start(uv::Timer::Time(0));
 
-  wpi::outs() << "WebServerClientTest Initialized\n";
+  std::puts("WebServerClientTest Initialized");
 
   return true;
 }
 
 void WebServerClientTest::AttemptConnect() {
   m_connect_attempts++;
-  wpi::outs() << "Test Client Connection Attempt " << m_connect_attempts
-              << "\n";
+  fmt::print("Test Client Connection Attempt {}\n", m_connect_attempts);
 
   if (m_connect_attempts >= 5) {
-    wpi::errs() << "Test Client Timeout. Unable to connect\n";
+    std::fputs("Test Client Timeout. Unable to connect\n", stderr);
     m_loop.Stop();
     return;
   }
 
   struct sockaddr_in dest;
-  uv::NameToAddr("localhost", 8080, &dest);
+  uv::NameToAddr("localhost", 3300, &dest);
   m_tcp_client->Connect(dest, [this]() {
     m_tcp_connected = true;
-    InitializeWebSocket("localhost", 8080, "/wpilibws");
+    InitializeWebSocket("localhost", 3300, "/wpilibws");
   });
 }
 
 void WebServerClientTest::SendMessage(const wpi::json& msg) {
   if (msg.empty()) {
-    wpi::errs() << "Message to send is empty\n";
+    std::fputs("Message to send is empty\n", stderr);
     return;
   }
 
@@ -150,13 +144,15 @@ void WebServerClientTest::SendMessage(const wpi::json& msg) {
         m_buffers->Release(bufs);
       }
       if (err) {
-        wpi::errs() << err.str() << "\n";
-        wpi::errs().flush();
+        fmt::print(stderr, "{}\n", err.str());
+        std::fflush(stderr);
       }
     });
   });
 }
 
-const wpi::json& WebServerClientTest::GetLastMessage() { return m_json; }
+const wpi::json& WebServerClientTest::GetLastMessage() {
+  return m_json;
+}
 
 }  // namespace wpilibws

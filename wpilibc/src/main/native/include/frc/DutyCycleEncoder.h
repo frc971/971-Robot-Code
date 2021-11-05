@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
@@ -12,12 +9,11 @@
 #include <hal/SimDevice.h>
 #include <hal/Types.h>
 #include <units/angle.h>
+#include <wpi/sendable/Sendable.h>
+#include <wpi/sendable/SendableHelper.h>
 
 #include "frc/AnalogTrigger.h"
 #include "frc/Counter.h"
-#include "frc/ErrorBase.h"
-#include "frc/smartdashboard/Sendable.h"
-#include "frc/smartdashboard/SendableHelper.h"
 
 namespace frc {
 class DutyCycle;
@@ -28,9 +24,8 @@ class DigitalSource;
  * PWM Output, the CTRE Mag Encoder, the Rev Hex Encoder, and the AM Mag
  * Encoder.
  */
-class DutyCycleEncoder : public ErrorBase,
-                         public Sendable,
-                         public SendableHelper<DutyCycleEncoder> {
+class DutyCycleEncoder : public wpi::Sendable,
+                         public wpi::SendableHelper<DutyCycleEncoder> {
  public:
   /**
    * Construct a new DutyCycleEncoder on a specific channel.
@@ -63,21 +58,21 @@ class DutyCycleEncoder : public ErrorBase,
   /**
    * Construct a new DutyCycleEncoder attached to a DigitalSource object.
    *
-   * @param source the digital source to attach to
+   * @param digitalSource the digital source to attach to
    */
   explicit DutyCycleEncoder(DigitalSource& digitalSource);
 
   /**
    * Construct a new DutyCycleEncoder attached to a DigitalSource object.
    *
-   * @param source the digital source to attach to
+   * @param digitalSource the digital source to attach to
    */
   explicit DutyCycleEncoder(DigitalSource* digitalSource);
 
   /**
    * Construct a new DutyCycleEncoder attached to a DigitalSource object.
    *
-   * @param source the digital source to attach to
+   * @param digitalSource the digital source to attach to
    */
   explicit DutyCycleEncoder(std::shared_ptr<DigitalSource> digitalSource);
 
@@ -168,7 +163,7 @@ class DutyCycleEncoder : public ErrorBase,
    */
   int GetSourceChannel() const;
 
-  void InitSendable(SendableBuilder& builder) override;
+  void InitSendable(wpi::SendableBuilder& builder) override;
 
  private:
   void Init();

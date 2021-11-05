@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2016-2019 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "hal/SPI.h"
 
@@ -14,13 +11,15 @@
 
 #include <array>
 #include <atomic>
+#include <cstdio>
 #include <cstring>
 
+#include <fmt/format.h>
 #include <wpi/mutex.h>
-#include <wpi/raw_ostream.h>
 
 #include "DigitalInternal.h"
 #include "HALInitializer.h"
+#include "HALInternal.h"
 #include "hal/DIO.h"
 #include "hal/HAL.h"
 #include "hal/handles/HandlesInternal.h"
@@ -54,17 +53,17 @@ static bool SPIInUseByAuto(HAL_SPIPort port) {
   // SPI engine conflicts with any other chip selects on the same SPI device.
   // There are two SPI devices: one for ports 0-3 (onboard), the other for port
   // 4 (MXP).
-  if (!spiAutoRunning) return false;
+  if (!spiAutoRunning) {
+    return false;
+  }
   std::scoped_lock lock(spiAutoMutex);
   return (spiAutoPort >= 0 && spiAutoPort <= 3 && port >= 0 && port <= 3) ||
          (spiAutoPort == 4 && port == 4);
 }
 
-namespace hal {
-namespace init {
+namespace hal::init {
 void InitializeSPI() {}
-}  // namespace init
-}  // namespace hal
+}  // namespace hal::init
 
 extern "C" {
 
@@ -73,19 +72,21 @@ static void CommonSPIPortInit(int32_t* status) {
   if (spiPortCount.fetch_add(1) == 0) {
     // Have not been initialized yet
     initializeDigital(status);
-    if (*status != 0) return;
+    if (*status != 0) {
+      return;
+    }
     // MISO
     if ((digitalHandles[3] = HAL_InitializeDIOPort(createPortHandleForSPI(29),
-                                                   false, status)) ==
+                                                   false, nullptr, status)) ==
         HAL_kInvalidHandle) {
-      std::printf("Failed to allocate DIO 29 (MISO)\n");
+      std::puts("Failed to allocate DIO 29 (MISO)");
       return;
     }
     // MOSI
     if ((digitalHandles[4] = HAL_InitializeDIOPort(createPortHandleForSPI(30),
-                                                   false, status)) ==
+                                                   false, nullptr, status)) ==
         HAL_kInvalidHandle) {
-      std::printf("Failed to allocate DIO 30 (MOSI)\n");
+      std::puts("Failed to allocate DIO 30 (MOSI)");
       HAL_FreeDIOPort(digitalHandles[3]);  // free the first port allocated
       return;
     }
@@ -104,20 +105,28 @@ void HAL_InitializeSPI(HAL_SPIPort port, int32_t* status) {
   hal::init::CheckInit();
   if (port < 0 || port >= kSpiMaxHandles) {
     *status = PARAMETER_OUT_OF_RANGE;
+    hal::SetLastError(
+        status,
+        fmt::format("Serial port must be between 0 and {}. Requested {}",
+                    kSpiMaxHandles, static_cast<int>(port)));
     return;
   }
 
   int handle;
-  if (HAL_GetSPIHandle(port) != 0) return;
+  if (HAL_GetSPIHandle(port) != 0) {
+    return;
+  }
   switch (port) {
     case HAL_SPI_kOnboardCS0:
       CommonSPIPortInit(status);
-      if (*status != 0) return;
+      if (*status != 0) {
+        return;
+      }
       // CS0 is not a DIO port, so nothing to allocate
       handle = open("/dev/spidev0.0", O_RDWR);
       if (handle < 0) {
-        std::printf("Failed to open SPI port %d: %s\n", port,
-                    std::strerror(errno));
+        fmt::print("Failed to open SPI port {}: {}\n", port,
+                   std::strerror(errno));
         CommonSPIPortFree();
         return;
       }
@@ -125,19 +134,21 @@ void HAL_InitializeSPI(HAL_SPIPort port, int32_t* status) {
       break;
     case HAL_SPI_kOnboardCS1:
       CommonSPIPortInit(status);
-      if (*status != 0) return;
+      if (*status != 0) {
+        return;
+      }
       // CS1, Allocate
       if ((digitalHandles[0] = HAL_InitializeDIOPort(createPortHandleForSPI(26),
-                                                     false, status)) ==
+                                                     false, nullptr, status)) ==
           HAL_kInvalidHandle) {
-        std::printf("Failed to allocate DIO 26 (CS1)\n");
+        std::puts("Failed to allocate DIO 26 (CS1)");
         CommonSPIPortFree();
         return;
       }
       handle = open("/dev/spidev0.1", O_RDWR);
       if (handle < 0) {
-        std::printf("Failed to open SPI port %d: %s\n", port,
-                    std::strerror(errno));
+        fmt::print("Failed to open SPI port {}: {}\n", port,
+                   std::strerror(errno));
         CommonSPIPortFree();
         HAL_FreeDIOPort(digitalHandles[0]);
         return;
@@ -146,19 +157,21 @@ void HAL_InitializeSPI(HAL_SPIPort port, int32_t* status) {
       break;
     case HAL_SPI_kOnboardCS2:
       CommonSPIPortInit(status);
-      if (*status != 0) return;
+      if (*status != 0) {
+        return;
+      }
       // CS2, Allocate
       if ((digitalHandles[1] = HAL_InitializeDIOPort(createPortHandleForSPI(27),
-                                                     false, status)) ==
+                                                     false, nullptr, status)) ==
           HAL_kInvalidHandle) {
-        std::printf("Failed to allocate DIO 27 (CS2)\n");
+        std::puts("Failed to allocate DIO 27 (CS2)");
         CommonSPIPortFree();
         return;
       }
       handle = open("/dev/spidev0.2", O_RDWR);
       if (handle < 0) {
-        std::printf("Failed to open SPI port %d: %s\n", port,
-                    std::strerror(errno));
+        fmt::print("Failed to open SPI port {}: {}\n", port,
+                   std::strerror(errno));
         CommonSPIPortFree();
         HAL_FreeDIOPort(digitalHandles[1]);
         return;
@@ -167,19 +180,21 @@ void HAL_InitializeSPI(HAL_SPIPort port, int32_t* status) {
       break;
     case HAL_SPI_kOnboardCS3:
       CommonSPIPortInit(status);
-      if (*status != 0) return;
+      if (*status != 0) {
+        return;
+      }
       // CS3, Allocate
       if ((digitalHandles[2] = HAL_InitializeDIOPort(createPortHandleForSPI(28),
-                                                     false, status)) ==
+                                                     false, nullptr, status)) ==
           HAL_kInvalidHandle) {
-        std::printf("Failed to allocate DIO 28 (CS3)\n");
+        std::puts("Failed to allocate DIO 28 (CS3)");
         CommonSPIPortFree();
         return;
       }
       handle = open("/dev/spidev0.3", O_RDWR);
       if (handle < 0) {
-        std::printf("Failed to open SPI port %d: %s\n", port,
-                    std::strerror(errno));
+        fmt::print("Failed to open SPI port {}: {}\n", port,
+                   std::strerror(errno));
         CommonSPIPortFree();
         HAL_FreeDIOPort(digitalHandles[2]);
         return;
@@ -188,32 +203,34 @@ void HAL_InitializeSPI(HAL_SPIPort port, int32_t* status) {
       break;
     case HAL_SPI_kMXP:
       initializeDigital(status);
-      if (*status != 0) return;
+      if (*status != 0) {
+        return;
+      }
       if ((digitalHandles[5] = HAL_InitializeDIOPort(createPortHandleForSPI(14),
-                                                     false, status)) ==
+                                                     false, nullptr, status)) ==
           HAL_kInvalidHandle) {
-        wpi::outs() << "Failed to allocate DIO 14\n";
+        std::puts("Failed to allocate DIO 14");
         return;
       }
       if ((digitalHandles[6] = HAL_InitializeDIOPort(createPortHandleForSPI(15),
-                                                     false, status)) ==
+                                                     false, nullptr, status)) ==
           HAL_kInvalidHandle) {
-        wpi::outs() << "Failed to allocate DIO 15\n";
+        std::puts("Failed to allocate DIO 15");
         HAL_FreeDIOPort(digitalHandles[5]);  // free the first port allocated
         return;
       }
       if ((digitalHandles[7] = HAL_InitializeDIOPort(createPortHandleForSPI(16),
-                                                     false, status)) ==
+                                                     false, nullptr, status)) ==
           HAL_kInvalidHandle) {
-        wpi::outs() << "Failed to allocate DIO 16\n";
+        std::puts("Failed to allocate DIO 16");
         HAL_FreeDIOPort(digitalHandles[5]);  // free the first port allocated
         HAL_FreeDIOPort(digitalHandles[6]);  // free the second port allocated
         return;
       }
       if ((digitalHandles[8] = HAL_InitializeDIOPort(createPortHandleForSPI(17),
-                                                     false, status)) ==
+                                                     false, nullptr, status)) ==
           HAL_kInvalidHandle) {
-        wpi::outs() << "Failed to allocate DIO 17\n";
+        std::puts("Failed to allocate DIO 17");
         HAL_FreeDIOPort(digitalHandles[5]);  // free the first port allocated
         HAL_FreeDIOPort(digitalHandles[6]);  // free the second port allocated
         HAL_FreeDIOPort(digitalHandles[7]);  // free the third port allocated
@@ -223,8 +240,8 @@ void HAL_InitializeSPI(HAL_SPIPort port, int32_t* status) {
           digitalSystem->readEnableMXPSpecialFunction(status) | 0x00F0, status);
       handle = open("/dev/spidev1.0", O_RDWR);
       if (handle < 0) {
-        std::printf("Failed to open SPI port %d: %s\n", port,
-                    std::strerror(errno));
+        fmt::print("Failed to open SPI port {}: {}\n", port,
+                   std::strerror(errno));
         HAL_FreeDIOPort(digitalHandles[5]);  // free the first port allocated
         HAL_FreeDIOPort(digitalHandles[6]);  // free the second port allocated
         HAL_FreeDIOPort(digitalHandles[7]);  // free the third port allocated
@@ -235,6 +252,8 @@ void HAL_InitializeSPI(HAL_SPIPort port, int32_t* status) {
       break;
     default:
       *status = PARAMETER_OUT_OF_RANGE;
+      hal::SetLastError(
+          status, fmt::format("Invalid SPI port {}", static_cast<int>(port)));
       break;
   }
 }
@@ -245,7 +264,9 @@ int32_t HAL_TransactionSPI(HAL_SPIPort port, const uint8_t* dataToSend,
     return -1;
   }
 
-  if (SPIInUseByAuto(port)) return -1;
+  if (SPIInUseByAuto(port)) {
+    return -1;
+  }
 
   struct spi_ioc_transfer xfer;
   std::memset(&xfer, 0, sizeof(xfer));
@@ -263,7 +284,9 @@ int32_t HAL_WriteSPI(HAL_SPIPort port, const uint8_t* dataToSend,
     return -1;
   }
 
-  if (SPIInUseByAuto(port)) return -1;
+  if (SPIInUseByAuto(port)) {
+    return -1;
+  }
 
   struct spi_ioc_transfer xfer;
   std::memset(&xfer, 0, sizeof(xfer));
@@ -279,7 +302,9 @@ int32_t HAL_ReadSPI(HAL_SPIPort port, uint8_t* buffer, int32_t count) {
     return -1;
   }
 
-  if (SPIInUseByAuto(port)) return -1;
+  if (SPIInUseByAuto(port)) {
+    return -1;
+  }
 
   struct spi_ioc_transfer xfer;
   std::memset(&xfer, 0, sizeof(xfer));
@@ -357,6 +382,10 @@ void HAL_SetSPIOpts(HAL_SPIPort port, HAL_Bool msbFirst,
 void HAL_SetSPIChipSelectActiveHigh(HAL_SPIPort port, int32_t* status) {
   if (port < 0 || port >= kSpiMaxHandles) {
     *status = PARAMETER_OUT_OF_RANGE;
+    hal::SetLastError(
+        status,
+        fmt::format("Serial port must be between 0 and {}. Requested {}",
+                    kSpiMaxHandles, static_cast<int>(port)));
     return;
   }
 
@@ -372,6 +401,10 @@ void HAL_SetSPIChipSelectActiveHigh(HAL_SPIPort port, int32_t* status) {
 void HAL_SetSPIChipSelectActiveLow(HAL_SPIPort port, int32_t* status) {
   if (port < 0 || port >= kSpiMaxHandles) {
     *status = PARAMETER_OUT_OF_RANGE;
+    hal::SetLastError(
+        status,
+        fmt::format("Serial port must be between 0 and {}. Requested {}",
+                    kSpiMaxHandles, static_cast<int>(port)));
     return;
   }
 
@@ -436,6 +469,10 @@ void HAL_SetSPIHandle(HAL_SPIPort port, int32_t handle) {
 void HAL_InitSPIAuto(HAL_SPIPort port, int32_t bufferSize, int32_t* status) {
   if (port < 0 || port >= kSpiMaxHandles) {
     *status = PARAMETER_OUT_OF_RANGE;
+    hal::SetLastError(
+        status,
+        fmt::format("Serial port must be between 0 and {}. Requested {}",
+                    kSpiMaxHandles, static_cast<int>(port)));
     return;
   }
 
@@ -467,11 +504,17 @@ void HAL_InitSPIAuto(HAL_SPIPort port, int32_t bufferSize, int32_t* status) {
 void HAL_FreeSPIAuto(HAL_SPIPort port, int32_t* status) {
   if (port < 0 || port >= kSpiMaxHandles) {
     *status = PARAMETER_OUT_OF_RANGE;
+    hal::SetLastError(
+        status,
+        fmt::format("Serial port must be between 0 and {}. Requested {}",
+                    kSpiMaxHandles, static_cast<int>(port)));
     return;
   }
 
   std::scoped_lock lock(spiAutoMutex);
-  if (spiAutoPort != port) return;
+  if (spiAutoPort != port) {
+    return;
+  }
   spiAutoPort = kSpiMaxHandles;
 
   // disable by setting to internal clock and setting rate=0
@@ -567,11 +610,21 @@ void HAL_SetSPIAutoTransmitData(HAL_SPIPort port, const uint8_t* dataToSend,
                                 int32_t* status) {
   if (dataSize < 0 || dataSize > 32) {
     *status = PARAMETER_OUT_OF_RANGE;
+    hal::SetLastError(
+        status,
+        fmt::format(
+            "Data size must be between 0 and 32 inclusive. Requested {}",
+            dataSize));
     return;
   }
 
   if (zeroSize < 0 || zeroSize > 127) {
     *status = PARAMETER_OUT_OF_RANGE;
+    hal::SetLastError(
+        status,
+        fmt::format(
+            "Zero size must be between 0 and 127 inclusive. Requested {}",
+            zeroSize));
     return;
   }
 

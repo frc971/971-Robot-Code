@@ -52,6 +52,14 @@
     "commandversion": 2
   },
   {
+    "name":"Mechanism2d",
+    "foldername":"Mechanism2d",
+    "gradlebase":"cpp",
+    "description":"An example usage of Mechanism2d to display mechanism states on a dashboard.",
+    "tags":["Mechanism2d"],
+    "commandversion": 2
+  },
+  {
     "name": "Solenoids",
     "description": "Demonstrate controlling a single and double solenoid from Joystick buttons.",
     "tags": [
@@ -86,6 +94,19 @@
       "Complete List"
     ],
     "foldername": "ArcadeDrive",
+    "gradlebase": "cpp",
+    "commandversion": 2
+  },
+  {
+    "name": "Tank Drive",
+    "description": "An example program which demonstrates the use of Tank Drive with the DifferentialDrive class",
+    "tags": [
+      "Getting Started with C++",
+      "Robot and Motor",
+      "Joystick",
+      "Complete List"
+    ],
+    "foldername": "TankDrive",
     "gradlebase": "cpp",
     "commandversion": 2
   },
@@ -260,17 +281,6 @@
     "foldername": "GearsBot",
     "gradlebase": "cpp",
     "commandversion": 2
-  },
-  {
-    "name": "PacGoat",
-    "description": "A fully functional example CommandBased program for FRC Team 190&#39;s 2014 robot. This code can run on your computer if it supports simulation.",
-    "tags": [
-      "CommandBased Robot",
-      "Complete List"
-    ],
-    "foldername": "PacGoat",
-    "gradlebase": "cpp",
-    "commandversion": 1
   },
   {
     "name": "HAL",
@@ -544,6 +554,17 @@
     "commandversion": 2
   },
   {
+    "name": "RomiReference",
+    "description": "An example command-based robot program that can be used with the Romi reference robot design.",
+    "tags": [
+      "Drivetrain",
+      "Romi"
+    ],
+    "foldername": "RomiReference",
+    "gradlebase": "cppromi",
+    "commandversion": 2
+  },
+  {
     "name": "StateSpaceFlywheel",
     "description": "An example state-space controller for a flywheel.",
     "tags": [
@@ -621,9 +642,42 @@
       "Digital",
       "Sensors",
       "Simulation",
-      "Physics"
+      "Physics",
+      "Mechanism2d"
     ],
     "foldername": "ElevatorSimulation",
+    "gradlebase": "cpp",
+    "mainclass": "Main",
+    "commandversion": 2
+  },
+  {
+    "name": "DifferentialDrivePoseEstimator",
+    "description": "Demonstrates the use of the DifferentialDrivePoseEstimator as a replacement for differential drive odometry.",
+    "tags": [
+      "Drivetrain",
+      "State space",
+      "Vision",
+      "Filter",
+      "Odometry",
+      "Pose"
+    ],
+    "foldername": "DifferentialDrivePoseEstimator",
+    "gradlebase": "cpp",
+    "mainclass": "Main",
+    "commandversion": 2
+  },
+  {
+    "name": "MecanumDrivePoseEstimator",
+    "description": "Demonstrates the use of the MecanumDrivePoseEstimator as a replacement for mecanum odometry.",
+    "tags": [
+      "Drivetrain",
+      "State space",
+      "Vision",
+      "Filter",
+      "Odometry",
+      "Pose"
+    ],
+    "foldername": "MecanumDrivePoseEstimator",
     "gradlebase": "cpp",
     "mainclass": "Main",
     "commandversion": 2
@@ -637,9 +691,28 @@
       "Digital",
       "Sensors",
       "Simulation",
-      "Physics"
+      "Physics",
+      "Mechanism2d"
     ],
     "foldername": "ArmSimulation",
+    "gradlebase": "cpp",
+    "mainclass": "Main",
+    "commandversion": 2
+  },
+  {
+    "name": "SimpleDifferentialDriveSimulation",
+    "description": "An example of a minimal drivetrain simulation project without the command-based library.",
+    "tags": [
+      "Differential Drive",
+      "State space",
+      "Digital",
+      "Sensors",
+      "Simulation",
+      "Physics",
+      "Drivetrain",
+      "Field2d"
+    ],
+    "foldername": "SimpleDifferentialDriveSimulation",
     "gradlebase": "cpp",
     "mainclass": "Main",
     "commandversion": 2
@@ -658,6 +731,23 @@
       "Field2d"
     ],
     "foldername": "StateSpaceDifferentialDriveSimulation",
+    "gradlebase": "cpp",
+    "mainclass": "Main",
+    "commandversion": 2
+  },
+  {
+    "name": "SwerveDrivePoseEstimator",
+    "description": "Demonstrates the use of the SwerveDrivePoseEstimator as a replacement for mecanum drive odometry.",
+    "tags": [
+      "Drivetrain",
+      "State space",
+      "Vision",
+      "Filter",
+      "Odometry",
+      "State",
+      "Swerve"
+    ],
+    "foldername": "SwerveDrivePoseEstimator",
     "gradlebase": "cpp",
     "mainclass": "Main",
     "commandversion": 2

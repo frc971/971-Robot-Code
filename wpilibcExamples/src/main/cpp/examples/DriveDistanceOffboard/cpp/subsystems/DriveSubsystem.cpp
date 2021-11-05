@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "subsystems/DriveSubsystem.h"
 
@@ -15,6 +12,16 @@ DriveSubsystem::DriveSubsystem()
       m_rightLeader{kRightMotor1Port},
       m_rightFollower{kRightMotor2Port},
       m_feedforward{ks, kv, ka} {
+  // We need to invert one side of the drivetrain so that positive voltages
+  // result in both sides moving forward. Depending on how your robot's
+  // gearbox is constructed, you might have to invert the left side instead.
+  m_rightLeader.SetInverted(true);
+
+  // You might need to not do this depending on the specific motor controller
+  // that you are using -- contact the respective vendor's documentation for
+  // more details.
+  m_rightFollower.SetInverted(true);
+
   m_leftFollower.Follow(m_leftLeader);
   m_rightFollower.Follow(m_rightLeader);
 
@@ -30,10 +37,10 @@ void DriveSubsystem::SetDriveStates(
     frc::TrapezoidProfile<units::meters>::State left,
     frc::TrapezoidProfile<units::meters>::State right) {
   m_leftLeader.SetSetpoint(ExampleSmartMotorController::PIDMode::kPosition,
-                           left.position.to<double>(),
+                           left.position.value(),
                            m_feedforward.Calculate(left.velocity) / 12_V);
   m_rightLeader.SetSetpoint(ExampleSmartMotorController::PIDMode::kPosition,
-                            right.position.to<double>(),
+                            right.position.value(),
                             m_feedforward.Calculate(right.velocity) / 12_V);
 }
 

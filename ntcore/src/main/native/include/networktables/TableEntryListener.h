@@ -1,25 +1,19 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2017-2018 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #ifndef NTCORE_NETWORKTABLES_TABLEENTRYLISTENER_H_
 #define NTCORE_NETWORKTABLES_TABLEENTRYLISTENER_H_
 
 #include <functional>
 #include <memory>
-
-#include <wpi/StringRef.h>
+#include <string_view>
 
 namespace nt {
 
 class NetworkTable;
 class NetworkTableEntry;
 class Value;
-
-using wpi::StringRef;
 
 /**
  * A listener that listens to changes in values in a NetworkTable.
@@ -35,10 +29,9 @@ using wpi::StringRef;
  *
  * @ingroup ntcore_cpp_api
  */
-typedef std::function<void(NetworkTable* table, StringRef name,
-                           NetworkTableEntry entry,
-                           std::shared_ptr<Value> value, int flags)>
-    TableEntryListener;
+using TableEntryListener = std::function<void(
+    NetworkTable* table, std::string_view name, NetworkTableEntry entry,
+    std::shared_ptr<Value> value, int flags)>;
 
 }  // namespace nt
 

@@ -1,15 +1,11 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2011-2019 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
 #include <memory>
-
-#include <wpi/Twine.h>
+#include <string_view>
 
 #include "frc/PIDController.h"
 #include "frc/PIDOutput.h"
@@ -20,25 +16,25 @@ namespace frc {
 
 class PIDCommand : public Command, public PIDOutput, public PIDSource {
  public:
-  PIDCommand(const wpi::Twine& name, double p, double i, double d);
-  PIDCommand(const wpi::Twine& name, double p, double i, double d,
+  PIDCommand(std::string_view name, double p, double i, double d);
+  PIDCommand(std::string_view name, double p, double i, double d,
              double period);
-  PIDCommand(const wpi::Twine& name, double p, double i, double d, double f,
+  PIDCommand(std::string_view name, double p, double i, double d, double f,
              double period);
   PIDCommand(double p, double i, double d);
   PIDCommand(double p, double i, double d, double period);
   PIDCommand(double p, double i, double d, double f, double period);
-  PIDCommand(const wpi::Twine& name, double p, double i, double d,
+  PIDCommand(std::string_view name, double p, double i, double d,
              Subsystem& subsystem);
-  PIDCommand(const wpi::Twine& name, double p, double i, double d,
-             double period, Subsystem& subsystem);
-  PIDCommand(const wpi::Twine& name, double p, double i, double d, double f,
+  PIDCommand(std::string_view name, double p, double i, double d, double period,
+             Subsystem& subsystem);
+  PIDCommand(std::string_view name, double p, double i, double d, double f,
              double period, Subsystem& subsystem);
   PIDCommand(double p, double i, double d, Subsystem& subsystem);
   PIDCommand(double p, double i, double d, double period, Subsystem& subsystem);
   PIDCommand(double p, double i, double d, double f, double period,
              Subsystem& subsystem);
-  virtual ~PIDCommand() = default;
+  ~PIDCommand() override = default;
 
   PIDCommand(PIDCommand&&) = default;
   PIDCommand& operator=(PIDCommand&&) = default;
@@ -68,7 +64,7 @@ class PIDCommand : public Command, public PIDOutput, public PIDSource {
   std::shared_ptr<PIDController> m_controller;
 
  public:
-  void InitSendable(SendableBuilder& builder) override;
+  void InitSendable(wpi::SendableBuilder& builder) override;
 };
 
 }  // namespace frc

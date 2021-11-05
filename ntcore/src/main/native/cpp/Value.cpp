@@ -1,11 +1,10 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2015-2019 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include <stdint.h>
+
+#include <cstring>
 
 #include <wpi/MemAlloc.h>
 #include <wpi/timestamp.h>
@@ -22,28 +21,31 @@ Value::Value() {
 
 Value::Value(NT_Type type, uint64_t time, const private_init&) {
   m_val.type = type;
-  if (time == 0)
+  if (time == 0) {
     m_val.last_change = wpi::Now();
-  else
+  } else {
     m_val.last_change = time;
-  if (m_val.type == NT_BOOLEAN_ARRAY)
+  }
+  if (m_val.type == NT_BOOLEAN_ARRAY) {
     m_val.data.arr_boolean.arr = nullptr;
-  else if (m_val.type == NT_DOUBLE_ARRAY)
+  } else if (m_val.type == NT_DOUBLE_ARRAY) {
     m_val.data.arr_double.arr = nullptr;
-  else if (m_val.type == NT_STRING_ARRAY)
+  } else if (m_val.type == NT_STRING_ARRAY) {
     m_val.data.arr_string.arr = nullptr;
+  }
 }
 
 Value::~Value() {
-  if (m_val.type == NT_BOOLEAN_ARRAY)
+  if (m_val.type == NT_BOOLEAN_ARRAY) {
     delete[] m_val.data.arr_boolean.arr;
-  else if (m_val.type == NT_DOUBLE_ARRAY)
+  } else if (m_val.type == NT_DOUBLE_ARRAY) {
     delete[] m_val.data.arr_double.arr;
-  else if (m_val.type == NT_STRING_ARRAY)
+  } else if (m_val.type == NT_STRING_ARRAY) {
     delete[] m_val.data.arr_string.arr;
+  }
 }
 
-std::shared_ptr<Value> Value::MakeBooleanArray(wpi::ArrayRef<bool> value,
+std::shared_ptr<Value> Value::MakeBooleanArray(wpi::span<const bool> value,
                                                uint64_t time) {
   auto val = std::make_shared<Value>(NT_BOOLEAN_ARRAY, time, private_init());
   val->m_val.data.arr_boolean.arr = new int[value.size()];
@@ -52,7 +54,7 @@ std::shared_ptr<Value> Value::MakeBooleanArray(wpi::ArrayRef<bool> value,
   return val;
 }
 
-std::shared_ptr<Value> Value::MakeBooleanArray(wpi::ArrayRef<int> value,
+std::shared_ptr<Value> Value::MakeBooleanArray(wpi::span<const int> value,
                                                uint64_t time) {
   auto val = std::make_shared<Value>(NT_BOOLEAN_ARRAY, time, private_init());
   val->m_val.data.arr_boolean.arr = new int[value.size()];
@@ -61,7 +63,7 @@ std::shared_ptr<Value> Value::MakeBooleanArray(wpi::ArrayRef<int> value,
   return val;
 }
 
-std::shared_ptr<Value> Value::MakeDoubleArray(wpi::ArrayRef<double> value,
+std::shared_ptr<Value> Value::MakeDoubleArray(wpi::span<const double> value,
                                               uint64_t time) {
   auto val = std::make_shared<Value>(NT_DOUBLE_ARRAY, time, private_init());
   val->m_val.data.arr_double.arr = new double[value.size()];
@@ -70,10 +72,10 @@ std::shared_ptr<Value> Value::MakeDoubleArray(wpi::ArrayRef<double> value,
   return val;
 }
 
-std::shared_ptr<Value> Value::MakeStringArray(wpi::ArrayRef<std::string> value,
-                                              uint64_t time) {
+std::shared_ptr<Value> Value::MakeStringArray(
+    wpi::span<const std::string> value, uint64_t time) {
   auto val = std::make_shared<Value>(NT_STRING_ARRAY, time, private_init());
-  val->m_string_array = value;
+  val->m_string_array.assign(value.begin(), value.end());
   // point NT_Value to the contents in the vector.
   val->m_val.data.arr_string.arr = new NT_String[value.size()];
   val->m_val.data.arr_string.size = val->m_string_array.size();
@@ -140,8 +142,9 @@ void nt::ConvertToC(const Value& in, NT_Value* out) {
       auto v = in.GetStringArray();
       out->data.arr_string.arr = static_cast<NT_String*>(
           wpi::safe_malloc(v.size() * sizeof(NT_String)));
-      for (size_t i = 0; i < v.size(); ++i)
+      for (size_t i = 0; i < v.size(); ++i) {
         ConvertToC(v[i], &out->data.arr_string.arr[i]);
+      }
       out->data.arr_string.size = v.size();
       break;
     }
@@ -152,7 +155,7 @@ void nt::ConvertToC(const Value& in, NT_Value* out) {
   out->type = in.type();
 }
 
-void nt::ConvertToC(wpi::StringRef in, NT_String* out) {
+void nt::ConvertToC(std::string_view in, NT_String* out) {
   out->len = in.size();
   out->str = static_cast<char*>(wpi::safe_malloc(in.size() + 1));
   std::memcpy(out->str, in.data(), in.size());
@@ -174,16 +177,17 @@ std::shared_ptr<Value> nt::ConvertFromC(const NT_Value& value) {
     case NT_RPC:
       return Value::MakeRpc(ConvertFromC(value.data.v_raw));
     case NT_BOOLEAN_ARRAY:
-      return Value::MakeBooleanArray(wpi::ArrayRef<int>(
-          value.data.arr_boolean.arr, value.data.arr_boolean.size));
+      return Value::MakeBooleanArray(
+          wpi::span(value.data.arr_boolean.arr, value.data.arr_boolean.size));
     case NT_DOUBLE_ARRAY:
-      return Value::MakeDoubleArray(wpi::ArrayRef<double>(
-          value.data.arr_double.arr, value.data.arr_double.size));
+      return Value::MakeDoubleArray(
+          wpi::span(value.data.arr_double.arr, value.data.arr_double.size));
     case NT_STRING_ARRAY: {
       std::vector<std::string> v;
       v.reserve(value.data.arr_string.size);
-      for (size_t i = 0; i < value.data.arr_string.size; ++i)
-        v.push_back(ConvertFromC(value.data.arr_string.arr[i]));
+      for (size_t i = 0; i < value.data.arr_string.size; ++i) {
+        v.emplace_back(ConvertFromC(value.data.arr_string.arr[i]));
+      }
       return Value::MakeStringArray(std::move(v));
     }
     default:
@@ -193,7 +197,9 @@ std::shared_ptr<Value> nt::ConvertFromC(const NT_Value& value) {
 }
 
 bool nt::operator==(const Value& lhs, const Value& rhs) {
-  if (lhs.type() != rhs.type()) return false;
+  if (lhs.type() != rhs.type()) {
+    return false;
+  }
   switch (lhs.type()) {
     case NT_UNASSIGNED:
       return true;  // XXX: is this better being false instead?
@@ -206,15 +212,17 @@ bool nt::operator==(const Value& lhs, const Value& rhs) {
     case NT_RPC:
       return lhs.m_string == rhs.m_string;
     case NT_BOOLEAN_ARRAY:
-      if (lhs.m_val.data.arr_boolean.size != rhs.m_val.data.arr_boolean.size)
+      if (lhs.m_val.data.arr_boolean.size != rhs.m_val.data.arr_boolean.size) {
         return false;
+      }
       return std::memcmp(lhs.m_val.data.arr_boolean.arr,
                          rhs.m_val.data.arr_boolean.arr,
                          lhs.m_val.data.arr_boolean.size *
                              sizeof(lhs.m_val.data.arr_boolean.arr[0])) == 0;
     case NT_DOUBLE_ARRAY:
-      if (lhs.m_val.data.arr_double.size != rhs.m_val.data.arr_double.size)
+      if (lhs.m_val.data.arr_double.size != rhs.m_val.data.arr_double.size) {
         return false;
+      }
       return std::memcmp(lhs.m_val.data.arr_double.arr,
                          rhs.m_val.data.arr_double.arr,
                          lhs.m_val.data.arr_double.size *

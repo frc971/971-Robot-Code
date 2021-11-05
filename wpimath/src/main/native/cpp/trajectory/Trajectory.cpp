@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "frc/trajectory/Trajectory.h"
 
@@ -34,7 +31,9 @@ Trajectory::State Trajectory::State::Interpolate(State endValue,
   const auto deltaT = newT - t;
 
   // If delta time is negative, flip the order of interpolation.
-  if (deltaT < 0_s) return endValue.Interpolate(*this, 1.0 - i);
+  if (deltaT < 0_s) {
+    return endValue.Interpolate(*this, 1.0 - i);
+  }
 
   // Check whether the robot is reversing at this stage.
   const auto reversing =
@@ -68,8 +67,12 @@ Trajectory::Trajectory(const std::vector<State>& states) : m_states(states) {
 }
 
 Trajectory::State Trajectory::Sample(units::second_t t) const {
-  if (t <= m_states.front().t) return m_states.front();
-  if (t >= m_totalTime) return m_states.back();
+  if (t <= m_states.front().t) {
+    return m_states.front();
+  }
+  if (t >= m_totalTime) {
+    return m_states.back();
+  }
 
   // Use binary search to get the element with a timestamp no less than the
   // requested timestamp. This starts at 1 because we use the previous state
@@ -121,12 +124,33 @@ Trajectory Trajectory::RelativeTo(const Pose2d& pose) {
   return Trajectory(newStates);
 }
 
+Trajectory Trajectory::operator+(const Trajectory& other) const {
+  // If this is a default constructed trajectory with no states, then we can
+  // simply return the rhs trajectory.
+  if (m_states.empty()) {
+    return other;
+  }
+
+  auto states = m_states;
+  auto otherStates = other.States();
+  for (auto& otherState : otherStates) {
+    otherState.t += m_totalTime;
+  }
+
+  // Here we omit the first state of the other trajectory because we don't want
+  // two time points with different states. Sample() will automatically
+  // interpolate between the end of this trajectory and the second state of the
+  // other trajectory.
+  states.insert(states.end(), otherStates.begin() + 1, otherStates.end());
+  return Trajectory(states);
+}
+
 void frc::to_json(wpi::json& json, const Trajectory::State& state) {
-  json = wpi::json{{"time", state.t.to<double>()},
-                   {"velocity", state.velocity.to<double>()},
-                   {"acceleration", state.acceleration.to<double>()},
+  json = wpi::json{{"time", state.t.value()},
+                   {"velocity", state.velocity.value()},
+                   {"acceleration", state.acceleration.value()},
                    {"pose", state.pose},
-                   {"curvature", state.curvature.to<double>()}};
+                   {"curvature", state.curvature.value()}};
 }
 
 void frc::from_json(const wpi::json& json, Trajectory::State& state) {

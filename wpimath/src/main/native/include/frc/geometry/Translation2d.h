@@ -1,11 +1,10 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
+
+#include <wpi/SymbolExports.h>
 
 #include "Rotation2d.h"
 #include "units/length.h"
@@ -24,7 +23,7 @@ namespace frc {
  * When the robot is placed on the origin, facing toward the X direction,
  * moving forward increases the X, whereas moving to the left increases the Y.
  */
-class Translation2d {
+class WPILIB_DLLEXPORT Translation2d {
  public:
   /**
    * Constructs a Translation2d with X and Y components equal to zero.
@@ -114,18 +113,6 @@ class Translation2d {
   Translation2d operator+(const Translation2d& other) const;
 
   /**
-   * Adds the new translation to the current translation.
-   *
-   * This is similar to the + operator, except that the current object is
-   * mutated.
-   *
-   * @param other The translation to add.
-   *
-   * @return The reference to the new mutated object.
-   */
-  Translation2d& operator+=(const Translation2d& other);
-
-  /**
    * Subtracts the other translation from the other translation and returns the
    * difference.
    *
@@ -137,18 +124,6 @@ class Translation2d {
    * @return The difference between the two translations.
    */
   Translation2d operator-(const Translation2d& other) const;
-
-  /**
-   * Subtracts the new translation from the current translation.
-   *
-   * This is similar to the - operator, except that the current object is
-   * mutated.
-   *
-   * @param other The translation to subtract.
-   *
-   * @return The reference to the new mutated object.
-   */
-  Translation2d& operator-=(const Translation2d& other);
 
   /**
    * Returns the inverse of the current translation. This is equivalent to
@@ -169,17 +144,6 @@ class Translation2d {
    * @return The scaled translation.
    */
   Translation2d operator*(double scalar) const;
-
-  /**
-   * Multiplies the current translation by a scalar.
-   *
-   * This is similar to the * operator, except that current object is mutated.
-   *
-   * @param scalar The scalar to multiply by.
-   *
-   * @return The reference to the new mutated object.
-   */
-  Translation2d& operator*=(double scalar);
 
   /**
    * Divides the translation by a scalar and returns the new translation.
@@ -208,24 +172,15 @@ class Translation2d {
    */
   bool operator!=(const Translation2d& other) const;
 
-  /*
-   * Divides the current translation by a scalar.
-   *
-   * This is similar to the / operator, except that current object is mutated.
-   *
-   * @param scalar The scalar to divide by.
-   *
-   * @return The reference to the new mutated object.
-   */
-  Translation2d& operator/=(double scalar);
-
  private:
   units::meter_t m_x = 0_m;
   units::meter_t m_y = 0_m;
 };
 
+WPILIB_DLLEXPORT
 void to_json(wpi::json& json, const Translation2d& state);
 
+WPILIB_DLLEXPORT
 void from_json(const wpi::json& json, Translation2d& state);
 
 }  // namespace frc

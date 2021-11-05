@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019 FIRST. All Rights Reserved.                             */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "subsystems/ArmSubsystem.h"
 
@@ -26,5 +23,5 @@ void ArmSubsystem::UseState(State setpoint) {
       m_feedforward.Calculate(setpoint.position, setpoint.velocity);
   // Add the feedforward to the PID output to get the motor output
   m_motor.SetSetpoint(ExampleSmartMotorController::PIDMode::kPosition,
-                      setpoint.position.to<double>(), feedforward / 12_V);
+                      setpoint.position.value(), feedforward / 12_V);
 }

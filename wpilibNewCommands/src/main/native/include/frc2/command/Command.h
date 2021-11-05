@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
@@ -12,11 +9,10 @@
 #include <memory>
 #include <string>
 
-#include <frc/ErrorBase.h>
 #include <units/time.h>
-#include <wpi/ArrayRef.h>
 #include <wpi/Demangle.h>
 #include <wpi/SmallSet.h>
+#include <wpi/span.h>
 
 #include "frc2/command/Subsystem.h"
 
@@ -49,13 +45,13 @@ class ProxyScheduleCommand;
  * @see CommandScheduler
  * @see CommandHelper
  */
-class Command : public frc::ErrorBase {
+class Command {
  public:
   Command() = default;
   virtual ~Command();
 
-  Command(const Command&);
-  Command& operator=(const Command&);
+  Command(const Command&) = default;
+  Command& operator=(const Command& rhs);
   Command(Command&&) = default;
   Command& operator=(Command&&) = default;
 
@@ -111,7 +107,7 @@ class Command : public frc::ErrorBase {
    * @param duration the timeout duration
    * @return the command with the timeout added
    */
-  ParallelRaceGroup WithTimeout(units::second_t duration) &&;
+  virtual ParallelRaceGroup WithTimeout(units::second_t duration) &&;
 
   /**
    * Decorates this command with an interrupt condition.  If the specified
@@ -122,7 +118,7 @@ class Command : public frc::ErrorBase {
    * @param condition the interrupt condition
    * @return the command with the interrupt condition added
    */
-  ParallelRaceGroup WithInterrupt(std::function<bool()> condition) &&;
+  virtual ParallelRaceGroup WithInterrupt(std::function<bool()> condition) &&;
 
   /**
    * Decorates this command with a runnable to run before this command starts.
@@ -131,7 +127,7 @@ class Command : public frc::ErrorBase {
    * @param requirements the required subsystems
    * @return the decorated command
    */
-  SequentialCommandGroup BeforeStarting(
+  virtual SequentialCommandGroup BeforeStarting(
       std::function<void()> toRun,
       std::initializer_list<Subsystem*> requirements) &&;
 
@@ -142,9 +138,9 @@ class Command : public frc::ErrorBase {
    * @param requirements the required subsystems
    * @return the decorated command
    */
-  SequentialCommandGroup BeforeStarting(
+  virtual SequentialCommandGroup BeforeStarting(
       std::function<void()> toRun,
-      wpi::ArrayRef<Subsystem*> requirements = {}) &&;
+      wpi::span<Subsystem* const> requirements = {}) &&;
 
   /**
    * Decorates this command with a runnable to run after the command finishes.
@@ -153,7 +149,7 @@ class Command : public frc::ErrorBase {
    * @param requirements the required subsystems
    * @return the decorated command
    */
-  SequentialCommandGroup AndThen(
+  virtual SequentialCommandGroup AndThen(
       std::function<void()> toRun,
       std::initializer_list<Subsystem*> requirements) &&;
 
@@ -164,9 +160,9 @@ class Command : public frc::ErrorBase {
    * @param requirements the required subsystems
    * @return the decorated command
    */
-  SequentialCommandGroup AndThen(
+  virtual SequentialCommandGroup AndThen(
       std::function<void()> toRun,
-      wpi::ArrayRef<Subsystem*> requirements = {}) &&;
+      wpi::span<Subsystem* const> requirements = {}) &&;
 
   /**
    * Decorates this command to run perpetually, ignoring its ordinary end
@@ -174,17 +170,17 @@ class Command : public frc::ErrorBase {
    *
    * @return the decorated command
    */
-  PerpetualCommand Perpetually() &&;
+  virtual PerpetualCommand Perpetually() &&;
 
   /**
-   * Decorates this command to run "by proxy" by wrapping it in a {@link
-   * ProxyScheduleCommand}. This is useful for "forking off" from command groups
+   * Decorates this command to run "by proxy" by wrapping it in a
+   * ProxyScheduleCommand. This is useful for "forking off" from command groups
    * when the user does not wish to extend the command's requirements to the
    * entire command group.
    *
    * @return the decorated command
    */
-  ProxyScheduleCommand AsProxy();
+  virtual ProxyScheduleCommand AsProxy();
 
   /**
    * Schedules this command.
@@ -215,11 +211,9 @@ class Command : public frc::ErrorBase {
   bool IsScheduled() const;
 
   /**
-   * Whether the command requires a given subsystem.  Named "hasRequirement"
-   * rather than "requires" to avoid confusion with
-   * {@link
-   * edu.wpi.first.wpilibj.command.Command#requires(edu.wpi.first.wpilibj.command.Subsystem)}
-   *  - this may be able to be changed in a few years.
+   * Whether the command requires a given subsystem.  Named "HasRequirement"
+   * rather than "requires" to avoid confusion with Command::Requires(Subsystem)
+   * -- this may be able to be changed in a few years.
    *
    * @param requirement the subsystem to inquire about
    * @return whether the subsystem is required

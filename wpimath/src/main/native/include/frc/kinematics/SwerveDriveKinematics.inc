@@ -1,14 +1,12 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
 #include <algorithm>
 
+#include "frc/kinematics/SwerveDriveKinematics.h"
 #include "units/math.h"
 
 namespace frc {
@@ -18,7 +16,7 @@ SwerveDriveKinematics(Translation2d, Wheels...)
     -> SwerveDriveKinematics<1 + sizeof...(Wheels)>;
 
 template <size_t NumModules>
-std::array<SwerveModuleState, NumModules>
+wpi::array<SwerveModuleState, NumModules>
 SwerveDriveKinematics<NumModules>::ToSwerveModuleStates(
     const ChassisSpeeds& chassisSpeeds,
     const Translation2d& centerOfRotation) const {
@@ -26,30 +24,29 @@ SwerveDriveKinematics<NumModules>::ToSwerveModuleStates(
   if (centerOfRotation != m_previousCoR) {
     for (size_t i = 0; i < NumModules; i++) {
       // clang-format off
-      m_inverseKinematics.template block<2, 3>(i * 2, 0) <<
-        1, 0, (-m_modules[i].Y() + centerOfRotation.Y()).template to<double>(),
-        0, 1, (+m_modules[i].X() - centerOfRotation.X()).template to<double>();
+      m_inverseKinematics.template block<2, 3>(i * 2, 0) =
+        Eigen::Matrix<double, 2, 3>{
+          {1, 0, (-m_modules[i].Y() + centerOfRotation.Y()).value()},
+          {0, 1, (+m_modules[i].X() - centerOfRotation.X()).value()}};
       // clang-format on
     }
     m_previousCoR = centerOfRotation;
   }
 
-  Eigen::Vector3d chassisSpeedsVector;
-  chassisSpeedsVector << chassisSpeeds.vx.to<double>(),
-      chassisSpeeds.vy.to<double>(), chassisSpeeds.omega.to<double>();
+  Eigen::Vector3d chassisSpeedsVector{chassisSpeeds.vx.value(),
+                                      chassisSpeeds.vy.value(),
+                                      chassisSpeeds.omega.value()};
 
   Eigen::Matrix<double, NumModules * 2, 1> moduleStatesMatrix =
       m_inverseKinematics * chassisSpeedsVector;
-  std::array<SwerveModuleState, NumModules> moduleStates;
+  wpi::array<SwerveModuleState, NumModules> moduleStates{wpi::empty_array};
 
   for (size_t i = 0; i < NumModules; i++) {
-    units::meters_per_second_t x =
-        units::meters_per_second_t{moduleStatesMatrix(i * 2, 0)};
-    units::meters_per_second_t y =
-        units::meters_per_second_t{moduleStatesMatrix(i * 2 + 1, 0)};
+    units::meters_per_second_t x{moduleStatesMatrix(i * 2, 0)};
+    units::meters_per_second_t y{moduleStatesMatrix(i * 2 + 1, 0)};
 
     auto speed = units::math::hypot(x, y);
-    Rotation2d rotation{x.to<double>(), y.to<double>()};
+    Rotation2d rotation{x.value(), y.value()};
 
     moduleStates[i] = {speed, rotation};
   }
@@ -65,22 +62,21 @@ ChassisSpeeds SwerveDriveKinematics<NumModules>::ToChassisSpeeds(
                 "Number of modules is not consistent with number of wheel "
                 "locations provided in constructor.");
 
-  std::array<SwerveModuleState, NumModules> moduleStates{wheelStates...};
+  wpi::array<SwerveModuleState, NumModules> moduleStates{wheelStates...};
 
   return this->ToChassisSpeeds(moduleStates);
 }
 
 template <size_t NumModules>
 ChassisSpeeds SwerveDriveKinematics<NumModules>::ToChassisSpeeds(
-    std::array<SwerveModuleState, NumModules> moduleStates) const {
+    wpi::array<SwerveModuleState, NumModules> moduleStates) const {
   Eigen::Matrix<double, NumModules * 2, 1> moduleStatesMatrix;
 
-  for (size_t i = 0; i < NumModules; i++) {
+  for (size_t i = 0; i < NumModules; ++i) {
     SwerveModuleState module = moduleStates[i];
-    moduleStatesMatrix.row(i * 2)
-        << module.speed.to<double>() * module.angle.Cos();
-    moduleStatesMatrix.row(i * 2 + 1)
-        << module.speed.to<double>() * module.angle.Sin();
+    moduleStatesMatrix(i * 2, 0) = module.speed.value() * module.angle.Cos();
+    moduleStatesMatrix(i * 2 + 1, 0) =
+        module.speed.value() * module.angle.Sin();
   }
 
   Eigen::Vector3d chassisSpeedsVector =
@@ -93,7 +89,7 @@ ChassisSpeeds SwerveDriveKinematics<NumModules>::ToChassisSpeeds(
 
 template <size_t NumModules>
 void SwerveDriveKinematics<NumModules>::NormalizeWheelSpeeds(
-    std::array<SwerveModuleState, NumModules>* moduleStates,
+    wpi::array<SwerveModuleState, NumModules>* moduleStates,
     units::meters_per_second_t attainableMaxSpeed) {
   auto& states = *moduleStates;
   auto realMaxSpeed = std::max_element(states.begin(), states.end(),

@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2020 FIRST. All Rights Reserved.                             */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include <cmath>
 
@@ -18,16 +15,30 @@ using namespace frc;
 static constexpr double kEpsilon = 1E-9;
 
 TEST(Transform2dTest, Inverse) {
-  const Pose2d initial{1_m, 2_m, Rotation2d(45.0_deg)};
-  const Transform2d transform{Translation2d{5.0_m, 0.0_m}, Rotation2d(5.0_deg)};
+  const Pose2d initial{1_m, 2_m, 45_deg};
+  const Transform2d transform{{5_m, 0_m}, 5_deg};
 
   auto transformed = initial + transform;
   auto untransformed = transformed + transform.Inverse();
 
-  EXPECT_NEAR(initial.X().to<double>(), untransformed.X().to<double>(),
+  EXPECT_NEAR(initial.X().value(), untransformed.X().value(), kEpsilon);
+  EXPECT_NEAR(initial.Y().value(), untransformed.Y().value(), kEpsilon);
+  EXPECT_NEAR(initial.Rotation().Degrees().value(),
+              untransformed.Rotation().Degrees().value(), kEpsilon);
+}
+
+TEST(Transform2dTest, Composition) {
+  const Pose2d initial{1_m, 2_m, 45_deg};
+  const Transform2d transform1{{5_m, 0_m}, 5_deg};
+  const Transform2d transform2{{0_m, 2_m}, 5_deg};
+
+  auto transformedSeparate = initial + transform1 + transform2;
+  auto transformedCombined = initial + (transform1 + transform2);
+
+  EXPECT_NEAR(transformedSeparate.X().value(), transformedCombined.X().value(),
               kEpsilon);
-  EXPECT_NEAR(initial.Y().to<double>(), untransformed.Y().to<double>(),
+  EXPECT_NEAR(transformedSeparate.Y().value(), transformedCombined.Y().value(),
               kEpsilon);
-  EXPECT_NEAR(initial.Rotation().Degrees().to<double>(),
-              untransformed.Rotation().Degrees().to<double>(), kEpsilon);
+  EXPECT_NEAR(transformedSeparate.Rotation().Degrees().value(),
+              transformedCombined.Rotation().Degrees().value(), kEpsilon);
 }

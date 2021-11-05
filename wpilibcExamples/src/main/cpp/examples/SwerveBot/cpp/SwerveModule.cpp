@@ -1,33 +1,38 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "SwerveModule.h"
 
 #include <frc/geometry/Rotation2d.h>
-#include <wpi/math>
+#include <wpi/numbers>
 
 SwerveModule::SwerveModule(const int driveMotorChannel,
-                           const int turningMotorChannel)
-    : m_driveMotor(driveMotorChannel), m_turningMotor(turningMotorChannel) {
+                           const int turningMotorChannel,
+                           const int driveEncoderChannelA,
+                           const int driveEncoderChannelB,
+                           const int turningEncoderChannelA,
+                           const int turningEncoderChannelB)
+    : m_driveMotor(driveMotorChannel),
+      m_turningMotor(turningMotorChannel),
+      m_driveEncoder(driveEncoderChannelA, driveEncoderChannelB),
+      m_turningEncoder(turningEncoderChannelA, turningEncoderChannelB) {
   // Set the distance per pulse for the drive encoder. We can simply use the
   // distance traveled for one rotation of the wheel divided by the encoder
   // resolution.
-  m_driveEncoder.SetDistancePerPulse(2 * wpi::math::pi * kWheelRadius /
+  m_driveEncoder.SetDistancePerPulse(2 * wpi::numbers::pi * kWheelRadius /
                                      kEncoderResolution);
 
   // Set the distance (in this case, angle) per pulse for the turning encoder.
-  // This is the the angle through an entire rotation (2 * wpi::math::pi)
+  // This is the the angle through an entire rotation (2 * wpi::numbers::pi)
   // divided by the encoder resolution.
-  m_turningEncoder.SetDistancePerPulse(2 * wpi::math::pi / kEncoderResolution);
+  m_turningEncoder.SetDistancePerPulse(2 * wpi::numbers::pi /
+                                       kEncoderResolution);
 
   // Limit the PID Controller's input range between -pi and pi and set the input
   // to be continuous.
-  m_turningPIDController.EnableContinuousInput(-units::radian_t(wpi::math::pi),
-                                               units::radian_t(wpi::math::pi));
+  m_turningPIDController.EnableContinuousInput(
+      -units::radian_t(wpi::numbers::pi), units::radian_t(wpi::numbers::pi));
 }
 
 frc::SwerveModuleState SwerveModule::GetState() const {
@@ -35,10 +40,15 @@ frc::SwerveModuleState SwerveModule::GetState() const {
           frc::Rotation2d(units::radian_t(m_turningEncoder.Get()))};
 }
 
-void SwerveModule::SetDesiredState(const frc::SwerveModuleState& state) {
+void SwerveModule::SetDesiredState(
+    const frc::SwerveModuleState& referenceState) {
+  // Optimize the reference state to avoid spinning further than 90 degrees
+  const auto state = frc::SwerveModuleState::Optimize(
+      referenceState, units::radian_t(m_turningEncoder.Get()));
+
   // Calculate the drive output from the drive PID controller.
   const auto driveOutput = m_drivePIDController.Calculate(
-      m_driveEncoder.GetRate(), state.speed.to<double>());
+      m_driveEncoder.GetRate(), state.speed.value());
 
   const auto driveFeedforward = m_driveFeedforward.Calculate(state.speed);
 

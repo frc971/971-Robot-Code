@@ -1,13 +1,12 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2011-2019 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
-#include <wpi/Twine.h>
+#include <string_view>
+
+#include <units/time.h>
 
 #include "frc/commands/Command.h"
 
@@ -23,11 +22,11 @@ class WaitUntilCommand : public Command {
    *
    * @see CommandGroup
    */
-  explicit WaitUntilCommand(double time);
+  explicit WaitUntilCommand(units::second_t time);
 
-  WaitUntilCommand(const wpi::Twine& name, double time);
+  WaitUntilCommand(std::string_view name, units::second_t time);
 
-  virtual ~WaitUntilCommand() = default;
+  ~WaitUntilCommand() override = default;
 
   WaitUntilCommand(WaitUntilCommand&&) = default;
   WaitUntilCommand& operator=(WaitUntilCommand&&) = default;
@@ -36,10 +35,10 @@ class WaitUntilCommand : public Command {
   /**
    * Check if we've reached the actual finish time.
    */
-  virtual bool IsFinished();
+  bool IsFinished() override;
 
  private:
-  double m_time;
+  units::second_t m_time;
 };
 
 }  // namespace frc

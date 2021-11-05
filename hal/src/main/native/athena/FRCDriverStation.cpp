@@ -1,22 +1,21 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2016-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include <atomic>
 #include <chrono>
 #include <cstdlib>
 #include <cstring>
 #include <limits>
+#include <string>
+#include <string_view>
 
 #include <FRC_NetworkCommunication/FRCComm.h>
 #include <FRC_NetworkCommunication/NetCommRPCProxy_Occur.h>
+#include <fmt/format.h>
 #include <wpi/SafeThread.h>
 #include <wpi/condition_variable.h>
 #include <wpi/mutex.h>
-#include <wpi/raw_ostream.h>
 
 #include "hal/DriverStation.h"
 
@@ -70,15 +69,15 @@ static int32_t HAL_GetJoystickButtonsInternal(int32_t joystickNum,
       joystickNum, &buttons->buttons, &buttons->count);
 }
 /**
- * Retrieve the Joystick Descriptor for particular slot
- * @param desc [out] descriptor (data transfer object) to fill in.  desc is
- * filled in regardless of success. In other words, if descriptor is not
- * available, desc is filled in with default values matching the init-values in
- * Java and C++ Driverstation for when caller requests a too-large joystick
- * index.
+ * Retrieve the Joystick Descriptor for particular slot.
  *
+ * @param[out] desc descriptor (data transfer object) to fill in. desc is filled
+ *                  in regardless of success. In other words, if descriptor is
+ *                  not available, desc is filled in with default values
+ *                  matching the init-values in Java and C++ Driverstation for
+ *                  when caller requests a too-large joystick index.
  * @return error code reported from Network Comm back-end.  Zero is good,
- * nonzero is bad.
+ *         nonzero is bad.
  */
 static int32_t HAL_GetJoystickDescriptorInternal(int32_t joystickNum,
                                                  HAL_JoystickDescriptor* desc) {
@@ -126,16 +125,14 @@ static wpi::mutex* newDSDataAvailableMutex;
 static wpi::condition_variable* newDSDataAvailableCond;
 static int newDSDataAvailableCounter{0};
 
-namespace hal {
-namespace init {
+namespace hal::init {
 void InitializeFRCDriverStation() {
   static wpi::mutex newMutex;
   newDSDataAvailableMutex = &newMutex;
   static wpi::condition_variable newCond;
   newDSDataAvailableCond = &newCond;
 }
-}  // namespace init
-}  // namespace hal
+}  // namespace hal::init
 
 extern "C" {
 
@@ -161,13 +158,15 @@ int32_t HAL_SendError(HAL_Bool isError, int32_t errorCode, HAL_Bool isLVCode,
   auto curTime = std::chrono::steady_clock::now();
   int i;
   for (i = 0; i < KEEP_MSGS; ++i) {
-    if (prevMsg[i] == details) break;
+    if (prevMsg[i] == details) {
+      break;
+    }
   }
   int retval = 0;
   if (i == KEEP_MSGS || (curTime - prevMsgTime[i]) >= std::chrono::seconds(1)) {
-    wpi::StringRef detailsRef{details};
-    wpi::StringRef locationRef{location};
-    wpi::StringRef callStackRef{callStack};
+    std::string_view detailsRef{details};
+    std::string_view locationRef{location};
+    std::string_view callStackRef{callStack};
 
     // 1 tag, 4 timestamp, 2 seqnum
     // 2 numOccur, 4 error code, 1 flags, 6 strlen
@@ -203,14 +202,16 @@ int32_t HAL_SendError(HAL_Bool isError, int32_t errorCode, HAL_Bool isLVCode,
                                                   newCallStack.c_str());
     }
     if (printMsg) {
+      fmt::memory_buffer buf;
       if (location && location[0] != '\0') {
-        wpi::errs() << (isError ? "Error" : "Warning") << " at " << location
-                    << ": ";
+        fmt::format_to(fmt::appender{buf},
+                       "{} at {}: ", isError ? "Error" : "Warning", location);
       }
-      wpi::errs() << details << "\n";
+      fmt::format_to(fmt::appender{buf}, "{}\n", details);
       if (callStack && callStack[0] != '\0') {
-        wpi::errs() << callStack << "\n";
+        fmt::format_to(fmt::appender{buf}, "{}\n", callStack);
       }
+      std::fwrite(buf.data(), buf.size(), 1, stderr);
     }
     if (i == KEEP_MSGS) {
       // replace the oldest one
@@ -230,7 +231,7 @@ int32_t HAL_SendError(HAL_Bool isError, int32_t errorCode, HAL_Bool isLVCode,
 }
 
 int32_t HAL_SendConsoleLine(const char* line) {
-  wpi::StringRef lineRef{line};
+  std::string_view lineRef{line};
   if (lineRef.size() <= 65535) {
     // Send directly
     return FRC_NetworkCommunication_sendConsoleLine(line);
@@ -299,15 +300,16 @@ char* HAL_GetJoystickName(int32_t joystickNum) {
     name[0] = '\0';
     return name;
   } else {
-    size_t len = std::strlen(joystickDesc.name);
-    char* name = static_cast<char*>(std::malloc(len + 1));
-    std::strncpy(name, joystickDesc.name, len);
-    name[len] = '\0';
+    const size_t len = std::strlen(joystickDesc.name) + 1;
+    char* name = static_cast<char*>(std::malloc(len));
+    std::memcpy(name, joystickDesc.name, len);
     return name;
   }
 }
 
-void HAL_FreeJoystickName(char* name) { std::free(name); }
+void HAL_FreeJoystickName(char* name) {
+  std::free(name);
+}
 
 int32_t HAL_GetJoystickAxisType(int32_t joystickNum, int32_t axis) {
   HAL_JoystickDescriptor joystickDesc;
@@ -363,21 +365,17 @@ HAL_Bool HAL_IsNewControlData(void) {
   std::scoped_lock lock{*newDSDataAvailableMutex};
   int& lastCount = GetThreadLocalLastCount();
   int currentCount = newDSDataAvailableCounter;
-  if (lastCount == currentCount) return false;
+  if (lastCount == currentCount) {
+    return false;
+  }
   lastCount = currentCount;
   return true;
 }
 
-/**
- * Waits for the newest DS packet to arrive. Note that this is a blocking call.
- */
-void HAL_WaitForDSData(void) { HAL_WaitForDSDataTimeout(0); }
+void HAL_WaitForDSData(void) {
+  HAL_WaitForDSDataTimeout(0);
+}
 
-/**
- * Waits for the newest DS packet to arrive. If timeout is <= 0, this will wait
- * forever. Otherwise, it will wait until either a new packet, or the timeout
- * time has passed. Returns true on new data, false on timeout.
- */
 HAL_Bool HAL_WaitForDSDataTimeout(double timeout) {
   std::unique_lock lock{*newDSDataAvailableMutex};
   int& lastCount = GetThreadLocalLastCount();
@@ -409,7 +407,9 @@ constexpr int32_t refNumber = 42;
 static void newDataOccur(uint32_t refNum) {
   // Since we could get other values, require our specific handle
   // to signal our threads
-  if (refNum != refNumber) return;
+  if (refNum != refNumber) {
+    return;
+  }
   std::scoped_lock lock{*newDSDataAvailableMutex};
   // Notify all threads
   ++newDSDataAvailableCounter;
@@ -425,11 +425,15 @@ void HAL_InitializeDriverStation(void) {
   static std::atomic_bool initialized{false};
   static wpi::mutex initializeMutex;
   // Initial check, as if it's true initialization has finished
-  if (initialized) return;
+  if (initialized) {
+    return;
+  }
 
   std::scoped_lock lock(initializeMutex);
   // Second check in case another thread was waiting
-  if (initialized) return;
+  if (initialized) {
+    return;
+  }
 
   // Set up the occur function internally with NetComm
   NetCommRPCProxy_SetOccurFuncPointer(newDataOccur);
@@ -443,6 +447,8 @@ void HAL_InitializeDriverStation(void) {
  * Releases the DS Mutex to allow proper shutdown of any threads that are
  * waiting on it.
  */
-void HAL_ReleaseDSMutex(void) { newDataOccur(refNumber); }
+void HAL_ReleaseDSMutex(void) {
+  newDataOccur(refNumber);
+}
 
 }  // extern "C"

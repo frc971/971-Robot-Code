@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
@@ -11,7 +8,7 @@
 #include <initializer_list>
 #include <utility>
 
-#include <wpi/ArrayRef.h>
+#include <wpi/span.h>
 
 #include "Trigger.h"
 
@@ -28,7 +25,7 @@ class Button : public Trigger {
   /**
    * Create a new button that is pressed when the given condition is true.
    *
-   * @param isActive Whether the button is pressed.
+   * @param isPressed Whether the button is pressed.
    */
   explicit Button(std::function<bool()> isPressed);
 
@@ -82,7 +79,7 @@ class Button : public Trigger {
    * @param requirements the required subsystems.
    */
   Button WhenPressed(std::function<void()> toRun,
-                     wpi::ArrayRef<Subsystem*> requirements = {});
+                     wpi::span<Subsystem* const> requirements = {});
 
   /**
    * Binds a command to be started repeatedly while the button is pressed, and
@@ -128,7 +125,7 @@ class Button : public Trigger {
    * @param requirements the required subsystems.
    */
   Button WhileHeld(std::function<void()> toRun,
-                   wpi::ArrayRef<Subsystem*> requirements = {});
+                   wpi::span<Subsystem* const> requirements = {});
 
   /**
    * Binds a command to be started when the button is pressed, and canceled
@@ -202,7 +199,7 @@ class Button : public Trigger {
    * @param requirements the required subsystems.
    */
   Button WhenReleased(std::function<void()> toRun,
-                      wpi::ArrayRef<Subsystem*> requirements = {});
+                      wpi::span<Subsystem* const> requirements = {});
 
   /**
    * Binds a command to start when the button is pressed, and be canceled when

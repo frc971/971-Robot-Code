@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019 FIRST. All Rights Reserved.                             */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
@@ -59,8 +56,7 @@ class RobotContainer {
           // Shoot for the specified time
           frc2::WaitCommand(ac::kAutoShootTimeSeconds)}
           // Add a timeout (will end the command if, for instance, the shooter
-          // never gets up to
-          // speed)
+          // never gets up to speed)
           .WithTimeout(ac::kAutoTimeoutSeconds)
           // When the command ends, turn off the shooter and the feeder
           .AndThen([this] {
@@ -76,15 +72,14 @@ class RobotContainer {
   frc2::InstantCommand m_stopShooter{[this] { m_shooter.Disable(); },
                                      {&m_shooter}};
 
-  // Shoots if the shooter wheen has reached the target speed
+  // Shoots if the shooter wheel has reached the target speed
   frc2::ConditionalCommand m_shoot{
       // Run the feeder
       frc2::InstantCommand{[this] { m_shooter.RunFeeder(); }, {&m_shooter}},
       // Do nothing
       frc2::InstantCommand(),
       // Determine which of the above to do based on whether the shooter has
-      // reached the
-      // desired speed
+      // reached the desired speed
       [this] { return m_shooter.AtSetpoint(); }};
 
   frc2::InstantCommand m_stopFeeder{[this] { m_shooter.StopFeeder(); },

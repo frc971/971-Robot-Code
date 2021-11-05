@@ -1,21 +1,19 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2015-2019 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include <stdint.h>
 
 #include <cfloat>
 #include <climits>
 #include <string>
-
-#include <wpi/StringRef.h>
+#include <string_view>
 
 #include "TestPrinters.h"
 #include "WireDecoder.h"
 #include "gtest/gtest.h"
+
+using namespace std::string_view_literals;
 
 namespace nt {
 
@@ -24,8 +22,8 @@ class WireDecoderTest : public ::testing::Test {
   WireDecoderTest() {
     v_boolean = Value::MakeBoolean(true);
     v_double = Value::MakeDouble(1.0);
-    v_string = Value::MakeString(wpi::StringRef("hello"));
-    v_raw = Value::MakeRaw(wpi::StringRef("hello"));
+    v_string = Value::MakeString("hello"sv);
+    v_raw = Value::MakeRaw("hello"sv);
     v_boolean_array = Value::MakeBooleanArray(std::vector<int>{0, 1, 0});
     v_boolean_array_big = Value::MakeBooleanArray(std::vector<int>(255));
     v_double_array = Value::MakeDoubleArray(std::vector<double>{0.5, 0.25});
@@ -37,7 +35,9 @@ class WireDecoderTest : public ::testing::Test {
     v_string_array = Value::MakeStringArray(std::move(sa));
 
     sa.clear();
-    for (int i = 0; i < 255; ++i) sa.push_back("h");
+    for (int i = 0; i < 255; ++i) {
+      sa.push_back("h");
+    }
     v_string_array_big = Value::MakeStringArray(std::move(sa));
 
     s_normal = std::string("hello");
@@ -269,7 +269,7 @@ TEST_F(WireDecoderTest, ReadStringValue2) {
   ASSERT_TRUE(static_cast<bool>(val));
   EXPECT_EQ(*v_string, *val);
 
-  auto v_bye = Value::MakeString(wpi::StringRef("bye"));
+  auto v_bye = Value::MakeString("bye"sv);
   val = d.ReadValue(NT_STRING);
   ASSERT_TRUE(static_cast<bool>(val));
   EXPECT_EQ(*v_bye, *val);
@@ -367,7 +367,9 @@ TEST_F(WireDecoderTest, ReadStringArrayValue2) {
 TEST_F(WireDecoderTest, ReadStringArrayBigValue2) {
   std::string s;
   s.push_back('\xff');
-  for (int i = 0; i < 255; ++i) s.append("\x00\x01h", 3);
+  for (int i = 0; i < 255; ++i) {
+    s.append("\x00\x01h", 3);
+  }
   wpi::raw_mem_istream is(s.data(), s.size());
   wpi::Logger logger;
   WireDecoder d(is, 0x0200u, logger);
@@ -442,7 +444,7 @@ TEST_F(WireDecoderTest, ReadStringValue3) {
   ASSERT_TRUE(static_cast<bool>(val));
   EXPECT_EQ(*v_string, *val);
 
-  auto v_bye = Value::MakeString(wpi::StringRef("bye"));
+  auto v_bye = Value::MakeString("bye"sv);
   val = d.ReadValue(NT_STRING);
   ASSERT_TRUE(static_cast<bool>(val));
   EXPECT_EQ(*v_bye, *val);
@@ -466,7 +468,7 @@ TEST_F(WireDecoderTest, ReadRawValue3) {
   ASSERT_TRUE(static_cast<bool>(val));
   EXPECT_EQ(*v_raw, *val);
 
-  auto v_bye = Value::MakeRaw(wpi::StringRef("bye"));
+  auto v_bye = Value::MakeRaw("bye"sv);
   val = d.ReadValue(NT_RAW);
   ASSERT_TRUE(static_cast<bool>(val));
   EXPECT_EQ(*v_bye, *val);
@@ -564,7 +566,9 @@ TEST_F(WireDecoderTest, ReadStringArrayValue3) {
 TEST_F(WireDecoderTest, ReadStringArrayBigValue3) {
   std::string s;
   s.push_back('\xff');
-  for (int i = 0; i < 255; ++i) s.append("\x01h", 2);
+  for (int i = 0; i < 255; ++i) {
+    s.append("\x01h", 2);
+  }
   wpi::raw_mem_istream is(s.data(), s.size());
   wpi::Logger logger;
   WireDecoder d(is, 0x0300u, logger);

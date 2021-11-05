@@ -1,20 +1,22 @@
 import org.gradle.internal.os.OperatingSystem
 
+nativeUtils.skipInstallPdb = project.hasProperty('buildServer')
+
 nativeUtils.addWpiNativeUtils()
 nativeUtils.withRoboRIO()
 nativeUtils.withRaspbian()
 nativeUtils.withBionic()
 nativeUtils {
-  wpi {
-    configureDependencies {
-      wpiVersion = "-1"
-      niLibVersion = "2020.10.1"
-      opencvVersion = "3.4.7-5"
-      googleTestVersion = "1.9.0-5-437e100-1"
-      imguiVersion = "1.76-9"
-      wpimathVersion = "-1"
+    wpi {
+        configureDependencies {
+            wpiVersion = "-1"
+            niLibVersion = "2022.2.2"
+            opencvVersion = "4.5.2-1"
+            googleTestVersion = "1.9.0-5-437e100-1"
+            imguiVersion = "1.82-1"
+            wpimathVersion = "-1"
+        }
     }
-  }
 }
 
 nativeUtils.wpi.addWarnings()
@@ -25,12 +27,16 @@ nativeUtils.setSinglePrintPerPlatform()
 nativeUtils.enableSourceLink()
 
 nativeUtils.platformConfigs.each {
-    if (it.name.contains('windows')) return
+    if (it.name.contains('windows')) {
+        return
+    }
     it.linker.args << '-Wl,-rpath,\'$ORIGIN\''
     if (it.name == 'osxx86-64') {
         it.linker.args << "-headerpad_max_install_names"
     }
 }
+
+nativeUtils.platformConfigs.linuxathena.linker.args.add("-Wl,--fatal-warnings")
 
 model {
     components {
@@ -41,6 +47,19 @@ model {
     binaries {
         withType(NativeBinarySpec).all {
             nativeUtils.usePlatformArguments(it)
+        }
+    }
+}
+
+apply plugin: DisableBuildingGTest
+
+if (project.hasProperty('buildServer')) {
+    tasks.withType(org.gradle.nativeplatform.test.tasks.RunTestExecutable) {
+        def exeFile = file(it.executable)
+        def folder = exeFile.parentFile
+
+        it.doLast {
+            folder.deleteDir()
         }
     }
 }
@@ -86,7 +105,7 @@ ext.createComponentZipTasks = { components, names, base, type, project, func ->
         if (it in NativeLibrarySpec && stringNames.contains(it.name)) {
             it.binaries.each {
                 if (!it.buildable) return
-                def target = nativeUtils.getPublishClassifier(it)
+                    def target = nativeUtils.getPublishClassifier(it)
                 if (configMap.containsKey(target)) {
                     configMap.get(target).add(it)
                 } else {

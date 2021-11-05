@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2018-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 /* Copyright Joyent, Inc. and other Node contributors. All rights reserved.
  *
@@ -34,10 +31,9 @@
 
 #define CONCURRENT_COUNT 10
 
-namespace wpi {
-namespace uv {
+namespace wpi::uv {
 
-TEST(UvGetAddrInfo, BothNull) {
+TEST(UvGetAddrInfoTest, BothNull) {
   int fail_cb_called = 0;
 
   auto loop = Loop::Create();
@@ -47,12 +43,12 @@ TEST(UvGetAddrInfo, BothNull) {
   });
 
   GetAddrInfo(
-      loop, [](const addrinfo&) { FAIL(); }, Twine::createNull());
+      loop, [](const addrinfo&) { FAIL(); }, "");
   loop->Run();
   ASSERT_EQ(fail_cb_called, 1);
 }
 
-TEST(UvGetAddrInfo, FailedLookup) {
+TEST(UvGetAddrInfoTest, FailedLookup) {
   int fail_cb_called = 0;
 
   auto loop = Loop::Create();
@@ -69,7 +65,7 @@ TEST(UvGetAddrInfo, FailedLookup) {
   ASSERT_EQ(fail_cb_called, 1);
 }
 
-TEST(UvGetAddrInfo, Basic) {
+TEST(UvGetAddrInfoTest, Basic) {
   int getaddrinfo_cbs = 0;
 
   auto loop = Loop::Create();
@@ -84,7 +80,7 @@ TEST(UvGetAddrInfo, Basic) {
 }
 
 #ifndef _WIN32
-TEST(UvGetAddrInfo, Concurrent) {
+TEST(UvGetAddrInfoTest, Concurrent) {
   int getaddrinfo_cbs = 0;
   int callback_counts[CONCURRENT_COUNT];
 
@@ -110,5 +106,4 @@ TEST(UvGetAddrInfo, Concurrent) {
 }
 #endif
 
-}  // namespace uv
-}  // namespace wpi
+}  // namespace wpi::uv

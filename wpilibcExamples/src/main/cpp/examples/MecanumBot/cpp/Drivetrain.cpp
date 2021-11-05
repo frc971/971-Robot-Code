@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "Drivetrain.h"
 
@@ -25,13 +22,13 @@ void Drivetrain::SetSpeeds(const frc::MecanumDriveWheelSpeeds& wheelSpeeds) {
       m_feedforward.Calculate(wheelSpeeds.rearRight);
 
   const double frontLeftOutput = m_frontLeftPIDController.Calculate(
-      m_frontLeftEncoder.GetRate(), wheelSpeeds.frontLeft.to<double>());
+      m_frontLeftEncoder.GetRate(), wheelSpeeds.frontLeft.value());
   const double frontRightOutput = m_frontRightPIDController.Calculate(
-      m_frontRightEncoder.GetRate(), wheelSpeeds.frontRight.to<double>());
+      m_frontRightEncoder.GetRate(), wheelSpeeds.frontRight.value());
   const double backLeftOutput = m_backLeftPIDController.Calculate(
-      m_backLeftEncoder.GetRate(), wheelSpeeds.rearLeft.to<double>());
+      m_backLeftEncoder.GetRate(), wheelSpeeds.rearLeft.value());
   const double backRightOutput = m_backRightPIDController.Calculate(
-      m_backRightEncoder.GetRate(), wheelSpeeds.rearRight.to<double>());
+      m_backRightEncoder.GetRate(), wheelSpeeds.rearRight.value());
 
   m_frontLeftMotor.SetVoltage(units::volt_t{frontLeftOutput} +
                               frontLeftFeedforward);

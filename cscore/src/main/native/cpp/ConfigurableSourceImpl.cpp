@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2018-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "ConfigurableSourceImpl.h"
 
@@ -16,7 +13,7 @@
 
 using namespace cs;
 
-ConfigurableSourceImpl::ConfigurableSourceImpl(const wpi::Twine& name,
+ConfigurableSourceImpl::ConfigurableSourceImpl(std::string_view name,
                                                wpi::Logger& logger,
                                                Notifier& notifier,
                                                Telemetry& telemetry,
@@ -26,7 +23,7 @@ ConfigurableSourceImpl::ConfigurableSourceImpl(const wpi::Twine& name,
   m_videoModes.push_back(m_mode);
 }
 
-ConfigurableSourceImpl::~ConfigurableSourceImpl() {}
+ConfigurableSourceImpl::~ConfigurableSourceImpl() = default;
 
 void ConfigurableSourceImpl::Start() {
   m_notifier.NotifySource(*this, CS_SOURCE_CONNECTED);
@@ -53,11 +50,11 @@ void ConfigurableSourceImpl::NumSinksEnabledChanged() {
   // ignore
 }
 
-void ConfigurableSourceImpl::NotifyError(const wpi::Twine& msg) {
+void ConfigurableSourceImpl::NotifyError(std::string_view msg) {
   PutError(msg, wpi::Now());
 }
 
-int ConfigurableSourceImpl::CreateProperty(const wpi::Twine& name,
+int ConfigurableSourceImpl::CreateProperty(std::string_view name,
                                            CS_PropertyKind kind, int minimum,
                                            int maximum, int step,
                                            int defaultValue, int value) {
@@ -78,12 +75,12 @@ int ConfigurableSourceImpl::CreateProperty(const wpi::Twine& name,
         value = prop.value;
       });
   m_notifier.NotifySourceProperty(*this, CS_SOURCE_PROPERTY_CREATED, name, ndx,
-                                  kind, value, wpi::Twine{});
+                                  kind, value, {});
   return ndx;
 }
 
 int ConfigurableSourceImpl::CreateProperty(
-    const wpi::Twine& name, CS_PropertyKind kind, int minimum, int maximum,
+    std::string_view name, CS_PropertyKind kind, int minimum, int maximum,
     int step, int defaultValue, int value,
     std::function<void(CS_Property property)> onChange) {
   // TODO
@@ -91,7 +88,7 @@ int ConfigurableSourceImpl::CreateProperty(
 }
 
 void ConfigurableSourceImpl::SetEnumPropertyChoices(
-    int property, wpi::ArrayRef<std::string> choices, CS_Status* status) {
+    int property, wpi::span<const std::string> choices, CS_Status* status) {
   std::scoped_lock lock(m_mutex);
   auto prop = GetProperty(property);
   if (!prop) {
@@ -102,8 +99,8 @@ void ConfigurableSourceImpl::SetEnumPropertyChoices(
     *status = CS_WRONG_PROPERTY_TYPE;
     return;
   }
-  prop->enumChoices = choices;
+  prop->enumChoices.assign(choices.begin(), choices.end());
   m_notifier.NotifySourceProperty(*this, CS_SOURCE_PROPERTY_CHOICES_UPDATED,
                                   prop->name, property, CS_PROP_ENUM,
-                                  prop->value, wpi::Twine{});
+                                  prop->value, {});
 }

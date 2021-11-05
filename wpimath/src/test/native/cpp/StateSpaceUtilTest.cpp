@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include <gtest/gtest.h>
 
@@ -11,16 +8,16 @@
 
 #include "Eigen/Core"
 #include "frc/StateSpaceUtil.h"
-#include "frc/system/RungeKutta.h"
+#include "frc/system/NumericalIntegration.h"
 
 TEST(StateSpaceUtilTest, MakeMatrix) {
   // Column vector
-  Eigen::Matrix<double, 2, 1> mat1 = frc::MakeMatrix<2, 1>(1.0, 2.0);
+  Eigen::Vector<double, 2> mat1 = frc::MakeMatrix<2, 1>(1.0, 2.0);
   EXPECT_NEAR(mat1(0), 1.0, 1e-3);
   EXPECT_NEAR(mat1(1), 2.0, 1e-3);
 
   // Row vector
-  Eigen::Matrix<double, 1, 2> mat2 = frc::MakeMatrix<1, 2>(1.0, 2.0);
+  Eigen::RowVector<double, 2> mat2 = frc::MakeMatrix<1, 2>(1.0, 2.0);
   EXPECT_NEAR(mat2(0), 1.0, 1e-3);
   EXPECT_NEAR(mat2(1), 2.0, 1e-3);
 
@@ -105,44 +102,59 @@ TEST(StateSpaceUtilTest, CovArray) {
 }
 
 TEST(StateSpaceUtilTest, WhiteNoiseVectorParameterPack) {
-  Eigen::Matrix<double, 2, 1> vec = frc::MakeWhiteNoiseVector(2.0, 3.0);
+  Eigen::Vector<double, 2> vec = frc::MakeWhiteNoiseVector(2.0, 3.0);
   static_cast<void>(vec);
 }
 
 TEST(StateSpaceUtilTest, WhiteNoiseVectorArray) {
-  Eigen::Matrix<double, 2, 1> vec = frc::MakeWhiteNoiseVector<2>({2.0, 3.0});
+  Eigen::Vector<double, 2> vec = frc::MakeWhiteNoiseVector<2>({2.0, 3.0});
   static_cast<void>(vec);
 }
 
 TEST(StateSpaceUtilTest, IsStabilizable) {
-  Eigen::Matrix<double, 2, 2> A;
-  Eigen::Matrix<double, 2, 1> B;
-  B << 0, 1;
-
-  // We separate the result of IsStabilizable from the assertion because
-  // templates break gtest.
+  Eigen::Matrix<double, 2, 1> B{0, 1};
 
   // First eigenvalue is uncontrollable and unstable.
   // Second eigenvalue is controllable and stable.
-  A << 1.2, 0, 0, 0.5;
-  bool ret = frc::IsStabilizable<2, 1>(A, B);
-  EXPECT_FALSE(ret);
+  EXPECT_FALSE((frc::IsStabilizable<2, 1>(
+      Eigen::Matrix<double, 2, 2>{{1.2, 0}, {0, 0.5}}, B)));
 
   // First eigenvalue is uncontrollable and marginally stable.
   // Second eigenvalue is controllable and stable.
-  A << 1, 0, 0, 0.5;
-  ret = frc::IsStabilizable<2, 1>(A, B);
-  EXPECT_FALSE(ret);
+  EXPECT_FALSE((frc::IsStabilizable<2, 1>(
+      Eigen::Matrix<double, 2, 2>{{1, 0}, {0, 0.5}}, B)));
 
   // First eigenvalue is uncontrollable and stable.
   // Second eigenvalue is controllable and stable.
-  A << 0.2, 0, 0, 0.5;
-  ret = frc::IsStabilizable<2, 1>(A, B);
-  EXPECT_TRUE(ret);
+  EXPECT_TRUE((frc::IsStabilizable<2, 1>(
+      Eigen::Matrix<double, 2, 2>{{0.2, 0}, {0, 0.5}}, B)));
 
   // First eigenvalue is uncontrollable and stable.
   // Second eigenvalue is controllable and unstable.
-  A << 0.2, 0, 0, 1.2;
-  ret = frc::IsStabilizable<2, 1>(A, B);
-  EXPECT_TRUE(ret);
+  EXPECT_TRUE((frc::IsStabilizable<2, 1>(
+      Eigen::Matrix<double, 2, 2>{{0.2, 0}, {0, 1.2}}, B)));
+}
+
+TEST(StateSpaceUtilTest, IsDetectable) {
+  Eigen::Matrix<double, 1, 2> C{0, 1};
+
+  // First eigenvalue is unobservable and unstable.
+  // Second eigenvalue is observable and stable.
+  EXPECT_FALSE((frc::IsDetectable<2, 1>(
+      Eigen::Matrix<double, 2, 2>{{1.2, 0}, {0, 0.5}}, C)));
+
+  // First eigenvalue is unobservable and marginally stable.
+  // Second eigenvalue is observable and stable.
+  EXPECT_FALSE((frc::IsDetectable<2, 1>(
+      Eigen::Matrix<double, 2, 2>{{1, 0}, {0, 0.5}}, C)));
+
+  // First eigenvalue is unobservable and stable.
+  // Second eigenvalue is observable and stable.
+  EXPECT_TRUE((frc::IsDetectable<2, 1>(
+      Eigen::Matrix<double, 2, 2>{{0.2, 0}, {0, 0.5}}, C)));
+
+  // First eigenvalue is unobservable and stable.
+  // Second eigenvalue is observable and unstable.
+  EXPECT_TRUE((frc::IsDetectable<2, 1>(
+      Eigen::Matrix<double, 2, 2>{{0.2, 0}, {0, 1.2}}, C)));
 }

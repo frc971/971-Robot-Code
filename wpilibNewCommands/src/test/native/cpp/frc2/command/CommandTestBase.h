@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
@@ -12,7 +9,6 @@
 
 #include <frc/simulation/DriverStationSim.h>
 
-#include "ErrorConfirmer.h"
 #include "frc2/command/CommandGroupBase.h"
 #include "frc2/command/CommandScheduler.h"
 #include "frc2/command/SetUtilities.h"
@@ -68,20 +64,20 @@ class CommandTestBase : public ::testing::Test {
           .WillRepeatedly(::testing::Return(m_requirements));
     }
 
-    MockCommand(const MockCommand& other) : Command{} {}
+    MockCommand(const MockCommand& other) : Command{other} {}
 
     void SetFinished(bool finished) {
       EXPECT_CALL(*this, IsFinished())
           .WillRepeatedly(::testing::Return(finished));
     }
 
-    ~MockCommand() {
+    ~MockCommand() {  // NOLINT
       auto& scheduler = CommandScheduler::GetInstance();
       scheduler.Cancel(this);
     }
 
    protected:
-    std::unique_ptr<Command> TransferOwnership() && {
+    std::unique_ptr<Command> TransferOwnership() && {  // NOLINT
       return std::make_unique<MockCommand>(std::move(*this));
     }
 

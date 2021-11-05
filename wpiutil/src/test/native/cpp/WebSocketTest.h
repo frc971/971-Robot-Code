@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2018 FIRST. All Rights Reserved.                             */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
@@ -12,7 +9,7 @@
 #include <vector>
 
 #include "gtest/gtest.h"
-#include "wpi/ArrayRef.h"
+#include "wpi/span.h"
 #include "wpi/uv/Loop.h"
 #include "wpi/uv/Pipe.h"
 #include "wpi/uv/Timer.h"
@@ -51,7 +48,7 @@ class WebSocketTest : public ::testing::Test {
     failTimer->Unreference();
   }
 
-  ~WebSocketTest() { Finish(); }
+  ~WebSocketTest() override { Finish(); }
 
   void Finish() {
     loop->Walk([](uv::Handle& it) { it.Close(); });
@@ -61,8 +58,8 @@ class WebSocketTest : public ::testing::Test {
                                           bool masking, uint64_t len);
   static std::vector<uint8_t> BuildMessage(uint8_t opcode, bool fin,
                                            bool masking,
-                                           ArrayRef<uint8_t> data);
-  static void AdjustMasking(MutableArrayRef<uint8_t> message);
+                                           span<const uint8_t> data);
+  static void AdjustMasking(span<uint8_t> message);
   static const uint8_t testMask[4];
 
   std::shared_ptr<uv::Loop> loop;

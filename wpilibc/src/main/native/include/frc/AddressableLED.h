@@ -1,20 +1,16 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
-#include <memory>
+#include <initializer_list>
 
 #include <hal/AddressableLEDTypes.h>
 #include <hal/Types.h>
 #include <units/time.h>
-#include <wpi/ArrayRef.h>
+#include <wpi/span.h>
 
-#include "frc/ErrorBase.h"
 #include "util/Color.h"
 #include "util/Color8Bit.h"
 
@@ -25,7 +21,7 @@ namespace frc {
  *
  * <p>Only 1 LED driver is currently supported by the roboRIO.
  */
-class AddressableLED : public ErrorBase {
+class AddressableLED {
  public:
   class LEDData : public HAL_AddressableLEDData {
    public:
@@ -89,7 +85,7 @@ class AddressableLED : public ErrorBase {
    */
   explicit AddressableLED(int port);
 
-  ~AddressableLED() override;
+  ~AddressableLED();
 
   /**
    * Sets the length of the LED strip.
@@ -111,7 +107,7 @@ class AddressableLED : public ErrorBase {
    *
    * @param ledData the buffer to write
    */
-  void SetData(wpi::ArrayRef<LEDData> ledData);
+  void SetData(wpi::span<const LEDData> ledData);
 
   /**
    * Sets the led output data.
@@ -144,7 +140,7 @@ class AddressableLED : public ErrorBase {
    * <p>The sync time is the time to hold output so LEDs enable. Default set for
    * WS2812.
    *
-   * @param syncTimeMicroSeconds the sync time
+   * @param syncTime the sync time
    */
   void SetSyncTime(units::microsecond_t syncTime);
 
@@ -163,5 +159,6 @@ class AddressableLED : public ErrorBase {
  private:
   hal::Handle<HAL_DigitalHandle> m_pwmHandle;
   hal::Handle<HAL_AddressableLEDHandle> m_handle;
+  int m_port;
 };
 }  // namespace frc

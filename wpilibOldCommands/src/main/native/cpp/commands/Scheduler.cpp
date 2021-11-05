@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2011-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "frc/commands/Scheduler.h"
 
@@ -13,16 +10,16 @@
 #include <vector>
 
 #include <hal/FRCUsageReporting.h>
+#include <networktables/NTSendableBuilder.h>
 #include <networktables/NetworkTableEntry.h>
 #include <wpi/mutex.h>
+#include <wpi/sendable/SendableRegistry.h>
 
-#include "frc/WPIErrors.h"
+#include "frc/Errors.h"
 #include "frc/buttons/ButtonScheduler.h"
 #include "frc/commands/Command.h"
 #include "frc/commands/Subsystem.h"
 #include "frc/livewindow/LiveWindow.h"
-#include "frc/smartdashboard/SendableBuilder.h"
-#include "frc/smartdashboard/SendableRegistry.h"
 
 using namespace frc;
 
@@ -55,8 +52,9 @@ Scheduler* Scheduler::GetInstance() {
 void Scheduler::AddCommand(Command* command) {
   std::scoped_lock lock(m_impl->additionsMutex);
   if (std::find(m_impl->additions.begin(), m_impl->additions.end(), command) !=
-      m_impl->additions.end())
+      m_impl->additions.end()) {
     return;
+  }
   m_impl->additions.push_back(command);
 }
 
@@ -66,9 +64,8 @@ void Scheduler::AddButton(ButtonScheduler* button) {
 }
 
 void Scheduler::RegisterSubsystem(Subsystem* subsystem) {
-  if (subsystem == nullptr) {
-    wpi_setWPIErrorWithContext(NullParameter, "subsystem");
-    return;
+  if (!subsystem) {
+    throw FRC_MakeError(err::NullParameter, "{}", "subsystem");
   }
   m_impl->subsystems.insert(subsystem);
 }
@@ -76,7 +73,9 @@ void Scheduler::RegisterSubsystem(Subsystem* subsystem) {
 void Scheduler::Run() {
   // Get button input (going backwards preserves button priority)
   {
-    if (!m_impl->enabled) return;
+    if (!m_impl->enabled) {
+      return;
+    }
 
     std::scoped_lock lock(m_impl->buttonsMutex);
     for (auto& button : m_impl->buttons) {
@@ -109,8 +108,8 @@ void Scheduler::Run() {
     for (auto& addition : m_impl->additions) {
       // Check to make sure no adding during adding
       if (m_impl->adding) {
-        wpi_setWPIErrorWithContext(IncompatibleState,
-                                   "Can not start command from cancel method");
+        FRC_ReportError(warn::IncompatibleState, "{}",
+                        "Can not start command from cancel method");
       } else {
         m_impl->ProcessCommandAddition(addition);
       }
@@ -122,8 +121,8 @@ void Scheduler::Run() {
   for (auto& subsystem : m_impl->subsystems) {
     if (subsystem->GetCurrentCommand() == nullptr) {
       if (m_impl->adding) {
-        wpi_setWPIErrorWithContext(IncompatibleState,
-                                   "Can not start command from cancel method");
+        FRC_ReportError(warn::IncompatibleState, "{}",
+                        "Can not start command from cancel method");
       } else {
         m_impl->ProcessCommandAddition(subsystem->GetDefaultCommand());
       }
@@ -133,9 +132,8 @@ void Scheduler::Run() {
 }
 
 void Scheduler::Remove(Command* command) {
-  if (command == nullptr) {
-    wpi_setWPIErrorWithContext(NullParameter, "command");
-    return;
+  if (!command) {
+    throw FRC_MakeError(err::NullParameter, "{}", "command");
   }
 
   m_impl->Remove(command);
@@ -155,18 +153,22 @@ void Scheduler::ResetAll() {
   m_impl->commands.clear();
 }
 
-void Scheduler::SetEnabled(bool enabled) { m_impl->enabled = enabled; }
+void Scheduler::SetEnabled(bool enabled) {
+  m_impl->enabled = enabled;
+}
 
-void Scheduler::InitSendable(SendableBuilder& builder) {
+void Scheduler::InitSendable(nt::NTSendableBuilder& builder) {
   builder.SetSmartDashboardType("Scheduler");
   auto namesEntry = builder.GetEntry("Names");
   auto idsEntry = builder.GetEntry("Ids");
   auto cancelEntry = builder.GetEntry("Cancel");
-  builder.SetUpdateTable([=]() {
+  builder.SetUpdateTable([=] {
     // Get the list of possible commands to cancel
     auto new_toCancel = cancelEntry.GetValue();
-    wpi::ArrayRef<double> toCancel;
-    if (new_toCancel) toCancel = new_toCancel->GetDoubleArray();
+    wpi::span<const double> toCancel;
+    if (new_toCancel) {
+      toCancel = new_toCancel->GetDoubleArray();
+    }
 
     // Cancel commands whose cancel buttons were pressed on the SmartDashboard
     if (!toCancel.empty()) {
@@ -184,9 +186,9 @@ void Scheduler::InitSendable(SendableBuilder& builder) {
     if (m_impl->runningCommandsChanged) {
       m_impl->commandsBuf.resize(0);
       m_impl->idsBuf.resize(0);
-      auto& registry = SendableRegistry::GetInstance();
       for (const auto& command : m_impl->commands) {
-        m_impl->commandsBuf.emplace_back(registry.GetName(command));
+        m_impl->commandsBuf.emplace_back(
+            wpi::SendableRegistry::GetName(command));
         m_impl->idsBuf.emplace_back(command->GetID());
       }
       nt::NetworkTableEntry(namesEntry).SetStringArray(m_impl->commandsBuf);
@@ -198,24 +200,24 @@ void Scheduler::InitSendable(SendableBuilder& builder) {
 Scheduler::Scheduler() : m_impl(new Impl) {
   HAL_Report(HALUsageReporting::kResourceType_Command,
              HALUsageReporting::kCommand_Scheduler);
-  SendableRegistry::GetInstance().AddLW(this, "Scheduler");
-  auto scheduler = frc::LiveWindow::GetInstance();
-  scheduler->enabled = [this] {
+  wpi::SendableRegistry::AddLW(this, "Scheduler");
+  frc::LiveWindow::SetEnabledCallback([this] {
     this->SetEnabled(false);
     this->RemoveAll();
-  };
-  scheduler->disabled = [this] { this->SetEnabled(true); };
+  });
+  frc::LiveWindow::SetDisabledCallback([this] { this->SetEnabled(true); });
 }
 
 Scheduler::~Scheduler() {
-  SendableRegistry::GetInstance().Remove(this);
-  auto scheduler = frc::LiveWindow::GetInstance();
-  scheduler->enabled = nullptr;
-  scheduler->disabled = nullptr;
+  wpi::SendableRegistry::Remove(this);
+  frc::LiveWindow::SetEnabledCallback(nullptr);
+  frc::LiveWindow::SetDisabledCallback(nullptr);
 }
 
 void Scheduler::Impl::Remove(Command* command) {
-  if (!commands.erase(command)) return;
+  if (!commands.erase(command)) {
+    return;
+  }
 
   for (auto&& requirement : command->GetRequirements()) {
     requirement->SetCurrentCommand(nullptr);
@@ -225,7 +227,9 @@ void Scheduler::Impl::Remove(Command* command) {
 }
 
 void Scheduler::Impl::ProcessCommandAddition(Command* command) {
-  if (command == nullptr) return;
+  if (command == nullptr) {
+    return;
+  }
 
   // Only add if not already in
   auto found = commands.find(command);
@@ -234,8 +238,9 @@ void Scheduler::Impl::ProcessCommandAddition(Command* command) {
     const auto& requirements = command->GetRequirements();
     for (const auto requirement : requirements) {
       if (requirement->GetCurrentCommand() != nullptr &&
-          !requirement->GetCurrentCommand()->IsInterruptible())
+          !requirement->GetCurrentCommand()->IsInterruptible()) {
         return;
+      }
     }
 
     // Give it the requirements

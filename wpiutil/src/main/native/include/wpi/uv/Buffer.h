@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2018-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #ifndef WPIUTIL_WPI_UV_BUFFER_H_
 #define WPIUTIL_WPI_UV_BUFFER_H_
@@ -12,14 +9,13 @@
 
 #include <cstring>
 #include <initializer_list>
+#include <string_view>
 #include <utility>
 
-#include "wpi/ArrayRef.h"
 #include "wpi/SmallVector.h"
-#include "wpi/StringRef.h"
+#include "wpi/span.h"
 
-namespace wpi {
-namespace uv {
+namespace wpi::uv {
 
 /**
  * Data buffer.  Convenience wrapper around uv_buf_t.
@@ -30,13 +26,13 @@ class Buffer : public uv_buf_t {
     base = nullptr;
     len = 0;
   }
-  /*implicit*/ Buffer(const uv_buf_t& oth) {  // NOLINT(runtime/explicit)
+  /*implicit*/ Buffer(const uv_buf_t& oth) {  // NOLINT
     base = oth.base;
     len = oth.len;
   }
-  /*implicit*/ Buffer(StringRef str)  // NOLINT(runtime/explicit)
+  /*implicit*/ Buffer(std::string_view str)  // NOLINT
       : Buffer{str.data(), str.size()} {}
-  /*implicit*/ Buffer(ArrayRef<uint8_t> arr)  // NOLINT(runtime/explicit)
+  /*implicit*/ Buffer(span<const uint8_t> arr)  // NOLINT
       : Buffer{reinterpret_cast<const char*>(arr.data()), arr.size()} {}
   Buffer(char* base_, size_t len_) {
     base = base_;
@@ -47,21 +43,21 @@ class Buffer : public uv_buf_t {
     len = static_cast<decltype(len)>(len_);
   }
 
-  ArrayRef<char> data() const { return ArrayRef<char>{base, len}; }
-  MutableArrayRef<char> data() { return MutableArrayRef<char>{base, len}; }
+  span<const char> data() const { return {base, len}; }
+  span<char> data() { return {base, len}; }
 
-  operator ArrayRef<char>() const { return data(); }
-  operator MutableArrayRef<char>() { return data(); }
+  operator span<const char>() const { return data(); }  // NOLINT
+  operator span<char>() { return data(); }              // NOLINT
 
   static Buffer Allocate(size_t size) { return Buffer{new char[size], size}; }
 
-  static Buffer Dup(StringRef in) {
+  static Buffer Dup(std::string_view in) {
     Buffer buf = Allocate(in.size());
     std::memcpy(buf.base, in.data(), in.size());
     return buf;
   }
 
-  static Buffer Dup(ArrayRef<uint8_t> in) {
+  static Buffer Dup(span<const uint8_t> in) {
     Buffer buf = Allocate(in.size());
     std::memcpy(buf.base, in.begin(), in.size());
     return buf;
@@ -116,7 +112,9 @@ class SimpleBufferPool {
    * Allocate a buffer.
    */
   Buffer Allocate() {
-    if (m_pool.empty()) return Buffer::Allocate(m_size);
+    if (m_pool.empty()) {
+      return Buffer::Allocate(m_size);
+    }
     auto buf = m_pool.back();
     m_pool.pop_back();
     buf.len = m_size;
@@ -133,15 +131,19 @@ class SimpleBufferPool {
    * This is NOT safe to use with arbitrary buffers unless they were
    * allocated with the same size as the buffer pool allocation size.
    */
-  void Release(MutableArrayRef<Buffer> bufs) {
-    for (auto& buf : bufs) m_pool.emplace_back(buf.Move());
+  void Release(span<Buffer> bufs) {
+    for (auto& buf : bufs) {
+      m_pool.emplace_back(buf.Move());
+    }
   }
 
   /**
    * Clear the pool, releasing all buffers.
    */
   void Clear() {
-    for (auto& buf : m_pool) buf.Deallocate();
+    for (auto& buf : m_pool) {
+      buf.Deallocate();
+    }
     m_pool.clear();
   }
 
@@ -153,10 +155,9 @@ class SimpleBufferPool {
 
  private:
   SmallVector<Buffer, DEPTH> m_pool;
-  size_t m_size;
+  size_t m_size;  // NOLINT
 };
 
-}  // namespace uv
-}  // namespace wpi
+}  // namespace wpi::uv
 
 #endif  // WPIUTIL_WPI_UV_BUFFER_H_

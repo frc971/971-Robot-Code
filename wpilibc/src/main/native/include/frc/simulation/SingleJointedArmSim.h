@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2020 FIRST. All Rights Reserved.                             */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
@@ -66,20 +63,34 @@ class SingleJointedArmSim : public LinearSystemSim<2, 1, 1> {
                       const std::array<double, 1>& measurementStdDevs = {0.0});
 
   /**
+   * Returns whether the arm would hit the lower limit.
+   *
+   * @param armAngle The arm height.
+   * @return Whether the arm would hit the lower limit.
+   */
+  bool WouldHitLowerLimit(units::radian_t armAngle) const;
+
+  /**
+   * Returns whether the arm would hit the upper limit.
+   *
+   * @param armAngle The arm height.
+   * @return Whether the arm would hit the upper limit.
+   */
+  bool WouldHitUpperLimit(units::radian_t armAngle) const;
+
+  /**
    * Returns whether the arm has hit the lower limit.
    *
-   * @param x The current arm state.
    * @return Whether the arm has hit the lower limit.
    */
-  bool HasHitLowerLimit(const Eigen::Matrix<double, 2, 1>& x) const;
+  bool HasHitLowerLimit() const;
 
   /**
    * Returns whether the arm has hit the upper limit.
    *
-   * @param x The current arm state.
    * @return Whether the arm has hit the upper limit.
    */
-  bool HasHitUpperLimit(const Eigen::Matrix<double, 2, 1>& x) const;
+  bool HasHitUpperLimit() const;
 
   /**
    * Returns the current arm angle.
@@ -103,7 +114,7 @@ class SingleJointedArmSim : public LinearSystemSim<2, 1, 1> {
   units::ampere_t GetCurrentDraw() const override;
 
   /**
-   * Sets the input voltage for the elevator.
+   * Sets the input voltage for the arm.
    *
    * @param voltage The input voltage.
    */
@@ -131,9 +142,9 @@ class SingleJointedArmSim : public LinearSystemSim<2, 1, 1> {
    * @param u           The system inputs (voltage).
    * @param dt          The time difference between controller updates.
    */
-  Eigen::Matrix<double, 2, 1> UpdateX(
-      const Eigen::Matrix<double, 2, 1>& currentXhat,
-      const Eigen::Matrix<double, 1, 1>& u, units::second_t dt) override;
+  Eigen::Vector<double, 2> UpdateX(const Eigen::Vector<double, 2>& currentXhat,
+                                   const Eigen::Vector<double, 1>& u,
+                                   units::second_t dt) override;
 
  private:
   units::meter_t m_r;

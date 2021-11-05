@@ -1,15 +1,13 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2017-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
 #include <functional>
 #include <memory>
 #include <string>
+#include <string_view>
 
 #include <hal/simulation/NotifyListener.h>
 #include <wpi/json.h>
@@ -19,19 +17,20 @@
 
 namespace wpilibws {
 
-typedef void (*HALCbRegisterIndexedFunc)(int32_t index,
-                                         HAL_NotifyCallback callback,
+using HALCbRegisterIndexedFunc = void (*)(int32_t index,
+                                          HAL_NotifyCallback callback,
+                                          void* param, HAL_Bool initialNotify);
+using HALCbRegisterSingleFunc = void (*)(HAL_NotifyCallback callback,
                                          void* param, HAL_Bool initialNotify);
-typedef void (*HALCbRegisterSingleFunc)(HAL_NotifyCallback callback,
-                                        void* param, HAL_Bool initialNotify);
 
 // provider generates diffs based on values
 class HALSimWSHalProvider : public HALSimWSBaseProvider {
  public:
   using HALSimWSBaseProvider::HALSimWSBaseProvider;
 
-  void OnNetworkConnected(std::shared_ptr<HALSimBaseWebSocketConnection> ws);
-  void OnNetworkDisconnected();
+  void OnNetworkConnected(
+      std::shared_ptr<HALSimBaseWebSocketConnection> ws) override;
+  void OnNetworkDisconnected() override;
 
   void ProcessHalCallback(const wpi::json& payload);
 
@@ -43,8 +42,8 @@ class HALSimWSHalProvider : public HALSimWSBaseProvider {
 // provider generates per-channel diffs
 class HALSimWSHalChanProvider : public HALSimWSHalProvider {
  public:
-  explicit HALSimWSHalChanProvider(int32_t channel, const std::string& key,
-                                   const std::string& type);
+  explicit HALSimWSHalChanProvider(int32_t channel, std::string_view key,
+                                   std::string_view type);
 
   int32_t GetChannel() { return m_channel; }
 
@@ -53,16 +52,15 @@ class HALSimWSHalChanProvider : public HALSimWSHalProvider {
 };
 
 using WSRegisterFunc = std::function<void(
-    const std::string&, std::shared_ptr<HALSimWSBaseProvider>)>;
+    std::string_view, std::shared_ptr<HALSimWSBaseProvider>)>;
 
 template <typename T>
-void CreateProviders(const std::string& prefix, int32_t numChannels,
+void CreateProviders(std::string_view prefix, int32_t numChannels,
                      WSRegisterFunc webRegisterFunc);
 
 template <typename T>
-void CreateSingleProvider(const std::string& key,
-                          WSRegisterFunc webRegisterFunc);
-
-#include "WSHalProviders.inl"
+void CreateSingleProvider(std::string_view key, WSRegisterFunc webRegisterFunc);
 
 }  // namespace wpilibws
+
+#include "WSHalProviders.inc"

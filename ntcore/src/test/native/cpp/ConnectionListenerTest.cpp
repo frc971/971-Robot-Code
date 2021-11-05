@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2017-2018 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include <chrono>
 #include <thread>
@@ -25,21 +22,21 @@ class ConnectionListenerTest : public ::testing::Test {
     nt::DestroyInstance(client_inst);
   }
 
-  void Connect();
+  void Connect(unsigned int port);
 
  protected:
   NT_Inst server_inst;
   NT_Inst client_inst;
 };
 
-void ConnectionListenerTest::Connect() {
-  nt::StartServer(server_inst, "connectionlistenertest.ini", "127.0.0.1",
-                  10000);
-  nt::StartClient(client_inst, "127.0.0.1", 10000);
+void ConnectionListenerTest::Connect(unsigned int port) {
+  nt::StartServer(server_inst, "connectionlistenertest.ini", "127.0.0.1", port);
+  nt::StartClient(client_inst, "127.0.0.1", port);
 
   // wait for client to report it's started, then wait another 0.1 sec
-  while ((nt::GetNetworkMode(client_inst) & NT_NET_MODE_STARTING) != 0)
+  while ((nt::GetNetworkMode(client_inst) & NT_NET_MODE_STARTING) != 0) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  }
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
 }
 
@@ -52,7 +49,7 @@ TEST_F(ConnectionListenerTest, Polled) {
   ASSERT_NE(handle, 0u);
 
   // trigger a connect event
-  Connect();
+  Connect(10000);
 
   // get the event
   ASSERT_TRUE(nt::WaitForConnectionListenerQueue(server_inst, 1.0));
@@ -87,7 +84,7 @@ TEST_F(ConnectionListenerTest, Threaded) {
       false);
 
   // trigger a connect event
-  Connect();
+  Connect(10001);
 
   ASSERT_TRUE(nt::WaitForConnectionListenerQueue(server_inst, 1.0));
 

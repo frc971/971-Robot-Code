@@ -1,12 +1,10 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2015-2019 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include <cctype>
 #include <string>
+#include <utility>
 
 #include <wpi/Base64.h>
 #include <wpi/SmallString.h>
@@ -23,19 +21,19 @@ namespace {
 
 class LoadPersistentImpl {
  public:
-  typedef std::pair<std::string, std::shared_ptr<Value>> Entry;
-  typedef std::function<void(size_t line, const char* msg)> WarnFunc;
+  using Entry = std::pair<std::string, std::shared_ptr<Value>>;
+  using WarnFunc = std::function<void(size_t, const char*)>;
 
   LoadPersistentImpl(wpi::raw_istream& is, WarnFunc warn)
-      : m_is(is), m_warn(warn) {}
+      : m_is(is), m_warn(std::move(warn)) {}
 
-  bool Load(StringRef prefix, std::vector<Entry>* entries);
+  bool Load(std::string_view prefix, std::vector<Entry>* entries);
 
  private:
   bool ReadLine();
   bool ReadHeader();
   NT_Type ReadType();
-  wpi::StringRef ReadName(wpi::SmallVectorImpl<char>& buf);
+  std::string_view ReadName(wpi::SmallVectorImpl<char>& buf);
   std::shared_ptr<Value> ReadValue(NT_Type type);
   std::shared_ptr<Value> ReadBooleanValue();
   std::shared_ptr<Value> ReadDoubleValue();
@@ -46,13 +44,15 @@ class LoadPersistentImpl {
   std::shared_ptr<Value> ReadStringArrayValue();
 
   void Warn(const char* msg) {
-    if (m_warn) m_warn(m_line_num, msg);
+    if (m_warn) {
+      m_warn(m_line_num, msg);
+    }
   }
 
   wpi::raw_istream& m_is;
   WarnFunc m_warn;
 
-  wpi::StringRef m_line;
+  std::string_view m_line;
   wpi::SmallString<128> m_line_buf;
   size_t m_line_num = 0;
 
@@ -71,11 +71,12 @@ class LoadPersistentImpl {
  * Returns a pair containing the extracted token (if any) and the remaining
  * tail string.
  */
-static std::pair<wpi::StringRef, wpi::StringRef> ReadStringToken(
-    wpi::StringRef source) {
+static std::pair<std::string_view, std::string_view> ReadStringToken(
+    std::string_view source) {
   // Match opening quote
-  if (source.empty() || source.front() != '"')
-    return std::make_pair(wpi::StringRef(), source);
+  if (source.empty() || source.front() != '"') {
+    return {{}, source};
+  }
 
   // Scan for ending double quote, checking for escaped as we go.
   size_t size = source.size();
@@ -86,20 +87,21 @@ static std::pair<wpi::StringRef, wpi::StringRef> ReadStringToken(
       break;
     }
   }
-  return std::make_pair(source.slice(0, pos), source.substr(pos));
+  return {wpi::slice(source, 0, pos), source.substr(pos)};
 }
 
 static int fromxdigit(char ch) {
-  if (ch >= 'a' && ch <= 'f')
+  if (ch >= 'a' && ch <= 'f') {
     return (ch - 'a' + 10);
-  else if (ch >= 'A' && ch <= 'F')
+  } else if (ch >= 'A' && ch <= 'F') {
     return (ch - 'A' + 10);
-  else
+  } else {
     return ch - '0';
+  }
 }
 
-static wpi::StringRef UnescapeString(wpi::StringRef source,
-                                     wpi::SmallVectorImpl<char>& buf) {
+static std::string_view UnescapeString(std::string_view source,
+                                       wpi::SmallVectorImpl<char>& buf) {
   assert(source.size() >= 2 && source.front() == '"' && source.back() == '"');
   buf.clear();
   buf.reserve(source.size() - 2);
@@ -133,11 +135,14 @@ static wpi::StringRef UnescapeString(wpi::StringRef source,
         break;
     }
   }
-  return wpi::StringRef{buf.data(), buf.size()};
+  return {buf.data(), buf.size()};
 }
 
-bool LoadPersistentImpl::Load(StringRef prefix, std::vector<Entry>* entries) {
-  if (!ReadHeader()) return false;  // header
+bool LoadPersistentImpl::Load(std::string_view prefix,
+                              std::vector<Entry>* entries) {
+  if (!ReadHeader()) {
+    return false;  // header
+  }
 
   while (ReadLine()) {
     // type
@@ -149,22 +154,27 @@ bool LoadPersistentImpl::Load(StringRef prefix, std::vector<Entry>* entries) {
 
     // name
     wpi::SmallString<128> buf;
-    wpi::StringRef name = ReadName(buf);
-    if (name.empty() || !name.startswith(prefix)) continue;
+    std::string_view name = ReadName(buf);
+    if (name.empty() || !wpi::starts_with(name, prefix)) {
+      continue;
+    }
 
     // =
-    m_line = m_line.ltrim(" \t");
+    m_line = wpi::ltrim(m_line, " \t");
     if (m_line.empty() || m_line.front() != '=') {
       Warn("expected = after name");
       continue;
     }
-    m_line = m_line.drop_front().ltrim(" \t");
+    m_line.remove_prefix(1);
+    m_line = wpi::ltrim(m_line, " \t");
 
     // value
     auto value = ReadValue(type);
 
     // move to entries
-    if (value) entries->emplace_back(name, std::move(value));
+    if (value) {
+      entries->emplace_back(name, std::move(value));
+    }
   }
   return true;
 }
@@ -173,9 +183,10 @@ bool LoadPersistentImpl::ReadLine() {
   // ignore blank lines and lines that start with ; or # (comments)
   while (!m_is.has_error()) {
     ++m_line_num;
-    m_line = m_is.getline(m_line_buf, INT_MAX).trim();
-    if (!m_line.empty() && m_line.front() != ';' && m_line.front() != '#')
+    m_line = wpi::trim(m_is.getline(m_line_buf, INT_MAX));
+    if (!m_line.empty() && m_line.front() != ';' && m_line.front() != '#') {
       return true;
+    }
   }
   return false;
 }
@@ -190,8 +201,8 @@ bool LoadPersistentImpl::ReadHeader() {
 }
 
 NT_Type LoadPersistentImpl::ReadType() {
-  wpi::StringRef tok;
-  std::tie(tok, m_line) = m_line.split(' ');
+  std::string_view tok;
+  std::tie(tok, m_line) = wpi::split(m_line, ' ');
   if (tok == "boolean") {
     return NT_BOOLEAN;
   } else if (tok == "double") {
@@ -201,28 +212,29 @@ NT_Type LoadPersistentImpl::ReadType() {
   } else if (tok == "raw") {
     return NT_RAW;
   } else if (tok == "array") {
-    wpi::StringRef array_tok;
-    std::tie(array_tok, m_line) = m_line.split(' ');
-    if (array_tok == "boolean")
+    std::string_view array_tok;
+    std::tie(array_tok, m_line) = wpi::split(m_line, ' ');
+    if (array_tok == "boolean") {
       return NT_BOOLEAN_ARRAY;
-    else if (array_tok == "double")
+    } else if (array_tok == "double") {
       return NT_DOUBLE_ARRAY;
-    else if (array_tok == "string")
+    } else if (array_tok == "string") {
       return NT_STRING_ARRAY;
+    }
   }
   return NT_UNASSIGNED;
 }
 
-wpi::StringRef LoadPersistentImpl::ReadName(wpi::SmallVectorImpl<char>& buf) {
-  wpi::StringRef tok;
+std::string_view LoadPersistentImpl::ReadName(wpi::SmallVectorImpl<char>& buf) {
+  std::string_view tok;
   std::tie(tok, m_line) = ReadStringToken(m_line);
   if (tok.empty()) {
     Warn("missing name");
-    return wpi::StringRef{};
+    return {};
   }
   if (tok.back() != '"') {
     Warn("unterminated name string");
-    return wpi::StringRef{};
+    return {};
   }
   return UnescapeString(tok, buf);
 }
@@ -250,15 +262,19 @@ std::shared_ptr<Value> LoadPersistentImpl::ReadValue(NT_Type type) {
 
 std::shared_ptr<Value> LoadPersistentImpl::ReadBooleanValue() {
   // only true or false is accepted
-  if (m_line == "true") return Value::MakeBoolean(true);
-  if (m_line == "false") return Value::MakeBoolean(false);
+  if (m_line == "true") {
+    return Value::MakeBoolean(true);
+  }
+  if (m_line == "false") {
+    return Value::MakeBoolean(false);
+  }
   Warn("unrecognized boolean value, not 'true' or 'false'");
   return nullptr;
 }
 
 std::shared_ptr<Value> LoadPersistentImpl::ReadDoubleValue() {
   // need to convert to null-terminated string for std::strtod()
-  wpi::SmallString<64> buf = m_line;
+  wpi::SmallString<64> buf{m_line};
   char* end;
   double v = std::strtod(buf.c_str(), &end);
   if (*end != '\0') {
@@ -269,7 +285,7 @@ std::shared_ptr<Value> LoadPersistentImpl::ReadDoubleValue() {
 }
 
 std::shared_ptr<Value> LoadPersistentImpl::ReadStringValue() {
-  wpi::StringRef tok;
+  std::string_view tok;
   std::tie(tok, m_line) = ReadStringToken(m_line);
   if (tok.empty()) {
     Warn("missing string value");
@@ -292,9 +308,9 @@ std::shared_ptr<Value> LoadPersistentImpl::ReadRawValue() {
 std::shared_ptr<Value> LoadPersistentImpl::ReadBooleanArrayValue() {
   m_buf_boolean_array.clear();
   while (!m_line.empty()) {
-    wpi::StringRef tok;
-    std::tie(tok, m_line) = m_line.split(',');
-    tok = tok.trim(" \t");
+    std::string_view tok;
+    std::tie(tok, m_line) = wpi::split(m_line, ',');
+    tok = wpi::trim(tok, " \t");
     if (tok == "true") {
       m_buf_boolean_array.push_back(1);
     } else if (tok == "false") {
@@ -310,11 +326,11 @@ std::shared_ptr<Value> LoadPersistentImpl::ReadBooleanArrayValue() {
 std::shared_ptr<Value> LoadPersistentImpl::ReadDoubleArrayValue() {
   m_buf_double_array.clear();
   while (!m_line.empty()) {
-    wpi::StringRef tok;
-    std::tie(tok, m_line) = m_line.split(',');
-    tok = tok.trim(" \t");
+    std::string_view tok;
+    std::tie(tok, m_line) = wpi::split(m_line, ',');
+    tok = wpi::trim(tok, " \t");
     // need to convert to null-terminated string for std::strtod()
-    wpi::SmallString<64> buf = tok;
+    wpi::SmallString<64> buf{tok};
     char* end;
     double v = std::strtod(buf.c_str(), &end);
     if (*end != '\0') {
@@ -330,7 +346,7 @@ std::shared_ptr<Value> LoadPersistentImpl::ReadDoubleArrayValue() {
 std::shared_ptr<Value> LoadPersistentImpl::ReadStringArrayValue() {
   m_buf_string_array.clear();
   while (!m_line.empty()) {
-    wpi::StringRef tok;
+    std::string_view tok;
     std::tie(tok, m_line) = ReadStringToken(m_line);
     if (tok.empty()) {
       Warn("missing string value");
@@ -342,31 +358,33 @@ std::shared_ptr<Value> LoadPersistentImpl::ReadStringArrayValue() {
     }
 
     wpi::SmallString<128> buf;
-    m_buf_string_array.push_back(UnescapeString(tok, buf));
+    m_buf_string_array.emplace_back(UnescapeString(tok, buf));
 
-    m_line = m_line.ltrim(" \t");
-    if (m_line.empty()) break;
+    m_line = wpi::ltrim(m_line, " \t");
+    if (m_line.empty()) {
+      break;
+    }
     if (m_line.front() != ',') {
       Warn("expected comma between strings");
       return nullptr;
     }
-    m_line = m_line.drop_front().ltrim(" \t");
+    m_line.remove_prefix(1);
+    m_line = wpi::ltrim(m_line, " \t");
   }
 
   return Value::MakeStringArray(std::move(m_buf_string_array));
 }
 
 bool Storage::LoadEntries(
-    wpi::raw_istream& is, const Twine& prefix, bool persistent,
+    wpi::raw_istream& is, std::string_view prefix, bool persistent,
     std::function<void(size_t line, const char* msg)> warn) {
-  wpi::SmallString<128> prefixBuf;
-  StringRef prefixStr = prefix.toStringRef(prefixBuf);
-
   // entries to add
   std::vector<LoadPersistentImpl::Entry> entries;
 
   // load file
-  if (!LoadPersistentImpl(is, warn).Load(prefixStr, &entries)) return false;
+  if (!LoadPersistentImpl(is, warn).Load(prefix, &entries)) {
+    return false;
+  }
 
   // copy values into storage as quickly as possible so lock isn't held
   std::vector<std::shared_ptr<Message>> msgs;
@@ -376,7 +394,9 @@ bool Storage::LoadEntries(
     auto old_value = entry->value;
     entry->value = i.second;
     bool was_persist = entry->IsPersistent();
-    if (!was_persist && persistent) entry->flags |= NT_PERSISTENT;
+    if (!was_persist && persistent) {
+      entry->flags |= NT_PERSISTENT;
+    }
 
     // if we're the server, assign an id if it doesn't have one
     if (m_server && entry->id == 0xffff) {
@@ -392,7 +412,9 @@ bool Storage::LoadEntries(
                                NT_NOTIFY_NEW | NT_NOTIFY_LOCAL);
       } else if (*old_value != *i.second) {
         unsigned int notify_flags = NT_NOTIFY_UPDATE | NT_NOTIFY_LOCAL;
-        if (!was_persist && persistent) notify_flags |= NT_NOTIFY_FLAGS;
+        if (!was_persist && persistent) {
+          notify_flags |= NT_NOTIFY_FLAGS;
+        }
         m_notifier.NotifyEntry(entry->local_id, i.first, i.second,
                                notify_flags);
       } else if (!was_persist && persistent) {
@@ -401,7 +423,9 @@ bool Storage::LoadEntries(
       }
     }
 
-    if (!m_dispatcher) continue;  // shortcut
+    if (!m_dispatcher) {
+      continue;  // shortcut
+    }
     ++entry->seq_num;
 
     // put on update queue
@@ -410,40 +434,51 @@ bool Storage::LoadEntries(
           i.first, entry->id, entry->seq_num.value(), i.second, entry->flags));
     } else if (entry->id != 0xffff) {
       // don't send an update if we don't have an assigned id yet
-      if (*old_value != *i.second)
+      if (*old_value != *i.second) {
         msgs.emplace_back(
             Message::EntryUpdate(entry->id, entry->seq_num.value(), i.second));
-      if (!was_persist)
+      }
+      if (!was_persist) {
         msgs.emplace_back(Message::FlagsUpdate(entry->id, entry->flags));
+      }
     }
   }
 
   if (m_dispatcher) {
     auto dispatcher = m_dispatcher;
     lock.unlock();
-    for (auto& msg : msgs)
+    for (auto& msg : msgs) {
       dispatcher->QueueOutgoing(std::move(msg), nullptr, nullptr);
+    }
   }
 
   return true;
 }
 
 const char* Storage::LoadPersistent(
-    const Twine& filename,
+    std::string_view filename,
     std::function<void(size_t line, const char* msg)> warn) {
   std::error_code ec;
   wpi::raw_fd_istream is(filename, ec);
-  if (ec.value() != 0) return "could not open file";
-  if (!LoadEntries(is, "", true, warn)) return "error reading file";
+  if (ec.value() != 0) {
+    return "could not open file";
+  }
+  if (!LoadEntries(is, "", true, warn)) {
+    return "error reading file";
+  }
   return nullptr;
 }
 
 const char* Storage::LoadEntries(
-    const Twine& filename, const Twine& prefix,
+    std::string_view filename, std::string_view prefix,
     std::function<void(size_t line, const char* msg)> warn) {
   std::error_code ec;
   wpi::raw_fd_istream is(filename, ec);
-  if (ec.value() != 0) return "could not open file";
-  if (!LoadEntries(is, prefix, false, warn)) return "error reading file";
+  if (ec.value() != 0) {
+    return "could not open file";
+  }
+  if (!LoadEntries(is, prefix, false, warn)) {
+    return "error reading file";
+  }
   return nullptr;
 }

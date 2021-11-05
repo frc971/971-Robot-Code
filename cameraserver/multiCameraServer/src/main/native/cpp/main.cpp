@@ -1,16 +1,15 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2018 FIRST. All Rights Reserved.                             */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include <cstdio>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <networktables/NetworkTableInstance.h>
-#include <wpi/StringRef.h>
+#include <wpi/StringExtras.h>
+#include <wpi/fmt/raw_ostream.h>
 #include <wpi/json.h>
 #include <wpi/raw_istream.h>
 #include <wpi/raw_ostream.h>
@@ -108,7 +107,7 @@ bool ReadConfig() {
   try {
     j = wpi::json::parse(is);
   } catch (const wpi::json::parse_error& e) {
-    ParseError() << "byte " << e.byte << ": " << e.what() << '\n';
+    fmt::print(ParseError(), "byte {}: {}\n", e.byte, e.what());
     return false;
   }
 
@@ -130,10 +129,9 @@ bool ReadConfig() {
   if (j.count("ntmode") != 0) {
     try {
       auto str = j.at("ntmode").get<std::string>();
-      wpi::StringRef s(str);
-      if (s.equals_lower("client")) {
+      if (wpi::equals_lower(str, "client")) {
         server = false;
-      } else if (s.equals_lower("server")) {
+      } else if (wpi::equals_lower(str, "server")) {
         server = true;
       } else {
         ParseError() << "could not understand ntmode value '" << str << "'\n";
@@ -146,7 +144,9 @@ bool ReadConfig() {
   // cameras
   try {
     for (auto&& camera : j.at("cameras")) {
-      if (!ReadCameraConfig(camera)) return false;
+      if (!ReadCameraConfig(camera)) {
+        return false;
+      }
     }
   } catch (const wpi::json::exception& e) {
     ParseError() << "could not read cameras: " << e.what() << '\n';
@@ -157,34 +157,41 @@ bool ReadConfig() {
 }
 
 void StartCamera(const CameraConfig& config) {
-  wpi::outs() << "Starting camera '" << config.name << "' on " << config.path
-              << '\n';
-  auto camera = frc::CameraServer::GetInstance()->StartAutomaticCapture(
-      config.name, config.path);
+  fmt::print("Starting camera '{}' on {}\n", config.name, config.path);
+  auto camera =
+      frc::CameraServer::StartAutomaticCapture(config.name, config.path);
 
   camera.SetConfigJson(config.config);
 }
 }  // namespace
 
 int main(int argc, char* argv[]) {
-  if (argc >= 2) configFile = argv[1];
+  if (argc >= 2) {
+    configFile = argv[1];
+  }
 
   // read configuration
-  if (!ReadConfig()) return EXIT_FAILURE;
+  if (!ReadConfig()) {
+    return EXIT_FAILURE;
+  }
 
   // start NetworkTables
   auto ntinst = nt::NetworkTableInstance::GetDefault();
   if (server) {
-    wpi::outs() << "Setting up NetworkTables server\n";
+    std::puts("Setting up NetworkTables server");
     ntinst.StartServer();
   } else {
-    wpi::outs() << "Setting up NetworkTables client for team " << team << '\n';
+    fmt::print("Setting up NetworkTables client for team {}\n", team);
     ntinst.StartClientTeam(team);
   }
 
   // start cameras
-  for (auto&& camera : cameras) StartCamera(camera);
+  for (auto&& camera : cameras) {
+    StartCamera(camera);
+  }
 
   // loop forever
-  for (;;) std::this_thread::sleep_for(std::chrono::seconds(10));
+  for (;;) {
+    std::this_thread::sleep_for(std::chrono::seconds(10));
+  }
 }

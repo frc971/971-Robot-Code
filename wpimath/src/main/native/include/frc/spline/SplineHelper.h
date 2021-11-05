@@ -1,15 +1,14 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
-#include <array>
 #include <utility>
 #include <vector>
+
+#include <wpi/SymbolExports.h>
+#include <wpi/array.h>
 
 #include "frc/spline/CubicHermiteSpline.h"
 #include "frc/spline/QuinticHermiteSpline.h"
@@ -19,7 +18,7 @@ namespace frc {
  * Helper class that is used to generate cubic and quintic splines from user
  * provided waypoints.
  */
-class SplineHelper {
+class WPILIB_DLLEXPORT SplineHelper {
  public:
   /**
    * Returns 2 cubic control vectors from a set of exterior waypoints and
@@ -30,7 +29,7 @@ class SplineHelper {
    * @param end               The ending pose.
    * @return 2 cubic control vectors.
    */
-  static std::array<Spline<3>::ControlVector, 2>
+  static wpi::array<Spline<3>::ControlVector, 2>
   CubicControlVectorsFromWaypoints(
       const Pose2d& start, const std::vector<Translation2d>& interiorWaypoints,
       const Pose2d& end);
@@ -81,14 +80,14 @@ class SplineHelper {
  private:
   static Spline<3>::ControlVector CubicControlVector(double scalar,
                                                      const Pose2d& point) {
-    return {{point.X().to<double>(), scalar * point.Rotation().Cos()},
-            {point.Y().to<double>(), scalar * point.Rotation().Sin()}};
+    return {{point.X().value(), scalar * point.Rotation().Cos()},
+            {point.Y().value(), scalar * point.Rotation().Sin()}};
   }
 
   static Spline<5>::ControlVector QuinticControlVector(double scalar,
                                                        const Pose2d& point) {
-    return {{point.X().to<double>(), scalar * point.Rotation().Cos(), 0.0},
-            {point.Y().to<double>(), scalar * point.Rotation().Sin(), 0.0}};
+    return {{point.X().value(), scalar * point.Rotation().Cos(), 0.0},
+            {point.Y().value(), scalar * point.Rotation().Sin(), 0.0}};
   }
 
   /**

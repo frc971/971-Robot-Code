@@ -1,28 +1,28 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2008-2019 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 package edu.wpi.first.wpilibj;
 
 /**
- * Interface for speed controlling devices.
+ * Interface for motor controlling devices.
+ *
+ * @deprecated Use {@link edu.wpi.first.wpilibj.motorcontrol.MotorController}.
  */
-public interface SpeedController extends PIDOutput {
+@Deprecated(since = "2022", forRemoval = true)
+public interface SpeedController {
   /**
-   * Common interface for setting the speed of a speed controller.
+   * Common interface for setting the speed of a motor controller.
    *
    * @param speed The speed to set. Value should be between -1.0 and 1.0.
    */
   void set(double speed);
 
   /**
-   * Sets the voltage output of the SpeedController.  Compensates for the current bus
-   * voltage to ensure that the desired voltage is output even if the battery voltage is below
-   * 12V - highly useful when the voltage outputs are "meaningful" (e.g. they come from a
-   * feedforward calculation).
+   * Sets the voltage output of the MotorController. Compensates for the current bus voltage to
+   * ensure that the desired voltage is output even if the battery voltage is below 12V - highly
+   * useful when the voltage outputs are "meaningful" (e.g. they come from a feedforward
+   * calculation).
    *
    * <p>NOTE: This function *must* be called regularly in order for voltage compensation to work
    * properly - unlike the ordinary set function, it is not "set it and forget it."
@@ -34,29 +34,27 @@ public interface SpeedController extends PIDOutput {
   }
 
   /**
-   * Common interface for getting the current set speed of a speed controller.
+   * Common interface for getting the current set speed of a motor controller.
    *
    * @return The current set speed. Value is between -1.0 and 1.0.
    */
   double get();
 
   /**
-   * Common interface for inverting direction of a speed controller.
+   * Common interface for inverting direction of a motor controller.
    *
    * @param isInverted The state of inversion true is inverted.
    */
   void setInverted(boolean isInverted);
 
   /**
-   * Common interface for returning if a speed controller is in the inverted state or not.
+   * Common interface for returning if a motor controller is in the inverted state or not.
    *
    * @return isInverted The state of the inversion true is inverted.
    */
   boolean getInverted();
 
-  /**
-   * Disable the speed controller.
-   */
+  /** Disable the motor controller. */
   void disable();
 
   /**

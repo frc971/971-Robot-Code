@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2015-2018 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #ifndef NTCORE_ENTRYNOTIFIER_H_
 #define NTCORE_ENTRYNOTIFIER_H_
@@ -11,8 +8,11 @@
 #include <atomic>
 #include <memory>
 #include <string>
+#include <string_view>
+#include <utility>
 
-#include "CallbackManager.h"
+#include <wpi/CallbackManager.h>
+
 #include "Handle.h"
 #include "IEntryNotifier.h"
 #include "ntcore_cpp.h"
@@ -26,22 +26,23 @@ namespace nt {
 namespace impl {
 
 struct EntryListenerData
-    : public ListenerData<std::function<void(const EntryNotification& event)>> {
+    : public wpi::CallbackListenerData<
+          std::function<void(const EntryNotification& event)>> {
   EntryListenerData() = default;
   EntryListenerData(
       std::function<void(const EntryNotification& event)> callback_,
-      StringRef prefix_, unsigned int flags_)
-      : ListenerData(callback_), prefix(prefix_), flags(flags_) {}
+      std::string_view prefix_, unsigned int flags_)
+      : CallbackListenerData(callback_), prefix(prefix_), flags(flags_) {}
   EntryListenerData(
       std::function<void(const EntryNotification& event)> callback_,
       NT_Entry entry_, unsigned int flags_)
-      : ListenerData(callback_), entry(entry_), flags(flags_) {}
-  EntryListenerData(unsigned int poller_uid_, StringRef prefix_,
+      : CallbackListenerData(callback_), entry(entry_), flags(flags_) {}
+  EntryListenerData(unsigned int poller_uid_, std::string_view prefix_,
                     unsigned int flags_)
-      : ListenerData(poller_uid_), prefix(prefix_), flags(flags_) {}
+      : CallbackListenerData(poller_uid_), prefix(prefix_), flags(flags_) {}
   EntryListenerData(unsigned int poller_uid_, NT_Entry entry_,
                     unsigned int flags_)
-      : ListenerData(poller_uid_), entry(entry_), flags(flags_) {}
+      : CallbackListenerData(poller_uid_), entry(entry_), flags(flags_) {}
 
   std::string prefix;
   NT_Entry entry = 0;
@@ -49,10 +50,12 @@ struct EntryListenerData
 };
 
 class EntryNotifierThread
-    : public CallbackThread<EntryNotifierThread, EntryNotification,
-                            EntryListenerData> {
+    : public wpi::CallbackThread<EntryNotifierThread, EntryNotification,
+                                 EntryListenerData> {
  public:
-  explicit EntryNotifierThread(int inst) : m_inst(inst) {}
+  EntryNotifierThread(std::function<void()> on_start,
+                      std::function<void()> on_exit, int inst)
+      : CallbackThread(std::move(on_start), std::move(on_exit)), m_inst(inst) {}
 
   bool Matches(const EntryListenerData& listener,
                const EntryNotification& data);
@@ -74,9 +77,9 @@ class EntryNotifierThread
 
 class EntryNotifier
     : public IEntryNotifier,
-      public CallbackManager<EntryNotifier, impl::EntryNotifierThread> {
+      public wpi::CallbackManager<EntryNotifier, impl::EntryNotifierThread> {
   friend class EntryNotifierTest;
-  friend class CallbackManager<EntryNotifier, impl::EntryNotifierThread>;
+  friend class wpi::CallbackManager<EntryNotifier, impl::EntryNotifierThread>;
 
  public:
   explicit EntryNotifier(int inst, wpi::Logger& logger);
@@ -86,15 +89,15 @@ class EntryNotifier
   bool local_notifiers() const override;
 
   unsigned int Add(std::function<void(const EntryNotification& event)> callback,
-                   wpi::StringRef prefix, unsigned int flags) override;
+                   std::string_view prefix, unsigned int flags) override;
   unsigned int Add(std::function<void(const EntryNotification& event)> callback,
                    unsigned int local_id, unsigned int flags) override;
-  unsigned int AddPolled(unsigned int poller_uid, wpi::StringRef prefix,
+  unsigned int AddPolled(unsigned int poller_uid, std::string_view prefix,
                          unsigned int flags) override;
   unsigned int AddPolled(unsigned int poller_uid, unsigned int local_id,
                          unsigned int flags) override;
 
-  void NotifyEntry(unsigned int local_id, StringRef name,
+  void NotifyEntry(unsigned int local_id, std::string_view name,
                    std::shared_ptr<Value> value, unsigned int flags,
                    unsigned int only_listener = UINT_MAX) override;
 

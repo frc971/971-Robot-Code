@@ -1,14 +1,13 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2020 FIRST. All Rights Reserved.                             */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "HALSimWS.h"
 
+#include <cstdio>
+
+#include <fmt/format.h>
 #include <wpi/SmallString.h>
-#include <wpi/raw_ostream.h>
 #include <wpi/uv/util.h>
 
 #include "HALSimWSClientConnection.h"
@@ -25,7 +24,7 @@ HALSimWS::HALSimWS(wpi::uv::Loop& loop, ProviderContainer& providers,
       m_providers(providers),
       m_simDevicesProvider(simDevicesProvider) {
   m_loop.error.connect([](uv::Error err) {
-    wpi::errs() << "HALSim WS Client libuv Error: " << err.str() << "\n";
+    fmt::print(stderr, "HALSim WS Client libuv Error: {}\n", err.str());
   });
 
   m_tcp_client = uv::Tcp::Create(m_loop);
@@ -42,26 +41,26 @@ bool HALSimWS::Initialize() {
   }
 
   const char* host = std::getenv("HALSIMWS_HOST");
-  if (host != NULL) {
+  if (host != nullptr) {
     m_host = host;
   } else {
     m_host = "localhost";
   }
 
   const char* port = std::getenv("HALSIMWS_PORT");
-  if (port != NULL) {
+  if (port != nullptr) {
     try {
       m_port = std::stoi(port);
     } catch (const std::invalid_argument& err) {
-      wpi::errs() << "Error decoding HALSIMWS_PORT (" << err.what() << ")\n";
+      fmt::print(stderr, "Error decoding HALSIMWS_PORT ({})\n", err.what());
       return false;
     }
   } else {
-    m_port = 8080;
+    m_port = 3300;
   }
 
   const char* uri = std::getenv("HALSIMWS_URI");
-  if (uri != NULL) {
+  if (uri != nullptr) {
     m_uri = uri;
   } else {
     m_uri = "/wpilibws";
@@ -86,13 +85,12 @@ void HALSimWS::Start() {
         m_connect_timer->Start(uv::Timer::Time(kTcpConnectAttemptTimeout));
       });
 
-  m_tcp_client->closed.connect(
-      []() { wpi::outs() << "TCP connection closed\n"; });
+  m_tcp_client->closed.connect([]() { std::puts("TCP connection closed"); });
 
   // Set up the connection timer
-  wpi::outs() << "HALSimWS Initialized\n";
-  wpi::outs() << "Will attempt to connect to ws://" << m_host << ":" << m_port
-              << m_uri << "\n";
+  std::puts("HALSimWS Initialized");
+  fmt::print("Will attempt to connect to ws://{}:{}{}\n", m_host, m_port,
+             m_uri);
 
   // Set up the timer to attempt connection
   m_connect_timer->timeout.connect([this] { AttemptConnect(); });
@@ -105,7 +103,7 @@ void HALSimWS::Start() {
 void HALSimWS::AttemptConnect() {
   m_connect_attempts++;
 
-  wpi::outs() << "Connection Attempt " << m_connect_attempts << "\n";
+  fmt::print("Connection Attempt {}\n", m_connect_attempts);
 
   struct sockaddr_in dest;
   uv::NameToAddr(m_host, m_port, &dest);
@@ -170,6 +168,6 @@ void HALSimWS::OnNetValueChanged(const wpi::json& msg) {
       provider->OnNetValueChanged(msg.at("data"));
     }
   } catch (wpi::json::exception& e) {
-    wpi::errs() << "Error with incoming message: " << e.what() << "\n";
+    fmt::print(stderr, "Error with incoming message: {}\n", e.what());
   }
 }

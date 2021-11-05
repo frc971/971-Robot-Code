@@ -15,7 +15,7 @@ set_property(TARGET wpigui PROPERTY POSITION_INDEPENDENT_CODE ON)
 set_property(TARGET wpigui PROPERTY FOLDER "libraries")
 
 wpilib_target_warnings(wpigui)
-target_link_libraries(wpigui PUBLIC imgui)
+target_link_libraries(wpigui PUBLIC imgui wpiutil)
 
 target_include_directories(wpigui PUBLIC
                             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/main/native/include>
@@ -46,6 +46,6 @@ install(DIRECTORY src/main/native/include/ DESTINATION "${include_dest}/wpigui")
 #    set (wpigui_config_dir share/wpigui)
 #endif()
 
-#configure_file(wpigui-config.cmake.in ${CMAKE_BINARY_DIR}/wpigui-config.cmake )
-#install(FILES ${CMAKE_BINARY_DIR}/wpigui-config.cmake DESTINATION ${wpigui_config_dir})
+#configure_file(wpigui-config.cmake.in ${WPILIB_BINARY_DIR}/wpigui-config.cmake )
+#install(FILES ${WPILIB_BINARY_DIR}/wpigui-config.cmake DESTINATION ${wpigui_config_dir})
 #install(EXPORT wpigui DESTINATION ${wpigui_config_dir})

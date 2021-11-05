@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2016-2018 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #ifndef NTCORE_INSTANCEIMPL_H_
 #define NTCORE_INSTANCEIMPL_H_
@@ -11,7 +8,6 @@
 #include <atomic>
 #include <memory>
 
-#include <wpi/UidVector.h>
 #include <wpi/mutex.h>
 
 #include "ConnectionNotifier.h"
@@ -50,8 +46,8 @@ class InstanceImpl {
   static int AllocImpl();
 
   static std::atomic<int> s_default;
-  static std::atomic<InstanceImpl*> s_fast_instances[10];
-  static wpi::UidVector<InstanceImpl*, 10> s_instances;
+  static constexpr int kNumInstances = 16;
+  static std::atomic<InstanceImpl*> s_instances[kNumInstances];
   static wpi::mutex s_mutex;
 };
 

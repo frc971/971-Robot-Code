@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2018 FIRST. All Rights Reserved.                             */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #ifndef WPIUTIL_WPI_UV_WORK_H_
 #define WPIUTIL_WPI_UV_WORK_H_
@@ -12,12 +9,12 @@
 
 #include <functional>
 #include <memory>
+#include <utility>
 
 #include "wpi/Signal.h"
 #include "wpi/uv/Request.h"
 
-namespace wpi {
-namespace uv {
+namespace wpi::uv {
 
 class Loop;
 
@@ -88,10 +85,9 @@ void QueueWork(Loop& loop, std::function<void()> work,
 inline void QueueWork(const std::shared_ptr<Loop>& loop,
                       std::function<void()> work,
                       std::function<void()> afterWork) {
-  QueueWork(*loop, work, afterWork);
+  QueueWork(*loop, std::move(work), std::move(afterWork));
 }
 
-}  // namespace uv
-}  // namespace wpi
+}  // namespace wpi::uv
 
 #endif  // WPIUTIL_WPI_UV_WORK_H_

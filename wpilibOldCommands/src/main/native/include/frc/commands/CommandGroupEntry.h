@@ -1,11 +1,10 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2011-2019 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
+
+#include <units/time.h>
 
 namespace frc {
 
@@ -20,14 +19,15 @@ class CommandGroupEntry {
   };
 
   CommandGroupEntry() = default;
-  CommandGroupEntry(Command* command, Sequence state, double timeout = -1.0);
+  CommandGroupEntry(Command* command, Sequence state,
+                    units::second_t timeout = -1_s);
 
   CommandGroupEntry(CommandGroupEntry&&) = default;
   CommandGroupEntry& operator=(CommandGroupEntry&&) = default;
 
   bool IsTimedOut() const;
 
-  double m_timeout = -1.0;
+  units::second_t m_timeout = -1_s;
   Command* m_command = nullptr;
   Sequence m_state = kSequence_InSequence;
 };

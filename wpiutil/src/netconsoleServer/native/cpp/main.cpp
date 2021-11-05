@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2018-2019 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #ifdef __APPLE__
 #include <util.h>
@@ -11,9 +8,12 @@
 #include <pty.h>
 #endif
 
+#include <cstdio>
+
+#include "fmt/format.h"
 #include "wpi/MathExtras.h"
 #include "wpi/SmallVector.h"
-#include "wpi/raw_ostream.h"
+#include "wpi/StringExtras.h"
 #include "wpi/raw_uv_ostream.h"
 #include "wpi/timestamp.h"
 #include "wpi/uv/Loop.h"
@@ -33,9 +33,9 @@ static bool NewlineBuffer(std::string& rem, uv::Buffer& buf, size_t len,
                           wpi::SmallVectorImpl<uv::Buffer>& bufs, bool tcp,
                           uint16_t tcpSeq) {
   // scan for last newline
-  wpi::StringRef str(buf.base, len);
+  std::string_view str(buf.base, len);
   size_t idx = str.rfind('\n');
-  if (idx == wpi::StringRef::npos) {
+  if (idx == std::string_view::npos) {
     // no newline yet, just keep appending to remainder
     rem += str;
     return false;
@@ -43,7 +43,7 @@ static bool NewlineBuffer(std::string& rem, uv::Buffer& buf, size_t len,
 
   // build output
   wpi::raw_uv_ostream out(bufs, 4096);
-  wpi::StringRef toCopy = str.slice(0, idx + 1);
+  std::string_view toCopy = wpi::slice(str, 0, idx + 1);
   if (tcp) {
     // Header is 2 byte len, 1 byte type, 4 byte timestamp, 2 byte sequence num
     uint32_t ts = wpi::FloatToBits((wpi::Now() - startTime) * 1.0e-6);
@@ -57,12 +57,12 @@ static bool NewlineBuffer(std::string& rem, uv::Buffer& buf, size_t len,
                               static_cast<uint8_t>(ts & 0xff),
                               static_cast<uint8_t>((tcpSeq >> 8) & 0xff),
                               static_cast<uint8_t>(tcpSeq & 0xff)};
-    out << wpi::ArrayRef<uint8_t>(header);
+    out << wpi::span<const uint8_t>(header);
   }
   out << rem << toCopy;
 
   // reset remainder
-  rem = str.slice(idx + 1, wpi::StringRef::npos);
+  rem = wpi::slice(str, idx + 1, std::string_view::npos);
   return true;
 }
 
@@ -81,11 +81,15 @@ static void CopyUdp(uv::Stream& in, std::shared_ptr<uv::Udp> out,
           uv::Buffer& buf, size_t len) {
         // build buffers
         wpi::SmallVector<uv::Buffer, 4> bufs;
-        if (!NewlineBuffer(*rem, buf, len, bufs, false, 0)) return;
+        if (!NewlineBuffer(*rem, buf, len, bufs, false, 0)) {
+          return;
+        }
 
         // send output
         outPtr->Send(addr, bufs, [](auto bufs2, uv::Error) {
-          for (auto buf : bufs2) buf.Deallocate();
+          for (auto buf : bufs2) {
+            buf.Deallocate();
+          }
         });
       },
       out);
@@ -101,12 +105,15 @@ static void CopyTcp(uv::Stream& in, std::shared_ptr<uv::Stream> out) {
           uv::Buffer& buf, size_t len) {
         // build buffers
         wpi::SmallVector<uv::Buffer, 4> bufs;
-        if (!NewlineBuffer(data->rem, buf, len, bufs, true, data->seq++))
+        if (!NewlineBuffer(data->rem, buf, len, bufs, true, data->seq++)) {
           return;
+        }
 
         // send output
         outPtr->Write(bufs, [](auto bufs2, uv::Error) {
-          for (auto buf : bufs2) buf.Deallocate();
+          for (auto buf : bufs2) {
+            buf.Deallocate();
+          }
         });
       },
       out);
@@ -116,8 +123,10 @@ static void CopyStream(uv::Stream& in, std::shared_ptr<uv::Stream> out) {
   in.data.connect([out](uv::Buffer& buf, size_t len) {
     uv::Buffer buf2 = buf.Dup();
     buf2.len = len;
-    out->Write(buf2, [](auto bufs, uv::Error) {
-      for (auto buf : bufs) buf.Deallocate();
+    out->Write({buf2}, [](auto bufs, uv::Error) {
+      for (auto buf : bufs) {
+        buf.Deallocate();
+      }
     });
   });
 }
@@ -130,24 +139,26 @@ int main(int argc, char* argv[]) {
   bool err = false;
 
   while (programArgc < argc && argv[programArgc][0] == '-') {
-    if (wpi::StringRef(argv[programArgc]) == "-u") {
+    if (std::string_view(argv[programArgc]) == "-u") {
       useUdp = true;
-    } else if (wpi::StringRef(argv[programArgc]) == "-b") {
+    } else if (std::string_view(argv[programArgc]) == "-b") {
       useUdp = true;
       broadcastUdp = true;
     } else {
-      wpi::errs() << "unrecognized command line option " << argv[programArgc]
-                  << '\n';
+      fmt::print(stderr, "unrecognized command line option {}\n",
+                 argv[programArgc]);
       err = true;
     }
     ++programArgc;
   }
 
   if (err || (argc - programArgc) < 1) {
-    wpi::errs()
-        << argv[0] << " [-ub] program [arguments ...]\n"
-        << "  -u  send udp to localhost port 6666 instead of using tcp\n"
-        << "  -b  broadcast udp to port 6666 instead of using tcp\n";
+    std::fputs(argv[0], stderr);
+    std::fputs(
+        " [-ub] program [arguments ...]\n"
+        "  -u  send udp to localhost port 6666 instead of using tcp\n"
+        "  -b  broadcast udp to port 6666 instead of using tcp\n",
+        stderr);
     return EXIT_FAILURE;
   }
 
@@ -155,7 +166,7 @@ int main(int argc, char* argv[]) {
 
   auto loop = uv::Loop::Create();
   loop->error.connect(
-      [](uv::Error err) { wpi::errs() << "uv ERROR: " << err.str() << '\n'; });
+      [](uv::Error err) { fmt::print(stderr, "uv ERROR: {}\n", err.str()); });
 
   // create pipes to communicate with child
   auto stdinPipe = uv::Pipe::Create(loop);
@@ -168,12 +179,20 @@ int main(int argc, char* argv[]) {
   auto stderrTty = uv::Tty::Create(loop, 2, false);
 
   // pass through our console to child's (bidirectional)
-  if (stdinTty) CopyStream(*stdinTty, stdinPipe);
-  if (stdoutTty) CopyStream(*stdoutPipe, stdoutTty);
-  if (stderrTty) CopyStream(*stderrPipe, stderrTty);
+  if (stdinTty) {
+    CopyStream(*stdinTty, stdinPipe);
+  }
+  if (stdoutTty) {
+    CopyStream(*stdoutPipe, stdoutTty);
+  }
+  if (stderrTty) {
+    CopyStream(*stderrPipe, stderrTty);
+  }
 
   // when our stdin closes, also close child stdin
-  if (stdinTty) stdinTty->end.connect([stdinPipe] { stdinPipe->Close(); });
+  if (stdinTty) {
+    stdinTty->end.connect([stdinPipe] { stdinPipe->Close(); });
+  }
 
   if (useUdp) {
     auto udp = uv::Udp::Create(loop);
@@ -189,7 +208,9 @@ int main(int argc, char* argv[]) {
     // when we get a connection, accept it
     tcp->connection.connect([srv = tcp.get(), stdoutPipe, stderrPipe] {
       auto tcp = srv->Accept();
-      if (!tcp) return;
+      if (!tcp) {
+        return;
+      }
 
       // close on error
       tcp->error.connect([s = tcp.get()](wpi::uv::Error err) { s->Close(); });
@@ -227,17 +248,21 @@ int main(int argc, char* argv[]) {
       uv::Process::StdioCreatePipe(2, *stderrPipe, UV_WRITABLE_PIPE));
 
   // pass our args as the child args (argv[1] becomes child argv[0], etc)
-  for (int i = programArgc; i < argc; ++i) options.emplace_back(argv[i]);
+  for (int i = programArgc; i < argc; ++i) {
+    options.emplace_back(argv[i]);
+  }
 
   auto proc = uv::Process::SpawnArray(loop, argv[programArgc], options);
   if (!proc) {
-    wpi::errs() << "could not start subprocess\n";
+    std::fputs("could not start subprocess\n", stderr);
     return EXIT_FAILURE;
   }
   proc->exited.connect([](int64_t status, int) { std::exit(status); });
 
   // start reading
-  if (stdinTty) stdinTty->StartRead();
+  if (stdinTty) {
+    stdinTty->StartRead();
+  }
   stdoutPipe->StartRead();
   stderrPipe->StartRead();
 

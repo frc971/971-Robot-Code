@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2015-2019 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #ifndef CSCORE_CSCORE_RAW_CV_H_
 #define CSCORE_CSCORE_RAW_CV_H_
@@ -11,6 +8,8 @@
 #ifdef CSCORE_CSCORE_CV_H_
 #error "Cannot include both cscore_cv.h and cscore_raw_cv.h in the same file"
 #endif
+
+#include <opencv2/core/mat.hpp>
 
 #include "cscore_raw.h"
 
@@ -35,7 +34,7 @@ class RawCvSource : public RawSource {
    * @param name Source name (arbitrary unique identifier)
    * @param mode Video mode being generated
    */
-  RawCvSource(const wpi::Twine& name, const VideoMode& mode);
+  RawCvSource(std::string_view name, const VideoMode& mode);
 
   /**
    * Create a Raw OpenCV source.
@@ -46,7 +45,7 @@ class RawCvSource : public RawSource {
    * @param height height
    * @param fps fps
    */
-  RawCvSource(const wpi::Twine& name, VideoMode::PixelFormat pixelFormat,
+  RawCvSource(std::string_view name, VideoMode::PixelFormat pixelFormat,
               int width, int height, int fps);
 
   /**
@@ -86,7 +85,7 @@ class RawCvSink : public RawSink {
    *
    * @param name Source name (arbitrary unique identifier)
    */
-  explicit RawCvSink(const wpi::Twine& name);
+  explicit RawCvSink(std::string_view name);
 
   /**
    * Create a sink for accepting OpenCV images in a separate thread.
@@ -100,7 +99,7 @@ class RawCvSink : public RawSink {
    *        or GetError() as needed, but should not call (except in very
    *        unusual circumstances) WaitForImage().
    */
-  RawCvSink(const wpi::Twine& name,
+  RawCvSink(std::string_view name,
             std::function<void(uint64_t time)> processFrame);
 
   /**
@@ -112,7 +111,7 @@ class RawCvSink : public RawSink {
    *         message); the frame time is in the same time base as wpi::Now(),
    *         and is in 1 us increments.
    */
-  uint64_t GrabFrame(cv::Mat& image, double timeout = 0.225);
+  [[nodiscard]] uint64_t GrabFrame(cv::Mat& image, double timeout = 0.225);
 
   /**
    * Wait for the next frame and get the image.  May block forever.
@@ -122,7 +121,7 @@ class RawCvSink : public RawSink {
    *         message); the frame time is in the same time base as wpi::Now(),
    *         and is in 1 us increments.
    */
-  uint64_t GrabFrameNoTimeout(cv::Mat& image);
+  [[nodiscard]] uint64_t GrabFrameNoTimeout(cv::Mat& image);
 
   /**
    * Wait for the next frame and get the image.
@@ -133,7 +132,8 @@ class RawCvSink : public RawSink {
    *         message); the frame time is in the same time base as wpi::Now(),
    *         and is in 1 us increments.
    */
-  uint64_t GrabFrameDirect(cv::Mat& image, double timeout = 0.225);
+  [[nodiscard]] uint64_t GrabFrameDirect(cv::Mat& image,
+                                         double timeout = 0.225);
 
   /**
    * Wait for the next frame and get the image.  May block forever.
@@ -143,16 +143,16 @@ class RawCvSink : public RawSink {
    *         message); the frame time is in the same time base as wpi::Now(),
    *         and is in 1 us increments.
    */
-  uint64_t GrabFrameNoTimeoutDirect(cv::Mat& image);
+  [[nodiscard]] uint64_t GrabFrameNoTimeoutDirect(cv::Mat& image);
 
  private:
   RawFrame rawFrame;
 };
 
-inline RawCvSource::RawCvSource(const wpi::Twine& name, const VideoMode& mode)
+inline RawCvSource::RawCvSource(std::string_view name, const VideoMode& mode)
     : RawSource{name, mode} {}
 
-inline RawCvSource::RawCvSource(const wpi::Twine& name,
+inline RawCvSource::RawCvSource(std::string_view name,
                                 VideoMode::PixelFormat format, int width,
                                 int height, int fps)
     : RawSource{name, format, width, height, fps} {}
@@ -162,34 +162,34 @@ inline void RawCvSource::PutFrame(cv::Mat& image) {
   rawFrame.data = reinterpret_cast<char*>(image.data);
   rawFrame.width = image.cols;
   rawFrame.height = image.rows;
-  rawFrame.totalData = image.total() * image.channels;
-  rawFrame.pixelFormat = image.channels == 3 ? CS_PIXFMT_BGR : CS_PIXFMT_GRAY;
+  rawFrame.totalData = image.total() * image.channels();
+  rawFrame.pixelFormat = image.channels() == 3 ? CS_PIXFMT_BGR : CS_PIXFMT_GRAY;
   PutSourceFrame(m_handle, rawFrame, &m_status);
 }
 
-inline RawCvSink::RawCvSink(const wpi::Twine& name) : RawSink{name} {}
+inline RawCvSink::RawCvSink(std::string_view name) : RawSink{name} {}
 
-inline RawCvSink::RawCvSink(const wpi::Twine& name,
+inline RawCvSink::RawCvSink(std::string_view name,
                             std::function<void(uint64_t time)> processFrame)
     : RawSink{name, processFrame} {}
 
 inline uint64_t RawCvSink::GrabFrame(cv::Mat& image, double timeout) {
-  cv::Mat tmpMat;
-  auto retVal = GrabFrameDirect(tmpMat);
+  cv::Mat tmpnam;
+  auto retVal = GrabFrameDirect(tmpnam);
   if (retVal <= 0) {
     return retVal;
   }
-  tmpMat.copyTo(image);
+  tmpnam.copyTo(image);
   return retVal;
 }
 
 inline uint64_t RawCvSink::GrabFrameNoTimeout(cv::Mat& image) {
-  cv::Mat tmpMat;
-  auto retVal = GrabFrameNoTimeoutDirect(tmpMat);
+  cv::Mat tmpnam;
+  auto retVal = GrabFrameNoTimeoutDirect(tmpnam);
   if (retVal <= 0) {
     return retVal;
   }
-  tmpMat.copyTo(image);
+  tmpnam.copyTo(image);
   return retVal;
 }
 
@@ -198,7 +198,9 @@ inline uint64_t RawCvSink::GrabFrameDirect(cv::Mat& image, double timeout) {
   rawFrame.width = 0;
   rawFrame.pixelFormat = CS_PixelFormat::CS_PIXFMT_BGR;
   m_status = RawSink::GrabFrame(rawFrame, timeout);
-  if (m_status <= 0) return m_status;
+  if (m_status <= 0) {
+    return m_status;
+  }
   image = cv::Mat{rawFrame.height, rawFrame.width, CV_8UC3, rawFrame.data};
   return m_status;
 }
@@ -208,7 +210,9 @@ inline uint64_t RawCvSink::GrabFrameNoTimeoutDirect(cv::Mat& image) {
   rawFrame.width = 0;
   rawFrame.pixelFormat = CS_PixelFormat::CS_PIXFMT_BGR;
   m_status = RawSink::GrabFrameNoTimeout(rawFrame);
-  if (m_status <= 0) return m_status;
+  if (m_status <= 0) {
+    return m_status;
+  }
   image = cv::Mat{rawFrame.height, rawFrame.width, CV_8UC3, rawFrame.data};
   return m_status;
 }

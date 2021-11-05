@@ -50,8 +50,14 @@ task cppHeadersZip(type: Zip) {
         into '/'
     }
 
-    from('src/main/native/include') {
-        into '/'
+    ext.includeDirs = [
+        project.file('src/main/native/include')
+    ]
+
+    ext.includeDirs.each {
+        from(it) {
+            into '/'
+        }
     }
 }
 
@@ -65,7 +71,10 @@ addTaskToCopyAllOutputs(cppHeadersZip)
 
 model {
     publishing {
-        def taskList = createComponentZipTasks($.components, [nativeName, "${nativeName}JNIShared"], zipBaseName, Zip, project, includeStandardZipFormat)
+        def taskList = createComponentZipTasks($.components, [
+            nativeName,
+            "${nativeName}JNIShared"
+        ], zipBaseName, Zip, project, includeStandardZipFormat)
 
         def jniTaskList = createComponentZipTasks($.components, ["${nativeName}JNI"], jniBaseName, Jar, project, { task, value ->
             value.each { binary ->

@@ -1,13 +1,12 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2016-2019 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
-#include <wpi/Twine.h>
+#include <string_view>
+
+#include <units/time.h>
 
 #include "frc/commands/Command.h"
 
@@ -24,35 +23,36 @@ class TimedCommand : public Command {
    * Creates a new TimedCommand with the given name and timeout.
    *
    * @param name    the name of the command
-   * @param timeout the time (in seconds) before this command "times out"
+   * @param timeout the time before this command "times out"
    */
-  TimedCommand(const wpi::Twine& name, double timeout);
+  TimedCommand(std::string_view name, units::second_t timeout);
 
   /**
    * Creates a new WaitCommand with the given timeout.
    *
-   * @param timeout the time (in seconds) before this command "times out"
+   * @param timeout the time before this command "times out"
    */
-  explicit TimedCommand(double timeout);
+  explicit TimedCommand(units::second_t timeout);
 
   /**
    * Creates a new TimedCommand with the given name and timeout.
    *
    * @param name      the name of the command
-   * @param timeout   the time (in seconds) before this command "times out"
+   * @param timeout   the time before this command "times out"
    * @param subsystem the subsystem that the command requires
    */
-  TimedCommand(const wpi::Twine& name, double timeout, Subsystem& subsystem);
+  TimedCommand(std::string_view name, units::second_t timeout,
+               Subsystem& subsystem);
 
   /**
    * Creates a new WaitCommand with the given timeout.
    *
-   * @param timeout   the time (in seconds) before this command "times out"
+   * @param timeout   the time before this command "times out"
    * @param subsystem the subsystem that the command requires
    */
-  TimedCommand(double timeout, Subsystem& subsystem);
+  TimedCommand(units::second_t timeout, Subsystem& subsystem);
 
-  virtual ~TimedCommand() = default;
+  ~TimedCommand() override = default;
 
   TimedCommand(TimedCommand&&) = default;
   TimedCommand& operator=(TimedCommand&&) = default;

@@ -1,13 +1,12 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
 #include <vector>
+
+#include <wpi/SymbolExports.h>
 
 #include "frc/geometry/Pose2d.h"
 #include "frc/geometry/Transform2d.h"
@@ -26,12 +25,12 @@ namespace frc {
  * various States that represent the pose, curvature, time elapsed, velocity,
  * and acceleration at that point.
  */
-class Trajectory {
+class WPILIB_DLLEXPORT Trajectory {
  public:
   /**
    * Represents one point on the trajectory.
    */
-  struct State {
+  struct WPILIB_DLLEXPORT State {
     // The time elapsed since the beginning of the trajectory.
     units::second_t t = 0_s;
 
@@ -123,6 +122,16 @@ class Trajectory {
   Trajectory RelativeTo(const Pose2d& pose);
 
   /**
+   * Concatenates another trajectory to the current trajectory. The user is
+   * responsible for making sure that the end pose of this trajectory and the
+   * start pose of the other trajectory match (if that is the desired behavior).
+   *
+   * @param other The trajectory to concatenate.
+   * @return The concatenated trajectory.
+   */
+  Trajectory operator+(const Trajectory& other) const;
+
+  /**
    * Returns the initial pose of the trajectory.
    *
    * @return The initial pose of the trajectory.
@@ -164,8 +173,10 @@ class Trajectory {
   }
 };
 
+WPILIB_DLLEXPORT
 void to_json(wpi::json& json, const Trajectory::State& state);
 
+WPILIB_DLLEXPORT
 void from_json(const wpi::json& json, Trajectory::State& state);
 
 }  // namespace frc

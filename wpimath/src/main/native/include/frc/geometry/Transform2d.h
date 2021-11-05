@@ -1,22 +1,21 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
+
+#include <wpi/SymbolExports.h>
 
 #include "Translation2d.h"
 
 namespace frc {
 
-class Pose2d;
+class WPILIB_DLLEXPORT Pose2d;
 
 /**
  * Represents a transformation for a Pose2d.
  */
-class Transform2d {
+class WPILIB_DLLEXPORT Transform2d {
  public:
   /**
    * Constructs the transform that maps the initial pose to the final pose.
@@ -83,6 +82,14 @@ class Transform2d {
   Transform2d operator*(double scalar) const {
     return Transform2d(m_translation * scalar, m_rotation * scalar);
   }
+
+  /**
+   * Composes two transformations.
+   *
+   * @param other The transform to compose with this one.
+   * @return The composition of the two transformations.
+   */
+  Transform2d operator+(const Transform2d& other) const;
 
   /**
    * Checks equality between this Transform2d and another object.

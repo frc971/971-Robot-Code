@@ -1,19 +1,16 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2008-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
 #include <memory>
 
 #include <hal/Types.h>
+#include <wpi/sendable/Sendable.h>
+#include <wpi/sendable/SendableHelper.h>
 
-#include "frc/GyroBase.h"
-#include "frc/smartdashboard/Sendable.h"
-#include "frc/smartdashboard/SendableHelper.h"
+#include "frc/interfaces/Gyro.h"
 
 namespace frc {
 
@@ -32,7 +29,9 @@ class AnalogInput;
  *
  * This class is for gyro sensors that connect to an analog input.
  */
-class AnalogGyro : public GyroBase {
+class AnalogGyro : public Gyro,
+                   public wpi::Sendable,
+                   public wpi::SendableHelper<AnalogGyro> {
  public:
   static constexpr int kOversampleBits = 10;
   static constexpr int kAverageBits = 0;
@@ -41,7 +40,7 @@ class AnalogGyro : public GyroBase {
   static constexpr double kDefaultVoltsPerDegreePerSecond = 0.007;
 
   /**
-   * Gyro constructor using the Analog Input channel number.
+   * %Gyro constructor using the Analog Input channel number.
    *
    * @param channel The analog channel the gyro is connected to. Gyros can only
    *                be used on on-board Analog Inputs 0-1.
@@ -63,7 +62,7 @@ class AnalogGyro : public GyroBase {
   explicit AnalogGyro(AnalogInput* channel);
 
   /**
-   * Gyro constructor with a precreated AnalogInput object.
+   * %Gyro constructor with a precreated AnalogInput object.
    *
    * Use this constructor when the analog channel needs to be shared.
    * This object will not clean up the AnalogInput object when using this
@@ -75,7 +74,7 @@ class AnalogGyro : public GyroBase {
   explicit AnalogGyro(std::shared_ptr<AnalogInput> channel);
 
   /**
-   * Gyro constructor using the Analog Input channel number with parameters for
+   * %Gyro constructor using the Analog Input channel number with parameters for
    * presetting the center and offset values. Bypasses calibration.
    *
    * @param channel The analog channel the gyro is connected to. Gyros can only
@@ -87,7 +86,7 @@ class AnalogGyro : public GyroBase {
   AnalogGyro(int channel, int center, double offset);
 
   /**
-   * Gyro constructor with a precreated AnalogInput object and calibrated
+   * %Gyro constructor with a precreated AnalogInput object and calibrated
    * parameters.
    *
    * Use this constructor when the analog channel needs to be shared.
@@ -104,8 +103,8 @@ class AnalogGyro : public GyroBase {
 
   ~AnalogGyro() override;
 
-  AnalogGyro(AnalogGyro&& rhs);
-  AnalogGyro& operator=(AnalogGyro&& rhs);
+  AnalogGyro(AnalogGyro&& rhs) = default;
+  AnalogGyro& operator=(AnalogGyro&& rhs) = default;
 
   /**
    * Return the actual angle in degrees that the robot is currently facing.
@@ -175,16 +174,16 @@ class AnalogGyro : public GyroBase {
    * significant drift in the gyro and it needs to be recalibrated after it has
    * been running.
    */
-  void Reset() override;
+  void Reset() final;
 
   /**
    * Initialize the gyro.
    *
    * Calibration is handled by Calibrate().
    */
-  virtual void InitGyro();
+  void InitGyro();
 
-  void Calibrate() override;
+  void Calibrate() final;
 
   /**
    * Gets the analog input for the gyro.
@@ -192,6 +191,8 @@ class AnalogGyro : public GyroBase {
    * @return AnalogInput
    */
   std::shared_ptr<AnalogInput> GetAnalogInput() const;
+
+  void InitSendable(wpi::SendableBuilder& builder) override;
 
  protected:
   std::shared_ptr<AnalogInput> m_analog;

@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019 FIRST. All Rights Reserved.                             */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #ifndef WPIUTIL_WPI_PORTFORWARDER_H_
 #define WPIUTIL_WPI_PORTFORWARDER_H_
@@ -11,8 +8,7 @@
 #pragma once
 
 #include <memory>
-
-#include "wpi/Twine.h"
+#include <string_view>
 
 namespace wpi {
 
@@ -41,7 +37,8 @@ class PortForwarder {
    * @param remoteHost remote IP address / DNS name
    * @param remotePort remote port number
    */
-  void Add(unsigned int port, const Twine& remoteHost, unsigned int remotePort);
+  void Add(unsigned int port, std::string_view remoteHost,
+           unsigned int remotePort);
 
   /**
    * Stop TCP forwarding on a port.

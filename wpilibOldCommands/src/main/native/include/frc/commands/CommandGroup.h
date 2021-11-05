@@ -1,15 +1,13 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2011-2019 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
+#include <string_view>
 #include <vector>
 
-#include <wpi/Twine.h>
+#include <units/time.h>
 
 #include "frc/commands/Command.h"
 #include "frc/commands/CommandGroupEntry.h"
@@ -42,9 +40,9 @@ class CommandGroup : public Command {
    *
    * @param name The name for this command group
    */
-  explicit CommandGroup(const wpi::Twine& name);
+  explicit CommandGroup(std::string_view name);
 
-  virtual ~CommandGroup() = default;
+  ~CommandGroup() override = default;
 
   CommandGroup(CommandGroup&&) = default;
   CommandGroup& operator=(CommandGroup&&) = default;
@@ -78,9 +76,9 @@ class CommandGroup : public Command {
    * It is recommended that this method be called in the constructor.
    *
    * @param command The Command to be added
-   * @param timeout The timeout (in seconds)
+   * @param timeout The timeout
    */
-  void AddSequential(Command* command, double timeout);
+  void AddSequential(Command* command, units::second_t timeout);
 
   /**
    * Adds a new child Command to the group. The Command will be started after
@@ -125,9 +123,9 @@ class CommandGroup : public Command {
    * It is recommended that this method be called in the constructor.
    *
    * @param command The command to be added
-   * @param timeout The timeout (in seconds)
+   * @param timeout The timeout
    */
-  void AddParallel(Command* command, double timeout);
+  void AddParallel(Command* command, units::second_t timeout);
 
   bool IsInterruptible() const;
 
@@ -137,32 +135,32 @@ class CommandGroup : public Command {
   /**
    * Can be overridden by teams.
    */
-  virtual void Initialize();
+  void Initialize() override;
 
   /**
    * Can be overridden by teams.
    */
-  virtual void Execute();
+  void Execute() override;
 
   /**
    * Can be overridden by teams.
    */
-  virtual bool IsFinished();
+  bool IsFinished() override;
 
   /**
    * Can be overridden by teams.
    */
-  virtual void End();
+  void End() override;
 
   /**
    * Can be overridden by teams.
    */
-  virtual void Interrupted();
+  void Interrupted() override;
 
-  virtual void _Initialize();
-  virtual void _Execute();
-  virtual void _End();
-  virtual void _Interrupted();
+  void _Initialize() override;
+  void _Execute() override;
+  void _End() override;
+  void _Interrupted() override;
 
  private:
   void CancelConflicts(Command* command);

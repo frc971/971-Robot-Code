@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2016-2019 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "CvSinkImpl.h"
 
@@ -21,28 +18,34 @@
 
 using namespace cs;
 
-CvSinkImpl::CvSinkImpl(const wpi::Twine& name, wpi::Logger& logger,
+CvSinkImpl::CvSinkImpl(std::string_view name, wpi::Logger& logger,
                        Notifier& notifier, Telemetry& telemetry)
     : SinkImpl{name, logger, notifier, telemetry} {
   m_active = true;
   // m_thread = std::thread(&CvSinkImpl::ThreadMain, this);
 }
 
-CvSinkImpl::CvSinkImpl(const wpi::Twine& name, wpi::Logger& logger,
+CvSinkImpl::CvSinkImpl(std::string_view name, wpi::Logger& logger,
                        Notifier& notifier, Telemetry& telemetry,
                        std::function<void(uint64_t time)> processFrame)
     : SinkImpl{name, logger, notifier, telemetry} {}
 
-CvSinkImpl::~CvSinkImpl() { Stop(); }
+CvSinkImpl::~CvSinkImpl() {
+  Stop();
+}
 
 void CvSinkImpl::Stop() {
   m_active = false;
 
   // wake up any waiters by forcing an empty frame to be sent
-  if (auto source = GetSource()) source->Wakeup();
+  if (auto source = GetSource()) {
+    source->Wakeup();
+  }
 
   // join thread
-  if (m_thread.joinable()) m_thread.join();
+  if (m_thread.joinable()) {
+    m_thread.join();
+  }
 }
 
 uint64_t CvSinkImpl::GrabFrame(cv::Mat& image) {
@@ -107,9 +110,11 @@ void CvSinkImpl::ThreadMain() {
       std::this_thread::sleep_for(std::chrono::seconds(1));
       continue;
     }
-    SDEBUG4("waiting for frame");
+    SDEBUG4("{}", "waiting for frame");
     Frame frame = source->GetNextFrame();  // blocks
-    if (!m_active) break;
+    if (!m_active) {
+      break;
+    }
     if (!frame) {
       // Bad frame; sleep for 10 ms so we don't consume all processor time.
       std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -122,14 +127,14 @@ void CvSinkImpl::ThreadMain() {
 
 namespace cs {
 
-CS_Sink CreateCvSink(const wpi::Twine& name, CS_Status* status) {
+CS_Sink CreateCvSink(std::string_view name, CS_Status* status) {
   auto& inst = Instance::GetInstance();
   return inst.CreateSink(
       CS_SINK_CV, std::make_shared<CvSinkImpl>(name, inst.logger, inst.notifier,
                                                inst.telemetry));
 }
 
-CS_Sink CreateCvSinkCallback(const wpi::Twine& name,
+CS_Sink CreateCvSinkCallback(std::string_view name,
                              std::function<void(uint64_t time)> processFrame,
                              CS_Status* status) {
   auto& inst = Instance::GetInstance();
@@ -140,7 +145,7 @@ CS_Sink CreateCvSinkCallback(const wpi::Twine& name,
 
 static constexpr unsigned SinkMask = CS_SINK_CV | CS_SINK_RAW;
 
-void SetSinkDescription(CS_Sink sink, const wpi::Twine& description,
+void SetSinkDescription(CS_Sink sink, std::string_view description,
                         CS_Status* status) {
   auto data = Instance::GetInstance().GetSink(sink);
   if (!data || (data->kind & SinkMask) == 0) {
@@ -178,12 +183,12 @@ std::string GetSinkError(CS_Sink sink, CS_Status* status) {
   return static_cast<CvSinkImpl&>(*data->sink).GetError();
 }
 
-wpi::StringRef GetSinkError(CS_Sink sink, wpi::SmallVectorImpl<char>& buf,
-                            CS_Status* status) {
+std::string_view GetSinkError(CS_Sink sink, wpi::SmallVectorImpl<char>& buf,
+                              CS_Status* status) {
   auto data = Instance::GetInstance().GetSink(sink);
   if (!data || (data->kind & SinkMask) == 0) {
     *status = CS_INVALID_HANDLE;
-    return wpi::StringRef{};
+    return {};
   }
   return static_cast<CvSinkImpl&>(*data->sink).GetError(buf);
 }
@@ -243,7 +248,9 @@ uint64_t CS_GrabSinkFrameTimeoutCpp(CS_Sink sink, cv::Mat* image,
 char* CS_GetSinkError(CS_Sink sink, CS_Status* status) {
   wpi::SmallString<128> buf;
   auto str = cs::GetSinkError(sink, buf, status);
-  if (*status != 0) return nullptr;
+  if (*status != 0) {
+    return nullptr;
+  }
   return cs::ConvertToC(str);
 }
 

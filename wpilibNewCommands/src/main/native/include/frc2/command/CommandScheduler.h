@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
@@ -11,14 +8,13 @@
 #include <memory>
 #include <utility>
 
-#include <frc/ErrorBase.h>
-#include <frc/WPIErrors.h>
+#include <frc/Errors.h>
 #include <frc/Watchdog.h>
-#include <frc/smartdashboard/Sendable.h>
-#include <frc/smartdashboard/SendableHelper.h>
+#include <networktables/NTSendable.h>
 #include <units/time.h>
-#include <wpi/ArrayRef.h>
 #include <wpi/FunctionExtras.h>
+#include <wpi/sendable/SendableHelper.h>
+#include <wpi/span.h>
 
 namespace frc2 {
 class Command;
@@ -31,9 +27,8 @@ class Subsystem;
  * with the scheduler using RegisterSubsystem() in order for their Periodic()
  * methods to be called and for their default commands to be scheduled.
  */
-class CommandScheduler final : public frc::Sendable,
-                               public frc::ErrorBase,
-                               public frc::SendableHelper<CommandScheduler> {
+class CommandScheduler final : public nt::NTSendable,
+                               public wpi::SendableHelper<CommandScheduler> {
  public:
   /**
    * Returns the Scheduler instance.
@@ -42,7 +37,7 @@ class CommandScheduler final : public frc::Sendable,
    */
   static CommandScheduler& GetInstance();
 
-  ~CommandScheduler();
+  ~CommandScheduler() override;
   CommandScheduler(const CommandScheduler&) = delete;
   CommandScheduler& operator=(const CommandScheduler&) = delete;
 
@@ -97,7 +92,7 @@ class CommandScheduler final : public frc::Sendable,
    * @param interruptible whether the commands should be interruptible
    * @param commands      the commands to schedule
    */
-  void Schedule(bool interruptible, wpi::ArrayRef<Command*> commands);
+  void Schedule(bool interruptible, wpi::span<Command* const> commands);
 
   /**
    * Schedules multiple commands for execution.  Does nothing if the command is
@@ -117,7 +112,7 @@ class CommandScheduler final : public frc::Sendable,
    *
    * @param commands the commands to schedule
    */
-  void Schedule(wpi::ArrayRef<Command*> commands);
+  void Schedule(wpi::span<Command* const> commands);
 
   /**
    * Schedules multiple commands for execution, with interruptible defaulted to
@@ -165,10 +160,10 @@ class CommandScheduler final : public frc::Sendable,
   void UnregisterSubsystem(Subsystem* subsystem);
 
   void RegisterSubsystem(std::initializer_list<Subsystem*> subsystems);
-  void RegisterSubsystem(wpi::ArrayRef<Subsystem*> subsystems);
+  void RegisterSubsystem(wpi::span<Subsystem* const> subsystems);
 
   void UnregisterSubsystem(std::initializer_list<Subsystem*> subsystems);
-  void UnregisterSubsystem(wpi::ArrayRef<Subsystem*> subsystems);
+  void UnregisterSubsystem(wpi::span<Subsystem* const> subsystems);
 
   /**
    * Sets the default command for a subsystem.  Registers that subsystem if it
@@ -185,14 +180,12 @@ class CommandScheduler final : public frc::Sendable,
                          Command, std::remove_reference_t<T>>>>
   void SetDefaultCommand(Subsystem* subsystem, T&& defaultCommand) {
     if (!defaultCommand.HasRequirement(subsystem)) {
-      wpi_setWPIErrorWithContext(
-          CommandIllegalUse, "Default commands must require their subsystem!");
-      return;
+      throw FRC_MakeError(frc::err::CommandIllegalUse, "{}",
+                          "Default commands must require their subsystem!");
     }
     if (defaultCommand.IsFinished()) {
-      wpi_setWPIErrorWithContext(CommandIllegalUse,
-                                 "Default commands should not end!");
-      return;
+      throw FRC_MakeError(frc::err::CommandIllegalUse, "{}",
+                          "Default commands should not end!");
     }
     SetDefaultCommandImpl(subsystem,
                           std::make_unique<std::remove_reference_t<T>>(
@@ -216,7 +209,7 @@ class CommandScheduler final : public frc::Sendable,
    * <p>Commands will be canceled even if they are not scheduled as
    * interruptible.
    *
-   * @param commands the commands to cancel
+   * @param command the command to cancel
    */
   void Cancel(Command* command);
 
@@ -230,7 +223,7 @@ class CommandScheduler final : public frc::Sendable,
    *
    * @param commands the commands to cancel
    */
-  void Cancel(wpi::ArrayRef<Command*> commands);
+  void Cancel(wpi::span<Command* const> commands);
 
   /**
    * Cancels commands. The scheduler will only call Command::End()
@@ -256,9 +249,9 @@ class CommandScheduler final : public frc::Sendable,
    * them.
    *
    * @param command the command to query
-   * @return the time since the command was scheduled, in seconds
+   * @return the time since the command was scheduled
    */
-  double TimeSinceScheduled(const Command* command) const;
+  units::second_t TimeSinceScheduled(const Command* command) const;
 
   /**
    * Whether the given commands are running.  Note that this only works on
@@ -268,7 +261,7 @@ class CommandScheduler final : public frc::Sendable,
    * @param commands the command to query
    * @return whether the command is currently scheduled
    */
-  bool IsScheduled(wpi::ArrayRef<const Command*> commands) const;
+  bool IsScheduled(wpi::span<const Command* const> commands) const;
 
   /**
    * Whether the given commands are running.  Note that this only works on
@@ -285,7 +278,7 @@ class CommandScheduler final : public frc::Sendable,
    * that are directly scheduled by the scheduler; it will not work on commands
    * inside of CommandGroups, as the scheduler does not see them.
    *
-   * @param commands the command to query
+   * @param command the command to query
    * @return whether the command is currently scheduled
    */
   bool IsScheduled(const Command* command) const;
@@ -339,7 +332,7 @@ class CommandScheduler final : public frc::Sendable,
    */
   void OnCommandFinish(Action action);
 
-  void InitSendable(frc::SendableBuilder& builder) override;
+  void InitSendable(nt::NTSendableBuilder& builder) override;
 
  private:
   // Constructor; private as this is a singleton

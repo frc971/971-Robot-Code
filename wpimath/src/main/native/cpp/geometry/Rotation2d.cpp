@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "frc/geometry/Rotation2d.h"
 
@@ -41,32 +38,20 @@ Rotation2d Rotation2d::operator+(const Rotation2d& other) const {
   return RotateBy(other);
 }
 
-Rotation2d& Rotation2d::operator+=(const Rotation2d& other) {
-  double cos = Cos() * other.Cos() - Sin() * other.Sin();
-  double sin = Cos() * other.Sin() + Sin() * other.Cos();
-  m_cos = cos;
-  m_sin = sin;
-  m_value = units::radian_t(std::atan2(m_sin, m_cos));
-  return *this;
-}
-
 Rotation2d Rotation2d::operator-(const Rotation2d& other) const {
   return *this + -other;
 }
 
-Rotation2d& Rotation2d::operator-=(const Rotation2d& other) {
-  *this += -other;
-  return *this;
+Rotation2d Rotation2d::operator-() const {
+  return Rotation2d(-m_value);
 }
-
-Rotation2d Rotation2d::operator-() const { return Rotation2d(-m_value); }
 
 Rotation2d Rotation2d::operator*(double scalar) const {
   return Rotation2d(m_value * scalar);
 }
 
 bool Rotation2d::operator==(const Rotation2d& other) const {
-  return units::math::abs(m_value - other.m_value) < 1E-9_rad;
+  return std::hypot(m_cos - other.m_cos, m_sin - other.m_sin) < 1E-9;
 }
 
 bool Rotation2d::operator!=(const Rotation2d& other) const {
@@ -79,7 +64,7 @@ Rotation2d Rotation2d::RotateBy(const Rotation2d& other) const {
 }
 
 void frc::to_json(wpi::json& json, const Rotation2d& rotation) {
-  json = wpi::json{{"radians", rotation.Radians().to<double>()}};
+  json = wpi::json{{"radians", rotation.Radians().value()}};
 }
 
 void frc::from_json(const wpi::json& json, Rotation2d& rotation) {

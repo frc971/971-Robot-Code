@@ -1,23 +1,20 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
-#include <frc/AnalogGyro.h>
+#include <frc/ADXRS450_Gyro.h>
 #include <frc/Encoder.h>
-#include <frc/PWMVictorSPX.h>
-#include <frc/SpeedControllerGroup.h>
 #include <frc/drive/DifferentialDrive.h>
 #include <frc/geometry/Pose2d.h>
 #include <frc/kinematics/DifferentialDriveOdometry.h>
-#include <frc/simulation/AnalogGyroSim.h>
+#include <frc/motorcontrol/MotorControllerGroup.h>
+#include <frc/motorcontrol/PWMSparkMax.h>
+#include <frc/simulation/ADXRS450_GyroSim.h>
 #include <frc/simulation/DifferentialDrivetrainSim.h>
 #include <frc/simulation/EncoderSim.h>
-#include <frc/simulation/Field2d.h>
+#include <frc/smartdashboard/Field2d.h>
 #include <frc2/command/SubsystemBase.h>
 #include <units/voltage.h>
 
@@ -131,16 +128,16 @@ class DriveSubsystem : public frc2::SubsystemBase {
   // declared private and exposed only through public methods.
 
   // The motor controllers
-  frc::PWMVictorSPX m_left1{DriveConstants::kLeftMotor1Port};
-  frc::PWMVictorSPX m_left2{DriveConstants::kLeftMotor2Port};
-  frc::PWMVictorSPX m_right1{DriveConstants::kRightMotor1Port};
-  frc::PWMVictorSPX m_right2{DriveConstants::kRightMotor2Port};
+  frc::PWMSparkMax m_left1{DriveConstants::kLeftMotor1Port};
+  frc::PWMSparkMax m_left2{DriveConstants::kLeftMotor2Port};
+  frc::PWMSparkMax m_right1{DriveConstants::kRightMotor1Port};
+  frc::PWMSparkMax m_right2{DriveConstants::kRightMotor2Port};
 
   // The motors on the left side of the drive
-  frc::SpeedControllerGroup m_leftMotors{m_left1, m_left2};
+  frc::MotorControllerGroup m_leftMotors{m_left1, m_left2};
 
   // The motors on the right side of the drive
-  frc::SpeedControllerGroup m_rightMotors{m_right1, m_right2};
+  frc::MotorControllerGroup m_rightMotors{m_right1, m_right2};
 
   // The robot's drive
   frc::DifferentialDrive m_drive{m_leftMotors, m_rightMotors};
@@ -154,22 +151,24 @@ class DriveSubsystem : public frc2::SubsystemBase {
                               DriveConstants::kRightEncoderPorts[1]};
 
   // The gyro sensor
-  frc::AnalogGyro m_gyro{0};
+  frc::ADXRS450_Gyro m_gyro;
 
   // Odometry class for tracking robot pose
   frc::DifferentialDriveOdometry m_odometry{m_gyro.GetRotation2d()};
 
   // These classes help simulate our drivetrain.
   frc::sim::DifferentialDrivetrainSim m_drivetrainSimulator{
-      DriveConstants::kDrivetrainPlant, DriveConstants::kTrackwidth,
-      DriveConstants::kDrivetrainGearbox, DriveConstants::kDrivetrainGearing,
-      DriveConstants::kWheelDiameter / 2};
+      DriveConstants::kDrivetrainPlant,
+      DriveConstants::kTrackwidth,
+      DriveConstants::kDrivetrainGearbox,
+      DriveConstants::kDrivetrainGearing,
+      DriveConstants::kWheelDiameter / 2,
+      {0.001, 0.001, 0.0001, 0.1, 0.1, 0.005, 0.005}};
 
   frc::sim::EncoderSim m_leftEncoderSim{m_leftEncoder};
   frc::sim::EncoderSim m_rightEncoderSim{m_rightEncoder};
-  frc::sim::AnalogGyroSim m_gyroAngleSim{m_gyro};
+  frc::sim::ADXRS450_GyroSim m_gyroSim{m_gyro};
 
-  // The Field2d class simulates the field in the sim GUI. Note that we can have
-  // only one instance!
+  // The Field2d class shows the field in the sim GUI.
   frc::Field2d m_fieldSim;
 };

@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2016-2019 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #ifndef CSCORE_UNLIMITEDHANDLERESOURCE_H_
 #define CSCORE_UNLIMITEDHANDLERESOURCE_H_
@@ -12,9 +9,9 @@
 #include <utility>
 #include <vector>
 
-#include <wpi/ArrayRef.h>
 #include <wpi/SmallVector.h>
 #include <wpi/mutex.h>
+#include <wpi/span.h>
 
 namespace cs {
 
@@ -53,7 +50,7 @@ class UnlimitedHandleResource {
   std::shared_ptr<TStruct> Free(THandle handle);
 
   template <typename T>
-  wpi::ArrayRef<T> GetAll(wpi::SmallVectorImpl<T>& vec);
+  wpi::span<T> GetAll(wpi::SmallVectorImpl<T>& vec);
 
   std::vector<std::shared_ptr<TStruct>> FreeAll();
 
@@ -90,7 +87,9 @@ THandle UnlimitedHandleResource<THandle, TStruct, typeValue, TMutex>::Allocate(
       return MakeHandle(i);
     }
   }
-  if (i >= THandle::kIndexMax) return 0;
+  if (i >= THandle::kIndexMax) {
+    return 0;
+  }
 
   m_structures.emplace_back(
       std::make_shared<TStruct>(std::forward<Args>(args)...));
@@ -108,7 +107,9 @@ THandle UnlimitedHandleResource<THandle, TStruct, typeValue, TMutex>::Allocate(
       return MakeHandle(i);
     }
   }
-  if (i >= THandle::kIndexMax) return 0;
+  if (i >= THandle::kIndexMax) {
+    return 0;
+  }
 
   m_structures.push_back(structure);
   return MakeHandle(i);
@@ -120,9 +121,13 @@ UnlimitedHandleResource<THandle, TStruct, typeValue, TMutex>::Get(
     THandle handle) {
   auto index =
       handle.GetTypedIndex(static_cast<typename THandle::Type>(typeValue));
-  if (index < 0) return nullptr;
+  if (index < 0) {
+    return nullptr;
+  }
   std::scoped_lock sync(m_handleMutex);
-  if (index >= static_cast<int>(m_structures.size())) return nullptr;
+  if (index >= static_cast<int>(m_structures.size())) {
+    return nullptr;
+  }
   return m_structures[index];
 }
 
@@ -132,9 +137,13 @@ UnlimitedHandleResource<THandle, TStruct, typeValue, TMutex>::Free(
     THandle handle) {
   auto index =
       handle.GetTypedIndex(static_cast<typename THandle::Type>(typeValue));
-  if (index < 0) return nullptr;
+  if (index < 0) {
+    return nullptr;
+  }
   std::scoped_lock sync(m_handleMutex);
-  if (index >= static_cast<int>(m_structures.size())) return nullptr;
+  if (index >= static_cast<int>(m_structures.size())) {
+    return nullptr;
+  }
   auto rv = std::move(m_structures[index]);
   m_structures[index].reset();
   return rv;
@@ -142,7 +151,7 @@ UnlimitedHandleResource<THandle, TStruct, typeValue, TMutex>::Free(
 
 template <typename THandle, typename TStruct, int typeValue, typename TMutex>
 template <typename T>
-inline wpi::ArrayRef<T>
+inline wpi::span<T>
 UnlimitedHandleResource<THandle, TStruct, typeValue, TMutex>::GetAll(
     wpi::SmallVectorImpl<T>& vec) {
   ForEach([&](THandle handle, const TStruct& data) { vec.push_back(handle); });
@@ -164,7 +173,9 @@ inline void
 UnlimitedHandleResource<THandle, TStruct, typeValue, TMutex>::ForEach(F func) {
   std::scoped_lock sync(m_handleMutex);
   for (size_t i = 0; i < m_structures.size(); i++) {
-    if (m_structures[i] != nullptr) func(MakeHandle(i), *(m_structures[i]));
+    if (m_structures[i] != nullptr) {
+      func(MakeHandle(i), *(m_structures[i]));
+    }
   }
 }
 
@@ -175,8 +186,9 @@ UnlimitedHandleResource<THandle, TStruct, typeValue, TMutex>::FindIf(F func) {
   std::scoped_lock sync(m_handleMutex);
   for (size_t i = 0; i < m_structures.size(); i++) {
     auto& structure = m_structures[i];
-    if (structure != nullptr && func(*structure))
+    if (structure != nullptr && func(*structure)) {
       return std::make_pair(MakeHandle(i), structure);
+    }
   }
   return std::make_pair(0, nullptr);
 }

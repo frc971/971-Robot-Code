@@ -1,17 +1,13 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2011-2019 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
 #include <memory>
 
-#include "frc/ErrorBase.h"
-#include "frc/smartdashboard/Sendable.h"
-#include "frc/smartdashboard/SendableHelper.h"
+#include <networktables/NTSendable.h>
+#include <wpi/sendable/SendableHelper.h>
 
 namespace frc {
 
@@ -19,9 +15,7 @@ class ButtonScheduler;
 class Command;
 class Subsystem;
 
-class Scheduler : public ErrorBase,
-                  public Sendable,
-                  public SendableHelper<Scheduler> {
+class Scheduler : public nt::NTSendable, public wpi::SendableHelper<Scheduler> {
  public:
   /**
    * Returns the Scheduler, creating it if one does not exist.
@@ -48,7 +42,7 @@ class Scheduler : public ErrorBase,
    *
    * All Subsystems should call this.
    *
-   * @param system the system
+   * @param subsystem the system
    */
   void RegisterSubsystem(Subsystem* subsystem);
 
@@ -84,7 +78,7 @@ class Scheduler : public ErrorBase,
 
   void SetEnabled(bool enabled);
 
-  void InitSendable(SendableBuilder& builder) override;
+  void InitSendable(nt::NTSendableBuilder& builder) override;
 
  private:
   Scheduler();
