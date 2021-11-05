@@ -54,7 +54,6 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
-        "//aos/logging",
         "//aos/network:team_number",
         "//aos/stl_mutex",
         "//frc971:constants",
@@ -62,6 +61,7 @@ cc_library(
         "//y2018/control_loops/drivetrain:polydrivetrain_plants",
         "//y2018/control_loops/superstructure/arm:dynamics",
         "//y2018/control_loops/superstructure/intake:intake_plants",
+        "@com_github_google_glog//:glog",
     ],
 )
 

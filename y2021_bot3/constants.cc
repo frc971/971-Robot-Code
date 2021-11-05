@@ -8,9 +8,9 @@
 #endif
 
 #include "absl/base/call_once.h"
-#include "aos/logging/logging.h"
 #include "aos/mutex/mutex.h"
 #include "aos/network/team_number.h"
+#include "glog/logging.h"
 
 namespace y2021_bot3 {
 namespace constants {
@@ -41,7 +41,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       break;
 
     default:
-      AOS_LOG(FATAL, "unknown team #%" PRIu16 "\n", team);
+      LOG(FATAL) << "unknown team: " << team;
   }
 
   return r;
@@ -49,7 +49,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
 
 void DoGetValues(const Values **result) {
   uint16_t team = ::aos::network::GetTeamNumber();
-  AOS_LOG(INFO, "creating a Constants for team %" PRIu16 "\n", team);
+  LOG(INFO) << "creating a Constants for team: " << team;
   *result = DoGetValuesForTeam(team);
 }
 

@@ -26,13 +26,13 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
-        "//aos/logging",
         "//aos/mutex",
         "//aos/network:team_number",
         "//frc971:constants",
         "//frc971/control_loops:pose",
         "//frc971/control_loops:static_zeroing_single_dof_profiled_subsystem",
         "//y2021_bot3/control_loops/drivetrain:polydrivetrain_plants",
+        "@com_github_google_glog//:glog",
         "@com_google_absl//absl/base",
     ],
 )
