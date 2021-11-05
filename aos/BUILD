@@ -153,9 +153,8 @@ cc_binary(
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
-        "//aos/logging",
-        "//aos/logging:implementations",
         "//aos/time",
+        "@com_github_google_glog//:glog",
     ],
 )
 
