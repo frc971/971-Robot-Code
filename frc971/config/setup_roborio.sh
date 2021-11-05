@@ -34,6 +34,7 @@ else
   ssh "admin@${ROBOT_HOSTNAME}" ln -s /media/sda1/aos_log-current robot_code/aos_log-current
   echo "Adding aos_dump autocomplete to profile"
   ssh "admin@${ROBOT_HOSTNAME}" 'echo "if [ -f /home/admin/robot_code/aos_dump_autocomplete.sh ]; then source /home/admin/robot_code/aos_dump_autocomplete.sh; fi;" >> /etc/profile'
+  ssh "admin@${ROBOT_HOSTNAME}" 'echo "export PATH=\"\${PATH}:/home/admin/robot_code:/home/admin/bin\"" >> /etc/profile'
 fi
 
 if [[ "$(ssh admin@${ROBOT_HOSTNAME} uname -r)" != "4.14.87-rt49-cg-7.0.0f0-xilinx-zynq-189" ]]; then
