@@ -479,6 +479,7 @@ class SortingElementTest : public ::testing::Test {
     ++queue_index_[channel_index];
 
     flatbuffers::FlatBufferBuilder fbb;
+    fbb.ForceDefaults(true);
     fbb.FinishSizePrefixed(
         PackMessage(&fbb, context, channel_index, LogType::kLogMessage));
 
