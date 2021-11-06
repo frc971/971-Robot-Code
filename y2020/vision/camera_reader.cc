@@ -45,13 +45,12 @@ class CameraReader {
             event_loop->MakeSender<sift::ImageMatchResult>("/camera")),
         detailed_result_sender_(
             event_loop->MakeSender<sift::ImageMatchResult>("/camera/detailed")),
-        read_image_timer_(event_loop->AddTimer([this]() { ReadImage(); })),
-        prev_R_camera_field_vec_(cv::Mat::zeros(3, 1, CV_32F)),
-        prev_T_camera_field_(cv::Mat::zeros(3, 1, CV_32F)) {
+        read_image_timer_(event_loop->AddTimer([this]() { ReadImage(); })) {
     for (int ii = 0; ii < number_training_images(); ++ii) {
       matchers_.push_back(cv::FlannBasedMatcher(index_params, search_params));
+      prev_camera_field_R_vec_list_.push_back(cv::Mat::zeros(3, 1, CV_32F));
+      prev_camera_field_T_list_.push_back(cv::Mat::zeros(3, 1, CV_32F));
     }
-
     CopyTrainingFeatures();
 
     for (auto &matcher : matchers_) {
@@ -172,8 +171,8 @@ class CameraReader {
   aos::TimerHandler *const read_image_timer_;
 
   // Storage for when we want to use the previous estimates of pose
-  cv::Mat prev_R_camera_field_vec_;
-  cv::Mat prev_T_camera_field_;
+  std::vector<cv::Mat> prev_camera_field_R_vec_list_;
+  std::vector<cv::Mat> prev_camera_field_T_list_;
 
   const std::unique_ptr<frc971::vision::SIFT971_Impl> sift_{
       new frc971::vision::SIFT971_Impl()};
@@ -382,8 +381,8 @@ void CameraReader::ProcessImage(const CameraImage &image) {
   for (size_t i = 0; i < per_image_matches.size(); ++i) {
     const PerImageMatches &per_image = per_image_matches[i];
 
-    VLOG(2) << "Number of matches to start: " << per_image.matches.size()
-            << "\n";
+    VLOG(2) << "Number of matches to start for training image: " << i
+            << " is: " << per_image.matches.size() << "\n";
     // If we don't have enough matches to start, skip this set of matches
     if (per_image.matches.size() < kMinimumMatchCount) {
       continue;
@@ -402,8 +401,8 @@ void CameraReader::ProcessImage(const CameraImage &image) {
     }
     homography_feature_counts.push_back(homography_feature_count);
 
-    VLOG(2) << "Number of matches after homography: " << cv::countNonZero(mask)
-            << "\n";
+    VLOG(2) << "Number of matches after homography for training image: " << i
+            << " is " << cv::countNonZero(mask) << "\n";
 
     // Fill our match info for each good match based on homography result
     PerImageMatches per_image_good_match;
@@ -431,7 +430,7 @@ void CameraReader::ProcessImage(const CameraImage &image) {
     // Returns from opencv are doubles (CV_64F), which don't play well
     // with our floats
     homography.convertTo(homography, CV_32F);
-    per_image_good_match.homography = homography;
+    per_image_good_match.homography = homography.clone();
 
     CHECK_GT(per_image_good_match.matches.size(), 0u);
 
@@ -472,8 +471,10 @@ void CameraReader::ProcessImage(const CameraImage &image) {
     // near the previous pose helps it converge to the previous pose
     // estimate (assuming it's valid).
     if (FLAGS_use_prev_pose) {
-      R_camera_field_vec = prev_R_camera_field_vec_.clone();
-      T_camera_field = prev_T_camera_field_.clone();
+      R_camera_field_vec = prev_camera_field_R_vec_list_[i].clone();
+      T_camera_field = prev_camera_field_T_list_[i].clone();
+      VLOG(2) << "Using previous match for training image " << i
+              << " with T of : " << T_camera_field;
     }
 
     // Compute the pose of the camera (global origin relative to camera)
@@ -502,11 +503,11 @@ void CameraReader::ProcessImage(const CameraImage &image) {
           << T_camera_field << "\nR: " << R_camera_field_vec
           << "\nNumber of matches is: "
           << per_image_good_match.query_points.size();
-      LOG(INFO) << "Resetting previous values to zero, from: R_prev: "
-                << prev_R_camera_field_vec_
-                << ", T_prev: " << prev_T_camera_field_;
-      prev_R_camera_field_vec_ = cv::Mat::zeros(3, 1, CV_32F);
-      prev_T_camera_field_ = cv::Mat::zeros(3, 1, CV_32F);
+      VLOG(2) << "Resetting previous values to zero, from: R_prev: "
+              << prev_camera_field_R_vec_list_[i]
+              << ", T_prev: " << prev_camera_field_T_list_[i];
+      prev_camera_field_R_vec_list_[i] = cv::Mat::zeros(3, 1, CV_32F);
+      prev_camera_field_T_list_[i] = cv::Mat::zeros(3, 1, CV_32F);
 
       continue;
     }
@@ -575,16 +576,16 @@ void CameraReader::ProcessImage(const CameraImage &image) {
                     "T_camera_target = "
                  << T_camera_target
                  << "\nAnd T_field_camera = " << T_field_camera;
-      LOG(INFO) << "Resetting previous values to zero, from: R_prev: "
-                << prev_R_camera_field_vec_
-                << ", T_prev: " << prev_T_camera_field_;
-      prev_R_camera_field_vec_ = cv::Mat::zeros(3, 1, CV_32F);
-      prev_T_camera_field_ = cv::Mat::zeros(3, 1, CV_32F);
+      VLOG(2) << "Resetting previous values to zero, from: R_prev: "
+              << prev_camera_field_R_vec_list_[i]
+              << ", T_prev: " << prev_camera_field_T_list_[i];
+      prev_camera_field_R_vec_list_[i] = cv::Mat::zeros(3, 1, CV_32F);
+      prev_camera_field_T_list_[i] = cv::Mat::zeros(3, 1, CV_32F);
       continue;
     }
 
-    prev_R_camera_field_vec_ = R_camera_field_vec.clone();
-    prev_T_camera_field_ = T_camera_field.clone();
+    prev_camera_field_R_vec_list_[i] = R_camera_field_vec.clone();
+    prev_camera_field_T_list_[i] = T_camera_field.clone();
   }
   // Now, send our two messages-- one large, with details for remote
   // debugging(features), and one smaller
