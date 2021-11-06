@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2020 FIRST. All Rights Reserved.                             */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
@@ -19,9 +16,7 @@ namespace wpi {
 template <class T, size_t N>
 class static_circular_buffer {
  public:
-  static_assert(N > 0, "The circular buffer size shouldn't be zero.");
-
-  constexpr static_circular_buffer() = default;
+  static_assert(N > 0, "Circular buffer size cannot be zero.");
 
   class iterator {
    public:
@@ -87,17 +82,38 @@ class static_circular_buffer {
     size_t m_index;
   };
 
+  /**
+   * Returns begin iterator.
+   */
   iterator begin() { return iterator(this, 0); }
+
+  /**
+   * Returns end iterator.
+   */
   iterator end() {
     return iterator(this, ::wpi::static_circular_buffer<T, N>::size());
   }
 
+  /**
+   * Returns begin iterator.
+   */
   const_iterator begin() const { return const_iterator(this, 0); }
+
+  /**
+   * Returns end iterator.
+   */
   const_iterator end() const {
     return const_iterator(this, ::wpi::static_circular_buffer<T, N>::size());
   }
 
+  /**
+   * Returns begin iterator.
+   */
   const_iterator cbegin() const { return const_iterator(this, 0); }
+
+  /**
+   * Returns end iterator.
+   */
   const_iterator cend() const {
     return const_iterator(this, ::wpi::static_circular_buffer<T, N>::size());
   }

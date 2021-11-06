@@ -1,30 +1,24 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2014-2019 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
-#include "frc/ErrorBase.h"
+#include <wpi/sendable/Sendable.h>
+#include <wpi/sendable/SendableHelper.h>
+
 #include "frc/interfaces/Accelerometer.h"
-#include "frc/smartdashboard/Sendable.h"
-#include "frc/smartdashboard/SendableHelper.h"
 
 namespace frc {
-
-class SendableBuilder;
 
 /**
  * Built-in accelerometer.
  *
  * This class allows access to the roboRIO's internal accelerometer.
  */
-class BuiltInAccelerometer : public ErrorBase,
-                             public Accelerometer,
-                             public Sendable,
-                             public SendableHelper<BuiltInAccelerometer> {
+class BuiltInAccelerometer : public Accelerometer,
+                             public wpi::Sendable,
+                             public wpi::SendableHelper<BuiltInAccelerometer> {
  public:
   /**
    * Constructor.
@@ -44,7 +38,7 @@ class BuiltInAccelerometer : public ErrorBase,
    *              accelerometer will measure. Not all accelerometers support all
    *              ranges.
    */
-  void SetRange(Range range) override;
+  void SetRange(Range range) final;
 
   /**
    * @return The acceleration of the roboRIO along the X axis in g-forces
@@ -61,7 +55,7 @@ class BuiltInAccelerometer : public ErrorBase,
    */
   double GetZ() override;
 
-  void InitSendable(SendableBuilder& builder) override;
+  void InitSendable(wpi::SendableBuilder& builder) override;
 };
 
 }  // namespace frc

@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019 FIRST. All Rights Reserved.                             */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "CommandTestBase.h"
 #include "frc2/command/InstantCommand.h"
@@ -13,7 +10,7 @@
 using namespace frc2;
 class ParallelDeadlineGroupTest : public CommandTestBase {};
 
-TEST_F(ParallelDeadlineGroupTest, DeadlineGroupScheduleTest) {
+TEST_F(ParallelDeadlineGroupTest, DeadlineGroupSchedule) {
   CommandScheduler scheduler = GetScheduler();
 
   std::unique_ptr<MockCommand> command1Holder = std::make_unique<MockCommand>();
@@ -51,7 +48,7 @@ TEST_F(ParallelDeadlineGroupTest, DeadlineGroupScheduleTest) {
   EXPECT_FALSE(scheduler.IsScheduled(&group));
 }
 
-TEST_F(ParallelDeadlineGroupTest, SequentialGroupInterruptTest) {
+TEST_F(ParallelDeadlineGroupTest, SequentialGroupInterrupt) {
   CommandScheduler scheduler = GetScheduler();
 
   TestSubsystem subsystem;
@@ -90,7 +87,7 @@ TEST_F(ParallelDeadlineGroupTest, SequentialGroupInterruptTest) {
   EXPECT_FALSE(scheduler.IsScheduled(&group));
 }
 
-TEST_F(ParallelDeadlineGroupTest, DeadlineGroupNotScheduledCancelTest) {
+TEST_F(ParallelDeadlineGroupTest, DeadlineGroupNotScheduledCancel) {
   CommandScheduler scheduler = GetScheduler();
 
   ParallelDeadlineGroup group{InstantCommand(), InstantCommand()};
@@ -98,7 +95,7 @@ TEST_F(ParallelDeadlineGroupTest, DeadlineGroupNotScheduledCancelTest) {
   EXPECT_NO_FATAL_FAILURE(scheduler.Cancel(&group));
 }
 
-TEST_F(ParallelDeadlineGroupTest, ParallelDeadlineCopyTest) {
+TEST_F(ParallelDeadlineGroupTest, ParallelDeadlineCopy) {
   CommandScheduler scheduler = GetScheduler();
 
   bool finished = false;
@@ -114,7 +111,7 @@ TEST_F(ParallelDeadlineGroupTest, ParallelDeadlineCopyTest) {
   EXPECT_FALSE(scheduler.IsScheduled(&group));
 }
 
-TEST_F(ParallelDeadlineGroupTest, ParallelDeadlineRequirementTest) {
+TEST_F(ParallelDeadlineGroupTest, ParallelDeadlineRequirement) {
   CommandScheduler scheduler = GetScheduler();
 
   TestSubsystem requirement1;

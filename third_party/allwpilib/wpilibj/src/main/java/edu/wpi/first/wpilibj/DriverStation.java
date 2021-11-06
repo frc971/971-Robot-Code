@@ -1,17 +1,8 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2008-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 package edu.wpi.first.wpilibj;
-
-import java.nio.ByteBuffer;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 import edu.wpi.first.hal.AllianceStationID;
 import edu.wpi.first.hal.ControlWord;
@@ -20,16 +11,15 @@ import edu.wpi.first.hal.MatchInfoData;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.networktables.NetworkTableInstance;
+import java.nio.ByteBuffer;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
-/**
- * Provide access to the network communication data to / from the Driver Station.
- */
-@SuppressWarnings({"PMD.CyclomaticComplexity", "PMD.ExcessiveClassLength",
-                   "PMD.ExcessivePublicCount", "PMD.GodClass", "PMD.TooManyFields"})
+/** Provide access to the network communication data to / from the Driver Station. */
 public class DriverStation {
-  /**
-   * Number of Joystick Ports.
-   */
+  /** Number of Joystick Ports. */
   public static final int kJoystickPorts = 6;
 
   private static class HALJoystickButtons {
@@ -58,54 +48,86 @@ public class DriverStation {
     }
   }
 
-  /**
-   * The robot alliance that the robot is a part of.
-   */
+  /** The robot alliance that the robot is a part of. */
   public enum Alliance {
-    Red, Blue, Invalid
+    Red,
+    Blue,
+    Invalid
   }
 
   public enum MatchType {
-    None, Practice, Qualification, Elimination
+    None,
+    Practice,
+    Qualification,
+    Elimination
   }
 
   private static final double JOYSTICK_UNPLUGGED_MESSAGE_INTERVAL = 1.0;
-  private double m_nextMessageTime;
+  private static double m_nextMessageTime;
 
   private static class DriverStationTask implements Runnable {
-    private final DriverStation m_ds;
-
-    DriverStationTask(DriverStation ds) {
-      m_ds = ds;
-    }
+    DriverStationTask() {}
 
     @Override
     public void run() {
-      m_ds.run();
+      DriverStation.run();
     }
   } /* DriverStationTask */
 
   private static class MatchDataSender {
     @SuppressWarnings("MemberName")
     NetworkTable table;
+
     @SuppressWarnings("MemberName")
     NetworkTableEntry typeMetadata;
+
     @SuppressWarnings("MemberName")
     NetworkTableEntry gameSpecificMessage;
+
     @SuppressWarnings("MemberName")
     NetworkTableEntry eventName;
+
     @SuppressWarnings("MemberName")
     NetworkTableEntry matchNumber;
+
     @SuppressWarnings("MemberName")
     NetworkTableEntry replayNumber;
+
     @SuppressWarnings("MemberName")
     NetworkTableEntry matchType;
+
     @SuppressWarnings("MemberName")
     NetworkTableEntry alliance;
+
     @SuppressWarnings("MemberName")
     NetworkTableEntry station;
+
     @SuppressWarnings("MemberName")
     NetworkTableEntry controlWord;
+
+    @SuppressWarnings("MemberName")
+    boolean oldIsRedAlliance = true;
+
+    @SuppressWarnings("MemberName")
+    int oldStationNumber = 1;
+
+    @SuppressWarnings("MemberName")
+    String oldEventName = "";
+
+    @SuppressWarnings("MemberName")
+    String oldGameSpecificMessage = "";
+
+    @SuppressWarnings("MemberName")
+    int oldMatchNumber;
+
+    @SuppressWarnings("MemberName")
+    int oldReplayNumber;
+
+    @SuppressWarnings("MemberName")
+    int oldMatchType;
+
+    @SuppressWarnings("MemberName")
+    int oldControlWord;
 
     MatchDataSender() {
       table = NetworkTableInstance.getDefault().getTable("FMSInfo");
@@ -128,61 +150,147 @@ public class DriverStation {
       controlWord = table.getEntry("FMSControlData");
       controlWord.forceSetDouble(0);
     }
+
+    private void sendMatchData() {
+      AllianceStationID allianceID = HAL.getAllianceStation();
+      boolean isRedAlliance = false;
+      int stationNumber = 1;
+      switch (allianceID) {
+        case Blue1:
+          isRedAlliance = false;
+          stationNumber = 1;
+          break;
+        case Blue2:
+          isRedAlliance = false;
+          stationNumber = 2;
+          break;
+        case Blue3:
+          isRedAlliance = false;
+          stationNumber = 3;
+          break;
+        case Red1:
+          isRedAlliance = true;
+          stationNumber = 1;
+          break;
+        case Red2:
+          isRedAlliance = true;
+          stationNumber = 2;
+          break;
+        default:
+          isRedAlliance = true;
+          stationNumber = 3;
+          break;
+      }
+
+      String currentEventName;
+      String currentGameSpecificMessage;
+      int currentMatchNumber;
+      int currentReplayNumber;
+      int currentMatchType;
+      int currentControlWord;
+      m_cacheDataMutex.lock();
+      try {
+        currentEventName = DriverStation.m_matchInfo.eventName;
+        currentGameSpecificMessage = DriverStation.m_matchInfo.gameSpecificMessage;
+        currentMatchNumber = DriverStation.m_matchInfo.matchNumber;
+        currentReplayNumber = DriverStation.m_matchInfo.replayNumber;
+        currentMatchType = DriverStation.m_matchInfo.matchType;
+      } finally {
+        m_cacheDataMutex.unlock();
+      }
+      currentControlWord = HAL.nativeGetControlWord();
+
+      if (oldIsRedAlliance != isRedAlliance) {
+        alliance.setBoolean(isRedAlliance);
+        oldIsRedAlliance = isRedAlliance;
+      }
+      if (oldStationNumber != stationNumber) {
+        station.setDouble(stationNumber);
+        oldStationNumber = stationNumber;
+      }
+      if (!oldEventName.equals(currentEventName)) {
+        eventName.setString(currentEventName);
+        oldEventName = currentEventName;
+      }
+      if (!oldGameSpecificMessage.equals(currentGameSpecificMessage)) {
+        gameSpecificMessage.setString(currentGameSpecificMessage);
+        oldGameSpecificMessage = currentGameSpecificMessage;
+      }
+      if (currentMatchNumber != oldMatchNumber) {
+        matchNumber.setDouble(currentMatchNumber);
+        oldMatchNumber = currentMatchNumber;
+      }
+      if (currentReplayNumber != oldReplayNumber) {
+        replayNumber.setDouble(currentReplayNumber);
+        oldReplayNumber = currentReplayNumber;
+      }
+      if (currentMatchType != oldMatchType) {
+        matchType.setDouble(currentMatchType);
+        oldMatchType = currentMatchType;
+      }
+      if (currentControlWord != oldControlWord) {
+        controlWord.setDouble(currentControlWord);
+        oldControlWord = currentControlWord;
+      }
+    }
   }
 
   private static DriverStation instance = new DriverStation();
 
   // Joystick User Data
-  private HALJoystickAxes[] m_joystickAxes = new HALJoystickAxes[kJoystickPorts];
-  private HALJoystickPOVs[] m_joystickPOVs = new HALJoystickPOVs[kJoystickPorts];
-  private HALJoystickButtons[] m_joystickButtons = new HALJoystickButtons[kJoystickPorts];
-  private MatchInfoData m_matchInfo = new MatchInfoData();
+  private static HALJoystickAxes[] m_joystickAxes = new HALJoystickAxes[kJoystickPorts];
+  private static HALJoystickPOVs[] m_joystickPOVs = new HALJoystickPOVs[kJoystickPorts];
+  private static HALJoystickButtons[] m_joystickButtons = new HALJoystickButtons[kJoystickPorts];
+  private static MatchInfoData m_matchInfo = new MatchInfoData();
 
   // Joystick Cached Data
-  private HALJoystickAxes[] m_joystickAxesCache = new HALJoystickAxes[kJoystickPorts];
-  private HALJoystickPOVs[] m_joystickPOVsCache = new HALJoystickPOVs[kJoystickPorts];
-  private HALJoystickButtons[] m_joystickButtonsCache = new HALJoystickButtons[kJoystickPorts];
-  private MatchInfoData m_matchInfoCache = new MatchInfoData();
+  private static HALJoystickAxes[] m_joystickAxesCache = new HALJoystickAxes[kJoystickPorts];
+  private static HALJoystickPOVs[] m_joystickPOVsCache = new HALJoystickPOVs[kJoystickPorts];
+  private static HALJoystickButtons[] m_joystickButtonsCache =
+      new HALJoystickButtons[kJoystickPorts];
+  private static MatchInfoData m_matchInfoCache = new MatchInfoData();
 
   // Joystick button rising/falling edge flags
-  private int[] m_joystickButtonsPressed = new int[kJoystickPorts];
-  private int[] m_joystickButtonsReleased = new int[kJoystickPorts];
+  private static int[] m_joystickButtonsPressed = new int[kJoystickPorts];
+  private static int[] m_joystickButtonsReleased = new int[kJoystickPorts];
 
   // preallocated byte buffer for button count
-  private final ByteBuffer m_buttonCountBuffer = ByteBuffer.allocateDirect(1);
+  private static final ByteBuffer m_buttonCountBuffer = ByteBuffer.allocateDirect(1);
 
-  private final MatchDataSender m_matchDataSender;
+  private static final MatchDataSender m_matchDataSender;
 
   // Internal Driver Station thread
-  @SuppressWarnings("PMD.SingularField")
-  private final Thread m_thread;
-  private volatile boolean m_threadKeepAlive = true;
+  private static Thread m_thread;
 
-  private final ReentrantLock m_cacheDataMutex = new ReentrantLock();
+  private static volatile boolean m_threadKeepAlive = true;
 
-  private final Lock m_waitForDataMutex;
-  private final Condition m_waitForDataCond;
-  private int m_waitForDataCount;
-  private final ThreadLocal<Integer> m_lastCount = ThreadLocal.withInitial(() -> 0);
+  private static final ReentrantLock m_cacheDataMutex = new ReentrantLock();
 
-  private boolean m_silenceJoystickWarning;
+  private static final Lock m_waitForDataMutex;
+  private static final Condition m_waitForDataCond;
+  private static int m_waitForDataCount;
+  private static final ThreadLocal<Integer> m_lastCount = ThreadLocal.withInitial(() -> 0);
+
+  private static boolean m_silenceJoystickWarning;
 
   // Robot state status variables
-  private boolean m_userInDisabled;
-  private boolean m_userInAutonomous;
-  private boolean m_userInTeleop;
-  private boolean m_userInTest;
+  private static boolean m_userInDisabled;
+  private static boolean m_userInAutonomous;
+  private static boolean m_userInTeleop;
+  private static boolean m_userInTest;
 
   // Control word variables
-  private final Object m_controlWordMutex;
-  private final ControlWord m_controlWordCache;
-  private long m_lastControlWordUpdate;
+  private static final Object m_controlWordMutex;
+  private static final ControlWord m_controlWordCache;
+  private static long m_lastControlWordUpdate;
 
   /**
    * Gets an instance of the DriverStation.
    *
    * @return The DriverStation.
+   * @deprecated Use the static methods
    */
+  @Deprecated
   public static DriverStation getInstance() {
     return DriverStation.instance;
   }
@@ -193,8 +301,9 @@ public class DriverStation {
    * <p>The single DriverStation instance is created statically with the instance static member
    * variable.
    */
-  @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
-  private DriverStation() {
+  private DriverStation() {}
+
+  static {
     HAL.initialize(500, 0);
     m_waitForDataCount = 0;
     m_waitForDataMutex = new ReentrantLock();
@@ -216,23 +325,29 @@ public class DriverStation {
 
     m_matchDataSender = new MatchDataSender();
 
-    m_thread = new Thread(new DriverStationTask(this), "FRCDriverStation");
+    m_thread = new Thread(new DriverStationTask(), "FRCDriverStation");
     m_thread.setPriority((Thread.NORM_PRIORITY + Thread.MAX_PRIORITY) / 2);
 
     m_thread.start();
   }
 
-  /**
-   * Kill the thread.
-   */
-  public void release() {
+  /** Kill the thread. */
+  public static synchronized void release() {
     m_threadKeepAlive = false;
+    if (m_thread != null) {
+      try {
+        m_thread.join();
+      } catch (InterruptedException ex) {
+        Thread.currentThread().interrupt();
+      }
+      m_thread = null;
+    }
   }
 
   /**
-   * Report error to Driver Station. Optionally appends Stack trace
-   * to error message.
+   * Report error to Driver Station. Optionally appends Stack trace to error message.
    *
+   * @param error The error to report.
    * @param printTrace If true, append stack trace to error string
    */
   public static void reportError(String error, boolean printTrace) {
@@ -240,9 +355,9 @@ public class DriverStation {
   }
 
   /**
-   * Report error to Driver Station. Appends provided stack trace
-   * to error message.
+   * Report error to Driver Station. Appends provided stack trace to error message.
    *
+   * @param error The error to report.
    * @param stackTrace The stack trace to append
    */
   public static void reportError(String error, StackTraceElement[] stackTrace) {
@@ -250,37 +365,41 @@ public class DriverStation {
   }
 
   /**
-   * Report warning to Driver Station. Optionally appends Stack
-   * trace to warning message.
+   * Report warning to Driver Station. Optionally appends Stack trace to warning message.
    *
+   * @param warning The warning to report.
    * @param printTrace If true, append stack trace to warning string
    */
-  public static void reportWarning(String error, boolean printTrace) {
-    reportErrorImpl(false, 1, error, printTrace);
+  public static void reportWarning(String warning, boolean printTrace) {
+    reportErrorImpl(false, 1, warning, printTrace);
   }
 
   /**
-   * Report warning to Driver Station. Appends provided stack
-   * trace to warning message.
+   * Report warning to Driver Station. Appends provided stack trace to warning message.
    *
+   * @param warning The warning to report.
    * @param stackTrace The stack trace to append
    */
-  public static void reportWarning(String error, StackTraceElement[] stackTrace) {
-    reportErrorImpl(false, 1, error, stackTrace);
+  public static void reportWarning(String warning, StackTraceElement[] stackTrace) {
+    reportErrorImpl(false, 1, warning, stackTrace);
   }
 
-  private static void reportErrorImpl(boolean isError, int code, String error, boolean
-      printTrace) {
+  private static void reportErrorImpl(boolean isError, int code, String error, boolean printTrace) {
     reportErrorImpl(isError, code, error, printTrace, Thread.currentThread().getStackTrace(), 3);
   }
 
-  private static void reportErrorImpl(boolean isError, int code, String error,
-      StackTraceElement[] stackTrace) {
+  private static void reportErrorImpl(
+      boolean isError, int code, String error, StackTraceElement[] stackTrace) {
     reportErrorImpl(isError, code, error, true, stackTrace, 0);
   }
 
-  private static void reportErrorImpl(boolean isError, int code, String error,
-      boolean printTrace, StackTraceElement[] stackTrace, int stackTraceFirst) {
+  private static void reportErrorImpl(
+      boolean isError,
+      int code,
+      String error,
+      boolean printTrace,
+      StackTraceElement[] stackTrace,
+      int stackTraceFirst) {
     String locString;
     if (stackTrace.length >= stackTraceFirst + 1) {
       locString = stackTrace[stackTraceFirst].toString();
@@ -306,11 +425,11 @@ public class DriverStation {
   /**
    * The state of one joystick button. Button indexes begin at 1.
    *
-   * @param stick  The joystick to read.
+   * @param stick The joystick to read.
    * @param button The button index, beginning at 1.
    * @return The state of the joystick button.
    */
-  public boolean getStickButton(final int stick, final int button) {
+  public static boolean getStickButton(final int stick, final int button) {
     if (stick < 0 || stick >= kJoystickPorts) {
       throw new IllegalArgumentException("Joystick index is out of range, should be 0-3");
     }
@@ -328,19 +447,23 @@ public class DriverStation {
       m_cacheDataMutex.unlock();
     }
 
-    reportJoystickUnpluggedWarning("Joystick Button " + button + " on port " + stick
-        + " not available, check if controller is plugged in");
+    reportJoystickUnpluggedWarning(
+        "Joystick Button "
+            + button
+            + " on port "
+            + stick
+            + " not available, check if controller is plugged in");
     return false;
   }
 
   /**
    * Whether one joystick button was pressed since the last check. Button indexes begin at 1.
    *
-   * @param stick  The joystick to read.
+   * @param stick The joystick to read.
    * @param button The button index, beginning at 1.
    * @return Whether the joystick button was pressed since the last check.
    */
-  public boolean getStickButtonPressed(final int stick, final int button) {
+  public static boolean getStickButtonPressed(final int stick, final int button) {
     if (button <= 0) {
       reportJoystickUnpluggedError("Button indexes begin at 1 in WPILib for C++ and Java\n");
       return false;
@@ -364,20 +487,23 @@ public class DriverStation {
       m_cacheDataMutex.unlock();
     }
 
-    reportJoystickUnpluggedWarning("Joystick Button " + button + " on port " + stick
-        + " not available, check if controller is plugged in");
+    reportJoystickUnpluggedWarning(
+        "Joystick Button "
+            + button
+            + " on port "
+            + stick
+            + " not available, check if controller is plugged in");
     return false;
   }
 
   /**
-   * Whether one joystick button was released since the last check. Button indexes
-   * begin at 1.
+   * Whether one joystick button was released since the last check. Button indexes begin at 1.
    *
-   * @param stick  The joystick to read.
+   * @param stick The joystick to read.
    * @param button The button index, beginning at 1.
    * @return Whether the joystick button was released since the last check.
    */
-  public boolean getStickButtonReleased(final int stick, final int button) {
+  public static boolean getStickButtonReleased(final int stick, final int button) {
     if (button <= 0) {
       reportJoystickUnpluggedError("Button indexes begin at 1 in WPILib for C++ and Java\n");
       return false;
@@ -401,8 +527,12 @@ public class DriverStation {
       m_cacheDataMutex.unlock();
     }
 
-    reportJoystickUnpluggedWarning("Joystick Button " + button + " on port " + stick
-        + " not available, check if controller is plugged in");
+    reportJoystickUnpluggedWarning(
+        "Joystick Button "
+            + button
+            + " on port "
+            + stick
+            + " not available, check if controller is plugged in");
     return false;
   }
 
@@ -411,10 +541,10 @@ public class DriverStation {
    * to the specified port.
    *
    * @param stick The joystick to read.
-   * @param axis  The analog axis value to read from the joystick.
+   * @param axis The analog axis value to read from the joystick.
    * @return The value of the axis on the joystick.
    */
-  public double getStickAxis(int stick, int axis) {
+  public static double getStickAxis(int stick, int axis) {
     if (stick < 0 || stick >= kJoystickPorts) {
       throw new IllegalArgumentException("Joystick index is out of range, should be 0-5");
     }
@@ -431,17 +561,23 @@ public class DriverStation {
       m_cacheDataMutex.unlock();
     }
 
-    reportJoystickUnpluggedWarning("Joystick axis " + axis + " on port " + stick
-        + " not available, check if controller is plugged in");
+    reportJoystickUnpluggedWarning(
+        "Joystick axis "
+            + axis
+            + " on port "
+            + stick
+            + " not available, check if controller is plugged in");
     return 0.0;
   }
 
   /**
    * Get the state of a POV on the joystick.
    *
+   * @param stick The joystick to read.
+   * @param pov The POV to read.
    * @return the angle of the POV in degrees, or -1 if the POV is not pressed.
    */
-  public int getStickPOV(int stick, int pov) {
+  public static int getStickPOV(int stick, int pov) {
     if (stick < 0 || stick >= kJoystickPorts) {
       throw new IllegalArgumentException("Joystick index is out of range, should be 0-5");
     }
@@ -458,8 +594,12 @@ public class DriverStation {
       m_cacheDataMutex.unlock();
     }
 
-    reportJoystickUnpluggedWarning("Joystick POV " + pov + " on port " + stick
-        + " not available, check if controller is plugged in");
+    reportJoystickUnpluggedWarning(
+        "Joystick POV "
+            + pov
+            + " on port "
+            + stick
+            + " not available, check if controller is plugged in");
     return -1;
   }
 
@@ -469,7 +609,7 @@ public class DriverStation {
    * @param stick The joystick to read.
    * @return The state of the buttons on the joystick.
    */
-  public int getStickButtons(final int stick) {
+  public static int getStickButtons(final int stick) {
     if (stick < 0 || stick >= kJoystickPorts) {
       throw new IllegalArgumentException("Joystick index is out of range, should be 0-3");
     }
@@ -488,7 +628,7 @@ public class DriverStation {
    * @param stick The joystick port number
    * @return The number of axes on the indicated joystick
    */
-  public int getStickAxisCount(int stick) {
+  public static int getStickAxisCount(int stick) {
     if (stick < 0 || stick >= kJoystickPorts) {
       throw new IllegalArgumentException("Joystick index is out of range, should be 0-5");
     }
@@ -507,7 +647,7 @@ public class DriverStation {
    * @param stick The joystick port number
    * @return The number of POVs on the indicated joystick
    */
-  public int getStickPOVCount(int stick) {
+  public static int getStickPOVCount(int stick) {
     if (stick < 0 || stick >= kJoystickPorts) {
       throw new IllegalArgumentException("Joystick index is out of range, should be 0-5");
     }
@@ -526,7 +666,7 @@ public class DriverStation {
    * @param stick The joystick port number
    * @return The number of buttons on the indicated joystick
    */
-  public int getStickButtonCount(int stick) {
+  public static int getStickButtonCount(int stick) {
     if (stick < 0 || stick >= kJoystickPorts) {
       throw new IllegalArgumentException("Joystick index is out of range, should be 0-5");
     }
@@ -545,7 +685,7 @@ public class DriverStation {
    * @param stick The joystick port number
    * @return A boolean that returns the value of isXbox
    */
-  public boolean getJoystickIsXbox(int stick) {
+  public static boolean getJoystickIsXbox(int stick) {
     if (stick < 0 || stick >= kJoystickPorts) {
       throw new IllegalArgumentException("Joystick index is out of range, should be 0-5");
     }
@@ -559,7 +699,7 @@ public class DriverStation {
    * @param stick The joystick port number
    * @return The value of type
    */
-  public int getJoystickType(int stick) {
+  public static int getJoystickType(int stick) {
     if (stick < 0 || stick >= kJoystickPorts) {
       throw new IllegalArgumentException("Joystick index is out of range, should be 0-5");
     }
@@ -573,7 +713,7 @@ public class DriverStation {
    * @param stick The joystick port number
    * @return The value of name
    */
-  public String getJoystickName(int stick) {
+  public static String getJoystickName(int stick) {
     if (stick < 0 || stick >= kJoystickPorts) {
       throw new IllegalArgumentException("Joystick index is out of range, should be 0-5");
     }
@@ -588,7 +728,7 @@ public class DriverStation {
    * @param axis The target axis
    * @return What type of axis the axis is reporting to be
    */
-  public int getJoystickAxisType(int stick, int axis) {
+  public static int getJoystickAxisType(int stick, int axis) {
     if (stick < 0 || stick >= kJoystickPorts) {
       throw new IllegalArgumentException("Joystick index is out of range, should be 0-5");
     }
@@ -599,16 +739,16 @@ public class DriverStation {
   /**
    * Returns if a joystick is connected to the Driver Station.
    *
-   * <p>This makes a best effort guess by looking at the reported number of axis,
-   * buttons, and POVs attached.
+   * <p>This makes a best effort guess by looking at the reported number of axis, buttons, and POVs
+   * attached.
    *
    * @param stick The joystick port number
    * @return true if a joystick is connected
    */
-  public boolean isJoystickConnected(int stick) {
+  public static boolean isJoystickConnected(int stick) {
     return getStickAxisCount(stick) > 0
-      || getStickButtonCount(stick) > 0
-      || getStickPOVCount(stick) > 0;
+        || getStickButtonCount(stick) > 0
+        || getStickPOVCount(stick) > 0;
   }
 
   /**
@@ -616,7 +756,7 @@ public class DriverStation {
    *
    * @return True if the robot is enabled, false otherwise.
    */
-  public boolean isEnabled() {
+  public static boolean isEnabled() {
     synchronized (m_controlWordMutex) {
       updateControlWord(false);
       return m_controlWordCache.getEnabled() && m_controlWordCache.getDSAttached();
@@ -628,7 +768,7 @@ public class DriverStation {
    *
    * @return True if the robot should be disabled, false otherwise.
    */
-  public boolean isDisabled() {
+  public static boolean isDisabled() {
     return !isEnabled();
   }
 
@@ -637,7 +777,7 @@ public class DriverStation {
    *
    * @return True if the robot is e-stopped, false otherwise.
    */
-  public boolean isEStopped() {
+  public static boolean isEStopped() {
     synchronized (m_controlWordMutex) {
       updateControlWord(false);
       return m_controlWordCache.getEStop();
@@ -650,7 +790,7 @@ public class DriverStation {
    *
    * @return True if autonomous mode should be enabled, false otherwise.
    */
-  public boolean isAutonomous() {
+  public static boolean isAutonomous() {
     synchronized (m_controlWordMutex) {
       updateControlWord(false);
       return m_controlWordCache.getAutonomous();
@@ -663,7 +803,7 @@ public class DriverStation {
    *
    * @return True if autonomous should be set and the robot should be enabled.
    */
-  public boolean isAutonomousEnabled() {
+  public static boolean isAutonomousEnabled() {
     synchronized (m_controlWordMutex) {
       updateControlWord(false);
       return m_controlWordCache.getAutonomous() && m_controlWordCache.getEnabled();
@@ -675,8 +815,20 @@ public class DriverStation {
    * operator-controlled mode.
    *
    * @return True if operator-controlled mode should be enabled, false otherwise.
+   * @deprecated Use isTeleop() instead.
    */
-  public boolean isOperatorControl() {
+  @Deprecated(since = "2022", forRemoval = true)
+  public static boolean isOperatorControl() {
+    return isTeleop();
+  }
+
+  /**
+   * Gets a value indicating whether the Driver Station requires the robot to be running in
+   * operator-controlled mode.
+   *
+   * @return True if operator-controlled mode should be enabled, false otherwise.
+   */
+  public static boolean isTeleop() {
     return !(isAutonomous() || isTest());
   }
 
@@ -685,11 +837,24 @@ public class DriverStation {
    * operator-controller mode and enabled.
    *
    * @return True if operator-controlled mode should be set and the robot should be enabled.
+   * @deprecated Use isTeleopEnabled() instead.
    */
-  public boolean isOperatorControlEnabled() {
+  @Deprecated(since = "2022", forRemoval = true)
+  public static boolean isOperatorControlEnabled() {
+    return isTeleopEnabled();
+  }
+
+  /**
+   * Gets a value indicating whether the Driver Station requires the robot to be running in
+   * operator-controller mode and enabled.
+   *
+   * @return True if operator-controlled mode should be set and the robot should be enabled.
+   */
+  public static boolean isTeleopEnabled() {
     synchronized (m_controlWordMutex) {
       updateControlWord(false);
-      return !m_controlWordCache.getAutonomous() && !m_controlWordCache.getTest()
+      return !m_controlWordCache.getAutonomous()
+          && !m_controlWordCache.getTest()
           && m_controlWordCache.getEnabled();
     }
   }
@@ -700,7 +865,7 @@ public class DriverStation {
    *
    * @return True if test mode should be enabled, false otherwise.
    */
-  public boolean isTest() {
+  public static boolean isTest() {
     synchronized (m_controlWordMutex) {
       updateControlWord(false);
       return m_controlWordCache.getTest();
@@ -712,7 +877,7 @@ public class DriverStation {
    *
    * @return True if Driver Station is attached, false otherwise.
    */
-  public boolean isDSAttached() {
+  public static boolean isDSAttached() {
     synchronized (m_controlWordMutex) {
       updateControlWord(false);
       return m_controlWordCache.getDSAttached();
@@ -725,7 +890,7 @@ public class DriverStation {
    *
    * @return True if the control data has been updated since the last call.
    */
-  public boolean isNewControlData() {
+  public static boolean isNewControlData() {
     m_waitForDataMutex.lock();
     try {
       int currentCount = m_waitForDataCount;
@@ -744,7 +909,7 @@ public class DriverStation {
    *
    * @return true if the robot is competing on a field being controlled by a Field Management System
    */
-  public boolean isFMSAttached() {
+  public static boolean isFMSAttached() {
     synchronized (m_controlWordMutex) {
       updateControlWord(false);
       return m_controlWordCache.getFMSAttached();
@@ -756,7 +921,7 @@ public class DriverStation {
    *
    * @return the game specific message
    */
-  public String getGameSpecificMessage() {
+  public static String getGameSpecificMessage() {
     m_cacheDataMutex.lock();
     try {
       return m_matchInfo.gameSpecificMessage;
@@ -770,7 +935,7 @@ public class DriverStation {
    *
    * @return the event name
    */
-  public String getEventName() {
+  public static String getEventName() {
     m_cacheDataMutex.lock();
     try {
       return m_matchInfo.eventName;
@@ -784,7 +949,7 @@ public class DriverStation {
    *
    * @return the match type
    */
-  public MatchType getMatchType() {
+  public static MatchType getMatchType() {
     int matchType;
     m_cacheDataMutex.lock();
     try {
@@ -809,7 +974,7 @@ public class DriverStation {
    *
    * @return the match number
    */
-  public int getMatchNumber() {
+  public static int getMatchNumber() {
     m_cacheDataMutex.lock();
     try {
       return m_matchInfo.matchNumber;
@@ -823,7 +988,7 @@ public class DriverStation {
    *
    * @return the replay number
    */
-  public int getReplayNumber() {
+  public static int getReplayNumber() {
     m_cacheDataMutex.lock();
     try {
       return m_matchInfo.replayNumber;
@@ -837,7 +1002,7 @@ public class DriverStation {
    *
    * @return the current alliance
    */
-  public Alliance getAlliance() {
+  public static Alliance getAlliance() {
     AllianceStationID allianceStationID = HAL.getAllianceStation();
     if (allianceStationID == null) {
       return Alliance.Invalid;
@@ -864,7 +1029,7 @@ public class DriverStation {
    *
    * @return the location of the team's driver station controls: 1, 2, or 3
    */
-  public int getLocation() {
+  public static int getLocation() {
     AllianceStationID allianceStationID = HAL.getAllianceStation();
     if (allianceStationID == null) {
       return 0;
@@ -890,10 +1055,10 @@ public class DriverStation {
   /**
    * Wait for new data from the driver station.
    *
-   * <p>Checks if new control data has arrived since the last waitForData call
-   * on the current thread. If new data has not arrived, returns immediately.
+   * <p>Checks if new control data has arrived since the last waitForData call on the current
+   * thread. If new data has not arrived, returns immediately.
    */
-  public void waitForData() {
+  public static void waitForData() {
     waitForData(0);
   }
 
@@ -901,15 +1066,15 @@ public class DriverStation {
    * Wait for new data or for timeout, which ever comes first. If timeout is 0, wait for new data
    * only.
    *
-   * <p>Checks if new control data has arrived since the last waitForData call
-   * on the current thread. If new data has not arrived, returns immediately.
+   * <p>Checks if new control data has arrived since the last waitForData call on the current
+   * thread. If new data has not arrived, returns immediately.
    *
-   * @param timeout The maximum time in seconds to wait.
+   * @param timeoutSeconds The maximum time in seconds to wait.
    * @return true if there is new data, otherwise false
    */
-  public boolean waitForData(double timeout) {
-    long startTime = RobotController.getFPGATime();
-    long timeoutMicros = (long) (timeout * 1000000);
+  public static boolean waitForData(double timeoutSeconds) {
+    long startTimeMicroS = RobotController.getFPGATime();
+    long timeoutMicroS = (long) (timeoutSeconds * 1e6);
     m_waitForDataMutex.lock();
     try {
       int currentCount = m_waitForDataCount;
@@ -918,12 +1083,13 @@ public class DriverStation {
         return true;
       }
       while (m_waitForDataCount == currentCount) {
-        if (timeout > 0) {
-          long now = RobotController.getFPGATime();
-          if (now < startTime + timeoutMicros) {
+        if (timeoutMicroS > 0) {
+          long nowMicroS = RobotController.getFPGATime();
+          if (nowMicroS < startTimeMicroS + timeoutMicroS) {
             // We still have time to wait
-            boolean signaled = m_waitForDataCond.await(startTime + timeoutMicros - now,
-                                                TimeUnit.MICROSECONDS);
+            boolean signaled =
+                m_waitForDataCond.await(
+                    startTimeMicroS + timeoutMicroS - nowMicroS, TimeUnit.MICROSECONDS);
             if (!signaled) {
               // Return false if a timeout happened
               return false;
@@ -951,12 +1117,12 @@ public class DriverStation {
    * Return the approximate match time. The FMS does not send an official match time to the robots,
    * but does send an approximate match time. The value will count down the time remaining in the
    * current period (auto or teleop). Warning: This is not an official time (so it cannot be used to
-   * dispute ref calls or guarantee that a function will trigger before the match ends) The
-   * Practice Match function of the DS approximates the behavior seen on the field.
+   * dispute ref calls or guarantee that a function will trigger before the match ends) The Practice
+   * Match function of the DS approximates the behavior seen on the field.
    *
    * @return Time remaining in current match period (auto or teleop) in seconds
    */
-  public double getMatchTime() {
+  public static double getMatchTime() {
     return HAL.getMatchTime();
   }
 
@@ -966,8 +1132,7 @@ public class DriverStation {
    *
    * @param entering If true, starting disabled code; if false, leaving disabled code
    */
-  @SuppressWarnings("MethodName")
-  public void InDisabled(boolean entering) {
+  public static void inDisabled(boolean entering) {
     m_userInDisabled = entering;
   }
 
@@ -977,8 +1142,7 @@ public class DriverStation {
    *
    * @param entering If true, starting autonomous code; if false, leaving autonomous code
    */
-  @SuppressWarnings("MethodName")
-  public void InAutonomous(boolean entering) {
+  public static void inAutonomous(boolean entering) {
     m_userInAutonomous = entering;
   }
 
@@ -987,9 +1151,20 @@ public class DriverStation {
    * purposes only.
    *
    * @param entering If true, starting teleop code; if false, leaving teleop code
+   * @deprecated Use {@link #inTeleop(boolean)} instead.
    */
-  @SuppressWarnings("MethodName")
-  public void InOperatorControl(boolean entering) {
+  @Deprecated(since = "2022", forRemoval = true)
+  public static void inOperatorControl(boolean entering) {
+    m_userInTeleop = entering;
+  }
+
+  /**
+   * Only to be used to tell the Driver Station what code you claim to be executing for diagnostic
+   * purposes only.
+   *
+   * @param entering If true, starting teleop code; if false, leaving teleop code
+   */
+  public static void inTeleop(boolean entering) {
     m_userInTeleop = entering;
   }
 
@@ -999,94 +1174,39 @@ public class DriverStation {
    *
    * @param entering If true, starting test code; if false, leaving test code
    */
-  @SuppressWarnings("MethodName")
-  public void InTest(boolean entering) {
+  public static void inTest(boolean entering) {
     m_userInTest = entering;
   }
 
-  private void sendMatchData() {
-    AllianceStationID alliance = HAL.getAllianceStation();
-    boolean isRedAlliance = false;
-    int stationNumber = 1;
-    switch (alliance) {
-      case Blue1:
-        isRedAlliance = false;
-        stationNumber = 1;
-        break;
-      case Blue2:
-        isRedAlliance = false;
-        stationNumber = 2;
-        break;
-      case Blue3:
-        isRedAlliance = false;
-        stationNumber = 3;
-        break;
-      case Red1:
-        isRedAlliance = true;
-        stationNumber = 1;
-        break;
-      case Red2:
-        isRedAlliance = true;
-        stationNumber = 2;
-        break;
-      default:
-        isRedAlliance = true;
-        stationNumber = 3;
-        break;
-    }
-
-
-    String eventName;
-    String gameSpecificMessage;
-    int matchNumber;
-    int replayNumber;
-    int matchType;
-    synchronized (m_cacheDataMutex) {
-      eventName = m_matchInfo.eventName;
-      gameSpecificMessage = m_matchInfo.gameSpecificMessage;
-      matchNumber = m_matchInfo.matchNumber;
-      replayNumber = m_matchInfo.replayNumber;
-      matchType = m_matchInfo.matchType;
-    }
-
-    m_matchDataSender.alliance.setBoolean(isRedAlliance);
-    m_matchDataSender.station.setDouble(stationNumber);
-    m_matchDataSender.eventName.setString(eventName);
-    m_matchDataSender.gameSpecificMessage.setString(gameSpecificMessage);
-    m_matchDataSender.matchNumber.setDouble(matchNumber);
-    m_matchDataSender.replayNumber.setDouble(replayNumber);
-    m_matchDataSender.matchType.setDouble(matchType);
-    m_matchDataSender.controlWord.setDouble(HAL.nativeGetControlWord());
-  }
-
-  /**
-   * Forces waitForData() to return immediately.
-   */
-  public void wakeupWaitForData() {
+  /** Forces waitForData() to return immediately. */
+  public static void wakeupWaitForData() {
     m_waitForDataMutex.lock();
-    m_waitForDataCount++;
-    m_waitForDataCond.signalAll();
-    m_waitForDataMutex.unlock();
+    try {
+      m_waitForDataCount++;
+      m_waitForDataCond.signalAll();
+    } finally {
+      m_waitForDataMutex.unlock();
+    }
   }
 
   /**
-   * Allows the user to specify whether they want joystick connection warnings
-   * to be printed to the console. This setting is ignored when the FMS is
-   * connected -- warnings will always be on in that scenario.
+   * Allows the user to specify whether they want joystick connection warnings to be printed to the
+   * console. This setting is ignored when the FMS is connected -- warnings will always be on in
+   * that scenario.
    *
    * @param silence Whether warning messages should be silenced.
    */
-  public void silenceJoystickConnectionWarning(boolean silence) {
+  public static void silenceJoystickConnectionWarning(boolean silence) {
     m_silenceJoystickWarning = silence;
   }
 
   /**
-   * Returns whether joystick connection warnings are silenced. This will
-   * always return false when connected to the FMS.
+   * Returns whether joystick connection warnings are silenced. This will always return false when
+   * connected to the FMS.
    *
    * @return Whether joystick connection warnings are silenced.
    */
-  public boolean isJoystickConnectionWarningSilenced() {
+  public static boolean isJoystickConnectionWarningSilenced() {
     return !isFMSAttached() && m_silenceJoystickWarning;
   }
 
@@ -1094,7 +1214,7 @@ public class DriverStation {
    * Copy data from the DS task for the user. If no new data exists, it will just be returned,
    * otherwise the data will be copied from the DS polling loop.
    */
-  protected void getData() {
+  protected static void getData() {
     // Get the status of all of the joysticks
     for (byte stick = 0; stick < kJoystickPorts; stick++) {
       m_joystickAxesCache[stick].m_count =
@@ -1144,14 +1264,14 @@ public class DriverStation {
     }
 
     wakeupWaitForData();
-    sendMatchData();
+    m_matchDataSender.sendMatchData();
   }
 
   /**
    * Reports errors related to unplugged joysticks Throttles the errors so that they don't overwhelm
    * the DS.
    */
-  private void reportJoystickUnpluggedError(String message) {
+  private static void reportJoystickUnpluggedError(String message) {
     double currentTime = Timer.getFPGATimestamp();
     if (currentTime > m_nextMessageTime) {
       reportError(message, false);
@@ -1163,7 +1283,7 @@ public class DriverStation {
    * Reports errors related to unplugged joysticks Throttles the errors so that they don't overwhelm
    * the DS.
    */
-  private void reportJoystickUnpluggedWarning(String message) {
+  private static void reportJoystickUnpluggedWarning(String message) {
     if (isFMSAttached() || !m_silenceJoystickWarning) {
       double currentTime = Timer.getFPGATimestamp();
       if (currentTime > m_nextMessageTime) {
@@ -1173,10 +1293,8 @@ public class DriverStation {
     }
   }
 
-  /**
-   * Provides the service routine for the DS polling m_thread.
-   */
-  private void run() {
+  /** Provides the service routine for the DS polling m_thread. */
+  private static void run() {
     int safetyCounter = 0;
     while (m_threadKeepAlive) {
       HAL.waitForDSData();
@@ -1207,12 +1325,12 @@ public class DriverStation {
   }
 
   /**
-   * Updates the data in the control word cache. Updates if the force parameter is set, or if
-   * 50ms have passed since the last update.
+   * Updates the data in the control word cache. Updates if the force parameter is set, or if 50ms
+   * have passed since the last update.
    *
    * @param force True to force an update to the cache, otherwise update if 50ms have passed.
    */
-  private void updateControlWord(boolean force) {
+  private static void updateControlWord(boolean force) {
     long now = System.currentTimeMillis();
     synchronized (m_controlWordMutex) {
       if (now - m_lastControlWordUpdate > 50 || force) {

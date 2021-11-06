@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2018-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include <jni.h>
 
@@ -775,6 +772,57 @@ Java_edu_wpi_first_hal_simulation_RoboRioDataJNI_setUserFaults3V3
   (JNIEnv*, jclass, jint value)
 {
   HALSIM_SetRoboRioUserFaults3V3(value);
+}
+
+/*
+ * Class:     edu_wpi_first_hal_simulation_RoboRioDataJNI
+ * Method:    registerBrownoutVoltageCallback
+ * Signature: (Ljava/lang/Object;Z)I
+ */
+JNIEXPORT jint JNICALL
+Java_edu_wpi_first_hal_simulation_RoboRioDataJNI_registerBrownoutVoltageCallback
+  (JNIEnv* env, jclass, jobject callback, jboolean initialNotify)
+{
+  return sim::AllocateCallbackNoIndex(
+      env, callback, initialNotify,
+      &HALSIM_RegisterRoboRioBrownoutVoltageCallback);
+}
+
+/*
+ * Class:     edu_wpi_first_hal_simulation_RoboRioDataJNI
+ * Method:    cancelBrownoutVoltageCallback
+ * Signature: (I)V
+ */
+JNIEXPORT void JNICALL
+Java_edu_wpi_first_hal_simulation_RoboRioDataJNI_cancelBrownoutVoltageCallback
+  (JNIEnv* env, jclass, jint handle)
+{
+  return sim::FreeCallbackNoIndex(env, handle,
+                                  &HALSIM_CancelRoboRioBrownoutVoltageCallback);
+}
+
+/*
+ * Class:     edu_wpi_first_hal_simulation_RoboRioDataJNI
+ * Method:    getBrownoutVoltage
+ * Signature: ()D
+ */
+JNIEXPORT jdouble JNICALL
+Java_edu_wpi_first_hal_simulation_RoboRioDataJNI_getBrownoutVoltage
+  (JNIEnv*, jclass)
+{
+  return HALSIM_GetRoboRioBrownoutVoltage();
+}
+
+/*
+ * Class:     edu_wpi_first_hal_simulation_RoboRioDataJNI
+ * Method:    setBrownoutVoltage
+ * Signature: (D)V
+ */
+JNIEXPORT void JNICALL
+Java_edu_wpi_first_hal_simulation_RoboRioDataJNI_setBrownoutVoltage
+  (JNIEnv*, jclass, jdouble value)
+{
+  HALSIM_SetRoboRioBrownoutVoltage(value);
 }
 
 /*

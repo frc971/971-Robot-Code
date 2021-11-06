@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2018 FIRST. All Rights Reserved.                             */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #ifndef WPIUTIL_WPI_UV_GETNAMEINFO_H_
 #define WPIUTIL_WPI_UV_GETNAMEINFO_H_
@@ -12,13 +9,13 @@
 
 #include <functional>
 #include <memory>
+#include <string_view>
+#include <utility>
 
 #include "wpi/Signal.h"
-#include "wpi/Twine.h"
 #include "wpi/uv/Request.h"
 
-namespace wpi {
-namespace uv {
+namespace wpi::uv {
 
 class Loop;
 
@@ -94,7 +91,7 @@ void GetNameInfo(Loop& loop,
 inline void GetNameInfo(const std::shared_ptr<Loop>& loop,
                         std::function<void(const char*, const char*)> callback,
                         const sockaddr& addr, int flags = 0) {
-  GetNameInfo(*loop, callback, addr, flags);
+  GetNameInfo(*loop, std::move(callback), addr, flags);
 }
 
 /**
@@ -109,7 +106,7 @@ inline void GetNameInfo(const std::shared_ptr<Loop>& loop,
  * @param flags Optional flags to modify the behavior of `getnameinfo`.
  */
 void GetNameInfo4(Loop& loop, const std::shared_ptr<GetNameInfoReq>& req,
-                  const Twine& ip, unsigned int port, int flags = 0);
+                  std::string_view ip, unsigned int port, int flags = 0);
 
 /**
  * Asynchronous IPv4 getnameinfo(3).  HandleResolvedName() is called on the
@@ -124,7 +121,8 @@ void GetNameInfo4(Loop& loop, const std::shared_ptr<GetNameInfoReq>& req,
  */
 inline void GetNameInfo4(const std::shared_ptr<Loop>& loop,
                          const std::shared_ptr<GetNameInfoReq>& req,
-                         const Twine& ip, unsigned int port, int flags = 0) {
+                         std::string_view ip, unsigned int port,
+                         int flags = 0) {
   return GetNameInfo4(*loop, req, ip, port, flags);
 }
 
@@ -140,7 +138,7 @@ inline void GetNameInfo4(const std::shared_ptr<Loop>& loop,
  */
 void GetNameInfo4(Loop& loop,
                   std::function<void(const char*, const char*)> callback,
-                  const Twine& ip, unsigned int port, int flags = 0);
+                  std::string_view ip, unsigned int port, int flags = 0);
 
 /**
  * Asynchronous IPv4 getnameinfo(3).  The callback is called when the resolution
@@ -155,8 +153,9 @@ void GetNameInfo4(Loop& loop,
  */
 inline void GetNameInfo4(const std::shared_ptr<Loop>& loop,
                          std::function<void(const char*, const char*)> callback,
-                         const Twine& ip, unsigned int port, int flags = 0) {
-  return GetNameInfo4(*loop, callback, ip, port, flags);
+                         std::string_view ip, unsigned int port,
+                         int flags = 0) {
+  return GetNameInfo4(*loop, std::move(callback), ip, port, flags);
 }
 
 /**
@@ -171,7 +170,7 @@ inline void GetNameInfo4(const std::shared_ptr<Loop>& loop,
  * @param flags Optional flags to modify the behavior of `getnameinfo`.
  */
 void GetNameInfo6(Loop& loop, const std::shared_ptr<GetNameInfoReq>& req,
-                  const Twine& ip, unsigned int port, int flags = 0);
+                  std::string_view ip, unsigned int port, int flags = 0);
 
 /**
  * Asynchronous IPv6 getnameinfo(3).  HandleResolvedName() is called on the
@@ -186,7 +185,8 @@ void GetNameInfo6(Loop& loop, const std::shared_ptr<GetNameInfoReq>& req,
  */
 inline void GetNameInfo6(const std::shared_ptr<Loop>& loop,
                          const std::shared_ptr<GetNameInfoReq>& req,
-                         const Twine& ip, unsigned int port, int flags = 0) {
+                         std::string_view ip, unsigned int port,
+                         int flags = 0) {
   GetNameInfo6(*loop, req, ip, port, flags);
 }
 
@@ -203,7 +203,7 @@ inline void GetNameInfo6(const std::shared_ptr<Loop>& loop,
  */
 void GetNameInfo6(Loop& loop,
                   std::function<void(const char*, const char*)> callback,
-                  const Twine& ip, unsigned int port, int flags = 0);
+                  std::string_view ip, unsigned int port, int flags = 0);
 
 /**
  * Asynchronous IPv6 getnameinfo(3).  The callback is called when the resolution
@@ -218,11 +218,11 @@ void GetNameInfo6(Loop& loop,
  */
 inline void GetNameInfo6(const std::shared_ptr<Loop>& loop,
                          std::function<void(const char*, const char*)> callback,
-                         const Twine& ip, unsigned int port, int flags = 0) {
-  return GetNameInfo6(*loop, callback, ip, port, flags);
+                         std::string_view ip, unsigned int port,
+                         int flags = 0) {
+  return GetNameInfo6(*loop, std::move(callback), ip, port, flags);
 }
 
-}  // namespace uv
-}  // namespace wpi
+}  // namespace wpi::uv
 
 #endif  // WPIUTIL_WPI_UV_GETNAMEINFO_H_

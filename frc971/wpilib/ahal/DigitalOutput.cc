@@ -38,7 +38,8 @@ DigitalOutput::DigitalOutput(int channel) {
   m_channel = channel;
 
   int32_t status = 0;
-  m_handle = HAL_InitializeDIOPort(HAL_GetPort(channel), false, &status);
+  m_handle =
+      HAL_InitializeDIOPort(HAL_GetPort(channel), false, nullptr, &status);
   if (status != 0) {
     wpi_setErrorWithContextRange(status, 0, HAL_GetNumDigitalChannels(),
                                  channel, HAL_GetErrorMessage(status));

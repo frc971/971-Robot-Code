@@ -12,6 +12,7 @@
 
 #include "ctre/phoenix/CANifier.h"
 #include "frc971/wpilib/ahal/AnalogInput.h"
+#include "frc971/wpilib/ahal/Compressor.h"
 #include "frc971/wpilib/ahal/Counter.h"
 #include "frc971/wpilib/ahal/DigitalGlitchFilter.h"
 #include "frc971/wpilib/ahal/DriverStation.h"
@@ -442,21 +443,10 @@ class SolenoidWriter {
             event_loop->MakeFetcher<::y2018::vision::VisionStatus>("/vision")),
         pneumatics_to_log_sender_(
             event_loop->MakeSender<::frc971::wpilib::PneumaticsToLog>("/aos")),
-        pcm_(pcm) {
+        pcm_(pcm),
+        compressor_(0) {
     event_loop->set_name("Solenoids");
     event_loop_->SetRuntimeRealtimePriority(27);
-
-    int32_t status = 0;
-    HAL_CompressorHandle compressor_ = HAL_InitializeCompressor(0, &status);
-    if (status != 0) {
-      AOS_LOG(ERROR, "Compressor status is nonzero, %d\n",
-              static_cast<int>(status));
-    }
-    HAL_SetCompressorClosedLoopControl(compressor_, true, &status);
-    if (status != 0) {
-      AOS_LOG(ERROR, "Compressor status is nonzero, %d\n",
-              static_cast<int>(status));
-    }
 
     event_loop_->AddPhasedLoop([this](int iterations) { Loop(iterations); },
                                ::std::chrono::milliseconds(20),
@@ -607,8 +597,6 @@ class SolenoidWriter {
       left_drivetrain_shifter_, right_drivetrain_shifter_, claw_, arm_brakes_,
       hook_, forks_;
 
-  HAL_CompressorHandle compressor_;
-
   ::ctre::phoenix::CANifier canifier_{0};
 
   ::std::atomic<bool> run_{true};
@@ -616,6 +604,8 @@ class SolenoidWriter {
   double last_red_ = -1.0;
   double last_green_ = -1.0;
   double last_blue_ = -1.0;
+
+  frc::Compressor compressor_;
 
   int light_flash_ = 0;
 };

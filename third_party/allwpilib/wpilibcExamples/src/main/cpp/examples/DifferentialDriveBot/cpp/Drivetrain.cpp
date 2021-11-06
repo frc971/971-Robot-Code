@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "Drivetrain.h"
 
@@ -11,9 +8,9 @@ void Drivetrain::SetSpeeds(const frc::DifferentialDriveWheelSpeeds& speeds) {
   const auto leftFeedforward = m_feedforward.Calculate(speeds.left);
   const auto rightFeedforward = m_feedforward.Calculate(speeds.right);
   const double leftOutput = m_leftPIDController.Calculate(
-      m_leftEncoder.GetRate(), speeds.left.to<double>());
+      m_leftEncoder.GetRate(), speeds.left.value());
   const double rightOutput = m_rightPIDController.Calculate(
-      m_rightEncoder.GetRate(), speeds.right.to<double>());
+      m_rightEncoder.GetRate(), speeds.right.value());
 
   m_leftGroup.SetVoltage(units::volt_t{leftOutput} + leftFeedforward);
   m_rightGroup.SetVoltage(units::volt_t{rightOutput} + rightFeedforward);

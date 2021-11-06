@@ -8,8 +8,9 @@
 #pragma once
 
 #include <hal/SPITypes.h>
-#include <wpi/ArrayRef.h>
 #include <wpi/deprecated.h>
+#include <wpi/span.h>
+#include "absl/types/span.h"
 
 #include <cstdint>
 #include <memory>
@@ -168,7 +169,7 @@ class SPI final {
    * @param dataToSend data to send (maximum 16 bytes)
    * @param zeroSize number of zeros to send after the data
    */
-  void SetAutoTransmitData(wpi::ArrayRef<uint8_t> dataToSend, int zeroSize);
+  void SetAutoTransmitData(absl::Span<const uint8_t> dataToSend, int zeroSize);
 
   /**
    * Start running the automatic SPI transfer engine at a periodic rate.

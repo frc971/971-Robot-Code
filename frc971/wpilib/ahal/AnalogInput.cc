@@ -35,7 +35,7 @@ AnalogInput::AnalogInput(int channel) {
 
   HAL_PortHandle port = HAL_GetPort(channel);
   int32_t status = 0;
-  m_port = HAL_InitializeAnalogInputPort(port, &status);
+  m_port = HAL_InitializeAnalogInputPort(port, nullptr, &status);
   if (status != 0) {
     wpi_setErrorWithContextRange(status, 0, HAL_GetNumAnalogInputs(), channel,
                                  HAL_GetErrorMessage(status));

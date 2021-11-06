@@ -83,12 +83,19 @@
 namespace drake {
 namespace internal {
 // Abort the program with an error message.
-[[noreturn]]
-void Abort(const char* condition, const char* func, const char* file, int line);
+[[noreturn]] void Abort(const char* condition, const char* func,
+                        const char* file, int line);
 // Report an assertion failure; will either Abort(...) or throw.
-[[noreturn]]
-void AssertionFailed(
-    const char* condition, const char* func, const char* file, int line);
+[[noreturn]] void AssertionFailed(const char* condition, const char* func,
+                                  const char* file, int line);
+template <bool>
+constexpr void DrakeAssertWasUsedWithRawPointer() {}
+template<>
+[[deprecated("\nDRAKE DEPRECATED: When using DRAKE_ASSERT or DRAKE_DEMAND on"
+" a raw pointer, always write out DRAKE_ASSERT(foo != nullptr), do not write"
+" DRAKE_ASSERT(foo) and rely on implicit pointer-to-bool conversion."
+"\nThe deprecated code will be removed from Drake on or after 2021-12-01.")]]
+constexpr void DrakeAssertWasUsedWithRawPointer<true>() {}
 }  // namespace internal
 namespace assert {
 // Allows for specialization of how to bool-convert Conditions used in
@@ -98,7 +105,7 @@ namespace assert {
 // require special handling.
 template <typename Condition>
 struct ConditionTraits {
-  static constexpr bool is_valid = std::is_convertible<Condition, bool>::value;
+  static constexpr bool is_valid = std::is_convertible_v<Condition, bool>;
   static bool Evaluate(const Condition& value) {
     return value;
   }
@@ -113,8 +120,10 @@ struct ConditionTraits {
 #define DRAKE_DEMAND(condition)                                              \
   do {                                                                       \
     typedef ::drake::assert::ConditionTraits<                                \
-        typename std::remove_cv<decltype(condition)>::type> Trait;           \
+        typename std::remove_cv_t<decltype(condition)>> Trait;               \
     static_assert(Trait::is_valid, "Condition should be bool-convertible."); \
+    ::drake::internal::DrakeAssertWasUsedWithRawPointer<                     \
+        std::is_pointer_v<decltype(condition)>>();                           \
     if (!Trait::Evaluate(condition)) {                                       \
       ::drake::internal::AssertionFailed(                                    \
            #condition, __func__, __FILE__, __LINE__);                        \
@@ -130,7 +139,7 @@ constexpr bool kDrakeAssertIsDisarmed = false;
 # define DRAKE_ASSERT(condition) DRAKE_DEMAND(condition)
 # define DRAKE_ASSERT_VOID(expression) do {                     \
     static_assert(                                              \
-        std::is_convertible<decltype(expression), void>::value, \
+        std::is_convertible_v<decltype(expression), void>,      \
         "Expression should be void.");                          \
     expression;                                                 \
   } while (0)
@@ -140,12 +149,16 @@ namespace drake {
 constexpr bool kDrakeAssertIsArmed = false;
 constexpr bool kDrakeAssertIsDisarmed = true;
 }  // namespace drake
-# define DRAKE_ASSERT(condition) static_assert(                        \
-    ::drake::assert::ConditionTraits<                                  \
-        typename std::remove_cv<decltype(condition)>::type>::is_valid, \
-    "Condition should be bool-convertible.");
+# define DRAKE_ASSERT(condition) do {                                  \
+    static_assert(                                                     \
+        ::drake::assert::ConditionTraits<                              \
+            typename std::remove_cv_t<decltype(condition)>>::is_valid, \
+        "Condition should be bool-convertible.");                      \
+    ::drake::internal::DrakeAssertWasUsedWithRawPointer<               \
+        std::is_pointer_v<decltype(condition)>>();                     \
+  } while (0)
 # define DRAKE_ASSERT_VOID(expression) static_assert(           \
-    std::is_convertible<decltype(expression), void>::value,     \
+    std::is_convertible_v<decltype(expression), void>,          \
     "Expression should be void.")
 #endif
 

@@ -1,16 +1,16 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2018 FIRST. All Rights Reserved.                             */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #ifndef WPIUTIL_WPI_RAW_UV_OSTREAM_H_
 #define WPIUTIL_WPI_RAW_UV_OSTREAM_H_
 
-#include "wpi/ArrayRef.h"
+#include <functional>
+#include <utility>
+
 #include "wpi/SmallVector.h"
 #include "wpi/raw_ostream.h"
+#include "wpi/span.h"
 #include "wpi/uv/Buffer.h"
 
 namespace wpi {
@@ -29,8 +29,7 @@ class raw_uv_ostream : public raw_ostream {
    *                  performed using Buffer::Allocate().
    */
   raw_uv_ostream(SmallVectorImpl<uv::Buffer>& bufs, size_t allocSize)
-      : m_bufs(bufs),
-        m_alloc([=]() { return uv::Buffer::Allocate(allocSize); }) {
+      : m_bufs(bufs), m_alloc([=] { return uv::Buffer::Allocate(allocSize); }) {
     SetUnbuffered();
   }
 
@@ -41,18 +40,23 @@ class raw_uv_ostream : public raw_ostream {
    */
   raw_uv_ostream(SmallVectorImpl<uv::Buffer>& bufs,
                  std::function<uv::Buffer()> alloc)
-      : m_bufs(bufs), m_alloc(alloc) {
+      : m_bufs(bufs), m_alloc(std::move(alloc)) {
     SetUnbuffered();
   }
 
   ~raw_uv_ostream() override = default;
 
   /**
-   * Returns an ArrayRef to the buffers.
+   * Returns an span to the buffers.
    */
-  ArrayRef<uv::Buffer> bufs() { return m_bufs; }
+  span<uv::Buffer> bufs() { return m_bufs; }
 
   void flush() = delete;
+
+  /**
+   * Resets the amount of allocated space.
+   */
+  void reset() { m_left = 0; }
 
  private:
   void write_impl(const char* data, size_t len) override;

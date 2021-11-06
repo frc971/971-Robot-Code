@@ -1,17 +1,13 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2018-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 package edu.wpi.first.wpilibj;
 
+import edu.wpi.first.hal.NotifierJNI;
 import java.io.Closeable;
 import java.util.PriorityQueue;
 import java.util.concurrent.locks.ReentrantLock;
-
-import edu.wpi.first.hal.NotifierJNI;
 
 /**
  * A class that's a wrapper around a watchdog timer.
@@ -23,13 +19,13 @@ import edu.wpi.first.hal.NotifierJNI;
  */
 public class Watchdog implements Closeable, Comparable<Watchdog> {
   // Used for timeout print rate-limiting
-  private static final long kMinPrintPeriod = 1000000; // microseconds
+  private static final long kMinPrintPeriodMicroS = (long) 1e6;
 
-  private double m_startTime; // seconds
-  private double m_timeout; // seconds
-  private double m_expirationTime; // seconds
+  private double m_startTimeSeconds;
+  private double m_timeoutSeconds;
+  private double m_expirationTimeSeconds;
   private final Runnable m_callback;
-  private double m_lastTimeoutPrintTime; // seconds
+  private double m_lastTimeoutPrintSeconds;
 
   boolean m_isExpired;
 
@@ -50,11 +46,11 @@ public class Watchdog implements Closeable, Comparable<Watchdog> {
   /**
    * Watchdog constructor.
    *
-   * @param timeout  The watchdog's timeout in seconds with microsecond resolution.
+   * @param timeoutSeconds The watchdog's timeout in seconds with microsecond resolution.
    * @param callback This function is called when the timeout expires.
    */
-  public Watchdog(double timeout, Runnable callback) {
-    m_timeout = timeout;
+  public Watchdog(double timeoutSeconds, Runnable callback) {
+    m_timeoutSeconds = timeoutSeconds;
     m_callback = callback;
     m_tracer = new Tracer();
   }
@@ -65,50 +61,50 @@ public class Watchdog implements Closeable, Comparable<Watchdog> {
   }
 
   @Override
-  public int compareTo(Watchdog rhs) {
-    // Elements with sooner expiration times are sorted as lesser. The head of
-    // Java's PriorityQueue is the least element.
-    return Double.compare(m_expirationTime, rhs.m_expirationTime);
-  }
-
-  @Override
   public boolean equals(Object obj) {
-    if (!(obj instanceof Watchdog)) {
-      return false;
+    if (obj instanceof Watchdog) {
+      return Double.compare(m_expirationTimeSeconds, ((Watchdog) obj).m_expirationTimeSeconds) == 0;
     }
-    Watchdog oth = (Watchdog) obj;
-    return oth.m_expirationTime == m_expirationTime;
+    return false;
   }
 
   @Override
   public int hashCode() {
-    return Double.hashCode(m_expirationTime);
+    return Double.hashCode(m_expirationTimeSeconds);
+  }
+
+  @Override
+  public int compareTo(Watchdog rhs) {
+    // Elements with sooner expiration times are sorted as lesser. The head of
+    // Java's PriorityQueue is the least element.
+    return Double.compare(m_expirationTimeSeconds, rhs.m_expirationTimeSeconds);
   }
 
   /**
    * Returns the time in seconds since the watchdog was last fed.
+   *
+   * @return The time in seconds since the watchdog was last fed.
    */
   public double getTime() {
-    return Timer.getFPGATimestamp() - m_startTime;
+    return Timer.getFPGATimestamp() - m_startTimeSeconds;
   }
 
   /**
    * Sets the watchdog's timeout.
    *
-   * @param timeout The watchdog's timeout in seconds with microsecond
-   *                resolution.
+   * @param timeoutSeconds The watchdog's timeout in seconds with microsecond resolution.
    */
-  public void setTimeout(double timeout) {
-    m_startTime = Timer.getFPGATimestamp();
+  public void setTimeout(double timeoutSeconds) {
+    m_startTimeSeconds = Timer.getFPGATimestamp();
     m_tracer.clearEpochs();
 
     m_queueMutex.lock();
     try {
-      m_timeout = timeout;
+      m_timeoutSeconds = timeoutSeconds;
       m_isExpired = false;
 
       m_watchdogs.remove(this);
-      m_expirationTime = m_startTime + m_timeout;
+      m_expirationTimeSeconds = m_startTimeSeconds + m_timeoutSeconds;
       m_watchdogs.add(this);
       updateAlarm();
     } finally {
@@ -118,11 +114,13 @@ public class Watchdog implements Closeable, Comparable<Watchdog> {
 
   /**
    * Returns the watchdog's timeout in seconds.
+   *
+   * @return The watchdog's timeout in seconds.
    */
   public double getTimeout() {
     m_queueMutex.lock();
     try {
-      return m_timeout;
+      return m_timeoutSeconds;
     } finally {
       m_queueMutex.unlock();
     }
@@ -130,6 +128,8 @@ public class Watchdog implements Closeable, Comparable<Watchdog> {
 
   /**
    * Returns true if the watchdog timer has expired.
+   *
+   * @return True if the watchdog timer has expired.
    */
   public boolean isExpired() {
     m_queueMutex.lock();
@@ -144,7 +144,6 @@ public class Watchdog implements Closeable, Comparable<Watchdog> {
    * Adds time since last epoch to the list printed by printEpochs().
    *
    * @see Tracer#addEpoch(String)
-   *
    * @param epochName The name to associate with the epoch.
    */
   public void addEpoch(String epochName) {
@@ -153,6 +152,7 @@ public class Watchdog implements Closeable, Comparable<Watchdog> {
 
   /**
    * Prints list of epochs added so far and their times.
+   *
    * @see Tracer#printEpochs()
    */
   public void printEpochs() {
@@ -168,11 +168,9 @@ public class Watchdog implements Closeable, Comparable<Watchdog> {
     enable();
   }
 
-  /**
-   * Enables the watchdog timer.
-   */
+  /** Enables the watchdog timer. */
   public void enable() {
-    m_startTime = Timer.getFPGATimestamp();
+    m_startTimeSeconds = Timer.getFPGATimestamp();
     m_tracer.clearEpochs();
 
     m_queueMutex.lock();
@@ -180,7 +178,7 @@ public class Watchdog implements Closeable, Comparable<Watchdog> {
       m_isExpired = false;
 
       m_watchdogs.remove(this);
-      m_expirationTime = m_startTime + m_timeout;
+      m_expirationTimeSeconds = m_startTimeSeconds + m_timeoutSeconds;
       m_watchdogs.add(this);
       updateAlarm();
     } finally {
@@ -188,9 +186,7 @@ public class Watchdog implements Closeable, Comparable<Watchdog> {
     }
   }
 
-  /**
-   * Disables the watchdog timer.
-   */
+  /** Disables the watchdog timer. */
   public void disable() {
     m_queueMutex.lock();
     try {
@@ -212,12 +208,13 @@ public class Watchdog implements Closeable, Comparable<Watchdog> {
     m_suppressTimeoutMessage = suppress;
   }
 
+  @SuppressWarnings("resource")
   private static void updateAlarm() {
     if (m_watchdogs.size() == 0) {
       NotifierJNI.cancelNotifierAlarm(m_notifier);
     } else {
-      NotifierJNI.updateNotifierAlarm(m_notifier,
-          (long) (m_watchdogs.peek().m_expirationTime * 1e6));
+      NotifierJNI.updateNotifierAlarm(
+          m_notifier, (long) (m_watchdogs.peek().m_expirationTimeSeconds * 1e6));
     }
   }
 
@@ -247,12 +244,11 @@ public class Watchdog implements Closeable, Comparable<Watchdog> {
         Watchdog watchdog = m_watchdogs.poll();
 
         double now = curTime * 1e-6;
-        if (now - watchdog.m_lastTimeoutPrintTime > kMinPrintPeriod) {
-          watchdog.m_lastTimeoutPrintTime = now;
+        if (now - watchdog.m_lastTimeoutPrintSeconds > kMinPrintPeriodMicroS) {
+          watchdog.m_lastTimeoutPrintSeconds = now;
           if (!watchdog.m_suppressTimeoutMessage) {
             DriverStation.reportWarning(
-                String.format("Watchdog not fed within %.6fs\n", watchdog.m_timeout),
-                false);
+                String.format("Watchdog not fed within %.6fs\n", watchdog.m_timeoutSeconds), false);
           }
         }
 

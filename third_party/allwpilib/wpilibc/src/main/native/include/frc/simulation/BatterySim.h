@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2020 FIRST. All Rights Reserved.                             */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
@@ -15,13 +12,16 @@
 
 namespace frc::sim {
 
+/**
+ * A utility class to simulate the robot battery.
+ */
 class BatterySim {
  public:
   /**
    * Calculate the loaded battery voltage. Use this with
-   * {@link RoboRioSim#setVInVoltage(double)} to set the simulated battery
-   * voltage, which can then be retrieved with the {@link
-   * RobotController#getBatteryVoltage()} method.
+   * RoboRioSim::SetVInVoltage(double) to set the simulated battery voltage,
+   * which can then be retrieved with the RobotController::GetBatteryVoltage()
+   * method.
    *
    * @param nominalVoltage The nominal battery voltage. Usually 12v.
    * @param resistance     The forward resistance of the battery. Most batteries
@@ -38,10 +38,10 @@ class BatterySim {
 
   /**
    * Calculate the loaded battery voltage. Use this with
-   * {@link RoboRioSim#setVInVoltage(double)} to set the simulated battery
-   * voltage, which can then be retrieved with the {@link
-   * RobotController#getBatteryVoltage()} method. This function assumes a
-   * nominal voltage of 12v and a resistance of 20 milliohms (0.020 ohms)
+   * RoboRioSimSetVInVoltage(double) to set the simulated battery voltage, which
+   * can then be retrieved with the RobotController::GetBatteryVoltage() method.
+   * This function assumes a nominal voltage of 12V and a resistance of 20
+   * milliohms (0.020 ohms).
    *
    * @param currents The currents drawn from the battery.
    * @return The battery's voltage under load.

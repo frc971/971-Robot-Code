@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2017-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "hal/simulation/RoboRioData.h"
 
@@ -30,6 +27,7 @@ DEFINE_CAPI(HAL_Bool, UserActive3V3, false)
 DEFINE_CAPI(int32_t, UserFaults6V, 0)
 DEFINE_CAPI(int32_t, UserFaults5V, 0)
 DEFINE_CAPI(int32_t, UserFaults3V3, 0)
+DEFINE_CAPI(double, BrownoutVoltage, 6.75)
 
 void HALSIM_RegisterRoboRioAllCallbacks(HAL_NotifyCallback callback,
                                         void* param, HAL_Bool initialNotify) {}

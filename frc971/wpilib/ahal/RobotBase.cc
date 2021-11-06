@@ -11,7 +11,6 @@
 
 #include "hal/HAL.h"
 #include "frc971/wpilib/ahal/DriverStation.h"
-#include "frc971/wpilib/ahal/Utility.h"
 #include "frc971/wpilib/ahal/WPILibVersion.h"
 
 using namespace frc;

@@ -1,6 +1,6 @@
 plugins {
     id 'java'
-    id "org.ysb33r.doxygen" version "0.5"
+    id "org.ysb33r.doxygen" version "0.7.0"
 }
 
 evaluationDependsOn(':wpiutil')
@@ -25,6 +25,7 @@ def zipBaseNameJava = '_GROUP_edu_wpi_first_wpilibj_ID_documentation_CLS'
 def outputsFolder = file("$project.buildDir/outputs")
 
 def cppProjectZips = []
+def cppIncludeRoots = []
 
 cppProjectZips.add(project(':hal').cppHeadersZip)
 cppProjectZips.add(project(':wpiutil').cppHeadersZip)
@@ -38,43 +39,125 @@ cppProjectZips.add(project(':wpilibNewCommands').cppHeadersZip)
 
 doxygen {
     executables {
-        doxygen version : '1.8.18',
-            baseURI : 'https://frcmaven.wpi.edu/artifactory/generic-release-mirror/doxygen'
+        doxygen version : '1.9.2',
+        baseURI : 'https://frcmaven.wpi.edu/artifactory/generic-release-mirror/doxygen'
     }
 }
 
 doxygen {
     generate_html true
+    html_extra_stylesheet 'theme.css'
 
     cppProjectZips.each {
         dependsOn it
         source it.source
+        it.ext.includeDirs.each {
+            cppIncludeRoots.add(it.absolutePath)
+        }
     }
 
-    exclude 'Eigen/**'
-    exclude 'unsupported/**'
-    exclude 'units/**'
-    exclude 'uv.h'
-    exclude 'uv/**'
+    if (project.hasProperty('docWarningsAsErrors')) {
+        // C++20 shims
+        exclude 'wpi/ghc/filesystem.hpp'
+        exclude 'wpi/span.h'
 
+        // Drake
+        exclude 'drake/common/**'
 
+        // Eigen
+        exclude 'Eigen/**'
+        exclude 'unsupported/**'
+
+        // LLVM
+        exclude 'wpi/AlignOf.h'
+        exclude 'wpi/Chrono.h'
+        exclude 'wpi/Compiler.h'
+        exclude 'wpi/ConvertUTF.h'
+        exclude 'wpi/DenseMap.h'
+        exclude 'wpi/DenseMapInfo.h'
+        exclude 'wpi/Endian.h'
+        exclude 'wpi/EpochTracker.h'
+        exclude 'wpi/Errc.h'
+        exclude 'wpi/Errno.h'
+        exclude 'wpi/ErrorHandling.h'
+        exclude 'wpi/fs.h'
+        exclude 'wpi/FunctionExtras.h'
+        exclude 'wpi/function_ref.h'
+        exclude 'wpi/Hashing.h'
+        exclude 'wpi/iterator.h'
+        exclude 'wpi/iterator_range.h'
+        exclude 'wpi/ManagedStatic.h'
+        exclude 'wpi/MapVector.h'
+        exclude 'wpi/MathExtras.h'
+        exclude 'wpi/MemAlloc.h'
+        exclude 'wpi/PointerIntPair.h'
+        exclude 'wpi/PointerLikeTypeTraits.h'
+        exclude 'wpi/PointerUnion.h'
+        exclude 'wpi/raw_os_ostream.h'
+        exclude 'wpi/raw_ostream.h'
+        exclude 'wpi/SmallPtrSet.h'
+        exclude 'wpi/SmallSet.h'
+        exclude 'wpi/SmallString.h'
+        exclude 'wpi/SmallVector.h'
+        exclude 'wpi/StringExtras.h'
+        exclude 'wpi/StringMap.h'
+        exclude 'wpi/SwapByteOrder.h'
+        exclude 'wpi/type_traits.h'
+        exclude 'wpi/VersionTuple.h'
+        exclude 'wpi/WindowsError.h'
+
+        // fmtlib
+        exclude 'fmt/**'
+
+        // libuv
+        exclude 'uv.h'
+        exclude 'uv/**'
+        exclude 'wpi/uv/**'
+
+        // json
+        exclude 'wpi/json.h'
+
+        // mpack
+        exclude 'wpi/mpack.h'
+
+        // units
+        exclude 'units/**'
+    }
+
+    case_sense_names false
     extension_mapping 'inc=C++'
-    project_name 'WPILibC++'
-    project_number wpilibVersioning.version.get()
-    javadoc_autobrief true
-    recursive true
-    quiet true
-    warnings false
-    warn_if_doc_error false
-    warn_no_paramdoc false
-    warn_format false
-    warn_logfile false
-    warn_if_undocumented false
-    generate_latex false
-    use_mathjax true
-    html_timestamp true
-    generate_treeview true
+    extract_all true
     extract_static true
+    full_path_names true
+    generate_html true
+    generate_latex false
+    generate_treeview true
+    html_extra_stylesheet 'theme.css'
+    html_timestamp true
+    javadoc_autobrief true
+    project_name 'WPILibC++'
+    project_logo '../wpiutil/src/main/native/resources/wpilib-128.png'
+    project_number wpilibVersioning.version.get()
+    quiet true
+    recursive true
+    strip_code_comments false
+    strip_from_inc_path cppIncludeRoots as String[]
+    strip_from_path cppIncludeRoots as String[]
+    use_mathjax true
+    warnings false
+    warn_if_incomplete_doc true
+    warn_if_undocumented false
+    warn_no_paramdoc true
+
+    //enable doxygen preprocessor expansion of WPI_DEPRECATED to fix SpeedController docs
+    enable_preprocessing true
+    macro_expansion true
+    expand_only_predef true
+    predefined "WPI_DEPRECATED(x)=[[deprecated(x)]]"
+
+    if (project.hasProperty('docWarningsAsErrors')) {
+        warn_as_error 'FAIL_ON_WARNINGS'
+    }
 }
 
 tasks.register("zipCppDocs", Zip) {
@@ -106,9 +189,10 @@ apply from: "${rootDir}/shared/opencv.gradle"
 task generateJavaDocs(type: Javadoc) {
     classpath += project(":wpimath").sourceSets.main.compileClasspath
     options.links("https://docs.oracle.com/en/java/javase/11/docs/api/")
-    options.addStringOption "tag", "pre:a:Pre-Condition"
-    options.addBooleanOption "Xdoclint:html,missing,reference,syntax", true
+    options.addStringOption("tag", "pre:a:Pre-Condition")
+    options.addBooleanOption("Xdoclint:html,missing,reference,syntax", true)
     options.addBooleanOption('html5', true)
+    options.linkSource(true)
     dependsOn project(':wpilibj').generateJavaVersion
     dependsOn project(':hal').generateUsageReporting
     dependsOn project(':wpimath').generateNat
@@ -124,10 +208,22 @@ task generateJavaDocs(type: Javadoc) {
     source configurations.javaSource.collect { zipTree(it) }
     include '**/*.java'
     failOnError = true
-    options.encoding = 'UTF-8'
 
     title = "WPILib API ${wpilibVersioning.version.get()}"
     ext.entryPoint = "$destinationDir/index.html"
+
+    if (JavaVersion.current().isJava8Compatible() && project.hasProperty('docWarningsAsErrors')) {
+        // Treat javadoc warnings as errors.
+        //
+        // The second argument '-quiet' is a hack. The one paramater
+        // addStringOption() doesn't work, so we add '-quiet', which is added
+        // anyway by gradle. See https://github.com/gradle/gradle/issues/2354.
+        //
+        // See JDK-8200363 (https://bugs.openjdk.java.net/browse/JDK-8200363)
+        // for information about the nonstandard -Xwerror option. JDK 15+ has
+        // -Werror.
+        options.addStringOption('Xwerror', '-quiet')
+    }
 
     if (JavaVersion.current().isJava11Compatible()) {
         if (!JavaVersion.current().isJava12Compatible()) {

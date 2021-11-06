@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "frc/geometry/Transform2d.h"
 
@@ -29,6 +26,10 @@ Transform2d Transform2d::Inverse() const {
   // using a clockwise rotation matrix. This transforms the global
   // delta into a local delta (relative to the initial pose).
   return Transform2d{(-Translation()).RotateBy(-Rotation()), -Rotation()};
+}
+
+Transform2d Transform2d::operator+(const Transform2d& other) const {
+  return Transform2d{Pose2d{}, Pose2d{}.TransformBy(*this).TransformBy(other)};
 }
 
 bool Transform2d::operator==(const Transform2d& other) const {

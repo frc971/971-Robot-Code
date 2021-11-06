@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "frc/geometry/Pose2d.h"
 
@@ -21,12 +18,6 @@ Pose2d::Pose2d(units::meter_t x, units::meter_t y, Rotation2d rotation)
 
 Pose2d Pose2d::operator+(const Transform2d& other) const {
   return TransformBy(other);
-}
-
-Pose2d& Pose2d::operator+=(const Transform2d& other) {
-  m_translation += other.Translation().RotateBy(m_rotation);
-  m_rotation += other.Rotation();
-  return *this;
 }
 
 Transform2d Pose2d::operator-(const Pose2d& other) const {
@@ -55,7 +46,7 @@ Pose2d Pose2d::RelativeTo(const Pose2d& other) const {
 Pose2d Pose2d::Exp(const Twist2d& twist) const {
   const auto dx = twist.dx;
   const auto dy = twist.dy;
-  const auto dtheta = twist.dtheta.to<double>();
+  const auto dtheta = twist.dtheta.value();
 
   const auto sinTheta = std::sin(dtheta);
   const auto cosTheta = std::cos(dtheta);
@@ -77,7 +68,7 @@ Pose2d Pose2d::Exp(const Twist2d& twist) const {
 
 Twist2d Pose2d::Log(const Pose2d& end) const {
   const auto transform = end.RelativeTo(*this);
-  const auto dtheta = transform.Rotation().Radians().to<double>();
+  const auto dtheta = transform.Rotation().Radians().value();
   const auto halfDtheta = dtheta / 2.0;
 
   const auto cosMinusOne = transform.Rotation().Cos() - 1;

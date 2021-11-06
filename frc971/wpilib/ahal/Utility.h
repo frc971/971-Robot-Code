@@ -5,57 +5,30 @@
 /* the project.                                                               */
 /*----------------------------------------------------------------------------*/
 
-#pragma once
+#ifndef FRC971_WPILIB_AHAL_UTILITY_H_
+#define FRC971_WPILIB_AHAL_UTILITY_H_
 
-/** @file
- * Contains global utility functions
- */
-
-#include <cstdint>
 #include <string>
-
-#include "wpi/StringRef.h"
-#include "wpi/Twine.h"
-
-#define wpi_assert(condition) \
-  wpi_assert_impl(condition, #condition, "", __FILE__, __LINE__, __FUNCTION__)
-#define wpi_assertWithMessage(condition, message)                     \
-  wpi_assert_impl(condition, #condition, message, __FILE__, __LINE__, \
-                  __FUNCTION__)
-
-#define wpi_assertEqual(a, b) \
-  wpi_assertEqual_impl(a, b, #a, #b, "", __FILE__, __LINE__, __FUNCTION__)
-#define wpi_assertEqualWithMessage(a, b, message) \
-  wpi_assertEqual_impl(a, b, #a, #b, message, __FILE__, __LINE__, __FUNCTION__)
-
-#define wpi_assertNotEqual(a, b) \
-  wpi_assertNotEqual_impl(a, b, #a, #b, "", __FILE__, __LINE__, __FUNCTION__)
-#define wpi_assertNotEqualWithMessage(a, b, message)                 \
-  wpi_assertNotEqual_impl(a, b, #a, #b, message, __FILE__, __LINE__, \
-                          __FUNCTION__)
-
-bool wpi_assert_impl(bool conditionValue, const wpi::Twine &conditionText,
-                     const wpi::Twine &message, wpi::StringRef fileName,
-                     int lineNumber, wpi::StringRef funcName);
-bool wpi_assertEqual_impl(int valueA, int valueB,
-                          const wpi::Twine &valueAString,
-                          const wpi::Twine &valueBString,
-                          const wpi::Twine &message, wpi::StringRef fileName,
-                          int lineNumber, wpi::StringRef funcName);
-bool wpi_assertNotEqual_impl(int valueA, int valueB,
-                             const wpi::Twine &valueAString,
-                             const wpi::Twine &valueBString,
-                             const wpi::Twine &message, wpi::StringRef fileName,
-                             int lineNumber, wpi::StringRef funcName);
-
-void wpi_suspendOnAssertEnabled(bool enabled);
 
 namespace frc {
 
+// Returns the FPGA Version number.  For now, this is the competition year.
 int GetFPGAVersion();
+
+// Returns the FPGA Revision number.
+// The format of the revision is 3 numbers.
+// The 12 most significant bits are the Major Revision.
+// the next 8 bits are the Minor Revision.
+// The 12 least significant bits are the Build Number.
 int64_t GetFPGARevision();
+
+// Reads the microsecond-resolution timer on the FPGA since reset.
 uint64_t GetFPGATime();
+
+// Gets the state of the "USER" button on the roboRIO, returning true if
+// pressed.
 bool GetUserButton();
-std::string GetStackTrace(int offset);
 
 }  // namespace frc
+
+#endif  // FRC971_WPILIB_AHAL_UTILITY_H_

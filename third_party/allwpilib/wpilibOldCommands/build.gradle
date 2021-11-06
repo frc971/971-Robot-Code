@@ -30,18 +30,34 @@ dependencies {
 
 nativeUtils.exportsConfigs {
     wpilibOldCommands {
-        x86ExcludeSymbols = ['_CT??_R0?AV_System_error', '_CT??_R0?AVexception', '_CT??_R0?AVfailure',
-                            '_CT??_R0?AVruntime_error', '_CT??_R0?AVsystem_error', '_CTA5?AVfailure',
-                            '_TI5?AVfailure', '_CT??_R0?AVout_of_range', '_CTA3?AVout_of_range',
-                            '_TI3?AVout_of_range', '_CT??_R0?AVbad_cast']
-        x64ExcludeSymbols = ['_CT??_R0?AV_System_error', '_CT??_R0?AVexception', '_CT??_R0?AVfailure',
-                            '_CT??_R0?AVruntime_error', '_CT??_R0?AVsystem_error', '_CTA5?AVfailure',
-                            '_TI5?AVfailure', '_CT??_R0?AVout_of_range', '_CTA3?AVout_of_range',
-                            '_TI3?AVout_of_range', '_CT??_R0?AVbad_cast']
+        x86ExcludeSymbols = [
+            '_CT??_R0?AV_System_error',
+            '_CT??_R0?AVexception',
+            '_CT??_R0?AVfailure',
+            '_CT??_R0?AVruntime_error',
+            '_CT??_R0?AVsystem_error',
+            '_CTA5?AVfailure',
+            '_TI5?AVfailure',
+            '_CT??_R0?AVout_of_range',
+            '_CTA3?AVout_of_range',
+            '_TI3?AVout_of_range',
+            '_CT??_R0?AVbad_cast'
+        ]
+        x64ExcludeSymbols = [
+            '_CT??_R0?AV_System_error',
+            '_CT??_R0?AVexception',
+            '_CT??_R0?AVfailure',
+            '_CT??_R0?AVruntime_error',
+            '_CT??_R0?AVsystem_error',
+            '_CTA5?AVfailure',
+            '_TI5?AVfailure',
+            '_CT??_R0?AVout_of_range',
+            '_CTA3?AVout_of_range',
+            '_TI3?AVout_of_range',
+            '_CT??_R0?AVbad_cast'
+        ]
     }
 }
-
-apply plugin: DisableBuildingGTest
 
 model {
     components {}
@@ -57,8 +73,8 @@ model {
             lib project: ':wpimath', library: 'wpimath', linkage: 'shared'
 
             if (it.component.name == "${nativeName}Dev") {
-              lib project: ':ntcore', library: 'ntcoreJNIShared', linkage: 'shared'
-              project(':hal').addHalJniDependency(it)
+                lib project: ':ntcore', library: 'ntcoreJNIShared', linkage: 'shared'
+                project(':hal').addHalJniDependency(it)
             }
 
             if (it instanceof GoogleTestTestSuiteBinarySpec) {
@@ -66,7 +82,7 @@ model {
                 lib project: ':cscore', library: 'cscore', linkage: 'shared'
             }
             if ((it instanceof NativeExecutableBinarySpec || it instanceof GoogleTestTestSuiteBinarySpec) && it.targetPlatform.name == nativeUtils.wpi.platforms.roborio) {
-                nativeUtils.useRequiredLibrary(it, 'netcomm_shared', 'chipobject_shared', 'visa_shared', 'ni_runtime_shared')
+                nativeUtils.useRequiredLibrary(it, 'ni_link_libraries', 'ni_runtime_libraries')
             }
         }
     }
@@ -96,4 +112,8 @@ test {
         outputs.upToDateWhen {false}
         showStandardStreams = true
     }
+}
+
+tasks.withType(JavaCompile) {
+    options.compilerArgs += "-Xlint:-removal"
 }

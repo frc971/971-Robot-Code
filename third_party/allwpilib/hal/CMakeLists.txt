@@ -65,8 +65,8 @@ else()
     set (hal_config_dir share/hal)
 endif()
 
-configure_file(hal-config.cmake.in ${CMAKE_BINARY_DIR}/hal-config.cmake )
-install(FILES ${CMAKE_BINARY_DIR}/hal-config.cmake DESTINATION ${hal_config_dir})
+configure_file(hal-config.cmake.in ${WPILIB_BINARY_DIR}/hal-config.cmake )
+install(FILES ${WPILIB_BINARY_DIR}/hal-config.cmake DESTINATION ${hal_config_dir})
 install(EXPORT hal DESTINATION ${hal_config_dir})
 
 # Java bindings
@@ -74,7 +74,7 @@ if (WITH_JAVA)
     find_package(Java REQUIRED)
     find_package(JNI REQUIRED)
     include(UseJava)
-    set(CMAKE_JAVA_COMPILE_FLAGS "-Xlint:unchecked")
+    set(CMAKE_JAVA_COMPILE_FLAGS "-encoding" "UTF8" "-Xlint:unchecked")
 
     configure_file(src/generate/FRCNetComm.java.in FRCNetComm.java)
 

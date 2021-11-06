@@ -1,25 +1,17 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2018-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 package edu.wpi.first.wpilibj2.command;
 
+import edu.wpi.first.util.sendable.Sendable;
+import edu.wpi.first.util.sendable.SendableBuilder;
+import edu.wpi.first.util.sendable.SendableRegistry;
 import java.util.HashSet;
 import java.util.Set;
 
-import edu.wpi.first.wpilibj.Sendable;
-import edu.wpi.first.wpilibj.smartdashboard.SendableBuilder;
-import edu.wpi.first.wpilibj.smartdashboard.SendableRegistry;
-
-/**
- * A {@link Sendable} base class for {@link Command}s.
- */
-@SuppressWarnings("PMD.AbstractClassWithoutAbstractMethod")
+/** A {@link Sendable} base class for {@link Command}s. */
 public abstract class CommandBase implements Sendable, Command {
-
   protected Set<Subsystem> m_requirements = new HashSet<>();
 
   protected CommandBase() {
@@ -51,19 +43,17 @@ public abstract class CommandBase implements Sendable, Command {
    *
    * @param name name
    */
-  @Override
   public void setName(String name) {
     SendableRegistry.setName(this, name);
   }
 
   /**
-  * Decorates this Command with a name.
-  * Is an inline function for #setName(String);
-  *
-  * @param name name
-  * @return the decorated Command
-  */
-  public Command withName(String name) {
+   * Decorates this Command with a name. Is an inline function for #setName(String);
+   *
+   * @param name name
+   * @return the decorated Command
+   */
+  public CommandBase withName(String name) {
     this.setName(name);
     return this;
   }
@@ -73,7 +63,6 @@ public abstract class CommandBase implements Sendable, Command {
    *
    * @return Subsystem name
    */
-  @Override
   public String getSubsystem() {
     return SendableRegistry.getSubsystem(this);
   }
@@ -83,13 +72,12 @@ public abstract class CommandBase implements Sendable, Command {
    *
    * @param subsystem subsystem name
    */
-  @Override
   public void setSubsystem(String subsystem) {
     SendableRegistry.setSubsystem(this, subsystem);
   }
 
   /**
-   * Initializes this sendable.  Useful for allowing implementations to easily extend SendableBase.
+   * Initializes this sendable. Useful for allowing implementations to easily extend SendableBase.
    *
    * @param builder the builder used to construct this sendable
    */
@@ -97,18 +85,21 @@ public abstract class CommandBase implements Sendable, Command {
   public void initSendable(SendableBuilder builder) {
     builder.setSmartDashboardType("Command");
     builder.addStringProperty(".name", this::getName, null);
-    builder.addBooleanProperty("running", this::isScheduled, value -> {
-      if (value) {
-        if (!isScheduled()) {
-          schedule();
-        }
-      } else {
-        if (isScheduled()) {
-          cancel();
-        }
-      }
-    });
-    builder.addBooleanProperty(".isParented",
-        () -> CommandGroupBase.getGroupedCommands().contains(this), null);
+    builder.addBooleanProperty(
+        "running",
+        this::isScheduled,
+        value -> {
+          if (value) {
+            if (!isScheduled()) {
+              schedule();
+            }
+          } else {
+            if (isScheduled()) {
+              cancel();
+            }
+          }
+        });
+    builder.addBooleanProperty(
+        ".isParented", () -> CommandGroupBase.getGroupedCommands().contains(this), null);
   }
 }

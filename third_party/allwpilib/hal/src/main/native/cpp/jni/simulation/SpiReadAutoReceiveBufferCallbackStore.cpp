@@ -1,13 +1,12 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2018-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "SpiReadAutoReceiveBufferCallbackStore.h"
 
 #include <jni.h>
+
+#include <cstdio>
 
 #include <wpi/jni_util.h>
 
@@ -25,8 +24,7 @@ static hal::UnlimitedHandleResource<
     SIM_JniHandle, SpiReadAutoReceiveBufferCallbackStore,
     hal::HAL_HandleEnum::SimulationJni>* callbackHandles;
 
-namespace hal {
-namespace sim {
+namespace hal::sim {
 void InitializeSpiBufferStore() {
   static hal::UnlimitedHandleResource<SIM_JniHandle,
                                       SpiReadAutoReceiveBufferCallbackStore,
@@ -34,8 +32,7 @@ void InitializeSpiBufferStore() {
       cb;
   callbackHandles = &cb;
 }
-}  // namespace sim
-}  // namespace hal
+}  // namespace hal::sim
 
 void SpiReadAutoReceiveBufferCallbackStore::create(JNIEnv* env, jobject obj) {
   m_call = JGlobal<jobject>(env, obj);
@@ -52,21 +49,21 @@ int32_t SpiReadAutoReceiveBufferCallbackStore::performCallback(
     didAttachThread = true;
     if (vm->AttachCurrentThread(reinterpret_cast<void**>(&env), nullptr) != 0) {
       // Failed to attach, log and return
-      wpi::outs() << "Failed to attach\n";
-      wpi::outs().flush();
+      std::puts("Failed to attach");
+      std::fflush(stdout);
       return -1;
     }
   } else if (tryGetEnv == JNI_EVERSION) {
-    wpi::outs() << "Invalid JVM Version requested\n";
-    wpi::outs().flush();
+    std::puts("Invalid JVM Version requested");
+    std::fflush(stdout);
   }
 
   auto toCallbackArr = MakeJIntArray(
-      env, wpi::ArrayRef<uint32_t>{buffer, static_cast<size_t>(numToRead)});
+      env, wpi::span<const uint32_t>{buffer, static_cast<size_t>(numToRead)});
 
   jint ret = env->CallIntMethod(m_call, sim::GetBufferCallback(),
                                 MakeJString(env, name), toCallbackArr,
-                                (jint)numToRead);
+                                static_cast<jint>(numToRead));
 
   jint* fromCallbackArr = reinterpret_cast<jint*>(
       env->GetPrimitiveArrayCritical(toCallbackArr, nullptr));
@@ -113,7 +110,9 @@ SIM_JniHandle sim::AllocateSpiBufferCallback(
     uintptr_t handleTmp = reinterpret_cast<uintptr_t>(param);
     SIM_JniHandle handle = static_cast<SIM_JniHandle>(handleTmp);
     auto data = callbackHandles->Get(handle);
-    if (!data) return;
+    if (!data) {
+      return;
+    }
 
     *outputCount = data->performCallback(name, buffer, numToRead);
   };

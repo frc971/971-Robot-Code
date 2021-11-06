@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2017-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
@@ -28,22 +25,32 @@ namespace frc {
  * RobotInit() -- provide for initialization at robot power-on
  *
  * Init() functions -- each of the following functions is called once when the
- *                     appropriate mode is entered:
- *   - DisabledInit()   -- called each and every time disabled is entered from
- *                         another mode
- *   - AutonomousInit() -- called each and every time autonomous is entered from
- *                         another mode
- *   - TeleopInit()     -- called each and every time teleop is entered from
- *                         another mode
- *   - TestInit()       -- called each and every time test is entered from
- *                         another mode
+ * appropriate mode is entered:
+ *
+ * \li DisabledInit() -- called each and every time disabled is entered from
+ *   another mode
+ * \li AutonomousInit() -- called each and every time autonomous is entered from
+ *   another mode
+ * \li TeleopInit() -- called each and every time teleop is entered from another
+ *   mode
+ * \li TestInit() -- called each and every time test is entered from another
+ *   mode
  *
  * Periodic() functions -- each of these functions is called on an interval:
- *   - RobotPeriodic()
- *   - DisabledPeriodic()
- *   - AutonomousPeriodic()
- *   - TeleopPeriodic()
- *   - TestPeriodic()
+ *
+ * \li RobotPeriodic()
+ * \li DisabledPeriodic()
+ * \li AutonomousPeriodic()
+ * \li TeleopPeriodic()
+ * \li TestPeriodic()
+ *
+ * Exit() functions -- each of the following functions is called once when the
+ * appropriate mode is exited:
+ *
+ * \li DisabledExit() -- called each and every time disabled is exited
+ * \li AutonomousExit() -- called each and every time autonomous is exited
+ * \li TeleopExit() -- called each and every time teleop is exited
+ * \li TestExit() -- called each and every time test is exited
  */
 class IterativeRobotBase : public RobotBase {
  public:
@@ -156,6 +163,51 @@ class IterativeRobotBase : public RobotBase {
   virtual void TestPeriodic();
 
   /**
+   * Exit code for disabled mode should go here.
+   *
+   * Users should override this method for code which will be called each time
+   * the robot exits disabled mode.
+   */
+  virtual void DisabledExit();
+
+  /**
+   * Exit code for autonomous mode should go here.
+   *
+   * Users should override this method for code which will be called each time
+   * the robot exits autonomous mode.
+   */
+  virtual void AutonomousExit();
+
+  /**
+   * Exit code for teleop mode should go here.
+   *
+   * Users should override this method for code which will be called each time
+   * the robot exits teleop mode.
+   */
+  virtual void TeleopExit();
+
+  /**
+   * Exit code for test mode should go here.
+   *
+   * Users should override this method for code which will be called each time
+   * the robot exits test mode.
+   */
+  virtual void TestExit();
+
+  /**
+   * Enables or disables flushing NetworkTables every loop iteration.
+   * By default, this is disabled.
+   *
+   * @param enabled True to enable, false to disable
+   */
+  void SetNetworkTablesFlushEnabled(bool enabled);
+
+  /**
+   * Gets time period between calls to Periodic() functions.
+   */
+  units::second_t GetPeriod() const;
+
+  /**
    * Constructor for IterativeRobotBase.
    *
    * @param period Period in seconds.
@@ -173,7 +225,7 @@ class IterativeRobotBase : public RobotBase {
    */
   explicit IterativeRobotBase(units::second_t period);
 
-  virtual ~IterativeRobotBase() = default;
+  ~IterativeRobotBase() override = default;
 
  protected:
   IterativeRobotBase(IterativeRobotBase&&) = default;
@@ -181,13 +233,13 @@ class IterativeRobotBase : public RobotBase {
 
   void LoopFunc();
 
-  units::second_t m_period;
-
  private:
   enum class Mode { kNone, kDisabled, kAutonomous, kTeleop, kTest };
 
   Mode m_lastMode = Mode::kNone;
+  units::second_t m_period;
   Watchdog m_watchdog;
+  bool m_ntFlushEnabled = false;
 
   void PrintLoopOverrunMessage();
 };

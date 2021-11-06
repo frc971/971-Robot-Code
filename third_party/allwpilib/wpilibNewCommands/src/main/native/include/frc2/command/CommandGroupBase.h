@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019 FIRST. All Rights Reserved.                             */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
@@ -11,7 +8,7 @@
 #include <memory>
 #include <vector>
 
-#include <wpi/ArrayRef.h>
+#include <wpi/span.h>
 
 #include "frc2/command/CommandBase.h"
 
@@ -28,10 +25,19 @@ class CommandGroupBase : public CommandBase {
    * Requires that the specified command not have been already allocated to a
    * CommandGroup. Reports an error if the command is already grouped.
    *
-   * @param commands The command to check
+   * @param command The command to check
    * @return True if all the command is ungrouped.
    */
-  static bool RequireUngrouped(Command& command);
+  static bool RequireUngrouped(const Command& command);
+
+  /**
+   * Requires that the specified command not have been already allocated to a
+   * CommandGroup. Reports an error if the command is already grouped.
+   *
+   * @param command The command to check
+   * @return True if all the command is ungrouped.
+   */
+  static bool RequireUngrouped(const Command* command);
 
   /**
    * Requires that the specified commands not have been already allocated to a
@@ -40,7 +46,8 @@ class CommandGroupBase : public CommandBase {
    * @param commands The commands to check
    * @return True if all the commands are ungrouped.
    */
-  static bool RequireUngrouped(wpi::ArrayRef<std::unique_ptr<Command>>);
+  static bool RequireUngrouped(
+      wpi::span<const std::unique_ptr<Command>> commands);
 
   /**
    * Requires that the specified commands not have been already allocated to a
@@ -49,7 +56,7 @@ class CommandGroupBase : public CommandBase {
    * @param commands The commands to check
    * @return True if all the commands are ungrouped.
    */
-  static bool RequireUngrouped(std::initializer_list<Command*>);
+  static bool RequireUngrouped(std::initializer_list<const Command*> commands);
 
   /**
    * Adds the given commands to the command group.

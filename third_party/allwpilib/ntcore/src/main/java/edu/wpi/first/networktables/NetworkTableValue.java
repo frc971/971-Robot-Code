@@ -1,17 +1,12 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2017-2019 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 package edu.wpi.first.networktables;
 
 import java.util.Objects;
 
-/**
- * A network table entry value.
- */
+/** A network table entry value. */
 public final class NetworkTableValue {
   NetworkTableValue(NetworkTableType type, Object value, long time) {
     m_type = type;
@@ -188,6 +183,7 @@ public final class NetworkTableValue {
    * @return The raw value.
    * @throws ClassCastException if the entry value is not of raw type.
    */
+  @SuppressWarnings("PMD.MethodReturnsInternalArray")
   public byte[] getRaw() {
     if (m_type != NetworkTableType.kRaw) {
       throw new ClassCastException("cannot convert " + m_type + " to raw");
@@ -201,6 +197,7 @@ public final class NetworkTableValue {
    * @return The rpc definition value.
    * @throws ClassCastException if the entry value is not of rpc definition type.
    */
+  @SuppressWarnings("PMD.MethodReturnsInternalArray")
   public byte[] getRpc() {
     if (m_type != NetworkTableType.kRpc) {
       throw new ClassCastException("cannot convert " + m_type + " to rpc");
@@ -214,6 +211,7 @@ public final class NetworkTableValue {
    * @return The boolean array value.
    * @throws ClassCastException if the entry value is not of boolean array type.
    */
+  @SuppressWarnings("PMD.MethodReturnsInternalArray")
   public boolean[] getBooleanArray() {
     if (m_type != NetworkTableType.kBooleanArray) {
       throw new ClassCastException("cannot convert " + m_type + " to boolean array");
@@ -227,6 +225,7 @@ public final class NetworkTableValue {
    * @return The double array value.
    * @throws ClassCastException if the entry value is not of double array type.
    */
+  @SuppressWarnings("PMD.MethodReturnsInternalArray")
   public double[] getDoubleArray() {
     if (m_type != NetworkTableType.kDoubleArray) {
       throw new ClassCastException("cannot convert " + m_type + " to double array");
@@ -240,6 +239,7 @@ public final class NetworkTableValue {
    * @return The string array value.
    * @throws ClassCastException if the entry value is not of string array type.
    */
+  @SuppressWarnings("PMD.MethodReturnsInternalArray")
   public String[] getStringArray() {
     if (m_type != NetworkTableType.kStringArray) {
       throw new ClassCastException("cannot convert " + m_type + " to string array");
@@ -478,6 +478,9 @@ public final class NetworkTableValue {
     return Objects.hash(m_type, m_value);
   }
 
+  // arraycopy() doesn't know how to unwrap boxed values; this is a false positive in PMD
+  // (see https://sourceforge.net/p/pmd/bugs/804/)
+  @SuppressWarnings("PMD.AvoidArrayLoops")
   static boolean[] toNative(Boolean[] arr) {
     boolean[] out = new boolean[arr.length];
     for (int i = 0; i < arr.length; i++) {
@@ -486,6 +489,7 @@ public final class NetworkTableValue {
     return out;
   }
 
+  @SuppressWarnings("PMD.AvoidArrayLoops")
   static double[] toNative(Number[] arr) {
     double[] out = new double[arr.length];
     for (int i = 0; i < arr.length; i++) {
@@ -494,6 +498,7 @@ public final class NetworkTableValue {
     return out;
   }
 
+  @SuppressWarnings("PMD.AvoidArrayLoops")
   static Boolean[] fromNative(boolean[] arr) {
     Boolean[] out = new Boolean[arr.length];
     for (int i = 0; i < arr.length; i++) {
@@ -502,6 +507,7 @@ public final class NetworkTableValue {
     return out;
   }
 
+  @SuppressWarnings("PMD.AvoidArrayLoops")
   static Double[] fromNative(double[] arr) {
     Double[] out = new Double[arr.length];
     for (int i = 0; i < arr.length; i++) {

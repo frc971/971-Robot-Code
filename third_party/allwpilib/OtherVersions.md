@@ -12,7 +12,8 @@ In order to build a project using a development build, find the build.gradle fil
 
 ```groovy
 wpi.maven.useDevelopment = true
-wpi.wpilibVersion = 'YEAR.+'
+wpi.versions.wpilibVersion = 'YEAR.+'
+wpi.versions.wpimathVersion = 'YEAR.+
 ```
 
 The top of your ``build.gradle`` file should now look similar to the code below. Ignore any differences in versions.
@@ -21,11 +22,13 @@ Java
 ```groovy
 plugins {
   id "java"
-  id "edu.wpi.first.GradleRIO" version "2020.3.2"
+  id "edu.wpi.first.GradleRIO" version "2022.1.1"
 }
 
+wpi.maven.useLocal = false
 wpi.maven.useDevelopment = true
-wpi.wpilibVersion = '2020.+'
+wpi.versions.wpilibVersion = '2022.+'
+wpi.versions.wpimathVersion = '2022.+'
 ```
 
 C++
@@ -33,11 +36,13 @@ C++
 plugins {
   id "cpp"
   id "google-test-test-suite"
-  id "edu.wpi.first.GradleRIO" version "2020.3.2"
+  id "edu.wpi.first.GradleRIO" version "2022.1.1"
 }
 
+wpi.maven.useLocal = false
 wpi.maven.useDevelopment = true
-wpi.wpilibVersion = '2020.+'
+wpi.versions.wpilibVersion = '2022.+'
+wpi.versions.wpimathVersion = '2022.+'
 ```
 
 ## Local Build
@@ -48,11 +53,13 @@ Java
 ```groovy
 plugins {
   id "java"
-  id "edu.wpi.first.GradleRIO" version "2020.3.2"
+  id "edu.wpi.first.GradleRIO" version "2022.1.1"
 }
 
+wpi.maven.useLocal = false
 wpi.maven.useFrcMavenLocalDevelopment = true
-wpi.wpilibVersion = 'YEAR.424242.+'
+wpi.versions.wpilibVersion = 'YEAR.424242.+'
+wpi.versions.wpimathVersion = 'YEAR.424242.+'
 ```
 
 C++
@@ -60,9 +67,26 @@ C++
 plugins {
   id "cpp"
   id "google-test-test-suite"
-  id "edu.wpi.first.GradleRIO" version "2020.3.2"
+  id "edu.wpi.first.GradleRIO" version "2022.1.1"
 }
 
+wpi.maven.useLocal = false
 wpi.maven.useFrcMavenLocalDevelopment = true
-wpi.wpilibVersion = 'YEAR.424242.+'
+wpi.versions.wpilibVersion = 'YEAR.424242.+'
+wpi.versions.wpimathVersion = 'YEAR.424242.+'
 ```
+
+# roboRIO Development
+
+This repo contains a myRobot project built in way to do full project development without needing to do a full publish into GradleRIO. These also only require building the minimum amount of binaries for the roboRIO, so the builds are much faster as well.
+
+The setup only works if the roboRIO is USB connected. If an alternate IP address is preferred, the `address` block in myRobot\build.gradle can be changed to point to another address.
+
+The following 3 tasks can be used for deployment:
+* `:myRobot:deployShared` deploys the C++ project using shared dependencies. Prefer this one for most C++ development.
+* `:myRobot:deployStatic` deploys the C++ project with all dependencies statically linked.
+* `:myRobot:deployJava` deploys the Java project and all required dependencies. Also installs the JRE if not currently installed.
+
+Deploying any of these to the roboRIO will disable the current startup project until it is redeployed.
+
+From here, ssh into the roboRIO using the `admin` account (`lvuser` will fail to run in many cases). In the admin home directory, a file for each deploy type will exist (`myRobotCpp`, `myRobotCppStatic` and `myRobotJavaRun`). These can be run to start up the corresponding project.

@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
@@ -12,12 +9,11 @@
 #include <hal/SimDevice.h>
 #include <hal/Types.h>
 #include <units/angle.h>
+#include <wpi/sendable/Sendable.h>
+#include <wpi/sendable/SendableHelper.h>
 
 #include "frc/AnalogTrigger.h"
 #include "frc/Counter.h"
-#include "frc/ErrorBase.h"
-#include "frc/smartdashboard/Sendable.h"
-#include "frc/smartdashboard/SendableHelper.h"
 
 namespace frc {
 class AnalogInput;
@@ -25,10 +21,16 @@ class AnalogInput;
 /**
  * Class for supporting continuous analog encoders, such as the US Digital MA3.
  */
-class AnalogEncoder : public ErrorBase,
-                      public Sendable,
-                      public SendableHelper<AnalogEncoder> {
+class AnalogEncoder : public wpi::Sendable,
+                      public wpi::SendableHelper<AnalogEncoder> {
  public:
+  /**
+   * Construct a new AnalogEncoder attached to a specific AnalogIn channel.
+   *
+   * @param channel the analog input channel to attach to
+   */
+  explicit AnalogEncoder(int channel);
+
   /**
    * Construct a new AnalogEncoder attached to a specific AnalogInput.
    *
@@ -115,7 +117,7 @@ class AnalogEncoder : public ErrorBase,
    */
   int GetChannel() const;
 
-  void InitSendable(SendableBuilder& builder) override;
+  void InitSendable(wpi::SendableBuilder& builder) override;
 
  private:
   void Init();

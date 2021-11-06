@@ -1,13 +1,22 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2020 FIRST. All Rights Reserved.                             */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "frc/StateSpaceUtil.h"
 
 namespace frc {
+
+Eigen::Vector<double, 3> PoseTo3dVector(const Pose2d& pose) {
+  return Eigen::Vector<double, 3>{pose.Translation().X().value(),
+                                  pose.Translation().Y().value(),
+                                  pose.Rotation().Radians().value()};
+}
+
+Eigen::Vector<double, 4> PoseTo4dVector(const Pose2d& pose) {
+  return Eigen::Vector<double, 4>{pose.Translation().X().value(),
+                                  pose.Translation().Y().value(),
+                                  pose.Rotation().Cos(), pose.Rotation().Sin()};
+}
 
 template <>
 bool IsStabilizable<1, 1>(const Eigen::Matrix<double, 1, 1>& A,
@@ -21,9 +30,9 @@ bool IsStabilizable<2, 1>(const Eigen::Matrix<double, 2, 2>& A,
   return detail::IsStabilizableImpl<2, 1>(A, B);
 }
 
-Eigen::Matrix<double, 3, 1> PoseToVector(const Pose2d& pose) {
-  return frc::MakeMatrix<3, 1>(pose.X().to<double>(), pose.Y().to<double>(),
-                               pose.Rotation().Radians().to<double>());
+Eigen::Vector<double, 3> PoseToVector(const Pose2d& pose) {
+  return Eigen::Vector<double, 3>{pose.X().value(), pose.Y().value(),
+                                  pose.Rotation().Radians().value()};
 }
 
 }  // namespace frc

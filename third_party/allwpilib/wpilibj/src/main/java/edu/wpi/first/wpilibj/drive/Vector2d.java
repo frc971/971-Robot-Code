@@ -1,23 +1,19 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2017-2018 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 package edu.wpi.first.wpilibj.drive;
 
-/**
- * This is a 2D vector struct that supports basic vector operations.
- */
-@SuppressWarnings("MemberName")
+/** This is a 2D vector struct that supports basic vector operations. */
 public class Vector2d {
+  @SuppressWarnings("MemberName")
   public double x;
+
+  @SuppressWarnings("MemberName")
   public double y;
 
   public Vector2d() {}
 
-  @SuppressWarnings("ParameterName")
   public Vector2d(double x, double y) {
     this.x = x;
     this.y = y;
@@ -42,6 +38,7 @@ public class Vector2d {
    * Returns dot product of this vector with argument.
    *
    * @param vec Vector with which to perform dot product.
+   * @return Dot product of this vector with argument.
    */
   public double dot(Vector2d vec) {
     return x * vec.x + y * vec.y;
@@ -49,6 +46,8 @@ public class Vector2d {
 
   /**
    * Returns magnitude of vector.
+   *
+   * @return Magnitude of vector.
    */
   public double magnitude() {
     return Math.sqrt(x * x + y * y);
@@ -58,6 +57,7 @@ public class Vector2d {
    * Returns scalar projection of this vector onto argument.
    *
    * @param vec Vector onto which to project this vector.
+   * @return scalar projection of this vector onto argument.
    */
   public double scalarProject(Vector2d vec) {
     return dot(vec) / vec.magnitude();

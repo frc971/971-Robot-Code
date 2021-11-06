@@ -1,18 +1,14 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2017-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "HALSimWeb.h"
 
-#include <wpi/FileSystem.h>
-#include <wpi/Path.h>
+#include <fmt/format.h>
 #include <wpi/SmallString.h>
-#include <wpi/Twine.h>
 #include <wpi/UrlParser.h>
 #include <wpi/WebSocketServer.h>
+#include <wpi/fs.h>
 #include <wpi/raw_uv_ostream.h>
 #include <wpi/uv/Loop.h>
 #include <wpi/uv/Tcp.h>
@@ -29,7 +25,7 @@ HALSimWeb::HALSimWeb(wpi::uv::Loop& loop, ProviderContainer& providers,
       m_providers(providers),
       m_simDevicesProvider(simDevicesProvider) {
   m_loop.error.connect([](uv::Error err) {
-    wpi::errs() << "HALSim WS Server libuv ERROR: " << err.str() << '\n';
+    fmt::print(stderr, "HALSim WS Server libuv ERROR: {}\n", err.str());
   });
 
   m_server = uv::Tcp::Create(m_loop);
@@ -45,49 +41,40 @@ bool HALSimWeb::Initialize() {
   }
 
   // determine where to get static content from
-  // wpi::SmallVector<char, 64> tmp;
-  wpi::SmallString<64> tmp;
-
+  fs::path path;
   const char* webroot_sys = std::getenv("HALSIMWS_SYSROOT");
-  if (webroot_sys != NULL) {
-    wpi::StringRef tstr(webroot_sys);
-    tmp.append(tstr);
+  if (webroot_sys != nullptr) {
+    path = webroot_sys;
   } else {
-    wpi::sys::fs::current_path(tmp);
-    wpi::sys::path::append(tmp, "sim");
+    path = fs::current_path() / "sim";
   }
-  wpi::sys::fs::make_absolute(tmp);
-  m_webroot_sys = wpi::Twine(tmp).str();
+  m_webroot_sys = fs::absolute(path).string();
 
-  tmp.clear();
   const char* webroot_user = std::getenv("HALSIMWS_USERROOT");
-  if (webroot_user != NULL) {
-    wpi::StringRef tstr(webroot_user);
-    tmp.append(tstr);
+  if (webroot_user != nullptr) {
+    path = webroot_sys;
   } else {
-    wpi::sys::fs::current_path(tmp);
-    wpi::sys::path::append(tmp, "sim", "user");
+    path = fs::current_path() / "sim" / "user";
   }
-  wpi::sys::fs::make_absolute(tmp);
-  m_webroot_user = wpi::Twine(tmp).str();
+  m_webroot_user = fs::absolute(path).string();
 
   const char* uri = std::getenv("HALSIMWS_URI");
-  if (uri != NULL) {
+  if (uri != nullptr) {
     m_uri = uri;
   } else {
     m_uri = "/wpilibws";
   }
 
   const char* port = std::getenv("HALSIMWS_PORT");
-  if (port != NULL) {
+  if (port != nullptr) {
     try {
       m_port = std::stoi(port);
     } catch (const std::invalid_argument& err) {
-      wpi::errs() << "Error decoding HALSIMWS_PORT (" << err.what() << ")\n";
+      fmt::print(stderr, "Error decoding HALSIMWS_PORT ({})\n", err.what());
       return false;
     }
   } else {
-    m_port = 8080;
+    m_port = 3300;
   }
 
   return true;
@@ -99,7 +86,9 @@ void HALSimWeb::Start() {
   // when we get a connection, accept it and start reading
   m_server->connection.connect([this, srv = m_server.get()] {
     auto tcp = srv->Accept();
-    if (!tcp) return;
+    if (!tcp) {
+      return;
+    }
 
     tcp->SetNoDelay(true);
 
@@ -109,8 +98,8 @@ void HALSimWeb::Start() {
 
   // start listening for incoming connections
   m_server->Listen();
-  wpi::outs() << "Listening at http://localhost:" << m_port << "\n";
-  wpi::outs() << "WebSocket URI: " << m_uri << "\n";
+  fmt::print("Listening at http://localhost:{}\n", m_port);
+  fmt::print("WebSocket URI: {}\n", m_uri);
 }
 
 bool HALSimWeb::RegisterWebsocket(
@@ -165,6 +154,6 @@ void HALSimWeb::OnNetValueChanged(const wpi::json& msg) {
       provider->OnNetValueChanged(msg.at("data"));
     }
   } catch (wpi::json::exception& e) {
-    wpi::errs() << "Error with incoming message: " << e.what() << "\n";
+    fmt::print(stderr, "Error with incoming message: {}\n", e.what());
   }
 }

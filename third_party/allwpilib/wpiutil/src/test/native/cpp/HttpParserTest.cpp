@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2018 FIRST. All Rights Reserved.                             */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "wpi/HttpParser.h"  // NOLINT(build/include_order)
 
@@ -14,7 +11,7 @@ namespace wpi {
 TEST(HttpParserTest, UrlMethodHeadersComplete) {
   HttpParser p{HttpParser::kRequest};
   int callbacks = 0;
-  p.url.connect([&](StringRef path) {
+  p.url.connect([&](std::string_view path) {
     ASSERT_EQ(path, "/foo/bar");
     ASSERT_EQ(p.GetUrl(), "/foo/bar");
     ++callbacks;
@@ -32,7 +29,7 @@ TEST(HttpParserTest, UrlMethodHeadersComplete) {
 TEST(HttpParserTest, UrlMethodHeader) {
   HttpParser p{HttpParser::kRequest};
   int callbacks = 0;
-  p.url.connect([&](StringRef path) {
+  p.url.connect([&](std::string_view path) {
     ASSERT_EQ(path, "/foo/bar");
     ASSERT_EQ(p.GetUrl(), "/foo/bar");
     ++callbacks;
@@ -52,7 +49,7 @@ TEST(HttpParserTest, UrlMethodHeader) {
 TEST(HttpParserTest, StatusHeadersComplete) {
   HttpParser p{HttpParser::kResponse};
   int callbacks = 0;
-  p.status.connect([&](StringRef status) {
+  p.status.connect([&](std::string_view status) {
     ASSERT_EQ(status, "OK");
     ASSERT_EQ(p.GetStatusCode(), 200u);
     ++callbacks;
@@ -69,7 +66,7 @@ TEST(HttpParserTest, StatusHeadersComplete) {
 TEST(HttpParserTest, StatusHeader) {
   HttpParser p{HttpParser::kResponse};
   int callbacks = 0;
-  p.status.connect([&](StringRef status) {
+  p.status.connect([&](std::string_view status) {
     ASSERT_EQ(status, "OK");
     ASSERT_EQ(p.GetStatusCode(), 200u);
     ++callbacks;
@@ -86,7 +83,7 @@ TEST(HttpParserTest, StatusHeader) {
 TEST(HttpParserTest, HeaderFieldComplete) {
   HttpParser p{HttpParser::kRequest};
   int callbacks = 0;
-  p.header.connect([&](StringRef name, StringRef value) {
+  p.header.connect([&](std::string_view name, std::string_view value) {
     ASSERT_EQ(name, "Foo");
     ASSERT_EQ(value, "Bar");
     ++callbacks;
@@ -109,7 +106,7 @@ TEST(HttpParserTest, HeaderFieldComplete) {
 TEST(HttpParserTest, HeaderFieldNext) {
   HttpParser p{HttpParser::kRequest};
   int callbacks = 0;
-  p.header.connect([&](StringRef name, StringRef value) {
+  p.header.connect([&](std::string_view name, std::string_view value) {
     ASSERT_EQ(name, "Foo");
     ASSERT_EQ(value, "Bar");
     ++callbacks;

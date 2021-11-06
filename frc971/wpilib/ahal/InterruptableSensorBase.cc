@@ -7,9 +7,9 @@
 
 #include "frc971/wpilib/ahal/InterruptableSensorBase.h"
 
-#include "hal/HAL.h"
-#include "frc971/wpilib/ahal/Utility.h"
 #include "frc971/wpilib/ahal/WPIErrors.h"
+#include "glog/logging.h"
+#include "hal/HAL.h"
 
 using namespace frc;
 
@@ -18,8 +18,8 @@ InterruptableSensorBase::InterruptableSensorBase() {}
 void InterruptableSensorBase::RequestInterrupts() {
   if (StatusIsFatal()) return;
 
-  wpi_assert(m_interrupt == HAL_kInvalidHandle);
-  AllocateInterrupts(true);
+  CHECK_EQ(m_interrupt, HAL_kInvalidHandle);
+  AllocateInterrupts();
   if (StatusIsFatal()) return;  // if allocate failed, out of interrupts
 
   int32_t status = 0;
@@ -31,19 +31,18 @@ void InterruptableSensorBase::RequestInterrupts() {
   SetUpSourceEdge(true, false);
 }
 
-void InterruptableSensorBase::AllocateInterrupts(bool watcher) {
-  wpi_assert(m_interrupt == HAL_kInvalidHandle);
+void InterruptableSensorBase::AllocateInterrupts() {
+  CHECK_EQ(m_interrupt, HAL_kInvalidHandle);
   // Expects the calling leaf class to allocate an interrupt index.
   int32_t status = 0;
-  m_interrupt = HAL_InitializeInterrupts(watcher, &status);
+  m_interrupt = HAL_InitializeInterrupts(&status);
   wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
 }
 
 void InterruptableSensorBase::CancelInterrupts() {
   if (StatusIsFatal()) return;
-  wpi_assert(m_interrupt != HAL_kInvalidHandle);
-  int32_t status = 0;
-  HAL_CleanInterrupts(m_interrupt, &status);
+  CHECK_NE(m_interrupt, HAL_kInvalidHandle);
+  HAL_CleanInterrupts(m_interrupt);
   // ignore status, as an invalid handle just needs to be ignored.
   m_interrupt = HAL_kInvalidHandle;
 }
@@ -51,7 +50,7 @@ void InterruptableSensorBase::CancelInterrupts() {
 InterruptableSensorBase::WaitResult InterruptableSensorBase::WaitForInterrupt(
     double timeout, bool ignorePrevious) {
   if (StatusIsFatal()) return InterruptableSensorBase::kTimeout;
-  wpi_assert(m_interrupt != HAL_kInvalidHandle);
+  CHECK_NE(m_interrupt, HAL_kInvalidHandle);
   int32_t status = 0;
   int result;
 
@@ -67,17 +66,9 @@ InterruptableSensorBase::WaitResult InterruptableSensorBase::WaitForInterrupt(
   return static_cast<WaitResult>(falling | rising);
 }
 
-void InterruptableSensorBase::EnableInterrupts() {
-  if (StatusIsFatal()) return;
-  wpi_assert(m_interrupt != HAL_kInvalidHandle);
-  int32_t status = 0;
-  HAL_EnableInterrupts(m_interrupt, &status);
-  wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
-}
-
 hal::fpga_clock::time_point InterruptableSensorBase::ReadRisingTimestamp() {
   if (StatusIsFatal()) return hal::fpga_clock::min_time;
-  wpi_assert(m_interrupt != HAL_kInvalidHandle);
+  CHECK_NE(m_interrupt, HAL_kInvalidHandle);
   int32_t status = 0;
   uint64_t timestamp = HAL_ReadInterruptRisingTimestamp(m_interrupt, &status);
   timestamp = HAL_ExpandFPGATime(timestamp, &status);
@@ -87,7 +78,7 @@ hal::fpga_clock::time_point InterruptableSensorBase::ReadRisingTimestamp() {
 
 hal::fpga_clock::time_point InterruptableSensorBase::ReadFallingTimestamp() {
   if (StatusIsFatal()) return hal::fpga_clock::min_time;
-  wpi_assert(m_interrupt != HAL_kInvalidHandle);
+  CHECK_NE(m_interrupt, HAL_kInvalidHandle);
   int32_t status = 0;
   uint64_t timestamp = HAL_ReadInterruptFallingTimestamp(m_interrupt, &status);
   timestamp = HAL_ExpandFPGATime(timestamp, &status);

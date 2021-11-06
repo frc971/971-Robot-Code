@@ -1,37 +1,35 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2016-2018 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "hal/PWM.h"
 
 #include "ConstantsInternal.h"
 #include "DigitalInternal.h"
 #include "HALInitializer.h"
+#include "HALInternal.h"
 #include "PortsInternal.h"
 #include "hal/handles/HandlesInternal.h"
 #include "mockdata/PWMDataInternal.h"
 
 using namespace hal;
 
-namespace hal {
-namespace init {
+namespace hal::init {
 void InitializePWM() {}
-}  // namespace init
-}  // namespace hal
+}  // namespace hal::init
 
 extern "C" {
 
 HAL_DigitalHandle HAL_InitializePWMPort(HAL_PortHandle portHandle,
+                                        const char* allocationLocation,
                                         int32_t* status) {
   hal::init::CheckInit();
-  if (*status != 0) return HAL_kInvalidHandle;
 
   int16_t channel = getPortHandleChannel(portHandle);
   if (channel == InvalidHandleIndex) {
-    *status = PARAMETER_OUT_OF_RANGE;
+    *status = RESOURCE_OUT_OF_RANGE;
+    hal::SetLastErrorIndexOutOfRange(status, "Invalid Index for PWM", 0,
+                                     kNumPWMChannels, channel);
     return HAL_kInvalidHandle;
   }
 
@@ -43,16 +41,20 @@ HAL_DigitalHandle HAL_InitializePWMPort(HAL_PortHandle portHandle,
     channel = remapMXPPWMChannel(channel) + 10;  // remap MXP to proper channel
   }
 
-  auto handle =
-      digitalChannelHandles->Allocate(channel, HAL_HandleEnum::PWM, status);
+  HAL_DigitalHandle handle;
 
-  if (*status != 0)
+  auto port = digitalChannelHandles->Allocate(channel, HAL_HandleEnum::PWM,
+                                              &handle, status);
+
+  if (*status != 0) {
+    if (port) {
+      hal::SetLastErrorPreviouslyAllocated(status, "PWM or DIO", channel,
+                                           port->previousAllocation);
+    } else {
+      hal::SetLastErrorIndexOutOfRange(status, "Invalid Index for PWM", 0,
+                                       kNumPWMChannels, channel);
+    }
     return HAL_kInvalidHandle;  // failed to allocate. Pass error back.
-
-  auto port = digitalChannelHandles->Get(handle, HAL_HandleEnum::PWM);
-  if (port == nullptr) {  // would only occur on thread issue.
-    *status = HAL_HANDLE_ERROR;
-    return HAL_kInvalidHandle;
   }
 
   port->channel = origChannel;
@@ -61,6 +63,8 @@ HAL_DigitalHandle HAL_InitializePWMPort(HAL_PortHandle portHandle,
 
   // Defaults to allow an always valid config.
   HAL_SetPWMConfig(handle, 2.0, 1.501, 1.5, 1.499, 1.0, status);
+
+  port->previousAllocation = allocationLocation ? allocationLocation : "";
 
   return handle;
 }
@@ -92,7 +96,9 @@ void HAL_SetPWMConfig(HAL_DigitalHandle pwmPortHandle, double max,
   // calculate the loop time in milliseconds
   double loopTime =
       HAL_GetPWMLoopTiming(status) / (kSystemClockTicksPerMicrosecond * 1e3);
-  if (*status != 0) return;
+  if (*status != 0) {
+    return;
+  }
 
   int32_t maxPwm = static_cast<int32_t>((max - kDefaultPwmCenter) / loopTime +
                                         kDefaultPwmStepsDown - 1);
@@ -252,8 +258,12 @@ double HAL_GetPWMSpeed(HAL_DigitalHandle pwmPortHandle, int32_t* status) {
   }
 
   double speed = SimPWMData[port->channel].speed;
-  if (speed > 1) speed = 1;
-  if (speed < -1) speed = -1;
+  if (speed > 1) {
+    speed = 1;
+  }
+  if (speed < -1) {
+    speed = -1;
+  }
   return speed;
 }
 
@@ -269,8 +279,12 @@ double HAL_GetPWMPosition(HAL_DigitalHandle pwmPortHandle, int32_t* status) {
   }
 
   double position = SimPWMData[port->channel].position;
-  if (position > 1) position = 1;
-  if (position < 0) position = 0;
+  if (position > 1) {
+    position = 1;
+  }
+  if (position < 0) {
+    position = 0;
+  }
   return position;
 }
 
@@ -296,7 +310,11 @@ void HAL_SetPWMPeriodScale(HAL_DigitalHandle pwmPortHandle, int32_t squelchMask,
   SimPWMData[port->channel].periodScale = squelchMask;
 }
 
-int32_t HAL_GetPWMLoopTiming(int32_t* status) { return kExpectedLoopTiming; }
+int32_t HAL_GetPWMLoopTiming(int32_t* status) {
+  return kExpectedLoopTiming;
+}
 
-uint64_t HAL_GetPWMCycleStartTime(int32_t* status) { return 0; }
+uint64_t HAL_GetPWMCycleStartTime(int32_t* status) {
+  return 0;
+}
 }  // extern "C"

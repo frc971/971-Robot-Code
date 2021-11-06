@@ -1,13 +1,12 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2011-2019 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
-#include <wpi/Twine.h>
+#include <string_view>
+
+#include <units/time.h>
 
 #include "frc/commands/Command.h"
 
@@ -15,15 +14,15 @@ namespace frc {
 
 class WaitForChildren : public Command {
  public:
-  explicit WaitForChildren(double timeout);
-  WaitForChildren(const wpi::Twine& name, double timeout);
-  virtual ~WaitForChildren() = default;
+  explicit WaitForChildren(units::second_t timeout);
+  WaitForChildren(std::string_view name, units::second_t timeout);
+  ~WaitForChildren() override = default;
 
   WaitForChildren(WaitForChildren&&) = default;
   WaitForChildren& operator=(WaitForChildren&&) = default;
 
  protected:
-  virtual bool IsFinished();
+  bool IsFinished() override;
 };
 
 }  // namespace frc

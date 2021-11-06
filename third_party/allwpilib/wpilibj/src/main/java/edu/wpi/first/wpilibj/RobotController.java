@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2017-2018 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 package edu.wpi.first.wpilibj;
 
@@ -13,17 +10,14 @@ import edu.wpi.first.hal.PowerJNI;
 import edu.wpi.first.hal.can.CANJNI;
 import edu.wpi.first.hal.can.CANStatus;
 
-/**
- * Contains functions for roboRIO functionality.
- */
+/** Contains functions for roboRIO functionality. */
 public final class RobotController {
   private RobotController() {
     throw new UnsupportedOperationException("This is a utility class!");
   }
 
   /**
-   * Return the FPGA Version number. For now, expect this to be the current
-   * year.
+   * Return the FPGA Version number. For now, expect this to be the current year.
    *
    * @return FPGA Version number.
    */
@@ -120,7 +114,7 @@ public final class RobotController {
   /**
    * Get the current output of the 3.3V rail.
    *
-   * @return The controller 3.3V rail output current value in Volts
+   * @return The controller 3.3V rail output current value in Amps
    */
   public static double getCurrent3V3() {
     return PowerJNI.getUserCurrent3V3();
@@ -220,13 +214,33 @@ public final class RobotController {
   }
 
   /**
+   * Get the current brownout voltage setting.
+   *
+   * @return The brownout voltage
+   */
+  public static double getBrownoutVoltage() {
+    return PowerJNI.getBrownoutVoltage();
+  }
+
+  /**
+   * Set the voltage the roboRIO will brownout and disable all outputs.
+   *
+   * <p>Note that this only does anything on the roboRIO 2. On the roboRIO it is a no-op.
+   *
+   * @param brownoutVoltage The brownout voltage
+   */
+  public static void setBrownoutVoltage(double brownoutVoltage) {
+    PowerJNI.setBrownoutVoltage(brownoutVoltage);
+  }
+
+  /**
    * Get the current status of the CAN bus.
    *
    * @return The status of the CAN bus
    */
   public static CANStatus getCANStatus() {
     CANStatus status = new CANStatus();
-    CANJNI.GetCANStatus(status);
+    CANJNI.getCANStatus(status);
     return status;
   }
 }

@@ -38,7 +38,8 @@ Relay::Relay(int channel, Relay::Direction direction)
 
   if (m_direction == kBothDirections || m_direction == kForwardOnly) {
     int32_t status = 0;
-    m_forwardHandle = HAL_InitializeRelayPort(portHandle, true, &status);
+    m_forwardHandle =
+        HAL_InitializeRelayPort(portHandle, true, nullptr, &status);
     if (status != 0) {
       wpi_setErrorWithContextRange(status, 0, HAL_GetNumRelayChannels(),
                                    channel, HAL_GetErrorMessage(status));
@@ -50,7 +51,7 @@ Relay::Relay(int channel, Relay::Direction direction)
   }
   if (m_direction == kBothDirections || m_direction == kReverseOnly) {
     int32_t status = 0;
-    m_reverseHandle = HAL_InitializeRelayPort(portHandle, false, &status);
+    m_reverseHandle = HAL_InitializeRelayPort(portHandle, false, nullptr, &status);
     if (status != 0) {
       wpi_setErrorWithContextRange(status, 0, HAL_GetNumRelayChannels(),
                                    channel, HAL_GetErrorMessage(status));

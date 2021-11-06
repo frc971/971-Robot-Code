@@ -9,10 +9,11 @@
 
 #include <chrono>
 #include <memory>
+#include <string_view>
+#include <functional>
 
 #include "FRC_NetworkCommunication/FRCComm.h"
 #include "frc971/wpilib/ahal/AnalogInput.h"
-#include "frc971/wpilib/ahal/Utility.h"
 #include "frc971/wpilib/ahal/WPIErrors.h"
 #include "hal/HAL.h"
 #include "hal/Power.h"
@@ -43,10 +44,8 @@ DriverStation &DriverStation::GetInstance() {
  *
  * The error is also printed to the program console.
  */
-void DriverStation::ReportError(const wpi::Twine &error) {
-  wpi::SmallString<128> temp;
-  HAL_SendError(1, 1, 0, error.toNullTerminatedStringRef(temp).data(), "", "",
-                1);
+void DriverStation::ReportError(const std::string_view &error) {
+  HAL_SendError(1, 1, 0, std::string(error).c_str(), "", "", 1);
 }
 
 /**
@@ -54,10 +53,8 @@ void DriverStation::ReportError(const wpi::Twine &error) {
  *
  * The warning is also printed to the program console.
  */
-void DriverStation::ReportWarning(const wpi::Twine &error) {
-  wpi::SmallString<128> temp;
-  HAL_SendError(0, 1, 0, error.toNullTerminatedStringRef(temp).data(), "", "",
-                1);
+void DriverStation::ReportWarning(const std::string_view &error) {
+  HAL_SendError(0, 1, 0, std::string(error).c_str(), "", "", 1);
 }
 
 /**
@@ -66,16 +63,11 @@ void DriverStation::ReportWarning(const wpi::Twine &error) {
  * The error is also printed to the program console.
  */
 void DriverStation::ReportError(bool is_error, int32_t code,
-                                const wpi::Twine &error,
-                                const wpi::Twine &location,
-                                const wpi::Twine &stack) {
-  wpi::SmallString<128> errorTemp;
-  wpi::SmallString<128> locationTemp;
-  wpi::SmallString<128> stackTemp;
-  HAL_SendError(is_error, code, 0,
-                error.toNullTerminatedStringRef(errorTemp).data(),
-                location.toNullTerminatedStringRef(locationTemp).data(),
-                stack.toNullTerminatedStringRef(stackTemp).data(), 1);
+                                const std::string_view &error,
+                                const std::string_view &location,
+                                const std::string_view &stack) {
+  HAL_SendError(is_error, code, 0, std::string(error).c_str(),
+                std::string(location).c_str(), std::string(stack).c_str(), 1);
 }
 
 /**

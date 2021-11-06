@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2018-2019 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #ifndef WPIUTIL_WPI_UV_TCP_H_
 #define WPIUTIL_WPI_UV_TCP_H_
@@ -13,12 +10,12 @@
 #include <chrono>
 #include <functional>
 #include <memory>
+#include <string_view>
+#include <utility>
 
-#include "wpi/Twine.h"
 #include "wpi/uv/NetworkStream.h"
 
-namespace wpi {
-namespace uv {
+namespace wpi::uv {
 
 class Loop;
 class TcpConnectReq;
@@ -116,7 +113,7 @@ class Tcp final : public NetworkStreamImpl<Tcp, uv_tcp_t> {
   void Open(uv_os_sock_t sock) { Invoke(&uv_tcp_open, GetRaw(), sock); }
 
   /**
-   * Enable/Disable Nagle's algorithm.
+   * Enable no delay operation (turns off Nagle's algorithm).
    * @param enable True to enable it, false otherwise.
    * @return True in case of success, false otherwise.
    */
@@ -189,7 +186,7 @@ class Tcp final : public NetworkStreamImpl<Tcp, uv_tcp_t> {
    * @param port The port to which to bind.
    * @param flags Optional additional flags.
    */
-  void Bind(const Twine& ip, unsigned int port, unsigned int flags = 0);
+  void Bind(std::string_view ip, unsigned int port, unsigned int flags = 0);
 
   /**
    * Bind the handle to an IPv6 address and port.
@@ -205,7 +202,7 @@ class Tcp final : public NetworkStreamImpl<Tcp, uv_tcp_t> {
    * @param port The port to which to bind.
    * @param flags Optional additional flags.
    */
-  void Bind6(const Twine& ip, unsigned int port, unsigned int flags = 0);
+  void Bind6(std::string_view ip, unsigned int port, unsigned int flags = 0);
 
   /**
    * Get the current address to which the handle is bound.
@@ -262,11 +259,11 @@ class Tcp final : public NetworkStreamImpl<Tcp, uv_tcp_t> {
   void Connect(const sockaddr& addr, std::function<void()> callback);
 
   void Connect(const sockaddr_in& addr, std::function<void()> callback) {
-    Connect(reinterpret_cast<const sockaddr&>(addr), callback);
+    Connect(reinterpret_cast<const sockaddr&>(addr), std::move(callback));
   }
 
   void Connect(const sockaddr_in6& addr, std::function<void()> callback) {
-    Connect(reinterpret_cast<const sockaddr&>(addr), callback);
+    Connect(reinterpret_cast<const sockaddr&>(addr), std::move(callback));
   }
 
   /**
@@ -285,7 +282,7 @@ class Tcp final : public NetworkStreamImpl<Tcp, uv_tcp_t> {
    * @param port The port to which to connect to.
    * @param req connection request
    */
-  void Connect(const Twine& ip, unsigned int port,
+  void Connect(std::string_view ip, unsigned int port,
                const std::shared_ptr<TcpConnectReq>& req);
 
   /**
@@ -302,7 +299,7 @@ class Tcp final : public NetworkStreamImpl<Tcp, uv_tcp_t> {
    * @param port The port to which to connect to.
    * @param callback Callback function to call when connection established
    */
-  void Connect(const Twine& ip, unsigned int port,
+  void Connect(std::string_view ip, unsigned int port,
                std::function<void()> callback);
 
   /**
@@ -321,7 +318,7 @@ class Tcp final : public NetworkStreamImpl<Tcp, uv_tcp_t> {
    * @param port The port to which to connect to.
    * @param req connection request
    */
-  void Connect6(const Twine& ip, unsigned int port,
+  void Connect6(std::string_view ip, unsigned int port,
                 const std::shared_ptr<TcpConnectReq>& req);
 
   /**
@@ -338,7 +335,7 @@ class Tcp final : public NetworkStreamImpl<Tcp, uv_tcp_t> {
    * @param port The port to which to connect to.
    * @param callback Callback function to call when connection established
    */
-  void Connect6(const Twine& ip, unsigned int port,
+  void Connect6(std::string_view ip, unsigned int port,
                 std::function<void()> callback);
 
  private:
@@ -361,7 +358,6 @@ class TcpConnectReq : public ConnectReq {
   }
 };
 
-}  // namespace uv
-}  // namespace wpi
+}  // namespace wpi::uv
 
 #endif  // WPIUTIL_WPI_UV_TCP_H_

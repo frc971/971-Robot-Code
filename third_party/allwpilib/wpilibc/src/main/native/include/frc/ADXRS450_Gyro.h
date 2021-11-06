@@ -1,25 +1,24 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2015-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
 #include <stdint.h>
 
 #include <hal/SimDevice.h>
+#include <wpi/sendable/Sendable.h>
+#include <wpi/sendable/SendableHelper.h>
 
-#include "frc/GyroBase.h"
 #include "frc/SPI.h"
+#include "frc/interfaces/Gyro.h"
 
 namespace frc {
 
 /**
  * Use a rate gyro to return the robots heading relative to a starting position.
  *
- * The Gyro class tracks the robots heading based on the starting position. As
+ * The %Gyro class tracks the robots heading based on the starting position. As
  * the robot rotates the new heading is computed by integrating the rate of
  * rotation returned by the sensor. When the class is instantiated, it does a
  * short calibration routine where it samples the gyro while at rest to
@@ -27,17 +26,19 @@ namespace frc {
  * determine the heading.
  *
  * This class is for the digital ADXRS450 gyro sensor that connects via SPI.
- * Only one instance of an ADXRS Gyro is supported.
+ * Only one instance of an ADXRS %Gyro is supported.
  */
-class ADXRS450_Gyro : public GyroBase {
+class ADXRS450_Gyro : public Gyro,
+                      public wpi::Sendable,
+                      public wpi::SendableHelper<ADXRS450_Gyro> {
  public:
   /**
-   * Gyro constructor on onboard CS0.
+   * %Gyro constructor on onboard CS0.
    */
   ADXRS450_Gyro();
 
   /**
-   * Gyro constructor on the specified SPI port.
+   * %Gyro constructor on the specified SPI port.
    *
    * @param port The SPI port the gyro is attached to.
    */
@@ -90,7 +91,7 @@ class ADXRS450_Gyro : public GyroBase {
    * robot is first turned on while it's sitting at rest before the competition
    * starts.
    */
-  void Calibrate() override;
+  void Calibrate() final;
 
   /**
    * Get the SPI port number.
@@ -98,6 +99,8 @@ class ADXRS450_Gyro : public GyroBase {
    * @return The SPI port number.
    */
   int GetPort() const;
+
+  void InitSendable(wpi::SendableBuilder& builder) override;
 
  private:
   SPI m_spi;

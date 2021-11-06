@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2020 FIRST. All Rights Reserved.                             */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "frc/simulation/FlywheelSim.h"
 
@@ -41,5 +38,5 @@ units::ampere_t FlywheelSim::GetCurrentDraw() const {
 }
 
 void FlywheelSim::SetInputVoltage(units::volt_t voltage) {
-  SetInput(frc::MakeMatrix<1, 1>(voltage.to<double>()));
+  SetInput(Eigen::Vector<double, 1>{voltage.value()});
 }

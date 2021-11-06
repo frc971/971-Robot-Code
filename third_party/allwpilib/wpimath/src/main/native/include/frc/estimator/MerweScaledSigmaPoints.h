@@ -1,16 +1,13 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
 #include <cmath>
 
+#include "Eigen/Cholesky"
 #include "Eigen/Core"
-#include "Eigen/src/Cholesky/LLT.h"
 
 namespace frc {
 
@@ -22,11 +19,11 @@ namespace frc {
  * version seen in most publications. Unless you know better, this should be
  * your default choice.
  *
- * @tparam States The dimensionality of the state. 2*States+1 weights will be
- *                generated.
- *
  * [1] R. Van der Merwe "Sigma-Point Kalman Filters for Probabilitic
  *     Inference in Dynamic State-Space Models" (Doctoral dissertation)
+ *
+ * @tparam States The dimensionality of the state. 2*States+1 weights will be
+ *                generated.
  */
 template <int States>
 class MerweScaledSigmaPoints {
@@ -40,8 +37,8 @@ class MerweScaledSigmaPoints {
    *             For Gaussian distributions, beta = 2 is optimal.
    * @param kappa Secondary scaling parameter usually set to 0 or 3 - States.
    */
-  MerweScaledSigmaPoints(double alpha = 1e-3, double beta = 2,
-                         int kappa = 3 - States) {
+  explicit MerweScaledSigmaPoints(double alpha = 1e-3, double beta = 2,
+                                  int kappa = 3 - States) {
     m_alpha = alpha;
     m_kappa = kappa;
 
@@ -66,7 +63,7 @@ class MerweScaledSigmaPoints {
    *
    */
   Eigen::Matrix<double, States, 2 * States + 1> SigmaPoints(
-      const Eigen::Matrix<double, States, 1>& x,
+      const Eigen::Vector<double, States>& x,
       const Eigen::Matrix<double, States, States>& P) {
     double lambda = std::pow(m_alpha, 2) * (States + m_kappa) - States;
     Eigen::Matrix<double, States, States> U =
@@ -87,7 +84,7 @@ class MerweScaledSigmaPoints {
   /**
    * Returns the weight for each sigma point for the mean.
    */
-  const Eigen::Matrix<double, 2 * States + 1, 1>& Wm() const { return m_Wm; }
+  const Eigen::Vector<double, 2 * States + 1>& Wm() const { return m_Wm; }
 
   /**
    * Returns an element of the weight for each sigma point for the mean.
@@ -99,7 +96,7 @@ class MerweScaledSigmaPoints {
   /**
    * Returns the weight for each sigma point for the covariance.
    */
-  const Eigen::Matrix<double, 2 * States + 1, 1>& Wc() const { return m_Wc; }
+  const Eigen::Vector<double, 2 * States + 1>& Wc() const { return m_Wc; }
 
   /**
    * Returns an element of the weight for each sigma point for the covariance.
@@ -109,8 +106,8 @@ class MerweScaledSigmaPoints {
   double Wc(int i) const { return m_Wc(i, 0); }
 
  private:
-  Eigen::Matrix<double, 2 * States + 1, 1> m_Wm;
-  Eigen::Matrix<double, 2 * States + 1, 1> m_Wc;
+  Eigen::Vector<double, 2 * States + 1> m_Wm;
+  Eigen::Vector<double, 2 * States + 1> m_Wc;
   double m_alpha;
   int m_kappa;
 
@@ -123,8 +120,8 @@ class MerweScaledSigmaPoints {
     double lambda = std::pow(m_alpha, 2) * (States + m_kappa) - States;
 
     double c = 0.5 / (States + lambda);
-    m_Wm = Eigen::Matrix<double, 2 * States + 1, 1>::Constant(c);
-    m_Wc = Eigen::Matrix<double, 2 * States + 1, 1>::Constant(c);
+    m_Wm = Eigen::Vector<double, 2 * States + 1>::Constant(c);
+    m_Wc = Eigen::Vector<double, 2 * States + 1>::Constant(c);
 
     m_Wm(0) = lambda / (States + lambda);
     m_Wc(0) = lambda / (States + lambda) + (1 - std::pow(m_alpha, 2) + beta);

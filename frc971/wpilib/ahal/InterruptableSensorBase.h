@@ -46,9 +46,6 @@ class InterruptableSensorBase {
   virtual WaitResult WaitForInterrupt(double timeout,
                                       bool ignorePrevious = true);
 
-  // Enables interrupts to occur based on the current configuration.
-  virtual void EnableInterrupts();
-
   // Returns the timestamp for the most recent rising interrupt.
   virtual hal::fpga_clock::time_point ReadRisingTimestamp();
   // Returns the timestamp for the most recent falling interrupt.
@@ -61,7 +58,7 @@ class InterruptableSensorBase {
 
  protected:
   HAL_InterruptHandle m_interrupt = HAL_kInvalidHandle;
-  void AllocateInterrupts(bool watcher);
+  void AllocateInterrupts();
 };
 
 }  // namespace frc

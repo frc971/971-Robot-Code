@@ -1,22 +1,8 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2017-2018 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 package edu.wpi.first.networktables;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.OS;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -24,6 +10,16 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+
+import java.util.ArrayList;
+import java.util.List;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class ConnectionListenerTest {
   private NetworkTableInstance m_serverInst;
@@ -44,13 +40,10 @@ class ConnectionListenerTest {
     m_serverInst.close();
   }
 
-  /**
-   * Connect to the server.
-   */
-  @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
-  private void connect() {
-    m_serverInst.startServer("connectionlistenertest.ini", "127.0.0.1", 10000);
-    m_clientInst.startClient("127.0.0.1", 10000);
+  /** Connect to the server. */
+  private void connect(int port) {
+    m_serverInst.startServer("connectionlistenertest.ini", "127.0.0.1", port);
+    m_clientInst.startClient("127.0.0.1", port);
 
     // wait for client to report it's started, then wait another 0.1 sec
     try {
@@ -73,7 +66,7 @@ class ConnectionListenerTest {
     assertNotSame(handle, 0, "bad listener handle");
 
     // trigger a connect event
-    connect();
+    connect(10020);
 
     // get the event
     assertTrue(m_serverInst.waitForConnectionListenerQueue(1.0));
@@ -111,20 +104,21 @@ class ConnectionListenerTest {
     assertEquals(1, events.length);
     assertEquals(handle, events[0].listener);
     assertFalse(events[0].connected);
-
   }
+
+  private static int threadedPort = 10001;
 
   @ParameterizedTest
   @DisabledOnOs(OS.WINDOWS)
-  @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
-  @ValueSource(strings = { "127.0.0.1", "127.0.0.1 ", " 127.0.0.1 " })
+  @ValueSource(strings = {"127.0.0.1", "127.0.0.1 ", " 127.0.0.1 "})
   void testThreaded(String address) {
-    m_serverInst.startServer("connectionlistenertest.ini", address, 10000);
+    m_serverInst.startServer("connectionlistenertest.ini", address, threadedPort);
     List<ConnectionNotification> events = new ArrayList<>();
     final int handle = m_serverInst.addConnectionListener(events::add, false);
 
     // trigger a connect event
-    m_clientInst.startClient(address, 10000);
+    m_clientInst.startClient(address, threadedPort);
+    threadedPort++;
 
     // wait for client to report it's started, then wait another 0.1 sec
     try {

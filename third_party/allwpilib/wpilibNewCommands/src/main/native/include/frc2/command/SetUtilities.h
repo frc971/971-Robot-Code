@@ -1,18 +1,15 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019 FIRST. All Rights Reserved.                             */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
-#include <wpi/ArrayRef.h>
 #include <wpi/SmallVector.h>
+#include <wpi/span.h>
 
 namespace frc2 {
 template <typename T>
-void SetInsert(wpi::SmallVectorImpl<T*>& vector, wpi::ArrayRef<T*> toAdd) {
+void SetInsert(wpi::SmallVectorImpl<T*>& vector, wpi::span<T* const> toAdd) {
   for (auto addCommand : toAdd) {
     bool exists = false;
     for (auto existingCommand : vector) {

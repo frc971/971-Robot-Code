@@ -10,12 +10,13 @@
 #include <atomic>
 // #include <condition_variable>
 #include <memory>
+#include <functional>
 #include <string>
+#include <string_view>
 #include <thread>
 
 #include "hal/DriverStation.h"
 #include "frc971/wpilib/ahal/SensorBase.h"
-#include "wpi/Twine.h"
 
 namespace frc {
 
@@ -29,10 +30,10 @@ class DriverStation {
 
   virtual ~DriverStation();
   static DriverStation &GetInstance();
-  static void ReportError(const wpi::Twine &error);
-  static void ReportWarning(const wpi::Twine &error);
-  static void ReportError(bool is_error, int code, const wpi::Twine &error,
-                          const wpi::Twine &location, const wpi::Twine &stack);
+  static void ReportError(const std::string_view &error);
+  static void ReportWarning(const std::string_view &error);
+  static void ReportError(bool is_error, int code, const std::string_view &error,
+                          const std::string_view &location, const std::string_view &stack);
 
   static const int kJoystickPorts = 6;
 

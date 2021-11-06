@@ -1,11 +1,10 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
+
+#include <wpi/SymbolExports.h>
 
 #include "Transform2d.h"
 #include "Translation2d.h"
@@ -20,7 +19,7 @@ namespace frc {
 /**
  * Represents a 2d pose containing translational and rotational elements.
  */
-class Pose2d {
+class WPILIB_DLLEXPORT Pose2d {
  public:
   /**
    * Constructs a pose at the origin facing toward the positive X axis.
@@ -59,18 +58,6 @@ class Pose2d {
    * @return The transformed pose.
    */
   Pose2d operator+(const Transform2d& other) const;
-
-  /**
-   * Transforms the current pose by the transformation.
-   *
-   * This is similar to the + operator, except that it mutates the current
-   * object.
-   *
-   * @param other The transform to transform the pose by.
-   *
-   * @return Reference to the new mutated object.
-   */
-  Pose2d& operator+=(const Transform2d& other);
 
   /**
    * Returns the Transform2d that maps the one pose to another.
@@ -186,8 +173,10 @@ class Pose2d {
   Rotation2d m_rotation;
 };
 
+WPILIB_DLLEXPORT
 void to_json(wpi::json& json, const Pose2d& pose);
 
+WPILIB_DLLEXPORT
 void from_json(const wpi::json& json, Pose2d& pose);
 
 }  // namespace frc

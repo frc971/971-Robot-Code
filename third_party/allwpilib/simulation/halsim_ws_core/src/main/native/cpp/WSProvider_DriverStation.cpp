@@ -1,14 +1,12 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2017-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "WSProvider_DriverStation.h"
 
 #include <algorithm>
 #include <atomic>
+#include <string_view>
 
 #include <hal/DriverStation.h>
 #include <hal/Extensions.h>
@@ -35,7 +33,7 @@ void HALSimWSProviderDriverStation::Initialize(WSRegisterFunc webRegisterFunc) {
     registered = true;
     HAL_RegisterExtensionListener(
         nullptr, [](void*, const char* name, void* data) {
-          if (wpi::StringRef{name} == "ds_socket") {
+          if (std::string_view{name} == "ds_socket") {
             gDSSocketConnected = static_cast<std::atomic<bool>*>(data);
           }
         });
@@ -92,10 +90,12 @@ void HALSimWSProviderDriverStation::RegisterCallbacks() {
       },
       this, true);
 
-  m_matchTimeCbKey = REGISTER(MatchTime, "<match_time", double, double);
+  m_matchTimeCbKey = REGISTER(MatchTime, ">match_time", double, double);
 }
 
-void HALSimWSProviderDriverStation::CancelCallbacks() { DoCancelCallbacks(); }
+void HALSimWSProviderDriverStation::CancelCallbacks() {
+  DoCancelCallbacks();
+}
 
 void HALSimWSProviderDriverStation::DoCancelCallbacks() {
   HALSIM_CancelDriverStationEnabledCallback(m_enabledCbKey);
@@ -121,7 +121,9 @@ void HALSimWSProviderDriverStation::DoCancelCallbacks() {
 
 void HALSimWSProviderDriverStation::OnNetValueChanged(const wpi::json& json) {
   // ignore if DS connected
-  if (gDSSocketConnected && *gDSSocketConnected) return;
+  if (gDSSocketConnected && *gDSSocketConnected) {
+    return;
+  }
 
   wpi::json::const_iterator it;
   if ((it = json.find(">enabled")) != json.end()) {
@@ -158,6 +160,14 @@ void HALSimWSProviderDriverStation::OnNetValueChanged(const wpi::json& json) {
     } else if (station == "blue3") {
       HALSIM_SetDriverStationAllianceStationId(HAL_AllianceStationID_kBlue3);
     }
+  }
+
+  if ((it = json.find(">match_time")) != json.end()) {
+    HALSIM_SetDriverStationMatchTime(it.value());
+  }
+  if ((it = json.find(">game_data")) != json.end()) {
+    HALSIM_SetGameSpecificMessage(
+        it.value().get_ref<const std::string&>().c_str());
   }
 
   // Only notify usercode if we get the new data message

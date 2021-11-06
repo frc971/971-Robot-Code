@@ -1,29 +1,21 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2011-2019 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
 #include <memory>
 #include <string>
+#include <string_view>
 
-#include <wpi/StringRef.h>
-#include <wpi/Twine.h>
-
-#include "frc/ErrorBase.h"
-#include "frc/smartdashboard/Sendable.h"
-#include "frc/smartdashboard/SendableHelper.h"
+#include <wpi/sendable/Sendable.h>
+#include <wpi/sendable/SendableHelper.h>
 
 namespace frc {
 
 class Command;
 
-class Subsystem : public ErrorBase,
-                  public Sendable,
-                  public SendableHelper<Subsystem> {
+class Subsystem : public wpi::Sendable, public wpi::SendableHelper<Subsystem> {
   friend class Scheduler;
 
  public:
@@ -32,7 +24,7 @@ class Subsystem : public ErrorBase,
    *
    * @param name the name of the subsystem
    */
-  explicit Subsystem(const wpi::Twine& name);
+  explicit Subsystem(std::string_view name);
 
   Subsystem(Subsystem&&) = default;
   Subsystem& operator=(Subsystem&&) = default;
@@ -60,7 +52,7 @@ class Subsystem : public ErrorBase,
    *
    * @return the default command name
    */
-  wpi::StringRef GetDefaultCommandName();
+  std::string GetDefaultCommandName();
 
   /**
    * Sets the current command.
@@ -81,7 +73,7 @@ class Subsystem : public ErrorBase,
    *
    * @return the current command name
    */
-  wpi::StringRef GetCurrentCommandName() const;
+  std::string GetCurrentCommandName() const;
 
   /**
    * When the run method of the scheduler is called this method will be called.
@@ -112,7 +104,7 @@ class Subsystem : public ErrorBase,
    *
    * @param name name
    */
-  void SetName(const wpi::Twine& name);
+  void SetName(std::string_view name);
 
   /**
    * Gets the subsystem name of this Subsystem.
@@ -126,7 +118,7 @@ class Subsystem : public ErrorBase,
    *
    * @param subsystem subsystem name
    */
-  void SetSubsystem(const wpi::Twine& subsystem);
+  void SetSubsystem(std::string_view subsystem);
 
   /**
    * Associate a Sendable with this Subsystem.
@@ -135,7 +127,7 @@ class Subsystem : public ErrorBase,
    * @param name name to give child
    * @param child sendable
    */
-  void AddChild(const wpi::Twine& name, std::shared_ptr<Sendable> child);
+  void AddChild(std::string_view name, std::shared_ptr<wpi::Sendable> child);
 
   /**
    * Associate a Sendable with this Subsystem.
@@ -144,7 +136,7 @@ class Subsystem : public ErrorBase,
    * @param name name to give child
    * @param child sendable
    */
-  void AddChild(const wpi::Twine& name, Sendable* child);
+  void AddChild(std::string_view name, wpi::Sendable* child);
 
   /**
    * Associate a Sendable with this Subsystem.
@@ -153,28 +145,28 @@ class Subsystem : public ErrorBase,
    * @param name name to give child
    * @param child sendable
    */
-  void AddChild(const wpi::Twine& name, Sendable& child);
+  void AddChild(std::string_view name, wpi::Sendable& child);
 
   /**
-   * Associate a {@link Sendable} with this Subsystem.
+   * Associate a Sendable with this Subsystem.
    *
    * @param child sendable
    */
-  void AddChild(std::shared_ptr<Sendable> child);
+  void AddChild(std::shared_ptr<wpi::Sendable> child);
 
   /**
-   * Associate a {@link Sendable} with this Subsystem.
+   * Associate a Sendable with this Subsystem.
    *
    * @param child sendable
    */
-  void AddChild(Sendable* child);
+  void AddChild(wpi::Sendable* child);
 
   /**
-   * Associate a {@link Sendable} with this Subsystem.
+   * Associate a Sendable with this Subsystem.
    *
    * @param child sendable
    */
-  void AddChild(Sendable& child);
+  void AddChild(wpi::Sendable& child);
 
  private:
   /**
@@ -193,7 +185,7 @@ class Subsystem : public ErrorBase,
   bool m_initializedDefaultCommand = false;
 
  public:
-  void InitSendable(SendableBuilder& builder) override;
+  void InitSendable(wpi::SendableBuilder& builder) override;
 };
 
 }  // namespace frc

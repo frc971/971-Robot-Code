@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2018-2019 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "wpi/WebSocket.h"  // NOLINT(build/include_order)
 
@@ -11,6 +8,7 @@
 #include "wpi/Base64.h"
 #include "wpi/HttpParser.h"
 #include "wpi/SmallString.h"
+#include "wpi/StringExtras.h"
 #include "wpi/raw_uv_ostream.h"
 #include "wpi/sha1.h"
 
@@ -20,9 +18,11 @@ class WebSocketClientTest : public WebSocketTest {
  public:
   WebSocketClientTest() {
     // Bare bones server
-    req.header.connect([this](StringRef name, StringRef value) {
+    req.header.connect([this](std::string_view name, std::string_view value) {
       // save key (required for valid response)
-      if (name.equals_lower("sec-websocket-key")) clientKey = value;
+      if (equals_lower(name, "sec-websocket-key")) {
+        clientKey = value;
+      }
     });
     req.headersComplete.connect([this](bool) {
       // send response
@@ -36,37 +36,48 @@ class WebSocketClientTest : public WebSocketTest {
       SHA1 hash;
       hash.Update(clientKey);
       hash.Update("258EAFA5-E914-47DA-95CA-C5AB0DC85B11");
-      if (mockBadAccept) hash.Update("1");
+      if (mockBadAccept) {
+        hash.Update("1");
+      }
       SmallString<64> hashBuf;
       SmallString<64> acceptBuf;
       os << "Sec-WebSocket-Accept: "
          << Base64Encode(hash.RawFinal(hashBuf), acceptBuf) << "\r\n";
 
-      if (!mockProtocol.empty())
+      if (!mockProtocol.empty()) {
         os << "Sec-WebSocket-Protocol: " << mockProtocol << "\r\n";
+      }
 
       os << "\r\n";
 
       conn->Write(bufs, [](auto bufs, uv::Error) {
-        for (auto& buf : bufs) buf.Deallocate();
+        for (auto& buf : bufs) {
+          buf.Deallocate();
+        }
       });
 
       serverHeadersDone = true;
-      if (connected) connected();
+      if (connected) {
+        connected();
+      }
     });
 
     serverPipe->Listen([this] {
       conn = serverPipe->Accept();
       conn->StartRead();
       conn->data.connect([this](uv::Buffer& buf, size_t size) {
-        StringRef data{buf.base, size};
+        std::string_view data{buf.base, size};
         if (!serverHeadersDone) {
           data = req.Execute(data);
-          if (req.HasError()) Finish();
+          if (req.HasError()) {
+            Finish();
+          }
           ASSERT_EQ(req.GetError(), HPE_OK) << http_errno_name(req.GetError());
-          if (data.empty()) return;
+          if (data.empty()) {
+            return;
+          }
         }
-        wireData.insert(wireData.end(), data.bytes_begin(), data.bytes_end());
+        wireData.insert(wireData.end(), data.begin(), data.end());
       });
       conn->end.connect([this] { Finish(); });
     });
@@ -87,12 +98,13 @@ TEST_F(WebSocketClientTest, Open) {
 
   clientPipe->Connect(pipeName, [&] {
     auto ws = WebSocket::CreateClient(*clientPipe, "/test", pipeName);
-    ws->closed.connect([&](uint16_t code, StringRef reason) {
+    ws->closed.connect([&](uint16_t code, std::string_view reason) {
       Finish();
-      if (code != 1005 && code != 1006)
+      if (code != 1005 && code != 1006) {
         FAIL() << "Code: " << code << " Reason: " << reason;
+      }
     });
-    ws->open.connect([&](StringRef protocol) {
+    ws->open.connect([&](std::string_view protocol) {
       ++gotOpen;
       Finish();
       ASSERT_TRUE(protocol.empty());
@@ -101,7 +113,9 @@ TEST_F(WebSocketClientTest, Open) {
 
   loop->Run();
 
-  if (HasFatalFailure()) return;
+  if (HasFatalFailure()) {
+    return;
+  }
   ASSERT_EQ(gotOpen, 1);
 }
 
@@ -112,12 +126,12 @@ TEST_F(WebSocketClientTest, BadAccept) {
 
   clientPipe->Connect(pipeName, [&] {
     auto ws = WebSocket::CreateClient(*clientPipe, "/test", pipeName);
-    ws->closed.connect([&](uint16_t code, StringRef msg) {
+    ws->closed.connect([&](uint16_t code, std::string_view msg) {
       Finish();
       ++gotClosed;
       ASSERT_EQ(code, 1002) << "Message: " << msg;
     });
-    ws->open.connect([&](StringRef protocol) {
+    ws->open.connect([&](std::string_view protocol) {
       Finish();
       FAIL() << "Got open";
     });
@@ -125,7 +139,9 @@ TEST_F(WebSocketClientTest, BadAccept) {
 
   loop->Run();
 
-  if (HasFatalFailure()) return;
+  if (HasFatalFailure()) {
+    return;
+  }
   ASSERT_EQ(gotClosed, 1);
 }
 
@@ -137,12 +153,13 @@ TEST_F(WebSocketClientTest, ProtocolGood) {
   clientPipe->Connect(pipeName, [&] {
     auto ws = WebSocket::CreateClient(*clientPipe, "/test", pipeName,
                                       {"myProtocol", "myProtocol2"});
-    ws->closed.connect([&](uint16_t code, StringRef msg) {
+    ws->closed.connect([&](uint16_t code, std::string_view msg) {
       Finish();
-      if (code != 1005 && code != 1006)
+      if (code != 1005 && code != 1006) {
         FAIL() << "Code: " << code << "Message: " << msg;
+      }
     });
-    ws->open.connect([&](StringRef protocol) {
+    ws->open.connect([&](std::string_view protocol) {
       ++gotOpen;
       Finish();
       ASSERT_EQ(protocol, "myProtocol");
@@ -151,7 +168,9 @@ TEST_F(WebSocketClientTest, ProtocolGood) {
 
   loop->Run();
 
-  if (HasFatalFailure()) return;
+  if (HasFatalFailure()) {
+    return;
+  }
   ASSERT_EQ(gotOpen, 1);
 }
 
@@ -162,12 +181,12 @@ TEST_F(WebSocketClientTest, ProtocolRespNotReq) {
 
   clientPipe->Connect(pipeName, [&] {
     auto ws = WebSocket::CreateClient(*clientPipe, "/test", pipeName);
-    ws->closed.connect([&](uint16_t code, StringRef msg) {
+    ws->closed.connect([&](uint16_t code, std::string_view msg) {
       Finish();
       ++gotClosed;
       ASSERT_EQ(code, 1003) << "Message: " << msg;
     });
-    ws->open.connect([&](StringRef protocol) {
+    ws->open.connect([&](std::string_view protocol) {
       Finish();
       FAIL() << "Got open";
     });
@@ -175,7 +194,9 @@ TEST_F(WebSocketClientTest, ProtocolRespNotReq) {
 
   loop->Run();
 
-  if (HasFatalFailure()) return;
+  if (HasFatalFailure()) {
+    return;
+  }
   ASSERT_EQ(gotClosed, 1);
 }
 
@@ -184,13 +205,13 @@ TEST_F(WebSocketClientTest, ProtocolReqNotResp) {
 
   clientPipe->Connect(pipeName, [&] {
     auto ws = WebSocket::CreateClient(*clientPipe, "/test", pipeName,
-                                      StringRef{"myProtocol"});
-    ws->closed.connect([&](uint16_t code, StringRef msg) {
+                                      {{"myProtocol"}});
+    ws->closed.connect([&](uint16_t code, std::string_view msg) {
       Finish();
       ++gotClosed;
       ASSERT_EQ(code, 1002) << "Message: " << msg;
     });
-    ws->open.connect([&](StringRef protocol) {
+    ws->open.connect([&](std::string_view protocol) {
       Finish();
       FAIL() << "Got open";
     });
@@ -198,7 +219,9 @@ TEST_F(WebSocketClientTest, ProtocolReqNotResp) {
 
   loop->Run();
 
-  if (HasFatalFailure()) return;
+  if (HasFatalFailure()) {
+    return;
+  }
   ASSERT_EQ(gotClosed, 1);
 }
 
@@ -213,7 +236,9 @@ class WebSocketClientDataTest : public WebSocketClientTest,
   WebSocketClientDataTest() {
     clientPipe->Connect(pipeName, [&] {
       ws = WebSocket::CreateClient(*clientPipe, "/test", pipeName);
-      if (setupWebSocket) setupWebSocket();
+      if (setupWebSocket) {
+        setupWebSocket();
+      }
     });
   }
 
@@ -228,8 +253,8 @@ TEST_P(WebSocketClientDataTest, SendBinary) {
   int gotCallback = 0;
   std::vector<uint8_t> data(GetParam(), 0x03u);
   setupWebSocket = [&] {
-    ws->open.connect([&](StringRef) {
-      ws->SendBinary(uv::Buffer(data), [&](auto bufs, uv::Error) {
+    ws->open.connect([&](std::string_view) {
+      ws->SendBinary({{data}}, [&](auto bufs, uv::Error) {
         ++gotCallback;
         ws->Terminate();
         ASSERT_FALSE(bufs.empty());
@@ -250,7 +275,7 @@ TEST_P(WebSocketClientDataTest, ReceiveBinary) {
   int gotCallback = 0;
   std::vector<uint8_t> data(GetParam(), 0x03u);
   setupWebSocket = [&] {
-    ws->binary.connect([&](ArrayRef<uint8_t> inData, bool fin) {
+    ws->binary.connect([&](auto inData, bool fin) {
       ++gotCallback;
       ws->Terminate();
       ASSERT_TRUE(fin);
@@ -259,9 +284,7 @@ TEST_P(WebSocketClientDataTest, ReceiveBinary) {
     });
   };
   auto message = BuildMessage(0x02, true, false, data);
-  connected = [&] {
-    conn->Write(uv::Buffer(message), [&](auto bufs, uv::Error) {});
-  };
+  connected = [&] { conn->Write({{message}}, [&](auto bufs, uv::Error) {}); };
 
   loop->Run();
 
@@ -276,19 +299,17 @@ TEST_P(WebSocketClientDataTest, ReceiveMasked) {
   int gotCallback = 0;
   std::vector<uint8_t> data(GetParam(), ' ');
   setupWebSocket = [&] {
-    ws->text.connect([&](StringRef, bool) {
+    ws->text.connect([&](std::string_view, bool) {
       ws->Terminate();
       FAIL() << "Should not have gotten masked message";
     });
-    ws->closed.connect([&](uint16_t code, StringRef reason) {
+    ws->closed.connect([&](uint16_t code, std::string_view reason) {
       ++gotCallback;
       ASSERT_EQ(code, 1002) << "reason: " << reason;
     });
   };
   auto message = BuildMessage(0x01, true, true, data);
-  connected = [&] {
-    conn->Write(uv::Buffer(message), [&](auto bufs, uv::Error) {});
-  };
+  connected = [&] { conn->Write({{message}}, [&](auto bufs, uv::Error) {}); };
 
   loop->Run();
 

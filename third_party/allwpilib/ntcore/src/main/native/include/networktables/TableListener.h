@@ -1,23 +1,17 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2017-2018 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #ifndef NTCORE_NETWORKTABLES_TABLELISTENER_H_
 #define NTCORE_NETWORKTABLES_TABLELISTENER_H_
 
 #include <functional>
 #include <memory>
-
-#include <wpi/StringRef.h>
+#include <string_view>
 
 namespace nt {
 
 class NetworkTable;
-
-using wpi::StringRef;
 
 /**
  * A listener that listens to new sub-tables in a NetworkTable.
@@ -30,9 +24,9 @@ using wpi::StringRef;
  *
  * @ingroup ntcore_cpp_api
  */
-typedef std::function<void(NetworkTable* parent, StringRef name,
-                           std::shared_ptr<NetworkTable> table)>
-    TableListener;
+using TableListener =
+    std::function<void(NetworkTable* parent, std::string_view name,
+                       std::shared_ptr<NetworkTable> table)>;
 
 }  // namespace nt
 

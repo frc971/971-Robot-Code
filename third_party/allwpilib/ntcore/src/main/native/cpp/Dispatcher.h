@@ -1,26 +1,22 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2015-2019 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #ifndef NTCORE_DISPATCHER_H_
 #define NTCORE_DISPATCHER_H_
 
 #include <atomic>
-#include <chrono>
 #include <functional>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <thread>
 #include <utility>
 #include <vector>
 
-#include <wpi/StringRef.h>
-#include <wpi/Twine.h>
 #include <wpi/condition_variable.h>
 #include <wpi/mutex.h>
+#include <wpi/span.h>
 
 #include "IDispatcher.h"
 #include "INetworkConnection.h"
@@ -41,20 +37,20 @@ class DispatcherBase : public IDispatcher {
   friend class DispatcherTest;
 
  public:
-  typedef std::function<std::unique_ptr<wpi::NetworkStream>()> Connector;
+  using Connector = std::function<std::unique_ptr<wpi::NetworkStream>()>;
 
   DispatcherBase(IStorage& storage, IConnectionNotifier& notifier,
                  wpi::Logger& logger);
-  virtual ~DispatcherBase();
+  ~DispatcherBase() override;
 
   unsigned int GetNetworkMode() const;
   void StartLocal();
-  void StartServer(const Twine& persist_filename,
+  void StartServer(std::string_view persist_filename,
                    std::unique_ptr<wpi::NetworkAcceptor> acceptor);
   void StartClient();
   void Stop();
   void SetUpdateRate(double interval);
-  void SetIdentity(const Twine& name);
+  void SetIdentity(std::string_view name);
   void Flush();
   std::vector<ConnectionInfo> GetConnections() const;
   bool IsConnected() const;
@@ -82,11 +78,11 @@ class DispatcherBase : public IDispatcher {
   bool ClientHandshake(
       NetworkConnection& conn,
       std::function<std::shared_ptr<Message>()> get_msg,
-      std::function<void(wpi::ArrayRef<std::shared_ptr<Message>>)> send_msgs);
+      std::function<void(wpi::span<std::shared_ptr<Message>>)> send_msgs);
   bool ServerHandshake(
       NetworkConnection& conn,
       std::function<std::shared_ptr<Message>()> get_msg,
-      std::function<void(wpi::ArrayRef<std::shared_ptr<Message>>)> send_msgs);
+      std::function<void(wpi::span<std::shared_ptr<Message>>)> send_msgs);
 
   void ClientReconnect(unsigned int proto_rev = 0x0300);
 
@@ -116,7 +112,7 @@ class DispatcherBase : public IDispatcher {
   // Condition variable for forced dispatch wakeup (flush)
   wpi::mutex m_flush_mutex;
   wpi::condition_variable m_flush_cv;
-  std::chrono::steady_clock::time_point m_last_flush;
+  uint64_t m_last_flush = 0;
   bool m_do_flush = false;
 
   // Condition variable for client reconnect (uses user mutex)
@@ -136,11 +132,12 @@ class Dispatcher : public DispatcherBase {
              wpi::Logger& logger)
       : DispatcherBase(storage, notifier, logger) {}
 
-  void StartServer(const Twine& persist_filename, const char* listen_address,
-                   unsigned int port);
+  void StartServer(std::string_view persist_filename,
+                   const char* listen_address, unsigned int port);
 
   void SetServer(const char* server_name, unsigned int port);
-  void SetServer(ArrayRef<std::pair<StringRef, unsigned int>> servers);
+  void SetServer(
+      wpi::span<const std::pair<std::string_view, unsigned int>> servers);
   void SetServerTeam(unsigned int team, unsigned int port);
 
   void SetServerOverride(const char* server_name, unsigned int port);

@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "subsystems/DriveSubsystem.h"
 
@@ -20,6 +17,11 @@ DriveSubsystem::DriveSubsystem()
       m_leftEncoder{kLeftEncoderPorts[0], kLeftEncoderPorts[1]},
       m_rightEncoder{kRightEncoderPorts[0], kRightEncoderPorts[1]},
       m_odometry{m_gyro.GetRotation2d()} {
+  // We need to invert one side of the drivetrain so that positive voltages
+  // result in both sides moving forward. Depending on how your robot's
+  // gearbox is constructed, you might have to invert the left side instead.
+  m_rightMotors.SetInverted(true);
+
   // Set the distance per pulse for the encoders
   m_leftEncoder.SetDistancePerPulse(kEncoderDistancePerPulse);
   m_rightEncoder.SetDistancePerPulse(kEncoderDistancePerPulse);
@@ -53,9 +55,13 @@ double DriveSubsystem::GetAverageEncoderDistance() {
   return (m_leftEncoder.GetDistance() + m_rightEncoder.GetDistance()) / 2.0;
 }
 
-frc::Encoder& DriveSubsystem::GetLeftEncoder() { return m_leftEncoder; }
+frc::Encoder& DriveSubsystem::GetLeftEncoder() {
+  return m_leftEncoder;
+}
 
-frc::Encoder& DriveSubsystem::GetRightEncoder() { return m_rightEncoder; }
+frc::Encoder& DriveSubsystem::GetRightEncoder() {
+  return m_rightEncoder;
+}
 
 void DriveSubsystem::SetMaxOutput(double maxOutput) {
   m_drive.SetMaxOutput(maxOutput);
@@ -65,9 +71,13 @@ units::degree_t DriveSubsystem::GetHeading() const {
   return m_gyro.GetRotation2d().Degrees();
 }
 
-double DriveSubsystem::GetTurnRate() { return -m_gyro.GetRate(); }
+double DriveSubsystem::GetTurnRate() {
+  return -m_gyro.GetRate();
+}
 
-frc::Pose2d DriveSubsystem::GetPose() { return m_odometry.GetPose(); }
+frc::Pose2d DriveSubsystem::GetPose() {
+  return m_odometry.GetPose();
+}
 
 frc::DifferentialDriveWheelSpeeds DriveSubsystem::GetWheelSpeeds() {
   return {units::meters_per_second_t(m_leftEncoder.GetRate()),

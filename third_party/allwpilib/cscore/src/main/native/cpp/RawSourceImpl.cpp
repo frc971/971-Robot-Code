@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2018-2019 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "RawSourceImpl.h"
 
@@ -17,12 +14,12 @@
 
 using namespace cs;
 
-RawSourceImpl::RawSourceImpl(const wpi::Twine& name, wpi::Logger& logger,
+RawSourceImpl::RawSourceImpl(std::string_view name, wpi::Logger& logger,
                              Notifier& notifier, Telemetry& telemetry,
                              const VideoMode& mode)
     : ConfigurableSourceImpl{name, logger, notifier, telemetry, mode} {}
 
-RawSourceImpl::~RawSourceImpl() {}
+RawSourceImpl::~RawSourceImpl() = default;
 
 void RawSourceImpl::PutFrame(const CS_RawFrame& image) {
   int type;
@@ -50,7 +47,7 @@ void RawSourceImpl::PutFrame(const CS_RawFrame& image) {
 }
 
 namespace cs {
-CS_Source CreateRawSource(const wpi::Twine& name, const VideoMode& mode,
+CS_Source CreateRawSource(std::string_view name, const VideoMode& mode,
                           CS_Status* status) {
   auto& inst = Instance::GetInstance();
   return inst.CreateSource(CS_SOURCE_RAW, std::make_shared<RawSourceImpl>(

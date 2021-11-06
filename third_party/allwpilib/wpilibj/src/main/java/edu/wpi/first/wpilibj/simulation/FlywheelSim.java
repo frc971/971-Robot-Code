@@ -1,22 +1,17 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2020 FIRST. All Rights Reserved.                             */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 package edu.wpi.first.wpilibj.simulation;
 
-import edu.wpi.first.wpilibj.system.LinearSystem;
-import edu.wpi.first.wpilibj.system.plant.DCMotor;
-import edu.wpi.first.wpilibj.system.plant.LinearSystemId;
-import edu.wpi.first.wpilibj.util.Units;
-import edu.wpi.first.wpiutil.math.Matrix;
-import edu.wpi.first.wpiutil.math.numbers.N1;
+import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.numbers.N1;
+import edu.wpi.first.math.system.LinearSystem;
+import edu.wpi.first.math.system.plant.DCMotor;
+import edu.wpi.first.math.system.plant.LinearSystemId;
+import edu.wpi.first.math.util.Units;
 
-/**
- * Represents a simulated flywheel mechanism.
- */
+/** Represents a simulated flywheel mechanism. */
 public class FlywheelSim extends LinearSystemSim<N1, N1, N1> {
   // Gearbox for the flywheel.
   private final DCMotor m_gearbox;
@@ -27,10 +22,9 @@ public class FlywheelSim extends LinearSystemSim<N1, N1, N1> {
   /**
    * Creates a simulated flywheel mechanism.
    *
-   * @param plant   The linear system that represents the flywheel.
+   * @param plant The linear system that represents the flywheel.
    * @param gearbox The type of and number of motors in the flywheel gearbox.
-   * @param gearing The gearing of the flywheel (numbers greater than 1
-   *                represent reductions).
+   * @param gearing The gearing of the flywheel (numbers greater than 1 represent reductions).
    */
   public FlywheelSim(LinearSystem<N1, N1, N1> plant, DCMotor gearbox, double gearing) {
     super(plant);
@@ -41,15 +35,16 @@ public class FlywheelSim extends LinearSystemSim<N1, N1, N1> {
   /**
    * Creates a simulated flywheel mechanism.
    *
-   * @param plant              The linear system that represents the flywheel.
-   * @param gearbox            The type of and number of motors in the flywheel
-   *                           gearbox.
-   * @param gearing            The gearing of the flywheel (numbers greater
-   *                           than 1 represent reductions).
+   * @param plant The linear system that represents the flywheel.
+   * @param gearbox The type of and number of motors in the flywheel gearbox.
+   * @param gearing The gearing of the flywheel (numbers greater than 1 represent reductions).
    * @param measurementStdDevs The standard deviations of the measurements.
    */
-  public FlywheelSim(LinearSystem<N1, N1, N1> plant, DCMotor gearbox, double gearing,
-                     Matrix<N1, N1> measurementStdDevs) {
+  public FlywheelSim(
+      LinearSystem<N1, N1, N1> plant,
+      DCMotor gearbox,
+      double gearing,
+      Matrix<N1, N1> measurementStdDevs) {
     super(plant, measurementStdDevs);
     m_gearbox = gearbox;
     m_gearing = gearing;
@@ -58,15 +53,14 @@ public class FlywheelSim extends LinearSystemSim<N1, N1, N1> {
   /**
    * Creates a simulated flywheel mechanism.
    *
-   * @param gearbox          The type of and number of motors in the flywheel gearbox.
-   * @param gearing          The gearing of the flywheel (numbers greater than 1
-   *                         represent reductions).
-   * @param jKgMetersSquared The moment of inertia of the flywheel. If this is unknown,
-   *                         use the {@link #FlywheelSim(LinearSystem, DCMotor, double, Matrix)}
-   *                         constructor.
+   * @param gearbox The type of and number of motors in the flywheel gearbox.
+   * @param gearing The gearing of the flywheel (numbers greater than 1 represent reductions).
+   * @param jKgMetersSquared The moment of inertia of the flywheel. If this is unknown, use the
+   *     {@link #FlywheelSim(LinearSystem, DCMotor, double, Matrix)} constructor.
    */
+  @SuppressWarnings("ParameterName")
   public FlywheelSim(DCMotor gearbox, double gearing, double jKgMetersSquared) {
-    super(LinearSystemId.createFlywheelSystem(gearbox, gearing, jKgMetersSquared));
+    super(LinearSystemId.createFlywheelSystem(gearbox, jKgMetersSquared, gearing));
     m_gearbox = gearbox;
     m_gearing = gearing;
   }
@@ -74,18 +68,17 @@ public class FlywheelSim extends LinearSystemSim<N1, N1, N1> {
   /**
    * Creates a simulated flywheel mechanism.
    *
-   * @param gearbox            The type of and number of motors in the flywheel
-   *                           gearbox.
-   * @param gearing            The gearing of the flywheel (numbers greater
-   *                           than 1 represent reductions).
-   * @param jKgMetersSquared   The moment of inertia of the flywheel. If this is unknown,
-   *                           use the {@link #FlywheelSim(LinearSystem, DCMotor, double, Matrix)}
-   *                           constructor.
+   * @param gearbox The type of and number of motors in the flywheel gearbox.
+   * @param gearing The gearing of the flywheel (numbers greater than 1 represent reductions).
+   * @param jKgMetersSquared The moment of inertia of the flywheel. If this is unknown, use the
+   *     {@link #FlywheelSim(LinearSystem, DCMotor, double, Matrix)} constructor.
    * @param measurementStdDevs The standard deviations of the measurements.
    */
-  public FlywheelSim(DCMotor gearbox, double gearing, double jKgMetersSquared,
-                     Matrix<N1, N1> measurementStdDevs) {
-    super(LinearSystemId.createFlywheelSystem(gearbox, gearing, jKgMetersSquared),
+  @SuppressWarnings("ParameterName")
+  public FlywheelSim(
+      DCMotor gearbox, double gearing, double jKgMetersSquared, Matrix<N1, N1> measurementStdDevs) {
+    super(
+        LinearSystemId.createFlywheelSystem(gearbox, jKgMetersSquared, gearing),
         measurementStdDevs);
     m_gearbox = gearbox;
     m_gearing = gearing;

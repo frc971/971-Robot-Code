@@ -1,9 +1,8 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2011-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
+
+#include <wpi/sendable/SendableBuilder.h>
 
 #include "frc/buttons/Button.h"
 #include "frc/buttons/CancelButtonScheduler.h"
@@ -11,7 +10,6 @@
 #include "frc/buttons/PressedButtonScheduler.h"
 #include "frc/buttons/ReleasedButtonScheduler.h"
 #include "frc/buttons/ToggleButtonScheduler.h"
-#include "frc/smartdashboard/SendableBuilder.h"
 
 using namespace frc;
 
@@ -36,7 +34,9 @@ Trigger& Trigger::operator=(Trigger&& rhs) {
   return *this;
 }
 
-bool Trigger::Grab() { return Get() || m_sendablePressed; }
+bool Trigger::Grab() {
+  return Get() || m_sendablePressed;
+}
 
 void Trigger::WhenActive(Command* command) {
   auto pbs = new PressedButtonScheduler(Grab(), this, command);
@@ -63,10 +63,10 @@ void Trigger::ToggleWhenActive(Command* command) {
   tbs->Start();
 }
 
-void Trigger::InitSendable(SendableBuilder& builder) {
+void Trigger::InitSendable(wpi::SendableBuilder& builder) {
   builder.SetSmartDashboardType("Button");
-  builder.SetSafeState([=]() { m_sendablePressed = false; });
+  builder.SetSafeState([=] { m_sendablePressed = false; });
   builder.AddBooleanProperty(
-      "pressed", [=]() { return Grab(); },
+      "pressed", [=] { return Grab(); },
       [=](bool value) { m_sendablePressed = value; });
 }

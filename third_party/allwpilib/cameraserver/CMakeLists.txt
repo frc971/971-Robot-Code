@@ -9,7 +9,7 @@ find_package( OpenCV REQUIRED )
 if (WITH_JAVA)
     find_package(Java REQUIRED)
     include(UseJava)
-    set(CMAKE_JAVA_COMPILE_FLAGS "-Xlint:unchecked")
+    set(CMAKE_JAVA_COMPILE_FLAGS "-encoding" "UTF8" "-Xlint:unchecked")
 
     #find java files, copy them locally
 
@@ -53,8 +53,8 @@ else()
     set (cameraserver_config_dir share/cameraserver)
 endif()
 
-configure_file(cameraserver-config.cmake.in ${CMAKE_BINARY_DIR}/cameraserver-config.cmake )
-install(FILES ${CMAKE_BINARY_DIR}/cameraserver-config.cmake DESTINATION ${cameraserver_config_dir})
+configure_file(cameraserver-config.cmake.in ${WPILIB_BINARY_DIR}/cameraserver-config.cmake )
+install(FILES ${WPILIB_BINARY_DIR}/cameraserver-config.cmake DESTINATION ${cameraserver_config_dir})
 install(EXPORT cameraserver DESTINATION ${cameraserver_config_dir})
 
 file(GLOB multiCameraServer_src multiCameraServer/src/main/native/cpp/*.cpp)

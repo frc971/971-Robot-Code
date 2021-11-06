@@ -1,20 +1,17 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2017-2019 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "frc/smartdashboard/SendableChooserBase.h"
 
-#include "frc/smartdashboard/SendableRegistry.h"
+#include <wpi/sendable/SendableRegistry.h>
 
 using namespace frc;
 
 std::atomic_int SendableChooserBase::s_instances{0};
 
 SendableChooserBase::SendableChooserBase() : m_instance{s_instances++} {
-  SendableRegistry::GetInstance().Add(this, "SendableChooser", m_instance);
+  wpi::SendableRegistry::Add(this, "SendableChooser", m_instance);
 }
 
 SendableChooserBase::SendableChooserBase(SendableChooserBase&& oth)

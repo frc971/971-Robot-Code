@@ -1,21 +1,18 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
 #include <string>
+#include <string_view>
 
-#include <wpi/StringRef.h>
-#include <wpi/Twine.h>
+#include <wpi/SymbolExports.h>
 
 #include "frc/trajectory/Trajectory.h"
 
 namespace frc {
-class TrajectoryUtil {
+class WPILIB_DLLEXPORT TrajectoryUtil {
  public:
   TrajectoryUtil() = delete;
 
@@ -24,11 +21,9 @@ class TrajectoryUtil {
    *
    * @param trajectory the trajectory to export
    * @param path the path of the file to export to
-   *
-   * @return The interpolated state.
    */
   static void ToPathweaverJson(const Trajectory& trajectory,
-                               const wpi::Twine& path);
+                               std::string_view path);
   /**
    * Imports a Trajectory from a PathWeaver-style JSON file.
    *
@@ -36,24 +31,24 @@ class TrajectoryUtil {
    *
    * @return The trajectory represented by the file.
    */
-  static Trajectory FromPathweaverJson(const wpi::Twine& path);
+  static Trajectory FromPathweaverJson(std::string_view path);
 
   /**
-     * Deserializes a Trajectory from PathWeaver-style JSON.
-
-     * @param json the string containing the serialized JSON
-
-     * @return the trajectory represented by the JSON
-     */
+   * Deserializes a Trajectory from PathWeaver-style JSON.
+   *
+   * @param trajectory the trajectory to export
+   *
+   * @return the string containing the serialized JSON
+   */
   static std::string SerializeTrajectory(const Trajectory& trajectory);
 
   /**
    * Serializes a Trajectory to PathWeaver-style JSON.
-
-   * @param trajectory the trajectory to export
-
-   * @return the string containing the serialized JSON
+   *
+   * @param jsonStr the string containing the serialized JSON
+   *
+   * @return the trajectory represented by the JSON
    */
-  static Trajectory DeserializeTrajectory(wpi::StringRef json_str);
+  static Trajectory DeserializeTrajectory(std::string_view jsonStr);
 };
 }  // namespace frc

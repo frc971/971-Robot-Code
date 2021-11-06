@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2015-2018 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #ifndef NTCORE_WIREENCODER_H_
 #define NTCORE_WIREENCODER_H_
@@ -12,9 +9,9 @@
 
 #include <cassert>
 #include <cstddef>
+#include <string_view>
 
 #include <wpi/SmallVector.h>
-#include <wpi/StringRef.h>
 
 #include "networktables/NetworkTableValue.h"
 
@@ -52,8 +49,8 @@ class WireEncoder {
   /* Returns number of bytes written to memory buffer. */
   size_t size() const { return m_data.size(); }
 
-  wpi::StringRef ToStringRef() const {
-    return wpi::StringRef(m_data.data(), m_data.size());
+  std::string_view ToStringView() const {
+    return {m_data.data(), m_data.size()};
   }
 
   /* Writes a single byte. */
@@ -83,7 +80,7 @@ class WireEncoder {
 
   void WriteType(NT_Type type);
   void WriteValue(const Value& value);
-  void WriteString(wpi::StringRef str);
+  void WriteString(std::string_view str);
 
   /* Utility function to get the written size of a value (without actually
    * writing it).
@@ -93,7 +90,7 @@ class WireEncoder {
   /* Utility function to get the written size of a string (without actually
    * writing it).
    */
-  size_t GetStringSize(wpi::StringRef str) const;
+  size_t GetStringSize(std::string_view str) const;
 
  protected:
   /* The protocol revision.  E.g. 0x0200 for version 2.0. */

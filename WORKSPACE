@@ -247,6 +247,7 @@ new_git_repository(
     remote = "https://github.com/avventi/Slycot.git",
 )
 
+# TODO(austin): https://github.com/wpilibsuite/roborio-toolchain/releases/tag/v2022-1
 http_archive(
     name = "arm_frc_linux_gnueabi_repo",
     build_file = "@//tools/cpp/arm-frc-linux-gnueabi:arm-frc-linux-gnueabi.BUILD",
@@ -324,13 +325,13 @@ bind(
 )
 
 # Generated with:
-# git fetch https://github.com/wpilibsuite/ni-libraries master
-# git archive --output=allwpilib_ni-libraries_c826046.tar.gz --format=tar.gz c826046
+# git fetch https://github.com/wpilibsuite/ni-libraries main
+# git archive --output=allwpilib_ni-libraries_987ab82a80232691d8e21c57c9f13d35d2c31f24.tar.gz --format=tar.gz 987ab82a80232691d8e21c57c9f13d35d2c31f24
 http_archive(
     name = "allwpilib_ni_libraries",
     build_file = "@//debian:ni-libraries.BUILD",
-    sha256 = "59e971854d689b8e60d2b7ede3cc1da911dbc70deeccb9b5306bb7c7aa5102d9",
-    url = "https://www.frc971.org/Build-Dependencies/allwpilib_ni-libraries_c826046.tar.gz",
+    sha256 = "f57dfc76ee3d8680aba8cfa6077e20cd47a2e5b2badd918ec3095d2c6300588f",
+    url = "https://www.frc971.org/Build-Dependencies/allwpilib_ni-libraries_987ab82a80232691d8e21c57c9f13d35d2c31f24.tar.gz",
 )
 
 # Downloaded from:
@@ -518,6 +519,7 @@ local_repository(
     path = "third_party/ceres",
 )
 
+# TODO(austin): Update!
 # Downloaded from http://devsite.ctr-electronics.com/maven/release/com/ctre/phoenix/api-cpp/5.18.1/.
 http_archive(
     name = "ctre_phoenix_api_cpp_headers",

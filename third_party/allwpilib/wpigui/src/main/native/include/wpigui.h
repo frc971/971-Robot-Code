@@ -1,13 +1,12 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
 #include <functional>
+#include <string>
+#include <string_view>
 
 #include <imgui.h>
 
@@ -86,6 +85,21 @@ void AddLateExecute(std::function<void()> execute);
 GLFWwindow* GetSystemWindow();
 
 /**
+ * Adds an application icon.  Multiple icons (of different sizes) may be
+ * set.  This must be called prior to initialization to have an effect.
+ *
+ * @param data image data
+ * @param len image data length
+ * @return False if image data could not be read
+ */
+bool AddIcon(const unsigned char* data, int len);
+
+inline bool AddIcon(std::string_view data) {
+  return AddIcon(reinterpret_cast<const unsigned char*>(data.data()),
+                 data.size());
+}
+
+/**
  * Adds a font to the GUI.  The passed function is called during
  * initialization as many times as necessary to create a range of sizes.
  *
@@ -122,6 +136,15 @@ void SetStyle(Style style);
  * @param color Color
  */
 void SetClearColor(ImVec4 color);
+
+/**
+ * Configures a save file (.ini) in a platform specific location. On Windows,
+ * the .ini is saved in %APPDATA%; on macOS the .ini is saved in
+ * ~/Library/Preferences; on Linux the .ini is stored in $XDG_CONFIG_HOME or
+ * ~/.config if the former is not defined. This must be called before
+ * gui::Initialize().
+ */
+void ConfigurePlatformSaveFile(const std::string& name);
 
 /**
  * Emits a View menu (e.g. for a main menu bar) that allows setting of
@@ -238,14 +261,16 @@ class Texture {
         m_format{oth.m_format},
         m_width{oth.m_width},
         m_height{oth.m_height} {
-    oth.m_texture = 0;
+    oth.m_texture = 0;  // NOLINT
   }
 
   Texture& operator=(const Texture&) = delete;
   Texture& operator=(Texture&& oth) {
-    if (m_texture) DeleteTexture(m_texture);
+    if (m_texture) {
+      DeleteTexture(m_texture);
+    }
     m_texture = oth.m_texture;
-    oth.m_texture = 0;
+    oth.m_texture = 0;  // NOLINT
     m_format = oth.m_format;
     m_width = oth.m_width;
     m_height = oth.m_height;
@@ -253,7 +278,9 @@ class Texture {
   }
 
   ~Texture() {
-    if (m_texture) DeleteTexture(m_texture);
+    if (m_texture) {
+      DeleteTexture(m_texture);
+    }
   }
 
   /**
@@ -264,7 +291,7 @@ class Texture {
   /**
    * Implicit conversion to ImTextureID.
    */
-  operator ImTextureID() const { return m_texture; }
+  operator ImTextureID() const { return m_texture; }  // NOLINT
 
   /**
    * Gets the texture pixel format.
@@ -323,8 +350,9 @@ class Texture {
   static Texture CreateFromFile(const char* filename) {
     Texture texture;
     if (!CreateTextureFromFile(filename, &texture.m_texture, &texture.m_width,
-                               &texture.m_height))
+                               &texture.m_height)) {
       return {};
+    }
     return texture;
   }
 
@@ -339,8 +367,9 @@ class Texture {
   static Texture CreateFromImage(const unsigned char* data, int len) {
     Texture texture;
     if (!CreateTextureFromImage(data, len, &texture.m_texture, &texture.m_width,
-                                &texture.m_height))
+                                &texture.m_height)) {
       return {};
+    }
     return texture;
   }
 

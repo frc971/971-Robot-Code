@@ -1,16 +1,13 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2016-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "hal/HAL.h"
 
+#include <cstdio>
 #include <vector>
 
 #include <wpi/mutex.h>
-#include <wpi/raw_ostream.h>
 #include <wpi/spinlock.h>
 
 #ifdef _WIN32
@@ -26,16 +23,41 @@
 #include "hal/Extensions.h"
 #include "hal/handles/HandlesInternal.h"
 #include "hal/simulation/DriverStationData.h"
+#include "hal/simulation/SimCallbackRegistry.h"
 #include "mockdata/RoboRioDataInternal.h"
 
 using namespace hal;
 
-static HAL_RuntimeType runtimeType{HAL_Mock};
+namespace {
+class SimPeriodicCallbackRegistry : public impl::SimCallbackRegistryBase {
+ public:
+  int32_t Register(HALSIM_SimPeriodicCallback callback, void* param) {
+    std::scoped_lock lock(m_mutex);
+    return DoRegister(reinterpret_cast<RawFunctor>(callback), param);
+  }
+
+  void operator()() const {
+#ifdef _MSC_VER  // work around VS2019 16.4.0 bug
+    std::scoped_lock<wpi::recursive_spinlock> lock(m_mutex);
+#else
+    std::scoped_lock lock(m_mutex);
+#endif
+    if (m_callbacks) {
+      for (auto&& cb : *m_callbacks) {
+        reinterpret_cast<HALSIM_SimPeriodicCallback>(cb.callback)(cb.param);
+      }
+    }
+  }
+};
+}  // namespace
+
+static HAL_RuntimeType runtimeType{HAL_Runtime_Simulation};
 static wpi::spinlock gOnShutdownMutex;
 static std::vector<std::pair<void*, void (*)(void*)>> gOnShutdown;
+static SimPeriodicCallbackRegistry gSimPeriodicBefore;
+static SimPeriodicCallbackRegistry gSimPeriodicAfter;
 
-namespace hal {
-namespace init {
+namespace hal::init {
 void InitializeHAL() {
   InitializeAccelerometerData();
   InitializeAddressableLEDData();
@@ -51,8 +73,9 @@ void InitializeHAL() {
   InitializeDriverStationData();
   InitializeEncoderData();
   InitializeI2CData();
-  InitializePCMData();
-  InitializePDPData();
+  InitializeCTREPCMData();
+  InitializeREVPHData();
+  InitializePowerDistributionData();
   InitializePWMData();
   InitializeRelayData();
   InitializeRoboRioData();
@@ -68,7 +91,6 @@ void InitializeHAL() {
   InitializeAnalogOutput();
   InitializeAnalogTrigger();
   InitializeCAN();
-  InitializeCompressor();
   InitializeConstants();
   InitializeCounter();
   InitializeDigitalInternal();
@@ -82,32 +104,38 @@ void InitializeHAL() {
   InitializeMain();
   InitializeMockHooks();
   InitializeNotifier();
-  InitializePDP();
+  InitializePowerDistribution();
   InitializePorts();
   InitializePower();
+  InitializeCTREPCM();
+  InitializeREVPH();
   InitializePWM();
   InitializeRelay();
   InitializeSerialPort();
   InitializeSimDevice();
-  InitializeSolenoid();
   InitializeSPI();
   InitializeThreads();
 }
-}  // namespace init
-}  // namespace hal
+}  // namespace hal::init
 
 extern "C" {
 
 HAL_PortHandle HAL_GetPort(int32_t channel) {
   // Dont allow a number that wouldn't fit in a uint8_t
-  if (channel < 0 || channel >= 255) return HAL_kInvalidHandle;
+  if (channel < 0 || channel >= 255) {
+    return HAL_kInvalidHandle;
+  }
   return createPortHandle(channel, 1);
 }
 
 HAL_PortHandle HAL_GetPortWithModule(int32_t module, int32_t channel) {
   // Dont allow a number that wouldn't fit in a uint8_t
-  if (channel < 0 || channel >= 255) return HAL_kInvalidHandle;
-  if (module < 0 || module >= 255) return HAL_kInvalidHandle;
+  if (channel < 0 || channel >= 255) {
+    return HAL_kInvalidHandle;
+  }
+  if (module < 0 || module >= 255) {
+    return HAL_kInvalidHandle;
+  }
   return createPortHandle(channel, module);
 }
 
@@ -223,14 +251,22 @@ const char* HAL_GetErrorMessage(int32_t code) {
       return HAL_CAN_BUFFER_OVERRUN_MESSAGE;
     case HAL_LED_CHANNEL_ERROR:
       return HAL_LED_CHANNEL_ERROR_MESSAGE;
+    case HAL_USE_LAST_ERROR:
+      return HAL_USE_LAST_ERROR_MESSAGE;
+    case HAL_CONSOLE_OUT_ENABLED_ERROR:
+      return HAL_CONSOLE_OUT_ENABLED_ERROR_MESSAGE;
     default:
       return "Unknown error status";
   }
 }
 
-HAL_RuntimeType HAL_GetRuntimeType(void) { return runtimeType; }
+HAL_RuntimeType HAL_GetRuntimeType(void) {
+  return runtimeType;
+}
 
-void HALSIM_SetRuntimeType(HAL_RuntimeType type) { runtimeType = type; }
+void HALSIM_SetRuntimeType(HAL_RuntimeType type) {
+  runtimeType = type;
+}
 
 int32_t HAL_GetFPGAVersion(int32_t* status) {
   return 2018;  // Automatically script this at some point
@@ -240,28 +276,32 @@ int64_t HAL_GetFPGARevision(int32_t* status) {
   return 0;  // TODO: Find a better number to return;
 }
 
-uint64_t HAL_GetFPGATime(int32_t* status) { return hal::GetFPGATime(); }
+uint64_t HAL_GetFPGATime(int32_t* status) {
+  return hal::GetFPGATime();
+}
 
-uint64_t HAL_ExpandFPGATime(uint32_t unexpanded_lower, int32_t* status) {
+uint64_t HAL_ExpandFPGATime(uint32_t unexpandedLower, int32_t* status) {
   // Capture the current FPGA time.  This will give us the upper half of the
   // clock.
-  uint64_t fpga_time = HAL_GetFPGATime(status);
-  if (*status != 0) return 0;
+  uint64_t fpgaTime = HAL_GetFPGATime(status);
+  if (*status != 0) {
+    return 0;
+  }
 
   // Now, we need to detect the case where the lower bits rolled over after we
   // sampled.  In that case, the upper bits will be 1 bigger than they should
   // be.
 
   // Break it into lower and upper portions.
-  uint32_t lower = fpga_time & 0xffffffffull;
-  uint64_t upper = (fpga_time >> 32) & 0xffffffff;
+  uint32_t lower = fpgaTime & 0xffffffffull;
+  uint64_t upper = (fpgaTime >> 32) & 0xffffffff;
 
   // The time was sampled *before* the current time, so roll it back.
-  if (lower < unexpanded_lower) {
+  if (lower < unexpandedLower) {
     --upper;
   }
 
-  return (upper << 32) + static_cast<uint64_t>(unexpanded_lower);
+  return (upper << 32) + static_cast<uint64_t>(unexpandedLower);
 }
 
 HAL_Bool HAL_GetFPGAButton(int32_t* status) {
@@ -280,11 +320,15 @@ HAL_Bool HAL_Initialize(int32_t timeout, int32_t mode) {
   static std::atomic_bool initialized{false};
   static wpi::mutex initializeMutex;
   // Initial check, as if it's true initialization has finished
-  if (initialized) return true;
+  if (initialized) {
+    return true;
+  }
 
   std::scoped_lock lock(initializeMutex);
   // Second check in case another thread was waiting
-  if (initialized) return true;
+  if (initialized) {
+    return true;
+  }
 
   hal::init::InitializeHAL();
 
@@ -311,8 +355,14 @@ HAL_Bool HAL_Initialize(int32_t timeout, int32_t mode) {
   }
 #endif  // _WIN32
 
-  wpi::outs().SetUnbuffered();
-  if (HAL_LoadExtensions() < 0) return false;
+#ifndef _WIN32
+  setlinebuf(stdin);
+  setlinebuf(stdout);
+#endif
+
+  if (HAL_LoadExtensions() < 0) {
+    return false;
+  }
 
   return true;  // Add initialization if we need to at a later point
 }
@@ -331,6 +381,32 @@ void HAL_Shutdown(void) {
 void HAL_OnShutdown(void* param, void (*func)(void*)) {
   std::scoped_lock lock(gOnShutdownMutex);
   gOnShutdown.emplace_back(param, func);
+}
+
+void HAL_SimPeriodicBefore(void) {
+  gSimPeriodicBefore();
+}
+
+void HAL_SimPeriodicAfter(void) {
+  gSimPeriodicAfter();
+}
+
+int32_t HALSIM_RegisterSimPeriodicBeforeCallback(
+    HALSIM_SimPeriodicCallback callback, void* param) {
+  return gSimPeriodicBefore.Register(callback, param);
+}
+
+void HALSIM_CancelSimPeriodicBeforeCallback(int32_t uid) {
+  gSimPeriodicBefore.Cancel(uid);
+}
+
+int32_t HALSIM_RegisterSimPeriodicAfterCallback(
+    HALSIM_SimPeriodicCallback callback, void* param) {
+  return gSimPeriodicAfter.Register(callback, param);
+}
+
+void HALSIM_CancelSimPeriodicAfterCallback(int32_t uid) {
+  gSimPeriodicAfter.Cancel(uid);
 }
 
 int64_t HAL_Report(int32_t resource, int32_t instanceNumber, int32_t context,

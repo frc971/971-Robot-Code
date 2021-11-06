@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2020 FIRST. All Rights Reserved.                             */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include <iostream>
 
@@ -11,10 +8,10 @@
 #include <units/angular_velocity.h>
 
 #include "frc/Encoder.h"
-#include "frc/PWMVictorSPX.h"
 #include "frc/RobotController.h"
 #include "frc/controller/PIDController.h"
 #include "frc/controller/SimpleMotorFeedforward.h"
+#include "frc/motorcontrol/PWMVictorSPX.h"
 #include "frc/simulation/BatterySim.h"
 #include "frc/simulation/DifferentialDrivetrainSim.h"
 #include "frc/simulation/ElevatorSim.h"
@@ -27,7 +24,7 @@
 #include "frc/system/plant/LinearSystemId.h"
 #include "gtest/gtest.h"
 
-TEST(StateSpaceSimTest, TestFlywheelSim) {
+TEST(StateSpaceSimTest, FlywheelSim) {
   const frc::LinearSystem<1, 1, 1> plant =
       frc::LinearSystemId::IdentifyVelocitySystem<units::radian>(
           0.02_V / 1_rad_per_s, 0.01_V / 1_rad_per_s_sq);
@@ -39,6 +36,9 @@ TEST(StateSpaceSimTest, TestFlywheelSim) {
   frc::sim::EncoderSim encoderSim{encoder};
   frc::PWMVictorSPX motor{0};
 
+  frc::sim::RoboRioSim::ResetData();
+  encoderSim.ResetData();
+
   for (int i = 0; i < 100; i++) {
     // RobotPeriodic runs first
     auto voltageOut = controller.Calculate(encoder.GetRate(), 200.0);
@@ -48,10 +48,10 @@ TEST(StateSpaceSimTest, TestFlywheelSim) {
     // Then, SimulationPeriodic runs
     frc::sim::RoboRioSim::SetVInVoltage(
         frc::sim::BatterySim::Calculate({sim.GetCurrentDraw()}));
-    sim.SetInput(frc::MakeMatrix<1, 1>(
-        motor.Get() * frc::RobotController::GetInputVoltage()));
+    sim.SetInput(Eigen::Vector<double, 1>{
+        motor.Get() * frc::RobotController::GetInputVoltage()});
     sim.Update(20_ms);
-    encoderSim.SetRate(sim.GetAngularVelocity().to<double>());
+    encoderSim.SetRate(sim.GetAngularVelocity().value());
   }
 
   ASSERT_TRUE(std::abs(200 - encoder.GetRate()) < 0.1);

@@ -1,19 +1,16 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2015-2019 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #ifndef NTCORE_RPCSERVER_H_
 #define NTCORE_RPCSERVER_H_
 
 #include <utility>
 
+#include <wpi/CallbackManager.h>
 #include <wpi/DenseMap.h>
 #include <wpi/mutex.h>
 
-#include "CallbackManager.h"
 #include "Handle.h"
 #include "IRpcServer.h"
 #include "Log.h"
@@ -22,27 +19,30 @@ namespace nt {
 
 namespace impl {
 
-typedef std::pair<unsigned int, unsigned int> RpcIdPair;
+using RpcIdPair = std::pair<unsigned int, unsigned int>;
 
 struct RpcNotifierData : public RpcAnswer {
-  RpcNotifierData(NT_Entry entry_, NT_RpcCall call_, StringRef name_,
-                  StringRef params_, const ConnectionInfo& conn_,
+  RpcNotifierData(NT_Entry entry_, NT_RpcCall call_, std::string_view name_,
+                  std::string_view params_, const ConnectionInfo& conn_,
                   IRpcServer::SendResponseFunc send_response_)
       : RpcAnswer{entry_, call_, name_, params_, conn_},
-        send_response{send_response_} {}
+        send_response{std::move(send_response_)} {}
 
   IRpcServer::SendResponseFunc send_response;
 };
 
 using RpcListenerData =
-    ListenerData<std::function<void(const RpcAnswer& answer)>>;
+    wpi::CallbackListenerData<std::function<void(const RpcAnswer& answer)>>;
 
 class RpcServerThread
-    : public CallbackThread<RpcServerThread, RpcAnswer, RpcListenerData,
-                            RpcNotifierData> {
+    : public wpi::CallbackThread<RpcServerThread, RpcAnswer, RpcListenerData,
+                                 RpcNotifierData> {
  public:
-  RpcServerThread(int inst, wpi::Logger& logger)
-      : m_inst(inst), m_logger(logger) {}
+  RpcServerThread(std::function<void()> on_start, std::function<void()> on_exit,
+                  int inst, wpi::Logger& logger)
+      : CallbackThread(std::move(on_start), std::move(on_exit)),
+        m_inst(inst),
+        m_logger(logger) {}
 
   bool Matches(const RpcListenerData& /*listener*/,
                const RpcNotifierData& data) {
@@ -58,7 +58,7 @@ class RpcServerThread
 
   void DoCallback(std::function<void(const RpcAnswer& call)> callback,
                   const RpcNotifierData& data) {
-    DEBUG4("rpc calling " << data.name);
+    DEBUG4("rpc calling {}", data.name);
     unsigned int local_id = Handle{data.entry}.GetIndex();
     unsigned int call_uid = Handle{data.call}.GetIndex();
     RpcIdPair lookup_uid{local_id, call_uid};
@@ -81,10 +81,11 @@ class RpcServerThread
 
 }  // namespace impl
 
-class RpcServer : public IRpcServer,
-                  public CallbackManager<RpcServer, impl::RpcServerThread> {
+class RpcServer
+    : public IRpcServer,
+      public wpi::CallbackManager<RpcServer, impl::RpcServerThread> {
   friend class RpcServerTest;
-  friend class CallbackManager<RpcServer, impl::RpcServerThread>;
+  friend class wpi::CallbackManager<RpcServer, impl::RpcServerThread>;
 
  public:
   RpcServer(int inst, wpi::Logger& logger);
@@ -95,13 +96,13 @@ class RpcServer : public IRpcServer,
   unsigned int AddPolled(unsigned int poller_uid);
   void RemoveRpc(unsigned int rpc_uid) override;
 
-  void ProcessRpc(unsigned int local_id, unsigned int call_uid, StringRef name,
-                  StringRef params, const ConnectionInfo& conn,
-                  SendResponseFunc send_response,
+  void ProcessRpc(unsigned int local_id, unsigned int call_uid,
+                  std::string_view name, std::string_view params,
+                  const ConnectionInfo& conn, SendResponseFunc send_response,
                   unsigned int rpc_uid) override;
 
   bool PostRpcResponse(unsigned int local_id, unsigned int call_uid,
-                       wpi::StringRef result);
+                       std::string_view result);
 
  private:
   int m_inst;

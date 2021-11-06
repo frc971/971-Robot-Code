@@ -1,14 +1,11 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2017-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
+#include <cstdio>
 #include <memory>
 
 #include <hal/Extensions.h>
-#include <wpi/raw_ostream.h>
 
 #include "HALSimWSServer.h"
 
@@ -22,7 +19,7 @@ extern "C" {
 __declspec(dllexport)
 #endif
     int HALSIM_InitExtension(void) {
-  wpi::outs() << "Websocket WS Server Initializing.\n";
+  std::puts("Websocket WS Server Initializing.");
 
   HAL_OnShutdown(nullptr, [](void*) { gServer.reset(); });
 
@@ -31,7 +28,7 @@ __declspec(dllexport)
     return -1;
   }
 
-  wpi::outs() << "Websocket WS Server Initialized!\n";
+  std::puts("Websocket WS Server Initialized!");
   return 0;
 }
 }  // extern "C"

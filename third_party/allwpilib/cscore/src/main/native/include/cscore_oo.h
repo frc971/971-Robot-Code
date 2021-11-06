@@ -1,17 +1,17 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2015-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #ifndef CSCORE_CSCORE_OO_H_
 #define CSCORE_CSCORE_OO_H_
 
 #include <initializer_list>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
+
+#include <wpi/span.h>
 
 #include "cscore_cpp.h"
 
@@ -51,7 +51,7 @@ class VideoProperty {
     kEnum = CS_PROP_ENUM
   };
 
-  VideoProperty() : m_status(0), m_handle(0), m_kind(kNone) {}
+  VideoProperty() = default;
 
   std::string GetName() const;
 
@@ -74,8 +74,8 @@ class VideoProperty {
 
   // String-specific functions
   std::string GetString() const;
-  wpi::StringRef GetString(wpi::SmallVectorImpl<char>& buf) const;
-  void SetString(const wpi::Twine& value);
+  std::string_view GetString(wpi::SmallVectorImpl<char>& buf) const;
+  void SetString(std::string_view value);
 
   // Enum-specific functions
   std::vector<std::string> GetChoices() const;
@@ -86,9 +86,9 @@ class VideoProperty {
   explicit VideoProperty(CS_Property handle);
   VideoProperty(CS_Property handle, Kind kind);
 
-  mutable CS_Status m_status;
-  CS_Property m_handle;
-  Kind m_kind;
+  mutable CS_Status m_status{0};
+  CS_Property m_handle{0};
+  Kind m_kind{kNone};
 };
 
 /**
@@ -127,7 +127,7 @@ class VideoSource {
     kConnectionForceClose = CS_CONNECTION_FORCE_CLOSE
   };
 
-  VideoSource() noexcept : m_handle(0) {}
+  VideoSource() noexcept = default;
   VideoSource(const VideoSource& source);
   VideoSource(VideoSource&& other) noexcept;
   VideoSource& operator=(VideoSource other) noexcept;
@@ -197,7 +197,7 @@ class VideoSource {
    * @return Property contents (of kind Property::kNone if no property with
    *         the given name exists)
    */
-  VideoProperty GetProperty(const wpi::Twine& name);
+  VideoProperty GetProperty(std::string_view name);
 
   /**
    * Enumerate all properties of this source.
@@ -279,7 +279,7 @@ class VideoSource {
    * @param config configuration
    * @return True if set successfully
    */
-  bool SetConfigJson(wpi::StringRef config);
+  bool SetConfigJson(std::string_view config);
 
   /**
    * Set video mode and properties from a JSON configuration object.
@@ -352,7 +352,7 @@ class VideoSource {
   explicit VideoSource(CS_Source handle) : m_handle(handle) {}
 
   mutable CS_Status m_status = 0;
-  CS_Source m_handle;
+  CS_Source m_handle{0};
 };
 
 /**
@@ -427,7 +427,7 @@ class UsbCamera : public VideoCamera {
    * @param name Source name (arbitrary unique identifier)
    * @param dev Device number (e.g. 0 for /dev/video0)
    */
-  UsbCamera(const wpi::Twine& name, int dev);
+  UsbCamera(std::string_view name, int dev);
 
   /**
    * Create a source for a USB camera based on device path.
@@ -435,7 +435,7 @@ class UsbCamera : public VideoCamera {
    * @param name Source name (arbitrary unique identifier)
    * @param path Path to device (e.g. "/dev/video0" on Linux)
    */
-  UsbCamera(const wpi::Twine& name, const wpi::Twine& path);
+  UsbCamera(std::string_view name, std::string_view path);
 
   /**
    * Enumerate USB cameras on the local system.
@@ -447,7 +447,7 @@ class UsbCamera : public VideoCamera {
   /**
    * Change the path to the device.
    */
-  void SetPath(const wpi::Twine& path);
+  void SetPath(std::string_view path);
 
   /**
    * Get the path to the device.
@@ -486,7 +486,7 @@ class HttpCamera : public VideoCamera {
    * @param url Camera URL (e.g. "http://10.x.y.11/video/stream.mjpg")
    * @param kind Camera kind (e.g. kAxis)
    */
-  HttpCamera(const wpi::Twine& name, const wpi::Twine& url,
+  HttpCamera(std::string_view name, std::string_view url,
              HttpCameraKind kind = kUnknown);
 
   /**
@@ -496,7 +496,7 @@ class HttpCamera : public VideoCamera {
    * @param url Camera URL (e.g. "http://10.x.y.11/video/stream.mjpg")
    * @param kind Camera kind (e.g. kAxis)
    */
-  HttpCamera(const wpi::Twine& name, const char* url,
+  HttpCamera(std::string_view name, const char* url,
              HttpCameraKind kind = kUnknown);
 
   /**
@@ -506,7 +506,7 @@ class HttpCamera : public VideoCamera {
    * @param url Camera URL (e.g. "http://10.x.y.11/video/stream.mjpg")
    * @param kind Camera kind (e.g. kAxis)
    */
-  HttpCamera(const wpi::Twine& name, const std::string& url,
+  HttpCamera(std::string_view name, const std::string& url,
              HttpCameraKind kind = kUnknown);
 
   /**
@@ -516,7 +516,7 @@ class HttpCamera : public VideoCamera {
    * @param urls Array of Camera URLs
    * @param kind Camera kind (e.g. kAxis)
    */
-  HttpCamera(const wpi::Twine& name, wpi::ArrayRef<std::string> urls,
+  HttpCamera(std::string_view name, wpi::span<const std::string> urls,
              HttpCameraKind kind = kUnknown);
 
   /**
@@ -527,7 +527,7 @@ class HttpCamera : public VideoCamera {
    * @param kind Camera kind (e.g. kAxis)
    */
   template <typename T>
-  HttpCamera(const wpi::Twine& name, std::initializer_list<T> urls,
+  HttpCamera(std::string_view name, std::initializer_list<T> urls,
              HttpCameraKind kind = kUnknown);
 
   /**
@@ -541,7 +541,7 @@ class HttpCamera : public VideoCamera {
   /**
    * Change the URLs used to connect to the camera.
    */
-  void SetUrls(wpi::ArrayRef<std::string> urls);
+  void SetUrls(wpi::span<const std::string> urls);
 
   /**
    * Change the URLs used to connect to the camera.
@@ -559,8 +559,8 @@ class HttpCamera : public VideoCamera {
  * A source that represents an Axis IP camera.
  */
 class AxisCamera : public HttpCamera {
-  static std::string HostToUrl(const wpi::Twine& host);
-  static std::vector<std::string> HostToUrl(wpi::ArrayRef<std::string> hosts);
+  static std::string HostToUrl(std::string_view host);
+  static std::vector<std::string> HostToUrl(wpi::span<const std::string> hosts);
   template <typename T>
   static std::vector<std::string> HostToUrl(std::initializer_list<T> hosts);
 
@@ -570,55 +570,41 @@ class AxisCamera : public HttpCamera {
    *
    * @param name Source name (arbitrary unique identifier)
    * @param host Camera host IP or DNS name (e.g. "10.x.y.11")
-   * @param kind Camera kind (e.g. kAxis)
    */
-  AxisCamera(const wpi::Twine& name, const wpi::Twine& host);
+  AxisCamera(std::string_view name, std::string_view host);
 
   /**
    * Create a source for an Axis IP camera.
    *
    * @param name Source name (arbitrary unique identifier)
    * @param host Camera host IP or DNS name (e.g. "10.x.y.11")
-   * @param kind Camera kind (e.g. kAxis)
    */
-  AxisCamera(const wpi::Twine& name, const char* host);
+  AxisCamera(std::string_view name, const char* host);
 
   /**
    * Create a source for an Axis IP camera.
    *
    * @param name Source name (arbitrary unique identifier)
    * @param host Camera host IP or DNS name (e.g. "10.x.y.11")
-   * @param kind Camera kind (e.g. kAxis)
    */
-  AxisCamera(const wpi::Twine& name, const std::string& host);
-
-  /**
-   * Create a source for an Axis IP camera.
-   *
-   * @param name Source name (arbitrary unique identifier)
-   * @param host Camera host IP or DNS name (e.g. "10.x.y.11")
-   * @param kind Camera kind (e.g. kAxis)
-   */
-  AxisCamera(const wpi::Twine& name, wpi::StringRef host);
+  AxisCamera(std::string_view name, const std::string& host);
 
   /**
    * Create a source for an Axis IP camera.
    *
    * @param name Source name (arbitrary unique identifier)
    * @param hosts Array of Camera host IPs/DNS names
-   * @param kind Camera kind (e.g. kAxis)
    */
-  AxisCamera(const wpi::Twine& name, wpi::ArrayRef<std::string> hosts);
+  AxisCamera(std::string_view name, wpi::span<const std::string> hosts);
 
   /**
    * Create a source for an Axis IP camera.
    *
    * @param name Source name (arbitrary unique identifier)
    * @param hosts Array of Camera host IPs/DNS names
-   * @param kind Camera kind (e.g. kAxis)
    */
   template <typename T>
-  AxisCamera(const wpi::Twine& name, std::initializer_list<T> hosts);
+  AxisCamera(std::string_view name, std::initializer_list<T> hosts);
 };
 
 /**
@@ -632,8 +618,10 @@ class ImageSource : public VideoSource {
   /**
    * Signal sinks that an error has occurred.  This should be called instead
    * of NotifyFrame when an error occurs.
+   *
+   * @param msg Notification message.
    */
-  void NotifyError(const wpi::Twine& msg);
+  void NotifyError(std::string_view msg);
 
   /**
    * Set source connection status.  Defaults to true.
@@ -647,7 +635,7 @@ class ImageSource : public VideoSource {
    *
    * @param description Description
    */
-  void SetDescription(const wpi::Twine& description);
+  void SetDescription(std::string_view description);
 
   /**
    * Create a property.
@@ -661,7 +649,7 @@ class ImageSource : public VideoSource {
    * @param value Current value
    * @return Property
    */
-  VideoProperty CreateProperty(const wpi::Twine& name, VideoProperty::Kind kind,
+  VideoProperty CreateProperty(std::string_view name, VideoProperty::Kind kind,
                                int minimum, int maximum, int step,
                                int defaultValue, int value);
 
@@ -676,7 +664,7 @@ class ImageSource : public VideoSource {
    * @param value Current value
    * @return Property
    */
-  VideoProperty CreateIntegerProperty(const wpi::Twine& name, int minimum,
+  VideoProperty CreateIntegerProperty(std::string_view name, int minimum,
                                       int maximum, int step, int defaultValue,
                                       int value);
 
@@ -688,19 +676,18 @@ class ImageSource : public VideoSource {
    * @param value Current value
    * @return Property
    */
-  VideoProperty CreateBooleanProperty(const wpi::Twine& name, bool defaultValue,
+  VideoProperty CreateBooleanProperty(std::string_view name, bool defaultValue,
                                       bool value);
 
   /**
    * Create a string property.
    *
    * @param name Property name
-   * @param defaultValue Default value
    * @param value Current value
    * @return Property
    */
-  VideoProperty CreateStringProperty(const wpi::Twine& name,
-                                     const wpi::Twine& value);
+  VideoProperty CreateStringProperty(std::string_view name,
+                                     std::string_view value);
 
   /**
    * Configure enum property choices.
@@ -709,7 +696,7 @@ class ImageSource : public VideoSource {
    * @param choices Choices
    */
   void SetEnumPropertyChoices(const VideoProperty& property,
-                              wpi::ArrayRef<std::string> choices);
+                              wpi::span<const std::string> choices);
 
   /**
    * Configure enum property choices.
@@ -736,7 +723,7 @@ class VideoSink {
     kCv = CS_SINK_CV
   };
 
-  VideoSink() noexcept : m_handle(0) {}
+  VideoSink() noexcept = default;
   VideoSink(const VideoSink& sink);
   VideoSink(VideoSink&& sink) noexcept;
   VideoSink& operator=(VideoSink other) noexcept;
@@ -775,7 +762,7 @@ class VideoSink {
    * @return Property (kind Property::kNone if no property with
    *         the given name exists)
    */
-  VideoProperty GetProperty(const wpi::Twine& name);
+  VideoProperty GetProperty(std::string_view name);
 
   /**
    * Enumerate all properties of this sink.
@@ -801,7 +788,7 @@ class VideoSink {
    * @param config configuration
    * @return True if set successfully
    */
-  bool SetConfigJson(wpi::StringRef config);
+  bool SetConfigJson(std::string_view config);
 
   /**
    * Set properties from a JSON configuration object.
@@ -848,7 +835,7 @@ class VideoSink {
    * @return Property (kind Property::kNone if no property with
    *         the given name exists or no source connected)
    */
-  VideoProperty GetSourceProperty(const wpi::Twine& name);
+  VideoProperty GetSourceProperty(std::string_view name);
 
   CS_Status GetLastStatus() const { return m_status; }
 
@@ -869,7 +856,7 @@ class VideoSink {
   explicit VideoSink(CS_Sink handle) : m_handle(handle) {}
 
   mutable CS_Status m_status = 0;
-  CS_Sink m_handle;
+  CS_Sink m_handle{0};
 };
 
 /**
@@ -886,8 +873,7 @@ class MjpegServer : public VideoSink {
    * @param listenAddress TCP listen address (empty string for all addresses)
    * @param port TCP port number
    */
-  MjpegServer(const wpi::Twine& name, const wpi::Twine& listenAddress,
-              int port);
+  MjpegServer(std::string_view name, std::string_view listenAddress, int port);
 
   /**
    * Create a MJPEG-over-HTTP server sink.
@@ -895,7 +881,7 @@ class MjpegServer : public VideoSink {
    * @param name Sink name (arbitrary unique identifier)
    * @param port TCP port number
    */
-  MjpegServer(const wpi::Twine& name, int port) : MjpegServer(name, "", port) {}
+  MjpegServer(std::string_view name, int port) : MjpegServer(name, "", port) {}
 
   /**
    * Get the listen address of the server.
@@ -966,7 +952,7 @@ class ImageSink : public VideoSink {
    *
    * @param description Description
    */
-  void SetDescription(const wpi::Twine& description);
+  void SetDescription(std::string_view description);
 
   /**
    * Get error string.  Call this if WaitForFrame() returns 0 to determine
@@ -1011,7 +997,7 @@ class VideoEvent : public RawEvent {
  */
 class VideoListener {
  public:
-  VideoListener() : m_handle(0) {}
+  VideoListener() = default;
 
   /**
    * Create an event listener.
@@ -1036,13 +1022,13 @@ class VideoListener {
   }
 
  private:
-  CS_Listener m_handle;
+  CS_Listener m_handle{0};
 };
 
 /** @} */
 
 }  // namespace cs
 
-#include "cscore_oo.inl"
+#include "cscore_oo.inc"
 
 #endif  // CSCORE_CSCORE_OO_H_

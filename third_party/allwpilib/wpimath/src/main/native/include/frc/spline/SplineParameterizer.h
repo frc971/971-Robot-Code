@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 /*
  * MIT License
@@ -36,7 +33,7 @@
 #include <utility>
 #include <vector>
 
-#include <wpi/Twine.h>
+#include <wpi/SymbolExports.h>
 
 #include "frc/spline/Spline.h"
 #include "units/angle.h"
@@ -49,7 +46,7 @@ namespace frc {
 /**
  * Class used to parameterize a spline by its arc length.
  */
-class SplineParameterizer {
+class WPILIB_DLLEXPORT SplineParameterizer {
  public:
   using PoseWithCurvature = std::pair<Pose2d, units::curvature_t>;
 

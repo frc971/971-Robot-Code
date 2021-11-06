@@ -1,11 +1,10 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "RobotContainer.h"
+
+#include <utility>
 
 #include <frc/controller/PIDController.h>
 #include <frc/controller/RamseteController.h>
@@ -29,20 +28,26 @@ RobotContainer::RobotContainer() {
   // Set up default drive command
   m_drive.SetDefaultCommand(frc2::RunCommand(
       [this] {
-        m_drive.ArcadeDrive(
-            m_driverController.GetY(frc::GenericHID::kLeftHand),
-            m_driverController.GetX(frc::GenericHID::kRightHand));
+        m_drive.ArcadeDrive(m_driverController.GetLeftY(),
+                            m_driverController.GetRightX());
       },
       {&m_drive}));
 }
 
-const DriveSubsystem& RobotContainer::GetRobotDrive() const { return m_drive; }
+void RobotContainer::ZeroAllOutputs() {
+  m_drive.TankDriveVolts(0_V, 0_V);
+}
+
+const DriveSubsystem& RobotContainer::GetRobotDrive() const {
+  return m_drive;
+}
 
 void RobotContainer::ConfigureButtonBindings() {
   // Configure your button bindings here
 
   // While holding the shoulder button, drive at half speed
-  frc2::JoystickButton(&m_driverController, 6)
+  frc2::JoystickButton(&m_driverController,
+                       frc::XboxController::Button::kRightBumper)
       .WhenPressed(&m_driveHalfSpeed)
       .WhenReleased(&m_driveFullSpeed);
 }
@@ -64,12 +69,12 @@ frc2::Command* RobotContainer::GetAutonomousCommand() {
 
   // An example trajectory to follow.  All units in meters.
   auto exampleTrajectory = frc::TrajectoryGenerator::GenerateTrajectory(
-      // Start at the origin facing the +X direction
-      frc::Pose2d(),
+      // Start at (1, 2) facing the +X direction
+      frc::Pose2d(1_m, 2_m, 0_deg),
       // Pass through these two interior waypoints, making an 's' curve path
-      {frc::Translation2d(1_m, 1_m), frc::Translation2d(2_m, -1_m)},
+      {frc::Translation2d(2_m, 3_m), frc::Translation2d(3_m, 1_m)},
       // End 3 meters straight ahead of where we started, facing forward
-      frc::Pose2d(3_m, 0_m, 0_deg),
+      frc::Pose2d(4_m, 2_m, 0_deg),
       // Pass the config
       config);
 

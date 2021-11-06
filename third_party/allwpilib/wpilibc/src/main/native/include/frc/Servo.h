@@ -1,14 +1,10 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2008-2019 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
 #include "frc/PWM.h"
-#include "frc/SpeedController.h"
 
 namespace frc {
 
@@ -68,7 +64,7 @@ class Servo : public PWM {
    * X being set and angles of more than Y degrees result in an angle of Y being
    * set.
    *
-   * @param degrees The angle in degrees to set the servo.
+   * @param angle The angle in degrees to set the servo.
    */
   void SetAngle(double angle);
 
@@ -96,7 +92,7 @@ class Servo : public PWM {
    */
   double GetMinAngle() const;
 
-  void InitSendable(SendableBuilder& builder) override;
+  void InitSendable(wpi::SendableBuilder& builder) override;
 
  private:
   double GetServoAngleRange() const;

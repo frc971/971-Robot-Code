@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2008-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 package edu.wpi.first.wpilibj.fixtures;
 
@@ -21,10 +18,8 @@ public interface ITestFixture {
   /**
    * Performs any required setup for this fixture, ensuring that all fixture elements are ready for
    * testing.
-   *
-   * @return True if the fixture is ready for testing
    */
-  boolean setup();
+  void setup();
 
   /**
    * Resets the fixture back to test start state. This should be called by the test class in the
@@ -32,16 +27,12 @@ public interface ITestFixture {
    * ITestFixture#setup()} as that is called once, before the class is constructed, so it may need
    * to start sensors. This method should not have to start anything, just reset sensors and ensure
    * that motors are stopped.
-   *
-   * @return True if the fixture is ready for testing
    */
-  boolean reset();
+  void reset();
 
   /**
    * Performs any required teardown after use of the fixture, ensuring that future tests will not
    * run into conflicts.
-   *
-   * @return True if the teardown succeeded
    */
-  boolean teardown();
+  void teardown();
 }

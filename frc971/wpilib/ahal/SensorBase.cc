@@ -8,35 +8,24 @@
 #include "frc971/wpilib/ahal/SensorBase.h"
 
 #include "FRC_NetworkCommunication/LoadOut.h"
+#include "frc971/wpilib/ahal/WPIErrors.h"
 #include "hal/AnalogInput.h"
 #include "hal/AnalogOutput.h"
 #include "hal/DIO.h"
 #include "hal/HAL.h"
-#include "hal/PDP.h"
 #include "hal/PWM.h"
 #include "hal/Ports.h"
+#include "hal/PowerDistribution.h"
 #include "hal/Relay.h"
-#include "hal/Solenoid.h"
-#include "frc971/wpilib/ahal/WPIErrors.h"
 
 namespace frc {
 
 const int kDigitalChannels = HAL_GetNumDigitalChannels();
 const int kAnalogInputs = HAL_GetNumAnalogInputs();
-const int kSolenoidChannels = HAL_GetNumSolenoidChannels();
-const int kSolenoidModules = HAL_GetNumPCMModules();
 const int kPwmChannels = HAL_GetNumPWMChannels();
 const int kRelayChannels = HAL_GetNumRelayHeaders();
-const int kPDPChannels = HAL_GetNumPDPChannels();
-
-/**
- * Check that the solenoid module number is valid.
- *
- * @return Solenoid module is valid and present
- */
-bool CheckSolenoidModule(int moduleNumber) {
-  return HAL_CheckSolenoidModule(moduleNumber);
-}
+const int kCTREPDPChannels = HAL_GetNumCTREPDPChannels();
+const int kREVPDPChannels = HAL_GetNumREVPDHChannels();
 
 /**
  * Check that the digital channel number is valid.
@@ -93,19 +82,12 @@ bool CheckAnalogOutputChannel(int channel) {
 }
 
 /**
- * Verify that the solenoid channel number is within limits.
- *
- * @return Solenoid channel is valid
- */
-bool CheckSolenoidChannel(int channel) {
-  return HAL_CheckSolenoidChannel(channel);
-}
-
-/**
  * Verify that the power distribution channel number is within limits.
  *
  * @return PDP channel is valid
  */
-bool CheckPDPChannel(int channel) { return HAL_CheckPDPModule(channel); }
+bool CheckPDPChannel(int channel, HAL_PowerDistributionType type) {
+  return HAL_CheckPowerDistributionModule(channel, type);
+}
 
 }  // namespace frc

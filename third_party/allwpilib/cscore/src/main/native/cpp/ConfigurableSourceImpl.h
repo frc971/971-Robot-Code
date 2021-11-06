@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2016-2019 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #ifndef CSCORE_CONFIGURABLESOURCEIMPL_H_
 #define CSCORE_CONFIGURABLESOURCEIMPL_H_
@@ -12,10 +9,10 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <vector>
 
-#include <wpi/ArrayRef.h>
-#include <wpi/Twine.h>
+#include <wpi/span.h>
 
 #include "SourceImpl.h"
 
@@ -23,7 +20,7 @@ namespace cs {
 
 class ConfigurableSourceImpl : public SourceImpl {
  protected:
-  ConfigurableSourceImpl(const wpi::Twine& name, wpi::Logger& logger,
+  ConfigurableSourceImpl(std::string_view name, wpi::Logger& logger,
                          Notifier& notifier, Telemetry& telemetry,
                          const VideoMode& mode);
 
@@ -38,13 +35,14 @@ class ConfigurableSourceImpl : public SourceImpl {
   void NumSinksEnabledChanged() override;
 
   // OpenCV-specific functions
-  void NotifyError(const wpi::Twine& msg);
-  int CreateProperty(const wpi::Twine& name, CS_PropertyKind kind, int minimum,
+  void NotifyError(std::string_view msg);
+  int CreateProperty(std::string_view name, CS_PropertyKind kind, int minimum,
                      int maximum, int step, int defaultValue, int value);
-  int CreateProperty(const wpi::Twine& name, CS_PropertyKind kind, int minimum,
+  int CreateProperty(std::string_view name, CS_PropertyKind kind, int minimum,
                      int maximum, int step, int defaultValue, int value,
                      std::function<void(CS_Property property)> onChange);
-  void SetEnumPropertyChoices(int property, wpi::ArrayRef<std::string> choices,
+  void SetEnumPropertyChoices(int property,
+                              wpi::span<const std::string> choices,
                               CS_Status* status);
 
  private:

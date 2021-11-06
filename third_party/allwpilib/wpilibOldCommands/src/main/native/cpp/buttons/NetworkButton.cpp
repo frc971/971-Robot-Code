@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2011-2019 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "frc/buttons/NetworkButton.h"
 
@@ -12,13 +9,12 @@
 
 using namespace frc;
 
-NetworkButton::NetworkButton(const wpi::Twine& tableName,
-                             const wpi::Twine& field)
+NetworkButton::NetworkButton(std::string_view tableName, std::string_view field)
     : NetworkButton(nt::NetworkTableInstance::GetDefault().GetTable(tableName),
                     field) {}
 
 NetworkButton::NetworkButton(std::shared_ptr<nt::NetworkTable> table,
-                             const wpi::Twine& field)
+                             std::string_view field)
     : m_entry(table->GetEntry(field)) {}
 
 bool NetworkButton::Get() {

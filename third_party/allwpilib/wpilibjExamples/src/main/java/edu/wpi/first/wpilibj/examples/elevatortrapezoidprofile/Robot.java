@@ -1,16 +1,13 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019 FIRST. All Rights Reserved.                             */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 package edu.wpi.first.wpilibj.examples.elevatortrapezoidprofile;
 
+import edu.wpi.first.math.controller.SimpleMotorFeedforward;
+import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.TimedRobot;
-import edu.wpi.first.wpilibj.controller.SimpleMotorFeedforward;
-import edu.wpi.first.wpilibj.trajectory.TrapezoidProfile;
 
 public class Robot extends TimedRobot {
   private static double kDt = 0.02;
@@ -49,7 +46,9 @@ public class Robot extends TimedRobot {
     m_setpoint = profile.calculate(kDt);
 
     // Send setpoint to offboard controller PID
-    m_motor.setSetpoint(ExampleSmartMotorController.PIDMode.kPosition, m_setpoint.position,
-                        m_feedforward.calculate(m_setpoint.velocity) / 12.0);
+    m_motor.setSetpoint(
+        ExampleSmartMotorController.PIDMode.kPosition,
+        m_setpoint.position,
+        m_feedforward.calculate(m_setpoint.velocity) / 12.0);
   }
 }

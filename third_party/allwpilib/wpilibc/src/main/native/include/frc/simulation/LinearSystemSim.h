@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2020 FIRST. All Rights Reserved.                             */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
@@ -13,6 +10,7 @@
 #include <units/current.h>
 #include <units/time.h>
 
+#include "frc/RobotController.h"
 #include "frc/StateSpaceUtil.h"
 #include "frc/system/LinearSystem.h"
 
@@ -38,13 +36,13 @@ class LinearSystemSim {
    * @param system             The system to simulate.
    * @param measurementStdDevs The standard deviations of the measurements.
    */
-  LinearSystemSim(const LinearSystem<States, Inputs, Outputs>& system,
-                  const std::array<double, Outputs>& measurementStdDevs =
-                      std::array<double, Outputs>{})
+  explicit LinearSystemSim(
+      const LinearSystem<States, Inputs, Outputs>& system,
+      const std::array<double, Outputs>& measurementStdDevs = {})
       : m_plant(system), m_measurementStdDevs(measurementStdDevs) {
-    m_x = Eigen::Matrix<double, States, 1>::Zero();
-    m_y = Eigen::Matrix<double, Outputs, 1>::Zero();
-    m_u = Eigen::Matrix<double, Inputs, 1>::Zero();
+    m_x = Eigen::Vector<double, States>::Zero();
+    m_y = Eigen::Vector<double, Outputs>::Zero();
+    m_u = Eigen::Vector<double, Inputs>::Zero();
   }
 
   /**
@@ -71,7 +69,7 @@ class LinearSystemSim {
    *
    * @return The current output of the plant.
    */
-  const Eigen::Matrix<double, Outputs, 1>& GetOutput() const { return m_y; }
+  const Eigen::Vector<double, Outputs>& GetOutput() const { return m_y; }
 
   /**
    * Returns an element of the current output of the plant.
@@ -86,7 +84,7 @@ class LinearSystemSim {
    *
    * @param u The system inputs.
    */
-  void SetInput(const Eigen::Matrix<double, Inputs, 1>& u) { m_u = u; }
+  void SetInput(const Eigen::Vector<double, Inputs>& u) { m_u = ClampInput(u); }
 
   /*
    * Sets the system inputs.
@@ -94,14 +92,17 @@ class LinearSystemSim {
    * @param row   The row in the input matrix to set.
    * @param value The value to set the row to.
    */
-  void SetInput(int row, double value) { m_u(row, 0) = value; }
+  void SetInput(int row, double value) {
+    m_u(row, 0) = value;
+    ClampInput(m_u);
+  }
 
   /**
    * Sets the system state.
    *
    * @param state The new state.
    */
-  void SetState(const Eigen::Matrix<double, States, 1>& state) { m_x = state; }
+  void SetState(const Eigen::Vector<double, States>& state) { m_x = state; }
 
   /**
    * Returns the current drawn by this simulated system. Override this method to
@@ -121,17 +122,29 @@ class LinearSystemSim {
    * @param u           The system inputs (usually voltage).
    * @param dt          The time difference between controller updates.
    */
-  virtual Eigen::Matrix<double, States, 1> UpdateX(
-      const Eigen::Matrix<double, States, 1>& currentXhat,
-      const Eigen::Matrix<double, Inputs, 1>& u, units::second_t dt) {
+  virtual Eigen::Vector<double, States> UpdateX(
+      const Eigen::Vector<double, States>& currentXhat,
+      const Eigen::Vector<double, Inputs>& u, units::second_t dt) {
     return m_plant.CalculateX(currentXhat, u, dt);
+  }
+
+  /**
+   * Clamp the input vector such that no element exceeds the given voltage. If
+   * any does, the relative magnitudes of the input will be maintained.
+   *
+   * @param u          The input vector.
+   * @return The normalized input.
+   */
+  Eigen::Vector<double, Inputs> ClampInput(Eigen::Vector<double, Inputs> u) {
+    return frc::NormalizeInputVector<Inputs>(
+        u, frc::RobotController::GetInputVoltage());
   }
 
   LinearSystem<States, Inputs, Outputs> m_plant;
 
-  Eigen::Matrix<double, States, 1> m_x;
-  Eigen::Matrix<double, Outputs, 1> m_y;
-  Eigen::Matrix<double, Inputs, 1> m_u;
+  Eigen::Vector<double, States> m_x;
+  Eigen::Vector<double, Outputs> m_y;
+  Eigen::Vector<double, Inputs> m_u;
   std::array<double, Outputs> m_measurementStdDevs;
 };
 }  // namespace frc::sim

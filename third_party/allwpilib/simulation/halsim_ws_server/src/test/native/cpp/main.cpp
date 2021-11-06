@@ -1,17 +1,14 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2020 FIRST. All Rights Reserved.                             */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include <thread>
 
+#include <fmt/format.h>
 #include <hal/DriverStation.h>
 #include <hal/HALBase.h>
 #include <hal/Main.h>
 #include <hal/simulation/DIOData.h>
-#include <wpi/raw_ostream.h>
 #include <wpi/uv/Loop.h>
 
 #include "HALSimWSServer.h"
@@ -44,7 +41,7 @@ class WebServerIntegrationTest : public ::testing::Test {
   HALSimWSServer m_server;
 };
 
-TEST_F(WebServerIntegrationTest, DigitalOutput) {
+TEST_F(WebServerIntegrationTest, DISABLED_DigitalOutput) {
   // Create expected results
   const bool EXPECTED_VALUE = false;
   const int PIN = 0;
@@ -58,8 +55,8 @@ TEST_F(WebServerIntegrationTest, DigitalOutput) {
         return;
       }
       if (IsConnectedClientWS()) {
-        wpi::outs() << "***** Setting DIO value for pin " << PIN << " to "
-                    << (EXPECTED_VALUE ? "true" : "false") << "\n";
+        fmt::print("***** Setting DIO value for pin {} to {}\n", PIN,
+                   (EXPECTED_VALUE ? "true" : "false"));
         HALSIM_SetDIOValue(PIN, EXPECTED_VALUE);
         done = true;
       }
@@ -86,7 +83,7 @@ TEST_F(WebServerIntegrationTest, DigitalOutput) {
       test_value = it.value();
     }
   } catch (wpi::json::exception& e) {
-    wpi::errs() << "Error with incoming message: " << e.what() << "\n";
+    fmt::print(stderr, "Error with incoming message: {}\n", e.what());
   }
 
   // Compare results
@@ -95,7 +92,7 @@ TEST_F(WebServerIntegrationTest, DigitalOutput) {
   EXPECT_EQ(EXPECTED_VALUE, test_value);
 }
 
-TEST_F(WebServerIntegrationTest, DigitalInput) {
+TEST_F(WebServerIntegrationTest, DISABLED_DigitalInput) {
   // Create expected results
   const bool EXPECTED_VALUE = false;
   const int PIN = 0;
@@ -112,7 +109,7 @@ TEST_F(WebServerIntegrationTest, DigitalInput) {
         wpi::json msg = {{"type", "DIO"},
                          {"device", std::to_string(PIN)},
                          {"data", {{"<>value", EXPECTED_VALUE}}}};
-        wpi::outs() << "***** Input JSON: " << msg.dump() << "\n";
+        fmt::print("***** Input JSON: {}\n", msg.dump());
         m_webserverClient->SendMessage(msg);
         done = true;
       }
@@ -147,7 +144,7 @@ TEST_F(WebServerIntegrationTest, DriverStation) {
             {"type", "DriverStation"},
             {"device", ""},
             {"data", {{">enabled", EXPECTED_VALUE}, {">new_data", true}}}};
-        wpi::outs() << "***** Input JSON: " << msg.dump() << "\n";
+        fmt::print("***** Input JSON: {}\n", msg.dump());
         m_webserverClient->SendMessage(msg);
         done = true;
       }

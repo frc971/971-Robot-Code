@@ -8,12 +8,12 @@
 #include "aos/macros.h"
 
 #include "aos/containers/sized_array.h"
+#include "frc971/wpilib/ahal/Utility.h"
 #include "frc971/wpilib/dma.h"
 
 #include "frc971/wpilib/ahal/AnalogInput.h"
 #include "frc971/wpilib/ahal/DigitalInput.h"
 #include "frc971/wpilib/ahal/Encoder.h"
-#include "frc971/wpilib/ahal/Utility.h"
 #undef ERROR
 
 namespace frc971 {

@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2011-2019 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "frc/commands/WaitUntilCommand.h"
 
@@ -11,14 +8,16 @@
 
 using namespace frc;
 
-WaitUntilCommand::WaitUntilCommand(double time)
+WaitUntilCommand::WaitUntilCommand(units::second_t time)
     : Command("WaitUntilCommand", time) {
   m_time = time;
 }
 
-WaitUntilCommand::WaitUntilCommand(const wpi::Twine& name, double time)
+WaitUntilCommand::WaitUntilCommand(std::string_view name, units::second_t time)
     : Command(name, time) {
   m_time = time;
 }
 
-bool WaitUntilCommand::IsFinished() { return Timer::GetMatchTime() >= m_time; }
+bool WaitUntilCommand::IsFinished() {
+  return Timer::GetMatchTime() >= m_time;
+}

@@ -1,13 +1,10 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2017-2019 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 package edu.wpi.first.wpilibj.examples.canpdp;
 
-import edu.wpi.first.wpilibj.PowerDistributionPanel;
+import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
@@ -16,9 +13,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
  * via CAN. The information will be displayed under variables through the SmartDashboard.
  */
 public class Robot extends TimedRobot {
-  private static final int kPDPId = 0;
-
-  private final PowerDistributionPanel m_pdp = new PowerDistributionPanel(kPDPId);
+  private final PowerDistribution m_pdp = new PowerDistribution();
 
   @Override
   public void robotPeriodic() {

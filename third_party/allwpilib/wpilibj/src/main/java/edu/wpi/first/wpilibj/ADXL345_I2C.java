@@ -1,14 +1,8 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2008-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 package edu.wpi.first.wpilibj;
-
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 
 import edu.wpi.first.hal.FRCNetComm.tInstances;
 import edu.wpi.first.hal.FRCNetComm.tResourceType;
@@ -16,16 +10,17 @@ import edu.wpi.first.hal.HAL;
 import edu.wpi.first.hal.SimDevice;
 import edu.wpi.first.hal.SimDouble;
 import edu.wpi.first.hal.SimEnum;
+import edu.wpi.first.networktables.NTSendable;
+import edu.wpi.first.networktables.NTSendableBuilder;
 import edu.wpi.first.networktables.NetworkTableEntry;
+import edu.wpi.first.util.sendable.SendableRegistry;
 import edu.wpi.first.wpilibj.interfaces.Accelerometer;
-import edu.wpi.first.wpilibj.smartdashboard.SendableBuilder;
-import edu.wpi.first.wpilibj.smartdashboard.SendableRegistry;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
-/**
- * ADXL345 I2C Accelerometer.
- */
+/** ADXL345 I2C Accelerometer. */
 @SuppressWarnings({"TypeName", "PMD.UnusedPrivateField"})
-public class ADXL345_I2C implements Accelerometer, Sendable, AutoCloseable {
+public class ADXL345_I2C implements Accelerometer, NTSendable, AutoCloseable {
   private static final byte kAddress = 0x1D;
   private static final byte kPowerCtlRegister = 0x2D;
   private static final byte kDataFormatRegister = 0x31;
@@ -47,9 +42,7 @@ public class ADXL345_I2C implements Accelerometer, Sendable, AutoCloseable {
     kY((byte) 0x02),
     kZ((byte) 0x04);
 
-    /**
-     * The integer value representing this enumeration.
-     */
+    /** The integer value representing this enumeration. */
     @SuppressWarnings("MemberName")
     public final byte value;
 
@@ -76,7 +69,7 @@ public class ADXL345_I2C implements Accelerometer, Sendable, AutoCloseable {
   /**
    * Constructs the ADXL345 Accelerometer with I2C address 0x1D.
    *
-   * @param port  The I2C port the accelerometer is attached to
+   * @param port The I2C port the accelerometer is attached to
    * @param range The range (+ or -) that the accelerometer will measure.
    */
   public ADXL345_I2C(I2C.Port port, Range range) {
@@ -86,20 +79,26 @@ public class ADXL345_I2C implements Accelerometer, Sendable, AutoCloseable {
   /**
    * Constructs the ADXL345 Accelerometer over I2C.
    *
-   * @param port          The I2C port the accelerometer is attached to
-   * @param range         The range (+ or -) that the accelerometer will measure.
+   * @param port The I2C port the accelerometer is attached to
+   * @param range The range (+ or -) that the accelerometer will measure.
    * @param deviceAddress I2C address of the accelerometer (0x1D or 0x53)
    */
   public ADXL345_I2C(I2C.Port port, Range range, int deviceAddress) {
     m_i2c = new I2C(port, deviceAddress);
 
     // simulation
-    m_simDevice = SimDevice.create("ADXL345_I2C", port.value, deviceAddress);
+    m_simDevice = SimDevice.create("Accel:ADXL345_I2C", port.value, deviceAddress);
     if (m_simDevice != null) {
-      m_simRange = m_simDevice.createEnum("Range", true, new String[] {"2G", "4G", "8G", "16G"}, 0);
-      m_simX = m_simDevice.createDouble("X Accel", false, 0.0);
-      m_simY = m_simDevice.createDouble("Y Accel", false, 0.0);
-      m_simZ = m_simDevice.createDouble("Z Accel", false, 0.0);
+      m_simRange =
+          m_simDevice.createEnumDouble(
+              "range",
+              SimDevice.Direction.kOutput,
+              new String[] {"2G", "4G", "8G", "16G"},
+              new double[] {2.0, 4.0, 8.0, 16.0},
+              0);
+      m_simX = m_simDevice.createDouble("x", SimDevice.Direction.kInput, 0.0);
+      m_simY = m_simDevice.createDouble("y", SimDevice.Direction.kInput, 0.0);
+      m_simZ = m_simDevice.createDouble("z", SimDevice.Direction.kInput, 0.0);
     }
 
     // Turn on the measurements
@@ -109,6 +108,14 @@ public class ADXL345_I2C implements Accelerometer, Sendable, AutoCloseable {
 
     HAL.report(tResourceType.kResourceType_ADXL345, tInstances.kADXL345_I2C);
     SendableRegistry.addLW(this, "ADXL345_I2C", port.value);
+  }
+
+  public int getPort() {
+    return m_i2c.getPort();
+  }
+
+  public int getDeviceAddress() {
+    return m_i2c.getDeviceAddress();
   }
 
   @Override
@@ -217,16 +224,17 @@ public class ADXL345_I2C implements Accelerometer, Sendable, AutoCloseable {
   }
 
   @Override
-  public void initSendable(SendableBuilder builder) {
+  public void initSendable(NTSendableBuilder builder) {
     builder.setSmartDashboardType("3AxisAccelerometer");
     NetworkTableEntry entryX = builder.getEntry("X");
     NetworkTableEntry entryY = builder.getEntry("Y");
     NetworkTableEntry entryZ = builder.getEntry("Z");
-    builder.setUpdateTable(() -> {
-      AllAxes data = getAccelerations();
-      entryX.setDouble(data.XAxis);
-      entryY.setDouble(data.YAxis);
-      entryZ.setDouble(data.ZAxis);
-    });
+    builder.setUpdateTable(
+        () -> {
+          AllAxes data = getAccelerations();
+          entryX.setDouble(data.XAxis);
+          entryY.setDouble(data.YAxis);
+          entryZ.setDouble(data.ZAxis);
+        });
   }
 }

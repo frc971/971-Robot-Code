@@ -1,16 +1,12 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2008-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #ifndef WPIUTIL_WPI_DEMANGLE_H_
 #define WPIUTIL_WPI_DEMANGLE_H_
 
 #include <string>
-
-#include "wpi/Twine.h"
+#include <string_view>
 
 namespace wpi {
 
@@ -20,7 +16,7 @@ namespace wpi {
  * @param mangledSymbol the mangled symbol.
  * @return The demangled symbol, or mangledSymbol if demangling fails.
  */
-std::string Demangle(const Twine& mangledSymbol);
+std::string Demangle(std::string_view mangledSymbol);
 
 }  // namespace wpi
 

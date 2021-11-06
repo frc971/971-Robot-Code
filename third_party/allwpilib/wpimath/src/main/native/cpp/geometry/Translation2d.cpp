@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "frc/geometry/Translation2d.h"
 
@@ -36,31 +33,16 @@ Translation2d Translation2d::operator+(const Translation2d& other) const {
   return {X() + other.X(), Y() + other.Y()};
 }
 
-Translation2d& Translation2d::operator+=(const Translation2d& other) {
-  m_x += other.m_x;
-  m_y += other.m_y;
-  return *this;
-}
-
 Translation2d Translation2d::operator-(const Translation2d& other) const {
   return *this + -other;
 }
 
-Translation2d& Translation2d::operator-=(const Translation2d& other) {
-  *this += -other;
-  return *this;
+Translation2d Translation2d::operator-() const {
+  return {-m_x, -m_y};
 }
-
-Translation2d Translation2d::operator-() const { return {-m_x, -m_y}; }
 
 Translation2d Translation2d::operator*(double scalar) const {
   return {scalar * m_x, scalar * m_y};
-}
-
-Translation2d& Translation2d::operator*=(double scalar) {
-  m_x *= scalar;
-  m_y *= scalar;
-  return *this;
 }
 
 Translation2d Translation2d::operator/(double scalar) const {
@@ -76,14 +58,9 @@ bool Translation2d::operator!=(const Translation2d& other) const {
   return !operator==(other);
 }
 
-Translation2d& Translation2d::operator/=(double scalar) {
-  *this *= (1.0 / scalar);
-  return *this;
-}
-
 void frc::to_json(wpi::json& json, const Translation2d& translation) {
-  json = wpi::json{{"x", translation.X().to<double>()},
-                   {"y", translation.Y().to<double>()}};
+  json =
+      wpi::json{{"x", translation.X().value()}, {"y", translation.Y().value()}};
 }
 
 void frc::from_json(const wpi::json& json, Translation2d& translation) {

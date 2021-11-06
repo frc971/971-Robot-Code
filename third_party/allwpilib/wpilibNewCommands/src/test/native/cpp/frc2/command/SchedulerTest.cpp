@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "CommandTestBase.h"
 #include "frc2/command/InstantCommand.h"
@@ -29,7 +26,7 @@ TEST_F(SchedulerTest, SchedulerLambdaTestNoInterrupt) {
   EXPECT_EQ(counter, 3);
 }
 
-TEST_F(SchedulerTest, SchedulerLambdaInterruptTest) {
+TEST_F(SchedulerTest, SchedulerLambdaInterrupt) {
   CommandScheduler scheduler = GetScheduler();
 
   RunCommand command([] {}, {});
@@ -45,7 +42,7 @@ TEST_F(SchedulerTest, SchedulerLambdaInterruptTest) {
   EXPECT_EQ(counter, 1);
 }
 
-TEST_F(SchedulerTest, UnregisterSubsystemTest) {
+TEST_F(SchedulerTest, UnregisterSubsystem) {
   CommandScheduler scheduler = GetScheduler();
 
   TestSubsystem system;
@@ -55,7 +52,7 @@ TEST_F(SchedulerTest, UnregisterSubsystemTest) {
   EXPECT_NO_FATAL_FAILURE(scheduler.UnregisterSubsystem(&system));
 }
 
-TEST_F(SchedulerTest, SchedulerCancelAllTest) {
+TEST_F(SchedulerTest, SchedulerCancelAll) {
   CommandScheduler scheduler = GetScheduler();
 
   RunCommand command([] {}, {});

@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2017-2018 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include <cameraserver/CameraServer.h>
 #include <frc/TimedRobot.h>
@@ -22,15 +19,15 @@ class Robot : public frc::TimedRobot {
   static void VisionThread() {
     // Get the Axis camera from CameraServer
     cs::AxisCamera camera =
-        frc::CameraServer::GetInstance()->AddAxisCamera("axis-camera.local");
+        frc::CameraServer::AddAxisCamera("axis-camera.local");
     // Set the resolution
     camera.SetResolution(640, 480);
 
     // Get a CvSink. This will capture Mats from the Camera
-    cs::CvSink cvSink = frc::CameraServer::GetInstance()->GetVideo();
+    cs::CvSink cvSink = frc::CameraServer::GetVideo();
     // Setup a CvSource. This will send images back to the Dashboard
     cs::CvSource outputStream =
-        frc::CameraServer::GetInstance()->PutVideo("Rectangle", 640, 480);
+        frc::CameraServer::PutVideo("Rectangle", 640, 480);
 
     // Mats are very memory expensive. Lets reuse this Mat.
     cv::Mat mat;
@@ -61,5 +58,7 @@ class Robot : public frc::TimedRobot {
 };
 
 #ifndef RUNNING_FRC_TESTS
-int main() { return frc::StartRobot<Robot>(); }
+int main() {
+  return frc::StartRobot<Robot>();
+}
 #endif

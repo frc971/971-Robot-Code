@@ -1,11 +1,10 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "RobotContainer.h"
+
+#include <utility>
 
 #include <frc/controller/PIDController.h>
 #include <frc/geometry/Translation2d.h>
@@ -33,13 +32,10 @@ RobotContainer::RobotContainer() {
   // Set up default drive command
   m_drive.SetDefaultCommand(frc2::RunCommand(
       [this] {
-        m_drive.Drive(units::meters_per_second_t(
-                          m_driverController.GetY(frc::GenericHID::kLeftHand)),
-                      units::meters_per_second_t(
-                          m_driverController.GetY(frc::GenericHID::kRightHand)),
-                      units::radians_per_second_t(
-                          m_driverController.GetX(frc::GenericHID::kLeftHand)),
-                      false);
+        m_drive.Drive(
+            units::meters_per_second_t(m_driverController.GetLeftY()),
+            units::meters_per_second_t(m_driverController.GetRightY()),
+            units::radians_per_second_t(m_driverController.GetLeftX()), false);
       },
       {&m_drive}));
 }
@@ -68,8 +64,8 @@ frc2::Command* RobotContainer::GetAutonomousCommand() {
       AutoConstants::kPThetaController, 0, 0,
       AutoConstants::kThetaControllerConstraints};
 
-  thetaController.EnableContinuousInput(units::radian_t(-wpi::math::pi),
-                                        units::radian_t(wpi::math::pi));
+  thetaController.EnableContinuousInput(units::radian_t(-wpi::numbers::pi),
+                                        units::radian_t(wpi::numbers::pi));
 
   frc2::SwerveControllerCommand<4> swerveControllerCommand(
       exampleTrajectory, [this]() { return m_drive.GetPose(); },

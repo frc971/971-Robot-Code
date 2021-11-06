@@ -37,19 +37,11 @@ else
   ssh "admin@${ROBOT_HOSTNAME}" 'echo "export PATH=\"\${PATH}:/home/admin/robot_code:/home/admin/bin\"" >> /etc/profile'
 fi
 
-if [[ "$(ssh admin@${ROBOT_HOSTNAME} uname -r)" != "4.14.87-rt49-cg-7.0.0f0-xilinx-zynq-189" ]]; then
-  echo "Target roboRIO has the wrong kernel"
-  exit 1
-fi
-
 ssh "admin@${ROBOT_HOSTNAME}" "sed -i 's/vm\.overcommit_memory=2/vm\.overcommit_memory=0/' /etc/sysctl.conf"
 
 ssh "admin@${ROBOT_HOSTNAME}" 'echo "vm.min_free_kbytes=4000" >> /etc/sysctl.conf'
 
-ssh "admin@${ROBOT_HOSTNAME}" mkdir "/lib/modules/4.14.87-rt49-cg-7.0.0f0-xilinx-zynq-189/kernel/net/sctp/ -p"
-scp frc971/config/sctp.ko "admin@${ROBOT_HOSTNAME}:/lib/modules/4.14.87-rt49-cg-7.0.0f0-xilinx-zynq-189/kernel/net/sctp/sctp.ko"
-ssh "admin@${ROBOT_HOSTNAME}" depmod
-ssh "admin@${ROBOT_HOSTNAME}" sed -i -e 's/^StartupDLLs/;StartupDLLs/' /etc/natinst/share/ni-rt.ini
+ssh "admin@${ROBOT_HOSTNAME}" 'sed -i -e "s/^StartupDLLs/;StartupDLLs/" /etc/natinst/share/ni-rt.ini'
 
 # This fails if the code isn't running.
 ssh "admin@${ROBOT_HOSTNAME}" 'PATH="${PATH}":/usr/local/natinst/bin/ /usr/local/frc/bin/frcKillRobot.sh -r -t' || true

@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2017-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "wpi/TCPConnector.h"  // NOLINT(build/include_order)
 
@@ -27,9 +24,11 @@ using namespace wpi;
 #endif
 
 std::unique_ptr<NetworkStream> TCPConnector::connect_parallel(
-    ArrayRef<std::pair<const char*, int>> servers, Logger& logger,
+    span<const std::pair<const char*, int>> servers, Logger& logger,
     int timeout) {
-  if (servers.empty()) return nullptr;
+  if (servers.empty()) {
+    return nullptr;
+  }
 
   // structure to make sure we don't start duplicate workers
   struct GlobalState {
@@ -75,13 +74,15 @@ std::unique_ptr<NetworkStream> TCPConnector::connect_parallel(
     // attempt to the same server
     {
       std::scoped_lock lock(local->mtx);
-      if (local->active.count(active_tracker) > 0) continue;  // already in set
+      if (local->active.count(active_tracker) > 0) {
+        continue;  // already in set
+      }
     }
 
     ++num_workers;
 
     // start the worker
-    std::thread([=]() {
+    std::thread([=] {
       if (!result->done) {
         // add to global state
         {
@@ -102,7 +103,9 @@ std::unique_ptr<NetworkStream> TCPConnector::connect_parallel(
         // successful connection
         if (stream) {
           std::scoped_lock lock(result->mtx);
-          if (!result->done.exchange(true)) result->stream = std::move(stream);
+          if (!result->done.exchange(true)) {
+            result->stream = std::move(stream);
+          }
         }
       }
       ++result->count;

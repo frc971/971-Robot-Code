@@ -1,14 +1,12 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2018-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
 #include <algorithm>
 #include <functional>
+#include <stdexcept>
 
 #include "Eigen/Core"
 #include "frc/StateSpaceUtil.h"
@@ -24,6 +22,10 @@ namespace frc {
  *
  * For more on the underlying math, read
  * https://file.tavsys.net/control/controls-engineering-in-frc.pdf.
+ *
+ * @tparam States Number of states.
+ * @tparam Inputs Number of inputs.
+ * @tparam Outputs Number of outputs.
  */
 template <int States, int Inputs, int Outputs>
 class LinearSystem {
@@ -35,11 +37,33 @@ class LinearSystem {
    * @param B    Input matrix.
    * @param C    Output matrix.
    * @param D    Feedthrough matrix.
+   * @throws std::domain_error if any matrix element isn't finite.
    */
   LinearSystem(const Eigen::Matrix<double, States, States>& A,
                const Eigen::Matrix<double, States, Inputs>& B,
                const Eigen::Matrix<double, Outputs, States>& C,
                const Eigen::Matrix<double, Outputs, Inputs>& D) {
+    if (!A.allFinite()) {
+      throw std::domain_error(
+          "Elements of A aren't finite. This is usually due to model "
+          "implementation errors.");
+    }
+    if (!B.allFinite()) {
+      throw std::domain_error(
+          "Elements of B aren't finite. This is usually due to model "
+          "implementation errors.");
+    }
+    if (!C.allFinite()) {
+      throw std::domain_error(
+          "Elements of C aren't finite. This is usually due to model "
+          "implementation errors.");
+    }
+    if (!D.allFinite()) {
+      throw std::domain_error(
+          "Elements of D aren't finite. This is usually due to model "
+          "implementation errors.");
+    }
+
     m_A = A;
     m_B = B;
     m_C = C;
@@ -109,14 +133,13 @@ class LinearSystem {
    * This is used by state observers directly to run updates based on state
    * estimate.
    *
-   * @param x  The current state.
-   * @param u  The control input.
-   * @param dt Timestep for model update.
+   * @param x        The current state.
+   * @param clampedU The control input.
+   * @param dt       Timestep for model update.
    */
-  Eigen::Matrix<double, States, 1> CalculateX(
-      const Eigen::Matrix<double, States, 1>& x,
-      const Eigen::Matrix<double, Inputs, 1>& clampedU,
-      units::second_t dt) const {
+  Eigen::Vector<double, States> CalculateX(
+      const Eigen::Vector<double, States>& x,
+      const Eigen::Vector<double, Inputs>& clampedU, units::second_t dt) const {
     Eigen::Matrix<double, States, States> discA;
     Eigen::Matrix<double, States, Inputs> discB;
     DiscretizeAB<States, Inputs>(m_A, m_B, dt, &discA, &discB);
@@ -133,9 +156,9 @@ class LinearSystem {
    * @param x The current state.
    * @param clampedU The control input.
    */
-  Eigen::Matrix<double, Outputs, 1> CalculateY(
-      const Eigen::Matrix<double, States, 1>& x,
-      const Eigen::Matrix<double, Inputs, 1>& clampedU) const {
+  Eigen::Vector<double, Outputs> CalculateY(
+      const Eigen::Vector<double, States>& x,
+      const Eigen::Vector<double, Inputs>& clampedU) const {
     return m_C * x + m_D * clampedU;
   }
 

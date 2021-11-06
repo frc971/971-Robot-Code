@@ -10,10 +10,10 @@
 
 #include <sstream>
 
+#include "frc971/wpilib/ahal/WPIErrors.h"
+#include "glog/logging.h"
 #include "hal/HAL.h"
 #include "hal/Ports.h"
-#include "frc971/wpilib/ahal/Utility.h"
-#include "frc971/wpilib/ahal/WPIErrors.h"
 
 using namespace frc;
 
@@ -37,7 +37,7 @@ PWM::PWM(int channel) {
   }
 
   int32_t status = 0;
-  m_handle = HAL_InitializePWMPort(HAL_GetPort(channel), &status);
+  m_handle = HAL_InitializePWMPort(HAL_GetPort(channel), nullptr, &status);
   if (status != 0) {
     //    wpi_setErrorWithContextRange(status, 0, HAL_GetNumPWMChannels(),
     //    channel,
@@ -271,7 +271,7 @@ void PWM::SetPeriodMultiplier(PeriodMultiplier mult) {
       HAL_SetPWMPeriodScale(m_handle, 0, &status);  // Don't squelch any outputs
       break;
     default:
-      wpi_assert(false);
+      LOG(FATAL) << "Invalid multiplier " << mult;
   }
 
   HAL_FATAL_ERROR();

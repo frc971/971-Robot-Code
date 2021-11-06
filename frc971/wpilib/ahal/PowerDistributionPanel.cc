@@ -10,7 +10,7 @@
 #include <sstream>
 
 #include "hal/HAL.h"
-#include "hal/PDP.h"
+#include "hal/PowerDistribution.h"
 #include "hal/Ports.h"
 #include "frc971/wpilib/ahal/WPIErrors.h"
 
@@ -24,7 +24,9 @@ PowerDistributionPanel::PowerDistributionPanel() : PowerDistributionPanel(0) {}
  */
 PowerDistributionPanel::PowerDistributionPanel(int module) {
   int32_t status = 0;
-  m_handle = HAL_InitializePDP(module, &status);
+  m_handle = HAL_InitializePowerDistribution(
+      module, HAL_PowerDistributionType::HAL_PowerDistributionType_kCTRE,
+      nullptr, &status);
   if (status != 0) {
     return;
   }
@@ -38,7 +40,7 @@ PowerDistributionPanel::PowerDistributionPanel(int module) {
 double PowerDistributionPanel::GetVoltage() const {
   int32_t status = 0;
 
-  double voltage = HAL_GetPDPVoltage(m_handle, &status);
+  double voltage = HAL_GetPowerDistributionVoltage(m_handle, &status);
 
   if (status) {
     WPI_LIB_FATAL_ERROR(Timeout, "");
@@ -55,7 +57,7 @@ double PowerDistributionPanel::GetVoltage() const {
 double PowerDistributionPanel::GetTemperature() const {
   int32_t status = 0;
 
-  double temperature = HAL_GetPDPTemperature(m_handle, &status);
+  double temperature = HAL_GetPowerDistributionTemperature(m_handle, &status);
 
   if (status) {
     WPI_LIB_FATAL_ERROR(Timeout, "");
@@ -72,13 +74,16 @@ double PowerDistributionPanel::GetTemperature() const {
 double PowerDistributionPanel::GetCurrent(int channel) const {
   int32_t status = 0;
 
-  if (!CheckPDPChannel(channel)) {
+  if (!CheckPDPChannel(
+          channel,
+          HAL_PowerDistributionType::HAL_PowerDistributionType_kCTRE)) {
     std::stringstream buf;
     buf << "PDP Channel " << channel;
     WPI_LIB_FATAL_ERROR(ChannelIndexOutOfRange, buf.str());
   }
 
-  double current = HAL_GetPDPChannelCurrent(m_handle, channel, &status);
+  double current =
+      HAL_GetPowerDistributionChannelCurrent(m_handle, channel, &status);
 
   if (status) {
     WPI_LIB_FATAL_ERROR(Timeout, "");
@@ -95,7 +100,7 @@ double PowerDistributionPanel::GetCurrent(int channel) const {
 double PowerDistributionPanel::GetTotalCurrent() const {
   int32_t status = 0;
 
-  double current = HAL_GetPDPTotalCurrent(m_handle, &status);
+  double current = HAL_GetPowerDistributionTotalCurrent(m_handle, &status);
 
   if (status) {
     WPI_LIB_FATAL_ERROR(Timeout, "");
@@ -112,7 +117,7 @@ double PowerDistributionPanel::GetTotalCurrent() const {
 double PowerDistributionPanel::GetTotalPower() const {
   int32_t status = 0;
 
-  double power = HAL_GetPDPTotalPower(m_handle, &status);
+  double power = HAL_GetPowerDistributionTotalPower(m_handle, &status);
 
   if (status) {
     WPI_LIB_FATAL_ERROR(Timeout, "");
@@ -129,7 +134,7 @@ double PowerDistributionPanel::GetTotalPower() const {
 double PowerDistributionPanel::GetTotalEnergy() const {
   int32_t status = 0;
 
-  double energy = HAL_GetPDPTotalEnergy(m_handle, &status);
+  double energy = HAL_GetPowerDistributionTotalEnergy(m_handle, &status);
 
   if (status) {
     WPI_LIB_FATAL_ERROR(Timeout, "");
@@ -146,7 +151,7 @@ double PowerDistributionPanel::GetTotalEnergy() const {
 void PowerDistributionPanel::ResetTotalEnergy() {
   int32_t status = 0;
 
-  HAL_ResetPDPTotalEnergy(m_handle, &status);
+  HAL_ResetPowerDistributionTotalEnergy(m_handle, &status);
 
   if (status) {
     WPI_LIB_FATAL_ERROR(Timeout, "");
@@ -159,7 +164,7 @@ void PowerDistributionPanel::ResetTotalEnergy() {
 void PowerDistributionPanel::ClearStickyFaults() {
   int32_t status = 0;
 
-  HAL_ClearPDPStickyFaults(m_handle, &status);
+  HAL_ClearPowerDistributionStickyFaults(m_handle, &status);
 
   if (status) {
     WPI_LIB_FATAL_ERROR(Timeout, "");

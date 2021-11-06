@@ -9,7 +9,6 @@
 #include "aos/util/compiler_memory_barrier.h"
 #include "frc971/wpilib/ahal/DigitalInput.h"
 #include "frc971/wpilib/ahal/DriverStation.h"
-#include "frc971/wpilib/ahal/Utility.h"
 #include "frc971/wpilib/fpga_time_conversion.h"
 #include "frc971/wpilib/wpilib_interface.h"
 #include "hal/PWM.h"

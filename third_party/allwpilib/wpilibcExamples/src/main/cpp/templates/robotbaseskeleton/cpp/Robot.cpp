@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2018-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "Robot.h"
 
@@ -24,8 +21,6 @@ void Robot::Teleop() {}
 void Robot::Test() {}
 
 void Robot::StartCompetition() {
-  auto& lw = *frc::LiveWindow::GetInstance();
-
   RobotInit();
 
   // Tell the DS that the robot is ready to be enabled
@@ -33,35 +28,47 @@ void Robot::StartCompetition() {
 
   while (!m_exit) {
     if (IsDisabled()) {
-      m_ds.InDisabled(true);
+      frc::DriverStation::InDisabled(true);
       Disabled();
-      m_ds.InDisabled(false);
-      while (IsDisabled()) m_ds.WaitForData();
+      frc::DriverStation::InDisabled(false);
+      while (IsDisabled()) {
+        frc::DriverStation::WaitForData();
+      }
     } else if (IsAutonomous()) {
-      m_ds.InAutonomous(true);
+      frc::DriverStation::InAutonomous(true);
       Autonomous();
-      m_ds.InAutonomous(false);
-      while (IsAutonomousEnabled()) m_ds.WaitForData();
+      frc::DriverStation::InAutonomous(false);
+      while (IsAutonomousEnabled()) {
+        frc::DriverStation::WaitForData();
+      }
     } else if (IsTest()) {
-      lw.SetEnabled(true);
+      frc::LiveWindow::SetEnabled(true);
       frc::Shuffleboard::EnableActuatorWidgets();
-      m_ds.InTest(true);
+      frc::DriverStation::InTest(true);
       Test();
-      m_ds.InTest(false);
-      while (IsTest() && IsEnabled()) m_ds.WaitForData();
-      lw.SetEnabled(false);
+      frc::DriverStation::InTest(false);
+      while (IsTest() && IsEnabled()) {
+        frc::DriverStation::WaitForData();
+      }
+      frc::LiveWindow::SetEnabled(false);
       frc::Shuffleboard::DisableActuatorWidgets();
     } else {
-      m_ds.InOperatorControl(true);
+      frc::DriverStation::InTeleop(true);
       Teleop();
-      m_ds.InOperatorControl(false);
-      while (IsOperatorControlEnabled()) m_ds.WaitForData();
+      frc::DriverStation::InTeleop(false);
+      while (IsTeleopEnabled()) {
+        frc::DriverStation::WaitForData();
+      }
     }
   }
 }
 
-void Robot::EndCompetition() { m_exit = true; }
+void Robot::EndCompetition() {
+  m_exit = true;
+}
 
 #ifndef RUNNING_FRC_TESTS
-int main() { return frc::StartRobot<Robot>(); }
+int main() {
+  return frc::StartRobot<Robot>();
+}
 #endif

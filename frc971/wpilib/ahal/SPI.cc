@@ -14,6 +14,7 @@
 #include <wpi/SmallVector.h>
 #include <wpi/mutex.h>
 
+#include "absl/types/span.h"
 #include "frc971/wpilib/ahal/DigitalSource.h"
 #include "frc971/wpilib/ahal/WPIErrors.h"
 
@@ -117,7 +118,8 @@ void SPI::FreeAuto() {
   wpi_setHALError(status);
 }
 
-void SPI::SetAutoTransmitData(wpi::ArrayRef<uint8_t> dataToSend, int zeroSize) {
+void SPI::SetAutoTransmitData(absl::Span<const uint8_t> dataToSend,
+                              int zeroSize) {
   int32_t status = 0;
   HAL_SetSPIAutoTransmitData(m_port, dataToSend.data(), dataToSend.size(),
                              zeroSize, &status);

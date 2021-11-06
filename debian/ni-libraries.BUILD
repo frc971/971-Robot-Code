@@ -1,16 +1,29 @@
+cc_binary(
+    name = "libNiFpgaLv.so.13",
+    srcs = [
+        "src/shims/fpgalv/main.c",
+    ],
+    linkshared = True,
+    linkstatic = False,
+)
+
+cc_binary(
+    name = "libnirio_emb_can.so.21",
+    srcs = [
+        "src/shims/embcan/main.c",
+    ],
+    linkshared = True,
+    linkstatic = False,
+)
+
 cc_library(
     name = "ni-libraries",
     srcs = [
-        "src/lib/chipobject/libRoboRIO_FRC_ChipObject.so.20.0.0",
-        "src/lib/netcomm/libFRC_NetworkCommunication.so.20.0.0",
-        "src/lib/runtime/libNiFpga.so.19.0.0",
-        "src/lib/runtime/libNiFpgaLv.so.19.0.0",
-        "src/lib/runtime/libNiRioSrv.so.19.0.0",
-        "src/lib/runtime/libni_emb.so.12.0.0",
-        "src/lib/runtime/libni_rtlog.so.2.8.0",
-        "src/lib/runtime/libnirio_emb_can.so.16.0.0",
-        "src/lib/runtime/libniriodevenum.so.19.0.0",
-        "src/lib/runtime/libniriosession.so.18.0.0",
+        "libNiFpgaLv.so.13",
+        "libnirio_emb_can.so.21",
+        "src/lib/chipobject/libRoboRIO_FRC_ChipObject.so.22.0.0",
+        "src/lib/netcomm/libFRC_NetworkCommunication.so.22.0.0",
+        "src/lib/visa/libvisa.so.21.0.0",
     ],
     hdrs = glob(["src/include/**"]),
     includes = [

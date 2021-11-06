@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "frc2/command/ParallelRaceGroup.h"
 
@@ -38,9 +35,13 @@ void ParallelRaceGroup::End(bool interrupted) {
   isRunning = false;
 }
 
-bool ParallelRaceGroup::IsFinished() { return m_finished; }
+bool ParallelRaceGroup::IsFinished() {
+  return m_finished;
+}
 
-bool ParallelRaceGroup::RunsWhenDisabled() const { return m_runWhenDisabled; }
+bool ParallelRaceGroup::RunsWhenDisabled() const {
+  return m_runWhenDisabled;
+}
 
 void ParallelRaceGroup::AddCommands(
     std::vector<std::unique_ptr<Command>>&& commands) {
@@ -49,9 +50,9 @@ void ParallelRaceGroup::AddCommands(
   }
 
   if (isRunning) {
-    wpi_setWPIErrorWithContext(CommandIllegalUse,
-                               "Commands cannot be added to a CommandGroup "
-                               "while the group is running");
+    throw FRC_MakeError(frc::err::CommandIllegalUse, "{}",
+                        "Commands cannot be added to a CommandGroup "
+                        "while the group is running");
   }
 
   for (auto&& command : commands) {
@@ -61,10 +62,9 @@ void ParallelRaceGroup::AddCommands(
       m_runWhenDisabled &= command->RunsWhenDisabled();
       m_commands.emplace_back(std::move(command));
     } else {
-      wpi_setWPIErrorWithContext(CommandIllegalUse,
-                                 "Multiple commands in a parallel group cannot "
-                                 "require the same subsystems");
-      return;
+      throw FRC_MakeError(frc::err::CommandIllegalUse, "{}",
+                          "Multiple commands in a parallel group cannot "
+                          "require the same subsystems");
     }
   }
 }

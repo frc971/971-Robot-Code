@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2017-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
@@ -35,7 +32,7 @@ extern "C" {
  * Expected to be called internally, not by users.
  *
  * @param library the library path
- * @return        the succes state of the initialization
+ * @return the succes state of the initialization
  */
 int HAL_LoadOneExtension(const char* library);
 
@@ -43,7 +40,7 @@ int HAL_LoadOneExtension(const char* library);
  * Loads any extra halsim libraries provided in the HALSIM_EXTENSIONS
  * environment variable.
  *
- * @return        the succes state of the initialization
+ * @return the succes state of the initialization
  */
 int HAL_LoadExtensions(void);
 

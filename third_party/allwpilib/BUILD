@@ -65,6 +65,7 @@ cc_library(
     srcs = glob(
         include = [
             "hal/src/main/native/athena/*.cpp",
+            "hal/src/main/native/athena/rev/*.cpp",
             "hal/src/main/native/cpp/cpp/*.cpp",
             "hal/src/main/native/cpp/*.cpp",
             "hal/src/main/native/athena/ctre/*.cpp",

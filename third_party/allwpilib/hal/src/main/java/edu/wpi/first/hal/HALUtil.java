@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2016-2018 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 package edu.wpi.first.hal;
 
@@ -17,6 +14,10 @@ public final class HALUtil extends JNIWrapper {
   public static final int ANALOG_TRIGGER_PULSE_OUTPUT_ERROR = -1011;
   public static final int NO_AVAILABLE_RESOURCES = -104;
   public static final int PARAMETER_OUT_OF_RANGE = -1028;
+
+  public static final int RUNTIME_ROBORIO = 0;
+  public static final int RUNTIME_ROBORIO2 = 1;
+  public static final int RUNTIME_SIMULATION = 2;
 
   public static native short getFPGAVersion();
 
@@ -38,7 +39,5 @@ public final class HALUtil extends JNIWrapper {
     return getHALstrerror(getHALErrno());
   }
 
-  private HALUtil() {
-
-  }
+  private HALUtil() {}
 }

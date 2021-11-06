@@ -1,16 +1,14 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019 FIRST. All Rights Reserved.                             */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
 #include <string>
+#include <string_view>
 
-#include <frc/smartdashboard/Sendable.h>
-#include <frc/smartdashboard/SendableHelper.h>
+#include <wpi/sendable/Sendable.h>
+#include <wpi/sendable/SendableHelper.h>
 
 #include "frc2/command/Subsystem.h"
 
@@ -20,10 +18,10 @@ namespace frc2 {
  * provides a more intuitive method for setting the default command.
  */
 class SubsystemBase : public Subsystem,
-                      public frc::Sendable,
-                      public frc::SendableHelper<SubsystemBase> {
+                      public wpi::Sendable,
+                      public wpi::SendableHelper<SubsystemBase> {
  public:
-  void InitSendable(frc::SendableBuilder& builder) override;
+  void InitSendable(wpi::SendableBuilder& builder) override;
 
   /**
    * Gets the name of this Subsystem.
@@ -37,7 +35,7 @@ class SubsystemBase : public Subsystem,
    *
    * @param name name
    */
-  void SetName(const wpi::Twine& name);
+  void SetName(std::string_view name);
 
   /**
    * Gets the subsystem name of this Subsystem.
@@ -49,9 +47,9 @@ class SubsystemBase : public Subsystem,
   /**
    * Sets the subsystem name of this Subsystem.
    *
-   * @param subsystem subsystem name
+   * @param name subsystem name
    */
-  void SetSubsystem(const wpi::Twine& name);
+  void SetSubsystem(std::string_view name);
 
   /**
    * Associate a Sendable with this Subsystem.
@@ -60,7 +58,7 @@ class SubsystemBase : public Subsystem,
    * @param name name to give child
    * @param child sendable
    */
-  void AddChild(std::string name, frc::Sendable* child);
+  void AddChild(std::string name, wpi::Sendable* child);
 
  protected:
   SubsystemBase();

@@ -10,13 +10,13 @@
 #include <algorithm>
 #include <array>
 
+#include "frc971/wpilib/ahal/Counter.h"
+#include "frc971/wpilib/ahal/Encoder.h"
+#include "frc971/wpilib/ahal/WPIErrors.h"
+#include "glog/logging.h"
 #include "hal/Constants.h"
 #include "hal/DIO.h"
 #include "hal/HAL.h"
-#include "frc971/wpilib/ahal/Counter.h"
-#include "frc971/wpilib/ahal/Encoder.h"
-#include "frc971/wpilib/ahal/Utility.h"
-#include "frc971/wpilib/ahal/WPIErrors.h"
 
 using namespace frc;
 
@@ -26,7 +26,7 @@ std::array<bool, 3> DigitalGlitchFilter::m_filterAllocated = {
 DigitalGlitchFilter::DigitalGlitchFilter() {
   auto index =
       std::find(m_filterAllocated.begin(), m_filterAllocated.end(), false);
-  wpi_assert(index != m_filterAllocated.end());
+  CHECK_NE(index, m_filterAllocated.end());
 
   m_channelIndex = std::distance(m_filterAllocated.begin(), index);
   *index = true;
@@ -67,7 +67,7 @@ void DigitalGlitchFilter::DoAdd(DigitalSource *input, int requested_index) {
     // Validate that we set it correctly.
     int actual_index =
         HAL_GetFilterSelect(input->GetPortHandleForRouting(), &status);
-    wpi_assertEqual(actual_index, requested_index);
+    CHECK_EQ(actual_index, requested_index);
 
     HAL_Report(HALUsageReporting::kResourceType_DigitalInput,
                input->GetChannel());

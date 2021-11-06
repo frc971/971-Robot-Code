@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2015-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #ifndef NTCORE_NTCORE_C_H_
 #define NTCORE_NTCORE_C_H_
@@ -15,8 +12,6 @@
 #else
 #include <stddef.h>
 #endif
-
-#include <wpi/deprecated.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -261,7 +256,7 @@ struct NT_LogMessage {
   unsigned int level;
 
   /** The filename of the source file that generated the message. */
-  const char* filename;
+  char* filename;
 
   /** The line number in the source file that generated the message. */
   unsigned int line;
@@ -330,11 +325,13 @@ NT_Entry NT_GetEntry(NT_Inst inst, const char* name, size_t name_len);
  * filtered by string prefix and entry type to only return a subset of all
  * entries.
  *
- * @param prefix        entry name required prefix; only entries whose name
- *                      starts with this string are returned
- * @param prefix_len    length of prefix in bytes
- * @param types         bitmask of NT_Type values; 0 is treated specially
- *                      as a "don't care"
+ * @param inst       NetworkTable instance
+ * @param prefix     entry name required prefix; only entries whose name starts
+ *                   with this string are returned
+ * @param prefix_len length of prefix in bytes
+ * @param types      bitmask of NT_Type values; 0 is treated specially as a
+ *                   "don't care"
+ * @param count      stores number of entry handles returned
  * @return Array of entry handles.
  */
 NT_Entry* NT_GetEntries(NT_Inst inst, const char* prefix, size_t prefix_len,
@@ -575,6 +572,7 @@ void NT_DestroyEntryListenerPoller(NT_EntryListenerPoller poller);
  *
  * @param poller            poller handle
  * @param prefix            UTF-8 string prefix
+ * @param prefix_len        Length of UTF-8 string prefix
  * @param flags             NT_NotifyKind bitmask
  * @return Listener handle
  */
@@ -588,7 +586,7 @@ NT_EntryListener NT_AddPolledEntryListener(NT_EntryListenerPoller poller,
  * The caller is responsible for calling NT_PollEntryListener() to poll.
  *
  * @param poller            poller handle
- * @param prefix            UTF-8 string prefix
+ * @param entry             entry handle
  * @param flags             NT_NotifyKind bitmask
  * @return Listener handle
  */
@@ -1597,21 +1595,21 @@ struct NT_String* NT_AllocateStringArray(size_t size);
 /**
  * Frees an array of chars.
  *
- * @param v_boolean  pointer to the char array to free
+ * @param v_char pointer to the char array to free
  */
 void NT_FreeCharArray(char* v_char);
 
 /**
  * Frees an array of doubles.
  *
- * @param v_boolean  pointer to the double array to free
+ * @param v_double pointer to the double array to free
  */
 void NT_FreeDoubleArray(double* v_double);
 
 /**
  * Frees an array of booleans.
  *
- * @param v_boolean  pointer to the boolean array to free
+ * @param v_boolean pointer to the boolean array to free
  */
 void NT_FreeBooleanArray(NT_Bool* v_boolean);
 

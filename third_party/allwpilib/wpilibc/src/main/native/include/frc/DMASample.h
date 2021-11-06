@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
@@ -22,11 +19,16 @@
 namespace frc {
 class DMASample : public HAL_DMASample {
  public:
-  HAL_DMAReadStatus Update(const DMA* dma, units::second_t timeout,
-                           int32_t* remaining, int32_t* status) {
-    units::millisecond_t ms = timeout;
-    auto timeoutMs = ms.to<int32_t>();
-    return HAL_ReadDMA(dma->dmaHandle, this, timeoutMs, remaining, status);
+  enum class DMAReadStatus {
+    kOk = HAL_DMA_OK,
+    kTimeout = HAL_DMA_TIMEOUT,
+    kError = HAL_DMA_ERROR
+  };
+
+  DMAReadStatus Update(const DMA* dma, units::second_t timeout,
+                       int32_t* remaining, int32_t* status) {
+    return static_cast<DMAReadStatus>(
+        HAL_ReadDMA(dma->dmaHandle, this, timeout.value(), remaining, status));
   }
 
   uint64_t GetTime() const { return timeStamp; }

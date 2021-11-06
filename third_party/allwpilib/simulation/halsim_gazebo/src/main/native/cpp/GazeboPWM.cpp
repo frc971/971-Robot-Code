@@ -1,14 +1,10 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2014-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "GazeboPWM.h"
 
-#include <string>
-
+#include <fmt/format.h>
 #include <hal/Value.h>
 #include <hal/simulation/NotifyListener.h>
 #include <hal/simulation/PWMData.h>
@@ -24,7 +20,8 @@ static void init_callback(const char* name, void* param,
 static void speed_callback(const char* name, void* param,
                            const struct HAL_Value* value) {
   GazeboPWM* pwm = static_cast<GazeboPWM*>(param);
-  if (pwm->IsInitialized()) pwm->Publish(value->data.v_double);
+  if (pwm->IsInitialized())
+    pwm->Publish(value->data.v_double);
 }
 
 GazeboPWM::GazeboPWM(int port, HALSimGazebo* halsim) {
@@ -37,10 +34,11 @@ GazeboPWM::GazeboPWM(int port, HALSimGazebo* halsim) {
 void GazeboPWM::Publish(double value) {
   if (!m_pub) {
     m_pub = m_halsim->node.Advertise<gazebo::msgs::Float64>(
-        "~/simulator/pwm/" + std::to_string(m_port));
+        fmt::format("~/simulator/pwm/{}", m_port));
     m_pub->WaitForConnection(gazebo::common::Time(1, 0));
   }
   gazebo::msgs::Float64 msg;
   msg.set_data(value);
-  if (m_pub) m_pub->Publish(msg);
+  if (m_pub)
+    m_pub->Publish(msg);
 }

@@ -1,14 +1,11 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2017-2019 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include <frc/Encoder.h>
 #include <frc/TimedRobot.h>
 #include <frc/smartdashboard/SmartDashboard.h>
-#include <wpi/math>
+#include <wpi/numbers>
 
 /**
  * Sample program displaying the value of a quadrature encoder on the
@@ -43,7 +40,7 @@ class Robot : public frc::TimedRobot {
      * inch diameter (1.5inch radius) wheel, and that we want to measure
      * distance in inches.
      */
-    m_encoder.SetDistancePerPulse(1.0 / 360.0 * 2.0 * wpi::math::pi * 1.5);
+    m_encoder.SetDistancePerPulse(1.0 / 360.0 * 2.0 * wpi::numbers::pi * 1.5);
 
     /* Defines the lowest rate at which the encoder will not be considered
      * stopped, for the purposes of the GetStopped() method. Units are in
@@ -82,5 +79,7 @@ class Robot : public frc::TimedRobot {
 };
 
 #ifndef RUNNING_FRC_TESTS
-int main() { return frc::StartRobot<Robot>(); }
+int main() {
+  return frc::StartRobot<Robot>();
+}
 #endif

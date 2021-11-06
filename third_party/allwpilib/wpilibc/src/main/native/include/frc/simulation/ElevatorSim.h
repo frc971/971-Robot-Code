@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2020 FIRST. All Rights Reserved.                             */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
@@ -61,20 +58,34 @@ class ElevatorSim : public LinearSystemSim<2, 1, 1> {
               const std::array<double, 1>& measurementStdDevs = {0.0});
 
   /**
+   * Returns whether the elevator would hit the lower limit.
+   *
+   * @param elevatorHeight The elevator height.
+   * @return Whether the elevator would hit the lower limit.
+   */
+  bool WouldHitLowerLimit(units::meter_t elevatorHeight) const;
+
+  /**
+   * Returns whether the elevator would hit the upper limit.
+   *
+   * @param elevatorHeight The elevator height.
+   * @return Whether the elevator would hit the upper limit.
+   */
+  bool WouldHitUpperLimit(units::meter_t elevatorHeight) const;
+
+  /**
    * Returns whether the elevator has hit the lower limit.
    *
-   * @param x The current elevator state.
    * @return Whether the elevator has hit the lower limit.
    */
-  bool HasHitLowerLimit(const Eigen::Matrix<double, 2, 1>& x) const;
+  bool HasHitLowerLimit() const;
 
   /**
    * Returns whether the elevator has hit the upper limit.
    *
-   * @param x The current elevator state.
    * @return Whether the elevator has hit the upper limit.
    */
-  bool HasHitUpperLimit(const Eigen::Matrix<double, 2, 1>& x) const;
+  bool HasHitUpperLimit() const;
 
   /**
    * Returns the position of the elevator.
@@ -112,9 +123,9 @@ class ElevatorSim : public LinearSystemSim<2, 1, 1> {
    * @param u           The system inputs (voltage).
    * @param dt          The time difference between controller updates.
    */
-  Eigen::Matrix<double, 2, 1> UpdateX(
-      const Eigen::Matrix<double, 2, 1>& currentXhat,
-      const Eigen::Matrix<double, 1, 1>& u, units::second_t dt) override;
+  Eigen::Vector<double, 2> UpdateX(const Eigen::Vector<double, 2>& currentXhat,
+                                   const Eigen::Vector<double, 1>& u,
+                                   units::second_t dt) override;
 
  private:
   DCMotor m_gearbox;

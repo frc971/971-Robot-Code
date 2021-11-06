@@ -10,19 +10,18 @@
 #include <cstdint>
 
 #include "frc971/wpilib/ahal/ErrorBase.h"
+#include "hal/PowerDistribution.h"
 
 namespace frc {
 
 inline int GetDefaultSolenoidModule() { return 0; }
 
-bool CheckSolenoidModule(int moduleNumber);
 bool CheckDigitalChannel(int channel);
 bool CheckRelayChannel(int channel);
 bool CheckPWMChannel(int channel);
 bool CheckAnalogInputChannel(int channel);
 bool CheckAnalogOutputChannel(int channel);
-bool CheckSolenoidChannel(int channel);
-bool CheckPDPChannel(int channel);
+bool CheckPDPChannel(int channel, HAL_PowerDistributionType type);
 
 extern const int kDigitalChannels;
 extern const int kAnalogInputs;

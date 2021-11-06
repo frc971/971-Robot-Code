@@ -1,19 +1,16 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
 #include <functional>
 #include <initializer_list>
 
+#include <frc/Timer.h>
 #include <frc/trajectory/TrapezoidProfile.h>
-#include <wpi/ArrayRef.h>
+#include <wpi/span.h>
 
-#include "frc2/Timer.h"
 #include "frc2/command/CommandBase.h"
 #include "frc2/command/CommandHelper.h"
 
@@ -38,8 +35,9 @@ class TrapezoidProfileCommand
    * Creates a new TrapezoidProfileCommand that will execute the given
    * TrapezoidalProfile. Output will be piped to the provided consumer function.
    *
-   * @param profile The motion profile to execute.
-   * @param output  The consumer for the profile output.
+   * @param profile      The motion profile to execute.
+   * @param output       The consumer for the profile output.
+   * @param requirements The list of requirements.
    */
   TrapezoidProfileCommand(frc::TrapezoidProfile<Distance> profile,
                           std::function<void(State)> output,
@@ -52,12 +50,13 @@ class TrapezoidProfileCommand
    * Creates a new TrapezoidProfileCommand that will execute the given
    * TrapezoidalProfile. Output will be piped to the provided consumer function.
    *
-   * @param profile The motion profile to execute.
-   * @param output  The consumer for the profile output.
+   * @param profile      The motion profile to execute.
+   * @param output       The consumer for the profile output.
+   * @param requirements The list of requirements.
    */
   TrapezoidProfileCommand(frc::TrapezoidProfile<Distance> profile,
                           std::function<void(State)> output,
-                          wpi::ArrayRef<Subsystem*> requirements = {})
+                          wpi::span<Subsystem* const> requirements = {})
       : m_profile(profile), m_output(output) {
     this->AddRequirements(requirements);
   }
@@ -79,7 +78,7 @@ class TrapezoidProfileCommand
   frc::TrapezoidProfile<Distance> m_profile;
   std::function<void(State)> m_output;
 
-  Timer m_timer;
+  frc::Timer m_timer;
 };
 
 }  // namespace frc2

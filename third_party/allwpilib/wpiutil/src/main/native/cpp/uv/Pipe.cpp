@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2018-2019 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "wpi/uv/Pipe.h"
 
@@ -11,8 +8,7 @@
 
 #include "wpi/SmallString.h"
 
-namespace wpi {
-namespace uv {
+namespace wpi::uv {
 
 std::shared_ptr<Pipe> Pipe::Create(Loop& loop, bool ipc) {
   auto h = std::make_shared<Pipe>(private_init{});
@@ -26,13 +22,19 @@ std::shared_ptr<Pipe> Pipe::Create(Loop& loop, bool ipc) {
 }
 
 void Pipe::Reuse(std::function<void()> callback, bool ipc) {
-  if (IsClosing()) return;
-  if (!m_reuseData) m_reuseData = std::make_unique<ReuseData>();
-  m_reuseData->callback = callback;
+  if (IsClosing()) {
+    return;
+  }
+  if (!m_reuseData) {
+    m_reuseData = std::make_unique<ReuseData>();
+  }
+  m_reuseData->callback = std::move(callback);
   m_reuseData->ipc = ipc;
   uv_close(GetRawHandle(), [](uv_handle_t* handle) {
     Pipe& h = *static_cast<Pipe*>(handle->data);
-    if (!h.m_reuseData) return;
+    if (!h.m_reuseData) {
+      return;
+    }
     auto data = std::move(h.m_reuseData);
     auto err =
         uv_pipe_init(h.GetLoopRef().GetRaw(), h.GetRaw(), data->ipc ? 1 : 0);
@@ -46,7 +48,9 @@ void Pipe::Reuse(std::function<void()> callback, bool ipc) {
 
 std::shared_ptr<Pipe> Pipe::Accept() {
   auto client = Create(GetLoopRef(), GetRaw()->ipc);
-  if (!client) return nullptr;
+  if (!client) {
+    return nullptr;
+  }
   if (!Accept(client)) {
     client->Release();
     return nullptr;
@@ -54,33 +58,34 @@ std::shared_ptr<Pipe> Pipe::Accept() {
   return client;
 }
 
-Pipe* Pipe::DoAccept() { return Accept().get(); }
-
-void Pipe::Bind(const Twine& name) {
-  SmallString<128> nameBuf;
-  Invoke(&uv_pipe_bind, GetRaw(),
-         name.toNullTerminatedStringRef(nameBuf).data());
+Pipe* Pipe::DoAccept() {
+  return Accept().get();
 }
 
-void Pipe::Connect(const Twine& name,
+void Pipe::Bind(std::string_view name) {
+  SmallString<128> nameBuf{name};
+  Invoke(&uv_pipe_bind, GetRaw(), nameBuf.c_str());
+}
+
+void Pipe::Connect(std::string_view name,
                    const std::shared_ptr<PipeConnectReq>& req) {
-  SmallString<128> nameBuf;
-  uv_pipe_connect(req->GetRaw(), GetRaw(),
-                  name.toNullTerminatedStringRef(nameBuf).data(),
+  SmallString<128> nameBuf{name};
+  uv_pipe_connect(req->GetRaw(), GetRaw(), nameBuf.c_str(),
                   [](uv_connect_t* req, int status) {
                     auto& h = *static_cast<PipeConnectReq*>(req->data);
-                    if (status < 0)
+                    if (status < 0) {
                       h.ReportError(status);
-                    else
+                    } else {
                       h.connected();
+                    }
                     h.Release();  // this is always a one-shot
                   });
   req->Keep();
 }
 
-void Pipe::Connect(const Twine& name, std::function<void()> callback) {
+void Pipe::Connect(std::string_view name, std::function<void()> callback) {
   auto req = std::make_shared<PipeConnectReq>();
-  req->connected.connect(callback);
+  req->connected.connect(std::move(callback));
   Connect(name, req);
 }
 
@@ -130,5 +135,4 @@ std::string Pipe::GetPeer() {
   return std::string{};
 }
 
-}  // namespace uv
-}  // namespace wpi
+}  // namespace wpi::uv

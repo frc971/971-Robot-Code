@@ -1,16 +1,14 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2008-2018 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
-#include <wpi/mutex.h>
-#include <wpi/raw_ostream.h>
+#include <string>
 
-#include "frc/ErrorBase.h"
+#include <units/time.h>
+#include <wpi/mutex.h>
+
 #include "frc/Timer.h"
 
 namespace frc {
@@ -21,7 +19,7 @@ namespace frc {
  *
  * The subclass should call Feed() whenever the motor value is updated.
  */
-class MotorSafety : public ErrorBase {
+class MotorSafety {
  public:
   MotorSafety();
   virtual ~MotorSafety();
@@ -39,16 +37,16 @@ class MotorSafety : public ErrorBase {
   /**
    * Set the expiration time for the corresponding motor safety object.
    *
-   * @param expirationTime The timeout value in seconds.
+   * @param expirationTime The timeout value.
    */
-  void SetExpiration(double expirationTime);
+  void SetExpiration(units::second_t expirationTime);
 
   /**
    * Retrieve the timeout value for the corresponding motor safety object.
    *
-   * @return the timeout value in seconds.
+   * @return the timeout value.
    */
-  double GetExpiration() const;
+  units::second_t GetExpiration() const;
 
   /**
    * Determine if the motor is still operating or has timed out.
@@ -93,19 +91,19 @@ class MotorSafety : public ErrorBase {
   static void CheckMotors();
 
   virtual void StopMotor() = 0;
-  virtual void GetDescription(wpi::raw_ostream& desc) const = 0;
+  virtual std::string GetDescription() const = 0;
 
  private:
-  static constexpr double kDefaultSafetyExpiration = 0.1;
+  static constexpr auto kDefaultSafetyExpiration = 100_ms;
 
   // The expiration time for this object
-  double m_expiration = kDefaultSafetyExpiration;
+  units::second_t m_expiration = kDefaultSafetyExpiration;
 
   // True if motor safety is enabled for this motor
   bool m_enabled = false;
 
   // The FPGA clock value when the motor has expired
-  double m_stopTime = Timer::GetFPGATimestamp();
+  units::second_t m_stopTime = Timer::GetFPGATimestamp();
 
   mutable wpi::mutex m_thisMutex;
 };

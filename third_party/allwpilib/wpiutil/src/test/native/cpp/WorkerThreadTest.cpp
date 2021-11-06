@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2018 FIRST. All Rights Reserved.                             */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "wpi/WorkerThread.h"  // NOLINT(build/include_order)
 
@@ -15,14 +12,14 @@
 
 namespace wpi {
 
-TEST(WorkerThread, Future) {
+TEST(WorkerThreadTest, Future) {
   WorkerThread<int(bool)> worker;
   future<int> f =
       worker.QueueWork([](bool v) -> int { return v ? 1 : 2; }, true);
   ASSERT_EQ(f.get(), 1);
 }
 
-TEST(WorkerThread, FutureVoid) {
+TEST(WorkerThreadTest, FutureVoid) {
   int callbacks = 0;
   WorkerThread<void(int)> worker;
   future<void> f = worker.QueueWork(
@@ -35,7 +32,7 @@ TEST(WorkerThread, FutureVoid) {
   ASSERT_EQ(callbacks, 1);
 }
 
-TEST(WorkerThread, Loop) {
+TEST(WorkerThreadTest, Loop) {
   int callbacks = 0;
   WorkerThread<int(bool)> worker;
   auto loop = uv::Loop::Create();
@@ -53,7 +50,7 @@ TEST(WorkerThread, Loop) {
   ASSERT_EQ(callbacks, 1);
 }
 
-TEST(WorkerThread, LoopVoid) {
+TEST(WorkerThreadTest, LoopVoid) {
   int callbacks = 0;
   WorkerThread<void(bool)> worker;
   auto loop = uv::Loop::Create();

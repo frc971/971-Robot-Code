@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2018-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #ifndef CSCORE_USBCAMERAIMPL_H_
 #define CSCORE_USBCAMERAIMPL_H_
@@ -19,14 +16,13 @@
 #include <atomic>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <thread>
 #include <utility>
 #include <vector>
 
 #include <Dbt.h>
-#include <wpi/STLExtras.h>
 #include <wpi/SmallVector.h>
-#include <wpi/Twine.h>
 #include <wpi/condition_variable.h>
 #include <wpi/mutex.h>
 #include <wpi/raw_istream.h>
@@ -43,17 +39,17 @@ namespace cs {
 class UsbCameraImpl : public SourceImpl,
                       public std::enable_shared_from_this<UsbCameraImpl> {
  public:
-  UsbCameraImpl(const wpi::Twine& name, wpi::Logger& logger, Notifier& notifier,
-                Telemetry& telemetry, const wpi::Twine& path);
-  UsbCameraImpl(const wpi::Twine& name, wpi::Logger& logger, Notifier& notifier,
+  UsbCameraImpl(std::string_view name, wpi::Logger& logger, Notifier& notifier,
+                Telemetry& telemetry, std::string_view path);
+  UsbCameraImpl(std::string_view name, wpi::Logger& logger, Notifier& notifier,
                 Telemetry& telemetry, int deviceId);
   ~UsbCameraImpl() override;
 
-  void Start();
+  void Start() override;
 
   // Property functions
   void SetProperty(int property, int value, CS_Status* status) override;
-  void SetStringProperty(int property, const wpi::Twine& value,
+  void SetStringProperty(int property, std::string_view value,
                          CS_Status* status) override;
 
   // Standard common camera properties
@@ -78,7 +74,7 @@ class UsbCameraImpl : public SourceImpl,
   void ProcessFrame(IMFSample* sample, const VideoMode& mode);
   void PostRequestNewFrame();
 
-  void SetPath(const wpi::Twine& path, CS_Status* status);
+  void SetPath(std::string_view path, CS_Status* status);
   std::string GetPath() const;
 
   // Messages passed to/from camera thread
@@ -110,7 +106,7 @@ class UsbCameraImpl : public SourceImpl,
 
  protected:
   std::unique_ptr<PropertyImpl> CreateEmptyProperty(
-      const wpi::Twine& name) const override;
+      std::string_view name) const override;
 
   // Cache properties.  Immediately successful if properties are already cached.
   // If they are not, tries to connect to the camera to do so; returns false and
@@ -135,7 +131,7 @@ class UsbCameraImpl : public SourceImpl,
   void DeviceCacheProperties();
   void DeviceCacheVideoModes();
   template <typename TagProperty, typename IAM>
-  void DeviceAddProperty(const wpi::Twine& name_, TagProperty tag,
+  void DeviceAddProperty(std::string_view name_, TagProperty tag,
                          IAM* pProcAmp);
 
   ComPtr<IMFMediaType> DeviceCheckModeValid(const VideoMode& toCheck);

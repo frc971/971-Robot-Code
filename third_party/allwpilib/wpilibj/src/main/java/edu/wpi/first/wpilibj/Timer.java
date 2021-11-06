@@ -1,12 +1,15 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2016-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 package edu.wpi.first.wpilibj;
 
+/**
+ * A timer class.
+ *
+ * <p>Note that if the user calls SimHooks.restartTiming(), they should also reset the timer so
+ * get() won't return a negative duration.
+ */
 public class Timer {
   /**
    * Return the system clock time in seconds. Return the time from the FPGA hardware clock in
@@ -23,13 +26,13 @@ public class Timer {
    * Return the approximate match time. The FMS does not send an official match time to the robots,
    * but does send an approximate match time. The value will count down the time remaining in the
    * current period (auto or teleop). Warning: This is not an official time (so it cannot be used to
-   * dispute ref calls or guarantee that a function will trigger before the match ends) The
-   * Practice Match function of the DS approximates the behavior seen on the field.
+   * dispute ref calls or guarantee that a function will trigger before the match ends) The Practice
+   * Match function of the DS approximates the behavior seen on the field.
    *
    * @return Time remaining in current match period (auto or teleop) in seconds
    */
   public static double getMatchTime() {
-    return DriverStation.getInstance().getMatchTime();
+    return DriverStation.getMatchTime();
   }
 
   /**
@@ -52,12 +55,7 @@ public class Timer {
   private double m_accumulatedTime;
   private boolean m_running;
 
-  /**
-   * Lock for synchronization.
-   */
-  private final Object m_lock = new Object();
-
-  @SuppressWarnings("JavadocMethod")
+  @SuppressWarnings("MissingJavadocMethod")
   public Timer() {
     reset();
   }
@@ -74,24 +72,21 @@ public class Timer {
    * @return Current time value for this timer in seconds
    */
   public double get() {
-    synchronized (m_lock) {
-      if (m_running) {
-        return m_accumulatedTime + (getMsClock() - m_startTime) / 1000.0;
-      } else {
-        return m_accumulatedTime;
-      }
+    if (m_running) {
+      return m_accumulatedTime + (getMsClock() - m_startTime) / 1000.0;
+    } else {
+      return m_accumulatedTime;
     }
   }
 
   /**
-   * Reset the timer by setting the time to 0. Make the timer startTime the current time so new
-   * requests will be relative now
+   * Reset the timer by setting the time to 0.
+   *
+   * <p>Make the timer startTime the current time so new requests will be relative now.
    */
   public void reset() {
-    synchronized (m_lock) {
-      m_accumulatedTime = 0;
-      m_startTime = getMsClock();
-    }
+    m_accumulatedTime = 0;
+    m_startTime = getMsClock();
   }
 
   /**
@@ -100,11 +95,9 @@ public class Timer {
    * already running.
    */
   public void start() {
-    synchronized (m_lock) {
-      if (!m_running) {
-        m_startTime = getMsClock();
-        m_running = true;
-      }
+    if (!m_running) {
+      m_startTime = getMsClock();
+      m_running = true;
     }
   }
 
@@ -114,10 +107,8 @@ public class Timer {
    * clock.
    */
   public void stop() {
-    synchronized (m_lock) {
-      m_accumulatedTime = get();
-      m_running = false;
-    }
+    m_accumulatedTime = get();
+    m_running = false;
   }
 
   /**
@@ -127,9 +118,7 @@ public class Timer {
    * @return Whether the period has passed.
    */
   public boolean hasElapsed(double seconds) {
-    synchronized (m_lock) {
-      return get() > seconds;
-    }
+    return get() >= seconds;
   }
 
   /**
@@ -139,7 +128,9 @@ public class Timer {
    *
    * @param period The period to check for (in seconds).
    * @return Whether the period has passed.
+   * @deprecated Use advanceIfElapsed() instead.
    */
+  @Deprecated(since = "2022", forRemoval = true)
   public boolean hasPeriodPassed(double period) {
     return advanceIfElapsed(period);
   }
@@ -153,15 +144,13 @@ public class Timer {
    * @return Whether the period has passed.
    */
   public boolean advanceIfElapsed(double seconds) {
-    synchronized (m_lock) {
-      if (get() > seconds) {
-        // Advance the start time by the period.
-        // Don't set it to the current time... we want to avoid drift.
-        m_startTime += seconds * 1000;
-        return true;
-      } else {
-        return false;
-      }
+    if (get() >= seconds) {
+      // Advance the start time by the period.
+      // Don't set it to the current time... we want to avoid drift.
+      m_startTime += seconds * 1000;
+      return true;
+    } else {
+      return false;
     }
   }
 }

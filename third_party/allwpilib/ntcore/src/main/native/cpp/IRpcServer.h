@@ -1,14 +1,12 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2017-2018 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #ifndef NTCORE_IRPCSERVER_H_
 #define NTCORE_IRPCSERVER_H_
 
 #include <memory>
+#include <string_view>
 
 #include "Message.h"
 #include "ntcore_cpp.h"
@@ -17,7 +15,7 @@ namespace nt {
 
 class IRpcServer {
  public:
-  typedef std::function<void(StringRef result)> SendResponseFunc;
+  using SendResponseFunc = std::function<void(std::string_view result)>;
 
   IRpcServer() = default;
   IRpcServer(const IRpcServer&) = delete;
@@ -27,7 +25,7 @@ class IRpcServer {
   virtual void RemoveRpc(unsigned int rpc_uid) = 0;
 
   virtual void ProcessRpc(unsigned int local_id, unsigned int call_uid,
-                          StringRef name, StringRef params,
+                          std::string_view name, std::string_view params,
                           const ConnectionInfo& conn,
                           SendResponseFunc send_response,
                           unsigned int rpc_uid) = 0;

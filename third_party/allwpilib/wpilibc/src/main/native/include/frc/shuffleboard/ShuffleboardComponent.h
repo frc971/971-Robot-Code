@@ -1,19 +1,16 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2018 FIRST. All Rights Reserved.                             */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
 #include <memory>
 #include <string>
+#include <string_view>
 
 #include <networktables/NetworkTable.h>
 #include <networktables/NetworkTableValue.h>
 #include <wpi/StringMap.h>
-#include <wpi/Twine.h>
 
 #include "frc/shuffleboard/ShuffleboardComponentBase.h"
 
@@ -29,10 +26,8 @@ class ShuffleboardContainer;
 template <typename Derived>
 class ShuffleboardComponent : public ShuffleboardComponentBase {
  public:
-  ShuffleboardComponent(ShuffleboardContainer& parent, const wpi::Twine& title,
-                        const wpi::Twine& type = "");
-
-  virtual ~ShuffleboardComponent() = default;
+  ShuffleboardComponent(ShuffleboardContainer& parent, std::string_view title,
+                        std::string_view type = "");
 
   /**
    * Sets custom properties for this component. Property names are

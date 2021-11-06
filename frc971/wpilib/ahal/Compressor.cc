@@ -6,12 +6,11 @@
 /*----------------------------------------------------------------------------*/
 
 #include "frc971/wpilib/ahal/Compressor.h"
-#include "hal/Compressor.h"
 
+#include "frc971/wpilib/ahal/WPIErrors.h"
+#include "hal/CTREPCM.h"
 #include "hal/HAL.h"
 #include "hal/Ports.h"
-#include "hal/Solenoid.h"
-#include "frc971/wpilib/ahal/WPIErrors.h"
 
 using namespace frc;
 
@@ -22,7 +21,7 @@ using namespace frc;
  */
 Compressor::Compressor(int pcmID) : m_module(pcmID) {
   int32_t status = 0;
-  m_compressorHandle = HAL_InitializeCompressor(m_module, &status);
+  m_compressorHandle = HAL_InitializeCTREPCM(m_module, nullptr, &status);
   if (status != 0) {
     wpi_setErrorWithContextRange(status, 0, HAL_GetNumPCMModules(), pcmID,
                                  HAL_GetErrorMessage(status));
@@ -59,7 +58,7 @@ bool Compressor::Enabled() const {
   int32_t status = 0;
   bool value;
 
-  value = HAL_GetCompressor(m_compressorHandle, &status);
+  value = HAL_GetCTREPCMCompressor(m_compressorHandle, &status);
 
   if (status) {
     wpi_setWPIError(Timeout);
@@ -78,7 +77,7 @@ bool Compressor::GetPressureSwitchValue() const {
   int32_t status = 0;
   bool value;
 
-  value = HAL_GetCompressorPressureSwitch(m_compressorHandle, &status);
+  value = HAL_GetCTREPCMPressureSwitch(m_compressorHandle, &status);
 
   if (status) {
     wpi_setWPIError(Timeout);
@@ -97,7 +96,7 @@ double Compressor::GetCompressorCurrent() const {
   int32_t status = 0;
   double value;
 
-  value = HAL_GetCompressorCurrent(m_compressorHandle, &status);
+  value = HAL_GetCTREPCMCompressorCurrent(m_compressorHandle, &status);
 
   if (status) {
     wpi_setWPIError(Timeout);
@@ -117,7 +116,7 @@ void Compressor::SetClosedLoopControl(bool on) {
   if (StatusIsFatal()) return;
   int32_t status = 0;
 
-  HAL_SetCompressorClosedLoopControl(m_compressorHandle, on, &status);
+  HAL_SetCTREPCMClosedLoopControl(m_compressorHandle, on, &status);
 
   if (status) {
     wpi_setWPIError(Timeout);
@@ -136,7 +135,7 @@ bool Compressor::GetClosedLoopControl() const {
   int32_t status = 0;
   bool value;
 
-  value = HAL_GetCompressorClosedLoopControl(m_compressorHandle, &status);
+  value = HAL_GetCTREPCMClosedLoopControl(m_compressorHandle, &status);
 
   if (status) {
     wpi_setWPIError(Timeout);
@@ -156,7 +155,7 @@ bool Compressor::GetCompressorCurrentTooHighFault() const {
   int32_t status = 0;
   bool value;
 
-  value = HAL_GetCompressorCurrentTooHighFault(m_compressorHandle, &status);
+  value = HAL_GetCTREPCMCompressorCurrentTooHighFault(m_compressorHandle, &status);
 
   if (status) {
     wpi_setWPIError(Timeout);
@@ -181,7 +180,7 @@ bool Compressor::GetCompressorCurrentTooHighStickyFault() const {
   bool value;
 
   value =
-      HAL_GetCompressorCurrentTooHighStickyFault(m_compressorHandle, &status);
+      HAL_GetCTREPCMCompressorCurrentTooHighStickyFault(m_compressorHandle, &status);
 
   if (status) {
     wpi_setWPIError(Timeout);
@@ -205,7 +204,7 @@ bool Compressor::GetCompressorShortedStickyFault() const {
   int32_t status = 0;
   bool value;
 
-  value = HAL_GetCompressorShortedStickyFault(m_compressorHandle, &status);
+  value = HAL_GetCTREPCMCompressorShortedStickyFault(m_compressorHandle, &status);
 
   if (status) {
     wpi_setWPIError(Timeout);
@@ -225,7 +224,7 @@ bool Compressor::GetCompressorShortedFault() const {
   int32_t status = 0;
   bool value;
 
-  value = HAL_GetCompressorShortedFault(m_compressorHandle, &status);
+  value = HAL_GetCTREPCMCompressorShortedFault(m_compressorHandle, &status);
 
   if (status) {
     wpi_setWPIError(Timeout);
@@ -248,7 +247,7 @@ bool Compressor::GetCompressorNotConnectedStickyFault() const {
   int32_t status = 0;
   bool value;
 
-  value = HAL_GetCompressorNotConnectedStickyFault(m_compressorHandle, &status);
+  value = HAL_GetCTREPCMCompressorNotConnectedStickyFault(m_compressorHandle, &status);
 
   if (status) {
     wpi_setWPIError(Timeout);
@@ -268,7 +267,7 @@ bool Compressor::GetCompressorNotConnectedFault() const {
   int32_t status = 0;
   bool value;
 
-  value = HAL_GetCompressorNotConnectedFault(m_compressorHandle, &status);
+  value = HAL_GetCTREPCMCompressorNotConnectedFault(m_compressorHandle, &status);
 
   if (status) {
     wpi_setWPIError(Timeout);
@@ -291,7 +290,7 @@ void Compressor::ClearAllPCMStickyFaults() {
   if (StatusIsFatal()) return;
   int32_t status = 0;
 
-  HAL_ClearAllPCMStickyFaults(m_module, &status);
+  HAL_ClearAllCTREPCMStickyFaults(m_module, &status);
 
   if (status) {
     wpi_setWPIError(Timeout);

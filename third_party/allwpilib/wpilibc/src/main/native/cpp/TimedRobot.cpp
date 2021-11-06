@@ -1,23 +1,20 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2017-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "frc/TimedRobot.h"
 
 #include <stdint.h>
 
+#include <cstdio>
 #include <utility>
 
 #include <hal/DriverStation.h>
 #include <hal/FRCUsageReporting.h>
 #include <hal/Notifier.h>
 
+#include "frc/Errors.h"
 #include "frc/Timer.h"
-#include "frc/Utility.h"
-#include "frc/WPIErrors.h"
 
 using namespace frc;
 
@@ -29,6 +26,7 @@ void TimedRobot::StartCompetition() {
   }
 
   // Tell the DS that the robot is ready to be enabled
+  std::puts("\n********** Robot program startup complete **********");
   HAL_ObserveUserProgramStarting();
 
   // Loop forever, calling the appropriate mode-dependent function
@@ -42,10 +40,12 @@ void TimedRobot::StartCompetition() {
     HAL_UpdateNotifierAlarm(
         m_notifier, static_cast<uint64_t>(callback.expirationTime * 1e6),
         &status);
-    wpi_setHALError(status);
+    FRC_CheckErrorStatus(status, "{}", "UpdateNotifierAlarm");
 
     uint64_t curTime = HAL_WaitForNotifierAlarm(m_notifier, &status);
-    if (curTime == 0 || status != 0) break;
+    if (curTime == 0 || status != 0) {
+      break;
+    }
 
     callback.func();
 
@@ -70,19 +70,15 @@ void TimedRobot::EndCompetition() {
   HAL_StopNotifier(m_notifier, &status);
 }
 
-units::second_t TimedRobot::GetPeriod() const {
-  return units::second_t(m_period);
-}
-
 TimedRobot::TimedRobot(double period) : TimedRobot(units::second_t(period)) {}
 
 TimedRobot::TimedRobot(units::second_t period) : IterativeRobotBase(period) {
-  m_startTime = frc2::Timer::GetFPGATimestamp();
+  m_startTime = Timer::GetFPGATimestamp();
   AddPeriodic([=] { LoopFunc(); }, period);
 
   int32_t status = 0;
   m_notifier = HAL_InitializeNotifier(&status);
-  wpi_setHALError(status);
+  FRC_CheckErrorStatus(status, "{}", "InitializeNotifier");
   HAL_SetNotifierName(m_notifier, "TimedRobot", &status);
 
   HAL_Report(HALUsageReporting::kResourceType_Framework,
@@ -93,7 +89,7 @@ TimedRobot::~TimedRobot() {
   int32_t status = 0;
 
   HAL_StopNotifier(m_notifier, &status);
-  wpi_setHALError(status);
+  FRC_ReportError(status, "{}", "StopNotifier");
 
   HAL_CleanNotifier(m_notifier, &status);
 }

@@ -1,24 +1,22 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2011-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "frc/commands/CommandGroup.h"
 
-#include "frc/WPIErrors.h"
+#include "frc/Errors.h"
 
 using namespace frc;
 
-CommandGroup::CommandGroup(const wpi::Twine& name) : Command(name) {}
+CommandGroup::CommandGroup(std::string_view name) : Command(name) {}
 
 void CommandGroup::AddSequential(Command* command) {
-  if (command == nullptr) {
-    wpi_setWPIErrorWithContext(NullParameter, "command");
+  if (!command) {
+    throw FRC_MakeError(err::NullParameter, "{}", "command");
+  }
+  if (!AssertUnlocked("Cannot add new command to command group")) {
     return;
   }
-  if (!AssertUnlocked("Cannot add new command to command group")) return;
 
   m_commands.emplace_back(command, CommandGroupEntry::kSequence_InSequence);
 
@@ -26,18 +24,21 @@ void CommandGroup::AddSequential(Command* command) {
 
   // Iterate through command->GetRequirements() and call Requires() on each
   // required subsystem
-  for (auto&& requirement : command->GetRequirements()) Requires(requirement);
+  for (auto&& requirement : command->GetRequirements()) {
+    Requires(requirement);
+  }
 }
 
-void CommandGroup::AddSequential(Command* command, double timeout) {
-  if (command == nullptr) {
-    wpi_setWPIErrorWithContext(NullParameter, "command");
+void CommandGroup::AddSequential(Command* command, units::second_t timeout) {
+  if (!command) {
+    throw FRC_MakeError(err::NullParameter, "{}", "command");
+  }
+  if (!AssertUnlocked("Cannot add new command to command group")) {
     return;
   }
-  if (!AssertUnlocked("Cannot add new command to command group")) return;
-  if (timeout < 0.0) {
-    wpi_setWPIErrorWithContext(ParameterOutOfRange, "timeout < 0.0");
-    return;
+  if (timeout < 0_s) {
+    throw FRC_MakeError(err::ParameterOutOfRange, "timeout {} < 0 s",
+                        timeout.value());
   }
 
   m_commands.emplace_back(command, CommandGroupEntry::kSequence_InSequence,
@@ -47,15 +48,19 @@ void CommandGroup::AddSequential(Command* command, double timeout) {
 
   // Iterate through command->GetRequirements() and call Requires() on each
   // required subsystem
-  for (auto&& requirement : command->GetRequirements()) Requires(requirement);
+  for (auto&& requirement : command->GetRequirements()) {
+    Requires(requirement);
+  }
 }
 
 void CommandGroup::AddParallel(Command* command) {
-  if (command == nullptr) {
-    wpi_setWPIErrorWithContext(NullParameter, "command");
+  if (!command) {
+    throw FRC_MakeError(err::NullParameter, "{}", "command");
     return;
   }
-  if (!AssertUnlocked("Cannot add new command to command group")) return;
+  if (!AssertUnlocked("Cannot add new command to command group")) {
+    return;
+  }
 
   m_commands.emplace_back(command, CommandGroupEntry::kSequence_BranchChild);
 
@@ -63,18 +68,21 @@ void CommandGroup::AddParallel(Command* command) {
 
   // Iterate through command->GetRequirements() and call Requires() on each
   // required subsystem
-  for (auto&& requirement : command->GetRequirements()) Requires(requirement);
+  for (auto&& requirement : command->GetRequirements()) {
+    Requires(requirement);
+  }
 }
 
-void CommandGroup::AddParallel(Command* command, double timeout) {
-  if (command == nullptr) {
-    wpi_setWPIErrorWithContext(NullParameter, "command");
+void CommandGroup::AddParallel(Command* command, units::second_t timeout) {
+  if (!command) {
+    throw FRC_MakeError(err::NullParameter, "{}", "command");
+  }
+  if (!AssertUnlocked("Cannot add new command to command group")) {
     return;
   }
-  if (!AssertUnlocked("Cannot add new command to command group")) return;
-  if (timeout < 0.0) {
-    wpi_setWPIErrorWithContext(ParameterOutOfRange, "timeout < 0.0");
-    return;
+  if (timeout < 0_s) {
+    throw FRC_MakeError(err::ParameterOutOfRange, "timeout {} < 0 s",
+                        timeout.value());
   }
 
   m_commands.emplace_back(command, CommandGroupEntry::kSequence_BranchChild,
@@ -84,26 +92,36 @@ void CommandGroup::AddParallel(Command* command, double timeout) {
 
   // Iterate through command->GetRequirements() and call Requires() on each
   // required subsystem
-  for (auto&& requirement : command->GetRequirements()) Requires(requirement);
+  for (auto&& requirement : command->GetRequirements()) {
+    Requires(requirement);
+  }
 }
 
 bool CommandGroup::IsInterruptible() const {
-  if (!Command::IsInterruptible()) return false;
+  if (!Command::IsInterruptible()) {
+    return false;
+  }
 
   if (m_currentCommandIndex != -1 &&
       static_cast<size_t>(m_currentCommandIndex) < m_commands.size()) {
     Command* cmd = m_commands[m_currentCommandIndex].m_command;
-    if (!cmd->IsInterruptible()) return false;
+    if (!cmd->IsInterruptible()) {
+      return false;
+    }
   }
 
   for (const auto& child : m_children) {
-    if (!child->m_command->IsInterruptible()) return false;
+    if (!child->m_command->IsInterruptible()) {
+      return false;
+    }
   }
 
   return true;
 }
 
-int CommandGroup::GetSize() const { return m_children.size(); }
+int CommandGroup::GetSize() const {
+  return m_children.size();
+}
 
 void CommandGroup::Initialize() {}
 
@@ -118,7 +136,9 @@ void CommandGroup::End() {}
 
 void CommandGroup::Interrupted() {}
 
-void CommandGroup::_Initialize() { m_currentCommandIndex = -1; }
+void CommandGroup::_Initialize() {
+  m_currentCommandIndex = -1;
+}
 
 void CommandGroup::_Execute() {
   CommandGroupEntry* entry;
@@ -135,7 +155,9 @@ void CommandGroup::_Execute() {
     // If a command is prepared to run
     if (cmd != nullptr) {
       // If command timed out, cancel it so it's removed from the Scheduler
-      if (entry->IsTimedOut()) cmd->_Cancel();
+      if (entry->IsTimedOut()) {
+        cmd->_Cancel();
+      }
 
       // If command finished or was canceled, remove it from Scheduler
       if (cmd->Run()) {
@@ -222,7 +244,9 @@ void CommandGroup::_End() {
   m_children.clear();
 }
 
-void CommandGroup::_Interrupted() { _End(); }
+void CommandGroup::_Interrupted() {
+  _End();
+}
 
 void CommandGroup::CancelConflicts(Command* command) {
   for (auto childIter = m_children.begin(); childIter != m_children.end();) {
@@ -238,6 +262,8 @@ void CommandGroup::CancelConflicts(Command* command) {
         break;
       }
     }
-    if (!erased) childIter++;
+    if (!erased) {
+      childIter++;
+    }
   }
 }

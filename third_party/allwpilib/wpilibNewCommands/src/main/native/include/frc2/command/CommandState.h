@@ -1,11 +1,10 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019 FIRST. All Rights Reserved.                             */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
+
+#include <units/time.h>
 
 namespace frc2 {
 /**
@@ -21,10 +20,10 @@ class CommandState final {
   bool IsInterruptible() const { return m_interruptible; }
 
   // The time since this command was initialized.
-  double TimeSinceInitialized() const;
+  units::second_t TimeSinceInitialized() const;
 
  private:
-  double m_startTime = -1;
+  units::second_t m_startTime = -1_s;
   bool m_interruptible;
 
   void StartTiming();

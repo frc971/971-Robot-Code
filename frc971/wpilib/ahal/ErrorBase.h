@@ -9,8 +9,6 @@
 
 #include <vector>
 
-#include <wpi/StringRef.h>
-#include <wpi/Twine.h>
 #include <wpi/mutex.h>
 
 // Forward declared manually to avoid needing to pull in entire HAL header.

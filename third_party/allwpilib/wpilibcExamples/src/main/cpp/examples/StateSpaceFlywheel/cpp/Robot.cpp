@@ -1,25 +1,20 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2017-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include <frc/DriverStation.h>
 #include <frc/Encoder.h>
-#include <frc/GenericHID.h>
-#include <frc/PWMVictorSPX.h>
-#include <frc/StateSpaceUtil.h>
 #include <frc/TimedRobot.h>
 #include <frc/XboxController.h>
 #include <frc/controller/LinearQuadraticRegulator.h>
 #include <frc/drive/DifferentialDrive.h>
 #include <frc/estimator/KalmanFilter.h>
+#include <frc/motorcontrol/PWMSparkMax.h>
 #include <frc/system/LinearSystemLoop.h>
 #include <frc/system/plant/DCMotor.h>
 #include <frc/system/plant/LinearSystemId.h>
 #include <units/angular_velocity.h>
-#include <wpi/math>
+#include <wpi/numbers>
 
 /**
  * This is a sample program to demonstrate how to use a state-space controller
@@ -80,32 +75,32 @@ class Robot : public frc::TimedRobot {
   // An encoder set up to measure flywheel velocity in radians per second.
   frc::Encoder m_encoder{kEncoderAChannel, kEncoderBChannel};
 
-  frc::PWMVictorSPX m_motor{kMotorPort};
+  frc::PWMSparkMax m_motor{kMotorPort};
   frc::XboxController m_joystick{kJoystickPort};
 
  public:
-  void RobotInit() {
+  void RobotInit() override {
     // We go 2 pi radians per 4096 clicks.
-    m_encoder.SetDistancePerPulse(2.0 * wpi::math::pi / 4096.0);
+    m_encoder.SetDistancePerPulse(2.0 * wpi::numbers::pi / 4096.0);
   }
 
-  void TeleopInit() {
-    m_loop.Reset(frc::MakeMatrix<1, 1>(m_encoder.GetRate()));
+  void TeleopInit() override {
+    m_loop.Reset(Eigen::Vector<double, 1>{m_encoder.GetRate()});
   }
 
-  void TeleopPeriodic() {
+  void TeleopPeriodic() override {
     // Sets the target speed of our flywheel. This is similar to setting the
     // setpoint of a PID controller.
-    if (m_joystick.GetBumper(frc::GenericHID::kRightHand)) {
+    if (m_joystick.GetRightBumper()) {
       // We pressed the bumper, so let's set our next reference
-      m_loop.SetNextR(frc::MakeMatrix<1, 1>(kSpinup.to<double>()));
+      m_loop.SetNextR(Eigen::Vector<double, 1>{kSpinup.value()});
     } else {
       // We released the bumper, so let's spin down
-      m_loop.SetNextR(frc::MakeMatrix<1, 1>(0.0));
+      m_loop.SetNextR(Eigen::Vector<double, 1>{0.0});
     }
 
     // Correct our Kalman filter's state vector estimate with encoder data.
-    m_loop.Correct(frc::MakeMatrix<1, 1>(m_encoder.GetRate()));
+    m_loop.Correct(Eigen::Vector<double, 1>{m_encoder.GetRate()});
 
     // Update our LQR to generate new voltage commands and use the voltages to
     // predict the next state with out Kalman filter.
@@ -119,5 +114,7 @@ class Robot : public frc::TimedRobot {
 };
 
 #ifndef RUNNING_FRC_TESTS
-int main() { return frc::StartRobot<Robot>(); }
+int main() {
+  return frc::StartRobot<Robot>();
+}
 #endif

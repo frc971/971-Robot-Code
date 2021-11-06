@@ -1,14 +1,12 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "frc/trajectory/TrajectoryUtil.h"
 
 #include <system_error>
 
+#include <fmt/format.h>
 #include <wpi/SmallString.h>
 #include <wpi/json.h>
 #include <wpi/raw_istream.h>
@@ -17,13 +15,12 @@
 using namespace frc;
 
 void TrajectoryUtil::ToPathweaverJson(const Trajectory& trajectory,
-                                      const wpi::Twine& path) {
+                                      std::string_view path) {
   std::error_code error_code;
 
-  wpi::SmallString<128> buf;
-  wpi::raw_fd_ostream output{path.toStringRef(buf), error_code};
+  wpi::raw_fd_ostream output{path, error_code};
   if (error_code) {
-    throw std::runtime_error(("Cannot open file: " + path).str());
+    throw std::runtime_error(fmt::format("Cannot open file: {}", path));
   }
 
   wpi::json json = trajectory.States();
@@ -31,13 +28,12 @@ void TrajectoryUtil::ToPathweaverJson(const Trajectory& trajectory,
   output.flush();
 }
 
-Trajectory TrajectoryUtil::FromPathweaverJson(const wpi::Twine& path) {
+Trajectory TrajectoryUtil::FromPathweaverJson(std::string_view path) {
   std::error_code error_code;
 
-  wpi::SmallString<128> buf;
-  wpi::raw_fd_istream input{path.toStringRef(buf), error_code};
+  wpi::raw_fd_istream input{path, error_code};
   if (error_code) {
-    throw std::runtime_error(("Cannot open file: " + path).str());
+    throw std::runtime_error(fmt::format("Cannot open file: {}", path));
   }
 
   wpi::json json;
@@ -51,8 +47,7 @@ std::string TrajectoryUtil::SerializeTrajectory(const Trajectory& trajectory) {
   return json.dump();
 }
 
-Trajectory TrajectoryUtil::DeserializeTrajectory(
-    const wpi::StringRef json_str) {
-  wpi::json json = wpi::json::parse(json_str);
+Trajectory TrajectoryUtil::DeserializeTrajectory(std::string_view jsonStr) {
+  wpi::json json = wpi::json::parse(jsonStr);
   return Trajectory{json.get<std::vector<Trajectory::State>>()};
 }

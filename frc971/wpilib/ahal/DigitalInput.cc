@@ -36,7 +36,8 @@ DigitalInput::DigitalInput(int channel) {
   m_channel = channel;
 
   int32_t status = 0;
-  m_handle = HAL_InitializeDIOPort(HAL_GetPort(channel), true, &status);
+  m_handle =
+      HAL_InitializeDIOPort(HAL_GetPort(channel), true, nullptr, &status);
   if (status != 0) {
     wpi_setErrorWithContextRange(status, 0, HAL_GetNumDigitalChannels(),
                                  channel, HAL_GetErrorMessage(status));
@@ -54,9 +55,7 @@ DigitalInput::DigitalInput(int channel) {
 DigitalInput::~DigitalInput() {
   if (StatusIsFatal()) return;
   if (m_interrupt != HAL_kInvalidHandle) {
-    int32_t status = 0;
-    HAL_CleanInterrupts(m_interrupt, &status);
-    // ignore status, as an invalid handle just needs to be ignored.
+    HAL_CleanInterrupts(m_interrupt);
     m_interrupt = HAL_kInvalidHandle;
   }
 

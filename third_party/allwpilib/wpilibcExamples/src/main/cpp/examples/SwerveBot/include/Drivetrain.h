@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #pragma once
 
@@ -11,7 +8,7 @@
 #include <frc/geometry/Translation2d.h>
 #include <frc/kinematics/SwerveDriveKinematics.h>
 #include <frc/kinematics/SwerveDriveOdometry.h>
-#include <wpi/math>
+#include <wpi/numbers>
 
 #include "SwerveModule.h"
 
@@ -30,7 +27,7 @@ class Drivetrain {
   static constexpr units::meters_per_second_t kMaxSpeed =
       3.0_mps;  // 3 meters per second
   static constexpr units::radians_per_second_t kMaxAngularSpeed{
-      wpi::math::pi};  // 1/2 rotation per second
+      wpi::numbers::pi};  // 1/2 rotation per second
 
  private:
   frc::Translation2d m_frontLeftLocation{+0.381_m, +0.381_m};
@@ -38,10 +35,10 @@ class Drivetrain {
   frc::Translation2d m_backLeftLocation{-0.381_m, +0.381_m};
   frc::Translation2d m_backRightLocation{-0.381_m, -0.381_m};
 
-  SwerveModule m_frontLeft{1, 2};
-  SwerveModule m_frontRight{2, 3};
-  SwerveModule m_backLeft{5, 6};
-  SwerveModule m_backRight{7, 8};
+  SwerveModule m_frontLeft{1, 2, 0, 1, 2, 3};
+  SwerveModule m_frontRight{2, 3, 4, 5, 6, 7};
+  SwerveModule m_backLeft{5, 6, 8, 9, 10, 11};
+  SwerveModule m_backRight{7, 8, 12, 13, 14, 15};
 
   frc::AnalogGyro m_gyro{0};
 

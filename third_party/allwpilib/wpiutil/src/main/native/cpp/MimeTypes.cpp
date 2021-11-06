@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2020 FIRST. All Rights Reserved.                             */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #include "wpi/MimeTypes.h"
 
@@ -13,7 +10,7 @@ namespace wpi {
 
 // derived partially from
 // https://github.com/DEGoodmanWilson/libmime/blob/stable/0.1.2/mime/mime.cpp
-StringRef MimeTypeFromPath(StringRef path) {
+std::string_view MimeTypeFromPath(std::string_view path) {
   // https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types
   static StringMap<const char*> mimeTypes{
       // text
@@ -55,11 +52,11 @@ StringRef MimeTypeFromPath(StringRef path) {
   static const char* defaultType = "application/octet-stream";
 
   auto pos = path.find_last_of("/");
-  if (pos != StringRef::npos) {
+  if (pos != std::string_view::npos) {
     path = path.substr(pos + 1);
   }
   auto dot_pos = path.find_last_of(".");
-  if (dot_pos > 0 && dot_pos != StringRef::npos) {
+  if (dot_pos > 0 && dot_pos != std::string_view::npos) {
     auto type = mimeTypes.find(path.substr(dot_pos + 1));
     if (type != mimeTypes.end()) {
       return type->getValue();

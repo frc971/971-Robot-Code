@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2015-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 #ifndef CSCORE_CSCORE_CPP_H_
 #define CSCORE_CSCORE_CPP_H_
@@ -12,12 +9,11 @@
 
 #include <functional>
 #include <string>
+#include <string_view>
 #include <vector>
 
-#include <wpi/ArrayRef.h>
 #include <wpi/SmallVector.h>
-#include <wpi/StringRef.h>
-#include <wpi/Twine.h>
+#include <wpi/span.h>
 
 #include "cscore_c.h"
 
@@ -119,34 +115,36 @@ struct RawEvent {
     kTelemetryUpdated = CS_TELEMETRY_UPDATED,
     kSinkPropertyCreated = CS_SINK_PROPERTY_CREATED,
     kSinkPropertyValueUpdated = CS_SINK_PROPERTY_VALUE_UPDATED,
-    kSinkPropertyChoicesUpdated = CS_SINK_PROPERTY_CHOICES_UPDATED
+    kSinkPropertyChoicesUpdated = CS_SINK_PROPERTY_CHOICES_UPDATED,
+    kUsbCamerasChanged = CS_USB_CAMERAS_CHANGED
   };
 
   RawEvent() = default;
   explicit RawEvent(RawEvent::Kind kind_) : kind{kind_} {}
-  RawEvent(const wpi::Twine& name_, CS_Handle handle_, RawEvent::Kind kind_)
-      : kind{kind_}, name{name_.str()} {
+  RawEvent(std::string_view name_, CS_Handle handle_, RawEvent::Kind kind_)
+      : kind{kind_}, name{name_} {
     if (kind_ == kSinkCreated || kind_ == kSinkDestroyed ||
-        kind_ == kSinkEnabled || kind_ == kSinkDisabled)
+        kind_ == kSinkEnabled || kind_ == kSinkDisabled) {
       sinkHandle = handle_;
-    else
+    } else {
       sourceHandle = handle_;
+    }
   }
-  RawEvent(const wpi::Twine& name_, CS_Source source_, const VideoMode& mode_)
+  RawEvent(std::string_view name_, CS_Source source_, const VideoMode& mode_)
       : kind{kSourceVideoModeChanged},
         sourceHandle{source_},
-        name{name_.str()},
+        name{name_},
         mode{mode_} {}
-  RawEvent(const wpi::Twine& name_, CS_Source source_, RawEvent::Kind kind_,
+  RawEvent(std::string_view name_, CS_Source source_, RawEvent::Kind kind_,
            CS_Property property_, CS_PropertyKind propertyKind_, int value_,
-           const wpi::Twine& valueStr_)
+           std::string_view valueStr_)
       : kind{kind_},
         sourceHandle{source_},
-        name{name_.str()},
+        name{name_},
         propertyHandle{property_},
         propertyKind{propertyKind_},
         value{value_},
-        valueStr{valueStr_.str()} {}
+        valueStr{valueStr_} {}
 
   Kind kind;
 
@@ -165,6 +163,9 @@ struct RawEvent {
   CS_PropertyKind propertyKind;
   int value;
   std::string valueStr;
+
+  // Listener that was triggered
+  CS_Listener listener{0};
 };
 
 /**
@@ -173,9 +174,9 @@ struct RawEvent {
  */
 CS_PropertyKind GetPropertyKind(CS_Property property, CS_Status* status);
 std::string GetPropertyName(CS_Property property, CS_Status* status);
-wpi::StringRef GetPropertyName(CS_Property property,
-                               wpi::SmallVectorImpl<char>& buf,
-                               CS_Status* status);
+std::string_view GetPropertyName(CS_Property property,
+                                 wpi::SmallVectorImpl<char>& buf,
+                                 CS_Status* status);
 int GetProperty(CS_Property property, CS_Status* status);
 void SetProperty(CS_Property property, int value, CS_Status* status);
 int GetPropertyMin(CS_Property property, CS_Status* status);
@@ -183,10 +184,10 @@ int GetPropertyMax(CS_Property property, CS_Status* status);
 int GetPropertyStep(CS_Property property, CS_Status* status);
 int GetPropertyDefault(CS_Property property, CS_Status* status);
 std::string GetStringProperty(CS_Property property, CS_Status* status);
-wpi::StringRef GetStringProperty(CS_Property property,
-                                 wpi::SmallVectorImpl<char>& buf,
-                                 CS_Status* status);
-void SetStringProperty(CS_Property property, const wpi::Twine& value,
+std::string_view GetStringProperty(CS_Property property,
+                                   wpi::SmallVectorImpl<char>& buf,
+                                   CS_Status* status);
+void SetStringProperty(CS_Property property, std::string_view value,
                        CS_Status* status);
 std::vector<std::string> GetEnumPropertyChoices(CS_Property property,
                                                 CS_Status* status);
@@ -196,16 +197,15 @@ std::vector<std::string> GetEnumPropertyChoices(CS_Property property,
  * @defgroup cscore_source_create_func Source Creation Functions
  * @{
  */
-CS_Source CreateUsbCameraDev(const wpi::Twine& name, int dev,
-                             CS_Status* status);
-CS_Source CreateUsbCameraPath(const wpi::Twine& name, const wpi::Twine& path,
+CS_Source CreateUsbCameraDev(std::string_view name, int dev, CS_Status* status);
+CS_Source CreateUsbCameraPath(std::string_view name, std::string_view path,
                               CS_Status* status);
-CS_Source CreateHttpCamera(const wpi::Twine& name, const wpi::Twine& url,
+CS_Source CreateHttpCamera(std::string_view name, std::string_view url,
                            CS_HttpCameraKind kind, CS_Status* status);
-CS_Source CreateHttpCamera(const wpi::Twine& name,
-                           wpi::ArrayRef<std::string> urls,
+CS_Source CreateHttpCamera(std::string_view name,
+                           wpi::span<const std::string> urls,
                            CS_HttpCameraKind kind, CS_Status* status);
-CS_Source CreateCvSource(const wpi::Twine& name, const VideoMode& mode,
+CS_Source CreateCvSource(std::string_view name, const VideoMode& mode,
                          CS_Status* status);
 /** @} */
 
@@ -215,21 +215,22 @@ CS_Source CreateCvSource(const wpi::Twine& name, const VideoMode& mode,
  */
 CS_SourceKind GetSourceKind(CS_Source source, CS_Status* status);
 std::string GetSourceName(CS_Source source, CS_Status* status);
-wpi::StringRef GetSourceName(CS_Source source, wpi::SmallVectorImpl<char>& buf,
-                             CS_Status* status);
+std::string_view GetSourceName(CS_Source source,
+                               wpi::SmallVectorImpl<char>& buf,
+                               CS_Status* status);
 std::string GetSourceDescription(CS_Source source, CS_Status* status);
-wpi::StringRef GetSourceDescription(CS_Source source,
-                                    wpi::SmallVectorImpl<char>& buf,
-                                    CS_Status* status);
+std::string_view GetSourceDescription(CS_Source source,
+                                      wpi::SmallVectorImpl<char>& buf,
+                                      CS_Status* status);
 uint64_t GetSourceLastFrameTime(CS_Source source, CS_Status* status);
 void SetSourceConnectionStrategy(CS_Source source,
                                  CS_ConnectionStrategy strategy,
                                  CS_Status* status);
 bool IsSourceConnected(CS_Source source, CS_Status* status);
 bool IsSourceEnabled(CS_Source source, CS_Status* status);
-CS_Property GetSourceProperty(CS_Source source, const wpi::Twine& name,
+CS_Property GetSourceProperty(CS_Source source, std::string_view name,
                               CS_Status* status);
-wpi::ArrayRef<CS_Property> EnumerateSourceProperties(
+wpi::span<CS_Property> EnumerateSourceProperties(
     CS_Source source, wpi::SmallVectorImpl<CS_Property>& vec,
     CS_Status* status);
 VideoMode GetSourceVideoMode(CS_Source source, CS_Status* status);
@@ -240,7 +241,7 @@ bool SetSourcePixelFormat(CS_Source source, VideoMode::PixelFormat pixelFormat,
 bool SetSourceResolution(CS_Source source, int width, int height,
                          CS_Status* status);
 bool SetSourceFPS(CS_Source source, int fps, CS_Status* status);
-bool SetSourceConfigJson(CS_Source source, wpi::StringRef config,
+bool SetSourceConfigJson(CS_Source source, std::string_view config,
                          CS_Status* status);
 bool SetSourceConfigJson(CS_Source source, const wpi::json& config,
                          CS_Status* status);
@@ -248,9 +249,9 @@ std::string GetSourceConfigJson(CS_Source source, CS_Status* status);
 wpi::json GetSourceConfigJsonObject(CS_Source source, CS_Status* status);
 std::vector<VideoMode> EnumerateSourceVideoModes(CS_Source source,
                                                  CS_Status* status);
-wpi::ArrayRef<CS_Sink> EnumerateSourceSinks(CS_Source source,
-                                            wpi::SmallVectorImpl<CS_Sink>& vec,
-                                            CS_Status* status);
+wpi::span<CS_Sink> EnumerateSourceSinks(CS_Source source,
+                                        wpi::SmallVectorImpl<CS_Sink>& vec,
+                                        CS_Status* status);
 CS_Source CopySource(CS_Source source, CS_Status* status);
 void ReleaseSource(CS_Source source, CS_Status* status);
 /** @} */
@@ -274,7 +275,7 @@ void SetCameraExposureManual(CS_Source source, int value, CS_Status* status);
  * @defgroup cscore_usbcamera_func UsbCamera Source Functions
  * @{
  */
-void SetUsbCameraPath(CS_Source, const wpi::Twine& path, CS_Status* status);
+void SetUsbCameraPath(CS_Source, std::string_view path, CS_Status* status);
 std::string GetUsbCameraPath(CS_Source source, CS_Status* status);
 UsbCameraInfo GetUsbCameraInfo(CS_Source source, CS_Status* status);
 /** @} */
@@ -284,7 +285,7 @@ UsbCameraInfo GetUsbCameraInfo(CS_Source source, CS_Status* status);
  * @{
  */
 CS_HttpCameraKind GetHttpCameraKind(CS_Source source, CS_Status* status);
-void SetHttpCameraUrls(CS_Source source, wpi::ArrayRef<std::string> urls,
+void SetHttpCameraUrls(CS_Source source, wpi::span<const std::string> urls,
                        CS_Status* status);
 std::vector<std::string> GetHttpCameraUrls(CS_Source source, CS_Status* status);
 /** @} */
@@ -293,17 +294,17 @@ std::vector<std::string> GetHttpCameraUrls(CS_Source source, CS_Status* status);
  * @defgroup cscore_opencv_source_func OpenCV Source Functions
  * @{
  */
-void NotifySourceError(CS_Source source, const wpi::Twine& msg,
+void NotifySourceError(CS_Source source, std::string_view msg,
                        CS_Status* status);
 void SetSourceConnected(CS_Source source, bool connected, CS_Status* status);
-void SetSourceDescription(CS_Source source, const wpi::Twine& description,
+void SetSourceDescription(CS_Source source, std::string_view description,
                           CS_Status* status);
-CS_Property CreateSourceProperty(CS_Source source, const wpi::Twine& name,
+CS_Property CreateSourceProperty(CS_Source source, std::string_view name,
                                  CS_PropertyKind kind, int minimum, int maximum,
                                  int step, int defaultValue, int value,
                                  CS_Status* status);
 void SetSourceEnumPropertyChoices(CS_Source source, CS_Property property,
-                                  wpi::ArrayRef<std::string> choices,
+                                  wpi::span<const std::string> choices,
                                   CS_Status* status);
 /** @} */
 
@@ -311,11 +312,10 @@ void SetSourceEnumPropertyChoices(CS_Source source, CS_Property property,
  * @defgroup cscore_sink_create_func Sink Creation Functions
  * @{
  */
-CS_Sink CreateMjpegServer(const wpi::Twine& name,
-                          const wpi::Twine& listenAddress, int port,
-                          CS_Status* status);
-CS_Sink CreateCvSink(const wpi::Twine& name, CS_Status* status);
-CS_Sink CreateCvSinkCallback(const wpi::Twine& name,
+CS_Sink CreateMjpegServer(std::string_view name, std::string_view listenAddress,
+                          int port, CS_Status* status);
+CS_Sink CreateCvSink(std::string_view name, CS_Status* status);
+CS_Sink CreateCvSinkCallback(std::string_view name,
                              std::function<void(uint64_t time)> processFrame,
                              CS_Status* status);
 
@@ -327,19 +327,21 @@ CS_Sink CreateCvSinkCallback(const wpi::Twine& name,
  */
 CS_SinkKind GetSinkKind(CS_Sink sink, CS_Status* status);
 std::string GetSinkName(CS_Sink sink, CS_Status* status);
-wpi::StringRef GetSinkName(CS_Sink sink, wpi::SmallVectorImpl<char>& buf,
-                           CS_Status* status);
+std::string_view GetSinkName(CS_Sink sink, wpi::SmallVectorImpl<char>& buf,
+                             CS_Status* status);
 std::string GetSinkDescription(CS_Sink sink, CS_Status* status);
-wpi::StringRef GetSinkDescription(CS_Sink sink, wpi::SmallVectorImpl<char>& buf,
-                                  CS_Status* status);
-CS_Property GetSinkProperty(CS_Sink sink, const wpi::Twine& name,
+std::string_view GetSinkDescription(CS_Sink sink,
+                                    wpi::SmallVectorImpl<char>& buf,
+                                    CS_Status* status);
+CS_Property GetSinkProperty(CS_Sink sink, std::string_view name,
                             CS_Status* status);
-wpi::ArrayRef<CS_Property> EnumerateSinkProperties(
+wpi::span<CS_Property> EnumerateSinkProperties(
     CS_Sink sink, wpi::SmallVectorImpl<CS_Property>& vec, CS_Status* status);
 void SetSinkSource(CS_Sink sink, CS_Source source, CS_Status* status);
-CS_Property GetSinkSourceProperty(CS_Sink sink, const wpi::Twine& name,
+CS_Property GetSinkSourceProperty(CS_Sink sink, std::string_view name,
                                   CS_Status* status);
-bool SetSinkConfigJson(CS_Sink sink, wpi::StringRef config, CS_Status* status);
+bool SetSinkConfigJson(CS_Sink sink, std::string_view config,
+                       CS_Status* status);
 bool SetSinkConfigJson(CS_Sink sink, const wpi::json& config,
                        CS_Status* status);
 std::string GetSinkConfigJson(CS_Sink sink, CS_Status* status);
@@ -361,11 +363,11 @@ int GetMjpegServerPort(CS_Sink sink, CS_Status* status);
  * @defgroup cscore_opencv_sink_func OpenCV Sink Functions
  * @{
  */
-void SetSinkDescription(CS_Sink sink, const wpi::Twine& description,
+void SetSinkDescription(CS_Sink sink, std::string_view description,
                         CS_Status* status);
 std::string GetSinkError(CS_Sink sink, CS_Status* status);
-wpi::StringRef GetSinkError(CS_Sink sink, wpi::SmallVectorImpl<char>& buf,
-                            CS_Status* status);
+std::string_view GetSinkError(CS_Sink sink, wpi::SmallVectorImpl<char>& buf,
+                              CS_Status* status);
 void SetSinkEnabled(CS_Sink sink, bool enabled, CS_Status* status);
 /** @} */
 
@@ -380,6 +382,15 @@ CS_Listener AddListener(std::function<void(const RawEvent& event)> callback,
                         int eventMask, bool immediateNotify, CS_Status* status);
 
 void RemoveListener(CS_Listener handle, CS_Status* status);
+
+CS_ListenerPoller CreateListenerPoller();
+void DestroyListenerPoller(CS_ListenerPoller poller);
+CS_Listener AddPolledListener(CS_ListenerPoller poller, int eventMask,
+                              bool immediateNotify, CS_Status* status);
+std::vector<RawEvent> PollListener(CS_ListenerPoller poller);
+std::vector<RawEvent> PollListener(CS_ListenerPoller poller, double timeout,
+                                   bool* timedOut);
+void CancelPollListener(CS_ListenerPoller poller);
 /** @} */
 
 bool NotifierDestroyed();
@@ -419,10 +430,10 @@ void Shutdown();
  */
 std::vector<UsbCameraInfo> EnumerateUsbCameras(CS_Status* status);
 
-wpi::ArrayRef<CS_Source> EnumerateSourceHandles(
+wpi::span<CS_Source> EnumerateSourceHandles(
     wpi::SmallVectorImpl<CS_Source>& vec, CS_Status* status);
-wpi::ArrayRef<CS_Sink> EnumerateSinkHandles(wpi::SmallVectorImpl<CS_Sink>& vec,
-                                            CS_Status* status);
+wpi::span<CS_Sink> EnumerateSinkHandles(wpi::SmallVectorImpl<CS_Sink>& vec,
+                                        CS_Status* status);
 
 std::string GetHostname();
 
