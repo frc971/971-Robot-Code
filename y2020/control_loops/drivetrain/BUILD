@@ -101,6 +101,7 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
+        "//y2020:constants",
         ":polydrivetrain_plants",
         "//frc971:shifter_hall_effect",
         "//frc971/control_loops/drivetrain:drivetrain_config",
