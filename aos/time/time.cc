@@ -221,7 +221,7 @@ monotonic_clock::time_point monotonic_clock::now() noexcept {
   using systick_duration =
       std::chrono::duration<uint32_t, std::ratio<1, F_CPU>>;
 
-  return time_point(aos::time::round<std::chrono::nanoseconds>(
+  return time_point(std::chrono::round<std::chrono::nanoseconds>(
       std::chrono::milliseconds(ms_count) + systick_duration(counter_up)));
 
 #endif  // __linux__
