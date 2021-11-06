@@ -1,5 +1,6 @@
 #include "y2020/control_loops/superstructure/turret/aiming.h"
 
+#include "aos/network/team_number.h"
 #include "frc971/control_loops/pose.h"
 #include "gtest/gtest.h"
 #include "y2020/constants.h"
@@ -15,6 +16,8 @@ using frc971::control_loops::Pose;
 
 class AimerTest : public ::testing::Test {
  public:
+  AimerTest() { aos::network::OverrideTeamNumber(971); }
+
   typedef Aimer::Goal Goal;
   typedef Aimer::Status Status;
   struct StatusData {
