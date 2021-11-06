@@ -6,6 +6,7 @@
 
 #include "aos/init.h"
 #include "aos/logging/logging.h"
+#include "aos/realtime.h"
 #include "aos/util/compiler_memory_barrier.h"
 #include "frc971/wpilib/ahal/DigitalInput.h"
 #include "frc971/wpilib/ahal/DriverStation.h"
@@ -27,6 +28,10 @@ SensorReader::SensorReader(::aos::ShmEventLoop *event_loop)
   ds_ = &::frc::DriverStation::GetInstance();
 
   event_loop->SetRuntimeRealtimePriority(40);
+  // The timer interrupt fires on CPU1.  Since nothing else is pinned, it will
+  // be cheapest to pin this there so it transitions directly and doesn't
+  // need to ever migrate.
+  event_loop->SetRuntimeAffinity(aos::MakeCpusetFromCpus({1}));
 
   // Fill in the no pwm trigger defaults.
   timer_handler_ = event_loop_->AddTimer([this]() { Loop(); });
