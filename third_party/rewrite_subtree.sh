@@ -13,11 +13,13 @@
 set -e
 set -o pipefail
 
+export SIGNOFF="Signed-off-by: $(git config --get user.name) <$(git config --get user.email)>"
+
 GIT_DIR=$(readlink -f "$(git rev-parse --git-dir)")
 TMP_MSG="${GIT_DIR}/COMMIT_MSG_REWRITE"
 
-git filter-branch --msg-filter \
-  "cat > ${TMP_MSG} && \"${GIT_DIR}/hooks/commit-msg\" ${TMP_MSG} && \
+git filter-branch -f --msg-filter \
+  "cat | git interpret-trailers --trailer \"$SIGNOFF\" > ${TMP_MSG} && \"${GIT_DIR}/hooks/commit-msg\" ${TMP_MSG} && \
   cat \"${TMP_MSG}\"" HEAD...HEAD~1
 
 rm -rf "${TMP_MSG}"
