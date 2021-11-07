@@ -17,9 +17,7 @@ namespace aos {
 // continue working in that case.
 class Ftrace {
  public:
-  Ftrace()
-      : message_fd_(open("/sys/kernel/debug/tracing/trace_marker", O_WRONLY)),
-        on_fd_(open("/sys/kernel/debug/tracing/tracing_on", O_WRONLY)) {}
+  Ftrace();
   ~Ftrace();
 
   // Writes a message with a printf-style format.

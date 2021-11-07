@@ -3,7 +3,19 @@
 #include <cstdarg>
 #include <cstdio>
 
+DEFINE_bool(
+    enable_ftrace, false,
+    "If false, disable logging to /sys/kernel/debug/tracing/trace_marker");
+
 namespace aos {
+
+Ftrace::Ftrace()
+    : message_fd_(FLAGS_enable_ftrace
+                      ? open("/sys/kernel/debug/tracing/trace_marker", O_WRONLY)
+                      : -1),
+      on_fd_(FLAGS_enable_ftrace
+                 ? open("/sys/kernel/debug/tracing/tracing_on", O_WRONLY)
+                 : -1) {}
 
 Ftrace::~Ftrace() {
   if (message_fd_ != -1) {
