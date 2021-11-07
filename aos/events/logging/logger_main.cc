@@ -3,6 +3,7 @@
 
 #include "aos/configuration.h"
 #include "aos/events/logging/log_writer.h"
+#include "aos/events/logging/snappy_encoder.h"
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 #include "aos/logging/log_namer.h"
@@ -14,6 +15,8 @@ DEFINE_string(config, "config.json", "Config file to use.");
 DEFINE_bool(skip_renicing, false,
             "If true, skip renicing the logger.  This leaves it lower priority "
             "and increases the likelihood of dropping messages and crashing.");
+
+DEFINE_bool(snappy_compress, false, "If true, compress log data using snappy.");
 
 int main(int argc, char *argv[]) {
   gflags::SetUsageMessage(
@@ -29,9 +32,15 @@ int main(int argc, char *argv[]) {
 
   aos::ShmEventLoop event_loop(&config.message());
 
-  std::unique_ptr<aos::logger::LogNamer> log_namer;
+  std::unique_ptr<aos::logger::MultiNodeLogNamer> log_namer;
   log_namer = std::make_unique<aos::logger::MultiNodeLogNamer>(
       absl::StrCat(aos::logging::GetLogName("fbs_log"), "/"), &event_loop);
+
+  if (FLAGS_snappy_compress) {
+    log_namer->set_extension(aos::logger::SnappyDecoder::kExtension);
+    log_namer->set_encoder_factory(
+        []() { return std::make_unique<aos::logger::SnappyEncoder>(); });
+  }
 
   aos::logger::Logger logger(&event_loop);
   event_loop.OnRun([&log_namer, &logger]() {

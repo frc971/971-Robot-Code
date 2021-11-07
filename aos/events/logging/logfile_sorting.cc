@@ -54,7 +54,8 @@ class LocalFileOperations final : public FileOperations {
 };
 
 bool IsValidFilename(std::string_view filename) {
-  return EndsWith(filename, ".bfbs") || EndsWith(filename, ".bfbs.xz");
+  return EndsWith(filename, ".bfbs") || EndsWith(filename, ".bfbs.xz") ||
+         EndsWith(filename, ".bfbs.sz");
 }
 
 std::unique_ptr<FileOperations> MakeFileOperations(std::string_view filename) {

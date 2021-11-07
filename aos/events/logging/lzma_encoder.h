@@ -52,6 +52,8 @@ class LzmaEncoder final : public DetachedBufferEncoder {
 // Decompresses data with liblzma.
 class LzmaDecoder final : public DataDecoder {
  public:
+  static constexpr std::string_view kExtension = ".xz";
+
   explicit LzmaDecoder(std::unique_ptr<DataDecoder> underlying_decoder);
   explicit LzmaDecoder(std::string_view filename)
       : LzmaDecoder(std::make_unique<DummyDecoder>(filename)) {}
