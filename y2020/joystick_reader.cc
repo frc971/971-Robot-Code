@@ -42,6 +42,7 @@ namespace superstructure = y2020::control_loops::superstructure;
 const ButtonLocation kAutoTrack(3, 3);
 const ButtonLocation kAutoNoHood(3, 5);
 const ButtonLocation kHood(3, 2);
+const ButtonLocation kShootSlow(4, 2);
 const ButtonLocation kFixedTurret(3, 1);
 const ButtonLocation kFeed(4, 1);
 const ButtonLocation kFeedDriver(1, 2);
@@ -187,6 +188,9 @@ class Reader : public ::frc971::input::ActionJoystickInput {
         accelerator_speed = setpoint_fetcher_->accelerator();
         finisher_speed = setpoint_fetcher_->finisher();
       }
+    } else if (data.IsPressed(kShootSlow)) {
+      accelerator_speed = 150.0;
+      finisher_speed = 200.0;
     }
 
     if (data.IsPressed(kIntakeExtend) || data.IsPressed(kIntakeExtendDriver)) {
