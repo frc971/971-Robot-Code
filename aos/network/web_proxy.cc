@@ -17,7 +17,7 @@ extern "C" {
 struct list *tmrl_get(void);
 }
 
-DEFINE_int32(proxy_port, 8080, "Port to use for the web proxy server.");
+DEFINE_int32(proxy_port, 1180, "Port to use for the web proxy server.");
 
 namespace aos {
 namespace web_proxy {
