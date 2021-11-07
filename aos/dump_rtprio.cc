@@ -16,9 +16,8 @@
 #include <cstdlib>
 #include <string>
 
-#include "aos/logging/implementations.h"
-#include "aos/logging/logging.h"
 #include "aos/time/time.h"
+#include "glog/logging.h"
 
 namespace {
 
@@ -54,19 +53,16 @@ const char *policy_string(uint32_t policy) {
 int find_pid_max() {
   int r;
   FILE *pid_max_file = fopen("/proc/sys/kernel/pid_max", "r");
-  if (pid_max_file == nullptr) {
-    AOS_PLOG(FATAL, "fopen(\"/proc/sys/kernel/pid_max\")");
-  }
-  AOS_CHECK_EQ(1, fscanf(pid_max_file, "%d", &r));
-  AOS_PCHECK(fclose(pid_max_file));
+  PCHECK(pid_max_file != nullptr)
+      << ": Failed to open /proc/sys/kernel/pid_max";
+  CHECK_EQ(1, fscanf(pid_max_file, "%d", &r));
+  PCHECK(fclose(pid_max_file) == 0);
   return r;
 }
 
 cpu_set_t find_all_cpus() {
   long nproc = sysconf(_SC_NPROCESSORS_CONF);
-  if (nproc == -1) {
-    AOS_PLOG(FATAL, "sysconf(_SC_NPROCESSORS_CONF)");
-  }
+  PCHECK(nproc != -1);
   cpu_set_t r;
   CPU_ZERO(&r);
   for (long i = 0; i < nproc; ++i) {
@@ -82,9 +78,7 @@ cpu_set_t find_cpu_mask(int process, bool *not_there) {
     *not_there = true;
     return cpu_set_t();
   }
-  if (result != 0) {
-    AOS_PLOG(FATAL, "sched_getaffinity(%d, %zu, %p)", process, sizeof(r), &r);
-  }
+  PCHECK(result == 0) << ": sched_getaffinity of " << process;
   return r;
 }
 
@@ -95,9 +89,7 @@ sched_param find_sched_param(int process, bool *not_there) {
     *not_there = true;
     return sched_param();
   }
-  if (result != 0) {
-    AOS_PLOG(FATAL, "sched_getparam(%d)", process);
-  }
+  PCHECK(result == 0) << ": sched_getparam of " << process;
   return r;
 }
 
@@ -107,9 +99,7 @@ int find_scheduler(int process, bool *not_there) {
     *not_there = true;
     return 0;
   }
-  if (scheduler == -1) {
-    AOS_PLOG(FATAL, "sched_getscheduler(%d)", process);
-  }
+  PCHECK(scheduler != -1) << ": sched_getscheduler of " << process;
   return scheduler;
 }
 
@@ -125,10 +115,8 @@ int find_scheduler(int process, bool *not_there) {
       *not_there = true;
       return "";
     }
-    if (exe_size == -1) {
-      AOS_PLOG(FATAL, "readlink(%s, %p, %zu)", exe_filename.c_str(), exe_buffer,
-               sizeof(exe_buffer));
-    }
+    PCHECK(exe_size != -1) << ": readlink " << exe_filename
+                           << " into buffer of size " << sizeof(exe_buffer);
     return ::std::string(exe_buffer, exe_size);
   }
 }
@@ -140,9 +128,7 @@ int find_nice_value(int process, bool *not_there) {
     *not_there = true;
     return 0;
   }
-  if (errno != 0) {
-    AOS_PLOG(FATAL, "getpriority(PRIO_PROCESS, %d)", process);
-  }
+  PCHECK(errno == 0) << "getpriority of " << process;
   return nice_value;
 }
 
@@ -153,9 +139,7 @@ void read_stat(int process, int *ppid, int *sid, bool *not_there) {
     *not_there = true;
     return;
   }
-  if (stat == nullptr) {
-    AOS_PLOG(FATAL, "fopen(%s, \"r\")", stat_filename.c_str());
-  }
+  PCHECK(stat != nullptr) << ": Failed to open " << stat_filename;
 
   char buffer[2048];
   if (fgets(buffer, sizeof(buffer), stat) == nullptr) {
@@ -164,7 +148,8 @@ void read_stat(int process, int *ppid, int *sid, bool *not_there) {
         *not_there = true;
         return;
       }
-      AOS_PLOG(FATAL, "fgets(%p, %zu, %p)", buffer, sizeof(buffer), stat);
+      PLOG(FATAL) << "reading from " << stat_filename << " into buffer of size "
+                  << sizeof(buffer);
     }
   }
 
@@ -197,12 +182,12 @@ void read_stat(int process, int *ppid, int *sid, bool *not_there) {
       field_start = i + 1;
     }
   }
-  AOS_PCHECK(fclose(stat));
+  PCHECK(fclose(stat) == 0);
 
   if (field < 4) {
-    AOS_LOG(FATAL, "couldn't get fields from /proc/%d/stat\n", process);
+    LOG(FATAL) << "couldn't get fields from /proc/" << process << "/stat";
   }
-  AOS_CHECK_EQ(pid, process);
+  CHECK_EQ(pid, process);
 }
 
 void read_status(int process, int ppid, int *pgrp, ::std::string *name,
@@ -214,16 +199,15 @@ void read_status(int process, int ppid, int *pgrp, ::std::string *name,
     *not_there = true;
     return;
   }
-  if (status == nullptr) {
-    AOS_PLOG(FATAL, "fopen(%s, \"r\")", status_filename.c_str());
-  }
+  PCHECK(status != nullptr) << ": Failed to open " << status_filename;
 
   int pid = 0, status_ppid = 0;
   while (true) {
     char buffer[1024];
     if (fgets(buffer, sizeof(buffer), status) == nullptr) {
       if (ferror(status)) {
-        AOS_PLOG(FATAL, "fgets(%p, %zu, %p)", buffer, sizeof(buffer), status);
+        PLOG(FATAL) << "reading from " << status_filename
+                    << " into buffer of size " << sizeof(buffer);
       } else {
         break;
       }
@@ -239,9 +223,9 @@ void read_status(int process, int ppid, int *pgrp, ::std::string *name,
       *pgrp = ::std::stoi(strip_string_prefix(5, line));
     }
   }
-  AOS_PCHECK(fclose(status));
-  AOS_CHECK_EQ(pid, process);
-  AOS_CHECK_EQ(status_ppid, ppid);
+  PCHECK(fclose(status) == 0);
+  CHECK_EQ(pid, process);
+  CHECK_EQ(status_ppid, ppid);
 }
 
 }  // namespace
