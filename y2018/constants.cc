@@ -9,9 +9,9 @@
 #include "sanitizer/lsan_interface.h"
 #endif
 
-#include "aos/logging/logging.h"
 #include "aos/network/team_number.h"
 #include "aos/stl_mutex/stl_mutex.h"
+#include "glog/logging.h"
 #include "y2018/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "y2018/control_loops/drivetrain/polydrivetrain_dog_motor_plant.h"
 
@@ -128,7 +128,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
       break;
 
     default:
-      AOS_LOG(FATAL, "unknown team #%" PRIu16 "\n", team);
+      LOG(FATAL) << "unknown team: " << team;
   }
 
   return r;
@@ -136,7 +136,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
 
 const Values &DoGetValues() {
   const uint16_t team = ::aos::network::GetTeamNumber();
-  AOS_LOG(INFO, "creating a Constants for team %" PRIu16 "\n", team);
+  LOG(INFO) << "creating a Constants for team: " << team;
   return GetValuesForTeam(team);
 }
 

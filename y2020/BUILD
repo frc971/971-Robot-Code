@@ -63,7 +63,6 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
-        "//aos/logging",
         "//aos/network:team_number",
         "//aos/stl_mutex",
         "//frc971:constants",
@@ -76,6 +75,7 @@ cc_library(
         "//y2020/control_loops/superstructure/hood:hood_plants",
         "//y2020/control_loops/superstructure/intake:intake_plants",
         "//y2020/control_loops/superstructure/turret:turret_plants",
+        "@com_github_google_glog//:glog",
         "@com_google_absl//absl/base",
     ],
 )

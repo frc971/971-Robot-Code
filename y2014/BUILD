@@ -12,12 +12,12 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
-        "//aos/logging",
         "//aos/network:team_number",
         "//aos/stl_mutex",
         "//frc971:shifter_hall_effect",
         "//frc971/control_loops:state_feedback_loop",
         "//y2014/control_loops/drivetrain:polydrivetrain_plants",
+        "@com_github_google_glog//:glog",
         "@com_google_absl//absl/base",
     ],
 )
