@@ -162,7 +162,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
     case Values::kPracticeTeamNumber:
       hood->zeroing_constants.measured_absolute_position = 0.0;
 
-      intake->zeroing_constants.measured_absolute_position = 0.347;
+      intake->zeroing_constants.measured_absolute_position = 0.205469223604347;
 
       turret->potentiometer_offset = 5.3931926228241;
       turret_params->zeroing_constants.measured_absolute_position = 4.22;
