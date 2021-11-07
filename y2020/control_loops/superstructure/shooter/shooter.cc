@@ -28,7 +28,8 @@ bool Shooter::UpToSpeed(const ShooterGoal *goal) {
       (std::abs(goal->velocity_finisher() - finisher_.avg_angular_velocity()) <
            kVelocityToleranceFinisher &&
        std::abs(goal->velocity_finisher() - finisher_.velocity()) <
-           kVelocityToleranceFinisher);
+           kVelocityToleranceFinisher &&
+       goal->velocity_finisher() > kVelocityToleranceFinisher);
   accelerator_ready_ =
       (std::abs(goal->velocity_accelerator() -
                 accelerator_left_.avg_angular_velocity()) <
@@ -39,7 +40,8 @@ bool Shooter::UpToSpeed(const ShooterGoal *goal) {
        std::abs(goal->velocity_accelerator() - accelerator_left_.velocity()) <
            kVelocityToleranceAccelerator &&
        std::abs(goal->velocity_accelerator() - accelerator_right_.velocity()) <
-           kVelocityToleranceAccelerator);
+           kVelocityToleranceAccelerator &&
+       goal->velocity_accelerator() > kVelocityToleranceAccelerator);
   return (finisher_ready_ && accelerator_ready_);
 }
 
@@ -74,15 +76,7 @@ flatbuffers::Offset<ShooterStatus> Shooter::RunIteration(
   accelerator_right_.Update(output == nullptr);
 
   if (goal) {
-    if (UpToSpeed(goal) &&
-        goal->velocity_finisher() > kVelocityToleranceFinisher &&
-        goal->velocity_accelerator() > kVelocityToleranceAccelerator) {
-      ready_ = true;
-    } else {
-      ready_ = false;
-      finisher_ready_ = false;
-      accelerator_ready_ = false;
-    }
+    ready_ = UpToSpeed(goal);
   }
 
   flatbuffers::Offset<FlywheelControllerStatus> finisher_status_offset =
