@@ -75,18 +75,15 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   aos::FlatbufferFixedAllocatorArray<ShooterGoal, 64> shooter_goal;
 
   constants::Values::ShotParams shot_params;
-  constants::Values::FlywheelShotParams flywheel_shot_params;
   if (constants::GetValues().shot_interpolation_table.GetInRange(
-          distance_to_goal, &shot_params) &&
-      constants::GetValues().flywheel_shot_interpolation_table.GetInRange(
-          shot_params.velocity_ball, &flywheel_shot_params)) {
+          distance_to_goal, &shot_params)) {
     hood_goal.Finish(frc971::control_loops::
                          CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
                              *hood_goal.fbb(), shot_params.hood_angle));
 
     shooter_goal.Finish(CreateShooterGoal(
-        *shooter_goal.fbb(), flywheel_shot_params.velocity_accelerator,
-        flywheel_shot_params.velocity_finisher));
+        *shooter_goal.fbb(), shot_params.velocity_accelerator,
+        shot_params.velocity_finisher));
   } else {
     hood_goal.Finish(
         frc971::control_loops::
