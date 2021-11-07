@@ -15,6 +15,9 @@ DEFINE_string(config, "config.json", "Path to the config file to use.");
 DEFINE_bool(show_features, true, "Show the SIFT features that matched.");
 DEFINE_string(channel, "/camera", "Channel name for the image.");
 
+DEFINE_string(capture, "",
+              "If set, capture a single image and save it to this filename.");
+
 namespace frc971 {
 namespace vision {
 namespace {
@@ -67,6 +70,11 @@ bool DisplayLoop() {
                           (void *)image->data()->data());
   cv::Mat rgb_image(cv::Size(image->cols(), image->rows()), CV_8UC3);
   cv::cvtColor(image_color_mat, rgb_image, CV_YUV2BGR_YUYV);
+
+  if (!FLAGS_capture.empty()) {
+    cv::imwrite(FLAGS_capture, rgb_image);
+    return false;
+  }
 
   if (matching_image_found) {
     // Draw whatever matches we have
@@ -154,6 +162,9 @@ void ViewerMain() {
       ::std::chrono::milliseconds(100));
 
   event_loop.Run();
+
+  image_fetcher = aos::Fetcher<CameraImage>();
+  match_fetcher = aos::Fetcher<sift::ImageMatchResult>();
 }
 
 }  // namespace
