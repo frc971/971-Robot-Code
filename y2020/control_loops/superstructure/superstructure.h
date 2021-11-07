@@ -32,7 +32,7 @@ class Superstructure
   static constexpr std::chrono::milliseconds kPreloadingTimeout =
       std::chrono::seconds(2);
   static constexpr std::chrono::milliseconds kPreloadingBackpowerDuration =
-      std::chrono::milliseconds(50);
+      std::chrono::milliseconds(55);
 
   using PotAndAbsoluteEncoderSubsystem =
       ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystem<
