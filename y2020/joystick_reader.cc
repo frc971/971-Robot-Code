@@ -138,8 +138,6 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     }
   }
 
-  bool latched_climbing_ = false;
-
   void HandleTeleop(
       const ::frc971::input::driver_station::Data &data) override {
     superstructure_status_fetcher_.Fetch();
@@ -220,17 +218,31 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     }
 
     if (data.IsPressed(kWinch)) {
+      ++winch_counter_;
+    } else {
+      winch_counter_ = 0;
+    }
+
+    if (winch_counter_ > 5 || (winch_counter_ > 0 && latched_climbing_)) {
       climber_speed = 12.0f;
       latched_climbing_ = true;
     }
 
     if (data.IsPressed(kUnWinch)) {
+      ++unwinch_counter_;
+    } else {
+      unwinch_counter_ = 0;
+    }
+
+    if (unwinch_counter_ > 10 || (unwinch_counter_ > 0 && latched_climbing_)) {
       climber_speed = -12.0f;
       latched_climbing_ = true;
     }
 
     if (data.IsPressed(kWinch) && data.IsPressed(kUnWinch)) {
       latched_climbing_ = false;
+      unwinch_counter_ = 0;
+      winch_counter_ = 0;
     }
 
     if (latched_climbing_) {
@@ -310,6 +322,11 @@ class Reader : public ::frc971::input::ActionJoystickInput {
   ::aos::Fetcher<superstructure::Status> superstructure_status_fetcher_;
 
   ::aos::Fetcher<y2020::joysticks::Setpoint> setpoint_fetcher_;
+
+  bool latched_climbing_ = false;
+
+  size_t winch_counter_ = 0;
+  size_t unwinch_counter_ = 0;
 };
 
 }  // namespace joysticks
