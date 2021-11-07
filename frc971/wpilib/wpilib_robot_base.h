@@ -54,6 +54,12 @@ class WPILibAdapterRobot : public frc::RobotBase {
     // it. This is in here instead of starter.sh because starter.sh doesn't run
     // with permissions on a roboRIO.
     PCHECK(system("echo 0 > /proc/sys/vm/overcommit_memory") == 0);
+    PCHECK(system("busybox ps -ef | grep '\\[ktimersoftd/0\\]' | awk '{print "
+                  "$1}' | xargs chrt -f -p 70") == 0);
+    PCHECK(system("busybox ps -ef | grep '\\[ktimersoftd/1\\]' | awk '{print "
+                  "$1}' | xargs chrt -f -p 70") == 0);
+    PCHECK(system("busybox ps -ef | grep '\\[irq/54-eth0\\]' | awk '{print "
+                  "$1}' | xargs chrt -f -p 17") == 0);
 
     // Configure throttling so we reserve 5% of the CPU for non-rt work.
     // This makes things significantly more stable when work explodes.
