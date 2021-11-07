@@ -91,6 +91,8 @@ class AutonomousActor : public frc971::autonomous::BaseAutonomousActor {
   bool user_indicated_safe_to_reset_ = false;
   bool sent_starting_position_ = false;
 
+  bool is_planned_ = false;
+
   std::optional<Eigen::Vector3d> starting_position_;
 };
 

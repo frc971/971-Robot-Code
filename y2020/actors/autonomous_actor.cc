@@ -53,6 +53,8 @@ AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
   });
 
   button_poll_ = event_loop->AddTimer([this]() {
+    const aos::monotonic_clock::time_point now =
+        this->event_loop()->context().monotonic_event_time;
     if (robot_state_fetcher_.Fetch()) {
       if (robot_state_fetcher_->user_button()) {
         user_indicated_safe_to_reset_ = true;
@@ -63,14 +65,24 @@ AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
       if (joystick_state_fetcher_->has_alliance() &&
           (joystick_state_fetcher_->alliance() != alliance_)) {
         alliance_ = joystick_state_fetcher_->alliance();
-        Replan();
+        is_planned_ = false;
+        // Only kick the planning out by 2 seconds. If we end up enabled in that
+        // second, then we will kick it out further based on the code below.
+        replan_timer_->Setup(now + std::chrono::seconds(2));
+      }
+      if (joystick_state_fetcher_->enabled()) {
+        if (!is_planned_) {
+          // Only replan once we've been disabled for 5 seconds.
+          replan_timer_->Setup(now + std::chrono::seconds(5));
+        }
       }
     }
   });
 }
 
 void AutonomousActor::MaybeSendStartingPosition() {
-  if (user_indicated_safe_to_reset_ && !sent_starting_position_) {
+  if (is_planned_ && user_indicated_safe_to_reset_ &&
+      !sent_starting_position_) {
     CHECK(starting_position_);
     SendStartingPosition(starting_position_.value());
   }
@@ -107,6 +119,9 @@ void AutonomousActor::Replan() {
   } else {
     starting_position_ = Eigen::Vector3d::Zero();
   }
+
+  is_planned_ = true;
+
   MaybeSendStartingPosition();
 }
 
@@ -128,10 +143,11 @@ bool AutonomousActor::RunAction(
     AOS_LOG(WARNING, "Didn't send starting position prior to starting auto.");
     SendStartingPosition(starting_position_.value());
   }
-
-  // Queue up a replan to occur as soon as this action completes.
-  // TODO(james): Modify this so we don't replan during teleop.
-  replan_timer_->Setup(monotonic_now());
+  // Clear this so that we don't accidentally resend things as soon as we replan
+  // later.
+  user_indicated_safe_to_reset_ = false;
+  is_planned_ = false;
+  starting_position_.reset();
 
   AOS_LOG(INFO, "Params are %d\n", params->mode());
   if (alliance_ == aos::Alliance::kInvalid) {
