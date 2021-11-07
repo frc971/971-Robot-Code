@@ -192,7 +192,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     }
 
     if (data.IsPressed(kIntakeExtend) || data.IsPressed(kIntakeExtendDriver)) {
-      intake_pos = 1.2;
+      intake_pos = 1.24;
       roller_speed = 7.0f;
       roller_speed_compensation = true;
       preload_intake = true;
