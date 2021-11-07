@@ -2,6 +2,7 @@
 
 #include "aos/containers/sized_array.h"
 #include "aos/events/event_loop.h"
+#include "aos/network/team_number.h"
 
 namespace y2020 {
 namespace control_loops {
@@ -22,7 +23,8 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
           event_loop->MakeFetcher<frc971::control_loops::drivetrain::Status>(
               "/drivetrain")),
       joystick_state_fetcher_(
-          event_loop->MakeFetcher<aos::JoystickState>("/aos")) {
+          event_loop->MakeFetcher<aos::JoystickState>("/aos")),
+      has_turret_(::aos::network::GetTeamNumber() != 9971) {
   event_loop->SetRuntimeRealtimePriority(30);
 }
 
@@ -199,7 +201,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   flatbuffers::Offset<flatbuffers::Vector<Subsystem>>
       subsystems_not_ready_offset;
   const bool turret_ready =
-      (std::abs(turret_.goal(0) - turret_.position()) < 0.025);
+      (std::abs(turret_.goal(0) - turret_.position()) < 0.025) || !has_turret_;
   if (unsafe_goal && unsafe_goal->shooting() &&
       (!shooter_.ready() || !turret_ready)) {
     aos::SizedArray<Subsystem, 3> subsystems_not_ready;
@@ -270,7 +272,9 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       }
 
       if (unsafe_goal->shooting()) {
-        if (shooter_.ready() && turret_ready) {
+        if ((shooter_.ready() ||
+             (!has_turret_ && shooter_.accelerator_ready())) &&
+            turret_ready) {
           output_struct.feeder_voltage = 12.0;
         }
         output_struct.washing_machine_spinner_voltage = 5.0;

@@ -23,7 +23,7 @@ Shooter::Shooter()
       accelerator_right_(accelerator::MakeIntegralAcceleratorLoop(),
                          accelerator::kBemf, accelerator::kResistance) {}
 
-bool Shooter::UpToSpeed(const ShooterGoal *goal) {
+void Shooter::UpToSpeed(const ShooterGoal *goal) {
   finisher_ready_ =
       (std::abs(goal->velocity_finisher() - finisher_.avg_angular_velocity()) <
            kVelocityToleranceFinisher &&
@@ -42,7 +42,6 @@ bool Shooter::UpToSpeed(const ShooterGoal *goal) {
        std::abs(goal->velocity_accelerator() - accelerator_right_.velocity()) <
            kVelocityToleranceAccelerator &&
        goal->velocity_accelerator() > kVelocityToleranceAccelerator);
-  return (finisher_ready_ && accelerator_ready_);
 }
 
 flatbuffers::Offset<ShooterStatus> Shooter::RunIteration(
@@ -76,7 +75,7 @@ flatbuffers::Offset<ShooterStatus> Shooter::RunIteration(
   accelerator_right_.Update(output == nullptr);
 
   if (goal) {
-    ready_ = UpToSpeed(goal);
+    UpToSpeed(goal);
   }
 
   flatbuffers::Offset<FlywheelControllerStatus> finisher_status_offset =

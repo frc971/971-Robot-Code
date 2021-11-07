@@ -78,6 +78,8 @@ class Superstructure
   aos::monotonic_clock::time_point preloading_backpower_timeout_ =
       aos::monotonic_clock::min_time;
 
+  bool has_turret_ = true;
+
   DISALLOW_COPY_AND_ASSIGN(Superstructure);
 };
 
