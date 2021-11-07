@@ -733,8 +733,8 @@ filegroup(
     visibility = ["//visibility:public"],
 )
     """,
-    sha256 = "e7037a374a7bf315b25058f0e9fbbf3e99c425e3a8e7d51edfc50e3f2a36a182",
-    url = "https://www.frc971.org/Build-Dependencies/2021-09-04_superstructure_shoot_balls.tar.gz",
+    sha256 = "2b9a3ecc83f2aba89a1909ae38fe51e6718a5b4d0e7c131846dfb2845df9cd19",
+    url = "https://www.frc971.org/Build-Dependencies/2021-10-03_superstructure_shoot_balls.tar.gz",
 )
 
 # OpenCV armhf (for raspberry pi)
