@@ -14,7 +14,7 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
-        "//aos/logging",
         "//third_party/seasocks",
+        "@com_github_google_glog//:glog",
     ],
 )

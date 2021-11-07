@@ -1,32 +1,35 @@
 #include "aos/seasocks/seasocks_logger.h"
 
-#include "aos/logging/logging.h"
+#include "glog/logging.h"
 #include "seasocks/PrintfLogger.h"
 
 namespace aos {
 namespace seasocks {
 
 void SeasocksLogger::log(::seasocks::Logger::Level level, const char *message) {
-  // Convert Seasocks error codes to AOS.
-  log_level aos_level;
+  // Convert Seasocks error codes to glog.
+  int glog_level;
   switch (level) {
     case ::seasocks::Logger::Level::Info:
-      aos_level = INFO;
+      glog_level = google::INFO;
       break;
     case ::seasocks::Logger::Level::Warning:
-      aos_level = WARNING;
+      glog_level = google::WARNING;
       break;
     case ::seasocks::Logger::Level::Error:
     case ::seasocks::Logger::Level::Severe:
-      aos_level = ERROR;
+      glog_level = google::ERROR;
       break;
     case ::seasocks::Logger::Level::Debug:
     case ::seasocks::Logger::Level::Access:
     default:
-      aos_level = DEBUG;
+      if (!VLOG_IS_ON(1)) {
+        return;
+      }
+      glog_level = google::INFO;
       break;
   }
-  AOS_LOG(aos_level, "Seasocks: %s\n", message);
+  LOG_AT_LEVEL(glog_level) << "Seasocks: " << message;
 }
 
 }  // namespace seasocks
