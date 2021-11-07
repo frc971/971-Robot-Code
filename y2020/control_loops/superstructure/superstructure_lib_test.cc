@@ -1172,8 +1172,10 @@ class SuperstructureReplayTest : public ::testing::Test {
     test_event_loop_ = reader_.event_loop_factory()->MakeEventLoop(
         "superstructure_replay_test", roborio_);
 
-    status_fetcher_ = test_event_loop_->MakeFetcher<Status>("/superstructure");
-    goal_sender_ = test_event_loop_->MakeSender<Goal>("/superstructure");
+    drivetrain_status_sender_ =
+        test_event_loop_->MakeSender<DrivetrainStatus>("/drivetrain");
+    superstructure_status_fetcher_ =
+        test_event_loop_->MakeFetcher<Status>("/superstructure");
 
     if (!FLAGS_output_file.empty()) {
       unlink(FLAGS_output_file.c_str());
@@ -1193,32 +1195,49 @@ class SuperstructureReplayTest : public ::testing::Test {
   std::unique_ptr<aos::EventLoop> logger_event_loop_;
   std::unique_ptr<aos::logger::Logger> logger_;
 
-  aos::Sender<y2020::control_loops::superstructure::Goal> goal_sender_;
-  aos::Fetcher<y2020::control_loops::superstructure::Status> status_fetcher_;
+  aos::Sender<DrivetrainStatus> drivetrain_status_sender_;
+  aos::Fetcher<Status> superstructure_status_fetcher_;
 };
 
 // Tests that balls_shot is updated correctly with a real log.
 TEST_F(SuperstructureReplayTest, BallsShotReplay) {
   Superstructure superstructure(superstructure_event_loop_.get());
-  // TODO(milind): remove this after the new log is uploaded
+
+  constexpr double kShotAngle = 1.0;
+  constexpr double kShotDistance = 2.5;
+  const auto target = turret::OuterPortPose(aos::Alliance::kRed);
+
+  // There was no target when this log was taken so send a position within range
+  // of the interpolation table.
   test_event_loop_->AddPhasedLoop(
       [&](int) {
-        auto builder = goal_sender_.MakeBuilder();
-        auto shooter_goal_builder = builder.MakeBuilder<ShooterGoal>();
-        shooter_goal_builder.add_velocity_finisher(304);
-        const auto shooter_goal_offset = shooter_goal_builder.Finish();
+        auto builder = drivetrain_status_sender_.MakeBuilder();
 
-        auto goal_builder = builder.MakeBuilder<Goal>();
-        goal_builder.add_shooter(shooter_goal_offset);
-        goal_builder.add_shooter_tracking(false);
-        builder.Send(goal_builder.Finish());
+        const auto localizer_offset =
+            builder
+                .MakeBuilder<
+                    frc971::control_loops::drivetrain::LocalizerState>()
+                .Finish();
+
+        auto drivetrain_status_builder =
+            builder.MakeBuilder<DrivetrainStatus>();
+
+        // Set the robot up at kShotAngle off from the target, kShotDistance
+        // away.
+        drivetrain_status_builder.add_x(target.abs_pos().x() +
+                                        std::cos(kShotAngle) * kShotDistance);
+        drivetrain_status_builder.add_y(target.abs_pos().y() +
+                                        std::sin(kShotAngle) * kShotDistance);
+        drivetrain_status_builder.add_localizer(localizer_offset);
+
+        ASSERT_TRUE(builder.Send(drivetrain_status_builder.Finish()));
       },
       frc971::controls::kLoopFrequency);
 
   reader_.event_loop_factory()->Run();
 
-  ASSERT_TRUE(status_fetcher_.Fetch());
-  EXPECT_EQ(status_fetcher_->shooter()->balls_shot(), 3);
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+  EXPECT_EQ(superstructure_status_fetcher_->shooter()->balls_shot(), 3);
 }
 
 class SuperstructureAllianceTest
