@@ -223,11 +223,11 @@ StaticZeroingSingleDOFProfiledSubsystem<ZeroingEstimator, ProfiledJointStatus,
 
         double safe_goal = goal->unsafe_goal();
         if (safe_goal < min_position_) {
-          AOS_LOG(DEBUG, "Limiting to %f from %f\n", min_position_, safe_goal);
+          VLOG(1) << "Limiting to " << min_position_ << " from " << safe_goal;
           safe_goal = min_position_;
         }
         if (safe_goal > max_position_) {
-          AOS_LOG(DEBUG, "Limiting to %f from %f\n", max_position_, safe_goal);
+          VLOG(1) << "Limiting to " << max_position_ << " from " << safe_goal;
           safe_goal = max_position_;
         }
         if (goal->has_ignore_profile()) {
