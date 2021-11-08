@@ -76,10 +76,6 @@ class Reader : public ::frc971::input::ActionJoystickInput {
         setpoint_fetcher_(event_loop->MakeFetcher<y2020::joysticks::Setpoint>(
             "/superstructure")) {}
 
-  void AutoEnded() override {
-    AOS_LOG(INFO, "Auto ended, assuming disc and have piece\n");
-  }
-
   void BlueResetLocalizer() {
     auto builder = localizer_control_sender_.MakeBuilder();
 
