@@ -77,9 +77,9 @@ export class FieldHandler {
   // Image information indexed by timestamp (seconds since the epoch), so that
   // we can stop displaying images after a certain amount of time.
   private localizerImageMatches = new Map<number, LocalizerDebug>();
-  private outer_target: HTMLElement =
+  private outerTarget: HTMLElement =
       (document.getElementById('outer_target') as HTMLElement);
-  private inner_target: HTMLElement =
+  private innerTarget: HTMLElement =
       (document.getElementById('inner_target') as HTMLElement);
   private x: HTMLElement = (document.getElementById('x') as HTMLElement);
   private y: HTMLElement = (document.getElementById('y') as HTMLElement);
@@ -98,6 +98,8 @@ export class FieldHandler {
   private hood: HTMLElement = (document.getElementById('hood') as HTMLElement);
   private turret: HTMLElement =
       (document.getElementById('turret') as HTMLElement);
+  private ballsShot: HTMLElement =
+      (document.getElementById('balls_shot') as HTMLElement);
   private intake: HTMLElement =
       (document.getElementById('intake') as HTMLElement);
   private imagesAcceptedCounter: HTMLElement =
@@ -499,12 +501,12 @@ export class FieldHandler {
 
         if (this.superstructureStatus.aimer().aimingForInnerPort()) {
           this.innerPort.innerHTML = 'true';
-          this.outer_target.classList.remove('targetted');
-          this.inner_target.classList.add('targetted');
+          this.outerTarget.classList.remove('targetted');
+          this.innerTarget.classList.add('targetted');
         } else {
           this.innerPort.innerHTML = 'false';
-          this.outer_target.classList.add('targetted');
-          this.inner_target.classList.remove('targetted');
+          this.outerTarget.classList.add('targetted');
+          this.innerTarget.classList.remove('targetted');
         }
 
         if (!this.superstructureStatus.hood().zeroed()) {
@@ -518,6 +520,9 @@ export class FieldHandler {
               this.superstructureStatus.hood().estimatorState().position(),
               1e-3);
         }
+
+        this.ballsShot.innerHTML =
+            this.superstructureStatus.shooter().ballsShot().toString();
 
         if (!this.superstructureStatus.turret().zeroed()) {
           this.setZeroing(this.turret);
