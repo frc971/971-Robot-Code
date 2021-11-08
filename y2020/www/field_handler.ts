@@ -1,18 +1,19 @@
 import * as configuration from 'org_frc971/aos/configuration_generated';
+import * as web_proxy from 'org_frc971/aos/network/web_proxy_generated';
 import {Connection} from 'org_frc971/aos/network/www/proxy';
 import * as flatbuffers_builder from 'org_frc971/external/com_github_google_flatbuffers/ts/builder';
 import {ByteBuffer} from 'org_frc971/external/com_github_google_flatbuffers/ts/byte-buffer';
 import * as drivetrain from 'org_frc971/frc971/control_loops/drivetrain/drivetrain_status_generated';
 import * as localizer from 'org_frc971/y2020/control_loops/drivetrain/localizer_debug_generated';
-import * as sift from 'org_frc971/y2020/vision/sift/sift_generated';
-import * as web_proxy from 'org_frc971/aos/network/web_proxy_generated';
 import * as ss from 'org_frc971/y2020/control_loops/superstructure/superstructure_status_generated'
+import * as sift from 'org_frc971/y2020/vision/sift/sift_generated';
 
 import DrivetrainStatus = drivetrain.frc971.control_loops.drivetrain.Status;
 import LocalizerDebug = localizer.y2020.control_loops.drivetrain.LocalizerDebug;
 import RejectionReason = localizer.y2020.control_loops.drivetrain.RejectionReason;
 import ImageMatchDebug = localizer.y2020.control_loops.drivetrain.ImageMatchDebug;
 import SuperstructureStatus = ss.y2020.control_loops.superstructure.Status;
+import FlywheelControllerStatus = ss.y2020.control_loops.superstructure.FlywheelControllerStatus;
 import ImageMatchResult = sift.frc971.vision.sift.ImageMatchResult;
 import Channel = configuration.aos.Channel;
 import SubscriberRequest = web_proxy.aos.web_proxy.SubscriberRequest;
@@ -65,30 +66,45 @@ const LOADING_ZONE_WIDTH = 60 * IN_TO_M;
 const ROBOT_WIDTH = 34 * IN_TO_M;
 const ROBOT_LENGTH = 36 * IN_TO_M;
 
-const PI_COLORS = ["#ff00ff", "#ffff00", "#000000", "#00ffff", "#ffa500"];
+const PI_COLORS = ['#ff00ff', '#ffff00', '#000000', '#00ffff', '#ffa500'];
 
 export class FieldHandler {
   private canvas = document.createElement('canvas');
-  private imageMatchResult =  new Map<string, ImageMatchResult>();
+  private imageMatchResult = new Map<string, ImageMatchResult>();
   private drivetrainStatus: DrivetrainStatus|null = null;
   private superstructureStatus: SuperstructureStatus|null = null;
+
   // Image information indexed by timestamp (seconds since the epoch), so that
   // we can stop displaying images after a certain amount of time.
   private localizerImageMatches = new Map<number, LocalizerDebug>();
-  private x: HTMLDivElement = (document.getElementById('x') as HTMLDivElement);
-  private y: HTMLDivElement = (document.getElementById('y') as HTMLDivElement);
-  private theta: HTMLDivElement = (document.getElementById('theta') as HTMLDivElement);
-  private shotDistance: HTMLDivElement = (document.getElementById('shot_distance') as HTMLDivElement);
-  private finisher: HTMLDivElement = (document.getElementById('finisher') as HTMLDivElement);
-  private leftAccelerator: HTMLDivElement = (document.getElementById('left_accelerator') as HTMLDivElement);
-  private rightAccelerator: HTMLDivElement = (document.getElementById('right_accelerator') as HTMLDivElement);
-  private innerPort: HTMLDivElement = (document.getElementById('inner_port') as HTMLDivElement);
-  private hood: HTMLDivElement = (document.getElementById('hood') as HTMLDivElement);
-  private turret: HTMLDivElement = (document.getElementById('turret') as HTMLDivElement);
-  private intake: HTMLDivElement = (document.getElementById('intake') as HTMLDivElement);
-  private imagesAcceptedCounter: HTMLDivElement = (document.getElementById('images_accepted') as HTMLDivElement);
-  private imagesRejectedCounter: HTMLDivElement = (document.getElementById('images_rejected') as HTMLDivElement);
-  private rejectionReasonCells: HTMLDivElement[] = [];
+  private outer_target: HTMLElement =
+      (document.getElementById('outer_target') as HTMLElement);
+  private inner_target: HTMLElement =
+      (document.getElementById('inner_target') as HTMLElement);
+  private x: HTMLElement = (document.getElementById('x') as HTMLElement);
+  private y: HTMLElement = (document.getElementById('y') as HTMLElement);
+  private theta: HTMLElement =
+      (document.getElementById('theta') as HTMLElement);
+  private shotDistance: HTMLElement =
+      (document.getElementById('shot_distance') as HTMLElement);
+  private finisher: HTMLElement =
+      (document.getElementById('finisher') as HTMLElement);
+  private leftAccelerator: HTMLElement =
+      (document.getElementById('left_accelerator') as HTMLElement);
+  private rightAccelerator: HTMLElement =
+      (document.getElementById('right_accelerator') as HTMLElement);
+  private innerPort: HTMLElement =
+      (document.getElementById('inner_port') as HTMLElement);
+  private hood: HTMLElement = (document.getElementById('hood') as HTMLElement);
+  private turret: HTMLElement =
+      (document.getElementById('turret') as HTMLElement);
+  private intake: HTMLElement =
+      (document.getElementById('intake') as HTMLElement);
+  private imagesAcceptedCounter: HTMLElement =
+      (document.getElementById('images_accepted') as HTMLElement);
+  private imagesRejectedCounter: HTMLElement =
+      (document.getElementById('images_rejected') as HTMLElement);
+  private rejectionReasonCells: HTMLElement[] = [];
 
   constructor(private readonly connection: Connection) {
     (document.getElementById('field') as HTMLElement).appendChild(this.canvas);
@@ -99,22 +115,22 @@ export class FieldHandler {
       if (isNaN(Number(value))) {
         continue;
       }
-      const row = document.createElement("div");
-      const nameCell = document.createElement("div");
+      const row = document.createElement('div');
+      const nameCell = document.createElement('div');
       nameCell.innerHTML = RejectionReason[value];
       row.appendChild(nameCell);
-      const valueCell = document.createElement("div");
-      valueCell.innerHTML = "NA";
+      const valueCell = document.createElement('div');
+      valueCell.innerHTML = 'NA';
       this.rejectionReasonCells.push(valueCell);
       row.appendChild(valueCell);
-      document.getElementById('readouts').appendChild(row);
+      document.getElementById('vision_readouts').appendChild(row);
     }
 
     for (let ii = 0; ii < PI_COLORS.length; ++ii) {
-      const legendEntry = document.createElement("div");
+      const legendEntry = document.createElement('div');
       legendEntry.style.color = PI_COLORS[ii];
-      legendEntry.innerHTML = "PI" + (ii + 1).toString()
-      document.getElementById("legend").appendChild(legendEntry);
+      legendEntry.innerHTML = 'PI' + (ii + 1).toString()
+      document.getElementById('legend').appendChild(legendEntry);
     }
 
     this.connection.addConfigHandler(() => {
@@ -178,7 +194,7 @@ export class FieldHandler {
               debug.statistics().rejectionReasonCount(ii).toString();
         }
       } else {
-        console.error("Unexpected number of rejection reasons in counter.");
+        console.error('Unexpected number of rejection reasons in counter.');
       }
       this.imagesRejectedCounter.innerHTML =
           (debug.statistics().totalCandidates() -
@@ -324,7 +340,7 @@ export class FieldHandler {
       ctx.save();
       ctx.rotate(turret + Math.PI);
       const turretRadius = ROBOT_WIDTH / 4.0;
-      ctx.strokeStyle = "red";
+      ctx.strokeStyle = 'red';
       // Draw circle for turret.
       ctx.beginPath();
       ctx.arc(0, 0, turretRadius, 0, 2.0 * Math.PI);
@@ -343,20 +359,58 @@ export class FieldHandler {
     ctx.restore();
   }
 
-  setZeroing(div: HTMLDivElement): void {
-        div.innerHTML = "zeroing";
-        div.classList.remove("faulted");
-        div.classList.add("zeroing");
+  setShooter(div: HTMLElement, flywheelStatus: FlywheelControllerStatus): void {
+    const currentVelocity = flywheelStatus.angularVelocity();
+    const goal = flywheelStatus.angularVelocityGoal();
+    // Show it as 'near' if difference between
+    if (Math.abs(currentVelocity - goal) < 5) {
+      this.setNear(div, currentVelocity.toFixed(2));
+      return;
+    }
+    div.classList.remove('faulted');
+    div.classList.remove('zeroing');
+    div.classList.remove('near');
+    div.innerHTML = currentVelocity.toFixed(2);
   }
-  setEstopped(div: HTMLDivElement): void {
-        div.innerHTML = "estopped";
-        div.classList.add("faulted");
-        div.classList.remove("zeroing");
+
+  setZeroing(div: HTMLElement): void {
+    div.innerHTML = 'zeroing';
+    div.classList.remove('faulted');
+    div.classList.add('zeroing');
+    div.classList.remove('near');
   }
-  setValue(div: HTMLDivElement, val: Number): void {
-        div.innerHTML = val.toFixed(4);
-        div.classList.remove("faulted");
-        div.classList.remove("zeroing");
+
+  setEstopped(div: HTMLElement): void {
+    div.innerHTML = 'estopped';
+    div.classList.add('faulted');
+    div.classList.remove('zeroing');
+    div.classList.remove('near');
+  }
+
+  setNear(div: HTMLElement, val: string): void {
+    div.innerHTML = val;
+    div.classList.remove('faulted');
+    div.classList.remove('zeroing');
+    div.classList.add('near');
+  }
+
+  setTargetValue(
+      div: HTMLElement, target: number, val: number, tolerance: number): void {
+    div.innerHTML = val.toFixed(4);
+    div.classList.remove('faulted');
+    div.classList.remove('zeroing');
+    if (Math.abs(target - val) < tolerance) {
+      div.classList.add('near');
+    } else {
+      div.classList.remove('near');
+    }
+  }
+
+  setValue(div: HTMLElement, val: number): void {
+    div.innerHTML = val.toFixed(4);
+    div.classList.remove('faulted');
+    div.classList.remove('zeroing');
+    div.classList.remove('near');
   }
 
   draw(): void {
@@ -385,7 +439,7 @@ export class FieldHandler {
         // Make camera readings fade over time.
         const alpha = Math.round(255 * ageAlpha).toString(16).padStart(2, '0');
         const dashed = false;
-        const acceptedRgb = accepted ? "#00FF00" : "#FF0000";
+        const acceptedRgb = accepted ? '#00FF00' : '#FF0000';
         const acceptedRgba = acceptedRgb + alpha;
         const cameraRgb = PI_COLORS[imageDebug.camera()];
         const cameraRgba = cameraRgb + alpha;
@@ -434,41 +488,49 @@ export class FieldHandler {
       if (this.superstructureStatus) {
         this.shotDistance.innerHTML =
             this.superstructureStatus.aimer().shotDistance().toFixed(2);
-        this.finisher.innerHTML = this.superstructureStatus.shooter()
-                                      .finisher()
-                                      .angularVelocity()
-                                      .toFixed(2);
-        this.leftAccelerator.innerHTML = this.superstructureStatus.shooter()
-                                             .acceleratorLeft()
-                                             .angularVelocity()
-                                             .toFixed(2);
-        this.rightAccelerator.innerHTML = this.superstructureStatus.shooter()
-                                              .acceleratorRight()
-                                              .angularVelocity()
-                                              .toFixed(2);
+        this.setShooter(
+            this.finisher, this.superstructureStatus.shooter().finisher());
+        this.setShooter(
+            this.leftAccelerator,
+            this.superstructureStatus.shooter().acceleratorLeft());
+        this.setShooter(
+            this.rightAccelerator,
+            this.superstructureStatus.shooter().acceleratorRight());
+
         if (this.superstructureStatus.aimer().aimingForInnerPort()) {
           this.innerPort.innerHTML = 'true';
+          this.outer_target.classList.remove('targetted');
+          this.inner_target.classList.add('targetted');
         } else {
           this.innerPort.innerHTML = 'false';
+          this.outer_target.classList.add('targetted');
+          this.inner_target.classList.remove('targetted');
         }
+
         if (!this.superstructureStatus.hood().zeroed()) {
           this.setZeroing(this.hood);
         } else if (this.superstructureStatus.hood().estopped()) {
           this.setEstopped(this.hood);
         } else {
-          this.setValue(
+          this.setTargetValue(
               this.hood,
-              this.superstructureStatus.hood().estimatorState().position());
+              this.superstructureStatus.hood().unprofiledGoalPosition(),
+              this.superstructureStatus.hood().estimatorState().position(),
+              1e-3);
         }
+
         if (!this.superstructureStatus.turret().zeroed()) {
           this.setZeroing(this.turret);
         } else if (this.superstructureStatus.turret().estopped()) {
           this.setEstopped(this.turret);
         } else {
-          this.setValue(
+          this.setTargetValue(
               this.turret,
-              this.superstructureStatus.turret().estimatorState().position());
+              this.superstructureStatus.turret().unprofiledGoalPosition(),
+              this.superstructureStatus.turret().estimatorState().position(),
+              1e-3);
         }
+
         if (!this.superstructureStatus.intake().zeroed()) {
           this.setZeroing(this.intake);
         } else if (this.superstructureStatus.intake().estopped()) {
@@ -479,6 +541,7 @@ export class FieldHandler {
               this.superstructureStatus.intake().estimatorState().position());
         }
       }
+
       this.drawRobot(
           this.drivetrainStatus.x(), this.drivetrainStatus.y(),
           this.drivetrainStatus.theta(),

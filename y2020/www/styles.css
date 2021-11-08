@@ -6,7 +6,10 @@
 #field {
   display: inline-block
 }
-#readouts {
+
+#targets,
+#readouts,
+#vision_readouts {
   display: inline-block;
   vertical-align: top;
   float: right;
@@ -16,14 +19,44 @@
   display: inline-block;
 }
 
-#readouts > div {
-  display: table-row;
-  padding: 5px;
+#outer_target {
+  border: 1px solid black;
+  width: 140px;
+  background-color: white;
 }
-#readouts > div > div {
-  display: table-cell;
+
+#inner_target {
+  width: 60px;
+  height: 60px;
+  margin: 40px;
+  border: 1px solid black;
+  background-color: white;
+}
+
+#outer_target.targetted,
+#inner_target.targetted {
+  background-color: green;
+}
+
+table, th, td {
+  border: 1px solid black;
+  border-collapse: collapse;
   padding: 5px;
+  margin: 10px;
+}
+
+th, td {
   text-align: right;
+  width: 70px;
+}
+
+td:first-child {
+  width: 150px;
+}
+
+.near {
+  background-color: LightGreen;
+  border-radius: 10px;
 }
 
 .zeroing {
@@ -34,4 +67,15 @@
 .faulted {
   background-color: red;
   border-radius: 10px;
+}
+
+#vision_readouts > div {
+  display: table-row;
+  padding: 5px;
+}
+
+#vision_readouts > div > div {
+  display: table-cell;
+  padding: 5px;
+  text-align: right;
 }
