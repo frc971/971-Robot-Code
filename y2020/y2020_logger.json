@@ -410,6 +410,14 @@
       "nodes": [
         "logger"
       ]
+    },
+    {
+      "name": "image_logger",
+      "executable_name": "logger_main",
+      "args": ["--snappy_compress", "--logging_folder", "", "--snappy_compress"],
+      "nodes": [
+        "logger"
+      ]
     }
   ],
   "nodes": [

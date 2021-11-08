@@ -80,6 +80,8 @@ sudo cp logind.conf "${PARTITION}/etc/systemd/logind.conf"
 sudo cp change_hostname.sh "${PARTITION}/tmp/change_hostname.sh"
 sudo cp frc971.service "${PARTITION}/etc/systemd/system/frc971.service"
 sudo cp rt.conf "${PARTITION}/etc/security/limits.d/rt.conf"
+sudo cp usb-mount@.service "${PARTITION}/etc/systemd/system/usb-mount@.service"
+sudo cp 99-usb-mount.rules "${PARTITION}/etc/udev/rules.d/99-usb-mount.rules"
 
 target /bin/mkdir -p /home/pi/.ssh/
 cat ~/.ssh/id_rsa.pub | target tee /home/pi/.ssh/authorized_keys

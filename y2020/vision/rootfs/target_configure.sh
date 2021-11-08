@@ -39,6 +39,7 @@ apt-get install -y vim-nox \
   libopencv-viz3.2 \
   python3-opencv \
   libnice10 \
+  pmount \
   libnice-dev
 
 echo 'GOVERNOR="performance"' > /etc/default/cpufrequtils

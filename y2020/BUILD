@@ -43,6 +43,7 @@ robot_downloader(
         "//y2020/www:www_files",
     ],
     start_binaries = [
+        "//aos/events/logging:logger_main",
         "//aos/network:message_bridge_client",
         "//aos/network:message_bridge_server",
         "//aos/network:web_proxy_main",
