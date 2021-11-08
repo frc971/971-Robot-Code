@@ -67,12 +67,12 @@ constexpr double kInnerPortBackset = 0.743;
 // speed. Assuming a constant average speed over the course of the trajectory
 // should be reasonable, since all we are trying to do here is calculate an
 // overall time-of-flight (we don't actually care about the ball speed itself).
-constexpr double kBallSpeedOverGround = 15.0;  // m/s
+constexpr double kBallSpeedOverGround = 17.0;  // m/s
 
 // Minimum distance that we must be from the inner port in order to attempt the
 // shot--this is to account for the fact that if we are too close to the target,
 // then we won't have a clear shot on the inner port.
-constexpr double kMinimumInnerPortShotDistance = 3.9;
+constexpr double kMinimumInnerPortShotDistance = 1.9;
 
 // Amount of buffer, in radians, to leave to help avoid wrapping. I.e., any time
 // that we are in kAvoidEdges mode, we will keep ourselves at least

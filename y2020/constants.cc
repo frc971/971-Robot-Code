@@ -32,34 +32,22 @@ const Values *DoGetValuesForTeam(uint16_t team) {
 
   // We found that the finisher velocity does not change ball velocity much,
   // so keep it constant.
-  constexpr double kVelocityFinisher = 350.0;
   r->shot_interpolation_table =
-      InterpolationTable<Values::ShotParams>({{1.0, {0.01, 10.7}},
-                                              {1.2, {0.01, 10.7}},
-                                              {1.4732, {0.10, 10.6}},
-                                              {2.5, {0.36, 12.0}},
-                                              {3.50, {0.43, 13.2}},
-                                              {3.93, {0.44, 13.2}},
-                                              {4.7371, {0.475, 14.2}},
-                                              {5.31, {0.51, 14.6}},
-                                              {6.332, {0.525, 15.2}},
-                                              {7.35, {0.52, 17.0}},
-                                              {8.30, {0.565, 17.0}},
-                                              {9.20, {0.535, 17.0}}});
-
-  r->flywheel_shot_interpolation_table =
-      InterpolationTable<Values::FlywheelShotParams>(
-          {{10.6, {250.0, kVelocityFinisher}},
-           {12.0, {275.0, kVelocityFinisher}},
-           {13.2, {300.0, kVelocityFinisher}},
-           {14.0, {325.0, kVelocityFinisher}},
-           {14.6, {350.0, kVelocityFinisher}},
-           {15.2, {375.0, kVelocityFinisher}},
-           {15.6, {400.0, kVelocityFinisher}},
-           {16.1, {425.0, kVelocityFinisher}},
-           {16.3, {450.0, kVelocityFinisher}},
-           {16.6, {475.0, kVelocityFinisher}},
-           {17.0, {500.0, kVelocityFinisher + 25}}});
+      InterpolationTable<Values::ShotParams>({{1.128, {0.01, 225, 170}},
+                                              {1.509, {0.01, 215, 160}},
+                                              {1.89, {0.01, 215, 155}},
+                                              {2.15, {0.093, 210, 170}},
+                                              {2.68, {0.195, 240, 190}},
+                                              {3.19, {0.27, 250, 220}},
+                                              {3.93, {0.365, 285, 250}},
+                                              {4.63, {0.42, 320, 280}},
+                                              {5.32, {0.515, 375, 330}},
+                                              {6, {0.565, 440, 400}},
+                                              {6.68, {0.58, 480, 450}},
+                                              {7.37, {0.645, 520, 540}},
+                                              {8.36, {0.645, 550, 560}},
+                                              {9.39, {0.66, 550, 580}},
+                                              {10.4, {0.67, 550, 600}}});
 
   // Hood constants.
   hood->zeroing_voltage = 2.0;
@@ -140,6 +128,8 @@ const Values *DoGetValuesForTeam(uint16_t team) {
   switch (team) {
     // A set of constants for tests.
     case 1:
+      r->shot_interpolation_table = InterpolationTable<Values::ShotParams>(
+          {{1, {0.01, 250, 250}}, {10, {0.67, 500, 600}}});
     case Values::kSpareRoborioTeamNumber:
       break;
 

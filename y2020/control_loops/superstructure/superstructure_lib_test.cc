@@ -1479,10 +1479,10 @@ TEST_P(SuperstructureAllianceTest, ShooterInterpolationInRange) {
                 ->accelerator_right()
                 ->angular_velocity_goal(),
             250.0);
-  EXPECT_DOUBLE_EQ(superstructure_status_fetcher_->shooter()
-                       ->finisher()
-                       ->angular_velocity_goal(),
-                   350.0);
+  EXPECT_GE(superstructure_status_fetcher_->shooter()
+                ->finisher()
+                ->angular_velocity_goal(),
+            250.0);
   EXPECT_GE(superstructure_status_fetcher_->hood()->position(),
             constants::Values::kHoodRange().lower);
 }
