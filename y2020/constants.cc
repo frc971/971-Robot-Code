@@ -129,7 +129,7 @@ const Values *DoGetValuesForTeam(uint16_t team) {
     // A set of constants for tests.
     case 1:
       r->shot_interpolation_table = InterpolationTable<Values::ShotParams>(
-          {{1, {0.01, 250, 250}}, {10, {0.67, 500, 600}}});
+          {{1, {0.01, 250, 350}}, {10, {0.67, 500, 350}}});
     case Values::kSpareRoborioTeamNumber:
       break;
 
