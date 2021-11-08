@@ -116,6 +116,7 @@ flatbuffers::Offset<ShooterStatus> Shooter::RunIteration(
       // come back up close to the last local maximum or is greater than it, the
       // ball has been shot.
       balls_shot_++;
+      VLOG(1) << "Shot ball at " << position_timestamp;
       ball_in_finisher_ = false;
     } else if (!ball_in_finisher_ &&
                (finisher_goal() > kVelocityToleranceFinisher)) {

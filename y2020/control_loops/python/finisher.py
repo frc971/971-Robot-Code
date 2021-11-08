@@ -20,7 +20,7 @@ gflags.DEFINE_bool('plot', False, 'If true, plot the loop response.')
 G = 44.0 / 40.0
 # Overall flywheel inertia.
 J = 0.00507464
-J = 0.008
+J = 0.0035
 
 def AddResistance(motor, resistance):
     motor.resistance += resistance
@@ -40,7 +40,7 @@ kFinisher = flywheel.FlywheelParams(
     q_vel=10.0,
     q_voltage=4.0,
     r_pos=0.01,
-    controller_poles=[.89])
+    controller_poles=[.93])
 
 
 def main(argv):
@@ -58,4 +58,5 @@ def main(argv):
 
 if __name__ == '__main__':
     argv = FLAGS(sys.argv)
+    glog.init()
     sys.exit(main(argv))
