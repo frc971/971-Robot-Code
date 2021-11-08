@@ -17,7 +17,7 @@ kDrivetrain = drivetrain.DrivetrainParams(
     mass=58.0,
     # TODO(austin): Measure radius a bit better.
     robot_radius=0.7 / 2.0,
-    wheel_radius=6.0 * 0.0254 / 2.0,
+    wheel_radius=6.0 * 0.0254 / 2.0 * 0.99,
     motor_type=control_loop.Falcon(),
     G=(8.0 / 70.0) * (17.0 / 24.0),
     q_pos=0.24,
