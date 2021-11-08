@@ -245,7 +245,8 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
         // the climber on.
         CHECK(unsafe_goal->has_turret());
         if (std::abs(unsafe_goal->turret()->unsafe_goal() -
-                     turret_.position()) > 0.1) {
+                     turret_.position()) > 0.1 &&
+            has_turret_) {
           output_struct.climber_voltage = 0;
         }
       }
