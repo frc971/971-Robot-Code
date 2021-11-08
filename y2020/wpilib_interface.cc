@@ -625,7 +625,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     std::unique_ptr<frc971::wpilib::ADIS16448> old_imu;
     std::unique_ptr<frc971::wpilib::ADIS16470> new_imu;
     std::unique_ptr<frc::SPI> imu_spi;
-    if (::aos::network::GetTeamNumber() == constants::Values::kCompTeamNumber) {
+    if (::aos::network::GetTeamNumber() != constants::Values::kCodingRobotTeamNumber) {
       old_imu = make_unique<frc971::wpilib::ADIS16448>(
           &imu_event_loop, spi_port, imu_trigger.get());
       old_imu->SetDummySPI(frc::SPI::Port::kOnboardCS2);
