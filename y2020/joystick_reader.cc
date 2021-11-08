@@ -187,7 +187,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
         finisher_speed = setpoint_fetcher_->finisher();
       }
     } else if (data.IsPressed(kShootSlow)) {
-      accelerator_speed = 150.0;
+      accelerator_speed = 400.0;
       finisher_speed = 200.0;
     }
 
