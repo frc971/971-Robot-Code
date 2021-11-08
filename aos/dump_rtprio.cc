@@ -4,7 +4,8 @@
 // all.
 //
 // The output format is the following comma-separated columns:
-// exe,name,cpumask,policy,nice,priority,tid,pid,ppid,sid,cpu
+// exe,name,cpumask,policy,nice,priority,tid,pid,ppid,sid
+// The threads in the output are sorted by realtime priority.
 
 #include <sched.h>
 #include <sys/resource.h>
@@ -14,6 +15,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <set>
 #include <string>
 
 #include "aos/time/time.h"
@@ -228,11 +230,34 @@ void read_status(int process, int ppid, int *pgrp, ::std::string *name,
   CHECK_EQ(status_ppid, ppid);
 }
 
+struct Thread {
+  uint32_t policy;
+  std::string exe, name, cpu_mask;
+  int nice_value, sched_priority, tid, pid, ppid, sid;
+
+  void Print() const {
+    printf("%s,%s,%s,%s,%d,%d,%d,%d,%d,%d\n", exe.c_str(), name.c_str(),
+           cpu_mask.c_str(), policy_string(policy), nice_value, sched_priority,
+           tid, pid, ppid, sid);
+  }
+
+  // Make threads with SCHED_FIFO or SCHED_RR show up before SCHED_OTHER, and
+  // make higher priority threads show up first. Higher priority threads are
+  // less than lower priority so that they appear first.
+  bool operator<(const Thread &t) const {
+    return (((((policy == SCHED_FIFO) || (policy == SCHED_RR))) &&
+             (t.policy == SCHED_OTHER)) ||
+            (sched_priority > t.sched_priority));
+  }
+};
+
 }  // namespace
 
 int main() {
   const int pid_max = find_pid_max();
   const cpu_set_t all_cpus = find_all_cpus();
+
+  std::multiset<Thread> threads;
 
   for (int i = 0; i < pid_max; ++i) {
     bool not_there = false;
@@ -255,8 +280,20 @@ int main() {
     const char *cpu_mask_string =
         CPU_EQUAL(&cpu_mask, &all_cpus) ? "all" : "???";
 
-    printf("%s,%s,%s,%s,%d,%d,%d,%d,%d,%d\n", exe.c_str(), name.c_str(),
-           cpu_mask_string, policy_string(scheduler), nice_value,
-           param.sched_priority, i, pgrp, ppid, sid);
+    threads.emplace(Thread{.policy = static_cast<uint32_t>(scheduler),
+                           .exe = exe,
+                           .name = name,
+                           .cpu_mask = cpu_mask_string,
+                           .nice_value = nice_value,
+                           .sched_priority = param.sched_priority,
+                           .tid = i,
+                           .pid = pgrp,
+                           .ppid = ppid,
+                           .sid = sid});
+  }
+
+  printf("exe,name,cpumask,policy,nice,priority,tid,pid,ppid,sid\n");
+  for (const auto &t : threads) {
+    t.Print();
   }
 }
