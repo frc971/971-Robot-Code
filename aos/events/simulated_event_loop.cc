@@ -1275,7 +1275,10 @@ void NodeEventLoopFactory::ScheduleStartup() {
   scheduler_.ScheduleOnStartup([this]() {
     UUID next_uuid = scheduler_.boot_uuid();
     if (boot_uuid_ != next_uuid) {
-      CHECK_EQ(boot_uuid_, UUID::Zero());
+      CHECK_EQ(boot_uuid_, UUID::Zero())
+          << ": Boot UUID changed without restarting.  Did TimeConverter "
+             "change the boot UUID without signaling a restart, or did you "
+             "change TimeConverter?";
       boot_uuid_ = next_uuid;
     }
     VLOG(1) << scheduler_.distributed_now() << " " << NodeName(this->node())
