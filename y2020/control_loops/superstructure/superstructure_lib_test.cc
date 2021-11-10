@@ -1087,18 +1087,21 @@ TEST_F(SuperstructureTest, BallsShot) {
           ball_in_finisher_ = false;
           finisher_velocity_below_goal = false;
           balls_shot++;
+          LOG(INFO) << "Shot a ball at " << test_event_loop_->monotonic_now();
         }
         // Since here we are calculating the dip from the goal instead of the
         // local maximum, the shooter could have calculated that a ball was shot
         // slightly before we did if the local maximum was slightly below the
         // goal.
-        EXPECT_TRUE((superstructure_status_fetcher_->shooter()->balls_shot() ==
-                     balls_shot) ||
-                    ((superstructure_status_fetcher_->shooter()->balls_shot() ==
-                      balls_shot + 1) &&
-                     (finisher_velocity_dip -
-                          shooter::Shooter::kVelocityToleranceFinisher <
-                      0.2)));
+        if (superstructure_status_fetcher_->shooter()->balls_shot() !=
+            balls_shot) {
+          EXPECT_EQ(superstructure_status_fetcher_->shooter()->balls_shot(),
+                    balls_shot + 1)
+              << ": Failed at " << test_event_loop_->monotonic_now();
+          EXPECT_LT(finisher_velocity_dip,
+                    0.2 + shooter::Shooter::kVelocityToleranceFinisher)
+              << ": Failed at " << test_event_loop_->monotonic_now();
+        }
       },
       dt());
 
@@ -1108,8 +1111,8 @@ TEST_F(SuperstructureTest, BallsShot) {
   // Maximum (since it is negative) flywheel voltage offsets for simulating the
   // friction of a ball at different finisher speeds.
   // Slower speeds require a higher magnitude of voltage offset.
-  static constexpr double kFastSpeedVoltageOffsetWithBall = -4.1;
-  static constexpr double kSlowSpeedVoltageOffsetWithBall = -4.5;
+  static constexpr double kFastSpeedVoltageOffsetWithBall = -3.1;
+  static constexpr double kSlowSpeedVoltageOffsetWithBall = -3.5;
 
   SetFinisherGoalAfter(kFastShootingSpeed, chrono::seconds(1));
   // Simulate shooting balls by applying friction to the finisher
@@ -1131,7 +1134,7 @@ TEST_F(SuperstructureTest, BallsShot) {
   ApplyFrictionToFinisherAfter(kSlowSpeedVoltageOffsetWithBall, true,
                                chrono::seconds(31));
   // This smaller decrease in velocity shouldn't be counted as a ball
-  ApplyFrictionToFinisherAfter(kSlowSpeedVoltageOffsetWithBall / 2, false,
+  ApplyFrictionToFinisherAfter(kSlowSpeedVoltageOffsetWithBall / 10.0, false,
                                chrono::seconds(34));
 
   SetFinisherGoalAfter(kFastShootingSpeed, chrono::seconds(38));
@@ -1142,7 +1145,7 @@ TEST_F(SuperstructureTest, BallsShot) {
   // This slow positive voltage offset that speeds up the flywheel instead of
   // slowing it down shouldn't be counted as a ball.
   // We wouldn't expect a positive voltage offset of more than ~2 volts.
-  ApplyFrictionToFinisherAfter(2, false, chrono::seconds(47));
+  ApplyFrictionToFinisherAfter(1, false, chrono::seconds(47));
 
   RunFor(chrono::seconds(50));
 

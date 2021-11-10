@@ -70,6 +70,10 @@ class VelocityFlywheel(control_loop.HybridControlLoop):
 
         self.Kff = controls.TwoStateFeedForwards(self.B, self.Qff)
 
+        glog.debug('K: %s', str(self.K))
+        glog.debug('Poles: %s',
+                   str(numpy.linalg.eig(self.A - self.B * self.K)[0]))
+
 
 class Flywheel(VelocityFlywheel):
     def __init__(self, params, name="Flywheel"):
