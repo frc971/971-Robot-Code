@@ -452,22 +452,37 @@ void ValidateConfiguration(const Flatbuffer<Configuration> &config) {
 }  // namespace
 
 // Maps name for the provided maps.  Modifies name.
+//
+// This is called many times during startup, and it dereferences a lot of
+// pointers. These combine to make it a performance hotspot during many tests
+// under msan, so there is some optimizing around caching intermediates instead
+// of dereferencing the pointer multiple times.
 void HandleMaps(const flatbuffers::Vector<flatbuffers::Offset<aos::Map>> *maps,
                 std::string *name, std::string_view type, const Node *node) {
   // For the same reason we merge configs in reverse order, we want to process
   // maps in reverse order.  That lets the outer config overwrite channels from
   // the inner configs.
   for (auto i = maps->rbegin(); i != maps->rend(); ++i) {
-    if (!i->has_match() || !i->match()->has_name()) {
+    const Channel *const match = i->match();
+    if (!match) {
       continue;
     }
-    if (!i->has_rename() || !i->rename()->has_name()) {
+    const flatbuffers::String *const match_name_string = match->name();
+    if (!match_name_string) {
+      continue;
+    }
+    const Channel *const rename = i->rename();
+    if (!rename) {
+      continue;
+    }
+    const flatbuffers::String *const rename_name_string = rename->name();
+    if (!rename_name_string) {
       continue;
     }
 
     // Handle normal maps (now that we know that match and rename are filled
     // out).
-    const std::string_view match_name = i->match()->name()->string_view();
+    const std::string_view match_name = match_name_string->string_view();
     if (match_name != *name) {
       if (match_name.back() == '*' &&
           std::string_view(*name).substr(
@@ -480,18 +495,21 @@ void HandleMaps(const flatbuffers::Vector<flatbuffers::Offset<aos::Map>> *maps,
     }
 
     // Handle type specific maps.
-    if (i->match()->has_type() && i->match()->type()->string_view() != type) {
+    const flatbuffers::String *const match_type_string = match->type();
+    if (match_type_string && match_type_string->string_view() != type) {
       continue;
     }
 
     // Now handle node specific maps.
-    if (node != nullptr && i->match()->has_source_node() &&
-        i->match()->source_node()->string_view() !=
+    const flatbuffers::String *const match_source_node_string =
+        match->source_node();
+    if (node && match_source_node_string &&
+        match_source_node_string->string_view() !=
             node->name()->string_view()) {
       continue;
     }
 
-    std::string new_name(i->rename()->name()->string_view());
+    std::string new_name(rename_name_string->string_view());
     if (match_name.back() == '*') {
       new_name += std::string(name->substr(match_name.size() - 1));
     }
