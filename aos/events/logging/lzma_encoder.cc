@@ -36,10 +36,10 @@ bool LzmaCodeIsOk(lzma_ret status, std::string_view filename = "") {
                    << " not recognized: " << status;
       }
     case LZMA_DATA_ERROR:
-      LOG(WARNING) << "Compressed file is corrupt: " << status;
+      VLOG(1) << "Compressed file is corrupt: " << status;
       return false;
     case LZMA_BUF_ERROR:
-      LOG(WARNING) << "Compressed file is truncated or corrupt: " << status;
+      VLOG(1) << "Compressed file is truncated or corrupt: " << status;
       return false;
     default:
       LOG(FATAL) << "Unexpected return value: " << status;
@@ -199,7 +199,14 @@ size_t LzmaDecoder::Read(uint8_t *begin, uint8_t *end) {
     // produced so far.
     if (!LzmaCodeIsOk(status, filename())) {
       finished_ = true;
-      LOG(WARNING) << filename() << " is truncated or corrupted.";
+      if (status == LZMA_DATA_ERROR) {
+        LOG(WARNING) << filename() << " is corrupted.";
+      } else if (status == LZMA_BUF_ERROR) {
+        LOG(WARNING) << filename() << " is truncated or corrupted.";
+      } else {
+        LOG(FATAL) << "Unknown error " << status << " when reading "
+                   << filename();
+      }
       return (end - begin) - stream_.avail_out;
     }
   }
