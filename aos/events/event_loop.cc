@@ -93,7 +93,7 @@ EventLoop::EventLoop(const Configuration *configuration)
       configuration_(configuration) {}
 
 EventLoop::~EventLoop() {
-  if(!senders_.empty()) {
+  if (!senders_.empty()) {
     for (const RawSender *sender : senders_) {
       LOG(ERROR) << "  Sender "
                  << configuration::StrippedChannelToString(sender->channel())
@@ -102,6 +102,31 @@ EventLoop::~EventLoop() {
   }
   CHECK_EQ(senders_.size(), 0u) << ": Not all senders destroyed";
   CHECK_EQ(events_.size(), 0u) << ": Not all events unregistered";
+}
+
+void EventLoop::SkipTimingReport() {
+  skip_timing_report_ = true;
+  timing_report_ = flatbuffers::DetachedBuffer();
+
+  for (size_t i = 0; i < timers_.size(); ++i) {
+    timers_[i]->timing_.set_timing_report(nullptr);
+  }
+
+  for (size_t i = 0; i < phased_loops_.size(); ++i) {
+    phased_loops_[i]->timing_.set_timing_report(nullptr);
+  }
+
+  for (size_t i = 0; i < watchers_.size(); ++i) {
+    watchers_[i]->set_timing_report(nullptr);
+  }
+
+  for (size_t i = 0; i < senders_.size(); ++i) {
+    senders_[i]->timing_.set_timing_report(nullptr);
+  }
+
+  for (size_t i = 0; i < fetchers_.size(); ++i) {
+    fetchers_[i]->timing_.set_timing_report(nullptr);
+  }
 }
 
 int EventLoop::ChannelIndex(const Channel *channel) {
@@ -240,6 +265,10 @@ void EventLoop::SendTimingReport() {
 }
 
 void EventLoop::UpdateTimingReport() {
+  if (skip_timing_report_) {
+    return;
+  }
+
   // We need to support senders and fetchers changing while we are setting up
   // the event loop.  Otherwise we can't fetch or send until the loop runs. This
   // means that on each change, we need to redo all this work.  This makes setup
@@ -528,13 +557,21 @@ void EventLoop::SetTimerContext(
 }
 
 void WatcherState::set_timing_report(timing::Watcher *watcher) {
-  CHECK_NOTNULL(watcher);
   watcher_ = watcher;
-  wakeup_latency_.set_statistic(watcher->mutable_wakeup_latency());
-  handler_time_.set_statistic(watcher->mutable_handler_time());
+  if (!watcher) {
+    wakeup_latency_.set_statistic(nullptr);
+    handler_time_.set_statistic(nullptr);
+  } else {
+    wakeup_latency_.set_statistic(watcher->mutable_wakeup_latency());
+    handler_time_.set_statistic(watcher->mutable_handler_time());
+  }
 }
 
 void WatcherState::ResetReport() {
+  if (!watcher_) {
+    return;
+  }
+
   wakeup_latency_.Reset();
   handler_time_.Reset();
   watcher_->mutate_count(0);

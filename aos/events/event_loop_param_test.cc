@@ -1958,6 +1958,57 @@ TEST_P(AbstractEventLoopTest, RawBasic) {
 }
 
 // Tests that a raw watcher and raw fetcher can receive messages from a raw
+// sender without messing up offsets, using the RawSpan overload.
+TEST_P(AbstractEventLoopTest, RawBasicSharedSpan) {
+  auto loop1 = Make();
+  auto loop2 = MakePrimary();
+  auto loop3 = Make();
+
+  const FlatbufferDetachedBuffer<TestMessage> kMessage =
+      JsonToFlatbuffer<TestMessage>("{}");
+
+  std::unique_ptr<aos::RawSender> sender =
+      loop1->MakeRawSender(configuration::GetChannel(
+          loop1->configuration(), "/test", "aos.TestMessage", "", nullptr));
+
+  std::unique_ptr<aos::RawFetcher> fetcher =
+      loop3->MakeRawFetcher(configuration::GetChannel(
+          loop3->configuration(), "/test", "aos.TestMessage", "", nullptr));
+
+  loop2->OnRun([&]() {
+    EXPECT_TRUE(sender->Send(std::make_shared<absl::Span<const uint8_t>>(
+        kMessage.span().data(), kMessage.span().size())));
+  });
+
+  bool happened = false;
+  loop2->MakeRawWatcher(
+      configuration::GetChannel(loop2->configuration(), "/test",
+                                "aos.TestMessage", "", nullptr),
+      [this, &kMessage, &fetcher, &happened](const Context &context,
+                                             const void *message) {
+        happened = true;
+        EXPECT_EQ(
+            kMessage.span(),
+            absl::Span<const uint8_t>(
+                reinterpret_cast<const uint8_t *>(message), context.size));
+        EXPECT_EQ(message, context.data);
+
+        ASSERT_TRUE(fetcher->Fetch());
+
+        EXPECT_EQ(kMessage.span(),
+                  absl::Span<const uint8_t>(reinterpret_cast<const uint8_t *>(
+                                                fetcher->context().data),
+                                            fetcher->context().size));
+
+        this->Exit();
+      });
+
+  EXPECT_FALSE(happened);
+  Run();
+  EXPECT_TRUE(happened);
+}
+
+// Tests that a raw watcher and raw fetcher can receive messages from a raw
 // sender with remote times filled out.
 TEST_P(AbstractEventLoopTest, RawRemoteTimes) {
   auto loop1 = Make();
