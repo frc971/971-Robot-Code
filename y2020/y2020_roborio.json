@@ -239,7 +239,8 @@
       "type": "frc971.control_loops.drivetrain.fb.Trajectory",
       "source_node": "roborio",
       "max_size": 600000,
-      "frequency": 4,
+      "frequency": 10,
+      "logger": "NOT_LOGGED",
       "num_senders": 2,
       "read_method": "PIN",
       "num_readers": 10
