@@ -1191,7 +1191,8 @@ TEST_P(AbstractEventLoopTest, TimerDisableOther) {
 }
 
 // Verifies that the event loop implementations detect when Channel is not a
-// pointer into configuration()
+// pointer into configuration(), or a name doesn't map to a channel in
+// configuration().
 TEST_P(AbstractEventLoopDeathTest, InvalidChannel) {
   auto loop = MakePrimary();
 
@@ -1201,12 +1202,26 @@ TEST_P(AbstractEventLoopDeathTest, InvalidChannel) {
   FlatbufferDetachedBuffer<Channel> channel_copy = CopyFlatBuffer(channel);
 
   EXPECT_DEATH(
-      { loop->MakeRawSender(&channel_copy.message()); },
+      loop->MakeRawSender(&channel_copy.message()),
       "Channel pointer not found in configuration\\(\\)->channels\\(\\)");
 
   EXPECT_DEATH(
-      { loop->MakeRawFetcher(&channel_copy.message()); },
+      loop->MakeSender<TestMessage>("/testbad"),
+      "Channel \\{ \"name\": \"/testbad\", \"type\": \"aos.TestMessage\" \\}"
+      " not found in config");
+
+  EXPECT_FALSE(loop->TryMakeSender<TestMessage>("/testbad"));
+
+  EXPECT_DEATH(
+      loop->MakeRawFetcher(&channel_copy.message()),
       "Channel pointer not found in configuration\\(\\)->channels\\(\\)");
+
+  EXPECT_DEATH(
+      loop->MakeFetcher<TestMessage>("/testbad"),
+      "Channel \\{ \"name\": \"/testbad\", \"type\": \"aos.TestMessage\" \\}"
+      " not found in config");
+
+  EXPECT_FALSE(loop->TryMakeFetcher<TestMessage>("/testbad").valid());
 
   EXPECT_DEATH(
       {
@@ -1214,6 +1229,58 @@ TEST_P(AbstractEventLoopDeathTest, InvalidChannel) {
                              [](const Context, const void *) {});
       },
       "Channel pointer not found in configuration\\(\\)->channels\\(\\)");
+
+  EXPECT_DEATH(
+      { loop->MakeWatcher("/testbad", [](const TestMessage &) {}); },
+      "Channel \\{ \"name\": \"/testbad\", \"type\": \"aos.TestMessage\" \\}"
+      " not found in config");
+}
+
+// Verifies that the event loop handles a channel which is not readable or
+// writable on the current node nicely.
+TEST_P(AbstractEventLoopDeathTest, InaccessibleChannel) {
+  EnableNodes("me");
+  auto loop = MakePrimary("me");
+  auto loop2 = Make("them");
+
+  const Channel *channel = configuration::GetChannel(
+      loop->configuration(), "/test_noforward", "aos.TestMessage", "", nullptr);
+
+  FlatbufferDetachedBuffer<Channel> channel_copy = CopyFlatBuffer(channel);
+
+  EXPECT_DEATH(
+      loop2->MakeSender<TestMessage>("/test_forward"),
+      "Channel"
+      " \\{ \"name\": \"/test_forward\", \"type\": \"aos.TestMessage\" \\}"
+      " is not able to be sent on this node");
+
+  EXPECT_FALSE(loop2->TryMakeSender<TestMessage>("/test_forward"));
+
+  EXPECT_DEATH(
+      loop2->MakeRawFetcher(channel),
+      "Channel"
+      " \\{ \"name\": \"/test_noforward\", \"type\": \"aos.TestMessage\" \\}"
+      " is not able to be fetched on this node");
+
+  EXPECT_DEATH(
+      loop2->MakeFetcher<TestMessage>("/test_noforward"),
+      "Channel"
+      " \\{ \"name\": \"/test_noforward\", \"type\": \"aos.TestMessage\" \\}"
+      " is not able to be fetched on this node");
+
+  EXPECT_FALSE(loop2->TryMakeFetcher<TestMessage>("/test_noforward").valid());
+
+  EXPECT_DEATH(
+      { loop2->MakeRawWatcher(channel, [](const Context, const void *) {}); },
+      "\\{ \"name\": \"/test_noforward\", \"type\": \"aos.TestMessage\", "
+      "\"source_node\": \"them\" \\}"
+      " is not able to be watched on this node");
+
+  EXPECT_DEATH(
+      { loop2->MakeWatcher("/test_noforward", [](const TestMessage &) {}); },
+      "\\{ \"name\": \"/test_noforward\", \"type\": \"aos.TestMessage\", "
+      "\"source_node\": \"them\" \\}"
+      " is not able to be watched on this node");
 }
 
 // Verifies that the event loop implementations detect when Channel has an

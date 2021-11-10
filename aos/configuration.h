@@ -113,6 +113,10 @@ std::vector<const Node *> GetNodes(const Configuration *config);
 std::vector<const Node *> GetNodesWithTag(const Configuration *config,
                                           std::string_view tag);
 
+// Returns whether the given node has the provided tag. If this is a single-node
+// world, we assume that all tags match.
+bool NodeHasTag(const Node *node, std::string_view tag);
+
 // Returns the node index for a node.  Note: will be faster if node is a pointer
 // to a node in config, but is not required.
 int GetNodeIndex(const Configuration *config, const Node *node);
