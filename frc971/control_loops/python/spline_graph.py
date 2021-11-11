@@ -34,6 +34,8 @@ class GridWindow(Gtk.Window):
             self.field.points.getConstraint("LATERAL_ACCELERATION"))
         self.vol_input.set_value(self.field.points.getConstraint("VOLTAGE"))
 
+    def undo_func(self, *args):
+        self.field.undo()
     def long_changed(self, button):
         value = self.long_input.get_value()
         self.field.points.setConstraint("LONGITUDINAL_ACCELERATION", value)
@@ -135,6 +137,10 @@ class GridWindow(Gtk.Window):
         self.clear = Gtk.Button.new_with_label("Clear")
         self.clear.set_size_request(100, 40)
         self.clear.connect("clicked", self.clear_clicked)
+
+        self.undo = Gtk.Button.new_with_label("Undo (Ctrl + Z)")
+        self.undo.set_size_request(100, 40)
+        self.undo.connect("clicked", self.undo_func)
         #Dropdown feature
         self.label = Gtk.Label()
         self.label.set_text("Change Field:")
@@ -171,11 +177,12 @@ class GridWindow(Gtk.Window):
         container.attach(limitControls, 5, 1, 1, 1)
 
         jsonControls = Gtk.FlowBox()
-        jsonControls.set_min_children_per_line(3)
+        jsonControls.set_min_children_per_line(5)
         jsonControls.add(self.file_name_box)
         jsonControls.add(self.output_json)
         jsonControls.add(self.input_json)
         jsonControls.add(self.clear)
+        jsonControls.add(self.undo)
         container.attach(jsonControls, 1, 0, 1, 1)
 
         container.attach(self.label, 4, 0, 1, 1)

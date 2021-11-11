@@ -40,7 +40,8 @@ class FieldWidget(Gtk.DrawingArea):
         self.graph = Graph()
         self.set_vexpand(True)
         self.set_hexpand(True)
-
+        # list of multisplines
+        self.multispline_stack = []
         # init field drawing
         # add default spline for testing purposes
         # init editing / viewing modes and pointer location
@@ -331,7 +332,14 @@ class FieldWidget(Gtk.DrawingArea):
         self.queue_draw()
         self.graph.schedule_recalculate(self.points)
 
-    def clear_graph(self):
+    def attempt_append_multispline(self):
+        if (len(self.multispline_stack) == 0 or
+        self.points.toMultiSpline() != self.multispline_stack[-1]):
+            self.multispline_stack.append(self.points.toMultiSpline())
+
+    def clear_graph(self, should_attempt_append=True):
+        if should_attempt_append:
+            self.attempt_append_multispline()
         self.points = Points()
         #recalulate graph using new points
         self.graph.axis.clear()
@@ -340,11 +348,31 @@ class FieldWidget(Gtk.DrawingArea):
         self.mode = Mode.kPlacing
         #redraw entire graph
         self.queue_draw()
-        #TODO: Make a way to undo clear
+
+
+    def undo(self):
+        try:
+            self.multispline_stack.pop()
+        except IndexError:
+            return
+        if len(self.multispline_stack) == 0:
+            self.clear_graph(should_attempt_append=False) #clear, don't do anything
+            return
+        multispline = self.multispline_stack[-1]
+        if multispline['spline_count'] > 0:
+            self.points.fromMultiSpline(multispline)
+            self.mode= Mode.kEditing
+        else:
+            self.mode = Mode.kPlacing
+            self.clear_graph(should_attempt_append=False)
+        self.queue_draw()
+
+
 
     def do_key_press_event(self, event):
         keyval = Gdk.keyval_to_lower(event.keyval)
-
+        if keyval == Gdk.KEY_z and event.state & Gdk.ModifierType.CONTROL_MASK:
+            self.undo()
         # TODO: This should be a button
         if keyval == Gdk.KEY_p:
             self.mode = Mode.kPlacing
@@ -360,6 +388,7 @@ class FieldWidget(Gtk.DrawingArea):
             self.queue_draw()
 
     def do_button_release_event(self, event):
+        self.attempt_append_multispline()
         self.mousex, self.mousey = self.input_transform.transform_point(
             event.x, event.y)
         if self.mode == Mode.kEditing:
