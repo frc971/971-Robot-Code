@@ -13,3 +13,4 @@ as a set of markdown files.
 * [Create a new autonomous routine](tutorials/create-a-new-autonomous.md)
 * [Tune an autonomous](tutorials/tune-an-autonomous.md)
 * [Set up access to the build server using vscode](tutorials/setup-ssh-vscode.md)
+* [Install PyCharm on the build server](tutorials/setup-pycharm-on-build-server.md)
