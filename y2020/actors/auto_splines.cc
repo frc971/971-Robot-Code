@@ -97,7 +97,7 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::BasicSSpline(
   const float starty = 0.0;
   std::vector<float> x_pos{0.0f + startx, 0.4f + startx, 0.4f + startx,
                            0.6f + startx, 0.6f + startx, 1.0f + startx};
-  std::vector<float> y_pos{starty + 0.0f, starty + 0.0f, starty + 0.05f,
+  std::vector<float> y_pos{starty + 0.0f, starty + 0.0f,  starty + 0.05f,
                            starty + 0.1f, starty + 0.15f, starty + 0.15f};
   if (alliance == aos::Alliance::kRed) {
     for (size_t ii = 0; ii < x_pos.size(); ++ii) {
@@ -137,6 +137,16 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::TargetAligned2(
     aos::Alliance alliance) {
   return FixSpline(builder,
                    aos::CopyFlatBuffer<frc971::MultiSpline>(target_aligned_2_,
+                                                            builder->fbb()),
+                   alliance);
+}
+
+flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::TargetAligned3(
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder,
+    aos::Alliance alliance) {
+  return FixSpline(builder,
+                   aos::CopyFlatBuffer<frc971::MultiSpline>(target_aligned_3_,
                                                             builder->fbb()),
                    alliance);
 }

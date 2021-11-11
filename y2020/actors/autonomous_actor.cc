@@ -89,10 +89,11 @@ void AutonomousActor::MaybeSendStartingPosition() {
 }
 
 void AutonomousActor::Replan() {
-  sent_starting_position_ = false;
+  LOG(INFO) << "Alliance " << static_cast<int>(alliance_);
   if (alliance_ == aos::Alliance::kInvalid) {
     return;
   }
+  sent_starting_position_ = false;
   if (FLAGS_spline_auto) {
     test_spline_ = PlanSpline(std::bind(&AutonomousSplines::TestSpline,
                                         &auto_splines_, std::placeholders::_1),
@@ -105,8 +106,12 @@ void AutonomousActor::Replan() {
                    SplineDirection::kForward),
         PlanSpline(std::bind(&AutonomousSplines::TargetAligned2, &auto_splines_,
                              std::placeholders::_1, alliance_),
-                   SplineDirection::kBackward)};
+                   SplineDirection::kBackward),
+        PlanSpline(std::bind(&AutonomousSplines::TargetAligned3, &auto_splines_,
+                             std::placeholders::_1, alliance_),
+                   SplineDirection::kForward)};
     starting_position_ = target_aligned_splines_.value()[0].starting_position();
+    CHECK(starting_position_);
   } else if (FLAGS_target_offset) {
     target_offset_splines_ = {
         PlanSpline(std::bind(&AutonomousSplines::TargetOffset1, &auto_splines_,
@@ -141,6 +146,7 @@ bool AutonomousActor::RunAction(
   Reset();
   if (!user_indicated_safe_to_reset_) {
     AOS_LOG(WARNING, "Didn't send starting position prior to starting auto.");
+    CHECK(starting_position_);
     SendStartingPosition(starting_position_.value());
   }
   // Clear this so that we don't accidentally resend things as soon as we replan
@@ -181,6 +187,8 @@ void AutonomousActor::SendStartingPosition(const Eigen::Vector3d &start) {
   localizer_control_builder.add_y(start(1));
   localizer_control_builder.add_theta(start(2));
   localizer_control_builder.add_theta_uncertainty(0.00001);
+  LOG(INFO) << "User button pressed, x: " << start(0) << " y: " << start(1)
+            << " theta: " << start(2);
   if (!builder.Send(localizer_control_builder.Finish())) {
     AOS_LOG(ERROR, "Failed to reset localizer.\n");
   }
@@ -193,9 +201,14 @@ void AutonomousActor::TargetAligned() {
 
   // Spin up.
   set_shooting(true);
+  set_preloading(true);
+  set_shooter_tracking(true);
   SendSuperstructureGoal();
   if (!WaitForBallsShot(3)) return;
+  LOG(INFO) << "Shot balls";
+  set_shooter_tracking(false);
 
+  // Drive and intake 3 balls in front of the trench run
   set_shooting(false);
   ExtendIntake();
   SendSuperstructureGoal();
@@ -204,9 +217,11 @@ void AutonomousActor::TargetAligned() {
   splines[0].Start();
 
   if (!splines[0].WaitForSplineDistanceRemaining(0.02)) return;
+
   std::this_thread::sleep_for(chrono::milliseconds(200));
   RetractIntake();
 
+  // Drive back to shooting position
   if (!splines[1].WaitForPlan()) return;
   splines[1].Start();
 
@@ -220,26 +235,29 @@ void AutonomousActor::TargetAligned() {
   // Once we come to a stop, give the robot a moment to settle down.  This makes
   // the shot more accurate.
   if (!splines[1].WaitForSplineDistanceRemaining(0.02)) return;
+  set_shooter_tracking(true);
   std::this_thread::sleep_for(chrono::milliseconds(1500));
   set_shooting(true);
   const int balls = Balls();
 
   SendSuperstructureGoal();
 
-  std::this_thread::sleep_for(chrono::milliseconds(1500));
-
-  // We have been seeing balls get stuck on the intake roller.  Reverse the
-  // roller again for a moment to unjam it.
-  set_shooting(false);
-  set_roller_voltage(-12.0);
-  SendSuperstructureGoal();
-  std::this_thread::sleep_for(chrono::milliseconds(250));
-
-  set_roller_voltage(0.0);
-  set_shooting(true);
   SendSuperstructureGoal();
 
   if (!WaitUntilAbsoluteBallsShot(3 + balls)) return;
+
+  set_shooting(false);
+  set_roller_voltage(0.0);
+  set_shooter_tracking(false);
+  set_preloading(false);
+  SendSuperstructureGoal();
+
+  // Drive close to the rendezvous point in the center of the field so that the
+  // driver can intake balls there right after auto ends.
+  if (!splines[2].WaitForPlan()) return;
+  splines[2].Start();
+
+  if (!splines[2].WaitForSplineDistanceRemaining(0.02)) return;
 
   LOG(INFO) << "Took "
             << chrono::duration<double>(aos::monotonic_clock::now() -
@@ -341,7 +359,7 @@ void AutonomousActor::SendSuperstructureGoal() {
       builder.MakeBuilder<superstructure::Goal>();
 
   superstructure_builder.add_intake(intake_offset);
-  superstructure_builder.add_intake_preloading(true);
+  superstructure_builder.add_intake_preloading(preloading_);
   superstructure_builder.add_roller_voltage(roller_voltage_);
   superstructure_builder.add_roller_speed_compensation(
       kRollerSpeedCompensation);
@@ -377,6 +395,10 @@ bool AutonomousActor::WaitUntilAbsoluteBallsShot(int absolute_balls) {
   ::aos::time::PhasedLoop phased_loop(frc971::controls::kLoopFrequency,
                                       event_loop()->monotonic_now(),
                                       frc971::controls::kLoopFrequency / 2);
+  superstructure_status_fetcher_.Fetch();
+  CHECK(superstructure_status_fetcher_.get() != nullptr);
+  int last_balls = superstructure_status_fetcher_->shooter()->balls_shot();
+  LOG(INFO) << "Waiting for balls, started with " << absolute_balls;
   while (true) {
     if (ShouldCancel()) {
       return false;
@@ -384,10 +406,19 @@ bool AutonomousActor::WaitUntilAbsoluteBallsShot(int absolute_balls) {
     phased_loop.SleepUntilNext();
     superstructure_status_fetcher_.Fetch();
     CHECK(superstructure_status_fetcher_.get() != nullptr);
+    if (superstructure_status_fetcher_->shooter()->balls_shot() != last_balls) {
+      LOG(INFO) << "Shot "
+                << superstructure_status_fetcher_->shooter()->balls_shot() -
+                       last_balls
+                << " balls, now at "
+                << superstructure_status_fetcher_->shooter()->balls_shot();
+    }
     if (superstructure_status_fetcher_->shooter()->balls_shot() >=
         absolute_balls) {
       return true;
     }
+
+    last_balls = superstructure_status_fetcher_->shooter()->balls_shot();
   }
 }
 

@@ -43,6 +43,7 @@ class AutonomousActor : public frc971::autonomous::BaseAutonomousActor {
     shooter_tracking_ = shooter_tracking;
   }
   void set_shooting(bool shooting) { shooting_ = shooting; }
+  void set_preloading(bool preloading) { preloading_ = preloading; }
 
   void SendSuperstructureGoal();
   void ExtendIntake();
@@ -64,6 +65,7 @@ class AutonomousActor : public frc971::autonomous::BaseAutonomousActor {
   double intake_goal_ = 0.0;
   double roller_voltage_ = 0.0;
   bool shooting_ = false;
+  bool preloading_ = true;
   bool shooter_tracking_ = true;
   const float kRollerSpeedCompensation = 2.0;
 
@@ -80,7 +82,8 @@ class AutonomousActor : public frc971::autonomous::BaseAutonomousActor {
   aos::TimerHandler *button_poll_;
 
   std::optional<std::array<SplineHandle, 2>> target_offset_splines_;
-  std::optional<std::array<SplineHandle, 2>> target_aligned_splines_;
+  // Max number of splines is 5
+  std::optional<std::array<SplineHandle, 3>> target_aligned_splines_;
 
   std::optional<SplineHandle> barrel_spline_;
   std::optional<SplineHandle> slalom_spline_;

@@ -25,6 +25,8 @@ class AutonomousSplines {
             "splines/target_aligned_1.json")),
         target_aligned_2_(aos::JsonFileToFlatbuffer<frc971::MultiSpline>(
             "splines/target_aligned_2.json")),
+        target_aligned_3_(aos::JsonFileToFlatbuffer<frc971::MultiSpline>(
+            "splines/target_aligned_3.json")),
         target_offset_1_(aos::JsonFileToFlatbuffer<frc971::MultiSpline>(
             "splines/target_offset_1.json")),
         target_offset_2_(aos::JsonFileToFlatbuffer<frc971::MultiSpline>(
@@ -53,6 +55,10 @@ class AutonomousSplines {
       aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
           *builder,
       aos::Alliance alliance);
+  flatbuffers::Offset<frc971::MultiSpline> TargetAligned3(
+      aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+          *builder,
+      aos::Alliance alliance);
   flatbuffers::Offset<frc971::MultiSpline> TargetOffset1(
       aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
           *builder) {
@@ -70,6 +76,7 @@ class AutonomousSplines {
   aos::FlatbufferDetachedBuffer<frc971::MultiSpline> test_spline_;
   aos::FlatbufferDetachedBuffer<frc971::MultiSpline> target_aligned_1_;
   aos::FlatbufferDetachedBuffer<frc971::MultiSpline> target_aligned_2_;
+  aos::FlatbufferDetachedBuffer<frc971::MultiSpline> target_aligned_3_;
   aos::FlatbufferDetachedBuffer<frc971::MultiSpline> target_offset_1_;
   aos::FlatbufferDetachedBuffer<frc971::MultiSpline> target_offset_2_;
 };
