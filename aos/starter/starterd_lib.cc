@@ -8,6 +8,8 @@
 #include <algorithm>
 #include <utility>
 
+#include "absl/strings/str_format.h"
+#include "aos/json_to_flatbuffer.h"
 #include "glog/logging.h"
 #include "glog/stl_logging.h"
 
@@ -406,6 +408,15 @@ SignalListener::SignalListener(aos::ShmEventLoop *loop,
 
 SignalListener::~SignalListener() { loop_->epoll()->DeleteFd(signalfd_.fd()); }
 
+const aos::Channel *StatusChannelForNode(const aos::Configuration *config,
+                                         const aos::Node *node) {
+  return configuration::GetChannel<Status>(config, "/aos", "", node);
+}
+const aos::Channel *StarterRpcChannelForNode(const aos::Configuration *config,
+                                             const aos::Node *node) {
+  return configuration::GetChannel<StarterRpc>(config, "/aos", "", node);
+}
+
 Starter::Starter(const aos::Configuration *event_loop_config)
     : config_msg_(event_loop_config),
       event_loop_(event_loop_config),
@@ -427,20 +438,30 @@ Starter::Starter(const aos::Configuration *event_loop_config)
                          std::chrono::milliseconds(1000));
   });
 
-  event_loop_.MakeWatcher("/aos", [this](const aos::starter::StarterRpc &cmd) {
-    if (!cmd.has_command() || !cmd.has_name() || exiting_) {
-      return;
+  if (!aos::configuration::MultiNode(config_msg_)) {
+    event_loop_.MakeWatcher(
+        "/aos",
+        [this](const aos::starter::StarterRpc &cmd) { HandleStarterRpc(cmd); });
+  } else {
+    for (const aos::Node *node : aos::configuration::GetNodes(config_msg_)) {
+      const Channel *channel = StarterRpcChannelForNode(config_msg_, node);
+      CHECK(channel != nullptr) << ": Failed to find channel /aos for "
+                                << StarterRpc::GetFullyQualifiedName() << " on "
+                                << node->name()->string_view();
+      if (!aos::configuration::ChannelIsReadableOnNode(channel,
+                                                       event_loop_.node())) {
+        LOG(INFO) << "StarterRpc channel "
+                  << aos::configuration::StrippedChannelToString(channel)
+                  << " is not readable on "
+                  << event_loop_.node()->name()->string_view();
+      } else {
+        event_loop_.MakeWatcher(channel->name()->string_view(),
+                                [this](const aos::starter::StarterRpc &cmd) {
+                                  HandleStarterRpc(cmd);
+                                });
+      }
     }
-    LOG(INFO) << "Received command "
-              << aos::starter::EnumNameCommand(cmd.command()) << ' '
-              << cmd.name()->string_view();
-
-    auto search = applications_.find(cmd.name()->str());
-    if (search != applications_.end()) {
-      // If an applicatione exists by the given name, dispatch the command
-      search->second.HandleCommand(cmd.command());
-    }
-  });
+  }
 
   if (config_msg_->has_applications()) {
     const flatbuffers::Vector<flatbuffers::Offset<aos::Application>>
@@ -462,6 +483,34 @@ Starter::Starter(const aos::Configuration *event_loop_config)
         AddApplication(application);
       }
     }
+  }
+}
+
+void Starter::HandleStarterRpc(const StarterRpc &command) {
+  if (!command.has_command() || !command.has_name() || exiting_) {
+    return;
+  }
+
+  LOG(INFO) << "Received " << aos::FlatbufferToJson(&command);
+
+  if (command.has_nodes()) {
+    CHECK(aos::configuration::MultiNode(config_msg_));
+    bool relevant_to_this_node = false;
+    for (const flatbuffers::String *node : *command.nodes()) {
+      if (node->string_view() == event_loop_.node()->name()->string_view()) {
+        relevant_to_this_node = true;
+      }
+    }
+    if (!relevant_to_this_node) {
+      return;
+    }
+  }
+  // If not populated, restart regardless of node.
+
+  auto search = applications_.find(command.name()->str());
+  if (search != applications_.end()) {
+    // If an applicatione exists by the given name, dispatch the command
+    search->second.HandleCommand(command.command());
   }
 }
 

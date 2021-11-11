@@ -1,4 +1,5 @@
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+load("//aos:config.bzl", "aos_config")
 
 # This target is everything which should get deployed to the robot.
 filegroup(
@@ -36,21 +37,47 @@ cc_library(
     ],
 )
 
+aos_config(
+    name = "multinode_pingpong_config",
+    src = "multinode_pingpong.json",
+    flatbuffers = [
+        "//aos/events:ping_fbs",
+        "//aos/events:pong_fbs",
+        ":starter_rpc_fbs",
+        ":starter_fbs",
+        "//aos/logging:log_message_fbs",
+        "//aos/events:event_loop_fbs",
+        "//aos/network:message_bridge_client_fbs",
+        "//aos/network:remote_message_fbs",
+        "//aos/network:timestamp_fbs",
+        "//aos/network:message_bridge_server_fbs",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+)
+
 cc_test(
     name = "starter_test",
     srcs = ["starter_test.cc"],
     data = [
+        ":multinode_pingpong_config",
         "//aos/events:ping",
         "//aos/events:pingpong_config",
         "//aos/events:pong",
     ],
+    linkopts = ["-lstdc++fs"],
     shard_count = 3,
-    target_compatible_with = ["@platforms//os:linux"],
+    # The roborio compiler doesn't support <filesystem>.
+    target_compatible_with =
+        select({
+            "//tools/platforms/hardware:roborio": ["@platforms//:incompatible"],
+            "//conditions:default": ["@platforms//os:linux"],
+        }),
     deps = [
         ":starter_rpc_lib",
         ":starterd_lib",
         "//aos/events:ping_fbs",
         "//aos/events:pong_fbs",
+        "//aos/events:simulated_event_loop",
         "//aos/testing:googletest",
         "//aos/testing:path",
         "//aos/testing:tmpdir",
@@ -73,9 +100,11 @@ cc_library(
     srcs = ["starter_rpc_lib.cc"],
     hdrs = ["starter_rpc_lib.h"],
     target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
     deps = [
         ":starter_fbs",
         ":starter_rpc_fbs",
+        ":starterd_lib",
         "//aos:configuration",
         "//aos:init",
         "//aos/events:shm_event_loop",

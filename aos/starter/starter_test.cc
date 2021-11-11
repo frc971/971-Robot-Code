@@ -1,9 +1,11 @@
 #include <csignal>
+#include <experimental/filesystem>
 #include <future>
 #include <thread>
 
 #include "aos/events/ping_generated.h"
 #include "aos/events/pong_generated.h"
+#include "aos/network/team_number.h"
 #include "aos/testing/path.h"
 #include "aos/testing/tmpdir.h"
 #include "gtest/gtest.h"
@@ -15,31 +17,57 @@ using aos::testing::ArtifactPath;
 namespace aos {
 namespace starter {
 
-TEST(StarterdTest, StartStopTest) {
-  const std::string config_file =
-      ArtifactPath("aos/events/pingpong_config.json");
+class StarterdTest : public ::testing::Test {
+ public:
+  StarterdTest() : shm_dir_(aos::testing::TestTmpDir() + "/aos") {
+    FLAGS_shm_base = shm_dir_;
+
+    // Nuke the shm dir:
+    std::experimental::filesystem::remove_all(shm_dir_);
+  }
+
+ protected:
+  gflags::FlagSaver flag_saver_;
+  std::string shm_dir_;
+};
+
+struct TestParams {
+  std::string config;
+  std::string hostname;
+};
+
+class StarterdConfigParamTest
+    : public StarterdTest,
+      public ::testing::WithParamInterface<TestParams> {};
+
+TEST_P(StarterdConfigParamTest, MultiNodeStartStopTest) {
+  gflags::FlagSaver flag_saver;
+  FLAGS_override_hostname = GetParam().hostname;
+  const std::string config_file = ArtifactPath(GetParam().config);
 
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig(config_file);
 
-  const std::string test_dir = aos::testing::TestTmpDir();
-
   auto new_config = aos::configuration::MergeWithConfig(
-      &config.message(), absl::StrFormat(
-                             R"({"applications": [
+      &config.message(),
+      absl::StrFormat(
+          R"({"applications": [
                                   {
                                     "name": "ping",
                                     "executable_name": "%s",
-                                    "args": ["--shm_base", "%s/aos"]
+                                    "nodes": ["pi1"],
+                                    "args": ["--shm_base", "%s", "--config", "%s", "--override_hostname", "%s"]
                                   },
                                   {
                                     "name": "pong",
                                     "executable_name": "%s",
-                                    "args": ["--shm_base", "%s/aos"]
+                                    "nodes": ["pi1"],
+                                    "args": ["--shm_base", "%s", "--config", "%s", "--override_hostname", "%s"]
                                   }
                                 ]})",
-                             ArtifactPath("aos/events/ping"), test_dir,
-                             ArtifactPath("aos/events/pong"), test_dir));
+          ArtifactPath("aos/events/ping"), shm_dir_, config_file,
+          GetParam().hostname, ArtifactPath("aos/events/pong"), shm_dir_,
+          config_file, GetParam().hostname));
 
   const aos::Configuration *config_msg = &new_config.message();
 
@@ -51,6 +79,17 @@ TEST(StarterdTest, StartStopTest) {
   aos::ShmEventLoop watcher_loop(config_msg);
   watcher_loop.SkipAosLog();
 
+  aos::ShmEventLoop client_loop(config_msg);
+  client_loop.SkipAosLog();
+  StarterClient client(&client_loop);
+  client.SetTimeoutHandler(
+      []() { FAIL() << ": Command should not have timed out."; });
+  bool success = false;
+  client.SetSuccessHandler([&success, &client_loop]() {
+    client_loop.Exit();
+    success = true;
+  });
+
   watcher_loop
       .AddTimer([&watcher_loop] {
         watcher_loop.Exit();
@@ -58,27 +97,25 @@ TEST(StarterdTest, StartStopTest) {
       })
       ->Setup(watcher_loop.monotonic_now() + std::chrono::seconds(7));
 
-  int test_stage = 0;
-  watcher_loop.MakeWatcher(
-      "/test", [&test_stage, config_msg](const aos::examples::Ping &) {
-        switch (test_stage) {
-          case 1: {
-            test_stage = 2;
-            break;
-          }
-          case 2: {
-            std::thread([config_msg] {
-              LOG(INFO) << "Send command";
-              ASSERT_TRUE(aos::starter::SendCommandBlocking(
-                  aos::starter::Command::STOP, "ping", config_msg,
-                  std::chrono::seconds(3)));
-            })
-                .detach();
-            test_stage = 3;
-            break;
-          }
+  std::atomic<int> test_stage = 0;
+  // Watch on the client loop since we need to interact with the StarterClient.
+  client_loop.MakeWatcher("/test", [&test_stage, &client,
+                                    &client_loop](const aos::examples::Ping &) {
+    switch (test_stage) {
+      case 1: {
+        test_stage = 2;
+        break;
+      }
+      case 2: {
+        {
+          client.SendCommands({{Command::STOP, "ping", {client_loop.node()}}},
+                              std::chrono::seconds(3));
         }
-      });
+        test_stage = 3;
+        break;
+      }
+    }
+  });
 
   watcher_loop.MakeWatcher(
       "/aos", [&test_stage, &watcher_loop](const aos::starter::Status &status) {
@@ -109,20 +146,26 @@ TEST(StarterdTest, StartStopTest) {
       });
 
   std::thread starterd_thread([&starter] { starter.Run(); });
+  std::thread client_thread([&client_loop] { client_loop.Run(); });
   watcher_loop.Run();
 
   starter.Cleanup();
+  client_thread.join();
   starterd_thread.join();
 }
 
-TEST(StarterdTest, DeathTest) {
+INSTANTIATE_TEST_SUITE_P(
+    StarterdConfigParamTest, StarterdConfigParamTest,
+    ::testing::Values(TestParams{"aos/events/pingpong_config.json", ""},
+                      TestParams{"aos/starter/multinode_pingpong_config.json",
+                                 "pi1"}));
+
+TEST_F(StarterdTest, DeathTest) {
   const std::string config_file =
       ArtifactPath("aos/events/pingpong_config.json");
 
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig(config_file);
-
-  const std::string test_dir = aos::testing::TestTmpDir();
 
   auto new_config = aos::configuration::MergeWithConfig(
       &config.message(), absl::StrFormat(
@@ -130,16 +173,16 @@ TEST(StarterdTest, DeathTest) {
                                   {
                                     "name": "ping",
                                     "executable_name": "%s",
-                                    "args": ["--shm_base", "%s/aos"]
+                                    "args": ["--shm_base", "%s"]
                                   },
                                   {
                                     "name": "pong",
                                     "executable_name": "%s",
-                                    "args": ["--shm_base", "%s/aos"]
+                                    "args": ["--shm_base", "%s"]
                                   }
                                 ]})",
-                             ArtifactPath("aos/events/ping"), test_dir,
-                             ArtifactPath("aos/events/pong"), test_dir));
+                             ArtifactPath("aos/events/ping"), shm_dir_,
+                             ArtifactPath("aos/events/pong"), shm_dir_));
 
   const aos::Configuration *config_msg = &new_config.message();
 
@@ -203,14 +246,12 @@ TEST(StarterdTest, DeathTest) {
   starterd_thread.join();
 }
 
-TEST(StarterdTest, Autostart) {
+TEST_F(StarterdTest, Autostart) {
   const std::string config_file =
       ArtifactPath("aos/events/pingpong_config.json");
 
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig(config_file);
-
-  const std::string test_dir = aos::testing::TestTmpDir();
 
   auto new_config = aos::configuration::MergeWithConfig(
       &config.message(), absl::StrFormat(
@@ -218,17 +259,17 @@ TEST(StarterdTest, Autostart) {
                                   {
                                     "name": "ping",
                                     "executable_name": "%s",
-                                    "args": ["--shm_base", "%s/aos"],
+                                    "args": ["--shm_base", "%s"],
                                     "autostart": false
                                   },
                                   {
                                     "name": "pong",
                                     "executable_name": "%s",
-                                    "args": ["--shm_base", "%s/aos"]
+                                    "args": ["--shm_base", "%s"]
                                   }
                                 ]})",
-                             ArtifactPath("aos/events/ping"), test_dir,
-                             ArtifactPath("aos/events/pong"), test_dir));
+                             ArtifactPath("aos/events/ping"), shm_dir_,
+                             ArtifactPath("aos/events/pong"), shm_dir_));
 
   const aos::Configuration *config_msg = &new_config.message();
 

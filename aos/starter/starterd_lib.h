@@ -159,6 +159,11 @@ class SignalListener {
   DISALLOW_COPY_AND_ASSIGN(SignalListener);
 };
 
+const aos::Channel *StatusChannelForNode(const aos::Configuration *config,
+                                         const aos::Node *node);
+const aos::Channel *StarterRpcChannelForNode(const aos::Configuration *config,
+                                             const aos::Node *node);
+
 class Starter {
  public:
   Starter(const aos::Configuration *event_loop_config);
@@ -180,6 +185,7 @@ class Starter {
       SIGSEGV, SIGPIPE, SIGTERM, SIGBUS, SIGXCPU};
 
   void OnSignal(signalfd_siginfo signal);
+  void HandleStarterRpc(const StarterRpc &command);
 
   // Sends the Status message if it wouldn't exceed the rate limit.
   void MaybeSendStatus();

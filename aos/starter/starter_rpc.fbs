@@ -17,11 +17,15 @@ enum Command : short {
 }
 
 table StarterRpc {
-  command : Command (id: 0);
+  command:Command (id: 0);
 
   // The name of the application to send the command to. Command is ignored if
   // the given application does not exist.
-  name: string (id: 1);
+  name:string (id: 1);
+
+  // This set of nodes to start/stop the application on. If empty, indicates that applications
+  // should be restarted on all nodes.
+  nodes:[string] (id: 2);
 }
 
 root_type StarterRpc;
