@@ -67,19 +67,19 @@ StarterClient::StarterClient(EventLoop *event_loop)
                                 << node->name()->string_view();
       if (!configuration::ChannelIsReadableOnNode(channel,
                                                   event_loop_->node())) {
-        LOG(INFO) << "Status channel "
-                  << configuration::StrippedChannelToString(channel)
-                  << " is not readable on "
-                  << event_loop_->node()->name()->string_view();
+        VLOG(1) << "Status channel "
+                << configuration::StrippedChannelToString(channel)
+                << " is not readable on "
+                << event_loop_->node()->name()->string_view();
       } else if (!configuration::ChannelIsReadableOnNode(
                      StarterRpcChannelForNode(event_loop_->configuration(),
                                               event_loop_->node()),
                      node)) {
         // Don't attempt to construct a status fetcher if the other node won't
         // even be able to receive our commands.
-        LOG(INFO) << "StarterRpc channel for "
-                  << event_loop_->node()->name()->string_view()
-                  << " is not readable on " << node->name()->string_view();
+        VLOG(1) << "StarterRpc channel for "
+                << event_loop_->node()->name()->string_view()
+                << " is not readable on " << node->name()->string_view();
       } else {
         status_fetchers_[node->name()->str()] =
             event_loop_->MakeFetcher<Status>(channel->name()->string_view());
