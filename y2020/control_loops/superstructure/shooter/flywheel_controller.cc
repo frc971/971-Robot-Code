@@ -41,16 +41,22 @@ class CurrentLimitedStateFeedbackController
     // And we have a quadratic!
     const double a = 1;
     const double b = -bemf_voltage;
-    const double c = -70.0 * 12.0 * resistance_;
+    const double c_positive = -70.0 * 12.0 * resistance_;
+    const double c_negative = -40.0 * 12.0 * resistance_;
 
     // Root is always positive.
-    const double root = std::sqrt(b * b - 4.0 * a * c);
-    const double upper_limit = (-b + root) / (2.0 * a);
-    const double lower_limit = (-b - root) / (2.0 * a);
+    const double root_positive = std::sqrt(b * b - 4.0 * a * c_positive);
+    const double root_negative = std::sqrt(b * b - 4.0 * a * c_negative);
+    const double upper_limit = (-b + root_positive) / (2.0 * a);
+    const double lower_limit = (-b - root_negative) / (2.0 * a);
 
     // Limit to the battery voltage and the current limit voltage.
     mutable_U(0, 0) = std::clamp(U(0, 0), lower_limit, upper_limit);
-    mutable_U(0, 0) = std::clamp(U(0, 0), 0.0, 12.0);
+    if (R(0) > 50.0) {
+      mutable_U(0, 0) = std::clamp(U(0, 0), -0.8, 12.0);
+    } else {
+      mutable_U(0, 0) = std::clamp(U(0, 0), 0.0, 12.0);
+    }
   }
 
  private:
