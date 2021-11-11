@@ -225,6 +225,21 @@ class EventLoopTestFactory {
       "name": "/test2",
       "type": "aos.TestMessage",
       "source_node": "me"
+    },
+    {
+      "name": "/test_forward",
+      "type": "aos.TestMessage",
+      "source_node": "them",
+      "destination_nodes": [
+        {
+          "name": "me"
+        }
+      ]
+    },
+    {
+      "name": "/test_noforward",
+      "type": "aos.TestMessage",
+      "source_node": "them"
     }
   ],
   "nodes": [

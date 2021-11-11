@@ -767,6 +767,27 @@ TEST_F(ConfigurationTest, GetNodesWithTag) {
   }
 }
 
+// Tests that we can check if a node has a tag.
+TEST_F(ConfigurationTest, NodeHasTag) {
+  {
+    FlatbufferDetachedBuffer<Configuration> config =
+        ReadConfig(ArtifactPath("aos/testdata/good_multinode.json"));
+    const Node *pi1 = GetNode(&config.message(), "pi1");
+    const Node *pi2 = GetNode(&config.message(), "pi2");
+
+    EXPECT_TRUE(NodeHasTag(pi1, "a"));
+    EXPECT_FALSE(NodeHasTag(pi2, "a"));
+    EXPECT_FALSE(NodeHasTag(pi1, "b"));
+    EXPECT_TRUE(NodeHasTag(pi2, "b"));
+    EXPECT_TRUE(NodeHasTag(pi1, "c"));
+    EXPECT_TRUE(NodeHasTag(pi2, "c"));
+    EXPECT_FALSE(NodeHasTag(pi1, "nope"));
+    EXPECT_FALSE(NodeHasTag(pi2, "nope"));
+  }
+
+  EXPECT_TRUE(NodeHasTag(nullptr, "arglfish"));
+}
+
 // Tests that we can extract a node index from a config.
 TEST_F(ConfigurationTest, GetNodeIndex) {
   FlatbufferDetachedBuffer<Configuration> config =

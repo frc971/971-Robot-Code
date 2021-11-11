@@ -1133,6 +1133,18 @@ std::vector<const Node *> GetNodesWithTag(const Configuration *config,
   return nodes;
 }
 
+bool NodeHasTag(const Node *node, std::string_view tag) {
+  if (node == nullptr) {
+    return true;
+  }
+
+  const auto *const tags = node->tags();
+  return std::find_if(tags->begin(), tags->end(),
+                      [tag](const flatbuffers::String *candidate) {
+                        return candidate->string_view() == tag;
+                      }) != tags->end();
+}
+
 bool MultiNode(const Configuration *config) { return config->has_nodes(); }
 
 bool ChannelIsSendableOnNode(const Channel *channel, const Node *node) {

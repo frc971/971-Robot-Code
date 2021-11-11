@@ -517,31 +517,62 @@ class EventLoop {
     return GetChannel<T>(channel_name) != nullptr;
   }
 
+  // Like MakeFetcher, but returns an invalid fetcher if the given channel is
+  // not readable on this node or does not exist.
+  template <typename T>
+  Fetcher<T> TryMakeFetcher(const std::string_view channel_name) {
+    const Channel *const channel = GetChannel<T>(channel_name);
+    if (channel == nullptr) {
+      return Fetcher<T>();
+    }
+
+    if (!configuration::ChannelIsReadableOnNode(channel, node())) {
+      return Fetcher<T>();
+    }
+
+    return Fetcher<T>(MakeRawFetcher(channel));
+  }
+
   // Makes a class that will always fetch the most recent value
   // sent to the provided channel.
   template <typename T>
   Fetcher<T> MakeFetcher(const std::string_view channel_name) {
-    const Channel *channel = GetChannel<T>(channel_name);
-    CHECK(channel != nullptr)
+    CHECK(HasChannel<T>(channel_name))
         << ": Channel { \"name\": \"" << channel_name << "\", \"type\": \""
         << T::GetFullyQualifiedName() << "\" } not found in config.";
 
-    if (!configuration::ChannelIsReadableOnNode(channel, node())) {
+    Fetcher<T> result = TryMakeFetcher<T>(channel_name);
+    if (!result.valid()) {
       LOG(FATAL) << "Channel { \"name\": \"" << channel_name
                  << "\", \"type\": \"" << T::GetFullyQualifiedName()
                  << "\" } is not able to be fetched on this node.  Check your "
                     "configuration.";
     }
 
-    return Fetcher<T>(MakeRawFetcher(channel));
+    return result;
+  }
+
+  // Like MakeSender, but returns an invalid sender if the given channel is
+  // not readable on this node or does not exist.
+  template <typename T>
+  Sender<T> TryMakeSender(const std::string_view channel_name) {
+    const Channel *channel = GetChannel<T>(channel_name);
+    if (channel == nullptr) {
+      return Sender<T>();
+    }
+
+    if (!configuration::ChannelIsSendableOnNode(channel, node())) {
+      return Sender<T>();
+    }
+
+    return Sender<T>(MakeRawSender(channel));
   }
 
   // Makes class that allows constructing and sending messages to
   // the provided channel.
   template <typename T>
   Sender<T> MakeSender(const std::string_view channel_name) {
-    const Channel *channel = GetChannel<T>(channel_name);
-    CHECK(channel != nullptr)
+    CHECK(HasChannel<T>(channel_name))
         << ": Channel { \"name\": \"" << channel_name << "\", \"type\": \""
         << T::GetFullyQualifiedName() << "\" } not found in config for "
         << name()
@@ -549,14 +580,15 @@ class EventLoop {
                 ? absl::StrCat(" on node ", node()->name()->string_view())
                 : ".");
 
-    if (!configuration::ChannelIsSendableOnNode(channel, node())) {
+    Sender<T> result = TryMakeSender<T>(channel_name);
+    if (!result) {
       LOG(FATAL) << "Channel { \"name\": \"" << channel_name
                  << "\", \"type\": \"" << T::GetFullyQualifiedName()
                  << "\" } is not able to be sent on this node.  Check your "
                     "configuration.";
     }
 
-    return Sender<T>(MakeRawSender(channel));
+    return result;
   }
 
   // This will watch messages sent to the provided channel.
