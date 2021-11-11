@@ -454,37 +454,37 @@ bool AddSingleElement(FlatbufferType type, int field_index, int64_t int_value,
       type.FieldElementaryType(field_index);
   switch (elementary_type) {
     case flatbuffers::ET_BOOL:
-      fbb->AddElement<bool>(field_offset, int_value, 0);
+      fbb->AddElement<bool>(field_offset, int_value);
       return true;
     case flatbuffers::ET_CHAR:
-      fbb->AddElement<int8_t>(field_offset, int_value, 0);
+      fbb->AddElement<int8_t>(field_offset, int_value);
       return true;
     case flatbuffers::ET_UCHAR:
-      fbb->AddElement<uint8_t>(field_offset, int_value, 0);
+      fbb->AddElement<uint8_t>(field_offset, int_value);
       return true;
     case flatbuffers::ET_SHORT:
-      fbb->AddElement<int16_t>(field_offset, int_value, 0);
+      fbb->AddElement<int16_t>(field_offset, int_value);
       return true;
     case flatbuffers::ET_USHORT:
-      fbb->AddElement<uint16_t>(field_offset, int_value, 0);
+      fbb->AddElement<uint16_t>(field_offset, int_value);
       return true;
     case flatbuffers::ET_INT:
-      fbb->AddElement<int32_t>(field_offset, int_value, 0);
+      fbb->AddElement<int32_t>(field_offset, int_value);
       return true;
     case flatbuffers::ET_UINT:
-      fbb->AddElement<uint32_t>(field_offset, int_value, 0);
+      fbb->AddElement<uint32_t>(field_offset, int_value);
       return true;
     case flatbuffers::ET_LONG:
-      fbb->AddElement<int64_t>(field_offset, int_value, 0);
+      fbb->AddElement<int64_t>(field_offset, int_value);
       return true;
     case flatbuffers::ET_ULONG:
-      fbb->AddElement<uint64_t>(field_offset, int_value, 0);
+      fbb->AddElement<uint64_t>(field_offset, int_value);
       return true;
     case flatbuffers::ET_FLOAT:
-      fbb->AddElement<float>(field_offset, int_value, 0);
+      fbb->AddElement<float>(field_offset, int_value);
       return true;
     case flatbuffers::ET_DOUBLE:
-      fbb->AddElement<double>(field_offset, int_value, 0);
+      fbb->AddElement<double>(field_offset, int_value);
       return true;
     case flatbuffers::ET_STRING:
     case flatbuffers::ET_UTYPE:
@@ -528,10 +528,10 @@ bool AddSingleElement(FlatbufferType type, int field_index, double double_value,
       return false;
     }
     case flatbuffers::ET_FLOAT:
-      fbb->AddElement<float>(field_offset, double_value, 0);
+      fbb->AddElement<float>(field_offset, double_value);
       return true;
     case flatbuffers::ET_DOUBLE:
-      fbb->AddElement<double>(field_offset, double_value, 0);
+      fbb->AddElement<double>(field_offset, double_value);
       return true;
   }
   return false;
