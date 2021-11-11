@@ -785,12 +785,17 @@ size_t ChannelIndex(const Configuration *configuration,
                     const Channel *channel) {
   CHECK(configuration->channels() != nullptr) << ": No channels";
 
-  auto c = std::find(configuration->channels()->begin(),
-                     configuration->channels()->end(), channel);
-  CHECK(c != configuration->channels()->end())
+  const auto c = std::lower_bound(
+      configuration->channels()->cbegin(), configuration->channels()->cend(),
+      std::make_pair(channel->name()->string_view(),
+                     channel->type()->string_view()),
+      CompareChannels);
+  CHECK(c != configuration->channels()->cend())
+      << ": Channel pointer not found in configuration()->channels()";
+  CHECK(*c == channel)
       << ": Channel pointer not found in configuration()->channels()";
 
-  return std::distance(configuration->channels()->begin(), c);
+  return std::distance(configuration->channels()->cbegin(), c);
 }
 
 std::string CleanedChannelToString(const Channel *channel) {
