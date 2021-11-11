@@ -244,8 +244,8 @@ int ChannelState::NodeConnected(const Node *node, sctp_assoc_t assoc_id,
 MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop)
     : event_loop_(event_loop),
       timestamp_loggers_(event_loop_),
-      server_(max_channels() + kControlStreams(),
-              "::", event_loop->node()->port()),
+      server_(max_channels() + kControlStreams(), "",
+              event_loop->node()->port()),
       server_status_(event_loop, [this](const Context &context) {
         timestamp_state_->SendData(&server_, context);
       }) {

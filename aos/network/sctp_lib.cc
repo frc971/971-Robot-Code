@@ -14,6 +14,7 @@
 #include "aos/util/file.h"
 
 DEFINE_string(interface, "", "ipv6 interface");
+DEFINE_bool(disable_ipv6, false, "disable ipv6");
 
 namespace aos {
 namespace message_bridge {
@@ -35,10 +36,36 @@ struct sockaddr_storage ResolveSocket(std::string_view host, int port) {
   struct addrinfo *addrinfo_result;
   struct sockaddr_in *t_addr = (struct sockaddr_in *)&result;
   struct sockaddr_in6 *t_addr6 = (struct sockaddr_in6 *)&result;
-
-  PCHECK(getaddrinfo(std::string(host).c_str(), 0, NULL, &addrinfo_result) == 0)
-      << ": Failed to look up " << host;
-
+  struct addrinfo hints;
+  memset(&hints, 0, sizeof(hints));
+  if (FLAGS_disable_ipv6) {
+    hints.ai_family = AF_INET;
+  } else {
+    // IPv6 can handle IPv4 through IPv4-mapped IPv6 addresses
+    // but IPv4 can't handle IPv6 connections.
+    // The default, if unspecified, is to use IPv4.
+    hints.ai_family = AF_INET6;
+  }
+  hints.ai_socktype = SOCK_SEQPACKET;
+  hints.ai_protocol = IPPROTO_SCTP;
+  // We deliberately avoid AI_ADDRCONFIG here because it breaks running things
+  // inside Bazel's test sandbox, which has no non-localhost IPv4 or IPv6
+  // addresses. Also, it's not really helpful, because most systems will have
+  // link-local addresses of both types with any interface that's up.
+  hints.ai_flags = AI_PASSIVE | AI_V4MAPPED | AI_NUMERICSERV;
+  int ret = getaddrinfo(host.empty() ? nullptr : std::string(host).c_str(),
+                        std::to_string(port).c_str(), &hints, &addrinfo_result);
+  if (ret) {
+    hints.ai_family = AF_INET;
+    ret = getaddrinfo(host.empty() ? nullptr : std::string(host).c_str(),
+                      std::to_string(port).c_str(), &hints, &addrinfo_result);
+  }
+  if (ret == EAI_SYSTEM) {
+    PLOG(FATAL) << "getaddrinfo failed to look up '" << host << "'";
+  } else if (ret != 0) {
+    LOG(FATAL) << "getaddrinfo failed to look up '" << host
+               << "': " << gai_strerror(ret);
+  }
   switch (addrinfo_result->ai_family) {
     case AF_INET:
       memcpy(t_addr, addrinfo_result->ai_addr, addrinfo_result->ai_addrlen);

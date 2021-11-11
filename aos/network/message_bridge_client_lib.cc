@@ -368,7 +368,7 @@ MessageBridgeClient::MessageBridgeClient(aos::ShmEventLoop *event_loop)
            event_loop->configuration(), event_loop->node())) {
     // Open an unspecified connection (:: in ipv6 terminology)
     connections_.emplace_back(new SctpClientConnection(
-        event_loop, source_node, event_loop->node(), "::", &channels_,
+        event_loop, source_node, event_loop->node(), "", &channels_,
         client_status_.FindClientIndex(source_node), &client_status_));
   }
 }
