@@ -189,10 +189,10 @@ size_t SnappyDecoder::Read(uint8_t *begin, uint8_t *end) {
       // checking the contents.
       continue;
     } else if (chunk_type == 0x00) {
-      // Note: This section uses CHECKs rather than terminating more silently
-      // because any of these CHECK's failing implies outright data corruption
-      // rather than mere truncation.
-      CHECK_LT(4u, compressed_buffer_.size()) << ": Missing checksum.";
+      if (compressed_buffer_.size() < 4u) {
+        LOG(WARNING) << "Logfile data is truncated.";
+        break;
+      }
       const uint32_t checksum = compressed_buffer_.data()[0] +
                                 (compressed_buffer_.data()[1] << 8) +
                                 (compressed_buffer_.data()[2] << 16) +
