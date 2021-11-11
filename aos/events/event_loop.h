@@ -698,7 +698,7 @@ class EventLoop {
   const Configuration *configuration() const { return configuration_; }
 
   // Prevents the event loop from sending a timing report.
-  void SkipTimingReport() { skip_timing_report_ = true; }
+  void SkipTimingReport();
 
   // Prevents AOS_LOG being sent to message on /aos.
   void SkipAosLog() { skip_logger_ = true; }

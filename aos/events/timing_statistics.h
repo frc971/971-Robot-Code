@@ -18,6 +18,10 @@ class TimingStatistic {
 
   // Adds a sample to the statistic.
   void Add(float sample) {
+    if (!statistic_) {
+      return;
+    }
+
     ++count_;
     if (count_ == 1) {
       statistic_->mutate_average(sample);
@@ -39,6 +43,10 @@ class TimingStatistic {
 
   // Clears any accumulated statistics.
   void Reset() {
+    if (!statistic_) {
+      return;
+    }
+
     statistic_->mutate_average(std::numeric_limits<float>::quiet_NaN());
     statistic_->mutate_min(std::numeric_limits<float>::quiet_NaN());
     statistic_->mutate_max(std::numeric_limits<float>::quiet_NaN());

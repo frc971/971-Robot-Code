@@ -75,7 +75,9 @@ void EventLoop::MakeNoArgWatcher(const std::string_view channel_name,
 inline bool RawFetcher::FetchNext() {
   const auto result = DoFetchNext();
   if (result.first) {
-    timing_.fetcher->mutate_count(timing_.fetcher->count() + 1);
+    if (timing_.fetcher) {
+      timing_.fetcher->mutate_count(timing_.fetcher->count() + 1);
+    }
     const monotonic_clock::time_point monotonic_time = result.second;
     ftrace_.FormatMessage(
         "%.*s: fetch next: now=%" PRId64 " event=%" PRId64 " queue=%" PRIu32,
@@ -103,7 +105,9 @@ inline bool RawFetcher::FetchNext() {
 inline bool RawFetcher::Fetch() {
   const auto result = DoFetch();
   if (result.first) {
-    timing_.fetcher->mutate_count(timing_.fetcher->count() + 1);
+    if (timing_.fetcher) {
+      timing_.fetcher->mutate_count(timing_.fetcher->count() + 1);
+    }
     const monotonic_clock::time_point monotonic_time = result.second;
     ftrace_.FormatMessage(
         "%.*s: fetch latest: now=%" PRId64 " event=%" PRId64 " queue=%" PRIu32,
@@ -139,8 +143,10 @@ inline bool RawSender::Send(
     uint32_t remote_queue_index, const UUID &uuid) {
   if (DoSend(size, monotonic_remote_time, realtime_remote_time,
              remote_queue_index, uuid)) {
-    timing_.size.Add(size);
-    timing_.sender->mutate_count(timing_.sender->count() + 1);
+    if (timing_.sender) {
+      timing_.size.Add(size);
+      timing_.sender->mutate_count(timing_.sender->count() + 1);
+    }
     ftrace_.FormatMessage(
         "%.*s: sent internal: event=%" PRId64 " queue=%" PRIu32,
         static_cast<int>(ftrace_prefix_.size()), ftrace_prefix_.data(),
@@ -163,8 +169,10 @@ inline bool RawSender::Send(
     uint32_t remote_queue_index, const UUID &uuid) {
   if (DoSend(data, size, monotonic_remote_time, realtime_remote_time,
              remote_queue_index, uuid)) {
-    timing_.size.Add(size);
-    timing_.sender->mutate_count(timing_.sender->count() + 1);
+    if (timing_.sender) {
+      timing_.size.Add(size);
+      timing_.sender->mutate_count(timing_.sender->count() + 1);
+    }
     ftrace_.FormatMessage(
         "%.*s: sent external: event=%" PRId64 " queue=%" PRIu32,
         static_cast<int>(ftrace_prefix_.size()), ftrace_prefix_.data(),
@@ -188,8 +196,10 @@ inline bool RawSender::Send(
   const size_t size = data->size();
   if (DoSend(std::move(data), monotonic_remote_time, realtime_remote_time,
              remote_queue_index, uuid)) {
-    timing_.size.Add(size);
-    timing_.sender->mutate_count(timing_.sender->count() + 1);
+    if (timing_.sender) {
+      timing_.size.Add(size);
+      timing_.sender->mutate_count(timing_.sender->count() + 1);
+    }
     ftrace_.FormatMessage(
         "%.*s: sent shared: event=%" PRId64 " queue=%" PRIu32,
         static_cast<int>(ftrace_prefix_.size()), ftrace_prefix_.data(),
@@ -203,7 +213,6 @@ inline bool RawSender::Send(
 inline monotonic_clock::time_point TimerHandler::Call(
     std::function<monotonic_clock::time_point()> get_time,
     monotonic_clock::time_point event_time) {
-  CHECK_NOTNULL(timing_.timer);
   const monotonic_clock::time_point monotonic_start_time = get_time();
 
   event_loop_->SetTimerContext(event_time);
@@ -213,14 +222,14 @@ inline monotonic_clock::time_point TimerHandler::Call(
       static_cast<int>(name_.size()), name_.data(),
       static_cast<int64_t>(monotonic_start_time.time_since_epoch().count()),
       static_cast<int64_t>(event_time.time_since_epoch().count()));
-  {
+  if (timing_.timer) {
     const float start_latency =
         std::chrono::duration_cast<std::chrono::duration<float>>(
             monotonic_start_time - event_time)
             .count();
     timing_.wakeup_latency.Add(start_latency);
+    timing_.timer->mutate_count(timing_.timer->count() + 1);
   }
-  timing_.timer->mutate_count(timing_.timer->count() + 1);
   fn_();
 
   const monotonic_clock::time_point monotonic_end_time = get_time();
@@ -256,14 +265,14 @@ inline void PhasedLoopHandler::Call(
       static_cast<int64_t>(
           phased_loop_.sleep_time().time_since_epoch().count()),
       cycles_elapsed_);
-  {
+  if (timing_.timer) {
     const float start_latency =
         std::chrono::duration_cast<std::chrono::duration<float>>(
             monotonic_start_time - event_loop_->context_.monotonic_event_time)
             .count();
     timing_.wakeup_latency.Add(start_latency);
+    timing_.timer->mutate_count(timing_.timer->count() + 1);
   }
-  timing_.timer->mutate_count(timing_.timer->count() + 1);
 
   // Call the function with the elapsed cycles.
   fn_(cycles_elapsed_);
@@ -318,14 +327,14 @@ class WatcherState {
         static_cast<int64_t>(
             context.monotonic_event_time.time_since_epoch().count()),
         context.queue_index);
-    {
+    if (watcher_) {
       const float start_latency =
           std::chrono::duration_cast<std::chrono::duration<float>>(
               monotonic_start_time - context.monotonic_event_time)
               .count();
       wakeup_latency_.Add(start_latency);
+      watcher_->mutate_count(watcher_->count() + 1);
     }
-    watcher_->mutate_count(watcher_->count() + 1);
     fn_(context, context.data);
 
     const monotonic_clock::time_point monotonic_end_time = get_time();
