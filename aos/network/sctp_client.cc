@@ -13,6 +13,10 @@
 #include "aos/unique_malloc_ptr.h"
 #include "glog/logging.h"
 
+DEFINE_int32(sinit_max_init_timeout, 0,
+             "Timeout in milliseconds for retrying the INIT packet when "
+             "connecting to the message bridge server");
+
 namespace aos {
 namespace message_bridge {
 
@@ -29,6 +33,8 @@ SctpClient::SctpClient(std::string_view remote_host, int remote_port,
     memset(&initmsg, 0, sizeof(struct sctp_initmsg));
     initmsg.sinit_num_ostreams = streams;
     initmsg.sinit_max_instreams = streams;
+    // Max timeout in milliseconds for the INIT packet.
+    initmsg.sinit_max_init_timeo = FLAGS_sinit_max_init_timeout;
     PCHECK(setsockopt(fd(), IPPROTO_SCTP, SCTP_INITMSG, &initmsg,
                       sizeof(struct sctp_initmsg)) == 0);
   }
