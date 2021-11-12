@@ -1935,5 +1935,192 @@ TEST(SimulatedEventLoopTest, ReliableMessageResentOnReboot) {
   EXPECT_NE(pi2_boot_uuid, pi2->boot_uuid());
 }
 
+class SimulatedEventLoopDisconnectTest : public ::testing::Test {
+ public:
+  SimulatedEventLoopDisconnectTest()
+      : config(aos::configuration::ReadConfig(ArtifactPath(
+            "aos/events/multinode_pingpong_test_split_config.json"))),
+        time(configuration::NodesCount(&config.message())),
+        factory(&config.message()) {
+    factory.SetTimeConverter(&time);
+  }
+
+  void VerifyChannels(std::set<const aos::Channel *> statistics_channels,
+                      const monotonic_clock::time_point allowable_message_time,
+                      std::set<const aos::Node *> empty_nodes) {
+    NodeEventLoopFactory *pi1 = factory.GetNodeEventLoopFactory("pi1");
+    NodeEventLoopFactory *pi2 = factory.GetNodeEventLoopFactory("pi2");
+    std::unique_ptr<aos::EventLoop> pi1_event_loop =
+        pi1->MakeEventLoop("fetcher");
+    std::unique_ptr<aos::EventLoop> pi2_event_loop =
+        pi2->MakeEventLoop("fetcher");
+    for (const aos::Channel *channel : *factory.configuration()->channels()) {
+      if (configuration::ChannelIsReadableOnNode(channel,
+                                                 pi1_event_loop->node())) {
+        std::unique_ptr<aos::RawFetcher> fetcher =
+            pi1_event_loop->MakeRawFetcher(channel);
+        if (statistics_channels.find(channel) == statistics_channels.end() ||
+            empty_nodes.find(pi1_event_loop->node()) != empty_nodes.end()) {
+          EXPECT_FALSE(fetcher->Fetch() &&
+                       fetcher->context().monotonic_event_time >
+                           allowable_message_time)
+              << ": Found recent message on channel "
+              << configuration::CleanedChannelToString(channel) << " and time "
+              << fetcher->context().monotonic_event_time << " > "
+              << allowable_message_time << " on pi1";
+        } else {
+          EXPECT_TRUE(fetcher->Fetch() &&
+                      fetcher->context().monotonic_event_time >=
+                          allowable_message_time)
+              << ": Didn't find recent message on channel "
+              << configuration::CleanedChannelToString(channel) << " on pi1";
+        }
+      }
+      if (configuration::ChannelIsReadableOnNode(channel,
+                                                 pi2_event_loop->node())) {
+        std::unique_ptr<aos::RawFetcher> fetcher =
+            pi2_event_loop->MakeRawFetcher(channel);
+        if (statistics_channels.find(channel) == statistics_channels.end() ||
+            empty_nodes.find(pi2_event_loop->node()) != empty_nodes.end()) {
+          EXPECT_FALSE(fetcher->Fetch() &&
+                       fetcher->context().monotonic_event_time >
+                           allowable_message_time)
+              << ": Found message on channel "
+              << configuration::CleanedChannelToString(channel) << " and time "
+              << fetcher->context().monotonic_event_time << " > "
+              << allowable_message_time << " on pi2";
+        } else {
+          EXPECT_TRUE(fetcher->Fetch() &&
+                      fetcher->context().monotonic_event_time >=
+                          allowable_message_time)
+              << ": Didn't find message on channel "
+              << configuration::CleanedChannelToString(channel) << " on pi2";
+        }
+      }
+    }
+  }
+
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config;
+
+  message_bridge::TestingTimeConverter time;
+  SimulatedEventLoopFactory factory;
+};
+
+// Tests that if we have message bridge client/server disabled, and timing
+// reports disabled, no messages are sent.  Also tests that we can disconnect a
+// node and disable statistics on it and it actually fully disconnects.
+TEST_F(SimulatedEventLoopDisconnectTest, NoMessagesWhenDisabled) {
+  time.StartEqual();
+  factory.SkipTimingReport();
+  factory.DisableStatistics();
+
+  NodeEventLoopFactory *pi1 = factory.GetNodeEventLoopFactory("pi1");
+  NodeEventLoopFactory *pi2 = factory.GetNodeEventLoopFactory("pi2");
+
+  std::unique_ptr<aos::EventLoop> pi1_event_loop =
+      pi1->MakeEventLoop("fetcher");
+  std::unique_ptr<aos::EventLoop> pi2_event_loop =
+      pi2->MakeEventLoop("fetcher");
+
+  factory.RunFor(chrono::milliseconds(100000));
+
+  // Confirm no messages are sent if we've configured them all off.
+  VerifyChannels({}, monotonic_clock::min_time, {});
+
+  // Now, confirm that all the message_bridge channels come back when we
+  // re-enable.
+  factory.EnableStatistics();
+
+  factory.RunFor(chrono::milliseconds(10050));
+
+  // Build up the list of all the messages we expect when we come back.
+  {
+    std::set<const aos::Channel *> statistics_channels;
+    for (const std::pair<std::string_view, const Node *> pi :
+         std::vector<std::pair<std::string_view, const Node *>>{
+             {"/pi1/aos", pi1->node()},
+             {"/pi2/aos", pi1->node()},
+             {"/pi3/aos", pi1->node()}}) {
+      statistics_channels.insert(configuration::GetChannel(
+          factory.configuration(), pi.first, "aos.message_bridge.Timestamp", "",
+          pi.second));
+      statistics_channels.insert(configuration::GetChannel(
+          factory.configuration(), pi.first,
+          "aos.message_bridge.ServerStatistics", "", pi.second));
+      statistics_channels.insert(configuration::GetChannel(
+          factory.configuration(), pi.first,
+          "aos.message_bridge.ClientStatistics", "", pi.second));
+    }
+
+    statistics_channels.insert(configuration::GetChannel(
+        factory.configuration(),
+        "/pi1/aos/remote_timestamps/pi2/pi1/aos/aos-message_bridge-Timestamp",
+        "aos.message_bridge.RemoteMessage", "", pi1->node()));
+    statistics_channels.insert(configuration::GetChannel(
+        factory.configuration(),
+        "/pi2/aos/remote_timestamps/pi1/pi2/aos/aos-message_bridge-Timestamp",
+        "aos.message_bridge.RemoteMessage", "", pi2->node()));
+    VerifyChannels(statistics_channels, monotonic_clock::min_time, {});
+  }
+
+  // Now test that we can disable the messages for a single node
+  pi2->DisableStatistics();
+  const aos::monotonic_clock::time_point statistics_disable_time =
+      pi2->monotonic_now();
+  factory.RunFor(chrono::milliseconds(10000));
+
+  // We should see a much smaller set of messages, but should still see messages
+  // forwarded, mainly the timestamp message.
+  {
+    std::set<const aos::Channel *> statistics_channels;
+    for (const std::pair<std::string_view, const Node *> pi :
+         std::vector<std::pair<std::string_view, const Node *>>{
+             {"/pi1/aos", pi1->node()}, {"/pi3/aos", pi1->node()}}) {
+      statistics_channels.insert(configuration::GetChannel(
+          factory.configuration(), pi.first, "aos.message_bridge.Timestamp", "",
+          pi.second));
+      statistics_channels.insert(configuration::GetChannel(
+          factory.configuration(), pi.first,
+          "aos.message_bridge.ServerStatistics", "", pi.second));
+      statistics_channels.insert(configuration::GetChannel(
+          factory.configuration(), pi.first,
+          "aos.message_bridge.ClientStatistics", "", pi.second));
+    }
+
+    statistics_channels.insert(configuration::GetChannel(
+        factory.configuration(),
+        "/pi1/aos/remote_timestamps/pi2/pi1/aos/aos-message_bridge-Timestamp",
+        "aos.message_bridge.RemoteMessage", "", pi1->node()));
+    VerifyChannels(statistics_channels, statistics_disable_time, {});
+  }
+
+  // Now, fully disconnect the node.  This will completely quiet down pi2.
+  pi1->Disconnect(pi2->node());
+  pi2->Disconnect(pi1->node());
+
+  const aos::monotonic_clock::time_point disconnect_disable_time =
+      pi2->monotonic_now();
+  factory.RunFor(chrono::milliseconds(10000));
+
+  {
+    std::set<const aos::Channel *> statistics_channels;
+    for (const std::pair<std::string_view, const Node *> pi :
+         std::vector<std::pair<std::string_view, const Node *>>{
+             {"/pi1/aos", pi1->node()}, {"/pi3/aos", pi1->node()}}) {
+      statistics_channels.insert(configuration::GetChannel(
+          factory.configuration(), pi.first, "aos.message_bridge.Timestamp", "",
+          pi.second));
+      statistics_channels.insert(configuration::GetChannel(
+          factory.configuration(), pi.first,
+          "aos.message_bridge.ServerStatistics", "", pi.second));
+      statistics_channels.insert(configuration::GetChannel(
+          factory.configuration(), pi.first,
+          "aos.message_bridge.ClientStatistics", "", pi.second));
+    }
+
+    VerifyChannels(statistics_channels, disconnect_disable_time, {pi2->node()});
+  }
+}
+
 }  // namespace testing
 }  // namespace aos

@@ -374,5 +374,11 @@ void MessageBridgeServerStatus::DisableStatistics() {
   statistics_timer_->Disable();
 }
 
+void MessageBridgeServerStatus::EnableStatistics() {
+  send_ = true;
+  statistics_timer_->Setup(event_loop_->monotonic_now() + kPingPeriod,
+                           kPingPeriod);
+}
+
 }  // namespace message_bridge
 }  // namespace aos

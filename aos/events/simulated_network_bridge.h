@@ -36,6 +36,9 @@ class SimulatedMessageBridge {
   // The messages are the ClientStatistics, ServerStatistics and Timestamp
   // messages.
   void DisableStatistics();
+  void DisableStatistics(const Node *node);
+  void EnableStatistics();
+  void EnableStatistics(const Node *node);
 
  private:
   struct DelayersVector {
@@ -59,6 +62,16 @@ class SimulatedMessageBridge {
       }
       if (client_status) {
         client_status->DisableStatistics();
+      }
+    }
+
+    void EnableStatistics() {
+      disable_statistics_ = false;
+      if (server_status) {
+        server_status->EnableStatistics();
+      }
+      if (client_status) {
+        client_status->EnableStatistics();
       }
     }
 

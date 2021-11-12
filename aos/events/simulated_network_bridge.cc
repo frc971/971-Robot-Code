@@ -565,6 +565,24 @@ void SimulatedMessageBridge::DisableStatistics() {
   }
 }
 
+void SimulatedMessageBridge::DisableStatistics(const Node *node) {
+  auto it = event_loop_map_.find(node);
+  CHECK(it != event_loop_map_.end());
+  it->second.DisableStatistics();
+}
+
+void SimulatedMessageBridge::EnableStatistics() {
+  for (std::pair<const Node *const, State> &state : event_loop_map_) {
+    state.second.EnableStatistics();
+  }
+}
+
+void SimulatedMessageBridge::EnableStatistics(const Node *node) {
+  auto it = event_loop_map_.find(node);
+  CHECK(it != event_loop_map_.end());
+  it->second.EnableStatistics();
+}
+
 void SimulatedMessageBridge::State::SetEventLoop(
     std::unique_ptr<aos::EventLoop> loop) {
   if (!loop) {
@@ -604,6 +622,9 @@ void SimulatedMessageBridge::State::SetEventLoop(
 
   timestamp_loggers = ChannelTimestampSender(event_loop.get());
   server_status = std::make_unique<MessageBridgeServerStatus>(event_loop.get());
+  if (disable_statistics_) {
+    server_status->DisableStatistics();
+  }
 
   {
     size_t node_index = 0;
@@ -623,9 +644,6 @@ void SimulatedMessageBridge::State::SetEventLoop(
     if (boot_uuids_[i] != UUID::Zero()) {
       server_status->SetBootUUID(i, boot_uuids_[i]);
     }
-  }
-  if (disable_statistics_) {
-    server_status->DisableStatistics();
   }
   if (fn_) {
     server_status->set_send_data(fn_);
