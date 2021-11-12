@@ -1,3 +1,7 @@
+#include <stdint.h>
+
+#include <optional>
+
 #include "absl/types/span.h"
 
 namespace aos {
