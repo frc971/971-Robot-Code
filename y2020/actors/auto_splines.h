@@ -30,7 +30,9 @@ class AutonomousSplines {
         target_offset_1_(aos::JsonFileToFlatbuffer<frc971::MultiSpline>(
             "splines/target_offset_1.json")),
         target_offset_2_(aos::JsonFileToFlatbuffer<frc971::MultiSpline>(
-            "splines/target_offset_2.json")) {}
+            "splines/target_offset_2.json")),
+        far_side_fender_(aos::JsonFileToFlatbuffer<frc971::MultiSpline>(
+            "splines/9971_to_fender.json")) {}
 
   static flatbuffers::Offset<frc971::MultiSpline> BasicSSpline(
       aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
@@ -72,6 +74,11 @@ class AutonomousSplines {
                                                     builder->fbb());
   }
 
+  flatbuffers::Offset<frc971::MultiSpline> FarSideFender(
+      aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+          *builder,
+      aos::Alliance alliance);
+
  private:
   aos::FlatbufferDetachedBuffer<frc971::MultiSpline> test_spline_;
   aos::FlatbufferDetachedBuffer<frc971::MultiSpline> target_aligned_1_;
@@ -79,6 +86,7 @@ class AutonomousSplines {
   aos::FlatbufferDetachedBuffer<frc971::MultiSpline> target_aligned_3_;
   aos::FlatbufferDetachedBuffer<frc971::MultiSpline> target_offset_1_;
   aos::FlatbufferDetachedBuffer<frc971::MultiSpline> target_offset_2_;
+  aos::FlatbufferDetachedBuffer<frc971::MultiSpline> far_side_fender_;
 };
 
 }  // namespace actors

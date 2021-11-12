@@ -49,6 +49,7 @@ class AutonomousActor : public frc971::autonomous::BaseAutonomousActor {
   void ExtendIntake();
   void RetractIntake();
   void SplineAuto();
+  void Fender();
   void SendStartingPosition(const Eigen::Vector3d &start);
   void TargetAligned();
   void TargetOffset();
@@ -61,6 +62,8 @@ class AutonomousActor : public frc971::autonomous::BaseAutonomousActor {
   void MaybeSendStartingPosition();
 
   void Replan();
+
+  bool practice_robot_ = false;
 
   double intake_goal_ = 0.0;
   double roller_voltage_ = 0.0;
@@ -84,6 +87,8 @@ class AutonomousActor : public frc971::autonomous::BaseAutonomousActor {
   std::optional<std::array<SplineHandle, 2>> target_offset_splines_;
   // Max number of splines is 5
   std::optional<std::array<SplineHandle, 3>> target_aligned_splines_;
+
+  std::optional<std::array<SplineHandle, 1>> fender_splines_;
 
   std::optional<SplineHandle> barrel_spline_;
   std::optional<SplineHandle> slalom_spline_;

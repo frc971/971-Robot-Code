@@ -151,6 +151,22 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::TargetAligned3(
                    alliance);
 }
 
+flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::FarSideFender(
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder,
+    aos::Alliance alliance) {
+  // I drew the spline on the wrong side of the field.
+  if (alliance == aos::Alliance::kBlue) {
+    alliance = aos::Alliance::kRed;
+  } else {
+    alliance = aos::Alliance::kBlue;
+  }
+  return FixSpline(builder,
+                   aos::CopyFlatBuffer<frc971::MultiSpline>(far_side_fender_,
+                                                            builder->fbb()),
+                   alliance);
+}
+
 flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::StraightLine(
     aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
         *builder) {
