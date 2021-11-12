@@ -478,6 +478,7 @@
       "hostname": "logger",
       "hostnames": [
         "pi-971-6",
+        "pi-9971-6",
         "ASchuh-T480s",
         "aschuh-3950x"
       ],

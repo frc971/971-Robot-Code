@@ -145,10 +145,19 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
                                             : nullptr;
 
   flatbuffers::Offset<PotAndAbsoluteEncoderProfiledJointStatus>
-      turret_status_offset = turret_.Iterate(
-          turret_goal, position->turret(),
-          output != nullptr ? &(output_struct.turret_voltage) : nullptr,
-          status->fbb());
+      turret_status_offset;
+  if (has_turret_) {
+    turret_status_offset = turret_.Iterate(
+        turret_goal, position->turret(),
+        output != nullptr ? &(output_struct.turret_voltage) : nullptr,
+        status->fbb());
+  } else {
+    PotAndAbsoluteEncoderProfiledJointStatus::Builder turret_builder(
+        *status->fbb());
+    turret_builder.add_position(M_PI);
+    turret_builder.add_velocity(0.0);
+    turret_status_offset = turret_builder.Finish();
+  }
 
   flatbuffers::Offset<ShooterStatus> shooter_status_offset =
       shooter_.RunIteration(
