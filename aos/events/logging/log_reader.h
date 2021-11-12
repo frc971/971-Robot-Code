@@ -450,6 +450,22 @@ class LogReader {
       timestamp_loggers_.clear();
     }
 
+    void SetFoundLastMessage(bool val) {
+      found_last_message_ = val;
+      last_message_.resize(factory_channel_index_.size(), false);
+    }
+    bool found_last_message() const { return found_last_message_; }
+
+    void set_last_message(size_t channel_index) {
+      CHECK_LT(channel_index, last_message_.size());
+      last_message_[channel_index] = true;
+    }
+
+    bool last_message(size_t channel_index) {
+      CHECK_LT(channel_index, last_message_.size());
+      return last_message_[channel_index];
+    }
+
    private:
     // Log file.
     std::unique_ptr<TimestampMapper> timestamp_mapper_;
@@ -526,6 +542,9 @@ class LogReader {
 
     bool stopped_ = false;
     bool started_ = false;
+
+    bool found_last_message_ = false;
+    std::vector<bool> last_message_;
   };
 
   // Node index -> State.
