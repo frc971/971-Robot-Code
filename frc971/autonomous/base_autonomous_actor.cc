@@ -42,6 +42,20 @@ BaseAutonomousActor::BaseAutonomousActor(
   event_loop->SetRuntimeRealtimePriority(29);
 }
 
+void BaseAutonomousActor::ApplyThrottle(double throttle) {
+  goal_spline_handle_ = 0;
+
+  auto builder = drivetrain_goal_sender_.MakeBuilder();
+
+  drivetrain::Goal::Builder goal_builder =
+      builder.MakeBuilder<drivetrain::Goal>();
+  goal_builder.add_controller_type(drivetrain::ControllerType::POLYDRIVE);
+  goal_builder.add_highgear(true);
+  goal_builder.add_wheel(0.0);
+  goal_builder.add_throttle(throttle);
+  builder.Send(goal_builder.Finish());
+}
+
 void BaseAutonomousActor::ResetDrivetrain() {
   AOS_LOG(INFO, "resetting the drivetrain\n");
   max_drivetrain_voltage_ = 12.0;
