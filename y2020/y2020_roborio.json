@@ -40,7 +40,7 @@
       "type": "aos.starter.StarterRpc",
       "source_node": "roborio",
       "frequency": 10,
-      "max_size": 72,
+      "max_size": 400,
       "num_senders": 2
     },
     {

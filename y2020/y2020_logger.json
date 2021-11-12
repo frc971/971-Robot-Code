@@ -155,7 +155,6 @@
       "type": "aos.starter.StarterRpc",
       "source_node": "logger",
       "frequency": 10,
-      "max_size": 72,
       "num_senders": 2
     },
     {
