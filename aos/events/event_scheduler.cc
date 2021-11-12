@@ -14,8 +14,9 @@ EventScheduler::Token EventScheduler::Schedule(
 }
 
 void EventScheduler::Deschedule(EventScheduler::Token token) {
-  // We basically want to DCHECK some nontrivial logic. Guard it with NDEBUG to ensure the compiler
-  // realizes it's all unnecessary when not doing debug checks.
+  // We basically want to DCHECK some nontrivial logic. Guard it with NDEBUG to
+  // ensure the compiler realizes it's all unnecessary when not doing debug
+  // checks.
 #ifndef NDEBUG
   {
     bool found = false;
@@ -41,9 +42,7 @@ aos::monotonic_clock::time_point EventScheduler::OldestEvent() {
   return events_list_.begin()->first;
 }
 
-void EventScheduler::Shutdown() {
-  on_shutdown_();
-}
+void EventScheduler::Shutdown() { on_shutdown_(); }
 
 void EventScheduler::Startup() {
   ++boot_count_;
