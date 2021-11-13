@@ -80,6 +80,7 @@ class BaseAutonomousActor : public ::aos::common::actions::ActorBase<Goal> {
   void InitializeEncoders();
   void StartDrive(double distance, double angle, ProfileParametersT linear,
                   ProfileParametersT angular);
+  void ApplyThrottle(double throttle);
 
   void WaitUntilDoneOrCanceled(
       ::std::unique_ptr<aos::common::actions::Action> action);
