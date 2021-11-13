@@ -39,7 +39,24 @@ cc_library(
 cc_binary(
     name = "camera_reader",
     srcs = [
+        "camera_reader_main.cc",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//y2020:__subpackages__"],
+    deps = [
+        ":camera_reader_lib",
+        "//aos:init",
+        "//aos/events:shm_event_loop",
+    ],
+)
+
+cc_library(
+    name = "camera_reader_lib",
+    srcs = [
         "camera_reader.cc",
+    ],
+    hdrs = [
+        "camera_reader.h",
     ],
     data = [
         "//y2020:config",
@@ -50,8 +67,7 @@ cc_binary(
         ":v4l2_reader",
         ":vision_fbs",
         "//aos:flatbuffer_merge",
-        "//aos:init",
-        "//aos/events:shm_event_loop",
+        "//aos/events:event_loop",
         "//aos/network:team_number",
         "//third_party:opencv",
         "//y2020/vision/sift:sift971",
