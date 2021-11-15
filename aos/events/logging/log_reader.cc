@@ -484,6 +484,9 @@ void LogReader::RegisterWithoutStarting(
     // from both the real message bridge and simulated message bridge.
     event_loop_factory_->DisableStatistics();
   }
+
+  // Write pseudo start times out to file now that we are all setup.
+  filters_->Start(event_loop_factory_);
 }
 
 void LogReader::Register(SimulatedEventLoopFactory *event_loop_factory) {

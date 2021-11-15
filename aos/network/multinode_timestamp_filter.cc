@@ -742,6 +742,9 @@ UUID MultiNodeNoncausalOffsetEstimator::boot_uuid(size_t node_index,
 
 void MultiNodeNoncausalOffsetEstimator::Start(
     SimulatedEventLoopFactory *factory) {
+  if (!configuration::MultiNode(factory->configuration())) {
+    return;
+  }
   std::vector<monotonic_clock::time_point> times;
   for (const Node *node : configuration::GetNodes(factory->configuration())) {
     times.emplace_back(factory->GetNodeEventLoopFactory(node)->monotonic_now());
