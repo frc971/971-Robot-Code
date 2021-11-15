@@ -105,6 +105,8 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
           output != nullptr ? &(output_struct.hood_voltage) : nullptr,
           status->fbb());
 
+  bool intake_out_jostle = false;
+
   if (unsafe_goal != nullptr) {
     if (unsafe_goal->shooting() &&
         shooting_start_time_ == aos::monotonic_clock::min_time) {
@@ -118,7 +120,9 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       if ((position_timestamp - shooting_start_time_) % (kPeriod * 2) <
           kPeriod) {
         intake_joint_.set_min_position(-0.25);
+        intake_out_jostle = false;
       } else {
+        intake_out_jostle = true;
         intake_joint_.set_min_position(-0.75);
       }
     } else {
@@ -284,7 +288,12 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
             turret_ready) {
           output_struct.feeder_voltage = 12.0;
         }
-        output_struct.washing_machine_spinner_voltage = 5.0;
+
+        if (!intake_out_jostle) {
+          output_struct.washing_machine_spinner_voltage = 5.0;
+        } else {
+          output_struct.washing_machine_spinner_voltage = -5.0;
+        }
         output_struct.intake_roller_voltage = 3.0;
       } else {
         output_struct.intake_roller_voltage =
