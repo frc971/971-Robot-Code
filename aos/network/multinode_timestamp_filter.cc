@@ -754,15 +754,18 @@ void MultiNodeNoncausalOffsetEstimator::Start(
 
 void MultiNodeNoncausalOffsetEstimator::Start(
     std::vector<monotonic_clock::time_point> times) {
-  std::fstream s("/tmp/timestamp_noncausal_starttime.csv", s.trunc | s.out);
-  CHECK(s.is_open());
-  for (const Node *node : configuration::GetNodes(configuration())) {
-    const size_t node_index =
-        configuration::GetNodeIndex(configuration(), node);
-    s << node->name()->string_view() << ", " << std::setprecision(12)
-      << std::fixed
-      << chrono::duration<double>(times[node_index].time_since_epoch()).count()
-      << "\n";
+  if (FLAGS_timestamps_to_csv) {
+    std::fstream s("/tmp/timestamp_noncausal_starttime.csv", s.trunc | s.out);
+    CHECK(s.is_open());
+    for (const Node *node : configuration::GetNodes(configuration())) {
+      const size_t node_index =
+          configuration::GetNodeIndex(configuration(), node);
+      s << node->name()->string_view() << ", " << std::setprecision(12)
+        << std::fixed
+        << chrono::duration<double>(times[node_index].time_since_epoch())
+               .count()
+        << "\n";
+    }
   }
 }
 
