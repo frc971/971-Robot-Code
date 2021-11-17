@@ -740,7 +740,7 @@ std::ostream &operator<<(std::ostream &os, const Message &m) {
   os << "{.channel_index=" << m.channel_index
      << ", .queue_index=" << m.queue_index << ", .timestamp=" << m.timestamp;
   if (m.data != nullptr) {
-    os << ", .data=" << m;
+    os << ", .data=" << m.data;
   }
   os << "}";
   return os;
