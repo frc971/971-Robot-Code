@@ -71,6 +71,8 @@ class MessageBridgeServerStatus {
 
   // Disables sending out any statistics messages.
   void DisableStatistics();
+  // Enables sending out any statistics messages.
+  void EnableStatistics();
 
  private:
   static constexpr std::chrono::nanoseconds kStatisticsPeriod =

@@ -120,6 +120,8 @@ class SimulatedEventLoopFactory {
 
   // Disables the messages sent by the simulated message gateway.
   void DisableStatistics();
+  // Enables the messages sent by the simulated message gateway.
+  void EnableStatistics();
 
   // Calls SkipTimingReport() on all EventLoops used as part of the
   // infrastructure. This may improve the performance of long-simulated-duration
@@ -238,10 +240,18 @@ class NodeEventLoopFactory {
   // Resumes forwarding messages.
   void Connect(const Node *other);
 
+  // Disables the messages sent by the simulated message gateway.
+  void DisableStatistics();
+  // Enables the messages sent by the simulated message gateway.
+  void EnableStatistics();
+
  private:
   friend class SimulatedEventLoopFactory;
   NodeEventLoopFactory(EventSchedulerScheduler *scheduler_scheduler,
                        SimulatedEventLoopFactory *factory, const Node *node);
+
+  // Skips timing reports on all event loops on this node.
+  void SkipTimingReport();
 
   // Helpers to restart.
   void ScheduleStartup();
@@ -254,6 +264,8 @@ class NodeEventLoopFactory {
   UUID boot_uuid_ = UUID::Zero();
 
   const Node *const node_;
+
+  bool skip_timing_report_ = false;
 
   std::vector<SimulatedEventLoop *> event_loops_;
 

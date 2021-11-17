@@ -1360,8 +1360,38 @@ void SimulatedEventLoopFactory::DisableStatistics() {
   bridge_->DisableStatistics();
 }
 
+void SimulatedEventLoopFactory::EnableStatistics() {
+  CHECK(bridge_) << ": Can't enable statistics without a message bridge.";
+  bridge_->EnableStatistics();
+}
+
 void SimulatedEventLoopFactory::SkipTimingReport() {
   CHECK(bridge_) << ": Can't skip timing reports without a message bridge.";
+
+  for (std::unique_ptr<NodeEventLoopFactory> &node : node_factories_) {
+    if (node) {
+      node->SkipTimingReport();
+    }
+  }
+}
+
+void NodeEventLoopFactory::SkipTimingReport() {
+  for (SimulatedEventLoop *event_loop : event_loops_) {
+    event_loop->SkipTimingReport();
+  }
+  skip_timing_report_ = true;
+}
+
+void NodeEventLoopFactory::EnableStatistics() {
+  CHECK(factory_->bridge_)
+      << ": Can't enable statistics without a message bridge.";
+  factory_->bridge_->EnableStatistics(node_);
+}
+
+void NodeEventLoopFactory::DisableStatistics() {
+  CHECK(factory_->bridge_)
+      << ": Can't disable statistics without a message bridge.";
+  factory_->bridge_->DisableStatistics(node_);
 }
 
 ::std::unique_ptr<EventLoop> NodeEventLoopFactory::MakeEventLoop(
@@ -1376,6 +1406,9 @@ void SimulatedEventLoopFactory::SkipTimingReport() {
       node_, tid));
   result->set_name(name);
   result->set_send_delay(factory_->send_delay());
+  if (skip_timing_report_) {
+    result->SkipTimingReport();
+  }
 
   VLOG(1) << scheduler_.distributed_now() << " " << NodeName(node())
           << monotonic_now() << " MakeEventLoop(\"" << result->name() << "\")";

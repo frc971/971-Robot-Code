@@ -15,6 +15,10 @@ namespace message_bridge {
 // statistics periodically.
 class MessageBridgeClientStatus {
  public:
+  // The period in milliseconds at which the client statistics message is
+  // published.
+  static constexpr std::chrono::milliseconds kStatisticsPeriod{100};
+
   MessageBridgeClientStatus(aos::EventLoop *event_loop);
 
   MessageBridgeClientStatus(const MessageBridgeClientStatus &) = delete;
@@ -45,6 +49,8 @@ class MessageBridgeClientStatus {
 
   // Disables sending out any statistics messages.
   void DisableStatistics();
+  // Enables sending out any statistics messages.
+  void EnableStatistics();
 
  private:
   // Sends out the statistics that are continually updated by the
