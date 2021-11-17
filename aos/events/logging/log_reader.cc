@@ -724,7 +724,16 @@ void LogReader::RegisterDuringStartup(EventLoop *event_loop, const Node *node) {
               state->monotonic_remote_now(timestamped_message.channel_index);
           if (!FLAGS_skip_order_validation) {
             CHECK_EQ(timestamped_message.monotonic_remote_time.boot,
-                     monotonic_remote_now.boot);
+                     monotonic_remote_now.boot)
+                << state->event_loop()->node()->name()->string_view() << " to "
+                << state->remote_node(timestamped_message.channel_index)
+                       ->name()
+                       ->string_view()
+                << " while trying to send a message on "
+                << configuration::CleanedChannelToString(
+                       logged_configuration()->channels()->Get(
+                           timestamped_message.channel_index))
+                << " " << timestamped_message << " " << state->DebugString();
             CHECK_LE(timestamped_message.monotonic_remote_time,
                      monotonic_remote_now)
                 << state->event_loop()->node()->name()->string_view() << " to "

@@ -33,6 +33,7 @@ int Main(int argc, char **argv) {
   // all the parts were sorted together and the configs match.
   const Configuration *config = nullptr;
   for (const LogFile &log_file : log_files) {
+    VLOG(1) << log_file;
     if (config == nullptr) {
       config = log_file.config.get();
     } else {

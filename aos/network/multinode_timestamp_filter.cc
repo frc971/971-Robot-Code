@@ -1299,8 +1299,36 @@ MultiNodeNoncausalOffsetEstimator::NextSolution(
         ++node_a_index;
         continue;
       }
-      VLOG(1) << "Trying " << next_node_time << " " << next_node_duration
-              << " for node " << node_a_index;
+
+      // We want to make sure we solve explicitly for the start time for each
+      // log.  This is useless (though not all that expensive) if it is in the
+      // middle of a set of data since we are just adding an extra point in the
+      // middle of a line, but very useful if the start time is before any
+      // points and we need to force a node to reboot.
+      //
+      // We can only do this meaningfully if there are data points on this node
+      // before or after this node to solve for.
+      const size_t next_boot = last_monotonics_[node_a_index].boot + 1;
+      if (next_boot < boots_->boots[node_a_index].size() &&
+          timestamp_mappers_[node_a_index] != nullptr) {
+        BootTimestamp next_start_time = BootTimestamp{
+            .boot = next_boot,
+            .time = timestamp_mappers_[node_a_index]->monotonic_start_time(
+                next_boot)};
+        if (next_start_time < next_node_time) {
+          VLOG(1) << "Candidate for node " << node_a_index
+                  << " is the next startup time, " << next_start_time;
+          next_node_time = next_start_time;
+          next_node_filter = nullptr;
+        }
+      }
+
+      if (next_node_filter != nullptr) {
+        VLOG(1) << "Trying " << next_node_time << " " << next_node_duration
+                << " for node " << node_a_index;
+      } else {
+        VLOG(1) << "Trying " << next_node_time << " for node " << node_a_index;
+      }
 
       // TODO(austin): If we start supporting only having 1 direction of
       // timestamps, we might need to change our assumptions around
@@ -1358,7 +1386,9 @@ MultiNodeNoncausalOffsetEstimator::NextSolution(
           VLOG(1) << "  " << solution[i];
         }
       }
+
       if (result_times.empty()) {
+        // This is the first solution candidate, so don't bother comparing.
         result_times = std::move(solution);
         next_filter = next_node_filter;
         solution_index = node_a_index;
@@ -1393,12 +1423,14 @@ MultiNodeNoncausalOffsetEstimator::NextSolution(
                       << "ns";
             }
             VLOG(1) << "Ignoring because it is close enough.";
-            std::optional<
-                std::tuple<logger::BootTimestamp, logger::BootDuration>>
-                result = next_node_filter->Consume();
-            CHECK(result);
-            next_node_filter->Pop(std::get<0>(*result) -
-                                  time_estimation_buffer_seconds_);
+            if (next_node_filter) {
+              std::optional<
+                  std::tuple<logger::BootTimestamp, logger::BootDuration>>
+                  result = next_node_filter->Consume();
+              CHECK(result);
+              next_node_filter->Pop(std::get<0>(*result) -
+                                    time_estimation_buffer_seconds_);
+            }
             break;
           }
           // Somehow the new solution is better *and* worse than the old
@@ -1415,12 +1447,14 @@ MultiNodeNoncausalOffsetEstimator::NextSolution(
           }
 
           if (skip_order_validation_) {
-            std::optional<
-                std::tuple<logger::BootTimestamp, logger::BootDuration>>
-                result = next_node_filter->Consume();
-            CHECK(result);
-            next_node_filter->Pop(std::get<0>(*result) -
-                                  time_estimation_buffer_seconds_);
+            if (next_node_filter) {
+              std::optional<
+                  std::tuple<logger::BootTimestamp, logger::BootDuration>>
+                  result = next_node_filter->Consume();
+              CHECK(result);
+              next_node_filter->Pop(std::get<0>(*result) -
+                                    time_estimation_buffer_seconds_);
+            }
             LOG(ERROR) << "Skipping because --skip_order_validation";
             break;
           } else {
@@ -1458,7 +1492,7 @@ MultiNodeNoncausalOffsetEstimator::NextTimestamp() {
   CHECK(!all_done_);
 
   // All done.
-  if (next_filter == nullptr) {
+  if (result_times.empty()) {
     if (first_solution_) {
       VLOG(1) << "No more timestamps and the first solution.";
       // If this is our first time, there is no solution.  Instead of giving up
@@ -1496,7 +1530,6 @@ MultiNodeNoncausalOffsetEstimator::NextTimestamp() {
     return std::nullopt;
   }
 
-
   std::tuple<logger::BootTimestamp, logger::BootDuration> sample;
   if (first_solution_) {
     first_solution_ = false;
@@ -1508,11 +1541,17 @@ MultiNodeNoncausalOffsetEstimator::NextTimestamp() {
         time = BootTimestamp::epoch();
       }
     }
-    sample = *next_filter->Consume();
-    next_filter->Pop(std::get<0>(sample) - time_estimation_buffer_seconds_);
+    if (next_filter) {
+      // This isn't a start time because we have a corresponding filter.
+      sample = *next_filter->Consume();
+      next_filter->Pop(std::get<0>(sample) - time_estimation_buffer_seconds_);
+    }
   } else {
-    sample = *next_filter->Consume();
-    next_filter->Pop(std::get<0>(sample) - time_estimation_buffer_seconds_);
+    if (next_filter) {
+      // This isn't a start time because we have a corresponding filter.
+      sample = *next_filter->Consume();
+      next_filter->Pop(std::get<0>(sample) - time_estimation_buffer_seconds_);
+    }
     // We found a good sample, so consume it.  If it is a duplicate, we still
     // want to consume it.  But, if this is the first time around, we want to
     // re-solve by recursing (once) to pickup the better base.
@@ -1583,7 +1622,7 @@ MultiNodeNoncausalOffsetEstimator::NextTimestamp() {
     }
   }
 
-  if (filter_fps_.size() > 0) {
+  if (filter_fps_.size() > 0 && next_filter) {
     const int node_a_index =
         configuration::GetNodeIndex(configuration(), next_filter->node_a());
     const int node_b_index =

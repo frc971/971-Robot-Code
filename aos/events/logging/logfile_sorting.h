@@ -20,6 +20,9 @@ struct Boots {
 
   // Maps the node index to a set of all boots for that node.
   std::vector<std::vector<std::string>> boots;
+
+  // TODO(austin): Aggregated start time should live here.  This is a property
+  // of sorting!
 };
 
 // Datastructure to hold ordered parts.
