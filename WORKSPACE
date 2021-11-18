@@ -476,13 +476,6 @@ http_archive(
     url = "https://www.frc971.org/Build-Dependencies/gcc-arm-none-eabi-7-2018-q2-update-linux.tar.bz2",
 )
 
-http_archive(
-    name = "cgal_repo",
-    build_file = "@//debian:cgal.BUILD",
-    sha256 = "d564dda558570344b4caa66c5bae2cdae9ef68e07829d64f5651b25f2c6a0e9e",
-    url = "https://www.frc971.org/Build-Dependencies/cgal-dev-4.5-2.tar.gz",
-)
-
 # Java9 JDK.
 http_archive(
     name = "openjdk_linux_archive",

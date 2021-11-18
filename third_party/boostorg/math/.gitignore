@@ -1,8 +1,0 @@
-/doc/inspect.htm
-/**/*.log
-reporting/*/third_party
-reporting/*/html
-inspect.html
-/example/float128_examples.cpp
-test/cuda
-*.DS_Store

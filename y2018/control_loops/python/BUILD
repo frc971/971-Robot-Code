@@ -98,61 +98,6 @@ py_binary(
     ],
 )
 
-cc_library(
-    name = "dlqr",
-    hdrs = [
-        "dlqr.h",
-    ],
-    target_compatible_with = ["@platforms//os:linux"],
-    deps = [
-        "@slycot_repo//:slicot",
-    ],
-)
-
-cc_binary(
-    name = "arm_mpc",
-    srcs = [
-        "arm_mpc.cc",
-    ],
-    target_compatible_with = ["@platforms//cpu:x86_64"],
-    deps = [
-        ":arm_bounds",
-        ":dlqr",
-        "//third_party/ct",
-        "//third_party/matplotlib-cpp",
-        "@cgal_repo//:cgal",
-        "@com_github_gflags_gflags//:gflags",
-    ],
-)
-
-cc_binary(
-    name = "3d_plot",
-    srcs = [
-        "3d_plot.cc",
-    ],
-    target_compatible_with = ["@platforms//cpu:x86_64"],
-    deps = [
-        ":arm_bounds",
-        "//third_party/matplotlib-cpp",
-        "@com_github_gflags_gflags//:gflags",
-    ],
-)
-
-cc_library(
-    name = "arm_bounds",
-    srcs = [
-        "arm_bounds.cc",
-    ],
-    hdrs = [
-        "arm_bounds.h",
-    ],
-    target_compatible_with = ["@platforms//os:linux"],
-    deps = [
-        "@cgal_repo//:cgal",
-        "@org_tuxfamily_eigen//:eigen",
-    ],
-)
-
 cc_binary(
     name = "2d_plot",
     srcs = [
@@ -208,20 +153,6 @@ py_binary(
     srcs = [
         "extended_lqr.py",
     ],
-    target_compatible_with = ["@platforms//cpu:x86_64"],
-    deps = [
-        "//external:python-gflags",
-        "//external:python-glog",
-        "//frc971/control_loops/python:controls",
-    ],
-)
-
-py_binary(
-    name = "arm_mpc_py",
-    srcs = [
-        "arm_mpc.py",
-    ],
-    main = "arm_mpc.py",
     target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         "//external:python-gflags",

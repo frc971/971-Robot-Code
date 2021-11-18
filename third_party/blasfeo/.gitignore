@@ -1,8 +1,0 @@
-*.swp
-*.s
-*.o
-*.out
-libblasfeo.a
-libblasfeo.so
-octave-workspace
-build/

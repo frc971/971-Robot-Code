@@ -1,8 +1,0 @@
-#pragma once
-
-#include "Nlp.h"
-#include "solver/NlpSolver.h"
-#include "solver/IpoptSolver.h"
-#include "solver/SnoptSolver.h"
-#include "solver/NlpSolverSettings.h"
-
