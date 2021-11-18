@@ -2860,6 +2860,147 @@ TEST(MultinodeRebootLoggerTest, StartTimeBeforeData) {
   ConfirmReadable(filenames);
 }
 
+// Tests that local data before remote data after reboot is properly replayed.
+// We only trigger a reboot in the timestamp interpolation function when solving
+// the timestamp problem when we actually have a point in the function.  This
+// originally only happened when a point passes the noncausal filter.  At the
+// start of time for the second boot, if we aren't careful, we will have
+// messages which need to be published at times before the boot.  This happens
+// when a local message is in the log before a forwarded message, so there is no
+// point in the interpolation function.  This delays the reboot.  So, we need to
+// recreate that situation and make sure it doesn't come back.
+TEST(MultinodeRebootLoggerTest, LocalMessageBeforeRemoteBeforeStartAfterReboot) {
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+      aos::configuration::ReadConfig(ArtifactPath(
+          "aos/events/logging/multinode_pingpong_split3_config.json"));
+  message_bridge::TestingTimeConverter time_converter(
+      configuration::NodesCount(&config.message()));
+  SimulatedEventLoopFactory event_loop_factory(&config.message());
+  event_loop_factory.SetTimeConverter(&time_converter);
+  NodeEventLoopFactory *const pi1 =
+      event_loop_factory.GetNodeEventLoopFactory("pi1");
+  const size_t pi1_index = configuration::GetNodeIndex(
+      event_loop_factory.configuration(), pi1->node());
+  NodeEventLoopFactory *const pi2 =
+      event_loop_factory.GetNodeEventLoopFactory("pi2");
+  const size_t pi2_index = configuration::GetNodeIndex(
+      event_loop_factory.configuration(), pi2->node());
+  NodeEventLoopFactory *const pi3 =
+      event_loop_factory.GetNodeEventLoopFactory("pi3");
+  const size_t pi3_index = configuration::GetNodeIndex(
+      event_loop_factory.configuration(), pi3->node());
+
+  const std::string kLogfile1_1 =
+      aos::testing::TestTmpDir() + "/multi_logfile1/";
+  const std::string kLogfile2_1 =
+      aos::testing::TestTmpDir() + "/multi_logfile2.1/";
+  const std::string kLogfile2_2 =
+      aos::testing::TestTmpDir() + "/multi_logfile2.2/";
+  const std::string kLogfile3_1 =
+      aos::testing::TestTmpDir() + "/multi_logfile3/";
+  util::UnlinkRecursive(kLogfile1_1);
+  util::UnlinkRecursive(kLogfile2_1);
+  util::UnlinkRecursive(kLogfile2_2);
+  util::UnlinkRecursive(kLogfile3_1);
+  const UUID pi1_boot0 = UUID::Random();
+  const UUID pi2_boot0 = UUID::Random();
+  const UUID pi2_boot1 = UUID::Random();
+  const UUID pi3_boot0 = UUID::Random();
+  {
+    CHECK_EQ(pi1_index, 0u);
+    CHECK_EQ(pi2_index, 1u);
+    CHECK_EQ(pi3_index, 2u);
+
+    time_converter.set_boot_uuid(pi1_index, 0, pi1_boot0);
+    time_converter.set_boot_uuid(pi2_index, 0, pi2_boot0);
+    time_converter.set_boot_uuid(pi2_index, 1, pi2_boot1);
+    time_converter.set_boot_uuid(pi3_index, 0, pi3_boot0);
+
+    time_converter.AddNextTimestamp(
+        distributed_clock::epoch(),
+        {BootTimestamp::epoch(), BootTimestamp::epoch(),
+         BootTimestamp::epoch()});
+    const chrono::nanoseconds reboot_time = chrono::milliseconds(5000);
+    time_converter.AddNextTimestamp(
+        distributed_clock::epoch() + reboot_time,
+        {BootTimestamp::epoch() + reboot_time,
+         BootTimestamp{
+             .boot = 1,
+             .time = monotonic_clock::epoch() + reboot_time + chrono::seconds(100)},
+         BootTimestamp::epoch() + reboot_time});
+  }
+
+  std::vector<std::string> filenames;
+  {
+    LoggerState pi1_logger = LoggerState::MakeLogger(
+        pi1, &event_loop_factory, SupportedCompressionAlgorithms()[0]);
+    LoggerState pi3_logger = LoggerState::MakeLogger(
+        pi3, &event_loop_factory, SupportedCompressionAlgorithms()[0]);
+    {
+      // And now start the logger.
+      LoggerState pi2_logger = LoggerState::MakeLogger(
+          pi2, &event_loop_factory, SupportedCompressionAlgorithms()[0]);
+
+      pi1_logger.StartLogger(kLogfile1_1);
+      pi3_logger.StartLogger(kLogfile3_1);
+      pi2_logger.StartLogger(kLogfile2_1);
+
+      event_loop_factory.RunFor(chrono::milliseconds(1005));
+
+      // Now that we've got a start time in the past, turn on data.
+      std::unique_ptr<aos::EventLoop> ping_event_loop =
+          pi1->MakeEventLoop("ping");
+      Ping ping(ping_event_loop.get());
+
+      pi2->AlwaysStart<Pong>("pong");
+
+      event_loop_factory.RunFor(chrono::milliseconds(3000));
+
+      pi2_logger.AppendAllFilenames(&filenames);
+
+      // Disable any remote messages on pi2.
+      pi1->Disconnect(pi2->node());
+      pi2->Disconnect(pi1->node());
+    }
+    event_loop_factory.RunFor(chrono::milliseconds(995));
+    // pi2 now reboots at 5 seconds.
+    {
+      event_loop_factory.RunFor(chrono::milliseconds(1000));
+
+      // Make local stuff happen before we start logging and connect the remote.
+      pi2->AlwaysStart<Pong>("pong");
+      std::unique_ptr<aos::EventLoop> ping_event_loop =
+          pi1->MakeEventLoop("ping");
+      Ping ping(ping_event_loop.get());
+      event_loop_factory.RunFor(chrono::milliseconds(1005));
+
+      // Start logging again on pi2 after it is up.
+      LoggerState pi2_logger = LoggerState::MakeLogger(
+          pi2, &event_loop_factory, SupportedCompressionAlgorithms()[0]);
+      pi2_logger.StartLogger(kLogfile2_2);
+
+      // And allow remote messages now that we have some local ones.
+      pi1->Connect(pi2->node());
+      pi2->Connect(pi1->node());
+
+      event_loop_factory.RunFor(chrono::milliseconds(1000));
+
+      event_loop_factory.RunFor(chrono::milliseconds(3000));
+
+      pi2_logger.AppendAllFilenames(&filenames);
+    }
+
+    pi1_logger.AppendAllFilenames(&filenames);
+    pi3_logger.AppendAllFilenames(&filenames);
+  }
+
+  // Confirm that we can parse the result.  LogReader has enough internal CHECKs
+  // to confirm the right thing happened.
+  const std::vector<LogFile> sorted_parts = SortParts(filenames);
+  ConfirmReadable(filenames);
+}
+
+
 }  // namespace testing
 }  // namespace logger
 }  // namespace aos

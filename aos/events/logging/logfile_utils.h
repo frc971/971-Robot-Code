@@ -550,6 +550,9 @@ class NodeMerger {
   realtime_clock::time_point realtime_start_time() const {
     return realtime_start_time_;
   }
+  monotonic_clock::time_point monotonic_oldest_time() const {
+    return monotonic_oldest_time_;
+  }
 
   // The time this data is sorted until.
   monotonic_clock::time_point sorted_until() const { return sorted_until_; }
@@ -579,6 +582,7 @@ class NodeMerger {
 
   realtime_clock::time_point realtime_start_time_ = realtime_clock::max_time;
   monotonic_clock::time_point monotonic_start_time_ = monotonic_clock::max_time;
+  monotonic_clock::time_point monotonic_oldest_time_ = monotonic_clock::max_time;
 };
 
 // Class to concatenate multiple boots worth of logs into a single per-node
@@ -611,6 +615,10 @@ class BootMerger {
   realtime_clock::time_point realtime_start_time(size_t boot) const {
     CHECK_LT(boot, node_mergers_.size());
     return node_mergers_[boot]->realtime_start_time();
+  }
+  monotonic_clock::time_point monotonic_oldest_time(size_t boot) const {
+    CHECK_LT(boot, node_mergers_.size());
+    return node_mergers_[boot]->monotonic_oldest_time();
   }
 
   bool started() const {
@@ -664,6 +672,10 @@ class TimestampMapper {
   }
   realtime_clock::time_point realtime_start_time(size_t boot) const {
     return boot_merger_.realtime_start_time(boot);
+  }
+  // Returns the oldest timestamp on a message on this boot.
+  monotonic_clock::time_point monotonic_oldest_time(size_t boot) const {
+    return boot_merger_.monotonic_oldest_time(boot);
   }
 
   // Uses timestamp_mapper as the peer for its node. Only one mapper may be set

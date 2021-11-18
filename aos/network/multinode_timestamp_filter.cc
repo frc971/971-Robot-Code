@@ -202,7 +202,7 @@ Eigen::VectorXd TimestampProblem::Newton(
 std::vector<BootTimestamp> TimestampProblem::SolveNewton() {
   constexpr int kMaxIterations = 200;
   MaybeUpdateNodeMapping();
-  VLOG(1) << "Solving for node " << solution_node_ << " at "
+  VLOG(2) << "Solving for node " << solution_node_ << " at "
           << base_clock(solution_node_);
   Eigen::VectorXd data = Eigen::VectorXd::Zero(live_nodes_);
 
@@ -210,7 +210,7 @@ std::vector<BootTimestamp> TimestampProblem::SolveNewton() {
   while (true) {
     Eigen::VectorXd step = Newton(data);
 
-    if (VLOG_IS_ON(1)) {
+    if (VLOG_IS_ON(2)) {
       // Print out the gradient ignoring the component removed by the equality
       // constraint.  This tells us what gradient we are depending to try to
       // finish our solution.
@@ -220,12 +220,12 @@ std::vector<BootTimestamp> TimestampProblem::SolveNewton() {
       Eigen::VectorXd adjusted_grad =
           Gradient(data) + step(live_nodes_) * constraint_jacobian.transpose();
 
-      VLOG(1) << "Adjusted grad " << solution_number << " -> "
+      VLOG(2) << "Adjusted grad " << solution_number << " -> "
               << std::setprecision(12) << std::fixed << std::setfill(' ')
               << adjusted_grad.transpose().format(kHeavyFormat);
     }
 
-    VLOG(1) << "Step " << solution_number << " -> " << std::setprecision(12)
+    VLOG(2) << "Step " << solution_number << " -> " << std::setprecision(12)
             << std::fixed << std::setfill(' ')
             << step.transpose().format(kHeavyFormat);
     // We got there if the max step is small (this is strongly correlated to the
@@ -267,7 +267,7 @@ std::vector<BootTimestamp> TimestampProblem::SolveNewton() {
     }
   }
 
-  VLOG(1) << "Solving for node " << solution_node_ << " of "
+  VLOG(2) << "Solving for node " << solution_node_ << " of "
           << base_clock(solution_node_) << " in " << solution_number
           << " cycles";
   std::vector<BootTimestamp> result(size());
@@ -277,11 +277,11 @@ std::vector<BootTimestamp> TimestampProblem::SolveNewton() {
       result[i].time = base_clock(i).time +
                        std::chrono::nanoseconds(static_cast<int64_t>(
                            std::round(data(NodeToFullSolutionIndex(i)))));
-      VLOG(1) << "live  " << result[i] << " "
+      VLOG(2) << "live  " << result[i] << " "
               << data(NodeToFullSolutionIndex(i));
     } else {
       result[i] = BootTimestamp::min_time();
-      VLOG(1) << "dead  " << result[i];
+      VLOG(2) << "dead  " << result[i];
     }
   }
   if (solution_number > kMaxIterations) {
@@ -458,7 +458,7 @@ distributed_clock::time_point InterpolatedTimeConverter::ToDistributedClock(
     const distributed_clock::time_point result =
         time.time - std::get<1>(times_[0])[node_index].time +
         std::get<0>(times_[0]);
-    VLOG(2) << "ToDistributedClock(" << node_index << ", " << time << ") -> "
+    VLOG(3) << "ToDistributedClock(" << node_index << ", " << time << ") -> "
             << result;
     return result;
   }
@@ -484,7 +484,7 @@ distributed_clock::time_point InterpolatedTimeConverter::ToDistributedClock(
 
   if (time > t1) {
     const distributed_clock::time_point result = (time.time - t1.time) + d1;
-    VLOG(2) << "ToDistributedClock(" << node_index << ", " << time << ") -> "
+    VLOG(3) << "ToDistributedClock(" << node_index << ", " << time << ") -> "
             << result;
     return result;
   }
@@ -492,12 +492,12 @@ distributed_clock::time_point InterpolatedTimeConverter::ToDistributedClock(
   if (t0.boot != t1.boot) {
     if (t0.boot == time.boot) {
       const distributed_clock::time_point result = (time.time - t0.time) + d0;
-      VLOG(2) << "ToDistributedClock(" << node_index << ", " << time << ") -> "
+      VLOG(3) << "ToDistributedClock(" << node_index << ", " << time << ") -> "
               << result;
       return result;
     } else if (t1.boot == time.boot) {
       const distributed_clock::time_point result = (time.time - t1.time) + d1;
-      VLOG(2) << "ToDistributedClock(" << node_index << ", " << time << ") -> "
+      VLOG(3) << "ToDistributedClock(" << node_index << ", " << time << ") -> "
               << result;
       return result;
     } else {
@@ -508,7 +508,7 @@ distributed_clock::time_point InterpolatedTimeConverter::ToDistributedClock(
   const distributed_clock::time_point result =
       message_bridge::ToDistributedClock(d0, d1, t0.time, t1.time, time.time);
 
-  VLOG(2) << "ToDistributedClock(" << node_index << ", " << time << ") -> "
+  VLOG(3) << "ToDistributedClock(" << node_index << ", " << time << ") -> "
           << result;
   return result;
 }
@@ -536,7 +536,7 @@ BootTimestamp InterpolatedTimeConverter::FromDistributedClock(
     }
     monotonic_clock::time_point result =
         time - std::get<0>(times_[0]) + std::get<1>(times_[0])[node_index].time;
-    VLOG(2) << "FromDistributedClock(" << node_index << ", " << time << ", "
+    VLOG(3) << "FromDistributedClock(" << node_index << ", " << time << ", "
             << boot_count << ") -> " << result;
     return {.boot = std::get<1>(times_[0])[node_index].boot, .time = result};
   }
@@ -565,13 +565,13 @@ BootTimestamp InterpolatedTimeConverter::FromDistributedClock(
   if (time == d1) {
     if (boot_count == t1.boot) {
       const BootTimestamp result = t1 + (time - d1);
-      VLOG(2) << "FromDistributedClock(" << node_index << ", " << time << ", "
+      VLOG(3) << "FromDistributedClock(" << node_index << ", " << time << ", "
               << boot_count << ") -> " << result;
       return result;
     } else {
       CHECK_EQ(boot_count, t0.boot);
       const BootTimestamp result = t0 + (time - d0);
-      VLOG(2) << "FromDistributedClock(" << node_index << ", " << time << ", "
+      VLOG(3) << "FromDistributedClock(" << node_index << ", " << time << ", "
               << boot_count << ") -> " << result;
       return result;
     }
@@ -581,14 +581,14 @@ BootTimestamp InterpolatedTimeConverter::FromDistributedClock(
             //<< " t1 " << t1;
   if (time > d1) {
     const BootTimestamp result = t1 + (time - d1);
-    VLOG(2) << "FromDistributedClock(" << node_index << ", " << time << ", "
+    VLOG(3) << "FromDistributedClock(" << node_index << ", " << time << ", "
             << boot_count << ") -> " << result;
     return result;
   }
 
   if (t0.boot != t1.boot) {
     const BootTimestamp result = t0 + (time - d0);
-    VLOG(2) << "FromDistributedClock(" << node_index << ", " << time << ", "
+    VLOG(3) << "FromDistributedClock(" << node_index << ", " << time << ", "
             << boot_count << ") -> " << result;
     return result;
   }
@@ -615,7 +615,7 @@ BootTimestamp InterpolatedTimeConverter::FromDistributedClock(
   const monotonic_clock::time_point result =
       t0.time + std::chrono::nanoseconds(
                     static_cast<int64_t>(numerator / absl::int128(dd.count())));
-  VLOG(2) << "FromDistributedClock(" << node_index << ", " << time << ", "
+  VLOG(3) << "FromDistributedClock(" << node_index << ", " << time << ", "
           << boot_count << ") -> " << result;
   return {.boot = t0.boot, .time = result};
 }
@@ -1270,7 +1270,7 @@ MultiNodeNoncausalOffsetEstimator::NextSolution(
   {
     size_t node_a_index = 0;
     for (const auto &filters : filters_per_node_) {
-      VLOG(1) << "Investigating filter for node " << node_a_index;
+      VLOG(2) << "Investigating filter for node " << node_a_index;
       BootTimestamp next_node_time = BootTimestamp::max_time();
       BootDuration next_node_duration;
       NoncausalTimestampFilter *next_node_filter = nullptr;
@@ -1282,7 +1282,7 @@ MultiNodeNoncausalOffsetEstimator::NextSolution(
             filter.filter->Observe();
 
         if (candidate) {
-          VLOG(1) << "Candidate for node " << node_a_index << " filter "
+          VLOG(2) << "Candidate for node " << node_a_index << " filter "
                   << filter_index << " is " << std::get<0>(*candidate);
           if (std::get<0>(*candidate) < next_node_time) {
             next_node_time = std::get<0>(*candidate);
@@ -1311,7 +1311,7 @@ MultiNodeNoncausalOffsetEstimator::NextSolution(
       const size_t next_boot = last_monotonics_[node_a_index].boot + 1;
       if (next_boot < boots_->boots[node_a_index].size() &&
           timestamp_mappers_[node_a_index] != nullptr) {
-        BootTimestamp next_start_time = BootTimestamp{
+        const BootTimestamp next_start_time = BootTimestamp{
             .boot = next_boot,
             .time = timestamp_mappers_[node_a_index]->monotonic_start_time(
                 next_boot)};
@@ -1321,10 +1321,27 @@ MultiNodeNoncausalOffsetEstimator::NextSolution(
           next_node_time = next_start_time;
           next_node_filter = nullptr;
         }
+
+        // We need to make sure we have solutions as well for any local messages
+        // published before remote messages.  Find the oldest message for each
+        // boot and make sure there's a time there.  Boots can't overlap, so if
+        // we have evidence that there has been a reboot, we need to get that
+        // into the interpolation function.
+        const BootTimestamp next_oldest_time = BootTimestamp{
+            .boot = next_boot,
+            .time = timestamp_mappers_[node_a_index]->monotonic_oldest_time(
+                next_boot)};
+        if (next_oldest_time < next_node_time) {
+          VLOG(1) << "Candidate for node " << node_a_index
+                  << " is the next oldest time, " << next_oldest_time
+                  << " not applying yet";
+          next_node_time = next_oldest_time;
+          next_node_filter = nullptr;
+        }
       }
 
       if (next_node_filter != nullptr) {
-        VLOG(1) << "Trying " << next_node_time << " " << next_node_duration
+        VLOG(2) << "Trying " << next_node_time << " " << next_node_duration
                 << " for node " << node_a_index;
       } else {
         VLOG(1) << "Trying " << next_node_time << " for node " << node_a_index;
