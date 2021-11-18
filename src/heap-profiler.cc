@@ -1,11 +1,11 @@
 // -*- Mode: C++; c-basic-offset: 2; indent-tabs-mode: nil -*-
 // Copyright (c) 2005, Google Inc.
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-// 
+//
 //     * Redistributions of source code must retain the above copyright
 // notice, this list of conditions and the following disclaimer.
 //     * Redistributions in binary form must reproduce the above
@@ -15,7 +15,7 @@
 //     * Neither the name of Google Inc. nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
-// 
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 // "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 // LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -82,8 +82,8 @@
 #endif
 #endif
 
-using STL_NAMESPACE::string;
-using STL_NAMESPACE::sort;
+using std::string;
+using std::sort;
 
 //----------------------------------------------------------------------
 // Flags that control heap-profiling
@@ -272,7 +272,7 @@ static void MaybeDumpProfileLocked() {
     const int64 inuse_bytes = total.alloc_size - total.free_size;
     bool need_to_dump = false;
     char buf[128];
-    int64 current_time = time(NULL);
+
     if (FLAGS_heap_profile_allocation_interval > 0 &&
         total.alloc_size >=
         last_dump_alloc + FLAGS_heap_profile_allocation_interval) {
@@ -293,13 +293,15 @@ static void MaybeDumpProfileLocked() {
       snprintf(buf, sizeof(buf), "%" PRId64 " MB currently in use",
                inuse_bytes >> 20);
       need_to_dump = true;
-    } else if (FLAGS_heap_profile_time_interval > 0 &&
-               current_time - last_dump_time >=
-               FLAGS_heap_profile_time_interval) {
-      snprintf(buf, sizeof(buf), "%" PRId64 " sec since the last dump",
-               current_time - last_dump_time);
-      need_to_dump = true;
-      last_dump_time = current_time;
+    } else if (FLAGS_heap_profile_time_interval > 0 ) {
+      int64 current_time = time(NULL);
+      if (current_time - last_dump_time >=
+          FLAGS_heap_profile_time_interval) {
+        snprintf(buf, sizeof(buf), "%" PRId64 " sec since the last dump",
+                 current_time - last_dump_time);
+        need_to_dump = true;
+        last_dump_time = current_time;
+      }
     }
     if (need_to_dump) {
       DumpProfileLocked(buf);
@@ -358,11 +360,11 @@ static void RawInfoStackDumper(const char* message, void*) {
 static void MmapHook(const void* result, const void* start, size_t size,
                      int prot, int flags, int fd, off_t offset) {
   if (FLAGS_mmap_log) {  // log it
-    // We use PRIxS not just '%p' to avoid deadlocks
+    // We use PRIxPTR not just '%p' to avoid deadlocks
     // in pretty-printing of NULL as "nil".
     // TODO(maxim): instead should use a safe snprintf reimplementation
     RAW_LOG(INFO,
-            "mmap(start=0x%" PRIxPTR ", len=%" PRIuS ", prot=0x%x, flags=0x%x, "
+            "mmap(start=0x%" PRIxPTR ", len=%zu, prot=0x%x, flags=0x%x, "
             "fd=%d, offset=0x%x) = 0x%" PRIxPTR "",
             (uintptr_t) start, size, prot, flags, fd, (unsigned int) offset,
             (uintptr_t) result);
@@ -376,12 +378,12 @@ static void MremapHook(const void* result, const void* old_addr,
                        size_t old_size, size_t new_size,
                        int flags, const void* new_addr) {
   if (FLAGS_mmap_log) {  // log it
-    // We use PRIxS not just '%p' to avoid deadlocks
+    // We use PRIxPTR not just '%p' to avoid deadlocks
     // in pretty-printing of NULL as "nil".
     // TODO(maxim): instead should use a safe snprintf reimplementation
     RAW_LOG(INFO,
-            "mremap(old_addr=0x%" PRIxPTR ", old_size=%" PRIuS ", "
-            "new_size=%" PRIuS ", flags=0x%x, new_addr=0x%" PRIxPTR ") = "
+            "mremap(old_addr=0x%" PRIxPTR ", old_size=%zu, "
+            "new_size=%zu, flags=0x%x, new_addr=0x%" PRIxPTR ") = "
             "0x%" PRIxPTR "",
             (uintptr_t) old_addr, old_size, new_size, flags,
             (uintptr_t) new_addr, (uintptr_t) result);
@@ -393,10 +395,10 @@ static void MremapHook(const void* result, const void* old_addr,
 
 static void MunmapHook(const void* ptr, size_t size) {
   if (FLAGS_mmap_log) {  // log it
-    // We use PRIxS not just '%p' to avoid deadlocks
+    // We use PRIxPTR not just '%p' to avoid deadlocks
     // in pretty-printing of NULL as "nil".
     // TODO(maxim): instead should use a safe snprintf reimplementation
-    RAW_LOG(INFO, "munmap(start=0x%" PRIxPTR ", len=%" PRIuS ")",
+    RAW_LOG(INFO, "munmap(start=0x%" PRIxPTR ", len=%zu)",
                   (uintptr_t) ptr, size);
 #ifdef TODO_REENABLE_STACK_TRACING
     DumpStackTrace(1, RawInfoStackDumper, NULL);
@@ -406,7 +408,7 @@ static void MunmapHook(const void* ptr, size_t size) {
 
 static void SbrkHook(const void* result, ptrdiff_t increment) {
   if (FLAGS_mmap_log) {  // log it
-    RAW_LOG(INFO, "sbrk(inc=%" PRIdS ") = 0x%" PRIxPTR "",
+    RAW_LOG(INFO, "sbrk(inc=%zd) = 0x%" PRIxPTR "",
                   increment, (uintptr_t) result);
 #ifdef TODO_REENABLE_STACK_TRACING
     DumpStackTrace(1, RawInfoStackDumper, NULL);

@@ -1,10 +1,11 @@
+// -*- Mode: C++; c-basic-offset: 2; indent-tabs-mode: nil -*-
 // Copyright (c) 2013, Google Inc.
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-// 
+//
 //     * Redistributions of source code must retain the above copyright
 // notice, this list of conditions and the following disclaimer.
 //     * Redistributions in binary form must reproduce the above
@@ -14,7 +15,7 @@
 //     * Neither the name of Google Inc. nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
-// 
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 // "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 // LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -46,7 +47,7 @@
 static SpinLock spinlock(SpinLock::LINKER_INITIALIZED);
 
 // The current system allocator declaration
-SysAllocator* sys_alloc = NULL;
+SysAllocator* tcmalloc_sys_alloc = NULL;
 // Number of bytes taken from system.
 size_t TCMalloc_SystemTaken = 0;
 
@@ -121,7 +122,7 @@ SysAllocator* tc_get_sysalloc_override(SysAllocator *def)
 static bool system_alloc_inited = false;
 void InitSystemAllocators(void) {
   VirtualSysAllocator *alloc = new (virtual_space) VirtualSysAllocator();
-  sys_alloc = tc_get_sysalloc_override(alloc);
+  tcmalloc_sys_alloc = tc_get_sysalloc_override(alloc);
 }
 
 extern PERFTOOLS_DLL_DECL
@@ -134,7 +135,7 @@ void* TCMalloc_SystemAlloc(size_t size, size_t *actual_size,
     system_alloc_inited = true;
   }
 
-  void* result = sys_alloc->Alloc(size, actual_size, alignment);
+  void* result = tcmalloc_sys_alloc->Alloc(size, actual_size, alignment);
   if (result != NULL) {
     if (actual_size) {
       TCMalloc_SystemTaken += *actual_size;

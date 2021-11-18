@@ -1,11 +1,11 @@
 // -*- Mode: C++; c-basic-offset: 2; indent-tabs-mode: nil -*-
 /* Copyright (c) 2006, Google Inc.
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
  * met:
- * 
+ *
  *     * Redistributions of source code must retain the above copyright
  * notice, this list of conditions and the following disclaimer.
  *     * Redistributions in binary form must reproduce the above
@@ -15,7 +15,7 @@
  *     * Neither the name of Google Inc. nor the names of its
  * contributors may be used to endorse or promote products derived from
  * this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -102,7 +102,13 @@
                      + __GNUC_MINOR__ * 100           \
                      + __GNUC_PATCHLEVEL__)
 
+#define CLANG_VERSION (__clang_major__ * 10000         \
+                       + __clang_minor__ * 100         \
+                       + __clang_patchlevel__)
+
 #if defined(TCMALLOC_PREFER_GCC_ATOMICS) && defined(__GNUC__) && GCC_VERSION >= 40700
+#include "base/atomicops-internals-gcc.h"
+#elif defined(TCMALLOC_PREFER_GCC_ATOMICS) && defined(__clang__) && CLANG_VERSION >= 30400
 #include "base/atomicops-internals-gcc.h"
 #elif defined(__MACH__) && defined(__APPLE__)
 #include "base/atomicops-internals-macosx.h"
@@ -119,6 +125,8 @@
 #elif defined(__GNUC__) && defined(__mips__)
 #include "base/atomicops-internals-mips.h"
 #elif defined(__GNUC__) && GCC_VERSION >= 40700
+#include "base/atomicops-internals-gcc.h"
+#elif defined(__clang__) && CLANG_VERSION >= 30400
 #include "base/atomicops-internals-gcc.h"
 #else
 #error You need to implement atomic operations for this architecture
@@ -197,11 +205,6 @@ inline void NoBarrier_Store(volatile AtomicWord *ptr, AtomicWord value) {
       reinterpret_cast<volatile AtomicWordCastType*>(ptr), value);
 }
 
-inline void Acquire_Store(volatile AtomicWord* ptr, AtomicWord value) {
-  return base::subtle::Acquire_Store(
-      reinterpret_cast<volatile AtomicWordCastType*>(ptr), value);
-}
-
 inline void Release_Store(volatile AtomicWord* ptr, AtomicWord value) {
   return base::subtle::Release_Store(
       reinterpret_cast<volatile AtomicWordCastType*>(ptr), value);
@@ -214,11 +217,6 @@ inline AtomicWord NoBarrier_Load(volatile const AtomicWord *ptr) {
 
 inline AtomicWord Acquire_Load(volatile const AtomicWord* ptr) {
   return base::subtle::Acquire_Load(
-      reinterpret_cast<volatile const AtomicWordCastType*>(ptr));
-}
-
-inline AtomicWord Release_Load(volatile const AtomicWord* ptr) {
-  return base::subtle::Release_Load(
       reinterpret_cast<volatile const AtomicWordCastType*>(ptr));
 }
 
@@ -260,11 +258,9 @@ Atomic32 Release_CompareAndSwap(volatile Atomic32* ptr,
                                 Atomic32 old_value,
                                 Atomic32 new_value);
 void NoBarrier_Store(volatile Atomic32* ptr, Atomic32 value);
-void Acquire_Store(volatile Atomic32* ptr, Atomic32 value);
 void Release_Store(volatile Atomic32* ptr, Atomic32 value);
 Atomic32 NoBarrier_Load(volatile const Atomic32* ptr);
 Atomic32 Acquire_Load(volatile const Atomic32* ptr);
-Atomic32 Release_Load(volatile const Atomic32* ptr);
 
 // Corresponding operations on Atomic64
 Atomic64 NoBarrier_CompareAndSwap(volatile Atomic64* ptr,
@@ -281,11 +277,9 @@ Atomic64 Release_CompareAndSwap(volatile Atomic64* ptr,
                                 Atomic64 old_value,
                                 Atomic64 new_value);
 void NoBarrier_Store(volatile Atomic64* ptr, Atomic64 value);
-void Acquire_Store(volatile Atomic64* ptr, Atomic64 value);
 void Release_Store(volatile Atomic64* ptr, Atomic64 value);
 Atomic64 NoBarrier_Load(volatile const Atomic64* ptr);
 Atomic64 Acquire_Load(volatile const Atomic64* ptr);
-Atomic64 Release_Load(volatile const Atomic64* ptr);
 }  // namespace base::subtle
 }  // namespace base
 
@@ -313,20 +307,12 @@ inline AtomicWord Release_CompareAndSwap(volatile AtomicWord* ptr,
   return base::subtle::Release_CompareAndSwap(ptr, old_value, new_value);
 }
 
-inline void Acquire_Store(volatile AtomicWord* ptr, AtomicWord value) {
-  return base::subtle::Acquire_Store(ptr, value);
-}
-
 inline void Release_Store(volatile AtomicWord* ptr, AtomicWord value) {
   return base::subtle::Release_Store(ptr, value);
 }
 
 inline AtomicWord Acquire_Load(volatile const AtomicWord* ptr) {
   return base::subtle::Acquire_Load(ptr);
-}
-
-inline AtomicWord Release_Load(volatile const AtomicWord* ptr) {
-  return base::subtle::Release_Load(ptr);
 }
 #endif  // AtomicWordCastType
 
@@ -342,17 +328,11 @@ inline Atomic32 Release_CompareAndSwap(volatile Atomic32* ptr,
                                        Atomic32 new_value) {
   return base::subtle::Release_CompareAndSwap(ptr, old_value, new_value);
 }
-inline void Acquire_Store(volatile Atomic32* ptr, Atomic32 value) {
-  base::subtle::Acquire_Store(ptr, value);
-}
 inline void Release_Store(volatile Atomic32* ptr, Atomic32 value) {
   return base::subtle::Release_Store(ptr, value);
 }
 inline Atomic32 Acquire_Load(volatile const Atomic32* ptr) {
   return base::subtle::Acquire_Load(ptr);
-}
-inline Atomic32 Release_Load(volatile const Atomic32* ptr) {
-  return base::subtle::Release_Load(ptr);
 }
 
 #ifdef BASE_HAS_ATOMIC64
@@ -369,10 +349,6 @@ inline base::subtle::Atomic64 Release_CompareAndSwap(
     base::subtle::Atomic64 old_value, base::subtle::Atomic64 new_value) {
   return base::subtle::Release_CompareAndSwap(ptr, old_value, new_value);
 }
-inline void Acquire_Store(
-    volatile base::subtle::Atomic64* ptr, base::subtle::Atomic64 value) {
-  base::subtle::Acquire_Store(ptr, value);
-}
 inline void Release_Store(
     volatile base::subtle::Atomic64* ptr, base::subtle::Atomic64 value) {
   return base::subtle::Release_Store(ptr, value);
@@ -380,10 +356,6 @@ inline void Release_Store(
 inline base::subtle::Atomic64 Acquire_Load(
     volatile const base::subtle::Atomic64* ptr) {
   return base::subtle::Acquire_Load(ptr);
-}
-inline base::subtle::Atomic64 Release_Load(
-    volatile const base::subtle::Atomic64* ptr) {
-  return base::subtle::Release_Load(ptr);
 }
 
 #endif  // BASE_HAS_ATOMIC64

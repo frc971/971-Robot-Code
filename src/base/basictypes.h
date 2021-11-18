@@ -83,7 +83,7 @@ const  int64 kint64max =  ( ((( int64) kint32max) << 32) | kuint32max );
 const  int8  kint8min   = (   (  int8) 0x80);
 const  int16 kint16min  = (   ( int16) 0x8000);
 const  int32 kint32min  = (   ( int32) 0x80000000);
-const  int64 kint64min =  ( ((( int64) kint32min) << 32) | 0 );
+const  int64 kint64min =  ( (((uint64) kint32min) << 32) | 0 );
 
 // Define the "portable" printf and scanf macros, if they're not
 // already there (via the inttypes.h we #included above, hopefully).
@@ -115,6 +115,14 @@ const  int64 kint64min =  ( ((( int64) kint32min) << 32) | 0 );
 #define PRINTABLE_PTHREAD(pthreadt) reinterpret_cast<uintptr_t>(pthreadt)
 #else
 #define PRINTABLE_PTHREAD(pthreadt) pthreadt
+#endif
+
+#if defined(__GNUC__)
+#define PREDICT_TRUE(x) __builtin_expect(!!(x), 1)
+#define PREDICT_FALSE(x) __builtin_expect(!!(x), 0)
+#else
+#define PREDICT_TRUE(x) (x)
+#define PREDICT_FALSE(x) (x)
 #endif
 
 // A macro to disallow the evil copy constructor and operator= functions
@@ -192,6 +200,12 @@ struct CompileAssert {
 # define ATTRIBUTE_UNUSED
 #endif
 
+#if defined(HAVE___ATTRIBUTE__) && defined(HAVE_TLS)
+#define ATTR_INITIAL_EXEC __attribute__ ((tls_model ("initial-exec")))
+#else
+#define ATTR_INITIAL_EXEC
+#endif
+
 #define COMPILE_ASSERT(expr, msg)                               \
   typedef CompileAssert<(bool(expr))> msg[bool(expr) ? 1 : -1] ATTRIBUTE_UNUSED
 
@@ -221,6 +235,16 @@ inline Dest bit_cast(const Source& source) {
   Dest dest;
   memcpy(&dest, &source, sizeof(dest));
   return dest;
+}
+
+// bit_store<Dest,Source> implements the equivalent of
+// "dest = *reinterpret_cast<Dest*>(&source)".
+//
+// This prevents undefined behavior when the dest pointer is unaligned.
+template <class Dest, class Source>
+inline void bit_store(Dest *dest, const Source *source) {
+  COMPILE_ASSERT(sizeof(Dest) == sizeof(Source), bitcasting_unequal_sizes);
+  memcpy(dest, source, sizeof(Dest));
 }
 
 #ifdef HAVE___ATTRIBUTE__
@@ -257,7 +281,7 @@ inline Dest bit_cast(const Source& source) {
 //    ATTRIBUTE_SECTION are guaranteed to be between START and STOP.
 
 #if defined(HAVE___ATTRIBUTE__) && defined(__ELF__)
-# define ATTRIBUTE_SECTION(name) __attribute__ ((section (#name)))
+# define ATTRIBUTE_SECTION(name) __attribute__ ((section (#name))) __attribute__((noinline))
 
   // Weak section declaration to be used as a global declaration
   // for ATTRIBUTE_SECTION_START|STOP(name) to compile and link
@@ -357,13 +381,45 @@ class AssignAttributeStartEnd {
 # elif (defined(__aarch64__))
 #   define CACHELINE_ALIGNED __attribute__((aligned(64)))
     // implementation specific, Cortex-A53 and 57 should have 64 bytes
+# elif (defined(__s390__))
+#   define CACHELINE_ALIGNED __attribute__((aligned(256)))
+# elif (defined(__riscv) && __riscv_xlen == 64)
+#   define CACHELINE_ALIGNED __attribute__((aligned(64)))
+# elif (defined(__e2k__))
+#   define CACHELINE_ALIGNED __attribute__((aligned(64)))
 # else
 #   error Could not determine cache line length - unknown architecture
 # endif
 #else
 # define CACHELINE_ALIGNED
-#endif  // defined(HAVE___ATTRIBUTE__) && (__i386__ || __x86_64__)
+#endif  // defined(HAVE___ATTRIBUTE__)
 
+#if defined(HAVE___ATTRIBUTE__ALIGNED_FN)
+#  define CACHELINE_ALIGNED_FN CACHELINE_ALIGNED
+#else
+#  define CACHELINE_ALIGNED_FN
+#endif
+
+// Structure for discovering alignment
+union MemoryAligner {
+  void*  p;
+  double d;
+  size_t s;
+} CACHELINE_ALIGNED;
+
+#if defined(HAVE___ATTRIBUTE__) && defined(__ELF__)
+#define ATTRIBUTE_HIDDEN __attribute__((visibility("hidden")))
+#else
+#define ATTRIBUTE_HIDDEN
+#endif
+
+#if defined(__GNUC__)
+#define ATTRIBUTE_ALWAYS_INLINE __attribute__((always_inline))
+#elif defined(_MSC_VER)
+#define ATTRIBUTE_ALWAYS_INLINE __forceinline
+#else
+#define ATTRIBUTE_ALWAYS_INLINE
+#endif
 
 // The following enum should be used only as a constructor argument to indicate
 // that the variable has static storage class, and that the constructor should

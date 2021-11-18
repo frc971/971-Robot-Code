@@ -109,9 +109,12 @@ DEFINE_bool(malloc_page_fence,
             "with a guard page following the allocation (to catch buffer "
             "overruns right when they happen).");
 DEFINE_bool(malloc_page_fence_never_reclaim,
-            EnvToBool("TCMALLOC_PAGE_FRANCE_NEVER_RECLAIM", false),
+            EnvToBool("TCMALLOC_PAGE_FENCE_NEVER_RECLAIM", false),
             "Enables making the virtual address space inaccessible "
             "upon a deallocation instead of returning it and reusing later.");
+DEFINE_bool(malloc_page_fence_readable,
+            EnvToBool("TCMALLOC_PAGE_FENCE_READABLE", false),
+            "Permits reads to the page fence.");
 #else
 DEFINE_bool(malloc_page_fence, false, "Not usable (requires mmap)");
 DEFINE_bool(malloc_page_fence_never_reclaim, false, "Not usable (required mmap)");
@@ -206,9 +209,10 @@ struct MallocBlockQueueEntry {
       // Adjust the number of frames to skip (4) if you change the
       // location of this call.
       num_deleter_pcs =
-          GetStackTrace(deleter_pcs,
-                        sizeof(deleter_pcs) / sizeof(deleter_pcs[0]),
-                        4);
+        MallocHook::GetCallerStackTrace(
+          deleter_pcs,
+          sizeof(deleter_pcs) / sizeof(deleter_pcs[0]),
+          4);
       deleter_threadid = pthread_self();
     } else {
       num_deleter_pcs = 0;
@@ -272,8 +276,8 @@ class MallocBlock {
   // We use either do_malloc or mmap to make the actual allocation. In
   // order to remember which one of the two was used for any block, we store an
   // appropriate magic word next to the block.
-  static const int kMagicMalloc = 0xDEADBEEF;
-  static const int kMagicMMap = 0xABCDEFAB;
+  static const size_t kMagicMalloc = 0xDEADBEEF;
+  static const size_t kMagicMMap = 0xABCDEFAB;
 
   // This array will be filled with 0xCD, for use with memcmp.
   static unsigned char kMagicDeletedBuffer[1024];
@@ -299,7 +303,7 @@ class MallocBlock {
   // then come the size2_ and magic2_, or a full page of mprotect-ed memory
   // if the malloc_page_fence feature is enabled.
   size_t size2_;
-  int magic2_;
+  size_t magic2_;
 
  private:  // static data and helpers
 
@@ -342,7 +346,7 @@ class MallocBlock {
 
   bool IsMMapped() const { return kMagicMMap == magic1_; }
 
-  bool IsValidMagicValue(int value) const {
+  bool IsValidMagicValue(size_t value) const {
     return kMagicMMap == value  ||  kMagicMalloc == value;
   }
 
@@ -375,8 +379,8 @@ class MallocBlock {
     return (const size_t*)((char*)&size2_ + size1_);
   }
 
-  int* magic2_addr() { return (int*)(size2_addr() + 1); }
-  const int* magic2_addr() const { return (const int*)(size2_addr() + 1); }
+  size_t* magic2_addr() { return (size_t*)(size2_addr() + 1); }
+  const size_t* magic2_addr() const { return (const size_t*)(size2_addr() + 1); }
 
  private:  // other helpers
 
@@ -394,28 +398,30 @@ class MallocBlock {
     offset_ = 0;
     alloc_type_ = type;
     if (!IsMMapped()) {
-      *magic2_addr() = magic1_;
-      *size2_addr() = size;
+      bit_store(magic2_addr(), &magic1_);
+      bit_store(size2_addr(), &size);
     }
     alloc_map_lock_.Unlock();
     memset(data_addr(), kMagicUninitializedByte, size);
     if (!IsMMapped()) {
-      RAW_CHECK(size1_ == *size2_addr(), "should hold");
-      RAW_CHECK(magic1_ == *magic2_addr(), "should hold");
+      RAW_CHECK(memcmp(&size1_, size2_addr(), sizeof(size1_)) == 0, "should hold");
+      RAW_CHECK(memcmp(&magic1_, magic2_addr(), sizeof(magic1_)) == 0, "should hold");
     }
   }
 
-  size_t CheckAndClear(int type) {
+  size_t CheckAndClear(int type, size_t given_size) {
     alloc_map_lock_.Lock();
     CheckLocked(type);
     if (!IsMMapped()) {
-      RAW_CHECK(size1_ == *size2_addr(), "should hold");
+      RAW_CHECK(memcmp(&size1_, size2_addr(), sizeof(size1_)) == 0, "should hold");
     }
     // record us as deallocated in the map
     alloc_map_->Insert(data_addr(), type | kDeallocatedTypeBit);
     alloc_map_lock_.Unlock();
     // clear us
     const size_t size = real_size();
+    RAW_CHECK(!given_size || given_size == size1_,
+              "right size must be passed to sized delete");
     memset(this, kMagicDeletedByte, size);
     return size;
   }
@@ -449,11 +455,13 @@ class MallocBlock {
                      data_addr());
     }
     if (!IsMMapped()) {
-      if (size1_ != *size2_addr()) {
+      if (memcmp(&size1_, size2_addr(), sizeof(size1_))) {
         RAW_LOG(FATAL, "memory stomping bug: a word after object at %p "
                        "has been corrupted", data_addr());
       }
-      if (!IsValidMagicValue(*magic2_addr())) {
+      size_t addr;
+      bit_store(&addr, magic2_addr());
+      if (!IsValidMagicValue(addr)) {
         RAW_LOG(FATAL, "memory stomping bug: a word after object at %p "
                 "has been corrupted", data_addr());
       }
@@ -498,11 +506,12 @@ class MallocBlock {
     // the address space could take more.
     static size_t max_size_t = ~0;
     if (size > max_size_t - sizeof(MallocBlock)) {
-      RAW_LOG(ERROR, "Massive size passed to malloc: %" PRIuS "", size);
+      RAW_LOG(ERROR, "Massive size passed to malloc: %zu", size);
       return NULL;
     }
     MallocBlock* b = NULL;
     const bool use_malloc_page_fence = FLAGS_malloc_page_fence;
+    const bool malloc_page_fence_readable = FLAGS_malloc_page_fence_readable;
 #ifdef HAVE_MMAP
     if (use_malloc_page_fence) {
       // Put the block towards the end of the page and make the next page
@@ -521,7 +530,8 @@ class MallocBlock {
                 strerror(errno));
       }
       // Mark the page after the block inaccessible
-      if (mprotect(p + (num_pages - 1) * pagesize, pagesize, PROT_NONE)) {
+      if (mprotect(p + (num_pages - 1) * pagesize, pagesize,
+                   PROT_NONE|(malloc_page_fence_readable ? PROT_READ : 0))) {
         RAW_LOG(FATAL, "Guard page setup failed: %s", strerror(errno));
       }
       b = (MallocBlock*) (p + (num_pages - 1) * pagesize - sz);
@@ -543,10 +553,10 @@ class MallocBlock {
     return b;
   }
 
-  void Deallocate(int type) {
+  void Deallocate(int type, size_t given_size) {
     if (IsMMapped()) {  // have to do this before CheckAndClear
 #ifdef HAVE_MMAP
-      int size = CheckAndClear(type);
+      int size = CheckAndClear(type, given_size);
       int pagesize = getpagesize();
       int num_pages = (size + pagesize - 1) / pagesize + 1;
       char* p = (char*) this;
@@ -559,7 +569,7 @@ class MallocBlock {
       }
 #endif
     } else {
-      const size_t size = CheckAndClear(type);
+      const size_t size = CheckAndClear(type, given_size);
       if (FLAGS_malloc_reclaim_memory) {
         // Instead of freeing the block immediately, push it onto a queue of
         // recently freed blocks.  Free only enough blocks to keep from
@@ -615,7 +625,6 @@ class MallocBlock {
         free_queue_lock_.Lock();
       }
     }
-    RAW_CHECK(free_queue_size_ >= 0, "Free queue size went negative!");
     free_queue_lock_.Unlock();
     for (int i = 0; i < num_entries; i++) {
       CheckForDanglingWrites(entries[i]);
@@ -837,8 +846,8 @@ void DanglingWriteChecker() {
 
 // ========================================================================= //
 
-const int MallocBlock::kMagicMalloc;
-const int MallocBlock::kMagicMMap;
+const size_t MallocBlock::kMagicMalloc;
+const size_t MallocBlock::kMagicMMap;
 
 MallocBlock::AllocMap* MallocBlock::alloc_map_ = NULL;
 SpinLock MallocBlock::alloc_map_lock_(SpinLock::LINKER_INITIALIZED);
@@ -885,6 +894,7 @@ static void TracePrintf(int fd, const char *fmt, ...) {
   const char *p = fmt;
   char numbuf[25];
   if (fd < 0) {
+    va_end(ap);
     return;
   }
   numbuf[sizeof(numbuf)-1] = 0;
@@ -998,7 +1008,7 @@ static SpinLock malloc_trace_lock(SpinLock::LINKER_INITIALIZED);
   do {                                                                  \
     if (FLAGS_malloctrace) {                                            \
       SpinLockHolder l(&malloc_trace_lock);                             \
-      TracePrintf(TraceFd(), "%s\t%" PRIuS "\t%p\t%" GPRIuPTHREAD,      \
+      TracePrintf(TraceFd(), "%s\t%zu\t%p\t%" GPRIuPTHREAD,      \
                   name, size, addr, PRINTABLE_PTHREAD(pthread_self())); \
       TraceStack();                                                     \
       TracePrintf(TraceFd(), "\n");                                     \
@@ -1030,11 +1040,11 @@ static inline void* DebugAllocate(size_t size, int type) {
   return ptr->data_addr();
 }
 
-static inline void DebugDeallocate(void* ptr, int type) {
+static inline void DebugDeallocate(void* ptr, int type, size_t given_size) {
   MALLOC_TRACE("free",
                (ptr != 0 ? MallocBlock::FromRawPointer(ptr)->data_size() : 0),
                ptr);
-  if (ptr)  MallocBlock::FromRawPointer(ptr)->Deallocate(type);
+  if (ptr)  MallocBlock::FromRawPointer(ptr)->Deallocate(type, given_size);
 }
 
 // ========================================================================= //
@@ -1147,8 +1157,8 @@ static union {
 
 REGISTER_MODULE_INITIALIZER(debugallocation, {
 #if (__cplusplus >= 201103L)
-    COMPILE_ASSERT(alignof(debug_malloc_implementation_space) >= alignof(DebugMallocImplementation),
-                   debug_malloc_implementation_space_is_not_properly_aligned);
+    static_assert(alignof(decltype(debug_malloc_implementation_space)) >= alignof(DebugMallocImplementation),
+                  "DebugMallocImplementation is expected to need just word alignment");
 #endif
   // Either we or valgrind will control memory management.  We
   // register our extension if we're the winner. Otherwise let
@@ -1210,18 +1220,47 @@ inline void* do_debug_malloc_or_debug_cpp_alloc(size_t size) {
 
 // Exported routines
 
-extern "C" PERFTOOLS_DLL_DECL void* tc_malloc(size_t size) __THROW {
+// frame forcer and force_frame exist only to prevent tail calls to
+// DebugDeallocate to be actually implemented as tail calls. This is
+// important because stack trace capturing in MallocBlockQueueEntry
+// relies on google_malloc section being on stack and tc_XXX functions
+// are in that section. So they must not jump to DebugDeallocate but
+// have to do call. frame_forcer call at the end of such functions
+// prevents tail calls to DebugDeallocate.
+static int frame_forcer;
+static void force_frame() {
+  int dummy = *(int volatile *)&frame_forcer;
+  (void)dummy;
+}
+
+extern "C" PERFTOOLS_DLL_DECL void* tc_malloc(size_t size) PERFTOOLS_NOTHROW {
+  if (ThreadCache::IsUseEmergencyMalloc()) {
+    return tcmalloc::EmergencyMalloc(size);
+  }
   void* ptr = do_debug_malloc_or_debug_cpp_alloc(size);
   MallocHook::InvokeNewHook(ptr, size);
   return ptr;
 }
 
-extern "C" PERFTOOLS_DLL_DECL void tc_free(void* ptr) __THROW {
+extern "C" PERFTOOLS_DLL_DECL void tc_free(void* ptr) PERFTOOLS_NOTHROW {
+  if (tcmalloc::IsEmergencyPtr(ptr)) {
+    return tcmalloc::EmergencyFree(ptr);
+  }
   MallocHook::InvokeDeleteHook(ptr);
-  DebugDeallocate(ptr, MallocBlock::kMallocType);
+  DebugDeallocate(ptr, MallocBlock::kMallocType, 0);
+  force_frame();
 }
 
-extern "C" PERFTOOLS_DLL_DECL void* tc_calloc(size_t count, size_t size) __THROW {
+extern "C" PERFTOOLS_DLL_DECL void tc_free_sized(void *ptr, size_t size) PERFTOOLS_NOTHROW {
+  MallocHook::InvokeDeleteHook(ptr);
+  DebugDeallocate(ptr, MallocBlock::kMallocType, size);
+  force_frame();
+}
+
+extern "C" PERFTOOLS_DLL_DECL void* tc_calloc(size_t count, size_t size) PERFTOOLS_NOTHROW {
+  if (ThreadCache::IsUseEmergencyMalloc()) {
+    return tcmalloc::EmergencyCalloc(count, size);
+  }
   // Overflow check
   const size_t total_size = count * size;
   if (size != 0 && total_size / size != count) return NULL;
@@ -1232,12 +1271,19 @@ extern "C" PERFTOOLS_DLL_DECL void* tc_calloc(size_t count, size_t size) __THROW
   return block;
 }
 
-extern "C" PERFTOOLS_DLL_DECL void tc_cfree(void* ptr) __THROW {
+extern "C" PERFTOOLS_DLL_DECL void tc_cfree(void* ptr) PERFTOOLS_NOTHROW {
+  if (tcmalloc::IsEmergencyPtr(ptr)) {
+    return tcmalloc::EmergencyFree(ptr);
+  }
   MallocHook::InvokeDeleteHook(ptr);
-  DebugDeallocate(ptr, MallocBlock::kMallocType);
+  DebugDeallocate(ptr, MallocBlock::kMallocType, 0);
+  force_frame();
 }
 
-extern "C" PERFTOOLS_DLL_DECL void* tc_realloc(void* ptr, size_t size) __THROW {
+extern "C" PERFTOOLS_DLL_DECL void* tc_realloc(void* ptr, size_t size) PERFTOOLS_NOTHROW {
+  if (tcmalloc::IsEmergencyPtr(ptr)) {
+    return tcmalloc::EmergencyRealloc(ptr, size);
+  }
   if (ptr == NULL) {
     ptr = do_debug_malloc_or_debug_cpp_alloc(size);
     MallocHook::InvokeNewHook(ptr, size);
@@ -1245,7 +1291,7 @@ extern "C" PERFTOOLS_DLL_DECL void* tc_realloc(void* ptr, size_t size) __THROW {
   }
   if (size == 0) {
     MallocHook::InvokeDeleteHook(ptr);
-    DebugDeallocate(ptr, MallocBlock::kMallocType);
+    DebugDeallocate(ptr, MallocBlock::kMallocType, 0);
     return NULL;
   }
   MallocBlock* old = MallocBlock::FromRawPointer(ptr);
@@ -1270,7 +1316,7 @@ extern "C" PERFTOOLS_DLL_DECL void* tc_realloc(void* ptr, size_t size) __THROW {
   memcpy(p->data_addr(), ptr, (old_size < size) ? old_size : size);
   MallocHook::InvokeDeleteHook(ptr);
   MallocHook::InvokeNewHook(p->data_addr(), size);
-  DebugDeallocate(ptr, MallocBlock::kMallocType);
+  DebugDeallocate(ptr, MallocBlock::kMallocType, 0);
   MALLOC_TRACE("realloc", p->data_size(), p->data_addr());
   return p->data_addr();
 }
@@ -1279,59 +1325,75 @@ extern "C" PERFTOOLS_DLL_DECL void* tc_new(size_t size) {
   void* ptr = debug_cpp_alloc(size, MallocBlock::kNewType, false);
   MallocHook::InvokeNewHook(ptr, size);
   if (ptr == NULL) {
-    RAW_LOG(FATAL, "Unable to allocate %" PRIuS " bytes: new failed.", size);
+    RAW_LOG(FATAL, "Unable to allocate %zu bytes: new failed.", size);
   }
   return ptr;
 }
 
-extern "C" PERFTOOLS_DLL_DECL void* tc_new_nothrow(size_t size, const std::nothrow_t&) __THROW {
+extern "C" PERFTOOLS_DLL_DECL void* tc_new_nothrow(size_t size, const std::nothrow_t&) PERFTOOLS_NOTHROW {
   void* ptr = debug_cpp_alloc(size, MallocBlock::kNewType, true);
   MallocHook::InvokeNewHook(ptr, size);
   return ptr;
 }
 
-extern "C" PERFTOOLS_DLL_DECL void tc_delete(void* p) __THROW {
+extern "C" PERFTOOLS_DLL_DECL void tc_delete(void* p) PERFTOOLS_NOTHROW {
   MallocHook::InvokeDeleteHook(p);
-  DebugDeallocate(p, MallocBlock::kNewType);
+  DebugDeallocate(p, MallocBlock::kNewType, 0);
+  force_frame();
+}
+
+extern "C" PERFTOOLS_DLL_DECL void tc_delete_sized(void* p, size_t size) PERFTOOLS_NOTHROW {
+  MallocHook::InvokeDeleteHook(p);
+  DebugDeallocate(p, MallocBlock::kNewType, size);
+  force_frame();
 }
 
 // Some STL implementations explicitly invoke this.
 // It is completely equivalent to a normal delete (delete never throws).
-extern "C" PERFTOOLS_DLL_DECL void tc_delete_nothrow(void* p, const std::nothrow_t&) __THROW {
+extern "C" PERFTOOLS_DLL_DECL void tc_delete_nothrow(void* p, const std::nothrow_t&) PERFTOOLS_NOTHROW {
   MallocHook::InvokeDeleteHook(p);
-  DebugDeallocate(p, MallocBlock::kNewType);
+  DebugDeallocate(p, MallocBlock::kNewType, 0);
+  force_frame();
 }
 
 extern "C" PERFTOOLS_DLL_DECL void* tc_newarray(size_t size) {
   void* ptr = debug_cpp_alloc(size, MallocBlock::kArrayNewType, false);
   MallocHook::InvokeNewHook(ptr, size);
   if (ptr == NULL) {
-    RAW_LOG(FATAL, "Unable to allocate %" PRIuS " bytes: new[] failed.", size);
+    RAW_LOG(FATAL, "Unable to allocate %zu bytes: new[] failed.", size);
   }
   return ptr;
 }
 
 extern "C" PERFTOOLS_DLL_DECL void* tc_newarray_nothrow(size_t size, const std::nothrow_t&)
-    __THROW {
+    PERFTOOLS_NOTHROW {
   void* ptr = debug_cpp_alloc(size, MallocBlock::kArrayNewType, true);
   MallocHook::InvokeNewHook(ptr, size);
   return ptr;
 }
 
-extern "C" PERFTOOLS_DLL_DECL void tc_deletearray(void* p) __THROW {
+extern "C" PERFTOOLS_DLL_DECL void tc_deletearray(void* p) PERFTOOLS_NOTHROW {
   MallocHook::InvokeDeleteHook(p);
-  DebugDeallocate(p, MallocBlock::kArrayNewType);
+  DebugDeallocate(p, MallocBlock::kArrayNewType, 0);
+  force_frame();
+}
+
+extern "C" PERFTOOLS_DLL_DECL void tc_deletearray_sized(void* p, size_t size) PERFTOOLS_NOTHROW {
+  MallocHook::InvokeDeleteHook(p);
+  DebugDeallocate(p, MallocBlock::kArrayNewType, size);
+  force_frame();
 }
 
 // Some STL implementations explicitly invoke this.
 // It is completely equivalent to a normal delete (delete never throws).
-extern "C" PERFTOOLS_DLL_DECL void tc_deletearray_nothrow(void* p, const std::nothrow_t&) __THROW {
+extern "C" PERFTOOLS_DLL_DECL void tc_deletearray_nothrow(void* p, const std::nothrow_t&) PERFTOOLS_NOTHROW {
   MallocHook::InvokeDeleteHook(p);
-  DebugDeallocate(p, MallocBlock::kArrayNewType);
+  DebugDeallocate(p, MallocBlock::kArrayNewType, 0);
+  force_frame();
 }
 
 // This is mostly the same as do_memalign in tcmalloc.cc.
-static void *do_debug_memalign(size_t alignment, size_t size) {
+static void *do_debug_memalign(size_t alignment, size_t size, int type) {
   // Allocate >= size bytes aligned on "alignment" boundary
   // "alignment" is a power of two.
   void *p = 0;
@@ -1341,7 +1403,7 @@ static void *do_debug_memalign(size_t alignment, size_t size) {
   // a further data_offset bytes for an additional fake header.
   size_t extra_bytes = data_offset + alignment - 1;
   if (size + extra_bytes < size) return NULL;         // Overflow
-  p = DebugAllocate(size + extra_bytes, MallocBlock::kMallocType);
+  p = DebugAllocate(size + extra_bytes, type);
   if (p != 0) {
     intptr_t orig_p = reinterpret_cast<intptr_t>(p);
     // Leave data_offset bytes for fake header, and round up to meet
@@ -1366,16 +1428,21 @@ static void *do_debug_memalign(size_t alignment, size_t size) {
 struct memalign_retry_data {
   size_t align;
   size_t size;
+  int type;
 };
 
 static void *retry_debug_memalign(void *arg) {
   memalign_retry_data *data = static_cast<memalign_retry_data *>(arg);
-  return do_debug_memalign(data->align, data->size);
+  return do_debug_memalign(data->align, data->size, data->type);
 }
 
+ATTRIBUTE_ALWAYS_INLINE
 inline void* do_debug_memalign_or_debug_cpp_memalign(size_t align,
-                                                     size_t size) {
-  void* p = do_debug_memalign(align, size);
+                                                     size_t size,
+                                                     int type,
+                                                     bool from_operator,
+                                                     bool nothrow) {
+  void* p = do_debug_memalign(align, size, type);
   if (p != NULL) {
     return p;
   }
@@ -1383,26 +1450,27 @@ inline void* do_debug_memalign_or_debug_cpp_memalign(size_t align,
   struct memalign_retry_data data;
   data.align = align;
   data.size = size;
+  data.type = type;
   return handle_oom(retry_debug_memalign, &data,
-                    false, true);
+                    from_operator, nothrow);
 }
 
-extern "C" PERFTOOLS_DLL_DECL void* tc_memalign(size_t align, size_t size) __THROW {
-  void *p = do_debug_memalign_or_debug_cpp_memalign(align, size);
+extern "C" PERFTOOLS_DLL_DECL void* tc_memalign(size_t align, size_t size) PERFTOOLS_NOTHROW {
+  void *p = do_debug_memalign_or_debug_cpp_memalign(align, size, MallocBlock::kMallocType, false, true);
   MallocHook::InvokeNewHook(p, size);
   return p;
 }
 
 // Implementation taken from tcmalloc/tcmalloc.cc
 extern "C" PERFTOOLS_DLL_DECL int tc_posix_memalign(void** result_ptr, size_t align, size_t size)
-    __THROW {
+    PERFTOOLS_NOTHROW {
   if (((align % sizeof(void*)) != 0) ||
       ((align & (align - 1)) != 0) ||
       (align == 0)) {
     return EINVAL;
   }
 
-  void* result = do_debug_memalign_or_debug_cpp_memalign(align, size);
+  void* result = do_debug_memalign_or_debug_cpp_memalign(align, size, MallocBlock::kMallocType, false, true);
   MallocHook::InvokeNewHook(result, size);
   if (result == NULL) {
     return ENOMEM;
@@ -1412,14 +1480,14 @@ extern "C" PERFTOOLS_DLL_DECL int tc_posix_memalign(void** result_ptr, size_t al
   }
 }
 
-extern "C" PERFTOOLS_DLL_DECL void* tc_valloc(size_t size) __THROW {
+extern "C" PERFTOOLS_DLL_DECL void* tc_valloc(size_t size) PERFTOOLS_NOTHROW {
   // Allocate >= size bytes starting on a page boundary
-  void *p = do_debug_memalign_or_debug_cpp_memalign(getpagesize(), size);
+  void *p = do_debug_memalign_or_debug_cpp_memalign(getpagesize(), size, MallocBlock::kMallocType, false, true);
   MallocHook::InvokeNewHook(p, size);
   return p;
 }
 
-extern "C" PERFTOOLS_DLL_DECL void* tc_pvalloc(size_t size) __THROW {
+extern "C" PERFTOOLS_DLL_DECL void* tc_pvalloc(size_t size) PERFTOOLS_NOTHROW {
   // Round size up to a multiple of pages
   // then allocate memory on a page boundary
   int pagesize = getpagesize();
@@ -1427,31 +1495,93 @@ extern "C" PERFTOOLS_DLL_DECL void* tc_pvalloc(size_t size) __THROW {
   if (size == 0) {     // pvalloc(0) should allocate one page, according to
     size = pagesize;   // http://man.free4web.biz/man3/libmpatrol.3.html
   }
-  void *p = do_debug_memalign_or_debug_cpp_memalign(pagesize, size);
+  void *p = do_debug_memalign_or_debug_cpp_memalign(pagesize, size, MallocBlock::kMallocType, false, true);
   MallocHook::InvokeNewHook(p, size);
   return p;
 }
 
+#if defined(ENABLE_ALIGNED_NEW_DELETE)
+
+extern "C" PERFTOOLS_DLL_DECL void* tc_new_aligned(size_t size, std::align_val_t align) {
+  void* result = do_debug_memalign_or_debug_cpp_memalign(static_cast<size_t>(align), size, MallocBlock::kNewType, true, false);
+  MallocHook::InvokeNewHook(result, size);
+  return result;
+}
+
+extern "C" PERFTOOLS_DLL_DECL void* tc_new_aligned_nothrow(size_t size, std::align_val_t align, const std::nothrow_t&) PERFTOOLS_NOTHROW {
+  void* result = do_debug_memalign_or_debug_cpp_memalign(static_cast<size_t>(align), size, MallocBlock::kNewType, true, true);
+  MallocHook::InvokeNewHook(result, size);
+  return result;
+}
+
+extern "C" PERFTOOLS_DLL_DECL void tc_delete_aligned(void* p, std::align_val_t) PERFTOOLS_NOTHROW {
+  tc_delete(p);
+}
+
+extern "C" PERFTOOLS_DLL_DECL void tc_delete_sized_aligned(void* p, size_t size, std::align_val_t align) PERFTOOLS_NOTHROW {
+  // Reproduce actual size calculation done by do_debug_memalign
+  const size_t alignment = static_cast<size_t>(align);
+  const size_t data_offset = MallocBlock::data_offset();
+  const size_t extra_bytes = data_offset + alignment - 1;
+
+  tc_delete_sized(p, size + extra_bytes);
+}
+
+extern "C" PERFTOOLS_DLL_DECL void tc_delete_aligned_nothrow(void* p, std::align_val_t, const std::nothrow_t&) PERFTOOLS_NOTHROW {
+  tc_delete(p);
+}
+
+extern "C" PERFTOOLS_DLL_DECL void* tc_newarray_aligned(size_t size, std::align_val_t align) {
+  void* result = do_debug_memalign_or_debug_cpp_memalign(static_cast<size_t>(align), size, MallocBlock::kArrayNewType, true, false);
+  MallocHook::InvokeNewHook(result, size);
+  return result;
+}
+
+extern "C" PERFTOOLS_DLL_DECL void* tc_newarray_aligned_nothrow(size_t size, std::align_val_t align, const std::nothrow_t& nt) PERFTOOLS_NOTHROW {
+  void* result = do_debug_memalign_or_debug_cpp_memalign(static_cast<size_t>(align), size, MallocBlock::kArrayNewType, true, true);
+  MallocHook::InvokeNewHook(result, size);
+  return result;
+}
+
+extern "C" PERFTOOLS_DLL_DECL void tc_deletearray_aligned(void* p, std::align_val_t) PERFTOOLS_NOTHROW {
+  tc_deletearray(p);
+}
+
+extern "C" PERFTOOLS_DLL_DECL void tc_deletearray_sized_aligned(void* p, size_t size, std::align_val_t align) PERFTOOLS_NOTHROW {
+  // Reproduce actual size calculation done by do_debug_memalign
+  const size_t alignment = static_cast<size_t>(align);
+  const size_t data_offset = MallocBlock::data_offset();
+  const size_t extra_bytes = data_offset + alignment - 1;
+
+  tc_deletearray_sized(p, size + extra_bytes);
+}
+
+extern "C" PERFTOOLS_DLL_DECL void tc_deletearray_aligned_nothrow(void* p, std::align_val_t, const std::nothrow_t&) PERFTOOLS_NOTHROW {
+  tc_deletearray(p);
+}
+
+#endif // defined(ENABLE_ALIGNED_NEW_DELETE)
+
 // malloc_stats just falls through to the base implementation.
-extern "C" PERFTOOLS_DLL_DECL void tc_malloc_stats(void) __THROW {
+extern "C" PERFTOOLS_DLL_DECL void tc_malloc_stats(void) PERFTOOLS_NOTHROW {
   do_malloc_stats();
 }
 
-extern "C" PERFTOOLS_DLL_DECL int tc_mallopt(int cmd, int value) __THROW {
+extern "C" PERFTOOLS_DLL_DECL int tc_mallopt(int cmd, int value) PERFTOOLS_NOTHROW {
   return do_mallopt(cmd, value);
 }
 
 #ifdef HAVE_STRUCT_MALLINFO
-extern "C" PERFTOOLS_DLL_DECL struct mallinfo tc_mallinfo(void) __THROW {
+extern "C" PERFTOOLS_DLL_DECL struct mallinfo tc_mallinfo(void) PERFTOOLS_NOTHROW {
   return do_mallinfo();
 }
 #endif
 
-extern "C" PERFTOOLS_DLL_DECL size_t tc_malloc_size(void* ptr) __THROW {
+extern "C" PERFTOOLS_DLL_DECL size_t tc_malloc_size(void* ptr) PERFTOOLS_NOTHROW {
   return MallocExtension::instance()->GetAllocatedSize(ptr);
 }
 
-extern "C" PERFTOOLS_DLL_DECL void* tc_malloc_skip_new_handler(size_t size) __THROW {
+extern "C" PERFTOOLS_DLL_DECL void* tc_malloc_skip_new_handler(size_t size) PERFTOOLS_NOTHROW {
   void* result = DebugAllocate(size, MallocBlock::kMallocType);
   MallocHook::InvokeNewHook(result, size);
   return result;

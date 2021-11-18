@@ -21,6 +21,10 @@
 /autom4te.cache/
 /benchmark/.deps
 /benchmark/.dirstamp
+/binary_trees
+/binary_trees.exe
+/binary_trees_shared
+/binary_trees_shared.exe
 /compile
 /config.guess
 /config.log
@@ -65,6 +69,8 @@
 /malloc_bench.exe
 /malloc_bench_shared
 /malloc_bench_shared.exe
+/malloc_bench_shared_full
+/malloc_bench_shared_full.exe
 /malloc_extension_c_test
 /malloc_extension_debug_test
 /malloc_extension_test
@@ -83,6 +89,7 @@
 /page_heap_test.exe
 /pagemap_unittest
 /pagemap_unittest.exe
+/pprof-symbolize
 /profile_handler_unittest
 /profiledata_unittest
 /profiler1_unittest
@@ -118,6 +125,10 @@
 /stack_trace_table_test.exe
 /stacktrace_unittest
 /system_alloc_unittest
+/tcm_asserts_unittest
+/tcm_asserts_unittest.exe
+/tcm_min_asserts_unittest
+/tcm_min_asserts_unittest.exe
 /tcmalloc_and_profiler_unittest
 /tcmalloc_both_unittest
 /tcmalloc_debug_unittest

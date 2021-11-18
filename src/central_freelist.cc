@@ -110,7 +110,6 @@ void CentralFreeList::ReleaseToSpans(void* object) {
   if (span->objects == NULL) {
     tcmalloc::DLL_Remove(span);
     tcmalloc::DLL_Prepend(&nonempty_, span);
-    Event(span, 'N', 0);
   }
 
   // The following check is expensive, so it is disabled by default
@@ -129,7 +128,6 @@ void CentralFreeList::ReleaseToSpans(void* object) {
   counter_++;
   span->refcount--;
   if (span->refcount == 0) {
-    Event(span, '#', 0);
     counter_ -= ((span->length<<kPageShift) /
                  Static::sizemap()->ByteSizeForClass(span->sizeclass));
     tcmalloc::DLL_Remove(span);
@@ -152,14 +150,14 @@ bool CentralFreeList::EvictRandomSizeClass(
     int locked_size_class, bool force) {
   static int race_counter = 0;
   int t = race_counter++;  // Updated without a lock, but who cares.
-  if (t >= kNumClasses) {
-    while (t >= kNumClasses) {
-      t -= kNumClasses;
+  if (t >= Static::num_size_classes()) {
+    while (t >= Static::num_size_classes()) {
+      t -= Static::num_size_classes();
     }
     race_counter = t;
   }
   ASSERT(t >= 0);
-  ASSERT(t < kNumClasses);
+  ASSERT(t < Static::num_size_classes());
   if (t == locked_size_class) return false;
   return Static::central_cache()[t].ShrinkCache(locked_size_class, force);
 }
@@ -305,7 +303,6 @@ int CentralFreeList::FetchFromOneSpans(int N, void **start, void **end) {
     // Move to empty list
     tcmalloc::DLL_Remove(span);
     tcmalloc::DLL_Prepend(&empty_, span);
-    Event(span, 'E', 0);
   }
 
   *start = span->objects;
@@ -340,7 +337,7 @@ void CentralFreeList::Populate() {
   // (Instead of being eager, we could just replace any stale info
   // about this span, but that seems to be no better in practice.)
   for (int i = 0; i < npages; i++) {
-    Static::pageheap()->CacheSizeClass(span->start + i, size_class_);
+    Static::pageheap()->SetCachedSizeClass(span->start + i, size_class_);
   }
 
   // Split the block into pieces and add to the free-list

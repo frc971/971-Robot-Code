@@ -1,10 +1,11 @@
+// -*- Mode: C++; c-basic-offset: 2; indent-tabs-mode: nil -*-
 // Copyright (c) 2007, Google Inc.
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-// 
+//
 //     * Redistributions of source code must retain the above copyright
 // notice, this list of conditions and the following disclaimer.
 //     * Redistributions in binary form must reproduce the above
@@ -14,7 +15,7 @@
 //     * Neither the name of Google Inc. nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
-// 
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 // "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 // LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -101,6 +102,16 @@ const int kMaxModules = 8182;
 // These are hard-coded, unfortunately. :-( They are also probably
 // compiler specific.  See get_mangled_names.cc, in this directory,
 // for instructions on how to update these names for your compiler.
+#ifdef _WIN64
+const char kMangledNew[] = "??2@YAPEAX_K@Z";
+const char kMangledNewArray[] = "??_U@YAPEAX_K@Z";
+const char kMangledDelete[] = "??3@YAXPEAX@Z";
+const char kMangledDeleteArray[] = "??_V@YAXPEAX@Z";
+const char kMangledNewNothrow[] = "??2@YAPEAX_KAEBUnothrow_t@std@@@Z";
+const char kMangledNewArrayNothrow[] = "??_U@YAPEAX_KAEBUnothrow_t@std@@@Z";
+const char kMangledDeleteNothrow[] = "??3@YAXPEAXAEBUnothrow_t@std@@@Z";
+const char kMangledDeleteArrayNothrow[] = "??_V@YAXPEAXAEBUnothrow_t@std@@@Z";
+#else
 const char kMangledNew[] = "??2@YAPAXI@Z";
 const char kMangledNewArray[] = "??_U@YAPAXI@Z";
 const char kMangledDelete[] = "??3@YAXPAX@Z";
@@ -109,6 +120,7 @@ const char kMangledNewNothrow[] = "??2@YAPAXIABUnothrow_t@std@@@Z";
 const char kMangledNewArrayNothrow[] = "??_U@YAPAXIABUnothrow_t@std@@@Z";
 const char kMangledDeleteNothrow[] = "??3@YAXPAXABUnothrow_t@std@@@Z";
 const char kMangledDeleteArrayNothrow[] = "??_V@YAXPAXABUnothrow_t@std@@@Z";
+#endif
 
 // This is an unused but exported symbol that we can use to tell the
 // MSVC linker to bring in libtcmalloc, via the /INCLUDE linker flag.
@@ -183,6 +195,8 @@ class LibcInfo {
     k_Msize, k_Expand,
     // A MS CRT "internal" function, implemented using _calloc_impl
     k_CallocCrt,
+    // Underlying deallocation functions called by CRT internal functions or operator delete
+    kFreeBase, kFreeDbg,
     kNumFunctions
   };
 
@@ -265,6 +279,8 @@ template<int> class LibcInfoWithPatchFunctions : public LibcInfo {
 
   static void* Perftools_malloc(size_t size) __THROW;
   static void Perftools_free(void* ptr) __THROW;
+  static void Perftools_free_base(void* ptr) __THROW;
+  static void Perftools_free_dbg(void* ptr, int block_use) __THROW;
   static void* Perftools_realloc(void* ptr, size_t size) __THROW;
   static void* Perftools_calloc(size_t nmemb, size_t size) __THROW;
   static void* Perftools_new(size_t size);
@@ -406,7 +422,7 @@ const char* const LibcInfo::function_name_[] = {
   NULL,  // kMangledNewArrayNothrow,
   NULL,  // kMangledDeleteNothrow,
   NULL,  // kMangledDeleteArrayNothrow,
-  "_msize", "_expand", "_calloc_crt",
+  "_msize", "_expand", "_calloc_crt", "_free_base", "_free_dbg"
 };
 
 // For mingw, I can't patch the new/delete here, because the
@@ -438,6 +454,8 @@ const GenericFnPtr LibcInfo::static_fn_[] = {
   (GenericFnPtr)&::_msize,
   (GenericFnPtr)&::_expand,
   (GenericFnPtr)&::calloc,
+  (GenericFnPtr)&::free,
+  (GenericFnPtr)&::free
 };
 
 template<int T> GenericFnPtr LibcInfoWithPatchFunctions<T>::origstub_fn_[] = {
@@ -461,6 +479,8 @@ const GenericFnPtr LibcInfoWithPatchFunctions<T>::perftools_fn_[] = {
   (GenericFnPtr)&Perftools__msize,
   (GenericFnPtr)&Perftools__expand,
   (GenericFnPtr)&Perftools_calloc,
+  (GenericFnPtr)&Perftools_free_base,
+  (GenericFnPtr)&Perftools_free_dbg
 };
 
 /*static*/ WindowsInfo::FunctionInfo WindowsInfo::function_info_[] = {
@@ -791,9 +811,7 @@ bool PatchAllModules() {
 
 template<int T>
 void* LibcInfoWithPatchFunctions<T>::Perftools_malloc(size_t size) __THROW {
-  void* result = do_malloc_or_cpp_alloc(size);
-  MallocHook::InvokeNewHook(result, size);
-  return result;
+  return malloc_fast_path<tcmalloc::malloc_oom>(size);
 }
 
 template<int T>
@@ -803,7 +821,28 @@ void LibcInfoWithPatchFunctions<T>::Perftools_free(void* ptr) __THROW {
   // allocated by tcmalloc.  Note it calls the origstub_free from
   // *this* templatized instance of LibcInfo.  See "template
   // trickiness" above.
-  do_free_with_callback(ptr, (void (*)(void*))origstub_fn_[kFree]);
+  do_free_with_callback(ptr, (void (*)(void*))origstub_fn_[kFree], false, 0);
+}
+
+template<int T>
+void LibcInfoWithPatchFunctions<T>::Perftools_free_base(void* ptr) __THROW{
+  MallocHook::InvokeDeleteHook(ptr);
+  // This calls the windows free if do_free decides ptr was not
+  // allocated by tcmalloc.  Note it calls the origstub_free from
+  // *this* templatized instance of LibcInfo.  See "template
+  // trickiness" above.
+  do_free_with_callback(ptr, (void(*)(void*))origstub_fn_[kFreeBase], false, 0);
+}
+
+template<int T>
+void LibcInfoWithPatchFunctions<T>::Perftools_free_dbg(void* ptr, int block_use) __THROW {
+  MallocHook::InvokeDeleteHook(ptr);
+  // The windows _free_dbg is called if ptr isn't owned by tcmalloc.
+  if (MallocExtension::instance()->GetOwnership(ptr) == MallocExtension::kOwned) {
+    do_free(ptr);
+  } else {
+    reinterpret_cast<void (*)(void*, int)>(origstub_fn_[kFreeDbg])(ptr, block_use);
+  }
 }
 
 template<int T>
@@ -817,7 +856,7 @@ void* LibcInfoWithPatchFunctions<T>::Perftools_realloc(
   if (new_size == 0) {
     MallocHook::InvokeDeleteHook(old_ptr);
     do_free_with_callback(old_ptr,
-                          (void (*)(void*))origstub_fn_[kFree]);
+                          (void (*)(void*))origstub_fn_[kFree], false, 0);
     return NULL;
   }
   return do_realloc_with_callback(
@@ -836,58 +875,50 @@ void* LibcInfoWithPatchFunctions<T>::Perftools_calloc(
 
 template<int T>
 void* LibcInfoWithPatchFunctions<T>::Perftools_new(size_t size) {
-  void* p = cpp_alloc(size, false);
-  MallocHook::InvokeNewHook(p, size);
-  return p;
+  return malloc_fast_path<tcmalloc::cpp_throw_oom>(size);
 }
 
 template<int T>
 void* LibcInfoWithPatchFunctions<T>::Perftools_newarray(size_t size) {
-  void* p = cpp_alloc(size, false);
-  MallocHook::InvokeNewHook(p, size);
-  return p;
+  return malloc_fast_path<tcmalloc::cpp_throw_oom>(size);
 }
 
 template<int T>
 void LibcInfoWithPatchFunctions<T>::Perftools_delete(void *p) {
   MallocHook::InvokeDeleteHook(p);
-  do_free_with_callback(p, (void (*)(void*))origstub_fn_[kFree]);
+  do_free_with_callback(p, (void (*)(void*))origstub_fn_[kFree], false, 0);
 }
 
 template<int T>
 void LibcInfoWithPatchFunctions<T>::Perftools_deletearray(void *p) {
   MallocHook::InvokeDeleteHook(p);
-  do_free_with_callback(p, (void (*)(void*))origstub_fn_[kFree]);
+  do_free_with_callback(p, (void (*)(void*))origstub_fn_[kFree], false, 0);
 }
 
 template<int T>
 void* LibcInfoWithPatchFunctions<T>::Perftools_new_nothrow(
     size_t size, const std::nothrow_t&) __THROW {
-  void* p = cpp_alloc(size, true);
-  MallocHook::InvokeNewHook(p, size);
-  return p;
+  return malloc_fast_path<tcmalloc::cpp_nothrow_oom>(size);
 }
 
 template<int T>
 void* LibcInfoWithPatchFunctions<T>::Perftools_newarray_nothrow(
     size_t size, const std::nothrow_t&) __THROW {
-  void* p = cpp_alloc(size, true);
-  MallocHook::InvokeNewHook(p, size);
-  return p;
+  return malloc_fast_path<tcmalloc::cpp_nothrow_oom>(size);
 }
 
 template<int T>
 void LibcInfoWithPatchFunctions<T>::Perftools_delete_nothrow(
     void *p, const std::nothrow_t&) __THROW {
   MallocHook::InvokeDeleteHook(p);
-  do_free_with_callback(p, (void (*)(void*))origstub_fn_[kFree]);
+  do_free_with_callback(p, (void (*)(void*))origstub_fn_[kFree], false, 0);
 }
 
 template<int T>
 void LibcInfoWithPatchFunctions<T>::Perftools_deletearray_nothrow(
     void *p, const std::nothrow_t&) __THROW {
   MallocHook::InvokeDeleteHook(p);
-  do_free_with_callback(p, (void (*)(void*))origstub_fn_[kFree]);
+  do_free_with_callback(p, (void (*)(void*))origstub_fn_[kFree], false, 0);
 }
 
 
@@ -970,16 +1001,6 @@ BOOL WINAPI WindowsInfo::Perftools_UnmapViewOfFile(LPCVOID lpBaseAddress) {
           function_info_[kUnmapViewOfFile].origstub_fn)(
               lpBaseAddress);
 }
-
-// g_load_map holds a copy of windows' refcount for how many times
-// each currently loaded module has been loaded and unloaded.  We use
-// it as an optimization when the same module is loaded more than
-// once: as long as the refcount stays above 1, we don't need to worry
-// about patching because it's already patched.  Likewise, we don't
-// need to unpatch until the refcount drops to 0.  load_map is
-// maintained in LoadLibraryExW and FreeLibrary, and only covers
-// modules explicitly loaded/freed via those interfaces.
-static std::map<HMODULE, int>* g_load_map = NULL;
 
 HMODULE WINAPI WindowsInfo::Perftools_LoadLibraryExW(LPCWSTR lpFileName,
                                                      HANDLE hFile,
