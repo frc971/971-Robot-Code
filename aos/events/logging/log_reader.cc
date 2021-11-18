@@ -1675,7 +1675,7 @@ BootTimestamp LogReader::State::OldestMessageTime() const {
   if (result_ptr == nullptr) {
     return BootTimestamp::max_time();
   }
-  VLOG(2) << MaybeNodeName(event_loop_->node()) << "oldest message at "
+  VLOG(2) << MaybeNodeName(node()) << "oldest message at "
           << result_ptr->monotonic_event_time.time;
   return result_ptr->monotonic_event_time;
 }
