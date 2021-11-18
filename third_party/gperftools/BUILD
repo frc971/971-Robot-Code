@@ -111,6 +111,7 @@ common_copts = [
 }) + compiler_select({
     "clang": [
         "-Wno-unused-const-variable",
+        "-Wno-unused-but-set-variable",
         "-Wno-gnu-alignof-expression",
         "-Wno-unused-private-field",
 

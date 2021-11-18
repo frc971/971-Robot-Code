@@ -2,6 +2,7 @@
 #define AOS_CONTAINERS_SIZED_ARRAY_H_
 
 #include <array>
+#include <cstddef>
 
 namespace aos {
 

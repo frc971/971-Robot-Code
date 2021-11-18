@@ -9,7 +9,9 @@ import argparse
 import hashlib
 
 def get_deps(package):
-  out = subprocess.check_output(["apt-rdepends", package])
+  env = dict(os.environ)
+  del env['LD_LIBRARY_PATH']
+  out = subprocess.check_output(["apt-rdepends", package], env=env)
   deps = out.splitlines()
   return set([dep for dep in deps if not dep.startswith(b" ")])
 
@@ -50,6 +52,12 @@ def map_virtual_packages(packages):
     if package == b'libopencl1':
       yield b'ocl-icd-libopencl1'
       continue
+    if package == b'libgcc1':
+      yield b'libgcc-s1'
+      continue
+    if package == b'libopencl-1.2-1':
+      yield b'ocl-icd-libopencl1'
+      continue
     if package == b'libblas.so.3':
       yield b'libblas3'
       continue
@@ -61,7 +69,9 @@ def download_deps(packages, excludes, force_includes):
   deps -= exclude_deps
   force_include_deps = get_all_deps(force_includes)
   deps |= force_include_deps
-  subprocess.check_call([b"apt-get", b"download"] + list(map_virtual_packages(deps)))
+  env = dict(os.environ)
+  del env['LD_LIBRARY_PATH']
+  subprocess.check_call([b"apt-get", b"download"] + list(map_virtual_packages(deps)), env=env)
 
 def fixup_files():
   # Gotta remove those pesky epoch numbers in the file names. Bazel doesn't

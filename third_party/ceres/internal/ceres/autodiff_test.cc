@@ -640,6 +640,10 @@ TEST(AutoDiff, VariadicAutoDiff) {
   }
 }
 
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-but-set-variable"
+#endif
 // This is fragile test that triggers the alignment bug on
 // i686-apple-darwin10-llvm-g++-4.2 (GCC) 4.2.1. It is quite possible,
 // that other combinations of operating system + compiler will
@@ -664,6 +668,9 @@ TEST(AutoDiff, AlignedAllocationTest) {
   // Need this to makes sure that x does not get optimized out.
   x[0] = x[0] + JetT(1.0);
 }
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
 
 }  // namespace internal
 }  // namespace ceres

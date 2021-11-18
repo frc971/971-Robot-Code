@@ -10,7 +10,7 @@ platform(
 )
 
 platform(
-    name = "linux_armhf",
+    name = "linux_armv7",
     constraint_values = [
         "@platforms//os:linux",
         "@platforms//cpu:armv7",

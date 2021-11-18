@@ -1,21 +1,21 @@
 package(default_visibility = ["@//debian:__pkg__"])
 
 cc_library(
-    name = "python3.7_lib",
+    name = "python3.9_lib",
     srcs = [
-        "usr/lib/x86_64-linux-gnu/libpython3.7m.so.1.0",
+        "usr/lib/x86_64-linux-gnu/libpython3.9.so.1.0",
     ],
     hdrs = glob(["usr/include/**/*.h"]),
     includes = [
         "usr/include/",
-        "usr/include/python3.7m/",
+        "usr/include/python3.9/",
     ],
     target_compatible_with = ["@platforms//cpu:x86_64"],
     visibility = ["//visibility:public"],
 )
 
 cc_library(
-    name = "python3.7_f2py",
+    name = "python3.9_f2py",
     srcs = [
         "usr/lib/python3/dist-packages/numpy/f2py/src/fortranobject.c",
     ],
@@ -31,7 +31,7 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
-        ":python3.7_lib",
+        ":python3.9_lib",
     ],
 )
 
@@ -66,6 +66,7 @@ py_library(
         ],
         exclude = [
             "usr/lib/python3/dist-packages/scipy/**/*.py",
+            "usr/lib/python3/dist-packages/scipy/io/tests/**",
         ],
     ),
     imports = [

@@ -4,8 +4,10 @@ filegroup(
         include = [
             "include/**",
             "lib/**",
+            "lib64/**",
             "usr/include/**",
             "usr/lib/**",
+            "usr/lib64/**",
         ],
         exclude = [
             "usr/share/**",

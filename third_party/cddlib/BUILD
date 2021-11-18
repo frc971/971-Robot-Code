@@ -1,7 +1,5 @@
 licenses(["notice"])
 
-load("//tools/build_rules:select.bzl", "compiler_select")
-
 cc_library(
     name = "cddlib",
     srcs = [
@@ -27,10 +25,8 @@ cc_library(
         "-Wno-sign-compare",
         "-Wno-implicit-fallthrough",
         "-Wno-unused-result",
-    ] + compiler_select({
-        "gcc": ["-Wno-unused-but-set-variable"],
-        "clang": [],
-    }),
+        "-Wno-unused-but-set-variable",
+    ],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )

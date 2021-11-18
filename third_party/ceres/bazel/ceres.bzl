@@ -184,6 +184,7 @@ def ceres_library(name,
             "-Wno-sign-compare",
             "-Wno-format-nonliteral",
             "-Wno-unused-parameter",
+            "-Wno-unused-but-set-variable",
         ] + schur_eliminator_copts,
 
         # These include directories and defines are propagated to other targets

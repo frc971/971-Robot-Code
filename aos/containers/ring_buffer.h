@@ -2,6 +2,7 @@
 #define AOS_RING_BUFFER_H_
 
 #include <array>
+#include <cstddef>
 
 namespace aos {
 

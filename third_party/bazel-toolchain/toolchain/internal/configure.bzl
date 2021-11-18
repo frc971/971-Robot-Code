@@ -37,10 +37,15 @@ def _include_dirs_str(rctx, key):
         return ""
     return ("\n" + 12 * " ").join(["\"%s\"," % d for d in dirs])
 
+def _is_absolute(path):
+    return path[0] == "/" and (len(path) == 1 or path[1] != "/")
+
 def llvm_config_impl(rctx):
     _check_os_arch_keys(rctx.attr.toolchain_roots)
+    _check_os_arch_keys(rctx.attr.target_toolchain_roots)
     _check_os_arch_keys(rctx.attr.sysroot)
     _check_os_arch_keys(rctx.attr.cxx_builtin_include_directories)
+    _check_os_arch_keys(rctx.attr.standard_libraries)
 
     os = _os(rctx)
     if os == "windows":
@@ -61,18 +66,27 @@ def llvm_register_toolchains():
 
     # Check if the toolchain root is an absolute path.
     use_absolute_paths = rctx.attr.absolute_paths
-    if toolchain_root[0] == "/" and (len(toolchain_root) == 1 or toolchain_root[1] != "/"):
+    for target_toolchain_root in rctx.attr.target_toolchain_roots.values():
+        if _is_absolute(toolchain_root) != _is_absolute(target_toolchain_root):
+            fail("Host and target toolchain roots must both be absolute or not")
+    if _is_absolute(toolchain_root):
         use_absolute_paths = True
 
+    target_llvm_repo_paths = {}
     if use_absolute_paths:
         llvm_repo_label = Label(toolchain_root + ":BUILD.bazel")  # Exact target does not matter.
         llvm_repo_path = _canonical_dir_path(str(rctx.path(llvm_repo_label).dirname))
+        for a_key in rctx.attr.target_toolchain_roots:
+            target_llvm_repo_label = Label(rctx.attr.target_toolchain_roots[a_key] + ":BUILD.bazel")
+            target_llvm_repo_paths[a_key] = _canonical_dir_path(str(rctx.path(target_llvm_repo_label).dirname))
         config_repo_path = _canonical_dir_path(str(rctx.path("")))
         toolchain_path_prefix = llvm_repo_path
         tools_path_prefix = llvm_repo_path
         wrapper_bin_prefix = config_repo_path
     else:
         llvm_repo_path = _pkg_path_from_label(Label(toolchain_root + ":BUILD.bazel"))
+        for a_key in rctx.attr.target_toolchain_roots:
+            target_llvm_repo_paths[a_key] = _pkg_path_from_label(Label(rctx.attr.target_toolchain_roots[a_key] + ":BUILD.bazel"))
         config_repo_path = "external/%s/" % rctx.name
 
         # tools can only be defined in a subdirectory of config_repo_path,
@@ -100,13 +114,24 @@ def llvm_register_toolchains():
         os = os,
         arch = arch,
         toolchain_root = toolchain_root,
+        additional_target_compatible_with_dict = rctx.attr.additional_target_compatible_with,
+        target_toolchain_roots_dict = rctx.attr.target_toolchain_roots,
         toolchain_path_prefix = toolchain_path_prefix,
+        target_toolchain_path_prefixes_dict = target_llvm_repo_paths,
         tools_path_prefix = tools_path_prefix,
         wrapper_bin_prefix = wrapper_bin_prefix,
         additional_include_dirs_dict = rctx.attr.cxx_builtin_include_directories,
         sysroot_dict = rctx.attr.sysroot,
         default_sysroot_path = default_sysroot_path,
         llvm_version = rctx.attr.llvm_version,
+        standard_libraries_dict = rctx.attr.standard_libraries,
+        static_libstdcxx = rctx.attr.static_libstdcxx,
+        conlyopts_dict = rctx.attr.conlyopts,
+        cxxopts_dict = rctx.attr.cxxopts,
+        copts_dict = rctx.attr.copts,
+        opt_copts_dict = rctx.attr.opt_copts,
+        dbg_copts_dict = rctx.attr.dbg_copts,
+        linkopts_dict = rctx.attr.linkopts,
     )
     host_tools_info = dict([
         pair
@@ -237,7 +262,8 @@ def _cc_toolchain_str(
 
     extra_files_str = ", \":llvm\", \":wrapper-files\""
 
-    additional_include_dirs = toolchain_info.additional_include_dirs_dict.get(_os_arch_pair(target_os, target_arch))
+    key = _os_arch_pair(target_os, target_arch)
+    additional_include_dirs = toolchain_info.additional_include_dirs_dict.get(key)
     additional_include_dirs_str = "[]"
     if additional_include_dirs:
         additional_include_dirs_str = "[{}]".format(
@@ -250,6 +276,25 @@ def _cc_toolchain_str(
     # them into `dict`s.
     host_tools_info = json.decode(json.encode(host_tools_info))
 
+    standard_library = toolchain_info.standard_libraries_dict.get(key, "")
+    conlyopts = toolchain_info.conlyopts_dict.get(key, [])
+    cxxopts = toolchain_info.cxxopts_dict.get(key, [])
+    copts = toolchain_info.copts_dict.get(key, [])
+    opt_copts = toolchain_info.opt_copts_dict.get(key, [])
+    dbg_copts = toolchain_info.dbg_copts_dict.get(key, [])
+    linkopts = toolchain_info.linkopts_dict.get(key, [])
+    target_toolchain_root = toolchain_info.toolchain_root
+    if key in toolchain_info.target_toolchain_roots_dict:
+        target_toolchain_root = toolchain_info.target_toolchain_roots_dict[key]
+    elif "" in toolchain_info.target_toolchain_roots_dict:
+        target_toolchain_root = toolchain_info.target_toolchain_roots_dict[""]
+    target_toolchain_path_prefix = toolchain_info.toolchain_path_prefix
+    if key in toolchain_info.target_toolchain_path_prefixes_dict:
+        target_toolchain_path_prefix = toolchain_info.target_toolchain_path_prefixes_dict[key]
+    elif "" in toolchain_info.target_toolchain_roots_dict:
+        target_toolchain_path_prefix = toolchain_info.target_toolchain_path_prefixes_dict[""]
+    additional_target_compatible_with = toolchain_info.additional_target_compatible_with_dict.get(key, [])
+
     template = """
 # CC toolchain for cc-clang-{suffix}.
 
@@ -260,12 +305,21 @@ cc_toolchain_config(
     target_arch = "{target_arch}",
     target_os = "{target_os}",
     toolchain_path_prefix = "{toolchain_path_prefix}",
+    target_toolchain_path_prefix = "{target_toolchain_path_prefix}",
     tools_path_prefix = "{tools_path_prefix}",
     wrapper_bin_prefix = "{wrapper_bin_prefix}",
     sysroot_path = "{sysroot_path}",
     additional_include_dirs = {additional_include_dirs_str},
     llvm_version = "{llvm_version}",
     host_tools_info = {host_tools_info},
+    standard_library = "{standard_library}",
+    static_libstdcxx = {static_libstdcxx},
+    conlyopts = {conlyopts},
+    cxxopts = {cxxopts},
+    copts = {copts},
+    opt_copts = {opt_copts},
+    dbg_copts = {dbg_copts},
+    linkopts = {linkopts},
 )
 
 toolchain(
@@ -277,7 +331,7 @@ toolchain(
     target_compatible_with = [
         "@platforms//cpu:{target_arch}",
         "@platforms//os:{target_os_bzl}",
-    ],
+    ] + {additional_target_compatible_with},
     toolchain = ":cc-clang-{suffix}",
     toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
 )
@@ -307,7 +361,7 @@ filegroup(
     name = "compiler-components-{suffix}",
     srcs = [
         "{toolchain_root}:clang",
-        "{toolchain_root}:include",
+        "{target_toolchain_root}:include",
         ":sysroot-components-{suffix}",
     ],
 )
@@ -318,7 +372,7 @@ filegroup(
         "{toolchain_root}:clang",
         "{toolchain_root}:ld",
         "{toolchain_root}:ar",
-        "{toolchain_root}:lib",
+        "{target_toolchain_root}:lib",
         ":sysroot-components-{suffix}",
     ],
 )
@@ -363,8 +417,11 @@ cc_toolchain(
         host_arch = host_arch,
         target_os_bzl = target_os_bzl,
         host_os_bzl = host_os_bzl,
+        additional_target_compatible_with = additional_target_compatible_with,
         toolchain_root = toolchain_info.toolchain_root,
         toolchain_path_prefix = toolchain_info.toolchain_path_prefix,
+        target_toolchain_root = target_toolchain_root,
+        target_toolchain_path_prefix = target_toolchain_path_prefix,
         tools_path_prefix = toolchain_info.tools_path_prefix,
         wrapper_bin_prefix = toolchain_info.wrapper_bin_prefix,
         additional_include_dirs_str = additional_include_dirs_str,
@@ -373,4 +430,12 @@ cc_toolchain(
         llvm_version = toolchain_info.llvm_version,
         extra_files_str = extra_files_str,
         host_tools_info = host_tools_info,
+        standard_library = standard_library,
+        static_libstdcxx = toolchain_info.static_libstdcxx,
+        conlyopts = conlyopts,
+        cxxopts = cxxopts,
+        copts = copts,
+        opt_copts = opt_copts,
+        dbg_copts = dbg_copts,
+        linkopts = linkopts,
     )

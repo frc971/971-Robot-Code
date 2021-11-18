@@ -169,6 +169,7 @@ def _impl(ctx):
         enabled = True,
     )
 
+    cxx_flags_actions = all_cpp_compile_actions + [ACTION_NAMES.lto_backend]
     default_compile_flags_feature = feature(
         name = "default_compile_flags",
         enabled = True,
@@ -200,12 +201,28 @@ def _impl(ctx):
                 with_features = [with_feature_set(features = ["opt"])],
             ),
             flag_set(
-                actions = all_cpp_compile_actions + [ACTION_NAMES.lto_backend],
+                actions = [ACTION_NAMES.c_compile],
+                flag_groups = ([
+                    flag_group(
+                        flags = ctx.attr.c_flags,
+                    ),
+                ] if ctx.attr.c_flags else []),
+            ),
+            flag_set(
+                actions = cxx_flags_actions,
                 flag_groups = ([
                     flag_group(
                         flags = ctx.attr.cxx_flags,
                     ),
                 ] if ctx.attr.cxx_flags else []),
+            ),
+            flag_set(
+                actions = [a for a in all_compile_actions if a not in cxx_flags_actions],
+                flag_groups = ([
+                    flag_group(
+                        flags = ctx.attr.compile_not_cxx_flags,
+                    ),
+                ] if ctx.attr.compile_not_cxx_flags else []),
             ),
         ],
     )
@@ -1260,6 +1277,8 @@ cc_toolchain_config = rule(
         "dbg_compile_flags": attr.string_list(),
         "opt_compile_flags": attr.string_list(),
         "cxx_flags": attr.string_list(),
+        "c_flags": attr.string_list(),
+        "compile_not_cxx_flags": attr.string_list(),
         "link_flags": attr.string_list(),
         "link_libs": attr.string_list(),
         "opt_link_flags": attr.string_list(),

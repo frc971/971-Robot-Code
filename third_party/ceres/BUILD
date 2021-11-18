@@ -57,6 +57,7 @@ cc_library(
     ],
     copts = [
         "-Wno-sign-compare",
+        "-Wno-unused-but-set-variable",
         "-DCERES_TEST_SRCDIR_SUFFIX=\\\"data/\\\"",
     ],
     includes = [

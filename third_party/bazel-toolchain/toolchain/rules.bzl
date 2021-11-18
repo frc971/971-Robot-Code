@@ -95,6 +95,19 @@ _llvm_config_attrs.update({
                "paths. Else, the value will be assumed to be a bazel package containing the " +
                "filegroup targets as in BUILD.llvm_repo."),
     ),
+    "target_toolchain_roots": attr.string_dict(
+        mandatory = True,
+        # TODO: Ideally, we should be taking a filegroup label here instead of a package path, but
+        # we ultimately need to subset the files to be more selective in what we include in the
+        # sandbox for which operations, and it is not straightforward to subset a filegroup.
+        doc = ("System or package path, for each target OS and arch pair you want to support " +
+               "({}), ".format(", ".join(_supported_os_arch_keys())) +
+               "to be used as the LLVM toolchain distributions. " +
+               "If the value begins with exactly one forward slash '/', then the value is " +
+               "assumed to be a system path and the toolchain is configured to use absolute " +
+               "paths. Else, the value will be assumed to be a bazel package containing the " +
+               "filegroup targets as in BUILD.llvm_repo."),
+    ),
     "sysroot": attr.string_dict(
         mandatory = False,
         doc = ("System path or fileset, for each target OS and arch pair you want to support " +
@@ -111,6 +124,67 @@ _llvm_config_attrs.update({
                "directories, for each target OS and arch pair you want to support " +
                "({}); ".format(", ".join(_supported_os_arch_keys())) +
                "see documentation for bazel's create_cc_toolchain_config_info."),
+    ),
+    "standard_libraries": attr.string_dict(
+        mandatory = False,
+        doc = ("The C++ standard library to use, " +
+               "for each target OS and arch pair you want to support " +
+               "({}), ".format(", ".join(_supported_os_arch_keys())) +
+               "used to find this version in the sysroot or host system. " +
+               "If set to \"libc++\" \"libstdc++\", that will be passed to clang directly. " +
+               "If set to \"libstdc++-N\", then explicit paths for major version N of " +
+               "libstdc++ will be passed to clang."),
+    ),
+    "additional_target_compatible_with": attr.string_list_dict(
+        mandatory = False,
+        doc = ("Additional target_compatible_with values, " +
+               "for each target OS and arch pair you want to support " +
+               "({}), ".format(", ".join(_supported_os_arch_keys())) +
+               "in addition to the @platforms//os and @platforms//cpu entries " +
+               "added automatically."),
+    ),
+    "conlyopts": attr.string_list_dict(
+        mandatory = False,
+        doc = ("Extra flags for compiling C (not C++) files, " +
+               "for each target OS and arch pair you want to support " +
+               "({}), ".format(", ".join(_supported_os_arch_keys())) + "."),
+    ),
+    "cxxopts": attr.string_list_dict(
+        mandatory = False,
+        doc = ("Extra flags for compiling C++ (not C) files, " +
+               "for each target OS and arch pair you want to support " +
+               "({}), ".format(", ".join(_supported_os_arch_keys())) + "."),
+    ),
+    "copts": attr.string_list_dict(
+        mandatory = False,
+        doc = ("Extra flags for compiling C, C++, and assembly files, " +
+               "for each target OS and arch pair you want to support " +
+               "({}), ".format(", ".join(_supported_os_arch_keys())) + "."),
+    ),
+    "opt_copts": attr.string_list_dict(
+        mandatory = False,
+        doc = ("Extra flags for compiling C, C++, and assembly files, " +
+               "for each target OS and arch pair you want to support " +
+               "({}), ".format(", ".join(_supported_os_arch_keys())) +
+               "used only with -c opt."),
+    ),
+    "dbg_copts": attr.string_list_dict(
+        mandatory = False,
+        doc = ("Extra flags for compiling C, C++, and assembly files, " +
+               "for each target OS and arch pair you want to support " +
+               "({}), ".format(", ".join(_supported_os_arch_keys())) +
+               "used only with -c dbg."),
+    ),
+    "linkopts": attr.string_list_dict(
+        mandatory = False,
+        doc = ("Extra flags to pass to the linker, " +
+               "for each target OS and arch pair you want to support " +
+               "({}), ".format(", ".join(_supported_os_arch_keys())) + "."),
+    ),
+    "static_libstdcxx": attr.bool(
+        default = True,
+        doc = "Link the C++ standard library statically. Note that this applies " +
+              "to all C++ standard libraries, like the -static-libstdc++ clang flag.",
     ),
     "absolute_paths": attr.bool(
         default = False,

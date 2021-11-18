@@ -9,6 +9,7 @@ cc_binary(
         "-Wno-reorder",
         "-Wno-unused-parameter",
         "-Wno-unused-function",
+        "-Wno-type-limits",
     ],
     includes = ["."],
     target_compatible_with = ["@platforms//os:linux"],

@@ -16,7 +16,7 @@ def main(params):
   target_cpu = sys.argv[3]
 
   target = {
-      'armhf-debian': 'arm-32-linux-no_asserts',
+      'armv7': 'arm-32-linux-no_asserts',
       'k8': 'x86-64-linux-no_asserts',
   }[target_cpu]
 

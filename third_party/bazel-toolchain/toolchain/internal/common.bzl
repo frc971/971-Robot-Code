@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-SUPPORTED_TARGETS = [("linux", "x86_64"), ("linux", "aarch64"), ("darwin", "x86_64")]
+SUPPORTED_TARGETS = [("linux", "x86_64"), ("linux", "aarch64"), ("linux", "armv7"), ("darwin", "x86_64")]
 
 host_tool_features = struct(
     SUPPORTS_ARG_FILE = "supports_arg_file",

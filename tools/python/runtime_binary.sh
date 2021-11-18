@@ -23,7 +23,7 @@ BASE_PATH=""
 for path in ${PYTHONPATH//:/ }; do
   if [[ "$path" == *.runfiles/python_repo ]]; then
     BASE_PATH="$path"
-    export LD_LIBRARY_PATH="$path"/lib/x86_64-linux-gnu:"$path"/usr/lib:"$path"/usr/lib/x86_64-linux-gnu
+    export LD_LIBRARY_PATH="$path"/lib/x86_64-linux-gnu:"$path"/usr/lib:"$path"/usr/lib/x86_64-linux-gnu:"$path"/../matplotlib_repo/usr/lib
     break
   fi
 done
@@ -34,7 +34,7 @@ if [[ -z "$BASE_PATH" ]]; then
   exit 1
 fi
 
-export LD_LIBRARY_PATH="${BASE_PATH}/usr/lib/lapack:${BASE_PATH}/usr/lib/libblas:${BASE_PATH}/usr/lib/x86_64-linux-gnu"
+export LD_LIBRARY_PATH="${BASE_PATH}/usr/lib/lapack:${BASE_PATH}/usr/lib/libblas:${BASE_PATH}/usr/lib/x86_64-linux-gnu:${BASE_PATH}/../matplotlib_repo/rpathed3/usr/lib"
 
 # Prevent Python from importing the host's installed packages.
 exec "$BASE_PATH"/usr/bin/python3 -sS "$@"

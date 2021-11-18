@@ -37,12 +37,12 @@ def fast_gaussian(sigmas, sizes):
         ]) + " " + cpu_select({
             "amd64": "k8",
             "roborio": "roborio",
-            "armhf": "armhf-debian",
+            "armhf": "armv7",
             "cortex-m": "cortex-m",
             "cortex-m0plus": "cortex-m0plus",
         }),
         outs = headers + objects + htmls,
-        # The tool doesn't support anything other than k8 and armhf-debian
+        # The tool doesn't support anything other than k8 and armv7.
         # right now.
         target_compatible_with = platforms.any_of([
             "@platforms//cpu:x86_64",

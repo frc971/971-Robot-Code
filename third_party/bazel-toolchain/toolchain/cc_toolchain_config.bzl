@@ -13,7 +13,7 @@
 # limitations under the License.
 
 load(
-    "@bazel_tools//tools/cpp:unix_cc_toolchain_config.bzl",
+    "//bazel_tools_changes/tools/cpp:unix_cc_toolchain_config.bzl",
     unix_cc_toolchain_config = "cc_toolchain_config",
 )
 load(
@@ -33,11 +33,20 @@ def cc_toolchain_config(
         target_arch,
         target_os,
         toolchain_path_prefix,
+        target_toolchain_path_prefix,
         tools_path_prefix,
         wrapper_bin_prefix,
         sysroot_path,
         additional_include_dirs,
         llvm_version,
+        standard_library,
+        static_libstdcxx,
+        conlyopts,
+        cxxopts,
+        copts,
+        opt_copts,
+        dbg_copts,
+        linkopts,
         host_tools_info = {}):
     host_os_arch_key = _os_arch_pair(host_os, host_arch)
     target_os_arch_key = _os_arch_pair(target_os, target_arch)
@@ -55,6 +64,7 @@ def cc_toolchain_config(
         compiler,
         abi_version,
         abi_libc_version,
+        multiarch,
     ) = {
         "darwin-x86_64": (
             "clang-x86_64-darwin",
@@ -64,6 +74,7 @@ def cc_toolchain_config(
             "clang",
             "darwin_x86_64",
             "darwin_x86_64",
+            None,
         ),
         "linux-x86_64": (
             "clang-x86_64-linux",
@@ -73,6 +84,7 @@ def cc_toolchain_config(
             "clang",
             "clang",
             "glibc_unknown",
+            "x86_64-linux-gnu",
         ),
         "linux-aarch64": (
             "clang-aarch64-linux",
@@ -82,6 +94,17 @@ def cc_toolchain_config(
             "clang",
             "clang",
             "glibc_unknown",
+            "aarch64-linux-gnu",
+        ),
+        "linux-armv7": (
+            "clang-armv7-linux",
+            "armv7a-unknown-linux-gnueabihf",
+            "armv7",
+            "glibc_unknown",
+            "clang",
+            "clang",
+            "glibc_unknown",
+            "arm-linux-gnueabihf",
         ),
     }[target_os_arch_key]
 
@@ -96,14 +119,25 @@ def cc_toolchain_config(
         "-D__TIME__=\"redacted\"",
         "-fdebug-prefix-map={}=__bazel_toolchain_llvm_repo__/".format(toolchain_path_prefix),
     ]
+    if target_toolchain_path_prefix != toolchain_path_prefix:
+        unfiltered_compile_flags.extend([
+            "-fdebug-prefix-map={}=__bazel_target_toolchain_llvm_repo__/".format(target_toolchain_path_prefix),
+        ])
 
     is_xcompile = not (host_os == target_os and host_arch == target_arch)
+
+    resource_dir = [
+        "-resource-dir",
+        "{}lib/clang/{}".format(target_toolchain_path_prefix, llvm_version),
+    ]
 
     # Default compiler flags:
     compile_flags = [
         "--target=" + target_system_name,
         # Security
         "-U_FORTIFY_SOURCE",  # https://github.com/google/sanitizers/issues/247
+        "-D_FORTIFY_SOURCE=2",
+        "-ggdb3",
         "-fstack-protector",
         "-fno-omit-frame-pointer",
         # Diagnostics
@@ -111,14 +145,13 @@ def cc_toolchain_config(
         "-Wall",
         "-Wthread-safety",
         "-Wself-assign",
-    ]
+        "-B{}bin/".format(toolchain_path_prefix),
+    ] + resource_dir
 
-    dbg_compile_flags = ["-g", "-fstandalone-debug"]
+    dbg_compile_flags = ["-fstandalone-debug"]
 
     opt_compile_flags = [
-        "-g0",
         "-O2",
-        "-D_FORTIFY_SOURCE=1",
         "-DNDEBUG",
         "-ffunction-sections",
         "-fdata-sections",
@@ -128,7 +161,7 @@ def cc_toolchain_config(
         "--target=" + target_system_name,
         "-lm",
         "-no-canonical-prefixes",
-    ]
+    ] + resource_dir
     link_libs = []
 
     # Linker flags:
@@ -153,46 +186,129 @@ def cc_toolchain_config(
         ])
 
     # Flags related to C++ standard.
+    cxx_flags = [
+        "-std=c++17",
+    ]
+    compile_not_cxx_flags = []
+
+    # We only support getting libc++ from the toolchain for now. Is it worth
+    # supporting libc++ from the sysroot? Or maybe just part of a LLVM distribution
+    # that's built for the target?
+    if not standard_library and is_xcompile:
+        print("WARNING: Using libc++ for host architecture while cross compiling, this is " +
+              "probably not what you want. Explicitly set standard_libraries to libc++ to silence.")
+
     # The linker has no way of knowing if there are C++ objects; so we
     # always link C++ libraries.
-    if not is_xcompile:
-        cxx_flags = [
-            "-std=c++17",
+    if not standard_library or standard_library == "libc++":
+        cxx_flags.extend([
             "-stdlib=libc++",
-        ]
+        ])
         if use_lld:
             # For single-platform builds, we can statically link the bundled
             # libraries.
             link_flags.extend([
-                "-L{}lib".format(toolchain_path_prefix),
-                "-l:libc++.a",
-                "-l:libc++abi.a",
+                "-L{}lib".format(target_toolchain_path_prefix),
+            ])
+            if static_libstdcxx:
+                link_flags.extend([
+                    "-l:libc++.a",
+                    "-l:libc++abi.a",
+                ])
+            else:
+                link_flags.extend([
+                    "-l:libc++.so",
+                    "-l:libc++abi.so",
+                ])
+            link_flags.extend([
                 "-l:libunwind.a",
                 # Compiler runtime features.
                 "-rtlib=compiler-rt",
             ])
-            link_libs.extend([
-                # To support libunwind.
-                "-lpthread",
-                "-ldl",
-            ])
         else:
-            # TODO: Not sure how to achieve static linking of bundled libraries
-            # with ld64; maybe we don't really need it.
+            if not static_libstdcxx:
+                # TODO: Not sure how to achieve static linking of bundled libraries
+                # with ld64; maybe we don't really need it.
+                print("WARNING: static libc++ with non-lld linker not supported, ignoring")
             link_flags.extend([
                 "-lc++",
                 "-lc++abi",
             ])
-    else:
-        cxx_flags = [
-            "-std=c++17",
-            "-stdlib=libstdc++",
-        ]
+    elif standard_library.startswith("libstdc++"):
+        if not use_lld:
+            fail("libstdc++ only supported with lld")
 
-        # For xcompile, we expect to pick up these libraries from the sysroot.
+        # We use libgcc when using libstdc++ from a sysroot. Most libstdc++
+        # builds link to libgcc, which means we need to use libgcc's exception
+        # handling implementation, not the separate one in compiler-rt.
+        # Unfortunately, clang sometimes emits code incompatible with libgcc,
+        # see <https://bugs.llvm.org/show_bug.cgi?id=27455> and
+        # <https://lists.llvm.org/pipermail/cfe-dev/2016-April/048466.html> for
+        # example. This seems to be a commonly-used configuration with clang
+        # though, so it's probably good enough for most people.
+
         link_flags.extend([
-            "-l:libstdc++.a",
+            "-L{}lib".format(target_toolchain_path_prefix),
         ])
+
+        # We expect to pick up these libraries from the sysroot.
+        if static_libstdcxx:
+            link_flags.extend([
+                "-l:libstdc++.a",
+            ])
+        else:
+            link_flags.extend([
+                "-l:libstdc++.so",
+            ])
+
+        if standard_library == "libstdc++":
+            cxx_flags.extend([
+                "-stdlib=libstdc++",
+            ])
+        elif standard_library.startswith("libstdc++-"):
+            # -stdlib does nothing when using -nostdinc besides produce a warning
+            # that it's unused, so don't use it here.
+
+            libstdcxx_version = standard_library[len("libstdc++-"):]
+
+            common_include_flags = [
+                "-nostdinc",
+                "-isystem",
+                target_toolchain_path_prefix + "lib/clang/{}/include".format(llvm_version),
+                "-isystem",
+                sysroot_path + "/usr/local/include",
+                "-isystem",
+                sysroot_path + "/usr/" + multiarch + "/include",
+                "-isystem",
+                sysroot_path + "/usr/include/" + multiarch,
+                "-isystem",
+                sysroot_path + "/usr/include",
+                "-isystem",
+                sysroot_path + "/include",
+                "-isystem",
+                sysroot_path + "/usr/include",
+            ]
+            compile_not_cxx_flags.extend(common_include_flags)
+            cxx_flags.extend([
+                "-nostdinc++",
+                "-isystem",
+                sysroot_path + "/usr/include/c++/" + libstdcxx_version,
+                "-isystem",
+                sysroot_path + "/usr/include/" + multiarch + "/c++/" + libstdcxx_version,
+                "-isystem",
+                sysroot_path + "/usr/include/c++/" + libstdcxx_version + "/backward",
+            ] + common_include_flags)
+        else:
+            fail("Invalid standard_libary: " + standard_library)
+    else:
+        fail("Invalid standard_libary: " + standard_library)
+
+    link_libs.extend([
+        # To support libunwind. We do this even if not using libunwind explicitly
+        # to keep the resulting toolchains more similar.
+        "-lpthread",
+        "-ldl",
+    ])
 
     opt_link_flags = ["-Wl,--gc-sections"] if target_os == "linux" else []
 
@@ -205,9 +321,9 @@ def cc_toolchain_config(
 
     # C++ built-in include directories:
     cxx_builtin_include_directories = [
-        toolchain_path_prefix + "include/c++/v1",
-        toolchain_path_prefix + "lib/clang/{}/include".format(llvm_version),
-        toolchain_path_prefix + "lib64/clang/{}/include".format(llvm_version),
+        target_toolchain_path_prefix + "include/c++/v1",
+        target_toolchain_path_prefix + "lib/clang/{}/include".format(llvm_version),
+        target_toolchain_path_prefix + "lib64/clang/{}/include".format(llvm_version),
     ]
 
     sysroot_prefix = ""
@@ -275,6 +391,13 @@ def cc_toolchain_config(
     # `lld` is being used as the linker.
     supports_start_end_lib = use_lld
 
+    # Add extra flags at the end so they can override anything from this file if desired.
+    cxx_flags.extend(cxxopts)
+    compile_flags.extend(copts)
+    dbg_compile_flags.extend(dbg_copts)
+    opt_compile_flags.extend(opt_copts)
+    link_flags.extend(linkopts)
+
     # Source: https://cs.opensource.google/bazel/bazel/+/master:tools/cpp/unix_cc_toolchain_config.bzl
     unix_cc_toolchain_config(
         name = name,
@@ -292,6 +415,8 @@ def cc_toolchain_config(
         dbg_compile_flags = dbg_compile_flags,
         opt_compile_flags = opt_compile_flags,
         cxx_flags = cxx_flags,
+        c_flags = conlyopts,
+        compile_not_cxx_flags = compile_not_cxx_flags,
         link_flags = link_flags,
         link_libs = link_libs,
         opt_link_flags = opt_link_flags,

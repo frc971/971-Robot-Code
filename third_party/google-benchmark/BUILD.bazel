@@ -21,6 +21,7 @@ cc_library(
     copts = [
         "-Wno-format-nonliteral",
         "-Wno-deprecated-declarations",
+        "-Wno-unused-but-set-variable",
     ],
     linkopts = select({
         ":windows": ["-DEFAULTLIB:shlwapi.lib"],

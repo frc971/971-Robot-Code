@@ -14,7 +14,7 @@ cc_library(
     target_compatible_with = ["@platforms//cpu:x86_64"],
     visibility = ["//visibility:public"],
     deps = [
-        "@python_repo//:python3.7_lib",
+        "@python_repo//:python3.9_lib",
     ],
 )
 

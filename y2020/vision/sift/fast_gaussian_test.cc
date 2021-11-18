@@ -1,8 +1,8 @@
 #include "y2020/vision/sift/fast_gaussian.h"
 
 #include <opencv2/imgproc.hpp>
-#include "gtest/gtest.h"
 
+#include "gtest/gtest.h"
 #include "y2020/vision/sift/fast_gaussian_all.h"
 
 namespace frc971 {
@@ -36,13 +36,14 @@ TEST_F(FastGaussianTest, DefaultGaussianSize) {
   ExpectEqual(default_blurred, explicitly_blurred);
 }
 
-// Verifies that with 8U just a 9x9 blur is as much as you get.
-TEST_F(FastGaussianTest, GaussianSizeS8) {
+// Verifies that with 8U just a 9x9 blur is as much as you get, except for a bit
+// of rounding.
+TEST_F(FastGaussianTest, GaussianSize8U) {
   const auto image = RandomImage(500, 500, CV_8UC3);
   cv::Mat big_blurred, little_blurred;
   cv::GaussianBlur(image, big_blurred, cv::Size(15, 15), 1.6, 1.6);
   cv::GaussianBlur(image, little_blurred, cv::Size(9, 9), 1.6, 1.6);
-  ExpectEqual(big_blurred, little_blurred);
+  ExpectEqual(big_blurred, little_blurred, 3);
 }
 
 // Verifies that FastGaussian and cv::GaussianBlur give the same result.
@@ -61,7 +62,6 @@ TEST_F(FastGaussianTest, FastGaussian) {
   ASSERT_EQ(0,
             DoGeneratedFastGaussian(MatToHalide<const int16_t>(image),
                                     MatToHalide<int16_t>(fast_direct), kSigma));
-
 
   // 1500/65536 = 0.0228, which is under 3%, which is pretty close.
   ExpectEqual(slow, fast, 1500);

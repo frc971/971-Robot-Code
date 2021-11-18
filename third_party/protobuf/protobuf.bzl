@@ -196,6 +196,7 @@ COPTS = [
         "clang": [
             "-Wno-unused-const-variable",
             "-Wno-unused-private-field",
+            "-Wno-tautological-type-limit-compare",
         ],
     })
 

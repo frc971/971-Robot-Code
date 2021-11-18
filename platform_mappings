@@ -6,8 +6,8 @@ platforms:
   //tools/platforms:linux_roborio
     --cpu=roborio
 
-  //tools/platforms:linux_armhf
-    --cpu=armhf-debian
+  //tools/platforms:linux_armv7
+    --cpu=armv7
 
   //tools/platforms:cortex_m4f
     --cpu=cortex-m4f
@@ -22,8 +22,8 @@ flags:
   --cpu=roborio
     //tools/platforms:linux_roborio
 
-  --cpu=armhf-debian
-    //tools/platforms:linux_armhf
+  --cpu=armv7
+    //tools/platforms:linux_armv7
 
   --cpu=cortex-m4f
     //tools/platforms:cortex_m4f

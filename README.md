@@ -162,7 +162,7 @@ bazel build --config=roborio -c opt //y2020/...
 ```
 ```
 # For the raspberry pi:
-bazel build --config=armhf-debian -c opt //y2020/...
+bazel build --config=armv7 -c opt //y2020/...
 ```
 
   * Configuring a roborio: Freshly imaged roboRIOs need to be configured to run the 971 code
@@ -179,7 +179,7 @@ bazel run --config=roborio -c opt //y2020:download_stripped -- roboRIO-971-frc.l
 This assumes the roborio is reachable at `roboRIO-971-frc.local`.  If that does not work, you can try with a static IP address like `10.9.71.2` (see troubleshooting below)
 ```console
 # For the raspberry pi's
-bazel run --config=armhf-debian -c opt //y2020:pi_download_stripped -- 10.9.71.101
+bazel run --config=armv7 -c opt //y2020:pi_download_stripped -- 10.9.71.101
 ```
 NOTE:
   1. The raspberry pi's require that you have your ssh key installed on them in order to copy code over
@@ -187,9 +187,9 @@ NOTE:
 
   * Downloading specific targets to the robot
     1. Generally if you want to update what's running on the robot, you can use the `download_stripped` (or `pi_download_stripped`) targets.  These will rsync only the changed files, and so are pretty efficient.
-    2. If you have a need to compile a specific module, you can build stripped versions of the individual modules by adding "_stripped" to the module name.  For example, to build the calibration code (`//y2020/vision:calibration`) for the pi (`armhf-debian`), run:
+    2. If you have a need to compile a specific module, you can build stripped versions of the individual modules by adding "_stripped" to the module name.  For example, to build the calibration code (`//y2020/vision:calibration`) for the pi (`armv7`), run:
     ```console
-    bazel run --config=armhf-debian -c opt //y2020/vision:calibration_stripped
+    bazel run --config=armv7 -c opt //y2020/vision:calibration_stripped
     ```
     You will then need to manually copy the resulting file over to the robot.
 
@@ -251,7 +251,7 @@ Host roborio-971
 This allows you to use the alias to `ping`, `ssh`, or run commands like:
 ```
 # Download code to robot #7971's raspberry pi #2
-bazel run --config=armhf-debian -c opt //y2020:download_stripped -- pi-7971-2
+bazel run --config=armv7 -c opt //y2020:download_stripped -- pi-7971-2
 ```
 
 ### Roborio Kernel Traces
