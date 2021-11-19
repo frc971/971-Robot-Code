@@ -394,7 +394,7 @@ class UnpackedMessageHeader {
   // The local queue index.
   uint32_t queue_index = 0xffffffff;
 
-  std::optional<std::chrono::nanoseconds> monotonic_remote_time;
+  std::optional<aos::monotonic_clock::time_point> monotonic_remote_time;
 
   std::optional<realtime_clock::time_point> realtime_remote_time;
   std::optional<uint32_t> remote_queue_index;
