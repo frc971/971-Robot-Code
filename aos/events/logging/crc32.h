@@ -1,3 +1,6 @@
+#ifndef AOS_EVENTS_LOGGING_CRC32_H_
+#define AOS_EVENTS_LOGGING_CRC32_H_
+
 #include <stdint.h>
 
 #include <optional>
@@ -13,3 +16,5 @@ uint32_t AccumulateCrc32(
     std::optional<uint32_t> current_checksum = std::nullopt);
 
 }  // namespace aos
+
+#endif  // AOS_EVENTS_LOGGING_CRC32_H_
