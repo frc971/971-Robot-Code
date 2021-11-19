@@ -36,6 +36,13 @@ DEFINE_double(
     "Max time to let data sit in the queue before flushing in seconds.");
 
 DEFINE_double(
+    max_network_delay, 1.0,
+    "Max time to assume a message takes to cross the network before we are "
+    "willing to drop it from our buffers and assume it didn't make it.  "
+    "Increasing this number can increase memory usage depending on the packet "
+    "loss of your network or if the timestamps aren't logged for a message.");
+
+DEFINE_double(
     max_out_of_order, -1,
     "If set, this overrides the max out of order duration for a log file.");
 
@@ -1098,6 +1105,12 @@ TimestampMapper::TimestampMapper(std::vector<LogParts> parts)
             (my_node != node);
         node_data->any_delivered = node_data->any_delivered ||
                                    node_data->channels[channel_index].delivered;
+        if (node_data->channels[channel_index].delivered) {
+          const Connection *connection =
+              configuration::ConnectionToNode(channel, node);
+          node_data->channels[channel_index].time_to_live =
+              chrono::nanoseconds(connection->time_to_live());
+        }
         ++channel_index;
       }
     }
@@ -1278,6 +1291,7 @@ void TimestampMapper::QueueFor(chrono::nanoseconds time_estimation_buffer) {
 
 void TimestampMapper::PopFront() {
   CHECK(first_message_ != FirstMessage::kNeedsUpdate);
+  last_popped_message_time_ = Front()->monotonic_event_time;
   first_message_ = FirstMessage::kNeedsUpdate;
 
   matched_messages_.pop_front();
@@ -1360,8 +1374,7 @@ Message TimestampMapper::MatchingMessageFor(const Message &message) {
 
     CHECK_EQ(result.timestamp, monotonic_remote_time)
         << ": Queue index matches, but timestamp doesn't.  Please investigate!";
-    CHECK_EQ(result.data->realtime_sent_time,
-             realtime_remote_time)
+    CHECK_EQ(result.data->realtime_sent_time, realtime_remote_time)
         << ": Queue index matches, but timestamp doesn't.  Please investigate!";
     // Now drop the data off the front.  We have deduplicated timestamps, so we
     // are done.  And all the data is in order.
@@ -1436,10 +1449,38 @@ bool TimestampMapper::Queue() {
     if (!node_data.any_delivered) continue;
     if (!node_data.save_for_peer) continue;
     if (node_data.channels[m->channel_index].delivered) {
-      // TODO(austin): This copies the data...  Probably not worth stressing
-      // about yet.
-      // TODO(austin): Bound how big this can get.  We tend not to send
-      // massive data, so we can probably ignore this for a bit.
+      // If we have data but no timestamps (logs where the timestamps didn't get
+      // logged are classic), we can grow this indefinitely.  We don't need to
+      // keep anything that is older than the last message returned.
+
+      // We have the time on the source node.
+      // We care to wait until we have the time on the destination node.
+      std::deque<Message> &messages =
+          node_data.channels[m->channel_index].messages;
+      // Max delay over the network is the TTL, so let's take the queue time and
+      // add TTL to it.  Don't forget any messages which are reliable until
+      // someone can come up with a good reason to forget those too.
+      if (node_data.channels[m->channel_index].time_to_live >
+          chrono::nanoseconds(0)) {
+        // We need to make *some* assumptions about network delay for this to
+        // work.  We want to only look at the RX side.  This means we need to
+        // track the last time a message was popped from any channel from the
+        // node sending this message, and compare that to the max time we expect
+        // that a message will take to be delivered across the network.  This
+        // assumes that messages are popped in time order as a proxy for
+        // measuring the distributed time at this layer.
+        //
+        // Leave at least 1 message in here so we can handle reboots and
+        // messages getting sent twice.
+        while (messages.size() > 1u &&
+               messages.begin()->timestamp +
+                       node_data.channels[m->channel_index].time_to_live +
+                       chrono::duration_cast<chrono::nanoseconds>(
+                           chrono::duration<double>(FLAGS_max_network_delay)) <
+                   last_popped_message_time_) {
+          messages.pop_front();
+        }
+      }
       node_data.channels[m->channel_index].messages.emplace_back(*m);
     }
   }

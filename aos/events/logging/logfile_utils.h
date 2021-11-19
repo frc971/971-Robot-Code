@@ -727,6 +727,8 @@ class TimestampMapper {
       // Bool tracking per channel if a message is delivered to the node this
       // NodeData represents.
       bool delivered = false;
+      // The TTL for delivery.
+      std::chrono::nanoseconds time_to_live = std::chrono::nanoseconds(0);
     };
 
     // Vector with per channel data.
@@ -792,6 +794,7 @@ class TimestampMapper {
   // Timestamp of the last message returned.  Used to make sure nothing goes
   // backwards.
   BootTimestamp last_message_time_ = BootTimestamp::min_time();
+  BootTimestamp last_popped_message_time_ = BootTimestamp::min_time();
   // Time this node is queued up until.  Used for caching.
   BootTimestamp queued_until_ = BootTimestamp::min_time();
 
