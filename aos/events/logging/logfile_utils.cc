@@ -528,7 +528,16 @@ std::shared_ptr<UnpackedMessageHeader> MessageReader::ReadMessage() {
   const monotonic_clock::time_point timestamp = result->monotonic_sent_time;
 
   newest_timestamp_ = std::max(newest_timestamp_, timestamp);
-  VLOG(2) << "Read from " << filename() << " data " << FlatbufferToJson(msg);
+
+  if (VLOG_IS_ON(3)) {
+    VLOG(3) << "Read from " << filename() << " data " << FlatbufferToJson(msg);
+  } else if (VLOG_IS_ON(2)) {
+    SizePrefixedFlatbufferVector<MessageHeader> msg_copy = msg;
+    msg_copy.mutable_message()->clear_data();
+    VLOG(2) << "Read from " << filename() << " data "
+            << FlatbufferToJson(msg_copy);
+  }
+
   return result;
 }
 
