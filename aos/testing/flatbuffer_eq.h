@@ -51,7 +51,7 @@ inline auto FlatbufferUnwrapped(::testing::Matcher<const T *> matcher) {
 template <typename T>
 class FlatbufferEqMatcher : public ::testing::MatcherInterface<const T *> {
  public:
-  FlatbufferEqMatcher(aos::FlatbufferSpan<T> expected)
+  FlatbufferEqMatcher(aos::FlatbufferVector<T> expected)
       : expected_(std::move(expected)) {}
   ~FlatbufferEqMatcher() override = default;
 
@@ -70,7 +70,7 @@ class FlatbufferEqMatcher : public ::testing::MatcherInterface<const T *> {
   }
 
  private:
-  const aos::FlatbufferSpan<T> expected_;
+  const aos::FlatbufferVector<T> expected_;
 };
 
 // Returns a googlemock matcher which will compare a `const T *` or a `const
@@ -81,7 +81,7 @@ class FlatbufferEqMatcher : public ::testing::MatcherInterface<const T *> {
 template <typename T>
 inline auto FlatbufferEq(const aos::NonSizePrefixedFlatbuffer<T> &expected) {
   return FlatbufferUnwrapped(::testing::MakeMatcher(
-      new FlatbufferEqMatcher(aos::FlatbufferSpan<T>(expected))));
+      new FlatbufferEqMatcher(aos::FlatbufferVector<T>(expected))));
 }
 
 }  // namespace testing
