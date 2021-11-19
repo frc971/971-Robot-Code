@@ -1410,9 +1410,9 @@ Message TimestampMapper::MatchingMessageFor(const Message &message) {
         << ": Queue index matches, but timestamp doesn't.  Please "
            "investigate!";
 
-    // TODO(austin): We still go in order, so we can erase from the beginning to
-    // our iterator minus 1.  That'll keep 1 in the queue.
-    data_queue->erase(it);
+    // Erase everything up to this message.  We want to keep 1 message in the
+    // queue so we can handle reliable messages forwarded across boots.
+    data_queue->erase(data_queue->begin(), it);
 
     return result;
   }
