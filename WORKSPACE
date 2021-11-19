@@ -226,6 +226,8 @@ register_toolchains(
     #"//tools/cpp:cc-toolchain-cortex-m4f-k22",
     "//tools/python:python_toolchain",
     "//tools/go:noop_go_toolchain",
+    "//tools/rust:rust-toolchain-roborio",
+    "//tools/rust:noop_rust_toolchain",
 )
 
 load("//tools/ci:repo_defs.bzl", "ci_configure")
@@ -775,6 +777,29 @@ http_archive(
     name = "io_bazel_rules_webtesting",
     sha256 = "e9abb7658b6a129740c0b3ef6f5a2370864e102a5ba5ffca2cea565829ed825a",
     urls = ["https://github.com/bazelbuild/rules_webtesting/releases/download/0.3.5/rules_webtesting.tar.gz"],
+)
+
+http_archive(
+    name = "rules_rust",
+    sha256 = "531bdd470728b61ce41cf7604dc4f9a115983e455d46ac1d0c1632f613ab9fc3",
+    strip_prefix = "rules_rust-d8238877c0e552639d3e057aadd6bfcf37592408",
+    urls = [
+        # `main` branch as of 2021-08-23
+        "https://github.com/bazelbuild/rules_rust/archive/d8238877c0e552639d3e057aadd6bfcf37592408.tar.gz",
+    ],
+)
+
+load("@rules_rust//rust:repositories.bzl", "rust_repository_set")
+
+rust_repository_set(
+    name = "rust",
+    edition = "2021",
+    exec_triple = "x86_64-unknown-linux-gnu",
+    extra_target_triples = [
+        "arm-unknown-linux-gnueabi",
+        "armv7-unknown-linux-gnueabihf",
+    ],
+    version = "1.56.1",
 )
 
 # Flatbuffers

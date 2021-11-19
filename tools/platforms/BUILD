@@ -6,6 +6,7 @@ platform(
         "@platforms//os:linux",
         "@platforms//cpu:x86_64",
         "//tools/platforms/go:has_support",
+        "//tools/platforms/rust:has_support",
     ],
 )
 
@@ -16,6 +17,7 @@ platform(
         "@platforms//cpu:armv7",
         "//tools/platforms/hardware:raspberry_pi",
         "//tools/platforms/go:lacks_support",
+        "//tools/platforms/rust:has_support",
     ],
 )
 
@@ -25,6 +27,7 @@ platform(
         "@platforms//os:linux",
         "@platforms//cpu:arm64",
         "//tools/platforms/go:lacks_support",
+        "//tools/platforms/rust:has_support",
     ],
 )
 
@@ -35,6 +38,7 @@ platform(
         "@platforms//cpu:armv7",
         "//tools/platforms/hardware:roborio",
         "//tools/platforms/go:lacks_support",
+        "//tools/platforms/rust:has_support",
     ],
 )
 
@@ -44,6 +48,7 @@ platform(
         "@platforms//os:none",
         "//tools/platforms/hardware:cortex_m4f",
         "//tools/platforms/go:lacks_support",
+        "//tools/platforms/rust:lacks_support",
     ],
 )
 
@@ -53,6 +58,7 @@ platform(
         "@platforms//os:none",
         "//tools/platforms/hardware:cortex_m0plus",
         "//tools/platforms/go:lacks_support",
+        "//tools/platforms/rust:lacks_support",
     ],
 )
 
