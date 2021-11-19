@@ -552,10 +552,10 @@ std::shared_ptr<UnpackedMessageHeader> UnpackedMessageHeader::MakeMessage(
                             data_size);
   }
 
-  std::optional<std::chrono::nanoseconds> monotonic_remote_time;
+  std::optional<aos::monotonic_clock::time_point> monotonic_remote_time;
   if (message.has_monotonic_remote_time()) {
-    monotonic_remote_time =
-        std::chrono::nanoseconds(message.monotonic_remote_time());
+    monotonic_remote_time = aos::monotonic_clock::time_point(
+        std::chrono::nanoseconds(message.monotonic_remote_time()));
   }
   std::optional<realtime_clock::time_point> realtime_remote_time;
   if (message.has_realtime_remote_time()) {
@@ -724,7 +724,7 @@ std::ostream &operator<<(std::ostream &os, const UnpackedMessageHeader &m) {
      << ", .realtime_sent_time=" << m.realtime_sent_time
      << ", .queue_index=" << m.queue_index;
   if (m.monotonic_remote_time) {
-    os << ", .monotonic_remote_time=" << m.monotonic_remote_time->count();
+    os << ", .monotonic_remote_time=" << *m.monotonic_remote_time;
   }
   os << ", .realtime_remote_time=";
   PrintOptionalOrNull(&os, m.realtime_remote_time);
@@ -740,6 +740,12 @@ std::ostream &operator<<(std::ostream &os, const Message &m) {
   os << "{.channel_index=" << m.channel_index
      << ", .queue_index=" << m.queue_index << ", .timestamp=" << m.timestamp;
   if (m.data != nullptr) {
+    if (m.data->remote_queue_index.has_value()) {
+      os << ", .remote_queue_index=" << *m.data->remote_queue_index;
+    }
+    if (m.data->monotonic_remote_time.has_value()) {
+      os << ", .monotonic_remote_time=" << *m.data->monotonic_remote_time;
+    }
     os << ", .data=" << m.data;
   }
   os << "}";
@@ -1208,8 +1214,7 @@ bool TimestampMapper::QueueMatched() {
             BootQueueIndex{.boot = m->monotonic_remote_boot,
                            .index = m->data->remote_queue_index.value()},
         .monotonic_remote_time = {m->monotonic_remote_boot,
-                                  monotonic_clock::time_point(
-                                      m->data->monotonic_remote_time.value())},
+                                  m->data->monotonic_remote_time.value()},
         .realtime_remote_time = m->data->realtime_remote_time.value(),
         .monotonic_timestamp_time = {m->monotonic_timestamp_boot,
                                      m->data->monotonic_timestamp_time},
@@ -1282,8 +1287,7 @@ Message TimestampMapper::MatchingMessageFor(const Message &message) {
 
   const BootTimestamp monotonic_remote_time{
       .boot = message.monotonic_remote_boot,
-      .time = monotonic_clock::time_point(
-          message.data->monotonic_remote_time.value())};
+      .time = message.data->monotonic_remote_time.value()};
   const realtime_clock::time_point realtime_remote_time =
       *message.data->realtime_remote_time;
 
