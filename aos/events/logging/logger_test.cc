@@ -456,6 +456,97 @@ std::ostream &operator<<(std::ostream &ostream, const ConfigParams &params) {
   return ostream;
 }
 
+struct LoggerState {
+  static LoggerState MakeLogger(NodeEventLoopFactory *node,
+                                SimulatedEventLoopFactory *factory,
+                                CompressionParams params,
+                                const Configuration *configuration = nullptr) {
+    if (configuration == nullptr) {
+      configuration = factory->configuration();
+    }
+    return {node->MakeEventLoop("logger"),
+            {},
+            configuration,
+            configuration::GetNode(configuration, node->node()),
+            nullptr,
+            params};
+  }
+
+  void StartLogger(std::string logfile_base) {
+    CHECK(!logfile_base.empty());
+
+    logger = std::make_unique<Logger>(event_loop.get(), configuration);
+    logger->set_polling_period(std::chrono::milliseconds(100));
+    logger->set_name(
+        absl::StrCat("name_prefix_", event_loop->node()->name()->str()));
+    event_loop->OnRun([this, logfile_base]() {
+      std::unique_ptr<MultiNodeLogNamer> namer =
+          std::make_unique<MultiNodeLogNamer>(logfile_base, configuration,
+                                              event_loop.get(), node);
+      namer->set_extension(params.extension);
+      namer->set_encoder_factory(params.encoder_factory);
+      log_namer = namer.get();
+
+      logger->StartLogging(std::move(namer));
+    });
+  }
+
+  std::unique_ptr<EventLoop> event_loop;
+  std::unique_ptr<Logger> logger;
+  const Configuration *configuration;
+  const Node *node;
+  MultiNodeLogNamer *log_namer;
+  CompressionParams params;
+
+  void AppendAllFilenames(std::vector<std::string> *filenames) {
+    for (const std::string &file : log_namer->all_filenames()) {
+      const std::string_view separator =
+          log_namer->base_name().back() == '/' ? "" : "_";
+      filenames->emplace_back(
+          absl::StrCat(log_namer->base_name(), separator, file));
+    }
+  }
+
+  ~LoggerState() {
+    if (logger) {
+      for (const std::string &file : log_namer->all_filenames()) {
+        LOG(INFO) << "Wrote to " << file;
+      }
+    }
+  }
+};
+
+void ConfirmReadable(const std::vector<std::string> &files) {
+  {
+    LogReader reader(SortParts(files));
+
+    SimulatedEventLoopFactory log_reader_factory(reader.configuration());
+    reader.Register(&log_reader_factory);
+
+    log_reader_factory.Run();
+
+    reader.Deregister();
+  }
+  {
+    LogReader reader(SortParts(files));
+
+    SimulatedEventLoopFactory log_reader_factory(reader.configuration());
+    reader.RegisterWithoutStarting(&log_reader_factory);
+    if (configuration::MultiNode(log_reader_factory.configuration())) {
+      for (const aos::Node *node :
+           *log_reader_factory.configuration()->nodes()) {
+        reader.OnStart(node, [node]() {
+          LOG(INFO) << "Starting " << node->name()->string_view();
+        });
+      }
+    }
+
+    log_reader_factory.Run();
+
+    reader.Deregister();
+  }
+}
+
 class MultinodeLoggerTest : public ::testing::TestWithParam<
                                 std::tuple<ConfigParams, CompressionParams>> {
  public:
@@ -722,28 +813,14 @@ class MultinodeLoggerTest : public ::testing::TestWithParam<
     return absl::StrCat(".bfbs", std::get<1>(GetParam()).extension);
   }
 
-  struct LoggerState {
-    std::unique_ptr<EventLoop> event_loop;
-    std::unique_ptr<Logger> logger;
-    const Configuration *configuration;
-    const Node *node;
-    MultiNodeLogNamer *log_namer;
-  };
-
   LoggerState MakeLogger(NodeEventLoopFactory *node,
                          SimulatedEventLoopFactory *factory = nullptr,
                          const Configuration *configuration = nullptr) {
     if (factory == nullptr) {
       factory = &event_loop_factory_;
     }
-    if (configuration == nullptr) {
-      configuration = factory->configuration();
-    }
-    return {node->MakeEventLoop("logger"),
-            {},
-            configuration,
-            configuration::GetNode(configuration, node->node()),
-            nullptr};
+    return LoggerState::MakeLogger(node, factory, std::get<1>(GetParam()),
+                                   configuration);
   }
 
   void StartLogger(LoggerState *logger, std::string logfile_base = "") {
@@ -754,23 +831,7 @@ class MultinodeLoggerTest : public ::testing::TestWithParam<
         logfile_base = logfile_base2_;
       }
     }
-
-    logger->logger = std::make_unique<Logger>(logger->event_loop.get(),
-                                              logger->configuration);
-    logger->logger->set_polling_period(std::chrono::milliseconds(100));
-    logger->logger->set_name(absl::StrCat(
-        "name_prefix_", logger->event_loop->node()->name()->str()));
-    logger->event_loop->OnRun([logger, logfile_base]() {
-      std::unique_ptr<MultiNodeLogNamer> namer =
-          std::make_unique<MultiNodeLogNamer>(
-              logfile_base, logger->configuration, logger->event_loop.get(),
-              logger->node);
-      namer->set_extension(std::get<1>(GetParam()).extension);
-      namer->set_encoder_factory(std::get<1>(GetParam()).encoder_factory);
-      logger->log_namer = namer.get();
-
-      logger->logger->StartLogging(std::move(namer));
-    });
+    logger->StartLogger(logfile_base);
   }
 
   void VerifyParts(const std::vector<LogFile> &sorted_parts,
@@ -842,17 +903,6 @@ class MultinodeLoggerTest : public ::testing::TestWithParam<
 
     EXPECT_THAT(sorted_parts[0].corrupted, ::testing::Eq(corrupted_parts));
     EXPECT_THAT(sorted_parts[1].corrupted, ::testing::Eq(corrupted_parts));
-  }
-
-  void ConfirmReadable(const std::vector<std::string> &files) {
-    LogReader reader(SortParts(files));
-
-    SimulatedEventLoopFactory log_reader_factory(reader.configuration());
-    reader.Register(&log_reader_factory);
-
-    log_reader_factory.Run();
-
-    reader.Deregister();
   }
 
   void AddExtension(std::string_view extension) {
@@ -1042,12 +1092,11 @@ TEST_P(MultinodeLoggerTest, SimpleMultiNode) {
         sorted_log_files[0].config;
 
     // Timing reports, pings
-    EXPECT_THAT(
-        CountChannelsData(config, logfiles_[2]),
-        UnorderedElementsAre(
-            std::make_tuple("/pi1/aos", "aos.message_bridge.ServerStatistics",
-                            1),
-            std::make_tuple("/test", "aos.examples.Ping", 1)))
+    EXPECT_THAT(CountChannelsData(config, logfiles_[2]),
+                UnorderedElementsAre(
+                    std::make_tuple("/pi1/aos",
+                                    "aos.message_bridge.ServerStatistics", 1),
+                    std::make_tuple("/test", "aos.examples.Ping", 1)))
         << " : " << logfiles_[2];
     EXPECT_THAT(
         CountChannelsData(config, logfiles_[3]),
@@ -2189,8 +2238,7 @@ TEST_P(MultinodeLoggerTest, MessageHeader) {
 // up a clock difference between 2 nodes and looking at the resulting parts.
 TEST_P(MultinodeLoggerTest, LoggerStartTime) {
   time_converter_.AddMonotonic(
-      {BootTimestamp::epoch(),
-       BootTimestamp::epoch() + chrono::seconds(1000)});
+      {BootTimestamp::epoch(), BootTimestamp::epoch() + chrono::seconds(1000)});
   {
     LoggerState pi1_logger = MakeLogger(pi1_);
     LoggerState pi2_logger = MakeLogger(pi2_);
@@ -2228,8 +2276,7 @@ TEST_F(MultinodeLoggerTest, LoggerRenameFolder) {
   util::UnlinkRecursive(tmp_dir_ + "/renamefolder");
   util::UnlinkRecursive(tmp_dir_ + "/new-good");
   time_converter_.AddMonotonic(
-      {BootTimestamp::epoch(),
-       BootTimestamp::epoch() + chrono::seconds(1000)});
+      {BootTimestamp::epoch(), BootTimestamp::epoch() + chrono::seconds(1000)});
   logfile_base1_ = tmp_dir_ + "/renamefolder/multi_logfile1";
   logfile_base2_ = tmp_dir_ + "/renamefolder/multi_logfile2";
   logfiles_ = MakeLogFiles(logfile_base1_, logfile_base2_);
@@ -2475,8 +2522,7 @@ TEST_P(MultinodeLoggerTest, RemoteReboot) {
 TEST_P(MultinodeLoggerTest, OneDirectionWithNegativeSlope) {
   pi1_->Disconnect(pi2_->node());
   time_converter_.AddMonotonic(
-      {BootTimestamp::epoch(),
-       BootTimestamp::epoch() + chrono::seconds(1000)});
+      {BootTimestamp::epoch(), BootTimestamp::epoch() + chrono::seconds(1000)});
 
   time_converter_.AddMonotonic(
       {chrono::milliseconds(10000),
@@ -2501,8 +2547,7 @@ TEST_P(MultinodeLoggerTest, OneDirectionWithNegativeSlope) {
 TEST_P(MultinodeLoggerTest, OneDirectionWithPositiveSlope) {
   pi1_->Disconnect(pi2_->node());
   time_converter_.AddMonotonic(
-      {BootTimestamp::epoch(),
-       BootTimestamp::epoch() + chrono::seconds(500)});
+      {BootTimestamp::epoch(), BootTimestamp::epoch() + chrono::seconds(500)});
 
   time_converter_.AddMonotonic(
       {chrono::milliseconds(10000),
@@ -2526,8 +2571,7 @@ TEST_P(MultinodeLoggerTest, OneDirectionWithPositiveSlope) {
 // error than an out of order error.
 TEST_P(MultinodeLoggerTest, DuplicateLogFiles) {
   time_converter_.AddMonotonic(
-      {BootTimestamp::epoch(),
-       BootTimestamp::epoch() + chrono::seconds(1000)});
+      {BootTimestamp::epoch(), BootTimestamp::epoch() + chrono::seconds(1000)});
   {
     LoggerState pi1_logger = MakeLogger(pi1_);
 
@@ -2552,8 +2596,7 @@ TEST_P(MultinodeLoggerTest, DeadNode) {
   pi1_->Disconnect(pi2_->node());
   pi2_->Disconnect(pi1_->node());
   time_converter_.AddMonotonic(
-      {BootTimestamp::epoch(),
-       BootTimestamp::epoch() + chrono::seconds(1000)});
+      {BootTimestamp::epoch(), BootTimestamp::epoch() + chrono::seconds(1000)});
   {
     LoggerState pi1_logger = MakeLogger(pi1_);
 
@@ -2650,8 +2693,8 @@ TEST_P(MultinodeLoggerTest, LogDifferentConfig) {
         MakeLogger(log_reader_factory.GetNodeEventLoopFactory("pi2"),
                    &log_reader_factory, reader.logged_configuration());
 
-    StartLogger(&pi1_logger, tmp_dir_ + "/relogged1");
-    StartLogger(&pi2_logger, tmp_dir_ + "/relogged2");
+    pi1_logger.StartLogger(tmp_dir_ + "/relogged1");
+    pi2_logger.StartLogger(tmp_dir_ + "/relogged2");
 
     log_reader_factory.Run();
 
@@ -2674,6 +2717,289 @@ TEST_P(MultinodeLoggerTest, LogDifferentConfig) {
     relogged_reader.event_loop_factory()->Run();
   }
 }
+
+// Tests that we properly replay a log where the start time for a node is before
+// any data on the node.  This can happen if the logger starts before data is
+// published.  While the scenario below is a bit convoluted, we have seen logs
+// like this generated out in the wild.
+TEST(MultinodeRebootLoggerTest, StartTimeBeforeData) {
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+      aos::configuration::ReadConfig(ArtifactPath(
+          "aos/events/logging/multinode_pingpong_split3_config.json"));
+  message_bridge::TestingTimeConverter time_converter(
+      configuration::NodesCount(&config.message()));
+  SimulatedEventLoopFactory event_loop_factory(&config.message());
+  event_loop_factory.SetTimeConverter(&time_converter);
+  NodeEventLoopFactory *const pi1 =
+      event_loop_factory.GetNodeEventLoopFactory("pi1");
+  const size_t pi1_index = configuration::GetNodeIndex(
+      event_loop_factory.configuration(), pi1->node());
+  NodeEventLoopFactory *const pi2 =
+      event_loop_factory.GetNodeEventLoopFactory("pi2");
+  const size_t pi2_index = configuration::GetNodeIndex(
+      event_loop_factory.configuration(), pi2->node());
+  NodeEventLoopFactory *const pi3 =
+      event_loop_factory.GetNodeEventLoopFactory("pi3");
+  const size_t pi3_index = configuration::GetNodeIndex(
+      event_loop_factory.configuration(), pi3->node());
+
+  const std::string kLogfile1_1 =
+      aos::testing::TestTmpDir() + "/multi_logfile1/";
+  const std::string kLogfile2_1 =
+      aos::testing::TestTmpDir() + "/multi_logfile2.1/";
+  const std::string kLogfile2_2 =
+      aos::testing::TestTmpDir() + "/multi_logfile2.2/";
+  const std::string kLogfile3_1 =
+      aos::testing::TestTmpDir() + "/multi_logfile3/";
+  util::UnlinkRecursive(kLogfile1_1);
+  util::UnlinkRecursive(kLogfile2_1);
+  util::UnlinkRecursive(kLogfile2_2);
+  util::UnlinkRecursive(kLogfile3_1);
+  const UUID pi1_boot0 = UUID::Random();
+  const UUID pi2_boot0 = UUID::Random();
+  const UUID pi2_boot1 = UUID::Random();
+  const UUID pi3_boot0 = UUID::Random();
+  {
+    CHECK_EQ(pi1_index, 0u);
+    CHECK_EQ(pi2_index, 1u);
+    CHECK_EQ(pi3_index, 2u);
+
+    time_converter.set_boot_uuid(pi1_index, 0, pi1_boot0);
+    time_converter.set_boot_uuid(pi2_index, 0, pi2_boot0);
+    time_converter.set_boot_uuid(pi2_index, 1, pi2_boot1);
+    time_converter.set_boot_uuid(pi3_index, 0, pi3_boot0);
+
+    time_converter.AddNextTimestamp(
+        distributed_clock::epoch(),
+        {BootTimestamp::epoch(), BootTimestamp::epoch(),
+         BootTimestamp::epoch()});
+    const chrono::nanoseconds reboot_time = chrono::milliseconds(20000);
+    time_converter.AddNextTimestamp(
+        distributed_clock::epoch() + reboot_time,
+        {BootTimestamp::epoch() + reboot_time,
+         BootTimestamp{
+             .boot = 1,
+             .time = monotonic_clock::epoch() + chrono::milliseconds(1323)},
+         BootTimestamp::epoch() + reboot_time});
+  }
+
+  // Make everything perfectly quiet.
+  event_loop_factory.SkipTimingReport();
+  event_loop_factory.DisableStatistics();
+
+  std::vector<std::string> filenames;
+  {
+    LoggerState pi1_logger = LoggerState::MakeLogger(
+        pi1, &event_loop_factory, SupportedCompressionAlgorithms()[0]);
+    LoggerState pi3_logger = LoggerState::MakeLogger(
+        pi3, &event_loop_factory, SupportedCompressionAlgorithms()[0]);
+    {
+      // And now start the logger.
+      LoggerState pi2_logger = LoggerState::MakeLogger(
+          pi2, &event_loop_factory, SupportedCompressionAlgorithms()[0]);
+
+      event_loop_factory.RunFor(chrono::milliseconds(1000));
+
+      pi1_logger.StartLogger(kLogfile1_1);
+      pi3_logger.StartLogger(kLogfile3_1);
+      pi2_logger.StartLogger(kLogfile2_1);
+
+      event_loop_factory.RunFor(chrono::milliseconds(10000));
+
+      // Now that we've got a start time in the past, turn on data.
+      event_loop_factory.EnableStatistics();
+      std::unique_ptr<aos::EventLoop> ping_event_loop =
+          pi1->MakeEventLoop("ping");
+      Ping ping(ping_event_loop.get());
+
+      pi2->AlwaysStart<Pong>("pong");
+
+      event_loop_factory.RunFor(chrono::milliseconds(3000));
+
+      pi2_logger.AppendAllFilenames(&filenames);
+
+      // Stop logging on pi2 before rebooting and completely shut off all
+      // messages on pi2.
+      pi2->DisableStatistics();
+      pi1->Disconnect(pi2->node());
+      pi2->Disconnect(pi1->node());
+    }
+    event_loop_factory.RunFor(chrono::milliseconds(7000));
+    // pi2 now reboots.
+    {
+      event_loop_factory.RunFor(chrono::milliseconds(1000));
+
+      // Start logging again on pi2 after it is up.
+      LoggerState pi2_logger = LoggerState::MakeLogger(
+          pi2, &event_loop_factory, SupportedCompressionAlgorithms()[0]);
+      pi2_logger.StartLogger(kLogfile2_2);
+
+      event_loop_factory.RunFor(chrono::milliseconds(10000));
+      // And, now that we have a start time in the log, turn data back on.
+      pi2->EnableStatistics();
+      pi1->Connect(pi2->node());
+      pi2->Connect(pi1->node());
+
+      pi2->AlwaysStart<Pong>("pong");
+      std::unique_ptr<aos::EventLoop> ping_event_loop =
+          pi1->MakeEventLoop("ping");
+      Ping ping(ping_event_loop.get());
+
+      event_loop_factory.RunFor(chrono::milliseconds(3000));
+
+      pi2_logger.AppendAllFilenames(&filenames);
+    }
+
+    pi1_logger.AppendAllFilenames(&filenames);
+    pi3_logger.AppendAllFilenames(&filenames);
+  }
+
+  // Confirm that we can parse the result.  LogReader has enough internal CHECKs
+  // to confirm the right thing happened.
+  const std::vector<LogFile> sorted_parts = SortParts(filenames);
+  ConfirmReadable(filenames);
+}
+
+// Tests that local data before remote data after reboot is properly replayed.
+// We only trigger a reboot in the timestamp interpolation function when solving
+// the timestamp problem when we actually have a point in the function.  This
+// originally only happened when a point passes the noncausal filter.  At the
+// start of time for the second boot, if we aren't careful, we will have
+// messages which need to be published at times before the boot.  This happens
+// when a local message is in the log before a forwarded message, so there is no
+// point in the interpolation function.  This delays the reboot.  So, we need to
+// recreate that situation and make sure it doesn't come back.
+TEST(MultinodeRebootLoggerTest, LocalMessageBeforeRemoteBeforeStartAfterReboot) {
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+      aos::configuration::ReadConfig(ArtifactPath(
+          "aos/events/logging/multinode_pingpong_split3_config.json"));
+  message_bridge::TestingTimeConverter time_converter(
+      configuration::NodesCount(&config.message()));
+  SimulatedEventLoopFactory event_loop_factory(&config.message());
+  event_loop_factory.SetTimeConverter(&time_converter);
+  NodeEventLoopFactory *const pi1 =
+      event_loop_factory.GetNodeEventLoopFactory("pi1");
+  const size_t pi1_index = configuration::GetNodeIndex(
+      event_loop_factory.configuration(), pi1->node());
+  NodeEventLoopFactory *const pi2 =
+      event_loop_factory.GetNodeEventLoopFactory("pi2");
+  const size_t pi2_index = configuration::GetNodeIndex(
+      event_loop_factory.configuration(), pi2->node());
+  NodeEventLoopFactory *const pi3 =
+      event_loop_factory.GetNodeEventLoopFactory("pi3");
+  const size_t pi3_index = configuration::GetNodeIndex(
+      event_loop_factory.configuration(), pi3->node());
+
+  const std::string kLogfile1_1 =
+      aos::testing::TestTmpDir() + "/multi_logfile1/";
+  const std::string kLogfile2_1 =
+      aos::testing::TestTmpDir() + "/multi_logfile2.1/";
+  const std::string kLogfile2_2 =
+      aos::testing::TestTmpDir() + "/multi_logfile2.2/";
+  const std::string kLogfile3_1 =
+      aos::testing::TestTmpDir() + "/multi_logfile3/";
+  util::UnlinkRecursive(kLogfile1_1);
+  util::UnlinkRecursive(kLogfile2_1);
+  util::UnlinkRecursive(kLogfile2_2);
+  util::UnlinkRecursive(kLogfile3_1);
+  const UUID pi1_boot0 = UUID::Random();
+  const UUID pi2_boot0 = UUID::Random();
+  const UUID pi2_boot1 = UUID::Random();
+  const UUID pi3_boot0 = UUID::Random();
+  {
+    CHECK_EQ(pi1_index, 0u);
+    CHECK_EQ(pi2_index, 1u);
+    CHECK_EQ(pi3_index, 2u);
+
+    time_converter.set_boot_uuid(pi1_index, 0, pi1_boot0);
+    time_converter.set_boot_uuid(pi2_index, 0, pi2_boot0);
+    time_converter.set_boot_uuid(pi2_index, 1, pi2_boot1);
+    time_converter.set_boot_uuid(pi3_index, 0, pi3_boot0);
+
+    time_converter.AddNextTimestamp(
+        distributed_clock::epoch(),
+        {BootTimestamp::epoch(), BootTimestamp::epoch(),
+         BootTimestamp::epoch()});
+    const chrono::nanoseconds reboot_time = chrono::milliseconds(5000);
+    time_converter.AddNextTimestamp(
+        distributed_clock::epoch() + reboot_time,
+        {BootTimestamp::epoch() + reboot_time,
+         BootTimestamp{
+             .boot = 1,
+             .time = monotonic_clock::epoch() + reboot_time + chrono::seconds(100)},
+         BootTimestamp::epoch() + reboot_time});
+  }
+
+  std::vector<std::string> filenames;
+  {
+    LoggerState pi1_logger = LoggerState::MakeLogger(
+        pi1, &event_loop_factory, SupportedCompressionAlgorithms()[0]);
+    LoggerState pi3_logger = LoggerState::MakeLogger(
+        pi3, &event_loop_factory, SupportedCompressionAlgorithms()[0]);
+    {
+      // And now start the logger.
+      LoggerState pi2_logger = LoggerState::MakeLogger(
+          pi2, &event_loop_factory, SupportedCompressionAlgorithms()[0]);
+
+      pi1_logger.StartLogger(kLogfile1_1);
+      pi3_logger.StartLogger(kLogfile3_1);
+      pi2_logger.StartLogger(kLogfile2_1);
+
+      event_loop_factory.RunFor(chrono::milliseconds(1005));
+
+      // Now that we've got a start time in the past, turn on data.
+      std::unique_ptr<aos::EventLoop> ping_event_loop =
+          pi1->MakeEventLoop("ping");
+      Ping ping(ping_event_loop.get());
+
+      pi2->AlwaysStart<Pong>("pong");
+
+      event_loop_factory.RunFor(chrono::milliseconds(3000));
+
+      pi2_logger.AppendAllFilenames(&filenames);
+
+      // Disable any remote messages on pi2.
+      pi1->Disconnect(pi2->node());
+      pi2->Disconnect(pi1->node());
+    }
+    event_loop_factory.RunFor(chrono::milliseconds(995));
+    // pi2 now reboots at 5 seconds.
+    {
+      event_loop_factory.RunFor(chrono::milliseconds(1000));
+
+      // Make local stuff happen before we start logging and connect the remote.
+      pi2->AlwaysStart<Pong>("pong");
+      std::unique_ptr<aos::EventLoop> ping_event_loop =
+          pi1->MakeEventLoop("ping");
+      Ping ping(ping_event_loop.get());
+      event_loop_factory.RunFor(chrono::milliseconds(1005));
+
+      // Start logging again on pi2 after it is up.
+      LoggerState pi2_logger = LoggerState::MakeLogger(
+          pi2, &event_loop_factory, SupportedCompressionAlgorithms()[0]);
+      pi2_logger.StartLogger(kLogfile2_2);
+
+      // And allow remote messages now that we have some local ones.
+      pi1->Connect(pi2->node());
+      pi2->Connect(pi1->node());
+
+      event_loop_factory.RunFor(chrono::milliseconds(1000));
+
+      event_loop_factory.RunFor(chrono::milliseconds(3000));
+
+      pi2_logger.AppendAllFilenames(&filenames);
+    }
+
+    pi1_logger.AppendAllFilenames(&filenames);
+    pi3_logger.AppendAllFilenames(&filenames);
+  }
+
+  // Confirm that we can parse the result.  LogReader has enough internal CHECKs
+  // to confirm the right thing happened.
+  const std::vector<LogFile> sorted_parts = SortParts(filenames);
+  ConfirmReadable(filenames);
+}
+
 
 }  // namespace testing
 }  // namespace logger

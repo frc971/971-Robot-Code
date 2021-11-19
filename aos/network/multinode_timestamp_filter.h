@@ -331,6 +331,9 @@ class MultiNodeNoncausalOffsetEstimator final
  private:
   TimestampProblem MakeProblem();
 
+  // Returns the next solution, the filter which has the control point for it
+  // (or nullptr if a start time triggered this to be returned), and the node
+  // which triggered it.
   std::tuple<NoncausalTimestampFilter *, std::vector<logger::BootTimestamp>,
              int>
   NextSolution(TimestampProblem *problem,

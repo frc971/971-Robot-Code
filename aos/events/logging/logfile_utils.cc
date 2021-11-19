@@ -1005,6 +1005,8 @@ Message *NodeMerger::Front() {
   if (oldest) {
     CHECK_GE(oldest->timestamp.time, last_message_time_);
     last_message_time_ = oldest->timestamp.time;
+    monotonic_oldest_time_ =
+        std::min(monotonic_oldest_time_, oldest->timestamp.time);
   } else {
     last_message_time_ = monotonic_clock::max_time;
   }
