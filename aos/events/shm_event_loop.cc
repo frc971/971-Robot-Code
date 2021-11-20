@@ -1092,7 +1092,7 @@ void ShmEventLoop::Run() {
     logging::ScopedLogRestorer prev_logger;
     AosLogToFbs aos_logger;
     if (!skip_logger_) {
-      aos_logger.Initialize(MakeSender<logging::LogMessageFbs>("/aos"));
+      aos_logger.Initialize(&name_, MakeSender<logging::LogMessageFbs>("/aos"));
       prev_logger.Swap(aos_logger.implementation());
     }
 

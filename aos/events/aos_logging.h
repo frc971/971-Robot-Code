@@ -11,7 +11,10 @@ class AosLogToFbs {
  public:
   AosLogToFbs() {}
 
-  void Initialize(Sender<logging::LogMessageFbs> log_sender);
+  // Initializes a sender with the provided name and sender.  Note: the name
+  // needs to be valid until this object is destroyed.
+  void Initialize(const std::string *name,
+                  Sender<logging::LogMessageFbs> log_sender);
   std::shared_ptr<logging::LogImplementation> implementation() const {
     return implementation_;
   }

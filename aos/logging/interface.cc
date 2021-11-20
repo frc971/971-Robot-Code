@@ -49,8 +49,9 @@ void VLog(log_level level, const char *format, va_list ap) {
     implementation->DoLog(level, format, ap1);
   } else {
     aos::logging::LogMessage message;
-    aos::logging::internal::FillInMessage(level, aos::monotonic_clock::now(),
-                                          format, ap, &message);
+    aos::logging::internal::FillInMessage(level, context->MyName(),
+                                          aos::monotonic_clock::now(), format,
+                                          ap, &message);
     aos::logging::internal::PrintMessage(stderr, message);
   }
   va_end(ap1);

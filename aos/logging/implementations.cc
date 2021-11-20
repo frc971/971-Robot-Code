@@ -15,15 +15,15 @@ namespace {
 
 namespace chrono = ::std::chrono;
 
-void FillInMessageBase(log_level level,
+void FillInMessageBase(log_level level, std::string_view name,
                        monotonic_clock::time_point monotonic_now,
                        LogMessage *message) {
   Context *context = Context::Get();
 
   message->level = level;
   message->source = context->source;
-  memcpy(message->name, context->name, context->name_size);
-  message->name_length = context->name_size;
+  memcpy(message->name, name.data(), name.size());
+  message->name_length = name.size();
 
   message->seconds =
       chrono::duration_cast<chrono::seconds>(monotonic_now.time_since_epoch())
@@ -38,9 +38,10 @@ void FillInMessageBase(log_level level,
 
 }  // namespace
 
-void FillInMessage(log_level level, monotonic_clock::time_point monotonic_now,
+void FillInMessage(log_level level, std::string_view name,
+                   monotonic_clock::time_point monotonic_now,
                    const char *format, va_list ap, LogMessage *message) {
-  FillInMessageBase(level, monotonic_now, message);
+  FillInMessageBase(level, name, monotonic_now, message);
 
   message->message_length =
       ExecuteFormat(message->message, sizeof(message->message), format, ap);
@@ -60,7 +61,8 @@ void PrintMessage(FILE *output, const LogMessage &message) {
 void HandleMessageLogImplementation::DoLog(log_level level, const char *format,
                                            va_list ap) {
   LogMessage message;
-  internal::FillInMessage(level, monotonic_now(), format, ap, &message);
+  internal::FillInMessage(level, MyName(), monotonic_now(), format, ap,
+                          &message);
   HandleMessage(message);
 }
 

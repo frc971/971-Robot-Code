@@ -27,13 +27,14 @@ class ActorBase {
       : event_loop_(event_loop),
         status_sender_(event_loop->MakeSender<Status>(name)),
         goal_fetcher_(event_loop->MakeFetcher<GoalType>(name)) {
-    AOS_LOG(INFO, "Constructing action %s\n", name.c_str());
     event_loop->MakeWatcher(name,
                             [this](const GoalType &goal) { HandleGoal(goal); });
 
     // Send out an inital status saying we aren't running to wake up any users
     // who might be waiting forever for the previous action.
     event_loop->OnRun([this]() {
+      AOS_LOG(INFO, "Constructing action %s\n",
+              status_sender_.channel()->name()->c_str());
       auto builder = status_sender_.MakeBuilder();
       Status::Builder status_builder = builder.template MakeBuilder<Status>();
       status_builder.add_running(0);

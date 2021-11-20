@@ -38,7 +38,10 @@ class ShmEventLoop : public EventLoop {
   ShmEventLoop(const Flatbuffer<Configuration> &configuration)
       : ShmEventLoop(&configuration.message()) {}
   ShmEventLoop(const Configuration *configuration);
+  ShmEventLoop(const ShmEventLoop &) = delete;
   ~ShmEventLoop() override;
+
+  void operator=(ShmEventLoop const &) = delete;
 
   // Runs the event loop until Exit is called, or ^C is caught.
   void Run();

@@ -2,7 +2,8 @@
 
 namespace aos {
 
-void AosLogToFbs::Initialize(Sender<logging::LogMessageFbs> log_sender) {
+void AosLogToFbs::Initialize(const std::string *name,
+                             Sender<logging::LogMessageFbs> log_sender) {
   log_sender_ = std::move(log_sender);
   if (log_sender_) {
     implementation_ = std::make_shared<logging::CallbackLogImplementation>(
@@ -23,7 +24,8 @@ void AosLogToFbs::Initialize(Sender<logging::LogMessageFbs> log_sender) {
           builder.add_name(name_str);
 
           message.Send(builder.Finish());
-        });
+        },
+        name);
   }
 }
 

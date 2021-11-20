@@ -23,6 +23,8 @@ class TestLogImplementation : public logging::HandleMessageLogImplementation {
     return ::aos::monotonic_clock::now();
   }
 
+  std::string_view MyName() override { return "Name"; }
+
   // This class has to be a singleton so that everybody can get access to the
   // same instance to read out the messages etc.
   static std::shared_ptr<TestLogImplementation> GetInstance() {
