@@ -8,6 +8,7 @@
 #include <climits>
 #include <cstddef>
 #include <memory>
+#include <string_view>
 
 #include "aos/logging/sizes.h"
 
@@ -50,14 +51,19 @@ struct Context {
   std::shared_ptr<LogImplementation> implementation;
 
   // A name representing this task/(process and thread).
-  char name[LOG_MESSAGE_NAME_LEN];
-  size_t name_size;
+  std::string_view MyName();
+  // Clears the cached name so MyName re-checks the thread's actual name.
+  void ClearName();
 
   // What to assign LogMessage::source to in this task/thread.
   pid_t source;
 
   // The sequence value to send out with the next message.
   uint16_t sequence;
+
+ private:
+  size_t name_size;
+  char name[LOG_MESSAGE_NAME_LEN];
 };
 
 }  // namespace internal

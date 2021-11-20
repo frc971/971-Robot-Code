@@ -13,6 +13,7 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <string_view>
 
 #include "aos/logging/context.h"
 #include "aos/logging/interface.h"
@@ -92,6 +93,12 @@ class StreamLogImplementation : public HandleMessageLogImplementation {
  public:
   StreamLogImplementation(FILE *stream);
 
+  // Returns the name of this actual thread as the name.
+  std::string_view MyName() override {
+    internal::Context *context = internal::Context::Get();
+    return context->MyName();
+  }
+
  private:
   void HandleMessage(const LogMessage &message) override;
 
@@ -108,13 +115,18 @@ void SetImplementation(std::shared_ptr<LogImplementation> implementation);
 class CallbackLogImplementation : public HandleMessageLogImplementation {
  public:
   CallbackLogImplementation(
-      const ::std::function<void(const LogMessage &)> &callback)
-      : callback_(callback) {}
+      const ::std::function<void(const LogMessage &)> &callback,
+      const std::string *name)
+      : callback_(callback), name_(name) {}
+
+  // Returns the provided name.  This is most likely the event loop name.
+  std::string_view MyName() override { return *name_; }
 
  private:
   void HandleMessage(const LogMessage &message) override { callback_(message); }
 
   ::std::function<void(const LogMessage &)> callback_;
+  const std::string *name_;
 };
 
 class ScopedLogRestorer {
@@ -136,18 +148,18 @@ namespace internal {
 
 // Fills in *message according to the given inputs (with type kString).
 // Used for implementing LogImplementation::DoLog.
-void FillInMessage(log_level level,
+void FillInMessage(log_level level, std::string_view name,
                    ::aos::monotonic_clock::time_point monotonic_now,
                    const char *format, va_list ap, LogMessage *message)
-    __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 0)));
+    __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 4, 0)));
 
-__attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 4, 5))) static inline void
-FillInMessageVarargs(log_level level,
+__attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 5, 6))) static inline void
+FillInMessageVarargs(log_level level, std::string_view name,
                      ::aos::monotonic_clock::time_point monotonic_now,
                      LogMessage *message, const char *format, ...) {
   va_list ap;
   va_start(ap, format);
-  FillInMessage(level, monotonic_now, format, ap, message);
+  FillInMessage(level, name, monotonic_now, format, ap, message);
   va_end(ap);
 }
 

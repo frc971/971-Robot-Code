@@ -3,6 +3,7 @@
 
 #include <cstdlib>
 
+#include "aos/logging/context.h"
 #include "aos/logging/implementations.h"
 
 namespace aos {
@@ -14,6 +15,10 @@ namespace util {
 class DeathTestLogImplementation
     : public logging::HandleMessageLogImplementation {
  public:
+  std::string_view MyName() override {
+    logging::internal::Context *context = logging::internal::Context::Get();
+    return context->MyName();
+  }
   virtual void HandleMessage(const logging::LogMessage &message) override {
     if (message.level == FATAL) {
       logging::internal::PrintMessage(stderr, message);

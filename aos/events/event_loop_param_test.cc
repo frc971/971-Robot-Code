@@ -5,6 +5,8 @@
 #include <unordered_set>
 
 #include "aos/flatbuffer_merge.h"
+#include "aos/logging/log_message_generated.h"
+#include "aos/logging/logging.h"
 #include "aos/realtime.h"
 #include "glog/logging.h"
 #include "gmock/gmock.h"
@@ -945,6 +947,74 @@ TEST_P(AbstractEventLoopTest, MultipleWatcherQuit) {
   });
 
   Run();
+}
+
+// Verify that AOS_LOG has the right name.
+TEST_P(AbstractEventLoopTest, AOSLog) {
+  auto loop2 = MakePrimary("loop1");
+  auto loop1 = Make("loop0");
+
+  auto fetcher = loop1->MakeFetcher<aos::logging::LogMessageFbs>("/aos");
+
+  EXPECT_FALSE(fetcher.Fetch());
+
+  loop2->OnRun([&]() {
+    AOS_LOG(INFO, "Testing123");
+    this->Exit();
+  });
+
+  Run();
+  EXPECT_TRUE(fetcher.Fetch());
+  EXPECT_EQ(fetcher->name()->string_view(), "loop1");
+}
+
+// Verify that AOS_LOG has the right name in a watcher.
+TEST_P(AbstractEventLoopTest, AOSLogWatcher) {
+  auto loop2 = MakePrimary("loop1");
+  auto loop1 = Make("loop0");
+
+  auto fetcher = loop1->MakeFetcher<aos::logging::LogMessageFbs>("/aos");
+
+  EXPECT_FALSE(fetcher.Fetch());
+
+  auto sender = loop1->MakeSender<TestMessage>("/test2");
+
+  loop2->MakeWatcher("/test2", [&](const TestMessage & /*message*/) {
+    AOS_LOG(INFO, "Testing123");
+    this->Exit();
+  });
+
+  loop2->OnRun([&]() {
+    aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
+    TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
+    builder.add_value(200);
+    ASSERT_TRUE(msg.Send(builder.Finish()));
+  });
+
+  Run();
+  EXPECT_TRUE(fetcher.Fetch());
+  EXPECT_EQ(fetcher->name()->string_view(), "loop1");
+}
+
+// Verify that AOS_LOG has the right name in a timer.
+TEST_P(AbstractEventLoopTest, AOSLogTimer) {
+  auto loop2 = MakePrimary("loop1");
+  auto loop1 = Make("loop0");
+
+  auto fetcher = loop1->MakeFetcher<aos::logging::LogMessageFbs>("/aos");
+
+  EXPECT_FALSE(fetcher.Fetch());
+
+  auto test_timer = loop2->AddTimer([&]() {
+    AOS_LOG(INFO, "Testing123");
+    this->Exit();
+  });
+
+  loop2->OnRun([&]() { test_timer->Setup(loop2->monotonic_now()); });
+
+  Run();
+  EXPECT_TRUE(fetcher.Fetch());
+  EXPECT_EQ(fetcher->name()->string_view(), "loop1");
 }
 
 // Verify that timer intervals and duration function properly.

@@ -609,6 +609,10 @@ class SimulatedEventLoop : public EventLoop {
   void OnRun(::std::function<void()> on_run) override {
     CHECK(!is_running()) << ": Cannot register OnRun callback while running.";
     scheduler_->ScheduleOnRun([this, on_run = std::move(on_run)]() {
+      logging::ScopedLogRestorer prev_logger;
+      if (log_impl_) {
+        prev_logger.Swap(log_impl_);
+      }
       ScopedMarkRealtimeRestorer rt(priority() > 0);
       SetTimerContext(monotonic_now());
       on_run();
@@ -638,7 +642,8 @@ class SimulatedEventLoop : public EventLoop {
   void Setup() {
     MaybeScheduleTimingReports();
     if (!skip_logger_) {
-      log_sender_.Initialize(MakeSender<logging::LogMessageFbs>("/aos"));
+      log_sender_.Initialize(&name_,
+                             MakeSender<logging::LogMessageFbs>("/aos"));
       log_impl_ = log_sender_.implementation();
     }
   }

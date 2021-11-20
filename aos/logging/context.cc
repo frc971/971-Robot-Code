@@ -78,13 +78,23 @@ Context::Context() : sequence(0) {}
 // Used in aos/linux_code/init.cc when a thread's name is changed.
 void ReloadThreadName() {
   if (my_context.created()) {
+    my_context->ClearName();
+  }
+}
+
+void Context::ClearName() { name_size = std::numeric_limits<size_t>::max(); }
+
+std::string_view Context::MyName() {
+  if (name_size == std::numeric_limits<size_t>::max()) {
     ::std::string my_name = GetMyName();
     if (my_name.size() + 1 > sizeof(Context::name)) {
       Die("logging: process/thread name '%s' is too long\n", my_name.c_str());
     }
-    strcpy(my_context->name, my_name.c_str());
-    my_context->name_size = my_name.size();
+    strcpy(name, my_name.c_str());
+    name_size = my_name.size();
   }
+
+  return std::string_view(&name[0], name_size);
 }
 
 Context *Context::Get() {
@@ -94,7 +104,7 @@ Context *Context::Get() {
   }
   if (__builtin_expect(!my_context.created(), false)) {
     my_context.Create();
-    ReloadThreadName();
+    my_context->ClearName();
     my_context->source = getpid();
   }
   return my_context.get();

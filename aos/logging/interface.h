@@ -4,6 +4,7 @@
 #include <cstdarg>
 #include <functional>
 #include <string>
+#include <string_view>
 
 #include "aos/logging/logging.h"
 #include "aos/macros.h"
@@ -28,6 +29,10 @@ class LogImplementation {
   LogImplementation() {}
 
   virtual ~LogImplementation() {}
+
+  // Returns the identifying name to be used when logging.  This could be the
+  // event loop name or the thread name.
+  virtual std::string_view MyName() = 0;
 
   // Actually logs the given message. Implementations should somehow create a
   // LogMessage and then call internal::FillInMessage.

@@ -312,6 +312,7 @@ cc_library(
         ":test_message_schema",
         ":timing_report_schema",
         "//aos:realtime",
+        "//aos/logging:log_message_fbs",
         "//aos/logging:log_message_schema",
         "//aos/network:message_bridge_client_schema",
         "//aos/network:message_bridge_server_schema",

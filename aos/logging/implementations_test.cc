@@ -24,9 +24,15 @@ class TestLogImplementation : public LogImplementation {
     return ::aos::monotonic_clock::now();
   }
 
+  std::string_view MyName() override {
+    internal::Context *context = internal::Context::Get();
+    return context->MyName();
+  }
+
   __attribute__((format(GOOD_PRINTF_FORMAT_TYPE, 3, 0))) void DoLog(
       log_level level, const char *format, va_list ap) override {
-    internal::FillInMessage(level, monotonic_now(), format, ap, &message_);
+    internal::FillInMessage(level, MyName(), monotonic_now(), format, ap,
+                            &message_);
 
     if (level == FATAL) {
       internal::PrintMessage(stderr, message_);
@@ -68,12 +74,13 @@ class LoggingTest : public ::testing::Test {
               static_cast<uint32_t>(log_implementation->message().source),
               static_cast<uint32_t>(context->source));
     }
-    if (log_implementation->message().name_length != context->name_size ||
-        memcmp(log_implementation->message().name, context->name,
-               context->name_size) != 0) {
+    if (log_implementation->message().name_length != context->MyName().size() ||
+        memcmp(log_implementation->message().name, context->MyName().data(),
+               context->MyName().size()) != 0) {
       AOS_LOG(FATAL, "got a message from %.*s, but we're %s\n",
               static_cast<int>(log_implementation->message().name_length),
-              log_implementation->message().name, context->name);
+              log_implementation->message().name,
+              std::string(context->MyName()).c_str());
     }
     if (strstr(log_implementation->message().message, message.c_str()) ==
         NULL) {
@@ -221,11 +228,12 @@ TEST(ScopedLogRestorerTest, RestoreTest) {
   SetImplementation(std::make_shared<StreamLogImplementation>(stdout));
   LogImplementation *curr_impl = GetImplementation().get();
 
+  std::string name = "name";
   {
     ScopedLogRestorer log_restorer;
 
-    log_restorer.Swap(
-        std::make_shared<CallbackLogImplementation>([](const LogMessage &) {}));
+    log_restorer.Swap(std::make_shared<CallbackLogImplementation>(
+        [](const LogMessage &) {}, &name));
     ASSERT_NE(curr_impl, GetImplementation().get());
   }
 
