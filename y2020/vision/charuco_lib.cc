@@ -102,13 +102,13 @@ ImageCallback::ImageCallback(
     const monotonic_clock::time_point eof_source_node =
         monotonic_clock::time_point(
             chrono::nanoseconds(image.monotonic_timestamp_ns()));
-    server_fetcher_.Fetch();
-    if (!server_fetcher_.get()) {
-      return;
-    }
-
     chrono::nanoseconds offset{0};
     if (source_node_ != event_loop_->node()) {
+      server_fetcher_.Fetch();
+      if (!server_fetcher_.get()) {
+        return;
+      }
+
       // If we are viewing this image from another node, convert to our
       // monotonic clock.
       const aos::message_bridge::ServerConnection *server_connection = nullptr;
