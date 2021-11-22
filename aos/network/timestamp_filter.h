@@ -344,7 +344,7 @@ class NoncausalTimestampFilter {
       return std::nullopt;
     }
 
-    size_t current_filter = current_filter_;
+    size_t current_filter = std::max(static_cast<ssize_t>(0), current_filter_);
     while (true) {
       const BootFilter &filter = filters_[current_filter];
       std::optional<
@@ -372,21 +372,23 @@ class NoncausalTimestampFilter {
     if (filters_.size() == 0u) {
       return std::nullopt;
     }
-    DCHECK_LT(current_filter_, filters_.size());
+    DCHECK_LT(current_filter_, static_cast<ssize_t>(filters_.size()));
 
     while (true) {
-      BootFilter &filter = filters_[current_filter_];
       std::optional<
           std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>>
-          result = filter.filter.Consume();
+          result =
+              current_filter_ < 0 ? std::nullopt
+                                  : filters_[current_filter_].filter.Consume();
       if (!result) {
-        if (current_filter_ + 1 == filters_.size()) {
+        if (static_cast<size_t>(current_filter_ + 1) == filters_.size()) {
           return std::nullopt;
         } else {
           ++current_filter_;
           continue;
         }
       }
+      BootFilter &filter = filters_[current_filter_];
       return std::make_tuple(
           logger::BootTimestamp{static_cast<size_t>(filter.boot.first),
                                 std::get<0>(*result)},
@@ -629,10 +631,10 @@ class NoncausalTimestampFilter {
       return &it->filter;
     }
 
-    if (!filters_.empty()) {
-      CHECK_LT(current_filter_, filters_.size());
+    if (!filters_.empty() && current_filter_ >= 0) {
+      CHECK_LT(static_cast<size_t>(current_filter_), filters_.size());
       CHECK_GE(boota, filters_[current_filter_].boot.first);
-      CHECK_GE(bootb, filters_[current_filter_].boot.second);
+      CHECK_GE(bootb, filters_[current_filter_].boot.second) << NodeNames();
     }
     SingleFilter *result =
         &filters_
@@ -666,14 +668,15 @@ class NoncausalTimestampFilter {
         std::lower_bound(filters_.begin(), filters_.end(),
                          std::make_pair(boota, bootb), FilterLessThanLower);
     CHECK(it != filters_.end());
-    CHECK(it->boot == std::make_pair(boota, bootb));
+    CHECK(it->boot == std::make_pair(boota, bootb))
+        << NodeNames() << " Failed to find " << boota << ", " << bootb;
     return &it->filter;
   }
 
  private:
   std::vector<BootFilter> filters_;
 
-  size_t current_filter_ = 0;
+  ssize_t current_filter_ = -1;
 
   // The filter to resume popping from.
   size_t pop_filter_ = 0;
