@@ -295,12 +295,13 @@ struct PartsSorter {
 
   // Map from a observed pair of boots to the associated timestamps.
   // logger_node -> logger_node_boot_uuid -> destination_node index ->
-  // destination_boot_uuid -> times.
+  // destination_boot_uuid -> list of all times from all parts.
   absl::btree_map<
       std::string,
       absl::btree_map<
           std::string,
-          absl::btree_map<size_t, absl::btree_map<std::string, BootPairTimes>>>>
+          absl::btree_map<size_t, absl::btree_map<std::string,
+                                                  std::vector<BootPairTimes>>>>>
       boot_times;
 
   // Map holding the log_event_uuid -> second map.  The second map holds the
@@ -571,7 +572,8 @@ void PartsSorter::PopulateFromFiles(const std::vector<std::string> &parts) {
                         std::string,
                         absl::btree_map<
                             size_t,
-                            absl::btree_map<std::string, BootPairTimes>>>())
+                            absl::btree_map<std::string,
+                                            std::vector<BootPairTimes>>>>())
                 .first;
       }
       auto source_boot_times_it =
@@ -583,7 +585,8 @@ void PartsSorter::PopulateFromFiles(const std::vector<std::string> &parts) {
                 .emplace(
                     logger_boot_uuid,
                     absl::btree_map<
-                        size_t, absl::btree_map<std::string, BootPairTimes>>())
+                        size_t, absl::btree_map<std::string,
+                                                std::vector<BootPairTimes>>>())
                 .first;
       }
 
@@ -646,7 +649,8 @@ void PartsSorter::PopulateFromFiles(const std::vector<std::string> &parts) {
           destination_boot_times_it =
               source_boot_times_it->second
                   .emplace(node_index,
-                           absl::btree_map<std::string, BootPairTimes>())
+                           absl::btree_map<std::string,
+                                           std::vector<BootPairTimes>>())
                   .first;
         }
 
@@ -656,7 +660,17 @@ void PartsSorter::PopulateFromFiles(const std::vector<std::string> &parts) {
         if (boot_times_it == destination_boot_times_it->second.end()) {
           // We have a new boot UUID pairing.  Copy over the data we have.
           destination_boot_times_it->second.emplace(
-              boot_uuid,
+              boot_uuid, std::vector<BootPairTimes>{BootPairTimes{
+                             .oldest_remote_monotonic_timestamp =
+                                 oldest_remote_monotonic_timestamp,
+                             .oldest_local_monotonic_timestamp =
+                                 oldest_local_monotonic_timestamp,
+                             .oldest_remote_unreliable_monotonic_timestamp =
+                                 oldest_remote_unreliable_monotonic_timestamp,
+                             .oldest_local_unreliable_monotonic_timestamp =
+                                 oldest_local_unreliable_monotonic_timestamp}});
+        } else {
+          boot_times_it->second.emplace_back(
               BootPairTimes{.oldest_remote_monotonic_timestamp =
                                 oldest_remote_monotonic_timestamp,
                             .oldest_local_monotonic_timestamp =
@@ -665,24 +679,6 @@ void PartsSorter::PopulateFromFiles(const std::vector<std::string> &parts) {
                                 oldest_remote_unreliable_monotonic_timestamp,
                             .oldest_local_unreliable_monotonic_timestamp =
                                 oldest_local_unreliable_monotonic_timestamp});
-        } else {
-          // If we found an existing entry, update the min to be the min of all
-          // records.  This lets us combine info from multiple part files.
-          if (oldest_remote_monotonic_timestamp <
-              boot_times_it->second.oldest_remote_monotonic_timestamp) {
-            boot_times_it->second.oldest_remote_monotonic_timestamp =
-                oldest_remote_monotonic_timestamp;
-            boot_times_it->second.oldest_local_monotonic_timestamp =
-                oldest_local_monotonic_timestamp;
-          }
-          if (oldest_remote_unreliable_monotonic_timestamp <
-              boot_times_it->second
-                  .oldest_remote_unreliable_monotonic_timestamp) {
-            boot_times_it->second.oldest_remote_unreliable_monotonic_timestamp =
-                oldest_remote_unreliable_monotonic_timestamp;
-            boot_times_it->second.oldest_local_unreliable_monotonic_timestamp =
-                oldest_local_unreliable_monotonic_timestamp;
-          }
         }
       }
     }
@@ -800,38 +796,139 @@ std::map<std::string, NodeBootState> PartsSorter::ComputeNewBootConstraints() {
 
         // Now, we have a bunch of remote boots for the same local boot and
         // remote node.  We want to sort them by observed local time.  This will
-        // tell us which ones happened first.
-        std::vector<std::pair<std::string, BootPairTimes>> source_boot_times;
-        for (const auto &boot_time : source_nodes.second) {
-          source_boot_times.emplace_back(boot_time);
+        // tell us which ones happened first.  Hold on to the max time on that
+        // node too so we can check for overlapping boots.
+        std::vector<std::tuple<std::string, BootPairTimes, BootPairTimes>>
+            source_boot_times;
+        for (const auto &boot_time_list : source_nodes.second) {
+          // Track the first boot time we have evidence of.
+          BootPairTimes boot_time = boot_time_list.second[0];
+          // And the last one so we can look for overlapping boots.
+          BootPairTimes max_boot_time = boot_time_list.second[0];
+          for (size_t i = 0; i < boot_time_list.second.size(); ++i) {
+            const BootPairTimes &next_boot_time = boot_time_list.second[i];
+            if (next_boot_time.oldest_local_unreliable_monotonic_timestamp !=
+                aos::monotonic_clock::max_time) {
+              VLOG(1)
+                  << "Remote time "
+                  << next_boot_time.oldest_remote_unreliable_monotonic_timestamp
+                  << " " << boot_time_list.first;
+              VLOG(1)
+                  << "Local time "
+                  << next_boot_time.oldest_local_unreliable_monotonic_timestamp
+                  << " " << boot_time_list.first;
+            }
+            // If we found an existing entry, update the min to be the min of
+            // all records.  This lets us combine info from multiple part files.
+            if (next_boot_time.oldest_remote_monotonic_timestamp <
+                boot_time.oldest_remote_monotonic_timestamp) {
+              boot_time.oldest_remote_monotonic_timestamp =
+                  next_boot_time.oldest_remote_monotonic_timestamp;
+              boot_time.oldest_local_monotonic_timestamp =
+                  next_boot_time.oldest_local_monotonic_timestamp;
+            }
+            if ((next_boot_time.oldest_remote_monotonic_timestamp >
+                     max_boot_time.oldest_remote_monotonic_timestamp ||
+                 max_boot_time.oldest_remote_monotonic_timestamp ==
+                     aos::monotonic_clock::max_time) &&
+                next_boot_time.oldest_remote_monotonic_timestamp !=
+                    aos::monotonic_clock::max_time) {
+              max_boot_time.oldest_remote_monotonic_timestamp =
+                  next_boot_time.oldest_remote_monotonic_timestamp;
+              max_boot_time.oldest_local_monotonic_timestamp =
+                  next_boot_time.oldest_local_monotonic_timestamp;
+            }
+            if (next_boot_time.oldest_remote_unreliable_monotonic_timestamp <
+                boot_time.oldest_remote_unreliable_monotonic_timestamp) {
+              boot_time.oldest_remote_unreliable_monotonic_timestamp =
+                  next_boot_time.oldest_remote_unreliable_monotonic_timestamp;
+              boot_time.oldest_local_unreliable_monotonic_timestamp =
+                  next_boot_time.oldest_local_unreliable_monotonic_timestamp;
+            }
+            if ((next_boot_time.oldest_remote_unreliable_monotonic_timestamp >
+                     max_boot_time
+                         .oldest_remote_unreliable_monotonic_timestamp ||
+                 max_boot_time.oldest_remote_unreliable_monotonic_timestamp ==
+                     aos::monotonic_clock::max_time) &&
+                next_boot_time.oldest_remote_unreliable_monotonic_timestamp !=
+                    aos::monotonic_clock::max_time) {
+              max_boot_time.oldest_remote_unreliable_monotonic_timestamp =
+                  next_boot_time.oldest_remote_unreliable_monotonic_timestamp;
+              max_boot_time.oldest_local_unreliable_monotonic_timestamp =
+                  next_boot_time.oldest_local_unreliable_monotonic_timestamp;
+            }
+          }
+          source_boot_times.emplace_back(
+              std::make_tuple(boot_time_list.first, boot_time, max_boot_time));
         }
         std::sort(
             source_boot_times.begin(), source_boot_times.end(),
-            [](const std::pair<std::string, BootPairTimes> &a,
-               const std::pair<std::string, BootPairTimes> &b) {
+            [](const std::tuple<std::string, BootPairTimes, BootPairTimes> &a,
+               const std::tuple<std::string, BootPairTimes, BootPairTimes> &b) {
               // There are cases where we will only have a reliable timestamp.
               // In that case, we need to use oldest_local_monotonic_timestamp.
               // But, that may result in collisions if the same message gets
               // forwarded to both boots, so it will have the same timestamp.
               // Solve that by breaking the tie with the unreliable messages.
-              if (a.second.oldest_local_monotonic_timestamp ==
-                  b.second.oldest_local_monotonic_timestamp) {
-                CHECK_NE(a.second.oldest_local_unreliable_monotonic_timestamp,
-                         b.second.oldest_local_unreliable_monotonic_timestamp);
-                return a.second.oldest_local_unreliable_monotonic_timestamp <
-                       b.second.oldest_local_unreliable_monotonic_timestamp;
+              if (std::get<1>(a).oldest_local_monotonic_timestamp ==
+                  std::get<1>(b).oldest_local_monotonic_timestamp) {
+                CHECK_NE(
+                    std::get<1>(a).oldest_local_unreliable_monotonic_timestamp,
+                    std::get<1>(b).oldest_local_unreliable_monotonic_timestamp);
+                return std::get<1>(a)
+                           .oldest_local_unreliable_monotonic_timestamp <
+                       std::get<1>(b)
+                           .oldest_local_unreliable_monotonic_timestamp;
               } else {
-                return a.second.oldest_local_monotonic_timestamp <
-                       b.second.oldest_local_monotonic_timestamp;
+                return std::get<1>(a).oldest_local_monotonic_timestamp <
+                       std::get<1>(b).oldest_local_monotonic_timestamp;
               }
             });
+
+        // The last time from the source node on the logger node.
+        // This is used to track overlapping boots since this should always
+        // increase.
+        aos::monotonic_clock::time_point last_boot_time =
+            aos::monotonic_clock::min_time;
 
         // Now take our sorted list and build up constraints so we can solve.
         for (size_t boot_id = 0; boot_id < source_boot_times.size();
              ++boot_id) {
-          const std::pair<std::string, BootPairTimes> &boot_time =
-              source_boot_times[boot_id];
-          const std::string &source_boot_uuid = boot_time.first;
+          const std::tuple<std::string, BootPairTimes, BootPairTimes>
+              &boot_time = source_boot_times[boot_id];
+          const std::string &source_boot_uuid = std::get<0>(boot_time);
+
+          // Enforce that the last time observed in the headers on the previous
+          // boot is less than the first time on the next boot.  This equates to
+          // there being no overlap between the two boots.
+          if (std::get<1>(boot_time)
+                  .oldest_local_unreliable_monotonic_timestamp <
+              last_boot_time) {
+            for (size_t fatal_boot_id = 0;
+                 fatal_boot_id < source_boot_times.size(); ++fatal_boot_id) {
+              const std::tuple<std::string, BootPairTimes, BootPairTimes>
+                  &fatal_boot_time = source_boot_times[fatal_boot_id];
+              const std::string &fatal_source_boot_uuid =
+                  std::get<0>(fatal_boot_time);
+              LOG(ERROR) << "Boot " << fatal_boot_id << ", "
+                         << fatal_source_boot_uuid << " on " << source_node_name
+                         << " spans ["
+                         << std::get<1>(fatal_boot_time)
+                                .oldest_local_unreliable_monotonic_timestamp
+                         << ", "
+                         << std::get<2>(fatal_boot_time)
+                                .oldest_local_unreliable_monotonic_timestamp
+                         << "] on logger " << logger_node_name;
+            }
+            LOG(FATAL) << "Found overlapping boots on " << source_node_name
+                       << " logged on " << logger_node_name << ", "
+                       << std::get<1>(boot_time)
+                              .oldest_local_unreliable_monotonic_timestamp
+                       << " < " << last_boot_time;
+          }
+
+          last_boot_time = std::get<2>(boot_time)
+                               .oldest_local_unreliable_monotonic_timestamp;
 
           auto source_node_boot_constraints_it =
               boot_constraints.find(source_node_name);
@@ -854,9 +951,9 @@ std::map<std::string, NodeBootState> PartsSorter::ComputeNewBootConstraints() {
                 &per_node_boot_constraints =
                     source_node_boot_constraints_it->second.constraints;
 
-            const std::pair<std::string, BootPairTimes> &prior_boot_time =
-                source_boot_times[boot_id - 1];
-            const std::string &prior_boot_uuid = prior_boot_time.first;
+            const std::tuple<std::string, BootPairTimes, BootPairTimes>
+                &prior_boot_time = source_boot_times[boot_id - 1];
+            const std::string &prior_boot_uuid = std::get<0>(prior_boot_time);
 
             auto first_per_boot_constraints =
                 per_node_boot_constraints.find(prior_boot_uuid);
