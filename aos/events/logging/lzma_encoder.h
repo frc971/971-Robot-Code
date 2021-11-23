@@ -54,9 +54,10 @@ class LzmaDecoder final : public DataDecoder {
  public:
   static constexpr std::string_view kExtension = ".xz";
 
-  explicit LzmaDecoder(std::unique_ptr<DataDecoder> underlying_decoder);
-  explicit LzmaDecoder(std::string_view filename)
-      : LzmaDecoder(std::make_unique<DummyDecoder>(filename)) {}
+  explicit LzmaDecoder(std::unique_ptr<DataDecoder> underlying_decoder,
+                       bool quiet = false);
+  explicit LzmaDecoder(std::string_view filename, bool quiet = false)
+      : LzmaDecoder(std::make_unique<DummyDecoder>(filename), quiet) {}
   LzmaDecoder(const LzmaDecoder &) = delete;
   LzmaDecoder(LzmaDecoder &&other) = delete;
   LzmaDecoder &operator=(const LzmaDecoder &) = delete;
@@ -84,6 +85,9 @@ class LzmaDecoder final : public DataDecoder {
   // Flag that represents whether or not all the data from the file has been
   // successfully decoded.
   bool finished_ = false;
+  // Flag to signal how quiet to be when logging potential issues around
+  // truncation.
+  const bool quiet_ = false;
 };
 
 // Decompresses data with liblzma in a new thread, up to a maximum queue
@@ -91,9 +95,10 @@ class LzmaDecoder final : public DataDecoder {
 // or block until more data is queued or the stream finishes.
 class ThreadedLzmaDecoder : public DataDecoder {
  public:
-  explicit ThreadedLzmaDecoder(std::string_view filename)
-      : ThreadedLzmaDecoder(std::make_unique<DummyDecoder>(filename)) {}
-  explicit ThreadedLzmaDecoder(std::unique_ptr<DataDecoder> underlying_decoder);
+  explicit ThreadedLzmaDecoder(std::string_view filename, bool quiet = false)
+      : ThreadedLzmaDecoder(std::make_unique<DummyDecoder>(filename), quiet) {}
+  explicit ThreadedLzmaDecoder(std::unique_ptr<DataDecoder> underlying_decoder,
+                               bool quiet = false);
   ThreadedLzmaDecoder(const ThreadedLzmaDecoder &) = delete;
   ThreadedLzmaDecoder &operator=(const ThreadedLzmaDecoder &) = delete;
 

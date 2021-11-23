@@ -149,9 +149,11 @@ void LzmaEncoder::RunLzmaCode(lzma_action action) {
   total_bytes_ += last_avail_out - stream_.avail_out;
 }
 
-LzmaDecoder::LzmaDecoder(std::unique_ptr<DataDecoder> underlying_decoder)
+LzmaDecoder::LzmaDecoder(std::unique_ptr<DataDecoder> underlying_decoder,
+                         bool quiet)
     : underlying_decoder_(std::move(underlying_decoder)),
-      stream_(LZMA_STREAM_INIT) {
+      stream_(LZMA_STREAM_INIT),
+      quiet_(quiet) {
   compressed_data_.resize(kBufSize);
 
   lzma_ret status =
@@ -200,9 +202,13 @@ size_t LzmaDecoder::Read(uint8_t *begin, uint8_t *end) {
     if (!LzmaCodeIsOk(status, filename())) {
       finished_ = true;
       if (status == LZMA_DATA_ERROR) {
-        LOG(WARNING) << filename() << " is corrupted.";
+        if (!quiet_ || VLOG_IS_ON(1)) {
+          LOG(WARNING) << filename() << " is corrupted.";
+        }
       } else if (status == LZMA_BUF_ERROR) {
-        LOG(WARNING) << filename() << " is truncated or corrupted.";
+        if (!quiet_ || VLOG_IS_ON(1)) {
+          LOG(WARNING) << filename() << " is truncated or corrupted.";
+        }
       } else {
         LOG(FATAL) << "Unknown error " << status << " when reading "
                    << filename();
@@ -214,8 +220,8 @@ size_t LzmaDecoder::Read(uint8_t *begin, uint8_t *end) {
 }
 
 ThreadedLzmaDecoder::ThreadedLzmaDecoder(
-    std::unique_ptr<DataDecoder> underlying_decoder)
-    : decoder_(std::move(underlying_decoder)), decode_thread_([this] {
+    std::unique_ptr<DataDecoder> underlying_decoder, bool quiet)
+    : decoder_(std::move(underlying_decoder), quiet), decode_thread_([this] {
         std::unique_lock lock(decode_mutex_);
         while (true) {
           // Wake if the queue is too small or we are finished.

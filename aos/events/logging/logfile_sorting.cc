@@ -15,6 +15,9 @@
 #include "openssl/sha.h"
 #include "sys/stat.h"
 
+DEFINE_bool(quiet_sorting, false,
+            "If true, sort with minimal messages about truncated files.");
+
 namespace aos {
 namespace logger {
 namespace chrono = std::chrono;
@@ -342,11 +345,13 @@ void PartsSorter::PopulateFromFiles(const std::vector<std::string> &parts) {
       // resources, so close a big batch at once periodically.
       part_readers.clear();
     }
-    part_readers.emplace_back(part);
+    part_readers.emplace_back(part, FLAGS_quiet_sorting);
     std::optional<SizePrefixedFlatbufferVector<LogFileHeader>> log_header =
         ReadHeader(&part_readers.back());
     if (!log_header) {
-      LOG(WARNING) << "Skipping " << part << " without a header";
+      if (!FLAGS_quiet_sorting) {
+        LOG(WARNING) << "Skipping " << part << " without a header";
+      }
       corrupted.emplace_back(part);
       continue;
     }
@@ -461,7 +466,9 @@ void PartsSorter::PopulateFromFiles(const std::vector<std::string> &parts) {
       std::optional<SizePrefixedFlatbufferVector<MessageHeader>> first_message =
           ReadNthMessage(part, 0);
       if (!first_message) {
-        LOG(WARNING) << "Skipping " << part << " without any messages";
+        if (!FLAGS_quiet_sorting) {
+          LOG(WARNING) << "Skipping " << part << " without any messages";
+        }
         corrupted.emplace_back(part);
         continue;
       }

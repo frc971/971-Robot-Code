@@ -336,15 +336,18 @@ flatbuffers::Offset<MessageHeader> PackMessage(
   return message_header_builder.Finish();
 }
 
-SpanReader::SpanReader(std::string_view filename) : filename_(filename) {
+SpanReader::SpanReader(std::string_view filename, bool quiet)
+    : filename_(filename) {
   decoder_ = std::make_unique<DummyDecoder>(filename);
 
   static constexpr std::string_view kXz = ".xz";
   static constexpr std::string_view kSnappy = SnappyDecoder::kExtension;
   if (filename.substr(filename.size() - kXz.size()) == kXz) {
 #if ENABLE_LZMA
-    decoder_ = std::make_unique<ThreadedLzmaDecoder>(std::move(decoder_));
+    decoder_ =
+        std::make_unique<ThreadedLzmaDecoder>(std::move(decoder_), quiet);
 #else
+    (void)quiet;
     LOG(FATAL) << "Reading xz-compressed files not supported on this platform";
 #endif
   } else if (filename.substr(filename.size() - kSnappy.size()) == kSnappy) {

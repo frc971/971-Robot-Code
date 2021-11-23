@@ -202,7 +202,7 @@ flatbuffers::Offset<MessageHeader> PackMessage(
 // Class to read chunks out of a log file.
 class SpanReader {
  public:
-  SpanReader(std::string_view filename);
+  SpanReader(std::string_view filename, bool quiet = false);
 
   std::string_view filename() const { return filename_; }
 
