@@ -518,6 +518,8 @@ TEST_P(RemoteMessageSimulatedEventLoopTest, MultinodePingPong) {
         for (const message_bridge::ServerConnection *connection :
              *stats.connections()) {
           EXPECT_EQ(connection->state(), message_bridge::State::CONNECTED);
+          EXPECT_EQ(connection->connection_count(), 1u);
+          EXPECT_EQ(connection->connected_since_time(), 0);
           EXPECT_TRUE(connection->has_boot_uuid());
           if (connection->node()->name()->string_view() == "pi2") {
             EXPECT_GT(connection->sent_packets(), 50);
@@ -547,6 +549,8 @@ TEST_P(RemoteMessageSimulatedEventLoopTest, MultinodePingPong) {
         EXPECT_GT(connection->sent_packets(), 50);
         EXPECT_TRUE(connection->has_monotonic_offset());
         EXPECT_EQ(connection->monotonic_offset(), 0);
+        EXPECT_EQ(connection->connection_count(), 1u);
+        EXPECT_EQ(connection->connected_since_time(), 0);
         ++pi2_server_statistics_count;
       });
 
@@ -564,6 +568,8 @@ TEST_P(RemoteMessageSimulatedEventLoopTest, MultinodePingPong) {
         EXPECT_GE(connection->sent_packets(), 5);
         EXPECT_TRUE(connection->has_monotonic_offset());
         EXPECT_EQ(connection->monotonic_offset(), 0);
+        EXPECT_EQ(connection->connection_count(), 1u);
+        EXPECT_EQ(connection->connected_since_time(), 0);
         ++pi3_server_statistics_count;
       });
 
@@ -588,6 +594,8 @@ TEST_P(RemoteMessageSimulatedEventLoopTest, MultinodePingPong) {
           EXPECT_EQ(connection->partial_deliveries(), 0);
           EXPECT_TRUE(connection->has_monotonic_offset());
           EXPECT_EQ(connection->monotonic_offset(), 150000);
+          EXPECT_EQ(connection->connection_count(), 1u);
+          EXPECT_EQ(connection->connected_since_time(), 0);
         }
         ++pi1_client_statistics_count;
       });
@@ -606,6 +614,8 @@ TEST_P(RemoteMessageSimulatedEventLoopTest, MultinodePingPong) {
         EXPECT_EQ(connection->partial_deliveries(), 0);
         EXPECT_TRUE(connection->has_monotonic_offset());
         EXPECT_EQ(connection->monotonic_offset(), 150000);
+        EXPECT_EQ(connection->connection_count(), 1u);
+        EXPECT_EQ(connection->connected_since_time(), 0);
         ++pi2_client_statistics_count;
       });
 
@@ -623,6 +633,8 @@ TEST_P(RemoteMessageSimulatedEventLoopTest, MultinodePingPong) {
         EXPECT_EQ(connection->partial_deliveries(), 0);
         EXPECT_TRUE(connection->has_monotonic_offset());
         EXPECT_EQ(connection->monotonic_offset(), 150000);
+        EXPECT_EQ(connection->connection_count(), 1u);
+        EXPECT_EQ(connection->connected_since_time(), 0);
         ++pi3_client_statistics_count;
       });
 
@@ -1022,6 +1034,9 @@ bool AllConnected(const message_bridge::ClientStatistics *client_statistics) {
     if (connection->state() != message_bridge::State::CONNECTED) {
       return false;
     }
+    EXPECT_TRUE(connection->has_boot_uuid());
+    EXPECT_TRUE(connection->has_connected_since_time());
+    EXPECT_TRUE(connection->has_connection_count());
   }
   return true;
 }
@@ -1034,13 +1049,40 @@ bool AllConnectedBut(const message_bridge::ClientStatistics *client_statistics,
       if (connection->state() == message_bridge::State::CONNECTED) {
         return false;
       }
+      EXPECT_FALSE(connection->has_boot_uuid());
+      EXPECT_FALSE(connection->has_connected_since_time());
     } else {
       if (connection->state() != message_bridge::State::CONNECTED) {
         return false;
       }
+      EXPECT_TRUE(connection->has_boot_uuid());
+      EXPECT_TRUE(connection->has_connected_since_time());
+      EXPECT_TRUE(connection->has_connection_count());
     }
   }
   return true;
+}
+
+int ConnectedCount(const message_bridge::ClientStatistics *client_statistics,
+                   std::string_view target) {
+  for (const message_bridge::ClientConnection *connection :
+       *client_statistics->connections()) {
+    if (connection->node()->name()->string_view() == target) {
+      return connection->connection_count();
+    }
+  }
+  return 0;
+}
+
+int ConnectedCount(const message_bridge::ServerStatistics *server_statistics,
+                   std::string_view target) {
+  for (const message_bridge::ServerConnection *connection :
+       *server_statistics->connections()) {
+    if (connection->node()->name()->string_view() == target) {
+      return connection->connection_count();
+    }
+  }
+  return 0;
 }
 
 // Test that disconnecting nodes actually disconnects them.
@@ -1247,6 +1289,33 @@ TEST_P(RemoteMessageSimulatedEventLoopTest, MultinodeDisconnect) {
 
   simulated_event_loop_factory.RunFor(chrono::seconds(2));
 
+  EXPECT_TRUE(pi1_server_statistics_fetcher.Fetch());
+  EXPECT_TRUE(pi1_client_statistics_fetcher.Fetch());
+  EXPECT_TRUE(pi2_server_statistics_fetcher.Fetch());
+  EXPECT_TRUE(pi2_client_statistics_fetcher.Fetch());
+  EXPECT_TRUE(pi3_server_statistics_fetcher.Fetch());
+  EXPECT_TRUE(pi3_client_statistics_fetcher.Fetch());
+
+  EXPECT_EQ(ConnectedCount(pi1_server_statistics_fetcher.get(), "pi3"), 2u)
+      << " : " << aos::FlatbufferToJson(pi1_server_statistics_fetcher.get());
+  EXPECT_EQ(ConnectedCount(pi1_server_statistics_fetcher.get(), "pi2"), 1u)
+      << " : " << aos::FlatbufferToJson(pi1_server_statistics_fetcher.get());
+  EXPECT_EQ(ConnectedCount(pi1_client_statistics_fetcher.get(), "pi3"), 1u)
+      << " : " << aos::FlatbufferToJson(pi1_client_statistics_fetcher.get());
+  EXPECT_EQ(ConnectedCount(pi1_client_statistics_fetcher.get(), "pi2"), 1u)
+      << " : " << aos::FlatbufferToJson(pi1_client_statistics_fetcher.get());
+
+  EXPECT_EQ(ConnectedCount(pi2_server_statistics_fetcher.get(), "pi1"), 1u)
+      << " : " << aos::FlatbufferToJson(pi2_server_statistics_fetcher.get());
+  EXPECT_EQ(ConnectedCount(pi2_client_statistics_fetcher.get(), "pi1"), 1u)
+      << " : " << aos::FlatbufferToJson(pi2_client_statistics_fetcher.get());
+
+  EXPECT_EQ(ConnectedCount(pi3_server_statistics_fetcher.get(), "pi1"), 1u)
+      << " : " << aos::FlatbufferToJson(pi3_server_statistics_fetcher.get());
+  EXPECT_EQ(ConnectedCount(pi3_client_statistics_fetcher.get(), "pi1"), 2u)
+      << " : " << aos::FlatbufferToJson(pi3_client_statistics_fetcher.get());
+
+
   EXPECT_EQ(pi1_pong_counter.count(), 601u);
   EXPECT_EQ(pi2_pong_counter.count(), 601u);
 
@@ -1270,22 +1339,16 @@ TEST_P(RemoteMessageSimulatedEventLoopTest, MultinodeDisconnect) {
   EXPECT_EQ(CountAll(remote_timestamps_pi2_on_pi1), 661);
   EXPECT_EQ(CountAll(remote_timestamps_pi1_on_pi2), 661);
 
-  EXPECT_TRUE(pi1_server_statistics_fetcher.Fetch());
   EXPECT_TRUE(AllConnected(pi1_server_statistics_fetcher.get()))
       << " : " << aos::FlatbufferToJson(pi1_server_statistics_fetcher.get());
-  EXPECT_TRUE(pi1_client_statistics_fetcher.Fetch());
   EXPECT_TRUE(AllConnected(pi1_client_statistics_fetcher.get()))
       << " : " << aos::FlatbufferToJson(pi1_client_statistics_fetcher.get());
-  EXPECT_TRUE(pi2_server_statistics_fetcher.Fetch());
   EXPECT_TRUE(AllConnected(pi2_server_statistics_fetcher.get()))
       << " : " << aos::FlatbufferToJson(pi2_server_statistics_fetcher.get());
-  EXPECT_TRUE(pi2_client_statistics_fetcher.Fetch());
   EXPECT_TRUE(AllConnected(pi2_client_statistics_fetcher.get()))
       << " : " << aos::FlatbufferToJson(pi2_client_statistics_fetcher.get());
-  EXPECT_TRUE(pi3_server_statistics_fetcher.Fetch());
   EXPECT_TRUE(AllConnected(pi3_server_statistics_fetcher.get()))
       << " : " << aos::FlatbufferToJson(pi3_server_statistics_fetcher.get());
-  EXPECT_TRUE(pi3_client_statistics_fetcher.Fetch());
   EXPECT_TRUE(AllConnected(pi3_client_statistics_fetcher.get()))
       << " : " << aos::FlatbufferToJson(pi3_client_statistics_fetcher.get());
 }
@@ -1563,10 +1626,13 @@ TEST_P(RemoteMessageSimulatedEventLoopTest, BootUUIDTest) {
 
   int pi1_server_statistics_count = 0;
   bool first_pi1_server_statistics = true;
+  int boot_number = 0;
+  monotonic_clock::time_point expected_connection_time = pi1->monotonic_now();
   pi1_remote_timestamp->MakeWatcher(
-      "/pi1/aos", [&pi1_server_statistics_count, &expected_boot_uuid,
-                   &first_pi1_server_statistics](
-                      const message_bridge::ServerStatistics &stats) {
+      "/pi1/aos",
+      [&pi1_server_statistics_count, &expected_boot_uuid,
+       &expected_connection_time, &first_pi1_server_statistics,
+       &boot_number](const message_bridge::ServerStatistics &stats) {
         VLOG(1) << "pi1 ServerStatistics " << FlatbufferToJson(&stats);
         for (const message_bridge::ServerConnection *connection :
              *stats.connections()) {
@@ -1582,6 +1648,10 @@ TEST_P(RemoteMessageSimulatedEventLoopTest, BootUUIDTest) {
             EXPECT_EQ(expected_boot_uuid,
                       UUID::FromString(connection->boot_uuid()))
                 << " : Got " << aos::FlatbufferToJson(&stats);
+            EXPECT_EQ(monotonic_clock::time_point(chrono::nanoseconds(
+                          connection->connected_since_time())),
+                      expected_connection_time);
+            EXPECT_EQ(boot_number + 1, connection->connection_count());
             ++pi1_server_statistics_count;
           }
         }
@@ -1590,7 +1660,8 @@ TEST_P(RemoteMessageSimulatedEventLoopTest, BootUUIDTest) {
 
   int pi1_client_statistics_count = 0;
   pi1_remote_timestamp->MakeWatcher(
-      "/pi1/aos", [&pi1_client_statistics_count](
+      "/pi1/aos", [&pi1_client_statistics_count, &expected_boot_uuid,
+                   &expected_connection_time, &boot_number](
                       const message_bridge::ClientStatistics &stats) {
         VLOG(1) << "pi1 ClientStatistics " << FlatbufferToJson(&stats);
         for (const message_bridge::ClientConnection *connection :
@@ -1598,18 +1669,33 @@ TEST_P(RemoteMessageSimulatedEventLoopTest, BootUUIDTest) {
           EXPECT_EQ(connection->state(), message_bridge::State::CONNECTED);
           if (connection->node()->name()->string_view() == "pi2") {
             ++pi1_client_statistics_count;
+            EXPECT_EQ(expected_boot_uuid,
+                      UUID::FromString(connection->boot_uuid()))
+                << " : Got " << aos::FlatbufferToJson(&stats);
+            EXPECT_EQ(monotonic_clock::time_point(chrono::nanoseconds(
+                          connection->connected_since_time())),
+                      expected_connection_time);
+            EXPECT_EQ(boot_number + 1, connection->connection_count());
+          } else {
+            EXPECT_EQ(connection->connected_since_time(), 0);
+            EXPECT_EQ(1, connection->connection_count());
           }
         }
       });
 
   // Confirm that reboot changes the UUID.
-  pi2->OnShutdown([&expected_boot_uuid, pi2, pi2_boot1]() {
-    expected_boot_uuid = pi2_boot1;
-    LOG(INFO) << "OnShutdown triggered for pi2";
-    pi2->OnStartup([&expected_boot_uuid, pi2]() {
-      EXPECT_EQ(expected_boot_uuid, pi2->boot_uuid());
-    });
-  });
+  pi2->OnShutdown(
+      [&expected_boot_uuid, &boot_number, &expected_connection_time, pi1, pi2,
+       pi2_boot1]() {
+        expected_boot_uuid = pi2_boot1;
+        ++boot_number;
+        LOG(INFO) << "OnShutdown triggered for pi2";
+        pi2->OnStartup(
+            [&expected_boot_uuid, &expected_connection_time, pi1, pi2]() {
+              EXPECT_EQ(expected_boot_uuid, pi2->boot_uuid());
+              expected_connection_time = pi1->monotonic_now();
+            });
+      });
 
   // Let a couple of ServerStatistics messages show up before rebooting.
   factory.RunFor(chrono::milliseconds(2002));

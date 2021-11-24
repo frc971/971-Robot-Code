@@ -257,9 +257,9 @@ class RawMessageDelayer {
         fetcher_->context().queue_index, fetcher_->context().source_boot_uuid));
 
     // And simulate message_bridge's offset recovery.
-    client_status_->SampleFilter(client_index_,
-                                 fetcher_->context().monotonic_event_time,
-                                 sender_->monotonic_sent_time());
+    client_status_->SampleFilter(
+        client_index_, fetcher_->context().monotonic_event_time,
+        sender_->monotonic_sent_time(), fetcher_->context().source_boot_uuid);
 
     client_connection_->mutate_received_packets(
         client_connection_->received_packets() + 1);
@@ -631,9 +631,16 @@ void SimulatedMessageBridge::State::SetEventLoop(
     for (ServerConnection *connection : server_status->server_connection()) {
       if (connection) {
         if (boot_uuids_[node_index] != UUID::Zero()) {
-          connection->mutate_state(server_state_[node_index]);
+          switch (server_state_[node_index]) {
+            case message_bridge::State::DISCONNECTED:
+              server_status->Disconnect(node_index);
+              break;
+            case message_bridge::State::CONNECTED:
+              server_status->Connect(node_index, event_loop->monotonic_now());
+              break;
+          }
         } else {
-          connection->mutate_state(message_bridge::State::DISCONNECTED);
+          server_status->Disconnect(node_index);
         }
       }
       ++node_index;
@@ -666,9 +673,18 @@ void SimulatedMessageBridge::State::SetEventLoop(
     const size_t client_node_index = configuration::GetNodeIndex(
         node_factory_->configuration(), client_node);
     if (boot_uuids_[client_node_index] != UUID::Zero()) {
-      client_connection->mutate_state(client_state_[client_node_index]);
+      if (client_connection->state() != client_state_[client_node_index]) {
+        switch (client_state_[client_node_index]) {
+          case message_bridge::State::DISCONNECTED:
+            client_status->Disconnect(i);
+            break;
+          case message_bridge::State::CONNECTED:
+            client_status->Connect(i);
+            break;
+        }
+      }
     } else {
-      client_connection->mutate_state(message_bridge::State::DISCONNECTED);
+      client_status->Disconnect(i);
     }
   }
 

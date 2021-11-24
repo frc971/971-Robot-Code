@@ -439,7 +439,14 @@ TEST_P(MessageBridgeParameterizedTest, PingPong) {
           pi2_client_event_loop->node()->name()->string_view()) {
         if (connection->state() == State::CONNECTED) {
           EXPECT_TRUE(connection->has_boot_uuid());
+          EXPECT_EQ(connection->connection_count(), 1u);
+          EXPECT_LT(monotonic_clock::time_point(chrono::nanoseconds(
+                        connection->connected_since_time())),
+                    monotonic_clock::now());
           connected = true;
+        } else {
+          EXPECT_FALSE(connection->has_connection_count());
+          EXPECT_FALSE(connection->has_connected_since_time());
         }
       }
     }
@@ -473,48 +480,95 @@ TEST_P(MessageBridgeParameterizedTest, PingPong) {
                   chrono::milliseconds(-1));
         EXPECT_TRUE(connection->has_boot_uuid());
       }
+
+      if (connection->state() == State::CONNECTED) {
+        EXPECT_EQ(connection->connection_count(), 1u);
+        EXPECT_LT(monotonic_clock::time_point(
+                      chrono::nanoseconds(connection->connected_since_time())),
+                  monotonic_clock::now());
+      } else {
+        EXPECT_FALSE(connection->has_connection_count());
+        EXPECT_FALSE(connection->has_connected_since_time());
+      }
     }
   });
 
   int pi1_client_statistics_count = 0;
-  ping_event_loop.MakeWatcher("/pi1/aos", [&pi1_client_statistics_count](
-                                              const ClientStatistics &stats) {
-    VLOG(1) << "/pi1/aos ClientStatistics " << FlatbufferToJson(&stats);
+  int pi1_connected_client_statistics_count = 0;
+  ping_event_loop.MakeWatcher(
+      "/pi1/aos",
+      [&pi1_client_statistics_count,
+       &pi1_connected_client_statistics_count](const ClientStatistics &stats) {
+        VLOG(1) << "/pi1/aos ClientStatistics " << FlatbufferToJson(&stats);
 
-    for (const ClientConnection *connection : *stats.connections()) {
-      if (connection->has_monotonic_offset()) {
-        ++pi1_client_statistics_count;
-        // It takes at least 10 microseconds to send a message between the
-        // client and server.  The min (filtered) time shouldn't be over 10
-        // milliseconds on localhost.  This might have to bump up if this is
-        // proving flaky.
-        EXPECT_LT(chrono::nanoseconds(connection->monotonic_offset()),
-                  chrono::milliseconds(10))
-            << " " << connection->monotonic_offset()
-            << "ns vs 10000ns on iteration " << pi1_client_statistics_count;
-        EXPECT_GT(chrono::nanoseconds(connection->monotonic_offset()),
-                  chrono::microseconds(10))
-            << " " << connection->monotonic_offset()
-            << "ns vs 10000ns on iteration " << pi1_client_statistics_count;
-      }
-    }
-  });
+        for (const ClientConnection *connection : *stats.connections()) {
+          if (connection->has_monotonic_offset()) {
+            ++pi1_client_statistics_count;
+            // It takes at least 10 microseconds to send a message between the
+            // client and server.  The min (filtered) time shouldn't be over 10
+            // milliseconds on localhost.  This might have to bump up if this is
+            // proving flaky.
+            EXPECT_LT(chrono::nanoseconds(connection->monotonic_offset()),
+                      chrono::milliseconds(10))
+                << " " << connection->monotonic_offset()
+                << "ns vs 10000ns on iteration " << pi1_client_statistics_count;
+            EXPECT_GT(chrono::nanoseconds(connection->monotonic_offset()),
+                      chrono::microseconds(10))
+                << " " << connection->monotonic_offset()
+                << "ns vs 10000ns on iteration " << pi1_client_statistics_count;
+          }
+          if (connection->state() == State::CONNECTED) {
+            EXPECT_EQ(connection->connection_count(), 1u);
+            EXPECT_LT(monotonic_clock::time_point(chrono::nanoseconds(
+                          connection->connected_since_time())),
+                      monotonic_clock::now());
+            // The first Connected message may not have a UUID in it since no
+            // data has flown.  That's fine.
+            if (pi1_connected_client_statistics_count > 0) {
+              EXPECT_TRUE(connection->has_boot_uuid())
+                  << ": " << aos::FlatbufferToJson(connection);
+            }
+            ++pi1_connected_client_statistics_count;
+          } else {
+            EXPECT_FALSE(connection->has_connection_count());
+            EXPECT_FALSE(connection->has_connected_since_time());
+          }
+        }
+      });
 
   int pi2_client_statistics_count = 0;
-  pong_event_loop.MakeWatcher("/pi2/aos", [&pi2_client_statistics_count](
-                                              const ClientStatistics &stats) {
-    VLOG(1) << "/pi2/aos ClientStatistics " << FlatbufferToJson(&stats);
+  int pi2_connected_client_statistics_count = 0;
+  pong_event_loop.MakeWatcher(
+      "/pi2/aos",
+      [&pi2_client_statistics_count,
+       &pi2_connected_client_statistics_count](const ClientStatistics &stats) {
+        VLOG(1) << "/pi2/aos ClientStatistics " << FlatbufferToJson(&stats);
 
-    for (const ClientConnection *connection : *stats.connections()) {
-      if (connection->has_monotonic_offset()) {
-        ++pi2_client_statistics_count;
-        EXPECT_LT(chrono::nanoseconds(connection->monotonic_offset()),
-                  chrono::milliseconds(10));
-        EXPECT_GT(chrono::nanoseconds(connection->monotonic_offset()),
-                  chrono::microseconds(10));
-      }
-    }
-  });
+        for (const ClientConnection *connection : *stats.connections()) {
+          if (connection->has_monotonic_offset()) {
+            ++pi2_client_statistics_count;
+            EXPECT_LT(chrono::nanoseconds(connection->monotonic_offset()),
+                      chrono::milliseconds(10))
+                << ": got " << aos::FlatbufferToJson(connection);
+            EXPECT_GT(chrono::nanoseconds(connection->monotonic_offset()),
+                      chrono::microseconds(10))
+                << ": got " << aos::FlatbufferToJson(connection);
+          }
+          if (connection->state() == State::CONNECTED) {
+            EXPECT_EQ(connection->connection_count(), 1u);
+            EXPECT_LT(monotonic_clock::time_point(chrono::nanoseconds(
+                          connection->connected_since_time())),
+                      monotonic_clock::now());
+            if (pi2_connected_client_statistics_count > 0) {
+              EXPECT_TRUE(connection->has_boot_uuid());
+            }
+            ++pi2_connected_client_statistics_count;
+          } else {
+            EXPECT_FALSE(connection->has_connection_count());
+            EXPECT_FALSE(connection->has_connected_since_time());
+          }
+        }
+      });
 
   ping_event_loop.MakeWatcher("/pi1/aos", [](const Timestamp &timestamp) {
     EXPECT_TRUE(timestamp.has_offsets());
@@ -756,6 +810,8 @@ TEST_P(MessageBridgeParameterizedTest, ClientRestart) {
         pi2_server_statistics_fetcher->connections()->Get(0);
 
     EXPECT_EQ(pi1_connection->state(), State::CONNECTED);
+    EXPECT_EQ(pi1_connection->connection_count(), 1u);
+    EXPECT_TRUE(pi1_connection->has_connected_since_time());
     EXPECT_TRUE(pi1_connection->has_monotonic_offset());
     EXPECT_LT(chrono::nanoseconds(pi1_connection->monotonic_offset()),
               chrono::milliseconds(1));
@@ -764,6 +820,8 @@ TEST_P(MessageBridgeParameterizedTest, ClientRestart) {
     EXPECT_TRUE(pi1_connection->has_boot_uuid());
 
     EXPECT_EQ(pi2_connection->state(), State::CONNECTED);
+    EXPECT_EQ(pi2_connection->connection_count(), 1u);
+    EXPECT_TRUE(pi2_connection->has_connected_since_time());
     EXPECT_TRUE(pi2_connection->has_monotonic_offset());
     EXPECT_LT(chrono::nanoseconds(pi2_connection->monotonic_offset()),
               chrono::milliseconds(1));
@@ -787,11 +845,15 @@ TEST_P(MessageBridgeParameterizedTest, ClientRestart) {
         pi2_server_statistics_fetcher->connections()->Get(0);
 
     EXPECT_EQ(pi1_connection->state(), State::DISCONNECTED);
+    EXPECT_EQ(pi1_connection->connection_count(), 1u);
+    EXPECT_FALSE(pi1_connection->has_connected_since_time());
     EXPECT_FALSE(pi1_connection->has_monotonic_offset());
     EXPECT_FALSE(pi1_connection->has_boot_uuid());
     EXPECT_EQ(pi2_connection->state(), State::CONNECTED);
     EXPECT_FALSE(pi2_connection->has_monotonic_offset());
     EXPECT_TRUE(pi2_connection->has_boot_uuid());
+    EXPECT_EQ(pi2_connection->connection_count(), 1u);
+    EXPECT_TRUE(pi2_connection->has_connected_since_time());
   }
 
   {
@@ -809,19 +871,27 @@ TEST_P(MessageBridgeParameterizedTest, ClientRestart) {
         pi2_server_statistics_fetcher->connections()->Get(0);
 
     EXPECT_EQ(pi1_connection->state(), State::CONNECTED);
+    EXPECT_EQ(pi1_connection->connection_count(), 2u);
+    EXPECT_TRUE(pi1_connection->has_connected_since_time());
     EXPECT_TRUE(pi1_connection->has_monotonic_offset());
     EXPECT_LT(chrono::nanoseconds(pi1_connection->monotonic_offset()),
-              chrono::milliseconds(1));
+              chrono::milliseconds(1))
+        << ": " << FlatbufferToJson(pi1_connection);
     EXPECT_GT(chrono::nanoseconds(pi1_connection->monotonic_offset()),
-              chrono::milliseconds(-1));
+              chrono::milliseconds(-1))
+        << ": " << FlatbufferToJson(pi1_connection);
     EXPECT_TRUE(pi1_connection->has_boot_uuid());
 
     EXPECT_EQ(pi2_connection->state(), State::CONNECTED);
+    EXPECT_EQ(pi2_connection->connection_count(), 1u);
+    EXPECT_TRUE(pi2_connection->has_connected_since_time());
     EXPECT_TRUE(pi2_connection->has_monotonic_offset());
     EXPECT_LT(chrono::nanoseconds(pi2_connection->monotonic_offset()),
-              chrono::milliseconds(1));
+              chrono::milliseconds(1))
+        << ": " << FlatbufferToJson(pi2_connection);
     EXPECT_GT(chrono::nanoseconds(pi2_connection->monotonic_offset()),
-              chrono::milliseconds(-1));
+              chrono::milliseconds(-1))
+        << ": " << FlatbufferToJson(pi2_connection);
     EXPECT_TRUE(pi2_connection->has_boot_uuid());
 
     StopPi2Client();
@@ -905,6 +975,8 @@ TEST_P(MessageBridgeParameterizedTest, ServerRestart) {
     EXPECT_GT(chrono::nanoseconds(pi1_connection->monotonic_offset()),
               chrono::milliseconds(-1));
     EXPECT_TRUE(pi1_connection->has_boot_uuid());
+    EXPECT_TRUE(pi1_connection->has_connected_since_time());
+    EXPECT_EQ(pi1_connection->connection_count(), 1u);
 
     EXPECT_EQ(pi2_connection->state(), State::CONNECTED);
     EXPECT_TRUE(pi2_connection->has_monotonic_offset());
@@ -913,6 +985,8 @@ TEST_P(MessageBridgeParameterizedTest, ServerRestart) {
     EXPECT_GT(chrono::nanoseconds(pi2_connection->monotonic_offset()),
               chrono::milliseconds(-1));
     EXPECT_TRUE(pi2_connection->has_boot_uuid());
+    EXPECT_TRUE(pi2_connection->has_connected_since_time());
+    EXPECT_EQ(pi2_connection->connection_count(), 1u);
 
     StopPi2Server();
   }
@@ -931,9 +1005,15 @@ TEST_P(MessageBridgeParameterizedTest, ServerRestart) {
 
     EXPECT_EQ(pi1_server_connection->state(), State::CONNECTED);
     EXPECT_FALSE(pi1_server_connection->has_monotonic_offset());
+    EXPECT_TRUE(pi1_server_connection->has_connected_since_time());
+    EXPECT_EQ(pi1_server_connection->connection_count(), 1u);
+
     EXPECT_TRUE(pi1_server_connection->has_boot_uuid());
     EXPECT_EQ(pi1_client_connection->state(), State::DISCONNECTED);
     EXPECT_FALSE(pi1_client_connection->has_monotonic_offset());
+    EXPECT_FALSE(pi1_client_connection->has_connected_since_time());
+    EXPECT_EQ(pi1_client_connection->connection_count(), 1u);
+    EXPECT_FALSE(pi1_client_connection->has_boot_uuid());
   }
 
   {
@@ -944,11 +1024,14 @@ TEST_P(MessageBridgeParameterizedTest, ServerRestart) {
     // And confirm we are synchronized again.
     EXPECT_TRUE(pi1_server_statistics_fetcher.Fetch());
     EXPECT_TRUE(pi2_server_statistics_fetcher.Fetch());
+    EXPECT_TRUE(pi1_client_statistics_fetcher.Fetch());
 
     const ServerConnection *const pi1_connection =
         pi1_server_statistics_fetcher->connections()->Get(0);
     const ServerConnection *const pi2_connection =
         pi2_server_statistics_fetcher->connections()->Get(0);
+    const ClientConnection *const pi1_client_connection =
+        pi1_client_statistics_fetcher->connections()->Get(0);
 
     EXPECT_EQ(pi1_connection->state(), State::CONNECTED);
     EXPECT_TRUE(pi1_connection->has_monotonic_offset());
@@ -957,6 +1040,11 @@ TEST_P(MessageBridgeParameterizedTest, ServerRestart) {
     EXPECT_GT(chrono::nanoseconds(pi1_connection->monotonic_offset()),
               chrono::milliseconds(-1));
     EXPECT_TRUE(pi1_connection->has_boot_uuid());
+
+    EXPECT_EQ(pi1_client_connection->state(), State::CONNECTED);
+    EXPECT_TRUE(pi1_client_connection->has_connected_since_time());
+    EXPECT_EQ(pi1_client_connection->connection_count(), 2u);
+    EXPECT_TRUE(pi1_client_connection->has_boot_uuid());
 
     EXPECT_EQ(pi2_connection->state(), State::CONNECTED);
     EXPECT_TRUE(pi2_connection->has_monotonic_offset());

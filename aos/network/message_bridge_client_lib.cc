@@ -208,16 +208,14 @@ void SctpClientConnection::NodeConnected(sctp_assoc_t assoc_id) {
   // the priority scheduler.  This only needs to be done once per stream.
   client_.SetPriorityScheduler(assoc_id);
 
-  connection_->mutate_state(State::CONNECTED);
-  client_status_->SampleReset(client_index_);
+  client_status_->Connect(client_index_);
 }
 
 void SctpClientConnection::NodeDisconnected() {
   connect_timer_->Setup(
       event_loop_->monotonic_now() + chrono::milliseconds(100),
       chrono::milliseconds(100));
-  connection_->mutate_state(State::DISCONNECTED);
-  connection_->mutate_monotonic_offset(0);
+  client_status_->Disconnect(client_index_);
   client_status_->SampleReset(client_index_);
 }
 
@@ -270,7 +268,8 @@ void SctpClientConnection::HandleData(const Message *message) {
         client_index_,
         monotonic_clock::time_point(
             chrono::nanoseconds(remote_data->monotonic_sent_time())),
-        sender->monotonic_sent_time());
+        sender->monotonic_sent_time(),
+        UUID::FromVector(remote_data->boot_uuid()));
 
     if (stream_reply_with_timestamp_[stream]) {
       // TODO(austin): Send back less if we are only acking.  Maybe only a

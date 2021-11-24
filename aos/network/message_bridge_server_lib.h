@@ -38,11 +38,12 @@ class ChannelState {
   struct Peer {
     Peer(const Connection *new_connection, int new_node_index,
          ServerConnection *new_server_connection_statistics,
-         bool new_logged_remotely,
+         MessageBridgeServerStatus *new_server_status, bool new_logged_remotely,
          aos::Sender<RemoteMessage> *new_timestamp_logger)
         : connection(new_connection),
           node_index(new_node_index),
           server_connection_statistics(new_server_connection_statistics),
+          server_status(new_server_status),
           timestamp_logger(new_timestamp_logger),
           logged_remotely(new_logged_remotely) {}
 
@@ -53,6 +54,7 @@ class ChannelState {
     const aos::Connection *connection;
     const int node_index;
     ServerConnection *server_connection_statistics;
+    MessageBridgeServerStatus *server_status;
     aos::Sender<RemoteMessage> *timestamp_logger = nullptr;
 
     // If true, this message will be logged on a receiving node.  We need to
@@ -64,12 +66,13 @@ class ChannelState {
   // Returns the node index which [dis]connected, or -1 if it didn't match.
   int NodeDisconnected(sctp_assoc_t assoc_id);
   int NodeConnected(const Node *node, sctp_assoc_t assoc_id, int stream,
-                    SctpServer *server);
+                    SctpServer *server,
+                    aos::monotonic_clock::time_point monotonic_now);
 
   // Adds a new peer.
   void AddPeer(const Connection *connection, int node_index,
                ServerConnection *server_connection_statistics,
-               bool logged_remotely,
+               MessageBridgeServerStatus *server_status, bool logged_remotely,
                aos::Sender<RemoteMessage> *timestamp_logger);
 
   // Returns true if this channel has the same name and type as the other

@@ -42,10 +42,16 @@ class MessageBridgeClientStatus {
   void SampleFilter(
       int client_index,
       const aos::monotonic_clock::time_point monotonic_sent_time,
-      const aos::monotonic_clock::time_point monotonic_delivered_time);
+      const aos::monotonic_clock::time_point monotonic_delivered_time,
+      const UUID &uuid);
 
   // Clears out the filter state.
   void SampleReset(int client_index) { filters_[client_index].Reset(); }
+
+  // Disconnects the client.
+  void Disconnect(int client_index);
+  // Connects the client.
+  void Connect(int client_index);
 
   // Disables sending out any statistics messages.
   void DisableStatistics();
@@ -72,6 +78,8 @@ class MessageBridgeClientStatus {
   std::vector<flatbuffers::Offset<ClientConnection>> client_connection_offsets_;
 
   std::vector<TimestampFilter> filters_;
+
+  std::vector<UUID> uuids_;
 
   // If true, send out the messages.
   bool send_ = true;
