@@ -18,8 +18,7 @@ export function plotRobotState(conn: Connection, element: Element) : void {
 
   // Robot Enabled/Disabled and Mode
   const robotStatePlot =
-      aosPlotter.addPlot(element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT / 2]);
-  currentTop += DEFAULT_HEIGHT / 2;
+      aosPlotter.addPlot(element, [DEFAULT_WIDTH, DEFAULT_HEIGHT / 2]);
   robotStatePlot.plot.getAxisLabels().setTitle('Robot State');
   robotStatePlot.plot.getAxisLabels().setXLabel(TIME);
   robotStatePlot.plot.getAxisLabels().setYLabel('bool');
@@ -41,7 +40,7 @@ export function plotRobotState(conn: Connection, element: Element) : void {
 
   // Battery Voltage
   const batteryPlot =
-      aosPlotter.addPlot(element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT / 2]);
+      aosPlotter.addPlot(element, [DEFAULT_WIDTH, DEFAULT_HEIGHT / 2]);
   currentTop += DEFAULT_HEIGHT / 2;
   batteryPlot.plot.getAxisLabels().setTitle('Battery Voltage');
   batteryPlot.plot.getAxisLabels().setXLabel(TIME);
@@ -51,7 +50,7 @@ export function plotRobotState(conn: Connection, element: Element) : void {
 
   // PID of process reading sensors
   const readerPidPlot =
-      aosPlotter.addPlot(element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT / 2]);
+      aosPlotter.addPlot(element, [DEFAULT_WIDTH, DEFAULT_HEIGHT / 2]);
   currentTop += DEFAULT_HEIGHT / 2;
   readerPidPlot.plot.getAxisLabels().setTitle("PID of Process Reading Sensors");
   readerPidPlot.plot.getAxisLabels().setXLabel(TIME);

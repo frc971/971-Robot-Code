@@ -25,7 +25,7 @@ export function plotSpline(conn: Connection, element: Element): void {
 
   // Polydrivetrain (teleop control) plots
   const longitudinalPlot = aosPlotter.addPlot(
-      element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT / 2]);
+      element, [DEFAULT_WIDTH, DEFAULT_HEIGHT / 2]);
   currentTop += DEFAULT_HEIGHT / 2;
   longitudinalPlot.plot.getAxisLabels().setTitle('Longitudinal Distance');
   longitudinalPlot.plot.getAxisLabels().setXLabel(TIME);
@@ -35,7 +35,7 @@ export function plotSpline(conn: Connection, element: Element): void {
       status, ['trajectory_logging', 'distance_remaining']);
 
   const boolPlot = aosPlotter.addPlot(
-      element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT / 2]);
+      element, [DEFAULT_WIDTH, DEFAULT_HEIGHT / 2]);
   currentTop += DEFAULT_HEIGHT / 2;
   boolPlot.plot.getAxisLabels().setTitle('Bool Flags');
   boolPlot.plot.getAxisLabels().setXLabel(TIME);
@@ -46,8 +46,7 @@ export function plotSpline(conn: Connection, element: Element): void {
   boolPlot.addMessageLine(status, ['trajectory_logging', 'is_executed'])
       .setColor(BLUE);
 
-  const handlePlot = aosPlotter.addPlot(
-      element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT]);
+  const handlePlot = aosPlotter.addPlot(element);
   currentTop += DEFAULT_HEIGHT;
   handlePlot.plot.getAxisLabels().setTitle('Spline Handles');
   handlePlot.plot.getAxisLabels().setXLabel(TIME);

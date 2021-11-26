@@ -17,12 +17,9 @@ export function plotFinisher(conn: Connection, element: Element) : void {
   const pdpValues = aosPlotter.addMessageSource('/roborio/aos', 'frc971.PDPValues');
   const robotState = aosPlotter.addMessageSource('/aos', 'aos.RobotState');
 
-  var currentTop = 0;
-
   // Robot Enabled/Disabled and Mode
   const velocityPlot =
-      aosPlotter.addPlot(element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT / 2]);
-  currentTop += DEFAULT_HEIGHT / 2;
+      aosPlotter.addPlot(element, [DEFAULT_WIDTH, DEFAULT_HEIGHT / 2]);
   velocityPlot.plot.getAxisLabels().setTitle('Velocity');
   velocityPlot.plot.getAxisLabels().setXLabel(TIME);
   velocityPlot.plot.getAxisLabels().setYLabel('rad/s');
@@ -35,8 +32,7 @@ export function plotFinisher(conn: Connection, element: Element) : void {
   velocityPlot.addMessageLine(status, ['shooter', 'finisher', 'dt_angular_velocity']).setColor(PINK).setPointSize(0.0);
 
   const ballsShotPlot =
-      aosPlotter.addPlot(element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT / 2]);
-  currentTop += DEFAULT_HEIGHT / 2;
+      aosPlotter.addPlot(element, [DEFAULT_WIDTH, DEFAULT_HEIGHT / 2]);
   ballsShotPlot.plot.getAxisLabels().setTitle('Balls Shot');
   ballsShotPlot.plot.getAxisLabels().setXLabel(TIME);
   ballsShotPlot.plot.getAxisLabels().setYLabel('Balls');
@@ -45,8 +41,7 @@ export function plotFinisher(conn: Connection, element: Element) : void {
 
 
   const voltagePlot =
-      aosPlotter.addPlot(element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT / 2]);
-  currentTop += DEFAULT_HEIGHT / 2;
+      aosPlotter.addPlot(element, [DEFAULT_WIDTH, DEFAULT_HEIGHT / 2]);
   voltagePlot.plot.getAxisLabels().setTitle('Voltage');
   voltagePlot.plot.getAxisLabels().setXLabel(TIME);
   voltagePlot.plot.getAxisLabels().setYLabel('Volts');
@@ -58,8 +53,7 @@ export function plotFinisher(conn: Connection, element: Element) : void {
 
 
   const currentPlot =
-      aosPlotter.addPlot(element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT / 2]);
-  currentTop += DEFAULT_HEIGHT / 2;
+      aosPlotter.addPlot(element, [DEFAULT_WIDTH, DEFAULT_HEIGHT / 2]);
   currentPlot.plot.getAxisLabels().setTitle('Current');
   currentPlot.plot.getAxisLabels().setXLabel(TIME);
   currentPlot.plot.getAxisLabels().setYLabel('Amps');

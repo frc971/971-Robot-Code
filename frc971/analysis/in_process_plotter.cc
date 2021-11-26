@@ -25,6 +25,9 @@ Plotter::Plotter()
   color_wheel_.push_back(Color(1, 1, 0));
   color_wheel_.push_back(Color(0, 1, 1));
   color_wheel_.push_back(Color(1, 0, 1));
+  color_wheel_.push_back(Color(1, 0.6, 0));
+  color_wheel_.push_back(Color(0.6, 0.3, 0));
+  color_wheel_.push_back(Color(1, 1, 1));
 }
 
 void Plotter::Spin() { event_loop_factory_.Run(); }

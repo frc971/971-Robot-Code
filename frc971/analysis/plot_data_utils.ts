@@ -29,9 +29,6 @@ export function plotData(conn: Connection, parentDiv: Element) {
   plotSelect.add(new Option('Select Plot', invalidSelectValue));
 
   const plotDiv = document.createElement('div');
-  plotDiv.style.position = 'absolute';
-  plotDiv.style.top = '30';
-  plotDiv.style.left = '0';
   parentDiv.appendChild(plotDiv);
 
   conn.addReliableHandler(
@@ -50,12 +47,11 @@ export function plotData(conn: Connection, parentDiv: Element) {
         for (let ii = 0; ii < plotFb.figuresLength(); ++ii) {
           const figure = plotFb.figures(ii);
           const figureDiv = document.createElement('div');
-          figureDiv.style.top = figure.position().top().toString();
-          figureDiv.style.left = figure.position().left().toString();
-          figureDiv.style.position = 'absolute';
+          figureDiv.style.width = figure.position().width().toString() + "px";
+          figureDiv.style.height = figure.position().height().toString() + "px";
+          figureDiv.style.position = 'relative';
           div.appendChild(figureDiv);
-          const plot = new Plot(
-              figureDiv, figure.position().width(), figure.position().height());
+          const plot = new Plot(figureDiv);
 
           if (figure.title()) {
             plot.getAxisLabels().setTitle(figure.title());

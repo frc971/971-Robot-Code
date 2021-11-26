@@ -24,12 +24,9 @@ export function plotDrivetrain(conn: Connection, element: Element): void {
       '/drivetrain', 'frc971.IMUValuesBatch',
       new ImuMessageHandler(conn.getSchema('frc971.IMUValuesBatch')));
 
-  let currentTop = 0;
-
   // Polydrivetrain (teleop control) plots
   const teleopPlot =
-      aosPlotter.addPlot(element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT / 2]);
-  currentTop += DEFAULT_HEIGHT / 2;
+      aosPlotter.addPlot(element, [DEFAULT_WIDTH, DEFAULT_HEIGHT / 2]);
   teleopPlot.plot.getAxisLabels().setTitle('Drivetrain Teleop Goals');
   teleopPlot.plot.getAxisLabels().setXLabel(TIME);
   teleopPlot.plot.getAxisLabels().setYLabel('bool, throttle/wheel values');
@@ -44,8 +41,7 @@ export function plotDrivetrain(conn: Connection, element: Element): void {
 
   // Drivetrain Control Mode
   const modePlot =
-      aosPlotter.addPlot(element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT / 2]);
-  currentTop += DEFAULT_HEIGHT / 2;
+      aosPlotter.addPlot(element, [DEFAULT_WIDTH, DEFAULT_HEIGHT / 2]);
   // TODO(james): Actually add enum support.
   modePlot.plot.getAxisLabels().setTitle(
       'Drivetrain Mode [POLYDRIVE, MOTION_PROFILE, ' +
@@ -58,9 +54,7 @@ export function plotDrivetrain(conn: Connection, element: Element): void {
   controllerType.setDrawLine(false);
 
   // Drivetrain Status estimated relative position
-  const positionPlot = aosPlotter.addPlot(element, [0, currentTop],
-                                         [DEFAULT_WIDTH, DEFAULT_HEIGHT]);
-  currentTop += DEFAULT_HEIGHT;
+  const positionPlot = aosPlotter.addPlot(element);
   positionPlot.plot.getAxisLabels().setTitle("Estimated Relative Position " +
                                              "of the Drivetrain");
   positionPlot.plot.getAxisLabels().setXLabel(TIME);
@@ -83,9 +77,7 @@ export function plotDrivetrain(conn: Connection, element: Element): void {
   rightEncoder.setColor(CYAN);
 
   // Drivetrain Output Voltage
-  const outputPlot =
-      aosPlotter.addPlot(element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT]);
-  currentTop += DEFAULT_HEIGHT;
+  const outputPlot = aosPlotter.addPlot(element);
   outputPlot.plot.getAxisLabels().setTitle('Drivetrain Output');
   outputPlot.plot.getAxisLabels().setXLabel(TIME);
   outputPlot.plot.getAxisLabels().setYLabel('Voltage (V)');
@@ -96,9 +88,7 @@ export function plotDrivetrain(conn: Connection, element: Element): void {
   rightVoltage.setColor(GREEN);
 
   // Voltage Errors
-  const voltageErrors =
-      aosPlotter.addPlot(element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT]);
-  currentTop += DEFAULT_HEIGHT;
+  const voltageErrors = aosPlotter.addPlot(element);
   voltageErrors.plot.getAxisLabels().setTitle('Voltage Errors');
   voltageErrors.plot.getAxisLabels().setXLabel(TIME);
   voltageErrors.plot.getAxisLabels().setYLabel('Voltage (V)');
@@ -118,9 +108,7 @@ export function plotDrivetrain(conn: Connection, element: Element): void {
   ekfRightVoltageError.setColor(CYAN);
 
   // Sundry components of the output voltages
-  const otherVoltages =
-      aosPlotter.addPlot(element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT]);
-  currentTop += DEFAULT_HEIGHT;
+  const otherVoltages = aosPlotter.addPlot(element);
   otherVoltages.plot.getAxisLabels().setTitle('Other Voltage Components');
   otherVoltages.plot.getAxisLabels().setXLabel(TIME);
   otherVoltages.plot.getAxisLabels().setYLabel('Voltage (V)');
@@ -144,9 +132,7 @@ export function plotDrivetrain(conn: Connection, element: Element): void {
   uncappedRightVoltage.setDrawLine(false);
 
   // Drivetrain Velocities
-  const velocityPlot =
-      aosPlotter.addPlot(element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT]);
-  currentTop += DEFAULT_HEIGHT;
+  const velocityPlot = aosPlotter.addPlot(element);
   velocityPlot.plot.getAxisLabels().setTitle('Velocity Plots');
   velocityPlot.plot.getAxisLabels().setXLabel(TIME);
   velocityPlot.plot.getAxisLabels().setYLabel('Wheel Velocity (m/s)');
@@ -183,9 +169,7 @@ export function plotDrivetrain(conn: Connection, element: Element): void {
   rightSpeed.setColor(BROWN);
 
   // Drivetrain trajectory and localizer velocities
-  const velocityPlot2 = aosPlotter.addPlot(element, [0, currentTop],
-                                          [DEFAULT_WIDTH, DEFAULT_HEIGHT]);
-  currentTop += DEFAULT_HEIGHT;
+  const velocityPlot2 = aosPlotter.addPlot(element);
   velocityPlot2.plot.getAxisLabels().setTitle(
       "Trajectory and Localizer Velocity Plots");
   velocityPlot2.plot.getAxisLabels().setXLabel(TIME);
@@ -221,8 +205,7 @@ export function plotDrivetrain(conn: Connection, element: Element): void {
   splineLateralVelocity.setPointSize(0.0);
 
   // Heading
-  const yawPlot = aosPlotter.addPlot(element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT]);
-  currentTop += DEFAULT_HEIGHT;
+  const yawPlot = aosPlotter.addPlot(element);
   yawPlot.plot.getAxisLabels().setTitle('Robot Yaw');
   yawPlot.plot.getAxisLabels().setXLabel(TIME);
   yawPlot.plot.getAxisLabels().setYLabel('Yaw (rad)');
@@ -240,9 +223,7 @@ export function plotDrivetrain(conn: Connection, element: Element): void {
   downEstimatorYaw.setColor(BLUE);
 
   // Pitch/Roll
-  const orientationPlot =
-      aosPlotter.addPlot(element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT]);
-  currentTop += DEFAULT_HEIGHT;
+  const orientationPlot = aosPlotter.addPlot(element);
   orientationPlot.plot.getAxisLabels().setTitle('Orientation');
   orientationPlot.plot.getAxisLabels().setXLabel(TIME);
   orientationPlot.plot.getAxisLabels().setYLabel('Angle (rad)');
@@ -257,9 +238,7 @@ export function plotDrivetrain(conn: Connection, element: Element): void {
   pitch.setLabel('pitch');
 
   // Accelerometer/Gravity
-  const accelPlot =
-      aosPlotter.addPlot(element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT]);
-  currentTop += DEFAULT_HEIGHT;
+  const accelPlot = aosPlotter.addPlot(element);
   accelPlot.plot.getAxisLabels().setTitle('Accelerometer Readings');
   accelPlot.plot.getAxisLabels().setYLabel('Acceleration (g)');
   accelPlot.plot.getAxisLabels().setXLabel('Monotonic Reading Time (sec)');
@@ -293,9 +272,7 @@ export function plotDrivetrain(conn: Connection, element: Element): void {
   accelZ.setDrawLine(false);
 
   // Absolute X Position
-  const xPositionPlot =
-      aosPlotter.addPlot(element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT]);
-  currentTop += DEFAULT_HEIGHT;
+  const xPositionPlot = aosPlotter.addPlot(element);
   xPositionPlot.plot.getAxisLabels().setTitle('X Position');
   xPositionPlot.plot.getAxisLabels().setXLabel(TIME);
   xPositionPlot.plot.getAxisLabels().setYLabel('X Position (m)');
@@ -307,9 +284,7 @@ export function plotDrivetrain(conn: Connection, element: Element): void {
   splineX.setColor(GREEN);
 
   // Absolute Y Position
-  const yPositionPlot =
-      aosPlotter.addPlot(element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT]);
-  currentTop += DEFAULT_HEIGHT;
+  const yPositionPlot = aosPlotter.addPlot(element);
   yPositionPlot.plot.getAxisLabels().setTitle('Y Position');
   yPositionPlot.plot.getAxisLabels().setXLabel(TIME);
   yPositionPlot.plot.getAxisLabels().setYLabel('Y Position (m)');
@@ -321,9 +296,7 @@ export function plotDrivetrain(conn: Connection, element: Element): void {
   splineY.setColor(GREEN);
 
   // Gyro
-  const gyroPlot =
-      aosPlotter.addPlot(element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT]);
-  currentTop += DEFAULT_HEIGHT;
+  const gyroPlot = aosPlotter.addPlot(element);
   gyroPlot.plot.getAxisLabels().setTitle('Gyro Readings');
   gyroPlot.plot.getAxisLabels().setYLabel('Angular Velocity (rad / sec)');
   gyroPlot.plot.getAxisLabels().setXLabel('Monotonic Reading Time (sec)');
@@ -353,8 +326,7 @@ export function plotDrivetrain(conn: Connection, element: Element): void {
 
   // IMU States
   const imuStatePlot =
-      aosPlotter.addPlot(element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT / 2]);
-  currentTop += DEFAULT_HEIGHT / 2;
+      aosPlotter.addPlot(element, [DEFAULT_WIDTH, DEFAULT_HEIGHT / 2]);
   imuStatePlot.plot.getAxisLabels().setTitle('IMU State');
   imuStatePlot.plot.getAxisLabels().setXLabel(TIME);
   imuStatePlot.plot.setDefaultYRange([-0.1, 1.1]);

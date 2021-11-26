@@ -18,7 +18,7 @@ export function plotDownEstimator(conn: Connection, element: Element): void {
       '/drivetrain', 'frc971.IMUValuesBatch',
       new ImuMessageHandler(conn.getSchema('frc971.IMUValuesBatch')));
 
-  const accelPlot = aosPlotter.addPlot(element, [0, 0], [width, height]);
+  const accelPlot = aosPlotter.addPlot(element, [width, height]);
   accelPlot.plot.getAxisLabels().setTitle(
       'Estimated Accelerations (x = forward, y = lateral, z = vertical)');
   accelPlot.plot.getAxisLabels().setYLabel('Acceleration (m/s/s)');
@@ -31,7 +31,7 @@ export function plotDownEstimator(conn: Connection, element: Element): void {
   const accelZ = accelPlot.addMessageLine(status, ['down_estimator', 'accel_z']);
   accelZ.setColor(BLUE);
 
-  const velPlot = aosPlotter.addPlot(element, [0, height], [width, height]);
+  const velPlot = aosPlotter.addPlot(element, [width, height]);
   velPlot.plot.getAxisLabels().setTitle('Raw IMU Integrated Velocity');
   velPlot.plot.getAxisLabels().setYLabel('Velocity (m/s)');
   velPlot.plot.getAxisLabels().setXLabel('Monotonic Reading Time (sec)');
@@ -43,7 +43,7 @@ export function plotDownEstimator(conn: Connection, element: Element): void {
   const velZ = velPlot.addMessageLine(status, ['down_estimator', 'velocity_z']);
   velZ.setColor(BLUE);
 
-  const gravityPlot = aosPlotter.addPlot(element, [0, height * 2], [width, height]);
+  const gravityPlot = aosPlotter.addPlot(element, [width, height]);
   gravityPlot.plot.getAxisLabels().setTitle('Accelerometer Magnitudes');
   gravityPlot.plot.getAxisLabels().setXLabel('Monotonic Sent Time (sec)');
   gravityPlot.plot.setDefaultYRange([0.95, 1.05]);
@@ -58,7 +58,7 @@ export function plotDownEstimator(conn: Connection, element: Element): void {
   accelMagnitudeLine.setDrawLine(false);
 
   const orientationPlot =
-      aosPlotter.addPlot(element, [0, height * 3], [width, height]);
+      aosPlotter.addPlot(element, [width, height]);
   orientationPlot.plot.getAxisLabels().setTitle('Orientation');
   orientationPlot.plot.getAxisLabels().setYLabel('Angle (rad)');
 
@@ -75,7 +75,7 @@ export function plotDownEstimator(conn: Connection, element: Element): void {
   yaw.setColor(BLUE);
   yaw.setLabel('yaw');
 
-  const imuAccelPlot = aosPlotter.addPlot(element, [0, height * 4], [width, height]);
+  const imuAccelPlot = aosPlotter.addPlot(element, [width, height]);
   imuAccelPlot.plot.getAxisLabels().setTitle('Filtered Accelerometer Readings');
   imuAccelPlot.plot.getAxisLabels().setYLabel('Acceleration (g)');
   imuAccelPlot.plot.getAxisLabels().setXLabel('Monotonic Reading Time (sec)');
@@ -113,7 +113,7 @@ export function plotDownEstimator(conn: Connection, element: Element): void {
   expectedAccelZ.setColor(BLUE);
   expectedAccelZ.setPointSize(0);
 
-  const gyroPlot = aosPlotter.addPlot(element, [0, height * 5], [width, height]);
+  const gyroPlot = aosPlotter.addPlot(element, [width, height]);
   gyroPlot.plot.getAxisLabels().setTitle('Gyro Readings');
   gyroPlot.plot.getAxisLabels().setYLabel('Angular Velocity (rad / sec)');
   gyroPlot.plot.getAxisLabels().setXLabel('Monotonic Reading Time (sec)');
@@ -141,7 +141,7 @@ export function plotDownEstimator(conn: Connection, element: Element): void {
   const gyroZ = gyroPlot.addMessageLine(imu, ['gyro_z']);
   gyroZ.setColor(BLUE);
 
-  const statePlot = aosPlotter.addPlot(element, [0, height * 6], [width, height / 2]);
+  const statePlot = aosPlotter.addPlot(element, [width, height / 2]);
   statePlot.plot.getAxisLabels().setTitle('IMU State');
   statePlot.plot.getAxisLabels().setXLabel('Monotonic Sent Time (sec)');
 

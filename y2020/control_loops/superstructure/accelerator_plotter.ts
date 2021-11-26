@@ -21,8 +21,7 @@ export function plotAccelerator(conn: Connection, element: Element) : void {
 
   // Robot Enabled/Disabled and Mode
   const velocityPlot =
-      aosPlotter.addPlot(element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT / 2]);
-  currentTop += DEFAULT_HEIGHT / 2;
+      aosPlotter.addPlot(element, [DEFAULT_WIDTH, DEFAULT_HEIGHT / 2]);
   velocityPlot.plot.getAxisLabels().setTitle('Velocity');
   velocityPlot.plot.getAxisLabels().setXLabel(TIME);
   velocityPlot.plot.getAxisLabels().setYLabel('rad/s');
@@ -38,8 +37,7 @@ export function plotAccelerator(conn: Connection, element: Element) : void {
   velocityPlot.addMessageLine(status, ['shooter', 'accelerator_right', 'dt_angular_velocity']).setColor(BLUE).setPointSize(0.0);
 
   const voltagePlot =
-      aosPlotter.addPlot(element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT / 2]);
-  currentTop += DEFAULT_HEIGHT / 2;
+      aosPlotter.addPlot(element, [DEFAULT_WIDTH, DEFAULT_HEIGHT / 2]);
   voltagePlot.plot.getAxisLabels().setTitle('Voltage');
   voltagePlot.plot.getAxisLabels().setXLabel(TIME);
   voltagePlot.plot.getAxisLabels().setYLabel('Volts');
@@ -53,8 +51,7 @@ export function plotAccelerator(conn: Connection, element: Element) : void {
 
 
   const currentPlot =
-      aosPlotter.addPlot(element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT / 2]);
-  currentTop += DEFAULT_HEIGHT / 2;
+      aosPlotter.addPlot(element, [DEFAULT_WIDTH, DEFAULT_HEIGHT / 2]);
   currentPlot.plot.getAxisLabels().setTitle('Current');
   currentPlot.plot.getAxisLabels().setXLabel(TIME);
   currentPlot.plot.getAxisLabels().setYLabel('Amps');

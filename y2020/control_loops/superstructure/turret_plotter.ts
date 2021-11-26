@@ -12,8 +12,6 @@ import Connection = proxy.Connection;
 import Schema = configuration.reflection.Schema;
 
 const TIME = AosPlotter.TIME;
-const DEFAULT_WIDTH = AosPlotter.DEFAULT_WIDTH;
-const DEFAULT_HEIGHT = AosPlotter.DEFAULT_HEIGHT;
 
 class DerivativeMessageHandler extends MessageHandler {
   // Calculated magnitude of the measured acceleration from the IMU.
@@ -71,11 +69,7 @@ export function plotTurret(conn: Connection, element: Element) : void {
   const localizerDebug =
       aosPlotter.addMessageSource('/drivetrain', 'y2020.control_loops.drivetrain.LocalizerDebug');
 
-  var currentTop = 0;
-
-  const turretPosPlot = aosPlotter.addPlot(
-      element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT]);
-  currentTop += DEFAULT_HEIGHT;
+  const turretPosPlot = aosPlotter.addPlot(element);
   turretPosPlot.plot.getAxisLabels().setTitle('Turret Position');
   turretPosPlot.plot.getAxisLabels().setXLabel(TIME);
   turretPosPlot.plot.getAxisLabels().setYLabel('rad');
@@ -93,9 +87,7 @@ export function plotTurret(conn: Connection, element: Element) : void {
       .setColor(BLUE)
       .setDrawLine(false);
 
-  const turretVelPlot = aosPlotter.addPlot(
-      element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT]);
-  currentTop += DEFAULT_HEIGHT;
+  const turretVelPlot = aosPlotter.addPlot(element);
   turretVelPlot.plot.getAxisLabels().setTitle('Turret Velocity');
   turretVelPlot.plot.getAxisLabels().setXLabel(TIME);
   turretVelPlot.plot.getAxisLabels().setYLabel('rad / sec');
@@ -110,9 +102,7 @@ export function plotTurret(conn: Connection, element: Element) : void {
       .setColor(BLUE)
       .setDrawLine(false);
 
-  const turretAccelPlot = aosPlotter.addPlot(
-      element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT]);
-  currentTop += DEFAULT_HEIGHT;
+  const turretAccelPlot = aosPlotter.addPlot(element);
   turretAccelPlot.plot.getAxisLabels().setTitle('Turret Acceleration');
   turretAccelPlot.plot.getAxisLabels().setXLabel(TIME);
   turretAccelPlot.plot.getAxisLabels().setYLabel('rad / sec / sec');
@@ -121,9 +111,7 @@ export function plotTurret(conn: Connection, element: Element) : void {
       .setColor(RED)
       .setPointSize(0.0);
 
-  const turretVoltagePlot = aosPlotter.addPlot(
-      element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT]);
-  currentTop += DEFAULT_HEIGHT;
+  const turretVoltagePlot = aosPlotter.addPlot(element);
   turretVoltagePlot.plot.getAxisLabels().setTitle('Turret Voltage');
   turretVoltagePlot.plot.getAxisLabels().setXLabel(TIME);
   turretVoltagePlot.plot.getAxisLabels().setYLabel('V');
@@ -141,9 +129,7 @@ export function plotTurret(conn: Connection, element: Element) : void {
       .setColor(RED)
       .setPointSize(0.0);
 
-  const currentPlot = aosPlotter.addPlot(
-      element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT]);
-  currentTop += DEFAULT_HEIGHT;
+  const currentPlot = aosPlotter.addPlot(element);
   currentPlot.plot.getAxisLabels().setTitle('Current');
   currentPlot.plot.getAxisLabels().setXLabel(TIME);
   currentPlot.plot.getAxisLabels().setYLabel('Amps');
@@ -154,9 +140,7 @@ export function plotTurret(conn: Connection, element: Element) : void {
       .setPointSize(0.0);
 
 
-  const targetDistancePlot = aosPlotter.addPlot(
-      element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT]);
-  currentTop += DEFAULT_HEIGHT;
+  const targetDistancePlot = aosPlotter.addPlot(element);
   targetDistancePlot.plot.getAxisLabels().setTitle('Target distance');
   targetDistancePlot.plot.getAxisLabels().setXLabel(TIME);
   targetDistancePlot.plot.getAxisLabels().setYLabel('m');
@@ -165,9 +149,7 @@ export function plotTurret(conn: Connection, element: Element) : void {
       .setColor(RED)
       .setPointSize(0.0);
 
-  const targetChoicePlot = aosPlotter.addPlot(
-      element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT]);
-  currentTop += DEFAULT_HEIGHT;
+  const targetChoicePlot = aosPlotter.addPlot(element);
   targetChoicePlot.plot.getAxisLabels().setTitle('Target choice');
   targetChoicePlot.plot.getAxisLabels().setXLabel(TIME);
   targetChoicePlot.plot.getAxisLabels().setYLabel('[bool]');
@@ -177,9 +159,7 @@ export function plotTurret(conn: Connection, element: Element) : void {
       .setColor(RED)
       .setPointSize(0.0);
 
-  const imageAcceptedPlot = aosPlotter.addPlot(
-      element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT]);
-  currentTop += DEFAULT_HEIGHT;
+  const imageAcceptedPlot = aosPlotter.addPlot(element);
   imageAcceptedPlot.plot.getAxisLabels().setTitle('Image Acceptance');
   imageAcceptedPlot.plot.getAxisLabels().setXLabel(TIME);
   imageAcceptedPlot.plot.getAxisLabels().setYLabel('[bool]');

@@ -10,7 +10,7 @@ export function plotImu(conn: Connection, element: Element): void {
   const height = 400;
   const aosPlotter = new AosPlotter(conn);
 
-  const accelPlot = aosPlotter.addPlot(element, [0, 0], [width, height]);
+  const accelPlot = aosPlotter.addPlot(element, [width, height]);
   accelPlot.plot.getAxisLabels().setTitle('Accelerometer Readings');
   accelPlot.plot.getAxisLabels().setYLabel('Acceleration (g)');
   accelPlot.plot.getAxisLabels().setXLabel('Monotonic Reading Time (sec)');
@@ -29,7 +29,7 @@ export function plotImu(conn: Connection, element: Element): void {
   const accelZ = accelPlot.addMessageLine(imu, ['accelerometer_z']);
   accelZ.setColor([0, 0, 1]);
 
-  const gyroPlot = aosPlotter.addPlot(element, [0, height], [width, height]);
+  const gyroPlot = aosPlotter.addPlot(element, [width, height]);
   gyroPlot.plot.getAxisLabels().setTitle('Gyro Readings');
   gyroPlot.plot.getAxisLabels().setYLabel('Angular Velocity (rad / sec)');
   gyroPlot.plot.getAxisLabels().setXLabel('Monotonic Reading Time (sec)');
@@ -57,14 +57,14 @@ export function plotImu(conn: Connection, element: Element): void {
   const gyroZ = gyroPlot.addMessageLine(imu, ['gyro_z']);
   gyroZ.setColor([0, 0, 1]);
 
-  const tempPlot = aosPlotter.addPlot(element, [0, height * 2], [width, height / 2]);
+  const tempPlot = aosPlotter.addPlot(element, [width, height / 2]);
   tempPlot.plot.getAxisLabels().setTitle('IMU Temperature');
   tempPlot.plot.getAxisLabels().setYLabel('Temperature (deg C)');
   tempPlot.plot.getAxisLabels().setXLabel('Monotonic Reading Time (sec)');
 
   tempPlot.addMessageLine(imu, ['temperature']);
 
-  const statePlot = aosPlotter.addPlot(element, [0, height * 2.5], [width, height / 2]);
+  const statePlot = aosPlotter.addPlot(element, [width, height / 2]);
   statePlot.plot.getAxisLabels().setTitle('IMU State');
   statePlot.plot.getAxisLabels().setXLabel('Monotonic Sent Time (sec)');
   statePlot.plot.setDefaultYRange([-0.1, 1.1]);

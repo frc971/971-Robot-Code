@@ -20,7 +20,7 @@ export function plotHood(conn: Connection, element: Element) : void {
 
   // Robot Enabled/Disabled and Mode
   const positionPlot =
-      aosPlotter.addPlot(element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT / 2]);
+      aosPlotter.addPlot(element, [DEFAULT_WIDTH, DEFAULT_HEIGHT / 2]);
   currentTop += DEFAULT_HEIGHT / 2;
   positionPlot.plot.getAxisLabels().setTitle('Position');
   positionPlot.plot.getAxisLabels().setXLabel(TIME);
@@ -35,7 +35,7 @@ export function plotHood(conn: Connection, element: Element) : void {
   positionPlot.addMessageLine(status, ['hood', 'estimator_state', 'position']).setColor(CYAN).setPointSize(0.0);
 
   const voltagePlot =
-      aosPlotter.addPlot(element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT / 2]);
+      aosPlotter.addPlot(element, [DEFAULT_WIDTH, DEFAULT_HEIGHT / 2]);
   currentTop += DEFAULT_HEIGHT / 2;
   voltagePlot.plot.getAxisLabels().setTitle('Voltage');
   voltagePlot.plot.getAxisLabels().setXLabel(TIME);

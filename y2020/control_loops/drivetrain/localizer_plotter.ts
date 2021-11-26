@@ -12,8 +12,6 @@ import Connection = proxy.Connection;
 import Schema = configuration.reflection.Schema;
 
 const TIME = AosPlotter.TIME;
-const DEFAULT_WIDTH = AosPlotter.DEFAULT_WIDTH;
-const DEFAULT_HEIGHT = AosPlotter.DEFAULT_HEIGHT;
 
 
 export function plotLocalizer(conn: Connection, element: Element) : void {
@@ -27,11 +25,7 @@ export function plotLocalizer(conn: Connection, element: Element) : void {
   const superstructureStatus = aosPlotter.addMessageSource(
       '/superstructure', 'y2020.control_loops.superstructure.Status');
 
-  var currentTop = 0;
-
-  const imageAcceptedPlot = aosPlotter.addPlot(
-      element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT]);
-  currentTop += DEFAULT_HEIGHT;
+  const imageAcceptedPlot = aosPlotter.addPlot(element);
   imageAcceptedPlot.plot.getAxisLabels().setTitle('Image Acceptance');
   imageAcceptedPlot.plot.getAxisLabels().setXLabel(TIME);
   imageAcceptedPlot.plot.getAxisLabels().setYLabel('[bool]');
@@ -41,9 +35,7 @@ export function plotLocalizer(conn: Connection, element: Element) : void {
       .setColor(RED)
       .setDrawLine(false);
 
-  const impliedXPlot = aosPlotter.addPlot(
-      element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT]);
-  currentTop += DEFAULT_HEIGHT;
+  const impliedXPlot = aosPlotter.addPlot(element);
   impliedXPlot.plot.getAxisLabels().setTitle('Implied Robot X');
   impliedXPlot.plot.getAxisLabels().setXLabel(TIME);
   impliedXPlot.plot.getAxisLabels().setYLabel('[m]');
@@ -58,9 +50,7 @@ export function plotLocalizer(conn: Connection, element: Element) : void {
       .setColor(GREEN)
       .setLabel('Localizer X');
 
-  const impliedYPlot = aosPlotter.addPlot(
-      element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT]);
-  currentTop += DEFAULT_HEIGHT;
+  const impliedYPlot = aosPlotter.addPlot(element);
   impliedYPlot.plot.getAxisLabels().setTitle('Implied Robot Y');
   impliedYPlot.plot.getAxisLabels().setXLabel(TIME);
   impliedYPlot.plot.getAxisLabels().setYLabel('[m]');
@@ -75,9 +65,7 @@ export function plotLocalizer(conn: Connection, element: Element) : void {
       .setColor(GREEN)
       .setLabel('Localizer Y');
 
-  const impliedHeadingPlot = aosPlotter.addPlot(
-      element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT]);
-  currentTop += DEFAULT_HEIGHT;
+  const impliedHeadingPlot = aosPlotter.addPlot(element);
   impliedHeadingPlot.plot.getAxisLabels().setTitle('Implied Robot Theta');
   impliedHeadingPlot.plot.getAxisLabels().setXLabel(TIME);
   impliedHeadingPlot.plot.getAxisLabels().setYLabel('[rad]');
@@ -89,9 +77,7 @@ export function plotLocalizer(conn: Connection, element: Element) : void {
       .setColor(GREEN)
       .setLabel('Localizer Theta');
 
-  const impliedTurretGoalPlot = aosPlotter.addPlot(
-      element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT]);
-  currentTop += DEFAULT_HEIGHT;
+  const impliedTurretGoalPlot = aosPlotter.addPlot(element);
   impliedTurretGoalPlot.plot.getAxisLabels().setTitle('Implied Turret Goal');
   impliedTurretGoalPlot.plot.getAxisLabels().setXLabel(TIME);
   impliedTurretGoalPlot.plot.getAxisLabels().setYLabel('[rad]');
@@ -102,9 +88,7 @@ export function plotLocalizer(conn: Connection, element: Element) : void {
   impliedTurretGoalPlot.addMessageLine(superstructureStatus, ['aimer', 'turret_position'])
       .setColor(GREEN);
 
-  const imageTimingPlot = aosPlotter.addPlot(
-      element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT]);
-  currentTop += DEFAULT_HEIGHT;
+  const imageTimingPlot = aosPlotter.addPlot(element);
   imageTimingPlot.plot.getAxisLabels().setTitle('Timing Plot');
   imageTimingPlot.plot.getAxisLabels().setXLabel(TIME);
   imageTimingPlot.plot.getAxisLabels().setYLabel('[ns]');

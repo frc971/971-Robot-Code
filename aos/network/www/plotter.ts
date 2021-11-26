@@ -409,7 +409,7 @@ export class LineDrawer {
 
   public static readonly COLOR_CYCLE = [
     Colors.RED, Colors.GREEN, Colors.BLUE, Colors.BROWN, Colors.PINK,
-    Colors.CYAN, Colors.WHITE
+    Colors.CYAN, Colors.WHITE, Colors.ORANGE, Colors.YELLOW
   ];
   private colorCycleIndex = 0;
 
@@ -850,6 +850,7 @@ class AxisLabels {
 export class Plot {
   private canvas = document.createElement('canvas');
   private textCanvas = document.createElement('canvas');
+  private lineDrawerContext: WebGLRenderingContext;
   private drawer: LineDrawer;
   private static keysPressed:
       object = {'x': false, 'y': false, 'Escape': false};
@@ -869,25 +870,26 @@ export class Plot {
   private defaultYRange: number[]|null = null;
   private zoomRectangle: Line;
 
-  constructor(wrapperDiv: HTMLDivElement, width: number, height: number) {
+  constructor(wrapperDiv: HTMLDivElement) {
     wrapperDiv.appendChild(this.canvas);
     wrapperDiv.appendChild(this.textCanvas);
     this.lastTimeMs = (new Date()).getTime();
 
-    this.canvas.width =
-        width - this.axisLabelBuffer.left - this.axisLabelBuffer.right;
-    this.canvas.height =
-        height - this.axisLabelBuffer.top - this.axisLabelBuffer.bottom;
-    this.canvas.style.left = this.axisLabelBuffer.left.toString();
-    this.canvas.style.top = this.axisLabelBuffer.top.toString();
-    this.canvas.style.position = 'absolute';
-    this.drawer = new LineDrawer(this.canvas.getContext('webgl'));
+    this.canvas.style.paddingLeft = this.axisLabelBuffer.left.toString() + "px";
+    this.canvas.style.paddingRight = this.axisLabelBuffer.right.toString() + "px";
+    this.canvas.style.paddingTop = this.axisLabelBuffer.top.toString() + "px";
+    this.canvas.style.paddingBottom = this.axisLabelBuffer.bottom.toString() + "px";
+    this.canvas.style.width = "100%";
+    this.canvas.style.height = "100%";
+    this.canvas.style.boxSizing = "border-box";
 
-    this.textCanvas.width = width;
-    this.textCanvas.height = height;
-    this.textCanvas.style.left = '0';
-    this.textCanvas.style.top = '0';
+    this.canvas.style.position = 'absolute';
+    this.lineDrawerContext = this.canvas.getContext('webgl');
+    this.drawer = new LineDrawer(this.lineDrawerContext);
+
     this.textCanvas.style.position = 'absolute';
+    this.textCanvas.style.width = "100%";
+    this.textCanvas.style.height = "100%";
     this.textCanvas.style.pointerEvents = 'none';
 
     this.canvas.addEventListener('dblclick', (e) => {
@@ -934,9 +936,22 @@ export class Plot {
   }
 
   mouseCanvasLocation(event: MouseEvent): number[] {
+    const computedStyle = window.getComputedStyle(this.canvas);
+    const paddingLeftStr = computedStyle.getPropertyValue('padding-left');
+    const paddingTopStr = computedStyle.getPropertyValue('padding-top');
+    if (paddingLeftStr.substring(paddingLeftStr.length - 2) != "px") {
+      throw new Error("Left padding should be specified in pixels.");
+    }
+    if (paddingTopStr.substring(paddingTopStr.length - 2) != "px") {
+      throw new Error("Left padding should be specified in pixels.");
+    }
+    // Javascript will just ignore the extra "px".
+    const paddingLeft = Number.parseInt(paddingLeftStr);
+    const paddingTop = Number.parseInt(paddingTopStr);
+
     return [
-      event.offsetX * 2.0 / this.canvas.width - 1.0,
-      -event.offsetY * 2.0 / this.canvas.height + 1.0
+      (event.offsetX - paddingLeft) * 2.0 / this.canvas.width - 1.0,
+      -(event.offsetY - paddingTop) * 2.0 / this.canvas.height + 1.0
     ];
   }
 
@@ -1154,6 +1169,17 @@ export class Plot {
     const curTime = (new Date()).getTime();
     const frameRate = 1000.0 / (curTime - this.lastTimeMs);
     this.lastTimeMs = curTime;
+    const parentWidth = this.textCanvas.parentElement.offsetWidth;
+    const parentHeight = this.textCanvas.parentElement.offsetHeight;
+    this.textCanvas.width = parentWidth;
+    this.textCanvas.height = parentHeight;
+    this.canvas.width =
+        parentWidth - this.axisLabelBuffer.left - this.axisLabelBuffer.right;
+    this.canvas.height =
+        parentHeight - this.axisLabelBuffer.top - this.axisLabelBuffer.bottom;
+    this.lineDrawerContext.viewport(
+        0, 0, this.lineDrawerContext.drawingBufferWidth,
+        this.lineDrawerContext.drawingBufferHeight);
 
     // Clear the overlay.
     const textCtx = this.textCanvas.getContext("2d");

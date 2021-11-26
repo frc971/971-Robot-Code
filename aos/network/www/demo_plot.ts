@@ -23,12 +23,12 @@ export function plotDemo(conn: Connection, parentDiv: Element): void {
   const height = AosPlotter.DEFAULT_HEIGHT;
 
   const benchmarkDiv = document.createElement('div');
-  benchmarkDiv.style.top = (height * 2).toString();
-  benchmarkDiv.style.left = '0';
-  benchmarkDiv.style.position = 'absolute';
+  benchmarkDiv.style.width = width.toString() + "px";
+  benchmarkDiv.style.height = height.toString() + "px";
+  benchmarkDiv.style.position = 'relative';
   parentDiv.appendChild(benchmarkDiv);
 
-  const benchmarkPlot = new Plot(benchmarkDiv, width, height);
+  const benchmarkPlot = new Plot(benchmarkDiv);
 
   const aosPlotter = new AosPlotter(conn);
 
