@@ -86,7 +86,7 @@ TEST_P(AbstractEventLoopTest, Basic) {
     aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
     TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
     builder.add_value(200);
-    ASSERT_TRUE(msg.Send(builder.Finish()));
+    msg.CheckOk(msg.Send(builder.Finish()));
   });
 
   loop2->MakeWatcher("/test", [&](const TestMessage &message) {
@@ -121,7 +121,7 @@ TEST_P(AbstractEventLoopTest, BasicSendDetached) {
     builder.add_value(200);
     detached = msg.Detach(builder.Finish());
   }
-  ASSERT_TRUE(sender.SendDetached(std::move(detached)));
+  sender.CheckOk(sender.SendDetached(std::move(detached)));
 
   auto fetcher = loop2->MakeFetcher<TestMessage>("/test");
   ASSERT_TRUE(fetcher.Fetch());
@@ -142,7 +142,7 @@ TEST_P(AbstractEventLoopTest, NoArgNoData) {
 
     aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
     TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
-    ASSERT_TRUE(msg.Send(builder.Finish()));
+    msg.CheckOk(msg.Send(builder.Finish()));
   });
 
   loop2->MakeNoArgWatcher<TestMessage>("/test", [&]() {
@@ -173,7 +173,7 @@ TEST_P(AbstractEventLoopTest, BasicNoArg) {
     aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
     TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
     builder.add_value(200);
-    ASSERT_TRUE(msg.Send(builder.Finish()));
+    msg.CheckOk(msg.Send(builder.Finish()));
   });
 
   aos::Fetcher<TestMessage> fetcher = loop2->MakeFetcher<TestMessage>("/test");
@@ -203,7 +203,7 @@ TEST_P(AbstractEventLoopTest, BasicFunction) {
     aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
     TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
     builder.add_value(200);
-    ASSERT_TRUE(msg.Send(builder.Finish()));
+    msg.CheckOk(msg.Send(builder.Finish()));
   });
 
   loop2->MakeWatcher("/test", std::function<void(const TestMessage &)>(
@@ -235,13 +235,13 @@ TEST_P(AbstractEventLoopTest, BasicTwoSenders) {
       aos::Sender<TestMessage>::Builder msg = sender1.MakeBuilder();
       TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
       builder.add_value(200);
-      ASSERT_TRUE(msg.Send(builder.Finish()));
+      msg.CheckOk(msg.Send(builder.Finish()));
     }
     {
       aos::Sender<TestMessage>::Builder msg = sender2.MakeBuilder();
       TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
       builder.add_value(200);
-      ASSERT_TRUE(msg.Send(builder.Finish()));
+      msg.CheckOk(msg.Send(builder.Finish()));
     }
   });
 
@@ -285,7 +285,7 @@ TEST_P(AbstractEventLoopTest, FetchWithoutRun) {
   aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
   TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
   builder.add_value(200);
-  ASSERT_TRUE(msg.Send(builder.Finish()));
+  msg.CheckOk(msg.Send(builder.Finish()));
 
   EXPECT_TRUE(fetcher.Fetch());
   ASSERT_FALSE(fetcher.get() == nullptr);
@@ -339,7 +339,7 @@ TEST_P(AbstractEventLoopTest, DoubleSendAtStartup) {
     aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
     TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
     builder.add_value(199);
-    ASSERT_TRUE(msg.Send(builder.Finish()));
+    msg.CheckOk(msg.Send(builder.Finish()));
   }
 
   loop2->OnRun([&]() {
@@ -347,13 +347,13 @@ TEST_P(AbstractEventLoopTest, DoubleSendAtStartup) {
       aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
       TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
       builder.add_value(200);
-      ASSERT_TRUE(msg.Send(builder.Finish()));
+      msg.CheckOk(msg.Send(builder.Finish()));
     }
     {
       aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
       TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
       builder.add_value(201);
-      ASSERT_TRUE(msg.Send(builder.Finish()));
+      msg.CheckOk(msg.Send(builder.Finish()));
     }
   });
 
@@ -376,13 +376,13 @@ TEST_P(AbstractEventLoopTest, DoubleSendAfterStartup) {
     aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
     TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
     builder.add_value(200);
-    ASSERT_TRUE(msg.Send(builder.Finish()));
+    msg.CheckOk(msg.Send(builder.Finish()));
   }
   {
     aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
     TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
     builder.add_value(201);
-    ASSERT_TRUE(msg.Send(builder.Finish()));
+    msg.CheckOk(msg.Send(builder.Finish()));
   }
 
   loop2->MakeWatcher("/test", [&](const TestMessage &message) {
@@ -413,13 +413,13 @@ TEST_P(AbstractEventLoopTest, FetchNext) {
     aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
     TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
     builder.add_value(200);
-    ASSERT_TRUE(msg.Send(builder.Finish()));
+    msg.CheckOk(msg.Send(builder.Finish()));
   }
   {
     aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
     TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
     builder.add_value(201);
-    ASSERT_TRUE(msg.Send(builder.Finish()));
+    msg.CheckOk(msg.Send(builder.Finish()));
   }
 
   // Add a timer to actually quit.
@@ -451,13 +451,13 @@ TEST_P(AbstractEventLoopTest, FetchNextAfterSend) {
     aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
     TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
     builder.add_value(200);
-    ASSERT_TRUE(msg.Send(builder.Finish()));
+    msg.CheckOk(msg.Send(builder.Finish()));
   }
   {
     aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
     TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
     builder.add_value(201);
-    ASSERT_TRUE(msg.Send(builder.Finish()));
+    msg.CheckOk(msg.Send(builder.Finish()));
   }
 
   auto fetcher = loop2->MakeFetcher<TestMessage>("/test");
@@ -492,13 +492,13 @@ TEST_P(AbstractEventLoopTest, FetchDataFromBeforeCreation) {
     aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
     TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
     builder.add_value(200);
-    ASSERT_TRUE(msg.Send(builder.Finish()));
+    msg.CheckOk(msg.Send(builder.Finish()));
   }
   {
     aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
     TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
     builder.add_value(201);
-    ASSERT_TRUE(msg.Send(builder.Finish()));
+    msg.CheckOk(msg.Send(builder.Finish()));
   }
 
   auto fetcher = loop2->MakeFetcher<TestMessage>("/test");
@@ -536,13 +536,13 @@ TEST_P(AbstractEventLoopTest, FetchAndFetchNextTogether) {
     aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
     TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
     builder.add_value(200);
-    ASSERT_TRUE(msg.Send(builder.Finish()));
+    msg.CheckOk(msg.Send(builder.Finish()));
   }
   {
     aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
     TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
     builder.add_value(201);
-    ASSERT_TRUE(msg.Send(builder.Finish()));
+    msg.CheckOk(msg.Send(builder.Finish()));
   }
 
   auto fetcher = loop2->MakeFetcher<TestMessage>("/test");
@@ -557,19 +557,19 @@ TEST_P(AbstractEventLoopTest, FetchAndFetchNextTogether) {
       aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
       TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
       builder.add_value(202);
-      ASSERT_TRUE(msg.Send(builder.Finish()));
+      msg.CheckOk(msg.Send(builder.Finish()));
     }
     {
       aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
       TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
       builder.add_value(203);
-      ASSERT_TRUE(msg.Send(builder.Finish()));
+      msg.CheckOk(msg.Send(builder.Finish()));
     }
     {
       aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
       TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
       builder.add_value(204);
-      ASSERT_TRUE(msg.Send(builder.Finish()));
+      msg.CheckOk(msg.Send(builder.Finish()));
     }
 
     if (fetcher.FetchNext()) {
@@ -603,14 +603,14 @@ TEST_P(AbstractEventLoopTest, FetchNextTest) {
     aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
     TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
     builder.add_value(100);
-    ASSERT_TRUE(msg.Send(builder.Finish()));
+    msg.CheckOk(msg.Send(builder.Finish()));
   }
 
   {
     aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
     TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
     builder.add_value(200);
-    ASSERT_TRUE(msg.Send(builder.Finish()));
+    msg.CheckOk(msg.Send(builder.Finish()));
   }
 
   ASSERT_TRUE(fetcher.FetchNext());
@@ -637,7 +637,7 @@ TEST_P(AbstractEventLoopTest, FetcherBehindData) {
     aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
     TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
     builder.add_value(1);
-    ASSERT_TRUE(msg.Send(builder.Finish()));
+    msg.CheckOk(msg.Send(builder.Finish()));
   }
   ASSERT_TRUE(fetcher.Fetch());
   EXPECT_EQ(1, fetcher.get()->value());
@@ -645,7 +645,7 @@ TEST_P(AbstractEventLoopTest, FetcherBehindData) {
     aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
     TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
     builder.add_value(i + 2);
-    ASSERT_TRUE(msg.Send(builder.Finish()));
+    msg.CheckOk(msg.Send(builder.Finish()));
   }
   EXPECT_EQ(1, fetcher.get()->value());
 }
@@ -663,7 +663,7 @@ TEST_P(AbstractEventLoopTest, FetcherPermutations) {
       aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
       TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
       builder.add_value(i);
-      ASSERT_TRUE(msg.Send(builder.Finish()));
+      msg.CheckOk(msg.Send(builder.Finish()));
     };
     std::vector<Fetcher<TestMessage>> fetchers;
     for (int i = 0; i < 10; ++i) {
@@ -943,7 +943,7 @@ TEST_P(AbstractEventLoopTest, MultipleWatcherQuit) {
     aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
     TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
     builder.add_value(200);
-    ASSERT_TRUE(msg.Send(builder.Finish()));
+    msg.CheckOk(msg.Send(builder.Finish()));
   });
 
   Run();
@@ -988,7 +988,7 @@ TEST_P(AbstractEventLoopTest, AOSLogWatcher) {
     aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
     TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
     builder.add_value(200);
-    ASSERT_TRUE(msg.Send(builder.Finish()));
+    msg.CheckOk(msg.Send(builder.Finish()));
   });
 
   Run();
@@ -1393,7 +1393,7 @@ TEST_P(AbstractEventLoopTest, MessageSendTime) {
     aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
     TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
     builder.add_value(200);
-    ASSERT_TRUE(msg.Send(builder.Finish()));
+    msg.CheckOk(msg.Send(builder.Finish()));
   });
 
   bool triggered = false;
@@ -1493,7 +1493,7 @@ TEST_P(AbstractEventLoopTest, MessageSendTimeNoArg) {
     aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
     TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
     builder.add_value(200);
-    ASSERT_TRUE(msg.Send(builder.Finish()));
+    msg.CheckOk(msg.Send(builder.Finish()));
   });
 
   bool triggered = false;
@@ -1821,7 +1821,7 @@ TEST_P(AbstractEventLoopTest, SenderTimingReport) {
       aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
       TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
       builder.add_value(200 + i);
-      ASSERT_TRUE(msg.Send(builder.Finish()));
+      msg.CheckOk(msg.Send(builder.Finish()));
     }
   });
 
@@ -1906,7 +1906,7 @@ TEST_P(AbstractEventLoopTest, WatcherTimingReport) {
       aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
       TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
       builder.add_value(200 + i);
-      ASSERT_TRUE(msg.Send(builder.Finish()));
+      msg.CheckOk(msg.Send(builder.Finish()));
     }
   });
 
@@ -1975,7 +1975,7 @@ TEST_P(AbstractEventLoopTest, FetcherTimingReport) {
       aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
       TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
       builder.add_value(200 + i);
-      ASSERT_TRUE(msg.Send(builder.Finish()));
+      msg.CheckOk(msg.Send(builder.Finish()));
     }
   });
 
@@ -2063,7 +2063,8 @@ TEST_P(AbstractEventLoopTest, RawBasic) {
           loop3->configuration(), "/test", "aos.TestMessage", "", nullptr));
 
   loop2->OnRun([&]() {
-    EXPECT_TRUE(sender->Send(kMessage.span().data(), kMessage.span().size()));
+    EXPECT_EQ(sender->Send(kMessage.span().data(), kMessage.span().size()),
+              RawSender::Error::kOk);
   });
 
   bool happened = false;
@@ -2113,8 +2114,9 @@ TEST_P(AbstractEventLoopTest, RawBasicSharedSpan) {
           loop3->configuration(), "/test", "aos.TestMessage", "", nullptr));
 
   loop2->OnRun([&]() {
-    EXPECT_TRUE(sender->Send(std::make_shared<absl::Span<const uint8_t>>(
-        kMessage.span().data(), kMessage.span().size())));
+    EXPECT_EQ(sender->Send(std::make_shared<absl::Span<const uint8_t>>(
+                  kMessage.span().data(), kMessage.span().size())),
+              RawSender::Error::kOk);
   });
 
   bool happened = false;
@@ -2171,9 +2173,10 @@ TEST_P(AbstractEventLoopTest, RawRemoteTimes) {
           loop3->configuration(), "/test", "aos.TestMessage", "", nullptr));
 
   loop2->OnRun([&]() {
-    EXPECT_TRUE(sender->Send(kMessage.span().data(), kMessage.span().size(),
-                             monotonic_remote_time, realtime_remote_time,
-                             remote_queue_index, source_boot_uuid));
+    EXPECT_EQ(sender->Send(kMessage.span().data(), kMessage.span().size(),
+                           monotonic_remote_time, realtime_remote_time,
+                           remote_queue_index, source_boot_uuid),
+              RawSender::Error::kOk);
   });
 
   bool happened = false;
@@ -2217,7 +2220,8 @@ TEST_P(AbstractEventLoopTest, RawSenderSentData) {
   const aos::monotonic_clock::time_point monotonic_now = loop1->monotonic_now();
   const aos::realtime_clock::time_point realtime_now = loop1->realtime_now();
 
-  EXPECT_TRUE(sender->Send(kMessage.span().data(), kMessage.span().size()));
+  EXPECT_EQ(sender->Send(kMessage.span().data(), kMessage.span().size()),
+            RawSender::Error::kOk);
 
   EXPECT_GE(sender->monotonic_sent_time(), monotonic_now);
   EXPECT_LE(sender->monotonic_sent_time(),
@@ -2227,7 +2231,8 @@ TEST_P(AbstractEventLoopTest, RawSenderSentData) {
             realtime_now + chrono::milliseconds(100));
   EXPECT_EQ(sender->sent_queue_index(), 0u);
 
-  EXPECT_TRUE(sender->Send(kMessage.span().data(), kMessage.span().size()));
+  EXPECT_EQ(sender->Send(kMessage.span().data(), kMessage.span().size()),
+            RawSender::Error::kOk);
 
   EXPECT_GE(sender->monotonic_sent_time(), monotonic_now);
   EXPECT_LE(sender->monotonic_sent_time(),
@@ -2382,7 +2387,7 @@ TEST_P(AbstractEventLoopTest, NonRealtimeEventLoopWatcher) {
   loop1->OnRun([&]() {
     aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
     TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
-    ASSERT_TRUE(msg.Send(builder.Finish()));
+    msg.CheckOk(msg.Send(builder.Finish()));
   });
 
   loop1->MakeWatcher("/test", [&](const TestMessage &) {
@@ -2405,7 +2410,7 @@ TEST_P(AbstractEventLoopTest, RealtimeEventLoopWatcher) {
   loop1->OnRun([&]() {
     aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
     TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
-    ASSERT_TRUE(msg.Send(builder.Finish()));
+    msg.CheckOk(msg.Send(builder.Finish()));
   });
 
   loop1->MakeWatcher("/test", [&](const TestMessage &) {
@@ -2558,7 +2563,7 @@ TEST_P(AbstractEventLoopDeathTest, WrongDetachedBuffer) {
   auto builder = sender1.MakeBuilder();
   FlatbufferDetachedBuffer<TestMessage> detached =
       builder.Detach(builder.MakeBuilder<TestMessage>().Finish());
-  EXPECT_DEATH(sender2.SendDetached(std::move(detached)),
+  EXPECT_DEATH(sender2.CheckOk(sender2.SendDetached(std::move(detached))),
                "May only send the buffer detached from this Sender");
 }
 

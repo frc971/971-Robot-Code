@@ -20,8 +20,8 @@ template <class T>
 class ActorBase {
  public:
   typedef T GoalType;
-  typedef typename std::remove_reference<
-      decltype(*static_cast<GoalType *>(nullptr)->params())>::type ParamType;
+  typedef typename std::remove_reference<decltype(
+      *static_cast<GoalType *>(nullptr)->params())>::type ParamType;
 
   ActorBase(::aos::EventLoop *event_loop, const ::std::string &name)
       : event_loop_(event_loop),
@@ -40,9 +40,9 @@ class ActorBase {
       status_builder.add_running(0);
       status_builder.add_last_running(0);
       status_builder.add_success(!abort_);
-      if (!builder.Send(status_builder.Finish())) {
-        AOS_LOG(ERROR, "Failed to send the status.\n");
-      }
+      CHECK_EQ(builder.Send(status_builder.Finish()),
+               aos::RawSender::Error::kOk)
+          << "Failed to send initial status";
     });
   }
 
@@ -127,7 +127,8 @@ void ActorBase<T>::HandleGoal(const GoalType &goal) {
         status_builder.add_running(0);
         status_builder.add_last_running(0);
         status_builder.add_success(!abort_);
-        if (!builder.Send(status_builder.Finish())) {
+        if (builder.Send(status_builder.Finish()) !=
+            aos::RawSender::Error::kOk) {
           AOS_LOG(ERROR, "Failed to send the status.\n");
         }
         break;
@@ -144,7 +145,8 @@ void ActorBase<T>::HandleGoal(const GoalType &goal) {
         status_builder.add_running(running_id);
         status_builder.add_last_running(0);
         status_builder.add_success(!abort_);
-        if (!builder.Send(status_builder.Finish())) {
+        if (builder.Send(status_builder.Finish()) !=
+            aos::RawSender::Error::kOk) {
           AOS_LOG(ERROR, "Failed to send the status.\n");
         }
       }
@@ -161,7 +163,8 @@ void ActorBase<T>::HandleGoal(const GoalType &goal) {
         status_builder.add_last_running(running_id);
         status_builder.add_success(!abort_);
 
-        if (!builder.Send(status_builder.Finish())) {
+        if (builder.Send(status_builder.Finish()) !=
+            aos::RawSender::Error::kOk) {
           AOS_LOG(ERROR, "Failed to send the status.\n");
         } else {
           AOS_LOG(INFO, "Sending Done status %" PRIx32 "\n", running_id);

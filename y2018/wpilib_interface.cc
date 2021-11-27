@@ -293,7 +293,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
           drivetrain_shifter_pot_translate(
               right_drivetrain_shifter_->GetVoltage()));
 
-      builder.Send(drivetrain_builder.Finish());
+      builder.CheckOk(builder.Send(drivetrain_builder.Finish()));
     }
   }
 
@@ -396,7 +396,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       superstructure_builder.add_box_distance(lidar_lite_.last_width() /
                                               0.00001 / 100.0 / 2);
 
-      builder.Send(superstructure_builder.Finish());
+      builder.CheckOk(builder.Send(superstructure_builder.Finish()));
     }
   }
 
@@ -516,7 +516,7 @@ class SolenoidWriter {
 
       pcm_->Flush();
       to_log_builder.add_read_solenoids(pcm_->GetAll());
-      builder.Send(to_log_builder.Finish());
+      (void)builder.Send(to_log_builder.Finish());
     }
 
     monotonic_clock::time_point monotonic_now = event_loop_->monotonic_now();

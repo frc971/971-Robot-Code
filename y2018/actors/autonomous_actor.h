@@ -105,7 +105,8 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
     superstructure_builder.add_deploy_fork(deploy_fork_);
     superstructure_builder.add_trajectory_override(false);
 
-    if (!builder.Send(superstructure_builder.Finish())) {
+    if (builder.Send(superstructure_builder.Finish()) !=
+        aos::RawSender::Error::kOk) {
       AOS_LOG(ERROR, "Sending superstructure goal failed.\n");
     }
   }

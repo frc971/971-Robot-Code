@@ -79,7 +79,8 @@ bool VisionAlignActor::RunAction(
     goal_builder.add_left_goal(left_current + side_distance_change);
     goal_builder.add_right_goal(right_current - side_distance_change);
 
-    if (!builder.Send(goal_builder.Finish())) {
+    if (builder.Send(goal_builder.Finish()) !=
+        aos::RawSender::Error::kOk) {
       AOS_LOG(WARNING, "sending drivetrain goal failed\n");
     }
   }

@@ -159,7 +159,7 @@ void ChannelState::HandleDelivery(sctp_assoc_t rcv_assoc_id, uint16_t /*ssn*/,
         server_status->AddPartialDeliveries(peer.node_index,
                                             partial_deliveries);
 
-        builder.Send(remote_message_builder.Finish());
+        builder.CheckOk(builder.Send(remote_message_builder.Finish()));
       }
       break;
     }

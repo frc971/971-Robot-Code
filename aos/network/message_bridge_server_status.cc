@@ -87,7 +87,8 @@ MessageBridgeServerStatus::MessageBridgeServerStatus(
 
   filters_.resize(event_loop->configuration()->nodes()->size());
   partial_deliveries_.resize(event_loop->configuration()->nodes()->size());
-  boot_uuids_.resize(event_loop->configuration()->nodes()->size(), UUID::Zero());
+  boot_uuids_.resize(event_loop->configuration()->nodes()->size(),
+                     UUID::Zero());
   has_boot_uuids_.resize(event_loop->configuration()->nodes()->size(), false);
   timestamp_fetchers_.resize(event_loop->configuration()->nodes()->size());
   server_connection_.resize(event_loop->configuration()->nodes()->size());
@@ -217,7 +218,10 @@ void MessageBridgeServerStatus::SendStatistics() {
   ServerStatistics::Builder server_statistics_builder =
       builder.MakeBuilder<ServerStatistics>();
   server_statistics_builder.add_connections(server_connections_offset);
-  builder.Send(server_statistics_builder.Finish());
+  server_statistics_builder.add_timestamp_send_failures(
+      timestamp_failure_counter_.failures());
+
+  builder.CheckOk(builder.Send(server_statistics_builder.Finish()));
 }
 
 void MessageBridgeServerStatus::Tick() {
@@ -352,20 +356,24 @@ void MessageBridgeServerStatus::Tick() {
   // Send it out over shm, and using that timestamp, then send it out over sctp.
   // This avoid some context switches.
   if (!send_) return;
-  timestamp_sender_.Send(timestamp_copy);
 
-  Context context;
-  context.monotonic_event_time = timestamp_sender_.monotonic_sent_time();
-  context.realtime_event_time = timestamp_sender_.realtime_sent_time();
-  context.queue_index = timestamp_sender_.sent_queue_index();
-  context.size = timestamp_copy.span().size();
-  context.source_boot_uuid = event_loop_->boot_uuid();
-  context.data = timestamp_copy.span().data();
+  const auto err = timestamp_sender_.Send(timestamp_copy);
+  timestamp_failure_counter_.Count(err);
+  // Reply only if we successfully sent the timestamp
+  if (err == RawSender::Error::kOk) {
+    Context context;
+    context.monotonic_event_time = timestamp_sender_.monotonic_sent_time();
+    context.realtime_event_time = timestamp_sender_.realtime_sent_time();
+    context.queue_index = timestamp_sender_.sent_queue_index();
+    context.size = timestamp_copy.span().size();
+    context.source_boot_uuid = event_loop_->boot_uuid();
+    context.data = timestamp_copy.span().data();
 
-  // Since we are building up the timestamp to send here, we need to trigger the
-  // SendData call ourselves.
-  if (send_data_) {
-    send_data_(context);
+    // Since we are building up the timestamp to send here, we need to trigger
+    // the SendData call ourselves.
+    if (send_data_) {
+      send_data_(context);
+    }
   }
 }
 

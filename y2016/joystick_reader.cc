@@ -381,7 +381,8 @@ class Reader : public ::frc971::input::ActionJoystickInput {
         superstructure_builder.add_traverse_down(traverse_down_);
         superstructure_builder.add_force_intake(true);
 
-        if (!builder.Send(superstructure_builder.Finish())) {
+        if (builder.Send(superstructure_builder.Finish()) !=
+            aos::RawSender::Error::kOk) {
           AOS_LOG(ERROR, "Sending superstructure goal failed.\n");
         } else {
           AOS_LOG(DEBUG, "sending goals: intake: %f, shoulder: %f, wrist: %f\n",
@@ -399,7 +400,8 @@ class Reader : public ::frc971::input::ActionJoystickInput {
         shooter_builder.add_force_lights_on(force_lights_on);
         shooter_builder.add_shooting_forwards(wrist_goal_ > 0);
 
-        if (!builder.Send(shooter_builder.Finish())) {
+        if (builder.Send(shooter_builder.Finish()) !=
+            aos::RawSender::Error::kOk) {
           AOS_LOG(ERROR, "Sending shooter goal failed.\n");
         }
       }

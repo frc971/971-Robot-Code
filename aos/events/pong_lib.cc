@@ -16,7 +16,7 @@ Pong::Pong(EventLoop *event_loop)
         builder.MakeBuilder<examples::Pong>();
     pong_builder.add_value(ping.value());
     pong_builder.add_initial_send_time(ping.send_time());
-    CHECK(builder.Send(pong_builder.Finish()));
+    builder.CheckOk(builder.Send(pong_builder.Finish()));
   });
 
   event_loop_->SetRuntimeRealtimePriority(5);

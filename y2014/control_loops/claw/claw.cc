@@ -619,8 +619,9 @@ void ClawMotor::RunIteration(const Goal *goal, const Position *position,
     if (::std::isnan(goal->bottom_angle()) ||
         ::std::isnan(goal->separation_angle()) ||
         ::std::isnan(goal->intake()) || ::std::isnan(goal->centering())) {
-      status->Send(Status::Pack(*status->fbb(), &status_struct));
-      output->Send(Output::Pack(*output->fbb(), &output_struct));
+      (void)status->Send(Status::Pack(*status->fbb(), &status_struct));
+      output->CheckOk(
+          output->Send(Output::Pack(*output->fbb(), &output_struct)));
       return;
     }
   }
@@ -977,7 +978,7 @@ void ClawMotor::RunIteration(const Goal *goal, const Position *position,
       output_struct.bottom_claw_voltage = -kMaxVoltage;
     }
 
-    output->Send(Output::Pack(*output->fbb(), &output_struct));
+    output->CheckOk(output->Send(Output::Pack(*output->fbb(), &output_struct)));
   }
 
   status_struct.bottom = bottom_absolute_position();
@@ -1013,7 +1014,7 @@ void ClawMotor::RunIteration(const Goal *goal, const Position *position,
        bottom_claw_.zeroing_state() ==
            ZeroedStateFeedbackLoop::DISABLED_CALIBRATION);
 
-  status->Send(Status::Pack(*status->fbb(), &status_struct));
+  (void)status->Send(Status::Pack(*status->fbb(), &status_struct));
 
   was_enabled_ = enabled;
 }

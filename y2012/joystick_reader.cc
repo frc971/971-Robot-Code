@@ -114,7 +114,8 @@ class Reader : public ::frc971::input::JoystickInput {
     goal_builder.add_highgear(is_high_gear_);
     goal_builder.add_quickturn(data.IsPressed(kQuickTurn));
 
-    if (!builder.Send(goal_builder.Finish())) {
+    if (builder.Send(goal_builder.Finish()) !=
+        aos::RawSender::Error::kOk) {
       AOS_LOG(WARNING, "sending stick values failed\n");
     }
   }
@@ -135,7 +136,8 @@ class Reader : public ::frc971::input::JoystickInput {
         builder.MakeBuilder<y2012::control_loops::accessories::Message>();
     message_builder.add_solenoids(solenoids_offset);
     message_builder.add_sticks(sticks_offset);
-    if (!builder.Send(message_builder.Finish())) {
+    if (builder.Send(message_builder.Finish()) !=
+        aos::RawSender::Error::kOk) {
       AOS_LOG(WARNING, "sending accessories goal failed\n");
     }
   }

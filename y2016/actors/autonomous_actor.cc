@@ -120,7 +120,8 @@ void AutonomousActor::MoveSuperstructure(
   superstructure_goal_builder.add_voltage_climber(0.0);
   superstructure_goal_builder.add_unfold_climber(false);
 
-  if (!builder.Send(superstructure_goal_builder.Finish())) {
+  if (builder.Send(superstructure_goal_builder.Finish()) !=
+      aos::RawSender::Error::kOk) {
     AOS_LOG(ERROR, "Sending superstructure goal failed.\n");
   }
 }
@@ -135,7 +136,8 @@ void AutonomousActor::OpenShooter() {
   shooter_goal_builder.add_clamp_open(true);
   shooter_goal_builder.add_push_to_shooter(false);
   shooter_goal_builder.add_force_lights_on(false);
-  if (!builder.Send(shooter_goal_builder.Finish())) {
+  if (builder.Send(shooter_goal_builder.Finish()) !=
+      aos::RawSender::Error::kOk) {
     AOS_LOG(ERROR, "Sending shooter goal failed.\n");
   }
 }
@@ -150,8 +152,8 @@ void AutonomousActor::CloseShooter() {
   shooter_goal_builder.add_clamp_open(false);
   shooter_goal_builder.add_push_to_shooter(false);
   shooter_goal_builder.add_force_lights_on(false);
-
-  if (!builder.Send(shooter_goal_builder.Finish())) {
+  if (builder.Send(shooter_goal_builder.Finish()) !=
+      aos::RawSender::Error::kOk) {
     AOS_LOG(ERROR, "Sending shooter goal failed.\n");
   }
 }
@@ -171,7 +173,8 @@ void AutonomousActor::SetShooterSpeed(double speed) {
   shooter_goal_builder.add_push_to_shooter(false);
   shooter_goal_builder.add_force_lights_on(force_lights_on);
 
-  if (!builder.Send(shooter_goal_builder.Finish())) {
+  if (builder.Send(shooter_goal_builder.Finish()) !=
+      aos::RawSender::Error::kOk) {
     AOS_LOG(ERROR, "Sending shooter goal failed.\n");
   }
 }
@@ -196,7 +199,8 @@ void AutonomousActor::Shoot() {
   shooter_goal_builder.add_push_to_shooter(true);
   shooter_goal_builder.add_force_lights_on(force_lights_on);
 
-  if (!builder.Send(shooter_goal_builder.Finish())) {
+  if (builder.Send(shooter_goal_builder.Finish()) !=
+      aos::RawSender::Error::kOk) {
     AOS_LOG(ERROR, "Sending shooter goal failed.\n");
   }
 

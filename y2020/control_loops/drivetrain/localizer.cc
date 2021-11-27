@@ -199,7 +199,7 @@ void Localizer::Update(const Eigen::Matrix<double, 2, 1> &U,
         builder.MakeBuilder<LocalizerDebug>();
     debug_builder.add_matches(vector_offset);
     debug_builder.add_statistics(stats_offset);
-    CHECK(builder.Send(debug_builder.Finish()));
+    builder.CheckOk(builder.Send(debug_builder.Finish()));
   }
 }
 
@@ -303,7 +303,8 @@ Localizer::HandleImageMatch(
     ImageMatchDebug::Builder builder(*fbb);
     builder.add_camera(camera_index);
     builder.add_pose_index(index);
-    builder.add_local_image_capture_time_ns(result.image_monotonic_timestamp_ns());
+    builder.add_local_image_capture_time_ns(
+        result.image_monotonic_timestamp_ns());
     builder.add_roborio_image_capture_time_ns(
         capture_time.time_since_epoch().count());
     builder.add_image_age_sec(aos::time::DurationInSeconds(now - capture_time));
@@ -390,8 +391,8 @@ Localizer::HandleImageMatch(
                                  (2.0 * dt_config_.robot_radius) +
                              (is_turret ? turret_data.velocity : 0.0));
 
-    // Pay less attention to cameras that aren't actually on the turret, since they
-    // are less useful when it comes to actually making shots.
+    // Pay less attention to cameras that aren't actually on the turret, since
+    // they are less useful when it comes to actually making shots.
     if (!is_turret) {
       noises *= 3.0;
     } else {

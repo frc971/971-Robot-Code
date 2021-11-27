@@ -35,7 +35,8 @@ int Main() {
           builder.MakeBuilder<VisionStatus>();
       vision_status_builder.add_high_frame_count(status.high_frame_count());
       vision_status_builder.add_low_frame_count(status.low_frame_count());
-      if (!builder.Send(vision_status_builder.Finish())) {
+      if (builder.Send(vision_status_builder.Finish()) !=
+          aos::RawSender::Error::kOk) {
         AOS_LOG(ERROR, "Failed to send vision information\n");
       }
     }

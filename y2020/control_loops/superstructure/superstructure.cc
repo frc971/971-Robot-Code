@@ -81,9 +81,9 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
                          CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
                              *hood_goal.fbb(), shot_params.hood_angle));
 
-    shooter_goal.Finish(CreateShooterGoal(
-        *shooter_goal.fbb(), shot_params.velocity_accelerator,
-        shot_params.velocity_finisher));
+    shooter_goal.Finish(CreateShooterGoal(*shooter_goal.fbb(),
+                                          shot_params.velocity_accelerator,
+                                          shot_params.velocity_finisher));
   } else {
     hood_goal.Finish(
         frc971::control_loops::
@@ -242,7 +242,9 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   status_builder.add_aimer(aimer_status_offset);
   status_builder.add_subsystems_not_ready(subsystems_not_ready_offset);
 
-  status->Send(status_builder.Finish());
+  status_builder.add_send_failures(status_failure_counter_.failures());
+
+  status_failure_counter_.Count(status->Send(status_builder.Finish()));
 
   if (output != nullptr) {
     output_struct.washing_machine_spinner_voltage = 0.0;
@@ -302,7 +304,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       }
     }
 
-    output->Send(Output::Pack(*output->fbb(), &output_struct));
+    output->CheckOk(output->Send(Output::Pack(*output->fbb(), &output_struct)));
   }
 }
 

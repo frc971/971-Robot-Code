@@ -3,6 +3,7 @@
 #include "aos/events/shm_event_loop.h"
 #include "aos/flatbuffer_merge.h"
 #include "aos/starter/starterd_lib.h"
+#include "glog/logging.h"
 
 namespace aos {
 namespace starter {
@@ -163,7 +164,7 @@ void StarterClient::SendCommands(
     if (is_multi_node) {
       command_builder.add_nodes(nodes_offset);
     }
-    CHECK(builder.Send(command_builder.Finish()));
+    builder.CheckOk(builder.Send(command_builder.Finish()));
   }
 
   timeout_timer_->Setup(event_loop_->monotonic_now() + timeout);

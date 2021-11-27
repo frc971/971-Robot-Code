@@ -97,7 +97,8 @@ TEST_F(LoopOutputHandlerTest, WatchdogTest) {
           LoopOutputHandlerTestOutput::Builder output_builder =
               builder.MakeBuilder<LoopOutputHandlerTestOutput>();
           output_builder.add_voltage(5.0);
-          EXPECT_TRUE(builder.Send(output_builder.Finish()));
+          EXPECT_EQ(builder.Send(output_builder.Finish()),
+                    aos::RawSender::Error::kOk);
 
           ++count;
         }

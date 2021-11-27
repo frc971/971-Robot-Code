@@ -122,7 +122,7 @@ void MessageBridgeClientStatus::SendStatistics() {
       builder.MakeBuilder<ClientStatistics>();
   client_statistics_builder.add_connections(client_connections_offset);
 
-  builder.Send(client_statistics_builder.Finish());
+  builder.CheckOk(builder.Send(client_statistics_builder.Finish()));
 }
 
 int MessageBridgeClientStatus::FindClientIndex(std::string_view node_name) {

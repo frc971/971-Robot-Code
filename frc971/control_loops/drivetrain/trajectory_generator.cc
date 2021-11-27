@@ -22,7 +22,8 @@ void TrajectoryGenerator::HandleSplineGoal(const SplineGoal &goal) {
   aos::Sender<fb::Trajectory>::Builder builder =
       trajectory_sender_.MakeBuilder();
 
-  CHECK(builder.Send(trajectory.Serialize(builder.fbb())));
+  CHECK_EQ(builder.Send(trajectory.Serialize(builder.fbb())),
+           aos::RawSender::Error::kOk);
 }
 
 }  // namespace drivetrain

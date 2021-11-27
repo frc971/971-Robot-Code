@@ -19,8 +19,7 @@ class VisionTimeAdjusterTest : public ::testing::Test {
       : ::testing::Test(),
         configuration_(aos::configuration::ReadConfig("y2017/config.json")),
         event_loop_factory_(&configuration_.message()),
-        simulation_event_loop_(
-            event_loop_factory_.MakeEventLoop("drivetrain")),
+        simulation_event_loop_(event_loop_factory_.MakeEventLoop("drivetrain")),
         drivetrain_status_sender_(
             simulation_event_loop_
                 ->MakeSender<::frc971::control_loops::drivetrain::Status>(
@@ -99,7 +98,8 @@ class VisionTimeAdjusterTest : public ::testing::Test {
     status_builder.add_estimated_left_position(drivetrain_left_);
     status_builder.add_estimated_right_position(drivetrain_right_);
 
-    ASSERT_TRUE(builder.Send(status_builder.Finish()));
+    ASSERT_EQ(builder.Send(status_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   void SendVisionTarget() {
@@ -118,7 +118,8 @@ class VisionTimeAdjusterTest : public ::testing::Test {
                                     drivetrain_history_[0]);
     vision_status_builder.add_image_valid(true);
 
-    ASSERT_TRUE(builder.Send(vision_status_builder.Finish()));
+    ASSERT_EQ(builder.Send(vision_status_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   double GetDriveTrainAngle() const {

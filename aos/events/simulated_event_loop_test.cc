@@ -1,5 +1,6 @@
 #include "aos/events/simulated_event_loop.h"
 
+#include <chrono>
 #include <string_view>
 
 #include "aos/events/event_loop_param_test.h"
@@ -174,7 +175,8 @@ void SendTestMessage(aos::Sender<TestMessage> *sender, int value) {
   TestMessage::Builder test_message_builder =
       builder.MakeBuilder<TestMessage>();
   test_message_builder.add_value(value);
-  builder.Send(test_message_builder.Finish());
+  ASSERT_EQ(builder.Send(test_message_builder.Finish()),
+            RawSender::Error::kOk);
 }
 
 // Test that sending a message after running gets properly notified.
@@ -337,7 +339,7 @@ TEST(SimulatedEventLoopTest, WatcherTimingReport) {
       aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
       TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
       builder.add_value(200 + i);
-      ASSERT_TRUE(msg.Send(builder.Finish()));
+      msg.CheckOk(msg.Send(builder.Finish()));
     }
   });
 
@@ -1394,7 +1396,7 @@ void SendPing(aos::Sender<examples::Ping> *sender, int value) {
   aos::Sender<examples::Ping>::Builder builder = sender->MakeBuilder();
   examples::Ping::Builder ping_builder = builder.MakeBuilder<examples::Ping>();
   ping_builder.add_value(value);
-  builder.Send(ping_builder.Finish());
+  builder.CheckOk(builder.Send(ping_builder.Finish()));
 }
 
 // Tests that reliable (and unreliable) ping messages get forwarded as expected.

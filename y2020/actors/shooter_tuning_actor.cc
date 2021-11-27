@@ -163,7 +163,8 @@ void ShooterTuningActor::SendSuperstructureGoal() {
   superstructure_builder.add_shooter(shooter_offset);
   superstructure_builder.add_shooting(shooting_);
 
-  if (!builder.Send(superstructure_builder.Finish())) {
+  if (builder.Send(superstructure_builder.Finish()) !=
+      aos::RawSender::Error::kOk) {
     AOS_LOG(ERROR, "Sending superstructure goal failed.\n");
   }
 }

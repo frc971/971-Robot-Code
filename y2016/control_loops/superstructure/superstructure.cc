@@ -742,7 +742,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       output_struct.traverse_down = unsafe_goal->traverse_down();
     }
 
-    output->Send(Output::Pack(*output->fbb(), &output_struct));
+    output->CheckOk(output->Send(Output::Pack(*output->fbb(), &output_struct)));
   }
 
   // Save debug/internal state.
@@ -827,7 +827,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   status_builder.add_state(state_);
   status_builder.add_is_collided(is_collided);
 
-  status->Send(status_builder.Finish());
+  (void)status->Send(status_builder.Finish());
 
   last_state_ = state_before_switch;
 }

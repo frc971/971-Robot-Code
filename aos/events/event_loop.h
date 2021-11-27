@@ -4,6 +4,7 @@
 #include <sched.h>
 
 #include <atomic>
+#include <ostream>
 #include <string>
 #include <string_view>
 
@@ -138,42 +139,56 @@ class RawSender {
  public:
   using SharedSpan = std::shared_ptr<const absl::Span<const uint8_t>>;
 
+  enum class [[nodiscard]] Error{
+      // Represents success and no error
+      kOk,
+
+      // Error for messages on channels being sent faster than their
+      // frequency and channel storage duration allow
+      kMessagesSentTooFast};
+
   RawSender(EventLoop *event_loop, const Channel *channel);
   RawSender(const RawSender &) = delete;
   RawSender &operator=(const RawSender &) = delete;
 
   virtual ~RawSender();
 
-  // Sends a message without copying it.  The users starts by copying up to
-  // size() bytes into the data backed by data().  They then call Send to send.
-  // Returns true on a successful send.
-  // If provided, monotonic_remote_time, realtime_remote_time, and
-  // remote_queue_index are attached to the message and are available in the
-  // context on the read side.  If they are not populated, the read side will
-  // get the sent times instead.
   virtual void *data() = 0;
   virtual size_t size() = 0;
-  bool Send(size_t size);
-  bool Send(size_t size, monotonic_clock::time_point monotonic_remote_time,
-            realtime_clock::time_point realtime_remote_time,
-            uint32_t remote_queue_index, const UUID &source_boot_uuid);
+
+  // Sends a message without copying it.  The users starts by copying up to
+  // size() bytes into the data backed by data().  They then call Send to send.
+  // Returns Error::kOk on a successful send, or
+  // Error::kMessagesSentTooFast if messages were sent too fast. If provided,
+  // monotonic_remote_time, realtime_remote_time, and remote_queue_index are
+  // attached to the message and are available in the context on the read side.
+  // If they are not populated, the read side will get the sent times instead.
+  Error Send(size_t size);
+  Error Send(size_t size, monotonic_clock::time_point monotonic_remote_time,
+             realtime_clock::time_point realtime_remote_time,
+             uint32_t remote_queue_index, const UUID &source_boot_uuid);
 
   // Sends a single block of data by copying it.
   // The remote arguments have the same meaning as in Send above.
-  bool Send(const void *data, size_t size);
-  bool Send(const void *data, size_t size,
-            monotonic_clock::time_point monotonic_remote_time,
-            realtime_clock::time_point realtime_remote_time,
-            uint32_t remote_queue_index, const UUID &source_boot_uuid);
+  // Returns Error::kMessagesSentTooFast if messages were sent too fast
+  Error Send(const void *data, size_t size);
+  Error Send(const void *data, size_t size,
+             monotonic_clock::time_point monotonic_remote_time,
+             realtime_clock::time_point realtime_remote_time,
+             uint32_t remote_queue_index, const UUID &source_boot_uuid);
+
+  // CHECKs that no sending Error occurred and logs the channel_ data if
+  // one did
+  void CheckOk(const Error err);
 
   // Sends a single block of data by refcounting it to avoid copies.  The data
   // must not change after being passed into Send. The remote arguments have the
   // same meaning as in Send above.
-  bool Send(const SharedSpan data);
-  bool Send(const SharedSpan data,
-            monotonic_clock::time_point monotonic_remote_time,
-            realtime_clock::time_point realtime_remote_time,
-            uint32_t remote_queue_index, const UUID &remote_boot_uuid);
+  Error Send(const SharedSpan data);
+  Error Send(const SharedSpan data,
+             monotonic_clock::time_point monotonic_remote_time,
+             realtime_clock::time_point realtime_remote_time,
+             uint32_t remote_queue_index, const UUID &remote_boot_uuid);
 
   const Channel *channel() const { return channel_; }
 
@@ -210,21 +225,21 @@ class RawSender {
  private:
   friend class EventLoop;
 
-  virtual bool DoSend(const void *data, size_t size,
-                      monotonic_clock::time_point monotonic_remote_time,
-                      realtime_clock::time_point realtime_remote_time,
-                      uint32_t remote_queue_index,
-                      const UUID &source_boot_uuid) = 0;
-  virtual bool DoSend(size_t size,
-                      monotonic_clock::time_point monotonic_remote_time,
-                      realtime_clock::time_point realtime_remote_time,
-                      uint32_t remote_queue_index,
-                      const UUID &source_boot_uuid) = 0;
-  virtual bool DoSend(const SharedSpan data,
-                      monotonic_clock::time_point monotonic_remote_time,
-                      realtime_clock::time_point realtime_remote_time,
-                      uint32_t remote_queue_index,
-                      const UUID &source_boot_uuid);
+  virtual Error DoSend(const void *data, size_t size,
+                       monotonic_clock::time_point monotonic_remote_time,
+                       realtime_clock::time_point realtime_remote_time,
+                       uint32_t remote_queue_index,
+                       const UUID &source_boot_uuid) = 0;
+  virtual Error DoSend(size_t size,
+                       monotonic_clock::time_point monotonic_remote_time,
+                       realtime_clock::time_point realtime_remote_time,
+                       uint32_t remote_queue_index,
+                       const UUID &source_boot_uuid) = 0;
+  virtual Error DoSend(const SharedSpan data,
+                       monotonic_clock::time_point monotonic_remote_time,
+                       realtime_clock::time_point realtime_remote_time,
+                       uint32_t remote_queue_index,
+                       const UUID &source_boot_uuid);
 
   EventLoop *const event_loop_;
   const Channel *const channel_;
@@ -235,6 +250,9 @@ class RawSender {
 
   ChannelPreallocatedAllocator fbb_allocator_{nullptr, 0, nullptr};
 };
+
+// Needed for compatibility with glog
+std::ostream &operator<<(std::ostream &os, const RawSender::Error err);
 
 // Fetches the newest message from a channel.
 // This provides a polling based interface for channels.
@@ -336,13 +354,16 @@ class Sender {
       return typename T2::Builder(fbb_);
     }
 
-    bool Send(flatbuffers::Offset<T> offset) {
+    RawSender::Error Send(flatbuffers::Offset<T> offset) {
       fbb_.Finish(offset);
-      const bool result = sender_->Send(fbb_.GetSize());
+      const auto err = sender_->Send(fbb_.GetSize());
       // Ensure fbb_ knows it shouldn't access the memory any more.
       fbb_ = flatbuffers::FlatBufferBuilder();
-      return result;
+      return err;
     }
+
+    // Equivalent to RawSender::CheckOk
+    void CheckOk(const RawSender::Error err) { sender_->CheckOk(err); };
 
     // CHECKs that this message was sent.
     void CheckSent() {
@@ -374,11 +395,14 @@ class Sender {
   Builder MakeBuilder();
 
   // Sends a prebuilt flatbuffer.
-  bool Send(const NonSizePrefixedFlatbuffer<T> &flatbuffer);
+  RawSender::Error Send(const NonSizePrefixedFlatbuffer<T> &flatbuffer);
 
   // Sends a prebuilt flatbuffer which was detached from a Builder created via
   // MakeBuilder() on this object.
-  bool SendDetached(FlatbufferDetachedBuffer<T> detached);
+  RawSender::Error SendDetached(FlatbufferDetachedBuffer<T> detached);
+
+  // Equivalent to RawSender::CheckOk
+  void CheckOk(const RawSender::Error err) { sender_->CheckOk(err); };
 
   // Returns the name of the underlying queue.
   const Channel *channel() const { return sender_->channel(); }
@@ -403,6 +427,22 @@ class Sender {
   friend class EventLoop;
   Sender(std::unique_ptr<RawSender> sender) : sender_(std::move(sender)) {}
   std::unique_ptr<RawSender> sender_;
+};
+
+// Class for keeping a count of send failures on a certain channel
+class SendFailureCounter {
+ public:
+  inline void Count(const RawSender::Error err) {
+    failures_ += static_cast<size_t>(err != RawSender::Error::kOk);
+    just_failed_ = (err != RawSender::Error::kOk);
+  }
+
+  inline size_t failures() const { return failures_; }
+  inline bool just_failed() const { return just_failed_; }
+
+ private:
+  size_t failures_ = 0;
+  bool just_failed_ = false;
 };
 
 // Interface for timers.
@@ -505,13 +545,13 @@ class EventLoop {
   virtual monotonic_clock::time_point monotonic_now() = 0;
   virtual realtime_clock::time_point realtime_now() = 0;
 
-  // Returns true if the channel exists in the configuration.
   template <typename T>
   const Channel *GetChannel(const std::string_view channel_name) {
     return configuration::GetChannel(configuration(), channel_name,
                                      T::GetFullyQualifiedName(), name(), node(),
                                      true);
   }
+  // Returns true if the channel exists in the configuration.
   template <typename T>
   bool HasChannel(const std::string_view channel_name) {
     return GetChannel<T>(channel_name) != nullptr;
@@ -806,6 +846,8 @@ class EventLoop {
 
   // If true, don't send out timing reports.
   bool skip_timing_report_ = false;
+
+  SendFailureCounter timing_report_failure_counter_;
 
   absl::btree_set<const Channel *> taken_watchers_, taken_senders_;
 };

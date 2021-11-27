@@ -7,6 +7,7 @@
 #include "frc971/control_loops/drivetrain/trajectory.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "gflags/gflags.h"
+#include "glog/logging.h"
 #if defined(SUPPORT_PLOT)
 #include "third_party/matplotlib-cpp/matplotlibcpp.h"
 #endif
@@ -168,7 +169,8 @@ void DrivetrainSimulation::SendTruthMessage() {
   status_builder.add_x(state_.x());
   status_builder.add_y(state_.y());
   status_builder.add_theta(state_(2));
-  builder.Send(status_builder.Finish());
+  CHECK_EQ(builder.Send(status_builder.Finish()),
+           aos::RawSender::Error::kOk);
 }
 
 void DrivetrainSimulation::SendPositionMessage() {
@@ -184,7 +186,8 @@ void DrivetrainSimulation::SendPositionMessage() {
     position_builder.add_right_encoder(right_encoder);
     position_builder.add_left_shifter_position(left_gear_high_ ? 1.0 : 0.0);
     position_builder.add_right_shifter_position(right_gear_high_ ? 1.0 : 0.0);
-    builder.Send(position_builder.Finish());
+    CHECK_EQ(builder.Send(position_builder.Finish()),
+             aos::RawSender::Error::kOk);
   }
 }
 
@@ -263,7 +266,8 @@ void DrivetrainSimulation::SendImuMessage() {
   frc971::IMUValuesBatch::Builder imu_values_batch_builder =
       builder.MakeBuilder<frc971::IMUValuesBatch>();
   imu_values_batch_builder.add_readings(imu_values_offset);
-  builder.Send(imu_values_batch_builder.Finish());
+  CHECK_EQ(builder.Send(imu_values_batch_builder.Finish()),
+           aos::RawSender::Error::kOk);
 }
 
 // Simulates the drivetrain moving for one timestep.

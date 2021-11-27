@@ -247,7 +247,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       drivetrain_builder.add_right_speed(-drivetrain_velocity_translate(
           drivetrain_right_encoder_->GetPeriod()));
 
-      builder.Send(drivetrain_builder.Finish());
+      builder.CheckOk(builder.Send(drivetrain_builder.Finish()));
     }
     const auto values = constants::GetValues();
 
@@ -308,7 +308,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       position_builder.add_platform_right_detect(
           !platform_right_detect_->Get());
 
-      builder.Send(position_builder.Finish());
+      builder.CheckOk(builder.Send(position_builder.Finish()));
     }
 
     {
@@ -326,7 +326,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
       auto_mode_builder.add_mode(mode);
 
-      builder.Send(auto_mode_builder.Finish());
+      builder.CheckOk(builder.Send(auto_mode_builder.Finish()));
     }
   }
 
@@ -457,7 +457,7 @@ class CameraReader {
                   .time_since_epoch())
               .count());
       camera_frame_builder.add_camera(received.camera_index);
-      builder.Send(camera_frame_builder.Finish());
+      builder.CheckOk(builder.Send(camera_frame_builder.Finish()));
     }
 
     if (dummy_spi_) {
@@ -652,7 +652,7 @@ class SolenoidWriter {
 
       pcm_.Flush();
       to_log_builder.add_read_solenoids(pcm_.GetAll());
-      builder.Send(to_log_builder.Finish());
+      (void)builder.Send(to_log_builder.Finish());
     }
 
     status_light_fetcher_.Fetch();

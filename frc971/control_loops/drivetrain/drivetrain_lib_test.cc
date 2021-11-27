@@ -183,7 +183,8 @@ TEST_F(DrivetrainTest, ConvergesCorrectly) {
     goal_builder.add_controller_type(ControllerType::MOTION_PROFILE);
     goal_builder.add_left_goal(-1.0);
     goal_builder.add_right_goal(1.0);
-    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
+    EXPECT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   RunFor(chrono::seconds(2));
   VerifyNearGoal();
@@ -199,7 +200,8 @@ TEST_F(DrivetrainTest, DisablesOnImuError) {
     goal_builder.add_controller_type(ControllerType::MOTION_PROFILE);
     goal_builder.add_left_goal(-1.0);
     goal_builder.add_right_goal(1.0);
-    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
+    EXPECT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   // Sanity check that the drivetrain is indeed commanding voltage while the IMU
@@ -235,7 +237,8 @@ TEST_F(DrivetrainTest, ConvergesWithVoltageError) {
     goal_builder.add_controller_type(ControllerType::MOTION_PROFILE);
     goal_builder.add_left_goal(-1.0);
     goal_builder.add_right_goal(1.0);
-    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
+    EXPECT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   drivetrain_plant_.set_left_voltage_offset(1.0);
   drivetrain_plant_.set_right_voltage_offset(1.0);
@@ -251,7 +254,8 @@ TEST_F(DrivetrainTest, SurvivesDisabling) {
     goal_builder.add_controller_type(ControllerType::MOTION_PROFILE);
     goal_builder.add_left_goal(-1.0);
     goal_builder.add_right_goal(1.0);
-    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
+    EXPECT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   for (int i = 0; i < 500; ++i) {
     if (i > 20 && i < 200) {
@@ -281,7 +285,8 @@ TEST_F(DrivetrainTest, DriveStraightForward) {
     goal_builder.add_controller_type(ControllerType::MOTION_PROFILE);
     goal_builder.add_left_goal(4.0);
     goal_builder.add_right_goal(4.0);
-    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
+    EXPECT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   for (int i = 0; i < 500; ++i) {
@@ -305,7 +310,8 @@ TEST_F(DrivetrainTest, DriveAlmostStraightForward) {
     goal_builder.add_controller_type(ControllerType::MOTION_PROFILE);
     goal_builder.add_left_goal(4.0);
     goal_builder.add_right_goal(3.9);
-    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
+    EXPECT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   for (int i = 0; i < 500; ++i) {
     RunFor(dt());
@@ -366,7 +372,8 @@ TEST_F(DrivetrainTest, ProfileStraightForward) {
     goal_builder.add_right_goal(4.0);
     goal_builder.add_linear(linear_offset);
     goal_builder.add_angular(angular_offset);
-    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
+    EXPECT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   const auto start_time = monotonic_now();
@@ -408,7 +415,8 @@ TEST_F(DrivetrainTest, ProfileTurn) {
     goal_builder.add_right_goal(1.0);
     goal_builder.add_linear(linear_offset);
     goal_builder.add_angular(angular_offset);
-    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
+    EXPECT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   const auto start_time = monotonic_now();
@@ -450,7 +458,8 @@ TEST_F(DrivetrainTest, SaturatedTurnDrive) {
     goal_builder.add_right_goal(4.0);
     goal_builder.add_linear(linear_offset);
     goal_builder.add_angular(angular_offset);
-    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
+    EXPECT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   const auto start_time = monotonic_now();
@@ -473,7 +482,8 @@ TEST_F(DrivetrainTest, OpenLoopThenClosed) {
     goal_builder.add_throttle(1.0);
     goal_builder.add_highgear(true);
     goal_builder.add_quickturn(false);
-    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
+    EXPECT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::seconds(1));
@@ -486,7 +496,8 @@ TEST_F(DrivetrainTest, OpenLoopThenClosed) {
     goal_builder.add_throttle(-0.3);
     goal_builder.add_highgear(true);
     goal_builder.add_quickturn(false);
-    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
+    EXPECT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::seconds(1));
@@ -499,7 +510,8 @@ TEST_F(DrivetrainTest, OpenLoopThenClosed) {
     goal_builder.add_throttle(0.0);
     goal_builder.add_highgear(true);
     goal_builder.add_quickturn(false);
-    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
+    EXPECT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::seconds(10));
@@ -526,7 +538,8 @@ TEST_F(DrivetrainTest, OpenLoopThenClosed) {
     goal_builder.add_right_goal(4.0);
     goal_builder.add_linear(linear_offset);
     goal_builder.add_angular(angular_offset);
-    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
+    EXPECT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   const auto end_time = monotonic_now() + chrono::seconds(4);
@@ -566,7 +579,8 @@ TEST_F(DrivetrainTest, SplineSimple) {
     spline_goal_builder.add_spline_idx(1);
     spline_goal_builder.add_drive_spline_backwards(false);
     spline_goal_builder.add_spline(multispline_offset);
-    EXPECT_TRUE(builder.Send(spline_goal_builder.Finish()));
+    EXPECT_EQ(builder.Send(spline_goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   RunFor(dt());
 
@@ -576,7 +590,8 @@ TEST_F(DrivetrainTest, SplineSimple) {
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline_handle(1);
-    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
+    EXPECT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::milliseconds(2000));
@@ -611,7 +626,8 @@ TEST_F(DrivetrainTest, SplineSimpleBackwards) {
     spline_goal_builder.add_drive_spline_backwards(true);
     spline_goal_builder.add_spline(multispline_offset);
 
-    EXPECT_TRUE(builder.Send(spline_goal_builder.Finish()));
+    EXPECT_EQ(builder.Send(spline_goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   RunFor(dt());
 
@@ -620,7 +636,8 @@ TEST_F(DrivetrainTest, SplineSimpleBackwards) {
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline_handle(1);
-    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
+    EXPECT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   // Check that we are right on the spline at the start (otherwise the feedback
@@ -669,7 +686,8 @@ TEST_F(DrivetrainTest, SplineSingleGoal) {
     spline_goal_builder.add_spline_idx(1);
     spline_goal_builder.add_drive_spline_backwards(false);
     spline_goal_builder.add_spline(multispline_offset);
-    EXPECT_TRUE(builder.Send(spline_goal_builder.Finish()));
+    EXPECT_EQ(builder.Send(spline_goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   {
@@ -677,7 +695,8 @@ TEST_F(DrivetrainTest, SplineSingleGoal) {
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline_handle(1);
-    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
+    EXPECT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::milliseconds(2000));
@@ -709,14 +728,16 @@ TEST_F(DrivetrainTest, SplineStop) {
     spline_goal_builder.add_spline_idx(1);
     spline_goal_builder.add_drive_spline_backwards(false);
     spline_goal_builder.add_spline(multispline_offset);
-    ASSERT_TRUE(builder.Send(spline_goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(spline_goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   {
     auto builder = drivetrain_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline_handle(1);
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::milliseconds(500));
@@ -728,7 +749,8 @@ TEST_F(DrivetrainTest, SplineStop) {
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline_handle(0);
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   for (int i = 0; i < 100; ++i) {
     RunFor(dt());
@@ -769,7 +791,8 @@ TEST_F(DrivetrainTest, SplineRestart) {
     spline_goal_builder.add_spline_idx(1);
     spline_goal_builder.add_drive_spline_backwards(false);
     spline_goal_builder.add_spline(multispline_offset);
-    ASSERT_TRUE(builder.Send(spline_goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(spline_goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   {
     auto builder = drivetrain_goal_sender_.MakeBuilder();
@@ -777,7 +800,8 @@ TEST_F(DrivetrainTest, SplineRestart) {
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline_handle(1);
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::milliseconds(500));
@@ -789,7 +813,8 @@ TEST_F(DrivetrainTest, SplineRestart) {
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline_handle(0);
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   RunFor(chrono::milliseconds(500));
 
@@ -799,7 +824,8 @@ TEST_F(DrivetrainTest, SplineRestart) {
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline_handle(1);
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   RunFor(chrono::milliseconds(2000));
 
@@ -828,7 +854,8 @@ TEST_P(DrivetrainBackwardsParamTest, SplineOffset) {
     localizer_control_builder.add_x(drivetrain_plant_.state()(0));
     localizer_control_builder.add_y(drivetrain_plant_.state()(1));
     localizer_control_builder.add_theta(drivetrain_plant_.state()(2));
-    ASSERT_TRUE(builder.Send(localizer_control_builder.Finish()));
+    ASSERT_EQ(builder.Send(localizer_control_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   {
     auto builder = trajectory_goal_sender_.MakeBuilder();
@@ -852,7 +879,8 @@ TEST_P(DrivetrainBackwardsParamTest, SplineOffset) {
     spline_goal_builder.add_spline_idx(1);
     spline_goal_builder.add_drive_spline_backwards(GetParam());
     spline_goal_builder.add_spline(multispline_offset);
-    ASSERT_TRUE(builder.Send(spline_goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(spline_goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   RunFor(dt());
 
@@ -861,7 +889,8 @@ TEST_P(DrivetrainBackwardsParamTest, SplineOffset) {
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline_handle(1);
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::milliseconds(5000));
@@ -898,7 +927,8 @@ TEST_F(DrivetrainTest, SplineSideOffset) {
     spline_goal_builder.add_spline_idx(1);
     spline_goal_builder.add_drive_spline_backwards(false);
     spline_goal_builder.add_spline(multispline_offset);
-    ASSERT_TRUE(builder.Send(spline_goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(spline_goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   RunFor(dt());
 
@@ -907,7 +937,8 @@ TEST_F(DrivetrainTest, SplineSideOffset) {
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline_handle(1);
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::milliseconds(5000));
@@ -947,7 +978,8 @@ TEST_F(DrivetrainTest, SplineVoltageError) {
     spline_goal_builder.add_spline_idx(1);
     spline_goal_builder.add_drive_spline_backwards(false);
     spline_goal_builder.add_spline(multispline_offset);
-    ASSERT_TRUE(builder.Send(spline_goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(spline_goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   RunFor(dt());
 
@@ -956,7 +988,8 @@ TEST_F(DrivetrainTest, SplineVoltageError) {
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline_handle(1);
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::milliseconds(5000));
@@ -1006,7 +1039,8 @@ TEST_F(DrivetrainTest, MultiSpline) {
     spline_goal_builder.add_spline_idx(1);
     spline_goal_builder.add_drive_spline_backwards(false);
     spline_goal_builder.add_spline(multispline_offset);
-    ASSERT_TRUE(builder.Send(spline_goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(spline_goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   RunFor(dt());
 
@@ -1015,7 +1049,8 @@ TEST_F(DrivetrainTest, MultiSpline) {
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline_handle(1);
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::milliseconds(4000));
@@ -1047,7 +1082,8 @@ TEST_F(DrivetrainTest, SequentialSplines) {
     spline_goal_builder.add_spline_idx(1);
     spline_goal_builder.add_drive_spline_backwards(false);
     spline_goal_builder.add_spline(multispline_offset);
-    ASSERT_TRUE(builder.Send(spline_goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(spline_goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   RunFor(dt());
 
@@ -1056,7 +1092,8 @@ TEST_F(DrivetrainTest, SequentialSplines) {
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline_handle(1);
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   WaitForTrajectoryExecution();
@@ -1086,7 +1123,8 @@ TEST_F(DrivetrainTest, SequentialSplines) {
     spline_goal_builder.add_spline_idx(2);
     spline_goal_builder.add_drive_spline_backwards(false);
     spline_goal_builder.add_spline(multispline_offset);
-    ASSERT_TRUE(builder.Send(spline_goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(spline_goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   RunFor(dt());
 
@@ -1096,7 +1134,8 @@ TEST_F(DrivetrainTest, SequentialSplines) {
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline_handle(2);
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::milliseconds(2000));
@@ -1128,14 +1167,16 @@ TEST_F(DrivetrainTest, SplineStopFirst) {
     spline_goal_builder.add_spline_idx(1);
     spline_goal_builder.add_drive_spline_backwards(false);
     spline_goal_builder.add_spline(multispline_offset);
-    ASSERT_TRUE(builder.Send(spline_goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(spline_goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   {
     auto builder = drivetrain_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline_handle(1);
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::milliseconds(2000));
@@ -1153,7 +1194,8 @@ TEST_F(DrivetrainTest, SplineStopFirst) {
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline_handle(0);
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   RunFor(chrono::milliseconds(500));
 
@@ -1180,14 +1222,16 @@ TEST_F(DrivetrainTest, SplineStopFirst) {
     spline_goal_builder.add_spline_idx(2);
     spline_goal_builder.add_drive_spline_backwards(false);
     spline_goal_builder.add_spline(multispline_offset);
-    ASSERT_TRUE(builder.Send(spline_goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(spline_goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   {
     auto builder = drivetrain_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline_handle(2);
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   WaitForTrajectoryExecution();
@@ -1222,7 +1266,8 @@ TEST_F(DrivetrainTest, CancelSplineBeforeExecuting) {
     spline_goal_builder.add_spline_idx(1);
     spline_goal_builder.add_drive_spline_backwards(false);
     spline_goal_builder.add_spline(multispline_offset);
-    ASSERT_TRUE(builder.Send(spline_goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(spline_goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::milliseconds(1000));
@@ -1250,7 +1295,8 @@ TEST_F(DrivetrainTest, CancelSplineBeforeExecuting) {
     spline_goal_builder.add_spline_idx(2);
     spline_goal_builder.add_drive_spline_backwards(false);
     spline_goal_builder.add_spline(multispline_offset);
-    ASSERT_TRUE(builder.Send(spline_goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(spline_goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   // Now execute it.
@@ -1259,7 +1305,8 @@ TEST_F(DrivetrainTest, CancelSplineBeforeExecuting) {
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline_handle(2);
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   WaitForTrajectoryExecution();
@@ -1292,7 +1339,8 @@ TEST_F(DrivetrainTest, ParallelSplines) {
     spline_goal_builder.add_spline_idx(1);
     spline_goal_builder.add_drive_spline_backwards(false);
     spline_goal_builder.add_spline(multispline_offset);
-    ASSERT_TRUE(builder.Send(spline_goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(spline_goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   // Second spline goal
@@ -1318,14 +1366,16 @@ TEST_F(DrivetrainTest, ParallelSplines) {
     spline_goal_builder.add_spline_idx(2);
     spline_goal_builder.add_drive_spline_backwards(false);
     spline_goal_builder.add_spline(multispline_offset);
-    ASSERT_TRUE(builder.Send(spline_goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(spline_goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   {
     auto builder = drivetrain_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline_handle(1);
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   WaitForTrajectoryExecution();
 
@@ -1335,7 +1385,8 @@ TEST_F(DrivetrainTest, ParallelSplines) {
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline_handle(2);
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::milliseconds(4000));
@@ -1367,7 +1418,8 @@ TEST_F(DrivetrainTest, OnlyPlanSpline) {
     spline_goal_builder.add_spline_idx(1);
     spline_goal_builder.add_drive_spline_backwards(false);
     spline_goal_builder.add_spline(multispline_offset);
-    ASSERT_TRUE(builder.Send(spline_goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(spline_goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   for (int i = 0; i < 100; ++i) {
@@ -1402,7 +1454,8 @@ TEST_F(DrivetrainTest, SplineExecuteAfterPlan) {
     spline_goal_builder.add_spline_idx(1);
     spline_goal_builder.add_drive_spline_backwards(false);
     spline_goal_builder.add_spline(multispline_offset);
-    ASSERT_TRUE(builder.Send(spline_goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(spline_goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   RunFor(chrono::milliseconds(2000));
 
@@ -1412,7 +1465,8 @@ TEST_F(DrivetrainTest, SplineExecuteAfterPlan) {
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline_handle(1);
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   WaitForTrajectoryExecution();
 
@@ -1434,7 +1488,8 @@ TEST_F(DrivetrainTest, FillSplineBuffer) {
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_controller_type(ControllerType::SPLINE_FOLLOWER);
     goal_builder.add_spline_handle(kRunSpline);
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   for (size_t spline_index = 0;
        spline_index < DrivetrainLoop::kNumSplineFetchers + kExtraSplines;
@@ -1460,7 +1515,8 @@ TEST_F(DrivetrainTest, FillSplineBuffer) {
     spline_goal_builder.add_spline_idx(spline_index);
     spline_goal_builder.add_drive_spline_backwards(false);
     spline_goal_builder.add_spline(multispline_offset);
-    ASSERT_TRUE(builder.Send(spline_goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(spline_goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
     // Run for at least 2 iterations. Because of how the logic works, there will
     // actually typically be a single iteration where we store kNumStoredSplines
     // + 1.
@@ -1504,7 +1560,8 @@ TEST_F(DrivetrainTest, BasicLineFollow) {
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_controller_type(ControllerType::LINE_FOLLOWER);
     goal_builder.add_throttle(0.5);
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::seconds(5));
@@ -1541,7 +1598,8 @@ TEST_F(DrivetrainTest, LineFollowDefersToOpenLoop) {
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_controller_type(ControllerType::LINE_FOLLOWER);
     goal_builder.add_throttle(0.5);
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::seconds(5));
@@ -1564,7 +1622,8 @@ TEST_F(DrivetrainTest, ResetLocalizer) {
     localizer_control_builder.add_x(9.0);
     localizer_control_builder.add_y(7.0);
     localizer_control_builder.add_theta(1.0);
-    ASSERT_TRUE(builder.Send(localizer_control_builder.Finish()));
+    ASSERT_EQ(builder.Send(localizer_control_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   RunFor(dt());
 
@@ -1586,7 +1645,8 @@ TEST_F(DrivetrainTest, ResetDrivetrain) {
     goal_builder.add_controller_type(ControllerType::MOTION_PROFILE);
     goal_builder.add_left_goal(4.0);
     goal_builder.add_right_goal(4.0);
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::seconds(2));

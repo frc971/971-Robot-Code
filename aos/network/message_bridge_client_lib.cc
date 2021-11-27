@@ -257,13 +257,14 @@ void SctpClientConnection::HandleData(const Message *message) {
 
     // Publish the message.
     RawSender *sender = channel_state->sender.get();
-    sender->Send(remote_data->data()->data(), remote_data->data()->size(),
-                 monotonic_clock::time_point(
-                     chrono::nanoseconds(remote_data->monotonic_sent_time())),
-                 realtime_clock::time_point(
-                     chrono::nanoseconds(remote_data->realtime_sent_time())),
-                 remote_data->queue_index(),
-                 UUID::FromVector(remote_data->boot_uuid()));
+    sender->CheckOk(sender->Send(
+        remote_data->data()->data(), remote_data->data()->size(),
+        monotonic_clock::time_point(
+            chrono::nanoseconds(remote_data->monotonic_sent_time())),
+        realtime_clock::time_point(
+            chrono::nanoseconds(remote_data->realtime_sent_time())),
+        remote_data->queue_index(),
+        UUID::FromVector(remote_data->boot_uuid())));
 
     client_status_->SampleFilter(
         client_index_,

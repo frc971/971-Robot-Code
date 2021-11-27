@@ -106,8 +106,8 @@ class TypedAction : public Action {
  public:
   // A convenient way to refer to the type of our goals.
   typedef T GoalType;
-  typedef typename std::remove_reference<
-      decltype(*static_cast<GoalType *>(nullptr)->params())>::type ParamType;
+  typedef typename std::remove_reference<decltype(
+      *static_cast<GoalType *>(nullptr)->params())>::type ParamType;
 
   TypedAction(typename ::aos::Fetcher<Status> *status_fetcher,
               typename ::aos::Sender<GoalType> *goal_sender,
@@ -194,8 +194,8 @@ template <typename T>
 class TypedActionFactory {
  public:
   typedef T GoalType;
-  typedef typename std::remove_reference<
-      decltype(*static_cast<GoalType *>(nullptr)->params())>::type ParamType;
+  typedef typename std::remove_reference<decltype(
+      *static_cast<GoalType *>(nullptr)->params())>::type ParamType;
 
   explicit TypedActionFactory(::aos::EventLoop *event_loop,
                               const ::std::string &name)
@@ -258,7 +258,7 @@ void TypedAction<T>::DoCancel() {
           typename GoalType::Builder goal_builder =
               builder.template MakeBuilder<GoalType>();
           goal_builder.add_run(0);
-          builder.Send(goal_builder.Finish());
+          builder.CheckOk(builder.Send(goal_builder.Finish()));
         }
         sent_cancel_ = true;
       }
@@ -372,7 +372,7 @@ void TypedAction<T>::DoStart() {
     goal_builder.add_run(run_value_);
 
     sent_started_ = true;
-    if (!builder.Send(goal_builder.Finish())) {
+    if (builder.Send(goal_builder.Finish()) != RawSender::Error::kOk) {
       AOS_LOG(ERROR,
               "sending goal for action %" PRIx32 " on queue %.*s failed\n",
               run_value_,

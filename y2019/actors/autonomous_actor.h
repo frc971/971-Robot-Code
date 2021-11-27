@@ -153,7 +153,8 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
     superstructure_builder.add_intake(intake_offset);
     superstructure_builder.add_suction(suction_offset);
 
-    if (!builder.Send(superstructure_builder.Finish())) {
+    if (builder.Send(superstructure_builder.Finish()) !=
+        aos::RawSender::Error::kOk) {
       AOS_LOG(ERROR, "Sending superstructure goal failed.\n");
     }
   }

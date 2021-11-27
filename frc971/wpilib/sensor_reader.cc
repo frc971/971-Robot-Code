@@ -110,7 +110,7 @@ void SensorReader::Loop() {
 
   {
     auto builder = robot_state_sender_.MakeBuilder();
-    builder.Send(::frc971::wpilib::PopulateRobotState(&builder, my_pid_));
+    (void)builder.Send(::frc971::wpilib::PopulateRobotState(&builder, my_pid_));
   }
   RunIteration();
   if (dma_synchronizer_) {

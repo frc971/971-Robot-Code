@@ -119,7 +119,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       output_struct.intake_roller_voltage = 0.0;
     }
 
-    output->Send(Output::Pack(*output->fbb(), &output_struct));
+    output->CheckOk(output->Send(Output::Pack(*output->fbb(), &output_struct)));
   }
 
   if (unsafe_goal) {
@@ -196,7 +196,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
     }
   }
 
-  status->Send(status_offset);
+  (void)status->Send(status_offset);
 }
 
 void Superstructure::SendColors(float red, float green, float blue) {
@@ -208,7 +208,8 @@ void Superstructure::SendColors(float red, float green, float blue) {
   status_light_builder.add_green(green);
   status_light_builder.add_blue(blue);
 
-  if (!builder.Send(status_light_builder.Finish())) {
+  if (builder.Send(status_light_builder.Finish()) !=
+      aos::RawSender::Error::kOk) {
     AOS_LOG(ERROR, "Failed to send lights.\n");
   }
 }

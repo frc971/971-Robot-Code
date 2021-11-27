@@ -351,7 +351,8 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       superstructure_builder.add_open_claw(false);
     }
 
-    if (!builder.Send(superstructure_builder.Finish())) {
+    if (builder.Send(superstructure_builder.Finish()) !=
+        aos::RawSender::Error::kOk) {
       AOS_LOG(ERROR, "Sending superstructure goal failed.\n");
     }
 

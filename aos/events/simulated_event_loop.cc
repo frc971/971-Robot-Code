@@ -2,6 +2,8 @@
 
 #include <algorithm>
 #include <deque>
+#include <optional>
+#include <queue>
 #include <string_view>
 #include <vector>
 
@@ -177,6 +179,10 @@ class SimulatedChannel {
                .count();
   }
 
+  std::chrono::nanoseconds channel_storage_duration() const {
+    return channel_storage_duration_;
+  }
+
   // The number of extra buffers (beyond the queue) we pretend to have.
   int number_scratch_buffers() const {
     // We need to start creating messages before we know how many
@@ -220,8 +226,8 @@ class SimulatedChannel {
   }
 
   // Sends the message to all the connected receivers and fetchers.  Returns the
-  // sent queue index.
-  uint32_t Send(std::shared_ptr<SimulatedMessage> message);
+  // sent queue index, or std::nullopt if messages were sent too fast.
+  std::optional<uint32_t> Send(std::shared_ptr<SimulatedMessage> message);
 
   // Unregisters a fetcher.
   void UnregisterFetcher(SimulatedFetcher *fetcher);
@@ -334,22 +340,22 @@ class SimulatedSender : public RawSender {
 
   size_t size() override { return simulated_channel_->max_size(); }
 
-  bool DoSend(size_t length, monotonic_clock::time_point monotonic_remote_time,
-              realtime_clock::time_point realtime_remote_time,
-              uint32_t remote_queue_index,
-              const UUID &source_boot_uuid) override;
+  Error DoSend(size_t length, monotonic_clock::time_point monotonic_remote_time,
+               realtime_clock::time_point realtime_remote_time,
+               uint32_t remote_queue_index,
+               const UUID &source_boot_uuid) override;
 
-  bool DoSend(const void *msg, size_t size,
-              monotonic_clock::time_point monotonic_remote_time,
-              realtime_clock::time_point realtime_remote_time,
-              uint32_t remote_queue_index,
-              const UUID &source_boot_uuid) override;
+  Error DoSend(const void *msg, size_t size,
+               monotonic_clock::time_point monotonic_remote_time,
+               realtime_clock::time_point realtime_remote_time,
+               uint32_t remote_queue_index,
+               const UUID &source_boot_uuid) override;
 
-  bool DoSend(const SharedSpan data,
-              aos::monotonic_clock::time_point monotonic_remote_time,
-              aos::realtime_clock::time_point realtime_remote_time,
-              uint32_t remote_queue_index,
-              const UUID &source_boot_uuid) override;
+  Error DoSend(const SharedSpan data,
+               aos::monotonic_clock::time_point monotonic_remote_time,
+               aos::realtime_clock::time_point realtime_remote_time,
+               uint32_t remote_queue_index,
+               const UUID &source_boot_uuid) override;
 
   int buffer_index() override {
     // First, ensure message_ is allocated.
@@ -912,10 +918,11 @@ void SimulatedChannel::MakeRawWatcher(SimulatedWatcher *watcher) {
   return ::std::move(fetcher);
 }
 
-uint32_t SimulatedChannel::Send(std::shared_ptr<SimulatedMessage> message) {
-  const uint32_t queue_index = next_queue_index_.index();
-  message->context.queue_index = queue_index;
+std::optional<uint32_t> SimulatedChannel::Send(
+    std::shared_ptr<SimulatedMessage> message) {
+  std::optional<uint32_t> queue_index = {next_queue_index_.index()};
 
+  message->context.queue_index = *queue_index;
   // Points to the actual data depending on the size set in context. Data may
   // allocate more than the actual size of the message, so offset from the back
   // of that to get the actual start of the data.
@@ -943,7 +950,6 @@ uint32_t SimulatedChannel::Send(std::shared_ptr<SimulatedMessage> message) {
   for (auto &fetcher : fetchers_) {
     fetcher->Enqueue(message);
   }
-
   return queue_index;
 }
 
@@ -963,11 +969,10 @@ SimulatedSender::~SimulatedSender() {
   simulated_channel_->CountSenderDestroyed();
 }
 
-bool SimulatedSender::DoSend(size_t length,
-                             monotonic_clock::time_point monotonic_remote_time,
-                             realtime_clock::time_point realtime_remote_time,
-                             uint32_t remote_queue_index,
-                             const UUID &source_boot_uuid) {
+RawSender::Error SimulatedSender::DoSend(
+    size_t length, monotonic_clock::time_point monotonic_remote_time,
+    realtime_clock::time_point realtime_remote_time,
+    uint32_t remote_queue_index, const UUID &source_boot_uuid) {
   VLOG(1) << simulated_event_loop_->distributed_now() << " "
           << NodeName(simulated_event_loop_->node())
           << simulated_event_loop_->monotonic_now() << " "
@@ -988,8 +993,31 @@ bool SimulatedSender::DoSend(size_t length,
   CHECK_LE(length, message_->context.size);
   message_->context.size = length;
 
-  // TODO(austin): Track sending too fast.
-  sent_queue_index_ = simulated_channel_->Send(message_);
+  const std::optional<uint32_t> optional_queue_index =
+      simulated_channel_->Send(message_);
+
+  // Check that we are not sending messages too fast
+  if (!optional_queue_index) {
+    VLOG(1) << simulated_event_loop_->distributed_now() << " "
+            << NodeName(simulated_event_loop_->node())
+            << simulated_event_loop_->monotonic_now() << " "
+            << simulated_event_loop_->name()
+            << "\nMessages were sent too fast:\n"
+            << "For channel: "
+            << configuration::CleanedChannelToString(
+                   simulated_channel_->channel())
+            << '\n'
+            << "Tried to send more than " << simulated_channel_->queue_size()
+            << " (queue size) messages in the last "
+            << std::chrono::duration<double>(
+                   simulated_channel_->channel_storage_duration())
+                   .count()
+            << " seconds (channel storage duration)"
+            << "\n\n";
+    return Error::kMessagesSentTooFast;
+  }
+
+  sent_queue_index_ = *optional_queue_index;
   monotonic_sent_time_ = simulated_event_loop_->monotonic_now();
   realtime_sent_time_ = simulated_event_loop_->realtime_now();
 
@@ -997,14 +1025,14 @@ bool SimulatedSender::DoSend(size_t length,
   // next time.  Otherwise we will continue to reuse the same memory for all
   // messages and corrupt it.
   message_.reset();
-  return true;
+  return Error::kOk;
 }
 
-bool SimulatedSender::DoSend(const void *msg, size_t size,
-                             monotonic_clock::time_point monotonic_remote_time,
-                             realtime_clock::time_point realtime_remote_time,
-                             uint32_t remote_queue_index,
-                             const UUID &source_boot_uuid) {
+RawSender::Error SimulatedSender::DoSend(
+    const void *msg, size_t size,
+    monotonic_clock::time_point monotonic_remote_time,
+    realtime_clock::time_point realtime_remote_time,
+    uint32_t remote_queue_index, const UUID &source_boot_uuid) {
   CHECK_LE(size, this->size())
       << ": Attempting to send too big a message on "
       << configuration::CleanedChannelToString(simulated_channel_->channel());
@@ -1021,11 +1049,11 @@ bool SimulatedSender::DoSend(const void *msg, size_t size,
                 remote_queue_index, source_boot_uuid);
 }
 
-bool SimulatedSender::DoSend(const RawSender::SharedSpan data,
-                             monotonic_clock::time_point monotonic_remote_time,
-                             realtime_clock::time_point realtime_remote_time,
-                             uint32_t remote_queue_index,
-                             const UUID &source_boot_uuid) {
+RawSender::Error SimulatedSender::DoSend(
+    const RawSender::SharedSpan data,
+    monotonic_clock::time_point monotonic_remote_time,
+    realtime_clock::time_point realtime_remote_time,
+    uint32_t remote_queue_index, const UUID &source_boot_uuid) {
   CHECK_LE(data->size(), this->size())
       << ": Attempting to send too big a message on "
       << configuration::CleanedChannelToString(simulated_channel_->channel());

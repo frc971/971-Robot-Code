@@ -262,7 +262,8 @@ class SuperstructureSimulation {
     position_builder.add_left_intake(left_intake_offset);
     position_builder.add_right_intake(right_intake_offset);
     position_builder.add_arm(arm_offset);
-    EXPECT_TRUE(builder.Send(position_builder.Finish()));
+    EXPECT_EQ(builder.Send(position_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   // Sets the difference between the commanded and applied powers.
@@ -409,7 +410,8 @@ TEST_F(SuperstructureTest, ReachesGoal) {
     goal_builder.add_arm_goal_position(arm::UpIndex());
     goal_builder.add_open_claw(true);
 
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   // Give it a lot of time to get there.
@@ -440,7 +442,8 @@ TEST_F(SuperstructureTest, OffsetStartReachesGoal) {
     goal_builder.add_arm_goal_position(arm::UpIndex());
     goal_builder.add_open_claw(true);
 
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   // Give it a lot of time to get there.
@@ -469,7 +472,8 @@ TEST_F(SuperstructureTest, RespectsRange) {
     goal_builder.add_arm_goal_position(arm::UpIndex());
     goal_builder.add_open_claw(true);
 
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   RunFor(chrono::seconds(10));
 
@@ -508,7 +512,8 @@ TEST_F(SuperstructureTest, RespectsRange) {
     goal_builder.add_arm_goal_position(arm::UpIndex());
     goal_builder.add_open_claw(true);
 
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::seconds(10));
@@ -552,7 +557,8 @@ TEST_F(SuperstructureTest, DISABLED_LowerHardstopStartup) {
     goal_builder.add_arm_goal_position(arm::UpIndex());
     goal_builder.add_open_claw(true);
 
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   RunFor(chrono::seconds(10));
   {
@@ -570,7 +576,8 @@ TEST_F(SuperstructureTest, DISABLED_LowerHardstopStartup) {
     goal_builder.add_arm_goal_position(arm::UpIndex());
     goal_builder.add_open_claw(true);
 
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   RunFor(chrono::seconds(10));
   VerifyNearGoal();
@@ -598,7 +605,8 @@ TEST_F(SuperstructureTest, DISABLED_UpperHardstopStartup) {
     goal_builder.add_arm_goal_position(arm::UpIndex());
     goal_builder.add_open_claw(true);
 
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   RunFor(chrono::seconds(10));
 
@@ -627,7 +635,8 @@ TEST_F(SuperstructureTest, ResetTest) {
     goal_builder.add_arm_goal_position(arm::UpIndex());
     goal_builder.add_open_claw(true);
 
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   RunFor(chrono::seconds(10));
 
@@ -675,7 +684,8 @@ TEST_F(SuperstructureTest, ArmSimpleGoal) {
     goal_builder.add_arm_goal_position(arm::FrontHighBoxIndex());
     goal_builder.add_open_claw(true);
 
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   EXPECT_EQ(arm::Arm::State::RUNNING, superstructure_.arm().state());
@@ -699,7 +709,8 @@ TEST_F(SuperstructureTest, ArmMoveAndMoveBack) {
     goal_builder.add_arm_goal_position(arm::FrontHighBoxIndex());
     goal_builder.add_open_claw(true);
 
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::seconds(10));
@@ -721,7 +732,8 @@ TEST_F(SuperstructureTest, ArmMoveAndMoveBack) {
     goal_builder.add_arm_goal_position(arm::ReadyAboveBoxIndex());
     goal_builder.add_open_claw(true);
 
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::seconds(10));
@@ -748,7 +760,8 @@ TEST_F(SuperstructureTest, ArmMultistepMove) {
     goal_builder.add_arm_goal_position(arm::BackLowBoxIndex());
     goal_builder.add_open_claw(true);
 
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::seconds(10));
@@ -770,7 +783,8 @@ TEST_F(SuperstructureTest, ArmMultistepMove) {
     goal_builder.add_arm_goal_position(arm::ReadyAboveBoxIndex());
     goal_builder.add_open_claw(true);
 
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::seconds(10));

@@ -89,7 +89,7 @@ int main(int argc, char **argv) {
               builder.MakeBuilder<y2014::HotGoal>();
           hot_goal_builder.add_left_count(left_count);
           hot_goal_builder.add_right_count(right_count);
-          builder.Send(hot_goal_builder.Finish());
+          (void)builder.Send(hot_goal_builder.Finish());
         } break;
         case 0:
           AOS_LOG(WARNING, "read on %d timed out\n", connection);

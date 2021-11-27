@@ -132,17 +132,18 @@ inline bool RawFetcher::Fetch() {
   return false;
 }
 
-inline bool RawSender::Send(size_t size) {
+inline RawSender::Error RawSender::Send(size_t size) {
   return Send(size, monotonic_clock::min_time, realtime_clock::min_time,
               0xffffffffu, event_loop_->boot_uuid());
 }
 
-inline bool RawSender::Send(
+inline RawSender::Error RawSender::Send(
     size_t size, aos::monotonic_clock::time_point monotonic_remote_time,
     aos::realtime_clock::time_point realtime_remote_time,
     uint32_t remote_queue_index, const UUID &uuid) {
-  if (DoSend(size, monotonic_remote_time, realtime_remote_time,
-             remote_queue_index, uuid)) {
+  const auto err = DoSend(size, monotonic_remote_time, realtime_remote_time,
+                          remote_queue_index, uuid);
+  if (err == RawSender::Error::kOk) {
     if (timing_.sender) {
       timing_.size.Add(size);
       timing_.sender->mutate_count(timing_.sender->count() + 1);
@@ -152,23 +153,23 @@ inline bool RawSender::Send(
         static_cast<int>(ftrace_prefix_.size()), ftrace_prefix_.data(),
         static_cast<int64_t>(monotonic_sent_time().time_since_epoch().count()),
         sent_queue_index());
-    return true;
   }
-  return false;
+  return err;
 }
 
-inline bool RawSender::Send(const void *data, size_t size) {
+inline RawSender::Error RawSender::Send(const void *data, size_t size) {
   return Send(data, size, monotonic_clock::min_time, realtime_clock::min_time,
               0xffffffffu, event_loop_->boot_uuid());
 }
 
-inline bool RawSender::Send(
+inline RawSender::Error RawSender::Send(
     const void *data, size_t size,
     aos::monotonic_clock::time_point monotonic_remote_time,
     aos::realtime_clock::time_point realtime_remote_time,
     uint32_t remote_queue_index, const UUID &uuid) {
-  if (DoSend(data, size, monotonic_remote_time, realtime_remote_time,
-             remote_queue_index, uuid)) {
+  const auto err = DoSend(data, size, monotonic_remote_time,
+                          realtime_remote_time, remote_queue_index, uuid);
+  if (err == RawSender::Error::kOk) {
     if (timing_.sender) {
       timing_.size.Add(size);
       timing_.sender->mutate_count(timing_.sender->count() + 1);
@@ -178,24 +179,24 @@ inline bool RawSender::Send(
         static_cast<int>(ftrace_prefix_.size()), ftrace_prefix_.data(),
         static_cast<int64_t>(monotonic_sent_time().time_since_epoch().count()),
         sent_queue_index());
-    return true;
   }
-  return false;
+  return err;
 }
 
-inline bool RawSender::Send(const SharedSpan data) {
+inline RawSender::Error RawSender::Send(const SharedSpan data) {
   return Send(std::move(data), monotonic_clock::min_time,
               realtime_clock::min_time, 0xffffffffu, event_loop_->boot_uuid());
 }
 
-inline bool RawSender::Send(
+inline RawSender::Error RawSender::Send(
     const SharedSpan data,
     aos::monotonic_clock::time_point monotonic_remote_time,
     aos::realtime_clock::time_point realtime_remote_time,
     uint32_t remote_queue_index, const UUID &uuid) {
   const size_t size = data->size();
-  if (DoSend(std::move(data), monotonic_remote_time, realtime_remote_time,
-             remote_queue_index, uuid)) {
+  const auto err = DoSend(std::move(data), monotonic_remote_time,
+                          realtime_remote_time, remote_queue_index, uuid);
+  if (err == Error::kOk) {
     if (timing_.sender) {
       timing_.size.Add(size);
       timing_.sender->mutate_count(timing_.sender->count() + 1);
@@ -205,9 +206,8 @@ inline bool RawSender::Send(
         static_cast<int>(ftrace_prefix_.size()), ftrace_prefix_.data(),
         static_cast<int64_t>(monotonic_sent_time().time_since_epoch().count()),
         sent_queue_index());
-    return true;
   }
-  return false;
+  return err;
 }
 
 inline monotonic_clock::time_point TimerHandler::Call(
@@ -371,12 +371,13 @@ class WatcherState {
 };
 
 template <typename T>
-bool Sender<T>::Send(const NonSizePrefixedFlatbuffer<T> &flatbuffer) {
+RawSender::Error Sender<T>::Send(
+    const NonSizePrefixedFlatbuffer<T> &flatbuffer) {
   return sender_->Send(flatbuffer.span().data(), flatbuffer.span().size());
 }
 
 template <typename T>
-bool Sender<T>::SendDetached(FlatbufferDetachedBuffer<T> detached) {
+RawSender::Error Sender<T>::SendDetached(FlatbufferDetachedBuffer<T> detached) {
   CHECK_EQ(static_cast<void *>(detached.span().data() + detached.span().size() -
                                sender_->size()),
            sender_->data())

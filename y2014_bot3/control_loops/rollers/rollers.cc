@@ -22,7 +22,7 @@ void Rollers::RunIteration(const Goal *goal, const Position * /*position*/,
   constexpr double k2014Bot3LowGoalForwardVoltage = 6.0;
   constexpr double k2014Bot3LowGoalBackwardVoltage = -6.0;
 
-  status->Send(status->MakeBuilder<Status>().Finish());
+  status->CheckOk(status->Send(status->MakeBuilder<Status>().Finish()));
 
   if (!output || !goal) {
     return;
@@ -80,7 +80,7 @@ void Rollers::RunIteration(const Goal *goal, const Position * /*position*/,
     output_struct.back_intake_voltage = -k2014Bot3IntakeForwardVoltage;
   }
 
-  output->Send(Output::Pack(*output->fbb(), &output_struct));
+  output->CheckOk(output->Send(Output::Pack(*output->fbb(), &output_struct)));
 }
 
 }  //  namespace rollers

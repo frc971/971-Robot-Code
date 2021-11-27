@@ -11,6 +11,7 @@
 #include "aos/time/time.h"
 #include "frc971/input/joystick_state_generated.h"
 #include "frc971/input/robot_state_generated.h"
+#include "glog/logging.h"
 #include "gtest/gtest.h"
 
 namespace frc971 {
@@ -123,7 +124,8 @@ class ControlLoopTestTemplated : public TestBaseClass {
       builder.add_autonomous(false);
       builder.add_team_id(team_id_);
 
-      new_state.Send(builder.Finish());
+      CHECK_EQ(new_state.Send(builder.Finish()),
+               aos::RawSender::Error::kOk);
 
       last_ds_time_ = monotonic_now();
       last_enabled_ = enabled_;
@@ -150,7 +152,7 @@ class ControlLoopTestTemplated : public TestBaseClass {
     builder.add_voltage_roborio_in(battery_voltage_);
     builder.add_voltage_battery(battery_voltage_);
 
-    new_state.Send(builder.Finish());
+    new_state.CheckOk(new_state.Send(builder.Finish()));
   }
 
   static constexpr ::std::chrono::microseconds kTimeTick{5000};

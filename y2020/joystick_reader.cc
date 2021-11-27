@@ -87,7 +87,8 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     localizer_control_builder.add_theta_uncertainty(10.0);
     localizer_control_builder.add_theta(0.0);
     localizer_control_builder.add_keep_current_theta(false);
-    if (!builder.Send(localizer_control_builder.Finish())) {
+    if (builder.Send(localizer_control_builder.Finish()) !=
+        aos::RawSender::Error::kOk) {
       AOS_LOG(ERROR, "Failed to reset blue localizer.\n");
     }
   }
@@ -103,7 +104,8 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     localizer_control_builder.add_theta_uncertainty(10.0);
     localizer_control_builder.add_theta(M_PI);
     localizer_control_builder.add_keep_current_theta(false);
-    if (!builder.Send(localizer_control_builder.Finish())) {
+    if (builder.Send(localizer_control_builder.Finish()) !=
+        aos::RawSender::Error::kOk) {
       AOS_LOG(ERROR, "Failed to reset red localizer.\n");
     }
   }
@@ -129,7 +131,8 @@ class Reader : public ::frc971::input::ActionJoystickInput {
         frc971::zeroing::Wrap(drivetrain_status->theta(), 0, M_PI);
     localizer_control_builder.add_theta(new_theta);
     localizer_control_builder.add_theta_uncertainty(10.0);
-    if (!builder.Send(localizer_control_builder.Finish())) {
+    if (builder.Send(localizer_control_builder.Finish()) !=
+        aos::RawSender::Error::kOk) {
       AOS_LOG(ERROR, "Failed to reset localizer.\n");
     }
   }
@@ -303,7 +306,8 @@ class Reader : public ::frc971::input::ActionJoystickInput {
            data.IsPressed(kFeedDriver)));
       superstructure_goal_builder.add_intake_preloading(preload_intake);
 
-      if (!builder.Send(superstructure_goal_builder.Finish())) {
+      if (builder.Send(superstructure_goal_builder.Finish()) !=
+          aos::RawSender::Error::kOk) {
         AOS_LOG(ERROR, "Sending superstructure goal failed.\n");
       }
     }

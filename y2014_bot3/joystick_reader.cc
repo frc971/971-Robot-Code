@@ -99,8 +99,9 @@ class Reader : public ::frc971::input::JoystickInput {
     } else if (data.IsPressed(kHumanPlayer)) {
       rollers_goal.human_player = true;
     }
-    if (!builder.Send(control_loops::rollers::Goal::Pack(*builder.fbb(),
-                                                         &rollers_goal))) {
+    if (builder.Send(control_loops::rollers::Goal::Pack(*builder.fbb(),
+                                                        &rollers_goal)) !=
+        aos::RawSender::Error::kOk) {
       AOS_LOG(WARNING, "Sending rollers values failed.\n");
     }
   }

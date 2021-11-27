@@ -76,7 +76,8 @@ class ShooterSimulation {
 
     position_builder.add_theta_left(shooter_plant_left_->Y(0, 0));
     position_builder.add_theta_right(shooter_plant_right_->Y(0, 0));
-    builder.Send(position_builder.Finish());
+    EXPECT_EQ(builder.Send(position_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   void set_left_voltage_offset(double voltage_offset) {
@@ -172,7 +173,8 @@ TEST_F(ShooterTest, DoesNothing) {
     auto builder = shooter_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_angular_velocity(0.0);
-    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
+    EXPECT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   RunFor(dt() * 3 / 2);
@@ -193,7 +195,8 @@ TEST_F(ShooterTest, SpinUpAndDown) {
     auto builder = shooter_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_angular_velocity(450.0);
-    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
+    EXPECT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::seconds(1));
@@ -204,7 +207,8 @@ TEST_F(ShooterTest, SpinUpAndDown) {
     auto builder = shooter_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_angular_velocity(0.0);
-    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
+    EXPECT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
   // Make sure we don't apply voltage on spin-down.
@@ -230,7 +234,8 @@ TEST_F(ShooterTest, SideLagTest) {
     auto builder = shooter_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_angular_velocity(20.0);
-    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
+    EXPECT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   // Cause problems by adding a voltage error on one side.
   shooter_plant_.set_right_voltage_offset(-4.0);
@@ -267,7 +272,8 @@ TEST_F(ShooterTest, Disabled) {
     auto builder = shooter_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_angular_velocity(200.0);
-    EXPECT_TRUE(builder.Send(goal_builder.Finish()));
+    EXPECT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
   RunFor(chrono::seconds(5));
   EXPECT_TRUE(shooter_output_fetcher_.Fetch());

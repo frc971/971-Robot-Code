@@ -1,6 +1,7 @@
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 #include "gflags/gflags.h"
+#include "glog/logging.h"
 #include "y2020/setpoint_generated.h"
 
 DEFINE_double(accelerator, 250.0, "Accelerator speed");
@@ -29,7 +30,7 @@ int main(int argc, char **argv) {
   setpoint_builder.add_finisher(FLAGS_finisher);
   setpoint_builder.add_hood(FLAGS_hood);
   setpoint_builder.add_turret(FLAGS_turret);
-  builder.Send(setpoint_builder.Finish());
+  builder.CheckOk(builder.Send(setpoint_builder.Finish()));
 
   return 0;
 }

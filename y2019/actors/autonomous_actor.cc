@@ -98,7 +98,8 @@ void AutonomousActor::Reset(bool is_left) {
     localizer_control_builder.add_y(1.35 * turn_scalar);
     localizer_control_builder.add_theta(M_PI);
     localizer_control_builder.add_theta_uncertainty(0.00001);
-    if (!builder.Send(localizer_control_builder.Finish())) {
+    if (builder.Send(localizer_control_builder.Finish()) !=
+        aos::RawSender::Error::kOk) {
       AOS_LOG(ERROR, "Failed to reset localizer.\n");
     }
   }

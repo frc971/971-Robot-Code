@@ -283,7 +283,8 @@ class Reader : public ::frc971::input::ActionJoystickInput {
               control_loops::drivetrain::SelectionHint::NONE);
         }
       }
-      if (!builder.Send(target_selector_hint_builder.Finish())) {
+      if (builder.Send(target_selector_hint_builder.Finish()) !=
+          aos::RawSender::Error::kOk) {
         AOS_LOG(ERROR, "Failed to send target selector hint.\n");
       }
     }
@@ -297,7 +298,8 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       localizer_control_builder.add_y(3.4);
       localizer_control_builder.add_keep_current_theta(true);
 
-      if (!builder.Send(localizer_control_builder.Finish())) {
+      if (builder.Send(localizer_control_builder.Finish()) !=
+          aos::RawSender::Error::kOk) {
         AOS_LOG(ERROR, "Failed to reset localizer.\n");
       }
     }
@@ -311,7 +313,8 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       localizer_control_builder.add_y(-3.4);
       localizer_control_builder.add_keep_current_theta(true);
 
-      if (!builder.Send(localizer_control_builder.Finish())) {
+      if (builder.Send(localizer_control_builder.Finish()) !=
+          aos::RawSender::Error::kOk) {
         AOS_LOG(ERROR, "Failed to reset localizer.\n");
       }
     }
@@ -325,7 +328,8 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       localizer_control_builder.add_y(3.4);
       localizer_control_builder.add_theta(0.0);
 
-      if (!builder.Send(localizer_control_builder.Finish())) {
+      if (builder.Send(localizer_control_builder.Finish()) !=
+          aos::RawSender::Error::kOk) {
         AOS_LOG(ERROR, "Failed to reset localizer.\n");
       }
     }
@@ -339,7 +343,8 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       localizer_control_builder.add_y(3.4);
       localizer_control_builder.add_theta(M_PI);
 
-      if (!builder.Send(localizer_control_builder.Finish())) {
+      if (builder.Send(localizer_control_builder.Finish()) !=
+          aos::RawSender::Error::kOk) {
         AOS_LOG(ERROR, "Failed to reset localizer.\n");
       }
     }
@@ -353,7 +358,8 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       localizer_control_builder.add_y(-3.4);
       localizer_control_builder.add_theta(0.0);
 
-      if (!builder.Send(localizer_control_builder.Finish())) {
+      if (builder.Send(localizer_control_builder.Finish()) !=
+          aos::RawSender::Error::kOk) {
         AOS_LOG(ERROR, "Failed to reset localizer.\n");
       }
     }
@@ -367,7 +373,8 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       localizer_control_builder.add_y(-3.4);
       localizer_control_builder.add_theta(M_PI);
 
-      if (!builder.Send(localizer_control_builder.Finish())) {
+      if (builder.Send(localizer_control_builder.Finish()) !=
+          aos::RawSender::Error::kOk) {
         AOS_LOG(ERROR, "Failed to reset localizer.\n");
       }
     }
@@ -599,7 +606,8 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     mutable_superstructure_goal->mutable_wrist()->mutate_unsafe_goal(
         elevator_wrist_pos_.wrist);
 
-    if (!main_superstructure_goal_builder.Send(superstructure_goal_offset)) {
+    if (main_superstructure_goal_builder.Send(superstructure_goal_offset) !=
+        aos::RawSender::Error::kOk) {
       AOS_LOG(ERROR, "Sending superstructure goal failed.\n");
     }
 
@@ -611,7 +619,8 @@ class Reader : public ::frc971::input::ActionJoystickInput {
 
     {
       auto builder = camera_log_sender_.MakeBuilder();
-      builder.Send(CreateCameraLog(*builder.fbb(), data.IsPressed(kCameraLog)));
+      (void)builder.Send(
+          CreateCameraLog(*builder.fbb(), data.IsPressed(kCameraLog)));
     }
   }
 

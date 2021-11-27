@@ -526,7 +526,10 @@ void DrivetrainLoop::RunIteration(
     builder.add_down_estimator(down_estimator_state_offset);
     builder.add_localizer(localizer_offset);
     builder.add_zeroing(zeroer_offset);
-    status->Send(builder.Finish());
+
+    builder.add_send_failures(status_failure_counter_.failures());
+
+    status_failure_counter_.Count(status->Send(builder.Finish()));
   }
 
   // If the filters aren't ready/valid, then disable all outputs (currently,
@@ -568,7 +571,7 @@ void DrivetrainLoop::RunIteration(
   }
 
   if (output) {
-    output->Send(Output::Pack(*output->fbb(), &output_struct));
+    output->CheckOk(output->Send(Output::Pack(*output->fbb(), &output_struct)));
   }
 }
 

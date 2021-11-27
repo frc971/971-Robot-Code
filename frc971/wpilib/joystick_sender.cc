@@ -111,7 +111,8 @@ JoystickSender::JoystickSender(::aos::ShmEventLoop *event_loop)
         }
         joystick_state_builder.add_team_id(team_id_);
 
-        if (!builder.Send(joystick_state_builder.Finish())) {
+        if (builder.Send(joystick_state_builder.Finish()) !=
+            aos::RawSender::Error::kOk) {
           AOS_LOG(WARNING, "sending joystick_state failed\n");
         }
       });

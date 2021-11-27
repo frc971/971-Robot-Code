@@ -243,7 +243,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       drivetrain_builder.add_right_speed(-drivetrain_velocity_translate(
           drivetrain_right_encoder_->GetPeriod()));
 
-      builder.Send(drivetrain_builder.Finish());
+      builder.CheckOk(builder.Send(drivetrain_builder.Finish()));
     }
     const constants::Values &values = constants::GetValues();
 
@@ -306,7 +306,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       position_builder.add_intake_beambreak_triggered(
           ball_intake_beambreak_->Get());
 
-      builder.Send(position_builder.Finish());
+      builder.CheckOk(builder.Send(position_builder.Finish()));
     }
 
     {
@@ -324,7 +324,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
       auto_mode_builder.add_mode(mode);
 
-      builder.Send(auto_mode_builder.Finish());
+      builder.CheckOk(builder.Send(auto_mode_builder.Finish()));
     }
 
     if (FLAGS_shooter_tuning) {
@@ -339,7 +339,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
             builder.MakeBuilder<superstructure::shooter::TuningReadings>();
         shooter_tuning_readings_builder.add_velocity_ball(
             kDistanceBetweenBeambreaks / ball_beambreak_reader_.last_width());
-        builder.Send(shooter_tuning_readings_builder.Finish());
+        builder.CheckOk(builder.Send(shooter_tuning_readings_builder.Finish()));
       }
     }
   }
@@ -625,7 +625,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     std::unique_ptr<frc971::wpilib::ADIS16448> old_imu;
     std::unique_ptr<frc971::wpilib::ADIS16470> new_imu;
     std::unique_ptr<frc::SPI> imu_spi;
-    if (::aos::network::GetTeamNumber() != constants::Values::kCodingRobotTeamNumber) {
+    if (::aos::network::GetTeamNumber() !=
+        constants::Values::kCodingRobotTeamNumber) {
       old_imu = make_unique<frc971::wpilib::ADIS16448>(
           &imu_event_loop, spi_port, imu_trigger.get());
       old_imu->SetDummySPI(frc::SPI::Port::kOnboardCS2);

@@ -547,11 +547,12 @@ class ShmSender : public RawSender {
     shm_event_loop()->CheckCurrentThread();
     return lockless_queue_sender_.size();
   }
-  bool DoSend(size_t length,
-              aos::monotonic_clock::time_point monotonic_remote_time,
-              aos::realtime_clock::time_point realtime_remote_time,
-              uint32_t remote_queue_index,
-              const UUID &source_boot_uuid) override {
+
+  Error DoSend(size_t length,
+               aos::monotonic_clock::time_point monotonic_remote_time,
+               aos::realtime_clock::time_point realtime_remote_time,
+               uint32_t remote_queue_index,
+               const UUID &source_boot_uuid) override {
     shm_event_loop()->CheckCurrentThread();
     CHECK_LE(length, static_cast<size_t>(channel()->max_size()))
         << ": Sent too big a message on "
@@ -565,14 +566,15 @@ class ShmSender : public RawSender {
 
     wake_upper_.Wakeup(event_loop()->is_running() ? event_loop()->priority()
                                                   : 0);
-    return true;
+    // TODO(Milind): check for messages sent too fast
+    return Error::kOk;
   }
 
-  bool DoSend(const void *msg, size_t length,
-              aos::monotonic_clock::time_point monotonic_remote_time,
-              aos::realtime_clock::time_point realtime_remote_time,
-              uint32_t remote_queue_index,
-              const UUID &source_boot_uuid) override {
+  Error DoSend(const void *msg, size_t length,
+               aos::monotonic_clock::time_point monotonic_remote_time,
+               aos::realtime_clock::time_point realtime_remote_time,
+               uint32_t remote_queue_index,
+               const UUID &source_boot_uuid) override {
     shm_event_loop()->CheckCurrentThread();
     CHECK_LE(length, static_cast<size_t>(channel()->max_size()))
         << ": Sent too big a message on "
@@ -586,7 +588,7 @@ class ShmSender : public RawSender {
     wake_upper_.Wakeup(event_loop()->is_running() ? event_loop()->priority()
                                                   : 0);
     // TODO(austin): Return an error if we send too fast.
-    return true;
+    return RawSender::Error::kOk;
   }
 
   absl::Span<char> GetSharedMemory() const {

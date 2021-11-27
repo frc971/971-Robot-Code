@@ -192,7 +192,8 @@ class LocalizedDrivetrainTest : public frc971::testing::ControlLoopTest {
           auto statistics_builder =
               builder.MakeBuilder<aos::message_bridge::ServerStatistics>();
           statistics_builder.add_connections(connections_offset);
-          builder.Send(statistics_builder.Finish());
+          CHECK_EQ(builder.Send(statistics_builder.Finish()),
+                   aos::RawSender::Error::kOk);
         },
         chrono::milliseconds(500));
 
@@ -210,7 +211,8 @@ class LocalizedDrivetrainTest : public frc971::testing::ControlLoopTest {
           auto turret_offset = turret_builder.Finish();
           auto status_builder = builder.MakeBuilder<superstructure::Status>();
           status_builder.add_turret(turret_offset);
-          builder.Send(status_builder.Finish());
+          CHECK_EQ(builder.Send(status_builder.Finish()),
+                   aos::RawSender::Error::kOk);
         },
         chrono::milliseconds(5));
 
@@ -341,8 +343,10 @@ class LocalizedDrivetrainTest : public frc971::testing::ControlLoopTest {
            std::get<0>(camera_delay_queue_.front()) <
                monotonic_now() - camera_latency) {
       auto builder = camera_sender_.MakeBuilder();
-      ASSERT_TRUE(builder.Send(ImageMatchResult::Pack(
-          *builder.fbb(), std::get<1>(camera_delay_queue_.front()).get())));
+      ASSERT_EQ(
+          builder.Send(ImageMatchResult::Pack(
+              *builder.fbb(), std::get<1>(camera_delay_queue_.front()).get())),
+          aos::RawSender::Error::kOk);
       camera_delay_queue_.pop();
     }
   }
@@ -402,7 +406,8 @@ class LocalizedDrivetrainTest : public frc971::testing::ControlLoopTest {
     drivetrain_builder.add_left_goal(left);
     drivetrain_builder.add_right_goal(right);
 
-    EXPECT_TRUE(builder.Send(drivetrain_builder.Finish()));
+    EXPECT_EQ(builder.Send(drivetrain_builder.Finish()),
+              aos::RawSender::Error::kOk);
   }
 
  private:
@@ -608,8 +613,8 @@ TEST_F(LocalizedDrivetrainTest, FetchersHandleTimeGap) {
       [this](int) {
         auto builder = camera_sender_.MakeBuilder();
         ImageMatchResultT image;
-        ASSERT_TRUE(
-            builder.Send(ImageMatchResult::Pack(*builder.fbb(), &image)));
+        ASSERT_EQ(builder.Send(ImageMatchResult::Pack(*builder.fbb(), &image)),
+                  aos::RawSender::Error::kOk);
       },
       std::chrono::milliseconds(40));
   test_event_loop_

@@ -80,6 +80,8 @@ class Superstructure
 
   bool has_turret_ = true;
 
+  aos::SendFailureCounter status_failure_counter_;
+
   DISALLOW_COPY_AND_ASSIGN(Superstructure);
 };
 

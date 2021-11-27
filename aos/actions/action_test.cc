@@ -1,8 +1,8 @@
 #include <unistd.h>
 
+#include <chrono>
 #include <memory>
 #include <thread>
-#include <chrono>
 
 #include "gtest/gtest.h"
 
@@ -48,8 +48,8 @@ class TestActorNOP
   typedef TypedActionFactory<actions::TestActionGoal> Factory;
 
   explicit TestActorNOP(::aos::EventLoop *event_loop)
-      : actions::ActorBase<actions::TestActionGoal>(
-            event_loop, "/test_action") {}
+      : actions::ActorBase<actions::TestActionGoal>(event_loop,
+                                                    "/test_action") {}
 
   static Factory MakeFactory(::aos::EventLoop *event_loop) {
     return Factory(event_loop, "/test_action");
@@ -85,8 +85,8 @@ class TestActor2Nop
   typedef TypedActionFactory<actions::TestAction2Goal> Factory;
 
   explicit TestActor2Nop(::aos::EventLoop *event_loop)
-      : actions::ActorBase<actions::TestAction2Goal>(
-            event_loop, "/test_action2") {}
+      : actions::ActorBase<actions::TestAction2Goal>(event_loop,
+                                                     "/test_action2") {}
 
   static Factory MakeFactory(::aos::EventLoop *event_loop) {
     return Factory(event_loop, "/test_action2");
@@ -146,14 +146,13 @@ TEST_F(ActionTest, StartWithOldGoal) {
   ActionQueue action_queue;
 
   {
-    ::aos::Sender<TestActionGoal>::Builder builder =
-        goal_sender.MakeBuilder();
+    ::aos::Sender<TestActionGoal>::Builder builder = goal_sender.MakeBuilder();
 
     TestActionGoal::Builder goal_builder =
         builder.MakeBuilder<TestActionGoal>();
 
     goal_builder.add_run(971);
-    ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+    builder.CheckOk(builder.Send(goal_builder.Finish()));
   }
 
   TestActorNOP nop_act(actor1_event_loop_.get());

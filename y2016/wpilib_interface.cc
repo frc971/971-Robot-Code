@@ -276,7 +276,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       position_builder.add_right_shifter_position(
           hall_translate(drivetrain_right_hall_->GetVoltage()));
 
-      builder.Send(position_builder.Finish());
+      builder.CheckOk(builder.Send(position_builder.Finish()));
     }
   }
 
@@ -290,7 +290,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
           shooter_translate(-shooter_left_encoder_->GetRaw()));
       shooter_builder.add_theta_right(
           shooter_translate(shooter_right_encoder_->GetRaw()));
-      builder.Send(shooter_builder.Finish());
+      builder.CheckOk(builder.Send(shooter_builder.Finish()));
     }
 
     {
@@ -321,7 +321,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       position_builder.add_shoulder(shoulder_offset);
       position_builder.add_wrist(wrist_offset);
 
-      builder.Send(position_builder.Finish());
+      builder.CheckOk(builder.Send(position_builder.Finish()));
     }
 
     {
@@ -329,7 +329,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       ::y2016::sensors::BallDetector::Builder ball_detector_builder =
           builder.MakeBuilder<y2016::sensors::BallDetector>();
       ball_detector_builder.add_voltage(ball_detector_->GetVoltage());
-      builder.Send(ball_detector_builder.Finish());
+      builder.CheckOk(builder.Send(ball_detector_builder.Finish()));
     }
 
     {
@@ -343,7 +343,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
         }
       }
       auto_builder.add_mode(mode);
-      builder.Send(auto_builder.Finish());
+      builder.CheckOk(builder.Send(auto_builder.Finish()));
     }
   }
 
@@ -492,7 +492,7 @@ class SolenoidWriter {
 
       pcm_->Flush();
       to_log_builder.add_read_solenoids(pcm_->GetAll());
-      builder.Send(to_log_builder.Finish());
+      (void)builder.Send(to_log_builder.Finish());
     }
   }
 
