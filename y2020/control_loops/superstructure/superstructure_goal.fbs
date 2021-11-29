@@ -55,6 +55,9 @@ table Goal {
 
   // Positive is deploying climber and to climb; cannot run in reverse
   climber_voltage:float (id: 10);
+
+  // Feed voltage override.
+  feed_voltage_override:float (id: 13);
 }
 
 root_type Goal;

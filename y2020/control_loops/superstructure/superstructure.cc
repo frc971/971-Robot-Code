@@ -284,6 +284,12 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
         output_struct.feeder_voltage = -12.0;
       }
 
+      if (unsafe_goal->has_feed_voltage_override()) {
+        output_struct.feeder_voltage = unsafe_goal->feed_voltage_override();
+        output_struct.washing_machine_spinner_voltage = -5.0;
+        preloading_timeout_ = position_timestamp;
+      }
+
       if (unsafe_goal->shooting()) {
         if ((shooter_.ready() ||
              (!has_turret_ && shooter_.accelerator_ready())) &&

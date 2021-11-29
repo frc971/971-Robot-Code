@@ -295,6 +295,9 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       superstructure_goal_builder.add_shooter(shooter_offset);
       superstructure_goal_builder.add_shooting(data.IsPressed(kFeed) ||
                                                data.IsPressed(kFeedDriver));
+      if (data.IsPressed(kSpit)) {
+        superstructure_goal_builder.add_feed_voltage_override(-7.0);
+      }
       superstructure_goal_builder.add_climber_voltage(climber_speed);
 
       superstructure_goal_builder.add_turret_tracking(turret_tracking);
