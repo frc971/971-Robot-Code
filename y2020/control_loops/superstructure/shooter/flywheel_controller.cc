@@ -42,7 +42,7 @@ class CurrentLimitedStateFeedbackController
     const double a = 1;
     const double b = -bemf_voltage;
     const double c_positive = -70.0 * 12.0 * resistance_;
-    const double c_negative = -40.0 * 12.0 * resistance_;
+    const double c_negative = -25.0 * 12.0 * resistance_;
 
     // Root is always positive.
     const double root_positive = std::sqrt(b * b - 4.0 * a * c_positive);
@@ -52,8 +52,8 @@ class CurrentLimitedStateFeedbackController
 
     // Limit to the battery voltage and the current limit voltage.
     mutable_U(0, 0) = std::clamp(U(0, 0), lower_limit, upper_limit);
-    if (R(0) > 50.0) {
-      mutable_U(0, 0) = std::clamp(U(0, 0), -0.8, 12.0);
+    if (R(1) > 50.0) {
+      mutable_U(0, 0) = std::clamp(U(0, 0), 1.0, 12.0);
     } else {
       mutable_U(0, 0) = std::clamp(U(0, 0), 0.0, 12.0);
     }
