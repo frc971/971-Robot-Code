@@ -132,6 +132,9 @@ std::optional<realtime_clock::time_point> realtime_clock::FromString(
   struct tm tm;
   std::istringstream ss(std::string(now.substr(0, now.size() - 10)));
   ss >> std::get_time(&tm, "%Y-%m-%d_%H-%M-%S");
+  if (ss.fail()) {
+    return std::nullopt;
+  }
   tm.tm_isdst = -1;
 
   time_t seconds = mktime(&tm);
