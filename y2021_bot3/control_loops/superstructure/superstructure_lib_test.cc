@@ -191,7 +191,7 @@ TEST_F(SuperstructureTest, PlotterTest) {
       goal_builder.add_intake_speed(speed);
       goal_builder.add_outtake_speed(speed);
       goal_builder.add_climber_speed(speed);
-      ASSERT_TRUE(builder.Send(goal_builder.Finish()));
+      builder.CheckOk(builder.Send(goal_builder.Finish()));
       speed += .001;
       if (speed >= 12) {
         speed = -12;
