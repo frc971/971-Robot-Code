@@ -38,6 +38,8 @@ import {plotAccelerator} from
     'org_frc971/y2020/control_loops/superstructure/accelerator_plotter'
 import {plotHood} from
     'org_frc971/y2020/control_loops/superstructure/hood_plotter'
+import {plotSuperstructure} from
+    'org_frc971/y2021_bot3/control_loops/superstructure/superstructure_plotter';
 import {plotDemo} from 'org_frc971/aos/network/www/demo_plot';
 import {plotData} from 'org_frc971/frc971/analysis/plot_data_utils';
 
@@ -104,6 +106,7 @@ const plotIndex = new Map<string, PlotState>([
   ['Turret', new PlotState(plotDiv, plotTurret)],
   ['2020 Localizer', new PlotState(plotDiv, plotLocalizer)],
   ['C++ Plotter', new PlotState(plotDiv, plotData)],
+  ['Y2021 3rd Robot Superstructure', new PlotState(plotDiv, plotSuperstructure)],
 ]);
 
 const invalidSelectValue = 'null';
