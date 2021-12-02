@@ -17,11 +17,8 @@ export function plotSuperstructure(conn: Connection, element: Element) : void {
   const position = aosPlotter.addMessageSource('/superstructure', 'y2021_bot3.control_loops.superstructure.Position');
   const robotState = aosPlotter.addMessageSource('/aos', 'aos.RobotState');
 
-  var currentTop = 0;
-
   const intakePlot =
-      aosPlotter.addPlot(element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT / 2]);
-  currentTop += DEFAULT_HEIGHT / 2;
+      aosPlotter.addPlot(element, [DEFAULT_WIDTH, DEFAULT_HEIGHT / 2]);
   intakePlot.plot.getAxisLabels().setTitle('Intake');
   intakePlot.plot.getAxisLabels().setXLabel(TIME);
   intakePlot.plot.getAxisLabels().setYLabel('Volts');
@@ -32,8 +29,7 @@ export function plotSuperstructure(conn: Connection, element: Element) : void {
   intakePlot.addMessageLine(status, ['intake_speed']).setColor(RED);
 
   const outtakePlot =
-      aosPlotter.addPlot(element, [0, currentTop], [DEFAULT_WIDTH, DEFAULT_HEIGHT / 2]);
-  currentTop += DEFAULT_HEIGHT / 2;
+      aosPlotter.addPlot(element, [DEFAULT_WIDTH, DEFAULT_HEIGHT / 2]);
   outtakePlot.plot.getAxisLabels().setTitle('Outtake');
   outtakePlot.plot.getAxisLabels().setXLabel(TIME);
   outtakePlot.plot.getAxisLabels().setYLabel('Volts');
