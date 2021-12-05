@@ -172,8 +172,6 @@ py_binary(
         "graph_generate.py",
     ],
     legacy_create_init = False,
-    python_version = "PY3",
-    srcs_version = "PY3",
     target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":python_init",
@@ -190,8 +188,6 @@ py_binary(
         "graph_generate.py",
     ],
     legacy_create_init = False,
-    python_version = "PY2",
-    srcs_version = "PY2",
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":python_init",

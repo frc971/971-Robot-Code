@@ -116,8 +116,6 @@ py_binary(
         "download_packages.py",
     ],
     main = "download_packages.py",
-    python_version = "PY3",
-    srcs_version = "PY2AND3",
     target_compatible_with = ["@platforms//os:linux"],
 )
 

@@ -125,6 +125,7 @@ register_toolchains(
     "//tools/cpp:cc-toolchain-cortex-m4f",
     # Find a good way to select between these two M4F toolchains.
     #"//tools/cpp:cc-toolchain-cortex-m4f-k22",
+    "//tools/python:python_toolchain",
 )
 
 http_archive(

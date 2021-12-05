@@ -61,7 +61,6 @@ py_binary(
         "test_images/*.png",
     ]),
     main = "target_definition.py",
-    python_version = "PY3",
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":target_definition",
@@ -80,7 +79,6 @@ py_binary(
     data = glob(["calib_files/*.json"]) + glob([
         "test_images/*.png",
     ]),
-    python_version = "PY3",
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":camera_definition",
@@ -100,7 +98,6 @@ py_binary(
     data = glob(["calib_files/*.json"]) + glob([
         "test_images/*.png",
     ]),
-    python_version = "PY3",
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":camera_definition",
@@ -156,8 +153,6 @@ py_binary(
         "test_images/*.png",
     ]),
     main = "load_sift_training.py",
-    python_version = "PY3",
-    srcs_version = "PY2AND3",
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":load_sift_training",

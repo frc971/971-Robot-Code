@@ -25,8 +25,6 @@ py_binary(
         "@amd64_debian_sysroot//:sysroot_files",
     ],
     main = "fast_gaussian_runner.py",
-    python_version = "PY3",
-    srcs_version = "PY2AND3",
     target_compatible_with = ["@platforms//os:linux"],
     toolchains = [
         "@bazel_tools//tools/cpp:current_cc_toolchain",
@@ -220,8 +218,6 @@ flatbuffer_cc_library(
 py_binary(
     name = "demo_sift_training",
     srcs = ["demo_sift_training.py"],
-    python_version = "PY3",
-    srcs_version = "PY2AND3",
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":sift_fbs_python",

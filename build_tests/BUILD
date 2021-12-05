@@ -85,8 +85,6 @@ py_test(
     name = "python3_opencv",
     srcs = ["python_opencv.py"],
     main = "python_opencv.py",
-    python_version = "PY3",
-    srcs_version = "PY2AND3",
     target_compatible_with = ["@platforms//os:linux"],
     deps = ["@opencv_contrib_nonfree_amd64//:python_opencv"],
 )

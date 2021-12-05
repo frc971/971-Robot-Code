@@ -17,12 +17,6 @@ common --noincompatible_restrict_string_escapes
 # Use the malloc we want.
 build --custom_malloc=//tools/cpp:malloc
 
-# Use our hermetic Python runtime.
-build --python_top=//tools/python:runtime
-build --noincompatible_use_python_toolchains
-build --noincompatible_py3_is_default
-build --noincompatible_py2_outputs_are_suffixed
-
 # Shortcuts for selecting the target platform.
 build:k8 --platforms=//tools/platforms:linux_x86
 build:roborio --platforms=//tools/platforms:linux_roborio
