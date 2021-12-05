@@ -230,8 +230,9 @@ http_archive(
 # TODO: add frc971.org URL
 http_archive(
     name = "rules_python",
-    sha256 = "778197e26c5fbeb07ac2a2c5ae405b30f6cb7ad1f5510ea6fdac03bded96cc6f",
-    url = "https://github.com/bazelbuild/rules_python/releases/download/0.2.0/rules_python-0.2.0.tar.gz",
+    sha256 = "895fa3b03898d7708eb50ed34dcfb71c07866433df6912a6ff4f4fb473048f99",
+    strip_prefix = "rules_python-2b1d6beb4d5d8f59d629597e30e9aa519182d9a9",
+    url = "https://github.com/bazelbuild/rules_python/archive/2b1d6beb4d5d8f59d629597e30e9aa519182d9a9.tar.gz",
 )
 
 new_local_repository(
