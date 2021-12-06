@@ -4,12 +4,10 @@ load("//tools:platforms.bzl", "platforms")
 py_library(
     name = "train_and_match",
     srcs = ["train_and_match.py"],
-    data = [
-        "@python_repo//:scipy",
-    ],
     deps = [
         "//external:python-glog",
         "@opencv_contrib_nonfree_amd64//:python_opencv",
+        "@python_repo//:scipy",
     ],
 )
 
@@ -18,13 +16,11 @@ py_library(
     srcs = [
         "define_training_data.py",
     ],
-    data = [
-        "@python_repo//:scipy",
-    ],
     deps = [
         ":train_and_match",
         "//external:python-glog",
         "@opencv_contrib_nonfree_amd64//:python_opencv",
+        "@python_repo//:scipy",
     ],
 )
 

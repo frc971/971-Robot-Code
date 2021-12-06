@@ -84,7 +84,7 @@ py_library(
     srcs = [
         "calib_sensors.py",
     ],
-    data = [
+    deps = [
         "@python_repo//:scipy",
     ],
     target_compatible_with = ["@platforms//os:linux"],
@@ -95,7 +95,7 @@ py_binary(
     srcs = [
         "current_equalize.py",
     ],
-    data = [
+    deps = [
         ":calib_sensors",
         "@python_repo//:scipy",
     ],

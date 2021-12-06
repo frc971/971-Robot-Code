@@ -191,6 +191,7 @@ py_binary(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":python_init",
+        "@python_repo//:numpy",
     ],
 )
 

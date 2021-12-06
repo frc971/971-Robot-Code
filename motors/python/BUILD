@@ -3,9 +3,6 @@ py_binary(
     srcs = [
         "big_phase_current.py",
     ],
-    data = [
-        "@python_repo//:scipy",
-    ],
     legacy_create_init = False,
     target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
@@ -14,6 +11,7 @@ py_binary(
         "//external:python-glog",
         "//frc971/control_loops/python:controls",
         "@matplotlib_repo//:matplotlib3",
+        "@python_repo//:scipy",
     ],
 )
 

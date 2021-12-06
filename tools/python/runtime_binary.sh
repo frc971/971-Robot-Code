@@ -36,4 +36,5 @@ fi
 
 export LD_LIBRARY_PATH="${BASE_PATH}/usr/lib/lapack:${BASE_PATH}/usr/lib/libblas:${BASE_PATH}/usr/lib/x86_64-linux-gnu"
 
-exec "$BASE_PATH"/usr/bin/python3 "$@"
+# Prevent Python from importing the host's installed packages.
+exec "$BASE_PATH"/usr/bin/python3 -sS "$@"

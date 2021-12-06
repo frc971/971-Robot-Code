@@ -55,11 +55,45 @@ py_binary(
     visibility = ["//visibility:public"],
 )
 
-filegroup(
+py_library(
     name = "scipy",
     srcs = glob([
-        "usr/lib/python3/dist-packages/numpy",
-        "usr/lib/python3/dist-packages/scipy",
+        "usr/lib/python3/dist-packages/scipy/**/*.py",
+    ]),
+    data = glob([
+        "usr/lib/python3/dist-packages/scipy/**/*",
+    ], exclude = [
+        "usr/lib/python3/dist-packages/scipy/**/*.py",
+    ]),
+    deps = [
+        ":numpy",
+    ],
+    visibility = ["//visibility:public"],
+    imports = [
+        "usr/lib/python3/dist-packages",
+    ],
+    target_compatible_with = [
+        "@platforms//os:linux",
+        "@platforms//cpu:x86_64",
+    ],
+)
+
+py_library(
+    name = "numpy",
+    srcs = glob([
+        "usr/lib/python3/dist-packages/numpy/**/*.py",
+    ]),
+    data = glob([
+        "usr/lib/python3/dist-packages/numpy/**/*",
+    ], exclude = [
+        "usr/lib/python3/dist-packages/numpy/**/*.py",
     ]),
     visibility = ["//visibility:public"],
+    imports = [
+        "usr/lib/python3/dist-packages",
+    ],
+    target_compatible_with = [
+        "@platforms//os:linux",
+        "@platforms//cpu:x86_64",
+    ],
 )

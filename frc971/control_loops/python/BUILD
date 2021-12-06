@@ -26,12 +26,12 @@ py_library(
     ],
     data = [
         "//third_party/cddlib:_cddlib.so",
-        "@python_repo//:scipy",
     ],
     target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":python_init",
         "//external:python-glog",
+        "@python_repo//:scipy",
     ],
 )
 
@@ -98,6 +98,7 @@ py_test(
     deps = [
         ":libspline",
         ":python_init",
+        "@python_repo//:numpy",
     ],
 )
 
