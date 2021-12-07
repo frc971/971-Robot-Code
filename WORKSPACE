@@ -126,6 +126,7 @@ register_toolchains(
     # Find a good way to select between these two M4F toolchains.
     #"//tools/cpp:cc-toolchain-cortex-m4f-k22",
     "//tools/python:python_toolchain",
+    "//tools/go:noop_go_toolchain",
 )
 
 http_archive(
@@ -873,3 +874,18 @@ local_repository(
     name = "snappy",
     path = "third_party/snappy",
 )
+
+http_archive(
+    name = "io_bazel_rules_go",
+    sha256 = "2b1641428dff9018f9e85c0384f03ec6c10660d935b750e3fa1492a281a53b0f",
+    urls = [
+        "https://www.frc971.org/Build-Dependencies/rules_go-v0.29.0.zip",
+        "https://github.com/bazelbuild/rules_go/releases/download/v0.29.0/rules_go-v0.29.0.zip",
+    ],
+)
+
+load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
+
+go_rules_dependencies()
+
+go_register_toolchains(version = "1.17.1")

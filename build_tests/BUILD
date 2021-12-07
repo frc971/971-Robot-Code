@@ -1,5 +1,6 @@
 load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library")
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_py_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary")
 
 cc_test(
     name = "gflags_build_test",
@@ -95,4 +96,10 @@ py_test(
     srcs_version = "PY2AND3",
     target_compatible_with = ["@platforms//os:linux"],
     deps = ["@python_jinja2"],
+)
+
+go_binary(
+    name = "hello_go",
+    srcs = ["hello.go"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
 )
