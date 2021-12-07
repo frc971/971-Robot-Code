@@ -2506,6 +2506,220 @@ TEST_F(RebootTimestampMapperTest, Node2Reboot) {
   }
 }
 
+class SortingDeathTest : public SortingElementTest {
+ public:
+  SortingDeathTest()
+      : SortingElementTest(),
+        part0_(MakeHeader(config_, R"({
+  /* 100ms */
+  "max_out_of_order_duration": 100000000,
+  "node": {
+    "name": "pi1"
+  },
+  "logger_node": {
+    "name": "pi1"
+  },
+  "monotonic_start_time": 1000000,
+  "realtime_start_time": 1000000000000,
+  "logger_monotonic_start_time": 1000000,
+  "logger_realtime_start_time": 1000000000000,
+  "log_event_uuid": "30ef1283-81d7-4004-8c36-1c162dbcb2b2",
+  "parts_uuid": "ee4f5a98-77d0-4e01-af2f-bbb29e098ede",
+  "parts_index": 0,
+  "logger_instance_uuid": "1c3142ad-10a5-408d-a760-b63b73d3b904",
+  "logger_node_boot_uuid": "a570df8b-5cc2-4dbe-89bd-286f9ddd02b7",
+  "source_node_boot_uuid": "a570df8b-5cc2-4dbe-89bd-286f9ddd02b7",
+  "boot_uuids": [
+    "a570df8b-5cc2-4dbe-89bd-286f9ddd02b7",
+    "6ba4f28d-21a2-4d7f-83f4-ee365cf86464",
+    ""
+  ],
+  "oldest_remote_monotonic_timestamps": [
+    9223372036854775807,
+    9223372036854775807,
+    9223372036854775807
+  ],
+  "oldest_local_monotonic_timestamps": [
+    9223372036854775807,
+    9223372036854775807,
+    9223372036854775807
+  ],
+  "oldest_remote_unreliable_monotonic_timestamps": [
+    9223372036854775807,
+    0,
+    9223372036854775807
+  ],
+  "oldest_local_unreliable_monotonic_timestamps": [
+    9223372036854775807,
+    0,
+    9223372036854775807
+  ]
+})")),
+        part1_(MakeHeader(config_, R"({
+  /* 100ms */
+  "max_out_of_order_duration": 100000000,
+  "node": {
+    "name": "pi1"
+  },
+  "logger_node": {
+    "name": "pi1"
+  },
+  "monotonic_start_time": 1000000,
+  "realtime_start_time": 1000000000000,
+  "logger_monotonic_start_time": 1000000,
+  "logger_realtime_start_time": 1000000000000,
+  "log_event_uuid": "30ef1283-81d7-4004-8c36-1c162dbcb2b2",
+  "parts_uuid": "ee4f5a98-77d0-4e01-af2f-bbb29e098ede",
+  "parts_index": 1,
+  "logger_instance_uuid": "1c3142ad-10a5-408d-a760-b63b73d3b904",
+  "logger_node_boot_uuid": "a570df8b-5cc2-4dbe-89bd-286f9ddd02b7",
+  "source_node_boot_uuid": "a570df8b-5cc2-4dbe-89bd-286f9ddd02b7",
+  "boot_uuids": [
+    "a570df8b-5cc2-4dbe-89bd-286f9ddd02b7",
+    "b728d27a-9181-4eac-bfc1-5d09b80469d2",
+    ""
+  ],
+  "oldest_remote_monotonic_timestamps": [
+    9223372036854775807,
+    9223372036854775807,
+    9223372036854775807
+  ],
+  "oldest_local_monotonic_timestamps": [
+    9223372036854775807,
+    9223372036854775807,
+    9223372036854775807
+  ],
+  "oldest_remote_unreliable_monotonic_timestamps": [
+    9223372036854775807,
+    100000,
+    9223372036854775807
+  ],
+  "oldest_local_unreliable_monotonic_timestamps": [
+    9223372036854775807,
+    100000,
+    9223372036854775807
+  ]
+})")),
+        part2_(MakeHeader(config_, R"({
+  /* 100ms */
+  "max_out_of_order_duration": 100000000,
+  "node": {
+    "name": "pi1"
+  },
+  "logger_node": {
+    "name": "pi1"
+  },
+  "monotonic_start_time": 1000000,
+  "realtime_start_time": 1000000000000,
+  "logger_monotonic_start_time": 1000000,
+  "logger_realtime_start_time": 1000000000000,
+  "log_event_uuid": "30ef1283-81d7-4004-8c36-1c162dbcb2b2",
+  "parts_uuid": "ee4f5a98-77d0-4e01-af2f-bbb29e098ede",
+  "parts_index": 2,
+  "logger_instance_uuid": "1c3142ad-10a5-408d-a760-b63b73d3b904",
+  "logger_node_boot_uuid": "a570df8b-5cc2-4dbe-89bd-286f9ddd02b7",
+  "source_node_boot_uuid": "a570df8b-5cc2-4dbe-89bd-286f9ddd02b7",
+  "boot_uuids": [
+    "a570df8b-5cc2-4dbe-89bd-286f9ddd02b7",
+    "6ba4f28d-21a2-4d7f-83f4-ee365cf86464",
+    ""
+  ],
+  "oldest_remote_monotonic_timestamps": [
+    9223372036854775807,
+    9223372036854775807,
+    9223372036854775807
+  ],
+  "oldest_local_monotonic_timestamps": [
+    9223372036854775807,
+    9223372036854775807,
+    9223372036854775807
+  ],
+  "oldest_remote_unreliable_monotonic_timestamps": [
+    9223372036854775807,
+    200000,
+    9223372036854775807
+  ],
+  "oldest_local_unreliable_monotonic_timestamps": [
+    9223372036854775807,
+    200000,
+    9223372036854775807
+  ]
+})")),
+        part3_(MakeHeader(config_, R"({
+  /* 100ms */
+  "max_out_of_order_duration": 100000000,
+  "node": {
+    "name": "pi1"
+  },
+  "logger_node": {
+    "name": "pi1"
+  },
+  "monotonic_start_time": 1000000,
+  "realtime_start_time": 1000000000000,
+  "logger_monotonic_start_time": 1000000,
+  "logger_realtime_start_time": 1000000000000,
+  "log_event_uuid": "30ef1283-81d7-4004-8c36-1c162dbcb2b2",
+  "parts_uuid": "ee4f5a98-77d0-4e01-af2f-bbb29e098ede",
+  "parts_index": 3,
+  "logger_instance_uuid": "1c3142ad-10a5-408d-a760-b63b73d3b904",
+  "logger_node_boot_uuid": "a570df8b-5cc2-4dbe-89bd-286f9ddd02b7",
+  "source_node_boot_uuid": "a570df8b-5cc2-4dbe-89bd-286f9ddd02b7",
+  "boot_uuids": [
+    "a570df8b-5cc2-4dbe-89bd-286f9ddd02b7",
+    "b728d27a-9181-4eac-bfc1-5d09b80469d2",
+    ""
+  ],
+  "oldest_remote_monotonic_timestamps": [
+    9223372036854775807,
+    9223372036854775807,
+    9223372036854775807
+  ],
+  "oldest_local_monotonic_timestamps": [
+    9223372036854775807,
+    9223372036854775807,
+    9223372036854775807
+  ],
+  "oldest_remote_unreliable_monotonic_timestamps": [
+    9223372036854775807,
+    300000,
+    9223372036854775807
+  ],
+  "oldest_local_unreliable_monotonic_timestamps": [
+    9223372036854775807,
+    300000,
+    9223372036854775807
+  ]
+})")) {}
+
+ protected:
+  const aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> part0_;
+  const aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> part1_;
+  const aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> part2_;
+  const aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> part3_;
+};
+
+// Tests that if 2 computers go back and forth trying to be the same node, we
+// die in sorting instead of failing to estimate time.
+TEST_F(SortingDeathTest, FightingNodes) {
+  {
+    DetachedBufferWriter writer0(logfile0_, std::make_unique<DummyEncoder>());
+    writer0.QueueSpan(part0_.span());
+    DetachedBufferWriter writer1(logfile1_, std::make_unique<DummyEncoder>());
+    writer1.QueueSpan(part1_.span());
+    DetachedBufferWriter writer2(logfile2_, std::make_unique<DummyEncoder>());
+    writer2.QueueSpan(part2_.span());
+    DetachedBufferWriter writer3(logfile3_, std::make_unique<DummyEncoder>());
+    writer3.QueueSpan(part3_.span());
+  }
+
+  EXPECT_DEATH(
+      {
+        const std::vector<LogFile> parts =
+            SortParts({logfile0_, logfile1_, logfile2_, logfile3_});
+      },
+      "Found overlapping boots on");
+}
+
 }  // namespace testing
 }  // namespace logger
 }  // namespace aos
