@@ -610,6 +610,9 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
 
       auto result = applications.insert(RecursiveCopyFlatBuffer(a));
       if (!result.second) {
+        if (a->has_args()) {
+          result.first->mutable_message()->clear_args();
+        }
         *result.first =
             MergeFlatBuffers(*result.first, RecursiveCopyFlatBuffer(a));
       }
