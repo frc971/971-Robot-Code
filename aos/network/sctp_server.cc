@@ -20,8 +20,10 @@
 namespace aos {
 namespace message_bridge {
 
-SctpServer::SctpServer(int streams, std::string_view local_host, int local_port)
-    : sockaddr_local_(ResolveSocket(local_host, local_port)) {
+SctpServer::SctpServer(int streams, std::string_view local_host,
+                       int local_port) {
+  bool use_ipv6 = Ipv6Enabled();
+  sockaddr_local_ = ResolveSocket(local_host, local_port, use_ipv6);
   while (true) {
     sctp_.OpenSocket(sockaddr_local_);
 

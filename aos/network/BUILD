@@ -553,6 +553,52 @@ cc_library(
     ],
 )
 
+cc_binary(
+    name = "sctp_lib_shim.so",
+    testonly = True,
+    srcs = [
+        "sctp_lib_shim.c",
+    ],
+    linkopts = [
+        "-ldl",
+    ],
+    linkshared = True,
+    target_compatible_with = ["@platforms//os:linux"],
+)
+
+cc_binary(
+    name = "sctp_lib_test_binary",
+    testonly = True,
+    srcs = [
+        "sctp_lib_test.cc",
+    ],
+    linkstatic = False,
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":sctp_lib",
+        "//aos:init",
+    ],
+)
+
+sh_test(
+    name = "sctp_lib_test",
+    srcs = [
+        "sctp_lib_test.sh",
+    ],
+    args = [
+        "$(location :sctp_lib_test_binary)",
+        "$(location :sctp_lib_shim.so)",
+    ],
+    data = [
+        ":sctp_lib_shim.so",
+        ":sctp_lib_test_binary",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        "@bazel_tools//tools/bash/runfiles",
+    ],
+)
+
 cc_test(
     name = "multinode_timestamp_filter_test",
     srcs = [

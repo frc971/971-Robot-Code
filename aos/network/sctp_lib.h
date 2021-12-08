@@ -17,9 +17,17 @@
 namespace aos {
 namespace message_bridge {
 
+// Check if ipv6 is enabled.
+// If we don't try IPv6, and omit AI_ADDRCONFIG when resolving addresses, the
+// library will happily resolve nodes to IPv6 IPs that can't be used. If we add
+// AI_ADDRCONFIG, the unit tests no longer work because they only have loopback
+// addresses available.
+bool Ipv6Enabled();
+
 // Resolves a socket and returns the address.  This can be either an ipv4 or
 // ipv6 address.
-struct sockaddr_storage ResolveSocket(std::string_view host, int port);
+struct sockaddr_storage ResolveSocket(std::string_view host, int port,
+                                      bool use_ipv6);
 
 // Returns a formatted version of the address.
 std::string Address(const struct sockaddr_storage &sockaddr);

@@ -17,9 +17,11 @@ namespace aos {
 namespace message_bridge {
 
 SctpClient::SctpClient(std::string_view remote_host, int remote_port,
-                       int streams, std::string_view local_host, int local_port)
-    : sockaddr_remote_(ResolveSocket(remote_host, remote_port)),
-      sockaddr_local_(ResolveSocket(local_host, local_port)) {
+                       int streams, std::string_view local_host,
+                       int local_port) {
+  bool use_ipv6 = Ipv6Enabled();
+  sockaddr_local_ = ResolveSocket(local_host, local_port, use_ipv6);
+  sockaddr_remote_ = ResolveSocket(remote_host, remote_port, use_ipv6);
   sctp_.OpenSocket(sockaddr_local_);
 
   {
