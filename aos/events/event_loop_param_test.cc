@@ -1186,14 +1186,14 @@ TEST_P(AbstractEventLoopTest, TimerDisable) {
   auto ender_timer = loop->AddTimer([&test_timer]() { test_timer->Disable(); });
 
   monotonic_clock::time_point s = loop->monotonic_now();
-  test_timer->Setup(s, ::std::chrono::milliseconds(70));
-  ender_timer->Setup(s + ::std::chrono::milliseconds(200));
-  EndEventLoop(loop.get(), ::std::chrono::milliseconds(350));
+  test_timer->Setup(s, ::std::chrono::milliseconds(500));
+  ender_timer->Setup(s + ::std::chrono::milliseconds(1250));
+  EndEventLoop(loop.get(), ::std::chrono::milliseconds(2000));
   Run();
 
   EXPECT_THAT(iteration_list,
-              ::testing::ElementsAre(s, s + chrono::milliseconds(70),
-                                     s + chrono::milliseconds(140)));
+              ::testing::ElementsAre(s, s + chrono::milliseconds(500),
+                                     s + chrono::milliseconds(1000)));
 }
 
 // Verify that a timer can disable itself.
