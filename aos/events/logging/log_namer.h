@@ -106,8 +106,8 @@ class NewDataWriter {
 
   monotonic_clock::time_point monotonic_start_time_ = monotonic_clock::min_time;
 
-  const Node *const node_ = nullptr;
-  const size_t node_index_ = 0;
+  const Node *node_ = nullptr;
+  size_t node_index_ = 0;
   LogNamer *log_namer_;
   UUID parts_uuid_ = UUID::Random();
   size_t parts_index_ = 0;
