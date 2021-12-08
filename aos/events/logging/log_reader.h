@@ -163,6 +163,14 @@ class LogReader {
                                      true) != nullptr;
   }
 
+  template <typename T>
+  void MaybeRemapLoggedChannel(std::string_view name,
+                               const Node *node = nullptr) {
+    if (HasChannel<T>(name, node)) {
+      RemapLoggedChannel<T>(name, node);
+    }
+  }
+
   // Returns true if the channel exists on the node and was logged.
   template <typename T>
   bool HasLoggedChannel(std::string_view name, const Node *node = nullptr) {
