@@ -7,6 +7,9 @@
 #include <unistd.h>
 
 #include <string_view>
+#if __has_feature(memory_sanitizer)
+#include <sanitizer/msan_interface.h>
+#endif
 
 #include "aos/scoped/scoped_fd.h"
 
@@ -101,6 +104,15 @@ void UnlinkRecursive(std::string_view path) {
   }
 
   while ((curr = fts_read(ftsp))) {
+#if __has_feature(memory_sanitizer)
+    // fts_read doesn't have propper msan interceptors.  Unpoison it ourselves.
+    if (curr) {
+      __msan_unpoison(curr, sizeof(*curr));
+      __msan_unpoison_string(curr->fts_accpath);
+      __msan_unpoison_string(curr->fts_path);
+      __msan_unpoison_string(curr->fts_name);
+    }
+#endif
     switch (curr->fts_info) {
       case FTS_NS:
       case FTS_DNR:
