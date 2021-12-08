@@ -20,6 +20,8 @@
 #include <cstdint>
 #include <cstring>
 
+#include "aos/ipc_lib/shm_observers.h"
+
 #ifdef AOS_SANITIZER_thread
 #include <sanitizer/tsan_interface_atomic.h>
 #endif
@@ -33,7 +35,7 @@
 #include "aos/util/compiler_memory_barrier.h"
 #include "glog/logging.h"
 
-using ::aos::linux_code::ipc_lib::FutexAccessorObserver;
+using ::aos::linux_code::ipc_lib::RunShmObservers;
 
 // This code was originally based on
 // <https://www.akkadia.org/drepper/futex.pdf>, but is has since evolved a lot.
@@ -680,34 +682,6 @@ void initialize_in_new_thread() {
   my_robust_list::Init();
 }
 
-FutexAccessorObserver before_observer = nullptr, after_observer = nullptr;
-
-// RAII class which runs before_observer during construction and after_observer
-// during destruction.
-class RunObservers {
- public:
-  template <class T>
-  RunObservers(T *address, bool write)
-      : address_(static_cast<void *>(
-            const_cast<typename ::std::remove_cv<T>::type *>(address))),
-        write_(write) {
-    if (__builtin_expect(before_observer != nullptr, false)) {
-      before_observer(address_, write_);
-    }
-  }
-  ~RunObservers() {
-    if (__builtin_expect(after_observer != nullptr, false)) {
-      after_observer(address_, write_);
-    }
-  }
-
- private:
-  void *const address_;
-  const bool write_;
-
-  DISALLOW_COPY_AND_ASSIGN(RunObservers);
-};
-
 // Finishes the locking of a mutex by potentially clearing FUTEX_OWNER_DIED in
 // the futex and returning the correct value.
 inline int mutex_finish_lock(aos_mutex *m) {
@@ -726,7 +700,7 @@ inline int mutex_finish_lock(aos_mutex *m) {
 // own my_robust_list::Adder.
 inline int mutex_do_get(aos_mutex *m, bool signals_fail,
                         const struct timespec *timeout, uint32_t tid) {
-  RunObservers run_observers(m, true);
+  RunShmObservers run_observers(m, true);
   if (kPrintOperations) {
     printf("%" PRId32 ": %p do_get\n", tid, m);
   }
@@ -794,7 +768,7 @@ inline int mutex_get(aos_mutex *m, bool signals_fail,
 // number_requeue is the number of waiters to requeue (probably INT_MAX or 0). 1
 // will always be woken.
 void condition_wake(aos_condition *c, aos_mutex *m, int number_requeue) {
-  RunObservers run_observers(c, true);
+  RunShmObservers run_observers(c, true);
   // Make it so that anybody just going to sleep won't.
   // This is where we might accidentally wake more than just 1 waiter with 1
   // signal():
@@ -838,7 +812,7 @@ int mutex_lock_timeout(aos_mutex *m, const struct timespec *timeout) {
 int mutex_grab(aos_mutex *m) { return mutex_get(m, false, NULL); }
 
 void mutex_unlock(aos_mutex *m) {
-  RunObservers run_observers(m, true);
+  RunShmObservers run_observers(m, true);
   const uint32_t tid = get_tid();
   if (kPrintOperations) {
     printf("%" PRId32 ": %p unlock\n", tid, m);
@@ -874,7 +848,7 @@ void mutex_unlock(aos_mutex *m) {
 }
 
 int mutex_trylock(aos_mutex *m) {
-  RunObservers run_observers(m, true);
+  RunShmObservers run_observers(m, true);
   const uint32_t tid = get_tid();
   if (kPrintOperations) {
     printf("%" PRId32 ": %p trylock\n", tid, m);
@@ -929,14 +903,14 @@ void death_notification_init(aos_mutex *m) {
   }
   my_robust_list::Adder adder(m);
   {
-    RunObservers run_observers(m, true);
+    RunShmObservers run_observers(m, true);
     CHECK(compare_and_swap(&m->futex, 0, tid));
   }
   adder.Add();
 }
 
 void death_notification_release(aos_mutex *m) {
-  RunObservers run_observers(m, true);
+  RunShmObservers run_observers(m, true);
 
 #ifndef NDEBUG
   // Verify it's "locked", like it should be.
@@ -961,7 +935,7 @@ void death_notification_release(aos_mutex *m) {
 }
 
 int condition_wait(aos_condition *c, aos_mutex *m, struct timespec *end_time) {
-  RunObservers run_observers(c, false);
+  RunShmObservers run_observers(c, false);
   const uint32_t tid = get_tid();
   const uint32_t wait_start = __atomic_load_n(c, __ATOMIC_SEQ_CST);
 
@@ -1041,7 +1015,7 @@ void condition_broadcast(aos_condition *c, aos_mutex *m) {
 }
 
 int futex_wait_timeout(aos_futex *m, const struct timespec *timeout) {
-  RunObservers run_observers(m, false);
+  RunShmObservers run_observers(m, false);
   const int ret = sys_futex_wait(FUTEX_WAIT, m, 0, timeout);
   if (ret != 0) {
     if (ret == -EINTR) {
@@ -1060,7 +1034,7 @@ int futex_wait_timeout(aos_futex *m, const struct timespec *timeout) {
 int futex_wait(aos_futex *m) { return futex_wait_timeout(m, NULL); }
 
 int futex_set_value(aos_futex *m, uint32_t value) {
-  RunObservers run_observers(m, false);
+  RunShmObservers run_observers(m, false);
   ANNOTATE_HAPPENS_BEFORE(m);
   __atomic_store_n(m, value, __ATOMIC_SEQ_CST);
   const int r = sys_futex_wake(m, INT_MAX - 4096);
@@ -1083,15 +1057,6 @@ int futex_unset(aos_futex *m) {
 namespace aos {
 namespace linux_code {
 namespace ipc_lib {
-
-// Sets functions to run befor eand after all futex operations.
-// This is important when doing robustness testing because the memory has to be
-// made writable for the whole futex operation, otherwise it never succeeds.
-void SetFutexAccessorObservers(FutexAccessorObserver before,
-                               FutexAccessorObserver after) {
-  before_observer = before;
-  after_observer = after;
-}
 
 // Sets an extra offset between mutexes and the value we use for them in the
 // robust list (only the forward pointers). This is used to work around a kernel

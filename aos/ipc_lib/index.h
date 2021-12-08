@@ -2,9 +2,11 @@
 #define AOS_IPC_LIB_INDEX_H_
 
 #include <sys/types.h>
+
 #include <atomic>
 #include <string>
 
+#include "aos/ipc_lib/shm_observers.h"
 #include "glog/logging.h"
 
 namespace aos {
@@ -155,6 +157,7 @@ struct AtomicQueueIndex {
   // Swaps expected for index atomically.  Returns true on success, false
   // otherwise.
   inline bool CompareAndExchangeStrong(QueueIndex expected, QueueIndex index) {
+    linux_code::ipc_lib::RunShmObservers run_observers(&index_, true);
     return index_.compare_exchange_strong(expected.index_, index.index_,
                                           ::std::memory_order_acq_rel);
   }
@@ -242,6 +245,7 @@ class AtomicIndex {
   // Swaps expected for index atomically.  Returns true on success, false
   // otherwise.
   bool CompareAndExchangeStrong(Index expected, Index index) {
+    linux_code::ipc_lib::RunShmObservers run_observers(&index_, true);
     return index_.compare_exchange_strong(expected.index_, index.index_,
                                           ::std::memory_order_acq_rel);
   }

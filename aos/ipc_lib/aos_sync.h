@@ -182,12 +182,6 @@ namespace aos {
 namespace linux_code {
 namespace ipc_lib {
 
-typedef void (*FutexAccessorObserver)(void *address, bool write);
-
-// Set functions which get called before and after all futex operations.
-void SetFutexAccessorObservers(FutexAccessorObserver before,
-                               FutexAccessorObserver after);
-
 // Set the offset to use for putting addresses into the robust list.
 // This is necessary to work around a kernel bug where it hangs when trying to
 // deal with a futex on the robust list when its memory has been changed to
