@@ -127,7 +127,7 @@ class SimulatedWatcher : public WatcherState {
 
   void Schedule(std::shared_ptr<SimulatedMessage> message);
 
-  void HandleEvent();
+  void HandleEvent() noexcept;
 
   void SetSimulatedChannel(SimulatedChannel *channel) {
     simulated_channel_ = channel;
@@ -473,7 +473,7 @@ class SimulatedTimerHandler : public TimerHandler {
   void Setup(monotonic_clock::time_point base,
              monotonic_clock::duration repeat_offset) override;
 
-  void HandleEvent();
+  void HandleEvent() noexcept;
 
   void Disable() override;
 
@@ -496,7 +496,7 @@ class SimulatedPhasedLoopHandler : public PhasedLoopHandler {
                              const monotonic_clock::duration offset);
   ~SimulatedPhasedLoopHandler();
 
-  void HandleEvent();
+  void HandleEvent() noexcept;
 
   void Schedule(monotonic_clock::time_point sleep_time) override;
 
@@ -840,7 +840,7 @@ void SimulatedWatcher::Schedule(std::shared_ptr<SimulatedMessage> message) {
   msgs_.emplace_back(message);
 }
 
-void SimulatedWatcher::HandleEvent() {
+void SimulatedWatcher::HandleEvent() noexcept {
   const monotonic_clock::time_point monotonic_now =
       simulated_event_loop_->monotonic_now();
   VLOG(1) << simulated_event_loop_->distributed_now() << " "
@@ -1094,7 +1094,7 @@ void SimulatedTimerHandler::Setup(monotonic_clock::time_point base,
   simulated_event_loop_->AddEvent(&event_);
 }
 
-void SimulatedTimerHandler::HandleEvent() {
+void SimulatedTimerHandler::HandleEvent() noexcept {
   const monotonic_clock::time_point monotonic_now =
       simulated_event_loop_->monotonic_now();
   VLOG(1) << simulated_event_loop_->distributed_now() << " "
@@ -1152,7 +1152,7 @@ SimulatedPhasedLoopHandler::~SimulatedPhasedLoopHandler() {
   simulated_event_loop_->RemoveEvent(&event_);
 }
 
-void SimulatedPhasedLoopHandler::HandleEvent() {
+void SimulatedPhasedLoopHandler::HandleEvent() noexcept {
   monotonic_clock::time_point monotonic_now =
       simulated_event_loop_->monotonic_now();
   VLOG(1) << monotonic_now << " Phased loop " << simulated_event_loop_->name()

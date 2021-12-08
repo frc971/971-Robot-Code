@@ -32,7 +32,7 @@ class EventLoopEvent {
   }
   void set_generation(size_t generation) { generation_ = generation; }
 
-  virtual void HandleEvent() = 0;
+  virtual void HandleEvent() noexcept = 0;
 
  private:
   monotonic_clock::time_point event_time_ = monotonic_clock::max_time;
@@ -45,7 +45,7 @@ class EventHandler final : public EventLoopEvent {
  public:
   EventHandler(T *t) : t_(t) {}
   ~EventHandler() override = default;
-  void HandleEvent() override { t_->HandleEvent(); }
+  void HandleEvent() noexcept override { t_->HandleEvent(); }
 
  private:
   T *const t_;
