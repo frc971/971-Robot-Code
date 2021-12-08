@@ -2273,7 +2273,7 @@ TEST_P(MultinodeLoggerTest, LoggerStartTime) {
 }
 
 // Test that renaming the base, renames the folder.
-TEST_F(MultinodeLoggerTest, LoggerRenameFolder) {
+TEST_P(MultinodeLoggerTest, LoggerRenameFolder) {
   util::UnlinkRecursive(tmp_dir_ + "/renamefolder");
   util::UnlinkRecursive(tmp_dir_ + "/new-good");
   time_converter_.AddMonotonic(
