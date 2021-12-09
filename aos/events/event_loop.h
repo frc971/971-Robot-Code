@@ -593,7 +593,7 @@ class EventLoop {
   }
 
   // Like MakeSender, but returns an invalid sender if the given channel is
-  // not readable on this node or does not exist.
+  // not sendable on this node or does not exist.
   template <typename T>
   Sender<T> TryMakeSender(const std::string_view channel_name) {
     const Channel *channel = GetChannel<T>(channel_name);
