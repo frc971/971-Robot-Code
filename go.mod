@@ -6,6 +6,7 @@ require (
 	github.com/buildkite/go-buildkite v2.2.0+incompatible
 	github.com/golang/protobuf v1.5.2
 	github.com/google/flatbuffers v2.0.5+incompatible
+	github.com/mattn/go-sqlite3 v1.14.10
 	google.golang.org/grpc v1.43.0
 )
 
