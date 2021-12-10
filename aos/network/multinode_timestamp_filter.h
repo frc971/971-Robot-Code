@@ -13,6 +13,7 @@
 #include "aos/events/simulated_event_loop.h"
 #include "aos/network/timestamp_filter.h"
 #include "aos/time/time.h"
+#include "glog/logging.h"
 
 namespace aos {
 namespace message_bridge {
@@ -198,11 +199,15 @@ class InterpolatedTimeConverter : public TimeConverter {
 
   // Queues timestamps util the last time in the queue matches the provided
   // function.
-  void QueueUntil(
-      std::function<
-          bool(const std::tuple<distributed_clock::time_point,
-                                std::vector<logger::BootTimestamp>> &)>
-          not_done);
+  template <typename F>
+  void QueueUntil(F not_done) {
+    while (!at_end_ && (times_.empty() || not_done(times_.back()))) {
+      QueueNextTimestamp();
+    }
+
+    CHECK(!times_.empty())
+        << ": Found no times to do timestamp estimation, please investigate.";
+  }
 
   // The number of nodes to enforce.
   const size_t node_count_;

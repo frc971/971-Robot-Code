@@ -371,18 +371,6 @@ InterpolatedTimeConverter::QueueNextTimestamp() {
   return &times_.back();
 }
 
-void InterpolatedTimeConverter::QueueUntil(
-    std::function<bool(const std::tuple<distributed_clock::time_point,
-                                        std::vector<BootTimestamp>> &)>
-        not_done) {
-  while (!at_end_ && (times_.empty() || not_done(times_.back()))) {
-    QueueNextTimestamp();
-  }
-
-  CHECK(!times_.empty())
-      << ": Found no times to do timestamp estimation, please investigate.";
-}
-
 void InterpolatedTimeConverter::ObserveTimePassed(
     distributed_clock::time_point time) {
   // Keep at least 500 points and time_estimation_buffer_seconds seconds of
