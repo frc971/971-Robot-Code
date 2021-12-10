@@ -206,6 +206,11 @@ class SpanReader {
 
   std::string_view filename() const { return filename_; }
 
+  size_t TotalRead() const { return total_read_; }
+  size_t TotalConsumed() const { return total_consumed_; }
+  bool IsIncomplete() const { return is_finished_
+      && total_consumed_ < total_read_; }
+
   // Returns a span with the data for the next message from the log file,
   // including the size.  The result is only guarenteed to be valid until
   // ReadMessage() or PeekMessage() is called again.
@@ -240,6 +245,17 @@ class SpanReader {
 
   // Amount of data consumed already in data_.
   size_t consumed_data_ = 0;
+
+  // Accumulates the total volume of bytes read from filename_
+  size_t total_read_ = 0;
+
+  // Accumulates the total volume of read bytes that were 'consumed' into
+  // messages. May be less than total_read_, if the last message (span) is
+  // either truncated or somehow corrupt.
+  size_t total_consumed_ = 0;
+
+  // Reached the end, no more readable messages.
+  bool is_finished_ = false;
 };
 
 // Reads the last header from a log file.  This handles any duplicate headers
@@ -293,6 +309,14 @@ class MessageReader {
     return newest_timestamp() - max_out_of_order_duration();
   }
 
+  // Flag value setters for testing
+  void set_crash_on_corrupt_message_flag(bool b) {
+    crash_on_corrupt_message_flag_ = b;
+  }
+  void set_ignore_corrupt_messages_flag(bool b) {
+    ignore_corrupt_messages_flag_ = b;
+  }
+
  private:
   // Log chunk reader.
   SpanReader span_reader_;
@@ -306,6 +330,30 @@ class MessageReader {
 
   // Timestamp of the newest message in a channel queue.
   monotonic_clock::time_point newest_timestamp_ = monotonic_clock::min_time;
+
+  // Total volume of verifiable messages from the beginning of the file.
+  // TODO - are message counts also useful?
+  size_t total_verified_before_ = 0;
+
+  // Total volume of messages with corrupted flatbuffer formatting, if any.
+  // Excludes corrupted message content.
+  // TODO - if the layout included something as simple as a CRC (relatively
+  // fast and robust enough) for each span, then corrupted content could be
+  // included in this check.
+  size_t total_corrupted_ = 0;
+
+  // Total volume of verifiable messages intermixed with corrupted messages,
+  // if any. Will be == 0 if total_corrupted_ == 0.
+  size_t total_verified_during_ = 0;
+
+  // Total volume of verifiable messages found after the last corrupted one,
+  // if any. Will be == 0 if total_corrupted_ == 0.
+  size_t total_verified_after_ = 0;
+
+  bool is_corrupted() const { return total_corrupted_ > 0; }
+
+  bool crash_on_corrupt_message_flag_ = true;
+  bool ignore_corrupt_messages_flag_ = false;
 };
 
 // A class to seamlessly read messages from a list of part files.

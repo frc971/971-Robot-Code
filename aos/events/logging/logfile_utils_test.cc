@@ -9,6 +9,7 @@
 #include "aos/flatbuffers.h"
 #include "aos/json_to_flatbuffer.h"
 #include "aos/testing/tmpdir.h"
+#include "gflags/gflags.h"
 #include "gtest/gtest.h"
 
 namespace aos {
@@ -2718,6 +2719,105 @@ TEST_F(SortingDeathTest, FightingNodes) {
             SortParts({logfile0_, logfile1_, logfile2_, logfile3_});
       },
       "Found overlapping boots on");
+}
+
+// Tests that we MessageReader blows up on a bad message.
+TEST(MessageReaderConfirmCrash, ReadWrite) {
+  const std::string logfile = aos::testing::TestTmpDir() + "/log.bfbs";
+  unlink(logfile.c_str());
+
+  const aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> config =
+      JsonToSizedFlatbuffer<LogFileHeader>(
+          R"({ "max_out_of_order_duration": 100000000 })");
+  const aos::SizePrefixedFlatbufferDetachedBuffer<MessageHeader> m1 =
+      JsonToSizedFlatbuffer<MessageHeader>(
+          R"({ "channel_index": 0, "monotonic_sent_time": 1 })");
+  const aos::SizePrefixedFlatbufferDetachedBuffer<MessageHeader> m2 =
+      JsonToSizedFlatbuffer<MessageHeader>(
+          R"({ "channel_index": 0, "monotonic_sent_time": 2 })");
+  const aos::SizePrefixedFlatbufferDetachedBuffer<MessageHeader> m4 =
+      JsonToSizedFlatbuffer<MessageHeader>(
+          R"({ "channel_index": 0, "monotonic_sent_time": 4 })");
+
+  // Starts out like a proper flat buffer header, but it breaks down ...
+  std::vector<uint8_t> garbage{8, 0, 0, 0, 16, 0, 0, 0, 4, 0, 0, 0};
+  absl::Span<uint8_t> m3_span(garbage);
+
+  {
+    DetachedBufferWriter writer(logfile, std::make_unique<DummyEncoder>());
+    writer.QueueSpan(config.span());
+    writer.QueueSpan(m1.span());
+    writer.QueueSpan(m2.span());
+    writer.QueueSpan(m3_span);
+    writer.QueueSpan(m4.span());  // This message is "hidden"
+  }
+
+  {
+    MessageReader reader(logfile);
+
+    EXPECT_EQ(reader.filename(), logfile);
+
+    EXPECT_EQ(
+        reader.max_out_of_order_duration(),
+        std::chrono::nanoseconds(config.message().max_out_of_order_duration()));
+    EXPECT_EQ(reader.newest_timestamp(), monotonic_clock::min_time);
+    EXPECT_TRUE(reader.ReadMessage());
+    EXPECT_EQ(reader.newest_timestamp(),
+              monotonic_clock::time_point(chrono::nanoseconds(1)));
+    EXPECT_TRUE(reader.ReadMessage());
+    EXPECT_EQ(reader.newest_timestamp(),
+              monotonic_clock::time_point(chrono::nanoseconds(2)));
+    // Confirm default crashing behavior
+    EXPECT_DEATH(reader.ReadMessage(), "Corrupted message at offset");
+  }
+
+  {
+    gflags::FlagSaver fs;
+
+    MessageReader reader(logfile);
+    reader.set_crash_on_corrupt_message_flag(false);
+
+    EXPECT_EQ(reader.filename(), logfile);
+
+    EXPECT_EQ(
+        reader.max_out_of_order_duration(),
+        std::chrono::nanoseconds(config.message().max_out_of_order_duration()));
+    EXPECT_EQ(reader.newest_timestamp(), monotonic_clock::min_time);
+    EXPECT_TRUE(reader.ReadMessage());
+    EXPECT_EQ(reader.newest_timestamp(),
+              monotonic_clock::time_point(chrono::nanoseconds(1)));
+    EXPECT_TRUE(reader.ReadMessage());
+    EXPECT_EQ(reader.newest_timestamp(),
+              monotonic_clock::time_point(chrono::nanoseconds(2)));
+    // Confirm avoiding the corrupted message crash, stopping instead.
+    EXPECT_FALSE(reader.ReadMessage());
+  }
+
+  {
+    gflags::FlagSaver fs;
+
+    MessageReader reader(logfile);
+    reader.set_crash_on_corrupt_message_flag(false);
+    reader.set_ignore_corrupt_messages_flag(true);
+
+    EXPECT_EQ(reader.filename(), logfile);
+
+    EXPECT_EQ(
+        reader.max_out_of_order_duration(),
+        std::chrono::nanoseconds(config.message().max_out_of_order_duration()));
+    EXPECT_EQ(reader.newest_timestamp(), monotonic_clock::min_time);
+    EXPECT_TRUE(reader.ReadMessage());
+    EXPECT_EQ(reader.newest_timestamp(),
+              monotonic_clock::time_point(chrono::nanoseconds(1)));
+    EXPECT_TRUE(reader.ReadMessage());
+    EXPECT_EQ(reader.newest_timestamp(),
+              monotonic_clock::time_point(chrono::nanoseconds(2)));
+    // Confirm skipping of the corrupted message to read the hidden one.
+    EXPECT_TRUE(reader.ReadMessage());
+    EXPECT_EQ(reader.newest_timestamp(),
+              monotonic_clock::time_point(chrono::nanoseconds(4)));
+    EXPECT_FALSE(reader.ReadMessage());
+  }
 }
 
 }  // namespace testing
