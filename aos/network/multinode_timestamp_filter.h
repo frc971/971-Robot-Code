@@ -39,26 +39,24 @@ class TimestampProblem {
 
   size_t size() const { return base_clock_.size(); }
 
-  // Sets node to fix time for and not solve for.
-  void set_solution_node(size_t solution_node) {
-    solution_node_ = solution_node;
-  }
-  size_t solution_node() const { return solution_node_; }
-
   // Sets and gets the base time for a node.
   void set_base_clock(size_t i, logger::BootTimestamp t) { base_clock_[i] = t; }
   logger::BootTimestamp base_clock(size_t i) const { return base_clock_[i]; }
 
   // Adds a timestamp filter from a -> b.
   //   filter[a_index]->Offset(ta) + ta => t(b_index);
-  void add_filter(size_t a_index, const NoncausalTimestampFilter *filter,
-                  size_t b_index) {
-    filters_[a_index].emplace_back(filter, b_index);
+  void add_clock_offset_filter(size_t a_index,
+                               const NoncausalTimestampFilter *filter,
+                               size_t b_index) {
+    clock_offset_filter_for_node_[a_index].emplace_back(filter, b_index);
   }
 
   // Solves the optimization problem phrased using the symmetric Netwon's method
-  // solver and returns the optimal time on each node.
-  std::vector<logger::BootTimestamp> SolveNewton();
+  // solver and returns the optimal time on each node, along with the node which
+  // constrained the problem.  points is the list of potential constraint
+  // points, and the solver uses the earliest point.
+  std::tuple<std::vector<logger::BootTimestamp>, size_t> SolveNewton(
+      const std::vector<logger::BootTimestamp> &points);
 
   // Validates the solution, returning true if it meets all the constraints, and
   // false otherwise.
@@ -85,33 +83,33 @@ class TimestampProblem {
   }
 
  private:
+  size_t SolutionNode(const std::vector<logger::BootTimestamp> &points) const {
+    size_t solution_node = std::numeric_limits<size_t>::max();
+    for (size_t i = 0; i < points.size(); ++i) {
+      if (points[i] != logger::BootTimestamp::max_time()) {
+        CHECK_EQ(solution_node, std::numeric_limits<size_t>::max());
+        solution_node = i;
+      }
+    }
+    CHECK_NE(solution_node, std::numeric_limits<size_t>::max());
+    return solution_node;
+  }
+
   // Returns the Hessian of the cost function at time_offsets.
   Eigen::MatrixXd Hessian(const Eigen::Ref<Eigen::VectorXd> time_offsets) const;
   // Returns the gradient of the cost function at time_offsets.
   Eigen::VectorXd Gradient(
       const Eigen::Ref<Eigen::VectorXd> time_offsets) const;
 
-  // Returns the newton step of the timestamp problem.  The last term is the
-  // scalar on the equality constraint.  This needs to be removed from the
-  // solution to get the actual newton step.
-  Eigen::VectorXd Newton(const Eigen::Ref<Eigen::VectorXd> time_offsets) const;
+  // Returns the newton step of the timestamp problem, and the node which was
+  // used for the equality constraint.  The last term is the scalar on the
+  // equality constraint.  This needs to be removed from the solution to get the
+  // actual newton step.
+  std::tuple<Eigen::VectorXd, size_t> Newton(
+      const Eigen::Ref<Eigen::VectorXd> time_offsets,
+      const std::vector<logger::BootTimestamp> &points) const;
 
-  void MaybeUpdateNodeMapping() {
-    if (node_mapping_valid_) {
-      return;
-    }
-    size_t live_node_index = 0;
-    for (size_t i = 0; i < node_mapping_.size(); ++i) {
-      if (live(i)) {
-        node_mapping_[i] = live_node_index;
-        ++live_node_index;
-      } else {
-        node_mapping_[i] = std::numeric_limits<size_t>::max();
-      }
-    }
-    live_nodes_ = live_node_index;
-    node_mapping_valid_ = true;
-  }
+  void MaybeUpdateNodeMapping();
 
   // Converts from a node index to an index in the solution without skipping the
   // solution node.
@@ -119,9 +117,6 @@ class TimestampProblem {
     CHECK(node_mapping_valid_);
     return node_mapping_[node_index];
   }
-
-  // The node to hold fixed when solving.
-  size_t solution_node_ = 0;
 
   // The optimization problem is solved as base_clock + time_offsets to minimize
   // numerical precision problems.  This contains all the base times.  The base
@@ -146,7 +141,7 @@ class TimestampProblem {
   };
 
   // List of filters indexed by node.
-  std::vector<std::vector<FilterPair>> filters_;
+  std::vector<std::vector<FilterPair>> clock_offset_filter_for_node_;
 };
 
 // Helpers to convert times between the monotonic and distributed clocks for
@@ -334,7 +329,16 @@ class MultiNodeNoncausalOffsetEstimator final
   const aos::Configuration *configuration() const { return configuration_; }
 
  private:
+  struct CandidateTimes {
+    logger::BootTimestamp next_node_time = logger::BootTimestamp::max_time();
+    logger::BootDuration next_node_duration;
+    NoncausalTimestampFilter *next_node_filter = nullptr;
+  };
+
   TimestampProblem MakeProblem();
+
+  // Returns the list of candidate times to solve for.
+  std::tuple<std::vector<CandidateTimes>, bool> MakeCandidateTimes() const;
 
   // Returns the next solution, the filter which has the control point for it
   // (or nullptr if a start time triggered this to be returned), and the node
@@ -344,6 +348,27 @@ class MultiNodeNoncausalOffsetEstimator final
   NextSolution(TimestampProblem *problem,
                const std::vector<logger::BootTimestamp> &base_times);
 
+  // Returns the solution (if there is one) for the list of candidate times by
+  // solving all the problems simultaneously.  They must be from the same boot.
+  std::tuple<NoncausalTimestampFilter *, std::vector<logger::BootTimestamp>,
+             int>
+  SimultaneousSolution(TimestampProblem *problem,
+                       const std::vector<CandidateTimes> candidate_times,
+                       const std::vector<logger::BootTimestamp> &base_times);
+
+  // Returns the solution (if there is one) for the list of candidate times by
+  // solving the problems one after another.  They can be from any boot.
+  std::tuple<NoncausalTimestampFilter *, std::vector<logger::BootTimestamp>,
+             int>
+  SequentialSolution(TimestampProblem *problem,
+                     const std::vector<CandidateTimes> candidate_times,
+                     const std::vector<logger::BootTimestamp> &base_times);
+
+  // Explodes if the invalid distance is too far.
+  void CheckInvalidDistance(
+      const std::vector<logger::BootTimestamp> &result_times,
+      const std::vector<logger::BootTimestamp> &solution);
+
   // Writes all samples to disk.
   void FlushAllSamples(bool finish);
 
@@ -352,7 +377,7 @@ class MultiNodeNoncausalOffsetEstimator final
 
   std::shared_ptr<const logger::Boots> boots_;
 
-  // If true, skip any validation which would trigger if we see evidance that
+  // If true, skip any validation which would trigger if we see evidence that
   // time estimation between nodes was incorrect.
   const bool skip_order_validation_;
 
