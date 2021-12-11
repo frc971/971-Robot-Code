@@ -65,6 +65,34 @@ Eigen::Matrix<double, 4, 1> ToQuaternionFromRotationVector(
     const Eigen::Matrix<double, 3, 1> &X,
     const double max_angle_cap = std::numeric_limits<double>::infinity());
 
+// Creates a rotational velocity vector to be integrated.
+//
+// omega is the rotational velocity vector in body coordinates.
+// q is a matrix with the compononents of the quaternion in it.
+//
+// Returns dq / dt
+inline Eigen::Vector4d QuaternionDerivative(Eigen::Vector3d omega,
+                                            const Eigen::Vector4d &q_matrix) {
+  // See https://www.ashwinnarayan.com/post/how-to-integrate-quaternions/ for
+  // another resource on quaternion integration and derivitives.
+  Eigen::Quaternion<double> q(q_matrix);
+
+  Eigen::Quaternion<double> omega_q;
+  omega_q.w() = 0.0;
+  omega_q.vec() = 0.5 * omega;
+
+  Eigen::Quaternion<double> deriv = q * omega_q;
+  return deriv.coeffs();
+}
+
+// d QuaternionDerivative / d omega
+Eigen::Matrix<double, 4, 3> QuaternionDerivativeDerivitive(
+    const Eigen::Vector4d &q_matrix);
+inline Eigen::Matrix<double, 4, 3> QuaternionDerivativeDerivitive(
+    const Eigen::Quaternion<double> &q) {
+  return QuaternionDerivativeDerivitive(q.coeffs());
+}
+
 }  // namespace controls
 }  // namespace frc971
 

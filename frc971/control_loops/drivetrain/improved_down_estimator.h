@@ -8,6 +8,7 @@
 #include "aos/time/time.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
+#include "frc971/control_loops/quaternion_utils.h"
 #include "frc971/control_loops/runge_kutta.h"
 #include "glog/logging.h"
 
@@ -216,22 +217,9 @@ class DrivetrainUkf : public QuaternionUkf {
   // A good reference for angular velocity vectors with quaternions is at
   // http://www.euclideanspace.com/physics/kinematics/angularvelocity/
 
-  // Creates a rotational velocity vector to be integrated.
-  //
-  // omega is the rotational velocity vector in body coordinates.
-  // q is a matrix with the compononents of the quaternion in it.
-  //
-  // Returns dq / dt
   static Eigen::Vector4d QuaternionDerivative(Eigen::Vector3d omega,
                                               const Eigen::Vector4d &q_matrix) {
-    Eigen::Quaternion<double> q(q_matrix);
-
-    Eigen::Quaternion<double> omega_q;
-    omega_q.w() = 0.0;
-    omega_q.vec() = 0.5 * (q * omega);
-
-    Eigen::Quaternion<double> deriv = omega_q * q;
-    return deriv.coeffs();
+    return frc971::controls::QuaternionDerivative(omega, q_matrix);
   }
 
   // Moves the robot by the provided rotation vector (U).
