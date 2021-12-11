@@ -164,6 +164,8 @@ cc_binary(
 cc_binary(
     name = "extrinsics_calibration",
     srcs = [
+        "calibration_accumulator.cc",
+        "calibration_accumulator.h",
         "extrinsics_calibration.cc",
     ],
     data = [
