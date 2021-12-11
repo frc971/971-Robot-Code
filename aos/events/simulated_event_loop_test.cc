@@ -138,6 +138,16 @@ class RemoteMessageSimulatedEventLoopTest
   aos::FlatbufferDetachedBuffer<aos::Configuration> config;
 };
 
+class FunctionEvent : public EventScheduler::Event {
+  public:
+   FunctionEvent(std::function<void()> fn) : fn_(fn) {}
+
+   void Handle() noexcept override { fn_(); }
+
+  private:
+   std::function<void()> fn_;
+};
+
 // Test that creating an event and running the scheduler runs the event.
 TEST(EventSchedulerTest, ScheduleEvent) {
   int counter = 0;
@@ -145,12 +155,12 @@ TEST(EventSchedulerTest, ScheduleEvent) {
   EventScheduler scheduler(0);
   scheduler_scheduler.AddEventScheduler(&scheduler);
 
-  scheduler.Schedule(monotonic_clock::epoch() + chrono::seconds(1),
-                     [&counter]() { counter += 1; });
+  FunctionEvent e([&counter]() { counter += 1; });
+  scheduler.Schedule(monotonic_clock::epoch() + chrono::seconds(1), &e);
   scheduler_scheduler.Run();
   EXPECT_EQ(counter, 1);
-  auto token = scheduler.Schedule(monotonic_clock::epoch() + chrono::seconds(2),
-                                  [&counter]() { counter += 1; });
+  auto token =
+      scheduler.Schedule(monotonic_clock::epoch() + chrono::seconds(2), &e);
   scheduler.Deschedule(token);
   scheduler_scheduler.Run();
   EXPECT_EQ(counter, 1);
@@ -163,8 +173,9 @@ TEST(EventSchedulerTest, DescheduleEvent) {
   EventScheduler scheduler(0);
   scheduler_scheduler.AddEventScheduler(&scheduler);
 
-  auto token = scheduler.Schedule(monotonic_clock::epoch() + chrono::seconds(1),
-                                  [&counter]() { counter += 1; });
+  FunctionEvent e([&counter]() { counter += 1; });
+  auto token =
+      scheduler.Schedule(monotonic_clock::epoch() + chrono::seconds(1), &e);
   scheduler.Deschedule(token);
   scheduler_scheduler.Run();
   EXPECT_EQ(counter, 0);
@@ -175,8 +186,7 @@ void SendTestMessage(aos::Sender<TestMessage> *sender, int value) {
   TestMessage::Builder test_message_builder =
       builder.MakeBuilder<TestMessage>();
   test_message_builder.add_value(value);
-  ASSERT_EQ(builder.Send(test_message_builder.Finish()),
-            RawSender::Error::kOk);
+  ASSERT_EQ(builder.Send(test_message_builder.Finish()), RawSender::Error::kOk);
 }
 
 // Test that sending a message after running gets properly notified.
