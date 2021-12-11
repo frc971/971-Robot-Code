@@ -112,7 +112,7 @@ struct SimulatedMessage final {
 
 // TODO(Brian): This should be in the anonymous namespace, but that annoys GCC
 // for some reason...
-class SimulatedWatcher : public WatcherState {
+class SimulatedWatcher : public WatcherState, public EventScheduler::Event {
  public:
   SimulatedWatcher(
       SimulatedEventLoop *simulated_event_loop, EventScheduler *scheduler,
@@ -122,6 +122,8 @@ class SimulatedWatcher : public WatcherState {
   ~SimulatedWatcher() override;
 
   bool has_run() const;
+
+  void Handle() noexcept override;
 
   void Startup(EventLoop * /*event_loop*/) override {}
 
@@ -463,7 +465,8 @@ class SimulatedFetcher : public RawFetcher {
   bool fell_behind_ = false;
 };
 
-class SimulatedTimerHandler : public TimerHandler {
+class SimulatedTimerHandler : public TimerHandler,
+                              public EventScheduler::Event {
  public:
   explicit SimulatedTimerHandler(EventScheduler *scheduler,
                                  SimulatedEventLoop *simulated_event_loop,
@@ -474,6 +477,8 @@ class SimulatedTimerHandler : public TimerHandler {
              monotonic_clock::duration repeat_offset) override;
 
   void HandleEvent() noexcept;
+
+  void Handle() noexcept override;
 
   void Disable() override;
 
@@ -487,7 +492,8 @@ class SimulatedTimerHandler : public TimerHandler {
   monotonic_clock::duration repeat_offset_;
 };
 
-class SimulatedPhasedLoopHandler : public PhasedLoopHandler {
+class SimulatedPhasedLoopHandler : public PhasedLoopHandler,
+                                   public EventScheduler::Event {
  public:
   SimulatedPhasedLoopHandler(EventScheduler *scheduler,
                              SimulatedEventLoop *simulated_event_loop,
@@ -499,6 +505,8 @@ class SimulatedPhasedLoopHandler : public PhasedLoopHandler {
   void HandleEvent() noexcept;
 
   void Schedule(monotonic_clock::time_point sleep_time) override;
+
+  void Handle() noexcept override;
 
  private:
   SimulatedEventLoop *simulated_event_loop_;
@@ -887,15 +895,17 @@ void SimulatedWatcher::HandleEvent() noexcept {
   }
 }
 
+void SimulatedWatcher::Handle() noexcept {
+  DCHECK(token_ != scheduler_->InvalidToken());
+  token_ = scheduler_->InvalidToken();
+  simulated_event_loop_->HandleEvent();
+}
+
 void SimulatedWatcher::DoSchedule(monotonic_clock::time_point event_time) {
   CHECK(token_ == scheduler_->InvalidToken())
       << ": May not schedule multiple times";
   token_ = scheduler_->Schedule(
-      event_time + simulated_event_loop_->send_delay(), [this]() {
-        DCHECK(token_ != scheduler_->InvalidToken());
-        token_ = scheduler_->InvalidToken();
-        simulated_event_loop_->HandleEvent();
-      });
+      event_time + simulated_event_loop_->send_delay(), this);
 }
 
 void SimulatedChannel::MakeRawWatcher(SimulatedWatcher *watcher) {
@@ -1085,13 +1095,15 @@ void SimulatedTimerHandler::Setup(monotonic_clock::time_point base,
       simulated_event_loop_->monotonic_now();
   base_ = base;
   repeat_offset_ = repeat_offset;
-  token_ = scheduler_->Schedule(std::max(base, monotonic_now), [this]() {
-    DCHECK(token_ != scheduler_->InvalidToken());
-    token_ = scheduler_->InvalidToken();
-    simulated_event_loop_->HandleEvent();
-  });
+  token_ = scheduler_->Schedule(std::max(base, monotonic_now), this);
   event_.set_event_time(base_);
   simulated_event_loop_->AddEvent(&event_);
+}
+
+void SimulatedTimerHandler::Handle() noexcept {
+  DCHECK(token_ != scheduler_->InvalidToken());
+  token_ = scheduler_->InvalidToken();
+  simulated_event_loop_->HandleEvent();
 }
 
 void SimulatedTimerHandler::HandleEvent() noexcept {
@@ -1111,11 +1123,7 @@ void SimulatedTimerHandler::HandleEvent() noexcept {
   if (repeat_offset_ != monotonic_clock::zero()) {
     // Reschedule.
     while (base_ <= monotonic_now) base_ += repeat_offset_;
-    token_ = scheduler_->Schedule(base_, [this]() {
-      DCHECK(token_ != scheduler_->InvalidToken());
-      token_ = scheduler_->InvalidToken();
-      simulated_event_loop_->HandleEvent();
-    });
+    token_ = scheduler_->Schedule(base_, this);
     event_.set_event_time(base_);
     simulated_event_loop_->AddEvent(&event_);
   }
@@ -1171,6 +1179,12 @@ void SimulatedPhasedLoopHandler::HandleEvent() noexcept {
   }
 }
 
+void SimulatedPhasedLoopHandler::Handle() noexcept {
+  DCHECK(token_ != scheduler_->InvalidToken());
+  token_ = scheduler_->InvalidToken();
+  simulated_event_loop_->HandleEvent();
+}
+
 void SimulatedPhasedLoopHandler::Schedule(
     monotonic_clock::time_point sleep_time) {
   // The allocations in here are due to infrastructure and don't count in the no
@@ -1180,11 +1194,7 @@ void SimulatedPhasedLoopHandler::Schedule(
     scheduler_->Deschedule(token_);
     token_ = scheduler_->InvalidToken();
   }
-  token_ = scheduler_->Schedule(sleep_time, [this]() {
-    DCHECK(token_ != scheduler_->InvalidToken());
-    token_ = scheduler_->InvalidToken();
-    simulated_event_loop_->HandleEvent();
-  });
+  token_ = scheduler_->Schedule(sleep_time, this);
   event_.set_event_time(sleep_time);
   simulated_event_loop_->AddEvent(&event_);
 }

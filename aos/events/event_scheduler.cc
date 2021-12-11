@@ -8,8 +8,8 @@
 
 namespace aos {
 
-EventScheduler::Token EventScheduler::Schedule(
-    monotonic_clock::time_point time, ::std::function<void()> callback) {
+EventScheduler::Token EventScheduler::Schedule(monotonic_clock::time_point time,
+                                               Event *callback) {
   return events_list_.emplace(time, callback);
 }
 
@@ -58,9 +58,9 @@ void EventScheduler::CallOldestEvent() {
   CHECK_EQ(t.boot, boot_count_);
   CHECK_EQ(t.time, iter->first) << ": Time is wrong on node " << node_index_;
 
-  ::std::function<void()> callback = ::std::move(iter->second);
+  Event *callback = iter->second;
   events_list_.erase(iter);
-  callback();
+  callback->Handle();
 
   converter_->ObserveTimePassed(scheduler_scheduler_->distributed_now());
 }

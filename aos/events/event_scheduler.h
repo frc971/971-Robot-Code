@@ -85,8 +85,13 @@ class EventSchedulerScheduler;
 
 class EventScheduler {
  public:
-  using ChannelType =
-      std::multimap<monotonic_clock::time_point, std::function<void()>>;
+  class Event {
+   public:
+    virtual void Handle() noexcept = 0;
+    virtual ~Event() {}
+  };
+
+  using ChannelType = std::multimap<monotonic_clock::time_point, Event *>;
   using Token = ChannelType::iterator;
   EventScheduler(size_t node_index) : node_index_(node_index) {}
 
@@ -97,14 +102,11 @@ class EventScheduler {
     converter_ = converter;
   }
 
-  UUID boot_uuid() {
-    return converter_->boot_uuid(node_index_, boot_count_);
-  }
+  UUID boot_uuid() { return converter_->boot_uuid(node_index_, boot_count_); }
 
   // Schedule an event with a callback function
   // Returns an iterator to the event
-  Token Schedule(monotonic_clock::time_point time,
-                 std::function<void()> callback);
+  Token Schedule(monotonic_clock::time_point time, Event *callback);
 
   // Schedules a callback when the event scheduler starts.
   void ScheduleOnRun(std::function<void()> callback) {
