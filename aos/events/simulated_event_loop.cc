@@ -424,7 +424,7 @@ class SimulatedFetcher : public RawFetcher {
 
   // Updates the state inside RawFetcher to point to the data in msg_.
   void SetMsg(std::shared_ptr<SimulatedMessage> msg) {
-    msg_ = msg;
+    msg_ = std::move(msg);
     context_ = msg_->context;
     if (channel()->read_method() != ReadMethod::PIN) {
       context_.buffer_index = -1;
@@ -442,7 +442,7 @@ class SimulatedFetcher : public RawFetcher {
 
   // Internal method for Simulation to add a message to the buffer.
   void Enqueue(std::shared_ptr<SimulatedMessage> buffer) {
-    msgs_.emplace_back(buffer);
+    msgs_.emplace_back(std::move(buffer));
     if (fell_behind_ ||
         msgs_.size() > static_cast<size_t>(simulated_channel_->queue_size())) {
       fell_behind_ = true;
@@ -837,7 +837,7 @@ void SimulatedWatcher::Schedule(std::shared_ptr<SimulatedMessage> message) {
     DoSchedule(event_time);
   }
 
-  msgs_.emplace_back(message);
+  msgs_.emplace_back(std::move(message));
 }
 
 void SimulatedWatcher::HandleEvent() noexcept {
@@ -941,14 +941,14 @@ std::optional<uint32_t> SimulatedChannel::Send(
 
   next_queue_index_ = next_queue_index_.Increment();
 
-  latest_message_ = message;
+  latest_message_ = std::move(message);
   for (SimulatedWatcher *watcher : watchers_) {
     if (watcher->has_run()) {
-      watcher->Schedule(message);
+      watcher->Schedule(latest_message_);
     }
   }
   for (auto &fetcher : fetchers_) {
-    fetcher->Enqueue(message);
+    fetcher->Enqueue(latest_message_);
   }
   return queue_index;
 }
