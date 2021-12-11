@@ -5,6 +5,7 @@ platform(
     constraint_values = [
         "@platforms//os:linux",
         "@platforms//cpu:x86_64",
+        "//tools/platforms/go:has_support",
     ],
 )
 
@@ -14,6 +15,7 @@ platform(
         "@platforms//os:linux",
         "@platforms//cpu:armv7",
         "//tools/platforms/hardware:raspberry_pi",
+        "//tools/platforms/go:lacks_support",
     ],
 )
 
@@ -22,6 +24,7 @@ platform(
     constraint_values = [
         "@platforms//os:linux",
         "@platforms//cpu:arm64",
+        "//tools/platforms/go:lacks_support",
     ],
 )
 
@@ -31,6 +34,7 @@ platform(
         "@platforms//os:linux",
         "@platforms//cpu:armv7",
         "//tools/platforms/hardware:roborio",
+        "//tools/platforms/go:lacks_support",
     ],
 )
 
@@ -39,6 +43,7 @@ platform(
     constraint_values = [
         "@platforms//os:none",
         "//tools/platforms/hardware:cortex_m4f",
+        "//tools/platforms/go:lacks_support",
     ],
 )
 
