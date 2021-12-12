@@ -7,6 +7,7 @@
 #include "absl/types/span.h"
 #include "aos/containers/resizeable_buffer.h"
 #include "aos/macros.h"
+#include "aos/util/file.h"
 #include "flatbuffers/flatbuffers.h"  // IWYU pragma: export
 #include "glog/logging.h"
 
@@ -500,6 +501,33 @@ inline flatbuffers::DetachedBuffer CopySpanAsDetachedBuffer(
   return flatbuffers::DetachedBuffer(nullptr, false, buf, span.size(), buf,
                                      span.size());
 }
+
+// MMap a flatbuffer on disk.
+template <typename T>
+class FlatbufferMMap : public NonSizePrefixedFlatbuffer<T> {
+ public:
+  // Builds a Flatbuffer by mmaping the data from a flatbuffer saved on disk.
+  FlatbufferMMap(const std::string &flatbuffer_path) {
+    span_ = util::MMapFile(flatbuffer_path);
+  }
+
+  // Copies the reference to the mapped memory.
+  FlatbufferMMap(const FlatbufferMMap &) = default;
+  FlatbufferMMap &operator=(const FlatbufferMMap<T> &other) = default;
+
+  // Moves the reference to the mapped memory from one pointer to another.
+  FlatbufferMMap(FlatbufferMMap &&) = default;
+  FlatbufferMMap &operator=(FlatbufferMMap<T> &&other) = default;
+
+  absl::Span<uint8_t> span() override {
+    LOG(FATAL) << "Unimplemented. A flatbuffer is immutable.";
+    return *span_;
+  }
+  absl::Span<const uint8_t> span() const override { return *span_; }
+
+ private:
+  std::shared_ptr<absl::Span<uint8_t>> span_;
+};
 
 }  // namespace aos
 
