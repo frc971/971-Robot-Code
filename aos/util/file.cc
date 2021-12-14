@@ -152,18 +152,24 @@ void UnlinkRecursive(std::string_view path) {
   }
 }
 
-std::shared_ptr<absl::Span<uint8_t>> MMapFile(const std::string &path) {
-  int fd = open(path.c_str(), O_RDONLY);
+std::shared_ptr<absl::Span<uint8_t>> MMapFile(const std::string &path,
+                                              FileOptions options) {
+  int fd =
+      open(path.c_str(), options == FileOptions::kReadable ? O_RDONLY : O_RDWR);
   PCHECK(fd != -1) << "Unable to open file " << path;
   struct stat sb;
   PCHECK(fstat(fd, &sb) != -1) << ": Unable to get file size of " << path;
-  uint8_t *start = reinterpret_cast<uint8_t *>(
-      mmap(NULL, sb.st_size, PROT_READ, MAP_PRIVATE, fd, 0));
+  uint8_t *start = reinterpret_cast<uint8_t *>(mmap(
+      NULL, sb.st_size,
+      options == FileOptions::kReadable ? PROT_READ : (PROT_READ | PROT_WRITE),
+      MAP_SHARED, fd, 0));
   CHECK(start != MAP_FAILED) << ": Unable to open mapping to file " << path;
   std::shared_ptr<absl::Span<uint8_t>> span =
       std::shared_ptr<absl::Span<uint8_t>>(
           new absl::Span<uint8_t>(start, sb.st_size),
           [](absl::Span<uint8_t> *span) {
+            PCHECK(msync(span->data(), span->size(), MS_SYNC) == 0)
+                << ": Failed to flush data before unmapping.";
             PCHECK(munmap(span->data(), span->size()) != -1);
             delete span;
           });

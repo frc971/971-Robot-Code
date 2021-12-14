@@ -507,8 +507,9 @@ template <typename T>
 class FlatbufferMMap : public NonSizePrefixedFlatbuffer<T> {
  public:
   // Builds a Flatbuffer by mmaping the data from a flatbuffer saved on disk.
-  FlatbufferMMap(const std::string &flatbuffer_path) {
-    span_ = util::MMapFile(flatbuffer_path);
+  FlatbufferMMap(const std::string &flatbuffer_path,
+                 util::FileOptions options = util::FileOptions::kReadable) {
+    span_ = util::MMapFile(flatbuffer_path, options);
   }
 
   // Copies the reference to the mapped memory.
@@ -519,10 +520,7 @@ class FlatbufferMMap : public NonSizePrefixedFlatbuffer<T> {
   FlatbufferMMap(FlatbufferMMap &&) = default;
   FlatbufferMMap &operator=(FlatbufferMMap<T> &&other) = default;
 
-  absl::Span<uint8_t> span() override {
-    LOG(FATAL) << "Unimplemented. A flatbuffer is immutable.";
-    return *span_;
-  }
+  absl::Span<uint8_t> span() override { return *span_; }
   absl::Span<const uint8_t> span() const override { return *span_; }
 
  private:
