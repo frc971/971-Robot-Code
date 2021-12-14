@@ -171,10 +171,11 @@ void ChannelState::HandleDelivery(sctp_assoc_t rcv_assoc_id, uint16_t /*ssn*/,
 
 void ChannelState::AddPeer(const Connection *connection, int node_index,
                            ServerConnection *server_connection_statistics,
+                           MessageBridgeServerStatus *server_status,
                            bool logged_remotely,
                            aos::Sender<RemoteMessage> *timestamp_logger) {
   peers_.emplace_back(connection, node_index, server_connection_statistics,
-                      logged_remotely, timestamp_logger);
+                      server_status, logged_remotely, timestamp_logger);
 }
 
 int ChannelState::NodeDisconnected(sctp_assoc_t assoc_id) {
@@ -183,7 +184,6 @@ int ChannelState::NodeDisconnected(sctp_assoc_t assoc_id) {
     if (peer.sac_assoc_id == assoc_id) {
       // TODO(austin): This will not handle multiple clients from
       // a single node.  But that should be rare.
-      peer.server_connection_statistics->mutate_state(State::DISCONNECTED);
       peer.sac_assoc_id = 0;
       peer.stream = 0;
       return peer.node_index;
@@ -192,8 +192,9 @@ int ChannelState::NodeDisconnected(sctp_assoc_t assoc_id) {
   return -1;
 }
 
-int ChannelState::NodeConnected(const Node *node, sctp_assoc_t assoc_id,
-                                int stream, SctpServer *server) {
+int ChannelState::NodeConnected(
+    const Node *node, sctp_assoc_t assoc_id, int stream, SctpServer *server,
+    aos::monotonic_clock::time_point monotonic_now) {
   VLOG(1) << "Connected to assoc_id: " << assoc_id << " for stream " << stream;
   for (ChannelState::Peer &peer : peers_) {
     if (peer.connection->name()->string_view() == node->name()->string_view()) {
@@ -210,7 +211,8 @@ int ChannelState::NodeConnected(const Node *node, sctp_assoc_t assoc_id,
 
       peer.sac_assoc_id = assoc_id;
       peer.stream = stream;
-      peer.server_connection_statistics->mutate_state(State::CONNECTED);
+      peer.server_status->Connect(peer.node_index, monotonic_now);
+
       server->SetStreamPriority(assoc_id, stream, peer.connection->priority());
       if (last_message_fetcher_ && peer.connection->time_to_live() == 0) {
         last_message_fetcher_->Fetch();
@@ -327,6 +329,7 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop)
                                         connection->name()->string_view()),
             server_status_.FindServerConnection(
                 connection->name()->string_view()),
+            &server_status_,
             configuration::ChannelMessageIsLoggedOnNode(channel, other_node),
             delivery_time_is_logged
                 ? timestamp_loggers_.SenderForChannel(channel, connection)
@@ -396,6 +399,7 @@ void MessageBridgeServer::NodeDisconnected(sctp_assoc_t assoc_id) {
                    ->Get(node_index)
                    ->name()
                    ->string_view();
+    server_status_.Disconnect(node_index);
     server_status_.ResetFilter(node_index);
     server_status_.ClearBootUUID(node_index);
     server_status_.ResetPartialDeliveries(node_index);
@@ -456,6 +460,7 @@ void MessageBridgeServer::HandleData(const Message *message) {
     CHECK_LE(connect->channels_to_transfer()->size(),
              static_cast<size_t>(max_channels()))
         << ": Client has more channels than we do";
+    monotonic_clock::time_point monotonic_now = event_loop_->monotonic_now();
 
     // Account for the control channel and delivery times channel.
     size_t channel_index = kControlStreams();
@@ -469,7 +474,7 @@ void MessageBridgeServer::HandleData(const Message *message) {
         if (channel_state->Matches(channel)) {
           node_index = channel_state->NodeConnected(
               connect->node(), message->header.rcvinfo.rcv_assoc_id,
-              channel_index, &server_);
+              channel_index, &server_, monotonic_now);
           CHECK_NE(node_index, -1);
 
           matched = true;

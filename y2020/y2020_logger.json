@@ -141,6 +141,7 @@
       "type": "aos.message_bridge.ClientStatistics",
       "source_node": "logger",
       "frequency": 10,
+      "max_size": 2000,
       "num_senders": 2
     },
     {

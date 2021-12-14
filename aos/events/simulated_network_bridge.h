@@ -86,7 +86,6 @@ class SimulatedMessageBridge {
       SetEventLoop(node_factory_->MakeEventLoop("message_bridge"));
     }
 
-    void ClearEventLoop() { SetEventLoop(nullptr); }
     void SetEventLoop(std::unique_ptr<aos::EventLoop> loop);
 
     void SetSendData(std::function<void(const Context &)> fn) {
@@ -109,19 +108,38 @@ class SimulatedMessageBridge {
         ServerConnection *connection =
             server_status->FindServerConnection(node);
         if (connection) {
-          connection->mutate_state(server_state_[node_index]);
-          server_status->ResetFilter(node_index);
-          server_status->SetBootUUID(node_index, boot_uuid);
+          if (boot_uuid == UUID::Zero()) {
+            server_status->Disconnect(node_index);
+            server_status->ResetFilter(node_index);
+          } else {
+            switch (server_state_[node_index]) {
+              case message_bridge::State::DISCONNECTED:
+                server_status->Disconnect(node_index);
+                break;
+              case message_bridge::State::CONNECTED:
+                server_status->Connect(node_index, event_loop->monotonic_now());
+                break;
+            }
+            server_status->ResetFilter(node_index);
+            server_status->SetBootUUID(node_index, boot_uuid);
+          }
         }
       }
       if (client_status) {
         const int client_index =
             client_status->FindClientIndex(node->name()->string_view());
-        ClientConnection *client_connection =
-            client_status->GetClientConnection(client_index);
-        if (client_connection) {
-          client_status->SampleReset(client_index);
-          client_connection->mutate_state(client_state_[node_index]);
+        client_status->SampleReset(client_index);
+        if (boot_uuid == UUID::Zero()) {
+          client_status->Disconnect(client_index);
+        } else {
+          switch (client_state_[node_index]) {
+            case message_bridge::State::CONNECTED:
+              client_status->Connect(client_index);
+              break;
+            case message_bridge::State::DISCONNECTED:
+              client_status->Disconnect(client_index);
+              break;
+          }
         }
       }
     }
@@ -135,7 +153,17 @@ class SimulatedMessageBridge {
             server_status->FindServerConnection(destination);
         if (connection == nullptr) return;
 
-        connection->mutate_state(state);
+        if (state == connection->state()) {
+          return;
+        }
+        switch (state) {
+          case message_bridge::State::DISCONNECTED:
+            server_status->Disconnect(node_index);
+            break;
+          case message_bridge::State::CONNECTED:
+            server_status->Connect(node_index, event_loop->monotonic_now());
+            break;
+        }
       }
     }
 
@@ -144,12 +172,23 @@ class SimulatedMessageBridge {
           configuration::GetNodeIndex(node_factory_->configuration(), source);
       client_state_[node_index] = state;
       if (client_status) {
+        const int client_index =
+            client_status->FindClientIndex(source->name()->string_view());
         ClientConnection *connection =
             client_status->GetClientConnection(source);
 
-        if (connection == nullptr) return;
-
-        connection->mutate_state(state);
+        // TODO(austin): Are there cases where we want to dedup 2 CONNECTED
+        // calls?
+        if (connection->state() != state) {
+          switch (state) {
+            case message_bridge::State::CONNECTED:
+              client_status->Connect(client_index);
+              break;
+            case message_bridge::State::DISCONNECTED:
+              client_status->Disconnect(client_index);
+              break;
+          }
+        }
       }
     }
 

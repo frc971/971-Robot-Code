@@ -45,6 +45,9 @@ class MessageBridgeServerStatus {
   // Clears the boot UUID for the provided node.
   void ClearBootUUID(int node_index);
 
+  void Connect(int node_index, monotonic_clock::time_point monotonic_now);
+  void Disconnect(int node_index);
+
   // Returns the boot UUID for a node, or an empty string_view if there isn't
   // one.
   const UUID &BootUUID(int node_index) const { return boot_uuids_[node_index]; }

@@ -34,6 +34,9 @@ FlatbufferDetachedBuffer<ClientStatistics> MakeClientStatistics(
     connection_builder.add_duplicate_packets(0);
     connection_builder.add_monotonic_offset(0);
     connection_builder.add_partial_deliveries(0);
+    connection_builder.add_connected_since_time(
+        monotonic_clock::min_time.time_since_epoch().count());
+    connection_builder.add_connection_count(0);
     connection_offsets.emplace_back(connection_builder.Finish());
   }
   flatbuffers::Offset<
@@ -58,6 +61,7 @@ MessageBridgeClientStatus::MessageBridgeClientStatus(aos::EventLoop *event_loop)
   client_connection_offsets_.reserve(
       statistics_.message().connections()->size());
   filters_.resize(statistics_.message().connections()->size());
+  uuids_.resize(statistics_.message().connections()->size(), UUID::Zero());
 
   statistics_timer_ = event_loop_->AddTimer([this]() { SendStatistics(); });
   statistics_timer_->set_name("statistics");
@@ -69,6 +73,26 @@ MessageBridgeClientStatus::MessageBridgeClientStatus(aos::EventLoop *event_loop)
   });
 }
 
+void MessageBridgeClientStatus::Disconnect(int client_index) {
+  ClientConnection *connection = GetClientConnection(client_index);
+
+  connection->mutate_state(State::DISCONNECTED);
+  connection->mutate_connected_since_time(
+      monotonic_clock::min_time.time_since_epoch().count());
+  connection->mutate_monotonic_offset(0);
+
+  uuids_[client_index] = UUID::Zero();
+}
+
+void MessageBridgeClientStatus::Connect(int client_index) {
+  ClientConnection *connection = GetClientConnection(client_index);
+
+  connection->mutate_state(State::CONNECTED);
+  connection->mutate_connected_since_time(
+      event_loop_->monotonic_now().time_since_epoch().count());
+  connection->mutate_connection_count(connection->connection_count() + 1);
+}
+
 void MessageBridgeClientStatus::SendStatistics() {
   if (!send_) {
     return;
@@ -78,13 +102,22 @@ void MessageBridgeClientStatus::SendStatistics() {
   aos::Sender<ClientStatistics>::Builder builder = sender_.MakeBuilder();
   client_connection_offsets_.clear();
 
-  for (const ClientConnection *connection :
-       *statistics_.message().connections()) {
+  for (size_t client_index = 0;
+       client_index < statistics_.message().connections()->size();
+       ++client_index) {
+    const ClientConnection *connection =
+        statistics_.message().connections()->Get(client_index);
     flatbuffers::Offset<flatbuffers::String> node_name_offset =
         builder.fbb()->CreateString(connection->node()->name()->string_view());
     Node::Builder node_builder = builder.MakeBuilder<Node>();
     node_builder.add_name(node_name_offset);
     flatbuffers::Offset<Node> node_offset = node_builder.Finish();
+
+    flatbuffers::Offset<flatbuffers::String> uuid_offset = 0;
+
+    if (uuids_[client_index] != UUID::Zero()) {
+      uuid_offset = uuids_[client_index].PackString(builder.fbb());
+    }
 
     ClientConnection::Builder client_connection_builder =
         builder.MakeBuilder<ClientConnection>();
@@ -97,8 +130,23 @@ void MessageBridgeClientStatus::SendStatistics() {
       client_connection_builder.add_duplicate_packets(
           connection->duplicate_packets());
     }
+
+    if (connection->connected_since_time() !=
+        monotonic_clock::min_time.time_since_epoch().count()) {
+      client_connection_builder.add_connected_since_time(
+          connection->connected_since_time());
+    }
+
+    if (connection->connection_count() != 0) {
+      client_connection_builder.add_connection_count(
+          connection->connection_count());
+    }
     client_connection_builder.add_partial_deliveries(
         connection->partial_deliveries());
+
+    if (!uuid_offset.IsNull()) {
+      client_connection_builder.add_boot_uuid(uuid_offset);
+    }
 
     // Strip out the monotonic offset if it isn't populated.
     TimestampFilter *filter = &filters_[client_connection_offsets_.size()];
@@ -152,7 +200,8 @@ ClientConnection *MessageBridgeClientStatus::GetClientConnection(
 void MessageBridgeClientStatus::SampleFilter(
     int client_index,
     const aos::monotonic_clock::time_point monotonic_sent_time,
-    const aos::monotonic_clock::time_point monotonic_delivered_time) {
+    const aos::monotonic_clock::time_point monotonic_delivered_time,
+    const UUID &uuid) {
   TimestampFilter *filter = &filters_[client_index];
 
   const std::chrono::nanoseconds offset =
@@ -163,6 +212,8 @@ void MessageBridgeClientStatus::SampleFilter(
   if (!filter->has_sample()) {
     filter->set_base_offset(offset);
   }
+
+  uuids_[client_index] = uuid;
 
   // We can now measure the latency!
   filter->Sample(monotonic_delivered_time, offset);

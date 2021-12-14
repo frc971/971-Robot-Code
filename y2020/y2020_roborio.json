@@ -55,7 +55,7 @@
       "type": "aos.message_bridge.ClientStatistics",
       "source_node": "roborio",
       "frequency": 15,
-      "max_size": 736,
+      "max_size": 2000,
       "num_senders": 2
     },
     {

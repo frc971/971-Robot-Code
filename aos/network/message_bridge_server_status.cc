@@ -37,6 +37,9 @@ FlatbufferDetachedBuffer<ServerStatistics> MakeServerStatistics(
     connection_builder.add_sent_packets(0);
     connection_builder.add_monotonic_offset(0);
     connection_builder.add_partial_deliveries(0);
+    connection_builder.add_connected_since_time(
+        monotonic_clock::min_time.time_since_epoch().count());
+    connection_builder.add_connection_count(0);
     connection_offsets.emplace_back(connection_builder.Finish());
   }
   flatbuffers::Offset<
@@ -162,6 +165,26 @@ void MessageBridgeServerStatus::ResetFilter(int node_index) {
   server_connection_[node_index]->mutate_monotonic_offset(0);
 }
 
+void MessageBridgeServerStatus::Connect(
+    int node_index, monotonic_clock::time_point monotonic_now) {
+  server_connection_[node_index]->mutate_state(State::CONNECTED);
+  // Only count connections if the timestamp changes.  This deduplicates
+  // multiple channel connections at the same point in time.
+  if (server_connection_[node_index]->connected_since_time() !=
+      monotonic_now.time_since_epoch().count()) {
+    server_connection_[node_index]->mutate_connection_count(
+        server_connection_[node_index]->connection_count() + 1);
+    server_connection_[node_index]->mutate_connected_since_time(
+        monotonic_now.time_since_epoch().count());
+  }
+}
+
+void MessageBridgeServerStatus::Disconnect(int node_index) {
+  server_connection_[node_index]->mutate_state(State::DISCONNECTED);
+  server_connection_[node_index]->mutate_connected_since_time(
+      aos::monotonic_clock::min_time.time_since_epoch().count());
+}
+
 void MessageBridgeServerStatus::SendStatistics() {
   if (!send_) return;
   aos::Sender<ServerStatistics>::Builder builder = sender_.MakeBuilder();
@@ -196,6 +219,17 @@ void MessageBridgeServerStatus::SendStatistics() {
     server_connection_builder.add_sent_packets(connection->sent_packets());
     server_connection_builder.add_partial_deliveries(
         partial_deliveries_[node_index]);
+
+    if (connection->connected_since_time() !=
+        monotonic_clock::min_time.time_since_epoch().count()) {
+      server_connection_builder.add_connected_since_time(
+          connection->connected_since_time());
+    }
+
+    if (connection->connection_count() != 0) {
+      server_connection_builder.add_connection_count(
+          connection->connection_count());
+    }
 
     // TODO(austin): If it gets stale, drop it too.
     if (!filters_[node_index].MissingSamples()) {

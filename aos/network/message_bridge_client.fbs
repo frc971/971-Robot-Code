@@ -25,7 +25,16 @@ table ClientConnection {
   // (indicates congestion)
   partial_deliveries:uint (id: 5);
 
-  // TODO(austin): Per channel counts?
+  // Boot UUID of the server.
+  boot_uuid:string (id: 6);
+
+  // Time at which we connected to the server as nanoseconds on the local
+  // monotonic clock.  This is not populated when not connected, and defaults
+  // to monotonic_clock::min_time.
+  connected_since_time:int64 = -9223372036854775808 (id: 7);
+
+  // Number of times we've established a connection to the server.
+  connection_count:uint (id: 8);
 }
 
 // Statistics for all clients.
