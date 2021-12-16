@@ -74,9 +74,9 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   }
 
   void WaitForHoodZeroed() {
-    ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+    ::aos::time::PhasedLoop phased_loop(frc971::controls::kLoopFrequency,
                                         event_loop()->monotonic_now(),
-                                        ::std::chrono::milliseconds(5) / 2);
+                                        ActorBase::kLoopOffset);
     while (true) {
       if (ShouldCancel()) return;
 
