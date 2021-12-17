@@ -1253,8 +1253,15 @@ MultiNodeNoncausalOffsetEstimator::NextSolution(
     TimestampProblem *problem, const std::vector<BootTimestamp> &base_times) {
   // Ok, now solve for the minimum time on each channel.
   std::vector<BootTimestamp> result_times;
-  NoncausalTimestampFilter *next_filter = nullptr;
-  size_t solution_index = 0;
+
+  struct CandidateTimes {
+    BootTimestamp next_node_time = BootTimestamp::max_time();
+    BootDuration next_node_duration;
+    NoncausalTimestampFilter *next_node_filter = nullptr;
+  };
+
+  std::vector<CandidateTimes> candidate_times;
+  candidate_times.resize(base_times.size());
   {
     size_t node_a_index = 0;
     for (const auto &filters : filters_per_node_) {
@@ -1284,6 +1291,10 @@ MultiNodeNoncausalOffsetEstimator::NextSolution(
       // Found no active filters.  Either this node is off, or disconnected, or
       // we are before the log file starts or after the log file ends.
       if (next_node_time == BootTimestamp::max_time()) {
+        candidate_times[node_a_index] =
+            CandidateTimes{.next_node_time = next_node_time,
+                           .next_node_duration = next_node_duration,
+                           .next_node_filter = next_node_filter};
         ++node_a_index;
         continue;
       }
@@ -1327,148 +1338,166 @@ MultiNodeNoncausalOffsetEstimator::NextSolution(
           next_node_filter = nullptr;
         }
       }
+      candidate_times[node_a_index] =
+          CandidateTimes{.next_node_time = next_node_time,
+                         .next_node_duration = next_node_duration,
+                         .next_node_filter = next_node_filter};
+      ++node_a_index;
+    }
+  }
 
-      if (next_node_filter != nullptr) {
-        VLOG(2) << "Trying " << next_node_time << " " << next_node_duration
-                << " for node " << node_a_index;
-      } else {
-        VLOG(1) << "Trying " << next_node_time << " for node " << node_a_index;
+  NoncausalTimestampFilter *next_filter = nullptr;
+  size_t solution_index = 0;
+  for (size_t node_a_index = 0; node_a_index < candidate_times.size();
+       ++node_a_index) {
+    VLOG(2) << "Investigating filter for node " << node_a_index;
+    BootTimestamp next_node_time = candidate_times[node_a_index].next_node_time;
+    BootDuration next_node_duration =
+        candidate_times[node_a_index].next_node_duration;
+    NoncausalTimestampFilter *next_node_filter =
+        candidate_times[node_a_index].next_node_filter;
+    if (next_node_time == BootTimestamp::max_time()) {
+      continue;
+    }
+
+    if (next_node_filter != nullptr) {
+      VLOG(2) << "Trying " << next_node_time << " " << next_node_duration
+              << " for node " << node_a_index;
+    } else {
+      VLOG(1) << "Trying " << next_node_time << " for node " << node_a_index;
+    }
+
+    // TODO(austin): If we start supporting only having 1 direction of
+    // timestamps, we might need to change our assumptions around
+    // BootTimestamp and BootDuration.
+
+    // If we haven't rebooted, we can seed the optimization problem with a
+    // pretty good initial guess.
+    if (next_node_time.boot == base_times[node_a_index].boot) {
+      // Optimize, and save the time into times if earlier than time.
+      for (size_t node_index = 0; node_index < base_times.size();
+           ++node_index) {
+        // Offset everything based on the elapsed time since the last solution
+        // on the node we are solving for.  The rate that time elapses should
+        // be ~1.
+        problem->set_base_clock(
+            node_index,
+            {base_times[node_index].boot,
+             base_times[node_index].time +
+                 (next_node_time.time - base_times[node_a_index].time)});
       }
-
-      // TODO(austin): If we start supporting only having 1 direction of
-      // timestamps, we might need to change our assumptions around
-      // BootTimestamp and BootDuration.
-
-      // If we haven't rebooted, we can seed the optimization problem with a
-      // pretty good initial guess.
-      if (next_node_time.boot == base_times[node_a_index].boot) {
-        // Optimize, and save the time into times if earlier than time.
-        for (size_t node_index = 0; node_index < base_times.size();
-             ++node_index) {
-          // Offset everything based on the elapsed time since the last solution
-          // on the node we are solving for.  The rate that time elapses should
-          // be ~1.
-          problem->set_base_clock(
-              node_index,
-              {base_times[node_index].boot,
-               base_times[node_index].time +
-                   (next_node_time.time - base_times[node_a_index].time)});
-        }
-      } else {
-        // Otherwise just pick the base time from before to try.
-        for (size_t node_index = 0; node_index < base_times.size();
-             ++node_index) {
-          problem->set_base_clock(node_index, base_times[node_index]);
-        }
+    } else {
+      // Otherwise just pick the base time from before to try.
+      for (size_t node_index = 0; node_index < base_times.size();
+           ++node_index) {
+        problem->set_base_clock(node_index, base_times[node_index]);
       }
+    }
 
-      problem->set_solution_node(node_a_index);
-      problem->set_base_clock(problem->solution_node(), next_node_time);
-      if (VLOG_IS_ON(2)) {
-        problem->Debug();
+    problem->set_solution_node(node_a_index);
+    problem->set_base_clock(problem->solution_node(), next_node_time);
+    if (VLOG_IS_ON(2)) {
+      problem->Debug();
+    }
+    // TODO(austin): Solve all problems at once :)
+    std::vector<BootTimestamp> solution = problem->SolveNewton();
+
+    // Bypass checking if order validation is turned off.  This lets us dump a
+    // CSV file so we can view the problem and figure out what to do.  The
+    // results won't make sense.
+    if (!problem->ValidateSolution(solution)) {
+      LOG(WARNING) << "Invalid solution, constraints not met.";
+      for (size_t i = 0; i < solution.size(); ++i) {
+        LOG(INFO) << "  " << solution[i];
       }
-      // TODO(austin): Solve all problems at once :)
-      std::vector<BootTimestamp> solution = problem->SolveNewton();
-
-      // Bypass checking if order validation is turned off.  This lets us dump a
-      // CSV file so we can view the problem and figure out what to do.  The
-      // results won't make sense.
-      if (!problem->ValidateSolution(solution)) {
-        LOG(WARNING) << "Invalid solution, constraints not met.";
-        for (size_t i = 0; i < solution.size(); ++i) {
-          LOG(INFO) << "  " << solution[i];
-        }
-        problem->Debug();
-        if (!skip_order_validation_) {
-          LOG(FATAL) << "Bailing, use --skip_order_validation to continue.  "
-                        "Use at your own risk.";
-        }
+      problem->Debug();
+      if (!skip_order_validation_) {
+        LOG(FATAL) << "Bailing, use --skip_order_validation to continue.  "
+                      "Use at your own risk.";
       }
+    }
 
-      if (VLOG_IS_ON(1)) {
-        VLOG(1) << "Candidate solution for node " << node_a_index << " is";
-        for (size_t i = 0; i < solution.size(); ++i) {
-          VLOG(1) << "  " << solution[i];
-        }
+    if (VLOG_IS_ON(1)) {
+      VLOG(1) << "Candidate solution for node " << node_a_index << " is";
+      for (size_t i = 0; i < solution.size(); ++i) {
+        VLOG(1) << "  " << solution[i];
       }
+    }
 
-      if (result_times.empty()) {
-        // This is the first solution candidate, so don't bother comparing.
+    if (result_times.empty()) {
+      // This is the first solution candidate, so don't bother comparing.
+      result_times = std::move(solution);
+      next_filter = next_node_filter;
+      solution_index = node_a_index;
+      continue;
+    }
+
+    switch (CompareTimes(result_times, solution)) {
+      // The old solution is before or at the new solution.  This means that
+      // the old solution is a better result, so ignore this one.
+      case TimeComparison::kBefore:
+      case TimeComparison::kEq:
+        break;
+      case TimeComparison::kAfter:
+        // The new solution is better!  Save it.
         result_times = std::move(solution);
         next_filter = next_node_filter;
         solution_index = node_a_index;
-        ++node_a_index;
-        continue;
-      }
-
-      switch (CompareTimes(result_times, solution)) {
-        // The old solution is before or at the new solution.  This means that
-        // the old solution is a better result, so ignore this one.
-        case TimeComparison::kBefore:
-        case TimeComparison::kEq:
-          break;
-        case TimeComparison::kAfter:
-          // The new solution is better!  Save it.
-          result_times = std::move(solution);
-          next_filter = next_node_filter;
-          solution_index = node_a_index;
-          break;
-        case TimeComparison::kInvalid: {
-          // If times are close enough, drop the invalid time.
-          const chrono::nanoseconds invalid_distance =
-              InvalidDistance(result_times, solution);
-          if (invalid_distance <=
-              chrono::nanoseconds(FLAGS_max_invalid_distance_ns)) {
-            VLOG(1) << "Times can't be compared by " << invalid_distance.count()
-                    << "ns";
-            for (size_t i = 0; i < result_times.size(); ++i) {
-              VLOG(1) << "  " << result_times[i] << " vs " << solution[i]
-                      << " -> "
-                      << (result_times[i].time - solution[i].time).count()
-                      << "ns";
-            }
-            VLOG(1) << "Ignoring because it is close enough.";
-            if (next_node_filter) {
-              std::optional<
-                  std::tuple<logger::BootTimestamp, logger::BootDuration>>
-                  result = next_node_filter->Consume();
-              CHECK(result);
-              next_node_filter->Pop(std::get<0>(*result) -
-                                    time_estimation_buffer_seconds_);
-            }
-            break;
-          }
-          // Somehow the new solution is better *and* worse than the old
-          // solution...  This is an internal failure because that means time
-          // goes backwards on a node.
-          CHECK_EQ(result_times.size(), solution.size());
-          LOG(INFO) << "Times can't be compared by " << invalid_distance.count()
-                    << "ns";
+        break;
+      case TimeComparison::kInvalid: {
+        // If times are close enough, drop the invalid time.
+        const chrono::nanoseconds invalid_distance =
+            InvalidDistance(result_times, solution);
+        if (invalid_distance <=
+            chrono::nanoseconds(FLAGS_max_invalid_distance_ns)) {
+          VLOG(1) << "Times can't be compared by " << invalid_distance.count()
+                  << "ns";
           for (size_t i = 0; i < result_times.size(); ++i) {
-            LOG(INFO) << "  " << result_times[i] << " vs " << solution[i]
-                      << " -> "
-                      << (result_times[i].time - solution[i].time).count()
-                      << "ns";
+            VLOG(1) << "  " << result_times[i] << " vs " << solution[i]
+                    << " -> "
+                    << (result_times[i].time - solution[i].time).count()
+                    << "ns";
           }
+          VLOG(1) << "Ignoring because it is close enough.";
+          if (next_node_filter) {
+            std::optional<
+                std::tuple<logger::BootTimestamp, logger::BootDuration>>
+                result = next_node_filter->Consume();
+            CHECK(result);
+            next_node_filter->Pop(std::get<0>(*result) -
+                                  time_estimation_buffer_seconds_);
+          }
+          break;
+        }
+        // Somehow the new solution is better *and* worse than the old
+        // solution...  This is an internal failure because that means time
+        // goes backwards on a node.
+        CHECK_EQ(result_times.size(), solution.size());
+        LOG(INFO) << "Times can't be compared by " << invalid_distance.count()
+                  << "ns";
+        for (size_t i = 0; i < result_times.size(); ++i) {
+          LOG(INFO) << "  " << result_times[i] << " vs " << solution[i]
+                    << " -> "
+                    << (result_times[i].time - solution[i].time).count()
+                    << "ns";
+        }
 
-          if (skip_order_validation_) {
-            if (next_node_filter) {
-              std::optional<
-                  std::tuple<logger::BootTimestamp, logger::BootDuration>>
-                  result = next_node_filter->Consume();
-              CHECK(result);
-              next_node_filter->Pop(std::get<0>(*result) -
-                                    time_estimation_buffer_seconds_);
-            }
-            LOG(ERROR) << "Skipping because --skip_order_validation";
-            break;
-          } else {
-            LOG(FATAL) << "Please investigate.  Use --max_invalid_distance_ns="
-                       << invalid_distance.count() << " to ignore this.";
+        if (skip_order_validation_) {
+          if (next_node_filter) {
+            std::optional<
+                std::tuple<logger::BootTimestamp, logger::BootDuration>>
+                result = next_node_filter->Consume();
+            CHECK(result);
+            next_node_filter->Pop(std::get<0>(*result) -
+                                  time_estimation_buffer_seconds_);
           }
-        } break;
-      }
-      ++node_a_index;
+          LOG(ERROR) << "Skipping because --skip_order_validation";
+          break;
+        } else {
+          LOG(FATAL) << "Please investigate.  Use --max_invalid_distance_ns="
+                     << invalid_distance.count() << " to ignore this.";
+        }
+      } break;
     }
   }
   if (VLOG_IS_ON(1)) {
