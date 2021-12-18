@@ -43,7 +43,7 @@ cc_library(
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
-        "//frc971/zeroing:zeroing",
+        "//frc971/zeroing",
         "//y2020:constants",
     ],
 )

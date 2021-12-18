@@ -83,9 +83,9 @@ cc_library(
         "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
         "//y2020:constants",
+        "//y2020/control_loops/superstructure/hood:hood_encoder_zeroing_estimator",
         "//y2020/control_loops/superstructure/shooter",
         "//y2020/control_loops/superstructure/turret:aiming",
-        "//y2020/control_loops/superstructure/hood:hood_encoder_zeroing_estimator",
     ],
 )
 

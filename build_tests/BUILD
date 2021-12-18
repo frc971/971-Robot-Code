@@ -1,6 +1,6 @@
 load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library")
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_py_library")
-load("@io_bazel_rules_go//go:def.bzl", "go_binary")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 
 cc_test(
     name = "gflags_build_test",
@@ -100,6 +100,15 @@ py_test(
 
 go_binary(
     name = "hello_go",
-    srcs = ["hello.go"],
+    embed = [":build_tests_lib"],
     target_compatible_with = ["@platforms//cpu:x86_64"],
+    visibility = ["//visibility:public"],
+)
+
+go_library(
+    name = "build_tests_lib",
+    srcs = ["hello.go"],
+    importpath = "github.com/frc971/971-Robot-Code/build_tests",
+    target_compatible_with = ["@platforms//cpu:x86_64"],
+    visibility = ["//visibility:private"],
 )

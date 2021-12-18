@@ -18,11 +18,11 @@ py_runtime_pair(
 
 toolchain(
     name = "python_toolchain",
-    target_compatible_with = [
+    exec_compatible_with = [
         "@platforms//cpu:x86_64",
         "@platforms//os:linux",
     ],
-    exec_compatible_with = [
+    target_compatible_with = [
         "@platforms//cpu:x86_64",
         "@platforms//os:linux",
     ],

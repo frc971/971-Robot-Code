@@ -1,0 +1,318 @@
+# This file is auto-generated. Do not edit.
+GO_MIRROR_INFO = {
+  "co_honnef_go_tools": {
+    "filename": "co_honnef_go_tools__v0.0.0-20190523083050-ea95bdfd59fc.zip",
+    "importpath": "honnef.co/go/tools",
+    "sha256": "eeaa82700e96ac5e803d7a9c32363332504beff8fbb1202492b4d43d5a5e7360",
+    "strip_prefix": "honnef.co/go/tools@v0.0.0-20190523083050-ea95bdfd59fc",
+    "version": "v0.0.0-20190523083050-ea95bdfd59fc"
+  },
+  "com_github_antihax_optional": {
+    "filename": "com_github_antihax_optional__v1.0.0.zip",
+    "importpath": "github.com/antihax/optional",
+    "sha256": "15ab4d41bdbb72ee0ac63db616cdefc7671c79e13d0f73b58355a6a88219c97f",
+    "strip_prefix": "github.com/antihax/optional@v1.0.0",
+    "version": "v1.0.0"
+  },
+  "com_github_buildkite_go_buildkite": {
+    "filename": "com_github_buildkite_go_buildkite__v2.2.0+incompatible.zip",
+    "importpath": "github.com/buildkite/go-buildkite",
+    "sha256": "1871115c8c6db004e4b6e57cee927043bfc9ea0c56e7b8f8336021bd8bf588c4",
+    "strip_prefix": "github.com/buildkite/go-buildkite@v2.2.0+incompatible",
+    "version": "v2.2.0+incompatible"
+  },
+  "com_github_burntsushi_toml": {
+    "filename": "com_github_burntsushi_toml__v0.3.1.zip",
+    "importpath": "github.com/BurntSushi/toml",
+    "sha256": "815c6e594745f2d8842ff9a4b0569c6695e6cdfd5e07e5b3d98d06b72ca41e3c",
+    "strip_prefix": "github.com/BurntSushi/toml@v0.3.1",
+    "version": "v0.3.1"
+  },
+  "com_github_cenkalti_backoff": {
+    "filename": "com_github_cenkalti_backoff__v2.2.1+incompatible.zip",
+    "importpath": "github.com/cenkalti/backoff",
+    "sha256": "f8196815a1b4d25e5b8158029d5264801fc8aa5ff128ccf30752fd169693d43b",
+    "strip_prefix": "github.com/cenkalti/backoff@v2.2.1+incompatible",
+    "version": "v2.2.1+incompatible"
+  },
+  "com_github_census_instrumentation_opencensus_proto": {
+    "filename": "com_github_census_instrumentation_opencensus_proto__v0.2.1.zip",
+    "importpath": "github.com/census-instrumentation/opencensus-proto",
+    "sha256": "b3c09f3e635d47b4138695a547d1f2c7138f382cbe5a8b5865b66a8e08233461",
+    "strip_prefix": "github.com/census-instrumentation/opencensus-proto@v0.2.1",
+    "version": "v0.2.1"
+  },
+  "com_github_cespare_xxhash_v2": {
+    "filename": "com_github_cespare_xxhash_v2__v2.1.1.zip",
+    "importpath": "github.com/cespare/xxhash/v2",
+    "sha256": "5baa031c72e73e42617f0fd74e7d813344850bd6a6073381b6a4160a5e9cb59e",
+    "strip_prefix": "github.com/cespare/xxhash/v2@v2.1.1",
+    "version": "v2.1.1"
+  },
+  "com_github_client9_misspell": {
+    "filename": "com_github_client9_misspell__v0.3.4.zip",
+    "importpath": "github.com/client9/misspell",
+    "sha256": "a3af206372e131dd10a68ac470c66a1b18eaf51c6afacb55b2e2a06e39b90728",
+    "strip_prefix": "github.com/client9/misspell@v0.3.4",
+    "version": "v0.3.4"
+  },
+  "com_github_cncf_udpa_go": {
+    "filename": "com_github_cncf_udpa_go__v0.0.0-20210930031921-04548b0d99d4.zip",
+    "importpath": "github.com/cncf/udpa/go",
+    "sha256": "a449fa94e58117a79c17577e39f72f695c4876f74cbd9142d512278192ca90aa",
+    "strip_prefix": "github.com/cncf/udpa/go@v0.0.0-20210930031921-04548b0d99d4",
+    "version": "v0.0.0-20210930031921-04548b0d99d4"
+  },
+  "com_github_cncf_xds_go": {
+    "filename": "com_github_cncf_xds_go__v0.0.0-20211011173535-cb28da3451f1.zip",
+    "importpath": "github.com/cncf/xds/go",
+    "sha256": "eb86281e1e9cf6f83d25edbec0e3fd690570efa3414866d14c6a32b44931375d",
+    "strip_prefix": "github.com/cncf/xds/go@v0.0.0-20211011173535-cb28da3451f1",
+    "version": "v0.0.0-20211011173535-cb28da3451f1"
+  },
+  "com_github_davecgh_go_spew": {
+    "filename": "com_github_davecgh_go_spew__v1.1.0.zip",
+    "importpath": "github.com/davecgh/go-spew",
+    "sha256": "0b5a691aeb8b6af31bd2bb640973ea7e8bf1ed9bc5889da220bf44dc06d9692c",
+    "strip_prefix": "github.com/davecgh/go-spew@v1.1.0",
+    "version": "v1.1.0"
+  },
+  "com_github_envoyproxy_go_control_plane": {
+    "filename": "com_github_envoyproxy_go_control_plane__v0.9.10-0.20210907150352-cf90f659a021.zip",
+    "importpath": "github.com/envoyproxy/go-control-plane",
+    "sha256": "41dc70a8e658cb8945fa0de289d25dd7a608e99929bae144776781401dec507a",
+    "strip_prefix": "github.com/envoyproxy/go-control-plane@v0.9.10-0.20210907150352-cf90f659a021",
+    "version": "v0.9.10-0.20210907150352-cf90f659a021"
+  },
+  "com_github_envoyproxy_protoc_gen_validate": {
+    "filename": "com_github_envoyproxy_protoc_gen_validate__v0.1.0.zip",
+    "importpath": "github.com/envoyproxy/protoc-gen-validate",
+    "sha256": "ec5261f3bbc426d71e2be4c76063ba12460c5d27845d630763e9e911ec4768af",
+    "strip_prefix": "github.com/envoyproxy/protoc-gen-validate@v0.1.0",
+    "version": "v0.1.0"
+  },
+  "com_github_ghodss_yaml": {
+    "filename": "com_github_ghodss_yaml__v1.0.0.zip",
+    "importpath": "github.com/ghodss/yaml",
+    "sha256": "c3f295d23c02c0b35e4d3b29053586e737cf9642df9615da99c0bda9bbacc624",
+    "strip_prefix": "github.com/ghodss/yaml@v1.0.0",
+    "version": "v1.0.0"
+  },
+  "com_github_golang_glog": {
+    "filename": "com_github_golang_glog__v0.0.0-20160126235308-23def4e6c14b.zip",
+    "importpath": "github.com/golang/glog",
+    "sha256": "36b3c522c8102dfe74ca96e474c4c361750bf2bb85bc3cefe4f074c07d6825a9",
+    "strip_prefix": "github.com/golang/glog@v0.0.0-20160126235308-23def4e6c14b",
+    "version": "v0.0.0-20160126235308-23def4e6c14b"
+  },
+  "com_github_golang_mock": {
+    "filename": "com_github_golang_mock__v1.1.1.zip",
+    "importpath": "github.com/golang/mock",
+    "sha256": "636fd21575ebdfbebd53045802a40c780fdab33c6130cea9279346898286f1ca",
+    "strip_prefix": "github.com/golang/mock@v1.1.1",
+    "version": "v1.1.1"
+  },
+  "com_github_golang_protobuf": {
+    "filename": "com_github_golang_protobuf__v1.5.2.zip",
+    "importpath": "github.com/golang/protobuf",
+    "sha256": "5d1c817bebc1202ab3b42a418e584e0008e8027baf212ce69c2ae3e9e7b8c64b",
+    "strip_prefix": "github.com/golang/protobuf@v1.5.2",
+    "version": "v1.5.2"
+  },
+  "com_github_google_go_cmp": {
+    "filename": "com_github_google_go_cmp__v0.5.5.zip",
+    "importpath": "github.com/google/go-cmp",
+    "sha256": "0ee90a7194c025d849699f897d97641b8676ceca9215c96e00eaf1f0e6e953ad",
+    "strip_prefix": "github.com/google/go-cmp@v0.5.5",
+    "version": "v0.5.5"
+  },
+  "com_github_google_go_querystring": {
+    "filename": "com_github_google_go_querystring__v1.1.0.zip",
+    "importpath": "github.com/google/go-querystring",
+    "sha256": "a6aafc01f5602e6177928751074e325792a654e1d92f0e238b8e8739656dd72b",
+    "strip_prefix": "github.com/google/go-querystring@v1.1.0",
+    "version": "v1.1.0"
+  },
+  "com_github_google_uuid": {
+    "filename": "com_github_google_uuid__v1.1.2.zip",
+    "importpath": "github.com/google/uuid",
+    "sha256": "5d52fee1f44cf85dbba03f1bd6098a15a131e32c0e45839b352d69aceb7babfc",
+    "strip_prefix": "github.com/google/uuid@v1.1.2",
+    "version": "v1.1.2"
+  },
+  "com_github_grpc_ecosystem_grpc_gateway": {
+    "filename": "com_github_grpc_ecosystem_grpc_gateway__v1.16.0.zip",
+    "importpath": "github.com/grpc-ecosystem/grpc-gateway",
+    "sha256": "377b03aef288b34ed894449d3ddba40d525dd7fb55de6e79045cdf499e7fe565",
+    "strip_prefix": "github.com/grpc-ecosystem/grpc-gateway@v1.16.0",
+    "version": "v1.16.0"
+  },
+  "com_github_pmezard_go_difflib": {
+    "filename": "com_github_pmezard_go_difflib__v1.0.0.zip",
+    "importpath": "github.com/pmezard/go-difflib",
+    "sha256": "de04cecc1a4b8d53e4357051026794bcbc54f2e6a260cfac508ce69d5d6457a0",
+    "strip_prefix": "github.com/pmezard/go-difflib@v1.0.0",
+    "version": "v1.0.0"
+  },
+  "com_github_prometheus_client_model": {
+    "filename": "com_github_prometheus_client_model__v0.0.0-20190812154241-14fe0d1b01d4.zip",
+    "importpath": "github.com/prometheus/client_model",
+    "sha256": "5d4719be47f4f69ab5bf36a04c75eb078a0f69b43a335f400c2d688ac9e61795",
+    "strip_prefix": "github.com/prometheus/client_model@v0.0.0-20190812154241-14fe0d1b01d4",
+    "version": "v0.0.0-20190812154241-14fe0d1b01d4"
+  },
+  "com_github_rogpeppe_fastuuid": {
+    "filename": "com_github_rogpeppe_fastuuid__v1.2.0.zip",
+    "importpath": "github.com/rogpeppe/fastuuid",
+    "sha256": "f9b8293f5e20270e26fb4214ca7afec864de92c73d03ff62b5ee29d1db4e72a1",
+    "strip_prefix": "github.com/rogpeppe/fastuuid@v1.2.0",
+    "version": "v1.2.0"
+  },
+  "com_github_stretchr_objx": {
+    "filename": "com_github_stretchr_objx__v0.1.0.zip",
+    "importpath": "github.com/stretchr/objx",
+    "sha256": "1fa10dab404ed7fc8ed2a033f8784187d5df3513ced3841ce39e46d37850eb1d",
+    "strip_prefix": "github.com/stretchr/objx@v0.1.0",
+    "version": "v0.1.0"
+  },
+  "com_github_stretchr_testify": {
+    "filename": "com_github_stretchr_testify__v1.7.0.zip",
+    "importpath": "github.com/stretchr/testify",
+    "sha256": "5a46ccebeff510df3e2f6d3842ee79d3f68d0e7b1554cd6ee93390d68b6c6b34",
+    "strip_prefix": "github.com/stretchr/testify@v1.7.0",
+    "version": "v1.7.0"
+  },
+  "com_google_cloud_go": {
+    "filename": "com_google_cloud_go__v0.34.0.zip",
+    "importpath": "cloud.google.com/go",
+    "sha256": "27c1190dcd33c594838487544d8c3d17df4f7916fb542f5c2c9ca729ef1d9fe6",
+    "strip_prefix": "cloud.google.com/go@v0.34.0",
+    "version": "v0.34.0"
+  },
+  "in_gopkg_check_v1": {
+    "filename": "in_gopkg_check_v1__v0.0.0-20161208181325-20d25e280405.zip",
+    "importpath": "gopkg.in/check.v1",
+    "sha256": "4e1817f964ca34e545b81afda0325a5e89cf58de2e413d8207c0afddd0fdc15c",
+    "strip_prefix": "gopkg.in/check.v1@v0.0.0-20161208181325-20d25e280405",
+    "version": "v0.0.0-20161208181325-20d25e280405"
+  },
+  "in_gopkg_yaml_v2": {
+    "filename": "in_gopkg_yaml_v2__v2.2.3.zip",
+    "importpath": "gopkg.in/yaml.v2",
+    "sha256": "213403de27ae981b118ba199a3a1ddc64a82d0c9cf7534b762dc9ee5d79c5316",
+    "strip_prefix": "gopkg.in/yaml.v2@v2.2.3",
+    "version": "v2.2.3"
+  },
+  "in_gopkg_yaml_v3": {
+    "filename": "in_gopkg_yaml_v3__v3.0.0-20200313102051-9f266ea9e77c.zip",
+    "importpath": "gopkg.in/yaml.v3",
+    "sha256": "acf19ccb4fca983b234a39ef032faf9ab70e759680673bb3dff077e77fee20fe",
+    "strip_prefix": "gopkg.in/yaml.v3@v3.0.0-20200313102051-9f266ea9e77c",
+    "version": "v3.0.0-20200313102051-9f266ea9e77c"
+  },
+  "io_opentelemetry_go_proto_otlp": {
+    "filename": "io_opentelemetry_go_proto_otlp__v0.7.0.zip",
+    "importpath": "go.opentelemetry.io/proto/otlp",
+    "sha256": "a7db0590bc4c5f0b9b99cc958decf644f1e5cc11e0b995dc20b3583a2215259b",
+    "strip_prefix": "go.opentelemetry.io/proto/otlp@v0.7.0",
+    "version": "v0.7.0"
+  },
+  "org_golang_google_appengine": {
+    "filename": "org_golang_google_appengine__v1.4.0.zip",
+    "importpath": "google.golang.org/appengine",
+    "sha256": "d4dba839844a92bd9355812a53f086ff3301aa8f59b29a3e2f799d27be8db71f",
+    "strip_prefix": "google.golang.org/appengine@v1.4.0",
+    "version": "v1.4.0"
+  },
+  "org_golang_google_genproto": {
+    "filename": "org_golang_google_genproto__v0.0.0-20200526211855-cb27e3aa2013.zip",
+    "importpath": "google.golang.org/genproto",
+    "sha256": "50336913c7325576ed9c3587fdcacd39094013af95c8c11736f335969136527d",
+    "strip_prefix": "google.golang.org/genproto@v0.0.0-20200526211855-cb27e3aa2013",
+    "version": "v0.0.0-20200526211855-cb27e3aa2013"
+  },
+  "org_golang_google_grpc": {
+    "filename": "org_golang_google_grpc__v1.43.0.zip",
+    "importpath": "google.golang.org/grpc",
+    "sha256": "19fa6e227e62e3ae9791ab81b8a784e93cc68860b7fe0e85dd8d3cfbc1b24398",
+    "strip_prefix": "google.golang.org/grpc@v1.43.0",
+    "version": "v1.43.0"
+  },
+  "org_golang_google_protobuf": {
+    "filename": "org_golang_google_protobuf__v1.26.0.zip",
+    "importpath": "google.golang.org/protobuf",
+    "sha256": "d7bc5de329bd4e803f7a2acfcbe8f2eba4ef1579485056ef569a4b245bee1208",
+    "strip_prefix": "google.golang.org/protobuf@v1.26.0",
+    "version": "v1.26.0"
+  },
+  "org_golang_x_crypto": {
+    "filename": "org_golang_x_crypto__v0.0.0-20200622213623-75b288015ac9.zip",
+    "importpath": "golang.org/x/crypto",
+    "sha256": "aeaac2684d693207a90f491b0303e881e58c014e96d27b0ebb7fe6937dfc1e76",
+    "strip_prefix": "golang.org/x/crypto@v0.0.0-20200622213623-75b288015ac9",
+    "version": "v0.0.0-20200622213623-75b288015ac9"
+  },
+  "org_golang_x_exp": {
+    "filename": "org_golang_x_exp__v0.0.0-20190121172915-509febef88a4.zip",
+    "importpath": "golang.org/x/exp",
+    "sha256": "c3a7dcc2e8117e749c6badc91d492de3ee2f5b440b30481a0a75f9d63db6fe0b",
+    "strip_prefix": "golang.org/x/exp@v0.0.0-20190121172915-509febef88a4",
+    "version": "v0.0.0-20190121172915-509febef88a4"
+  },
+  "org_golang_x_lint": {
+    "filename": "org_golang_x_lint__v0.0.0-20190313153728-d0100b6bd8b3.zip",
+    "importpath": "golang.org/x/lint",
+    "sha256": "5c7bb9792bdc4ec4cf1af525cf9998f8a958daf6495852c9a7dbb71738f2f10a",
+    "strip_prefix": "golang.org/x/lint@v0.0.0-20190313153728-d0100b6bd8b3",
+    "version": "v0.0.0-20190313153728-d0100b6bd8b3"
+  },
+  "org_golang_x_net": {
+    "filename": "org_golang_x_net__v0.0.0-20200822124328-c89045814202.zip",
+    "importpath": "golang.org/x/net",
+    "sha256": "22ea306ad6c9100c636c165dc05a64265d0f985452a9f1edf32b561b620ae762",
+    "strip_prefix": "golang.org/x/net@v0.0.0-20200822124328-c89045814202",
+    "version": "v0.0.0-20200822124328-c89045814202"
+  },
+  "org_golang_x_oauth2": {
+    "filename": "org_golang_x_oauth2__v0.0.0-20200107190931-bf48bf16ab8d.zip",
+    "importpath": "golang.org/x/oauth2",
+    "sha256": "661e4c30b15e488b434b19085567e581eb7bde892f04a0a3ab7ef94c0028f133",
+    "strip_prefix": "golang.org/x/oauth2@v0.0.0-20200107190931-bf48bf16ab8d",
+    "version": "v0.0.0-20200107190931-bf48bf16ab8d"
+  },
+  "org_golang_x_sync": {
+    "filename": "org_golang_x_sync__v0.0.0-20190423024810-112230192c58.zip",
+    "importpath": "golang.org/x/sync",
+    "sha256": "dc105c2b4d6c7ab48e54946ce2f624e8d1f5d47270eff1e88fed06cc65f91fb4",
+    "strip_prefix": "golang.org/x/sync@v0.0.0-20190423024810-112230192c58",
+    "version": "v0.0.0-20190423024810-112230192c58"
+  },
+  "org_golang_x_sys": {
+    "filename": "org_golang_x_sys__v0.0.0-20200323222414-85ca7c5b95cd.zip",
+    "importpath": "golang.org/x/sys",
+    "sha256": "d00ccd67cf0f2dd8622ed2721b8824fcbaf4f5730f47387fd5e39adbd5f6972e",
+    "strip_prefix": "golang.org/x/sys@v0.0.0-20200323222414-85ca7c5b95cd",
+    "version": "v0.0.0-20200323222414-85ca7c5b95cd"
+  },
+  "org_golang_x_text": {
+    "filename": "org_golang_x_text__v0.3.0.zip",
+    "importpath": "golang.org/x/text",
+    "sha256": "ea3068395503d3c7ef8ce16a286f75c8c93882c25a66c2aa6c8e2ad4da7a9ae0",
+    "strip_prefix": "golang.org/x/text@v0.3.0",
+    "version": "v0.3.0"
+  },
+  "org_golang_x_tools": {
+    "filename": "org_golang_x_tools__v0.0.0-20190524140312-2c0ae7006135.zip",
+    "importpath": "golang.org/x/tools",
+    "sha256": "86687e8cd5adccf8809ba031e59146d0c89047b6267aacc785ffc20b0ce6b735",
+    "strip_prefix": "golang.org/x/tools@v0.0.0-20190524140312-2c0ae7006135",
+    "version": "v0.0.0-20190524140312-2c0ae7006135"
+  },
+  "org_golang_x_xerrors": {
+    "filename": "org_golang_x_xerrors__v0.0.0-20200804184101-5ec99f83aff1.zip",
+    "importpath": "golang.org/x/xerrors",
+    "sha256": "380aaa3368ae165628bb487cf4e695a55c1420072b8b7a6f59c122f6a23bb255",
+    "strip_prefix": "golang.org/x/xerrors@v0.0.0-20200804184101-5ec99f83aff1",
+    "version": "v0.0.0-20200804184101-5ec99f83aff1"
+  }
+}

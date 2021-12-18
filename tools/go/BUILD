@@ -1,5 +1,36 @@
-# This file exists to create a NOOP toolchain for Go on platforms that don't
-# support Go. We can probably get rid of this once
+py_library(
+    name = "mirror_lib",
+    srcs = [
+        "mirror_lib.py",
+    ],
+)
+
+py_binary(
+    name = "tweak_gazelle_go_deps",
+    srcs = [
+        "tweak_gazelle_go_deps.py",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":mirror_lib",
+    ],
+)
+
+py_binary(
+    name = "mirror_go_repos",
+    srcs = [
+        "mirror_go_repos.py",
+    ],
+    data = [
+        "@go_sdk//:bin/go",
+    ],
+    deps = [
+        ":mirror_lib",
+    ],
+)
+
+# The remainder of this file exists to create a NOOP toolchain for Go on
+# platforms that don't support Go. We can probably get rid of this once
 # https://github.com/bazelbuild/bazel/issues/12897 is fixed.
 #
 # For platforms that do support Go, we use go_register_toolchain() in

@@ -84,10 +84,10 @@ py_library(
     srcs = [
         "calib_sensors.py",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "@python_repo//:scipy",
     ],
-    target_compatible_with = ["@platforms//os:linux"],
 )
 
 py_binary(
@@ -95,11 +95,11 @@ py_binary(
     srcs = [
         "current_equalize.py",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":calib_sensors",
         "@python_repo//:scipy",
     ],
-    target_compatible_with = ["@platforms//os:linux"],
 )
 
 genrule(
