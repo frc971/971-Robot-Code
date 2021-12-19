@@ -25,26 +25,21 @@
 	# X values for silk on sides and top
 	# X values for silk on sides and bottom
 # Element [SFlags "Desc" "Name" "Value" MX MY TX TY TDir TScale TSFlags]
-Element[ "" "Transistor" "" "TO263" 0 0 0 0 0 100 ""]
+Element[ "" "Transistor" "" "TO252AE" 0 0 0 0 0 100 ""]
 (
 # Pad [rX1 rY1 rX2 rY2 Thickness Clearance Mask "Name" "Number" SFlags]
 # the signal pads
-Pad[ -10000 37500 -10000 30700 4100 2000 5200 "1"  "1" "square"]
+Pad[ -9000 13200 -9000 11200 5500 2000 5200 "1"  "1" "square"]
 #Pad[      0 37500      0 30700 4100 2000 5200 "2"  "2" "square"]
-Pad[  10000 37500  10000 30700 4100 2000 5200 "3"  "3" "square"]
+Pad[  9000 13200  9000 11200 5500 2000 5200 "3"  "3" "square"]
 # the tab pad
-Pad[ 5000  -10900  -5000  -10900  35000  2000 22000  "4"  "4" "square"]
+Pad[ 250  -10900  -250  -10900  23500  2000 22000  "4"  "4" "square"]
 #Pad[ 17500 -24150 -17500 -24150 7500 2000 8500 "4"  "4" "square"]
 # ElementLine[ x1 y1 x2 y2 width]
 # top and upper sides:
-ElementLine[ 24000 27100  24000 -29900 1000 ]
-ElementLine[ 24000 -29900  -24000 -29900 1000 ]
-ElementLine[ -24000 -29900  -24000 27100 1000 ]
+ElementLine[ 14000 17450  14000 -24150 1000 ]
+ElementLine[ 14000 -24150  -14000 -24150 1000 ]
+ElementLine[ -14000 -24150  -14000 17450 1000 ]
 # bottom and lower sides
-ElementLine[ -15500 27100 -15500 41000 1000 ]
-ElementLine[ -15500 41000  15500 41000 1000 ]
-ElementLine[  15500 41000  15500 27100 1000 ]
-# and the two connecting lines
-ElementLine[ -24000 27100 -15500 27100 1000 ]
-ElementLine[ 24000 27100  15500 27100 1000 ]
+ElementLine[ -14000 17450  14000 17450 1000 ]
 )
