@@ -123,9 +123,9 @@ void BaseAutonomousActor::WaitUntilDoneOrCanceled(
     return;
   }
 
-  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+  ::aos::time::PhasedLoop phased_loop(frc971::controls::kLoopFrequency,
                                       event_loop()->monotonic_now(),
-                                      ::std::chrono::milliseconds(5) / 2);
+                                      ActorBase::kLoopOffset);
   while (true) {
     // Poll the running bit and see if we should cancel.
     phased_loop.SleepUntilNext();
@@ -136,9 +136,9 @@ void BaseAutonomousActor::WaitUntilDoneOrCanceled(
 }
 
 bool BaseAutonomousActor::WaitForDriveDone() {
-  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+  ::aos::time::PhasedLoop phased_loop(frc971::controls::kLoopFrequency,
                                       event_loop()->monotonic_now(),
-                                      ::std::chrono::milliseconds(5) / 2);
+                                      ActorBase::kLoopOffset);
 
   while (true) {
     if (ShouldCancel()) {
@@ -178,9 +178,9 @@ bool BaseAutonomousActor::IsDriveDone() {
 }
 
 bool BaseAutonomousActor::WaitForAboveAngle(double angle) {
-  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+  ::aos::time::PhasedLoop phased_loop(frc971::controls::kLoopFrequency,
                                       event_loop()->monotonic_now(),
-                                      ::std::chrono::milliseconds(5) / 2);
+                                      ActorBase::kLoopOffset);
   while (true) {
     if (ShouldCancel()) {
       return false;
@@ -199,9 +199,9 @@ bool BaseAutonomousActor::WaitForAboveAngle(double angle) {
 }
 
 bool BaseAutonomousActor::WaitForBelowAngle(double angle) {
-  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+  ::aos::time::PhasedLoop phased_loop(frc971::controls::kLoopFrequency,
                                       event_loop()->monotonic_now(),
-                                      ::std::chrono::milliseconds(5) / 2);
+                                      ActorBase::kLoopOffset);
   while (true) {
     if (ShouldCancel()) {
       return false;
@@ -220,9 +220,9 @@ bool BaseAutonomousActor::WaitForBelowAngle(double angle) {
 }
 
 bool BaseAutonomousActor::WaitForMaxBy(double angle) {
-  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+  ::aos::time::PhasedLoop phased_loop(frc971::controls::kLoopFrequency,
                                       event_loop()->monotonic_now(),
-                                      ::std::chrono::milliseconds(5) / 2);
+                                      ActorBase::kLoopOffset);
   double max_angle = -M_PI;
   while (true) {
     if (ShouldCancel()) {
@@ -245,9 +245,9 @@ bool BaseAutonomousActor::WaitForMaxBy(double angle) {
 }
 
 bool BaseAutonomousActor::WaitForDriveNear(double distance, double angle) {
-  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+  ::aos::time::PhasedLoop phased_loop(frc971::controls::kLoopFrequency,
                                       event_loop()->monotonic_now(),
-                                      ::std::chrono::milliseconds(5) / 2);
+                                      ActorBase::kLoopOffset);
   constexpr double kPositionTolerance = 0.02;
   constexpr double kProfileTolerance = 0.001;
 
@@ -314,9 +314,9 @@ bool BaseAutonomousActor::WaitForDriveNear(double distance, double angle) {
 }
 
 bool BaseAutonomousActor::WaitForDriveProfileNear(double tolerance) {
-  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+  ::aos::time::PhasedLoop phased_loop(frc971::controls::kLoopFrequency,
                                       event_loop()->monotonic_now(),
-                                      ::std::chrono::milliseconds(5) / 2);
+                                      ActorBase::kLoopOffset);
   while (true) {
     if (ShouldCancel()) {
       return false;
@@ -351,9 +351,9 @@ bool BaseAutonomousActor::WaitForDriveProfileDone() {
 }
 
 bool BaseAutonomousActor::WaitForTurnProfileNear(double tolerance) {
-  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+  ::aos::time::PhasedLoop phased_loop(frc971::controls::kLoopFrequency,
                                       event_loop()->monotonic_now(),
-                                      ::std::chrono::milliseconds(5) / 2);
+                                      ActorBase::kLoopOffset);
   while (true) {
     if (ShouldCancel()) {
       return false;
@@ -427,9 +427,9 @@ bool BaseAutonomousActor::SplineHandle::SplineDistanceRemaining(
 bool BaseAutonomousActor::SplineHandle::WaitForSplineDistanceRemaining(
     double distance) {
   ::aos::time::PhasedLoop phased_loop(
-      ::std::chrono::milliseconds(5),
+      frc971::controls::kLoopFrequency,
       base_autonomous_actor_->event_loop()->monotonic_now(),
-      ::std::chrono::milliseconds(5) / 2);
+      ActorBase::kLoopOffset);
   while (true) {
     if (base_autonomous_actor_->ShouldCancel()) {
       return false;
@@ -541,9 +541,9 @@ bool BaseAutonomousActor::SplineHandle::IsPlanned() {
 
 bool BaseAutonomousActor::SplineHandle::WaitForPlan() {
   ::aos::time::PhasedLoop phased_loop(
-      ::std::chrono::milliseconds(5),
+      frc971::controls::kLoopFrequency,
       base_autonomous_actor_->event_loop()->monotonic_now(),
-      ::std::chrono::milliseconds(5) / 2);
+      ActorBase::kLoopOffset);
   while (true) {
     if (base_autonomous_actor_->ShouldCancel()) {
       return false;
@@ -591,9 +591,9 @@ bool BaseAutonomousActor::SplineHandle::IsDone() {
 
 bool BaseAutonomousActor::SplineHandle::WaitForDone() {
   ::aos::time::PhasedLoop phased_loop(
-      ::std::chrono::milliseconds(5),
+      frc971::controls::kLoopFrequency,
       base_autonomous_actor_->event_loop()->monotonic_now(),
-      ::std::chrono::milliseconds(5) / 2);
+      ActorBase::kLoopOffset);
   while (true) {
     if (base_autonomous_actor_->ShouldCancel()) {
       return false;

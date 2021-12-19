@@ -127,7 +127,8 @@ TEST(StateFeedbackLoopTest, UnequalSizes) {
       Eigen::Matrix<double, 7, 2>::Identity(),
       Eigen::Matrix<double, 7, 4>::Identity(),
       Eigen::Matrix<double, 4, 1>::Constant(1),
-      Eigen::Matrix<double, 4, 1>::Constant(-1), std::chrono::milliseconds(5));
+      Eigen::Matrix<double, 4, 1>::Constant(-1),
+      frc971::controls::kLoopFrequency);
 
   // Build a plant.
   ::std::vector<::std::unique_ptr<StateFeedbackPlantCoefficients<2, 4, 7>>>
@@ -166,7 +167,7 @@ TEST(StateFeedbackLoopTest, UnequalSizes) {
 // matches what was computed both in Python and in Matlab.
 TEST(StateFeedbackLoopTest, PythonMatch) {
   auto test_loop = MakeIntegralShooterLoop();
-  test_loop.Update(false, ::std::chrono::milliseconds(5));
+  test_loop.Update(false, frc971::controls::kLoopFrequency);
 
   Eigen::Matrix<double, 3, 3> A_discrete;
   A_discrete << 1, 0.00490008, 0.00547272, 0, 0.96029888, 2.17440921, 0, 0, 1;

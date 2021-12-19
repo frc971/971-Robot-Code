@@ -48,9 +48,8 @@ bool AutonomousActor::RunAction(
   AOS_LOG(INFO, "Done %f\n",
           ::aos::time::DurationInSeconds(monotonic_now() - start_time));
 
-  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
-                                      monotonic_now(),
-                                      ::std::chrono::milliseconds(5) / 2);
+  ::aos::time::PhasedLoop phased_loop(frc971::controls::kLoopFrequency,
+                                      monotonic_now(), ActorBase::kLoopOffset);
   while (!ShouldCancel()) {
     phased_loop.SleepUntilNext();
   }

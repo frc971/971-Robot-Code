@@ -293,7 +293,7 @@ class HybridKalman {
     X_hat_.setZero();
     P_ = coefficients().P_steady_state;
     UpdateQR(plant, coefficients().Q_continuous, coefficients().R_continuous,
-             ::std::chrono::milliseconds(5));
+             frc971::controls::kLoopFrequency);
   }
 
   void Predict(StateFeedbackHybridPlant<number_of_states, number_of_inputs,

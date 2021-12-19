@@ -102,7 +102,7 @@ TEST(DownEstimatorTest, UkfConstantRotation) {
   Eigen::Matrix<double, 3, 1> measurement;
   measurement.setZero();
   for (int ii = 0; ii < 200; ++ii) {
-    dtukf.Predict(ux * M_PI_2, measurement, std::chrono::milliseconds(5));
+    dtukf.Predict(ux * M_PI_2, measurement, frc971::controls::kLoopFrequency);
   }
   const Eigen::Quaterniond expected(Eigen::AngleAxis<double>(M_PI_2, ux));
   EXPECT_TRUE(QuaternionEqual(expected, dtukf.X_hat(), 0.01))
@@ -185,7 +185,8 @@ TEST(DownEstimatorTest, UkfAccelCorrectsBias) {
             (Eigen::Vector3d(0.0, 0.0, 1.0) - dtukf.H(dtukf.X_hat().coeffs()))
                 .norm());
   for (int ii = 0; ii < 200; ++ii) {
-    dtukf.Predict({0.0, 0.0, 0.0}, measurement, std::chrono::milliseconds(5));
+    dtukf.Predict({0.0, 0.0, 0.0}, measurement,
+                  frc971::controls::kLoopFrequency);
   }
   const Eigen::Quaterniond expected(Eigen::AngleAxis<double>(M_PI_2, ux));
   EXPECT_TRUE(QuaternionEqual(expected, dtukf.X_hat(), 0.01))
@@ -207,7 +208,7 @@ TEST(DownEstimatorTest, UkfIgnoreBadAccel) {
   measurement << 0.3, 1.0, 0.0;
   for (int ii = 0; ii < 200; ++ii) {
     dtukf.Predict({0.0, M_PI_2, 0.0}, measurement,
-                  std::chrono::milliseconds(5));
+                  frc971::controls::kLoopFrequency);
   }
   const Eigen::Quaterniond expected(Eigen::AngleAxis<double>(M_PI_2, uy));
   EXPECT_TRUE(QuaternionEqual(expected, dtukf.X_hat(), 1e-1))

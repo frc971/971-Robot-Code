@@ -123,9 +123,9 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
 
   bool WaitForArmTrajectoryOrDriveClose(double drive_threshold,
                                         double arm_threshold) {
-    ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+    ::aos::time::PhasedLoop phased_loop(frc971::controls::kLoopFrequency,
                                         event_loop()->monotonic_now(),
-                                        ::std::chrono::milliseconds(5) / 2);
+                                        ActorBase::kLoopOffset);
 
     constexpr double kPositionTolerance = 0.02;
     constexpr double kProfileTolerance = 0.001;
@@ -185,9 +185,9 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   }
 
   bool WaitForArmTrajectoryClose(double threshold) {
-    ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+    ::aos::time::PhasedLoop phased_loop(frc971::controls::kLoopFrequency,
                                         event_loop()->monotonic_now(),
-                                        ::std::chrono::milliseconds(5) / 2);
+                                        ActorBase::kLoopOffset);
     while (true) {
       if (ShouldCancel()) {
         return false;
@@ -207,9 +207,9 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   }
 
   bool WaitForBoxGrabed() {
-    ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+    ::aos::time::PhasedLoop phased_loop(frc971::controls::kLoopFrequency,
                                         event_loop()->monotonic_now(),
-                                        ::std::chrono::milliseconds(5) / 2);
+                                        ActorBase::kLoopOffset);
     while (true) {
       if (ShouldCancel()) {
         return false;

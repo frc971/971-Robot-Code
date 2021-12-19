@@ -214,7 +214,7 @@ class LocalizedDrivetrainTest : public frc971::testing::ControlLoopTest {
           CHECK_EQ(builder.Send(status_builder.Finish()),
                    aos::RawSender::Error::kOk);
         },
-        chrono::milliseconds(5));
+        frc971::controls::kLoopFrequency);
 
     test_event_loop_->OnRun([this]() { SetStartingPosition({3.0, 2.0, 0.0}); });
 

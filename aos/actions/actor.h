@@ -23,6 +23,10 @@ class ActorBase {
   typedef typename std::remove_reference<decltype(
       *static_cast<GoalType *>(nullptr)->params())>::type ParamType;
 
+  // Commonly used offset for autonomous phased loops
+  static constexpr monotonic_clock::duration kLoopOffset =
+      frc971::controls::kLoopFrequency / 2;
+
   ActorBase(::aos::EventLoop *event_loop, const ::std::string &name)
       : event_loop_(event_loop),
         status_sender_(event_loop->MakeSender<Status>(name)),
@@ -189,7 +193,7 @@ bool ActorBase<T>::WaitUntil(::std::function<bool(void)> done_condition,
                              ::aos::monotonic_clock::time_point end_time) {
   ::aos::time::PhasedLoop phased_loop(::frc971::controls::kLoopFrequency,
                                       event_loop_->monotonic_now(),
-                                      ::std::chrono::milliseconds(5) / 2);
+                                      kLoopOffset);
 
   while (!done_condition()) {
     if (ShouldCancel() || abort_) {

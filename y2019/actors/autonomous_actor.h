@@ -169,9 +169,9 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   }
 
   bool WaitForGamePiece() {
-    ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+    ::aos::time::PhasedLoop phased_loop(frc971::controls::kLoopFrequency,
                                         event_loop()->monotonic_now(),
-                                        ::std::chrono::milliseconds(5) / 2);
+                                        ActorBase::kLoopOffset);
 
     while (true) {
       if (ShouldCancel()) {
@@ -192,7 +192,7 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
         return false;
       }
       // TODO(james): Allow non-multiples of 5.
-      ::std::this_thread::sleep_for(::std::chrono::milliseconds(5));
+      ::std::this_thread::sleep_for(frc971::controls::kLoopFrequency);
     }
     return true;
   }
@@ -220,9 +220,9 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   }
 
   bool WaitForSuperstructureDone() {
-    ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+    ::aos::time::PhasedLoop phased_loop(frc971::controls::kLoopFrequency,
                                         event_loop()->monotonic_now(),
-                                        ::std::chrono::milliseconds(5) / 2);
+                                        ActorBase::kLoopOffset);
 
     while (true) {
       if (ShouldCancel()) {

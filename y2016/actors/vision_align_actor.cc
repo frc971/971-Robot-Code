@@ -34,9 +34,9 @@ bool VisionAlignActor::RunAction(
     const vision_align_action::VisionAlignActionParams * /*params*/) {
   const double robot_radius =
       control_loops::drivetrain::GetDrivetrainConfig().robot_radius;
-  ::aos::time::PhasedLoop phased_loop(::std::chrono::milliseconds(5),
+  ::aos::time::PhasedLoop phased_loop(frc971::controls::kLoopFrequency,
                                       event_loop()->monotonic_now(),
-                                      ::std::chrono::milliseconds(5) / 2);
+                                      ActorBase::kLoopOffset);
   while (true) {
     const int iterations = phased_loop.SleepUntilNext();
     if (iterations != 1) {
