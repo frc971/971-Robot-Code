@@ -30,7 +30,23 @@
         {
           "name": "logger",
           "priority": 2,
-          "time_to_live": 50000000
+          "time_to_live": 500000000
+        }
+      ]
+    },
+    {
+      "name": "/drivetrain",
+      "type": "frc971.control_loops.drivetrain.Position",
+      "source_node": "roborio",
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "logger"
+      ],
+      "destination_nodes": [
+        {
+          "name": "logger",
+          "priority": 2,
+          "time_to_live": 500000000
         }
       ]
     },
