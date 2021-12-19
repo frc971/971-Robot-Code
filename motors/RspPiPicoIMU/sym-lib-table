@@ -1,0 +1,5 @@
+(sym_lib_table
+  (lib (name RspPiPicoIMU)(type Legacy)(uri ${KIPRJMOD}/RspPiPicoIMU.lib)(options "")(descr ""))
+  (lib (name RspPiPicoIMU-rescue)(type Legacy)(uri ${KIPRJMOD}/RspPiPicoIMU-rescue.lib)(options "")(descr ""))
+  (lib (name PICO)(type Legacy)(uri ${KIPRJMOD}/PICO.lib)(options "")(descr ""))
+)

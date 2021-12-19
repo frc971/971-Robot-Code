@@ -1,0 +1,35 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP 4-PIN-VERT-MOLEX
+F https://www.mouser.com/datasheet/2/276/0022232041_PCB_HEADERS-526511.pdf
+$ENDCMP
+#
+$CMP ADM3490ARZ
+F https://www.analog.com/media/en/technical-documentation/data-sheets/ADM3483_3485_3488_3490_3491.pdf
+$ENDCMP
+#
+$CMP ADUM1280ARZ
+F https://www.analog.com/media/en/technical-documentation/data-sheets/ADuM1280_1281_1285_1286.pdf
+$ENDCMP
+#
+$CMP MC74AC125DG
+F https://www.onsemi.com/pdf/datasheet/mc74ac125-d.pdf
+$ENDCMP
+#
+$CMP SC0915-PI-Pico
+F https://datasheets.raspberrypi.com/pico/pico-datasheet.pdf
+$ENDCMP
+#
+$CMP SMA6J5.0A
+F https://www.bourns.com/docs/Product-Datasheets/SMA6J-Q.pdf
+$ENDCMP
+#
+$CMP SMDJ5.0A
+F https://www.littelfuse.com/~/media/electronics/datasheets/tvs_diodes/littelfuse_tvs_diode_smdj_datasheet.pdf.pdf
+$ENDCMP
+#
+$CMP SN74HC14DR
+F https://www.ti.com/lit/ds/symlink/sn74hc14.pdf?ts=1638729416007&ref_url=https%253A%252F%252Fwww.ti.com%252Fproduct%252FSN74HC14%253Futm_source%253Dsupplyframe%2526utm_medium%253DSEP%2526utm_campaign%253Dnot_alldatasheet%2526DCM%253Dyes%2526dclid%253DCJaqqtumzfQCFTscBgAdv3YIfQ
+$ENDCMP
+#
+#End Doc Library
