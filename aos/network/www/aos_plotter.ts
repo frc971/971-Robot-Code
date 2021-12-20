@@ -60,31 +60,50 @@ export class MessageHandler {
     this.messages.push(
         new TimestampedMessage(Table.getRootTable(new ByteBuffer(data)), time));
   }
-  private readField<T>(
-      message: Table, fieldName: string,
-      normalReader: (message: Table, name: string) => T | null,
-      vectorReader: (message: Table, name: string) => T[] | null): T[]|null {
-    // Typescript handles bindings in non-obvious ways that aren't caught well
-    // by the compiler.
-    normalReader = normalReader.bind(this.parser);
-    vectorReader = vectorReader.bind(this.parser);
+  private parseFieldName(rawName: string): [string, boolean, number|null] {
+    // If the fieldName includes an array index at the end, attempt to read a
+    // vector.
+    // The indices can either be in the form [X] for some index X, or be an
+    // empty [], which is a request to return all values.
     const regex = /(.*)\[([0-9]*)\]/;
-    const match = fieldName.match(regex);
+    const match = rawName.match(regex);
     if (match) {
       const name = match[1];
-      const vector = vectorReader(message, name);
-      if (vector === null) {
-        return null;
-      }
-      if (match[2] === "") {
-        return vector;
-      } else {
-        const index = parseInt(match[2]);
-        return (index < vector.length) ? [vector[index]] : null;
-      }
+      const requestFullVector = match[2] === '';
+      const requestedIndex = requestFullVector ? null : parseInt(match[2]);
+      return [name, true, requestedIndex];
+    } else {
+      return [rawName, false, null];
     }
-    const singleResult = normalReader(message, fieldName);
-    return singleResult ? [singleResult] : null;
+  }
+  private readField<T>(
+      typeIndex: number, fieldName: string,
+      normalReader: (typeIndex: number, name: string) => (t: Table) => T | null,
+      vectorReader: (typeIndex: number, name: string) => (t: Table) => T[] |
+          null): (t: Table) => T[] | null {
+    const [name, isVector, vectorIndex] = this.parseFieldName(fieldName);
+    if (isVector) {
+      const vectorLambda = vectorReader(typeIndex, name);
+      const requestFullVector = vectorIndex === null;
+      return (message: Table) => {
+        const vector = vectorLambda(message);
+        if (vector === null) {
+          return null;
+        }
+        if (requestFullVector) {
+          return vector;
+        } else {
+          return (vectorIndex < vector.length) ? [vector[vectorIndex]] : null;
+        }
+      };
+    }
+    const singleLambda = normalReader(typeIndex, fieldName);
+    return (message: Table) => {
+      // For single values, return as a 1-vector so that the type is
+      // consistent with that used for vectors.
+      const singleValue = singleLambda(message);
+      return (singleValue === null) ? null : [singleValue];
+    };
   }
   // Returns a time-series of every single instance of the given field. Format
   // of the return value is [time0, value0, time1, value1,... timeN, valueN],
@@ -94,17 +113,40 @@ export class MessageHandler {
   // If you want to retrieve a single signal from a vector, you can specify it
   // as "field_name[index]".
   getField(field: string[]): Point[] {
+    if (this.messages.length == 0) {
+      return [];
+    }
+    const rootType = this.messages[0].message.typeIndex;
     const fieldName = field[field.length - 1];
     const subMessage = field.slice(0, field.length - 1);
+
+    const lambdas = [];
+    let currentType = rootType;
+    for (const subMessageName of subMessage) {
+      lambdas.push(this.readField(
+          currentType, subMessageName,
+          (typeIndex: number, name: string) =>
+              this.parser.readTableLambda(typeIndex, name),
+          (typeIndex: number, name: string) =>
+              this.parser.readVectorOfTablesLambda(typeIndex, name)));
+      const [name, isVector, vectorIndex] = this.parseFieldName(subMessageName);
+      currentType =
+          this.parser.getField(name, currentType).type().index();
+    }
+    const fieldLambda = this.readField(
+        currentType, fieldName,
+        (typeIndex: number, name: string) =>
+            this.parser.readScalarLambda(typeIndex, name),
+        (typeIndex: number, name: string) =>
+            this.parser.readVectorOfScalarsLambda(typeIndex, name));
+
     const results = [];
     for (let ii = 0; ii < this.messages.length; ++ii) {
       let tables = [this.messages[ii].message];
-      for (const subMessageName of subMessage) {
+      for (const lambda of lambdas) {
         let nextTables = [];
         for (const table of tables) {
-          const nextTable = this.readField(
-              table, subMessageName, Parser.prototype.readTable,
-              Parser.prototype.readVectorOfTables);
+          const nextTable = lambda(table);
           if (nextTable === null) {
             continue;
           }
@@ -112,20 +154,21 @@ export class MessageHandler {
         }
         tables = nextTables;
       }
+
+      const values = [];
+      for (const table of tables) {
+        const value = fieldLambda(table);
+        if (value !== null) {
+          values.push(value);
+        }
+      }
       const time = this.messages[ii].time;
       if (tables.length === 0) {
         results.push(new Point(time, NaN));
       } else {
-        for (const table of tables) {
-          const values = this.readField(
-              table, fieldName, Parser.prototype.readScalar,
-              Parser.prototype.readVectorOfScalars);
-          if (values === null) {
-            results.push(new Point(time, NaN));
-          } else {
-            for (const value of values) {
-              results.push(new Point(time, (value === null) ? NaN : value));
-            }
+        for (const valueVector of values) {
+          for (const value of valueVector) {
+            results.push(new Point(time, (value === null) ? NaN : value));
           }
         }
       }

@@ -7,6 +7,7 @@ import {MessageHandler, TimestampedMessage} from 'org_frc971/aos/network/www/aos
 import {Point} from 'org_frc971/aos/network/www/plotter';
 import {Table} from 'org_frc971/aos/network/www/reflection';
 import {ByteBuffer} from 'org_frc971/external/com_github_google_flatbuffers/ts/byte-buffer';
+import {Long} from 'org_frc971/external/com_github_google_flatbuffers/ts/long';
 
 import Connection = proxy.Connection;
 import Schema = configuration.reflection.Schema;
@@ -19,7 +20,7 @@ class DerivativeMessageHandler extends MessageHandler {
   constructor(private readonly schema: Schema) {
     super(schema);
   }
-  private readScalar(table: Table, fieldName: string): number {
+  private readScalar(table: Table, fieldName: string): number|Long|null {
     return this.parser.readScalar(table, fieldName);
   }
 
