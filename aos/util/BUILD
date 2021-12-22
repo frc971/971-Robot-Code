@@ -35,33 +35,6 @@ py_library(
 )
 
 cc_library(
-    name = "run_command",
-    srcs = [
-        "run_command.cc",
-    ],
-    hdrs = [
-        "run_command.h",
-    ],
-    target_compatible_with = ["@platforms//os:linux"],
-    deps = [
-        "//aos/logging",
-    ],
-)
-
-cc_test(
-    name = "run_command_test",
-    srcs = [
-        "run_command_test.cc",
-    ],
-    target_compatible_with = ["@platforms//os:linux"],
-    deps = [
-        ":run_command",
-        "//aos/logging",
-        "//aos/testing:googletest",
-    ],
-)
-
-cc_library(
     name = "math",
     hdrs = ["math.h"],
     target_compatible_with = ["@platforms//os:linux"],
