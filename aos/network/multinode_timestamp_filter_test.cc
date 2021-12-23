@@ -361,30 +361,37 @@ TEST(TimestampProblemTest, SolveNewton) {
   TimestampProblem problem(2);
   problem.set_base_clock(0, ta);
   problem.set_base_clock(1, e);
-  problem.set_solution_node(0);
-  problem.add_filter(0, &a, 1);
-  problem.add_filter(1, &b, 0);
+  problem.add_clock_offset_filter(0, &a, 1);
+  problem.add_clock_offset_filter(1, &b, 0);
 
   problem.Debug();
 
   problem.set_base_clock(0, e + chrono::seconds(1));
   problem.set_base_clock(1, e);
 
-  problem.set_solution_node(0);
-  std::vector<BootTimestamp> result1 = problem.SolveNewton();
+  std::vector<BootTimestamp> points1(problem.size(), BootTimestamp::max_time());
+  points1[0] = e + chrono::seconds(1);
 
-  problem.set_base_clock(1, result1[1]);
-  problem.set_solution_node(1);
-  std::vector<BootTimestamp> result2 = problem.SolveNewton();
+  std::tuple<std::vector<BootTimestamp>, size_t> result1 =
+      problem.SolveNewton(points1);
+  EXPECT_EQ(std::get<1>(result1), 0u);
 
-  EXPECT_EQ(result1[0], e + chrono::seconds(1));
-  EXPECT_EQ(result1[0], result2[0]);
-  EXPECT_EQ(result1[1], result2[1]);
+  std::vector<BootTimestamp> points2(problem.size(), BootTimestamp::max_time());
+  points2[1] = std::get<0>(result1)[1];
+  std::tuple<std::vector<BootTimestamp>, size_t> result2 =
+      problem.SolveNewton(points2);
+  EXPECT_EQ(std::get<1>(result2), 1u);
+
+  EXPECT_EQ(std::get<0>(result1)[0], e + chrono::seconds(1));
+  EXPECT_EQ(std::get<0>(result1)[0], std::get<0>(result2)[0]);
+  EXPECT_EQ(std::get<0>(result1)[1], std::get<0>(result2)[1]);
 
   // Confirm that the error is almost equal for both directions.  The solution
   // is an integer solution, so there will be a little bit of error left over.
-  EXPECT_NEAR(a.OffsetError(result1[0], 0.0, result1[1], 0.0) -
-                  b.OffsetError(result1[1], 0.0, result1[0], 0.0),
+  EXPECT_NEAR(a.OffsetError(std::get<0>(result1)[0], 0.0,
+                            std::get<0>(result1)[1], 0.0) -
+                  b.OffsetError(std::get<0>(result1)[1], 0.0,
+                                std::get<0>(result1)[0], 0.0),
               0.0, 0.5);
 }
 
