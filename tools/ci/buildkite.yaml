@@ -8,6 +8,11 @@ env:
   ROBORIO_TARGETS: ${TARGETS} //y2020:download_stripped
 
 steps:
+  - label: "lint"
+    commands:
+      - tools/ci/clean-disk.sh
+      - tools/bazel ${STARTUP} --output_base=../lint_output_base run ${COMMON} --config=k8 //tools/lint:run-ci
+
   - label: "x86_64"
     commands:
       - tools/ci/clean-disk.sh
