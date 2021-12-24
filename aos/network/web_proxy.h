@@ -111,8 +111,17 @@ class Subscriber {
  private:
   struct ChannelInformation {
     TransferMethod transfer_method;
+    // Queue index (same as the queue index within the AOS channel) of the
+    // message that we are currently sending or, if we are between messages,
+    // the next message we will send.
     uint32_t current_queue_index = 0;
+    // Index of the next packet to send within current_queue_index (large
+    // messages are broken into multiple packets, as we have encountered
+    // issues with how some WebRTC implementations handle large packets).
     size_t next_packet_number = 0;
+    // The last queue/packet index reported by the client.
+    uint32_t reported_queue_index = 0;
+    size_t reported_packet_index = 0;
   };
   struct Message {
     uint32_t index = 0xffffffff;
@@ -126,7 +135,21 @@ class Subscriber {
   int channel_index_;
   int buffer_size_;
   std::deque<Message> message_buffer_;
-  std::map<std::shared_ptr<ScopedDataChannel>, ChannelInformation> channels_;
+  // The ScopedDataChannel that we use for actually sending data over WebRTC
+  // is stored using a weak_ptr because:
+  // (a) There are some dangers of accidentally creating circular dependencies
+  //     that prevent a ScopedDataChannel from ever being destroyed.
+  // (b) The inter-dependencies involved are complicated enough that we want
+  //     to be able to check whether someone has destroyed the ScopedDataChannel
+  //     before using it (if it has been destroyed and the Subscriber still
+  //     wants to use it, that is a bug, but checking for bugs is useful).
+  // This particular location *may* be able to get away with a shared_ptr, but
+  // because the ScopedDataChannel effectively destroys itself (see
+  // ScopedDataChannel::StaticDataChannelCloseHandler) while also potentially
+  // holding references to other objects (e.g., through the various handlers
+  // that can be registered), creating unnecessary shared_ptr's is dubious.
+  std::vector<std::pair<std::weak_ptr<ScopedDataChannel>, ChannelInformation>>
+      channels_;
 };
 
 // Class to manage a WebRTC connection to a browser.

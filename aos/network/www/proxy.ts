@@ -15,6 +15,7 @@ import SdpType = web_proxy.aos.web_proxy.SdpType;
 import SubscriberRequest = web_proxy.aos.web_proxy.SubscriberRequest;
 import ChannelRequestFb = web_proxy.aos.web_proxy.ChannelRequest;
 import TransferMethod = web_proxy.aos.web_proxy.TransferMethod;
+import ChannelState = web_proxy.aos.web_proxy.ChannelState;
 
 // There is one handler for each DataChannel, it maintains the state of
 // multi-part messages and delegates to a callback when the message is fully
@@ -34,6 +35,16 @@ export class Handler {
     const messageHeader = MessageHeader.getRootAsMessageHeader(
         fbBuffer as unknown as flatbuffers.ByteBuffer);
     const time = messageHeader.monotonicSentTime().toFloat64() * 1e-9;
+
+    const stateBuilder = new Builder(512) as unknown as flatbuffers.Builder;
+    ChannelState.startChannelState(stateBuilder);
+    ChannelState.addQueueIndex(stateBuilder, messageHeader.queueIndex());
+    ChannelState.addPacketIndex(stateBuilder, messageHeader.packetIndex());
+    const state = ChannelState.endChannelState(stateBuilder);
+    stateBuilder.finish(state);
+    const stateArray = stateBuilder.asUint8Array();
+    this.channel.send(stateArray);
+
     // Short circuit if only one packet
     if (messageHeader.packetCount() === 1) {
       this.handlerFunc(messageHeader.dataArray(), time);

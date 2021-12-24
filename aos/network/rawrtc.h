@@ -44,7 +44,7 @@ namespace web_proxy {
 //    on_close callback and shuts down the channel.
 class ScopedDataChannel {
  public:
-  ScopedDataChannel();
+  static std::shared_ptr<ScopedDataChannel> MakeDataChannel();
   ScopedDataChannel(const ScopedDataChannel &) = delete;
   ScopedDataChannel &operator=(const ScopedDataChannel &) = delete;
 
@@ -90,6 +90,7 @@ class ScopedDataChannel {
   uint64_t buffered_amount();
 
  private:
+  ScopedDataChannel();
   // Trampolines from C -> C++.
   static void StaticDataChannelOpenHandler(void *const arg);
   static void StaticBufferedAmountLowHandler(void *const arg);

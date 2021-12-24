@@ -72,6 +72,16 @@ table ChannelRequest {
   method:TransferMethod (id: 1);
 }
 
+// This is used to communicate the most recently received message by the client.
+// This allows the server to avoid overloading the client (which we've had
+// issues with in the past).
+table ChannelState {
+  // queue_index and packet_index correspond to the similarly named fields in
+  // MessageHeader.
+  queue_index:uint (id: 0);
+  packet_index:uint (id: 1);
+}
+
 table SubscriberRequest {
   // The channels that we want transfered to this client.
   channels_to_transfer:[ChannelRequest] (id: 0);

@@ -27,6 +27,12 @@ enum {
 
 ScopedDataChannel::ScopedDataChannel() {}
 
+std::shared_ptr<ScopedDataChannel> ScopedDataChannel::MakeDataChannel() {
+  std::shared_ptr<ScopedDataChannel> channel(new ScopedDataChannel());
+  channel->self_ = channel;
+  return channel;
+}
+
 void ScopedDataChannel::Open(struct rawrtc_peer_connection *connection,
                              const std::string &label) {
   label_ = label;
@@ -89,7 +95,7 @@ void ScopedDataChannel::Open(struct rawrtc_data_channel *const channel) {
 
 ScopedDataChannel::~ScopedDataChannel() {
   CHECK(opened_);
-  CHECK(closed_);
+  CHECK(closed_) << ": Never closed " << label();
   CHECK(data_channel_ == nullptr)
       << ": Destroying open data channel " << this << ".";
 }
@@ -129,6 +135,7 @@ void ScopedDataChannel::StaticDataChannelCloseHandler(void *const arg) {
     on_close();
   }
   mem_deref(data_channel);
+  client->self_.reset();
 }
 
 void ScopedDataChannel::StaticDataChannelMessageHandler(
@@ -285,7 +292,7 @@ void RawRTCConnection::StaticDataChannelHandler(
   RawRTCConnection *const client = reinterpret_cast<RawRTCConnection *>(arg);
   if (client->on_data_channel_) {
     std::shared_ptr<ScopedDataChannel> new_channel =
-        std::make_shared<ScopedDataChannel>();
+        ScopedDataChannel::MakeDataChannel();
     new_channel->Open(channel);
     client->on_data_channel_(std::move(new_channel));
   }
