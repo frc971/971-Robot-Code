@@ -165,14 +165,54 @@
       "type": "aos.starter.Status",
       "source_node": "logger",
       "frequency": 50,
-      "num_senders": 20
+      "num_senders": 20,
+      "destination_nodes": [
+        {
+          "name": "roborio",
+          "priority": 5,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "logger"
+          ],
+          "time_to_live": 5000000
+        }
+      ]
+    },
+    {
+      "name": "/logger/aos/remote_timestamps/roborio/logger/aos/aos-starter-Status",
+      "type": "aos.message_bridge.RemoteMessage",
+      "source_node": "logger",
+      "logger": "NOT_LOGGED",
+      "frequency": 20,
+      "num_senders": 2,
+      "max_size": 200
     },
     {
       "name": "/logger/aos",
       "type": "aos.starter.StarterRpc",
       "source_node": "logger",
       "frequency": 10,
-      "num_senders": 2
+      "num_senders": 2,
+      "destination_nodes": [
+        {
+          "name": "roborio",
+          "priority": 5,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "logger"
+          ],
+          "time_to_live": 5000000
+        }
+      ]
+    },
+    {
+      "name": "/logger/aos/remote_timestamps/roborio/logger/aos/aos-starter-StarterRpc",
+      "type": "aos.message_bridge.RemoteMessage",
+      "source_node": "logger",
+      "logger": "NOT_LOGGED",
+      "frequency": 20,
+      "num_senders": 2,
+      "max_size": 200
     },
     {
       "name": "/logger/aos",
