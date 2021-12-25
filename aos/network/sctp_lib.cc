@@ -15,6 +15,7 @@
 
 DEFINE_string(interface, "", "network interface");
 DEFINE_bool(disable_ipv6, false, "disable ipv6");
+DEFINE_int32(rmem, 0, "If nonzero, set rmem to this size.");
 
 namespace aos {
 namespace message_bridge {
@@ -500,6 +501,10 @@ void SctpReadWrite::DoSetMaxSize() {
   // The SO_RCVBUF option (also controlled by net.core.rmem_default) needs to be
   // decently large but the actual size can be measured by tuning.  The defaults
   // should be fine.  If it isn't big enough, transmission will fail.
+  if (FLAGS_rmem > 0) {
+    size_t rmem = FLAGS_rmem;
+    PCHECK(setsockopt(fd(), SOL_SOCKET, SO_RCVBUF, &rmem, sizeof(rmem)) == 0);
+  }
 }
 
 bool SctpReadWrite::ProcessNotification(const Message *message) {

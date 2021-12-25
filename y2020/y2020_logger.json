@@ -508,6 +508,7 @@
     {
       "name": "message_bridge_client",
       "executable_name": "message_bridge_client",
+      "args": ["--rmem=8388608"],
       "nodes": [
         "logger"
       ]
