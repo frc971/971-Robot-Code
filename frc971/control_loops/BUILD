@@ -99,7 +99,9 @@ cc_test(
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
+        ":jacobian",
         ":quaternion_utils",
+        ":runge_kutta",
         "//aos/testing:googletest",
         "//aos/testing:random_seed",
         "@com_github_google_glog//:glog",

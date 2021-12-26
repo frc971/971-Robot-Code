@@ -194,11 +194,13 @@ cc_binary(
         "//aos:init",
         "//aos/events:shm_event_loop",
         "//aos/events/logging:log_reader",
+        "//frc971/analysis:in_process_plotter",
         "//frc971/control_loops/drivetrain:improved_down_estimator",
         "//frc971/wpilib:imu_batch_fbs",
         "//frc971/wpilib:imu_fbs",
         "//third_party:opencv",
         "@com_google_absl//absl/strings:str_format",
+        "@com_google_ceres_solver//:ceres",
         "@org_tuxfamily_eigen//:eigen",
     ],
 )
