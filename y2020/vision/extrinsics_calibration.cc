@@ -22,6 +22,7 @@
 
 DEFINE_string(config, "config.json", "Path to the config file to use.");
 DEFINE_string(pi, "pi-7971-2", "Pi name to calibrate.");
+DEFINE_bool(plot, false, "Whether to plot the resulting data.");
 
 namespace frc971 {
 namespace vision {
@@ -632,10 +633,11 @@ void Main(int argc, char **argv) {
                                         4, 3, 1, 3>(
             new CostFunctor(&data), data.camera_samples_size() * 6);
     problem.AddResidualBlock(
-        cost_function, nullptr, initial_orientation.coeffs().data(),
-        imu_to_camera.coeffs().data(), gyro_bias.data(), initial_state.data(),
-        board_to_world.coeffs().data(), imu_to_camera_translation.data(),
-        &gravity_scalar, accelerometer_bias.data());
+        cost_function, new ceres::HuberLoss(1.0),
+        initial_orientation.coeffs().data(), imu_to_camera.coeffs().data(),
+        gyro_bias.data(), initial_state.data(), board_to_world.coeffs().data(),
+        imu_to_camera_translation.data(), &gravity_scalar,
+        accelerometer_bias.data());
     problem.SetParameterization(initial_orientation.coeffs().data(),
                                 quaternion_local_parameterization);
     problem.SetParameterization(imu_to_camera.coeffs().data(),
@@ -697,7 +699,9 @@ void Main(int argc, char **argv) {
                       initial_state, board_to_world, imu_to_camera_translation,
                       gravity_scalar, accelerometer_bias);
     data.ReviewData(&filter);
-    filter.Plot();
+    if (FLAGS_plot) {
+      filter.Plot();
+    }
   }
 }
 
