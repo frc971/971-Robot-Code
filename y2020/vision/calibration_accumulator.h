@@ -13,11 +13,17 @@
 namespace frc971 {
 namespace vision {
 
+// This class provides an interface for an application to be notified of all
+// camera and IMU samples in order with the correct timestamps.
 class CalibrationDataObserver {
  public:
+  // Observes a camera sample at the corresponding time t, and with the
+  // corresponding rotation and translation vectors rt.
   virtual void UpdateCamera(aos::distributed_clock::time_point t,
                             std::pair<Eigen::Vector3d, Eigen::Vector3d> rt) = 0;
 
+  // Observes an IMU sample at the corresponding time t, and with the
+  // corresponding angular velocity and linear acceleration vectors wa.
   virtual void UpdateIMU(aos::distributed_clock::time_point t,
                          std::pair<Eigen::Vector3d, Eigen::Vector3d> wa) = 0;
 };
