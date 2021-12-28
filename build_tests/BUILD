@@ -220,3 +220,15 @@ rust_test(
     rustc_flags = ["-Crelocation-model=static"],
     target_compatible_with = ["//tools/platforms/rust:has_support"],
 )
+
+py_test(
+    name = "upstream_python_test",
+    srcs = [
+        "upstream_python_test.py",
+    ],
+    deps = [
+        "@pip//matplotlib",
+        "@pip//numpy",
+        "@pip//scipy",
+    ],
+)

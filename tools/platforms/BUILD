@@ -11,6 +11,18 @@ platform(
     ],
 )
 
+# TODO(phil): Delete this platform after migrating everything to use upstream
+# pip rules.
+platform(
+    name = "linux_x86_upstream_python",
+    constraint_values = [
+        "//tools/platforms/python:upstream_bundled_python",
+    ],
+    parents = [
+        ":linux_x86",
+    ],
+)
+
 platform(
     name = "linux_armv7",
     constraint_values = [

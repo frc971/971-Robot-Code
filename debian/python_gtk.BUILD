@@ -163,6 +163,9 @@ py_library(
         "usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders",
     ],
     imports = ["usr/lib/python3/dist-packages"],
-    target_compatible_with = ["@platforms//cpu:x86_64"],
+    target_compatible_with = [
+        "@platforms//cpu:x86_64",
+        "@//tools/platforms/python:debian_bundled_python",
+    ],
     visibility = ["//visibility:public"],
 )
