@@ -1,8 +1,8 @@
-# TODO(austin): I bet this is wrong.
-licenses(["restricted"])
-
 load("@//tools/build_rules:fortran.bzl", "f2c_library")
 load("@//tools/build_rules:select.bzl", "compiler_select")
+
+# TODO(austin): I bet this is wrong.
+licenses(["restricted"])
 
 f2c_library(
     name = "slicot",

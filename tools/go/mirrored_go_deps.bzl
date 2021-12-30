@@ -30,7 +30,6 @@ def maybe_override_go_dep(name, importpath, sum, version):
             version = version,
         )
 
-
 def mirrored_go_dependencies():
     """Sets up the Go dependencies we've mirrored."""
     for name in GO_MIRROR_INFO:

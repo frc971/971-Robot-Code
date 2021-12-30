@@ -1,6 +1,6 @@
-package(default_visibility = ["//visibility:public"])
-
 load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library")
+
+package(default_visibility = ["//visibility:public"])
 
 cc_library(
     name = "image_types",

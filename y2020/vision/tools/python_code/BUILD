@@ -1,6 +1,3 @@
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_py_library")
-load("//tools:platforms.bzl", "platforms")
-
 py_library(
     name = "train_and_match",
     srcs = ["train_and_match.py"],

@@ -1,6 +1,6 @@
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 load("//aos:config.bzl", "aos_config")
-load("//tools/build_rules:select.bzl", "compiler_select", "cpu_select")
+load("//tools/build_rules:select.bzl", "cpu_select")
 
 genrule(
     name = "genrule_drivetrain",

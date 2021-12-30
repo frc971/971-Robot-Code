@@ -1,4 +1,4 @@
-load("//tools/build_rules:gtk_dependent.bzl", "gtk_dependent_cc_binary", "gtk_dependent_cc_library")
+load("//tools/build_rules:gtk_dependent.bzl", "gtk_dependent_cc_binary")
 
 gtk_dependent_cc_binary(
     name = "jpeg_vision_test",

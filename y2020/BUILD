@@ -1,6 +1,5 @@
 load("//frc971:downloader.bzl", "robot_downloader")
 load("//aos:config.bzl", "aos_config")
-load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library")
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 load("//tools/build_rules:template.bzl", "jinja2_template")
 
@@ -285,8 +284,6 @@ sh_binary(
     ],
     target_compatible_with = ["@platforms//os:linux"],
 )
-
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 
 flatbuffer_cc_library(
     name = "setpoint_fbs",

@@ -16,7 +16,10 @@ import tarfile
 from typing import List, Dict
 import urllib.request
 
-import tools.go.mirror_lib
+from bazel_tools.tools.python.runfiles import runfiles
+
+# Need a fully qualified import here because @bazel_tools interferes.
+import org_frc971.tools.go.mirror_lib
 
 GO_DEPS_WWWW_DIR = "/var/www/html/files/frc971/Build-Dependencies/go_deps"
 
@@ -111,7 +114,7 @@ def main(argv):
 
     os.chdir(os.environ["BUILD_WORKSPACE_DIRECTORY"])
 
-    repos = tools.go.mirror_lib.parse_go_repositories(args.go_deps_bzl)
+    repos = org_frc971.tools.go.mirror_lib.parse_go_repositories(args.go_deps_bzl)
 
     if args.ssh_host:
         existing_mirrored_repos = get_existing_mirrored_repos(args.ssh_host)
@@ -136,8 +139,19 @@ def main(argv):
     with open(args.go_mirrors_bzl, "w") as file:
         file.write("# This file is auto-generated. Do not edit.\n")
         file.write("GO_MIRROR_INFO = ")
-        json.dump(cached_info, file, indent=2, sort_keys=True)
+        # Format as JSON first. It's parsable as Starlark.
+        json.dump(cached_info, file, indent=4, sort_keys=True)
         file.write("\n")
+
+
+    # Properly format the file now so that the linter doesn't complain.
+    r = runfiles.Create()
+    subprocess.run(
+        [
+            r.Rlocation("com_github_bazelbuild_buildtools/buildifier/buildifier_/buildifier"),
+            args.go_mirrors_bzl,
+        ],
+        check=True)
 
 
 if __name__ == "__main__":

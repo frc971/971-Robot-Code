@@ -1,7 +1,7 @@
-licenses(["notice"])
-
 load("@//tools/build_rules:fortran.bzl", "f2c_copts")
 load("@//tools/build_rules:select.bzl", "compiler_select")
+
+licenses(["notice"])
 
 genrule(
     name = "create_sysdep1",

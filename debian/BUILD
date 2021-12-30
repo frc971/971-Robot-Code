@@ -1,5 +1,3 @@
-package(default_visibility = ["//visibility:public"])
-
 load(
     "//debian:python.bzl",
     python_debs = "files",
@@ -77,6 +75,8 @@ load(
     lzma_arm64_debs = "files",
 )
 load(":packages.bzl", "download_packages", "generate_deb_tarball")
+
+package(default_visibility = ["//visibility:public"])
 
 filegroup(
     name = "matplotlib_patches",

@@ -5,9 +5,9 @@ py_library(
         include = ["**/*"],
         exclude = ["**/*.py"],
     ),
+    imports = ["."],
+    visibility = ["//visibility:public"],
     deps = [
         "@python_repo//:numpy",
     ],
-    imports = ["."],
-    visibility = ["//visibility:public"],
 )

@@ -50,6 +50,10 @@ tweak_gazelle_go_deps() {
     "${tweaker}" ./go_deps.bzl
 }
 
+buildifier() {
+    ./tools/lint/buildifier
+}
+
 git_status_is_clean() {
     cd "${BUILD_WORKSPACE_DIRECTORY}"
     if ! git diff --quiet; then
@@ -65,6 +69,7 @@ readonly -a LINTERS=(
     update_repos
     gazelle
     tweak_gazelle_go_deps
+    buildifier
     git_status_is_clean  # This must the last linter.
 )
 

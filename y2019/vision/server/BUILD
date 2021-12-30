@@ -2,7 +2,6 @@ load("//aos/seasocks:gen_embedded.bzl", "gen_embedded")
 load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library")
 load("//frc971/downloader:downloader.bzl", "aos_downloader_dir")
 load("@npm_bazel_typescript//:defs.bzl", "ts_library")
-load("@build_bazel_rules_nodejs//:defs.bzl", "rollup_bundle")
 
 ts_library(
     name = "demo",

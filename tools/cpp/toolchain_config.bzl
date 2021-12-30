@@ -1,17 +1,11 @@
 load(
     "@bazel_tools//tools/cpp:cc_toolchain_config_lib.bzl",
     "action_config",
-    "artifact_name_pattern",
-    "env_entry",
-    "env_set",
     "feature",
-    "feature_set",
     "flag_group",
     "flag_set",
-    "make_variable",
     "tool",
     "tool_path",
-    "variable_with_value",
     "with_feature_set",
 )
 load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "ACTION_NAMES")

@@ -1,10 +1,9 @@
-package(default_visibility = ["//visibility:public"])
-
 load("@npm_bazel_typescript//:defs.bzl", "ts_library")
-load("@com_google_protobuf//:protobuf.bzl", "py_proto_library")
-load("@build_bazel_rules_nodejs//:defs.bzl", "nodejs_binary", "rollup_bundle")
+load("@build_bazel_rules_nodejs//:defs.bzl", "rollup_bundle")
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_ts_library")
 load("//aos:config.bzl", "aos_config")
+
+package(default_visibility = ["//visibility:public"])
 
 cc_binary(
     name = "py_log_reader.so",

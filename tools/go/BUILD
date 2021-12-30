@@ -1,3 +1,6 @@
+load("@bazel_skylib//rules:write_file.bzl", "write_file")
+load("@io_bazel_rules_go//go:def.bzl", "go_sdk", "go_toolchain")
+
 py_library(
     name = "mirror_lib",
     srcs = [
@@ -22,10 +25,13 @@ py_binary(
         "mirror_go_repos.py",
     ],
     data = [
+        "@com_github_bazelbuild_buildtools//buildifier",
         "@go_sdk//:bin/go",
     ],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":mirror_lib",
+        "@bazel_tools//tools/python/runfiles",
     ],
 )
 
@@ -35,9 +41,6 @@ py_binary(
 #
 # For platforms that do support Go, we use go_register_toolchain() in
 # WORKSPACE.
-
-load("@bazel_skylib//rules:write_file.bzl", "write_file")
-load("@io_bazel_rules_go//go:def.bzl", "go_sdk", "go_toolchain")
 
 write_file(
     name = "noop_error_exit",

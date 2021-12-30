@@ -1,6 +1,6 @@
 workspace(name = "org_frc971")
 
-load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository", "new_git_repository")
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "new_git_repository")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive", "http_file")
 load(
     "//debian:python.bzl",
@@ -913,3 +913,12 @@ mirrored_go_dependencies()
 go_dependencies()
 
 gazelle_dependencies()
+
+http_archive(
+    name = "com_github_bazelbuild_buildtools",
+    sha256 = "44a6e5acc007e197d45ac3326e7f993f0160af9a58e8777ca7701e00501c0857",
+    strip_prefix = "buildtools-4.2.4",
+    urls = [
+        "https://github.com/bazelbuild/buildtools/archive/refs/tags/4.2.4.tar.gz",
+    ],
+)

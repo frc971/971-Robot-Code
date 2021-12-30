@@ -60,21 +60,24 @@ py_library(
     srcs = glob([
         "usr/lib/python3/dist-packages/scipy/**/*.py",
     ]),
-    data = glob([
-        "usr/lib/python3/dist-packages/scipy/**/*",
-    ], exclude = [
-        "usr/lib/python3/dist-packages/scipy/**/*.py",
-    ]),
-    deps = [
-        ":numpy",
-    ],
-    visibility = ["//visibility:public"],
+    data = glob(
+        [
+            "usr/lib/python3/dist-packages/scipy/**/*",
+        ],
+        exclude = [
+            "usr/lib/python3/dist-packages/scipy/**/*.py",
+        ],
+    ),
     imports = [
         "usr/lib/python3/dist-packages",
     ],
     target_compatible_with = [
         "@platforms//os:linux",
         "@platforms//cpu:x86_64",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":numpy",
     ],
 )
 
@@ -83,12 +86,14 @@ py_library(
     srcs = glob([
         "usr/lib/python3/dist-packages/numpy/**/*.py",
     ]),
-    data = glob([
-        "usr/lib/python3/dist-packages/numpy/**/*",
-    ], exclude = [
-        "usr/lib/python3/dist-packages/numpy/**/*.py",
-    ]),
-    visibility = ["//visibility:public"],
+    data = glob(
+        [
+            "usr/lib/python3/dist-packages/numpy/**/*",
+        ],
+        exclude = [
+            "usr/lib/python3/dist-packages/numpy/**/*.py",
+        ],
+    ),
     imports = [
         "usr/lib/python3/dist-packages",
     ],
@@ -96,4 +101,5 @@ py_library(
         "@platforms//os:linux",
         "@platforms//cpu:x86_64",
     ],
+    visibility = ["//visibility:public"],
 )

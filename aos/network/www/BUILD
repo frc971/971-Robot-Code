@@ -1,5 +1,5 @@
 load("@npm_bazel_typescript//:defs.bzl", "ts_library")
-load("@build_bazel_rules_nodejs//:defs.bzl", "nodejs_binary", "rollup_bundle")
+load("@build_bazel_rules_nodejs//:defs.bzl", "rollup_bundle")
 load("//aos:config.bzl", "aos_config")
 
 filegroup(

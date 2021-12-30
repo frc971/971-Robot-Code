@@ -12,11 +12,24 @@ sh_binary(
 )
 
 sh_binary(
+    name = "buildifier",
+    srcs = ["buildifier.sh"],
+    data = [
+        "@com_github_bazelbuild_buildtools//buildifier",
+    ],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
+    deps = [
+        "@bazel_tools//tools/bash/runfiles",
+    ],
+)
+
+sh_binary(
     name = "run-ci",
     srcs = [
         "run-ci.sh",
     ],
     data = [
+        ":buildifier",
         ":gofmt",
         "//:gazelle-runner",
         "//tools/go:tweak_gazelle_go_deps",
@@ -28,6 +41,7 @@ sh_binary(
         #   /var/lib/buildkite-agent/.cache/go-build: permission denied
         "RUNNING_IN_CI": "1" if RUNNING_IN_CI else "0",
     },
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         "@bazel_tools//tools/bash/runfiles",
     ],
