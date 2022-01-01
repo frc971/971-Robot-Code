@@ -454,7 +454,7 @@ Polygon TargetFinder::FindPolygon(::std::vector<::Eigen::Vector2f> &&contour,
     // direction vector.
     ::Eigen::Vector2f smallest_point = polygon.contour[0];
     float smallest_value = outer_edge_vector.transpose() * smallest_point;
-    for (const ::Eigen::Vector2f point : polygon.contour) {
+    for (const ::Eigen::Vector2f &point : polygon.contour) {
       const float current_value = outer_edge_vector.transpose() * point;
       if (current_value < smallest_value) {
         smallest_value = current_value;
