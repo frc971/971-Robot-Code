@@ -2,6 +2,8 @@
 
 #include <string.h>
 
+#include <algorithm>
+
 namespace frc971 {
 namespace teensy {
 
