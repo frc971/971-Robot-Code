@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <fstream>
+#include <random>
 #include <sstream>
 #include <utility>
 
@@ -91,7 +92,9 @@ ShooterTuningActor::ShooterTuningActor(aos::EventLoop *event_loop)
   }
   // Randomize the ordering of the velocities
   std::srand(std::time(nullptr));
-  std::random_shuffle(velocities_.begin(), velocities_.end());
+  std::random_device random_device;
+  std::mt19937 generator(random_device());
+  std::shuffle(velocities_.begin(), velocities_.end(), generator);
 }
 
 bool ShooterTuningActor::RunAction(
