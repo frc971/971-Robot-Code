@@ -1,5 +1,4 @@
 #include <csignal>
-#include <experimental/filesystem>
 #include <future>
 #include <thread>
 
@@ -8,6 +7,7 @@
 #include "aos/network/team_number.h"
 #include "aos/testing/path.h"
 #include "aos/testing/tmpdir.h"
+#include "aos/util/file.h"
 #include "gtest/gtest.h"
 #include "starter_rpc_lib.h"
 #include "starterd_lib.h"
@@ -23,7 +23,7 @@ class StarterdTest : public ::testing::Test {
     FLAGS_shm_base = shm_dir_;
 
     // Nuke the shm dir:
-    std::experimental::filesystem::remove_all(shm_dir_);
+    aos::util::UnlinkRecursive(shm_dir_);
   }
 
  protected:
