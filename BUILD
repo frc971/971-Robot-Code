@@ -1,6 +1,9 @@
 load("@bazel_gazelle//:def.bzl", "gazelle")
 
-exports_files(["tsconfig.json"])
+exports_files([
+    "tsconfig.json",
+    "rollup.config.js",
+])
 
 # gazelle:prefix github.com/frc971/971-Robot-Code
 # gazelle:build_file_name BUILD

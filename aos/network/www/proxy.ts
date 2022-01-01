@@ -243,7 +243,7 @@ export class Connection {
     this.webSocketConnection.send(array.buffer.slice(array.byteOffset));
   }
 
-  onIceCandidateError(e: RTCPeerConnectionIceErrorEvent): void {
+  onIceCandidateError(e: Event): void {
     console.warn(e);
   }
 

@@ -51,7 +51,8 @@ class Visualiser {
     const socket = new WebSocket(`ws://${server}/ws`);
 
     socket.addEventListener('message', (event) => {
-      const j = JSON.parse(event.data);
+      // data is a proto which we don't currently have TS support for.
+      const j = JSON.parse(event.data) as any;
       this.x = j.robotPose.x;
       this.y = j.robotPose.y;
       this.theta = j.robotPose.theta;

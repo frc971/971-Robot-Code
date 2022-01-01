@@ -2,7 +2,7 @@ load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library",
 load("//aos:config.bzl", "aos_config")
 load("//tools/build_rules:select.bzl", "cpu_select")
 load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
-load("@npm_bazel_typescript//:defs.bzl", "ts_library")
+load("@npm//@bazel/typescript:index.bzl", "ts_library")
 
 package(default_visibility = ["//visibility:public"])
 

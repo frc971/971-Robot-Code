@@ -2,10 +2,13 @@
   "name": "971-Robot-Code",
   "license": "MIT",
   "devDependencies": {
-    "@bazel/bazel": "^0.29.0",
     "@types/flatbuffers": "latest",
-    "@bazel/ibazel": "^0.10.3",
-    "@bazel/typescript": "^0.37.0",
-    "typescript": "^3.1.6"
+    "@bazel/typescript": "latest",
+    "@bazel/rollup": "latest",
+    "@bazel/terser": "latest",
+    "@rollup/plugin-node-resolve": "latest",
+    "typescript": "latest",
+    "rollup": "latest",
+    "terser": "latest"
   }
 }

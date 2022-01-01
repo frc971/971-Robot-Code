@@ -1,4 +1,4 @@
-load("@npm_bazel_typescript//:defs.bzl", "ts_library")
+load("@npm//@bazel/typescript:index.bzl", "ts_library")
 
 ts_library(
     name = "flatbuffers_ts",

@@ -1,5 +1,5 @@
-load("@npm_bazel_typescript//:defs.bzl", "ts_library")
-load("@build_bazel_rules_nodejs//:defs.bzl", "rollup_bundle")
+load("@npm//@bazel/typescript:index.bzl", "ts_library")
+load("//tools/build_rules:js.bzl", "rollup_bundle")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -35,7 +35,6 @@ genrule(
 
 rollup_bundle(
     name = "visualizer_bundle",
-    enable_code_splitting = False,
     entry_point = "main.ts",
     target_compatible_with = ["@platforms//os:linux"],
     deps = [

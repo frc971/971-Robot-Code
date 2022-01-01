@@ -1,5 +1,5 @@
-load("@npm_bazel_typescript//:defs.bzl", "ts_library")
-load("@build_bazel_rules_nodejs//:defs.bzl", "rollup_bundle")
+load("@npm//@bazel/typescript:index.bzl", "ts_library")
+load("//tools/build_rules:js.bzl", "rollup_bundle")
 load("//aos:config.bzl", "aos_config")
 
 filegroup(
@@ -43,7 +43,6 @@ ts_library(
 
 rollup_bundle(
     name = "main_bundle",
-    enable_code_splitting = False,
     entry_point = "main.ts",
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//aos:__subpackages__"],
@@ -165,7 +164,6 @@ aos_config(
 
 rollup_bundle(
     name = "reflection_test_bundle",
-    enable_code_splitting = False,
     entry_point = "reflection_test_main.ts",
     target_compatible_with = ["@platforms//os:linux"],
     deps = [

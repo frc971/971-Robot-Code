@@ -4,7 +4,8 @@
     "strict": false,
     "noImplicitAny": false,
     "target": "es6",
-    "lib": ["es6", "dom", "dom.iterable"]
+    "lib": ["es6", "dom", "dom.iterable"],
+    "moduleResolution": "node"
   },
   "bazelOptions": {
     "workspaceName": "971-Robot-Code"

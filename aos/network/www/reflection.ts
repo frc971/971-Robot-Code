@@ -236,7 +236,7 @@ export class Parser {
   }
 
   // Returns the Object definition associated with the given type index.
-  getType(typeIndex: number): reflection.Object {
+  getType(typeIndex: number): reflection.ObjectGenerated {
     if (typeIndex === -1) {
       return this.schema.rootTable();
     }
@@ -249,7 +249,7 @@ export class Parser {
   // Retrieves the Field schema for the given field name within a given
   // type index.
   getField(fieldName: string, typeIndex: number): reflection.Field {
-    const schema: reflection.Object = this.getType(typeIndex);
+    const schema: reflection.ObjectGenerated = this.getType(typeIndex);
     const numFields = schema.fieldsLength();
     for (let ii = 0; ii < numFields; ++ii) {
       const field = schema.fields(ii);

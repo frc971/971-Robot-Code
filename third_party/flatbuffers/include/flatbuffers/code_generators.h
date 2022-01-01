@@ -133,10 +133,13 @@ class BaseGenerator {
   // Ensure that a type is prefixed with its namespace even within
   // its own namespace to avoid conflict between generated method
   // names and similarly named classes or structs
+  // frc971 modifications: Add the `js_ts` flag to tweak the behaviour for
+  // TypeScript. We can't have a class called `Object`. We modify it to be
+  // `ObjectGenerated`.
   std::string WrapInNameSpace(const Namespace *ns,
-                              const std::string &name) const;
+                              const std::string &name, bool js_ts = false) const;
 
-  std::string WrapInNameSpace(const Definition &def) const;
+  std::string WrapInNameSpace(const Definition &def, bool js_ts = false) const;
 
   std::string GetNameSpace(const Definition &def) const;
 

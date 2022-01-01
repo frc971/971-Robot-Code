@@ -1,5 +1,5 @@
-load("@npm_bazel_typescript//:defs.bzl", "ts_library")
-load("@build_bazel_rules_nodejs//:defs.bzl", "rollup_bundle")
+load("@npm//@bazel/typescript:index.bzl", "ts_library")
+load("//tools/build_rules:js.bzl", "rollup_bundle")
 load("//frc971/downloader:downloader.bzl", "aos_downloader_dir")
 
 ts_library(
@@ -44,7 +44,6 @@ ts_library(
 
 rollup_bundle(
     name = "camera_main_bundle",
-    enable_code_splitting = False,
     entry_point = "camera_main.ts",
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//y2020:__subpackages__"],
@@ -55,7 +54,6 @@ rollup_bundle(
 
 rollup_bundle(
     name = "field_main_bundle",
-    enable_code_splitting = False,
     entry_point = "field_main.ts",
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//y2020:__subpackages__"],
