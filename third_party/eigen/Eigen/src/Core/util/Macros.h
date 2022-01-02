@@ -387,9 +387,18 @@
 #endif
 #endif
 
+#ifndef EIGEN_HAS_STD_INVOKE_RESULT
+#if EIGEN_MAX_CPP_VER >= 17 && \
+    (defined(__cplusplus) && __cplusplus >= 201703L)
+#define EIGEN_HAS_STD_INVOKE_RESULT 1
+#else
+#define EIGEN_HAS_STD_INVOKE_RESULT 0
+#endif
+#endif
+
 // Does the compiler support result_of?
 #ifndef EIGEN_HAS_STD_RESULT_OF
-#if EIGEN_MAX_CPP_VER>=11 && ((__has_feature(cxx_lambdas) || (defined(__cplusplus) && __cplusplus >= 201103L)))
+#if EIGEN_MAX_CPP_VER>=11 && ((__has_feature(cxx_lambdas) || (defined(__cplusplus) && __cplusplus >= 201103L && __cplusplus < 201703L)))
 #define EIGEN_HAS_STD_RESULT_OF 1
 #else
 #define EIGEN_HAS_STD_RESULT_OF 0
