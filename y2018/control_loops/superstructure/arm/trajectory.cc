@@ -130,7 +130,7 @@ Path::Path(::std::initializer_list<::std::array<double, 6>> list) {
     // Loop through all the various vmin, plan_vmax combinations.
     for (const double c : {-plan_vmax, plan_vmax}) {
       // Also loop through saturating theta0 and theta1
-      for (const ::std::tuple<double, double, double> abgravity :
+      for (const ::std::tuple<double, double, double> &abgravity :
            {::std::tuple<double, double, double>{vk1(0), vk2(0),
                                                 gravity_volts(0)},
             ::std::tuple<double, double, double>{vk1(1), vk2(1),
@@ -201,7 +201,7 @@ double Trajectory::FeasableForwardsAcceleration(
 
   double goal_acceleration = -::std::numeric_limits<double>::infinity();
   for (double c : {-plan_vmax, plan_vmax}) {
-    for (const ::std::pair<double, double> ab :
+    for (const ::std::pair<double, double> &ab :
          {::std::pair<double, double>{k_constant(0, 0), k_scalar(0, 0)},
           ::std::pair<double, double>{k_constant(1, 0), k_scalar(1, 0)}}) {
       const double a = ab.first;
@@ -259,7 +259,7 @@ double Trajectory::FeasableBackwardsAcceleration(
 
   double goal_acceleration = -::std::numeric_limits<double>::infinity();
   for (double c : {-plan_vmax, plan_vmax}) {
-    for (const ::std::pair<double, double> ab :
+    for (const ::std::pair<double, double> &ab :
          {::std::pair<double, double>{k_constant(0, 0), k_scalar(0, 0)},
           ::std::pair<double, double>{k_constant(1, 0), k_scalar(1, 0)}}) {
       const double a = ab.first;
