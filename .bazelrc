@@ -22,6 +22,7 @@ build:k8 --platforms=//tools/platforms:linux_x86
 build:roborio --platforms=//tools/platforms:linux_roborio
 build:armhf-debian --platforms=//tools/platforms:linux_armhf
 build:cortex-m4f --platforms=//tools/platforms:cortex_m4f
+build:rp2040 --platforms=//tools/platforms:rp2040
 
 # Without this, we end up rebuilding from scratch every time we change compilers.  This is needed to make --cpu work (even though it shouldn't be used).
 build --crosstool_top=@//tools/cpp:toolchain --host_crosstool_top=@//tools/cpp:toolchain

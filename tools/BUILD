@@ -34,6 +34,11 @@ config_setting(
     constraint_values = ["@//tools/platforms/hardware:cortex_m4f"],
 )
 
+config_setting(
+    name = "cpu_cortex_m0plus",
+    constraint_values = ["@//tools/platforms/hardware:cortex_m0plus"],
+)
+
 # TODO(phil): Re-enable this with proper support.
 #config_setting(
 #    name = "cpu_cortex_m4f_k22",

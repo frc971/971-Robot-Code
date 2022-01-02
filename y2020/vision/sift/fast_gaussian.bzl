@@ -39,6 +39,7 @@ def fast_gaussian(sigmas, sizes):
             "roborio": "roborio",
             "armhf": "armhf-debian",
             "cortex-m": "cortex-m",
+            "cortex-m0plus": "cortex-m0plus",
         }),
         outs = headers + objects + htmls,
         # The tool doesn't support anything other than k8 and armhf-debian

@@ -9,6 +9,7 @@ cc_toolchain_suite(
         "armhf-debian": ":cc-compiler-armhf-debian",
         "roborio": ":cc-compiler-roborio",
         "cortex-m4f": ":cc-compiler-cortex-m4f",
+        "rp2040": ":cc-compiler-rp2040",
     },
     visibility = ["//visibility:public"],
 )
@@ -23,6 +24,7 @@ cc_toolchain_suite(
         "armhf-debian",
         "cortex-m4f",
         "cortex-m4f-k22",
+        "rp2040",
         "k8",
         "roborio",
     ]
@@ -40,6 +42,7 @@ cc_library(
         "//tools:has_asan": [],
         "//tools:has_tsan": [],
         "//tools:cpu_cortex_m4f": [],
+        "//tools:cpu_cortex_m0plus": [],
         # TODO(phil): Support this properly.
         #"//tools:cpu_cortex_m4f_k22": [],
         "//conditions:default": ["//third_party/gperftools:tcmalloc"],
@@ -339,6 +342,34 @@ filegroup(
         "//tools/cpp/gcc_arm_none_eabi:ar",
         "@gcc_arm_none_eabi//:compiler_pieces",
     ],
+)
+
+cc_toolchain(
+    name = "cc-compiler-rp2040",
+    all_files = ":gcc_arm_none_eabi_none_files",
+    ar_files = ":gcc_arm_none_eabi_ar_files",
+    compiler_files = ":gcc_arm_none_eabi_compiler_files",
+    dwp_files = ":empty",
+    linker_files = ":gcc_arm_none_eabi_linker_files",
+    objcopy_files = "//tools/cpp/gcc_arm_none_eabi:objcopy",
+    strip_files = "//tools/cpp/gcc_arm_none_eabi:strip",
+    supports_param_files = 1,
+    toolchain_config = ":rp2040_toolchain_config",
+    toolchain_identifier = "rp2040",
+)
+
+toolchain(
+    name = "cc-toolchain-rp2040",
+    exec_compatible_with = [
+        "@platforms//os:linux",
+        "@platforms//cpu:x86_64",
+    ],
+    target_compatible_with = [
+        "@platforms//os:none",
+        "//tools/platforms/hardware:cortex_m0plus",
+    ],
+    toolchain = ":cc-compiler-rp2040",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
 )
 
 cc_toolchain(

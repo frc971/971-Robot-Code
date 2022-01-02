@@ -472,6 +472,7 @@ cc_library(
             "usr/lib/arm-linux-gnueabihf/libgomp.so.1",
         ],
         "cortex-m": [],
+        "cortex-m0plus": [],
     }),
     hdrs = glob([
         "usr/include/opencv/**",
