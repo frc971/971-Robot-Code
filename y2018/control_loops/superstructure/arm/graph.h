@@ -54,7 +54,7 @@ class IntrusivePriorityQueue {
 
     T *get() { return value_; }
 
-    bool operator<(const QueueEntry &o) { return *value_ < *o.value_; }
+    bool operator<(const QueueEntry &o) const { return *value_ < *o.value_; }
 
    private:
     friend class IntrusivePriorityQueue;
