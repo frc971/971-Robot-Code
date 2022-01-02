@@ -1,17 +1,43 @@
 load(":fast_gaussian.bzl", "fast_gaussian")
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_py_library", "flatbuffer_ts_library")
 
+cc_library(
+    name = "get_gaussian_kernel",
+    hdrs = [
+        "get_gaussian_kernel.h",
+    ],
+)
+
+cc_test(
+    name = "get_gaussian_kernel_test",
+    srcs = [
+        "get_gaussian_kernel_test.cc",
+    ],
+    deps = [
+        ":get_gaussian_kernel",
+        "//aos/testing:googletest",
+        "//third_party:opencv",
+        "@com_github_google_glog//:glog",
+    ],
+)
+
 cc_binary(
     name = "fast_gaussian_generator",
     srcs = [
         "fast_gaussian_generator.cc",
     ],
+    linkopts = [
+        "-lpthread",
+        "-ldl",
+    ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
+        ":get_gaussian_kernel",
         "//third_party:halide",
         "//third_party:halide_gengen",
+        # This somehow brings in a zlib that libllvm needs?
+        # TODO(Brian): Remove this dependency, it's not really used.
         "//third_party:opencv",
-        "@com_github_google_glog//:glog",
     ],
 )
 

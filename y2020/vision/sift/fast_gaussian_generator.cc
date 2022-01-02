@@ -1,7 +1,14 @@
-#include <opencv2/core/mat.hpp>
-#include <opencv2/imgproc.hpp>
 #include "Halide.h"
-#include "glog/logging.h"
+#include "y2020/vision/sift/get_gaussian_kernel.h"
+
+#define CHECK(x, message, ...)                                              \
+  do {                                                                      \
+    if (!(x)) {                                                             \
+      fprintf(stderr, "assertion failed: " message ": %s\n", ##__VA_ARGS__, \
+              #x);                                                          \
+      abort();                                                              \
+    }                                                                       \
+  } while (0)
 
 // This is a Halide "generator". This means it is a binary which generates
 // ahead-of-time optimized functions as directed by command-line arguments.
@@ -14,12 +21,12 @@ namespace {
 
 // Returns a function implementating a 1-dimensional gaussian blur convolution.
 Halide::Func GenerateBlur(std::string name, Halide::Func in, int col_step,
-                          int row_step, int radius, cv::Mat kernel,
+                          int row_step, int radius, std::vector<float> kernel,
                           Halide::Var col, Halide::Var row) {
-  Halide::Expr expr = kernel.at<float>(0) * in(col, row);
+  Halide::Expr expr = kernel[0] * in(col, row);
   for (int i = 1; i <= radius; ++i) {
-    expr += kernel.at<float>(i) * (in(col - i * col_step, row - i * row_step) +
-                                   in(col + i * col_step, row + i * row_step));
+    expr += kernel[0] * (in(col - i * col_step, row - i * row_step) +
+                         in(col + i * col_step, row + i * row_step));
   }
   Halide::Func func(name);
   func(col, row) = expr;
@@ -55,25 +62,26 @@ class GaussianGenerator : public Halide::Generator<GaussianGenerator> {
   Var col{"col"}, row{"row"};
 
   void generate() {
-    CHECK(cols > 0) << ": Must specify a cols";
-    CHECK(rows > 0) << ": Must specify a rows";
-    CHECK(sigma > 0) << ": Must specify a sigma";
-    CHECK(filter_width > 0) << ": Must specify a filter_width";
-    CHECK((filter_width % 2) == 1)
-        << ": Invalid filter_width: " << static_cast<int>(filter_width);
+    CHECK(cols > 0, "Must specify a cols");
+    CHECK(rows > 0, "Must specify a rows");
+    CHECK(sigma > 0, "Must specify a sigma");
+    CHECK(filter_width > 0, "Must specify a filter_width");
+    CHECK((filter_width % 2) == 1, "Invalid filter_width: %d",
+          static_cast<int>(filter_width));
 
     SetRowMajor(&input, cols, rows);
 
     const int radius = (filter_width - 1) / 2;
-    const cv::Mat kernel =
-        cv::getGaussianKernel(filter_width, sigma, CV_32F)
-            .rowRange(radius, filter_width);
+    const std::vector<float> full_kernel =
+        GetGaussianKernel(filter_width, sigma);
+    const std::vector<float> kernel(full_kernel.begin() + radius,
+                                    full_kernel.end());
 
     Halide::Func in_bounded = Halide::BoundaryConditions::repeat_edge(input);
     Halide::Func blur_col =
         GenerateBlur("blur_col", in_bounded, 1, 0, radius, kernel, col, row);
-    output(col, row) = Halide::cast<int16_t>(
-        GenerateBlur("blur_row", blur_col, 0, 1, radius, kernel, col, row)(col, row));
+    output(col, row) = Halide::cast<int16_t>(GenerateBlur(
+        "blur_row", blur_col, 0, 1, radius, kernel, col, row)(col, row));
 
     // Vectorize along the col dimension. Most of the data needed by each lane
     // overlaps this way. This also has the advantage of being the first
@@ -112,8 +120,8 @@ class SubtractGenerator : public Halide::Generator<SubtractGenerator> {
   Var col{"col"}, row{"row"};
 
   void generate() {
-    CHECK(cols > 0) << ": Must specify a cols";
-    CHECK(rows > 0) << ": Must specify a rows";
+    CHECK(cols > 0, "Must specify a cols");
+    CHECK(rows > 0, "Must specify a rows");
 
     SetRowMajor(&input_a, cols, rows);
     SetRowMajor(&input_b, cols, rows);
@@ -145,25 +153,26 @@ class GaussianAndSubtractGenerator
   Var col{"col"}, row{"row"};
 
   void generate() {
-    CHECK(cols > 0) << ": Must specify a cols";
-    CHECK(rows > 0) << ": Must specify a rows";
-    CHECK(sigma > 0) << ": Must specify a sigma";
-    CHECK(filter_width > 0) << ": Must specify a filter_width";
-    CHECK((filter_width % 2) == 1)
-        << ": Invalid filter_width: " << static_cast<int>(filter_width);
+    CHECK(cols > 0, "Must specify a cols");
+    CHECK(rows > 0, "Must specify a rows");
+    CHECK(sigma > 0, "Must specify a sigma");
+    CHECK(filter_width > 0, "Must specify a filter_width");
+    CHECK((filter_width % 2) == 1, "Invalid filter_width: %d",
+          static_cast<int>(filter_width));
 
     SetRowMajor(&input, cols, rows);
 
     const int radius = (filter_width - 1) / 2;
-    const cv::Mat kernel =
-        cv::getGaussianKernel(filter_width, sigma, CV_32F)
-            .rowRange(radius, filter_width);
+    const std::vector<float> full_kernel =
+        GetGaussianKernel(filter_width, sigma);
+    const std::vector<float> kernel(full_kernel.begin() + radius,
+                                    full_kernel.end());
 
     Halide::Func in_bounded = Halide::BoundaryConditions::repeat_edge(input);
     Halide::Func blur_col =
         GenerateBlur("blur_col", in_bounded, 1, 0, radius, kernel, col, row);
-    blurred(col, row) = Halide::cast<int16_t>(
-        GenerateBlur("blur_row", blur_col, 0, 1, radius, kernel, col, row)(col, row));
+    blurred(col, row) = Halide::cast<int16_t>(GenerateBlur(
+        "blur_row", blur_col, 0, 1, radius, kernel, col, row)(col, row));
     difference(col, row) = Halide::saturating_cast<int16_t>(
         Halide::cast<int32_t>(blurred(col, row)) - input(col, row));
 
