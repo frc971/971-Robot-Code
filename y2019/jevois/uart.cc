@@ -3,7 +3,7 @@
 #include <array>
 
 #include "aos/util/bitpacking.h"
-#include "third_party/GSL/include/gsl/gsl"
+#include "absl/types/span.h"
 #include "y2019/jevois/jevois_crc.h"
 #ifdef __linux__
 #include "aos/logging/logging.h"
@@ -17,7 +17,7 @@ namespace jevois {
 
 UartToTeensyBuffer UartPackToTeensy(const CameraFrame &message) {
   std::array<char, uart_to_teensy_size()> buffer;
-  gsl::span<char> remaining_space = buffer;
+  absl::Span<char> remaining_space(buffer);
   remaining_space[0] = message.targets.size();
   remaining_space = remaining_space.subspan(1);
   for (size_t i = 0; i < 3; ++i) {
@@ -56,7 +56,7 @@ UartToTeensyBuffer UartPackToTeensy(const CameraFrame &message) {
 }
 
 std::optional<CameraFrame> UartUnpackToTeensy(
-    gsl::span<const char> encoded_buffer) {
+    absl::Span<const char> encoded_buffer) {
   std::array<char, uart_to_teensy_size()> buffer;
   if (static_cast<size_t>(
           CobsDecode<uart_to_teensy_size()>(encoded_buffer, &buffer).size()) !=
@@ -65,7 +65,7 @@ std::optional<CameraFrame> UartUnpackToTeensy(
   }
 
   CameraFrame message;
-  gsl::span<const char> remaining_input = buffer;
+  absl::Span<const char> remaining_input(buffer);
   const int number_targets = remaining_input[0];
   remaining_input = remaining_input.subspan(1);
   for (int i = 0; i < 3; ++i) {
@@ -106,7 +106,7 @@ std::optional<CameraFrame> UartUnpackToTeensy(
 
 UartToCameraBuffer UartPackToCamera(const CameraCalibration &message) {
   std::array<char, uart_to_camera_size()> buffer;
-  gsl::span<char> remaining_space = buffer;
+  absl::Span<char> remaining_space(buffer);
   for (int i = 0; i < 3; ++i) {
     for (int j = 0; j < 4; ++j) {
       memcpy(remaining_space.data(), &message.calibration(i, j), sizeof(float));
@@ -144,7 +144,7 @@ UartToCameraBuffer UartPackToCamera(const CameraCalibration &message) {
 }
 
 std::optional<CameraCalibration> UartUnpackToCamera(
-    gsl::span<const char> encoded_buffer) {
+    absl::Span<const char> encoded_buffer) {
   std::array<char, uart_to_camera_size()> buffer;
   if (static_cast<size_t>(
           CobsDecode<uart_to_camera_size()>(encoded_buffer, &buffer).size()) !=
@@ -153,7 +153,7 @@ std::optional<CameraCalibration> UartUnpackToCamera(
   }
 
   CameraCalibration message;
-  gsl::span<const char> remaining_input = buffer;
+  absl::Span<const char> remaining_input(buffer);
   for (int i = 0; i < 3; ++i) {
     for (int j = 0; j < 4; ++j) {
       memcpy(&message.calibration(i, j), remaining_input.data(), sizeof(float));

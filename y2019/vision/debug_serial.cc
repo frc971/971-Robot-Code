@@ -36,7 +36,7 @@ void main(int argc, char **argv) {
       char data[kBufferSize];
       ssize_t n = read(itsDev, &data[0], kBufferSize);
       if (n >= 1) {
-        cobs.ParseData(gsl::span<const char>(&data[0], n));
+        cobs.ParseData(absl::Span<const char>(&data[0], n));
         auto packet = cobs.received_packet();
         if (!packet.empty()) {
           // One we read data from the serial, Teensy code will return an

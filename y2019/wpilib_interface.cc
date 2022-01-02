@@ -399,7 +399,7 @@ class CameraReader {
     std::array<char, spi_transfer_size() + 1> to_send{};
     {
       const auto to_send_data =
-          gsl::make_span(to_send).last<spi_transfer_size()>();
+          absl::MakeSpan(to_send).last(spi_transfer_size());
       const auto encoded = SpiPackToTeensy(to_teensy);
       std::copy(encoded.begin(), encoded.end(), to_send_data.begin());
     }
@@ -407,9 +407,9 @@ class CameraReader {
     // First, send recieve a dummy byte because the Teensy can't control what it
     // sends for the first byte.
     std::array<char, spi_transfer_size() + 1> to_receive;
-    DoTransaction(to_send, to_receive);
+    DoTransaction(absl::Span<char>(to_send), absl::Span<char>(to_receive));
     const auto unpacked = SpiUnpackToRoborio(
-        gsl::make_span(to_receive).last(spi_transfer_size()));
+        absl::MakeSpan(to_receive).last(spi_transfer_size()));
     if (!unpacked) {
       AOS_LOG(INFO, "Decoding SPI data failed\n");
       return;
@@ -466,12 +466,12 @@ class CameraReader {
     }
   }
 
-  void DoTransaction(gsl::span<char> to_send, gsl::span<char> to_receive) {
+  void DoTransaction(absl::Span<char> to_send, absl::Span<char> to_receive) {
     AOS_CHECK_EQ(to_send.size(), to_receive.size());
-    const auto result = spi_->Transaction(
+    const int result = spi_->Transaction(
         reinterpret_cast<uint8_t *>(to_send.data()),
         reinterpret_cast<uint8_t *>(to_receive.data()), to_send.size());
-    if (result == to_send.size()) {
+    if (result == static_cast<int>(to_send.size())) {
       return;
     }
     if (result == -1) {

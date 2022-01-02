@@ -7,7 +7,7 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
-        "//third_party/GSL",
+        "@com_google_absl//absl/types:span",
     ],
 )
 

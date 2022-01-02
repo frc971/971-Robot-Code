@@ -15,7 +15,6 @@ cc_library(
         "constants_formatting.cc",
     ],
     hdrs = ["constants.h"],
-    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )
 

@@ -1,9 +1,10 @@
 #ifndef Y2019_JEVOIS_UART_H_
 #define Y2019_JEVOIS_UART_H_
 
-#include "aos/containers/sized_array.h"
-#include "third_party/GSL/include/gsl/gsl"
 #include <optional>
+
+#include "absl/types/span.h"
+#include "aos/containers/sized_array.h"
 #include "y2019/jevois/cobs.h"
 #include "y2019/jevois/structures.h"
 
@@ -30,11 +31,11 @@ using UartToCameraBuffer =
     aos::SizedArray<char, CobsMaxEncodedSize(uart_to_camera_size())>;
 
 UartToTeensyBuffer UartPackToTeensy(const CameraFrame &message);
-std::optional<CameraFrame> UartUnpackToTeensy(gsl::span<const char> buffer);
+std::optional<CameraFrame> UartUnpackToTeensy(absl::Span<const char> buffer);
 
 UartToCameraBuffer UartPackToCamera(const CameraCalibration &message);
 std::optional<CameraCalibration> UartUnpackToCamera(
-    gsl::span<const char> buffer);
+    absl::Span<const char> buffer);
 
 }  // namespace jevois
 }  // namespace frc971

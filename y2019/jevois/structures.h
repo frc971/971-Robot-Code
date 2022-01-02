@@ -9,7 +9,6 @@
 #include "Eigen/Dense"
 #include "aos/containers/sized_array.h"
 #include "aos/time/time.h"
-#include "third_party/GSL/include/gsl/gsl"
 
 namespace frc971 {
 namespace jevois {

@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <optional>
 
-#include "third_party/GSL/include/gsl/gsl"
+#include "absl/types/span.h"
 #include "y2019/jevois/structures.h"
 
 // This file manages serializing and deserializing the various structures for
@@ -27,10 +27,10 @@ using SpiTransfer = std::array<char, spi_transfer_size()>;
 
 SpiTransfer SpiPackToRoborio(const TeensyToRoborio &message);
 std::optional<TeensyToRoborio> SpiUnpackToRoborio(
-    gsl::span<const char, spi_transfer_size()> transfer);
+    absl::Span<const char> transfer);
 SpiTransfer SpiPackToTeensy(const RoborioToTeensy &message);
 std::optional<RoborioToTeensy> SpiUnpackToTeensy(
-    gsl::span<const char, spi_transfer_size()> transfer);
+    absl::Span<const char> transfer);
 
 }  // namespace jevois
 }  // namespace frc971

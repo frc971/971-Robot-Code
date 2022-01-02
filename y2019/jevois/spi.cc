@@ -47,13 +47,13 @@ constexpr float heading_min() { return -3; }
 constexpr float heading_max() { return 3; }
 constexpr int heading_bits() { return 10; }
 constexpr int heading_offset() { return 0; }
-void heading_pack(float heading, gsl::span<char> destination) {
+void heading_pack(float heading, absl::Span<char> destination) {
   const auto integer = aos::FloatToIntLinear<heading_bits()>(
       heading_min(), heading_max(), heading);
   aos::PackBits<uint32_t, heading_bits(), heading_offset()>(integer,
                                                             destination);
 }
-float heading_unpack(gsl::span<const char> source) {
+float heading_unpack(absl::Span<const char> source) {
   const auto integer =
       aos::UnpackBits<uint32_t, heading_bits(), heading_offset()>(source);
   return aos::IntToFloatLinear<heading_bits()>(heading_min(), heading_max(),
@@ -64,13 +64,13 @@ constexpr float distance_min() { return 0; }
 constexpr float distance_max() { return 10.0; }
 constexpr int distance_bits() { return 8; }
 constexpr int distance_offset() { return heading_offset() + heading_bits(); }
-void distance_pack(float distance, gsl::span<char> destination) {
+void distance_pack(float distance, absl::Span<char> destination) {
   const auto integer = aos::FloatToIntLinear<distance_bits()>(
       distance_min(), distance_max(), distance);
   aos::PackBits<uint32_t, distance_bits(), distance_offset()>(integer,
                                                               destination);
 }
-float distance_unpack(gsl::span<const char> source) {
+float distance_unpack(absl::Span<const char> source) {
   const auto integer =
       aos::UnpackBits<uint32_t, distance_bits(), distance_offset()>(source);
   return aos::IntToFloatLinear<distance_bits()>(distance_min(), distance_max(),
@@ -81,12 +81,12 @@ constexpr float skew_min() { return -3; }
 constexpr float skew_max() { return 3; }
 constexpr int skew_bits() { return 6; }
 constexpr int skew_offset() { return distance_offset() + distance_bits(); }
-void skew_pack(float skew, gsl::span<char> destination) {
+void skew_pack(float skew, absl::Span<char> destination) {
   const auto integer =
       aos::FloatToIntLinear<skew_bits()>(skew_min(), skew_max(), skew);
   aos::PackBits<uint32_t, skew_bits(), skew_offset()>(integer, destination);
 }
-float skew_unpack(gsl::span<const char> source) {
+float skew_unpack(absl::Span<const char> source) {
   const auto integer =
       aos::UnpackBits<uint32_t, skew_bits(), skew_offset()>(source);
   return aos::IntToFloatLinear<skew_bits()>(skew_min(), skew_max(), integer);
@@ -96,37 +96,39 @@ constexpr float height_min() { return 0; }
 constexpr float height_max() { return 1.5; }
 constexpr int height_bits() { return 6; }
 constexpr int height_offset() { return skew_offset() + skew_bits(); }
-void height_pack(float height, gsl::span<char> destination) {
+void height_pack(float height, absl::Span<char> destination) {
   const auto integer =
       aos::FloatToIntLinear<height_bits()>(height_min(), height_max(), height);
   aos::PackBits<uint32_t, height_bits(), height_offset()>(integer, destination);
 }
-float height_unpack(gsl::span<const char> source) {
+float height_unpack(absl::Span<const char> source) {
   const auto integer =
       aos::UnpackBits<uint32_t, height_bits(), height_offset()>(source);
   return aos::IntToFloatLinear<height_bits()>(height_min(), height_max(),
                                               integer);
 }
 
-constexpr int quantity_index_offset() { return height_offset() + height_bits(); }
-void camera_index_pack(int camera_index, gsl::span<char> destination) {
+constexpr int quantity_index_offset() {
+  return height_offset() + height_bits();
+}
+void camera_index_pack(int camera_index, absl::Span<char> destination) {
   aos::PackBits<uint32_t, 2, quantity_index_offset()>(camera_index & 3,
                                                       destination);
   aos::PackBits<uint32_t, 2, quantity_index_offset() + 32>(
       (camera_index >> 2) & 3, destination);
 }
-int camera_index_unpack(gsl::span<const char> source) {
+int camera_index_unpack(absl::Span<const char> source) {
   int result = 0;
   result |= aos::UnpackBits<uint32_t, 2, quantity_index_offset()>(source);
   result |= aos::UnpackBits<uint32_t, 2, quantity_index_offset() + 32>(source)
             << 2;
   return result;
 }
-void target_count_pack(int target_count, gsl::span<char> destination) {
+void target_count_pack(int target_count, absl::Span<char> destination) {
   aos::PackBits<uint32_t, 2, quantity_index_offset() + 32 * 2>(target_count,
                                                                destination);
 }
-int target_count_unpack(gsl::span<const char> source) {
+int target_count_unpack(absl::Span<const char> source) {
   return aos::UnpackBits<uint32_t, 2, quantity_index_offset() + 32 * 2>(source);
 }
 
@@ -137,7 +139,7 @@ static_assert(next_offset() <= 32, "Target is too big");
 
 SpiTransfer SpiPackToRoborio(const TeensyToRoborio &message) {
   SpiTransfer transfer;
-  gsl::span<char> remaining_space = transfer;
+  absl::Span<char> remaining_space = absl::Span<char>(transfer);
   for (int frame = 0; frame < 3; ++frame) {
     // Zero out all three targets and the age.
     for (int i = 0; i < 3 * 4 + 1; ++i) {
@@ -184,9 +186,12 @@ SpiTransfer SpiPackToRoborio(const TeensyToRoborio &message) {
 }
 
 std::optional<TeensyToRoborio> SpiUnpackToRoborio(
-    gsl::span<const char, spi_transfer_size()> transfer) {
+    absl::Span<const char> transfer) {
+  if (transfer.size() != spi_transfer_size()) {
+    return std::nullopt;
+  }
   TeensyToRoborio message;
-  gsl::span<const char> remaining_input = transfer;
+  absl::Span<const char> remaining_input = transfer;
   for (int frame = 0; frame < 3; ++frame) {
     const int camera_index_plus = camera_index_unpack(remaining_input);
     if (camera_index_plus > 0) {
@@ -240,7 +245,7 @@ std::optional<TeensyToRoborio> SpiUnpackToRoborio(
 
 SpiTransfer SpiPackToTeensy(const RoborioToTeensy &message) {
   SpiTransfer transfer;
-  gsl::span<char> remaining_space = transfer;
+  absl::Span<char> remaining_space = absl::Span<char>(transfer);
   for (size_t i = 0; i < message.beacon_brightness.size(); ++i) {
     remaining_space[0] = message.beacon_brightness[i];
     remaining_space = remaining_space.subspan(1);
@@ -268,9 +273,12 @@ SpiTransfer SpiPackToTeensy(const RoborioToTeensy &message) {
 }
 
 std::optional<RoborioToTeensy> SpiUnpackToTeensy(
-    gsl::span<const char, spi_transfer_size()> transfer) {
+    absl::Span<const char> transfer) {
+  if (transfer.size() != spi_transfer_size()) {
+    return std::nullopt;
+  }
   RoborioToTeensy message;
-  gsl::span<const char> remaining_input = transfer;
+  absl::Span<const char> remaining_input = transfer;
   for (size_t i = 0; i < message.beacon_brightness.size(); ++i) {
     message.beacon_brightness[i] = remaining_input[0];
     remaining_input = remaining_input.subspan(1);

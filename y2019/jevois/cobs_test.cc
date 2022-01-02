@@ -1,8 +1,8 @@
 #include "y2019/jevois/cobs.h"
 
+#include "absl/types/span.h"
 #include "aos/testing/test_logging.h"
 #include "gtest/gtest.h"
-#include "third_party/GSL/include/gsl/gsl"
 
 namespace frc971 {
 namespace jevois {
@@ -26,11 +26,11 @@ class CobsTest : public ::testing::Test {
   void EncodeAndDecode(const char (&input_data)[number_elements]) {
     static constexpr size_t input_size =
         (min_buffer_size > number_elements) ? min_buffer_size : number_elements;
-    EncodeAndDecode<input_size>(gsl::span<const char>(input_data));
+    EncodeAndDecode<input_size>(absl::Span<const char>(input_data));
   }
 
   template <size_t max_decoded_size>
-  void EncodeAndDecode(const gsl::span<const char> decoded_input) {
+  void EncodeAndDecode(const absl::Span<const char> decoded_input) {
     std::array<char, CobsMaxEncodedSize(max_decoded_size)> encoded_buffer;
     const auto encoded =
         CobsEncode<max_decoded_size>(decoded_input, &encoded_buffer);
@@ -42,7 +42,7 @@ class CobsTest : public ::testing::Test {
     ASSERT_LE(decoded.size(), decoded_buffer.size());
     ASSERT_EQ(decoded.data(), &decoded_buffer.front());
     ASSERT_EQ(decoded.size(), decoded_input.size());
-    for (int i = 0; i < decoded.size(); ++i) {
+    for (size_t i = 0; i < decoded.size(); ++i) {
       EXPECT_EQ(decoded[i], decoded_input[i]);
     }
   }
@@ -113,7 +113,7 @@ TEST_F(CobsTest, AroundOneChunk) {
   for (size_t i = 0; i < sizeof(data); ++i) {
     data[i] = (i * 7) & 0xFF;
   }
-  const gsl::span<char> data_span = data;
+  const absl::Span<char> data_span(data);
   for (int i = 253; i <= 256; ++i) {
     EncodeAndDecode<256>(data_span.subspan(0, i));
   }
@@ -139,7 +139,7 @@ TEST(CobsPacketizerTest, BasicSingleByte) {
   ASSERT_TRUE(packetizer.received_packet().empty());
   packetizer.ParseData(std::array<char, 1>{{0}});
   ASSERT_FALSE(packetizer.received_packet().empty());
-  EXPECT_EQ(gsl::span<const char>(std::array<char, 3>{{1, 2, 3}}),
+  EXPECT_EQ(absl::Span<const char>(std::array<char, 3>{{1, 2, 3}}),
             packetizer.received_packet());
   packetizer.clear_received_packet();
   ASSERT_TRUE(packetizer.received_packet().empty());
@@ -149,21 +149,21 @@ TEST(CobsPacketizerTest, BasicSingleByte) {
   ASSERT_TRUE(packetizer.received_packet().empty());
   packetizer.ParseData(std::array<char, 1>{{0}});
   ASSERT_FALSE(packetizer.received_packet().empty());
-  EXPECT_EQ(gsl::span<const char>(std::array<char, 1>{{5}}),
+  EXPECT_EQ(absl::Span<const char>(std::array<char, 1>{{5}}),
             packetizer.received_packet());
 
   ASSERT_FALSE(packetizer.received_packet().empty());
   packetizer.ParseData(std::array<char, 1>{{9}});
   ASSERT_FALSE(packetizer.received_packet().empty());
-  EXPECT_EQ(gsl::span<const char>(std::array<char, 1>{{5}}),
+  EXPECT_EQ(absl::Span<const char>(std::array<char, 1>{{5}}),
             packetizer.received_packet());
   packetizer.ParseData(std::array<char, 1>{{7}});
   ASSERT_FALSE(packetizer.received_packet().empty());
-  EXPECT_EQ(gsl::span<const char>(std::array<char, 1>{{5}}),
+  EXPECT_EQ(absl::Span<const char>(std::array<char, 1>{{5}}),
             packetizer.received_packet());
   packetizer.ParseData(std::array<char, 1>{{0}});
   ASSERT_FALSE(packetizer.received_packet().empty());
-  EXPECT_EQ(gsl::span<const char>(std::array<char, 2>{{9, 7}}),
+  EXPECT_EQ(absl::Span<const char>(std::array<char, 2>{{9, 7}}),
             packetizer.received_packet());
 }
 
@@ -176,7 +176,7 @@ TEST(CobsPacketizerTest, BasicSinglePacket) {
   ASSERT_TRUE(packetizer.received_packet().empty());
   packetizer.ParseData(std::array<char, 1>{{0}});
   ASSERT_FALSE(packetizer.received_packet().empty());
-  EXPECT_EQ(gsl::span<const char>(std::array<char, 3>{{1, 2, 3}}),
+  EXPECT_EQ(absl::Span<const char>(std::array<char, 3>{{1, 2, 3}}),
             packetizer.received_packet());
   packetizer.clear_received_packet();
   ASSERT_TRUE(packetizer.received_packet().empty());
@@ -186,17 +186,17 @@ TEST(CobsPacketizerTest, BasicSinglePacket) {
   ASSERT_TRUE(packetizer.received_packet().empty());
   packetizer.ParseData(std::array<char, 1>{{0}});
   ASSERT_FALSE(packetizer.received_packet().empty());
-  EXPECT_EQ(gsl::span<const char>(std::array<char, 1>{{5}}),
+  EXPECT_EQ(absl::Span<const char>(std::array<char, 1>{{5}}),
             packetizer.received_packet());
 
   ASSERT_FALSE(packetizer.received_packet().empty());
   packetizer.ParseData(std::array<char, 2>{{9, 7}});
   ASSERT_FALSE(packetizer.received_packet().empty());
-  EXPECT_EQ(gsl::span<const char>(std::array<char, 1>{{5}}),
+  EXPECT_EQ(absl::Span<const char>(std::array<char, 1>{{5}}),
             packetizer.received_packet());
   packetizer.ParseData(std::array<char, 1>{{0}});
   ASSERT_FALSE(packetizer.received_packet().empty());
-  EXPECT_EQ(gsl::span<const char>(std::array<char, 2>{{9, 7}}),
+  EXPECT_EQ(absl::Span<const char>(std::array<char, 2>{{9, 7}}),
             packetizer.received_packet());
 }
 
@@ -207,7 +207,7 @@ TEST(CobsPacketizerTest, BasicSinglePacketWithTerminator) {
   ASSERT_TRUE(packetizer.received_packet().empty());
   packetizer.ParseData(std::array<char, 4>{{1, 2, 3, 0}});
   ASSERT_FALSE(packetizer.received_packet().empty());
-  EXPECT_EQ(gsl::span<const char>(std::array<char, 3>{{1, 2, 3}}),
+  EXPECT_EQ(absl::Span<const char>(std::array<char, 3>{{1, 2, 3}}),
             packetizer.received_packet());
   packetizer.clear_received_packet();
   ASSERT_TRUE(packetizer.received_packet().empty());
@@ -215,13 +215,13 @@ TEST(CobsPacketizerTest, BasicSinglePacketWithTerminator) {
   ASSERT_TRUE(packetizer.received_packet().empty());
   packetizer.ParseData(std::array<char, 2>{{5, 0}});
   ASSERT_FALSE(packetizer.received_packet().empty());
-  EXPECT_EQ(gsl::span<const char>(std::array<char, 1>{{5}}),
+  EXPECT_EQ(absl::Span<const char>(std::array<char, 1>{{5}}),
             packetizer.received_packet());
 
   ASSERT_FALSE(packetizer.received_packet().empty());
   packetizer.ParseData(std::array<char, 3>{{9, 7, 0}});
   ASSERT_FALSE(packetizer.received_packet().empty());
-  EXPECT_EQ(gsl::span<const char>(std::array<char, 2>{{9, 7}}),
+  EXPECT_EQ(absl::Span<const char>(std::array<char, 2>{{9, 7}}),
             packetizer.received_packet());
 }
 
@@ -236,13 +236,13 @@ TEST(CobsPacketizerTest, OverlappingEnd) {
   ASSERT_TRUE(packetizer.received_packet().empty());
   packetizer.ParseData(std::array<char, 2>{{0, 5}});
   ASSERT_FALSE(packetizer.received_packet().empty());
-  EXPECT_EQ(gsl::span<const char>(std::array<char, 3>{{1, 2, 3}}),
+  EXPECT_EQ(absl::Span<const char>(std::array<char, 3>{{1, 2, 3}}),
             packetizer.received_packet());
   packetizer.clear_received_packet();
   ASSERT_TRUE(packetizer.received_packet().empty());
   packetizer.ParseData(std::array<char, 1>{{0}});
   ASSERT_FALSE(packetizer.received_packet().empty());
-  EXPECT_EQ(gsl::span<const char>(std::array<char, 1>{{5}}),
+  EXPECT_EQ(absl::Span<const char>(std::array<char, 1>{{5}}),
             packetizer.received_packet());
 }
 
@@ -260,7 +260,7 @@ TEST(CobsPacketizerTest, OverlappingTwoEnds) {
   ASSERT_FALSE(packetizer.received_packet().empty());
   // We skip the {{1, 2, 3}} packet (arbitrarily; either that packet or this one
   // has to be skipped).
-  EXPECT_EQ(gsl::span<const char>(std::array<char, 1>{{5}}),
+  EXPECT_EQ(absl::Span<const char>(std::array<char, 1>{{5}}),
             packetizer.received_packet());
 }
 
@@ -279,12 +279,12 @@ TEST(CobsPacketizerTest, OverlappingTwoEndsAndPartial) {
   ASSERT_FALSE(packetizer.received_packet().empty());
   // We skip the {{5}} packet (arbitrarily; either that packet or this one has
   // to be skipped).
-  EXPECT_EQ(gsl::span<const char>(std::array<char, 3>{{1, 2, 3}}),
+  EXPECT_EQ(absl::Span<const char>(std::array<char, 3>{{1, 2, 3}}),
             packetizer.received_packet());
 
   packetizer.ParseData(std::array<char, 1>{{0}});
   ASSERT_FALSE(packetizer.received_packet().empty());
-  EXPECT_EQ(gsl::span<const char>(std::array<char, 1>{{8}}),
+  EXPECT_EQ(absl::Span<const char>(std::array<char, 1>{{8}}),
             packetizer.received_packet());
 }
 

@@ -116,7 +116,7 @@ class SpiQueue {
   SpiQueue(const SpiQueue &) = delete;
   SpiQueue &operator=(const SpiQueue &) = delete;
 
-  std::optional<gsl::span<const char, spi_transfer_size()>> Tick() {
+  std::optional<absl::Span<const char>> Tick() {
     {
       DisableInterrupts disable_interrupts;
       if (waiting_for_enable_ || waiting_for_disable_) {
@@ -236,7 +236,7 @@ class SpiQueue {
 
  private:
   void WaitForNextTransfer() {
-    to_receive_ = received_transfer_;
+    to_receive_ = absl::Span<char>(received_transfer_);
     received_dummy_ = false;
     {
       DisableInterrupts disable_interrupts;
@@ -268,7 +268,7 @@ class SpiQueue {
   SpiTransfer transfer_;
   bool received_dummy_ = false;
   SpiTransfer received_transfer_;
-  gsl::span<char> to_receive_ = received_transfer_;
+  absl::Span<char> to_receive_{received_transfer_};
   aos::monotonic_clock::time_point receive_start_;
   aos::monotonic_clock::time_point cs_deassert_time_;
 };
@@ -343,7 +343,7 @@ SpiTransfer FrameQueue::MakeTransfer() {
     const int index = oldest_indices[i];
     const FrameData &frame = frames_[index];
     const auto age = aos::monotonic_clock::now() - frame.capture_time;
-    const auto rounded_age = aos::time::round<camera_duration>(age);
+    const auto rounded_age = std::chrono::round<camera_duration>(age);
     message.frames.push_back({frame.targets, rounded_age, frame.camera_index});
     last_frames_.push_back(index);
   }

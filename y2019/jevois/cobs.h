@@ -5,7 +5,7 @@
 #include <array>
 #include <cstdint>
 
-#include "third_party/GSL/include/gsl/gsl"
+#include "absl/types/span.h"
 
 // This file contains code for encoding and decoding Consistent Overhead Byte
 // Stuffing data. <http://www.stuartcheshire.org/papers/cobsforton.pdf> has
@@ -23,8 +23,8 @@ constexpr size_t CobsMaxEncodedSize(size_t decoded_size) {
 // output_buffer is where to store the result.
 // Returns a span in output_buffer which has no 0 bytes.
 template <size_t max_decoded_size>
-gsl::span<char> CobsEncode(
-    gsl::span<const char> input,
+absl::Span<char> CobsEncode(
+    absl::Span<const char> input,
     std::array<char, CobsMaxEncodedSize(max_decoded_size)> *output_buffer);
 
 // Decodes some COBS-encoded data.
@@ -35,7 +35,7 @@ gsl::span<char> CobsEncode(
 // If the input data is invalid, this will simply stop when either the input or
 // output buffer is exhausted and return the result.
 template <size_t max_decoded_size>
-gsl::span<char> CobsDecode(gsl::span<const char> input,
+absl::Span<char> CobsDecode(absl::Span<const char> input,
                            std::array<char, max_decoded_size> *output_buffer);
 
 // Manages scanning a stream of bytes for 0s and exposing the resulting buffers.
@@ -53,17 +53,17 @@ class CobsPacketizer {
   // a packet if the end delimeters for any packets are present in new_data. If
   // multiple end delimiters are present, received_packet() will be filled out
   // to an arbitrary one of them.
-  void ParseData(gsl::span<const char> new_data);
+  void ParseData(absl::Span<const char> new_data);
 
   // Returns the most-recently-parsed packet.
   // If this is empty, it indicates no packet was received.
-  gsl::span<const char> received_packet() const { return complete_packet_; }
-  void clear_received_packet() { complete_packet_ = gsl::span<char>(); }
+  absl::Span<const char> received_packet() const { return complete_packet_; }
+  void clear_received_packet() { complete_packet_ = absl::Span<char>(); }
 
  private:
   using Buffer = std::array<char, CobsMaxEncodedSize(max_decoded_size)>;
 
-  void CopyData(gsl::span<const char> input) {
+  void CopyData(absl::Span<const char> input) {
     const size_t size = std::min(input.size(), remaining_active_.size());
     for (size_t i = 0; i < size; ++i) {
       remaining_active_[i] = input[i];
@@ -74,24 +74,24 @@ class CobsPacketizer {
   void FinishPacket() {
     const Buffer &active_buffer = buffers_[active_index_];
     complete_packet_ =
-        gsl::span<const char>(active_buffer)
+        absl::Span<const char>(active_buffer)
             .first(active_buffer.size() - remaining_active_.size());
 
     active_index_ = 1 - active_index_;
-    remaining_active_ = buffers_[active_index_];
+    remaining_active_ = absl::Span<char>(buffers_[active_index_]);
   }
 
   Buffer buffers_[2];
   // The remaining space in the active buffer.
-  gsl::span<char> remaining_active_ = buffers_[0];
+  absl::Span<char> remaining_active_{buffers_[0]};
   // The last complete packet we parsed.
-  gsl::span<const char> complete_packet_;
+  absl::Span<const char> complete_packet_;
   int active_index_ = 0;
 };
 
 template <size_t max_decoded_size>
-gsl::span<char> CobsEncode(
-    gsl::span<const char> input,
+absl::Span<char> CobsEncode(
+    absl::Span<const char> input,
     std::array<char, CobsMaxEncodedSize(max_decoded_size)> *output_buffer) {
   static_assert(max_decoded_size > 0, "Empty buffers not supported");
   if (static_cast<size_t>(input.size()) > max_decoded_size) {
@@ -128,12 +128,12 @@ gsl::span<char> CobsEncode(
   if (output_pointer > output_buffer->end()) {
     __builtin_trap();
   }
-  return gsl::span<char>(*output_buffer)
+  return absl::Span<char>(*output_buffer)
       .subspan(0, output_pointer - output_buffer->begin());
 }
 
 template <size_t max_decoded_size>
-gsl::span<char> CobsDecode(gsl::span<const char> input,
+absl::Span<char> CobsDecode(absl::Span<const char> input,
                            std::array<char, max_decoded_size> *output_buffer) {
   static_assert(max_decoded_size > 0, "Empty buffers not supported");
   if (static_cast<size_t>(input.size()) >
@@ -150,27 +150,27 @@ gsl::span<char> CobsDecode(gsl::span<const char> input,
         break;
       }
       if (output_pointer == output_buffer->end()) {
-        return gsl::span<char>(*output_buffer);
+        return absl::Span<char>(*output_buffer);
       }
       *output_pointer = *input_pointer;
       ++output_pointer;
       ++input_pointer;
     }
     if (output_pointer == output_buffer->end()) {
-      return gsl::span<char>(*output_buffer);
+      return absl::Span<char>(*output_buffer);
     }
     if (code < 0xFFu) {
       *output_pointer = 0;
       ++output_pointer;
     }
   }
-  return gsl::span<char>(*output_buffer)
+  return absl::Span<char>(*output_buffer)
       .subspan(0, output_pointer - output_buffer->begin() - 1);
 }
 
 template <size_t max_decoded_size>
 void CobsPacketizer<max_decoded_size>::ParseData(
-    gsl::span<const char> new_data) {
+    absl::Span<const char> new_data) {
   // Find where the active packet ends.
   const auto first_end = std::find(new_data.begin(), new_data.end(), 0);
   if (first_end == new_data.end()) {

@@ -46,7 +46,6 @@ genrule(
             "$(location jevois_crc.c)",
         ]),
     ]),
-    target_compatible_with = ["@platforms//os:linux"],
     tools = [
         "//third_party/pycrc:pycrc_main",
     ],
@@ -60,9 +59,8 @@ cc_library(
     hdrs = [
         "jevois_crc.h",
     ],
-    target_compatible_with = ["@platforms//os:linux"],
     deps = [
-        "//third_party/GSL",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -92,7 +90,7 @@ cc_library(
         ":jevois_crc",
         ":structures",
         "//aos/util:bitpacking",
-        "//third_party/GSL",
+        "@com_google_absl//absl/types:span",
     ] + select({
         "@platforms//os:linux": ["//aos/logging"],
         "//conditions:default": [],
@@ -114,7 +112,7 @@ cc_library(
         ":structures",
         "//aos/containers:sized_array",
         "//aos/util:bitpacking",
-        "//third_party/GSL",
+        "@com_google_absl//absl/types:span",
     ] + select({
         "@platforms//os:linux": ["//aos/logging"],
         "//conditions:default": [],
@@ -151,7 +149,7 @@ cc_library(
         "cobs.h",
     ],
     deps = [
-        "//third_party/GSL",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -165,7 +163,7 @@ cc_test(
         ":cobs",
         "//aos/testing:googletest",
         "//aos/testing:test_logging",
-        "//third_party/GSL",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -197,8 +195,8 @@ cc_binary(
         "//motors/peripheral:spi",
         "//motors/peripheral:uart",
         "//motors/print:usb",
-        "//third_party/GSL",
         "//y2019/vision:constants",
+        "@com_google_absl//absl/types:span",
     ],
 )
 

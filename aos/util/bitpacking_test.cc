@@ -29,30 +29,30 @@ TEST(MaskOnesTest, Large) {
 TEST(PackBitsTest, Basic) {
   {
     std::array<char, 3> buffer{};
-    PackBits<uint8_t, 8, 0>(0, buffer);
+    PackBits<uint8_t, 8, 0>(0, absl::Span<char>(buffer));
     EXPECT_EQ((std::array<char, 3>{}), buffer);
-    PackBits<uint8_t, 8, 0>(9, buffer);
+    PackBits<uint8_t, 8, 0>(9, absl::Span<char>(buffer));
     EXPECT_EQ((std::array<char, 3>{{9, 0, 0}}), buffer);
-    PackBits<uint8_t, 8, 8>(7, buffer);
+    PackBits<uint8_t, 8, 8>(7, absl::Span<char>(buffer));
     EXPECT_EQ((std::array<char, 3>{{9, 7, 0}}), buffer);
-    PackBits<uint8_t, 8, 16>(1, buffer);
+    PackBits<uint8_t, 8, 16>(1, absl::Span<char>(buffer));
     EXPECT_EQ((std::array<char, 3>{{9, 7, 1}}), buffer);
   }
   {
     std::array<char, 3> buffer{};
-    PackBits<uint16_t, 16, 0>(0xdead, buffer);
+    PackBits<uint16_t, 16, 0>(0xdead, absl::Span<char>(buffer));
     EXPECT_EQ((std::array<char, 3>{
                   {static_cast<char>(0xad), static_cast<char>(0xde), 0}}),
               buffer);
   }
   {
     std::array<char, 3> buffer{};
-    PackBits<uint8_t, 4, 0>(0xd7, buffer);
+    PackBits<uint8_t, 4, 0>(0xd7, absl::Span<char>(buffer));
     EXPECT_EQ((std::array<char, 3>{{0x7, 0, 0}}), buffer);
   }
   {
     std::array<char, 3> buffer{};
-    PackBits<uint8_t, 4, 4>(0xd7, buffer);
+    PackBits<uint8_t, 4, 4>(0xd7, absl::Span<char>(buffer));
     EXPECT_EQ((std::array<char, 3>{{0x70, 0, 0}}), buffer);
   }
 }
@@ -62,30 +62,30 @@ TEST(PackBitsTest, Basic) {
 TEST(PackBitsTest, Consistency) {
   {
     std::array<char, 3> buffer1{};
-    PackBits<uint8_t, 8, 0>(0x80, buffer1);
+    PackBits<uint8_t, 8, 0>(0x80, absl::Span<char>(buffer1));
     std::array<char, 3> buffer2{};
-    PackBits<uint8_t, 1, 7>(0x1, buffer2);
+    PackBits<uint8_t, 1, 7>(0x1, absl::Span<char>(buffer2));
     EXPECT_EQ(buffer1, buffer2);
   }
   {
     std::array<char, 1> buffer1{{static_cast<char>(0xFF)}};
-    PackBits<uint8_t, 8, 0>(0x7F, buffer1);
+    PackBits<uint8_t, 8, 0>(0x7F, absl::Span<char>(buffer1));
     std::array<char, 1> buffer2{{static_cast<char>(0xFF)}};
-    PackBits<uint8_t, 1, 7>(0x0, buffer2);
+    PackBits<uint8_t, 1, 7>(0x0, absl::Span<char>(buffer2));
     EXPECT_EQ(buffer1, buffer2);
   }
   {
     std::array<char, 1> buffer1{};
-    PackBits<uint8_t, 3, 5>(0x7, buffer1);
+    PackBits<uint8_t, 3, 5>(0x7, absl::Span<char>(buffer1));
     std::array<char, 1> buffer2{};
-    PackBits<uint8_t, 5, 3>(0x3C, buffer2);
+    PackBits<uint8_t, 5, 3>(0x3C, absl::Span<char>(buffer2));
     EXPECT_EQ(buffer1, buffer2);
   }
   {
     std::array<char, 1> buffer1{{static_cast<char>(0xFF)}};
-    PackBits<uint8_t, 3, 5>(0x0, buffer1);
+    PackBits<uint8_t, 3, 5>(0x0, absl::Span<char>(buffer1));
     std::array<char, 1> buffer2{{static_cast<char>(0xFF)}};
-    PackBits<uint8_t, 5, 3>(0x03, buffer2);
+    PackBits<uint8_t, 5, 3>(0x03, absl::Span<char>(buffer2));
     EXPECT_EQ(buffer1, buffer2);
   }
 }
@@ -124,49 +124,49 @@ TEST(UnpackBitsTest, Basic) {
 TEST(PackBitsTest, AcrossBytes) {
   {
     std::array<char, 2> buffer{};
-    PackBits<uint8_t, 8, 7>(0xFF, buffer);
+    PackBits<uint8_t, 8, 7>(0xFF, absl::Span<char>(buffer));
     EXPECT_EQ((std::array<char, 2>{
                   {static_cast<char>(0x80), static_cast<char>(0x7F)}}),
               buffer);
   }
   {
     std::array<char, 2> buffer{};
-    PackBits<uint8_t, 8, 6>(0xFF, buffer);
+    PackBits<uint8_t, 8, 6>(0xFF, absl::Span<char>(buffer));
     EXPECT_EQ((std::array<char, 2>{
                   {static_cast<char>(0xC0), static_cast<char>(0x3F)}}),
               buffer);
   }
   {
     std::array<char, 2> buffer{};
-    PackBits<uint8_t, 8, 5>(0xFF, buffer);
+    PackBits<uint8_t, 8, 5>(0xFF, absl::Span<char>(buffer));
     EXPECT_EQ((std::array<char, 2>{
                   {static_cast<char>(0xE0), static_cast<char>(0x1F)}}),
               buffer);
   }
   {
     std::array<char, 2> buffer{};
-    PackBits<uint8_t, 8, 4>(0xFF, buffer);
+    PackBits<uint8_t, 8, 4>(0xFF, absl::Span<char>(buffer));
     EXPECT_EQ((std::array<char, 2>{
                   {static_cast<char>(0xF0), static_cast<char>(0x0F)}}),
               buffer);
   }
   {
     std::array<char, 2> buffer{};
-    PackBits<uint8_t, 8, 3>(0xFF, buffer);
+    PackBits<uint8_t, 8, 3>(0xFF, absl::Span<char>(buffer));
     EXPECT_EQ((std::array<char, 2>{
                   {static_cast<char>(0xF8), static_cast<char>(0x07)}}),
               buffer);
   }
   {
     std::array<char, 2> buffer{};
-    PackBits<uint8_t, 8, 2>(0xFF, buffer);
+    PackBits<uint8_t, 8, 2>(0xFF, absl::Span<char>(buffer));
     EXPECT_EQ((std::array<char, 2>{
                   {static_cast<char>(0xFC), static_cast<char>(0x03)}}),
               buffer);
   }
   {
     std::array<char, 2> buffer{};
-    PackBits<uint8_t, 8, 1>(0xFF, buffer);
+    PackBits<uint8_t, 8, 1>(0xFF, absl::Span<char>(buffer));
     EXPECT_EQ((std::array<char, 2>{
                   {static_cast<char>(0xFE), static_cast<char>(0x01)}}),
               buffer);
@@ -217,7 +217,7 @@ TEST(PackBitsTest, AdjacentBits) {
   {
     std::array<char, 2> buffer{
         {static_cast<char>(0xFF), static_cast<char>(0xFF)}};
-    PackBits<uint8_t, 1, 0>(0, buffer);
+    PackBits<uint8_t, 1, 0>(0, absl::Span<char>(buffer));
     EXPECT_EQ((std::array<char, 2>{
                   {static_cast<char>(0xFE), static_cast<char>(0xFF)}}),
               buffer);
@@ -225,7 +225,7 @@ TEST(PackBitsTest, AdjacentBits) {
   {
     std::array<char, 2> buffer{
         {static_cast<char>(0xFF), static_cast<char>(0xFF)}};
-    PackBits<uint8_t, 7, 0>(0, buffer);
+    PackBits<uint8_t, 7, 0>(0, absl::Span<char>(buffer));
     EXPECT_EQ((std::array<char, 2>{
                   {static_cast<char>(0x80), static_cast<char>(0xFF)}}),
               buffer);
@@ -233,7 +233,7 @@ TEST(PackBitsTest, AdjacentBits) {
   {
     std::array<char, 2> buffer{
         {static_cast<char>(0xFF), static_cast<char>(0xFF)}};
-    PackBits<uint8_t, 8, 0>(0, buffer);
+    PackBits<uint8_t, 8, 0>(0, absl::Span<char>(buffer));
     EXPECT_EQ((std::array<char, 2>{
                   {static_cast<char>(0x00), static_cast<char>(0xFF)}}),
               buffer);
@@ -241,7 +241,7 @@ TEST(PackBitsTest, AdjacentBits) {
   {
     std::array<char, 2> buffer{
         {static_cast<char>(0xFF), static_cast<char>(0xFF)}};
-    PackBits<uint16_t, 9, 0>(0, buffer);
+    PackBits<uint16_t, 9, 0>(0, absl::Span<char>(buffer));
     EXPECT_EQ((std::array<char, 2>{
                   {static_cast<char>(0x00), static_cast<char>(0xFE)}}),
               buffer);
@@ -249,7 +249,7 @@ TEST(PackBitsTest, AdjacentBits) {
   {
     std::array<char, 2> buffer{
         {static_cast<char>(0xFF), static_cast<char>(0xFF)}};
-    PackBits<uint16_t, 14, 0>(0, buffer);
+    PackBits<uint16_t, 14, 0>(0, absl::Span<char>(buffer));
     EXPECT_EQ((std::array<char, 2>{
                   {static_cast<char>(0x00), static_cast<char>(0xC0)}}),
               buffer);
@@ -257,7 +257,7 @@ TEST(PackBitsTest, AdjacentBits) {
   {
     std::array<char, 2> buffer{
         {static_cast<char>(0xFF), static_cast<char>(0xFF)}};
-    PackBits<uint16_t, 15, 0>(0, buffer);
+    PackBits<uint16_t, 15, 0>(0, absl::Span<char>(buffer));
     EXPECT_EQ((std::array<char, 2>{
                   {static_cast<char>(0x00), static_cast<char>(0x80)}}),
               buffer);
@@ -265,7 +265,7 @@ TEST(PackBitsTest, AdjacentBits) {
   {
     std::array<char, 2> buffer{
         {static_cast<char>(0xFF), static_cast<char>(0xFF)}};
-    PackBits<uint16_t, 15, 1>(0, buffer);
+    PackBits<uint16_t, 15, 1>(0, absl::Span<char>(buffer));
     EXPECT_EQ((std::array<char, 2>{
                   {static_cast<char>(0x01), static_cast<char>(0x00)}}),
               buffer);
@@ -273,7 +273,7 @@ TEST(PackBitsTest, AdjacentBits) {
   {
     std::array<char, 2> buffer{
         {static_cast<char>(0xFF), static_cast<char>(0xFF)}};
-    PackBits<uint16_t, 6, 8>(0, buffer);
+    PackBits<uint16_t, 6, 8>(0, absl::Span<char>(buffer));
     EXPECT_EQ((std::array<char, 2>{
                   {static_cast<char>(0xFF), static_cast<char>(0xC0)}}),
               buffer);
@@ -282,7 +282,7 @@ TEST(PackBitsTest, AdjacentBits) {
     std::array<char, 4> buffer{
         {static_cast<char>(0xFF), static_cast<char>(0xFF),
          static_cast<char>(0xFF), static_cast<char>(0xFF)}};
-    PackBits<uint16_t, 6, 24>(0, buffer);
+    PackBits<uint16_t, 6, 24>(0, absl::Span<char>(buffer));
     EXPECT_EQ((std::array<char, 4>{
                   {static_cast<char>(0xFF), static_cast<char>(0xFF),
                    static_cast<char>(0xFF), static_cast<char>(0xC0)}}),

@@ -4,7 +4,7 @@
 #include <cassert>
 #include <type_traits>
 
-#include "third_party/GSL/include/gsl/gsl"
+#include "absl/types/span.h"
 
 namespace aos {
 
@@ -31,7 +31,7 @@ MaskOnes(size_t bits) {
 template <typename Integer, size_t bits, size_t offset>
 typename std::enable_if<std::is_unsigned<Integer>::value &&
                         sizeof(Integer) * 8 >= bits>::type
-PackBits(const Integer value, const gsl::span<char> destination) {
+PackBits(const Integer value, const absl::Span<char> destination) {
   assert(static_cast<size_t>(destination.size()) * 8u >= bits + offset);
   size_t bits_completed = 0;
   while (bits_completed < bits) {
@@ -69,7 +69,7 @@ template <typename Integer, size_t bits, size_t offset>
 typename std::enable_if<std::is_unsigned<Integer>::value &&
                             sizeof(Integer) * 8 >= bits,
                         Integer>::type
-UnpackBits(const gsl::span<const char> source) {
+UnpackBits(const absl::Span<const char> source) {
   Integer result = 0;
   assert(static_cast<size_t>(source.size()) * 8u >= bits + offset);
   size_t bits_completed = 0;
