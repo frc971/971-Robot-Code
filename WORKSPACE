@@ -80,6 +80,11 @@ load(
 )
 load("//debian:packages.bzl", "generate_repositories_for_debs")
 
+local_repository(
+    name = "com_grail_bazel_toolchain",
+    path = "third_party/bazel-toolchain",
+)
+
 generate_repositories_for_debs(python_debs)
 
 generate_repositories_for_debs(clang_debs)
