@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <optional>
 
+#include "absl/types/span.h"
 #include "aos/time/time.h"
 #include "motors/core/kinetis.h"
 #include "motors/core/time.h"
@@ -10,7 +11,6 @@
 #include "motors/peripheral/uart.h"
 #include "motors/print/print.h"
 #include "motors/util.h"
-#include "third_party/GSL/include/gsl/gsl"
 #include "y2019/jevois/cobs.h"
 #include "y2019/jevois/spi.h"
 #include "y2019/jevois/uart.h"
@@ -152,8 +152,9 @@ class SpiQueue {
         all_done = to_receive_.empty();
       } else {
         std::array<char, 1> dummy_data;
-        if (global_spi_instance->Read(dummy_data, &disable_interrupts).size() >=
-            1) {
+        if (global_spi_instance
+                ->Read(absl::Span<char>(dummy_data), &disable_interrupts)
+                .size() >= 1) {
           received_dummy_ = true;
         }
         all_done = false;
@@ -453,40 +454,40 @@ __attribute__((unused)) void TestUarts() {
   while (true) {
     {
       std::array<char, 10> buffer;
-      const auto data = uarts->cam0.Read(buffer);
-      for (int i = 0; i < data.size(); ++i) {
+      const auto data = uarts->cam0.Read(absl::Span<char>(buffer));
+      for (size_t i = 0; i < data.size(); ++i) {
         data[i] += 1;
       }
       uarts->cam0.Write(data);
     }
     {
       std::array<char, 10> buffer;
-      const auto data = uarts->cam1.Read(buffer);
-      for (int i = 0; i < data.size(); ++i) {
+      const auto data = uarts->cam1.Read(absl::Span<char>(buffer));
+      for (size_t i = 0; i < data.size(); ++i) {
         data[i] += 2;
       }
       uarts->cam1.Write(data);
     }
     {
       std::array<char, 10> buffer;
-      const auto data = uarts->cam2.Read(buffer);
-      for (int i = 0; i < data.size(); ++i) {
+      const auto data = uarts->cam2.Read(absl::Span<char>(buffer));
+      for (size_t i = 0; i < data.size(); ++i) {
         data[i] += 3;
       }
       uarts->cam2.Write(data);
     }
     {
       std::array<char, 10> buffer;
-      const auto data = uarts->cam3.Read(buffer);
-      for (int i = 0; i < data.size(); ++i) {
+      const auto data = uarts->cam3.Read(absl::Span<char>(buffer));
+      for (size_t i = 0; i < data.size(); ++i) {
         data[i] += 4;
       }
       uarts->cam3.Write(data);
     }
     {
       std::array<char, 10> buffer;
-      const auto data = uarts->cam4.Read(buffer);
-      for (int i = 0; i < data.size(); ++i) {
+      const auto data = uarts->cam4.Read(absl::Span<char>(buffer));
+      for (size_t i = 0; i < data.size(); ++i) {
         data[i] += 5;
       }
       uarts->cam4.Write(data);
@@ -673,11 +674,11 @@ __attribute__((unused)) void TransferData(
 
     {
       std::array<char, 20> buffer;
-      packetizers[0].ParseData(uarts->cam0.Read(buffer));
-      packetizers[1].ParseData(uarts->cam1.Read(buffer));
-      packetizers[2].ParseData(uarts->cam2.Read(buffer));
-      packetizers[3].ParseData(uarts->cam3.Read(buffer));
-      packetizers[4].ParseData(uarts->cam4.Read(buffer));
+      packetizers[0].ParseData(uarts->cam0.Read(absl::Span<char>(buffer)));
+      packetizers[1].ParseData(uarts->cam1.Read(absl::Span<char>(buffer)));
+      packetizers[2].ParseData(uarts->cam2.Read(absl::Span<char>(buffer)));
+      packetizers[3].ParseData(uarts->cam3.Read(absl::Span<char>(buffer)));
+      packetizers[4].ParseData(uarts->cam4.Read(absl::Span<char>(buffer)));
     }
     for (size_t i = 0; i < packetizers.size(); ++i) {
       if (!packetizers[i].received_packet().empty()) {

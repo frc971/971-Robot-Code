@@ -18,7 +18,7 @@ class UartPrinting : public PrintingImplementation {
 
   void Initialize() override;
 
-  int WriteStdout(gsl::span<const char> buffer) override;
+  int WriteStdout(absl::Span<const char> buffer) override;
 
  private:
   teensy::InterruptBufferedUart stdout_uart_;

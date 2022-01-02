@@ -57,7 +57,7 @@ void InterruptBufferedSpi::ClearQueues(const DisableInterrupts &) {
   spi_.FlushInterruptRequests();
 }
 
-void InterruptBufferedSpi::Write(gsl::span<const char> data,
+void InterruptBufferedSpi::Write(absl::Span<const char> data,
                                  DisableInterrupts *disable_interrupts) {
   frames_to_receive_ += data.size();
   // Until we get all of the data queued, we'll call WriteFrames from our
@@ -82,11 +82,11 @@ void InterruptBufferedSpi::Write(gsl::span<const char> data,
   }
 }
 
-gsl::span<char> InterruptBufferedSpi::Read(
-    gsl::span<char> buffer, DisableInterrupts *disable_interrupts) {
+absl::Span<char> InterruptBufferedSpi::Read(
+    absl::Span<char> buffer, DisableInterrupts *disable_interrupts) {
   size_t bytes_read = 0;
   {
-    const gsl::span<const char> read_data =
+    const absl::Span<const char> read_data =
         receive_buffer_.PopSpan(buffer.size());
     std::copy(read_data.begin(), read_data.end(), buffer.begin());
     bytes_read += read_data.size();
@@ -95,7 +95,7 @@ gsl::span<char> InterruptBufferedSpi::Read(
   ReenableInterrupts{disable_interrupts};
 
   {
-    const gsl::span<const char> read_data =
+    const absl::Span<const char> read_data =
         receive_buffer_.PopSpan(buffer.size() - bytes_read);
     std::copy(read_data.begin(), read_data.end(),
               buffer.subspan(bytes_read).begin());

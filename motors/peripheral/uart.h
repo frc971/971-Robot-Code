@@ -1,11 +1,11 @@
 #ifndef MOTORS_PERIPHERAL_UART_H_
 #define MOTORS_PERIPHERAL_UART_H_
 
+#include "absl/types/span.h"
 #include "aos/containers/sized_array.h"
 #include "motors/core/kinetis.h"
 #include "motors/peripheral/uart_buffer.h"
 #include "motors/util.h"
-#include "third_party/GSL/include/gsl/gsl"
 
 namespace frc971 {
 namespace teensy {
@@ -22,7 +22,7 @@ class Uart {
   void Initialize(int baud_rate);
 
   // Blocks until all of the data is at least queued.
-  void Write(gsl::span<const char> data, const DisableInterrupts &) {
+  void Write(absl::Span<const char> data, const DisableInterrupts &) {
     DoWrite(data);
   }
 
@@ -77,7 +77,7 @@ class Uart {
     module_->C2 = c2_value_;
   }
 
-  void DoWrite(gsl::span<const char> data);
+  void DoWrite(absl::Span<const char> data);
   aos::SizedArray<char, 4> DoRead();
 
   KINETISK_UART_t *const module_;
@@ -100,13 +100,13 @@ class InterruptBufferedUart {
 
   // Queues up the given data for immediate writing. Blocks only if the queue
   // fills up before all of data is enqueued.
-  void Write(gsl::span<const char> data);
+  void Write(absl::Span<const char> data);
 
   // Reads currently available data.
   // Returns all the data which is currently available (possibly none);
   // buffer is where to store the result. The return value will be a subspan of
   // this.
-  gsl::span<char> Read(gsl::span<char> buffer);
+  absl::Span<char> Read(absl::Span<char> buffer);
 
   // Should be called as the body of the interrupt handler.
   void HandleInterrupt(const DisableInterrupts &disable_interrupts) {

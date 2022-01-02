@@ -45,7 +45,7 @@ cc_library(
     hdrs = ["uart_buffer.h"],
     visibility = ["//visibility:public"],
     deps = [
-        "//third_party/GSL",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -72,7 +72,7 @@ cc_library(
         "//aos/containers:sized_array",
         "//motors:util",
         "//motors/core",
-        "//third_party/GSL",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -99,6 +99,6 @@ cc_library(
         ":uart_buffer",
         "//motors:util",
         "//motors/core",
-        "//third_party/GSL",
+        "@com_google_absl//absl/types:span",
     ],
 )

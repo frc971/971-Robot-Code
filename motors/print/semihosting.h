@@ -1,6 +1,7 @@
 #ifndef MOTORS_PRINT_SEMIHOSTING_H_
 #define MOTORS_PRINT_SEMIHOSTING_H_
 
+#include "absl/types/span.h"
 #include "motors/print/print.h"
 
 namespace frc971 {
@@ -23,7 +24,7 @@ class SemihostingPrinting final : public PrintingImplementation {
 
   void Initialize() override {}
 
-  int WriteStdout(gsl::span<const char> buffer) override;
+  int WriteStdout(absl::Span<const char> buffer) override;
 
   // Could easily implement an optional WriteDebug which goes to a separate
   // file if the name is filled out in the parameters.

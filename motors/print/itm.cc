@@ -1,12 +1,16 @@
 #include "motors/print/itm.h"
 
+#include <cstring>
+
+#include "absl/types/span.h"
 #include "motors/core/itm.h"
 
 namespace frc971 {
 namespace motors {
 namespace {
 
-template<int kPort> void WriteToPort(gsl::span<const char> buffer) {
+template <int kPort>
+void WriteToPort(absl::Span<const char> buffer) {
   // This ignores memory barriers etc, because it will be called by
   // CreatePrinting which must be called before any interrupts are enabled. That
   // means the only thing we need to worry about is actually getting it
@@ -70,7 +74,7 @@ template<int kPort> void WriteToPort(gsl::span<const char> buffer) {
 }
 
 extern "C" int _write(const int /*file*/, char *const ptr, const int len) {
-  WriteToPort<0>(gsl::span<const char>(ptr, len));
+  WriteToPort<0>(absl::Span<const char>(ptr, len));
   return len;
 }
 
@@ -81,12 +85,12 @@ ItmPrinting::ItmPrinting() {
   _write(0, nullptr, 0);
 }
 
-int ItmPrinting::WriteStdout(gsl::span<const char> buffer) {
+int ItmPrinting::WriteStdout(absl::Span<const char> buffer) {
   WriteToPort<0>(buffer);
   return buffer.size();
 }
 
-int ItmPrinting::WriteDebug(gsl::span<const char> buffer) {
+int ItmPrinting::WriteDebug(absl::Span<const char> buffer) {
   WriteToPort<1>(buffer);
   return buffer.size();
 }

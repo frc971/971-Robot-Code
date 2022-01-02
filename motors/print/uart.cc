@@ -51,7 +51,7 @@ void UartPrinting::Initialize() {
   NVIC_ENABLE_IRQ(stdout_status_interrupt_);
 }
 
-int UartPrinting::WriteStdout(gsl::span<const char> buffer) {
+int UartPrinting::WriteStdout(absl::Span<const char> buffer) {
   stdout_uart_.Write(buffer);
   return buffer.size();
 }
@@ -60,7 +60,7 @@ extern "C" int _write(const int /*file*/, char *const ptr, const int len) {
   teensy::InterruptBufferedUart *const tty =
       global_stdout.load(::std::memory_order_acquire);
   if (tty != nullptr) {
-    tty->Write(gsl::make_span(ptr, len));
+    tty->Write(absl::MakeSpan(ptr, len));
   }
   return len;
 }

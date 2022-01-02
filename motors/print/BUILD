@@ -8,7 +8,7 @@ cc_library(
     deps = [
         "//aos/containers:sized_array",
         "//motors/core",
-        "//third_party/GSL",
+        "@com_google_absl//absl/types:span",
     ],
 )
 

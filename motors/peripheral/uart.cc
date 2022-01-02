@@ -52,12 +52,12 @@ void Uart::Initialize(int baud_rate) {
   module_->RWFIFO = 1;
 }
 
-void Uart::DoWrite(gsl::span<const char> data) {
+void Uart::DoWrite(absl::Span<const char> data) {
   // In theory, we could be more efficient about this by writing the number of
   // bytes we know there's space for and only calling SpaceAvailable() (or
   // otherwise reading S1) before the final one. In practice, the FIFOs are so
   // short on this part it probably won't help anything.
-  for (int i = 0; i < data.size(); ++i) {
+  for (size_t i = 0; i < data.size(); ++i) {
     while (!SpaceAvailable()) {
     }
     WriteCharacter(data[i]);
@@ -93,7 +93,7 @@ void InterruptBufferedUart::Initialize(int baud_rate) {
   }
 }
 
-void InterruptBufferedUart::Write(gsl::span<const char> data) {
+void InterruptBufferedUart::Write(absl::Span<const char> data) {
   DisableInterrupts disable_interrupts;
   uart_.EnableTransmitInterrupt(disable_interrupts);
   while (!data.empty()) {
@@ -104,18 +104,18 @@ void InterruptBufferedUart::Write(gsl::span<const char> data) {
   }
 }
 
-gsl::span<char> InterruptBufferedUart::Read(gsl::span<char> buffer) {
+absl::Span<char> InterruptBufferedUart::Read(absl::Span<char> buffer) {
   size_t bytes_read = 0;
   {
     DisableInterrupts disable_interrupts;
-    const gsl::span<const char> read_data =
+    const absl::Span<const char> read_data =
         receive_buffer_.PopSpan(buffer.size());
     std::copy(read_data.begin(), read_data.end(), buffer.begin());
     bytes_read += read_data.size();
   }
   {
     DisableInterrupts disable_interrupts;
-    const gsl::span<const char> read_data =
+    const absl::Span<const char> read_data =
         receive_buffer_.PopSpan(buffer.size() - bytes_read);
     std::copy(read_data.begin(), read_data.end(),
               buffer.subspan(bytes_read).begin());

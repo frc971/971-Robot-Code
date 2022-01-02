@@ -3,9 +3,9 @@
 
 #include <memory>
 
+#include "absl/types/span.h"
 #include "aos/containers/sized_array.h"
 #include "motors/core/kinetis.h"
-#include "third_party/GSL/include/gsl/gsl"
 
 namespace frc971 {
 namespace teensy {
@@ -26,10 +26,12 @@ class PrintingImplementation {
   virtual void Initialize() = 0;
 
   // Writes something directly to stdout/stderr (they are treated as the same).
-  virtual int WriteStdout(gsl::span<const char> buffer) = 0;
+  virtual int WriteStdout(absl::Span<const char> buffer) = 0;
   // Writes something to a separate debug stream. Some implementations will
   // always ignore this, and others will ignore it under some conditions.
-  virtual int WriteDebug(gsl::span<const char> buffer) { return buffer.size(); }
+  virtual int WriteDebug(absl::Span<const char> buffer) {
+    return buffer.size();
+  }
 
   // Reads any characters which are available (never blocks).
   //
@@ -46,7 +48,7 @@ class NopPrinting : public PrintingImplementation {
   ~NopPrinting() override = default;
 
   void Initialize() override {}
-  int WriteStdout(gsl::span<const char> buffer) override {
+  int WriteStdout(absl::Span<const char> buffer) override {
     return buffer.size();
   }
 };

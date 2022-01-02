@@ -36,7 +36,7 @@ absl::Span<char> CobsEncode(
 // output buffer is exhausted and return the result.
 template <size_t max_decoded_size>
 absl::Span<char> CobsDecode(absl::Span<const char> input,
-                           std::array<char, max_decoded_size> *output_buffer);
+                            std::array<char, max_decoded_size> *output_buffer);
 
 // Manages scanning a stream of bytes for 0s and exposing the resulting buffers.
 //
@@ -134,7 +134,7 @@ absl::Span<char> CobsEncode(
 
 template <size_t max_decoded_size>
 absl::Span<char> CobsDecode(absl::Span<const char> input,
-                           std::array<char, max_decoded_size> *output_buffer) {
+                            std::array<char, max_decoded_size> *output_buffer) {
   static_assert(max_decoded_size > 0, "Empty buffers not supported");
   if (static_cast<size_t>(input.size()) >
       CobsMaxEncodedSize(max_decoded_size)) {

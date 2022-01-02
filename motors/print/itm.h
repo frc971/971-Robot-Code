@@ -1,6 +1,7 @@
 #ifndef MOTORS_PRINT_ITM_
 #define MOTORS_PRINT_ITM_
 
+#include "absl/types/span.h"
 #include "motors/print/print.h"
 
 namespace frc971 {
@@ -21,9 +22,9 @@ class ItmPrinting final : public PrintingImplementation {
   void Initialize() override {}
 
   // This goes to stimulus port 0.
-  int WriteStdout(gsl::span<const char> buffer) override;
+  int WriteStdout(absl::Span<const char> buffer) override;
   // This goes to stimulus port 1.
-  int WriteDebug(gsl::span<const char> buffer) override;
+  int WriteDebug(absl::Span<const char> buffer) override;
 };
 
 }  // namespace motors

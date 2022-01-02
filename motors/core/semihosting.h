@@ -3,7 +3,7 @@
 
 // This file defines interfaces to the ARM semihosting functions.
 
-#include "third_party/GSL/include/gsl/gsl"
+#include "absl/types/span.h"
 
 namespace frc971 {
 namespace motors {
@@ -56,7 +56,7 @@ struct GetCommandLine {
   uint32_t length;
 
   GetCommandLine() = default;
-  GetCommandLine(gsl::span<char> buffer_in) {
+  GetCommandLine(absl::Span<char> buffer_in) {
     buffer = buffer_in.data();
     length = buffer_in.size();
   }
@@ -114,16 +114,16 @@ struct Read {
   uint32_t size;
 
   Read() = default;
-  Read(uint32_t handle_in, gsl::span<char> buffer_in) {
+  Read(uint32_t handle_in, absl::Span<char> buffer_in) {
     handle = handle_in;
     buffer = buffer_in.data();
     size = buffer_in.size();
   }
 
   // Returns the result. If this is empty, that means the file is at EOF.
-  gsl::span<const char> Execute() {
+  absl::Span<const char> Execute() {
     const uint32_t not_read = integer_operation(0x06, this);
-    return gsl::span<const char>(buffer, size - not_read);
+    return absl::Span<const char>(buffer, size - not_read);
   }
 };
 
@@ -160,7 +160,7 @@ struct Write {
   uint32_t length;
 
   Write() = default;
-  Write(uint32_t handle_in, gsl::span<const char> buffer_in) {
+  Write(uint32_t handle_in, absl::Span<const char> buffer_in) {
     handle = handle_in;
     buffer = buffer_in.data();
     length = buffer_in.size();

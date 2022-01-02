@@ -17,11 +17,11 @@ class UsbPrinting final : public PrintingImplementation {
 
   void Initialize() override;
 
-  int WriteStdout(gsl::span<const char> buffer) override {
+  int WriteStdout(absl::Span<const char> buffer) override {
     return stdout_tty_->Write(buffer.data(), buffer.size());
   }
 
-  int WriteDebug(gsl::span<const char> buffer) override {
+  int WriteDebug(absl::Span<const char> buffer) override {
     if (debug_tty_ == nullptr) {
       return buffer.size();
     }
@@ -48,11 +48,11 @@ class DedicatedUsbPrinting final : public PrintingImplementation {
 
   void Initialize() override;
 
-  int WriteStdout(gsl::span<const char> buffer) override {
+  int WriteStdout(absl::Span<const char> buffer) override {
     return stdout_tty_.Write(buffer.data(), buffer.size());
   }
 
-  int WriteDebug(gsl::span<const char> buffer) override {
+  int WriteDebug(absl::Span<const char> buffer) override {
     return debug_tty_.Write(buffer.data(), buffer.size());
   }
 

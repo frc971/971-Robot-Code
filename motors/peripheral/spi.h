@@ -1,10 +1,10 @@
 #ifndef MOTORS_PERIPHERAL_SPI_H_
 #define MOTORS_PERIPHERAL_SPI_H_
 
+#include "absl/types/span.h"
 #include "motors/core/kinetis.h"
 #include "motors/peripheral/uart_buffer.h"
 #include "motors/util.h"
-#include "third_party/GSL/include/gsl/gsl"
 
 namespace frc971 {
 namespace teensy {
@@ -41,21 +41,11 @@ class Spi {
   }
 
   // Calling code must synchronize all of these.
-  void EnableTransmitInterrupt() {
-    rser_value_ |= M_SPI_TFFF_RE;
-  }
-  void DisableTransmitInterrupt() {
-    rser_value_ &= ~M_SPI_TFFF_RE;
-  }
-  void EnableReceiveInterrupt() {
-    rser_value_ |= M_SPI_RFDF_RE;
-  }
-  void DisableReceiveInterrupt() {
-    rser_value_ &= ~M_SPI_RFDF_RE;
-  }
-  void FlushInterruptRequests() {
-    module_->RSER = rser_value_;
-  }
+  void EnableTransmitInterrupt() { rser_value_ |= M_SPI_TFFF_RE; }
+  void DisableTransmitInterrupt() { rser_value_ &= ~M_SPI_TFFF_RE; }
+  void EnableReceiveInterrupt() { rser_value_ |= M_SPI_RFDF_RE; }
+  void DisableReceiveInterrupt() { rser_value_ &= ~M_SPI_RFDF_RE; }
+  void FlushInterruptRequests() { module_->RSER = rser_value_; }
 
  private:
   KINETISK_SPI_t *const module_;
@@ -88,18 +78,20 @@ class InterruptBufferedSpi {
 
   // Queues up the given data for immediate writing. Blocks only if the queue
   // fills up before all of data is enqueued.
-  void Write(gsl::span<const char> data, DisableInterrupts *disable_interrupts);
+  void Write(absl::Span<const char> data,
+             DisableInterrupts *disable_interrupts);
 
   // Reads currently available data.
   // Returns all the data which is currently available (possibly none);
   // buffer is where to store the result. The return value will be a subspan of
   // this.
-  gsl::span<char> Read(gsl::span<char> buffer,
-                       DisableInterrupts *disable_interrupts);
+  absl::Span<char> Read(absl::Span<char> buffer,
+                        DisableInterrupts *disable_interrupts);
 
   // Should be called as the body of the interrupt handler.
   void HandleInterrupt(const DisableInterrupts &disable_interrupts) {
-    while (ReadAndWriteFrame(true, disable_interrupts)) {}
+    while (ReadAndWriteFrame(true, disable_interrupts)) {
+    }
     spi_.FlushInterruptRequests();
   }
 
