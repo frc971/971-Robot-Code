@@ -13,6 +13,8 @@ load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "ACTION_NAMES")
 def _impl(ctx):
     if (ctx.attr.cpu == "armhf-debian"):
         toolchain_identifier = "clang_linux_armhf"
+    elif (ctx.attr.cpu == "rp2040"):
+        toolchain_identifier = "rp2040"
     elif (ctx.attr.cpu == "cortex-m4f"):
         toolchain_identifier = "cortex-m4f"
     elif (ctx.attr.cpu == "cortex-m4f-k22"):
@@ -30,7 +32,8 @@ def _impl(ctx):
         host_system_name = "armeabi-v7a"
     elif (ctx.attr.cpu == "armhf-debian"):
         host_system_name = "linux"
-    elif (ctx.attr.cpu == "cortex-m4f" or
+    elif (ctx.attr.cpu == "rp2040" or
+          ctx.attr.cpu == "cortex-m4f" or
           ctx.attr.cpu == "cortex-m4f-k22" or
           ctx.attr.cpu == "k8"):
         host_system_name = "local"
@@ -43,6 +46,8 @@ def _impl(ctx):
         target_system_name = "arm_a15"
     elif (ctx.attr.cpu == "armeabi-v7a"):
         target_system_name = "armeabi-v7a"
+    elif (ctx.attr.cpu == "rp2040"):
+        target_system_name = "rp2040"
     elif (ctx.attr.cpu == "cortex-m4f"):
         target_system_name = "cortex-m4f"
     elif (ctx.attr.cpu == "cortex-m4f-k22"):
@@ -58,6 +63,8 @@ def _impl(ctx):
         target_cpu = "armeabi-v7a"
     elif (ctx.attr.cpu == "armhf-debian"):
         target_cpu = "armhf-debian"
+    elif (ctx.attr.cpu == "rp2040"):
+        target_cpu = "rp2040"
     elif (ctx.attr.cpu == "cortex-m4f"):
         target_cpu = "cortex-m4f"
     elif (ctx.attr.cpu == "cortex-m4f-k22"):
@@ -71,6 +78,8 @@ def _impl(ctx):
 
     if (ctx.attr.cpu == "armeabi-v7a"):
         target_libc = "armeabi-v7a"
+    elif (ctx.attr.cpu == "rp2040"):
+        target_libc = "rp2040"
     elif (ctx.attr.cpu == "cortex-m4f"):
         target_libc = "cortex-m4f"
     elif (ctx.attr.cpu == "cortex-m4f-k22"):
@@ -89,7 +98,8 @@ def _impl(ctx):
         compiler = "clang"
     elif (ctx.attr.cpu == "armeabi-v7a"):
         compiler = "compiler"
-    elif (ctx.attr.cpu == "cortex-m4f" or
+    elif (ctx.attr.cpu == "rp2040" or
+          ctx.attr.cpu == "cortex-m4f" or
           ctx.attr.cpu == "cortex-m4f-k22" or
           ctx.attr.cpu == "roborio"):
         compiler = "gcc"
@@ -100,6 +110,8 @@ def _impl(ctx):
         abi_version = "armeabi-v7a"
     elif (ctx.attr.cpu == "armhf-debian"):
         abi_version = "clang_6.0"
+    elif (ctx.attr.cpu == "rp2040"):
+        abi_version = "rp2040"
     elif (ctx.attr.cpu == "cortex-m4f"):
         abi_version = "cortex-m4f"
     elif (ctx.attr.cpu == "cortex-m4f-k22"):
@@ -113,6 +125,8 @@ def _impl(ctx):
 
     if (ctx.attr.cpu == "armeabi-v7a"):
         abi_libc_version = "armeabi-v7a"
+    elif (ctx.attr.cpu == "rp2040"):
+        abi_libc_version = "rp2040"
     elif (ctx.attr.cpu == "cortex-m4f"):
         abi_libc_version = "cortex-m4f"
     elif (ctx.attr.cpu == "cortex-m4f-k22"):
@@ -202,7 +216,8 @@ def _impl(ctx):
             enabled = True,
             tools = [tool(path = "clang_6p0/x86_64-linux-gnu-objcopy")],
         )
-    elif (ctx.attr.cpu == "cortex-m4f" or
+    elif (ctx.attr.cpu == "rp2040" or
+          ctx.attr.cpu == "cortex-m4f" or
           ctx.attr.cpu == "cortex-m4f-k22"):
         objcopy_embed_data_action = action_config(
             action_name = "objcopy_embed_data",
@@ -215,6 +230,7 @@ def _impl(ctx):
     if (ctx.attr.cpu == "armeabi-v7a"):
         action_configs = []
     elif (ctx.attr.cpu == "armhf-debian" or
+          ctx.attr.cpu == "rp2040" or
           ctx.attr.cpu == "cortex-m4f" or
           ctx.attr.cpu == "cortex-m4f-k22" or
           ctx.attr.cpu == "k8" or
@@ -509,6 +525,88 @@ def _impl(ctx):
                 ),
             ],
         )
+    elif (ctx.attr.cpu == "rp2040"):
+        default_compile_flags_feature = feature(
+            name = "default_compile_flags",
+            enabled = True,
+            flag_sets = [
+                flag_set(
+                    actions = [
+                        ACTION_NAMES.assemble,
+                        ACTION_NAMES.preprocess_assemble,
+                        ACTION_NAMES.linkstamp_compile,
+                        ACTION_NAMES.c_compile,
+                        ACTION_NAMES.cpp_compile,
+                        ACTION_NAMES.cpp_header_parsing,
+                        ACTION_NAMES.cpp_module_compile,
+                        ACTION_NAMES.cpp_module_codegen,
+                        ACTION_NAMES.lto_backend,
+                        ACTION_NAMES.clif_match,
+                    ],
+                    flag_groups = [
+                        flag_group(
+                            flags = [
+                                "-DPICO_BOARD=\"pico\"",
+                                "-DPICO_BUILD=1",
+                                "-DPICO_NO_HARDWARE=0",
+                                "-DPICO_ON_DEVICE=1",
+                                "-D__STDC_FORMAT_MACROS",
+                                "-D__STDC_CONSTANT_MACROS",
+                                "-D__STDC_LIMIT_MACROS",
+                                "-Wl,--gc-sections",
+                                "-fstack-protector",
+                                "-mcpu=cortex-m0plus",
+                                "-mthumb",
+                                "-fno-strict-aliasing",
+                                "-fmessage-length=80",
+                                "-fmax-errors=20",
+                                "-Wall",
+                                "-Wextra",
+                                "-Wpointer-arith",
+                                "-Wcast-qual",
+                                "-Wwrite-strings",
+                                "-Wtype-limits",
+                                "-Wsign-compare",
+                                "-Wformat=2",
+                                "-Werror",
+                                "-Wstrict-aliasing=2",
+                                "-Wno-misleading-indentation",
+                                "-Wno-int-in-bool-context",
+                                "-Wdouble-promotion",
+                                "-pipe",
+                                "-g",
+                            ],
+                        ),
+                    ],
+                ),
+                flag_set(
+                    actions = [
+                        ACTION_NAMES.assemble,
+                        ACTION_NAMES.preprocess_assemble,
+                        ACTION_NAMES.linkstamp_compile,
+                        ACTION_NAMES.c_compile,
+                        ACTION_NAMES.cpp_compile,
+                        ACTION_NAMES.cpp_header_parsing,
+                        ACTION_NAMES.cpp_module_compile,
+                        ACTION_NAMES.cpp_module_codegen,
+                        ACTION_NAMES.lto_backend,
+                        ACTION_NAMES.clif_match,
+                    ],
+                    flag_groups = [
+                        flag_group(
+                            flags = [
+                                "-O3",
+                                "-finline-functions",
+                                "-funroll-loops",
+                                "-DNDEBUG",
+                                "-ffunction-sections",
+                            ],
+                        ),
+                    ],
+                    with_features = [with_feature_set(features = ["opt"])],
+                ),
+            ],
+        )
     elif (ctx.attr.cpu == "armhf-debian"):
         default_compile_flags_feature = feature(
             name = "default_compile_flags",
@@ -655,7 +753,8 @@ def _impl(ctx):
                 ),
             ],
         )
-    elif (ctx.attr.cpu == "cortex-m4f" or
+    elif (ctx.attr.cpu == "rp2040" or
+          ctx.attr.cpu == "cortex-m4f" or
           ctx.attr.cpu == "cortex-m4f-k22"):
         dbg_feature = feature(
             name = "dbg",
@@ -713,7 +812,8 @@ def _impl(ctx):
                 ),
             ],
         )
-    elif (ctx.attr.cpu == "cortex-m4f" or
+    elif (ctx.attr.cpu == "rp2040" or
+          ctx.attr.cpu == "cortex-m4f" or
           ctx.attr.cpu == "cortex-m4f-k22"):
         fastbuild_feature = feature(name = "fastbuild", implies = ["all_modes"])
     else:
@@ -788,7 +888,8 @@ def _impl(ctx):
             ],
             implies = ["all_modes"],
         )
-    elif (ctx.attr.cpu == "cortex-m4f" or
+    elif (ctx.attr.cpu == "rp2040" or
+          ctx.attr.cpu == "cortex-m4f" or
           ctx.attr.cpu == "cortex-m4f-k22"):
         opt_feature = feature(name = "opt", implies = ["all_modes"])
     else:
@@ -815,7 +916,8 @@ def _impl(ctx):
         ],
     )
 
-    if (ctx.attr.cpu == "cortex-m4f" or
+    if (ctx.attr.cpu == "rp2040" or
+        ctx.attr.cpu == "cortex-m4f" or
         ctx.attr.cpu == "cortex-m4f-k22"):
         include_paths_feature = feature(
             name = "include_paths",
@@ -993,6 +1095,30 @@ def _impl(ctx):
                 ),
             ],
         )
+    elif (ctx.attr.cpu == "rp2040"):
+        default_link_flags_feature = feature(
+            name = "default_link_flags",
+            enabled = True,
+            flag_sets = [
+                flag_set(
+                    actions = all_link_actions,
+                    flag_groups = [
+                        flag_group(
+                            flags = [
+                                "-no-canonical-prefixes",
+                                "-mcpu=cortex-m0plus",
+                                "-mthumb",
+                                "-fno-strict-aliasing",
+                                "-Wl,--build-id=none",
+                                "--specs=nosys.specs",
+                                "-nostartfiles",
+                            ],
+                        ),
+                    ],
+                ),
+                # TODO(austin): I'd love to turn --gc-sections on, but that breaks things.
+            ],
+        )
     elif (ctx.attr.cpu == "k8"):
         default_link_flags_feature = feature(
             name = "default_link_flags",
@@ -1119,7 +1245,8 @@ def _impl(ctx):
                 ),
             ],
         )
-    elif (ctx.attr.cpu == "cortex-m4f" or
+    elif (ctx.attr.cpu == "rp2040" or
+          ctx.attr.cpu == "cortex-m4f" or
           ctx.attr.cpu == "cortex-m4f-k22"):
         all_modes_feature = feature(
             name = "all_modes",
@@ -1130,7 +1257,7 @@ def _impl(ctx):
                         ACTION_NAMES.assemble,
                         ACTION_NAMES.c_compile,
                     ],
-                    flag_groups = [flag_group(flags = ["--std=gnu99"])],
+                    flag_groups = [flag_group(flags = ["--std=gnu11"])],
                 ),
                 flag_set(
                     actions = [
@@ -1246,7 +1373,8 @@ def _impl(ctx):
                 ),
             ],
         )
-    elif (ctx.attr.cpu == "cortex-m4f" or
+    elif (ctx.attr.cpu == "rp2040" or
+          ctx.attr.cpu == "cortex-m4f" or
           ctx.attr.cpu == "cortex-m4f-k22" or
           ctx.attr.cpu == "roborio"):
         unfiltered_compile_flags_feature = feature(
@@ -1521,7 +1649,8 @@ def _impl(ctx):
         ],
     )
 
-    if (ctx.attr.cpu == "cortex-m4f" or
+    if (ctx.attr.cpu == "rp2040" or
+        ctx.attr.cpu == "cortex-m4f" or
         ctx.attr.cpu == "cortex-m4f-k22"):
         features = [
             default_compile_flags_feature,
@@ -1604,7 +1733,8 @@ def _impl(ctx):
             "%package(@linaro_linux_gcc_repo//lib/gcc/arm-linux-gnueabihf/7.4.1/include-fixed)%",
             "%package(@linaro_linux_gcc_repo//arm-linux-gnueabihf/include)%/c++/7.4.1",
         ]
-    elif (ctx.attr.cpu == "cortex-m4f" or
+    elif (ctx.attr.cpu == "rp2040" or
+          ctx.attr.cpu == "cortex-m4f" or
           ctx.attr.cpu == "cortex-m4f-k22"):
         cxx_builtin_include_directories = [
             "/usr/lib/gcc/arm-none-eabi/4.8/include",
@@ -1714,7 +1844,8 @@ def _impl(ctx):
                 path = "clang_6p0/x86_64-linux-gnu-strip",
             ),
         ]
-    elif (ctx.attr.cpu == "cortex-m4f" or
+    elif (ctx.attr.cpu == "rp2040" or
+          ctx.attr.cpu == "cortex-m4f" or
           ctx.attr.cpu == "cortex-m4f-k22"):
         tool_paths = [
             tool_path(
@@ -1856,7 +1987,7 @@ def _impl(ctx):
 cc_toolchain_config = rule(
     implementation = _impl,
     attrs = {
-        "cpu": attr.string(mandatory = True, values = ["armeabi-v7a", "armhf-debian", "cortex-m4f", "cortex-m4f-k22", "k8", "roborio"]),
+        "cpu": attr.string(mandatory = True, values = ["armeabi-v7a", "armhf-debian", "cortex-m4f", "cortex-m4f-k22", "k8", "roborio", "rp2040"]),
     },
     provides = [CcToolchainConfigInfo],
     executable = True,

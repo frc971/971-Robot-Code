@@ -21,7 +21,10 @@ cc_library(
         "reg_debug.h",
         "time.h",
     ],
-    target_compatible_with = ["@platforms//os:none"],
+    target_compatible_with = [
+        "@platforms//os:none",
+        "//tools/platforms/hardware:cortex_m4f",
+    ],
     visibility = ["//visibility:public"],
 )
 
@@ -30,7 +33,10 @@ cc_library(
     hdrs = [
         "semihosting.h",
     ],
-    target_compatible_with = ["@platforms//os:none"],
+    target_compatible_with = [
+        "@platforms//os:none",
+        "//tools/platforms/hardware:cortex_m4f",
+    ],
     visibility = ["//visibility:public"],
     deps = [
         "//third_party/GSL",
@@ -45,7 +51,10 @@ cc_library(
     hdrs = [
         "itm.h",
     ],
-    target_compatible_with = ["@platforms//os:none"],
+    target_compatible_with = [
+        "@platforms//os:none",
+        "//tools/platforms/hardware:cortex_m4f",
+    ],
     visibility = ["//visibility:public"],
     deps = [
         ":core",

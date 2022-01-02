@@ -123,6 +123,7 @@ register_toolchains(
     "//tools/cpp:cc-toolchain-armhf-debian",
     "//tools/cpp:cc-toolchain-roborio",
     "//tools/cpp:cc-toolchain-cortex-m4f",
+    "//tools/cpp:cc-toolchain-rp2040",
     # Find a good way to select between these two M4F toolchains.
     #"//tools/cpp:cc-toolchain-cortex-m4f-k22",
     "//tools/python:python_toolchain",

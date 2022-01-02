@@ -3,6 +3,7 @@ env:
   COMMON: -c opt --stamp=no --curses=yes --symlink_prefix=/ --disk_cache=~/.cache/bazel/disk_cache/ --repo_env=FRC971_RUNNING_IN_CI=1
   TARGETS: //... @com_github_google_glog//... @com_google_ceres_solver//... @com_github_rawrtc_rawrtc//... @com_google_googletest//...
   M4F_TARGETS: //...
+  RP2040_TARGETS: //...
   # Sanity check that we are able to build the y2020 roborio code, which confirms
   # that we have the platform compatibility for the roborio set up correctly.
   ROBORIO_TARGETS: ${TARGETS} //y2020:download_stripped
@@ -32,3 +33,8 @@ steps:
     commands:
       - tools/ci/clean-disk.sh
       - tools/bazel ${STARTUP} --output_base=../cortex-m4f_output_base build ${COMMON} --config=cortex-m4f ${M4F_TARGETS}
+
+  - label: "rp2040"
+    commands:
+      - tools/ci/clean-disk.sh
+      - tools/bazel ${STARTUP} --output_base=../rp2040_output_base build ${COMMON} --config=rp2040 ${RP2040_TARGETS}

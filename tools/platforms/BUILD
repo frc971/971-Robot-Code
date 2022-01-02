@@ -47,4 +47,13 @@ platform(
     ],
 )
 
+platform(
+    name = "rp2040",
+    constraint_values = [
+        "@platforms//os:none",
+        "//tools/platforms/hardware:cortex_m0plus",
+        "//tools/platforms/go:lacks_support",
+    ],
+)
+
 # TODO(phil): Create something for "cortex-m4f-k22" builds.

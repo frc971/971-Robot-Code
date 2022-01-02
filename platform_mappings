@@ -12,6 +12,9 @@ platforms:
   //tools/platforms:cortex_m4f
     --cpu=cortex-m4f
 
+  //tools/platforms:rp2040
+    --cpu=rp2040
+
 flags:
   --cpu=k8
     //tools/platforms:linux_x86
@@ -24,3 +27,6 @@ flags:
 
   --cpu=cortex-m4f
     //tools/platforms:cortex_m4f
+
+  --cpu=rp2040
+    //tools/platforms:rp2040

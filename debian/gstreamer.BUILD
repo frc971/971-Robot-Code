@@ -160,6 +160,7 @@ cc_library(
             "usr/lib/arm-linux-gnueabihf/libxml2.so.2",
         ],
         "cortex-m": [],
+        "cortex-m0plus": [],
     }),
     hdrs = glob([
         "usr/lib/x86_64-linux-gnu/glib-2.0/include/**/*.h",
@@ -180,10 +181,9 @@ cc_library(
             "usr/include/glib-2.0",
             "usr/include/gstreamer-1.0",
         ],
-        "roborio": [
-        ],
-        "cortex-m": [
-        ],
+        "roborio": [],
+        "cortex-m": [],
+        "cortex-m0plus": [],
     }),
     linkopts = [
         "-ldl",
