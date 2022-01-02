@@ -80,11 +80,6 @@ load(
 )
 load("//debian:packages.bzl", "generate_repositories_for_debs")
 
-local_repository(
-    name = "com_grail_bazel_toolchain",
-    path = "third_party/bazel-toolchain",
-)
-
 generate_repositories_for_debs(python_debs)
 
 generate_repositories_for_debs(clang_debs)
@@ -122,6 +117,22 @@ generate_repositories_for_debs(m4_debs)
 generate_repositories_for_debs(lzma_amd64_debs)
 
 generate_repositories_for_debs(lzma_arm64_debs)
+
+local_repository(
+    name = "com_grail_bazel_toolchain",
+    path = "third_party/bazel-toolchain",
+)
+
+load("@com_grail_bazel_toolchain//toolchain:rules.bzl", "llvm_toolchain")
+
+llvm_toolchain(
+    name = "llvm_toolchain",
+    distribution = "clang+llvm-13.0.0-x86_64-linux-gnu-ubuntu-16.04.tar.xz",
+    llvm_version = "13.0.0",
+    sysroot = {
+        "linux-x86_64": "@amd64_debian_sysroot//:sysroot_files",
+    },
+)
 
 register_toolchains(
     "//tools/cpp:cc-toolchain-k8",
