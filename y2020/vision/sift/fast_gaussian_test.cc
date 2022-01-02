@@ -63,8 +63,8 @@ TEST_F(FastGaussianTest, FastGaussian) {
                                     MatToHalide<int16_t>(fast_direct), kSigma));
 
 
-  // 50/65536 = 0.00076, which is under 1%, which is pretty close.
-  ExpectEqual(slow, fast, 50);
+  // 1500/65536 = 0.0228, which is under 3%, which is pretty close.
+  ExpectEqual(slow, fast, 1500);
   // The wrapper should be calling the exact same code, so it should end up with
   // the exact same result.
   ExpectEqual(fast, fast_direct, 0);
