@@ -25,8 +25,8 @@ table WebSocketSdp {
 // advaced features.
 table WebSocketIce {
   candidate:string (id: 0);
-  sdpMid:string (id: 1);
-  sdpMLineIndex:int (id: 2);
+  sdp_mid:string (id: 1);
+  sdp_m_line_index:int (id: 2);
 }
 
 union Payload {WebSocketSdp, WebSocketIce}

@@ -89,7 +89,9 @@ void WebsocketHandler::onData(::seasocks::WebSocket *sock, const uint8_t *data,
       connections_[sock]->OnIce(ice);
       break;
     }
-    default: { break; }
+    default: {
+      break;
+    }
   }
 }
 
@@ -415,12 +417,12 @@ void ApplicationConnection::OnIce(const WebSocketIce *ice) {
   if (!ice->has_candidate()) {
     return;
   }
-  uint8_t sdpMLineIndex = ice->sdpMLineIndex();
+  uint8_t sdp_m_line_index = ice->sdp_m_line_index();
 
   struct rawrtc_peer_connection_ice_candidate *ice_candidate = nullptr;
   CHECK_RAWRTC(rawrtc_peer_connection_ice_candidate_create(
-      &ice_candidate, ice->candidate()->c_str(), ice->sdpMid()->c_str(),
-      &sdpMLineIndex, nullptr));
+      &ice_candidate, ice->candidate()->c_str(), ice->sdp_mid()->c_str(),
+      &sdp_m_line_index, nullptr));
 
   rawrtc_peer_connection_add_ice_candidate(connection_.connection(),
                                            ice_candidate);
@@ -457,10 +459,10 @@ void ApplicationConnection::LocalCandidate(
     WebSocketIce::Builder web_socket_ice_builder(fbb);
 
     web_socket_ice_builder.add_candidate(sdpp_offset);
-    web_socket_ice_builder.add_sdpMid(sdp_mid_offset);
+    web_socket_ice_builder.add_sdp_mid(sdp_mid_offset);
 
     if (error == RAWRTC_CODE_SUCCESS) {
-      web_socket_ice_builder.add_sdpMLineIndex(media_line_index);
+      web_socket_ice_builder.add_sdp_m_line_index(media_line_index);
     }
     flatbuffers::Offset<WebSocketIce> ice_offset =
         web_socket_ice_builder.Finish();
