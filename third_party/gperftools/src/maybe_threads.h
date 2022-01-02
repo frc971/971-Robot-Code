@@ -1,11 +1,11 @@
 // -*- Mode: C++; c-basic-offset: 2; indent-tabs-mode: nil -*-
 // Copyright (c) 2005, Google Inc.
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-// 
+//
 //     * Redistributions of source code must retain the above copyright
 // notice, this list of conditions and the following disclaimer.
 //     * Redistributions in binary form must reproduce the above
@@ -15,7 +15,7 @@
 //     * Neither the name of Google Inc. nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
-// 
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 // "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 // LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -50,5 +50,12 @@ void *perftools_pthread_getspecific(pthread_key_t key);
 int perftools_pthread_setspecific(pthread_key_t key, void *val);
 int perftools_pthread_once(pthread_once_t *ctl,
                            void  (*init_routine) (void));
+
+// Our wrapper for pthread_atfork. Does _nothing_ when there are no
+// threads. See static_vars.cc:SetupAtForkLocksHandler for only user
+// of this.
+void perftools_pthread_atfork(void (*before)(),
+                              void (*parent_after)(),
+                              void (*child_after)());
 
 #endif  /* GOOGLE_MAYBE_THREADS_H_ */

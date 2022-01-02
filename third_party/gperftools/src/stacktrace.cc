@@ -60,6 +60,7 @@
 #include "gperftools/stacktrace.h"
 #include "base/commandlineflags.h"
 #include "base/googleinit.h"
+#include "getenv_safe.h"
 
 
 // we're using plain struct and not class to avoid any possible issues
@@ -90,6 +91,15 @@ struct GetStackImplementation {
 #define HAVE_GST_generic
 #endif
 
+#ifdef HAVE_UNWIND_BACKTRACE
+#define STACKTRACE_INL_HEADER "stacktrace_libgcc-inl.h"
+#define GST_SUFFIX libgcc
+#include "stacktrace_impl_setup-inl.h"
+#undef GST_SUFFIX
+#undef STACKTRACE_INL_HEADER
+#define HAVE_GST_libgcc
+#endif
+
 // libunwind uses __thread so we check for both libunwind.h and
 // __thread support
 #if defined(HAVE_LIBUNWIND_H) && defined(HAVE_TLS)
@@ -109,6 +119,27 @@ struct GetStackImplementation {
 #undef STACKTRACE_INL_HEADER
 #define HAVE_GST_x86
 #endif // i386 || x86_64
+
+// Sadly, different OSes have very different mcontexts even for
+// identical hardware arch. So keep it linux-only for now.
+#if defined(__GNUC__) && __linux__ && (defined(__x86_64__) || defined(__aarch64__) || defined(__riscv))
+#define STACKTRACE_INL_HEADER "stacktrace_generic_fp-inl.h"
+#define GST_SUFFIX generic_fp
+#include "stacktrace_impl_setup-inl.h"
+#undef GST_SUFFIX
+#undef STACKTRACE_INL_HEADER
+#define HAVE_GST_generic_fp
+
+#undef TCMALLOC_UNSAFE_GENERIC_FP_STACKTRACE
+#define TCMALLOC_UNSAFE_GENERIC_FP_STACKTRACE 1
+
+#define STACKTRACE_INL_HEADER "stacktrace_generic_fp-inl.h"
+#define GST_SUFFIX generic_fp_unsafe
+#include "stacktrace_impl_setup-inl.h"
+#undef GST_SUFFIX
+#undef STACKTRACE_INL_HEADER
+#define HAVE_GST_generic_fp_unsafe
+#endif
 
 #if defined(__ppc__) || defined(__PPC__)
 #if defined(__linux__)
@@ -153,8 +184,17 @@ struct GetStackImplementation {
 #endif
 
 static GetStackImplementation *all_impls[] = {
+#ifdef HAVE_GST_libgcc
+  &impl__libgcc,
+#endif
 #ifdef HAVE_GST_generic
   &impl__generic,
+#endif
+#ifdef HAVE_GST_generic_fp
+  &impl__generic_fp,
+#endif
+#ifdef HAVE_GST_generic_fp
+  &impl__generic_fp_unsafe,
 #endif
 #ifdef HAVE_GST_libunwind
   &impl__libunwind,
@@ -179,26 +219,34 @@ static GetStackImplementation *all_impls[] = {
 
 // ppc and i386 implementations prefer arch-specific asm implementations.
 // arm's asm implementation is broken
-#if defined(__i386__) || defined(__x86_64__) || defined(__ppc__) || defined(__PPC__)
+#if defined(__i386__) || defined(__ppc__) || defined(__PPC__)
 #if !defined(NO_FRAME_POINTER)
 #define TCMALLOC_DONT_PREFER_LIBUNWIND
 #endif
 #endif
 
+static bool get_stack_impl_inited;
+
 #if defined(HAVE_GST_instrument)
 static GetStackImplementation *get_stack_impl = &impl__instrument;
 #elif defined(HAVE_GST_win32)
 static GetStackImplementation *get_stack_impl = &impl__win32;
+#elif defined(HAVE_GST_generic_fp) && !defined(NO_FRAME_POINTER) \
+   && !defined(__riscv) \
+   && (!defined(HAVE_GST_libunwind) || defined(TCMALLOC_DONT_PREFER_LIBUNWIND))
+static GetStackImplementation *get_stack_impl = &impl__generic_fp;
 #elif defined(HAVE_GST_x86) && defined(TCMALLOC_DONT_PREFER_LIBUNWIND)
 static GetStackImplementation *get_stack_impl = &impl__x86;
 #elif defined(HAVE_GST_ppc) && defined(TCMALLOC_DONT_PREFER_LIBUNWIND)
 static GetStackImplementation *get_stack_impl = &impl__ppc;
 #elif defined(HAVE_GST_libunwind)
 static GetStackImplementation *get_stack_impl = &impl__libunwind;
-#elif defined(HAVE_GST_arm)
-static GetStackImplementation *get_stack_impl = &impl__arm;
+#elif defined(HAVE_GST_libgcc)
+static GetStackImplementation *get_stack_impl = &impl__libgcc;
 #elif defined(HAVE_GST_generic)
 static GetStackImplementation *get_stack_impl = &impl__generic;
+#elif defined(HAVE_GST_arm)
+static GetStackImplementation *get_stack_impl = &impl__arm;
 #elif 0
 // This is for the benefit of code analysis tools that may have
 // trouble with the computed #include above.
@@ -217,13 +265,52 @@ static int ATTRIBUTE_NOINLINE frame_forcer(int rv) {
   return rv;
 }
 
+static void init_default_stack_impl_inner(void);
+
+namespace tcmalloc {
+  bool EnterStacktraceScope(void);
+  void LeaveStacktraceScope(void);
+}
+
+namespace {
+  using tcmalloc::EnterStacktraceScope;
+  using tcmalloc::LeaveStacktraceScope;
+
+  class StacktraceScope {
+    bool stacktrace_allowed;
+  public:
+    StacktraceScope() {
+      stacktrace_allowed = true;
+      stacktrace_allowed = EnterStacktraceScope();
+    }
+    bool IsStacktraceAllowed() {
+      return stacktrace_allowed;
+    }
+    ~StacktraceScope() {
+      if (stacktrace_allowed) {
+        LeaveStacktraceScope();
+      }
+    }
+  };
+}
+
 PERFTOOLS_DLL_DECL int GetStackFrames(void** result, int* sizes, int max_depth,
                                       int skip_count) {
+  StacktraceScope scope;
+  if (!scope.IsStacktraceAllowed()) {
+    return 0;
+  }
+  init_default_stack_impl_inner();
   return frame_forcer(get_stack_impl->GetStackFramesPtr(result, sizes, max_depth, skip_count));
 }
 
 PERFTOOLS_DLL_DECL int GetStackFramesWithContext(void** result, int* sizes, int max_depth,
                                                  int skip_count, const void *uc) {
+  StacktraceScope scope;
+  if (!scope.IsStacktraceAllowed()) {
+    return 0;
+  }
+  init_default_stack_impl_inner();
   return frame_forcer(get_stack_impl->GetStackFramesWithContextPtr(
                         result, sizes, max_depth,
                         skip_count, uc));
@@ -231,18 +318,56 @@ PERFTOOLS_DLL_DECL int GetStackFramesWithContext(void** result, int* sizes, int 
 
 PERFTOOLS_DLL_DECL int GetStackTrace(void** result, int max_depth,
                                      int skip_count) {
+  StacktraceScope scope;
+  if (!scope.IsStacktraceAllowed()) {
+    return 0;
+  }
+  init_default_stack_impl_inner();
   return frame_forcer(get_stack_impl->GetStackTracePtr(result, max_depth, skip_count));
 }
 
 PERFTOOLS_DLL_DECL int GetStackTraceWithContext(void** result, int max_depth,
                                                 int skip_count, const void *uc) {
+  StacktraceScope scope;
+  if (!scope.IsStacktraceAllowed()) {
+    return 0;
+  }
+  init_default_stack_impl_inner();
   return frame_forcer(get_stack_impl->GetStackTraceWithContextPtr(
                         result, max_depth, skip_count, uc));
 }
 
+// As of this writing, aarch64 has completely borked libunwind, so
+// lets test this case and fall back to frame pointers (which is
+// nearly but not quite perfect).
+ATTRIBUTE_NOINLINE
+static void maybe_convert_libunwind_to_generic_fp() {
+#if defined(HAVE_GST_libunwind) && defined(HAVE_GST_generic_fp)
+  if (get_stack_impl != &impl__libunwind) {
+    return;
+  }
+
+  // Okay we're on libunwind and we have generic_fp, check if
+  // libunwind returns bogus results.
+  void* stack[4];
+  int rv = get_stack_impl->GetStackTracePtr(stack, 4, 0);
+  if (rv > 2) {
+    // Seems fine
+    return;
+  }
+  // bogus. So replacing with generic_fp
+  get_stack_impl = &impl__generic_fp;
+#endif
+}
+
 static void init_default_stack_impl_inner(void) {
-  char *val = getenv("TCMALLOC_STACKTRACE_METHOD");
+  if (get_stack_impl_inited) {
+    return;
+  }
+  get_stack_impl_inited = true;
+  const char *val = TCMallocGetenvSafe("TCMALLOC_STACKTRACE_METHOD");
   if (!val || !*val) {
+    maybe_convert_libunwind_to_generic_fp();
     return;
   }
   for (GetStackImplementation **p = all_impls; *p; p++) {
@@ -255,6 +380,7 @@ static void init_default_stack_impl_inner(void) {
   fprintf(stderr, "Unknown or unsupported stacktrace method requested: %s. Ignoring it\n", val);
 }
 
+ATTRIBUTE_NOINLINE
 static void init_default_stack_impl(void) {
   init_default_stack_impl_inner();
   if (EnvToBool("TCMALLOC_STACKTRACE_METHOD_VERBOSE", false)) {

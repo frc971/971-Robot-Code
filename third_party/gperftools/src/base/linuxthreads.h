@@ -1,3 +1,4 @@
+// -*- Mode: C++; c-basic-offset: 2; indent-tabs-mode: nil -*-
 /* Copyright (c) 2005-2007, Google Inc.
  * All rights reserved.
  *
@@ -37,11 +38,12 @@
 /* Include thread_lister.h to get the interface that we implement for linux.
  */
 
-/* We currently only support x86-32 and x86-64 on Linux. Porting to other
+/* We currently only support certain platforms on Linux. Porting to other
  * related platforms should not be difficult.
  */
-#if (defined(__i386__) || defined(__x86_64__) || defined(__ARM_ARCH_3__) || \
-     defined(__mips__) || defined(__PPC__) || defined(__aarch64__)) && defined(__linux)
+#if (defined(__i386__) || defined(__x86_64__) || defined(__arm__) || \
+     defined(__mips__) || defined(__PPC__) || defined(__aarch64__) ||       \
+     defined(__s390__)) && defined(__linux)
 
 /* Define the THREADS symbol to make sure that there is exactly one core dumper
  * built into the library.

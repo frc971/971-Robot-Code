@@ -1,11 +1,11 @@
 // -*- Mode: C++; c-basic-offset: 2; indent-tabs-mode: nil -*-
 // Copyright (c) 2005, Google Inc.
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-// 
+//
 //     * Redistributions of source code must retain the above copyright
 // notice, this list of conditions and the following disclaimer.
 //     * Redistributions in binary form must reproduce the above
@@ -15,7 +15,7 @@
 //     * Neither the name of Google Inc. nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
-// 
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 // "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 // LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -49,6 +49,7 @@
 #include <algorithm>
 #include "base/logging.h"
 #include "base/spinlock.h"
+#include "maybe_emergency_malloc.h"
 #include "maybe_threads.h"
 #include "malloc_hook-inl.h"
 #include <gperftools/malloc_hook.h>
@@ -491,10 +492,16 @@ MallocHook_SbrkHook MallocHook_SetSbrkHook(MallocHook_SbrkHook hook) {
 
 
 void MallocHook::InvokeNewHookSlow(const void* p, size_t s) {
+  if (tcmalloc::IsEmergencyPtr(p)) {
+    return;
+  }
   INVOKE_HOOKS(NewHook, new_hooks_, (p, s));
 }
 
 void MallocHook::InvokeDeleteHookSlow(const void* p) {
+  if (tcmalloc::IsEmergencyPtr(p)) {
+    return;
+  }
   INVOKE_HOOKS(DeleteHook, delete_hooks_, (p));
 }
 
@@ -560,6 +567,8 @@ void MallocHook::InvokeSbrkHookSlow(const void* result, ptrdiff_t increment) {
 
 #undef INVOKE_HOOKS
 
+#ifndef NO_TCMALLOC_SAMPLES
+
 DEFINE_ATTRIBUTE_SECTION_VARS(google_malloc);
 DECLARE_ATTRIBUTE_SECTION_VARS(google_malloc);
   // actual functions are in debugallocation.cc or tcmalloc.cc
@@ -605,6 +614,8 @@ static inline void CheckInHookCaller() {
   }
 }
 
+#endif // !NO_TCMALLOC_SAMPLES
+
 // We can improve behavior/compactness of this function
 // if we pass a generic test function (with a generic arg)
 // into the implementations for GetStackTrace instead of the skip_count.
@@ -636,6 +647,14 @@ extern "C" int MallocHook_GetCallerStackTrace(void** result, int max_depth,
     return 0;
   for (int i = 0; i < depth; ++i) {  // stack[0] is our immediate caller
     if (InHookCaller(stack[i])) {
+      // fast-path to slow-path calls may be implemented by compiler
+      // as non-tail calls. Causing two functions on stack trace to be
+      // inside google_malloc. In such case we're skipping to
+      // outermost such frame since this is where malloc stack frames
+      // really start.
+      while (i + 1 < depth && InHookCaller(stack[i+1])) {
+        i++;
+      }
       RAW_VLOG(10, "Found hooked allocator at %d: %p <- %p",
                    i, stack[i], stack[i+1]);
       i += 1;  // skip hook caller frame

@@ -4,7 +4,7 @@ load("//tools/build_rules:select.bzl", "compiler_select", "cpu_select")
 load("//tools/build_rules:empty_main.bzl", "empty_main_if_asan")
 
 common_copts = [
-    #Stuff from their Makefile.
+    # Stuff from their Makefile.
     "-Wno-cast-align",
     "-Wno-sign-compare",
     "-fno-builtin-malloc",
@@ -19,8 +19,9 @@ common_copts = [
     "-Wno-unused-result",
     "-fno-omit-frame-pointer",
     "-DNDEBUG",
+    "-DENABLE_EMERGENCY_MALLOC",
 
-    #Stuff to make it work for us.
+    # Stuff to make it work for us.
     "-Ithird_party/gperftools/src/",
     "-Ithird_party/empty_config_h",
     "-Wno-unused-parameter",
@@ -32,9 +33,12 @@ common_copts = [
     "-Wno-error=cast-align",
     "-Wno-error=cast-qual",
 
-    #Stuff pulled out of config.h.
+    # //build_tests:tcmalloc_build_test relies on this.
+    "-DENABLE_LARGE_ALLOC_REPORT=1",
+
+    # Stuff pulled out of config.h.
+    "-DGPERFTOOLS_CONFIG_H_=1",
     "-DHAVE_BUILTIN_EXPECT=1",
-    "-DHAVE_DECL_CFREE=1",
     "-DHAVE_DECL_MEMALIGN=1",
     "-DHAVE_DECL_POSIX_MEMALIGN=1",
     "-DHAVE_DECL_PVALLOC=1",
@@ -86,9 +90,9 @@ common_copts = [
     "-DPERFTOOLS_DLL_DECL=",
     "-DSTDC_HEADERS=1",
     "-DSTL_NAMESPACE=std",
-    "-DPACKAGE_STRING=\\\"gperftools\\ 2.4\\\"",
+    "-DPACKAGE_STRING=\\\"gperftools\\ 2.9.1\\\"",
     "-DPACKAGE_BUGREPORT=\\\"https://frc971.org/contact\\\"",
-    "-DPACKAGE_VERSION=\\\"2.4\\\"",
+    "-DPACKAGE_VERSION=\\\"2.9.1\\\"",
 ] + cpu_select({
     "amd64": [
         "-DHAVE_GETPAGESZE=1",
@@ -109,6 +113,11 @@ common_copts = [
         "-Wno-unused-const-variable",
         "-Wno-gnu-alignof-expression",
         "-Wno-unused-private-field",
+
+        # It has annotations for this analysis, but the invariants are too tricky
+        # for clang to figure out by itself so it has lots of false positives. Just
+        # disable the analysis to simplify.
+        "-Wno-thread-safety-analysis",
     ],
     "gcc": [],
 })
@@ -126,15 +135,14 @@ cc_library(
             "**/*_unittest.cc",
             "**/*_test.cc",
             "src/debugallocation.cc",
+            "src/fake_stacktrace_scope.cc",
         ],
     ),
     hdrs = glob([
         "src/*.h",
         "src/base/*.h",
         "src/gperftools/*.h",
-    ]) + [
-        "src/third_party/valgrind.h",
-    ],
+    ]),
     copts = common_copts,
     includes = ["src"],
     linkopts = [
@@ -204,6 +212,7 @@ cc_test(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":tcmalloc",
+        ":testutil",
     ],
 )
 
@@ -237,6 +246,7 @@ cc_test(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":tcmalloc",
+        ":testutil",
     ],
 )
 
@@ -265,6 +275,7 @@ cc_test(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":tcmalloc",
+        ":testutil",
     ],
 )
 

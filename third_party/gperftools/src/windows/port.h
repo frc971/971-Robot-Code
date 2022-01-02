@@ -64,7 +64,7 @@
 #include <assert.h>
 #include <stdlib.h>          /* for rand, srand, _strtoxxx */
 
-#if _MSC_VER >= 1900
+#if defined(_MSC_VER) && _MSC_VER >= 1900
 #define _TIMESPEC_DEFINED
 #include <time.h>
 #endif
@@ -102,19 +102,8 @@
 /* ----------------------------------- BASIC TYPES */
 
 #ifndef HAVE_STDINT_H
-#ifndef HAVE___INT64    /* we need to have all the __intX names */
 # error  Do not know how to set up type aliases.  Edit port.h for your system.
 #endif
-
-typedef __int8 int8_t;
-typedef __int16 int16_t;
-typedef __int32 int32_t;
-typedef __int64 int64_t;
-typedef unsigned __int8 uint8_t;
-typedef unsigned __int16 uint16_t;
-typedef unsigned __int32 uint32_t;
-typedef unsigned __int64 uint64_t;
-#endif  /* #ifndef HAVE_STDINT_H */
 
 /* I guess MSVC's <types.h> doesn't include ssize_t by default? */
 #ifdef _MSC_VER
@@ -329,17 +318,7 @@ inline int perftools_vsnprintf(char *str, size_t size, const char *format,
 }
 #endif
 
-#ifndef HAVE_SNPRINTF
-inline int snprintf(char *str, size_t size, const char *format, ...) {
-  va_list ap;
-  int r;
-  va_start(ap, format);
-  r = perftools_vsnprintf(str, size, format, ap);
-  va_end(ap);
-  return r;
-}
-#endif
-
+#ifndef HAVE_INTTYPES_H
 #define PRIx64  "I64x"
 #define SCNx64  "I64x"
 #define PRId64  "I64d"
@@ -351,6 +330,7 @@ inline int snprintf(char *str, size_t size, const char *format, ...) {
 #else
 # define PRIuPTR "lu"
 # define PRIxPTR "lx"
+#endif
 #endif
 
 /* ----------------------------------- FILE IO */
@@ -461,7 +441,7 @@ inline int nanosleep(const struct timespec *req, struct timespec *rem) {
 #endif
 
 #ifndef __MINGW32__
-#if _MSC_VER < 1800
+#if defined(_MSC_VER) && _MSC_VER < 1800
 inline long long int strtoll(const char *nptr, char **endptr, int base) {
     return _strtoi64(nptr, endptr, base);
 }

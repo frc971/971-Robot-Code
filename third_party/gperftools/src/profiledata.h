@@ -35,7 +35,7 @@
 // Collect profiling data.
 //
 // The profile data file format is documented in
-// doc/cpuprofile-fileformat.html
+// docs/cpuprofile-fileformat.html
 
 
 #ifndef BASE_PROFILEDATA_H_
@@ -101,7 +101,7 @@ class ProfileData {
     int      frequency_;                  // Sample frequency.
   };
 
-  static const int kMaxStackDepth = 64;  // Max stack depth stored in profile
+  static const int kMaxStackDepth = 254;  // Max stack depth stored in profile
 
   ProfileData();
   ~ProfileData();

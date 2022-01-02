@@ -56,6 +56,9 @@
 //#define _XOPEN_SOURCE 500
 
 #include <string.h>         // for memcmp
+#ifdef HAVE_ASM_PTRACE_H
+#include <asm/ptrace.h>
+#endif
 #if defined(HAVE_SYS_UCONTEXT_H)
 #include <sys/ucontext.h>
 #elif defined(HAVE_UCONTEXT_H)
@@ -179,7 +182,12 @@ inline void* GetPC(const struct ucontext_t& signal_ucontext) {
 // configure.ac (or set it manually in your config.h).
 #else
 inline void* GetPC(const ucontext_t& signal_ucontext) {
+#if defined(__s390__) && !defined(__s390x__)
+  // Mask out the AMODE31 bit from the PC recorded in the context.
+  return (void*)((unsigned long)signal_ucontext.PC_FROM_UCONTEXT & 0x7fffffffUL);
+#else
   return (void*)signal_ucontext.PC_FROM_UCONTEXT;   // defined in config.h
+#endif
 }
 
 #endif

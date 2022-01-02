@@ -43,7 +43,7 @@
 #include <sys/time.h>     // for setitimer
 
 // Needs to be volatile so compiler doesn't try to optimize it away
-static volatile void* getpc_retval = NULL;    // what GetPC returns
+static void* volatile getpc_retval = NULL;    // what GetPC returns
 static volatile bool prof_handler_called = false;
 
 static void prof_handler(int sig, siginfo_t*, void* signal_ucontext) {
