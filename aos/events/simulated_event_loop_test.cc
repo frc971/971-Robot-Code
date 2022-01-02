@@ -2134,7 +2134,7 @@ TEST_F(SimulatedEventLoopDisconnectTest, NoMessagesWhenDisabled) {
   // Build up the list of all the messages we expect when we come back.
   {
     std::set<const aos::Channel *> statistics_channels;
-    for (const std::pair<std::string_view, const Node *> pi :
+    for (const std::pair<std::string_view, const Node *> &pi :
          std::vector<std::pair<std::string_view, const Node *>>{
              {"/pi1/aos", pi1->node()},
              {"/pi2/aos", pi1->node()},
@@ -2171,7 +2171,7 @@ TEST_F(SimulatedEventLoopDisconnectTest, NoMessagesWhenDisabled) {
   // forwarded, mainly the timestamp message.
   {
     std::set<const aos::Channel *> statistics_channels;
-    for (const std::pair<std::string_view, const Node *> pi :
+    for (const std::pair<std::string_view, const Node *> &pi :
          std::vector<std::pair<std::string_view, const Node *>>{
              {"/pi1/aos", pi1->node()}, {"/pi3/aos", pi1->node()}}) {
       statistics_channels.insert(configuration::GetChannel(
@@ -2202,7 +2202,7 @@ TEST_F(SimulatedEventLoopDisconnectTest, NoMessagesWhenDisabled) {
 
   {
     std::set<const aos::Channel *> statistics_channels;
-    for (const std::pair<std::string_view, const Node *> pi :
+    for (const std::pair<std::string_view, const Node *> &pi :
          std::vector<std::pair<std::string_view, const Node *>>{
              {"/pi1/aos", pi1->node()}, {"/pi3/aos", pi1->node()}}) {
       statistics_channels.insert(configuration::GetChannel(
