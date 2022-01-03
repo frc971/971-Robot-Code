@@ -69,12 +69,16 @@ run_check_transfer_num_obj ""
 run_check_transfer_num_obj "40"
 run_check_transfer_num_obj "4096"
 
-echo -n "Testing $TCMALLOC_UNITTEST with TCMALLOC_AGGRESSIVE_DECOMMIT=f ... "
+echo -n "Testing $TCMALLOC_UNITTEST with TCMALLOC_AGGRESSIVE_DECOMMIT=t ... "
 
-TCMALLOC_AGGRESSIVE_DECOMMIT=f run_unittest
+TCMALLOC_AGGRESSIVE_DECOMMIT=t run_unittest
 
 echo -n "Testing $TCMALLOC_UNITTEST with TCMALLOC_HEAP_LIMIT_MB=512 ... "
 
 TCMALLOC_HEAP_LIMIT_MB=512 run_unittest
+
+echo -n "Testing $TCMALLOC_UNITTEST with TCMALLOC_ENABLE_SIZED_DELETE=t ..."
+
+TCMALLOC_ENABLE_SIZED_DELETE=t run_unittest
 
 echo "PASS"

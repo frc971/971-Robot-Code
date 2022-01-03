@@ -1,11 +1,11 @@
 // -*- Mode: C++; c-basic-offset: 2; indent-tabs-mode: nil -*-
 // Copyright (c) 2005, Google Inc.
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-// 
+//
 //     * Redistributions of source code must retain the above copyright
 // notice, this list of conditions and the following disclaimer.
 //     * Redistributions in binary form must reproduce the above
@@ -15,7 +15,7 @@
 //     * Neither the name of Google Inc. nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
-// 
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 // "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 // LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -48,6 +48,7 @@
 #include <string>
 #include "maybe_threads.h"
 #include "base/basictypes.h"
+#include "base/logging.h"
 
 // __THROW is defined in glibc systems.  It means, counter-intuitively,
 // "This function will never throw an exception."  It's an optional
@@ -68,6 +69,12 @@ extern "C" {
       __THROW ATTRIBUTE_WEAK;
   int pthread_once(pthread_once_t *, void (*)(void))
       ATTRIBUTE_WEAK;
+#ifdef HAVE_FORK
+  int pthread_atfork(void (*__prepare) (void),
+                     void (*__parent) (void),
+                     void (*__child) (void))
+    __THROW ATTRIBUTE_WEAK;
+#endif
 }
 
 #define MAX_PERTHREAD_VALS 16
@@ -155,3 +162,16 @@ int perftools_pthread_once(pthread_once_t *ctl,
     return 0;
   }
 }
+
+#ifdef HAVE_FORK
+
+void perftools_pthread_atfork(void (*before)(),
+                              void (*parent_after)(),
+                              void (*child_after)()) {
+  if (pthread_atfork) {
+    int rv = pthread_atfork(before, parent_after, child_after);
+    CHECK(rv == 0);
+  }
+}
+
+#endif

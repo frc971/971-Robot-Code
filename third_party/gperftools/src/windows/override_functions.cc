@@ -1,11 +1,11 @@
 // -*- Mode: C++; c-basic-offset: 2; indent-tabs-mode: nil -*-
 // Copyright (c) 2007, Google Inc.
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-// 
+//
 //     * Redistributions of source code must retain the above copyright
 // notice, this list of conditions and the following disclaimer.
 //     * Redistributions in binary form must reproduce the above
@@ -15,7 +15,7 @@
 //     * Neither the name of Google Inc. nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
-// 
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 // "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 // LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -30,7 +30,7 @@
 //
 // ---
 // Author: Mike Belshe
-// 
+//
 // To link tcmalloc into a EXE or DLL statically without using the patching
 // facility, we can take a stock libcmt and remove all the allocator functions.
 // When we relink the EXE/DLL with the modified libcmt and tcmalloc, a few
@@ -52,26 +52,70 @@
 
 #include "tcmalloc.cc"
 
-extern "C" void* _recalloc(void* p, size_t n, size_t size) {
-  void* result = realloc(p, n * size);
-  memset(result, 0, n * size);
-  return result;
+extern "C" {
+
+void* _malloc_base(size_t size) {
+  return malloc(size);
 }
 
-extern "C" void* _calloc_impl(size_t n, size_t size) {
+void _free_base(void* p) {
+  free(p);
+}
+
+void* _calloc_base(size_t n, size_t size) {
   return calloc(n, size);
 }
 
-extern "C" size_t _msize(void* p) {
+void* _recalloc(void* old_ptr, size_t n, size_t size) {
+  // Ensure that (n * size) does not overflow
+  if (!(n == 0 || (std::numeric_limits<size_t>::max)() / n >= size)) {
+    errno = ENOMEM;
+    return NULL;
+  }
+
+  const size_t old_size = tc_malloc_size(old_ptr);
+  const size_t new_size = n * size;
+
+  void* new_ptr = realloc(old_ptr, new_size);
+
+  // If the reallocation succeeded and the new block is larger, zero-fill the
+  // new bytes:
+  if (new_ptr != NULL && new_size > old_size) {
+    memset(static_cast<char*>(new_ptr) + old_size, 0, tc_nallocx(new_size, 0) - old_size);
+  }
+
+  return new_ptr;
+}
+
+void* _calloc_impl(size_t n, size_t size) {
+  return calloc(n, size);
+}
+
+size_t _msize(void* p) {
   return MallocExtension::instance()->GetAllocatedSize(p);
 }
 
-extern "C" intptr_t _get_heap_handle() {
+HANDLE __acrt_heap = nullptr;
+
+bool __acrt_initialize_heap() {
+  new TCMallocGuard();
+  return true;
+}
+
+bool __acrt_uninitialize_heap(bool) {
+  return true;
+}
+
+intptr_t _get_heap_handle() {
   return 0;
 }
 
+HANDLE __acrt_getheap() {
+  return __acrt_heap;
+}
+
 // The CRT heap initialization stub.
-extern "C" int _heap_init() {
+int _heap_init() {
   // We intentionally leak this object.  It lasts for the process
   // lifetime.  Trying to teardown at _heap_term() is so late that
   // you can't do anything useful anyway.
@@ -80,12 +124,24 @@ extern "C" int _heap_init() {
 }
 
 // The CRT heap cleanup stub.
-extern "C" void _heap_term() {
+void _heap_term() {
 }
 
-extern "C" int _set_new_mode(int flag) {
+// We set this to 1 because part of the CRT uses a check of _crtheap != 0
+// to test whether the CRT has been initialized.  Once we've ripped out
+// the allocators from libcmt, we need to provide this definition so that
+// the rest of the CRT is still usable.
+void* _crtheap = reinterpret_cast<void*>(1);
+
+int _set_new_mode(int flag) {
   return tc_set_new_mode(flag);
 }
+
+int _query_new_mode() {
+  return tc_query_new_mode();
+}
+
+}  // extern "C"
 
 #ifndef NDEBUG
 #undef malloc
@@ -115,9 +171,3 @@ extern "C" void* _calloc_dbg(size_t n, size_t size, int, const char*, int) {
   return calloc(n, size);
 }
 #endif  // NDEBUG
-
-// We set this to 1 because part of the CRT uses a check of _crtheap != 0
-// to test whether the CRT has been initialized.  Once we've ripped out
-// the allocators from libcmt, we need to provide this definition so that
-// the rest of the CRT is still usable.
-extern "C" void* _crtheap = reinterpret_cast<void*>(1);

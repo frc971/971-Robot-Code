@@ -1,11 +1,11 @@
 // -*- Mode: C++; c-basic-offset: 2; indent-tabs-mode: nil -*-
 // Copyright (c) 2005, Google Inc.
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-// 
+//
 //     * Redistributions of source code must retain the above copyright
 // notice, this list of conditions and the following disclaimer.
 //     * Redistributions in binary form must reproduce the above
@@ -15,7 +15,7 @@
 //     * Neither the name of Google Inc. nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
-// 
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 // "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 // LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -107,8 +107,12 @@ class PERFTOOLS_DLL_DECL MallocExtension {
   virtual bool MallocMemoryStats(int* blocks, size_t* total,
                                  int histogram[kMallocHistogramSize]);
 
-  // Get a human readable description of the current state of the malloc
-  // data structures.  The state is stored as a null-terminated string
+  // Get a human readable description of the following malloc data structures.
+  // - Total inuse memory by application.
+  // - Free memory(thread, central and page heap),
+  // - Freelist of central cache, each class.
+  // - Page heap freelist.
+  // The state is stored as a null-terminated string
   // in a prefix of "buffer[0,buffer_length-1]".
   // REQUIRES: buffer_length > 0.
   virtual void GetStats(char* buffer, int buffer_length);
@@ -119,6 +123,10 @@ class PERFTOOLS_DLL_DECL MallocExtension {
   // therefore be passed to "pprof". This function is equivalent to
   // ReadStackTraces. The main difference is that this function returns
   // serialized data appropriately formatted for use by the pprof tool.
+  //
+  // Since gperftools 2.8 heap samples are not de-duplicated by the
+  // library anymore.
+  //
   // NOTE: by default, tcmalloc does not do any heap sampling, and this
   //       function will always return an empty sample.  To get useful
   //       data from GetHeapSample, you must also set the environment
@@ -158,6 +166,14 @@ class PERFTOOLS_DLL_DECL MallocExtension {
   //            current_allocated_bytes +
   //            fragmentation +
   //            freed memory regions
+  //      This property is not writable.
+  //
+  //  "generic.total_physical_bytes"
+  //      Estimate of total bytes of the physical memory usage by the
+  //      allocator ==
+  //            current_allocated_bytes +
+  //            fragmentation +
+  //            metadata
   //      This property is not writable.
   //
   // tcmalloc
@@ -391,6 +407,15 @@ class PERFTOOLS_DLL_DECL MallocExtension {
   // Like ReadStackTraces(), but returns stack traces that caused growth
   // in the address space size.
   virtual void** ReadHeapGrowthStackTraces();
+
+  // Returns the size in bytes of the calling threads cache.
+  virtual size_t GetThreadCacheSize();
+
+  // Like MarkThreadIdle, but does not destroy the internal data
+  // structures of the thread cache. When the thread resumes, it wil
+  // have an empty cache but will not need to pay to reconstruct the
+  // cache data structures.
+  virtual void MarkThreadTemporarilyIdle();
 };
 
 namespace base {
