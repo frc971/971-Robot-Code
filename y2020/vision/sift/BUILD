@@ -1,6 +1,8 @@
 load(":fast_gaussian.bzl", "fast_gaussian")
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_py_library", "flatbuffer_ts_library")
 
+# Note that this file is also used directly by :fast_gaussian_halide_generator,
+# without any dependencies added here.
 cc_library(
     name = "get_gaussian_kernel",
     hdrs = [
@@ -21,23 +23,32 @@ cc_test(
     ],
 )
 
-cc_binary(
-    name = "fast_gaussian_generator",
+sh_binary(
+    name = "fast_gaussian_halide_generator",
     srcs = [
+        "fast_gaussian_halide_generator.sh",
+    ],
+    data = [
         "fast_gaussian_generator.cc",
+        "get_gaussian_kernel.h",
+        "@amd64_debian_sysroot//:sysroot_files",
+        "@deb_zlib1g_dev_1_2_11_dfsg_1_amd64_deb_repo//file",
+        "@halide_k8//:build_files",
+        "@llvm_toolchain//:all-components-x86_64-linux",
     ],
-    linkopts = [
-        "-lpthread",
-        "-ldl",
-    ],
-    target_compatible_with = ["@platforms//os:linux"],
     deps = [
-        ":get_gaussian_kernel",
-        "//third_party:halide",
-        "//third_party:halide_gengen",
-        # This somehow brings in a zlib that libllvm needs?
-        # TODO(Brian): Remove this dependency, it's not really used.
-        "//third_party:opencv",
+        "@bazel_tools//tools/bash/runfiles",
+    ],
+)
+
+genrule(
+    name = "run_fast_gaussian_halide_generator",
+    outs = [
+        "fast_gaussian_generator",
+    ],
+    cmd = "$(location :fast_gaussian_halide_generator) $@",
+    tools = [
+        ":fast_gaussian_halide_generator",
     ],
 )
 

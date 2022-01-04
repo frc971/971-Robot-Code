@@ -1,5 +1,5 @@
 #include "Halide.h"
-#include "y2020/vision/sift/get_gaussian_kernel.h"
+#include "get_gaussian_kernel.h"
 
 #define CHECK(x, message, ...)                                              \
   do {                                                                      \
