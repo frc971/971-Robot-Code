@@ -11,84 +11,84 @@ load(
 load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "ACTION_NAMES")
 
 def _impl(ctx):
-    if (ctx.attr.cpu == "armhf-debian"):
+    if ctx.attr.cpu == "armhf-debian":
         toolchain_identifier = "clang_linux_armhf"
-    elif (ctx.attr.cpu == "rp2040"):
+    elif ctx.attr.cpu == "rp2040":
         toolchain_identifier = "rp2040"
-    elif (ctx.attr.cpu == "cortex-m4f"):
+    elif ctx.attr.cpu == "cortex-m4f":
         toolchain_identifier = "cortex-m4f"
-    elif (ctx.attr.cpu == "cortex-m4f-k22"):
+    elif ctx.attr.cpu == "cortex-m4f-k22":
         toolchain_identifier = "cortex-m4f-k22"
-    elif (ctx.attr.cpu == "k8"):
+    elif ctx.attr.cpu == "k8":
         toolchain_identifier = "k8_linux"
-    elif (ctx.attr.cpu == "roborio"):
+    elif ctx.attr.cpu == "roborio":
         toolchain_identifier = "roborio_linux"
-    elif (ctx.attr.cpu == "armeabi-v7a"):
+    elif ctx.attr.cpu == "armeabi-v7a":
         toolchain_identifier = "stub_armeabi-v7a"
     else:
         fail("Unreachable")
 
-    if (ctx.attr.cpu == "armeabi-v7a"):
+    if ctx.attr.cpu == "armeabi-v7a":
         host_system_name = "armeabi-v7a"
-    elif (ctx.attr.cpu == "armhf-debian"):
+    elif ctx.attr.cpu == "armhf-debian":
         host_system_name = "linux"
     elif (ctx.attr.cpu == "rp2040" or
           ctx.attr.cpu == "cortex-m4f" or
           ctx.attr.cpu == "cortex-m4f-k22" or
           ctx.attr.cpu == "k8"):
         host_system_name = "local"
-    elif (ctx.attr.cpu == "roborio"):
+    elif ctx.attr.cpu == "roborio":
         host_system_name = "roborio"
     else:
         fail("Unreachable")
 
-    if (ctx.attr.cpu == "armhf-debian"):
+    if ctx.attr.cpu == "armhf-debian":
         target_system_name = "arm_a15"
-    elif (ctx.attr.cpu == "armeabi-v7a"):
+    elif ctx.attr.cpu == "armeabi-v7a":
         target_system_name = "armeabi-v7a"
-    elif (ctx.attr.cpu == "rp2040"):
+    elif ctx.attr.cpu == "rp2040":
         target_system_name = "rp2040"
-    elif (ctx.attr.cpu == "cortex-m4f"):
+    elif ctx.attr.cpu == "cortex-m4f":
         target_system_name = "cortex-m4f"
-    elif (ctx.attr.cpu == "cortex-m4f-k22"):
+    elif ctx.attr.cpu == "cortex-m4f-k22":
         target_system_name = "cortex-m4f-k22"
-    elif (ctx.attr.cpu == "k8"):
+    elif ctx.attr.cpu == "k8":
         target_system_name = "k8"
-    elif (ctx.attr.cpu == "roborio"):
+    elif ctx.attr.cpu == "roborio":
         target_system_name = "roborio"
     else:
         fail("Unreachable")
 
-    if (ctx.attr.cpu == "armeabi-v7a"):
+    if ctx.attr.cpu == "armeabi-v7a":
         target_cpu = "armeabi-v7a"
-    elif (ctx.attr.cpu == "armhf-debian"):
+    elif ctx.attr.cpu == "armhf-debian":
         target_cpu = "armhf-debian"
-    elif (ctx.attr.cpu == "rp2040"):
+    elif ctx.attr.cpu == "rp2040":
         target_cpu = "rp2040"
-    elif (ctx.attr.cpu == "cortex-m4f"):
+    elif ctx.attr.cpu == "cortex-m4f":
         target_cpu = "cortex-m4f"
-    elif (ctx.attr.cpu == "cortex-m4f-k22"):
+    elif ctx.attr.cpu == "cortex-m4f-k22":
         target_cpu = "cortex-m4f-k22"
-    elif (ctx.attr.cpu == "k8"):
+    elif ctx.attr.cpu == "k8":
         target_cpu = "k8"
-    elif (ctx.attr.cpu == "roborio"):
+    elif ctx.attr.cpu == "roborio":
         target_cpu = "roborio"
     else:
         fail("Unreachable")
 
-    if (ctx.attr.cpu == "armeabi-v7a"):
+    if ctx.attr.cpu == "armeabi-v7a":
         target_libc = "armeabi-v7a"
-    elif (ctx.attr.cpu == "rp2040"):
+    elif ctx.attr.cpu == "rp2040":
         target_libc = "rp2040"
-    elif (ctx.attr.cpu == "cortex-m4f"):
+    elif ctx.attr.cpu == "cortex-m4f":
         target_libc = "cortex-m4f"
-    elif (ctx.attr.cpu == "cortex-m4f-k22"):
+    elif ctx.attr.cpu == "cortex-m4f-k22":
         target_libc = "cortex-m4f-k22"
-    elif (ctx.attr.cpu == "armhf-debian"):
+    elif ctx.attr.cpu == "armhf-debian":
         target_libc = "glibc_2.19"
-    elif (ctx.attr.cpu == "k8"):
+    elif ctx.attr.cpu == "k8":
         target_libc = "local"
-    elif (ctx.attr.cpu == "roborio"):
+    elif ctx.attr.cpu == "roborio":
         target_libc = "roborio"
     else:
         fail("Unreachable")
@@ -96,7 +96,7 @@ def _impl(ctx):
     if (ctx.attr.cpu == "armhf-debian" or
         ctx.attr.cpu == "k8"):
         compiler = "clang"
-    elif (ctx.attr.cpu == "armeabi-v7a"):
+    elif ctx.attr.cpu == "armeabi-v7a":
         compiler = "compiler"
     elif (ctx.attr.cpu == "rp2040" or
           ctx.attr.cpu == "cortex-m4f" or
@@ -106,36 +106,36 @@ def _impl(ctx):
     else:
         fail("Unreachable")
 
-    if (ctx.attr.cpu == "armeabi-v7a"):
+    if ctx.attr.cpu == "armeabi-v7a":
         abi_version = "armeabi-v7a"
-    elif (ctx.attr.cpu == "armhf-debian"):
+    elif ctx.attr.cpu == "armhf-debian":
         abi_version = "clang_6.0"
-    elif (ctx.attr.cpu == "rp2040"):
+    elif ctx.attr.cpu == "rp2040":
         abi_version = "rp2040"
-    elif (ctx.attr.cpu == "cortex-m4f"):
+    elif ctx.attr.cpu == "cortex-m4f":
         abi_version = "cortex-m4f"
-    elif (ctx.attr.cpu == "cortex-m4f-k22"):
+    elif ctx.attr.cpu == "cortex-m4f-k22":
         abi_version = "cortex-m4f-k22"
-    elif (ctx.attr.cpu == "k8"):
+    elif ctx.attr.cpu == "k8":
         abi_version = "local"
-    elif (ctx.attr.cpu == "roborio"):
+    elif ctx.attr.cpu == "roborio":
         abi_version = "roborio"
     else:
         fail("Unreachable")
 
-    if (ctx.attr.cpu == "armeabi-v7a"):
+    if ctx.attr.cpu == "armeabi-v7a":
         abi_libc_version = "armeabi-v7a"
-    elif (ctx.attr.cpu == "rp2040"):
+    elif ctx.attr.cpu == "rp2040":
         abi_libc_version = "rp2040"
-    elif (ctx.attr.cpu == "cortex-m4f"):
+    elif ctx.attr.cpu == "cortex-m4f":
         abi_libc_version = "cortex-m4f"
-    elif (ctx.attr.cpu == "cortex-m4f-k22"):
+    elif ctx.attr.cpu == "cortex-m4f-k22":
         abi_libc_version = "cortex-m4f-k22"
-    elif (ctx.attr.cpu == "armhf-debian"):
+    elif ctx.attr.cpu == "armhf-debian":
         abi_libc_version = "glibc_2.19"
-    elif (ctx.attr.cpu == "k8"):
+    elif ctx.attr.cpu == "k8":
         abi_libc_version = "local"
-    elif (ctx.attr.cpu == "roborio"):
+    elif ctx.attr.cpu == "roborio":
         abi_libc_version = "roborio"
     else:
         fail("Unreachable")
@@ -192,7 +192,7 @@ def _impl(ctx):
         ACTION_NAMES.cpp_link_nodeps_dynamic_library,
     ]
 
-    if (ctx.attr.cpu == "roborio"):
+    if ctx.attr.cpu == "roborio":
         objcopy_embed_data_action = action_config(
             action_name = "objcopy_embed_data",
             enabled = True,
@@ -202,7 +202,7 @@ def _impl(ctx):
                 ),
             ],
         )
-    elif (ctx.attr.cpu == "armhf-debian"):
+    elif ctx.attr.cpu == "armhf-debian":
         objcopy_embed_data_action = action_config(
             action_name = "objcopy_embed_data",
             enabled = True,
@@ -210,7 +210,7 @@ def _impl(ctx):
                 tool(path = "linaro_linux_gcc/arm-linux-gnueabihf-objcopy"),
             ],
         )
-    elif (ctx.attr.cpu == "k8"):
+    elif ctx.attr.cpu == "k8":
         objcopy_embed_data_action = action_config(
             action_name = "objcopy_embed_data",
             enabled = True,
@@ -227,7 +227,7 @@ def _impl(ctx):
     else:
         objcopy_embed_data_action = None
 
-    if (ctx.attr.cpu == "armeabi-v7a"):
+    if ctx.attr.cpu == "armeabi-v7a":
         action_configs = []
     elif (ctx.attr.cpu == "armhf-debian" or
           ctx.attr.cpu == "rp2040" or
@@ -258,7 +258,7 @@ def _impl(ctx):
 
     supports_pic_feature = feature(name = "supports_pic", enabled = True)
 
-    if (ctx.attr.cpu == "k8"):
+    if ctx.attr.cpu == "k8":
         default_compile_flags_feature = feature(
             name = "default_compile_flags",
             enabled = True,
@@ -351,7 +351,7 @@ def _impl(ctx):
                 ),
             ],
         )
-    elif (ctx.attr.cpu == "cortex-m4f-k22"):
+    elif ctx.attr.cpu == "cortex-m4f-k22":
         default_compile_flags_feature = feature(
             name = "default_compile_flags",
             enabled = True,
@@ -438,7 +438,7 @@ def _impl(ctx):
                 ),
             ],
         )
-    elif (ctx.attr.cpu == "cortex-m4f"):
+    elif ctx.attr.cpu == "cortex-m4f":
         default_compile_flags_feature = feature(
             name = "default_compile_flags",
             enabled = True,
@@ -525,7 +525,7 @@ def _impl(ctx):
                 ),
             ],
         )
-    elif (ctx.attr.cpu == "rp2040"):
+    elif ctx.attr.cpu == "rp2040":
         default_compile_flags_feature = feature(
             name = "default_compile_flags",
             enabled = True,
@@ -607,7 +607,7 @@ def _impl(ctx):
                 ),
             ],
         )
-    elif (ctx.attr.cpu == "armhf-debian"):
+    elif ctx.attr.cpu == "armhf-debian":
         default_compile_flags_feature = feature(
             name = "default_compile_flags",
             enabled = True,
@@ -733,7 +733,7 @@ def _impl(ctx):
             ],
             implies = ["all_modes"],
         )
-    elif (ctx.attr.cpu == "roborio"):
+    elif ctx.attr.cpu == "roborio":
         dbg_feature = feature(
             name = "dbg",
             flag_sets = [
@@ -795,7 +795,7 @@ def _impl(ctx):
             ],
             implies = ["all_modes"],
         )
-    elif (ctx.attr.cpu == "roborio"):
+    elif ctx.attr.cpu == "roborio":
         fastbuild_feature = feature(
             name = "fastbuild",
             flag_sets = [
@@ -830,7 +830,7 @@ def _impl(ctx):
         ],
     )
 
-    if (ctx.attr.cpu == "roborio"):
+    if ctx.attr.cpu == "roborio":
         opt_feature = feature(
             name = "opt",
             flag_sets = [
@@ -949,7 +949,7 @@ def _impl(ctx):
                 ),
             ],
         )
-    elif (ctx.attr.cpu == "roborio"):
+    elif ctx.attr.cpu == "roborio":
         include_paths_feature = feature(
             name = "include_paths",
             enabled = True,
@@ -1003,7 +1003,7 @@ def _impl(ctx):
         ],
     )
 
-    if (ctx.attr.cpu == "roborio"):
+    if ctx.attr.cpu == "roborio":
         default_link_flags_feature = feature(
             name = "default_link_flags",
             enabled = True,
@@ -1027,7 +1027,7 @@ def _impl(ctx):
                 ),
             ],
         )
-    elif (ctx.attr.cpu == "cortex-m4f-k22"):
+    elif ctx.attr.cpu == "cortex-m4f-k22":
         default_link_flags_feature = feature(
             name = "default_link_flags",
             enabled = True,
@@ -1061,7 +1061,7 @@ def _impl(ctx):
                 ),
             ],
         )
-    elif (ctx.attr.cpu == "cortex-m4f"):
+    elif ctx.attr.cpu == "cortex-m4f":
         default_link_flags_feature = feature(
             name = "default_link_flags",
             enabled = True,
@@ -1095,7 +1095,7 @@ def _impl(ctx):
                 ),
             ],
         )
-    elif (ctx.attr.cpu == "rp2040"):
+    elif ctx.attr.cpu == "rp2040":
         default_link_flags_feature = feature(
             name = "default_link_flags",
             enabled = True,
@@ -1119,7 +1119,7 @@ def _impl(ctx):
                 # TODO(austin): I'd love to turn --gc-sections on, but that breaks things.
             ],
         )
-    elif (ctx.attr.cpu == "k8"):
+    elif ctx.attr.cpu == "k8":
         default_link_flags_feature = feature(
             name = "default_link_flags",
             enabled = True,
@@ -1161,7 +1161,7 @@ def _impl(ctx):
                 ),
             ],
         )
-    elif (ctx.attr.cpu == "armhf-debian"):
+    elif ctx.attr.cpu == "armhf-debian":
         default_link_flags_feature = feature(
             name = "default_link_flags",
             enabled = True,
@@ -1204,7 +1204,7 @@ def _impl(ctx):
     else:
         default_link_flags_feature = None
 
-    if (ctx.attr.cpu == "roborio"):
+    if ctx.attr.cpu == "roborio":
         all_modes_feature = feature(
             name = "all_modes",
             enabled = True,
@@ -1274,7 +1274,7 @@ def _impl(ctx):
                 ),
             ],
         )
-    elif (ctx.attr.cpu == "armhf-debian"):
+    elif ctx.attr.cpu == "armhf-debian":
         all_modes_feature = feature(
             name = "all_modes",
             flag_sets = [
@@ -1310,7 +1310,7 @@ def _impl(ctx):
                 ),
             ],
         )
-    elif (ctx.attr.cpu == "k8"):
+    elif ctx.attr.cpu == "k8":
         all_modes_feature = feature(
             name = "all_modes",
             flag_sets = [
@@ -1338,7 +1338,7 @@ def _impl(ctx):
 
     supports_dynamic_linker_feature = feature(name = "supports_dynamic_linker", enabled = True)
 
-    if (ctx.attr.cpu == "k8"):
+    if ctx.attr.cpu == "k8":
         unfiltered_compile_flags_feature = feature(
             name = "unfiltered_compile_flags",
             enabled = True,
@@ -1408,7 +1408,7 @@ def _impl(ctx):
                 ),
             ],
         )
-    elif (ctx.attr.cpu == "armhf-debian"):
+    elif ctx.attr.cpu == "armhf-debian":
         unfiltered_compile_flags_feature = feature(
             name = "unfiltered_compile_flags",
             enabled = True,
@@ -1468,17 +1468,6 @@ def _impl(ctx):
                         expand_if_available = "dependency_file",
                     ),
                 ],
-            ),
-        ],
-    )
-
-    objcopy_embed_flags_feature = feature(
-        name = "objcopy_embed_flags",
-        enabled = True,
-        flag_sets = [
-            flag_set(
-                actions = ["objcopy_embed_data"],
-                flag_groups = [flag_group(flags = ["-I", "binary"])],
             ),
         ],
     )
@@ -1660,7 +1649,6 @@ def _impl(ctx):
             fastbuild_feature,
             all_modes_feature,
             include_paths_feature,
-            objcopy_embed_flags_feature,
             user_compile_flags_feature,
             sysroot_feature,
             unfiltered_compile_flags_feature,
@@ -1677,12 +1665,11 @@ def _impl(ctx):
             pie_for_linking_feature,
             supports_dynamic_linker_feature,
             supports_pic_feature,
-            objcopy_embed_flags_feature,
             user_compile_flags_feature,
             sysroot_feature,
             unfiltered_compile_flags_feature,
         ]
-    elif (ctx.attr.cpu == "roborio"):
+    elif ctx.attr.cpu == "roborio":
         features = [
             default_link_flags_feature,
             compile_flags1_feature,
@@ -1698,33 +1685,32 @@ def _impl(ctx):
             pie_for_linking_feature,
             supports_dynamic_linker_feature,
             supports_pic_feature,
-            objcopy_embed_flags_feature,
             user_compile_flags_feature,
             sysroot_feature,
             unfiltered_compile_flags_feature,
         ]
-    elif (ctx.attr.cpu == "armeabi-v7a"):
+    elif ctx.attr.cpu == "armeabi-v7a":
         features = [supports_pic_feature]
     else:
         fail("Unreachable")
 
-    if (ctx.attr.cpu == "armeabi-v7a"):
+    if ctx.attr.cpu == "armeabi-v7a":
         cxx_builtin_include_directories = []
-    elif (ctx.attr.cpu == "roborio"):
+    elif ctx.attr.cpu == "roborio":
         cxx_builtin_include_directories = [
             "%package(@arm_frc_linux_gnueabi_repo//arm-frc2020-linux-gnueabi/usr/lib/gcc/arm-frc2020-linux-gnueabi/7.3.0/include)%",
             "%package(@arm_frc_linux_gnueabi_repo//arm-frc2020-linux-gnueabi/usr/lib/gcc/arm-frc2020-linux-gnueabi/7.3.0/include-fixed)%",
             "%package(@arm_frc_linux_gnueabi_repo//arm-frc2020-linux-gnueabi/usr/include/c++/7.3.0/arm-frc2020-linux-gnueabi)%",
             "%package(@arm_frc_linux_gnueabi_repo//arm-frc2020-linux-gnueabi/usr/include/c++/7.3.0/backward)%",
         ]
-    elif (ctx.attr.cpu == "k8"):
+    elif ctx.attr.cpu == "k8":
         cxx_builtin_include_directories = [
             "%package(@clang_6p0_repo//usr)%/lib/llvm-6.0/lib/clang/6.0.0/include",
             "%package(@amd64_debian_sysroot//usr)%/include",
             "%package(@amd64_debian_sysroot//usr)%/lib/gcc/x86_64-linux-gnu/7/include",
             "%package(@amd64_debian_sysroot//usr)%/lib/gcc/x86_64-linux-gnu/7/include-fixed",
         ]
-    elif (ctx.attr.cpu == "armhf-debian"):
+    elif ctx.attr.cpu == "armhf-debian":
         cxx_builtin_include_directories = [
             "%package(@linaro_linux_gcc_repo//include)%",
             "%package(@armhf_debian_rootfs//usr/include)%",
@@ -1749,7 +1735,7 @@ def _impl(ctx):
 
     make_variables = []
 
-    if (ctx.attr.cpu == "roborio"):
+    if ctx.attr.cpu == "roborio":
         tool_paths = [
             tool_path(
                 name = "ar",
@@ -1797,7 +1783,7 @@ def _impl(ctx):
                 path = "arm-frc-linux-gnueabi/arm-frc-linux-gnueabi-strip",
             ),
         ]
-    elif (ctx.attr.cpu == "k8"):
+    elif ctx.attr.cpu == "k8":
         tool_paths = [
             tool_path(
                 name = "ar",
@@ -1893,7 +1879,7 @@ def _impl(ctx):
                 path = "gcc_arm_none_eabi/arm-none-eabi-strip",
             ),
         ]
-    elif (ctx.attr.cpu == "armhf-debian"):
+    elif ctx.attr.cpu == "armhf-debian":
         tool_paths = [
             tool_path(
                 name = "ar",
@@ -1940,7 +1926,7 @@ def _impl(ctx):
                 path = "linaro_linux_gcc/arm-linux-gnueabihf-strip",
             ),
         ]
-    elif (ctx.attr.cpu == "armeabi-v7a"):
+    elif ctx.attr.cpu == "armeabi-v7a":
         tool_paths = [
             tool_path(name = "ar", path = "/bin/false"),
             tool_path(name = "compat-ld", path = "/bin/false"),
