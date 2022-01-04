@@ -5,18 +5,14 @@
 #include <cmath>
 
 #include "aos/logging/logging.h"
+#include "aos/network/team_number.h"
 #include "aos/util/math.h"
 #include "frc971/control_loops/drivetrain/localizer_generated.h"
 #include "y2020/actors/auto_splines.h"
+#include "y2020/constants.h"
 #include "y2020/control_loops/drivetrain/drivetrain_base.h"
 
 DEFINE_bool(spline_auto, false, "If true, define a spline autonomous mode");
-DEFINE_bool(target_aligned, true,
-            "If true, run the Infinite Recharge autonomous that starts aligned "
-            "with the target");
-DEFINE_bool(target_offset, false,
-            "If true, run the Infinite Recharge autonomous that starts offset "
-            "from the target");
 DEFINE_bool(just_shoot, false,
             "If true, run the autonomous that just shoots balls.");
 
@@ -45,6 +41,9 @@ AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
           event_loop->MakeFetcher<aos::JoystickState>("/aos")),
       robot_state_fetcher_(event_loop->MakeFetcher<aos::RobotState>("/aos")),
       auto_splines_() {
+  practice_robot_ =
+      ::aos::network::GetTeamNumber() == constants::Values::kPracticeTeamNumber;
+
   set_max_drivetrain_voltage(12.0);
   replan_timer_ = event_loop->AddTimer([this]() { Replan(); });
   event_loop->OnRun([this, event_loop]() {
@@ -99,30 +98,32 @@ void AutonomousActor::Replan() {
                                         &auto_splines_, std::placeholders::_1),
                               SplineDirection::kForward);
     starting_position_ = test_spline_->starting_position();
-  } else if (FLAGS_target_aligned) {
-    target_aligned_splines_ = {
-        PlanSpline(std::bind(&AutonomousSplines::TargetAligned1, &auto_splines_,
-                             std::placeholders::_1, alliance_),
-                   SplineDirection::kForward),
-        PlanSpline(std::bind(&AutonomousSplines::TargetAligned2, &auto_splines_,
-                             std::placeholders::_1, alliance_),
-                   SplineDirection::kBackward),
-        PlanSpline(std::bind(&AutonomousSplines::TargetAligned3, &auto_splines_,
-                             std::placeholders::_1, alliance_),
-                   SplineDirection::kForward)};
-    starting_position_ = target_aligned_splines_.value()[0].starting_position();
-    CHECK(starting_position_);
-  } else if (FLAGS_target_offset) {
-    target_offset_splines_ = {
-        PlanSpline(std::bind(&AutonomousSplines::TargetOffset1, &auto_splines_,
-                             std::placeholders::_1),
-                   SplineDirection::kForward),
-        PlanSpline(std::bind(&AutonomousSplines::TargetOffset2, &auto_splines_,
-                             std::placeholders::_1),
-                   SplineDirection::kBackward)};
-    starting_position_ = target_offset_splines_.value()[0].starting_position();
   } else {
-    starting_position_ = Eigen::Vector3d::Zero();
+    if (practice_robot_) {
+      fender_splines_ = {PlanSpline(
+          std::bind(&AutonomousSplines::FarSideFender, &auto_splines_,
+                    std::placeholders::_1, alliance_),
+          SplineDirection::kForward)};
+      starting_position_ = fender_splines_.value()[0].starting_position();
+      CHECK(starting_position_);
+    } else {
+      target_aligned_splines_ = {
+          PlanSpline(
+              std::bind(&AutonomousSplines::TargetAligned1, &auto_splines_,
+                        std::placeholders::_1, alliance_),
+              SplineDirection::kForward),
+          PlanSpline(
+              std::bind(&AutonomousSplines::TargetAligned2, &auto_splines_,
+                        std::placeholders::_1, alliance_),
+              SplineDirection::kBackward),
+          PlanSpline(
+              std::bind(&AutonomousSplines::TargetAligned3, &auto_splines_,
+                        std::placeholders::_1, alliance_),
+              SplineDirection::kForward)};
+      starting_position_ =
+          target_aligned_splines_.value()[0].starting_position();
+      CHECK(starting_position_);
+    }
   }
 
   is_planned_ = true;
@@ -162,15 +163,14 @@ bool AutonomousActor::RunAction(
   }
   if (FLAGS_spline_auto) {
     SplineAuto();
-  } else if (FLAGS_target_aligned) {
-    TargetAligned();
-  } else if (FLAGS_target_offset) {
-    TargetOffset();
-  } else if (FLAGS_just_shoot) {
-    JustShoot();
   } else {
-    return DriveFwd();
+    if (practice_robot_) {
+      Fender();
+    } else {
+      TargetAligned();
+    }
   }
+
   return true;
 }
 
@@ -260,6 +260,33 @@ void AutonomousActor::TargetAligned() {
 
   if (!splines[2].WaitForSplineDistanceRemaining(0.02)) return;
 
+  LOG(INFO) << "Took "
+            << chrono::duration<double>(aos::monotonic_clock::now() -
+                                        start_time)
+                   .count();
+}
+
+void AutonomousActor::Fender() {
+  aos::monotonic_clock::time_point start_time = aos::monotonic_clock::now();
+  CHECK(fender_splines_);
+  auto &splines = *fender_splines_;
+
+  // Spin up.
+  set_shooting(false);
+  set_preloading(true);
+  set_shooter_tracking(false);
+  SendSuperstructureGoal();
+
+  if (!splines[0].WaitForPlan()) return;
+  splines[0].Start();
+
+  if (!splines[0].WaitForSplineDistanceRemaining(0.02)) return;
+
+  SendSuperstructureGoal();
+  std::this_thread::sleep_for(chrono::milliseconds(500));
+  ApplyThrottle(0.2);
+  set_shooting(true);
+  SendSuperstructureGoal();
   LOG(INFO) << "Took "
             << chrono::duration<double>(aos::monotonic_clock::now() -
                                         start_time)
@@ -356,11 +383,17 @@ void AutonomousActor::SendSuperstructureGoal() {
     intake_offset = intake_builder.Finish();
   }
 
+  flatbuffers::Offset<superstructure::ShooterGoal> shooter_offset =
+      superstructure::CreateShooterGoal(*builder.fbb(), 400.0, 200.0);
+
   superstructure::Goal::Builder superstructure_builder =
       builder.MakeBuilder<superstructure::Goal>();
 
   superstructure_builder.add_intake(intake_offset);
   superstructure_builder.add_intake_preloading(preloading_);
+  if (!shooter_tracking_ && shooting_) {
+    superstructure_builder.add_shooter(shooter_offset);
+  }
   superstructure_builder.add_roller_voltage(roller_voltage_);
   superstructure_builder.add_roller_speed_compensation(
       kRollerSpeedCompensation);
