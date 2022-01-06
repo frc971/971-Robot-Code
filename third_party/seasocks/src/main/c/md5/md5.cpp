@@ -173,28 +173,18 @@ md5_process(md5_state_t* pms, const md5_byte_t* data /*[64]*/) {
     {
 #if BYTE_ORDER == 0
         /*
-     * Determine dynamically whether this is a big-endian or
-     * little-endian machine, since we can use a more efficient
-     * algorithm on the latter.
-     */
+         * Determine dynamically whether this is a big-endian or
+         * little-endian machine, since we can use a more efficient
+         * algorithm on the latter.
+         */
         static const int w = 1;
 
         if (*((const md5_byte_t*) &w)) /* dynamic little-endian */
 #endif
 #if BYTE_ORDER <= 0 /* little-endian */
         {
-            /*
-         * On little-endian machines, we can process properly aligned
-         * data without copying it.
-         */
-            if (!((data - (const md5_byte_t*) 0) & 3)) {
-                /* data are properly aligned */
-                X = (const md5_word_t*) data;
-            } else {
-                /* not aligned */
-                memcpy(xbuf, data, 64);
-                X = xbuf;
-            }
+            memcpy(xbuf, data, 64);
+            X = xbuf;
         }
 #endif
 #if BYTE_ORDER == 0
@@ -203,9 +193,9 @@ md5_process(md5_state_t* pms, const md5_byte_t* data /*[64]*/) {
 #if BYTE_ORDER >= 0 /* big-endian */
         {
             /*
-         * On big-endian machines, we must arrange the bytes in the
-         * right order.
-         */
+             * On big-endian machines, we must arrange the bytes in the
+             * right order.
+             */
             const md5_byte_t* xp = data;
             int i;
 
