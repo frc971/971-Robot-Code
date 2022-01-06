@@ -939,8 +939,8 @@ typedef struct _RTL_CRITICAL_SECTION GTEST_CRITICAL_SECTION;
 // A macro to disallow copy constructor and operator=
 // This should be used in the private: declarations for a class.
 #define GTEST_DISALLOW_COPY_AND_ASSIGN_(type) \
-  type(type const &) = delete; \
-  GTEST_DISALLOW_ASSIGN_(type)
+  type(type const&) = delete; \
+  type& operator=(type const&) = delete
 
 // Tell the compiler to warn about unused return values for functions declared
 // with this macro.  The macro should be used on function declarations
@@ -1208,8 +1208,6 @@ class GTEST_API_ RE {
   const char* full_pattern_;  // For FullMatch();
 
 # endif
-
-  GTEST_DISALLOW_ASSIGN_(RE);
 };
 
 #endif  // GTEST_USES_PCRE
@@ -7640,8 +7638,6 @@ class NativeArray {
   const Element* array_;
   size_t size_;
   void (NativeArray::*clone_)(const Element*, size_t);
-
-  GTEST_DISALLOW_ASSIGN_(NativeArray);
 };
 
 // Backport of std::index_sequence.
