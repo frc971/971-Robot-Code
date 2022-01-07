@@ -584,11 +584,11 @@ class SimulatedEventLoop : public EventLoop {
     send_delay_ = send_delay;
   }
 
-  monotonic_clock::time_point monotonic_now() override {
+  monotonic_clock::time_point monotonic_now() const override {
     return node_event_loop_factory_->monotonic_now();
   }
 
-  realtime_clock::time_point realtime_now() override {
+  realtime_clock::time_point realtime_now() const override {
     return node_event_loop_factory_->realtime_now();
   }
 

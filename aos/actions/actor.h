@@ -90,7 +90,7 @@ class ActorBase {
 
   ::aos::EventLoop *event_loop() { return event_loop_; }
 
-  ::aos::monotonic_clock::time_point monotonic_now() {
+  ::aos::monotonic_clock::time_point monotonic_now() const {
     return event_loop_->monotonic_now();
   }
 

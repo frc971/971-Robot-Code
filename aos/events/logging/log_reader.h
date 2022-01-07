@@ -400,7 +400,7 @@ class LogReader {
           ->node_event_loop_factory_->node();
     }
 
-    monotonic_clock::time_point monotonic_now() {
+    monotonic_clock::time_point monotonic_now() const {
       return node_event_loop_factory_->monotonic_now();
     }
 

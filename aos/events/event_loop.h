@@ -542,8 +542,8 @@ class EventLoop {
   virtual ~EventLoop();
 
   // Current time.
-  virtual monotonic_clock::time_point monotonic_now() = 0;
-  virtual realtime_clock::time_point realtime_now() = 0;
+  virtual monotonic_clock::time_point monotonic_now() const = 0;
+  virtual realtime_clock::time_point realtime_now() const = 0;
 
   template <typename T>
   const Channel *GetChannel(const std::string_view channel_name) {

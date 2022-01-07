@@ -48,10 +48,10 @@ class ShmEventLoop : public EventLoop {
   // Exits the event loop.  Async safe.
   void Exit();
 
-  aos::monotonic_clock::time_point monotonic_now() override {
+  aos::monotonic_clock::time_point monotonic_now() const override {
     return aos::monotonic_clock::now();
   }
-  aos::realtime_clock::time_point realtime_now() override {
+  aos::realtime_clock::time_point realtime_now() const override {
     return aos::realtime_clock::now();
   }
 
