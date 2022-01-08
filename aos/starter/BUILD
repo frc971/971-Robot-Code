@@ -23,6 +23,21 @@ filegroup(
 )
 
 cc_library(
+    name = "subprocess",
+    srcs = ["subprocess.cc"],
+    hdrs = ["subprocess.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":starter_fbs",
+        ":starter_rpc_fbs",
+        "//aos/events:event_loop",
+        "//aos/events:shm_event_loop",
+        "//aos/util:scoped_pipe",
+        "@com_github_google_glog//:glog",
+    ],
+)
+
+cc_library(
     name = "starterd_lib",
     srcs = ["starterd_lib.cc"],
     hdrs = ["starterd_lib.h"],
@@ -30,6 +45,7 @@ cc_library(
     deps = [
         ":starter_fbs",
         ":starter_rpc_fbs",
+        ":subprocess",
         "//aos:configuration",
         "//aos:macros",
         "//aos/events:shm_event_loop",
