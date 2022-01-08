@@ -1,6 +1,7 @@
 #include "starterd_lib.h"
 
 #include <fcntl.h>
+#include <grp.h>
 #include <pwd.h>
 #include <sys/fsuid.h>
 #include <sys/prctl.h>
@@ -24,11 +25,11 @@ Application::Application(const aos::Application *application,
                 ? application->executable_name()->string_view()
                 : application->name()->string_view()),
       args_(1),
-      user_(application->has_user() ? FindUid(application->user()->c_str())
+      user_name_(application->has_user() ? application->user()->str() : ""),
+      user_(application->has_user() ? FindUid(user_name_.c_str())
                                     : std::nullopt),
-      group_(application->has_user()
-                 ? FindPrimaryGidForUser(application->user()->c_str())
-                 : std::nullopt),
+      group_(application->has_user() ? FindPrimaryGidForUser(user_name_.c_str())
+                                     : std::nullopt),
       autostart_(application->autostart()),
       event_loop_(event_loop),
       start_timer_(event_loop_->AddTimer([this] {
@@ -91,6 +92,23 @@ void Application::DoStart() {
   }
 
   if (group_) {
+    CHECK(!user_name_.empty());
+    // The manpage for setgroups says we just need CAP_SETGID, but empirically
+    // we also need the effective UID to be 0 to make it work. user_ must also
+    // be set so we change this effective UID back later.
+    CHECK(user_);
+    if (seteuid(0) == -1) {
+      write_pipe_.Write(
+          static_cast<uint32_t>(aos::starter::LastStopReason::SET_GRP_ERR));
+      PLOG(FATAL) << "Could not seteuid(0) for " << name_
+                  << " in preparation for setting groups";
+    }
+    if (initgroups(user_name_.c_str(), *group_) == -1) {
+      write_pipe_.Write(
+          static_cast<uint32_t>(aos::starter::LastStopReason::SET_GRP_ERR));
+      PLOG(FATAL) << "Could not initialize normal groups for " << name_
+                  << " as " << user_name_ << " with " << *group_;
+    }
     if (setgid(*group_) == -1) {
       write_pipe_.Write(
           static_cast<uint32_t>(aos::starter::LastStopReason::SET_GRP_ERR));

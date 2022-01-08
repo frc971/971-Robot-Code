@@ -117,6 +117,7 @@ class Application {
   std::string name_;
   std::string path_;
   std::vector<char *> args_;
+  std::string user_name_;
   std::optional<uid_t> user_;
   std::optional<gid_t> group_;
 

@@ -24,6 +24,10 @@ int main(int argc, char **argv) {
         return 1;
       }
     }
+    // Change the real and effective IDs to the user we're running as. The
+    // effective IDs mean files we access (like shared memory) will happen as
+    // that user. The real IDs allow child processes with an different effective
+    // ID to still participate in signal sending/receiving.
     constexpr int kUnchanged = -1;
     if (setresgid(/* ruid */ gid, /* euid */ gid,
                   /* suid */ kUnchanged) != 0) {
