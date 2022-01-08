@@ -31,6 +31,7 @@ Application::Application(const aos::Application *application,
       group_(application->has_user() ? FindPrimaryGidForUser(user_name_.c_str())
                                      : std::nullopt),
       autostart_(application->autostart()),
+      autorestart_(application->autorestart()),
       event_loop_(event_loop),
       start_timer_(event_loop_->AddTimer([this] {
         status_ = aos::starter::State::RUNNING;
@@ -319,13 +320,17 @@ bool Application::MaybeHandleSignal() {
     case aos::starter::State::STARTING: {
       LOG(WARNING) << "Failed to start '" << name_ << "' on pid " << pid_
                    << " : Exited with status " << exit_code_;
-      QueueStart();
+      if (autorestart()) {
+        QueueStart();
+      }
       break;
     }
     case aos::starter::State::RUNNING: {
       LOG(WARNING) << "Application '" << name_ << "' pid " << pid_
                    << " exited unexpectedly with status " << exit_code_;
-      QueueStart();
+      if (autorestart()) {
+        QueueStart();
+      }
       break;
     }
     case aos::starter::State::STOPPING: {

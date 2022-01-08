@@ -97,6 +97,8 @@ class Application {
 
   bool autostart() const { return autostart_; }
 
+  bool autorestart() const { return autorestart_; }
+
  private:
   void DoStart();
 
@@ -130,6 +132,7 @@ class Application {
   bool queue_restart_ = false;
   bool terminating_ = false;
   bool autostart_ = true;
+  bool autorestart_ = true;
 
   aos::starter::State status_ = aos::starter::State::STOPPED;
   aos::starter::LastStopReason stop_reason_ =

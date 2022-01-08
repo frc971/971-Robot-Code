@@ -316,5 +316,95 @@ TEST_F(StarterdTest, Autostart) {
   starterd_thread.join();
 }
 
+// Tests that starterd respects autorestart.
+TEST_F(StarterdTest, DeathNoRestartTest) {
+  const std::string config_file =
+      ArtifactPath("aos/events/pingpong_config.json");
+
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+      aos::configuration::ReadConfig(config_file);
+
+  const std::string test_dir = aos::testing::TestTmpDir();
+
+  auto new_config = aos::configuration::MergeWithConfig(
+      &config.message(), absl::StrFormat(
+                             R"({"applications": [
+                                  {
+                                    "name": "ping",
+                                    "executable_name": "%s",
+                                    "args": ["--shm_base", "%s/aos"],
+                                    "autorestart": false
+                                  },
+                                  {
+                                    "name": "pong",
+                                    "executable_name": "%s",
+                                    "args": ["--shm_base", "%s/aos"]
+                                  }
+                                ]})",
+                             ArtifactPath("aos/events/ping"), test_dir,
+                             ArtifactPath("aos/events/pong"), test_dir));
+
+  const aos::Configuration *config_msg = &new_config.message();
+
+  // Set up starter with config file
+  aos::starter::Starter starter(config_msg);
+
+  // Create an event loop to watch for the Status message to watch the state
+  // transitions.
+  aos::ShmEventLoop watcher_loop(config_msg);
+  watcher_loop.SkipAosLog();
+
+  watcher_loop
+      .AddTimer([&watcher_loop] {
+        watcher_loop.Exit();
+        SUCCEED();
+      })
+      ->Setup(watcher_loop.monotonic_now() + std::chrono::seconds(11));
+
+  int test_stage = 0;
+  uint64_t id;
+
+  watcher_loop.MakeWatcher("/aos", [&test_stage, &watcher_loop,
+                                    &id](const aos::starter::Status &status) {
+    const aos::starter::ApplicationStatus *app_status =
+        FindApplicationStatus(status, "ping");
+    if (app_status == nullptr) {
+      return;
+    }
+
+    switch (test_stage) {
+      case 0: {
+        if (app_status->has_state() &&
+            app_status->state() == aos::starter::State::RUNNING) {
+          LOG(INFO) << "Ping is running";
+          test_stage = 1;
+          ASSERT_TRUE(app_status->has_pid());
+          ASSERT_TRUE(kill(app_status->pid(), SIGINT) != -1);
+          ASSERT_TRUE(app_status->has_id());
+          id = app_status->id();
+        }
+        break;
+      }
+
+      case 1: {
+        if (app_status->has_state() &&
+            app_status->state() == aos::starter::State::RUNNING &&
+            app_status->has_id() && app_status->id() != id) {
+          LOG(INFO) << "Ping restarted, it shouldn't...";
+          watcher_loop.Exit();
+          FAIL();
+        }
+        break;
+      }
+    }
+  });
+
+  std::thread starterd_thread([&starter] { starter.Run(); });
+  watcher_loop.Run();
+
+  starter.Cleanup();
+  starterd_thread.join();
+}
+
 }  // namespace starter
 }  // namespace aos

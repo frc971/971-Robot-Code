@@ -65,7 +65,7 @@ cc_test(
         "//aos/events:pong",
     ],
     linkopts = ["-lstdc++fs"],
-    shard_count = 3,
+    shard_count = 4,
     # The roborio compiler doesn't support <filesystem>.
     target_compatible_with =
         select({

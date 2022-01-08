@@ -146,6 +146,9 @@ table Application {
 
   // Indicates that application should be executed on boot.
   autostart:bool = true (id: 6);
+
+  // Indicates that application should automatically restart on failure.
+  autorestart:bool = true (id: 7);
 }
 
 // Per node data and connection information.
