@@ -99,8 +99,11 @@ bool SendCommandBlocking(const std::vector<ApplicationCommand> &commands,
 // Fetches the status of the application with the given name. Creates a
 // temporary event loop from the provided config for fetching. Returns nullopt
 // if the application is not found.
+// The returned pair is the time at which the ApplicationStatus was sent on the
+// node it was sent from, to allow calculating uptimes on remote nodes.
 const std::optional<
-    aos::FlatbufferDetachedBuffer<aos::starter::ApplicationStatus>>
+    std::pair<aos::monotonic_clock::time_point,
+              aos::FlatbufferDetachedBuffer<aos::starter::ApplicationStatus>>>
 GetStatus(std::string_view name, const aos::Configuration *config,
           const aos::Node *node);
 

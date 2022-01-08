@@ -258,7 +258,9 @@ bool SendCommandBlocking(const std::vector<ApplicationCommand> &commands,
   return success;
 }
 
-const std::optional<FlatbufferDetachedBuffer<aos::starter::ApplicationStatus>>
+const std::optional<
+    std::pair<aos::monotonic_clock::time_point,
+              FlatbufferDetachedBuffer<aos::starter::ApplicationStatus>>>
 GetStatus(std::string_view name, const Configuration *config,
           const aos::Node *node) {
   ShmEventLoop event_loop(config);
@@ -271,7 +273,8 @@ GetStatus(std::string_view name, const Configuration *config,
     const aos::starter::ApplicationStatus *status =
         FindApplicationStatus(*status_fetcher, name);
     if (status != nullptr) {
-      return aos::CopyFlatBuffer(status);
+      return std::make_pair(status_fetcher.context().monotonic_remote_time,
+                            aos::CopyFlatBuffer(status));
     }
   }
   return std::nullopt;

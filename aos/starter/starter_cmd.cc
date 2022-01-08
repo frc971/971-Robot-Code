@@ -158,8 +158,8 @@ bool GetStarterStatus(int argc, char **argv, const aos::Configuration *config) {
       auto optional_status =
           aos::starter::GetStatus(application_name, config, node);
       if (optional_status.has_value()) {
-        PrintApplicationStatus(&optional_status.value().message(),
-                               aos::monotonic_clock::now(), node);
+        PrintApplicationStatus(&optional_status.value().second.message(),
+                               optional_status.value().first, node);
       } else {
         if (node != nullptr) {
           LOG(ERROR) << "No status available yet for \"" << application_name
