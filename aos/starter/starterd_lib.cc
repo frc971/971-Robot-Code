@@ -326,8 +326,13 @@ bool Application::MaybeHandleSignal() {
       break;
     }
     case aos::starter::State::RUNNING: {
-      LOG(WARNING) << "Application '" << name_ << "' pid " << pid_
-                   << " exited unexpectedly with status " << exit_code_;
+      if (exit_code_ == 0) {
+        LOG(INFO) << "Application '" << name_ << "' pid " << pid_
+                  << " exited with status " << exit_code_;
+      } else {
+        LOG(WARNING) << "Application '" << name_ << "' pid " << pid_
+                     << " exited unexpectedly with status " << exit_code_;
+      }
       if (autorestart()) {
         QueueStart();
       }
