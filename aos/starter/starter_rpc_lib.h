@@ -97,11 +97,12 @@ bool SendCommandBlocking(const std::vector<ApplicationCommand> &commands,
                          std::chrono::milliseconds timeout);
 
 // Fetches the status of the application with the given name. Creates a
-// temporary event loop from the provided config for fetching. Returns an empty
-// flatbuffer if the application is not found.
-const aos::FlatbufferDetachedBuffer<aos::starter::ApplicationStatus> GetStatus(
-    std::string_view name, const aos::Configuration *config,
-    const aos::Node *node);
+// temporary event loop from the provided config for fetching. Returns nullopt
+// if the application is not found.
+const std::optional<
+    aos::FlatbufferDetachedBuffer<aos::starter::ApplicationStatus>>
+GetStatus(std::string_view name, const aos::Configuration *config,
+          const aos::Node *node);
 
 // Fetches the entire status message of starter. Creates a temporary event loop
 // from the provided config for fetching.

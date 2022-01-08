@@ -155,9 +155,20 @@ bool GetStarterStatus(int argc, char **argv, const aos::Configuration *config) {
     }
     PrintKey();
     for (const aos::Node *node : application_nodes) {
-      auto status = aos::starter::GetStatus(application_name, config, node);
-      PrintApplicationStatus(&status.message(), aos::monotonic_clock::now(),
-                             node);
+      auto optional_status =
+          aos::starter::GetStatus(application_name, config, node);
+      if (optional_status.has_value()) {
+        PrintApplicationStatus(&optional_status.value().message(),
+                               aos::monotonic_clock::now(), node);
+      } else {
+        if (node != nullptr) {
+          LOG(ERROR) << "No status available yet for \"" << application_name
+                     << "\" on node \"" << node->name()->string_view() << "\".";
+        } else {
+          LOG(ERROR) << "No status available yet for \"" << application_name
+                     << "\".";
+        }
+      }
     }
   } else {
     LOG(ERROR) << "The \"status\" command requires zero or one arguments.";
