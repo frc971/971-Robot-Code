@@ -27,6 +27,7 @@ namespace frc {
 class DriverStation {
  public:
   enum Alliance { kRed, kBlue, kInvalid };
+  enum MatchType { kNone, kPractice, kQualification, kElimination };
 
   virtual ~DriverStation();
   static DriverStation &GetInstance();
@@ -55,10 +56,18 @@ class DriverStation {
   bool IsTestMode() const { return is_test_mode_; }
   bool IsFmsAttached() const { return is_fms_attached_; }
   bool IsAutonomous() const { return is_autonomous_; }
+  bool IsTeleop() const { return is_teleop_; }
+  bool IsDSAttached() const { return is_ds_attached_; }
 
   bool IsSysActive() const;
   bool IsBrownedOut() const;
 
+  std::string_view GetGameSpecificMessage() const;
+
+  std::string_view GetEventName() const;
+  MatchType GetMatchType() const;
+  int GetMatchNumber() const;
+  int GetReplayNumber() const;
   Alliance GetAlliance() const;
   int GetLocation() const;
   double GetMatchTime() const;
@@ -88,6 +97,11 @@ class DriverStation {
   bool is_test_mode_ = false;
   bool is_autonomous_ = false;
   bool is_fms_attached_ = false;
+  bool is_teleop_ = false;
+  bool is_ds_attached_ = false;
+
+  // statically allocated match info so we can return string_views into it.
+  HAL_MatchInfo info_;
 };
 
 }  // namespace frc
