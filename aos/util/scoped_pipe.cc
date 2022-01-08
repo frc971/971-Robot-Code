@@ -26,13 +26,21 @@ ScopedPipe &ScopedPipe::operator=(ScopedPipe &&scoped_pipe) {
   return *this;
 }
 
-std::tuple<ScopedPipe::ScopedReadPipe, ScopedPipe::ScopedWritePipe>
-ScopedPipe::MakePipe() {
+ScopedPipe::PipePair ScopedPipe::MakePipe() {
   int fds[2];
   PCHECK(pipe(fds) != -1);
   PCHECK(fcntl(fds[0], F_SETFL, fcntl(fds[0], F_GETFL) | O_NONBLOCK) != -1);
   PCHECK(fcntl(fds[1], F_SETFL, fcntl(fds[1], F_GETFL) | O_NONBLOCK) != -1);
-  return {ScopedReadPipe(fds[0]), ScopedWritePipe(fds[1])};
+  return {std::unique_ptr<ScopedReadPipe>(new ScopedReadPipe(fds[0])),
+          std::unique_ptr<ScopedWritePipe>(new ScopedWritePipe(fds[1]))};
+}
+
+void ScopedPipe::SetCloexec() {
+  // FD_CLOEXEC is the only known file descriptor flag, but call GETFD just in
+  // case.
+  int flags = fcntl(fd(), F_GETFD);
+  PCHECK(flags != -1);
+  PCHECK(fcntl(fd(), F_SETFD, flags | FD_CLOEXEC) != -1);
 }
 
 size_t ScopedPipe::ScopedReadPipe::Read(std::string *buffer) {

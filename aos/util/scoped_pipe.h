@@ -3,8 +3,8 @@
 
 #include <stdint.h>
 
+#include <memory>
 #include <optional>
-#include <tuple>
 
 #include "absl/types/span.h"
 
@@ -16,11 +16,18 @@ class ScopedPipe {
   class ScopedReadPipe;
   class ScopedWritePipe;
 
-  static std::tuple<ScopedReadPipe, ScopedWritePipe> MakePipe();
+  struct PipePair {
+    std::unique_ptr<ScopedReadPipe> read;
+    std::unique_ptr<ScopedWritePipe> write;
+  };
+
+  static PipePair MakePipe();
 
   virtual ~ScopedPipe();
 
   int fd() const { return fd_; }
+  // Sets FD_CLOEXEC on the file descriptor.
+  void SetCloexec();
 
  private:
   ScopedPipe(int fd = -1);

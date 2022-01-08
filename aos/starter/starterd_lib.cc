@@ -169,9 +169,11 @@ Application *Starter::AddApplication(const aos::Application *application) {
       applications_.try_emplace(application->name()->str(), application,
                                 &event_loop_, [this]() { MaybeSendStatus(); });
   if (success) {
-    if (application->has_args()) {
-      iter->second.set_args(*application->args());
-    }
+    // We should be catching and handling SIGCHLD correctly in the starter, so
+    // don't leave in the crutch for polling for the child process status (this
+    // is less about efficiency, and more about making sure bit rot doesn't
+    // result in the signal handling breaking).
+    iter->second.DisableChildDeathPolling();
     return &(iter->second);
   }
   return nullptr;

@@ -72,6 +72,24 @@ aos_config(
 )
 
 cc_test(
+    name = "subprocess_test",
+    srcs = ["subprocess_test.cc"],
+    data = [
+        "//aos/events:pingpong_config",
+    ],
+    # The roborio compiler doesn't support <filesystem>.
+    target_compatible_with =
+        ["@platforms//os:linux"],
+    deps = [
+        ":subprocess",
+        "//aos/events:shm_event_loop",
+        "//aos/testing:googletest",
+        "//aos/testing:path",
+        "//aos/testing:tmpdir",
+    ],
+)
+
+cc_test(
     name = "starter_test",
     srcs = ["starter_test.cc"],
     data = [

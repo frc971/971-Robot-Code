@@ -34,21 +34,12 @@ SignalListener::SignalListener(aos::ShmEventLoop *loop,
 
 SignalListener::~SignalListener() { loop_->epoll()->DeleteFd(signalfd_.fd()); }
 
-Application::Application(const aos::Application *application,
+Application::Application(std::string_view name,
+                         std::string_view executable_name,
                          aos::EventLoop *event_loop,
                          std::function<void()> on_change)
-    : name_(application->name()->string_view()),
-      path_(application->has_executable_name()
-                ? application->executable_name()->string_view()
-                : application->name()->string_view()),
-      args_(1),
-      user_name_(application->has_user() ? application->user()->str() : ""),
-      user_(application->has_user() ? FindUid(user_name_.c_str())
-                                    : std::nullopt),
-      group_(application->has_user() ? FindPrimaryGidForUser(user_name_.c_str())
-                                     : std::nullopt),
-      autostart_(application->autostart()),
-      autorestart_(application->autorestart()),
+    : name_(name),
+      path_(executable_name),
       event_loop_(event_loop),
       start_timer_(event_loop_->AddTimer([this] {
         status_ = aos::starter::State::RUNNING;
@@ -61,7 +52,37 @@ Application::Application(const aos::Application *application,
                        << "' pid: " << pid_;
         }
       })),
-      on_change_(on_change) {}
+      pipe_timer_(event_loop_->AddTimer([this]() { FetchOutputs(); })),
+      child_status_handler_(
+          event_loop_->AddTimer([this]() { MaybeHandleSignal(); })),
+      on_change_(on_change) {
+  event_loop_->OnRun([this]() {
+    // Every second poll to check if the child is dead. This is used as a
+    // default for the case where the user is not directly catching SIGCHLD and
+    // calling MaybeHandleSignal for us.
+    child_status_handler_->Setup(event_loop_->monotonic_now(),
+                                 std::chrono::seconds(1));
+  });
+}
+
+Application::Application(const aos::Application *application,
+                         aos::EventLoop *event_loop,
+                         std::function<void()> on_change)
+    : Application(application->name()->string_view(),
+                  application->has_executable_name()
+                      ? application->executable_name()->string_view()
+                      : application->name()->string_view(),
+                  event_loop, on_change) {
+  user_name_ = application->has_user() ? application->user()->str() : "";
+  user_ = application->has_user() ? FindUid(user_name_.c_str()) : std::nullopt;
+  group_ = application->has_user() ? FindPrimaryGidForUser(user_name_.c_str())
+                                   : std::nullopt;
+  autostart_ = application->autostart();
+  autorestart_ = application->autorestart();
+  if (application->has_args()) {
+    set_args(*application->args());
+  }
+}
 
 void Application::DoStart() {
   if (status_ != aos::starter::State::WAITING) {
@@ -71,7 +92,19 @@ void Application::DoStart() {
   start_timer_->Disable();
   restart_timer_->Disable();
 
-  std::tie(read_pipe_, write_pipe_) = util::ScopedPipe::MakePipe();
+  status_pipes_ = util::ScopedPipe::MakePipe();
+
+  if (capture_stdout_) {
+    stdout_pipes_ = util::ScopedPipe::MakePipe();
+    stdout_.clear();
+  }
+  if (capture_stderr_) {
+    stderr_pipes_ = util::ScopedPipe::MakePipe();
+    stderr_.clear();
+  }
+
+  pipe_timer_->Setup(event_loop_->monotonic_now(),
+                     std::chrono::milliseconds(100));
 
   const pid_t pid = fork();
 
@@ -91,10 +124,22 @@ void Application::DoStart() {
       // alive in 1 second.
       start_timer_->Setup(event_loop_->monotonic_now() +
                           std::chrono::seconds(1));
+      // Since we are the parent process, clear our write-side of all the pipes.
+      status_pipes_.write.reset();
+      stdout_pipes_.write.reset();
+      stderr_pipes_.write.reset();
     }
     on_change_();
     return;
   }
+
+  // Since we are the child process, clear our read-side of all the pipes.
+  status_pipes_.read.reset();
+  stdout_pipes_.read.reset();
+  stderr_pipes_.read.reset();
+
+  // The status pipe will not be needed if the execve succeeds.
+  status_pipes_.write->SetCloexec();
 
   // Clear out signal mask of parent so forked process receives all signals
   // normally.
@@ -104,7 +149,7 @@ void Application::DoStart() {
 
   // Cleanup children if starter dies in a way that is not handled gracefully.
   if (prctl(PR_SET_PDEATHSIG, SIGKILL) == -1) {
-    write_pipe_.Write(
+    status_pipes_.write->Write(
         static_cast<uint32_t>(aos::starter::LastStopReason::SET_PRCTL_ERR));
     PLOG(FATAL) << "Could not set PR_SET_PDEATHSIG to SIGKILL";
   }
@@ -116,19 +161,19 @@ void Application::DoStart() {
     // be set so we change this effective UID back later.
     CHECK(user_);
     if (seteuid(0) == -1) {
-      write_pipe_.Write(
+      status_pipes_.write->Write(
           static_cast<uint32_t>(aos::starter::LastStopReason::SET_GRP_ERR));
       PLOG(FATAL) << "Could not seteuid(0) for " << name_
                   << " in preparation for setting groups";
     }
     if (initgroups(user_name_.c_str(), *group_) == -1) {
-      write_pipe_.Write(
+      status_pipes_.write->Write(
           static_cast<uint32_t>(aos::starter::LastStopReason::SET_GRP_ERR));
       PLOG(FATAL) << "Could not initialize normal groups for " << name_
                   << " as " << user_name_ << " with " << *group_;
     }
     if (setgid(*group_) == -1) {
-      write_pipe_.Write(
+      status_pipes_.write->Write(
           static_cast<uint32_t>(aos::starter::LastStopReason::SET_GRP_ERR));
       PLOG(FATAL) << "Could not set group for " << name_ << " to " << *group_;
     }
@@ -136,23 +181,55 @@ void Application::DoStart() {
 
   if (user_) {
     if (setuid(*user_) == -1) {
-      write_pipe_.Write(
+      status_pipes_.write->Write(
           static_cast<uint32_t>(aos::starter::LastStopReason::SET_USR_ERR));
       PLOG(FATAL) << "Could not set user for " << name_ << " to " << *user_;
     }
   }
 
-  // argv[0] should be the program name
-  args_.insert(args_.begin(), path_.data());
+  if (capture_stdout_) {
+    PCHECK(STDOUT_FILENO == dup2(stdout_pipes_.write->fd(), STDOUT_FILENO));
+    stdout_pipes_.write.reset();
+  }
 
-  execvp(path_.c_str(), args_.data());
+  if (capture_stderr_) {
+    PCHECK(STDERR_FILENO == dup2(stderr_pipes_.write->fd(), STDERR_FILENO));
+    stderr_pipes_.write.reset();
+  }
+
+  // argv[0] should be the program name
+  args_.insert(args_.begin(), path_);
+
+  std::vector<char *> cargs = CArgs();
+  execvp(path_.c_str(), cargs.data());
 
   // If we got here, something went wrong
-  write_pipe_.Write(
+  status_pipes_.write->Write(
       static_cast<uint32_t>(aos::starter::LastStopReason::EXECV_ERR));
   PLOG(WARNING) << "Could not execute " << name_ << " (" << path_ << ')';
 
   _exit(EXIT_FAILURE);
+}
+
+void Application::FetchOutputs() {
+  if (capture_stdout_) {
+    stdout_pipes_.read->Read(&stdout_);
+  }
+  if (capture_stderr_) {
+    stderr_pipes_.read->Read(&stderr_);
+  }
+}
+
+const std::string &Application::GetStdout() {
+  CHECK(capture_stdout_);
+  FetchOutputs();
+  return stdout_;
+}
+
+const std::string &Application::GetStderr() {
+  CHECK(capture_stderr_);
+  FetchOutputs();
+  return stderr_;
 }
 
 void Application::DoStop(bool restart) {
@@ -160,6 +237,8 @@ void Application::DoStop(bool restart) {
   // so cancel both.
   restart_timer_->Disable();
   start_timer_->Disable();
+
+  FetchOutputs();
 
   switch (status_) {
     case aos::starter::State::STARTING:
@@ -217,14 +296,31 @@ void Application::QueueStart() {
   on_change_();
 }
 
+std::vector<char *> Application::CArgs() {
+  std::vector<char *> cargs;
+  std::transform(args_.begin(), args_.end(), std::back_inserter(cargs),
+                 [](std::string &str) { return str.data(); });
+  cargs.push_back(nullptr);
+  return cargs;
+}
+
 void Application::set_args(
     const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> &v) {
   args_.clear();
   std::transform(v.begin(), v.end(), std::back_inserter(args_),
-                 [](const flatbuffers::String *str) {
-                   return const_cast<char *>(str->c_str());
-                 });
-  args_.push_back(nullptr);
+                 [](const flatbuffers::String *str) { return str->str(); });
+}
+
+void Application::set_args(std::vector<std::string> args) {
+  args_ = std::move(args);
+}
+
+void Application::set_capture_stdout(bool capture) {
+  capture_stdout_ = capture;
+}
+
+void Application::set_capture_stderr(bool capture) {
+  capture_stderr_ = capture;
 }
 
 std::optional<uid_t> Application::FindUid(const char *name) {
@@ -257,7 +353,9 @@ Application::PopulateStatus(flatbuffers::FlatBufferBuilder *builder) {
   aos::starter::ApplicationStatus::Builder status_builder(*builder);
   status_builder.add_name(name_fbs);
   status_builder.add_state(status_);
-  status_builder.add_last_exit_code(exit_code_);
+  if (exit_code_.has_value()) {
+    status_builder.add_last_exit_code(exit_code_.value());
+  }
   status_builder.add_last_stop_reason(stop_reason_);
   if (pid_ != -1) {
     status_builder.add_pid(pid_);
@@ -326,38 +424,51 @@ bool Application::MaybeHandleSignal() {
     return false;
   }
 
+  start_timer_->Disable();
   exit_time_ = event_loop_->monotonic_now();
   exit_code_ = WIFEXITED(status) ? WEXITSTATUS(status) : WTERMSIG(status);
 
-  if (auto read_result = read_pipe_.Read()) {
+  if (auto read_result = status_pipes_.read->Read()) {
     stop_reason_ = static_cast<aos::starter::LastStopReason>(*read_result);
   }
 
   switch (status_) {
     case aos::starter::State::STARTING: {
-      LOG(WARNING) << "Failed to start '" << name_ << "' on pid " << pid_
-                   << " : Exited with status " << exit_code_;
+      if (exit_code_.value() == 0) {
+        LOG(INFO) << "Application '" << name_ << "' pid " << pid_
+                  << " exited with status " << exit_code_.value();
+      } else {
+        LOG(WARNING) << "Failed to start '" << name_ << "' on pid " << pid_
+                     << " : Exited with status " << exit_code_.value();
+      }
       if (autorestart()) {
         QueueStart();
+      } else {
+        status_ = aos::starter::State::STOPPED;
+        on_change_();
       }
       break;
     }
     case aos::starter::State::RUNNING: {
-      if (exit_code_ == 0) {
+      if (exit_code_.value() == 0) {
         LOG(INFO) << "Application '" << name_ << "' pid " << pid_
-                  << " exited with status " << exit_code_;
+                  << " exited with status " << exit_code_.value();
       } else {
         LOG(WARNING) << "Application '" << name_ << "' pid " << pid_
-                     << " exited unexpectedly with status " << exit_code_;
+                     << " exited unexpectedly with status "
+                     << exit_code_.value();
       }
       if (autorestart()) {
         QueueStart();
+      } else {
+        status_ = aos::starter::State::STOPPED;
+        on_change_();
       }
       break;
     }
     case aos::starter::State::STOPPING: {
       LOG(INFO) << "Successfully stopped '" << name_ << "' pid: " << pid_
-                << " with status " << exit_code_;
+                << " with status " << exit_code_.value();
       status_ = aos::starter::State::STOPPED;
 
       // Disable force stop timer since the process already died
