@@ -223,16 +223,6 @@ cc_library(
     ],
 )
 
-cc_library(
-    name = "scoped_pipe",
-    srcs = ["scoped_pipe.cc"],
-    hdrs = ["scoped_pipe.h"],
-    target_compatible_with = ["@platforms//os:linux"],
-    deps = [
-        "@com_github_google_glog//:glog",
-    ],
-)
-
 cc_test(
     name = "file_test",
     size = "small",
@@ -242,6 +232,27 @@ cc_test(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":file",
+        "//aos/testing:googletest",
+    ],
+)
+
+cc_library(
+    name = "scoped_pipe",
+    srcs = ["scoped_pipe.cc"],
+    hdrs = ["scoped_pipe.h"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "scoped_pipe_test",
+    srcs = ["scoped_pipe_test.cc"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":scoped_pipe",
         "//aos/testing:googletest",
     ],
 )

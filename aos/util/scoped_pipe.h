@@ -6,6 +6,8 @@
 #include <optional>
 #include <tuple>
 
+#include "absl/types/span.h"
+
 namespace aos::util {
 
 // RAII Pipe for sending individual ints between reader and writer.
@@ -34,6 +36,10 @@ class ScopedPipe {
 class ScopedPipe::ScopedReadPipe : public ScopedPipe {
  public:
   std::optional<uint32_t> Read();
+  // Reads as many bytes as possible out of the pipe, appending them to the end
+  // of the provided buffer. Returns the number of bytes read. Dies on errors
+  // other than EAGAIN or EWOULDBLOCK.
+  size_t Read(std::string *buffer);
 
  private:
   using ScopedPipe::ScopedPipe;
@@ -44,6 +50,8 @@ class ScopedPipe::ScopedReadPipe : public ScopedPipe {
 class ScopedPipe::ScopedWritePipe : public ScopedPipe {
  public:
   void Write(uint32_t data);
+  // Writes the entirety of the specified buffer to the pipe. Dies on failure.
+  void Write(absl::Span<const uint8_t> data);
 
  private:
   using ScopedPipe::ScopedPipe;

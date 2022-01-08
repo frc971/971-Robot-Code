@@ -35,6 +35,33 @@ ScopedPipe::MakePipe() {
   return {ScopedReadPipe(fds[0]), ScopedWritePipe(fds[1])};
 }
 
+size_t ScopedPipe::ScopedReadPipe::Read(std::string *buffer) {
+  CHECK_NOTNULL(buffer);
+  constexpr ssize_t kBufferSize = 1024;
+  const size_t original_size = buffer->size();
+  size_t read_bytes = 0;
+  while (true) {
+    buffer->resize(buffer->size() + kBufferSize);
+    const ssize_t result =
+        read(fd(), buffer->data() + buffer->size() - kBufferSize, kBufferSize);
+    if (result == -1) {
+      if (errno == EAGAIN || errno == EWOULDBLOCK) {
+        buffer->resize(original_size);
+        return 0;
+      }
+      PLOG(FATAL) << "Error on reading pipe.";
+    } else if (result < kBufferSize) {
+      read_bytes += result;
+      buffer->resize(original_size + read_bytes);
+      break;
+    } else {
+      CHECK_EQ(result, kBufferSize);
+      read_bytes += result;
+    }
+  }
+  return read_bytes;
+}
+
 std::optional<uint32_t> ScopedPipe::ScopedReadPipe::Read() {
   uint32_t buf;
   ssize_t result = read(fd(), &buf, sizeof(buf));
@@ -48,7 +75,13 @@ std::optional<uint32_t> ScopedPipe::ScopedReadPipe::Read() {
 void ScopedPipe::ScopedWritePipe::Write(uint32_t data) {
   ssize_t result = write(fd(), &data, sizeof(data));
   PCHECK(result != -1);
-  CHECK(result == sizeof(data));
+  CHECK_EQ(static_cast<size_t>(result), sizeof(data));
+}
+
+void ScopedPipe::ScopedWritePipe::Write(absl::Span<const uint8_t> data) {
+  ssize_t result = write(fd(), data.data(), data.size());
+  PCHECK(result != -1);
+  CHECK_EQ(static_cast<size_t>(result), data.size());
 }
 
 }  // namespace aos::util
