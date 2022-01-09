@@ -5,9 +5,11 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
 #
 # 1. Create a "download_packages" build step in //debian/BUILD. List the
 #    packages you care about and exclude the ones you don't care about.
-#    Invoke "bazel build" on the "download_packages" target you just created.
+#    Invoke "bazel run" on the "download_packages" target you just created.
 #    Save the "_files" dictionary it prints into a .bzl file in the //debian
 #    folder. You will need to have the apt-rdepends package installed.
+#    If you want to get packages for a different architecture or distribution,
+#    you can pass flags here to control those. See the --help for details.
 # 2. The "download_packages" steps prints the location of the deb packages
 #    after it prints the "_files" dictionary. Take the deb packages from there
 #    and upload them to https://www.frc971.org/Build-Dependencies/.
@@ -21,8 +23,6 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
 #    and upload the resulting tarball to https://www.frc971.org/Build-Dependencies.
 # 6. Add a new "new_http_archive" entry to the WORKSPACE file for the tarball
 #    you just uploaded.
-
-# TODO(phil): Deal with armhf packages. Right now only works for amd64.
 
 def download_packages(name, packages, excludes = [], force_includes = [], target_compatible_with = None):
     """Downloads a set of packages as well as their dependencies.
@@ -39,19 +39,38 @@ def download_packages(name, packages, excludes = [], force_includes = [], target
     excludes_list = " ".join(["--exclude=%s" % e for e in excludes])
     force_includes = " ".join(["--force-include=%s" % i for i in force_includes])
     native.genrule(
+        name = name + "_gen",
+        outs = ["%s.sh" % name],
+        executable = True,
+        cmd = """
+cat > $@ <<'END'
+#!/bin/bash
+
+# --- begin runfiles.bash initialization v2 ---
+# Copy-pasted from the Bazel Bash runfiles library v2.
+set -uo pipefail; f=bazel_tools/tools/bash/runfiles/runfiles.bash
+source "$${RUNFILES_DIR:-/dev/null}/$$f" 2>/dev/null || \\
+  source "$$(grep -sm1 "^$$f " "$${RUNFILES_MANIFEST_FILE:-/dev/null}" | cut -f2- -d' ')" 2>/dev/null || \\
+  source "$$0.runfiles/$$f" 2>/dev/null || \\
+  source "$$(grep -sm1 "^$$f " "$$0.runfiles_manifest" | cut -f2- -d' ')" 2>/dev/null || \\
+  source "$$(grep -sm1 "^$$f " "$$0.exe.runfiles_manifest" | cut -f2- -d' ')" 2>/dev/null || \\
+  { echo>&2 "ERROR: cannot find $$f"; exit 1; }; f=; set -e
+# --- end runfiles.bash initialization v2 ---
+
+
+exec "$$(rlocation org_frc971/debian/download_packages)" %s %s %s "$$@"
+END""" % (force_includes, excludes_list, package_list),
+        target_compatible_with = target_compatible_with,
+    )
+    native.sh_binary(
         name = name,
-        outs = ["%s_output.txt" % name],
-        tags = [
-            "local",
-            "manual",
+        srcs = ["%s.sh" % name],
+        deps = [
+            "@bazel_tools//tools/bash/runfiles",
         ],
-        tools = [
+        data = [
             "//debian:download_packages",
         ],
-        # TODO(phil): Deal with stderr a bit better. It spews more stuff out than I
-        # would like it to.
-        cmd = "$(location //debian:download_packages) %s %s %s | tee $@ >&2" %
-              (force_includes, excludes_list, package_list),
         target_compatible_with = target_compatible_with,
     )
 
