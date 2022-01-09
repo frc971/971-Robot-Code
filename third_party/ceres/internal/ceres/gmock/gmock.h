@@ -1198,13 +1198,9 @@ class PolymorphicAction {
 
    private:
     Impl impl_;
-
-    GTEST_DISALLOW_ASSIGN_(MonomorphicImpl);
   };
 
   Impl impl_;
-
-  GTEST_DISALLOW_ASSIGN_(PolymorphicAction);
 };
 
 // Creates an Action from its implementation and returns it.  The
@@ -1345,13 +1341,9 @@ class ReturnAction {
    private:
     bool performed_;
     const std::shared_ptr<R> wrapper_;
-
-    GTEST_DISALLOW_ASSIGN_(Impl);
   };
 
   const std::shared_ptr<R> value_;
-
-  GTEST_DISALLOW_ASSIGN_(ReturnAction);
 };
 
 // Implements the ReturnNull() action.
@@ -1412,13 +1404,9 @@ class ReturnRefAction {
 
    private:
     T& ref_;
-
-    GTEST_DISALLOW_ASSIGN_(Impl);
   };
 
   T& ref_;
-
-  GTEST_DISALLOW_ASSIGN_(ReturnRefAction);
 };
 
 // Implements the polymorphic ReturnRefOfCopy(x) action, which can be
@@ -1459,13 +1447,9 @@ class ReturnRefOfCopyAction {
 
    private:
     T value_;
-
-    GTEST_DISALLOW_ASSIGN_(Impl);
   };
 
   const T value_;
-
-  GTEST_DISALLOW_ASSIGN_(ReturnRefOfCopyAction);
 };
 
 // Implements the polymorphic DoDefault() action.
@@ -1492,8 +1476,6 @@ class AssignAction {
  private:
   T1* const ptr_;
   const T2 value_;
-
-  GTEST_DISALLOW_ASSIGN_(AssignAction);
 };
 
 #if !GTEST_OS_WINDOWS_MOBILE
@@ -1515,8 +1497,6 @@ class SetErrnoAndReturnAction {
  private:
   const int errno_;
   const T result_;
-
-  GTEST_DISALLOW_ASSIGN_(SetErrnoAndReturnAction);
 };
 
 #endif  // !GTEST_OS_WINDOWS_MOBILE
@@ -1540,8 +1520,6 @@ class SetArgumentPointeeAction {
 
  private:
   const A value_;
-
-  GTEST_DISALLOW_ASSIGN_(SetArgumentPointeeAction);
 };
 
 template <size_t N, typename Proto>
@@ -1563,8 +1541,6 @@ class SetArgumentPointeeAction<N, Proto, true> {
 
  private:
   const std::shared_ptr<Proto> proto_;
-
-  GTEST_DISALLOW_ASSIGN_(SetArgumentPointeeAction);
 };
 
 // Implements the Invoke(object_ptr, &Class::Method) action.
@@ -1655,13 +1631,9 @@ class IgnoreResultAction {
         OriginalFunction;
 
     const Action<OriginalFunction> action_;
-
-    GTEST_DISALLOW_ASSIGN_(Impl);
   };
 
   const A action_;
-
-  GTEST_DISALLOW_ASSIGN_(IgnoreResultAction);
 };
 
 template <typename InnerAction, size_t... I>
@@ -2437,8 +2409,6 @@ class MatcherCastImpl<T, Matcher<U> > {
 
    private:
     const Matcher<U> source_matcher_;
-
-    GTEST_DISALLOW_ASSIGN_(Impl);
   };
 };
 
@@ -2823,13 +2793,9 @@ class RefMatcher<T&> {
 
    private:
     const Super& object_;
-
-    GTEST_DISALLOW_ASSIGN_(Impl);
   };
 
   T& object_;
-
-  GTEST_DISALLOW_ASSIGN_(RefMatcher);
 };
 
 // Polymorphic helper functions for narrow and wide string matchers.
@@ -2932,8 +2898,6 @@ class StrEqualityMatcher {
   const StringType string_;
   const bool expect_eq_;
   const bool case_sensitive_;
-
-  GTEST_DISALLOW_ASSIGN_(StrEqualityMatcher);
 };
 
 // Implements the polymorphic HasSubstr(substring) matcher, which
@@ -2989,8 +2953,6 @@ class HasSubstrMatcher {
 
  private:
   const StringType substring_;
-
-  GTEST_DISALLOW_ASSIGN_(HasSubstrMatcher);
 };
 
 // Implements the polymorphic StartsWith(substring) matcher, which
@@ -3046,8 +3008,6 @@ class StartsWithMatcher {
 
  private:
   const StringType prefix_;
-
-  GTEST_DISALLOW_ASSIGN_(StartsWithMatcher);
 };
 
 // Implements the polymorphic EndsWith(substring) matcher, which
@@ -3102,8 +3062,6 @@ class EndsWithMatcher {
 
  private:
   const StringType suffix_;
-
-  GTEST_DISALLOW_ASSIGN_(EndsWithMatcher);
 };
 
 // Implements a matcher that compares the two fields of a 2-tuple
@@ -3197,8 +3155,6 @@ class NotMatcherImpl : public MatcherInterface<const T&> {
 
  private:
   const Matcher<T> matcher_;
-
-  GTEST_DISALLOW_ASSIGN_(NotMatcherImpl);
 };
 
 // Implements the Not(m) matcher, which matches a value that doesn't
@@ -3217,8 +3173,6 @@ class NotMatcher {
 
  private:
   InnerMatcher matcher_;
-
-  GTEST_DISALLOW_ASSIGN_(NotMatcher);
 };
 
 // Implements the AllOf(m1, m2) matcher for a particular argument type
@@ -3280,8 +3234,6 @@ class AllOfMatcherImpl : public MatcherInterface<const T&> {
 
  private:
   const std::vector<Matcher<T> > matchers_;
-
-  GTEST_DISALLOW_ASSIGN_(AllOfMatcherImpl);
 };
 
 // VariadicMatcher is used for the variadic implementation of
@@ -3295,6 +3247,9 @@ class VariadicMatcher {
       : matchers_(matchers...) {
     static_assert(sizeof...(Args) > 0, "Must have at least one matcher.");
   }
+
+  VariadicMatcher(const VariadicMatcher&) = default;
+  VariadicMatcher& operator=(const VariadicMatcher&) = delete;
 
   // This template type conversion operator allows an
   // VariadicMatcher<Matcher1, Matcher2...> object to match any type that
@@ -3320,8 +3275,6 @@ class VariadicMatcher {
       std::integral_constant<size_t, sizeof...(Args)>) const {}
 
   std::tuple<Args...> matchers_;
-
-  GTEST_DISALLOW_ASSIGN_(VariadicMatcher);
 };
 
 template <typename... Args>
@@ -3386,8 +3339,6 @@ class AnyOfMatcherImpl : public MatcherInterface<const T&> {
 
  private:
   const std::vector<Matcher<T> > matchers_;
-
-  GTEST_DISALLOW_ASSIGN_(AnyOfMatcherImpl);
 };
 
 // AnyOfMatcher is used for the variadic implementation of AnyOf(m_1, m_2, ...).
@@ -3415,8 +3366,6 @@ class SomeOfArrayMatcher {
 
  private:
   const ::std::vector<T> matchers_;
-
-  GTEST_DISALLOW_ASSIGN_(SomeOfArrayMatcher);
 };
 
 template <typename T>
@@ -3460,8 +3409,6 @@ class TrulyMatcher {
 
  private:
   Predicate predicate_;
-
-  GTEST_DISALLOW_ASSIGN_(TrulyMatcher);
 };
 
 // Used for implementing Matches(matcher), which turns a matcher into
@@ -3498,8 +3445,6 @@ class MatcherAsPredicate {
 
  private:
   M matcher_;
-
-  GTEST_DISALLOW_ASSIGN_(MatcherAsPredicate);
 };
 
 // For implementing ASSERT_THAT() and EXPECT_THAT().  The template
@@ -3550,8 +3495,6 @@ class PredicateFormatterFromMatcher {
 
  private:
   const M matcher_;
-
-  GTEST_DISALLOW_ASSIGN_(PredicateFormatterFromMatcher);
 };
 
 // A helper function for converting a matcher to a predicate-formatter
@@ -3687,8 +3630,6 @@ class FloatingEqMatcher {
     const bool nan_eq_nan_;
     // max_abs_error will be used for value comparison when >= 0.
     const FloatType max_abs_error_;
-
-    GTEST_DISALLOW_ASSIGN_(Impl);
   };
 
   // The following 3 type conversion operators allow FloatEq(expected) and
@@ -3717,8 +3658,6 @@ class FloatingEqMatcher {
   const bool nan_eq_nan_;
   // max_abs_error will be used for value comparison when >= 0.
   const FloatType max_abs_error_;
-
-  GTEST_DISALLOW_ASSIGN_(FloatingEqMatcher);
 };
 
 // A 2-tuple ("binary") wrapper around FloatingEqMatcher:
@@ -3848,13 +3787,9 @@ class PointeeMatcher {
 
    private:
     const Matcher<const Pointee&> matcher_;
-
-    GTEST_DISALLOW_ASSIGN_(Impl);
   };
 
   const InnerMatcher matcher_;
-
-  GTEST_DISALLOW_ASSIGN_(PointeeMatcher);
 };
 
 #if GTEST_HAS_RTTI
@@ -3891,8 +3826,6 @@ class WhenDynamicCastToMatcherBase {
   static void GetCastTypeDescription(::std::ostream* os) {
     *os << "when dynamic_cast to " << GetToName() << ", ";
   }
-
-  GTEST_DISALLOW_ASSIGN_(WhenDynamicCastToMatcherBase);
 };
 
 // Primary template.
@@ -3990,8 +3923,6 @@ class FieldMatcher {
   // Contains either "whose given field " if the name of the field is unknown
   // or "whose field `name_of_field` " if the name is known.
   const std::string whose_field_;
-
-  GTEST_DISALLOW_ASSIGN_(FieldMatcher);
 };
 
 // Implements the Property() matcher for matching a property
@@ -4060,8 +3991,6 @@ class PropertyMatcher {
   // Contains either "whose given property " if the name of the property is
   // unknown or "whose property `name_of_property` " if the name is known.
   const std::string whose_property_;
-
-  GTEST_DISALLOW_ASSIGN_(PropertyMatcher);
 };
 
 // Type traits specifying various features of different functors for ResultOf.
@@ -4149,14 +4078,10 @@ class ResultOfMatcher {
     // how many times the callable will be invoked.
     mutable CallableStorageType callable_;
     const Matcher<ResultType> matcher_;
-
-    GTEST_DISALLOW_ASSIGN_(Impl);
   };  // class Impl
 
   const CallableStorageType callable_;
   const InnerMatcher matcher_;
-
-  GTEST_DISALLOW_ASSIGN_(ResultOfMatcher);
 };
 
 // Implements a matcher that checks the size of an STL-style container.
@@ -4201,12 +4126,10 @@ class SizeIsMatcher {
 
    private:
     const Matcher<SizeType> size_matcher_;
-    GTEST_DISALLOW_ASSIGN_(Impl);
   };
 
  private:
   const SizeMatcher size_matcher_;
-  GTEST_DISALLOW_ASSIGN_(SizeIsMatcher);
 };
 
 // Implements a matcher that checks the begin()..end() distance of an STL-style
@@ -4258,12 +4181,10 @@ class BeginEndDistanceIsMatcher {
 
    private:
     const Matcher<DistanceType> distance_matcher_;
-    GTEST_DISALLOW_ASSIGN_(Impl);
   };
 
  private:
   const DistanceMatcher distance_matcher_;
-  GTEST_DISALLOW_ASSIGN_(BeginEndDistanceIsMatcher);
 };
 
 // Implements an equality matcher for any STL-style container whose elements
@@ -4357,8 +4278,6 @@ class ContainerEqMatcher {
 
  private:
   const StlContainer expected_;
-
-  GTEST_DISALLOW_ASSIGN_(ContainerEqMatcher);
 };
 
 // A comparator functor that uses the < operator to compare two values.
@@ -4440,8 +4359,6 @@ class WhenSortedByMatcher {
  private:
   const Comparator comparator_;
   const ContainerMatcher matcher_;
-
-  GTEST_DISALLOW_ASSIGN_(WhenSortedByMatcher);
 };
 
 // Implements Pointwise(tuple_matcher, rhs_container).  tuple_matcher
@@ -4557,15 +4474,11 @@ class PointwiseMatcher {
    private:
     const Matcher<InnerMatcherArg> mono_tuple_matcher_;
     const RhsStlContainer rhs_;
-
-    GTEST_DISALLOW_ASSIGN_(Impl);
   };
 
  private:
   const TupleMatcher tuple_matcher_;
   const RhsStlContainer rhs_;
-
-  GTEST_DISALLOW_ASSIGN_(PointwiseMatcher);
 };
 
 // Holds the logic common to ContainsMatcherImpl and EachMatcherImpl.
@@ -4608,8 +4521,6 @@ class QuantifierMatcherImpl : public MatcherInterface<Container> {
 
  protected:
   const Matcher<const Element&> inner_matcher_;
-
-  GTEST_DISALLOW_ASSIGN_(QuantifierMatcherImpl);
 };
 
 // Implements Contains(element_matcher) for the given argument type Container.
@@ -4636,9 +4547,6 @@ class ContainsMatcherImpl : public QuantifierMatcherImpl<Container> {
                        MatchResultListener* listener) const override {
     return this->MatchAndExplainImpl(false, container, listener);
   }
-
- private:
-  GTEST_DISALLOW_ASSIGN_(ContainsMatcherImpl);
 };
 
 // Implements Each(element_matcher) for the given argument type Container.
@@ -4665,9 +4573,6 @@ class EachMatcherImpl : public QuantifierMatcherImpl<Container> {
                        MatchResultListener* listener) const override {
     return this->MatchAndExplainImpl(true, container, listener);
   }
-
- private:
-  GTEST_DISALLOW_ASSIGN_(EachMatcherImpl);
 };
 
 // Implements polymorphic Contains(element_matcher).
@@ -4684,8 +4589,6 @@ class ContainsMatcher {
 
  private:
   const M inner_matcher_;
-
-  GTEST_DISALLOW_ASSIGN_(ContainsMatcher);
 };
 
 // Implements polymorphic Each(element_matcher).
@@ -4702,8 +4605,6 @@ class EachMatcher {
 
  private:
   const M inner_matcher_;
-
-  GTEST_DISALLOW_ASSIGN_(EachMatcher);
 };
 
 struct Rank1 {};
@@ -4773,8 +4674,6 @@ class KeyMatcherImpl : public MatcherInterface<PairType> {
 
  private:
   const Matcher<const KeyType&> inner_matcher_;
-
-  GTEST_DISALLOW_ASSIGN_(KeyMatcherImpl);
 };
 
 // Implements polymorphic Key(matcher_for_key).
@@ -4791,8 +4690,6 @@ class KeyMatcher {
 
  private:
   const M matcher_for_key_;
-
-  GTEST_DISALLOW_ASSIGN_(KeyMatcher);
 };
 
 // Implements Pair(first_matcher, second_matcher) for the given argument pair
@@ -4878,8 +4775,6 @@ class PairMatcherImpl : public MatcherInterface<PairType> {
 
   const Matcher<const FirstType&> first_matcher_;
   const Matcher<const SecondType&> second_matcher_;
-
-  GTEST_DISALLOW_ASSIGN_(PairMatcherImpl);
 };
 
 // Implements polymorphic Pair(first_matcher, second_matcher).
@@ -4898,8 +4793,6 @@ class PairMatcher {
  private:
   const FirstMatcher first_matcher_;
   const SecondMatcher second_matcher_;
-
-  GTEST_DISALLOW_ASSIGN_(PairMatcher);
 };
 
 // Implements ElementsAre() and ElementsAreArray().
@@ -5045,8 +4938,6 @@ class ElementsAreMatcherImpl : public MatcherInterface<Container> {
   size_t count() const { return matchers_.size(); }
 
   ::std::vector<Matcher<const Element&> > matchers_;
-
-  GTEST_DISALLOW_ASSIGN_(ElementsAreMatcherImpl);
 };
 
 // Connectivity matrix of (elements X matchers), in element-major order.
@@ -5149,8 +5040,6 @@ class GTEST_API_ UnorderedElementsAreMatcherImplBase {
  private:
   UnorderedMatcherRequire::Flags match_flags_;
   MatcherDescriberVec matcher_describers_;
-
-  GTEST_DISALLOW_ASSIGN_(UnorderedElementsAreMatcherImplBase);
 };
 
 // Implements UnorderedElementsAre, UnorderedElementsAreArray, IsSubsetOf, and
@@ -5244,8 +5133,6 @@ class UnorderedElementsAreMatcherImpl
   }
 
   ::std::vector<Matcher<const Element&> > matchers_;
-
-  GTEST_DISALLOW_ASSIGN_(UnorderedElementsAreMatcherImpl);
 };
 
 // Functor for use in TransformTuple.
@@ -5283,7 +5170,6 @@ class UnorderedElementsAreMatcher {
 
  private:
   const MatcherTuple matchers_;
-  GTEST_DISALLOW_ASSIGN_(UnorderedElementsAreMatcher);
 };
 
 // Implements ElementsAre.
@@ -5313,7 +5199,6 @@ class ElementsAreMatcher {
 
  private:
   const MatcherTuple matchers_;
-  GTEST_DISALLOW_ASSIGN_(ElementsAreMatcher);
 };
 
 // Implements UnorderedElementsAreArray(), IsSubsetOf(), and IsSupersetOf().
@@ -5335,8 +5220,6 @@ class UnorderedElementsAreArrayMatcher {
  private:
   UnorderedMatcherRequire::Flags match_flags_;
   ::std::vector<T> matchers_;
-
-  GTEST_DISALLOW_ASSIGN_(UnorderedElementsAreArrayMatcher);
 };
 
 // Implements ElementsAreArray().
@@ -5358,8 +5241,6 @@ class ElementsAreArrayMatcher {
 
  private:
   const ::std::vector<T> matchers_;
-
-  GTEST_DISALLOW_ASSIGN_(ElementsAreArrayMatcher);
 };
 
 // Given a 2-tuple matcher tm of type Tuple2Matcher and a value second
@@ -5419,8 +5300,6 @@ class BoundSecondMatcher {
    private:
     const Matcher<const ArgTuple&> mono_tuple2_matcher_;
     const Second second_value_;
-
-    GTEST_DISALLOW_ASSIGN_(Impl);
   };
 
   const Tuple2Matcher tuple2_matcher_;
@@ -5493,12 +5372,10 @@ class OptionalMatcher {
 
    private:
     const Matcher<ValueType> value_matcher_;
-    GTEST_DISALLOW_ASSIGN_(Impl);
   };
 
  private:
   const ValueMatcher value_matcher_;
-  GTEST_DISALLOW_ASSIGN_(OptionalMatcher);
 };
 
 namespace variant_matcher {
@@ -7238,7 +7115,10 @@ class GTEST_API_ Expectation {
  public:
   // Constructs a null object that doesn't reference any expectation.
   Expectation();
-
+  Expectation(Expectation&&) = default;
+  Expectation(const Expectation&) = default;
+  Expectation& operator=(Expectation&&) = default;
+  Expectation& operator=(const Expectation&) = default;
   ~Expectation();
 
   // This single-argument ctor must not be explicit, in order to support the
@@ -7616,8 +7496,6 @@ class GTEST_API_ ExpectationBase {
   Clause last_clause_;
   mutable bool action_count_checked_;  // Under mutex_.
   mutable Mutex mutex_;  // Protects action_count_checked_.
-
-  GTEST_DISALLOW_ASSIGN_(ExpectationBase);
 };  // class ExpectationBase
 
 // Impements an expectation for the given function type.
@@ -8031,8 +7909,6 @@ class MockSpec {
   internal::FunctionMocker<F>* const function_mocker_;
   // The argument matchers specified in the spec.
   ArgumentMatcherTuple matchers_;
-
-  GTEST_DISALLOW_ASSIGN_(MockSpec);
 };  // class MockSpec
 
 // Wrapper type for generically holding an ordinary value or lvalue reference.
@@ -10631,16 +10507,12 @@ class ActionHelper {
           arg5_type arg5, arg6_type arg6, arg7_type arg7, arg8_type arg8, \
           arg9_type arg9) const;\
       GMOCK_INTERNAL_DEFN_##value_params\
-     private:\
-      GTEST_DISALLOW_ASSIGN_(gmock_Impl);\
     };\
     template <typename F> operator ::testing::Action<F>() const {\
       return ::testing::Action<F>(\
           new gmock_Impl<F>(GMOCK_INTERNAL_LIST_##value_params));\
     }\
     GMOCK_INTERNAL_DEFN_##value_params\
-   private:\
-    GTEST_DISALLOW_ASSIGN_(GMOCK_ACTION_CLASS_(name, value_params));\
   };\
   template <GMOCK_INTERNAL_DECL_##template_params\
             GMOCK_INTERNAL_DECL_TYPE_##value_params>\
@@ -10691,14 +10563,10 @@ class ActionHelper {
           arg1_type arg1, arg2_type arg2, arg3_type arg3, arg4_type arg4, \
           arg5_type arg5, arg6_type arg6, arg7_type arg7, arg8_type arg8, \
           arg9_type arg9) const;\
-     private:\
-      GTEST_DISALLOW_ASSIGN_(gmock_Impl);\
     };\
     template <typename F> operator ::testing::Action<F>() const {\
       return ::testing::Action<F>(new gmock_Impl<F>());\
     }\
-   private:\
-    GTEST_DISALLOW_ASSIGN_(name##Action);\
   };\
   inline name##Action name() {\
     return name##Action();\
@@ -10740,15 +10608,11 @@ class ActionHelper {
           arg5_type arg5, arg6_type arg6, arg7_type arg7, arg8_type arg8, \
           arg9_type arg9) const;\
       p0##_type p0;\
-     private:\
-      GTEST_DISALLOW_ASSIGN_(gmock_Impl);\
     };\
     template <typename F> operator ::testing::Action<F>() const {\
       return ::testing::Action<F>(new gmock_Impl<F>(p0));\
     }\
     p0##_type p0;\
-   private:\
-    GTEST_DISALLOW_ASSIGN_(name##ActionP);\
   };\
   template <typename p0##_type>\
   inline name##ActionP<p0##_type> name(p0##_type p0) {\
@@ -10795,16 +10659,12 @@ class ActionHelper {
           arg9_type arg9) const;\
       p0##_type p0;\
       p1##_type p1;\
-     private:\
-      GTEST_DISALLOW_ASSIGN_(gmock_Impl);\
     };\
     template <typename F> operator ::testing::Action<F>() const {\
       return ::testing::Action<F>(new gmock_Impl<F>(p0, p1));\
     }\
     p0##_type p0;\
     p1##_type p1;\
-   private:\
-    GTEST_DISALLOW_ASSIGN_(name##ActionP2);\
   };\
   template <typename p0##_type, typename p1##_type>\
   inline name##ActionP2<p0##_type, p1##_type> name(p0##_type p0, \
@@ -10855,8 +10715,6 @@ class ActionHelper {
       p0##_type p0;\
       p1##_type p1;\
       p2##_type p2;\
-     private:\
-      GTEST_DISALLOW_ASSIGN_(gmock_Impl);\
     };\
     template <typename F> operator ::testing::Action<F>() const {\
       return ::testing::Action<F>(new gmock_Impl<F>(p0, p1, p2));\
@@ -10864,8 +10722,6 @@ class ActionHelper {
     p0##_type p0;\
     p1##_type p1;\
     p2##_type p2;\
-   private:\
-    GTEST_DISALLOW_ASSIGN_(name##ActionP3);\
   };\
   template <typename p0##_type, typename p1##_type, typename p2##_type>\
   inline name##ActionP3<p0##_type, p1##_type, p2##_type> name(p0##_type p0, \
@@ -10922,8 +10778,6 @@ class ActionHelper {
       p1##_type p1;\
       p2##_type p2;\
       p3##_type p3;\
-     private:\
-      GTEST_DISALLOW_ASSIGN_(gmock_Impl);\
     };\
     template <typename F> operator ::testing::Action<F>() const {\
       return ::testing::Action<F>(new gmock_Impl<F>(p0, p1, p2, p3));\
@@ -10932,8 +10786,6 @@ class ActionHelper {
     p1##_type p1;\
     p2##_type p2;\
     p3##_type p3;\
-   private:\
-    GTEST_DISALLOW_ASSIGN_(name##ActionP4);\
   };\
   template <typename p0##_type, typename p1##_type, typename p2##_type, \
       typename p3##_type>\
@@ -10998,8 +10850,6 @@ class ActionHelper {
       p2##_type p2;\
       p3##_type p3;\
       p4##_type p4;\
-     private:\
-      GTEST_DISALLOW_ASSIGN_(gmock_Impl);\
     };\
     template <typename F> operator ::testing::Action<F>() const {\
       return ::testing::Action<F>(new gmock_Impl<F>(p0, p1, p2, p3, p4));\
@@ -11009,8 +10859,6 @@ class ActionHelper {
     p2##_type p2;\
     p3##_type p3;\
     p4##_type p4;\
-   private:\
-    GTEST_DISALLOW_ASSIGN_(name##ActionP5);\
   };\
   template <typename p0##_type, typename p1##_type, typename p2##_type, \
       typename p3##_type, typename p4##_type>\
@@ -11078,8 +10926,6 @@ class ActionHelper {
       p3##_type p3;\
       p4##_type p4;\
       p5##_type p5;\
-     private:\
-      GTEST_DISALLOW_ASSIGN_(gmock_Impl);\
     };\
     template <typename F> operator ::testing::Action<F>() const {\
       return ::testing::Action<F>(new gmock_Impl<F>(p0, p1, p2, p3, p4, p5));\
@@ -11090,8 +10936,6 @@ class ActionHelper {
     p3##_type p3;\
     p4##_type p4;\
     p5##_type p5;\
-   private:\
-    GTEST_DISALLOW_ASSIGN_(name##ActionP6);\
   };\
   template <typename p0##_type, typename p1##_type, typename p2##_type, \
       typename p3##_type, typename p4##_type, typename p5##_type>\
@@ -11164,8 +11008,6 @@ class ActionHelper {
       p4##_type p4;\
       p5##_type p5;\
       p6##_type p6;\
-     private:\
-      GTEST_DISALLOW_ASSIGN_(gmock_Impl);\
     };\
     template <typename F> operator ::testing::Action<F>() const {\
       return ::testing::Action<F>(new gmock_Impl<F>(p0, p1, p2, p3, p4, p5, \
@@ -11178,8 +11020,6 @@ class ActionHelper {
     p4##_type p4;\
     p5##_type p5;\
     p6##_type p6;\
-   private:\
-    GTEST_DISALLOW_ASSIGN_(name##ActionP7);\
   };\
   template <typename p0##_type, typename p1##_type, typename p2##_type, \
       typename p3##_type, typename p4##_type, typename p5##_type, \
@@ -11259,8 +11099,6 @@ class ActionHelper {
       p5##_type p5;\
       p6##_type p6;\
       p7##_type p7;\
-     private:\
-      GTEST_DISALLOW_ASSIGN_(gmock_Impl);\
     };\
     template <typename F> operator ::testing::Action<F>() const {\
       return ::testing::Action<F>(new gmock_Impl<F>(p0, p1, p2, p3, p4, p5, \
@@ -11274,8 +11112,6 @@ class ActionHelper {
     p5##_type p5;\
     p6##_type p6;\
     p7##_type p7;\
-   private:\
-    GTEST_DISALLOW_ASSIGN_(name##ActionP8);\
   };\
   template <typename p0##_type, typename p1##_type, typename p2##_type, \
       typename p3##_type, typename p4##_type, typename p5##_type, \
@@ -11360,8 +11196,6 @@ class ActionHelper {
       p6##_type p6;\
       p7##_type p7;\
       p8##_type p8;\
-     private:\
-      GTEST_DISALLOW_ASSIGN_(gmock_Impl);\
     };\
     template <typename F> operator ::testing::Action<F>() const {\
       return ::testing::Action<F>(new gmock_Impl<F>(p0, p1, p2, p3, p4, p5, \
@@ -11376,8 +11210,6 @@ class ActionHelper {
     p6##_type p6;\
     p7##_type p7;\
     p8##_type p8;\
-   private:\
-    GTEST_DISALLOW_ASSIGN_(name##ActionP9);\
   };\
   template <typename p0##_type, typename p1##_type, typename p2##_type, \
       typename p3##_type, typename p4##_type, typename p5##_type, \
@@ -11468,8 +11300,6 @@ class ActionHelper {
       p7##_type p7;\
       p8##_type p8;\
       p9##_type p9;\
-     private:\
-      GTEST_DISALLOW_ASSIGN_(gmock_Impl);\
     };\
     template <typename F> operator ::testing::Action<F>() const {\
       return ::testing::Action<F>(new gmock_Impl<F>(p0, p1, p2, p3, p4, p5, \
@@ -11485,8 +11315,6 @@ class ActionHelper {
     p7##_type p7;\
     p8##_type p8;\
     p9##_type p9;\
-   private:\
-    GTEST_DISALLOW_ASSIGN_(name##ActionP10);\
   };\
   template <typename p0##_type, typename p1##_type, typename p2##_type, \
       typename p3##_type, typename p4##_type, typename p5##_type, \
