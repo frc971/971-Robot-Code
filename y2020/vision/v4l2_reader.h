@@ -43,6 +43,13 @@ class V4L2Reader {
                                              buffer->message_offset);
   }
 
+  // Sets the exposure duration of the camera. duration is the number of 100
+  // microsecond units.
+  void SetExposure(size_t duration);
+
+  // Switches from manual to auto exposure.
+  void UseAutoExposure();
+
  private:
   static constexpr int kNumberBuffers = 16;
 
