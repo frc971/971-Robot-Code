@@ -314,7 +314,9 @@ std::tuple<std::vector<BootTimestamp>, size_t> TimestampProblem::SolveNewton(
                        std::chrono::nanoseconds(static_cast<int64_t>(
                            std::round(data(NodeToFullSolutionIndex(i)))));
       VLOG(2) << "live  " << result[i] << " "
-              << data(NodeToFullSolutionIndex(i));
+              << (data(NodeToFullSolutionIndex(i)) -
+                  std::round(data(NodeToFullSolutionIndex(i))))
+              << " (unrounded: " << data(NodeToFullSolutionIndex(i)) << ")";
     } else {
       result[i] = BootTimestamp::min_time();
       VLOG(2) << "dead  " << result[i];
@@ -1756,7 +1758,7 @@ MultiNodeNoncausalOffsetEstimator::NextTimestamp() {
       case TimeComparison::kInvalid: {
         const chrono::nanoseconds invalid_distance =
             InvalidDistance(last_monotonics_, result_times);
-        if (invalid_distance <
+        if (invalid_distance <=
             chrono::nanoseconds(FLAGS_max_invalid_distance_ns)) {
           return NextTimestamp();
         }
