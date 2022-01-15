@@ -1,0 +1,11 @@
+# Use tools/rehost.sh to rehost easily.
+
+block *
+rewrite github.com/(.*) software.frc971.org/Build-Dependencies/github.com/$1
+rewrite dl.google.com/(.*) software.frc971.org/Build-Dependencies/dl.google.com/$1
+rewrite mirror.bazel.build/(.*) software.frc971.org/Build-Dependencies/mirror.bazel.build/$1
+rewrite nodejs.org/(.*) software.frc971.org/Build-Dependencies/nodejs.org/$1
+allow golang.org
+
+allow software.frc971.org
+allow www.frc971.org

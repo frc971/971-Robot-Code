@@ -1,6 +1,9 @@
 # Use platforms to build our code.
 build --incompatible_enable_cc_toolchain_resolution
 
+# Rewrite all URLs to be on software.frc971.org
+common --experimental_downloader_config=tools/dependency_rewrite
+
 # Default to py3 since that's all we support
 build --python_version=PY3
 
