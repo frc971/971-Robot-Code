@@ -292,6 +292,7 @@ cc_library(
         # Don't mangle the names of all the BLAS symbols, because slicot needs to
         # call them directly.
         "-DNO_BLAS_WRAP",
+        "-Wno-unused-but-set-variable",
     ] + compiler_select({
         "clang": [
             "-Wno-self-assign",
@@ -301,7 +302,6 @@ cc_library(
             "-Wno-array-bounds",
             "-Wno-discarded-qualifiers",
             "-Wno-maybe-uninitialized",
-            "-Wno-unused-but-set-variable",
         ],
     }),
     includes = [

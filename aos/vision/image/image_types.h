@@ -2,6 +2,7 @@
 #define _AOS_VISION_IMAGE_IMAGE_TYPES_H_
 
 #include <cstdint>
+#include <limits>
 #include <cstring>
 #include <memory>
 #include <sstream>

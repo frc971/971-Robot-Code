@@ -24,10 +24,10 @@ steps:
       - tools/ci/clean-disk.sh
       - tools/bazel ${STARTUP} --output_base=../roborio_output_base build ${COMMON} --config=roborio ${ROBORIO_TARGETS}
 
-  - label: "armhf-debian"
+  - label: "armv7"
     commands:
       - tools/ci/clean-disk.sh
-      - tools/bazel ${STARTUP} --output_base=../armhf-debian_output_base build ${COMMON} --config=armhf-debian ${TARGETS}
+      - tools/bazel ${STARTUP} --output_base=../armv7_output_base build ${COMMON} --config=armv7 ${TARGETS}
 
   - label: "cortex-m4f"
     commands:

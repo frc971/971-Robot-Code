@@ -29,7 +29,7 @@ ZLIB1G_DEV_AMD64_DEB="$(rlocation deb_zlib1g_dev_1_2_11_dfsg_1_amd64_deb_repo/fi
 
 ZLIB1G_DEV="$(mktemp -d)"
 
-LLVM_TOOLCHAIN="$(dirname "$(dirname "$(rlocation llvm_toolchain_llvm/bin/clang)")")"
+LLVM_TOOLCHAIN="$(dirname "$(dirname "$(rlocation llvm_k8/bin/clang)")")"
 dpkg-deb -x "${ZLIB1G_DEV_AMD64_DEB}" "${ZLIB1G_DEV}"
 TARGET=x86_64-unknown-linux-gnu
 MULTIARCH=x86_64-linux-gnu
@@ -40,8 +40,8 @@ export LD_LIBRARY_PATH="${SYSROOT}/usr/lib:${SYSROOT}/lib:${ZLIB1G_DEV}/usr/lib/
   -fcolor-diagnostics \
   -I"${HALIDE}/include" \
   -nostdinc \
-  -isystem"${SYSROOT}/usr/include/c++/7" \
-  -isystem"${SYSROOT}/usr/include/${MULTIARCH}/c++/7" \
+  -isystem"${SYSROOT}/usr/include/c++/10" \
+  -isystem"${SYSROOT}/usr/include/${MULTIARCH}/c++/10" \
   -isystem"${SYSROOT}/usr/include/c++/7/backward" \
   -isystem"${LLVM_TOOLCHAIN}/lib/clang/13.0.0/include" \
   -isystem"${SYSROOT}/usr/include/${MULTIARCH}" \

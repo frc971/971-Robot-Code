@@ -1,6 +1,7 @@
 #include "aos/json_tokenizer.h"
 
 #include <cerrno>
+#include <limits>
 
 namespace aos {
 

@@ -174,6 +174,7 @@ _llvm_distributions = {
     "clang+llvm-13.0.0-amd64-unknown-freebsd13.tar.xz": "c4f15e156afaa530eb47ba13c46800275102af535ed48e395aed4c1decc1eaa1",
     "clang+llvm-13.0.0-i386-unknown-freebsd12.tar.xz": "4d14b19c082438a5ceed61e538e5a0298018b1773e8ba2e990f3fbe33492f48f",
     "clang+llvm-13.0.0-i386-unknown-freebsd13.tar.xz": "f8e105c6ac2fd517ae5ed8ef9b9bab4b015fe89a06c90c3dd5d5c7933dca2276",
+    "clang+llvm-13.0.0-armv7a-linux-gnueabihf.tar.xz": "e17aacd843cc7c3c3c27a0d2293af8b3e9ad76408f7c178a92a182f18e7734e5",
     "clang+llvm-13.0.0-powerpc64le-linux-rhel-7.9.tar.xz": "cfade83f6da572a8ab0e4796d1f657967b342e98202c26e76c857879fb2fa2d2",
     "clang+llvm-13.0.0-powerpc64le-linux-ubuntu-18.04.tar.xz": "5d79e9e2919866a91431589355f6d07f35d439458ff12cb8f36093fb314a7028",
     "clang+llvm-13.0.0-x86_64-apple-darwin.tar.xz": "d051234eca1db1f5e4bc08c64937c879c7098900f7a0370f3ceb7544816a8b09",

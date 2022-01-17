@@ -253,16 +253,26 @@ static PyMethodDef LogReader_methods[] = {
     {nullptr, 0, 0, nullptr} /* Sentinel */
 };
 
+#ifdef __clang__
+// These extensions to C++ syntax do surprising things in C++, but for these
+// uses none of them really matter I think, and the alternatives are really
+// annoying.
+#pragma clang diagnostic ignored "-Wc99-designator"
+#endif
+
 static PyTypeObject LogReaderType = {
-    PyVarObject_HEAD_INIT(NULL, 0).tp_name = "py_log_reader.LogReader",
-    .tp_doc = "LogReader objects",
+    PyVarObject_HEAD_INIT(NULL, 0)
+        // The previous macro initializes some fields, leave a comment to help
+        // clang-format not make this uglier.
+        .tp_name = "py_log_reader.LogReader",
     .tp_basicsize = sizeof(LogReaderType),
     .tp_itemsize = 0,
-    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
-    .tp_new = LogReader_new,
-    .tp_init = (initproc)LogReader_init,
     .tp_dealloc = (destructor)LogReader_dealloc,
+    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_doc = "LogReader objects",
     .tp_methods = LogReader_methods,
+    .tp_init = (initproc)LogReader_init,
+    .tp_new = LogReader_new,
 };
 
 static PyModuleDef log_reader_module = {

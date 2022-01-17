@@ -90,7 +90,7 @@ std::ostream& operator<<(std::ostream& o, const EventBits& b) {
 
 constexpr int EpollTimeoutMillis = 500; // Twice a second is ample.
 constexpr int DefaultLameConnectionTimeoutSeconds = 10;
-pid_t gettid() {
+pid_t seasocks_gettid() {
     return static_cast<pid_t>(syscall(SYS_gettid));
 }
 
@@ -405,7 +405,7 @@ bool Server::loop() {
     }
 
     // Stash away "the" server thread id.
-    _threadId = gettid();
+    _threadId = seasocks_gettid();
 
     while (!_terminate) {
         // Always process events first to catch start up events.
@@ -422,8 +422,8 @@ bool Server::loop() {
 Server::PollResult Server::poll(int millis) {
     // Grab the thread ID on the first poll.
     if (_threadId == 0)
-        _threadId = gettid();
-    if (_threadId != gettid()) {
+        _threadId = seasocks_gettid();
+    if (_threadId != seasocks_gettid()) {
         LS_ERROR(_logger, "poll() called from the wrong thread");
         return PollResult::Error;
     }
@@ -613,7 +613,7 @@ void Server::setPerMessageDeflateEnabled(bool enabled) {
 }
 
 void Server::checkThread() const {
-    auto thisTid = gettid();
+    auto thisTid = seasocks_gettid();
     if (thisTid != _threadId) {
         std::ostringstream o;
         o << "seasocks called on wrong thread : " << thisTid << " instead of " << _threadId;

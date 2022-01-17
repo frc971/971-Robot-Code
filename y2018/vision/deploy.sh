@@ -5,7 +5,7 @@ set -e
 JETSON="root@$1"
 
 # To build for the Jetson, use
-bazel build -c opt //y2018/vision:image_streamer --config=armhf-debian
+bazel build -c opt //y2018/vision:image_streamer --config=armv7
 
 # Copy files to Jetson
 rsync -av --progress bazel-bin/y2018/vision/image_streamer y2018/vision/exposure_loop.sh "${JETSON}":.

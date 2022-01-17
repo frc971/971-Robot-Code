@@ -69,7 +69,7 @@ bool DisplayLoop() {
   cv::Mat image_color_mat(cv::Size(image->cols(), image->rows()), CV_8UC2,
                           (void *)image->data()->data());
   cv::Mat rgb_image(cv::Size(image->cols(), image->rows()), CV_8UC3);
-  cv::cvtColor(image_color_mat, rgb_image, CV_YUV2BGR_YUYV);
+  cv::cvtColor(image_color_mat, rgb_image, cv::COLOR_YUV2BGR_YUYV);
 
   if (!FLAGS_capture.empty()) {
     cv::imwrite(FLAGS_capture, rgb_image);
@@ -119,7 +119,7 @@ bool DisplayLoop() {
   int keystroke = cv::waitKey(1);
   if ((keystroke & 0xFF) == static_cast<int>('c')) {
     // Convert again, to get clean image
-    cv::cvtColor(image_color_mat, rgb_image, CV_YUV2BGR_YUYV);
+    cv::cvtColor(image_color_mat, rgb_image, cv::COLOR_YUV2BGR_YUYV);
     std::stringstream name;
     name << "capture-" << aos::realtime_clock::now() << ".png";
     cv::imwrite(name.str(), rgb_image);

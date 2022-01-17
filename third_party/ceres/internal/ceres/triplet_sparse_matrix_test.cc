@@ -184,8 +184,15 @@ TEST(TripletSparseMatrix, AssignmentOperatorSelfAssignment) {
   orig.mutable_values()[1] = 5.2;
   orig.set_num_nonzeros(2);
 
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wself-assign-overloaded"
+#endif
   // Who's on earth gonna do this?
   orig = orig;
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
 
   EXPECT_EQ(orig.num_rows(), 2);
   EXPECT_EQ(orig.num_cols(), 5);

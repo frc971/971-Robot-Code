@@ -3,10 +3,6 @@ load(
     python_debs = "files",
 )
 load(
-    "//debian:clang.bzl",
-    clang_debs = "files",
-)
-load(
     ":patch.bzl",
     patch_debs = "files",
 )
@@ -61,10 +57,6 @@ load(
 load(
     ":gstreamer_armhf.bzl",
     gstreamer_armhf_debs = "files",
-)
-load(
-    ":m4.bzl",
-    m4_debs = "files",
 )
 load(
     ":lzma_amd64.bzl",
@@ -126,9 +118,6 @@ download_packages(
         "liblapack.so.3",
     ],
     packages = [
-        "python-dev",
-        "python-numpy",
-        "python-scipy",
         "python3-dev",
         "python3-numpy",
         "python3-scipy",
@@ -201,20 +190,15 @@ download_packages(
 download_packages(
     name = "download_matplotlib_deps",
     excludes = [
-        "python-dev",
-        "python-numpy",
-        "python-scipy",
         "python3-dev",
         "python3-numpy",
         "python3-scipy",
         "x11-common",
         "fonts-freefont",
-        "python",
+        "python3",
         "libcups2",
     ],
     packages = [
-        "python-matplotlib",
-        "python-tk",
         "python3-matplotlib",
         "python3-tk",
     ],
@@ -262,23 +246,9 @@ download_packages(
     target_compatible_with = ["@platforms//os:linux"],
 )
 
-download_packages(
-    name = "download_m4",
-    packages = [
-        "m4",
-    ],
-    target_compatible_with = ["@platforms//os:linux"],
-)
-
 generate_deb_tarball(
     name = "python",
     files = python_debs,
-    target_compatible_with = ["@platforms//os:linux"],
-)
-
-generate_deb_tarball(
-    name = "clang_6p0",
-    files = clang_debs,
     target_compatible_with = ["@platforms//os:linux"],
 )
 
@@ -342,61 +312,56 @@ generate_deb_tarball(
     target_compatible_with = ["@platforms//os:linux"],
 )
 
-# Starting point for opencv package list below.
 download_packages(
     name = "download_opencv",
     packages = [
         "libopencv-calib3d-dev",
-        "libopencv-calib3d3.2",
+        "libopencv-calib3d4.5",
         "libopencv-contrib-dev",
-        "libopencv-contrib3.2",
+        "libopencv-contrib4.5",
         "libopencv-core-dev",
-        "libopencv-core3.2",
+        "libopencv-core4.5",
         "libopencv-dev",
         "libopencv-features2d-dev",
-        "libopencv-features2d3.2",
+        "libopencv-features2d4.5",
         "libopencv-flann-dev",
-        "libopencv-flann3.2",
+        "libopencv-flann4.5",
         "libopencv-highgui-dev",
-        "libopencv-highgui3.2",
+        "libopencv-highgui4.5",
         "libopencv-imgcodecs-dev",
-        "libopencv-imgcodecs3.2",
+        "libopencv-imgcodecs4.5",
         "libopencv-imgproc-dev",
-        "libopencv-imgproc3.2",
+        "libopencv-imgproc4.5",
         "libopencv-ml-dev",
-        "libopencv-ml3.2",
+        "libopencv-ml4.5",
         "libopencv-objdetect-dev",
-        "libopencv-objdetect3.2",
+        "libopencv-objdetect4.5",
         "libopencv-photo-dev",
-        "libopencv-photo3.2",
+        "libopencv-photo4.5",
         "libopencv-shape-dev",
-        "libopencv-shape3.2",
+        "libopencv-shape4.5",
         "libopencv-stitching-dev",
-        "libopencv-stitching3.2",
+        "libopencv-stitching4.5",
         "libopencv-superres-dev",
-        "libopencv-superres3.2",
-        "libopencv-ts-dev",
+        "libopencv-superres4.5",
         "libopencv-video-dev",
-        "libopencv-video3.2",
+        "libopencv-video4.5",
         "libopencv-videoio-dev",
-        "libopencv-videoio3.2",
+        "libopencv-videoio4.5",
         "libopencv-videostab-dev",
-        "libopencv-videostab3.2",
+        "libopencv-videostab4.5",
         "libopencv-viz-dev",
-        "libopencv-viz3.2",
+        "libopencv-viz4.5",
     ],
     target_compatible_with = ["@platforms//os:linux"],
 )
 
-# This list was generated with download_packages.py on armhf and then
-# hand-tweaked to get everything it needs.
 generate_deb_tarball(
-    name = "opencv_armhf_v3",
+    name = "opencv_armhf_v4",
     files = opencv_armhf_debs,
     target_compatible_with = ["@platforms//os:linux"],
 )
 
-# This was hand-written based on opencv_armhf.bzl.
 generate_deb_tarball(
     name = "opencv_amd64",
     files = opencv_amd64_debs,
@@ -412,12 +377,6 @@ generate_deb_tarball(
 generate_deb_tarball(
     name = "gstreamer_armhf",
     files = gstreamer_armhf_debs,
-    target_compatible_with = ["@platforms//os:linux"],
-)
-
-generate_deb_tarball(
-    name = "m4",
-    files = m4_debs,
     target_compatible_with = ["@platforms//os:linux"],
 )
 

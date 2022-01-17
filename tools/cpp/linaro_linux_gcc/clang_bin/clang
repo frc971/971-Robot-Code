@@ -1,4 +1,0 @@
-#!/bin/bash --norc
-
-exec -a "$0" \
-  "tools/cpp/clang_6p0/x86_64-linux-gnu-clang-6.0" "$@"

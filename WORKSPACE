@@ -7,10 +7,6 @@ load(
     python_debs = "files",
 )
 load(
-    "//debian:clang.bzl",
-    clang_debs = "files",
-)
-load(
     "//debian:patch.bzl",
     patch_debs = "files",
 )
@@ -82,8 +78,6 @@ load("//debian:packages.bzl", "generate_repositories_for_debs")
 
 generate_repositories_for_debs(python_debs)
 
-generate_repositories_for_debs(clang_debs)
-
 generate_repositories_for_debs(rsync_debs)
 
 generate_repositories_for_debs(ssh_debs)
@@ -123,20 +117,102 @@ local_repository(
     path = "third_party/bazel-toolchain",
 )
 
-load("@com_grail_bazel_toolchain//toolchain:rules.bzl", "llvm_toolchain")
+load("@com_grail_bazel_toolchain//toolchain:rules.bzl", "llvm", "llvm_toolchain")
+
+llvm_version = "13.0.0"
+
+llvm(
+    name = "llvm_k8",
+    distribution = "clang+llvm-%s-x86_64-linux-gnu-ubuntu-16.04.tar.xz" % llvm_version,
+    llvm_version = llvm_version,
+)
+
+llvm(
+    name = "llvm_armv7",
+    distribution = "clang+llvm-%s-armv7a-linux-gnueabihf.tar.xz" % llvm_version,
+    llvm_version = llvm_version,
+)
+
+llvm_conlyopts = [
+    "-std=gnu99",
+]
+
+llvm_copts = [
+    "-D__STDC_FORMAT_MACROS",
+    "-D__STDC_CONSTANT_MACROS",
+    "-D__STDC_LIMIT_MACROS",
+    "-D_FILE_OFFSET_BITS=64",
+    "-fmessage-length=100",
+    "-fmacro-backtrace-limit=0",
+    "-Wextra",
+    "-Wpointer-arith",
+    "-Wstrict-aliasing",
+    "-Wcast-qual",
+    "-Wcast-align",
+    "-Wwrite-strings",
+    "-Wtype-limits",
+    "-Wsign-compare",
+    "-Wformat=2",
+    "-Werror",
+    "-ggdb3",
+    "-DAOS_DEBUG=0",
+]
+
+llvm_cxxopts = [
+    "-std=gnu++17",
+]
+
+llvm_dbg_copts = [
+    "-DAOS_DEBUG=1",
+]
 
 llvm_toolchain(
     name = "llvm_toolchain",
-    distribution = "clang+llvm-13.0.0-x86_64-linux-gnu-ubuntu-16.04.tar.xz",
-    llvm_version = "13.0.0",
+    additional_target_compatible_with = {
+        "linux-armv7": [
+            "@//tools/platforms/hardware:raspberry_pi",
+        ],
+    },
+    conlyopts = {
+        "linux-x86_64": llvm_conlyopts,
+        "linux-armv7": llvm_conlyopts,
+    },
+    copts = {
+        "linux-x86_64": llvm_copts,
+        "linux-armv7": llvm_copts,
+    },
+    cxxopts = {
+        "linux-x86_64": llvm_cxxopts,
+        "linux-armv7": llvm_cxxopts,
+    },
+    dbg_copts = {
+        "linux-x86_64": llvm_dbg_copts,
+        "linux-armv7": llvm_cxxopts,
+    },
+    llvm_version = llvm_version,
+    standard_libraries = {
+        "linux-x86_64": "libstdc++-10",
+        "linux-armv7": "libstdc++-10",
+    },
+    static_libstdcxx = False,
     sysroot = {
         "linux-x86_64": "@amd64_debian_sysroot//:sysroot_files",
+        "linux-armv7": "@armhf_debian_rootfs//:sysroot_files",
+    },
+    target_toolchain_roots = {
+        "linux-x86_64": "@llvm_k8//",
+        "linux-armv7": "@llvm_armv7//",
+    },
+    toolchain_roots = {
+        "linux-x86_64": "@llvm_k8//",
     },
 )
 
+load("@llvm_toolchain//:toolchains.bzl", "llvm_register_toolchains")
+
+llvm_register_toolchains()
+
 register_toolchains(
-    "//tools/cpp:cc-toolchain-k8",
-    "//tools/cpp:cc-toolchain-armhf-debian",
     "//tools/cpp:cc-toolchain-roborio",
     "//tools/cpp:cc-toolchain-cortex-m4f",
     "//tools/cpp:cc-toolchain-rp2040",
@@ -169,15 +245,8 @@ http_archive(
 http_archive(
     name = "python_repo",
     build_file = "@//debian:python.BUILD",
-    sha256 = "c2e293cd8bab436c2bd03648d2a0853ff3e2d954644698473fcd263bb9bab037",
-    url = "https://www.frc971.org/Build-Dependencies/python-5.tar.gz",
-)
-
-http_archive(
-    name = "clang_6p0_repo",
-    build_file = "@//tools/cpp/clang_6p0:clang_6p0.BUILD",
-    sha256 = "7c5dc0f124fbd26e440797a851466e7f852da27d9f1562c74059b5a34c294cc9",
-    url = "https://www.frc971.org/Build-Dependencies/clang_6p0.tar.gz",
+    sha256 = "048c51872f9c3853ae4e961c710533f477194a3f170b454e8d582f32a83e90f5",
+    url = "https://www.frc971.org/Build-Dependencies/python-6.tar.gz",
 )
 
 http_archive(
@@ -281,39 +350,28 @@ http_archive(
     url = "https://www.frc971.org/Build-Dependencies/FRC-2020-Linux-Toolchain-7.3.0.tar.gz",
 )
 
-# Recompressed version of the one downloaded from Linaro at
-# <https://releases.linaro.org/components/toolchain/binaries/7.4-2019.02/arm-linux-gnueabihf/gcc-linaro-7.4.1-2019.02-x86_64_arm-linux-gnueabihf.tar.xz>
-# with workarounds for <https://github.com/bazelbuild/bazel/issues/574> and the
-# top-level folder stripped off.
-http_archive(
-    name = "linaro_linux_gcc_repo",
-    build_file = "@//:compilers/linaro_linux_gcc.BUILD",
-    sha256 = "3c951cf1941d0fa06d64cc0d5e88612b209d8123b273fa26c16d70bd7bc6b163",
-    strip_prefix = "gcc-linaro-7.4.1-2019.02-x86_64_arm-linux-gnueabihf",
-    url = "https://www.frc971.org/Build-Dependencies/gcc-linaro-7.4.1-2019.02-x86_64_arm-linux-gnueabihf.tar.xz",
-)
-
-# The main partition from https://downloads.raspberrypi.org/raspbian_lite/images/raspbian_lite-2019-09-30/2019-09-26-raspbian-buster-lite.zip.
-# The following folders are removed to make bazel happy with it:
+# The main partition from https://downloads.raspberrypi.org/raspios_lite_armhf/images/raspios_lite_armhf-2021-11-08/2021-10-30-raspios-bullseye-armhf-lite.zip.sig
+# The following files and folders are removed to make bazel happy with it:
 #   usr/share/ca-certificates
-# This copy command to make clang happy: `cp usr/lib/arm-linux-gnueabihf/*.o usr/lib`
+#   lib/systemd/system/system-systemd\\x2dcryptsetup.slice
 http_archive(
     name = "armhf_debian_rootfs",
     build_file = "@//:compilers/debian_rootfs.BUILD",
-    sha256 = "8c827bdb79615046ee3e13e85664e5d01286ca1721f7169341667a634e599eb6",
-    url = "https://www.frc971.org/Build-Dependencies/2019-09-26-raspbian-buster-lite_rootfs.tar.bz2",
+    sha256 = "734f26a0cfc943cc3cae88412536186adfc4ed148cc167e6ffb298497c686280",
+    url = "https://www.frc971.org/Build-Dependencies/2021-10-30-raspios-bullseye-armhf-lite_rootfs.tar.bz2",
 )
 
 # Created with:
 #   `debootstrap buster buster_sysroot`
 # and then chrooting in and running:
 #   apt install libc6-dev libstdc++-7-dev
+# removing the apt cache,
 # and then tarring up the result
 http_archive(
     name = "amd64_debian_sysroot",
     build_file = "@//:compilers/debian_rootfs.BUILD",
-    sha256 = "fb0a4f0b35b4c99fcfc83902d2d2eaac7062024b2ff2f998e68736aac92c8e59",
-    url = "https://www.frc971.org/Build-Dependencies/2019-01-14-debian-buster_rootfs.tar.bz2",
+    sha256 = "5e10f4cac85a98a39da1716b218bc05fff4666c61cc471a7df27876710bc86d2",
+    url = "https://www.frc971.org/Build-Dependencies/2022-01-06-debian-bullseye_rootfs.tar.bz2",
 )
 
 new_git_repository(
@@ -458,8 +516,8 @@ http_archive(
 http_archive(
     name = "matplotlib_repo",
     build_file = "@//debian:matplotlib.BUILD",
-    sha256 = "a3db08d5951c1fc73f2203e3ab1f9ff4a647fff7b384c1b87f89adec61a0d77f",
-    url = "https://www.frc971.org/Build-Dependencies/matplotlib-5.tar.gz",
+    sha256 = "71d1512f1a9a3c90496f0ef3adcd46c4e5e4da4310d7cbb6b0da01a07e5e76e8",
+    url = "https://www.frc971.org/Build-Dependencies/matplotlib-6.tar.gz",
 )
 
 http_archive(
@@ -742,15 +800,15 @@ filegroup(
 http_archive(
     name = "opencv_armhf",
     build_file = "@//debian:opencv.BUILD",
-    sha256 = "1dd496ad0947ed6ce5d89cbefcfa55ea15ccb5bf70fa6ad7701c62cf2fcdd657",
-    url = "https://www.frc971.org/Build-Dependencies/opencv_armhf_v3.tar.gz",
+    sha256 = "064165507bad1afa8f7b22961a9a9067b243abc70064d713d26b37bc8dc2bf56",
+    url = "https://www.frc971.org/Build-Dependencies/opencv_armhf_v4.tar.gz",
 )
 
 http_archive(
     name = "opencv_k8",
     build_file = "@//debian:opencv.BUILD",
-    sha256 = "5ae1b473c2d47576d6cbea61d46423d8782936c057b578f1236809e43d0a62d1",
-    url = "https://www.frc971.org/Build-Dependencies/opencv_amd64_v2.tar.gz",
+    sha256 = "b730f5d0c8eb59411157b4e84bfdddd3a6fceed10b842716d9d1b74ad322ea14",
+    url = "https://www.frc971.org/Build-Dependencies/opencv_amd64_v3.tar.gz",
 )
 
 # Downloaded from:
@@ -780,9 +838,9 @@ http_archive(
 http_archive(
     name = "opencv_contrib_nonfree_amd64",
     build_file = "@//debian:opencv_python.BUILD",
-    sha256 = "6d8434a45e8f75c4da5fd0068ce001f4f8e35771cc851d746d4721eeaf517e25",
+    sha256 = "a1dfa0486db367594510c0c799ec7481247dc86e651b69008806d875ab731471",
     type = "zip",
-    url = "https://www.frc971.org/Build-Dependencies/opencv_python-4.5.1.48-cp37-cp37m-manylinux2014_x86_64.whl",
+    url = "https://www.frc971.org/Build-Dependencies/opencv_python-4.5.1.48-cp39-cp39-manylinux2014_x86_64.whl",
 )
 
 http_archive(
@@ -817,13 +875,6 @@ http_archive(
     sha256 = "29872e92839765e546828bb7754a68c418d927cd064fd4708fab9fe9c8bb116b",
     strip_prefix = "MarkupSafe-1.1.1",
     url = "https://www.frc971.org/Build-Dependencies/MarkupSafe-1.1.1.tar.gz",
-)
-
-http_archive(
-    name = "m4_v1.4.18",
-    build_file = "@//debian:m4.BUILD",
-    sha256 = "ee8dfe664ac8c1d066bab64f71bd076a021875581b3cc47dac4a14a475f50b15",
-    url = "https://www.frc971.org/Build-Dependencies/m4.tar.gz",
 )
 
 # //debian:lzma_amd64

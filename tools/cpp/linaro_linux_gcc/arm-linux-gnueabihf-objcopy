@@ -1,9 +1,0 @@
-#!/bin/bash --norc
-
-LD_LIBRARY_PATH="${BAZEL_OUTPUT_ROOT}external/linaro_49_deps/usr/lib/x86_64-linux-gnu"
-LD_LIBRARY_PATH+=":${BAZEL_OUTPUT_ROOT}external/linaro_49_deps/lib/x86_64-linux-gnu"
-export LD_LIBRARY_PATH
-
-exec -a arm-linux-gnueabihf-objcopy \
-	${BAZEL_OUTPUT_ROOT}external/linaro_linux_gcc_repo/bin/arm-linux-gnueabihf-objcopy \
-	"$@"

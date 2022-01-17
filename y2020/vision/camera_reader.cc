@@ -241,7 +241,7 @@ void CameraReader::ProcessImage(const CameraImage &image) {
     cv::Mat mask;
     cv::Mat homography =
         cv::findHomography(per_image.training_points, per_image.query_points,
-                           CV_RANSAC, 3.0, mask);
+                           cv::FM_RANSAC, 3.0, mask);
 
     const int homography_feature_count = cv::countNonZero(mask);
     // If mask doesn't have enough leftover matches, skip these matches
@@ -341,7 +341,7 @@ void CameraReader::ProcessImage(const CameraImage &image) {
       cv::solvePnP(per_image_good_match.training_points_3d,
                    per_image_good_match.query_points, CameraIntrinsics(),
                    CameraDistCoeffs(), R_camera_field_vec, T_camera_field,
-                   FLAGS_use_prev_pose, CV_ITERATIVE);
+                   FLAGS_use_prev_pose, cv::SOLVEPNP_ITERATIVE);
     }
 
     // We are occasionally seeing NaN in the prior estimate, so checking for

@@ -1,8 +1,8 @@
 --- a/__init__.py	2018-07-11 15:57:58.086509489 -0700
 +++ b/__init__.py	2018-07-11 16:04:15.004795500 -0700
-@@ -110,6 +111,31 @@
- __version__ = str('1.4.2')
- __version__numpy__ = str('1.6')  # minimum required numpy version
+@@ -117,6 +117,31 @@
+ __version__ = str(get_versions()['version'])
+ del get_versions
  
 +_matplotlib_base = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..")
 +
@@ -13,7 +13,7 @@
 +            "usr", "share", "matplotlib", "mpl-data")
 +# Avoid reading /etc/matplotlib in all cases. Matplotlib is pretty happy to
 +# escape the sandbox by using absolute paths.
-+os.environ['MATPLOTLIBRC'] = os.environ['MATPLOTLIBDATA']
++os.environ['MATPLOTLIBRC'] = os.path.join(os.environ['MATPLOTLIBDATA'], "matplotlibrc")
 +# There's a bug where the temp directory gets set if MATPLOTLIBRC isn't set.
 +# That causes the directory to not be created in time. We set the variable
 +# manually here to work around the bug.
@@ -29,6 +29,15 @@
 +os.environ["FONTCONFIG_FILE"] = "fonts.conf"
 +os.environ["FONTCONFIG_SYSROOT"] = _matplotlib_base
 +
- try:
-     import dateutil
- except ImportError:
+ _log = logging.getLogger(__name__)
+ 
+ __bibtex__ = r"""@Article{Hunter:2007,
+@@ -536,7 +562,7 @@
+ 
+ @_logged_cached('(private) matplotlib data path: %s')
+ def _get_data_path():
+-    path = Path(__file__).with_name("mpl-data")
++    path = Path(os.environ['MATPLOTLIBDATA'])
+     if path.is_dir():
+         return str(path)
+

@@ -146,7 +146,7 @@ ImageCallback::ImageCallback(
                             (void *)image.data()->data());
     const cv::Size image_size(image.cols(), image.rows());
     cv::Mat rgb_image(image_size, CV_8UC3);
-    cv::cvtColor(image_color_mat, rgb_image, CV_YUV2BGR_YUYV);
+    cv::cvtColor(image_color_mat, rgb_image, cv::COLOR_YUV2BGR_YUYV);
     handle_image_(rgb_image, eof);
   });
 }

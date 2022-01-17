@@ -11,11 +11,12 @@ f2c_library(
         # This gets triggered because it doesn't realize xerbla doesn't return.
         # TODO(Brian): Try and get __attribute__((noreturn)) on xerbla somehow.
         "-Wno-uninitialized",
+        "-Wno-unused-but-set-variable",
     ] + compiler_select({
         "clang": [
+            "-Wno-unused-but-set-parameter",
         ],
         "gcc": [
-            "-Wno-unused-but-set-variable",
             "-Wno-discarded-qualifiers",
         ],
     }),

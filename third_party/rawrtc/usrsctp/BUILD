@@ -48,7 +48,9 @@ cc_library(
         "-DHAVE_LINUX_IF_ADDR_H",
         "-Wno-address-of-packed-member",
     ] + compiler_select({
-        "clang": [],
+        "clang": [
+            "-Wno-unused-but-set-variable",
+        ],
         "gcc": [
             "-Wno-discarded-qualifiers",
         ],
