@@ -1,0 +1,9 @@
+include "frc971/control_loops/control_loops.fbs";
+
+namespace y2022.control_loops.superstructure;
+
+table Position {
+
+}
+
+root_type Position;
