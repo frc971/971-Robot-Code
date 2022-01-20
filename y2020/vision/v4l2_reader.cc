@@ -92,6 +92,25 @@ bool V4L2Reader::ReadLatestImage() {
 
 void V4L2Reader::SendLatestImage() { buffers_[saved_buffer_.index].Send(); }
 
+void V4L2Reader::SetExposure(size_t duration) {
+  v4l2_control manual_control;
+  manual_control.id = V4L2_CID_EXPOSURE_AUTO;
+  manual_control.value = V4L2_EXPOSURE_MANUAL;
+  PCHECK(Ioctl(VIDIOC_S_CTRL, &manual_control) == 0);
+
+  v4l2_control exposure_control;
+  exposure_control.id = V4L2_CID_EXPOSURE_ABSOLUTE;
+  exposure_control.value = static_cast<int>(duration);  // 100 micro s units
+  PCHECK(Ioctl(VIDIOC_S_CTRL, &exposure_control) == 0);
+}
+
+void V4L2Reader::UseAutoExposure() {
+  v4l2_control control;
+  control.id = V4L2_CID_EXPOSURE_AUTO;
+  control.value = V4L2_EXPOSURE_AUTO;
+  PCHECK(Ioctl(VIDIOC_S_CTRL, &control) == 0);
+}
+
 void V4L2Reader::Buffer::InitializeMessage(size_t max_image_size) {
   message_offset = flatbuffers::Offset<CameraImage>();
   builder = aos::Sender<CameraImage>::Builder();
