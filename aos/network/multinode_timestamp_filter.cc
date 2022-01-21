@@ -1355,7 +1355,10 @@ MultiNodeNoncausalOffsetEstimator::MakeCandidateTimes() const {
           .boot = next_boot,
           .time = timestamp_mappers_[node_a_index]->monotonic_start_time(
               next_boot)};
-      if (next_start_time < next_node_time) {
+      // If we don't have a start time, it doesn't make sense to solve for it.
+      // Ignore that case.
+      if (next_start_time < next_node_time &&
+          next_start_time.time != monotonic_clock::min_time) {
         VLOG(1) << "Candidate for node " << node_a_index
                 << " is the next startup time, " << next_start_time;
         next_node_time = next_start_time;

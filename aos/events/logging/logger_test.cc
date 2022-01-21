@@ -2739,8 +2739,21 @@ TEST_P(MultinodeLoggerTest, RemoteRebootOnlyTimestamps) {
 
   EXPECT_TRUE(timestamp_file_count == 2u || timestamp_file_count == 4u);
 
-  // TODO(austin): Finish reading it.  We don't have a valid start time so
-  // log_reader gets rather grumpy.
+  // Confirm that we can actually sort the resulting log and read it.
+  {
+    LogReader reader(SortParts(filenames));
+
+    SimulatedEventLoopFactory log_reader_factory(reader.configuration());
+    log_reader_factory.set_send_delay(chrono::microseconds(0));
+
+    // This sends out the fetched messages and advances time to the start of
+    // the log file.
+    reader.Register(&log_reader_factory);
+
+    log_reader_factory.Run();
+
+    reader.Deregister();
+  }
 }
 
 // Tests that we properly handle one direction of message_bridge being
