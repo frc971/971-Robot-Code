@@ -59,6 +59,11 @@ class NewDataWriter {
                     const UUID &node_boot_uuid,
                     aos::monotonic_clock::time_point now);
 
+  // Updates the current boot for the source node.  This is useful when you want
+  // to queue a message that may trigger a reboot rotation, but then need to
+  // update the remote timestamps.
+  void UpdateBoot(const UUID &source_node_boot_uuid);
+
   // Returns the filename of the writer.
   std::string_view filename() const {
     return writer ? writer->filename() : "(closed)";
@@ -97,7 +102,7 @@ class NewDataWriter {
 
  private:
   // Signals that a node has rebooted.
-  void Reboot();
+  void Reboot(const UUID &source_node_boot_uuid);
 
   void QueueHeader(
       aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> &&header);

@@ -136,6 +136,9 @@ table LogFileHeader {
   // For all channels sent from a specific node, these vectors hold the
   // timestamp of the oldest known message from that node, and the
   // corresponding monotonic timestamp for when that was received on our node.
+  //
+  // The local node is the node that this log file is from the perspective of
+  // (field 6)
   corrupted_oldest_remote_monotonic_timestamps:[int64] (id: 20, deprecated);
   corrupted_oldest_local_monotonic_timestamps:[int64] (id: 21, deprecated);
   oldest_remote_monotonic_timestamps:[int64] (id: 24);

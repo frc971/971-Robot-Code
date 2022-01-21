@@ -695,6 +695,20 @@ void Logger::LogUntil(monotonic_clock::time_point t) {
         const auto end = event_loop_->monotonic_now();
         RecordCreateMessageTime(start, end, &f);
 
+        // Timestamps tell us information about what happened too!
+        // Capture any reboots so UpdateRemote is properly recorded.
+        f.contents_writer->UpdateBoot(UUID::FromVector(msg->boot_uuid()));
+
+        // Start with recording info about the data flowing from our node to the
+        // remote.
+        f.contents_writer->UpdateRemote(
+            node_index_, event_loop_->boot_uuid(),
+            monotonic_clock::time_point(
+                chrono::nanoseconds(msg->monotonic_remote_time())),
+            monotonic_clock::time_point(
+                chrono::nanoseconds(msg->monotonic_sent_time())),
+            f.reliable_forwarding);
+
         f.contents_writer->QueueMessage(
             &fbb, UUID::FromVector(msg->boot_uuid()), end);
       }

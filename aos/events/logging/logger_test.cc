@@ -2518,6 +2518,231 @@ TEST_P(MultinodeLoggerTest, RemoteReboot) {
   }
 }
 
+// Tests that we can sort a log which only has timestamps from the remote
+// because the local message_bridge_client failed to connect.
+TEST_P(MultinodeLoggerTest, RemoteRebootOnlyTimestamps) {
+  const UUID pi1_boot0 = UUID::Random();
+  const UUID pi2_boot0 = UUID::Random();
+  const UUID pi2_boot1 = UUID::Random();
+  {
+    CHECK_EQ(pi1_index_, 0u);
+    CHECK_EQ(pi2_index_, 1u);
+
+    time_converter_.set_boot_uuid(pi1_index_, 0, pi1_boot0);
+    time_converter_.set_boot_uuid(pi2_index_, 0, pi2_boot0);
+    time_converter_.set_boot_uuid(pi2_index_, 1, pi2_boot1);
+
+    time_converter_.AddNextTimestamp(
+        distributed_clock::epoch(),
+        {BootTimestamp::epoch(), BootTimestamp::epoch()});
+    const chrono::nanoseconds reboot_time = chrono::milliseconds(10100);
+    time_converter_.AddNextTimestamp(
+        distributed_clock::epoch() + reboot_time,
+        {BootTimestamp::epoch() + reboot_time,
+         BootTimestamp{
+             .boot = 1,
+             .time = monotonic_clock::epoch() + chrono::milliseconds(1323)}});
+  }
+  pi2_->Disconnect(pi1_->node());
+
+  std::vector<std::string> filenames;
+  {
+    LoggerState pi1_logger = MakeLogger(pi1_);
+
+    event_loop_factory_.RunFor(chrono::milliseconds(95));
+    EXPECT_EQ(event_loop_factory_.GetNodeEventLoopFactory("pi1")->boot_uuid(),
+              pi1_boot0);
+    EXPECT_EQ(event_loop_factory_.GetNodeEventLoopFactory("pi2")->boot_uuid(),
+              pi2_boot0);
+
+    StartLogger(&pi1_logger);
+
+    event_loop_factory_.RunFor(chrono::milliseconds(10000));
+
+    VLOG(1) << "Reboot now!";
+
+    event_loop_factory_.RunFor(chrono::milliseconds(20000));
+    EXPECT_EQ(event_loop_factory_.GetNodeEventLoopFactory("pi1")->boot_uuid(),
+              pi1_boot0);
+    EXPECT_EQ(event_loop_factory_.GetNodeEventLoopFactory("pi2")->boot_uuid(),
+              pi2_boot1);
+    pi1_logger.AppendAllFilenames(&filenames);
+  }
+
+  // Confirm that our new oldest timestamps properly update as we reboot and
+  // rotate.
+  size_t timestamp_file_count = 0;
+  for (const std::string &file : filenames) {
+    std::optional<SizePrefixedFlatbufferVector<LogFileHeader>> log_header =
+        ReadHeader(file);
+    CHECK(log_header);
+
+    if (log_header->message().has_configuration()) {
+      continue;
+    }
+
+    const monotonic_clock::time_point monotonic_start_time =
+        monotonic_clock::time_point(
+            chrono::nanoseconds(log_header->message().monotonic_start_time()));
+    const UUID source_node_boot_uuid = UUID::FromString(
+        log_header->message().source_node_boot_uuid()->string_view());
+
+    ASSERT_TRUE(log_header->message().has_oldest_remote_monotonic_timestamps());
+    ASSERT_EQ(
+        log_header->message().oldest_remote_monotonic_timestamps()->size(), 2u);
+    ASSERT_TRUE(log_header->message().has_oldest_local_monotonic_timestamps());
+    ASSERT_EQ(log_header->message().oldest_local_monotonic_timestamps()->size(),
+              2u);
+    ASSERT_TRUE(log_header->message()
+                    .has_oldest_remote_unreliable_monotonic_timestamps());
+    ASSERT_EQ(log_header->message()
+                  .oldest_remote_unreliable_monotonic_timestamps()
+                  ->size(),
+              2u);
+    ASSERT_TRUE(log_header->message()
+                    .has_oldest_local_unreliable_monotonic_timestamps());
+    ASSERT_EQ(log_header->message()
+                  .oldest_local_unreliable_monotonic_timestamps()
+                  ->size(),
+              2u);
+
+    if (log_header->message().node()->name()->string_view() != "pi1") {
+      ASSERT_TRUE(file.find("aos.message_bridge.RemoteMessage") !=
+                  std::string::npos);
+
+      const std::optional<SizePrefixedFlatbufferVector<MessageHeader>> msg =
+          ReadNthMessage(file, 0);
+      CHECK(msg);
+
+      EXPECT_TRUE(msg->message().has_monotonic_sent_time());
+      EXPECT_TRUE(msg->message().has_monotonic_remote_time());
+
+      const monotonic_clock::time_point
+          expected_oldest_local_monotonic_timestamps(
+              chrono::nanoseconds(msg->message().monotonic_sent_time()));
+      const monotonic_clock::time_point
+          expected_oldest_remote_monotonic_timestamps(
+              chrono::nanoseconds(msg->message().monotonic_remote_time()));
+
+      EXPECT_NE(expected_oldest_local_monotonic_timestamps,
+                monotonic_clock::min_time);
+      EXPECT_NE(expected_oldest_remote_monotonic_timestamps,
+                monotonic_clock::min_time);
+
+      ++timestamp_file_count;
+      // Since the log file is from the perspective of the other node,
+      const monotonic_clock::time_point oldest_remote_monotonic_timestamps =
+          monotonic_clock::time_point(chrono::nanoseconds(
+              log_header->message().oldest_remote_monotonic_timestamps()->Get(
+                  0)));
+      const monotonic_clock::time_point oldest_local_monotonic_timestamps =
+          monotonic_clock::time_point(chrono::nanoseconds(
+              log_header->message().oldest_local_monotonic_timestamps()->Get(
+                  0)));
+      const monotonic_clock::time_point
+          oldest_remote_unreliable_monotonic_timestamps =
+              monotonic_clock::time_point(chrono::nanoseconds(
+                  log_header->message()
+                      .oldest_remote_unreliable_monotonic_timestamps()
+                      ->Get(0)));
+      const monotonic_clock::time_point
+          oldest_local_unreliable_monotonic_timestamps =
+              monotonic_clock::time_point(chrono::nanoseconds(
+                  log_header->message()
+                      .oldest_local_unreliable_monotonic_timestamps()
+                      ->Get(0)));
+      // Confirm that the oldest timestamps match what we expect.  Based on what
+      // we are doing, we know that the oldest time is the first message's time.
+      //
+      // This makes the test robust to both the split and combined config tests.
+      switch (log_header->message().parts_index()) {
+        case 0:
+        case 1:
+          EXPECT_EQ(oldest_remote_monotonic_timestamps,
+                    expected_oldest_remote_monotonic_timestamps);
+          EXPECT_EQ(oldest_local_monotonic_timestamps,
+                    expected_oldest_local_monotonic_timestamps);
+          EXPECT_EQ(oldest_remote_unreliable_monotonic_timestamps,
+                    expected_oldest_remote_monotonic_timestamps);
+          EXPECT_EQ(oldest_local_unreliable_monotonic_timestamps,
+                    expected_oldest_local_monotonic_timestamps);
+          break;
+        default:
+          FAIL();
+          break;
+      }
+
+      switch (log_header->message().parts_index()) {
+        case 0:
+          EXPECT_EQ(source_node_boot_uuid, pi2_boot0);
+          EXPECT_EQ(monotonic_start_time, monotonic_clock::min_time);
+          break;
+        case 1:
+          EXPECT_EQ(source_node_boot_uuid, pi2_boot1);
+          EXPECT_EQ(monotonic_start_time, monotonic_clock::min_time);
+          break;
+        default:
+          FAIL();
+          break;
+      }
+
+      continue;
+    }
+    EXPECT_EQ(
+        log_header->message().oldest_remote_monotonic_timestamps()->Get(0),
+        monotonic_clock::max_time.time_since_epoch().count());
+    EXPECT_EQ(log_header->message().oldest_local_monotonic_timestamps()->Get(0),
+              monotonic_clock::max_time.time_since_epoch().count());
+    EXPECT_EQ(log_header->message()
+                  .oldest_remote_unreliable_monotonic_timestamps()
+                  ->Get(0),
+              monotonic_clock::max_time.time_since_epoch().count());
+    EXPECT_EQ(log_header->message()
+                  .oldest_local_unreliable_monotonic_timestamps()
+                  ->Get(0),
+              monotonic_clock::max_time.time_since_epoch().count());
+
+    const monotonic_clock::time_point oldest_remote_monotonic_timestamps =
+        monotonic_clock::time_point(chrono::nanoseconds(
+            log_header->message().oldest_remote_monotonic_timestamps()->Get(
+                1)));
+    const monotonic_clock::time_point oldest_local_monotonic_timestamps =
+        monotonic_clock::time_point(chrono::nanoseconds(
+            log_header->message().oldest_local_monotonic_timestamps()->Get(1)));
+    const monotonic_clock::time_point
+        oldest_remote_unreliable_monotonic_timestamps =
+            monotonic_clock::time_point(chrono::nanoseconds(
+                log_header->message()
+                    .oldest_remote_unreliable_monotonic_timestamps()
+                    ->Get(1)));
+    const monotonic_clock::time_point
+        oldest_local_unreliable_monotonic_timestamps =
+            monotonic_clock::time_point(chrono::nanoseconds(
+                log_header->message()
+                    .oldest_local_unreliable_monotonic_timestamps()
+                    ->Get(1)));
+    switch (log_header->message().parts_index()) {
+      case 0:
+        EXPECT_EQ(oldest_remote_monotonic_timestamps,
+                  monotonic_clock::max_time);
+        EXPECT_EQ(oldest_local_monotonic_timestamps, monotonic_clock::max_time);
+        EXPECT_EQ(oldest_remote_unreliable_monotonic_timestamps,
+                  monotonic_clock::max_time);
+        EXPECT_EQ(oldest_local_unreliable_monotonic_timestamps,
+                  monotonic_clock::max_time);
+        break;
+      default:
+        FAIL();
+        break;
+    }
+  }
+
+  EXPECT_TRUE(timestamp_file_count == 2u || timestamp_file_count == 4u);
+
+  // TODO(austin): Finish reading it.  We don't have a valid start time so
+  // log_reader gets rather grumpy.
+}
+
 // Tests that we properly handle one direction of message_bridge being
 // unavailable.
 TEST_P(MultinodeLoggerTest, OneDirectionWithNegativeSlope) {

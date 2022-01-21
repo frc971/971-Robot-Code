@@ -46,11 +46,33 @@ void NewDataWriter::Rotate() {
   }
 }
 
-void NewDataWriter::Reboot() {
+void NewDataWriter::Reboot(const UUID &source_node_boot_uuid) {
   parts_uuid_ = UUID::Random();
   ++parts_index_;
   reopen_(this);
   header_written_ = false;
+  for (State &state : state_) {
+    state.boot_uuid = UUID::Zero();
+    state.oldest_remote_monotonic_timestamp = monotonic_clock::max_time;
+    state.oldest_local_monotonic_timestamp = monotonic_clock::max_time;
+    state.oldest_remote_unreliable_monotonic_timestamp =
+        monotonic_clock::max_time;
+    state.oldest_local_unreliable_monotonic_timestamp =
+        monotonic_clock::max_time;
+  }
+
+  state_[node_index_].boot_uuid = source_node_boot_uuid;
+
+  VLOG(1) << "Rebooted " << filename();
+}
+
+void NewDataWriter::UpdateBoot(const UUID &source_node_boot_uuid) {
+  if (state_[node_index_].boot_uuid != source_node_boot_uuid) {
+    state_[node_index_].boot_uuid = source_node_boot_uuid;
+    if (header_written_) {
+      Reboot(source_node_boot_uuid);
+    }
+  }
 }
 
 void NewDataWriter::UpdateRemote(
@@ -76,7 +98,6 @@ void NewDataWriter::UpdateRemote(
         monotonic_clock::max_time;
     rotate = true;
   }
-
 
   // Did the unreliable timestamps change?
   if (!reliable) {
@@ -113,18 +134,15 @@ void NewDataWriter::QueueMessage(flatbuffers::FlatBufferBuilder *fbb,
                                  const UUID &source_node_boot_uuid,
                                  aos::monotonic_clock::time_point now) {
   // Trigger a reboot if we detect the boot UUID change.
-  if (state_[node_index_].boot_uuid != source_node_boot_uuid) {
-    state_[node_index_].boot_uuid = source_node_boot_uuid;
-    if (header_written_) {
-      Reboot();
-    }
+  UpdateBoot(source_node_boot_uuid);
 
+  if (!header_written_) {
     QueueHeader(MakeHeader());
   }
 
   // If the start time has changed for this node, trigger a rotation.
   if (log_namer_->monotonic_start_time(node_index_, source_node_boot_uuid) !=
-           monotonic_start_time_) {
+      monotonic_start_time_) {
     CHECK(header_written_);
     Rotate();
   }
