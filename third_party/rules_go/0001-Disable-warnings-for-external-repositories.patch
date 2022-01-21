@@ -1,0 +1,28 @@
+From 3113c6d807095eb6068ee4ffbc2f04649f999c35 Mon Sep 17 00:00:00 2001
+From: Philipp Schrader <philipp.schrader@gmail.com>
+Date: Thu, 20 Jan 2022 22:28:10 -0800
+Subject: [PATCH] Disable warnings for external repositories
+
+---
+ go/private/rules/cgo.bzl | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/go/private/rules/cgo.bzl b/go/private/rules/cgo.bzl
+index f75e3c95..ee2a2ca9 100644
+--- a/go/private/rules/cgo.bzl
++++ b/go/private/rules/cgo.bzl
+@@ -53,6 +53,11 @@ def cgo_configure(go, srcs, cdeps, cppopts, copts, cxxopts, clinkopts):
+     if not go.cgo_tools:
+         fail("Go toolchain does not support cgo")
+ 
++    # If we're not in the main repository, ignore all warnings. It's not worth
++    # our time to fix the warnings for third-party cgo code.
++    if go._ctx.label.workspace_name:
++        copts = copts + ["-Wno-everything"]
++
+     cppopts = list(cppopts)
+     copts = go.cgo_tools.c_compile_options + copts
+     cxxopts = go.cgo_tools.cxx_compile_options + cxxopts
+-- 
+2.30.2
+
