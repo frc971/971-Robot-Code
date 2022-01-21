@@ -9,6 +9,8 @@
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 
+DEFINE_double(rate, -1, "Rate at which to send the message (-1 to send once).");
+
 int main(int argc, char **argv) {
   gflags::SetUsageMessage(
       "Sends messages on arbitrary channels.\n"
@@ -44,7 +46,19 @@ int main(int argc, char **argv) {
   fbb.ForceDefaults(true);
   fbb.Finish(aos::JsonToFlatbuffer(std::string_view(argv[1]), channel->schema(),
                                    &fbb));
-  sender->CheckOk(sender->Send(fbb.GetSize()));
+
+  if (FLAGS_rate < 0) {
+    sender->CheckOk(sender->Send(fbb.GetSize()));
+  } else {
+    cli_info.event_loop
+        ->AddTimer([&fbb, &sender]() {
+          sender->CheckOk(sender->Send(fbb.GetBufferPointer(), fbb.GetSize()));
+        })
+        ->Setup(cli_info.event_loop->monotonic_now(),
+                std::chrono::duration_cast<std::chrono::nanoseconds>(
+                    std::chrono::duration<double>(1.0 / FLAGS_rate)));
+    cli_info.event_loop->Run();
+  }
 
   return 0;
 }
