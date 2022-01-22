@@ -5,7 +5,7 @@ flatbuffer_cc_library(
     srcs = ["vision.fbs"],
     gen_reflections = 1,
     target_compatible_with = ["@platforms//os:linux"],
-    visibility = ["//y2020:__subpackages__"],
+    visibility = ["//y2020:__subpackages__"] + ["//y2022:__subpackages__"],
 )
 
 flatbuffer_cc_library(
@@ -61,7 +61,7 @@ cc_library(
         "//y2020:config",
     ],
     target_compatible_with = ["@platforms//os:linux"],
-    visibility = ["//y2020:__subpackages__"],
+    visibility = ["//y2020:__subpackages__"] + ["//y2022:__subpackages__"],
     deps = [
         ":v4l2_reader",
         ":vision_fbs",
