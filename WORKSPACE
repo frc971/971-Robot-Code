@@ -694,9 +694,16 @@ node_repositories()
 # I'm sure there is a better path, but that works...
 yarn_install(
     name = "npm",
+    frozen_lockfile = True,
     package_json = "//:package.json",
     symlink_node_modules = False,
     yarn_lock = "//:yarn.lock",
+)
+
+http_archive(
+    name = "io_bazel_rules_webtesting",
+    sha256 = "e9abb7658b6a129740c0b3ef6f5a2370864e102a5ba5ffca2cea565829ed825a",
+    urls = ["https://github.com/bazelbuild/rules_webtesting/releases/download/0.3.5/rules_webtesting.tar.gz"],
 )
 
 # Flatbuffers
