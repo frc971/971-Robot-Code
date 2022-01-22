@@ -14,6 +14,27 @@ robot_downloader(
     ],
 )
 
+robot_downloader(
+    name = "pi_download",
+    binaries = [
+        "//y2022/vision:viewer",
+    ],
+    data = [
+        ":config",
+    ],
+    dirs = [
+    ],
+    start_binaries = [
+        "//aos/events/logging:logger_main",
+        "//aos/network:message_bridge_client",
+        "//aos/network:message_bridge_server",
+        "//aos/network:web_proxy_main",
+        "//y2022/vision:camera_reader",
+    ],
+    target_compatible_with = ["//tools/platforms/hardware:raspberry_pi"],
+    target_type = "pi",
+)
+
 cc_library(
     name = "constants",
     srcs = [
