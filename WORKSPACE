@@ -926,6 +926,12 @@ local_repository(
 
 http_archive(
     name = "io_bazel_rules_go",
+    patch_args = [
+        "-p1",
+    ],
+    patches = [
+        "@//third_party:rules_go/0001-Disable-warnings-for-external-repositories.patch",
+    ],
     sha256 = "2b1641428dff9018f9e85c0384f03ec6c10660d935b750e3fa1492a281a53b0f",
     urls = [
         "https://www.frc971.org/Build-Dependencies/rules_go-v0.29.0.zip",
