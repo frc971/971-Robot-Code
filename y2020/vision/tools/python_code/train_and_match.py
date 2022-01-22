@@ -52,13 +52,13 @@ def load_images(image_names):
 # Load feature extractor based on extractor name
 # Returns feature extractor object
 def load_feature_extractor():
-    if FEATURE_EXTRACTOR_NAME is 'SIFT':
+    if FEATURE_EXTRACTOR_NAME == 'SIFT':
         # Initiate SIFT detector
         feature_extractor = cv2.SIFT_create()
-    elif FEATURE_EXTRACTOR_NAME is 'SURF':
+    elif FEATURE_EXTRACTOR_NAME == 'SURF':
         # Initiate SURF detector
         feature_extractor = cv2.xfeatures2d.SURF_create()
-    elif FEATURE_EXTRACTOR_NAME is 'ORB':
+    elif FEATURE_EXTRACTOR_NAME == 'ORB':
         # Initiate ORB detector
         feature_extractor = cv2.ORB_create()
 
@@ -78,7 +78,7 @@ def detect_and_compute(feature_extractor, image_list):
             kp, des = feature_extractor.detectAndCompute(image_list[i], None)
             descriptor_lists.append(des)
             keypoint_lists.append(kp)
-    elif FEATURE_EXTRACTOR_NAME is 'ORB':
+    elif FEATURE_EXTRACTOR_NAME == 'ORB':
         # TODO: Check whether ORB extractor can do detectAndCompute.
         # If so, we don't need to have this branch for ORB
         for i in range(len(image_list)):
@@ -104,7 +104,7 @@ def train_matcher(descriptor_lists):
         matcher = cv2.FlannBasedMatcher(index_params, search_params)
         matcher.add(descriptor_lists)
         matcher.train()
-    elif FEATURE_EXTRACTOR_NAME is 'ORB':
+    elif FEATURE_EXTRACTOR_NAME == 'ORB':
         # Use FLANN LSH for ORB
         FLANN_INDEX_LSH = 6
         index_params = dict(
@@ -144,7 +144,7 @@ def compute_matches(matcher, train_descriptor_lists, query_descriptor_lists):
 
             good_matches_list.append(good_matches)
 
-    elif FEATURE_EXTRACTOR_NAME is 'ORB':
+    elif FEATURE_EXTRACTOR_NAME == 'ORB':
         matches = matcher.knnMatch(train_keypoint_lists[0], desc_query, k=2)
         good_matches = []
         for m in matches:
