@@ -4,7 +4,7 @@ import * as flatbuffers_builder from 'org_frc971/external/com_github_google_flat
 import {ByteBuffer} from 'org_frc971/external/com_github_google_flatbuffers/ts/byte-buffer';
 import {Long} from 'org_frc971/external/com_github_google_flatbuffers/ts/long';
 import * as sift from 'org_frc971/y2020/vision/sift/sift_generated'
-import * as vision from 'org_frc971/y2020/vision/vision_generated';
+import * as vision from 'org_frc971/frc971/vision/vision_generated';
 import * as web_proxy from 'org_frc971/aos/network/web_proxy_generated';
 
 import Channel = configuration.aos.Channel;

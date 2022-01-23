@@ -9,12 +9,12 @@
 #include "aos/events/event_loop.h"
 #include "aos/flatbuffer_merge.h"
 #include "aos/network/team_number.h"
+#include "frc971/vision/v4l2_reader.h"
+#include "frc971/vision/vision_generated.h"
 #include "y2020/vision/sift/sift971.h"
 #include "y2020/vision/sift/sift_generated.h"
 #include "y2020/vision/sift/sift_training_generated.h"
 #include "y2020/vision/tools/python_code/sift_training_data.h"
-#include "y2020/vision/v4l2_reader.h"
-#include "y2020/vision/vision_generated.h"
 
 DEFINE_bool(skip_sift, false,
             "If true don't run any feature extraction.  Just forward images.");

@@ -8,7 +8,7 @@
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 #include "aos/time/time.h"
-#include "y2020/vision/vision_generated.h"
+#include "frc971/vision/vision_generated.h"
 #include "y2022/vision/blob_detector.h"
 
 DEFINE_string(capture, "",

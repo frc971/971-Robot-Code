@@ -34,7 +34,7 @@ cc_binary(
         "viewer.cc",
     ],
     data = [
-        "//y2020:config",
+        "//y2022:config",
     ],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//y2022:__subpackages__"],
@@ -42,8 +42,7 @@ cc_binary(
         ":blob_detector_lib",
         "//aos:init",
         "//aos/events:shm_event_loop",
+        "//frc971/vision:vision_fbs",
         "//third_party:opencv",
-        "//y2020/vision:vision_fbs",
-        "//y2020/vision/sift:sift_fbs",
     ],
 )

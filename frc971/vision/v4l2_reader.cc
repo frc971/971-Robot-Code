@@ -1,4 +1,4 @@
-#include "y2020/vision/v4l2_reader.h"
+#include "frc971/vision/v4l2_reader.h"
 
 #include <fcntl.h>
 #include <linux/videodev2.h>
@@ -60,8 +60,8 @@ V4L2Reader::V4L2Reader(aos::EventLoop *event_loop,
 }
 
 bool V4L2Reader::ReadLatestImage() {
-  // First, enqueue any old buffer we already have. This is the one which may
-  // have been sent.
+  // First, enqueue any old buffer we already have. This is the one which
+  // may have been sent.
   if (saved_buffer_) {
     EnqueueBuffer(saved_buffer_.index);
     saved_buffer_.Clear();
@@ -189,8 +189,8 @@ void V4L2Reader::StreamOff() {
   if (result == 0) {
     return;
   }
-  // Some devices (like Alex's webcam) return this if streaming isn't currently
-  // on, unlike what the documentations says should happen.
+  // Some devices (like Alex's webcam) return this if streaming isn't
+  // currently on, unlike what the documentations says should happen.
   if (errno == EBUSY) {
     return;
   }
