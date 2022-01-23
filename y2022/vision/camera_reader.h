@@ -15,6 +15,7 @@
 #include "y2020/vision/sift/sift_generated.h"
 #include "y2020/vision/sift/sift_training_generated.h"
 #include "y2020/vision/tools/python_code/sift_training_data.h"
+#include "y2022/vision/target_estimate_generated.h"
 
 namespace y2022 {
 namespace vision {
@@ -32,6 +33,8 @@ class CameraReader {
         camera_calibration_(FindCameraCalibration()),
         reader_(reader),
         image_sender_(event_loop->MakeSender<CameraImage>("/camera")),
+        target_estimate_sender_(
+            event_loop->MakeSender<TargetEstimate>("/camera")),
         read_image_timer_(event_loop->AddTimer([this]() { ReadImage(); })) {
     event_loop->OnRun(
         [this]() { read_image_timer_->Setup(event_loop_->monotonic_now()); });
@@ -54,6 +57,16 @@ class CameraReader {
     return result;
   }
 
+  cv::Mat CameraExtrinsics() const {
+    const cv::Mat result(
+        4, 4, CV_32F,
+        const_cast<void *>(static_cast<const void *>(
+            camera_calibration_->fixed_extrinsics()->data()->data())));
+    CHECK_EQ(result.total(),
+             camera_calibration_->fixed_extrinsics()->data()->size());
+    return result;
+  }
+
   cv::Mat CameraDistCoeffs() const {
     const cv::Mat result(5, 1, CV_32F,
                          const_cast<void *>(static_cast<const void *>(
@@ -67,9 +80,10 @@ class CameraReader {
   const sift::CameraCalibration *const camera_calibration_;
   V4L2Reader *const reader_;
   aos::Sender<CameraImage> image_sender_;
+  aos::Sender<TargetEstimate> target_estimate_sender_;
 
-  // We schedule this immediately to read an image. Having it on a timer means
-  // other things can run on the event loop in between.
+  // We schedule this immediately to read an image. Having it on a timer
+  // means other things can run on the event loop in between.
   aos::TimerHandler *const read_image_timer_;
 };
 

@@ -116,7 +116,6 @@ void ViewerLocal() {
         cv::Mat::zeros(cv::Size(rgb_image.cols, rgb_image.rows), CV_8UC1);
     cv::Mat ret_image =
         cv::Mat::zeros(cv::Size(rgb_image.cols, rgb_image.rows), CV_8UC3);
-
     BlobDetector::ExtractBlobs(rgb_image, binarized_image, ret_image,
                                filtered_blobs, unfiltered_blobs, blob_stats);
 

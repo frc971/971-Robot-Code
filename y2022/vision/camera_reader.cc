@@ -12,6 +12,8 @@
 #include "y2020/vision/sift/sift_generated.h"
 #include "y2020/vision/sift/sift_training_generated.h"
 #include "y2020/vision/tools/python_code/sift_training_data.h"
+#include "y2022/vision/blob_detector.h"
+#include "y2022/vision/target_estimator.h"
 
 namespace y2022 {
 namespace vision {
@@ -49,7 +51,21 @@ void CameraReader::ProcessImage(const CameraImage &image) {
 
   // Now, send our two messages-- one large, with details for remote
   // debugging(features), and one smaller
-  // TODO: Send blobdetection and pose results
+  // TODO: Send debugging message as well
+  std::vector<std::vector<cv::Point> > filtered_blobs, unfiltered_blobs;
+  std::vector<BlobDetector::BlobStats> blob_stats;
+  cv::Mat binarized_image =
+      cv::Mat::zeros(cv::Size(image_mat.cols, image_mat.rows), CV_8UC1);
+  cv::Mat ret_image =
+      cv::Mat::zeros(cv::Size(image_mat.cols, image_mat.rows), CV_8UC3);
+  BlobDetector::ExtractBlobs(image_mat, binarized_image, ret_image,
+                             filtered_blobs, unfiltered_blobs, blob_stats);
+  // TODO(milind): use actual centroid
+  TargetEstimateT target = TargetEstimator::EstimateTargetLocation(
+      blob_stats[0].centroid, CameraIntrinsics(), CameraExtrinsics());
+
+  auto builder = target_estimate_sender_.MakeBuilder();
+  builder.CheckOk(builder.Send(TargetEstimate::Pack(*builder.fbb(), &target)));
 }
 
 void CameraReader::ReadImage() {
