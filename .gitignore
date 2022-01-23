@@ -2,6 +2,10 @@
 /bazel-*
 /compile_commands.json
 
+# The `tools/build_rules/apache_runner.py` helper looks for this file by
+# default. We don't want folks to check it in.
+/ldap.json
+
 # Hide vagrant's files that unfortunately make it into the source tree when you
 # run "vagrant up".
 /vm/.vagrant/

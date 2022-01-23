@@ -92,6 +92,9 @@ def map_virtual_packages(packages):
     if package == b'libblas.so.3':
       yield b'libblas3'
       continue
+    if package == b'debconf-2.0':
+      yield b'debconf'
+      continue
     yield package
 
 def download_deps(apt_args, packages, excludes, force_includes):

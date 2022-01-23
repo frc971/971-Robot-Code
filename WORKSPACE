@@ -7,6 +7,10 @@ load(
     python_debs = "files",
 )
 load(
+    "//debian:apache2.bzl",
+    apache2_debs = "files",
+)
+load(
     "//debian:patch.bzl",
     patch_debs = "files",
 )
@@ -81,6 +85,8 @@ generate_repositories_for_debs(python_debs)
 generate_repositories_for_debs(rsync_debs)
 
 generate_repositories_for_debs(ssh_debs)
+
+generate_repositories_for_debs(apache2_debs)
 
 generate_repositories_for_debs(patch_debs)
 
@@ -487,6 +493,13 @@ http_archive(
     build_file = "@//debian:ssh.BUILD",
     sha256 = "470fdc1252a2133a9d3c3da778e892a5b88f04f402cb04d8eb1cff7853242034",
     url = "https://www.frc971.org/Build-Dependencies/ssh_v3.tar.gz",
+)
+
+http_archive(
+    name = "apache2",
+    build_file = "@//debian:apache2.BUILD",
+    sha256 = "98b0ad6d911751ba0aa486429e6278f995e7bbabd928c7d3d44c888fa2bf371b",
+    url = "https://www.frc971.org/Build-Dependencies/apache2.tar.gz",
 )
 
 http_archive(
