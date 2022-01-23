@@ -1,7 +1,9 @@
 namespace y2022.control_loops.superstructure;
 
 table Output {
-
+    // Voltage of the climber falcon
+    // - is down + is up
+    climber_voltage:double (id: 0);
 }
 
 root_type Output;

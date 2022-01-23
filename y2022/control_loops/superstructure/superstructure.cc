@@ -26,7 +26,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
   if (output != nullptr && unsafe_goal != nullptr) {
     OutputT output_struct;
-
+    output_struct.climber_voltage = unsafe_goal->climber_speed();
     output->CheckOk(output->Send(Output::Pack(*output->fbb(), &output_struct)));
   }
 
@@ -36,8 +36,8 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   status_builder.add_estopped(false);
 
   if (unsafe_goal != nullptr) {
+    status_builder.add_climber_speed(unsafe_goal->climber_speed());
   }
-
   (void)status->Send(status_builder.Finish());
 }
 
