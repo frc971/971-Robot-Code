@@ -1,22 +1,21 @@
-#include "Eigen/Dense"
-#include "Eigen/Geometry"
-
+#include <cmath>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 
+#include "Eigen/Dense"
+#include "Eigen/Geometry"
 #include "absl/strings/str_format.h"
-#include "y2020/vision/charuco_lib.h"
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 #include "aos/network/team_number.h"
 #include "aos/time/time.h"
 #include "aos/util/file.h"
+#include "y2020/vision/charuco_lib.h"
 
 DEFINE_string(config, "config.json", "Path to the config file to use.");
 DEFINE_string(pi, "pi-7971-1", "Pi name to calibrate.");
-DEFINE_string(calibration_folder, "y2020/vision/tools/python_code/calib_files",
-              "Folder to place calibration files.");
+DEFINE_string(calibration_folder, ".", "Folder to place calibration files.");
 DEFINE_bool(display_undistorted, false,
             "If true, display the undistorted image.");
 
@@ -29,9 +28,12 @@ class Calibration {
       : event_loop_(event_loop),
         pi_(pi),
         pi_number_(aos::network::ParsePiNumber(pi)),
+        prev_rvec_(Eigen::Vector3d::Zero()),
+        prev_tvec_(Eigen::Vector3d::Zero()),
         charuco_extractor_(
             event_loop, pi,
-            [this](cv::Mat rgb_image, const aos::monotonic_clock::time_point eof,
+            [this](cv::Mat rgb_image,
+                   const aos::monotonic_clock::time_point eof,
                    std::vector<int> charuco_ids,
                    std::vector<cv::Point2f> charuco_corners, bool valid,
                    Eigen::Vector3d rvec_eigen, Eigen::Vector3d tvec_eigen) {
@@ -46,8 +48,10 @@ class Calibration {
                      const aos::monotonic_clock::time_point /*eof*/,
                      std::vector<int> charuco_ids,
                      std::vector<cv::Point2f> charuco_corners, bool valid,
-                     Eigen::Vector3d /*rvec_eigen*/,
-                     Eigen::Vector3d /*tvec_eigen*/) {
+                     Eigen::Vector3d rvec_eigen, Eigen::Vector3d tvec_eigen) {
+    // Reduce resolution displayed on remote viewer to prevent lag
+    cv::resize(rgb_image, rgb_image,
+               cv::Size(rgb_image.cols / 2, rgb_image.rows / 2));
     cv::imshow("Display", rgb_image);
 
     if (FLAGS_display_undistorted) {
@@ -60,12 +64,42 @@ class Calibration {
       cv::imshow("Display undist", undistorted_rgb_image);
     }
 
+    // Calibration calculates rotation and translation delta from last image
+    // captured to automatically capture next image
+
+    Eigen::Matrix3d r_aff =
+        Eigen::AngleAxisd(rvec_eigen.norm(), rvec_eigen / rvec_eigen.norm())
+            .toRotationMatrix();
+    Eigen::Matrix3d prev_r_aff =
+        Eigen::AngleAxisd(prev_rvec_.norm(), prev_rvec_ / prev_rvec_.norm())
+            .toRotationMatrix();
+
+    Eigen::AngleAxisd delta_r = Eigen::AngleAxisd(r_aff * prev_r_aff.inverse());
+
+    Eigen::Vector3d delta_t = tvec_eigen - prev_tvec_;
+
+    double r_norm = std::abs(delta_r.angle());
+    double t_norm = delta_t.norm();
+
     int keystroke = cv::waitKey(1);
-    if ((keystroke & 0xFF) == static_cast<int>('c')) {
+    if (r_norm > kDeltaRThreshold || t_norm > kDeltaTThreshold) {
       if (valid) {
+        prev_rvec_ = rvec_eigen;
+        prev_tvec_ = tvec_eigen;
+
         all_charuco_ids_.emplace_back(std::move(charuco_ids));
         all_charuco_corners_.emplace_back(std::move(charuco_corners));
-        LOG(INFO) << "Image " << all_charuco_corners_.size();
+
+        if (r_norm > kDeltaRThreshold) {
+          LOG(INFO) << "Triggered by rotation delta = " << r_norm << " > "
+                    << kDeltaRThreshold;
+        }
+        if (t_norm > kDeltaTThreshold) {
+          LOG(INFO) << "Trigerred by translation delta = " << t_norm << " > "
+                    << kDeltaTThreshold;
+        }
+
+        LOG(INFO) << "Image count " << all_charuco_corners_.size();
       }
 
       if (all_charuco_ids_.size() >= 50) {
@@ -150,12 +184,18 @@ class Calibration {
   }
 
  private:
+  static constexpr double kDeltaRThreshold = M_PI / 6.0;
+  static constexpr double kDeltaTThreshold = 0.3;
+
   aos::ShmEventLoop *event_loop_;
   std::string pi_;
   const std::optional<uint16_t> pi_number_;
 
   std::vector<std::vector<int>> all_charuco_ids_;
   std::vector<std::vector<cv::Point2f>> all_charuco_corners_;
+
+  Eigen::Vector3d prev_rvec_;
+  Eigen::Vector3d prev_tvec_;
 
   CharucoExtractor charuco_extractor_;
 };
