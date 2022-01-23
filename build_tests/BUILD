@@ -111,4 +111,5 @@ go_library(
     importpath = "github.com/frc971/971-Robot-Code/build_tests",
     target_compatible_with = ["@platforms//cpu:x86_64"],
     visibility = ["//visibility:private"],
+    deps = ["//build_tests/go_greeter"],
 )

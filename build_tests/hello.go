@@ -1,7 +1,11 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/frc971/971-Robot-Code/build_tests/go_greeter"
+)
 
 func main() {
-	fmt.Println("Hello world")
+	fmt.Println(go_greeter.Greet("world"))
 }
