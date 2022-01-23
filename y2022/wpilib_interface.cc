@@ -68,18 +68,6 @@ constexpr double kMaxBringupPower = 12.0;
 // DMA stuff and then removing the * 2.0 in *_translate.
 // The low bit is direction.
 
-// TODO(brian): Use ::std::max instead once we have C++14 so that can be
-// constexpr.
-template <typename T>
-constexpr T max(T a, T b) {
-  return (a > b) ? a : b;
-}
-
-template <typename T, typename... Rest>
-constexpr T max(T a, T b, T c, Rest... rest) {
-  return max(max(a, b), c, rest...);
-}
-
 double drivetrain_translate(int32_t in) {
   return ((static_cast<double>(in) /
            Values::kDrivetrainEncoderCountsPerRevolution()) *
