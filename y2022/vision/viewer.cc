@@ -15,9 +15,7 @@ DEFINE_string(capture, "",
               "If set, capture a single image and save it to this filename.");
 DEFINE_string(channel, "/camera", "Channel name for the image.");
 DEFINE_string(config, "config.json", "Path to the config file to use.");
-DEFINE_string(png_dir,
-              "/home/jim/code/FRC/971-Robot-Code/y2020/vision/LED_Ring_exp",
-              "Path to a set of images to display.");
+DEFINE_string(png_dir, "LED_Ring_exp", "Path to a set of images to display.");
 DEFINE_bool(show_features, true, "Show the blobs.");
 
 namespace y2022 {
@@ -52,8 +50,8 @@ bool DisplayLoop() {
   }
 
   cv::Mat binarized_image, ret_image;
-  std::vector<std::vector<cv::Point>> unfiltered_blobs, filtered_blobs,
-      blob_stats;
+  std::vector<std::vector<cv::Point>> unfiltered_blobs, filtered_blobs;
+  std::vector<BlobDetector::BlobStats> blob_stats;
   BlobDetector::ExtractBlobs(rgb_image, binarized_image, ret_image,
                              filtered_blobs, unfiltered_blobs, blob_stats);
 
@@ -112,8 +110,8 @@ void ViewerLocal() {
   for (auto file : file_list) {
     LOG(INFO) << "Reading file " << file;
     cv::Mat rgb_image = cv::imread(file.c_str());
-    std::vector<std::vector<cv::Point>> filtered_blobs, unfiltered_blobs,
-        blob_stats;
+    std::vector<std::vector<cv::Point>> filtered_blobs, unfiltered_blobs;
+    std::vector<BlobDetector::BlobStats> blob_stats;
     cv::Mat binarized_image =
         cv::Mat::zeros(cv::Size(rgb_image.cols, rgb_image.rows), CV_8UC1);
     cv::Mat ret_image =
@@ -127,7 +125,7 @@ void ViewerLocal() {
     cv::imshow("image", rgb_image);
     cv::imshow("blobs", ret_image);
 
-    int keystroke = cv::waitKey(1000);
+    int keystroke = cv::waitKey(0);
     if ((keystroke & 0xFF) == static_cast<int>('q')) {
       return;
     }
