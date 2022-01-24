@@ -104,7 +104,7 @@
       "source_node": "pi{{ NUM }}",
       "frequency": 25,
       "num_senders": 2
-    }
+    },
     {
       "name": "/logger/aos",
       "type": "aos.starter.StarterRpc",
