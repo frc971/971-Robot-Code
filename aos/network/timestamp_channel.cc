@@ -27,6 +27,15 @@ std::string ChannelTimestampFinder::CombinedChannelName(
   return absl::StrCat("/aos/remote_timestamps/", remote_node);
 }
 
+const Channel *ChannelTimestampFinder::SplitChannelForChannel(
+    const Channel *channel, const Connection *connection) {
+  const std::string split_timestamp_channel_name =
+      SplitChannelName(channel, connection);
+  return configuration::GetChannel(configuration_, split_timestamp_channel_name,
+                                   RemoteMessage::GetFullyQualifiedName(),
+                                   name_, node_, true);
+}
+
 const Channel *ChannelTimestampFinder::ForChannel(
     const Channel *channel, const Connection *connection) {
   const std::string split_timestamp_channel_name =

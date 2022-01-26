@@ -15,6 +15,9 @@ namespace message_bridge {
 
 // Class to find the corresponding channel where timestamps for a specified data
 // channel and connection will be logged.
+//
+// This abstracts (and detects) when we have combined or split remote timestamp
+// logging channels.
 class ChannelTimestampFinder {
  public:
   ChannelTimestampFinder(aos::EventLoop *event_loop)
@@ -22,6 +25,11 @@ class ChannelTimestampFinder {
                                event_loop->node()) {}
   ChannelTimestampFinder(const Configuration *configuration,
                          const std::string_view name, const Node *node);
+
+  // Returns the split timestamp logging channel for the provide channel and
+  // connection if one exists, or nullptr otherwise.
+  const Channel *SplitChannelForChannel(const Channel *channel,
+                                        const Connection *connection);
 
   // Finds the timestamp logging channel for the provided data channel and
   // connection.
