@@ -2,13 +2,24 @@
   "name": "971-Robot-Code",
   "license": "MIT",
   "devDependencies": {
+    "@bazel/concatjs": "latest",
+    "@angular/animations": "latest",
+    "@angular/core": "latest",
+    "@angular/common": "latest",
+    "@angular/platform-browser": "latest",
+    "@angular/compiler": "latest",
+    "@angular/compiler-cli": "latest",
+    "@angular/cli": "latest",
     "@types/flatbuffers": "latest",
-    "@bazel/typescript": "latest",
+    "@bazel/typescript": "4.4.6",
     "@bazel/rollup": "latest",
     "@bazel/terser": "latest",
     "@rollup/plugin-node-resolve": "latest",
     "typescript": "latest",
     "rollup": "latest",
-    "terser": "latest"
+    "terser": "latest",
+    "@babel/cli": "^7.6.0",
+    "@babel/core": "^7.6.0",
+    "zone.js": "^0.11.4"
   }
 }
