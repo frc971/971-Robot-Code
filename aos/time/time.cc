@@ -91,11 +91,11 @@ std::optional<monotonic_clock::time_point> monotonic_clock::FromString(
     return std::nullopt;
   }
 
-  if (now.substr(now.size() - 13, 1) != ".") {
+  if (now[now.size() - 13] != '.') {
     return std::nullopt;
   }
 
-  bool negative = now.substr(0, 1) == "-";
+  bool negative = now[0] == '-';
 
   std::string sec(
       now.substr(negative ? 1 : 0, now.size() - (negative ? 14 : 13)));
@@ -119,7 +119,7 @@ std::optional<realtime_clock::time_point> realtime_clock::FromString(
     return std::nullopt;
   }
 
-  if (now.substr(now.size() - 10, 1) != ".") {
+  if (now[now.size() - 10] != '.') {
     return std::nullopt;
   }
 
