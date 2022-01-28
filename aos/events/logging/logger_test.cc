@@ -398,8 +398,7 @@ TEST_F(LoggerTest, ManyMessages) {
               ping_sender.MakeBuilder();
           examples::Ping::Builder ping_builder =
               builder.MakeBuilder<examples::Ping>();
-          CHECK_EQ(builder.Send(ping_builder.Finish()),
-                   RawSender::Error::kOk);
+          CHECK_EQ(builder.Send(ping_builder.Finish()), RawSender::Error::kOk);
         });
 
     // 100 ms / 0.05 ms -> 2000 messages.  Should be enough to crash it.
@@ -512,6 +511,7 @@ struct LoggerState {
     if (logger) {
       std::vector<std::string> filenames;
       AppendAllFilenames(&filenames);
+      std::sort(filenames.begin(), filenames.end());
       for (const std::string &file : filenames) {
         LOG(INFO) << "Wrote to " << file;
         auto x = ReadHeader(file);
@@ -604,8 +604,8 @@ class MultinodeLoggerTest : public ::testing::TestWithParam<
 
   std::vector<std::string> MakeLogFiles(std::string logfile_base1,
                                         std::string logfile_base2,
-                                        size_t pi1_data_count = 2,
-                                        size_t pi2_data_count = 2) {
+                                        size_t pi1_data_count = 3,
+                                        size_t pi2_data_count = 3) {
     std::vector<std::string> result;
     result.emplace_back(absl::StrCat(
         logfile_base1, "_", std::get<0>(GetParam()).sha256, Extension()));
@@ -643,6 +643,10 @@ class MultinodeLoggerTest : public ::testing::TestWithParam<
       result.emplace_back(logfile_base1 +
                           "_timestamps/pi1/aos/remote_timestamps/pi2/"
                           "aos.message_bridge.RemoteMessage.part1" +
+                          Extension());
+      result.emplace_back(logfile_base1 +
+                          "_timestamps/pi1/aos/remote_timestamps/pi2/"
+                          "aos.message_bridge.RemoteMessage.part2" +
                           Extension());
       result.emplace_back(logfile_base2 +
                           "_timestamps/pi2/aos/remote_timestamps/pi1/"
@@ -693,6 +697,8 @@ class MultinodeLoggerTest : public ::testing::TestWithParam<
     result.emplace_back(logfile_base1_ + "_pi1_data.part0" + Extension());
     result.emplace_back(logfile_base1_ + "_pi1_data.part1" + Extension());
     result.emplace_back(logfile_base1_ + "_pi1_data.part2" + Extension());
+    result.emplace_back(logfile_base1_ + "_pi1_data.part3" + Extension());
+    result.emplace_back(logfile_base1_ + "_pi1_data.part4" + Extension());
     result.emplace_back(logfile_base1_ +
                         "_pi2_data/test/aos.examples.Pong.part0" + Extension());
     result.emplace_back(logfile_base1_ +
@@ -716,22 +722,13 @@ class MultinodeLoggerTest : public ::testing::TestWithParam<
     result.emplace_back(absl::StrCat(
         logfile_base1_, "_", std::get<0>(GetParam()).sha256, Extension()));
     if (shared()) {
-      result.emplace_back(logfile_base1_ +
-                          "_timestamps/pi1/aos/remote_timestamps/pi2/"
-                          "aos.message_bridge.RemoteMessage.part0" +
-                          Extension());
-      result.emplace_back(logfile_base1_ +
-                          "_timestamps/pi1/aos/remote_timestamps/pi2/"
-                          "aos.message_bridge.RemoteMessage.part1" +
-                          Extension());
-      result.emplace_back(logfile_base1_ +
-                          "_timestamps/pi1/aos/remote_timestamps/pi2/"
-                          "aos.message_bridge.RemoteMessage.part2" +
-                          Extension());
-      result.emplace_back(logfile_base1_ +
-                          "_timestamps/pi1/aos/remote_timestamps/pi2/"
-                          "aos.message_bridge.RemoteMessage.part3" +
-                          Extension());
+      for (size_t i = 0; i < 6; ++i) {
+        result.emplace_back(
+            absl::StrCat(logfile_base1_,
+                         "_timestamps/pi1/aos/remote_timestamps/pi2/"
+                         "aos.message_bridge.RemoteMessage.part",
+                         i, Extension()));
+      }
     } else {
       result.emplace_back(logfile_base1_ +
                           "_timestamps/pi1/aos/remote_timestamps/pi2/pi1/aos/"
@@ -800,17 +797,24 @@ class MultinodeLoggerTest : public ::testing::TestWithParam<
 
   std::vector<std::vector<std::string>> StructureLogFiles() {
     std::vector<std::vector<std::string>> result{
-        std::vector<std::string>{logfiles_[2], logfiles_[3]},
-        std::vector<std::string>{logfiles_[4], logfiles_[5]},
-        std::vector<std::string>{logfiles_[6], logfiles_[7]},
-        std::vector<std::string>{logfiles_[8], logfiles_[9]},
+        std::vector<std::string>{logfiles_[2], logfiles_[3], logfiles_[4]},
+        std::vector<std::string>{logfiles_[5], logfiles_[6]},
+        std::vector<std::string>{logfiles_[7], logfiles_[8], logfiles_[9]},
         std::vector<std::string>{logfiles_[10], logfiles_[11]},
-        std::vector<std::string>{logfiles_[12], logfiles_[13]},
-        std::vector<std::string>{logfiles_[14], logfiles_[15]}};
+        std::vector<std::string>{logfiles_[12], logfiles_[13]}};
 
-    if (!shared()) {
+    if (shared()) {
+      result.emplace_back(std::vector<std::string>{logfiles_[14], logfiles_[15],
+                                                   logfiles_[16]});
+      result.emplace_back(
+          std::vector<std::string>{logfiles_[17], logfiles_[18]});
+    } else {
+      result.emplace_back(
+          std::vector<std::string>{logfiles_[14], logfiles_[15]});
       result.emplace_back(
           std::vector<std::string>{logfiles_[16], logfiles_[17]});
+      result.emplace_back(
+          std::vector<std::string>{logfiles_[18], logfiles_[19]});
     }
 
     return result;
@@ -893,7 +897,7 @@ class MultinodeLoggerTest : public ::testing::TestWithParam<
     // Test that each list of parts is in order.  Don't worry about the ordering
     // between part file lists though.
     // (inner vectors all need to be in order, but outer one doesn't matter).
-    EXPECT_THAT(ToLogReaderVector(sorted_parts),
+    ASSERT_THAT(ToLogReaderVector(sorted_parts),
                 ::testing::UnorderedElementsAreArray(structured_logfiles_));
 
     EXPECT_THAT(logger_nodes, ::testing::UnorderedElementsAre("pi1", "pi2"));
@@ -1016,7 +1020,9 @@ std::vector<std::tuple<std::string, std::string, int>> CountChannelsTimestamp(
 
 // Tests that we can write and read simple multi-node log files.
 TEST_P(MultinodeLoggerTest, SimpleMultiNode) {
+  std::vector<std::string> actual_filenames;
   time_converter_.StartEqual();
+
   {
     LoggerState pi1_logger = MakeLogger(pi1_);
     LoggerState pi2_logger = MakeLogger(pi2_);
@@ -1027,7 +1033,12 @@ TEST_P(MultinodeLoggerTest, SimpleMultiNode) {
     StartLogger(&pi2_logger);
 
     event_loop_factory_.RunFor(chrono::milliseconds(20000));
+    pi1_logger.AppendAllFilenames(&actual_filenames);
+    pi2_logger.AppendAllFilenames(&actual_filenames);
   }
+
+  ASSERT_THAT(actual_filenames,
+              ::testing::UnorderedElementsAreArray(logfiles_));
 
   {
     std::set<std::string> logfile_uuids;
@@ -1054,41 +1065,73 @@ TEST_P(MultinodeLoggerTest, SimpleMultiNode) {
     // And confirm everything is on the correct node.
     EXPECT_EQ(log_header[2].message().node()->name()->string_view(), "pi1");
     EXPECT_EQ(log_header[3].message().node()->name()->string_view(), "pi1");
-    EXPECT_EQ(log_header[4].message().node()->name()->string_view(), "pi2");
+    EXPECT_EQ(log_header[4].message().node()->name()->string_view(), "pi1");
+
     EXPECT_EQ(log_header[5].message().node()->name()->string_view(), "pi2");
     EXPECT_EQ(log_header[6].message().node()->name()->string_view(), "pi2");
+
     EXPECT_EQ(log_header[7].message().node()->name()->string_view(), "pi2");
-    EXPECT_EQ(log_header[8].message().node()->name()->string_view(), "pi1");
-    EXPECT_EQ(log_header[9].message().node()->name()->string_view(), "pi1");
-    EXPECT_EQ(log_header[10].message().node()->name()->string_view(), "pi2");
-    EXPECT_EQ(log_header[11].message().node()->name()->string_view(), "pi2");
+    EXPECT_EQ(log_header[8].message().node()->name()->string_view(), "pi2");
+    EXPECT_EQ(log_header[9].message().node()->name()->string_view(), "pi2");
+
+    EXPECT_EQ(log_header[10].message().node()->name()->string_view(), "pi1");
+    EXPECT_EQ(log_header[11].message().node()->name()->string_view(), "pi1");
+
     EXPECT_EQ(log_header[12].message().node()->name()->string_view(), "pi2");
     EXPECT_EQ(log_header[13].message().node()->name()->string_view(), "pi2");
-    EXPECT_EQ(log_header[14].message().node()->name()->string_view(), "pi1");
-    EXPECT_EQ(log_header[15].message().node()->name()->string_view(), "pi1");
-    if (!shared()) {
+
+    if (shared()) {
+      EXPECT_EQ(log_header[14].message().node()->name()->string_view(), "pi2");
+      EXPECT_EQ(log_header[15].message().node()->name()->string_view(), "pi2");
       EXPECT_EQ(log_header[16].message().node()->name()->string_view(), "pi2");
-      EXPECT_EQ(log_header[17].message().node()->name()->string_view(), "pi2");
+
+      EXPECT_EQ(log_header[17].message().node()->name()->string_view(), "pi1");
+      EXPECT_EQ(log_header[18].message().node()->name()->string_view(), "pi1");
+    } else {
+      EXPECT_EQ(log_header[14].message().node()->name()->string_view(), "pi2");
+      EXPECT_EQ(log_header[15].message().node()->name()->string_view(), "pi2");
+
+      EXPECT_EQ(log_header[16].message().node()->name()->string_view(), "pi1");
+      EXPECT_EQ(log_header[17].message().node()->name()->string_view(), "pi1");
+
+      EXPECT_EQ(log_header[18].message().node()->name()->string_view(), "pi2");
+      EXPECT_EQ(log_header[19].message().node()->name()->string_view(), "pi2");
     }
 
     // And the parts index matches.
     EXPECT_EQ(log_header[2].message().parts_index(), 0);
     EXPECT_EQ(log_header[3].message().parts_index(), 1);
-    EXPECT_EQ(log_header[4].message().parts_index(), 0);
-    EXPECT_EQ(log_header[5].message().parts_index(), 1);
-    EXPECT_EQ(log_header[6].message().parts_index(), 0);
-    EXPECT_EQ(log_header[7].message().parts_index(), 1);
-    EXPECT_EQ(log_header[8].message().parts_index(), 0);
-    EXPECT_EQ(log_header[9].message().parts_index(), 1);
+    EXPECT_EQ(log_header[4].message().parts_index(), 2);
+
+    EXPECT_EQ(log_header[5].message().parts_index(), 0);
+    EXPECT_EQ(log_header[6].message().parts_index(), 1);
+
+    EXPECT_EQ(log_header[7].message().parts_index(), 0);
+    EXPECT_EQ(log_header[8].message().parts_index(), 1);
+    EXPECT_EQ(log_header[9].message().parts_index(), 2);
+
     EXPECT_EQ(log_header[10].message().parts_index(), 0);
     EXPECT_EQ(log_header[11].message().parts_index(), 1);
+
     EXPECT_EQ(log_header[12].message().parts_index(), 0);
     EXPECT_EQ(log_header[13].message().parts_index(), 1);
-    EXPECT_EQ(log_header[14].message().parts_index(), 0);
-    EXPECT_EQ(log_header[15].message().parts_index(), 1);
-    if (!shared()) {
+
+    if (shared()) {
+      EXPECT_EQ(log_header[14].message().parts_index(), 0);
+      EXPECT_EQ(log_header[15].message().parts_index(), 1);
+      EXPECT_EQ(log_header[16].message().parts_index(), 2);
+
+      EXPECT_EQ(log_header[17].message().parts_index(), 0);
+      EXPECT_EQ(log_header[18].message().parts_index(), 1);
+    } else {
+      EXPECT_EQ(log_header[14].message().parts_index(), 0);
+      EXPECT_EQ(log_header[15].message().parts_index(), 1);
+
       EXPECT_EQ(log_header[16].message().parts_index(), 0);
       EXPECT_EQ(log_header[17].message().parts_index(), 1);
+
+      EXPECT_EQ(log_header[18].message().parts_index(), 0);
+      EXPECT_EQ(log_header[19].message().parts_index(), 1);
     }
   }
 
@@ -1108,50 +1151,65 @@ TEST_P(MultinodeLoggerTest, SimpleMultiNode) {
     EXPECT_THAT(
         CountChannelsData(config, logfiles_[3]),
         UnorderedElementsAre(
-            std::make_tuple("/pi1/aos", "aos.message_bridge.Timestamp", 200),
+            std::make_tuple("/pi1/aos", "aos.message_bridge.Timestamp", 1),
+            std::make_tuple("/pi1/aos", "aos.message_bridge.ClientStatistics",
+                            1)))
+        << " : " << logfiles_[3];
+    EXPECT_THAT(
+        CountChannelsData(config, logfiles_[4]),
+        UnorderedElementsAre(
+            std::make_tuple("/pi1/aos", "aos.message_bridge.Timestamp", 199),
             std::make_tuple("/pi1/aos", "aos.message_bridge.ServerStatistics",
                             20),
             std::make_tuple("/pi1/aos", "aos.message_bridge.ClientStatistics",
-                            200),
+                            199),
             std::make_tuple("/pi1/aos", "aos.timing.Report", 40),
             std::make_tuple("/test", "aos.examples.Ping", 2000)))
-        << " : " << logfiles_[3];
+        << " : " << logfiles_[4];
     // Timestamps for pong
     EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[2]),
                 UnorderedElementsAre())
         << " : " << logfiles_[2];
     EXPECT_THAT(
         CountChannelsTimestamp(config, logfiles_[3]),
-        UnorderedElementsAre(
-            std::make_tuple("/test", "aos.examples.Pong", 2001),
-            std::make_tuple("/pi2/aos", "aos.message_bridge.Timestamp", 200)))
+        UnorderedElementsAre(std::make_tuple("/test", "aos.examples.Pong", 1)))
         << " : " << logfiles_[3];
+    EXPECT_THAT(
+        CountChannelsTimestamp(config, logfiles_[4]),
+        UnorderedElementsAre(
+            std::make_tuple("/test", "aos.examples.Pong", 2000),
+            std::make_tuple("/pi2/aos", "aos.message_bridge.Timestamp", 200)))
+        << " : " << logfiles_[4];
 
     // Pong data.
     EXPECT_THAT(
-        CountChannelsData(config, logfiles_[4]),
+        CountChannelsData(config, logfiles_[5]),
         UnorderedElementsAre(std::make_tuple("/test", "aos.examples.Pong", 91)))
-        << " : " << logfiles_[4];
-    EXPECT_THAT(CountChannelsData(config, logfiles_[5]),
+        << " : " << logfiles_[5];
+    EXPECT_THAT(CountChannelsData(config, logfiles_[6]),
                 UnorderedElementsAre(
                     std::make_tuple("/test", "aos.examples.Pong", 1910)))
-        << " : " << logfiles_[5];
+        << " : " << logfiles_[6];
 
     // No timestamps
-    EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[4]),
-                UnorderedElementsAre())
-        << " : " << logfiles_[4];
     EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[5]),
                 UnorderedElementsAre())
         << " : " << logfiles_[5];
+    EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[6]),
+                UnorderedElementsAre())
+        << " : " << logfiles_[6];
 
     // Timing reports and pongs.
-    EXPECT_THAT(CountChannelsData(config, logfiles_[6]),
+    EXPECT_THAT(CountChannelsData(config, logfiles_[7]),
                 UnorderedElementsAre(std::make_tuple(
                     "/pi2/aos", "aos.message_bridge.ServerStatistics", 1)))
-        << " : " << logfiles_[6];
+        << " : " << logfiles_[7];
     EXPECT_THAT(
-        CountChannelsData(config, logfiles_[7]),
+        CountChannelsData(config, logfiles_[8]),
+        UnorderedElementsAre(std::make_tuple("/test", "aos.examples.Pong", 1)))
+        << " : " << logfiles_[8];
+    EXPECT_THAT(
+        CountChannelsData(config, logfiles_[9]),
         UnorderedElementsAre(
             std::make_tuple("/pi2/aos", "aos.message_bridge.Timestamp", 200),
             std::make_tuple("/pi2/aos", "aos.message_bridge.ServerStatistics",
@@ -1159,120 +1217,142 @@ TEST_P(MultinodeLoggerTest, SimpleMultiNode) {
             std::make_tuple("/pi2/aos", "aos.message_bridge.ClientStatistics",
                             200),
             std::make_tuple("/pi2/aos", "aos.timing.Report", 40),
-            std::make_tuple("/test", "aos.examples.Pong", 2001)))
-        << " : " << logfiles_[7];
+            std::make_tuple("/test", "aos.examples.Pong", 2000)))
+        << " : " << logfiles_[9];
     // And ping timestamps.
-    EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[6]),
+    EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[7]),
                 UnorderedElementsAre())
-        << " : " << logfiles_[6];
-    EXPECT_THAT(
-        CountChannelsTimestamp(config, logfiles_[7]),
-        UnorderedElementsAre(
-            std::make_tuple("/test", "aos.examples.Ping", 2001),
-            std::make_tuple("/pi1/aos", "aos.message_bridge.Timestamp", 200)))
         << " : " << logfiles_[7];
+    EXPECT_THAT(
+        CountChannelsTimestamp(config, logfiles_[8]),
+        UnorderedElementsAre(std::make_tuple("/test", "aos.examples.Ping", 1)))
+        << " : " << logfiles_[8];
+    EXPECT_THAT(
+        CountChannelsTimestamp(config, logfiles_[9]),
+        UnorderedElementsAre(
+            std::make_tuple("/test", "aos.examples.Ping", 2000),
+            std::make_tuple("/pi1/aos", "aos.message_bridge.Timestamp", 200)))
+        << " : " << logfiles_[9];
 
     // And then test that the remotely logged timestamp data files only have
     // timestamps in them.
-    EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[8]),
-                UnorderedElementsAre())
-        << " : " << logfiles_[8];
-    EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[9]),
-                UnorderedElementsAre())
-        << " : " << logfiles_[9];
     EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[10]),
                 UnorderedElementsAre())
         << " : " << logfiles_[10];
     EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[11]),
                 UnorderedElementsAre())
         << " : " << logfiles_[11];
-
-    EXPECT_THAT(CountChannelsData(config, logfiles_[8]),
-                UnorderedElementsAre(std::make_tuple(
-                    "/pi1/aos", "aos.message_bridge.Timestamp", 9)))
-        << " : " << logfiles_[8];
-    EXPECT_THAT(CountChannelsData(config, logfiles_[9]),
-                UnorderedElementsAre(std::make_tuple(
-                    "/pi1/aos", "aos.message_bridge.Timestamp", 191)))
-        << " : " << logfiles_[9];
+    EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[12]),
+                UnorderedElementsAre())
+        << " : " << logfiles_[12];
+    EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[13]),
+                UnorderedElementsAre())
+        << " : " << logfiles_[13];
 
     EXPECT_THAT(CountChannelsData(config, logfiles_[10]),
                 UnorderedElementsAre(std::make_tuple(
-                    "/pi2/aos", "aos.message_bridge.Timestamp", 9)))
+                    "/pi1/aos", "aos.message_bridge.Timestamp", 9)))
         << " : " << logfiles_[10];
     EXPECT_THAT(CountChannelsData(config, logfiles_[11]),
                 UnorderedElementsAre(std::make_tuple(
-                    "/pi2/aos", "aos.message_bridge.Timestamp", 191)))
+                    "/pi1/aos", "aos.message_bridge.Timestamp", 191)))
         << " : " << logfiles_[11];
 
-    // Timestamps from pi2 on pi1, and the other way.
     EXPECT_THAT(CountChannelsData(config, logfiles_[12]),
-                UnorderedElementsAre())
+                UnorderedElementsAre(std::make_tuple(
+                    "/pi2/aos", "aos.message_bridge.Timestamp", 9)))
         << " : " << logfiles_[12];
     EXPECT_THAT(CountChannelsData(config, logfiles_[13]),
-                UnorderedElementsAre())
+                UnorderedElementsAre(std::make_tuple(
+                    "/pi2/aos", "aos.message_bridge.Timestamp", 191)))
         << " : " << logfiles_[13];
-    EXPECT_THAT(CountChannelsData(config, logfiles_[14]),
-                UnorderedElementsAre())
-        << " : " << logfiles_[14];
-    EXPECT_THAT(CountChannelsData(config, logfiles_[15]),
-                UnorderedElementsAre())
-        << " : " << logfiles_[15];
-    if (!shared()) {
+
+    // Timestamps from pi2 on pi1, and the other way.
+    if (shared()) {
+      EXPECT_THAT(CountChannelsData(config, logfiles_[14]),
+                  UnorderedElementsAre())
+          << " : " << logfiles_[14];
+      EXPECT_THAT(CountChannelsData(config, logfiles_[15]),
+                  UnorderedElementsAre())
+          << " : " << logfiles_[15];
       EXPECT_THAT(CountChannelsData(config, logfiles_[16]),
                   UnorderedElementsAre())
           << " : " << logfiles_[16];
       EXPECT_THAT(CountChannelsData(config, logfiles_[17]),
                   UnorderedElementsAre())
           << " : " << logfiles_[17];
-    }
+      EXPECT_THAT(CountChannelsData(config, logfiles_[18]),
+                  UnorderedElementsAre())
+          << " : " << logfiles_[18];
 
-    if (shared()) {
+      EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[14]),
+                  UnorderedElementsAre(
+                      std::make_tuple("/test", "aos.examples.Ping", 1)))
+          << " : " << logfiles_[14];
       EXPECT_THAT(
-          CountChannelsTimestamp(config, logfiles_[12]),
+          CountChannelsTimestamp(config, logfiles_[15]),
           UnorderedElementsAre(
               std::make_tuple("/pi1/aos", "aos.message_bridge.Timestamp", 9),
-              std::make_tuple("/test", "aos.examples.Ping", 91)))
-          << " : " << logfiles_[12];
+              std::make_tuple("/test", "aos.examples.Ping", 90)))
+          << " : " << logfiles_[15];
       EXPECT_THAT(
-          CountChannelsTimestamp(config, logfiles_[13]),
+          CountChannelsTimestamp(config, logfiles_[16]),
           UnorderedElementsAre(
               std::make_tuple("/pi1/aos", "aos.message_bridge.Timestamp", 191),
               std::make_tuple("/test", "aos.examples.Ping", 1910)))
-          << " : " << logfiles_[13];
-      EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[14]),
-                  UnorderedElementsAre(std::make_tuple(
-                      "/pi2/aos", "aos.message_bridge.Timestamp", 9)))
-          << " : " << logfiles_[14];
-      EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[15]),
-                  UnorderedElementsAre(std::make_tuple(
-                      "/pi2/aos", "aos.message_bridge.Timestamp", 191)))
-          << " : " << logfiles_[15];
-    } else {
-      EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[12]),
-                  UnorderedElementsAre(std::make_tuple(
-                      "/pi1/aos", "aos.message_bridge.Timestamp", 9)))
-          << " : " << logfiles_[12];
-      EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[13]),
-                  UnorderedElementsAre(std::make_tuple(
-                      "/pi1/aos", "aos.message_bridge.Timestamp", 191)))
-          << " : " << logfiles_[13];
-      EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[14]),
-                  UnorderedElementsAre(std::make_tuple(
-                      "/pi2/aos", "aos.message_bridge.Timestamp", 9)))
-          << " : " << logfiles_[14];
-      EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[15]),
-                  UnorderedElementsAre(std::make_tuple(
-                      "/pi2/aos", "aos.message_bridge.Timestamp", 191)))
-          << " : " << logfiles_[15];
-      EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[16]),
-                  UnorderedElementsAre(
-                      std::make_tuple("/test", "aos.examples.Ping", 91)))
           << " : " << logfiles_[16];
       EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[17]),
+                  UnorderedElementsAre(std::make_tuple(
+                      "/pi2/aos", "aos.message_bridge.Timestamp", 9)))
+          << " : " << logfiles_[17];
+      EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[18]),
+                  UnorderedElementsAre(std::make_tuple(
+                      "/pi2/aos", "aos.message_bridge.Timestamp", 191)))
+          << " : " << logfiles_[18];
+    } else {
+      EXPECT_THAT(CountChannelsData(config, logfiles_[14]),
+                  UnorderedElementsAre())
+          << " : " << logfiles_[14];
+      EXPECT_THAT(CountChannelsData(config, logfiles_[15]),
+                  UnorderedElementsAre())
+          << " : " << logfiles_[15];
+      EXPECT_THAT(CountChannelsData(config, logfiles_[16]),
+                  UnorderedElementsAre())
+          << " : " << logfiles_[16];
+      EXPECT_THAT(CountChannelsData(config, logfiles_[17]),
+                  UnorderedElementsAre())
+          << " : " << logfiles_[17];
+      EXPECT_THAT(CountChannelsData(config, logfiles_[18]),
+                  UnorderedElementsAre())
+          << " : " << logfiles_[18];
+      EXPECT_THAT(CountChannelsData(config, logfiles_[19]),
+                  UnorderedElementsAre())
+          << " : " << logfiles_[19];
+
+      EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[14]),
+                  UnorderedElementsAre(std::make_tuple(
+                      "/pi1/aos", "aos.message_bridge.Timestamp", 9)))
+          << " : " << logfiles_[14];
+      EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[15]),
+                  UnorderedElementsAre(std::make_tuple(
+                      "/pi1/aos", "aos.message_bridge.Timestamp", 191)))
+          << " : " << logfiles_[15];
+      EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[16]),
+                  UnorderedElementsAre(std::make_tuple(
+                      "/pi2/aos", "aos.message_bridge.Timestamp", 9)))
+          << " : " << logfiles_[16];
+      EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[17]),
+                  UnorderedElementsAre(std::make_tuple(
+                      "/pi2/aos", "aos.message_bridge.Timestamp", 191)))
+          << " : " << logfiles_[17];
+      EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[18]),
+                  UnorderedElementsAre(
+                      std::make_tuple("/test", "aos.examples.Ping", 91)))
+          << " : " << logfiles_[18];
+      EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[19]),
                   UnorderedElementsAre(
                       std::make_tuple("/test", "aos.examples.Ping", 1910)))
-          << " : " << logfiles_[17];
+          << " : " << logfiles_[19];
     }
   }
 
@@ -1465,6 +1545,8 @@ TEST_P(MultinodeLoggerDeathTest, MultiNodeBadReplayConfig) {
 // time.
 TEST_P(MultinodeLoggerTest, StaggeredStart) {
   time_converter_.StartEqual();
+  std::vector<std::string> actual_filenames;
+
   {
     LoggerState pi1_logger = MakeLogger(pi1_);
     LoggerState pi2_logger = MakeLogger(pi2_);
@@ -1478,12 +1560,13 @@ TEST_P(MultinodeLoggerTest, StaggeredStart) {
     StartLogger(&pi2_logger);
 
     event_loop_factory_.RunFor(chrono::milliseconds(20000));
+    pi1_logger.AppendAllFilenames(&actual_filenames);
+    pi2_logger.AppendAllFilenames(&actual_filenames);
   }
 
   // Since we delay starting pi2, it already knows about all the timestamps so
   // we don't end up with extra parts.
-  LogReader reader(
-      SortParts(MakeLogFiles(logfile_base1_, logfile_base2_, 2, 1)));
+  LogReader reader(SortParts(actual_filenames));
 
   SimulatedEventLoopFactory log_reader_factory(reader.configuration());
   log_reader_factory.set_send_delay(chrono::microseconds(0));
@@ -1794,6 +1877,7 @@ TEST_P(MultinodeLoggerTest, SortEmptyParts) {
 // Tests that we can sort a bunch of parts with the end missing off a
 // file.  We should use the part we can read.
 TEST_P(MultinodeLoggerTest, SortTruncatedParts) {
+  std::vector<std::string> actual_filenames;
   time_converter_.StartEqual();
   // Make a bunch of parts.
   {
@@ -1806,16 +1890,22 @@ TEST_P(MultinodeLoggerTest, SortTruncatedParts) {
     StartLogger(&pi2_logger);
 
     event_loop_factory_.RunFor(chrono::milliseconds(2000));
+
+    pi1_logger.AppendAllFilenames(&actual_filenames);
+    pi2_logger.AppendAllFilenames(&actual_filenames);
   }
+
+  ASSERT_THAT(actual_filenames,
+              ::testing::UnorderedElementsAreArray(logfiles_));
 
   // Strip off the end of one of the files.  Pick one with a lot of data.
   // For snappy, needs to have enough data to be >1 chunk of compressed data so
   // that we don't corrupt the entire log part.
   ::std::string compressed_contents =
-      aos::util::ReadFileToStringOrDie(logfiles_[3]);
+      aos::util::ReadFileToStringOrDie(logfiles_[4]);
 
   aos::util::WriteStringToFileOrDie(
-      logfiles_[3],
+      logfiles_[4],
       compressed_contents.substr(0, compressed_contents.size() - 100));
 
   const std::vector<LogFile> sorted_parts = SortParts(logfiles_);
@@ -2328,6 +2418,8 @@ TEST_P(MultinodeLoggerDeathTest, LoggerRenameFile) {
 // This should be enough that we can then re-run the logger and get a valid log
 // back.
 TEST_P(MultinodeLoggerTest, RemoteReboot) {
+  std::vector<std::string> actual_filenames;
+
   const UUID pi1_boot0 = UUID::Random();
   const UUID pi2_boot0 = UUID::Random();
   const UUID pi2_boot1 = UUID::Random();
@@ -2371,7 +2463,14 @@ TEST_P(MultinodeLoggerTest, RemoteReboot) {
               pi1_boot0);
     EXPECT_EQ(event_loop_factory_.GetNodeEventLoopFactory("pi2")->boot_uuid(),
               pi2_boot1);
+
+    pi1_logger.AppendAllFilenames(&actual_filenames);
   }
+
+  std::sort(actual_filenames.begin(), actual_filenames.end());
+  std::sort(pi1_reboot_logfiles_.begin(), pi1_reboot_logfiles_.end());
+  ASSERT_THAT(actual_filenames,
+              ::testing::UnorderedElementsAreArray(pi1_reboot_logfiles_));
 
   // Confirm that our new oldest timestamps properly update as we reboot and
   // rotate.
@@ -2395,7 +2494,8 @@ TEST_P(MultinodeLoggerTest, RemoteReboot) {
       //
       // TODO(austin): I'm not the most thrilled with this test pattern...  It
       // feels brittle in a different way.
-      if (file.find("aos.message_bridge.RemoteMessage") == std::string::npos || !shared()) {
+      if (file.find("aos.message_bridge.RemoteMessage") == std::string::npos ||
+          !shared()) {
         switch (log_header->message().parts_index()) {
           case 0:
             EXPECT_EQ(source_node_boot_uuid, pi2_boot0);
@@ -2423,20 +2523,21 @@ TEST_P(MultinodeLoggerTest, RemoteReboot) {
       } else {
         switch (log_header->message().parts_index()) {
           case 0:
+          case 1:
             EXPECT_EQ(source_node_boot_uuid, pi2_boot0);
             EXPECT_EQ(monotonic_start_time, monotonic_clock::min_time);
             break;
-          case 1:
+          case 2:
             EXPECT_EQ(source_node_boot_uuid, pi2_boot0);
             ASSERT_EQ(monotonic_start_time,
                       monotonic_clock::epoch() + chrono::seconds(1));
             break;
-          case 2:
           case 3:
+          case 4:
             EXPECT_EQ(source_node_boot_uuid, pi2_boot1);
             EXPECT_EQ(monotonic_start_time, monotonic_clock::min_time) << file;
             break;
-          case 4:
+          case 5:
             EXPECT_EQ(source_node_boot_uuid, pi2_boot1);
             ASSERT_EQ(monotonic_start_time, monotonic_clock::epoch() +
                                                 chrono::nanoseconds(2322999462))
@@ -2503,6 +2604,18 @@ TEST_P(MultinodeLoggerTest, RemoteReboot) {
                 log_header->message()
                     .oldest_local_unreliable_monotonic_timestamps()
                     ->Get(1)));
+    const monotonic_clock::time_point
+        oldest_remote_reliable_monotonic_timestamps =
+            monotonic_clock::time_point(chrono::nanoseconds(
+                log_header->message()
+                    .oldest_remote_reliable_monotonic_timestamps()
+                    ->Get(1)));
+    const monotonic_clock::time_point
+        oldest_local_reliable_monotonic_timestamps =
+            monotonic_clock::time_point(chrono::nanoseconds(
+                log_header->message()
+                    .oldest_local_reliable_monotonic_timestamps()
+                    ->Get(1)));
     switch (log_header->message().parts_index()) {
       case 0:
         EXPECT_EQ(oldest_remote_monotonic_timestamps,
@@ -2511,6 +2624,10 @@ TEST_P(MultinodeLoggerTest, RemoteReboot) {
         EXPECT_EQ(oldest_remote_unreliable_monotonic_timestamps,
                   monotonic_clock::max_time);
         EXPECT_EQ(oldest_local_unreliable_monotonic_timestamps,
+                  monotonic_clock::max_time);
+        EXPECT_EQ(oldest_remote_reliable_monotonic_timestamps,
+                  monotonic_clock::max_time);
+        EXPECT_EQ(oldest_local_reliable_monotonic_timestamps,
                   monotonic_clock::max_time);
         break;
       case 1:
@@ -2522,8 +2639,32 @@ TEST_P(MultinodeLoggerTest, RemoteReboot) {
                   monotonic_clock::time_point(chrono::microseconds(90200)));
         EXPECT_EQ(oldest_local_unreliable_monotonic_timestamps,
                   monotonic_clock::time_point(chrono::microseconds(90350)));
+        EXPECT_EQ(oldest_remote_reliable_monotonic_timestamps,
+                  monotonic_clock::max_time);
+        EXPECT_EQ(oldest_local_reliable_monotonic_timestamps,
+                  monotonic_clock::max_time);
         break;
       case 2:
+        EXPECT_EQ(oldest_remote_monotonic_timestamps,
+                  monotonic_clock::time_point(chrono::microseconds(90200)))
+            << file;
+        EXPECT_EQ(oldest_local_monotonic_timestamps,
+                  monotonic_clock::time_point(chrono::microseconds(90350)))
+            << file;
+        EXPECT_EQ(oldest_remote_unreliable_monotonic_timestamps,
+                  monotonic_clock::time_point(chrono::microseconds(90200)))
+            << file;
+        EXPECT_EQ(oldest_local_unreliable_monotonic_timestamps,
+                  monotonic_clock::time_point(chrono::microseconds(90350)))
+            << file;
+        EXPECT_EQ(oldest_remote_reliable_monotonic_timestamps,
+                  monotonic_clock::time_point(chrono::microseconds(100000)))
+            << file;
+        EXPECT_EQ(oldest_local_reliable_monotonic_timestamps,
+                  monotonic_clock::time_point(chrono::microseconds(100150)))
+            << file;
+        break;
+      case 3:
         EXPECT_EQ(oldest_remote_monotonic_timestamps,
                   monotonic_clock::time_point(chrono::milliseconds(1323) +
                                               chrono::microseconds(200)));
@@ -2534,6 +2675,30 @@ TEST_P(MultinodeLoggerTest, RemoteReboot) {
                                               chrono::microseconds(200)));
         EXPECT_EQ(oldest_local_unreliable_monotonic_timestamps,
                   monotonic_clock::time_point(chrono::microseconds(10100350)));
+        EXPECT_EQ(oldest_remote_reliable_monotonic_timestamps,
+                  monotonic_clock::max_time)
+            << file;
+        EXPECT_EQ(oldest_local_reliable_monotonic_timestamps,
+                  monotonic_clock::max_time)
+            << file;
+        break;
+      case 4:
+        EXPECT_EQ(oldest_remote_monotonic_timestamps,
+                  monotonic_clock::time_point(chrono::milliseconds(1323) +
+                                              chrono::microseconds(200)));
+        EXPECT_EQ(oldest_local_monotonic_timestamps,
+                  monotonic_clock::time_point(chrono::microseconds(10100350)));
+        EXPECT_EQ(oldest_remote_unreliable_monotonic_timestamps,
+                  monotonic_clock::time_point(chrono::milliseconds(1323) +
+                                              chrono::microseconds(200)));
+        EXPECT_EQ(oldest_local_unreliable_monotonic_timestamps,
+                  monotonic_clock::time_point(chrono::microseconds(10100350)));
+        EXPECT_EQ(oldest_remote_reliable_monotonic_timestamps,
+                  monotonic_clock::time_point(chrono::microseconds(1423000)))
+            << file;
+        EXPECT_EQ(oldest_local_reliable_monotonic_timestamps,
+                  monotonic_clock::time_point(chrono::microseconds(10200150)))
+            << file;
         break;
       default:
         FAIL();
@@ -2608,6 +2773,8 @@ TEST_P(MultinodeLoggerTest, RemoteRebootOnlyTimestamps) {
               pi2_boot1);
     pi1_logger.AppendAllFilenames(&filenames);
   }
+
+  std::sort(filenames.begin(), filenames.end());
 
   // Confirm that our new oldest timestamps properly update as we reboot and
   // rotate.
@@ -2691,6 +2858,18 @@ TEST_P(MultinodeLoggerTest, RemoteRebootOnlyTimestamps) {
                   log_header->message()
                       .oldest_local_unreliable_monotonic_timestamps()
                       ->Get(0)));
+      const monotonic_clock::time_point
+          oldest_remote_reliable_monotonic_timestamps =
+              monotonic_clock::time_point(chrono::nanoseconds(
+                  log_header->message()
+                      .oldest_remote_reliable_monotonic_timestamps()
+                      ->Get(0)));
+      const monotonic_clock::time_point
+          oldest_local_reliable_monotonic_timestamps =
+              monotonic_clock::time_point(chrono::nanoseconds(
+                  log_header->message()
+                      .oldest_local_reliable_monotonic_timestamps()
+                      ->Get(0)));
 
       const Channel *channel =
           event_loop_factory_.configuration()->channels()->Get(
@@ -2711,17 +2890,51 @@ TEST_P(MultinodeLoggerTest, RemoteRebootOnlyTimestamps) {
         // tests.
         switch (log_header->message().parts_index()) {
           case 0:
-          case 1:
             EXPECT_EQ(oldest_remote_monotonic_timestamps,
                       expected_oldest_remote_monotonic_timestamps);
             EXPECT_EQ(oldest_local_monotonic_timestamps,
                       expected_oldest_local_monotonic_timestamps);
             if (reliable) {
+              EXPECT_EQ(oldest_remote_reliable_monotonic_timestamps,
+                        expected_oldest_remote_monotonic_timestamps);
+              EXPECT_EQ(oldest_local_reliable_monotonic_timestamps,
+                        expected_oldest_local_monotonic_timestamps);
               EXPECT_EQ(oldest_remote_unreliable_monotonic_timestamps,
                         monotonic_clock::max_time);
               EXPECT_EQ(oldest_local_unreliable_monotonic_timestamps,
                         monotonic_clock::max_time);
             } else {
+              EXPECT_EQ(oldest_remote_reliable_monotonic_timestamps,
+                        monotonic_clock::max_time);
+              EXPECT_EQ(oldest_local_reliable_monotonic_timestamps,
+                        monotonic_clock::max_time);
+              EXPECT_EQ(oldest_remote_unreliable_monotonic_timestamps,
+                        expected_oldest_remote_monotonic_timestamps);
+              EXPECT_EQ(oldest_local_unreliable_monotonic_timestamps,
+                        expected_oldest_local_monotonic_timestamps);
+            }
+            break;
+          case 1:
+            EXPECT_EQ(oldest_remote_monotonic_timestamps,
+                      monotonic_clock::epoch() + chrono::nanoseconds(90000000));
+            EXPECT_EQ(oldest_local_monotonic_timestamps,
+                      monotonic_clock::epoch() + chrono::nanoseconds(90150000));
+            if (reliable) {
+              EXPECT_EQ(oldest_remote_reliable_monotonic_timestamps,
+                        expected_oldest_remote_monotonic_timestamps);
+              EXPECT_EQ(oldest_local_reliable_monotonic_timestamps,
+                        expected_oldest_local_monotonic_timestamps);
+              EXPECT_EQ(
+                  oldest_remote_unreliable_monotonic_timestamps,
+                  monotonic_clock::epoch() + chrono::nanoseconds(90000000));
+              EXPECT_EQ(
+                  oldest_local_unreliable_monotonic_timestamps,
+                  monotonic_clock::epoch() + chrono::nanoseconds(90150000));
+            } else {
+              EXPECT_EQ(oldest_remote_reliable_monotonic_timestamps,
+                        monotonic_clock::max_time);
+              EXPECT_EQ(oldest_local_reliable_monotonic_timestamps,
+                        monotonic_clock::max_time);
               EXPECT_EQ(oldest_remote_unreliable_monotonic_timestamps,
                         expected_oldest_remote_monotonic_timestamps);
               EXPECT_EQ(oldest_local_unreliable_monotonic_timestamps,
@@ -2729,6 +2942,34 @@ TEST_P(MultinodeLoggerTest, RemoteRebootOnlyTimestamps) {
             }
             break;
           case 2:
+            EXPECT_EQ(
+                oldest_remote_monotonic_timestamps,
+                monotonic_clock::epoch() + chrono::nanoseconds(10000000000));
+            EXPECT_EQ(
+                oldest_local_monotonic_timestamps,
+                monotonic_clock::epoch() + chrono::nanoseconds(1323100000));
+            if (reliable) {
+              EXPECT_EQ(oldest_remote_reliable_monotonic_timestamps,
+                        expected_oldest_remote_monotonic_timestamps);
+              EXPECT_EQ(oldest_local_reliable_monotonic_timestamps,
+                        expected_oldest_local_monotonic_timestamps);
+              EXPECT_EQ(oldest_remote_unreliable_monotonic_timestamps,
+                        monotonic_clock::max_time);
+              EXPECT_EQ(oldest_local_unreliable_monotonic_timestamps,
+                        monotonic_clock::max_time);
+            } else {
+              EXPECT_EQ(oldest_remote_reliable_monotonic_timestamps,
+                        monotonic_clock::max_time);
+              EXPECT_EQ(oldest_local_reliable_monotonic_timestamps,
+                        monotonic_clock::max_time);
+              EXPECT_EQ(oldest_remote_unreliable_monotonic_timestamps,
+                        expected_oldest_remote_monotonic_timestamps);
+              EXPECT_EQ(oldest_local_unreliable_monotonic_timestamps,
+                        expected_oldest_local_monotonic_timestamps);
+            }
+            break;
+
+          case 3:
             LOG(INFO) << "Shared";
             EXPECT_EQ(
                 oldest_remote_monotonic_timestamps,
@@ -2752,10 +2993,14 @@ TEST_P(MultinodeLoggerTest, RemoteRebootOnlyTimestamps) {
             EXPECT_EQ(monotonic_start_time, monotonic_clock::min_time);
             break;
           case 1:
-            EXPECT_EQ(source_node_boot_uuid, pi2_boot1);
+            EXPECT_EQ(source_node_boot_uuid, pi2_boot0);
             EXPECT_EQ(monotonic_start_time, monotonic_clock::min_time);
             break;
           case 2:
+            EXPECT_EQ(source_node_boot_uuid, pi2_boot1);
+            EXPECT_EQ(monotonic_start_time, monotonic_clock::min_time);
+            break;
+          case 3:
             if (shared()) {
               EXPECT_EQ(source_node_boot_uuid, pi2_boot1);
               EXPECT_EQ(monotonic_start_time, monotonic_clock::min_time);
@@ -2855,7 +3100,7 @@ TEST_P(MultinodeLoggerTest, RemoteRebootOnlyTimestamps) {
   }
 
   if (shared()) {
-    EXPECT_EQ(timestamp_file_count, 3u);
+    EXPECT_EQ(timestamp_file_count, 4u);
   } else {
     EXPECT_EQ(timestamp_file_count, 4u);
   }
@@ -3229,7 +3474,8 @@ TEST(MultinodeRebootLoggerTest, StartTimeBeforeData) {
 // when a local message is in the log before a forwarded message, so there is no
 // point in the interpolation function.  This delays the reboot.  So, we need to
 // recreate that situation and make sure it doesn't come back.
-TEST(MultinodeRebootLoggerTest, LocalMessageBeforeRemoteBeforeStartAfterReboot) {
+TEST(MultinodeRebootLoggerTest,
+     LocalMessageBeforeRemoteBeforeStartAfterReboot) {
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig(ArtifactPath(
           "aos/events/logging/multinode_pingpong_split3_config.json"));
@@ -3284,9 +3530,9 @@ TEST(MultinodeRebootLoggerTest, LocalMessageBeforeRemoteBeforeStartAfterReboot) 
     time_converter.AddNextTimestamp(
         distributed_clock::epoch() + reboot_time,
         {BootTimestamp::epoch() + reboot_time,
-         BootTimestamp{
-             .boot = 1,
-             .time = monotonic_clock::epoch() + reboot_time + chrono::seconds(100)},
+         BootTimestamp{.boot = 1,
+                       .time = monotonic_clock::epoch() + reboot_time +
+                               chrono::seconds(100)},
          BootTimestamp::epoch() + reboot_time});
   }
 

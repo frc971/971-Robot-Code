@@ -98,6 +98,15 @@ class NewDataWriter {
     // oldest_local_unreliable_monotonic_timestamp.
     monotonic_clock::time_point oldest_local_unreliable_monotonic_timestamp =
         monotonic_clock::max_time;
+
+    // Timestamp on the remote monotonic clock of the oldest message sent to
+    // node_index_, only including messages forwarded with time_to_live() == 0.
+    monotonic_clock::time_point oldest_remote_reliable_monotonic_timestamp =
+        monotonic_clock::max_time;
+    // Timestamp on the local monotonic clock of the message in
+    // oldest_local_reliable_monotonic_timestamp.
+    monotonic_clock::time_point oldest_local_reliable_monotonic_timestamp =
+        monotonic_clock::max_time;
   };
 
  private:

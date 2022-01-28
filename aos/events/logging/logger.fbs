@@ -108,30 +108,60 @@ table LogFileHeader {
   // across the network and using those to determine constraints so we can sort
   // a DAG.
   //
-  // There are 2 main problem cases.  Let's say we have 2 channels.  /a which
-  // is reliable, and /b which isn't, both sent from the same remote node.
+  // There are 5 main cases.  Let's say we have 2 channels.  /r which
+  // is reliable, and /u which isn't, both sent from the same remote node.
+  // The examples below are listed as the remote node sending the message, and
+  // then the local node receiving and logging the message.
   //
-  // case 1:  /a -> boot 0 received on boot 0.
-  //          /b -> boot 1 received on boot 0.
+  // case 0:  /r -> boot 0 received on boot 0.
+  //          /u -> boot 0 received on boot 0.
+  //  We log for a bit, then the remote reboots.
+  //          /r -> boot 1 received on boot 0.
+  //          /u -> boot 1 received on boot 0.
+  //
+  // case 1:  /r -> boot 0 received on boot 0.
+  //          /u -> boot 1 received on boot 0.
   //  We start logging after both messages arrive.
   //
-  // case 2:  /a -> boot 0 received on boot 0.
-  //          /b -> boot 0 received on boot 0.
+  // case 2:  /r -> boot 0 received on boot 0.
+  //          /u -> boot 0 received on boot 0.
   //  We log for a bit, then reboot.  More messages show up when we reconnect.
-  //          /a -> boot 0 received on boot 1.
-  //          /b -> boot 0 received on boot 1.
+  //          /r -> boot 0 received on boot 1.
+  //          /u -> boot 0 received on boot 1.
+  //
+  // case 3:  /u -> boot 0 received on boot 0.
+  //          /r -> boot 1 received on boot 0.
+  //          /u -> boot 1 received on boot 0.
+  //  We start logging after both messages arrive.
+  //
+  // case 4:  /u -> boot 0 received on boot 0.
+  //          /r -> boot 1 received on boot 0.
+  //
+  // In case 0, we have all the messages showing up and a reboot of the remote.
   //
   // In case 1: we only have a reliable timestamp from boot 0, but that
-  // reliable timestamp makes it clear that /a was before /b, so boot 0 was
+  // reliable timestamp makes it clear that /r was before /u, so boot 0 was
   // before boot 1.
   //
   // In case 2: we have the same reliable timestamp, so that tells us nothing.
-  // The unreliable timestamps though tell a different story.  /b will be after
-  // /a, since any messages on /b generated before the reboot won't get
-  // delivered.  So, we get an ordering constraint saying that any sent /b's
-  // on the second boot were after /b on the first boot.
+  // The unreliable timestamps though tell a different story.  /u will be after
+  // /r, since any messages on /u generated before the reboot won't get
+  // delivered.  So, we get an ordering constraint saying that any sent /u's
+  // on the second boot were after /u on the first boot.
+  //
+  // In case 3: we only got the reliable message on the second boot for some
+  // reason.  Reliable messages aren't 100% reliable.  In this case, the
+  // reliable timestamps are actually a distraction and are misleading.  We
+  // want to use the unreliable timestamps here.
+  //
+  // In case 4: we have utter madness...
+  //
+  // We expect the nominal case to be case 0, or the first half of case 0 if
+  // there are no reboots.
   //
   // We believe that any other cases are covered by the same mechanism.
+  // TODO(austin/brian): Shore up this and capture the cases that are 100%
+  // ambiguous and we can't sort.
   //
   // For all channels sent from a specific node, these vectors hold the
   // timestamp of the oldest known message from that node, and the
@@ -150,6 +180,11 @@ table LogFileHeader {
   corrupted_oldest_local_unreliable_monotonic_timestamps:[int64] (id: 23, deprecated);
   oldest_remote_unreliable_monotonic_timestamps:[int64] (id: 26);
   oldest_local_unreliable_monotonic_timestamps:[int64] (id: 27);
+
+  // For all channels *excluding* the unreliable channels (ttl != 0), record the
+  // same quantity.
+  oldest_remote_reliable_monotonic_timestamps:[int64] (id: 28);
+  oldest_local_reliable_monotonic_timestamps:[int64] (id: 29);
 }
 
 // Table holding a message.

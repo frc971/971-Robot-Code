@@ -59,6 +59,10 @@ void NewDataWriter::Reboot(const UUID &source_node_boot_uuid) {
         monotonic_clock::max_time;
     state.oldest_local_unreliable_monotonic_timestamp =
         monotonic_clock::max_time;
+    state.oldest_remote_reliable_monotonic_timestamp =
+        monotonic_clock::max_time;
+    state.oldest_local_reliable_monotonic_timestamp =
+        monotonic_clock::max_time;
   }
 
   state_[node_index_].boot_uuid = source_node_boot_uuid;
@@ -96,6 +100,10 @@ void NewDataWriter::UpdateRemote(
         monotonic_clock::max_time;
     state.oldest_local_unreliable_monotonic_timestamp =
         monotonic_clock::max_time;
+    state.oldest_remote_reliable_monotonic_timestamp =
+        monotonic_clock::max_time;
+    state.oldest_local_reliable_monotonic_timestamp =
+        monotonic_clock::max_time;
     rotate = true;
   }
 
@@ -110,6 +118,17 @@ void NewDataWriter::UpdateRemote(
       state.oldest_remote_unreliable_monotonic_timestamp =
           monotonic_remote_time;
       state.oldest_local_unreliable_monotonic_timestamp = monotonic_event_time;
+      rotate = true;
+    }
+  } else {
+    if (state.oldest_remote_reliable_monotonic_timestamp >
+        monotonic_remote_time) {
+      VLOG(1) << filename() << " Remote " << remote_node_index
+              << " oldest_remote_reliable_monotonic_timestamp updated from "
+              << state.oldest_remote_reliable_monotonic_timestamp << " to "
+              << monotonic_remote_time;
+      state.oldest_remote_reliable_monotonic_timestamp = monotonic_remote_time;
+      state.oldest_local_reliable_monotonic_timestamp = monotonic_event_time;
       rotate = true;
     }
   }
@@ -219,7 +238,7 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> LogNamer::MakeHeader(
   const UUID &source_node_boot_uuid = state[node_index].boot_uuid;
   const Node *const source_node =
       configuration::GetNode(configuration_, node_index);
-  CHECK_EQ(LogFileHeader::MiniReflectTypeTable()->num_elems, 28u);
+  CHECK_EQ(LogFileHeader::MiniReflectTypeTable()->num_elems, 30u);
   flatbuffers::FlatBufferBuilder fbb;
   fbb.ForceDefaults(true);
 
@@ -296,6 +315,16 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> LogNamer::MakeHeader(
           fbb.CreateUninitializedVector(
               state.size(), &unused);
 
+  flatbuffers::Offset<flatbuffers::Vector<int64_t>>
+      oldest_remote_reliable_monotonic_timestamps_offset =
+          fbb.CreateUninitializedVector(
+              state.size(), &unused);
+
+  flatbuffers::Offset<flatbuffers::Vector<int64_t>>
+      oldest_local_reliable_monotonic_timestamps_offset =
+          fbb.CreateUninitializedVector(
+              state.size(), &unused);
+
   for (size_t i = 0; i < state.size(); ++i) {
     if (state[i].boot_uuid != UUID::Zero()) {
       boot_uuid_offsets.emplace_back(state[i].boot_uuid.PackString(&fbb));
@@ -310,6 +339,10 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> LogNamer::MakeHeader(
       CHECK_EQ(state[i].oldest_remote_unreliable_monotonic_timestamp,
                monotonic_clock::max_time);
       CHECK_EQ(state[i].oldest_local_unreliable_monotonic_timestamp,
+               monotonic_clock::max_time);
+      CHECK_EQ(state[i].oldest_remote_reliable_monotonic_timestamp,
+               monotonic_clock::max_time);
+      CHECK_EQ(state[i].oldest_local_reliable_monotonic_timestamp,
                monotonic_clock::max_time);
     }
 
@@ -326,13 +359,28 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> LogNamer::MakeHeader(
     flatbuffers::GetMutableTemporaryPointer(
         fbb, oldest_remote_unreliable_monotonic_timestamps_offset)
         ->Mutate(i, state[i]
-                        .oldest_remote_unreliable_monotonic_timestamp.time_since_epoch()
+                        .oldest_remote_unreliable_monotonic_timestamp
+                        .time_since_epoch()
                         .count());
     flatbuffers::GetMutableTemporaryPointer(
         fbb, oldest_local_unreliable_monotonic_timestamps_offset)
         ->Mutate(i, state[i]
-                        .oldest_local_unreliable_monotonic_timestamp.time_since_epoch()
+                        .oldest_local_unreliable_monotonic_timestamp
+                        .time_since_epoch()
                         .count());
+
+    flatbuffers::GetMutableTemporaryPointer(
+        fbb, oldest_remote_reliable_monotonic_timestamps_offset)
+        ->Mutate(i, state[i]
+                        .oldest_remote_reliable_monotonic_timestamp
+                        .time_since_epoch()
+                        .count());
+    flatbuffers::GetMutableTemporaryPointer(
+        fbb, oldest_local_reliable_monotonic_timestamps_offset)
+        ->Mutate(
+            i, state[i]
+                   .oldest_local_reliable_monotonic_timestamp.time_since_epoch()
+                   .count());
   }
 
   flatbuffers::Offset<
@@ -415,6 +463,10 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> LogNamer::MakeHeader(
       oldest_remote_unreliable_monotonic_timestamps_offset);
   log_file_header_builder.add_oldest_local_unreliable_monotonic_timestamps(
       oldest_local_unreliable_monotonic_timestamps_offset);
+  log_file_header_builder.add_oldest_remote_reliable_monotonic_timestamps(
+      oldest_remote_reliable_monotonic_timestamps_offset);
+  log_file_header_builder.add_oldest_local_reliable_monotonic_timestamps(
+      oldest_local_reliable_monotonic_timestamps_offset);
   fbb.FinishSizePrefixed(log_file_header_builder.Finish());
   aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> result(
       fbb.Release());
