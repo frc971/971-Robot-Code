@@ -263,6 +263,13 @@ struct MapBoots {
 
 // For a pair of nodes, this holds the oldest times that messages were
 // transfered.
+//
+// TODO(austin): We are finding that the timestamps in
+// oldest_remote_monotonic_timestamp are not very useful because there may not
+// be reliable messages on both boots in the log.  Figure out how to use that
+// data better (or really, use the new reliable remote timestamps field) and
+// update this code.  I think we can delay a bit until someone figures out how
+// to get here without other code paths sorting us first.
 struct BootPairTimes {
   // Pair of local and remote timestamps for the oldest message forwarded to
   // this node.
@@ -620,6 +627,21 @@ void PartsSorter::PopulateFromFiles(const std::vector<std::string> &parts) {
                log_header->message()
                    .oldest_remote_unreliable_monotonic_timestamps()
                    ->size());
+      CHECK_EQ(log_header->message()
+                   .has_oldest_logger_local_unreliable_monotonic_timestamps(),
+               log_header->message()
+                   .has_oldest_logger_remote_unreliable_monotonic_timestamps());
+      if (log_header->message()
+              .has_oldest_logger_local_unreliable_monotonic_timestamps()) {
+        CHECK_EQ(boot_uuids_size,
+                 log_header->message()
+                     .oldest_logger_local_unreliable_monotonic_timestamps()
+                     ->size());
+        CHECK_EQ(boot_uuids_size,
+                 log_header->message()
+                     .oldest_logger_remote_unreliable_monotonic_timestamps()
+                     ->size());
+      }
       CHECK(!logger_boot_uuid.empty());
       CHECK(!source_boot_uuid.empty());
       for (size_t node_index = 0; node_index < boot_uuids_size; ++node_index) {
@@ -644,7 +666,26 @@ void PartsSorter::PopulateFromFiles(const std::vector<std::string> &parts) {
                 log_header->message()
                     .oldest_remote_unreliable_monotonic_timestamps()
                     ->Get(node_index)));
-        if (boot_uuid.empty() || boot_uuid == source_boot_uuid) {
+
+        const monotonic_clock::time_point
+            oldest_logger_local_unreliable_monotonic_timestamp =
+                log_header->message()
+                        .has_oldest_logger_local_unreliable_monotonic_timestamps()
+                    ? monotonic_clock::time_point(chrono::nanoseconds(
+                          log_header->message()
+                              .oldest_logger_local_unreliable_monotonic_timestamps()
+                              ->Get(node_index)))
+                    : monotonic_clock::max_time;
+        const monotonic_clock::time_point
+            oldest_logger_remote_unreliable_monotonic_timestamp =
+                log_header->message()
+                        .has_oldest_logger_remote_unreliable_monotonic_timestamps()
+                    ? monotonic_clock::time_point(chrono::nanoseconds(
+                          log_header->message()
+                              .oldest_logger_remote_unreliable_monotonic_timestamps()
+                              ->Get(node_index)))
+                    : monotonic_clock::max_time;
+        if (boot_uuid.empty()) {
           CHECK_EQ(oldest_local_monotonic_timestamp, monotonic_clock::max_time);
           CHECK_EQ(oldest_remote_monotonic_timestamp,
                    monotonic_clock::max_time);
@@ -652,8 +693,112 @@ void PartsSorter::PopulateFromFiles(const std::vector<std::string> &parts) {
                    monotonic_clock::max_time);
           CHECK_EQ(oldest_remote_unreliable_monotonic_timestamp,
                    monotonic_clock::max_time);
+          CHECK_EQ(oldest_logger_local_unreliable_monotonic_timestamp,
+                   monotonic_clock::max_time);
+          CHECK_EQ(oldest_logger_remote_unreliable_monotonic_timestamp,
+                   monotonic_clock::max_time);
           continue;
         }
+
+        if (boot_uuid == source_boot_uuid) {
+          CHECK_EQ(oldest_local_monotonic_timestamp, monotonic_clock::max_time);
+          CHECK_EQ(oldest_remote_monotonic_timestamp,
+                   monotonic_clock::max_time);
+          CHECK_EQ(oldest_local_unreliable_monotonic_timestamp,
+                   monotonic_clock::max_time);
+          CHECK_EQ(oldest_remote_unreliable_monotonic_timestamp,
+                   monotonic_clock::max_time);
+          if (oldest_logger_local_unreliable_monotonic_timestamp !=
+                     monotonic_clock::max_time) {
+            CHECK_NE(oldest_logger_remote_unreliable_monotonic_timestamp,
+                     monotonic_clock::max_time);
+            // Now, we found a timestamp going the other way.  Add it in!
+            auto logger_node_boot_times_it = boot_times.find(logger_node);
+            if (logger_node_boot_times_it == boot_times.end()) {
+              logger_node_boot_times_it =
+                  boot_times
+                      .emplace(
+                          logger_node,
+                          absl::btree_map<
+                              std::string,
+                              absl::btree_map<
+                                  size_t, absl::btree_map<
+                                              std::string,
+                                              std::vector<BootPairTimes>>>>())
+                      .first;
+            }
+
+            auto logger_source_boot_times_it =
+                logger_node_boot_times_it->second.find(
+                    std::string(logger_boot_uuid));
+
+            if (logger_source_boot_times_it ==
+                logger_node_boot_times_it->second.end()) {
+              logger_source_boot_times_it =
+                  logger_node_boot_times_it->second
+                      .emplace(
+                          logger_boot_uuid,
+                          absl::btree_map<
+                              size_t,
+                              absl::btree_map<std::string,
+                                              std::vector<BootPairTimes>>>())
+                      .first;
+            }
+
+            // We need the index of the source node.  Luckily, since we are at
+            // the index in the boot UUID list which matches the source node
+            // boot uuid, we know it's index!
+            auto logger_destination_boot_times_it =
+                logger_source_boot_times_it->second.find(node_index);
+            if (logger_destination_boot_times_it ==
+                logger_source_boot_times_it->second.end()) {
+              logger_destination_boot_times_it =
+                  logger_source_boot_times_it->second
+                      .emplace(node_index,
+                               absl::btree_map<std::string,
+                                               std::vector<BootPairTimes>>())
+                      .first;
+            }
+
+            auto logger_boot_times_it =
+                logger_destination_boot_times_it->second.find(
+                    std::string(source_boot_uuid));
+
+            if (logger_boot_times_it ==
+                logger_destination_boot_times_it->second.end()) {
+              // We have a new boot UUID pairing.  Copy over the data we have.
+              logger_destination_boot_times_it->second.emplace(
+                  source_boot_uuid,
+                  std::vector<BootPairTimes>{BootPairTimes{
+                      .oldest_remote_monotonic_timestamp =
+                          monotonic_clock::max_time,
+                      .oldest_local_monotonic_timestamp =
+                          monotonic_clock::max_time,
+                      .oldest_remote_unreliable_monotonic_timestamp =
+                          oldest_logger_remote_unreliable_monotonic_timestamp,
+                      .oldest_local_unreliable_monotonic_timestamp =
+                          oldest_logger_local_unreliable_monotonic_timestamp}});
+            } else {
+              logger_boot_times_it->second.emplace_back(BootPairTimes{
+                  .oldest_remote_monotonic_timestamp =
+                      monotonic_clock::max_time,
+                  .oldest_local_monotonic_timestamp = monotonic_clock::max_time,
+                  .oldest_remote_unreliable_monotonic_timestamp =
+                      oldest_logger_remote_unreliable_monotonic_timestamp,
+                  .oldest_local_unreliable_monotonic_timestamp =
+                      oldest_logger_local_unreliable_monotonic_timestamp});
+            }
+          }
+          continue;
+        }
+
+        // There is no supported way to get logger timestamps from anything but
+        // the source node.  Since we've already handled that above, we should
+        // always expect max_time here.
+        CHECK_EQ(oldest_logger_local_unreliable_monotonic_timestamp,
+                 monotonic_clock::max_time);
+        CHECK_EQ(oldest_logger_remote_unreliable_monotonic_timestamp,
+                 monotonic_clock::max_time);
 
         // Now, we have a valid pairing.
         auto destination_boot_times_it =
@@ -950,24 +1095,9 @@ std::map<std::string, NodeBootState> PartsSorter::ComputeNewBootConstraints() {
             source_boot_times.begin(), source_boot_times.end(),
             [](const std::tuple<std::string, BootPairTimes, BootPairTimes> &a,
                const std::tuple<std::string, BootPairTimes, BootPairTimes> &b) {
-              // There are cases where we will only have a reliable timestamp.
-              // In that case, we need to use oldest_local_monotonic_timestamp.
-              // But, that may result in collisions if the same message gets
-              // forwarded to both boots, so it will have the same timestamp.
-              // Solve that by breaking the tie with the unreliable messages.
-              if (std::get<1>(a).oldest_local_monotonic_timestamp ==
-                  std::get<1>(b).oldest_local_monotonic_timestamp) {
-                CHECK_NE(
-                    std::get<1>(a).oldest_local_unreliable_monotonic_timestamp,
-                    std::get<1>(b).oldest_local_unreliable_monotonic_timestamp);
-                return std::get<1>(a)
-                           .oldest_local_unreliable_monotonic_timestamp <
-                       std::get<1>(b)
-                           .oldest_local_unreliable_monotonic_timestamp;
-              } else {
-                return std::get<1>(a).oldest_local_monotonic_timestamp <
-                       std::get<1>(b).oldest_local_monotonic_timestamp;
-              }
+              return std::get<1>(a)
+                         .oldest_local_unreliable_monotonic_timestamp <
+                     std::get<1>(b).oldest_local_unreliable_monotonic_timestamp;
             });
 
         // The last time from the source node on the logger node.
@@ -1091,21 +1221,8 @@ std::map<std::string, NodeBootState> PartsSorter::ComputeNewBootConstraints() {
             destination_boot_times.begin(), destination_boot_times.end(),
             [](const std::pair<std::string, BootPairTimes> &a,
                const std::pair<std::string, BootPairTimes> &b) {
-              // There are cases where we will only have a reliable timestamp.
-              // In that case, we need to use oldest_remote_monotonic_timestamp.
-              // But, that may result in collisions if the same message gets
-              // forwarded to both boots, so it will have the same timestamp.
-              // Solve that by breaking the tie with the unreliable messages.
-              if (a.second.oldest_remote_monotonic_timestamp ==
-                  b.second.oldest_remote_monotonic_timestamp) {
-                CHECK_NE(a.second.oldest_remote_unreliable_monotonic_timestamp,
-                         b.second.oldest_remote_unreliable_monotonic_timestamp);
-                return a.second.oldest_remote_unreliable_monotonic_timestamp <
-                       b.second.oldest_remote_unreliable_monotonic_timestamp;
-              } else {
-                return a.second.oldest_remote_monotonic_timestamp <
-                       b.second.oldest_remote_monotonic_timestamp;
-              }
+              return a.second.oldest_remote_unreliable_monotonic_timestamp <
+                     b.second.oldest_remote_unreliable_monotonic_timestamp;
             });
 
         for (size_t boot_id = 0; boot_id < destination_boot_times.size();
