@@ -132,7 +132,7 @@ table LogFileHeader {
   // case 3:  /u -> boot 0 received on boot 0.
   //          /r -> boot 1 received on boot 0.
   //          /u -> boot 1 received on boot 0.
-  //  We start logging after both messages arrive.
+  //  We start logging after all three messages arrive.
   //
   // case 4:  /u -> boot 0 received on boot 0.
   //          /r -> boot 1 received on boot 0.
