@@ -339,6 +339,24 @@ cc_binary(
 )
 
 cc_binary(
+    name = "single_node_merge",
+    srcs = [
+        "single_node_merge.cc",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":logfile_utils",
+        "//aos:configuration",
+        "//aos:init",
+        "//aos/events:simulated_event_loop",
+        "//aos/network:multinode_timestamp_filter",
+        "@com_github_gflags_gflags//:gflags",
+        "@com_github_google_glog//:glog",
+    ],
+)
+
+cc_binary(
     name = "log_edit",
     srcs = [
         "log_edit.cc",
