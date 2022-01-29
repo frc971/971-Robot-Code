@@ -192,8 +192,8 @@ cc_test(
     deps = [
         ":sift_training_data_test",
         "//aos/testing:googletest",
+        "//frc971/vision:vision_fbs",
         "//third_party:opencv",
-        "//y2020/vision:vision_fbs",
         "//y2020/vision/sift:sift_fbs",
         "//y2020/vision/sift:sift_training_fbs",
     ],

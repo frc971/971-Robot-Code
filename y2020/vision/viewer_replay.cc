@@ -6,7 +6,7 @@
 #include "aos/events/logging/log_reader.h"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/init.h"
-#include "y2020/vision/vision_generated.h"
+#include "frc971/vision/vision_generated.h"
 
 DEFINE_string(node, "pi1", "Node name to replay.");
 DEFINE_string(image_save_prefix, "/tmp/img",

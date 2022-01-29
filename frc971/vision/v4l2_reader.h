@@ -1,5 +1,5 @@
-#ifndef Y2020_VISION_V4L2_READER_H_
-#define Y2020_VISION_V4L2_READER_H_
+#ifndef FRC971_VISION_V4L2_READER_H_
+#define FRC971_VISION_V4L2_READER_H_
 
 #include <array>
 #include <string>
@@ -9,7 +9,7 @@
 
 #include "aos/events/event_loop.h"
 #include "aos/scoped/scoped_fd.h"
-#include "y2020/vision/vision_generated.h"
+#include "frc971/vision/vision_generated.h"
 
 namespace frc971 {
 namespace vision {
@@ -119,4 +119,4 @@ class V4L2Reader {
 }  // namespace vision
 }  // namespace frc971
 
-#endif  // Y2020_VISION_V4L2_READER_H_
+#endif  // FRC971_VISION_V4L2_READER_H_

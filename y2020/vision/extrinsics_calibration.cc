@@ -12,13 +12,13 @@
 #include "frc971/analysis/in_process_plotter.h"
 #include "frc971/control_loops/drivetrain/improved_down_estimator.h"
 #include "frc971/control_loops/quaternion_utils.h"
+#include "frc971/vision/vision_generated.h"
 #include "frc971/wpilib/imu_batch_generated.h"
 #include "y2020/vision/calibration_accumulator.h"
 #include "y2020/vision/charuco_lib.h"
 #include "y2020/vision/sift/sift_generated.h"
 #include "y2020/vision/sift/sift_training_generated.h"
 #include "y2020/vision/tools/python_code/sift_training_data.h"
-#include "y2020/vision/vision_generated.h"
 
 DEFINE_string(config, "config.json", "Path to the config file to use.");
 DEFINE_string(pi, "pi-7971-2", "Pi name to calibrate.");
@@ -120,7 +120,7 @@ class CeresPoseFilter : public CalibrationDataObserver {
 
   const Eigen::Quaternion<Scalar> &orientation() const { return orientation_; }
 
-  std::vector<Eigen::Matrix<Scalar, 3, 1> > errors_;
+  std::vector<Eigen::Matrix<Scalar, 3, 1>> errors_;
 
   // Returns the angular errors for each camera sample.
   size_t num_errors() const { return errors_.size(); }
@@ -136,18 +136,18 @@ class CeresPoseFilter : public CalibrationDataObserver {
     result.template block<4, 1>(0, 0) = q.coeffs();
     result.template block<6, 1>(4, 0) = x_hat;
     result.template block<36, 1>(10, 0) =
-        Eigen::Map<Eigen::Matrix<Scalar, 36, 1> >(p.data(), p.size());
+        Eigen::Map<Eigen::Matrix<Scalar, 36, 1>>(p.data(), p.size());
 
     return result;
   }
 
   std::tuple<Eigen::Quaternion<Scalar>, Eigen::Matrix<Scalar, 6, 1>,
-             Eigen::Matrix<Scalar, 6, 6> >
+             Eigen::Matrix<Scalar, 6, 6>>
   UnPack(Eigen::Matrix<Scalar, 46, 1> input) {
     Eigen::Quaternion<Scalar> q(input.template block<4, 1>(0, 0));
     Eigen::Matrix<Scalar, 6, 1> x_hat(input.template block<6, 1>(4, 0));
     Eigen::Matrix<Scalar, 6, 6> p =
-        Eigen::Map<Eigen::Matrix<Scalar, 6, 6> >(input.data() + 10, 6, 6);
+        Eigen::Map<Eigen::Matrix<Scalar, 6, 6>>(input.data() + 10, 6, 6);
     return std::make_tuple(q, x_hat, p);
   }
 
@@ -361,8 +361,8 @@ class PoseFilter : public CeresPoseFilter<double> {
   std::vector<double> imu_ratez;
 
   std::vector<double> times_;
-  std::vector<Eigen::Matrix<double, 6, 1> > x_hats_;
-  std::vector<Eigen::Quaternion<double> > orientations_;
+  std::vector<Eigen::Matrix<double, 6, 1>> x_hats_;
+  std::vector<Eigen::Quaternion<double>> orientations_;
 
   Eigen::Matrix<double, 3, 1> last_accel_ = Eigen::Matrix<double, 3, 1>::Zero();
 };

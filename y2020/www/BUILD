@@ -15,7 +15,7 @@ ts_library(
         "//aos/network:connect_ts_fbs",
         "//aos/network:web_proxy_ts_fbs",
         "//aos/network/www:proxy",
-        "//y2020/vision:vision_ts_fbs",
+        "//frc971/vision:vision_ts_fbs",
         "//y2020/vision/sift:sift_ts_fbs",
         "@com_github_google_flatbuffers//ts:flatbuffers_ts",
     ],

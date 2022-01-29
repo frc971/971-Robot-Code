@@ -12,9 +12,9 @@
 #include "y2020/vision/tools/python_code/sift_training_data.h"
 #endif
 
+#include "frc971/vision/vision_generated.h"
 #include "y2020/vision/sift/sift_generated.h"
 #include "y2020/vision/sift/sift_training_generated.h"
-#include "y2020/vision/vision_generated.h"
 
 namespace frc971 {
 namespace vision {

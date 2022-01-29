@@ -1,12 +1,4 @@
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_ts_library")
-
-flatbuffer_cc_library(
-    name = "vision_fbs",
-    srcs = ["vision.fbs"],
-    gen_reflections = 1,
-    target_compatible_with = ["@platforms//os:linux"],
-    visibility = ["//y2020:__subpackages__"] + ["//y2022:__subpackages__"],
-)
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 
 flatbuffer_cc_library(
     name = "galactic_search_path_fbs",
@@ -14,25 +6,6 @@ flatbuffer_cc_library(
     gen_reflections = 1,
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//y2020:__subpackages__"],
-)
-
-cc_library(
-    name = "v4l2_reader",
-    srcs = [
-        "v4l2_reader.cc",
-    ],
-    hdrs = [
-        "v4l2_reader.h",
-    ],
-    target_compatible_with = ["@platforms//os:linux"],
-    visibility = ["//y2020:__subpackages__"],
-    deps = [
-        ":vision_fbs",
-        "//aos/events:event_loop",
-        "//aos/scoped:scoped_fd",
-        "@com_github_google_glog//:glog",
-        "@com_google_absl//absl/base",
-    ],
 )
 
 cc_binary(
@@ -63,24 +36,17 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//y2020:__subpackages__"] + ["//y2022:__subpackages__"],
     deps = [
-        ":v4l2_reader",
-        ":vision_fbs",
         "//aos:flatbuffer_merge",
         "//aos/events:event_loop",
         "//aos/network:team_number",
+        "//frc971/vision:v4l2_reader",
+        "//frc971/vision:vision_fbs",
         "//third_party:opencv",
         "//y2020/vision/sift:sift971",
         "//y2020/vision/sift:sift_fbs",
         "//y2020/vision/sift:sift_training_fbs",
         "//y2020/vision/tools/python_code:sift_training_data",
     ],
-)
-
-flatbuffer_ts_library(
-    name = "vision_ts_fbs",
-    srcs = ["vision.fbs"],
-    target_compatible_with = ["@platforms//os:linux"],
-    visibility = ["//y2020:__subpackages__"],
 )
 
 cc_binary(
@@ -94,9 +60,10 @@ cc_binary(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//y2020:__subpackages__"],
     deps = [
-        ":vision_fbs",
         "//aos:init",
         "//aos/events:shm_event_loop",
+        "//frc971/vision:v4l2_reader",
+        "//frc971/vision:vision_fbs",
         "//third_party:opencv",
         "//y2020/vision/sift:sift_fbs",
     ],
@@ -113,12 +80,12 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//y2020:__subpackages__"],
     deps = [
-        ":vision_fbs",
         "//aos:flatbuffers",
         "//aos/events:event_loop",
         "//aos/network:message_bridge_server_fbs",
         "//aos/network:team_number",
         "//frc971/control_loops:quaternion_utils",
+        "//frc971/vision:vision_fbs",
         "//third_party:opencv",
         "//y2020/vision/sift:sift_fbs",
         "//y2020/vision/sift:sift_training_fbs",
@@ -142,10 +109,10 @@ cc_binary(
     visibility = ["//y2020:__subpackages__"],
     deps = [
         ":charuco_lib",
-        ":vision_fbs",
         "//aos:init",
         "//aos/events:shm_event_loop",
         "//frc971/control_loops/drivetrain:improved_down_estimator",
+        "//frc971/vision:vision_fbs",
         "//frc971/wpilib:imu_batch_fbs",
         "//frc971/wpilib:imu_fbs",
         "//third_party:opencv",
@@ -168,10 +135,10 @@ cc_binary(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//y2020:__subpackages__"],
     deps = [
-        ":vision_fbs",
         "//aos:init",
         "//aos/events:simulated_event_loop",
         "//aos/events/logging:log_reader",
+        "//frc971/vision:vision_fbs",
         "//third_party:opencv",
     ],
 )

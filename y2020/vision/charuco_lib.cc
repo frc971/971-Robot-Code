@@ -11,11 +11,11 @@
 #include "aos/flatbuffers.h"
 #include "aos/network/team_number.h"
 #include "frc971/control_loops/quaternion_utils.h"
+#include "frc971/vision/vision_generated.h"
 #include "glog/logging.h"
 #include "y2020/vision/sift/sift_generated.h"
 #include "y2020/vision/sift/sift_training_generated.h"
 #include "y2020/vision/tools/python_code/sift_training_data.h"
-#include "y2020/vision/vision_generated.h"
 
 DEFINE_uint32(min_targets, 10,
               "The mininum number of targets required to match.");
@@ -133,8 +133,7 @@ ImageCallback::ImageCallback(
 
     const monotonic_clock::time_point eof = eof_source_node - offset;
 
-    const monotonic_clock::duration age =
-        event_loop_->monotonic_now() - eof;
+    const monotonic_clock::duration age = event_loop_->monotonic_now() - eof;
     const double age_double =
         std::chrono::duration_cast<std::chrono::duration<double>>(age).count();
     if (age > std::chrono::milliseconds(100)) {
