@@ -34,6 +34,16 @@ struct Values {
 
   // Climber
   static constexpr double kClimberSupplyCurrentLimit() { return 60.0; }
+
+  // Intake
+  // two encoders with same gear ratio for intake
+  static constexpr double kIntakeEncoderCountsPerRevolution() { return 512.0; }
+
+  static constexpr double kIntakeEncoderRatio() {
+    return ((16.0 / 60.0) * (18.0 / 62.0));
+  }
+
+  // TODO(Milo): Also need to add specific PPR (Pulse per revolution)
 };
 
 // Creates (once) a Values instance for ::aos::network::GetTeamNumber(). Should
