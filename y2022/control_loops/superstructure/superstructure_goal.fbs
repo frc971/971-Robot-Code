@@ -3,7 +3,9 @@ include "frc971/control_loops/profiled_subsystem.fbs";
 namespace y2022.control_loops.superstructure;
 
 table Goal {
-
+    // Voltage of the climber falcon
+    // - is down + is up
+    climber_speed:double (id: 0);
 }
 
 root_type Goal;
