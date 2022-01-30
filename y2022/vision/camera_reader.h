@@ -5,9 +5,10 @@
 
 #include <opencv2/calib3d.hpp>
 #include <opencv2/features2d.hpp>
+#include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
 
-#include "aos/events/event_loop.h"
+#include "aos/events/shm_event_loop.h"
 #include "aos/flatbuffer_merge.h"
 #include "aos/network/team_number.h"
 #include "frc971/vision/v4l2_reader.h"
@@ -26,7 +27,7 @@ using namespace frc971::vision;
 
 class CameraReader {
  public:
-  CameraReader(aos::EventLoop *event_loop,
+  CameraReader(aos::ShmEventLoop *event_loop,
                const sift::TrainingData *training_data, V4L2Reader *reader)
       : event_loop_(event_loop),
         training_data_(training_data),
@@ -44,7 +45,7 @@ class CameraReader {
   const sift::CameraCalibration *FindCameraCalibration() const;
 
   // Processes an image (including sending the results).
-  void ProcessImage(const CameraImage &image);
+  void ProcessImage(const cv::Mat &image);
 
   // Reads an image, and then performs all of our processing on it.
   void ReadImage();
@@ -75,7 +76,7 @@ class CameraReader {
     return result;
   }
 
-  aos::EventLoop *const event_loop_;
+  aos::ShmEventLoop *const event_loop_;
   const sift::TrainingData *const training_data_;
   const sift::CameraCalibration *const camera_calibration_;
   V4L2Reader *const reader_;
