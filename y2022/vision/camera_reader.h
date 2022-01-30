@@ -13,9 +13,8 @@
 #include "aos/network/team_number.h"
 #include "frc971/vision/v4l2_reader.h"
 #include "frc971/vision/vision_generated.h"
-#include "y2020/vision/sift/sift_generated.h"
-#include "y2020/vision/sift/sift_training_generated.h"
-#include "y2020/vision/tools/python_code/sift_training_data.h"
+#include "y2022/vision/calibration_data.h"
+#include "y2022/vision/calibration_generated.h"
 #include "y2022/vision/target_estimate_generated.h"
 
 namespace y2022 {
@@ -28,9 +27,10 @@ using namespace frc971::vision;
 class CameraReader {
  public:
   CameraReader(aos::ShmEventLoop *event_loop,
-               const sift::TrainingData *training_data, V4L2Reader *reader)
+               const calibration::CalibrationData *calibration_data,
+               V4L2Reader *reader)
       : event_loop_(event_loop),
-        training_data_(training_data),
+        calibration_data_(calibration_data),
         camera_calibration_(FindCameraCalibration()),
         reader_(reader),
         image_sender_(event_loop->MakeSender<CameraImage>("/camera")),
@@ -42,7 +42,7 @@ class CameraReader {
   }
 
  private:
-  const sift::CameraCalibration *FindCameraCalibration() const;
+  const calibration::CameraCalibration *FindCameraCalibration() const;
 
   // Processes an image (including sending the results).
   void ProcessImage(const cv::Mat &image);
@@ -77,8 +77,8 @@ class CameraReader {
   }
 
   aos::ShmEventLoop *const event_loop_;
-  const sift::TrainingData *const training_data_;
-  const sift::CameraCalibration *const camera_calibration_;
+  const calibration::CalibrationData *const calibration_data_;
+  const calibration::CameraCalibration *const camera_calibration_;
   V4L2Reader *const reader_;
   aos::Sender<CameraImage> image_sender_;
   aos::Sender<TargetEstimate> target_estimate_sender_;

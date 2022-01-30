@@ -100,6 +100,13 @@
     },
     {
       "name": "/pi{{ NUM }}/camera",
+      "type": "frc971.vision.calibration.CalibrationData",
+      "source_node": "pi{{ NUM }}",
+      "frequency": 2,
+      "max_size": 100000
+    },
+    {
+      "name": "/pi{{ NUM }}/camera",
       "type": "y2022.vision.TargetEstimate",
       "source_node": "pi{{ NUM }}",
       "frequency": 25,

@@ -1,16 +1,81 @@
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_py_library")
 
-cc_binary(
-    name = "camera_reader",
-    srcs = [
-        "camera_reader_main.cc",
-    ],
+flatbuffer_cc_library(
+    name = "calibration_fbs",
+    srcs = ["calibration.fbs"],
+    gen_reflections = 1,
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//y2022:__subpackages__"],
+)
+
+flatbuffer_py_library(
+    name = "calibration_fbs_python",
+    srcs = [
+        "calibration.fbs",
+    ],
+    namespace = "frc971.vision.calibration",
+    tables = [
+        "CalibrationData",
+        "CameraCalibration",
+        "TransformationMatrix",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+)
+
+py_library(
+    name = "camera_definition",
+    srcs = [
+        "camera_definition.py",
+    ],
     deps = [
-        ":camera_reader_lib",
-        "//aos:init",
-        "//aos/events:shm_event_loop",
+        "//external:python-glog",
+    ],
+)
+
+py_binary(
+    name = "create_calib_file",
+    srcs = [
+        "create_calib_file.py",
+    ],
+    args = [
+        "calibration_data.h",
+    ],
+    data = glob(["calib_files/*.json"]),
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":camera_definition",
+        "//external:python-glog",
+        "//y2022/vision:calibration_fbs_python",
+        "@bazel_tools//tools/python/runfiles",
+        "@opencv_contrib_nonfree_amd64//:python_opencv",
+    ],
+)
+
+genrule(
+    name = "run_calibration_data",
+    outs = [
+        "calibration_data.h",
+    ],
+    cmd = " ".join([
+        "$(location :create_calib_file)",
+        "$(location calibration_data.h)",
+    ]),
+    target_compatible_with = ["@platforms//os:linux"],
+    tools = [
+        ":create_calib_file",
+    ],
+)
+
+cc_library(
+    name = "calibration_data",
+    hdrs = [
+        "calibration_data.h",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -29,6 +94,8 @@ cc_library(
     visibility = ["//y2022:__subpackages__"],
     deps = [
         ":blob_detector_lib",
+        ":calibration_data",
+        ":calibration_fbs",
         ":target_estimator_lib",
         "//aos:flatbuffer_merge",
         "//aos/events:event_loop",
@@ -37,9 +104,20 @@ cc_library(
         "//frc971/vision:v4l2_reader",
         "//frc971/vision:vision_fbs",
         "//third_party:opencv",
-        "//y2020/vision/sift:sift_fbs",
-        "//y2020/vision/sift:sift_training_fbs",
-        "//y2020/vision/tools/python_code:sift_training_data",
+    ],
+)
+
+cc_binary(
+    name = "camera_reader",
+    srcs = [
+        "camera_reader_main.cc",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//y2022:__subpackages__"],
+    deps = [
+        ":camera_reader_lib",
+        "//aos:init",
+        "//aos/events:shm_event_loop",
     ],
 )
 
