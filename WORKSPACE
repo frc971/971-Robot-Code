@@ -752,7 +752,7 @@ node_repositories()
 # I'm sure there is a better path, but that works...
 yarn_install(
     name = "npm",
-    frozen_lockfile = False,
+    frozen_lockfile = True,
     package_json = "//:package.json",
     symlink_node_modules = False,
     yarn_lock = "//:yarn.lock",
