@@ -1,0 +1,12 @@
+namespace y2022.vision;
+
+// Contains the information the EKF wants from blobs from a single image.
+table TargetEstimate {
+  // Horizontal distance from the camera to the center of the upper hub
+  distance:double (id: 0);
+  // Angle from the camera to the target (horizontal angle in rad).
+  // Positive means right of center, negative means left.
+  angle_to_target:double (id: 1);
+
+  // TODO(milind): add confidence and blob stats
+}

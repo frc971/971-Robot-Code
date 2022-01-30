@@ -1,3 +1,5 @@
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+
 cc_binary(
     name = "camera_reader",
     srcs = [
@@ -26,6 +28,8 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//y2022:__subpackages__"],
     deps = [
+        ":blob_detector_lib",
+        ":target_estimator_lib",
         "//aos:flatbuffer_merge",
         "//aos/events:event_loop",
         "//aos/network:team_number",
@@ -54,6 +58,30 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "target_estimator_lib",
+    srcs = [
+        "target_estimator.cc",
+    ],
+    hdrs = [
+        "target_estimator.h",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//y2022:__subpackages__"],
+    deps = [
+        ":target_estimate_fbs",
+        "//third_party:opencv",
+    ],
+)
+
+flatbuffer_cc_library(
+    name = "target_estimate_fbs",
+    srcs = ["target_estimate.fbs"],
+    gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//y2022:__subpackages__"],
+)
+
 cc_binary(
     name = "viewer",
     srcs = [
@@ -66,6 +94,7 @@ cc_binary(
     visibility = ["//y2022:__subpackages__"],
     deps = [
         ":blob_detector_lib",
+        ":target_estimator_lib",
         "//aos:init",
         "//aos/events:shm_event_loop",
         "//frc971/vision:vision_fbs",

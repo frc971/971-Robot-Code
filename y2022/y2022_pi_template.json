@@ -99,6 +99,13 @@
       "num_senders": 18
     },
     {
+      "name": "/pi{{ NUM }}/camera",
+      "type": "y2022.vision.TargetEstimate",
+      "source_node": "pi{{ NUM }}",
+      "frequency": 25,
+      "num_senders": 2
+    }
+    {
       "name": "/logger/aos",
       "type": "aos.starter.StarterRpc",
       "source_node": "logger",
