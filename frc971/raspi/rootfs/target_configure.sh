@@ -19,28 +19,29 @@ apt-get install -y vim-nox \
   git \
   python3-pip \
   cpufrequtils \
-  libopencv-calib3d3.2 \
-  libopencv-contrib3.2 \
-  libopencv-core3.2 \
-  libopencv-features2d3.2 \
-  libopencv-flann3.2 \
-  libopencv-highgui3.2 \
-  libopencv-imgcodecs3.2 \
-  libopencv-imgproc3.2 \
-  libopencv-ml3.2 \
-  libopencv-objdetect3.2 \
-  libopencv-photo3.2 \
-  libopencv-shape3.2 \
-  libopencv-stitching3.2 \
-  libopencv-superres3.2 \
-  libopencv-video3.2 \
-  libopencv-videoio3.2 \
-  libopencv-videostab3.2 \
-  libopencv-viz3.2 \
+  libopencv-calib3d4.5 \
+  libopencv-contrib4.5 \
+  libopencv-core4.5 \
+  libopencv-features2d4.5 \
+  libopencv-flann4.5 \
+  libopencv-highgui4.5 \
+  libopencv-imgcodecs4.5 \
+  libopencv-imgproc4.5 \
+  libopencv-ml4.5 \
+  libopencv-objdetect4.5 \
+  libopencv-photo4.5 \
+  libopencv-shape4.5 \
+  libopencv-stitching4.5 \
+  libopencv-superres4.5 \
+  libopencv-video4.5 \
+  libopencv-videoio4.5 \
+  libopencv-videostab4.5 \
+  libopencv-viz4.5 \
   python3-opencv \
   libnice10 \
   pmount \
-  libnice-dev
+  libnice-dev \
+  feh
 
 echo 'GOVERNOR="performance"' > /etc/default/cpufrequtils
 
