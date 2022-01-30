@@ -20,7 +20,9 @@ struct Values {
   static constexpr double kDrivetrainEncoderCountsPerRevolution() {
     return kDrivetrainCyclesPerRevolution() * 4;
   }
-  static constexpr double kDrivetrainEncoderRatio() { return (24.0 / 52.0); }
+  static constexpr double kDrivetrainEncoderRatio() {
+    return (14.0 / 54.0) * (22.0 / 56.0);
+  }
   static constexpr double kMaxDrivetrainEncoderPulsesPerSecond() {
     return control_loops::drivetrain::kFreeSpeed / (2.0 * M_PI) *
            control_loops::drivetrain::kHighOutputRatio /
