@@ -10,3 +10,5 @@ table TargetEstimate {
 
   // TODO(milind): add confidence and blob stats
 }
+
+root_type TargetEstimate;

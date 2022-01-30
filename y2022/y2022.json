@@ -1,39 +1,23 @@
 {
-  "channels":
-  [
+  "channel_storage_duration": 2000000000,
+  "maps": [
     {
-      "name": "/superstructure",
-      "type": "y2022.control_loops.superstructure.Goal",
-      "frequency": 200
-    },
-    {
-      "name": "/superstructure",
-      "type": "y2022.control_loops.superstructure.Status",
-      "frequency": 200
-    },
-    {
-      "name": "/superstructure",
-      "type": "y2022.control_loops.superstructure.Output",
-      "frequency": 200
-    },
-    {
-      "name": "/superstructure",
-      "type": "y2022.control_loops.superstructure.Position",
-      "frequency": 200
-    }
-  ],
-  "applications": [
-    {
-      "name": "drivetrain"
-    },
-    {
-      "name": "superstructure"
+      "match": {
+        "name": "/aos",
+        "type": "aos.RobotState"
+      },
+      "rename": {
+        "name": "/roborio/aos"
+      }
     }
   ],
   "imports": [
-    "../frc971/input/robot_state_config.json",
-    "../frc971/control_loops/drivetrain/drivetrain_config.json",
-    "../frc971/autonomous/autonomous_config.json",
-    "../frc971/wpilib/wpilib_config.json"
+    "y2022_roborio.json",
+    "y2022_pi1.json",
+    "y2022_pi2.json",
+    "y2022_pi3.json",
+    "y2022_pi4.json",
+    "y2022_pi5.json",
+    "y2022_logger.json"
   ]
 }
