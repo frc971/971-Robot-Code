@@ -2,8 +2,8 @@
 
 set -xe
 
-# Full path to Raspberry Pi Buster disk image
-IMAGE="2020-08-20-raspios-buster-armhf-lite.img"
+# Full path to Raspberry Pi Bullseye disk image
+IMAGE="2021-10-30-raspios-bullseye-armhf-lite.img"
 BOOT_PARTITION="${IMAGE}.boot_partition"
 PARTITION="${IMAGE}.partition"
 
@@ -34,8 +34,11 @@ fi
 if ! grep "gpu_mem=128" "${BOOT_PARTITION}/config.txt"; then
   echo "gpu_mem=128" | sudo tee -a "${BOOT_PARTITION}/config.txt"
 fi
+# For now, disable the new libcamera driver in favor of legacy ones
+sudo sed -i s/^camera_auto_detect=1/#camera_auto_detect=1/ "${BOOT_PARTITION}/config.txt"
 
-sudo umount "${BOOT_PARTITION}"
+# Seeing a race condition with umount, so doing lazy umount
+sudo umount -l "${BOOT_PARTITION}"
 rmdir "${BOOT_PARTITION}"
 
 if mount | grep "${PARTITION}" >/dev/null ;
@@ -86,10 +89,21 @@ sudo cp 99-usb-mount.rules "${PARTITION}/etc/udev/rules.d/99-usb-mount.rules"
 target /bin/mkdir -p /home/pi/.ssh/
 cat ~/.ssh/id_rsa.pub | target tee /home/pi/.ssh/authorized_keys
 
+# Downloads and installs our target libraries
 target /bin/bash /tmp/target_configure.sh
+
+# Add a file to show when this image was last modified and by whom
+TIMESTAMP_FILE="${PARTITION}/home/pi/.ImageModifiedDate.txt"
+date > "${TIMESTAMP_FILE}"
+git rev-parse HEAD >> "${TIMESTAMP_FILE}"
+whoami >> "${TIMESTAMP_FILE}"
 
 # Run a prompt as root inside the target to poke around and check things.
 target /bin/bash --rcfile /root/.bashrc
 
-sudo umount "${PARTITION}"
+sudo umount -l "${PARTITION}"
 rmdir "${PARTITION}"
+
+# Move the image to a different name, to indicated we've modified it
+MOD_IMAGE_NAME=`echo ${IMAGE} | sed s/.img/-frc-mods.img/`
+mv ${IMAGE} ${MOD_IMAGE_NAME}
