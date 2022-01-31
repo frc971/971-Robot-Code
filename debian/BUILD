@@ -3,6 +3,10 @@ load(
     python_debs = "files",
 )
 load(
+    ":apache2.bzl",
+    apache2_debs = "files",
+)
+load(
     ":patch.bzl",
     patch_debs = "files",
 )
@@ -109,6 +113,26 @@ py_binary(
     ],
     main = "download_packages.py",
     target_compatible_with = ["@platforms//os:linux"],
+)
+
+download_packages(
+    name = "download_apache2_packages",
+    excludes = [
+        "libaprutil1-dbd-mysql",
+        "libaprutil1-dbd-odbc",
+        "libaprutil1-dbd-pgsql",
+        "libaprutil1-dbd-freetds",
+        "libstdc++6",
+        "lsb-base",
+        "debconf",
+        "libc6-dev",
+    ],
+    force_includes = [
+        "libaprutil1",
+    ],
+    packages = [
+        "apache2",
+    ],
 )
 
 download_packages(
@@ -249,6 +273,12 @@ download_packages(
 generate_deb_tarball(
     name = "python",
     files = python_debs,
+    target_compatible_with = ["@platforms//os:linux"],
+)
+
+generate_deb_tarball(
+    name = "apache2",
+    files = apache2_debs,
     target_compatible_with = ["@platforms//os:linux"],
 )
 
