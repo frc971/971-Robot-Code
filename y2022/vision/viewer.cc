@@ -16,7 +16,7 @@ DEFINE_string(capture, "",
               "If set, capture a single image and save it to this filename.");
 DEFINE_string(channel, "/camera", "Channel name for the image.");
 DEFINE_string(config, "config.json", "Path to the config file to use.");
-DEFINE_string(png_dir, "LED_Ring_exp", "Path to a set of images to display.");
+DEFINE_string(png_dir, "", "Path to a set of images to display.");
 DEFINE_bool(show_features, true, "Show the blobs.");
 
 namespace y2022 {
@@ -29,8 +29,8 @@ bool DisplayLoop() {
   int64_t image_timestamp = 0;
   const frc971::vision::CameraImage *image;
   // Read next image
-  if (!image_fetcher.FetchNext()) {
-    VLOG(2) << "Couldn't fetch next image";
+  if (!image_fetcher.Fetch()) {
+    LOG(INFO) << "Couldn't fetch image";
     return true;
   }
 
@@ -50,7 +50,8 @@ bool DisplayLoop() {
     return false;
   }
 
-  cv::Mat binarized_image, ret_image;
+  cv::Mat binarized_image;
+  cv::Mat ret_image(cv::Size(image->cols(), image->rows()), CV_8UC3);
   std::vector<std::vector<cv::Point>> unfiltered_blobs, filtered_blobs;
   std::vector<BlobDetector::BlobStats> blob_stats;
   cv::Point centroid;
