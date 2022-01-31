@@ -206,8 +206,16 @@ class AosPlot {
   // get the DrivetrainStatus.zeroing().zeroed() member.
   // Currently, this interface does not provide any support for non-numeric
   // fields or for repeated fields (or sub-messages) of any sort.
-  addMessageLine(message: MessageHandler, field: string[]): Line {
+  addMessageLine(message: MessageHandler|null, field: string[]): Line {
+    // Construct the line regardless so that we have something to return to the
+    // user.
     const line = this.plot.getDrawer().addLine();
+    if (message === null) {
+      console.warn(
+          'Not plotting field ' + field.join('.') +
+          ' because of an invalid MessageHandler.');
+      return line;
+    }
     line.setLabel(field.join('.'));
     this.lines.push(new MessageLine(message, line, field));
     return line;
@@ -242,9 +250,15 @@ export class AosPlotter {
 
   // Sets up an AOS channel as a message source. Returns a handler that can
   // be passed to addMessageLine().
-  addMessageSource(name: string, type: string): MessageHandler {
-    return this.addRawMessageSource(
-        name, type, new MessageHandler(this.connection.getSchema(type)));
+  addMessageSource(name: string, type: string): MessageHandler|null {
+    let schema = null;
+    try {
+      schema = this.connection.getSchema(type);
+    } catch (e) {
+      console.error(e);
+      return null;
+    }
+    return this.addRawMessageSource(name, type, new MessageHandler(schema));
   }
 
   // Same as addMessageSource, but allows you to specify a custom MessageHandler
@@ -252,7 +266,10 @@ export class AosPlotter {
   // create post-processed versions of individual channels.
   addRawMessageSource(
       name: string, type: string,
-      messageHandler: MessageHandler): MessageHandler {
+      messageHandler: MessageHandler|null): MessageHandler {
+    if (messageHandler === null) {
+      return null;
+    }
     this.messages.add(messageHandler);
     // Use a "reliable" handler so that we get *all* the data when we are
     // plotting from a logfile.
