@@ -7,6 +7,11 @@
 
 readonly LOCALPATH="$(basename "${1}")"
 
+if echo "${1}" | grep --quiet http; then
+  echo "Argument must not include the scheme (remove the https://)" >&2
+  exit 1
+fi
+
 set -e
 curl -L "https://${1}" -o "${LOCALPATH}"
 
