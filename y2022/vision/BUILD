@@ -32,6 +32,7 @@ cc_library(
         ":target_estimator_lib",
         "//aos:flatbuffer_merge",
         "//aos/events:event_loop",
+        "//aos/events:shm_event_loop",
         "//aos/network:team_number",
         "//frc971/vision:v4l2_reader",
         "//frc971/vision:vision_fbs",

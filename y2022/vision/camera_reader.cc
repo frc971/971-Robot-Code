@@ -5,6 +5,7 @@
 #include <opencv2/imgproc.hpp>
 
 #include "aos/events/event_loop.h"
+#include "aos/events/shm_event_loop.h"
 #include "aos/flatbuffer_merge.h"
 #include "aos/network/team_number.h"
 #include "frc971/vision/v4l2_reader.h"
@@ -14,6 +15,8 @@
 #include "y2020/vision/tools/python_code/sift_training_data.h"
 #include "y2022/vision/blob_detector.h"
 #include "y2022/vision/target_estimator.h"
+
+DEFINE_string(image_png, "", "A set of PNG images");
 
 namespace y2022 {
 namespace vision {
@@ -37,22 +40,12 @@ const sift::CameraCalibration *CameraReader::FindCameraCalibration() const {
              << " on " << team_number;
 }
 
-void CameraReader::ProcessImage(const CameraImage &image) {
+void CameraReader::ProcessImage(const cv::Mat &image_mat) {
   // Remember, we're getting YUYV images, so we start by converting to RGB
 
   // TOOD: Need to code this up for blob detection
-  cv::Mat image_mat(image.rows(), image.cols(), CV_8U);
-  CHECK(image_mat.isContinuous());
-  const int number_pixels = image.rows() * image.cols();
-  for (int i = 0; i < number_pixels; ++i) {
-    reinterpret_cast<uint8_t *>(image_mat.data)[i] =
-        image.data()->data()[i * 2];
-  }
 
-  // Now, send our two messages-- one large, with details for remote
-  // debugging(features), and one smaller
-  // TODO: Send debugging message as well
-  std::vector<std::vector<cv::Point> > filtered_blobs, unfiltered_blobs;
+  std::vector<std::vector<cv::Point>> filtered_blobs, unfiltered_blobs;
   std::vector<BlobDetector::BlobStats> blob_stats;
   cv::Mat binarized_image =
       cv::Mat::zeros(cv::Size(image_mat.cols, image_mat.rows), CV_8UC1);
@@ -69,13 +62,37 @@ void CameraReader::ProcessImage(const CameraImage &image) {
 }
 
 void CameraReader::ReadImage() {
+  // Path is for reading from the Disk.
+  if (FLAGS_image_png != "") {
+    std::vector<cv::String> file_list;
+    cv::glob(FLAGS_image_png + "/*.png", file_list, false);
+
+    for (auto file : file_list) {
+      LOG(INFO) << "Reading file " << file;
+      cv::Mat rgb_image = cv::imread(file.c_str());
+      ProcessImage(rgb_image);
+    }
+    event_loop_->Exit();
+    return;
+  }
+  // If we are not reading from the disk, we read the live camera stream.
   if (!reader_->ReadLatestImage()) {
     read_image_timer_->Setup(event_loop_->monotonic_now() +
                              std::chrono::milliseconds(10));
     return;
   }
 
-  ProcessImage(reader_->LatestImage());
+  const CameraImage &image = reader_->LatestImage();
+  cv::Mat image_mat(image.rows(), image.cols(), CV_8U);
+  CHECK(image_mat.isContinuous());
+
+  const int number_pixels = image.rows() * image.cols();
+  for (int i = 0; i < number_pixels; ++i) {
+    reinterpret_cast<uint8_t *>(image_mat.data)[i] =
+        image.data()->data()[i * 2];
+  }
+
+  ProcessImage(image_mat);
 
   reader_->SendLatestImage();
   read_image_timer_->Setup(event_loop_->monotonic_now());
