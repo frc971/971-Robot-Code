@@ -117,7 +117,7 @@ export class Connection {
       name: string, type: string,
       handler: (data: Uint8Array, sentTime: number) => void): void {
     this.addHandlerImpl(
-        name, type, TransferMethod.EVERYTHING_WITH_HISTORY, handler);
+        name, type, TransferMethod.LOSSLESS, handler);
   }
 
   /**
@@ -137,7 +137,7 @@ export class Connection {
     if (!this.handlerFuncs.has(channel.key())) {
       this.handlerFuncs.set(channel.key(), []);
     } else {
-      if (method == TransferMethod.EVERYTHING_WITH_HISTORY) {
+      if (method == TransferMethod.LOSSLESS) {
         console.warn(
             'Behavior of multiple reliable handlers is currently poorly ' +
             'defined and may not actually deliver all of the messages.');

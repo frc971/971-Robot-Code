@@ -15,7 +15,7 @@ Plotter::Plotter()
       event_loop_factory_(&config_.message()),
       event_loop_(event_loop_factory_.MakeEventLoop("plotter")),
       plot_sender_(event_loop_->MakeSender<Plot>("/analysis")),
-      web_proxy_(event_loop_.get(), -1),
+      web_proxy_(event_loop_.get(), aos::web_proxy::StoreHistory::kYes, -1),
       builder_(plot_sender_.MakeBuilder()) {
   web_proxy_.SetDataPath(kDataPath);
   event_loop_->SkipTimingReport();

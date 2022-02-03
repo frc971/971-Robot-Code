@@ -42,7 +42,8 @@ int main(int argc, char **argv) {
 
   event_loop->SkipTimingReport();
 
-  aos::web_proxy::WebProxy web_proxy(event_loop.get(), FLAGS_buffer_size);
+  aos::web_proxy::WebProxy web_proxy(
+      event_loop.get(), aos::web_proxy::StoreHistory::kYes, FLAGS_buffer_size);
 
   web_proxy.SetDataPath(FLAGS_data_dir.c_str());
 
