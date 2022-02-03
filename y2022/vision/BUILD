@@ -55,6 +55,7 @@ cc_library(
     visibility = ["//y2022:__subpackages__"],
     deps = [
         "//aos/network:team_number",
+        "//aos/time",
         "//third_party:opencv",
     ],
 )

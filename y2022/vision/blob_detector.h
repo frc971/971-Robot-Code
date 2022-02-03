@@ -29,8 +29,10 @@ class BlobDetector {
   static std::vector<BlobStats> ComputeStats(
       std::vector<std::vector<cv::Point>> blobs);
 
-  // Filter blobs to get rid of noise, too large items, etc.
-  static std::vector<std::vector<cv::Point>> FilterBlobs(
+  // Filter blobs to get rid of noise, too small/large items, and blobs that
+  // aren't in a circle. Returns a pair of filtered blobs and the average
+  // of their centroids.
+  static std::pair<std::vector<std::vector<cv::Point>>, cv::Point> FilterBlobs(
       std::vector<std::vector<cv::Point>> blobs,
       std::vector<BlobStats> blob_stats);
 
@@ -40,13 +42,13 @@ class BlobDetector {
       cv::Mat view_image,
       const std::vector<std::vector<cv::Point>> &filtered_blobs,
       const std::vector<std::vector<cv::Point>> &unfiltered_blobs,
-      const std::vector<BlobStats> &blob_stats);
+      const std::vector<BlobStats> &blob_stats, cv::Point centroid);
 
   static void ExtractBlobs(
       cv::Mat rgb_image, cv::Mat binarized_image, cv::Mat blob_image,
       std::vector<std::vector<cv::Point>> &filtered_blobs,
       std::vector<std::vector<cv::Point>> &unfiltered_blobs,
-      std::vector<BlobStats> &blob_stats);
+      std::vector<BlobStats> &blob_stats, cv::Point &centroid);
 };
 }  // namespace vision
 }  // namespace y2022

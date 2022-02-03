@@ -10,6 +10,7 @@
 #include "aos/time/time.h"
 #include "frc971/vision/vision_generated.h"
 #include "y2022/vision/blob_detector.h"
+#include "y2022/vision/target_estimator.h"
 
 DEFINE_string(capture, "",
               "If set, capture a single image and save it to this filename.");
@@ -52,16 +53,13 @@ bool DisplayLoop() {
   cv::Mat binarized_image, ret_image;
   std::vector<std::vector<cv::Point>> unfiltered_blobs, filtered_blobs;
   std::vector<BlobDetector::BlobStats> blob_stats;
+  cv::Point centroid;
   BlobDetector::ExtractBlobs(rgb_image, binarized_image, ret_image,
-                             filtered_blobs, unfiltered_blobs, blob_stats);
+                             filtered_blobs, unfiltered_blobs, blob_stats,
+                             centroid);
 
   LOG(INFO) << image->monotonic_timestamp_ns()
             << ": # blobs: " << filtered_blobs.size();
-
-  // Downsize for viewing
-  cv::resize(rgb_image, rgb_image,
-             cv::Size(rgb_image.cols / 2, rgb_image.rows / 2),
-             cv::INTER_LINEAR);
 
   cv::imshow("image", rgb_image);
   cv::imshow("blobs", ret_image);
@@ -116,8 +114,10 @@ void ViewerLocal() {
         cv::Mat::zeros(cv::Size(rgb_image.cols, rgb_image.rows), CV_8UC1);
     cv::Mat ret_image =
         cv::Mat::zeros(cv::Size(rgb_image.cols, rgb_image.rows), CV_8UC3);
+    cv::Point centroid;
     BlobDetector::ExtractBlobs(rgb_image, binarized_image, ret_image,
-                               filtered_blobs, unfiltered_blobs, blob_stats);
+                               filtered_blobs, unfiltered_blobs, blob_stats,
+                               centroid);
 
     LOG(INFO) << ": # blobs: " << filtered_blobs.size() << " (# removed: "
               << unfiltered_blobs.size() - filtered_blobs.size() << ")";

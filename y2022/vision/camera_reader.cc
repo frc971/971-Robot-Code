@@ -51,11 +51,12 @@ void CameraReader::ProcessImage(const cv::Mat &image_mat) {
       cv::Mat::zeros(cv::Size(image_mat.cols, image_mat.rows), CV_8UC1);
   cv::Mat ret_image =
       cv::Mat::zeros(cv::Size(image_mat.cols, image_mat.rows), CV_8UC3);
+  cv::Point centroid;
   BlobDetector::ExtractBlobs(image_mat, binarized_image, ret_image,
-                             filtered_blobs, unfiltered_blobs, blob_stats);
-  // TODO(milind): use actual centroid
+                             filtered_blobs, unfiltered_blobs, blob_stats,
+                             centroid);
   TargetEstimateT target = TargetEstimator::EstimateTargetLocation(
-      blob_stats[0].centroid, CameraIntrinsics(), CameraExtrinsics());
+      centroid, CameraIntrinsics(), CameraExtrinsics());
 
   auto builder = target_estimate_sender_.MakeBuilder();
   builder.CheckOk(builder.Send(TargetEstimate::Pack(*builder.fbb(), &target)));
