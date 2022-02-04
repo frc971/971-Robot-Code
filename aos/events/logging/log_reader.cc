@@ -292,8 +292,7 @@ monotonic_clock::time_point LogReader::monotonic_start_time(
       states_[configuration::GetNodeIndex(configuration(), node)].get();
   CHECK(state != nullptr) << ": Unknown node " << FlatbufferToJson(node);
 
-  // TODO(austin): Un-hard-code the 0 boot count.
-  return state->monotonic_start_time(0);
+  return state->monotonic_start_time(state->boot_count());
 }
 
 realtime_clock::time_point LogReader::realtime_start_time(
@@ -302,8 +301,7 @@ realtime_clock::time_point LogReader::realtime_start_time(
       states_[configuration::GetNodeIndex(configuration(), node)].get();
   CHECK(state != nullptr) << ": Unknown node " << FlatbufferToJson(node);
 
-  // TODO(austin): Un-hard-code the 0 boot count.
-  return state->realtime_start_time(0);
+  return state->realtime_start_time(state->boot_count());
 }
 
 void LogReader::OnStart(std::function<void()> fn) {
