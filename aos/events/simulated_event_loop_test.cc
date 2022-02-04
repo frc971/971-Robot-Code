@@ -181,6 +181,29 @@ TEST(EventSchedulerTest, DescheduleEvent) {
   EXPECT_EQ(counter, 0);
 }
 
+// Test that TemporarilyStopAndRun respects and preserves running.
+TEST(EventSchedulerTest, TemporarilyStopAndRun) {
+  int counter = 0;
+  EventSchedulerScheduler scheduler_scheduler;
+  EventScheduler scheduler(0);
+  scheduler_scheduler.AddEventScheduler(&scheduler);
+
+  scheduler_scheduler.TemporarilyStopAndRun(
+      [&]() { CHECK(!scheduler_scheduler.is_running()); });
+  ASSERT_FALSE(scheduler_scheduler.is_running());
+
+  FunctionEvent e([&]() {
+    counter += 1;
+    CHECK(scheduler_scheduler.is_running());
+    scheduler_scheduler.TemporarilyStopAndRun(
+        [&]() { CHECK(!scheduler_scheduler.is_running()); });
+    CHECK(scheduler_scheduler.is_running());
+  });
+  scheduler.Schedule(monotonic_clock::epoch() + chrono::seconds(1), &e);
+  scheduler_scheduler.Run();
+  EXPECT_EQ(counter, 1);
+}
+
 void SendTestMessage(aos::Sender<TestMessage> *sender, int value) {
   aos::Sender<TestMessage>::Builder builder = sender->MakeBuilder();
   TestMessage::Builder test_message_builder =

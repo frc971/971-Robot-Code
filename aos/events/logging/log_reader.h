@@ -23,6 +23,8 @@
 namespace aos {
 namespace logger {
 
+class EventNotifier;
+
 // We end up with one of the following 3 log file types.
 //
 // Single node logged as the source node.
@@ -73,10 +75,20 @@ class LogReader {
   // below, but can be anything as long as the locations needed to send
   // everything are available.
   void Register(SimulatedEventLoopFactory *event_loop_factory);
+
   // Registers all the callbacks to send the log file data out to an event loop
   // factory.  This does not start replaying or change the current distributed
   // time of the factory.  It does change the monotonic clocks to be right.
   void RegisterWithoutStarting(SimulatedEventLoopFactory *event_loop_factory);
+  // Runs the log until the last start time.  Register above is defined as:
+  // Register(...) {
+  //   RegisterWithoutStarting
+  //   StartAfterRegister
+  // }
+  // This should generally be considered as a stepping stone to convert from
+  // Register() to RegisterWithoutStarting() incrementally.
+  void StartAfterRegister(SimulatedEventLoopFactory *event_loop_factory);
+
   // Creates an SimulatedEventLoopFactory accessible via event_loop_factory(),
   // and then calls Register.
   void Register();
@@ -120,6 +132,14 @@ class LogReader {
       const Node *node = nullptr) const;
   realtime_clock::time_point realtime_start_time(
       const Node *node = nullptr) const;
+
+  // Sets the start and end times to replay data until for all nodes.  This
+  // overrides the --start_time and --end_time flags.  The default is to replay
+  // all data.
+  void SetStartTime(std::string start_time);
+  void SetStartTime(realtime_clock::time_point start_time);
+  void SetEndTime(std::string end_time);
+  void SetEndTime(realtime_clock::time_point end_time);
 
   // Causes the logger to publish the provided channel on a different name so
   // that replayed applications can publish on the proper channel name without
@@ -277,7 +297,7 @@ class LogReader {
     TimestampedMessage PopOldest();
 
     // Returns the monotonic time of the oldest message.
-    BootTimestamp OldestMessageTime() const;
+    BootTimestamp OldestMessageTime();
 
     size_t boot_count() const {
       // If we are replaying directly into an event loop, we can't reboot.  So
@@ -296,7 +316,7 @@ class LogReader {
       if (start_time == monotonic_clock::min_time) {
         LOG(ERROR)
             << "No start time, skipping, please figure out when this happens";
-        RunOnStart();
+        NotifyLogfileStart();
         return;
       }
       CHECK_GE(start_time, event_loop_->monotonic_now());
@@ -329,7 +349,9 @@ class LogReader {
 
     // Sets the node event loop factory for replaying into a
     // SimulatedEventLoopFactory.  Returns the EventLoop to use.
-    void SetNodeEventLoopFactory(NodeEventLoopFactory *node_event_loop_factory);
+    void SetNodeEventLoopFactory(
+        NodeEventLoopFactory *node_event_loop_factory,
+        SimulatedEventLoopFactory *event_loop_factory);
 
     // Sets and gets the event loop to use.
     void set_event_loop(EventLoop *event_loop) { event_loop_ = event_loop; }
@@ -419,6 +441,18 @@ class LogReader {
     void RunOnStart();
     void RunOnEnd();
 
+    // Handles a logfile start event to potentially call the OnStart callbacks.
+    void NotifyLogfileStart();
+    // Handles a start time flag start event to potentially call the OnStart
+    // callbacks.
+    void NotifyFlagStart();
+
+    // Handles a logfile end event to potentially call the OnEnd callbacks.
+    void NotifyLogfileEnd();
+    // Handles a end time flag start event to potentially call the OnEnd
+    // callbacks.
+    void NotifyFlagEnd();
+
     // Unregisters everything so we can destory the event loop.
     // TODO(austin): Is this needed?  OnShutdown should be able to serve this
     // need.
@@ -436,6 +470,18 @@ class LogReader {
         }
       }
     }
+
+    // Creates and registers the --start_time and --end_time event callbacks.
+    void SetStartTimeFlag(realtime_clock::time_point start_time);
+    void SetEndTimeFlag(realtime_clock::time_point end_time);
+
+    // Notices the next message to update the start/end time callbacks.
+    void ObserveNextMessage(monotonic_clock::time_point monotonic_event,
+                            realtime_clock::time_point realtime_event);
+
+    // Clears the start and end time flag handlers so we can delete the event
+    // loop.
+    void ClearTimeFlags();
 
     // Sets the next wakeup time on the replay callback.
     void Setup(monotonic_clock::time_point next_time) {
@@ -516,6 +562,8 @@ class LogReader {
 
     // Factory (if we are in sim) that this loop was created on.
     NodeEventLoopFactory *node_event_loop_factory_ = nullptr;
+    SimulatedEventLoopFactory *event_loop_factory_ = nullptr;
+
     std::unique_ptr<EventLoop> event_loop_unique_ptr_;
     // Event loop.
     const Node *node_ = nullptr;
@@ -523,6 +571,9 @@ class LogReader {
     // And timer used to send messages.
     TimerHandler *timer_handler_ = nullptr;
     TimerHandler *startup_timer_ = nullptr;
+
+    std::unique_ptr<EventNotifier> start_event_notifier_;
+    std::unique_ptr<EventNotifier> end_event_notifier_;
 
     // Filters (or nullptr if it isn't a forwarded channel) for each channel.
     // This corresponds to the object which is shared among all the channels
@@ -598,6 +649,9 @@ class LogReader {
 
   // Whether to exit the SimulatedEventLoop when we finish reading the logs.
   bool exit_on_finish_ = true;
+
+  realtime_clock::time_point start_time_ = realtime_clock::min_time;
+  realtime_clock::time_point end_time_ = realtime_clock::max_time;
 };
 
 }  // namespace logger

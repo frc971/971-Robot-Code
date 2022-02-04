@@ -407,7 +407,9 @@ class Sender {
   // Returns the name of the underlying queue.
   const Channel *channel() const { return sender_->channel(); }
 
+  // TODO(austin): Deprecate the operator bool.
   operator bool() const { return sender_ ? true : false; }
+  bool valid() const { return static_cast<bool>(sender_); }
 
   // Returns the time_points that the last message was sent at.
   aos::monotonic_clock::time_point monotonic_sent_time() const {
