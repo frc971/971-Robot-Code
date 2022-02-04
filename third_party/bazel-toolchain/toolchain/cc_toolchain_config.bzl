@@ -46,6 +46,7 @@ def cc_toolchain_config(
         copts,
         opt_copts,
         dbg_copts,
+        fastbuild_copts,
         linkopts,
         host_tools_info = {}):
     host_os_arch_key = _os_arch_pair(host_os, host_arch)
@@ -155,6 +156,9 @@ def cc_toolchain_config(
         "-DNDEBUG",
         "-ffunction-sections",
         "-fdata-sections",
+    ]
+
+    fastbuild_compile_flags = [
     ]
 
     link_flags = [
@@ -396,6 +400,7 @@ def cc_toolchain_config(
     compile_flags.extend(copts)
     dbg_compile_flags.extend(dbg_copts)
     opt_compile_flags.extend(opt_copts)
+    fastbuild_compile_flags.extend(fastbuild_copts)
     link_flags.extend(linkopts)
 
     # Source: https://cs.opensource.google/bazel/bazel/+/master:tools/cpp/unix_cc_toolchain_config.bzl
@@ -414,6 +419,7 @@ def cc_toolchain_config(
         compile_flags = compile_flags,
         dbg_compile_flags = dbg_compile_flags,
         opt_compile_flags = opt_compile_flags,
+        fastbuild_compile_flags = fastbuild_compile_flags,
         cxx_flags = cxx_flags,
         c_flags = conlyopts,
         compile_not_cxx_flags = compile_not_cxx_flags,
