@@ -76,6 +76,7 @@ filegroup(
     srcs = [
         ":flags_compiler_inputs",
         "//tools/cpp/arm-frc-linux-gnueabi:as",
+        "//tools/cpp/arm-frc-linux-gnueabi:libs",
         "//tools/cpp/arm-frc-linux-gnueabi:tool-wrappers",
         "@arm_frc_linux_gnueabi_repo//:compiler_pieces",
     ],

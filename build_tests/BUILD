@@ -2,6 +2,7 @@ load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library")
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_py_library")
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 load("//tools/build_rules:apache.bzl", "apache_wrapper")
+load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library", "rust_test")
 
 cc_test(
     name = "gflags_build_test",
@@ -125,4 +126,24 @@ apache_wrapper(
     name = "apache_https_demo",
     binary = ":dummy_http_server",
     target_compatible_with = ["@platforms//cpu:x86_64"],
+)
+
+rust_library(
+    name = "hello_lib",
+    srcs = ["hello_lib.rs"],
+    target_compatible_with = ["@platforms//os:linux"],
+)
+
+rust_test(
+    name = "hello_lib_test",
+    srcs = ["hello_lib.rs"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [":hello_lib"],
+)
+
+rust_binary(
+    name = "rust_hello",
+    srcs = ["rust_hello.rs"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [":hello_lib"],
 )
