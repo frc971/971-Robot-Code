@@ -175,13 +175,19 @@ static int16_t encoder2_count = 0;
 
 static uint32_t data_collect_timestamp = 0;
 
+// if we need to reset the imu
+static bool reset_imu = false;
+// number of consectuive checksums that are mismatched or zero
+static uint suspicious_checksums = 0;
+
 // useful debug counters
-static uint checksum_mismatch_count;
-static uint message_recieved_count;
-static uint message_sent_count;
+static uint imu_reset_count = 0;
+static uint checksum_mismatch_count = 0;
+static uint message_recieved_count = 0;
+static uint message_sent_count = 0;
 // the number of times we had to defer sending new data because another
 // transfer was still in progress
-static uint timing_overrun_count;
+static uint timing_overrun_count = 0;
 
 // the time it takes from servicing DR_IMU to finishing the transfer to the pi
 static int send_time = 0;
@@ -255,7 +261,7 @@ static uint32_t calculate_crc32(uint8_t *data, size_t len) {
   return crc;
 }
 
-static bool check_checksum(uint16_t *buf) {
+static uint16_t check_checksum(uint16_t *buf) {
   uint16_t sum = 0;
   for (int i = 1; i < IMU_NUM_ITEMS - 1; i++) {
     uint16_t low = buf[i] & 0xff;
@@ -264,8 +270,7 @@ static bool check_checksum(uint16_t *buf) {
     sum += high + low;
   }
 
-  uint16_t checksum = buf[IMU_NUM_ITEMS - 1];
-  return sum == checksum;
+  return sum;
 }
 
 static void zero_yaw(double yaw) {
@@ -348,9 +353,17 @@ void imu_read_finished() {
   // TODO: check status and if necessary set flag to reset in main loop
 
   message_recieved_count++;
-  bool checksum_passed = check_checksum(imu_data_buffer);
-  if (!checksum_passed) {
+  uint16_t computed_checksum = check_checksum(imu_data_buffer);
+  uint16_t given_checksum = imu_data_buffer[IMU_NUM_ITEMS - 1];
+
+  if (computed_checksum != given_checksum) {
     checksum_mismatch_count++;
+    for (size_t i = 0; i < IMU_NUM_ITEMS; i++) {
+      // make it clear that this data is bad
+      imu_data_buffer[i] = 0;
+    }
+    // and set an unused bit of DIAG_STAT
+    imu_data_buffer[1] = 1u << 0;
   } else {
     static const double dt = 0.0005;  // seconds
     int32_t z_gyro_out;
@@ -366,10 +379,23 @@ void imu_read_finished() {
     // 0 to 360
     uint16_t heading_level = (int16_t)(fmod(yaw, 360) / 360.0 * PWM_TOP);
     pwm_set_gpio_level(HEADING_PWM, heading_level);
-
-    // fill out message and add it to the queue
-    pack_pi_packet();
   }
+
+  // if 5 or more consecutive checksums are zero, then something weird is going
+  // on with the imu
+  if (computed_checksum != given_checksum || computed_checksum == 0 ||
+      given_checksum == 0) {
+    suspicious_checksums++;
+  } else {
+    suspicious_checksums = 0;
+  }
+
+  if (suspicious_checksums >= 5) {
+    reset_imu = true;
+  }
+
+  // fill out message and add it to the queue
+  pack_pi_packet();
 
   // TODO: this has a sleep in it
   // stay in sync with the pi by resetting the spi fifos each transfer
@@ -396,7 +422,6 @@ void maybe_send_pi_packet() {
     return;
   }
 
-  gpio_put(DR_PI, 1);
   memcpy(pi_sending_buffer, pi_staging_buffer, PI_NUM_ITEMS);
 
   dma_channel_configure(pi_dma_tx, &pi_tx_config,
@@ -418,6 +443,7 @@ void maybe_send_pi_packet() {
 
   // start both at exactly the same time
   dma_start_channel_mask((1u << pi_dma_tx) | (1u << pi_dma_rx));
+  gpio_put(DR_PI, 1);
 }
 
 void pi_transfer_finished() {
@@ -427,6 +453,74 @@ void pi_transfer_finished() {
   send_time = time_us_32() - data_collect_timestamp;
 
   dma_hw->ints1 = 1u << pi_dma_rx;
+}
+
+void setup_adis16505() {
+  gpio_set_irq_enabled(DR_IMU, GPIO_IRQ_EDGE_RISE, false);
+
+  while (true) {
+    adis16505_reset();
+    //   See if SPI is working - interrogate the device for its product ID
+    //   number, should be 0x4079
+    uint16_t id = read_register(PROD_ID);
+    if (id == EXPECTED_PROD_ID) {
+      printf("Product id: 0x%04x == expected 0x%04x\n", id, EXPECTED_PROD_ID);
+      break;
+    } else {
+      printf("Got 0x%04x for prod id, expected 0x%04x\ntrying again\n", id,
+             EXPECTED_PROD_ID);
+    }
+  }
+
+  uint16_t firmware_revision = read_register(FIRM_REV);
+  uint16_t firmware_day_month = read_register(FIRM_DM);
+  uint16_t firmware_year = read_register(FIRM_Y);
+  uint16_t serial_number = read_register(SERIAL_NUM);
+
+  printf(
+      "Firmware revision: 0x%04x, \nFirmware day month: 0x%04x, \nFirmware "
+      "year: "
+      "0x%04x, \nSerial number: 0x%04x, \n",
+      firmware_revision, firmware_day_month, firmware_year, serial_number);
+
+  // run self test
+  int num_failures = 0;
+  while (true) {
+    write_register(GLOB_CMD, 1u << 2);
+    sleep_ms(24);
+    uint16_t diag_stat = read_register(DIAG_STAT);
+
+    // check the sensor failure bit
+    bool sensor_failure = diag_stat & (1u << 5);
+    printf("Diag stat: 0b%016b, \n", diag_stat);
+
+    if (sensor_failure) {
+      num_failures++;
+      printf("%d failures, trying again\n", num_failures);
+    } else {
+      break;
+    }
+  }
+
+  write_register(FILT_CTRL, 0 /* no filtering */);
+  write_register(
+      MSC_CTRL,
+      (1u << 9) /* enable 32-bit mode for burst reads */ |
+          (0u << 8) /* send gyro and accelerometer data in burst mode */ |
+          (1u << 7) /* enable gyro linear g compensation */ |
+          (1u << 6) /* enable point of percussion alignment */ |
+          (0u << 2) /* internal clock mode */ |
+          (0u << 1) /* sync polarity, doesn't matter */ |
+          (1u << 0) /* data ready is active high */);
+  // Rate of the output will be 2000 / (DEC_RATE + 1) Hz.
+  write_register(DEC_RATE, 0 /* no decimation */);
+
+  sleep_us(200);
+
+  imu_reset_count++;
+
+  gpio_set_irq_enabled_with_callback(DR_IMU, GPIO_IRQ_EDGE_RISE, true,
+                                     &gpio_irq_handler);
 }
 
 int main() {
@@ -587,67 +681,7 @@ int main() {
       "%f, PWM TOP: %d\n",
       clock_get_hz(clk_sys), PWM_FREQ_HZ, divisor, PWM_TOP);
 
-  while (true) {
-    adis16505_reset();
-    //   See if SPI is working - interrogate the device for its product ID
-    //   number, should be 0x4079
-    uint16_t id = read_register(PROD_ID);
-    if (id == EXPECTED_PROD_ID) {
-      printf("Product id: 0x%04x == expected 0x%04x\n", id, EXPECTED_PROD_ID);
-      break;
-    } else {
-      printf("Got 0x%04x for prod id, expected 0x%04x\ntrying again\n", id,
-             EXPECTED_PROD_ID);
-    }
-  }
-
-  uint16_t firmware_revision = read_register(FIRM_REV);
-  uint16_t firmware_day_month = read_register(FIRM_DM);
-  uint16_t firmware_year = read_register(FIRM_Y);
-  uint16_t serial_number = read_register(SERIAL_NUM);
-
-  printf(
-      "Firmware revision: 0x%04x, \nFirmware day month: 0x%04x, \nFirmware "
-      "year: "
-      "0x%04x, \nSerial number: 0x%04x, \n",
-      firmware_revision, firmware_day_month, firmware_year, serial_number);
-
-  // run self test
-  int num_failures = 0;
-  while (true) {
-    write_register(GLOB_CMD, 1u << 2);
-    sleep_ms(24);
-    uint16_t diag_stat = read_register(DIAG_STAT);
-
-    // check the sensor failure bit
-    bool sensor_failure = diag_stat & (1u << 5);
-    printf("Diag stat: 0b%016b, \n", diag_stat);
-
-    if (sensor_failure) {
-      num_failures++;
-      printf("%d failures, trying again\n", num_failures);
-    } else {
-      break;
-    }
-  }
-
-  write_register(FILT_CTRL, 0 /* no filtering */);
-  write_register(
-      MSC_CTRL,
-      (1u << 9) /* enable 32-bit mode for burst reads */ |
-          (0u << 8) /* send gyro and accelerometer data in burst mode */ |
-          (1u << 7) /* enable gyro linear g compensation */ |
-          (1u << 6) /* enable point of percussion alignment */ |
-          (0u << 2) /* internal clock mode */ |
-          (0u << 1) /* sync polarity, doesn't matter */ |
-          (1u << 0) /* data ready is active high */);
-  // Rate of the output will be 2000 / (DEC_RATE + 1) Hz.
-  write_register(DEC_RATE, 0 /* no decimation */);
-
-  sleep_us(200);
-
-  gpio_set_irq_enabled_with_callback(DR_IMU, GPIO_IRQ_EDGE_RISE, true,
-                                     &gpio_irq_handler);
+  setup_adis16505();
 
   while (!yaw_zeroed) {
     dma_channel_wait_for_finish_blocking(imu_dma_rx);
@@ -663,16 +697,24 @@ int main() {
     // can get a good picture of what's going on without things moving around
     sleep_us(100);
 
+    if (reset_imu) {
+      printf("Triggered IMU reset, resetting\n");
+      setup_adis16505();
+      reset_imu = false;
+    }
+
     // debug
     // one printf is faster than many printfs
     printf(
         "Z pos is %f encoder: %d %d\n"
         "Num failed checksums: %d, Total messages recieved: %d,\n"
         "Num messages to pi: %d, Timing overrun count: %d,\n"
-        "Send time: %d us\n",
+        "Send time: %d us, suspicious checksum count: %u,\n"
+        "IMU reset count: %d, checksum: %u,\n",
         yaw, encoder1_count, encoder2_count, checksum_mismatch_count,
         message_recieved_count, message_sent_count, timing_overrun_count,
-        send_time);
+        send_time, suspicious_checksums, imu_reset_count,
+        imu_data_buffer[IMU_NUM_ITEMS - 1]);
 
     // allow the user to enter the bootloader without removing power or having
     // to install a reset button
