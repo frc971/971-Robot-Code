@@ -45,7 +45,7 @@ class BlobDetector {
       const std::vector<BlobStats> &blob_stats, cv::Point centroid);
 
   static void ExtractBlobs(
-      cv::Mat rgb_image, cv::Mat binarized_image, cv::Mat blob_image,
+      cv::Mat rgb_image, cv::Mat &binarized_image, cv::Mat blob_image,
       std::vector<std::vector<cv::Point>> &filtered_blobs,
       std::vector<std::vector<cv::Point>> &unfiltered_blobs,
       std::vector<BlobStats> &blob_stats, cv::Point &centroid);
