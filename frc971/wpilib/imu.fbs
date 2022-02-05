@@ -45,6 +45,11 @@ table ADIS16470DiagStat {
   // Operation section for more details on conditions that may cause this bit to
   // be set to 1.
   data_path_overrun:bool (id: 6);
+
+  // True indicates that the Raspberry Pi Pico recieved a packet
+  // from the imu that had a bad checksum but still sent a message
+  // containing a timestamp and encoder values.
+  checksum_mismatch:bool (id:7);
 }
 
 // Values returned from an IMU.
@@ -86,6 +91,24 @@ table IMUValues {
   // CLOCK_MONOTONIC time in nanoseconds when the values were captured,
   // converted from fpga_timestamp.
   monotonic_timestamp_ns:long (id: 12);
+
+  // The timestamp when the values were captured by the Raspberry Pi Pico.
+  // This has microsecond precision.
+  pico_timestamp_us:int (id:20);
+
+  // The number of this reading produced from a 16-bit counter.
+  data_counter:int (id:19);
+
+  // The number of messages recieved by the Raspberry Pi that had bad checksums
+  failed_checksums:int (id:21);
+  // True if this packet has a bad checksum
+  // from the Raspberry Pi Pico to the Raspberry Pi.
+  checksum_failed:bool (id:22);
+
+  // The position of the left drivetrain encoder in encoder ticks
+  left_encoder:int (id: 17);
+  // The position of the right drivetrain encoder in encoder ticks
+  right_encoder:int (id: 18);
 
   // For an ADIS16470, the DIAG_STAT value immediately after reset.
   start_diag_stat:ADIS16470DiagStat (id: 13);

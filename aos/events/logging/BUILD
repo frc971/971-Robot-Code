@@ -134,10 +134,10 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":buffer_encoder",
-        ":crc32",
         ":logger_fbs",
         "//aos:configuration_fbs",
         "//aos/containers:resizeable_buffer",
+        "//aos/util:crc32",
         "@com_github_google_flatbuffers//:flatbuffers",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/types:span",
@@ -464,13 +464,4 @@ flatbuffer_cc_library(
     srcs = ["test_message.fbs"],
     gen_reflections = 1,
     target_compatible_with = ["@platforms//os:linux"],
-)
-
-cc_library(
-    name = "crc32",
-    srcs = ["crc32.cc"],
-    hdrs = ["crc32.h"],
-    deps = [
-        "@com_google_absl//absl/types:span",
-    ],
 )

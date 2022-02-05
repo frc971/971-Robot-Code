@@ -257,6 +257,15 @@ cc_test(
     ],
 )
 
+cc_library(
+    name = "crc32",
+    srcs = ["crc32.cc"],
+    hdrs = ["crc32.h"],
+    deps = [
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
 py_library(
     name = "python_init",
     srcs = ["__init__.py"],

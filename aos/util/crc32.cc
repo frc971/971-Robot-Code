@@ -1,4 +1,4 @@
-#include "aos/events/logging/crc32.h"
+#include "aos/util/crc32.h"
 
 namespace aos {
 
@@ -53,9 +53,8 @@ uint32_t ComputeCrc32(const absl::Span<uint8_t> data) {
   return AccumulateCrc32(data, std::nullopt);
 }
 
-uint32_t AccumulateCrc32(
-    const absl::Span<uint8_t> data,
-    std::optional<uint32_t> current_checksum) {
+uint32_t AccumulateCrc32(const absl::Span<uint8_t> data,
+                         std::optional<uint32_t> current_checksum) {
   uint32_t crc =
       current_checksum.has_value() ? current_checksum.value() : 0xFF'FF'FF'FF;
   for (const uint8_t n : data) {

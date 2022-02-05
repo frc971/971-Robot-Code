@@ -28,6 +28,7 @@ robot_downloader(
     binaries = [
         "//y2020/vision:calibration",
         "//y2022/vision:viewer",
+        "//y2022/localizer:imu_main",
     ],
     data = [
         ":config",

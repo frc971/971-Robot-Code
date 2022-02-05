@@ -1,6 +1,6 @@
 #include "aos/events/logging/snappy_encoder.h"
 
-#include "aos/events/logging/crc32.h"
+#include "aos/util/crc32.h"
 #include "external/snappy/snappy.h"
 
 namespace aos::logger {
