@@ -7,6 +7,7 @@ cc_toolchain_suite(
     toolchains = {
         "k8": "@llvm_toolchain//:cc-clang-x86_64-linux",
         "armv7": "@llvm_toolchain//:cc-clang-armv7-linux",
+        "arm64": "@llvm_toolchain//:cc-clang-aarch64-linux",
         "roborio": ":cc-compiler-roborio",
         "cortex-m4f": ":cc-compiler-cortex-m4f",
         "rp2040": ":cc-compiler-rp2040",

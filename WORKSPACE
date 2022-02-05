@@ -51,6 +51,10 @@ load(
     python_gtk_debs = "files",
 )
 load(
+    "//debian:opencv_arm64.bzl",
+    opencv_arm64_debs = "files",
+)
+load(
     "//debian:opencv_armhf.bzl",
     opencv_armhf_debs = "files",
 )
@@ -104,6 +108,8 @@ generate_repositories_for_debs(arm_frc_gnueabi_deps_debs)
 
 generate_repositories_for_debs(python_gtk_debs)
 
+generate_repositories_for_debs(opencv_arm64_debs)
+
 generate_repositories_for_debs(opencv_armhf_debs)
 
 generate_repositories_for_debs(opencv_amd64_debs)
@@ -136,6 +142,12 @@ llvm(
 llvm(
     name = "llvm_armv7",
     distribution = "clang+llvm-%s-armv7a-linux-gnueabihf.tar.xz" % llvm_version,
+    llvm_version = llvm_version,
+)
+
+llvm(
+    name = "llvm_aarch64",
+    distribution = "clang+llvm-%s-aarch64-linux-gnu.tar.xz" % llvm_version,
     llvm_version = llvm_version,
 )
 
@@ -189,40 +201,49 @@ llvm_toolchain(
     conlyopts = {
         "linux-x86_64": llvm_conlyopts,
         "linux-armv7": llvm_conlyopts,
+        "linux-aarch64": llvm_conlyopts,
     },
     copts = {
         "linux-x86_64": llvm_copts,
         "linux-armv7": llvm_copts,
+        "linux-aarch64": llvm_copts,
     },
     cxxopts = {
         "linux-x86_64": llvm_cxxopts,
         "linux-armv7": llvm_cxxopts,
+        "linux-aarch64": llvm_cxxopts,
     },
     dbg_copts = {
         "linux-x86_64": llvm_dbg_copts,
         "linux-armv7": llvm_dbg_copts,
+        "linux-aarch64": llvm_dbg_copts,
     },
     fastbuild_copts = {
         "linux-x86_64": llvm_fastbuild_copts,
         "linux-armv7": llvm_fastbuild_copts,
+        "linux-aarch64": llvm_fastbuild_copts,
     },
     llvm_version = llvm_version,
     opt_copts = {
         "linux-x86_64": llvm_opt_copts,
         "linux-armv7": llvm_opt_copts,
+        "linux-aarch64": llvm_opt_copts,
     },
     standard_libraries = {
         "linux-x86_64": "libstdc++-10",
         "linux-armv7": "libstdc++-10",
+        "linux-aarch64": "libstdc++-10",
     },
     static_libstdcxx = False,
     sysroot = {
         "linux-x86_64": "@amd64_debian_sysroot//:sysroot_files",
         "linux-armv7": "@armhf_debian_rootfs//:sysroot_files",
+        "linux-aarch64": "@arm64_debian_rootfs//:sysroot_files",
     },
     target_toolchain_roots = {
         "linux-x86_64": "@llvm_k8//",
         "linux-armv7": "@llvm_armv7//",
+        "linux-aarch64": "@llvm_aarch64//",
     },
     toolchain_roots = {
         "linux-x86_64": "@llvm_k8//",
@@ -382,6 +403,17 @@ http_archive(
     build_file = "@//:compilers/debian_rootfs.BUILD",
     sha256 = "734f26a0cfc943cc3cae88412536186adfc4ed148cc167e6ffb298497c686280",
     url = "https://www.frc971.org/Build-Dependencies/2021-10-30-raspios-bullseye-armhf-lite_rootfs.tar.bz2",
+)
+
+# The main partition from https://downloads.raspberrypi.org/raspios_lite_armhf/images/raspios_lite_armhf-2021-11-08/2021-10-30-raspios-bullseye-armhf-lite.zip.sig
+# The following files and folders are removed to make bazel happy with it:
+#   usr/share/ca-certificates
+#   lib/systemd/system/system-systemd\\x2dcryptsetup.slice
+http_archive(
+    name = "arm64_debian_rootfs",
+    build_file = "@//:compilers/debian_rootfs.BUILD",
+    sha256 = "7e6ad432fec0a36f8b66c3fc2ab8795ea446e61f7dce7a206b55602677cf0904",
+    url = "https://www.frc971.org/Build-Dependencies/2021-10-30-raspios-bullseye-arm64-lite_rootfs.tar.bz2",
 )
 
 # Created with:
@@ -813,6 +845,7 @@ rust_repository_set(
     extra_target_triples = [
         "arm-unknown-linux-gnueabi",
         "armv7-unknown-linux-gnueabihf",
+        "aarch64-unknown-linux-gnu",
     ],
     version = "1.56.1",
 )
@@ -856,6 +889,14 @@ filegroup(
     url = "https://www.frc971.org/Build-Dependencies/2021-10-03_superstructure_shoot_balls.tar.gz",
 )
 
+# OpenCV arm64 (for raspberry pi)
+http_archive(
+    name = "opencv_arm64",
+    build_file = "@//debian:opencv.BUILD",
+    sha256 = "d284fae46ca710cf24c81ff7ace34929773466bff38f365a80371bea3b36a2ed",
+    url = "https://www.frc971.org/Build-Dependencies/opencv_arm64.tar.gz",
+)
+
 # OpenCV armhf (for raspberry pi)
 http_archive(
     name = "opencv_armhf",
@@ -880,6 +921,19 @@ http_archive(
     sha256 = "c67185d50a99adba86f6b2cc43c7e2cf11bcdfba9052d05e764a89b456a50446",
     strip_prefix = "halide/",
     url = "https://www.frc971.org/Build-Dependencies/halide-linux-64-gcc53-800-65c26cba6a3eca2d08a0bccf113ca28746012cc3.tgz",
+)
+
+# Downloaded from:
+# https://github.com/halide/Halide/releases/download/v8.0.0/halide-arm64-linux-64-trunk-65c26cba6a3eca2d08a0bccf113ca28746012cc3.tgz
+# which is "Halide 8.0.0" at https://github.com/halide/Halide/releases.
+# The "2019/08/27" release was renamed as per the release notes:
+# https://github.com/halide/Halide/releases/tag/v8.0.0
+http_archive(
+    name = "halide_arm64",
+    build_file = "@//debian:halide.BUILD",
+    sha256 = "97b3e54565cd9df52abdd6452f3720ffd38861524154d74ae3d20dc949ed2a63",
+    strip_prefix = "halide/",
+    url = "https://www.frc971.org/Build-Dependencies/halide-arm64-linux-64-trunk-65c26cba6a3eca2d08a0bccf113ca28746012cc3.tgz",
 )
 
 # Downloaded from:

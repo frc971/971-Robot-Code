@@ -54,7 +54,7 @@ cc_library(
         "@boringssl//:crypto",
     ] + select({
         "//tools:cpu_k8": [":lzma_encoder"],
-        "//tools:cpu_aarch64": [":lzma_encoder"],
+        "//tools:cpu_arm64": [":lzma_encoder"],
         "//conditions:default": [],
     }),
 )
@@ -421,7 +421,7 @@ cc_test(
     srcs = ["logger_test.cc"],
     copts = select({
         "//tools:cpu_k8": ["-DLZMA=1"],
-        "//tools:cpu_aarch64": ["-DLZMA=1"],
+        "//tools:cpu_arm64": ["-DLZMA=1"],
         "//conditions:default": [],
     }),
     data = [

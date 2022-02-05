@@ -264,7 +264,7 @@ template <typename MatrixType>
 struct matrix_exp_computeUV<MatrixType, long double>
 {
   template <typename ArgType>
-  static void run(const ArgType& arg, MatrixType& U, MatrixType& V, int& squarings)
+  static void run(const ArgType& arg, [[maybe_unused]] MatrixType& U, [[maybe_unused]] MatrixType& V, int& squarings)
   {
 #if   LDBL_MANT_DIG == 53   // double precision
     matrix_exp_computeUV<MatrixType, double>::run(arg, U, V, squarings);
@@ -273,7 +273,7 @@ struct matrix_exp_computeUV<MatrixType, long double>
   
     using std::frexp;
     using std::pow;
-    const long double l1norm = arg.cwiseAbs().colwise().sum().maxCoeff();
+    [[maybe_unused]] const long double l1norm = arg.cwiseAbs().colwise().sum().maxCoeff();
     squarings = 0;
   
 #if LDBL_MANT_DIG <= 64   // extended precision
