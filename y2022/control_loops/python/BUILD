@@ -48,10 +48,26 @@ py_library(
     ],
 )
 
+py_binary(
+    name = "intake",
+    srcs = [
+        "intake.py",
+    ],
+    legacy_create_init = False,
+    target_compatible_with = ["@platforms//cpu:x86_64"],
+    deps = [
+        ":python_init",
+        "//external:python-gflags",
+        "//external:python-glog",
+        "//frc971/control_loops/python:angular_system",
+        "//frc971/control_loops/python:controls",
+    ],
+)
+
 py_library(
     name = "python_init",
     srcs = ["__init__.py"],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
-    deps = ["//y2020/control_loops:python_init"],
+    deps = ["//y2022/control_loops:python_init"],
 )

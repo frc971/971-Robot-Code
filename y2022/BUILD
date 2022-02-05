@@ -232,3 +232,10 @@ cc_binary(
         "//y2022/control_loops/superstructure:superstructure_status_fbs",
     ],
 )
+
+py_library(
+    name = "python_init",
+    srcs = ["__init__.py"],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+)
