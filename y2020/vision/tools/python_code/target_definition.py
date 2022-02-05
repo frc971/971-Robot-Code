@@ -136,8 +136,7 @@ def load_training_data():
         "target_definitions/ideal_power_port_red.json",
         "target_definitions/ideal_power_port_blue.json")
     training_target_list = TargetData.from_jsons(
-        "target_definitions/cc_power_port_red_base_2021-10-29_15-08-50.json",
-        "target_definitions/cc_power_port_blue_base_2021-10-29_15-14-21.json")
+        "target_definitions/mvhs_power_port_red_base_2021-11-06_14-18-22.json")
     return ideal_target_list, training_target_list
 
 
