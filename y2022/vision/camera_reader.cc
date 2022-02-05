@@ -10,10 +10,8 @@
 #include "aos/network/team_number.h"
 #include "frc971/vision/v4l2_reader.h"
 #include "frc971/vision/vision_generated.h"
-#include "y2020/vision/sift/sift_generated.h"
-#include "y2020/vision/sift/sift_training_generated.h"
-#include "y2020/vision/tools/python_code/sift_training_data.h"
 #include "y2022/vision/blob_detector.h"
+#include "y2022/vision/calibration_generated.h"
 #include "y2022/vision/target_estimator.h"
 
 DEFINE_string(image_png, "", "A set of PNG images");
@@ -23,11 +21,12 @@ namespace vision {
 
 using namespace frc971::vision;
 
-const sift::CameraCalibration *CameraReader::FindCameraCalibration() const {
+const calibration::CameraCalibration *CameraReader::FindCameraCalibration()
+    const {
   const std::string_view node_name = event_loop_->node()->name()->string_view();
   const int team_number = aos::network::GetTeamNumber();
-  for (const sift::CameraCalibration *candidate :
-       *training_data_->camera_calibrations()) {
+  for (const calibration::CameraCalibration *candidate :
+       *calibration_data_->camera_calibrations()) {
     if (candidate->node_name()->string_view() != node_name) {
       continue;
     }

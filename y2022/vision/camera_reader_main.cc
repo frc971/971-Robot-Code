@@ -18,24 +18,24 @@ void CameraReaderMain() {
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig(FLAGS_config);
 
-  const aos::FlatbufferSpan<sift::TrainingData> training_data(
-      SiftTrainingData());
-  CHECK(training_data.Verify());
+  const aos::FlatbufferSpan<calibration::CalibrationData> calibration_data(
+      CalibrationData());
+  CHECK(calibration_data.Verify());
 
   aos::ShmEventLoop event_loop(&config.message());
 
   // First, log the data for future reference.
   {
-    aos::Sender<sift::TrainingData> training_data_sender =
-        event_loop.MakeSender<sift::TrainingData>("/camera");
-    CHECK_EQ(training_data_sender.Send(training_data),
+    aos::Sender<calibration::CalibrationData> calibration_data_sender =
+        event_loop.MakeSender<calibration::CalibrationData>("/camera");
+    CHECK_EQ(calibration_data_sender.Send(calibration_data),
              aos::RawSender::Error::kOk);
   }
 
   V4L2Reader v4l2_reader(&event_loop, "/dev/video0");
   v4l2_reader.SetExposure(FLAGS_exposure);
 
-  CameraReader camera_reader(&event_loop, &training_data.message(),
+  CameraReader camera_reader(&event_loop, &calibration_data.message(),
                              &v4l2_reader);
 
   event_loop.Run();

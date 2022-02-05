@@ -1,0 +1,55 @@
+namespace frc971.vision.calibration;
+
+table TransformationMatrix {
+  // The matrix data for a row-major 4x4 homogeneous transformation matrix.
+  // This implies the bottom row is (0, 0, 0, 1).
+  data:[float] (id: 0);
+}
+
+// Calibration information for a given camera on a given robot.
+table CameraCalibration {
+  // The name of the camera node which this calibration data applies to.
+  node_name:string (id: 0);
+  // The team number of the robot which this calibration data applies to.
+  team_number:int (id: 1);
+
+  // Intrinsics for the camera.
+  //
+  // This is the standard OpenCV intrinsics matrix in row major order (3x3).
+  intrinsics:[float] (id: 2);
+
+  // Fixed extrinsics for the camera. This transforms from camera coordinates to
+  // robot coordinates. For example: multiplying (0, 0, 0, 1) by this results in
+  // the position of the camera aperture in robot coordinates.
+  fixed_extrinsics:TransformationMatrix (id: 3);
+
+  // Extrinsics for a camera on a turret. This will only be filled out for
+  // applicable cameras. For turret-mounted cameras, fixed_extrinsics defines
+  // a position for the center of rotation of the turret, and this field defines
+  // a position for the camera on the turret.
+  //
+  // The combination of the two transformations is underdefined, so nothing can
+  // distinguish between the two parts of the final extrinsics for a given
+  // turret position.
+  //
+  // To get the final extrinsics for a camera using this transformation,
+  // multiply (in order):
+  //   fixed_extrinsics
+  //   rotation around the Z axis by the turret angle
+  //   turret_extrinsics
+  turret_extrinsics:TransformationMatrix (id: 4);
+
+  // This is the standard OpenCV 5 parameter distortion coefficients
+  dist_coeffs:[float] (id: 5);
+
+  // Timestamp for when the calibration was taken on the realtime clock.
+  calibration_timestamp:int64 (id: 6);
+}
+
+// Calibration information for all the cameras we know about.
+table CalibrationData {
+  camera_calibrations:[CameraCalibration] (id: 0);
+}
+
+
+root_type CalibrationData;
