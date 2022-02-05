@@ -65,9 +65,10 @@ std::vector<BlobDetector::BlobStats> BlobDetector::ComputeStats(
     const double aspect_ratio =
         static_cast<double>(blob_size.width) / blob_size.height;
     const double area = moments.m00;
-    const size_t points = blob.size();
+    const size_t num_points = blob.size();
 
-    blob_stats.emplace_back(BlobStats{centroid, aspect_ratio, area, points});
+    blob_stats.emplace_back(
+        BlobStats{centroid, aspect_ratio, area, num_points});
   }
   return blob_stats;
 }
@@ -185,7 +186,7 @@ BlobDetector::FilterBlobs(std::vector<std::vector<cv::Point>> blobs,
     if ((stats_it->centroid.y <= kMaxY) &&
         (std::abs(kTapeAspectRatio - stats_it->aspect_ratio) <
          kAspectRatioThreshold) &&
-        (stats_it->area >= kMinArea) && (stats_it->points >= kMinPoints)) {
+        (stats_it->area >= kMinArea) && (stats_it->num_points >= kMinPoints)) {
       filtered_blobs.push_back(*blob_it);
       filtered_stats.push_back(*stats_it);
     }
@@ -293,7 +294,7 @@ void BlobDetector::DrawBlobs(
 }
 
 void BlobDetector::ExtractBlobs(
-    cv::Mat rgb_image, cv::Mat &binarized_image, cv::Mat blob_image,
+    cv::Mat rgb_image, cv::Mat &binarized_image,
     std::vector<std::vector<cv::Point>> &filtered_blobs,
     std::vector<std::vector<cv::Point>> &unfiltered_blobs,
     std::vector<BlobStats> &blob_stats, cv::Point &centroid) {
@@ -308,7 +309,6 @@ void BlobDetector::ExtractBlobs(
   LOG(INFO) << "Blob detection elapsed time: "
             << std::chrono::duration<double, std::milli>(end - start).count()
             << " ms";
-  DrawBlobs(blob_image, unfiltered_blobs, filtered_blobs, blob_stats, centroid);
 }
 
 }  // namespace vision

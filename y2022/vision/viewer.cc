@@ -10,7 +10,7 @@
 #include "aos/time/time.h"
 #include "frc971/vision/vision_generated.h"
 #include "y2022/vision/blob_detector.h"
-#include "y2022/vision/target_estimator.h"
+#include "y2022/vision/target_estimate_generated.h"
 
 DEFINE_string(capture, "",
               "If set, capture a single image and save it to this filename.");
@@ -24,6 +24,33 @@ namespace vision {
 namespace {
 
 aos::Fetcher<frc971::vision::CameraImage> image_fetcher;
+aos::Fetcher<y2022::vision::TargetEstimate> target_estimate_fetcher;
+
+std::vector<std::vector<cv::Point>> FbsToCvBlobs(
+    const flatbuffers::Vector<flatbuffers::Offset<Blob>> &blobs_fbs) {
+  std::vector<std::vector<cv::Point>> blobs;
+  for (const auto blob : blobs_fbs) {
+    std::vector<cv::Point> points;
+    for (const Point *point : *blob->points()) {
+      points.emplace_back(cv::Point{point->x(), point->y()});
+    }
+    blobs.emplace_back(points);
+  }
+  return blobs;
+}
+
+std::vector<BlobDetector::BlobStats> FbsToBlobStats(
+    const flatbuffers::Vector<flatbuffers::Offset<BlobStatsFbs>>
+        &blob_stats_fbs) {
+  std::vector<BlobDetector::BlobStats> blob_stats;
+  for (const auto stats_fbs : blob_stats_fbs) {
+    cv::Point centroid{stats_fbs->centroid()->x(), stats_fbs->centroid()->y()};
+    blob_stats.emplace_back(BlobDetector::BlobStats{
+        centroid, stats_fbs->aspect_ratio(), stats_fbs->area(),
+        static_cast<size_t>(stats_fbs->num_points())});
+  }
+  return blob_stats;
+}
 
 bool DisplayLoop() {
   int64_t image_timestamp = 0;
@@ -39,6 +66,11 @@ bool DisplayLoop() {
   image_timestamp = image->monotonic_timestamp_ns();
   VLOG(2) << "Got image at timestamp: " << image_timestamp;
 
+  // TODO(Milind) Store the target estimates and match them by timestamp to make
+  // sure we're getting the right one.
+  CHECK(target_estimate_fetcher.FetchNext());
+  const TargetEstimate *target = target_estimate_fetcher.get();
+
   // Create color image:
   cv::Mat image_color_mat(cv::Size(image->cols(), image->rows()), CV_8UC2,
                           (void *)image->data()->data());
@@ -50,17 +82,16 @@ bool DisplayLoop() {
     return false;
   }
 
-  cv::Mat binarized_image;
-  cv::Mat ret_image(cv::Size(image->cols(), image->rows()), CV_8UC3);
-  std::vector<std::vector<cv::Point>> unfiltered_blobs, filtered_blobs;
-  std::vector<BlobDetector::BlobStats> blob_stats;
-  cv::Point centroid;
-  BlobDetector::ExtractBlobs(rgb_image, binarized_image, ret_image,
-                             filtered_blobs, unfiltered_blobs, blob_stats,
-                             centroid);
-
   LOG(INFO) << image->monotonic_timestamp_ns()
-            << ": # blobs: " << filtered_blobs.size();
+            << ": # blobs: " << target->blob_result()->filtered_blobs()->size();
+
+  cv::Mat ret_image;
+  BlobDetector::DrawBlobs(
+      ret_image, FbsToCvBlobs(*target->blob_result()->filtered_blobs()),
+      FbsToCvBlobs(*target->blob_result()->unfiltered_blobs()),
+      FbsToBlobStats(*target->blob_result()->blob_stats()),
+      cv::Point{target->blob_result()->centroid()->x(),
+                target->blob_result()->centroid()->y()});
 
   cv::imshow("image", rgb_image);
   cv::imshow("blobs", ret_image);
@@ -102,36 +133,6 @@ void ViewerMain() {
 
   image_fetcher = aos::Fetcher<frc971::vision::CameraImage>();
 }
-
-void ViewerLocal() {
-  std::vector<cv::String> file_list;
-  cv::glob(FLAGS_png_dir + "/*.png", file_list, false);
-  for (auto file : file_list) {
-    LOG(INFO) << "Reading file " << file;
-    cv::Mat rgb_image = cv::imread(file.c_str());
-    std::vector<std::vector<cv::Point>> filtered_blobs, unfiltered_blobs;
-    std::vector<BlobDetector::BlobStats> blob_stats;
-    cv::Mat binarized_image =
-        cv::Mat::zeros(cv::Size(rgb_image.cols, rgb_image.rows), CV_8UC1);
-    cv::Mat ret_image =
-        cv::Mat::zeros(cv::Size(rgb_image.cols, rgb_image.rows), CV_8UC3);
-    cv::Point centroid;
-    BlobDetector::ExtractBlobs(rgb_image, binarized_image, ret_image,
-                               filtered_blobs, unfiltered_blobs, blob_stats,
-                               centroid);
-
-    LOG(INFO) << ": # blobs: " << filtered_blobs.size() << " (# removed: "
-              << unfiltered_blobs.size() - filtered_blobs.size() << ")";
-    cv::imshow("image", rgb_image);
-    cv::imshow("mask", binarized_image);
-    cv::imshow("blobs", ret_image);
-
-    int keystroke = cv::waitKey(0);
-    if ((keystroke & 0xFF) == static_cast<int>('q')) {
-      return;
-    }
-  }
-}
 }  // namespace
 }  // namespace vision
 }  // namespace y2022
@@ -139,8 +140,5 @@ void ViewerLocal() {
 // Quick and lightweight viewer for images
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
-  if (FLAGS_png_dir != "")
-    y2022::vision::ViewerLocal();
-  else
-    y2022::vision::ViewerMain();
+  y2022::vision::ViewerMain();
 }

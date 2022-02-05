@@ -1,5 +1,34 @@
 namespace y2022.vision;
 
+struct Point {
+  x:int (id: 0);
+  y:int (id: 1);
+}
+
+table Blob  {
+  points:[Point] (id: 0);
+}
+
+// Statistics for each blob used for filtering
+table BlobStatsFbs {
+  centroid:Point (id: 0);
+  aspect_ratio:double (id: 1);
+  area:double (id: 2);
+  num_points:uint64 (id: 3);
+}
+
+// Information for debugging blob detection
+table BlobResult {
+  // Blobs that passed the filtering step
+  filtered_blobs:[Blob] (id: 0);
+  // All detected blobs
+  unfiltered_blobs:[Blob] (id: 1);
+  // Stats on the blobs
+  blob_stats:[BlobStatsFbs] (id: 2);
+  // Average centroid of the filtered blobs
+  centroid:Point (id: 3);
+}
+
 // Contains the information the EKF wants from blobs from a single image.
 table TargetEstimate {
   // Horizontal distance from the camera to the center of the upper hub
@@ -8,7 +37,9 @@ table TargetEstimate {
   // Positive means right of center, negative means left.
   angle_to_target:double (id: 1);
 
-  // TODO(milind): add confidence and blob stats
+  blob_result:BlobResult (id: 2);
+
+  // TODO(milind): add confidence
 }
 
 root_type TargetEstimate;

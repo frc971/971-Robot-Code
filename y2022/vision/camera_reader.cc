@@ -39,26 +39,80 @@ const calibration::CameraCalibration *CameraReader::FindCameraCalibration()
              << " on " << team_number;
 }
 
+namespace {
+// Converts a vector of cv::Point to PointT for the flatbuffer
+flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Blob>>>
+CvBlobsToFbs(const std::vector<std::vector<cv::Point>> &blobs,
+             aos::Sender<TargetEstimate>::Builder &builder) {
+  std::vector<flatbuffers::Offset<Blob>> blobs_fbs;
+  for (auto &blob : blobs) {
+    std::vector<Point> points_fbs;
+    for (auto p : blob) {
+      points_fbs.push_back(Point{p.x, p.y});
+    }
+    auto points_offset = builder.fbb()->CreateVectorOfStructs(points_fbs);
+    auto blob_builder = builder.MakeBuilder<Blob>();
+    blob_builder.add_points(points_offset);
+    blobs_fbs.emplace_back(blob_builder.Finish());
+  }
+  return builder.fbb()->CreateVector(blobs_fbs.data(), blobs_fbs.size());
+}
+
+flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<BlobStatsFbs>>>
+BlobStatsToFbs(const std::vector<BlobDetector::BlobStats> blob_stats,
+               aos::Sender<TargetEstimate>::Builder &builder) {
+  std::vector<flatbuffers::Offset<BlobStatsFbs>> stats_fbs;
+  for (auto &stats : blob_stats) {
+    // Make BlobStatsFbs builder then fill each field using the BlobStats
+    // struct, then you finish it and add it to stats_fbs.
+    auto stats_builder = builder.MakeBuilder<BlobStatsFbs>();
+    Point centroid_fbs = Point{stats.centroid.x, stats.centroid.y};
+    stats_builder.add_centroid(&centroid_fbs);
+    stats_builder.add_aspect_ratio(stats.aspect_ratio);
+    stats_builder.add_area(stats.area);
+    stats_builder.add_num_points(stats.num_points);
+
+    auto current_stats = stats_builder.Finish();
+    stats_fbs.emplace_back(current_stats);
+  }
+  return builder.fbb()->CreateVector(stats_fbs.data(), stats_fbs.size());
+}
+}  // namespace
+
 void CameraReader::ProcessImage(cv::Mat image_mat) {
   // Remember, we're getting YUYV images, so we start by converting to RGB
-
-  // TOOD: Need to code this up for blob detection
 
   std::vector<std::vector<cv::Point>> filtered_blobs, unfiltered_blobs;
   std::vector<BlobDetector::BlobStats> blob_stats;
   cv::Mat binarized_image =
       cv::Mat::zeros(cv::Size(image_mat.cols, image_mat.rows), CV_8UC1);
-  cv::Mat ret_image =
-      cv::Mat::zeros(cv::Size(image_mat.cols, image_mat.rows), CV_8UC3);
   cv::Point centroid;
-  BlobDetector::ExtractBlobs(image_mat, binarized_image, ret_image,
-                             filtered_blobs, unfiltered_blobs, blob_stats,
-                             centroid);
-  TargetEstimateT target = TargetEstimator::EstimateTargetLocation(
-      centroid, CameraIntrinsics(), CameraExtrinsics());
-
+  BlobDetector::ExtractBlobs(image_mat, binarized_image, filtered_blobs,
+                             unfiltered_blobs, blob_stats, centroid);
   auto builder = target_estimate_sender_.MakeBuilder();
-  builder.CheckOk(builder.Send(TargetEstimate::Pack(*builder.fbb(), &target)));
+  flatbuffers::Offset<BlobResult> blob_result_offset;
+  {
+    const auto filtered_blobs_offset = CvBlobsToFbs(filtered_blobs, builder);
+    const auto unfiltered_blobs_offset =
+        CvBlobsToFbs(unfiltered_blobs, builder);
+    const auto blob_stats_offset = BlobStatsToFbs(blob_stats, builder);
+    const Point centroid_fbs = Point{centroid.x, centroid.y};
+
+    auto blob_result_builder = builder.MakeBuilder<BlobResult>();
+    blob_result_builder.add_filtered_blobs(filtered_blobs_offset);
+    blob_result_builder.add_unfiltered_blobs(unfiltered_blobs_offset);
+    blob_result_builder.add_blob_stats(blob_stats_offset);
+    blob_result_builder.add_centroid(&centroid_fbs);
+    blob_result_offset = blob_result_builder.Finish();
+  }
+
+  auto target_estimate_builder = builder.MakeBuilder<TargetEstimate>();
+  TargetEstimator::EstimateTargetLocation(centroid, CameraIntrinsics(),
+                                          CameraExtrinsics(),
+                                          &target_estimate_builder);
+  target_estimate_builder.add_blob_result(blob_result_offset);
+
+  builder.CheckOk(builder.Send(target_estimate_builder.Finish()));
 }
 
 void CameraReader::ReadImage() {

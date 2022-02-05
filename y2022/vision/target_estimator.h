@@ -10,9 +10,11 @@ class TargetEstimator {
  public:
   // Computes the location of the target.
   // blob_point is the mean (x, y) of blob pixels.
-  static TargetEstimateT EstimateTargetLocation(cv::Point2i blob_point,
-                                                const cv::Mat &intrinsics,
-                                                const cv::Mat &extrinsics);
+  // Adds angle_to_target and distance to the given builder.
+  static void EstimateTargetLocation(cv::Point2i centroid,
+                                     const cv::Mat &intrinsics,
+                                     const cv::Mat &extrinsics,
+                                     TargetEstimate::Builder *builder);
 
  private:
   // Height of the center of the tape (m)
