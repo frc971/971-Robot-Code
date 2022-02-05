@@ -147,6 +147,20 @@ GO_MIRROR_INFO = {
         "strip_prefix": "github.com/grpc-ecosystem/grpc-gateway@v1.16.0",
         "version": "v1.16.0",
     },
+    "com_github_joho_godotenv": {
+        "filename": "com_github_joho_godotenv__v1.4.0.zip",
+        "importpath": "github.com/joho/godotenv",
+        "sha256": "6c6d2f6c2a9d2ee8608e4acd7ba7035d31b1f0da3c7d9537a32928b8eed4e3cd",
+        "strip_prefix": "github.com/joho/godotenv@v1.4.0",
+        "version": "v1.4.0",
+    },
+    "com_github_mattn_go_sqlite3": {
+        "filename": "com_github_mattn_go_sqlite3__v1.14.10.zip",
+        "importpath": "github.com/mattn/go-sqlite3",
+        "sha256": "3c1e6497b023fc4741bf1bbfb39ae657b99cf44cfb33f5cbf1e88b315d25a306",
+        "strip_prefix": "github.com/mattn/go-sqlite3@v1.14.10",
+        "version": "v1.14.10",
+    },
     "com_github_pmezard_go_difflib": {
         "filename": "com_github_pmezard_go_difflib__v1.0.0.zip",
         "importpath": "github.com/pmezard/go-difflib",
@@ -314,12 +328,5 @@ GO_MIRROR_INFO = {
         "sha256": "380aaa3368ae165628bb487cf4e695a55c1420072b8b7a6f59c122f6a23bb255",
         "strip_prefix": "golang.org/x/xerrors@v0.0.0-20200804184101-5ec99f83aff1",
         "version": "v0.0.0-20200804184101-5ec99f83aff1",
-    },
-    "com_github_mattn_go_sqlite3": {
-        "filename": "com_github_mattn_go_sqlite3__v1.14.10.zip",
-        "importpath": "github.com/mattn/go-sqlite3",
-        "sha256": "3c1e6497b023fc4741bf1bbfb39ae657b99cf44cfb33f5cbf1e88b315d25a306",
-        "strip_prefix": "github.com/mattn/go-sqlite3@v1.14.10",
-        "version": "v1.14.10",
     },
 }

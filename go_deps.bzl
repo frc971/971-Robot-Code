@@ -129,6 +129,12 @@ def go_dependencies():
         version = "v1.16.0",
     )
     maybe_override_go_dep(
+        name = "com_github_joho_godotenv",
+        importpath = "github.com/joho/godotenv",
+        sum = "h1:3l4+N6zfMWnkbPEXKng2o2/MR5mSwTrBih4ZEkkz1lg=",
+        version = "v1.4.0",
+    )
+    maybe_override_go_dep(
         name = "com_github_mattn_go_sqlite3",
         importpath = "github.com/mattn/go-sqlite3",
         sum = "h1:MLn+5bFRlWMGoSRmJour3CL1w/qL96mvipqpwQW/Sfk=",
