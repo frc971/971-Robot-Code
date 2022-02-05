@@ -200,8 +200,10 @@ BlobDetector::FilterBlobs(std::vector<std::vector<cv::Point>> blobs,
 
   // If we see more than this number of blobs after filtering based on
   // color/size, the circle fit may detect noise so just return no blobs.
+  constexpr size_t kMinFilteredBlobs = 3;
   constexpr size_t kMaxFilteredBlobs = 50;
-  if (filtered_blobs.size() > 0 && filtered_blobs.size() <= kMaxFilteredBlobs) {
+  if (filtered_blobs.size() >= kMinFilteredBlobs &&
+      filtered_blobs.size() <= kMaxFilteredBlobs) {
     constexpr size_t kRansacIterations = 15;
     for (size_t i = 0; i < kRansacIterations; i++) {
       // Pick 3 random blobs and see how many fit on their circle
@@ -291,7 +293,7 @@ void BlobDetector::DrawBlobs(
 }
 
 void BlobDetector::ExtractBlobs(
-    cv::Mat rgb_image, cv::Mat binarized_image, cv::Mat blob_image,
+    cv::Mat rgb_image, cv::Mat &binarized_image, cv::Mat blob_image,
     std::vector<std::vector<cv::Point>> &filtered_blobs,
     std::vector<std::vector<cv::Point>> &unfiltered_blobs,
     std::vector<BlobStats> &blob_stats, cv::Point &centroid) {

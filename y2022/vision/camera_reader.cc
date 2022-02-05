@@ -40,7 +40,7 @@ const sift::CameraCalibration *CameraReader::FindCameraCalibration() const {
              << " on " << team_number;
 }
 
-void CameraReader::ProcessImage(const cv::Mat &image_mat) {
+void CameraReader::ProcessImage(cv::Mat image_mat) {
   // Remember, we're getting YUYV images, so we start by converting to RGB
 
   // TOOD: Need to code this up for blob detection

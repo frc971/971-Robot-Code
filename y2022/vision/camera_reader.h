@@ -45,7 +45,7 @@ class CameraReader {
   const sift::CameraCalibration *FindCameraCalibration() const;
 
   // Processes an image (including sending the results).
-  void ProcessImage(const cv::Mat &image);
+  void ProcessImage(cv::Mat image);
 
   // Reads an image, and then performs all of our processing on it.
   void ReadImage();

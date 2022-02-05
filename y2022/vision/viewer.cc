@@ -122,6 +122,7 @@ void ViewerLocal() {
     LOG(INFO) << ": # blobs: " << filtered_blobs.size() << " (# removed: "
               << unfiltered_blobs.size() - filtered_blobs.size() << ")";
     cv::imshow("image", rgb_image);
+    cv::imshow("mask", binarized_image);
     cv::imshow("blobs", ret_image);
 
     int keystroke = cv::waitKey(0);
