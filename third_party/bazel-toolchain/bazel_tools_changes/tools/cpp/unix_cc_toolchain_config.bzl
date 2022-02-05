@@ -201,6 +201,15 @@ def _impl(ctx):
                 with_features = [with_feature_set(features = ["opt"])],
             ),
             flag_set(
+                actions = all_compile_actions,
+                flag_groups = ([
+                    flag_group(
+                        flags = ctx.attr.fastbuild_compile_flags,
+                    ),
+                ] if ctx.attr.fastbuild_compile_flags else []),
+                with_features = [with_feature_set(features = ["fastbuild"])],
+            ),
+            flag_set(
                 actions = [ACTION_NAMES.c_compile],
                 flag_groups = ([
                     flag_group(
@@ -254,6 +263,8 @@ def _impl(ctx):
     dbg_feature = feature(name = "dbg")
 
     opt_feature = feature(name = "opt")
+
+    fastbuild_feature = feature(name = "fastbuild")
 
     sysroot_feature = feature(
         name = "sysroot",
@@ -1218,6 +1229,7 @@ def _impl(ctx):
             supports_dynamic_linker_feature,
             dbg_feature,
             opt_feature,
+            fastbuild_feature,
             user_compile_flags_feature,
             sysroot_feature,
             unfiltered_compile_flags_feature,
@@ -1238,6 +1250,7 @@ def _impl(ctx):
             supports_dynamic_linker_feature,
             dbg_feature,
             opt_feature,
+            fastbuild_feature,
             user_compile_flags_feature,
             sysroot_feature,
             unfiltered_compile_flags_feature,
@@ -1276,6 +1289,7 @@ cc_toolchain_config = rule(
         "compile_flags": attr.string_list(),
         "dbg_compile_flags": attr.string_list(),
         "opt_compile_flags": attr.string_list(),
+        "fastbuild_compile_flags": attr.string_list(),
         "cxx_flags": attr.string_list(),
         "c_flags": attr.string_list(),
         "compile_not_cxx_flags": attr.string_list(),

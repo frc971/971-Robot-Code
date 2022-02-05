@@ -161,11 +161,18 @@ llvm_copts = [
     "-Wformat=2",
     "-Werror",
     "-ggdb3",
-    "-DAOS_DEBUG=0",
 ]
 
 llvm_cxxopts = [
     "-std=gnu++17",
+]
+
+llvm_opt_copts = [
+    "-DAOS_DEBUG=0",
+]
+
+llvm_fastbuild_copts = [
+    "-DAOS_DEBUG=0",
 ]
 
 llvm_dbg_copts = [
@@ -193,9 +200,17 @@ llvm_toolchain(
     },
     dbg_copts = {
         "linux-x86_64": llvm_dbg_copts,
-        "linux-armv7": llvm_cxxopts,
+        "linux-armv7": llvm_dbg_copts,
+    },
+    fastbuild_copts = {
+        "linux-x86_64": llvm_fastbuild_copts,
+        "linux-armv7": llvm_fastbuild_copts,
     },
     llvm_version = llvm_version,
+    opt_copts = {
+        "linux-x86_64": llvm_opt_copts,
+        "linux-armv7": llvm_opt_copts,
+    },
     standard_libraries = {
         "linux-x86_64": "libstdc++-10",
         "linux-armv7": "libstdc++-10",

@@ -175,6 +175,13 @@ _llvm_config_attrs.update({
                "({}), ".format(", ".join(_supported_os_arch_keys())) +
                "used only with -c dbg."),
     ),
+    "fastbuild_copts": attr.string_list_dict(
+        mandatory = False,
+        doc = ("Extra flags for compiling C, C++, and assembly files, " +
+               "for each target OS and arch pair you want to support " +
+               "({}), ".format(", ".join(_supported_os_arch_keys())) +
+               "used only with -c fastbuild."),
+    ),
     "linkopts": attr.string_list_dict(
         mandatory = False,
         doc = ("Extra flags to pass to the linker, " +
