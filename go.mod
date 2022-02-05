@@ -1,4 +1,4 @@
-module frc971.org/971-Robot-Code
+module github.com/frc971/971-Robot-Code
 
 go 1.17
 
