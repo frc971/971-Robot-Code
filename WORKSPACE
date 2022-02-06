@@ -251,9 +251,9 @@ ci_configure(name = "ci_configure")
 
 http_archive(
     name = "platforms",
-    sha256 = "3c4057c53b64dd3f2c753e0a80bbb6ccb29fb437910200c911dd51454baf619b",
-    strip_prefix = "platforms-10b4d2bdde25ea1e66c02c3f83a6d921000a7272",
-    url = "https://www.frc971.org/Build-Dependencies/platforms_10b4d2bdde25ea1e66c02c3f83a6d921000a7272.zip",
+    sha256 = "2c8d8347427e6bb0ba7cf9f933c08fe2be2b62ff2454546ad852f7bf267aad87",
+    strip_prefix = "platforms-e658a6af526089406d0057160542597501ba65d7",
+    url = "https://github.com/bazelbuild/platforms/archive/e658a6af526089406d0057160542597501ba65d7.zip",
 )
 
 http_archive(
