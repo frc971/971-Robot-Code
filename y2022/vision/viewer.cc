@@ -68,8 +68,10 @@ bool DisplayLoop() {
 
   // TODO(Milind) Store the target estimates and match them by timestamp to make
   // sure we're getting the right one.
-  CHECK(target_estimate_fetcher.FetchNext());
-  const TargetEstimate *target = target_estimate_fetcher.get();
+  const TargetEstimate *target_est = nullptr;
+  if (target_estimate_fetcher.Fetch()) {
+    target_est = target_estimate_fetcher.get();
+  }
 
   // Create color image:
   cv::Mat image_color_mat(cv::Size(image->cols(), image->rows()), CV_8UC2,
@@ -82,19 +84,23 @@ bool DisplayLoop() {
     return false;
   }
 
-  LOG(INFO) << image->monotonic_timestamp_ns()
-            << ": # blobs: " << target->blob_result()->filtered_blobs()->size();
+  LOG(INFO) << image->monotonic_timestamp_ns() << ": # unfiltered blobs: "
+            << target_est->blob_result()->unfiltered_blobs()->size()
+            << "; # filtered blobs: "
+            << target_est->blob_result()->filtered_blobs()->size();
 
-  cv::Mat ret_image;
-  BlobDetector::DrawBlobs(
-      ret_image, FbsToCvBlobs(*target->blob_result()->filtered_blobs()),
-      FbsToCvBlobs(*target->blob_result()->unfiltered_blobs()),
-      FbsToBlobStats(*target->blob_result()->blob_stats()),
-      cv::Point{target->blob_result()->centroid()->x(),
-                target->blob_result()->centroid()->y()});
+  cv::Mat ret_image(cv::Size(image->cols(), image->rows()), CV_8UC3);
+  if (target_est != nullptr) {
+    BlobDetector::DrawBlobs(
+        ret_image, FbsToCvBlobs(*target_est->blob_result()->filtered_blobs()),
+        FbsToCvBlobs(*target_est->blob_result()->unfiltered_blobs()),
+        FbsToBlobStats(*target_est->blob_result()->blob_stats()),
+        cv::Point{target_est->blob_result()->centroid()->x(),
+                  target_est->blob_result()->centroid()->y()});
+    cv::imshow("blobs", ret_image);
+  }
 
   cv::imshow("image", rgb_image);
-  cv::imshow("blobs", ret_image);
 
   int keystroke = cv::waitKey(1);
   if ((keystroke & 0xFF) == static_cast<int>('c')) {
@@ -118,6 +124,9 @@ void ViewerMain() {
 
   image_fetcher =
       event_loop.MakeFetcher<frc971::vision::CameraImage>(FLAGS_channel);
+
+  target_estimate_fetcher =
+      event_loop.MakeFetcher<y2022::vision::TargetEstimate>(FLAGS_channel);
 
   // Run the display loop
   event_loop.AddPhasedLoop(
