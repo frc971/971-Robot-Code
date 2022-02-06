@@ -124,8 +124,8 @@ void CameraReader::ReadImage() {
       // that can be sent in a second.
       std::this_thread::sleep_for(std::chrono::milliseconds(50));
       LOG(INFO) << "Reading file " << file;
-      cv::Mat rgb_image = cv::imread(file.c_str());
-      ProcessImage(rgb_image);
+      cv::Mat bgr_image = cv::imread(file.c_str());
+      ProcessImage(bgr_image);
     }
     event_loop_->Exit();
     return;

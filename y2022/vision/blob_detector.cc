@@ -17,11 +17,11 @@ DEFINE_bool(use_outdoors, false,
 namespace y2022 {
 namespace vision {
 
-cv::Mat BlobDetector::ThresholdImage(cv::Mat rgb_image) {
-  cv::Mat binarized_image(cv::Size(rgb_image.cols, rgb_image.rows), CV_8UC1);
-  for (int row = 0; row < rgb_image.rows; row++) {
-    for (int col = 0; col < rgb_image.cols; col++) {
-      cv::Vec3b pixel = rgb_image.at<cv::Vec3b>(row, col);
+cv::Mat BlobDetector::ThresholdImage(cv::Mat bgr_image) {
+  cv::Mat binarized_image(cv::Size(bgr_image.cols, bgr_image.rows), CV_8UC1);
+  for (int row = 0; row < bgr_image.rows; row++) {
+    for (int col = 0; col < bgr_image.cols; col++) {
+      cv::Vec3b pixel = bgr_image.at<cv::Vec3b>(row, col);
       uint8_t blue = pixel.val[0];
       uint8_t green = pixel.val[1];
       uint8_t red = pixel.val[2];
@@ -143,15 +143,26 @@ struct Circle {
   }
 
   double DistanceTo(cv::Point2d p) const {
-    // Translate the point so that the circle orgin can be (0, 0)
-    const auto p_prime = cv::Point2d(p.y - center.y, p.x - center.x);
+    const auto p_prime = TranslateToOrigin(p);
     // Now, the distance is simply the difference between distance from the
     // origin to p' and the radius.
     return std::abs(cv::norm(p_prime) - radius);
   }
 
-  // Inverted because y-coordinates go backwards
-  bool OnTopHalf(cv::Point2d p) const { return p.y <= center.y; }
+  bool InAngleRange(cv::Point2d p, double theta_min, double theta_max) const {
+    auto p_prime = TranslateToOrigin(p);
+    // Flip the y because y values go downwards.
+    p_prime.y *= -1;
+    const double theta = std::atan2(p_prime.y, p_prime.x);
+    return (theta >= theta_min && theta <= theta_max);
+  }
+
+ private:
+  // Translate the point on the circle
+  // as if the circle's center is the origin (0,0)
+  cv::Point2d TranslateToOrigin(cv::Point2d p) const {
+    return cv::Point2d(p.x - center.x, p.y - center.y);
+  }
 };
 
 }  // namespace
@@ -176,17 +187,17 @@ BlobDetector::FilterBlobs(std::vector<std::vector<cv::Point>> blobs,
     // y = -(y_offset - offset_y)
     constexpr int kMaxY = 400;
     constexpr double kTapeAspectRatio = 5.0 / 2.0;
-    constexpr double kAspectRatioThreshold = 1.5;
+    constexpr double kAspectRatioThreshold = 1.6;
     constexpr double kMinArea = 10;
-    constexpr size_t kMinPoints = 6;
+    constexpr size_t kMinNumPoints = 6;
 
     // Remove all blobs that are at the bottom of the image, have a different
-    // aspect ratio than the tape, or have too little area or points
-    // TODO(milind): modify to take into account that blobs will be on the side.
+    // aspect ratio than the tape, or have too little area or points.
     if ((stats_it->centroid.y <= kMaxY) &&
         (std::abs(kTapeAspectRatio - stats_it->aspect_ratio) <
          kAspectRatioThreshold) &&
-        (stats_it->area >= kMinArea) && (stats_it->num_points >= kMinPoints)) {
+        (stats_it->area >= kMinArea) &&
+        (stats_it->num_points >= kMinNumPoints)) {
       filtered_blobs.push_back(*blob_it);
       filtered_stats.push_back(*stats_it);
     }
@@ -196,6 +207,9 @@ BlobDetector::FilterBlobs(std::vector<std::vector<cv::Point>> blobs,
 
   // Threshold for mean distance from a blob centroid to a circle.
   constexpr double kCircleDistanceThreshold = 5.0;
+  // We should only expect to see blobs between these angles on a circle.
+  constexpr double kMinBlobAngle = M_PI / 3;
+  constexpr double kMaxBlobAngle = M_PI - kMinBlobAngle;
   std::vector<std::vector<cv::Point>> blob_circle;
   std::vector<cv::Point2d> centroids;
 
@@ -230,16 +244,20 @@ BlobDetector::FilterBlobs(std::vector<std::vector<cv::Point>> blobs,
         continue;
       }
 
-      // Only try to fit points to this circle if all of these are on the top
-      // half, like how the blobs should be
-      if (circle->OnTopHalf(current_centroids[0]) &&
-          circle->OnTopHalf(current_centroids[1]) &&
-          circle->OnTopHalf(current_centroids[2])) {
+      // Only try to fit points to this circle if all of these are between
+      // certain angles.
+      if (circle->InAngleRange(current_centroids[0], kMinBlobAngle,
+                               kMaxBlobAngle) &&
+          circle->InAngleRange(current_centroids[1], kMinBlobAngle,
+                               kMaxBlobAngle) &&
+          circle->InAngleRange(current_centroids[2], kMinBlobAngle,
+                               kMaxBlobAngle)) {
         for (size_t m = 0; m < filtered_blobs.size(); m++) {
           // Add this blob to the list if it is close to the circle, is on the
           // top half,  and isn't one of the other blobs
           if ((m != i) && (m != j) && (m != k) &&
-              circle->OnTopHalf(filtered_stats[m].centroid) &&
+              circle->InAngleRange(filtered_stats[m].centroid, kMinBlobAngle,
+                                   kMaxBlobAngle) &&
               (circle->DistanceTo(filtered_stats[m].centroid) <
                kCircleDistanceThreshold)) {
             current_blobs.emplace_back(filtered_blobs[m]);
@@ -293,10 +311,10 @@ void BlobDetector::DrawBlobs(
   cv::circle(view_image, centroid, 3, cv::Scalar(255, 255, 0), cv::FILLED);
 }
 
-void BlobDetector::ExtractBlobs(cv::Mat rgb_image,
+void BlobDetector::ExtractBlobs(cv::Mat bgr_image,
                                 BlobDetector::BlobResult *blob_result) {
   auto start = aos::monotonic_clock::now();
-  blob_result->binarized_image = ThresholdImage(rgb_image);
+  blob_result->binarized_image = ThresholdImage(bgr_image);
   blob_result->unfiltered_blobs = FindBlobs(blob_result->binarized_image);
   blob_result->blob_stats = ComputeStats(blob_result->unfiltered_blobs);
   auto filtered_pair =
