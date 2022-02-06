@@ -1,6 +1,8 @@
 #include "y2022/vision/camera_reader.h"
 
-#include <math.h>
+#include <cmath>
+#include <chrono>
+#include <thread>
 
 #include <opencv2/imgproc.hpp>
 
@@ -120,8 +122,10 @@ void CameraReader::ReadImage() {
   if (FLAGS_image_png != "") {
     std::vector<cv::String> file_list;
     cv::glob(FLAGS_image_png + "/*.png", file_list, false);
-
     for (auto file : file_list) {
+      // Sleep for 0.05 seconds in order to not reach the max number of messages
+      // that can be sent in a second.
+      std::this_thread::sleep_for(std::chrono::milliseconds(50));
       LOG(INFO) << "Reading file " << file;
       cv::Mat rgb_image = cv::imread(file.c_str());
       ProcessImage(rgb_image);
