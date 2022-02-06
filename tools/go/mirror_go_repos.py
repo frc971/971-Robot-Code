@@ -14,9 +14,6 @@ import subprocess
 import sys
 import tarfile
 from typing import List, Dict
-import urllib.request
-
-from bazel_tools.tools.python.runfiles import runfiles
 
 # Need a fully qualified import here because @bazel_tools interferes.
 import org_frc971.tools.go.mirror_lib
@@ -101,7 +98,14 @@ def copy_to_host_and_unpack(filename: str, ssh_host: str) -> None:
 
 def main(argv):
     parser = argparse.ArgumentParser()
-    parser.add_argument(
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument(
+        "--prune",
+        action="store_true",
+        help=("When set, makes the tool prune go_mirrors_bzl to match the "
+              "repositories specified in go_deps_bzl. Incompatible with "
+              "--ssh_host."))
+    group.add_argument(
         "--ssh_host",
         type=str,
         help=("The SSH host to copy the downloaded Go repositories to. This "
@@ -121,37 +125,38 @@ def main(argv):
     else:
         existing_mirrored_repos = {}
 
-    with tarfile.open("go_deps.tar", "w") as tar:
-        cached_info = download_repos(repos, existing_mirrored_repos, tar)
-        num_not_already_mirrored = len(tar.getnames())
+    exit_code = 0
 
-    print(f"Found {num_not_already_mirrored}/{len(cached_info)} libraries "
-          "that need to be mirrored.")
-
-    # Only mirror the deps if we've specified an SSH host and we actually have
-    # something to mirror.
-    if args.ssh_host and num_not_already_mirrored:
-        copy_to_host_and_unpack("go_deps.tar", args.ssh_host)
+    if args.prune:
+        # Delete all mirror info that is not needed anymore.
+        existing_cache_info = org_frc971.tools.go.mirror_lib.parse_go_mirror_info(args.go_mirrors_bzl)
+        cached_info = {}
+        for repo in repos:
+            try:
+                cached_info[repo["name"]] = existing_cache_info[repo["name"]]
+            except KeyError:
+                print(f"{repo['name']} needs to be mirrored still.")
+                exit_code = 1
     else:
-        print("Skipping mirroring because of lack of --ssh_host or there's "
-              "nothing to actually mirror.")
+        # Download all the repositories that need to be mirrored.
+        with tarfile.open("go_deps.tar", "w") as tar:
+            cached_info = download_repos(repos, existing_mirrored_repos, tar)
+            num_not_already_mirrored = len(tar.getnames())
 
-    with open(args.go_mirrors_bzl, "w") as file:
-        file.write("# This file is auto-generated. Do not edit.\n")
-        file.write("GO_MIRROR_INFO = ")
-        # Format as JSON first. It's parsable as Starlark.
-        json.dump(cached_info, file, indent=4, sort_keys=True)
-        file.write("\n")
+        print(f"Found {num_not_already_mirrored}/{len(cached_info)} libraries "
+              "that need to be mirrored.")
 
+        # Only mirror the deps if we've specified an SSH host and we actually have
+        # something to mirror.
+        if args.ssh_host and num_not_already_mirrored:
+            copy_to_host_and_unpack("go_deps.tar", args.ssh_host)
+        else:
+            print("Skipping mirroring because of lack of --ssh_host or there's "
+                  "nothing to actually mirror.")
 
-    # Properly format the file now so that the linter doesn't complain.
-    r = runfiles.Create()
-    subprocess.run(
-        [
-            r.Rlocation("com_github_bazelbuild_buildtools/buildifier/buildifier_/buildifier"),
-            args.go_mirrors_bzl,
-        ],
-        check=True)
+    org_frc971.tools.go.mirror_lib.write_go_mirror_info(args.go_mirrors_bzl, cached_info)
+
+    return exit_code
 
 
 if __name__ == "__main__":

@@ -32,6 +32,7 @@ sh_binary(
         ":buildifier",
         ":gofmt",
         "//:gazelle-runner",
+        "//tools/go:mirror_go_repos",
         "//tools/go:tweak_gazelle_go_deps",
         "@go_sdk//:bin/go",
     ],

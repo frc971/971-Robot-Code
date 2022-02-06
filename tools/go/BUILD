@@ -6,6 +6,13 @@ py_library(
     srcs = [
         "mirror_lib.py",
     ],
+    data = [
+        "@com_github_bazelbuild_buildtools//buildifier",
+    ],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
+    deps = [
+        "@bazel_tools//tools/python/runfiles",
+    ],
 )
 
 py_binary(
@@ -25,13 +32,12 @@ py_binary(
         "mirror_go_repos.py",
     ],
     data = [
-        "@com_github_bazelbuild_buildtools//buildifier",
         "@go_sdk//:bin/go",
     ],
     target_compatible_with = ["@platforms//cpu:x86_64"],
+    visibility = ["//visibility:public"],
     deps = [
         ":mirror_lib",
-        "@bazel_tools//tools/python/runfiles",
     ],
 )
 

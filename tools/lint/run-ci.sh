@@ -34,6 +34,12 @@ gomod() {
 }
 
 update_repos() {
+    # Clear out the go_deps.bzl file so that gazelle won't hesitate to update
+    # it. Without this step gazelle would never try to remove a dependency.
+    cat > "${BUILD_WORKSPACE_DIRECTORY}"/go_deps.bzl <<EOF
+def go_dependencies():
+    pass
+EOF
     ./gazelle-runner.bash update-repos \
         -from_file=go.mod \
         -to_macro=go_deps.bzl%go_dependencies \
@@ -48,6 +54,10 @@ tweak_gazelle_go_deps() {
     local -r tweaker="$(readlink -f tools/go/tweak_gazelle_go_deps)"
     cd "${BUILD_WORKSPACE_DIRECTORY}"
     "${tweaker}" ./go_deps.bzl
+}
+
+clean_up_go_mirrors() {
+    ./tools/go/mirror_go_repos --prune
 }
 
 buildifier() {
@@ -69,6 +79,7 @@ readonly -a LINTERS=(
     update_repos
     gazelle
     tweak_gazelle_go_deps
+    clean_up_go_mirrors
     buildifier
     git_status_is_clean  # This must the last linter.
 )

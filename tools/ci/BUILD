@@ -6,7 +6,7 @@ go_library(
     importpath = "github.com/frc971/971-Robot-Code/tools/ci",
     target_compatible_with = ["@platforms//cpu:x86_64"],
     visibility = ["//visibility:private"],
-    deps = ["@com_github_buildkite_go_buildkite//buildkite:go_default_library"],
+    deps = ["@com_github_buildkite_go_buildkite//buildkite"],
 )
 
 go_binary(
