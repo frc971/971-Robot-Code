@@ -2,6 +2,7 @@
 #include <opencv2/calib3d.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc.hpp>
+#include <regex>
 
 #include "Eigen/Dense"
 #include "Eigen/Geometry"
@@ -13,21 +14,24 @@
 #include "aos/util/file.h"
 #include "y2020/vision/charuco_lib.h"
 
-DEFINE_string(config, "config.json", "Path to the config file to use.");
-DEFINE_string(pi, "pi-7971-1", "Pi name to calibrate.");
 DEFINE_string(calibration_folder, ".", "Folder to place calibration files.");
+DEFINE_string(camera_id, "", "Camera ID in format YY-NN-- year and number.");
+DEFINE_string(config, "config.json", "Path to the config file to use.");
 DEFINE_bool(display_undistorted, false,
             "If true, display the undistorted image.");
+DEFINE_string(pi, "", "Pi name to calibrate.");
 
 namespace frc971 {
 namespace vision {
 
 class Calibration {
  public:
-  Calibration(aos::ShmEventLoop *event_loop, std::string_view pi)
+  Calibration(aos::ShmEventLoop *event_loop, std::string_view pi,
+              std::string_view camera_id)
       : event_loop_(event_loop),
         pi_(pi),
         pi_number_(aos::network::ParsePiNumber(pi)),
+        camera_id_(camera_id),
         H_camera_board_(Eigen::Affine3d()),
         prev_H_camera_board_(Eigen::Affine3d()),
         charuco_extractor_(
@@ -37,11 +41,15 @@ class Calibration {
                    std::vector<int> charuco_ids,
                    std::vector<cv::Point2f> charuco_corners, bool valid,
                    Eigen::Vector3d rvec_eigen, Eigen::Vector3d tvec_eigen) {
-              HandleCharuco(rgb_image, eof, charuco_ids, charuco_corners,
-                            valid, rvec_eigen, tvec_eigen);
+              HandleCharuco(rgb_image, eof, charuco_ids, charuco_corners, valid,
+                            rvec_eigen, tvec_eigen);
             }) {
     CHECK(pi_number_) << ": Invalid pi number " << pi
                       << ", failed to parse pi number";
+    std::regex re{"^[0-9][0-9]-[0-9][0-9]"};
+    CHECK(std::regex_match(camera_id_, re))
+        << ": Invalid camera_id '" << camera_id_
+        << "', should be of form YY-NN";
   }
 
   void HandleCharuco(cv::Mat rgb_image,
@@ -111,6 +119,8 @@ class Calibration {
 
   void MaybeCalibrate() {
     if (all_charuco_ids_.size() >= 50) {
+      LOG(INFO) << "Beginning calibration on " << all_charuco_ids_.size()
+                << " images";
       cv::Mat cameraMatrix, distCoeffs;
       std::vector<cv::Mat> rvecs, tvecs;
       cv::Mat stdDeviationsIntrinsics, stdDeviationsExtrinsics, perViewErrors;
@@ -129,6 +139,8 @@ class Calibration {
       flatbuffers::FlatBufferBuilder fbb;
       flatbuffers::Offset<flatbuffers::String> name_offset =
           fbb.CreateString(absl::StrFormat("pi%d", pi_number_.value()));
+      flatbuffers::Offset<flatbuffers::String> camera_id_offset =
+          fbb.CreateString(camera_id_);
       flatbuffers::Offset<flatbuffers::Vector<float>> intrinsics_offset =
           fbb.CreateVector<float>(9u, [&cameraMatrix](size_t i) {
             return static_cast<float>(
@@ -152,6 +164,7 @@ class Calibration {
           aos::realtime_clock::now();
       camera_calibration_builder.add_node_name(name_offset);
       camera_calibration_builder.add_team_number(team_number.value());
+      camera_calibration_builder.add_camera_id(camera_id_offset);
       camera_calibration_builder.add_calibration_timestamp(
           realtime_now.time_since_epoch().count());
       camera_calibration_builder.add_intrinsics(intrinsics_offset);
@@ -166,8 +179,9 @@ class Calibration {
 
       const std::string calibration_filename =
           FLAGS_calibration_folder +
-          absl::StrFormat("/calibration_pi-%d-%d_%s.json", team_number.value(),
-                          pi_number_.value(), time_ss.str());
+          absl::StrFormat("/calibration_pi-%d-%d_cam-%s_%s.json",
+                          team_number.value(), pi_number_.value(), camera_id_,
+                          time_ss.str());
 
       LOG(INFO) << calibration_filename << " -> "
                 << aos::FlatbufferToJson(camera_calibration,
@@ -188,6 +202,7 @@ class Calibration {
   aos::ShmEventLoop *event_loop_;
   std::string pi_;
   const std::optional<uint16_t> pi_number_;
+  const std::string camera_id_;
 
   std::vector<std::vector<int>> all_charuco_ids_;
   std::vector<std::vector<cv::Point2f>> all_charuco_corners_;
@@ -206,7 +221,12 @@ void Main() {
 
   aos::ShmEventLoop event_loop(&config.message());
 
-  Calibration extractor(&event_loop, FLAGS_pi);
+  std::string hostname = FLAGS_pi;
+  if (hostname == "") {
+    hostname = aos::network::GetHostname();
+    LOG(INFO) << "Using pi name from hostname as " << hostname;
+  }
+  Calibration extractor(&event_loop, hostname, FLAGS_camera_id);
 
   event_loop.Run();
 
