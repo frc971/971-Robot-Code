@@ -199,6 +199,17 @@ class Logger {
 
     // If true, this message is being sent over a reliable channel.
     bool reliable_forwarding = false;
+
+    // One of the following will be populated.  If channel_reliable_contents is
+    // non zero size, it contains a mapping from the event loop channel (not the
+    // logged channel) to a bool telling us if that particular channel is
+    // reliable.
+    //
+    // If channel_reliable_contents is empty, reliable_contents will contain the
+    // same info for all contents logged here.  This is the predominant case for
+    // split timestamp channels (the prefered approach).
+    bool reliable_contents = false;
+    std::vector<bool> channel_reliable_contents;
   };
 
   // Vector mapping from the channel index from the event loop to the logged

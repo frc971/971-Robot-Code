@@ -836,24 +836,17 @@ std::map<std::string, NodeBootState> PartsSorter::ComputeNewBootConstraints() {
               VLOG(1)
                   << "Unreliable remote time "
                   << next_boot_time.oldest_remote_unreliable_monotonic_timestamp
-                  << " remote " << boot_time_list.first << " local "
-                  << source_boot_uuid;
-              VLOG(1)
-                  << "Unreliable local time "
+                  << " remote " << boot_time_list.first << " -> local time "
                   << next_boot_time.oldest_local_unreliable_monotonic_timestamp
-                  << " remote " << boot_time_list.first << " local "
-                  << source_boot_uuid;
+                  << " local " << source_boot_uuid;
             }
             if (next_boot_time.oldest_local_monotonic_timestamp !=
                 aos::monotonic_clock::max_time) {
               VLOG(1) << "Reliable remote time "
                       << next_boot_time.oldest_remote_monotonic_timestamp
-                      << " remote " << boot_time_list.first << " local "
-                      << source_boot_uuid;
-              VLOG(1) << "Reliable local time "
+                      << " remote " << boot_time_list.first << " -> local time "
                       << next_boot_time.oldest_local_monotonic_timestamp
-                      << " remote " << boot_time_list.first << " local "
-                      << source_boot_uuid;
+                      << " local " << source_boot_uuid;
             }
             // If we found an existing entry, update the min to be the min of
             // all records.  This lets us combine info from multiple part files.

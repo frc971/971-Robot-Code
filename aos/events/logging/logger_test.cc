@@ -510,8 +510,14 @@ struct LoggerState {
 
   ~LoggerState() {
     if (logger) {
-      for (const std::string &file : log_namer->all_filenames()) {
+      std::vector<std::string> filenames;
+      AppendAllFilenames(&filenames);
+      for (const std::string &file : filenames) {
         LOG(INFO) << "Wrote to " << file;
+        auto x = ReadHeader(file);
+        if (x) {
+          VLOG(1) << aos::FlatbufferToJson(x.value());
+        }
       }
     }
   }
@@ -2384,28 +2390,62 @@ TEST_P(MultinodeLoggerTest, RemoteReboot) {
         log_header->message().source_node_boot_uuid()->string_view());
 
     if (log_header->message().node()->name()->string_view() != "pi1") {
-      switch (log_header->message().parts_index()) {
-        case 0:
-          EXPECT_EQ(source_node_boot_uuid, pi2_boot0);
-          EXPECT_EQ(monotonic_start_time, monotonic_clock::min_time);
-          break;
-        case 1:
-          EXPECT_EQ(source_node_boot_uuid, pi2_boot0);
-          ASSERT_EQ(monotonic_start_time,
-                    monotonic_clock::epoch() + chrono::seconds(1));
-          break;
-        case 2:
-          EXPECT_EQ(source_node_boot_uuid, pi2_boot1);
-          EXPECT_EQ(monotonic_start_time, monotonic_clock::min_time);
-          break;
-        case 3:
-          EXPECT_EQ(source_node_boot_uuid, pi2_boot1);
-          ASSERT_EQ(monotonic_start_time,
-                    monotonic_clock::epoch() + chrono::nanoseconds(2322999462));
-          break;
-        default:
-          FAIL();
-          break;
+      // The remote message channel should rotate later and have more parts.
+      // This only is true on the log files with shared remote messages.
+      //
+      // TODO(austin): I'm not the most thrilled with this test pattern...  It
+      // feels brittle in a different way.
+      if (file.find("aos.message_bridge.RemoteMessage") == std::string::npos || !shared()) {
+        switch (log_header->message().parts_index()) {
+          case 0:
+            EXPECT_EQ(source_node_boot_uuid, pi2_boot0);
+            EXPECT_EQ(monotonic_start_time, monotonic_clock::min_time);
+            break;
+          case 1:
+            EXPECT_EQ(source_node_boot_uuid, pi2_boot0);
+            ASSERT_EQ(monotonic_start_time,
+                      monotonic_clock::epoch() + chrono::seconds(1));
+            break;
+          case 2:
+            EXPECT_EQ(source_node_boot_uuid, pi2_boot1);
+            EXPECT_EQ(monotonic_start_time, monotonic_clock::min_time) << file;
+            break;
+          case 3:
+            EXPECT_EQ(source_node_boot_uuid, pi2_boot1);
+            ASSERT_EQ(monotonic_start_time, monotonic_clock::epoch() +
+                                                chrono::nanoseconds(2322999462))
+                << " on " << file;
+            break;
+          default:
+            FAIL();
+            break;
+        }
+      } else {
+        switch (log_header->message().parts_index()) {
+          case 0:
+            EXPECT_EQ(source_node_boot_uuid, pi2_boot0);
+            EXPECT_EQ(monotonic_start_time, monotonic_clock::min_time);
+            break;
+          case 1:
+            EXPECT_EQ(source_node_boot_uuid, pi2_boot0);
+            ASSERT_EQ(monotonic_start_time,
+                      monotonic_clock::epoch() + chrono::seconds(1));
+            break;
+          case 2:
+          case 3:
+            EXPECT_EQ(source_node_boot_uuid, pi2_boot1);
+            EXPECT_EQ(monotonic_start_time, monotonic_clock::min_time) << file;
+            break;
+          case 4:
+            EXPECT_EQ(source_node_boot_uuid, pi2_boot1);
+            ASSERT_EQ(monotonic_start_time, monotonic_clock::epoch() +
+                                                chrono::nanoseconds(2322999462))
+                << " on " << file;
+            break;
+          default:
+            FAIL();
+            break;
+        }
       }
       continue;
     }
@@ -2651,39 +2691,116 @@ TEST_P(MultinodeLoggerTest, RemoteRebootOnlyTimestamps) {
                   log_header->message()
                       .oldest_local_unreliable_monotonic_timestamps()
                       ->Get(0)));
-      // Confirm that the oldest timestamps match what we expect.  Based on what
-      // we are doing, we know that the oldest time is the first message's time.
-      //
-      // This makes the test robust to both the split and combined config tests.
-      switch (log_header->message().parts_index()) {
-        case 0:
-        case 1:
-          EXPECT_EQ(oldest_remote_monotonic_timestamps,
-                    expected_oldest_remote_monotonic_timestamps);
-          EXPECT_EQ(oldest_local_monotonic_timestamps,
-                    expected_oldest_local_monotonic_timestamps);
-          EXPECT_EQ(oldest_remote_unreliable_monotonic_timestamps,
-                    expected_oldest_remote_monotonic_timestamps);
-          EXPECT_EQ(oldest_local_unreliable_monotonic_timestamps,
-                    expected_oldest_local_monotonic_timestamps);
-          break;
-        default:
-          FAIL();
-          break;
-      }
 
-      switch (log_header->message().parts_index()) {
-        case 0:
-          EXPECT_EQ(source_node_boot_uuid, pi2_boot0);
-          EXPECT_EQ(monotonic_start_time, monotonic_clock::min_time);
-          break;
-        case 1:
-          EXPECT_EQ(source_node_boot_uuid, pi2_boot1);
-          EXPECT_EQ(monotonic_start_time, monotonic_clock::min_time);
-          break;
-        default:
-          FAIL();
-          break;
+      const Channel *channel =
+          event_loop_factory_.configuration()->channels()->Get(
+              msg->message().channel_index());
+      const Connection *connection = configuration::ConnectionToNode(
+          channel, configuration::GetNode(
+                       event_loop_factory_.configuration(),
+                       log_header->message().node()->name()->string_view()));
+
+      const bool reliable = connection->time_to_live() == 0;
+
+      if (shared()) {
+        // Confirm that the oldest timestamps match what we expect.  Based on
+        // what we are doing, we know that the oldest time is the first
+        // message's time.
+        //
+        // This makes the test robust to both the split and combined config
+        // tests.
+        switch (log_header->message().parts_index()) {
+          case 0:
+          case 1:
+            EXPECT_EQ(oldest_remote_monotonic_timestamps,
+                      expected_oldest_remote_monotonic_timestamps);
+            EXPECT_EQ(oldest_local_monotonic_timestamps,
+                      expected_oldest_local_monotonic_timestamps);
+            if (reliable) {
+              EXPECT_EQ(oldest_remote_unreliable_monotonic_timestamps,
+                        monotonic_clock::max_time);
+              EXPECT_EQ(oldest_local_unreliable_monotonic_timestamps,
+                        monotonic_clock::max_time);
+            } else {
+              EXPECT_EQ(oldest_remote_unreliable_monotonic_timestamps,
+                        expected_oldest_remote_monotonic_timestamps);
+              EXPECT_EQ(oldest_local_unreliable_monotonic_timestamps,
+                        expected_oldest_local_monotonic_timestamps);
+            }
+            break;
+          case 2:
+            LOG(INFO) << "Shared";
+            EXPECT_EQ(
+                oldest_remote_monotonic_timestamps,
+                monotonic_clock::epoch() + chrono::nanoseconds(10000000000));
+            EXPECT_EQ(
+                oldest_local_monotonic_timestamps,
+                monotonic_clock::epoch() + chrono::nanoseconds(1323100000));
+            EXPECT_EQ(oldest_remote_unreliable_monotonic_timestamps,
+                      expected_oldest_remote_monotonic_timestamps);
+            EXPECT_EQ(oldest_local_unreliable_monotonic_timestamps,
+                      expected_oldest_local_monotonic_timestamps);
+            break;
+          default:
+            FAIL();
+            break;
+        }
+
+        switch (log_header->message().parts_index()) {
+          case 0:
+            EXPECT_EQ(source_node_boot_uuid, pi2_boot0);
+            EXPECT_EQ(monotonic_start_time, monotonic_clock::min_time);
+            break;
+          case 1:
+            EXPECT_EQ(source_node_boot_uuid, pi2_boot1);
+            EXPECT_EQ(monotonic_start_time, monotonic_clock::min_time);
+            break;
+          case 2:
+            if (shared()) {
+              EXPECT_EQ(source_node_boot_uuid, pi2_boot1);
+              EXPECT_EQ(monotonic_start_time, monotonic_clock::min_time);
+              LOG(INFO) << "Shared";
+              break;
+            }
+            [[fallthrough]];
+          default:
+            FAIL();
+            break;
+        }
+      } else {
+        switch (log_header->message().parts_index()) {
+          case 0:
+          case 1:
+            if (reliable) {
+              EXPECT_EQ(oldest_remote_unreliable_monotonic_timestamps,
+                        monotonic_clock::max_time);
+              EXPECT_EQ(oldest_local_unreliable_monotonic_timestamps,
+                        monotonic_clock::max_time);
+            } else {
+              EXPECT_EQ(oldest_remote_unreliable_monotonic_timestamps,
+                        expected_oldest_remote_monotonic_timestamps);
+              EXPECT_EQ(oldest_local_unreliable_monotonic_timestamps,
+                        expected_oldest_local_monotonic_timestamps);
+            }
+            break;
+          default:
+            FAIL();
+            break;
+        }
+
+        switch (log_header->message().parts_index()) {
+          case 0:
+            EXPECT_EQ(source_node_boot_uuid, pi2_boot0);
+            EXPECT_EQ(monotonic_start_time, monotonic_clock::min_time);
+            break;
+          case 1:
+            EXPECT_EQ(source_node_boot_uuid, pi2_boot1);
+            EXPECT_EQ(monotonic_start_time, monotonic_clock::min_time);
+            break;
+          default:
+            FAIL();
+            break;
+        }
       }
 
       continue;
@@ -2737,7 +2854,11 @@ TEST_P(MultinodeLoggerTest, RemoteRebootOnlyTimestamps) {
     }
   }
 
-  EXPECT_TRUE(timestamp_file_count == 2u || timestamp_file_count == 4u);
+  if (shared()) {
+    EXPECT_EQ(timestamp_file_count, 3u);
+  } else {
+    EXPECT_EQ(timestamp_file_count, 4u);
+  }
 
   // Confirm that we can actually sort the resulting log and read it.
   {
