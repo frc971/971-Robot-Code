@@ -29,6 +29,11 @@ steps:
       - tools/ci/clean-disk.sh
       - tools/bazel ${STARTUP} --output_base=../armv7_output_base build ${COMMON} --config=armv7 ${TARGETS}
 
+  - label: "arm64"
+    commands:
+      - tools/ci/clean-disk.sh
+      - tools/bazel ${STARTUP} --output_base=../arm64_output_base build ${COMMON} --config=arm64 ${TARGETS}
+
   - label: "cortex-m4f"
     commands:
       - tools/ci/clean-disk.sh

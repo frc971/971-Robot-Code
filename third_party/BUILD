@@ -42,6 +42,7 @@ cc_library(
     deps = select({
         "//tools:cpu_k8": ["@opencv_k8//:opencv"],
         "//tools:cpu_armhf": ["@opencv_armhf//:opencv"],
+        "//tools:cpu_arm64": ["@opencv_arm64//:opencv"],
         "//conditions:default": [":unavailable"],
     }),
 )
@@ -86,6 +87,7 @@ cc_library(
     deps = select({
         "//tools:cpu_k8": ["@halide_k8//:runtime"],
         "//tools:cpu_armhf": ["@halide_armhf//:runtime"],
+        "//tools:cpu_arm64": ["@halide_arm64//:runtime"],
         "//conditions:default": [":unavailable"],
     }),
 )
@@ -95,7 +97,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = select({
         "//tools:cpu_k8": ["@lzma_amd64//:lib"],
-        "//tools:cpu_aarch64": ["@lzma_arm64//:lib"],
+        "//tools:cpu_arm64": ["@lzma_arm64//:lib"],
         "//conditions:default": [":unavailable"],
     }),
 )

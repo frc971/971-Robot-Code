@@ -180,6 +180,7 @@ _llvm_distributions = {
     "clang+llvm-13.0.0-x86_64-apple-darwin.tar.xz": "d051234eca1db1f5e4bc08c64937c879c7098900f7a0370f3ceb7544816a8b09",
     "clang+llvm-13.0.0-x86_64-linux-gnu-ubuntu-16.04.tar.xz": "76d0bf002ede7a893f69d9ad2c4e101d15a8f4186fbfe24e74856c8449acd7c1",
     "clang+llvm-13.0.0-x86_64-linux-gnu-ubuntu-20.04.tar.xz": "2c2fb857af97f41a5032e9ecadf7f78d3eff389a5cd3c9ec620d24f134ceb3c8",
+    "clang+llvm-13.0.0-aarch64-linux-gnu.tar.xz": "968d65d2593850ee9b37fcda074fb7641529bd45d2f976af6c8197de3c22612f",
 }
 
 # Note: Unlike the user-specified llvm_mirror attribute, the URL prefixes in

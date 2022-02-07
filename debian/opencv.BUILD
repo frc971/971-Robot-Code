@@ -266,6 +266,7 @@ cc_library(
             "usr/lib/x86_64-linux-gnu/libnuma.so.1",
         ],
         "@platforms//cpu:armv7": [s % "arm-linux-gnueabihf" if "%" in s else s for s in _common_srcs_list],
+        "@platforms//cpu:arm64": [s % "aarch64-linux-gnu" if "%" in s else s for s in _common_srcs_list],
     }),
     hdrs = glob([
         "usr/include/opencv4/**",
@@ -283,6 +284,9 @@ cc_library(
             "@platforms//os:linux",
         ],
         "@platforms//cpu:armv7": [
+            "@platforms//os:linux",
+        ],
+        "@platforms//cpu:arm64": [
             "@platforms//os:linux",
         ],
     }),

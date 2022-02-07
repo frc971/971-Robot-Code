@@ -26,6 +26,7 @@ platform(
     constraint_values = [
         "@platforms//os:linux",
         "@platforms//cpu:arm64",
+        "//tools/platforms/hardware:raspberry_pi",
         "//tools/platforms/go:lacks_support",
         "//tools/platforms/rust:has_support",
     ],

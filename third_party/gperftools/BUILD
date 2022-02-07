@@ -102,11 +102,17 @@ common_copts = [
         "-DPRIuS=\\\"lu\\\"",
         "-DPRIxS=\\\"lx\\\"",
     ],
-    "arm": [
+    "arm32": [
         "-DPC_FROM_UCONTEXT=uc_mcontext.arm_pc",
         "-DPRIdS=\\\"d\\\"",
         "-DPRIuS=\\\"u\\\"",
         "-DPRIxS=\\\"x\\\"",
+    ],
+    "arm64": [
+        "-DPC_FROM_UCONTEXT=uc_mcontext.pc",
+        "-DPRIdS=\\\"ld\\\"",
+        "-DPRIuS=\\\"lu\\\"",
+        "-DPRIxS=\\\"lx\\\"",
     ],
 }) + compiler_select({
     "clang": [
