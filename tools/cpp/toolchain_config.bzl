@@ -19,25 +19,19 @@ def _impl(ctx):
         toolchain_identifier = "cortex-m4f-k22"
     elif ctx.attr.cpu == "roborio":
         toolchain_identifier = "roborio_linux"
-    elif ctx.attr.cpu == "armeabi-v7a":
-        toolchain_identifier = "stub_armeabi-v7a"
     else:
         fail("Unreachable")
 
-    if ctx.attr.cpu == "armeabi-v7a":
-        host_system_name = "armeabi-v7a"
-    elif (ctx.attr.cpu == "rp2040" or
-          ctx.attr.cpu == "cortex-m4f" or
-          ctx.attr.cpu == "cortex-m4f-k22"):
+    if (ctx.attr.cpu == "rp2040" or
+        ctx.attr.cpu == "cortex-m4f" or
+        ctx.attr.cpu == "cortex-m4f-k22"):
         host_system_name = "local"
     elif ctx.attr.cpu == "roborio":
         host_system_name = "roborio"
     else:
         fail("Unreachable")
 
-    if ctx.attr.cpu == "armeabi-v7a":
-        target_system_name = "armeabi-v7a"
-    elif ctx.attr.cpu == "rp2040":
+    if ctx.attr.cpu == "rp2040":
         target_system_name = "rp2040"
     elif ctx.attr.cpu == "cortex-m4f":
         target_system_name = "cortex-m4f"
@@ -48,9 +42,7 @@ def _impl(ctx):
     else:
         fail("Unreachable")
 
-    if ctx.attr.cpu == "armeabi-v7a":
-        target_cpu = "armeabi-v7a"
-    elif ctx.attr.cpu == "rp2040":
+    if ctx.attr.cpu == "rp2040":
         target_cpu = "rp2040"
     elif ctx.attr.cpu == "cortex-m4f":
         target_cpu = "cortex-m4f"
@@ -61,9 +53,7 @@ def _impl(ctx):
     else:
         fail("Unreachable")
 
-    if ctx.attr.cpu == "armeabi-v7a":
-        target_libc = "armeabi-v7a"
-    elif ctx.attr.cpu == "rp2040":
+    if ctx.attr.cpu == "rp2040":
         target_libc = "rp2040"
     elif ctx.attr.cpu == "cortex-m4f":
         target_libc = "cortex-m4f"
@@ -74,19 +64,15 @@ def _impl(ctx):
     else:
         fail("Unreachable")
 
-    if ctx.attr.cpu == "armeabi-v7a":
-        compiler = "compiler"
-    elif (ctx.attr.cpu == "rp2040" or
-          ctx.attr.cpu == "cortex-m4f" or
-          ctx.attr.cpu == "cortex-m4f-k22" or
-          ctx.attr.cpu == "roborio"):
+    if (ctx.attr.cpu == "rp2040" or
+        ctx.attr.cpu == "cortex-m4f" or
+        ctx.attr.cpu == "cortex-m4f-k22" or
+        ctx.attr.cpu == "roborio"):
         compiler = "gcc"
     else:
         fail("Unreachable")
 
-    if ctx.attr.cpu == "armeabi-v7a":
-        abi_version = "armeabi-v7a"
-    elif ctx.attr.cpu == "rp2040":
+    if ctx.attr.cpu == "rp2040":
         abi_version = "rp2040"
     elif ctx.attr.cpu == "cortex-m4f":
         abi_version = "cortex-m4f"
@@ -97,9 +83,7 @@ def _impl(ctx):
     else:
         fail("Unreachable")
 
-    if ctx.attr.cpu == "armeabi-v7a":
-        abi_libc_version = "armeabi-v7a"
-    elif ctx.attr.cpu == "rp2040":
+    if ctx.attr.cpu == "rp2040":
         abi_libc_version = "rp2040"
     elif ctx.attr.cpu == "cortex-m4f":
         abi_libc_version = "cortex-m4f"
@@ -183,12 +167,10 @@ def _impl(ctx):
     else:
         objcopy_embed_data_action = None
 
-    if ctx.attr.cpu == "armeabi-v7a":
-        action_configs = []
-    elif (ctx.attr.cpu == "rp2040" or
-          ctx.attr.cpu == "cortex-m4f" or
-          ctx.attr.cpu == "cortex-m4f-k22" or
-          ctx.attr.cpu == "roborio"):
+    if (ctx.attr.cpu == "rp2040" or
+        ctx.attr.cpu == "cortex-m4f" or
+        ctx.attr.cpu == "cortex-m4f-k22" or
+        ctx.attr.cpu == "roborio"):
         action_configs = [objcopy_embed_data_action]
     else:
         fail("Unreachable")
@@ -1162,14 +1144,10 @@ def _impl(ctx):
             sysroot_feature,
             unfiltered_compile_flags_feature,
         ]
-    elif ctx.attr.cpu == "armeabi-v7a":
-        features = [supports_pic_feature]
     else:
         fail("Unreachable")
 
-    if ctx.attr.cpu == "armeabi-v7a":
-        cxx_builtin_include_directories = []
-    elif ctx.attr.cpu == "roborio":
+    if ctx.attr.cpu == "roborio":
         cxx_builtin_include_directories = [
             "%package(@arm_frc_linux_gnueabi_repo//arm-frc2020-linux-gnueabi/usr/lib/gcc/arm-frc2020-linux-gnueabi/7.3.0/include)%",
             "%package(@arm_frc_linux_gnueabi_repo//arm-frc2020-linux-gnueabi/usr/lib/gcc/arm-frc2020-linux-gnueabi/7.3.0/include-fixed)%",
@@ -1289,20 +1267,6 @@ def _impl(ctx):
                 path = "gcc_arm_none_eabi/arm-none-eabi-strip",
             ),
         ]
-    elif ctx.attr.cpu == "armeabi-v7a":
-        tool_paths = [
-            tool_path(name = "ar", path = "/bin/false"),
-            tool_path(name = "compat-ld", path = "/bin/false"),
-            tool_path(name = "cpp", path = "/bin/false"),
-            tool_path(name = "dwp", path = "/bin/false"),
-            tool_path(name = "gcc", path = "/bin/false"),
-            tool_path(name = "gcov", path = "/bin/false"),
-            tool_path(name = "ld", path = "/bin/false"),
-            tool_path(name = "nm", path = "/bin/false"),
-            tool_path(name = "objcopy", path = "/bin/false"),
-            tool_path(name = "objdump", path = "/bin/false"),
-            tool_path(name = "strip", path = "/bin/false"),
-        ]
     else:
         fail("Unreachable")
 
@@ -1336,7 +1300,7 @@ def _impl(ctx):
 cc_toolchain_config = rule(
     implementation = _impl,
     attrs = {
-        "cpu": attr.string(mandatory = True, values = ["armeabi-v7a", "cortex-m4f", "cortex-m4f-k22", "roborio", "rp2040"]),
+        "cpu": attr.string(mandatory = True, values = ["cortex-m4f", "cortex-m4f-k22", "roborio", "rp2040"]),
     },
     provides = [CcToolchainConfigInfo],
     executable = True,
