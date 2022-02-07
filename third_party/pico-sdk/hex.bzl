@@ -7,7 +7,7 @@ def bin_from_elf(name, target_compatible_with = None):
         executable = True,
         output_to_bindir = True,
         target_compatible_with = target_compatible_with,
-        toolchains = ["@bazel_tools//tools/cpp:current_cc_toolchain"],
+        toolchains = ["//tools/cpp:cc_toolchain_make_variables"],
     )
 
 def uf2_from_elf(name, target_compatible_with = None):

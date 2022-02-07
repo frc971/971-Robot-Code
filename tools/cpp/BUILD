@@ -1,19 +1,11 @@
 load(":toolchain_config.bzl", "cc_toolchain_config")
+load(":toolchain_make_variables.bzl", "cc_toolchain_make_variables")
 
 package(default_visibility = ["//visibility:public"])
 
-cc_toolchain_suite(
-    name = "toolchain",
-    toolchains = {
-        "k8": "@llvm_toolchain//:cc-clang-x86_64-linux",
-        "armv7": "@llvm_toolchain//:cc-clang-armv7-linux",
-        "arm64": "@llvm_toolchain//:cc-clang-aarch64-linux",
-        "roborio": ":cc-compiler-roborio",
-        "cortex-m4f": ":cc-compiler-cortex-m4f",
-        "rp2040": ":cc-compiler-rp2040",
-    },
-    visibility = ["//visibility:public"],
-)
+# Use this instead of @bazel_tools//tools/cpp:current_cc_toolchain.
+# This one supports platforms.
+cc_toolchain_make_variables(name = "cc_toolchain_make_variables")
 
 [
     cc_toolchain_config(
