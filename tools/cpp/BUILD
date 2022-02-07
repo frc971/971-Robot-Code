@@ -20,7 +20,6 @@ cc_toolchain_suite(
         cpu = cpu,
     )
     for cpu in [
-        "armeabi-v7a",
         "cortex-m4f",
         "cortex-m4f-k22",
         "rp2040",
