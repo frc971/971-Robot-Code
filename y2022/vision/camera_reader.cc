@@ -1,10 +1,8 @@
 #include "y2022/vision/camera_reader.h"
 
-#include <cmath>
 #include <chrono>
+#include <cmath>
 #include <thread>
-
-#include <opencv2/imgproc.hpp>
 
 #include "aos/events/event_loop.h"
 #include "aos/events/shm_event_loop.h"
@@ -12,6 +10,7 @@
 #include "aos/network/team_number.h"
 #include "frc971/vision/v4l2_reader.h"
 #include "frc971/vision/vision_generated.h"
+#include "opencv2/imgproc.hpp"
 #include "y2022/vision/blob_detector.h"
 #include "y2022/vision/calibration_generated.h"
 #include "y2022/vision/target_estimator.h"
@@ -82,25 +81,23 @@ BlobStatsToFbs(const std::vector<BlobDetector::BlobStats> blob_stats,
 }  // namespace
 
 void CameraReader::ProcessImage(cv::Mat image_mat) {
-  // Remember, we're getting YUYV images, so we start by converting to RGB
-
-  std::vector<std::vector<cv::Point>> filtered_blobs, unfiltered_blobs;
-  std::vector<BlobDetector::BlobStats> blob_stats;
-  cv::Mat binarized_image =
+  BlobDetector::BlobResult blob_result;
+  blob_result.binarized_image =
       cv::Mat::zeros(cv::Size(image_mat.cols, image_mat.rows), CV_8UC1);
-  cv::Point centroid;
-  BlobDetector::ExtractBlobs(image_mat, binarized_image, filtered_blobs,
-                             unfiltered_blobs, blob_stats, centroid);
+  BlobDetector::ExtractBlobs(image_mat, &blob_result);
   auto builder = target_estimate_sender_.MakeBuilder();
-  flatbuffers::Offset<BlobResult> blob_result_offset;
+  flatbuffers::Offset<BlobResultFbs> blob_result_offset;
   {
-    const auto filtered_blobs_offset = CvBlobsToFbs(filtered_blobs, builder);
+    const auto filtered_blobs_offset =
+        CvBlobsToFbs(blob_result.filtered_blobs, builder);
     const auto unfiltered_blobs_offset =
-        CvBlobsToFbs(unfiltered_blobs, builder);
-    const auto blob_stats_offset = BlobStatsToFbs(blob_stats, builder);
-    const Point centroid_fbs = Point{centroid.x, centroid.y};
+        CvBlobsToFbs(blob_result.unfiltered_blobs, builder);
+    const auto blob_stats_offset =
+        BlobStatsToFbs(blob_result.blob_stats, builder);
+    const Point centroid_fbs =
+        Point{blob_result.centroid.x, blob_result.centroid.y};
 
-    auto blob_result_builder = builder.MakeBuilder<BlobResult>();
+    auto blob_result_builder = builder.MakeBuilder<BlobResultFbs>();
     blob_result_builder.add_filtered_blobs(filtered_blobs_offset);
     blob_result_builder.add_unfiltered_blobs(unfiltered_blobs_offset);
     blob_result_builder.add_blob_stats(blob_stats_offset);
@@ -109,9 +106,9 @@ void CameraReader::ProcessImage(cv::Mat image_mat) {
   }
 
   auto target_estimate_builder = builder.MakeBuilder<TargetEstimate>();
-  TargetEstimator::EstimateTargetLocation(centroid, CameraIntrinsics(),
-                                          CameraExtrinsics(),
-                                          &target_estimate_builder);
+  TargetEstimator::EstimateTargetLocation(
+      blob_result.centroid, CameraIntrinsics(), CameraExtrinsics(),
+      &target_estimate_builder);
   target_estimate_builder.add_blob_result(blob_result_offset);
 
   builder.CheckOk(builder.Send(target_estimate_builder.Finish()));

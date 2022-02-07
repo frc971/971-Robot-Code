@@ -16,7 +16,15 @@ class BlobDetector {
     size_t num_points;
   };
 
+  struct BlobResult {
+    cv::Mat binarized_image;
+    std::vector<std::vector<cv::Point>> filtered_blobs, unfiltered_blobs;
+    std::vector<BlobStats> blob_stats;
+    cv::Point centroid;
+  };
+
   BlobDetector() {}
+
   // Given an image, threshold it to find "green" pixels
   // Input: Color image
   // Output: Grayscale (binarized) image with green pixels set to 255
@@ -44,11 +52,7 @@ class BlobDetector {
       const std::vector<std::vector<cv::Point>> &unfiltered_blobs,
       const std::vector<BlobStats> &blob_stats, cv::Point centroid);
 
-  static void ExtractBlobs(
-      cv::Mat rgb_image, cv::Mat &binarized_image,
-      std::vector<std::vector<cv::Point>> &filtered_blobs,
-      std::vector<std::vector<cv::Point>> &unfiltered_blobs,
-      std::vector<BlobStats> &blob_stats, cv::Point &centroid);
+  static void ExtractBlobs(cv::Mat rgb_image, BlobResult *blob_result);
 };
 }  // namespace vision
 }  // namespace y2022

@@ -18,7 +18,7 @@ table BlobStatsFbs {
 }
 
 // Information for debugging blob detection
-table BlobResult {
+table BlobResultFbs {
   // Blobs that passed the filtering step
   filtered_blobs:[Blob] (id: 0);
   // All detected blobs
@@ -37,7 +37,7 @@ table TargetEstimate {
   // Positive means right of center, negative means left.
   angle_to_target:double (id: 1);
 
-  blob_result:BlobResult (id: 2);
+  blob_result:BlobResultFbs (id: 2);
 
   // TODO(milind): add confidence
 }
