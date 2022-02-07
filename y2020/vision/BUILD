@@ -106,7 +106,10 @@ cc_binary(
         "//y2020:config",
     ],
     target_compatible_with = ["@platforms//os:linux"],
-    visibility = ["//y2020:__subpackages__"],
+    visibility = [
+        "//y2020:__subpackages__",
+        "//y2022:__subpackages__",
+    ],
     deps = [
         ":charuco_lib",
         "//aos:init",
