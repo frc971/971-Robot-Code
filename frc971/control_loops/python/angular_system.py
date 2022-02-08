@@ -193,6 +193,8 @@ def RunTest(plant,
     x_plot = []
     v_plot = []
     a_plot = []
+    motor_current_plot = []
+    battery_current_plot = []
     x_goal_plot = []
     v_goal_plot = []
     x_hat_plot = []
@@ -239,7 +241,14 @@ def RunTest(plant,
             v_goal_plot.append(end_goal[1, 0])
 
         U = U_uncapped.copy()
+
         U[0, 0] = numpy.clip(U[0, 0], -vbat, vbat)
+
+        motor_current = (U[0, 0] - plant.X[1, 0] / plant.G / plant.motor.Kv
+                         ) / plant.motor.resistance
+        motor_current_plot.append(motor_current)
+        battery_current = U[0, 0] * motor_current / 12.0
+        battery_current_plot.append(battery_current)
         x_plot.append(plant.X[0, 0])
 
         if v_plot:
@@ -282,8 +291,16 @@ def RunTest(plant,
     pylab.plot(t_plot, offset_plot, label='voltage_offset')
     pylab.legend()
 
-    pylab.subplot(3, 1, 3)
-    pylab.plot(t_plot, a_plot, label='a')
+    ax1 = pylab.subplot(3, 1, 3)
+    ax1.set_xlabel("time(s)")
+    ax1.set_ylabel("rad/s^2")
+    ax1.plot(t_plot, a_plot, label='a')
+
+    ax2 = ax1.twinx()
+    ax2.set_xlabel("time(s)")
+    ax2.set_ylabel("Amps")
+    ax2.plot(t_plot, battery_current_plot, 'g', label='battery')
+    ax2.plot(t_plot, motor_current_plot, 'r', label='motor')
     pylab.legend()
 
     pylab.show()
