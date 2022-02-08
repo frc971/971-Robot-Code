@@ -257,7 +257,7 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop)
       }) {
   CHECK(event_loop_->node() != nullptr) << ": No nodes configured.";
 
-  int32_t max_size = 0;
+  size_t max_size = 0;
 
   // Seed up all the per-node connection state.
   // We are making the assumption here that every connection is bidirectional
@@ -269,14 +269,14 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop)
     // Find the largest connection message so we can size our buffers big enough
     // to receive a connection message.  The connect message comes from the
     // client to the server, so swap the node arguments.
-    const int32_t connect_size = static_cast<int32_t>(
+    const size_t connect_size =
         MakeConnectMessage(event_loop->configuration(),
                            configuration::GetNode(event_loop->configuration(),
                                                   destination_node_name),
                            event_loop->node()->name()->string_view(),
                            UUID::Zero())
             .span()
-            .size());
+            .size();
     VLOG(1) << "Connection to " << destination_node_name << " has size "
             << connect_size;
     max_size = std::max(max_size, connect_size);
@@ -310,7 +310,10 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop)
           any_reliable = true;
         }
       }
-      max_size = std::max(channel->max_size(), max_size);
+      max_size =
+          std::max(static_cast<size_t>(channel->max_size() *
+                                       channel->destination_nodes()->size()),
+                   max_size);
       std::unique_ptr<ChannelState> state(new ChannelState{
           channel, channel_index,
           any_reliable ? event_loop_->MakeRawFetcher(channel) : nullptr});
@@ -371,7 +374,7 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop)
 
   // Buffer up the max size a bit so everything fits nicely.
   LOG(INFO) << "Max message size for all clients is " << max_size;
-  server_.SetMaxSize(max_size + 100);
+  server_.SetMaxSize(max_size + 100u);
 }
 
 void MessageBridgeServer::NodeConnected(sctp_assoc_t assoc_id) {

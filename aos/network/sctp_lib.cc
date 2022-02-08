@@ -319,6 +319,9 @@ bool SctpReadWrite::SendMessage(
   if (size == -1) {
     if (errno == EPIPE || errno == EAGAIN || errno == ESHUTDOWN ||
         errno == EINTR) {
+      if (VLOG_IS_ON(1)) {
+        PLOG(WARNING) << "sendmsg on sctp socket failed";
+      }
       return false;
     }
     PLOG(FATAL) << "sendmsg on sctp socket failed";
