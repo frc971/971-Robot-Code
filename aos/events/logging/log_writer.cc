@@ -729,10 +729,10 @@ void Logger::LogUntil(monotonic_clock::time_point t) {
         message_header_builder.add_remote_queue_index(
             msg->remote_queue_index());
 
+        const aos::monotonic_clock::time_point monotonic_timestamp_time =
+            f.fetcher->context().monotonic_event_time;
         message_header_builder.add_monotonic_timestamp_time(
-            f.fetcher->context()
-                .monotonic_event_time.time_since_epoch()
-                .count());
+            monotonic_timestamp_time.time_since_epoch().count());
 
         fbb.FinishSizePrefixed(message_header_builder.Finish());
         const auto end = event_loop_->monotonic_now();
@@ -755,7 +755,7 @@ void Logger::LogUntil(monotonic_clock::time_point t) {
                 chrono::nanoseconds(msg->monotonic_remote_time())),
             monotonic_clock::time_point(
                 chrono::nanoseconds(msg->monotonic_sent_time())),
-            reliable);
+            reliable, monotonic_timestamp_time);
 
         f.contents_writer->QueueMessage(
             &fbb, UUID::FromVector(msg->boot_uuid()), end);

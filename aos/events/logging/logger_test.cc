@@ -2334,6 +2334,7 @@ TEST_P(MultinodeLoggerTest, MessageHeader) {
 // Tests that we properly populate and extract the logger_start time by setting
 // up a clock difference between 2 nodes and looking at the resulting parts.
 TEST_P(MultinodeLoggerTest, LoggerStartTime) {
+  std::vector<std::string> actual_filenames;
   time_converter_.AddMonotonic(
       {BootTimestamp::epoch(), BootTimestamp::epoch() + chrono::seconds(1000)});
   {
@@ -2344,7 +2345,13 @@ TEST_P(MultinodeLoggerTest, LoggerStartTime) {
     StartLogger(&pi2_logger);
 
     event_loop_factory_.RunFor(chrono::milliseconds(10000));
+
+    pi1_logger.AppendAllFilenames(&actual_filenames);
+    pi2_logger.AppendAllFilenames(&actual_filenames);
   }
+
+  ASSERT_THAT(actual_filenames,
+              ::testing::UnorderedElementsAreArray(logfiles_));
 
   for (const LogFile &log_file : SortParts(logfiles_)) {
     for (const LogParts &log_part : log_file.parts) {
@@ -2616,6 +2623,22 @@ TEST_P(MultinodeLoggerTest, RemoteReboot) {
                 log_header->message()
                     .oldest_local_reliable_monotonic_timestamps()
                     ->Get(1)));
+    const monotonic_clock::time_point
+        oldest_logger_remote_unreliable_monotonic_timestamps =
+            monotonic_clock::time_point(chrono::nanoseconds(
+                log_header->message()
+                    .oldest_logger_remote_unreliable_monotonic_timestamps()
+                    ->Get(0)));
+    const monotonic_clock::time_point
+        oldest_logger_local_unreliable_monotonic_timestamps =
+            monotonic_clock::time_point(chrono::nanoseconds(
+                log_header->message()
+                    .oldest_logger_local_unreliable_monotonic_timestamps()
+                    ->Get(0)));
+    EXPECT_EQ(oldest_logger_remote_unreliable_monotonic_timestamps,
+              monotonic_clock::max_time);
+    EXPECT_EQ(oldest_logger_local_unreliable_monotonic_timestamps,
+              monotonic_clock::max_time);
     switch (log_header->message().parts_index()) {
       case 0:
         EXPECT_EQ(oldest_remote_monotonic_timestamps,
@@ -2812,6 +2835,32 @@ TEST_P(MultinodeLoggerTest, RemoteRebootOnlyTimestamps) {
                   .oldest_local_unreliable_monotonic_timestamps()
                   ->size(),
               2u);
+    ASSERT_TRUE(log_header->message()
+                    .has_oldest_remote_reliable_monotonic_timestamps());
+    ASSERT_EQ(log_header->message()
+                  .oldest_remote_reliable_monotonic_timestamps()
+                  ->size(),
+              2u);
+    ASSERT_TRUE(log_header->message()
+                    .has_oldest_local_reliable_monotonic_timestamps());
+    ASSERT_EQ(log_header->message()
+                  .oldest_local_reliable_monotonic_timestamps()
+                  ->size(),
+              2u);
+
+    ASSERT_TRUE(
+        log_header->message()
+            .has_oldest_logger_remote_unreliable_monotonic_timestamps());
+    ASSERT_EQ(log_header->message()
+                  .oldest_logger_remote_unreliable_monotonic_timestamps()
+                  ->size(),
+              2u);
+    ASSERT_TRUE(log_header->message()
+                    .has_oldest_logger_local_unreliable_monotonic_timestamps());
+    ASSERT_EQ(log_header->message()
+                  .oldest_logger_local_unreliable_monotonic_timestamps()
+                  ->size(),
+              2u);
 
     if (log_header->message().node()->name()->string_view() != "pi1") {
       ASSERT_TRUE(file.find("aos.message_bridge.RemoteMessage") !=
@@ -2830,10 +2879,15 @@ TEST_P(MultinodeLoggerTest, RemoteRebootOnlyTimestamps) {
       const monotonic_clock::time_point
           expected_oldest_remote_monotonic_timestamps(
               chrono::nanoseconds(msg->message().monotonic_remote_time()));
+      const monotonic_clock::time_point
+          expected_oldest_timestamp_monotonic_timestamps(
+              chrono::nanoseconds(msg->message().monotonic_timestamp_time()));
 
       EXPECT_NE(expected_oldest_local_monotonic_timestamps,
                 monotonic_clock::min_time);
       EXPECT_NE(expected_oldest_remote_monotonic_timestamps,
+                monotonic_clock::min_time);
+      EXPECT_NE(expected_oldest_timestamp_monotonic_timestamps,
                 monotonic_clock::min_time);
 
       ++timestamp_file_count;
@@ -2870,6 +2924,18 @@ TEST_P(MultinodeLoggerTest, RemoteRebootOnlyTimestamps) {
                   log_header->message()
                       .oldest_local_reliable_monotonic_timestamps()
                       ->Get(0)));
+      const monotonic_clock::time_point
+          oldest_logger_remote_unreliable_monotonic_timestamps =
+              monotonic_clock::time_point(chrono::nanoseconds(
+                  log_header->message()
+                      .oldest_logger_remote_unreliable_monotonic_timestamps()
+                      ->Get(1)));
+      const monotonic_clock::time_point
+          oldest_logger_local_unreliable_monotonic_timestamps =
+              monotonic_clock::time_point(chrono::nanoseconds(
+                  log_header->message()
+                      .oldest_logger_local_unreliable_monotonic_timestamps()
+                      ->Get(1)));
 
       const Channel *channel =
           event_loop_factory_.configuration()->channels()->Get(
@@ -2880,6 +2946,10 @@ TEST_P(MultinodeLoggerTest, RemoteRebootOnlyTimestamps) {
                        log_header->message().node()->name()->string_view()));
 
       const bool reliable = connection->time_to_live() == 0;
+
+      SCOPED_TRACE(file);
+      SCOPED_TRACE(aos::FlatbufferToJson(
+          *log_header, {.multi_line = true, .max_vector_size = 100}));
 
       if (shared()) {
         // Confirm that the oldest timestamps match what we expect.  Based on
@@ -2894,6 +2964,11 @@ TEST_P(MultinodeLoggerTest, RemoteRebootOnlyTimestamps) {
                       expected_oldest_remote_monotonic_timestamps);
             EXPECT_EQ(oldest_local_monotonic_timestamps,
                       expected_oldest_local_monotonic_timestamps);
+            EXPECT_EQ(oldest_logger_remote_unreliable_monotonic_timestamps,
+                      expected_oldest_local_monotonic_timestamps) << file;
+            EXPECT_EQ(oldest_logger_local_unreliable_monotonic_timestamps,
+                      expected_oldest_timestamp_monotonic_timestamps) << file;
+
             if (reliable) {
               EXPECT_EQ(oldest_remote_reliable_monotonic_timestamps,
                         expected_oldest_remote_monotonic_timestamps);
@@ -2919,6 +2994,10 @@ TEST_P(MultinodeLoggerTest, RemoteRebootOnlyTimestamps) {
                       monotonic_clock::epoch() + chrono::nanoseconds(90000000));
             EXPECT_EQ(oldest_local_monotonic_timestamps,
                       monotonic_clock::epoch() + chrono::nanoseconds(90150000));
+            EXPECT_EQ(oldest_logger_remote_unreliable_monotonic_timestamps,
+                      monotonic_clock::epoch() + chrono::nanoseconds(90150000));
+            EXPECT_EQ(oldest_logger_local_unreliable_monotonic_timestamps,
+                      monotonic_clock::epoch() + chrono::nanoseconds(90250000));
             if (reliable) {
               EXPECT_EQ(oldest_remote_reliable_monotonic_timestamps,
                         expected_oldest_remote_monotonic_timestamps);
@@ -2948,6 +3027,10 @@ TEST_P(MultinodeLoggerTest, RemoteRebootOnlyTimestamps) {
             EXPECT_EQ(
                 oldest_local_monotonic_timestamps,
                 monotonic_clock::epoch() + chrono::nanoseconds(1323100000));
+            EXPECT_EQ(oldest_logger_remote_unreliable_monotonic_timestamps,
+                      expected_oldest_local_monotonic_timestamps) << file;
+            EXPECT_EQ(oldest_logger_local_unreliable_monotonic_timestamps,
+                      expected_oldest_timestamp_monotonic_timestamps) << file;
             if (reliable) {
               EXPECT_EQ(oldest_remote_reliable_monotonic_timestamps,
                         expected_oldest_remote_monotonic_timestamps);
@@ -2970,7 +3053,6 @@ TEST_P(MultinodeLoggerTest, RemoteRebootOnlyTimestamps) {
             break;
 
           case 3:
-            LOG(INFO) << "Shared";
             EXPECT_EQ(
                 oldest_remote_monotonic_timestamps,
                 monotonic_clock::epoch() + chrono::nanoseconds(10000000000));
@@ -2981,6 +3063,12 @@ TEST_P(MultinodeLoggerTest, RemoteRebootOnlyTimestamps) {
                       expected_oldest_remote_monotonic_timestamps);
             EXPECT_EQ(oldest_local_unreliable_monotonic_timestamps,
                       expected_oldest_local_monotonic_timestamps);
+            EXPECT_EQ(
+                oldest_logger_remote_unreliable_monotonic_timestamps,
+                monotonic_clock::epoch() + chrono::nanoseconds(1323100000));
+            EXPECT_EQ(
+                oldest_logger_local_unreliable_monotonic_timestamps,
+                monotonic_clock::epoch() + chrono::nanoseconds(10100200000));
             break;
           default:
             FAIL();
@@ -3004,7 +3092,6 @@ TEST_P(MultinodeLoggerTest, RemoteRebootOnlyTimestamps) {
             if (shared()) {
               EXPECT_EQ(source_node_boot_uuid, pi2_boot1);
               EXPECT_EQ(monotonic_start_time, monotonic_clock::min_time);
-              LOG(INFO) << "Shared";
               break;
             }
             [[fallthrough]];
@@ -3015,17 +3102,57 @@ TEST_P(MultinodeLoggerTest, RemoteRebootOnlyTimestamps) {
       } else {
         switch (log_header->message().parts_index()) {
           case 0:
+            if (reliable) {
+              EXPECT_EQ(oldest_remote_unreliable_monotonic_timestamps,
+                        monotonic_clock::max_time);
+              EXPECT_EQ(oldest_local_unreliable_monotonic_timestamps,
+                        monotonic_clock::max_time);
+              EXPECT_EQ(
+                  oldest_logger_remote_unreliable_monotonic_timestamps,
+                  monotonic_clock::epoch() + chrono::nanoseconds(100150000))
+                  << file;
+              EXPECT_EQ(
+                  oldest_logger_local_unreliable_monotonic_timestamps,
+                  monotonic_clock::epoch() + chrono::nanoseconds(100250000))
+                  << file;
+            } else {
+              EXPECT_EQ(oldest_remote_unreliable_monotonic_timestamps,
+                        expected_oldest_remote_monotonic_timestamps);
+              EXPECT_EQ(oldest_local_unreliable_monotonic_timestamps,
+                        expected_oldest_local_monotonic_timestamps);
+              EXPECT_EQ(
+                  oldest_logger_remote_unreliable_monotonic_timestamps,
+                  monotonic_clock::epoch() + chrono::nanoseconds(90150000))
+                  << file;
+              EXPECT_EQ(
+                  oldest_logger_local_unreliable_monotonic_timestamps,
+                  monotonic_clock::epoch() + chrono::nanoseconds(90250000))
+                  << file;
+            }
+            break;
           case 1:
             if (reliable) {
               EXPECT_EQ(oldest_remote_unreliable_monotonic_timestamps,
                         monotonic_clock::max_time);
               EXPECT_EQ(oldest_local_unreliable_monotonic_timestamps,
                         monotonic_clock::max_time);
+              EXPECT_EQ(
+                  oldest_logger_remote_unreliable_monotonic_timestamps,
+                  monotonic_clock::epoch() + chrono::nanoseconds(1323100000));
+              EXPECT_EQ(
+                  oldest_logger_local_unreliable_monotonic_timestamps,
+                  monotonic_clock::epoch() + chrono::nanoseconds(10100200000));
             } else {
               EXPECT_EQ(oldest_remote_unreliable_monotonic_timestamps,
                         expected_oldest_remote_monotonic_timestamps);
               EXPECT_EQ(oldest_local_unreliable_monotonic_timestamps,
                         expected_oldest_local_monotonic_timestamps);
+              EXPECT_EQ(
+                  oldest_logger_remote_unreliable_monotonic_timestamps,
+                  monotonic_clock::epoch() + chrono::nanoseconds(1323150000));
+              EXPECT_EQ(
+                  oldest_logger_local_unreliable_monotonic_timestamps,
+                  monotonic_clock::epoch() + chrono::nanoseconds(10100250000));
             }
             break;
           default:

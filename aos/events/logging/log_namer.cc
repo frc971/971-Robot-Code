@@ -18,10 +18,13 @@ namespace aos {
 namespace logger {
 
 NewDataWriter::NewDataWriter(LogNamer *log_namer, const Node *node,
+                             const Node *logger_node,
                              std::function<void(NewDataWriter *)> reopen,
                              std::function<void(NewDataWriter *)> close)
     : node_(node),
       node_index_(configuration::GetNodeIndex(log_namer->configuration_, node)),
+      logger_node_index_(
+          configuration::GetNodeIndex(log_namer->configuration_, logger_node)),
       log_namer_(log_namer),
       reopen_(std::move(reopen)),
       close_(std::move(close)) {
@@ -61,7 +64,10 @@ void NewDataWriter::Reboot(const UUID &source_node_boot_uuid) {
         monotonic_clock::max_time;
     state.oldest_remote_reliable_monotonic_timestamp =
         monotonic_clock::max_time;
-    state.oldest_local_reliable_monotonic_timestamp =
+    state.oldest_local_reliable_monotonic_timestamp = monotonic_clock::max_time;
+    state.oldest_logger_remote_unreliable_monotonic_timestamp =
+        monotonic_clock::max_time;
+    state.oldest_logger_local_unreliable_monotonic_timestamp =
         monotonic_clock::max_time;
   }
 
@@ -82,8 +88,8 @@ void NewDataWriter::UpdateBoot(const UUID &source_node_boot_uuid) {
 void NewDataWriter::UpdateRemote(
     const size_t remote_node_index, const UUID &remote_node_boot_uuid,
     const monotonic_clock::time_point monotonic_remote_time,
-    const monotonic_clock::time_point monotonic_event_time,
-    const bool reliable) {
+    const monotonic_clock::time_point monotonic_event_time, const bool reliable,
+    monotonic_clock::time_point monotonic_timestamp_time) {
   // Trigger rotation if anything in the header changes.
   bool rotate = false;
   CHECK_LT(remote_node_index, state_.size());
@@ -102,7 +108,10 @@ void NewDataWriter::UpdateRemote(
         monotonic_clock::max_time;
     state.oldest_remote_reliable_monotonic_timestamp =
         monotonic_clock::max_time;
-    state.oldest_local_reliable_monotonic_timestamp =
+    state.oldest_local_reliable_monotonic_timestamp = monotonic_clock::max_time;
+    state.oldest_logger_remote_unreliable_monotonic_timestamp =
+        monotonic_clock::max_time;
+    state.oldest_logger_local_unreliable_monotonic_timestamp =
         monotonic_clock::max_time;
     rotate = true;
   }
@@ -129,6 +138,27 @@ void NewDataWriter::UpdateRemote(
               << monotonic_remote_time;
       state.oldest_remote_reliable_monotonic_timestamp = monotonic_remote_time;
       state.oldest_local_reliable_monotonic_timestamp = monotonic_event_time;
+      rotate = true;
+    }
+  }
+
+  // Track the logger timestamps too.
+  if (monotonic_timestamp_time != monotonic_clock::min_time) {
+    State &logger_state = state_[node_index_];
+    CHECK_EQ(remote_node_index, logger_node_index_);
+    if (monotonic_event_time <
+        logger_state.oldest_logger_remote_unreliable_monotonic_timestamp) {
+      VLOG(1)
+          << filename() << " Remote " << node_index_
+          << " oldest_logger_remote_unreliable_monotonic_timestamp updated "
+             "from "
+          << logger_state.oldest_logger_remote_unreliable_monotonic_timestamp
+          << " to " << monotonic_event_time;
+      logger_state.oldest_logger_remote_unreliable_monotonic_timestamp =
+          monotonic_event_time;
+      logger_state.oldest_logger_local_unreliable_monotonic_timestamp =
+          monotonic_timestamp_time;
+
       rotate = true;
     }
   }
@@ -238,7 +268,7 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> LogNamer::MakeHeader(
   const UUID &source_node_boot_uuid = state[node_index].boot_uuid;
   const Node *const source_node =
       configuration::GetNode(configuration_, node_index);
-  CHECK_EQ(LogFileHeader::MiniReflectTypeTable()->num_elems, 30u);
+  CHECK_EQ(LogFileHeader::MiniReflectTypeTable()->num_elems, 32u);
   flatbuffers::FlatBufferBuilder fbb;
   fbb.ForceDefaults(true);
 
@@ -298,32 +328,36 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> LogNamer::MakeHeader(
 
   int64_t *unused;
   flatbuffers::Offset<flatbuffers::Vector<int64_t>>
-      oldest_remote_monotonic_timestamps_offset = fbb.CreateUninitializedVector(
-          state.size(), &unused);
+      oldest_remote_monotonic_timestamps_offset =
+          fbb.CreateUninitializedVector(state.size(), &unused);
 
   flatbuffers::Offset<flatbuffers::Vector<int64_t>>
-      oldest_local_monotonic_timestamps_offset = fbb.CreateUninitializedVector(
-          state.size(), &unused);
+      oldest_local_monotonic_timestamps_offset =
+          fbb.CreateUninitializedVector(state.size(), &unused);
 
   flatbuffers::Offset<flatbuffers::Vector<int64_t>>
       oldest_remote_unreliable_monotonic_timestamps_offset =
-          fbb.CreateUninitializedVector(
-              state.size(), &unused);
+          fbb.CreateUninitializedVector(state.size(), &unused);
 
   flatbuffers::Offset<flatbuffers::Vector<int64_t>>
       oldest_local_unreliable_monotonic_timestamps_offset =
-          fbb.CreateUninitializedVector(
-              state.size(), &unused);
+          fbb.CreateUninitializedVector(state.size(), &unused);
 
   flatbuffers::Offset<flatbuffers::Vector<int64_t>>
       oldest_remote_reliable_monotonic_timestamps_offset =
-          fbb.CreateUninitializedVector(
-              state.size(), &unused);
+          fbb.CreateUninitializedVector(state.size(), &unused);
 
   flatbuffers::Offset<flatbuffers::Vector<int64_t>>
       oldest_local_reliable_monotonic_timestamps_offset =
-          fbb.CreateUninitializedVector(
-              state.size(), &unused);
+          fbb.CreateUninitializedVector(state.size(), &unused);
+
+  flatbuffers::Offset<flatbuffers::Vector<int64_t>>
+      oldest_logger_remote_unreliable_monotonic_timestamps_offset =
+          fbb.CreateUninitializedVector(state.size(), &unused);
+
+  flatbuffers::Offset<flatbuffers::Vector<int64_t>>
+      oldest_logger_local_unreliable_monotonic_timestamps_offset =
+          fbb.CreateUninitializedVector(state.size(), &unused);
 
   for (size_t i = 0; i < state.size(); ++i) {
     if (state[i].boot_uuid != UUID::Zero()) {
@@ -343,6 +377,10 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> LogNamer::MakeHeader(
       CHECK_EQ(state[i].oldest_remote_reliable_monotonic_timestamp,
                monotonic_clock::max_time);
       CHECK_EQ(state[i].oldest_local_reliable_monotonic_timestamp,
+               monotonic_clock::max_time);
+      CHECK_EQ(state[i].oldest_logger_remote_unreliable_monotonic_timestamp,
+               monotonic_clock::max_time);
+      CHECK_EQ(state[i].oldest_logger_local_unreliable_monotonic_timestamp,
                monotonic_clock::max_time);
     }
 
@@ -381,6 +419,19 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> LogNamer::MakeHeader(
             i, state[i]
                    .oldest_local_reliable_monotonic_timestamp.time_since_epoch()
                    .count());
+
+    flatbuffers::GetMutableTemporaryPointer(
+        fbb, oldest_logger_remote_unreliable_monotonic_timestamps_offset)
+        ->Mutate(i, state[i]
+                        .oldest_logger_remote_unreliable_monotonic_timestamp
+                        .time_since_epoch()
+                        .count());
+    flatbuffers::GetMutableTemporaryPointer(
+        fbb, oldest_logger_local_unreliable_monotonic_timestamps_offset)
+        ->Mutate(i, state[i]
+                        .oldest_logger_local_unreliable_monotonic_timestamp
+                        .time_since_epoch()
+                        .count());
   }
 
   flatbuffers::Offset<
@@ -467,6 +518,12 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> LogNamer::MakeHeader(
       oldest_remote_reliable_monotonic_timestamps_offset);
   log_file_header_builder.add_oldest_local_reliable_monotonic_timestamps(
       oldest_local_reliable_monotonic_timestamps_offset);
+  log_file_header_builder
+      .add_oldest_logger_remote_unreliable_monotonic_timestamps(
+          oldest_logger_remote_unreliable_monotonic_timestamps_offset);
+  log_file_header_builder
+      .add_oldest_logger_local_unreliable_monotonic_timestamps(
+          oldest_logger_local_unreliable_monotonic_timestamps_offset);
   fbb.FinishSizePrefixed(log_file_header_builder.Finish());
   aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> result(
       fbb.Release());
@@ -608,13 +665,14 @@ NewDataWriter *MultiNodeLogNamer::MakeWriter(const Channel *channel) {
     nodes_.emplace_back(source_node);
   }
 
-  NewDataWriter data_writer(this, source_node,
-                            [this, channel](NewDataWriter *data_writer) {
-                              OpenWriter(channel, data_writer);
-                            },
-                            [this](NewDataWriter *data_writer) {
-                              CloseWriter(&data_writer->writer);
-                            });
+  NewDataWriter data_writer(
+      this, source_node, node_,
+      [this, channel](NewDataWriter *data_writer) {
+        OpenWriter(channel, data_writer);
+      },
+      [this](NewDataWriter *data_writer) {
+        CloseWriter(&data_writer->writer);
+      });
   return &(
       data_writers_.emplace(channel, std::move(data_writer)).first->second);
 }
@@ -632,14 +690,14 @@ NewDataWriter *MultiNodeLogNamer::MakeForwardedTimestampWriter(
     nodes_.emplace_back(node);
   }
 
-  NewDataWriter data_writer(this, configuration::GetNode(configuration_, node),
-                            [this, channel](NewDataWriter *data_writer) {
-                              OpenForwardedTimestampWriter(channel,
-                                                           data_writer);
-                            },
-                            [this](NewDataWriter *data_writer) {
-                              CloseWriter(&data_writer->writer);
-                            });
+  NewDataWriter data_writer(
+      this, configuration::GetNode(configuration_, node), node_,
+      [this, channel](NewDataWriter *data_writer) {
+        OpenForwardedTimestampWriter(channel, data_writer);
+      },
+      [this](NewDataWriter *data_writer) {
+        CloseWriter(&data_writer->writer);
+      });
   return &(
       data_writers_.emplace(channel, std::move(data_writer)).first->second);
 }
@@ -704,7 +762,7 @@ void MultiNodeLogNamer::OpenWriter(const Channel *channel,
 void MultiNodeLogNamer::OpenDataWriter() {
   if (!data_writer_) {
     data_writer_ = std::make_unique<NewDataWriter>(
-        this, node_,
+        this, node_, node_,
         [this](NewDataWriter *writer) {
           std::string name;
           if (node() != nullptr) {

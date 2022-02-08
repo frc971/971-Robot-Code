@@ -185,6 +185,12 @@ table LogFileHeader {
   // same quantity.
   oldest_remote_reliable_monotonic_timestamps:[int64] (id: 28);
   oldest_local_reliable_monotonic_timestamps:[int64] (id: 29);
+
+  // For all the remote timestamps which come back to the logger.  The "local"
+  // time here is the logger node boot, and "remote" is the node which sent the
+  // timestamps.
+  oldest_logger_remote_unreliable_monotonic_timestamps:[int64] (id: 30);
+  oldest_logger_local_unreliable_monotonic_timestamps:[int64] (id: 31);
 }
 
 // Table holding a message.

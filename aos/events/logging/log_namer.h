@@ -36,7 +36,7 @@ class NewDataWriter {
   // node is the node whom's prespective we are logging from.
   // reopen is called whenever a file needs to be reopened.
   // close is called to close that file and extract any statistics.
-  NewDataWriter(LogNamer *log_namer, const Node *node,
+  NewDataWriter(LogNamer *log_namer, const Node *node, const Node *logger_node,
                 std::function<void(NewDataWriter *)> reopen,
                 std::function<void(NewDataWriter *)> close);
 
@@ -50,10 +50,14 @@ class NewDataWriter {
   // Rotates the log file, delaying writing the new header until data arrives.
   void Rotate();
 
+  // Updates all the metadata in the log file about the remote node which this
+  // message is from.
   void UpdateRemote(size_t remote_node_index, const UUID &remote_node_boot_uuid,
                     monotonic_clock::time_point monotonic_remote_time,
                     monotonic_clock::time_point monotonic_event_time,
-                    bool reliable);
+                    bool reliable,
+                    monotonic_clock::time_point monotonic_timestamp_time =
+                        monotonic_clock::min_time);
   // Queues up a message with the provided boot UUID.
   void QueueMessage(flatbuffers::FlatBufferBuilder *fbb,
                     const UUID &node_boot_uuid,
@@ -107,6 +111,18 @@ class NewDataWriter {
     // oldest_local_reliable_monotonic_timestamp.
     monotonic_clock::time_point oldest_local_reliable_monotonic_timestamp =
         monotonic_clock::max_time;
+
+    // Timestamp on the remote monotonic clock of the oldest message timestamp
+    // sent back to logger_node_index_.  The remote here will be the node this
+    // part is from the perspective of, ie node_index_.
+    monotonic_clock::time_point
+        oldest_logger_remote_unreliable_monotonic_timestamp =
+            monotonic_clock::max_time;
+    // The time on the monotonic clock of the logger when this timestamp made it
+    // back to the logger (logger_node_index_).
+    monotonic_clock::time_point
+        oldest_logger_local_unreliable_monotonic_timestamp =
+            monotonic_clock::max_time;
   };
 
  private:
@@ -122,6 +138,7 @@ class NewDataWriter {
 
   const Node *node_ = nullptr;
   size_t node_index_ = 0;
+  size_t logger_node_index_ = 0;
   LogNamer *log_namer_;
   UUID parts_uuid_ = UUID::Random();
   size_t parts_index_ = 0;
@@ -280,14 +297,15 @@ class LocalLogNamer : public LogNamer {
                 const aos::Node *node)
       : LogNamer(event_loop->configuration(), event_loop, node),
         base_name_(base_name),
-        data_writer_(this, node,
-                     [this](NewDataWriter *writer) {
-                       writer->writer = std::make_unique<DetachedBufferWriter>(
-                           absl::StrCat(base_name_, ".part",
-                                        writer->parts_index(), ".bfbs"),
-                           std::make_unique<aos::logger::DummyEncoder>());
-                     },
-                     [](NewDataWriter * /*writer*/) {}) {}
+        data_writer_(
+            this, node, event_loop->node(),
+            [this](NewDataWriter *writer) {
+              writer->writer = std::make_unique<DetachedBufferWriter>(
+                  absl::StrCat(base_name_, ".part", writer->parts_index(),
+                               ".bfbs"),
+                  std::make_unique<aos::logger::DummyEncoder>());
+            },
+            [](NewDataWriter * /*writer*/) {}) {}
 
   LocalLogNamer(const LocalLogNamer &) = delete;
   LocalLogNamer(LocalLogNamer &&) = delete;
