@@ -13,5 +13,5 @@ go_library(
     importpath = "github.com/frc971/971-Robot-Code/scouting",
     target_compatible_with = ["@platforms//cpu:x86_64"],
     visibility = ["//visibility:private"],
-    deps = ["@com_github_mattn_go_sqlite3//:go_default_library"],
+    deps = ["@com_github_mattn_go_sqlite3//:go-sqlite3"],
 )

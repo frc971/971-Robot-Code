@@ -1,7 +1,11 @@
 """Provides helper functions for mirroring Go repositories."""
 
-import unittest.mock
+import json
+import subprocess
 from typing import List, Dict
+import unittest.mock
+
+from bazel_tools.tools.python.runfiles import runfiles
 
 
 def read_file(filepath: str) -> str:
@@ -39,3 +43,30 @@ def parse_go_repositories(filepath: str) -> List[Dict[str, str]]:
 
     return repositories
 
+
+def parse_go_mirror_info(filepath: str) -> Dict[str, Dict[str, str]]:
+    """Parses the tools/go/go_mirrors.bzl file and returns the GO_MIRROR_INFO dictionary."""
+    global_data = {}
+    compiled_code = compile(read_file(filepath), filepath, "exec")
+    eval(compiled_code, global_data)
+
+    return global_data["GO_MIRROR_INFO"]
+
+
+def write_go_mirror_info(filepath: str, mirror_info: Dict[str, Dict[str, str]]):
+    """Saves the specified mirror_info as GO_MIRROR_INFO into tools/go/go_mirrors.bzl."""
+    with open(filepath, "w") as file:
+        file.write("# This file is auto-generated. Do not edit.\n")
+        file.write("GO_MIRROR_INFO = ")
+        # Format as JSON first. It's parsable as Starlark.
+        json.dump(mirror_info, file, indent=4, sort_keys=True)
+        file.write("\n")
+
+    # Properly format the file now so that the linter doesn't complain.
+    r = runfiles.Create()
+    subprocess.run(
+        [
+            r.Rlocation("com_github_bazelbuild_buildtools/buildifier/buildifier_/buildifier"),
+            filepath,
+        ],
+        check=True)

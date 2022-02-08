@@ -147,13 +147,6 @@ GO_MIRROR_INFO = {
         "strip_prefix": "github.com/grpc-ecosystem/grpc-gateway@v1.16.0",
         "version": "v1.16.0",
     },
-    "com_github_joho_godotenv": {
-        "filename": "com_github_joho_godotenv__v1.4.0.zip",
-        "importpath": "github.com/joho/godotenv",
-        "sha256": "6c6d2f6c2a9d2ee8608e4acd7ba7035d31b1f0da3c7d9537a32928b8eed4e3cd",
-        "strip_prefix": "github.com/joho/godotenv@v1.4.0",
-        "version": "v1.4.0",
-    },
     "com_github_mattn_go_sqlite3": {
         "filename": "com_github_mattn_go_sqlite3__v1.14.10.zip",
         "importpath": "github.com/mattn/go-sqlite3",

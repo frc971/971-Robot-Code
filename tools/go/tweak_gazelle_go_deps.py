@@ -12,14 +12,14 @@ import argparse
 import sys
 import textwrap
 
-import tools.go.mirror_lib
+import org_frc971.tools.go.mirror_lib
 
 def main(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument("go_deps_bzl", type=str)
     args = parser.parse_args(argv[1:])
 
-    repos = tools.go.mirror_lib.parse_go_repositories(args.go_deps_bzl)
+    repos = org_frc971.tools.go.mirror_lib.parse_go_repositories(args.go_deps_bzl)
 
     with open(args.go_deps_bzl, "w") as file:
         file.write(textwrap.dedent("""\
