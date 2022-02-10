@@ -4,6 +4,14 @@ table Output {
     // Voltage of the climber falcon
     // - is down + is up
     climber_voltage:double (id: 0);
+
+    // Voltage of the catapult falcon
+    // Positive rotates counterclockwise parallel to the motor shaft
+    catapult_voltage:double (id: 1);
+
+    // Voltage of the turret falcon
+    // Positive rotates counterclockwise from a bird's eye view
+    turret_voltage:double (id: 2);
 }
 
 root_type Output;
