@@ -1,5 +1,5 @@
 load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library")
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_py_library")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_go_library", "flatbuffer_py_library")
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 load("//tools/build_rules:apache.bzl", "apache_wrapper")
 load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library", "rust_test")
@@ -74,6 +74,14 @@ flatbuffer_py_library(
         "Bar",
     ],
     target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+)
+
+flatbuffer_go_library(
+    name = "test_go_fbs",
+    srcs = ["test.fbs"],
+    importpath = "github.com/frc971/971-Robot-Code/build_tests/fbs",
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     visibility = ["//visibility:public"],
 )
 
