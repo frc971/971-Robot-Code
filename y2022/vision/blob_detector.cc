@@ -293,18 +293,16 @@ void BlobDetector::DrawBlobs(
   cv::circle(view_image, centroid, 3, cv::Scalar(255, 255, 0), cv::FILLED);
 }
 
-void BlobDetector::ExtractBlobs(
-    cv::Mat rgb_image, cv::Mat &binarized_image,
-    std::vector<std::vector<cv::Point>> &filtered_blobs,
-    std::vector<std::vector<cv::Point>> &unfiltered_blobs,
-    std::vector<BlobStats> &blob_stats, cv::Point &centroid) {
+void BlobDetector::ExtractBlobs(cv::Mat rgb_image,
+                                BlobDetector::BlobResult *blob_result) {
   auto start = aos::monotonic_clock::now();
-  binarized_image = ThresholdImage(rgb_image);
-  unfiltered_blobs = FindBlobs(binarized_image);
-  blob_stats = ComputeStats(unfiltered_blobs);
-  auto filtered_pair = FilterBlobs(unfiltered_blobs, blob_stats);
-  filtered_blobs = filtered_pair.first;
-  centroid = filtered_pair.second;
+  blob_result->binarized_image = ThresholdImage(rgb_image);
+  blob_result->unfiltered_blobs = FindBlobs(blob_result->binarized_image);
+  blob_result->blob_stats = ComputeStats(blob_result->unfiltered_blobs);
+  auto filtered_pair =
+      FilterBlobs(blob_result->unfiltered_blobs, blob_result->blob_stats);
+  blob_result->filtered_blobs = filtered_pair.first;
+  blob_result->centroid = filtered_pair.second;
   auto end = aos::monotonic_clock::now();
   LOG(INFO) << "Blob detection elapsed time: "
             << std::chrono::duration<double, std::milli>(end - start).count()
