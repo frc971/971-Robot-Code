@@ -4,7 +4,7 @@ set -e
 
 # Disk image to use for creating SD card
 # NOTE: You MUST run modify_rootfs.sh on this image BEFORE running make_sd.sh
-ORIG_IMAGE="2021-10-30-raspios-bullseye-armhf-lite.img"
+ORIG_IMAGE="2022-01-28-raspios-bullseye-arm64-lite.img"
 IMAGE=`echo ${ORIG_IMAGE} | sed s/.img/-frc-mods.img/`
 DEVICE="/dev/sda"
 
@@ -22,7 +22,7 @@ mkdir -p "${PARTITION}"
 sudo mount "${DEVICE}2" "${PARTITION}"
 
 function target() {
-  HOME=/root/ USER=root sudo proot -0 -q qemu-arm-static -w / -r "${PARTITION}" "$@"
+  HOME=/root/ USER=root sudo proot -0 -q qemu-aarch64-static -w / -r "${PARTITION}" "$@"
 }
 
 if [ "${1}" == "" ]; then

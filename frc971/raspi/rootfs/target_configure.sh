@@ -17,7 +17,6 @@ apt-get update
 
 apt-get install -y vim-nox \
   git \
-  python3-pip \
   cpufrequtils \
   libopencv-calib3d4.5 \
   libopencv-contrib4.5 \
@@ -37,7 +36,6 @@ apt-get install -y vim-nox \
   libopencv-videoio4.5 \
   libopencv-videostab4.5 \
   libopencv-viz4.5 \
-  python3-opencv \
   libnice10 \
   pmount \
   libnice-dev \
@@ -73,6 +71,7 @@ rm -f /etc/profile.d/wifi-check.sh
 
 systemctl enable ssh.service
 systemctl enable frc971.service
+systemctl enable frc971chrt.service
 
 # Default us to pi-971-1
 /root/bin/change_hostname.sh pi-971-1
