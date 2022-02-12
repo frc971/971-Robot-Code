@@ -9,6 +9,7 @@
 #include "frc971/control_loops/pose.h"
 #include "frc971/control_loops/static_zeroing_single_dof_profiled_subsystem.h"
 #include "y2022/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
+#include "y2022/control_loops/superstructure/intake/intake_plant.h"
 
 namespace y2022 {
 namespace constants {
@@ -32,6 +33,19 @@ struct Values {
   static constexpr double kRollerSupplyCurrentLimit() { return 30.0; }
   static constexpr double kRollerStatorCurrentLimit() { return 40.0; }
 
+  ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<
+      ::frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator>
+      intake;
+
+  // TODO (Yash): Constants need to be tuned
+  static constexpr ::frc971::constants::Range kIntakeRange() {
+    return ::frc971::constants::Range{
+        .lower_hard = -0.5,         // Back Hard
+        .upper_hard = 2.85 + 0.05,  // Front Hard
+        .lower = -0.300,            // Back Soft
+        .upper = 2.725              // Front Soft
+    };
+  }
   // Climber
   static constexpr double kClimberSupplyCurrentLimit() { return 60.0; }
 
