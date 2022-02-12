@@ -6,7 +6,9 @@
 
 DEFINE_string(config, "./config.json", "File path of aos configuration");
 DEFINE_string(data_dir, "www", "Directory to serve data files from");
-DEFINE_int32(buffer_size, 0, "-1 if infinite, in # of messages / channel.");
+DEFINE_int32(buffer_size, 1000000,
+             "-1 if infinite, in bytes / channel. If there are no active "
+             "connections, will not store anything.");
 
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
@@ -16,7 +18,8 @@ int main(int argc, char **argv) {
 
   aos::ShmEventLoop event_loop(&config.message());
 
-  aos::web_proxy::WebProxy web_proxy(&event_loop, FLAGS_buffer_size);
+  aos::web_proxy::WebProxy web_proxy(
+      &event_loop, aos::web_proxy::StoreHistory::kNo, FLAGS_buffer_size);
   web_proxy.SetDataPath(FLAGS_data_dir.c_str());
 
   event_loop.Run();

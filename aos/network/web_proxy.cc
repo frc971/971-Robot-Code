@@ -28,7 +28,9 @@ DEFINE_int32(pre_send_messages, 10000,
 namespace aos {
 namespace web_proxy {
 WebsocketHandler::WebsocketHandler(::seasocks::Server *server,
-                                   aos::EventLoop *event_loop, int buffer_size)
+                                   aos::EventLoop *event_loop,
+                                   StoreHistory store_history,
+                                   int per_channel_buffer_size_bytes)
     : server_(server),
       config_(aos::CopyFlatBuffer(event_loop->configuration())),
       event_loop_(event_loop) {
@@ -47,7 +49,10 @@ WebsocketHandler::WebsocketHandler(::seasocks::Server *server,
     if (aos::configuration::ChannelIsReadableOnNode(channel, self)) {
       auto fetcher = event_loop_->MakeRawFetcher(channel);
       subscribers_.emplace_back(std::make_unique<aos::web_proxy::Subscriber>(
-          std::move(fetcher), i, buffer_size));
+          std::move(fetcher), i, store_history,
+          per_channel_buffer_size_bytes < 0
+              ? -1
+              : per_channel_buffer_size_bytes / channel->max_size()));
     } else {
       subscribers_.emplace_back(nullptr);
     }
@@ -126,19 +131,24 @@ static void ReFdClose(int fd) {
   global_epoll->DeleteFd(fd);
 }
 
-WebProxy::WebProxy(aos::EventLoop *event_loop, int buffer_size)
-    : WebProxy(event_loop, &internal_epoll_, buffer_size) {}
+WebProxy::WebProxy(aos::EventLoop *event_loop, StoreHistory store_history,
+                   int per_channel_buffer_size_bytes)
+    : WebProxy(event_loop, &internal_epoll_, store_history,
+               per_channel_buffer_size_bytes) {}
 
-WebProxy::WebProxy(aos::ShmEventLoop *event_loop, int buffer_size)
-    : WebProxy(event_loop, event_loop->epoll(), buffer_size) {}
+WebProxy::WebProxy(aos::ShmEventLoop *event_loop, StoreHistory store_history,
+                   int per_channel_buffer_size_bytes)
+    : WebProxy(event_loop, event_loop->epoll(), store_history,
+               per_channel_buffer_size_bytes) {}
 
 WebProxy::WebProxy(aos::EventLoop *event_loop, aos::internal::EPoll *epoll,
-                   int buffer_size)
+                   StoreHistory store_history,
+                   int per_channel_buffer_size_bytes)
     : epoll_(epoll),
       server_(std::make_shared<aos::seasocks::SeasocksLogger>(
           ::seasocks::Logger::Level::Info)),
-      websocket_handler_(
-          new WebsocketHandler(&server_, event_loop, buffer_size)) {
+      websocket_handler_(new WebsocketHandler(
+          &server_, event_loop, store_history, per_channel_buffer_size_bytes)) {
   CHECK(!global_epoll);
   global_epoll = epoll;
 
@@ -192,9 +202,12 @@ WebProxy::~WebProxy() {
 }
 
 void Subscriber::RunIteration() {
-  if (channels_.empty() && buffer_size_ == 0) {
+  if (channels_.empty() && (buffer_size_ == 0 || !store_history_)) {
+    fetcher_->Fetch();
+    message_buffer_.clear();
     return;
   }
+
 
   while (fetcher_->FetchNext()) {
     // If we aren't building up a buffer, short-circuit the FetchNext().
@@ -270,12 +283,6 @@ void Subscriber::AddListener(std::shared_ptr<ScopedDataChannel> data_channel,
                              TransferMethod transfer_method) {
   ChannelInformation info;
   info.transfer_method = transfer_method;
-
-  // If we aren't keeping a buffer and there are no existing listeners, call
-  // Fetch() to avoid falling behind on future calls to FetchNext().
-  if (channels_.empty() && buffer_size_ == 0) {
-    fetcher_->Fetch();
-  }
 
   channels_.emplace_back(std::make_pair(data_channel, info));
 

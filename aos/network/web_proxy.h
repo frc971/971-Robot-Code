@@ -24,13 +24,19 @@ class Connection;
 class Subscriber;
 class ApplicationConnection;
 
+enum class StoreHistory {
+  kNo,
+  kYes,
+};
+
 // Basic class that handles receiving new websocket connections. Creates a new
 // Connection to manage the rest of the negotiation and data passing. When the
 // websocket closes, it deletes the Connection.
 class WebsocketHandler : public ::seasocks::WebSocket::Handler {
  public:
   WebsocketHandler(::seasocks::Server *server, aos::EventLoop *event_loop,
-                   int buffer_size);
+                   StoreHistory store_history,
+                   int per_channel_buffer_size_bytes);
   void onConnect(::seasocks::WebSocket *sock) override;
   void onData(::seasocks::WebSocket *sock, const uint8_t *data,
               size_t size) override;
@@ -50,15 +56,28 @@ class WebsocketHandler : public ::seasocks::WebSocket::Handler {
 // Wrapper class that manages the seasocks server and WebsocketHandler.
 class WebProxy {
  public:
-  WebProxy(aos::EventLoop *event_loop, int buffer_size);
-  WebProxy(aos::ShmEventLoop *event_loop, int buffer_size);
+  // Constructs a WebProxy object for interacting with a webpage. store_history
+  // and per_channel_buffer_size_bytes specify how we manage delivering LOSSLESS
+  // messages to the client:
+  // * store_history specifies whether we should always buffer up data for all
+  //   channels--even for messages that are played prior to the client
+  //   connecting. This is mostly useful for log replay where the client
+  //   will typically connect after the logfile has been fully loaded/replayed.
+  // * per_channel_buffer_size_bytes is the maximum amount of data to buffer
+  //   up per channel (-1 will indicate infinite data, which is used during log
+  //   replay). This is divided by the max_size per channel to determine
+  //   how many messages to queue up.
+  WebProxy(aos::EventLoop *event_loop, StoreHistory store_history,
+           int per_channel_buffer_size_bytes);
+  WebProxy(aos::ShmEventLoop *event_loop, StoreHistory store_history,
+           int per_channel_buffer_size_bytes);
   ~WebProxy();
 
   void SetDataPath(const char *path) { server_.setStaticPath(path); }
 
  private:
   WebProxy(aos::EventLoop *event_loop, aos::internal::EPoll *epoll,
-           int buffer_size);
+           StoreHistory store_history, int per_channel_buffer_size_bytes);
 
   aos::internal::EPoll internal_epoll_;
   aos::internal::EPoll *const epoll_;
@@ -96,9 +115,10 @@ class UpdateData : public ::seasocks::Server::Runnable {
 class Subscriber {
  public:
   Subscriber(std::unique_ptr<RawFetcher> fetcher, int channel_index,
-             int buffer_size)
+             StoreHistory store_history, int buffer_size)
       : fetcher_(std::move(fetcher)),
         channel_index_(channel_index),
+        store_history_(store_history == StoreHistory::kYes),
         buffer_size_(buffer_size) {}
 
   void RunIteration();
@@ -133,6 +153,10 @@ class Subscriber {
 
   std::unique_ptr<RawFetcher> fetcher_;
   int channel_index_;
+  // If set, will always build up a buffer of the most recent buffer_size_
+  // messages. If store_history_ is *not* set we will only buffer up messages
+  // while there is an active listener.
+  bool store_history_;
   int buffer_size_;
   std::deque<Message> message_buffer_;
   // The ScopedDataChannel that we use for actually sending data over WebRTC

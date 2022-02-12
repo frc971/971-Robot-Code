@@ -64,7 +64,7 @@ table MessageHeader {
 
 enum TransferMethod : byte {
   SUBSAMPLE,
-  EVERYTHING_WITH_HISTORY,
+  LOSSLESS,
 }
 
 table ChannelRequest {
