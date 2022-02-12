@@ -20,6 +20,7 @@ class AngularSystemParams(object):
                  kalman_q_vel,
                  kalman_q_voltage,
                  kalman_r_position,
+                 radius = None,
                  dt=0.00505):
         """Constructs an AngularSystemParams object.
 
@@ -38,6 +39,7 @@ class AngularSystemParams(object):
         self.kalman_q_vel = kalman_q_vel
         self.kalman_q_voltage = kalman_q_voltage
         self.kalman_r_position = kalman_r_position
+        self.radius = radius
         self.dt = dt
 
 
@@ -80,11 +82,17 @@ class AngularSystem(control_loop.ControlLoop):
         glog.debug('Controllability of %d',
                    numpy.linalg.matrix_rank(controllability))
         glog.debug('J: %f', self.J)
-        glog.debug('Stall torque: %f', self.motor.stall_torque / self.G)
-        glog.debug('Stall acceleration: %f',
+        glog.debug('Stall torque: %f (N m)', self.motor.stall_torque / self.G)
+        if self.params.radius is not None:
+            glog.debug('Stall force: %f (N)',
+                       self.motor.stall_torque / self.G / self.params.radius)
+            glog.debug('Stall force: %f (lbf)',
+                       self.motor.stall_torque / self.G / self.params.radius * 0.224809)
+
+        glog.debug('Stall acceleration: %f (rad/s^2)',
                    self.motor.stall_torque / self.G / self.J)
 
-        glog.debug('Free speed is %f',
+        glog.debug('Free speed is %f (rad/s)',
                    -self.B_continuous[1, 0] / self.A_continuous[1, 1] * 12.0)
 
         self.Q = numpy.matrix([[(1.0 / (self.params.q_pos**2.0)), 0.0],
