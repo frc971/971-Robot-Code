@@ -2,6 +2,7 @@ workspace(name = "org_frc971")
 
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "new_git_repository")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive", "http_file")
+load("@bazel_tools//tools/jdk:remote_java_repository.bzl", "remote_java_repository")
 load(
     "//debian:python.bzl",
     python_debs = "files",
@@ -614,20 +615,19 @@ http_archive(
 )
 
 # Java9 JDK.
-http_archive(
+remote_java_repository(
     name = "openjdk_linux_archive",
-    build_file_content = """
-java_runtime(
-    name = 'jdk',
-    srcs = glob(['**']),
-    visibility = ['//visibility:public'],
-)
-""",
+    exec_compatible_with = [
+        "@platforms//cpu:x86_64",
+        "@platforms//os:linux",
+    ],
+    prefix = "openjdk",
     sha256 = "f27cb933de4f9e7fe9a703486cf44c84bc8e9f138be0c270c9e5716a32367e87",
     strip_prefix = "zulu9.0.7.1-jdk9.0.7-linux_x64-allmodules",
     urls = [
         "https://www.frc971.org/Build-Dependencies/zulu9.0.7.1-jdk9.0.7-linux_x64-allmodules.tar.gz",
     ],
+    version = "9",
 )
 
 local_repository(
