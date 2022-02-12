@@ -20,6 +20,8 @@ class BlobDetector {
     cv::Mat binarized_image;
     std::vector<std::vector<cv::Point>> filtered_blobs, unfiltered_blobs;
     std::vector<BlobStats> blob_stats;
+    // In sorted order from left to right on the circle
+    std::vector<cv::Point> filtered_centroids;
     cv::Point centroid;
   };
 
@@ -35,22 +37,16 @@ class BlobDetector {
 
   // Extract stats for each blob
   static std::vector<BlobStats> ComputeStats(
-      std::vector<std::vector<cv::Point>> blobs);
+      const std::vector<std::vector<cv::Point>> &blobs);
 
   // Filter blobs to get rid of noise, too small/large items, and blobs that
-  // aren't in a circle. Returns a pair of filtered blobs and the average
-  // of their centroids.
-  static std::pair<std::vector<std::vector<cv::Point>>, cv::Point> FilterBlobs(
-      std::vector<std::vector<cv::Point>> blobs,
-      std::vector<BlobStats> blob_stats);
+  // aren't in a circle. Finds the filtered blobs, centroids, and the absolute
+  // centroid.
+  static void FilterBlobs(BlobResult *blob_result);
 
   // Draw Blobs on image
   // Optionally draw all blobs and filtered blobs
-  static void DrawBlobs(
-      cv::Mat view_image,
-      const std::vector<std::vector<cv::Point>> &filtered_blobs,
-      const std::vector<std::vector<cv::Point>> &unfiltered_blobs,
-      const std::vector<BlobStats> &blob_stats, cv::Point centroid);
+  static void DrawBlobs(const BlobResult &blob_result, cv::Mat view_image);
 
   static void ExtractBlobs(cv::Mat bgr_image, BlobResult *blob_result);
 };

@@ -18,7 +18,7 @@ DEFINE_bool(use_outdoors, false,
             "If true, change thresholds to handle outdoor illumination");
 DEFINE_uint64(outdoors_red_delta, 100,
               "Difference between green pixels vs. red, when outdoors");
-DEFINE_uint64(outdoors_blue_delta, 15,
+DEFINE_uint64(outdoors_blue_delta, 1,
               "Difference between green pixels vs. blue, when outdoors");
 
 namespace y2022 {
@@ -30,7 +30,7 @@ cv::Mat BlobDetector::ThresholdImage(cv::Mat bgr_image) {
 
   if (FLAGS_use_outdoors) {
     red_delta = FLAGS_outdoors_red_delta;
-    red_delta = FLAGS_outdoors_blue_delta;
+    blue_delta = FLAGS_outdoors_blue_delta;
   }
 
   cv::Mat binarized_image(cv::Size(bgr_image.cols, bgr_image.rows), CV_8UC1);
@@ -65,14 +65,11 @@ std::vector<std::vector<cv::Point>> BlobDetector::FindBlobs(
 }
 
 std::vector<BlobDetector::BlobStats> BlobDetector::ComputeStats(
-    std::vector<std::vector<cv::Point>> blobs) {
+    const std::vector<std::vector<cv::Point>> &blobs) {
   std::vector<BlobDetector::BlobStats> blob_stats;
   for (auto blob : blobs) {
-    // Make the blob convex before finding bounding box
-    std::vector<cv::Point> convex_blob;
-    cv::convexHull(blob, convex_blob);
-    auto blob_size = cv::boundingRect(convex_blob).size();
-    cv::Moments moments = cv::moments(convex_blob);
+    auto blob_size = cv::boundingRect(blob).size();
+    cv::Moments moments = cv::moments(blob);
 
     const auto centroid =
         cv::Point(moments.m10 / moments.m00, moments.m01 / moments.m00);
@@ -163,11 +160,16 @@ struct Circle {
     return std::abs(cv::norm(p_prime) - radius);
   }
 
-  bool InAngleRange(cv::Point2d p, double theta_min, double theta_max) const {
+  double AngleOf(cv::Point2d p) const {
     auto p_prime = TranslateToOrigin(p);
     // Flip the y because y values go downwards.
     p_prime.y *= -1;
-    const double theta = std::atan2(p_prime.y, p_prime.x);
+    return std::atan2(p_prime.y, p_prime.x);
+  }
+
+  // TODO(milind): handle wrapping around 2pi
+  bool InAngleRange(cv::Point2d p, double theta_min, double theta_max) const {
+    const double theta = AngleOf(p);
     return (theta >= theta_min && theta <= theta_max);
   }
 
@@ -181,25 +183,14 @@ struct Circle {
 
 }  // namespace
 
-std::pair<std::vector<std::vector<cv::Point>>, cv::Point>
-BlobDetector::FilterBlobs(std::vector<std::vector<cv::Point>> blobs,
-                          std::vector<BlobDetector::BlobStats> blob_stats) {
+void BlobDetector::FilterBlobs(BlobResult *blob_result) {
   std::vector<std::vector<cv::Point>> filtered_blobs;
   std::vector<BlobStats> filtered_stats;
 
-  auto blob_it = blobs.begin();
-  auto stats_it = blob_stats.begin();
-  while (blob_it < blobs.end() && stats_it < blob_stats.end()) {
-    // To estimate the maximum y, we can figure out the y value of the blobs
-    // when the camera is the farthest from the target, at the field corner.
-    // We can solve for the pitch of the blob:
-    // blob_pitch = atan((height_tape - height_camera) / depth) + camera_pitch
-    // The triangle with the height of the tape above the camera and the
-    // camera depth is similar to the one with the focal length in y pixels
-    // and the y coordinate offset from the center of the image. Therefore
-    // y_offset = focal_length_y * tan(blob_pitch), and y = -(y_offset -
-    // offset_y)
-    constexpr int kMaxY = 400;
+  auto blob_it = blob_result->unfiltered_blobs.begin();
+  auto stats_it = blob_result->blob_stats.begin();
+  while (blob_it < blob_result->unfiltered_blobs.end() &&
+         stats_it < blob_result->blob_stats.end()) {
     constexpr double kTapeAspectRatio = 5.0 / 2.0;
     constexpr double kAspectRatioThreshold = 1.6;
     constexpr double kMinArea = 10;
@@ -207,8 +198,7 @@ BlobDetector::FilterBlobs(std::vector<std::vector<cv::Point>> blobs,
 
     // Remove all blobs that are at the bottom of the image, have a different
     // aspect ratio than the tape, or have too little area or points.
-    if ((stats_it->centroid.y <= kMaxY) &&
-        (std::abs(kTapeAspectRatio - stats_it->aspect_ratio) <
+    if ((std::abs(1.0 - kTapeAspectRatio / stats_it->aspect_ratio) <
          kAspectRatioThreshold) &&
         (stats_it->area >= kMinArea) &&
         (stats_it->num_points >= kMinNumPoints)) {
@@ -220,11 +210,13 @@ BlobDetector::FilterBlobs(std::vector<std::vector<cv::Point>> blobs,
   }
 
   // Threshold for mean distance from a blob centroid to a circle.
-  constexpr double kCircleDistanceThreshold = 5.0;
+  constexpr double kCircleDistanceThreshold = 10.0;
   // We should only expect to see blobs between these angles on a circle.
-  constexpr double kMinBlobAngle = M_PI / 3;
+  constexpr double kDegToRad = M_PI / 180.0;
+  constexpr double kMinBlobAngle = 50.0 * kDegToRad;
   constexpr double kMaxBlobAngle = M_PI - kMinBlobAngle;
   std::vector<std::vector<cv::Point>> blob_circle;
+  Circle circle;
   std::vector<cv::Point2d> centroids;
 
   // If we see more than this number of blobs after filtering based on
@@ -251,28 +243,29 @@ BlobDetector::FilterBlobs(std::vector<std::vector<cv::Point>> blobs,
       std::vector<cv::Point2d> current_centroids{filtered_stats[j].centroid,
                                                  filtered_stats[k].centroid,
                                                  filtered_stats[l].centroid};
-      const std::optional<Circle> circle = Circle::Fit(current_centroids);
+      const std::optional<Circle> current_circle =
+          Circle::Fit(current_centroids);
 
       // Make sure that a circle could be created from the points
-      if (!circle) {
+      if (!current_circle) {
         continue;
       }
 
       // Only try to fit points to this circle if all of these are between
       // certain angles.
-      if (circle->InAngleRange(current_centroids[0], kMinBlobAngle,
-                               kMaxBlobAngle) &&
-          circle->InAngleRange(current_centroids[1], kMinBlobAngle,
-                               kMaxBlobAngle) &&
-          circle->InAngleRange(current_centroids[2], kMinBlobAngle,
-                               kMaxBlobAngle)) {
+      if (current_circle->InAngleRange(current_centroids[0], kMinBlobAngle,
+                                       kMaxBlobAngle) &&
+          current_circle->InAngleRange(current_centroids[1], kMinBlobAngle,
+                                       kMaxBlobAngle) &&
+          current_circle->InAngleRange(current_centroids[2], kMinBlobAngle,
+                                       kMaxBlobAngle)) {
         for (size_t m = 0; m < filtered_blobs.size(); m++) {
           // Add this blob to the list if it is close to the circle, is on the
           // top half,  and isn't one of the other blobs
-          if ((m != i) && (m != j) && (m != k) &&
-              circle->InAngleRange(filtered_stats[m].centroid, kMinBlobAngle,
-                                   kMaxBlobAngle) &&
-              (circle->DistanceTo(filtered_stats[m].centroid) <
+          if ((m != j) && (m != k) && (m != l) &&
+              current_circle->InAngleRange(filtered_stats[m].centroid,
+                                           kMinBlobAngle, kMaxBlobAngle) &&
+              (current_circle->DistanceTo(filtered_stats[m].centroid) <
                kCircleDistanceThreshold)) {
             current_blobs.emplace_back(filtered_blobs[m]);
             current_centroids.emplace_back(filtered_stats[m].centroid);
@@ -281,6 +274,7 @@ BlobDetector::FilterBlobs(std::vector<std::vector<cv::Point>> blobs,
 
         if (current_blobs.size() > blob_circle.size()) {
           blob_circle = current_blobs;
+          circle = *current_circle;
           centroids = current_centroids;
         }
       }
@@ -295,34 +289,52 @@ BlobDetector::FilterBlobs(std::vector<std::vector<cv::Point>> blobs,
     }
     avg_centroid.x /= centroids.size();
     avg_centroid.y /= centroids.size();
+
+    for (auto centroid : centroids) {
+      blob_result->filtered_centroids.emplace_back(
+          static_cast<int>(centroid.x), static_cast<int>(centroid.y));
+    }
+
+    // Sort the filtered centroids to make them go from left to right
+    std::sort(blob_result->filtered_centroids.begin(),
+              blob_result->filtered_centroids.end(),
+              [&circle](cv::Point p, cv::Point q) {
+                // If the angle is greater, it is more left and should be
+                // considered "less" for sorting
+                return circle.AngleOf(p) > circle.AngleOf(q);
+              });
   }
 
-  return {blob_circle, avg_centroid};
+  blob_result->filtered_blobs = blob_circle;
+  blob_result->centroid = avg_centroid;
 }
 
-void BlobDetector::DrawBlobs(
-    cv::Mat view_image,
-    const std::vector<std::vector<cv::Point>> &unfiltered_blobs,
-    const std::vector<std::vector<cv::Point>> &filtered_blobs,
-    const std::vector<BlobStats> &blob_stats, cv::Point centroid) {
+void BlobDetector::DrawBlobs(const BlobResult &blob_result,
+                             cv::Mat view_image) {
   CHECK_GT(view_image.cols, 0);
-  if (unfiltered_blobs.size() > 0) {
+  if (blob_result.unfiltered_blobs.size() > 0) {
     // Draw blobs unfilled, with red color border
-    cv::drawContours(view_image, unfiltered_blobs, -1, cv::Scalar(0, 0, 255),
-                     0);
+    cv::drawContours(view_image, blob_result.unfiltered_blobs, -1,
+                     cv::Scalar(0, 0, 255), 0);
   }
 
-  cv::drawContours(view_image, filtered_blobs, -1, cv::Scalar(0, 255, 0),
-                   cv::FILLED);
+  cv::drawContours(view_image, blob_result.filtered_blobs, -1,
+                   cv::Scalar(0, 100, 0), cv::FILLED);
 
+  static constexpr double kCircleRadius = 2.0;
   // Draw blob centroids
-  for (auto stats : blob_stats) {
-    cv::circle(view_image, stats.centroid, 2, cv::Scalar(255, 0, 0),
+  for (auto stats : blob_result.blob_stats) {
+    cv::circle(view_image, stats.centroid, kCircleRadius,
+               cv::Scalar(0, 215, 255), cv::FILLED);
+  }
+  for (auto centroid : blob_result.filtered_centroids) {
+    cv::circle(view_image, centroid, kCircleRadius, cv::Scalar(0, 255, 0),
                cv::FILLED);
   }
 
   // Draw average centroid
-  cv::circle(view_image, centroid, 3, cv::Scalar(255, 255, 0), cv::FILLED);
+  cv::circle(view_image, blob_result.centroid, kCircleRadius,
+             cv::Scalar(255, 255, 0), cv::FILLED);
 }
 
 void BlobDetector::ExtractBlobs(cv::Mat bgr_image,
@@ -331,10 +343,7 @@ void BlobDetector::ExtractBlobs(cv::Mat bgr_image,
   blob_result->binarized_image = ThresholdImage(bgr_image);
   blob_result->unfiltered_blobs = FindBlobs(blob_result->binarized_image);
   blob_result->blob_stats = ComputeStats(blob_result->unfiltered_blobs);
-  auto filtered_pair =
-      FilterBlobs(blob_result->unfiltered_blobs, blob_result->blob_stats);
-  blob_result->filtered_blobs = filtered_pair.first;
-  blob_result->centroid = filtered_pair.second;
+  FilterBlobs(blob_result);
   auto end = aos::monotonic_clock::now();
   VLOG(2) << "Blob detection elapsed time: "
           << std::chrono::duration<double, std::milli>(end - start).count()

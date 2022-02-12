@@ -27,8 +27,17 @@ table BlobResultFbs {
   unfiltered_blobs:[Blob] (id: 1);
   // Stats on the blobs
   blob_stats:[BlobStatsFbs] (id: 2);
+  // Centroids of filtered blobs
+  filtered_centroids:[Point] (id: 4);
   // Average centroid of the filtered blobs
   centroid:Point (id: 3);
+}
+
+// Euler angles rotation
+struct Rotation {
+  roll:double (id: 0);
+  pitch:double (id: 1);
+  yaw:double (id: 2);
 }
 
 // Contains the information the EKF wants from blobs from a single image.
@@ -36,19 +45,22 @@ table TargetEstimate {
   // Horizontal distance from the camera to the center of the upper hub
   distance:double (id: 0);
   // Angle from the camera to the target (horizontal angle in rad).
-  // Positive means right of center, negative means left.
+  // Positive means left of center, negative means right.
   angle_to_target:double (id: 1);
+  // Polar angle from target to camera (not rotation).
+  // Currently being frozen at 0
+  angle_to_camera:double (id: 3);
+  // Rotation of the camera in the hub's reference frame
+  rotation_camera_hub:Rotation (id: 4);
 
   blob_result:BlobResultFbs (id: 2);
 
   // Contains the duration between the epoch and the nearest point
   // in time from when it was called.
-  image_monotonic_timestamp_ns:int64 (id: 3);
+  image_monotonic_timestamp_ns:int64 (id: 5);
 
   // Information about the camera which took this image.
-  camera_calibration:frc971.vision.calibration.CameraCalibration (id: 4);
-
-  // TODO(milind): add confidence
+  camera_calibration:frc971.vision.calibration.CameraCalibration (id: 6);
 }
 
 root_type TargetEstimate;

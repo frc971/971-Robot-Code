@@ -11,13 +11,18 @@
 #include "frc971/vision/vision_generated.h"
 #include "y2022/vision/blob_detector.h"
 #include "y2022/vision/target_estimate_generated.h"
+#include "y2022/vision/target_estimator.h"
 
 DEFINE_string(capture, "",
               "If set, capture a single image and save it to this filename.");
 DEFINE_string(channel, "/camera", "Channel name for the image.");
 DEFINE_string(config, "aos_config.json", "Path to the config file to use.");
 DEFINE_string(png_dir, "", "Path to a set of images to display.");
+DEFINE_uint64(skip, 0,
+              "Number of images to skip if doing local reading (png_dir set).");
 DEFINE_bool(show_features, true, "Show the blobs.");
+DEFINE_bool(display_estimation, false,
+            "If true, display the target estimation graphically");
 
 namespace y2022 {
 namespace vision {
@@ -29,15 +34,20 @@ std::map<int64_t, BlobDetector::BlobResult> target_est_map;
 aos::Fetcher<frc971::vision::CameraImage> image_fetcher;
 aos::Fetcher<y2022::vision::TargetEstimate> target_estimate_fetcher;
 
+std::vector<cv::Point> FbsToCvPoints(
+    const flatbuffers::Vector<const Point *> &points_fbs) {
+  std::vector<cv::Point> points;
+  for (const Point *point : points_fbs) {
+    points.emplace_back(point->x(), point->y());
+  }
+  return points;
+}
+
 std::vector<std::vector<cv::Point>> FbsToCvBlobs(
     const flatbuffers::Vector<flatbuffers::Offset<Blob>> &blobs_fbs) {
   std::vector<std::vector<cv::Point>> blobs;
   for (const auto blob : blobs_fbs) {
-    std::vector<cv::Point> points;
-    for (const Point *point : *blob->points()) {
-      points.emplace_back(cv::Point{point->x(), point->y()});
-    }
-    blobs.emplace_back(points);
+    blobs.emplace_back(FbsToCvPoints(*blob->points()));
   }
   return blobs;
 }
@@ -67,12 +77,14 @@ bool DisplayLoop() {
       VLOG(2) << "Got blobs for timestamp " << target_est << "\n";
     }
     // Store the TargetEstimate data so we can match timestamp with image
-    target_est_map[target_timestamp] = BlobDetector::BlobResult(
-        {cv::Mat(), FbsToCvBlobs(*target_est->blob_result()->filtered_blobs()),
-         FbsToCvBlobs(*target_est->blob_result()->unfiltered_blobs()),
-         FbsToBlobStats(*target_est->blob_result()->blob_stats()),
-         cv::Point{target_est->blob_result()->centroid()->x(),
-                   target_est->blob_result()->centroid()->y()}});
+    target_est_map[target_timestamp] = BlobDetector::BlobResult{
+        cv::Mat(),
+        FbsToCvBlobs(*target_est->blob_result()->filtered_blobs()),
+        FbsToCvBlobs(*target_est->blob_result()->unfiltered_blobs()),
+        FbsToBlobStats(*target_est->blob_result()->blob_stats()),
+        FbsToCvPoints(*target_est->blob_result()->filtered_centroids()),
+        cv::Point{target_est->blob_result()->centroid()->x(),
+                  target_est->blob_result()->centroid()->y()}};
     // Only keep last 10 matches
     while (target_est_map.size() > 10u) {
       target_est_map.erase(target_est_map.begin());
@@ -108,10 +120,7 @@ bool DisplayLoop() {
 
     cv::Mat ret_image =
         cv::Mat::zeros(cv::Size(image->cols(), image->rows()), CV_8UC3);
-    BlobDetector::DrawBlobs(ret_image, target_est_it->second.filtered_blobs,
-                            target_est_it->second.unfiltered_blobs,
-                            target_est_it->second.blob_stats,
-                            target_est_it->second.centroid);
+    BlobDetector::DrawBlobs(target_est_it->second, ret_image);
     cv::imshow("blobs", ret_image);
   }
 
@@ -155,6 +164,62 @@ void ViewerMain() {
 
   event_loop.Run();
 }
+
+// TODO(milind): delete this when viewer can accumulate local images and results
+void ViewerLocal() {
+  std::vector<cv::String> file_list;
+  cv::glob(FLAGS_png_dir + "/*.png", file_list, false);
+
+  cv::Mat intrinsics = cv::Mat::zeros(cv::Size(3, 3), CV_64F);
+  intrinsics.at<double>(0, 0) = 391.63916;
+  intrinsics.at<double>(0, 1) = 0.0;
+  intrinsics.at<double>(0, 2) = 312.691162;
+  intrinsics.at<double>(1, 0) = 0.0;
+  intrinsics.at<double>(1, 1) = 391.535889;
+  intrinsics.at<double>(1, 2) = 267.138672;
+  intrinsics.at<double>(2, 0) = 0.0;
+  intrinsics.at<double>(2, 1) = 0.0;
+  intrinsics.at<double>(2, 2) = 1.0;
+  cv::Mat extrinsics = cv::Mat::zeros(cv::Size(4, 4), CV_64F);
+  extrinsics.at<double>(2, 3) = 0.9398;
+
+  TargetEstimator estimator(intrinsics, extrinsics);
+
+  for (auto it = file_list.begin() + FLAGS_skip; it != file_list.end(); it++) {
+    LOG(INFO) << "Reading file " << *it;
+    cv::Mat image_mat = cv::imread(it->c_str());
+    BlobDetector::BlobResult blob_result;
+    blob_result.binarized_image =
+        cv::Mat::zeros(cv::Size(image_mat.cols, image_mat.rows), CV_8UC1);
+    BlobDetector::ExtractBlobs(image_mat, &blob_result);
+
+    cv::Mat ret_image =
+        cv::Mat::zeros(cv::Size(image_mat.cols, image_mat.rows), CV_8UC3);
+    BlobDetector::DrawBlobs(blob_result, ret_image);
+
+    LOG(INFO) << ": # blobs: " << blob_result.filtered_blobs.size()
+              << " (# removed: "
+              << blob_result.unfiltered_blobs.size() -
+                     blob_result.filtered_blobs.size()
+              << ")";
+
+    if (blob_result.filtered_blobs.size() > 0) {
+      estimator.Solve(blob_result.filtered_centroids,
+                      FLAGS_display_estimation ? std::make_optional(ret_image)
+                                               : std::nullopt);
+      estimator.DrawEstimate(ret_image);
+    }
+
+    cv::imshow("image", image_mat);
+    cv::imshow("mask", blob_result.binarized_image);
+    cv::imshow("blobs", ret_image);
+
+    int keystroke = cv::waitKey(0);
+    if ((keystroke & 0xFF) == static_cast<int>('q')) {
+      return;
+    }
+  }
+}
 }  // namespace
 }  // namespace vision
 }  // namespace y2022
@@ -162,5 +227,8 @@ void ViewerMain() {
 // Quick and lightweight viewer for images
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
-  y2022::vision::ViewerMain();
+  if (FLAGS_png_dir != "")
+    y2022::vision::ViewerLocal();
+  else
+    y2022::vision::ViewerMain();
 }

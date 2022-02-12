@@ -153,7 +153,13 @@ cc_library(
     deps = [
         ":calibration_fbs",
         ":target_estimate_fbs",
+        "//aos/logging",
+        "//aos/time",
+        "//frc971/control_loops:quaternion_utils",
         "//third_party:opencv",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_ceres_solver//:ceres",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 
