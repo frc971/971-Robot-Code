@@ -22,10 +22,15 @@ using aos::distributed_clock;
 using aos::monotonic_clock;
 namespace chrono = std::chrono;
 
+constexpr double kG = 9.807;
+
 void CalibrationData::AddCameraPose(
     distributed_clock::time_point distributed_now, Eigen::Vector3d rvec,
     Eigen::Vector3d tvec) {
-  rot_trans_points_.emplace_back(distributed_now, std::make_pair(rvec, tvec));
+  // Always start with IMU reading...
+  if (!imu_points_.empty() && imu_points_[0].first < distributed_now) {
+    rot_trans_points_.emplace_back(distributed_now, std::make_pair(rvec, tvec));
+  }
 }
 
 void CalibrationData::AddImu(distributed_clock::time_point distributed_now,
@@ -167,7 +172,7 @@ void Calibration::HandleIMU(const frc971::IMUValues *imu) {
 
   data_->AddImu(imu_factory_->ToDistributedClock(monotonic_clock::time_point(
                     chrono::nanoseconds(imu->monotonic_timestamp_ns()))),
-                gyro, accel);
+                gyro, accel * kG);
 }
 
 }  // namespace vision

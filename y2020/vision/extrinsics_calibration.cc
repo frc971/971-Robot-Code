@@ -29,6 +29,8 @@ namespace chrono = std::chrono;
 using aos::distributed_clock;
 using aos::monotonic_clock;
 
+constexpr double kGravity = 9.8;
+
 // The basic ideas here are taken from Kalibr.
 // (https://github.com/ethz-asl/kalibr), but adapted to work with AOS, and to be
 // simpler.
@@ -61,48 +63,95 @@ using aos::monotonic_clock;
 template <typename Scalar>
 class CeresPoseFilter : public CalibrationDataObserver {
  public:
+  typedef Eigen::Transform<Scalar, 3, Eigen::Affine> Affine3s;
+
   CeresPoseFilter(Eigen::Quaternion<Scalar> initial_orientation,
                   Eigen::Quaternion<Scalar> imu_to_camera,
-                  Eigen::Matrix<Scalar, 3, 1> imu_bias)
+                  Eigen::Matrix<Scalar, 3, 1> gyro_bias,
+                  Eigen::Matrix<Scalar, 6, 1> initial_state,
+                  Eigen::Quaternion<Scalar> board_to_world,
+                  Eigen::Matrix<Scalar, 3, 1> imu_to_camera_translation,
+                  Scalar gravity_scalar,
+                  Eigen::Matrix<Scalar, 3, 1> accelerometer_bias)
       : accel_(Eigen::Matrix<double, 3, 1>::Zero()),
         omega_(Eigen::Matrix<double, 3, 1>::Zero()),
-        imu_bias_(imu_bias),
+        imu_bias_(gyro_bias),
         orientation_(initial_orientation),
-        x_hat_(Eigen::Matrix<Scalar, 6, 1>::Zero()),
+        x_hat_(initial_state),
         p_(Eigen::Matrix<Scalar, 6, 6>::Zero()),
-        imu_to_camera_(imu_to_camera) {}
+        imu_to_camera_rotation_(imu_to_camera),
+        imu_to_camera_translation_(imu_to_camera_translation),
+        board_to_world_(board_to_world),
+        gravity_scalar_(gravity_scalar),
+        accelerometer_bias_(accelerometer_bias) {}
 
-  virtual void ObserveCameraUpdate(distributed_clock::time_point /*t*/,
-                                   Eigen::Vector3d /*board_to_camera_rotation*/,
-                                   Eigen::Quaternion<Scalar> /*imu_to_world*/) {
-  }
+  Scalar gravity_scalar() { return gravity_scalar_; }
 
+  virtual void ObserveCameraUpdate(
+      distributed_clock::time_point /*t*/,
+      Eigen::Vector3d /*board_to_camera_rotation*/,
+      Eigen::Quaternion<Scalar> /*imu_to_world_rotation*/,
+      Affine3s /*imu_to_world*/) {}
+
+  // Observes a camera measurement by applying a kalman filter correction and
+  // accumulating up the error associated with the step.
   void UpdateCamera(distributed_clock::time_point t,
                     std::pair<Eigen::Vector3d, Eigen::Vector3d> rt) override {
     Integrate(t);
 
-    Eigen::Quaternion<Scalar> board_to_camera(
+    const Eigen::Quaternion<Scalar> board_to_camera_rotation(
         frc971::controls::ToQuaternionFromRotationVector(rt.first)
             .cast<Scalar>());
+    const Affine3s board_to_camera =
+        Eigen::Translation3d(rt.second).cast<Scalar>() *
+        board_to_camera_rotation;
+
+    const Affine3s imu_to_camera =
+        imu_to_camera_translation_ * imu_to_camera_rotation_;
 
     // This converts us from (facing the board),
     //   x right, y up, z towards us -> x right, y away, z up.
     // Confirmed to be right.
-    Eigen::Quaternion<Scalar> board_to_world(
-        Eigen::AngleAxisd(0.5 * M_PI, Eigen::Vector3d::UnitX()).cast<Scalar>());
 
     // Want world -> imu rotation.
     // world <- board <- camera <- imu.
-    const Eigen::Quaternion<Scalar> imu_to_world =
-        board_to_world * board_to_camera.inverse() * imu_to_camera_;
+    const Eigen::Quaternion<Scalar> imu_to_world_rotation =
+        board_to_world_ * board_to_camera_rotation.inverse() *
+        imu_to_camera_rotation_;
 
-    const Eigen::Quaternion<Scalar> error(imu_to_world.inverse() *
+    const Affine3s imu_to_world =
+        board_to_world_ * board_to_camera.inverse() * imu_to_camera;
+
+    const Eigen::Matrix<Scalar, 3, 1> z =
+        imu_to_world * Eigen::Matrix<Scalar, 3, 1>::Zero();
+
+    Eigen::Matrix<Scalar, 3, 6> H = Eigen::Matrix<Scalar, 3, 6>::Zero();
+    H(0, 0) = static_cast<Scalar>(1.0);
+    H(1, 1) = static_cast<Scalar>(1.0);
+    H(2, 2) = static_cast<Scalar>(1.0);
+    const Eigen::Matrix<Scalar, 3, 1> y = z - H * x_hat_;
+
+    const Eigen::Matrix<double, 3, 3> R =
+        (::Eigen::DiagonalMatrix<double, 3>().diagonal() << ::std::pow(0.01, 2),
+         ::std::pow(0.01, 2), ::std::pow(0.01, 2))
+            .finished()
+            .asDiagonal();
+
+    const Eigen::Matrix<Scalar, 3, 3> S =
+        H * p_ * H.transpose() + R.cast<Scalar>();
+    const Eigen::Matrix<Scalar, 6, 3> K = p_ * H.transpose() * S.inverse();
+
+    x_hat_ += K * y;
+    p_ = (Eigen::Matrix<Scalar, 6, 6>::Identity() - K * H) * p_;
+
+    const Eigen::Quaternion<Scalar> error(imu_to_world_rotation.inverse() *
                                           orientation());
 
     errors_.emplace_back(
         Eigen::Matrix<Scalar, 3, 1>(error.x(), error.y(), error.z()));
+    position_errors_.emplace_back(y);
 
-    ObserveCameraUpdate(t, rt.first, imu_to_world);
+    ObserveCameraUpdate(t, rt.first, imu_to_world_rotation, imu_to_world);
   }
 
   virtual void ObserveIMUUpdate(
@@ -120,13 +169,15 @@ class CeresPoseFilter : public CalibrationDataObserver {
 
   const Eigen::Quaternion<Scalar> &orientation() const { return orientation_; }
 
-  std::vector<Eigen::Matrix<Scalar, 3, 1>> errors_;
-
-  // Returns the angular errors for each camera sample.
   size_t num_errors() const { return errors_.size(); }
   Scalar errorx(size_t i) const { return errors_[i].x(); }
   Scalar errory(size_t i) const { return errors_[i].y(); }
   Scalar errorz(size_t i) const { return errors_[i].z(); }
+
+  size_t num_perrors() const { return position_errors_.size(); }
+  Scalar errorpx(size_t i) const { return position_errors_[i].x(); }
+  Scalar errorpy(size_t i) const { return position_errors_[i].y(); }
+  Scalar errorpz(size_t i) const { return position_errors_[i].z(); }
 
  private:
   Eigen::Matrix<Scalar, 46, 1> Pack(Eigen::Quaternion<Scalar> q,
@@ -151,7 +202,7 @@ class CeresPoseFilter : public CalibrationDataObserver {
     return std::make_tuple(q, x_hat, p);
   }
 
-  Eigen::Matrix<Scalar, 46, 1> Derivitive(
+  Eigen::Matrix<Scalar, 46, 1> Derivative(
       const Eigen::Matrix<Scalar, 46, 1> &input) {
     auto [q, x_hat, p] = UnPack(input);
 
@@ -160,25 +211,48 @@ class CeresPoseFilter : public CalibrationDataObserver {
     omega_q.vec() = 0.5 * (omega_.cast<Scalar>() - imu_bias_);
     Eigen::Matrix<Scalar, 4, 1> q_dot = (q * omega_q).coeffs();
 
-    Eigen::Matrix<Scalar, 6, 1> x_hat_dot = Eigen::Matrix<Scalar, 6, 1>::Zero();
-    x_hat_dot(0, 0) = x_hat(3, 0);
-    x_hat_dot(1, 0) = x_hat(4, 0);
-    x_hat_dot(2, 0) = x_hat(5, 0);
-    x_hat_dot.template block<3, 1>(3, 0) = accel_.cast<Scalar>();
+    Eigen::Matrix<double, 6, 6> A = Eigen::Matrix<double, 6, 6>::Zero();
+    A(0, 3) = 1.0;
+    A(1, 4) = 1.0;
+    A(2, 5) = 1.0;
 
-    Eigen::Matrix<Scalar, 6, 6> p_dot = Eigen::Matrix<Scalar, 6, 6>::Zero();
+    Eigen::Matrix<Scalar, 6, 1> x_hat_dot = A * x_hat;
+    x_hat_dot.template block<3, 1>(3, 0) =
+        orientation() * (accel_.cast<Scalar>() - accelerometer_bias_) -
+        Eigen::Vector3d(0, 0, kGravity).cast<Scalar>() * gravity_scalar_;
+
+    // Initialize the position noise to 0.  If the solver is going to back-solve
+    // for the most likely starting position, let's just say that the noise is
+    // small.
+    constexpr double kPositionNoise = 0.0;
+    constexpr double kAccelerometerNoise = 2.3e-6 * 9.8;
+    constexpr double kIMUdt = 5.0e-4;
+    Eigen::Matrix<double, 6, 6> Q_dot(
+        (::Eigen::DiagonalMatrix<double, 6>().diagonal()
+             << ::std::pow(kPositionNoise, 2) / kIMUdt,
+         ::std::pow(kPositionNoise, 2) / kIMUdt,
+         ::std::pow(kPositionNoise, 2) / kIMUdt,
+         ::std::pow(kAccelerometerNoise, 2) / kIMUdt,
+         ::std::pow(kAccelerometerNoise, 2) / kIMUdt,
+         ::std::pow(kAccelerometerNoise, 2) / kIMUdt)
+            .finished()
+            .asDiagonal());
+    Eigen::Matrix<Scalar, 6, 6> p_dot = A.cast<Scalar>() * p +
+                                        p * A.transpose().cast<Scalar>() +
+                                        Q_dot.cast<Scalar>();
 
     return Pack(Eigen::Quaternion<Scalar>(q_dot), x_hat_dot, p_dot);
   }
 
   virtual void ObserveIntegrated(distributed_clock::time_point /*t*/,
                                  Eigen::Matrix<Scalar, 6, 1> /*x_hat*/,
-                                 Eigen::Quaternion<Scalar> /*orientation*/) {}
+                                 Eigen::Quaternion<Scalar> /*orientation*/,
+                                 Eigen::Matrix<Scalar, 6, 6> /*p*/) {}
 
   void Integrate(distributed_clock::time_point t) {
     if (last_time_ != distributed_clock::min_time) {
       Eigen::Matrix<Scalar, 46, 1> next = control_loops::RungeKutta(
-          [this](auto r) { return Derivitive(r); },
+          [this](auto r) { return Derivative(r); },
           Pack(orientation_, x_hat_, p_),
           aos::time::DurationInSeconds(t - last_time_));
 
@@ -189,34 +263,42 @@ class CeresPoseFilter : public CalibrationDataObserver {
     }
 
     last_time_ = t;
-    ObserveIntegrated(t, x_hat_, orientation_);
+    ObserveIntegrated(t, x_hat_, orientation_, p_);
   }
 
   Eigen::Matrix<double, 3, 1> accel_;
   Eigen::Matrix<double, 3, 1> omega_;
   Eigen::Matrix<Scalar, 3, 1> imu_bias_;
 
+  // IMU -> world quaternion
   Eigen::Quaternion<Scalar> orientation_;
   Eigen::Matrix<Scalar, 6, 1> x_hat_;
   Eigen::Matrix<Scalar, 6, 6> p_;
   distributed_clock::time_point last_time_ = distributed_clock::min_time;
 
-  Eigen::Quaternion<Scalar> imu_to_camera_;
+  Eigen::Quaternion<Scalar> imu_to_camera_rotation_;
+  Eigen::Translation<Scalar, 3> imu_to_camera_translation_ =
+      Eigen::Translation3d(0, 0, 0).cast<Scalar>();
 
-  // States outside the KF:
-  //   orientation quaternion
-  //
+  Eigen::Quaternion<Scalar> board_to_world_;
+  Scalar gravity_scalar_;
+  Eigen::Matrix<Scalar, 3, 1> accelerometer_bias_;
   // States:
   //   xyz position
   //   xyz velocity
   //
   // Inputs
   //   xyz accel
-  //   angular rates
   //
   // Measurement:
-  //   xyz position
-  //   orientation rotation vector
+  //   xyz position from camera.
+  //
+  // Since the gyro is so good, we can just solve for the bias and initial
+  // position with the solver and see what it learns.
+
+  // Returns the angular errors for each camera sample.
+  std::vector<Eigen::Matrix<Scalar, 3, 1>> errors_;
+  std::vector<Eigen::Matrix<Scalar, 3, 1>> position_errors_;
 };
 
 // Subclass of the filter above which has plotting.  This keeps debug code and
@@ -225,25 +307,48 @@ class PoseFilter : public CeresPoseFilter<double> {
  public:
   PoseFilter(Eigen::Quaternion<double> initial_orientation,
              Eigen::Quaternion<double> imu_to_camera,
-             Eigen::Matrix<double, 3, 1> imu_bias)
-      : CeresPoseFilter<double>(initial_orientation, imu_to_camera, imu_bias) {}
+             Eigen::Matrix<double, 3, 1> gyro_bias,
+             Eigen::Matrix<double, 6, 1> initial_state,
+             Eigen::Quaternion<double> board_to_world,
+             Eigen::Matrix<double, 3, 1> imu_to_camera_translation,
+             double gravity_scalar,
+             Eigen::Matrix<double, 3, 1> accelerometer_bias)
+      : CeresPoseFilter<double>(initial_orientation, imu_to_camera, gyro_bias,
+                                initial_state, board_to_world,
+                                imu_to_camera_translation, gravity_scalar,
+                                accelerometer_bias) {}
 
   void Plot() {
+    std::vector<double> rx;
+    std::vector<double> ry;
+    std::vector<double> rz;
     std::vector<double> x;
     std::vector<double> y;
     std::vector<double> z;
+    std::vector<double> vx;
+    std::vector<double> vy;
+    std::vector<double> vz;
     for (const Eigen::Quaternion<double> &q : orientations_) {
       Eigen::Matrix<double, 3, 1> rotation_vector =
           frc971::controls::ToRotationVectorFromQuaternion(q);
-      x.emplace_back(rotation_vector(0, 0));
-      y.emplace_back(rotation_vector(1, 0));
-      z.emplace_back(rotation_vector(2, 0));
+      rx.emplace_back(rotation_vector(0, 0));
+      ry.emplace_back(rotation_vector(1, 0));
+      rz.emplace_back(rotation_vector(2, 0));
     }
+    for (const Eigen::Matrix<double, 6, 1> &x_hat : x_hats_) {
+      x.emplace_back(x_hat(0));
+      y.emplace_back(x_hat(1));
+      z.emplace_back(x_hat(2));
+      vx.emplace_back(x_hat(3));
+      vy.emplace_back(x_hat(4));
+      vz.emplace_back(x_hat(5));
+    }
+
     frc971::analysis::Plotter plotter;
     plotter.AddFigure("position");
-    plotter.AddLine(times_, x, "x_hat(0)");
-    plotter.AddLine(times_, y, "x_hat(1)");
-    plotter.AddLine(times_, z, "x_hat(2)");
+    plotter.AddLine(times_, rx, "x_hat(0)");
+    plotter.AddLine(times_, ry, "x_hat(1)");
+    plotter.AddLine(times_, rz, "x_hat(2)");
     plotter.AddLine(ct, cx, "Camera x");
     plotter.AddLine(ct, cy, "Camera y");
     plotter.AddLine(ct, cz, "Camera z");
@@ -253,9 +358,9 @@ class PoseFilter : public CeresPoseFilter<double> {
     plotter.Publish();
 
     plotter.AddFigure("error");
-    plotter.AddLine(times_, x, "x_hat(0)");
-    plotter.AddLine(times_, y, "x_hat(1)");
-    plotter.AddLine(times_, z, "x_hat(2)");
+    plotter.AddLine(times_, rx, "x_hat(0)");
+    plotter.AddLine(times_, ry, "x_hat(1)");
+    plotter.AddLine(times_, rz, "x_hat(2)");
     plotter.AddLine(ct, cerrx, "Camera error x");
     plotter.AddLine(ct, cerry, "Camera error y");
     plotter.AddLine(ct, cerrz, "Camera error z");
@@ -268,6 +373,9 @@ class PoseFilter : public CeresPoseFilter<double> {
     plotter.AddLine(imut, imu_x, "imu x");
     plotter.AddLine(imut, imu_y, "imu y");
     plotter.AddLine(imut, imu_z, "imu z");
+    plotter.AddLine(times_, rx, "rotation x");
+    plotter.AddLine(times_, ry, "rotation y");
+    plotter.AddLine(times_, rz, "rotation z");
     plotter.Publish();
 
     plotter.AddFigure("raw");
@@ -282,12 +390,27 @@ class PoseFilter : public CeresPoseFilter<double> {
     plotter.AddLine(ct, raw_cz, "Camera z");
     plotter.Publish();
 
+    plotter.AddFigure("xyz vel");
+    plotter.AddLine(times_, x, "x");
+    plotter.AddLine(times_, y, "y");
+    plotter.AddLine(times_, z, "z");
+    plotter.AddLine(times_, vx, "vx");
+    plotter.AddLine(times_, vy, "vy");
+    plotter.AddLine(times_, vz, "vz");
+    plotter.AddLine(ct, camera_position_x, "Camera x");
+    plotter.AddLine(ct, camera_position_y, "Camera y");
+    plotter.AddLine(ct, camera_position_z, "Camera z");
+    plotter.Publish();
+
     plotter.Spin();
   }
 
   void ObserveIntegrated(distributed_clock::time_point t,
                          Eigen::Matrix<double, 6, 1> x_hat,
-                         Eigen::Quaternion<double> orientation) override {
+                         Eigen::Quaternion<double> orientation,
+                         Eigen::Matrix<double, 6, 6> p) override {
+    VLOG(1) << t << " -> " << p;
+    VLOG(1) << t << " xhat -> " << x_hat.transpose();
     times_.emplace_back(chrono::duration<double>(t.time_since_epoch()).count());
     x_hats_.emplace_back(x_hat);
     orientations_.emplace_back(orientation);
@@ -309,18 +432,19 @@ class PoseFilter : public CeresPoseFilter<double> {
 
   void ObserveCameraUpdate(distributed_clock::time_point t,
                            Eigen::Vector3d board_to_camera_rotation,
-                           Eigen::Quaternion<double> imu_to_world) override {
+                           Eigen::Quaternion<double> imu_to_world_rotation,
+                           Eigen::Affine3d imu_to_world) override {
     raw_cx.emplace_back(board_to_camera_rotation(0, 0));
     raw_cy.emplace_back(board_to_camera_rotation(1, 0));
     raw_cz.emplace_back(board_to_camera_rotation(2, 0));
 
     Eigen::Matrix<double, 3, 1> rotation_vector =
-        frc971::controls::ToRotationVectorFromQuaternion(imu_to_world);
+        frc971::controls::ToRotationVectorFromQuaternion(imu_to_world_rotation);
     ct.emplace_back(chrono::duration<double>(t.time_since_epoch()).count());
 
     Eigen::Matrix<double, 3, 1> cerr =
         frc971::controls::ToRotationVectorFromQuaternion(
-            imu_to_world.inverse() * orientation());
+            imu_to_world_rotation.inverse() * orientation());
 
     cx.emplace_back(rotation_vector(0, 0));
     cy.emplace_back(rotation_vector(1, 0));
@@ -330,11 +454,20 @@ class PoseFilter : public CeresPoseFilter<double> {
     cerry.emplace_back(cerr(1, 0));
     cerrz.emplace_back(cerr(2, 0));
 
-    const Eigen::Vector3d world_gravity = imu_to_world * last_accel_;
+    const Eigen::Vector3d world_gravity =
+        imu_to_world_rotation * last_accel_ -
+        Eigen::Vector3d(0, 0, kGravity) * gravity_scalar();
+
+    const Eigen::Vector3d camera_position =
+        imu_to_world * Eigen::Vector3d::Zero();
 
     world_gravity_x.emplace_back(world_gravity.x());
     world_gravity_y.emplace_back(world_gravity.y());
     world_gravity_z.emplace_back(world_gravity.z());
+
+    camera_position_x.emplace_back(camera_position.x());
+    camera_position_y.emplace_back(camera_position.y());
+    camera_position_z.emplace_back(camera_position.z());
   }
 
   std::vector<double> ct;
@@ -354,6 +487,9 @@ class PoseFilter : public CeresPoseFilter<double> {
   std::vector<double> imu_x;
   std::vector<double> imu_y;
   std::vector<double> imu_z;
+  std::vector<double> camera_position_x;
+  std::vector<double> camera_position_y;
+  std::vector<double> camera_position_z;
 
   std::vector<double> imut;
   std::vector<double> imu_ratex;
@@ -375,19 +511,41 @@ struct CostFunctor {
 
   template <typename S>
   bool operator()(const S *const q1, const S *const q2, const S *const v,
-                  S *residual) const {
+                  const S *const p, const S *const btw, const S *const itc,
+                  const S *const gravity_scalar_ptr,
+                  const S *const accelerometer_bias_ptr, S *residual) const {
     Eigen::Quaternion<S> initial_orientation(q1[3], q1[0], q1[1], q1[2]);
     Eigen::Quaternion<S> mounting_orientation(q2[3], q2[0], q2[1], q2[2]);
-    Eigen::Matrix<S, 3, 1> imu_bias(v[0], v[1], v[2]);
+    Eigen::Quaternion<S> board_to_world(btw[3], btw[0], btw[1], btw[2]);
+    Eigen::Matrix<S, 3, 1> gyro_bias(v[0], v[1], v[2]);
+    Eigen::Matrix<S, 6, 1> initial_state;
+    initial_state(0) = p[0];
+    initial_state(1) = p[1];
+    initial_state(2) = p[2];
+    initial_state(3) = p[3];
+    initial_state(4) = p[4];
+    initial_state(5) = p[5];
+    Eigen::Matrix<S, 3, 1> imu_to_camera_translation(itc[0], itc[1], itc[2]);
+    Eigen::Matrix<S, 3, 1> accelerometer_bias(accelerometer_bias_ptr[0],
+                                              accelerometer_bias_ptr[1],
+                                              accelerometer_bias_ptr[2]);
 
     CeresPoseFilter<S> filter(initial_orientation, mounting_orientation,
-                              imu_bias);
+                              gyro_bias, initial_state, board_to_world,
+                              imu_to_camera_translation, *gravity_scalar_ptr,
+                              accelerometer_bias);
     data->ReviewData(&filter);
 
     for (size_t i = 0; i < filter.num_errors(); ++i) {
       residual[3 * i + 0] = filter.errorx(i);
       residual[3 * i + 1] = filter.errory(i);
       residual[3 * i + 2] = filter.errorz(i);
+    }
+
+    for (size_t i = 0; i < filter.num_perrors(); ++i) {
+      residual[3 * filter.num_errors() + 3 * i + 0] = filter.errorpx(i);
+      residual[3 * filter.num_errors() + 3 * i + 1] = filter.errorpy(i);
+      residual[3 * filter.num_errors() + 3 * i + 2] = filter.errorpz(i);
     }
 
     return true;
@@ -437,17 +595,29 @@ void Main(int argc, char **argv) {
   LOG(INFO) << "Done with event_loop running";
   // And now we have it, we can start processing it.
 
-  Eigen::Quaternion<double> nominal_initial_orientation(
+  const Eigen::Quaternion<double> nominal_initial_orientation(
       frc971::controls::ToQuaternionFromRotationVector(
           Eigen::Vector3d(0.0, 0.0, M_PI)));
-  Eigen::Quaternion<double> nominal_imu_to_camera(
+  const Eigen::Quaternion<double> nominal_imu_to_camera(
       Eigen::AngleAxisd(-0.5 * M_PI, Eigen::Vector3d::UnitX()));
+  const Eigen::Quaternion<double> nominal_board_to_world(
+      Eigen::AngleAxisd(0.5 * M_PI, Eigen::Vector3d::UnitX()));
 
-  Eigen::Quaternion<double> initial_orientation =
-      Eigen::Quaternion<double>::Identity();
-  Eigen::Quaternion<double> imu_to_camera =
-      Eigen::Quaternion<double>::Identity();
-  Eigen::Vector3d imu_bias = Eigen::Vector3d::Zero();
+  Eigen::Quaternion<double> initial_orientation = nominal_initial_orientation;
+  // Eigen::Quaternion<double>::Identity();
+  Eigen::Quaternion<double> imu_to_camera = nominal_imu_to_camera;
+  // Eigen::Quaternion<double>::Identity();
+  Eigen::Quaternion<double> board_to_world = nominal_board_to_world;
+  // Eigen::Quaternion<double>::Identity();
+  Eigen::Vector3d gyro_bias = Eigen::Vector3d::Zero();
+  Eigen::Matrix<double, 6, 1> initial_state =
+      Eigen::Matrix<double, 6, 1>::Zero();
+  Eigen::Matrix<double, 3, 1> imu_to_camera_translation =
+      Eigen::Matrix<double, 3, 1>::Zero();
+
+  double gravity_scalar = 1.0;
+  Eigen::Matrix<double, 3, 1> accelerometer_bias =
+      Eigen::Matrix<double, 3, 1>::Zero();
 
   {
     ceres::Problem problem;
@@ -458,19 +628,28 @@ void Main(int argc, char **argv) {
     // auto-differentiation to obtain the derivative (jacobian).
 
     ceres::CostFunction *cost_function =
-        new ceres::AutoDiffCostFunction<CostFunctor, ceres::DYNAMIC, 4, 4, 3>(
-            new CostFunctor(&data), data.camera_samples_size() * 3);
-    problem.AddResidualBlock(cost_function, nullptr,
-                             initial_orientation.coeffs().data(),
-                             imu_to_camera.coeffs().data(), imu_bias.data());
+        new ceres::AutoDiffCostFunction<CostFunctor, ceres::DYNAMIC, 4, 4, 3, 6,
+                                        4, 3, 1, 3>(
+            new CostFunctor(&data), data.camera_samples_size() * 6);
+    problem.AddResidualBlock(
+        cost_function, nullptr, initial_orientation.coeffs().data(),
+        imu_to_camera.coeffs().data(), gyro_bias.data(), initial_state.data(),
+        board_to_world.coeffs().data(), imu_to_camera_translation.data(),
+        &gravity_scalar, accelerometer_bias.data());
     problem.SetParameterization(initial_orientation.coeffs().data(),
                                 quaternion_local_parameterization);
     problem.SetParameterization(imu_to_camera.coeffs().data(),
                                 quaternion_local_parameterization);
+    problem.SetParameterization(board_to_world.coeffs().data(),
+                                quaternion_local_parameterization);
     for (int i = 0; i < 3; ++i) {
-      problem.SetParameterLowerBound(imu_bias.data(), i, -0.05);
-      problem.SetParameterUpperBound(imu_bias.data(), i, 0.05);
+      problem.SetParameterLowerBound(gyro_bias.data(), i, -0.05);
+      problem.SetParameterUpperBound(gyro_bias.data(), i, 0.05);
+      problem.SetParameterLowerBound(accelerometer_bias.data(), i, -0.05);
+      problem.SetParameterUpperBound(accelerometer_bias.data(), i, 0.05);
     }
+    problem.SetParameterLowerBound(&gravity_scalar, 0, 0.95);
+    problem.SetParameterUpperBound(&gravity_scalar, 0, 1.05);
 
     // Run the solver!
     ceres::Solver::Options options;
@@ -497,12 +676,28 @@ void Main(int argc, char **argv) {
               << frc971::controls::ToRotationVectorFromQuaternion(
                      imu_to_camera * nominal_imu_to_camera.inverse())
                      .transpose();
-    LOG(INFO) << "imu_bias " << imu_bias.transpose();
+    LOG(INFO) << "gyro_bias " << gyro_bias.transpose();
+    LOG(INFO) << "board_to_world " << board_to_world.coeffs().transpose();
+    LOG(INFO) << "board_to_world(rotation) "
+              << frc971::controls::ToRotationVectorFromQuaternion(
+                     board_to_world)
+                     .transpose();
+    LOG(INFO) << "board_to_world delta "
+              << frc971::controls::ToRotationVectorFromQuaternion(
+                     board_to_world * nominal_board_to_world.inverse())
+                     .transpose();
+    LOG(INFO) << "imu_to_camera_translation "
+              << imu_to_camera_translation.transpose();
+    LOG(INFO) << "gravity " << kGravity * gravity_scalar;
+    LOG(INFO) << "accelerometer bias " << accelerometer_bias.transpose();
   }
 
   {
-    PoseFilter filter(initial_orientation, imu_to_camera, imu_bias);
+    PoseFilter filter(initial_orientation, imu_to_camera, gyro_bias,
+                      initial_state, board_to_world, imu_to_camera_translation,
+                      gravity_scalar, accelerometer_bias);
     data.ReviewData(&filter);
+    filter.Plot();
   }
 }
 
