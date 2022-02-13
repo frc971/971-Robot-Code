@@ -31,3 +31,64 @@ cc_static_flatbuffer(
     target = ":localizer_status_fbs_reflection_out",
     visibility = ["//visibility:public"],
 )
+
+cc_library(
+    name = "localizer",
+    srcs = ["localizer.cc"],
+    hdrs = ["localizer.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":localizer_output_fbs",
+        ":localizer_status_fbs",
+        "//aos/containers:ring_buffer",
+        "//aos/events:event_loop",
+        "//aos/time",
+        "//frc971/control_loops:c2d",
+        "//frc971/control_loops:control_loops_fbs",
+        "//frc971/control_loops/drivetrain:drivetrain_output_fbs",
+        "//frc971/control_loops/drivetrain:drivetrain_position_fbs",
+        "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
+        "//frc971/control_loops/drivetrain:improved_down_estimator",
+        "//frc971/control_loops/drivetrain:localizer_fbs",
+        "//frc971/wpilib:imu_batch_fbs",
+        "//frc971/wpilib:imu_fbs",
+        "//frc971/zeroing:imu_zeroer",
+        "//y2020/control_loops/drivetrain:drivetrain_base",
+        "//y2020/vision/sift:sift_fbs",
+        "@org_tuxfamily_eigen//:eigen",
+    ],
+)
+
+cc_test(
+    name = "localizer_test",
+    srcs = ["localizer_test.cc"],
+    data = [
+        "//y2022:config",
+    ],
+    shard_count = 10,
+    deps = [
+        ":localizer",
+        "//aos/events:simulated_event_loop",
+        "//aos/testing:googletest",
+        "//frc971/control_loops/drivetrain:drivetrain_test_lib",
+    ],
+)
+
+cc_binary(
+    name = "localizer_replay",
+    srcs = ["localizer_replay.cc"],
+    data = [
+        "//y2020:config",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":localizer",
+        ":localizer_schema",
+        "//aos:configuration",
+        "//aos:init",
+        "//aos:json_to_flatbuffer",
+        "//aos/events:simulated_event_loop",
+        "//aos/events/logging:log_reader",
+        "//aos/events/logging:log_writer",
+    ],
+)
