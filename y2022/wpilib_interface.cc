@@ -36,6 +36,7 @@
 #include "frc971/autonomous/auto_mode_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_position_generated.h"
 #include "frc971/input/robot_state_generated.h"
+#include "frc971/queues/gyro_generated.h"
 #include "frc971/wpilib/ADIS16448.h"
 #include "frc971/wpilib/buffered_pcm.h"
 #include "frc971/wpilib/buffered_solenoid.h"
@@ -131,7 +132,9 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
         drivetrain_position_sender_(
             event_loop
                 ->MakeSender<::frc971::control_loops::drivetrain::Position>(
-                    "/drivetrain")) {
+                    "/drivetrain")),
+        gyro_sender_(event_loop->MakeSender<::frc971::sensors::GyroReading>(
+            "/drivetrain")) {
     // Set to filter out anything shorter than 1/4 of the minimum pulse width
     // we should ever see.
     UpdateFastEncoderFilterHz(kMaxFastEncoderPulsesPerSecond);
@@ -156,6 +159,14 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   void set_catapult_potentiometer(
       ::std::unique_ptr<frc::AnalogInput> potentiometer) {
     catapult_encoder_.set_potentiometer(::std::move(potentiometer));
+  }
+
+  void set_heading_input(::std::unique_ptr<frc::DigitalInput> sensor) {
+    imu_heading_reader_.set_input(::std::move(sensor));
+  }
+
+  void set_yaw_rate_input(::std::unique_ptr<frc::DigitalInput> sensor) {
+    imu_yaw_rate_reader_.set_input(::std::move(sensor));
   }
 
   void RunIteration() override {
@@ -247,6 +258,38 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
           drivetrain_right_encoder_->GetPeriod()));
 
       builder.CheckOk(builder.Send(drivetrain_builder.Finish()));
+    }
+
+    {
+      auto builder = gyro_sender_.MakeBuilder();
+      ::frc971::sensors::GyroReading::Builder gyro_reading_builder =
+          builder.MakeBuilder<::frc971::sensors::GyroReading>();
+      constexpr double kMaxVelocity = 2000;  // degrees / second
+      constexpr double kVelocityRadiansPerSecond =
+          kMaxVelocity / 360 * (2.0 * M_PI);
+
+      // Only part of the full range is used to prevent being 100% on or off.
+      constexpr double kScaledRangeLow = 0.1;
+      constexpr double kScaledRangeHigh = 0.9;
+
+      constexpr double kDutyCycleScale =
+          1 / (kScaledRangeHigh - kScaledRangeLow);
+
+      // scale from 0.1 - 0.9 to 0 - 1
+      double rescaled_heading_duty_cycle =
+          (imu_heading_reader_.Read() - kScaledRangeLow) * kDutyCycleScale;
+      double rescaled_velocity_duty_cycle =
+          (imu_yaw_rate_reader_.Read() - kScaledRangeLow) * kDutyCycleScale;
+
+      if (!std::isnan(rescaled_heading_duty_cycle)) {
+        gyro_reading_builder.add_angle(rescaled_heading_duty_cycle *
+                                       (2.0 * M_PI));
+      }
+      if (!std::isnan(rescaled_velocity_duty_cycle)) {
+        gyro_reading_builder.add_velocity((rescaled_velocity_duty_cycle - 0.5) *
+                                          kVelocityRadiansPerSecond);
+      }
+      builder.CheckOk(builder.Send(gyro_reading_builder.Finish()));
     }
 
     {
@@ -345,6 +388,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   aos::Sender<superstructure::Position> superstructure_position_sender_;
   aos::Sender<frc971::control_loops::drivetrain::Position>
       drivetrain_position_sender_;
+  ::aos::Sender<::frc971::sensors::GyroReading> gyro_sender_;
 
   std::array<std::unique_ptr<frc::DigitalInput>, 2> autonomous_modes_;
 
@@ -354,9 +398,9 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   std::unique_ptr<frc::AnalogInput> climber_potentiometer_,
       flipper_arm_right_potentiometer_, flipper_arm_left_potentiometer_;
   frc971::wpilib::AbsoluteEncoderAndPotentiometer intake_encoder_front_,
-      intake_encoder_back_, turret_encoder_;
+      intake_encoder_back_, turret_encoder_, catapult_encoder_;
 
-  frc971::wpilib::AbsoluteEncoderAndPotentiometer catapult_encoder_;
+  frc971::wpilib::DutyCycleReader imu_heading_reader_, imu_yaw_rate_reader_;
 };
 
 class SuperstructureWriter
@@ -601,6 +645,9 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         std::make_unique<frc::DigitalInput>(2));
     sensor_reader.set_catapult_potentiometer(
         std::make_unique<frc::AnalogInput>(2));
+
+    sensor_reader.set_heading_input(make_unique<frc::DigitalInput>(8));
+    sensor_reader.set_yaw_rate_input(make_unique<frc::DigitalInput>(9));
 
     AddLoop(&sensor_reader_event_loop);
 

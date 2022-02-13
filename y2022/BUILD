@@ -225,6 +225,7 @@ cc_binary(
         "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_position_fbs",
         "//frc971/input:robot_state_fbs",
+        "//frc971/queues:gyro_fbs",
         "//frc971/wpilib:ADIS16448",
         "//frc971/wpilib:buffered_pcm",
         "//frc971/wpilib:drivetrain_writer",
