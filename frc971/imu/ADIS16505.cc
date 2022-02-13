@@ -377,7 +377,12 @@ void imu_read_finished() {
     pwm_set_gpio_level(RATE_PWM, rate_level);
 
     // 0 to 360
-    uint16_t heading_level = (int16_t)(fmod(yaw, 360) / 360.0 * PWM_TOP);
+    double wrapped_heading = fmod(yaw, 360);
+    if (wrapped_heading < 0) {
+      wrapped_heading = wrapped_heading + 360;
+    }
+
+    uint16_t heading_level = (int16_t)(wrapped_heading / 360.0 * PWM_TOP);
     pwm_set_gpio_level(HEADING_PWM, heading_level);
   }
 
