@@ -30,6 +30,15 @@ struct Values {
            constants::Values::kDrivetrainEncoderRatio() *
            kDrivetrainEncoderCountsPerRevolution();
   }
+
+  static double DrivetrainEncoderToMeters(int32_t in) {
+    return ((static_cast<double>(in) /
+             kDrivetrainEncoderCountsPerRevolution()) *
+            (2.0 * M_PI)) *
+           kDrivetrainEncoderRatio() *
+           control_loops::drivetrain::kWheelRadius;
+  }
+
   static constexpr double kRollerSupplyCurrentLimit() { return 30.0; }
   static constexpr double kRollerStatorCurrentLimit() { return 40.0; }
 
