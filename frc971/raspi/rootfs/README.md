@@ -1,3 +1,5 @@
+# Creating an SD card to run the Raspberry Pis
+
 This modifies a stock debian root filesystem to be able to operate as a vision
 pi.  It is not trying to be reproducible, but should be good enough for FRC
 purposes.
@@ -5,15 +7,37 @@ purposes.
 The default hostname and IP is pi-971-1, 10.9.71.101.
   Username pi, password raspberry.
 
-Download 2021-10-30-raspios-bullseye-armhf-lite.img (or any newer
-bullseye version, as a .zip file) from
-`https://www.raspberrypi.org/downloads/raspberry-pi-os/`, extract
-(unzip) the .img file, and edit `modify_rootfs.sh` to point to it.
+## Build the real-time kernel using `build_kernel.sh`
 
-Run modify_rootfs.sh to build the filesystem (you might need to hit
+- Checkout the real-time kernel source code, e.g.,
+  `cd CODE_DIR`
+  `git clone git@github.com:frc971/linux.git`
+  `git checkout frc971-5.10-pi4-rt branch`
+
+- Run `build_kernel.sh` to compile the real-time kernel
+  `cd ROOTFS_DIR` (where ROOTFS_DIR -> //frc971/raspi/rootfs)
+  `./build_kernel.sh CODE_DIR/linux kernel_5.10.tar.gz`
+
+## Download the Raspberry Pi OS
+
+Download the appropriate Raspberry Pi OS image, e.g.,
+`2022-01-28-raspios-bullseye-arm64-lite.img` (or any newer arm64
+bullseye version, as a .zip file) from
+`https://www.raspberrypi.org/downloads/raspberry-pi-os/`, and extract
+(unzip) the .img file.
+
+## Create our custom OS image using `modify_root.sh`
+
+- Edit `modify_rootfs.sh` to point to the kernel file (e.g.,
+`KERNEL=kernel_5.10.tar.gz`) and the Raspberry Pi OS image (e.g.,
+`IMAGE=2022-01-28-raspios-bullseye-arm64-lite.img`)
+
+- Run modify_rootfs.sh to build the filesystem (you might need to hit
 return in a spot or two and will need sudo privileges to mount the
 partition):
-  * `modify_root.sh`
+  * `./modify_root.sh`
+
+## Write the file system to the SD card
 
 VERY IMPORTANT NOTE: Before doing the next step, use `lsblk` to find
 the device and make absolutely sure this isn't your hard drive or
