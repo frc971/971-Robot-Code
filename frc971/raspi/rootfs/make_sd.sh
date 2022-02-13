@@ -32,14 +32,14 @@ else
   target /root/bin/change_hostname.sh "${1}"
 fi
 
-echo "Starting a shell for any manual configuration"
-target /bin/bash --rcfile /root/.bashrc
-
 # Put a timestamp on when this card got created and by whom
 TIMESTAMP_FILE="${PARTITION}/home/pi/.DiskFlashedDate.txt"
 date > "${TIMESTAMP_FILE}"
 git rev-parse HEAD >> "${TIMESTAMP_FILE}"
 whoami >> "${TIMESTAMP_FILE}"
+
+echo "Starting a shell for any manual configuration"
+target /bin/bash --rcfile /root/.bashrc
 
 # Found I had to do a lazy force unmount ("-l" flag) to make it work reliably
 sudo umount -l "${PARTITION}"
