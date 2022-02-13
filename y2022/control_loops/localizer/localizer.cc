@@ -558,6 +558,10 @@ EventLoopLocalizer::EventLoopLocalizer(
             auto builder = output_sender_.MakeBuilder();
             LocalizerOutput::Builder output_builder =
                 builder.MakeBuilder<LocalizerOutput>();
+            // TODO(james): Should we bother to try to estimate time offsets for
+            // the pico?
+            output_builder.add_monotonic_timestamp_ns(
+                value->monotonic_timestamp_ns());
             output_builder.add_x(model_based_.xytheta()(0));
             output_builder.add_y(model_based_.xytheta()(1));
             output_builder.add_theta(model_based_.xytheta()(2));

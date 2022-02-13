@@ -204,7 +204,9 @@ void DrivetrainFilters::Correct(aos::monotonic_clock::time_point monotonic_now,
       break;
   }
 
-  ready_ = imu_zeroer_.Zeroed();
+  ready_ = dt_config_.gyro_type == GyroType::SPARTAN_GYRO ||
+           dt_config_.gyro_type == GyroType::FLIPPED_SPARTAN_GYRO ||
+           imu_zeroer_.Zeroed();
 
   // TODO(james): How aggressively can we fault here? If we fault to
   // aggressively, we might have issues during startup if wpilib_interface takes
@@ -213,11 +215,18 @@ void DrivetrainFilters::Correct(aos::monotonic_clock::time_point monotonic_now,
     last_gyro_rate_ = 0.0;
   }
 
-  localizer_->Update(
-      {last_last_voltage_(kLeftVoltage), last_last_voltage_(kRightVoltage)},
-      monotonic_now, position->left_encoder(), position->right_encoder(),
-      down_estimator_.avg_recent_yaw_rates(),
-      down_estimator_.avg_recent_accel());
+  if (imu_values_fetcher_.valid()) {
+    localizer_->Update(
+        {last_last_voltage_(kLeftVoltage), last_last_voltage_(kRightVoltage)},
+        monotonic_now, position->left_encoder(), position->right_encoder(),
+        down_estimator_.avg_recent_yaw_rates(),
+        down_estimator_.avg_recent_accel());
+  } else {
+    localizer_->Update(
+        {last_last_voltage_(kLeftVoltage), last_last_voltage_(kRightVoltage)},
+        monotonic_now, position->left_encoder(), position->right_encoder(),
+        last_gyro_rate_, Eigen::Vector3d::Zero());
+  }
 
   // If we get a new message setting the absolute position, then reset the
   // localizer.

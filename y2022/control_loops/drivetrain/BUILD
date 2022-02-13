@@ -1,3 +1,5 @@
+load("//aos:config.bzl", "aos_config")
+
 genrule(
     name = "genrule_drivetrain",
     outs = [
@@ -69,6 +71,19 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "localizer",
+    srcs = ["localizer.cc"],
+    hdrs = ["localizer.h"],
+    deps = [
+        "//aos/events:event_loop",
+        "//aos/network:message_bridge_server_fbs",
+        "//frc971/control_loops/drivetrain:hybrid_ekf",
+        "//frc971/control_loops/drivetrain:localizer",
+        "//y2022/control_loops/localizer:localizer_output_fbs",
+    ],
+)
+
 cc_binary(
     name = "drivetrain",
     srcs = [
@@ -78,8 +93,40 @@ cc_binary(
     visibility = ["//visibility:public"],
     deps = [
         ":drivetrain_base",
+        ":localizer",
         "//aos:init",
         "//aos/events:shm_event_loop",
         "//frc971/control_loops/drivetrain:drivetrain_lib",
+    ],
+)
+
+aos_config(
+    name = "simulation_config",
+    src = "drivetrain_simulation_config.json",
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//frc971/control_loops/drivetrain:simulation_channels",
+        "//y2022:config",
+    ],
+)
+
+cc_test(
+    name = "localizer_test",
+    srcs = ["localizer_test.cc"],
+    data = [":simulation_config"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":drivetrain_base",
+        ":localizer",
+        "//aos/events:simulated_event_loop",
+        "//aos/events/logging:log_writer",
+        "//aos/network:team_number",
+        "//aos/network:testing_time_converter",
+        "//frc971/control_loops:control_loop_test",
+        "//frc971/control_loops:team_number_test_environment",
+        "//frc971/control_loops/drivetrain:drivetrain_lib",
+        "//frc971/control_loops/drivetrain:drivetrain_test_lib",
+        "//y2022/control_loops/localizer:localizer_output_fbs",
     ],
 )

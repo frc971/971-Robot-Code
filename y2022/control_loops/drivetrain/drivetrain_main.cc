@@ -4,6 +4,7 @@
 #include "aos/init.h"
 #include "frc971/control_loops/drivetrain/drivetrain.h"
 #include "y2022/control_loops/drivetrain/drivetrain_base.h"
+#include "y2022/control_loops/drivetrain/localizer.h"
 
 using ::frc971::control_loops::drivetrain::DrivetrainLoop;
 
@@ -14,7 +15,7 @@ int main(int argc, char **argv) {
       aos::configuration::ReadConfig("config.json");
 
   ::aos::ShmEventLoop event_loop(&config.message());
-  ::frc971::control_loops::drivetrain::DeadReckonEkf localizer(
+  ::y2022::control_loops::drivetrain::Localizer localizer(
       &event_loop,
       ::y2022::control_loops::drivetrain::GetDrivetrainConfig());
   std::unique_ptr<DrivetrainLoop> drivetrain = std::make_unique<DrivetrainLoop>(
