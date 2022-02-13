@@ -2,6 +2,7 @@
 
 #include "aos/util/crc32.h"
 #include "glog/logging.h"
+#include "y2022/constants.h"
 
 namespace y2022::localizer {
 
@@ -120,8 +121,10 @@ flatbuffers::Offset<frc971::IMUValues> Imu::ProcessReading(
 
     // extra data from the pico
     imu_builder.add_pico_timestamp_us(pico_timestamp);
-    imu_builder.add_left_encoder(encoder1_count);
-    imu_builder.add_right_encoder(encoder2_count);
+    imu_builder.add_left_encoder(
+        constants::Values::DrivetrainEncoderToMeters(encoder1_count));
+    imu_builder.add_right_encoder(
+        constants::Values::DrivetrainEncoderToMeters(encoder2_count));
     imu_builder.add_previous_reading_diag_stat(diag_stat_offset);
   }
 

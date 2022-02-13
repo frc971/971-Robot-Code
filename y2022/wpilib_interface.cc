@@ -68,14 +68,6 @@ constexpr double kMaxBringupPower = 12.0;
 // DMA stuff and then removing the * 2.0 in *_translate.
 // The low bit is direction.
 
-double drivetrain_translate(int32_t in) {
-  return ((static_cast<double>(in) /
-           Values::kDrivetrainEncoderCountsPerRevolution()) *
-          (2.0 * M_PI)) *
-         Values::kDrivetrainEncoderRatio() *
-         control_loops::drivetrain::kWheelRadius;
-}
-
 double drivetrain_velocity_translate(double in) {
   return (((1.0 / in) / Values::kDrivetrainCyclesPerRevolution()) *
           (2.0 * M_PI)) *
@@ -127,12 +119,14 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       frc971::control_loops::drivetrain::Position::Builder drivetrain_builder =
           builder.MakeBuilder<frc971::control_loops::drivetrain::Position>();
       drivetrain_builder.add_left_encoder(
-          drivetrain_translate(drivetrain_left_encoder_->GetRaw()));
+          constants::Values::DrivetrainEncoderToMeters(
+              drivetrain_left_encoder_->GetRaw()));
       drivetrain_builder.add_left_speed(
           drivetrain_velocity_translate(drivetrain_left_encoder_->GetPeriod()));
 
       drivetrain_builder.add_right_encoder(
-          -drivetrain_translate(drivetrain_right_encoder_->GetRaw()));
+          -constants::Values::DrivetrainEncoderToMeters(
+              drivetrain_right_encoder_->GetRaw()));
       drivetrain_builder.add_right_speed(-drivetrain_velocity_translate(
           drivetrain_right_encoder_->GetPeriod()));
 

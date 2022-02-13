@@ -105,10 +105,10 @@ table IMUValues {
   // from the Raspberry Pi Pico to the Raspberry Pi.
   checksum_failed:bool (id:22);
 
-  // The position of the left drivetrain encoder in encoder ticks
-  left_encoder:int (id: 17);
-  // The position of the right drivetrain encoder in encoder ticks
-  right_encoder:int (id: 18);
+  // The position of the left drivetrain encoder in meters
+  left_encoder:double (id: 17);
+  // The position of the right drivetrain encoder in meters
+  right_encoder:double (id: 18);
 
   // For an ADIS16470, the DIAG_STAT value immediately after reset.
   start_diag_stat:ADIS16470DiagStat (id: 13);
