@@ -28,8 +28,8 @@ class Calibration {
       : event_loop_(event_loop),
         pi_(pi),
         pi_number_(aos::network::ParsePiNumber(pi)),
-        prev_rvec_(Eigen::Vector3d::Zero()),
-        prev_tvec_(Eigen::Vector3d::Zero()),
+        H_camera_board_(Eigen::Affine3d()),
+        prev_H_camera_board_(Eigen::Affine3d()),
         charuco_extractor_(
             event_loop, pi,
             [this](cv::Mat rgb_image,
@@ -67,16 +67,15 @@ class Calibration {
     // Calibration calculates rotation and translation delta from last image
     // captured to automatically capture next image
 
-    Eigen::Matrix3d r_aff =
-        Eigen::AngleAxisd(rvec_eigen.norm(), rvec_eigen / rvec_eigen.norm())
-            .toRotationMatrix();
-    Eigen::Matrix3d prev_r_aff =
-        Eigen::AngleAxisd(prev_rvec_.norm(), prev_rvec_ / prev_rvec_.norm())
-            .toRotationMatrix();
+    Eigen::Affine3d H_board_camera =
+        Eigen::Translation3d(tvec_eigen) *
+        Eigen::AngleAxisd(rvec_eigen.norm(), rvec_eigen / rvec_eigen.norm());
+    H_camera_board_ = H_board_camera.inverse();
+    Eigen::Affine3d H_delta = H_board_camera * prev_H_camera_board_;
 
-    Eigen::AngleAxisd delta_r = Eigen::AngleAxisd(r_aff * prev_r_aff.inverse());
+    Eigen::AngleAxisd delta_r = Eigen::AngleAxisd(H_delta.rotation());
 
-    Eigen::Vector3d delta_t = tvec_eigen - prev_tvec_;
+    Eigen::Vector3d delta_t = H_delta.translation();
 
     double r_norm = std::abs(delta_r.angle());
     double t_norm = delta_t.norm();
@@ -84,8 +83,7 @@ class Calibration {
     int keystroke = cv::waitKey(1);
     if (r_norm > kDeltaRThreshold || t_norm > kDeltaTThreshold) {
       if (valid) {
-        prev_rvec_ = rvec_eigen;
-        prev_tvec_ = tvec_eigen;
+        prev_H_camera_board_ = H_camera_board_;
 
         all_charuco_ids_.emplace_back(std::move(charuco_ids));
         all_charuco_corners_.emplace_back(std::move(charuco_corners));
@@ -194,8 +192,8 @@ class Calibration {
   std::vector<std::vector<int>> all_charuco_ids_;
   std::vector<std::vector<cv::Point2f>> all_charuco_corners_;
 
-  Eigen::Vector3d prev_rvec_;
-  Eigen::Vector3d prev_tvec_;
+  Eigen::Affine3d H_camera_board_;
+  Eigen::Affine3d prev_H_camera_board_;
 
   CharucoExtractor charuco_extractor_;
 };
