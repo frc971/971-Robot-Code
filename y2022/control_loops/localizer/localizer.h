@@ -11,7 +11,6 @@
 #include "y2022/control_loops/localizer/localizer_status_generated.h"
 #include "y2022/control_loops/localizer/localizer_output_generated.h"
 #include "frc971/control_loops/drivetrain/improved_down_estimator.h"
-#include "frc971/control_loops/drivetrain/drivetrain_position_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_output_generated.h"
 #include "frc971/control_loops/drivetrain/localizer_generated.h"
 #include "frc971/zeroing/imu_zeroer.h"
@@ -208,7 +207,6 @@ class EventLoopLocalizer {
   ModelBasedLocalizer model_based_;
   aos::Sender<LocalizerStatus> status_sender_;
   aos::Sender<LocalizerOutput> output_sender_;
-  aos::Fetcher<frc971::control_loops::drivetrain::Position> position_fetcher_;
   aos::Fetcher<frc971::control_loops::drivetrain::Output> output_fetcher_;
   zeroing::ImuZeroer zeroer_;
   aos::monotonic_clock::time_point last_output_send_ =

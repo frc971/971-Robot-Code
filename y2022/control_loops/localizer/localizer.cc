@@ -507,9 +507,6 @@ EventLoopLocalizer::EventLoopLocalizer(
       model_based_(dt_config),
       status_sender_(event_loop_->MakeSender<LocalizerStatus>("/localizer")),
       output_sender_(event_loop_->MakeSender<LocalizerOutput>("/localizer")),
-      position_fetcher_(
-          event_loop_->MakeFetcher<frc971::control_loops::drivetrain::Position>(
-              "/localizer")),
       output_fetcher_(
           event_loop_->MakeFetcher<frc971::control_loops::drivetrain::Output>(
               "/drivetrain")) {
@@ -526,26 +523,24 @@ EventLoopLocalizer::EventLoopLocalizer(
   event_loop_->MakeWatcher(
       "/localizer", [this](const frc971::IMUValuesBatch &values) {
         CHECK(values.has_readings());
-        position_fetcher_.Fetch();
         output_fetcher_.Fetch();
         for (const IMUValues *value : *values.readings()) {
           zeroer_.InsertAndProcessMeasurement(*value);
           if (zeroer_.Zeroed()) {
-            CHECK(position_fetcher_.get() != nullptr);
-            CHECK(output_fetcher_.get() != nullptr);
-            const bool disabled =
-                output_fetcher_.context().monotonic_event_time +
-                    std::chrono::milliseconds(10) <
-                event_loop_->context().monotonic_event_time;
-            model_based_.HandleImu(
-                aos::monotonic_clock::time_point(
-                    std::chrono::nanoseconds(value->monotonic_timestamp_ns())),
-                zeroer_.ZeroedGyro(), zeroer_.ZeroedAccel(),
-                {position_fetcher_->left_encoder(),
-                 position_fetcher_->right_encoder()},
-                disabled ? Eigen::Vector2d::Zero()
-                         : Eigen::Vector2d{output_fetcher_->left_voltage(),
-                                           output_fetcher_->right_voltage()});
+            if (output_fetcher_.get() != nullptr) {
+              const bool disabled =
+                  output_fetcher_.context().monotonic_event_time +
+                      std::chrono::milliseconds(10) <
+                  event_loop_->context().monotonic_event_time;
+              model_based_.HandleImu(
+                  aos::monotonic_clock::time_point(std::chrono::nanoseconds(
+                      value->monotonic_timestamp_ns())),
+                  zeroer_.ZeroedGyro(), zeroer_.ZeroedAccel(),
+                  {value->left_encoder(), value->right_encoder()},
+                  disabled ? Eigen::Vector2d::Zero()
+                           : Eigen::Vector2d{output_fetcher_->left_voltage(),
+                                             output_fetcher_->right_voltage()});
+            }
           }
           {
             auto builder = status_sender_.MakeBuilder();

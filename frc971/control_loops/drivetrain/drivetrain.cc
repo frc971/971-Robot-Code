@@ -35,7 +35,7 @@ DrivetrainFilters::DrivetrainFilters(const DrivetrainConfig<double> &dt_config,
       localizer_control_fetcher_(
           event_loop->MakeFetcher<LocalizerControl>("/drivetrain")),
       imu_values_fetcher_(
-          event_loop->MakeFetcher<::frc971::IMUValuesBatch>("/drivetrain")),
+          event_loop->TryMakeFetcher<::frc971::IMUValuesBatch>("/drivetrain")),
       gyro_reading_fetcher_(
           event_loop->MakeFetcher<::frc971::sensors::GyroReading>(
               "/drivetrain")),
@@ -52,7 +52,9 @@ DrivetrainFilters::DrivetrainFilters(const DrivetrainConfig<double> &dt_config,
   event_loop->OnRun([this]() {
     // On the first fetch, make sure that we are caught all the way up to the
     // present.
-    imu_values_fetcher_.Fetch();
+    if (imu_values_fetcher_.valid()) {
+      imu_values_fetcher_.Fetch();
+    }
   });
   if (dt_config.is_simulated) {
     down_estimator_.assume_perfect_gravity();
@@ -117,7 +119,7 @@ void DrivetrainFilters::Correct(aos::monotonic_clock::time_point monotonic_now,
       break;
   }
 
-  while (imu_values_fetcher_.FetchNext()) {
+  while (imu_values_fetcher_.valid() && imu_values_fetcher_.FetchNext()) {
     CHECK(imu_values_fetcher_->has_readings());
     last_gyro_time_ = monotonic_now;
     for (const IMUValues *value : *imu_values_fetcher_->readings()) {
@@ -138,7 +140,7 @@ void DrivetrainFilters::Correct(aos::monotonic_clock::time_point monotonic_now,
   }
 
   bool got_imu_reading = false;
-  if (imu_values_fetcher_.get() != nullptr) {
+  if (imu_values_fetcher_.valid() && imu_values_fetcher_.get() != nullptr) {
     imu_zeroer_.ProcessMeasurements();
     got_imu_reading = true;
     CHECK(imu_values_fetcher_->has_readings());

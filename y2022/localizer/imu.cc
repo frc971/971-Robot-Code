@@ -18,7 +18,7 @@ constexpr double kTempScale = 0.1;
 Imu::Imu(aos::ShmEventLoop *event_loop)
     : event_loop_(event_loop),
       imu_sender_(
-          event_loop_->MakeSender<frc971::IMUValuesBatch>("/drivetrain")) {
+          event_loop_->MakeSender<frc971::IMUValuesBatch>("/localizer")) {
   event_loop->SetRuntimeRealtimePriority(30);
   imu_fd_ = open("/dev/adis16505", O_RDONLY | O_NONBLOCK);
   PCHECK(imu_fd_ != -1) << ": Failed to open SPI device for IMU.";

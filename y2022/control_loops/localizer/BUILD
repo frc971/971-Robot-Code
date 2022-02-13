@@ -60,7 +60,6 @@ cc_library(
         "//frc971/control_loops:c2d",
         "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_output_fbs",
-        "//frc971/control_loops/drivetrain:drivetrain_position_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
         "//frc971/control_loops/drivetrain:improved_down_estimator",
         "//frc971/control_loops/drivetrain:localizer_fbs",

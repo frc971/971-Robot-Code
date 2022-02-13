@@ -114,7 +114,7 @@ DrivetrainSimulation::DrivetrainSimulation(
           event_loop_->MakeFetcher<::frc971::control_loops::drivetrain::Status>(
               "/drivetrain")),
       imu_sender_(
-          event_loop->MakeSender<::frc971::IMUValuesBatch>("/drivetrain")),
+          event_loop->TryMakeSender<::frc971::IMUValuesBatch>("/drivetrain")),
       dt_config_(dt_config),
       drivetrain_plant_(MakePlantFromConfig(dt_config_)),
       velocity_drivetrain_(
@@ -126,13 +126,13 @@ DrivetrainSimulation::DrivetrainSimulation(
                                     HybridKalman<2, 2, 2>>(
                   dt_config_.make_hybrid_drivetrain_velocity_loop()))) {
   if (imu_event_loop_ != nullptr) {
-    localizer_position_sender_ =
-        imu_event_loop_
-            ->MakeSender<::frc971::control_loops::drivetrain::Position>(
-                "/localizer");
-    localizer_imu_sender_ =
+    CHECK(!imu_sender_);
+    imu_sender_ =
         imu_event_loop_->MakeSender<::frc971::IMUValuesBatch>("/localizer");
+    gyro_sender_ =
+        event_loop_->MakeSender<::frc971::sensors::GyroReading>("/drivetrain");
   }
+  CHECK(imu_sender_);
   Reinitialize();
   last_U_.setZero();
   event_loop_->AddPhasedLoop(
@@ -202,10 +202,6 @@ void DrivetrainSimulation::SendPositionMessage() {
         position(fbb.Release());
     CHECK_EQ(drivetrain_position_sender_.Send(position),
              aos::RawSender::Error::kOk);
-    if (localizer_position_sender_) {
-      CHECK_EQ(localizer_position_sender_.Send(position),
-               aos::RawSender::Error::kOk);
-    }
   }
 }
 
@@ -231,8 +227,10 @@ void DrivetrainSimulation::ReadImu() {
       std::chrono::duration_cast<std::chrono::nanoseconds>(
           event_loop_->monotonic_now().time_since_epoch())
           .count();
+  last_yaw_rate_ = gyro.z();
   imu_readings_.push({.gyro = gyro,
                       .accel = accel,
+                      .encoders = {GetLeftPosition(), GetRightPosition()},
                       .timestamp = timestamp,
                       .faulted = imu_faulted_});
 }
@@ -273,6 +271,14 @@ void DrivetrainSimulation::SendImuMessage() {
     imu_builder.add_accelerometer_z(imu_reading.accel.z());
     imu_builder.add_monotonic_timestamp_ns(imu_reading.timestamp);
 
+    if (imu_event_loop_ != nullptr) {
+      imu_builder.add_pico_timestamp_us(imu_reading.timestamp / 1000);
+      imu_builder.add_data_counter(imu_data_counter_++);
+      imu_builder.add_checksum_failed(false);
+      imu_builder.add_left_encoder(imu_reading.encoders(0));
+      imu_builder.add_right_encoder(imu_reading.encoders(1));
+    }
+
     imu_values.push_back(imu_builder.Finish());
   }
 
@@ -284,8 +290,14 @@ void DrivetrainSimulation::SendImuMessage() {
   fbb.Finish(imu_values_batch_builder.Finish());
   aos::FlatbufferDetachedBuffer<frc971::IMUValuesBatch> message = fbb.Release();
   CHECK_EQ(imu_sender_.Send(message), aos::RawSender::Error::kOk);
-  if (localizer_imu_sender_) {
-    CHECK_EQ(localizer_imu_sender_.Send(message), aos::RawSender::Error::kOk);
+  if (gyro_sender_) {
+    auto builder = gyro_sender_.MakeBuilder();
+    sensors::GyroReading::Builder reading_builder =
+        builder.MakeBuilder<sensors::GyroReading>();
+    reading_builder.add_angle(state_(2));
+    reading_builder.add_velocity(last_yaw_rate_);
+    CHECK_EQ(builder.Send(reading_builder.Finish()),
+             aos::RawSender::Error::kOk);
   }
 }
 

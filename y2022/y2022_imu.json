@@ -199,6 +199,9 @@
       "frequency": 2200,
       "max_size": 2000,
       "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "roborio"
+      ],
       "destination_nodes": [
         {
           "name": "logger",
@@ -227,6 +230,9 @@
       "frequency": 200,
       "max_size": 200,
       "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "roborio"
+      ],
       "destination_nodes": [
         {
           "name": "roborio",
@@ -271,9 +277,12 @@
       "type": "frc971.IMUValuesBatch",
       "source_node": "imu",
       "frequency": 2200,
-      "max_size": 1000,
+      "max_size": 1600,
       "num_senders": 2,
       "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "logger"
+      ],
       "destination_nodes": [
         {
           "name": "logger",
@@ -292,35 +301,6 @@
       "source_node": "imu",
       "logger": "NOT_LOGGED",
       "frequency": 2200,
-      "num_senders": 2,
-      "max_size": 200
-    },
-    {
-      "name": "/localizer",
-      "type": "frc971.control_loops.drivetrain.Position",
-      "source_node": "imu",
-      "frequency": 200,
-      "max_size": 200,
-      "num_senders": 2,
-      "logger": "LOCAL_AND_REMOTE_LOGGER",
-      "destination_nodes": [
-        {
-          "name": "logger",
-          "priority": 5,
-          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
-          "timestamp_logger_nodes": [
-            "imu"
-          ],
-          "time_to_live": 5000000
-        }
-      ]
-    },
-    {
-      "name": "/imu/aos/remote_timestamps/logger/localizer/frc971-control_loops-drivetrain-Position",
-      "type": "aos.message_bridge.RemoteMessage",
-      "source_node": "imu",
-      "logger": "NOT_LOGGED",
-      "frequency": 200,
       "num_senders": 2,
       "max_size": 200
     }

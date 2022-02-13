@@ -220,7 +220,18 @@
       "type": "y2022.control_loops.superstructure.Status",
       "source_node": "roborio",
       "frequency": 200,
-      "num_senders": 2
+      "num_senders": 2,
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "imu"
+      ],
+      "destination_nodes": [
+        {
+          "name": "imu",
+          "priority": 5,
+          "time_to_live": 5000000
+        }
+      ]
     },
     {
       "name": "/superstructure",
@@ -237,14 +248,6 @@
       "frequency": 200,
       "num_senders": 2,
       "max_size": 448
-    },
-    {
-      "name": "/drivetrain",
-      "type": "frc971.IMUValuesBatch",
-      "source_node": "roborio",
-      "frequency": 250,
-      "max_size": 2000,
-      "num_senders": 2
     },
     {
       "name": "/drivetrain",
@@ -300,6 +303,9 @@
       "max_size": 80,
       "num_senders": 2,
       "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "imu"
+      ],
       "destination_nodes": [
         {
           "name": "imu",
@@ -336,6 +342,9 @@
       "frequency": 200,
       "max_size": 96,
       "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "imu"
+      ],
       "destination_nodes": [
         {
           "name": "imu",
@@ -344,7 +353,7 @@
           "timestamp_logger_nodes": [
             "imu"
           ],
-          "time_to_live": 5000000
+          "time_to_live": 0
         }
       ]
     },

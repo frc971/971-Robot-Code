@@ -13,6 +13,7 @@
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/wpilib/imu_batch_generated.h"
+#include "frc971/queues/gyro_generated.h"
 
 namespace frc971 {
 namespace control_loops {
@@ -101,6 +102,9 @@ class DrivetrainSimulation {
   struct ImuReading {
     Eigen::Vector3d gyro;
     Eigen::Vector3d accel;
+    // On the 2022 robot, encoders are read as part of the same procedure that
+    // reads the IMU.
+    Eigen::Vector2d encoders;
     int64_t timestamp;
     bool faulted;
   };
@@ -123,27 +127,19 @@ class DrivetrainSimulation {
 
   ::aos::Sender<::frc971::control_loops::drivetrain::Position>
       drivetrain_position_sender_;
-  // Duplicate Position sender to be sent from the imu pi, for robots that
-  // support it.
-  // TODO(james): Update this to match what Ravago did for the IMU--either
-  // update that library, or update this one.
-  ::aos::Sender<::frc971::control_loops::drivetrain::Position>
-      localizer_position_sender_;
   ::aos::Sender<::frc971::control_loops::drivetrain::Status>
       drivetrain_truth_sender_;
   ::aos::Fetcher<::frc971::control_loops::drivetrain::Output>
       drivetrain_output_fetcher_;
   ::aos::Fetcher<::frc971::control_loops::drivetrain::Status>
       drivetrain_status_fetcher_;
-  // TODO(james): Disable this on non-IMU roborios.
   ::aos::Sender<::frc971::IMUValuesBatch> imu_sender_;
-  // Duplicate IMUValues sender to be sent from the imu pi, for robots that
-  // support it.
-  // TODO(james): Also, add a roborio-based GyroReading sender.
-  ::aos::Sender<::frc971::IMUValuesBatch> localizer_imu_sender_;
+  ::aos::Sender<::frc971::sensors::GyroReading> gyro_sender_;
 
   bool imu_faulted_ = false;
 
+  double last_yaw_rate_ = 0.0;
+  int imu_data_counter_ = 0;
   std::queue<ImuReading> imu_readings_;
 
   DrivetrainConfig<double> dt_config_;
