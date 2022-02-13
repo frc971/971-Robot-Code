@@ -128,6 +128,11 @@ class SimulatedEventLoopFactory {
   // tests.
   void SkipTimingReport();
 
+  // Re-enables application creation for the duration of fn.  This is mostly to
+  // allow use cases like log reading to create applications after the node
+  // starts up without stopping execution.
+  void AllowApplicationCreationDuring(std::function<void()> fn);
+
  private:
   friend class NodeEventLoopFactory;
 

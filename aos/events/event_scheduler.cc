@@ -66,20 +66,32 @@ void EventScheduler::CallOldestEvent() {
 }
 
 void EventScheduler::RunOnRun() {
-  for (std::function<void()> &on_run : on_run_) {
-    on_run();
+  while (!on_run_.empty()) {
+    std::function<void()> fn = std::move(*on_run_.begin());
+    on_run_.erase(on_run_.begin());
+    fn();
   }
-  on_run_.clear();
 }
 
-void EventScheduler::RunOnStartup() {
-  for (size_t i = 0; i < on_startup_.size(); ++i) {
-    on_startup_[i]();
+void EventScheduler::RunOnStartup() noexcept {
+  while (!on_startup_.empty()) {
+    std::function<void()> fn = std::move(*on_startup_.begin());
+    on_startup_.erase(on_startup_.begin());
+    fn();
   }
-  on_startup_.clear();
 }
 
-void EventScheduler::RunStarted() { started_(); }
+void EventScheduler::RunStarted() {
+  if (started_) {
+    started_();
+  }
+}
+
+void EventScheduler::RunStopped() {
+  if (stopped_) {
+    stopped_();
+  }
+}
 
 std::ostream &operator<<(std::ostream &stream,
                          const aos::distributed_clock::time_point &now) {
@@ -119,6 +131,7 @@ void EventSchedulerScheduler::Reboot() {
       rebooted.emplace_back(node_index);
       CHECK_EQ(schedulers_[node_index]->boot_count() + 1,
                times[node_index].boot);
+      schedulers_[node_index]->RunStopped();
       schedulers_[node_index]->Shutdown();
     }
   }
@@ -144,6 +157,7 @@ void EventSchedulerScheduler::Reboot() {
 void EventSchedulerScheduler::RunFor(distributed_clock::duration duration) {
   distributed_clock::time_point end_time = now_ + duration;
   logging::ScopedLogRestorer prev_logger;
+  RunOnStartup();
   RunOnRun();
 
   // Run all the sub-event-schedulers.
@@ -191,10 +205,13 @@ void EventSchedulerScheduler::RunFor(distributed_clock::duration duration) {
   }
 
   now_ = end_time;
+
+  RunStopped();
 }
 
 void EventSchedulerScheduler::Run() {
   logging::ScopedLogRestorer prev_logger;
+  RunOnStartup();
   RunOnRun();
   // Run all the sub-event-schedulers.
   while (is_running_) {
@@ -232,6 +249,8 @@ void EventSchedulerScheduler::Run() {
   }
 
   is_running_ = false;
+
+  RunStopped();
 }
 
 std::tuple<distributed_clock::time_point, EventScheduler *>
@@ -259,6 +278,19 @@ EventSchedulerScheduler::OldestEvent() {
             << min_scheduler->node_index_;
   }
   return std::make_tuple(min_event_time, min_scheduler);
+}
+
+void EventSchedulerScheduler::TemporarilyStopAndRun(std::function<void()> fn) {
+  const bool was_running = is_running_;
+  if (is_running_) {
+    is_running_ = false;
+    RunStopped();
+  }
+  fn();
+  if (was_running) {
+    RunOnStartup();
+    RunOnRun();
+  }
 }
 
 }  // namespace aos

@@ -1268,6 +1268,11 @@ NodeEventLoopFactory::NodeEventLoopFactory(
       event_loop->SetIsRunning(true);
     }
   });
+  scheduler_.set_stopped([this]() {
+    for (SimulatedEventLoop *event_loop : event_loops_) {
+      event_loop->SetIsRunning(false);
+    }
+  });
   scheduler_.set_on_shutdown([this]() {
     VLOG(1) << scheduler_.distributed_now() << " " << NodeName(this->node())
             << monotonic_now() << " Shutting down node.";
@@ -1339,7 +1344,7 @@ void NodeEventLoopFactory::Startup() {
 
 void NodeEventLoopFactory::Shutdown() {
   for (SimulatedEventLoop *event_loop : event_loops_) {
-    event_loop->SetIsRunning(false);
+    CHECK(!event_loop->is_running());
   }
 
   CHECK(started_);
@@ -1367,12 +1372,11 @@ void NodeEventLoopFactory::Shutdown() {
 
 void SimulatedEventLoopFactory::RunFor(monotonic_clock::duration duration) {
   // This sets running to true too.
-  scheduler_scheduler_.RunOnStartup();
   scheduler_scheduler_.RunFor(duration);
   for (std::unique_ptr<NodeEventLoopFactory> &node : node_factories_) {
     if (node) {
       for (SimulatedEventLoop *loop : node->event_loops_) {
-        loop->SetIsRunning(false);
+        CHECK(!loop->is_running());
       }
     }
   }
@@ -1380,12 +1384,11 @@ void SimulatedEventLoopFactory::RunFor(monotonic_clock::duration duration) {
 
 void SimulatedEventLoopFactory::Run() {
   // This sets running to true too.
-  scheduler_scheduler_.RunOnStartup();
   scheduler_scheduler_.Run();
   for (std::unique_ptr<NodeEventLoopFactory> &node : node_factories_) {
     if (node) {
       for (SimulatedEventLoop *loop : node->event_loops_) {
-        loop->SetIsRunning(false);
+        CHECK(!loop->is_running());
       }
     }
   }
@@ -1456,6 +1459,11 @@ void NodeEventLoopFactory::DisableStatistics() {
   VLOG(1) << scheduler_.distributed_now() << " " << NodeName(node())
           << monotonic_now() << " MakeEventLoop(\"" << result->name() << "\")";
   return std::move(result);
+}
+
+void SimulatedEventLoopFactory::AllowApplicationCreationDuring(
+    std::function<void()> fn) {
+  scheduler_scheduler_.TemporarilyStopAndRun(std::move(fn));
 }
 
 void NodeEventLoopFactory::Disconnect(const Node *other) {

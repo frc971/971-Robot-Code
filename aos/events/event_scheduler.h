@@ -126,7 +126,12 @@ class EventScheduler {
     started_ = std::move(callback);
   }
 
+  void set_stopped(std::function<void()> callback) {
+    stopped_ = std::move(callback);
+  }
+
   std::function<void()> started_;
+  std::function<void()> stopped_;
   std::function<void()> on_shutdown_;
 
   Token InvalidToken() { return events_list_.end(); }
@@ -138,10 +143,12 @@ class EventScheduler {
   void RunOnRun();
 
   // Runs the OnStartup callbacks.
-  void RunOnStartup();
+  void RunOnStartup() noexcept;
 
   // Runs the Started callback.
   void RunStarted();
+  // Runs the Started callback.
+  void RunStopped();
 
   // Returns true if events are being handled.
   inline bool is_running() const;
@@ -283,6 +290,13 @@ class EventSchedulerScheduler {
     }
   }
 
+  void RunStopped() {
+    CHECK(!is_running_);
+    for (EventScheduler *scheduler : schedulers_) {
+      scheduler->RunStopped();
+    }
+  }
+
   void SetTimeConverter(TimeConverter *time_converter) {
     time_converter->set_reboot_found(
         [this](distributed_clock::time_point reboot_time,
@@ -293,6 +307,11 @@ class EventSchedulerScheduler {
           reboots_.emplace_back(reboot_time, node_times);
         });
   }
+
+  // Runs the provided callback now.  Stops everything, runs the callback, then
+  // starts it all up again.  This lets us do operations like starting and
+  // stopping applications while running.
+  void TemporarilyStopAndRun(std::function<void()> fn);
 
  private:
   // Handles running the OnRun functions.
