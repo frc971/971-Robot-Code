@@ -1,0 +1,87 @@
+include "frc971/control_loops/drivetrain/drivetrain_status.fbs";
+
+namespace frc971.controls;
+
+// Stores the state associated with the acceleration-based modelling.
+table AccelBasedState {
+  // x/y position, in meters.
+  x:double (id: 0);
+  y:double (id: 1);
+  // heading, in radians.
+  theta:double (id: 2);
+  // Velocity in X/Y directions, in m/s.
+  velocity_x:double (id: 3);
+  velocity_y:double (id: 4);
+}
+
+// Stores the state associated with the drivetrain model-based state.
+// This model assumes zero lateral motion of the drivetrain.
+table ModelBasedState {
+  // x/y position, in meters.
+  x:double (id: 0);
+  y:double (id: 1);
+  // heading, in radians.
+  theta:double (id: 2);
+  // Expected encoder reading for the left side of the drivetrain, in meters.
+  left_encoder:double (id: 3);
+  // Modelled velocity of the left side of the drivetrain, in meters / second.
+  left_velocity:double (id: 4);
+  // Estimated voltage error, in volts.
+  left_voltage_error:double (id: 5);
+  // Same as the left_* fields, but for the right side of the drivetrain.
+  right_encoder:double (id: 6);
+  right_velocity:double (id: 7);
+  right_voltage_error:double (id: 8);
+}
+
+table ModelBasedStatus {
+  // Current acceleration and model-based states. Depending on using_model,
+  // one of these will be the ground-truth and the other will be calculated
+  // based on it. E.g. if using_model is true, then model_state will be
+  // populated as you'd expect, while accel_state will be populated to be
+  // consistent with model_state (e.g., no lateral motion).
+  accel_state:AccelBasedState (id: 0);
+  model_state:ModelBasedState (id: 1);
+  // using_model indicates whether we are currently in in model-based or
+  // accelerometer-based estimation.
+  using_model:bool (id: 2);
+  // Current residual associated with the amount of inconsistency between
+  // the two models. Will be zero if the drivetrain model is perfectly
+  // consistent with the IMU readings.
+  residual:double (id: 3);
+  // Status from the down estimator.
+  down_estimator:frc971.control_loops.drivetrain.DownEstimatorState (id: 4);
+  // Current ground-truth for x/y/theta. Should match those present in *_state.
+  x:double (id: 5);
+  y:double (id: 6);
+  theta:double (id: 7);
+  // Current accelerations implied by the current accelerometer + down estimator
+  // + yaw readings.
+  implied_accel_x:double (id: 8);
+  implied_accel_y:double (id: 9);
+  implied_accel_z:double (id: 10);
+  // oldest_* are the oldest surviving branches of the model that have just been
+  // running purely on one model.
+  oldest_accel_state:AccelBasedState (id: 11);
+  oldest_model_state:ModelBasedState (id: 12);
+  // Filtered version of the residual field--this is what is actually used by
+  // the code for determining when to swap between modes.
+  filtered_residual:double (id: 13);
+  // Components of the residual. Useful for debugging.
+  velocity_residual:double (id: 14);
+  accel_residual:double (id: 15);
+  theta_rate_residual:double (id: 16);
+  // Number of times we have missed an IMU reading. Should never increase except
+  // *maybe* during startup.
+  clock_resets:int (id: 17);
+}
+
+table LocalizerStatus {
+  model_based:ModelBasedStatus (id: 0);
+  // Whether the IMU is zeroed or not.
+  zeroed:bool (id: 1);
+  // Whether the IMU zeroing is faulted or not.
+  faulted_zero:bool (id: 2);
+}
+
+root_type LocalizerStatus;

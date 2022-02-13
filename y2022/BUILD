@@ -58,6 +58,7 @@ aos_config(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
+        ":config_imu",
         ":config_logger",
         ":config_pi1",
         ":config_pi2",
@@ -97,6 +98,25 @@ aos_config(
         "pi5",
     ]
 ]
+
+aos_config(
+    name = "config_imu",
+    src = "y2022_imu.json",
+    flatbuffers = [
+        "//aos/network:message_bridge_client_fbs",
+        "//aos/network:message_bridge_server_fbs",
+        "//aos/network:timestamp_fbs",
+        "//aos/network:remote_message_fbs",
+        "//y2022/control_loops/localizer:localizer_status_fbs",
+        "//y2022/control_loops/localizer:localizer_output_fbs",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aos/events:config",
+        "//frc971/control_loops/drivetrain:config",
+    ],
+)
 
 aos_config(
     name = "config_logger",
