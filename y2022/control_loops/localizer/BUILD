@@ -66,9 +66,20 @@ cc_library(
         "//frc971/wpilib:imu_batch_fbs",
         "//frc971/wpilib:imu_fbs",
         "//frc971/zeroing:imu_zeroer",
-        "//y2020/control_loops/drivetrain:drivetrain_base",
         "//y2020/vision/sift:sift_fbs",
         "@org_tuxfamily_eigen//:eigen",
+    ],
+)
+
+cc_binary(
+    name = "localizer_main",
+    srcs = ["localizer_main.cc"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":localizer",
+        "//aos:init",
+        "//aos/events:shm_event_loop",
+        "//y2022/control_loops/drivetrain:drivetrain_base",
     ],
 )
 
@@ -103,5 +114,6 @@ cc_binary(
         "//aos/events:simulated_event_loop",
         "//aos/events/logging:log_reader",
         "//aos/events/logging:log_writer",
+        "//y2020/control_loops/drivetrain:drivetrain_base",
     ],
 )

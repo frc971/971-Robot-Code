@@ -314,10 +314,25 @@
       ]
     },
     {
+      "name": "localizer",
+      "executable_name": "localizer",
+      "nodes": [
+        "imu"
+      ]
+    },
+    {
       "name": "message_bridge_server",
       "executable_name": "message_bridge_server",
       "nodes": [
         "imu"
+      ]
+    },
+    {
+      "name": "localizer_logger",
+      "executable_name": "logger_main",
+      "args": ["--logging_folder", "", "--snappy_compress"],
+      "nodes": [
+        "logger"
       ]
     },
     {

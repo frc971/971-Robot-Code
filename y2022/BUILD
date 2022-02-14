@@ -29,6 +29,7 @@ robot_downloader(
         "//y2020/vision:calibration",
         "//y2022/vision:viewer",
         "//y2022/localizer:imu_main",
+        "//y2022/control_loops/localizer:localizer_main",
     ],
     data = [
         ":config",

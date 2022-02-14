@@ -23,16 +23,6 @@ Eigen::Matrix<double, N, 1> MakeState(std::vector<double> values) {
   }
   return vector;
 }
-
-#if 0
-Eigen::Matrix<double, 3, 3> AxisToMatrix(const Eigen::Vector3d &vec) {
-  const double rotation_norm = vec.norm();
-  return rotation_norm < 1e-5
-             ? Eigen::Matrix<double, 3, 3>::Identity()
-             : Eigen::AngleAxis<double>(rotation_norm, vec / rotation_norm)
-                   .toRotationMatrix();
-}
-#endif
 }  // namespace
 
 ModelBasedLocalizer::ModelBasedLocalizer(
@@ -43,6 +33,8 @@ ModelBasedLocalizer::ModelBasedLocalizer(
               .plant()
               .coefficients()),
       down_estimator_(dt_config) {
+  CHECK_EQ(branches_.capacity(), static_cast<size_t>(std::chrono::seconds(1) /
+                                                 kNominalDt / kBranchPeriod));
   if (dt_config_.is_simulated) {
     down_estimator_.assume_perfect_gravity();
   }
@@ -394,7 +386,11 @@ void ModelBasedLocalizer::HandleImu(aos::monotonic_clock::time_point t,
   }
   new_branch.accumulated_divergence = 0.0;
 
-  branches_.Push(new_branch);
+  ++branch_counter_;
+  if (branch_counter_ % kBranchPeriod == 0) {
+    branches_.Push(new_branch);
+    branch_counter_ = 0;
+  }
 
   last_residual_ = model_divergence;
 

@@ -89,6 +89,9 @@ class ModelBasedLocalizer {
   static constexpr size_t kRightVoltage = 1;
   static constexpr size_t kNModelInputs = 2;
 
+  // Branching period, in cycles.
+  static constexpr int kBranchPeriod = 1;
+
   typedef Eigen::Matrix<double, kNModelStates, 1> ModelState;
   typedef Eigen::Matrix<double, kNAccelStates, 1> AccelState;
   typedef Eigen::Matrix<double, kNModelInputs, 1> ModelInput;
@@ -176,7 +179,8 @@ class ModelBasedLocalizer {
   // impact of any lateral motion).
   // We then integrate up all of these states and observe how much the model and
   // accel based states of each branch compare to one another.
-  aos::RingBuffer<CombinedState, 2000> branches_;
+  aos::RingBuffer<CombinedState, 2000 / kBranchPeriod> branches_;
+  int branch_counter_ = 0;
 
   CombinedState current_state_;
   aos::monotonic_clock::time_point t_ = aos::monotonic_clock::min_time;
