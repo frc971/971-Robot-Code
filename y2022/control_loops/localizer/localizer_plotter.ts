@@ -22,7 +22,7 @@ export function plotLocalizer(conn: Connection, element: Element): void {
   const localizer = aosPlotter.addMessageSource(
       '/localizer', 'frc971.controls.LocalizerStatus');
   const imu = aosPlotter.addRawMessageSource(
-      '/drivetrain', 'frc971.IMUValuesBatch',
+      '/localizer', 'frc971.IMUValuesBatch',
       new ImuMessageHandler(conn.getSchema('frc971.IMUValuesBatch')));
 
   // Drivetrain Status estimated relative position
@@ -48,8 +48,20 @@ export function plotLocalizer(conn: Connection, element: Element): void {
   positionPlot.addMessageLine(position, ['left_encoder'])
       .setColor(BROWN)
       .setDrawLine(false);
+  positionPlot.addMessageLine(imu, ['left_encoder'])
+      .setColor(BROWN)
+      .setDrawLine(false);
+  positionPlot.addMessageLine(localizer, ['left_encoder'])
+      .setColor(RED)
+      .setDrawLine(false);
   positionPlot.addMessageLine(position, ['right_encoder'])
       .setColor(CYAN)
+      .setDrawLine(false);
+  positionPlot.addMessageLine(imu, ['right_encoder'])
+      .setColor(CYAN)
+      .setDrawLine(false);
+  positionPlot.addMessageLine(localizer, ['right_encoder'])
+      .setColor(GREEN)
       .setDrawLine(false);
 
 
@@ -167,13 +179,6 @@ export function plotLocalizer(conn: Connection, element: Element): void {
   accelPlot.plot.getAxisLabels().setYLabel('Velocity (m/s)');
   accelPlot.plot.getAxisLabels().setXLabel('Monotonic Time (sec)');
 
-  accelPlot.addMessageLine(localizer, ['no_wheel_status', 'velocity_x'])
-      .setColor(PINK);
-  accelPlot.addMessageLine(localizer, ['no_wheel_status', 'velocity_y'])
-      .setColor(GREEN);
-  accelPlot.addMessageLine(localizer, ['no_wheel_status', 'velocity_z'])
-      .setColor(BLUE);
-
   accelPlot.addMessageLine(localizer, ['model_based', 'accel_state', 'velocity_x'])
       .setColor(RED)
       .setDrawLine(false);
@@ -197,10 +202,7 @@ export function plotLocalizer(conn: Connection, element: Element): void {
   xPositionPlot.addMessageLine(status, ['x']).setColor(RED);
   xPositionPlot.addMessageLine(status, ['down_estimator', 'position_x'])
       .setColor(BLUE);
-  xPositionPlot.addMessageLine(localizer, ['no_wheel_status', 'x']).setColor(GREEN);
   xPositionPlot.addMessageLine(localizer, ['model_based', 'x']).setColor(CYAN);
-
-  xPositionPlot.plot.setDefaultYRange([0.0, 0.5]);
 
   // Absolute Y Position
   const yPositionPlot = aosPlotter.addPlot(element);
@@ -212,7 +214,6 @@ export function plotLocalizer(conn: Connection, element: Element): void {
   localizerY.setColor(RED);
   yPositionPlot.addMessageLine(status, ['down_estimator', 'position_y'])
       .setColor(BLUE);
-  yPositionPlot.addMessageLine(localizer, ['no_wheel_status', 'y']).setColor(GREEN);
   yPositionPlot.addMessageLine(localizer, ['model_based', 'y']).setColor(CYAN);
 
   // Gyro
@@ -264,4 +265,13 @@ export function plotLocalizer(conn: Connection, element: Element): void {
   costPlot.addMessageLine(localizer, ['model_based', 'accel_residual'])
       .setColor(CYAN)
       .setPointSize(0);
+
+  const timingPlot =
+      aosPlotter.addPlot(element, [DEFAULT_WIDTH, DEFAULT_HEIGHT]);
+  timingPlot.plot.getAxisLabels().setTitle('Timing');
+  timingPlot.plot.getAxisLabels().setXLabel(TIME);
+
+  timingPlot.addMessageLine(localizer, ['model_based', 'clock_resets'])
+      .setColor(GREEN)
+      .setDrawLine(false);
 }

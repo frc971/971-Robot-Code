@@ -9,9 +9,9 @@
 #include "y2022/control_loops/localizer/localizer.h"
 #include "y2022/control_loops/localizer/localizer_schema.h"
 #include "gflags/gflags.h"
-#include "y2020/control_loops/drivetrain/drivetrain_base.h"
+#include "y2022/control_loops/drivetrain/drivetrain_base.h"
 
-DEFINE_string(config, "y2020/aos_config.json",
+DEFINE_string(config, "y2022/aos_config.json",
               "Name of the config file to replay using.");
 DEFINE_int32(team, 7971, "Team number to use for logfile replay.");
 DEFINE_string(output_folder, "/tmp/replayed",
@@ -58,33 +58,10 @@ int main(int argc, char **argv) {
       aos::logger::SortParts(unsorted_logfiles);
 
   // open logfiles
-  aos::logger::LogReader reader(logfiles);
-  // Patch in any new channels.
-  // TODO(james): With some of the extra changes I've made recently, this is no
-  // longer adequate for replaying old logfiles. Just stop trying to support old
-  // logs.
-  aos::FlatbufferDetachedBuffer<aos::Configuration> updated_config =
-      aos::configuration::MergeWithConfig(
-          reader.configuration(),
-          aos::configuration::AddSchema(
-              R"channel({
-  "channels": [
-    {
-      "name": "/localizer",
-      "type": "frc971.controls.LocalizerStatus",
-      "source_node": "roborio",
-      "frequency": 2000,
-      "max_size": 2000,
-      "num_senders": 2
-    }
-  ]
-})channel",
-              {aos::FlatbufferVector<reflection::Schema>(
-                  aos::FlatbufferSpan<reflection::Schema>(
-                      frc971::controls::LocalizerStatusSchema()))}));
+  aos::logger::LogReader reader(logfiles, &config.message());
 
-  auto factory = std::make_unique<aos::SimulatedEventLoopFactory>(
-      &updated_config.message());
+  auto factory =
+      std::make_unique<aos::SimulatedEventLoopFactory>(reader.configuration());
 
   reader.Register(factory.get());
 
@@ -92,7 +69,7 @@ int main(int argc, char **argv) {
   // List of nodes to create loggers for (note: currently just roborio; this
   // code was refactored to allow easily adding new loggers to accommodate
   // debugging and potential future changes).
-  const std::vector<std::string> nodes_to_log = {"roborio"};
+  const std::vector<std::string> nodes_to_log = {"imu"};
   for (const std::string &node : nodes_to_log) {
     loggers.emplace_back(std::make_unique<LoggerState>(
         &reader, aos::configuration::GetNode(reader.configuration(), node)));
@@ -100,7 +77,7 @@ int main(int argc, char **argv) {
 
   const aos::Node *node = nullptr;
   if (aos::configuration::MultiNode(reader.configuration())) {
-    node = aos::configuration::GetNode(reader.configuration(), "roborio");
+    node = aos::configuration::GetNode(reader.configuration(), "imu");
   }
 
   std::unique_ptr<aos::EventLoop> localizer_event_loop =
@@ -109,7 +86,7 @@ int main(int argc, char **argv) {
 
   frc971::controls::EventLoopLocalizer localizer(
       localizer_event_loop.get(),
-      y2020::control_loops::drivetrain::GetDrivetrainConfig());
+      y2022::control_loops::drivetrain::GetDrivetrainConfig());
 
   reader.event_loop_factory()->Run();
 

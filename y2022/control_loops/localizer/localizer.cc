@@ -2,11 +2,7 @@
 
 #include "frc971/control_loops/c2d.h"
 #include "frc971/wpilib/imu_batch_generated.h"
-// TODO(james): Things to do:
-// -Approach still seems fundamentally sound.
-// -Really need to work on cost/residual function.
-//    -Particularly for handling stopping.
-//    -Extra hysteresis
+#include "y2022/constants.h"
 
 namespace frc971::controls {
 
@@ -154,8 +150,11 @@ ModelBasedLocalizer::AccelState ModelBasedLocalizer::AccelStateForModelState(
     const ModelBasedLocalizer::ModelState &state) const {
   const double robot_speed =
       (state(kLeftVelocity) + state(kRightVelocity)) / 2.0;
-  const double velocity_x = std::cos(state(kTheta)) * robot_speed;
-  const double velocity_y = std::sin(state(kTheta)) * robot_speed;
+  const double lat_speed = (AModel(state) * state)(kTheta) * long_offset_;
+  const double velocity_x = std::cos(state(kTheta)) * robot_speed -
+                            std::sin(state(kTheta)) * lat_speed;
+  const double velocity_y = std::sin(state(kTheta)) * robot_speed +
+                            std::cos(state(kTheta)) * lat_speed;
   return (AccelState() << state(0), state(1), state(2), velocity_x, velocity_y)
       .finished();
 }
@@ -181,6 +180,10 @@ double ModelBasedLocalizer::ModelDivergence(
   // Convert the model state into the acceleration-based state-space and check
   // the distance between the two (should really be a weighted norm, but all the
   // numbers are on ~the same scale).
+  // TODO(james): Maybe weight lateral velocity divergence different than
+  // longitudinal? Seems like we tend to get false-positives currently when in
+  // sharp turns.
+  // TODO(james): For off-center gyros, maybe reduce noise when turning?
   VLOG(2) << "divergence: "
           << (state.accel_state - AccelStateForModelState(state.model_state))
                  .transpose();
@@ -190,9 +193,10 @@ double ModelBasedLocalizer::ModelDivergence(
       (state.model_state(kLeftVelocity) + state.model_state(kRightVelocity)) /
       2.0;
   const double model_lng_accel =
-      (diff_model(kLeftVelocity) + diff_model(kRightVelocity)) / 2.0;
-  const Eigen::Vector2d robot_frame_accel(
-      model_lng_accel, diff_model(kTheta) * model_lng_velocity);
+      (diff_model(kLeftVelocity) + diff_model(kRightVelocity)) / 2.0 -
+      diff_model(kTheta) * diff_model(kTheta) * long_offset_;
+  const double model_lat_accel = diff_model(kTheta) * model_lng_velocity;
+  const Eigen::Vector2d robot_frame_accel(model_lng_accel, model_lat_accel);
   const Eigen::Vector2d model_accel =
       Eigen::AngleAxisd(state.model_state(kTheta), Eigen::Vector3d::UnitZ())
           .toRotationMatrix()
@@ -203,13 +207,29 @@ double ModelBasedLocalizer::ModelDivergence(
       std::abs(diff_accel(kTheta) - diff_model(kTheta));
 
   const Eigen::Vector2d accel_vel = state.accel_state.bottomRows<2>();
-  const Eigen::Vector2d model_vel =
+  Eigen::Vector2d model_vel =
       AccelStateForModelState(state.model_state).bottomRows<2>();
   velocity_residual_ = (accel_vel - model_vel).norm() /
                        (1.0 + accel_vel.norm() + model_vel.norm());
   theta_rate_residual_ = theta_rate_diff;
   accel_residual_ = accel_diff / 4.0;
   return velocity_residual_ + theta_rate_residual_ + accel_residual_;
+}
+
+void ModelBasedLocalizer::UpdateState(
+    CombinedState *state,
+    const Eigen::Matrix<double, kNModelStates, kNModelOutputs> &K,
+    const Eigen::Matrix<double, kNModelOutputs, 1> &Z,
+    const Eigen::Matrix<double, kNModelOutputs, kNModelStates> &H,
+    const AccelInput &accel_input, const ModelInput &model_input,
+    aos::monotonic_clock::duration dt) {
+  state->accel_state = UpdateAccel(state->accel_state, accel_input, dt);
+  if (down_estimator_.consecutive_still() > 500.0) {
+    state->accel_state(kVelocityX) *= 0.9;
+    state->accel_state(kVelocityY) *= 0.9;
+  }
+  state->model_state = UpdateModel(state->model_state, model_input, dt);
+  state->model_state += K * (Z - H * state->model_state);
 }
 
 void ModelBasedLocalizer::HandleImu(aos::monotonic_clock::time_point t,
@@ -229,7 +249,8 @@ void ModelBasedLocalizer::HandleImu(aos::monotonic_clock::time_point t,
   t_ = t;
   down_estimator_.Predict(gyro, accel, dt);
   // TODO(james): Should we prefer this or use the down-estimator corrected
-  // version?
+  // version? Using the down estimator is more principled, but does create more
+  // opportunities for subtle biases.
   const double yaw_rate = (dt_config_.imu_transform * gyro)(2);
   const double diameter = 2.0 * dt_config_.robot_radius;
 
@@ -240,12 +261,8 @@ void ModelBasedLocalizer::HandleImu(aos::monotonic_clock::time_point t,
   const Eigen::Vector3d absolute_accel =
       orientation * dt_config_.imu_transform * kG * accel;
   abs_accel_ = absolute_accel;
-  const Eigen::Vector3d absolute_gyro =
-      orientation * dt_config_.imu_transform * gyro;
-  (void)absolute_gyro;
 
   VLOG(2) << "abs accel " << absolute_accel.transpose();
-  VLOG(2) << "abs gyro " << absolute_gyro.transpose();
   VLOG(2) << "dt " << aos::time::DurationInSeconds(dt);
 
   // Update all the branched states.
@@ -299,14 +316,9 @@ void ModelBasedLocalizer::HandleImu(aos::monotonic_clock::time_point t,
   VLOG(2) << "Z\n" << Z.transpose();
 
   for (CombinedState &state : branches_) {
-    state.accel_state = UpdateAccel(state.accel_state, accel_input, dt);
-    if (down_estimator_.consecutive_still() > 100.0) {
-      state.accel_state(kVelocityX) *= 0.9;
-      state.accel_state(kVelocityY) *= 0.9;
-    }
-    state.model_state = UpdateModel(state.model_state, model_input, dt);
-    state.model_state += K * (Z - H * state.model_state);
+    UpdateState(&state, K, Z, H, accel_input, model_input, dt);
   }
+  UpdateState(&current_state_, K, Z, H, accel_input, model_input, dt);
 
   VLOG(2) << "oildest accel " << branches_[0].accel_state.transpose();
   VLOG(2) << "oildest accel diff "
@@ -326,8 +338,13 @@ void ModelBasedLocalizer::HandleImu(aos::monotonic_clock::time_point t,
   filtered_residual_ +=
       (1.0 - std::exp(-aos::time::DurationInSeconds(kNominalDt) / 0.0095)) *
       (model_divergence - filtered_residual_);
-  constexpr double kUseAccelThreshold = 0.4;
-  constexpr double kUseModelThreshold = 0.2;
+  // TODO(james): Tune this more. Currently set to generally trust the model,
+  // perhaps a bit too much.
+  // When the residual exceeds the accel threshold, we start using the inertials
+  // alone; when it drops back below the model threshold, we go back to being
+  // model-based.
+  constexpr double kUseAccelThreshold = 2.0;
+  constexpr double kUseModelThreshold = 0.5;
   constexpr size_t kShareStates = kNModelStates;
   static_assert(kUseModelThreshold < kUseAccelThreshold);
   if (using_model_) {
@@ -347,7 +364,6 @@ void ModelBasedLocalizer::HandleImu(aos::monotonic_clock::time_point t,
           current_state_.accel_state, encoders, yaw_rate);
     } else {
       VLOG(2) << "Normal branching";
-      current_state_.model_state = branches_[branches_.size() - 1].model_state;
       current_state_.accel_state =
           AccelStateForModelState(current_state_.model_state);
       current_state_.branch_time = t;
@@ -368,9 +384,7 @@ void ModelBasedLocalizer::HandleImu(aos::monotonic_clock::time_point t,
       current_state_.accel_state =
           AccelStateForModelState(current_state_.model_state);
     } else {
-      current_state_.accel_state = branches_[branches_.size() - 1].accel_state;
       // TODO(james): Why was I leaving the encoders/wheel velocities in place?
-      current_state_.model_state = branches_[branches_.size() - 1].model_state;
       current_state_.model_state = ModelStateForAccelState(
           current_state_.accel_state, encoders, yaw_rate);
       current_state_.branch_time = t;
@@ -379,11 +393,11 @@ void ModelBasedLocalizer::HandleImu(aos::monotonic_clock::time_point t,
 
   // Generate a new branch, with the accel state reset based on the model-based
   // state (really, just getting rid of the lateral velocity).
+  // By resetting the accel state in the new branch, this tries to minimize the
+  // odds of runaway lateral velocities. This doesn't help with runaway
+  // longitudinal velocities, however.
   CombinedState new_branch = current_state_;
-  //if (!keep_accel_state) {
-  if (using_model_) {
-    new_branch.accel_state = AccelStateForModelState(new_branch.model_state);
-  }
+  new_branch.accel_state = AccelStateForModelState(new_branch.model_state);
   new_branch.accumulated_divergence = 0.0;
 
   ++branch_counter_;
@@ -496,6 +510,13 @@ flatbuffers::Offset<ModelBasedStatus> ModelBasedLocalizer::PopulateStatus(
   return builder.Finish();
 }
 
+namespace {
+// Period at which the encoder readings from the IMU board wrap.
+static double DrivetrainWrapPeriod() {
+  return y2022::constants::Values::DrivetrainEncoderToMeters(1 << 16);
+}
+}
+
 EventLoopLocalizer::EventLoopLocalizer(
     aos::EventLoop *event_loop,
     const control_loops::drivetrain::DrivetrainConfig<double> &dt_config)
@@ -505,7 +526,9 @@ EventLoopLocalizer::EventLoopLocalizer(
       output_sender_(event_loop_->MakeSender<LocalizerOutput>("/localizer")),
       output_fetcher_(
           event_loop_->MakeFetcher<frc971::control_loops::drivetrain::Output>(
-              "/drivetrain")) {
+              "/drivetrain")),
+      left_encoder_(-DrivetrainWrapPeriod() / 2.0, DrivetrainWrapPeriod()),
+      right_encoder_(-DrivetrainWrapPeriod() / 2.0, DrivetrainWrapPeriod()) {
   event_loop_->MakeWatcher(
       "/drivetrain",
       [this](
@@ -522,31 +545,58 @@ EventLoopLocalizer::EventLoopLocalizer(
         output_fetcher_.Fetch();
         for (const IMUValues *value : *values.readings()) {
           zeroer_.InsertAndProcessMeasurement(*value);
+          const Eigen::Vector2d encoders{
+              left_encoder_.Unwrap(value->left_encoder()),
+              right_encoder_.Unwrap(value->right_encoder())};
           if (zeroer_.Zeroed()) {
-            if (output_fetcher_.get() != nullptr) {
-              const bool disabled =
-                  output_fetcher_.context().monotonic_event_time +
-                      std::chrono::milliseconds(10) <
-                  event_loop_->context().monotonic_event_time;
-              model_based_.HandleImu(
-                  aos::monotonic_clock::time_point(std::chrono::nanoseconds(
-                      value->monotonic_timestamp_ns())),
-                  zeroer_.ZeroedGyro(), zeroer_.ZeroedAccel(),
-                  {value->left_encoder(), value->right_encoder()},
-                  disabled ? Eigen::Vector2d::Zero()
-                           : Eigen::Vector2d{output_fetcher_->left_voltage(),
-                                             output_fetcher_->right_voltage()});
+            const aos::monotonic_clock::time_point pico_timestamp{
+                std::chrono::microseconds(value->pico_timestamp_us())};
+            // TODO(james): If we get large enough drift off of the pico,
+            // actually do something about it.
+            if (!pico_offset_.has_value()) {
+              pico_offset_ =
+                  event_loop_->context().monotonic_event_time - pico_timestamp;
+              last_pico_timestamp_ = pico_timestamp;
             }
+            if (pico_timestamp < last_pico_timestamp_) {
+              pico_offset_.value() += std::chrono::microseconds(1ULL << 32);
+            }
+            const aos::monotonic_clock::time_point sample_timestamp =
+                pico_offset_.value() + pico_timestamp;
+            pico_offset_error_ =
+                event_loop_->context().monotonic_event_time - sample_timestamp;
+            const bool disabled =
+                (output_fetcher_.get() == nullptr) ||
+                (output_fetcher_.context().monotonic_event_time +
+                     std::chrono::milliseconds(10) <
+                 event_loop_->context().monotonic_event_time);
+            model_based_.HandleImu(
+                sample_timestamp,
+                zeroer_.ZeroedGyro(), zeroer_.ZeroedAccel(), encoders,
+                disabled ? Eigen::Vector2d::Zero()
+                         : Eigen::Vector2d{output_fetcher_->left_voltage(),
+                                           output_fetcher_->right_voltage()});
+            last_pico_timestamp_ = pico_timestamp;
           }
           {
             auto builder = status_sender_.MakeBuilder();
             const flatbuffers::Offset<ModelBasedStatus> model_based_status =
                 model_based_.PopulateStatus(builder.fbb());
+            const flatbuffers::Offset<control_loops::drivetrain::ImuZeroerState>
+                zeroer_status = zeroer_.PopulateStatus(builder.fbb());
             LocalizerStatus::Builder status_builder =
                 builder.MakeBuilder<LocalizerStatus>();
             status_builder.add_model_based(model_based_status);
             status_builder.add_zeroed(zeroer_.Zeroed());
             status_builder.add_faulted_zero(zeroer_.Faulted());
+            status_builder.add_zeroing(zeroer_status);
+            status_builder.add_left_encoder(encoders(0));
+            status_builder.add_right_encoder(encoders(1));
+            if (pico_offset_.has_value()) {
+              status_builder.add_pico_offset_ns(pico_offset_.value().count());
+              status_builder.add_pico_offset_error_ns(
+                  pico_offset_error_.count());
+            }
             builder.CheckOk(builder.Send(status_builder.Finish()));
           }
           if (last_output_send_ + std::chrono::milliseconds(5) <

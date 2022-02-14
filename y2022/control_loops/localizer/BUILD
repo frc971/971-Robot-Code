@@ -66,7 +66,9 @@ cc_library(
         "//frc971/wpilib:imu_batch_fbs",
         "//frc971/wpilib:imu_fbs",
         "//frc971/zeroing:imu_zeroer",
+        "//frc971/zeroing:wrap",
         "//y2020/vision/sift:sift_fbs",
+        "//y2022:constants",
         "@org_tuxfamily_eigen//:eigen",
     ],
 )
@@ -102,7 +104,7 @@ cc_binary(
     name = "localizer_replay",
     srcs = ["localizer_replay.cc"],
     data = [
-        "//y2020:aos_config",
+        "//y2022:aos_config",
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
@@ -114,6 +116,6 @@ cc_binary(
         "//aos/events:simulated_event_loop",
         "//aos/events/logging:log_reader",
         "//aos/events/logging:log_writer",
-        "//y2020/control_loops/drivetrain:drivetrain_base",
+        "//y2022/control_loops/drivetrain:drivetrain_base",
     ],
 )

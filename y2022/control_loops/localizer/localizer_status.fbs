@@ -82,6 +82,18 @@ table LocalizerStatus {
   zeroed:bool (id: 1);
   // Whether the IMU zeroing is faulted or not.
   faulted_zero:bool (id: 2);
+  zeroing:control_loops.drivetrain.ImuZeroerState (id: 3);
+  // Offset between the pico clock and the pi clock, such that
+  // pico_timestamp + pico_offset_ns = pi_timestamp
+  pico_offset_ns:int64 (id: 4);
+  // Error in the offset, if we assume that the pi/pico clocks are identical and
+  // that there is a perfectly consistent latency between the two. Will be zero
+  // for the very first cycle, and then referenced off of the initial offset
+  // thereafter. If greater than zero, implies that the pico is "behind",
+  // whether due to unusually large latency or due to clock drift.
+  pico_offset_error_ns:int64 (id: 5);
+  left_encoder:double (id: 6);
+  right_encoder:double (id: 7);
 }
 
 root_type LocalizerStatus;
