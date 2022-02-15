@@ -9,15 +9,30 @@
 #include "opencv2/features2d.hpp"
 #include "opencv2/imgproc.hpp"
 
-DEFINE_uint64(green_delta, 50,
-              "Required difference between green pixels vs. red and blue");
+DEFINE_uint64(red_delta, 100,
+              "Required difference between green pixels vs. red");
+DEFINE_uint64(blue_delta, 50,
+              "Required difference between green pixels vs. blue");
+
 DEFINE_bool(use_outdoors, false,
             "If true, change thresholds to handle outdoor illumination");
+DEFINE_uint64(outdoors_red_delta, 100,
+              "Difference between green pixels vs. red, when outdoors");
+DEFINE_uint64(outdoors_blue_delta, 15,
+              "Difference between green pixels vs. blue, when outdoors");
 
 namespace y2022 {
 namespace vision {
 
 cv::Mat BlobDetector::ThresholdImage(cv::Mat bgr_image) {
+  size_t red_delta = FLAGS_red_delta;
+  size_t blue_delta = FLAGS_blue_delta;
+
+  if (FLAGS_use_outdoors) {
+    red_delta = FLAGS_outdoors_red_delta;
+    red_delta = FLAGS_outdoors_blue_delta;
+  }
+
   cv::Mat binarized_image(cv::Size(bgr_image.cols, bgr_image.rows), CV_8UC1);
   for (int row = 0; row < bgr_image.rows; row++) {
     for (int col = 0; col < bgr_image.cols; col++) {
@@ -27,8 +42,7 @@ cv::Mat BlobDetector::ThresholdImage(cv::Mat bgr_image) {
       uint8_t red = pixel.val[2];
       // Simple filter that looks for green pixels sufficiently brigher than
       // red and blue
-      if ((green > blue + FLAGS_green_delta) &&
-          (green > red + FLAGS_green_delta)) {
+      if ((green > blue + blue_delta) && (green > red + red_delta)) {
         binarized_image.at<uint8_t>(row, col) = 255;
       } else {
         binarized_image.at<uint8_t>(row, col) = 0;
@@ -180,11 +194,11 @@ BlobDetector::FilterBlobs(std::vector<std::vector<cv::Point>> blobs,
     // when the camera is the farthest from the target, at the field corner.
     // We can solve for the pitch of the blob:
     // blob_pitch = atan((height_tape - height_camera) / depth) + camera_pitch
-    // The triangle with the height of the tape above the camera and the camera
-    // depth is similar to the one with the focal length in y pixels and the y
-    // coordinate offset from the center of the image.
-    // Therefore y_offset = focal_length_y * tan(blob_pitch), and
-    // y = -(y_offset - offset_y)
+    // The triangle with the height of the tape above the camera and the
+    // camera depth is similar to the one with the focal length in y pixels
+    // and the y coordinate offset from the center of the image. Therefore
+    // y_offset = focal_length_y * tan(blob_pitch), and y = -(y_offset -
+    // offset_y)
     constexpr int kMaxY = 400;
     constexpr double kTapeAspectRatio = 5.0 / 2.0;
     constexpr double kAspectRatioThreshold = 1.6;
