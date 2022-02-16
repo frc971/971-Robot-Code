@@ -6,6 +6,7 @@
 // bazel run //y2022/vision:camera_reader -- --config y2022/config.json
 //   --override_hostname pi-7971-1  --ignore_timestamps true
 DEFINE_string(config, "config.json", "Path to the config file to use.");
+DEFINE_double(duty_cycle, 0.5, "Duty cycle of the LEDs");
 DEFINE_uint32(exposure, 5,
               "Exposure time, in 100us increments; 0 implies auto exposure");
 
@@ -40,6 +41,7 @@ void CameraReaderMain() {
 
   CameraReader camera_reader(&event_loop, &calibration_data.message(),
                              &v4l2_reader);
+  camera_reader.SetDutyCycle(FLAGS_duty_cycle);
 
   event_loop.Run();
 }

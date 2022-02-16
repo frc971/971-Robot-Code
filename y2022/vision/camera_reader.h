@@ -15,6 +15,7 @@
 #include "frc971/vision/vision_generated.h"
 #include "y2022/vision/calibration_data.h"
 #include "y2022/vision/calibration_generated.h"
+#include "y2022/vision/gpio.h"
 #include "y2022/vision/target_estimate_generated.h"
 
 namespace y2022 {
@@ -22,7 +23,8 @@ namespace vision {
 
 using namespace frc971::vision;
 
-// TODO<Jim/Milind>: Need to add in senders to send out the blob data/stats
+// TODO<jim>: Probably need to break out LED control to separate process
+// TODO<jim>: Need to add sync with camera to strobe lights
 
 class CameraReader {
  public:
@@ -36,10 +38,20 @@ class CameraReader {
         image_sender_(event_loop->MakeSender<CameraImage>("/camera")),
         target_estimate_sender_(
             event_loop->MakeSender<TargetEstimate>("/camera")),
-        read_image_timer_(event_loop->AddTimer([this]() { ReadImage(); })) {
+        read_image_timer_(event_loop->AddTimer([this]() { ReadImage(); })),
+        gpio_pwm_control_(GPIOPWMControl(GPIO_PIN_SCK_PWM, duty_cycle_)),
+        gpio_disable_control_(
+            GPIOControl(GPIO_PIN_MOSI_DISABLE, kGPIOOut, kGPIOLow)) {
     event_loop->OnRun(
         [this]() { read_image_timer_->Setup(event_loop_->monotonic_now()); });
   }
+
+  void SetDutyCycle(double duty_cycle) {
+    duty_cycle_ = duty_cycle;
+    gpio_pwm_control_.setPWMDutyCycle(duty_cycle_);
+  }
+
+  double GetDutyCycle() { return duty_cycle_; }
 
  private:
   const calibration::CameraCalibration *FindCameraCalibration() const;
@@ -86,6 +98,10 @@ class CameraReader {
   // We schedule this immediately to read an image. Having it on a timer
   // means other things can run on the event loop in between.
   aos::TimerHandler *const read_image_timer_;
+
+  double duty_cycle_ = 0.0;
+  GPIOPWMControl gpio_pwm_control_;
+  GPIOControl gpio_disable_control_;
 };
 
 }  // namespace vision

@@ -102,9 +102,9 @@ target /bin/bash /tmp/target_configure.sh
 
 # Add a file to show when this image was last modified and by whom
 TIMESTAMP_FILE="${PARTITION}/home/pi/.ImageModifiedDate.txt"
-date > "${TIMESTAMP_FILE}"
-git rev-parse HEAD >> "${TIMESTAMP_FILE}"
-whoami >> "${TIMESTAMP_FILE}"
+echo "Date modified:"`date` > "${TIMESTAMP_FILE}"
+echo "Git tag: "`git rev-parse HEAD` >> "${TIMESTAMP_FILE}"
+echo "User: "`whoami` >> "${TIMESTAMP_FILE}"
 
 # Run a prompt as root inside the target to poke around and check things.
 target /bin/bash --rcfile /root/.bashrc

@@ -41,6 +41,14 @@ apt-get install -y vim-nox \
   libnice-dev \
   feh
 
+# Install WiringPi gpio for PWM control
+if [[ ! -e "/usr/bin/gpio" ]]; then
+    cd /tmp
+    git clone https://github.com/WiringPi/WiringPi.git
+    cd WiringPi
+    ./build
+fi
+
 echo 'GOVERNOR="performance"' > /etc/default/cpufrequtils
 
 # Add a .bashrc and friends for root.

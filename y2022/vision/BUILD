@@ -86,6 +86,7 @@ cc_library(
     ],
     hdrs = [
         "camera_reader.h",
+        "gpio.h",
     ],
     data = [
         "//y2022:config",
