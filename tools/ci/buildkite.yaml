@@ -1,5 +1,5 @@
 env:
-  STARTUP: --max_idle_secs=0 --watchfs
+  STARTUP: --max_idle_secs=0
   COMMON: -c opt --stamp=no --curses=yes --symlink_prefix=/ --disk_cache=~/.cache/bazel/disk_cache/ --repo_env=FRC971_RUNNING_IN_CI=1
   TARGETS: //... @com_github_google_glog//... @com_google_ceres_solver//... @com_github_rawrtc_rawrtc//... @com_google_googletest//...
   M4F_TARGETS: //...
