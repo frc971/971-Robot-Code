@@ -6,6 +6,7 @@ Rules for building C++ flatbuffers with Bazel.
 """
 
 load("@npm//@bazel/typescript:index.bzl", "ts_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 flatc_path = "@com_github_google_flatbuffers//:flatc"
 
@@ -29,6 +30,10 @@ DEFAULT_FLATC_ARGS = [
     "--force-empty",
     "--scoped-enums",
     "--gen-name-strings",
+]
+
+DEFAULT_FLATC_GO_ARGS = [
+    "--gen-onefile",
 ]
 
 DEFAULT_FLATC_TS_ARGS = [
@@ -337,6 +342,42 @@ def flatbuffer_py_library(
         target_compatible_with = target_compatible_with,
         imports = ["."],
         deps = ["@com_github_google_flatbuffers//:flatpy"],
+    )
+
+def flatbuffer_go_library(
+        name,
+        srcs,
+        importpath,
+        compatible_with = None,
+        target_compatible_with = None,
+        includes = [],
+        include_paths = DEFAULT_INCLUDE_PATHS,
+        flatc_args = DEFAULT_FLATC_GO_ARGS,
+        visibility = None,
+        srcs_filegroup_visibility = None):
+    srcs_lib = "%s_srcs" % (name)
+    outs = ["%s_generated.go" % (s.replace(".fbs", "").split("/")[-1]) for s in srcs]
+    flatc_args = flatc_args + ["--go-namespace", importpath.split("/")[-1]]
+
+    flatbuffer_library_public(
+        name = srcs_lib,
+        srcs = srcs,
+        outs = outs,
+        language_flag = "--go",
+        includes = includes,
+        include_paths = include_paths,
+        flatc_args = flatc_args,
+        compatible_with = compatible_with,
+        target_compatible_with = target_compatible_with,
+    )
+    go_library(
+        name = name,
+        srcs = outs,
+        deps = ["@com_github_google_flatbuffers//go"],
+        importpath = importpath,
+        visibility = visibility,
+        compatible_with = compatible_with,
+        target_compatible_with = target_compatible_with,
     )
 
 def flatbuffer_ts_library(

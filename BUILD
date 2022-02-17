@@ -11,6 +11,7 @@ exports_files([
 # gazelle:go_generate_proto false
 # gazelle:exclude third_party
 # gazelle:exclude external
+# gazelle:resolve go github.com/frc971/971-Robot-Code/build_tests/fbs //build_tests:test_go_fbs
 
 gazelle(
     name = "gazelle",
