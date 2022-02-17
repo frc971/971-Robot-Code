@@ -1,21 +1,23 @@
-load("@npm//@bazel/typescript:index.bzl", "ts_project")
+load("@npm//@bazel/typescript:index.bzl", "ts_library")
 load("//tools/build_rules:js.bzl", "rollup_bundle")
 load("@npm//@bazel/concatjs:index.bzl", "concatjs_devserver")
 load("@npm//@babel/cli:index.bzl", "babel")
 
-ts_project(
+ts_library(
     name = "app",
     srcs = glob([
         "*.ts",
+    ]),
+    angular_assets = glob([
         "*.ng.html",
     ]),
-    tsc = "@npm//@angular/compiler-cli/bin:ngc",
-    tsconfig = "//:tsconfig.json",
+    compiler = "//tools:tsc_wrapped_with_angular",
+    target_compatible_with = ["@platforms//cpu:x86_64"],
+    use_angular_plugin = True,
     visibility = ["//visibility:public"],
     deps = [
         "@npm//@angular/animations",
         "@npm//@angular/common",
-        "@npm//@angular/compiler",
         "@npm//@angular/core",
         "@npm//@angular/platform-browser",
     ],

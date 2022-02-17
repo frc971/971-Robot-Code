@@ -1,3 +1,5 @@
+load("@build_bazel_rules_nodejs//:index.bzl", "nodejs_binary")
+
 package(default_visibility = ["//visibility:public"])
 
 exports_files(["test_sharding_compliant"])
@@ -71,4 +73,14 @@ config_setting(
 config_setting(
     name = "has_ubsan",
     values = {"define": "have_ubsan=true"},
+)
+
+nodejs_binary(
+    name = "tsc_wrapped_with_angular",
+    data = [
+        "@npm//@angular/compiler-cli",
+        "@npm//@bazel/typescript",
+    ],
+    entry_point = "@npm//:node_modules/@bazel/typescript/internal/tsc_wrapped/tsc_wrapped.js",
+    target_compatible_with = ["@platforms//cpu:x86_64"],
 )

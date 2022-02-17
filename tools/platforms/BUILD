@@ -7,6 +7,7 @@ platform(
         "@platforms//cpu:x86_64",
         "//tools/platforms/go:has_support",
         "//tools/platforms/rust:has_support",
+        "//tools/platforms/nodejs:has_support",
     ],
 )
 
@@ -18,6 +19,7 @@ platform(
         "//tools/platforms/hardware:raspberry_pi",
         "//tools/platforms/go:lacks_support",
         "//tools/platforms/rust:has_support",
+        "//tools/platforms/nodejs:lacks_support",
     ],
 )
 
@@ -29,6 +31,7 @@ platform(
         "//tools/platforms/hardware:raspberry_pi",
         "//tools/platforms/go:lacks_support",
         "//tools/platforms/rust:has_support",
+        "//tools/platforms/nodejs:lacks_support",
     ],
 )
 
@@ -40,6 +43,7 @@ platform(
         "//tools/platforms/hardware:roborio",
         "//tools/platforms/go:lacks_support",
         "//tools/platforms/rust:has_support",
+        "//tools/platforms/nodejs:lacks_support",
     ],
 )
 
@@ -50,6 +54,7 @@ platform(
         "//tools/platforms/hardware:cortex_m4f",
         "//tools/platforms/go:lacks_support",
         "//tools/platforms/rust:lacks_support",
+        "//tools/platforms/nodejs:lacks_support",
     ],
 )
 
@@ -60,6 +65,7 @@ platform(
         "//tools/platforms/hardware:cortex_m0plus",
         "//tools/platforms/go:lacks_support",
         "//tools/platforms/rust:lacks_support",
+        "//tools/platforms/nodejs:lacks_support",
     ],
 )
 

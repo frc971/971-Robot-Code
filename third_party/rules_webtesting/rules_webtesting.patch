@@ -1,0 +1,56 @@
+diff --git a/BUILD.bazel b/BUILD.bazel
+index ab52bbb..5f9f4c3 100644
+--- a/BUILD.bazel
++++ b/BUILD.bazel
+@@ -24,3 +24,17 @@ gazelle(
+     name = "gazelle",
+     prefix = "github.com/bazelbuild/rules_webtesting",
+ )
++
++genrule(
++    name = "generate_error_bin",
++    outs = ["error_bin.sh"],
++    cmd = "echo 'exit 1' > $(OUTS)",
++    executable = True,
++)
++
++sh_binary(
++    name = "error_bin",
++    srcs = ["error_bin.sh"],
++    visibility = ["//visibility:public"],
++    target_compatible_with = ["@platforms//:incompatible"],
++)
+diff --git a/third_party/chromedriver/BUILD.bazel b/third_party/chromedriver/BUILD.bazel
+index 3d794d4..3644474 100644
+--- a/third_party/chromedriver/BUILD.bazel
++++ b/third_party/chromedriver/BUILD.bazel
+@@ -30,6 +30,7 @@ alias(
+         "//common/conditions:macos_x64": "@org_chromium_chromedriver_macos_x64//:metadata",
+         "//common/conditions:macos_arm64": "@org_chromium_chromedriver_macos_arm64//:metadata",
+         "//common/conditions:windows_x64": "@org_chromium_chromedriver_windows_x64//:metadata",
++        "//conditions:default": "//:error_bin",
+     }),
+     visibility = ["//browsers:__subpackages__"],
+ )
+diff --git a/third_party/chromium/BUILD.bazel b/third_party/chromium/BUILD.bazel
+index 6d8c6e0..7702fb9 100644
+--- a/third_party/chromium/BUILD.bazel
++++ b/third_party/chromium/BUILD.bazel
+@@ -26,6 +26,7 @@ alias(
+         "//common/conditions:macos_x64": "@org_chromium_chromium_macos_x64//:metadata",
+         "//common/conditions:macos_arm64": "@org_chromium_chromium_macos_arm64//:metadata",
+         "//common/conditions:windows_x64": "@org_chromium_chromium_windows_x64//:metadata",
++        "//conditions:default": "//:error_bin",
+     }),
+     visibility = ["//browsers:__subpackages__"],
+ )
+diff --git a/web/internal/executable_name.bzl b/web/internal/executable_name.bzl
+index b103868..12df0cc 100644
+--- a/web/internal/executable_name.bzl
++++ b/web/internal/executable_name.bzl
+@@ -26,4 +26,5 @@ def get_platform_executable_name():
+         "//common/conditions:macos_x64": "main_darwin_x64",
+         "//common/conditions:macos_arm64": "main_darwin_arm64",
+         "//common/conditions:windows_x64": "main_windows_x64.exe",
++        "//conditions:default": "//:error_bin",
+     })
