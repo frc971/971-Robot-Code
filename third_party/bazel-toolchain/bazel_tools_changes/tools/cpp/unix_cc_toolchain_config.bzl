@@ -160,6 +160,17 @@ def _impl(ctx):
 
     action_configs.append(llvm_cov_action)
 
+    objcopy_embed_data_action = action_config(
+        action_name = "objcopy_embed_data",
+        tools = [
+            tool(
+                path = ctx.attr.tool_paths["objcopy"],
+            ),
+        ],
+    )
+
+    action_configs.append(objcopy_embed_data_action)
+
     supports_pic_feature = feature(
         name = "supports_pic",
         enabled = True,

@@ -69,6 +69,6 @@ Things to do once the SD card is complete, and you've booted a PI with it:
   * Download the code:
     Once this is completed, you can boot the pi with the newly flashed SD
     card, and download the code to the pi using:
-      `bazel run -c opt --cpu=armv7 //y2022:pi_download_stripped -- PI_IP_ADDR
+      `bazel run -c opt --config=armv7 //y2022:pi_download_stripped -- PI_IP_ADDR
 
     where PI_IP_ADDR is the IP address of the target pi, e.g., 10.9.71.101

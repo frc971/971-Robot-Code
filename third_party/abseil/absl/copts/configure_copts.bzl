@@ -63,7 +63,7 @@ def absl_random_randen_copts_init():
     # These configs have consistent flags to enable HWAES intsructions.
     cpu_configs = [
         "ppc",
-        "k8",
+        #"k8",
         "darwin_x86_64",
         "darwin",
         "x64_windows_msvc",
@@ -74,3 +74,7 @@ def absl_random_randen_copts_init():
             name = "cpu_%s" % cpu,
             values = {"cpu": cpu},
         )
+    native.config_setting(
+        name = "cpu_k8",
+        constraint_values = ["@platforms//cpu:x86_64"],
+    )

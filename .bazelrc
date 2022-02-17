@@ -22,13 +22,15 @@ build --custom_malloc=//tools/cpp:malloc
 # Shortcuts for selecting the target platform.
 build:k8 --platforms=//tools/platforms:linux_x86
 build:roborio --platforms=//tools/platforms:linux_roborio
+build:roborio --platform_suffix=-roborio
 build:armv7 --platforms=//tools/platforms:linux_armv7
+build:armv7 --platform_suffix=-armv7
 build:arm64 --platforms=//tools/platforms:linux_arm64
+build:arm64 --platform_suffix=-arm64
 build:cortex-m4f --platforms=//tools/platforms:cortex_m4f
+build:cortex-m4f --platform_suffix=-cortex-m4f
 build:rp2040 --platforms=//tools/platforms:rp2040
-
-# Without this, we end up rebuilding from scratch every time we change compilers.  This is needed to make --cpu work (even though it shouldn't be used).
-build --crosstool_top=@//tools/cpp:toolchain --host_crosstool_top=@//tools/cpp:toolchain
+build:rp2040 --platform_suffix=-rp2040
 
 build:asan --copt -fsanitize=address
 build:asan --linkopt -fsanitize=address --linkopt -ldl
