@@ -148,8 +148,9 @@ void ScopedDataChannel::StaticDataChannelMessageHandler(
 
 void ScopedDataChannel::Close() {
   CHECK(opened_);
-  CHECK(!closed_);
-  CHECK_RAWRTC(rawrtc_data_channel_close(data_channel_));
+  if (!closed_) {
+    CHECK_RAWRTC(rawrtc_data_channel_close(data_channel_));
+  }
 }
 
 void ScopedDataChannel::Send(const ::flatbuffers::DetachedBuffer &buffer) {
