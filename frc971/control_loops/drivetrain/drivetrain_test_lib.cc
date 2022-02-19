@@ -93,16 +93,20 @@ void DrivetrainPlant::CheckU(const Eigen::Matrix<double, 2, 1> &U) {
 }
 
 DrivetrainSimulation::DrivetrainSimulation(
-    ::aos::EventLoop *event_loop, const DrivetrainConfig<double> &dt_config)
+    ::aos::EventLoop *event_loop, ::aos::EventLoop *imu_event_loop,
+    const DrivetrainConfig<double> &dt_config,
+    aos::monotonic_clock::duration imu_read_period)
     : event_loop_(event_loop),
+      imu_event_loop_(imu_event_loop),
       robot_state_fetcher_(event_loop_->MakeFetcher<::aos::RobotState>("/aos")),
       drivetrain_position_sender_(
           event_loop_
               ->MakeSender<::frc971::control_loops::drivetrain::Position>(
                   "/drivetrain")),
       drivetrain_truth_sender_(
-          event_loop_->MakeSender<::frc971::control_loops::drivetrain::Status>(
-              "/drivetrain/truth")),
+          event_loop_
+              ->TryMakeSender<::frc971::control_loops::drivetrain::Status>(
+                  "/drivetrain/truth")),
       drivetrain_output_fetcher_(
           event_loop_->MakeFetcher<::frc971::control_loops::drivetrain::Output>(
               "/drivetrain")),
@@ -121,6 +125,14 @@ DrivetrainSimulation::DrivetrainSimulation(
                                     StateFeedbackHybridPlant<2, 2, 2>,
                                     HybridKalman<2, 2, 2>>(
                   dt_config_.make_hybrid_drivetrain_velocity_loop()))) {
+  if (imu_event_loop_ != nullptr) {
+    localizer_position_sender_ =
+        imu_event_loop_
+            ->MakeSender<::frc971::control_loops::drivetrain::Position>(
+                "/localizer");
+    localizer_imu_sender_ =
+        imu_event_loop_->MakeSender<::frc971::IMUValuesBatch>("/localizer");
+  }
   Reinitialize();
   last_U_.setZero();
   event_loop_->AddPhasedLoop(
@@ -147,9 +159,7 @@ DrivetrainSimulation::DrivetrainSimulation(
         SendImuMessage();
       },
       dt_config_.dt);
-  // TODO(milind): We should be able to get IMU readings at 1 kHz instead of 2.
-  event_loop_->AddPhasedLoop([this](int) { ReadImu(); },
-                             frc971::controls::kLoopFrequency);
+  event_loop_->AddPhasedLoop([this](int) { ReadImu(); }, imu_read_period);
 }
 
 void DrivetrainSimulation::Reinitialize() {
@@ -163,6 +173,9 @@ void DrivetrainSimulation::Reinitialize() {
 }
 
 void DrivetrainSimulation::SendTruthMessage() {
+  if (!drivetrain_truth_sender_) {
+    return;
+  }
   auto builder = drivetrain_truth_sender_.MakeBuilder();
   auto status_builder =
       builder.MakeBuilder<frc971::control_loops::drivetrain::Status>();
@@ -178,16 +191,21 @@ void DrivetrainSimulation::SendPositionMessage() {
   const double right_encoder = GetRightPosition();
 
   if (send_messages_) {
-    ::aos::Sender<::frc971::control_loops::drivetrain::Position>::Builder
-        builder = drivetrain_position_sender_.MakeBuilder();
-    frc971::control_loops::drivetrain::Position::Builder position_builder =
-        builder.MakeBuilder<frc971::control_loops::drivetrain::Position>();
+    flatbuffers::FlatBufferBuilder fbb;
+    frc971::control_loops::drivetrain::Position::Builder position_builder(fbb);
     position_builder.add_left_encoder(left_encoder);
     position_builder.add_right_encoder(right_encoder);
     position_builder.add_left_shifter_position(left_gear_high_ ? 1.0 : 0.0);
     position_builder.add_right_shifter_position(right_gear_high_ ? 1.0 : 0.0);
-    CHECK_EQ(builder.Send(position_builder.Finish()),
+    fbb.Finish(position_builder.Finish());
+    aos::FlatbufferDetachedBuffer<frc971::control_loops::drivetrain::Position>
+        position(fbb.Release());
+    CHECK_EQ(drivetrain_position_sender_.Send(position),
              aos::RawSender::Error::kOk);
+    if (localizer_position_sender_) {
+      CHECK_EQ(localizer_position_sender_.Send(position),
+               aos::RawSender::Error::kOk);
+    }
   }
 }
 
@@ -204,11 +222,11 @@ void DrivetrainSimulation::ReadImu() {
                           (dt_config_.robot_radius * 2.0));
 
   // Acceleration due to gravity, in m/s/s.
-  constexpr double kG = 9.807;
+  constexpr double kG = 9.80665;
   const Eigen::Vector3d accel =
       dt_config_.imu_transform.inverse() *
       Eigen::Vector3d(last_acceleration_.x() / kG, last_acceleration_.y() / kG,
-                      1.0);
+                      last_acceleration_.z() + 1.0);
   const int64_t timestamp =
       std::chrono::duration_cast<std::chrono::nanoseconds>(
           event_loop_->monotonic_now().time_since_epoch())
@@ -224,16 +242,15 @@ void DrivetrainSimulation::SendImuMessage() {
     return;
   }
 
+  flatbuffers::FlatBufferBuilder fbb;
   std::vector<flatbuffers::Offset<IMUValues>> imu_values;
-  auto builder = imu_sender_.MakeBuilder();
 
   // Send all the IMU readings and pop the ones we have sent
   while (!imu_readings_.empty()) {
     const auto imu_reading = imu_readings_.front();
     imu_readings_.pop();
 
-    frc971::ADIS16470DiagStat::Builder diag_stat_builder =
-        builder.MakeBuilder<frc971::ADIS16470DiagStat>();
+    frc971::ADIS16470DiagStat::Builder diag_stat_builder(fbb);
     diag_stat_builder.add_clock_error(false);
     diag_stat_builder.add_memory_failure(imu_reading.faulted);
     diag_stat_builder.add_sensor_failure(false);
@@ -244,8 +261,7 @@ void DrivetrainSimulation::SendImuMessage() {
 
     const auto diag_stat_offset = diag_stat_builder.Finish();
 
-    frc971::IMUValues::Builder imu_builder =
-        builder.MakeBuilder<frc971::IMUValues>();
+    frc971::IMUValues::Builder imu_builder(fbb);
     imu_builder.add_self_test_diag_stat(diag_stat_offset);
 
     imu_builder.add_gyro_x(imu_reading.gyro.x());
@@ -262,12 +278,15 @@ void DrivetrainSimulation::SendImuMessage() {
 
   flatbuffers::Offset<
       flatbuffers::Vector<flatbuffers::Offset<frc971::IMUValues>>>
-      imu_values_offset = builder.fbb()->CreateVector(imu_values);
-  frc971::IMUValuesBatch::Builder imu_values_batch_builder =
-      builder.MakeBuilder<frc971::IMUValuesBatch>();
+      imu_values_offset = fbb.CreateVector(imu_values);
+  frc971::IMUValuesBatch::Builder imu_values_batch_builder(fbb);
   imu_values_batch_builder.add_readings(imu_values_offset);
-  CHECK_EQ(builder.Send(imu_values_batch_builder.Finish()),
-           aos::RawSender::Error::kOk);
+  fbb.Finish(imu_values_batch_builder.Finish());
+  aos::FlatbufferDetachedBuffer<frc971::IMUValuesBatch> message = fbb.Release();
+  CHECK_EQ(imu_sender_.Send(message), aos::RawSender::Error::kOk);
+  if (localizer_imu_sender_) {
+    CHECK_EQ(localizer_imu_sender_.Send(message), aos::RawSender::Error::kOk);
+  }
 }
 
 // Simulates the drivetrain moving for one timestep.
@@ -331,6 +350,12 @@ void DrivetrainSimulation::Simulate() {
   // TODO(james): Allow inputting arbitrary calibrations, e.g., for testing
   // situations where the IMU is not perfectly flat in the CG of the robot.
   last_acceleration_ << (Xdot(3, 0) + Xdot(4, 0)) / 2.0, centripetal_accel, 0.0;
+  double accel_disturbance =
+      std::sin(10.0 * 2 * M_PI *
+               aos::time::DurationInSeconds(
+                   event_loop_->monotonic_now().time_since_epoch())) *
+      accel_sin_wave_magnitude_;
+  last_acceleration_.z() += accel_disturbance;
 }
 
 void DrivetrainSimulation::MaybePlot() {

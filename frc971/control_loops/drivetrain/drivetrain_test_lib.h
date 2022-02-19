@@ -50,7 +50,13 @@ class DrivetrainSimulation {
   // Constructs a motor simulation.
   // TODO(aschuh) Do we want to test the clutch one too?
   DrivetrainSimulation(::aos::EventLoop *event_loop,
-                       const DrivetrainConfig<double> &dt_config);
+                       ::aos::EventLoop *imu_event_loop,
+                       const DrivetrainConfig<double> &dt_config,
+                       aos::monotonic_clock::duration imu_read_period =
+                           frc971::controls::kLoopFrequency);
+  DrivetrainSimulation(::aos::EventLoop *event_loop,
+                       const DrivetrainConfig<double> &dt_config)
+      : DrivetrainSimulation(event_loop, nullptr, dt_config) {}
 
   // Resets the plant.
   void Reinitialize();
@@ -87,6 +93,9 @@ class DrivetrainSimulation {
   }
 
   void set_imu_faulted(const bool fault_imu) { imu_faulted_ = fault_imu; }
+  void set_accel_sin_magnitude(double magnitude) {
+    accel_sin_wave_magnitude_ = magnitude;
+  }
 
  private:
   struct ImuReading {
@@ -109,17 +118,29 @@ class DrivetrainSimulation {
   void Simulate();
 
   ::aos::EventLoop *event_loop_;
+  ::aos::EventLoop *imu_event_loop_;
   ::aos::Fetcher<::aos::RobotState> robot_state_fetcher_;
 
   ::aos::Sender<::frc971::control_loops::drivetrain::Position>
       drivetrain_position_sender_;
+  // Duplicate Position sender to be sent from the imu pi, for robots that
+  // support it.
+  // TODO(james): Update this to match what Ravago did for the IMU--either
+  // update that library, or update this one.
+  ::aos::Sender<::frc971::control_loops::drivetrain::Position>
+      localizer_position_sender_;
   ::aos::Sender<::frc971::control_loops::drivetrain::Status>
       drivetrain_truth_sender_;
   ::aos::Fetcher<::frc971::control_loops::drivetrain::Output>
       drivetrain_output_fetcher_;
   ::aos::Fetcher<::frc971::control_loops::drivetrain::Status>
       drivetrain_status_fetcher_;
+  // TODO(james): Disable this on non-IMU roborios.
   ::aos::Sender<::frc971::IMUValuesBatch> imu_sender_;
+  // Duplicate IMUValues sender to be sent from the imu pi, for robots that
+  // support it.
+  // TODO(james): Also, add a roborio-based GyroReading sender.
+  ::aos::Sender<::frc971::IMUValuesBatch> localizer_imu_sender_;
 
   bool imu_faulted_ = false;
 
@@ -153,6 +174,8 @@ class DrivetrainSimulation {
   ::std::vector<double> trajectory_y_;
 
   bool send_messages_ = true;
+  // Magnitude of sine wave to feed into the measured accelerations.
+  double accel_sin_wave_magnitude_ = 0.0;
 };
 
 }  // namespace testing
