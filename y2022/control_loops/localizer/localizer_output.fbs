@@ -1,0 +1,17 @@
+namespace frc971.controls;
+
+// This provides a minimal output from the localizer that can be forwarded to
+// the roborio and used for corrections to its (simpler) localizer.
+
+table LocalizerOutput {
+  // Timestamp (on the source node) that this sample corresponds with. This
+  // may be older than the sent time to account for delays in sensor readings.
+  monotonic_timestamp_ns:int64 (id: 0);
+  // Current x/y position estimate, in meters.
+  x:double (id: 1);
+  y:double (id: 2);
+  // Current heading, in radians.
+  theta:double (id: 3);
+}
+
+root_type LocalizerOutput;

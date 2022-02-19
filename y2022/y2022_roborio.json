@@ -138,12 +138,19 @@
       "max_size": 208
     },
     {
+      "name": "/roborio/aos/remote_timestamps/imu/roborio/aos/aos-message_bridge-Timestamp",
+      "type": "aos.message_bridge.RemoteMessage",
+      "frequency": 20,
+      "source_node": "roborio",
+      "max_size": 208
+    },
+    {
       "name": "/roborio/aos",
       "type": "aos.message_bridge.Timestamp",
       "source_node": "roborio",
       "frequency": 15,
       "num_senders": 2,
-      "max_size": 304,
+      "max_size": 512,
       "destination_nodes": [
         {
           "name": "pi1",
@@ -183,6 +190,15 @@
         },
         {
           "name": "pi5",
+          "priority": 1,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "roborio"
+          ],
+          "time_to_live": 5000000
+        },
+        {
+          "name": "imu",
           "priority": 1,
           "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
           "timestamp_logger_nodes": [
@@ -282,7 +298,28 @@
       "source_node": "roborio",
       "frequency": 200,
       "max_size": 80,
-      "num_senders": 2
+      "num_senders": 2,
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "destination_nodes": [
+        {
+          "name": "imu",
+          "priority": 5,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "imu"
+          ],
+          "time_to_live": 5000000
+        }
+      ]
+    },
+    {
+      "name": "/roborio/aos/remote_timestamps/imu/drivetrain/frc971-control_loops-drivetrain-Output",
+      "type": "aos.message_bridge.RemoteMessage",
+      "source_node": "roborio",
+      "logger": "NOT_LOGGED",
+      "frequency": 200,
+      "num_senders": 2,
+      "max_size": 200
     },
     {
       "name": "/drivetrain",
@@ -297,7 +334,28 @@
       "type": "frc971.control_loops.drivetrain.LocalizerControl",
       "source_node": "roborio",
       "frequency": 200,
-      "max_size": 96
+      "max_size": 96,
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "destination_nodes": [
+        {
+          "name": "imu",
+          "priority": 5,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "imu"
+          ],
+          "time_to_live": 5000000
+        }
+      ]
+    },
+    {
+      "name": "/roborio/aos/remote_timestamps/imu/drivetrain/frc971-control_loops-drivetrain-LocalizerControl",
+      "type": "aos.message_bridge.RemoteMessage",
+      "source_node": "roborio",
+      "logger": "NOT_LOGGED",
+      "frequency": 200,
+      "num_senders": 2,
+      "max_size": 200
     },
     {
       "name": "/drivetrain",
@@ -433,6 +491,9 @@
         "roboRIO-9971-FRC"
       ],
       "port": 9971
+    },
+    {
+      "name": "imu"
     },
     {
       "name": "logger"
