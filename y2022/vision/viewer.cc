@@ -77,7 +77,7 @@ bool DisplayLoop() {
   cv::Mat image_color_mat(cv::Size(image->cols(), image->rows()), CV_8UC2,
                           (void *)image->data()->data());
   cv::Mat bgr_image(cv::Size(image->cols(), image->rows()), CV_8UC3);
-  cv::cvtColor(image_color_mat, bgr_image, cv::COLOR_YUV2RGB_YUYV);
+  cv::cvtColor(image_color_mat, bgr_image, cv::COLOR_YUV2BGR_YUYV);
 
   if (!FLAGS_capture.empty()) {
     cv::imwrite(FLAGS_capture, bgr_image);
