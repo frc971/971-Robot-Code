@@ -265,6 +265,7 @@ register_toolchains(
     "//tools/go:noop_go_toolchain",
     "//tools/rust:rust-toolchain-roborio",
     "//tools/rust:noop_rust_toolchain",
+    "//tools/ts:noop_node_toolchain",
 )
 
 load("//tools/ci:repo_defs.bzl", "ci_configure")
@@ -814,14 +815,22 @@ node_repositories()
 # I'm sure there is a better path, but that works...
 yarn_install(
     name = "npm",
-    frozen_lockfile = True,
+    frozen_lockfile = False,
     package_json = "//:package.json",
     symlink_node_modules = False,
     yarn_lock = "//:yarn.lock",
 )
 
+load("@build_bazel_rules_nodejs//toolchains/esbuild:esbuild_repositories.bzl", "esbuild_repositories")
+
+esbuild_repositories(npm_repository = "npm")
+
 http_archive(
     name = "io_bazel_rules_webtesting",
+    patch_args = ["-p1"],
+    patches = [
+        "@//third_party:rules_webtesting/rules_webtesting.patch",
+    ],
     sha256 = "e9abb7658b6a129740c0b3ef6f5a2370864e102a5ba5ffca2cea565829ed825a",
     urls = ["https://github.com/bazelbuild/rules_webtesting/releases/download/0.3.5/rules_webtesting.tar.gz"],
 )
@@ -849,6 +858,14 @@ rust_repository_set(
     ],
     version = "1.56.1",
 )
+
+load("@io_bazel_rules_webtesting//web:repositories.bzl", "web_test_repositories")
+
+web_test_repositories()
+
+load("@io_bazel_rules_webtesting//web/versioned:browsers-0.3.3.bzl", "browser_repositories")
+
+browser_repositories(chromium = True)
 
 # Flatbuffers
 local_repository(
