@@ -336,9 +336,9 @@ void BlobDetector::ExtractBlobs(cv::Mat bgr_image,
   blob_result->filtered_blobs = filtered_pair.first;
   blob_result->centroid = filtered_pair.second;
   auto end = aos::monotonic_clock::now();
-  LOG(INFO) << "Blob detection elapsed time: "
-            << std::chrono::duration<double, std::milli>(end - start).count()
-            << " ms";
+  VLOG(2) << "Blob detection elapsed time: "
+          << std::chrono::duration<double, std::milli>(end - start).count()
+          << " ms";
 }
 
 }  // namespace vision

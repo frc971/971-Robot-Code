@@ -137,7 +137,7 @@ ImageCallback::ImageCallback(
     const double age_double =
         std::chrono::duration_cast<std::chrono::duration<double>>(age).count();
     if (age > std::chrono::milliseconds(100)) {
-      LOG(INFO) << "Age: " << age_double << ", getting behind, skipping";
+      VLOG(2) << "Age: " << age_double << ", getting behind, skipping";
       return;
     }
     // Create color image:

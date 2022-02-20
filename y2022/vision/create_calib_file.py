@@ -44,13 +44,9 @@ def list_to_transformation_matrix(values, fbb):
 
 
 def main():
-
-    camera_calib_list = None
-
-    output_path = sys.argv[1]
-
     camera_calib_list = camera_definition.load_camera_definitions()
 
+    output_path = sys.argv[1]
     glog.debug("Writing file to %s", output_path)
 
     fbb = flatbuffers.Builder(0)

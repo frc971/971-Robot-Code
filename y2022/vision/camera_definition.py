@@ -48,6 +48,7 @@ class CameraParameters:
         self.turret_ext = None
         self.node_name = ""
         self.team_number = -1
+        self.camera_id = ""
         self.timestamp = 0
 
 
@@ -144,6 +145,10 @@ def load_camera_definitions():
 
             team_number = calib_dict["team_number"]
             node_name = calib_dict["node_name"]
+            camera_id = "UNKNOWN"
+            if "camera_id" in calib_dict:
+                camera_id = calib_dict["camera_id"]
+
             camera_matrix = np.asarray(calib_dict["intrinsics"]).reshape(
                 (3, 3))
             dist_coeffs = np.asarray(calib_dict["dist_coeffs"]).reshape((1, 5))
@@ -158,6 +163,7 @@ def load_camera_definitions():
 
             camera_params.node_name = node_name
             camera_params.team_number = team_number
+            camera_params.camera_id = camera_id
             camera_params.camera_int.camera_matrix = copy.copy(camera_matrix)
             camera_params.camera_int.dist_coeffs = copy.copy(dist_coeffs)
             camera_list.append(camera_params)

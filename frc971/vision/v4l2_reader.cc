@@ -15,7 +15,7 @@ namespace vision {
 V4L2Reader::V4L2Reader(aos::EventLoop *event_loop,
                        const std::string &device_name)
     : fd_(open(device_name.c_str(), O_RDWR | O_NONBLOCK)) {
-  PCHECK(fd_.get() != -1);
+  PCHECK(fd_.get() != -1) << " Failed to open device " << device_name;
 
   // First, clean up after anybody else who left the device streaming.
   StreamOff();

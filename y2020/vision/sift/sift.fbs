@@ -104,6 +104,10 @@ table CameraCalibration {
 
   // Timestamp for when the calibration was taken on the realtime clock.
   calibration_timestamp:int64 (id: 6);
+
+  // The id of the camera which this calibration data applies to.
+  // Expected to be formatted as Year-Number (YY-##).
+  camera_id:string (id: 7);
 }
 
 // Contains the information the EKF wants from an image matched against a single
