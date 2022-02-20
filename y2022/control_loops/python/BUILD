@@ -48,6 +48,33 @@ py_library(
     ],
 )
 
+py_library(
+    name = "catapult_lib",
+    srcs = [
+        "catapult_lib.py",
+    ],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
+    deps = [
+        "//frc971/control_loops/python:controls",
+        "@matplotlib_repo//:matplotlib3",
+    ],
+)
+
+py_binary(
+    name = "catapult",
+    srcs = [
+        "catapult.py",
+    ],
+    legacy_create_init = False,
+    target_compatible_with = ["@platforms//cpu:x86_64"],
+    deps = [
+        ":catapult_lib",
+        ":python_init",
+        "//external:python-gflags",
+        "//external:python-glog",
+    ],
+)
+
 py_binary(
     name = "intake",
     srcs = [
