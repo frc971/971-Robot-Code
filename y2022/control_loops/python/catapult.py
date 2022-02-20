@@ -3,6 +3,7 @@
 from frc971.control_loops.python import control_loop
 from frc971.control_loops.python import controls
 import numpy
+import osqp
 import math
 import scipy.optimize
 import sys
@@ -49,7 +50,7 @@ J = (J_ball + J_bar + J_cup * 1.5)
 print("J", J)
 
 kCatapult = catapult_lib.CatapultParams(
-    name='Finisher',
+    name='Catapult',
     motor=AddResistance(control_loop.NMotor(control_loop.Falcon(), 2), 0.03),
     G=G,
     J=J,
@@ -60,8 +61,6 @@ kCatapult = catapult_lib.CatapultParams(
     r_pos=0.01,
     controller_poles=[.93],
     dt=0.00505)
-
-catapult = catapult_lib.Catapult(kCatapult)
 
 # Ideas for adjusting the cost function:
 #
@@ -76,8 +75,86 @@ catapult = catapult_lib.Catapult(kCatapult)
 # We really want our cost function to be robust so that we can tolerate the
 # battery not delivering like we want at the end.
 
+def quadratic_cost(catapult, X_initial, X_final, horizon):
+    Q_final = numpy.matrix([[10000.0, 0.0], [0.0, 10000.0]])
 
-def mpc_cost(X_initial, X_final, u_matrix):
+    As = numpy.vstack([catapult.A**(n + 1) for n in range(0, horizon)])
+    Af = catapult.A**horizon
+
+    Bs = numpy.matrix(numpy.zeros((2 * horizon, horizon)))
+    for n in range(0, horizon):
+        for m in range(0, n + 1):
+            Bs[n * 2:(n * 2) + 2, m] = catapult.A**(n - m) * catapult.B
+
+    Bf = Bs[horizon * 2 - 2:, :]
+
+    P_final = 2.0 * Bf.transpose() * Q_final * Bf
+    q_final = (2.0 * (Af * X_initial - X_final).transpose() * Q_final *
+         Bf).transpose()
+
+    constant_final = (Af * X_initial - X_final).transpose() * Q_final * (
+        Af * X_initial - X_final)
+
+    m = numpy.matrix([[catapult.A[1, 1] ** (n + 1)] for n in range(horizon)])
+    M = Bs[1:horizon * 2:2, :]
+
+    W = numpy.matrix(numpy.identity(horizon) - numpy.eye(horizon, horizon, -1)) / catapult.dt
+    w = -numpy.matrix(numpy.eye(horizon, 1, 0)) / catapult.dt
+
+
+    Pi = numpy.diag([
+        (0.01 ** 2.0) + (0.02 * max(0.0, 20 - (horizon - n)) / 20.0) ** 2.0 for n in range(horizon)
+    ])
+
+    P_accel = 2.0 * M.transpose() * W.transpose() * Pi * W * M
+    q_accel = 2.0 * (((W * m + w) * X_initial[1, 0]).transpose() * Pi * W * M).transpose()
+    constant_accel = ((W * m + w) * X_initial[1, 0]).transpose() * Pi * (
+        (W * m + w) * X_initial[1, 0])
+
+    return ((P_accel + P_final), (q_accel + q_final), (constant_accel + constant_final))
+
+
+def new_cost(catapult, X_initial, X_final, u):
+    u_matrix = numpy.matrix(u).transpose()
+    Q_final = numpy.matrix([[10000.0, 0.0], [0.0, 10000.0]])
+
+    As = numpy.vstack([catapult.A**(n + 1) for n in range(0, len(u))])
+    Af = catapult.A**len(u)
+
+    Bs = numpy.matrix(numpy.zeros((2 * len(u), len(u))))
+    for n in range(0, len(u)):
+        for m in range(0, n + 1):
+            Bs[n * 2:(n * 2) + 2, m] = catapult.A**(n - m) * catapult.B
+
+    Bf = Bs[len(u) * 2 - 2:, :]
+
+    P_final = 2.0 * Bf.transpose() * Q_final * Bf
+    q_final = (2.0 * (Af * X_initial - X_final).transpose() * Q_final *
+         Bf).transpose()
+
+    constant_final = (Af * X_initial - X_final).transpose() * Q_final * (
+        Af * X_initial - X_final)
+
+    m = numpy.matrix([[catapult.A[1, 1] ** (n + 1)] for n in range(len(u))])
+    M = Bs[1:len(u) * 2:2, :]
+
+    W = numpy.matrix(numpy.identity(len(u)) - numpy.eye(len(u), len(u), -1)) / catapult.dt
+    w = -numpy.matrix(numpy.eye(len(u), 1, 0)) * X_initial[1, 0] / catapult.dt
+
+    accel = W * (M * u_matrix + m * X_initial[1, 0]) + w
+
+    Pi = numpy.diag([
+        (0.01 ** 2.0) + (0.02 * max(0.0, 20 - (len(u) - n)) / 20.0) ** 2.0 for n in range(len(u))
+    ])
+
+    P_accel = 2.0 * M.transpose() * W.transpose() * Pi * W * M
+    q_accel = 2.0 * ((W * m * X_initial[1, 0] + w).transpose() * Pi * W * M).transpose()
+    constant_accel = (W * m * X_initial[1, 0] +
+                      w).transpose() * Pi * (W * m * X_initial[1, 0] + w)
+
+
+def mpc_cost(catapult, X_initial, X_final, u_matrix):
+
     X = X_initial.copy()
     cost = 0.0
     last_u = u_matrix[0]
@@ -118,7 +195,7 @@ def mpc_cost(X_initial, X_final, u_matrix):
     return cost
 
 
-def SolveCatapult(X_initial, X_final, u):
+def SolveCatapult(catapult, X_initial, X_final, u):
     """ Solves for the optimal action given a seed, state, and target """
     def vbat_constraint(z, i):
         return 12.0 - z[i]
@@ -126,10 +203,31 @@ def SolveCatapult(X_initial, X_final, u):
     def forward(z, i):
         return z[i]
 
-    def mpc_cost2(u_matrix):
-        return mpc_cost(X_initial, X_final, u_matrix)
+    P, q, c = quadratic_cost(catapult, X_initial, X_final, len(u))
 
-    constraints = [{
+
+    def mpc_cost2(u_solver):
+        u_matrix = numpy.matrix(u_solver).transpose()
+        cost = mpc_cost(catapult, X_initial, X_final, u_solver)
+        return cost
+
+
+    def mpc_cost3(u_solver):
+        u_matrix = numpy.matrix(u_solver).transpose()
+        return (0.5 * u_matrix.transpose() * P * u_matrix +
+                q.transpose() * u_matrix + c)[0, 0]
+
+    # If we provide scipy with the analytical jacobian and hessian, it solves
+    # more accurately and a *lot* faster.
+    def jacobian(u):
+        u_matrix = numpy.matrix(u).transpose()
+        return numpy.array(P * u_matrix + q)
+
+    def hessian(u):
+        return numpy.array(P)
+
+    constraints = []
+    constraints += [{
         'type': 'ineq',
         'fun': vbat_constraint,
         'args': (i, )
@@ -141,9 +239,12 @@ def SolveCatapult(X_initial, X_final, u):
         'args': (i, )
     } for i in numpy.arange(len(u))]
 
-    result = scipy.optimize.minimize(mpc_cost2,
+    result = scipy.optimize.minimize(mpc_cost3,
                                      u,
+                                     jac=jacobian,
+                                     hess=hessian,
                                      method='SLSQP',
+                                     tol=1e-12,
                                      constraints=constraints)
     print(result)
 
@@ -171,7 +272,8 @@ def CatapultProblem():
     # Iteratively solve our MPC and simulate it.
     u_samples = []
     for i in range(kHorizon):
-        u_horizon = SolveCatapult(X, X_final, u)
+        u_horizon = SolveCatapult(c, X, X_final, u)
+
         u_samples.append(u_horizon[0])
         v_prior = X[1, 0]
         X = c.A * X + c.B * numpy.matrix([[u_horizon[0]]])
@@ -200,15 +302,43 @@ def CatapultProblem():
 def main(argv):
     # Do all our math with a lower voltage so we have headroom.
     U = numpy.matrix([[9.0]])
-    print(
-        "For G:", G, " max speed ",
-        catapult_lib.MaxSpeed(params=kCatapult,
-                              U=U,
-                              final_position=math.pi / 2.0))
 
-    CatapultProblem()
+    prob = osqp.OSQP()
+
+    kHorizon = 40
+    catapult = catapult_lib.Catapult(kCatapult)
+    X_initial = numpy.matrix([[0.0], [0.0]])
+    X_final = numpy.matrix([[2.0], [25.0]])
+    P, q, c = quadratic_cost(catapult, X_initial, X_final, kHorizon)
+    A = numpy.identity(kHorizon)
+    l = numpy.zeros((kHorizon, 1))
+    u = numpy.ones((kHorizon, 1)) * 12.0
+
+    prob.setup(scipy.sparse.csr_matrix(P),
+               q,
+               scipy.sparse.csr_matrix(A),
+               l,
+               u,
+               warm_start=True)
+
+    result = prob.solve()
+    # Check solver status
+    if result.info.status != 'solved':
+        raise ValueError('OSQP did not solve the problem!')
+
+    # Apply first control input to the plant
+    print(result.x)
 
     if FLAGS.plot:
+        print(
+            "For G:", G, " max speed ",
+            catapult_lib.MaxSpeed(params=kCatapult,
+                                  U=U,
+                                  final_position=math.pi / 2.0))
+
+        CatapultProblem()
+        return 0
+
         catapult_lib.PlotShot(kCatapult, U, final_position=math.pi / 4.0)
 
         gs = []
@@ -222,7 +352,15 @@ def main(argv):
                                       final_position=math.pi / 2.0))
         pylab.plot(gs, speed, label="max_speed")
         pylab.show()
-        return 0
+
+    if len(argv) != 5:
+        glog.fatal(
+            'Expected .h file name and .cc file name for the catapult and integral catapult.'
+        )
+    else:
+        namespaces = ['y2022', 'control_loops', 'superstructure', 'catapult']
+        catapult_lib.WriteCatapult(kCatapult, argv[1:3], argv[3:5], namespaces)
+    return 0
 
 
 if __name__ == '__main__':

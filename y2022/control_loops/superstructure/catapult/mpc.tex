@@ -1,0 +1,202 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\begin{document}
+
+TODO(austin): Now that the python matches the original problem and solves, confirm the paper matches what got implemented.
+
+osqp!
+
+\section{Catapult MPC}
+We want to phrase our problem as trying to solve for the set of control inputs
+which get us closest to the destination, but minimizes acceleration.
+Specifically, we want to minimize acceleration close to the end.
+We also have a voltage limit.
+
+Our model is
+
+\begin{equation}
+\label{cost}
+  \begin{bmatrix} x_1 \\ v_1 \end{bmatrix} =
+    \begin{bmatrix} a_{00} & a_{01} \\ 0 & a_{11} \end{bmatrix}
+      \begin{bmatrix} x_0 \\ v_0 \end{bmatrix} + 
+    \begin{bmatrix} b_{0} \\ b_{1} \end{bmatrix} \begin{bmatrix} u_0 \end{bmatrix}
+\end{equation}
+
+Our acceleration can be measured as:
+
+\begin{equation}
+\label{accel}
+  \frac{ \left( \boldsymbol{X_1(1)} - \boldsymbol{X_1(0)} \right)}{\Delta t}
+\end{equation}
+
+This simplifies to:
+
+\begin{equation}
+  \frac{a_{11} v_0 + b_1 u_0 - v_0}{\Delta t}
+\end{equation}
+
+and finally
+
+\begin{equation}
+  \frac{(a_{11} - 1) v_0 + b_1 u_0}{\Delta t}
+\end{equation}
+
+
+We can also compute our state matrix as a function of inital state and the control inputs.
+
+\begin{equation}
+\label{all_x}
+  \begin{bmatrix} X_1 \\ X_2 \\ X_3 \\ \vdots \end{bmatrix} = 
+  \begin{bmatrix} A  \\
+                  A^2  \\
+                  A^3  \\
+                  \vdots \end{bmatrix} 
+   X_0 + 
+  \begin{bmatrix} B & 0 & 0 & 0 \\
+                  A B & B & 0 & 0 \\
+                  A^2 B & A B & B & 0 \\
+                  \vdots  & \ddots & & \hdots \end{bmatrix} 
+  \begin{bmatrix} U_0 \\ U_1 \\ U_2 \\ \vdots \end{bmatrix}
+\end{equation}
+
+\section{MPC problem formulation}
+
+We want to penalize both final state and intermediate acceleration.  
+
+\begin{equation}
+C = \sum_{n=0}^{39} \frac{\left(v(n + 1) - v(n)\right)^2}{\Delta t} \pi_n + (X_{40} - X_{final})^T Q_{final} (X_{40} - X_{final})
+\end{equation}
+
+where $\pi_n$ is a constant only dependent on $n$, and designed such that it depends on the distance to the end of the sequence, not the distance from the start.
+
+In order to use OSQP, which has a code generator, we need to get this into the form of
+
+\begin{tabular}{ l l }
+minimize &      $ \frac{1}{2} X^T P X + q^T X $ \\
+subject to &    $ l <= A X <= u $ \\
+\end{tabular}
+
+This is the simplest form of a constrained quadratic program that we can solve efficiently.
+Luckily for us, the problem statement above fits that definition.
+
+\section{Manipulating the formulation}
+
+We need to separate constant factors from things dependent on U (or X in OSQP parlance) so we can create these matrices easier.
+
+\subsection{Terminal cost}
+
+Next step is to compute $X_{40}$ using equation \ref{all_x}.
+We can do this by only computing the final row of the matrix.
+
+\begin{equation}
+\label{x40}
+  X_{40} = \begin{bmatrix} A^{39} B & A^{38} B & \hdots & B \end{bmatrix}
+           \begin{bmatrix} U_0 \\
+                           \vdots \\
+                           U_{39}
+           \end{bmatrix} + A^{40} X_0 = B_f \boldsymbol{U} + A^{40} X_0
+\end{equation}
+
+We can substitute equation \ref{x40} into equation \ref{cost}.
+
+\begin{equation}
+\label{final_cost}
+\begin{aligned}[t]
+  C_f = & \boldsymbol{U}^T B_f^T Q_{final} B_f \boldsymbol{U} \\
+        & + 2 (A^{40} X_0 - X_{final})^T Q_{final} B_f \boldsymbol{U} \\
+        & + (A^{40} X_0 - X_{final})^T Q_{final} (A^{40} X_0 - X_{final})
+\end{aligned}
+\end{equation}
+
+\subsection{Acceleration costs}
+
+We can compute a velocity matrix for all the times by stripping out the positions from equation \ref{all_x} by using every other row.
+We can use this to then compute the accelerations for each time slice and then penalize them.
+
+\begin{equation}
+  \begin{bmatrix} v_1 \\ v_2 \\ \vdots \\ v_{40} \end{bmatrix} =
+     M \boldsymbol{U} + \begin{bmatrix} a_{11} \\ a^2_{11} \\ \vdots \\ a^{40}_{11} \end{bmatrix} v_0 =
+     M \boldsymbol{U} + m v_0
+\end{equation}
+
+We can then use equation \ref{accel} in matrix form to convert a velocity matrix to an acceleration matrix.
+
+\begin{equation}
+  \begin{bmatrix} \alpha_1 \\ \alpha_2 \\ \alpha_3 \\ \vdots \\ \alpha_{40} \end{bmatrix} =
+    \frac{1}{\Delta t} \left(
+    \begin{bmatrix} 1 & 0 & 0 & \hdots & 0 \\
+                    -1 & 1 & 0 & \hdots & 0 \\
+                    0 & -1 & 1 & \hdots & 0 \\
+                    \vdots & & & \ddots  & \vdots \\
+                    0 & 0 & \hdots & -1 & 1 \\
+  \end{bmatrix}
+  \begin{bmatrix} v_1 \\ v_2 \\ \vdots \\ v_{40} \end{bmatrix} - \begin{bmatrix} v_0 \\ 0 \\ \vdots \\ 0 \end{bmatrix}
+\right)
+\end{equation}
+
+We can pull some of these terms out to make it easier to work with.
+
+\begin{equation}
+\boldsymbol{\alpha} = W V + w v_0
+\end{equation}
+
+Our acceleration cost function is then:
+
+\begin{equation}
+C_a = \boldsymbol{\alpha}^T
+        \begin{bmatrix} \pi_1 &  & 0 \\
+                        & \pi_2 &   \\
+                        0 & & \ddots \end{bmatrix} \boldsymbol{\alpha} = 
+ \boldsymbol{\alpha}^T \Pi \boldsymbol{\alpha}
+\end{equation}
+
+We can substitute everything in to get something as a function of $U$.
+
+\begin{equation}
+C_a = \left(W \left(M \boldsymbol{U} + m v_0 \right) + w v_0 \right)^T \Pi \left(W \left(M \boldsymbol{U} + m v_0 \right) + w v_0 \right)
+\end{equation}
+
+And then simplify this down into the expected form.
+
+\begin{equation}
+  C_a = \left(W M \boldsymbol{U} + (W m + w) v_0 \right)^T \Pi \left(W M \boldsymbol{U} + (W m + w) v_0  \right)
+\end{equation}
+
+\begin{equation}
+\label{accel_cost}
+\begin{aligned}[t]
+C_a = & \boldsymbol{U}^T M^T W^T \Pi W M \boldsymbol{U} \\
+  & + 2 v_0 (W m + w)^T \Pi W M \boldsymbol{U} \\
+& +  v_0 (W m + w)^T  \Pi \left(W m + w \right) v_0
+\end{aligned}
+\end{equation}
+
+\subsection{Overall cost}
+
+We can combine equations \ref{final_cost} and \ref{accel_cost} to get our overall cost in the correct form.
+
+\begin{equation}
+\begin{aligned}[t]
+C &= \boldsymbol{U}^T \left( M^T W^T \Pi W M + B_f^T Q_{final} B_f \right) \boldsymbol{U}  \\
+ &+ \left(2 v_0 (W m + w)^T \Pi W M
+   - 2 X_{final}^T Q_{final} B_f
+\right) \boldsymbol{U} \\
+& + X_{final}^T Q_{final} X_{final}
+  +  v_0 (W m + w)^T  \Pi \left(W m + w \right) v_0
+\end{aligned}
+\end{equation}
+
+
+\section{Response}
+
+For a reasonable request (11 m/s after 90 degrees), we get the following response
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\linewidth]{response.png}
+\end{figure}
+
+This is well within 1\% error, and avoid saturation and keeps the acceleration down at the end.
+
+\end{document}

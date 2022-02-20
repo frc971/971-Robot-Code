@@ -7,6 +7,7 @@ rewrite mirror.bazel.build/(.*) software.frc971.org/Build-Dependencies/mirror.ba
 rewrite nodejs.org/(.*) software.frc971.org/Build-Dependencies/nodejs.org/$1
 rewrite static.rust-lang.org/(.*) software.frc971.org/Build-Dependencies/static.rust-lang.org/$1
 rewrite storage.googleapis.com/(.*) software.frc971.org/Build-Dependencies/storage.googleapis.com/$1
+rewrite files.pythonhosted.org/(.*) software.frc971.org/Build-Dependencies/files.pythonhosted.org/$1
 allow golang.org
 
 allow software.frc971.org

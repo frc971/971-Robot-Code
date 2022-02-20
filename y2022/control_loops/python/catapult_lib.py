@@ -306,3 +306,45 @@ def PlotShot(params, U, final_position):
     pylab.legend()
 
     pylab.show()
+
+def WriteCatapult(params, plant_files, controller_files, year_namespaces):
+    """Writes out the constants for a catapult to a file.
+
+    Args:
+      params: list of CatapultParams or CatapultParams, the
+        parameters defining the system.
+      plant_files: list of strings, the cc and h files for the plant.
+      controller_files: list of strings, the cc and h files for the integral
+        controller.
+      year_namespaces: list of strings, the namespace list to use.
+    """
+    # Write the generated constants out to a file.
+    catapults = []
+    integral_catapults = []
+
+    if type(params) is list:
+        name = params[0].name
+        for index, param in enumerate(params):
+            catapults.append(
+                Catapult(param, param.name + str(index)))
+            integral_catapults.append(
+                IntegralCatapult(param,
+                                      'Integral' + param.name + str(index)))
+    else:
+        name = params.name
+        catapults.append(Catapult(params, params.name))
+        integral_catapults.append(
+            IntegralCatapult(params, 'Integral' + params.name))
+
+    loop_writer = control_loop.ControlLoopWriter(
+        name, catapults, namespaces=year_namespaces)
+    loop_writer.AddConstant(
+        control_loop.Constant('kOutputRatio', '%f', catapults[0].G))
+    loop_writer.AddConstant(
+        control_loop.Constant('kFreeSpeed', '%f',
+                              catapults[0].motor.free_speed))
+    loop_writer.Write(plant_files[0], plant_files[1])
+
+    integral_loop_writer = control_loop.ControlLoopWriter(
+        'Integral' + name, integral_catapults, namespaces=year_namespaces)
+    integral_loop_writer.Write(controller_files[0], controller_files[1])

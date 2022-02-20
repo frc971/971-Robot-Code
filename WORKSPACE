@@ -975,6 +975,22 @@ http_archive(
 )
 
 http_archive(
+    name = "osqp_amd64",
+    build_file = "@//debian:osqp_python.BUILD",
+    sha256 = "8003fc363f707daa46fef3af548e6a580372154d6cd49a7bf2f569ba5f807d15",
+    type = "zip",
+    url = "https://files.pythonhosted.org/packages/3f/e2/f1c40e890f00f8a566bc2481d0f215e52def3dfe8eea6b8ad4cc2d3cbca2/osqp-0.6.2.post5-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+)
+
+http_archive(
+    name = "qdldl_amd64",
+    build_file = "@//debian:qdldl_python.BUILD",
+    sha256 = "2c09f4b1a1c6f3a0579af004443417e084491e7c844ff9fb73170bb5d43f70b5",
+    type = "zip",
+    url = "https://files.pythonhosted.org/packages/9e/26/ccb4f065b40c1e9ff35ee66970d4fa97dd2fe221b846da2110eb8cd6c3f4/qdldl-0.1.5.post0-cp39-cp39-manylinux2014_x86_64.whl",
+)
+
+http_archive(
     name = "gstreamer_k8",
     build_file = "@//debian:gstreamer.BUILD",
     sha256 = "4d74d4a82f7a73dc9fe9463d5fae409b17845eef7cd64ef9c4c4553816c53589",

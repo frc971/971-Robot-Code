@@ -72,6 +72,7 @@ py_binary(
         ":python_init",
         "//external:python-gflags",
         "//external:python-glog",
+        "@osqp_amd64//:python_osqp",
     ],
 )
 
