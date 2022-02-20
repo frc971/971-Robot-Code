@@ -196,6 +196,10 @@ void data_ready();
 void maybe_send_pi_packet();
 
 void gpio_irq_handler(uint gpio, uint32_t events) {
+  if (gpio == SYNC_IMU && (events & GPIO_IRQ_EDGE_RISE)) {
+    // Grab a timestamp for when the data sample was actually collected.
+    data_collect_timestamp = time_us_32();
+  }
   if (gpio == DR_IMU && (events & GPIO_IRQ_EDGE_RISE)) {
     data_ready();
   }
@@ -321,9 +325,6 @@ void pack_pi_packet() {
 }
 
 void data_ready() {
-  // save timestamp
-  data_collect_timestamp = time_us_32();
-
   // read encoders
   quadrature_encoder_request_count(pio0, 0);
   quadrature_encoder_request_count(pio0, 1);
@@ -461,7 +462,10 @@ void pi_transfer_finished() {
 }
 
 void setup_adis16505() {
+  // Disable the interrupts from the data-ready/sync pins to avoid interrupts
+  // while attempting to reset the IMU.
   gpio_set_irq_enabled(DR_IMU, GPIO_IRQ_EDGE_RISE, false);
+  gpio_set_irq_enabled(SYNC_IMU, GPIO_IRQ_EDGE_RISE, false);
 
   while (true) {
     adis16505_reset();
@@ -514,8 +518,8 @@ void setup_adis16505() {
           (0u << 8) /* send gyro and accelerometer data in burst mode */ |
           (1u << 7) /* enable gyro linear g compensation */ |
           (1u << 6) /* enable point of percussion alignment */ |
-          (0u << 2) /* internal clock mode */ |
-          (0u << 1) /* sync polarity, doesn't matter */ |
+          (11u << 2) /* output sync mode (uses internal 2kHz clock) */ |
+          (1u << 1) /* sync polarity, active high */ |
           (1u << 0) /* data ready is active high */);
   // Rate of the output will be 2000 / (DEC_RATE + 1) Hz.
   write_register(DEC_RATE, 0 /* no decimation */);
@@ -524,6 +528,7 @@ void setup_adis16505() {
 
   imu_reset_count++;
 
+  gpio_set_irq_enabled(SYNC_IMU, GPIO_IRQ_EDGE_RISE, true);
   gpio_set_irq_enabled_with_callback(DR_IMU, GPIO_IRQ_EDGE_RISE, true,
                                      &gpio_irq_handler);
 }
@@ -631,13 +636,21 @@ int main() {
   irq_set_enabled(DMA_IRQ_1, true);
 
   /* All IRQ priorities are initialized to PICO_DEFAULT_IRQ_PRIORITY by the pico
-   * runtime at startup.
+   * runtime at startup. As such, their priorities will correspond to their
+   * IRQ numbers (See Table 80 in the rp2040 datasheet). The interrupts are
+   * listed highest priority to lowest below--i.e., the sync/data ready
+   * interrupts are currently at the lowest priority.
+   * TODO(james): In the nominal case, the GPIO interrupts should never
+   * interfere with the SPI data transfer, but we may still want to up the
+   * GPIO priority using irq_set_priority() so that we are guaranteed good
+   * timestamps.
    *
    * Handler             | Interrupt    | Cause of interrupt
    * --------------------|--------------|---------------------------------------
    * imu_read_finished   | DMA_IRQ_0    | When the dma read from the imu is done
    * pi_transfer_finished| DMA_IRQ_1    | When the dma read to the pi is
    * done data_ready     | IO_IRQ_BANK0 | On the rising edge of DR_IMU
+   * sync pin high       | IO_IRQ_BANK0 | On the rising edge of SYNC_IMU
    */
 
   // Tell the GPIOs they are allocated to PWM
