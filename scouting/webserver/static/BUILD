@@ -17,5 +17,6 @@ go_test(
         "test_pages/root.txt",
     ],
     embed = [":static"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = ["//scouting/webserver/server"],
 )

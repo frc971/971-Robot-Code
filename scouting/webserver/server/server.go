@@ -17,6 +17,9 @@ type ScoutingServer interface {
 	// Add a handler for a particular path. See upstream docs for this:
 	// https://pkg.go.dev/net/http#ServeMux.Handle
 	Handle(string, http.Handler)
+	// Add a handler function for a particular path. See upstream docs:
+	// https://pkg.go.dev/net/http#ServeMux.HandleFunc
+	HandleFunc(string, func(http.ResponseWriter, *http.Request))
 	// Starts the server on the specified port. Handlers cannot be added
 	// once this function is called.
 	Start(int)
@@ -52,6 +55,13 @@ func (server *scoutingServer) Handle(path string, handler http.Handler) {
 		log.Fatal("Cannot add handlers once server has started.")
 	}
 	server.mux.Handle(path, handler)
+}
+
+func (server *scoutingServer) HandleFunc(path string, handler func(http.ResponseWriter, *http.Request)) {
+	if server.started {
+		log.Fatal("Cannot add handlers once server has started.")
+	}
+	server.mux.HandleFunc(path, handler)
 }
 
 func (server *scoutingServer) Start(port int) {

@@ -12,6 +12,9 @@ exports_files([
 # gazelle:exclude third_party
 # gazelle:exclude external
 # gazelle:resolve go github.com/frc971/971-Robot-Code/build_tests/fbs //build_tests:test_go_fbs
+# gazelle:resolve go github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/error_response //scouting/webserver/requests/messages:error_response_go_fbs
+# gazelle:resolve go github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_data_scouting //scouting/webserver/requests/messages:submit_data_scouting_go_fbs
+# gazelle:resolve go github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_data_scouting_response //scouting/webserver/requests/messages:submit_data_scouting_response_go_fbs
 
 gazelle(
     name = "gazelle",

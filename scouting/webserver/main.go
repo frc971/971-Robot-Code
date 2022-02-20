@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/server"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/static"
 )
@@ -18,6 +19,7 @@ func main() {
 
 	scoutingServer := server.NewScoutingServer()
 	static.ServePages(scoutingServer, *dirPtr)
+	requests.HandleRequests(scoutingServer)
 	scoutingServer.Start(*portPtr)
 	fmt.Println("Serving", *dirPtr, "on port", *portPtr)
 
