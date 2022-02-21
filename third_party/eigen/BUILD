@@ -19,7 +19,7 @@ cc_library(
         "unsupported/Eigen/src/MatrixFunctions/*.h",
         "unsupported/Eigen/CXX11/Tensor",
         "unsupported/Eigen/SpecialFunctions",
-        "unsupported/Eigen/src/SpecialFunctions/*.h",
+        "unsupported/Eigen/src/SpecialFunctions/**/*.h",
         "unsupported/Eigen/CXX11/src/util/*.h",
         "unsupported/Eigen/CXX11/src/Tensor/*.h",
     ]),
