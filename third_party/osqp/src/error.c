@@ -1,4 +1,4 @@
-#include "error.h"
+#include "osqp_error.h"
 
 const char *OSQP_ERROR_MESSAGE[] = {
   "Problem data validation.",
@@ -15,6 +15,8 @@ c_int _osqp_error(enum osqp_error_type error_code,
 		 const char * function_name) {
 # ifdef PRINTING
   c_print("ERROR in %s: %s\n", function_name, OSQP_ERROR_MESSAGE[error_code-1]);
+# else
+  (void)function_name;
 # endif
   return (c_int)error_code;
 }

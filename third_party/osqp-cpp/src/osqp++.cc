@@ -36,7 +36,7 @@ static_assert(
 static_assert(std::is_same_v<c_float, double>,
               "OSQP's c_float typedef is unexpectedly not the same as double");
 
-static_assert(sizeof(OSQPSettings) == 176,
+static_assert(sizeof(OSQPSettings) == 144,
               "The size of OSQPSettings has changed unexpectedly. Make sure "
               "that the map between ::OSQPSettings and osqp::OsqpSettings "
               "remains up to date.");
@@ -303,7 +303,7 @@ absl::Status VerifySameSparsity(
     }
   }
 
-  for (size_t i = 0; i < new_matrix.nonZeros(); ++i) {
+  for (Eigen::Index i = 0; i < new_matrix.nonZeros(); ++i) {
     if (ref_matrix->i[i] != new_matrix.innerIndexPtr()[i]) {
       return absl::InvalidArgumentError(
           "Sparsity of the new matrix differs from the previously "
@@ -541,6 +541,7 @@ Map<const VectorXd> OsqpSolver::dual_solution() const {
 Map<const VectorXd> OsqpSolver::primal_infeasibility_certificate() const {
   OSQP_CHECK(IsInitialized());
   const OsqpExitCode exit_code = StatusToExitCode(workspace_->info->status_val);
+  (void)exit_code;
   OSQP_CHECK(exit_code == OsqpExitCode::kPrimalInfeasible ||
              exit_code == OsqpExitCode::kPrimalInfeasibleInaccurate);
   return Map<const VectorXd>(workspace_->delta_y, workspace_->data->m);

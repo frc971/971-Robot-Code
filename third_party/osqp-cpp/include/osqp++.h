@@ -30,7 +30,7 @@ namespace osqp {
 
 // Must match the typedef in osqp/include/glob_opts.h (if not, it will trigger
 // a static_assert failure in osqp++.cc).
-using c_int = long long;  // NOLINT
+using c_int = int;  // NOLINT
 
 // A memory-safe mirror of the OSQPData struct defined in osqp/include/types.h.
 // The number of variables and constraints is implied by the shape of
