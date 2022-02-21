@@ -183,6 +183,18 @@ class SuperstructureWriter
          Values::kClimberSupplyCurrentLimit(), 0});
   }
 
+  void set_turret_falcon(::std::unique_ptr<::frc::TalonFX> t) {
+    turret_falcon_ = ::std::move(t);
+  }
+
+  void set_catapult_falcon_1(::std::unique_ptr<::frc::TalonFX> t) {
+    catapult_falcon_1_ = ::std::move(t);
+  }
+
+  void set_catapult_falcon_2(::std::unique_ptr<::frc::TalonFX> t) {
+    catapult_falcon_2_ = ::std::move(t);
+  }
+
  private:
   void WriteToFalconCan(const double voltage,
                         ::ctre::phoenix::motorcontrol::can::TalonFX *falcon) {
@@ -193,15 +205,32 @@ class SuperstructureWriter
 
   void Write(const superstructure::Output &output) override {
     WriteToFalconCan(output.climber_voltage(), climber_falcon_.get());
+    catapult_falcon_1_->SetSpeed(std::clamp(output.catapult_voltage(),
+                                            -kMaxBringupPower,
+                                            kMaxBringupPower) /
+                                 12.0);
+    catapult_falcon_2_->SetSpeed(std::clamp(output.catapult_voltage(),
+                                            -kMaxBringupPower,
+                                            kMaxBringupPower) /
+                                 12.0);
+    turret_falcon_->SetSpeed(std::clamp(output.turret_voltage(),
+                                        -kMaxBringupPower, kMaxBringupPower) /
+                             12.0);
   }
 
   void Stop() override {
     AOS_LOG(WARNING, "Superstructure output too old.\n");
     climber_falcon_->Set(ctre::phoenix::motorcontrol::ControlMode::Disabled, 0);
+    catapult_falcon_1_->SetDisabled();
+    catapult_falcon_2_->SetDisabled();
+    turret_falcon_->SetDisabled();
   }
 
   ::std::unique_ptr<::ctre::phoenix::motorcontrol::can::TalonFX>
       climber_falcon_;
+
+  ::std::unique_ptr<::frc::TalonFX> turret_falcon_, catapult_falcon_1_,
+      catapult_falcon_2_;
 };
 
 class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
@@ -246,6 +275,9 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     superstructure_writer.set_climber_falcon(
         make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(0));
+    superstructure_writer.set_turret_falcon(make_unique<::frc::TalonFX>(2));
+    superstructure_writer.set_catapult_falcon_1(make_unique<::frc::TalonFX>(3));
+    superstructure_writer.set_catapult_falcon_2(make_unique<::frc::TalonFX>(4));
 
     AddLoop(&output_event_loop);
 
