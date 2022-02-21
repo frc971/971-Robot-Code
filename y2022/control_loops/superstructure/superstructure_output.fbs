@@ -6,11 +6,12 @@ table Output {
     climber_voltage:double (id: 0);
 
     // Voltage of the catapult falcon
-    // Positive rotates counterclockwise parallel to the motor shaft
+    // Positive lifts the catapult to fire.
     catapult_voltage:double (id: 1);
 
     // Voltage of the turret falcon
-    // Positive rotates counterclockwise from a bird's eye view
+    // Positive rotates the turret around the Z axis (up) according to the
+    // right hand rule.
     turret_voltage:double (id: 2);
 }
 
