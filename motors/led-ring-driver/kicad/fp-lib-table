@@ -1,0 +1,3 @@
+(fp_lib_table
+  (lib (name "led-ring-driver")(type "KiCad")(uri "${KIPRJMOD}/led-ring-driver.pretty")(options "")(descr ""))
+)

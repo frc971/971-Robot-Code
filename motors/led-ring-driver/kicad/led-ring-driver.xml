@@ -1,0 +1,2335 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<export version="E">
+  <design>
+    <source>/home/scott/dev/git/971-Robot-Code/motors/led-ring-driver/kicad/led-ring-driver.kicad_sch</source>
+    <date>Sun 23 Jan 2022 02:52:23 PM PST</date>
+    <tool>Eeschema 6.0.1-79c1e3a40b~116~ubuntu20.04.1</tool>
+    <sheet number="1" name="/" tstamps="/">
+      <title_block>
+        <title>LED RING DRIVER</title>
+        <company>SPARTAN 971</company>
+        <rev>1.5</rev>
+        <date>2022-01-15</date>
+        <source>led-ring-driver.kicad_sch</source>
+        <comment number="1" value=""/>
+        <comment number="2" value=""/>
+        <comment number="3" value=""/>
+        <comment number="4" value=""/>
+        <comment number="5" value=""/>
+        <comment number="6" value=""/>
+        <comment number="7" value=""/>
+        <comment number="8" value=""/>
+        <comment number="9" value=""/>
+      </title_block>
+    </sheet>
+    <sheet number="2" name="/Boost Converter/" tstamps="/164fcee2-1769-49e0-8fc8-7f46fdd9394f/">
+      <title_block>
+        <title>LED RING DRIVER</title>
+        <company>SPARTAN 971</company>
+        <rev>1.3</rev>
+        <date>2022-01-15</date>
+        <source>boost.kicad_sch</source>
+        <comment number="1" value=""/>
+        <comment number="2" value=""/>
+        <comment number="3" value=""/>
+        <comment number="4" value=""/>
+        <comment number="5" value=""/>
+        <comment number="6" value=""/>
+        <comment number="7" value=""/>
+        <comment number="8" value=""/>
+        <comment number="9" value=""/>
+      </title_block>
+    </sheet>
+    <sheet number="3" name="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/">
+      <title_block>
+        <title>LED RING DRIVER</title>
+        <company>SPARTAN 971</company>
+        <rev>1.3</rev>
+        <date>2022-01-15</date>
+        <source>LED-Current-Regulator.kicad_sch</source>
+        <comment number="1" value=""/>
+        <comment number="2" value=""/>
+        <comment number="3" value=""/>
+        <comment number="4" value=""/>
+        <comment number="5" value=""/>
+        <comment number="6" value=""/>
+        <comment number="7" value=""/>
+        <comment number="8" value=""/>
+        <comment number="9" value=""/>
+      </title_block>
+    </sheet>
+  </design>
+  <components>
+    <comp ref="D3">
+      <value>GREEN</value>
+      <footprint>LED_SMD:LED_PLCC_2835</footprint>
+      <datasheet>https://www.inolux-corp.com/datasheet/SMDLED/Mono%20Color%20Top%20View/IN-P23CTKG_V1.0.pdf</datasheet>
+      <fields>
+        <field name="MFG">Inolux</field>
+        <field name="P/N">IN-P23CTKG</field>
+      </fields>
+      <libsource lib="Device" part="LED" description="Light emitting diode"/>
+      <property name="MFG" value="Inolux"/>
+      <property name="P/N" value="IN-P23CTKG"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="led-ring-driver.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>8e65a45c-d6e4-484e-89c2-18fc555ca753</tstamps>
+    </comp>
+    <comp ref="D4">
+      <value>GREEN</value>
+      <footprint>LED_SMD:LED_PLCC_2835</footprint>
+      <datasheet>https://www.inolux-corp.com/datasheet/SMDLED/Mono%20Color%20Top%20View/IN-P23CTKG_V1.0.pdf</datasheet>
+      <fields>
+        <field name="MFG">Inolux</field>
+        <field name="P/N">IN-P23CTKG</field>
+      </fields>
+      <libsource lib="Device" part="LED" description="Light emitting diode"/>
+      <property name="MFG" value="Inolux"/>
+      <property name="P/N" value="IN-P23CTKG"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="led-ring-driver.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>d6663b6e-dd01-46ed-af6d-d9d4c75edd0e</tstamps>
+    </comp>
+    <comp ref="D5">
+      <value>GREEN</value>
+      <footprint>LED_SMD:LED_PLCC_2835</footprint>
+      <datasheet>https://www.inolux-corp.com/datasheet/SMDLED/Mono%20Color%20Top%20View/IN-P23CTKG_V1.0.pdf</datasheet>
+      <fields>
+        <field name="MFG">Inolux</field>
+        <field name="P/N">IN-P23CTKG</field>
+      </fields>
+      <libsource lib="Device" part="LED" description="Light emitting diode"/>
+      <property name="MFG" value="Inolux"/>
+      <property name="P/N" value="IN-P23CTKG"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="led-ring-driver.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>97d98f50-c208-4676-a75c-ae727849a07d</tstamps>
+    </comp>
+    <comp ref="D6">
+      <value>GREEN</value>
+      <footprint>LED_SMD:LED_PLCC_2835</footprint>
+      <datasheet>https://www.inolux-corp.com/datasheet/SMDLED/Mono%20Color%20Top%20View/IN-P23CTKG_V1.0.pdf</datasheet>
+      <fields>
+        <field name="MFG">Inolux</field>
+        <field name="P/N">IN-P23CTKG</field>
+      </fields>
+      <libsource lib="Device" part="LED" description="Light emitting diode"/>
+      <property name="MFG" value="Inolux"/>
+      <property name="P/N" value="IN-P23CTKG"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="led-ring-driver.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>9143553f-7bc0-48de-999c-73a3f960ed69</tstamps>
+    </comp>
+    <comp ref="D7">
+      <value>GREEN</value>
+      <footprint>LED_SMD:LED_PLCC_2835</footprint>
+      <datasheet>https://www.inolux-corp.com/datasheet/SMDLED/Mono%20Color%20Top%20View/IN-P23CTKG_V1.0.pdf</datasheet>
+      <fields>
+        <field name="MFG">Inolux</field>
+        <field name="P/N">IN-P23CTKG</field>
+      </fields>
+      <libsource lib="Device" part="LED" description="Light emitting diode"/>
+      <property name="MFG" value="Inolux"/>
+      <property name="P/N" value="IN-P23CTKG"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="led-ring-driver.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>4e54f618-dea1-4b69-b82a-a27ca8315086</tstamps>
+    </comp>
+    <comp ref="D8">
+      <value>GREEN</value>
+      <footprint>LED_SMD:LED_PLCC_2835</footprint>
+      <datasheet>https://www.inolux-corp.com/datasheet/SMDLED/Mono%20Color%20Top%20View/IN-P23CTKG_V1.0.pdf</datasheet>
+      <fields>
+        <field name="MFG">Inolux</field>
+        <field name="P/N">IN-P23CTKG</field>
+      </fields>
+      <libsource lib="Device" part="LED" description="Light emitting diode"/>
+      <property name="MFG" value="Inolux"/>
+      <property name="P/N" value="IN-P23CTKG"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="led-ring-driver.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>2fe6c9d7-a79c-426e-8da5-1dacfb2bfe18</tstamps>
+    </comp>
+    <comp ref="D9">
+      <value>GREEN</value>
+      <footprint>LED_SMD:LED_PLCC_2835</footprint>
+      <datasheet>https://www.inolux-corp.com/datasheet/SMDLED/Mono%20Color%20Top%20View/IN-P23CTKG_V1.0.pdf</datasheet>
+      <fields>
+        <field name="MFG">Inolux</field>
+        <field name="P/N">IN-P23CTKG</field>
+      </fields>
+      <libsource lib="Device" part="LED" description="Light emitting diode"/>
+      <property name="MFG" value="Inolux"/>
+      <property name="P/N" value="IN-P23CTKG"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="led-ring-driver.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>1ce125e9-2de6-48c6-8ebf-1cb8d648f2de</tstamps>
+    </comp>
+    <comp ref="D10">
+      <value>GREEN</value>
+      <footprint>LED_SMD:LED_PLCC_2835</footprint>
+      <datasheet>https://www.inolux-corp.com/datasheet/SMDLED/Mono%20Color%20Top%20View/IN-P23CTKG_V1.0.pdf</datasheet>
+      <fields>
+        <field name="MFG">Inolux</field>
+        <field name="P/N">IN-P23CTKG</field>
+      </fields>
+      <libsource lib="Device" part="LED" description="Light emitting diode"/>
+      <property name="MFG" value="Inolux"/>
+      <property name="P/N" value="IN-P23CTKG"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="led-ring-driver.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>642f3a4a-4461-46a7-ac74-f42d4c08971a</tstamps>
+    </comp>
+    <comp ref="D11">
+      <value>GREEN</value>
+      <footprint>LED_SMD:LED_PLCC_2835</footprint>
+      <datasheet>https://www.inolux-corp.com/datasheet/SMDLED/Mono%20Color%20Top%20View/IN-P23CTKG_V1.0.pdf</datasheet>
+      <fields>
+        <field name="MFG">Inolux</field>
+        <field name="P/N">IN-P23CTKG</field>
+      </fields>
+      <libsource lib="Device" part="LED" description="Light emitting diode"/>
+      <property name="MFG" value="Inolux"/>
+      <property name="P/N" value="IN-P23CTKG"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="led-ring-driver.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>368d795d-d0bc-4f3a-b8b6-b1376b8003a8</tstamps>
+    </comp>
+    <comp ref="D12">
+      <value>GREEN</value>
+      <footprint>LED_SMD:LED_PLCC_2835</footprint>
+      <datasheet>https://www.inolux-corp.com/datasheet/SMDLED/Mono%20Color%20Top%20View/IN-P23CTKG_V1.0.pdf</datasheet>
+      <fields>
+        <field name="MFG">Inolux</field>
+        <field name="P/N">IN-P23CTKG</field>
+      </fields>
+      <libsource lib="Device" part="LED" description="Light emitting diode"/>
+      <property name="MFG" value="Inolux"/>
+      <property name="P/N" value="IN-P23CTKG"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="led-ring-driver.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>cd3aa32c-8a1c-432d-9f55-45cbd4b1a94a</tstamps>
+    </comp>
+    <comp ref="D13">
+      <value>GREEN</value>
+      <footprint>LED_SMD:LED_PLCC_2835</footprint>
+      <datasheet>https://www.inolux-corp.com/datasheet/SMDLED/Mono%20Color%20Top%20View/IN-P23CTKG_V1.0.pdf</datasheet>
+      <fields>
+        <field name="MFG">Inolux</field>
+        <field name="P/N">IN-P23CTKG</field>
+      </fields>
+      <libsource lib="Device" part="LED" description="Light emitting diode"/>
+      <property name="MFG" value="Inolux"/>
+      <property name="P/N" value="IN-P23CTKG"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="led-ring-driver.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>4fbdaafe-039f-47f2-92aa-63d03168acd1</tstamps>
+    </comp>
+    <comp ref="D14">
+      <value>GREEN</value>
+      <footprint>LED_SMD:LED_PLCC_2835</footprint>
+      <datasheet>https://www.inolux-corp.com/datasheet/SMDLED/Mono%20Color%20Top%20View/IN-P23CTKG_V1.0.pdf</datasheet>
+      <fields>
+        <field name="MFG">Inolux</field>
+        <field name="P/N">IN-P23CTKG</field>
+      </fields>
+      <libsource lib="Device" part="LED" description="Light emitting diode"/>
+      <property name="MFG" value="Inolux"/>
+      <property name="P/N" value="IN-P23CTKG"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="led-ring-driver.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>45280210-8bd3-421d-bb52-e8c7382a4a86</tstamps>
+    </comp>
+    <comp ref="D15">
+      <value>GREEN</value>
+      <footprint>LED_SMD:LED_PLCC_2835</footprint>
+      <datasheet>https://www.inolux-corp.com/datasheet/SMDLED/Mono%20Color%20Top%20View/IN-P23CTKG_V1.0.pdf</datasheet>
+      <fields>
+        <field name="MFG">Inolux</field>
+        <field name="P/N">IN-P23CTKG</field>
+      </fields>
+      <libsource lib="Device" part="LED" description="Light emitting diode"/>
+      <property name="MFG" value="Inolux"/>
+      <property name="P/N" value="IN-P23CTKG"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="led-ring-driver.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>6e7ba840-2a08-4aae-a901-990fd833ec4a</tstamps>
+    </comp>
+    <comp ref="D16">
+      <value>GREEN</value>
+      <footprint>LED_SMD:LED_PLCC_2835</footprint>
+      <datasheet>https://www.inolux-corp.com/datasheet/SMDLED/Mono%20Color%20Top%20View/IN-P23CTKG_V1.0.pdf</datasheet>
+      <fields>
+        <field name="MFG">Inolux</field>
+        <field name="P/N">IN-P23CTKG</field>
+      </fields>
+      <libsource lib="Device" part="LED" description="Light emitting diode"/>
+      <property name="MFG" value="Inolux"/>
+      <property name="P/N" value="IN-P23CTKG"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="led-ring-driver.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>2d6bbc1c-8574-4116-b21e-5e0a9882de4d</tstamps>
+    </comp>
+    <comp ref="D17">
+      <value>GREEN</value>
+      <footprint>LED_SMD:LED_PLCC_2835</footprint>
+      <datasheet>https://www.inolux-corp.com/datasheet/SMDLED/Mono%20Color%20Top%20View/IN-P23CTKG_V1.0.pdf</datasheet>
+      <fields>
+        <field name="MFG">Inolux</field>
+        <field name="P/N">IN-P23CTKG</field>
+      </fields>
+      <libsource lib="Device" part="LED" description="Light emitting diode"/>
+      <property name="MFG" value="Inolux"/>
+      <property name="P/N" value="IN-P23CTKG"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="led-ring-driver.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>91822612-85f3-4df8-b082-5d74b4d4b553</tstamps>
+    </comp>
+    <comp ref="D18">
+      <value>GREEN</value>
+      <footprint>LED_SMD:LED_PLCC_2835</footprint>
+      <datasheet>https://www.inolux-corp.com/datasheet/SMDLED/Mono%20Color%20Top%20View/IN-P23CTKG_V1.0.pdf</datasheet>
+      <fields>
+        <field name="MFG">Inolux</field>
+        <field name="P/N">IN-P23CTKG</field>
+      </fields>
+      <libsource lib="Device" part="LED" description="Light emitting diode"/>
+      <property name="MFG" value="Inolux"/>
+      <property name="P/N" value="IN-P23CTKG"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="led-ring-driver.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>16682195-35d4-4236-a16f-e632923e192f</tstamps>
+    </comp>
+    <comp ref="J1">
+      <value>430450601</value>
+      <footprint>led-ring-driver:430450601</footprint>
+      <datasheet>https://media.digikey.com/pdf/Data%20Sheets/Molex%20PDFs/PK-70873-05xx_1_N3.pdf</datasheet>
+      <fields>
+        <field name="MFG">Molex</field>
+        <field name="P/N">0430450601</field>
+      </fields>
+      <libsource lib="led-ring-driver" part="430450601" description=""/>
+      <property name="MFG" value="Molex"/>
+      <property name="P/N" value="0430450601"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="led-ring-driver.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>ca2c3d39-cadd-458a-998b-5300bd5185ed</tstamps>
+    </comp>
+    <comp ref="C1">
+      <value>270uF 25V</value>
+      <footprint>led-ring-driver:CAPPRD500W60D1000H950</footprint>
+      <datasheet>https://industrial.panasonic.com/cdbs/www-data/pdf/RDD0000/RDD0000C1240.pdf</datasheet>
+      <fields>
+        <field name="MFG">Panasonic</field>
+        <field name="P/N">EEH-AZF1E271</field>
+      </fields>
+      <libsource lib="Device" part="C_Polarized_US" description="Polarized capacitor, US symbol"/>
+      <property name="MFG" value="Panasonic"/>
+      <property name="P/N" value="EEH-AZF1E271"/>
+      <property name="Sheetname" value="Boost Converter"/>
+      <property name="Sheetfile" value="boost.kicad_sch"/>
+      <sheetpath names="/Boost Converter/" tstamps="/164fcee2-1769-49e0-8fc8-7f46fdd9394f/"/>
+      <tstamps>10c02641-1fd3-4847-82b5-8c439df03561</tstamps>
+    </comp>
+    <comp ref="C2">
+      <value>10uF</value>
+      <footprint>Capacitor_SMD:C_1206_3216Metric</footprint>
+      <datasheet>https://ds.yuden.co.jp/TYCOMPAS/ut/detail?pn=MSAST319LB5106MTNA01&amp;u=M</datasheet>
+      <fields>
+        <field name="MFG">Taiyo Yuden</field>
+        <field name="P/N">TMK316ABJ106MD-T</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="Taiyo Yuden"/>
+      <property name="P/N" value="TMK316ABJ106MD-T"/>
+      <property name="Sheetname" value="Boost Converter"/>
+      <property name="Sheetfile" value="boost.kicad_sch"/>
+      <sheetpath names="/Boost Converter/" tstamps="/164fcee2-1769-49e0-8fc8-7f46fdd9394f/"/>
+      <tstamps>0f3982ef-47cd-4e49-949f-c0d3106f0e6b</tstamps>
+    </comp>
+    <comp ref="C3">
+      <value>10uF</value>
+      <footprint>Capacitor_SMD:C_1206_3216Metric</footprint>
+      <datasheet>https://ds.yuden.co.jp/TYCOMPAS/ut/detail?pn=MSAST319LB5106MTNA01&amp;u=M</datasheet>
+      <fields>
+        <field name="MFG">Taiyo Yuden</field>
+        <field name="P/N">TMK316ABJ106MD-T</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="Taiyo Yuden"/>
+      <property name="P/N" value="TMK316ABJ106MD-T"/>
+      <property name="Sheetname" value="Boost Converter"/>
+      <property name="Sheetfile" value="boost.kicad_sch"/>
+      <sheetpath names="/Boost Converter/" tstamps="/164fcee2-1769-49e0-8fc8-7f46fdd9394f/"/>
+      <tstamps>e65634df-6c57-4ef1-bb4f-2fc37389c409</tstamps>
+    </comp>
+    <comp ref="C4">
+      <value>470pF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">KYOCERA AVX</field>
+        <field name="P/N">08055A471JAT2A</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="KYOCERA AVX"/>
+      <property name="P/N" value="08055A471JAT2A"/>
+      <property name="Sheetname" value="Boost Converter"/>
+      <property name="Sheetfile" value="boost.kicad_sch"/>
+      <sheetpath names="/Boost Converter/" tstamps="/164fcee2-1769-49e0-8fc8-7f46fdd9394f/"/>
+      <tstamps>0fbccf67-09ce-472c-9e0a-1d03a8ae6e69</tstamps>
+    </comp>
+    <comp ref="C5">
+      <value>DNI</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value="Boost Converter"/>
+      <property name="Sheetfile" value="boost.kicad_sch"/>
+      <sheetpath names="/Boost Converter/" tstamps="/164fcee2-1769-49e0-8fc8-7f46fdd9394f/"/>
+      <tstamps>6ff228cb-e799-48d1-928c-d6a614657c07</tstamps>
+    </comp>
+    <comp ref="C11">
+      <value>470pF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">KYOCERA AVX</field>
+        <field name="P/N">08055A471JAT2A</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="KYOCERA AVX"/>
+      <property name="P/N" value="08055A471JAT2A"/>
+      <property name="Sheetname" value="Boost Converter"/>
+      <property name="Sheetfile" value="boost.kicad_sch"/>
+      <sheetpath names="/Boost Converter/" tstamps="/164fcee2-1769-49e0-8fc8-7f46fdd9394f/"/>
+      <tstamps>ef58fa8b-51a2-4e7c-a066-1530f4155b4d</tstamps>
+    </comp>
+    <comp ref="C12">
+      <value>1.0uF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">TDK Corporation</field>
+        <field name="P/N">X7R1E105K125AB</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="TDK Corporation"/>
+      <property name="P/N" value="X7R1E105K125AB"/>
+      <property name="Sheetname" value="Boost Converter"/>
+      <property name="Sheetfile" value="boost.kicad_sch"/>
+      <sheetpath names="/Boost Converter/" tstamps="/164fcee2-1769-49e0-8fc8-7f46fdd9394f/"/>
+      <tstamps>76c542af-6bea-4b92-afb7-88b21c428a8c</tstamps>
+    </comp>
+    <comp ref="C13">
+      <value>1.0uF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">TDK Corporation</field>
+        <field name="P/N">X7R1E105K125AB</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="TDK Corporation"/>
+      <property name="P/N" value="X7R1E105K125AB"/>
+      <property name="Sheetname" value="Boost Converter"/>
+      <property name="Sheetfile" value="boost.kicad_sch"/>
+      <sheetpath names="/Boost Converter/" tstamps="/164fcee2-1769-49e0-8fc8-7f46fdd9394f/"/>
+      <tstamps>72985e05-1b03-4a18-942e-d39d550fb736</tstamps>
+    </comp>
+    <comp ref="C14">
+      <value>10uF</value>
+      <footprint>Capacitor_SMD:C_1206_3216Metric</footprint>
+      <datasheet>https://ds.yuden.co.jp/TYCOMPAS/ut/detail?pn=MSAST319LB5106MTNA01&amp;u=M</datasheet>
+      <fields>
+        <field name="MFG">Taiyo Yuden</field>
+        <field name="P/N">TMK316ABJ106MD-T</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="Taiyo Yuden"/>
+      <property name="P/N" value="TMK316ABJ106MD-T"/>
+      <property name="Sheetname" value="Boost Converter"/>
+      <property name="Sheetfile" value="boost.kicad_sch"/>
+      <sheetpath names="/Boost Converter/" tstamps="/164fcee2-1769-49e0-8fc8-7f46fdd9394f/"/>
+      <tstamps>4b037cb4-52c0-4073-8911-d1899fddecbc</tstamps>
+    </comp>
+    <comp ref="C15">
+      <value>1.0uF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">TDK Corporation</field>
+        <field name="P/N">X7R1E105K125AB</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="TDK Corporation"/>
+      <property name="P/N" value="X7R1E105K125AB"/>
+      <property name="Sheetname" value="Boost Converter"/>
+      <property name="Sheetfile" value="boost.kicad_sch"/>
+      <sheetpath names="/Boost Converter/" tstamps="/164fcee2-1769-49e0-8fc8-7f46fdd9394f/"/>
+      <tstamps>41563602-4b5c-45c1-89da-66cdd17e809f</tstamps>
+    </comp>
+    <comp ref="C16">
+      <value>10uF</value>
+      <footprint>Capacitor_SMD:C_1206_3216Metric</footprint>
+      <datasheet>https://ds.yuden.co.jp/TYCOMPAS/ut/detail?pn=MSAST319LB5106MTNA01&amp;u=M</datasheet>
+      <fields>
+        <field name="MFG">Taiyo Yuden</field>
+        <field name="P/N">TMK316ABJ106MD-T</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="Taiyo Yuden"/>
+      <property name="P/N" value="TMK316ABJ106MD-T"/>
+      <property name="Sheetname" value="Boost Converter"/>
+      <property name="Sheetfile" value="boost.kicad_sch"/>
+      <sheetpath names="/Boost Converter/" tstamps="/164fcee2-1769-49e0-8fc8-7f46fdd9394f/"/>
+      <tstamps>5de89f3b-11f1-4faf-89c3-efe0cefafde9</tstamps>
+    </comp>
+    <comp ref="C17">
+      <value>10uF</value>
+      <footprint>Capacitor_SMD:C_1206_3216Metric</footprint>
+      <datasheet>https://ds.yuden.co.jp/TYCOMPAS/ut/detail?pn=MSAST319LB5106MTNA01&amp;u=M</datasheet>
+      <fields>
+        <field name="MFG">Taiyo Yuden</field>
+        <field name="P/N">TMK316ABJ106MD-T</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="Taiyo Yuden"/>
+      <property name="P/N" value="TMK316ABJ106MD-T"/>
+      <property name="Sheetname" value="Boost Converter"/>
+      <property name="Sheetfile" value="boost.kicad_sch"/>
+      <sheetpath names="/Boost Converter/" tstamps="/164fcee2-1769-49e0-8fc8-7f46fdd9394f/"/>
+      <tstamps>cfa8b1dd-2ce8-4c74-a7f2-a8076eee2d80</tstamps>
+    </comp>
+    <comp ref="C18">
+      <value>10uF</value>
+      <footprint>Capacitor_SMD:C_1206_3216Metric</footprint>
+      <datasheet>https://ds.yuden.co.jp/TYCOMPAS/ut/detail?pn=MSAST319LB5106MTNA01&amp;u=M</datasheet>
+      <fields>
+        <field name="MFG">Taiyo Yuden</field>
+        <field name="P/N">TMK316ABJ106MD-T</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="Taiyo Yuden"/>
+      <property name="P/N" value="TMK316ABJ106MD-T"/>
+      <property name="Sheetname" value="Boost Converter"/>
+      <property name="Sheetfile" value="boost.kicad_sch"/>
+      <sheetpath names="/Boost Converter/" tstamps="/164fcee2-1769-49e0-8fc8-7f46fdd9394f/"/>
+      <tstamps>74711c70-2cdc-464a-883f-b65713f31293</tstamps>
+    </comp>
+    <comp ref="C19">
+      <value>10uF</value>
+      <footprint>Capacitor_SMD:C_1206_3216Metric</footprint>
+      <datasheet>https://ds.yuden.co.jp/TYCOMPAS/ut/detail?pn=MSAST319LB5106MTNA01&amp;u=M</datasheet>
+      <fields>
+        <field name="MFG">Taiyo Yuden</field>
+        <field name="P/N">TMK316ABJ106MD-T</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="Taiyo Yuden"/>
+      <property name="P/N" value="TMK316ABJ106MD-T"/>
+      <property name="Sheetname" value="Boost Converter"/>
+      <property name="Sheetfile" value="boost.kicad_sch"/>
+      <sheetpath names="/Boost Converter/" tstamps="/164fcee2-1769-49e0-8fc8-7f46fdd9394f/"/>
+      <tstamps>67403cf8-eb62-46ba-9d38-6ee1a2fcad1a</tstamps>
+    </comp>
+    <comp ref="C20">
+      <value>10uF</value>
+      <footprint>Capacitor_SMD:C_1206_3216Metric</footprint>
+      <datasheet>https://ds.yuden.co.jp/TYCOMPAS/ut/detail?pn=MSAST319LB5106MTNA01&amp;u=M</datasheet>
+      <fields>
+        <field name="MFG">Taiyo Yuden</field>
+        <field name="P/N">TMK316ABJ106MD-T</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="Taiyo Yuden"/>
+      <property name="P/N" value="TMK316ABJ106MD-T"/>
+      <property name="Sheetname" value="Boost Converter"/>
+      <property name="Sheetfile" value="boost.kicad_sch"/>
+      <sheetpath names="/Boost Converter/" tstamps="/164fcee2-1769-49e0-8fc8-7f46fdd9394f/"/>
+      <tstamps>3a58b744-d69e-42df-8551-9b1f48d8f43b</tstamps>
+    </comp>
+    <comp ref="D1">
+      <value>B330-13-F</value>
+      <footprint>Diode_SMD:D_SMC</footprint>
+      <datasheet>https://www.diodes.com/assets/Datasheets/ds30923.pdf</datasheet>
+      <fields>
+        <field name="MFG">Diodes Inc</field>
+        <field name="P/N">B330-13-F</field>
+      </fields>
+      <libsource lib="Device" part="D_Schottky" description="Schottky diode"/>
+      <property name="MFG" value="Diodes Inc"/>
+      <property name="P/N" value="B330-13-F"/>
+      <property name="Sheetname" value="Boost Converter"/>
+      <property name="Sheetfile" value="boost.kicad_sch"/>
+      <sheetpath names="/Boost Converter/" tstamps="/164fcee2-1769-49e0-8fc8-7f46fdd9394f/"/>
+      <tstamps>5be70613-72d5-448c-91cd-4a0d98d7b728</tstamps>
+    </comp>
+    <comp ref="D2">
+      <value>12V</value>
+      <footprint>Diode_SMD:D_SMB</footprint>
+      <datasheet>https://www.mccsemi.com/pdf/Products/SMBJ5338B-SMBJ5388B(SMB).pdf</datasheet>
+      <fields>
+        <field name="MFG">Micro Commercial</field>
+        <field name="P/N">SMBJ5349B-TP</field>
+      </fields>
+      <libsource lib="Device" part="D_Zener" description="Zener diode"/>
+      <property name="MFG" value="Micro Commercial"/>
+      <property name="P/N" value="SMBJ5349B-TP"/>
+      <property name="Sheetname" value="Boost Converter"/>
+      <property name="Sheetfile" value="boost.kicad_sch"/>
+      <sheetpath names="/Boost Converter/" tstamps="/164fcee2-1769-49e0-8fc8-7f46fdd9394f/"/>
+      <tstamps>b2c78f1b-056b-4a93-81a8-f6bc40db90ba</tstamps>
+    </comp>
+    <comp ref="D22">
+      <value>CDBW0520L-G</value>
+      <footprint>Diode_SMD:D_SOD-123</footprint>
+      <datasheet>https://www.comchiptech.com/admin/files/product/CDBW0520L-HF%20Thru824572.%20CDBW0540-HF%20RevA.pdf</datasheet>
+      <fields>
+        <field name="MFG">Comchip</field>
+        <field name="P/N">CDBW0520L-G</field>
+      </fields>
+      <libsource lib="Device" part="D_Schottky" description="Schottky diode"/>
+      <property name="MFG" value="Comchip"/>
+      <property name="P/N" value="CDBW0520L-G"/>
+      <property name="Sheetname" value="Boost Converter"/>
+      <property name="Sheetfile" value="boost.kicad_sch"/>
+      <sheetpath names="/Boost Converter/" tstamps="/164fcee2-1769-49e0-8fc8-7f46fdd9394f/"/>
+      <tstamps>80812935-7ba6-4237-8cd0-5677e3e5603b</tstamps>
+    </comp>
+    <comp ref="D23">
+      <value>CDBW0520L-G</value>
+      <footprint>Diode_SMD:D_SOD-123</footprint>
+      <datasheet>https://www.comchiptech.com/admin/files/product/CDBW0520L-HF%20Thru824572.%20CDBW0540-HF%20RevA.pdf</datasheet>
+      <fields>
+        <field name="MFG">Comchip</field>
+        <field name="P/N">CDBW0520L-G</field>
+      </fields>
+      <libsource lib="Device" part="D_Schottky" description="Schottky diode"/>
+      <property name="MFG" value="Comchip"/>
+      <property name="P/N" value="CDBW0520L-G"/>
+      <property name="Sheetname" value="Boost Converter"/>
+      <property name="Sheetfile" value="boost.kicad_sch"/>
+      <sheetpath names="/Boost Converter/" tstamps="/164fcee2-1769-49e0-8fc8-7f46fdd9394f/"/>
+      <tstamps>a7aac5d0-5f47-457b-825e-90945a3a22f2</tstamps>
+    </comp>
+    <comp ref="L1">
+      <value>6.8uH</value>
+      <footprint>led-ring-driver:SRP3020C-1R0M</footprint>
+      <datasheet>https://www.bourns.com/docs/product-datasheets/srp3020c.pdf</datasheet>
+      <fields>
+        <field name="MFG">Bourns</field>
+        <field name="P/N">SRP3020C-6R8M</field>
+      </fields>
+      <libsource lib="Device" part="L_Iron" description="Inductor with iron core"/>
+      <property name="MFG" value="Bourns"/>
+      <property name="P/N" value="SRP3020C-6R8M"/>
+      <property name="Sheetname" value="Boost Converter"/>
+      <property name="Sheetfile" value="boost.kicad_sch"/>
+      <sheetpath names="/Boost Converter/" tstamps="/164fcee2-1769-49e0-8fc8-7f46fdd9394f/"/>
+      <tstamps>78e42204-f189-4716-8e85-a5d0b5576fe7</tstamps>
+    </comp>
+    <comp ref="Q1">
+      <value>SI4116DY-T1-GE3</value>
+      <footprint>Package_SO:SO-8_3.9x4.9mm_P1.27mm</footprint>
+      <datasheet>https://www.vishay.com/docs/69837/si4116dy.pdf</datasheet>
+      <fields>
+        <field name="MFG">Vishay</field>
+        <field name="P/N">SI4116DY-T1-GE3</field>
+      </fields>
+      <libsource lib="Device" part="Q_NMOS_SGD" description="N-MOSFET transistor, source/gate/drain"/>
+      <property name="MFG" value="Vishay"/>
+      <property name="P/N" value="SI4116DY-T1-GE3"/>
+      <property name="Sheetname" value="Boost Converter"/>
+      <property name="Sheetfile" value="boost.kicad_sch"/>
+      <sheetpath names="/Boost Converter/" tstamps="/164fcee2-1769-49e0-8fc8-7f46fdd9394f/"/>
+      <tstamps>d9828340-1508-4bb4-b035-5a2e110f2e6b</tstamps>
+    </comp>
+    <comp ref="Q3">
+      <value>SI4143DY-T1-GE3</value>
+      <footprint>Package_SO:SOIC-8_3.9x4.9mm_P1.27mm</footprint>
+      <datasheet>https://www.vishay.com/docs/63242/si4143dy.pdf</datasheet>
+      <fields>
+        <field name="MFG">Vishay</field>
+        <field name="P/N">SI4143DY-T1-GE3</field>
+      </fields>
+      <libsource lib="Device" part="Q_PMOS_SGD" description="P-MOSFET transistor, source/gate/drain"/>
+      <property name="MFG" value="Vishay"/>
+      <property name="P/N" value="SI4143DY-T1-GE3"/>
+      <property name="Sheetname" value="Boost Converter"/>
+      <property name="Sheetfile" value="boost.kicad_sch"/>
+      <sheetpath names="/Boost Converter/" tstamps="/164fcee2-1769-49e0-8fc8-7f46fdd9394f/"/>
+      <tstamps>6c4ba3f0-d5e9-48c2-b9af-b09b128a4db5</tstamps>
+    </comp>
+    <comp ref="R2">
+      <value>90m</value>
+      <footprint>Resistor_SMD:R_1206_3216Metric</footprint>
+      <fields>
+        <field name="MFG">Vishay Dale</field>
+        <field name="P/N">WSL1206R0900FEA</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MFG" value="Vishay Dale"/>
+      <property name="P/N" value="WSL1206R0900FEA"/>
+      <property name="Sheetname" value="Boost Converter"/>
+      <property name="Sheetfile" value="boost.kicad_sch"/>
+      <sheetpath names="/Boost Converter/" tstamps="/164fcee2-1769-49e0-8fc8-7f46fdd9394f/"/>
+      <tstamps>6df16058-e1be-40a5-aba2-2e9667b97fa4</tstamps>
+    </comp>
+    <comp ref="R3">
+      <value>30k</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Stackpole Electronics</field>
+        <field name="P/N">RMCF0805FT30K0</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MFG" value="Stackpole Electronics"/>
+      <property name="P/N" value="RMCF0805FT30K0"/>
+      <property name="Sheetname" value="Boost Converter"/>
+      <property name="Sheetfile" value="boost.kicad_sch"/>
+      <sheetpath names="/Boost Converter/" tstamps="/164fcee2-1769-49e0-8fc8-7f46fdd9394f/"/>
+      <tstamps>1e124763-9660-4b49-bb23-c9714cc46fd1</tstamps>
+    </comp>
+    <comp ref="R5">
+      <value>30k</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Stackpole Electronics</field>
+        <field name="P/N">RMCF0805FT30K0</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MFG" value="Stackpole Electronics"/>
+      <property name="P/N" value="RMCF0805FT30K0"/>
+      <property name="Sheetname" value="Boost Converter"/>
+      <property name="Sheetfile" value="boost.kicad_sch"/>
+      <sheetpath names="/Boost Converter/" tstamps="/164fcee2-1769-49e0-8fc8-7f46fdd9394f/"/>
+      <tstamps>9749f2ba-8586-4a65-a776-3b84b130c532</tstamps>
+    </comp>
+    <comp ref="R33">
+      <value>10k</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Stackpole Electronics Inc</field>
+        <field name="P/N">RMCF0805FT10K0</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MFG" value="Stackpole Electronics Inc"/>
+      <property name="P/N" value="RMCF0805FT10K0"/>
+      <property name="Sheetname" value="Boost Converter"/>
+      <property name="Sheetfile" value="boost.kicad_sch"/>
+      <sheetpath names="/Boost Converter/" tstamps="/164fcee2-1769-49e0-8fc8-7f46fdd9394f/"/>
+      <tstamps>e7056f0d-1ade-42ed-b01a-30480e12b651</tstamps>
+    </comp>
+    <comp ref="R34">
+      <value>909R</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Stackpole Electronics Inc</field>
+        <field name="P/N">RMCF0805FT909R</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MFG" value="Stackpole Electronics Inc"/>
+      <property name="P/N" value="RMCF0805FT909R"/>
+      <property name="Sheetname" value="Boost Converter"/>
+      <property name="Sheetfile" value="boost.kicad_sch"/>
+      <sheetpath names="/Boost Converter/" tstamps="/164fcee2-1769-49e0-8fc8-7f46fdd9394f/"/>
+      <tstamps>24e00d27-65ed-4bea-8ac0-6eade425d292</tstamps>
+    </comp>
+    <comp ref="R35">
+      <value>10k</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Stackpole Electronics Inc</field>
+        <field name="P/N">RMCF0805FT10K0</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MFG" value="Stackpole Electronics Inc"/>
+      <property name="P/N" value="RMCF0805FT10K0"/>
+      <property name="Sheetname" value="Boost Converter"/>
+      <property name="Sheetfile" value="boost.kicad_sch"/>
+      <sheetpath names="/Boost Converter/" tstamps="/164fcee2-1769-49e0-8fc8-7f46fdd9394f/"/>
+      <tstamps>c58e170b-7b29-460b-afa5-e026ba969ed1</tstamps>
+    </comp>
+    <comp ref="R37">
+      <value>100R</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Stackpole Electronics Inc</field>
+        <field name="P/N">RMCF0805FT100R</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MFG" value="Stackpole Electronics Inc"/>
+      <property name="P/N" value="RMCF0805FT100R"/>
+      <property name="Sheetname" value="Boost Converter"/>
+      <property name="Sheetfile" value="boost.kicad_sch"/>
+      <sheetpath names="/Boost Converter/" tstamps="/164fcee2-1769-49e0-8fc8-7f46fdd9394f/"/>
+      <tstamps>86ed9e70-56ea-4ee9-8fc4-aa791e24d1fe</tstamps>
+    </comp>
+    <comp ref="R38">
+      <value>1.0k</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Stackpole Electronics Inc</field>
+        <field name="P/N">RMCF0805FT1K00</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MFG" value="Stackpole Electronics Inc"/>
+      <property name="P/N" value="RMCF0805FT1K00"/>
+      <property name="Sheetname" value="Boost Converter"/>
+      <property name="Sheetfile" value="boost.kicad_sch"/>
+      <sheetpath names="/Boost Converter/" tstamps="/164fcee2-1769-49e0-8fc8-7f46fdd9394f/"/>
+      <tstamps>5c45ef3d-50a6-4afc-9ab3-3f3896a5a4cb</tstamps>
+    </comp>
+    <comp ref="R39">
+      <value>10k</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Stackpole Electronics Inc</field>
+        <field name="P/N">RMCF0805FT10K0</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MFG" value="Stackpole Electronics Inc"/>
+      <property name="P/N" value="RMCF0805FT10K0"/>
+      <property name="Sheetname" value="Boost Converter"/>
+      <property name="Sheetfile" value="boost.kicad_sch"/>
+      <sheetpath names="/Boost Converter/" tstamps="/164fcee2-1769-49e0-8fc8-7f46fdd9394f/"/>
+      <tstamps>35cc3e96-1f2b-48bd-bb6e-f2864b8e587d</tstamps>
+    </comp>
+    <comp ref="U1">
+      <value>MIC2196YM</value>
+      <footprint>Package_SO:SO-8_3.9x4.9mm_P1.27mm</footprint>
+      <datasheet>https://ww1.microchip.com/downloads/en/DeviceDoc/mic2196.pdf</datasheet>
+      <fields>
+        <field name="MFG">Microchip</field>
+        <field name="P/N">MIC2196YM</field>
+      </fields>
+      <libsource lib="led-ring-driver" part="MIC2196YM" description=""/>
+      <property name="MFG" value="Microchip"/>
+      <property name="P/N" value="MIC2196YM"/>
+      <property name="Sheetname" value="Boost Converter"/>
+      <property name="Sheetfile" value="boost.kicad_sch"/>
+      <sheetpath names="/Boost Converter/" tstamps="/164fcee2-1769-49e0-8fc8-7f46fdd9394f/"/>
+      <tstamps>81bc1f66-c374-46f0-8f99-49e74a5d524d</tstamps>
+    </comp>
+    <comp ref="U6">
+      <value>TL751L05CD</value>
+      <footprint>Package_SO:SO-8_3.9x4.9mm_P1.27mm</footprint>
+      <datasheet>https://www.ti.com/lit/ds/slvs017u/slvs017u.pdf</datasheet>
+      <fields>
+        <field name="MFG">Texas Instruments</field>
+        <field name="P/N">TL751L05CD</field>
+      </fields>
+      <libsource lib="led-ring-driver" part="TL751L05CD" description=""/>
+      <property name="MFG" value="Texas Instruments"/>
+      <property name="P/N" value="TL751L05CD"/>
+      <property name="Sheetname" value="Boost Converter"/>
+      <property name="Sheetfile" value="boost.kicad_sch"/>
+      <sheetpath names="/Boost Converter/" tstamps="/164fcee2-1769-49e0-8fc8-7f46fdd9394f/"/>
+      <tstamps>630a4125-a6cd-4e42-a8dc-098d0ab20d61</tstamps>
+    </comp>
+    <comp ref="C6">
+      <value>0.1uF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">TDK</field>
+        <field name="P/N">C2012X7R2A104K125AA</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="TDK"/>
+      <property name="P/N" value="C2012X7R2A104K125AA"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>1251c668-2528-422c-b184-6cf03355188d</tstamps>
+    </comp>
+    <comp ref="C7">
+      <value>0.1uF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">TDK</field>
+        <field name="P/N">C2012X7R2A104K125AA</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="TDK"/>
+      <property name="P/N" value="C2012X7R2A104K125AA"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>9eacf55f-c454-48c5-8c9b-e3d5947a7dc4</tstamps>
+    </comp>
+    <comp ref="C8">
+      <value>0.1uF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">TDK</field>
+        <field name="P/N">C2012X7R2A104K125AA</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="TDK"/>
+      <property name="P/N" value="C2012X7R2A104K125AA"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>c78fa4e6-f3c5-4d52-90cf-299e4f5b2981</tstamps>
+    </comp>
+    <comp ref="C9">
+      <value>0.1uF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">TDK</field>
+        <field name="P/N">C2012X7R2A104K125AA</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="TDK"/>
+      <property name="P/N" value="C2012X7R2A104K125AA"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>4099be24-4041-44aa-b3ae-1d400eb2ae96</tstamps>
+    </comp>
+    <comp ref="C10">
+      <value>0.1uF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">TDK</field>
+        <field name="P/N">C2012X7R2A104K125AA</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="TDK"/>
+      <property name="P/N" value="C2012X7R2A104K125AA"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>cecfa2ef-ffa2-45d4-809c-53979b068d85</tstamps>
+    </comp>
+    <comp ref="D19">
+      <value>PWM</value>
+      <footprint>LED_SMD:LED_1206_3216Metric</footprint>
+      <fields>
+        <field name="MFG">Wurth Elektronik</field>
+        <field name="P/N">150120RS75000</field>
+      </fields>
+      <libsource lib="Device" part="LED" description="Light emitting diode"/>
+      <property name="P/N" value="150120RS75000"/>
+      <property name="MFG" value="Wurth Elektronik"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>e4a74d67-a67d-4315-8002-1e10c16a3a8c</tstamps>
+    </comp>
+    <comp ref="D20">
+      <value>DIS</value>
+      <footprint>LED_SMD:LED_1206_3216Metric</footprint>
+      <fields>
+        <field name="MFG">Wurth Elektronik</field>
+        <field name="P/N">150120RS75000</field>
+      </fields>
+      <libsource lib="Device" part="LED" description="Light emitting diode"/>
+      <property name="P/N" value="150120RS75000"/>
+      <property name="MFG" value="Wurth Elektronik"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>4494e84a-f8f3-42bc-a2f6-9ea2424f7bf2</tstamps>
+    </comp>
+    <comp ref="D21">
+      <value>PWR</value>
+      <footprint>LED_SMD:LED_1206_3216Metric</footprint>
+      <fields>
+        <field name="MFG">Wurth Elektronik</field>
+        <field name="P/N">150120RS75000</field>
+      </fields>
+      <libsource lib="Device" part="LED" description="Light emitting diode"/>
+      <property name="P/N" value="150120RS75000"/>
+      <property name="MFG" value="Wurth Elektronik"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>8bd62a21-4da1-4775-a8e9-78aa8040eff5</tstamps>
+    </comp>
+    <comp ref="Q2">
+      <value>SMMBT3904LT3G</value>
+      <footprint>Package_TO_SOT_SMD:SOT-23</footprint>
+      <datasheet>https://www.onsemi.com/pdf/datasheet/mmbt3904lt1-d.pdf</datasheet>
+      <fields>
+        <field name="MFG">onsemi</field>
+        <field name="P/N">SMMBT3904LT3G</field>
+      </fields>
+      <libsource lib="Device" part="Q_NPN_BEC" description="NPN transistor, base/emitter/collector"/>
+      <property name="MFG" value="onsemi"/>
+      <property name="P/N" value="SMMBT3904LT3G"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>a36574c1-cec7-46a9-aa57-12589e7ae25b</tstamps>
+    </comp>
+    <comp ref="Q4">
+      <value>SMMBT3904LT3G</value>
+      <footprint>Package_TO_SOT_SMD:SOT-23</footprint>
+      <datasheet>https://www.onsemi.com/pdf/datasheet/mmbt3904lt1-d.pdf</datasheet>
+      <fields>
+        <field name="MFG">onsemi</field>
+        <field name="P/N">SMMBT3904LT3G</field>
+      </fields>
+      <libsource lib="Device" part="Q_NPN_BEC" description="NPN transistor, base/emitter/collector"/>
+      <property name="MFG" value="onsemi"/>
+      <property name="P/N" value="SMMBT3904LT3G"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>23f368f3-47db-4805-865f-f1b994506125</tstamps>
+    </comp>
+    <comp ref="Q5">
+      <value>SMMBT3904LT3G</value>
+      <footprint>Package_TO_SOT_SMD:SOT-23</footprint>
+      <datasheet>https://www.onsemi.com/pdf/datasheet/mmbt3904lt1-d.pdf</datasheet>
+      <fields>
+        <field name="MFG">onsemi</field>
+        <field name="P/N">SMMBT3904LT3G</field>
+      </fields>
+      <libsource lib="Device" part="Q_NPN_BEC" description="NPN transistor, base/emitter/collector"/>
+      <property name="MFG" value="onsemi"/>
+      <property name="P/N" value="SMMBT3904LT3G"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>0478abad-111c-4b0e-9c37-0df8d8b6042a</tstamps>
+    </comp>
+    <comp ref="Q6">
+      <value>SMMBT3904LT3G</value>
+      <footprint>Package_TO_SOT_SMD:SOT-23</footprint>
+      <datasheet>https://www.onsemi.com/pdf/datasheet/mmbt3904lt1-d.pdf</datasheet>
+      <fields>
+        <field name="MFG">onsemi</field>
+        <field name="P/N">SMMBT3904LT3G</field>
+      </fields>
+      <libsource lib="Device" part="Q_NPN_BEC" description="NPN transistor, base/emitter/collector"/>
+      <property name="MFG" value="onsemi"/>
+      <property name="P/N" value="SMMBT3904LT3G"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>999adf50-90e0-41b0-bfe4-8946e80867bd</tstamps>
+    </comp>
+    <comp ref="Q7">
+      <value>2N7002</value>
+      <footprint>Package_TO_SOT_SMD:SOT-23</footprint>
+      <datasheet>https://ww1.microchip.com/downloads/en/DeviceDoc/2N7002-N-Channel-Enhancement-Mode-Vertical-DMOS-FET-Data-Sheet-20005797A.pdf</datasheet>
+      <fields>
+        <field name="MFG">Microchip</field>
+        <field name="P/N">2N7002-G</field>
+      </fields>
+      <libsource lib="Device" part="Q_NMOS_GSD" description="N-MOSFET transistor, gate/source/drain"/>
+      <property name="MFG" value="Microchip"/>
+      <property name="P/N" value="2N7002-G"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>34d8ef6d-a4d8-4221-b985-ce12751f0bfa</tstamps>
+    </comp>
+    <comp ref="Q8">
+      <value>SMMBT3904LT3G</value>
+      <footprint>Package_TO_SOT_SMD:SOT-23</footprint>
+      <datasheet>https://www.onsemi.com/pdf/datasheet/mmbt3904lt1-d.pdf</datasheet>
+      <fields>
+        <field name="MFG">onsemi</field>
+        <field name="P/N">SMMBT3904LT3G</field>
+      </fields>
+      <libsource lib="Device" part="Q_NPN_BEC" description="NPN transistor, base/emitter/collector"/>
+      <property name="MFG" value="onsemi"/>
+      <property name="P/N" value="SMMBT3904LT3G"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>38a0b23c-584c-4de8-83be-c3d9a39db326</tstamps>
+    </comp>
+    <comp ref="Q9">
+      <value>SMMBT3904LT3G</value>
+      <footprint>Package_TO_SOT_SMD:SOT-23</footprint>
+      <datasheet>https://www.onsemi.com/pdf/datasheet/mmbt3904lt1-d.pdf</datasheet>
+      <fields>
+        <field name="MFG">onsemi</field>
+        <field name="P/N">SMMBT3904LT3G</field>
+      </fields>
+      <libsource lib="Device" part="Q_NPN_BEC" description="NPN transistor, base/emitter/collector"/>
+      <property name="MFG" value="onsemi"/>
+      <property name="P/N" value="SMMBT3904LT3G"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>adbfa5da-1c6a-4b6c-9e00-85407f229fc7</tstamps>
+    </comp>
+    <comp ref="Q10">
+      <value>SMMBT3904LT3G</value>
+      <footprint>Package_TO_SOT_SMD:SOT-23</footprint>
+      <datasheet>https://www.onsemi.com/pdf/datasheet/mmbt3904lt1-d.pdf</datasheet>
+      <fields>
+        <field name="MFG">onsemi</field>
+        <field name="P/N">SMMBT3904LT3G</field>
+      </fields>
+      <libsource lib="Device" part="Q_NPN_BEC" description="NPN transistor, base/emitter/collector"/>
+      <property name="MFG" value="onsemi"/>
+      <property name="P/N" value="SMMBT3904LT3G"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>7c187116-15f1-4790-a8ca-ed432c0f6352</tstamps>
+    </comp>
+    <comp ref="Q11">
+      <value>SMMBT3904LT3G</value>
+      <footprint>Package_TO_SOT_SMD:SOT-23</footprint>
+      <datasheet>https://www.onsemi.com/pdf/datasheet/mmbt3904lt1-d.pdf</datasheet>
+      <fields>
+        <field name="MFG">onsemi</field>
+        <field name="P/N">SMMBT3904LT3G</field>
+      </fields>
+      <libsource lib="Device" part="Q_NPN_BEC" description="NPN transistor, base/emitter/collector"/>
+      <property name="MFG" value="onsemi"/>
+      <property name="P/N" value="SMMBT3904LT3G"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>c99e8cff-3000-42f2-a50e-49d40e3f47da</tstamps>
+    </comp>
+    <comp ref="R1">
+      <value>1.0k</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Stackpole Electronics</field>
+        <field name="P/N">RMCF0805FT1K00</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MFG" value="Stackpole Electronics"/>
+      <property name="P/N" value="RMCF0805FT1K00"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>5c6e4a11-12ea-476d-ac5f-30d6eb4cedce</tstamps>
+    </comp>
+    <comp ref="R4">
+      <value>1.0k</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Stackpole Electronics Inc</field>
+        <field name="P/N">RMCF0805FT1K00</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MFG" value="Stackpole Electronics Inc"/>
+      <property name="P/N" value="RMCF0805FT1K00"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>a03882c9-6560-429e-b352-6c997420c6fd</tstamps>
+    </comp>
+    <comp ref="R6">
+      <value>1.0k</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Stackpole Electronics</field>
+        <field name="P/N">RMCF0805FT1K00</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MFG" value="Stackpole Electronics"/>
+      <property name="P/N" value="RMCF0805FT1K00"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>ca2b274f-0e94-4e6a-a8bd-90fdf910b526</tstamps>
+    </comp>
+    <comp ref="R7">
+      <value>1.0k</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Stackpole Electronics</field>
+        <field name="P/N">RMCF0805FT1K00</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MFG" value="Stackpole Electronics"/>
+      <property name="P/N" value="RMCF0805FT1K00"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>52ae086c-b99c-4a2a-9f34-071193327443</tstamps>
+    </comp>
+    <comp ref="R8">
+      <value>1.0k</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Stackpole Electronics Inc</field>
+        <field name="P/N">RMCF0805FT1K00</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MFG" value="Stackpole Electronics Inc"/>
+      <property name="P/N" value="RMCF0805FT1K00"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>1d9be834-ce81-4af0-9daf-de94114da756</tstamps>
+    </comp>
+    <comp ref="R9">
+      <value>1.0k</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Stackpole Electronics Inc</field>
+        <field name="P/N">RMCF0805FT1K00</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MFG" value="Stackpole Electronics Inc"/>
+      <property name="P/N" value="RMCF0805FT1K00"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>3ec94dca-ffc8-4350-a575-1a4849224395</tstamps>
+    </comp>
+    <comp ref="R10">
+      <value>1.0k</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Stackpole Electronics Inc</field>
+        <field name="P/N">RMCF0805FT1K00</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MFG" value="Stackpole Electronics Inc"/>
+      <property name="P/N" value="RMCF0805FT1K00"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>ec4e5820-180e-4f7e-8117-e24f9f471b10</tstamps>
+    </comp>
+    <comp ref="R11">
+      <value>1.0k</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Stackpole Electronics Inc</field>
+        <field name="P/N">RMCF0805FT1K00</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MFG" value="Stackpole Electronics Inc"/>
+      <property name="P/N" value="RMCF0805FT1K00"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>42f13b81-c00d-4b8d-bad2-5f1e6ce4bc8f</tstamps>
+    </comp>
+    <comp ref="R12">
+      <value>1.0k</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Stackpole Electronics Inc</field>
+        <field name="P/N">RMCF0805FT1K00</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MFG" value="Stackpole Electronics Inc"/>
+      <property name="P/N" value="RMCF0805FT1K00"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>5c37683e-9bda-4ab9-be22-d8fee7ab5695</tstamps>
+    </comp>
+    <comp ref="R13">
+      <value>1.0k</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Stackpole Electronics Inc</field>
+        <field name="P/N">RMCF0805FT1K00</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MFG" value="Stackpole Electronics Inc"/>
+      <property name="P/N" value="RMCF0805FT1K00"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>ac51ba6d-5e02-42a6-a74d-9f0751546072</tstamps>
+    </comp>
+    <comp ref="R14">
+      <value>1.0k</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Stackpole Electronics</field>
+        <field name="P/N">RMCF0805FT1K00</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MFG" value="Stackpole Electronics"/>
+      <property name="P/N" value="RMCF0805FT1K00"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>672388e4-dc84-4cb3-b384-9924a985455d</tstamps>
+    </comp>
+    <comp ref="R15">
+      <value>1.0k</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Stackpole Electronics Inc</field>
+        <field name="P/N">RMCF0805FT1K00</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MFG" value="Stackpole Electronics Inc"/>
+      <property name="P/N" value="RMCF0805FT1K00"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>b9488c3b-8acc-49cc-8b0a-254e8510b250</tstamps>
+    </comp>
+    <comp ref="R16">
+      <value>9.09k</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Stackpole Electronics Inc</field>
+        <field name="P/N">RMCF0805FG9K09</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MFG" value="Stackpole Electronics Inc"/>
+      <property name="P/N" value="RMCF0805FG9K09"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>51d5eff9-f549-45f5-a923-bd60c5e0dd59</tstamps>
+    </comp>
+    <comp ref="R17">
+      <value>100k</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Stackpole Electronics Inc</field>
+        <field name="P/N">RMCF0805FG100K</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MFG" value="Stackpole Electronics Inc"/>
+      <property name="P/N" value="RMCF0805FG100K"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>dff68f4d-da10-49a4-a88a-37ef161be566</tstamps>
+    </comp>
+    <comp ref="R18">
+      <value>1.0k</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Stackpole Electronics Inc</field>
+        <field name="P/N">RMCF0805FT1K00</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MFG" value="Stackpole Electronics Inc"/>
+      <property name="P/N" value="RMCF0805FT1K00"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>61106e08-1cfc-44e4-943b-9f26213d2ec7</tstamps>
+    </comp>
+    <comp ref="R19">
+      <value>1.0k</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Stackpole Electronics</field>
+        <field name="P/N">RMCF0805FT1K00</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MFG" value="Stackpole Electronics"/>
+      <property name="P/N" value="RMCF0805FT1K00"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>f88093b9-59c9-4188-893e-8f4733cd0b27</tstamps>
+    </comp>
+    <comp ref="R20">
+      <value>100k</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Stackpole Electronics Inc</field>
+        <field name="P/N">RMCF0805FG100K</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MFG" value="Stackpole Electronics Inc"/>
+      <property name="P/N" value="RMCF0805FG100K"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>7530246d-03c1-4a84-8352-5d150ea795c0</tstamps>
+    </comp>
+    <comp ref="R21">
+      <value>100k</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Stackpole Electronics Inc</field>
+        <field name="P/N">RMCF0805FG100K</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MFG" value="Stackpole Electronics Inc"/>
+      <property name="P/N" value="RMCF0805FG100K"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>c90ae628-5bca-46be-b24a-b713366a9ecb</tstamps>
+    </comp>
+    <comp ref="R22">
+      <value>10.0R</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Stackpole Electronics Inc</field>
+        <field name="P/N">RNCP0805FTD10R0</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MFG" value="Stackpole Electronics Inc"/>
+      <property name="P/N" value="RNCP0805FTD10R0"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>989d9263-6812-4493-b76a-a9ba303338ae</tstamps>
+    </comp>
+    <comp ref="R23">
+      <value>1.0k</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Stackpole Electronics Inc</field>
+        <field name="P/N">RMCF0805FT1K00</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MFG" value="Stackpole Electronics Inc"/>
+      <property name="P/N" value="RMCF0805FT1K00"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>ceaab48e-65b7-40c6-8a4b-73250265ec6f</tstamps>
+    </comp>
+    <comp ref="R24">
+      <value>1.0k</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Stackpole Electronics Inc</field>
+        <field name="P/N">RMCF0805FT1K00</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MFG" value="Stackpole Electronics Inc"/>
+      <property name="P/N" value="RMCF0805FT1K00"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>50222b98-8b8b-4783-aebe-e775198c3afb</tstamps>
+    </comp>
+    <comp ref="R25">
+      <value>1.0k</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Stackpole Electronics Inc</field>
+        <field name="P/N">RMCF0805FT1K00</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MFG" value="Stackpole Electronics Inc"/>
+      <property name="P/N" value="RMCF0805FT1K00"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>155bdc59-a761-42ae-8913-4f4223534b97</tstamps>
+    </comp>
+    <comp ref="R26">
+      <value>10k</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Stackpole Electronics Inc</field>
+        <field name="P/N">RMCF0805FT10K0</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MFG" value="Stackpole Electronics Inc"/>
+      <property name="P/N" value="RMCF0805FT10K0"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>fa2ddf87-fdb2-4b92-9b10-c9d951a68ddf</tstamps>
+    </comp>
+    <comp ref="R27">
+      <value>1.0k</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Stackpole Electronics Inc</field>
+        <field name="P/N">RMCF0805FT1K00</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MFG" value="Stackpole Electronics Inc"/>
+      <property name="P/N" value="RMCF0805FT1K00"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>8c61c483-b686-44eb-be67-dd2a89a31e4f</tstamps>
+    </comp>
+    <comp ref="R28">
+      <value>10.0R</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Stackpole Electronics Inc</field>
+        <field name="P/N">RNCP0805FTD10R0</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MFG" value="Stackpole Electronics Inc"/>
+      <property name="P/N" value="RNCP0805FTD10R0"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>e956575b-6a58-4d0d-9d80-746b34f17eef</tstamps>
+    </comp>
+    <comp ref="R29">
+      <value>1.0k</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Stackpole Electronics</field>
+        <field name="P/N">RMCF0805FT1K00</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MFG" value="Stackpole Electronics"/>
+      <property name="P/N" value="RMCF0805FT1K00"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>f653adde-7c02-43bd-b919-de8368f1c4f3</tstamps>
+    </comp>
+    <comp ref="R30">
+      <value>1.0k</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Stackpole Electronics</field>
+        <field name="P/N">RMCF0805FT1K00</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MFG" value="Stackpole Electronics"/>
+      <property name="P/N" value="RMCF0805FT1K00"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>662fe166-cb37-40c7-bce5-20337e3a601b</tstamps>
+    </comp>
+    <comp ref="R31">
+      <value>10.0R</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Stackpole Electronics Inc</field>
+        <field name="P/N">RNCP0805FTD10R0</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MFG" value="Stackpole Electronics Inc"/>
+      <property name="P/N" value="RNCP0805FTD10R0"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>ecca0c02-7e0b-43c6-968e-b2424de21a56</tstamps>
+    </comp>
+    <comp ref="R32">
+      <value>10.0R</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Stackpole Electronics Inc</field>
+        <field name="P/N">RNCP0805FTD10R0</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MFG" value="Stackpole Electronics Inc"/>
+      <property name="P/N" value="RNCP0805FTD10R0"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>a86dee26-c0a1-4b85-94b3-c6c2cd55411c</tstamps>
+    </comp>
+    <comp ref="R36">
+      <value>1.0k</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Stackpole Electronics</field>
+        <field name="P/N">RMCF0805FT1K00</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MFG" value="Stackpole Electronics"/>
+      <property name="P/N" value="RMCF0805FT1K00"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>a9b9bfa6-5fc4-4b47-8fa8-63dd1fbd8d16</tstamps>
+    </comp>
+    <comp ref="U2">
+      <value>TLV272QDRG4Q1</value>
+      <footprint>Package_SO:SO-8_3.9x4.9mm_P1.27mm</footprint>
+      <datasheet>https://www.ti.com/lit/ds/symlink/tlv272-q1.pdf?HQS=dis-dk-null-digikeymode-dsf-pf-null-wwe&amp;ts=1642359927314&amp;ref_url=https%253A%252F%252Fwww.ti.com%252Fgeneral%252Fdocs%252Fsuppproductinfo.tsp%253FdistId%253D10%2526gotoUrl%253Dhttps%253A%252F%252Fwww.ti.com%252Flit%252Fgpn%252Ftlv272-q1</datasheet>
+      <fields>
+        <field name="MFG">Texas Instruments</field>
+        <field name="P/N">TLV272QDRG4Q1</field>
+      </fields>
+      <libsource lib="Amplifier_Operational" part="LM358" description="Low-Power, Dual Operational Amplifiers, DIP-8/SOIC-8/TO-99-8"/>
+      <property name="Mfg" value=""/>
+      <property name="P/N" value="TLV272QDRG4Q1"/>
+      <property name="MFG" value="Texas Instruments"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>c1e9ebd8-3bce-4bde-aef8-9c432832a6f5 5310419f-4200-4827-990b-a03c69d8d527 12237345-a31d-4966-a850-7780fec9f378</tstamps>
+    </comp>
+    <comp ref="U3">
+      <value>TLV272QDRG4Q1</value>
+      <footprint>Package_SO:SO-8_3.9x4.9mm_P1.27mm</footprint>
+      <datasheet>https://www.ti.com/lit/ds/symlink/tlv272-q1.pdf?HQS=dis-dk-null-digikeymode-dsf-pf-null-wwe&amp;ts=1642359927314&amp;ref_url=https%253A%252F%252Fwww.ti.com%252Fgeneral%252Fdocs%252Fsuppproductinfo.tsp%253FdistId%253D10%2526gotoUrl%253Dhttps%253A%252F%252Fwww.ti.com%252Flit%252Fgpn%252Ftlv272-q1</datasheet>
+      <fields>
+        <field name="MFG">Texas Instruments</field>
+        <field name="P/N">TLV272QDRG4Q1</field>
+      </fields>
+      <libsource lib="Amplifier_Operational" part="LM358" description="Low-Power, Dual Operational Amplifiers, DIP-8/SOIC-8/TO-99-8"/>
+      <property name="P/N" value="TLV272QDRG4Q1"/>
+      <property name="MFG" value="Texas Instruments"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>facd7060-ccb6-4a79-a3b1-f3821c535524 dc81c9f4-9330-43e3-87e7-ddc8ee5cb0d3 7f7ed0d7-a344-42fd-aeeb-46b98af0dccb</tstamps>
+    </comp>
+    <comp ref="U4">
+      <value>TLV272QDRG4Q1</value>
+      <footprint>Package_SO:SO-8_3.9x4.9mm_P1.27mm</footprint>
+      <datasheet>https://www.ti.com/lit/ds/symlink/tlv272-q1.pdf?HQS=dis-dk-null-digikeymode-dsf-pf-null-wwe&amp;ts=1642359927314&amp;ref_url=https%253A%252F%252Fwww.ti.com%252Fgeneral%252Fdocs%252Fsuppproductinfo.tsp%253FdistId%253D10%2526gotoUrl%253Dhttps%253A%252F%252Fwww.ti.com%252Flit%252Fgpn%252Ftlv272-q1</datasheet>
+      <fields>
+        <field name="MFG">Texas Instruments</field>
+        <field name="P/N">TLV272QDRG4Q1</field>
+      </fields>
+      <libsource lib="Amplifier_Operational" part="LM358" description="Low-Power, Dual Operational Amplifiers, DIP-8/SOIC-8/TO-99-8"/>
+      <property name="P/N" value="TLV272QDRG4Q1"/>
+      <property name="MFG" value="Texas Instruments"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>212653b7-a006-4e0c-a05b-862351ffcb9c 1162259d-62ef-4f76-9bb3-77505dad8eef 0b9c0493-9597-4867-be8d-3f448f5ca7e5</tstamps>
+    </comp>
+    <comp ref="U5">
+      <value>TLV272QDRG4Q1</value>
+      <footprint>Package_SO:SO-8_3.9x4.9mm_P1.27mm</footprint>
+      <datasheet>https://www.ti.com/lit/ds/symlink/tlv272-q1.pdf?HQS=dis-dk-null-digikeymode-dsf-pf-null-wwe&amp;ts=1642359927314&amp;ref_url=https%253A%252F%252Fwww.ti.com%252Fgeneral%252Fdocs%252Fsuppproductinfo.tsp%253FdistId%253D10%2526gotoUrl%253Dhttps%253A%252F%252Fwww.ti.com%252Flit%252Fgpn%252Ftlv272-q1</datasheet>
+      <fields>
+        <field name="MFG">Texas Instruments</field>
+        <field name="P/N">TLV272QDRG4Q1</field>
+      </fields>
+      <libsource lib="Amplifier_Operational" part="LM358" description="Low-Power, Dual Operational Amplifiers, DIP-8/SOIC-8/TO-99-8"/>
+      <property name="P/N" value="TLV272QDRG4Q1"/>
+      <property name="MFG" value="Texas Instruments"/>
+      <property name="Sheetname" value="LED Current Regulator"/>
+      <property name="Sheetfile" value="LED-Current-Regulator.kicad_sch"/>
+      <sheetpath names="/LED Current Regulator/" tstamps="/4de2f1f8-b824-4413-9424-d86017b42123/"/>
+      <tstamps>113759e9-7a8c-42a1-987d-41f80031c0b0 529c37aa-fcab-45a0-8f94-66e43375519e 0b8c1861-3d01-4558-abb7-be1b0bb564f6</tstamps>
+    </comp>
+  </components>
+  <libparts>
+    <libpart lib="Amplifier_Operational" part="LM358">
+      <description>Low-Power, Dual Operational Amplifiers, DIP-8/SOIC-8/TO-99-8</description>
+      <docs>http://www.ti.com/lit/ds/symlink/lm2904-n.pdf</docs>
+      <footprints>
+        <fp>SOIC*3.9x4.9mm*P1.27mm*</fp>
+        <fp>DIP*W7.62mm*</fp>
+        <fp>TO*99*</fp>
+        <fp>OnSemi*Micro8*</fp>
+        <fp>TSSOP*3x3mm*P0.65mm*</fp>
+        <fp>TSSOP*4.4x3mm*P0.65mm*</fp>
+        <fp>MSOP*3x3mm*P0.65mm*</fp>
+        <fp>SSOP*3.9x4.9mm*P0.635mm*</fp>
+        <fp>LFCSP*2x2mm*P0.5mm*</fp>
+        <fp>*SIP*</fp>
+        <fp>SOIC*5.3x6.2mm*P1.27mm*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">LM358</field>
+        <field name="Datasheet">http://www.ti.com/lit/ds/symlink/lm2904-n.pdf</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="output"/>
+        <pin num="2" name="-" type="input"/>
+        <pin num="3" name="+" type="input"/>
+        <pin num="4" name="V-" type="power_in"/>
+        <pin num="5" name="+" type="input"/>
+        <pin num="6" name="-" type="input"/>
+        <pin num="7" name="" type="output"/>
+        <pin num="8" name="V+" type="power_in"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="C">
+      <description>Unpolarized capacitor</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>C_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">C</field>
+        <field name="Value">C</field>
+        <field name="Datasheet">~</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="C_Polarized_US">
+      <description>Polarized capacitor, US symbol</description>
+      <docs>https://industrial.panasonic.com/cdbs/www-data/pdf/RDD0000/RDD0000C1240.pdf</docs>
+      <footprints>
+        <fp>CP_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">C20</field>
+        <field name="Value">270uF 25V</field>
+        <field name="Footprint">led-ring-driver:CAPPRD500W60D1000H950</field>
+        <field name="Datasheet">https://industrial.panasonic.com/cdbs/www-data/pdf/RDD0000/RDD0000C1240.pdf</field>
+        <field name="MFG">Panasonic</field>
+        <field name="P/N">EEH-AZF1E271</field>
+      </fields>
+      <pins>
+        <pin num="N" name="" type="passive"/>
+        <pin num="P" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="D_Schottky">
+      <description>Schottky diode</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>TO-???*</fp>
+        <fp>*_Diode_*</fp>
+        <fp>*SingleDiode*</fp>
+        <fp>D_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">D</field>
+        <field name="Value">D_Schottky</field>
+        <field name="Datasheet">~</field>
+      </fields>
+      <pins>
+        <pin num="1" name="K" type="passive"/>
+        <pin num="2" name="A" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="D_Zener">
+      <description>Zener diode</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>TO-???*</fp>
+        <fp>*_Diode_*</fp>
+        <fp>*SingleDiode*</fp>
+        <fp>D_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">D</field>
+        <field name="Value">D_Zener</field>
+        <field name="Datasheet">~</field>
+      </fields>
+      <pins>
+        <pin num="1" name="K" type="passive"/>
+        <pin num="2" name="A" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="LED">
+      <description>Light emitting diode</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>LED*</fp>
+        <fp>LED_SMD:*</fp>
+        <fp>LED_THT:*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">D</field>
+        <field name="Value">LED</field>
+        <field name="Datasheet">~</field>
+      </fields>
+      <pins>
+        <pin num="1" name="K" type="passive"/>
+        <pin num="2" name="A" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="L_Iron">
+      <description>Inductor with iron core</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>Choke_*</fp>
+        <fp>*Coil*</fp>
+        <fp>Inductor_*</fp>
+        <fp>L_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">L</field>
+        <field name="Value">L_Iron</field>
+        <field name="Datasheet">~</field>
+      </fields>
+      <pins>
+        <pin num="1" name="1" type="passive"/>
+        <pin num="2" name="2" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="Q_NMOS_GSD">
+      <description>N-MOSFET transistor, gate/source/drain</description>
+      <docs>~</docs>
+      <fields>
+        <field name="Reference">Q</field>
+        <field name="Value">Q_NMOS_GSD</field>
+        <field name="Datasheet">~</field>
+      </fields>
+      <pins>
+        <pin num="1" name="G" type="input"/>
+        <pin num="2" name="S" type="passive"/>
+        <pin num="3" name="D" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="Q_NMOS_SGD">
+      <description>N-MOSFET transistor, source/gate/drain</description>
+      <docs>https://www.vishay.com/docs/69837/si4116dy.pdf</docs>
+      <fields>
+        <field name="Reference">Q?</field>
+        <field name="Value">SI4116DY-T1-GE3</field>
+        <field name="Footprint">Package_SO:SO-8_3.9x4.9mm_P1.27mm</field>
+        <field name="Datasheet">https://www.vishay.com/docs/69837/si4116dy.pdf</field>
+        <field name="MFG">Vishay</field>
+        <field name="P/N">SI4116DY-T1-GE3</field>
+      </fields>
+      <pins>
+        <pin num="1" name="S" type="passive"/>
+        <pin num="2" name="S" type="passive"/>
+        <pin num="3" name="S" type="passive"/>
+        <pin num="4" name="G" type="input"/>
+        <pin num="5" name="D" type="passive"/>
+        <pin num="6" name="D" type="passive"/>
+        <pin num="7" name="D" type="passive"/>
+        <pin num="8" name="D" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="Q_NPN_BEC">
+      <description>NPN transistor, base/emitter/collector</description>
+      <docs>~</docs>
+      <fields>
+        <field name="Reference">Q</field>
+        <field name="Value">Q_NPN_BEC</field>
+        <field name="Datasheet">~</field>
+      </fields>
+      <pins>
+        <pin num="1" name="B" type="input"/>
+        <pin num="2" name="E" type="passive"/>
+        <pin num="3" name="C" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="Q_PMOS_SGD">
+      <description>P-MOSFET transistor, source/gate/drain</description>
+      <docs>~</docs>
+      <fields>
+        <field name="Reference">Q?</field>
+        <field name="Value">Q_PMOS_SGD</field>
+        <field name="Datasheet">~</field>
+      </fields>
+      <pins>
+        <pin num="1" name="S" type="passive"/>
+        <pin num="2" name="S" type="passive"/>
+        <pin num="3" name="S" type="passive"/>
+        <pin num="4" name="G" type="input"/>
+        <pin num="5" name="D" type="passive"/>
+        <pin num="6" name="D" type="passive"/>
+        <pin num="7" name="D" type="passive"/>
+        <pin num="8" name="D" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="R">
+      <description>Resistor</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>R_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">R</field>
+        <field name="Value">R</field>
+        <field name="Datasheet">~</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="led-ring-driver" part="430450601">
+      <docs>https://media.digikey.com/pdf/Data%20Sheets/Molex%20PDFs/PK-70873-05xx_1_N3.pdf</docs>
+      <footprints>
+        <fp>CON_430450601_MOL</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">430450601</field>
+        <field name="Footprint">CON_430450601_MOL</field>
+        <field name="Datasheet">https://media.digikey.com/pdf/Data%20Sheets/Molex%20PDFs/PK-70873-05xx_1_N3.pdf</field>
+        <field name="MFG">Molex</field>
+        <field name="P/N">0430450601</field>
+      </fields>
+      <pins>
+        <pin num="1" name="1" type="unspecified"/>
+        <pin num="2" name="2" type="unspecified"/>
+        <pin num="3" name="3" type="unspecified"/>
+        <pin num="4" name="4" type="unspecified"/>
+        <pin num="5" name="5" type="unspecified"/>
+        <pin num="6" name="6" type="unspecified"/>
+      </pins>
+    </libpart>
+    <libpart lib="led-ring-driver" part="MIC2196YM">
+      <docs>https://ww1.microchip.com/downloads/en/DeviceDoc/mic2196.pdf</docs>
+      <footprints>
+        <fp>SOIC-8_M_MCL</fp>
+        <fp>SOIC-8_M_MCL-M</fp>
+        <fp>SOIC-8_M_MCL-L</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">MIC2196YM</field>
+        <field name="Footprint">Package_SO:SO-8_3.9x4.9mm_P1.27mm</field>
+        <field name="Datasheet">https://ww1.microchip.com/downloads/en/DeviceDoc/mic2196.pdf</field>
+        <field name="MFG">Microchip</field>
+        <field name="P/N">MIC2196YM</field>
+      </fields>
+      <pins>
+        <pin num="1" name="COMP" type="output"/>
+        <pin num="2" name="FB" type="input"/>
+        <pin num="3" name="EN/UVLO" type="input"/>
+        <pin num="4" name="CS" type="input"/>
+        <pin num="5" name="VDD" type="power_in"/>
+        <pin num="6" name="GND" type="power_in"/>
+        <pin num="7" name="OUTN" type="output"/>
+        <pin num="8" name="VIN" type="input"/>
+      </pins>
+    </libpart>
+    <libpart lib="led-ring-driver" part="TL751L05CD">
+      <docs>https://www.ti.com/lit/ds/slvs017u/slvs017u.pdf</docs>
+      <footprints>
+        <fp>D8</fp>
+        <fp>D8-M</fp>
+        <fp>D8-L</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">TL751L05CD</field>
+        <field name="Footprint">Package_SO:SO-8_3.9x4.9mm_P1.27mm</field>
+        <field name="Datasheet">https://www.ti.com/lit/ds/slvs017u/slvs017u.pdf</field>
+        <field name="MFG">Texas Instruments</field>
+        <field name="P/N">TL751L05CD</field>
+      </fields>
+      <pins>
+        <pin num="1" name="OUT" type="output"/>
+        <pin num="2" name="GND" type="unspecified"/>
+        <pin num="3" name="GND" type="unspecified"/>
+        <pin num="4" name="NC" type="no_connect"/>
+        <pin num="5" name="NC" type="no_connect"/>
+        <pin num="6" name="GND" type="unspecified"/>
+        <pin num="7" name="GND" type="unspecified"/>
+        <pin num="8" name="IN" type="input"/>
+      </pins>
+    </libpart>
+  </libparts>
+  <libraries>
+    <library logical="Amplifier_Operational">
+      <uri>/usr/share/kicad/symbols//Amplifier_Operational.kicad_sym</uri>
+    </library>
+    <library logical="Device">
+      <uri>/usr/share/kicad/symbols//Device.kicad_sym</uri>
+    </library>
+    <library logical="led-ring-driver">
+      <uri>/home/scott/dev/git/971-Robot-Code/motors/led-ring-driver/kicad/led-ring-driver.kicad_sym</uri>
+    </library>
+  </libraries>
+  <nets>
+    <net code="1" name="+5V">
+      <node ref="C10" pin="1" pintype="passive"/>
+      <node ref="C14" pin="1" pintype="passive"/>
+      <node ref="C3" pin="1" pintype="passive"/>
+      <node ref="C7" pin="1" pintype="passive"/>
+      <node ref="C8" pin="1" pintype="passive"/>
+      <node ref="C9" pin="1" pintype="passive"/>
+      <node ref="R23" pin="1" pintype="passive"/>
+      <node ref="R24" pin="1" pintype="passive"/>
+      <node ref="U1" pin="8" pinfunction="VIN" pintype="input"/>
+      <node ref="U2" pin="8" pinfunction="V+" pintype="power_in"/>
+      <node ref="U3" pin="8" pinfunction="V+" pintype="power_in"/>
+      <node ref="U4" pin="8" pinfunction="V+" pintype="power_in"/>
+      <node ref="U5" pin="8" pinfunction="V+" pintype="power_in"/>
+      <node ref="U6" pin="1" pinfunction="OUT" pintype="output"/>
+    </net>
+    <net code="2" name="/Boost Converter/+15V">
+      <node ref="C1" pin="P" pintype="passive"/>
+      <node ref="C16" pin="1" pintype="passive"/>
+      <node ref="C17" pin="1" pintype="passive"/>
+      <node ref="C19" pin="1" pintype="passive"/>
+      <node ref="C20" pin="1" pintype="passive"/>
+      <node ref="D1" pin="1" pinfunction="K" pintype="passive"/>
+      <node ref="D13" pin="2" pinfunction="A" pintype="passive"/>
+      <node ref="D16" pin="2" pinfunction="A" pintype="passive"/>
+      <node ref="D22" pin="2" pinfunction="A" pintype="passive"/>
+      <node ref="D5" pin="2" pinfunction="A" pintype="passive"/>
+      <node ref="D8" pin="2" pinfunction="A" pintype="passive"/>
+      <node ref="R26" pin="2" pintype="passive"/>
+      <node ref="R33" pin="1" pintype="passive"/>
+    </net>
+    <net code="4" name="/Boost Converter/SW">
+      <node ref="D1" pin="2" pinfunction="A" pintype="passive"/>
+      <node ref="L1" pin="2" pinfunction="2" pintype="passive"/>
+      <node ref="Q1" pin="5" pinfunction="D" pintype="passive"/>
+      <node ref="Q1" pin="6" pinfunction="D" pintype="passive"/>
+      <node ref="Q1" pin="7" pinfunction="D" pintype="passive"/>
+      <node ref="Q1" pin="8" pinfunction="D" pintype="passive"/>
+    </net>
+    <net code="5" name="/Boost Converter/V_P">
+      <node ref="C18" pin="1" pintype="passive"/>
+      <node ref="C2" pin="1" pintype="passive"/>
+      <node ref="D2" pin="1" pinfunction="K" pintype="passive"/>
+      <node ref="D23" pin="2" pinfunction="A" pintype="passive"/>
+      <node ref="L1" pin="1" pinfunction="1" pintype="passive"/>
+      <node ref="Q3" pin="1" pinfunction="S" pintype="passive"/>
+      <node ref="Q3" pin="2" pinfunction="S" pintype="passive"/>
+      <node ref="Q3" pin="3" pinfunction="S" pintype="passive"/>
+      <node ref="R39" pin="1" pintype="passive"/>
+    </net>
+    <net code="6" name="/DISABLE_H">
+      <node ref="J1" pin="4" pinfunction="4" pintype="unspecified"/>
+      <node ref="R13" pin="1" pintype="passive"/>
+      <node ref="R27" pin="1" pintype="passive"/>
+      <node ref="R9" pin="1" pintype="passive"/>
+    </net>
+    <net code="7" name="/DISABLE_L">
+      <node ref="J1" pin="5" pinfunction="5" pintype="unspecified"/>
+      <node ref="R12" pin="1" pintype="passive"/>
+      <node ref="R23" pin="2" pintype="passive"/>
+      <node ref="R9" pin="2" pintype="passive"/>
+    </net>
+    <net code="8" name="/LED Current Regulator/LED1_NEG">
+      <node ref="D4" pin="1" pinfunction="K" pintype="passive"/>
+      <node ref="Q11" pin="3" pinfunction="C" pintype="passive"/>
+      <node ref="Q2" pin="3" pinfunction="C" pintype="passive"/>
+    </net>
+    <net code="9" name="/LED Current Regulator/LED2_NEG">
+      <node ref="D10" pin="1" pinfunction="K" pintype="passive"/>
+      <node ref="Q10" pin="3" pinfunction="C" pintype="passive"/>
+      <node ref="Q4" pin="3" pinfunction="C" pintype="passive"/>
+    </net>
+    <net code="10" name="/LED Current Regulator/LED3_NEG">
+      <node ref="D17" pin="1" pinfunction="K" pintype="passive"/>
+      <node ref="Q5" pin="3" pinfunction="C" pintype="passive"/>
+      <node ref="Q9" pin="3" pinfunction="C" pintype="passive"/>
+    </net>
+    <net code="11" name="/LED Current Regulator/LED4_NEG">
+      <node ref="D11" pin="1" pinfunction="K" pintype="passive"/>
+      <node ref="Q6" pin="3" pinfunction="C" pintype="passive"/>
+      <node ref="Q8" pin="3" pinfunction="C" pintype="passive"/>
+    </net>
+    <net code="12" name="/LED1A">
+      <node ref="D3" pin="1" pinfunction="K" pintype="passive"/>
+      <node ref="D4" pin="2" pinfunction="A" pintype="passive"/>
+    </net>
+    <net code="13" name="/LED1B">
+      <node ref="D3" pin="2" pinfunction="A" pintype="passive"/>
+      <node ref="D6" pin="1" pinfunction="K" pintype="passive"/>
+    </net>
+    <net code="14" name="/LED1C">
+      <node ref="D6" pin="2" pinfunction="A" pintype="passive"/>
+      <node ref="D8" pin="1" pinfunction="K" pintype="passive"/>
+    </net>
+    <net code="15" name="/LED2A">
+      <node ref="D10" pin="2" pinfunction="A" pintype="passive"/>
+      <node ref="D12" pin="1" pinfunction="K" pintype="passive"/>
+    </net>
+    <net code="16" name="/LED2B">
+      <node ref="D12" pin="2" pinfunction="A" pintype="passive"/>
+      <node ref="D14" pin="1" pinfunction="K" pintype="passive"/>
+    </net>
+    <net code="17" name="/LED2C">
+      <node ref="D14" pin="2" pinfunction="A" pintype="passive"/>
+      <node ref="D16" pin="1" pinfunction="K" pintype="passive"/>
+    </net>
+    <net code="18" name="/LED3A">
+      <node ref="D17" pin="2" pinfunction="A" pintype="passive"/>
+      <node ref="D18" pin="1" pinfunction="K" pintype="passive"/>
+    </net>
+    <net code="19" name="/LED3B">
+      <node ref="D15" pin="1" pinfunction="K" pintype="passive"/>
+      <node ref="D18" pin="2" pinfunction="A" pintype="passive"/>
+    </net>
+    <net code="20" name="/LED3C">
+      <node ref="D13" pin="1" pinfunction="K" pintype="passive"/>
+      <node ref="D15" pin="2" pinfunction="A" pintype="passive"/>
+    </net>
+    <net code="21" name="/LED4A">
+      <node ref="D11" pin="2" pinfunction="A" pintype="passive"/>
+      <node ref="D9" pin="1" pinfunction="K" pintype="passive"/>
+    </net>
+    <net code="22" name="/LED4B">
+      <node ref="D7" pin="1" pinfunction="K" pintype="passive"/>
+      <node ref="D9" pin="2" pinfunction="A" pintype="passive"/>
+    </net>
+    <net code="23" name="/LED4C">
+      <node ref="D5" pin="1" pinfunction="K" pintype="passive"/>
+      <node ref="D7" pin="2" pinfunction="A" pintype="passive"/>
+    </net>
+    <net code="24" name="/PWM_H">
+      <node ref="J1" pin="1" pinfunction="1" pintype="unspecified"/>
+      <node ref="R11" pin="1" pintype="passive"/>
+      <node ref="R25" pin="1" pintype="passive"/>
+      <node ref="R8" pin="1" pintype="passive"/>
+    </net>
+    <net code="25" name="/PWM_L">
+      <node ref="J1" pin="2" pinfunction="2" pintype="unspecified"/>
+      <node ref="R10" pin="1" pintype="passive"/>
+      <node ref="R24" pin="2" pintype="passive"/>
+      <node ref="R8" pin="2" pintype="passive"/>
+    </net>
+    <net code="26" name="/VIN">
+      <node ref="C13" pin="1" pintype="passive"/>
+      <node ref="J1" pin="3" pinfunction="3" pintype="unspecified"/>
+      <node ref="Q3" pin="5" pinfunction="D" pintype="passive"/>
+      <node ref="Q3" pin="6" pinfunction="D" pintype="passive"/>
+      <node ref="Q3" pin="7" pinfunction="D" pintype="passive"/>
+      <node ref="Q3" pin="8" pinfunction="D" pintype="passive"/>
+    </net>
+    <net code="27" name="GND">
+      <node ref="C1" pin="N" pintype="passive"/>
+      <node ref="C10" pin="2" pintype="passive"/>
+      <node ref="C11" pin="2" pintype="passive"/>
+      <node ref="C12" pin="2" pintype="passive"/>
+      <node ref="C13" pin="2" pintype="passive"/>
+      <node ref="C14" pin="2" pintype="passive"/>
+      <node ref="C15" pin="2" pintype="passive"/>
+      <node ref="C16" pin="2" pintype="passive"/>
+      <node ref="C17" pin="2" pintype="passive"/>
+      <node ref="C18" pin="2" pintype="passive"/>
+      <node ref="C19" pin="2" pintype="passive"/>
+      <node ref="C2" pin="2" pintype="passive"/>
+      <node ref="C20" pin="2" pintype="passive"/>
+      <node ref="C3" pin="2" pintype="passive"/>
+      <node ref="C4" pin="2" pintype="passive"/>
+      <node ref="C5" pin="2" pintype="passive"/>
+      <node ref="C6" pin="2" pintype="passive"/>
+      <node ref="C7" pin="2" pintype="passive"/>
+      <node ref="C8" pin="2" pintype="passive"/>
+      <node ref="C9" pin="2" pintype="passive"/>
+      <node ref="D19" pin="1" pinfunction="K" pintype="passive"/>
+      <node ref="D20" pin="1" pinfunction="K" pintype="passive"/>
+      <node ref="D21" pin="1" pinfunction="K" pintype="passive"/>
+      <node ref="J1" pin="6" pinfunction="6" pintype="unspecified"/>
+      <node ref="Q7" pin="2" pinfunction="S" pintype="passive"/>
+      <node ref="R2" pin="2" pintype="passive"/>
+      <node ref="R22" pin="2" pintype="passive"/>
+      <node ref="R25" pin="2" pintype="passive"/>
+      <node ref="R27" pin="2" pintype="passive"/>
+      <node ref="R28" pin="2" pintype="passive"/>
+      <node ref="R31" pin="2" pintype="passive"/>
+      <node ref="R32" pin="2" pintype="passive"/>
+      <node ref="R34" pin="2" pintype="passive"/>
+      <node ref="R35" pin="2" pintype="passive"/>
+      <node ref="R38" pin="2" pintype="passive"/>
+      <node ref="R4" pin="1" pintype="passive"/>
+      <node ref="U1" pin="6" pinfunction="GND" pintype="power_in"/>
+      <node ref="U2" pin="4" pinfunction="V-" pintype="power_in"/>
+      <node ref="U3" pin="4" pinfunction="V-" pintype="power_in"/>
+      <node ref="U4" pin="4" pinfunction="V-" pintype="power_in"/>
+      <node ref="U5" pin="4" pinfunction="V-" pintype="power_in"/>
+      <node ref="U6" pin="2" pinfunction="GND" pintype="unspecified"/>
+      <node ref="U6" pin="3" pinfunction="GND" pintype="unspecified"/>
+      <node ref="U6" pin="6" pinfunction="GND" pintype="unspecified"/>
+      <node ref="U6" pin="7" pinfunction="GND" pintype="unspecified"/>
+    </net>
+    <net code="28" name="Net-(C4-Pad1)">
+      <node ref="C4" pin="1" pintype="passive"/>
+      <node ref="R5" pin="2" pintype="passive"/>
+    </net>
+    <net code="29" name="Net-(C5-Pad1)">
+      <node ref="C5" pin="1" pintype="passive"/>
+      <node ref="R5" pin="1" pintype="passive"/>
+      <node ref="U1" pin="1" pinfunction="COMP" pintype="output"/>
+    </net>
+    <net code="30" name="Net-(C6-Pad1)">
+      <node ref="C6" pin="1" pintype="passive"/>
+      <node ref="R17" pin="2" pintype="passive"/>
+      <node ref="U4" pin="5" pinfunction="+" pintype="input"/>
+    </net>
+    <net code="31" name="Net-(C11-Pad1)">
+      <node ref="C11" pin="1" pintype="passive"/>
+      <node ref="R37" pin="1" pintype="passive"/>
+      <node ref="U1" pin="4" pinfunction="CS" pintype="input"/>
+    </net>
+    <net code="32" name="Net-(C12-Pad1)">
+      <node ref="C12" pin="1" pintype="passive"/>
+      <node ref="U1" pin="5" pinfunction="VDD" pintype="power_in"/>
+    </net>
+    <net code="33" name="Net-(C15-Pad1)">
+      <node ref="C15" pin="1" pintype="passive"/>
+      <node ref="D22" pin="1" pinfunction="K" pintype="passive"/>
+      <node ref="D23" pin="1" pinfunction="K" pintype="passive"/>
+      <node ref="R3" pin="1" pintype="passive"/>
+      <node ref="U6" pin="8" pinfunction="IN" pintype="input"/>
+    </net>
+    <net code="34" name="Net-(D2-Pad2)">
+      <node ref="D2" pin="2" pinfunction="A" pintype="passive"/>
+      <node ref="Q3" pin="4" pinfunction="G" pintype="input"/>
+      <node ref="R38" pin="1" pintype="passive"/>
+      <node ref="R39" pin="2" pintype="passive"/>
+    </net>
+    <net code="35" name="Net-(D19-Pad2)">
+      <node ref="D19" pin="2" pinfunction="A" pintype="passive"/>
+      <node ref="R15" pin="1" pintype="passive"/>
+    </net>
+    <net code="36" name="Net-(D20-Pad2)">
+      <node ref="D20" pin="2" pinfunction="A" pintype="passive"/>
+      <node ref="R18" pin="1" pintype="passive"/>
+    </net>
+    <net code="37" name="Net-(D21-Pad2)">
+      <node ref="D21" pin="2" pinfunction="A" pintype="passive"/>
+      <node ref="R26" pin="1" pintype="passive"/>
+    </net>
+    <net code="38" name="Net-(Q1-Pad1)">
+      <node ref="Q1" pin="1" pinfunction="S" pintype="passive"/>
+      <node ref="Q1" pin="2" pinfunction="S" pintype="passive"/>
+      <node ref="Q1" pin="3" pinfunction="S" pintype="passive"/>
+      <node ref="R2" pin="1" pintype="passive"/>
+      <node ref="R37" pin="2" pintype="passive"/>
+    </net>
+    <net code="39" name="Net-(Q1-Pad4)">
+      <node ref="Q1" pin="4" pinfunction="G" pintype="input"/>
+      <node ref="U1" pin="7" pinfunction="OUTN" pintype="output"/>
+    </net>
+    <net code="40" name="Net-(Q2-Pad1)">
+      <node ref="Q2" pin="1" pinfunction="B" pintype="input"/>
+      <node ref="R1" pin="2" pintype="passive"/>
+    </net>
+    <net code="41" name="Net-(Q4-Pad1)">
+      <node ref="Q4" pin="1" pinfunction="B" pintype="input"/>
+      <node ref="R6" pin="2" pintype="passive"/>
+    </net>
+    <net code="42" name="Net-(Q5-Pad1)">
+      <node ref="Q5" pin="1" pinfunction="B" pintype="input"/>
+      <node ref="R7" pin="2" pintype="passive"/>
+    </net>
+    <net code="43" name="Net-(Q5-Pad2)">
+      <node ref="Q5" pin="2" pinfunction="E" pintype="passive"/>
+      <node ref="Q9" pin="2" pinfunction="E" pintype="passive"/>
+      <node ref="R28" pin="1" pintype="passive"/>
+      <node ref="U3" pin="2" pinfunction="-" pintype="input"/>
+    </net>
+    <net code="44" name="Net-(Q6-Pad1)">
+      <node ref="Q6" pin="1" pinfunction="B" pintype="input"/>
+      <node ref="R14" pin="2" pintype="passive"/>
+    </net>
+    <net code="45" name="Net-(Q6-Pad2)">
+      <node ref="Q6" pin="2" pinfunction="E" pintype="passive"/>
+      <node ref="Q8" pin="2" pinfunction="E" pintype="passive"/>
+      <node ref="R22" pin="1" pintype="passive"/>
+      <node ref="U3" pin="6" pinfunction="-" pintype="input"/>
+    </net>
+    <net code="46" name="Net-(Q7-Pad1)">
+      <node ref="Q7" pin="1" pinfunction="G" pintype="input"/>
+      <node ref="R18" pin="2" pintype="passive"/>
+      <node ref="R21" pin="2" pintype="passive"/>
+      <node ref="U5" pin="1" pintype="output"/>
+    </net>
+    <net code="47" name="Net-(Q7-Pad3)">
+      <node ref="Q7" pin="3" pinfunction="D" pintype="passive"/>
+      <node ref="R16" pin="2" pintype="passive"/>
+      <node ref="R4" pin="2" pintype="passive"/>
+      <node ref="U2" pin="3" pinfunction="+" pintype="input"/>
+      <node ref="U2" pin="5" pinfunction="+" pintype="input"/>
+      <node ref="U3" pin="3" pinfunction="+" pintype="input"/>
+      <node ref="U3" pin="5" pinfunction="+" pintype="input"/>
+    </net>
+    <net code="48" name="Net-(Q8-Pad1)">
+      <node ref="Q8" pin="1" pinfunction="B" pintype="input"/>
+      <node ref="R19" pin="2" pintype="passive"/>
+    </net>
+    <net code="49" name="Net-(Q9-Pad1)">
+      <node ref="Q9" pin="1" pinfunction="B" pintype="input"/>
+      <node ref="R29" pin="2" pintype="passive"/>
+    </net>
+    <net code="50" name="Net-(Q10-Pad1)">
+      <node ref="Q10" pin="1" pinfunction="B" pintype="input"/>
+      <node ref="R30" pin="2" pintype="passive"/>
+    </net>
+    <net code="51" name="Net-(Q10-Pad2)">
+      <node ref="Q10" pin="2" pinfunction="E" pintype="passive"/>
+      <node ref="Q4" pin="2" pinfunction="E" pintype="passive"/>
+      <node ref="R31" pin="1" pintype="passive"/>
+      <node ref="U2" pin="6" pinfunction="-" pintype="input"/>
+    </net>
+    <net code="52" name="Net-(Q11-Pad1)">
+      <node ref="Q11" pin="1" pinfunction="B" pintype="input"/>
+      <node ref="R36" pin="2" pintype="passive"/>
+    </net>
+    <net code="53" name="Net-(Q11-Pad2)">
+      <node ref="Q11" pin="2" pinfunction="E" pintype="passive"/>
+      <node ref="Q2" pin="2" pinfunction="E" pintype="passive"/>
+      <node ref="R32" pin="1" pintype="passive"/>
+      <node ref="U2" pin="2" pinfunction="-" pintype="input"/>
+    </net>
+    <net code="54" name="Net-(R1-Pad1)">
+      <node ref="R1" pin="1" pintype="passive"/>
+      <node ref="R36" pin="1" pintype="passive"/>
+      <node ref="U2" pin="1" pintype="output"/>
+    </net>
+    <net code="55" name="Net-(R3-Pad2)">
+      <node ref="R3" pin="2" pintype="passive"/>
+      <node ref="R35" pin="1" pintype="passive"/>
+      <node ref="U1" pin="3" pinfunction="EN/UVLO" pintype="input"/>
+    </net>
+    <net code="56" name="Net-(R10-Pad2)">
+      <node ref="R10" pin="2" pintype="passive"/>
+      <node ref="U4" pin="2" pinfunction="-" pintype="input"/>
+    </net>
+    <net code="57" name="Net-(R11-Pad2)">
+      <node ref="R11" pin="2" pintype="passive"/>
+      <node ref="R20" pin="1" pintype="passive"/>
+      <node ref="U4" pin="3" pinfunction="+" pintype="input"/>
+    </net>
+    <net code="58" name="Net-(R12-Pad2)">
+      <node ref="R12" pin="2" pintype="passive"/>
+      <node ref="U5" pin="2" pinfunction="-" pintype="input"/>
+    </net>
+    <net code="59" name="Net-(R13-Pad2)">
+      <node ref="R13" pin="2" pintype="passive"/>
+      <node ref="R21" pin="1" pintype="passive"/>
+      <node ref="U5" pin="3" pinfunction="+" pintype="input"/>
+    </net>
+    <net code="60" name="Net-(R14-Pad1)">
+      <node ref="R14" pin="1" pintype="passive"/>
+      <node ref="R19" pin="1" pintype="passive"/>
+      <node ref="U3" pin="7" pintype="output"/>
+    </net>
+    <net code="61" name="Net-(R15-Pad2)">
+      <node ref="R15" pin="2" pintype="passive"/>
+      <node ref="U5" pin="6" pinfunction="-" pintype="input"/>
+      <node ref="U5" pin="7" pintype="output"/>
+    </net>
+    <net code="62" name="Net-(R16-Pad1)">
+      <node ref="R16" pin="1" pintype="passive"/>
+      <node ref="U4" pin="6" pinfunction="-" pintype="input"/>
+      <node ref="U4" pin="7" pintype="output"/>
+    </net>
+    <net code="63" name="Net-(R17-Pad1)">
+      <node ref="R17" pin="1" pintype="passive"/>
+      <node ref="R20" pin="2" pintype="passive"/>
+      <node ref="U4" pin="1" pintype="output"/>
+      <node ref="U5" pin="5" pinfunction="+" pintype="input"/>
+    </net>
+    <net code="64" name="Net-(R29-Pad1)">
+      <node ref="R29" pin="1" pintype="passive"/>
+      <node ref="R7" pin="1" pintype="passive"/>
+      <node ref="U3" pin="1" pintype="output"/>
+    </net>
+    <net code="65" name="Net-(R30-Pad1)">
+      <node ref="R30" pin="1" pintype="passive"/>
+      <node ref="R6" pin="1" pintype="passive"/>
+      <node ref="U2" pin="7" pintype="output"/>
+    </net>
+    <net code="66" name="Net-(R33-Pad2)">
+      <node ref="R33" pin="2" pintype="passive"/>
+      <node ref="R34" pin="1" pintype="passive"/>
+      <node ref="U1" pin="2" pinfunction="FB" pintype="input"/>
+    </net>
+    <net code="67" name="unconnected-(U6-Pad4)">
+      <node ref="U6" pin="4" pinfunction="NC" pintype="no_connect"/>
+    </net>
+    <net code="68" name="unconnected-(U6-Pad5)">
+      <node ref="U6" pin="5" pinfunction="NC" pintype="no_connect"/>
+    </net>
+  </nets>
+</export>
