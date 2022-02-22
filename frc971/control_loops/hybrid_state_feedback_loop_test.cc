@@ -34,7 +34,7 @@ MakeIntegralShooterPlantCoefficients() {
   B_continuous(1, 0) = 443.75;
   B_continuous(2, 0) = 0.0;
   return StateFeedbackHybridPlantCoefficients<3, 1, 1>(
-      A_continuous, B_continuous, C, D, U_max, U_min);
+      A_continuous, B_continuous, C, D, U_max, U_min, false);
 }
 
 StateFeedbackControllerCoefficients<3, 1, 1>
@@ -74,7 +74,7 @@ HybridKalmanCoefficients<3, 1, 1> MakeIntegralShooterObserverCoefficients() {
   P_steady_state(2, 1) = 0.015962850974712596;
   P_steady_state(2, 2) = 0.0019821816120708254;
   return HybridKalmanCoefficients<3, 1, 1>(Q_continuous, R_continuous,
-                                           P_steady_state);
+                                           P_steady_state, false);
 }
 
 StateFeedbackHybridPlant<3, 1, 1> MakeIntegralShooterPlant() {
@@ -128,7 +128,7 @@ TEST(StateFeedbackLoopTest, UnequalSizes) {
       Eigen::Matrix<double, 7, 4>::Identity(),
       Eigen::Matrix<double, 4, 1>::Constant(1),
       Eigen::Matrix<double, 4, 1>::Constant(-1),
-      frc971::controls::kLoopFrequency);
+      frc971::controls::kLoopFrequency, false);
 
   // Build a plant.
   ::std::vector<::std::unique_ptr<StateFeedbackPlantCoefficients<2, 4, 7>>>
@@ -153,7 +153,7 @@ TEST(StateFeedbackLoopTest, UnequalSizes) {
   v_observer.emplace_back(new StateFeedbackObserverCoefficients<2, 4, 7>(
       Eigen::Matrix<double, 2, 7>::Identity(),
       Eigen::Matrix<double, 2, 2>::Identity(),
-      Eigen::Matrix<double, 7, 7>::Identity()));
+      Eigen::Matrix<double, 7, 7>::Identity(), false));
   StateFeedbackObserver<2, 4, 7> observer(std::move(v_observer));
 
   StateFeedbackLoop<2, 4, 7> test_loop(
