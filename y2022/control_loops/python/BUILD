@@ -107,6 +107,22 @@ py_binary(
     ],
 )
 
+py_binary(
+    name = "climber",
+    srcs = [
+        "climber.py",
+    ],
+    legacy_create_init = False,
+    target_compatible_with = ["@platforms//cpu:x86_64"],
+    deps = [
+        ":python_init",
+        "//external:python-gflags",
+        "//external:python-glog",
+        "//frc971/control_loops/python:controls",
+        "//frc971/control_loops/python:linear_system",
+    ],
+)
+
 py_library(
     name = "python_init",
     srcs = ["__init__.py"],

@@ -75,6 +75,12 @@ double drivetrain_velocity_translate(double in) {
          control_loops::drivetrain::kWheelRadius;
 }
 
+double climber_pot_translate(double voltage) {
+  return voltage * Values::kClimberPotRatio() *
+         (10.0 /*turns*/ / 5.0 /*volts*/) *
+         Values::kClimberPotMetersPerRevolution();
+}
+
 constexpr double kMaxFastEncoderPulsesPerSecond =
     Values::kMaxDrivetrainEncoderPulsesPerSecond();
 static_assert(kMaxFastEncoderPulsesPerSecond <= 1300000,
@@ -114,6 +120,8 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   }
 
   void RunIteration() override {
+    const constants::Values &values = constants::GetValues();
+
     {
       auto builder = drivetrain_position_sender_.MakeBuilder();
       frc971::control_loops::drivetrain::Position::Builder drivetrain_builder =
@@ -135,8 +143,16 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
     {
       auto builder = superstructure_position_sender_.MakeBuilder();
+
+      frc971::RelativePositionT climber;
+      CopyPosition(*climber_potentiometer_, &climber, climber_pot_translate,
+                   false, values.climber.potentiometer_offset);
+      flatbuffers::Offset<frc971::RelativePosition> climber_offset =
+          frc971::RelativePosition::Pack(*builder.fbb(), &climber);
+
       superstructure::Position::Builder position_builder =
           builder.MakeBuilder<superstructure::Position>();
+      position_builder.add_climber(climber_offset);
       builder.CheckOk(builder.Send(position_builder.Finish()));
     }
 
@@ -159,28 +175,32 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     }
   }
 
+  void set_climber_potentiometer(
+      ::std::unique_ptr<frc::AnalogInput> potentiometer) {
+    climber_potentiometer_ = ::std::move(potentiometer);
+  }
+
  private:
-  ::aos::Sender<::frc971::autonomous::AutonomousMode> auto_mode_sender_;
-  ::aos::Sender<superstructure::Position> superstructure_position_sender_;
-  ::aos::Sender<::frc971::control_loops::drivetrain::Position>
+  aos::Sender<frc971::autonomous::AutonomousMode> auto_mode_sender_;
+  aos::Sender<superstructure::Position> superstructure_position_sender_;
+  aos::Sender<frc971::control_loops::drivetrain::Position>
       drivetrain_position_sender_;
 
-  ::std::array<::std::unique_ptr<frc::DigitalInput>, 2> autonomous_modes_;
+  std::unique_ptr<frc::AnalogInput> climber_potentiometer_;
+
+  std::array<std::unique_ptr<frc::DigitalInput>, 2> autonomous_modes_;
 };
 
 class SuperstructureWriter
     : public ::frc971::wpilib::LoopOutputHandler<superstructure::Output> {
  public:
-  SuperstructureWriter(::aos::EventLoop *event_loop)
-      : ::frc971::wpilib::LoopOutputHandler<superstructure::Output>(
+  SuperstructureWriter(aos::EventLoop *event_loop)
+      : frc971::wpilib::LoopOutputHandler<superstructure::Output>(
             event_loop, "/superstructure") {}
 
   void set_climber_falcon(
-      ::std::unique_ptr<::ctre::phoenix::motorcontrol::can::TalonFX> t) {
-    climber_falcon_ = ::std::move(t);
-    climber_falcon_->ConfigSupplyCurrentLimit(
-        {true, Values::kClimberSupplyCurrentLimit(),
-         Values::kClimberSupplyCurrentLimit(), 0});
+      std::unique_ptr<frc::TalonFX> t) {
+    climber_falcon_ = std::move(t);
   }
 
   void set_turret_falcon(::std::unique_ptr<::frc::TalonFX> t) {
@@ -196,15 +216,10 @@ class SuperstructureWriter
   }
 
  private:
-  void WriteToFalconCan(const double voltage,
-                        ::ctre::phoenix::motorcontrol::can::TalonFX *falcon) {
-    falcon->Set(
-        ctre::phoenix::motorcontrol::ControlMode::PercentOutput,
-        std::clamp(voltage, -kMaxBringupPower, kMaxBringupPower) / 12.0);
-  }
-
   void Write(const superstructure::Output &output) override {
-    WriteToFalconCan(output.climber_voltage(), climber_falcon_.get());
+    climber_falcon_->SetSpeed(std::clamp(output.climber_voltage(),
+                                         -kMaxBringupPower, kMaxBringupPower) /
+                              12.0);
     catapult_falcon_1_->SetSpeed(std::clamp(output.catapult_voltage(),
                                             -kMaxBringupPower,
                                             kMaxBringupPower) /
@@ -220,17 +235,14 @@ class SuperstructureWriter
 
   void Stop() override {
     AOS_LOG(WARNING, "Superstructure output too old.\n");
-    climber_falcon_->Set(ctre::phoenix::motorcontrol::ControlMode::Disabled, 0);
+    climber_falcon_->SetDisabled();
     catapult_falcon_1_->SetDisabled();
     catapult_falcon_2_->SetDisabled();
     turret_falcon_->SetDisabled();
   }
 
-  ::std::unique_ptr<::ctre::phoenix::motorcontrol::can::TalonFX>
-      climber_falcon_;
-
   ::std::unique_ptr<::frc::TalonFX> turret_falcon_, catapult_falcon_1_,
-      catapult_falcon_2_;
+      catapult_falcon_2_, climber_falcon_;
 };
 
 class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
@@ -260,6 +272,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     SensorReader sensor_reader(&sensor_reader_event_loop);
     sensor_reader.set_drivetrain_left_encoder(make_encoder(0));
     sensor_reader.set_drivetrain_right_encoder(make_encoder(1));
+    sensor_reader.set_climber_potentiometer(make_unique<frc::AnalogInput>(0));
 
     AddLoop(&sensor_reader_event_loop);
 
@@ -273,8 +286,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     SuperstructureWriter superstructure_writer(&output_event_loop);
 
-    superstructure_writer.set_climber_falcon(
-        make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(0));
+    superstructure_writer.set_climber_falcon(make_unique<frc::TalonFX>(5));
     superstructure_writer.set_turret_falcon(make_unique<::frc::TalonFX>(2));
     superstructure_writer.set_catapult_falcon_1(make_unique<::frc::TalonFX>(3));
     superstructure_writer.set_catapult_falcon_2(make_unique<::frc::TalonFX>(4));

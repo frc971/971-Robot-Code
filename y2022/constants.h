@@ -55,8 +55,29 @@ struct Values {
         .upper = 2.725              // Front Soft
     };
   }
+
   // Climber
-  static constexpr double kClimberSupplyCurrentLimit() { return 60.0; }
+  static constexpr ::frc971::constants::Range kClimberRange() {
+    return ::frc971::constants::Range{
+        .lower_hard = -0.01,
+        .upper_hard = 0.6,
+        .lower = 0.0,
+        .upper = 0.5
+    };
+  }
+  static constexpr double kClimberPotMetersPerRevolution() {
+    return 22 * 0.25 * 0.0254;
+  }
+  static constexpr double kClimberPotRatio() { return 1.0; }
+
+  struct PotConstants {
+    ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<
+        ::frc971::zeroing::RelativeEncoderZeroingEstimator>
+        subsystem_params;
+    double potentiometer_offset;
+  };
+
+  PotConstants climber;
 
   // Intake
   // two encoders with same gear ratio for intake

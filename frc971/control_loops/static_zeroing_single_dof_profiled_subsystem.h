@@ -104,6 +104,9 @@ class StaticZeroingSingleDOFProfiledSubsystem {
     ESTOP,
   };
 
+  bool zeroed() const { return profiled_subsystem_.zeroed(); }
+  bool estopped() const { return state() == State::ESTOP; }
+
   State state() const { return state_; }
 
  private:
@@ -264,7 +267,7 @@ StaticZeroingSingleDOFProfiledSubsystem<ZeroingEstimator, ProfiledJointStatus,
           .template BuildStatus<typename ProfiledJointStatus::Builder>(
               status_fbb);
 
-  status_builder.add_estopped(state_ == State::ESTOP);
+  status_builder.add_estopped(estopped());
   status_builder.add_state(static_cast<int32_t>(state_));
   return status_builder.Finish();
 }

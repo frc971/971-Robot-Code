@@ -8,36 +8,44 @@ namespace superstructure {
 
 using frc971::control_loops::AbsoluteEncoderProfiledJointStatus;
 using frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus;
+using frc971::control_loops:: RelativeEncoderProfiledJointStatus;
 
 Superstructure::Superstructure(::aos::EventLoop *event_loop,
                                const ::std::string &name)
     : frc971::controls::ControlLoop<Goal, Position, Status, Output>(event_loop,
-                                                                    name) {
+                                                                    name),
+      climber_(constants::GetValues().climber.subsystem_params) {
   event_loop->SetRuntimeRealtimePriority(30);
 }
 
 void Superstructure::RunIteration(const Goal *unsafe_goal,
-                                  const Position * /*position*/,
+                                  const Position *position,
                                   aos::Sender<Output>::Builder *output,
                                   aos::Sender<Status>::Builder *status) {
   if (WasReset()) {
     AOS_LOG(ERROR, "WPILib reset, restarting\n");
   }
 
-  if (output != nullptr && unsafe_goal != nullptr) {
-    OutputT output_struct;
-    output_struct.climber_voltage = unsafe_goal->climber_speed();
+  OutputT output_struct;
+
+  flatbuffers::Offset<RelativeEncoderProfiledJointStatus>
+      climber_status_offset = climber_.Iterate(
+          unsafe_goal != nullptr ? unsafe_goal->climber() : nullptr,
+          position->climber(),
+          output != nullptr ? &(output_struct.climber_voltage) : nullptr,
+          status->fbb());
+
+  if (output != nullptr) {
     output->CheckOk(output->Send(Output::Pack(*output->fbb(), &output_struct)));
   }
 
   Status::Builder status_builder = status->MakeBuilder<Status>();
 
-  status_builder.add_zeroed(true);
-  status_builder.add_estopped(false);
+  // Climber is always zeroed; only has a pot
+  status_builder.add_zeroed(climber_.zeroed());
+  status_builder.add_estopped(climber_.estopped());
+  status_builder.add_climber(climber_status_offset);
 
-  if (unsafe_goal != nullptr) {
-    status_builder.add_climber_speed(unsafe_goal->climber_speed());
-  }
   (void)status->Send(status_builder.Finish());
 }
 

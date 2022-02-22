@@ -12,6 +12,7 @@
 #include "aos/network/team_number.h"
 #include "glog/logging.h"
 #include "y2022/control_loops/superstructure/intake/integral_intake_plant.h"
+#include "y2022/control_loops/superstructure/climber/integral_climber_plant.h"
 
 namespace y2022 {
 namespace constants {
@@ -58,18 +59,32 @@ const Values *DoGetValuesForTeam(uint16_t team) {
   // Measured absolute position of the encoder when at zero.
   intake->zeroing_constants.measured_absolute_position = 0.0;
 
+  // Climber constants
+  auto *const climber = &r->climber;
+  climber->subsystem_params.zeroing_voltage = 3.0;
+  climber->subsystem_params.operating_voltage = 12.0;
+  climber->subsystem_params.zeroing_profile_params = {0.5, 0.1};
+  climber->subsystem_params.default_profile_params = {6.0, 1.0};
+  climber->subsystem_params.range = Values::kClimberRange();
+  climber->subsystem_params.make_integral_loop =
+      control_loops::superstructure::climber::MakeIntegralClimberLoop;
+
   switch (team) {
     // A set of constants for tests.
     case 1:
+      climber->potentiometer_offset = 0.0;
       break;
 
     case kCompTeamNumber:
+      climber->potentiometer_offset = 0.0;
       break;
 
     case kPracticeTeamNumber:
+      climber->potentiometer_offset = 0.0;
       break;
 
     case kCodingRobotTeamNumber:
+      climber->potentiometer_offset = 0.0;
       break;
 
     default:

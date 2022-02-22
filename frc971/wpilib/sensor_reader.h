@@ -187,7 +187,7 @@ class SensorReader {
     position->index_pulses = encoder.index_posedge_count();
   }
 
-  // Copies a relative encoder.
+  // Copies a relative digital encoder.
   void CopyPosition(const ::frc::Encoder &encoder,
                     ::frc971::RelativePositionT *position,
                     double encoder_counts_per_revolution, double encoder_ratio,
@@ -197,6 +197,16 @@ class SensorReader {
         multiplier * encoder_translate(encoder.GetRaw(),
                                        encoder_counts_per_revolution,
                                        encoder_ratio);
+  }
+
+  // Copies a potentiometer
+  void CopyPosition(const ::frc::AnalogInput &input,
+                    ::frc971::RelativePositionT *position,
+                    ::std::function<double(double)> potentiometer_translate,
+                    bool reverse, double pot_offset) {
+    const double multiplier = reverse ? -1.0 : 1.0;
+    position->encoder =
+        multiplier * potentiometer_translate(input.GetVoltage()) + pot_offset;
   }
 
   double encoder_translate(int32_t value, double counts_per_revolution,

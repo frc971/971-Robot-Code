@@ -237,39 +237,42 @@ table AbsoluteAndAbsoluteEncoderProfiledJointStatus {
 }
 
 table RelativeEncoderProfiledJointStatus {
+  // Is the subsystem zeroed?
+  zeroed:bool (id: 0);
+
   // The state of the subsystem, if applicable.  -1 otherwise.
   // TODO(alex): replace with enum.
-  state:int (id: 0);
+  state:int (id: 1);
 
   // If true, we have aborted.
-  estopped:bool (id: 1);
+  estopped:bool (id: 2);
 
   // Position of the joint.
-  position:float (id: 2);
+  position:float (id: 3);
   // Velocity of the joint in units/second.
-  velocity:float (id: 3);
+  velocity:float (id: 4);
   // Profiled goal position of the joint.
-  goal_position:float (id: 4);
+  goal_position:float (id: 5);
   // Profiled goal velocity of the joint in units/second.
-  goal_velocity:float (id: 5);
+  goal_velocity:float (id: 6);
   // Unprofiled goal position from absoulte zero  of the joint.
-  unprofiled_goal_position:float (id: 6);
+  unprofiled_goal_position:float (id: 7);
   // Unprofiled goal velocity of the joint in units/second.
-  unprofiled_goal_velocity:float (id: 7);
+  unprofiled_goal_velocity:float (id: 8);
 
   // The estimated voltage error.
-  voltage_error:float (id: 8);
+  voltage_error:float (id: 9);
 
   // The calculated velocity with delta x/delta t
-  calculated_velocity:float (id: 9);
+  calculated_velocity:float (id: 10);
 
   // Components of the control loop output
-  position_power:float (id: 10);
-  velocity_power:float (id: 11);
-  feedforwards_power:float (id: 12);
+  position_power:float (id: 11);
+  velocity_power:float (id: 12);
+  feedforwards_power:float (id: 13);
 
   // State of the estimator.
-  estimator_state:frc971.RelativeEncoderEstimatorState (id: 13);
+  estimator_state:frc971.RelativeEncoderEstimatorState (id: 14);
 }
 
 table StaticZeroingSingleDOFProfiledSubsystemGoal {

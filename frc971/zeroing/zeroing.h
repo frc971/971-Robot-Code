@@ -126,10 +126,12 @@ class MoveDetector {
 
 // A trivial ZeroingEstimator which just passes the position straight through.
 class RelativeEncoderZeroingEstimator
-    : public ZeroingEstimator<RelativePosition, void,
+    : public ZeroingEstimator<RelativePosition,
+                              constants::RelativeEncoderZeroingConstants,
                               RelativeEncoderEstimatorState> {
  public:
-  explicit RelativeEncoderZeroingEstimator() {}
+  explicit RelativeEncoderZeroingEstimator(
+      const constants::RelativeEncoderZeroingConstants &) {}
 
   // Update position with new position from encoder
   void UpdateEstimate(const RelativePosition &position) override {

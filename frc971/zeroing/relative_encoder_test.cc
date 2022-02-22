@@ -1,8 +1,6 @@
 #include "frc971/zeroing/zeroing.h"
-
-#include "gtest/gtest.h"
-
 #include "frc971/zeroing/zeroing_test.h"
+#include "gtest/gtest.h"
 
 namespace frc971 {
 namespace zeroing {
@@ -21,7 +19,8 @@ class RelativeEncoderZeroingTest : public ZeroingTest {
 
 TEST_F(RelativeEncoderZeroingTest, TestRelativeEncoderZeroingWithoutMovement) {
   PositionSensorSimulator sim(1.0);
-  RelativeEncoderZeroingEstimator estimator;
+  RelativeEncoderZeroingEstimator estimator{
+      constants::RelativeEncoderZeroingConstants{}};
 
   sim.InitializeRelativeEncoder();
 

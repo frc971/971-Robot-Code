@@ -68,6 +68,8 @@ struct PotAndAbsoluteEncoderZeroingConstants {
   double allowable_encoder_error;
 };
 
+struct RelativeEncoderZeroingConstants {};
+
 struct AbsoluteEncoderZeroingConstants {
   // The number of samples in the moving average filter.
   size_t average_filter_size;

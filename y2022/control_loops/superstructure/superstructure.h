@@ -1,8 +1,8 @@
 #ifndef Y2022_CONTROL_LOOPS_SUPERSTRUCTURE_SUPERSTRUCTURE_H_
 #define Y2022_CONTROL_LOOPS_SUPERSTRUCTURE_SUPERSTRUCTURE_H_
 
-#include "frc971/control_loops/control_loop.h"
 #include "aos/events/event_loop.h"
+#include "frc971/control_loops/control_loop.h"
 #include "y2022/constants.h"
 #include "y2022/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2022/control_loops/superstructure/superstructure_output_generated.h"
@@ -16,6 +16,11 @@ namespace superstructure {
 class Superstructure
     : public ::frc971::controls::ControlLoop<Goal, Position, Status, Output> {
  public:
+  using RelativeEncoderSubsystem =
+      ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystem<
+          ::frc971::zeroing::RelativeEncoderZeroingEstimator,
+          ::frc971::control_loops::RelativeEncoderProfiledJointStatus>;
+
   explicit Superstructure(::aos::EventLoop *event_loop,
                           const ::std::string &name = "/superstructure");
 
@@ -25,6 +30,8 @@ class Superstructure
                             aos::Sender<Status>::Builder *status) override;
 
  private:
+  RelativeEncoderSubsystem climber_;
+
   DISALLOW_COPY_AND_ASSIGN(Superstructure);
 };
 
