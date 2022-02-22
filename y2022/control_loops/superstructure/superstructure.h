@@ -3,6 +3,7 @@
 
 #include "aos/events/event_loop.h"
 #include "frc971/control_loops/control_loop.h"
+#include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "y2022/constants.h"
 #include "y2022/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2022/control_loops/superstructure/superstructure_output_generated.h"
@@ -21,8 +22,27 @@ class Superstructure
           ::frc971::zeroing::RelativeEncoderZeroingEstimator,
           ::frc971::control_loops::RelativeEncoderProfiledJointStatus>;
 
+  using PotAndAbsoluteEncoderSubsystem =
+      ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystem<
+          ::frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator,
+          ::frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus>;
+
   explicit Superstructure(::aos::EventLoop *event_loop,
+                         std::shared_ptr<const constants::Values> values,
                           const ::std::string &name = "/superstructure");
+
+  inline const PotAndAbsoluteEncoderSubsystem &intake_front() const {
+    return intake_front_;
+  }
+  inline const PotAndAbsoluteEncoderSubsystem &intake_back() const {
+    return intake_back_;
+  }
+  inline const PotAndAbsoluteEncoderSubsystem &turret() const {
+    return turret_;
+  }
+  inline const RelativeEncoderSubsystem &climber() const { return climber_; }
+
+  double robot_velocity() const;
 
  protected:
   virtual void RunIteration(const Goal *unsafe_goal, const Position *position,
@@ -31,6 +51,12 @@ class Superstructure
 
  private:
   RelativeEncoderSubsystem climber_;
+  PotAndAbsoluteEncoderSubsystem intake_front_;
+  PotAndAbsoluteEncoderSubsystem intake_back_;
+  PotAndAbsoluteEncoderSubsystem turret_;
+
+  aos::Fetcher<frc971::control_loops::drivetrain::Status>
+      drivetrain_status_fetcher_;
 
   DISALLOW_COPY_AND_ASSIGN(Superstructure);
 };

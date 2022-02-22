@@ -5,6 +5,22 @@ namespace y2022.control_loops.superstructure;
 table Goal {
   // Height of the climber above rest point
   climber:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal (id: 0);
+
+  // Goal angles of intake joints.
+  // Positive is out, 0 is up.
+  intake_front:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal (id: 1);
+  intake_back:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal (id: 2);
+
+  // Positive is rollers intaking.
+  roller_speed_front:double (id: 3);
+  roller_speed_back:double (id: 4);
+  // One transfer motor for both sides
+  transfer_roller_speed:double (id: 5);
+
+  // Factor to multiply robot velocity by and add to roller voltage.
+  roller_speed_compensation:double (id: 6);
+
+  turret:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal (id: 7);
 }
 
 root_type Goal;

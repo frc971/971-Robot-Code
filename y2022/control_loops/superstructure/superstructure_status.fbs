@@ -12,6 +12,12 @@ table Status {
 
   // Subsystem statuses
   climber:frc971.control_loops.RelativeEncoderProfiledJointStatus (id: 2);
+
+  // Estimated angles and angular velocities of the intakes.
+  intake_front:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 3);
+  intake_back:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 4);
+
+  turret:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 5);
 }
 
 root_type Status;

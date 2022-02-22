@@ -1,18 +1,28 @@
 namespace y2022.control_loops.superstructure;
 
 table Output {
-    // Voltage of the climber falcon
-    // - is down + is up
-    climber_voltage:double (id: 0);
+  // Voltage of the climber falcon
+  // - is down + is up
+  climber_voltage:double (id: 0);
 
-    // Voltage of the catapult falcon
-    // Positive lifts the catapult to fire.
-    catapult_voltage:double (id: 1);
+  // Voltage of the catapult falcon
+  // Positive lifts the catapult to fire.
+  catapult_voltage:double (id: 1);
 
-    // Voltage of the turret falcon
-    // Positive rotates the turret around the Z axis (up) according to the
-    // right hand rule.
-    turret_voltage:double (id: 2);
+  // Voltage of the turret falcon
+  // Positive rotates the turret around the Z axis (up) according to the
+  // right hand rule.
+  turret_voltage:double (id: 2);
+
+  // Intake joint voltages.
+  intake_voltage_front:double (id: 3);
+  intake_voltage_back:double (id: 4);
+
+  // Intake roller voltages
+  roller_voltage_front:double (id: 5);
+  roller_voltage_back:double (id: 6);
+  // One transfer motor for both sides
+  transfer_roller_voltage:double (id: 7);
 }
 
 root_type Output;
