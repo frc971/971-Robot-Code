@@ -200,4 +200,7 @@ def build_matplotlib(version, tkinter_py_version = None, copy_shared_files = Tru
         ],
         target_compatible_with = ["@platforms//cpu:x86_64"],
         visibility = ["//visibility:public"],
+        deps = [
+            "@python_repo//:numpy",
+        ],
     )
