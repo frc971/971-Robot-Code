@@ -33,6 +33,7 @@ using namespace hal;
 
 static std::unique_ptr<tGlobal> global;
 static std::unique_ptr<tSysWatchdog> watchdog;
+static uint64_t dsStartTime;
 
 using namespace hal;
 
@@ -83,6 +84,11 @@ void ReleaseFPGAInterrupt(int32_t interruptNumber) {
                                     &status);
   global->strobeInterruptForceOnce(&status);
 }
+
+uint64_t GetDSInitializeTime() {
+  return dsStartTime;
+}
+
 }  // namespace hal
 
 extern "C" {
@@ -392,6 +398,11 @@ HAL_Bool HAL_Initialize(int32_t timeout, int32_t mode) {
   }
 
   HAL_InitializeDriverStation();
+
+  dsStartTime = HAL_GetFPGATime(&status);
+  if (status != 0) {
+    return false;
+  }
 
   // Set WPI_Now to use FPGA timestamp
   wpi::SetNowImpl([]() -> uint64_t {

@@ -58,6 +58,11 @@ public class KilloughDrive extends RobotDriveBase implements Sendable, AutoClose
 
   private boolean m_reported;
 
+  /**
+   * Wheel speeds for a Killough drive.
+   *
+   * <p>Uses normalized voltage [-1.0..1.0].
+   */
   @SuppressWarnings("MemberName")
   public static class WheelSpeeds {
     public double left;
@@ -70,9 +75,9 @@ public class KilloughDrive extends RobotDriveBase implements Sendable, AutoClose
     /**
      * Constructs a WheelSpeeds.
      *
-     * @param left The left speed.
-     * @param right The right speed.
-     * @param back The back speed.
+     * @param left The left speed [-1.0..1.0].
+     * @param right The right speed [-1.0..1.0].
+     * @param back The back speed [-1.0..1.0].
      */
     public WheelSpeeds(double left, double right, double back) {
       this.left = left;
@@ -238,9 +243,26 @@ public class KilloughDrive extends RobotDriveBase implements Sendable, AutoClose
    * @param xSpeed The robot's speed along the X axis [-1.0..1.0]. Forward is positive.
    * @param zRotation The robot's rotation rate around the Z axis [-1.0..1.0]. Clockwise is
    *     positive.
+   * @return Wheel speeds [-1.0..1.0].
+   */
+  @SuppressWarnings("ParameterName")
+  public WheelSpeeds driveCartesianIK(double ySpeed, double xSpeed, double zRotation) {
+    return driveCartesianIK(ySpeed, xSpeed, zRotation, 0.0);
+  }
+
+  /**
+   * Cartesian inverse kinematics for Killough platform.
+   *
+   * <p>Angles are measured clockwise from the positive X axis. The robot's speed is independent
+   * from its angle or rotation rate.
+   *
+   * @param ySpeed The robot's speed along the Y axis [-1.0..1.0]. Right is positive.
+   * @param xSpeed The robot's speed along the X axis [-1.0..1.0]. Forward is positive.
+   * @param zRotation The robot's rotation rate around the Z axis [-1.0..1.0]. Clockwise is
+   *     positive.
    * @param gyroAngle The current angle reading from the gyro in degrees around the Z axis. Use this
    *     to implement field-oriented controls.
-   * @return Wheel speeds.
+   * @return Wheel speeds [-1.0..1.0].
    */
   @SuppressWarnings("ParameterName")
   public WheelSpeeds driveCartesianIK(
