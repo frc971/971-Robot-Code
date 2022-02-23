@@ -360,7 +360,7 @@ public class DifferentialDrivetrainSim {
    * @return The normalized input.
    */
   protected Matrix<N2, N1> clampInput(Matrix<N2, N1> u) {
-    return StateSpaceUtil.normalizeInputVector(u, RobotController.getBatteryVoltage());
+    return StateSpaceUtil.desaturateInputVector(u, RobotController.getBatteryVoltage());
   }
 
   /** Represents the different states of the drivetrain. */
@@ -407,7 +407,11 @@ public class DifferentialDrivetrainSim {
     kSingleCIMPerSide(DCMotor.getCIM(1)),
     kDualCIMPerSide(DCMotor.getCIM(2)),
     kSingleMiniCIMPerSide(DCMotor.getMiniCIM(1)),
-    kDualMiniCIMPerSide(DCMotor.getMiniCIM(2));
+    kDualMiniCIMPerSide(DCMotor.getMiniCIM(2)),
+    kSingleFalcon500PerSide(DCMotor.getFalcon500(1)),
+    kDoubleFalcon500PerSide(DCMotor.getFalcon500(2)),
+    kSingleNEOPerSide(DCMotor.getNEO(1)),
+    kDoubleNEOPerSide(DCMotor.getNEO(2));
 
     @SuppressWarnings("MemberName")
     public final DCMotor value;
