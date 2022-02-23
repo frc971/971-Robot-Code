@@ -130,3 +130,18 @@ cc_test(
         "//y2022/control_loops/localizer:localizer_output_fbs",
     ],
 )
+
+cc_binary(
+    name = "trajectory_generator",
+    srcs = [
+        "trajectory_generator_main.cc",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":drivetrain_base",
+        "//aos:init",
+        "//aos/events:shm_event_loop",
+        "//frc971/control_loops/drivetrain:trajectory_generator",
+    ],
+)

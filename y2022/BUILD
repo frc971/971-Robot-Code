@@ -18,6 +18,7 @@ robot_downloader(
         "//aos/network:message_bridge_server",
         "//y2022/actors:binaries",
         "//y2022/control_loops/drivetrain:drivetrain",
+        "//y2022/control_loops/drivetrain:trajectory_generator",
         "//y2022/control_loops/superstructure:superstructure",
     ],
     target_compatible_with = ["@platforms//os:linux"],
