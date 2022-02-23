@@ -81,6 +81,11 @@ double climber_pot_translate(double voltage) {
          Values::kClimberPotMetersPerRevolution();
 }
 
+double flipper_arms_pot_translate(double voltage) {
+  return voltage * Values::kFlipperArmsPotRatio() *
+         (3.0 /*turns*/ / 5.0 /*volts*/) * (2 * M_PI /*radians*/);
+}
+
 double intake_pot_translate(double voltage) {
   return voltage * Values::kIntakePotRatio() * (3.0 /*turns*/ / 5.0 /*volts*/) *
          (2 * M_PI /*radians*/);
@@ -142,18 +147,28 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       flatbuffers::Offset<frc971::RelativePosition> climber_offset =
           frc971::RelativePosition::Pack(*builder.fbb(), &climber);
 
+      frc971::RelativePositionT flipper_arm_left;
+      CopyPosition(*flipper_arm_left_potentiometer_, &flipper_arm_left,
+                   flipper_arms_pot_translate, false,
+                   values_->flipper_arm_left.potentiometer_offset);
+
+      frc971::RelativePositionT flipper_arm_right;
+      CopyPosition(*flipper_arm_right_potentiometer_, &flipper_arm_right,
+                   flipper_arms_pot_translate, false,
+                   values_->flipper_arm_right.potentiometer_offset);
+
       // Intake
       frc971::PotAndAbsolutePositionT intake_front;
-      frc971::PotAndAbsolutePositionT intake_back;
-      frc971::PotAndAbsolutePositionT turret;
       CopyPosition(intake_encoder_front_, &intake_front,
                    Values::kIntakeEncoderCountsPerRevolution(),
                    Values::kIntakeEncoderRatio(), intake_pot_translate, false,
                    values_->intake_front.potentiometer_offset);
+      frc971::PotAndAbsolutePositionT intake_back;
       CopyPosition(intake_encoder_back_, &intake_back,
                    Values::kIntakeEncoderCountsPerRevolution(),
                    Values::kIntakeEncoderRatio(), intake_pot_translate, false,
                    values_->intake_back.potentiometer_offset);
+      frc971::PotAndAbsolutePositionT turret;
       CopyPosition(turret_encoder_, &turret,
                    Values::kTurretEncoderCountsPerRevolution(),
                    Values::kTurretEncoderRatio(), turret_pot_translate, false,
@@ -165,10 +180,16 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
           frc971::PotAndAbsolutePosition::Pack(*builder.fbb(), &intake_back);
       flatbuffers::Offset<frc971::PotAndAbsolutePosition> turret_offset =
           frc971::PotAndAbsolutePosition::Pack(*builder.fbb(), &turret);
+      flatbuffers::Offset<frc971::RelativePosition> flipper_arm_left_offset =
+          frc971::RelativePosition::Pack(*builder.fbb(), &flipper_arm_left);
+      flatbuffers::Offset<frc971::RelativePosition> flipper_arm_right_offset =
+          frc971::RelativePosition::Pack(*builder.fbb(), &flipper_arm_right);
 
       superstructure::Position::Builder position_builder =
           builder.MakeBuilder<superstructure::Position>();
       position_builder.add_climber(climber_offset);
+      position_builder.add_flipper_arm_left(flipper_arm_left_offset);
+      position_builder.add_flipper_arm_right(flipper_arm_right_offset);
       position_builder.add_intake_front(intake_offset_front);
       position_builder.add_intake_back(intake_offset_back);
       position_builder.add_turret(turret_offset);
@@ -216,6 +237,16 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   void set_climber_potentiometer(
       ::std::unique_ptr<frc::AnalogInput> potentiometer) {
     climber_potentiometer_ = ::std::move(potentiometer);
+  }
+
+  void set_flipper_arm_left_potentiometer(
+      ::std::unique_ptr<frc::AnalogInput> potentiometer) {
+    flipper_arm_left_potentiometer_ = ::std::move(potentiometer);
+  }
+
+  void set_flipper_arm_right_potentiometer(
+      ::std::unique_ptr<frc::AnalogInput> potentiometer) {
+    flipper_arm_right_potentiometer_ = ::std::move(potentiometer);
   }
 
   void set_intake_encoder_front(::std::unique_ptr<frc::Encoder> encoder) {
@@ -273,7 +304,8 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
   std::array<std::unique_ptr<frc::DigitalInput>, 2> autonomous_modes_;
 
-  std::unique_ptr<frc::AnalogInput> climber_potentiometer_;
+  std::unique_ptr<frc::AnalogInput> climber_potentiometer_,
+      flipper_arm_right_potentiometer_, flipper_arm_left_potentiometer_;
   frc971::wpilib::AbsoluteEncoderAndPotentiometer intake_encoder_front_,
       intake_encoder_back_, turret_encoder_;
 };
@@ -331,6 +363,17 @@ class SuperstructureWriter
          Values::kIntakeRollerStatorCurrentLimit(), 0});
   }
 
+  void set_flipper_arms_falcon(
+      ::std::unique_ptr<::ctre::phoenix::motorcontrol::can::TalonFX> t) {
+    flipper_arms_falcon_ = ::std::move(t);
+    flipper_arms_falcon_->ConfigSupplyCurrentLimit(
+        {true, Values::kFlipperArmSupplyCurrentLimit(),
+         Values::kFlipperArmSupplyCurrentLimit(), 0});
+    flipper_arms_falcon_->ConfigStatorCurrentLimit(
+        {true, Values::kFlipperArmStatorCurrentLimit(),
+         Values::kFlipperArmStatorCurrentLimit(), 0});
+  }
+
   void set_transfer_roller_victor(::std::unique_ptr<::frc::VictorSP> t) {
     transfer_roller_victor_ = ::std::move(t);
   }
@@ -343,6 +386,8 @@ class SuperstructureWriter
         ctre::phoenix::motorcontrol::ControlMode::Disabled, 0);
     roller_falcon_back_->Set(ctre::phoenix::motorcontrol::ControlMode::Disabled,
                              0);
+    flipper_arms_falcon_->Set(
+        ctre::phoenix::motorcontrol::ControlMode::Disabled, 0);
     intake_falcon_front_->SetDisabled();
     intake_falcon_back_->SetDisabled();
     transfer_roller_victor_->SetDisabled();
@@ -353,13 +398,18 @@ class SuperstructureWriter
 
   void Write(const superstructure::Output &output) override {
     WritePwm(output.climber_voltage(), climber_falcon_.get());
+
     WritePwm(output.intake_voltage_front(), intake_falcon_front_.get());
     WritePwm(output.intake_voltage_back(), intake_falcon_back_.get());
     WriteCan(output.roller_voltage_front(), roller_falcon_front_.get());
     WriteCan(output.roller_voltage_back(), roller_falcon_back_.get());
     WritePwm(output.transfer_roller_voltage(), transfer_roller_victor_.get());
+
+    WriteCan(output.flipper_arms_voltage(), flipper_arms_falcon_.get());
+
     WritePwm(output.catapult_voltage(), catapult_falcon_1_.get());
     WritePwm(output.catapult_voltage(), catapult_falcon_2_.get());
+
     WritePwm(output.turret_voltage(), turret_falcon_.get());
   }
 
@@ -379,7 +429,7 @@ class SuperstructureWriter
   ::std::unique_ptr<frc::TalonFX> intake_falcon_front_, intake_falcon_back_;
 
   ::std::unique_ptr<::ctre::phoenix::motorcontrol::can::TalonFX>
-      roller_falcon_front_, roller_falcon_back_;
+      roller_falcon_front_, roller_falcon_back_, flipper_arms_falcon_;
 
   ::std::unique_ptr<::frc::TalonFX> turret_falcon_, catapult_falcon_1_,
       catapult_falcon_2_, climber_falcon_;
@@ -435,6 +485,11 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     sensor_reader.set_climber_potentiometer(make_unique<frc::AnalogInput>(5));
 
+    sensor_reader.set_flipper_arm_left_potentiometer(
+        make_unique<frc::AnalogInput>(4));
+    sensor_reader.set_flipper_arm_right_potentiometer(
+        make_unique<frc::AnalogInput>(5));
+
     AddLoop(&sensor_reader_event_loop);
 
     // Thread 4.
@@ -447,18 +502,20 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     SuperstructureWriter superstructure_writer(&output_event_loop);
 
-    superstructure_writer.set_turret_falcon(make_unique<::frc::TalonFX>(2));
-    superstructure_writer.set_catapult_falcon_1(make_unique<::frc::TalonFX>(3));
-    superstructure_writer.set_catapult_falcon_2(make_unique<::frc::TalonFX>(4));
+    superstructure_writer.set_turret_falcon(make_unique<::frc::TalonFX>(0));
+    superstructure_writer.set_catapult_falcon_1(make_unique<::frc::TalonFX>(1));
+    superstructure_writer.set_catapult_falcon_2(make_unique<::frc::TalonFX>(2));
     superstructure_writer.set_roller_falcon_front(
-        make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(1));
+        make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(3));
     superstructure_writer.set_roller_falcon_back(
-        make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(2));
+        make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(4));
     superstructure_writer.set_transfer_roller_victor(
-        make_unique<::frc::VictorSP>(4));
+        make_unique<::frc::VictorSP>(2));
     superstructure_writer.set_intake_falcon_front(make_unique<frc::TalonFX>(5));
     superstructure_writer.set_intake_falcon_back(make_unique<frc::TalonFX>(6));
     superstructure_writer.set_climber_falcon(make_unique<frc::TalonFX>(7));
+    superstructure_writer.set_flipper_arms_falcon(
+        make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(5));
 
     AddLoop(&output_event_loop);
 

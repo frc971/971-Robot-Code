@@ -9,6 +9,10 @@ table Position {
   intake_front:frc971.PotAndAbsolutePosition (id: 1);
   intake_back:frc971.PotAndAbsolutePosition (id: 2);
   turret:frc971.PotAndAbsolutePosition (id: 3);
+
+  // Zero is straight and positive is open
+  flipper_arm_left:frc971.RelativePosition (id: 4);
+  flipper_arm_right:frc971.RelativePosition (id: 5);
 }
 
 root_type Position;

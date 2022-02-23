@@ -122,6 +122,21 @@ struct Values {
            control_loops::superstructure::turret::kOutputRatio /
            kTurretEncoderRatio() * kTurretEncoderCountsPerRevolution();
   }
+
+  // Flipper arms
+  static constexpr double kFlipperArmSupplyCurrentLimit() { return 30.0; }
+  static constexpr double kFlipperArmStatorCurrentLimit() { return 40.0; }
+
+  // TODO: (Griffin) this needs to be set
+  static constexpr ::frc971::constants::Range kFlipperArmRange() {
+    return ::frc971::constants::Range{
+        .lower_hard = -0.01, .upper_hard = 0.6, .lower = 0.0, .upper = 0.5};
+  }
+
+  static constexpr double kFlipperArmsPotRatio() { return 16.0 / 36.0; }
+
+  PotConstants flipper_arm_left;
+  PotConstants flipper_arm_right;
 };
 
 // Creates and returns a Values instance for the constants.
