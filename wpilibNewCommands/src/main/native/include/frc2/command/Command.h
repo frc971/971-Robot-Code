@@ -42,6 +42,8 @@ class ProxyScheduleCommand;
  * <p>Note: ALWAYS create a subclass by extending CommandHelper<Base, Subclass>,
  * or decorators will not function!
  *
+ * This class is provided by the NewCommands VendorDep
+ *
  * @see CommandScheduler
  * @see CommandHelper
  */
@@ -108,6 +110,17 @@ class Command {
    * @return the command with the timeout added
    */
   virtual ParallelRaceGroup WithTimeout(units::second_t duration) &&;
+
+  /**
+   * Decorates this command with an interrupt condition.  If the specified
+   * condition becomes true before the command finishes normally, the command
+   * will be interrupted and un-scheduled. Note that this only applies to the
+   * command returned by this method; the calling command is not itself changed.
+   *
+   * @param condition the interrupt condition
+   * @return the command with the interrupt condition added
+   */
+  virtual ParallelRaceGroup Until(std::function<bool()> condition) &&;
 
   /**
    * Decorates this command with an interrupt condition.  If the specified
