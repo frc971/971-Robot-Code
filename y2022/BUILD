@@ -66,7 +66,6 @@ aos_config(
         ":config_pi2",
         ":config_pi3",
         ":config_pi4",
-        ":config_pi5",
         ":config_roborio",
     ],
 )
@@ -97,7 +96,6 @@ aos_config(
         "pi2",
         "pi3",
         "pi4",
-        "pi5",
     ]
 ]
 
