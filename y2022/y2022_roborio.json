@@ -131,13 +131,6 @@
       "source_node": "roborio"
     },
     {
-      "name": "/roborio/aos/remote_timestamps/pi5/roborio/aos/aos-message_bridge-Timestamp",
-      "type": "aos.message_bridge.RemoteMessage",
-      "frequency": 20,
-      "source_node": "roborio",
-      "max_size": 208
-    },
-    {
       "name": "/roborio/aos/remote_timestamps/imu/roborio/aos/aos-message_bridge-Timestamp",
       "type": "aos.message_bridge.RemoteMessage",
       "frequency": 20,
@@ -181,15 +174,6 @@
         },
         {
           "name": "pi4",
-          "priority": 1,
-          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
-          "timestamp_logger_nodes": [
-            "roborio"
-          ],
-          "time_to_live": 5000000
-        },
-        {
-          "name": "pi5",
           "priority": 1,
           "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
           "timestamp_logger_nodes": [
@@ -518,9 +502,6 @@
     },
     {
       "name": "pi4"
-    },
-    {
-      "name": "pi5"
     }
   ]
 }
