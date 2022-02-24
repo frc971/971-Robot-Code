@@ -40,27 +40,35 @@ J_bar = 1.0 / 3.0 * M_bar * lever**2.0
 M_cup = (1750 * 0.0254 * 0.04 * 2 * math.pi * (ball_diameter / 2.)**2.0)
 J_cup = M_cup * lever**2.0 + M_cup * (ball_diameter / 2.)**2.0
 
-print("J ball", ball_mass * lever * lever)
-print("J bar", J_bar)
-print("bar mass", M_bar)
-print("J cup", J_cup)
-print("cup mass", M_cup)
 
 J = (J_ball + J_bar + J_cup * 1.5)
-print("J", J)
+JEmpty = (J_bar + J_cup * 1.5)
 
-kCatapult = catapult_lib.CatapultParams(
+kCatapultWithBall = catapult_lib.CatapultParams(
     name='Catapult',
     motor=AddResistance(control_loop.NMotor(control_loop.Falcon(), 2), 0.03),
     G=G,
     J=J,
-    lever=lever,
-    q_pos=0.01,
-    q_vel=10.0,
-    q_voltage=4.0,
-    r_pos=0.01,
-    controller_poles=[.93],
-    dt=0.00505)
+    radius=lever,
+    q_pos=2.8,
+    q_vel=20.0,
+    kalman_q_pos=0.12,
+    kalman_q_vel=1.0,
+    kalman_q_voltage=1.5,
+    kalman_r_position=0.05)
+
+kCatapultEmpty = catapult_lib.CatapultParams(
+    name='Catapult',
+    motor=AddResistance(control_loop.NMotor(control_loop.Falcon(), 2), 0.03),
+    G=G,
+    J=JEmpty,
+    radius=lever,
+    q_pos=2.8,
+    q_vel=20.0,
+    kalman_q_pos=0.12,
+    kalman_q_vel=1.0,
+    kalman_q_voltage=1.5,
+    kalman_r_position=0.05)
 
 # Ideas for adjusting the cost function:
 #
@@ -252,7 +260,7 @@ def SolveCatapult(catapult, X_initial, X_final, u):
 
 
 def CatapultProblem():
-    c = catapult_lib.Catapult(kCatapult)
+    c = catapult_lib.Catapult(kCatapultWithBall)
 
     kHorizon = 40
 
@@ -300,54 +308,69 @@ def CatapultProblem():
 
 
 def main(argv):
-    # Do all our math with a lower voltage so we have headroom.
-    U = numpy.matrix([[9.0]])
-
-    prob = osqp.OSQP()
-
-    kHorizon = 40
-    catapult = catapult_lib.Catapult(kCatapult)
-    X_initial = numpy.matrix([[0.0], [0.0]])
-    X_final = numpy.matrix([[2.0], [25.0]])
-    P, q, c = quadratic_cost(catapult, X_initial, X_final, kHorizon)
-    A = numpy.identity(kHorizon)
-    l = numpy.zeros((kHorizon, 1))
-    u = numpy.ones((kHorizon, 1)) * 12.0
-
-    prob.setup(scipy.sparse.csr_matrix(P),
-               q,
-               scipy.sparse.csr_matrix(A),
-               l,
-               u,
-               warm_start=True)
-
-    result = prob.solve()
-    # Check solver status
-    if result.info.status != 'solved':
-        raise ValueError('OSQP did not solve the problem!')
-
-    # Apply first control input to the plant
-    print(result.x)
-
     if FLAGS.plot:
-        print(
+        # Do all our math with a lower voltage so we have headroom.
+        U = numpy.matrix([[9.0]])
+
+        prob = osqp.OSQP()
+
+        kHorizon = 40
+        catapult = catapult_lib.Catapult(kCatapultWithBall)
+        X_initial = numpy.matrix([[0.0], [0.0]])
+        X_final = numpy.matrix([[2.0], [25.0]])
+        P, q, c = quadratic_cost(catapult, X_initial, X_final, kHorizon)
+        A = numpy.identity(kHorizon)
+        l = numpy.zeros((kHorizon, 1))
+        u = numpy.ones((kHorizon, 1)) * 12.0
+
+        prob.setup(scipy.sparse.csr_matrix(P),
+                   q,
+                   scipy.sparse.csr_matrix(A),
+                   l,
+                   u,
+                   warm_start=True)
+
+        result = prob.solve()
+        # Check solver status
+        if result.info.status != 'solved':
+            raise ValueError('OSQP did not solve the problem!')
+
+        # Apply first control input to the plant
+        print(result.x)
+
+        glog.debug("J ball", ball_mass * lever * lever)
+        glog.debug("J bar", J_bar)
+        glog.debug("bar mass", M_bar)
+        glog.debug("J cup", J_cup)
+        glog.debug("cup mass", M_cup)
+        glog.debug("J", J)
+        glog.debug("J Empty", JEmpty)
+
+        glog.debug(
             "For G:", G, " max speed ",
-            catapult_lib.MaxSpeed(params=kCatapult,
+            catapult_lib.MaxSpeed(params=kCatapultWithBall,
                                   U=U,
                                   final_position=math.pi / 2.0))
 
         CatapultProblem()
+
+        catapult_lib.PlotStep(params=kCatapultWithBall,
+                              R=numpy.matrix([[1.0], [0.0]]))
+        catapult_lib.PlotKick(params=kCatapultWithBall,
+                              R=numpy.matrix([[1.0], [0.0]]))
         return 0
 
-        catapult_lib.PlotShot(kCatapult, U, final_position=math.pi / 4.0)
+        catapult_lib.PlotShot(kCatapultWithBall,
+                              U,
+                              final_position=math.pi / 4.0)
 
         gs = []
         speed = []
         for i in numpy.linspace(0.01, 0.15, 150):
-            kCatapult.G = i
-            gs.append(kCatapult.G)
+            kCatapultWithBall.G = i
+            gs.append(kCatapultWithBall.G)
             speed.append(
-                catapult_lib.MaxSpeed(params=kCatapult,
+                catapult_lib.MaxSpeed(params=kCatapultWithBall,
                                       U=U,
                                       final_position=math.pi / 2.0))
         pylab.plot(gs, speed, label="max_speed")
@@ -359,10 +382,11 @@ def main(argv):
         )
     else:
         namespaces = ['y2022', 'control_loops', 'superstructure', 'catapult']
-        catapult_lib.WriteCatapult(kCatapult, argv[1:3], argv[3:5], namespaces)
+        catapult_lib.WriteCatapult([kCatapultWithBall, kCatapultEmpty], argv[1:3], argv[3:5], namespaces)
     return 0
 
 
 if __name__ == '__main__':
     argv = FLAGS(sys.argv)
+    glog.init()
     sys.exit(main(argv))

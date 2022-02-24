@@ -55,6 +55,8 @@ py_library(
     ],
     target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
+        "//aos/util:py_trapezoid_profile",
+        "//frc971/control_loops/python:angular_system",
         "//frc971/control_loops/python:controls",
         "@matplotlib_repo//:matplotlib3",
     ],
