@@ -34,9 +34,10 @@ fi
 
 # Put a timestamp on when this card got created and by whom
 TIMESTAMP_FILE="${PARTITION}/home/pi/.DiskFlashedDate.txt"
-date > "${TIMESTAMP_FILE}"
-git rev-parse HEAD >> "${TIMESTAMP_FILE}"
-whoami >> "${TIMESTAMP_FILE}"
+echo "Date Imaged: "`date` > "${TIMESTAMP_FILE}"
+echo "Image file: ${IMAGE}"  >> "${TIMESTAMP_FILE}"
+echo "Git tag: "`git rev-parse HEAD` >> "${TIMESTAMP_FILE}"
+echo "User: "`whoami` >> "${TIMESTAMP_FILE}"
 
 echo "Starting a shell for any manual configuration"
 target /bin/bash --rcfile /root/.bashrc
