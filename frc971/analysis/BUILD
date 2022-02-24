@@ -53,6 +53,7 @@ ts_library(
         "//y2020/control_loops/superstructure:turret_plotter",
         "//y2021_bot3/control_loops/superstructure:superstructure_plotter",
         "//y2022/control_loops/localizer:localizer_plotter",
+        "//y2022/control_loops/superstructure:catapult_plotter",
     ],
 )
 
