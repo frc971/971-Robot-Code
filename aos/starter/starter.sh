@@ -5,6 +5,12 @@ if [[ "$(hostname)" == "roboRIO"* ]]; then
 
   ROBOT_CODE="/home/admin/robot_code"
 
+  # Get the CTRE libraries in the shared library search path
+  for f in $(ls *.so);
+  do
+    ln -f -s /home/admin/robot_code/$f /usr/local/frc/third-party/lib/$f
+  done
+
   ln -s /var/local/natinst/log/FRC_UserProgram.log /tmp/FRC_UserProgram.log
   ln -s /var/local/natinst/log/FRC_UserProgram.log "${ROBOT_CODE}/FRC_UserProgram.log"
 elif [[ "$(hostname)" == "pi-"* ]]; then

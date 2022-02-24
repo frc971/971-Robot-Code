@@ -8,6 +8,8 @@ robot_downloader(
     ],
     data = [
         ":config",
+        "@ctre_phoenix_api_cpp_athena//:shared_libraries",
+        "@ctre_phoenix_cci_athena//:shared_libraries",
     ],
     dirs = [
         "//y2022/www:www_files",

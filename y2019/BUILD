@@ -6,6 +6,8 @@ load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 robot_downloader(
     data = [
         ":config",
+        "@ctre_phoenix_api_cpp_athena//:shared_libraries",
+        "@ctre_phoenix_cci_athena//:shared_libraries",
     ],
     dirs = [
         "//y2019/vision/server:www_files",
