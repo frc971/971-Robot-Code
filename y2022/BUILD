@@ -9,6 +9,9 @@ robot_downloader(
     data = [
         ":config",
     ],
+    dirs = [
+        "//y2022/www:www_files",
+    ],
     start_binaries = [
         "//aos/events/logging:logger_main",
         "//aos/network:web_proxy_main",

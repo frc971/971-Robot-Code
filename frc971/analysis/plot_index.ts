@@ -34,6 +34,8 @@ import {plotTurret} from
     'org_frc971/y2020/control_loops/superstructure/turret_plotter'
 import {plotLocalizer as plot2020Localizer} from
     'org_frc971/y2020/control_loops/drivetrain/localizer_plotter'
+import {plotCatapult as plot2022Catapult} from
+    'org_frc971/y2022/control_loops/superstructure/catapult_plotter'
 import {plotLocalizer as plot2022Localizer} from
     'org_frc971/y2022/control_loops/localizer/localizer_plotter'
 import {plotAccelerator} from
@@ -108,6 +110,7 @@ const plotIndex = new Map<string, PlotState>([
   ['Turret', new PlotState(plotDiv, plotTurret)],
   ['2022 Localizer', new PlotState(plotDiv, plot2022Localizer)],
   ['2020 Localizer', new PlotState(plotDiv, plot2020Localizer)],
+  ['2022 Catapult', new PlotState(plotDiv, plot2022Catapult)],
   ['C++ Plotter', new PlotState(plotDiv, plotData)],
   ['Y2021 3rd Robot Superstructure', new PlotState(plotDiv, plotSuperstructure)],
 ]);
