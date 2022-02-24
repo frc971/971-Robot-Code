@@ -5,24 +5,28 @@ table Output {
   // - is down + is up
   climber_voltage:double (id: 0);
 
+  // Voltage of the flipper arms falcons
+  // - is feed + is open
+  flipper_arms_voltage:double (id: 1);
+
   // Voltage of the catapult falcon
   // Positive lifts the catapult to fire.
-  catapult_voltage:double (id: 1);
+  catapult_voltage:double (id: 2);
 
   // Voltage of the turret falcon
   // Positive rotates the turret around the Z axis (up) according to the
   // right hand rule.
-  turret_voltage:double (id: 2);
+  turret_voltage:double (id: 3);
 
   // Intake joint voltages.
-  intake_voltage_front:double (id: 3);
-  intake_voltage_back:double (id: 4);
+  intake_voltage_front:double (id: 4);
+  intake_voltage_back:double (id: 5);
 
   // Intake roller voltages
-  roller_voltage_front:double (id: 5);
-  roller_voltage_back:double (id: 6);
+  roller_voltage_front:double (id: 6);
+  roller_voltage_back:double (id: 7);
   // One transfer motor for both sides
-  transfer_roller_voltage:double (id: 7);
+  transfer_roller_voltage:double (id: 8);
 }
 
 root_type Output;

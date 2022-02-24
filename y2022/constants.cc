@@ -92,6 +92,22 @@ Values MakeValues(uint16_t team) {
   climber->subsystem_params.make_integral_loop =
       control_loops::superstructure::climber::MakeIntegralClimberLoop;
 
+  // Flipper arm constants
+  Values::PotConstants flipper_arms;
+  flipper_arms.subsystem_params.zeroing_voltage = 3.0;
+  flipper_arms.subsystem_params.operating_voltage = 12.0;
+  flipper_arms.subsystem_params.zeroing_profile_params = {0.5, 0.1};
+  flipper_arms.subsystem_params.default_profile_params = {6.0, 1.0};
+  flipper_arms.subsystem_params.range = Values::kFlipperArmRange();
+
+  auto *const flipper_arm_right = &r.flipper_arm_left;
+  auto *const flipper_arm_left = &r.flipper_arm_right;
+
+  *flipper_arm_right = flipper_arms;
+  *flipper_arm_left = flipper_arms;
+
+  // No integral loops for flipper arms
+
   switch (team) {
     // A set of constants for tests.
     case 1:
@@ -105,6 +121,8 @@ Values MakeValues(uint16_t team) {
       turret->potentiometer_offset = 0.0;
       turret->subsystem_params.zeroing_constants.measured_absolute_position =
           0.0;
+      flipper_arm_left->potentiometer_offset = 0.0;
+      flipper_arm_right->potentiometer_offset = 0.0;
       break;
 
     case kCompTeamNumber:
@@ -118,6 +136,8 @@ Values MakeValues(uint16_t team) {
       turret->potentiometer_offset = 0.0;
       turret->subsystem_params.zeroing_constants.measured_absolute_position =
           0.0;
+      flipper_arm_left->potentiometer_offset = 0.0;
+      flipper_arm_right->potentiometer_offset = 0.0;
       break;
 
     case kPracticeTeamNumber:
@@ -131,6 +151,8 @@ Values MakeValues(uint16_t team) {
       turret->potentiometer_offset = 0.0;
       turret->subsystem_params.zeroing_constants.measured_absolute_position =
           0.0;
+      flipper_arm_left->potentiometer_offset = 0.0;
+      flipper_arm_right->potentiometer_offset = 0.0;
       break;
 
     case kCodingRobotTeamNumber:
@@ -144,6 +166,8 @@ Values MakeValues(uint16_t team) {
       turret->potentiometer_offset = 0.0;
       turret->subsystem_params.zeroing_constants.measured_absolute_position =
           0.0;
+      flipper_arm_left->potentiometer_offset = 0.0;
+      flipper_arm_right->potentiometer_offset = 0.0;
       break;
 
     default:
