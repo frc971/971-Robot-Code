@@ -1,3 +1,5 @@
+include "y2022/vision/calibration.fbs";
+
 namespace y2022.vision;
 
 struct Point {
@@ -39,7 +41,8 @@ table TargetEstimate {
 
   blob_result:BlobResultFbs (id: 2);
 
-  // TODO(milind): add confidence
+  // Information about the camera which took this image.
+  camera_calibration:frc971.vision.calibration.CameraCalibration (id: 3);
 }
 
 root_type TargetEstimate;

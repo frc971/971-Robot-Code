@@ -105,11 +105,15 @@ void CameraReader::ProcessImage(cv::Mat image_mat) {
     blob_result_offset = blob_result_builder.Finish();
   }
 
+  const auto camera_calibration_offset =
+      aos::RecursiveCopyFlatBuffer(camera_calibration_, builder.fbb());
+
   auto target_estimate_builder = builder.MakeBuilder<TargetEstimate>();
   TargetEstimator::EstimateTargetLocation(
       blob_result.centroid, CameraIntrinsics(), CameraExtrinsics(),
       &target_estimate_builder);
   target_estimate_builder.add_blob_result(blob_result_offset);
+  target_estimate_builder.add_camera_calibration(camera_calibration_offset);
 
   builder.CheckOk(builder.Send(target_estimate_builder.Finish()));
 }

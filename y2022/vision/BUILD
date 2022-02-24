@@ -151,6 +151,7 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//y2022:__subpackages__"],
     deps = [
+        ":calibration_fbs",
         ":target_estimate_fbs",
         "//third_party:opencv",
     ],
@@ -160,6 +161,9 @@ flatbuffer_cc_library(
     name = "target_estimate_fbs",
     srcs = ["target_estimate.fbs"],
     gen_reflections = 1,
+    includes = [
+        ":calibration_fbs_includes",
+    ],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//y2022:__subpackages__"],
 )
