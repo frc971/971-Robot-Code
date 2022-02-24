@@ -349,6 +349,10 @@ class StateFeedbackObserver {
   }
   Eigen::Matrix<Scalar, number_of_states, 1> &mutable_X_hat() { return X_hat_; }
 
+  const Eigen::Matrix<Scalar, number_of_inputs, 1> &last_U() const {
+    return last_U_;
+  }
+
   void Reset(StateFeedbackPlant<number_of_states, number_of_inputs,
                                 number_of_outputs, Scalar> * /*loop*/) {
     X_hat_.setZero();

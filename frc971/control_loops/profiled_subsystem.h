@@ -7,10 +7,9 @@
 #include <utility>
 
 #include "Eigen/Dense"
-
-#include "frc971/control_loops/control_loop.h"
 #include "aos/util/trapezoid_profile.h"
 #include "frc971/constants.h"
+#include "frc971/control_loops/control_loop.h"
 #include "frc971/control_loops/control_loops_generated.h"
 #include "frc971/control_loops/profiled_subsystem_generated.h"
 #include "frc971/control_loops/simple_capped_state_feedback_loop.h"
@@ -154,16 +153,23 @@ class SingleDOFProfiledSubsystem
 
   // Updates our estimator with the latest position.
   void Correct(const typename ZeroingEstimator::Position &position);
-  // Runs the controller and profile generator for a cycle.
-  void Update(bool disabled);
+  // Runs the controller and profile generator for a cycle.  This is equivilent
+  // to calling UpdateObserver(UpdateController()) with the rest of the syntax
+  // actually right.
+  double Update(bool disabled);
+  // Just computes the controller and pushes the feed forwards forwards 1 step.
+  double UpdateController(bool disabled);
+  // Updates the observer with the computed U.
+  // Note: if this is the only method called, ForceGoal should also be called to
+  // move the state to match.
+  void UpdateObserver(double voltage);
 
   // Fills out the ProfiledJointStatus structure with the current state.
   template <class StatusTypeBuilder>
-  StatusTypeBuilder BuildStatus(
-      flatbuffers::FlatBufferBuilder *fbb);
+  StatusTypeBuilder BuildStatus(flatbuffers::FlatBufferBuilder *fbb);
 
   // Forces the current goal to the provided goal, bypassing the profiler.
-  void ForceGoal(double goal);
+  void ForceGoal(double goal, double goal_velocity = 0.0);
   // Sets whether to use the trapezoidal profiler or whether to just bypass it
   // and pass the unprofiled goal through directly.
   void set_enable_profile(bool enable) { enable_profile_ = enable; }
@@ -183,7 +189,7 @@ class SingleDOFProfiledSubsystem
   // Returns the requested voltage.
   double voltage() const { return this->loop_->U(0, 0); }
 
-  // Returns the current position.
+  // Returns the current position or velocity.
   double position() const { return this->Y_(0, 0); }
 
   // For testing:
@@ -285,10 +291,10 @@ StatusTypeBuilder SingleDOFProfiledSubsystem<ZeroingEstimator>::BuildStatus(
   builder.add_estimator_state(estimator_state);
 
   Eigen::Matrix<double, 3, 1> error = this->controller().error();
-  builder.add_position_power(
-      this->controller().controller().K(0, 0) * error(0, 0));
-  builder.add_velocity_power(
-      this->controller().controller().K(0, 1) * error(1, 0));
+  builder.add_position_power(this->controller().controller().K(0, 0) *
+                             error(0, 0));
+  builder.add_velocity_power(this->controller().controller().K(0, 1) *
+                             error(1, 0));
   return builder;
 }
 
@@ -341,8 +347,9 @@ void SingleDOFProfiledSubsystem<ZeroingEstimator>::CapGoal(
 }
 
 template <class ZeroingEstimator>
-void SingleDOFProfiledSubsystem<ZeroingEstimator>::ForceGoal(double goal) {
-  set_unprofiled_goal(goal, 0.0, false);
+void SingleDOFProfiledSubsystem<ZeroingEstimator>::ForceGoal(
+    double goal, double goal_velocity) {
+  set_unprofiled_goal(goal, goal_velocity, false);
   this->loop_->mutable_R() = this->unprofiled_goal_;
   this->loop_->mutable_next_R() = this->loop_->R();
 
@@ -360,7 +367,8 @@ void SingleDOFProfiledSubsystem<ZeroingEstimator>::set_unprofiled_goal(
 }
 
 template <class ZeroingEstimator>
-void SingleDOFProfiledSubsystem<ZeroingEstimator>::Update(bool disable) {
+double SingleDOFProfiledSubsystem<ZeroingEstimator>::UpdateController(
+    bool disable) {
   // TODO(austin): What do we want to do with the profile on reset?  Also, we
   // should probably reset R, the offset, the profile, etc.
   if (this->should_reset_) {
@@ -389,12 +397,28 @@ void SingleDOFProfiledSubsystem<ZeroingEstimator>::Update(bool disable) {
     CapGoal("next R", &this->loop_->mutable_next_R());
   }
 
-  this->loop_->Update(disable);
+  this->loop_->UpdateController(disable);
 
   if (!disable && this->loop_->U(0, 0) != this->loop_->U_uncapped(0, 0)) {
     const ::Eigen::Matrix<double, 3, 1> &R = this->loop_->R();
     profile_.MoveCurrentState(R.block<2, 1>(0, 0));
   }
+
+  return this->loop_->U(0, 0);
+}
+
+template <class ZeroingEstimator>
+void SingleDOFProfiledSubsystem<ZeroingEstimator>::UpdateObserver(
+    double voltage) {
+  this->loop_->mutable_U(0, 0) = voltage;
+  this->loop_->UpdateObserver(this->loop_->U(), this->loop_->plant().dt());
+}
+
+template <class ZeroingEstimator>
+double SingleDOFProfiledSubsystem<ZeroingEstimator>::Update(bool disable) {
+  const double voltage = UpdateController(disable);
+  UpdateObserver(voltage);
+  return voltage;
 }
 
 template <class ZeroingEstimator>
