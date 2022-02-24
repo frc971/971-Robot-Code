@@ -128,6 +128,11 @@ class Logger {
   void StartLogging(std::unique_ptr<LogNamer> log_namer,
                     std::optional<UUID> log_start_uuid = std::nullopt);
 
+  // Restart logging using a new naming scheme. Intended for log rotation.
+  // Returns a unique_ptr to the prior log_namer instance.
+  std::unique_ptr<LogNamer> RestartLogging(std::unique_ptr<LogNamer> log_namer,
+                    std::optional<UUID> log_start_uuid = std::nullopt);
+
   // Moves the current log location to the new name. Returns true if a change
   // was made, false otherwise.
   // Only renaming the folder is supported, not the file base name.
@@ -216,6 +221,9 @@ class Logger {
   // channel index.
   std::vector<int> event_loop_to_logged_channel_index_;
 
+  // Start/Restart write configuration into LogNamer space.
+  std::string WriteConfiguration(LogNamer* log_namer);
+
   void WriteHeader();
 
   // Makes a template header for all the follower nodes.
@@ -232,10 +240,18 @@ class Logger {
 
   void WriteMissingTimestamps();
 
+  void WriteData(NewDataWriter *writer, const FetcherStruct &f);
+  void WriteTimestamps(NewDataWriter *timestamps_writer, const FetcherStruct &f);
+  void WriteContent(NewDataWriter *contents_writer, const FetcherStruct &f);
+
+  void WriteFetchedRecord(FetcherStruct &f);
+
   // Fetches from each channel until all the data is logged.  This is dangerous
   // because it lets you log for more than 1 period.  All calls need to verify
   // that t isn't greater than 1 period in the future.
-  void LogUntil(monotonic_clock::time_point t);
+  // Returns true if there is at least one message that has been fetched but
+  // not yet written.
+  bool LogUntil(monotonic_clock::time_point t);
 
   void RecordFetchResult(aos::monotonic_clock::time_point start,
                          aos::monotonic_clock::time_point end, bool got_new,
@@ -243,7 +259,7 @@ class Logger {
 
   void RecordCreateMessageTime(aos::monotonic_clock::time_point start,
                                aos::monotonic_clock::time_point end,
-                               FetcherStruct *fetcher);
+                               const FetcherStruct &fetcher);
 
   EventLoop *const event_loop_;
   // The configuration to place at the top of the log file.
