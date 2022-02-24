@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/frc971/971-Robot-Code/scouting/db"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/error_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_data_scouting"
 	_ "github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_data_scouting_response"
@@ -15,8 +16,9 @@ import (
 
 // Validates that an unhandled address results in a 404.
 func Test404(t *testing.T) {
+	db := MockDatabase{}
 	scoutingServer := server.NewScoutingServer()
-	HandleRequests(scoutingServer)
+	HandleRequests(&db, scoutingServer)
 	scoutingServer.Start(8080)
 	defer scoutingServer.Stop()
 
@@ -31,8 +33,9 @@ func Test404(t *testing.T) {
 
 // Validates that we can submit new data scouting data.
 func TestSubmitDataScoutingError(t *testing.T) {
+	db := MockDatabase{}
 	scoutingServer := server.NewScoutingServer()
-	HandleRequests(scoutingServer)
+	HandleRequests(&db, scoutingServer)
 	scoutingServer.Start(8080)
 	defer scoutingServer.Stop()
 
@@ -58,8 +61,9 @@ func TestSubmitDataScoutingError(t *testing.T) {
 
 // Validates that we can submit new data scouting data.
 func TestSubmitDataScouting(t *testing.T) {
+	db := MockDatabase{}
 	scoutingServer := server.NewScoutingServer()
-	HandleRequests(scoutingServer)
+	HandleRequests(&db, scoutingServer)
 	scoutingServer.Start(8080)
 	defer scoutingServer.Stop()
 
@@ -78,4 +82,33 @@ func TestSubmitDataScouting(t *testing.T) {
 		t.Fatal("Unexpected status code. Got", resp.Status)
 	}
 	// TODO(phil): We have nothing to validate yet. Fix that.
+}
+
+// A mocked database we can use for testing. Add functionality to this as
+// needed for your tests.
+
+type MockDatabase struct{}
+
+func (database *MockDatabase) AddToMatch(db.Match) error {
+	return nil
+}
+
+func (database *MockDatabase) AddToStats(db.Stats) error {
+	return nil
+}
+
+func (database *MockDatabase) ReturnMatches() ([]db.Match, error) {
+	return []db.Match{}, nil
+}
+
+func (database *MockDatabase) ReturnStats() ([]db.Stats, error) {
+	return []db.Stats{}, nil
+}
+
+func (database *MockDatabase) QueryMatches(int) ([]db.Match, error) {
+	return []db.Match{}, nil
+}
+
+func (database *MockDatabase) QueryStats(int) ([]db.Stats, error) {
+	return []db.Stats{}, nil
 }

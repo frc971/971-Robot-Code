@@ -3,10 +3,12 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"github.com/frc971/971-Robot-Code/scouting/db"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/server"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/static"
@@ -17,9 +19,14 @@ func main() {
 	dirPtr := flag.String("directory", ".", "The directory to serve at /.")
 	flag.Parse()
 
+	database, err := db.NewDatabase()
+	if err != nil {
+		log.Fatal("Failed to connect to database: ", err)
+	}
+
 	scoutingServer := server.NewScoutingServer()
 	static.ServePages(scoutingServer, *dirPtr)
-	requests.HandleRequests(scoutingServer)
+	requests.HandleRequests(database, scoutingServer)
 	scoutingServer.Start(*portPtr)
 	fmt.Println("Serving", *dirPtr, "on port", *portPtr)
 

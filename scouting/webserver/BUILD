@@ -7,6 +7,7 @@ go_library(
     target_compatible_with = ["@platforms//cpu:x86_64"],
     visibility = ["//visibility:private"],
     deps = [
+        "//scouting/db",
         "//scouting/webserver/requests",
         "//scouting/webserver/server",
         "//scouting/webserver/static",

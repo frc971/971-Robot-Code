@@ -7,6 +7,7 @@ go_library(
     target_compatible_with = ["@platforms//cpu:x86_64"],
     visibility = ["//visibility:public"],
     deps = [
+        "//scouting/db",
         "//scouting/webserver/requests/messages:error_response_go_fbs",
         "//scouting/webserver/requests/messages:submit_data_scouting_go_fbs",
         "//scouting/webserver/requests/messages:submit_data_scouting_response_go_fbs",
@@ -21,6 +22,7 @@ go_test(
     embed = [":requests"],
     target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
+        "//scouting/db",
         "//scouting/webserver/requests/messages:error_response_go_fbs",
         "//scouting/webserver/requests/messages:submit_data_scouting_go_fbs",
         "//scouting/webserver/requests/messages:submit_data_scouting_response_go_fbs",

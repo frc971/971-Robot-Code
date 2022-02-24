@@ -5,12 +5,24 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/frc971/971-Robot-Code/scouting/db"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/error_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_data_scouting"
 	_ "github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/server"
 	flatbuffers "github.com/google/flatbuffers/go"
 )
+
+// The interface we expect the database abstraction to conform to.
+// We use an interface here because it makes unit testing easier.
+type Database interface {
+	AddToMatch(db.Match) error
+	AddToStats(db.Stats) error
+	ReturnMatches() ([]db.Match, error)
+	ReturnStats() ([]db.Stats, error)
+	QueryMatches(int) ([]db.Match, error)
+	QueryStats(int) ([]db.Stats, error)
+}
 
 // Handles unknown requests. Just returns a 404.
 func unknown(w http.ResponseWriter, req *http.Request) {
@@ -44,7 +56,11 @@ func parseSubmitDataScouting(w http.ResponseWriter, buf []byte) (*submit_data_sc
 }
 
 // Handles a SubmitDataScouting request.
-func submitDataScouting(w http.ResponseWriter, req *http.Request) {
+type submitDataScoutingHandler struct {
+	db Database
+}
+
+func (handler submitDataScoutingHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	requestBytes, err := io.ReadAll(req.Body)
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, fmt.Sprint("Failed to read request bytes:", err))
@@ -57,11 +73,13 @@ func submitDataScouting(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// TODO(phil): Actually handle the request.
+	// We have access to the database via "handler.db" here. For example:
+	// stats := handler.db.ReturnStats()
 
 	respondNotImplemented(w)
 }
 
-func HandleRequests(scoutingServer server.ScoutingServer) {
+func HandleRequests(db Database, scoutingServer server.ScoutingServer) {
 	scoutingServer.HandleFunc("/requests", unknown)
-	scoutingServer.HandleFunc("/requests/submit/data_scouting", submitDataScouting)
+	scoutingServer.Handle("/requests/submit/data_scouting", submitDataScoutingHandler{db})
 }
