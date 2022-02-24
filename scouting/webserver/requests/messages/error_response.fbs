@@ -1,0 +1,7 @@
+namespace scouting.webserver.requests;
+
+table ErrorResponse {
+    error_message:string (id: 0);
+}
+
+root_type ErrorResponse;

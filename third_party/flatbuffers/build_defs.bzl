@@ -34,6 +34,7 @@ DEFAULT_FLATC_ARGS = [
 
 DEFAULT_FLATC_GO_ARGS = [
     "--gen-onefile",
+    "--gen-object-api",
 ]
 
 DEFAULT_FLATC_TS_ARGS = [

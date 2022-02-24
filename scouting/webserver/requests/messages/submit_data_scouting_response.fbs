@@ -1,0 +1,7 @@
+namespace scouting.webserver.requests;
+
+table SubmitDataScoutingResponse {
+    // TODO: Implement this.
+}
+
+root_type SubmitDataScoutingResponse;

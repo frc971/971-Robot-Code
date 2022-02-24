@@ -1,0 +1,11 @@
+namespace scouting.webserver.requests;
+
+table SubmitDataScouting {
+    team:int (id: 0);
+    match:int (id: 1);
+
+    upper_goal_hits:int (id: 2);
+    // TODO: Implement the rest of this.
+}
+
+root_type SubmitDataScouting;
