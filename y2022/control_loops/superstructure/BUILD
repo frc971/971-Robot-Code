@@ -62,6 +62,7 @@ cc_library(
         ":superstructure_status_fbs",
         "//aos/events:event_loop",
         "//frc971/control_loops:control_loop",
+        "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
         "//y2022:constants",
     ],
 )
