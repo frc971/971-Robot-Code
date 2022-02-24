@@ -544,7 +544,8 @@ def PlotDrivetrainMotions(drivetrain_params):
     for _ in range(300):
         U = numpy.clip(drivetrain.K * (R - drivetrain.X_hat), drivetrain.U_min,
                        drivetrain.U_max)
-        drivetrain.UpdateObserver(U)
+        drivetrain.CorrectObserver(U)
+        drivetrain.PredictObserver(U)
         drivetrain.Update(U + numpy.matrix([[1.0], [1.0]]))
         close_loop_left.append(drivetrain.X[0, 0])
         close_loop_right.append(drivetrain.X[2, 0])
@@ -588,7 +589,8 @@ def PlotDrivetrainMotions(drivetrain_params):
     for _ in range(300):
         U = numpy.clip(drivetrain.K * (R - drivetrain.X_hat), drivetrain.U_min,
                        drivetrain.U_max)
-        drivetrain.UpdateObserver(U)
+        drivetrain.CorrectObserver(U)
+        drivetrain.PredictObserver(U)
         drivetrain.Update(U)
         close_loop_left.append(drivetrain.X[0, 0])
         close_loop_right.append(drivetrain.X[2, 0])
@@ -612,7 +614,8 @@ def PlotDrivetrainMotions(drivetrain_params):
     for _ in range(200):
         U = numpy.clip(drivetrain.K * (R - drivetrain.X_hat), drivetrain.U_min,
                        drivetrain.U_max)
-        drivetrain.UpdateObserver(U)
+        drivetrain.CorrectObserver(U)
+        drivetrain.PredictObserver(U)
         drivetrain.Update(U)
         close_loop_left.append(drivetrain.X[0, 0])
         close_loop_right.append(drivetrain.X[2, 0])
@@ -633,7 +636,8 @@ def PlotDrivetrainMotions(drivetrain_params):
     for _ in range(300):
         U = numpy.clip(drivetrain.K * (R - drivetrain.X_hat), drivetrain.U_min,
                        drivetrain.U_max)
-        drivetrain.UpdateObserver(U)
+        drivetrain.CorrectObserver(U)
+        drivetrain.PredictObserver(U)
         drivetrain.Update(U)
         close_loop_left.append(drivetrain.X[0, 0])
         close_loop_right.append(drivetrain.X[2, 0])

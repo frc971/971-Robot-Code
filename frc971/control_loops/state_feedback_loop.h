@@ -39,7 +39,8 @@ struct StateFeedbackPlantCoefficients final {
         D(other.D),
         U_min(other.U_min),
         U_max(other.U_max),
-        dt(other.dt) {}
+        dt(other.dt),
+        delayed_u(other.delayed_u) {}
 
   StateFeedbackPlantCoefficients(
       const Eigen::Matrix<Scalar, number_of_states, number_of_states> &A,
@@ -48,8 +49,15 @@ struct StateFeedbackPlantCoefficients final {
       const Eigen::Matrix<Scalar, number_of_outputs, number_of_inputs> &D,
       const Eigen::Matrix<Scalar, number_of_inputs, 1> &U_max,
       const Eigen::Matrix<Scalar, number_of_inputs, 1> &U_min,
-      const std::chrono::nanoseconds dt)
-      : A(A), B(B), C(C), D(D), U_min(U_min), U_max(U_max), dt(dt) {}
+      const std::chrono::nanoseconds dt, bool delayed_u)
+      : A(A),
+        B(B),
+        C(C),
+        D(D),
+        U_min(U_min),
+        U_max(U_max),
+        dt(dt),
+        delayed_u(delayed_u) {}
 
   const Eigen::Matrix<Scalar, number_of_states, number_of_states> A;
   const Eigen::Matrix<Scalar, number_of_states, number_of_inputs> B;
@@ -58,6 +66,12 @@ struct StateFeedbackPlantCoefficients final {
   const Eigen::Matrix<Scalar, number_of_inputs, 1> U_min;
   const Eigen::Matrix<Scalar, number_of_inputs, 1> U_max;
   const std::chrono::nanoseconds dt;
+
+  // If true, this adds a single cycle output delay model to the plant.  This is
+  // useful for modeling a control loop cycle where you sample, compute, and
+  // then queue the outputs to be ready to be executed when the next cycle
+  // happens.
+  const bool delayed_u;
 };
 
 template <int number_of_states, int number_of_inputs, int number_of_outputs,
@@ -78,6 +92,7 @@ class StateFeedbackPlant {
     ::std::swap(coefficients_, other.coefficients_);
     X_.swap(other.X_);
     Y_.swap(other.Y_);
+    last_U_.swap(other.last_U_);
   }
 
   virtual ~StateFeedbackPlant() {}
@@ -143,6 +158,7 @@ class StateFeedbackPlant {
   void Reset() {
     X_.setZero();
     Y_.setZero();
+    last_U_.setZero();
   }
 
   // Assert that U is within the hardware range.
@@ -164,8 +180,14 @@ class StateFeedbackPlant {
     // Powers outside of the range are more likely controller bugs than things
     // that the plant should deal with.
     CheckU(U);
-    X_ = Update(X(), U);
-    UpdateY(U);
+    if (coefficients().delayed_u) {
+      X_ = Update(X(), last_U_);
+      UpdateY(last_U_);
+      last_U_ = U;
+    } else {
+      X_ = Update(X(), U);
+      UpdateY(U);
+    }
   }
 
   // Computes the new Y given the control input.
@@ -188,6 +210,7 @@ class StateFeedbackPlant {
  private:
   Eigen::Matrix<Scalar, number_of_states, 1> X_;
   Eigen::Matrix<Scalar, number_of_outputs, 1> Y_;
+  Eigen::Matrix<Scalar, number_of_inputs, 1> last_U_;
 
   ::std::vector<::std::unique_ptr<StateFeedbackPlantCoefficients<
       number_of_states, number_of_inputs, number_of_outputs, Scalar>>>
@@ -283,12 +306,19 @@ struct StateFeedbackObserverCoefficients final {
   const Eigen::Matrix<Scalar, number_of_states, number_of_states> Q;
   const Eigen::Matrix<Scalar, number_of_outputs, number_of_outputs> R;
 
+  // If true, this adds a single cycle output delay model to the plant.  This is
+  // useful for modeling a control loop cycle where you sample, compute, and
+  // then queue the outputs to be ready to be executed when the next cycle
+  // happens.
+  const bool delayed_u;
+
   StateFeedbackObserverCoefficients(
       const Eigen::Matrix<Scalar, number_of_states, number_of_outputs>
           &KalmanGain,
       const Eigen::Matrix<Scalar, number_of_states, number_of_states> &Q,
-      const Eigen::Matrix<Scalar, number_of_outputs, number_of_outputs> &R)
-      : KalmanGain(KalmanGain), Q(Q), R(R) {}
+      const Eigen::Matrix<Scalar, number_of_outputs, number_of_outputs> &R,
+      bool delayed_u)
+      : KalmanGain(KalmanGain), Q(Q), R(R), delayed_u(delayed_u) {}
 };
 
 template <int number_of_states, int number_of_inputs, int number_of_outputs,
@@ -304,7 +334,7 @@ class StateFeedbackObserver {
       : coefficients_(::std::move(observers)) {}
 
   StateFeedbackObserver(StateFeedbackObserver &&other)
-      : X_hat_(other.X_hat_), index_(other.index_) {
+      : X_hat_(other.X_hat_), last_U_(other.last_U_), index_(other.index_) {
     ::std::swap(coefficients_, other.coefficients_);
   }
 
@@ -322,13 +352,19 @@ class StateFeedbackObserver {
   void Reset(StateFeedbackPlant<number_of_states, number_of_inputs,
                                 number_of_outputs, Scalar> * /*loop*/) {
     X_hat_.setZero();
+    last_U_.setZero();
   }
 
   void Predict(StateFeedbackPlant<number_of_states, number_of_inputs,
                                   number_of_outputs, Scalar> *plant,
                const Eigen::Matrix<Scalar, number_of_inputs, 1> &new_u,
                ::std::chrono::nanoseconds /*dt*/) {
-    mutable_X_hat() = plant->Update(X_hat(), new_u);
+    if (plant->coefficients().delayed_u) {
+      mutable_X_hat() = plant->Update(X_hat(), last_U_);
+      last_U_ = new_u;
+    } else {
+      mutable_X_hat() = plant->Update(X_hat(), new_u);
+    }
   }
 
   void Correct(const StateFeedbackPlant<number_of_states, number_of_inputs,
@@ -366,6 +402,7 @@ class StateFeedbackObserver {
  private:
   // Internal state estimate.
   Eigen::Matrix<Scalar, number_of_states, 1> X_hat_;
+  Eigen::Matrix<Scalar, number_of_inputs, 1> last_U_;
 
   int index_ = 0;
   ::std::vector<::std::unique_ptr<StateFeedbackObserverCoefficients<

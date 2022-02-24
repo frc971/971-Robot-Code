@@ -266,6 +266,7 @@ class ControlLoop(object):
             name: string, The name of the loop to use when writing the C++ files.
         """
         self._name = name
+        self.delayed_u = False
 
     @property
     def name(self):
@@ -290,6 +291,7 @@ class ControlLoop(object):
         self.X = numpy.matrix(numpy.zeros((self.A.shape[0], 1)))
         self.Y = self.C * self.X
         self.X_hat = numpy.matrix(numpy.zeros((self.A.shape[0], 1)))
+        self.last_U = numpy.matrix(numpy.zeros((self.B.shape[1], 1)))
 
     def PlaceControllerPoles(self, poles):
         """Places the controller poles.
@@ -312,12 +314,21 @@ class ControlLoop(object):
     def Update(self, U):
         """Simulates one time step with the provided U."""
         #U = numpy.clip(U, self.U_min, self.U_max)
-        self.X = self.A * self.X + self.B * U
-        self.Y = self.C * self.X + self.D * U
+        if self.delayed_u:
+            self.X = self.A * self.X + self.B * self.last_U
+            self.Y = self.C * self.X + self.D * self.last_U
+            self.last_U = U.copy()
+        else:
+            self.X = self.A * self.X + self.B * U
+            self.Y = self.C * self.X + self.D * U
 
     def PredictObserver(self, U):
         """Runs the predict step of the observer update."""
-        self.X_hat = (self.A * self.X_hat + self.B * U)
+        if self.delayed_u:
+            self.X_hat = (self.A * self.X_hat + self.B * self.last_U)
+            self.last_U = U.copy()
+        else:
+            self.X_hat = (self.A * self.X_hat + self.B * U)
 
     def CorrectObserver(self, U):
         """Runs the correct step of the observer update."""
@@ -325,16 +336,12 @@ class ControlLoop(object):
             KalmanGain = self.KalmanGain
         else:
             KalmanGain = numpy.linalg.inv(self.A) * self.L
-        self.X_hat += KalmanGain * (self.Y - self.C * self.X_hat - self.D * U)
-
-    def UpdateObserver(self, U):
-        """Updates the observer given the provided U."""
-        if hasattr(self, 'KalmanGain'):
-            KalmanGain = self.KalmanGain
+        if self.delayed_u:
+            self.X_hat += KalmanGain * (self.Y - self.C * self.X_hat -
+                                        self.D * self.last_U)
         else:
-            KalmanGain = numpy.linalg.inv(self.A) * self.L
-        self.X_hat = (self.A * self.X_hat + self.B * U + self.A * KalmanGain *
-                      (self.Y - self.C * self.X_hat - self.D * U))
+            self.X_hat += KalmanGain * (self.Y - self.C * self.X_hat -
+                                        self.D * U)
 
     def _DumpMatrix(self, matrix_name, matrix, scalar_type):
         """Dumps the provided matrix into a variable called matrix_name.
@@ -389,6 +396,7 @@ class ControlLoop(object):
         ans.append(self._DumpMatrix('U_max', self.U_max, scalar_type))
         ans.append(self._DumpMatrix('U_min', self.U_min, scalar_type))
 
+        delayed_u_string = "true" if self.delayed_u else "false"
         if plant_coefficient_type.startswith('StateFeedbackPlant'):
             ans.append(self._DumpMatrix('A', self.A, scalar_type))
             ans.append(self._DumpMatrix('B', self.B, scalar_type))
@@ -396,7 +404,7 @@ class ControlLoop(object):
                 '  const std::chrono::nanoseconds dt(%d);\n' % (self.dt * 1e9))
             ans.append(
                 '  return %s'
-                '(A, B, C, D, U_max, U_min, dt);\n' % (plant_coefficient_type))
+                '(A, B, C, D, U_max, U_min, dt, %s);\n' % (plant_coefficient_type, delayed_u_string))
         elif plant_coefficient_type.startswith('StateFeedbackHybridPlant'):
             ans.append(
                 self._DumpMatrix('A_continuous', self.A_continuous,
@@ -405,8 +413,8 @@ class ControlLoop(object):
                 self._DumpMatrix('B_continuous', self.B_continuous,
                                  scalar_type))
             ans.append('  return %s'
-                       '(A_continuous, B_continuous, C, D, U_max, U_min);\n' %
-                       (plant_coefficient_type))
+                       '(A_continuous, B_continuous, C, D, U_max, U_min, %s);\n' %
+                       (plant_coefficient_type, delayed_u_string))
         else:
             glog.fatal('Unsupported plant type %s', plant_coefficient_type)
 
@@ -484,6 +492,7 @@ class ControlLoop(object):
             '%s %s {\n' % (observer_coefficient_type, self.ObserverFunction())
         ]
 
+        delayed_u_string = "true" if self.delayed_u else "false"
         if observer_coefficient_type.startswith('StateFeedbackObserver'):
             if hasattr(self, 'KalmanGain'):
                 KalmanGain = self.KalmanGain
@@ -496,8 +505,8 @@ class ControlLoop(object):
             ans.append(self._DumpMatrix('KalmanGain', KalmanGain, scalar_type))
             ans.append(self._DumpMatrix('Q', Q, scalar_type))
             ans.append(self._DumpMatrix('R', R, scalar_type))
-            ans.append('  return %s(KalmanGain, Q, R);\n' %
-                       (observer_coefficient_type, ))
+            ans.append('  return %s(KalmanGain, Q, R, %s);\n' %
+                       (observer_coefficient_type, delayed_u_string))
 
         elif observer_coefficient_type.startswith('HybridKalman'):
             ans.append(
@@ -510,8 +519,8 @@ class ControlLoop(object):
                 self._DumpMatrix('P_steady_state', self.P_steady_state,
                                  scalar_type))
             ans.append(
-                '  return %s(Q_continuous, R_continuous, P_steady_state);\n' %
-                (observer_coefficient_type, ))
+                '  return %s(Q_continuous, R_continuous, P_steady_state, %s);\n' %
+                (observer_coefficient_type, delayed_u_string))
         else:
             glog.fatal('Unsupported observer type %s',
                        observer_coefficient_type)
@@ -531,7 +540,12 @@ class HybridControlLoop(ControlLoop):
 
     def PredictHybridObserver(self, U, dt):
         self.Discretize(dt)
-        self.X_hat = self.A * self.X_hat + self.B * U
+        if self.delayed_u:
+            self.X_hat = self.A * self.X_hat + self.B * self.last_U
+            self.last_U = U.copy()
+        else:
+            self.X_hat = self.A * self.X_hat + self.B * U
+
         self.P = (self.A * self.P * self.A.T + self.Q)
 
     def CorrectHybridObserver(self, U):

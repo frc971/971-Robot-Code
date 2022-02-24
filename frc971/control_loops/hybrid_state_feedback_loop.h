@@ -28,7 +28,8 @@ struct StateFeedbackHybridPlantCoefficients final {
         C(other.C),
         D(other.D),
         U_min(other.U_min),
-        U_max(other.U_max) {}
+        U_max(other.U_max),
+        delayed_u(other.delayed_u) {}
 
   StateFeedbackHybridPlantCoefficients(
       const Eigen::Matrix<Scalar, number_of_states, number_of_states>
@@ -38,13 +39,14 @@ struct StateFeedbackHybridPlantCoefficients final {
       const Eigen::Matrix<Scalar, number_of_outputs, number_of_states> &C,
       const Eigen::Matrix<Scalar, number_of_outputs, number_of_inputs> &D,
       const Eigen::Matrix<Scalar, number_of_inputs, 1> &U_max,
-      const Eigen::Matrix<Scalar, number_of_inputs, 1> &U_min)
+      const Eigen::Matrix<Scalar, number_of_inputs, 1> &U_min, bool delayed_u)
       : A_continuous(A_continuous),
         B_continuous(B_continuous),
         C(C),
         D(D),
         U_min(U_min),
-        U_max(U_max) {}
+        U_max(U_max),
+        delayed_u(delayed_u) {}
 
   const Eigen::Matrix<Scalar, number_of_states, number_of_states> A_continuous;
   const Eigen::Matrix<Scalar, number_of_states, number_of_inputs> B_continuous;
@@ -52,6 +54,8 @@ struct StateFeedbackHybridPlantCoefficients final {
   const Eigen::Matrix<Scalar, number_of_outputs, number_of_inputs> D;
   const Eigen::Matrix<Scalar, number_of_inputs, 1> U_min;
   const Eigen::Matrix<Scalar, number_of_inputs, 1> U_max;
+
+  const bool delayed_u;
 };
 
 template <int number_of_states, int number_of_inputs, int number_of_outputs,
@@ -226,16 +230,20 @@ struct HybridKalmanCoefficients final {
   const Eigen::Matrix<Scalar, number_of_states, number_of_states>
       P_steady_state;
 
+  const bool delayed_u;
+
   HybridKalmanCoefficients(
       const Eigen::Matrix<Scalar, number_of_states, number_of_states>
           &Q_continuous,
       const Eigen::Matrix<Scalar, number_of_outputs, number_of_outputs>
           &R_continuous,
       const Eigen::Matrix<Scalar, number_of_states, number_of_states>
-          &P_steady_state)
+          &P_steady_state, bool delayed_u)
       : Q_continuous(Q_continuous),
         R_continuous(R_continuous),
-        P_steady_state(P_steady_state) {}
+        P_steady_state(P_steady_state), delayed_u(delayed_u) {
+    CHECK(!delayed_u) << ": Delayed hybrid filters aren't supported yet.";
+  }
 };
 
 template <int number_of_states, int number_of_inputs, int number_of_outputs,
