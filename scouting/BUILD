@@ -1,4 +1,4 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library", "go_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 
 go_binary(
     name = "sql_demo",
@@ -14,20 +14,4 @@ go_library(
     target_compatible_with = ["@platforms//cpu:x86_64"],
     visibility = ["//visibility:private"],
     deps = ["@com_github_mattn_go_sqlite3//:go-sqlite3"],
-)
-
-go_library(
-    name = "database",
-    srcs = ["db.go"],
-    importpath = "github.com/frc971/971-Robot-Code/scouting",
-    target_compatible_with = ["@platforms//cpu:x86_64"],
-    visibility = ["//visibility:private"],
-    deps = ["@com_github_mattn_go_sqlite3//:go_default_library"],
-)
-
-go_test(
-    name = "db_test",
-    srcs = ["db_test.go"],
-    embed = [":database"],
-    target_compatible_with = ["@platforms//cpu:x86_64"],
 )
