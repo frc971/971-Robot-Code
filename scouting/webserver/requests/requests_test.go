@@ -82,6 +82,7 @@ func TestSubmitDataScouting(t *testing.T) {
 		t.Fatal("Unexpected status code. Got", resp.Status)
 	}
 	// TODO(phil): We have nothing to validate yet. Fix that.
+	// TODO(phil): Can we use scouting/webserver/requests/debug here?
 }
 
 // A mocked database we can use for testing. Add functionality to this as

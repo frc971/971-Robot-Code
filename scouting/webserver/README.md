@@ -24,3 +24,15 @@ server. Make sure that none of the files you're serving clash with any of the
 paths used by the other libraries that enhance the server's functionality. E.g.
 if POST requests for match data are serviced at `/requests/xyz`, then don't
 serve any files in a `requests` directory.
+
+`requests/`
+--------------------------------------------------------------------------------
+This directory contains the code that services requests from the web page. The
+web page sends serialized flatbuffers (see the
+`scouting/webserver/requests/messages` directory) and receives serialized
+flatbuffers in response.
+
+### `requests/debug/cli`
+This directory contains a debug application that lets you interact with the
+webserver. It allows you to make call calls that the web page would normally
+make.
