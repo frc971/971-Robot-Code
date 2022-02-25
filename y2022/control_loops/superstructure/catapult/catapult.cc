@@ -367,6 +367,7 @@ Catapult::Iterate(const Goal *unsafe_goal, const Position *position,
           CHECK_NOTNULL(catapult_voltage);
           *catapult_voltage = 0.0;
           if (catapult_mpc_.started()) {
+            ++shot_count_;
             // Finished the catapult, time to fire.
             catapult_state_ = CatapultState::RESETTING;
           }

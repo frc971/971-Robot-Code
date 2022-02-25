@@ -198,6 +198,9 @@ class Catapult {
 
   bool mpc_active() const { return !use_profile_; }
 
+  // Returns the number of shots taken.
+  int shot_count() const { return shot_count_; }
+
   // Runs either the MPC or the profiled subsystem depending on if we are
   // shooting or not.  Returns the status.
   const flatbuffers::Offset<
@@ -219,6 +222,8 @@ class Catapult {
 
   bool last_firing_ = false;
   bool use_profile_ = true;
+
+  int shot_count_ = 0;
 };
 
 }  // namespace catapult
