@@ -1,0 +1,7 @@
+namespace scouting.webserver.requests;
+
+table QueryMatchList {
+    team:int (id: 0);
+}
+
+root_type QueryMatchList;

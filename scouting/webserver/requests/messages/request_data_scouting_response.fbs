@@ -1,6 +1,6 @@
 namespace scouting.webserver.requests;
 
-table SubmitDataScouting {
+struct Stats {
     team:int (id: 0);
     match:int (id: 1);
     missed_shots_auto:int (id: 2);
@@ -13,4 +13,8 @@ table SubmitDataScouting {
     climbing:int (id:9);
 }
 
-root_type SubmitDataScouting;
+table QueryDataScoutingResponse {
+    stats_list:[Stats] (id:0);
+}
+
+root_type QueryDataScoutingResponse;
