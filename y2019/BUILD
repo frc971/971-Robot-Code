@@ -5,7 +5,7 @@ load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 
 robot_downloader(
     data = [
-        ":config",
+        ":aos_config",
         "@ctre_phoenix_api_cpp_athena//:shared_libraries",
         "@ctre_phoenix_cci_athena//:shared_libraries",
     ],
@@ -180,7 +180,7 @@ flatbuffer_cc_library(
 )
 
 aos_config(
-    name = "config",
+    name = "aos_config",
     src = "y2019.json",
     flatbuffers = [
         ":status_light_fbs",
@@ -195,10 +195,10 @@ aos_config(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
-        "//frc971/autonomous:config",
-        "//frc971/control_loops/drivetrain:config",
-        "//frc971/input:config",
-        "//frc971/wpilib:config",
+        "//frc971/autonomous:aos_config",
+        "//frc971/control_loops/drivetrain:aos_config",
+        "//frc971/input:aos_config",
+        "//frc971/wpilib:aos_config",
     ],
 )
 

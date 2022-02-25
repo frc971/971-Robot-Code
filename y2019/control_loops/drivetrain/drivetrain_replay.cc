@@ -14,7 +14,7 @@
 
 DEFINE_string(logfile, "/tmp/logfile.bfbs",
               "Name of the logfile to read from.");
-DEFINE_string(config, "y2019/config.json",
+DEFINE_string(config, "y2019/aos_config.json",
               "Name of the config file to replay using.");
 DEFINE_string(output_file, "/tmp/replayed",
               "Name of the logfile to write replayed data to.");

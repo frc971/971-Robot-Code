@@ -11,7 +11,7 @@
 #include "gflags/gflags.h"
 #include "y2020/control_loops/drivetrain/drivetrain_base.h"
 
-DEFINE_string(config, "y2020/config.json",
+DEFINE_string(config, "y2020/aos_config.json",
               "Name of the config file to replay using.");
 DEFINE_int32(team, 7971, "Team number to use for logfile replay.");
 DEFINE_string(output_folder, "/tmp/replayed",

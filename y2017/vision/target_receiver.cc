@@ -20,7 +20,7 @@ int Main() {
   // TODO(parker): Have this pull in a config from somewhere.
   TargetFinder finder;
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
-      aos::configuration::ReadConfig("config.json");
+      aos::configuration::ReadConfig("aos_config.json");
 
   ::aos::ShmEventLoop event_loop(&config.message());
 

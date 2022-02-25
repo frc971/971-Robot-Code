@@ -293,7 +293,7 @@ class ClawTest : public ::frc971::testing::ControlLoopTest {
  protected:
   ClawTest()
       : ::frc971::testing::ControlLoopTest(
-            aos::configuration::ReadConfig("y2014/config.json"),
+            aos::configuration::ReadConfig("y2014/aos_config.json"),
             chrono::microseconds(5000)),
         test_event_loop_(MakeEventLoop("test")),
         claw_goal_sender_(test_event_loop_->MakeSender<Goal>("/claw")),

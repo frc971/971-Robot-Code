@@ -97,7 +97,7 @@ cc_test(
         "superstructure_lib_test.cc",
     ],
     data = [
-        "//y2022:config",
+        "//y2022:aos_config",
     ],
     deps = [
         ":superstructure_goal_fbs",

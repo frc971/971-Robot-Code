@@ -6,7 +6,7 @@
 
 #include <iostream>
 
-DEFINE_string(config, "./config.json", "File path of aos configuration");
+DEFINE_string(config, "./aos_config.json", "File path of aos configuration");
 
 DEFINE_bool(
     _bash_autocomplete, false,

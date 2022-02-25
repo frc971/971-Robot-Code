@@ -17,7 +17,7 @@ class VisionTimeAdjusterTest : public ::testing::Test {
  public:
   VisionTimeAdjusterTest()
       : ::testing::Test(),
-        configuration_(aos::configuration::ReadConfig("y2017/config.json")),
+        configuration_(aos::configuration::ReadConfig("y2017/aos_config.json")),
         event_loop_factory_(&configuration_.message()),
         simulation_event_loop_(event_loop_factory_.MakeEventLoop("drivetrain")),
         drivetrain_status_sender_(

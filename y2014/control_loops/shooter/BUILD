@@ -90,7 +90,7 @@ cc_test(
     srcs = [
         "shooter_lib_test.cc",
     ],
-    data = ["//y2014:config"],
+    data = ["//y2014:aos_config"],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":shooter_goal_fbs",

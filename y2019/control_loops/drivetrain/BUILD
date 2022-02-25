@@ -151,7 +151,7 @@ cc_library(
 cc_test(
     name = "target_selector_test",
     srcs = ["target_selector_test.cc"],
-    data = ["//y2019:config"],
+    data = ["//y2019:aos_config"],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":target_selector",
@@ -212,7 +212,7 @@ aos_config(
     visibility = ["//visibility:public"],
     deps = [
         "//frc971/control_loops/drivetrain:simulation_channels",
-        "//y2019:config",
+        "//y2019:aos_config",
     ],
 )
 
@@ -238,7 +238,7 @@ cc_test(
 cc_binary(
     name = "drivetrain_replay",
     srcs = ["drivetrain_replay.cc"],
-    data = ["//y2019:config"],
+    data = ["//y2019:aos_config"],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":drivetrain_base",

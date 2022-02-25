@@ -6,7 +6,7 @@ int main(int argc, char **argv) {
   ::aos::InitGoogle(&argc, &argv);
 
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
-      aos::configuration::ReadConfig("config.json");
+      aos::configuration::ReadConfig("aos_config.json");
 
   ::aos::ShmEventLoop event_loop(&config.message());
   std::shared_ptr<const y2022::constants::Values> values =

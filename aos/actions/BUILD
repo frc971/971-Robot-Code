@@ -54,7 +54,7 @@ aos_config(
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
-        "//aos/events:config",
+        "//aos/events:aos_config",
     ],
 )
 

@@ -13,7 +13,7 @@
 #include "gflags/gflags.h"
 #include "starter_rpc_lib.h"
 
-DEFINE_string(config, "./config.json", "File path of aos configuration");
+DEFINE_string(config, "./aos_config.json", "File path of aos configuration");
 // TODO(james): Bash autocompletion for node names.
 DEFINE_string(
     node, "",

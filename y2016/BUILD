@@ -55,7 +55,7 @@ cc_binary(
 
 robot_downloader(
     data = [
-        ":config",
+        ":aos_config",
     ],
     dirs = [
         "//y2016/dashboard:www_files",
@@ -76,7 +76,7 @@ robot_downloader(
 )
 
 aos_config(
-    name = "config",
+    name = "aos_config",
     src = "y2016.json",
     flatbuffers = [
         "//y2016/control_loops/shooter:shooter_goal_fbs",
@@ -96,10 +96,10 @@ aos_config(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
-        "//frc971/autonomous:config",
-        "//frc971/control_loops/drivetrain:config",
-        "//frc971/input:config",
-        "//frc971/wpilib:config",
+        "//frc971/autonomous:aos_config",
+        "//frc971/control_loops/drivetrain:aos_config",
+        "//frc971/input:aos_config",
+        "//frc971/wpilib:aos_config",
     ],
 )
 

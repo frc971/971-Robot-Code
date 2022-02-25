@@ -107,7 +107,7 @@ aos_config(
     visibility = ["//visibility:public"],
     deps = [
         "//frc971/control_loops/drivetrain:simulation_channels",
-        "//y2022:config",
+        "//y2022:aos_config",
     ],
 )
 

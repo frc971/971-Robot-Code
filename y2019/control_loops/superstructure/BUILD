@@ -80,7 +80,7 @@ cc_test(
         "superstructure_lib_test.cc",
     ],
     data = [
-        "//y2019:config",
+        "//y2019:aos_config",
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [

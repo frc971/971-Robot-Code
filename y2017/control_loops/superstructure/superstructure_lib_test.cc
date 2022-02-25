@@ -521,7 +521,7 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
  protected:
   SuperstructureTest()
       : ::frc971::testing::ControlLoopTest(
-            aos::configuration::ReadConfig("y2017/config.json"),
+            aos::configuration::ReadConfig("y2017/aos_config.json"),
             chrono::microseconds(5050)),
         test_event_loop_(MakeEventLoop("test")),
         superstructure_goal_fetcher_(

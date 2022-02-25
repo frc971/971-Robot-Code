@@ -299,7 +299,7 @@ class DrivetrainOffsetCalculator {
 
 void Main() {
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
-      aos::configuration::ReadConfig("config.json");
+      aos::configuration::ReadConfig("aos_config.json");
 
   ::aos::ShmEventLoop event_loop(&config.message());
 

@@ -26,7 +26,7 @@ DEFINE_string(
     logfile,
     "external/drivetrain_replay/",
     "Name of the logfile to read from.");
-DEFINE_string(config, "y2020/config.json",
+DEFINE_string(config, "y2020/aos_config.json",
               "Name of the config file to replay using.");
 
 namespace y2020 {

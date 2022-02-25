@@ -3,7 +3,7 @@
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 
-DEFINE_string(config, "config.json", "Path to the config.");
+DEFINE_string(config, "aos_config.json", "Path to the config.");
 DEFINE_int32(rt_priority, -1, "If > 0, run as this RT priority");
 
 namespace aos {

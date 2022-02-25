@@ -10,7 +10,7 @@
 DEFINE_bool(all, false,
             "If true, print out the channels for all nodes in the config file, "
             "not just the channels which are visible on this node.");
-DEFINE_string(config, "./config.json", "File path of aos configuration");
+DEFINE_string(config, "./aos_config.json", "File path of aos configuration");
 DEFINE_bool(short_types, true,
             "Whether to show a shortened version of the type name");
 

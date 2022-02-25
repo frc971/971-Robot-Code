@@ -31,7 +31,7 @@ cc_library(
         "camera_reader.h",
     ],
     data = [
-        "//y2020:config",
+        "//y2020:aos_config",
     ],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//y2020:__subpackages__"] + ["//y2022:__subpackages__"],
@@ -55,7 +55,7 @@ cc_binary(
         "viewer.cc",
     ],
     data = [
-        "//y2020:config",
+        "//y2020:aos_config",
     ],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//y2020:__subpackages__"],
@@ -103,7 +103,7 @@ cc_binary(
         "calibration.cc",
     ],
     data = [
-        "//y2020:config",
+        "//y2020:aos_config",
     ],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = [
@@ -133,7 +133,7 @@ cc_binary(
         "viewer_replay.cc",
     ],
     data = [
-        "//y2020:config",
+        "//y2020:aos_config",
     ],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//y2020:__subpackages__"],
@@ -154,7 +154,7 @@ cc_binary(
         "extrinsics_calibration.cc",
     ],
     data = [
-        "//y2020:config",
+        "//y2020:aos_config",
     ],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//y2020:__subpackages__"],

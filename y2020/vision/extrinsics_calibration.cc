@@ -20,7 +20,7 @@
 #include "y2020/vision/sift/sift_training_generated.h"
 #include "y2020/vision/tools/python_code/sift_training_data.h"
 
-DEFINE_string(config, "config.json", "Path to the config file to use.");
+DEFINE_string(config, "aos_config.json", "Path to the config file to use.");
 DEFINE_string(pi, "pi-7971-2", "Pi name to calibrate.");
 DEFINE_bool(plot, false, "Whether to plot the resulting data.");
 

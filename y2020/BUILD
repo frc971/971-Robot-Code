@@ -9,7 +9,7 @@ robot_downloader(
         "//aos/network:web_proxy_main",
     ],
     data = [
-        ":config",
+        ":aos_config",
         "@ctre_phoenix_api_cpp_athena//:shared_libraries",
         "@ctre_phoenix_cci_athena//:shared_libraries",
     ],
@@ -39,7 +39,7 @@ robot_downloader(
         "//y2020/vision:viewer",
     ],
     data = [
-        ":config",
+        ":aos_config",
     ],
     dirs = [
         "//y2020/www:www_files",
@@ -152,7 +152,7 @@ cc_binary(
 )
 
 aos_config(
-    name = "config",
+    name = "aos_config",
     src = "y2020.json",
     flatbuffers = [
         "//aos/network:message_bridge_client_fbs",
@@ -192,9 +192,9 @@ aos_config(
         target_compatible_with = ["@platforms//os:linux"],
         visibility = ["//visibility:public"],
         deps = [
-            "//aos/events:config",
-            "//frc971/control_loops/drivetrain:config",
-            "//frc971/input:config",
+            "//aos/events:aos_config",
+            "//frc971/control_loops/drivetrain:aos_config",
+            "//frc971/input:aos_config",
         ],
     )
     for pi in [
@@ -221,9 +221,9 @@ aos_config(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
-        "//aos/events:config",
-        "//frc971/control_loops/drivetrain:config",
-        "//frc971/input:config",
+        "//aos/events:aos_config",
+        "//frc971/control_loops/drivetrain:aos_config",
+        "//frc971/input:aos_config",
     ],
 )
 
@@ -247,11 +247,11 @@ aos_config(
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
-        "//aos/events:config",
-        "//frc971/autonomous:config",
-        "//frc971/control_loops/drivetrain:config",
-        "//frc971/input:config",
-        "//frc971/wpilib:config",
+        "//aos/events:aos_config",
+        "//frc971/autonomous:aos_config",
+        "//frc971/control_loops/drivetrain:aos_config",
+        "//frc971/input:aos_config",
+        "//frc971/wpilib:aos_config",
     ],
 )
 
@@ -266,7 +266,7 @@ sh_binary(
     name = "log_web_proxy",
     srcs = ["log_web_proxy.sh"],
     data = [
-        ":config",
+        ":aos_config",
         "//aos/network:log_web_proxy_main",
         "//y2020/www:camera_main_bundle.min.js",
         "//y2020/www:field_main_bundle.min.js",
@@ -279,7 +279,7 @@ sh_binary(
     name = "web_proxy",
     srcs = ["web_proxy.sh"],
     data = [
-        ":config",
+        ":aos_config",
         "//aos/network:web_proxy_main",
         "//y2020/www:camera_main_bundle.min.js",
         "//y2020/www:field_main_bundle.min.js",

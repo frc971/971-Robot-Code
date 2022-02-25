@@ -4,7 +4,7 @@
 #include "aos/network/web_proxy.h"
 #include "gflags/gflags.h"
 
-DEFINE_string(config, "./config.json", "File path of aos configuration");
+DEFINE_string(config, "./aos_config.json", "File path of aos configuration");
 DEFINE_string(data_dir, "www", "Directory to serve data files from");
 DEFINE_int32(buffer_size, 1000000,
              "-1 if infinite, in bytes / channel. If there are no active "

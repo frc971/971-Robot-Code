@@ -19,7 +19,7 @@
 #include "y2020/control_loops/drivetrain/localizer.h"
 #include "y2020/control_loops/superstructure/superstructure.h"
 
-DEFINE_string(config, "y2020/config.json",
+DEFINE_string(config, "y2020/aos_config.json",
               "Name of the config file to replay using.");
 DEFINE_string(output_folder, "/tmp/replayed",
               "Name of the folder to write replayed logs to.");

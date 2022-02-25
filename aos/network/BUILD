@@ -354,7 +354,7 @@ aos_config(
         "//aos/network:timestamp_fbs",
     ],
     target_compatible_with = ["@platforms//os:linux"],
-    deps = ["//aos/events:config"],
+    deps = ["//aos/events:aos_config"],
 )
 
 aos_config(
@@ -369,7 +369,7 @@ aos_config(
         "//aos/network:timestamp_fbs",
     ],
     target_compatible_with = ["@platforms//os:linux"],
-    deps = ["//aos/events:config"],
+    deps = ["//aos/events:aos_config"],
 )
 
 cc_test(

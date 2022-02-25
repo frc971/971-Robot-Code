@@ -3,7 +3,7 @@ load("//aos:config.bzl", "aos_config")
 
 robot_downloader(
     data = [
-        ":config",
+        ":aos_config",
     ],
     start_binaries = [
         ":joystick_reader",
@@ -98,7 +98,7 @@ cc_binary(
 )
 
 aos_config(
-    name = "config",
+    name = "aos_config",
     src = "y2021_bot3.json",
     flatbuffers = [
         "//y2021_bot3/control_loops/superstructure:superstructure_goal_fbs",
@@ -108,9 +108,9 @@ aos_config(
     ],
     visibility = ["//visibility:public"],
     deps = [
-        "//frc971/autonomous:config",
-        "//frc971/control_loops/drivetrain:config",
-        "//frc971/input:config",
-        "//frc971/wpilib:config",
+        "//frc971/autonomous:aos_config",
+        "//frc971/control_loops/drivetrain:aos_config",
+        "//frc971/input:aos_config",
+        "//frc971/wpilib:aos_config",
     ],
 )

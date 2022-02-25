@@ -5,7 +5,7 @@
 #include "gflags/gflags.h"
 #include "starterd_lib.h"
 
-DEFINE_string(config, "./config.json", "File path of aos configuration");
+DEFINE_string(config, "./aos_config.json", "File path of aos configuration");
 DEFINE_string(user, "",
               "Starter runs as though this user ran a SUID binary if set.");
 

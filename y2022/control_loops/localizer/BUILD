@@ -87,7 +87,7 @@ cc_test(
     name = "localizer_test",
     srcs = ["localizer_test.cc"],
     data = [
-        "//y2022:config",
+        "//y2022:aos_config",
     ],
     shard_count = 10,
     deps = [
@@ -102,7 +102,7 @@ cc_binary(
     name = "localizer_replay",
     srcs = ["localizer_replay.cc"],
     data = [
-        "//y2020:config",
+        "//y2020:aos_config",
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [

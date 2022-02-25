@@ -12,7 +12,7 @@
 #include "frc971/vision/vision_generated.h"
 #include "y2020/vision/sift/sift_generated.h"
 
-DEFINE_string(config, "config.json", "Path to the config file to use.");
+DEFINE_string(config, "aos_config.json", "Path to the config file to use.");
 DEFINE_bool(show_features, true, "Show the SIFT features that matched.");
 DEFINE_string(channel, "/camera", "Channel name for the image.");
 

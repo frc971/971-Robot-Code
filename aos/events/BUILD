@@ -142,7 +142,7 @@ cc_binary(
 )
 
 aos_config(
-    name = "config",
+    name = "aos_config",
     src = "aos.json",
     flatbuffers = [
         ":event_loop_fbs",
@@ -161,7 +161,7 @@ aos_config(
         ":pong_fbs",
     ],
     target_compatible_with = ["@platforms//os:linux"],
-    deps = [":config"],
+    deps = [":aos_config"],
 )
 
 [
@@ -177,7 +177,7 @@ aos_config(
             "//aos/network:message_bridge_server_fbs",
         ],
         target_compatible_with = ["@platforms//os:linux"],
-        deps = [":config"],
+        deps = [":aos_config"],
     )
     for config in [
         "multinode_pingpong_test_split",
@@ -448,7 +448,7 @@ cc_test(
         "glib_main_loop_test.cc",
     ],
     data = [
-        ":config",
+        ":aos_config",
     ],
     deps = [
         ":glib_main_loop",

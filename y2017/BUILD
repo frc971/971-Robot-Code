@@ -49,7 +49,7 @@ cc_binary(
 )
 
 aos_config(
-    name = "config",
+    name = "aos_config",
     src = "y2017.json",
     flatbuffers = [
         "//y2017/control_loops/superstructure:superstructure_goal_fbs",
@@ -61,8 +61,8 @@ aos_config(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
-        "//frc971/control_loops/drivetrain:config",
-        "//frc971/input:config",
+        "//frc971/control_loops/drivetrain:aos_config",
+        "//frc971/input:aos_config",
     ],
 )
 

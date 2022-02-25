@@ -158,7 +158,7 @@ aos_config(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
-        "//aos/events:config",
+        "//aos/events:aos_config",
     ],
 )
 
@@ -179,7 +179,7 @@ sh_binary(
         ":reflection_test_bundle.min.js",
         ":test_config",
         "//aos/network:web_proxy_main",
-        "//y2020:config",
+        "//y2020:aos_config",
     ],
     target_compatible_with = ["@platforms//os:linux"],
 )

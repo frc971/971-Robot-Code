@@ -37,7 +37,7 @@ struct TestParams {
 class TargetSelectorParamTest : public ::testing::TestWithParam<TestParams> {
  public:
   TargetSelectorParamTest()
-      : configuration_(aos::configuration::ReadConfig("y2019/config.json")),
+      : configuration_(aos::configuration::ReadConfig("y2019/aos_config.json")),
         event_loop_factory_(&configuration_.message()),
         event_loop_(this->event_loop_factory_.MakeEventLoop("drivetrain")),
         test_event_loop_(this->event_loop_factory_.MakeEventLoop("test")),

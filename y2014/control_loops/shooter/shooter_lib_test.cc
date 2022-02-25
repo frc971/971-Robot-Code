@@ -331,7 +331,7 @@ class ShooterTestTemplated
  protected:
   ShooterTestTemplated()
       : ::frc971::testing::ControlLoopTestTemplated<TestType>(
-            aos::configuration::ReadConfig("y2014/config.json"),
+            aos::configuration::ReadConfig("y2014/aos_config.json"),
             // TODO(austin): I think this runs at 5 ms in real life.
             chrono::microseconds(5000)),
         test_event_loop_(this->MakeEventLoop("test")),

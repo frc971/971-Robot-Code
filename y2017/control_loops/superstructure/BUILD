@@ -78,7 +78,7 @@ cc_test(
     srcs = [
         "superstructure_lib_test.cc",
     ],
-    data = ["//y2017:config"],
+    data = ["//y2017:aos_config"],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":superstructure_goal_fbs",
@@ -136,7 +136,7 @@ cc_test(
     srcs = [
         "vision_time_adjuster_test.cc",
     ],
-    data = ["//y2017:config"],
+    data = ["//y2017:aos_config"],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":vision_time_adjuster",

@@ -3,9 +3,9 @@
 #include "y2022/vision/camera_reader.h"
 
 // config used to allow running camera_reader independently.  E.g.,
-// bazel run //y2022/vision:camera_reader -- --config y2022/config.json
+// bazel run //y2022/vision:camera_reader -- --config y2022/aos_config.json
 //   --override_hostname pi-7971-1  --ignore_timestamps true
-DEFINE_string(config, "config.json", "Path to the config file to use.");
+DEFINE_string(config, "aos_config.json", "Path to the config file to use.");
 DEFINE_double(duty_cycle, 0.5, "Duty cycle of the LEDs");
 DEFINE_uint32(exposure, 5,
               "Exposure time, in 100us increments; 0 implies auto exposure");

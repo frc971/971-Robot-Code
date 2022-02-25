@@ -7,7 +7,7 @@ robot_downloader(
         "//aos/network:web_proxy_main",
     ],
     data = [
-        ":config",
+        ":aos_config",
         "@ctre_phoenix_api_cpp_athena//:shared_libraries",
         "@ctre_phoenix_cci_athena//:shared_libraries",
     ],
@@ -38,7 +38,7 @@ robot_downloader(
         "//y2022/control_loops/localizer:localizer_main",
     ],
     data = [
-        ":config",
+        ":aos_config",
     ],
     start_binaries = [
         "//aos/events/logging:logger_main",
@@ -52,7 +52,7 @@ robot_downloader(
 )
 
 aos_config(
-    name = "config",
+    name = "aos_config",
     src = "y2022.json",
     flatbuffers = [
         "//aos/network:message_bridge_client_fbs",
@@ -91,9 +91,9 @@ aos_config(
         target_compatible_with = ["@platforms//os:linux"],
         visibility = ["//visibility:public"],
         deps = [
-            "//aos/events:config",
-            "//frc971/control_loops/drivetrain:config",
-            "//frc971/input:config",
+            "//aos/events:aos_config",
+            "//frc971/control_loops/drivetrain:aos_config",
+            "//frc971/input:aos_config",
         ],
     )
     for pi in [
@@ -118,8 +118,8 @@ aos_config(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
-        "//aos/events:config",
-        "//frc971/control_loops/drivetrain:config",
+        "//aos/events:aos_config",
+        "//frc971/control_loops/drivetrain:aos_config",
     ],
 )
 
@@ -137,9 +137,9 @@ aos_config(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
-        "//aos/events:config",
-        "//frc971/control_loops/drivetrain:config",
-        "//frc971/input:config",
+        "//aos/events:aos_config",
+        "//frc971/control_loops/drivetrain:aos_config",
+        "//frc971/input:aos_config",
     ],
 )
 
@@ -159,11 +159,11 @@ aos_config(
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
-        "//aos/events:config",
-        "//frc971/autonomous:config",
-        "//frc971/control_loops/drivetrain:config",
-        "//frc971/input:config",
-        "//frc971/wpilib:config",
+        "//aos/events:aos_config",
+        "//frc971/autonomous:aos_config",
+        "//frc971/control_loops/drivetrain:aos_config",
+        "//frc971/input:aos_config",
+        "//frc971/wpilib:aos_config",
     ],
 )
 

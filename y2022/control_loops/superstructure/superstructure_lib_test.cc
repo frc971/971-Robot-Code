@@ -252,7 +252,7 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
  public:
   SuperstructureTest()
       : ::frc971::testing::ControlLoopTest(
-            aos::configuration::ReadConfig("y2022/config.json"),
+            aos::configuration::ReadConfig("y2022/aos_config.json"),
             std::chrono::microseconds(5050)),
         values_(std::make_shared<constants::Values>(constants::MakeValues(
             frc971::control_loops::testing::kTeamNumber))),

@@ -89,7 +89,7 @@ flatbuffer_cc_library(
 )
 
 aos_config(
-    name = "config",
+    name = "aos_config",
     src = "robot_state_config.json",
     flatbuffers = [
         ":joystick_state_fbs",
@@ -97,5 +97,5 @@ aos_config(
     ],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
-    deps = ["//aos/events:config"],
+    deps = ["//aos/events:aos_config"],
 )

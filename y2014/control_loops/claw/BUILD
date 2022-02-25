@@ -89,7 +89,7 @@ cc_test(
     srcs = [
         "claw_lib_test.cc",
     ],
-    data = ["//y2014:config"],
+    data = ["//y2014:aos_config"],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":claw_goal_fbs",

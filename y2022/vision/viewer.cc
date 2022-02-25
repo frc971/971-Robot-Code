@@ -15,7 +15,7 @@
 DEFINE_string(capture, "",
               "If set, capture a single image and save it to this filename.");
 DEFINE_string(channel, "/camera", "Channel name for the image.");
-DEFINE_string(config, "config.json", "Path to the config file to use.");
+DEFINE_string(config, "aos_config.json", "Path to the config file to use.");
 DEFINE_string(png_dir, "", "Path to a set of images to display.");
 DEFINE_bool(show_features, true, "Show the blobs.");
 

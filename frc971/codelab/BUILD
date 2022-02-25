@@ -7,7 +7,7 @@ cc_binary(
     name = "basic_test",
     testonly = 1,
     srcs = ["basic_test.cc"],
-    data = [":config"],
+    data = [":aos_config"],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":basic",
@@ -74,7 +74,7 @@ flatbuffer_cc_library(
 )
 
 aos_config(
-    name = "config",
+    name = "aos_config",
     src = "codelab.json",
     flatbuffers = [
         ":basic_goal_fbs",
@@ -84,6 +84,6 @@ aos_config(
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
-        "//frc971/input:config",
+        "//frc971/input:aos_config",
     ],
 )

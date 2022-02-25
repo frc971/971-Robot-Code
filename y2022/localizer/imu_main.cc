@@ -2,7 +2,7 @@
 #include "aos/init.h"
 #include "y2022/localizer/imu.h"
 
-DEFINE_string(config, "config.json", "Path to the config file to use.");
+DEFINE_string(config, "aos_config.json", "Path to the config file to use.");
 
 int main(int argc, char *argv[]) {
   aos::InitGoogle(&argc, &argv);

@@ -16,7 +16,7 @@
 
 DEFINE_string(calibration_folder, ".", "Folder to place calibration files.");
 DEFINE_string(camera_id, "", "Camera ID in format YY-NN-- year and number.");
-DEFINE_string(config, "config.json", "Path to the config file to use.");
+DEFINE_string(config, "aos_config.json", "Path to the config file to use.");
 DEFINE_bool(display_undistorted, false,
             "If true, display the undistorted image.");
 DEFINE_string(pi, "", "Pi name to calibrate.");

@@ -145,7 +145,7 @@ aos_config(
     visibility = ["//visibility:public"],
     deps = [
         "//frc971/control_loops/drivetrain:simulation_channels",
-        "//y2020:config",
+        "//y2020:aos_config",
     ],
 )
 
@@ -172,7 +172,7 @@ cc_test(
     name = "drivetrain_replay_test",
     srcs = ["drivetrain_replay_test.cc"],
     data = [
-        "//y2020:config",
+        "//y2020:aos_config",
         "@drivetrain_replay",
     ],
     target_compatible_with = ["@platforms//os:linux"],
@@ -195,7 +195,7 @@ cc_test(
 cc_binary(
     name = "drivetrain_replay",
     srcs = ["drivetrain_replay.cc"],
-    data = ["//y2020:config"],
+    data = ["//y2020:aos_config"],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":drivetrain_base",

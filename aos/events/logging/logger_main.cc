@@ -10,7 +10,7 @@
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 
-DEFINE_string(config, "config.json", "Config file to use.");
+DEFINE_string(config, "aos_config.json", "Config file to use.");
 
 DEFINE_bool(skip_renicing, false,
             "If true, skip renicing the logger.  This leaves it lower priority "

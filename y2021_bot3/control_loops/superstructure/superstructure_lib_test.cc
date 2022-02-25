@@ -21,7 +21,7 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
  public:
   SuperstructureTest()
       : ::frc971::testing::ControlLoopTest(
-            aos::configuration::ReadConfig("y2021_bot3/config.json"),
+            aos::configuration::ReadConfig("y2021_bot3/aos_config.json"),
             std::chrono::microseconds(5050)),
         superstructure_event_loop(MakeEventLoop("Superstructure")),
         superstructure_(superstructure_event_loop.get()),

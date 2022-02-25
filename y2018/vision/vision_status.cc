@@ -15,7 +15,7 @@ using aos::monotonic_clock;
 
 int Main() {
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
-      aos::configuration::ReadConfig("config.json");
+      aos::configuration::ReadConfig("aos_config.json");
 
   ::aos::events::RXUdpSocket video_rx(5001);
   char data[65507];

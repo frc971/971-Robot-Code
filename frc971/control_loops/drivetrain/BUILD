@@ -136,13 +136,13 @@ aos_config(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
-        ":config",
+        ":aos_config",
         ":simulation_channels",
     ],
 )
 
 aos_config(
-    name = "config",
+    name = "aos_config",
     src = "drivetrain_config.json",
     flatbuffers = [
         ":drivetrain_goal_fbs",
@@ -160,7 +160,7 @@ aos_config(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
-        "//frc971/input:config",
+        "//frc971/input:aos_config",
     ],
 )
 

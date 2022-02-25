@@ -448,7 +448,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         std::make_shared<const Values>(constants::MakeValues());
 
     aos::FlatbufferDetachedBuffer<aos::Configuration> config =
-        aos::configuration::ReadConfig("config.json");
+        aos::configuration::ReadConfig("aos_config.json");
 
     // Thread 1.
     ::aos::ShmEventLoop joystick_sender_event_loop(&config.message());

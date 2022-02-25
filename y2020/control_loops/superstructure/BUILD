@@ -108,7 +108,7 @@ cc_test(
         "superstructure_lib_test.cc",
     ],
     data = [
-        "//y2020:config",
+        "//y2020:aos_config",
         "@superstructure_replay",
     ],
     target_compatible_with = ["@platforms//os:linux"],

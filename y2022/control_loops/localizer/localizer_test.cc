@@ -284,7 +284,7 @@ using control_loops::drivetrain::Output;
 class EventLoopLocalizerTest : public ::testing::Test {
  protected:
   EventLoopLocalizerTest()
-      : configuration_(aos::configuration::ReadConfig("y2022/config.json")),
+      : configuration_(aos::configuration::ReadConfig("y2022/aos_config.json")),
         event_loop_factory_(&configuration_.message()),
         roborio_node_(
             aos::configuration::GetNode(&configuration_.message(), "roborio")),

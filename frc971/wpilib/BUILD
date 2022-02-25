@@ -135,7 +135,7 @@ flatbuffer_cc_library(
 )
 
 aos_config(
-    name = "config",
+    name = "aos_config",
     src = "wpilib_config.json",
     flatbuffers = [
         ":pdp_values_fbs",
@@ -152,7 +152,7 @@ aos_config(
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
-        "//aos/events:config",
+        "//aos/events:aos_config",
     ],
 )
 

@@ -15,7 +15,7 @@ using aos::testing::ArtifactPath;
 
 const FlatbufferDetachedBuffer<Configuration> &Config() {
   static const FlatbufferDetachedBuffer<Configuration> result =
-      configuration::ReadConfig(ArtifactPath("aos/events/config.json"));
+      configuration::ReadConfig(ArtifactPath("aos/events/aos_config.json"));
   return result;
 }
 

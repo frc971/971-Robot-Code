@@ -79,7 +79,7 @@ cc_test(
     srcs = [
         "superstructure_lib_test.cc",
     ],
-    data = ["//y2018:config"],
+    data = ["//y2018:aos_config"],
     shard_count = 5,
     target_compatible_with = ["@platforms//os:linux"],
     deps = [

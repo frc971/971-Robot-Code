@@ -23,7 +23,7 @@ DEFINE_string(output_file, "",
               "If set, logs all channels to the provided logfile.");
 DEFINE_string(replay_logfile, "external/superstructure_replay/",
               "Name of the logfile to read from and replay.");
-DEFINE_string(config, "y2020/config.json",
+DEFINE_string(config, "y2020/aos_config.json",
               "Name of the config file to replay using.");
 
 namespace y2020 {
@@ -445,7 +445,7 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
  protected:
   SuperstructureTest()
       : ::frc971::testing::ControlLoopTest(
-            aos::configuration::ReadConfig("y2020/config.json"),
+            aos::configuration::ReadConfig("y2020/aos_config.json"),
             chrono::microseconds(5050)),
         roborio_(aos::configuration::GetNode(configuration(), "roborio")),
         test_event_loop_(MakeEventLoop("test", roborio_)),

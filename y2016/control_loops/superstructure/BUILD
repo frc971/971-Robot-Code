@@ -130,7 +130,7 @@ cc_test(
     srcs = [
         "superstructure_lib_test.cc",
     ],
-    data = ["//y2016:config"],
+    data = ["//y2016:aos_config"],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":superstructure_goal_fbs",

@@ -131,7 +131,7 @@ aos_config(
     src = "plotter_config.json",
     flatbuffers = [":plot_data_fbs"],
     target_compatible_with = ["@platforms//os:linux"],
-    deps = ["//aos/events:config"],
+    deps = ["//aos/events:aos_config"],
 )
 
 cc_library(

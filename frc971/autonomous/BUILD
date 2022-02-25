@@ -46,7 +46,7 @@ cc_library(
 )
 
 aos_config(
-    name = "config",
+    name = "aos_config",
     src = "autonomous_config.json",
     flatbuffers = [
         "//aos/actions:actions_fbs",

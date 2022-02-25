@@ -89,7 +89,7 @@ cc_library(
         "gpio.h",
     ],
     data = [
-        "//y2022:config",
+        "//y2022:aos_config",
     ],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//y2022:__subpackages__"],
@@ -170,7 +170,7 @@ cc_binary(
         "viewer.cc",
     ],
     data = [
-        "//y2022:config",
+        "//y2022:aos_config",
     ],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//y2022:__subpackages__"],
