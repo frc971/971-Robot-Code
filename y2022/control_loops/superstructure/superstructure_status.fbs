@@ -18,6 +18,11 @@ table Status {
   intake_back:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 4);
 
   turret:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 5);
+
+  catapult:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 6);
+
+  solve_time:double (id: 7);
+  mpc_active:bool (id: 8);
 }
 
 root_type Status;

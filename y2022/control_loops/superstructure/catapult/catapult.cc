@@ -19,17 +19,17 @@ namespace {
 osqp::OsqpInstance MakeInstance(
     size_t horizon, Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> P) {
   osqp::OsqpInstance instance;
-  instance.objective_matrix = P.cast<c_float>().sparseView();
+  instance.objective_matrix = P.sparseView();
 
   instance.constraint_matrix =
-      Eigen::SparseMatrix<c_float, Eigen::ColMajor, osqp::c_int>(horizon,
+      Eigen::SparseMatrix<double, Eigen::ColMajor, osqp::c_int>(horizon,
                                                                  horizon);
   instance.constraint_matrix.setIdentity();
 
   instance.lower_bounds =
-      Eigen::Matrix<c_float, Eigen::Dynamic, 1>::Zero(horizon, 1);
+      Eigen::Matrix<double, Eigen::Dynamic, 1>::Zero(horizon, 1);
   instance.upper_bounds =
-      Eigen::Matrix<c_float, Eigen::Dynamic, 1>::Ones(horizon, 1) * 12.0;
+      Eigen::Matrix<double, Eigen::Dynamic, 1>::Ones(horizon, 1) * 12.0;
   return instance;
 }
 }  // namespace
@@ -40,27 +40,37 @@ MPCProblem::MPCProblem(size_t horizon,
                        Eigen::Matrix<double, 2, 2> Af,
                        Eigen::Matrix<double, Eigen::Dynamic, 2> final_q)
     : horizon_(horizon),
-      accel_q_(std::move(accel_q.cast<c_float>())),
-      Af_(std::move(Af.cast<c_float>())),
-      final_q_(std::move(final_q.cast<c_float>())),
+      accel_q_(std::move(accel_q)),
+      Af_(std::move(Af)),
+      final_q_(std::move(final_q)),
       instance_(MakeInstance(horizon, std::move(P))) {
-  instance_.objective_vector =
-      Eigen::Matrix<c_float, Eigen::Dynamic, 1>(horizon, 1);
+  // Start with a representative problem.
+  Eigen::Matrix<double, 2, 1> X_initial(0.0, 0.0);
+  Eigen::Matrix<double, 2, 1> X_final(2.0, 25.0);
+
+  objective_vector_ =
+      X_initial(1, 0) * accel_q_ + final_q_ * (Af_ * X_initial - X_final);
+  instance_.objective_vector = objective_vector_;
   settings_.max_iter = 25;
-  settings_.check_termination = 25;
-  settings_.warm_start = 0;
+  settings_.check_termination = 5;
+  settings_.warm_start = 1;
+  // TODO(austin): Do we need this scaling thing?  It makes it not solve
+  // sometimes... I'm pretty certain by giving it a decently formed problem to
+  // initialize with, it will not try doing crazy things with the scaling
+  // internally.
+  settings_.scaling = 0;
   auto status = solver_.Init(instance_, settings_);
   CHECK(status.ok()) << status;
 }
 
-void MPCProblem::SetState(Eigen::Matrix<c_float, 2, 1> X_initial,
-                          Eigen::Matrix<c_float, 2, 1> X_final) {
+void MPCProblem::SetState(Eigen::Matrix<double, 2, 1> X_initial,
+                          Eigen::Matrix<double, 2, 1> X_final) {
   X_initial_ = X_initial;
   X_final_ = X_final;
-  instance_.objective_vector =
+  objective_vector_ =
       X_initial(1, 0) * accel_q_ + final_q_ * (Af_ * X_initial - X_final);
 
-  auto status = solver_.SetObjectiveVector(instance_.objective_vector);
+  auto status = solver_.SetObjectiveVector(objective_vector_);
   CHECK(status.ok()) << status;
 }
 
@@ -126,8 +136,8 @@ CatapultProblemGenerator::P(size_t horizon) {
 }
 
 const Eigen::Matrix<double, Eigen::Dynamic, 1> CatapultProblemGenerator::q(
-    size_t horizon, Eigen::Matrix<c_float, 2, 1> X_initial,
-    Eigen::Matrix<c_float, 2, 1> X_final) {
+    size_t horizon, Eigen::Matrix<double, 2, 1> X_initial,
+    Eigen::Matrix<double, 2, 1> X_final) {
   CHECK_GT(horizon, 0u);
   CHECK_LE(horizon, horizon_);
   return 2.0 * X_initial(1, 0) * accel_q(horizon) +
@@ -252,6 +262,163 @@ Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>
 CatapultProblemGenerator::MakeP() {
   return 2.0 * (M_.transpose() * W_.transpose() * Pi_ * W_ * M_ +
                 Bf(horizon_).transpose() * Q_final_ * Bf(horizon_));
+}
+
+CatapultController::CatapultController(size_t horizon) : generator_(horizon) {
+  problems_.reserve(generator_.horizon());
+  for (size_t i = generator_.horizon(); i > 0; --i) {
+    problems_.emplace_back(generator_.MakeProblem(i));
+  }
+
+  Reset();
+}
+
+void CatapultController::Reset() {
+  current_controller_ = 0;
+  solve_time_ = 0.0;
+}
+
+void CatapultController::SetState(Eigen::Matrix<double, 2, 1> X_initial,
+                                  Eigen::Matrix<double, 2, 1> X_final) {
+  if (current_controller_ >= problems_.size()) {
+    return;
+  }
+  problems_[current_controller_]->SetState(X_initial, X_final);
+}
+
+bool CatapultController::Solve() {
+  if (current_controller_ >= problems_.size()) {
+    return true;
+  }
+  const bool result = problems_[current_controller_]->Solve();
+  solve_time_ = problems_[current_controller_]->solve_time();
+  return result;
+}
+
+std::optional<double> CatapultController::Next() {
+  if (current_controller_ >= problems_.size()) {
+    return std::nullopt;
+  }
+
+  const double u = problems_[current_controller_]->U(0);
+
+  if (current_controller_ + 1u < problems_.size()) {
+    problems_[current_controller_ + 1]->WarmStart(
+        *problems_[current_controller_]);
+  }
+  ++current_controller_;
+  return u;
+}
+
+const flatbuffers::Offset<
+    frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus>
+Catapult::Iterate(const Goal *unsafe_goal, const Position *position,
+                  double *catapult_voltage,
+                  flatbuffers::FlatBufferBuilder *fbb) {
+  const frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal
+      *catapult_goal = unsafe_goal != nullptr && unsafe_goal->has_catapult()
+                           ? (unsafe_goal->catapult()->return_position())
+                           : nullptr;
+
+  const bool catapult_disabled = catapult_.Correct(
+      catapult_goal, position->catapult(), catapult_voltage == nullptr);
+
+  if (catapult_disabled) {
+    catapult_state_ = CatapultState::PROFILE;
+  } else if (catapult_.running() && unsafe_goal &&
+             unsafe_goal->has_catapult() && unsafe_goal->catapult()->fire() &&
+             !last_firing_) {
+    catapult_state_ = CatapultState::FIRING;
+  }
+
+  if (catapult_.running() && unsafe_goal && unsafe_goal->has_catapult()) {
+    last_firing_ = unsafe_goal->catapult()->fire();
+  }
+
+  use_profile_ = true;
+
+  switch (catapult_state_) {
+    case CatapultState::FIRING: {
+      // Select the ball controller.  We should only be firing if we have a
+      // ball, or at least should only care about the shot accuracy.
+      catapult_.set_controller_index(0);
+      // Ok, so we've now corrected.  Next step is to run the MPC.
+      //
+      // Since there is a unit delay between when we ask for a U and the
+      // hardware applies it, we need to run the optimizer for the position at
+      // the *next* control loop cycle.
+
+      const Eigen::Vector3d next_X =
+          catapult_.controller().plant().A() * catapult_.estimated_state() +
+          catapult_.controller().plant().B() *
+              catapult_.controller().observer().last_U();
+
+      catapult_mpc_.SetState(
+          next_X.block<2, 1>(0, 0),
+          Eigen::Vector2d(unsafe_goal->catapult()->shot_position(),
+                          unsafe_goal->catapult()->shot_velocity()));
+
+      const bool solved = catapult_mpc_.Solve();
+
+      if (solved || catapult_mpc_.started()) {
+        std::optional<double> solution = catapult_mpc_.Next();
+
+        if (!solution.has_value()) {
+          CHECK_NOTNULL(catapult_voltage);
+          *catapult_voltage = 0.0;
+          if (catapult_mpc_.started()) {
+            // Finished the catapult, time to fire.
+            catapult_state_ = CatapultState::RESETTING;
+          }
+        } else {
+          // TODO(austin): Voltage error?
+          CHECK_NOTNULL(catapult_voltage);
+          *catapult_voltage =
+              std::max(0.0, std::min(12.0, *solution - 0.0 * next_X(2, 0)));
+          use_profile_ = false;
+        }
+      } else {
+        if (unsafe_goal && unsafe_goal->has_catapult() &&
+            !unsafe_goal->catapult()->fire()) {
+          // Eh, didn't manage to solve before it was time to fire.  Give up.
+          catapult_state_ = CatapultState::PROFILE;
+        }
+      }
+
+      if (!use_profile_ || catapult_state_ == CatapultState::RESETTING) {
+        catapult_.ForceGoal(catapult_.estimated_position(),
+                            catapult_.estimated_velocity());
+      }
+    } break;
+
+    case CatapultState::RESETTING:
+      if (catapult_.controller().R(1, 0) > 0.0) {
+        catapult_.AdjustProfile(7.0, 500.0);
+      } else {
+        catapult_state_ = CatapultState::PROFILE;
+      }
+      [[fallthrough]];
+
+    case CatapultState::PROFILE:
+      break;
+  }
+
+  if (use_profile_) {
+    if (catapult_state_ != CatapultState::FIRING) {
+      catapult_mpc_.Reset();
+    }
+    // Select the controller designed for when we have no ball.
+    catapult_.set_controller_index(1);
+
+    const double output_voltage = catapult_.UpdateController(catapult_disabled);
+    if (catapult_voltage != nullptr) {
+      *catapult_voltage = output_voltage;
+    }
+  }
+
+  catapult_.UpdateObserver(catapult_voltage != nullptr ? *catapult_voltage : 0.0);
+
+  return catapult_.MakeStatus(fbb);
 }
 
 }  // namespace catapult

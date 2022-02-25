@@ -2,6 +2,19 @@ include "frc971/control_loops/profiled_subsystem.fbs";
 
 namespace y2022.control_loops.superstructure;
 
+table CatapultGoal {
+  // If true, fire!  The robot will only fire when ready.
+  fire:bool (id: 0);
+
+  // The target shot position and velocity.  If these are provided before fire
+  // is called, the optimizer can pre-compute the trajectory.
+  shot_position:double (id: 1);
+  shot_velocity:double (id: 2);
+
+  // The target position to return the catapult to when not shooting.
+  return_position:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal (id: 3);
+}
+
 table Goal {
   // Height of the climber above rest point
   climber:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal (id: 0);
@@ -21,6 +34,9 @@ table Goal {
   roller_speed_compensation:double (id: 6);
 
   turret:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal (id: 7);
+
+  // Catapult goal state.
+  catapult:CatapultGoal (id: 8);
 }
 
 root_type Goal;

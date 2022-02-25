@@ -15,14 +15,15 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
                                const ::std::string &name)
     : frc971::controls::ControlLoop<Goal, Position, Status, Output>(event_loop,
                                                                     name),
-
-      climber_(values->climber.subsystem_params),
-      intake_front_(values->intake_front.subsystem_params),
-      intake_back_(values->intake_back.subsystem_params),
-      turret_(values->turret.subsystem_params),
+      values_(values),
+      climber_(values_->climber.subsystem_params),
+      intake_front_(values_->intake_front.subsystem_params),
+      intake_back_(values_->intake_back.subsystem_params),
+      turret_(values_->turret.subsystem_params),
       drivetrain_status_fetcher_(
           event_loop->MakeFetcher<frc971::control_loops::drivetrain::Status>(
-              "/drivetrain")) {
+              "/drivetrain")),
+      catapult_(*values_) {
   event_loop->SetRuntimeRealtimePriority(30);
 }
 
@@ -30,12 +31,15 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
                                   const Position *position,
                                   aos::Sender<Output>::Builder *output,
                                   aos::Sender<Status>::Builder *status) {
+  OutputT output_struct;
+
   if (WasReset()) {
     AOS_LOG(ERROR, "WPILib reset, restarting\n");
     intake_front_.Reset();
     intake_back_.Reset();
     turret_.Reset();
     climber_.Reset();
+    catapult_.Reset();
   }
 
   drivetrain_status_fetcher_.Fetch();
@@ -57,7 +61,12 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
     transfer_roller_speed = unsafe_goal->transfer_roller_speed();
   }
 
-  OutputT output_struct;
+
+  const flatbuffers::Offset<PotAndAbsoluteEncoderProfiledJointStatus>
+      catapult_status_offset = catapult_.Iterate(
+          unsafe_goal, position,
+          output != nullptr ? &(output_struct.catapult_voltage) : nullptr,
+          status->fbb());
 
   flatbuffers::Offset<RelativeEncoderProfiledJointStatus>
       climber_status_offset = climber_.Iterate(
@@ -98,9 +107,9 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   Status::Builder status_builder = status->MakeBuilder<Status>();
 
   const bool zeroed = intake_front_.zeroed() && intake_back_.zeroed() &&
-                      turret_.zeroed() && climber_.zeroed();
+                      turret_.zeroed() && climber_.zeroed() && catapult_.zeroed();
   const bool estopped = intake_front_.estopped() || intake_back_.estopped() ||
-                        turret_.estopped() || climber_.zeroed();
+                        turret_.estopped() || climber_.estopped() || catapult_.estopped();
 
   status_builder.add_zeroed(zeroed);
   status_builder.add_estopped(estopped);
@@ -109,6 +118,9 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   status_builder.add_intake_back(intake_status_offset_back);
   status_builder.add_turret(turret_status_offset);
   status_builder.add_climber(climber_status_offset);
+  status_builder.add_catapult(catapult_status_offset);
+  status_builder.add_solve_time(catapult_.solve_time());
+  status_builder.add_mpc_active(catapult_.mpc_active());
 
   (void)status->Send(status_builder.Finish());
 }
