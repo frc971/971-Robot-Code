@@ -9,9 +9,12 @@ cp /tmp/dhcpcd.conf /etc/
 
 # And provide a script to change it.
 cp /tmp/change_hostname.sh /root/bin/
+cp /tmp/enable_imu.sh /root/bin/
 chmod a+x /root/bin/change_hostname.sh
+chmod a+x /root/bin/enable_imu.sh
 
 chown -R pi.pi /home/pi/.ssh
+chown -R pi.pi /home/pi/bin
 
 apt-get update
 
@@ -41,13 +44,7 @@ apt-get install -y vim-nox \
   libnice-dev \
   feh
 
-# Install WiringPi gpio for PWM control
-if [[ ! -e "/usr/bin/gpio" ]]; then
-    cd /tmp
-    git clone https://github.com/WiringPi/WiringPi.git
-    cd WiringPi
-    ./build
-fi
+dpkg -i /tmp/wiringpi-2.70-1.deb
 
 echo 'GOVERNOR="performance"' > /etc/default/cpufrequtils
 

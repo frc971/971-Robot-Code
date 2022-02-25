@@ -36,8 +36,13 @@ fi
 if ! grep "gpu_mem=128" "${BOOT_PARTITION}/config.txt"; then
   echo "gpu_mem=128" | sudo tee -a "${BOOT_PARTITION}/config.txt"
 fi
+if ! grep "enable_uart=1" "${BOOT_PARTITION}/config.txt"; then
+  echo "enable_uart=1" | sudo tee -a "${BOOT_PARTITION}/config.txt"
+fi
 # For now, disable the new libcamera driver in favor of legacy ones
 sudo sed -i s/^camera_auto_detect=1/#camera_auto_detect=1/ "${BOOT_PARTITION}/config.txt"
+# Enable SPI.
+sudo sed -i s/^.*dtparam=spi=on/dtparam=spi=on/ "${BOOT_PARTITION}/config.txt"
 
 sudo tar -zxvf "${KERNEL}" --strip-components 2 -C ${BOOT_PARTITION}/ ./fat32
 
@@ -80,11 +85,17 @@ EOF
   sudo mount -o loop,offset=${OFFSET} "${IMAGE}" "${PARTITION}"
 fi
 
+if [[ ! -e wiringpi-2.70-1.deb ]]; then
+  wget --continue https://software.frc971.org/Build-Dependencies/wiringpi-2.70-1.deb
+fi
+
 sudo cp target_configure.sh "${PARTITION}/tmp/"
+sudo cp wiringpi-2.70-1.deb "${PARTITION}/tmp/"
 sudo cp dhcpcd.conf "${PARTITION}/tmp/dhcpcd.conf"
 sudo cp sctp.conf "${PARTITION}/etc/sysctl.d/sctp.conf"
 sudo cp logind.conf "${PARTITION}/etc/systemd/logind.conf"
 sudo cp change_hostname.sh "${PARTITION}/tmp/change_hostname.sh"
+sudo cp enable_imu.sh "${PARTITION}/tmp/"
 sudo cp frc971.service "${PARTITION}/etc/systemd/system/frc971.service"
 sudo cp frc971chrt.service "${PARTITION}/etc/systemd/system/frc971chrt.service"
 sudo cp rt.conf "${PARTITION}/etc/security/limits.d/rt.conf"
@@ -96,6 +107,8 @@ cat ~/.ssh/id_rsa.pub | target tee /home/pi/.ssh/authorized_keys
 
 sudo rm -rf "${PARTITION}/lib/modules/"*
 sudo tar -zxvf "${KERNEL}" --strip-components 4 -C "${PARTITION}/lib/modules/" ./ext4/lib/modules/
+sudo cp adis16505.ko "${PARTITION}/lib/modules/5.10.78-rt55-v8+/kernel/"
+target /usr/sbin/depmod 5.10.78-rt55-v8+
 
 # Downloads and installs our target libraries
 target /bin/bash /tmp/target_configure.sh
