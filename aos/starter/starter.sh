@@ -6,12 +6,7 @@ if [[ "$(hostname)" == "roboRIO"* ]]; then
   /usr/local/natinst/etc/init.d/systemWebServer stop
 
   ROBOT_CODE="/home/admin/bin"
-
-  # Get the CTRE libraries in the shared library search path
-  for f in $(ls *.so);
-  do
-    ln -f -s /home/admin/bin/$f /usr/local/frc/third-party/lib/$f
-  done
+  cd "${ROBOT_CODE}"
 
   ln -s /var/local/natinst/log/FRC_UserProgram.log /tmp/FRC_UserProgram.log
   ln -s /var/local/natinst/log/FRC_UserProgram.log "${ROBOT_CODE}/FRC_UserProgram.log"
