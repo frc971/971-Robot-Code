@@ -704,10 +704,30 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
 FlatbufferDetachedBuffer<Configuration> ReadConfig(
     const std::string_view path,
     const std::vector<std::string_view> &extra_import_paths) {
+  // Add the executable directory to the search path.  That makes it so that
+  // tools can be run from any directory without hard-coding an absolute path to
+  // the config into all binaries.
+  std::vector<std::string_view> extra_import_paths_with_exe =
+      extra_import_paths;
+  char proc_self_exec_buffer[PATH_MAX + 1];
+  std::memset(proc_self_exec_buffer, 0, sizeof(proc_self_exec_buffer));
+  ssize_t s = readlink("/proc/self/exe", proc_self_exec_buffer, PATH_MAX);
+  if (s > 0) {
+    // If the readlink call fails, the worst thing that happens is that we don't
+    // automatically find the config next to the binary.  VLOG to make it easier
+    // to debug.
+    std::string_view proc_self_exec(proc_self_exec_buffer);
+
+    extra_import_paths_with_exe.emplace_back(
+        proc_self_exec.substr(0, proc_self_exec.rfind("/")));
+  } else {
+    VLOG(1) << "Failed to read /proc/self/exe";
+  }
+
   // We only want to read a file once.  So track the visited files in a set.
   absl::btree_set<std::string> visited_paths;
   FlatbufferDetachedBuffer<Configuration> read_config =
-      ReadConfig(path, &visited_paths, extra_import_paths);
+      ReadConfig(path, &visited_paths, extra_import_paths_with_exe);
 
   // If we only read one file, and it had a .bfbs extension, it has to be a
   // fully formatted config.  Do a quick verification and return it.
