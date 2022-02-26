@@ -77,8 +77,8 @@ RECTS_JSON_PATH = "rects.json"
 AOS_SEND_PATH = "bazel-bin/aos/aos_send"
 
 def setup_if_pi():
-    if os.path.isdir("/home/pi/robot_code"):
-        AOS_SEND_PATH = "/home/pi/robot_code/aos_send.stripped"
+    if os.path.isdir("/home/pi/bin"):
+        AOS_SEND_PATH = "/home/pi/bin/aos_send.stripped"
         os.system("./starter_cmd stop camera_reader")
 
 setup_if_pi()

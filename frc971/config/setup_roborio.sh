@@ -30,11 +30,11 @@ else
   ssh "admin@${ROBOT_HOSTNAME}" 'echo "alias l=\"ls -la\"" >> /etc/profile'
   echo "Adding symbolic link to loging directory"
   ssh "admin@${ROBOT_HOSTNAME}" ln -s /media/sda1 logs
-  ssh "admin@${ROBOT_HOSTNAME}" mkdir robot_code
-  ssh "admin@${ROBOT_HOSTNAME}" ln -s /media/sda1/aos_log-current robot_code/aos_log-current
+  ssh "admin@${ROBOT_HOSTNAME}" mkdir bin
+  ssh "admin@${ROBOT_HOSTNAME}" ln -s /media/sda1/aos_log-current bin/aos_log-current
   echo "Adding aos_dump autocomplete to profile"
-  ssh "admin@${ROBOT_HOSTNAME}" 'echo "if [ -f /home/admin/robot_code/aos_dump_autocomplete.sh ]; then source /home/admin/robot_code/aos_dump_autocomplete.sh; fi;" >> /etc/profile'
-  ssh "admin@${ROBOT_HOSTNAME}" 'echo "export PATH=\"\${PATH}:/home/admin/robot_code:/home/admin/bin\"" >> /etc/profile'
+  ssh "admin@${ROBOT_HOSTNAME}" 'echo "if [ -f /home/admin/bin/aos_dump_autocomplete.sh ]; then source /home/admin/bin/aos_dump_autocomplete.sh; fi;" >> /etc/profile'
+  ssh "admin@${ROBOT_HOSTNAME}" 'echo "export PATH=\"\${PATH}:/home/admin/bin\"" >> /etc/profile'
 fi
 
 ssh "admin@${ROBOT_HOSTNAME}" "sed -i 's/vm\.overcommit_memory=2/vm\.overcommit_memory=0/' /etc/sysctl.conf"

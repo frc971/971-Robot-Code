@@ -69,7 +69,7 @@ def main(argv):
             user = "pi"
         elif args.type == "roborio":
             user = "admin"
-    target_dir = "/home/" + user + "/robot_code"
+    target_dir = "/home/" + user + "/bin"
 
     ssh_target = "%s@%s" % (user, hostname)
 

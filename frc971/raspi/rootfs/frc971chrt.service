@@ -3,7 +3,7 @@ Description=Configure IRQs
 
 [Service]
 Type=oneshot
-ExecStart=/home/pi/robot_code/chrt.sh
+ExecStart=/home/pi/bin/chrt.sh
 
 [Install]
 WantedBy=multi-user.target

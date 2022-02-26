@@ -301,7 +301,7 @@ int main(int argc, char **argv) {
   server.serve("www", 1180);
 #else
   // Absolute directory of www folder on the robot.
-  server.serve("/home/admin/robot_code/www", 1180);
+  server.serve("/home/admin/bin/www", 1180);
 #endif
 
   socket_handler.Quit();

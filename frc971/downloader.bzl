@@ -25,7 +25,7 @@ def robot_downloader(
         ] if target_type == "roborio" else []) + start_binaries,
         srcs = [
             "//aos:prime_binaries",
-        ] + binaries + data,
+        ] + binaries + data + ["//frc971/raspi/rootfs:chrt.sh"],
         dirs = dirs,
         target_type = target_type,
         default_target = default_target,
@@ -40,7 +40,7 @@ def robot_downloader(
                      [expand_label(binary) + ".stripped" for binary in start_binaries],
         srcs = [
             "//aos:prime_binaries_stripped",
-        ] + [expand_label(binary) + ".stripped" for binary in binaries] + data,
+        ] + [expand_label(binary) + ".stripped" for binary in binaries] + data + ["//frc971/raspi/rootfs:chrt.sh"],
         dirs = dirs,
         target_type = target_type,
         default_target = default_target,

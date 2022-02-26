@@ -300,13 +300,13 @@ int main(int argc, char **argv) {
   bool serve_www = false;
   {
     struct stat result;
-    if (stat("/home/admin/robot_code/www", &result) == 0) {
+    if (stat("/home/admin/bin/www", &result) == 0) {
       serve_www = true;
     }
   }
 
   server.serve(
-      serve_www ? "/home/admin/robot_code/www" : "y2019/vision/server/www",
+      serve_www ? "/home/admin/bin/www" : "y2019/vision/server/www",
       1180);
 
   return 0;
