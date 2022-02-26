@@ -257,6 +257,7 @@ void ModelBasedLocalizer::HandleImu(aos::monotonic_clock::time_point t,
   const Eigen::AngleAxis<double> orientation(
       Eigen::AngleAxis<double>(xytheta()(kTheta), Eigen::Vector3d::UnitZ()) *
       down_estimator_.X_hat());
+  last_orientation_ = orientation;
 
   const Eigen::Vector3d absolute_accel =
       orientation * dt_config_.imu_transform * kG * accel;
@@ -611,6 +612,13 @@ EventLoopLocalizer::EventLoopLocalizer(
             output_builder.add_x(model_based_.xytheta()(0));
             output_builder.add_y(model_based_.xytheta()(1));
             output_builder.add_theta(model_based_.xytheta()(2));
+            const Eigen::Quaterniond &orientation = model_based_.orientation();
+            Quaternion quaternion;
+            quaternion.mutate_x(orientation.x());
+            quaternion.mutate_y(orientation.y());
+            quaternion.mutate_z(orientation.z());
+            quaternion.mutate_w(orientation.w());
+            output_builder.add_orientation(&quaternion);
             builder.CheckOk(builder.Send(output_builder.Finish()));
             last_output_send_ = event_loop_->monotonic_now();
           }

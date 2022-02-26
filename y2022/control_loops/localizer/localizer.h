@@ -122,6 +122,8 @@ class ModelBasedLocalizer {
     }
   }
 
+  Eigen::Quaterniond orientation() const { return last_orientation_; }
+
   AccelState accel_state() const { return current_state_.accel_state; };
 
   void set_longitudinal_offset(double offset) { long_offset_ = offset; }
@@ -209,6 +211,7 @@ class ModelBasedLocalizer {
   double accel_residual_ = 0.0;
   double theta_rate_residual_ = 0.0;
   int hysteresis_count_ = 0;
+  Eigen::Quaterniond last_orientation_ = Eigen::Quaterniond::Identity();
 
   int clock_resets_ = 0;
 
