@@ -40,6 +40,15 @@ enum class IMUType : int32_t {
   IMU_Z = 3,          // Use the z-axis of the IMU.
 };
 
+struct DownEstimatorConfig {
+  // Threshold, in g's, to use for detecting whether we are stopped in the down
+  // estimator.
+  double gravity_threshold = 0.025;
+  // Number of cycles of being still to require before taking accelerometer
+  // corrections.
+  int do_accel_corrections = 50;
+};
+
 template <typename Scalar = double>
 struct DrivetrainConfig {
   // Shifting method we are using.
@@ -106,6 +115,8 @@ struct DrivetrainConfig {
 
   // True if we are running a simulated drivetrain.
   bool is_simulated = false;
+
+  DownEstimatorConfig down_estimator_config{};
 
   // Converts the robot state to a linear distance position, velocity.
   static Eigen::Matrix<Scalar, 2, 1> LeftRightToLinear(

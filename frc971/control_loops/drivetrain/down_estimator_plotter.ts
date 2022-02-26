@@ -12,10 +12,10 @@ export function plotDownEstimator(conn: Connection, element: Element): void {
   const aosPlotter = new AosPlotter(conn);
 
   const status = aosPlotter.addMessageSource(
-      '/drivetrain', 'frc971.control_loops.drivetrain.Status');
+      '/localizer', 'frc971.controls.LocalizerStatus');
 
   const imu = aosPlotter.addRawMessageSource(
-      '/drivetrain', 'frc971.IMUValuesBatch',
+      '/localizer', 'frc971.IMUValuesBatch',
       new ImuMessageHandler(conn.getSchema('frc971.IMUValuesBatch')));
 
   const accelPlot = aosPlotter.addPlot(element, [width, height]);
@@ -24,11 +24,11 @@ export function plotDownEstimator(conn: Connection, element: Element): void {
   accelPlot.plot.getAxisLabels().setYLabel('Acceleration (m/s/s)');
   accelPlot.plot.getAxisLabels().setXLabel('Monotonic Reading Time (sec)');
 
-  const accelX = accelPlot.addMessageLine(status, ['down_estimator', 'accel_x']);
+  const accelX = accelPlot.addMessageLine(status, ['model_based', 'down_estimator', 'accel_x']);
   accelX.setColor(RED);
-  const accelY = accelPlot.addMessageLine(status, ['down_estimator', 'accel_y']);
+  const accelY = accelPlot.addMessageLine(status, ['model_based', 'down_estimator', 'accel_y']);
   accelY.setColor(GREEN);
-  const accelZ = accelPlot.addMessageLine(status, ['down_estimator', 'accel_z']);
+  const accelZ = accelPlot.addMessageLine(status, ['model_based', 'down_estimator', 'accel_z']);
   accelZ.setColor(BLUE);
 
   const velPlot = aosPlotter.addPlot(element, [width, height]);
@@ -36,11 +36,11 @@ export function plotDownEstimator(conn: Connection, element: Element): void {
   velPlot.plot.getAxisLabels().setYLabel('Velocity (m/s)');
   velPlot.plot.getAxisLabels().setXLabel('Monotonic Reading Time (sec)');
 
-  const velX = velPlot.addMessageLine(status, ['down_estimator', 'velocity_x']);
+  const velX = velPlot.addMessageLine(status, ['model_based', 'down_estimator', 'velocity_x']);
   velX.setColor(RED);
-  const velY = velPlot.addMessageLine(status, ['down_estimator', 'velocity_y']);
+  const velY = velPlot.addMessageLine(status, ['model_based', 'down_estimator', 'velocity_y']);
   velY.setColor(GREEN);
-  const velZ = velPlot.addMessageLine(status, ['down_estimator', 'velocity_z']);
+  const velZ = velPlot.addMessageLine(status, ['model_based', 'down_estimator', 'velocity_z']);
   velZ.setColor(BLUE);
 
   const gravityPlot = aosPlotter.addPlot(element, [width, height]);
@@ -48,7 +48,7 @@ export function plotDownEstimator(conn: Connection, element: Element): void {
   gravityPlot.plot.getAxisLabels().setXLabel('Monotonic Sent Time (sec)');
   gravityPlot.plot.setDefaultYRange([0.95, 1.05]);
   const gravityLine =
-      gravityPlot.addMessageLine(status, ['down_estimator', 'gravity_magnitude']);
+      gravityPlot.addMessageLine(status, ['model_based', 'down_estimator', 'gravity_magnitude']);
   gravityLine.setColor(RED);
   gravityLine.setDrawLine(false);
   const accelMagnitudeLine =
@@ -63,15 +63,15 @@ export function plotDownEstimator(conn: Connection, element: Element): void {
   orientationPlot.plot.getAxisLabels().setYLabel('Angle (rad)');
 
   const roll = orientationPlot.addMessageLine(
-      status, ['down_estimator', 'lateral_pitch']);
+      status, ['model_based', 'down_estimator', 'lateral_pitch']);
   roll.setColor(RED);
   roll.setLabel('roll');
   const pitch = orientationPlot.addMessageLine(
-      status, ['down_estimator', 'longitudinal_pitch']);
+      status, ['model_based', 'down_estimator', 'longitudinal_pitch']);
   pitch.setColor(GREEN);
   pitch.setLabel('pitch');
   const yaw = orientationPlot.addMessageLine(
-      status, ['down_estimator', 'yaw']);
+      status, ['model_based', 'down_estimator', 'yaw']);
   yaw.setColor(BLUE);
   yaw.setLabel('yaw');
 
@@ -101,15 +101,15 @@ export function plotDownEstimator(conn: Connection, element: Element): void {
   imuAccelZFiltered.setPointSize(0);
 
   const expectedAccelX = imuAccelPlot.addMessageLine(
-      status, ['down_estimator', 'expected_accel_x']);
+      status, ['model_based', 'down_estimator', 'expected_accel_x']);
   expectedAccelX.setColor(RED);
   expectedAccelX.setPointSize(0);
   const expectedAccelY = imuAccelPlot.addMessageLine(
-      status, ['down_estimator', 'expected_accel_y']);
+      status, ['model_based', 'down_estimator', 'expected_accel_y']);
   expectedAccelY.setColor(GREEN);
   expectedAccelY.setPointSize(0);
   const expectedAccelZ = imuAccelPlot.addMessageLine(
-      status, ['down_estimator', 'expected_accel_z']);
+      status, ['model_based', 'down_estimator', 'expected_accel_z']);
   expectedAccelZ.setColor(BLUE);
   expectedAccelZ.setPointSize(0);
 
@@ -150,7 +150,7 @@ export function plotDownEstimator(conn: Connection, element: Element): void {
   zeroedLine.setColor(RED);
   zeroedLine.setDrawLine(false);
   const consecutiveStill =
-      statePlot.addMessageLine(status, ['down_estimator', 'consecutive_still']);
+      statePlot.addMessageLine(status, ['model_based', 'down_estimator', 'consecutive_still']);
   consecutiveStill.setColor(BLUE);
   consecutiveStill.setPointSize(0);
   const faultedLine =

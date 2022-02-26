@@ -119,7 +119,7 @@ TEST(DownEstimatorTest, UkfAccelCorrectsBias) {
   EXPECT_EQ(0.0,
             (Eigen::Vector3d(0.0, 0.0, 1.0) - dtukf.H(dtukf.X_hat().coeffs()))
                 .norm());
-  for (int ii = 0; ii < 200; ++ii) {
+  for (int ii = 0; ii < 2000; ++ii) {
     dtukf.Predict({0.0, 0.0, 0.0}, measurement,
                   frc971::controls::kLoopFrequency);
   }

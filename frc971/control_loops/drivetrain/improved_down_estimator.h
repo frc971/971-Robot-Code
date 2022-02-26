@@ -57,9 +57,9 @@ class QuaternionUkf {
   // Measurements to use for correcting the estimated system state. These
   // correspond to (x, y, z) measurements from the accelerometer.
   constexpr static int kNumMeasurements = 3;
-  QuaternionUkf(const Eigen::Matrix<double, 3, 3> &imu_transform =
-                    Eigen::Matrix<double, 3, 3>::Identity())
-      : imu_transform_(imu_transform) {
+  QuaternionUkf(const DrivetrainConfig<double> &dt_config)
+      : imu_transform_(dt_config.imu_transform),
+        config_(dt_config.down_estimator_config) {
     Reset();
   }
 
@@ -193,6 +193,8 @@ class QuaternionUkf {
   // The transformation from the IMU's frame to the robot frame.
   Eigen::Matrix<double, 3, 3> imu_transform_;
 
+  const DownEstimatorConfig config_;
+
   bool assume_perfect_gravity_ = false;
 };
 
@@ -204,7 +206,7 @@ class QuaternionUkf {
 class DrivetrainUkf : public QuaternionUkf {
  public:
   DrivetrainUkf(const DrivetrainConfig<double> &dt_config)
-      : QuaternionUkf(dt_config.imu_transform) {}
+      : QuaternionUkf(dt_config) {}
   // UKF for http://kodlab.seas.upenn.edu/uploads/Arun/UKFpaper.pdf
   // Reference in case the link is dead:
   // Kraft, Edgar. "A quaternion-based unscented Kalman filter for orientation

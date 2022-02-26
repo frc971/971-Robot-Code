@@ -88,7 +88,8 @@ void QuaternionUkf::DoPredict(const Eigen::Matrix<double, 3, 1> &U,
 
   // If the only obvious acceleration is that due to gravity, then accept the
   // measurement.
-  const double kUseAccelThreshold = assume_perfect_gravity_ ? 1e-10 : 0.025;
+  const double kUseAccelThreshold =
+      assume_perfect_gravity_ ? 1e-10 : config_.gravity_threshold;
   const double accel_norm = measurement.norm();
   if (std::abs(accel_norm - 1.0) > kUseAccelThreshold) {
     P_ = P_prior;
@@ -99,12 +100,12 @@ void QuaternionUkf::DoPredict(const Eigen::Matrix<double, 3, 1> &U,
   // velocity. Because we just use this for debugging, only set it once per time
   // duration when we are paused--this lets us observe how far things drift
   // while sitting still.
-  if (consecutive_still_ == 1000) {
+  if (consecutive_still_ == 2000) {
     pos_vel_.block<3, 1>(3, 0).setZero();
   }
   // Don't do accelerometer updates unless we have been roughly still for a
   // decent number of iterations.
-  if (++consecutive_still_ < 50) {
+  if (++consecutive_still_ < config_.do_accel_corrections) {
     return;
   }
 

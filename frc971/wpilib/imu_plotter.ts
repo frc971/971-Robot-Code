@@ -19,7 +19,7 @@ export function plotImu(conn: Connection, element: Element): void {
       '/drivetrain', 'frc971.control_loops.drivetrain.Status');
 
   const imu = aosPlotter.addRawMessageSource(
-      '/drivetrain', 'frc971.IMUValuesBatch',
+      '/localizer', 'frc971.IMUValuesBatch',
       new ImuMessageHandler(conn.getSchema('frc971.IMUValuesBatch')));
 
   const accelX = accelPlot.addMessageLine(imu, ['accelerometer_x']);
