@@ -1,6 +1,7 @@
 #include "y2022/control_loops/superstructure/superstructure.h"
 
 #include "aos/events/event_loop.h"
+#include "y2022/control_loops/superstructure/collision_avoidance.h"
 
 namespace y2022 {
 namespace control_loops {
@@ -41,6 +42,19 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
     climber_.Reset();
     catapult_.Reset();
   }
+
+  collision_avoidance_.UpdateGoal(
+      {.intake_front_position = intake_front_.estimated_position(),
+       .intake_back_position = intake_back_.estimated_position(),
+       .turret_position = turret_.estimated_position()},
+      unsafe_goal);
+
+  turret_.set_min_position(collision_avoidance_.min_turret_goal());
+  turret_.set_max_position(collision_avoidance_.max_turret_goal());
+  intake_front_.set_min_position(collision_avoidance_.min_intake_front_goal());
+  intake_front_.set_max_position(collision_avoidance_.max_intake_front_goal());
+  intake_back_.set_min_position(collision_avoidance_.min_intake_back_goal());
+  intake_back_.set_max_position(collision_avoidance_.max_intake_back_goal());
 
   drivetrain_status_fetcher_.Fetch();
   const float velocity = robot_velocity();

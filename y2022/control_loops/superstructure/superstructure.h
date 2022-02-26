@@ -6,6 +6,7 @@
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "y2022/constants.h"
 #include "y2022/control_loops/superstructure/catapult/catapult.h"
+#include "y2022/control_loops/superstructure/collision_avoidance.h"
 #include "y2022/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2022/control_loops/superstructure/superstructure_output_generated.h"
 #include "y2022/control_loops/superstructure/superstructure_position_generated.h"
@@ -29,7 +30,7 @@ class Superstructure
           ::frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus>;
 
   explicit Superstructure(::aos::EventLoop *event_loop,
-                         std::shared_ptr<const constants::Values> values,
+                          std::shared_ptr<const constants::Values> values,
                           const ::std::string &name = "/superstructure");
 
   inline const PotAndAbsoluteEncoderSubsystem &intake_front() const {
@@ -57,6 +58,8 @@ class Superstructure
   PotAndAbsoluteEncoderSubsystem intake_front_;
   PotAndAbsoluteEncoderSubsystem intake_back_;
   PotAndAbsoluteEncoderSubsystem turret_;
+
+  CollisionAvoidance collision_avoidance_;
 
   aos::Fetcher<frc971::control_loops::drivetrain::Status>
       drivetrain_status_fetcher_;

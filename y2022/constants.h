@@ -104,10 +104,10 @@ struct Values {
   // TODO (Yash): Constants need to be tuned
   static constexpr ::frc971::constants::Range kTurretRange() {
     return ::frc971::constants::Range{
-        .lower_hard = -3.45,  // Back Hard
-        .upper_hard = 3.45,   // Front Hard
-        .lower = -3.3,        // Back Soft
-        .upper = 3.3          // Front Soft
+        .lower_hard = -0.1,  // Back Hard
+        .upper_hard = 4.71,  // Front Hard
+        .lower = 0.0,        // Back Soft
+        .upper = 3.3         // Front Soft
     };
   }
 
