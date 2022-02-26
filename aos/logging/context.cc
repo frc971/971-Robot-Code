@@ -18,7 +18,6 @@
 extern char *program_invocation_name;
 extern char *program_invocation_short_name;
 
-#include "aos/complex_thread_local.h"
 #include "aos/die.h"
 #include "aos/logging/implementations.h"
 #include "aos/thread_local.h"
@@ -63,7 +62,7 @@ namespace {
   return process_name + '.' + thread_name;
 }
 
-::aos::ComplexThreadLocal<Context> my_context;
+thread_local std::optional<Context> my_context;
 
 // True if we're going to delete the current Context object ASAP. The
 // reason for doing this instead of just deleting them is that tsan (at least)
@@ -77,7 +76,7 @@ Context::Context() : sequence(0) {}
 
 // Used in aos/linux_code/init.cc when a thread's name is changed.
 void ReloadThreadName() {
-  if (my_context.created()) {
+  if (my_context.has_value()) {
     my_context->ClearName();
   }
 }
@@ -99,21 +98,21 @@ std::string_view Context::MyName() {
 
 Context *Context::Get() {
   if (__builtin_expect(delete_current_context, false)) {
-    my_context.Clear();
+    my_context.reset();
     delete_current_context = false;
   }
-  if (__builtin_expect(!my_context.created(), false)) {
-    my_context.Create();
+  if (__builtin_expect(!my_context.has_value(), false)) {
+    my_context.emplace();
     my_context->ClearName();
     my_context->source = getpid();
   }
-  return my_context.get();
+  return &*my_context;
 }
 
 void Context::Delete() { delete_current_context = true; }
 
 void Context::DeleteNow() {
-  my_context.Clear();
+  my_context.reset();
   delete_current_context = false;
 }
 
