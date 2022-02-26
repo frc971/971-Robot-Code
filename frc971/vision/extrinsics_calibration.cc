@@ -334,45 +334,45 @@ class PoseFilter : public CeresPoseFilter<double> {
     plotter.AddLine(times_, rx, "x_hat(0)");
     plotter.AddLine(times_, ry, "x_hat(1)");
     plotter.AddLine(times_, rz, "x_hat(2)");
-    plotter.AddLine(ct, cx, "Camera x");
-    plotter.AddLine(ct, cy, "Camera y");
-    plotter.AddLine(ct, cz, "Camera z");
-    plotter.AddLine(ct, cerrx, "Camera error x");
-    plotter.AddLine(ct, cerry, "Camera error y");
-    plotter.AddLine(ct, cerrz, "Camera error z");
+    plotter.AddLine(camera_times_, camera_x_, "Camera x");
+    plotter.AddLine(camera_times_, camera_y_, "Camera y");
+    plotter.AddLine(camera_times_, camera_z_, "Camera z");
+    plotter.AddLine(camera_times_, camera_error_x_, "Camera error x");
+    plotter.AddLine(camera_times_, camera_error_y_, "Camera error y");
+    plotter.AddLine(camera_times_, camera_error_z_, "Camera error z");
     plotter.Publish();
 
     plotter.AddFigure("error");
     plotter.AddLine(times_, rx, "x_hat(0)");
     plotter.AddLine(times_, ry, "x_hat(1)");
     plotter.AddLine(times_, rz, "x_hat(2)");
-    plotter.AddLine(ct, cerrx, "Camera error x");
-    plotter.AddLine(ct, cerry, "Camera error y");
-    plotter.AddLine(ct, cerrz, "Camera error z");
+    plotter.AddLine(camera_times_, camera_error_x_, "Camera error x");
+    plotter.AddLine(camera_times_, camera_error_y_, "Camera error y");
+    plotter.AddLine(camera_times_, camera_error_z_, "Camera error z");
     plotter.Publish();
 
     plotter.AddFigure("imu");
-    plotter.AddLine(ct, world_gravity_x, "world_gravity(0)");
-    plotter.AddLine(ct, world_gravity_y, "world_gravity(1)");
-    plotter.AddLine(ct, world_gravity_z, "world_gravity(2)");
-    plotter.AddLine(imut, imu_x, "imu x");
-    plotter.AddLine(imut, imu_y, "imu y");
-    plotter.AddLine(imut, imu_z, "imu z");
+    plotter.AddLine(camera_times_, world_gravity_x_, "world_gravity(0)");
+    plotter.AddLine(camera_times_, world_gravity_y_, "world_gravity(1)");
+    plotter.AddLine(camera_times_, world_gravity_z_, "world_gravity(2)");
+    plotter.AddLine(imu_times_, imu_x_, "imu x");
+    plotter.AddLine(imu_times_, imu_y_, "imu y");
+    plotter.AddLine(imu_times_, imu_z_, "imu z");
     plotter.AddLine(times_, rx, "rotation x");
     plotter.AddLine(times_, ry, "rotation y");
     plotter.AddLine(times_, rz, "rotation z");
     plotter.Publish();
 
     plotter.AddFigure("raw");
-    plotter.AddLine(imut, imu_x, "imu x");
-    plotter.AddLine(imut, imu_y, "imu y");
-    plotter.AddLine(imut, imu_z, "imu z");
-    plotter.AddLine(imut, imu_ratex, "omega x");
-    plotter.AddLine(imut, imu_ratey, "omega y");
-    plotter.AddLine(imut, imu_ratez, "omega z");
-    plotter.AddLine(ct, raw_cx, "Camera x");
-    plotter.AddLine(ct, raw_cy, "Camera y");
-    plotter.AddLine(ct, raw_cz, "Camera z");
+    plotter.AddLine(imu_times_, imu_x_, "imu x");
+    plotter.AddLine(imu_times_, imu_y_, "imu y");
+    plotter.AddLine(imu_times_, imu_z_, "imu z");
+    plotter.AddLine(imu_times_, imu_ratex_, "omega x");
+    plotter.AddLine(imu_times_, imu_ratey_, "omega y");
+    plotter.AddLine(imu_times_, imu_ratez_, "omega z");
+    plotter.AddLine(camera_times_, raw_camera_x_, "Camera x");
+    plotter.AddLine(camera_times_, raw_camera_y_, "Camera y");
+    plotter.AddLine(camera_times_, raw_camera_z_, "Camera z");
     plotter.Publish();
 
     plotter.AddFigure("xyz vel");
@@ -382,9 +382,9 @@ class PoseFilter : public CeresPoseFilter<double> {
     plotter.AddLine(times_, vx, "vx");
     plotter.AddLine(times_, vy, "vy");
     plotter.AddLine(times_, vz, "vz");
-    plotter.AddLine(ct, camera_position_x, "Camera x");
-    plotter.AddLine(ct, camera_position_y, "Camera y");
-    plotter.AddLine(ct, camera_position_z, "Camera z");
+    plotter.AddLine(camera_times_, camera_position_x_, "Camera x");
+    plotter.AddLine(camera_times_, camera_position_y_, "Camera y");
+    plotter.AddLine(camera_times_, camera_position_z_, "Camera z");
     plotter.Publish();
 
     plotter.Spin();
@@ -404,13 +404,13 @@ class PoseFilter : public CeresPoseFilter<double> {
   void ObserveIMUUpdate(
       distributed_clock::time_point t,
       std::pair<Eigen::Vector3d, Eigen::Vector3d> wa) override {
-    imut.emplace_back(chrono::duration<double>(t.time_since_epoch()).count());
-    imu_ratex.emplace_back(wa.first.x());
-    imu_ratey.emplace_back(wa.first.y());
-    imu_ratez.emplace_back(wa.first.z());
-    imu_x.emplace_back(wa.second.x());
-    imu_y.emplace_back(wa.second.y());
-    imu_z.emplace_back(wa.second.z());
+    imu_times_.emplace_back(chrono::duration<double>(t.time_since_epoch()).count());
+    imu_ratex_.emplace_back(wa.first.x());
+    imu_ratey_.emplace_back(wa.first.y());
+    imu_ratez_.emplace_back(wa.first.z());
+    imu_x_.emplace_back(wa.second.x());
+    imu_y_.emplace_back(wa.second.y());
+    imu_z_.emplace_back(wa.second.z());
 
     last_accel_ = wa.second;
   }
@@ -419,25 +419,26 @@ class PoseFilter : public CeresPoseFilter<double> {
                            Eigen::Vector3d board_to_camera_rotation,
                            Eigen::Quaternion<double> imu_to_world_rotation,
                            Eigen::Affine3d imu_to_world) override {
-    raw_cx.emplace_back(board_to_camera_rotation(0, 0));
-    raw_cy.emplace_back(board_to_camera_rotation(1, 0));
-    raw_cz.emplace_back(board_to_camera_rotation(2, 0));
+    raw_camera_x_.emplace_back(board_to_camera_rotation(0, 0));
+    raw_camera_y_.emplace_back(board_to_camera_rotation(1, 0));
+    raw_camera_z_.emplace_back(board_to_camera_rotation(2, 0));
 
     Eigen::Matrix<double, 3, 1> rotation_vector =
         frc971::controls::ToRotationVectorFromQuaternion(imu_to_world_rotation);
-    ct.emplace_back(chrono::duration<double>(t.time_since_epoch()).count());
+    camera_times_.emplace_back(
+        chrono::duration<double>(t.time_since_epoch()).count());
 
-    Eigen::Matrix<double, 3, 1> cerr =
+    Eigen::Matrix<double, 3, 1> camera_error =
         frc971::controls::ToRotationVectorFromQuaternion(
             imu_to_world_rotation.inverse() * orientation());
 
-    cx.emplace_back(rotation_vector(0, 0));
-    cy.emplace_back(rotation_vector(1, 0));
-    cz.emplace_back(rotation_vector(2, 0));
+    camera_x_.emplace_back(rotation_vector(0, 0));
+    camera_y_.emplace_back(rotation_vector(1, 0));
+    camera_z_.emplace_back(rotation_vector(2, 0));
 
-    cerrx.emplace_back(cerr(0, 0));
-    cerry.emplace_back(cerr(1, 0));
-    cerrz.emplace_back(cerr(2, 0));
+    camera_error_x_.emplace_back(camera_error(0, 0));
+    camera_error_y_.emplace_back(camera_error(1, 0));
+    camera_error_z_.emplace_back(camera_error(2, 0));
 
     const Eigen::Vector3d world_gravity =
         imu_to_world_rotation * last_accel_ -
@@ -446,40 +447,40 @@ class PoseFilter : public CeresPoseFilter<double> {
     const Eigen::Vector3d camera_position =
         imu_to_world * Eigen::Vector3d::Zero();
 
-    world_gravity_x.emplace_back(world_gravity.x());
-    world_gravity_y.emplace_back(world_gravity.y());
-    world_gravity_z.emplace_back(world_gravity.z());
+    world_gravity_x_.emplace_back(world_gravity.x());
+    world_gravity_y_.emplace_back(world_gravity.y());
+    world_gravity_z_.emplace_back(world_gravity.z());
 
-    camera_position_x.emplace_back(camera_position.x());
-    camera_position_y.emplace_back(camera_position.y());
-    camera_position_z.emplace_back(camera_position.z());
+    camera_position_x_.emplace_back(camera_position.x());
+    camera_position_y_.emplace_back(camera_position.y());
+    camera_position_z_.emplace_back(camera_position.z());
   }
 
-  std::vector<double> ct;
-  std::vector<double> cx;
-  std::vector<double> cy;
-  std::vector<double> cz;
-  std::vector<double> raw_cx;
-  std::vector<double> raw_cy;
-  std::vector<double> raw_cz;
-  std::vector<double> cerrx;
-  std::vector<double> cerry;
-  std::vector<double> cerrz;
+  std::vector<double> camera_times_;
+  std::vector<double> camera_x_;
+  std::vector<double> camera_y_;
+  std::vector<double> camera_z_;
+  std::vector<double> raw_camera_x_;
+  std::vector<double> raw_camera_y_;
+  std::vector<double> raw_camera_z_;
+  std::vector<double> camera_error_x_;
+  std::vector<double> camera_error_y_;
+  std::vector<double> camera_error_z_;
 
-  std::vector<double> world_gravity_x;
-  std::vector<double> world_gravity_y;
-  std::vector<double> world_gravity_z;
-  std::vector<double> imu_x;
-  std::vector<double> imu_y;
-  std::vector<double> imu_z;
-  std::vector<double> camera_position_x;
-  std::vector<double> camera_position_y;
-  std::vector<double> camera_position_z;
+  std::vector<double> world_gravity_x_;
+  std::vector<double> world_gravity_y_;
+  std::vector<double> world_gravity_z_;
+  std::vector<double> imu_x_;
+  std::vector<double> imu_y_;
+  std::vector<double> imu_z_;
+  std::vector<double> camera_position_x_;
+  std::vector<double> camera_position_y_;
+  std::vector<double> camera_position_z_;
 
-  std::vector<double> imut;
-  std::vector<double> imu_ratex;
-  std::vector<double> imu_ratey;
-  std::vector<double> imu_ratez;
+  std::vector<double> imu_times_;
+  std::vector<double> imu_ratex_;
+  std::vector<double> imu_ratey_;
+  std::vector<double> imu_ratez_;
 
   std::vector<double> times_;
   std::vector<Eigen::Matrix<double, 6, 1>> x_hats_;
