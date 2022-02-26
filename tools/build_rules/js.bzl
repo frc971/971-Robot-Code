@@ -59,3 +59,22 @@ _expose_minified_js = rule(
         "out": attr.output(mandatory = True),
     },
 )
+
+# Some rules (e.g. babel()) do not expose their files as runfiles. So we need
+# to do this step manually.
+def _turn_files_into_runfiles_impl(ctx):
+    files = ctx.attr.files.files
+    return [DefaultInfo(
+        files = files,
+        runfiles = ctx.runfiles(transitive_files = files),
+    )]
+
+turn_files_into_runfiles = rule(
+    implementation = _turn_files_into_runfiles_impl,
+    attrs = {
+        "files": attr.label(
+            mandatory = True,
+            doc = "The target whose files should be turned into runfiles.",
+        ),
+    },
+)

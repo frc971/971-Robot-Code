@@ -3,6 +3,10 @@ load("//tools/build_rules:js.bzl", "rollup_bundle")
 load("@npm//@bazel/concatjs:index.bzl", "concatjs_devserver")
 load("@npm//@babel/cli:index.bzl", "babel")
 
+exports_files([
+    "index.html",
+])
+
 ts_library(
     name = "app",
     srcs = glob([
@@ -46,14 +50,29 @@ babel(
         "@npm//@angular/compiler-cli",
     ],
     output_dir = True,
+    visibility = ["//visibility:public"],
+)
+
+# Create a copy of zone.js here so that we can have a predictable path to
+# source it from on the webserver.
+genrule(
+    name = "zonejs_copy",
+    srcs = [
+        "@npm//:node_modules/zone.js/dist/zone.min.js",
+    ],
+    outs = [
+        "npm/node_modules/zone.js/dist/zone.min.js",
+    ],
+    cmd = "cp $(SRCS) $(OUTS)",
+    visibility = ["//visibility:public"],
 )
 
 concatjs_devserver(
     name = "devserver",
     serving_path = "/main_bundle.js",
     static_files = [
-        ":index.html",
-        "@npm//:node_modules/zone.js/dist/zone.min.js",
+        "index.html",
+        ":zonejs_copy",
     ],
     deps = [":main_bundle_compiled"],
 )
