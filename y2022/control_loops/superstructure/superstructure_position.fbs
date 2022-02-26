@@ -13,6 +13,12 @@ table Position {
   // Zero is straight and positive is open
   flipper_arm_left:frc971.RelativePosition (id: 4);
   flipper_arm_right:frc971.RelativePosition (id: 5);
+
+
+  // True is broken
+  intake_beambreak_front:bool (id:6);
+  intake_beambreak_back:bool (id:7);
+  turret_beambreak:bool (id:8);
 }
 
 root_type Position;
