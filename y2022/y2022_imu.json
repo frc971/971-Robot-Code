@@ -316,6 +316,15 @@
     {
       "name": "localizer",
       "executable_name": "localizer",
+      "autostart": false,
+      "autorestart": false,
+      "nodes": [
+        "imu"
+      ]
+    },
+    {
+      "name": "imu",
+      "executable_name": "imu_main",
       "nodes": [
         "imu"
       ]
