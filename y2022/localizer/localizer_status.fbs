@@ -2,6 +2,20 @@ include "frc971/control_loops/drivetrain/drivetrain_status.fbs";
 
 namespace frc971.controls;
 
+enum RejectionReason : byte {
+  IMAGE_FROM_FUTURE = 0,
+  NO_CALIBRATION = 1,
+  TURRET_TOO_FAST = 2,
+  MESSAGE_BRIDGE_DISCONNECTED = 3,
+}
+
+table CumulativeStatistics {
+  total_accepted:int (id: 0);
+  total_candidates:int (id: 1);
+  // Indexed by integer value of RejectionReason enum.
+  rejection_reason_count:[int] (id: 2);
+}
+
 // Stores the state associated with the acceleration-based modelling.
 table AccelBasedState {
   // x/y position, in meters.
@@ -74,6 +88,7 @@ table ModelBasedStatus {
   // Number of times we have missed an IMU reading. Should never increase except
   // *maybe* during startup.
   clock_resets:int (id: 17);
+  statistics:CumulativeStatistics (id: 18);
 }
 
 table LocalizerStatus {

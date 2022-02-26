@@ -3,12 +3,18 @@
 #include "frc971/control_loops/c2d.h"
 #include "frc971/wpilib/imu_batch_generated.h"
 #include "y2022/constants.h"
+#include "aos/json_to_flatbuffer.h"
 
 namespace frc971::controls {
 
 namespace {
 constexpr double kG = 9.80665;
 constexpr std::chrono::microseconds kNominalDt(500);
+
+// Field position of the target (the 2022 target is conveniently in the middle
+// of the field....).
+constexpr double kVisionTargetX = 0.0;
+constexpr double kVisionTargetY = 0.0;
 
 template <int N>
 Eigen::Matrix<double, N, 1> MakeState(std::vector<double> values) {
@@ -29,6 +35,7 @@ ModelBasedLocalizer::ModelBasedLocalizer(
               .plant()
               .coefficients()),
       down_estimator_(dt_config) {
+  statistics_.rejection_counts.fill(0);
   CHECK_EQ(branches_.capacity(), static_cast<size_t>(std::chrono::seconds(1) /
                                                  kNominalDt / kBranchPeriod));
   if (dt_config_.is_simulated) {
@@ -77,10 +84,20 @@ ModelBasedLocalizer::ModelBasedLocalizer(
   B_continuous_accel_(kTheta, kThetaRate) = 1.0;
 
   Q_continuous_model_.setZero();
-  Q_continuous_model_.diagonal() << 1e-4, 1e-4, 1e-4, 1e-2, 1e-0, 1e-0, 1e-2,
+  Q_continuous_model_.diagonal() << 1e-2, 1e-2, 1e-8, 1e-2, 1e-0, 1e-0, 1e-2,
       1e-0, 1e-0;
 
+  Q_continuous_accel_.setZero();
+  Q_continuous_accel_.diagonal() << 1e-2, 1e-2, 1e-20, 1e-4, 1e-4;
+
   P_model_ = Q_continuous_model_ * aos::time::DurationInSeconds(kNominalDt);
+
+  // We can precalculate the discretizations of the accel model because it is
+  // actually LTI.
+
+  DiscretizeQAFast(Q_continuous_accel_, A_continuous_accel_, kNominalDt,
+                   &Q_discrete_accel_, &A_discrete_accel_);
+  P_accel_ = Q_discrete_accel_;
 }
 
 Eigen::Matrix<double, ModelBasedLocalizer::kNModelStates,
@@ -281,6 +298,8 @@ void ModelBasedLocalizer::HandleImu(aos::monotonic_clock::time_point t,
                    &A_discrete);
 
   P_model_ = A_discrete * P_model_ * A_discrete.transpose() + Q_discrete;
+  P_accel_ = A_discrete_accel_ * P_accel_ * A_discrete_accel_.transpose() +
+             Q_discrete_accel_;
 
   Eigen::Matrix<double, kNModelOutputs, kNModelStates> H;
   Eigen::Matrix<double, kNModelOutputs, kNModelOutputs> R;
@@ -300,8 +319,6 @@ void ModelBasedLocalizer::HandleImu(aos::monotonic_clock::time_point t,
 
   if (branches_.empty()) {
     VLOG(2) << "Initializing";
-    current_state_.model_state.setZero();
-    current_state_.accel_state.setZero();
     current_state_.model_state(kLeftEncoder) = encoders(0);
     current_state_.model_state(kRightEncoder) = encoders(1);
     current_state_.branch_time = t;
@@ -404,6 +421,8 @@ void ModelBasedLocalizer::HandleImu(aos::monotonic_clock::time_point t,
   ++branch_counter_;
   if (branch_counter_ % kBranchPeriod == 0) {
     branches_.Push(new_branch);
+    old_positions_.Push(OldPosition{t, xytheta(), latest_turret_position_,
+                                    latest_turret_velocity_});
     branch_counter_ = 0;
   }
 
@@ -424,6 +443,219 @@ void ModelBasedLocalizer::HandleImu(aos::monotonic_clock::time_point t,
   VLOG(2) << "yaw rate " << yaw_rate;
 
   CHECK(std::isfinite(last_residual_));
+}
+
+const ModelBasedLocalizer::OldPosition ModelBasedLocalizer::GetStateForTime(
+    aos::monotonic_clock::time_point time) {
+  if (old_positions_.empty()) {
+    return OldPosition{};
+  }
+
+  aos::monotonic_clock::duration lowest_time_error =
+      aos::monotonic_clock::duration::max();
+  const OldPosition *best_match = nullptr;
+  for (const OldPosition &sample : old_positions_) {
+    const aos::monotonic_clock::duration time_error =
+        std::chrono::abs(sample.sample_time - time);
+    if (time_error < lowest_time_error) {
+      lowest_time_error = time_error;
+      best_match = &sample;
+    }
+  }
+  return *best_match;
+}
+
+namespace {
+// Converts a flatbuffer TransformationMatrix to an Eigen matrix. Technically,
+// this should be able to do a single memcpy, but the extra verbosity here seems
+// appropriate.
+Eigen::Matrix<double, 4, 4> FlatbufferToTransformationMatrix(
+    const frc971::vision::calibration::TransformationMatrix &flatbuffer) {
+  CHECK_EQ(16u, CHECK_NOTNULL(flatbuffer.data())->size());
+  Eigen::Matrix<double, 4, 4> result;
+  result.setIdentity();
+  for (int row = 0; row < 4; ++row) {
+    for (int col = 0; col < 4; ++col) {
+      result(row, col) = (*flatbuffer.data())[row * 4 + col];
+    }
+  }
+  return result;
+}
+
+// Node names of the pis to listen for cameras from.
+const std::array<std::string, 4> kPisToUse{"pi1", "pi2", "pi3", "pi4"};
+}
+
+const Eigen::Matrix<double, 4, 4> ModelBasedLocalizer::CameraTransform(
+    const OldPosition &state,
+    const frc971::vision::calibration::CameraCalibration *calibration,
+    std::optional<RejectionReason> *rejection_reason) const {
+  CHECK_NOTNULL(rejection_reason);
+  CHECK_NOTNULL(calibration);
+  // Per the CameraCalibration specification, we can actually determine whether
+  // the camera is the turret camera just from the presence of the
+  // turret_extrinsics member.
+  const bool is_turret = calibration->has_turret_extrinsics();
+  // Ignore readings when the turret is spinning too fast, on the assumption
+  // that the odds of screwing up the time compensation are higher.
+  // Note that the current number here is chosen pretty arbitrarily--1 rad / sec
+  // seems reasonable, but may be unnecessarily low or high.
+  constexpr double kMaxTurretVelocity = 1.0;
+  if (is_turret && std::abs(state.turret_velocity) > kMaxTurretVelocity &&
+      !rejection_reason->has_value()) {
+    *rejection_reason = RejectionReason::TURRET_TOO_FAST;
+  }
+  CHECK(calibration->has_fixed_extrinsics());
+  const Eigen::Matrix<double, 4, 4> fixed_extrinsics =
+      FlatbufferToTransformationMatrix(*calibration->fixed_extrinsics());
+
+  // Calculate the pose of the camera relative to the robot origin.
+  Eigen::Matrix<double, 4, 4> H_robot_camera = fixed_extrinsics;
+  if (is_turret) {
+    H_robot_camera =
+        H_robot_camera *
+        frc971::control_loops::TransformationMatrixForYaw<double>(
+            state.turret_position) *
+        FlatbufferToTransformationMatrix(*calibration->turret_extrinsics());
+  }
+  return H_robot_camera;
+}
+
+const std::optional<Eigen::Vector2d>
+ModelBasedLocalizer::CameraMeasuredRobotPosition(
+    const OldPosition &state, const y2022::vision::TargetEstimate *target,
+    std::optional<RejectionReason> *rejection_reason) const {
+  if (!target->has_camera_calibration()) {
+    *rejection_reason = RejectionReason::NO_CALIBRATION;
+    return std::nullopt;
+  }
+  const Eigen::Matrix<double, 4, 4> H_robot_camera =
+      CameraTransform(state, target->camera_calibration(), rejection_reason);
+  const control_loops::Pose robot_pose(
+      {state.xytheta(0), state.xytheta(1), 0.0}, state.xytheta(2));
+  const Eigen::Matrix<double, 4, 4> H_field_robot =
+      robot_pose.AsTransformationMatrix();
+  // Current estimated pose of the camera in the global frame.
+  // Note that this is all really just an elaborate way of extracting the
+  // current estimated camera yaw, and nothing else.
+  const Eigen::Matrix<double, 4, 4> H_field_camera =
+      H_field_robot * H_robot_camera;
+  // Grab the implied yaw of the camera (the +Z axis is coming out of the front
+  // of the cameras).
+  const Eigen::Vector3d rotated_camera_z =
+      H_field_camera.block<3, 3>(0, 0) * Eigen::Vector3d(0, 0, 1);
+  const double camera_yaw =
+      std::atan2(rotated_camera_z.y(), rotated_camera_z.x());
+  // All right, now we need to use the heading and distance from the
+  // TargetEstimate, plus the yaw embedded in the camera_pose, to determine what
+  // the implied X/Y position of the robot is. To do this, we calculate the
+  // heading/distance from the target to the robot. The distance is easy, since
+  // that's the same as the distance from the robot to the target. The heading
+  // isn't too hard, but is obnoxious to think about, since the heading from the
+  // target to the robot is distinct from the heading from the robot to the
+  // target.
+
+  // Just to walk through examples to confirm that the below calculation is
+  // correct:
+  // * If yaw = 0, and angle_to_target = 0, we are at 180 deg relative to the
+  //   target.
+  // * If yaw = 90 deg, and angle_to_target = 0, we are at -90 deg relative to
+  //   the target.
+  // * If yaw = 0, and angle_to_target = 90 deg, we are at -90 deg relative to
+  //   the target.
+  const double heading_from_target =
+      aos::math::NormalizeAngle(M_PI + camera_yaw + target->angle_to_target());
+  const double distance_from_target = target->distance();
+  // Extract the implied camera position on the field.
+  Eigen::Matrix<double, 4, 4> H_field_camera_measured = H_field_camera;
+  // TODO(james): Are we going to need to evict the roll/pitch components of the
+  // camera extrinsics this year as well?
+  H_field_camera_measured(0, 3) =
+      distance_from_target * std::cos(heading_from_target) + kVisionTargetX;
+  H_field_camera_measured(1, 3) =
+      distance_from_target * std::sin(heading_from_target) + kVisionTargetY;
+  const Eigen::Matrix<double, 4, 4> H_field_robot_measured =
+      H_field_camera_measured * H_robot_camera.inverse();
+  return H_field_robot_measured.block<2, 1>(0, 3);
+}
+
+void ModelBasedLocalizer::HandleImageMatch(
+    aos::monotonic_clock::time_point sample_time,
+    const y2022::vision::TargetEstimate *target) {
+  std::optional<RejectionReason> rejection_reason;
+
+  const OldPosition &state = GetStateForTime(sample_time);
+  const std::optional<Eigen::Vector2d> measured_robot_position =
+      CameraMeasuredRobotPosition(state, target, &rejection_reason);
+  // Technically, rejection_reason should always be set if
+  // measured_robot_position is nullopt, but in the future we may have more
+  // recoverable rejection reasons that we wish to allow to propagate further
+  // into the process.
+  if (!measured_robot_position || rejection_reason.has_value()) {
+    CHECK(rejection_reason.has_value());
+    TallyRejection(rejection_reason.value());
+    return;
+  }
+
+  // Next, go through and do the actual Kalman corrections for the x/y
+  // measurement, for both the accel state and the model-based state.
+  const Eigen::Matrix<double, kNModelStates, kNModelStates> A_continuous_model =
+      AModel(current_state_.model_state);
+
+  Eigen::Matrix<double, kNModelStates, kNModelStates> A_discrete_model;
+  Eigen::Matrix<double, kNModelStates, kNModelStates> Q_discrete_model;
+
+  DiscretizeQAFast(Q_continuous_model_, A_continuous_model, kNominalDt,
+                   &Q_discrete_model, &A_discrete_model);
+
+  Eigen::Matrix<double, 2, kNModelStates> H_model;
+  H_model.setZero();
+  Eigen::Matrix<double, 2, kNAccelStates> H_accel;
+  H_accel.setZero();
+  Eigen::Matrix<double, 2, 2> R;
+  R.setZero();
+  H_model(0, kX) = 1.0;
+  H_model(1, kY) = 1.0;
+  H_accel(0, kX) = 1.0;
+  H_accel(1, kY) = 1.0;
+  R.diagonal() << 1e-2, 1e-2;
+
+  const Eigen::Matrix<double, kNModelStates, 2> K_model =
+      P_model_ * H_model.transpose() *
+      (H_model * P_model_ * H_model.transpose() + R).inverse();
+  const Eigen::Matrix<double, kNAccelStates, 2> K_accel =
+      P_accel_ * H_accel.transpose() *
+      (H_accel * P_accel_ * H_accel.transpose() + R).inverse();
+  P_model_ = (Eigen::Matrix<double, kNModelStates, kNModelStates>::Identity() -
+              K_model * H_model) *
+             P_model_;
+  P_accel_ = (Eigen::Matrix<double, kNAccelStates, kNAccelStates>::Identity() -
+              K_accel * H_accel) *
+             P_accel_;
+  // And now we have to correct *everything* on all the branches:
+  for (CombinedState &state : branches_) {
+    state.model_state += K_model * (measured_robot_position.value() -
+                                     H_model * state.model_state);
+    state.accel_state += K_accel * (measured_robot_position.value() -
+                                     H_accel * state.accel_state);
+  }
+  current_state_.model_state +=
+      K_model *
+      (measured_robot_position.value() - H_model * current_state_.model_state);
+  current_state_.accel_state +=
+      K_accel *
+      (measured_robot_position.value() - H_accel * current_state_.accel_state);
+
+  statistics_.total_accepted++;
+  statistics_.total_candidates++;
+}
+
+void ModelBasedLocalizer::HandleTurret(
+    aos::monotonic_clock::time_point sample_time, double turret_position,
+    double turret_velocity) {
+  last_turret_update_ = sample_time;
+  latest_turret_position_ = turret_position;
+  latest_turret_velocity_ = turret_velocity;
 }
 
 void ModelBasedLocalizer::HandleReset(aos::monotonic_clock::time_point now,
@@ -470,6 +702,16 @@ flatbuffers::Offset<ModelBasedState> ModelBasedLocalizer::BuildModelState(
 
 flatbuffers::Offset<ModelBasedStatus> ModelBasedLocalizer::PopulateStatus(
     flatbuffers::FlatBufferBuilder *fbb) {
+  const auto rejections_offset = fbb->CreateVector(
+      statistics_.rejection_counts.data(), statistics_.rejection_counts.size());
+
+  CumulativeStatistics::Builder stats_builder(*fbb);
+  stats_builder.add_total_accepted(statistics_.total_accepted);
+  stats_builder.add_total_candidates(statistics_.total_candidates);
+  stats_builder.add_rejection_reason_count(rejections_offset);
+  const flatbuffers::Offset<CumulativeStatistics> stats_offset =
+      stats_builder.Finish();
+
   const flatbuffers::Offset<control_loops::drivetrain::DownEstimatorState>
       down_estimator_offset = down_estimator_.PopulateStatus(fbb, t_);
 
@@ -508,6 +750,7 @@ flatbuffers::Offset<ModelBasedStatus> ModelBasedLocalizer::PopulateStatus(
   builder.add_implied_accel_y(abs_accel_(1));
   builder.add_implied_accel_z(abs_accel_(2));
   builder.add_clock_resets(clock_resets_);
+  builder.add_statistics(stats_offset);
   return builder.Finish();
 }
 
@@ -528,6 +771,9 @@ EventLoopLocalizer::EventLoopLocalizer(
       output_fetcher_(
           event_loop_->MakeFetcher<frc971::control_loops::drivetrain::Output>(
               "/drivetrain")),
+      clock_offset_fetcher_(
+          event_loop_->MakeFetcher<aos::message_bridge::ServerStatistics>(
+              "/aos")),
       left_encoder_(-DrivetrainWrapPeriod() / 2.0, DrivetrainWrapPeriod()),
       right_encoder_(-DrivetrainWrapPeriod() / 2.0, DrivetrainWrapPeriod()) {
   event_loop_->MakeWatcher(
@@ -538,8 +784,39 @@ EventLoopLocalizer::EventLoopLocalizer(
                                  ? model_based_.xytheta()(2)
                                  : control.theta();
         model_based_.HandleReset(event_loop_->monotonic_now(),
-                               {control.x(), control.y(), theta});
+                                 {control.x(), control.y(), theta});
       });
+  event_loop_->MakeWatcher(
+      "/superstructure",
+      [this](const y2022::control_loops::superstructure::Status &status) {
+        if (!status.has_turret()) {
+          return;
+        }
+        CHECK(status.has_turret());
+        model_based_.HandleTurret(event_loop_->context().monotonic_event_time,
+                                  status.turret()->position(),
+                                  status.turret()->velocity());
+      });
+
+  for (const auto &pi : kPisToUse) {
+    event_loop_->MakeWatcher(
+        "/" + pi + "/camera",
+        [this, pi](const y2022::vision::TargetEstimate &target) {
+          const std::optional<aos::monotonic_clock::duration> monotonic_offset =
+              ClockOffset(pi);
+          if (!monotonic_offset.has_value()) {
+            return;
+          }
+          // TODO(james): Get timestamp from message contents.
+          aos::monotonic_clock::time_point capture_time(
+              event_loop_->context().monotonic_remote_time - monotonic_offset.value());
+          if (capture_time > event_loop_->context().monotonic_event_time) {
+            model_based_.TallyRejection(RejectionReason::IMAGE_FROM_FUTURE);
+            return;
+          }
+          model_based_.HandleImageMatch(capture_time, &target);
+        });
+  }
   event_loop_->MakeWatcher(
       "/localizer", [this](const frc971::IMUValuesBatch &values) {
         CHECK(values.has_readings());
@@ -624,6 +901,32 @@ EventLoopLocalizer::EventLoopLocalizer(
           }
         }
       });
+}
+
+std::optional<aos::monotonic_clock::duration> EventLoopLocalizer::ClockOffset(
+    std::string_view pi) {
+  std::optional<aos::monotonic_clock::duration> monotonic_offset;
+  clock_offset_fetcher_.Fetch();
+  if (clock_offset_fetcher_.get() != nullptr) {
+    for (const auto connection : *clock_offset_fetcher_->connections()) {
+      if (connection->has_node() && connection->node()->has_name() &&
+          connection->node()->name()->string_view() == pi) {
+        if (connection->has_monotonic_offset()) {
+          monotonic_offset =
+              std::chrono::nanoseconds(connection->monotonic_offset());
+        } else {
+          // If we don't have a monotonic offset, that means we aren't
+          // connected.
+          model_based_.TallyRejection(
+              RejectionReason::MESSAGE_BRIDGE_DISCONNECTED);
+          return std::nullopt;
+        }
+        break;
+      }
+    }
+  }
+  CHECK(monotonic_offset.has_value());
+  return monotonic_offset;
 }
 
 }  // namespace frc971::controls
