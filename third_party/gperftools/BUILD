@@ -32,6 +32,8 @@ common_copts = [
     "-Wno-switch-enum",
     "-Wno-error=cast-align",
     "-Wno-error=cast-qual",
+    "-Wno-deprecated-volatile",
+    "-Wno-cast-qual",
 
     # //build_tests:tcmalloc_build_test relies on this.
     "-DENABLE_LARGE_ALLOC_REPORT=1",
