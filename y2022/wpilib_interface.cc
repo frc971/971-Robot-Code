@@ -193,6 +193,10 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       position_builder.add_intake_front(intake_offset_front);
       position_builder.add_intake_back(intake_offset_back);
       position_builder.add_turret(turret_offset);
+      position_builder.add_intake_beambreak_front(
+          intake_beambreak_front_->Get());
+      position_builder.add_intake_beambreak_back(intake_beambreak_back_->Get());
+      position_builder.add_turret_beambreak(turret_beambreak_->Get());
       builder.CheckOk(builder.Send(position_builder.Finish()));
     }
 
@@ -294,6 +298,16 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     turret_encoder_.set_potentiometer(::std::move(potentiometer));
   }
 
+  void set_intake_beambreak_front(::std::unique_ptr<frc::DigitalInput> sensor) {
+    intake_beambreak_front_ = ::std::move(sensor);
+  }
+  void set_intake_beambreak_back(::std::unique_ptr<frc::DigitalInput> sensor) {
+    intake_beambreak_back_ = ::std::move(sensor);
+  }
+  void set_turret_beambreak(::std::unique_ptr<frc::DigitalInput> sensor) {
+    turret_beambreak_ = ::std::move(sensor);
+  }
+
  private:
   std::shared_ptr<const Values> values_;
 
@@ -303,6 +317,9 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       drivetrain_position_sender_;
 
   std::array<std::unique_ptr<frc::DigitalInput>, 2> autonomous_modes_;
+
+  std::unique_ptr<frc::DigitalInput> intake_beambreak_front_,
+      intake_beambreak_back_, turret_beambreak_;
 
   std::unique_ptr<frc::AnalogInput> climber_potentiometer_,
       flipper_arm_right_potentiometer_, flipper_arm_left_potentiometer_;
@@ -482,6 +499,10 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     sensor_reader.set_turret_encoder(make_encoder(4));
     sensor_reader.set_turret_absolute_pwm(make_unique<frc::DigitalInput>(4));
     sensor_reader.set_turret_potentiometer(make_unique<frc::AnalogInput>(4));
+
+    sensor_reader.set_intake_beambreak_front(make_unique<frc::DigitalInput>(5));
+    sensor_reader.set_intake_beambreak_back(make_unique<frc::DigitalInput>(6));
+    sensor_reader.set_turret_beambreak(make_unique<frc::DigitalInput>(7));
 
     sensor_reader.set_climber_potentiometer(make_unique<frc::AnalogInput>(5));
 
