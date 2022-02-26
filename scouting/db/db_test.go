@@ -1,16 +1,28 @@
 package db
 
 import (
-	"fmt"
+	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 )
 
-func TestAddToMatchDB(t *testing.T) {
-	db, error_ := NewDatabase()
-	if error_ != nil {
-		t.Fatalf(error_.Error())
+// Creates a database in TEST_TMPDIR so that we don't accidentally write it
+// into the runfiles directory.
+func createDatabase(t *testing.T) *Database {
+	// Get the path to our temporary writable directory.
+	testTmpdir := os.Getenv("TEST_TMPDIR")
+	db, err := NewDatabase(filepath.Join(testTmpdir, "scouting.db"))
+	if err != nil {
+		t.Fatal("Failed to create a new database: ", err)
 	}
+	return db
+}
+
+func TestAddToMatchDB(t *testing.T) {
+	db := createDatabase(t)
+	defer db.Delete()
+
 	correct := []Match{Match{matchNumber: 7, round: 1, compLevel: "quals", r1: 9999, r2: 1000, r3: 777, b1: 0000, b2: 4321, b3: 1234, r1ID: 1, r2ID: 2, r3ID: 3, b1ID: 4, b2ID: 5, b3ID: 6}}
 	db.AddToMatch(correct[0])
 	got, error_ := db.ReturnMatches()
@@ -20,14 +32,12 @@ func TestAddToMatchDB(t *testing.T) {
 	if !reflect.DeepEqual(correct, got) {
 		t.Fatalf("Got %#v,\nbut expected %#v.", got, correct)
 	}
-	db.Delete()
 }
 
 func TestAddToStatsDB(t *testing.T) {
-	db, error_ := NewDatabase()
-	if error_ != nil {
-		t.Fatalf(error_.Error())
-	}
+	db := createDatabase(t)
+	defer db.Delete()
+
 	correct := []Stats{
 		Stats{teamNumber: 1236, matchNumber: 7, shotsMissed: 9, upperGoalShots: 5, lowerGoalShots: 4, shotsMissedAuto: 3, upperGoalAuto: 2, lowerGoalAuto: 1, playedDefense: 2, climbing: 3},
 		Stats{teamNumber: 1001, matchNumber: 7, shotsMissed: 6, upperGoalShots: 9, lowerGoalShots: 9, shotsMissedAuto: 0, upperGoalAuto: 0, lowerGoalAuto: 0, playedDefense: 0, climbing: 0},
@@ -47,15 +57,11 @@ func TestAddToStatsDB(t *testing.T) {
 	if !reflect.DeepEqual(correct, got) {
 		t.Errorf("Got %#v,\nbut expected %#v.", got, correct)
 	}
-	db.Delete()
 }
 
 func TestQueryMatchDB(t *testing.T) {
-	db, error_ := NewDatabase()
-	if error_ != nil {
-		t.Fatalf(error_.Error())
-		fmt.Println("Error creating new database")
-	}
+	db := createDatabase(t)
+	defer db.Delete()
 
 	testDatabase := []Match{
 		Match{matchNumber: 2, round: 1, compLevel: "quals", r1: 251, r2: 169, r3: 286, b1: 253, b2: 538, b3: 149},
@@ -74,17 +80,18 @@ func TestQueryMatchDB(t *testing.T) {
 	}
 
 	got, error_ := db.QueryMatches(538)
+	if error_ != nil {
+		t.Fatal("Failed to query matches for 538: ", error_)
+	}
 	if !reflect.DeepEqual(correct, got) {
 		t.Fatalf("Got %#v,\nbut expected %#v.", got, correct)
 	}
-	db.Delete()
 }
 
 func TestQueryStatsDB(t *testing.T) {
-	db, error_ := NewDatabase()
-	if error_ != nil {
-		t.Fatalf(error_.Error())
-	}
+	db := createDatabase(t)
+	defer db.Delete()
+
 	testDatabase := []Stats{
 		Stats{teamNumber: 1235, matchNumber: 94, shotsMissed: 2, upperGoalShots: 2, lowerGoalShots: 2, shotsMissedAuto: 2, upperGoalAuto: 2, lowerGoalAuto: 2, playedDefense: 2, climbing: 2},
 		Stats{teamNumber: 1234, matchNumber: 94, shotsMissed: 4, upperGoalShots: 4, lowerGoalShots: 4, shotsMissedAuto: 4, upperGoalAuto: 4, lowerGoalAuto: 4, playedDefense: 7, climbing: 2},
@@ -107,14 +114,12 @@ func TestQueryStatsDB(t *testing.T) {
 	if !reflect.DeepEqual(correct, got) {
 		t.Errorf("Got %#v,\nbut expected %#v.", got, correct)
 	}
-	db.Delete()
 }
 
 func TestReturnMatchDB(t *testing.T) {
-	db, error_ := NewDatabase()
-	if error_ != nil {
-		t.Fatalf(error_.Error())
-	}
+	db := createDatabase(t)
+	defer db.Delete()
+
 	correct := []Match{
 		Match{matchNumber: 2, round: 1, compLevel: "quals", r1: 251, r2: 169, r3: 286, b1: 253, b2: 538, b3: 149, r1ID: 1, r2ID: 2, r3ID: 3, b1ID: 4, b2ID: 5, b3ID: 6},
 		Match{matchNumber: 3, round: 1, compLevel: "quals", r1: 147, r2: 421, r3: 538, b1: 126, b2: 448, b3: 262, r1ID: 7, r2ID: 8, r3ID: 9, b1ID: 10, b2ID: 11, b3ID: 12},
@@ -132,14 +137,12 @@ func TestReturnMatchDB(t *testing.T) {
 	if !reflect.DeepEqual(correct, got) {
 		t.Errorf("Got %#v,\nbut expected %#v.", got, correct)
 	}
-	db.Delete()
 }
 
 func TestReturnStatsDB(t *testing.T) {
-	db, error_ := NewDatabase()
-	if error_ != nil {
-		t.Fatalf(error_.Error())
-	}
+	db := createDatabase(t)
+	defer db.Delete()
+
 	correct := []Stats{
 		Stats{teamNumber: 1235, matchNumber: 94, shotsMissed: 2, upperGoalShots: 2, lowerGoalShots: 2, shotsMissedAuto: 2, upperGoalAuto: 2, lowerGoalAuto: 2, playedDefense: 2, climbing: 2},
 		Stats{teamNumber: 1236, matchNumber: 94, shotsMissed: 4, upperGoalShots: 4, lowerGoalShots: 4, shotsMissedAuto: 4, upperGoalAuto: 4, lowerGoalAuto: 4, playedDefense: 7, climbing: 2},
@@ -159,5 +162,4 @@ func TestReturnStatsDB(t *testing.T) {
 	if !reflect.DeepEqual(correct, got) {
 		t.Errorf("Got %#v,\nbut expected %#v.", got, correct)
 	}
-	db.Delete()
 }
