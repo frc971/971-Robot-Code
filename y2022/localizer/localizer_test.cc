@@ -1,4 +1,4 @@
-#include "y2022/control_loops/localizer/localizer.h"
+#include "y2022/localizer/localizer.h"
 
 #include "aos/events/simulated_event_loop.h"
 #include "gtest/gtest.h"

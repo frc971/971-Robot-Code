@@ -1,4 +1,3 @@
-
 #include "aos/configuration.h"
 #include "aos/events/logging/log_reader.h"
 #include "aos/events/logging/log_writer.h"
@@ -6,8 +5,8 @@
 #include "aos/init.h"
 #include "aos/json_to_flatbuffer.h"
 #include "aos/network/team_number.h"
-#include "y2022/control_loops/localizer/localizer.h"
-#include "y2022/control_loops/localizer/localizer_schema.h"
+#include "y2022/localizer/localizer.h"
+#include "y2022/localizer/localizer_schema.h"
 #include "gflags/gflags.h"
 #include "y2022/control_loops/drivetrain/drivetrain_base.h"
 

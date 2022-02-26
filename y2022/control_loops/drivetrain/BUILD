@@ -80,7 +80,7 @@ cc_library(
         "//aos/network:message_bridge_server_fbs",
         "//frc971/control_loops/drivetrain:hybrid_ekf",
         "//frc971/control_loops/drivetrain:localizer",
-        "//y2022/control_loops/localizer:localizer_output_fbs",
+        "//y2022/localizer:localizer_output_fbs",
     ],
 )
 
@@ -127,7 +127,7 @@ cc_test(
         "//frc971/control_loops:team_number_test_environment",
         "//frc971/control_loops/drivetrain:drivetrain_lib",
         "//frc971/control_loops/drivetrain:drivetrain_test_lib",
-        "//y2022/control_loops/localizer:localizer_output_fbs",
+        "//y2022/localizer:localizer_output_fbs",
     ],
 )
 

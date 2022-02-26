@@ -1,6 +1,6 @@
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
-#include "y2022/control_loops/localizer/localizer.h"
+#include "y2022/localizer/localizer.h"
 #include "y2022/control_loops/drivetrain/drivetrain_base.h"
 
 DEFINE_string(config, "aos_config.json", "Path to the config file to use.");

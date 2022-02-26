@@ -37,7 +37,7 @@ import {plotLocalizer as plot2020Localizer} from
 import {plotCatapult as plot2022Catapult} from
     'org_frc971/y2022/control_loops/superstructure/catapult_plotter'
 import {plotLocalizer as plot2022Localizer} from
-    'org_frc971/y2022/control_loops/localizer/localizer_plotter'
+    'org_frc971/y2022/localizer/localizer_plotter'
 import {plotAccelerator} from
     'org_frc971/y2020/control_loops/superstructure/accelerator_plotter'
 import {plotHood} from
