@@ -225,9 +225,8 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       subsystems_not_ready.push_back(Subsystem::TURRET);
     }
 
-    subsystems_not_ready_offset =
-        status->fbb()->CreateVector(subsystems_not_ready.backing_array().data(),
-                                    subsystems_not_ready.size());
+    subsystems_not_ready_offset = status->fbb()->CreateVector(
+        subsystems_not_ready.data(), subsystems_not_ready.size());
   }
 
   Status::Builder status_builder = status->MakeBuilder<Status>();

@@ -23,9 +23,8 @@ constexpr size_t CobsMaxEncodedSize(size_t decoded_size) {
 // output_buffer is where to store the result.
 // Returns a span in output_buffer which has no 0 bytes.
 template <size_t max_decoded_size>
-absl::Span<char> CobsEncode(
-    absl::Span<const char> input,
-    std::array<char, CobsMaxEncodedSize(max_decoded_size)> *output_buffer);
+absl::Span<char> CobsEncode(absl::Span<const char> input,
+                            absl::Span<char> output_buffer);
 
 // Decodes some COBS-encoded data.
 // input is the data to decide. Its size may be at most
@@ -90,20 +89,19 @@ class CobsPacketizer {
 };
 
 template <size_t max_decoded_size>
-absl::Span<char> CobsEncode(
-    absl::Span<const char> input,
-    std::array<char, CobsMaxEncodedSize(max_decoded_size)> *output_buffer) {
+absl::Span<char> CobsEncode(absl::Span<const char> input,
+                            absl::Span<char> output_buffer) {
   static_assert(max_decoded_size > 0, "Empty buffers not supported");
   if (static_cast<size_t>(input.size()) > max_decoded_size) {
     __builtin_trap();
   }
   auto input_pointer = input.begin();
-  auto output_pointer = output_buffer->begin();
+  auto output_pointer = output_buffer.begin();
   auto code_pointer = output_pointer;
   ++output_pointer;
   uint8_t code = 1;
   while (input_pointer < input.end()) {
-    if (output_pointer >= output_buffer->end()) {
+    if (output_pointer >= output_buffer.end()) {
       __builtin_trap();
     }
     if (*input_pointer == 0u) {
@@ -125,11 +123,11 @@ absl::Span<char> CobsEncode(
     ++input_pointer;
   }
   *code_pointer = code;
-  if (output_pointer > output_buffer->end()) {
+  if (output_pointer > output_buffer.end()) {
     __builtin_trap();
   }
-  return absl::Span<char>(*output_buffer)
-      .subspan(0, output_pointer - output_buffer->begin());
+  return absl::Span<char>(output_buffer)
+      .subspan(0, output_pointer - output_buffer.begin());
 }
 
 template <size_t max_decoded_size>

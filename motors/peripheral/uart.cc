@@ -70,7 +70,7 @@ aos::SizedArray<char, 4> Uart::DoRead() {
   // otherwise reading S1) before the final one. In practice, the FIFOs are so
   // short on this part it probably won't help anything.
   aos::SizedArray<char, 4> result;
-  while (DataAvailable() && !result.full()) {
+  while (DataAvailable() && result.size() != result.capacity()) {
     result.push_back(ReadCharacter());
   }
   return result;

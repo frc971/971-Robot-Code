@@ -32,8 +32,8 @@ class CobsTest : public ::testing::Test {
   template <size_t max_decoded_size>
   void EncodeAndDecode(const absl::Span<const char> decoded_input) {
     std::array<char, CobsMaxEncodedSize(max_decoded_size)> encoded_buffer;
-    const auto encoded =
-        CobsEncode<max_decoded_size>(decoded_input, &encoded_buffer);
+    const auto encoded = CobsEncode<max_decoded_size>(
+        decoded_input, absl::Span<char>(encoded_buffer));
     ASSERT_LE(encoded.size(), encoded_buffer.size());
     ASSERT_EQ(encoded.data(), &encoded_buffer.front());
 

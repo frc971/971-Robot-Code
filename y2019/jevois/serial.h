@@ -7,6 +7,6 @@ namespace jevois {
 int open_via_terminos(const char *tty_name);
 
 }  // namespace jevois
-}  // namespace frc971
+}  // namespace y2019
 
 #endif  // Y2019_JEVOIS_SERIAL_H_

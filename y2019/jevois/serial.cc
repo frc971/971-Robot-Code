@@ -1,12 +1,12 @@
 #include "y2019/jevois/serial.h"
 
-#include "aos/logging/logging.h"
-
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <termios.h>
 #include <unistd.h>
+
+#include "aos/logging/logging.h"
 
 namespace y2019 {
 namespace jevois {
@@ -33,7 +33,7 @@ int open_via_terminos(const char *tty_name) {
                        | IGNCR            // ignore CR
                        | ICRNL            // translate CR to newline on input
                        | IXON  // disable XON/XOFF flow control on output
-                       );
+  );
 
   // disable implementation-defined output processing
   options.c_oflag &= ~OPOST;
@@ -42,7 +42,7 @@ int open_via_terminos(const char *tty_name) {
                        | ICANON  // disable cannonical mode
                        | ISIG    // do not signal for INTR, QUIT, SUSP etc
                        | IEXTEN  // disable platform dependent i/p processing
-                       );
+  );
 
   cfsetispeed(&options, B115200);
   cfsetospeed(&options, B115200);

@@ -46,6 +46,9 @@ cc_library(
     hdrs = [
         "sized_array.h",
     ],
+    deps = [
+        "@com_google_absl//absl/container:inlined_vector",
+    ],
 )
 
 cc_test(
