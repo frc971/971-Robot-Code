@@ -282,6 +282,10 @@ class SuperstructureSimulation {
 
 class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
  public:
+  static constexpr double kSafeTurretAngle =
+      CollisionAvoidance::kMaxCollisionZoneBackTurret +
+      CollisionAvoidance::kEpsTurret;
+
   SuperstructureTest()
       : ::frc971::testing::ControlLoopTest(
             aos::configuration::ReadConfig("y2022/aos_config.json"),
@@ -472,8 +476,7 @@ TEST_F(SuperstructureTest, DoesNothing) {
       constants::Values::kIntakeRange().middle());
   superstructure_plant_.intake_back()->InitializePosition(
       constants::Values::kIntakeRange().middle());
-  superstructure_plant_.turret()->InitializePosition(
-      constants::Values::kTurretRange().middle());
+  superstructure_plant_.turret()->InitializePosition(kSafeTurretAngle);
   superstructure_plant_.catapult()->InitializePosition(
       constants::Values::kCatapultRange().middle());
   superstructure_plant_.climber()->InitializePosition(
@@ -494,7 +497,7 @@ TEST_F(SuperstructureTest, DoesNothing) {
 
     flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
         turret_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-            *builder.fbb(), constants::Values::kTurretRange().middle());
+            *builder.fbb(), kSafeTurretAngle);
 
     flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
         climber_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
@@ -575,6 +578,8 @@ TEST_F(SuperstructureTest, ReachesGoal) {
 // behaviour.
 TEST_F(SuperstructureTest, SaturationTest) {
   SetEnabled(true);
+  superstructure_plant_.turret()->InitializePosition(kSafeTurretAngle);
+
   // Zero it before we move.
   WaitUntilZeroed();
   {
@@ -582,19 +587,21 @@ TEST_F(SuperstructureTest, SaturationTest) {
 
     flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
         intake_offset_front = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-            *builder.fbb(), constants::Values::kIntakeRange().upper);
+            *builder.fbb(), constants::Values::kIntakeRange().lower);
 
     flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
         intake_offset_back = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-            *builder.fbb(), constants::Values::kIntakeRange().upper);
+            *builder.fbb(), constants::Values::kIntakeRange().lower);
 
+    // Keep the turret away from the intakes because they start in the collision
+    // area
     flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
         turret_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-            *builder.fbb(), constants::Values::kTurretRange().upper);
+            *builder.fbb(), kSafeTurretAngle);
 
     flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
         climber_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-            *builder.fbb(), constants::Values::kClimberRange().upper);
+            *builder.fbb(), constants::Values::kClimberRange().lower);
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
 
@@ -607,7 +614,7 @@ TEST_F(SuperstructureTest, SaturationTest) {
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
-  RunFor(chrono::seconds(10));
+  RunFor(chrono::seconds(20));
   VerifyNearGoal();
 
   // Try a low acceleration move with a high max velocity and verify the
@@ -617,22 +624,22 @@ TEST_F(SuperstructureTest, SaturationTest) {
 
     flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
         intake_offset_front = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-            *builder.fbb(), constants::Values::kIntakeRange().lower,
+            *builder.fbb(), constants::Values::kIntakeRange().upper,
             CreateProfileParameters(*builder.fbb(), 20.0, 0.1));
 
     flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
         intake_offset_back = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-            *builder.fbb(), constants::Values::kIntakeRange().lower,
+            *builder.fbb(), constants::Values::kIntakeRange().upper,
             CreateProfileParameters(*builder.fbb(), 20.0, 0.1));
 
     flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
         turret_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-            *builder.fbb(), constants::Values::kTurretRange().lower,
+            *builder.fbb(), constants::Values::kTurretRange().upper,
             CreateProfileParameters(*builder.fbb(), 20.0, 0.1));
 
     flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
         climber_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-            *builder.fbb(), constants::Values::kClimberRange().lower,
+            *builder.fbb(), constants::Values::kClimberRange().upper,
             CreateProfileParameters(*builder.fbb(), 20.0, 0.1));
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
@@ -723,6 +730,7 @@ TEST_F(SuperstructureTest, RunIntakes) {
       constants::Values::kIntakeRange().middle());
   superstructure_plant_.intake_back()->InitializePosition(
       constants::Values::kIntakeRange().middle());
+  superstructure_plant_.turret()->InitializePosition(kSafeTurretAngle);
 
   WaitUntilZeroed();
 
@@ -742,10 +750,17 @@ TEST_F(SuperstructureTest, RunIntakes) {
           *builder.fbb(), constants::Values::kIntakeRange().upper,
           CreateProfileParameters(*builder.fbb(), 1.0, 0.2));
 
+  // Keep the turret away from the intakes to not trigger collision avoidance
+  flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+      turret_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+          *builder.fbb(), kSafeTurretAngle,
+          CreateProfileParameters(*builder.fbb(), 1.0, 0.2));
+
   Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
 
   goal_builder.add_intake_front(intake_offset_front);
   goal_builder.add_intake_back(intake_offset_back);
+  goal_builder.add_turret(turret_offset);
 
   ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   // TODO(Milo): Make this a sane time

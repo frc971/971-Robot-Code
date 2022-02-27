@@ -76,6 +76,7 @@ cc_library(
         "superstructure.h",
     ],
     deps = [
+        ":collision_avoidance_lib",
         ":superstructure_goal_fbs",
         ":superstructure_output_fbs",
         ":superstructure_position_fbs",
@@ -123,6 +124,35 @@ cc_test(
         "//frc971/control_loops:position_sensor_sim",
         "//frc971/control_loops:team_number_test_environment",
         "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
+    ],
+)
+
+cc_library(
+    name = "collision_avoidance_lib",
+    srcs = ["collision_avoidance.cc"],
+    hdrs = ["collision_avoidance.h"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":superstructure_goal_fbs",
+        ":superstructure_status_fbs",
+        "//frc971/control_loops:control_loops_fbs",
+        "//frc971/control_loops:profiled_subsystem_fbs",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/functional:bind_front",
+    ],
+)
+
+cc_test(
+    name = "collision_avoidance_test",
+    srcs = ["collision_avoidance_test.cc"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":collision_avoidance_lib",
+        ":superstructure_goal_fbs",
+        ":superstructure_status_fbs",
+        "//aos:flatbuffers",
+        "//aos:math",
+        "//aos/testing:googletest",
     ],
 )
 
