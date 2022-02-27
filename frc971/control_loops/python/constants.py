@@ -33,6 +33,7 @@ BARREL = "Barrel"
 Robot2019 = RobotType(width=0.65, length=0.8)
 Robot2020 = RobotType(width=0.8128, length=0.8636) # 32 in x 34 in
 Robot2021 = Robot2020
+Robot2022 = Robot2021
 
 FIELDS = {
     "2019 Field":
@@ -116,14 +117,25 @@ FIELDS = {
         length=4.572,
         robot=Robot2021,
         field_id="autonav_bounce"),
+    "2022 Field":
+    FieldType(
+        "2022 Field",
+        tags=[],
+        year=2022,
+        width=16.4592,
+        length=8.2296,
+        robot=Robot2022,
+        field_id="2022"),
 }
 
-FIELD = FIELDS["2020 Field"]
+FIELD = FIELDS["2022 Field"]
 
 
 def get_json_folder(field):
     if field.year == 2020 or field.year == 2021:
         return "y2020/actors/splines"
+    elif field.year == 2022:
+        return "y2022/actors/splines"
     else:
         return "frc971/control_loops/python/spline_jsons"
 
