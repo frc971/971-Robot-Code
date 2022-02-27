@@ -1,5 +1,5 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
-load("//tools/build_rules:js.bzl", "turn_files_into_runfiles")
+load("//tools/build_rules:js.bzl", "protractor_ts_test", "turn_files_into_runfiles")
 
 go_binary(
     name = "sql_demo",
@@ -35,12 +35,11 @@ sh_binary(
     ],
 )
 
-py_test(
+protractor_ts_test(
     name = "scouting_test",
     srcs = [
-        "scouting_test.py",
+        ":scouting_test.ts",
     ],
-    data = [
-        ":scouting",
-    ],
+    on_prepare = ":scouting_test.protractor.on-prepare.js",
+    server = ":scouting",
 )

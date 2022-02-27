@@ -1,6 +1,9 @@
 load("@build_bazel_rules_nodejs//:providers.bzl", "JSModuleInfo")
 load("@npm//@bazel/rollup:index.bzl", upstream_rollup_bundle = "rollup_bundle")
 load("@npm//@bazel/terser:index.bzl", "terser_minified")
+load("@bazel_skylib//lib:paths.bzl", "paths")
+load("@npm//@bazel/protractor:index.bzl", "protractor_web_test_suite")
+load("@npm//@bazel/typescript:index.bzl", "ts_project")
 
 def rollup_bundle(name, deps, visibility = None, **kwargs):
     """Calls the upstream rollup_bundle() and exposes a .min.js file.
@@ -78,3 +81,36 @@ turn_files_into_runfiles = rule(
         ),
     },
 )
+
+def protractor_ts_test(name, srcs, deps = None, **kwargs):
+    """Wraps upstream protractor_web_test_suite() to reduce boilerplate.
+
+    This is largely based on the upstream protractor example:
+    https://github.com/bazelbuild/rules_nodejs/blob/stable/examples/angular/e2e/BUILD.bazel
+
+    See the documentation for more information:
+    https://bazelbuild.github.io/rules_nodejs/Protractor.html#protractor_web_test_suite
+    """
+    ts_project(
+        name = name + "__lib",
+        srcs = srcs,
+        testonly = 1,
+        deps = (deps or []) + [
+            # Implicit deps that are necessary to get tests of this kind to
+            # work.
+            "@npm//@types/jasmine",
+            "@npm//jasmine",
+            "@npm//protractor",
+            "@npm//@types/node",
+        ],
+        tsconfig = {},
+        declaration = True,
+        declaration_map = True,
+    )
+
+    protractor_web_test_suite(
+        name = name,
+        srcs = [paths.replace_extension(src, ".js") for src in srcs],
+        deps = [":%s__lib" % name],
+        **kwargs
+    )
