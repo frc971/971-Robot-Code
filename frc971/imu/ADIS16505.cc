@@ -373,9 +373,7 @@ void imu_read_finished() {
     yaw += yaw_rate * dt;
 
     // 50% is 0; -2000 deg/sec to 2000 deg/sec
-    uint16_t rate_level =
-        (std::clamp(yaw_rate, -2000.0, 2000.0) / 4000.0 + 0.5) * PWM_TOP;
-    pwm_set_gpio_level(RATE_PWM, rate_level);
+    double scaled_rate = (std::clamp(yaw_rate, -2000.0, 2000.0) / 4000.0 + 0.5);
 
     // 0 to 360
     double wrapped_heading = fmod(yaw, 360);
@@ -383,8 +381,20 @@ void imu_read_finished() {
       wrapped_heading = wrapped_heading + 360;
     }
 
-    uint16_t heading_level = (int16_t)(wrapped_heading / 360.0 * PWM_TOP);
+    double scaled_heading = wrapped_heading / 360.0;
+
+    constexpr double kScaledRangeLow = 0.1;
+    constexpr double kScaledRangeHigh = 0.9;
+
+    uint16_t heading_level =
+        (scaled_heading * (kScaledRangeHigh - kScaledRangeLow) +
+         kScaledRangeLow) *
+        PWM_TOP;
+    uint16_t rate_level =
+        (scaled_rate * (kScaledRangeHigh - kScaledRangeLow) + kScaledRangeLow) *
+        PWM_TOP;
     pwm_set_gpio_level(HEADING_PWM, heading_level);
+    pwm_set_gpio_level(RATE_PWM, rate_level);
   }
 
   // if 5 or more consecutive checksums are zero, then something weird is going
