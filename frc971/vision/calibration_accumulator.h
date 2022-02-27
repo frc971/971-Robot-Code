@@ -26,6 +26,11 @@ class CalibrationDataObserver {
   // corresponding angular velocity and linear acceleration vectors wa.
   virtual void UpdateIMU(aos::distributed_clock::time_point t,
                          std::pair<Eigen::Vector3d, Eigen::Vector3d> wa) = 0;
+
+  // Observes a turret sample at the corresponding time t, and with the
+  // corresponding state.
+  virtual void UpdateTurret(aos::distributed_clock::time_point t,
+                            Eigen::Vector2d state) = 0;
 };
 
 // Class to both accumulate and replay camera and IMU data in time order.
@@ -40,11 +45,18 @@ class CalibrationData {
   void AddImu(aos::distributed_clock::time_point distributed_now,
               Eigen::Vector3d gyro, Eigen::Vector3d accel);
 
+  // Adds a turret reading (position; velocity) to the list at the provided
+  // time.
+  void AddTurret(aos::distributed_clock::time_point distributed_now,
+                 Eigen::Vector2d state);
+
   // Processes the data points by calling UpdateCamera and UpdateIMU in time
   // order.
   void ReviewData(CalibrationDataObserver *observer) const;
 
   size_t camera_samples_size() const { return rot_trans_points_.size(); }
+
+  size_t turret_samples() const { return turret_points_.size(); }
 
  private:
   std::vector<std::pair<aos::distributed_clock::time_point,
@@ -56,6 +68,10 @@ class CalibrationData {
   std::vector<std::pair<aos::distributed_clock::time_point,
                         std::pair<Eigen::Vector3d, Eigen::Vector3d>>>
       rot_trans_points_;
+
+  // Turret state as a timestamp and [x, v].
+  std::vector<std::pair<aos::distributed_clock::time_point, Eigen::Vector2d>>
+      turret_points_;
 };
 
 // Class to register image and IMU callbacks in AOS and route them to the

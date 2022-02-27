@@ -38,6 +38,18 @@ void CalibrationData::AddImu(distributed_clock::time_point distributed_now,
   imu_points_.emplace_back(distributed_now, std::make_pair(gyro, accel));
 }
 
+void CalibrationData::AddTurret(
+    aos::distributed_clock::time_point distributed_now, Eigen::Vector2d state) {
+  // We want the turret to be known too when solving.  But, we don't know if we
+  // are going to have a turret until we get the first reading.  In that case,
+  // blow away any camera readings from before.
+  while (!rot_trans_points_.empty() &&
+         rot_trans_points_[0].first < distributed_now) {
+    rot_trans_points_.erase(rot_trans_points_.begin());
+  }
+  turret_points_.emplace_back(distributed_now, state);
+}
+
 void CalibrationData::ReviewData(CalibrationDataObserver *observer) const {
   size_t next_imu_point = 0;
   size_t next_camera_point = 0;

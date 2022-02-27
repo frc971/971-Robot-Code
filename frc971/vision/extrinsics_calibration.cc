@@ -51,11 +51,13 @@ class CeresPoseFilter : public CalibrationDataObserver {
   typedef Eigen::Transform<Scalar, 3, Eigen::Affine> Affine3s;
 
   CeresPoseFilter(Eigen::Quaternion<Scalar> initial_orientation,
-                  Eigen::Quaternion<Scalar> imu_to_camera,
+                  Eigen::Quaternion<Scalar> pivot_to_camera,
+                  Eigen::Quaternion<Scalar> pivot_to_imu,
                   Eigen::Matrix<Scalar, 3, 1> gyro_bias,
                   Eigen::Matrix<Scalar, 6, 1> initial_state,
                   Eigen::Quaternion<Scalar> board_to_world,
-                  Eigen::Matrix<Scalar, 3, 1> imu_to_camera_translation,
+                  Eigen::Matrix<Scalar, 3, 1> pivot_to_camera_translation,
+                  Eigen::Matrix<Scalar, 3, 1> pivot_to_imu_translation,
                   Scalar gravity_scalar,
                   Eigen::Matrix<Scalar, 3, 1> accelerometer_bias)
       : accel_(Eigen::Matrix<double, 3, 1>::Zero()),
@@ -64,8 +66,10 @@ class CeresPoseFilter : public CalibrationDataObserver {
         orientation_(initial_orientation),
         x_hat_(initial_state),
         p_(Eigen::Matrix<Scalar, 6, 6>::Zero()),
-        imu_to_camera_rotation_(imu_to_camera),
-        imu_to_camera_translation_(imu_to_camera_translation),
+        pivot_to_camera_rotation_(pivot_to_camera),
+        pivot_to_camera_translation_(pivot_to_camera_translation),
+        pivot_to_imu_rotation_(pivot_to_imu),
+        pivot_to_imu_translation_(pivot_to_imu_translation),
         board_to_world_(board_to_world),
         gravity_scalar_(gravity_scalar),
         accelerometer_bias_(accelerometer_bias) {}
@@ -78,11 +82,26 @@ class CeresPoseFilter : public CalibrationDataObserver {
       Eigen::Quaternion<Scalar> /*imu_to_world_rotation*/,
       Affine3s /*imu_to_world*/) {}
 
+  void UpdateTurret(distributed_clock::time_point t,
+                    Eigen::Vector2d state) override {
+    state_ = state;
+    state_time_ = t;
+  }
+
+  Eigen::Vector2d state_ = Eigen::Vector2d::Zero();
+  distributed_clock::time_point state_time_ = distributed_clock::min_time;
+
   // Observes a camera measurement by applying a kalman filter correction and
   // accumulating up the error associated with the step.
   void UpdateCamera(distributed_clock::time_point t,
                     std::pair<Eigen::Vector3d, Eigen::Vector3d> rt) override {
     Integrate(t);
+
+    const double pivot_angle =
+        state_time_ == distributed_clock::min_time
+            ? 0.0
+            : state_(0) +
+                  state_(1) * chrono::duration<double>(t - state_time_).count();
 
     const Eigen::Quaternion<Scalar> board_to_camera_rotation(
         frc971::controls::ToQuaternionFromRotationVector(rt.first)
@@ -91,8 +110,10 @@ class CeresPoseFilter : public CalibrationDataObserver {
         Eigen::Translation3d(rt.second).cast<Scalar>() *
         board_to_camera_rotation;
 
-    const Affine3s imu_to_camera =
-        imu_to_camera_translation_ * imu_to_camera_rotation_;
+    const Affine3s pivot_to_camera =
+        pivot_to_camera_translation_ * pivot_to_camera_rotation_;
+    const Affine3s pivot_to_imu =
+        pivot_to_imu_translation_ * pivot_to_imu_rotation_;
 
     // This converts us from (facing the board),
     //   x right, y up, z towards us -> x right, y away, z up.
@@ -102,10 +123,16 @@ class CeresPoseFilter : public CalibrationDataObserver {
     // world <- board <- camera <- imu.
     const Eigen::Quaternion<Scalar> imu_to_world_rotation =
         board_to_world_ * board_to_camera_rotation.inverse() *
-        imu_to_camera_rotation_;
+        pivot_to_camera_rotation_ *
+        Eigen::AngleAxis<Scalar>(static_cast<Scalar>(-pivot_angle),
+                                 Eigen::Vector3d::UnitZ().cast<Scalar>()) *
+        pivot_to_imu_rotation_.inverse();
 
     const Affine3s imu_to_world =
-        board_to_world_ * board_to_camera.inverse() * imu_to_camera;
+        board_to_world_ * board_to_camera.inverse() * pivot_to_camera *
+        Eigen::AngleAxis<Scalar>(static_cast<Scalar>(-pivot_angle),
+                                 Eigen::Vector3d::UnitZ().cast<Scalar>()) *
+        pivot_to_imu.inverse();
 
     const Eigen::Matrix<Scalar, 3, 1> z =
         imu_to_world * Eigen::Matrix<Scalar, 3, 1>::Zero();
@@ -261,8 +288,12 @@ class CeresPoseFilter : public CalibrationDataObserver {
   Eigen::Matrix<Scalar, 6, 6> p_;
   distributed_clock::time_point last_time_ = distributed_clock::min_time;
 
-  Eigen::Quaternion<Scalar> imu_to_camera_rotation_;
-  Eigen::Translation<Scalar, 3> imu_to_camera_translation_ =
+  Eigen::Quaternion<Scalar> pivot_to_camera_rotation_;
+  Eigen::Translation<Scalar, 3> pivot_to_camera_translation_ =
+      Eigen::Translation3d(0, 0, 0).cast<Scalar>();
+
+  Eigen::Quaternion<Scalar> pivot_to_imu_rotation_;
+  Eigen::Translation<Scalar, 3> pivot_to_imu_translation_ =
       Eigen::Translation3d(0, 0, 0).cast<Scalar>();
 
   Eigen::Quaternion<Scalar> board_to_world_;
@@ -286,22 +317,35 @@ class CeresPoseFilter : public CalibrationDataObserver {
   std::vector<Eigen::Matrix<Scalar, 3, 1>> position_errors_;
 };
 
+// Drives the Z coordinate of the quaternion to 0.
+struct PenalizeQuaternionZ {
+  template <typename S>
+  bool operator()(const S *const pivot_to_imu_ptr, S *residual) const {
+    Eigen::Quaternion<S> pivot_to_imu(pivot_to_imu_ptr[3], pivot_to_imu_ptr[0],
+                                      pivot_to_imu_ptr[1], pivot_to_imu_ptr[2]);
+    residual[0] = pivot_to_imu.z();
+    return true;
+  }
+};
+
 // Subclass of the filter above which has plotting.  This keeps debug code and
 // actual code separate.
 class PoseFilter : public CeresPoseFilter<double> {
  public:
   PoseFilter(Eigen::Quaternion<double> initial_orientation,
-             Eigen::Quaternion<double> imu_to_camera,
+             Eigen::Quaternion<double> pivot_to_camera,
+             Eigen::Quaternion<double> pivot_to_imu,
              Eigen::Matrix<double, 3, 1> gyro_bias,
              Eigen::Matrix<double, 6, 1> initial_state,
              Eigen::Quaternion<double> board_to_world,
-             Eigen::Matrix<double, 3, 1> imu_to_camera_translation,
+             Eigen::Matrix<double, 3, 1> pivot_to_camera_translation,
+             Eigen::Matrix<double, 3, 1> pivot_to_imu_translation,
              double gravity_scalar,
              Eigen::Matrix<double, 3, 1> accelerometer_bias)
-      : CeresPoseFilter<double>(initial_orientation, imu_to_camera, gyro_bias,
-                                initial_state, board_to_world,
-                                imu_to_camera_translation, gravity_scalar,
-                                accelerometer_bias) {}
+      : CeresPoseFilter<double>(
+            initial_orientation, pivot_to_camera, pivot_to_imu, gyro_bias,
+            initial_state, board_to_world, pivot_to_camera_translation,
+            pivot_to_imu_translation, gravity_scalar, accelerometer_bias) {}
 
   void Plot() {
     std::vector<double> rx;
@@ -496,30 +540,49 @@ struct CostFunctor {
   const CalibrationData *data;
 
   template <typename S>
-  bool operator()(const S *const q1, const S *const q2, const S *const v,
-                  const S *const p, const S *const btw, const S *const itc,
+  bool operator()(const S *const initial_orientation_ptr,
+                  const S *const pivot_to_camera_ptr,
+                  const S *const pivot_to_imu_ptr, const S *const gyro_bias_ptr,
+                  const S *const initial_state_ptr,
+                  const S *const board_to_world_ptr,
+                  const S *const pivot_to_camera_translation_ptr,
+                  const S *const pivot_to_imu_translation_ptr,
                   const S *const gravity_scalar_ptr,
                   const S *const accelerometer_bias_ptr, S *residual) const {
-    Eigen::Quaternion<S> initial_orientation(q1[3], q1[0], q1[1], q1[2]);
-    Eigen::Quaternion<S> mounting_orientation(q2[3], q2[0], q2[1], q2[2]);
-    Eigen::Quaternion<S> board_to_world(btw[3], btw[0], btw[1], btw[2]);
-    Eigen::Matrix<S, 3, 1> gyro_bias(v[0], v[1], v[2]);
+    Eigen::Quaternion<S> initial_orientation(
+        initial_orientation_ptr[3], initial_orientation_ptr[0],
+        initial_orientation_ptr[1], initial_orientation_ptr[2]);
+    Eigen::Quaternion<S> pivot_to_camera(
+        pivot_to_camera_ptr[3], pivot_to_camera_ptr[0], pivot_to_camera_ptr[1],
+        pivot_to_camera_ptr[2]);
+    Eigen::Quaternion<S> pivot_to_imu(pivot_to_imu_ptr[3], pivot_to_imu_ptr[0],
+                                      pivot_to_imu_ptr[1], pivot_to_imu_ptr[2]);
+    Eigen::Quaternion<S> board_to_world(
+        board_to_world_ptr[3], board_to_world_ptr[0], board_to_world_ptr[1],
+        board_to_world_ptr[2]);
+    Eigen::Matrix<S, 3, 1> gyro_bias(gyro_bias_ptr[0], gyro_bias_ptr[1],
+                                     gyro_bias_ptr[2]);
     Eigen::Matrix<S, 6, 1> initial_state;
-    initial_state(0) = p[0];
-    initial_state(1) = p[1];
-    initial_state(2) = p[2];
-    initial_state(3) = p[3];
-    initial_state(4) = p[4];
-    initial_state(5) = p[5];
-    Eigen::Matrix<S, 3, 1> imu_to_camera_translation(itc[0], itc[1], itc[2]);
+    initial_state(0) = initial_state_ptr[0];
+    initial_state(1) = initial_state_ptr[1];
+    initial_state(2) = initial_state_ptr[2];
+    initial_state(3) = initial_state_ptr[3];
+    initial_state(4) = initial_state_ptr[4];
+    initial_state(5) = initial_state_ptr[5];
+    Eigen::Matrix<S, 3, 1> pivot_to_camera_translation(
+        pivot_to_camera_translation_ptr[0], pivot_to_camera_translation_ptr[1],
+        pivot_to_camera_translation_ptr[2]);
+    Eigen::Matrix<S, 3, 1> pivot_to_imu_translation(
+        pivot_to_imu_translation_ptr[0], pivot_to_imu_translation_ptr[1],
+        pivot_to_imu_translation_ptr[2]);
     Eigen::Matrix<S, 3, 1> accelerometer_bias(accelerometer_bias_ptr[0],
                                               accelerometer_bias_ptr[1],
                                               accelerometer_bias_ptr[2]);
 
-    CeresPoseFilter<S> filter(initial_orientation, mounting_orientation,
-                              gyro_bias, initial_state, board_to_world,
-                              imu_to_camera_translation, *gravity_scalar_ptr,
-                              accelerometer_bias);
+    CeresPoseFilter<S> filter(
+        initial_orientation, pivot_to_camera, pivot_to_imu, gyro_bias,
+        initial_state, board_to_world, pivot_to_camera_translation,
+        pivot_to_imu_translation, *gravity_scalar_ptr, accelerometer_bias);
     data->ReviewData(&filter);
 
     for (size_t i = 0; i < filter.num_errors(); ++i) {
@@ -547,25 +610,51 @@ void Solve(const CalibrationData &data,
   // Set up the only cost function (also known as residual). This uses
   // auto-differentiation to obtain the derivative (jacobian).
 
-  ceres::CostFunction *cost_function =
-      new ceres::AutoDiffCostFunction<CostFunctor, ceres::DYNAMIC, 4, 4, 3, 6,
-                                      4, 3, 1, 3>(
-          new CostFunctor(&data), data.camera_samples_size() * 6);
-  problem.AddResidualBlock(
-      cost_function, new ceres::HuberLoss(1.0),
-      calibration_parameters->initial_orientation.coeffs().data(),
-      calibration_parameters->imu_to_camera.coeffs().data(),
-      calibration_parameters->gyro_bias.data(),
-      calibration_parameters->initial_state.data(),
-      calibration_parameters->board_to_world.coeffs().data(),
-      calibration_parameters->imu_to_camera_translation.data(),
-      &calibration_parameters->gravity_scalar,
-      calibration_parameters->accelerometer_bias.data());
+  {
+    ceres::CostFunction *cost_function =
+        new ceres::AutoDiffCostFunction<CostFunctor, ceres::DYNAMIC, 4, 4, 4, 3,
+                                        6, 4, 3, 3, 1, 3>(
+            new CostFunctor(&data), data.camera_samples_size() * 6);
+    problem.AddResidualBlock(
+        cost_function, new ceres::HuberLoss(1.0),
+        calibration_parameters->initial_orientation.coeffs().data(),
+        calibration_parameters->pivot_to_camera.coeffs().data(),
+        calibration_parameters->pivot_to_imu.coeffs().data(),
+        calibration_parameters->gyro_bias.data(),
+        calibration_parameters->initial_state.data(),
+        calibration_parameters->board_to_world.coeffs().data(),
+        calibration_parameters->pivot_to_camera_translation.data(),
+        calibration_parameters->pivot_to_imu_translation.data(),
+        &calibration_parameters->gravity_scalar,
+        calibration_parameters->accelerometer_bias.data());
+  }
+
+  {
+    ceres::CostFunction *turret_z_cost_function =
+        new ceres::AutoDiffCostFunction<PenalizeQuaternionZ, 1, 4>(
+            new PenalizeQuaternionZ());
+    problem.AddResidualBlock(
+        turret_z_cost_function, nullptr,
+        calibration_parameters->pivot_to_imu.coeffs().data());
+  }
+
+  if (calibration_parameters->has_pivot) {
+    // Constrain Z.
+    problem.SetParameterization(
+        calibration_parameters->pivot_to_imu_translation.data(),
+        new ceres::SubsetParameterization(3, {2}));
+  } else {
+    problem.SetParameterBlockConstant(
+        calibration_parameters->pivot_to_imu.coeffs().data());
+    problem.SetParameterBlockConstant(
+        calibration_parameters->pivot_to_imu_translation.data());
+  }
+
   problem.SetParameterization(
       calibration_parameters->initial_orientation.coeffs().data(),
       quaternion_local_parameterization);
   problem.SetParameterization(
-      calibration_parameters->imu_to_camera.coeffs().data(),
+      calibration_parameters->pivot_to_camera.coeffs().data(),
       quaternion_local_parameterization);
   problem.SetParameterization(
       calibration_parameters->board_to_world.coeffs().data(),
@@ -597,11 +686,17 @@ void Solve(const CalibrationData &data,
 
   LOG(INFO) << "initial_orientation "
             << calibration_parameters->initial_orientation.coeffs().transpose();
-  LOG(INFO) << "imu_to_camera "
-            << calibration_parameters->imu_to_camera.coeffs().transpose();
-  LOG(INFO) << "imu_to_camera(rotation) "
+  LOG(INFO) << "pivot_to_imu "
+            << calibration_parameters->pivot_to_imu.coeffs().transpose();
+  LOG(INFO) << "pivot_to_imu(rotation) "
             << frc971::controls::ToRotationVectorFromQuaternion(
-                   calibration_parameters->imu_to_camera)
+                   calibration_parameters->pivot_to_imu)
+                   .transpose();
+  LOG(INFO) << "pivot_to_camera "
+            << calibration_parameters->pivot_to_camera.coeffs().transpose();
+  LOG(INFO) << "pivot_to_camera(rotation) "
+            << frc971::controls::ToRotationVectorFromQuaternion(
+                   calibration_parameters->pivot_to_camera)
                    .transpose();
   LOG(INFO) << "gyro_bias " << calibration_parameters->gyro_bias.transpose();
   LOG(INFO) << "board_to_world "
@@ -610,8 +705,10 @@ void Solve(const CalibrationData &data,
             << frc971::controls::ToRotationVectorFromQuaternion(
                    calibration_parameters->board_to_world)
                    .transpose();
-  LOG(INFO) << "imu_to_camera_translation "
-            << calibration_parameters->imu_to_camera_translation.transpose();
+  LOG(INFO) << "pivot_to_imu_translation "
+            << calibration_parameters->pivot_to_imu_translation.transpose();
+  LOG(INFO) << "pivot_to_camera_translation "
+            << calibration_parameters->pivot_to_camera_translation.transpose();
   LOG(INFO) << "gravity " << kGravity * calibration_parameters->gravity_scalar;
   LOG(INFO) << "accelerometer bias "
             << calibration_parameters->accelerometer_bias.transpose();
@@ -620,11 +717,13 @@ void Solve(const CalibrationData &data,
 void Plot(const CalibrationData &data,
           const CalibrationParameters &calibration_parameters) {
   PoseFilter filter(calibration_parameters.initial_orientation,
-                    calibration_parameters.imu_to_camera,
+                    calibration_parameters.pivot_to_camera,
+                    calibration_parameters.pivot_to_imu,
                     calibration_parameters.gyro_bias,
                     calibration_parameters.initial_state,
                     calibration_parameters.board_to_world,
-                    calibration_parameters.imu_to_camera_translation,
+                    calibration_parameters.pivot_to_camera_translation,
+                    calibration_parameters.pivot_to_imu_translation,
                     calibration_parameters.gravity_scalar,
                     calibration_parameters.accelerometer_bias);
   data.ReviewData(&filter);

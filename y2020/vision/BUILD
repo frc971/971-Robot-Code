@@ -128,6 +128,8 @@ cc_binary(
     deps = [
         "//aos:init",
         "//aos/events/logging:log_reader",
+        "//frc971/control_loops:profiled_subsystem_fbs",
         "//frc971/vision:extrinsics_calibration",
+        "//y2020/control_loops/superstructure:superstructure_status_fbs",
     ],
 )

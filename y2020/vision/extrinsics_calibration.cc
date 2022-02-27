@@ -1,6 +1,7 @@
+#include "frc971/vision/extrinsics_calibration.h"
+
 #include "Eigen/Dense"
 #include "Eigen/Geometry"
-
 #include "absl/strings/str_format.h"
 #include "aos/events/logging/log_reader.h"
 #include "aos/init.h"
@@ -9,8 +10,8 @@
 #include "aos/util/file.h"
 #include "frc971/control_loops/quaternion_utils.h"
 #include "frc971/vision/vision_generated.h"
-#include "frc971/vision/extrinsics_calibration.h"
 #include "frc971/wpilib/imu_batch_generated.h"
+#include "y2020/control_loops/superstructure/superstructure_status_generated.h"
 #include "y2020/vision/sift/sift_generated.h"
 #include "y2020/vision/sift/sift_training_generated.h"
 #include "y2020/vision/tools/python_code/sift_training_data.h"
@@ -18,6 +19,7 @@
 DEFINE_string(config, "aos_config.json", "Path to the config file to use.");
 DEFINE_string(pi, "pi-7971-2", "Pi name to calibrate.");
 DEFINE_bool(plot, false, "Whether to plot the resulting data.");
+DEFINE_bool(turret, false, "If true, the camera is on the turret");
 
 namespace frc971 {
 namespace vision {
@@ -60,6 +62,21 @@ void Main(int argc, char **argv) {
     Calibration extractor(&factory, pi_event_loop.get(),
                           roborio_event_loop.get(), FLAGS_pi, &data);
 
+    if (FLAGS_turret) {
+      aos::NodeEventLoopFactory *roborio_factory =
+          factory.GetNodeEventLoopFactory(roborio_node->name()->string_view());
+      roborio_event_loop->MakeWatcher(
+          "/superstructure",
+          [roborio_factory, roborio_event_loop = roborio_event_loop.get(),
+           &data](const y2020::control_loops::superstructure::Status &status) {
+            data.AddTurret(
+                roborio_factory->ToDistributedClock(
+                    roborio_event_loop->context().monotonic_event_time),
+                Eigen::Vector2d(status.turret()->position(),
+                                status.turret()->velocity()));
+          });
+    }
+
     factory.Run();
 
     reader.Deregister();
@@ -71,26 +88,26 @@ void Main(int argc, char **argv) {
   const Eigen::Quaternion<double> nominal_initial_orientation(
       frc971::controls::ToQuaternionFromRotationVector(
           Eigen::Vector3d(0.0, 0.0, M_PI)));
-  const Eigen::Quaternion<double> nominal_imu_to_camera(
+  const Eigen::Quaternion<double> nominal_pivot_to_camera(
       Eigen::AngleAxisd(-0.5 * M_PI, Eigen::Vector3d::UnitX()));
   const Eigen::Quaternion<double> nominal_board_to_world(
       Eigen::AngleAxisd(0.5 * M_PI, Eigen::Vector3d::UnitX()));
 
   CalibrationParameters calibration_parameters;
   calibration_parameters.initial_orientation = nominal_initial_orientation;
-  calibration_parameters.imu_to_camera = nominal_imu_to_camera;
+  calibration_parameters.pivot_to_camera = nominal_pivot_to_camera;
   calibration_parameters.board_to_world = nominal_board_to_world;
 
   Solve(data, &calibration_parameters);
   LOG(INFO) << "Nominal initial_orientation "
             << nominal_initial_orientation.coeffs().transpose();
-  LOG(INFO) << "Nominal imu_to_camera "
-            << nominal_imu_to_camera.coeffs().transpose();
+  LOG(INFO) << "Nominal pivot_to_camera "
+            << nominal_pivot_to_camera.coeffs().transpose();
 
-  LOG(INFO) << "imu_to_camera delta "
+  LOG(INFO) << "pivot_to_camera delta "
             << frc971::controls::ToRotationVectorFromQuaternion(
-                   calibration_parameters.imu_to_camera *
-                   nominal_imu_to_camera.inverse())
+                   calibration_parameters.pivot_to_camera *
+                   nominal_pivot_to_camera.inverse())
                    .transpose();
   LOG(INFO) << "board_to_world delta "
             << frc971::controls::ToRotationVectorFromQuaternion(
