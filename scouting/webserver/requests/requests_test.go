@@ -69,9 +69,16 @@ func TestSubmitDataScouting(t *testing.T) {
 
 	builder := flatbuffers.NewBuilder(1024)
 	builder.Finish((&submit_data_scouting.SubmitDataScoutingT{
-		Team:          971,
-		Match:         1,
-		UpperGoalHits: 9971,
+		Team:            971,
+		Match:           1,
+		MissedShotsAuto: 9971,
+		UpperGoalAuto:   9971,
+		LowerGoalAuto:   9971,
+		MissedShotsTele: 9971,
+		UpperGoalTele:   9971,
+		LowerGoalTele:   9971,
+		DefenseRating:   9971,
+		Climbing:        9971,
 	}).Pack(builder))
 
 	resp, err := http.Post("http://localhost:8080/requests/submit/data_scouting", "application/octet-stream", bytes.NewReader(builder.FinishedBytes()))

@@ -58,7 +58,14 @@ class TestDebugCli(unittest.TestCase):
         json_path = write_json({
             "team": 971,
             "match": 42,
-            "upper_goal_hits": 3,
+            "missed_shots_auto": 9971,
+            "upper_goal_auto": 9971,
+            "lower_goal_auto": 9971,
+            "missed_shots_tele": 9971,
+            "upper_goal_tele": 9971,
+            "lower_goal_tele": 9971,
+            "defense_rating": 9971,
+            "climbing": 9971,
         })
         exit_code, _stdout, stderr = run_debug_cli(["-submitDataScouting", json_path])
 

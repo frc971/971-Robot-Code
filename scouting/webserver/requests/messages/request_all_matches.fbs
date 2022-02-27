@@ -1,0 +1,6 @@
+namespace scouting.webserver.requests;
+
+table RequestMatchList {
+}
+
+root_type RequestMatchList;

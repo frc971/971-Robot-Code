@@ -4,6 +4,12 @@ FILE_NAMES = (
     "error_response",
     "submit_data_scouting",
     "submit_data_scouting_response",
+    "request_all_matches",
+    "request_all_matches_response",
+    "request_matches_for_team",
+    "request_matches_for_team_response",
+    "request_data_scouting",
+    "request_data_scouting_response",
 )
 
 filegroup(
