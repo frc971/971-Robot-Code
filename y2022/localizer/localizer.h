@@ -92,7 +92,7 @@ class ModelBasedLocalizer {
   // Branching period, in cycles.
   // Needs 10 to even stay alive, and still at ~96% CPU.
   // ~20 gives ~55-60% CPU.
-  static constexpr int kBranchPeriod = 20;
+  static constexpr int kBranchPeriod = 100;
 
   typedef Eigen::Matrix<double, kNModelStates, 1> ModelState;
   typedef Eigen::Matrix<double, kNAccelStates, 1> AccelState;
