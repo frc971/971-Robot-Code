@@ -26,9 +26,11 @@ type Stats struct {
 	climbing                                                     int
 }
 
-func NewDatabase() (*Database, error) {
+// Opens a database at the specified path. If the path refers to a non-existent
+// file, the database will be created and initialized with empty tables.
+func NewDatabase(path string) (*Database, error) {
 	database := new(Database)
-	database.DB, _ = sql.Open("sqlite3", "./scouting.db")
+	database.DB, _ = sql.Open("sqlite3", path)
 	statement, error_ := database.Prepare("CREATE TABLE IF NOT EXISTS matches " +
 		"(id INTEGER PRIMARY KEY, matchNumber INTEGER, round INTEGER, compLevel INTEGER, r1 INTEGER, r2 INTEGER, r3 INTEGER, b1 INTEGER, b2 INTEGER, b3 INTEGER, r1ID INTEGER, r2ID INTEGER, r3ID INTEGER, b1ID INTEGER, b2ID INTEGER, b3ID INTEGER)")
 	defer statement.Close()

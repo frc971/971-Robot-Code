@@ -31,12 +31,7 @@ def run_debug_cli(args: List[str]):
 class TestDebugCli(unittest.TestCase):
 
     def setUp(self):
-        # Since the webserver creates a database in the current directory,
-        # let's run the test in TEST_TMPDIR where we can do whatever we want.
-        self.webserver_working_dir = Path(os.environ["TEST_TMPDIR"]) / "webserver"
-        os.mkdir(self.webserver_working_dir)
-        webserver_path = os.path.abspath("scouting/webserver/webserver_/webserver")
-        self.webserver = subprocess.Popen([webserver_path], cwd=self.webserver_working_dir)
+        self.webserver = subprocess.Popen(["scouting/webserver/webserver_/webserver"])
 
         # Wait for the server to respond to requests.
         while True:
@@ -52,7 +47,6 @@ class TestDebugCli(unittest.TestCase):
     def tearDown(self):
         self.webserver.terminate()
         self.webserver.wait()
-        shutil.rmtree(self.webserver_working_dir)
 
     def test_submit_data_scouting(self):
         json_path = write_json({
