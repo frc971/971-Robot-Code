@@ -193,6 +193,10 @@
       "name": "/roborio/aos",
       "type": "aos.starter.Status",
       "source_node": "roborio",
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "imu"
+      ],
       "destination_nodes": [
         {
           "name": "imu",
