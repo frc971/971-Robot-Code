@@ -33,7 +33,9 @@ class LocalizerTest : public ::testing::Test {
   LocalizerTest()
       : dt_config_(
             control_loops::drivetrain::testing::GetTestDrivetrainConfig()),
-        localizer_(dt_config_) {}
+        localizer_(dt_config_) {
+    localizer_.set_longitudinal_offset(0.0);
+  }
   ModelState CallDiffModel(const ModelState &state, const ModelInput &U) {
     return localizer_.DiffModel(state, U);
   }
@@ -174,7 +176,7 @@ TEST_F(LocalizerTest, AccelOnly) {
   Eigen::Vector3d gyro{0.0, 0.0, 0.0};
   const Eigen::Vector2d encoders{0.0, 0.0};
   const Eigen::Vector2d voltages{0.0, 0.0};
-  Eigen::Vector3d accel{1.0, 0.2, 9.80665};
+  Eigen::Vector3d accel{5.0, 2.0, 9.80665};
   Eigen::Vector3d accel_gs = accel / 9.80665;
   while (t < start) {
     // Spin to fill up the buffer.
@@ -205,8 +207,8 @@ TEST_F(LocalizerTest, AccelOnly) {
     EXPECT_EQ(0.0, xytheta(2));
   }
 
-  ASSERT_NEAR(1.0, localizer_.accel_state()(kVelocityX), 1e-10);
-  ASSERT_NEAR(0.2, localizer_.accel_state()(kVelocityY), 1e-10);
+  ASSERT_NEAR(accel(0), localizer_.accel_state()(kVelocityX), 1e-10);
+  ASSERT_NEAR(accel(1), localizer_.accel_state()(kVelocityY), 1e-10);
 
   // Start going in a cirlce, and confirm that we
   // handle things correctly. We rotate the accelerometer readings by 90 degrees
@@ -315,6 +317,7 @@ class EventLoopLocalizerTest : public ::testing::Test {
             "/localizer")),
         status_fetcher_(
             imu_test_event_loop_->MakeFetcher<LocalizerStatus>("/localizer")) {
+    localizer_.localizer()->set_longitudinal_offset(0.0);
     aos::TimerHandler *timer = roborio_test_event_loop_->AddTimer([this]() {
       auto builder = output_sender_.MakeBuilder();
       auto output_builder = builder.MakeBuilder<Output>();
@@ -480,7 +483,7 @@ TEST_F(EventLoopLocalizerTest, VoltageError) {
   CHECK(status_fetcher_.Fetch());
   // Should still be using the model, but have a non-trivial residual.
   ASSERT_TRUE(status_fetcher_->model_based()->using_model());
-  ASSERT_LT(0.1, status_fetcher_->model_based()->residual())
+  ASSERT_LT(0.02, status_fetcher_->model_based()->residual())
       << aos::FlatbufferToJson(status_fetcher_.get(), {.multi_line = true});
 
   // Afer running for a while, voltage error terms should converge and result in
@@ -497,7 +500,7 @@ TEST_F(EventLoopLocalizerTest, VoltageError) {
       2.0, status_fetcher_->model_based()->model_state()->right_voltage_error(),
       0.1)
       << aos::FlatbufferToJson(status_fetcher_.get(), {.multi_line = true});
-  ASSERT_GT(0.01, status_fetcher_->model_based()->residual())
+  ASSERT_GT(0.02, status_fetcher_->model_based()->residual())
       << aos::FlatbufferToJson(status_fetcher_.get(), {.multi_line = true});
 }
 

@@ -14,6 +14,7 @@
 #include "frc971/control_loops/drivetrain/drivetrain_output_generated.h"
 #include "frc971/control_loops/drivetrain/localizer_generated.h"
 #include "frc971/zeroing/imu_zeroer.h"
+#include "frc971/zeroing/wrap.h"
 
 namespace frc971::controls {
 
@@ -57,7 +58,6 @@ class LocalizerTest;
 // TODO:
 // * Implement paying attention to camera readings.
 // * Tune for ADIS16505/real robot.
-// * Tune down CPU usage to run on a pi.
 class ModelBasedLocalizer {
  public:
   static constexpr size_t kX = 0;
@@ -90,7 +90,9 @@ class ModelBasedLocalizer {
   static constexpr size_t kNModelInputs = 2;
 
   // Branching period, in cycles.
-  static constexpr int kBranchPeriod = 1;
+  // Needs 10 to even stay alive, and still at ~96% CPU.
+  // ~20 gives ~55-60% CPU.
+  static constexpr int kBranchPeriod = 20;
 
   typedef Eigen::Matrix<double, kNModelStates, 1> ModelState;
   typedef Eigen::Matrix<double, kNAccelStates, 1> AccelState;
@@ -120,7 +122,11 @@ class ModelBasedLocalizer {
     }
   }
 
+  Eigen::Quaterniond orientation() const { return last_orientation_; }
+
   AccelState accel_state() const { return current_state_.accel_state; };
+
+  void set_longitudinal_offset(double offset) { long_offset_ = offset; }
 
  private:
   struct CombinedState {
@@ -155,6 +161,13 @@ class ModelBasedLocalizer {
                          const AccelInput &accel_inputs,
                          const Eigen::Vector2d &filtered_accel,
                          const ModelInput &model_inputs);
+  void UpdateState(
+      CombinedState *state,
+      const Eigen::Matrix<double, kNModelStates, kNModelOutputs> &K,
+      const Eigen::Matrix<double, kNModelOutputs, 1> &Z,
+      const Eigen::Matrix<double, kNModelOutputs, kNModelStates> &H,
+      const AccelInput &accel_input, const ModelInput &model_input,
+      aos::monotonic_clock::duration dt);
 
   const control_loops::drivetrain::DrivetrainConfig<double> dt_config_;
   const StateFeedbackHybridPlantCoefficients<2, 2, 2, double>
@@ -186,6 +199,10 @@ class ModelBasedLocalizer {
   aos::monotonic_clock::time_point t_ = aos::monotonic_clock::min_time;
   bool using_model_;
 
+  // X position of the IMU, in meters. 0 = center of robot, positive = ahead of
+  // center, negative = behind center.
+  double long_offset_ = -0.15;
+
   double last_residual_ = 0.0;
   double filtered_residual_ = 0.0;
   Eigen::Vector2d filtered_residual_accel_ = Eigen::Vector2d::Zero();
@@ -194,6 +211,7 @@ class ModelBasedLocalizer {
   double accel_residual_ = 0.0;
   double theta_rate_residual_ = 0.0;
   int hysteresis_count_ = 0;
+  Eigen::Quaterniond last_orientation_ = Eigen::Quaterniond::Identity();
 
   int clock_resets_ = 0;
 
@@ -206,6 +224,8 @@ class EventLoopLocalizer {
       aos::EventLoop *event_loop,
       const control_loops::drivetrain::DrivetrainConfig<double> &dt_config);
 
+  ModelBasedLocalizer *localizer() { return &model_based_; }
+
  private:
   aos::EventLoop *event_loop_;
   ModelBasedLocalizer model_based_;
@@ -215,6 +235,14 @@ class EventLoopLocalizer {
   zeroing::ImuZeroer zeroer_;
   aos::monotonic_clock::time_point last_output_send_ =
       aos::monotonic_clock::min_time;
+  std::optional<aos::monotonic_clock::time_point> last_pico_timestamp_;
+  aos::monotonic_clock::duration pico_offset_error_;
+  // t = pico_offset_ + pico_timestamp.
+  // Note that this can drift over sufficiently long time periods!
+  std::optional<std::chrono::nanoseconds> pico_offset_;
+
+  zeroing::UnwrapSensor left_encoder_;
+  zeroing::UnwrapSensor right_encoder_;
 };
 }  // namespace frc971::controls
 #endif // Y2022_CONTROL_LOOPS_LOCALIZER_LOCALIZER_H_
