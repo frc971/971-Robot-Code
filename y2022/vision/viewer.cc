@@ -23,6 +23,9 @@ namespace y2022 {
 namespace vision {
 namespace {
 
+using namespace frc971::vision;
+
+std::map<int64_t, BlobDetector::BlobResult> target_est_map;
 aos::Fetcher<frc971::vision::CameraImage> image_fetcher;
 aos::Fetcher<y2022::vision::TargetEstimate> target_estimate_fetcher;
 
@@ -53,25 +56,37 @@ std::vector<BlobDetector::BlobStats> FbsToBlobStats(
 }
 
 bool DisplayLoop() {
+  int64_t target_timestamp = 0;
+  if (target_estimate_fetcher.Fetch()) {
+    const TargetEstimate *target_est = target_estimate_fetcher.get();
+    CHECK(target_est != nullptr)
+        << "Got null when trying to fetch target estimate";
+
+    target_timestamp = target_est->image_monotonic_timestamp_ns();
+    if (target_est->blob_result()->filtered_blobs()->size() > 0) {
+      VLOG(2) << "Got blobs for timestamp " << target_est << "\n";
+    }
+    // Store the TargetEstimate data so we can match timestamp with image
+    target_est_map[target_timestamp] = BlobDetector::BlobResult(
+        {cv::Mat(), FbsToCvBlobs(*target_est->blob_result()->filtered_blobs()),
+         FbsToCvBlobs(*target_est->blob_result()->unfiltered_blobs()),
+         FbsToBlobStats(*target_est->blob_result()->blob_stats()),
+         cv::Point{target_est->blob_result()->centroid()->x(),
+                   target_est->blob_result()->centroid()->y()}});
+    // Only keep last 10 matches
+    while (target_est_map.size() > 10u) {
+      target_est_map.erase(target_est_map.begin());
+    }
+  }
   int64_t image_timestamp = 0;
-  const frc971::vision::CameraImage *image;
-  // Read next image
   if (!image_fetcher.Fetch()) {
-    LOG(INFO) << "Couldn't fetch image";
+    VLOG(2) << "Couldn't fetch image";
     return true;
   }
-
-  image = image_fetcher.get();
+  const CameraImage *image = image_fetcher.get();
   CHECK(image != nullptr) << "Couldn't read image";
   image_timestamp = image->monotonic_timestamp_ns();
   VLOG(2) << "Got image at timestamp: " << image_timestamp;
-
-  // TODO(Milind) Store the target estimates and match them by timestamp to make
-  // sure we're getting the right one.
-  const TargetEstimate *target_est = nullptr;
-  if (target_estimate_fetcher.Fetch()) {
-    target_est = target_estimate_fetcher.get();
-  }
 
   // Create color image:
   cv::Mat image_color_mat(cv::Size(image->cols(), image->rows()), CV_8UC2,
@@ -84,19 +99,19 @@ bool DisplayLoop() {
     return false;
   }
 
-  LOG(INFO) << image->monotonic_timestamp_ns() << ": # unfiltered blobs: "
-            << target_est->blob_result()->unfiltered_blobs()->size()
-            << "; # filtered blobs: "
-            << target_est->blob_result()->filtered_blobs()->size();
+  auto target_est_it = target_est_map.find(image_timestamp);
+  if (target_est_it != target_est_map.end()) {
+    LOG(INFO) << image->monotonic_timestamp_ns() << ": # unfiltered blobs: "
+              << target_est_it->second.unfiltered_blobs.size()
+              << "; # filtered blobs: "
+              << target_est_it->second.filtered_blobs.size();
 
-  cv::Mat ret_image(cv::Size(image->cols(), image->rows()), CV_8UC3);
-  if (target_est != nullptr) {
-    BlobDetector::DrawBlobs(
-        ret_image, FbsToCvBlobs(*target_est->blob_result()->filtered_blobs()),
-        FbsToCvBlobs(*target_est->blob_result()->unfiltered_blobs()),
-        FbsToBlobStats(*target_est->blob_result()->blob_stats()),
-        cv::Point{target_est->blob_result()->centroid()->x(),
-                  target_est->blob_result()->centroid()->y()});
+    cv::Mat ret_image =
+        cv::Mat::zeros(cv::Size(image->cols(), image->rows()), CV_8UC3);
+    BlobDetector::DrawBlobs(ret_image, target_est_it->second.filtered_blobs,
+                            target_est_it->second.unfiltered_blobs,
+                            target_est_it->second.blob_stats,
+                            target_est_it->second.centroid);
     cv::imshow("blobs", ret_image);
   }
 
@@ -139,8 +154,6 @@ void ViewerMain() {
       ::std::chrono::milliseconds(100));
 
   event_loop.Run();
-
-  image_fetcher = aos::Fetcher<frc971::vision::CameraImage>();
 }
 }  // namespace
 }  // namespace vision

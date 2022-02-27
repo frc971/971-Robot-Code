@@ -41,8 +41,14 @@ table TargetEstimate {
 
   blob_result:BlobResultFbs (id: 2);
 
+  // Contains the duration between the epoch and the nearest point
+  // in time from when it was called.
+  image_monotonic_timestamp_ns:int64 (id: 3);
+
   // Information about the camera which took this image.
-  camera_calibration:frc971.vision.calibration.CameraCalibration (id: 3);
+  camera_calibration:frc971.vision.calibration.CameraCalibration (id: 4);
+
+  // TODO(milind): add confidence
 }
 
 root_type TargetEstimate;
