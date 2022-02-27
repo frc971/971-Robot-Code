@@ -183,3 +183,19 @@ cc_binary(
         "//third_party:opencv",
     ],
 )
+
+cc_binary(
+    name = "extrinsics_calibration",
+    srcs = [
+        "extrinsics_calibration.cc",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//y2022:__subpackages__"],
+    deps = [
+        "//aos:init",
+        "//aos/events/logging:log_reader",
+        "//frc971/control_loops:profiled_subsystem_fbs",
+        "//frc971/vision:extrinsics_calibration",
+        "//y2022/control_loops/superstructure:superstructure_status_fbs",
+    ],
+)
