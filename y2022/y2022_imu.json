@@ -78,19 +78,41 @@
         "roborio",
         "logger"
       ],
-      "max_size": 200,
+      "max_size": 400,
       "destination_nodes": [
         {
           "name": "roborio",
           "priority": 1,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "imu"
+          ],
           "time_to_live": 5000000
         },
         {
           "name": "logger",
           "priority": 1,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "imu"
+          ],
           "time_to_live": 5000000
         }
       ]
+    },
+    {
+      "name": "/imu/aos/remote_timestamps/roborio/imu/aos/aos-message_bridge-Timestamp",
+      "type": "aos.message_bridge.RemoteMessage",
+      "frequency": 20,
+      "source_node": "imu",
+      "max_size": 208
+    },
+    {
+      "name": "/imu/aos/remote_timestamps/logger/imu/aos/aos-message_bridge-Timestamp",
+      "type": "aos.message_bridge.RemoteMessage",
+      "frequency": 20,
+      "source_node": "imu",
+      "max_size": 208
     },
     {
       "name": "/logger/aos",

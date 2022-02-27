@@ -87,8 +87,54 @@
           "timestamp_logger_nodes": [
             "roborio"
           ]
+        },
+        {
+          "name": "imu",
+          "priority": 1,
+          "time_to_live": 5000000,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "imu"
+          ]
         }
       ]
+    },
+    {
+      "name": "/pi{{ NUM }}/aos/remote_timestamps/roborio/pi{{ NUM }}/aos/aos-message_bridge-Timestamp",
+      "type": "aos.message_bridge.RemoteMessage",
+      "frequency": 20,
+      "source_node": "pi{{ NUM }}",
+      "max_size": 208
+    },
+    {
+      "name": "/pi{{ NUM }}/aos/remote_timestamps/imu/pi{{ NUM }}/aos/aos-message_bridge-Timestamp",
+      "type": "aos.message_bridge.RemoteMessage",
+      "frequency": 20,
+      "source_node": "pi{{ NUM }}",
+      "max_size": 208
+    },
+    {
+      "name": "/imu/aos",
+      "type": "aos.message_bridge.Timestamp",
+      "source_node": "imu",
+      "destination_nodes": [
+        {
+          "name": "pi{{ NUM }}",
+          "priority": 1,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "imu"
+          ],
+          "time_to_live": 5000000
+        }
+      ]
+    },
+    {
+      "name": "/imu/aos/remote_timestamps/pi{{ NUM }}/imu/aos/aos-message_bridge-Timestamp",
+      "type": "aos.message_bridge.RemoteMessage",
+      "frequency": 20,
+      "source_node": "imu",
+      "max_size": 208
     },
     {
       "name": "/pi{{ NUM }}/camera",
@@ -111,7 +157,46 @@
       "source_node": "pi{{ NUM }}",
       "frequency": 25,
       "num_senders": 2,
-      "max_size": 20000
+      "max_size": 20000,
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "imu",
+        "logger"
+      ],
+      "destination_nodes": [
+        {
+          "name": "imu",
+          "priority": 4,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "pi{{ NUM }}"
+          ],
+          "time_to_live": 5000000
+        },
+        {
+          "name": "logger",
+          "priority": 4,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "pi{{ NUM }}"
+          ],
+          "time_to_live": 5000000
+        }
+      ]
+    },
+    {
+      "name": "/pi{{ NUM }}/aos/remote_timestamps/imu/pi{{ NUM }}/camera/y2022-vision-TargetEstimate",
+      "type": "aos.message_bridge.RemoteMessage",
+      "frequency": 20,
+      "source_node": "pi{{ NUM }}",
+      "max_size": 208
+    },
+    {
+      "name": "/pi{{ NUM }}/aos/remote_timestamps/logger/pi{{ NUM }}/camera/y2022-vision-TargetEstimate",
+      "type": "aos.message_bridge.RemoteMessage",
+      "frequency": 20,
+      "source_node": "pi{{ NUM }}",
+      "max_size": 208
     },
     {
       "name": "/logger/aos",
@@ -278,6 +363,9 @@
     },
     {
       "name": "logger"
+    },
+    {
+      "name": "imu"
     },
     {
       "name": "roborio"

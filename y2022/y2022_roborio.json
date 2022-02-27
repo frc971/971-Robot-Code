@@ -144,6 +144,10 @@
       "frequency": 15,
       "num_senders": 2,
       "max_size": 512,
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "imu"
+      ],
       "destination_nodes": [
         {
           "name": "pi1",
