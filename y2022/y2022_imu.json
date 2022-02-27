@@ -341,9 +341,7 @@
     },
     {
       "name": "localizer",
-      "executable_name": "localizer",
-      "autostart": false,
-      "autorestart": false,
+      "executable_name": "localizer_main",
       "nodes": [
         "imu"
       ]
@@ -365,9 +363,9 @@
     {
       "name": "localizer_logger",
       "executable_name": "logger_main",
-      "args": ["--logging_folder", "", "--snappy_compress"],
+      "args": ["--snappy_compress"],
       "nodes": [
-        "logger"
+        "imu"
       ]
     },
     {
