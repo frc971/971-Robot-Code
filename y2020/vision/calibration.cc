@@ -32,8 +32,8 @@ class Calibration {
         pi_(pi),
         pi_number_(aos::network::ParsePiNumber(pi)),
         camera_id_(camera_id),
-        H_camera_board_(Eigen::Affine3d()),
         prev_H_camera_board_(Eigen::Affine3d()),
+        prev_image_H_camera_board_(Eigen::Affine3d()),
         charuco_extractor_(
             event_loop, pi,
             [this](cv::Mat rgb_image,
@@ -73,12 +73,12 @@ class Calibration {
     }
 
     // Calibration calculates rotation and translation delta from last image
-    // captured to automatically capture next image
+    // stored to automatically capture next image
 
     Eigen::Affine3d H_board_camera =
         Eigen::Translation3d(tvec_eigen) *
         Eigen::AngleAxisd(rvec_eigen.norm(), rvec_eigen / rvec_eigen.norm());
-    H_camera_board_ = H_board_camera.inverse();
+    Eigen::Affine3d H_camera_board_ = H_board_camera.inverse();
     Eigen::Affine3d H_delta = H_board_camera * prev_H_camera_board_;
 
     Eigen::AngleAxisd delta_r = Eigen::AngleAxisd(H_delta.rotation());
@@ -88,8 +88,30 @@ class Calibration {
     double r_norm = std::abs(delta_r.angle());
     double t_norm = delta_t.norm();
 
-    int keystroke = cv::waitKey(1);
+    bool store_image = false;
+    // Verify that camera has moved enough from last stored image
     if (r_norm > kDeltaRThreshold || t_norm > kDeltaTThreshold) {
+      // frame_ refers to deltas between current and last captured image
+      Eigen::Affine3d frame_H_delta =
+          H_board_camera * prev_image_H_camera_board_;
+
+      Eigen::AngleAxisd frame_delta_r =
+          Eigen::AngleAxisd(frame_H_delta.rotation());
+
+      Eigen::Vector3d frame_delta_t = frame_H_delta.translation();
+
+      double frame_r_norm = std::abs(frame_delta_r.angle());
+      double frame_t_norm = frame_delta_t.norm();
+
+      // Make sure camera has stopped moving before storing image
+      store_image =
+          frame_r_norm < kFrameDeltaRLimit && frame_t_norm < kFrameDeltaTLimit;
+    }
+
+    prev_image_H_camera_board_ = H_camera_board_;
+
+    int keystroke = cv::waitKey(1);
+    if (store_image) {
       if (valid) {
         prev_H_camera_board_ = H_camera_board_;
 
@@ -101,7 +123,7 @@ class Calibration {
                     << kDeltaRThreshold;
         }
         if (t_norm > kDeltaTThreshold) {
-          LOG(INFO) << "Trigerred by translation delta = " << t_norm << " > "
+          LOG(INFO) << "Triggered by translation delta = " << t_norm << " > "
                     << kDeltaTThreshold;
         }
 
@@ -199,6 +221,9 @@ class Calibration {
   static constexpr double kDeltaRThreshold = M_PI / 6.0;
   static constexpr double kDeltaTThreshold = 0.3;
 
+  static constexpr double kFrameDeltaRLimit = M_PI / 60;
+  static constexpr double kFrameDeltaTLimit = 0.01;
+
   aos::ShmEventLoop *event_loop_;
   std::string pi_;
   const std::optional<uint16_t> pi_number_;
@@ -209,6 +234,7 @@ class Calibration {
 
   Eigen::Affine3d H_camera_board_;
   Eigen::Affine3d prev_H_camera_board_;
+  Eigen::Affine3d prev_image_H_camera_board_;
 
   CharucoExtractor charuco_extractor_;
 };
