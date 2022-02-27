@@ -52,6 +52,9 @@ table TargetEstimate {
   angle_to_camera:double (id: 3);
   // Rotation of the camera in the hub's reference frame
   rotation_camera_hub:Rotation (id: 4);
+  // Confidence in the estimate from 0 to 1, based on the final solver cost.
+  // Good estimates currently have confidences of around 0.9 or greater.
+  confidence:double (id: 7);
 
   blob_result:BlobResultFbs (id: 2);
 

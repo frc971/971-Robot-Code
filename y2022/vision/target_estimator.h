@@ -10,6 +10,7 @@
 #include "y2022/vision/target_estimate_generated.h"
 
 namespace y2022::vision {
+
 // Class to estimate the polar coordinates and rotation from the camera to the
 // target.
 class TargetEstimator {
@@ -45,6 +46,8 @@ class TargetEstimator {
   inline double angle_to_target() const { return M_PI - yaw_; }
   inline double camera_height() const { return camera_height_; }
 
+  inline double confidence() const { return confidence_; }
+
   // Draws the distance, angle, and rotation on the given image
   static void DrawEstimate(const TargetEstimate &target_estimate,
                            cv::Mat view_image);
@@ -79,6 +82,7 @@ class TargetEstimator {
   double distance_;
   double angle_to_camera_;
   double camera_height_;
+  double confidence_;
 };
 
 }  // namespace y2022::vision
