@@ -77,6 +77,7 @@ cc_test(
     data = [
         "//aos/events:pingpong_config",
     ],
+    flaky = True,
     # The roborio compiler doesn't support <filesystem>.
     target_compatible_with =
         ["@platforms//os:linux"],
