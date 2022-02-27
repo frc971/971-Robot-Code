@@ -49,6 +49,7 @@
 #include "frc971/wpilib/sensor_reader.h"
 #include "frc971/wpilib/wpilib_robot_base.h"
 #include "y2022/constants.h"
+#include "y2022/control_loops/superstructure/superstructure_can_position_generated.h"
 #include "y2022/control_loops/superstructure/superstructure_output_generated.h"
 #include "y2022/control_loops/superstructure/superstructure_position_generated.h"
 
@@ -412,14 +413,19 @@ class SuperstructureWriter
   }
 
   void set_flipper_arms_falcon(
-      ::std::unique_ptr<::ctre::phoenix::motorcontrol::can::TalonFX> t) {
-    flipper_arms_falcon_ = ::std::move(t);
+      ::std::shared_ptr<::ctre::phoenix::motorcontrol::can::TalonFX> t) {
+    flipper_arms_falcon_ = t;
     flipper_arms_falcon_->ConfigSupplyCurrentLimit(
         {true, Values::kFlipperArmSupplyCurrentLimit(),
          Values::kFlipperArmSupplyCurrentLimit(), 0});
     flipper_arms_falcon_->ConfigStatorCurrentLimit(
         {true, Values::kFlipperArmStatorCurrentLimit(),
          Values::kFlipperArmStatorCurrentLimit(), 0});
+  }
+
+  ::std::shared_ptr<::ctre::phoenix::motorcontrol::can::TalonFX>
+  flipper_arms_falcon() {
+    return flipper_arms_falcon_;
   }
 
   void set_transfer_roller_victor(::std::unique_ptr<::frc::VictorSP> t) {
@@ -477,11 +483,58 @@ class SuperstructureWriter
   ::std::unique_ptr<frc::TalonFX> intake_falcon_front_, intake_falcon_back_;
 
   ::std::unique_ptr<::ctre::phoenix::motorcontrol::can::TalonFX>
-      roller_falcon_front_, roller_falcon_back_, flipper_arms_falcon_;
+      roller_falcon_front_, roller_falcon_back_;
+
+  ::std::shared_ptr<::ctre::phoenix::motorcontrol::can::TalonFX>
+      flipper_arms_falcon_;
 
   ::std::unique_ptr<::frc::TalonFX> turret_falcon_, catapult_falcon_1_,
       catapult_falcon_2_, climber_falcon_;
   ::std::unique_ptr<::frc::VictorSP> transfer_roller_victor_;
+};
+
+class CANSensorReader {
+ public:
+  CANSensorReader(aos::EventLoop *event_loop)
+      : event_loop_(event_loop),
+        can_position_sender_(
+            event_loop->MakeSender<superstructure::CANPosition>(
+                "/superstructure")) {
+    event_loop->SetRuntimeRealtimePriority(16);
+
+    phased_loop_handler_ =
+        event_loop_->AddPhasedLoop([this](int) { Loop(); }, kPeriod);
+    phased_loop_handler_->set_name("CAN SensorReader Loop");
+
+    event_loop->OnRun([this]() { Loop(); });
+  }
+
+  void set_flipper_arms_falcon(
+      ::std::shared_ptr<::ctre::phoenix::motorcontrol::can::TalonFX> t) {
+    flipper_arms_falcon_ = std::move(t);
+  }
+
+ private:
+  void Loop() {
+    auto builder = can_position_sender_.MakeBuilder();
+    superstructure::CANPosition::Builder can_position_builder =
+        builder.MakeBuilder<superstructure::CANPosition>();
+    can_position_builder.add_flipper_arm_integrated_sensor_velocity(
+        flipper_arms_falcon_->GetSelectedSensorVelocity() *
+        kVelocityConversion);
+    builder.CheckOk(builder.Send(can_position_builder.Finish()));
+  }
+
+  static constexpr std::chrono::milliseconds kPeriod =
+      std::chrono::milliseconds(20);
+  // 2048 encoder counts / 100 ms to rad/sec
+  static constexpr double kVelocityConversion = (2.0 * M_PI / 2048) * 0.100;
+  aos::EventLoop *event_loop_;
+  ::aos::PhasedLoopHandler *phased_loop_handler_;
+
+  ::std::shared_ptr<::ctre::phoenix::motorcontrol::can::TalonFX>
+      flipper_arms_falcon_;
+  aos::Sender<superstructure::CANPosition> can_position_sender_;
 };
 
 class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
@@ -544,8 +597,10 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     sensor_reader.set_catapult_encoder(
         make_unique<frc::Encoder>(0, 1, false, frc::Encoder::k4X));
-    sensor_reader.set_catapult_absolute_pwm(std::make_unique<frc::DigitalInput>(2));
-    sensor_reader.set_catapult_potentiometer(std::make_unique<frc::AnalogInput>(2));
+    sensor_reader.set_catapult_absolute_pwm(
+        std::make_unique<frc::DigitalInput>(2));
+    sensor_reader.set_catapult_potentiometer(
+        std::make_unique<frc::AnalogInput>(2));
 
     AddLoop(&sensor_reader_event_loop);
 
@@ -576,6 +631,13 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     superstructure_writer.set_catapult_falcon_2(make_unique<::frc::TalonFX>(3));
 
     AddLoop(&output_event_loop);
+
+    // Thread 5
+    ::aos::ShmEventLoop can_sensor_reader_event_loop(&config.message());
+    CANSensorReader can_sensor_reader(&can_sensor_reader_event_loop);
+    can_sensor_reader.set_flipper_arms_falcon(
+        superstructure_writer.flipper_arms_falcon());
+    AddLoop(&can_sensor_reader_event_loop);
 
     RunLoops();
   }

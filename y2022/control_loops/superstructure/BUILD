@@ -24,6 +24,14 @@ flatbuffer_cc_library(
 )
 
 flatbuffer_cc_library(
+    name = "superstructure_can_position_fbs",
+    srcs = [
+        "superstructure_can_position.fbs",
+    ],
+    gen_reflections = 1,
+)
+
+flatbuffer_cc_library(
     name = "superstructure_status_fbs",
     srcs = [
         "superstructure_status.fbs",

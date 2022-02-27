@@ -238,6 +238,14 @@
       "max_size": 448
     },
     {
+      "name": "/superstructure",
+      "type": "y2022.control_loops.superstructure.CANPosition",
+      "source_node": "roborio",
+      "frequency": 200,
+      "num_senders": 2,
+      "max_size": 72
+    },
+    {
       "name": "/drivetrain",
       "type": "frc971.sensors.GyroReading",
       "source_node": "roborio",

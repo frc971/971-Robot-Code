@@ -1,0 +1,10 @@
+namespace y2022.control_loops.superstructure;
+
+// CAN readings from the CAN sensor reader loop
+table CANPosition {
+  // Velocity of the flipper arms (rad/s), obtained from the integrated sensor
+  // in the falcon.
+  flipper_arm_integrated_sensor_velocity:double (id: 0);
+}
+
+root_type CANPosition;
