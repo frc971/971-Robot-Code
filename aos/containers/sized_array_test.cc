@@ -32,39 +32,39 @@ TEST(SizedArrayTest, ElementAccess) {
 TEST(SizedArrayTest, Accessors) {
   SizedArray<int, 5> a;
   EXPECT_TRUE(a.empty());
-  EXPECT_FALSE(a.full());
+  EXPECT_NE(a.size(), a.capacity());
   EXPECT_EQ(0u, a.size());
-  EXPECT_EQ(5u, a.max_size());
+  EXPECT_EQ(5u, a.capacity());
 
   a.push_back(9);
   EXPECT_FALSE(a.empty());
-  EXPECT_FALSE(a.full());
+  EXPECT_NE(a.size(), a.capacity());
   EXPECT_EQ(1u, a.size());
-  EXPECT_EQ(5u, a.max_size());
+  EXPECT_EQ(5u, a.capacity());
 
   a.push_back(9);
   EXPECT_FALSE(a.empty());
-  EXPECT_FALSE(a.full());
+  EXPECT_NE(a.size(), a.capacity());
   EXPECT_EQ(2u, a.size());
-  EXPECT_EQ(5u, a.max_size());
+  EXPECT_EQ(5u, a.capacity());
 
   a.push_back(9);
   EXPECT_FALSE(a.empty());
-  EXPECT_FALSE(a.full());
+  EXPECT_NE(a.size(), a.capacity());
   EXPECT_EQ(3u, a.size());
-  EXPECT_EQ(5u, a.max_size());
+  EXPECT_EQ(5u, a.capacity());
 
   a.push_back(9);
   EXPECT_FALSE(a.empty());
-  EXPECT_FALSE(a.full());
+  EXPECT_NE(a.size(), a.capacity());
   EXPECT_EQ(4u, a.size());
-  EXPECT_EQ(5u, a.max_size());
+  EXPECT_EQ(5u, a.capacity());
 
   a.push_back(9);
   EXPECT_FALSE(a.empty());
-  EXPECT_TRUE(a.full());
+  EXPECT_EQ(a.size(), a.capacity());
   EXPECT_EQ(5u, a.size());
-  EXPECT_EQ(5u, a.max_size());
+  EXPECT_EQ(5u, a.capacity());
 }
 
 // Tests the various kinds of iterator.
@@ -139,19 +139,34 @@ TEST(SizedArrayTest, Iterators) {
 TEST(SizedArrayTest, FillEmpty) {
   SizedArray<int, 2> a;
   EXPECT_TRUE(a.empty());
-  EXPECT_FALSE(a.full());
+  EXPECT_NE(a.size(), a.capacity());
   a.push_back(9);
   EXPECT_FALSE(a.empty());
-  EXPECT_FALSE(a.full());
+  EXPECT_NE(a.size(), a.capacity());
   a.push_back(7);
   EXPECT_FALSE(a.empty());
-  EXPECT_TRUE(a.full());
+  EXPECT_EQ(a.size(), a.capacity());
 
   a.clear();
   EXPECT_TRUE(a.empty());
-  EXPECT_FALSE(a.full());
+  EXPECT_NE(a.size(), a.capacity());
   a.push_back(1);
   EXPECT_EQ(1, a.back());
+}
+
+TEST(SizedArrayTest, OverflowTest) {
+  SizedArray<int, 4> a;
+  EXPECT_EQ(a.capacity(), 4u);
+  EXPECT_TRUE(a.empty());
+
+  const int* const pre_front = a.data();
+  a.assign({1, 2, 3, 4});
+
+  EXPECT_EQ(a.capacity(), 4u);
+  // Verify that we didn't reallocate
+  EXPECT_EQ(pre_front, a.data());
+
+  EXPECT_DEATH(a.emplace_back(5), "SIGILL");
 }
 
 }  // namespace testing

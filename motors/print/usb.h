@@ -30,7 +30,7 @@ class UsbPrinting final : public PrintingImplementation {
 
   aos::SizedArray<char, 4> ReadStdin() override {
     aos::SizedArray<char, 4> result;
-    result.set_size(stdout_tty_->Read(result.data(), result.max_size()));
+    result.resize(stdout_tty_->Read(result.data(), result.capacity()));
     return result;
   }
 
@@ -58,7 +58,7 @@ class DedicatedUsbPrinting final : public PrintingImplementation {
 
   aos::SizedArray<char, 4> ReadStdin() override {
     aos::SizedArray<char, 4> result;
-    result.set_size(stdout_tty_.Read(result.data(), result.max_size()));
+    result.resize(stdout_tty_.Read(result.data(), result.capacity()));
     return result;
   }
 

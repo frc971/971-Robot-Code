@@ -1,5 +1,3 @@
-#include "y2019/vision/target_finder.h"
-
 #include <condition_variable>
 #include <fstream>
 #include <mutex>
@@ -16,19 +14,20 @@
 #include "y2019/jevois/structures.h"
 #include "y2019/jevois/uart.h"
 #include "y2019/vision/image_writer.h"
+#include "y2019/vision/target_finder.h"
 
 // This has to be last to preserve compatibility with other headers using AOS
 // logging.
 #include "glog/logging.h"
 
+using ::aos::monotonic_clock;
 using ::aos::events::DataSocket;
 using ::aos::events::RXUdpSocket;
 using ::aos::events::TCPServer;
 using ::aos::vision::DataRef;
 using ::aos::vision::Int32Codec;
-using ::aos::monotonic_clock;
-using ::y2019::jevois::open_via_terminos;
 using aos::vision::Segment;
+using ::y2019::jevois::open_via_terminos;
 
 class CameraStream : public ::y2019::camera::ImageStreamEvent {
  public:
@@ -41,8 +40,9 @@ class CameraStream : public ::y2019::camera::ImageStreamEvent {
     if (on_frame_) on_frame_(data, monotonic_now);
   }
 
-  void set_on_frame(const std::function<
-                    void(DataRef, monotonic_clock::time_point)> &on_frame) {
+  void set_on_frame(
+      const std::function<void(DataRef, monotonic_clock::time_point)>
+          &on_frame) {
     on_frame_ = on_frame;
   }
 
@@ -67,12 +67,12 @@ std::string GetFileContents(const std::string &filename) {
   exit(-1);
 }
 
+using aos::vision::ImageFormat;
 using aos::vision::ImageRange;
 using aos::vision::RangeImage;
-using aos::vision::ImageFormat;
-using y2019::vision::TargetFinder;
 using y2019::vision::IntermediateResult;
 using y2019::vision::Target;
+using y2019::vision::TargetFinder;
 
 class TargetProcessPool {
  public:
@@ -271,7 +271,7 @@ int main(int argc, char **argv) {
 
     frc971::jevois::CameraFrame frame{};
 
-    for (size_t i = 0; i < results.size() && i < frame.targets.max_size();
+    for (size_t i = 0; i < results.size() && i < frame.targets.capacity();
          ++i) {
       const auto &result = results[i].extrinsics;
       frame.targets.push_back(frc971::jevois::Target{

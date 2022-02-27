@@ -49,8 +49,9 @@ UartToTeensyBuffer UartPackToTeensy(const CameraFrame &message) {
   }
   AOS_CHECK(remaining_space.empty());
   UartToTeensyBuffer result;
-  result.set_size(
-      CobsEncode<uart_to_teensy_size()>(buffer, result.mutable_backing_array())
+  result.resize(result.capacity());
+  result.resize(
+      CobsEncode<uart_to_teensy_size()>(buffer, absl::Span<char>(result))
           .size());
   return result;
 }
@@ -137,8 +138,9 @@ UartToCameraBuffer UartPackToCamera(const CameraCalibration &message) {
   }
   AOS_CHECK(remaining_space.empty());
   UartToCameraBuffer result;
-  result.set_size(
-      CobsEncode<uart_to_camera_size()>(buffer, result.mutable_backing_array())
+  result.resize(result.capacity());
+  result.resize(
+      CobsEncode<uart_to_camera_size()>(buffer, absl::Span<char>(result))
           .size());
   return result;
 }
