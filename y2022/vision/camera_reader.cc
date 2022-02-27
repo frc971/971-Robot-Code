@@ -80,10 +80,9 @@ BlobStatsToFbs(const std::vector<BlobDetector::BlobStats> blob_stats,
 }
 }  // namespace
 
-void CameraReader::ProcessImage(cv::Mat image_mat) {
+void CameraReader::ProcessImage(cv::Mat image_mat,
+                                int64_t image_monotonic_timestamp_ns) {
   BlobDetector::BlobResult blob_result;
-  blob_result.binarized_image =
-      cv::Mat::zeros(cv::Size(image_mat.cols, image_mat.rows), CV_8UC1);
   BlobDetector::ExtractBlobs(image_mat, &blob_result);
   auto builder = target_estimate_sender_.MakeBuilder();
   flatbuffers::Offset<BlobResultFbs> blob_result_offset;
@@ -114,7 +113,8 @@ void CameraReader::ProcessImage(cv::Mat image_mat) {
       &target_estimate_builder);
   target_estimate_builder.add_blob_result(blob_result_offset);
   target_estimate_builder.add_camera_calibration(camera_calibration_offset);
-
+  target_estimate_builder.add_image_monotonic_timestamp_ns(
+      image_monotonic_timestamp_ns);
   builder.CheckOk(builder.Send(target_estimate_builder.Finish()));
 }
 
@@ -129,7 +129,10 @@ void CameraReader::ReadImage() {
       std::this_thread::sleep_for(std::chrono::milliseconds(50));
       LOG(INFO) << "Reading file " << file;
       cv::Mat bgr_image = cv::imread(file.c_str());
-      ProcessImage(bgr_image);
+      // TODO (Henry) convert to YUYV
+      int64_t timestamp =
+          aos::monotonic_clock::now().time_since_epoch().count();
+      ProcessImage(bgr_image, timestamp);
     }
     event_loop_->Exit();
     return;
@@ -142,16 +145,13 @@ void CameraReader::ReadImage() {
   }
 
   const CameraImage &image = reader_->LatestImage();
-  cv::Mat image_mat(image.rows(), image.cols(), CV_8U);
-  CHECK(image_mat.isContinuous());
 
-  const int number_pixels = image.rows() * image.cols();
-  for (int i = 0; i < number_pixels; ++i) {
-    reinterpret_cast<uint8_t *>(image_mat.data)[i] =
-        image.data()->data()[i * 2];
-  }
+  cv::Mat image_color_mat(cv::Size(image.cols(), image.rows()), CV_8UC2,
+                          (void *)image.data()->data());
+  cv::Mat image_mat(cv::Size(image.cols(), image.rows()), CV_8UC3);
+  cv::cvtColor(image_color_mat, image_mat, cv::COLOR_YUV2BGR_YUYV);
 
-  ProcessImage(image_mat);
+  ProcessImage(image_mat, image.monotonic_timestamp_ns());
 
   reader_->SendLatestImage();
   read_image_timer_->Setup(event_loop_->monotonic_now());
