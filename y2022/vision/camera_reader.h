@@ -39,6 +39,7 @@ class CameraReader {
         target_estimate_sender_(
             event_loop->MakeSender<TargetEstimate>("/camera")),
         read_image_timer_(event_loop->AddTimer([this]() { ReadImage(); })),
+        gpio_imu_pin_(GPIOControl(GPIO_PIN_SCLK_IMU, kGPIOIn)),
         gpio_pwm_control_(GPIOPWMControl(GPIO_PIN_SCK_PWM, duty_cycle_)),
         gpio_disable_control_(
             GPIOControl(GPIO_PIN_MOSI_DISABLE, kGPIOOut, kGPIOLow)) {
@@ -100,6 +101,7 @@ class CameraReader {
   aos::TimerHandler *const read_image_timer_;
 
   double duty_cycle_ = 0.0;
+  GPIOControl gpio_imu_pin_;
   GPIOPWMControl gpio_pwm_control_;
   GPIOControl gpio_disable_control_;
 };
