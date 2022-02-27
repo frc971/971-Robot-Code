@@ -1,4 +1,4 @@
-#include "y2020/vision/calibration_accumulator.h"
+#include "frc971/vision/calibration_accumulator.h"
 
 #include <opencv2/aruco/charuco.hpp>
 #include <opencv2/calib3d.hpp>
@@ -11,7 +11,7 @@
 #include "aos/time/time.h"
 #include "frc971/control_loops/quaternion_utils.h"
 #include "frc971/wpilib/imu_batch_generated.h"
-#include "y2020/vision/charuco_lib.h"
+#include "frc971/vision/charuco_lib.h"
 
 DEFINE_bool(display_undistorted, false,
             "If true, display the undistorted image.");
@@ -38,7 +38,7 @@ void CalibrationData::AddImu(distributed_clock::time_point distributed_now,
   imu_points_.emplace_back(distributed_now, std::make_pair(gyro, accel));
 }
 
-void CalibrationData::ReviewData(CalibrationDataObserver *observer) {
+void CalibrationData::ReviewData(CalibrationDataObserver *observer) const {
   size_t next_imu_point = 0;
   size_t next_camera_point = 0;
   while (true) {
@@ -115,13 +115,6 @@ void Calibration::HandleCharuco(cv::Mat rgb_image,
   if (valid) {
     data_->AddCameraPose(image_factory_->ToDistributedClock(eof), rvec_eigen,
                          tvec_eigen);
-
-    // TODO(austin): Need a gravity vector input.
-    //
-    // TODO(austin): Need a state, covariance, and model.
-    //
-    // TODO(austin): Need to record all the values out of a log and run it
-    // as a batch run so we can feed it into ceres.
 
     // Z -> up
     // Y -> away from cameras 2 and 3

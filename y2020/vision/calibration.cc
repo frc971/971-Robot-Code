@@ -12,7 +12,7 @@
 #include "aos/network/team_number.h"
 #include "aos/time/time.h"
 #include "aos/util/file.h"
-#include "y2020/vision/charuco_lib.h"
+#include "frc971/vision/charuco_lib.h"
 
 DEFINE_string(calibration_folder, ".", "Folder to place calibration files.");
 DEFINE_string(camera_id, "", "Camera ID in format YY-NN-- year and number.");

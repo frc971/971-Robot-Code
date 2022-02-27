@@ -7,8 +7,8 @@
 #include "aos/events/simulated_event_loop.h"
 #include "aos/time/time.h"
 #include "frc971/control_loops/quaternion_utils.h"
+#include "frc971/vision/charuco_lib.h"
 #include "frc971/wpilib/imu_batch_generated.h"
-#include "y2020/vision/charuco_lib.h"
 
 namespace frc971 {
 namespace vision {
@@ -42,7 +42,7 @@ class CalibrationData {
 
   // Processes the data points by calling UpdateCamera and UpdateIMU in time
   // order.
-  void ReviewData(CalibrationDataObserver *observer);
+  void ReviewData(CalibrationDataObserver *observer) const;
 
   size_t camera_samples_size() const { return rot_trans_points_.size(); }
 

@@ -33,3 +33,56 @@ cc_library(
         "@com_google_absl//absl/base",
     ],
 )
+
+cc_library(
+    name = "charuco_lib",
+    srcs = [
+        "charuco_lib.cc",
+    ],
+    hdrs = [
+        "charuco_lib.h",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aos:flatbuffers",
+        "//aos/events:event_loop",
+        "//aos/network:message_bridge_server_fbs",
+        "//aos/network:team_number",
+        "//frc971/control_loops:quaternion_utils",
+        "//frc971/vision:vision_fbs",
+        "//third_party:opencv",
+        "//y2020/vision/sift:sift_fbs",
+        "//y2020/vision/sift:sift_training_fbs",
+        "//y2020/vision/tools/python_code:sift_training_data",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/types:span",
+        "@org_tuxfamily_eigen//:eigen",
+    ],
+)
+
+cc_library(
+    name = "extrinsics_calibration",
+    srcs = [
+        "calibration_accumulator.cc",
+        "calibration_accumulator.h",
+        "extrinsics_calibration.cc",
+        "extrinsics_calibration.h",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":charuco_lib",
+        "//aos:init",
+        "//aos/events/logging:log_reader",
+        "//frc971/analysis:in_process_plotter",
+        "//frc971/control_loops/drivetrain:improved_down_estimator",
+        "//frc971/wpilib:imu_batch_fbs",
+        "//frc971/wpilib:imu_fbs",
+        "//third_party:opencv",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_ceres_solver//:ceres",
+        "@org_tuxfamily_eigen//:eigen",
+    ],
+)
