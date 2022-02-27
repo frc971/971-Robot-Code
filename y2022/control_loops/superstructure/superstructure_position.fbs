@@ -8,6 +8,7 @@ table Position {
   // down.
   intake_front:frc971.PotAndAbsolutePosition (id: 1);
   intake_back:frc971.PotAndAbsolutePosition (id: 2);
+  // Zero is forwards; positive = counter-clockwise.
   turret:frc971.PotAndAbsolutePosition (id: 3);
 
   // Zero is straight and positive is open
