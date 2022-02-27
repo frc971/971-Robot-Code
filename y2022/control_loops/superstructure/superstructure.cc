@@ -121,6 +121,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   status_builder.add_catapult(catapult_status_offset);
   status_builder.add_solve_time(catapult_.solve_time());
   status_builder.add_mpc_active(catapult_.mpc_active());
+  status_builder.add_shot_count(catapult_.shot_count());
 
   (void)status->Send(status_builder.Finish());
 }

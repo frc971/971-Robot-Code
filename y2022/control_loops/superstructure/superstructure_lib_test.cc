@@ -97,6 +97,8 @@ class SubsystemSimulator {
   void set_peak_acceleration(double value) { peak_acceleration_ = value; }
   void set_peak_velocity(double value) { peak_velocity_ = value; }
 
+  void set_controller_index(size_t index) { plant_->set_index(index); }
+
   PositionSensorSimulator *encoder() { return &encoder_; }
 
  private:
@@ -195,6 +197,11 @@ class SuperstructureSimulation {
                 superstructure_status_fetcher_->intake_back());
             turret_.Simulate(superstructure_output_fetcher_->turret_voltage(),
                              superstructure_status_fetcher_->turret());
+            if (superstructure_status_fetcher_->mpc_active()) {
+              catapult_.set_controller_index(0);
+            } else {
+              catapult_.set_controller_index(1);
+            }
             catapult_.Simulate(
                 superstructure_output_fetcher_->catapult_voltage(),
                 superstructure_status_fetcher_->catapult());
@@ -748,6 +755,88 @@ TEST_F(SuperstructureTest, RunIntakes) {
                   constants::Values::kIntakeRange().lower);
   EXPECT_FLOAT_EQ(superstructure_status_fetcher_->intake_back()->position(),
                   constants::Values::kIntakeRange().upper);
+}
+
+// Make sure that we can shoot the catapult and reload it.
+TEST_F(SuperstructureTest, ShootCatapult) {
+  SetEnabled(true);
+  superstructure_plant_.intake_front()->InitializePosition(
+      constants::Values::kIntakeRange().middle());
+  superstructure_plant_.intake_back()->InitializePosition(
+      constants::Values::kIntakeRange().middle());
+
+  WaitUntilZeroed();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        catapult_return_position_offset =
+            CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+                *builder.fbb(), constants::Values::kCatapultRange().lower,
+                CreateProfileParameters(*builder.fbb(), 4.0, 20.0));
+
+    CatapultGoal::Builder catapult_goal_builder =
+        builder.MakeBuilder<CatapultGoal>();
+
+    catapult_goal_builder.add_fire(false);
+    catapult_goal_builder.add_shot_position(0.3);
+    catapult_goal_builder.add_shot_velocity(15.0);
+    catapult_goal_builder.add_return_position(catapult_return_position_offset);
+    flatbuffers::Offset<CatapultGoal> catapult_goal_offset =
+        catapult_goal_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_catapult(catapult_goal_offset);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::seconds(5));
+
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+  EXPECT_FALSE(superstructure_status_fetcher_->mpc_active());
+  EXPECT_FLOAT_EQ(superstructure_status_fetcher_->catapult()->position(),
+                  constants::Values::kCatapultRange().lower);
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        catapult_return_position_offset =
+            CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+                *builder.fbb(), constants::Values::kCatapultRange().lower,
+                CreateProfileParameters(*builder.fbb(), 4.0, 20.0));
+
+    CatapultGoal::Builder catapult_goal_builder =
+        builder.MakeBuilder<CatapultGoal>();
+
+    catapult_goal_builder.add_fire(true);
+    catapult_goal_builder.add_shot_position(0.5);
+    catapult_goal_builder.add_shot_velocity(20.0);
+    catapult_goal_builder.add_return_position(catapult_return_position_offset);
+    flatbuffers::Offset<CatapultGoal> catapult_goal_offset =
+        catapult_goal_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_catapult(catapult_goal_offset);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::milliseconds(100));
+
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+  EXPECT_TRUE(superstructure_status_fetcher_->mpc_active());
+  EXPECT_EQ(superstructure_status_fetcher_->shot_count(), 0);
+
+  EXPECT_GT(superstructure_status_fetcher_->catapult()->position(),
+            constants::Values::kCatapultRange().lower + 0.1);
+  RunFor(chrono::milliseconds(1950));
+
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+  EXPECT_NEAR(superstructure_status_fetcher_->catapult()->position(),
+              constants::Values::kCatapultRange().lower, 1e-3);
+  EXPECT_EQ(superstructure_status_fetcher_->shot_count(), 1);
 }
 
 }  // namespace testing
