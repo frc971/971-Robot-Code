@@ -159,35 +159,6 @@ cc_binary(
 )
 
 cc_library(
-    name = "complex_thread_local",
-    srcs = [
-        "complex_thread_local.cc",
-    ],
-    hdrs = [
-        "complex_thread_local.h",
-    ],
-    target_compatible_with = ["@platforms//os:linux"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//aos:die",
-        "@com_google_absl//absl/base",
-    ],
-)
-
-cc_test(
-    name = "complex_thread_local_test",
-    srcs = [
-        "complex_thread_local_test.cc",
-    ],
-    target_compatible_with = ["@platforms//os:linux"],
-    deps = [
-        ":complex_thread_local",
-        "//aos/logging",
-        "//aos/testing:googletest",
-    ],
-)
-
-cc_library(
     name = "init",
     srcs = [
         "init.cc",

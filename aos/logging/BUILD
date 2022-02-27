@@ -20,7 +20,6 @@ cc_library(
     deps = [
         ":printf_formats",
         ":sizes",
-        "//aos:complex_thread_local",
         "//aos:die",
         "//aos:macros",
         "//aos:thread_local",
