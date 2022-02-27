@@ -129,10 +129,42 @@ void CameraReader::ReadImage() {
       std::this_thread::sleep_for(std::chrono::milliseconds(50));
       LOG(INFO) << "Reading file " << file;
       cv::Mat bgr_image = cv::imread(file.c_str());
-      // TODO (Henry) convert to YUYV
+      cv::Mat image_color_mat;
+      cv::cvtColor(bgr_image, image_color_mat, cv::COLOR_BGR2YUV);
+
+      // Convert YUV (3 channels) to YUYV (stacked format)
+      std::vector<uint8_t> yuyv;
+      for (int i = 0; i < image_color_mat.rows; i++) {
+        for (int j = 0; j < image_color_mat.cols; j++) {
+          // Always push a Y value
+          yuyv.emplace_back(image_color_mat.at<cv::Vec3b>(i, j)[0]);
+          if ((j % 2) == 0) {
+            // If column # is even, push a U value.
+            yuyv.emplace_back(image_color_mat.at<cv::Vec3b>(i, j)[1]);
+          } else {
+            // If column # is odd, push a V value.
+            yuyv.emplace_back(image_color_mat.at<cv::Vec3b>(i, j)[2]);
+          }
+        }
+      }
+
+      CHECK_EQ(static_cast<int>(yuyv.size()),
+               image_color_mat.rows * image_color_mat.cols * 2);
+
+      auto builder = image_sender_.MakeBuilder();
+      auto image_offset = builder.fbb()->CreateVector(yuyv);
+      auto image_builder = builder.MakeBuilder<CameraImage>();
+
       int64_t timestamp =
           aos::monotonic_clock::now().time_since_epoch().count();
+
+      image_builder.add_rows(image_color_mat.rows);
+      image_builder.add_cols(image_color_mat.cols);
+      image_builder.add_data(image_offset);
+      image_builder.add_monotonic_timestamp_ns(timestamp);
+
       ProcessImage(bgr_image, timestamp);
+      builder.CheckOk(builder.Send(image_builder.Finish()));
     }
     event_loop_->Exit();
     return;
