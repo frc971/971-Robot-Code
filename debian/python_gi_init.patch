@@ -1,6 +1,6 @@
 --- a/__init__.py	1969-12-31 16:00:00.000000000 -0800
 +++ b/__init__.py	2018-10-17 21:45:04.908201161 -0700
-@@ -29,6 +29,19 @@ import os
+@@ -29,6 +29,22 @@ import os
  import importlib
  import types
  
@@ -12,7 +12,10 @@
 +# Tell fontconfig where to find the sandboxed font files.
 +os.environ["FONTCONFIG_PATH"] = os.path.join(_base, "etc/fonts/")
 +os.environ["FONTCONFIG_FILE"] = os.path.join(_base, "etc/fonts/fonts.conf")
-+os.environ["FONTCONFIG_SYSROOT"] = _base
++# The sysroot here needs to be "/". If it were _base, then the font caches
++# would contain _base-relative paths in them. Unfortunately pango interprets
++# those as absolute paths and ends up failing to find all fonts.
++os.environ["FONTCONFIG_SYSROOT"] = "/"
 +os.environ["GDK_PIXBUF_MODULEDIR"] = os.path.join(_base, "rpathed", "usr", "lib", "x86_64-linux-gnu", "gdk-pixbuf-2.0", "2.10.0", "loaders")
 +os.environ["GDK_PIXBUF_MODULE_FILE"] = os.path.join(os.environ["GDK_PIXBUF_MODULEDIR"], "loaders.cache")
 +os.system(os.path.join(_base, "usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders") + " --update-cache")
