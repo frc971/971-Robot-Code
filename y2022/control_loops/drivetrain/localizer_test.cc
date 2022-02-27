@@ -10,7 +10,7 @@
 #include "frc971/control_loops/drivetrain/drivetrain.h"
 #include "frc971/control_loops/drivetrain/drivetrain_test_lib.h"
 #include "frc971/control_loops/team_number_test_environment.h"
-#include "y2022/control_loops/localizer/localizer_output_generated.h"
+#include "y2022/localizer/localizer_output_generated.h"
 #include "gtest/gtest.h"
 #include "y2022/control_loops/drivetrain/drivetrain_base.h"
 

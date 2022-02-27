@@ -1,5 +1,5 @@
-#ifndef Y2022_CONTROL_LOOPS_LOCALIZER_LOCALIZER_H_
-#define Y2022_CONTROL_LOOPS_LOCALIZER_LOCALIZER_H_
+#ifndef Y2022_LOCALIZER_LOCALIZER_H_
+#define Y2022_LOCALIZER_LOCALIZER_H_
 
 #include "Eigen/Dense"
 #include "Eigen/Geometry"
@@ -8,8 +8,8 @@
 #include "aos/containers/ring_buffer.h"
 #include "aos/time/time.h"
 #include "y2020/vision/sift/sift_generated.h"
-#include "y2022/control_loops/localizer/localizer_status_generated.h"
-#include "y2022/control_loops/localizer/localizer_output_generated.h"
+#include "y2022/localizer/localizer_status_generated.h"
+#include "y2022/localizer/localizer_output_generated.h"
 #include "frc971/control_loops/drivetrain/improved_down_estimator.h"
 #include "frc971/control_loops/drivetrain/drivetrain_output_generated.h"
 #include "frc971/control_loops/drivetrain/localizer_generated.h"
@@ -245,4 +245,4 @@ class EventLoopLocalizer {
   zeroing::UnwrapSensor right_encoder_;
 };
 }  // namespace frc971::controls
-#endif // Y2022_CONTROL_LOOPS_LOCALIZER_LOCALIZER_H_
+#endif  // Y2022_LOCALIZER_LOCALIZER_H_

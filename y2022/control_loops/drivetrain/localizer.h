@@ -6,7 +6,7 @@
 #include "aos/events/event_loop.h"
 #include "frc971/control_loops/drivetrain/hybrid_ekf.h"
 #include "frc971/control_loops/drivetrain/localizer.h"
-#include "y2022/control_loops/localizer/localizer_output_generated.h"
+#include "y2022/localizer/localizer_output_generated.h"
 #include "aos/network/message_bridge_server_generated.h"
 
 namespace y2022 {
@@ -16,7 +16,7 @@ namespace drivetrain {
 // This class handles the localization for the 2022 robot. Rather than actually
 // doing any work on the roborio, we farm all the localization out to a
 // raspberry pi and it then sends out LocalizerOutput messages that we treat as
-// measurement updates. See //y2022/control_loops/localizer.
+// measurement updates. See //y2022/localizer.
 // TODO(james): Needs tests. Should refactor out some of the code from the 2020
 // localizer test.
 class Localizer : public frc971::control_loops::drivetrain::LocalizerInterface {

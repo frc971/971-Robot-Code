@@ -1,4 +1,4 @@
-#include "y2022/control_loops/localizer/localizer.h"
+#include "y2022/localizer/localizer.h"
 
 #include "frc971/control_loops/c2d.h"
 #include "frc971/wpilib/imu_batch_generated.h"
