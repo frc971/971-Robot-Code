@@ -23,6 +23,11 @@ using namespace frc971::vision;
 // This pin is MOSI, being used to control the LED Disable
 static constexpr int GPIO_PIN_MOSI_DISABLE = 10;
 
+// Physical pin 23 maps to sysfs pin 11
+// This pin is SCLK, and is used to talk to the IMU
+// To drive the lights, we have to set this pin to an input
+static constexpr int GPIO_PIN_SCLK_IMU = 11;
+
 // Physical pin 33 maps to sysfs pin 13
 // This pin is SCK, being used to control the LED PWM
 static constexpr int GPIO_PIN_SCK_PWM = 13;
