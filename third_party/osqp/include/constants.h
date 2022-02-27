@@ -118,7 +118,7 @@ extern const char * OSQP_ERROR_MESSAGE[];
 # endif // ifdef PROFILING
 
 /* Printing */
-# define PRINT_INTERVAL 200
+# define PRINT_INTERVAL 5
 
 
 # ifdef __cplusplus

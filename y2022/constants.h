@@ -9,6 +9,7 @@
 #include "frc971/control_loops/pose.h"
 #include "frc971/control_loops/static_zeroing_single_dof_profiled_subsystem.h"
 #include "y2022/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
+#include "y2022/control_loops/superstructure/catapult/catapult_plant.h"
 #include "y2022/control_loops/superstructure/climber/climber_plant.h"
 #include "y2022/control_loops/superstructure/intake/intake_plant.h"
 #include "y2022/control_loops/superstructure/turret/turret_plant.h"
@@ -135,6 +136,31 @@ struct Values {
 
   PotConstants flipper_arm_left;
   PotConstants flipper_arm_right;
+
+  // Catapult.
+  static constexpr double kCatapultPotRatio() { return (12.0 / 33.0); }
+  static constexpr double kCatapultEncoderRatio() {
+    return kCatapultPotRatio();
+  }
+  static constexpr double kCatapultEncoderCountsPerRevolution() {
+    return 4096.0;
+  }
+
+  static constexpr double kMaxCatapultEncoderPulsesPerSecond() {
+    return control_loops::superstructure::catapult::kFreeSpeed / (2.0 * M_PI) *
+           control_loops::superstructure::catapult::kOutputRatio /
+           kCatapultEncoderRatio() * kCatapultEncoderCountsPerRevolution();
+  }
+  static constexpr ::frc971::constants::Range kCatapultRange() {
+    return ::frc971::constants::Range{
+        .lower_hard = -1.2,
+        .upper_hard = 2.0,
+        .lower = -1.00,
+        .upper = 1.57,
+    };
+  }
+
+  PotAndAbsEncoderConstants catapult;
 };
 
 // Creates and returns a Values instance for the constants.

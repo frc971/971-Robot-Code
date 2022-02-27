@@ -42,6 +42,10 @@ cc_library(
         ":catapult_plants",
         "//aos:realtime",
         "//third_party/osqp-cpp",
+        "//y2022:constants",
+        "//y2022/control_loops/superstructure:superstructure_goal_fbs",
+        "//y2022/control_loops/superstructure:superstructure_position_fbs",
+        "//y2022/control_loops/superstructure:superstructure_status_fbs",
     ],
 )
 

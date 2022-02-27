@@ -7,7 +7,12 @@
 #include "frc971/control_loops/position_sensor_sim.h"
 #include "frc971/control_loops/team_number_test_environment.h"
 #include "gtest/gtest.h"
+#include "y2022/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
+#include "y2022/control_loops/superstructure/catapult/catapult_plant.h"
+#include "y2022/control_loops/superstructure/climber/climber_plant.h"
+#include "y2022/control_loops/superstructure/intake/intake_plant.h"
 #include "y2022/control_loops/superstructure/superstructure.h"
+#include "y2022/control_loops/superstructure/turret/turret_plant.h"
 
 DEFINE_string(output_folder, "",
               "If set, logs all channels to the provided logfile.");
@@ -133,8 +138,8 @@ class SuperstructureSimulation {
             event_loop_->MakeFetcher<Output>("/superstructure")),
         intake_front_(new CappedTestPlant(intake::MakeIntakePlant()),
                       PositionSensorSimulator(
-                          values->intake_front.subsystem_params.zeroing_constants
-                              .one_revolution_distance),
+                          values->intake_front.subsystem_params
+                              .zeroing_constants.one_revolution_distance),
                       values->intake_front, constants::Values::kIntakeRange(),
                       values->intake_front.subsystem_params.zeroing_constants
                           .measured_absolute_position,
@@ -155,6 +160,14 @@ class SuperstructureSimulation {
                 values->turret.subsystem_params.zeroing_constants
                     .measured_absolute_position,
                 dt_),
+        catapult_(new CappedTestPlant(catapult::MakeCatapultPlant()),
+                  PositionSensorSimulator(
+                      values->catapult.subsystem_params.zeroing_constants
+                          .one_revolution_distance),
+                  values->catapult, constants::Values::kCatapultRange(),
+                  values->catapult.subsystem_params.zeroing_constants
+                      .measured_absolute_position,
+                  dt_),
         climber_(new CappedTestPlant(climber::MakeClimberPlant()),
                  PositionSensorSimulator(
                      constants::Values::kClimberPotMetersPerRevolution()),
@@ -164,6 +177,7 @@ class SuperstructureSimulation {
         constants::Values::kIntakeRange().middle());
     intake_back_.InitializePosition(constants::Values::kIntakeRange().middle());
     turret_.InitializePosition(constants::Values::kTurretRange().middle());
+    catapult_.InitializePosition(constants::Values::kCatapultRange().middle());
     climber_.InitializePosition(constants::Values::kClimberRange().middle());
 
     phased_loop_handle_ = event_loop_->AddPhasedLoop(
@@ -181,6 +195,9 @@ class SuperstructureSimulation {
                 superstructure_status_fetcher_->intake_back());
             turret_.Simulate(superstructure_output_fetcher_->turret_voltage(),
                              superstructure_status_fetcher_->turret());
+            catapult_.Simulate(
+                superstructure_output_fetcher_->catapult_voltage(),
+                superstructure_status_fetcher_->catapult());
             climber_.Simulate(superstructure_output_fetcher_->climber_voltage(),
                               superstructure_status_fetcher_->climber());
           }
@@ -199,6 +216,11 @@ class SuperstructureSimulation {
         builder.MakeBuilder<frc971::PotAndAbsolutePosition>();
     flatbuffers::Offset<frc971::PotAndAbsolutePosition> turret_offset =
         turret_.encoder()->GetSensorValues(&turret_builder);
+
+    frc971::PotAndAbsolutePosition::Builder catapult_builder =
+        builder.MakeBuilder<frc971::PotAndAbsolutePosition>();
+    flatbuffers::Offset<frc971::PotAndAbsolutePosition> catapult_offset =
+        catapult_.encoder()->GetSensorValues(&catapult_builder);
 
     frc971::PotAndAbsolutePosition::Builder intake_front_builder =
         builder.MakeBuilder<frc971::PotAndAbsolutePosition>();
@@ -220,6 +242,7 @@ class SuperstructureSimulation {
     position_builder.add_intake_front(intake_front_offset);
     position_builder.add_intake_back(intake_back_offset);
     position_builder.add_turret(turret_offset);
+    position_builder.add_catapult(catapult_offset);
     position_builder.add_climber(climber_offset);
 
     CHECK_EQ(builder.Send(position_builder.Finish()),
@@ -229,6 +252,7 @@ class SuperstructureSimulation {
   PotAndAbsoluteEncoderSimulator *intake_front() { return &intake_front_; }
   PotAndAbsoluteEncoderSimulator *intake_back() { return &intake_back_; }
   PotAndAbsoluteEncoderSimulator *turret() { return &turret_; }
+  PotAndAbsoluteEncoderSimulator *catapult() { return &catapult_; }
   RelativeEncoderSimulator *climber() { return &climber_; }
 
  private:
@@ -245,6 +269,7 @@ class SuperstructureSimulation {
   PotAndAbsoluteEncoderSimulator intake_front_;
   PotAndAbsoluteEncoderSimulator intake_back_;
   PotAndAbsoluteEncoderSimulator turret_;
+  PotAndAbsoluteEncoderSimulator catapult_;
   RelativeEncoderSimulator climber_;
 };
 
@@ -310,6 +335,15 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
     if (superstructure_goal_fetcher_->has_turret()) {
       EXPECT_NEAR(superstructure_goal_fetcher_->turret()->unsafe_goal(),
                   superstructure_status_fetcher_->turret()->position(), 0.001);
+    }
+
+    if (superstructure_goal_fetcher_->has_catapult() &&
+        superstructure_goal_fetcher_->catapult()->has_return_position()) {
+      EXPECT_NEAR(superstructure_goal_fetcher_->catapult()
+                      ->return_position()
+                      ->unsafe_goal(),
+                  superstructure_status_fetcher_->catapult()->position(),
+                  0.001);
     }
 
     if (superstructure_goal_fetcher_->has_climber()) {
@@ -433,6 +467,8 @@ TEST_F(SuperstructureTest, DoesNothing) {
       constants::Values::kIntakeRange().middle());
   superstructure_plant_.turret()->InitializePosition(
       constants::Values::kTurretRange().middle());
+  superstructure_plant_.catapult()->InitializePosition(
+      constants::Values::kCatapultRange().middle());
   superstructure_plant_.climber()->InitializePosition(
       constants::Values::kClimberRange().middle());
 

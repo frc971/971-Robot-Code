@@ -14,11 +14,14 @@ table Position {
   flipper_arm_left:frc971.RelativePosition (id: 4);
   flipper_arm_right:frc971.RelativePosition (id: 5);
 
-
-  // True is broken
+  // True means there is a ball in front of the sensor.
   intake_beambreak_front:bool (id:6);
   intake_beambreak_back:bool (id:7);
   turret_beambreak:bool (id:8);
+
+  // Position of the catapult.  Positive is up to fire.  Zero is horizontal
+  // with the drive base.
+  catapult:frc971.PotAndAbsolutePosition (id: 9);
 }
 
 root_type Position;

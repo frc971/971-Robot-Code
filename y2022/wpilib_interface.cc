@@ -107,6 +107,11 @@ constexpr double kMaxMediumEncoderPulsesPerSecond =
 static_assert(kMaxMediumEncoderPulsesPerSecond <= 400000,
               "medium encoders are too fast");
 
+double catapult_pot_translate(double voltage) {
+  return voltage * Values::kCatapultPotRatio() *
+         (3.0 /*turns*/ / 5.0 /*volts*/) * (2 * M_PI /*radians*/);
+}
+
 }  // namespace
 
 // Class to send position messages with sensor readings to our loops.
@@ -137,9 +142,32 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     autonomous_modes_.at(i) = ::std::move(sensor);
   }
 
+  void set_catapult_encoder(::std::unique_ptr<frc::Encoder> encoder) {
+    medium_encoder_filter_.Add(encoder.get());
+    catapult_encoder_.set_encoder(::std::move(encoder));
+  }
+
+  void set_catapult_absolute_pwm(
+      ::std::unique_ptr<frc::DigitalInput> absolute_pwm) {
+    catapult_encoder_.set_absolute_pwm(::std::move(absolute_pwm));
+  }
+
+  void set_catapult_potentiometer(
+      ::std::unique_ptr<frc::AnalogInput> potentiometer) {
+    catapult_encoder_.set_potentiometer(::std::move(potentiometer));
+  }
+
   void RunIteration() override {
     {
       auto builder = superstructure_position_sender_.MakeBuilder();
+
+      frc971::PotAndAbsolutePositionT catapult;
+      CopyPosition(catapult_encoder_, &catapult,
+                   Values::kCatapultEncoderCountsPerRevolution(),
+                   Values::kCatapultEncoderRatio(), catapult_pot_translate,
+                   true, values_->catapult.potentiometer_offset);
+      flatbuffers::Offset<frc971::PotAndAbsolutePosition> catapult_offset =
+          frc971::PotAndAbsolutePosition::Pack(*builder.fbb(), &catapult);
 
       frc971::RelativePositionT climber;
       CopyPosition(*climber_potentiometer_, &climber, climber_pot_translate,
@@ -197,6 +225,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
           intake_beambreak_front_->Get());
       position_builder.add_intake_beambreak_back(intake_beambreak_back_->Get());
       position_builder.add_turret_beambreak(turret_beambreak_->Get());
+      position_builder.add_catapult(catapult_offset);
       builder.CheckOk(builder.Send(position_builder.Finish()));
     }
 
@@ -325,6 +354,8 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       flipper_arm_right_potentiometer_, flipper_arm_left_potentiometer_;
   frc971::wpilib::AbsoluteEncoderAndPotentiometer intake_encoder_front_,
       intake_encoder_back_, turret_encoder_;
+
+  frc971::wpilib::AbsoluteEncoderAndPotentiometer catapult_encoder_;
 };
 
 class SuperstructureWriter
@@ -511,32 +542,38 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     sensor_reader.set_flipper_arm_right_potentiometer(
         make_unique<frc::AnalogInput>(5));
 
+    sensor_reader.set_catapult_encoder(
+        make_unique<frc::Encoder>(0, 1, false, frc::Encoder::k4X));
+    sensor_reader.set_catapult_absolute_pwm(std::make_unique<frc::DigitalInput>(2));
+    sensor_reader.set_catapult_potentiometer(std::make_unique<frc::AnalogInput>(2));
+
     AddLoop(&sensor_reader_event_loop);
 
     // Thread 4.
     ::aos::ShmEventLoop output_event_loop(&config.message());
     ::frc971::wpilib::DrivetrainWriter drivetrain_writer(&output_event_loop);
     drivetrain_writer.set_left_controller0(
-        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(0)), true);
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(1)), true);
     drivetrain_writer.set_right_controller0(
-        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(1)), false);
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(0)), false);
 
     SuperstructureWriter superstructure_writer(&output_event_loop);
 
-    superstructure_writer.set_turret_falcon(make_unique<::frc::TalonFX>(0));
-    superstructure_writer.set_catapult_falcon_1(make_unique<::frc::TalonFX>(1));
-    superstructure_writer.set_catapult_falcon_2(make_unique<::frc::TalonFX>(2));
+    superstructure_writer.set_turret_falcon(make_unique<::frc::TalonFX>(8));
     superstructure_writer.set_roller_falcon_front(
         make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(3));
     superstructure_writer.set_roller_falcon_back(
         make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(4));
     superstructure_writer.set_transfer_roller_victor(
-        make_unique<::frc::VictorSP>(2));
+        make_unique<::frc::VictorSP>(9));
     superstructure_writer.set_intake_falcon_front(make_unique<frc::TalonFX>(5));
     superstructure_writer.set_intake_falcon_back(make_unique<frc::TalonFX>(6));
     superstructure_writer.set_climber_falcon(make_unique<frc::TalonFX>(7));
     superstructure_writer.set_flipper_arms_falcon(
         make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(5));
+
+    superstructure_writer.set_catapult_falcon_1(make_unique<::frc::TalonFX>(2));
+    superstructure_writer.set_catapult_falcon_2(make_unique<::frc::TalonFX>(3));
 
     AddLoop(&output_event_loop);
 

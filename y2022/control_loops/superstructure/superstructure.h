@@ -5,6 +5,7 @@
 #include "frc971/control_loops/control_loop.h"
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "y2022/constants.h"
+#include "y2022/control_loops/superstructure/catapult/catapult.h"
 #include "y2022/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2022/control_loops/superstructure/superstructure_output_generated.h"
 #include "y2022/control_loops/superstructure/superstructure_position_generated.h"
@@ -50,6 +51,8 @@ class Superstructure
                             aos::Sender<Status>::Builder *status) override;
 
  private:
+  std::shared_ptr<const constants::Values> values_;
+
   RelativeEncoderSubsystem climber_;
   PotAndAbsoluteEncoderSubsystem intake_front_;
   PotAndAbsoluteEncoderSubsystem intake_back_;
@@ -59,6 +62,8 @@ class Superstructure
       drivetrain_status_fetcher_;
 
   DISALLOW_COPY_AND_ASSIGN(Superstructure);
+
+  catapult::Catapult catapult_;
 };
 
 }  // namespace superstructure

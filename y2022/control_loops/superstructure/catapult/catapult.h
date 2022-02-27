@@ -5,6 +5,10 @@
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "glog/logging.h"
 #include "osqp++.h"
+#include "y2022/constants.h"
+#include "y2022/control_loops/superstructure/superstructure_goal_generated.h"
+#include "y2022/control_loops/superstructure/superstructure_position_generated.h"
+#include "y2022/control_loops/superstructure/superstructure_status_generated.h"
 
 namespace y2022 {
 namespace control_loops {
@@ -56,6 +60,8 @@ class MPCProblem {
 
   Eigen::Matrix<double, 2, 1> X_initial_;
   Eigen::Matrix<double, 2, 1> X_final_;
+
+  Eigen::Matrix<double, Eigen::Dynamic, 1> objective_vector_;
 
   // Solver state.
   osqp::OsqpInstance instance_;
@@ -122,6 +128,97 @@ class CatapultProblemGenerator {
 
   const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> WM_;
   const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> Wmpw_;
+};
+
+// A class to hold all the state needed to manage the catapult MPC solvers for
+// repeated shots.
+//
+// The solver may take a couple of cycles to get everything converged and ready.
+// The flow is as follows:
+//  1) Reset() the state for the new problem.
+//  2) Update to the current state with SetState()
+//  3) Call Solve().  This will return true if it is ready to be executed, false
+//     if it needs more iterations to fully converge.
+//  4) Next() returns the current optimal control output and advances the
+//     pointers to the next problem.
+//  5) Go back to 2 for the next cycle.
+class CatapultController {
+ public:
+  CatapultController(size_t horizon);
+
+  // Starts back over at the first controller.
+  void Reset();
+
+  // Updates our current and final states for the current controller.
+  void SetState(Eigen::Matrix<double, 2, 1> X_initial,
+                Eigen::Matrix<double, 2, 1> X_final);
+
+  // Solves!  Returns true if the solution converged and osqp was happy.
+  bool Solve();
+
+  // Returns the time in seconds it last took Solve to run.
+  double solve_time() const { return solve_time_; }
+
+  // Returns the controller value if there is a controller to run, or nullopt if
+  // we finished the last controller.  Advances the controller pointer to the
+  // next controller and warms up the next controller.
+  std::optional<double> Next();
+
+  // Returns true if Next has been called and a controller has been used.  Reset
+  // starts over.
+  bool started() const { return current_controller_ != 0u; }
+
+ private:
+  CatapultProblemGenerator generator_;
+
+  std::vector<std::unique_ptr<MPCProblem>> problems_;
+
+  size_t current_controller_ = 0;
+  double solve_time_ = 0.0;
+};
+
+// Class to handle transitioning between both the profiled subsystem and the MPC
+// for shooting.
+class Catapult {
+ public:
+  Catapult(const constants::Values &values)
+      : catapult_(values.catapult.subsystem_params), catapult_mpc_(35) {}
+
+  using PotAndAbsoluteEncoderSubsystem =
+      ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystem<
+          ::frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator,
+          ::frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus>;
+
+  // Resets all state for when WPILib restarts.
+  void Reset() { catapult_.Reset(); }
+
+  bool zeroed() const { return catapult_.zeroed(); }
+  bool estopped() const { return catapult_.estopped(); }
+  double solve_time() const { return catapult_mpc_.solve_time(); }
+
+  bool mpc_active() const { return !use_profile_; }
+
+  // Runs either the MPC or the profiled subsystem depending on if we are
+  // shooting or not.  Returns the status.
+  const flatbuffers::Offset<
+      frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus>
+  Iterate(const Goal *unsafe_goal, const Position *position,
+          double *catapult_voltage, flatbuffers::FlatBufferBuilder *fbb);
+
+ private:
+  // TODO(austin): Prototype is just an encoder.  Catapult has both an encoder
+  // and pot.  Switch back once we have a catapult.
+  // PotAndAbsoluteEncoderSubsystem catapult_;
+  PotAndAbsoluteEncoderSubsystem catapult_;
+
+  catapult::CatapultController catapult_mpc_;
+
+  enum CatapultState { PROFILE, FIRING, RESETTING };
+
+  CatapultState catapult_state_ = CatapultState::PROFILE;
+
+  bool last_firing_ = false;
+  bool use_profile_ = true;
 };
 
 }  // namespace catapult

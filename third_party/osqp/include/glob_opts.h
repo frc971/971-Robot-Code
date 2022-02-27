@@ -144,7 +144,7 @@ typedef float c_float;  /* for numerical values  */
 #   include <R_ext/Print.h>
 #   define c_print Rprintf
 #  else  /* ifdef MATLAB */
-#   define c_print printf
+#   define c_print(...) fprintf(stderr, __VA_ARGS__)
 #  endif /* c_print configuration */
 
 /* error printing function */
