@@ -141,6 +141,13 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     UpdateMediumEncoderFilterHz(kMaxMediumEncoderPulsesPerSecond);
   }
 
+  void Start() override {
+    // TODO(Ravago): Figure out why adding multiple DMA readers results in weird
+    // behavior
+    // AddToDMA(&imu_heading_reader_);
+    AddToDMA(&imu_yaw_rate_reader_);
+  }
+
   // Auto mode switches.
   void set_autonomous_mode(int i, ::std::unique_ptr<frc::DigitalInput> sensor) {
     autonomous_modes_.at(i) = ::std::move(sensor);
@@ -162,11 +169,13 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   }
 
   void set_heading_input(::std::unique_ptr<frc::DigitalInput> sensor) {
-    imu_heading_reader_.set_input(::std::move(sensor));
+    imu_heading_input_ = ::std::move(sensor);
+    imu_heading_reader_.set_input(imu_heading_input_.get());
   }
 
   void set_yaw_rate_input(::std::unique_ptr<frc::DigitalInput> sensor) {
-    imu_yaw_rate_reader_.set_input(::std::move(sensor));
+    imu_yaw_rate_input_ = ::std::move(sensor);
+    imu_yaw_rate_reader_.set_input(imu_yaw_rate_input_.get());
   }
 
   void RunIteration() override {
@@ -272,14 +281,19 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       constexpr double kScaledRangeLow = 0.1;
       constexpr double kScaledRangeHigh = 0.9;
 
+      constexpr double kPWMFrequencyHz = 200;
+      double heading_duty_cycle =
+          imu_heading_reader_.last_width() * kPWMFrequencyHz;
+      double velocity_duty_cycle =
+          imu_yaw_rate_reader_.last_width() * kPWMFrequencyHz;
+
       constexpr double kDutyCycleScale =
           1 / (kScaledRangeHigh - kScaledRangeLow);
-
       // scale from 0.1 - 0.9 to 0 - 1
       double rescaled_heading_duty_cycle =
-          (imu_heading_reader_.Read() - kScaledRangeLow) * kDutyCycleScale;
+          (heading_duty_cycle - kScaledRangeLow) * kDutyCycleScale;
       double rescaled_velocity_duty_cycle =
-          (imu_yaw_rate_reader_.Read() - kScaledRangeLow) * kDutyCycleScale;
+          (velocity_duty_cycle - kScaledRangeLow) * kDutyCycleScale;
 
       if (!std::isnan(rescaled_heading_duty_cycle)) {
         gyro_reading_builder.add_angle(rescaled_heading_duty_cycle *
@@ -393,14 +407,15 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   std::array<std::unique_ptr<frc::DigitalInput>, 2> autonomous_modes_;
 
   std::unique_ptr<frc::DigitalInput> intake_beambreak_front_,
-      intake_beambreak_back_, turret_beambreak_;
+      intake_beambreak_back_, turret_beambreak_, imu_heading_input_,
+      imu_yaw_rate_input_;
 
   std::unique_ptr<frc::AnalogInput> climber_potentiometer_,
       flipper_arm_right_potentiometer_, flipper_arm_left_potentiometer_;
   frc971::wpilib::AbsoluteEncoderAndPotentiometer intake_encoder_front_,
       intake_encoder_back_, turret_encoder_, catapult_encoder_;
 
-  frc971::wpilib::DutyCycleReader imu_heading_reader_, imu_yaw_rate_reader_;
+  frc971::wpilib::DMAPulseWidthReader imu_heading_reader_, imu_yaw_rate_reader_;
 };
 
 class SuperstructureWriter
