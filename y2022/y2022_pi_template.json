@@ -75,7 +75,8 @@
       "num_senders": 2,
       "logger": "LOCAL_AND_REMOTE_LOGGER",
       "logger_nodes": [
-        "roborio"
+        "roborio",
+        "imu"
       ],
       "max_size": 200,
       "destination_nodes": [
