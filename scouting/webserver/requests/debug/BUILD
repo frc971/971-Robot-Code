@@ -8,6 +8,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//scouting/webserver/requests/messages:error_response_go_fbs",
+        "//scouting/webserver/requests/messages:request_all_matches_response_go_fbs",
         "//scouting/webserver/requests/messages:submit_data_scouting_response_go_fbs",
     ],
 )

@@ -9,6 +9,8 @@ go_library(
     deps = [
         "//scouting/db",
         "//scouting/webserver/requests/messages:error_response_go_fbs",
+        "//scouting/webserver/requests/messages:request_all_matches_go_fbs",
+        "//scouting/webserver/requests/messages:request_all_matches_response_go_fbs",
         "//scouting/webserver/requests/messages:submit_data_scouting_go_fbs",
         "//scouting/webserver/requests/messages:submit_data_scouting_response_go_fbs",
         "//scouting/webserver/server",
@@ -23,7 +25,10 @@ go_test(
     target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         "//scouting/db",
+        "//scouting/webserver/requests/debug",
         "//scouting/webserver/requests/messages:error_response_go_fbs",
+        "//scouting/webserver/requests/messages:request_all_matches_go_fbs",
+        "//scouting/webserver/requests/messages:request_all_matches_response_go_fbs",
         "//scouting/webserver/requests/messages:submit_data_scouting_go_fbs",
         "//scouting/webserver/requests/messages:submit_data_scouting_response_go_fbs",
         "//scouting/webserver/server",

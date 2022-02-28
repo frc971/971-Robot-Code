@@ -50,9 +50,9 @@ func parseJson(fbsPath string, jsonPath string) []byte {
 	// Execute the `flatc` command.
 	flatcCommand := exec.Command(absFlatcPath, "--binary", absFbsPath, jsonSymlink)
 	flatcCommand.Dir = dir
-	err = flatcCommand.Run()
+	output, err := flatcCommand.CombinedOutput()
 	if err != nil {
-		log.Fatal("Failed to execute flatc: ", err)
+		log.Fatal("Failed to execute flatc: ", err, ": ", string(output))
 	}
 
 	// Read the serialized flatbuffer and return it.
@@ -70,6 +70,8 @@ func main() {
 		"The end point where the server is listening.")
 	submitDataScoutingPtr := flag.String("submitDataScouting", "",
 		"If specified, parse the file as a SubmitDataScouting JSON request.")
+	requestAllMatchesPtr := flag.String("requestAllMatches", "",
+		"If specified, parse the file as a RequestAllMatches JSON request.")
 	flag.Parse()
 
 	// Handle the actual arguments.
@@ -82,6 +84,17 @@ func main() {
 		if err != nil {
 			log.Fatal("Failed SubmitDataScouting: ", err)
 		}
-		log.Printf("%+v", response)
+		log.Printf("%+v", *response)
+	}
+	if *requestAllMatchesPtr != "" {
+		log.Printf("Sending RequestAllMatches to %s", *addressPtr)
+		binaryRequest := parseJson(
+			"scouting/webserver/requests/messages/request_all_matches.fbs",
+			*requestAllMatchesPtr)
+		response, err := debug.RequestAllMatches(*addressPtr, binaryRequest)
+		if err != nil {
+			log.Fatal("Failed RequestAllMatches: ", err)
+		}
+		log.Printf("%+v", *response)
 	}
 }

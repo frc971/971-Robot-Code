@@ -1,3 +1,5 @@
+# TODO(phil): Rewrite this in Go.
+
 import json
 import os
 from pathlib import Path
@@ -66,6 +68,15 @@ class TestDebugCli(unittest.TestCase):
         # The SubmitDataScouting message isn't handled yet.
         self.assertEqual(exit_code, 1)
         self.assertIn("/requests/submit/data_scouting returned 501 Not Implemented", stderr)
+
+    def test_request_all_matches(self):
+        # RequestAllMatches has no fields.
+        json_path = write_json({})
+        exit_code, _stdout, stderr = run_debug_cli(["-requestAllMatches", json_path])
+
+        # TODO(phil): Actually add some matches here.
+        self.assertEqual(exit_code, 0)
+        self.assertIn("{MatchList:[]}", stderr)
 
 if __name__ == "__main__":
     unittest.main()

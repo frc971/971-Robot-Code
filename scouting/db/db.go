@@ -12,9 +12,9 @@ type Database struct {
 }
 
 type Match struct {
-	MatchNumber, Round     int
+	MatchNumber, Round     int32
 	CompLevel              string
-	R1, R2, R3, B1, B2, B3 int
+	R1, R2, R3, B1, B2, B3 int32
 	// Each of these variables holds the matchID of the corresponding Stats row
 	r1ID, r2ID, r3ID, b1ID, b2ID, b3ID int
 }
@@ -74,7 +74,7 @@ func (database *Database) AddToMatch(m Match) error {
 		return (error_)
 	}
 	var rowIds [6]int64
-	for i, teamNumber := range []int{m.R1, m.R2, m.R3, m.B1, m.B2, m.B3} {
+	for i, teamNumber := range []int32{m.R1, m.R2, m.R3, m.B1, m.B2, m.B3} {
 		result, error_ := statement.Exec(teamNumber, m.MatchNumber, 0, 0, 0, 0, 0, 0, 0, 0)
 		if error_ != nil {
 			fmt.Println("failed to execute statement 2:", error_)

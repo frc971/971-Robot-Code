@@ -1,6 +1,6 @@
 namespace scouting.webserver.requests;
 
-table RequestMatchList {
+table RequestAllMatches {
 }
 
-root_type RequestMatchList;
+root_type RequestAllMatches;
