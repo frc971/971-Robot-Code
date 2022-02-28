@@ -17,8 +17,6 @@
 
 using namespace frc;
 
-#define HAL_FATAL_ERROR()
-
 /**
  * Allocate a PWM given a channel number.
  *
@@ -42,7 +40,7 @@ PWM::PWM(int channel) {
     //    wpi_setErrorWithContextRange(status, 0, HAL_GetNumPWMChannels(),
     //    channel,
     //                                 HAL_GetErrorMessage(status));
-    HAL_FATAL_ERROR();
+    HAL_CHECK_STATUS(status) << ": Channel " << channel;
     m_channel = std::numeric_limits<int>::max();
     m_handle = HAL_kInvalidHandle;
     return;
@@ -51,10 +49,10 @@ PWM::PWM(int channel) {
   m_channel = channel;
 
   HAL_SetPWMDisabled(m_handle, &status);
-  HAL_FATAL_ERROR();
+  HAL_CHECK_STATUS(status) << ": Channel " << channel;
   status = 0;
   HAL_SetPWMEliminateDeadband(m_handle, false, &status);
-  HAL_FATAL_ERROR();
+  HAL_CHECK_STATUS(status) << ": Channel " << channel;
 
   HAL_Report(HALUsageReporting::kResourceType_PWM, channel);
 }
@@ -68,10 +66,10 @@ PWM::~PWM() {
   int32_t status = 0;
 
   HAL_SetPWMDisabled(m_handle, &status);
-  HAL_FATAL_ERROR();
+  HAL_CHECK_STATUS(status);
 
   HAL_FreePWMPort(m_handle, &status);
-  HAL_FATAL_ERROR();
+  HAL_CHECK_STATUS(status);
 }
 
 /**
@@ -85,7 +83,7 @@ PWM::~PWM() {
 void PWM::EnableDeadbandElimination(bool eliminateDeadband) {
   int32_t status = 0;
   HAL_SetPWMEliminateDeadband(m_handle, eliminateDeadband, &status);
-  HAL_FATAL_ERROR();
+  HAL_CHECK_STATUS(status);
 }
 
 /**
@@ -106,7 +104,7 @@ void PWM::SetBounds(double max, double deadbandMax, double center,
   int32_t status = 0;
   HAL_SetPWMConfig(m_handle, max, deadbandMax, center, deadbandMin, min,
                    &status);
-  HAL_FATAL_ERROR();
+  HAL_CHECK_STATUS(status);
 }
 
 /**
@@ -127,7 +125,7 @@ void PWM::SetRawBounds(int max, int deadbandMax, int center, int deadbandMin,
   int32_t status = 0;
   HAL_SetPWMConfigRaw(m_handle, max, deadbandMax, center, deadbandMin, min,
                       &status);
-  HAL_FATAL_ERROR();
+  HAL_CHECK_STATUS(status);
 }
 
 /**
@@ -148,7 +146,7 @@ void PWM::GetRawBounds(int *max, int *deadbandMax, int *center,
   int32_t status = 0;
   HAL_GetPWMConfigRaw(m_handle, max, deadbandMax, center, deadbandMin, min,
                       &status);
-  HAL_FATAL_ERROR();
+  HAL_CHECK_STATUS(status);
 }
 
 /**
@@ -164,7 +162,7 @@ void PWM::GetRawBounds(int *max, int *deadbandMax, int *center,
 void PWM::SetPosition(double pos) {
   int32_t status = 0;
   HAL_SetPWMPosition(m_handle, pos, &status);
-  HAL_FATAL_ERROR();
+  HAL_CHECK_STATUS(status);
 }
 
 /**
@@ -180,7 +178,7 @@ void PWM::SetPosition(double pos) {
 double PWM::GetPosition() const {
   int32_t status = 0;
   double position = HAL_GetPWMPosition(m_handle, &status);
-  HAL_FATAL_ERROR();
+  HAL_CHECK_STATUS(status);
   return position;
 }
 
@@ -200,7 +198,7 @@ double PWM::GetPosition() const {
 void PWM::SetSpeed(double speed) {
   int32_t status = 0;
   HAL_SetPWMSpeed(m_handle, speed, &status);
-  HAL_FATAL_ERROR();
+  HAL_CHECK_STATUS(status);
 }
 
 /**
@@ -218,7 +216,7 @@ void PWM::SetSpeed(double speed) {
 double PWM::GetSpeed() const {
   int32_t status = 0;
   double speed = HAL_GetPWMSpeed(m_handle, &status);
-  HAL_FATAL_ERROR();
+  HAL_CHECK_STATUS(status);
   return speed;
 }
 
@@ -232,7 +230,7 @@ double PWM::GetSpeed() const {
 void PWM::SetRaw(uint16_t value) {
   int32_t status = 0;
   HAL_SetPWMRaw(m_handle, value, &status);
-  HAL_FATAL_ERROR();
+  HAL_CHECK_STATUS(status);
 }
 
 /**
@@ -245,7 +243,7 @@ void PWM::SetRaw(uint16_t value) {
 uint16_t PWM::GetRaw() const {
   int32_t status = 0;
   uint16_t value = HAL_GetPWMRaw(m_handle, &status);
-  HAL_FATAL_ERROR();
+  HAL_CHECK_STATUS(status);
 
   return value;
 }
@@ -274,7 +272,7 @@ void PWM::SetPeriodMultiplier(PeriodMultiplier mult) {
       LOG(FATAL) << "Invalid multiplier " << mult;
   }
 
-  HAL_FATAL_ERROR();
+  HAL_CHECK_STATUS(status);
 }
 
 /**
@@ -285,12 +283,12 @@ void PWM::SetDisabled() {
   int32_t status = 0;
 
   HAL_SetPWMDisabled(m_handle, &status);
-  HAL_FATAL_ERROR();
+  HAL_CHECK_STATUS(status);
 }
 
 void PWM::SetZeroLatch() {
   int32_t status = 0;
 
   HAL_LatchPWMZero(m_handle, &status);
-  HAL_FATAL_ERROR();
+  HAL_CHECK_STATUS(status);
 }

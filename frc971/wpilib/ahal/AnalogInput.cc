@@ -41,6 +41,8 @@ AnalogInput::AnalogInput(int channel) {
                                  HAL_GetErrorMessage(status));
     m_channel = std::numeric_limits<int>::max();
     m_port = HAL_kInvalidHandle;
+    HAL_CHECK_STATUS(status)
+        << ": Failed to make AnalogInput channel " << channel;
     return;
   }
 
@@ -69,6 +71,7 @@ int AnalogInput::GetValue() const {
   int32_t status = 0;
   int value = HAL_GetAnalogValue(m_port, &status);
   wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
+  HAL_CHECK_STATUS(status);
   return value;
 }
 
@@ -91,6 +94,7 @@ int AnalogInput::GetAverageValue() const {
   int32_t status = 0;
   int value = HAL_GetAnalogAverageValue(m_port, &status);
   wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
+  HAL_CHECK_STATUS(status);
   return value;
 }
 
@@ -107,6 +111,7 @@ double AnalogInput::GetVoltage() const {
   int32_t status = 0;
   double voltage = HAL_GetAnalogVoltage(m_port, &status);
   wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
+  HAL_CHECK_STATUS(status);
   return voltage;
 }
 
@@ -129,6 +134,7 @@ double AnalogInput::GetAverageVoltage() const {
   int32_t status = 0;
   double voltage = HAL_GetAnalogAverageVoltage(m_port, &status);
   wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
+  HAL_CHECK_STATUS(status);
   return voltage;
 }
 
@@ -144,6 +150,7 @@ int AnalogInput::GetLSBWeight() const {
   int32_t status = 0;
   int lsbWeight = HAL_GetAnalogLSBWeight(m_port, &status);
   wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
+  HAL_CHECK_STATUS(status);
   return lsbWeight;
 }
 
@@ -159,6 +166,7 @@ int AnalogInput::GetOffset() const {
   int32_t status = 0;
   int offset = HAL_GetAnalogOffset(m_port, &status);
   wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
+  HAL_CHECK_STATUS(status);
   return offset;
 }
 
@@ -188,6 +196,7 @@ void AnalogInput::SetAverageBits(int bits) {
   int32_t status = 0;
   HAL_SetAnalogAverageBits(m_port, bits, &status);
   wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
+  HAL_CHECK_STATUS(status);
 }
 
 /**
@@ -202,6 +211,7 @@ int AnalogInput::GetAverageBits() const {
   int32_t status = 0;
   int averageBits = HAL_GetAnalogAverageBits(m_port, &status);
   wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
+  HAL_CHECK_STATUS(status);
   return averageBits;
 }
 
@@ -220,6 +230,7 @@ void AnalogInput::SetOversampleBits(int bits) {
   int32_t status = 0;
   HAL_SetAnalogOversampleBits(m_port, bits, &status);
   wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
+  HAL_CHECK_STATUS(status);
 }
 
 /**
@@ -236,6 +247,7 @@ int AnalogInput::GetOversampleBits() const {
   int32_t status = 0;
   int oversampleBits = HAL_GetAnalogOversampleBits(m_port, &status);
   wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
+  HAL_CHECK_STATUS(status);
   return oversampleBits;
 }
 
@@ -251,6 +263,7 @@ void AnalogInput::SetSampleRate(double samplesPerSecond) {
   int32_t status = 0;
   HAL_SetAnalogSampleRate(samplesPerSecond, &status);
   wpi_setGlobalErrorWithContext(status, HAL_GetErrorMessage(status));
+  HAL_CHECK_STATUS(status);
 }
 
 /**
@@ -262,5 +275,6 @@ double AnalogInput::GetSampleRate() {
   int32_t status = 0;
   double sampleRate = HAL_GetAnalogSampleRate(&status);
   wpi_setGlobalErrorWithContext(status, HAL_GetErrorMessage(status));
+  HAL_CHECK_STATUS(status);
   return sampleRate;
 }

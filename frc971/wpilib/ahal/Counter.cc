@@ -19,6 +19,7 @@ Counter::Counter(Mode mode) {
   int32_t status = 0;
   m_counter = HAL_InitializeCounter((HAL_Counter_Mode)mode, &m_index, &status);
   wpi_setHALError(status);
+  HAL_CHECK_STATUS(status);
 
   SetMaxPeriod(0.5);
 
@@ -77,6 +78,7 @@ Counter::Counter(EncodingType encodingType,
   }
 
   wpi_setHALError(status);
+  HAL_CHECK_STATUS(status);
   SetDownSourceEdge(inverted, true);
 }
 
@@ -86,6 +88,7 @@ Counter::~Counter() {
   int32_t status = 0;
   HAL_FreeCounter(m_counter, &status);
   wpi_setHALError(status);
+  HAL_CHECK_STATUS(status);
 }
 
 void Counter::SetUpSource(int channel) {
@@ -119,6 +122,7 @@ void Counter::SetUpSource(std::shared_ptr<DigitalSource> source) {
       m_counter, source->GetPortHandleForRouting(),
       (HAL_AnalogTriggerType)source->GetAnalogTriggerTypeForRouting(), &status);
   wpi_setHALError(status);
+  HAL_CHECK_STATUS(status);
 }
 
 void Counter::SetUpSource(DigitalSource& source) {
@@ -136,6 +140,7 @@ void Counter::SetUpSourceEdge(bool risingEdge, bool fallingEdge) {
   int32_t status = 0;
   HAL_SetCounterUpSourceEdge(m_counter, risingEdge, fallingEdge, &status);
   wpi_setHALError(status);
+  HAL_CHECK_STATUS(status);
 }
 
 void Counter::ClearUpSource() {
@@ -144,6 +149,7 @@ void Counter::ClearUpSource() {
   int32_t status = 0;
   HAL_ClearCounterUpSource(m_counter, &status);
   wpi_setHALError(status);
+  HAL_CHECK_STATUS(status);
 }
 
 void Counter::SetDownSource(int channel) {
@@ -182,6 +188,7 @@ void Counter::SetDownSource(std::shared_ptr<DigitalSource> source) {
       m_counter, source->GetPortHandleForRouting(),
       (HAL_AnalogTriggerType)source->GetAnalogTriggerTypeForRouting(), &status);
   wpi_setHALError(status);
+  HAL_CHECK_STATUS(status);
 }
 
 void Counter::SetDownSourceEdge(bool risingEdge, bool fallingEdge) {
@@ -194,6 +201,7 @@ void Counter::SetDownSourceEdge(bool risingEdge, bool fallingEdge) {
   int32_t status = 0;
   HAL_SetCounterDownSourceEdge(m_counter, risingEdge, fallingEdge, &status);
   wpi_setHALError(status);
+  HAL_CHECK_STATUS(status);
 }
 
 void Counter::ClearDownSource() {
@@ -202,6 +210,7 @@ void Counter::ClearDownSource() {
   int32_t status = 0;
   HAL_ClearCounterDownSource(m_counter, &status);
   wpi_setHALError(status);
+  HAL_CHECK_STATUS(status);
 }
 
 void Counter::SetUpDownCounterMode() {
@@ -209,6 +218,7 @@ void Counter::SetUpDownCounterMode() {
   int32_t status = 0;
   HAL_SetCounterUpDownMode(m_counter, &status);
   wpi_setHALError(status);
+  HAL_CHECK_STATUS(status);
 }
 
 void Counter::SetExternalDirectionMode() {
@@ -216,6 +226,7 @@ void Counter::SetExternalDirectionMode() {
   int32_t status = 0;
   HAL_SetCounterExternalDirectionMode(m_counter, &status);
   wpi_setHALError(status);
+  HAL_CHECK_STATUS(status);
 }
 
 void Counter::SetSemiPeriodMode(bool highSemiPeriod) {
@@ -223,6 +234,7 @@ void Counter::SetSemiPeriodMode(bool highSemiPeriod) {
   int32_t status = 0;
   HAL_SetCounterSemiPeriodMode(m_counter, highSemiPeriod, &status);
   wpi_setHALError(status);
+  HAL_CHECK_STATUS(status);
 }
 
 void Counter::SetPulseLengthMode(double threshold) {
@@ -230,6 +242,7 @@ void Counter::SetPulseLengthMode(double threshold) {
   int32_t status = 0;
   HAL_SetCounterPulseLengthMode(m_counter, threshold, &status);
   wpi_setHALError(status);
+  HAL_CHECK_STATUS(status);
 }
 
 void Counter::SetReverseDirection(bool reverseDirection) {
@@ -237,6 +250,7 @@ void Counter::SetReverseDirection(bool reverseDirection) {
   int32_t status = 0;
   HAL_SetCounterReverseDirection(m_counter, reverseDirection, &status);
   wpi_setHALError(status);
+  HAL_CHECK_STATUS(status);
 }
 
 void Counter::SetSamplesToAverage(int samplesToAverage) {
@@ -248,12 +262,14 @@ void Counter::SetSamplesToAverage(int samplesToAverage) {
   int32_t status = 0;
   HAL_SetCounterSamplesToAverage(m_counter, samplesToAverage, &status);
   wpi_setHALError(status);
+  HAL_CHECK_STATUS(status);
 }
 
 int Counter::GetSamplesToAverage() const {
   int32_t status = 0;
   int samples = HAL_GetCounterSamplesToAverage(m_counter, &status);
   wpi_setHALError(status);
+  HAL_CHECK_STATUS(status);
   return samples;
 }
 
@@ -264,6 +280,7 @@ int Counter::Get() const {
   int32_t status = 0;
   int value = HAL_GetCounter(m_counter, &status);
   wpi_setHALError(status);
+  HAL_CHECK_STATUS(status);
   return value;
 }
 
@@ -272,6 +289,7 @@ void Counter::Reset() {
   int32_t status = 0;
   HAL_ResetCounter(m_counter, &status);
   wpi_setHALError(status);
+  HAL_CHECK_STATUS(status);
 }
 
 double Counter::GetPeriod() const {
@@ -279,6 +297,7 @@ double Counter::GetPeriod() const {
   int32_t status = 0;
   double value = HAL_GetCounterPeriod(m_counter, &status);
   wpi_setHALError(status);
+  HAL_CHECK_STATUS(status);
   return value;
 }
 
@@ -287,6 +306,7 @@ void Counter::SetMaxPeriod(double maxPeriod) {
   int32_t status = 0;
   HAL_SetCounterMaxPeriod(m_counter, maxPeriod, &status);
   wpi_setHALError(status);
+  HAL_CHECK_STATUS(status);
 }
 
 void Counter::SetUpdateWhenEmpty(bool enabled) {
@@ -294,6 +314,7 @@ void Counter::SetUpdateWhenEmpty(bool enabled) {
   int32_t status = 0;
   HAL_SetCounterUpdateWhenEmpty(m_counter, enabled, &status);
   wpi_setHALError(status);
+  HAL_CHECK_STATUS(status);
 }
 
 bool Counter::GetStopped() const {
@@ -301,6 +322,7 @@ bool Counter::GetStopped() const {
   int32_t status = 0;
   bool value = HAL_GetCounterStopped(m_counter, &status);
   wpi_setHALError(status);
+  HAL_CHECK_STATUS(status);
   return value;
 }
 
@@ -309,5 +331,6 @@ bool Counter::GetDirection() const {
   int32_t status = 0;
   bool value = HAL_GetCounterDirection(m_counter, &status);
   wpi_setHALError(status);
+  HAL_CHECK_STATUS(status);
   return value;
 }

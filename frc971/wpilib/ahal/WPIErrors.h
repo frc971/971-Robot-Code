@@ -9,6 +9,8 @@
 
 #include <cstdint>
 
+#include "glog/logging.h"
+
 #ifdef WPI_ERRORS_DEFINE_STRINGS
 #define S(label, offset, message)            \
   const char *wpi_error_s_##label = message; \
@@ -18,6 +20,9 @@
   extern const char *wpi_error_s_##label; \
   const int wpi_error_value_##label = offset
 #endif
+
+#define HAL_CHECK_STATUS(status) \
+  CHECK(status == 0) << HAL_GetLastError(&(status))
 
 /*
  * Fatal errors

@@ -43,6 +43,7 @@ DigitalOutput::DigitalOutput(int channel) {
   if (status != 0) {
     wpi_setErrorWithContextRange(status, 0, HAL_GetNumDigitalChannels(),
                                  channel, HAL_GetErrorMessage(status));
+    HAL_CHECK_STATUS(status);
     m_channel = std::numeric_limits<int>::max();
     m_handle = HAL_kInvalidHandle;
     return;
@@ -75,6 +76,7 @@ void DigitalOutput::Set(bool value) {
   int32_t status = 0;
   HAL_SetDIO(m_handle, value, &status);
   wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
+  HAL_CHECK_STATUS(status);
 }
 
 /**
@@ -88,6 +90,7 @@ bool DigitalOutput::Get() const {
   int32_t status = 0;
   bool val = HAL_GetDIO(m_handle, &status);
   wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
+  HAL_CHECK_STATUS(status);
   return val;
 }
 
@@ -110,6 +113,7 @@ void DigitalOutput::Pulse(double length) {
   int32_t status = 0;
   HAL_Pulse(m_handle, length, &status);
   wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
+  HAL_CHECK_STATUS(status);
 }
 
 /**
@@ -123,6 +127,7 @@ bool DigitalOutput::IsPulsing() const {
   int32_t status = 0;
   bool value = HAL_IsPulsing(m_handle, &status);
   wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
+  HAL_CHECK_STATUS(status);
   return value;
 }
 
@@ -142,6 +147,7 @@ void DigitalOutput::SetPWMRate(double rate) {
   int32_t status = 0;
   HAL_SetDigitalPWMRate(rate, &status);
   wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
+  HAL_CHECK_STATUS(status);
 }
 
 /**
@@ -173,6 +179,8 @@ void DigitalOutput::EnablePWM(double initialDutyCycle) {
   if (StatusIsFatal()) return;
   HAL_SetDigitalPWMOutputChannel(m_pwmGenerator, m_channel, &status);
   wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
+
+  HAL_CHECK_STATUS(status);
 }
 
 /**
@@ -194,6 +202,8 @@ void DigitalOutput::DisablePWM() {
   wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
 
   m_pwmGenerator = HAL_kInvalidHandle;
+
+  HAL_CHECK_STATUS(status);
 }
 
 /**
@@ -210,6 +220,8 @@ void DigitalOutput::UpdateDutyCycle(double dutyCycle) {
   int32_t status = 0;
   HAL_SetDigitalPWMDutyCycle(m_pwmGenerator, dutyCycle, &status);
   wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
+
+  HAL_CHECK_STATUS(status);
 }
 
 /**

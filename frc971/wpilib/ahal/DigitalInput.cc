@@ -43,6 +43,7 @@ DigitalInput::DigitalInput(int channel) {
                                  channel, HAL_GetErrorMessage(status));
     m_handle = HAL_kInvalidHandle;
     m_channel = std::numeric_limits<int>::max();
+    HAL_CHECK_STATUS(status) << ": Channel " << channel;
     return;
   }
 
@@ -72,6 +73,7 @@ bool DigitalInput::Get() const {
   int32_t status = 0;
   bool value = HAL_GetDIO(m_handle, &status);
   wpi_setErrorWithContext(status, HAL_GetErrorMessage(status));
+  HAL_CHECK_STATUS(status);
   return value;
 }
 

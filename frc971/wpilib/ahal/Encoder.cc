@@ -9,10 +9,9 @@
 
 #include "hal/HAL.h"
 #include "frc971/wpilib/ahal/DigitalInput.h"
+#include "frc971/wpilib/ahal/WPIErrors.h"
 
 using namespace frc;
-
-#define HAL_FATAL_WITH_STATUS(status)
 
 /**
  * Common initialization code for Encoders.
@@ -40,7 +39,7 @@ void Encoder::InitEncoder(bool reverseDirection, EncodingType encodingType) {
       m_bSource->GetPortHandleForRouting(),
       (HAL_AnalogTriggerType)m_bSource->GetAnalogTriggerTypeForRouting(),
       reverseDirection, (HAL_EncoderEncodingType)encodingType, &status);
-  HAL_FATAL_WITH_STATUS(status);
+  HAL_CHECK_STATUS(status);
 
   HAL_Report(HALUsageReporting::kResourceType_Encoder, GetFPGAIndex(),
              encodingType);
@@ -84,7 +83,7 @@ Encoder::Encoder(int aChannel, int bChannel, bool reverseDirection,
 Encoder::~Encoder() {
   int32_t status = 0;
   HAL_FreeEncoder(m_encoder, &status);
-  HAL_FATAL_WITH_STATUS(status);
+  HAL_CHECK_STATUS(status);
 }
 
 /**
@@ -110,7 +109,7 @@ int Encoder::GetEncodingScale() const {
 int Encoder::GetRaw() const {
   int32_t status = 0;
   int value = HAL_GetEncoderRaw(m_encoder, &status);
-  HAL_FATAL_WITH_STATUS(status);
+  HAL_CHECK_STATUS(status);
   return value;
 }
 
@@ -129,7 +128,7 @@ int Encoder::GetRaw() const {
 double Encoder::GetPeriod() const {
   int32_t status = 0;
   double value = HAL_GetEncoderPeriod(m_encoder, &status);
-  HAL_FATAL_WITH_STATUS(status);
+  HAL_CHECK_STATUS(status);
   return value;
 }
 /**
@@ -151,12 +150,12 @@ double Encoder::GetPeriod() const {
 void Encoder::SetMaxPeriod(double maxPeriod) {
   int32_t status = 0;
   HAL_SetEncoderMaxPeriod(m_encoder, maxPeriod, &status);
-  HAL_FATAL_WITH_STATUS(status);
+  HAL_CHECK_STATUS(status);
 }
 
 int Encoder::GetFPGAIndex() const {
   int32_t status = 0;
   int val = HAL_GetEncoderFPGAIndex(m_encoder, &status);
-  HAL_FATAL_WITH_STATUS(status);
+  HAL_CHECK_STATUS(status);
   return val;
 }
