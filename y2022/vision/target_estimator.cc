@@ -140,6 +140,25 @@ void TargetEstimator::Solve(const std::vector<cv::Point> &centroids,
             << std::chrono::duration<double, std::milli>(end - start).count()
             << " ms";
 
+  // Use a sigmoid to convert the final cost into a confidence for the
+  // localizer. Fit a sigmoid to the points of (0, 1) and two other reasonable
+  // residual-confidence combinations using
+  // https://www.desmos.com/calculator/jj7p8zk0w2
+  constexpr double kSigmoidCapacity = 1.206;
+  // Stretch the sigmoid out correctly.
+  // Currently, good estimates have final costs of around 1 to 2 pixels.
+  constexpr double kSigmoidScalar = 0.2061;
+  constexpr double kSigmoidGrowthRate = -0.1342;
+  if (centroids_.size() > 0) {
+    confidence_ = kSigmoidCapacity /
+                  (1.0 + kSigmoidScalar * std::exp(-kSigmoidGrowthRate *
+                                                   summary.final_cost));
+  } else {
+    // If we detected no blobs, the confidence should be zero and not depending
+    // on the final cost, which would be 0.
+    confidence_ = 0.0;
+  }
+
   if (FLAGS_solver_output) {
     LOG(INFO) << summary.FullReport();
 
@@ -150,6 +169,7 @@ void TargetEstimator::Solve(const std::vector<cv::Point> &centroids,
     LOG(INFO) << "angle to camera (polar): " << angle_to_camera_;
     LOG(INFO) << "distance (polar): " << distance_;
     LOG(INFO) << "camera height: " << camera_height_;
+    LOG(INFO) << "confidence: " << confidence_;
   }
 }
 
@@ -293,9 +313,9 @@ cv::Point_<S> TargetEstimator::DistanceFromTape(
 namespace {
 void DrawEstimateValues(double distance, double angle_to_target,
                         double angle_to_camera, double roll, double pitch,
-                        double yaw, cv::Mat view_image) {
+                        double yaw, double confidence, cv::Mat view_image) {
   constexpr int kTextX = 10;
-  int text_y = 330;
+  int text_y = 250;
   constexpr int kTextSpacing = 35;
 
   const auto kTextColor = cv::Scalar(0, 255, 255);
@@ -318,6 +338,10 @@ void DrawEstimateValues(double distance, double angle_to_target,
       absl::StrFormat("Roll: %.3f, pitch: %.3f, yaw: %.3f", roll, pitch, yaw),
       cv::Point(kTextX, text_y += kTextSpacing), cv::FONT_HERSHEY_DUPLEX,
       kFontScale, kTextColor, 2);
+
+  cv::putText(view_image, absl::StrFormat("Confidence: %.3f", confidence),
+              cv::Point(kTextX, text_y += kTextSpacing),
+              cv::FONT_HERSHEY_DUPLEX, kFontScale, kTextColor, 2);
 }
 }  // namespace
 
@@ -328,12 +352,13 @@ void TargetEstimator::DrawEstimate(const TargetEstimate &target_estimate,
                      target_estimate.angle_to_camera(),
                      target_estimate.rotation_camera_hub()->roll(),
                      target_estimate.rotation_camera_hub()->pitch(),
-                     target_estimate.rotation_camera_hub()->yaw(), view_image);
+                     target_estimate.rotation_camera_hub()->yaw(),
+                     target_estimate.confidence(), view_image);
 }
 
 void TargetEstimator::DrawEstimate(cv::Mat view_image) const {
   DrawEstimateValues(distance_, angle_to_target(), angle_to_camera_, roll_,
-                     pitch_, yaw_, view_image);
+                     pitch_, yaw_, confidence_, view_image);
 }
 
 }  // namespace y2022::vision

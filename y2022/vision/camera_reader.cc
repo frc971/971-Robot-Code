@@ -129,6 +129,7 @@ void CameraReader::ProcessImage(cv::Mat image_mat,
   target_estimate_builder.add_angle_to_camera(
       target_estimator_.angle_to_camera());
   target_estimate_builder.add_rotation_camera_hub(&rotation);
+  target_estimate_builder.add_confidence(target_estimator_.confidence());
   target_estimate_builder.add_blob_result(blob_result_offset);
   target_estimate_builder.add_camera_calibration(camera_calibration_offset);
   target_estimate_builder.add_image_monotonic_timestamp_ns(
