@@ -45,6 +45,9 @@ table Goal {
   // Aborts the shooting process if the ball has been loaded into the catapult
   // and the superstructure is in the LOADED state.
   cancel_shot:bool (id: 10);
+
+  // If true, auto-track the turret to point at the goal.
+  auto_aim:bool (id: 11);
 }
 
 

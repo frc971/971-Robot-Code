@@ -430,10 +430,20 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
   }
 
   void SendRobotVelocity(double robot_velocity) {
+    SendDrivetrainStatus(robot_velocity, {0.0, 0.0}, 0.0);
+  }
+
+  void SendDrivetrainStatus(double robot_velocity, Eigen::Vector2d pos,
+                            double theta) {
     // Send a robot velocity to test compensation
     auto builder = drivetrain_status_sender_.MakeBuilder();
     auto drivetrain_status_builder = builder.MakeBuilder<DrivetrainStatus>();
     drivetrain_status_builder.add_robot_speed(robot_velocity);
+    drivetrain_status_builder.add_estimated_left_velocity(robot_velocity);
+    drivetrain_status_builder.add_estimated_right_velocity(robot_velocity);
+    drivetrain_status_builder.add_x(pos.x());
+    drivetrain_status_builder.add_y(pos.y());
+    drivetrain_status_builder.add_theta(theta);
     builder.CheckOk(builder.Send(drivetrain_status_builder.Finish()));
   }
 
@@ -1149,6 +1159,40 @@ TEST_F(SuperstructureTest, ShootCatapult) {
               constants::Values::kCatapultRange().lower, 1e-3);
   EXPECT_EQ(superstructure_status_fetcher_->shot_count(), 1);
   EXPECT_EQ(superstructure_status_fetcher_->state(), SuperstructureState::IDLE);
+}
+
+// Tests that the turret switches to auto-aiming when we set auto_aim to
+// true.
+TEST_F(SuperstructureTest, TurretAutoAim) {
+  SetEnabled(true);
+  WaitUntilZeroed();
+
+  // Set ourselves up 5m from the target--the turret goal should be 90 deg (we
+  // need to shoot out the right of the robot, and we shoot out of the back of
+  // the turret).
+  SendDrivetrainStatus(0.0, {0.0, 5.0}, 0.0);
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_auto_aim(true);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()),
+              aos::RawSender::Error::kOk);
+  }
+
+  // Give it time to stabilize.
+  RunFor(chrono::seconds(2));
+
+  superstructure_status_fetcher_.Fetch();
+  EXPECT_NEAR(M_PI_2, superstructure_status_fetcher_->turret()->position(),
+              5e-4);
+  EXPECT_FLOAT_EQ(M_PI_2,
+                  superstructure_status_fetcher_->aimer()->turret_position());
+  EXPECT_FLOAT_EQ(0,
+                  superstructure_status_fetcher_->aimer()->turret_velocity());
 }
 
 }  // namespace testing

@@ -55,6 +55,13 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   drivetrain_status_fetcher_.Fetch();
   const float velocity = robot_velocity();
 
+  const turret::Aimer::Goal *auto_aim_goal = nullptr;
+  if (drivetrain_status_fetcher_.get() != nullptr) {
+    aimer_.Update(drivetrain_status_fetcher_.get(),
+                  turret::Aimer::ShotMode::kShootOnTheFly);
+    auto_aim_goal = aimer_.TurretGoal();
+  }
+
   const frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal
       *turret_goal = nullptr;
   double roller_speed_compensated_front = 0.0;
@@ -63,8 +70,6 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   double flipper_arms_voltage = 0.0;
 
   if (unsafe_goal != nullptr) {
-    turret_goal = unsafe_goal->turret();
-
     roller_speed_compensated_front =
         unsafe_goal->roller_speed_front() +
         std::max(velocity * unsafe_goal->roller_speed_compensation(), 0.0);
@@ -74,9 +79,10 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
         std::min(velocity * unsafe_goal->roller_speed_compensation(), 0.0);
 
     transfer_roller_speed = unsafe_goal->transfer_roller_speed();
-  }
 
-  // TODO: Aimer sets turret_goal here
+    turret_goal =
+        unsafe_goal->auto_aim() ? auto_aim_goal : unsafe_goal->turret();
+  }
 
   // Supersturcture state machine:
   // 1. IDLE: Wait until an intake beambreak is triggerred, meaning that a ball
@@ -337,6 +343,9 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   intake_back_.set_min_position(collision_avoidance_.min_intake_back_goal());
   intake_back_.set_max_position(collision_avoidance_.max_intake_back_goal());
 
+  const flatbuffers::Offset<AimerStatus> aimer_offset =
+      aimer_.PopulateStatus(status->fbb());
+
   // Disable the catapult if we want to restart to prevent damage with flippers
   const flatbuffers::Offset<PotAndAbsoluteEncoderProfiledJointStatus>
       catapult_status_offset =
@@ -409,6 +418,8 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   status_builder.add_fire(fire_);
   status_builder.add_state(state_);
   status_builder.add_intake_state(intake_state_);
+
+  status_builder.add_aimer(aimer_offset);
 
   (void)status->Send(status_builder.Finish());
 }

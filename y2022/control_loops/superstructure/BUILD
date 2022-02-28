@@ -87,6 +87,7 @@ cc_library(
         "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
         "//y2022:constants",
         "//y2022/control_loops/superstructure/catapult",
+        "//y2022/control_loops/superstructure/turret:aiming",
     ],
 )
 
