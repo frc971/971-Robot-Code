@@ -9,6 +9,9 @@ namespace superstructure {
 namespace turret {
 
 using frc971::control_loops::Pose;
+using frc971::control_loops::aiming::TurretGoal;
+using frc971::control_loops::aiming::ShotConfig;
+using frc971::control_loops::aiming::RobotState;
 
 // Shooting-on-the-fly concept:
 // The current way that we manage shooting-on-the fly endeavors to be reasonably
@@ -104,22 +107,6 @@ flatbuffers::DetachedBuffer MakePrefilledGoal() {
   fbb.Finish(builder.Finish());
   return fbb.Release();
 }
-
-// This implements the iteration in the described shooting-on-the-fly algorithm.
-// robot_pose: Current robot pose.
-// robot_velocity: Current robot velocity, in the absolute field frame.
-// target_pose: Absolute goal Pose.
-// current_virtual_pose: Current estimate of where we want to shoot at.
-Pose IterateVirtualGoal(const Pose &robot_pose,
-                        const Eigen::Vector3d &robot_velocity,
-                        const Pose &target_pose,
-                        const Pose &current_virtual_pose) {
-  const double air_time =
-      current_virtual_pose.Rebase(&robot_pose).xy_norm() / kBallSpeedOverGround;
-  const Eigen::Vector3d virtual_target =
-      target_pose.abs_pos() - air_time * robot_velocity;
-  return Pose(virtual_target, target_pose.abs_theta());
-}
 }  // namespace
 
 Pose InnerPortPose(aos::Alliance alliance) {
@@ -176,83 +163,25 @@ void Aimer::Update(const Status *status, aos::Alliance alliance,
   aiming_for_inner_port_ =
       (std::abs(inner_port_angle_) < max_inner_port_angle) &&
       (inner_port_distance > min_inner_port_distance);
+  const Pose goal = aiming_for_inner_port_ ? inner_port : outer_port;
 
-  // This code manages compensating the goal turret heading for the robot's
-  // current velocity, to allow for shooting on-the-fly.
-  // This works by solving for the correct turret angle numerically, since while
-  // we technically could do it analytically, doing so would both make it hard
-  // to make small changes (since it would force us to redo the math) and be
-  // error-prone since it'd be easy to make typos or other minor math errors.
-  Pose virtual_goal;
-  {
-    const Pose goal = aiming_for_inner_port_ ? inner_port : outer_port;
-    target_distance_ = goal.Rebase(&robot_pose).xy_norm();
-    virtual_goal = goal;
-    if (shot_mode == ShotMode::kShootOnTheFly) {
-      for (int ii = 0; ii < 3; ++ii) {
-        virtual_goal =
-            IterateVirtualGoal(robot_pose, {xdot, ydot, 0}, goal, virtual_goal);
-      }
-      VLOG(1) << "Shooting-on-the-fly target position: "
-              << virtual_goal.abs_pos().transpose();
-    }
-    virtual_goal = virtual_goal.Rebase(&robot_pose);
-  }
+  const struct TurretGoal turret_goal =
+      frc971::control_loops::aiming::AimerGoal(
+          ShotConfig{goal, shot_mode, constants::Values::kTurretRange(),
+                     kBallSpeedOverGround,
+                     wrap_mode == WrapMode::kAvoidEdges ? kAntiWrapBuffer : 0.0,
+                     kTurretZeroOffset},
+          RobotState{robot_pose,
+                     {xdot, ydot},
+                     linear_angular(1),
+                     goal_.message().unsafe_goal()});
 
-  const double heading_to_goal = virtual_goal.heading();
-  CHECK(status->has_localizer());
-  shot_distance_ = virtual_goal.xy_norm();
+  target_distance_ = turret_goal.target_distance;
+  shot_distance_ = turret_goal.virtual_shot_distance;
 
-  // The following code all works to calculate what the rate of turn of the
-  // turret should be. The code only accounts for the rate of turn if we are
-  // aiming at a static target, which should be close enough to correct that it
-  // doesn't matter that it fails to account for the
-  // shooting-on-the-fly compensation.
-  const double rel_x = virtual_goal.rel_pos().x();
-  const double rel_y = virtual_goal.rel_pos().y();
-  const double squared_norm = rel_x * rel_x + rel_y * rel_y;
-  // rel_xdot and rel_ydot are the derivatives (with respect to time) of rel_x
-  // and rel_y. Since these are in the robot's coordinate frame, and since we
-  // are ignoring lateral velocity for this exercise, rel_ydot is zero, and
-  // rel_xdot is just the inverse of the robot's velocity.
-  const double rel_xdot = -linear_angular(0);
-  const double rel_ydot = 0.0;
-
-  // If squared_norm gets to be too close to zero, just zero out the relevant
-  // term to prevent NaNs. Note that this doesn't address the chattering that
-  // would likely occur if we were to get excessively close to the target.
-  // Note that x and y terms are swapped relative to what you would normally see
-  // in the derivative of atan because xdot and ydot are the derivatives of
-  // robot_pos and we are working with the atan of (target_pos - robot_pos).
-  const double atan_diff =
-      (squared_norm < 1e-3) ? 0.0 : (rel_x * rel_ydot - rel_y * rel_xdot) /
-                                        squared_norm;
-  // heading = atan2(relative_y, relative_x) - robot_theta
-  // dheading / dt =
-  //     (rel_x * rel_y' - rel_y * rel_x') / (rel_x^2 + rel_y^2) - dtheta / dt
-  const double dheading_dt = atan_diff - linear_angular(1);
-
-  double range = kTurretRange;
-  if (wrap_mode == WrapMode::kAvoidEdges) {
-    range -= 2.0 * kAntiWrapBuffer;
-  }
-  // Calculate a goal turret heading such that it is within +/- pi of the
-  // current position (i.e., a goal that would minimize the amount the turret
-  // would have to travel).
-  // We then check if this goal would bring us out of range of the valid angles,
-  // and if it would, we reset to be within +/- pi of zero.
-  double turret_heading =
-      goal_.message().unsafe_goal() +
-      aos::math::NormalizeAngle(heading_to_goal - kTurretZeroOffset -
-                                goal_.message().unsafe_goal());
-  if (std::abs(turret_heading - constants::Values::kTurretRange().middle()) >
-      range / 2.0) {
-    turret_heading = aos::math::NormalizeAngle(turret_heading);
-  }
-
-  goal_.mutable_message()->mutate_unsafe_goal(turret_heading);
+  goal_.mutable_message()->mutate_unsafe_goal(turret_goal.position);
   goal_.mutable_message()->mutate_goal_velocity(
-      std::clamp(dheading_dt, -2.0, 2.0));
+      std::clamp(turret_goal.velocity, -2.0, 2.0));
 }
 
 flatbuffers::Offset<AimerStatus> Aimer::PopulateStatus(
