@@ -17,6 +17,7 @@
 #include "y2022/vision/calibration_generated.h"
 #include "y2022/vision/gpio.h"
 #include "y2022/vision/target_estimate_generated.h"
+#include "y2022/vision/target_estimator.h"
 
 namespace y2022 {
 namespace vision {
@@ -36,6 +37,7 @@ class CameraReader {
         camera_calibration_(FindCameraCalibration()),
         reader_(reader),
         image_sender_(event_loop->MakeSender<CameraImage>("/camera")),
+        target_estimator_(CameraIntrinsics(), CameraExtrinsics()),
         target_estimate_sender_(
             event_loop->MakeSender<TargetEstimate>("/camera")),
         read_image_timer_(event_loop->AddTimer([this]() { ReadImage(); })),
@@ -94,6 +96,7 @@ class CameraReader {
   const calibration::CameraCalibration *const camera_calibration_;
   V4L2Reader *const reader_;
   aos::Sender<CameraImage> image_sender_;
+  TargetEstimator target_estimator_;
   aos::Sender<TargetEstimate> target_estimate_sender_;
 
   // We schedule this immediately to read an image. Having it on a timer

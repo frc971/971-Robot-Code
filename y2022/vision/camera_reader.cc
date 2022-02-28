@@ -13,7 +13,6 @@
 #include "opencv2/imgproc.hpp"
 #include "y2022/vision/blob_detector.h"
 #include "y2022/vision/calibration_generated.h"
-#include "y2022/vision/target_estimator.h"
 
 DEFINE_string(image_png, "", "A set of PNG images");
 
@@ -41,32 +40,38 @@ const calibration::CameraCalibration *CameraReader::FindCameraCalibration()
 }
 
 namespace {
+flatbuffers::Offset<flatbuffers::Vector<const Point *>> CvPointsToFbs(
+    const std::vector<cv::Point> &points,
+    aos::Sender<TargetEstimate>::Builder *builder) {
+  std::vector<Point> points_fbs;
+  for (auto p : points) {
+    points_fbs.push_back(Point{p.x, p.y});
+  }
+  return builder->fbb()->CreateVectorOfStructs(points_fbs);
+}
+
 // Converts a vector of cv::Point to PointT for the flatbuffer
 flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Blob>>>
 CvBlobsToFbs(const std::vector<std::vector<cv::Point>> &blobs,
-             aos::Sender<TargetEstimate>::Builder &builder) {
+             aos::Sender<TargetEstimate>::Builder *builder) {
   std::vector<flatbuffers::Offset<Blob>> blobs_fbs;
   for (auto &blob : blobs) {
-    std::vector<Point> points_fbs;
-    for (auto p : blob) {
-      points_fbs.push_back(Point{p.x, p.y});
-    }
-    auto points_offset = builder.fbb()->CreateVectorOfStructs(points_fbs);
-    auto blob_builder = builder.MakeBuilder<Blob>();
+    const auto points_offset = CvPointsToFbs(blob, builder);
+    auto blob_builder = builder->MakeBuilder<Blob>();
     blob_builder.add_points(points_offset);
     blobs_fbs.emplace_back(blob_builder.Finish());
   }
-  return builder.fbb()->CreateVector(blobs_fbs.data(), blobs_fbs.size());
+  return builder->fbb()->CreateVector(blobs_fbs.data(), blobs_fbs.size());
 }
 
 flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<BlobStatsFbs>>>
 BlobStatsToFbs(const std::vector<BlobDetector::BlobStats> blob_stats,
-               aos::Sender<TargetEstimate>::Builder &builder) {
+               aos::Sender<TargetEstimate>::Builder *builder) {
   std::vector<flatbuffers::Offset<BlobStatsFbs>> stats_fbs;
   for (auto &stats : blob_stats) {
     // Make BlobStatsFbs builder then fill each field using the BlobStats
     // struct, then you finish it and add it to stats_fbs.
-    auto stats_builder = builder.MakeBuilder<BlobStatsFbs>();
+    auto stats_builder = builder->MakeBuilder<BlobStatsFbs>();
     Point centroid_fbs = Point{stats.centroid.x, stats.centroid.y};
     stats_builder.add_centroid(&centroid_fbs);
     stats_builder.add_aspect_ratio(stats.aspect_ratio);
@@ -76,7 +81,7 @@ BlobStatsToFbs(const std::vector<BlobDetector::BlobStats> blob_stats,
     auto current_stats = stats_builder.Finish();
     stats_fbs.emplace_back(current_stats);
   }
-  return builder.fbb()->CreateVector(stats_fbs.data(), stats_fbs.size());
+  return builder->fbb()->CreateVector(stats_fbs.data(), stats_fbs.size());
 }
 }  // namespace
 
@@ -88,11 +93,13 @@ void CameraReader::ProcessImage(cv::Mat image_mat,
   flatbuffers::Offset<BlobResultFbs> blob_result_offset;
   {
     const auto filtered_blobs_offset =
-        CvBlobsToFbs(blob_result.filtered_blobs, builder);
+        CvBlobsToFbs(blob_result.filtered_blobs, &builder);
     const auto unfiltered_blobs_offset =
-        CvBlobsToFbs(blob_result.unfiltered_blobs, builder);
+        CvBlobsToFbs(blob_result.unfiltered_blobs, &builder);
     const auto blob_stats_offset =
-        BlobStatsToFbs(blob_result.blob_stats, builder);
+        BlobStatsToFbs(blob_result.blob_stats, &builder);
+    const auto filtered_centroids_offset =
+        CvPointsToFbs(blob_result.filtered_centroids, &builder);
     const Point centroid_fbs =
         Point{blob_result.centroid.x, blob_result.centroid.y};
 
@@ -100,17 +107,28 @@ void CameraReader::ProcessImage(cv::Mat image_mat,
     blob_result_builder.add_filtered_blobs(filtered_blobs_offset);
     blob_result_builder.add_unfiltered_blobs(unfiltered_blobs_offset);
     blob_result_builder.add_blob_stats(blob_stats_offset);
+    blob_result_builder.add_filtered_centroids(filtered_centroids_offset);
     blob_result_builder.add_centroid(&centroid_fbs);
     blob_result_offset = blob_result_builder.Finish();
   }
 
+  target_estimator_.Solve(blob_result.filtered_centroids, std::nullopt);
+
   const auto camera_calibration_offset =
       aos::RecursiveCopyFlatBuffer(camera_calibration_, builder.fbb());
 
+  const auto rotation =
+      Rotation{target_estimator_.roll(), target_estimator_.pitch(),
+               target_estimator_.yaw()};
+
   auto target_estimate_builder = builder.MakeBuilder<TargetEstimate>();
-  TargetEstimator::EstimateTargetLocation(
-      blob_result.centroid, CameraIntrinsics(), CameraExtrinsics(),
-      &target_estimate_builder);
+
+  target_estimate_builder.add_distance(target_estimator_.distance());
+  target_estimate_builder.add_angle_to_target(
+      target_estimator_.angle_to_target());
+  target_estimate_builder.add_angle_to_camera(
+      target_estimator_.angle_to_camera());
+  target_estimate_builder.add_rotation_camera_hub(&rotation);
   target_estimate_builder.add_blob_result(blob_result_offset);
   target_estimate_builder.add_camera_calibration(camera_calibration_offset);
   target_estimate_builder.add_image_monotonic_timestamp_ns(
