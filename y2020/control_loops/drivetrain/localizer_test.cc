@@ -603,7 +603,7 @@ TEST_F(LocalizedDrivetrainTest, TooFastTurretDoesntAffectFixedCamera) {
 // Tests that we don't blow up if we stop getting updates for an extended period
 // of time and fall behind on fetching fron the cameras.
 TEST_F(LocalizedDrivetrainTest, FetchersHandleTimeGap) {
-  set_enable_cameras(true);
+  set_enable_cameras(false);
   set_send_delay(std::chrono::seconds(0));
   event_loop_factory()->set_network_delay(std::chrono::nanoseconds(1));
   test_event_loop_

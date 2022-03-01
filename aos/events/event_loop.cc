@@ -26,6 +26,8 @@ std::string_view ErrorToString(const RawSender::Error err) {
       return "RawSender::Error::kOk";
     case RawSender::Error::kMessagesSentTooFast:
       return "RawSender::Error::kMessagesSentTooFast";
+    case RawSender::Error::kInvalidRedzone:
+      return "RawSender::Error::kInvalidRedzone";
   }
   LOG(FATAL) << "Unknown error given with code " << static_cast<int>(err);
 }

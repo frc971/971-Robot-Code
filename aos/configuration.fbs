@@ -57,6 +57,9 @@ table Channel {
   // Type name of the flatbuffer.
   type:string (id: 1);
   // Max frequency in messages/sec of the data published on this channel.
+  // The maximum number of messages that can be sent
+  // in a channel_storage_duration is
+  // frequency * channel_storage_duration (in seconds).
   frequency:int = 100 (id: 2);
   // Max size of the data being published.  (This will hopefully be
   // automatically computed in the future.)

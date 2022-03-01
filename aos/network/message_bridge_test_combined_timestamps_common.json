@@ -20,7 +20,7 @@
       "name": "/pi1/aos",
       "type": "aos.message_bridge.Timestamp",
       "source_node": "pi1",
-      "frequency": 10,
+      "frequency": 15,
       "max_size": 200,
       "destination_nodes": [
         {
@@ -36,7 +36,7 @@
       "name": "/pi2/aos",
       "type": "aos.message_bridge.Timestamp",
       "source_node": "pi2",
-      "frequency": 10,
+      "frequency": 15,
       "max_size": 200,
       "destination_nodes": [
         {
@@ -64,25 +64,25 @@
       "name": "/pi1/aos",
       "type": "aos.message_bridge.ClientStatistics",
       "source_node": "pi1",
-      "frequency": 2
+      "frequency": 15
     },
     {
       "name": "/pi2/aos",
       "type": "aos.message_bridge.ClientStatistics",
       "source_node": "pi2",
-      "frequency": 2
+      "frequency": 15
     },
     {
       "name": "/pi1/aos/remote_timestamps/pi2",
       "type": "aos.message_bridge.RemoteMessage",
       "source_node": "pi1",
-      "frequency": 10
+      "frequency": 15
     },
     {
       "name": "/pi2/aos/remote_timestamps/pi1",
       "type": "aos.message_bridge.RemoteMessage",
       "source_node": "pi2",
-      "frequency": 10
+      "frequency": 15
     },
     {
       "name": "/pi1/aos",

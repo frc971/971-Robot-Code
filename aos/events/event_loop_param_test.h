@@ -359,6 +359,12 @@ class AbstractEventLoopTest
       std::vector<std::reference_wrapper<const Fetcher<TestMessage>>> fetchers,
       std::vector<std::reference_wrapper<const Sender<TestMessage>>> senders);
 
+  // Helper function for testing the sent too fast check using a PhasedLoop with
+  // an interval that sends exactly at the frequency of the channel
+  void TestSentTooFastCheckEdgeCase(
+      const std::function<RawSender::Error(int, int)> expected_err,
+      const bool send_twice_at_end);
+
  private:
   const ::std::unique_ptr<EventLoopTestFactory> factory_;
 
@@ -366,6 +372,13 @@ class AbstractEventLoopTest
 };
 
 using AbstractEventLoopDeathTest = AbstractEventLoopTest;
+
+// Returns the frequency of the /test TestMessage channel
+int TestChannelFrequency(EventLoop *event_loop);
+// Returns the queue size of the /test TestMessage channel
+int TestChannelQueueSize(EventLoop *event_loop);
+// Sends a test message with value 0 with the given sender
+RawSender::Error SendTestMessage(aos::Sender<TestMessage> &sender);
 
 }  // namespace testing
 }  // namespace aos

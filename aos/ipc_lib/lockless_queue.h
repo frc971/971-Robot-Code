@@ -282,10 +282,19 @@ class LocklessQueueWakeUpper {
 // scoped to this object's lifetime.
 class LocklessQueueSender {
  public:
+  // Enum of possible sending errors
+  // Send returns GOOD if the messages was sent successfully, INVALID_REDZONE if
+  // one of a message's redzones has invalid data, or MESSAGES_SENT_TOO_FAST if
+  // more than queue_size messages were going to be sent in a
+  // channel_storage_duration_.
+  enum class Result { GOOD, INVALID_REDZONE, MESSAGES_SENT_TOO_FAST };
+
   LocklessQueueSender(const LocklessQueueSender &) = delete;
   LocklessQueueSender &operator=(const LocklessQueueSender &) = delete;
   LocklessQueueSender(LocklessQueueSender &&other)
-      : memory_(other.memory_), sender_index_(other.sender_index_) {
+      : memory_(other.memory_),
+        sender_index_(other.sender_index_),
+        channel_storage_duration_(other.channel_storage_duration_) {
     other.memory_ = nullptr;
     other.sender_index_ = -1;
   }
@@ -299,7 +308,8 @@ class LocklessQueueSender {
 
   // Creates a sender.  If we couldn't allocate a sender, returns nullopt.
   // TODO(austin): Change the API if we find ourselves with more errors.
-  static std::optional<LocklessQueueSender> Make(LocklessQueue queue);
+  static std::optional<LocklessQueueSender> Make(
+      LocklessQueue queue, monotonic_clock::duration channel_storage_duration);
 
   // Sends a message without copying the data.
   // Copy at most size() bytes of data into the memory pointed to by Data(),
@@ -307,33 +317,42 @@ class LocklessQueueSender {
   // Note: calls to Data() are expensive enough that you should cache it.
   size_t size() const;
   void *Data();
-  bool Send(size_t length, monotonic_clock::time_point monotonic_remote_time,
-            realtime_clock::time_point realtime_remote_time,
-            uint32_t remote_queue_index, const UUID &source_boot_uuid,
-            monotonic_clock::time_point *monotonic_sent_time = nullptr,
-            realtime_clock::time_point *realtime_sent_time = nullptr,
-            uint32_t *queue_index = nullptr);
+  LocklessQueueSender::Result Send(
+      size_t length, monotonic_clock::time_point monotonic_remote_time,
+      realtime_clock::time_point realtime_remote_time,
+      uint32_t remote_queue_index, const UUID &source_boot_uuid,
+      monotonic_clock::time_point *monotonic_sent_time = nullptr,
+      realtime_clock::time_point *realtime_sent_time = nullptr,
+      uint32_t *queue_index = nullptr);
 
   // Sends up to length data.  Does not wakeup the target.
-  bool Send(const char *data, size_t length,
-            monotonic_clock::time_point monotonic_remote_time,
-            realtime_clock::time_point realtime_remote_time,
-            uint32_t remote_queue_index, const UUID &source_boot_uuid,
-            monotonic_clock::time_point *monotonic_sent_time = nullptr,
-            realtime_clock::time_point *realtime_sent_time = nullptr,
-            uint32_t *queue_index = nullptr);
+  LocklessQueueSender::Result Send(
+      const char *data, size_t length,
+      monotonic_clock::time_point monotonic_remote_time,
+      realtime_clock::time_point realtime_remote_time,
+      uint32_t remote_queue_index, const UUID &source_boot_uuid,
+      monotonic_clock::time_point *monotonic_sent_time = nullptr,
+      realtime_clock::time_point *realtime_sent_time = nullptr,
+      uint32_t *queue_index = nullptr);
 
   int buffer_index() const;
 
  private:
-  LocklessQueueSender(LocklessQueueMemory *memory);
+  LocklessQueueSender(LocklessQueueMemory *memory,
+                      monotonic_clock::duration channel_storage_duration);
 
   // Pointer to the backing memory.
   LocklessQueueMemory *memory_ = nullptr;
 
   // Index into the sender list.
   int sender_index_ = -1;
+
+  // Storage duration of the channel used to check if messages were sent too
+  // fast
+  const monotonic_clock::duration channel_storage_duration_;
 };
+
+std::ostream &operator<<(std::ostream &os, const LocklessQueueSender::Result r);
 
 // Pinner for blocks of data.  The resources associated with a pinner are
 // scoped to this object's lifetime.

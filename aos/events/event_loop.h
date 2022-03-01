@@ -139,13 +139,16 @@ class RawSender {
  public:
   using SharedSpan = std::shared_ptr<const absl::Span<const uint8_t>>;
 
-  enum class [[nodiscard]] Error{
+  enum class [[nodiscard]] Error {
       // Represents success and no error
       kOk,
 
       // Error for messages on channels being sent faster than their
       // frequency and channel storage duration allow
-      kMessagesSentTooFast};
+      kMessagesSentTooFast,
+      // Access to Redzone was attempted in Sender Queue
+      kInvalidRedzone
+  };
 
   RawSender(EventLoop *event_loop, const Channel *channel);
   RawSender(const RawSender &) = delete;

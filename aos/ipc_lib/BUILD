@@ -216,6 +216,7 @@ cc_test(
         "//aos/events:epoll",
         "//aos/testing:googletest",
         "//aos/testing:prevent_exit",
+        "//aos/util:phased_loop",
     ],
 )
 

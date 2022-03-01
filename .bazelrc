@@ -77,7 +77,8 @@ build:eigen  --copt -UNDEBUG
 # Show paths to a few more than just 1 target.
 build --show_result 5
 # Dump the output of the failing test to stdout.
-test --test_output=errors
+# Keep the default test timeouts except make 'eternal'=4500 secs
+test --test_output=errors --test_timeout=-1,-1,-1,4500
 
 build --sandbox_base=/dev/shm/
 build --experimental_multi_threaded_digest
