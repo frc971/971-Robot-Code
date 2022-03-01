@@ -78,5 +78,15 @@ class TestDebugCli(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         self.assertIn("{MatchList:[]}", stderr)
 
+    def test_request_matches_for_team(self):
+        json_path = write_json({
+            "team": 971,
+        })
+        exit_code, _stdout, stderr = run_debug_cli(["-requestMatchesForTeam", json_path])
+
+        # TODO(phil): Actually add some matches here.
+        self.assertEqual(exit_code, 0)
+        self.assertIn("{MatchList:[]}", stderr)
+
 if __name__ == "__main__":
     unittest.main()

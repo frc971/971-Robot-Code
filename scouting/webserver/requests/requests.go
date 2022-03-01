@@ -9,6 +9,8 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/error_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_matches"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_matches_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_matches_for_team"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_matches_for_team_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_data_scouting"
 	_ "github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/server"
@@ -18,6 +20,8 @@ import (
 type SubmitDataScouting = submit_data_scouting.SubmitDataScouting
 type RequestAllMatches = request_all_matches.RequestAllMatches
 type RequestAllMatchesResponseT = request_all_matches_response.RequestAllMatchesResponseT
+type RequestMatchesForTeam = request_matches_for_team.RequestMatchesForTeam
+type RequestMatchesForTeamResponseT = request_matches_for_team_response.RequestMatchesForTeamResponseT
 
 // The interface we expect the database abstraction to conform to.
 // We use an interface here because it makes unit testing easier.
@@ -26,7 +30,7 @@ type Database interface {
 	AddToStats(db.Stats) error
 	ReturnMatches() ([]db.Match, error)
 	ReturnStats() ([]db.Stats, error)
-	QueryMatches(int) ([]db.Match, error)
+	QueryMatches(int32) ([]db.Match, error)
 	QueryStats(int) ([]db.Stats, error)
 }
 
@@ -140,8 +144,64 @@ func (handler requestAllMatchesHandler) ServeHTTP(w http.ResponseWriter, req *ht
 	w.Write(builder.FinishedBytes())
 }
 
+// TODO(phil): Can we turn this into a generic?
+func parseRequestMatchesForTeam(w http.ResponseWriter, buf []byte) (*RequestMatchesForTeam, bool) {
+	success := true
+	defer func() {
+		if r := recover(); r != nil {
+			respondWithError(w, http.StatusBadRequest, fmt.Sprintf("Failed to parse SubmitDataScouting: %v", r))
+			success = false
+		}
+	}()
+	result := request_matches_for_team.GetRootAsRequestMatchesForTeam(buf, 0)
+	return result, success
+}
+
+// Handles a RequestMatchesForTeam request.
+type requestMatchesForTeamHandler struct {
+	db Database
+}
+
+func (handler requestMatchesForTeamHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	requestBytes, err := io.ReadAll(req.Body)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, fmt.Sprint("Failed to read request bytes:", err))
+		return
+	}
+
+	request, success := parseRequestMatchesForTeam(w, requestBytes)
+	if !success {
+		return
+	}
+
+	matches, err := handler.db.QueryMatches(request.Team())
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Faled to query database: ", err))
+	}
+
+	var response RequestAllMatchesResponseT
+	for _, match := range matches {
+		response.MatchList = append(response.MatchList, &request_all_matches_response.MatchT{
+			MatchNumber: match.MatchNumber,
+			Round:       match.Round,
+			CompLevel:   match.CompLevel,
+			R1:          match.R1,
+			R2:          match.R2,
+			R3:          match.R3,
+			B1:          match.B1,
+			B2:          match.B2,
+			B3:          match.B3,
+		})
+	}
+
+	builder := flatbuffers.NewBuilder(50 * 1024)
+	builder.Finish((&response).Pack(builder))
+	w.Write(builder.FinishedBytes())
+}
+
 func HandleRequests(db Database, scoutingServer server.ScoutingServer) {
 	scoutingServer.HandleFunc("/requests", unknown)
 	scoutingServer.Handle("/requests/submit/data_scouting", submitDataScoutingHandler{db})
 	scoutingServer.Handle("/requests/request/all_matches", requestAllMatchesHandler{db})
+	scoutingServer.Handle("/requests/request/matches_for_team", requestMatchesForTeamHandler{db})
 }

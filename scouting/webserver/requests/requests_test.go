@@ -12,6 +12,8 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/error_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_matches"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_matches_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_matches_for_team"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_matches_for_team_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_data_scouting"
 	_ "github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/server"
@@ -155,6 +157,55 @@ func TestRequestAllMatches(t *testing.T) {
 	}
 }
 
+// Validates that we can request the full match list.
+func TestRequestMatchesForTeam(t *testing.T) {
+	db := MockDatabase{
+		matches: []db.Match{
+			{
+				MatchNumber: 1, Round: 1, CompLevel: "qual",
+				R1: 5, R2: 42, R3: 600, B1: 971, B2: 400, B3: 200,
+			},
+			{
+				MatchNumber: 2, Round: 1, CompLevel: "qual",
+				R1: 6, R2: 43, R3: 601, B1: 972, B2: 401, B3: 201,
+			},
+		},
+	}
+	scoutingServer := server.NewScoutingServer()
+	HandleRequests(&db, scoutingServer)
+	scoutingServer.Start(8080)
+	defer scoutingServer.Stop()
+
+	builder := flatbuffers.NewBuilder(1024)
+	builder.Finish((&request_matches_for_team.RequestMatchesForTeamT{
+		Team: 971,
+	}).Pack(builder))
+
+	response, err := debug.RequestMatchesForTeam("http://localhost:8080", builder.FinishedBytes())
+	if err != nil {
+		t.Fatal("Failed to request all matches: ", err)
+	}
+
+	expected := request_matches_for_team_response.RequestMatchesForTeamResponseT{
+		MatchList: []*request_matches_for_team_response.MatchT{
+			// MatchNumber, Round, CompLevel
+			// R1, R2, R3, B1, B2, B3
+			{
+				1, 1, "qual",
+				5, 42, 600, 971, 400, 200,
+			},
+		},
+	}
+	if len(expected.MatchList) != len(response.MatchList) {
+		t.Fatal("Expected ", expected, ", but got ", *response)
+	}
+	for i, match := range expected.MatchList {
+		if !reflect.DeepEqual(*match, *response.MatchList[i]) {
+			t.Fatal("Expected for match", i, ":", *match, ", but got:", *response.MatchList[i])
+		}
+	}
+}
+
 // A mocked database we can use for testing. Add functionality to this as
 // needed for your tests.
 
@@ -178,8 +229,17 @@ func (database *MockDatabase) ReturnStats() ([]db.Stats, error) {
 	return []db.Stats{}, nil
 }
 
-func (database *MockDatabase) QueryMatches(int) ([]db.Match, error) {
-	return []db.Match{}, nil
+func (database *MockDatabase) QueryMatches(requestedTeam int32) ([]db.Match, error) {
+	var matches []db.Match
+	for _, match := range database.matches {
+		for _, team := range []int32{match.R1, match.R2, match.R3, match.B1, match.B2, match.B3} {
+			if team == requestedTeam {
+				matches = append(matches, match)
+				break
+			}
+		}
+	}
+	return matches, nil
 }
 
 func (database *MockDatabase) QueryStats(int) ([]db.Stats, error) {

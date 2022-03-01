@@ -144,7 +144,7 @@ func (database *Database) ReturnStats() ([]Stats, error) {
 	return teams, nil
 }
 
-func (database *Database) QueryMatches(teamNumber_ int) ([]Match, error) {
+func (database *Database) QueryMatches(teamNumber_ int32) ([]Match, error) {
 	rows, error_ := database.Query("SELECT * FROM matches WHERE R1 = ? OR R2 = ? OR R3 = ? OR B1 = ? OR B2 = ? OR B3 = ?", teamNumber_, teamNumber_, teamNumber_, teamNumber_, teamNumber_, teamNumber_)
 	if error_ != nil {
 		fmt.Println("failed to execute statement 1:", error_)

@@ -10,12 +10,14 @@ import (
 
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/error_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_matches_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_matches_for_team_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_data_scouting_response"
 )
 
 // Use aliases to make the rest of the code more readable.
 type SubmitDataScoutingResponseT = submit_data_scouting_response.SubmitDataScoutingResponseT
 type RequestAllMatchesResponseT = request_all_matches_response.RequestAllMatchesResponseT
+type RequestMatchesForTeamResponseT = request_matches_for_team_response.RequestMatchesForTeamResponseT
 
 // A struct that can be used as an `error`. It contains information about the
 // why the server was unhappy and what the corresponding request was.
@@ -97,5 +99,17 @@ func RequestAllMatches(server string, requestBytes []byte) (*RequestAllMatchesRe
 	}
 	log.Printf("Parsing RequestAllMatchesResponse")
 	response := request_all_matches_response.GetRootAsRequestAllMatchesResponse(responseBytes, 0)
+	return response.UnPack(), nil
+}
+
+// Sends a `RequestMatchesForTeam` message to the server and returns the
+// deserialized response.
+func RequestMatchesForTeam(server string, requestBytes []byte) (*RequestMatchesForTeamResponseT, error) {
+	responseBytes, err := performPost(server+"/requests/request/matches_for_team", requestBytes)
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("Parsing RequestMatchesForTeamResponse")
+	response := request_matches_for_team_response.GetRootAsRequestMatchesForTeamResponse(responseBytes, 0)
 	return response.UnPack(), nil
 }
