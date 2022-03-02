@@ -10,6 +10,7 @@
 #include "opencv2/features2d.hpp"
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc.hpp"
+#include "y2022/constants.h"
 
 DEFINE_bool(freeze_roll, false, "If true, don't solve for roll");
 DEFINE_bool(freeze_pitch, false, "If true, don't solve for pitch");
@@ -103,8 +104,9 @@ TargetEstimator::TargetEstimator(cv::Mat intrinsics, cv::Mat extrinsics)
       yaw_(M_PI),
       distance_(3.0),
       angle_to_camera_(0.0),
-      // TODO(milind): add IMU height
-      camera_height_(extrinsics.at<double>(2, 3)) {
+      // Seed camera height
+      camera_height_(extrinsics.at<double>(2, 3) +
+                     constants::Values::kImuHeight()) {
   cv::cv2eigen(intrinsics, intrinsics_);
   cv::cv2eigen(extrinsics, extrinsics_);
 }
@@ -119,6 +121,13 @@ void SetBoundsOrFreeze(double *param, bool freeze, double min, double max,
     problem->SetParameterUpperBound(param, 0, max);
   }
 }
+
+// With X, Y, Z being hub axes and x, y, z being camera axes,
+// x = -Y, y = -Z, z = X
+const Eigen::Matrix3d kHubToCameraAxes =
+    (Eigen::Matrix3d() << 0.0, -1.0, 0.0, 0.0, 0.0, -1.0, 1.0, 0.0, 0.0)
+        .finished();
+
 }  // namespace
 
 void TargetEstimator::Solve(
@@ -177,18 +186,23 @@ void TargetEstimator::Solve(
   problem.AddResidualBlock(cost_function, nullptr, &roll_, &pitch_, &yaw_,
                            &distance_, &angle_to_camera_, &camera_height_);
 
-  // TODO(milind): seed values at localizer output, and constrain to be close to
-  // that.
+  // Compute the estimated rotation of the camera using the robot rotation.
+  const Eigen::Vector3d ypr_extrinsics =
+      (Eigen::Affine3d(extrinsics_).rotation() * kHubToCameraAxes)
+          .eulerAngles(2, 1, 0);
+  // TODO(milind): seed with localizer output as well
+  const double roll_seed = ypr_extrinsics.z();
+  const double pitch_seed = ypr_extrinsics.y();
 
-  // Constrain the rotation, otherwise there can be multiple solutions.
-  // There shouldn't be too much roll or pitch
-  constexpr double kMaxRoll = 0.1;
-  SetBoundsOrFreeze(&roll_, FLAGS_freeze_roll, -kMaxRoll, kMaxRoll, &problem);
+  // Constrain the rotation to be around the localizer's, otherwise there can be
+  // multiple solutions. There shouldn't be too much roll or pitch
+  constexpr double kMaxRollDelta = 0.1;
+  SetBoundsOrFreeze(&roll_, FLAGS_freeze_roll, roll_seed - kMaxRollDelta,
+                    roll_seed + kMaxRollDelta, &problem);
 
-  constexpr double kPitch = -35.0 * M_PI / 180.0;
   constexpr double kMaxPitchDelta = 0.15;
-  SetBoundsOrFreeze(&pitch_, FLAGS_freeze_pitch, kPitch - kMaxPitchDelta,
-                    kPitch + kMaxPitchDelta, &problem);
+  SetBoundsOrFreeze(&pitch_, FLAGS_freeze_pitch, pitch_seed - kMaxPitchDelta,
+                    pitch_seed + kMaxPitchDelta, &problem);
   // Constrain the yaw to where the target would be visible
   constexpr double kMaxYawDelta = M_PI / 4.0;
   SetBoundsOrFreeze(&yaw_, FLAGS_freeze_yaw, M_PI - kMaxYawDelta,
@@ -372,18 +386,12 @@ cv::Point_<S> TargetEstimator::ProjectToImage(
     Eigen::Transform<S, 3, Eigen::Affine> &H_hub_camera) const {
   using Vector3s = Eigen::Matrix<S, 3, 1>;
 
-  // With X, Y, Z being world axes and x, y, z being camera axes,
-  // x = Y, y = Z, z = -X
-  static const Eigen::Matrix3d kCameraAxisConversion =
-      (Eigen::Matrix3d() << 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, -1.0, 0.0, 0.0)
-          .finished();
   const Vector3s tape_point_hub_eigen =
       Vector3s(S(tape_point_hub.x), S(tape_point_hub.y), S(tape_point_hub.z));
   // Project the 3d tape point onto the image using the transformation and
   // intrinsics
   const Vector3s tape_point_proj =
-      intrinsics_ *
-      (kCameraAxisConversion * (H_hub_camera * tape_point_hub_eigen));
+      intrinsics_ * (kHubToCameraAxes * (H_hub_camera * tape_point_hub_eigen));
 
   // Normalize the projected point
   return {tape_point_proj.x() / tape_point_proj.z(),

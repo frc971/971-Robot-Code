@@ -10,6 +10,7 @@
 #include "aos/time/time.h"
 #include "frc971/vision/vision_generated.h"
 #include "y2022/vision/blob_detector.h"
+#include "y2022/vision/calibration_data.h"
 #include "y2022/vision/target_estimate_generated.h"
 #include "y2022/vision/target_estimator.h"
 
@@ -18,6 +19,11 @@ DEFINE_string(capture, "",
 DEFINE_string(channel, "/camera", "Channel name for the image.");
 DEFINE_string(config, "aos_config.json", "Path to the config file to use.");
 DEFINE_string(png_dir, "", "Path to a set of images to display.");
+DEFINE_string(calibration_node, "",
+              "If reading locally, use the calibration for this node");
+DEFINE_int32(
+    calibration_team_number, 971,
+    "If reading locally, use the calibration for a node with this team number");
 DEFINE_uint64(skip, 0,
               "Number of images to skip if doing local reading (png_dir set).");
 DEFINE_bool(show_features, true, "Show the blobs.");
@@ -171,18 +177,35 @@ void ViewerLocal() {
   std::vector<cv::String> file_list;
   cv::glob(FLAGS_png_dir + "/*.png", file_list, false);
 
-  cv::Mat intrinsics = cv::Mat::zeros(cv::Size(3, 3), CV_64F);
-  intrinsics.at<double>(0, 0) = 391.63916;
-  intrinsics.at<double>(0, 1) = 0.0;
-  intrinsics.at<double>(0, 2) = 312.691162;
-  intrinsics.at<double>(1, 0) = 0.0;
-  intrinsics.at<double>(1, 1) = 391.535889;
-  intrinsics.at<double>(1, 2) = 267.138672;
-  intrinsics.at<double>(2, 0) = 0.0;
-  intrinsics.at<double>(2, 1) = 0.0;
-  intrinsics.at<double>(2, 2) = 1.0;
-  cv::Mat extrinsics = cv::Mat::zeros(cv::Size(4, 4), CV_64F);
-  extrinsics.at<double>(2, 3) = 0.9398;
+  const aos::FlatbufferSpan<calibration::CalibrationData> calibration_data(
+      CalibrationData());
+
+  const calibration::CameraCalibration *calibration = nullptr;
+  for (const calibration::CameraCalibration *candidate :
+       *calibration_data.message().camera_calibrations()) {
+    if ((candidate->node_name()->string_view() == FLAGS_calibration_node) &&
+        (candidate->team_number() == FLAGS_calibration_team_number)) {
+      calibration = candidate;
+      break;
+    }
+  }
+
+  CHECK(calibration) << "No calibration data found for node \""
+                     << FLAGS_calibration_node << "\" with team number "
+                     << FLAGS_calibration_team_number;
+
+  auto intrinsics_float = cv::Mat(3, 3, CV_32F,
+                                  const_cast<void *>(static_cast<const void *>(
+                                      calibration->intrinsics()->data())));
+  cv::Mat intrinsics;
+  intrinsics_float.convertTo(intrinsics, CV_64F);
+
+  const auto extrinsics_float =
+      cv::Mat(4, 4, CV_32F,
+              const_cast<void *>(static_cast<const void *>(
+                  calibration->fixed_extrinsics()->data()->data())));
+  cv::Mat extrinsics;
+  extrinsics_float.convertTo(extrinsics, CV_64F);
 
   TargetEstimator estimator(intrinsics, extrinsics);
 

@@ -226,6 +226,9 @@ struct Values {
   }
 
   PotAndAbsEncoderConstants catapult;
+
+  // TODO(milind): set this
+  static constexpr double kImuHeight() { return 0.0; }
 };
 
 // Creates and returns a Values instance for the constants.
