@@ -12,6 +12,8 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/error_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_matches"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_matches_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_data_scouting"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_matches_for_team"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_matches_for_team_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_data_scouting"
@@ -206,11 +208,73 @@ func TestRequestMatchesForTeam(t *testing.T) {
 	}
 }
 
+// Validates that we can request the stats.
+func TestRequestDataScouting(t *testing.T) {
+	db := MockDatabase{
+		stats: []db.Stats{
+			{
+				TeamNumber: 971, MatchNumber: 1,
+				ShotsMissed: 1, UpperGoalShots: 2, LowerGoalShots: 3,
+				ShotsMissedAuto: 4, UpperGoalAuto: 5, LowerGoalAuto: 6,
+				PlayedDefense: 7, Climbing: 8,
+			},
+			{
+				TeamNumber: 972, MatchNumber: 1,
+				ShotsMissed: 2, UpperGoalShots: 3, LowerGoalShots: 4,
+				ShotsMissedAuto: 5, UpperGoalAuto: 6, LowerGoalAuto: 7,
+				PlayedDefense: 8, Climbing: 9,
+			},
+		},
+	}
+	scoutingServer := server.NewScoutingServer()
+	HandleRequests(&db, scoutingServer)
+	scoutingServer.Start(8080)
+	defer scoutingServer.Stop()
+
+	builder := flatbuffers.NewBuilder(1024)
+	builder.Finish((&request_data_scouting.RequestDataScoutingT{}).Pack(builder))
+
+	response, err := debug.RequestDataScouting("http://localhost:8080", builder.FinishedBytes())
+	if err != nil {
+		t.Fatal("Failed to request all matches: ", err)
+	}
+
+	expected := request_data_scouting_response.RequestDataScoutingResponseT{
+		StatsList: []*request_data_scouting_response.StatsT{
+			// Team, Match,
+			// MissedShotsAuto, UpperGoalAuto, LowerGoalAuto,
+			// MissedShotsTele, UpperGoalTele, LowerGoalTele,
+			// DefenseRating, Climbing,
+			{
+				971, 1,
+				4, 5, 6,
+				1, 2, 3,
+				7, 8,
+			},
+			{
+				972, 1,
+				5, 6, 7,
+				2, 3, 4,
+				8, 9,
+			},
+		},
+	}
+	if len(expected.StatsList) != len(response.StatsList) {
+		t.Fatal("Expected ", expected, ", but got ", *response)
+	}
+	for i, match := range expected.StatsList {
+		if !reflect.DeepEqual(*match, *response.StatsList[i]) {
+			t.Fatal("Expected for stats", i, ":", *match, ", but got:", *response.StatsList[i])
+		}
+	}
+}
+
 // A mocked database we can use for testing. Add functionality to this as
 // needed for your tests.
 
 type MockDatabase struct {
 	matches []db.Match
+	stats   []db.Stats
 }
 
 func (database *MockDatabase) AddToMatch(db.Match) error {
@@ -226,7 +290,7 @@ func (database *MockDatabase) ReturnMatches() ([]db.Match, error) {
 }
 
 func (database *MockDatabase) ReturnStats() ([]db.Stats, error) {
-	return []db.Stats{}, nil
+	return database.stats, nil
 }
 
 func (database *MockDatabase) QueryMatches(requestedTeam int32) ([]db.Match, error) {

@@ -74,6 +74,8 @@ func main() {
 		"If specified, parse the file as a RequestAllMatches JSON request.")
 	requestMatchesForTeamPtr := flag.String("requestMatchesForTeam", "",
 		"If specified, parse the file as a RequestMatchesForTeam JSON request.")
+	requestDataScoutingPtr := flag.String("requestDataScouting", "",
+		"If specified, parse the file as a RequestDataScouting JSON request.")
 	flag.Parse()
 
 	// Handle the actual arguments.
@@ -107,6 +109,17 @@ func main() {
 		response, err := debug.RequestMatchesForTeam(*addressPtr, binaryRequest)
 		if err != nil {
 			log.Fatal("Failed RequestMatchesForTeam: ", err)
+		}
+		log.Printf("%+v", *response)
+	}
+	if *requestDataScoutingPtr != "" {
+		log.Printf("Sending RequestDataScouting to %s", *addressPtr)
+		binaryRequest := parseJson(
+			"scouting/webserver/requests/messages/request_data_scouting.fbs",
+			*requestDataScoutingPtr)
+		response, err := debug.RequestDataScouting(*addressPtr, binaryRequest)
+		if err != nil {
+			log.Fatal("Failed RequestDataScouting: ", err)
 		}
 		log.Printf("%+v", *response)
 	}

@@ -88,5 +88,13 @@ class TestDebugCli(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         self.assertIn("{MatchList:[]}", stderr)
 
+    def test_request_data_scouting(self):
+        json_path = write_json({})
+        exit_code, _stdout, stderr = run_debug_cli(["-requestDataScouting", json_path])
+
+        # TODO(phil): Actually add data here before querying it.
+        self.assertEqual(exit_code, 0)
+        self.assertIn("{StatsList:[]}", stderr)
+
 if __name__ == "__main__":
     unittest.main()
