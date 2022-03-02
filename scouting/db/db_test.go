@@ -39,12 +39,12 @@ func TestAddToStatsDB(t *testing.T) {
 	defer db.Delete()
 
 	correct := []Stats{
-		Stats{teamNumber: 1236, MatchNumber: 7, shotsMissed: 9, upperGoalShots: 5, lowerGoalShots: 4, shotsMissedAuto: 3, upperGoalAuto: 2, lowerGoalAuto: 1, playedDefense: 2, climbing: 3},
-		Stats{teamNumber: 1001, MatchNumber: 7, shotsMissed: 6, upperGoalShots: 9, lowerGoalShots: 9, shotsMissedAuto: 0, upperGoalAuto: 0, lowerGoalAuto: 0, playedDefense: 0, climbing: 0},
-		Stats{teamNumber: 777, MatchNumber: 7, shotsMissed: 5, upperGoalShots: 7, lowerGoalShots: 12, shotsMissedAuto: 0, upperGoalAuto: 4, lowerGoalAuto: 0, playedDefense: 0, climbing: 0},
-		Stats{teamNumber: 1000, MatchNumber: 7, shotsMissed: 12, upperGoalShots: 6, lowerGoalShots: 10, shotsMissedAuto: 0, upperGoalAuto: 7, lowerGoalAuto: 0, playedDefense: 0, climbing: 0},
-		Stats{teamNumber: 4321, MatchNumber: 7, shotsMissed: 14, upperGoalShots: 12, lowerGoalShots: 3, shotsMissedAuto: 0, upperGoalAuto: 7, lowerGoalAuto: 0, playedDefense: 0, climbing: 0},
-		Stats{teamNumber: 1234, MatchNumber: 7, shotsMissed: 3, upperGoalShots: 4, lowerGoalShots: 0, shotsMissedAuto: 0, upperGoalAuto: 9, lowerGoalAuto: 0, playedDefense: 0, climbing: 0},
+		Stats{TeamNumber: 1236, MatchNumber: 7, ShotsMissed: 9, UpperGoalShots: 5, LowerGoalShots: 4, ShotsMissedAuto: 3, UpperGoalAuto: 2, LowerGoalAuto: 1, PlayedDefense: 2, Climbing: 3},
+		Stats{TeamNumber: 1001, MatchNumber: 7, ShotsMissed: 6, UpperGoalShots: 9, LowerGoalShots: 9, ShotsMissedAuto: 0, UpperGoalAuto: 0, LowerGoalAuto: 0, PlayedDefense: 0, Climbing: 0},
+		Stats{TeamNumber: 777, MatchNumber: 7, ShotsMissed: 5, UpperGoalShots: 7, LowerGoalShots: 12, ShotsMissedAuto: 0, UpperGoalAuto: 4, LowerGoalAuto: 0, PlayedDefense: 0, Climbing: 0},
+		Stats{TeamNumber: 1000, MatchNumber: 7, ShotsMissed: 12, UpperGoalShots: 6, LowerGoalShots: 10, ShotsMissedAuto: 0, UpperGoalAuto: 7, LowerGoalAuto: 0, PlayedDefense: 0, Climbing: 0},
+		Stats{TeamNumber: 4321, MatchNumber: 7, ShotsMissed: 14, UpperGoalShots: 12, LowerGoalShots: 3, ShotsMissedAuto: 0, UpperGoalAuto: 7, LowerGoalAuto: 0, PlayedDefense: 0, Climbing: 0},
+		Stats{TeamNumber: 1234, MatchNumber: 7, ShotsMissed: 3, UpperGoalShots: 4, LowerGoalShots: 0, ShotsMissedAuto: 0, UpperGoalAuto: 9, LowerGoalAuto: 0, PlayedDefense: 0, Climbing: 0},
 	}
 	db.AddToMatch(Match{MatchNumber: 7, Round: 1, CompLevel: "quals", R1: 1236, R2: 1001, R3: 777, B1: 1000, B2: 4321, B3: 1234, r1ID: 1, r2ID: 2, r3ID: 3, b1ID: 4, b2ID: 5, b3ID: 6})
 	for i := 0; i < len(correct); i++ {
@@ -93,19 +93,19 @@ func TestQueryStatsDB(t *testing.T) {
 	defer db.Delete()
 
 	testDatabase := []Stats{
-		Stats{teamNumber: 1235, MatchNumber: 94, shotsMissed: 2, upperGoalShots: 2, lowerGoalShots: 2, shotsMissedAuto: 2, upperGoalAuto: 2, lowerGoalAuto: 2, playedDefense: 2, climbing: 2},
-		Stats{teamNumber: 1234, MatchNumber: 94, shotsMissed: 4, upperGoalShots: 4, lowerGoalShots: 4, shotsMissedAuto: 4, upperGoalAuto: 4, lowerGoalAuto: 4, playedDefense: 7, climbing: 2},
-		Stats{teamNumber: 1233, MatchNumber: 94, shotsMissed: 3, upperGoalShots: 3, lowerGoalShots: 3, shotsMissedAuto: 3, upperGoalAuto: 3, lowerGoalAuto: 3, playedDefense: 3, climbing: 3},
-		Stats{teamNumber: 1232, MatchNumber: 94, shotsMissed: 5, upperGoalShots: 5, lowerGoalShots: 5, shotsMissedAuto: 5, upperGoalAuto: 5, lowerGoalAuto: 5, playedDefense: 7, climbing: 1},
-		Stats{teamNumber: 1231, MatchNumber: 94, shotsMissed: 6, upperGoalShots: 6, lowerGoalShots: 6, shotsMissedAuto: 6, upperGoalAuto: 6, lowerGoalAuto: 6, playedDefense: 7, climbing: 1},
-		Stats{teamNumber: 1239, MatchNumber: 94, shotsMissed: 7, upperGoalShots: 7, lowerGoalShots: 7, shotsMissedAuto: 7, upperGoalAuto: 7, lowerGoalAuto: 3, playedDefense: 7, climbing: 1},
+		Stats{TeamNumber: 1235, MatchNumber: 94, ShotsMissed: 2, UpperGoalShots: 2, LowerGoalShots: 2, ShotsMissedAuto: 2, UpperGoalAuto: 2, LowerGoalAuto: 2, PlayedDefense: 2, Climbing: 2},
+		Stats{TeamNumber: 1234, MatchNumber: 94, ShotsMissed: 4, UpperGoalShots: 4, LowerGoalShots: 4, ShotsMissedAuto: 4, UpperGoalAuto: 4, LowerGoalAuto: 4, PlayedDefense: 7, Climbing: 2},
+		Stats{TeamNumber: 1233, MatchNumber: 94, ShotsMissed: 3, UpperGoalShots: 3, LowerGoalShots: 3, ShotsMissedAuto: 3, UpperGoalAuto: 3, LowerGoalAuto: 3, PlayedDefense: 3, Climbing: 3},
+		Stats{TeamNumber: 1232, MatchNumber: 94, ShotsMissed: 5, UpperGoalShots: 5, LowerGoalShots: 5, ShotsMissedAuto: 5, UpperGoalAuto: 5, LowerGoalAuto: 5, PlayedDefense: 7, Climbing: 1},
+		Stats{TeamNumber: 1231, MatchNumber: 94, ShotsMissed: 6, UpperGoalShots: 6, LowerGoalShots: 6, ShotsMissedAuto: 6, UpperGoalAuto: 6, LowerGoalAuto: 6, PlayedDefense: 7, Climbing: 1},
+		Stats{TeamNumber: 1239, MatchNumber: 94, ShotsMissed: 7, UpperGoalShots: 7, LowerGoalShots: 7, ShotsMissedAuto: 7, UpperGoalAuto: 7, LowerGoalAuto: 3, PlayedDefense: 7, Climbing: 1},
 	}
 	db.AddToMatch(Match{MatchNumber: 94, Round: 1, CompLevel: "quals", R1: 1235, R2: 1234, R3: 1233, B1: 1232, B2: 1231, B3: 1239})
 	for i := 0; i < len(testDatabase); i++ {
 		db.AddToStats(testDatabase[i])
 	}
 	correct := []Stats{
-		Stats{teamNumber: 1235, MatchNumber: 94, shotsMissed: 2, upperGoalShots: 2, lowerGoalShots: 2, shotsMissedAuto: 2, upperGoalAuto: 2, lowerGoalAuto: 2, playedDefense: 2, climbing: 2},
+		Stats{TeamNumber: 1235, MatchNumber: 94, ShotsMissed: 2, UpperGoalShots: 2, LowerGoalShots: 2, ShotsMissedAuto: 2, UpperGoalAuto: 2, LowerGoalAuto: 2, PlayedDefense: 2, Climbing: 2},
 	}
 	got, error_ := db.QueryStats(1235)
 	if error_ != nil {
@@ -144,12 +144,12 @@ func TestReturnStatsDB(t *testing.T) {
 	defer db.Delete()
 
 	correct := []Stats{
-		Stats{teamNumber: 1235, MatchNumber: 94, shotsMissed: 2, upperGoalShots: 2, lowerGoalShots: 2, shotsMissedAuto: 2, upperGoalAuto: 2, lowerGoalAuto: 2, playedDefense: 2, climbing: 2},
-		Stats{teamNumber: 1236, MatchNumber: 94, shotsMissed: 4, upperGoalShots: 4, lowerGoalShots: 4, shotsMissedAuto: 4, upperGoalAuto: 4, lowerGoalAuto: 4, playedDefense: 7, climbing: 2},
-		Stats{teamNumber: 1237, MatchNumber: 94, shotsMissed: 3, upperGoalShots: 3, lowerGoalShots: 3, shotsMissedAuto: 3, upperGoalAuto: 3, lowerGoalAuto: 3, playedDefense: 3, climbing: 3},
-		Stats{teamNumber: 1238, MatchNumber: 94, shotsMissed: 5, upperGoalShots: 5, lowerGoalShots: 5, shotsMissedAuto: 5, upperGoalAuto: 5, lowerGoalAuto: 5, playedDefense: 7, climbing: 1},
-		Stats{teamNumber: 1239, MatchNumber: 94, shotsMissed: 6, upperGoalShots: 6, lowerGoalShots: 6, shotsMissedAuto: 6, upperGoalAuto: 6, lowerGoalAuto: 6, playedDefense: 7, climbing: 1},
-		Stats{teamNumber: 1233, MatchNumber: 94, shotsMissed: 7, upperGoalShots: 7, lowerGoalShots: 7, shotsMissedAuto: 7, upperGoalAuto: 7, lowerGoalAuto: 3, playedDefense: 7, climbing: 1},
+		Stats{TeamNumber: 1235, MatchNumber: 94, ShotsMissed: 2, UpperGoalShots: 2, LowerGoalShots: 2, ShotsMissedAuto: 2, UpperGoalAuto: 2, LowerGoalAuto: 2, PlayedDefense: 2, Climbing: 2},
+		Stats{TeamNumber: 1236, MatchNumber: 94, ShotsMissed: 4, UpperGoalShots: 4, LowerGoalShots: 4, ShotsMissedAuto: 4, UpperGoalAuto: 4, LowerGoalAuto: 4, PlayedDefense: 7, Climbing: 2},
+		Stats{TeamNumber: 1237, MatchNumber: 94, ShotsMissed: 3, UpperGoalShots: 3, LowerGoalShots: 3, ShotsMissedAuto: 3, UpperGoalAuto: 3, LowerGoalAuto: 3, PlayedDefense: 3, Climbing: 3},
+		Stats{TeamNumber: 1238, MatchNumber: 94, ShotsMissed: 5, UpperGoalShots: 5, LowerGoalShots: 5, ShotsMissedAuto: 5, UpperGoalAuto: 5, LowerGoalAuto: 5, PlayedDefense: 7, Climbing: 1},
+		Stats{TeamNumber: 1239, MatchNumber: 94, ShotsMissed: 6, UpperGoalShots: 6, LowerGoalShots: 6, ShotsMissedAuto: 6, UpperGoalAuto: 6, LowerGoalAuto: 6, PlayedDefense: 7, Climbing: 1},
+		Stats{TeamNumber: 1233, MatchNumber: 94, ShotsMissed: 7, UpperGoalShots: 7, LowerGoalShots: 7, ShotsMissedAuto: 7, UpperGoalAuto: 7, LowerGoalAuto: 3, PlayedDefense: 7, Climbing: 1},
 	}
 	db.AddToMatch(Match{MatchNumber: 94, Round: 1, CompLevel: "quals", R1: 1235, R2: 1236, R3: 1237, B1: 1238, B2: 1239, B3: 1233})
 	for i := 0; i < len(correct); i++ {

@@ -20,10 +20,10 @@ type Match struct {
 }
 
 type Stats struct {
-	teamNumber, MatchNumber                                      int
-	shotsMissed, upperGoalShots, lowerGoalShots                  int
-	shotsMissedAuto, upperGoalAuto, lowerGoalAuto, playedDefense int
-	climbing                                                     int
+	TeamNumber, MatchNumber                                      int32
+	ShotsMissed, UpperGoalShots, LowerGoalShots                  int32
+	ShotsMissedAuto, UpperGoalAuto, LowerGoalAuto, PlayedDefense int32
+	Climbing                                                     int32
 }
 
 // Opens a database at the specified path. If the path refers to a non-existent
@@ -39,7 +39,7 @@ func NewDatabase(path string) (*Database, error) {
 		return nil, error_
 	}
 	_, error_ = statement.Exec()
-	statement, error_ = database.Prepare("CREATE TABLE IF NOT EXISTS team_match_stats (id INTEGER PRIMARY KEY, teamNumber INTEGER, MatchNumber DOUBLE, shotsMissed INTEGER, upperGoalShots INTEGER, lowerGoalShots INTEGER, shotsMissedAuto INTEGER, upperGoalAuto INTEGER, lowerGoalAuto INTEGER, playedDefense INTEGER, climbing INTEGER)")
+	statement, error_ = database.Prepare("CREATE TABLE IF NOT EXISTS team_match_stats (id INTEGER PRIMARY KEY, TeamNumber INTEGER, MatchNumber DOUBLE, ShotsMissed INTEGER, UpperGoalShots INTEGER, LowerGoalShots INTEGER, ShotsMissedAuto INTEGER, UpperGoalAuto INTEGER, LowerGoalAuto INTEGER, PlayedDefense INTEGER, Climbing INTEGER)")
 	defer statement.Close()
 	if error_ != nil {
 		fmt.Println(error_)
@@ -67,15 +67,15 @@ func (database *Database) Delete() error {
 
 // This function will also populate the Stats table with six empty rows every time a match is added
 func (database *Database) AddToMatch(m Match) error {
-	statement, error_ := database.Prepare("INSERT INTO team_match_stats(teamNumber, MatchNumber, shotsMissed, upperGoalShots, lowerGoalShots, shotsMissedAuto, upperGoalAuto, lowerGoalAuto, playedDefense, climbing) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+	statement, error_ := database.Prepare("INSERT INTO team_match_stats(TeamNumber, MatchNumber, ShotsMissed, UpperGoalShots, LowerGoalShots, ShotsMissedAuto, UpperGoalAuto, LowerGoalAuto, PlayedDefense, Climbing) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
 	defer statement.Close()
 	if error_ != nil {
 		fmt.Println("failed to prepare stats database:", error_)
 		return (error_)
 	}
 	var rowIds [6]int64
-	for i, teamNumber := range []int32{m.R1, m.R2, m.R3, m.B1, m.B2, m.B3} {
-		result, error_ := statement.Exec(teamNumber, m.MatchNumber, 0, 0, 0, 0, 0, 0, 0, 0)
+	for i, TeamNumber := range []int32{m.R1, m.R2, m.R3, m.B1, m.B2, m.B3} {
+		result, error_ := statement.Exec(TeamNumber, m.MatchNumber, 0, 0, 0, 0, 0, 0, 0, 0)
 		if error_ != nil {
 			fmt.Println("failed to execute statement 2:", error_)
 			return (error_)
@@ -97,12 +97,12 @@ func (database *Database) AddToMatch(m Match) error {
 }
 
 func (database *Database) AddToStats(s Stats) error {
-	statement, error_ := database.Prepare("UPDATE team_match_stats SET teamNumber = ?, MatchNumber = ?, shotsMissed = ?, upperGoalShots = ?, lowerGoalShots = ?, shotsMissedAuto = ?, upperGoalAuto = ?, lowerGoalAuto = ?, playedDefense = ?, climbing = ? WHERE MatchNumber = ? AND teamNumber = ?")
+	statement, error_ := database.Prepare("UPDATE team_match_stats SET TeamNumber = ?, MatchNumber = ?, ShotsMissed = ?, UpperGoalShots = ?, LowerGoalShots = ?, ShotsMissedAuto = ?, UpperGoalAuto = ?, LowerGoalAuto = ?, PlayedDefense = ?, Climbing = ? WHERE MatchNumber = ? AND TeamNumber = ?")
 	if error_ != nil {
 		fmt.Println(error_)
 		return (error_)
 	}
-	_, error_ = statement.Exec(s.teamNumber, s.MatchNumber, s.shotsMissed, s.upperGoalShots, s.lowerGoalShots, s.shotsMissedAuto, s.upperGoalAuto, s.lowerGoalAuto, s.playedDefense, s.climbing, s.MatchNumber, s.teamNumber)
+	_, error_ = statement.Exec(s.TeamNumber, s.MatchNumber, s.ShotsMissed, s.UpperGoalShots, s.LowerGoalShots, s.ShotsMissedAuto, s.UpperGoalAuto, s.LowerGoalAuto, s.PlayedDefense, s.Climbing, s.MatchNumber, s.TeamNumber)
 	if error_ != nil {
 		fmt.Println(error_)
 		return (error_)
@@ -134,7 +134,7 @@ func (database *Database) ReturnStats() ([]Stats, error) {
 	var id int
 	for rows.Next() {
 		var team Stats
-		error_ := rows.Scan(&id, &team.teamNumber, &team.MatchNumber, &team.shotsMissed, &team.upperGoalShots, &team.lowerGoalShots, &team.shotsMissedAuto, &team.upperGoalAuto, &team.lowerGoalAuto, &team.playedDefense, &team.climbing)
+		error_ := rows.Scan(&id, &team.TeamNumber, &team.MatchNumber, &team.ShotsMissed, &team.UpperGoalShots, &team.LowerGoalShots, &team.ShotsMissedAuto, &team.UpperGoalAuto, &team.LowerGoalAuto, &team.PlayedDefense, &team.Climbing)
 		if error_ != nil {
 			fmt.Println(error_)
 			return nil, error_
@@ -162,7 +162,7 @@ func (database *Database) QueryMatches(teamNumber_ int32) ([]Match, error) {
 }
 
 func (database *Database) QueryStats(teamNumber_ int) ([]Stats, error) {
-	rows, error_ := database.Query("SELECT * FROM team_match_stats WHERE teamNumber = ?", teamNumber_)
+	rows, error_ := database.Query("SELECT * FROM team_match_stats WHERE TeamNumber = ?", teamNumber_)
 	if error_ != nil {
 		fmt.Println("failed to execute statement 3:", error_)
 		return nil, error_
@@ -172,9 +172,9 @@ func (database *Database) QueryStats(teamNumber_ int) ([]Stats, error) {
 	for rows.Next() {
 		var team Stats
 		var id int
-		error_ = rows.Scan(&id, &team.teamNumber, &team.MatchNumber, &team.shotsMissed,
-			&team.upperGoalShots, &team.lowerGoalShots, &team.shotsMissedAuto, &team.upperGoalAuto,
-			&team.lowerGoalAuto, &team.playedDefense, &team.climbing)
+		error_ = rows.Scan(&id, &team.TeamNumber, &team.MatchNumber, &team.ShotsMissed,
+			&team.UpperGoalShots, &team.LowerGoalShots, &team.ShotsMissedAuto, &team.UpperGoalAuto,
+			&team.LowerGoalAuto, &team.PlayedDefense, &team.Climbing)
 		teams = append(teams, team)
 	}
 	if error_ != nil {
