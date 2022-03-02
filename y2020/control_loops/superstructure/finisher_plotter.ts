@@ -39,7 +39,6 @@ export function plotFinisher(conn: Connection, element: Element) : void {
   ballsShotPlot.plot.setDefaultYRange([0.0, 20.0]);
   ballsShotPlot.addMessageLine(status, ['shooter', 'balls_shot']).setColor(BLUE).setPointSize(0.0);
 
-
   const voltagePlot =
       aosPlotter.addPlot(element, [DEFAULT_WIDTH, DEFAULT_HEIGHT / 2]);
   voltagePlot.plot.getAxisLabels().setTitle('Voltage');
@@ -50,7 +49,6 @@ export function plotFinisher(conn: Connection, element: Element) : void {
   voltagePlot.addMessageLine(output, ['finisher_voltage']).setColor(BLUE).setPointSize(0.0);
   voltagePlot.addMessageLine(status, ['shooter', 'finisher', 'voltage_error']).setColor(RED).setPointSize(0.0);
   voltagePlot.addMessageLine(robotState, ['voltage_battery']).setColor(GREEN).setPointSize(0.0);
-
 
   const currentPlot =
       aosPlotter.addPlot(element, [DEFAULT_WIDTH, DEFAULT_HEIGHT / 2]);
