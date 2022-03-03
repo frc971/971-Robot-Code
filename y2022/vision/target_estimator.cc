@@ -4,13 +4,14 @@
 #include "aos/time/time.h"
 #include "ceres/ceres.h"
 #include "frc971/control_loops/quaternion_utils.h"
+#include "geometry.h"
 #include "opencv2/core/core.hpp"
 #include "opencv2/core/eigen.hpp"
 #include "opencv2/features2d.hpp"
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc.hpp"
 
-DEFINE_bool(freeze_roll, true, "If true, don't solve for roll");
+DEFINE_bool(freeze_roll, false, "If true, don't solve for roll");
 DEFINE_bool(freeze_pitch, false, "If true, don't solve for pitch");
 DEFINE_bool(freeze_yaw, false, "If true, don't solve for yaw");
 DEFINE_bool(freeze_camera_height, true,
@@ -25,9 +26,19 @@ DEFINE_bool(solver_output, false,
 
 namespace y2022::vision {
 
-std::vector<cv::Point3d> TargetEstimator::ComputeTapePoints() {
+namespace {
+
+constexpr size_t kNumPiecesOfTape = 16;
+// Width and height of a piece of reflective tape
+constexpr double kTapePieceWidth = 0.13;
+constexpr double kTapePieceHeight = 0.05;
+// Height of the center of the tape (m)
+constexpr double kTapeCenterHeight = 2.58 + (kTapePieceHeight / 2);
+// Horizontal distance from tape to center of hub (m)
+constexpr double kUpperHubRadius = 1.22 / 2;
+
+std::vector<cv::Point3d> ComputeTapePoints() {
   std::vector<cv::Point3d> tape_points;
-  tape_points.reserve(kNumPiecesOfTape);
 
   constexpr size_t kNumVisiblePiecesOfTape = 5;
   for (size_t i = 0; i < kNumVisiblePiecesOfTape; i++) {
@@ -38,17 +49,54 @@ std::vector<cv::Point3d> TargetEstimator::ComputeTapePoints() {
     // The polar angle is a multiple of the angle between tape centers
     double theta = theta_index * ((2.0 * M_PI) / kNumPiecesOfTape);
     tape_points.emplace_back(kUpperHubRadius * std::cos(theta),
-                             kUpperHubRadius * std::sin(theta), kTapeHeight);
+                             kUpperHubRadius * std::sin(theta),
+                             kTapeCenterHeight);
   }
 
   return tape_points;
 }
 
+std::array<cv::Point3d, 4> ComputeMiddleTapePiecePoints() {
+  std::array<cv::Point3d, 4> tape_piece_points;
+
+  // Angle that each piece of tape occupies on the hub
+  constexpr double kTapePieceAngle =
+      (kTapePieceWidth / (2.0 * M_PI * kUpperHubRadius)) * (2.0 * M_PI);
+
+  constexpr double kThetaTapeLeft = -kTapePieceAngle / 2.0;
+  constexpr double kThetaTapeRight = kTapePieceAngle / 2.0;
+
+  constexpr double kTapeTopHeight =
+      kTapeCenterHeight + (kTapePieceHeight / 2.0);
+  constexpr double kTapeBottomHeight =
+      kTapeCenterHeight - (kTapePieceHeight / 2.0);
+
+  tape_piece_points[0] = {kUpperHubRadius * std::cos(kThetaTapeLeft),
+                          kUpperHubRadius * std::sin(kThetaTapeLeft),
+                          kTapeTopHeight};
+  tape_piece_points[1] = {kUpperHubRadius * std::cos(kThetaTapeRight),
+                          kUpperHubRadius * std::sin(kThetaTapeRight),
+                          kTapeTopHeight};
+
+  tape_piece_points[2] = {kUpperHubRadius * std::cos(kThetaTapeRight),
+                          kUpperHubRadius * std::sin(kThetaTapeRight),
+                          kTapeBottomHeight};
+  tape_piece_points[3] = {kUpperHubRadius * std::cos(kThetaTapeLeft),
+                          kUpperHubRadius * std::sin(kThetaTapeLeft),
+                          kTapeBottomHeight};
+
+  return tape_piece_points;
+}
+
+}  // namespace
+
 const std::vector<cv::Point3d> TargetEstimator::kTapePoints =
     ComputeTapePoints();
+const std::array<cv::Point3d, 4> TargetEstimator::kMiddleTapePiecePoints =
+    ComputeMiddleTapePiecePoints();
 
 TargetEstimator::TargetEstimator(cv::Mat intrinsics, cv::Mat extrinsics)
-    : centroids_(),
+    : blob_stats_(),
       image_(std::nullopt),
       roll_(0.0),
       pitch_(0.0),
@@ -65,8 +113,7 @@ namespace {
 void SetBoundsOrFreeze(double *param, bool freeze, double min, double max,
                        ceres::Problem *problem) {
   if (freeze) {
-    problem->SetParameterization(
-        param, new ceres::SubsetParameterization(1, std::vector<int>{0}));
+    problem->SetParameterBlockConstant(param);
   } else {
     problem->SetParameterLowerBound(param, 0, min);
     problem->SetParameterUpperBound(param, 0, max);
@@ -74,20 +121,56 @@ void SetBoundsOrFreeze(double *param, bool freeze, double min, double max,
 }
 }  // namespace
 
-void TargetEstimator::Solve(const std::vector<cv::Point> &centroids,
-                            std::optional<cv::Mat> image) {
+void TargetEstimator::Solve(
+    const std::vector<BlobDetector::BlobStats> &blob_stats,
+    std::optional<cv::Mat> image) {
   auto start = aos::monotonic_clock::now();
 
-  centroids_ = centroids;
+  blob_stats_ = blob_stats;
   image_ = image;
 
+  // Do nothing if no blobs were detected
+  if (blob_stats_.size() == 0) {
+    confidence_ = 0.0;
+    return;
+  }
+
+  CHECK_GE(blob_stats_.size(), 3) << "Expected at least 3 blobs";
+
+  const auto circle =
+      Circle::Fit({blob_stats_[0].centroid, blob_stats_[1].centroid,
+                   blob_stats_[2].centroid});
+  CHECK(circle.has_value());
+
+  // Find the middle blob, which is the one with the angle closest to the
+  // average
+  double theta_avg = 0.0;
+  for (const auto &stats : blob_stats_) {
+    theta_avg += circle->AngleOf(stats.centroid);
+  }
+  theta_avg /= blob_stats_.size();
+
+  double min_diff = std::numeric_limits<double>::infinity();
+  for (auto it = blob_stats_.begin(); it < blob_stats_.end(); it++) {
+    const double diff = std::abs(circle->AngleOf(it->centroid) - theta_avg);
+    if (diff < min_diff) {
+      min_diff = diff;
+      middle_blob_index_ = it - blob_stats_.begin();
+    }
+  }
+
   ceres::Problem problem;
+
+  // x and y differences between projected centroids and blob centroids, as well
+  // as width and height differences between middle projected piece and the
+  // detected blob
+  const size_t num_residuals = (blob_stats_.size() * 2) + 2;
 
   // Set up the only cost function (also known as residual). This uses
   // auto-differentiation to obtain the derivative (jacobian).
   ceres::CostFunction *cost_function =
       new ceres::AutoDiffCostFunction<TargetEstimator, ceres::DYNAMIC, 1, 1, 1,
-                                      1, 1, 1>(this, centroids_.size() * 2,
+                                      1, 1, 1>(this, num_residuals,
                                                ceres::DO_NOT_TAKE_OWNERSHIP);
 
   // TODO(milind): add loss function when we get more noisy data
@@ -136,28 +219,33 @@ void TargetEstimator::Solve(const std::vector<cv::Point> &centroids,
   ceres::Solve(options, &problem, &summary);
 
   auto end = aos::monotonic_clock::now();
-  LOG(INFO) << "Target estimation elapsed time: "
-            << std::chrono::duration<double, std::milli>(end - start).count()
-            << " ms";
+  VLOG(1) << "Target estimation elapsed time: "
+          << std::chrono::duration<double, std::milli>(end - start).count()
+          << " ms";
 
-  // Use a sigmoid to convert the final cost into a confidence for the
-  // localizer. Fit a sigmoid to the points of (0, 1) and two other reasonable
-  // residual-confidence combinations using
-  // https://www.desmos.com/calculator/jj7p8zk0w2
-  constexpr double kSigmoidCapacity = 1.206;
-  // Stretch the sigmoid out correctly.
-  // Currently, good estimates have final costs of around 1 to 2 pixels.
-  constexpr double kSigmoidScalar = 0.2061;
-  constexpr double kSigmoidGrowthRate = -0.1342;
-  if (centroids_.size() > 0) {
-    confidence_ = kSigmoidCapacity /
-                  (1.0 + kSigmoidScalar * std::exp(-kSigmoidGrowthRate *
-                                                   summary.final_cost));
-  } else {
-    // If we detected no blobs, the confidence should be zero and not depending
-    // on the final cost, which would be 0.
-    confidence_ = 0.0;
+  // For computing the confidence, find the standard deviation in pixels
+  std::vector<double> residual(num_residuals);
+  (*this)(&roll_, &pitch_, &yaw_, &distance_, &angle_to_camera_,
+          &camera_height_, residual.data());
+  double std_dev = 0.0;
+  for (auto it = residual.begin(); it < residual.end() - 2; it++) {
+    std_dev += std::pow(*it, 2);
   }
+  std_dev /= num_residuals - 2;
+  std_dev = std::sqrt(std_dev);
+
+  // Use a sigmoid to convert the deviation into a confidence for the
+  // localizer. Fit a sigmoid to the points of (0, 1) and two other
+  // reasonable deviation-confidence combinations using
+  // https://www.desmos.com/calculator/try0pgx1qw
+  constexpr double kSigmoidCapacity = 1.045;
+  // Stretch the sigmoid out correctly.
+  // Currently, good estimates have deviations of around 2 pixels.
+  constexpr double kSigmoidScalar = 0.04452;
+  constexpr double kSigmoidGrowthRate = -0.4021;
+  confidence_ =
+      kSigmoidCapacity /
+      (1.0 + kSigmoidScalar * std::exp(-kSigmoidGrowthRate * std_dev));
 
   if (FLAGS_solver_output) {
     LOG(INFO) << summary.FullReport();
@@ -169,6 +257,7 @@ void TargetEstimator::Solve(const std::vector<cv::Point> &centroids,
     LOG(INFO) << "angle to camera (polar): " << angle_to_camera_;
     LOG(INFO) << "distance (polar): " << distance_;
     LOG(INFO) << "camera height: " << camera_height_;
+    LOG(INFO) << "standard deviation (px): " << std_dev;
     LOG(INFO) << "confidence: " << confidence_;
   }
 }
@@ -206,38 +295,57 @@ bool TargetEstimator::operator()(const S *const roll, const S *const pitch,
                         *distance * ceres::sin(*theta), *camera_height);
 
   Affine3s H_camera_hub = Eigen::Translation<S, 3>(T_camera_hub) * R_camera_hub;
+  Affine3s H_hub_camera = H_camera_hub.inverse();
 
   std::vector<cv::Point_<S>> tape_points_proj;
   for (cv::Point3d tape_point_hub : kTapePoints) {
-    Vector3s tape_point_hub_eigen(S(tape_point_hub.x), S(tape_point_hub.y),
-                                  S(tape_point_hub.z));
-
-    // With X, Y, Z being world axes and x, y, z being camera axes,
-    // x = Y, y = Z, z = -X
-    static const Eigen::Matrix3d kCameraAxisConversion =
-        (Eigen::Matrix3d() << 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, -1.0, 0.0, 0.0)
-            .finished();
-    // Project the 3d tape point onto the image using the transformation and
-    // intrinsics
-    Vector3s tape_point_proj =
-        intrinsics_ * (kCameraAxisConversion *
-                       (H_camera_hub.inverse() * tape_point_hub_eigen));
-
-    // Normalize the projected point
-    tape_points_proj.emplace_back(tape_point_proj.x() / tape_point_proj.z(),
-                                  tape_point_proj.y() / tape_point_proj.z());
-    VLOG(1) << "Projected tape point: "
+    tape_points_proj.emplace_back(ProjectToImage(tape_point_hub, H_hub_camera));
+    VLOG(2) << "Projected tape point: "
             << ScalarPointToDouble(
                    tape_points_proj[tape_points_proj.size() - 1]);
   }
 
-  for (size_t i = 0; i < centroids_.size(); i++) {
+  // Find the rectangle bounding the projected piece of tape
+  std::array<cv::Point_<S>, 4> middle_tape_piece_points_proj;
+  for (auto tape_piece_it = kMiddleTapePiecePoints.begin();
+       tape_piece_it < kMiddleTapePiecePoints.end(); tape_piece_it++) {
+    middle_tape_piece_points_proj[tape_piece_it -
+                                  kMiddleTapePiecePoints.begin()] =
+        ProjectToImage(*tape_piece_it, H_hub_camera);
+  }
+
+  for (size_t i = 0; i < blob_stats_.size(); i++) {
     const auto distance = DistanceFromTape(i, tape_points_proj);
     // Set the residual to the (x, y) distance of the centroid from the
     // nearest projected piece of tape
     residual[i * 2] = distance.x;
     residual[(i * 2) + 1] = distance.y;
   }
+
+  // Penalize based on the difference between the size of the projected piece of
+  // tape and that of the detected blobs. Use the squared size to avoid taking a
+  // norm, which ceres can't handle well
+  const S middle_tape_piece_width_squared =
+      ceres::pow(middle_tape_piece_points_proj[2].x -
+                     middle_tape_piece_points_proj[3].x,
+                 2) +
+      ceres::pow(middle_tape_piece_points_proj[2].y -
+                     middle_tape_piece_points_proj[3].y,
+                 2);
+  const S middle_tape_piece_height_squared =
+      ceres::pow(middle_tape_piece_points_proj[1].x -
+                     middle_tape_piece_points_proj[2].x,
+                 2) +
+      ceres::pow(middle_tape_piece_points_proj[1].y -
+                     middle_tape_piece_points_proj[2].y,
+                 2);
+
+  residual[blob_stats_.size() * 2] =
+      middle_tape_piece_width_squared -
+      std::pow(blob_stats_[middle_blob_index_].size.width, 2);
+  residual[(blob_stats_.size() * 2) + 1] =
+      middle_tape_piece_height_squared -
+      std::pow(blob_stats_[middle_blob_index_].size.height, 2);
 
   if (image_.has_value()) {
     // Draw the current stage of the solving
@@ -258,6 +366,30 @@ bool TargetEstimator::operator()(const S *const roll, const S *const pitch,
   return true;
 }
 
+template <typename S>
+cv::Point_<S> TargetEstimator::ProjectToImage(
+    cv::Point3d tape_point_hub,
+    Eigen::Transform<S, 3, Eigen::Affine> &H_hub_camera) const {
+  using Vector3s = Eigen::Matrix<S, 3, 1>;
+
+  // With X, Y, Z being world axes and x, y, z being camera axes,
+  // x = Y, y = Z, z = -X
+  static const Eigen::Matrix3d kCameraAxisConversion =
+      (Eigen::Matrix3d() << 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, -1.0, 0.0, 0.0)
+          .finished();
+  const Vector3s tape_point_hub_eigen =
+      Vector3s(S(tape_point_hub.x), S(tape_point_hub.y), S(tape_point_hub.z));
+  // Project the 3d tape point onto the image using the transformation and
+  // intrinsics
+  const Vector3s tape_point_proj =
+      intrinsics_ *
+      (kCameraAxisConversion * (H_hub_camera * tape_point_hub_eigen));
+
+  // Normalize the projected point
+  return {tape_point_proj.x() / tape_point_proj.z(),
+          tape_point_proj.y() / tape_point_proj.z()};
+}
+
 namespace {
 template <typename S>
 cv::Point_<S> Distance(cv::Point p, cv::Point_<S> q) {
@@ -273,35 +405,20 @@ bool Less(cv::Point_<S> distance_1, cv::Point_<S> distance_2) {
 
 template <typename S>
 cv::Point_<S> TargetEstimator::DistanceFromTape(
-    size_t centroid_index,
-    const std::vector<cv::Point_<S>> &tape_points) const {
-  // Figure out the middle index in the tape points
-  size_t middle_index = centroids_.size() / 2;
-  if (centroids_.size() % 2 == 0) {
-    // There are two possible middles in this case. Figure out which one fits
-    // the current better
-    const auto tape_middle = tape_points[tape_points.size() / 2];
-    const auto middle_distance_1 =
-        Distance(centroids_[(centroids_.size() / 2) - 1], tape_middle);
-    const auto middle_distance_2 =
-        Distance(centroids_[centroids_.size() / 2], tape_middle);
-    if (Less(middle_distance_1, middle_distance_2)) {
-      middle_index--;
-    }
-  }
-
+    size_t blob_index, const std::vector<cv::Point_<S>> &tape_points) const {
   auto distance = cv::Point_<S>(std::numeric_limits<S>::infinity(),
                                 std::numeric_limits<S>::infinity());
-  if (centroid_index == middle_index) {
-    // Fix the middle centroid so the solver can't go too far off
-    distance =
-        Distance(centroids_[middle_index], tape_points[tape_points.size() / 2]);
+  if (blob_index == middle_blob_index_) {
+    // Fix the middle blob so the solver can't go too far off
+    distance = Distance(blob_stats_[middle_blob_index_].centroid,
+                        tape_points[tape_points.size() / 2]);
   } else {
-    // Give the other centroids some freedom in case some are split into pieces
-    for (auto tape_point : tape_points) {
+    // Give the other blob_stats some freedom in case some are split into pieces
+    for (auto it = tape_points.begin(); it < tape_points.end(); it++) {
       const auto current_distance =
-          Distance(centroids_[centroid_index], tape_point);
-      if (Less(current_distance, distance)) {
+          Distance(blob_stats_[blob_index].centroid, *it);
+      if ((it != tape_points.begin() + (tape_points.size() / 2)) &&
+          Less(current_distance, distance)) {
         distance = current_distance;
       }
     }

@@ -178,6 +178,7 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//y2022:__subpackages__"],
     deps = [
+        ":blob_detector_lib",
         ":calibration_fbs",
         ":target_estimate_fbs",
         "//aos/logging",

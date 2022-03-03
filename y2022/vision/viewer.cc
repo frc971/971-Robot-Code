@@ -58,8 +58,9 @@ std::vector<BlobDetector::BlobStats> FbsToBlobStats(
   std::vector<BlobDetector::BlobStats> blob_stats;
   for (const auto stats_fbs : blob_stats_fbs) {
     cv::Point centroid{stats_fbs->centroid()->x(), stats_fbs->centroid()->y()};
+    cv::Size size{stats_fbs->size()->width(), stats_fbs->size()->height()};
     blob_stats.emplace_back(BlobDetector::BlobStats{
-        centroid, stats_fbs->aspect_ratio(), stats_fbs->area(),
+        centroid, size, stats_fbs->aspect_ratio(), stats_fbs->area(),
         static_cast<size_t>(stats_fbs->num_points())});
   }
   return blob_stats;
@@ -82,7 +83,7 @@ bool DisplayLoop() {
         FbsToCvBlobs(*target_est->blob_result()->filtered_blobs()),
         FbsToCvBlobs(*target_est->blob_result()->unfiltered_blobs()),
         FbsToBlobStats(*target_est->blob_result()->blob_stats()),
-        FbsToCvPoints(*target_est->blob_result()->filtered_centroids()),
+        FbsToBlobStats(*target_est->blob_result()->filtered_stats()),
         cv::Point{target_est->blob_result()->centroid()->x(),
                   target_est->blob_result()->centroid()->y()}};
     // Only keep last 10 matches
@@ -204,7 +205,7 @@ void ViewerLocal() {
               << ")";
 
     if (blob_result.filtered_blobs.size() > 0) {
-      estimator.Solve(blob_result.filtered_centroids,
+      estimator.Solve(blob_result.filtered_stats,
                       FLAGS_display_estimation ? std::make_optional(ret_image)
                                                : std::nullopt);
       estimator.DrawEstimate(ret_image);

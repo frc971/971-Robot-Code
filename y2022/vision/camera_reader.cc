@@ -98,8 +98,8 @@ void CameraReader::ProcessImage(cv::Mat image_mat,
         CvBlobsToFbs(blob_result.unfiltered_blobs, &builder);
     const auto blob_stats_offset =
         BlobStatsToFbs(blob_result.blob_stats, &builder);
-    const auto filtered_centroids_offset =
-        CvPointsToFbs(blob_result.filtered_centroids, &builder);
+    const auto filtered_stats_offset =
+        BlobStatsToFbs(blob_result.filtered_stats, &builder);
     const Point centroid_fbs =
         Point{blob_result.centroid.x, blob_result.centroid.y};
 
@@ -107,12 +107,12 @@ void CameraReader::ProcessImage(cv::Mat image_mat,
     blob_result_builder.add_filtered_blobs(filtered_blobs_offset);
     blob_result_builder.add_unfiltered_blobs(unfiltered_blobs_offset);
     blob_result_builder.add_blob_stats(blob_stats_offset);
-    blob_result_builder.add_filtered_centroids(filtered_centroids_offset);
+    blob_result_builder.add_filtered_stats(filtered_stats_offset);
     blob_result_builder.add_centroid(&centroid_fbs);
     blob_result_offset = blob_result_builder.Finish();
   }
 
-  target_estimator_.Solve(blob_result.filtered_centroids, std::nullopt);
+  target_estimator_.Solve(blob_result.filtered_stats, std::nullopt);
 
   const auto camera_calibration_offset =
       aos::RecursiveCopyFlatBuffer(camera_calibration_, builder.fbb());
