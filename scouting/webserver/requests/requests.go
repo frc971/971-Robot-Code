@@ -126,6 +126,7 @@ func (handler requestAllMatchesHandler) ServeHTTP(w http.ResponseWriter, req *ht
 	matches, err := handler.db.ReturnMatches()
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Faled to query database: ", err))
+		return
 	}
 
 	var response RequestAllMatchesResponseT
@@ -181,6 +182,7 @@ func (handler requestMatchesForTeamHandler) ServeHTTP(w http.ResponseWriter, req
 	matches, err := handler.db.QueryMatches(request.Team())
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Faled to query database: ", err))
+		return
 	}
 
 	var response RequestAllMatchesResponseT
@@ -236,6 +238,7 @@ func (handler requestDataScoutingHandler) ServeHTTP(w http.ResponseWriter, req *
 	stats, err := handler.db.ReturnStats()
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Faled to query database: ", err))
+		return
 	}
 
 	var response RequestDataScoutingResponseT
