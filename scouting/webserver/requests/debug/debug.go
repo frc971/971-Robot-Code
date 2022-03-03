@@ -9,11 +9,17 @@ import (
 	"net/http"
 
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/error_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_matches_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_data_scouting_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_matches_for_team_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_data_scouting_response"
 )
 
 // Use aliases to make the rest of the code more readable.
 type SubmitDataScoutingResponseT = submit_data_scouting_response.SubmitDataScoutingResponseT
+type RequestAllMatchesResponseT = request_all_matches_response.RequestAllMatchesResponseT
+type RequestMatchesForTeamResponseT = request_matches_for_team_response.RequestMatchesForTeamResponseT
+type RequestDataScoutingResponseT = request_data_scouting_response.RequestDataScoutingResponseT
 
 // A struct that can be used as an `error`. It contains information about the
 // why the server was unhappy and what the corresponding request was.
@@ -83,5 +89,41 @@ func SubmitDataScouting(server string, requestBytes []byte) (*SubmitDataScouting
 	}
 	log.Printf("Parsing SubmitDataScoutingResponse")
 	response := submit_data_scouting_response.GetRootAsSubmitDataScoutingResponse(responseBytes, 0)
+	return response.UnPack(), nil
+}
+
+// Sends a `RequestAllMatches` message to the server and returns the
+// deserialized response.
+func RequestAllMatches(server string, requestBytes []byte) (*RequestAllMatchesResponseT, error) {
+	responseBytes, err := performPost(server+"/requests/request/all_matches", requestBytes)
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("Parsing RequestAllMatchesResponse")
+	response := request_all_matches_response.GetRootAsRequestAllMatchesResponse(responseBytes, 0)
+	return response.UnPack(), nil
+}
+
+// Sends a `RequestMatchesForTeam` message to the server and returns the
+// deserialized response.
+func RequestMatchesForTeam(server string, requestBytes []byte) (*RequestMatchesForTeamResponseT, error) {
+	responseBytes, err := performPost(server+"/requests/request/matches_for_team", requestBytes)
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("Parsing RequestMatchesForTeamResponse")
+	response := request_matches_for_team_response.GetRootAsRequestMatchesForTeamResponse(responseBytes, 0)
+	return response.UnPack(), nil
+}
+
+// Sends a `RequestDataScouting` message to the server and returns the
+// deserialized response.
+func RequestDataScouting(server string, requestBytes []byte) (*RequestDataScoutingResponseT, error) {
+	responseBytes, err := performPost(server+"/requests/request/data_scouting", requestBytes)
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("Parsing RequestDataScoutingResponse")
+	response := request_data_scouting_response.GetRootAsRequestDataScoutingResponse(responseBytes, 0)
 	return response.UnPack(), nil
 }

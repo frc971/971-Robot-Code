@@ -13,8 +13,8 @@ table Match {
 }
 //TODO(Sabina): de-duplicate the Match struct in request_all_matches
 
-table QueryMatchListResponse {
+table RequestMatchesForTeamResponse {
     match_list:[Match] (id:0);
 }
 
-root_type QueryMatchListResponse;
+root_type RequestMatchesForTeamResponse;

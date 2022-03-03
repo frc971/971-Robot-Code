@@ -12,8 +12,8 @@ table Match {
     b3:int (id: 8);
 }
 
-table RequestMatchListResponse  {
+table RequestAllMatchesResponse  {
     match_list:[Match] (id:0);
 }
 
-root_type RequestMatchListResponse;
+root_type RequestAllMatchesResponse;
