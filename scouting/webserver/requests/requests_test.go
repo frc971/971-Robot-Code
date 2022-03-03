@@ -8,8 +8,11 @@ import (
 	"testing"
 
 	"github.com/frc971/971-Robot-Code/scouting/db"
+	"github.com/frc971/971-Robot-Code/scouting/scraping"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/debug"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/error_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/refresh_match_list"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/refresh_match_list_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_matches"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_matches_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_data_scouting"
@@ -26,7 +29,7 @@ import (
 func Test404(t *testing.T) {
 	db := MockDatabase{}
 	scoutingServer := server.NewScoutingServer()
-	HandleRequests(&db, scoutingServer)
+	HandleRequests(&db, scrapeEmtpyMatchList, scoutingServer)
 	scoutingServer.Start(8080)
 	defer scoutingServer.Stop()
 
@@ -43,7 +46,7 @@ func Test404(t *testing.T) {
 func TestSubmitDataScoutingError(t *testing.T) {
 	db := MockDatabase{}
 	scoutingServer := server.NewScoutingServer()
-	HandleRequests(&db, scoutingServer)
+	HandleRequests(&db, scrapeEmtpyMatchList, scoutingServer)
 	scoutingServer.Start(8080)
 	defer scoutingServer.Stop()
 
@@ -71,7 +74,7 @@ func TestSubmitDataScoutingError(t *testing.T) {
 func TestSubmitDataScouting(t *testing.T) {
 	db := MockDatabase{}
 	scoutingServer := server.NewScoutingServer()
-	HandleRequests(&db, scoutingServer)
+	HandleRequests(&db, scrapeEmtpyMatchList, scoutingServer)
 	scoutingServer.Start(8080)
 	defer scoutingServer.Stop()
 
@@ -119,7 +122,7 @@ func TestRequestAllMatches(t *testing.T) {
 		},
 	}
 	scoutingServer := server.NewScoutingServer()
-	HandleRequests(&db, scoutingServer)
+	HandleRequests(&db, scrapeEmtpyMatchList, scoutingServer)
 	scoutingServer.Start(8080)
 	defer scoutingServer.Stop()
 
@@ -174,7 +177,7 @@ func TestRequestMatchesForTeam(t *testing.T) {
 		},
 	}
 	scoutingServer := server.NewScoutingServer()
-	HandleRequests(&db, scoutingServer)
+	HandleRequests(&db, scrapeEmtpyMatchList, scoutingServer)
 	scoutingServer.Start(8080)
 	defer scoutingServer.Stop()
 
@@ -227,7 +230,7 @@ func TestRequestDataScouting(t *testing.T) {
 		},
 	}
 	scoutingServer := server.NewScoutingServer()
-	HandleRequests(&db, scoutingServer)
+	HandleRequests(&db, scrapeEmtpyMatchList, scoutingServer)
 	scoutingServer.Start(8080)
 	defer scoutingServer.Stop()
 
@@ -269,6 +272,79 @@ func TestRequestDataScouting(t *testing.T) {
 	}
 }
 
+// Validates that we can download the schedule from The Blue Alliance.
+func TestRefreshMatchList(t *testing.T) {
+	scrapeMockSchedule := func(int32, string) ([]scraping.Match, error) {
+		return []scraping.Match{
+			{
+				CompLevel:   "qual",
+				MatchNumber: 1,
+				Alliances: scraping.Alliances{
+					Red: scraping.Alliance{
+						TeamKeys: []string{
+							"100",
+							"200",
+							"300",
+						},
+					},
+					Blue: scraping.Alliance{
+						TeamKeys: []string{
+							"101",
+							"201",
+							"301",
+						},
+					},
+				},
+				WinningAlliance: "",
+				EventKey:        "",
+				Time:            0,
+				PredictedTime:   0,
+				ActualTime:      0,
+				PostResultTime:  0,
+				ScoreBreakdowns: scraping.ScoreBreakdowns{},
+			},
+		}, nil
+	}
+
+	database := MockDatabase{}
+	scoutingServer := server.NewScoutingServer()
+	HandleRequests(&database, scrapeMockSchedule, scoutingServer)
+	scoutingServer.Start(8080)
+	defer scoutingServer.Stop()
+
+	builder := flatbuffers.NewBuilder(1024)
+	builder.Finish((&refresh_match_list.RefreshMatchListT{}).Pack(builder))
+
+	response, err := debug.RefreshMatchList("http://localhost:8080", builder.FinishedBytes())
+	if err != nil {
+		t.Fatal("Failed to request all matches: ", err)
+	}
+
+	// Validate the response.
+	expected := refresh_match_list_response.RefreshMatchListResponseT{}
+	if !reflect.DeepEqual(expected, *response) {
+		t.Fatal("Expected ", expected, ", but got ", *response)
+	}
+
+	// Make sure that the data made it into the database.
+	expectedMatches := []db.Match{
+		{
+			MatchNumber: 1,
+			Round:       1,
+			CompLevel:   "qual",
+			R1:          100,
+			R2:          200,
+			R3:          300,
+			B1:          101,
+			B2:          201,
+			B3:          301,
+		},
+	}
+	if !reflect.DeepEqual(expectedMatches, database.matches) {
+		t.Fatal("Expected ", expectedMatches, ", but got ", database.matches)
+	}
+}
+
 // A mocked database we can use for testing. Add functionality to this as
 // needed for your tests.
 
@@ -277,7 +353,8 @@ type MockDatabase struct {
 	stats   []db.Stats
 }
 
-func (database *MockDatabase) AddToMatch(db.Match) error {
+func (database *MockDatabase) AddToMatch(match db.Match) error {
+	database.matches = append(database.matches, match)
 	return nil
 }
 
@@ -308,4 +385,9 @@ func (database *MockDatabase) QueryMatches(requestedTeam int32) ([]db.Match, err
 
 func (database *MockDatabase) QueryStats(int) ([]db.Stats, error) {
 	return []db.Stats{}, nil
+}
+
+// Returns an empty match list from the fake The Blue Alliance scraping.
+func scrapeEmtpyMatchList(int32, string) ([]scraping.Match, error) {
+	return nil, nil
 }

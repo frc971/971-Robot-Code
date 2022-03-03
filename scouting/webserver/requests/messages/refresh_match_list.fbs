@@ -1,0 +1,8 @@
+namespace scouting.webserver.requests;
+
+table RefreshMatchList {
+    year: int (id: 0);
+    event_code: string (id: 1);
+}
+
+root_type RefreshMatchList;

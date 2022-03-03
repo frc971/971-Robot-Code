@@ -1,5 +1,14 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 
+filegroup(
+    name = "test_data",
+    srcs = [
+        # Generated with: bazel run //scouting/scraping:scraping_demo -- --json
+        "test_data/2016_nytr.json",
+    ],
+    visibility = ["//visibility:public"],
+)
+
 go_library(
     name = "scraping",
     srcs = [

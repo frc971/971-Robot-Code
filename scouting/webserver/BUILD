@@ -8,6 +8,7 @@ go_library(
     visibility = ["//visibility:private"],
     deps = [
         "//scouting/db",
+        "//scouting/scraping",
         "//scouting/webserver/requests",
         "//scouting/webserver/server",
         "//scouting/webserver/static",
