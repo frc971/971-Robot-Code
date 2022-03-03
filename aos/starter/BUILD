@@ -33,6 +33,7 @@ cc_library(
         "//aos/events:event_loop",
         "//aos/events:shm_event_loop",
         "//aos/util:scoped_pipe",
+        "@boringssl//:crypto",
         "@com_github_google_glog//:glog",
     ],
 )

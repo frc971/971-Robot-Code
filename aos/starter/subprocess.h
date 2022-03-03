@@ -75,6 +75,8 @@ class Application {
 
   bool autorestart() const { return autorestart_; }
 
+  std::string_view full_path() const { return full_path_; }
+
   const std::string &GetStdout();
   const std::string &GetStderr();
   std::optional<int> exit_code() const { return exit_code_; }
@@ -91,6 +93,9 @@ class Application {
 
   void QueueStart();
 
+  // Queues start if autorestart set, otherwise moves state to stopped.
+  void MaybeQueueRestart();
+
   // Copy flatbuffer vector of strings to vector of std::string.
   static std::vector<std::string> FbsVectorToVector(
       const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> &v);
@@ -106,11 +111,21 @@ class Application {
   // call).
   std::vector<char *> CArgs();
 
+  // Resolves the path to the binary from the PATH environment variable. On
+  // success, updates full_path_ to the absolute path to the binary and the
+  // checksum_ to the hex-encoded sha256 hash of the file; returns true. On
+  // failure, returns false.
+  bool UpdatePathAndChecksum();
+
   // Next unique id for all applications
   static inline uint64_t next_id_ = 0;
 
+  static constexpr size_t kSha256HexStrSize = 256 / CHAR_BIT * 2;
+
   std::string name_;
   std::string path_;
+  std::string full_path_;
+  std::array<char, kSha256HexStrSize> checksum_{"DEADBEEF"};
   std::vector<std::string> args_;
   std::string user_name_;
   std::optional<uid_t> user_;

@@ -45,7 +45,10 @@ enum LastStopReason : uint {
   EXECV_ERR,
 
   // Failed to change to the requested group
-  SET_GRP_ERR
+  SET_GRP_ERR,
+
+  // Failed to either find the binary or open it for reading.
+  RESOLVE_ERR,
 }
 
 table Status {
@@ -73,6 +76,12 @@ table ApplicationStatus {
   // Indicates the reason the application is not running. Only valid if
   // application is STOPPED.
   last_stop_reason: LastStopReason (id: 6);
+
+  binary_sha256: string (id: 7);
+
+  // Resolved path to the binary executed. May be absolute or relative to the
+  // working directory of starter.
+  full_path: string (id: 8);
 }
 
 root_type Status;
