@@ -246,6 +246,12 @@
       "max_size": 72
     },
     {
+      "name": "/superstructure",
+      "type": "y2022.input.joysticks.Setpoint",
+      "source_node": "roborio",
+      "num_senders": 2
+    },
+    {
       "name": "/drivetrain",
       "type": "frc971.sensors.GyroReading",
       "source_node": "roborio",

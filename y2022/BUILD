@@ -1,9 +1,11 @@
 load("//frc971:downloader.bzl", "robot_downloader")
 load("//aos:config.bzl", "aos_config")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 load("//tools/build_rules:template.bzl", "jinja2_template")
 
 robot_downloader(
     binaries = [
+        ":setpoint_setter",
         "//aos/network:web_proxy_main",
     ],
     data = [
@@ -147,6 +149,7 @@ aos_config(
     name = "config_roborio",
     src = "y2022_roborio.json",
     flatbuffers = [
+        ":setpoint_fbs",
         "//aos/network:remote_message_fbs",
         "//aos/network:message_bridge_client_fbs",
         "//aos/network:message_bridge_server_fbs",
@@ -252,6 +255,8 @@ cc_binary(
         ":joystick_reader.cc",
     ],
     deps = [
+        ":constants",
+        ":setpoint_fbs",
         "//aos:init",
         "//aos/actions:action_lib",
         "//aos/logging",
@@ -264,6 +269,27 @@ cc_binary(
         "//y2022/control_loops/drivetrain:drivetrain_base",
         "//y2022/control_loops/superstructure:superstructure_goal_fbs",
         "//y2022/control_loops/superstructure:superstructure_status_fbs",
+    ],
+)
+
+flatbuffer_cc_library(
+    name = "setpoint_fbs",
+    srcs = [
+        "setpoint.fbs",
+    ],
+    gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
+)
+
+cc_binary(
+    name = "setpoint_setter",
+    srcs = ["setpoint_setter.cc"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":constants",
+        ":setpoint_fbs",
+        "//aos:init",
+        "//aos/events:shm_event_loop",
     ],
 )
 
