@@ -3,6 +3,7 @@
 set -ex
 
 mkdir -p /root/bin
+mkdir -p /home/pi/bin
 
 # Give it a static IP
 cp /tmp/dhcpcd.conf /etc/

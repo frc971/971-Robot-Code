@@ -52,7 +52,7 @@ fi
 # Put corret team number in imu's address, or add it if missing
 if grep '^10\.[0-9]*\.[0-9]*\.105\s.*\s*imu$' /etc/hosts >/dev/null;
 then
-  sed -i "s/^10\.[0-9]*\.[0-9]*\(\.105\s.*imu\)$/${IP_BASE}\1/" /etc/hosts
+  sed -i "s/^10\.[0-9]*\.[0-9]*\(\.[0-9]*\s*pi-\)[0-9]*\(-[0-9] pi5 imu\)$/${IP_BASE}\1${TEAM_NUMBER}\2/" /etc/hosts
 else
   if grep '^10\.[0-9]*\.[0-9]*\.105\s*pi-[0-9]*-[0-9]*\s*pi5$' /etc/hosts
   then
