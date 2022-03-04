@@ -262,22 +262,31 @@ void CharucoExtractor::HandleImage(cv::Mat rgb_image,
         Eigen::Vector3d result = eigen_camera_matrix_ * camera_projection *
                                  board_to_camera * Eigen::Vector3d::Zero();
 
-        result /= result.z();
-        cv::circle(rgb_image, cv::Point(result.x(), result.y()), 4,
-                   cv::Scalar(255, 255, 255), 0, cv::LINE_8);
+        // Found that drawAxis hangs if you try to draw with z values too small
+        // (trying to draw axes at inifinity)
+        // TODO<Jim>: Explore what real thresholds for this should be; likely
+        // Don't need to get rid of negative values
+        if (result.z() < 0.01) {
+          LOG(INFO) << "Skipping, due to z value too small: " << result.z();
+          valid = false;
+        } else {
+          result /= result.z();
+          cv::circle(rgb_image, cv::Point(result.x(), result.y()), 4,
+                     cv::Scalar(255, 255, 255), 0, cv::LINE_8);
 
-        cv::aruco::drawAxis(rgb_image, camera_matrix_, dist_coeffs_, rvec, tvec,
-                            0.1);
+          cv::aruco::drawAxis(rgb_image, camera_matrix_, dist_coeffs_, rvec,
+                              tvec, 0.1);
+        }
       } else {
         LOG(INFO) << "Age: " << age_double << ", invalid pose";
       }
     } else {
-      LOG(INFO) << "Age: " << age_double << ", not enough charuco IDs, got "
-                << charuco_ids.size() << ", needed " << FLAGS_min_targets;
+      VLOG(2) << "Age: " << age_double << ", not enough charuco IDs, got "
+              << charuco_ids.size() << ", needed " << FLAGS_min_targets;
     }
   } else {
-    LOG(INFO) << "Age: " << age_double << ", not enough marker IDs, got "
-              << marker_ids.size() << ", needed " << FLAGS_min_targets;
+    VLOG(2) << "Age: " << age_double << ", not enough marker IDs, got "
+            << marker_ids.size() << ", needed " << FLAGS_min_targets;
     cv::aruco::drawDetectedMarkers(rgb_image, marker_corners, marker_ids);
   }
 
