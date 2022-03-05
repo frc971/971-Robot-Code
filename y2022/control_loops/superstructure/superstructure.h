@@ -7,6 +7,7 @@
 #include "y2022/constants.h"
 #include "y2022/control_loops/superstructure/catapult/catapult.h"
 #include "y2022/control_loops/superstructure/collision_avoidance.h"
+#include "y2022/control_loops/superstructure/superstructure_can_position_generated.h"
 #include "y2022/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2022/control_loops/superstructure/superstructure_output_generated.h"
 #include "y2022/control_loops/superstructure/superstructure_position_generated.h"
@@ -28,6 +29,11 @@ class Superstructure
       ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystem<
           ::frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator,
           ::frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus>;
+
+  static constexpr double kTurretGoalThreshold = 0.01;
+  static constexpr double kCatapultGoalThreshold = 0.01;
+  // potentiometer will be more noisy
+  static constexpr double kFlipperGoalThreshold = 0.05;
 
   explicit Superstructure(::aos::EventLoop *event_loop,
                           std::shared_ptr<const constants::Values> values,
@@ -58,15 +64,32 @@ class Superstructure
   PotAndAbsoluteEncoderSubsystem intake_front_;
   PotAndAbsoluteEncoderSubsystem intake_back_;
   PotAndAbsoluteEncoderSubsystem turret_;
+  catapult::Catapult catapult_;
 
   CollisionAvoidance collision_avoidance_;
 
   aos::Fetcher<frc971::control_loops::drivetrain::Status>
       drivetrain_status_fetcher_;
+  aos::Fetcher<CANPosition> can_position_fetcher_;
+
+  int prev_shot_count_ = 0;
+
+  bool flippers_open_ = false;
+  bool reseating_in_catapult_ = false;
+  bool fire_ = false;
+
+  aos::monotonic_clock::time_point intake_beambreak_timer_ =
+      aos::monotonic_clock::min_time;
+  aos::monotonic_clock::time_point transferring_timer_ =
+      aos::monotonic_clock::min_time;
+  aos::monotonic_clock::time_point loading_timer_ =
+      aos::monotonic_clock::min_time;
+  aos::monotonic_clock::time_point flipper_opening_start_time_ =
+      aos::monotonic_clock::min_time;
+  SuperstructureState state_ = SuperstructureState::IDLE;
+  IntakeState intake_state_ = IntakeState::NO_BALL;
 
   DISALLOW_COPY_AND_ASSIGN(Superstructure);
-
-  catapult::Catapult catapult_;
 };
 
 }  // namespace superstructure

@@ -244,6 +244,18 @@ class SuperstructureSimulation {
     flatbuffers::Offset<frc971::RelativePosition> climber_offset =
         climber_.encoder()->GetSensorValues(&climber_builder);
 
+    frc971::RelativePosition::Builder flipper_arm_left_builder =
+        builder.MakeBuilder<frc971::RelativePosition>();
+    flipper_arm_left_builder.add_encoder(flipper_arm_left_);
+    flatbuffers::Offset<frc971::RelativePosition> flipper_arm_left_offset =
+        flipper_arm_left_builder.Finish();
+
+    frc971::RelativePosition::Builder flipper_arm_right_builder =
+        builder.MakeBuilder<frc971::RelativePosition>();
+    flipper_arm_right_builder.add_encoder(flipper_arm_right_);
+    flatbuffers::Offset<frc971::RelativePosition> flipper_arm_right_offset =
+        flipper_arm_left_builder.Finish();
+
     Position::Builder position_builder = builder.MakeBuilder<Position>();
 
     position_builder.add_intake_front(intake_front_offset);
@@ -251,6 +263,11 @@ class SuperstructureSimulation {
     position_builder.add_turret(turret_offset);
     position_builder.add_catapult(catapult_offset);
     position_builder.add_climber(climber_offset);
+    position_builder.add_intake_beambreak_front(intake_beambreak_front_);
+    position_builder.add_intake_beambreak_back(intake_beambreak_back_);
+    position_builder.add_turret_beambreak(turret_beambreak_);
+    position_builder.add_flipper_arm_left(flipper_arm_left_offset);
+    position_builder.add_flipper_arm_right(flipper_arm_right_offset);
 
     CHECK_EQ(builder.Send(position_builder.Finish()),
              aos::RawSender::Error::kOk);
@@ -261,6 +278,19 @@ class SuperstructureSimulation {
   PotAndAbsoluteEncoderSimulator *turret() { return &turret_; }
   PotAndAbsoluteEncoderSimulator *catapult() { return &catapult_; }
   RelativeEncoderSimulator *climber() { return &climber_; }
+
+  void set_intake_beambreak_front(bool triggered) {
+    intake_beambreak_front_ = triggered;
+  }
+
+  void set_intake_beambreak_back(bool triggered) {
+    intake_beambreak_back_ = triggered;
+  }
+
+  void set_turret_beambreak(bool triggered) { turret_beambreak_ = triggered; }
+
+  void set_flipper_arm_left(double pos) { flipper_arm_left_ = pos; }
+  void set_flipper_arm_right(double pos) { flipper_arm_right_ = pos; }
 
  private:
   ::aos::EventLoop *event_loop_;
@@ -273,6 +303,11 @@ class SuperstructureSimulation {
 
   bool first_ = true;
 
+  bool intake_beambreak_front_ = false;
+  bool intake_beambreak_back_ = false;
+  bool turret_beambreak_ = false;
+  double flipper_arm_left_ = 0.0;
+  double flipper_arm_right_ = 0.0;
   PotAndAbsoluteEncoderSimulator intake_front_;
   PotAndAbsoluteEncoderSimulator intake_back_;
   PotAndAbsoluteEncoderSimulator turret_;
@@ -343,11 +378,6 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
                   0.001);
     }
 
-    if (superstructure_goal_fetcher_->has_turret()) {
-      EXPECT_NEAR(superstructure_goal_fetcher_->turret()->unsafe_goal(),
-                  superstructure_status_fetcher_->turret()->position(), 0.001);
-    }
-
     if (superstructure_goal_fetcher_->has_catapult() &&
         superstructure_goal_fetcher_->catapult()->has_return_position()) {
       EXPECT_NEAR(superstructure_goal_fetcher_->catapult()
@@ -361,7 +391,23 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
       EXPECT_NEAR(superstructure_goal_fetcher_->climber()->unsafe_goal(),
                   superstructure_status_fetcher_->climber()->position(), 0.001);
     }
-  }
+
+    if (superstructure_status_fetcher_->intake_state() !=
+        IntakeState::NO_BALL) {
+      EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_front(), 0.0);
+      EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_back(), 0.0);
+    }
+
+    EXPECT_NEAR(superstructure_goal_fetcher_->climber()->unsafe_goal(),
+                superstructure_status_fetcher_->climber()->position(), 0.001);
+
+    if (superstructure_goal_fetcher_->has_turret() &&
+        superstructure_status_fetcher_->state() !=
+            SuperstructureState::TRANSFERRING) {
+      EXPECT_NEAR(superstructure_goal_fetcher_->turret()->unsafe_goal(),
+                  superstructure_status_fetcher_->turret()->position(), 0.001);
+    }
+  }  // namespace testing
 
   void CheckIfZeroed() {
     superstructure_status_fetcher_.Fetch();
@@ -392,7 +438,7 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
   }
 
   void TestRollerFront(double roller_speed_front,
-                       double roller_speed_compensation) {
+                       double roller_speed_compensation, double expected) {
     auto builder = superstructure_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_roller_speed_front(roller_speed_front);
@@ -400,18 +446,11 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
     builder.CheckOk(builder.Send(goal_builder.Finish()));
     RunFor(dt() * 2);
     ASSERT_TRUE(superstructure_output_fetcher_.Fetch());
-    EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_front(),
-              roller_speed_front + std::max((superstructure_.robot_velocity() *
-                                             roller_speed_compensation),
-                                            0.0));
-    if (superstructure_.robot_velocity() <= 0) {
-      EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_front(),
-                roller_speed_front);
-    }
+    EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_front(), expected);
   }
 
   void TestRollerBack(double roller_speed_back,
-                      double roller_speed_compensation) {
+                      double roller_speed_compensation, double expected) {
     auto builder = superstructure_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_roller_speed_back(roller_speed_back);
@@ -420,18 +459,12 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
     RunFor(dt() * 2);
     ASSERT_TRUE(superstructure_output_fetcher_.Fetch());
     ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
-    EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_back(),
-              roller_speed_back - std::min(superstructure_.robot_velocity() *
-                                               roller_speed_compensation,
-                                           0.0));
-    if (superstructure_.robot_velocity() >= 0) {
-      EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_back(),
-                roller_speed_back);
-    }
+
+    EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_back(), expected);
   }
 
   void TestTransferRoller(double transfer_roller_speed,
-                          double roller_speed_compensation) {
+                          double roller_speed_compensation, double expected) {
     auto builder = superstructure_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_transfer_roller_speed(transfer_roller_speed);
@@ -441,7 +474,7 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
     ASSERT_TRUE(superstructure_output_fetcher_.Fetch());
     ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
     EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage(),
-              transfer_roller_speed);
+              expected);
   }
 
   std::shared_ptr<const constants::Values> values_;
@@ -466,7 +499,7 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
 
   std::unique_ptr<aos::EventLoop> logger_event_loop_;
   std::unique_ptr<aos::logger::Logger> logger_;
-};
+};  // namespace testing
 
 // Tests that the superstructure does nothing when the goal is to remain
 // still.
@@ -699,28 +732,265 @@ TEST_F(SuperstructureTest, RunRollers) {
   WaitUntilZeroed();
 
   SendRobotVelocity(3.0);
-  TestRollerFront(-12.0, 1.5);
-  TestRollerFront(12.0, 1.5);
-  TestRollerFront(0.0, 1.5);
+  TestRollerFront(-12.0, 1.5, -7.5);
+  TestRollerFront(12.0, 1.5, 16.5);
+  TestRollerFront(0.0, 1.5, 4.5);
 
   SendRobotVelocity(-3.0);
-  TestRollerFront(-12.0, 1.5);
-  TestRollerFront(12.0, 1.5);
-  TestRollerFront(0.0, 1.5);
+  TestRollerFront(-12.0, 1.5, -12.0);
+  TestRollerFront(12.0, 1.5, 12.0);
+  TestRollerFront(0.0, 1.5, 0.0);
 
   SendRobotVelocity(3.0);
-  TestRollerBack(-12.0, 1.5);
-  TestRollerBack(12.0, 1.5);
-  TestRollerBack(0.0, 1.5);
+  TestRollerBack(-12.0, 1.5, -12.0);
+  TestRollerBack(12.0, 1.5, 12.0);
+  TestRollerBack(0.0, 1.5, 0.0);
 
   SendRobotVelocity(-3.0);
-  TestRollerBack(-12.0, 1.5);
-  TestRollerBack(12.0, 1.5);
-  TestRollerBack(0.0, 1.5);
+  TestRollerBack(-12.0, 1.5, -7.5);
+  TestRollerBack(12.0, 1.5, 16.5);
+  TestRollerBack(0.0, 1.5, 4.5);
 
-  TestTransferRoller(-12.0, 1.5);
-  TestTransferRoller(12.0, 1.5);
-  TestTransferRoller(0.0, 1.5);
+  TestTransferRoller(-12.0, 1.5, -12.0);
+  TestTransferRoller(12.0, 1.5, 12.0);
+  TestTransferRoller(0.0, 1.5, 0.0);
+}
+
+// Tests the whole shooting statemachine - from loading to shooting
+TEST_F(SuperstructureTest, LoadingToShooting) {
+  SetEnabled(true);
+  WaitUntilZeroed();
+
+  SendRobotVelocity(3.0);
+
+  constexpr double kTurretGoal = 3.0;
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        turret_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), kTurretGoal);
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_roller_speed_front(12.0);
+    goal_builder.add_roller_speed_back(12.0);
+    goal_builder.add_roller_speed_compensation(0.0);
+    goal_builder.add_turret(turret_offset);
+    builder.CheckOk(builder.Send(goal_builder.Finish()));
+  }
+  RunFor(std::chrono::seconds(2));
+
+  // Make sure that the rollers are spinning, but the superstructure hasn't
+  // transitioned away from idle because the beambreaks haven't been triggered.
+  ASSERT_TRUE(superstructure_output_fetcher_.Fetch());
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+  EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_front(), 12.0);
+  EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_back(), 12.0);
+  EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage(), 0.0);
+  EXPECT_EQ(superstructure_status_fetcher_->state(), SuperstructureState::IDLE);
+  EXPECT_EQ(superstructure_status_fetcher_->intake_state(),
+            IntakeState::NO_BALL);
+  EXPECT_NEAR(superstructure_status_fetcher_->turret()->position(), kTurretGoal,
+              0.001);
+  EXPECT_EQ(superstructure_status_fetcher_->shot_count(), 0);
+
+  superstructure_plant_.set_intake_beambreak_front(true);
+  superstructure_plant_.set_intake_beambreak_back(false);
+  RunFor(dt());
+
+  // Make sure that the turret goal is set to be loading from the front intake
+  // and the supersturcture is transferring from the front intake, since that
+  // beambreak was trigerred. Also, the outside rollers should be stopped
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+  ASSERT_TRUE(superstructure_output_fetcher_.Fetch());
+  EXPECT_EQ(superstructure_status_fetcher_->state(),
+            SuperstructureState::TRANSFERRING);
+  EXPECT_EQ(superstructure_status_fetcher_->intake_state(),
+            IntakeState::INTAKE_FRONT_BALL);
+  EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_front(), 0.0);
+  EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_back(), 0.0);
+
+  RunFor(chrono::seconds(1));
+
+  // Make sure that we are still transferring and the front transfer rollers
+  // still have a ball. The turret should now be at the loading position and the
+  // flippers should be feeding the ball.
+  ASSERT_TRUE(superstructure_output_fetcher_.Fetch());
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+  EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_front(), 0.0);
+  EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_back(), 0.0);
+  EXPECT_EQ(superstructure_status_fetcher_->state(),
+            SuperstructureState::TRANSFERRING);
+  EXPECT_EQ(superstructure_status_fetcher_->intake_state(),
+            IntakeState::INTAKE_FRONT_BALL);
+  EXPECT_EQ(superstructure_output_fetcher_->flipper_arms_voltage(),
+            constants::Values::kFlipperFeedVoltage());
+  EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage(),
+            constants::Values::kTransferRollerFrontVoltage());
+  EXPECT_NEAR(superstructure_status_fetcher_->turret()->position(),
+              constants::Values::kTurretFrontIntakePos(), 0.001);
+  EXPECT_EQ(superstructure_status_fetcher_->shot_count(), 0);
+
+  superstructure_plant_.set_intake_beambreak_front(false);
+  superstructure_plant_.set_intake_beambreak_back(false);
+  superstructure_plant_.set_turret_beambreak(true);
+  RunFor(dt() * 2);
+
+  // Now that the turret beambreak has been triggered, we should be loading the
+  // ball. The outside rollers shouldn't be limited anymore, and the transfer
+  // rollers should be off. The flippers should still be feeding the ball, and
+  // the intake state should reflect that the ball has been transferred away
+  ASSERT_TRUE(superstructure_output_fetcher_.Fetch());
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+  EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_front(), 12.0);
+  EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_back(), 12.0);
+  EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage(), 0.0);
+  EXPECT_EQ(superstructure_status_fetcher_->state(),
+            SuperstructureState::LOADING);
+  EXPECT_EQ(superstructure_status_fetcher_->intake_state(),
+            IntakeState::NO_BALL);
+  EXPECT_EQ(superstructure_output_fetcher_->flipper_arms_voltage(),
+            constants::Values::kFlipperFeedVoltage());
+  EXPECT_EQ(superstructure_status_fetcher_->shot_count(), 0);
+
+  superstructure_plant_.set_turret_beambreak(false);
+  RunFor(constants::Values::kExtraLoadingTime() + dt());
+
+  // Now that the ball has gone past the turret beambreak,
+  // it should be loaded in the catapult and ready for firing.
+  // The flippers should be off.
+  ASSERT_TRUE(superstructure_output_fetcher_.Fetch());
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+  EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_front(), 12.0);
+  EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_back(), 12.0);
+  EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage(), 0.0);
+  EXPECT_EQ(superstructure_status_fetcher_->state(),
+            SuperstructureState::LOADED);
+  EXPECT_EQ(superstructure_status_fetcher_->intake_state(),
+            IntakeState::NO_BALL);
+  EXPECT_EQ(superstructure_output_fetcher_->flipper_arms_voltage(), 0.0);
+  EXPECT_EQ(superstructure_status_fetcher_->shot_count(), 0);
+
+  RunFor(std::chrono::seconds(2));
+
+  // After a few seconds, the turret should be at it's aiming goal. The flippers
+  // should still be off and we should still be loaded and ready to fire.
+  ASSERT_TRUE(superstructure_output_fetcher_.Fetch());
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+  EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_front(), 12.0);
+  EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_back(), 12.0);
+  EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage(), 0.0);
+  EXPECT_EQ(superstructure_status_fetcher_->state(),
+            SuperstructureState::LOADED);
+  EXPECT_EQ(superstructure_status_fetcher_->intake_state(),
+            IntakeState::NO_BALL);
+  EXPECT_EQ(superstructure_output_fetcher_->flipper_arms_voltage(), 0.0);
+  EXPECT_NEAR(superstructure_status_fetcher_->turret()->position(), kTurretGoal,
+              0.001);
+  EXPECT_EQ(superstructure_status_fetcher_->shot_count(), 0);
+
+  superstructure_plant_.set_intake_beambreak_front(false);
+  superstructure_plant_.set_intake_beambreak_back(true);
+  RunFor(dt() * 2);
+
+  // A ball being intaked from the back should be held by wiggling the transfer
+  // rollers, but we shound't abort the shot from the front intake for it and
+  // move the turret.
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+  ASSERT_TRUE(superstructure_output_fetcher_.Fetch());
+  EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_front(), 0.0);
+  EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_back(), 0.0);
+  LOG(INFO) << superstructure_output_fetcher_->transfer_roller_voltage();
+  EXPECT_TRUE(superstructure_output_fetcher_->transfer_roller_voltage() !=
+                  0.0 &&
+              superstructure_output_fetcher_->transfer_roller_voltage() <=
+                  constants::Values::kTransferRollerFrontWiggleVoltage() &&
+              superstructure_output_fetcher_->transfer_roller_voltage() >=
+                  -constants::Values::kTransferRollerFrontWiggleVoltage());
+  EXPECT_EQ(superstructure_status_fetcher_->state(),
+            SuperstructureState::LOADED);
+  EXPECT_EQ(superstructure_status_fetcher_->intake_state(),
+            IntakeState::INTAKE_BACK_BALL);
+  EXPECT_NEAR(superstructure_status_fetcher_->turret()->position(), kTurretGoal,
+              0.001);
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        turret_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), kTurretGoal);
+
+    const auto catapult_return_offset =
+        CreateStaticZeroingSingleDOFProfiledSubsystemGoal(*builder.fbb(),
+                                                          -0.87);
+    auto catapult_builder = builder.MakeBuilder<CatapultGoal>();
+    catapult_builder.add_shot_position(0.3);
+    catapult_builder.add_shot_velocity(15.0);
+    catapult_builder.add_return_position(catapult_return_offset);
+    auto catapult_offset = catapult_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_roller_speed_front(12.0);
+    goal_builder.add_roller_speed_back(12.0);
+    goal_builder.add_roller_speed_compensation(0.0);
+    goal_builder.add_catapult(catapult_offset);
+    goal_builder.add_fire(true);
+    goal_builder.add_turret(turret_offset);
+    builder.CheckOk(builder.Send(goal_builder.Finish()));
+  }
+  superstructure_plant_.set_flipper_arm_left(
+      constants::Values::kFlipperArmRange().upper);
+  superstructure_plant_.set_flipper_arm_right(
+      constants::Values::kFlipperArmRange().upper);
+  RunFor(dt() * 2);
+
+  // Now that we were asked to fire and the flippers are open,
+  // we should be shooting the ball and holding the flippers open.
+  // The turret should still be at its goal, and we should still be wiggling the
+  // transfer rollers to keep the ball in the back intake
+  ASSERT_TRUE(superstructure_output_fetcher_.Fetch());
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+  EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_front(), 0.0);
+  EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_back(), 0.0);
+  EXPECT_TRUE(superstructure_output_fetcher_->transfer_roller_voltage() !=
+                  0.0 &&
+              superstructure_output_fetcher_->transfer_roller_voltage() <=
+                  constants::Values::kTransferRollerFrontWiggleVoltage() &&
+              superstructure_output_fetcher_->transfer_roller_voltage() >=
+                  -constants::Values::kTransferRollerFrontWiggleVoltage());
+  EXPECT_EQ(superstructure_status_fetcher_->state(),
+            SuperstructureState::SHOOTING);
+  EXPECT_EQ(superstructure_status_fetcher_->intake_state(),
+            IntakeState::INTAKE_BACK_BALL);
+  EXPECT_TRUE(superstructure_status_fetcher_->flippers_open());
+  EXPECT_EQ(superstructure_output_fetcher_->flipper_arms_voltage(),
+            constants::Values::kFlipperHoldVoltage());
+  EXPECT_NEAR(superstructure_status_fetcher_->turret()->position(), kTurretGoal,
+              0.001);
+  EXPECT_EQ(superstructure_status_fetcher_->shot_count(), 0);
+
+  superstructure_plant_.set_flipper_arm_left(
+      constants::Values::kFlipperArmRange().upper);
+  superstructure_plant_.set_flipper_arm_right(
+      constants::Values::kFlipperArmRange().upper);
+  superstructure_plant_.set_intake_beambreak_back(false);
+  RunFor(std::chrono::seconds(2));
+
+  // After a bit, we should have completed the shot and be idle.
+  // Since the beambreak was triggered a bit ago, it should still think a ball
+  // is there
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+  EXPECT_EQ(superstructure_status_fetcher_->shot_count(), 1);
+  EXPECT_EQ(superstructure_status_fetcher_->state(), SuperstructureState::IDLE);
+  EXPECT_EQ(superstructure_status_fetcher_->intake_state(),
+            IntakeState::INTAKE_BACK_BALL);
+
+  // Since the intake beambreak hasn't triggered in a while, it should realize
+  // the ball was lost
+  RunFor(std::chrono::seconds(1));
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+  EXPECT_EQ(superstructure_status_fetcher_->shot_count(), 1);
+  EXPECT_EQ(superstructure_status_fetcher_->state(), SuperstructureState::IDLE);
+  EXPECT_EQ(superstructure_status_fetcher_->intake_state(),
+            IntakeState::NO_BALL);
 }
 
 // Make sure that the front and back intakes are never switched
@@ -776,9 +1046,11 @@ TEST_F(SuperstructureTest, RunIntakes) {
 TEST_F(SuperstructureTest, ShootCatapult) {
   SetEnabled(true);
   superstructure_plant_.intake_front()->InitializePosition(
-      constants::Values::kIntakeRange().middle());
+      constants::Values::kIntakeRange().upper);
   superstructure_plant_.intake_back()->InitializePosition(
-      constants::Values::kIntakeRange().middle());
+      constants::Values::kIntakeRange().upper);
+  superstructure_plant_.turret()->InitializePosition(
+      constants::Values::kTurretFrontIntakePos());
 
   WaitUntilZeroed();
 
@@ -794,7 +1066,6 @@ TEST_F(SuperstructureTest, ShootCatapult) {
     CatapultGoal::Builder catapult_goal_builder =
         builder.MakeBuilder<CatapultGoal>();
 
-    catapult_goal_builder.add_fire(false);
     catapult_goal_builder.add_shot_position(0.3);
     catapult_goal_builder.add_shot_velocity(15.0);
     catapult_goal_builder.add_return_position(catapult_return_position_offset);
@@ -802,6 +1073,7 @@ TEST_F(SuperstructureTest, ShootCatapult) {
         catapult_goal_builder.Finish();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_fire(false);
     goal_builder.add_catapult(catapult_goal_offset);
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
@@ -817,6 +1089,10 @@ TEST_F(SuperstructureTest, ShootCatapult) {
     auto builder = superstructure_goal_sender_.MakeBuilder();
 
     flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        turret_goal_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), constants::Values::kTurretFrontIntakePos());
+
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
         catapult_return_position_offset =
             CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
                 *builder.fbb(), constants::Values::kCatapultRange().lower,
@@ -825,7 +1101,6 @@ TEST_F(SuperstructureTest, ShootCatapult) {
     CatapultGoal::Builder catapult_goal_builder =
         builder.MakeBuilder<CatapultGoal>();
 
-    catapult_goal_builder.add_fire(true);
     catapult_goal_builder.add_shot_position(0.5);
     catapult_goal_builder.add_shot_velocity(20.0);
     catapult_goal_builder.add_return_position(catapult_return_position_offset);
@@ -834,11 +1109,28 @@ TEST_F(SuperstructureTest, ShootCatapult) {
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
 
+    goal_builder.add_fire(true);
     goal_builder.add_catapult(catapult_goal_offset);
+    goal_builder.add_turret(turret_goal_offset);
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
-  RunFor(chrono::milliseconds(100));
+  // Make the superstructure statemachine progress to SHOOTING
+  superstructure_plant_.set_intake_beambreak_front(true);
+  superstructure_plant_.set_turret_beambreak(true);
+  superstructure_plant_.set_flipper_arm_left(
+      constants::Values::kFlipperArmRange().upper);
+  superstructure_plant_.set_flipper_arm_right(
+      constants::Values::kFlipperArmRange().upper);
+
+  RunFor(dt() * 4);
+
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+  EXPECT_EQ(superstructure_status_fetcher_->state(),
+            SuperstructureState::LOADING);
+  superstructure_plant_.set_turret_beambreak(false);
+
+  RunFor(chrono::milliseconds(200));
 
   ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
   EXPECT_TRUE(superstructure_status_fetcher_->mpc_active());
@@ -846,12 +1138,17 @@ TEST_F(SuperstructureTest, ShootCatapult) {
 
   EXPECT_GT(superstructure_status_fetcher_->catapult()->position(),
             constants::Values::kCatapultRange().lower + 0.1);
+  EXPECT_EQ(superstructure_status_fetcher_->state(),
+            SuperstructureState::SHOOTING);
+  superstructure_plant_.set_intake_beambreak_front(false);
+
   RunFor(chrono::milliseconds(1950));
 
   ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
   EXPECT_NEAR(superstructure_status_fetcher_->catapult()->position(),
               constants::Values::kCatapultRange().lower, 1e-3);
   EXPECT_EQ(superstructure_status_fetcher_->shot_count(), 1);
+  EXPECT_EQ(superstructure_status_fetcher_->state(), SuperstructureState::IDLE);
 }
 
 }  // namespace testing

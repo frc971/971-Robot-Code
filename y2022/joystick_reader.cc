@@ -75,7 +75,6 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     superstructure::CatapultGoal::Builder catapult_builder =
         builder.MakeBuilder<superstructure::CatapultGoal>();
     catapult_builder.add_return_position(catapult_return_offset);
-    catapult_builder.add_fire(data.IsPressed(kFire));
     catapult_builder.add_shot_position(0.3);
     catapult_builder.add_shot_velocity(15.0);
     flatbuffers::Offset<superstructure::CatapultGoal> catapult_offset =
@@ -84,6 +83,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     superstructure::Goal::Builder goal_builder =
         builder.MakeBuilder<superstructure::Goal>();
     goal_builder.add_catapult(catapult_offset);
+    goal_builder.add_fire(data.IsPressed(kFire));
 
     if (builder.Send(goal_builder.Finish()) != aos::RawSender::Error::kOk) {
       AOS_LOG(ERROR, "Sending superstructure goal failed.\n");

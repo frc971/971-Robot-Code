@@ -3,12 +3,47 @@ include "frc971/control_loops/profiled_subsystem.fbs";
 
 namespace y2022.control_loops.superstructure;
 
+// Contains which intake has a ball
+enum IntakeState : ubyte {
+  NO_BALL,
+  INTAKE_FRONT_BALL,
+  INTAKE_BACK_BALL,
+}
+
+// State of the superstructure state machine
+enum SuperstructureState : ubyte {
+  // Before a ball is intaked, when neither intake beambreak is triggered
+  IDLE,
+  // Transferring ball with transfer rollers. Moves turret to loading position.
+  TRANSFERRING,
+  // Loading the ball into the catapult
+  LOADING,
+  // The ball is loaded into the catapult
+  LOADED,
+  // Waiting for the turret to be at shooting goal and then telling the
+  // catapult to fire.
+  SHOOTING,
+}
+
 table Status {
   // All subsystems know their location.
   zeroed:bool (id: 0);
 
   // If true, we have aborted. This is the or of all subsystem estops.
   estopped:bool (id: 1);
+  // The state of the superstructure
+
+  state:SuperstructureState (id: 10);
+  // Intaking state
+  intake_state:IntakeState (id: 11);
+  // Whether the flippers are open for shooting
+  flippers_open:bool (id: 12);
+  // Whether the flippers failed to open and we are retrying
+  reseating_in_catapult:bool (id: 13);
+  // Whether the catapult was told to fire,
+  // meaning that the turret and flippers are ready for firing
+  // and we were asked to fire. Different from fire flag in goal.
+  fire:bool (id: 14);
 
   // Subsystem statuses
   climber:frc971.control_loops.RelativeEncoderProfiledJointStatus (id: 2);

@@ -23,6 +23,7 @@ table Output {
   intake_voltage_back:double (id: 5);
 
   // Intake roller voltages
+  // positive is pulling into the robot
   roller_voltage_front:double (id: 6);
   roller_voltage_back:double (id: 7);
   // One transfer motor for both sides
