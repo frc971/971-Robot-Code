@@ -9,7 +9,17 @@ table SubmitDataScouting {
     missed_shots_tele:int (id: 5);
     upper_goal_tele:int (id:6);
     lower_goal_tele:int (id:7);
+    // The rating that is used to rate the defense that this robot played on
+    // other robots.
+    // TODO: Document what the different values mean. E.g. 0 means no defense
+    // played?
     defense_rating:int (id:8);
+    // The amount of defense that other robots played on this robot.
+    // TODO: Document what the different values mean. E.g. 0 means no defense
+    // played against this robot?
+    defense_received_rating:int (id:10);
+    // The rating that this robot gets for its climbing.
+    // TODO: Change into an enum to make the different values self-documenting.
     climbing:int (id:9);
 }
 
