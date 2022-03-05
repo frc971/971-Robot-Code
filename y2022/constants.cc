@@ -152,20 +152,25 @@ Values MakeValues(uint16_t team) {
 
     case kCompTeamNumber:
       climber->potentiometer_offset = 0.0;
-      intake_front->potentiometer_offset = 0.0;
-      intake_front->subsystem_params.zeroing_constants
-          .measured_absolute_position = 0.0;
-      intake_back->potentiometer_offset = 0.0;
-      intake_back->subsystem_params.zeroing_constants
-          .measured_absolute_position = 0.0;
-      turret->potentiometer_offset = 0.0;
-      turret->subsystem_params.zeroing_constants.measured_absolute_position =
-          0.0;
-      flipper_arm_left->potentiometer_offset = 0.0;
-      flipper_arm_right->potentiometer_offset = 0.0;
 
-      catapult_params->zeroing_constants.measured_absolute_position = 0.0;
-      catapult->potentiometer_offset = 0.0;
+      intake_front->potentiometer_offset = 2.79628370453323;
+      intake_front->subsystem_params.zeroing_constants
+          .measured_absolute_position = 0.248921954833972;
+
+      intake_back->potentiometer_offset = 3.1409576474047;
+      intake_back->subsystem_params.zeroing_constants
+          .measured_absolute_position = 0.280099007470002;
+
+      turret->potentiometer_offset = -9.99970387166721;
+      turret->subsystem_params.zeroing_constants.measured_absolute_position =
+          0.638321248163561;
+
+      flipper_arm_left->potentiometer_offset = -6.4;
+      flipper_arm_right->potentiometer_offset = -5.66;
+
+      catapult_params->zeroing_constants.measured_absolute_position =
+          1.71723370408082;
+      catapult->potentiometer_offset = -2.03383240293769;
       break;
 
     case kPracticeTeamNumber:
