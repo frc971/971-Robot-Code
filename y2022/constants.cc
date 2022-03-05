@@ -101,8 +101,8 @@ Values MakeValues(uint16_t team) {
   flipper_arms.subsystem_params.default_profile_params = {6.0, 1.0};
   flipper_arms.subsystem_params.range = Values::kFlipperArmRange();
 
-  auto *const flipper_arm_right = &r.flipper_arm_left;
-  auto *const flipper_arm_left = &r.flipper_arm_right;
+  auto *const flipper_arm_right = &r.flipper_arm_right;
+  auto *const flipper_arm_left = &r.flipper_arm_left;
 
   *flipper_arm_right = flipper_arms;
   *flipper_arm_left = flipper_arms;
