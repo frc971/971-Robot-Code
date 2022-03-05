@@ -438,10 +438,6 @@ class SuperstructureWriter
     catapult_falcon_1_ = ::std::move(t);
   }
 
-  void set_catapult_falcon_2(::std::unique_ptr<::frc::TalonFX> t) {
-    catapult_falcon_2_ = ::std::move(t);
-  }
-
   void set_intake_falcon_front(::std::unique_ptr<frc::TalonFX> t) {
     intake_falcon_front_ = ::std::move(t);
   }
@@ -506,7 +502,6 @@ class SuperstructureWriter
     intake_falcon_back_->SetDisabled();
     transfer_roller_victor_->SetDisabled();
     catapult_falcon_1_->SetDisabled();
-    catapult_falcon_2_->SetDisabled();
     turret_falcon_->SetDisabled();
   }
 
@@ -519,12 +514,11 @@ class SuperstructureWriter
     WriteCan(output.roller_voltage_back(), roller_falcon_back_.get());
     WritePwm(output.transfer_roller_voltage(), transfer_roller_victor_.get());
 
-    WriteCan(output.flipper_arms_voltage(), flipper_arms_falcon_.get());
+    WriteCan(-output.flipper_arms_voltage(), flipper_arms_falcon_.get());
 
     WritePwm(output.catapult_voltage(), catapult_falcon_1_.get());
-    WritePwm(output.catapult_voltage(), catapult_falcon_2_.get());
 
-    WritePwm(output.turret_voltage(), turret_falcon_.get());
+    WritePwm(-output.turret_voltage(), turret_falcon_.get());
   }
 
   static void WriteCan(const double voltage,
@@ -549,7 +543,7 @@ class SuperstructureWriter
       flipper_arms_falcon_;
 
   ::std::unique_ptr<::frc::TalonFX> turret_falcon_, catapult_falcon_1_,
-      catapult_falcon_2_, climber_falcon_;
+      climber_falcon_;
   ::std::unique_ptr<::frc::VictorSP> transfer_roller_victor_;
 };
 
@@ -680,25 +674,22 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     SuperstructureWriter superstructure_writer(&output_event_loop);
 
     superstructure_writer.set_turret_falcon(make_unique<::frc::TalonFX>(3));
-    // TODO(milind): correct CAN ports
     superstructure_writer.set_roller_falcon_front(
         make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(0));
     superstructure_writer.set_roller_falcon_back(
         make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(1));
+
     // TODO(milind): correct port
     superstructure_writer.set_transfer_roller_victor(
         make_unique<::frc::VictorSP>(5));
+
     superstructure_writer.set_intake_falcon_front(make_unique<frc::TalonFX>(2));
     superstructure_writer.set_intake_falcon_back(make_unique<frc::TalonFX>(4));
-    // TODO(milind): correct port
-    superstructure_writer.set_climber_falcon(make_unique<frc::TalonFX>(6));
-    // TODO(milind): correct CAN port
+    superstructure_writer.set_climber_falcon(make_unique<frc::TalonFX>(8));
     superstructure_writer.set_flipper_arms_falcon(
         make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(2));
 
-    // TODO(milind): correct ports
-    superstructure_writer.set_catapult_falcon_1(make_unique<::frc::TalonFX>(7));
-    superstructure_writer.set_catapult_falcon_2(make_unique<::frc::TalonFX>(8));
+    superstructure_writer.set_catapult_falcon_1(make_unique<::frc::TalonFX>(9));
 
     AddLoop(&output_event_loop);
 

@@ -90,10 +90,10 @@ struct Values {
   // TODO (Yash): Constants need to be tuned
   static constexpr ::frc971::constants::Range kIntakeRange() {
     return ::frc971::constants::Range{
-        .lower_hard = -0.5,         // Back Hard
-        .upper_hard = 2.85 + 0.05,  // Front Hard
-        .lower = -0.300,            // Back Soft
-        .upper = 2.725              // Front Soft
+        .lower_hard = -0.85,  // Back Hard
+        .upper_hard = 1.85,   // Front Hard
+        .lower = -0.400,      // Back Soft
+        .upper = 1.57         // Front Soft
     };
   }
 
@@ -158,7 +158,7 @@ struct Values {
   // Voltage to open the flippers for firing
   static constexpr double kFlipperOpenVoltage() { return 3.0; }
   // Voltage to keep the flippers open for firing once they already are
-  static constexpr double kFlipperHoldVoltage() { return 2.0; }
+  static constexpr double kFlipperHoldVoltage() { return 2.5; }
   // Voltage to feed a ball from the transfer rollers to the catpult with the
   // flippers
   static constexpr double kFlipperFeedVoltage() { return -8.0; }
@@ -186,13 +186,13 @@ struct Values {
   // TODO: (Griffin) this needs to be set
   static constexpr ::frc971::constants::Range kFlipperArmRange() {
     return ::frc971::constants::Range{
-        .lower_hard = -0.01, .upper_hard = 0.6, .lower = 0.0, .upper = 0.5};
+        .lower_hard = -0.01, .upper_hard = 0.4, .lower = 0.0, .upper = 0.5};
   }
   // Position of the flippers when they are open
-  static constexpr double kFlipperOpenPosition() { return 0.4; }
+  static constexpr double kFlipperOpenPosition() { return 0.15; }
   // If the flippers were open but now moved back, reseat the ball if they go
   // below this position
-  static constexpr double kReseatFlipperPosition() { return 0.3; }
+  static constexpr double kReseatFlipperPosition() { return 0.1; }
 
   static constexpr double kFlipperArmsPotRatio() { return 16.0 / 36.0; }
 
