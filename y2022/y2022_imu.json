@@ -226,7 +226,7 @@
       "max_size": 2000,
       "logger": "LOCAL_AND_REMOTE_LOGGER",
       "logger_nodes": [
-        "roborio"
+        "logger"
       ],
       "destination_nodes": [
         {
@@ -257,7 +257,8 @@
       "max_size": 200,
       "logger": "LOCAL_AND_REMOTE_LOGGER",
       "logger_nodes": [
-        "roborio"
+        "roborio",
+        "logger"
       ],
       "destination_nodes": [
         {
