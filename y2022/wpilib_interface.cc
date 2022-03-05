@@ -619,29 +619,29 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     // Thread 2.
     ::aos::ShmEventLoop pdp_fetcher_event_loop(&config.message());
     ::frc971::wpilib::PDPFetcher pdp_fetcher(&pdp_fetcher_event_loop);
-    AddLoop(&pdp_fetcher_event_loop);
+    ;AddLoop(&pdp_fetcher_event_loop);
 
     // Thread 3.
     ::aos::ShmEventLoop sensor_reader_event_loop(&config.message());
     SensorReader sensor_reader(&sensor_reader_event_loop, values);
-    sensor_reader.set_drivetrain_left_encoder(make_encoder(0));
-    sensor_reader.set_drivetrain_right_encoder(make_encoder(1));
+    sensor_reader.set_drivetrain_left_encoder(make_encoder(1));
+    sensor_reader.set_drivetrain_right_encoder(make_encoder(0));
 
     sensor_reader.set_intake_encoder_front(make_encoder(3));
     sensor_reader.set_intake_front_absolute_pwm(
         make_unique<frc::DigitalInput>(3));
     sensor_reader.set_intake_front_potentiometer(
-        make_unique<frc::AnalogInput>(1));
+        make_unique<frc::AnalogInput>(3));
 
     sensor_reader.set_intake_encoder_back(make_encoder(4));
     sensor_reader.set_intake_back_absolute_pwm(
         make_unique<frc::DigitalInput>(4));
     sensor_reader.set_intake_back_potentiometer(
-        make_unique<frc::AnalogInput>(2));
+        make_unique<frc::AnalogInput>(4));
 
     sensor_reader.set_turret_encoder(make_encoder(5));
     sensor_reader.set_turret_absolute_pwm(make_unique<frc::DigitalInput>(5));
-    sensor_reader.set_turret_potentiometer(make_unique<frc::AnalogInput>(3));
+    sensor_reader.set_turret_potentiometer(make_unique<frc::AnalogInput>(5));
 
     // TODO(milind): correct intake beambreak ports once set
     sensor_reader.set_intake_beambreak_front(
@@ -652,16 +652,16 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     sensor_reader.set_climber_potentiometer(make_unique<frc::AnalogInput>(7));
 
     sensor_reader.set_flipper_arm_left_potentiometer(
-        make_unique<frc::AnalogInput>(4));
+        make_unique<frc::AnalogInput>(0));
     sensor_reader.set_flipper_arm_right_potentiometer(
-        make_unique<frc::AnalogInput>(5));
+        make_unique<frc::AnalogInput>(1));
 
     // TODO(milind): correct catapult encoder and absolute pwm ports
-    sensor_reader.set_catapult_encoder(make_encoder(6));
+    sensor_reader.set_catapult_encoder(make_encoder(2));
     sensor_reader.set_catapult_absolute_pwm(
-        std::make_unique<frc::DigitalInput>(6));
+        std::make_unique<frc::DigitalInput>(2));
     sensor_reader.set_catapult_potentiometer(
-        std::make_unique<frc::AnalogInput>(6));
+        std::make_unique<frc::AnalogInput>(2));
 
     sensor_reader.set_heading_input(make_unique<frc::DigitalInput>(8));
     sensor_reader.set_yaw_rate_input(make_unique<frc::DigitalInput>(9));
@@ -672,9 +672,9 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     ::aos::ShmEventLoop output_event_loop(&config.message());
     ::frc971::wpilib::DrivetrainWriter drivetrain_writer(&output_event_loop);
     drivetrain_writer.set_left_controller0(
-        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(0)), true);
-    drivetrain_writer.set_right_controller0(
         ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(1)), false);
+    drivetrain_writer.set_right_controller0(
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(0)), true);
 
     SuperstructureWriter superstructure_writer(&output_event_loop);
 
