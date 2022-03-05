@@ -1,0 +1,14 @@
+namespace y2022.input.joysticks;
+
+// Table for dynamically setting shooter goals
+table Setpoint {
+  // Catapult shot release angle
+  catapult_position:double (id: 0);
+  // Catapult shot velocity
+  catapult_velocity:double (id: 1);
+
+  // Turret angle
+  turret:double (id: 2);
+}
+
+root_type Setpoint;

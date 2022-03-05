@@ -10,15 +10,21 @@
 #include "aos/network/team_number.h"
 #include "aos/util/log_interval.h"
 #include "frc971/autonomous/base_autonomous_actor.h"
+#include "frc971/control_loops/drivetrain/localizer_generated.h"
 #include "frc971/control_loops/profiled_subsystem_generated.h"
 #include "frc971/input/action_joystick_input.h"
 #include "frc971/input/driver_station_data.h"
 #include "frc971/input/drivetrain_input.h"
 #include "frc971/input/joystick_input.h"
+#include "frc971/zeroing/wrap.h"
+#include "y2022/constants.h"
 #include "y2022/control_loops/drivetrain/drivetrain_base.h"
 #include "y2022/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2022/control_loops/superstructure/superstructure_status_generated.h"
+#include "y2022/setpoint_generated.h"
 
+using frc971::CreateProfileParameters;
+using frc971::control_loops::CreateStaticZeroingSingleDOFProfiledSubsystemGoal;
 using frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal;
 using frc971::input::driver_station::ButtonLocation;
 using frc971::input::driver_station::ControlBit;
@@ -29,10 +35,23 @@ namespace y2022 {
 namespace input {
 namespace joysticks {
 
-const ButtonLocation kCatapultPos(3, 3);
-const ButtonLocation kFire(3, 1);
-
 namespace superstructure = y2022::control_loops::superstructure;
+
+// TODO(henry) put actually button locations here
+// TODO(milind): integrate with shooting statemachine and aimer
+const ButtonLocation kCatapultPos(3, 3);
+const ButtonLocation kFire(3, 2);
+const ButtonLocation kFixedTurret(3, 1);
+
+const ButtonLocation kIntakeFrontOut(4, 4);
+const ButtonLocation kIntakeBackOut(4, 3);
+
+const ButtonLocation kRedLocalizerReset(3, 13);
+const ButtonLocation kBlueLocalizerReset(3, 14);
+const ButtonLocation kLocalizerReset(3, 8);
+
+const ButtonLocation kClimberUpMidRung(10, 10);
+const ButtonLocation kClimberDown(11, 11);
 
 class Reader : public ::frc971::input::ActionJoystickInput {
  public:
@@ -43,9 +62,74 @@ class Reader : public ::frc971::input::ActionJoystickInput {
             ::frc971::input::DrivetrainInputReader::InputType::kPistol, {}),
         superstructure_goal_sender_(
             event_loop->MakeSender<superstructure::Goal>("/superstructure")),
+        localizer_control_sender_(
+            event_loop->MakeSender<
+                ::frc971::control_loops::drivetrain::LocalizerControl>(
+                "/drivetrain")),
         superstructure_status_fetcher_(
-            event_loop->MakeFetcher<superstructure::Status>(
-                "/superstructure")) {}
+            event_loop->MakeFetcher<superstructure::Status>("/superstructure")),
+        setpoint_fetcher_(
+            event_loop->MakeFetcher<Setpoint>("/superstructure")) {}
+
+  void BlueResetLocalizer() {
+    auto builder = localizer_control_sender_.MakeBuilder();
+
+    frc971::control_loops::drivetrain::LocalizerControl::Builder
+        localizer_control_builder = builder.MakeBuilder<
+            frc971::control_loops::drivetrain::LocalizerControl>();
+    localizer_control_builder.add_x(7.4);
+    localizer_control_builder.add_y(-1.7);
+    localizer_control_builder.add_theta_uncertainty(10.0);
+    localizer_control_builder.add_theta(0.0);
+    localizer_control_builder.add_keep_current_theta(false);
+    if (builder.Send(localizer_control_builder.Finish()) !=
+        aos::RawSender::Error::kOk) {
+      AOS_LOG(ERROR, "Failed to reset blue localizer.\n");
+    }
+  }
+
+  void RedResetLocalizer() {
+    auto builder = localizer_control_sender_.MakeBuilder();
+
+    frc971::control_loops::drivetrain::LocalizerControl::Builder
+        localizer_control_builder = builder.MakeBuilder<
+            frc971::control_loops::drivetrain::LocalizerControl>();
+    localizer_control_builder.add_x(-7.4);
+    localizer_control_builder.add_y(1.7);
+    localizer_control_builder.add_theta_uncertainty(10.0);
+    localizer_control_builder.add_theta(M_PI);
+    localizer_control_builder.add_keep_current_theta(false);
+    if (builder.Send(localizer_control_builder.Finish()) !=
+        aos::RawSender::Error::kOk) {
+      AOS_LOG(ERROR, "Failed to reset red localizer.\n");
+    }
+  }
+
+  void ResetLocalizer() {
+    const frc971::control_loops::drivetrain::Status *drivetrain_status =
+        this->drivetrain_status();
+    if (drivetrain_status == nullptr) {
+      return;
+    }
+    // Get the current position
+    // Snap to heading.
+    auto builder = localizer_control_sender_.MakeBuilder();
+
+    // TODO<Henry> Put our starting location here.
+    frc971::control_loops::drivetrain::LocalizerControl::Builder
+        localizer_control_builder = builder.MakeBuilder<
+            frc971::control_loops::drivetrain::LocalizerControl>();
+    localizer_control_builder.add_x(drivetrain_status->x());
+    localizer_control_builder.add_y(drivetrain_status->y());
+    const double new_theta =
+        frc971::zeroing::Wrap(drivetrain_status->theta(), 0, M_PI);
+    localizer_control_builder.add_theta(new_theta);
+    localizer_control_builder.add_theta_uncertainty(10.0);
+    if (builder.Send(localizer_control_builder.Finish()) !=
+        aos::RawSender::Error::kOk) {
+      AOS_LOG(ERROR, "Failed to reset localizer.\n");
+    }
+  }
 
   void AutoEnded() override { AOS_LOG(INFO, "Auto ended.\n"); }
 
@@ -57,43 +141,169 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       return;
     }
 
-    aos::Sender<superstructure::Goal>::Builder builder =
-        superstructure_goal_sender_.MakeBuilder();
+    setpoint_fetcher_.Fetch();
 
-    flatbuffers::Offset<frc971::ProfileParameters> catapult_profile =
-        frc971::CreateProfileParameters(*builder.fbb(), 5.0, 30.0);
+    // Default to the intakes in
+    double intake_front_pos = constants::Values::kIntakeRange().lower;
+    double intake_back_pos = constants::Values::kIntakeRange().lower;
 
-    StaticZeroingSingleDOFProfiledSubsystemGoal::Builder
-        catapult_return_builder =
-            builder.MakeBuilder<StaticZeroingSingleDOFProfiledSubsystemGoal>();
-    catapult_return_builder.add_unsafe_goal(
-        data.IsPressed(kCatapultPos) ? 0.3 : -0.85);
-    catapult_return_builder.add_profile_params(catapult_profile);
-    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
-        catapult_return_offset = catapult_return_builder.Finish();
+    double roller_front_speed = 0.0;
+    double roller_back_speed = 0.0;
+    bool roller_speed_compensation = false;
 
-    superstructure::CatapultGoal::Builder catapult_builder =
-        builder.MakeBuilder<superstructure::CatapultGoal>();
-    catapult_builder.add_return_position(catapult_return_offset);
-    catapult_builder.add_shot_position(0.3);
-    catapult_builder.add_shot_velocity(15.0);
-    flatbuffers::Offset<superstructure::CatapultGoal> catapult_offset =
-        catapult_builder.Finish();
+    double turret_pos = 0.0;
 
-    superstructure::Goal::Builder goal_builder =
-        builder.MakeBuilder<superstructure::Goal>();
-    goal_builder.add_catapult(catapult_offset);
-    goal_builder.add_fire(data.IsPressed(kFire));
+    double catapult_pos = 0.0;
+    double catapult_return_pos = 0.0;
+    double catapult_speed = 0.0;
+    bool fire = false;
 
-    if (builder.Send(goal_builder.Finish()) != aos::RawSender::Error::kOk) {
-      AOS_LOG(ERROR, "Sending superstructure goal failed.\n");
+    if (data.IsPressed(kFire)) {
+      fire = true;
+    }
+
+    // Use setpoints for shooting if present
+    if (setpoint_fetcher_.get()) {
+      turret_pos = setpoint_fetcher_->turret();
+
+      catapult_pos = setpoint_fetcher_->catapult_position();
+      catapult_speed = setpoint_fetcher_->catapult_velocity();
+    } else {
+      turret_pos = 0.0;
+
+      catapult_pos = constants::Values::kDefaultCatapultShotPosition();
+      catapult_speed = constants::Values::kDefaultCatapultShotVelocity();
+    }
+
+    // Keep the catapult return position at the shot one if kCatapultPos is
+    // pressed
+    if (data.IsPressed(kCatapultPos)) {
+      catapult_return_pos = catapult_pos;
+    } else {
+      catapult_return_pos = constants::Values::kCatapultReturnPosition();
+    }
+
+    // If either intake is out by enough, always spin the rollers
+    if (superstructure_status_fetcher_.get() &&
+        superstructure_status_fetcher_->intake_front()->zeroed() &&
+        superstructure_status_fetcher_->intake_front()->position() >
+            constants::Values::kIntakeSlightlyOutPosition()) {
+      roller_front_speed =
+          std::max(roller_front_speed,
+                   constants::Values::kMinIntakeSlightlyOutRollerSpeed());
+      roller_speed_compensation = true;
+    }
+    if (superstructure_status_fetcher_.get() &&
+        superstructure_status_fetcher_->intake_back()->zeroed() &&
+        superstructure_status_fetcher_->intake_back()->position() >
+            constants::Values::kIntakeSlightlyOutPosition()) {
+      roller_back_speed =
+          std::max(roller_back_speed,
+                   constants::Values::kMinIntakeSlightlyOutRollerSpeed());
+      roller_speed_compensation = true;
+    }
+
+    // Extend the intakes and spin the rollers
+    if (data.IsPressed(kIntakeFrontOut)) {
+      intake_front_pos = constants::Values::kIntakeOutPosition();
+      roller_front_speed = constants::Values::kIntakeOutRollerSpeed();
+      roller_speed_compensation = true;
+    }
+    if (data.IsPressed(kIntakeBackOut)) {
+      intake_back_pos = constants::Values::kIntakeOutPosition();
+      roller_back_speed = constants::Values::kIntakeOutRollerSpeed();
+      roller_speed_compensation = true;
+    }
+
+    // Position climber to climb on mid rung
+    if (data.IsPressed(kClimberUpMidRung)) {
+      climber_pos_ = constants::Values::kClimberMidRungHeight();
+    } else if (data.IsPressed(kClimberDown)) {
+      climber_pos_ = 0.0;
+    }
+
+    if (data.PosEdge(kLocalizerReset)) {
+      ResetLocalizer();
+    }
+
+    if (data.PosEdge(kRedLocalizerReset)) {
+      RedResetLocalizer();
+    }
+    if (data.PosEdge(kBlueLocalizerReset)) {
+      BlueResetLocalizer();
+    }
+
+    {
+      auto builder = superstructure_goal_sender_.MakeBuilder();
+
+      flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+          intake_front_offset =
+              CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+                  *builder.fbb(), intake_front_pos,
+                  CreateProfileParameters(*builder.fbb(), 20.0, 70.0));
+      flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+          intake_back_offset =
+              CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+                  *builder.fbb(), intake_back_pos,
+                  CreateProfileParameters(*builder.fbb(), 20.0, 70.0));
+
+      flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+          turret_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+              *builder.fbb(), turret_pos,
+              CreateProfileParameters(*builder.fbb(), 6.0, 20.0));
+
+      flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+          climber_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+              *builder.fbb(), climber_pos_,
+              CreateProfileParameters(*builder.fbb(), 6.0, 20.0));
+
+      flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+          catapult_return_offset =
+              CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+                  *builder.fbb(), catapult_return_pos,
+                  frc971::CreateProfileParameters(*builder.fbb(), 5.0, 30.0));
+
+      superstructure::CatapultGoal::Builder catapult_builder =
+          builder.MakeBuilder<superstructure::CatapultGoal>();
+      catapult_builder.add_return_position(catapult_return_offset);
+      catapult_builder.add_shot_position(catapult_pos);
+      catapult_builder.add_shot_velocity(catapult_speed);
+      flatbuffers::Offset<superstructure::CatapultGoal> catapult_offset =
+          catapult_builder.Finish();
+
+      superstructure::Goal::Builder superstructure_goal_builder =
+          builder.MakeBuilder<superstructure::Goal>();
+
+      superstructure_goal_builder.add_intake_front(intake_front_offset);
+      superstructure_goal_builder.add_intake_back(intake_back_offset);
+      superstructure_goal_builder.add_turret(turret_offset);
+      superstructure_goal_builder.add_climber(climber_offset);
+      superstructure_goal_builder.add_catapult(catapult_offset);
+      superstructure_goal_builder.add_fire(fire);
+
+      superstructure_goal_builder.add_roller_speed_front(roller_front_speed);
+      superstructure_goal_builder.add_roller_speed_back(roller_back_speed);
+      superstructure_goal_builder.add_roller_speed_compensation(
+          roller_speed_compensation ? 1.5 : 0.0f);
+
+      if (builder.Send(superstructure_goal_builder.Finish()) !=
+          aos::RawSender::Error::kOk) {
+        AOS_LOG(ERROR, "Sending superstructure goal failed.\n");
+      }
     }
   }
 
  private:
+  double climber_pos_ = 0.0;
+
   ::aos::Sender<superstructure::Goal> superstructure_goal_sender_;
 
+  ::aos::Sender<frc971::control_loops::drivetrain::LocalizerControl>
+      localizer_control_sender_;
+
   ::aos::Fetcher<superstructure::Status> superstructure_status_fetcher_;
+
+  ::aos::Fetcher<Setpoint> setpoint_fetcher_;
 };
 
 }  // namespace joysticks
