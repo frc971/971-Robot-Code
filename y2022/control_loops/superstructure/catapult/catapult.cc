@@ -23,7 +23,7 @@ osqp::OsqpInstance MakeInstance(
 
   instance.constraint_matrix =
       Eigen::SparseMatrix<double, Eigen::ColMajor, osqp::c_int>(horizon,
-                                                                 horizon);
+                                                                horizon);
   instance.constraint_matrix.setIdentity();
 
   instance.lower_bounds =
@@ -313,7 +313,7 @@ std::optional<double> CatapultController::Next() {
 const flatbuffers::Offset<
     frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus>
 Catapult::Iterate(const Goal *unsafe_goal, const Position *position,
-                  double *catapult_voltage,
+                  double *catapult_voltage, bool fire,
                   flatbuffers::FlatBufferBuilder *fbb) {
   const frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal
       *catapult_goal = unsafe_goal != nullptr && unsafe_goal->has_catapult()
@@ -326,13 +326,12 @@ Catapult::Iterate(const Goal *unsafe_goal, const Position *position,
   if (catapult_disabled) {
     catapult_state_ = CatapultState::PROFILE;
   } else if (catapult_.running() && unsafe_goal &&
-             unsafe_goal->has_catapult() && unsafe_goal->catapult()->fire() &&
-             !last_firing_) {
+             unsafe_goal->has_catapult() && fire && !last_firing_) {
     catapult_state_ = CatapultState::FIRING;
   }
 
   if (catapult_.running() && unsafe_goal && unsafe_goal->has_catapult()) {
-    last_firing_ = unsafe_goal->catapult()->fire();
+    last_firing_ = fire;
   }
 
   use_profile_ = true;
@@ -379,8 +378,7 @@ Catapult::Iterate(const Goal *unsafe_goal, const Position *position,
           use_profile_ = false;
         }
       } else {
-        if (unsafe_goal && unsafe_goal->has_catapult() &&
-            !unsafe_goal->catapult()->fire()) {
+        if (unsafe_goal && unsafe_goal->has_catapult() && !fire) {
           // Eh, didn't manage to solve before it was time to fire.  Give up.
           catapult_state_ = CatapultState::PROFILE;
         }
@@ -417,7 +415,8 @@ Catapult::Iterate(const Goal *unsafe_goal, const Position *position,
     }
   }
 
-  catapult_.UpdateObserver(catapult_voltage != nullptr ? *catapult_voltage : 0.0);
+  catapult_.UpdateObserver(catapult_voltage != nullptr ? *catapult_voltage
+                                                       : 0.0);
 
   return catapult_.MakeStatus(fbb);
 }

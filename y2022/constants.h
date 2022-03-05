@@ -98,6 +98,20 @@ struct Values {
   static constexpr double kIntakeRollerSupplyCurrentLimit() { return 40.0; }
   static constexpr double kIntakeRollerStatorCurrentLimit() { return 60.0; }
 
+  // Transfer rollers
+  // Positive voltage means front transfer rollers pull in and back spits out,
+  // and vice versa
+  static constexpr double kTransferRollerFrontVoltage() { return 12.0; }
+  static constexpr double kTransferRollerBackVoltage() {
+    return -kTransferRollerFrontVoltage();
+  }
+
+  // Voltage to wiggle the transfer rollers and keep a ball in.
+  static constexpr double kTransferRollerFrontWiggleVoltage() { return 5.0; }
+  static constexpr double kTransferRollerBackWiggleVoltage() {
+    return -kTransferRollerFrontWiggleVoltage();
+  }
+
   // Turret
   PotAndAbsEncoderConstants turret;
 
@@ -111,7 +125,9 @@ struct Values {
     };
   }
 
-  // Turret
+  static constexpr double kTurretBackIntakePos() { return 0.0; }
+  static constexpr double kTurretFrontIntakePos() { return M_PI; }
+
   static constexpr double kTurretPotRatio() { return 27.0 / 110.0; }
   static constexpr double kTurretEncoderRatio() { return kTurretPotRatio(); }
   static constexpr double kTurretEncoderCountsPerRevolution() { return 4096.0; }
@@ -126,11 +142,44 @@ struct Values {
   static constexpr double kFlipperArmSupplyCurrentLimit() { return 30.0; }
   static constexpr double kFlipperArmStatorCurrentLimit() { return 40.0; }
 
+  // Voltage to open the flippers for firing
+  static constexpr double kFlipperOpenVoltage() { return 3.0; }
+  // Voltage to keep the flippers open for firing once they already are
+  static constexpr double kFlipperHoldVoltage() { return 2.0; }
+  // Voltage to feed a ball from the transfer rollers to the catpult with the
+  // flippers
+  static constexpr double kFlipperFeedVoltage() { return -8.0; }
+
+  // Ball is fed into catapult for atleast this time no matter what
+  static constexpr std::chrono::milliseconds kExtraLoadingTime() {
+    return std::chrono::milliseconds(100);
+  }
+  // If we have been trying to transfer the ball for this amount of time, it
+  // probably got lost so abort
+  static constexpr std::chrono::seconds kBallLostTime() {
+    return std::chrono::seconds(2);
+  }
+  // If the flippers took more than this amount of time to open for firing,
+  // reseat the ball
+  static constexpr std::chrono::milliseconds kFlipperOpeningTimeout() {
+    return std::chrono::milliseconds(250);
+  }
+  // Don't use flipper velocity readings more than this amount of time in the
+  // past
+  static constexpr std::chrono::milliseconds kFlipperVelocityValidTime() {
+    return std::chrono::milliseconds(100);
+  }
+
   // TODO: (Griffin) this needs to be set
   static constexpr ::frc971::constants::Range kFlipperArmRange() {
     return ::frc971::constants::Range{
         .lower_hard = -0.01, .upper_hard = 0.6, .lower = 0.0, .upper = 0.5};
   }
+  // Position of the flippers when they are open
+  static constexpr double kFlipperOpenPosition() { return 0.4; }
+  // If the flippers were open but now moved back, reseat the ball if they go
+  // below this position
+  static constexpr double kReseatFlipperPosition() { return 0.3; }
 
   static constexpr double kFlipperArmsPotRatio() { return 16.0 / 36.0; }
 

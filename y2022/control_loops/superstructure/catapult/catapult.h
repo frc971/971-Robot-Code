@@ -192,6 +192,8 @@ class Catapult {
   // Resets all state for when WPILib restarts.
   void Reset() { catapult_.Reset(); }
 
+  void Estop() { catapult_.Estop(); }
+
   bool zeroed() const { return catapult_.zeroed(); }
   bool estopped() const { return catapult_.estopped(); }
   double solve_time() const { return catapult_mpc_.solve_time(); }
@@ -201,12 +203,16 @@ class Catapult {
   // Returns the number of shots taken.
   int shot_count() const { return shot_count_; }
 
+  // Returns the estimated position
+  double estimated_position() const { return catapult_.estimated_position(); }
+
   // Runs either the MPC or the profiled subsystem depending on if we are
   // shooting or not.  Returns the status.
   const flatbuffers::Offset<
       frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus>
   Iterate(const Goal *unsafe_goal, const Position *position,
-          double *catapult_voltage, flatbuffers::FlatBufferBuilder *fbb);
+          double *catapult_voltage, bool fire,
+          flatbuffers::FlatBufferBuilder *fbb);
 
  private:
   // TODO(austin): Prototype is just an encoder.  Catapult has both an encoder

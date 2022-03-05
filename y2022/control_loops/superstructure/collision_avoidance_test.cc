@@ -2,8 +2,8 @@
 
 #include "aos/commonmath.h"
 #include "aos/flatbuffers.h"
-#include "gtest/gtest.h"
 #include "gmock/gmock.h"
+#include "gtest/gtest.h"
 #include "y2022/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2022/control_loops/superstructure/superstructure_status_generated.h"
 
@@ -84,22 +84,18 @@ class CollisionAvoidanceTest : public ::testing::Test {
         status_({0.0, 0.0, 0.0}),
         prev_status_({0.0, 0.0, 0.0}) {}
 
-  int t = 0;
-  int d = 0;
   void Simulate() {
     FlatbufferDetachedBuffer<Goal> safe_goal = MakeZeroGoal();
 
-    t++;
     // Don't simulate if already collided
     if (avoidance_.IsCollided(status_)) {
-      d++;
       return;
     }
 
     bool moving = true;
     while (moving) {
       // Compute the safe goal
-      avoidance_.UpdateGoal(status_, &unsafe_goal_.message());
+      avoidance_.UpdateGoal(status_, unsafe_goal_.message().turret());
 
       // The system should never be collided
       ASSERT_FALSE(avoidance_.IsCollided(status_));

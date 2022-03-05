@@ -67,8 +67,10 @@ bool CollisionAvoidance::TurretCollided(double intake_position,
   return false;
 }
 
-void CollisionAvoidance::UpdateGoal(const CollisionAvoidance::Status &status,
-                                    const Goal *unsafe_goal) {
+void CollisionAvoidance::UpdateGoal(
+    const CollisionAvoidance::Status &status,
+    const frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal
+        *unsafe_turret_goal) {
   // Start with our constraints being wide open.
   clear_max_turret_goal();
   clear_min_turret_goal();
@@ -81,10 +83,9 @@ void CollisionAvoidance::UpdateGoal(const CollisionAvoidance::Status &status,
   const double intake_back_position = status.intake_back_position;
   const double turret_position = status.turret_position;
 
-  const double turret_goal =
-      (unsafe_goal != nullptr && unsafe_goal->turret() != nullptr
-           ? unsafe_goal->turret()->unsafe_goal()
-           : std::numeric_limits<double>::quiet_NaN());
+  const double turret_goal = (unsafe_turret_goal != nullptr
+                                  ? unsafe_turret_goal->unsafe_goal()
+                                  : std::numeric_limits<double>::quiet_NaN());
 
   // Calculating the avoidance with either intake, and when the turret is
   // wrapped.

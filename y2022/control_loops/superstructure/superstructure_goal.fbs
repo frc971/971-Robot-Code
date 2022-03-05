@@ -3,8 +3,9 @@ include "frc971/control_loops/profiled_subsystem.fbs";
 namespace y2022.control_loops.superstructure;
 
 table CatapultGoal {
-  // If true, fire!  The robot will only fire when ready.
-  fire:bool (id: 0);
+  // Old fire flag, only kept for backwards-compatability with logs.
+  // Use the fire flag in the root Goal instead
+  fire:bool (id: 0, deprecated);
 
   // The target shot position and velocity.  If these are provided before fire
   // is called, the optimizer can pre-compute the trajectory.
@@ -37,6 +38,15 @@ table Goal {
 
   // Catapult goal state.
   catapult:CatapultGoal (id: 8);
+
+  // If true, fire!  The robot will only fire when ready.
+  fire:bool (id: 9);
+
+  // Aborts the shooting process if the ball has been loaded into the catapult
+  // and the superstructure is in the LOADED state.
+  cancel_shot:bool (id: 10);
 }
+
+
 
 root_type Goal;

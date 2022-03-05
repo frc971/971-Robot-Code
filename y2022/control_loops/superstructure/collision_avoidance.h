@@ -69,7 +69,10 @@ class CollisionAvoidance {
                       double min_turret_collision_position,
                       double max_turret_collision_position);
   // Checks and alters goals to make sure they're safe.
-  void UpdateGoal(const Status &status, const Goal *unsafe_goal);
+  void UpdateGoal(
+      const Status &status,
+      const frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal
+          *unsafe_turret_goal);
   // Limits if goal is in collision spots.
   void CalculateAvoidance(bool intake_front, double intake_position,
                           double turret_goal, double mix_turret_collision_goal,
