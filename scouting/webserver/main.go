@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -11,6 +12,7 @@ import (
 	"syscall"
 
 	"github.com/frc971/971-Robot-Code/scouting/db"
+	"github.com/frc971/971-Robot-Code/scouting/scraping"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/server"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/static"
@@ -40,6 +42,10 @@ func main() {
 	portPtr := flag.Int("port", 8080, "The port number to bind to.")
 	dirPtr := flag.String("directory", ".", "The directory to serve at /.")
 	dbPathPtr := flag.String("database", getDefaultDatabasePath(), "The path to the database.")
+	blueAllianceConfigPtr := flag.String("tba_config", "",
+		"The path to your The Blue Alliance JSON config. "+
+			"It needs an \"api_key\" field with your TBA API key. "+
+			"Optionally, it can have a \"url\" field with the TBA API base URL.")
 	flag.Parse()
 
 	database, err := db.NewDatabase(*dbPathPtr)
@@ -47,9 +53,16 @@ func main() {
 		log.Fatal("Failed to connect to database: ", err)
 	}
 
+	scrapeMatchList := func(year int32, eventCode string) ([]scraping.Match, error) {
+		if *blueAllianceConfigPtr == "" {
+			return nil, errors.New("Cannot scrape TBA's match list without a config file.")
+		}
+		return scraping.AllMatches(year, eventCode, *blueAllianceConfigPtr)
+	}
+
 	scoutingServer := server.NewScoutingServer()
 	static.ServePages(scoutingServer, *dirPtr)
-	requests.HandleRequests(database, scoutingServer)
+	requests.HandleRequests(database, scrapeMatchList, scoutingServer)
 	scoutingServer.Start(*portPtr)
 	fmt.Println("Serving", *dirPtr, "on port", *portPtr)
 

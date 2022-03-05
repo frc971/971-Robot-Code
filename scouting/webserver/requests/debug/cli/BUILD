@@ -10,7 +10,10 @@ go_library(
     importpath = "github.com/frc971/971-Robot-Code/scouting/webserver/requests/debug/cli",
     target_compatible_with = ["@platforms//cpu:x86_64"],
     visibility = ["//visibility:private"],
-    deps = ["//scouting/webserver/requests/debug"],
+    deps = [
+        "//scouting/webserver/requests/debug",
+        "@com_github_davecgh_go_spew//spew",
+    ],
 )
 
 go_binary(
@@ -27,6 +30,7 @@ py_test(
     ],
     data = [
         ":cli",
+        "//scouting/scraping:test_data",
         "//scouting/webserver",
     ],
 )

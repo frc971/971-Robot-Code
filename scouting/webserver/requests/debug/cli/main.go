@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/debug"
 )
 
@@ -76,6 +77,8 @@ func main() {
 		"If specified, parse the file as a RequestMatchesForTeam JSON request.")
 	requestDataScoutingPtr := flag.String("requestDataScouting", "",
 		"If specified, parse the file as a RequestDataScouting JSON request.")
+	refreshMatchListPtr := flag.String("refreshMatchList", "",
+		"If specified, parse the file as a RefreshMatchList JSON request.")
 	flag.Parse()
 
 	// Handle the actual arguments.
@@ -88,7 +91,7 @@ func main() {
 		if err != nil {
 			log.Fatal("Failed SubmitDataScouting: ", err)
 		}
-		log.Printf("%+v", *response)
+		spew.Dump(*response)
 	}
 	if *requestAllMatchesPtr != "" {
 		log.Printf("Sending RequestAllMatches to %s", *addressPtr)
@@ -99,7 +102,7 @@ func main() {
 		if err != nil {
 			log.Fatal("Failed RequestAllMatches: ", err)
 		}
-		log.Printf("%+v", *response)
+		spew.Dump(*response)
 	}
 	if *requestMatchesForTeamPtr != "" {
 		log.Printf("Sending RequestMatchesForTeam to %s", *addressPtr)
@@ -110,7 +113,7 @@ func main() {
 		if err != nil {
 			log.Fatal("Failed RequestMatchesForTeam: ", err)
 		}
-		log.Printf("%+v", *response)
+		spew.Dump(*response)
 	}
 	if *requestDataScoutingPtr != "" {
 		log.Printf("Sending RequestDataScouting to %s", *addressPtr)
@@ -121,6 +124,17 @@ func main() {
 		if err != nil {
 			log.Fatal("Failed RequestDataScouting: ", err)
 		}
-		log.Printf("%+v", *response)
+		spew.Dump(*response)
+	}
+	if *refreshMatchListPtr != "" {
+		log.Printf("Sending RefreshMatchList to %s", *addressPtr)
+		binaryRequest := parseJson(
+			"scouting/webserver/requests/messages/refresh_match_list.fbs",
+			*refreshMatchListPtr)
+		response, err := debug.RefreshMatchList(*addressPtr, binaryRequest)
+		if err != nil {
+			log.Fatal("Failed RefreshMatchList: ", err)
+		}
+		spew.Dump(*response)
 	}
 }

@@ -1,0 +1,6 @@
+namespace scouting.webserver.requests;
+
+table RefreshMatchListResponse {
+}
+
+root_type RefreshMatchListResponse;

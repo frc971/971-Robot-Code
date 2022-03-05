@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/error_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/refresh_match_list_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_matches_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_matches_for_team_response"
@@ -20,6 +21,7 @@ type SubmitDataScoutingResponseT = submit_data_scouting_response.SubmitDataScout
 type RequestAllMatchesResponseT = request_all_matches_response.RequestAllMatchesResponseT
 type RequestMatchesForTeamResponseT = request_matches_for_team_response.RequestMatchesForTeamResponseT
 type RequestDataScoutingResponseT = request_data_scouting_response.RequestDataScoutingResponseT
+type RefreshMatchListResponseT = refresh_match_list_response.RefreshMatchListResponseT
 
 // A struct that can be used as an `error`. It contains information about the
 // why the server was unhappy and what the corresponding request was.
@@ -125,5 +127,17 @@ func RequestDataScouting(server string, requestBytes []byte) (*RequestDataScouti
 	}
 	log.Printf("Parsing RequestDataScoutingResponse")
 	response := request_data_scouting_response.GetRootAsRequestDataScoutingResponse(responseBytes, 0)
+	return response.UnPack(), nil
+}
+
+// Sends a `RefreshMatchList` message to the server and returns the
+// deserialized response.
+func RefreshMatchList(server string, requestBytes []byte) (*RefreshMatchListResponseT, error) {
+	responseBytes, err := performPost(server+"/requests/refresh_match_list", requestBytes)
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("Parsing RefreshMatchListResponse")
+	response := refresh_match_list_response.GetRootAsRefreshMatchListResponse(responseBytes, 0)
 	return response.UnPack(), nil
 }
