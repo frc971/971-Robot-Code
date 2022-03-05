@@ -66,7 +66,7 @@ struct Values {
   static constexpr double kIntakeEncoderCountsPerRevolution() { return 4096.0; }
 
   static constexpr double kIntakeEncoderRatio() {
-    return (16.0 / 64.0) * (20.0 / 50.0);
+    return (16.0 / 64.0) * (18.0 / 62.0);
   }
 
   static constexpr double kIntakePotRatio() { return 16.0 / 64.0; }

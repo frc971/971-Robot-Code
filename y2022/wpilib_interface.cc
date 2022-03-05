@@ -186,7 +186,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       CopyPosition(catapult_encoder_, &catapult,
                    Values::kCatapultEncoderCountsPerRevolution(),
                    Values::kCatapultEncoderRatio(), catapult_pot_translate,
-                   true, values_->catapult.potentiometer_offset);
+                   false, values_->catapult.potentiometer_offset);
       flatbuffers::Offset<frc971::PotAndAbsolutePosition> catapult_offset =
           frc971::PotAndAbsolutePosition::Pack(*builder.fbb(), &catapult);
 
@@ -210,12 +210,13 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       frc971::PotAndAbsolutePositionT intake_front;
       CopyPosition(intake_encoder_front_, &intake_front,
                    Values::kIntakeEncoderCountsPerRevolution(),
-                   Values::kIntakeEncoderRatio(), intake_pot_translate, false,
+                   Values::kIntakeEncoderRatio(), intake_pot_translate, true,
                    values_->intake_front.potentiometer_offset);
       frc971::PotAndAbsolutePositionT intake_back;
       CopyPosition(intake_encoder_back_, &intake_back,
                    Values::kIntakeEncoderCountsPerRevolution(),
-                   Values::kIntakeEncoderRatio(), intake_pot_translate, false,
+                   Values::kIntakeEncoderRatio(),
+                   intake_pot_translate, true,
                    values_->intake_back.potentiometer_offset);
       frc971::PotAndAbsolutePositionT turret;
       CopyPosition(turret_encoder_, &turret,

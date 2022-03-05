@@ -4,14 +4,14 @@ namespace y2022.control_loops.superstructure;
 
 table Position {
   climber:frc971.RelativePosition (id: 0);
-  // Zero for the intake position value is up, and positive is
-  // down.
+  // Zero for the intake position value is horizontal, and positive is
+  // up.
   intake_front:frc971.PotAndAbsolutePosition (id: 1);
   intake_back:frc971.PotAndAbsolutePosition (id: 2);
-  // Zero is forwards; positive = counter-clockwise.
+  // Zero is to the front (away from the RIO); positive = counter-clockwise.
   turret:frc971.PotAndAbsolutePosition (id: 3);
 
-  // Zero is straight and positive is open
+  // Zero is closed and positive is open
   flipper_arm_left:frc971.RelativePosition (id: 4);
   flipper_arm_right:frc971.RelativePosition (id: 5);
 
