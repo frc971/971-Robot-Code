@@ -138,11 +138,11 @@ class CollisionAvoidanceTest : public ::testing::Test {
 
     switch (intake_state) {
       case IntakeState::kSafe:
-        intake_angle = CollisionAvoidance::kCollisionZoneIntake +
+        intake_angle = CollisionAvoidance::kCollisionZoneIntake -
                        CollisionAvoidance::kEpsIntake;
         break;
       case IntakeState::kUnsafe:
-        intake_angle = CollisionAvoidance::kCollisionZoneIntake -
+        intake_angle = CollisionAvoidance::kCollisionZoneIntake +
                        CollisionAvoidance::kEpsIntake;
         break;
     }
@@ -267,7 +267,7 @@ class CollisionAvoidanceTest : public ::testing::Test {
             intake_front_goal(), turret_goal(),
             CollisionAvoidance::kMinCollisionZoneFrontTurret,
             CollisionAvoidance::kMaxCollisionZoneFrontTurret)) {
-      EXPECT_GE(status_.intake_front_position,
+      EXPECT_LE(status_.intake_front_position,
                 CollisionAvoidance::kCollisionZoneIntake);
     } else {
       EXPECT_NEAR(intake_front_goal(), status_.intake_front_position,
@@ -278,7 +278,7 @@ class CollisionAvoidanceTest : public ::testing::Test {
             intake_back_goal(), turret_goal(),
             CollisionAvoidance::kMinCollisionZoneBackTurret,
             CollisionAvoidance::kMaxCollisionZoneBackTurret)) {
-      EXPECT_GE(status_.intake_back_position,
+      EXPECT_LE(status_.intake_back_position,
                 CollisionAvoidance::kCollisionZoneIntake);
     } else {
       EXPECT_NEAR(intake_back_goal(), status_.intake_back_position, 0.001);

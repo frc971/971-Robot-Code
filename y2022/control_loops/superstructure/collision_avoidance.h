@@ -52,7 +52,7 @@ class CollisionAvoidance {
   static constexpr double kMinCollisionZoneBackTurret = -kCollisionZoneTurret;
   static constexpr double kMaxCollisionZoneBackTurret = kCollisionZoneTurret;
 
-  // Minimum (highest in reality) of the intake, in order to avoid collisions
+  // Maximum position of the intake to avoid collisions
   static constexpr double kCollisionZoneIntake = M_PI / 6.0;
 
   // Tolerance for the turret.

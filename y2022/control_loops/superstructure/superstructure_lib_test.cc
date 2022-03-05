@@ -570,22 +570,22 @@ TEST_F(SuperstructureTest, ReachesGoal) {
     auto builder = superstructure_goal_sender_.MakeBuilder();
     flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
         intake_offset_front = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-            *builder.fbb(), constants::Values::kIntakeRange().upper,
+            *builder.fbb(), constants::Values::kIntakeRange().lower,
             CreateProfileParameters(*builder.fbb(), 1.0, 0.2));
 
     flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
         intake_offset_back = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-            *builder.fbb(), constants::Values::kIntakeRange().upper,
+            *builder.fbb(), constants::Values::kIntakeRange().lower,
             CreateProfileParameters(*builder.fbb(), 1.0, 0.2));
 
     flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
         turret_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-            *builder.fbb(), constants::Values::kTurretRange().upper,
+            *builder.fbb(), constants::Values::kTurretRange().lower,
             CreateProfileParameters(*builder.fbb(), 1.0, 0.2));
 
     flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
         climber_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-            *builder.fbb(), constants::Values::kClimberRange().upper,
+            *builder.fbb(), constants::Values::kClimberRange().lower,
             CreateProfileParameters(*builder.fbb(), 1.0, 0.2));
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
@@ -620,11 +620,11 @@ TEST_F(SuperstructureTest, SaturationTest) {
 
     flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
         intake_offset_front = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-            *builder.fbb(), constants::Values::kIntakeRange().lower);
+            *builder.fbb(), constants::Values::kIntakeRange().upper);
 
     flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
         intake_offset_back = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-            *builder.fbb(), constants::Values::kIntakeRange().lower);
+            *builder.fbb(), constants::Values::kIntakeRange().upper);
 
     // Keep the turret away from the intakes because they start in the collision
     // area
@@ -634,7 +634,7 @@ TEST_F(SuperstructureTest, SaturationTest) {
 
     flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
         climber_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-            *builder.fbb(), constants::Values::kClimberRange().lower);
+            *builder.fbb(), constants::Values::kClimberRange().upper);
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
 
@@ -657,22 +657,22 @@ TEST_F(SuperstructureTest, SaturationTest) {
 
     flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
         intake_offset_front = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-            *builder.fbb(), constants::Values::kIntakeRange().upper,
+            *builder.fbb(), constants::Values::kIntakeRange().lower,
             CreateProfileParameters(*builder.fbb(), 20.0, 0.1));
 
     flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
         intake_offset_back = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-            *builder.fbb(), constants::Values::kIntakeRange().upper,
+            *builder.fbb(), constants::Values::kIntakeRange().lower,
             CreateProfileParameters(*builder.fbb(), 20.0, 0.1));
 
     flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
         turret_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-            *builder.fbb(), constants::Values::kTurretRange().upper,
+            *builder.fbb(), constants::Values::kTurretRange().lower,
             CreateProfileParameters(*builder.fbb(), 20.0, 0.1));
 
     flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
         climber_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-            *builder.fbb(), constants::Values::kClimberRange().upper,
+            *builder.fbb(), constants::Values::kClimberRange().lower,
             CreateProfileParameters(*builder.fbb(), 20.0, 0.1));
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();

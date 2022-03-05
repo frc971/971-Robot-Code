@@ -58,7 +58,7 @@ bool CollisionAvoidance::TurretCollided(double intake_position,
   if (turret_position_wrapped >= min_turret_collision_position &&
       turret_position_wrapped <= max_turret_collision_position) {
     // Reterns true if the intake is raised.
-    if (intake_position <= kCollisionZoneIntake) {
+    if (intake_position > kCollisionZoneIntake) {
       return true;
     }
   } else {
@@ -144,14 +144,14 @@ void CollisionAvoidance::CalculateAvoidance(bool intake_front,
   if (turret_pos_unsafe || turret_moving_past_intake) {
     // If the turret is unsafe, limit the intake
     if (intake_front) {
-      update_min_intake_front_goal(kCollisionZoneIntake + kEpsIntake);
+      update_max_intake_front_goal(kCollisionZoneIntake - kEpsIntake);
     } else {
-      update_min_intake_back_goal(kCollisionZoneIntake + kEpsIntake);
+      update_max_intake_back_goal(kCollisionZoneIntake - kEpsIntake);
     }
 
     // If the intake is in the way, limit the turret until moved. Otherwise,
     // let'errip!
-    if (!turret_pos_unsafe && (intake_position <= kCollisionZoneIntake)) {
+    if (!turret_pos_unsafe && (intake_position > kCollisionZoneIntake)) {
       if (turret_position < min_turret_collision_goal_unwrapped) {
         update_max_turret_goal(min_turret_collision_goal_unwrapped -
                                kEpsTurret);
