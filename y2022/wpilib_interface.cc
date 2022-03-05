@@ -627,39 +627,41 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     sensor_reader.set_drivetrain_left_encoder(make_encoder(0));
     sensor_reader.set_drivetrain_right_encoder(make_encoder(1));
 
-    sensor_reader.set_intake_encoder_front(make_encoder(2));
+    sensor_reader.set_intake_encoder_front(make_encoder(3));
     sensor_reader.set_intake_front_absolute_pwm(
-        make_unique<frc::DigitalInput>(2));
+        make_unique<frc::DigitalInput>(3));
     sensor_reader.set_intake_front_potentiometer(
+        make_unique<frc::AnalogInput>(1));
+
+    sensor_reader.set_intake_encoder_back(make_encoder(4));
+    sensor_reader.set_intake_back_absolute_pwm(
+        make_unique<frc::DigitalInput>(4));
+    sensor_reader.set_intake_back_potentiometer(
         make_unique<frc::AnalogInput>(2));
 
-    sensor_reader.set_intake_encoder_back(make_encoder(3));
-    sensor_reader.set_intake_back_absolute_pwm(
-        make_unique<frc::DigitalInput>(3));
-    sensor_reader.set_intake_back_potentiometer(
-        make_unique<frc::AnalogInput>(3));
+    sensor_reader.set_turret_encoder(make_encoder(5));
+    sensor_reader.set_turret_absolute_pwm(make_unique<frc::DigitalInput>(5));
+    sensor_reader.set_turret_potentiometer(make_unique<frc::AnalogInput>(3));
 
-    sensor_reader.set_turret_encoder(make_encoder(4));
-    sensor_reader.set_turret_absolute_pwm(make_unique<frc::DigitalInput>(4));
-    sensor_reader.set_turret_potentiometer(make_unique<frc::AnalogInput>(4));
-
-    sensor_reader.set_intake_beambreak_front(make_unique<frc::DigitalInput>(5));
-    sensor_reader.set_intake_beambreak_back(make_unique<frc::DigitalInput>(6));
+    // TODO(milind): correct intake beambreak ports once set
+    sensor_reader.set_intake_beambreak_front(
+        make_unique<frc::DigitalInput>(22));
+    sensor_reader.set_intake_beambreak_back(make_unique<frc::DigitalInput>(23));
     sensor_reader.set_turret_beambreak(make_unique<frc::DigitalInput>(7));
 
-    sensor_reader.set_climber_potentiometer(make_unique<frc::AnalogInput>(5));
+    sensor_reader.set_climber_potentiometer(make_unique<frc::AnalogInput>(7));
 
     sensor_reader.set_flipper_arm_left_potentiometer(
         make_unique<frc::AnalogInput>(4));
     sensor_reader.set_flipper_arm_right_potentiometer(
         make_unique<frc::AnalogInput>(5));
 
-    sensor_reader.set_catapult_encoder(
-        make_unique<frc::Encoder>(0, 1, false, frc::Encoder::k4X));
+    // TODO(milind): correct catapult encoder and absolute pwm ports
+    sensor_reader.set_catapult_encoder(make_encoder(6));
     sensor_reader.set_catapult_absolute_pwm(
-        std::make_unique<frc::DigitalInput>(2));
+        std::make_unique<frc::DigitalInput>(6));
     sensor_reader.set_catapult_potentiometer(
-        std::make_unique<frc::AnalogInput>(2));
+        std::make_unique<frc::AnalogInput>(6));
 
     sensor_reader.set_heading_input(make_unique<frc::DigitalInput>(8));
     sensor_reader.set_yaw_rate_input(make_unique<frc::DigitalInput>(9));
@@ -670,27 +672,32 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     ::aos::ShmEventLoop output_event_loop(&config.message());
     ::frc971::wpilib::DrivetrainWriter drivetrain_writer(&output_event_loop);
     drivetrain_writer.set_left_controller0(
-        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(1)), true);
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(0)), true);
     drivetrain_writer.set_right_controller0(
-        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(0)), false);
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(1)), false);
 
     SuperstructureWriter superstructure_writer(&output_event_loop);
 
-    superstructure_writer.set_turret_falcon(make_unique<::frc::TalonFX>(8));
+    superstructure_writer.set_turret_falcon(make_unique<::frc::TalonFX>(3));
+    // TODO(milind): correct CAN ports
     superstructure_writer.set_roller_falcon_front(
-        make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(3));
+        make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(0));
     superstructure_writer.set_roller_falcon_back(
-        make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(4));
+        make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(1));
+    // TODO(milind): correct port
     superstructure_writer.set_transfer_roller_victor(
-        make_unique<::frc::VictorSP>(9));
-    superstructure_writer.set_intake_falcon_front(make_unique<frc::TalonFX>(5));
-    superstructure_writer.set_intake_falcon_back(make_unique<frc::TalonFX>(6));
-    superstructure_writer.set_climber_falcon(make_unique<frc::TalonFX>(7));
+        make_unique<::frc::VictorSP>(5));
+    superstructure_writer.set_intake_falcon_front(make_unique<frc::TalonFX>(2));
+    superstructure_writer.set_intake_falcon_back(make_unique<frc::TalonFX>(4));
+    // TODO(milind): correct port
+    superstructure_writer.set_climber_falcon(make_unique<frc::TalonFX>(6));
+    // TODO(milind): correct CAN port
     superstructure_writer.set_flipper_arms_falcon(
-        make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(5));
+        make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(2));
 
-    superstructure_writer.set_catapult_falcon_1(make_unique<::frc::TalonFX>(2));
-    superstructure_writer.set_catapult_falcon_2(make_unique<::frc::TalonFX>(3));
+    // TODO(milind): correct ports
+    superstructure_writer.set_catapult_falcon_1(make_unique<::frc::TalonFX>(7));
+    superstructure_writer.set_catapult_falcon_2(make_unique<::frc::TalonFX>(8));
 
     AddLoop(&output_event_loop);
 
