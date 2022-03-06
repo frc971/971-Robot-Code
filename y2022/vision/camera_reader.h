@@ -25,8 +25,6 @@ namespace vision {
 using namespace frc971::vision;
 
 // TODO<jim>: Probably need to break out LED control to separate process
-// TODO<jim>: Need to add sync with camera to strobe lights
-
 class CameraReader {
  public:
   CameraReader(aos::ShmEventLoop *event_loop,
@@ -66,18 +64,20 @@ class CameraReader {
   void ReadImage();
 
   cv::Mat CameraIntrinsics() const {
-    const cv::Mat result(3, 3, CV_32F,
-                         const_cast<void *>(static_cast<const void *>(
-                             camera_calibration_->intrinsics()->data())));
+    cv::Mat result(3, 3, CV_32F,
+                   const_cast<void *>(static_cast<const void *>(
+                       camera_calibration_->intrinsics()->data())));
+    result.convertTo(result, CV_64F);
     CHECK_EQ(result.total(), camera_calibration_->intrinsics()->size());
     return result;
   }
 
   cv::Mat CameraExtrinsics() const {
-    const cv::Mat result(
+    cv::Mat result(
         4, 4, CV_32F,
         const_cast<void *>(static_cast<const void *>(
             camera_calibration_->fixed_extrinsics()->data()->data())));
+    result.convertTo(result, CV_64F);
     CHECK_EQ(result.total(),
              camera_calibration_->fixed_extrinsics()->data()->size());
     return result;

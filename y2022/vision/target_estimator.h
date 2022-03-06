@@ -7,22 +7,21 @@
 #include "Eigen/Geometry"
 #include "opencv2/core/types.hpp"
 #include "opencv2/imgproc.hpp"
+#include "y2022/vision/blob_detector.h"
 #include "y2022/vision/target_estimate_generated.h"
 
 namespace y2022::vision {
 
-// Class to estimate the polar coordinates and rotation from the camera to the
+// Class to estimate the distance and rotation of the camera from the
 // target.
 class TargetEstimator {
  public:
   TargetEstimator(cv::Mat intrinsics, cv::Mat extrinsics);
 
   // Runs the solver to estimate the target
-  // centroids must be in sorted order from left to right on the circle.
-  // TODO(milind): seems safer to sort them here.
   // If image != std::nullopt, the solver's progress will be displayed
   // graphically.
-  void Solve(const std::vector<cv::Point> &centroids,
+  void Solve(const std::vector<BlobDetector::BlobStats> &blob_stats,
              std::optional<cv::Mat> image);
 
   // Cost function for the solver.
@@ -54,22 +53,24 @@ class TargetEstimator {
   void DrawEstimate(cv::Mat view_image) const;
 
  private:
-  // Height of the center of the tape (m)
-  static constexpr double kTapeHeight = 2.58 + (0.05 / 2);
-  // Horizontal distance from tape to center of hub (m)
-  static constexpr double kUpperHubRadius = 1.22 / 2;
-  static constexpr size_t kNumPiecesOfTape = 16;
-
   // 3d points of the visible pieces of tape in the hub's frame
   static const std::vector<cv::Point3d> kTapePoints;
-  static std::vector<cv::Point3d> ComputeTapePoints();
+  // 3d outer points of the middle piece of tape in the hub's frame,
+  // clockwise around the rectangle
+  static const std::array<cv::Point3d, 4> kMiddleTapePiecePoints;
+
+  template <typename S>
+  cv::Point_<S> ProjectToImage(
+      cv::Point3d tape_point_hub,
+      Eigen::Transform<S, 3, Eigen::Affine> &H_hub_camera) const;
 
   template <typename S>
   cv::Point_<S> DistanceFromTape(
       size_t centroid_index,
       const std::vector<cv::Point_<S>> &tape_points) const;
 
-  std::vector<cv::Point> centroids_;
+  std::vector<BlobDetector::BlobStats> blob_stats_;
+  size_t middle_blob_index_;
   std::optional<cv::Mat> image_;
 
   Eigen::Matrix3d intrinsics_;

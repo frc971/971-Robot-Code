@@ -11,6 +11,9 @@ class BlobDetector {
  public:
   struct BlobStats {
     cv::Point centroid;
+    // Size of the rotated rect fitting around the blob
+    cv::Size size;
+    // Aspect ratio of the non-rotated bounding box
     double aspect_ratio;
     double area;
     size_t num_points;
@@ -20,8 +23,7 @@ class BlobDetector {
     cv::Mat binarized_image;
     std::vector<std::vector<cv::Point>> filtered_blobs, unfiltered_blobs;
     std::vector<BlobStats> blob_stats;
-    // In sorted order from left to right on the circle
-    std::vector<cv::Point> filtered_centroids;
+    std::vector<BlobStats> filtered_stats;
     cv::Point centroid;
   };
 

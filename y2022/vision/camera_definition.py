@@ -99,10 +99,8 @@ def compute_extrinsic_by_pi(pi_number):
     T = np.array([0.0, 0.0, 0.0])
 
     if pi_number == "pi1":
-        # This is the turret camera
-        camera_pitch = -10.0 * np.pi / 180.0
-        is_turret = True
-        T = np.array([7.5 * 0.0254, -5.5 * 0.0254, 41.0 * 0.0254])
+        camera_pitch = -35.0 * np.pi / 180.0
+        T = np.array([0.0, 0.0, 37.0 * 0.0254])
     elif pi_number == "pi2":
         T = np.array([4.5 * 0.0254, 3.75 * 0.0254, 26.0 * 0.0254])
     elif pi_number == "pi3":

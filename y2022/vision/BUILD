@@ -178,12 +178,14 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//y2022:__subpackages__"],
     deps = [
+        ":blob_detector_lib",
         ":calibration_fbs",
         ":target_estimate_fbs",
         "//aos/logging",
         "//aos/time",
         "//frc971/control_loops:quaternion_utils",
         "//third_party:opencv",
+        "//y2022:constants",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_ceres_solver//:ceres",
         "@org_tuxfamily_eigen//:eigen",
@@ -213,6 +215,7 @@ cc_binary(
     visibility = ["//y2022:__subpackages__"],
     deps = [
         ":blob_detector_lib",
+        ":calibration_data",
         ":target_estimator_lib",
         "//aos:init",
         "//aos/events:shm_event_loop",

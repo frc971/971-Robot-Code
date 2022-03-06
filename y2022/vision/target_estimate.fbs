@@ -7,6 +7,11 @@ struct Point {
   y:int (id: 1);
 }
 
+struct Size {
+  width:int (id: 0);
+  height:int (id: 1);
+}
+
 table Blob  {
   points:[Point] (id: 0);
 }
@@ -14,6 +19,7 @@ table Blob  {
 // Statistics for each blob used for filtering
 table BlobStatsFbs {
   centroid:Point (id: 0);
+  size:Size (id: 4);
   aspect_ratio:double (id: 1);
   area:double (id: 2);
   num_points:uint64 (id: 3);
@@ -27,8 +33,8 @@ table BlobResultFbs {
   unfiltered_blobs:[Blob] (id: 1);
   // Stats on the blobs
   blob_stats:[BlobStatsFbs] (id: 2);
-  // Centroids of filtered blobs
-  filtered_centroids:[Point] (id: 4);
+  // Stats of filtered blobs
+  filtered_stats:[BlobStatsFbs] (id: 4);
   // Average centroid of the filtered blobs
   centroid:Point (id: 3);
 }
@@ -52,7 +58,8 @@ table TargetEstimate {
   angle_to_camera:double (id: 3);
   // Rotation of the camera in the hub's reference frame
   rotation_camera_hub:Rotation (id: 4);
-  // Confidence in the estimate from 0 to 1, based on the final solver cost.
+  // Confidence in the estimate from 0 to 1,
+  // based on the final deviation between projected points and actual blobs.
   // Good estimates currently have confidences of around 0.9 or greater.
   confidence:double (id: 7);
 
