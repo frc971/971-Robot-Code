@@ -129,6 +129,11 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
     intake_beambreak_timer_ = timestamp;
   }
 
+  if (timestamp >
+      intake_beambreak_timer_ + constants::Values::kBallLostTime()) {
+    intake_state_ = IntakeState::NO_BALL;
+  }
+
   if (intake_state_ != IntakeState::NO_BALL) {
     // Block intaking in
     roller_speed_compensated_front = 0.0;
@@ -152,11 +157,6 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
   switch (state_) {
     case SuperstructureState::IDLE: {
-      if (timestamp >
-          intake_beambreak_timer_ + constants::Values::kBallLostTime()) {
-        intake_state_ = IntakeState::NO_BALL;
-      }
-
       if (is_spitting) {
         intake_state_ = IntakeState::NO_BALL;
       }
@@ -174,13 +174,6 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
     }
     case SuperstructureState::TRANSFERRING: {
       // If we've been transferring for too long, the ball probably got lost
-      if (timestamp >
-          intake_beambreak_timer_ + constants::Values::kBallLostTime()) {
-        intake_state_ = IntakeState::NO_BALL;
-        state_ = SuperstructureState::IDLE;
-        break;
-      }
-
       if (intake_state_ == IntakeState::NO_BALL) {
         state_ = SuperstructureState::IDLE;
         break;
@@ -225,8 +218,8 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       // Keep feeding for kExtraLoadingTime
 
       // The ball should go past the turret beambreak to be loaded.
-      // If we got a CAN reading not too long ago, the flippers should have also
-      // stopped.
+      // If we got a CAN reading not too long ago, the flippers should have
+      // also stopped.
       if (position->turret_beambreak()) {
         loading_timer_ = timestamp;
       } else if (timestamp >
@@ -332,7 +325,8 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   const flatbuffers::Offset<AimerStatus> aimer_offset =
       aimer_.PopulateStatus(status->fbb());
 
-  // Disable the catapult if we want to restart to prevent damage with flippers
+  // Disable the catapult if we want to restart to prevent damage with
+  // flippers
   const flatbuffers::Offset<PotAndAbsoluteEncoderProfiledJointStatus>
       catapult_status_offset =
           catapult_.Iterate(unsafe_goal, position,
