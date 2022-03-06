@@ -25,6 +25,13 @@ flatbuffer_cc_library(
     visibility = ["//visibility:public"],
 )
 
+flatbuffer_ts_library(
+    name = "localizer_output_ts_fbs",
+    srcs = ["localizer_output.fbs"],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+)
+
 flatbuffer_cc_library(
     name = "localizer_status_fbs",
     srcs = [

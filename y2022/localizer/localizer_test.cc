@@ -398,12 +398,20 @@ class EventLoopLocalizerTest : public ::testing::Test {
         }
         {
           auto builder = turret_sender_.MakeBuilder();
+          auto turret_estimator_builder =
+              builder
+                  .MakeBuilder<frc971::PotAndAbsoluteEncoderEstimatorState>();
+          turret_estimator_builder.add_position(turret_position_);
+          const flatbuffers::Offset<frc971::PotAndAbsoluteEncoderEstimatorState>
+              turret_estimator_offset = turret_estimator_builder.Finish();
           auto turret_builder =
               builder
                   .MakeBuilder<frc971::control_loops::
                                    PotAndAbsoluteEncoderProfiledJointStatus>();
           turret_builder.add_position(turret_position_);
           turret_builder.add_velocity(turret_velocity_);
+          turret_builder.add_zeroed(true);
+          turret_builder.add_estimator_state(turret_estimator_offset);
           const auto turret_offset = turret_builder.Finish();
           auto status_builder =
               builder
@@ -782,6 +790,53 @@ TEST_F(EventLoopLocalizerTest, ImageCorrections) {
             status_fetcher_->model_based()->statistics()->total_candidates());
   ASSERT_EQ(status_fetcher_->model_based()->statistics()->total_candidates(),
             status_fetcher_->model_based()->statistics()->total_accepted());
+}
+
+// Tests that image corrections are ignored when the turret moves too fast.
+TEST_F(EventLoopLocalizerTest, ImageCorrectionsTurretTooFast) {
+  output_voltages_ << 0.0, 0.0;
+  drivetrain_plant_.mutable_state()->x() = 2.0;
+  drivetrain_plant_.mutable_state()->y() = 2.0;
+  SendLocalizerControl(5.0, 3.0, 0.0);
+  turret_velocity_ = 10.0;
+  event_loop_factory_.RunFor(std::chrono::seconds(4));
+  CHECK(output_fetcher_.Fetch());
+  ASSERT_NEAR(5.0, output_fetcher_->x(), 1e-5);
+  ASSERT_NEAR(3.0, output_fetcher_->y(), 1e-5);
+  ASSERT_NEAR(0.0, output_fetcher_->theta(), 1e-5);
+
+  send_targets_ = true;
+
+  event_loop_factory_.RunFor(std::chrono::seconds(4));
+  CHECK(status_fetcher_.Fetch());
+  CHECK(output_fetcher_.Fetch());
+  ASSERT_NEAR(5.0, output_fetcher_->x(), 1e-5);
+  ASSERT_NEAR(3.0, output_fetcher_->y(), 1e-5);
+  ASSERT_NEAR(0.0, output_fetcher_->theta(), 1e-5);
+  ASSERT_TRUE(status_fetcher_->model_based()->has_statistics());
+  ASSERT_LT(10,
+            status_fetcher_->model_based()->statistics()->total_candidates());
+  ASSERT_EQ(0, status_fetcher_->model_based()->statistics()->total_accepted());
+  ASSERT_EQ(status_fetcher_->model_based()->statistics()->total_candidates(),
+            status_fetcher_->model_based()
+                ->statistics()
+                ->rejection_reason_count()
+                ->Get(static_cast<int>(RejectionReason::TURRET_TOO_FAST)));
+  // We expect one more rejection to occur due to the time it takes all the
+  // information to propagate.
+  const int rejected_count =
+      status_fetcher_->model_based()->statistics()->total_candidates() + 1;
+  // Check that when we go back to being still we do successfully converge.
+  turret_velocity_ = 0.0;
+  turret_position_ = 1.0;
+  event_loop_factory_.RunFor(std::chrono::seconds(4));
+  CHECK(status_fetcher_.Fetch());
+  ASSERT_TRUE(status_fetcher_->model_based()->using_model());
+  EXPECT_TRUE(VerifyEstimatorAccurate(1e-1));
+  ASSERT_TRUE(status_fetcher_->model_based()->has_statistics());
+  ASSERT_EQ(status_fetcher_->model_based()->statistics()->total_candidates(),
+            rejected_count +
+                status_fetcher_->model_based()->statistics()->total_accepted());
 }
 
 // Tests that image corrections when we are in accel mode works.

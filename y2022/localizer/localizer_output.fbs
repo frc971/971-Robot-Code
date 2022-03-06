@@ -21,6 +21,9 @@ table LocalizerOutput {
   theta:double (id: 3);
   // Current estimate of the robot's 3-D rotation.
   orientation:Quaternion (id: 4);
+  // Whether we have zeroed the IMU (may go false if we observe a fault with the
+  // IMU).
+  zeroed:bool (id: 5);
 }
 
 root_type LocalizerOutput;
