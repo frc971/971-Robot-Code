@@ -862,7 +862,7 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
   EXPECT_EQ(superstructure_status_fetcher_->shot_count(), 0);
 
   superstructure_plant_.set_turret_beambreak(false);
-  RunFor(constants::Values::kExtraLoadingTime() + dt());
+  RunFor(constants::Values::kExtraLoadingTime() + dt() * 2);
 
   // Now that the ball has gone past the turret beambreak,
   // it should be loaded in the catapult and ready for firing.

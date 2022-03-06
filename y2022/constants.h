@@ -116,7 +116,7 @@ struct Values {
   }
 
   // Voltage to wiggle the transfer rollers and keep a ball in.
-  static constexpr double kTransferRollerFrontWiggleVoltage() { return 5.0; }
+  static constexpr double kTransferRollerFrontWiggleVoltage() { return 3.0; }
   static constexpr double kTransferRollerBackWiggleVoltage() {
     return -kTransferRollerFrontWiggleVoltage();
   }
@@ -138,8 +138,8 @@ struct Values {
     };
   }
 
-  static constexpr double kTurretBackIntakePos() { return 0.0; }
-  static constexpr double kTurretFrontIntakePos() { return M_PI; }
+  static constexpr double kTurretBackIntakePos() { return M_PI; }
+  static constexpr double kTurretFrontIntakePos() { return 0; }
 
   static constexpr double kTurretPotRatio() { return 27.0 / 110.0; }
   static constexpr double kTurretEncoderRatio() { return kTurretPotRatio(); }
@@ -161,7 +161,7 @@ struct Values {
   static constexpr double kFlipperHoldVoltage() { return 2.5; }
   // Voltage to feed a ball from the transfer rollers to the catpult with the
   // flippers
-  static constexpr double kFlipperFeedVoltage() { return -8.0; }
+  static constexpr double kFlipperFeedVoltage() { return -12.0; }
 
   // Ball is fed into catapult for atleast this time no matter what
   static constexpr std::chrono::milliseconds kExtraLoadingTime() {
@@ -218,9 +218,9 @@ struct Values {
   }
   static constexpr ::frc971::constants::Range kCatapultRange() {
     return ::frc971::constants::Range{
-        .lower_hard = -1.2,
+        .lower_hard = -1.0,
         .upper_hard = 2.0,
-        .lower = -1.00,
+        .lower = -0.90,
         .upper = 1.57,
     };
   }
