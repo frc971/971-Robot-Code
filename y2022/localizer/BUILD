@@ -1,4 +1,4 @@
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_ts_library")
 load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
 load("@npm//@bazel/typescript:index.bzl", "ts_library")
 
@@ -39,6 +39,30 @@ flatbuffer_cc_library(
     visibility = ["//visibility:public"],
 )
 
+flatbuffer_cc_library(
+    name = "localizer_visualization_fbs",
+    srcs = ["localizer_visualization.fbs"],
+    gen_reflections = 1,
+    includes = [
+        ":localizer_status_fbs_includes",
+        "//frc971/control_loops:control_loops_fbs_includes",
+        "//frc971/control_loops/drivetrain:drivetrain_status_fbs_includes",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+flatbuffer_ts_library(
+    name = "localizer_visualization_ts_fbs",
+    srcs = ["localizer_visualization.fbs"],
+    includes = [
+        ":localizer_status_fbs_includes",
+        "//frc971/control_loops:control_loops_fbs_includes",
+        "//frc971/control_loops/drivetrain:drivetrain_status_fbs_includes",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+)
+
 cc_static_flatbuffer(
     name = "localizer_schema",
     function = "frc971::controls::LocalizerStatusSchema",
@@ -54,7 +78,9 @@ cc_library(
     deps = [
         ":localizer_output_fbs",
         ":localizer_status_fbs",
+        ":localizer_visualization_fbs",
         "//aos/containers:ring_buffer",
+        "//aos/containers:sized_array",
         "//aos/events:event_loop",
         "//aos/network:message_bridge_server_fbs",
         "//aos/time",

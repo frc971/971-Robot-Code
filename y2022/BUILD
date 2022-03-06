@@ -116,6 +116,7 @@ aos_config(
         "//aos/network:remote_message_fbs",
         "//y2022/localizer:localizer_status_fbs",
         "//y2022/localizer:localizer_output_fbs",
+        "//y2022/localizer:localizer_visualization_fbs",
     ],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],

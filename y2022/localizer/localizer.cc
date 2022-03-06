@@ -483,7 +483,7 @@ Eigen::Matrix<double, 4, 4> FlatbufferToTransformationMatrix(
 }
 
 // Node names of the pis to listen for cameras from.
-const std::array<std::string, 4> kPisToUse{"pi1", "pi2", "pi3", "pi4"};
+const std::array<std::string_view, 4> kPisToUse{"pi1", "pi2", "pi3", "pi4"};
 }
 
 const Eigen::Matrix<double, 4, 4> ModelBasedLocalizer::CameraTransform(
@@ -524,7 +524,8 @@ const Eigen::Matrix<double, 4, 4> ModelBasedLocalizer::CameraTransform(
 const std::optional<Eigen::Vector2d>
 ModelBasedLocalizer::CameraMeasuredRobotPosition(
     const OldPosition &state, const y2022::vision::TargetEstimate *target,
-    std::optional<RejectionReason> *rejection_reason) const {
+    std::optional<RejectionReason> *rejection_reason,
+    Eigen::Matrix<double, 4, 4> *H_field_camera_measured) const {
   if (!target->has_camera_calibration()) {
     *rejection_reason = RejectionReason::NO_CALIBRATION;
     return std::nullopt;
@@ -567,26 +568,28 @@ ModelBasedLocalizer::CameraMeasuredRobotPosition(
       aos::math::NormalizeAngle(M_PI + camera_yaw + target->angle_to_target());
   const double distance_from_target = target->distance();
   // Extract the implied camera position on the field.
-  Eigen::Matrix<double, 4, 4> H_field_camera_measured = H_field_camera;
+  *H_field_camera_measured = H_field_camera;
   // TODO(james): Are we going to need to evict the roll/pitch components of the
   // camera extrinsics this year as well?
-  H_field_camera_measured(0, 3) =
+  (*H_field_camera_measured)(0, 3) =
       distance_from_target * std::cos(heading_from_target) + kVisionTargetX;
-  H_field_camera_measured(1, 3) =
+  (*H_field_camera_measured)(1, 3) =
       distance_from_target * std::sin(heading_from_target) + kVisionTargetY;
   const Eigen::Matrix<double, 4, 4> H_field_robot_measured =
-      H_field_camera_measured * H_robot_camera.inverse();
+      *H_field_camera_measured * H_robot_camera.inverse();
   return H_field_robot_measured.block<2, 1>(0, 3);
 }
 
 void ModelBasedLocalizer::HandleImageMatch(
     aos::monotonic_clock::time_point sample_time,
-    const y2022::vision::TargetEstimate *target) {
+    const y2022::vision::TargetEstimate *target, int camera_index) {
   std::optional<RejectionReason> rejection_reason;
 
   const OldPosition &state = GetStateForTime(sample_time);
+  Eigen::Matrix<double, 4, 4> H_field_camera_measured;
   const std::optional<Eigen::Vector2d> measured_robot_position =
-      CameraMeasuredRobotPosition(state, target, &rejection_reason);
+      CameraMeasuredRobotPosition(state, target, &rejection_reason,
+                                  &H_field_camera_measured);
   // Technically, rejection_reason should always be set if
   // measured_robot_position is nullopt, but in the future we may have more
   // recoverable rejection reasons that we wish to allow to propagate further
@@ -648,6 +651,25 @@ void ModelBasedLocalizer::HandleImageMatch(
 
   statistics_.total_accepted++;
   statistics_.total_candidates++;
+
+  const Eigen::Vector3d camera_z_in_field =
+      H_field_camera_measured.block<3, 3>(0, 0) * Eigen::Vector3d::UnitZ();
+  const double camera_yaw =
+      std::atan2(camera_z_in_field.y(), camera_z_in_field.x());
+
+  TargetEstimateDebugT debug;
+  debug.camera = static_cast<uint8_t>(camera_index);
+  debug.camera_x = H_field_camera_measured(0, 3);
+  debug.camera_y = H_field_camera_measured(1, 3);
+  debug.camera_theta = camera_yaw;
+  debug.implied_robot_x = measured_robot_position.value().x();
+  debug.implied_robot_y = measured_robot_position.value().y();
+  debug.implied_robot_theta = xytheta()(2);
+  debug.implied_turret_goal =
+      aos::math::NormalizeAngle(camera_yaw + target->angle_to_target());
+  debug.accepted = true;
+  debug.image_age_sec = aos::time::DurationInSeconds(t_ - sample_time);
+  image_debugs_.push_back(debug);
 }
 
 void ModelBasedLocalizer::HandleTurret(
@@ -700,8 +722,8 @@ flatbuffers::Offset<ModelBasedState> ModelBasedLocalizer::BuildModelState(
   return model_state_builder.Finish();
 }
 
-flatbuffers::Offset<ModelBasedStatus> ModelBasedLocalizer::PopulateStatus(
-    flatbuffers::FlatBufferBuilder *fbb) {
+flatbuffers::Offset<CumulativeStatistics>
+ModelBasedLocalizer::PopulateStatistics(flatbuffers::FlatBufferBuilder *fbb) {
   const auto rejections_offset = fbb->CreateVector(
       statistics_.rejection_counts.data(), statistics_.rejection_counts.size());
 
@@ -709,8 +731,13 @@ flatbuffers::Offset<ModelBasedStatus> ModelBasedLocalizer::PopulateStatus(
   stats_builder.add_total_accepted(statistics_.total_accepted);
   stats_builder.add_total_candidates(statistics_.total_candidates);
   stats_builder.add_rejection_reason_count(rejections_offset);
+  return stats_builder.Finish();
+}
+
+flatbuffers::Offset<ModelBasedStatus> ModelBasedLocalizer::PopulateStatus(
+    flatbuffers::FlatBufferBuilder *fbb) {
   const flatbuffers::Offset<CumulativeStatistics> stats_offset =
-      stats_builder.Finish();
+      PopulateStatistics(fbb);
 
   const flatbuffers::Offset<control_loops::drivetrain::DownEstimatorState>
       down_estimator_offset = down_estimator_.PopulateStatus(fbb, t_);
@@ -754,6 +781,58 @@ flatbuffers::Offset<ModelBasedStatus> ModelBasedLocalizer::PopulateStatus(
   return builder.Finish();
 }
 
+flatbuffers::Offset<LocalizerVisualization>
+ModelBasedLocalizer::PopulateVisualization(
+    flatbuffers::FlatBufferBuilder *fbb) {
+  const flatbuffers::Offset<CumulativeStatistics> stats_offset =
+      PopulateStatistics(fbb);
+
+  aos::SizedArray<flatbuffers::Offset<TargetEstimateDebug>, kDebugBufferSize>
+      debug_offsets;
+
+  for (const TargetEstimateDebugT& debug : image_debugs_) {
+    debug_offsets.push_back(PackTargetEstimateDebug(debug, fbb));
+  }
+
+  image_debugs_.clear();
+
+  const flatbuffers::Offset<
+      flatbuffers::Vector<flatbuffers::Offset<TargetEstimateDebug>>>
+      debug_offset =
+          fbb->CreateVector(debug_offsets.data(), debug_offsets.size());
+
+  LocalizerVisualization::Builder builder(*fbb);
+  builder.add_statistics(stats_offset);
+  builder.add_targets(debug_offset);
+  return builder.Finish();
+}
+
+void ModelBasedLocalizer::TallyRejection(const RejectionReason reason) {
+  statistics_.total_candidates++;
+  statistics_.rejection_counts[static_cast<size_t>(reason)]++;
+  TargetEstimateDebugT debug;
+  debug.accepted = false;
+  debug.rejection_reason = reason;
+  image_debugs_.push_back(debug);
+}
+
+flatbuffers::Offset<TargetEstimateDebug>
+ModelBasedLocalizer::PackTargetEstimateDebug(
+    const TargetEstimateDebugT &debug, flatbuffers::FlatBufferBuilder *fbb) {
+  if (!debug.accepted) {
+    TargetEstimateDebug::Builder builder(*fbb);
+    builder.add_accepted(debug.accepted);
+    builder.add_rejection_reason(debug.rejection_reason);
+    return builder.Finish();
+  } else {
+    flatbuffers::Offset<TargetEstimateDebug> offset =
+        TargetEstimateDebug::Pack(*fbb, &debug);
+    flatbuffers::GetMutableTemporaryPointer(*fbb, offset)
+        ->clear_rejection_reason();
+    return offset;
+  }
+}
+
 namespace {
 // Period at which the encoder readings from the IMU board wrap.
 static double DrivetrainWrapPeriod() {
@@ -768,6 +847,8 @@ EventLoopLocalizer::EventLoopLocalizer(
       model_based_(dt_config),
       status_sender_(event_loop_->MakeSender<LocalizerStatus>("/localizer")),
       output_sender_(event_loop_->MakeSender<LocalizerOutput>("/localizer")),
+      visualization_sender_(
+          event_loop_->MakeSender<LocalizerVisualization>("/localizer")),
       output_fetcher_(
           event_loop_->MakeFetcher<frc971::control_loops::drivetrain::Output>(
               "/drivetrain")),
@@ -798,12 +879,12 @@ EventLoopLocalizer::EventLoopLocalizer(
                                   status.turret()->velocity());
       });
 
-  for (const auto &pi : kPisToUse) {
+  for (size_t camera_index = 0; camera_index < kPisToUse.size(); ++camera_index) {
     event_loop_->MakeWatcher(
-        "/" + pi + "/camera",
-        [this, pi](const y2022::vision::TargetEstimate &target) {
+        absl::StrCat("/", kPisToUse[camera_index], "/camera"),
+        [this, camera_index](const y2022::vision::TargetEstimate &target) {
           const std::optional<aos::monotonic_clock::duration> monotonic_offset =
-              ClockOffset(pi);
+              ClockOffset(kPisToUse[camera_index]);
           if (!monotonic_offset.has_value()) {
             return;
           }
@@ -814,7 +895,15 @@ EventLoopLocalizer::EventLoopLocalizer(
             model_based_.TallyRejection(RejectionReason::IMAGE_FROM_FUTURE);
             return;
           }
-          model_based_.HandleImageMatch(capture_time, &target);
+          model_based_.HandleImageMatch(capture_time, &target, camera_index);
+          if (model_based_.NumQueuedImageDebugs() ==
+                  ModelBasedLocalizer::kDebugBufferSize ||
+              (last_visualization_send_ + kMinVisualizationPeriod <
+               event_loop_->monotonic_now())) {
+            auto builder = visualization_sender_.MakeBuilder();
+            visualization_sender_.CheckOk(
+                builder.Send(model_based_.PopulateVisualization(builder.fbb())));
+          }
         });
   }
   event_loop_->MakeWatcher(
