@@ -47,6 +47,12 @@ double UnwrapTurretAngle(double wrapped, int wraps) {
   return wrapped + 2.0 * M_PI * wraps;
 }
 
+bool AngleInRange(double theta, double theta_min, double theta_max) {
+  return (
+      (theta >= theta_min && theta <= theta_max) ||
+      (theta_min > theta_max && (theta >= theta_min || theta <= theta_max)));
+}
+
 bool CollisionAvoidance::TurretCollided(double intake_position,
                                         double turret_position,
                                         double min_turret_collision_position,
@@ -55,8 +61,8 @@ bool CollisionAvoidance::TurretCollided(double intake_position,
   const double turret_position_wrapped = turret_position_wrapped_pair.first;
 
   // Checks if turret is in the collision area.
-  if (turret_position_wrapped >= min_turret_collision_position &&
-      turret_position_wrapped <= max_turret_collision_position) {
+  if (AngleInRange(turret_position_wrapped, min_turret_collision_position,
+                   max_turret_collision_position)) {
     // Reterns true if the intake is raised.
     if (intake_position > kCollisionZoneIntake) {
       return true;
@@ -110,8 +116,8 @@ void CollisionAvoidance::CalculateAvoidance(bool intake_front,
   // If the turret goal is in a collison zone or moving through one, limit
   // intake.
   const bool turret_pos_unsafe =
-      (turret_position_wrapped >= min_turret_collision_goal &&
-       turret_position_wrapped <= max_turret_collision_goal);
+      AngleInRange(turret_position_wrapped, min_turret_collision_goal,
+                   max_turret_collision_goal);
 
   const bool turret_moving_forward = (turret_goal > turret_position);
 
@@ -129,8 +135,11 @@ void CollisionAvoidance::CalculateAvoidance(bool intake_front,
   }
   min_turret_collision_goal_unwrapped =
       UnwrapTurretAngle(min_turret_collision_goal, bounds_wraps);
+  // If we are checking the back intake, the max turret angle is on the wrap
+  // after the min, so add 1 to the number of wraps for it
   const double max_turret_collision_goal_unwrapped =
-      UnwrapTurretAngle(max_turret_collision_goal, bounds_wraps);
+      UnwrapTurretAngle(max_turret_collision_goal,
+                        intake_front ? bounds_wraps : bounds_wraps + 1);
 
   // Check if the closest unwrapped angles are going to be passed
   const bool turret_moving_past_intake =

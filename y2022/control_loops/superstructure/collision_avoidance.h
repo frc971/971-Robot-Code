@@ -19,6 +19,10 @@ std::pair<double, int> WrapTurretAngle(double turret_angle);
 // Returns the absolute angle given the wrapped angle and number of wraps.
 double UnwrapTurretAngle(double wrapped, int wraps);
 
+// Checks if theta is between theta_min and theta_max. Expects all angles to be
+// wrapped from 0 to 2pi
+bool AngleInRange(double theta, double theta_min, double theta_max);
+
 // 1. Prevent the turret from moving if the intake is up
 // 2. If the intake is up, drop it so it is not in the way
 // 3. Move the turret to the desired position.
@@ -49,7 +53,8 @@ class CollisionAvoidance {
   static constexpr double kMaxCollisionZoneFrontTurret =
       M_PI + kCollisionZoneTurret;
 
-  static constexpr double kMinCollisionZoneBackTurret = -kCollisionZoneTurret;
+  static constexpr double kMinCollisionZoneBackTurret =
+      (2.0 * M_PI) - kCollisionZoneTurret;
   static constexpr double kMaxCollisionZoneBackTurret = kCollisionZoneTurret;
 
   // Maximum position of the intake to avoid collisions
