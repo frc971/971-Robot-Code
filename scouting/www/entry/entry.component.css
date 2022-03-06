@@ -1,5 +1,17 @@
 * {
-    margin: 10px;
+    padding: 10px;
+}
+
+.center-column {
+  display: flex;
+  align-items: stretch;
+  flex-direction: column;
+  text-align: center;
+}
+
+.buttons {
+  display: flex;
+  justify-content: space-between;
 }
 
 textarea {
