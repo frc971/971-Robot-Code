@@ -1,0 +1,22 @@
+[
+  {
+    "match_number": 1,
+    "comp_level": "qm",
+    "alliances": {
+      "red": {
+        "team_keys": [
+          "frc100",
+          "frc101",
+          "frc102"
+        ]
+      },
+      "blue": {
+        "team_keys": [
+          "frc103",
+          "frc104",
+          "frc105"
+        ]
+      }
+    }
+  }
+]

@@ -46,9 +46,14 @@ func TestAddToStatsDB(t *testing.T) {
 		Stats{TeamNumber: 4321, MatchNumber: 7, ShotsMissed: 14, UpperGoalShots: 12, LowerGoalShots: 3, ShotsMissedAuto: 0, UpperGoalAuto: 7, LowerGoalAuto: 0, PlayedDefense: 0, Climbing: 0},
 		Stats{TeamNumber: 1234, MatchNumber: 7, ShotsMissed: 3, UpperGoalShots: 4, LowerGoalShots: 0, ShotsMissedAuto: 0, UpperGoalAuto: 9, LowerGoalAuto: 0, PlayedDefense: 0, Climbing: 0},
 	}
-	db.AddToMatch(Match{MatchNumber: 7, Round: 1, CompLevel: "quals", R1: 1236, R2: 1001, R3: 777, B1: 1000, B2: 4321, B3: 1234, r1ID: 1, r2ID: 2, r3ID: 3, b1ID: 4, b2ID: 5, b3ID: 6})
+	err := db.AddToMatch(Match{MatchNumber: 7, Round: 1, CompLevel: "quals", R1: 1236, R2: 1001, R3: 777, B1: 1000, B2: 4321, B3: 1234, r1ID: 1, r2ID: 2, r3ID: 3, b1ID: 4, b2ID: 5, b3ID: 6})
+	if err != nil {
+		t.Fatal("Failed to add match: ", err)
+	}
 	for i := 0; i < len(correct); i++ {
-		db.AddToStats(correct[i])
+		if err := db.AddToStats(correct[i]); err != nil {
+			t.Fatal("Failed to add stats to DB: ", err)
+		}
 	}
 	got, error_ := db.ReturnStats()
 	if error_ != nil {

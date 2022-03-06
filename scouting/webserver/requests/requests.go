@@ -20,12 +20,13 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_matches_for_team"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_matches_for_team_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_data_scouting"
-	_ "github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_data_scouting_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/server"
 	flatbuffers "github.com/google/flatbuffers/go"
 )
 
 type SubmitDataScouting = submit_data_scouting.SubmitDataScouting
+type SubmitDataScoutingResponseT = submit_data_scouting_response.SubmitDataScoutingResponseT
 type RequestAllMatches = request_all_matches.RequestAllMatches
 type RequestAllMatchesResponseT = request_all_matches_response.RequestAllMatchesResponseT
 type RequestMatchesForTeam = request_matches_for_team.RequestMatchesForTeam
@@ -91,16 +92,32 @@ func (handler submitDataScoutingHandler) ServeHTTP(w http.ResponseWriter, req *h
 		return
 	}
 
-	_, success := parseSubmitDataScouting(w, requestBytes)
+	request, success := parseSubmitDataScouting(w, requestBytes)
 	if !success {
 		return
 	}
 
-	// TODO(phil): Actually handle the request.
-	// We have access to the database via "handler.db" here. For example:
-	// stats := handler.db.ReturnStats()
+	stats := db.Stats{
+		TeamNumber:      request.Team(),
+		MatchNumber:     request.Match(),
+		ShotsMissedAuto: request.MissedShotsAuto(),
+		UpperGoalAuto:   request.UpperGoalAuto(),
+		LowerGoalAuto:   request.LowerGoalAuto(),
+		ShotsMissed:     request.MissedShotsTele(),
+		UpperGoalShots:  request.UpperGoalTele(),
+		LowerGoalShots:  request.LowerGoalTele(),
+		PlayedDefense:   request.DefenseRating(),
+		Climbing:        request.Climbing(),
+	}
 
-	respondNotImplemented(w)
+	err = handler.db.AddToStats(stats)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Failed to submit datascouting data: ", err))
+	}
+
+	builder := flatbuffers.NewBuilder(50 * 1024)
+	builder.Finish((&SubmitDataScoutingResponseT{}).Pack(builder))
+	w.Write(builder.FinishedBytes())
 }
 
 // TODO(phil): Can we turn this into a generic?
