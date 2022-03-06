@@ -3,18 +3,19 @@
 
 #include "Eigen/Dense"
 #include "Eigen/Geometry"
-
-#include "aos/events/event_loop.h"
 #include "aos/containers/ring_buffer.h"
+#include "aos/events/event_loop.h"
+#include "aos/network/message_bridge_server_generated.h"
 #include "aos/time/time.h"
-#include "y2020/vision/sift/sift_generated.h"
-#include "y2022/localizer/localizer_status_generated.h"
-#include "y2022/localizer/localizer_output_generated.h"
-#include "frc971/control_loops/drivetrain/improved_down_estimator.h"
 #include "frc971/control_loops/drivetrain/drivetrain_output_generated.h"
+#include "frc971/control_loops/drivetrain/improved_down_estimator.h"
 #include "frc971/control_loops/drivetrain/localizer_generated.h"
 #include "frc971/zeroing/imu_zeroer.h"
 #include "frc971/zeroing/wrap.h"
+#include "y2022/control_loops/superstructure/superstructure_status_generated.h"
+#include "y2022/localizer/localizer_output_generated.h"
+#include "y2022/localizer/localizer_status_generated.h"
+#include "y2022/vision/target_estimate_generated.h"
 
 namespace frc971::controls {
 
@@ -104,10 +105,10 @@ class ModelBasedLocalizer {
   void HandleImu(aos::monotonic_clock::time_point t,
                  const Eigen::Vector3d &gyro, const Eigen::Vector3d &accel,
                  const Eigen::Vector2d encoders, const Eigen::Vector2d voltage);
-  void HandleImageMatch(aos::monotonic_clock::time_point,
-                        const vision::sift::ImageMatchResult *) {
-    LOG(FATAL) << "Unimplemented.";
-  }
+  void HandleTurret(aos::monotonic_clock::time_point sample_time,
+                    double turret_position, double turret_velocity);
+  void HandleImageMatch(aos::monotonic_clock::time_point sample_time,
+                        const y2022::vision::TargetEstimate *target);
   void HandleReset(aos::monotonic_clock::time_point,
                    const Eigen::Vector3d &xytheta);
 
@@ -128,12 +129,28 @@ class ModelBasedLocalizer {
 
   void set_longitudinal_offset(double offset) { long_offset_ = offset; }
 
+  void TallyRejection(const RejectionReason reason) {
+    statistics_.total_candidates++;
+    statistics_.rejection_counts[static_cast<size_t>(reason)]++;
+  }
+
  private:
   struct CombinedState {
-    AccelState accel_state;
-    ModelState model_state;
-    aos::monotonic_clock::time_point branch_time;
-    double accumulated_divergence;
+    AccelState accel_state = AccelState::Zero();
+    ModelState model_state = ModelState::Zero();
+    aos::monotonic_clock::time_point branch_time =
+        aos::monotonic_clock::min_time;
+    double accumulated_divergence = 0.0;
+  };
+
+  // Struct to store state data needed to perform a camera correction, since
+  // camera corrections require looking back in time.
+  struct OldPosition {
+    aos::monotonic_clock::time_point sample_time =
+        aos::monotonic_clock::min_time;
+    Eigen::Vector3d xytheta = Eigen::Vector3d::Zero();
+    double turret_position = 0.0;
+    double turret_velocity = 0.0;
   };
 
   static flatbuffers::Offset<AccelBasedState> BuildAccelState(
@@ -169,22 +186,45 @@ class ModelBasedLocalizer {
       const AccelInput &accel_input, const ModelInput &model_input,
       aos::monotonic_clock::duration dt);
 
+  const OldPosition GetStateForTime(aos::monotonic_clock::time_point time);
+
+  // Returns the transformation to get from the camera frame to the robot frame
+  // for the specified state.
+  const Eigen::Matrix<double, 4, 4> CameraTransform(
+      const OldPosition &state,
+      const frc971::vision::calibration::CameraCalibration *calibration,
+      std::optional<RejectionReason> *rejection_reason) const;
+
+  // Returns the robot x/y position implied by the specified camera data and
+  // estimated state from that time.
+  const std::optional<Eigen::Vector2d> CameraMeasuredRobotPosition(
+      const OldPosition &state, const y2022::vision::TargetEstimate *target,
+      std::optional<RejectionReason> *rejection_reason) const;
+
   const control_loops::drivetrain::DrivetrainConfig<double> dt_config_;
   const StateFeedbackHybridPlantCoefficients<2, 2, 2, double>
       velocity_drivetrain_coefficients_;
   Eigen::Matrix<double, kNModelStates, kNModelStates> A_continuous_model_;
   Eigen::Matrix<double, kNAccelStates, kNAccelStates> A_continuous_accel_;
+  Eigen::Matrix<double, kNAccelStates, kNAccelStates> A_discrete_accel_;
   Eigen::Matrix<double, kNModelStates, kNModelInputs> B_continuous_model_;
   Eigen::Matrix<double, kNAccelStates, kNAccelInputs> B_continuous_accel_;
 
   Eigen::Matrix<double, kNModelStates, kNModelStates> Q_continuous_model_;
 
   Eigen::Matrix<double, kNModelStates, kNModelStates> P_model_;
+
+  Eigen::Matrix<double, kNAccelStates, kNAccelStates> Q_continuous_accel_;
+  Eigen::Matrix<double, kNAccelStates, kNAccelStates> Q_discrete_accel_;
+
+  Eigen::Matrix<double, kNAccelStates, kNAccelStates> P_accel_;
+
+  control_loops::drivetrain::DrivetrainUkf down_estimator_;
+
   // When we are following the model, we will, on each iteration:
   // 1) Perform a model-based update of a single state.
   // 2) Add a hypothetical non-model-based entry based on the current state.
   // 3) Evict too-old non-model-based entries.
-  control_loops::drivetrain::DrivetrainUkf down_estimator_;
 
   // Buffer of old branches these are all created by initializing a new
   // model-based state based on the current state, and then initializing a new
@@ -194,6 +234,10 @@ class ModelBasedLocalizer {
   // accel based states of each branch compare to one another.
   aos::RingBuffer<CombinedState, 2000 / kBranchPeriod> branches_;
   int branch_counter_ = 0;
+
+  // Buffer of old x/y/theta positions. This is used so that we can have a
+  // reference for exactly where we thought a camera was when it took an image.
+  aos::RingBuffer<OldPosition, 500 / kBranchPeriod> old_positions_;
 
   CombinedState current_state_;
   aos::monotonic_clock::time_point t_ = aos::monotonic_clock::min_time;
@@ -215,6 +259,29 @@ class ModelBasedLocalizer {
 
   int clock_resets_ = 0;
 
+  std::optional<aos::monotonic_clock::time_point> last_turret_update_;
+  double latest_turret_position_ = 0.0;
+  double latest_turret_velocity_ = 0.0;
+
+  // Stuff to track faults.
+  static constexpr size_t kNumRejectionReasons =
+      static_cast<int>(RejectionReason::MAX) -
+      static_cast<int>(RejectionReason::MIN) + 1;
+
+  struct Statistics {
+    int total_accepted = 0;
+    int total_candidates = 0;
+    static_assert(0 == static_cast<int>(RejectionReason::MIN));
+    static_assert(
+        kNumRejectionReasons ==
+            sizeof(
+                std::invoke_result<decltype(EnumValuesRejectionReason)>::type) /
+                sizeof(RejectionReason),
+        "RejectionReason has non-contiguous error values.");
+    std::array<int, kNumRejectionReasons> rejection_counts;
+  };
+  Statistics statistics_;
+
   friend class testing::LocalizerTest;
 };
 
@@ -227,11 +294,14 @@ class EventLoopLocalizer {
   ModelBasedLocalizer *localizer() { return &model_based_; }
 
  private:
+  std::optional<aos::monotonic_clock::duration> ClockOffset(
+      std::string_view pi);
   aos::EventLoop *event_loop_;
   ModelBasedLocalizer model_based_;
   aos::Sender<LocalizerStatus> status_sender_;
   aos::Sender<LocalizerOutput> output_sender_;
   aos::Fetcher<frc971::control_loops::drivetrain::Output> output_fetcher_;
+  aos::Fetcher<aos::message_bridge::ServerStatistics> clock_offset_fetcher_;
   zeroing::ImuZeroer zeroer_;
   aos::monotonic_clock::time_point last_output_send_ =
       aos::monotonic_clock::min_time;

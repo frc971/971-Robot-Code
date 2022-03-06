@@ -1,14 +1,31 @@
 #include "y2022/localizer/localizer.h"
 
+#include "aos/events/logging/log_writer.h"
 #include "aos/events/simulated_event_loop.h"
 #include "gtest/gtest.h"
 #include "frc971/control_loops/drivetrain/drivetrain_test_lib.h"
+#include "frc971/control_loops/pose.h"
+#include "y2022/vision/target_estimate_generated.h"
+#include "y2022/control_loops/superstructure/superstructure_status_generated.h"
+#include "y2022/control_loops/drivetrain/drivetrain_base.h"
+
+DEFINE_string(output_folder, "",
+              "If set, logs all channels to the provided logfile.");
 
 namespace frc971::controls::testing {
 typedef ModelBasedLocalizer::ModelState ModelState;
 typedef ModelBasedLocalizer::AccelState AccelState;
 typedef ModelBasedLocalizer::ModelInput ModelInput;
 typedef ModelBasedLocalizer::AccelInput AccelInput;
+
+using frc971::vision::calibration::CameraCalibrationT;
+using frc971::vision::calibration::TransformationMatrixT;
+using frc971::control_loops::drivetrain::DrivetrainConfig;
+using frc971::control_loops::drivetrain::LocalizerControl;
+using frc971::control_loops::Pose;
+using y2022::vision::TargetEstimate;
+using y2022::vision::TargetEstimateT;
+
 namespace {
 constexpr size_t kX = ModelBasedLocalizer::kX;
 constexpr size_t kY = ModelBasedLocalizer::kY;
@@ -26,13 +43,52 @@ constexpr size_t kRightVelocity = ModelBasedLocalizer::kRightVelocity;
 constexpr size_t kRightVoltageError = ModelBasedLocalizer::kRightVoltageError;
 constexpr size_t kLeftVoltage = ModelBasedLocalizer::kLeftVoltage;
 constexpr size_t kRightVoltage = ModelBasedLocalizer::kRightVoltage;
+
+Eigen::Matrix<double, 4, 4> TurretRobotTransformation() {
+  Eigen::Matrix<double, 4, 4> H;
+  H.setIdentity();
+  H.block<3, 1>(0, 3) << 1, 1.1, 0.9;
+  return H;
+}
+
+// Provides the location of the camera on the turret.
+Eigen::Matrix<double, 4, 4> CameraTurretTransformation() {
+  Eigen::Matrix<double, 4, 4> H;
+  H.setIdentity();
+  H.block<3, 1>(0, 3) << 0.1, 0, 0;
+  H.block<3, 3>(0, 0) << 0, 0, 1, -1, 0, 0, 0, -1, 0;
+
+  // Introduce a bit of pitch to make sure that we're exercising all the code.
+  H.block<3, 3>(0, 0) =
+      Eigen::AngleAxis<double>(0.1, Eigen::Vector3d::UnitY()) *
+      H.block<3, 3>(0, 0);
+  return H;
+}
+
+// Copies an Eigen matrix into a row-major vector of the data.
+std::vector<float> MatrixToVector(const Eigen::Matrix<double, 4, 4> &H) {
+  std::vector<float> data;
+  for (int row = 0; row < 4; ++row) {
+    for (int col = 0; col < 4; ++col) {
+      data.push_back(H(row, col));
+    }
+  }
+  return data;
+}
+
+DrivetrainConfig<double> GetTest2022DrivetrainConfig() {
+  DrivetrainConfig<double> config =
+      y2022::control_loops::drivetrain::GetDrivetrainConfig();
+  config.is_simulated = true;
+  return config;
+}
 }
 
 class LocalizerTest : public ::testing::Test {
  protected:
   LocalizerTest()
       : dt_config_(
-            control_loops::drivetrain::testing::GetTestDrivetrainConfig()),
+            GetTest2022DrivetrainConfig()),
         localizer_(dt_config_) {
     localizer_.set_longitudinal_offset(0.0);
   }
@@ -177,7 +233,7 @@ TEST_F(LocalizerTest, AccelOnly) {
   const Eigen::Vector2d encoders{0.0, 0.0};
   const Eigen::Vector2d voltages{0.0, 0.0};
   Eigen::Vector3d accel{5.0, 2.0, 9.80665};
-  Eigen::Vector3d accel_gs = accel / 9.80665;
+  Eigen::Vector3d accel_gs = dt_config_.imu_transform.inverse() * accel / 9.80665;
   while (t < start) {
     // Spin to fill up the buffer.
     localizer_.HandleImu(t, gyro, Eigen::Vector3d::UnitZ(), encoders, voltages);
@@ -215,7 +271,7 @@ TEST_F(LocalizerTest, AccelOnly) {
   // and then leave them constant, which should make it look like we are going
   // around in a circle.
   accel = Eigen::Vector3d{-accel(1), accel(0), 9.80665};
-  accel_gs = accel / 9.80665;
+  accel_gs = dt_config_.imu_transform.inverse() * accel / 9.80665;
   // v^2 / r = a
   // w * r = v
   // v^2 / v * w = a
@@ -292,6 +348,8 @@ class EventLoopLocalizerTest : public ::testing::Test {
             aos::configuration::GetNode(&configuration_.message(), "roborio")),
         imu_node_(
             aos::configuration::GetNode(&configuration_.message(), "imu")),
+        camera_node_(
+            aos::configuration::GetNode(&configuration_.message(), "pi1")),
         dt_config_(
             control_loops::drivetrain::testing::GetTestDrivetrainConfig()),
         localizer_event_loop_(
@@ -308,37 +366,177 @@ class EventLoopLocalizerTest : public ::testing::Test {
             event_loop_factory_.MakeEventLoop("test", roborio_node_)),
         imu_test_event_loop_(
             event_loop_factory_.MakeEventLoop("test", imu_node_)),
+        camera_test_event_loop_(
+            event_loop_factory_.MakeEventLoop("test", camera_node_)),
         logger_test_event_loop_(
             event_loop_factory_.GetNodeEventLoopFactory("logger")
                 ->MakeEventLoop("test")),
         output_sender_(
             roborio_test_event_loop_->MakeSender<Output>("/drivetrain")),
+        turret_sender_(
+            roborio_test_event_loop_
+                ->MakeSender<y2022::control_loops::superstructure::Status>(
+                    "/superstructure")),
+        target_sender_(
+            camera_test_event_loop_->MakeSender<y2022::vision::TargetEstimate>(
+                "/camera")),
+        control_sender_(roborio_test_event_loop_->MakeSender<LocalizerControl>(
+            "/drivetrain")),
         output_fetcher_(roborio_test_event_loop_->MakeFetcher<LocalizerOutput>(
             "/localizer")),
         status_fetcher_(
             imu_test_event_loop_->MakeFetcher<LocalizerStatus>("/localizer")) {
     localizer_.localizer()->set_longitudinal_offset(0.0);
-    aos::TimerHandler *timer = roborio_test_event_loop_->AddTimer([this]() {
-      auto builder = output_sender_.MakeBuilder();
-      auto output_builder = builder.MakeBuilder<Output>();
-      output_builder.add_left_voltage(output_voltages_(0));
-      output_builder.add_right_voltage(output_voltages_(1));
-      builder.CheckOk(builder.Send(output_builder.Finish()));
-    });
-    roborio_test_event_loop_->OnRun([timer, this]() {
-      timer->Setup(roborio_test_event_loop_->monotonic_now(),
-                   std::chrono::milliseconds(5));
-    });
+    {
+      aos::TimerHandler *timer = roborio_test_event_loop_->AddTimer([this]() {
+        {
+          auto builder = output_sender_.MakeBuilder();
+          auto output_builder = builder.MakeBuilder<Output>();
+          output_builder.add_left_voltage(output_voltages_(0));
+          output_builder.add_right_voltage(output_voltages_(1));
+          builder.CheckOk(builder.Send(output_builder.Finish()));
+        }
+        {
+          auto builder = turret_sender_.MakeBuilder();
+          auto turret_builder =
+              builder
+                  .MakeBuilder<frc971::control_loops::
+                                   PotAndAbsoluteEncoderProfiledJointStatus>();
+          turret_builder.add_position(turret_position_);
+          turret_builder.add_velocity(turret_velocity_);
+          const auto turret_offset = turret_builder.Finish();
+          auto status_builder =
+              builder
+                  .MakeBuilder<y2022::control_loops::superstructure::Status>();
+          status_builder.add_turret(turret_offset);
+          builder.CheckOk(builder.Send(status_builder.Finish()));
+        }
+      });
+      roborio_test_event_loop_->OnRun([timer, this]() {
+        timer->Setup(roborio_test_event_loop_->monotonic_now(),
+                     std::chrono::milliseconds(5));
+      });
+    }
+    {
+      aos::TimerHandler *timer = camera_test_event_loop_->AddTimer([this]() {
+        if (!send_targets_) {
+          return;
+        }
+        const frc971::control_loops::Pose robot_pose(
+            {drivetrain_plant_.GetPosition().x(),
+             drivetrain_plant_.GetPosition().y(), 0.0},
+            drivetrain_plant_.state()(2, 0));
+        const Eigen::Matrix<double, 4, 4> H_turret_camera =
+            frc971::control_loops::TransformationMatrixForYaw(
+                turret_position_) *
+            CameraTurretTransformation();
+
+        const Eigen::Matrix<double, 4, 4> H_field_camera =
+            robot_pose.AsTransformationMatrix() * TurretRobotTransformation() *
+            H_turret_camera;
+        const Eigen::Matrix<double, 4, 4> target_transform =
+            Eigen::Matrix<double, 4, 4>::Identity();
+        const Eigen::Matrix<double, 4, 4> H_camera_target =
+            H_field_camera.inverse() * target_transform;
+        const Eigen::Matrix<double, 4, 4> H_target_camera =
+            H_camera_target.inverse();
+
+        std::unique_ptr<y2022::vision::TargetEstimateT> estimate(
+            new y2022::vision::TargetEstimateT());
+        estimate->distance = H_target_camera.block<2, 1>(0, 3).norm();
+        estimate->angle_to_target =
+            std::atan2(-H_camera_target(0, 3), H_camera_target(2, 3));
+        estimate->camera_calibration.reset(new CameraCalibrationT());
+        {
+          estimate->camera_calibration->fixed_extrinsics.reset(
+              new TransformationMatrixT());
+          TransformationMatrixT *H_robot_turret =
+              estimate->camera_calibration->fixed_extrinsics.get();
+          H_robot_turret->data = MatrixToVector(TurretRobotTransformation());
+        }
+
+        estimate->camera_calibration->turret_extrinsics.reset(
+            new TransformationMatrixT());
+        estimate->camera_calibration->turret_extrinsics->data =
+            MatrixToVector(CameraTurretTransformation());
+
+        auto builder = target_sender_.MakeBuilder();
+        builder.CheckOk(
+            builder.Send(TargetEstimate::Pack(*builder.fbb(), estimate.get())));
+      });
+      camera_test_event_loop_->OnRun([timer, this]() {
+        timer->Setup(camera_test_event_loop_->monotonic_now(),
+                     std::chrono::milliseconds(50));
+      });
+    }
+
+    localizer_control_send_timer_ =
+        roborio_test_event_loop_->AddTimer([this]() {
+          auto builder = control_sender_.MakeBuilder();
+          auto control_builder = builder.MakeBuilder<LocalizerControl>();
+          control_builder.add_x(localizer_control_x_);
+          control_builder.add_y(localizer_control_y_);
+          control_builder.add_theta(localizer_control_theta_);
+          control_builder.add_theta_uncertainty(0.01);
+          control_builder.add_keep_current_theta(false);
+          builder.CheckOk(builder.Send(control_builder.Finish()));
+        });
+
     // Get things zeroed.
     event_loop_factory_.RunFor(std::chrono::seconds(10));
     CHECK(status_fetcher_.Fetch());
     CHECK(status_fetcher_->zeroed());
+
+    if (!FLAGS_output_folder.empty()) {
+      logger_event_loop_ =
+          event_loop_factory_.MakeEventLoop("logger", imu_node_);
+      logger_ = std::make_unique<aos::logger::Logger>(logger_event_loop_.get());
+      logger_->StartLoggingOnRun(FLAGS_output_folder);
+    }
+  }
+
+  void SendLocalizerControl(double x, double y, double theta) {
+    localizer_control_x_ = x;
+    localizer_control_y_ = y;
+    localizer_control_theta_ = theta;
+    localizer_control_send_timer_->Setup(
+        roborio_test_event_loop_->monotonic_now());
+  }
+  ::testing::AssertionResult IsNear(double expected, double actual,
+                                    double epsilon) {
+    if (std::abs(expected - actual) < epsilon) {
+      return ::testing::AssertionSuccess();
+    } else {
+      return ::testing::AssertionFailure()
+             << "Expected " << expected << " but got " << actual
+             << " with a max difference of " << epsilon
+             << " and an actual difference of " << std::abs(expected - actual);
+    }
+  }
+  ::testing::AssertionResult VerifyEstimatorAccurate(double eps) {
+    const Eigen::Matrix<double, 5, 1> true_state = drivetrain_plant_.state();
+    ::testing::AssertionResult result(true);
+    status_fetcher_.Fetch();
+    if (!(result = IsNear(status_fetcher_->model_based()->x(), true_state(0),
+                          eps))) {
+      return result;
+    }
+    if (!(result = IsNear(status_fetcher_->model_based()->y(), true_state(1),
+                          eps))) {
+      return result;
+    }
+    if (!(result = IsNear(status_fetcher_->model_based()->theta(),
+                          true_state(2), eps))) {
+      return result;
+    }
+    return result;
   }
 
   aos::FlatbufferDetachedBuffer<aos::Configuration> configuration_;
   aos::SimulatedEventLoopFactory event_loop_factory_;
   const aos::Node *const roborio_node_;
   const aos::Node *const imu_node_;
+  const aos::Node *const camera_node_;
   const control_loops::drivetrain::DrivetrainConfig<double> dt_config_;
   std::unique_ptr<aos::EventLoop> localizer_event_loop_;
   EventLoopLocalizer localizer_;
@@ -349,13 +547,30 @@ class EventLoopLocalizerTest : public ::testing::Test {
 
   std::unique_ptr<aos::EventLoop> roborio_test_event_loop_;
   std::unique_ptr<aos::EventLoop> imu_test_event_loop_;
+  std::unique_ptr<aos::EventLoop> camera_test_event_loop_;
   std::unique_ptr<aos::EventLoop> logger_test_event_loop_;
 
   aos::Sender<Output> output_sender_;
+  aos::Sender<y2022::control_loops::superstructure::Status> turret_sender_;
+  aos::Sender<y2022::vision::TargetEstimate> target_sender_;
+  aos::Sender<LocalizerControl> control_sender_;
   aos::Fetcher<LocalizerOutput> output_fetcher_;
   aos::Fetcher<LocalizerStatus> status_fetcher_;
 
   Eigen::Vector2d output_voltages_ = Eigen::Vector2d::Zero();
+
+  aos::TimerHandler *localizer_control_send_timer_;
+
+  bool send_targets_ = false;
+  double turret_position_ = 0.0;
+  double turret_velocity_ = 0.0;
+
+  double localizer_control_x_ = 0.0;
+  double localizer_control_y_ = 0.0;
+  double localizer_control_theta_ = 0.0;
+
+  std::unique_ptr<aos::EventLoop> logger_event_loop_;
+  std::unique_ptr<aos::logger::Logger> logger_;
 };
 
 TEST_F(EventLoopLocalizerTest, Nominal) {
@@ -523,6 +738,81 @@ TEST_F(EventLoopLocalizerTest, HighVoltageError) {
               status_fetcher_->model_based()->x(), 1.0);
   ASSERT_NEAR(drivetrain_plant_.state()(1),
               status_fetcher_->model_based()->y(), 1e-6);
+}
+
+// Tests that image corrections in the nominal case (no errors) causes no
+// issues.
+TEST_F(EventLoopLocalizerTest, NominalImageCorrections) {
+  output_voltages_ << 3.0, 2.0;
+  drivetrain_plant_.set_accel_sin_magnitude(0.01);
+  send_targets_ = true;
+
+  event_loop_factory_.RunFor(std::chrono::seconds(4));
+  CHECK(status_fetcher_.Fetch());
+  ASSERT_TRUE(status_fetcher_->model_based()->using_model());
+  EXPECT_TRUE(VerifyEstimatorAccurate(1e-1));
+  ASSERT_TRUE(status_fetcher_->model_based()->has_statistics());
+  ASSERT_LT(10,
+            status_fetcher_->model_based()->statistics()->total_candidates());
+  ASSERT_EQ(status_fetcher_->model_based()->statistics()->total_candidates(),
+            status_fetcher_->model_based()->statistics()->total_accepted());
+}
+
+// Tests that image corrections when there is an error at the start results
+// in us actually getting corrected over time.
+TEST_F(EventLoopLocalizerTest, ImageCorrections) {
+  output_voltages_ << 0.0, 0.0;
+  drivetrain_plant_.mutable_state()->x() = 2.0;
+  drivetrain_plant_.mutable_state()->y() = 2.0;
+  SendLocalizerControl(5.0, 3.0, 0.0);
+  event_loop_factory_.RunFor(std::chrono::seconds(4));
+  CHECK(output_fetcher_.Fetch());
+  ASSERT_NEAR(5.0, output_fetcher_->x(), 1e-5);
+  ASSERT_NEAR(3.0, output_fetcher_->y(), 1e-5);
+  ASSERT_NEAR(0.0, output_fetcher_->theta(), 1e-5);
+
+  send_targets_ = true;
+
+  event_loop_factory_.RunFor(std::chrono::seconds(4));
+  CHECK(status_fetcher_.Fetch());
+  ASSERT_TRUE(status_fetcher_->model_based()->using_model());
+  EXPECT_TRUE(VerifyEstimatorAccurate(1e-1));
+  ASSERT_TRUE(status_fetcher_->model_based()->has_statistics());
+  ASSERT_LT(10,
+            status_fetcher_->model_based()->statistics()->total_candidates());
+  ASSERT_EQ(status_fetcher_->model_based()->statistics()->total_candidates(),
+            status_fetcher_->model_based()->statistics()->total_accepted());
+}
+
+// Tests that image corrections when we are in accel mode works.
+TEST_F(EventLoopLocalizerTest, ImageCorrectionsInAccel) {
+  output_voltages_ << 0.0, 0.0;
+  drivetrain_plant_.set_left_voltage_offset(200.0);
+  drivetrain_plant_.set_right_voltage_offset(200.0);
+  drivetrain_plant_.set_accel_sin_magnitude(0.01);
+  drivetrain_plant_.mutable_state()->x() = 2.0;
+  drivetrain_plant_.mutable_state()->y() = 2.0;
+  SendLocalizerControl(5.0, 3.0, 0.0);
+  event_loop_factory_.RunFor(std::chrono::seconds(1));
+  CHECK(output_fetcher_.Fetch());
+  CHECK(status_fetcher_.Fetch());
+  ASSERT_FALSE(status_fetcher_->model_based()->using_model());
+  EXPECT_FALSE(VerifyEstimatorAccurate(0.5));
+
+  send_targets_ = true;
+
+  event_loop_factory_.RunFor(std::chrono::seconds(4));
+  CHECK(status_fetcher_.Fetch());
+  ASSERT_FALSE(status_fetcher_->model_based()->using_model());
+  EXPECT_TRUE(VerifyEstimatorAccurate(0.5));
+  // y should be noticeably more accurate than x, since we are just driving
+  // straight.
+  ASSERT_NEAR(drivetrain_plant_.state()(1), status_fetcher_->model_based()->y(), 0.1);
+  ASSERT_TRUE(status_fetcher_->model_based()->has_statistics());
+  ASSERT_LT(10,
+            status_fetcher_->model_based()->statistics()->total_candidates());
+  ASSERT_EQ(status_fetcher_->model_based()->statistics()->total_candidates(),
+            status_fetcher_->model_based()->statistics()->total_accepted());
 }
 
 }  // namespace frc91::controls::testing

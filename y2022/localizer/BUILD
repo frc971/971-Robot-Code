@@ -56,6 +56,7 @@ cc_library(
         ":localizer_status_fbs",
         "//aos/containers:ring_buffer",
         "//aos/events:event_loop",
+        "//aos/network:message_bridge_server_fbs",
         "//aos/time",
         "//frc971/control_loops:c2d",
         "//frc971/control_loops:control_loops_fbs",
@@ -67,8 +68,10 @@ cc_library(
         "//frc971/wpilib:imu_fbs",
         "//frc971/zeroing:imu_zeroer",
         "//frc971/zeroing:wrap",
-        "//y2020/vision/sift:sift_fbs",
         "//y2022:constants",
+        "//y2022/control_loops/superstructure:superstructure_status_fbs",
+        "//y2022/vision:calibration_fbs",
+        "//y2022/vision:target_estimate_fbs",
         "@org_tuxfamily_eigen//:eigen",
     ],
 )
@@ -91,12 +94,14 @@ cc_test(
     data = [
         "//y2022:aos_config",
     ],
-    shard_count = 10,
+    shard_count = 13,
     deps = [
         ":localizer",
         "//aos/events:simulated_event_loop",
+        "//aos/events/logging:log_writer",
         "//aos/testing:googletest",
         "//frc971/control_loops/drivetrain:drivetrain_test_lib",
+        "//y2022/control_loops/drivetrain:drivetrain_base",
     ],
 )
 
