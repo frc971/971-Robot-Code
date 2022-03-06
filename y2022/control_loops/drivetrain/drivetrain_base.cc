@@ -24,7 +24,7 @@ const ShifterHallEffect kThreeStateDriveShifter{0.0, 0.0, 0.25, 0.75};
 
 const DrivetrainConfig<double> &GetDrivetrainConfig() {
   // Yaw of the IMU relative to the robot frame.
-  static constexpr double kImuYaw = -M_PI_2 + 0.15;
+  static constexpr double kImuYaw = 0.0;
   static DrivetrainConfig<double> kDrivetrainConfig{
       ::frc971::control_loops::drivetrain::ShifterType::SIMPLE_SHIFTER,
       ::frc971::control_loops::drivetrain::LoopType::CLOSED_LOOP,
