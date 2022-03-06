@@ -468,6 +468,8 @@ class EventLoopLocalizerTest : public ::testing::Test {
         estimate->camera_calibration->turret_extrinsics->data =
             MatrixToVector(CameraTurretTransformation());
 
+        estimate->confidence = 1.0;
+
         auto builder = target_sender_.MakeBuilder();
         builder.CheckOk(
             builder.Send(TargetEstimate::Pack(*builder.fbb(), estimate.get())));
