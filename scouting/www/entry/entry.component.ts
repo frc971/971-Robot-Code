@@ -16,8 +16,8 @@ export class EntryComponent {
     teleUpperShotsMade: number = 0;
     teleLowerShotsMade: number = 0;
     teleShotsMissed: number = 0;
-    defensePlayedOnScore: number = 50;
-    defensePlayedScore: number = 50;
+    defensePlayedOnScore: number = 3;
+    defensePlayedScore: number = 3;
     level: Level;
     proper: boolean = false;
     climbed: boolean = false;
@@ -70,6 +70,18 @@ export class EntryComponent {
         } else if (this.section === 'Review and Submit') {
             this.section = 'Home';
         }
+    }
+
+    prevSection() {
+      if (this.section === 'TeleOp') {
+        this.section = 'Auto';
+      } else if (this.section === 'Climb') {
+        this.section = 'TeleOp';
+      } else if (this.section === 'Defense') {
+        this.section = 'Climb';
+      } else if (this.section === 'Review and Submit') {
+        this.section = 'Defense';
+      }
     }
 
     adjustAutoUpper(by: number) {
