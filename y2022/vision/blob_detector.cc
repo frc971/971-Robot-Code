@@ -221,8 +221,10 @@ void BlobDetector::DrawBlobs(const BlobResult &blob_result,
                      cv::Scalar(0, 0, 255), 0);
   }
 
-  cv::drawContours(view_image, blob_result.filtered_blobs, -1,
-                   cv::Scalar(0, 100, 0), cv::FILLED);
+  if (blob_result.filtered_blobs.size() > 0) {
+    cv::drawContours(view_image, blob_result.filtered_blobs, -1,
+                     cv::Scalar(0, 100, 0), cv::FILLED);
+  }
 
   static constexpr double kCircleRadius = 2.0;
   // Draw blob centroids

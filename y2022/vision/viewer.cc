@@ -50,9 +50,12 @@ std::vector<cv::Point> FbsToCvPoints(
 }
 
 std::vector<std::vector<cv::Point>> FbsToCvBlobs(
-    const flatbuffers::Vector<flatbuffers::Offset<Blob>> &blobs_fbs) {
+    const flatbuffers::Vector<flatbuffers::Offset<Blob>> *blobs_fbs) {
+  if (blobs_fbs == nullptr) {
+    return {};
+  }
   std::vector<std::vector<cv::Point>> blobs;
-  for (const auto blob : blobs_fbs) {
+  for (const auto blob : *blobs_fbs) {
     blobs.emplace_back(FbsToCvPoints(*blob->points()));
   }
   return blobs;
@@ -86,8 +89,8 @@ bool DisplayLoop() {
     // Store the TargetEstimate data so we can match timestamp with image
     target_est_map[target_timestamp] = BlobDetector::BlobResult{
         cv::Mat(),
-        FbsToCvBlobs(*target_est->blob_result()->filtered_blobs()),
-        FbsToCvBlobs(*target_est->blob_result()->unfiltered_blobs()),
+        FbsToCvBlobs(target_est->blob_result()->filtered_blobs()),
+        FbsToCvBlobs(target_est->blob_result()->unfiltered_blobs()),
         FbsToBlobStats(*target_est->blob_result()->blob_stats()),
         FbsToBlobStats(*target_est->blob_result()->filtered_stats()),
         cv::Point{target_est->blob_result()->centroid()->x(),

@@ -50,6 +50,8 @@ flatbuffers::Offset<flatbuffers::Vector<const Point *>> CvPointsToFbs(
   return builder->fbb()->CreateVectorOfStructs(points_fbs);
 }
 
+constexpr size_t kMaxBlobsForDebug = 100;
+
 // Converts a vector of cv::Point to PointT for the flatbuffer
 flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Blob>>>
 CvBlobsToFbs(const std::vector<std::vector<cv::Point>> &blobs,
@@ -60,6 +62,9 @@ CvBlobsToFbs(const std::vector<std::vector<cv::Point>> &blobs,
     auto blob_builder = builder->MakeBuilder<Blob>();
     blob_builder.add_points(points_offset);
     blobs_fbs.emplace_back(blob_builder.Finish());
+    if (blobs_fbs.size() == kMaxBlobsForDebug) {
+      break;
+    }
   }
   return builder->fbb()->CreateVector(blobs_fbs.data(), blobs_fbs.size());
 }
