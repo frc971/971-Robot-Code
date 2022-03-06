@@ -20,7 +20,7 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_matches_for_team"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_matches_for_team_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_data_scouting"
-	_ "github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_data_scouting_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/server"
 	flatbuffers "github.com/google/flatbuffers/go"
 )
@@ -92,15 +92,16 @@ func TestSubmitDataScouting(t *testing.T) {
 		Climbing:        9971,
 	}).Pack(builder))
 
-	resp, err := http.Post("http://localhost:8080/requests/submit/data_scouting", "application/octet-stream", bytes.NewReader(builder.FinishedBytes()))
+	response, err := debug.SubmitDataScouting("http://localhost:8080", builder.FinishedBytes())
 	if err != nil {
-		t.Fatalf("Failed to send request: %v", err)
+		t.Fatal("Failed to submit data scouting: ", err)
 	}
-	if resp.StatusCode != http.StatusNotImplemented {
-		t.Fatal("Unexpected status code. Got", resp.Status)
+
+	// We get an empty response back. Validate that.
+	expected := submit_data_scouting_response.SubmitDataScoutingResponseT{}
+	if !reflect.DeepEqual(expected, *response) {
+		t.Fatal("Expected ", expected, ", but got:", *response)
 	}
-	// TODO(phil): We have nothing to validate yet. Fix that.
-	// TODO(phil): Can we use scouting/webserver/requests/debug here?
 }
 
 // Validates that we can request the full match list.
@@ -160,6 +161,7 @@ func TestRequestAllMatches(t *testing.T) {
 			t.Fatal("Expected for match", i, ":", *match, ", but got:", *response.MatchList[i])
 		}
 	}
+
 }
 
 // Validates that we can request the full match list.
@@ -358,7 +360,8 @@ func (database *MockDatabase) AddToMatch(match db.Match) error {
 	return nil
 }
 
-func (database *MockDatabase) AddToStats(db.Stats) error {
+func (database *MockDatabase) AddToStats(stats db.Stats) error {
+	database.stats = append(database.stats, stats)
 	return nil
 }
 

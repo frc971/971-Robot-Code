@@ -5,6 +5,7 @@ filegroup(
     srcs = [
         # Generated with: bazel run //scouting/scraping:scraping_demo -- --json
         "test_data/2016_nytr.json",
+        "test_data/2020_fake.json",
     ],
     visibility = ["//visibility:public"],
 )

@@ -7,6 +7,7 @@ from pathlib import Path
 import shutil
 import socket
 import subprocess
+import textwrap
 import time
 from typing import Any, Dict, List
 import unittest
@@ -55,11 +56,8 @@ class TestDebugCli(unittest.TestCase):
 
         # Copy the test data into place so that the final API call can be
         # emulated.
-        tba_api_dir = tmpdir / "api" / "v3" / "event" / "1234event_key"
-        os.makedirs(tba_api_dir)
-        (tba_api_dir / "matches").write_text(
-            Path("scouting/scraping/test_data/2016_nytr.json").read_text()
-        )
+        self.set_up_tba_api_dir(tmpdir, year=2016, event_code="nytr")
+        self.set_up_tba_api_dir(tmpdir, year=2020, event_code="fake")
 
         # Create a fake TBA server to serve the static match list.
         self.fake_tba_api = subprocess.Popen(
@@ -93,34 +91,61 @@ class TestDebugCli(unittest.TestCase):
         self.fake_tba_api.wait()
         self.webserver.wait()
 
-    def refresh_match_list(self):
+    def set_up_tba_api_dir(self, tmpdir, year, event_code):
+        tba_api_dir = tmpdir / "api" / "v3" / "event" / f"{year}{event_code}"
+        os.makedirs(tba_api_dir)
+        (tba_api_dir / "matches").write_text(
+            Path(f"scouting/scraping/test_data/{year}_{event_code}.json").read_text()
+        )
+
+    def refresh_match_list(self, year=2016, event_code="nytr"):
         """Triggers the webserver to fetch the match list."""
         json_path = write_json_request({
-            "year": 1234,
-            "event_code": "event_key",
+            "year": year,
+            "event_code": event_code,
         })
         exit_code, stdout, stderr = run_debug_cli(["-refreshMatchList", json_path])
         self.assertEqual(exit_code, 0, stderr)
         self.assertIn("(refresh_match_list_response.RefreshMatchListResponseT)", stdout)
 
-    def test_submit_data_scouting(self):
-        json_path = write_json_request({
-            "team": 971,
-            "match": 42,
-            "missed_shots_auto": 9971,
-            "upper_goal_auto": 9971,
-            "lower_goal_auto": 9971,
-            "missed_shots_tele": 9971,
-            "upper_goal_tele": 9971,
-            "lower_goal_tele": 9971,
-            "defense_rating": 9971,
-            "climbing": 9971,
-        })
-        exit_code, _stdout, stderr = run_debug_cli(["-submitDataScouting", json_path])
+    def test_submit_and_request_data_scouting(self):
+        self.refresh_match_list(year=2020, event_code="fake")
 
-        # The SubmitDataScouting message isn't handled yet.
-        self.assertEqual(exit_code, 1)
-        self.assertIn("/requests/submit/data_scouting returned 501 Not Implemented", stderr)
+        # First submit some data to be added to the database.
+        json_path = write_json_request({
+            "team": 100,
+            "match": 1,
+            "missed_shots_auto": 10,
+            "upper_goal_auto": 11,
+            "lower_goal_auto": 12,
+            "missed_shots_tele": 13,
+            "upper_goal_tele": 14,
+            "lower_goal_tele": 15,
+            "defense_rating": 3,
+            "climbing": 1,
+        })
+        exit_code, _, stderr = run_debug_cli(["-submitDataScouting", json_path])
+        self.assertEqual(exit_code, 0, stderr)
+
+        # Now request the data back with zero indentation. That let's us
+        # validate the data easily.
+        json_path = write_json_request({})
+        exit_code, stdout, stderr = run_debug_cli(["-requestDataScouting", json_path, "-indent="])
+
+        self.assertEqual(exit_code, 0, stderr)
+        self.assertIn(textwrap.dedent("""\
+            {
+            Team: (int32) 100,
+            Match: (int32) 1,
+            MissedShotsAuto: (int32) 10,
+            UpperGoalAuto: (int32) 11,
+            LowerGoalAuto: (int32) 12,
+            MissedShotsTele: (int32) 13,
+            UpperGoalTele: (int32) 14,
+            LowerGoalTele: (int32) 15,
+            DefenseRating: (int32) 3,
+            Climbing: (int32) 1
+            }"""), stdout)
 
     def test_request_all_matches(self):
         self.refresh_match_list()
@@ -146,14 +171,6 @@ class TestDebugCli(unittest.TestCase):
         self.assertIn("MatchList: ([]*request_matches_for_team_response.MatchT) (len=12 cap=12) {", stdout)
         self.assertEqual(stdout.count("MatchNumber:"), 12)
         self.assertEqual(len(re.findall(r": \(int32\) 4856[,\n]", stdout)), 12)
-
-    def test_request_data_scouting(self):
-        json_path = write_json_request({})
-        exit_code, stdout, stderr = run_debug_cli(["-requestDataScouting", json_path])
-
-        # TODO(phil): Actually add data here before querying it.
-        self.assertEqual(exit_code, 0, stderr)
-        self.assertIn("(request_data_scouting_response.RequestDataScoutingResponseT)", stdout)
 
 if __name__ == "__main__":
     unittest.main()

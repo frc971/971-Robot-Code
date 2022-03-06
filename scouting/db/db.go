@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -102,10 +103,19 @@ func (database *Database) AddToStats(s Stats) error {
 		fmt.Println(error_)
 		return (error_)
 	}
-	_, error_ = statement.Exec(s.TeamNumber, s.MatchNumber, s.ShotsMissed, s.UpperGoalShots, s.LowerGoalShots, s.ShotsMissedAuto, s.UpperGoalAuto, s.LowerGoalAuto, s.PlayedDefense, s.Climbing, s.MatchNumber, s.TeamNumber)
+	result, error_ := statement.Exec(s.TeamNumber, s.MatchNumber, s.ShotsMissed, s.UpperGoalShots, s.LowerGoalShots, s.ShotsMissedAuto, s.UpperGoalAuto, s.LowerGoalAuto, s.PlayedDefense, s.Climbing, s.MatchNumber, s.TeamNumber)
 	if error_ != nil {
 		fmt.Println(error_)
 		return (error_)
+	}
+	numRowsAffected, error_ := result.RowsAffected()
+	if error_ != nil {
+		return errors.New(fmt.Sprint("Failed to query rows affected: ", error_))
+	}
+	if numRowsAffected == 0 {
+		return errors.New(fmt.Sprint(
+			"Failed to find team ", s.TeamNumber,
+			" in match ", s.MatchNumber, " in the schedule."))
 	}
 	return nil
 }
@@ -128,7 +138,10 @@ func (database *Database) ReturnMatches() ([]Match, error) {
 }
 
 func (database *Database) ReturnStats() ([]Stats, error) {
-	rows, _ := database.Query("SELECT * FROM team_match_stats")
+	rows, error_ := database.Query("SELECT * FROM team_match_stats")
+	if error_ != nil {
+		return nil, errors.New(fmt.Sprint("Failed to SELECT * FROM team_match_stats: ", error_))
+	}
 	defer rows.Close()
 	teams := make([]Stats, 0)
 	var id int

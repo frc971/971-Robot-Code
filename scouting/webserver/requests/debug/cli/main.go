@@ -67,6 +67,8 @@ func parseJson(fbsPath string, jsonPath string) []byte {
 
 func main() {
 	// Parse command line arguments.
+	indentPtr := flag.String("indent", " ",
+		"The indentation to use for the result dumping. Default is a space.")
 	addressPtr := flag.String("address", "http://localhost:8080",
 		"The end point where the server is listening.")
 	submitDataScoutingPtr := flag.String("submitDataScouting", "",
@@ -80,6 +82,8 @@ func main() {
 	refreshMatchListPtr := flag.String("refreshMatchList", "",
 		"If specified, parse the file as a RefreshMatchList JSON request.")
 	flag.Parse()
+
+	spew.Config.Indent = *indentPtr
 
 	// Handle the actual arguments.
 	if *submitDataScoutingPtr != "" {
