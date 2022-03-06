@@ -640,8 +640,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     // TODO(milind): correct intake beambreak ports once set
     sensor_reader.set_intake_beambreak_front(
-        make_unique<frc::DigitalInput>(22));
-    sensor_reader.set_intake_beambreak_back(make_unique<frc::DigitalInput>(23));
+        make_unique<frc::DigitalInput>(1));
+    sensor_reader.set_intake_beambreak_back(make_unique<frc::DigitalInput>(6));
     sensor_reader.set_turret_beambreak(make_unique<frc::DigitalInput>(7));
 
     sensor_reader.set_climber_potentiometer(make_unique<frc::AnalogInput>(7));
