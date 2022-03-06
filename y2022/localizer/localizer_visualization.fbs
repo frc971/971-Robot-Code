@@ -1,0 +1,26 @@
+include "y2022/localizer/localizer_status.fbs";
+
+namespace frc971.controls;
+
+table TargetEstimateDebug {
+  camera:uint8 (id: 0);
+  camera_x:double (id: 1);
+  camera_y:double (id: 2);
+  camera_theta:double (id: 3);
+  implied_robot_x:double (id: 4);
+  implied_robot_y:double (id: 5);
+  implied_robot_theta:double (id: 6);
+  implied_turret_goal:double (id: 7);
+  accepted:bool (id: 8);
+  rejection_reason:RejectionReason  (id: 9);
+  // Image age (more human-readable than trying to interpret raw nanosecond
+  // values).
+  image_age_sec:double (id: 10);
+}
+
+table LocalizerVisualization {
+  targets:[TargetEstimateDebug] (id: 0);
+  statistics:CumulativeStatistics (id: 1);
+}
+
+root_type LocalizerVisualization;

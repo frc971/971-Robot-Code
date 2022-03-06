@@ -4,6 +4,7 @@
 #include "Eigen/Dense"
 #include "Eigen/Geometry"
 #include "aos/containers/ring_buffer.h"
+#include "aos/containers/sized_array.h"
 #include "aos/events/event_loop.h"
 #include "aos/network/message_bridge_server_generated.h"
 #include "aos/time/time.h"
@@ -15,6 +16,7 @@
 #include "y2022/control_loops/superstructure/superstructure_status_generated.h"
 #include "y2022/localizer/localizer_output_generated.h"
 #include "y2022/localizer/localizer_status_generated.h"
+#include "y2022/localizer/localizer_visualization_generated.h"
 #include "y2022/vision/target_estimate_generated.h"
 
 namespace frc971::controls {
@@ -95,6 +97,8 @@ class ModelBasedLocalizer {
   // ~20 gives ~55-60% CPU.
   static constexpr int kBranchPeriod = 100;
 
+  static constexpr size_t kDebugBufferSize = 10;
+
   typedef Eigen::Matrix<double, kNModelStates, 1> ModelState;
   typedef Eigen::Matrix<double, kNAccelStates, 1> AccelState;
   typedef Eigen::Matrix<double, kNModelInputs, 1> ModelInput;
@@ -108,7 +112,8 @@ class ModelBasedLocalizer {
   void HandleTurret(aos::monotonic_clock::time_point sample_time,
                     double turret_position, double turret_velocity);
   void HandleImageMatch(aos::monotonic_clock::time_point sample_time,
-                        const y2022::vision::TargetEstimate *target);
+                        const y2022::vision::TargetEstimate *target,
+                        int camera_index);
   void HandleReset(aos::monotonic_clock::time_point,
                    const Eigen::Vector3d &xytheta);
 
@@ -129,10 +134,12 @@ class ModelBasedLocalizer {
 
   void set_longitudinal_offset(double offset) { long_offset_ = offset; }
 
-  void TallyRejection(const RejectionReason reason) {
-    statistics_.total_candidates++;
-    statistics_.rejection_counts[static_cast<size_t>(reason)]++;
-  }
+  void TallyRejection(const RejectionReason reason);
+
+  flatbuffers::Offset<LocalizerVisualization> PopulateVisualization(
+      flatbuffers::FlatBufferBuilder *fbb);
+
+  size_t NumQueuedImageDebugs() const { return image_debugs_.size(); }
 
  private:
   struct CombinedState {
@@ -197,9 +204,17 @@ class ModelBasedLocalizer {
 
   // Returns the robot x/y position implied by the specified camera data and
   // estimated state from that time.
+  // H_field_camera is passed in so that it can be used as a debugging output.
   const std::optional<Eigen::Vector2d> CameraMeasuredRobotPosition(
       const OldPosition &state, const y2022::vision::TargetEstimate *target,
-      std::optional<RejectionReason> *rejection_reason) const;
+      std::optional<RejectionReason> *rejection_reason,
+      Eigen::Matrix<double, 4, 4> *H_field_camera_measured) const;
+
+  flatbuffers::Offset<TargetEstimateDebug> PackTargetEstimateDebug(
+      const TargetEstimateDebugT &debug, flatbuffers::FlatBufferBuilder *fbb);
+
+  flatbuffers::Offset<CumulativeStatistics> PopulateStatistics(
+      flatbuffers::FlatBufferBuilder *fbb);
 
   const control_loops::drivetrain::DrivetrainConfig<double> dt_config_;
   const StateFeedbackHybridPlantCoefficients<2, 2, 2, double>
@@ -282,11 +297,15 @@ class ModelBasedLocalizer {
   };
   Statistics statistics_;
 
+  aos::SizedArray<TargetEstimateDebugT, kDebugBufferSize> image_debugs_;
+
   friend class testing::LocalizerTest;
 };
 
 class EventLoopLocalizer {
  public:
+  static constexpr std::chrono::milliseconds kMinVisualizationPeriod{100};
+
   EventLoopLocalizer(
       aos::EventLoop *event_loop,
       const control_loops::drivetrain::DrivetrainConfig<double> &dt_config);
@@ -300,10 +319,13 @@ class EventLoopLocalizer {
   ModelBasedLocalizer model_based_;
   aos::Sender<LocalizerStatus> status_sender_;
   aos::Sender<LocalizerOutput> output_sender_;
+  aos::Sender<LocalizerVisualization> visualization_sender_;
   aos::Fetcher<frc971::control_loops::drivetrain::Output> output_fetcher_;
   aos::Fetcher<aos::message_bridge::ServerStatistics> clock_offset_fetcher_;
   zeroing::ImuZeroer zeroer_;
   aos::monotonic_clock::time_point last_output_send_ =
+      aos::monotonic_clock::min_time;
+  aos::monotonic_clock::time_point last_visualization_send_ =
       aos::monotonic_clock::min_time;
   std::optional<aos::monotonic_clock::time_point> last_pico_timestamp_;
   aos::monotonic_clock::duration pico_offset_error_;
