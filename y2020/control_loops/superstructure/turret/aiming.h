@@ -6,6 +6,7 @@
 #include "frc971/control_loops/pose.h"
 #include "frc971/control_loops/profiled_subsystem_generated.h"
 #include "frc971/input/joystick_state_generated.h"
+#include "frc971/control_loops/aiming/aiming.h"
 #include "y2020/control_loops/superstructure/superstructure_status_generated.h"
 
 namespace y2020 {
@@ -39,14 +40,7 @@ class Aimer {
     kAvoidWrapping,
   };
 
-  // Control modes for managing how we manage shooting on the fly.
-  enum class ShotMode {
-    // Don't do any shooting-on-the-fly compensation--just point straight at the
-    // target. Primarily used in tests.
-    kStatic,
-    // Do do shooting-on-the-fly compensation.
-    kShootOnTheFly,
-  };
+  typedef frc971::control_loops::aiming::ShotMode ShotMode;
 
   Aimer();
 
