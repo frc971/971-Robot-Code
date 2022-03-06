@@ -658,8 +658,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     sensor_reader.set_catapult_potentiometer(
         std::make_unique<frc::AnalogInput>(2));
 
-    sensor_reader.set_heading_input(make_unique<frc::DigitalInput>(8));
-    sensor_reader.set_yaw_rate_input(make_unique<frc::DigitalInput>(9));
+    sensor_reader.set_heading_input(make_unique<frc::DigitalInput>(9));
+    sensor_reader.set_yaw_rate_input(make_unique<frc::DigitalInput>(8));
 
     AddLoop(&sensor_reader_event_loop);
 
