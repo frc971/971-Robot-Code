@@ -978,6 +978,7 @@ EventLoopLocalizer::EventLoopLocalizer(
             output_builder.add_x(model_based_.xytheta()(0));
             output_builder.add_y(model_based_.xytheta()(1));
             output_builder.add_theta(model_based_.xytheta()(2));
+            output_builder.add_zeroed(zeroer_.Zeroed());
             const Eigen::Quaterniond &orientation = model_based_.orientation();
             Quaternion quaternion;
             quaternion.mutate_x(orientation.x());

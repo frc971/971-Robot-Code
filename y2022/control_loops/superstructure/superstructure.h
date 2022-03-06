@@ -12,6 +12,7 @@
 #include "y2022/control_loops/superstructure/superstructure_output_generated.h"
 #include "y2022/control_loops/superstructure/superstructure_position_generated.h"
 #include "y2022/control_loops/superstructure/superstructure_status_generated.h"
+#include "y2022/control_loops/superstructure/turret/aiming.h"
 
 namespace y2022 {
 namespace control_loops {
@@ -73,6 +74,8 @@ class Superstructure
   aos::Fetcher<CANPosition> can_position_fetcher_;
 
   int prev_shot_count_ = 0;
+
+  turret::Aimer aimer_;
 
   bool flippers_open_ = false;
   bool reseating_in_catapult_ = false;

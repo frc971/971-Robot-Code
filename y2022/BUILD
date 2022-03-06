@@ -300,3 +300,15 @@ py_library(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )
+
+sh_binary(
+    name = "log_web_proxy",
+    srcs = ["log_web_proxy.sh"],
+    data = [
+        ":aos_config",
+        "//aos/network:log_web_proxy_main",
+        "//y2022/www:field_main_bundle.min.js",
+        "//y2022/www:files",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+)

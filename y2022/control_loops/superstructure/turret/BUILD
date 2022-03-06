@@ -32,3 +32,21 @@ cc_library(
         "//frc971/control_loops:state_feedback_loop",
     ],
 )
+
+cc_library(
+    name = "aiming",
+    srcs = ["aiming.cc"],
+    hdrs = ["aiming.h"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        "//aos:flatbuffers",
+        "//frc971/control_loops:control_loops_fbs",
+        "//frc971/control_loops:pose",
+        "//frc971/control_loops:profiled_subsystem_fbs",
+        "//frc971/control_loops/aiming",
+        "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
+        "//y2022:constants",
+        "//y2022/control_loops/drivetrain:drivetrain_base",
+        "//y2022/control_loops/superstructure:superstructure_status_fbs",
+    ],
+)

@@ -25,6 +25,18 @@ enum SuperstructureState : ubyte {
   SHOOTING,
 }
 
+table AimerStatus {
+  // The current goal angle for the turret auto-tracking, in radians.
+  turret_position:double (id: 0);
+  // The current goal velocity for the turret, in radians / sec.
+  turret_velocity:double (id: 1);
+  // The current distance to the target, in meters.
+  target_distance:double (id: 2);
+  // The current "shot distance." When shooting on the fly, this may be
+  // different from the static distance to the target.
+  shot_distance:double (id: 3);
+}
+
 table Status {
   // All subsystems know their location.
   zeroed:bool (id: 0);
@@ -61,6 +73,8 @@ table Status {
 
   // The number of shots we have taken.
   shot_count:int32 (id: 9);
+
+  aimer:AimerStatus (id: 15);
 }
 
 root_type Status;
