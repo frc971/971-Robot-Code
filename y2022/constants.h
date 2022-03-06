@@ -48,9 +48,6 @@ struct Values {
     return 22 * 0.25 * 0.0254;
   }
   static constexpr double kClimberPotRatio() { return 1.0; }
-  // TODO(milind): figure this out
-  // Climber position when it's comfortably above the mid rung.
-  static constexpr double kClimberMidRungHeight() { return 1.0; }
 
   struct PotConstants {
     ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<
@@ -97,12 +94,6 @@ struct Values {
     };
   }
 
-  // When the intake is atleast this much out, always spin the rollers
-  static constexpr double kIntakeSlightlyOutPosition() {
-    return kIntakeRange().middle();
-  }
-  static constexpr double kIntakeOutPosition() { return 1.24; }
-
   // Intake rollers
   static constexpr double kIntakeRollerSupplyCurrentLimit() { return 40.0; }
   static constexpr double kIntakeRollerStatorCurrentLimit() { return 60.0; }
@@ -112,11 +103,6 @@ struct Values {
 
   // Voltage to wiggle the transfer rollers and keep a ball in.
   static constexpr double kTransferRollerWiggleVoltage() { return 3.0; }
-
-  // Minimum roller speed when the intake is slightly out
-  static constexpr double kMinIntakeSlightlyOutRollerSpeed() { return 6.0; }
-  // Roller speeds when intake is out
-  static constexpr double kIntakeOutRollerSpeed() { return 7.0; }
 
   // Turret
   PotAndAbsEncoderConstants turret;
@@ -200,9 +186,6 @@ struct Values {
   static constexpr double kCatapultEncoderCountsPerRevolution() {
     return 4096.0;
   }
-  static constexpr double kDefaultCatapultShotPosition() { return 3.0; }
-  static constexpr double kDefaultCatapultShotVelocity() { return 3.0; }
-  static constexpr double kCatapultReturnPosition() { return -0.85; }
 
   static constexpr double kMaxCatapultEncoderPulsesPerSecond() {
     return control_loops::superstructure::catapult::kFreeSpeed / (2.0 * M_PI) *
