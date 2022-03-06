@@ -667,9 +667,9 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     ::aos::ShmEventLoop output_event_loop(&config.message());
     ::frc971::wpilib::DrivetrainWriter drivetrain_writer(&output_event_loop);
     drivetrain_writer.set_left_controller0(
-        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(1)), false);
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(0)), false);
     drivetrain_writer.set_right_controller0(
-        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(0)), true);
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(1)), true);
 
     SuperstructureWriter superstructure_writer(&output_event_loop);
 
