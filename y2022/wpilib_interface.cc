@@ -203,7 +203,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
       frc971::RelativePositionT flipper_arm_right;
       CopyPosition(*flipper_arm_right_potentiometer_, &flipper_arm_right,
-                   flipper_arms_pot_translate, false,
+                   flipper_arms_pot_translate, true,
                    values_->flipper_arm_right.potentiometer_offset);
 
       // Intake
