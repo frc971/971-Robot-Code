@@ -30,8 +30,8 @@ class Superstructure
           ::frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator,
           ::frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus>;
 
-  static constexpr double kTurretGoalThreshold = 0.01;
-  static constexpr double kCatapultGoalThreshold = 0.01;
+  static constexpr double kTurretGoalThreshold = 0.05;
+  static constexpr double kCatapultGoalThreshold = 0.05;
   // potentiometer will be more noisy
   static constexpr double kFlipperGoalThreshold = 0.05;
 

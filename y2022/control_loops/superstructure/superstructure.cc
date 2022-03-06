@@ -162,8 +162,6 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       }
 
       state_ = SuperstructureState::TRANSFERRING;
-      transferring_timer_ = timestamp;
-
       // Save the side the ball is on for later
 
       break;
@@ -171,8 +169,9 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
     case SuperstructureState::TRANSFERRING: {
       // If we've been transferring for too long, the ball probably got lost
       if (timestamp >
-          transferring_timer_ + constants::Values::kBallLostTime()) {
+          intake_beambreak_timer_ + constants::Values::kBallLostTime()) {
         intake_state_ = IntakeState::NO_BALL;
+        state_ = SuperstructureState::IDLE;
         break;
       }
 
@@ -219,26 +218,13 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
       // Keep feeding for kExtraLoadingTime
 
-      can_position_fetcher_.Fetch();
-      const bool flipper_arm_roller_is_stopped =
-          can_position_fetcher_.get() != nullptr &&
-          std::abs(
-              can_position_fetcher_->flipper_arm_integrated_sensor_velocity()) <
-              0.01;
-
-      const bool reading_is_recent =
-          can_position_fetcher_.get() != nullptr &&
-          (timestamp < can_position_fetcher_.context().monotonic_event_time +
-                           constants::Values::kFlipperVelocityValidTime());
-
       // The ball should go past the turret beambreak to be loaded.
       // If we got a CAN reading not too long ago, the flippers should have also
       // stopped.
-      // TODO(milind): maybe it's better to update loading_timer_ as long as the
-      // turret beambreak is triggered.
-      if (timestamp > loading_timer_ + constants::Values::kExtraLoadingTime() &&
-          !position->turret_beambreak() &&
-          (flipper_arm_roller_is_stopped || !reading_is_recent)) {
+      if (position->turret_beambreak()) {
+        loading_timer_ = timestamp;
+      } else if (timestamp >
+                 loading_timer_ + constants::Values::kExtraLoadingTime()) {
         state_ = SuperstructureState::LOADED;
         reseating_in_catapult_ = false;
       }
