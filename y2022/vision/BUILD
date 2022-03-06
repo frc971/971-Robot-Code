@@ -1,4 +1,5 @@
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_py_library")
+load("@npm//@bazel/typescript:index.bzl", "ts_library")
 
 flatbuffer_cc_library(
     name = "calibration_fbs",
@@ -21,6 +22,18 @@ flatbuffer_py_library(
     ],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
+)
+
+ts_library(
+    name = "vision_plotter",
+    srcs = ["vision_plotter.ts"],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aos/network/www:aos_plotter",
+        "//aos/network/www:colors",
+        "//aos/network/www:proxy",
+    ],
 )
 
 py_library(
