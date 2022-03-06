@@ -1,0 +1,185 @@
+<div class="header">
+    <h2>{{section}}</h2>
+</div>
+
+<ng-container [ngSwitch]="section">
+    <div *ngSwitchCase="'Auto'" id="auto" class="container-fluid">
+        <div class="row">
+            <!--Image here-->
+            <h4>Image</h4>
+            <form>
+                <!--Choice for each ball location-->
+                <input type="radio" name="balls" value="1" id="ball-1"><label for="ball-1">Ball 1</label>
+                <input type="radio" name="balls" value="2" id="ball-2"><label for="ball-2">Ball 2</label><br>
+                <input type="radio" name="balls" value="3" id="ball-3"><label for="ball-3">Ball 3</label>
+                <input type="radio" name="balls" value="4" id="ball-4"><label for="ball-4">Ball 4</label>
+            </form>
+        </div>
+        <div class="row">
+            <!--Image here-->
+            <h4>Image</h4>
+            <form>
+                <input type="radio" name="quadrant" id="first" value="Quadrant 1">
+                <label for="first">Quadrant 1</label>
+                <input type="radio" name="quadrant" id="second" value="Quadrant 2">
+                <label for="second">Quadrant 2</label><br>
+                <input type="radio" name="quadrant" id="third" value="Quadrant 3">
+                <label for="third">Quadrant 3</label>
+                <input type="radio" name="quadrant" id="fourth" value="Quadrant 4">
+                <label for="fourth">Quadrant 4</label>
+            </form>
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-sm">
+                <h4>Upper Shots Made</h4>
+                <button (click)="adjustAutoUpper(1)" class="btn btn-secondary">+</button>
+                <h3>{{autoUpperShotsMade}}</h3>
+                <button (click)="adjustAutoUpper(-1)" class="btn btn-secondary">-</button>
+            </div>
+
+            <div class="col-sm">
+                <h4>Lower Shots Made</h4>
+                <button (click)="adjustAutoLower(1)" class="col-xs btn btn-secondary">+</button>
+                <h3>{{autoLowerShotsMade}}</h3>
+                <button (click)="adjustAutoLower(-1)" class="btn btn-secondary">-</button>
+            </div>
+
+            <div class="col-sm">
+                <h4>Missed Shots</h4>
+                <button (click)="adjustAutoMissed(1)" class="btn btn-secondary">+</button>
+                <h3>{{autoShotsMissed}}</h3>
+                <button (click)="adjustAutoMissed(-1)" class="btn btn-secondary">-</button>
+            </div>
+        </div>
+        <div class="text-right">
+            <button class="btn btn-primary" (click)="nextSection()">Next</button>
+        </div>
+    </div>
+
+    <div *ngSwitchCase="'TeleOp'" id="teleop" class="container-fluid">
+        <div class="row justify-content-center">
+            <div class="col-sm">
+                <h4>Upper Shots Made</h4>
+                <button (click)="adjustTeleUpper(1)" class="btn btn-secondary">+</button>
+                <h3>{{teleUpperShotsMade}}</h3>
+                <button (click)="adjustTeleUpper(-1)" class="btn btn-secondary">-</button>
+            </div>
+
+            <div class="col-sm">
+                <h4>Lower Shots Made</h4>
+                <button (click)="adjustTeleLower(1)" class="btn btn-secondary">+</button>
+                <h3>{{teleLowerShotsMade}}</h3>
+                <button (click)="adjustTeleLower(-1)" class="btn btn-secondary">-</button>
+            </div>
+
+            <div class="col-sm">
+                <h4>Missed Shots</h4>
+                <button (click)="adjustTeleMissed(1)" class="btn btn-secondary">+</button>
+                <h3>{{teleShotsMissed}}</h3>
+                <button (click)="adjustTeleMissed(-1)" class="btn btn-secondary">-</button>
+            </div>
+        </div>
+        <div class="text-right">
+            <button class="btn btn-primary" (click)="nextSection()">Next</button>
+        </div>
+    </div>
+
+    <div *ngSwitchCase="'Climb'" id="climb" class="container-fluid">
+        <div class="row">
+            <form>
+                <input (click)="setClimbedFalse()" type="radio" name="climbing" id="continue"><label for="continue">Kept Shooting</label><br>
+                <input (click)="setClimbedTrue()" type="radio" name="climbing" id="climbed"><label for="climbed">Attempted to Climb</label><br>
+            </form>
+        </div>
+        <div *ngIf="climbed">
+            <h4>Bar Made</h4>
+            <form>
+                <input (click)="setLow()" type="radio" name="level" id="low"><label for="low">Low</label><br>
+                <input (click)="setMedium()" type="radio" name="level" id="medium"><label for="medium">Medium</label><br>
+                <input (click)="setHigh()" type="radio" name="level" id="high"><label for="high">High</label><br>
+                <input (click)="setTransversal()" type="radio" name="level" id="transversal"><label for="transversal">Transversal</label><br>
+                <input (click)="toggleProper()" type="checkbox" id="proper"><label for="proper">~10 seconds to attempt next level?</label>
+            </form>
+        </div>
+        <div class="row">
+            <h4>Comments</h4>
+            <textarea></textarea>
+        </div>
+        <button class="btn btn-primary" (click)="nextSection()">Next</button>
+    </div>
+
+    <div *ngSwitchCase="'Defense'" id="defense" class="container-fluid">
+        <h4 class="text-center">How much defense did other robots play on this robot?</h4>
+
+        <div class="row" style="min-height: 50px">
+            <div class="col">
+                <h6>None</h6>
+            </div>
+
+            <div class="col">
+                <input type="range" min="1" max="100" value="50" (input)="defensePlayedOnSlider($event)">
+            </div>
+
+            <div class="col">
+                <h6>A lot</h6>
+            </div>
+        </div>
+
+        <h6 class="text-center">{{defensePlayedOnScore}}</h6>
+
+        <h4 class="text-center">How much defense did this robot play?</h4>
+
+        <div class="row">
+
+            <div class="col">
+                <h6>None</h6>
+            </div>
+
+            <div class="col">
+                <input type="range" min="1" max="100" value="50" (input)="defensePlayedSlider($event)">
+            </div>
+
+            <div class="col">
+                <h6>A lot</h6>
+            </div>
+        </div>
+        <h6 class="text-center">{{defensePlayedScore}}</h6>
+
+        <button class="btn btn-primary" (click)="nextSection()">Next</button>
+    </div>
+
+    <div *ngSwitchCase="'Review and Submit'" id="review" class="container-fluid">
+        <h4>Auto</h4>
+        <ul>
+            <li>Upper Shots Made: {{autoUpperShotsMade}}</li>
+            <li>Lower Shots Made: {{autoLowerShotsMade}}</li>
+            <li>Missed Shots: {{autoShotsMissed}}</li>
+        </ul>
+
+        <h4>TeleOp</h4>
+        <ul>
+            <li>Upper Shots Made: {{teleUpperShotsMade}}</li>
+            <li>Lower Shots Made: {{teleLowerShotsMade}}</li>
+            <li>Missed Shots {{teleShotsMissed}}</li>
+        </ul>
+
+        <h4>Climb</h4>
+        <ul>
+            <div *ngIf="climbed">
+                <li *ngIf="climbed">Attempted to Climb?: Yes</li>
+                <li>Level: {{level}}</li>
+                <li *ngIf="proper">Proper Attempt: Yes</li>
+                <li *ngIf="!proper">Proper Attempt: No</li>
+            </div>
+            <li *ngIf="!climbed">Attempted to Climb: No</li>
+        </ul>
+
+        <h4>Defense</h4>
+        <ul>
+            <li>Defense Played On Rating: {{defensePlayedOnScore}}</li>
+            <li>Defense Played Raing: {{defensePlayedScore}}</li>
+        </ul>
+
+        <button class="btn btn-primary" (click)="nextSection()">Submit</button>
+    </div>
+</ng-container>

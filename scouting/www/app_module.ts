@@ -1,6 +1,7 @@
 import {NgModule} from '@angular/core';
 import {BrowserModule} from '@angular/platform-browser';
 import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
+import {EntryModule} from './entry/entry.module';
 
 import {App} from './app';
 
@@ -9,6 +10,7 @@ import {App} from './app';
   imports: [
     BrowserModule,
     BrowserAnimationsModule,
+    EntryModule,
   ],
   exports: [App],
   bootstrap: [App],

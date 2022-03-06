@@ -14,7 +14,7 @@ class AppPage {
   }
 
   async getParagraphText() {
-    return (await this.waitForElement(element(by.css('h1')))).getText();
+    return (await this.waitForElement(element(by.css('.header')))).getText();
   }
 }
 
@@ -27,6 +27,6 @@ describe('The scouting web page', () => {
 
   it('should display: This is an app.', async () => {
     await page.navigateTo();
-    expect(await page.getParagraphText()).toEqual('This is an app.');
+    expect(await page.getParagraphText()).toEqual('Auto');
   });
 });
