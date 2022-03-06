@@ -50,7 +50,7 @@ export function plotIntake(conn: Connection, element: Element) : void {
   voltagePlotFront.plot.getAxisLabels().setYLabel('Volts');
   voltagePlotFront.plot.setDefaultYRange([-4.0, 14.0]);
 
-  voltagePlotFront.addMessageLine(output, ['intake_front_voltage']).setColor(BLUE).setPointSize(4.0);
+  voltagePlotFront.addMessageLine(output, ['intake_voltage_front']).setColor(BLUE).setPointSize(4.0);
   voltagePlotFront.addMessageLine(status, ['intake_front', 'voltage_error']).setColor(RED).setPointSize(1.0);
   voltagePlotFront.addMessageLine(status, ['intake_front', 'position_power']).setColor(BROWN).setPointSize(1.0);
   voltagePlotFront.addMessageLine(status, ['intake_front', 'velocity_power']).setColor(CYAN).setPointSize(1.0);
@@ -64,7 +64,7 @@ export function plotIntake(conn: Connection, element: Element) : void {
   voltagePlotBack.plot.getAxisLabels().setYLabel('Volts');
   voltagePlotBack.plot.setDefaultYRange([-4.0, 14.0]);
 
-  voltagePlotBack.addMessageLine(output, ['intake_back_voltage']).setColor(BLUE).setPointSize(4.0);
+  voltagePlotBack.addMessageLine(output, ['intake_voltage_back']).setColor(BLUE).setPointSize(4.0);
   voltagePlotBack.addMessageLine(status, ['intake_back', 'voltage_error']).setColor(RED).setPointSize(1.0);
   voltagePlotBack.addMessageLine(status, ['intake_back', 'position_power']).setColor(BROWN).setPointSize(1.0);
   voltagePlotBack.addMessageLine(status, ['intake_back', 'velocity_power']).setColor(CYAN).setPointSize(1.0);
