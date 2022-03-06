@@ -9,6 +9,7 @@
 # The scraping library uses looks for this config file by default,
 # you don't want to get that checked in
 /scouting_config.json
+/scouting.db
 
 # Hide vagrant's files that unfortunately make it into the source tree when you
 # run "vagrant up".
