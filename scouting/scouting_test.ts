@@ -27,6 +27,6 @@ describe('The scouting web page', () => {
 
   it('should display: This is an app.', async () => {
     await page.navigateTo();
-    expect(await page.getParagraphText()).toEqual('Auto');
+    expect(await page.getParagraphText()).toEqual('Team Selection');
   });
 });

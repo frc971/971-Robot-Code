@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 
-type Section = 'Auto'|'TeleOp'|'Climb'|'Defense'|'Review and Submit'|'Home'
+type Section = 'Team Selection'|'Auto'|'TeleOp'|'Climb'|'Defense'|'Review and Submit'|'Home'
 type Level = 'Low'|'Medium'|'High'|'Transversal'
 
 @Component({
@@ -9,7 +9,9 @@ type Level = 'Low'|'Medium'|'High'|'Transversal'
     styleUrls: ['./entry.component.css']
 })
 export class EntryComponent {
-    section: Section = 'Auto'; //placeholder
+    section: Section = 'Team Selection';
+    matchNumber: number = 1
+    teamNumber: number = 1
     autoUpperShotsMade: number = 0;
     autoLowerShotsMade: number = 0;
     autoShotsMissed: number = 0;
@@ -59,7 +61,9 @@ export class EntryComponent {
     }
 
     nextSection() {
-        if (this.section === 'Auto') {
+        if (this.section === 'Team Selection') {
+            this.section = 'Auto';
+        } else if (this.section === 'Auto') {
             this.section = 'TeleOp';
         } else if (this.section === 'TeleOp') {
             this.section = 'Climb';
@@ -73,7 +77,9 @@ export class EntryComponent {
     }
 
     prevSection() {
-      if (this.section === 'TeleOp') {
+      if (this.section === 'Auto') {
+        this.section = 'Team Selection';
+      } else if (this.section === 'TeleOp') {
         this.section = 'Auto';
       } else if (this.section === 'Climb') {
         this.section = 'TeleOp';
