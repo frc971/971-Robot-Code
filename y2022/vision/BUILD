@@ -97,6 +97,7 @@ cc_library(
         ":blob_detector_lib",
         ":calibration_data",
         ":calibration_fbs",
+        ":geometry_lib",
         ":target_estimate_fbs",
         ":target_estimator_lib",
         "//aos:flatbuffer_merge",
@@ -124,6 +125,31 @@ cc_binary(
 )
 
 cc_library(
+    name = "geometry_lib",
+    hdrs = [
+        "geometry.h",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//y2022:__subpackages__"],
+    deps = [
+        "//aos/util:math",
+        "//third_party:opencv",
+        "@com_github_google_glog//:glog",
+    ],
+)
+
+cc_test(
+    name = "geometry_test",
+    srcs = [
+        "geometry_test.cc",
+    ],
+    deps = [
+        ":geometry_lib",
+        "//aos/testing:googletest",
+    ],
+)
+
+cc_library(
     name = "blob_detector_lib",
     srcs = [
         "blob_detector.cc",
@@ -134,6 +160,7 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//y2022:__subpackages__"],
     deps = [
+        ":geometry_lib",
         "//aos/network:team_number",
         "//aos/time",
         "//third_party:opencv",
