@@ -349,24 +349,29 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   const flatbuffers::Offset<RelativeEncoderProfiledJointStatus>
       climber_status_offset = climber_.Iterate(
           unsafe_goal != nullptr ? unsafe_goal->climber() : nullptr,
-          position->climber(), &output_struct.climber_voltage, status->fbb());
+          position->climber(),
+          output != nullptr ? &output_struct.climber_voltage : nullptr,
+          status->fbb());
 
   const flatbuffers::Offset<PotAndAbsoluteEncoderProfiledJointStatus>
       intake_status_offset_front = intake_front_.Iterate(
           unsafe_goal != nullptr ? unsafe_goal->intake_front() : nullptr,
-          position->intake_front(), &output_struct.intake_voltage_front,
+          position->intake_front(),
+          output != nullptr ? &output_struct.intake_voltage_front : nullptr,
           status->fbb());
 
   const flatbuffers::Offset<PotAndAbsoluteEncoderProfiledJointStatus>
       intake_status_offset_back = intake_back_.Iterate(
           unsafe_goal != nullptr ? unsafe_goal->intake_back() : nullptr,
-          position->intake_back(), &output_struct.intake_voltage_back,
+          position->intake_back(),
+          output != nullptr ? &output_struct.intake_voltage_back : nullptr,
           status->fbb());
 
   const flatbuffers::Offset<PotAndAbsoluteEncoderProfiledJointStatus>
-      turret_status_offset =
-          turret_.Iterate(turret_goal, position->turret(),
-                          &output_struct.turret_voltage, status->fbb());
+      turret_status_offset = turret_.Iterate(
+          turret_goal, position->turret(),
+          output != nullptr ? &output_struct.turret_voltage : nullptr,
+          status->fbb());
 
   if (output != nullptr) {
     output_struct.roller_voltage_front = roller_speed_compensated_front;
