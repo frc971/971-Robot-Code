@@ -11,6 +11,8 @@ import LocalizerOutput = output.frc971.controls.LocalizerOutput;
 import RejectionReason = localizer.frc971.controls.RejectionReason;
 import TargetEstimateDebug = localizer.frc971.controls.TargetEstimateDebug;
 import SuperstructureStatus = ss.y2022.control_loops.superstructure.Status;
+import SuperstructureState = ss.y2022.control_loops.superstructure.SuperstructureState;
+import IntakeState = ss.y2022.control_loops.superstructure.IntakeState;
 
 import {FIELD_LENGTH, FIELD_WIDTH, FT_TO_M, IN_TO_M} from './constants';
 
@@ -43,6 +45,26 @@ export class FieldHandler {
       (document.getElementById('shot_distance') as HTMLElement);
   private turret: HTMLElement =
       (document.getElementById('turret') as HTMLElement);
+  private fire: HTMLElement =
+      (document.getElementById('fire') as HTMLElement);
+  private mpcSolveTime: HTMLElement =
+      (document.getElementById('mpc_solve_time') as HTMLElement);
+  private mpcActive: HTMLElement =
+      (document.getElementById('mpc_active') as HTMLElement);
+  private shotCount: HTMLElement =
+      (document.getElementById('shot_count') as HTMLElement);
+  private catapult: HTMLElement =
+      (document.getElementById('catapult') as HTMLElement);
+  private superstructureState: HTMLElement =
+      (document.getElementById('superstructure_state') as HTMLElement);
+  private intakeState: HTMLElement =
+      (document.getElementById('intake_state') as HTMLElement);
+  private reseatingInCatapult: HTMLElement =
+      (document.getElementById('reseating_in_catapult') as HTMLElement);
+  private flippersOpen: HTMLElement =
+      (document.getElementById('flippers_open') as HTMLElement);
+  private climber: HTMLElement =
+      (document.getElementById('climber') as HTMLElement);
   private frontIntake: HTMLElement =
       (document.getElementById('front_intake') as HTMLElement);
   private backIntake: HTMLElement =
@@ -297,6 +319,98 @@ export class FieldHandler {
         this.drawCamera(cameraX, cameraY, cameraTheta, cameraRgba, false);
       }
     }
+    if (this.superstructureStatus) {
+      this.shotDistance.innerHTML = this.superstructureStatus.aimer() ?
+          this.superstructureStatus.aimer().shotDistance().toFixed(2) :
+          'NA';
+
+      this.fire.innerHTML = this.superstructureStatus.fire() ? 'true' : 'false';
+
+      this.mpcActive.innerHTML =
+          this.superstructureStatus.mpcActive() ? 'true' : 'false';
+
+      this.setValue(this.mpcSolveTime, this.superstructureStatus.solveTime());
+
+      this.shotCount.innerHTML =
+          this.superstructureStatus.shotCount().toFixed(0);
+
+      this.superstructureState.innerHTML =
+          SuperstructureState[this.superstructureStatus.state()];
+
+      this.intakeState.innerHTML =
+          IntakeState[this.superstructureStatus.intakeState()];
+
+      this.reseatingInCatapult.innerHTML =
+          this.superstructureStatus.reseatingInCatapult() ? 'true' : 'false';
+
+      this.flippersOpen.innerHTML =
+          this.superstructureStatus.flippersOpen() ? 'true' : 'false';
+
+      if (!this.superstructureStatus.catapult() ||
+          !this.superstructureStatus.catapult().zeroed()) {
+        this.setZeroing(this.catapult);
+      } else if (this.superstructureStatus.catapult().estopped()) {
+        this.setEstopped(this.catapult);
+      } else {
+        this.setTargetValue(
+            this.catapult,
+            this.superstructureStatus.catapult().unprofiledGoalPosition(),
+            this.superstructureStatus.catapult().estimatorState().position(),
+            1e-3);
+      }
+
+      if (!this.superstructureStatus.climber() ||
+          !this.superstructureStatus.climber().zeroed()) {
+        this.setZeroing(this.climber);
+      } else if (this.superstructureStatus.climber().estopped()) {
+        this.setEstopped(this.climber);
+      } else {
+        this.setTargetValue(
+            this.climber,
+            this.superstructureStatus.climber().unprofiledGoalPosition(),
+            this.superstructureStatus.climber().estimatorState().position(),
+            1e-3);
+      }
+
+
+
+      if (!this.superstructureStatus.turret() ||
+          !this.superstructureStatus.turret().zeroed()) {
+        this.setZeroing(this.turret);
+      } else if (this.superstructureStatus.turret().estopped()) {
+        this.setEstopped(this.turret);
+      } else {
+        this.setTargetValue(
+            this.turret,
+            this.superstructureStatus.turret().unprofiledGoalPosition(),
+            this.superstructureStatus.turret().estimatorState().position(),
+            1e-3);
+      }
+
+      if (!this.superstructureStatus.intakeBack() ||
+          !this.superstructureStatus.intakeBack().zeroed()) {
+        this.setZeroing(this.backIntake);
+      } else if (this.superstructureStatus.intakeBack().estopped()) {
+        this.setEstopped(this.backIntake);
+      } else {
+        this.setValue(
+            this.backIntake,
+            this.superstructureStatus.intakeBack().estimatorState().position());
+      }
+
+      if (!this.superstructureStatus.intakeFront() ||
+          !this.superstructureStatus.intakeFront().zeroed()) {
+        this.setZeroing(this.frontIntake);
+      } else if (this.superstructureStatus.intakeFront().estopped()) {
+        this.setEstopped(this.frontIntake);
+      } else {
+        this.setValue(
+            this.frontIntake,
+            this.superstructureStatus.intakeFront()
+                .estimatorState()
+                .position());
+      }
+    }
 
     if (this.localizerOutput) {
       if (!this.localizerOutput.zeroed()) {
@@ -308,52 +422,6 @@ export class FieldHandler {
         this.setValue(this.y, this.localizerOutput.y());
         this.setValue(this.theta, this.localizerOutput.theta());
       }
-
-      if (this.superstructureStatus) {
-        this.shotDistance.innerHTML = this.superstructureStatus.aimer() ?
-            this.superstructureStatus.aimer().shotDistance().toFixed(2) :
-            'NA';
-
-        if (!this.superstructureStatus.turret() ||
-            !this.superstructureStatus.turret().zeroed()) {
-          this.setZeroing(this.turret);
-        } else if (this.superstructureStatus.turret().estopped()) {
-          this.setEstopped(this.turret);
-        } else {
-          this.setTargetValue(
-              this.turret,
-              this.superstructureStatus.turret().unprofiledGoalPosition(),
-              this.superstructureStatus.turret().estimatorState().position(),
-              1e-3);
-        }
-
-        if (!this.superstructureStatus.intakeBack() ||
-            !this.superstructureStatus.intakeBack().zeroed()) {
-          this.setZeroing(this.backIntake);
-        } else if (this.superstructureStatus.intakeBack().estopped()) {
-          this.setEstopped(this.backIntake);
-        } else {
-          this.setValue(
-              this.backIntake,
-              this.superstructureStatus.intakeBack()
-                  .estimatorState()
-                  .position());
-        }
-
-        if (!this.superstructureStatus.intakeFront() ||
-            !this.superstructureStatus.intakeFront().zeroed()) {
-          this.setZeroing(this.frontIntake);
-        } else if (this.superstructureStatus.intakeFront().estopped()) {
-          this.setEstopped(this.frontIntake);
-        } else {
-          this.setValue(
-              this.frontIntake,
-              this.superstructureStatus.intakeFront()
-                  .estimatorState()
-                  .position());
-        }
-      }
-
 
       this.drawRobot(
           this.localizerOutput.x(), this.localizerOutput.y(),
