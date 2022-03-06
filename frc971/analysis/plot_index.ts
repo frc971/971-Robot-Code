@@ -44,7 +44,7 @@ import {plotTurret as plot2022Turret} from
     'org_frc971/y2022/control_loops/superstructure/turret_plotter'
 import {plotCatapult as plot2022Catapult} from
     'org_frc971/y2022/control_loops/superstructure/catapult_plotter'
-import {plotIntake as plot2022Intake} from
+import {plotIntakeFront as plot2022IntakeFront, plotIntakeBack as plot2022IntakeBack} from
     'org_frc971/y2022/control_loops/superstructure/intake_plotter'
 import {plotClimber as plot2022Climber} from
     'org_frc971/y2022/control_loops/superstructure/climber_plotter'
@@ -117,7 +117,8 @@ const plotIndex = new Map<string, PlotState>([
   ['2020 Localizer', new PlotState(plotDiv, plot2020Localizer)],
   ['2022 Localizer', new PlotState(plotDiv, plot2022Localizer)],
   ['2022 Catapult', new PlotState(plotDiv, plot2022Catapult)],
-  ['2022 Intake', new PlotState(plotDiv, plot2022Intake)],
+  ['2022 Intake Front', new PlotState(plotDiv, plot2022IntakeFront)],
+  ['2022 Intake Back', new PlotState(plotDiv, plot2022IntakeBack)],
   ['2022 Climber', new PlotState(plotDiv, plot2022Climber)],
   ['2022 Turret', new PlotState(plotDiv, plot2022Turret)],
   ['C++ Plotter', new PlotState(plotDiv, plotData)],
