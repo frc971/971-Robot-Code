@@ -203,7 +203,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
       frc971::RelativePositionT flipper_arm_right;
       CopyPosition(*flipper_arm_right_potentiometer_, &flipper_arm_right,
-                   flipper_arms_pot_translate, false,
+                   flipper_arms_pot_translate, true,
                    values_->flipper_arm_right.potentiometer_offset);
 
       // Intake
@@ -640,8 +640,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     // TODO(milind): correct intake beambreak ports once set
     sensor_reader.set_intake_beambreak_front(
-        make_unique<frc::DigitalInput>(22));
-    sensor_reader.set_intake_beambreak_back(make_unique<frc::DigitalInput>(23));
+        make_unique<frc::DigitalInput>(1));
+    sensor_reader.set_intake_beambreak_back(make_unique<frc::DigitalInput>(6));
     sensor_reader.set_turret_beambreak(make_unique<frc::DigitalInput>(7));
 
     sensor_reader.set_climber_potentiometer(make_unique<frc::AnalogInput>(7));
@@ -667,9 +667,9 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     ::aos::ShmEventLoop output_event_loop(&config.message());
     ::frc971::wpilib::DrivetrainWriter drivetrain_writer(&output_event_loop);
     drivetrain_writer.set_left_controller0(
-        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(1)), false);
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(0)), false);
     drivetrain_writer.set_right_controller0(
-        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(0)), true);
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(1)), true);
 
     SuperstructureWriter superstructure_writer(&output_event_loop);
 

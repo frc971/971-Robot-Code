@@ -39,19 +39,16 @@ namespace superstructure = y2022::control_loops::superstructure;
 
 // TODO(henry) put actually button locations here
 // TODO(milind): integrate with shooting statemachine and aimer
-const ButtonLocation kCatapultPos(3, 3);
-const ButtonLocation kFire(3, 2);
+const ButtonLocation kCatapultPos(4, 3);
+const ButtonLocation kFire(3, 4);
 const ButtonLocation kFixedTurret(3, 1);
 
-const ButtonLocation kIntakeFrontOut(4, 4);
-const ButtonLocation kIntakeBackOut(4, 3);
+const ButtonLocation kIntakeFrontOut(4, 10);
+const ButtonLocation kIntakeBackOut(4, 9);
 
 const ButtonLocation kRedLocalizerReset(3, 13);
 const ButtonLocation kBlueLocalizerReset(3, 14);
 const ButtonLocation kLocalizerReset(3, 8);
-
-const ButtonLocation kClimberUpMidRung(10, 10);
-const ButtonLocation kClimberDown(11, 11);
 
 class Reader : public ::frc971::input::ActionJoystickInput {
  public:
@@ -144,83 +141,19 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     setpoint_fetcher_.Fetch();
 
     // Default to the intakes in
-    double intake_front_pos = constants::Values::kIntakeRange().lower;
-    double intake_back_pos = constants::Values::kIntakeRange().lower;
+    double intake_front_pos = 1.57;
+    double intake_back_pos = 1.57;
+    double transfer_roller_speed = 0.0;
 
     double roller_front_speed = 0.0;
     double roller_back_speed = 0.0;
-    bool roller_speed_compensation = false;
 
-    double turret_pos = 0.0;
+    double turret_pos = 1.5;
 
-    double catapult_pos = 0.0;
+    double catapult_pos = 0.3;
+    double catapult_speed = 10.0;
     double catapult_return_pos = 0.0;
-    double catapult_speed = 0.0;
     bool fire = false;
-
-    if (data.IsPressed(kFire)) {
-      fire = true;
-    }
-
-    // Use setpoints for shooting if present
-    if (setpoint_fetcher_.get()) {
-      turret_pos = setpoint_fetcher_->turret();
-
-      catapult_pos = setpoint_fetcher_->catapult_position();
-      catapult_speed = setpoint_fetcher_->catapult_velocity();
-    } else {
-      turret_pos = 0.0;
-
-      catapult_pos = constants::Values::kDefaultCatapultShotPosition();
-      catapult_speed = constants::Values::kDefaultCatapultShotVelocity();
-    }
-
-    // Keep the catapult return position at the shot one if kCatapultPos is
-    // pressed
-    if (data.IsPressed(kCatapultPos)) {
-      catapult_return_pos = catapult_pos;
-    } else {
-      catapult_return_pos = constants::Values::kCatapultReturnPosition();
-    }
-
-    // If either intake is out by enough, always spin the rollers
-    if (superstructure_status_fetcher_.get() &&
-        superstructure_status_fetcher_->intake_front()->zeroed() &&
-        superstructure_status_fetcher_->intake_front()->position() >
-            constants::Values::kIntakeSlightlyOutPosition()) {
-      roller_front_speed =
-          std::max(roller_front_speed,
-                   constants::Values::kMinIntakeSlightlyOutRollerSpeed());
-      roller_speed_compensation = true;
-    }
-    if (superstructure_status_fetcher_.get() &&
-        superstructure_status_fetcher_->intake_back()->zeroed() &&
-        superstructure_status_fetcher_->intake_back()->position() >
-            constants::Values::kIntakeSlightlyOutPosition()) {
-      roller_back_speed =
-          std::max(roller_back_speed,
-                   constants::Values::kMinIntakeSlightlyOutRollerSpeed());
-      roller_speed_compensation = true;
-    }
-
-    // Extend the intakes and spin the rollers
-    if (data.IsPressed(kIntakeFrontOut)) {
-      intake_front_pos = constants::Values::kIntakeOutPosition();
-      roller_front_speed = constants::Values::kIntakeOutRollerSpeed();
-      roller_speed_compensation = true;
-    }
-    if (data.IsPressed(kIntakeBackOut)) {
-      intake_back_pos = constants::Values::kIntakeOutPosition();
-      roller_back_speed = constants::Values::kIntakeOutRollerSpeed();
-      roller_speed_compensation = true;
-    }
-
-    // Position climber to climb on mid rung
-    if (data.IsPressed(kClimberUpMidRung)) {
-      climber_pos_ = constants::Values::kClimberMidRungHeight();
-    } else if (data.IsPressed(kClimberDown)) {
-      climber_pos_ = 0.0;
-    }
 
     if (data.PosEdge(kLocalizerReset)) {
       ResetLocalizer();
@@ -233,6 +166,29 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       BlueResetLocalizer();
     }
 
+    // Keep the catapult return position at the shot one if kCatapultPos is
+    // pressed
+    if (data.IsPressed(kCatapultPos)) {
+      catapult_return_pos = 0.3;
+    } else {
+      catapult_return_pos = -0.90;
+    }
+
+    // Extend the intakes and spin the rollers
+    if (data.IsPressed(kIntakeFrontOut)) {
+      intake_front_pos = 0.0;
+      roller_front_speed = 12.0;
+      transfer_roller_speed = 12.0;
+    } else if (data.IsPressed(kIntakeBackOut)) {
+      roller_back_speed = 12.0;
+      intake_back_pos = 0.0;
+      transfer_roller_speed = -12.0;
+    }
+
+    if (data.IsPressed(kFire)) {
+      fire = true;
+    }
+
     {
       auto builder = superstructure_goal_sender_.MakeBuilder();
 
@@ -240,28 +196,23 @@ class Reader : public ::frc971::input::ActionJoystickInput {
           intake_front_offset =
               CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
                   *builder.fbb(), intake_front_pos,
-                  CreateProfileParameters(*builder.fbb(), 20.0, 70.0));
+                  CreateProfileParameters(*builder.fbb(), 8.0, 40.0));
       flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
           intake_back_offset =
               CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
                   *builder.fbb(), intake_back_pos,
-                  CreateProfileParameters(*builder.fbb(), 20.0, 70.0));
+                  CreateProfileParameters(*builder.fbb(), 8.0, 40.0));
 
       flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
           turret_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
               *builder.fbb(), turret_pos,
-              CreateProfileParameters(*builder.fbb(), 6.0, 20.0));
-
-      flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
-          climber_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-              *builder.fbb(), climber_pos_,
-              CreateProfileParameters(*builder.fbb(), 6.0, 20.0));
+              CreateProfileParameters(*builder.fbb(), 1.0, 10.0));
 
       flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
           catapult_return_offset =
               CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
                   *builder.fbb(), catapult_return_pos,
-                  frc971::CreateProfileParameters(*builder.fbb(), 5.0, 30.0));
+                  frc971::CreateProfileParameters(*builder.fbb(), 9.0, 40.0));
 
       superstructure::CatapultGoal::Builder catapult_builder =
           builder.MakeBuilder<superstructure::CatapultGoal>();
@@ -277,14 +228,12 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       superstructure_goal_builder.add_intake_front(intake_front_offset);
       superstructure_goal_builder.add_intake_back(intake_back_offset);
       superstructure_goal_builder.add_turret(turret_offset);
-      superstructure_goal_builder.add_climber(climber_offset);
       superstructure_goal_builder.add_catapult(catapult_offset);
       superstructure_goal_builder.add_fire(fire);
 
       superstructure_goal_builder.add_roller_speed_front(roller_front_speed);
       superstructure_goal_builder.add_roller_speed_back(roller_back_speed);
-      superstructure_goal_builder.add_roller_speed_compensation(
-          roller_speed_compensation ? 1.5 : 0.0f);
+      superstructure_goal_builder.add_transfer_roller_speed(transfer_roller_speed);
 
       if (builder.Send(superstructure_goal_builder.Finish()) !=
           aos::RawSender::Error::kOk) {
@@ -294,8 +243,6 @@ class Reader : public ::frc971::input::ActionJoystickInput {
   }
 
  private:
-  double climber_pos_ = 0.0;
-
   ::aos::Sender<superstructure::Goal> superstructure_goal_sender_;
 
   ::aos::Sender<frc971::control_loops::drivetrain::LocalizerControl>
