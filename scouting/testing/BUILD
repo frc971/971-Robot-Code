@@ -6,6 +6,7 @@ py_binary(
     ],
     data = [
         "//scouting",
+        "//scouting/db/testdb_server",
         "//scouting/scraping:test_data",
     ],
     visibility = ["//visibility:public"],

@@ -105,3 +105,6 @@ build --java_runtime_version=openjdk_9 --tool_java_runtime_version=openjdk_9
 
 # Prevent falling back to the host JDK.
 startup --noautodetect_server_javabase
+
+# Give each build action and test its own /tmp.
+build --sandbox_tmpfs_path=/tmp

@@ -63,10 +63,16 @@ def go_dependencies():
         version = "v0.0.0-20211011173535-cb28da3451f1",
     )
     maybe_override_go_dep(
+        name = "com_github_cockroachdb_apd",
+        importpath = "github.com/cockroachdb/apd",
+        sum = "h1:3LFP3629v+1aKXU5Q37mxmRxX/pIu1nijXydLShEq5I=",
+        version = "v1.1.0",
+    )
+    maybe_override_go_dep(
         name = "com_github_davecgh_go_spew",
         importpath = "github.com/davecgh/go-spew",
-        sum = "h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=",
-        version = "v1.1.0",
+        sum = "h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=",
+        version = "v1.1.1",
     )
     maybe_override_go_dep(
         name = "com_github_envoyproxy_go_control_plane",
@@ -85,6 +91,12 @@ def go_dependencies():
         importpath = "github.com/ghodss/yaml",
         sum = "h1:wQHKEahhL6wmXdzwWG11gIVCkOv05bNOh+Rxn0yngAk=",
         version = "v1.0.0",
+    )
+    maybe_override_go_dep(
+        name = "com_github_gofrs_uuid",
+        importpath = "github.com/gofrs/uuid",
+        sum = "h1:1SD/1F5pU8p29ybwgQSwpQk+mwdRrXCYuPhW6m+TnJw=",
+        version = "v4.0.0+incompatible",
     )
     maybe_override_go_dep(
         name = "com_github_golang_glog",
@@ -129,10 +141,40 @@ def go_dependencies():
         version = "v1.16.0",
     )
     maybe_override_go_dep(
+        name = "com_github_jackc_fake",
+        importpath = "github.com/jackc/fake",
+        sum = "h1:vr3AYkKovP8uR8AvSGGUK1IDqRa5lAAvEkZG1LKaCRc=",
+        version = "v0.0.0-20150926172116-812a484cc733",
+    )
+    maybe_override_go_dep(
+        name = "com_github_jackc_pgx",
+        importpath = "github.com/jackc/pgx",
+        sum = "h1:2zP5OD7kiyR3xzRYMhOcXVvkDZsImVXfj+yIyTQf3/o=",
+        version = "v3.6.2+incompatible",
+    )
+    maybe_override_go_dep(
+        name = "com_github_lib_pq",
+        importpath = "github.com/lib/pq",
+        sum = "h1:AqzbZs4ZoCBp+GtejcpCpcxM3zlSMx29dXbUSeVtJb8=",
+        version = "v1.10.2",
+    )
+    maybe_override_go_dep(
         name = "com_github_mattn_go_sqlite3",
         importpath = "github.com/mattn/go-sqlite3",
         sum = "h1:MLn+5bFRlWMGoSRmJour3CL1w/qL96mvipqpwQW/Sfk=",
         version = "v1.14.10",
+    )
+    maybe_override_go_dep(
+        name = "com_github_phst_runfiles",
+        importpath = "github.com/phst/runfiles",
+        sum = "h1:N5aMcF9W9AjW4ed+PJhA7+FjdgPa9gJ+St3mNu2tq1Q=",
+        version = "v0.0.0-20220125203201-388095b3a22d",
+    )
+    maybe_override_go_dep(
+        name = "com_github_pkg_errors",
+        importpath = "github.com/pkg/errors",
+        sum = "h1:iURUrRGxPUNPdy5/HRSm+Yj6okJ6UtLINN0Q9M4+h3I=",
+        version = "v0.8.1",
     )
     maybe_override_go_dep(
         name = "com_github_pmezard_go_difflib",
@@ -150,6 +192,12 @@ def go_dependencies():
         name = "com_github_rogpeppe_fastuuid",
         importpath = "github.com/rogpeppe/fastuuid",
         sum = "h1:Ppwyp6VYCF1nvBTXL3trRso7mXMlRrw9ooo375wvi2s=",
+        version = "v1.2.0",
+    )
+    maybe_override_go_dep(
+        name = "com_github_shopspring_decimal",
+        importpath = "github.com/shopspring/decimal",
+        sum = "h1:abSATXmQEYyShuxI4/vyW3tV1MrKAJzCZ/0zLUXYbsQ=",
         version = "v1.2.0",
     )
     maybe_override_go_dep(
@@ -221,8 +269,8 @@ def go_dependencies():
     maybe_override_go_dep(
         name = "org_golang_x_crypto",
         importpath = "golang.org/x/crypto",
-        sum = "h1:psW17arqaxU48Z5kZ0CQnkZWQJsqcURM6tKiBApRjXI=",
-        version = "v0.0.0-20200622213623-75b288015ac9",
+        sum = "h1:/UOmuWzQfxxo9UtlXMwuQU8CMgg1eZXqTRwkSQJWKOI=",
+        version = "v0.0.0-20210711020723-a769d52b0f97",
     )
     maybe_override_go_dep(
         name = "org_golang_x_exp",
@@ -239,8 +287,8 @@ def go_dependencies():
     maybe_override_go_dep(
         name = "org_golang_x_net",
         importpath = "golang.org/x/net",
-        sum = "h1:VvcQYSHwXgi7W+TpUR6A9g6Up98WAHf3f/ulnJ62IyA=",
-        version = "v0.0.0-20200822124328-c89045814202",
+        sum = "h1:qWPm9rbaAMKs8Bq/9LRpbMqxWRVUAQwMI9fVrssnTfw=",
+        version = "v0.0.0-20210226172049-e18ecbb05110",
     )
     maybe_override_go_dep(
         name = "org_golang_x_oauth2",
@@ -257,14 +305,20 @@ def go_dependencies():
     maybe_override_go_dep(
         name = "org_golang_x_sys",
         importpath = "golang.org/x/sys",
-        sum = "h1:xhmwyvizuTgC2qz7ZlMluP20uW+C3Rm0FD/WLDX8884=",
-        version = "v0.0.0-20200323222414-85ca7c5b95cd",
+        sum = "h1:SrN+KX8Art/Sf4HNj6Zcz06G7VEz+7w9tdXTPOZ7+l4=",
+        version = "v0.0.0-20210615035016-665e8c7367d1",
+    )
+    maybe_override_go_dep(
+        name = "org_golang_x_term",
+        importpath = "golang.org/x/term",
+        sum = "h1:v+OssWQX+hTHEmOBgwxdZxK4zHq3yOs8F9J7mk0PY8E=",
+        version = "v0.0.0-20201126162022-7de9c90e9dd1",
     )
     maybe_override_go_dep(
         name = "org_golang_x_text",
         importpath = "golang.org/x/text",
-        sum = "h1:g61tztE5qeGQ89tm6NTjjM9VPIm088od1l6aSorWRWg=",
-        version = "v0.3.0",
+        sum = "h1:aRYxNxv6iGQlyVaZmk6ZgYEDa+Jg18DxebPSrd6bg1M=",
+        version = "v0.3.6",
     )
     maybe_override_go_dep(
         name = "org_golang_x_tools",

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/jackc/pgx/stdlib"
 )
 
 type Database struct {
@@ -32,21 +32,22 @@ type NotesData struct {
 	Notes      []string
 }
 
-// Opens a database at the specified path. If the path refers to a non-existent
-// file, the database will be created and initialized with empty tables.
-func NewDatabase(path string) (*Database, error) {
+// Opens a database at the specified port on localhost. We currently don't
+// support connecting to databases on other hosts.
+func NewDatabase(user string, password string, port int) (*Database, error) {
 	var err error
 	database := new(Database)
-	database.DB, err = sql.Open("sqlite3", path)
-	if err != nil {
-		return nil, errors.New(fmt.Sprint("Failed to create postgres db: ", err))
-	}
 
+	psqlInfo := fmt.Sprintf("postgres://%s:%s@localhost:%d/postgres", user, password, port)
+	database.DB, err = sql.Open("pgx", psqlInfo)
+	if err != nil {
+		return nil, errors.New(fmt.Sprint("Failed to connect to postgres: ", err))
+	}
 	statement, err := database.Prepare("CREATE TABLE IF NOT EXISTS matches (" +
-		"id INTEGER PRIMARY KEY, " +
+		"id SERIAL PRIMARY KEY, " +
 		"MatchNumber INTEGER, " +
 		"Round INTEGER, " +
-		"CompLevel INTEGER, " +
+		"CompLevel VARCHAR, " +
 		"R1 INTEGER, " +
 		"R2 INTEGER, " +
 		"R3 INTEGER, " +
@@ -60,17 +61,19 @@ func NewDatabase(path string) (*Database, error) {
 		"b2ID INTEGER, " +
 		"b3ID INTEGER)")
 	if err != nil {
+		database.Close()
 		return nil, errors.New(fmt.Sprint("Failed to prepare matches table creation: ", err))
 	}
 	defer statement.Close()
 
 	_, err = statement.Exec()
 	if err != nil {
+		database.Close()
 		return nil, errors.New(fmt.Sprint("Failed to create matches table: ", err))
 	}
 
 	statement, err = database.Prepare("CREATE TABLE IF NOT EXISTS team_match_stats (" +
-		"id INTEGER PRIMARY KEY, " +
+		"id SERIAL PRIMARY KEY, " +
 		"TeamNumber INTEGER, " +
 		"MatchNumber INTEGER, " +
 		"ShotsMissed INTEGER, " +
@@ -82,17 +85,19 @@ func NewDatabase(path string) (*Database, error) {
 		"PlayedDefense INTEGER, " +
 		"Climbing INTEGER)")
 	if err != nil {
+		database.Close()
 		return nil, errors.New(fmt.Sprint("Failed to prepare stats table creation: ", err))
 	}
 	defer statement.Close()
 
 	_, err = statement.Exec()
 	if err != nil {
+		database.Close()
 		return nil, errors.New(fmt.Sprint("Failed to create team_match_stats table: ", err))
 	}
 
 	statement, err = database.Prepare("CREATE TABLE IF NOT EXISTS team_notes (" +
-		"id INTEGER PRIMARY KEY, " +
+		"id SERIAL PRIMARY KEY, " +
 		"TeamNumber INTEGER, " +
 		"Notes TEXT)")
 	if err != nil {
@@ -146,10 +151,11 @@ func (database *Database) AddToMatch(m Match) error {
 		"ShotsMissedAuto, UpperGoalAuto, LowerGoalAuto, " +
 		"PlayedDefense, Climbing) " +
 		"VALUES (" +
-		"?, ?, " +
-		"?, ?, ?, " +
-		"?, ?, ?, " +
-		"?, ?)")
+		"$1, $2, " +
+		"$3, $4, $5, " +
+		"$6, $7, $8, " +
+		"$9, $10) " +
+		"RETURNING id")
 	if err != nil {
 		return errors.New(fmt.Sprint("Failed to prepare insertion into stats database: ", err))
 	}
@@ -157,13 +163,10 @@ func (database *Database) AddToMatch(m Match) error {
 
 	var rowIds [6]int64
 	for i, TeamNumber := range []int32{m.R1, m.R2, m.R3, m.B1, m.B2, m.B3} {
-		result, err := statement.Exec(TeamNumber, m.MatchNumber, 0, 0, 0, 0, 0, 0, 0, 0)
+		row := statement.QueryRow(TeamNumber, m.MatchNumber, 0, 0, 0, 0, 0, 0, 0, 0)
+		err = row.Scan(&rowIds[i])
 		if err != nil {
 			return errors.New(fmt.Sprint("Failed to insert stats: ", err))
-		}
-		rowIds[i], err = result.LastInsertId()
-		if err != nil {
-			return errors.New(fmt.Sprint("Failed to get last insert ID: ", err))
 		}
 	}
 
@@ -172,9 +175,9 @@ func (database *Database) AddToMatch(m Match) error {
 		"R1, R2, R3, B1, B2, B3, " +
 		"r1ID, r2ID, r3ID, b1ID, b2ID, b3ID) " +
 		"VALUES (" +
-		"?, ?, ?, " +
-		"?, ?, ?, ?, ?, ?, " +
-		"?, ?, ?, ?, ?, ?)")
+		"$1, $2, $3, " +
+		"$4, $5, $6, $7, $8, $9, " +
+		"$10, $11, $12, $13, $14, $15)")
 	if err != nil {
 		return errors.New(fmt.Sprint("Failed to prepare insertion into match database: ", err))
 	}
@@ -191,11 +194,11 @@ func (database *Database) AddToMatch(m Match) error {
 
 func (database *Database) AddToStats(s Stats) error {
 	statement, err := database.Prepare("UPDATE team_match_stats SET " +
-		"TeamNumber = ?, MatchNumber = ?, " +
-		"ShotsMissed = ?, UpperGoalShots = ?, LowerGoalShots = ?, " +
-		"ShotsMissedAuto = ?, UpperGoalAuto = ?, LowerGoalAuto = ?, " +
-		"PlayedDefense = ?, Climbing = ? " +
-		"WHERE MatchNumber = ? AND TeamNumber = ?")
+		"TeamNumber = $1, MatchNumber = $2, " +
+		"ShotsMissed = $3, UpperGoalShots = $4, LowerGoalShots = $5, " +
+		"ShotsMissedAuto = $6, UpperGoalAuto = $7, LowerGoalAuto = $8, " +
+		"PlayedDefense = $9, Climbing = $10 " +
+		"WHERE MatchNumber = $11 AND TeamNumber = $12")
 	if err != nil {
 		return errors.New(fmt.Sprint("Failed to prepare stats update statement: ", err))
 	}
@@ -269,7 +272,7 @@ func (database *Database) ReturnStats() ([]Stats, error) {
 
 func (database *Database) QueryMatches(teamNumber_ int32) ([]Match, error) {
 	rows, err := database.Query("SELECT * FROM matches WHERE "+
-		"R1 = ? OR R2 = ? OR R3 = ? OR B1 = ? OR B2 = ? OR B3 = ?",
+		"R1 = $1 OR R2 = $2 OR R3 = $3 OR B1 = $4 OR B2 = $5 OR B3 = $6",
 		teamNumber_, teamNumber_, teamNumber_, teamNumber_, teamNumber_, teamNumber_)
 	if err != nil {
 		return nil, errors.New(fmt.Sprint("Failed to select from matches for team: ", err))
@@ -292,7 +295,7 @@ func (database *Database) QueryMatches(teamNumber_ int32) ([]Match, error) {
 }
 
 func (database *Database) QueryStats(teamNumber_ int) ([]Stats, error) {
-	rows, err := database.Query("SELECT * FROM team_match_stats WHERE TeamNumber = ?", teamNumber_)
+	rows, err := database.Query("SELECT * FROM team_match_stats WHERE TeamNumber = $1", teamNumber_)
 	if err != nil {
 		return nil, errors.New(fmt.Sprint("Failed to select from stats: ", err))
 	}
@@ -315,7 +318,7 @@ func (database *Database) QueryStats(teamNumber_ int) ([]Stats, error) {
 }
 
 func (database *Database) QueryNotes(TeamNumber int32) (NotesData, error) {
-	rows, err := database.Query("SELECT * FROM team_notes WHERE TeamNumber = ?", TeamNumber)
+	rows, err := database.Query("SELECT * FROM team_notes WHERE TeamNumber = $1", TeamNumber)
 	if err != nil {
 		return NotesData{}, errors.New(fmt.Sprint("Failed to select from notes: ", err))
 	}
@@ -340,7 +343,7 @@ func (database *Database) AddNotes(data NotesData) error {
 	}
 	statement, err := database.Prepare("INSERT INTO " +
 		"team_notes(TeamNumber, Notes)" +
-		"VALUES (?, ?)")
+		"VALUES ($1, $2)")
 	if err != nil {
 		return errors.New(fmt.Sprint("Failed to prepare insertion into notes table: ", err))
 	}

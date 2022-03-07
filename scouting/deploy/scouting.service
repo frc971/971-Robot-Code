@@ -9,7 +9,7 @@ Type=simple
 WorkingDirectory=/opt/frc971/scouting_server
 ExecStart=/opt/frc971/scouting_server/scouting/scouting \
     -port 8080 \
-    -database /var/frc971/scouting/scouting.db \
+    -db_config /var/frc971/scouting/db_config.json \
     -tba_config /var/frc971/scouting/tba_config.json
 Restart=always
 

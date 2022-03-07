@@ -372,7 +372,7 @@ func (handler refreshMatchListHandler) ServeHTTP(w http.ResponseWriter, req *htt
 			return
 		}
 		// Add the match to the database.
-		handler.db.AddToMatch(db.Match{
+		err = handler.db.AddToMatch(db.Match{
 			MatchNumber: int32(match.MatchNumber),
 			// TODO(phil): What does Round mean?
 			Round:     1,
@@ -384,6 +384,11 @@ func (handler refreshMatchListHandler) ServeHTTP(w http.ResponseWriter, req *htt
 			B2:        blue[1],
 			B3:        blue[2],
 		})
+		if err != nil {
+			respondWithError(w, http.StatusInternalServerError, fmt.Sprintf(
+				"Failed to add match %d to the database: %v", match.MatchNumber, err))
+			return
+		}
 	}
 
 	var response RefreshMatchListResponseT
