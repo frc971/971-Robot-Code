@@ -50,6 +50,7 @@
 #include "frc971/wpilib/sensor_reader.h"
 #include "frc971/wpilib/wpilib_robot_base.h"
 #include "y2022/constants.h"
+#include "y2022/control_loops/superstructure/led_indicator.h"
 #include "y2022/control_loops/superstructure/superstructure_can_position_generated.h"
 #include "y2022/control_loops/superstructure/superstructure_output_generated.h"
 #include "y2022/control_loops/superstructure/superstructure_position_generated.h"
@@ -701,6 +702,12 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     superstructure_writer.set_catapult_falcon_1(make_unique<::frc::TalonFX>(9));
 
     AddLoop(&output_event_loop);
+
+    // Thread 5.
+    ::aos::ShmEventLoop led_indicator_event_loop(&config.message());
+    control_loops::superstructure::LedIndicator led_indicator(
+        &led_indicator_event_loop);
+    AddLoop(&led_indicator_event_loop);
 
     RunLoops();
   }

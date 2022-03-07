@@ -234,6 +234,16 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       frc971::control_loops::CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
           *turret_loading_goal_buffer.fbb(), turret_loading_position));
 
+  const bool turret_near_goal =
+      turret_goal != nullptr &&
+      std::abs(turret_goal->unsafe_goal() - turret_.position()) <
+          kTurretGoalThreshold;
+  const bool collided = collision_avoidance_.IsCollided(
+      {.intake_front_position = intake_front_.estimated_position(),
+       .intake_back_position = intake_back_.estimated_position(),
+       .turret_position = turret_.estimated_position(),
+       .shooting = true});
+
   switch (state_) {
     case SuperstructureState::IDLE: {
       // Only change the turret's goal loading position when idle, to prevent us
@@ -335,16 +345,6 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       break;
     }
     case SuperstructureState::SHOOTING: {
-      const bool turret_near_goal =
-          turret_goal != nullptr &&
-          std::abs(turret_goal->unsafe_goal() - turret_.position()) <
-              kTurretGoalThreshold;
-      const bool collided = collision_avoidance_.IsCollided(
-          {.intake_front_position = intake_front_.estimated_position(),
-           .intake_back_position = intake_back_.estimated_position(),
-           .turret_position = turret_.estimated_position(),
-           .shooting = true});
-
       // Don't open the flippers until the turret's ready: give them as little
       // time to get bumped as possible.
       if (!turret_near_goal || collided) {
@@ -509,6 +509,8 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   status_builder.add_flippers_open(flippers_open_);
   status_builder.add_reseating_in_catapult(reseating_in_catapult_);
   status_builder.add_fire(fire_);
+  status_builder.add_ready_to_fire(state_ == SuperstructureState::LOADED &&
+                                   turret_near_goal && !collided);
   status_builder.add_state(state_);
   if (!front_intake_has_ball_ && !back_intake_has_ball_) {
     status_builder.add_intake_state(IntakeState::NO_BALL);

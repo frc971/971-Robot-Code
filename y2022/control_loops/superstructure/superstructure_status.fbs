@@ -55,6 +55,8 @@ table Status {
   flippers_open:bool (id: 12);
   // Whether the flippers failed to open and we are retrying
   reseating_in_catapult:bool (id: 13);
+  // Whether the turret is ready for firing
+  ready_to_fire:bool (id: 20);
   // Whether the catapult was told to fire,
   // meaning that the turret and flippers are ready for firing
   // and we were asked to fire. Different from fire flag in goal.

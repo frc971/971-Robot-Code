@@ -251,6 +251,7 @@ cc_binary(
         "//frc971/wpilib:wpilib_robot_base",
         "//third_party:phoenix",
         "//third_party:wpilib",
+        "//y2022/control_loops/superstructure:led_indicator_lib",
         "//y2022/control_loops/superstructure:superstructure_can_position_fbs",
         "//y2022/control_loops/superstructure:superstructure_output_fbs",
         "//y2022/control_loops/superstructure:superstructure_position_fbs",
