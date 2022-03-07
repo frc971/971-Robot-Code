@@ -50,6 +50,8 @@ import {plotClimber as plot2022Climber} from
     'org_frc971/y2022/control_loops/superstructure/climber_plotter'
 import {plotLocalizer as plot2022Localizer} from
     'org_frc971/y2022/localizer/localizer_plotter'
+import {plotVision as plot2022Vision} from
+    'org_frc971/y2022/vision/vision_plotter'
 import {plotDemo} from 'org_frc971/aos/network/www/demo_plot';
 import {plotData} from 'org_frc971/frc971/analysis/plot_data_utils';
 
@@ -116,6 +118,7 @@ const plotIndex = new Map<string, PlotState>([
   ['2020 Turret', new PlotState(plotDiv, plot2020Turret)],
   ['2020 Localizer', new PlotState(plotDiv, plot2020Localizer)],
   ['2022 Localizer', new PlotState(plotDiv, plot2022Localizer)],
+  ['2022 Vision', new PlotState(plotDiv, plot2022Vision)],
   ['2022 Catapult', new PlotState(plotDiv, plot2022Catapult)],
   ['2022 Intake Front', new PlotState(plotDiv, plot2022IntakeFront)],
   ['2022 Intake Back', new PlotState(plotDiv, plot2022IntakeBack)],

@@ -42,6 +42,9 @@ robot_downloader(
     data = [
         ":aos_config",
     ],
+    dirs = [
+        "//y2022/www:www_files",
+    ],
     start_binaries = [
         "//aos/events/logging:logger_main",
         "//aos/network:message_bridge_client",

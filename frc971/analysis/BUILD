@@ -57,6 +57,7 @@ ts_library(
         "//y2022/control_loops/superstructure:intake_plotter",
         "//y2022/control_loops/superstructure:turret_plotter",
         "//y2022/localizer:localizer_plotter",
+        "//y2022/vision:vision_plotter",
     ],
 )
 
