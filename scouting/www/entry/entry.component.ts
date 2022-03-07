@@ -15,7 +15,7 @@ type Level = 'Low'|'Medium'|'High'|'Transversal'
 @Component({
     selector: 'app-entry',
     templateUrl: './entry.ng.html',
-    styleUrls: ['./entry.component.css']
+    styleUrls: ['../common.css', './entry.component.css']
 })
 export class EntryComponent {
     section: Section = 'Team Selection';

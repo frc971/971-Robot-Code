@@ -19,10 +19,6 @@ textarea {
   height: 150px;
 }
 
-.error_message {
-  color: red;
-}
-
 button {
   touch-action: manipulation;
 }

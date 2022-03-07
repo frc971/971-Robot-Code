@@ -45,7 +45,7 @@ func main() {
 	blueAllianceConfigPtr := flag.String("tba_config", "",
 		"The path to your The Blue Alliance JSON config. "+
 			"It needs an \"api_key\" field with your TBA API key. "+
-			"Optionally, it can have a \"url\" field with the TBA API base URL.")
+			"Optionally, it can have a \"base_url\" field with the TBA API base URL.")
 	flag.Parse()
 
 	database, err := db.NewDatabase(*dbPathPtr)
