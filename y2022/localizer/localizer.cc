@@ -16,6 +16,9 @@ constexpr std::chrono::microseconds kNominalDt(500);
 constexpr double kVisionTargetX = 0.0;
 constexpr double kVisionTargetY = 0.0;
 
+// Minimum confidence to require to use a target match.
+constexpr double kMinTargetEstimateConfidence = 0.2;
+
 template <int N>
 Eigen::Matrix<double, N, 1> MakeState(std::vector<double> values) {
   CHECK_EQ(static_cast<size_t>(N), values.size());
@@ -584,6 +587,12 @@ void ModelBasedLocalizer::HandleImageMatch(
     aos::monotonic_clock::time_point sample_time,
     const y2022::vision::TargetEstimate *target, int camera_index) {
   std::optional<RejectionReason> rejection_reason;
+
+  if (target->confidence() < kMinTargetEstimateConfidence) {
+    rejection_reason = RejectionReason::LOW_CONFIDENCE;
+    TallyRejection(rejection_reason.value());
+    return;
+  }
 
   const OldPosition &state = GetStateForTime(sample_time);
   Eigen::Matrix<double, 4, 4> H_field_camera_measured;
