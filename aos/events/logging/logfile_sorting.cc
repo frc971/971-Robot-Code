@@ -1037,6 +1037,13 @@ std::map<std::string, NodeBootState> PartsSorter::ComputeNewBootConstraints() {
                   next_boot_time.oldest_local_unreliable_monotonic_timestamp;
             }
           }
+
+          // Skip anything without a time in it.
+          if (boot_time.oldest_remote_unreliable_monotonic_timestamp ==
+              aos::monotonic_clock::max_time) {
+            continue;
+          }
+
           source_boot_times.emplace_back(
               std::make_tuple(boot_time_list.first, boot_time, max_boot_time));
 
@@ -1214,6 +1221,9 @@ std::map<std::string, NodeBootState> PartsSorter::ComputeNewBootConstraints() {
         std::vector<std::pair<std::string, BootPairTimes>>
             destination_boot_times;
         for (const auto &source_boot_uuid : source_node.second) {
+          CHECK_NE(source_boot_uuid.second
+                       .oldest_remote_unreliable_monotonic_timestamp,
+                   monotonic_clock::max_time);
           destination_boot_times.emplace_back(source_boot_uuid);
         }
 
