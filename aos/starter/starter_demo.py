@@ -50,6 +50,6 @@ if __name__ == '__main__':
             destination = f"{tmpdir}/aos/events/{basename}"
             os.makedirs(os.path.dirname(destination), exist_ok=True)
             shutil.copy(config, destination)
-            shutil.copy(config, f"{tmpdir}/config.{suffix}")
+            shutil.copy(config, f"{tmpdir}/aos_config.{suffix}")
         args = [tmpdir + "/starterd"]
         subprocess.run(args, check=True, cwd=tmpdir)
