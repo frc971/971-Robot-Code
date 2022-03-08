@@ -10,13 +10,20 @@ The default hostname and IP is pi-971-1, 10.9.71.101.
 ## Build the real-time kernel using `build_kernel.sh`
 
 - Checkout the real-time kernel source code, e.g.,
-  `cd CODE_DIR`
+  `cd CODE_DIR`, where CODE_DIR is the directory containing the FRC971 code
   `git clone git@github.com:frc971/linux.git`
   `git checkout frc971-5.10-pi4-rt branch`
 
 - Run `build_kernel.sh` to compile the real-time kernel
   `cd ROOTFS_DIR` (where ROOTFS_DIR -> //frc971/raspi/rootfs)
   `./build_kernel.sh CODE_DIR/linux kernel_5.10.tar.gz`
+
+## Build the ADIS16505 overlay file (adis16505.ko)
+
+- Make sure the linux kernel source code is checked out at CODE_DIR/linux
+- cd //y2022/localizer/kernel
+- `make`
+- copy that file to this directory (//frc971/raspi/rootfs)
 
 ## Download the Raspberry Pi OS
 

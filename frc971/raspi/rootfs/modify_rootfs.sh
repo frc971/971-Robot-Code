@@ -4,6 +4,19 @@ set -xe
 
 # Full path to Raspberry Pi Bullseye disk image
 IMAGE="2022-01-28-raspios-bullseye-arm64-lite.img"
+MOD_IMAGE_NAME=`echo ${IMAGE} | sed s/.img/-frc-mods.img/`
+
+if [ ! -f "$IMAGE" ]; then
+    echo "Attempting to use already modified image"
+    if [ ! -f "$MOD_IMAGE_NAME" ]; then
+        echo "Must provide image filename."
+        echo "Couldn't find $IMAGE or $MOD_IMAGE_NAME"
+        exit 1
+    fi
+    echo "Using already modified image: ${MOD_IMAGE_NAME}"
+    IMAGE=$MOD_IMAGE_NAME
+fi
+
 # Kernel built with build_kernel.sh
 KERNEL="kernel_5.10.tar.gz"
 BOOT_PARTITION="${IMAGE}.boot_partition"
@@ -116,6 +129,7 @@ target /bin/bash /tmp/target_configure.sh
 # Add a file to show when this image was last modified and by whom
 TIMESTAMP_FILE="${PARTITION}/home/pi/.ImageModifiedDate.txt"
 echo "Date modified:"`date` > "${TIMESTAMP_FILE}"
+echo "Image file: ${IMAGE}"  >> "${TIMESTAMP_FILE}"
 echo "Git tag: "`git rev-parse HEAD` >> "${TIMESTAMP_FILE}"
 echo "User: "`whoami` >> "${TIMESTAMP_FILE}"
 
@@ -125,6 +139,7 @@ target /bin/bash --rcfile /root/.bashrc
 sudo umount -l "${PARTITION}"
 rmdir "${PARTITION}"
 
-# Move the image to a different name, to indicated we've modified it
-MOD_IMAGE_NAME=`echo ${IMAGE} | sed s/.img/-frc-mods.img/`
-mv ${IMAGE} ${MOD_IMAGE_NAME}
+# Move the image to a different name, to indicate we've modified it
+if [ ${IMAGE} != ${MOD_IMAGE_NAME} ]; then
+  mv ${IMAGE} ${MOD_IMAGE_NAME}
+fi
