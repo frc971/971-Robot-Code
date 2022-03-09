@@ -294,6 +294,9 @@ register_toolchains(
     #"//tools/cpp:cc-toolchain-cortex-m4f-k22",
     "//tools/python:python_toolchain",
     "//tools/go:noop_go_toolchain",
+    "//tools/rust:rust-toolchain-x86",
+    "//tools/rust:rust-toolchain-armv7",
+    "//tools/rust:rust-toolchain-arm64",
     "//tools/rust:rust-toolchain-roborio",
     "//tools/rust:noop_rust_toolchain",
     "//tools/ts:noop_node_toolchain",
@@ -834,9 +837,9 @@ local_repository(
     path = "third_party/rules_rust",
 )
 
-load("@rules_rust//rust:repositories.bzl", "rust_repository_set")
+load("@rules_rust//rust:repositories.bzl", "rust_toolchain_repository")
 
-rust_repository_set(
+rust_toolchain_repository(
     name = "rust",
     edition = "2021",
     exec_triple = "x86_64-unknown-linux-gnu",
@@ -845,7 +848,9 @@ rust_repository_set(
         "armv7-unknown-linux-gnueabihf",
         "aarch64-unknown-linux-gnu",
     ],
-    version = "1.56.1",
+    rustfmt_version = "1.58.1",
+    toolchain_name_prefix = "toolchain_for",
+    version = "1.58.1",
 )
 
 load("@io_bazel_rules_webtesting//web:repositories.bzl", "web_test_repositories")

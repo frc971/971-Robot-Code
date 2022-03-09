@@ -146,9 +146,8 @@ rust_library(
 
 rust_test(
     name = "hello_lib_test",
-    srcs = ["hello_lib.rs"],
+    crate = ":hello_lib",
     target_compatible_with = ["@platforms//os:linux"],
-    deps = [":hello_lib"],
 )
 
 rust_binary(
