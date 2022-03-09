@@ -106,16 +106,18 @@ struct Circle {
     return std::atan2(p_prime.y, p_prime.x);
   }
 
+  // Expects all angles to be from 0 to 2pi
+  // TODO(milind): handle wrapping
+  static inline bool AngleInRange(double theta, double theta_min,
+                                  double theta_max) {
+    return (
+        (theta >= theta_min && theta <= theta_max) ||
+        (theta_min > theta_max && (theta >= theta_min || theta <= theta_max)));
+  }
+
   inline bool InAngleRange(cv::Point2d p, double theta_min,
                            double theta_max) const {
-    const double theta = AngleOf(p);
-
-    // Handle the case if the bounds wrap around 2pi
-    const double max_diff = aos::math::NormalizeAngle(theta_max - theta);
-    const double min_diff = aos::math::NormalizeAngle(theta - theta_min);
-
-    return ((theta == theta_max) || (theta == theta_min) ||
-            (std::signbit(min_diff) == std::signbit(max_diff)));
+    return AngleInRange(AngleOf(p), theta_min, theta_max);
   }
 
  private:

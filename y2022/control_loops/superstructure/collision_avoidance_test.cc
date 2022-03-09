@@ -416,4 +416,12 @@ TEST(WrapTest, UnWrap) {
   }
 }
 
+// Test that AngleInRange works correctly for wrapped angles
+TEST(AngleTest, AngleInRange) {
+  EXPECT_TRUE(AngleInRange(0.5, 0.4, 0.6));
+  EXPECT_TRUE(AngleInRange(0, (2.0 * M_PI) - 0.2, 0.2));
+  EXPECT_FALSE(AngleInRange(0, (2.0 * M_PI) - 0.2, (2.0 * M_PI) - 0.1));
+  EXPECT_TRUE(AngleInRange(0.5, (2.0 * M_PI) - 0.1, 0.6));
+}
+
 }  // namespace y2022::control_loops::superstructure::testing

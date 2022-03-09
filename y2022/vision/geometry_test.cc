@@ -81,10 +81,7 @@ TEST(GeometryTest, Circle) {
 
     const cv::Point2d kZeroPoint = {c->center.x + c->radius, c->center.y};
     EXPECT_NEAR(c->AngleOf(kZeroPoint), 0.0, 1e-5);
-    EXPECT_TRUE(
-        c->InAngleRange(kZeroPoint, -2.1 * 2.0 * M_PI, -1.9 * 2.0 * M_PI));
-    EXPECT_TRUE(
-        c->InAngleRange(kZeroPoint, 1.9 * 2.0 * M_PI, 2.1 * 2.0 * M_PI));
+    EXPECT_TRUE(c->InAngleRange(kZeroPoint, (2.0 * M_PI) - 0.1, 0.1));
     EXPECT_EQ(c->DistanceTo(kZeroPoint), 0.0);
 
     // Test the distance to another point
@@ -100,6 +97,14 @@ TEST(GeometryTest, Circle) {
   {
     auto c = Circle::Fit({{-6.0, 3.2}, {-3.0, 2.0}, {-6.0, 3.2}});
     EXPECT_FALSE(c.has_value());
+  }
+  // Test if angles are in ranges
+  {
+    EXPECT_TRUE(Circle::AngleInRange(0.5, 0.4, 0.6));
+    EXPECT_TRUE(Circle::AngleInRange(0, (2.0 * M_PI) - 0.2, 0.2));
+    EXPECT_FALSE(
+        Circle::AngleInRange(0, (2.0 * M_PI) - 0.2, (2.0 * M_PI) - 0.1));
+    EXPECT_TRUE(Circle::AngleInRange(0.5, (2.0 * M_PI) - 0.1, 0.6));
   }
 }
 
