@@ -1,0 +1,10 @@
+/* This CSS is shared between all scouting app tabs. */
+
+.error_message {
+  color: red;
+}
+.error_message:empty, .progress_message:empty {
+  /* TODO(phil): Figure out a way to make these take up no horizontal space.
+   * I.e. It would be nice to keep the error message and the progress message
+   * aligned when they are non-empty. */
+}

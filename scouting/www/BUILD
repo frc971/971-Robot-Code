@@ -22,6 +22,7 @@ ts_library(
     visibility = ["//visibility:public"],
     deps = [
         "//scouting/www/entry",
+        "//scouting/www/import_match_list",
         "@npm//@angular/animations",
         "@npm//@angular/common",
         "@npm//@angular/core",
@@ -77,4 +78,10 @@ concatjs_devserver(
         ":zonejs_copy",
     ],
     deps = [":main_bundle_compiled"],
+)
+
+filegroup(
+    name = "common_css",
+    srcs = ["common.css"],
+    visibility = ["//scouting/www:__subpackages__"],
 )
