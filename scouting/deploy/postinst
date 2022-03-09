@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# This script runs after the frc971-scouting-server package is installed. This
+# script is responsible for making sure the webserver has everything it needs,
+# then starts the webserver.
+
+set -o errexit
+set -o nounset
+set -o pipefail
+
+# Create a directory for the database to live in.
+mkdir -p /var/frc971/scouting/
+
+# Create an empty The Blue Alliance configuration file.
+if [[ ! -e /var/frc971/scouting/tba_config.json ]]; then
+    echo '{}' > /var/frc971/scouting/tba_config.json
+fi
+
+# Make sure it's all usable by the user.
+chown -R www-data:www-data /var/frc971/scouting/
+
+systemctl daemon-reload
+systemctl enable scouting.service
+systemctl start scouting.service || :

@@ -1,0 +1,28 @@
+From d654cc64ae71366ea82ac492106e9b2c8fa532d5 Mon Sep 17 00:00:00 2001
+From: Philipp Schrader <philipp.schrader@gmail.com>
+Date: Thu, 10 Mar 2022 23:25:21 -0800
+Subject: [PATCH] Fix tree artifacts
+
+For some reason the upstream code strips the directory names from the
+`babel()` rule that we use. This patch makes it so the directory is
+not stripped.  This makes runfiles layout in the tarball match the
+runfiles layout in `bazel-bin`.
+---
+ pkg/pkg.bzl | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/pkg/pkg.bzl b/pkg/pkg.bzl
+index d7adbbc..a241b26 100644
+--- a/pkg/pkg.bzl
++++ b/pkg/pkg.bzl
+@@ -157,8 +157,8 @@ def _pkg_tar_impl(ctx):
+                     # Tree artifacts need a name, but the name is never really
+                     # the important part. The likely behavior people want is
+                     # just the content, so we strip the directory name.
+-                    dest = "/".join(d_path.split("/")[0:-1])
+-                    add_tree_artifact(content_map, dest, f, src.label)
++                    #dest = "/".join(d_path.split("/")[0:-1])
++                    add_tree_artifact(content_map, d_path, f, src.label)
+                 else:
+                     # Note: This extra remap is the bottleneck preventing this
+                     # large block from being a utility method as shown below.
