@@ -253,8 +253,9 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       const double flipper_open_position =
           (flippers_open_ ? constants::Values::kReseatFlipperPosition()
                           : constants::Values::kFlipperOpenPosition());
+
+      // TODO(milind): add left arm back once it's fixed
       flippers_open_ =
-          position->flipper_arm_left()->encoder() >= flipper_open_position &&
           position->flipper_arm_right()->encoder() >= flipper_open_position;
 
       if (flippers_open_) {

@@ -392,7 +392,7 @@ Catapult::Iterate(const Goal *unsafe_goal, const Position *position,
 
     case CatapultState::RESETTING:
       if (catapult_.controller().R(1, 0) > 0.0) {
-        catapult_.AdjustProfile(7.0, 500.0);
+        catapult_.AdjustProfile(7.0, 1000.0);
       } else {
         catapult_state_ = CatapultState::PROFILE;
       }

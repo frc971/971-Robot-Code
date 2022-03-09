@@ -41,8 +41,8 @@ M_cup = (1750 * 0.0254 * 0.04 * 2 * math.pi * (ball_diameter / 2.)**2.0)
 J_cup = M_cup * lever**2.0 + M_cup * (ball_diameter / 2.)**2.0
 
 
-J = (J_ball + J_bar + J_cup * 1.5)
-JEmpty = (J_bar + J_cup * 1.5)
+J = (0.6 * J_ball + J_bar + J_cup * 0.0)
+JEmpty = (J_bar + J_cup * 0.0)
 
 kCatapultWithBall = catapult_lib.CatapultParams(
     name='Catapult',
@@ -52,14 +52,14 @@ kCatapultWithBall = catapult_lib.CatapultParams(
     radius=lever,
     q_pos=2.8,
     q_vel=20.0,
-    kalman_q_pos=0.12,
+    kalman_q_pos=0.01,
     kalman_q_vel=1.0,
     kalman_q_voltage=1.5,
-    kalman_r_position=0.05)
+    kalman_r_position=0.001)
 
 kCatapultEmpty = catapult_lib.CatapultParams(
     name='Catapult',
-    motor=AddResistance(control_loop.NMotor(control_loop.Falcon(), 2), 0.03),
+    motor=AddResistance(control_loop.NMotor(control_loop.Falcon(), 2), 0.02),
     G=G,
     J=JEmpty,
     radius=lever,

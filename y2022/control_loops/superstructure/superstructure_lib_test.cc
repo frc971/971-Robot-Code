@@ -818,7 +818,7 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
   EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_front(), 0.0);
   EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_back(), 0.0);
 
-  RunFor(chrono::seconds(1));
+  RunFor(chrono::seconds(2));
 
   // Make sure that we are still transferring and the front transfer rollers
   // still have a ball. The turret should now be at the loading position and the
@@ -1179,8 +1179,7 @@ TEST_F(SuperstructureTest, TurretAutoAim) {
 
     goal_builder.add_auto_aim(true);
 
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   // Give it time to stabilize.

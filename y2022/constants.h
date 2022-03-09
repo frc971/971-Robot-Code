@@ -152,8 +152,8 @@ struct Values {
   }
 
   // Flipper arms
-  static constexpr double kFlipperArmSupplyCurrentLimit() { return 30.0; }
-  static constexpr double kFlipperArmStatorCurrentLimit() { return 40.0; }
+  static constexpr double kFlipperArmSupplyCurrentLimit() { return 40.0; }
+  static constexpr double kFlipperArmStatorCurrentLimit() { return 60.0; }
 
   // Voltage to open the flippers for firing
   static constexpr double kFlipperOpenVoltage() { return 3.0; }
@@ -175,7 +175,7 @@ struct Values {
   // If the flippers took more than this amount of time to open for firing,
   // reseat the ball
   static constexpr std::chrono::milliseconds kFlipperOpeningTimeout() {
-    return std::chrono::milliseconds(250);
+    return std::chrono::milliseconds(1000);
   }
   // Don't use flipper velocity readings more than this amount of time in the
   // past
@@ -220,7 +220,7 @@ struct Values {
     return ::frc971::constants::Range{
         .lower_hard = -1.0,
         .upper_hard = 2.0,
-        .lower = -0.90,
+        .lower = -0.91,
         .upper = 1.57,
     };
   }

@@ -39,9 +39,10 @@ namespace superstructure = y2022::control_loops::superstructure;
 
 // TODO(henry) put actually button locations here
 // TODO(milind): integrate with shooting statemachine and aimer
+#if 0
 const ButtonLocation kCatapultPos(4, 3);
 const ButtonLocation kFire(3, 4);
-const ButtonLocation kFixedTurret(3, 1);
+const ButtonLocation kTurret(4, 15);
 
 const ButtonLocation kIntakeFrontOut(4, 10);
 const ButtonLocation kIntakeBackOut(4, 9);
@@ -49,6 +50,19 @@ const ButtonLocation kIntakeBackOut(4, 9);
 const ButtonLocation kRedLocalizerReset(3, 13);
 const ButtonLocation kBlueLocalizerReset(3, 14);
 const ButtonLocation kLocalizerReset(3, 8);
+#else
+
+const ButtonLocation kCatapultPos(4, 3);
+const ButtonLocation kFire(4, 1);
+const ButtonLocation kTurret(4, 15);
+
+const ButtonLocation kIntakeFrontOut(4, 10);
+const ButtonLocation kIntakeBackOut(4, 9);
+
+const ButtonLocation kRedLocalizerReset(3, 13);
+const ButtonLocation kBlueLocalizerReset(3, 14);
+const ButtonLocation kLocalizerReset(3, 8);
+#endif
 
 class Reader : public ::frc971::input::ActionJoystickInput {
  public:
@@ -141,17 +155,17 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     setpoint_fetcher_.Fetch();
 
     // Default to the intakes in
-    double intake_front_pos = 1.57;
-    double intake_back_pos = 1.57;
+    double intake_front_pos = 1.47;
+    double intake_back_pos = 1.47;
     double transfer_roller_speed = 0.0;
 
     double roller_front_speed = 0.0;
     double roller_back_speed = 0.0;
 
-    double turret_pos = 1.5;
+    double turret_pos = 0.0;
 
-    double catapult_pos = 0.3;
-    double catapult_speed = 10.0;
+    double catapult_pos = 0.03;
+    double catapult_speed = 18.0;
     double catapult_return_pos = 0.0;
     bool fire = false;
 
@@ -166,12 +180,18 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       BlueResetLocalizer();
     }
 
+    if (data.IsPressed(kTurret)) {
+      turret_pos = -1.5;
+    } else {
+      turret_pos = 0.0;
+    }
+
     // Keep the catapult return position at the shot one if kCatapultPos is
     // pressed
     if (data.IsPressed(kCatapultPos)) {
       catapult_return_pos = 0.3;
     } else {
-      catapult_return_pos = -0.90;
+      catapult_return_pos = -0.908;
     }
 
     // Extend the intakes and spin the rollers
@@ -212,7 +232,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
           catapult_return_offset =
               CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
                   *builder.fbb(), catapult_return_pos,
-                  frc971::CreateProfileParameters(*builder.fbb(), 9.0, 40.0));
+                  frc971::CreateProfileParameters(*builder.fbb(), 9.0, 50.0));
 
       superstructure::CatapultGoal::Builder catapult_builder =
           builder.MakeBuilder<superstructure::CatapultGoal>();
