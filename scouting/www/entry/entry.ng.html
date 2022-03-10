@@ -44,26 +44,9 @@
             </form>
         </div>
         <div class="row justify-content-center">
-            <span class="col-4 center-column">
-                <h4>Upper</h4>
-                <button (click)="adjustAutoUpper(1)" class="btn btn-secondary btn-block">+</button>
-                <h3>{{autoUpperShotsMade}}</h3>
-                <button (click)="adjustAutoUpper(-1)" class="btn btn-secondary btn-block">-</button>
-            </span>
-
-            <span class="col-4 center-column">
-                <h4>Lower</h4>
-                <button (click)="adjustAutoLower(1)" class="btn btn-secondary btn-block">+</button>
-                <h3>{{autoLowerShotsMade}}</h3>
-                <button (click)="adjustAutoLower(-1)" class="btn btn-secondary btn-block">-</button>
-            </span>
-
-            <span class="col-4 center-column">
-                <h4>Missed</h4>
-                <button (click)="adjustAutoMissed(1)" class="btn btn-secondary btn-block">+</button>
-                <h3>{{autoShotsMissed}}</h3>
-                <button (click)="adjustAutoMissed(-1)" class="btn btn-secondary btn-block">-</button>
-            </span>
+            <frc971-counter-button class="col-4" [(value)]="autoUpperShotsMade">Upper</frc971-counter-button>
+            <frc971-counter-button class="col-4" [(value)]="autoLowerShotsMade">Lower</frc971-counter-button>
+            <frc971-counter-button class="col-4" [(value)]="autoShotsMissed">Missed</frc971-counter-button>
         </div>
         <div class="buttons">
           <!-- hack to right align the next button -->
@@ -74,26 +57,9 @@
 
     <div *ngSwitchCase="'TeleOp'" id="teleop" class="container-fluid">
         <div class="row justify-content-center">
-            <span class="col-4 center-column">
-                <h4>Upper</h4>
-                <button (click)="adjustTeleUpper(1)" class="btn btn-secondary btn-block">+</button>
-                <h3>{{teleUpperShotsMade}}</h3>
-                <button (click)="adjustTeleUpper(-1)" class="btn btn-secondary btn-block">-</button>
-            </span>
-
-            <span class="col-4 center-column">
-                <h4>Lower</h4>
-                <button (click)="adjustTeleLower(1)" class="btn btn-secondary btn-block">+</button>
-                <h3>{{teleLowerShotsMade}}</h3>
-                <button (click)="adjustTeleLower(-1)" class="btn btn-secondary btn-block">-</button>
-            </span>
-
-            <span class="col-4 center-column">
-                <h4>Missed</h4>
-                <button (click)="adjustTeleMissed(1)" class="btn btn-secondary btn-block">+</button>
-                <h3>{{teleShotsMissed}}</h3>
-                <button (click)="adjustTeleMissed(-1)" class="btn btn-secondary btn-block">-</button>
-            </span>
+            <frc971-counter-button class="col-4" [(value)]="teleUpperShotsMade">Upper</frc971-counter-button>
+            <frc971-counter-button class="col-4" [(value)]="teleLowerShotsMade">Lower</frc971-counter-button>
+            <frc971-counter-button class="col-4" [(value)]="teleShotsMissed">Missed</frc971-counter-button>
         </div>
         <div class="buttons">
           <button class="btn btn-primary" (click)="prevSection()">Back</button>

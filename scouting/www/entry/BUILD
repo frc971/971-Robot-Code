@@ -19,6 +19,7 @@ ts_library(
         "//scouting/webserver/requests/messages:error_response_ts_fbs",
         "//scouting/webserver/requests/messages:submit_data_scouting_response_ts_fbs",
         "//scouting/webserver/requests/messages:submit_data_scouting_ts_fbs",
+        "//scouting/www/counter_button",
         "@com_github_google_flatbuffers//ts:flatbuffers_ts",
         "@npm//@angular/common",
         "@npm//@angular/core",

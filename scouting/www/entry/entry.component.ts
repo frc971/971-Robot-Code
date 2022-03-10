@@ -100,30 +100,6 @@ export class EntryComponent {
       }
     }
 
-    adjustAutoUpper(by: number) {
-        this.autoUpperShotsMade = Math.max(0, this.autoUpperShotsMade + by);
-    }
-
-    adjustAutoLower(by: number) {
-        this.autoLowerShotsMade = Math.max(0, this.autoLowerShotsMade + by);
-    }
-
-    adjustAutoMissed(by: number) {
-        this.autoShotsMissed = Math.max(0, this.autoShotsMissed + by);
-    }
-
-    adjustTeleUpper(by: number) {
-        this.teleUpperShotsMade = Math.max(0, this.teleUpperShotsMade + by);
-    }
-
-    adjustTeleLower(by: number) {
-        this.teleLowerShotsMade = Math.max(0, this.teleLowerShotsMade + by);
-    }
-
-    adjustTeleMissed(by: number) {
-        this.teleShotsMissed = Math.max(0, this.teleShotsMissed + by);
-    }
-
     async submitDataScouting() {
         const builder = new flatbuffer_builder.Builder() as unknown as flatbuffers.Builder;
         SubmitDataScouting.startSubmitDataScouting(builder);
