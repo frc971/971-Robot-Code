@@ -1056,9 +1056,9 @@ TEST_F(SuperstructureTest, RunIntakes) {
 TEST_F(SuperstructureTest, ShootCatapult) {
   SetEnabled(true);
   superstructure_plant_.intake_front()->InitializePosition(
-      constants::Values::kIntakeRange().upper);
+      constants::Values::kIntakeRange().lower);
   superstructure_plant_.intake_back()->InitializePosition(
-      constants::Values::kIntakeRange().upper);
+      constants::Values::kIntakeRange().lower);
   superstructure_plant_.turret()->InitializePosition(
       constants::Values::kTurretFrontIntakePos());
 
@@ -1179,8 +1179,7 @@ TEST_F(SuperstructureTest, TurretAutoAim) {
 
     goal_builder.add_auto_aim(true);
 
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   // Give it time to stabilize.
