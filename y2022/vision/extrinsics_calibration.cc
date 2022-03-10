@@ -11,20 +11,22 @@
 #include "frc971/control_loops/quaternion_utils.h"
 #include "frc971/vision/vision_generated.h"
 #include "frc971/wpilib/imu_batch_generated.h"
-#include "y2020/control_loops/superstructure/superstructure_status_generated.h"
+#include "y2022/control_loops/superstructure/superstructure_status_generated.h"
 #include "y2020/vision/sift/sift_generated.h"
 #include "y2020/vision/sift/sift_training_generated.h"
 #include "y2020/vision/tools/python_code/sift_training_data.h"
 
 DEFINE_string(pi, "pi-7971-2", "Pi name to calibrate.");
 DEFINE_bool(plot, false, "Whether to plot the resulting data.");
-DEFINE_bool(turret, false, "If true, the camera is on the turret");
 
 namespace frc971 {
 namespace vision {
 namespace chrono = std::chrono;
 using aos::distributed_clock;
 using aos::monotonic_clock;
+
+// TODO(austin): Source of IMU data?  Is it the same?
+// TODO(austin): Intrinsics data?
 
 void Main(int argc, char **argv) {
   CalibrationData data;
@@ -61,20 +63,18 @@ void Main(int argc, char **argv) {
     Calibration extractor(&factory, pi_event_loop.get(),
                           roborio_event_loop.get(), FLAGS_pi, &data);
 
-    if (FLAGS_turret) {
-      aos::NodeEventLoopFactory *roborio_factory =
-          factory.GetNodeEventLoopFactory(roborio_node->name()->string_view());
-      roborio_event_loop->MakeWatcher(
-          "/superstructure",
-          [roborio_factory, roborio_event_loop = roborio_event_loop.get(),
-           &data](const y2020::control_loops::superstructure::Status &status) {
-            data.AddTurret(
-                roborio_factory->ToDistributedClock(
-                    roborio_event_loop->context().monotonic_event_time),
-                Eigen::Vector2d(status.turret()->position(),
-                                status.turret()->velocity()));
-          });
-    }
+    aos::NodeEventLoopFactory *roborio_factory =
+        factory.GetNodeEventLoopFactory(roborio_node->name()->string_view());
+    roborio_event_loop->MakeWatcher(
+        "/superstructure",
+        [roborio_factory, roborio_event_loop = roborio_event_loop.get(),
+         &data](const y2022::control_loops::superstructure::Status &status) {
+          data.AddTurret(
+              roborio_factory->ToDistributedClock(
+                  roborio_event_loop->context().monotonic_event_time),
+              Eigen::Vector2d(status.turret()->position(),
+                              status.turret()->velocity()));
+        });
 
     factory.Run();
 
