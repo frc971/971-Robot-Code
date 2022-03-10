@@ -130,9 +130,20 @@ Values MakeValues(uint16_t team) {
   catapult_params->zeroing_constants.moving_buffer_size = 20;
   catapult_params->zeroing_constants.allowable_encoder_error = 0.9;
 
+  // Interpolation table for comp and practice robots
+  r.shot_interpolation_table = InterpolationTable<Values::ShotParams>({
+      {2, {0.08, 8.0}},
+      {5, {0.6, 10.0}},
+  });
+
   switch (team) {
     // A set of constants for tests.
     case 1:
+      r.shot_interpolation_table = InterpolationTable<Values::ShotParams>({
+          {2, {0.08, 8.0}},
+          {5, {0.6, 10.0}},
+      });
+
       climber->potentiometer_offset = 0.0;
       intake_front->potentiometer_offset = 0.0;
       intake_front->subsystem_params.zeroing_constants
@@ -193,6 +204,11 @@ Values MakeValues(uint16_t team) {
       break;
 
     case kCodingRobotTeamNumber:
+      r.shot_interpolation_table = InterpolationTable<Values::ShotParams>({
+          {2, {0.08, 8.0}},
+          {5, {0.6, 10.0}},
+      });
+
       climber->potentiometer_offset = 0.0;
       intake_front->potentiometer_offset = 0.0;
       intake_front->subsystem_params.zeroing_constants

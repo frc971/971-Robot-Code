@@ -1254,6 +1254,42 @@ TEST_F(SuperstructureTest, TurretAutoAim) {
                   superstructure_status_fetcher_->aimer()->turret_velocity());
 }
 
+TEST_F(SuperstructureTest, InterpolationTableTest) {
+  SetEnabled(true);
+  WaitUntilZeroed();
+
+  constexpr double kDistance = 3.0;
+
+  SendDrivetrainStatus(0.0, {0.0, kDistance}, 0.0);
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_auto_aim(true);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  // Give it time to stabilize.
+  RunFor(chrono::seconds(2));
+
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+
+  EXPECT_NEAR(superstructure_status_fetcher_->aimer()->target_distance(),
+              kDistance, 0.01);
+
+  constants::Values::ShotParams shot_params;
+  EXPECT_TRUE(
+      values_->shot_interpolation_table.GetInRange(kDistance, &shot_params));
+
+  EXPECT_EQ(superstructure_status_fetcher_->shot_velocity(),
+            shot_params.shot_velocity);
+  EXPECT_EQ(superstructure_status_fetcher_->shot_position(),
+            shot_params.shot_angle);
+}
+
 }  // namespace testing
 }  // namespace superstructure
 }  // namespace control_loops

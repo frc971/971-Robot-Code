@@ -1,6 +1,7 @@
 #include "y2022/control_loops/superstructure/superstructure.h"
 
 #include "aos/events/event_loop.h"
+#include "aos/flatbuffer_merge.h"
 #include "y2022/control_loops/superstructure/collision_avoidance.h"
 
 namespace y2022 {
@@ -48,6 +49,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   aos::FlatbufferFixedAllocatorArray<
       frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal, 64>
       turret_goal_buffer;
+  aos::FlatbufferFixedAllocatorArray<CatapultGoal, 64> catapult_goal_buffer;
 
   const aos::monotonic_clock::time_point timestamp =
       event_loop()->context().monotonic_event_time;
@@ -64,6 +66,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
   const frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal
       *turret_goal = nullptr;
+  const CatapultGoal *catapult_goal = nullptr;
   double roller_speed_compensated_front = 0.0;
   double roller_speed_compensated_back = 0.0;
   double transfer_roller_speed_front = 0.0;
@@ -84,6 +87,31 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
     turret_goal =
         unsafe_goal->auto_aim() ? auto_aim_goal : unsafe_goal->turret();
+
+    catapult_goal = unsafe_goal->catapult();
+
+    constants::Values::ShotParams shot_params;
+    const double distance_to_goal = aimer_.DistanceToGoal();
+    if (unsafe_goal->auto_aim() && values_->shot_interpolation_table.GetInRange(
+                                       distance_to_goal, &shot_params)) {
+      std::optional<flatbuffers::Offset<
+          frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal>>
+          return_position_offset;
+      if (unsafe_goal != nullptr && unsafe_goal->has_catapult() &&
+          unsafe_goal->catapult()->has_return_position()) {
+        return_position_offset = {
+            aos::CopyFlatBuffer(unsafe_goal->catapult()->return_position(),
+                                catapult_goal_buffer.fbb())};
+      }
+      CatapultGoal::Builder builder(*catapult_goal_buffer.fbb());
+      builder.add_shot_position(shot_params.shot_angle);
+      builder.add_shot_velocity(shot_params.shot_velocity);
+      if (return_position_offset.has_value()) {
+        builder.add_return_position(return_position_offset.value());
+      }
+      catapult_goal_buffer.Finish(builder.Finish());
+      catapult_goal = &catapult_goal_buffer.message();
+    }
   }
 
   // Superstructure state machine:
@@ -395,7 +423,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   // flippers
   const flatbuffers::Offset<PotAndAbsoluteEncoderProfiledJointStatus>
       catapult_status_offset = catapult_.Iterate(
-          unsafe_goal, position, robot_state().voltage_battery(),
+          catapult_goal, position, robot_state().voltage_battery(),
           output != nullptr && !catapult_.estopped()
               ? &(output_struct.catapult_voltage)
               : nullptr,
@@ -459,6 +487,10 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   status_builder.add_solve_time(catapult_.solve_time());
   status_builder.add_shot_count(catapult_.shot_count());
   status_builder.add_mpc_active(catapult_.mpc_active());
+  if (catapult_goal != nullptr) {
+    status_builder.add_shot_position(catapult_goal->shot_position());
+    status_builder.add_shot_velocity(catapult_goal->shot_velocity());
+  }
 
   status_builder.add_flippers_open(flippers_open_);
   status_builder.add_reseating_in_catapult(reseating_in_catapult_);
