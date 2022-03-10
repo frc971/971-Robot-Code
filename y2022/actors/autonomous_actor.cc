@@ -214,7 +214,10 @@ void AutonomousActor::SendSuperstructureGoal() {
   superstructure_builder.add_roller_speed_compensation(1.5);
   superstructure_builder.add_roller_speed_front(roller_front_voltage_);
   superstructure_builder.add_roller_speed_back(roller_back_voltage_);
-  superstructure_builder.add_transfer_roller_speed(transfer_roller_voltage_);
+  superstructure_builder.add_transfer_roller_speed_front(
+      transfer_roller_front_voltage_);
+  superstructure_builder.add_transfer_roller_speed_back(
+      transfer_roller_back_voltage_);
   superstructure_builder.add_catapult(catapult_goal_offset);
   superstructure_builder.add_fire(fire_);
   superstructure_builder.add_auto_aim(true);
@@ -228,28 +231,32 @@ void AutonomousActor::SendSuperstructureGoal() {
 void AutonomousActor::ExtendFrontIntake() {
   set_intake_front_goal(kExtendIntakeGoal);
   set_roller_front_voltage(kRollerVoltage);
-  set_transfer_roller_voltage(kRollerVoltage);
+  set_transfer_roller_front_voltage(kRollerVoltage);
+  set_transfer_roller_back_voltage(-kRollerVoltage);
   SendSuperstructureGoal();
 }
 
 void AutonomousActor::RetractFrontIntake() {
   set_intake_front_goal(kRetractIntakeGoal);
   set_roller_front_voltage(kRollerVoltage);
-  set_transfer_roller_voltage(0.0);
+  set_transfer_roller_front_voltage(0.0);
+  set_transfer_roller_back_voltage(0.0);
   SendSuperstructureGoal();
 }
 
 void AutonomousActor::ExtendBackIntake() {
   set_intake_back_goal(kExtendIntakeGoal);
   set_roller_back_voltage(kRollerVoltage);
-  set_transfer_roller_voltage(-kRollerVoltage);
+  set_transfer_roller_back_voltage(kRollerVoltage);
+  set_transfer_roller_front_voltage(-kRollerVoltage);
   SendSuperstructureGoal();
 }
 
 void AutonomousActor::RetractBackIntake() {
   set_intake_back_goal(kRetractIntakeGoal);
   set_roller_back_voltage(kRollerVoltage);
-  set_transfer_roller_voltage(0.0);
+  set_transfer_roller_front_voltage(0.0);
+  set_transfer_roller_back_voltage(0.0);
   SendSuperstructureGoal();
 }
 

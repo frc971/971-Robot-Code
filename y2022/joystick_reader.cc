@@ -157,7 +157,8 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     // Default to the intakes in
     double intake_front_pos = 1.47;
     double intake_back_pos = 1.47;
-    double transfer_roller_speed = 0.0;
+    double transfer_roller_front_speed = 0.0;
+    double transfer_roller_back_speed = 0.0;
 
     double roller_front_speed = 0.0;
     double roller_back_speed = 0.0;
@@ -198,11 +199,13 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     if (data.IsPressed(kIntakeFrontOut)) {
       intake_front_pos = 0.0;
       roller_front_speed = 12.0;
-      transfer_roller_speed = 12.0;
+      transfer_roller_front_speed = 12.0;
+      transfer_roller_back_speed = -transfer_roller_front_speed;
     } else if (data.IsPressed(kIntakeBackOut)) {
       roller_back_speed = 12.0;
       intake_back_pos = 0.0;
-      transfer_roller_speed = -12.0;
+      transfer_roller_back_speed = 12.0;
+      transfer_roller_front_speed = -transfer_roller_back_speed;
     }
 
     if (data.IsPressed(kFire)) {
@@ -253,7 +256,10 @@ class Reader : public ::frc971::input::ActionJoystickInput {
 
       superstructure_goal_builder.add_roller_speed_front(roller_front_speed);
       superstructure_goal_builder.add_roller_speed_back(roller_back_speed);
-      superstructure_goal_builder.add_transfer_roller_speed(transfer_roller_speed);
+      superstructure_goal_builder.add_transfer_roller_speed_front(
+          transfer_roller_front_speed);
+      superstructure_goal_builder.add_transfer_roller_speed_back(
+          transfer_roller_front_speed);
 
       if (builder.Send(superstructure_goal_builder.Finish()) !=
           aos::RawSender::Error::kOk) {

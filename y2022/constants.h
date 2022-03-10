@@ -108,18 +108,11 @@ struct Values {
   static constexpr double kIntakeRollerStatorCurrentLimit() { return 60.0; }
 
   // Transfer rollers
-  // Positive voltage means front transfer rollers pull in and back spits out,
-  // and vice versa
-  static constexpr double kTransferRollerFrontVoltage() { return 12.0; }
-  static constexpr double kTransferRollerBackVoltage() {
-    return -kTransferRollerFrontVoltage();
-  }
+  static constexpr double kTransferRollerVoltage() { return 12.0; }
 
   // Voltage to wiggle the transfer rollers and keep a ball in.
-  static constexpr double kTransferRollerFrontWiggleVoltage() { return 3.0; }
-  static constexpr double kTransferRollerBackWiggleVoltage() {
-    return -kTransferRollerFrontWiggleVoltage();
-  }
+  static constexpr double kTransferRollerWiggleVoltage() { return 3.0; }
+
   // Minimum roller speed when the intake is slightly out
   static constexpr double kMinIntakeSlightlyOutRollerSpeed() { return 6.0; }
   // Roller speeds when intake is out
