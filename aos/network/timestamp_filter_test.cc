@@ -854,22 +854,28 @@ TEST_F(NoncausalTimestampFilterTest, InterpolateOffset) {
       NoncausalTimestampFilter::ExtrapolateOffset(std::make_tuple(t1, o1), t1),
       o1);
 
-  // With small offset (<1/kMaxVelocity() sec), low precision can't
-  // tell the difference since the delta is a fraction of a nanosecond
+  // Test that we round correctly when extrapolating.
+  EXPECT_EQ(NoncausalTimestampFilter::ExtrapolateOffset(
+                std::make_tuple(t1, o1), t1 + chrono::nanoseconds(-400)),
+            o1);
   EXPECT_EQ(NoncausalTimestampFilter::ExtrapolateOffset(
                 std::make_tuple(t1, o1), t1 + chrono::nanoseconds(-800)),
+            o1 - chrono::nanoseconds(1));
+
+  EXPECT_EQ(NoncausalTimestampFilter::ExtrapolateOffset(
+                std::make_tuple(t1, o1), t1 + chrono::nanoseconds(400)),
             o1);
 
   EXPECT_EQ(NoncausalTimestampFilter::ExtrapolateOffset(
-                std::make_tuple(t1, o1), e + chrono::nanoseconds(1000)),
-            o1 - chrono::nanoseconds(
-                     int64_t((t1 - (e + chrono::nanoseconds(1000))).count() *
-                             kMaxVelocity())));
+                std::make_tuple(t1, o1), t1 + chrono::nanoseconds(800)),
+            o1 - chrono::nanoseconds(1));
+  EXPECT_EQ(NoncausalTimestampFilter::ExtrapolateOffset(
+                std::make_tuple(t1, o1), t1 + chrono::nanoseconds(1000)),
+            o1 - chrono::nanoseconds(1));
 
   EXPECT_EQ(NoncausalTimestampFilter::ExtrapolateOffset(
                 std::make_tuple(t1, o1), t1 + chrono::nanoseconds(-9000)),
-            o1 + chrono::nanoseconds(int64_t(
-                     chrono::nanoseconds(-9000).count() * kMaxVelocity())));
+            o1 - chrono::nanoseconds(9));
 
   // Test base + double version
   EXPECT_EQ(NoncausalTimestampFilter::ExtrapolateOffset(std::make_tuple(t1, o1),

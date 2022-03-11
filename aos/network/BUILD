@@ -507,6 +507,7 @@ cc_library(
         "//aos:configuration",
         "//aos/events/logging:boot_timestamp",
         "//aos/time",
+        "@com_google_absl//absl/numeric:int128",
         "@com_google_absl//absl/strings",
     ],
 )
