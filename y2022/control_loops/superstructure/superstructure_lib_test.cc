@@ -1199,6 +1199,25 @@ TEST_F(SuperstructureTest, ShootCatapult) {
   EXPECT_EQ(superstructure_status_fetcher_->state(), SuperstructureState::IDLE);
 }
 
+// Test that we are able to signal that the ball was preloaded
+TEST_F(SuperstructureTest, Preloaded) {
+  SetEnabled(true);
+  WaitUntilZeroed();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_preloaded(true);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(dt());
+
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+  EXPECT_EQ(superstructure_status_fetcher_->state(),
+            SuperstructureState::LOADED);
+}
+
 // Tests that the turret switches to auto-aiming when we set auto_aim to
 // true.
 TEST_F(SuperstructureTest, TurretAutoAim) {

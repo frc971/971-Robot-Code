@@ -180,6 +180,34 @@ void AutonomousActor::SplineAuto() {
   if (!test_spline_->WaitForSplineDistanceRemaining(0.02)) return;
 }
 
+bool AutonomousActor::WaitForPreloaded() {
+  set_preloaded(true);
+  SendSuperstructureGoal();
+
+  ::aos::time::PhasedLoop phased_loop(frc971::controls::kLoopFrequency,
+                                      event_loop()->monotonic_now(),
+                                      ActorBase::kLoopOffset);
+
+  bool loaded = false;
+  while (!loaded) {
+    if (ShouldCancel()) {
+      return false;
+    }
+
+    phased_loop.SleepUntilNext();
+    superstructure_status_fetcher_.Fetch();
+    CHECK(superstructure_status_fetcher_.get() != nullptr);
+
+    loaded = (superstructure_status_fetcher_->state() ==
+              control_loops::superstructure::SuperstructureState::LOADED);
+  }
+
+  set_preloaded(false);
+  SendSuperstructureGoal();
+
+  return true;
+}
+
 void AutonomousActor::SendSuperstructureGoal() {
   auto builder = superstructure_goal_sender_.MakeBuilder();
 
@@ -220,6 +248,7 @@ void AutonomousActor::SendSuperstructureGoal() {
       transfer_roller_back_voltage_);
   superstructure_builder.add_catapult(catapult_goal_offset);
   superstructure_builder.add_fire(fire_);
+  superstructure_builder.add_preloaded(preloaded_);
   superstructure_builder.add_auto_aim(true);
 
   if (builder.Send(superstructure_builder.Finish()) !=

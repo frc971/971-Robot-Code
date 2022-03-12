@@ -48,6 +48,9 @@ table Goal {
 
   // If true, auto-track the turret to point at the goal.
   auto_aim:bool (id: 11);
+
+  // If true, we started with the ball loaded and should proceed to that state.
+  preloaded:bool (id: 12);
 }
 
 

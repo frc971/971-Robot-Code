@@ -86,7 +86,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
         unsafe_goal->auto_aim() ? auto_aim_goal : unsafe_goal->turret();
   }
 
-  // Supersturcture state machine:
+  // Superstructure state machine:
   // 1. IDLE: Wait until an intake beambreak is triggerred, meaning that a ball
   // is being intaked. This means that the transfer rollers have a ball. If
   // we've been waiting here for too long without any beambreak triggered, the
@@ -112,6 +112,22 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   // catapult, so estop it. Otherwise, wait until the catapult shoots a ball and
   // goes back to its return position. We have now finished the shot, so return
   // to IDLE.
+
+  // If we started off preloaded, skip to the loaded state.
+  // Make sure we weren't already there just in case.
+  if (unsafe_goal != nullptr && unsafe_goal->preloaded()) {
+    switch (state_) {
+      case SuperstructureState::IDLE:
+      case SuperstructureState::TRANSFERRING:
+      case SuperstructureState::LOADING:
+        state_ = SuperstructureState::LOADED;
+        loading_timer_ = timestamp;
+        break;
+      case SuperstructureState::LOADED:
+      case SuperstructureState::SHOOTING:
+        break;
+    }
+  }
 
   const bool is_spitting = ((intake_state_ == IntakeState::INTAKE_FRONT_BALL &&
                              transfer_roller_speed_front < 0) ||
