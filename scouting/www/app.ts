@@ -10,6 +10,15 @@ type Tab = 'Entry'|'ImportMatchList';
 export class App {
   tab: Tab = 'Entry';
 
+  constructor() {
+    window.addEventListener('beforeunload', (e) => {
+      // Based on https://developer.mozilla.org/en-US/docs/Web/API/WindowEventHandlers/onbeforeunload#example
+      // This combination ensures a dialog will be shown on most browsers.
+      e.preventDefault();
+      e.returnValue = '';
+    });
+  }
+
   tabIs(tab: Tab) {
     return this.tab == tab;
   }
