@@ -518,7 +518,7 @@ class SuperstructureWriter
     WriteCan(output.roller_voltage_back(), roller_falcon_back_.get());
     WritePwm(output.transfer_roller_voltage_front(),
              transfer_roller_victor_front_.get());
-    WritePwm(output.transfer_roller_voltage_back(),
+    WritePwm(-output.transfer_roller_voltage_back(),
              transfer_roller_victor_back_.get());
 
     WriteCan(-output.flipper_arms_voltage(), flipper_arms_falcon_.get());

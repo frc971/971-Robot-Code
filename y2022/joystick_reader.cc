@@ -268,7 +268,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       superstructure_goal_builder.add_transfer_roller_speed_front(
           transfer_roller_front_speed);
       superstructure_goal_builder.add_transfer_roller_speed_back(
-          transfer_roller_front_speed);
+          transfer_roller_back_speed);
 
       if (builder.Send(superstructure_goal_builder.Finish()) !=
           aos::RawSender::Error::kOk) {
