@@ -184,6 +184,20 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
                ? constants::Values::kTurretFrontIntakePos()
                : constants::Values::kTurretBackIntakePos());
 
+      // Turn to the loading position as close to the current position as
+      // possible
+      // Strategy is copied from frc971/control_loops/aiming/aiming.cc
+      turret_loading_position =
+          turret_.estimated_position() +
+          aos::math::NormalizeAngle(turret_loading_position -
+                                    turret_.estimated_position());
+      // if out of range, reset back to within +/- pi of zero.
+      if (turret_loading_position > constants::Values::kTurretRange().upper ||
+          turret_loading_position < constants::Values::kTurretRange().lower) {
+        turret_loading_position =
+            aos::math::NormalizeAngle(turret_loading_position);
+      }
+
       turret_goal_buffer.Finish(
           frc971::control_loops::
               CreateStaticZeroingSingleDOFProfiledSubsystemGoal(

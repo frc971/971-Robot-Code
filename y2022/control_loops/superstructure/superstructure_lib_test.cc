@@ -1003,6 +1003,45 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
             IntakeState::NO_BALL);
 }
 
+TEST_F(SuperstructureTest, TestTurretWrapsWhenLoading) {
+  SetEnabled(true);
+  WaitUntilZeroed();
+
+  constexpr double kTurretGoal = -4.0;
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        turret_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), kTurretGoal);
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_turret(turret_offset);
+    builder.CheckOk(builder.Send(goal_builder.Finish()));
+  }
+  RunFor(std::chrono::seconds(5));
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+  EXPECT_EQ(superstructure_status_fetcher_->state(), SuperstructureState::IDLE);
+  EXPECT_EQ(superstructure_status_fetcher_->intake_state(),
+            IntakeState::NO_BALL);
+  EXPECT_NEAR(superstructure_status_fetcher_->turret()->position(), kTurretGoal,
+              0.001);
+
+  superstructure_plant_.set_intake_beambreak_back(true);
+  RunFor(dt() * 2);
+
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+  EXPECT_EQ(superstructure_status_fetcher_->state(),
+            SuperstructureState::TRANSFERRING);
+  EXPECT_EQ(superstructure_status_fetcher_->intake_state(),
+            IntakeState::INTAKE_BACK_BALL);
+
+  RunFor(std::chrono::seconds(3));
+
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+  EXPECT_NEAR(superstructure_status_fetcher_->turret()->position(),
+              -constants::Values::kTurretBackIntakePos(), 0.001);
+  // it chooses -pi because -pi is closer to -4 than positive pi
+}
+
 // Make sure that the front and back intakes are never switched
 TEST_F(SuperstructureTest, RunIntakes) {
   SetEnabled(true);
