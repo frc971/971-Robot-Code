@@ -5,8 +5,8 @@
 namespace y2020 {
 namespace actors {
 
-constexpr double kFieldLength = 15.983;
-constexpr double kFieldWidth = 8.212;
+constexpr double kFieldLength = 16.4592;
+constexpr double kFieldWidth = 8.2296;
 
 void MaybeFlipSpline(
     aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder

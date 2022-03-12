@@ -1,0 +1,1 @@
+{"spline_count": 1, "spline_x": [0, 0.4, 0.4, 0.6, 0.6, 1.0], "spline_y": [0, 0, 0.05, 0.1, 0.15, 0.15], "constraints": [{"constraint_type": "LONGITUDINAL_ACCELERATION", "value": 1}, {"constraint_type": "LATERAL_ACCELERATION", "value": 1}, {"constraint_type": "VOLTAGE", "value": 2}]}
