@@ -168,7 +168,7 @@ struct Values {
         .lower_hard = -0.01, .upper_hard = 0.4, .lower = 0.0, .upper = 0.5};
   }
   // Position of the flippers when they are open
-  static constexpr double kFlipperOpenPosition() { return 0.15; }
+  static constexpr double kFlipperOpenPosition() { return 0.20; }
   // If the flippers were open but now moved back, reseat the ball if they go
   // below this position
   static constexpr double kReseatFlipperPosition() { return 0.1; }

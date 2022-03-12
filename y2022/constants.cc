@@ -167,7 +167,7 @@ Values MakeValues(uint16_t team) {
           0.511895084051468;
 
       flipper_arm_left->potentiometer_offset = -6.4;
-      flipper_arm_right->potentiometer_offset = 5.66;
+      flipper_arm_right->potentiometer_offset = 5.56;
 
       catapult_params->zeroing_constants.measured_absolute_position =
           1.71723370408082;
