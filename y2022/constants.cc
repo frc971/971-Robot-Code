@@ -68,7 +68,7 @@ Values MakeValues(uint16_t team) {
   auto *const turret_params = &turret->subsystem_params;
 
   turret_params->zeroing_voltage = 4.0;
-  turret_params->operating_voltage = 4.0;
+  turret_params->operating_voltage = 12.0;
   turret_params->zeroing_profile_params = {0.5, 2.0};
   turret_params->default_profile_params = {15.0, 40.0};
   turret_params->range = Values::kTurretRange();
