@@ -86,11 +86,12 @@ class StaticZeroingSingleDOFProfiledSubsystem {
   // Returns the current position
   double position() const { return profiled_subsystem_.position(); }
 
+  // Returns the most recently corrected state.
   Eigen::Vector3d estimated_state() const {
     return profiled_subsystem_.X_hat();
   }
-  double estimated_position() const { return profiled_subsystem_.X_hat(0, 0); }
-  double estimated_velocity() const { return profiled_subsystem_.X_hat(1, 0); }
+  double estimated_position() const { return estimated_state()(0, 0); }
+  double estimated_velocity() const { return estimated_state()(1, 0); }
 
   // Corrects the internal state, adjusts limits, and sets nominal goals.
   // Returns true if the controller should run.

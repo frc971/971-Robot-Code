@@ -36,6 +36,7 @@ class ProfiledSubsystem {
       : loop_(::std::move(loop)), estimators_(::std::move(estimators)) {
     zeroed_.fill(false);
     unprofiled_goal_.setZero();
+    X_hat_.setZero();
   }
 
   // Returns whether an error has occured
@@ -95,11 +96,14 @@ class ProfiledSubsystem {
     return unprofiled_goal_(row, col);
   }
 
-  // Returns the current state estimate.
+  // Returns the current state estimate after the most recent Correct.  This
+  // does not change when Predict is run.
   const Eigen::Matrix<double, number_of_states, 1> &X_hat() const {
-    return loop_->X_hat();
+    return X_hat_;
   }
-  double X_hat(int row, int col) const { return loop_->X_hat(row, col); }
+  double X_hat(int row, int col) const { return X_hat()(row, col); }
+  // Returns a mutable reference to the current state of the actual kalman
+  // filter state.  Note: changing this won't change X_hat() immediately.
   double &mutable_X_hat(int row, int col) const {
     return loop_->mutable_X_hat(row, col);
   }
@@ -126,6 +130,8 @@ class ProfiledSubsystem {
 
   // The goal that the profile tries to reach.
   Eigen::Matrix<double, number_of_states, 1> unprofiled_goal_;
+
+  Eigen::Matrix<double, number_of_states, 1> X_hat_;
 
   bool initialized_ = false;
 
@@ -277,13 +283,13 @@ StatusTypeBuilder SingleDOFProfiledSubsystem<ZeroingEstimator>::BuildStatus(
   builder.add_zeroed(this->zeroed());
   // We don't know, so default to the bad case.
 
-  builder.add_position(this->X_hat(0, 0));
-  builder.add_velocity(this->X_hat(1, 0));
+  builder.add_position(this->X_hat_(0, 0));
+  builder.add_velocity(this->X_hat_(1, 0));
   builder.add_goal_position(this->goal(0, 0));
   builder.add_goal_velocity(this->goal(1, 0));
   builder.add_unprofiled_goal_position(this->unprofiled_goal(0, 0));
   builder.add_unprofiled_goal_velocity(this->unprofiled_goal(1, 0));
-  builder.add_voltage_error(this->X_hat(2, 0));
+  builder.add_voltage_error(this->X_hat_(2, 0));
   builder.add_calculated_velocity(
       (position() - last_position_) /
       ::aos::time::DurationInSeconds(this->loop_->plant().coefficients().dt));
@@ -305,6 +311,7 @@ void SingleDOFProfiledSubsystem<ZeroingEstimator>::Correct(
 
   if (this->estimators_[0].error()) {
     AOS_LOG(ERROR, "zeroing error\n");
+    this->X_hat_ = this->loop_->X_hat();
     return;
   }
 
@@ -324,6 +331,7 @@ void SingleDOFProfiledSubsystem<ZeroingEstimator>::Correct(
   this->Y_ << new_position.encoder();
   this->Y_ += this->offset_;
   this->loop_->Correct(Y_);
+  this->X_hat_ = this->loop_->X_hat();
 }
 
 template <class ZeroingEstimator>
@@ -375,6 +383,7 @@ double SingleDOFProfiledSubsystem<ZeroingEstimator>::UpdateController(
     this->loop_->mutable_X_hat(0, 0) = Y_(0, 0);
     this->loop_->mutable_X_hat(1, 0) = 0.0;
     this->loop_->mutable_X_hat(2, 0) = 0.0;
+    this->X_hat_.setZero();
     this->should_reset_ = false;
   }
 
