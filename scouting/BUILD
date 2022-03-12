@@ -33,6 +33,7 @@ sh_binary(
         "//scouting/www:index.html",
         "//scouting/www:zonejs_copy",
     ],
+    visibility = ["//scouting/deploy:__pkg__"],
 )
 
 protractor_ts_test(

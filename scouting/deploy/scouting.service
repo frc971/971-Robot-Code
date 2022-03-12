@@ -1,0 +1,17 @@
+[Unit]
+Description=FRC971 Scouting Server
+After=systemd-networkd-wait-online.service
+
+[Service]
+User=www-data
+Group=www-data
+Type=simple
+WorkingDirectory=/opt/frc971/scouting_server
+ExecStart=/opt/frc971/scouting_server/scouting/scouting \
+    -port 8080 \
+    -database /var/frc971/scouting/scouting.db \
+    -tba_config /var/frc971/scouting/tba_config.json
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# This script gets run before the frc971-scouting-server package gets removed
+# or upgraded. This script is responsible for stopping the webserver before the
+# underlying files are removed by dpkg.
+
+set -o errexit
+set -o nounset
+set -o pipefail
+
+systemctl stop scouting.service
+systemctl disable scouting.service
+systemctl daemon-reload
