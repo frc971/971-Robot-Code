@@ -37,15 +37,15 @@ namespace joysticks {
 
 namespace superstructure = y2022::control_loops::superstructure;
 
-// TODO(henry) put actually button locations here
-// TODO(milind): integrate with shooting statemachine and aimer
 #if 0
 const ButtonLocation kCatapultPos(4, 3);
 const ButtonLocation kFire(3, 4);
 const ButtonLocation kTurret(4, 15);
+const ButtonLocation kAutoAim(4, 2);
 
 const ButtonLocation kIntakeFrontOut(4, 10);
 const ButtonLocation kIntakeBackOut(4, 9);
+const ButtonLocation kSpit(3, 3);
 
 const ButtonLocation kRedLocalizerReset(3, 13);
 const ButtonLocation kBlueLocalizerReset(3, 14);
@@ -55,10 +55,11 @@ const ButtonLocation kLocalizerReset(3, 8);
 const ButtonLocation kCatapultPos(4, 3);
 const ButtonLocation kFire(4, 1);
 const ButtonLocation kTurret(4, 15);
-const ButtonLocation kAutoAim(3, 3);
+const ButtonLocation kAutoAim(4, 2);
 
 const ButtonLocation kIntakeFrontOut(4, 10);
 const ButtonLocation kIntakeBackOut(4, 9);
+const ButtonLocation kSpit(3, 3);
 
 const ButtonLocation kRedLocalizerReset(4, 13);
 const ButtonLocation kBlueLocalizerReset(4, 14);
@@ -206,22 +207,29 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     }
 
     constexpr double kRollerSpeed = 8.0;
+    constexpr double kTransferRollerSpeed = 12.0;
     constexpr double kIntakePosition = -0.02;
     constexpr size_t kIntakeCounterIterations = 25;
 
     // Extend the intakes and spin the rollers
     if (data.IsPressed(kIntakeFrontOut)) {
       intake_front_pos = kIntakePosition;
-      transfer_roller_front_speed = 12.0;
-      transfer_roller_back_speed = -transfer_roller_front_speed;
+      transfer_roller_front_speed = kTransferRollerSpeed;
+      transfer_roller_back_speed = -kTransferRollerSpeed;
 
       intake_front_counter_ = kIntakeCounterIterations;
     } else if (data.IsPressed(kIntakeBackOut)) {
       intake_back_pos = kIntakePosition;
-      transfer_roller_back_speed = 12.0;
-      transfer_roller_front_speed = -transfer_roller_back_speed;
+      transfer_roller_back_speed = kTransferRollerSpeed;
+      transfer_roller_front_speed = -kTransferRollerSpeed;
 
       intake_back_counter_ = kIntakeCounterIterations;
+    } else if (data.IsPressed(kSpit)) {
+      transfer_roller_front_speed = -kTransferRollerSpeed;
+      transfer_roller_back_speed = -kTransferRollerSpeed;
+
+      intake_front_counter_ = 0;
+      intake_back_counter_ = 0;
     }
 
     // Keep spinning the rollers a bit after they let go
