@@ -44,7 +44,7 @@ rollup_bundle(
 aos_downloader_dir(
     name = "www_files",
     srcs = [
-        ":field_main_bundle",
+        ":field_main_bundle.min.js",
         ":files",
         "//frc971/analysis:plot_index_bundle.min.js",
     ],
