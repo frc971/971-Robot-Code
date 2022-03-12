@@ -35,6 +35,22 @@
       ]
     },
     {
+      "name": "/drivetrain",
+      "type": "frc971.control_loops.drivetrain.Output",
+      "source_node": "roborio",
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "logger"
+      ],
+      "destination_nodes": [
+        {
+          "name": "logger",
+          "priority": 2,
+          "time_to_live": 500000000
+        }
+      ]
+    },
+    {
       "name": "/pi1/aos",
       "type": "aos.message_bridge.Timestamp",
       "source_node": "pi1",
