@@ -1,5 +1,7 @@
 namespace aos;
 
+enum MatchType : byte { kNone, kPractice, kQualification, kElimination }
+
 table Joystick {
   // A bitmask of the butotn state.
   buttons:ushort (id: 0);
@@ -44,6 +46,14 @@ table JoystickState {
 
   // String corresponding to the game data string
   game_data:string (id: 10);
+
+  // Driver station location.
+  location:ubyte (id: 11);
+
+  match_number:int (id: 12);
+  replay_number:int (id: 13);
+  match_type:MatchType (id: 14);
+  event_name:string (id: 15);
 }
 
 root_type JoystickState;

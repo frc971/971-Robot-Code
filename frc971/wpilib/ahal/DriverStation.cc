@@ -272,6 +272,54 @@ bool DriverStation::IsBrownedOut() const {
 }
 
 /**
+  * Returns the game specific message provided by the FMS.
+  *
+  * @return A string containing the game specific message.
+  */
+std::string_view DriverStation::GetGameSpecificMessage() const {
+  return std::string_view(
+      reinterpret_cast<const char *>(info_.gameSpecificMessage),
+      info_.gameSpecificMessageSize);
+}
+
+/**
+  * Returns the name of the competition event provided by the FMS.
+  *
+  * @return A string containing the event name
+  */
+std::string_view DriverStation::GetEventName() const {
+  return info_.eventName;
+}
+
+/**
+  * Returns the match number provided by the FMS.
+  *
+  * @return The number of the match
+  */
+DriverStation::MatchType DriverStation::GetMatchType() const {
+  return static_cast<DriverStation::MatchType>(info_.matchType);
+}
+
+/**
+  * Returns the match number provided by the FMS.
+  *
+  * @return The number of the match
+  */
+int DriverStation::GetMatchNumber() const {
+  return info_.matchNumber;
+}
+
+/**
+  * Returns the number of times the current match has been replayed from the
+  * FMS.
+  *
+  * @return The number of replays
+  */
+int DriverStation::GetReplayNumber() const {
+  return info_.replayNumber;
+}
+
+/**
  * Return the alliance that the driver station says it is on.
  *
  * This could return kRed or kBlue.
@@ -374,10 +422,14 @@ void DriverStation::GetData() {
 
   HAL_ControlWord control_word;
   HAL_GetControlWord(&control_word);
-  is_enabled_ = control_word.enabled;
+  is_enabled_ = control_word.enabled && control_word.dsAttached;
   is_autonomous_ = control_word.autonomous;
   is_test_mode_ = control_word.test;
   is_fms_attached_ = control_word.fmsAttached;
+  is_ds_attached_ = control_word.dsAttached;
+  is_teleop_ = !(control_word.autonomous || control_word.test);
+
+  HAL_GetMatchInfo(&info_);
 }
 
 /**

@@ -30,9 +30,6 @@ JoystickSender::JoystickSender(::aos::ShmEventLoop *event_loop)
       ds->RunIteration([&]() {
         auto builder = joystick_state_sender_.MakeBuilder();
 
-        HAL_MatchInfo match_info;
-        auto status = HAL_GetMatchInfo(&match_info);
-
         std::array<flatbuffers::Offset<Joystick>,
                    frc971::input::driver_station::JoystickFeature::kJoysticks>
             joysticks;
@@ -67,32 +64,26 @@ JoystickSender::JoystickSender(::aos::ShmEventLoop *event_loop)
             joysticks_offset = builder.fbb()->CreateVector(joysticks.begin(),
                                                            joysticks.size());
 
-        flatbuffers::Offset<flatbuffers::String> game_data_offset;
-        if (status == 0) {
-          static_assert(sizeof(match_info.gameSpecificMessage) == 64,
-                        "Check that the match info game specific message size "
-                        "hasn't changed and is still sane.");
-          CHECK_LE(match_info.gameSpecificMessageSize,
-                   sizeof(match_info.gameSpecificMessage));
-          game_data_offset = builder.fbb()->CreateString(
-              reinterpret_cast<const char *>(match_info.gameSpecificMessage),
-              match_info.gameSpecificMessageSize);
-        }
+        flatbuffers::Offset<flatbuffers::String> game_data_offset =
+            builder.fbb()->CreateString(ds->GetGameSpecificMessage());
+
+        flatbuffers::Offset<flatbuffers::String> event_name_offset =
+            builder.fbb()->CreateString(ds->GetEventName());
 
         aos::JoystickState::Builder joystick_state_builder =
             builder.MakeBuilder<aos::JoystickState>();
 
         joystick_state_builder.add_joysticks(joysticks_offset);
 
-        if (status == 0) {
+        if (ds->GetGameSpecificMessage().size() >= 2u) {
           joystick_state_builder.add_switch_left(
-              match_info.gameSpecificMessage[0] == 'L' ||
-              match_info.gameSpecificMessage[0] == 'l');
+              ds->GetGameSpecificMessage()[0] == 'L' ||
+              ds->GetGameSpecificMessage()[0] == 'l');
           joystick_state_builder.add_scale_left(
-              match_info.gameSpecificMessage[1] == 'L' ||
-              match_info.gameSpecificMessage[1] == 'l');
-          joystick_state_builder.add_game_data(game_data_offset);
+              ds->GetGameSpecificMessage()[1] == 'L' ||
+              ds->GetGameSpecificMessage()[1] == 'l');
         }
+        joystick_state_builder.add_game_data(game_data_offset);
 
         joystick_state_builder.add_test_mode(ds->IsTestMode());
         joystick_state_builder.add_fms_attached(ds->IsFmsAttached());
@@ -109,7 +100,28 @@ JoystickSender::JoystickSender(::aos::ShmEventLoop *event_loop)
             joystick_state_builder.add_alliance(aos::Alliance::kInvalid);
             break;
         }
+        joystick_state_builder.add_location(ds->GetLocation());
+
         joystick_state_builder.add_team_id(team_id_);
+        joystick_state_builder.add_match_number(ds->GetMatchNumber());
+        joystick_state_builder.add_replay_number(ds->GetReplayNumber());
+
+        switch (ds->GetMatchType()) {
+          case frc::DriverStation::kNone:
+            joystick_state_builder.add_match_type(aos::MatchType::kNone);
+            break;
+          case frc::DriverStation::kPractice:
+            joystick_state_builder.add_match_type(aos::MatchType::kPractice);
+            break;
+          case frc::DriverStation::kQualification:
+            joystick_state_builder.add_match_type(
+                aos::MatchType::kQualification);
+            break;
+          case frc::DriverStation::kElimination:
+            joystick_state_builder.add_match_type(aos::MatchType::kElimination);
+            break;
+        }
+        joystick_state_builder.add_event_name(event_name_offset);
 
         if (builder.Send(joystick_state_builder.Finish()) !=
             aos::RawSender::Error::kOk) {
