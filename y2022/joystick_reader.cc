@@ -55,12 +55,13 @@ const ButtonLocation kLocalizerReset(3, 8);
 const ButtonLocation kCatapultPos(4, 3);
 const ButtonLocation kFire(4, 1);
 const ButtonLocation kTurret(4, 15);
+const ButtonLocation kAutoAim(3, 3);
 
 const ButtonLocation kIntakeFrontOut(4, 10);
 const ButtonLocation kIntakeBackOut(4, 9);
 
-const ButtonLocation kRedLocalizerReset(3, 13);
-const ButtonLocation kBlueLocalizerReset(3, 14);
+const ButtonLocation kRedLocalizerReset(4, 13);
+const ButtonLocation kBlueLocalizerReset(4, 14);
 const ButtonLocation kLocalizerReset(3, 8);
 #endif
 
@@ -105,8 +106,8 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     frc971::control_loops::drivetrain::LocalizerControl::Builder
         localizer_control_builder = builder.MakeBuilder<
             frc971::control_loops::drivetrain::LocalizerControl>();
-    localizer_control_builder.add_x(-7.4);
-    localizer_control_builder.add_y(1.7);
+    localizer_control_builder.add_x(-7.9);
+    localizer_control_builder.add_y(0.7);
     localizer_control_builder.add_theta_uncertainty(10.0);
     localizer_control_builder.add_theta(M_PI);
     localizer_control_builder.add_keep_current_theta(false);
@@ -285,6 +286,8 @@ class Reader : public ::frc971::input::ActionJoystickInput {
           transfer_roller_front_speed);
       superstructure_goal_builder.add_transfer_roller_speed_back(
           transfer_roller_back_speed);
+      superstructure_goal_builder.add_auto_aim(
+          data.IsPressed(kAutoAim));
 
       if (builder.Send(superstructure_goal_builder.Finish()) !=
           aos::RawSender::Error::kOk) {
