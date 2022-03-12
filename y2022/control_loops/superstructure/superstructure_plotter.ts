@@ -78,4 +78,7 @@ export function plotSuperstructure(conn: Connection, element: Element): void {
   otherPlot.addMessageLine(position, ['flipper_arm_right', 'encoder'])
       .setColor(CYAN)
       .setPointSize(4.0);
+  otherPlot.addMessageLine(output, ['flipper_arms_voltage'])
+      .setColor(BROWN)
+      .setPointSize(4.0);
 }
