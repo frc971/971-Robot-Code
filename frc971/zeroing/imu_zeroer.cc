@@ -6,7 +6,8 @@ namespace {
 bool DiagStatHasFaults(const ADIS16470DiagStat &diag) {
   return diag.clock_error() || diag.memory_failure() || diag.sensor_failure() ||
          diag.standby_mode() || diag.spi_communication_error() ||
-         diag.flash_memory_update_error() || diag.data_path_overrun();
+         diag.flash_memory_update_error() || diag.data_path_overrun() ||
+         diag.checksum_mismatch();
 }
 bool ReadingHasFaults(const IMUValues &values) {
   if (values.has_previous_reading_diag_stat() &&
@@ -17,11 +18,15 @@ bool ReadingHasFaults(const IMUValues &values) {
       DiagStatHasFaults(*values.self_test_diag_stat())) {
     return true;
   }
+  if (values.checksum_failed()) {
+    return true;
+  }
   return false;
 }
 }  // namespace
 
-ImuZeroer::ImuZeroer() {
+ImuZeroer::ImuZeroer(FaultBehavior fault_behavior)
+    : fault_behavior_(fault_behavior) {
   gyro_average_.setZero();
   accel_average_.setZero();
   last_gyro_sample_.setZero();
@@ -32,14 +37,20 @@ bool ImuZeroer::Zeroed() const {
   return num_zeroes_ > kRequiredZeroPoints && !Faulted();
 }
 
-bool ImuZeroer::Faulted() const { return faulted_; }
+bool ImuZeroer::Faulted() const { return reading_faulted_ || zeroing_faulted_; }
 
-Eigen::Vector3d ImuZeroer::ZeroedGyro() const {
-  return last_gyro_sample_ - gyro_average_;
+std::optional<Eigen::Vector3d> ImuZeroer::ZeroedGyro() const {
+  return Faulted() ? std::nullopt
+                   : std::make_optional<Eigen::Vector3d>(last_gyro_sample_ -
+                                                         gyro_average_);
 }
-Eigen::Vector3d ImuZeroer::ZeroedAccel() const {
-  return last_accel_sample_ - accel_average_;
+
+std::optional<Eigen::Vector3d> ImuZeroer::ZeroedAccel() const {
+  return Faulted() ? std::nullopt
+                   : std::make_optional<Eigen::Vector3d>(last_accel_sample_ -
+                                                         accel_average_);
 }
+
 Eigen::Vector3d ImuZeroer::GyroOffset() const { return gyro_average_; }
 
 bool ImuZeroer::GyroZeroReady() const {
@@ -55,20 +66,25 @@ bool ImuZeroer::AccelZeroReady() const {
 }
 
 void ImuZeroer::InsertAndProcessMeasurement(const IMUValues &values) {
-  InsertMeasurement(values);
-  ProcessMeasurements();
+  if (InsertMeasurement(values)) {
+    ProcessMeasurements();
+  }
 }
 
-void ImuZeroer::InsertMeasurement(const IMUValues &values) {
+bool ImuZeroer::InsertMeasurement(const IMUValues &values) {
   if (ReadingHasFaults(values)) {
-    faulted_ = true;
-    return;
+    reading_faulted_ = true;
+    return false;
+  }
+  if (fault_behavior_ == FaultBehavior::kTemporary) {
+    reading_faulted_ = false;
   }
   last_gyro_sample_ << values.gyro_x(), values.gyro_y(), values.gyro_z();
   gyro_averager_.AddData(last_gyro_sample_);
   last_accel_sample_ << values.accelerometer_x(), values.accelerometer_y(),
                            values.accelerometer_z();
   accel_averager_.AddData(last_accel_sample_);
+  return true;
 }
 
 void ImuZeroer::ProcessMeasurements() {
@@ -88,7 +104,9 @@ void ImuZeroer::ProcessMeasurements() {
         // original zero, fault.
         if ((current_gyro_average - gyro_average_).norm() >
             kGyroFaultVariation) {
-          faulted_ = true;
+          zeroing_faulted_ = true;
+        } else if (fault_behavior_ == FaultBehavior::kTemporary) {
+          zeroing_faulted_ = false;
         }
       }
       ++num_zeroes_;

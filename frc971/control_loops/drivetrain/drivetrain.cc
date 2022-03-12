@@ -137,8 +137,8 @@ void DrivetrainFilters::Correct(aos::monotonic_clock::time_point monotonic_now,
       if (last_imu_update_ == aos::monotonic_clock::min_time) {
         last_imu_update_ = reading_time;
       }
-      down_estimator_.Predict(imu_zeroer_.ZeroedGyro(),
-                              imu_zeroer_.ZeroedAccel(),
+      down_estimator_.Predict(imu_zeroer_.ZeroedGyro().value(),
+                              imu_zeroer_.ZeroedAccel().value(),
                               reading_time - last_imu_update_);
       last_imu_update_ = reading_time;
     }
@@ -170,26 +170,31 @@ void DrivetrainFilters::Correct(aos::monotonic_clock::time_point monotonic_now,
   }
 
   // TODO(austin): Signal the current gear to both loops.
+  bool imu_zeroer_zeroed = imu_zeroer_.Zeroed();
 
   switch (dt_config_.gyro_type) {
     case GyroType::IMU_X_GYRO:
       if (got_imu_reading) {
-        last_gyro_rate_ = imu_zeroer_.ZeroedGyro().x();
+        last_gyro_rate_ =
+            imu_zeroer_zeroed ? imu_zeroer_.ZeroedGyro().value().x() : 0.0;
       }
       break;
     case GyroType::IMU_Y_GYRO:
       if (got_imu_reading) {
-        last_gyro_rate_ = imu_zeroer_.ZeroedGyro().y();
+        last_gyro_rate_ =
+            imu_zeroer_zeroed ? imu_zeroer_.ZeroedGyro().value().y() : 0.0;
       }
       break;
     case GyroType::IMU_Z_GYRO:
       if (got_imu_reading) {
-        last_gyro_rate_ = imu_zeroer_.ZeroedGyro().z();
+        last_gyro_rate_ =
+            imu_zeroer_zeroed ? imu_zeroer_.ZeroedGyro().value().z() : 0.0;
       }
       break;
     case GyroType::FLIPPED_IMU_Z_GYRO:
       if (got_imu_reading) {
-        last_gyro_rate_ = -imu_zeroer_.ZeroedGyro().z();
+        last_gyro_rate_ =
+            imu_zeroer_zeroed ? -imu_zeroer_.ZeroedGyro().value().z() : 0.0;
       }
       break;
     case GyroType::SPARTAN_GYRO:

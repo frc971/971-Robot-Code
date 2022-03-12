@@ -321,6 +321,7 @@ class EventLoopLocalizer {
   std::optional<aos::monotonic_clock::duration> ClockOffset(
       std::string_view pi);
   aos::EventLoop *event_loop_;
+  const control_loops::drivetrain::DrivetrainConfig<double> &dt_config_;
   ModelBasedLocalizer model_based_;
   aos::Sender<LocalizerStatus> status_sender_;
   aos::Sender<LocalizerOutput> output_sender_;
