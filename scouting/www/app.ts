@@ -15,6 +15,12 @@ export class App {
   }
 
   switchTabTo(tab: Tab) {
-    this.tab = tab;
+    let shouldSwitch = true;
+    if (tab === 'ImportMatchList') {
+      shouldSwitch = window.confirm('Leave data scouting page?');
+    }
+    if (shouldSwitch) {
+      this.tab = tab;
+    }
   }
 }
