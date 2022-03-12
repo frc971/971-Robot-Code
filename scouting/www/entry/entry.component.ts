@@ -10,7 +10,7 @@ import SubmitDataScoutingResponse = submit_data_scouting_response.scouting.webse
 import ErrorResponse = error_response.scouting.webserver.requests.ErrorResponse;
 
 type Section = 'Team Selection'|'Auto'|'TeleOp'|'Climb'|'Defense'|'Review and Submit'|'Home'
-type Level = 'Low'|'Medium'|'High'|'Transversal'
+type Level = 'Failed'|'Low'|'Medium'|'High'|'Transversal'
 
 @Component({
     selector: 'app-entry',
@@ -36,6 +36,10 @@ export class EntryComponent {
 
     toggleProper() {
         this.proper = !this.proper;
+    }
+
+    setFailed() {
+        this.level = 'Failed';
     }
 
     setLow() {
