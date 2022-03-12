@@ -87,19 +87,19 @@ class CollisionAvoidanceTest : public ::testing::Test {
 
   void Simulate() {
     FlatbufferDetachedBuffer<Goal> safe_goal = MakeZeroGoal();
-
-    // Don't simulate if already collided
-    if (avoidance_.IsCollided(status_)) {
-      return;
-    }
+    bool was_collided = avoidance_.IsCollided(status_);
 
     bool moving = true;
     while (moving) {
       // Compute the safe goal
       avoidance_.UpdateGoal(status_, unsafe_goal_.message().turret());
 
-      // The system should never be collided
-      ASSERT_FALSE(avoidance_.IsCollided(status_));
+      if (!was_collided) {
+        // The system should never be collided if it didn't start off collided
+        EXPECT_FALSE(avoidance_.IsCollided(status_));
+      } else {
+        was_collided = avoidance_.IsCollided(status_);
+      }
 
       safe_goal.mutable_message()->mutable_intake_front()->mutate_unsafe_goal(
           ::aos::Clip(intake_front_goal(), avoidance_.min_intake_front_goal(),
@@ -128,6 +128,8 @@ class CollisionAvoidanceTest : public ::testing::Test {
         prev_status_ = status_;
       }
     }
+
+    EXPECT_FALSE(avoidance_.IsCollided(status_));
 
     CheckGoals();
   }
@@ -336,8 +338,13 @@ TEST_F(CollisionAvoidanceTest, BruteForce) {
            {TurretState::kSafeFront, TurretState::kSafeBack,
             TurretState::kSafeFrontWrapped, TurretState::kSafeBackWrapped,
             TurretState::kUnsafeFront, TurretState::kUnsafeBack,
-            TurretState::kUnsafeFrontWrapped,
-            TurretState::kUnsafeBackWrapped}) {
+            TurretState::kUnsafeFrontWrapped, TurretState::kUnsafeBackWrapped,
+            TurretState::kNegativeSafeFront, TurretState::kNegativeSafeBack,
+            TurretState::kNegativeSafeFrontWrapped,
+            TurretState::kNegativeSafeBackWrapped,
+            TurretState::kNegativeUnsafeFront, TurretState::kNegativeUnsafeBack,
+            TurretState::kNegativeUnsafeFrontWrapped,
+            TurretState::kNegativeUnsafeBackWrapped}) {
         // Intake front goal
         for (IntakeState intake_front_goal :
              {IntakeState::kSafe, IntakeState::kUnsafe}) {
@@ -350,7 +357,15 @@ TEST_F(CollisionAvoidanceTest, BruteForce) {
                   TurretState::kSafeFrontWrapped, TurretState::kSafeBackWrapped,
                   TurretState::kUnsafeFront, TurretState::kUnsafeBack,
                   TurretState::kUnsafeFrontWrapped,
-                  TurretState::kUnsafeBackWrapped}) {
+                  TurretState::kUnsafeBackWrapped,
+                  TurretState::kNegativeSafeFront,
+                  TurretState::kNegativeSafeBack,
+                  TurretState::kNegativeSafeFrontWrapped,
+                  TurretState::kNegativeSafeBackWrapped,
+                  TurretState::kNegativeUnsafeFront,
+                  TurretState::kNegativeUnsafeBack,
+                  TurretState::kNegativeUnsafeFrontWrapped,
+                  TurretState::kNegativeUnsafeBackWrapped}) {
               // Catapult state
               for (CatapultState catapult_state :
                    {CatapultState::kIdle, CatapultState::kShooting}) {
