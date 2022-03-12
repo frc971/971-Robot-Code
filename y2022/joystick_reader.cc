@@ -60,8 +60,8 @@ const ButtonLocation kAutoAim(3, 3);
 const ButtonLocation kIntakeFrontOut(4, 10);
 const ButtonLocation kIntakeBackOut(4, 9);
 
-const ButtonLocation kRedLocalizerReset(4, 13);
-const ButtonLocation kBlueLocalizerReset(4, 14);
+const ButtonLocation kRedLocalizerReset(4, 14);
+const ButtonLocation kBlueLocalizerReset(4, 13);
 const ButtonLocation kLocalizerReset(3, 8);
 #endif
 
@@ -83,16 +83,18 @@ class Reader : public ::frc971::input::ActionJoystickInput {
         setpoint_fetcher_(
             event_loop->MakeFetcher<Setpoint>("/superstructure")) {}
 
+  // Localizer reset positions are with front of robot pressed up against driver
+  // station in the middle of the field side-to-side.
   void BlueResetLocalizer() {
     auto builder = localizer_control_sender_.MakeBuilder();
 
     frc971::control_loops::drivetrain::LocalizerControl::Builder
         localizer_control_builder = builder.MakeBuilder<
             frc971::control_loops::drivetrain::LocalizerControl>();
-    localizer_control_builder.add_x(7.4);
-    localizer_control_builder.add_y(-1.7);
+    localizer_control_builder.add_x(-7.9);
+    localizer_control_builder.add_y(0.0);
     localizer_control_builder.add_theta_uncertainty(10.0);
-    localizer_control_builder.add_theta(0.0);
+    localizer_control_builder.add_theta(M_PI);
     localizer_control_builder.add_keep_current_theta(false);
     if (builder.Send(localizer_control_builder.Finish()) !=
         aos::RawSender::Error::kOk) {
@@ -106,10 +108,10 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     frc971::control_loops::drivetrain::LocalizerControl::Builder
         localizer_control_builder = builder.MakeBuilder<
             frc971::control_loops::drivetrain::LocalizerControl>();
-    localizer_control_builder.add_x(-7.9);
-    localizer_control_builder.add_y(0.7);
+    localizer_control_builder.add_x(7.9);
+    localizer_control_builder.add_y(0.0);
     localizer_control_builder.add_theta_uncertainty(10.0);
-    localizer_control_builder.add_theta(M_PI);
+    localizer_control_builder.add_theta(0.0);
     localizer_control_builder.add_keep_current_theta(false);
     if (builder.Send(localizer_control_builder.Finish()) !=
         aos::RawSender::Error::kOk) {
