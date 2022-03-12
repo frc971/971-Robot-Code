@@ -282,5 +282,27 @@ void AutonomousActor::RetractBackIntake() {
   SendSuperstructureGoal();
 }
 
+bool AutonomousActor::WaitForBallsShot(int num_wanted) {
+  ::aos::time::PhasedLoop phased_loop(frc971::controls::kLoopFrequency,
+                                      event_loop()->monotonic_now(),
+                                      ActorBase::kLoopOffset);
+  superstructure_status_fetcher_.Fetch();
+  CHECK(superstructure_status_fetcher_.get() != nullptr);
+  int initial_balls = superstructure_status_fetcher_->shot_count();
+  LOG(INFO) << "Waiting for balls, started with " << initial_balls;
+  while (true) {
+    if (ShouldCancel()) {
+      return false;
+    }
+    phased_loop.SleepUntilNext();
+    superstructure_status_fetcher_.Fetch();
+    CHECK(superstructure_status_fetcher_.get() != nullptr);
+    if (superstructure_status_fetcher_->shot_count() - initial_balls >=
+        num_wanted) {
+      return true;
+    }
+  }
+}
+
 }  // namespace actors
 }  // namespace y2022
