@@ -384,15 +384,20 @@ Catapult::Iterate(const Goal *unsafe_goal, const Position *position,
         }
       }
 
-      if (!use_profile_ || catapult_state_ == CatapultState::RESETTING) {
+      if (!use_profile_) {
         catapult_.ForceGoal(catapult_.estimated_position(),
                             catapult_.estimated_velocity());
       }
-    } break;
+    }
+      if (catapult_state_ != CatapultState::RESETTING) {
+        break;
+      } else {
+        [[fallthrough]];
+      }
 
     case CatapultState::RESETTING:
       if (catapult_.controller().R(1, 0) > 0.0) {
-        catapult_.AdjustProfile(7.0, 1000.0);
+        catapult_.AdjustProfile(7.0, 1400.0);
       } else {
         catapult_state_ = CatapultState::PROFILE;
       }

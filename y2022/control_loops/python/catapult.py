@@ -46,7 +46,7 @@ JEmpty = (J_bar + J_cup * 0.0)
 
 kCatapultWithBall = catapult_lib.CatapultParams(
     name='Catapult',
-    motor=AddResistance(control_loop.NMotor(control_loop.Falcon(), 2), 0.03),
+    motor=AddResistance(control_loop.NMotor(control_loop.Falcon(), 2), 0.01),
     G=G,
     J=J,
     radius=lever,
