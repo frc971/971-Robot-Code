@@ -1,3 +1,5 @@
+load("//frc971/downloader:downloader.bzl", "aos_downloader_dir")
+
 filegroup(
     name = "binaries.stripped",
     srcs = [
@@ -11,6 +13,24 @@ filegroup(
     srcs = [
         ":autonomous_action",
     ],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "spline_jsons",
+    srcs = glob([
+        "splines/*.json",
+    ]),
+    visibility = ["//visibility:public"],
+)
+
+aos_downloader_dir(
+    name = "splines",
+    srcs = [
+        ":spline_jsons",
+    ],
+    dir = "splines",
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )
 
@@ -33,6 +53,7 @@ cc_library(
         "//frc971/control_loops:profiled_subsystem_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_config",
         "//frc971/control_loops/drivetrain:localizer_fbs",
+        "//y2022:constants",
         "//y2022/control_loops/drivetrain:drivetrain_base",
         "//y2022/control_loops/superstructure:superstructure_goal_fbs",
         "//y2022/control_loops/superstructure:superstructure_status_fbs",

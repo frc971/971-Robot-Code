@@ -14,6 +14,7 @@ robot_downloader(
         "@ctre_phoenix_cci_athena//:shared_libraries",
     ],
     dirs = [
+        "//y2022/actors:splines",
         "//y2022/www:www_files",
     ],
     start_binaries = [
