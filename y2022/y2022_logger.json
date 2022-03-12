@@ -322,7 +322,7 @@
       "max_size": 200
     },
     {
-      "name": "/pi1/camera",
+      "name": "/pi1/camera/decimated",
       "type": "frc971.vision.CameraImage",
       "source_node": "pi1",
       "logger": "LOCAL_AND_REMOTE_LOGGER",
@@ -338,7 +338,7 @@
       ]
     },
     {
-      "name": "/pi2/camera",
+      "name": "/pi2/camera/decimated",
       "type": "frc971.vision.CameraImage",
       "source_node": "pi2",
       "logger": "LOCAL_AND_REMOTE_LOGGER",
@@ -354,7 +354,7 @@
       ]
     },
     {
-      "name": "/pi3/camera",
+      "name": "/pi3/camera/decimated",
       "type": "frc971.vision.CameraImage",
       "source_node": "pi3",
       "logger": "LOCAL_AND_REMOTE_LOGGER",
@@ -370,7 +370,7 @@
       ]
     },
     {
-      "name": "/pi4/camera",
+      "name": "/pi4/camera/decimated",
       "type": "frc971.vision.CameraImage",
       "source_node": "pi4",
       "logger": "LOCAL_AND_REMOTE_LOGGER",

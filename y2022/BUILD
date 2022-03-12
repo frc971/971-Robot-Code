@@ -39,6 +39,7 @@ robot_downloader(
         "//y2022/vision:viewer",
         "//y2022/localizer:imu_main",
         "//y2022/localizer:localizer_main",
+        "//y2022/vision:image_decimator",
     ],
     data = [
         ":aos_config",

@@ -252,3 +252,15 @@ cc_binary(
         "//y2022/control_loops/superstructure:superstructure_status_fbs",
     ],
 )
+
+cc_binary(
+    name = "image_decimator",
+    srcs = ["image_decimator.cc"],
+    visibility = ["//y2022:__subpackages__"],
+    deps = [
+        "//aos:flatbuffers",
+        "//aos:init",
+        "//aos/events:shm_event_loop",
+        "//frc971/vision:vision_fbs",
+    ],
+)
