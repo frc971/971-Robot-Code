@@ -13,6 +13,8 @@
 #include "y2022/control_loops/drivetrain/drivetrain_base.h"
 
 DEFINE_bool(spline_auto, false, "If true, define a spline autonomous mode");
+DEFINE_bool(rapid_react, false,
+            "If true, run the main rapid react autonomous mode");
 
 namespace y2022 {
 namespace actors {
@@ -97,6 +99,25 @@ void AutonomousActor::Replan() {
                    SplineDirection::kForward);
 
     starting_position_ = test_spline_->starting_position();
+  } else if (FLAGS_rapid_react) {
+    rapid_react_splines_ = {
+        PlanSpline(std::bind(&AutonomousSplines::Spline1, &auto_splines_,
+                             std::placeholders::_1, alliance_),
+                   SplineDirection::kForward),
+        PlanSpline(std::bind(&AutonomousSplines::Spline2, &auto_splines_,
+                             std::placeholders::_1, alliance_),
+                   SplineDirection::kForward),
+        PlanSpline(std::bind(&AutonomousSplines::Spline3, &auto_splines_,
+                             std::placeholders::_1, alliance_),
+                   SplineDirection::kForward),
+        PlanSpline(std::bind(&AutonomousSplines::Spline4, &auto_splines_,
+                             std::placeholders::_1, alliance_),
+                   SplineDirection::kBackward),
+        PlanSpline(std::bind(&AutonomousSplines::Spline5, &auto_splines_,
+                             std::placeholders::_1, alliance_),
+                   SplineDirection::kBackward)};
+    starting_position_ = rapid_react_splines_.value()[0].starting_position();
+    CHECK(starting_position_);
   }
 
   is_planned_ = true;
@@ -145,6 +166,8 @@ bool AutonomousActor::RunAction(
   }
   if (FLAGS_spline_auto) {
     SplineAuto();
+  } else if (FLAGS_rapid_react) {
+    RapidReact();
   }
 
   return true;
@@ -180,7 +203,73 @@ void AutonomousActor::SplineAuto() {
   if (!test_spline_->WaitForSplineDistanceRemaining(0.02)) return;
 }
 
-bool AutonomousActor::WaitForPreloaded() {
+void AutonomousActor::RapidReact() {
+  aos::monotonic_clock::time_point start_time = aos::monotonic_clock::now();
+
+  CHECK(rapid_react_splines_);
+
+  auto &splines = *rapid_react_splines_;
+
+  // Tell the superstructure a ball was preloaded
+
+  if (!WaitForPreloaded()) return;
+  // Drive and intake the 2nd ball
+  ExtendFrontIntake();
+  if (!splines[0].WaitForPlan()) return;
+  splines[0].Start();
+  if (!splines[0].WaitForSplineDistanceRemaining(0.02)) return;
+
+  // Fire the two balls once we stopped
+  set_fire_at_will(true);
+  SendSuperstructureGoal();
+  if (!WaitForBallsShot(2)) return;
+  set_fire_at_will(false);
+
+  // Drive and intake the 3rd ball
+  if (!splines[1].WaitForPlan()) return;
+  splines[1].Start();
+  if (!splines[1].WaitForSplineDistanceRemaining(0.02)) return;
+
+  // Fire the 3rd once we stopped.
+  set_fire_at_will(true);
+  SendSuperstructureGoal();
+  if (!WaitForBallsShot(1)) return;
+  set_fire_at_will(false);
+
+  // Drive to the human player station while intaking two balls.
+  // Once is already placed down,
+  // and one will be rolled to the robot by the human player
+  if (!splines[2].WaitForPlan()) return;
+  splines[2].Start();
+  if (!splines[2].WaitForSplineDistanceRemaining(0.02)) return;
+
+  // Drive to the shooting position
+  if (!splines[3].WaitForPlan()) return;
+  splines[3].Start();
+  if (!splines[3].WaitForSplineDistanceRemaining(0.02)) return;
+
+  // Fire the two balls once we stopped
+  set_fire_at_will(true);
+  SendSuperstructureGoal();
+  if (!WaitForBallsShot(2)) return;
+  set_fire_at_will(false);
+
+  // Done intaking
+  RetractFrontIntake();
+
+  // Drive to the middle of the field to get ready for teleop
+  if (!splines[4].WaitForPlan()) return;
+  splines[4].Start();
+  if (!splines[4].WaitForSplineDistanceRemaining(0.02)) return;
+
+  LOG(INFO) << "Took "
+            << chrono::duration<double>(aos::monotonic_clock::now() -
+                                        start_time)
+                   .count()
+            << 's';
+}
+
+[[nodiscard]] bool AutonomousActor::WaitForPreloaded() {
   set_preloaded(true);
   SendSuperstructureGoal();
 
@@ -282,7 +371,7 @@ void AutonomousActor::RetractBackIntake() {
   SendSuperstructureGoal();
 }
 
-bool AutonomousActor::WaitForBallsShot(int num_wanted) {
+[[nodiscard]] bool AutonomousActor::WaitForBallsShot(int num_wanted) {
   ::aos::time::PhasedLoop phased_loop(frc971::controls::kLoopFrequency,
                                       event_loop()->monotonic_now(),
                                       ActorBase::kLoopOffset);
