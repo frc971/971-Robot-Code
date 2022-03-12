@@ -66,7 +66,8 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       *turret_goal = nullptr;
   double roller_speed_compensated_front = 0.0;
   double roller_speed_compensated_back = 0.0;
-  double transfer_roller_speed = 0.0;
+  double transfer_roller_speed_front = 0.0;
+  double transfer_roller_speed_back = 0.0;
   double flipper_arms_voltage = 0.0;
 
   if (unsafe_goal != nullptr) {
@@ -78,7 +79,8 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
         unsafe_goal->roller_speed_back() -
         std::min(velocity * unsafe_goal->roller_speed_compensation(), 0.0);
 
-    transfer_roller_speed = unsafe_goal->transfer_roller_speed();
+    transfer_roller_speed_front = unsafe_goal->transfer_roller_speed_front();
+    transfer_roller_speed_back = unsafe_goal->transfer_roller_speed_back();
 
     turret_goal =
         unsafe_goal->auto_aim() ? auto_aim_goal : unsafe_goal->turret();
@@ -112,9 +114,9 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   // to IDLE.
 
   const bool is_spitting = ((intake_state_ == IntakeState::INTAKE_FRONT_BALL &&
-                             transfer_roller_speed < 0) ||
+                             transfer_roller_speed_front < 0) ||
                             (intake_state_ == IntakeState::INTAKE_BACK_BALL &&
-                             transfer_roller_speed > 0));
+                             transfer_roller_speed_back < 0));
 
   // Intake handling should happen regardless of the turret state
   if (position->intake_beambreak_front() || position->intake_beambreak_back()) {
@@ -135,23 +137,29 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   }
 
   if (intake_state_ != IntakeState::NO_BALL) {
-    // Block intaking in
     roller_speed_compensated_front = 0.0;
     roller_speed_compensated_back = 0.0;
 
     const double wiggle_voltage =
-        (intake_state_ == IntakeState::INTAKE_FRONT_BALL
-             ? constants::Values::kTransferRollerFrontWiggleVoltage()
-             : constants::Values::kTransferRollerBackWiggleVoltage());
+        constants::Values::kTransferRollerWiggleVoltage();
     // Wiggle transfer rollers: send the ball back and forth while waiting
     // for the turret or waiting for another shot to be completed
-    if ((intake_state_ == IntakeState::INTAKE_FRONT_BALL &&
-         position->intake_beambreak_front()) ||
-        (intake_state_ == IntakeState::INTAKE_BACK_BALL &&
-         position->intake_beambreak_back())) {
-      transfer_roller_speed = -wiggle_voltage;
+    if (intake_state_ == IntakeState::INTAKE_FRONT_BALL) {
+      if (position->intake_beambreak_front()) {
+        transfer_roller_speed_front = -wiggle_voltage;
+        transfer_roller_speed_back = wiggle_voltage;
+      } else {
+        transfer_roller_speed_front = wiggle_voltage;
+        transfer_roller_speed_back = -wiggle_voltage;
+      }
     } else {
-      transfer_roller_speed = wiggle_voltage;
+      if (position->intake_beambreak_back()) {
+        transfer_roller_speed_back = -wiggle_voltage;
+        transfer_roller_speed_front = wiggle_voltage;
+      } else {
+        transfer_roller_speed_back = wiggle_voltage;
+        transfer_roller_speed_front = -wiggle_voltage;
+      }
     }
   }
 
@@ -212,10 +220,17 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       }
 
       // Transfer rollers and flipper arm belt on
-      transfer_roller_speed =
-          (intake_state_ == IntakeState::INTAKE_FRONT_BALL
-               ? constants::Values::kTransferRollerFrontVoltage()
-               : constants::Values::kTransferRollerBackVoltage());
+      if (intake_state_ == IntakeState::INTAKE_FRONT_BALL) {
+        transfer_roller_speed_front =
+            constants::Values::kTransferRollerVoltage();
+        transfer_roller_speed_back =
+            -constants::Values::kTransferRollerVoltage();
+      } else {
+        transfer_roller_speed_back =
+            constants::Values::kTransferRollerVoltage();
+        transfer_roller_speed_front =
+            -constants::Values::kTransferRollerVoltage();
+      }
       flipper_arms_voltage = constants::Values::kFlipperFeedVoltage();
 
       // Ball is in catapult
@@ -387,7 +402,8 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   if (output != nullptr) {
     output_struct.roller_voltage_front = roller_speed_compensated_front;
     output_struct.roller_voltage_back = roller_speed_compensated_back;
-    output_struct.transfer_roller_voltage = transfer_roller_speed;
+    output_struct.transfer_roller_voltage_front = transfer_roller_speed_front;
+    output_struct.transfer_roller_voltage_back = transfer_roller_speed_back;
     output_struct.flipper_arms_voltage = flipper_arms_voltage;
 
     output->CheckOk(output->Send(Output::Pack(*output->fbb(), &output_struct)));

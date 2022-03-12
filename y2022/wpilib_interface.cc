@@ -215,8 +215,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       frc971::PotAndAbsolutePositionT intake_back;
       CopyPosition(intake_encoder_back_, &intake_back,
                    Values::kIntakeEncoderCountsPerRevolution(),
-                   Values::kIntakeEncoderRatio(),
-                   intake_pot_translate, true,
+                   Values::kIntakeEncoderRatio(), intake_pot_translate, true,
                    values_->intake_back.potentiometer_offset);
       frc971::PotAndAbsolutePositionT turret;
       CopyPosition(turret_encoder_, &turret,
@@ -484,8 +483,12 @@ class SuperstructureWriter
     return flipper_arms_falcon_;
   }
 
-  void set_transfer_roller_victor(::std::unique_ptr<::frc::VictorSP> t) {
-    transfer_roller_victor_ = ::std::move(t);
+  void set_transfer_roller_victor_front(::std::unique_ptr<::frc::VictorSP> t) {
+    transfer_roller_victor_front_ = ::std::move(t);
+  }
+
+  void set_transfer_roller_victor_back(::std::unique_ptr<::frc::VictorSP> t) {
+    transfer_roller_victor_back_ = ::std::move(t);
   }
 
  private:
@@ -500,7 +503,8 @@ class SuperstructureWriter
         ctre::phoenix::motorcontrol::ControlMode::Disabled, 0);
     intake_falcon_front_->SetDisabled();
     intake_falcon_back_->SetDisabled();
-    transfer_roller_victor_->SetDisabled();
+    transfer_roller_victor_front_->SetDisabled();
+    transfer_roller_victor_back_->SetDisabled();
     catapult_falcon_1_->SetDisabled();
     turret_falcon_->SetDisabled();
   }
@@ -512,7 +516,10 @@ class SuperstructureWriter
     WritePwm(output.intake_voltage_back(), intake_falcon_back_.get());
     WriteCan(output.roller_voltage_front(), roller_falcon_front_.get());
     WriteCan(output.roller_voltage_back(), roller_falcon_back_.get());
-    WritePwm(output.transfer_roller_voltage(), transfer_roller_victor_.get());
+    WritePwm(output.transfer_roller_voltage_front(),
+             transfer_roller_victor_front_.get());
+    WritePwm(output.transfer_roller_voltage_back(),
+             transfer_roller_victor_back_.get());
 
     WriteCan(-output.flipper_arms_voltage(), flipper_arms_falcon_.get());
 
@@ -544,7 +551,8 @@ class SuperstructureWriter
 
   ::std::unique_ptr<::frc::TalonFX> turret_falcon_, catapult_falcon_1_,
       climber_falcon_;
-  ::std::unique_ptr<::frc::VictorSP> transfer_roller_victor_;
+  ::std::unique_ptr<::frc::VictorSP> transfer_roller_victor_front_,
+      transfer_roller_victor_back_;
 };
 
 class CANSensorReader {
@@ -614,7 +622,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     // Thread 2.
     ::aos::ShmEventLoop pdp_fetcher_event_loop(&config.message());
     ::frc971::wpilib::PDPFetcher pdp_fetcher(&pdp_fetcher_event_loop);
-    ;AddLoop(&pdp_fetcher_event_loop);
+    AddLoop(&pdp_fetcher_event_loop);
 
     // Thread 3.
     ::aos::ShmEventLoop sensor_reader_event_loop(&config.message());
@@ -639,8 +647,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     sensor_reader.set_turret_potentiometer(make_unique<frc::AnalogInput>(5));
 
     // TODO(milind): correct intake beambreak ports once set
-    sensor_reader.set_intake_beambreak_front(
-        make_unique<frc::DigitalInput>(1));
+    sensor_reader.set_intake_beambreak_front(make_unique<frc::DigitalInput>(1));
     sensor_reader.set_intake_beambreak_back(make_unique<frc::DigitalInput>(6));
     sensor_reader.set_turret_beambreak(make_unique<frc::DigitalInput>(7));
 
@@ -679,8 +686,9 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     superstructure_writer.set_roller_falcon_back(
         make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(1));
 
-    // TODO(milind): correct port
-    superstructure_writer.set_transfer_roller_victor(
+    superstructure_writer.set_transfer_roller_victor_front(
+        make_unique<::frc::VictorSP>(6));
+    superstructure_writer.set_transfer_roller_victor_back(
         make_unique<::frc::VictorSP>(5));
 
     superstructure_writer.set_intake_falcon_front(make_unique<frc::TalonFX>(2));

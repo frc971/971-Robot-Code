@@ -473,20 +473,6 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
     EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_back(), expected);
   }
 
-  void TestTransferRoller(double transfer_roller_speed,
-                          double roller_speed_compensation, double expected) {
-    auto builder = superstructure_goal_sender_.MakeBuilder();
-    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_transfer_roller_speed(transfer_roller_speed);
-    goal_builder.add_roller_speed_compensation(roller_speed_compensation);
-    builder.CheckOk(builder.Send(goal_builder.Finish()));
-    RunFor(dt() * 2);
-    ASSERT_TRUE(superstructure_output_fetcher_.Fetch());
-    ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
-    EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage(),
-              expected);
-  }
-
   std::shared_ptr<const constants::Values> values_;
 
   const aos::Node *const roborio_;
@@ -760,10 +746,6 @@ TEST_F(SuperstructureTest, RunRollers) {
   TestRollerBack(-12.0, 1.5, -7.5);
   TestRollerBack(12.0, 1.5, 16.5);
   TestRollerBack(0.0, 1.5, 4.5);
-
-  TestTransferRoller(-12.0, 1.5, -12.0);
-  TestTransferRoller(12.0, 1.5, 12.0);
-  TestTransferRoller(0.0, 1.5, 0.0);
 }
 
 // Tests the whole shooting statemachine - from loading to shooting
@@ -794,7 +776,10 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
   ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
   EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_front(), 12.0);
   EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_back(), 12.0);
-  EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage(), 0.0);
+  EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage_front(),
+            0.0);
+  EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage_back(),
+            0.0);
   EXPECT_EQ(superstructure_status_fetcher_->state(), SuperstructureState::IDLE);
   EXPECT_EQ(superstructure_status_fetcher_->intake_state(),
             IntakeState::NO_BALL);
@@ -833,8 +818,10 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
             IntakeState::INTAKE_FRONT_BALL);
   EXPECT_EQ(superstructure_output_fetcher_->flipper_arms_voltage(),
             constants::Values::kFlipperFeedVoltage());
-  EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage(),
-            constants::Values::kTransferRollerFrontVoltage());
+  EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage_front(),
+            constants::Values::kTransferRollerVoltage());
+  EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage_back(),
+            -constants::Values::kTransferRollerVoltage());
   EXPECT_NEAR(superstructure_status_fetcher_->turret()->position(),
               constants::Values::kTurretFrontIntakePos(), 0.001);
   EXPECT_EQ(superstructure_status_fetcher_->shot_count(), 0);
@@ -852,7 +839,10 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
   ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
   EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_front(), 12.0);
   EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_back(), 12.0);
-  EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage(), 0.0);
+  EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage_front(),
+            0.0);
+  EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage_back(),
+            0.0);
   EXPECT_EQ(superstructure_status_fetcher_->state(),
             SuperstructureState::LOADING);
   EXPECT_EQ(superstructure_status_fetcher_->intake_state(),
@@ -871,7 +861,10 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
   ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
   EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_front(), 12.0);
   EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_back(), 12.0);
-  EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage(), 0.0);
+  EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage_front(),
+            0.0);
+  EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage_back(),
+            0.0);
   EXPECT_EQ(superstructure_status_fetcher_->state(),
             SuperstructureState::LOADED);
   EXPECT_EQ(superstructure_status_fetcher_->intake_state(),
@@ -887,7 +880,10 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
   ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
   EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_front(), 12.0);
   EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_back(), 12.0);
-  EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage(), 0.0);
+  EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage_front(),
+            0.0);
+  EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage_back(),
+            0.0);
   EXPECT_EQ(superstructure_status_fetcher_->state(),
             SuperstructureState::LOADED);
   EXPECT_EQ(superstructure_status_fetcher_->intake_state(),
@@ -908,13 +904,14 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
   ASSERT_TRUE(superstructure_output_fetcher_.Fetch());
   EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_front(), 0.0);
   EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_back(), 0.0);
-  LOG(INFO) << superstructure_output_fetcher_->transfer_roller_voltage();
-  EXPECT_TRUE(superstructure_output_fetcher_->transfer_roller_voltage() !=
+  EXPECT_TRUE(superstructure_output_fetcher_->transfer_roller_voltage_front() !=
                   0.0 &&
-              superstructure_output_fetcher_->transfer_roller_voltage() <=
-                  constants::Values::kTransferRollerFrontWiggleVoltage() &&
-              superstructure_output_fetcher_->transfer_roller_voltage() >=
-                  -constants::Values::kTransferRollerFrontWiggleVoltage());
+              superstructure_output_fetcher_->transfer_roller_voltage_front() <=
+                  constants::Values::kTransferRollerWiggleVoltage() &&
+              superstructure_output_fetcher_->transfer_roller_voltage_front() >=
+                  -constants::Values::kTransferRollerWiggleVoltage());
+  EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage_back(),
+            -superstructure_output_fetcher_->transfer_roller_voltage_front());
   EXPECT_EQ(superstructure_status_fetcher_->state(),
             SuperstructureState::LOADED);
   EXPECT_EQ(superstructure_status_fetcher_->intake_state(),
@@ -960,12 +957,14 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
   ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
   EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_front(), 0.0);
   EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_back(), 0.0);
-  EXPECT_TRUE(superstructure_output_fetcher_->transfer_roller_voltage() !=
+  EXPECT_TRUE(superstructure_output_fetcher_->transfer_roller_voltage_back() !=
                   0.0 &&
-              superstructure_output_fetcher_->transfer_roller_voltage() <=
-                  constants::Values::kTransferRollerFrontWiggleVoltage() &&
-              superstructure_output_fetcher_->transfer_roller_voltage() >=
-                  -constants::Values::kTransferRollerFrontWiggleVoltage());
+              superstructure_output_fetcher_->transfer_roller_voltage_back() <=
+                  constants::Values::kTransferRollerWiggleVoltage() &&
+              superstructure_output_fetcher_->transfer_roller_voltage_back() >=
+                  -constants::Values::kTransferRollerWiggleVoltage());
+  EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage_front(),
+            -superstructure_output_fetcher_->transfer_roller_voltage_back());
   EXPECT_EQ(superstructure_status_fetcher_->state(),
             SuperstructureState::SHOOTING);
   EXPECT_EQ(superstructure_status_fetcher_->intake_state(),
