@@ -322,6 +322,10 @@ class EventLoopLocalizer {
   aos::Sender<LocalizerVisualization> visualization_sender_;
   aos::Fetcher<frc971::control_loops::drivetrain::Output> output_fetcher_;
   aos::Fetcher<aos::message_bridge::ServerStatistics> clock_offset_fetcher_;
+  std::array<aos::Fetcher<y2022::vision::TargetEstimate>, 4>
+      target_estimate_fetchers_;
+  aos::Fetcher<y2022::control_loops::superstructure::Status>
+      superstructure_fetcher_;
   zeroing::ImuZeroer zeroer_;
   aos::monotonic_clock::time_point last_output_send_ =
       aos::monotonic_clock::min_time;

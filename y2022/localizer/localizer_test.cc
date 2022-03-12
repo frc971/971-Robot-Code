@@ -849,19 +849,19 @@ TEST_F(EventLoopLocalizerTest, ImageCorrectionsInAccel) {
   drivetrain_plant_.set_accel_sin_magnitude(0.01);
   drivetrain_plant_.mutable_state()->x() = 2.0;
   drivetrain_plant_.mutable_state()->y() = 2.0;
-  SendLocalizerControl(5.0, 3.0, 0.0);
+  SendLocalizerControl(6.0, 3.0, 0.0);
   event_loop_factory_.RunFor(std::chrono::seconds(1));
   CHECK(output_fetcher_.Fetch());
   CHECK(status_fetcher_.Fetch());
   ASSERT_FALSE(status_fetcher_->model_based()->using_model());
-  EXPECT_FALSE(VerifyEstimatorAccurate(0.5));
+  EXPECT_FALSE(VerifyEstimatorAccurate(3.0));
 
   send_targets_ = true;
 
   event_loop_factory_.RunFor(std::chrono::seconds(4));
   CHECK(status_fetcher_.Fetch());
   ASSERT_FALSE(status_fetcher_->model_based()->using_model());
-  EXPECT_TRUE(VerifyEstimatorAccurate(0.5));
+  EXPECT_TRUE(VerifyEstimatorAccurate(3.0));
   // y should be noticeably more accurate than x, since we are just driving
   // straight.
   ASSERT_NEAR(drivetrain_plant_.state()(1), status_fetcher_->model_based()->y(), 0.1);

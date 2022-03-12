@@ -678,6 +678,7 @@ void ModelBasedLocalizer::HandleImageMatch(
       aos::math::NormalizeAngle(camera_yaw + target->angle_to_target());
   debug.accepted = true;
   debug.image_age_sec = aos::time::DurationInSeconds(t_ - sample_time);
+  CHECK_LT(image_debugs_.size(), kDebugBufferSize);
   image_debugs_.push_back(debug);
 }
 
@@ -822,6 +823,7 @@ void ModelBasedLocalizer::TallyRejection(const RejectionReason reason) {
   TargetEstimateDebugT debug;
   debug.accepted = false;
   debug.rejection_reason = reason;
+  CHECK_LT(image_debugs_.size(), kDebugBufferSize);
   image_debugs_.push_back(debug);
 }
 
@@ -864,6 +866,8 @@ EventLoopLocalizer::EventLoopLocalizer(
       clock_offset_fetcher_(
           event_loop_->MakeFetcher<aos::message_bridge::ServerStatistics>(
               "/aos")),
+  superstructure_fetcher_(event_loop_->MakeFetcher<y2022::control_loops::superstructure::Status>(
+      "/superstructure")),
       left_encoder_(-DrivetrainWrapPeriod() / 2.0, DrivetrainWrapPeriod()),
       right_encoder_(-DrivetrainWrapPeriod() / 2.0, DrivetrainWrapPeriod()) {
   event_loop_->MakeWatcher(
@@ -876,45 +880,70 @@ EventLoopLocalizer::EventLoopLocalizer(
         model_based_.HandleReset(event_loop_->monotonic_now(),
                                  {control.x(), control.y(), theta});
       });
-  event_loop_->MakeWatcher(
-      "/superstructure",
-      [this](const y2022::control_loops::superstructure::Status &status) {
-        if (!status.has_turret()) {
-          return;
-        }
-        CHECK(status.has_turret());
-        model_based_.HandleTurret(event_loop_->context().monotonic_event_time,
-                                  status.turret()->position(),
-                                  status.turret()->velocity());
-      });
+  aos::TimerHandler *superstructure_timer = event_loop_->AddTimer([this]() {
+    if (superstructure_fetcher_.Fetch()) {
+      const y2022::control_loops::superstructure::Status &status =
+          *superstructure_fetcher_.get();
+      if (!status.has_turret()) {
+        return;
+      }
+      CHECK(status.has_turret());
+      model_based_.HandleTurret(
+          superstructure_fetcher_.context().monotonic_event_time,
+          status.turret()->position(), status.turret()->velocity());
+    }
+  });
+  event_loop_->OnRun([this, superstructure_timer]() {
+    superstructure_timer->Setup(event_loop_->monotonic_now(),
+                                std::chrono::milliseconds(20));
+  });
 
   for (size_t camera_index = 0; camera_index < kPisToUse.size(); ++camera_index) {
-    event_loop_->MakeWatcher(
-        absl::StrCat("/", kPisToUse[camera_index], "/camera"),
-        [this, camera_index](const y2022::vision::TargetEstimate &target) {
-          const std::optional<aos::monotonic_clock::duration> monotonic_offset =
-              ClockOffset(kPisToUse[camera_index]);
-          if (!monotonic_offset.has_value()) {
-            return;
-          }
-          // TODO(james): Get timestamp from message contents.
-          aos::monotonic_clock::time_point capture_time(
-              event_loop_->context().monotonic_remote_time - monotonic_offset.value());
-          if (capture_time > event_loop_->context().monotonic_event_time) {
-            model_based_.TallyRejection(RejectionReason::IMAGE_FROM_FUTURE);
-            return;
-          }
-          model_based_.HandleImageMatch(capture_time, &target, camera_index);
+    CHECK_LT(camera_index, target_estimate_fetchers_.size());
+    target_estimate_fetchers_[camera_index] =
+        event_loop_->MakeFetcher<y2022::vision::TargetEstimate>(
+            absl::StrCat("/", kPisToUse[camera_index], "/camera"));
+  }
+  aos::TimerHandler *estimate_timer = event_loop_->AddTimer(
+      [this]() {
+        for (size_t camera_index = 0; camera_index < kPisToUse.size();
+             ++camera_index) {
           if (model_based_.NumQueuedImageDebugs() ==
                   ModelBasedLocalizer::kDebugBufferSize ||
               (last_visualization_send_ + kMinVisualizationPeriod <
                event_loop_->monotonic_now())) {
             auto builder = visualization_sender_.MakeBuilder();
-            visualization_sender_.CheckOk(
-                builder.Send(model_based_.PopulateVisualization(builder.fbb())));
+            visualization_sender_.CheckOk(builder.Send(
+                model_based_.PopulateVisualization(builder.fbb())));
           }
-        });
-  }
+          if (target_estimate_fetchers_[camera_index].Fetch()) {
+            const std::optional<aos::monotonic_clock::duration>
+                monotonic_offset = ClockOffset(kPisToUse[camera_index]);
+            if (!monotonic_offset.has_value()) {
+              continue;
+            }
+            // TODO(james): Get timestamp from message contents.
+            aos::monotonic_clock::time_point capture_time(
+                target_estimate_fetchers_[camera_index]
+                    .context()
+                    .monotonic_remote_time -
+                monotonic_offset.value());
+            if (capture_time > target_estimate_fetchers_[camera_index]
+                                   .context()
+                                   .monotonic_event_time) {
+              model_based_.TallyRejection(RejectionReason::IMAGE_FROM_FUTURE);
+              continue;
+            }
+            model_based_.HandleImageMatch(
+                capture_time, target_estimate_fetchers_[camera_index].get(),
+                camera_index);
+          }
+        }
+      });
+  event_loop_->OnRun([this, estimate_timer]() {
+    estimate_timer->Setup(event_loop_->monotonic_now(),
+                          std::chrono::milliseconds(100));
+  });
   event_loop_->MakeWatcher(
       "/localizer", [this](const frc971::IMUValuesBatch &values) {
         CHECK(values.has_readings());
