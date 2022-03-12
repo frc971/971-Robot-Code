@@ -313,7 +313,7 @@ std::optional<double> CatapultController::Next() {
 const flatbuffers::Offset<
     frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus>
 Catapult::Iterate(const Goal *unsafe_goal, const Position *position,
-                  double *catapult_voltage, bool fire,
+                  double battery_voltage, double *catapult_voltage, bool fire,
                   flatbuffers::FlatBufferBuilder *fbb) {
   const frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal
       *catapult_goal = unsafe_goal != nullptr && unsafe_goal->has_catapult()
@@ -373,8 +373,9 @@ Catapult::Iterate(const Goal *unsafe_goal, const Position *position,
         } else {
           // TODO(austin): Voltage error?
           CHECK_NOTNULL(catapult_voltage);
-          *catapult_voltage =
-              std::max(0.0, std::min(12.0, *solution - 0.0 * next_X(2, 0)));
+          *catapult_voltage = std::max(
+              0.0, std::min(12.0, (*solution - 0.0 * next_X(2, 0)) * 12.0 /
+                                      std::max(battery_voltage, 8.0)));
           use_profile_ = false;
         }
       } else {
@@ -420,8 +421,9 @@ Catapult::Iterate(const Goal *unsafe_goal, const Position *position,
     }
   }
 
-  catapult_.UpdateObserver(catapult_voltage != nullptr ? *catapult_voltage
-                                                       : 0.0);
+  catapult_.UpdateObserver(catapult_voltage != nullptr
+                               ? (*catapult_voltage * battery_voltage / 12.0)
+                               : 0.0);
 
   return catapult_.MakeStatus(fbb);
 }

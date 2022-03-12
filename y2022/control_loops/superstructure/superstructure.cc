@@ -394,12 +394,12 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   // Disable the catapult if we want to restart to prevent damage with
   // flippers
   const flatbuffers::Offset<PotAndAbsoluteEncoderProfiledJointStatus>
-      catapult_status_offset =
-          catapult_.Iterate(unsafe_goal, position,
-                            output != nullptr && !catapult_.estopped()
-                                ? &(output_struct.catapult_voltage)
-                                : nullptr,
-                            fire_, status->fbb());
+      catapult_status_offset = catapult_.Iterate(
+          unsafe_goal, position, robot_state().voltage_battery(),
+          output != nullptr && !catapult_.estopped()
+              ? &(output_struct.catapult_voltage)
+              : nullptr,
+          fire_, status->fbb());
 
   const flatbuffers::Offset<RelativeEncoderProfiledJointStatus>
       climber_status_offset = climber_.Iterate(
