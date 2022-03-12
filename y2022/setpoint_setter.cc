@@ -4,8 +4,8 @@
 #include "glog/logging.h"
 #include "y2022/setpoint_generated.h"
 
-DEFINE_double(catapult_position, 0.3, "Catapult shot position");
-DEFINE_double(catapult_velocity, 15.0, "Catapult shot velocity");
+DEFINE_double(catapult_position, 0.03, "Catapult shot position");
+DEFINE_double(catapult_velocity, 18.0, "Catapult shot velocity");
 DEFINE_double(turret, 0.0, "Turret setpoint");
 
 using y2022::input::joysticks::Setpoint;

@@ -182,9 +182,18 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     }
 
     if (data.IsPressed(kTurret)) {
-      turret_pos = -1.5;
+      if (setpoint_fetcher_.get()) {
+        turret_pos = setpoint_fetcher_->turret();
+      } else {
+        turret_pos = -1.5;
+      }
     } else {
       turret_pos = 0.0;
+    }
+
+    if (setpoint_fetcher_.get()) {
+      catapult_pos = setpoint_fetcher_->catapult_position();
+      catapult_speed = setpoint_fetcher_->catapult_velocity();
     }
 
     // Keep the catapult return position at the shot one if kCatapultPos is
