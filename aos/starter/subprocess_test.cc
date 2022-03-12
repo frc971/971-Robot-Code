@@ -49,9 +49,6 @@ TEST_F(SubprocessTest, CaptureOutputs) {
 
   event_loop.Run();
 
-  EXPECT_TRUE(echo_stdout.full_path() == "/bin/echo" ||
-              echo_stdout.full_path() == "/usr/bin/echo")
-      << echo_stdout.full_path();
   ASSERT_EQ("abcdef\n", echo_stdout.GetStdout());
   ASSERT_TRUE(echo_stdout.GetStderr().empty());
   EXPECT_TRUE(observed_stopped);

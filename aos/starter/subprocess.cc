@@ -6,9 +6,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
-#include "absl/strings/str_split.h"
 #include "glog/logging.h"
-#include "openssl/sha.h"
 
 namespace aos::starter {
 
@@ -93,12 +91,6 @@ void Application::DoStart() {
 
   start_timer_->Disable();
   restart_timer_->Disable();
-
-  if (!UpdatePathAndChecksum()) {
-    stop_reason_ = aos::starter::LastStopReason::RESOLVE_ERR;
-    MaybeQueueRestart();
-    return;
-  }
 
   status_pipes_ = util::ScopedPipe::MakePipe();
 
@@ -206,15 +198,15 @@ void Application::DoStart() {
   }
 
   // argv[0] should be the program name
-  args_.insert(args_.begin(), full_path_);
+  args_.insert(args_.begin(), path_);
 
   std::vector<char *> cargs = CArgs();
-  execv(full_path_.c_str(), cargs.data());
+  execvp(path_.c_str(), cargs.data());
 
   // If we got here, something went wrong
   status_pipes_.write->Write(
       static_cast<uint32_t>(aos::starter::LastStopReason::EXECV_ERR));
-  PLOG(WARNING) << "Could not execute " << name_ << " (" << full_path_ << ')';
+  PLOG(WARNING) << "Could not execute " << name_ << " (" << path_ << ')';
 
   _exit(EXIT_FAILURE);
 }
@@ -304,15 +296,6 @@ void Application::QueueStart() {
   on_change_();
 }
 
-void Application::MaybeQueueRestart() {
-  if (autorestart()) {
-    QueueStart();
-  } else {
-    status_ = aos::starter::State::STOPPED;
-    on_change_();
-  }
-}
-
 std::vector<char *> Application::CArgs() {
   std::vector<char *> cargs;
   std::transform(args_.begin(), args_.end(), std::back_inserter(cargs),
@@ -362,70 +345,10 @@ std::optional<gid_t> Application::FindPrimaryGidForUser(const char *name) {
   }
 }
 
-bool Application::UpdatePathAndChecksum() {
-  int fin = -1;
-  std::string test_path;
-  if (path_.find('/') != std::string::npos) {
-    test_path = path_;
-    fin = open(path_.c_str(), O_RDONLY);
-  } else {
-    char *path = secure_getenv("PATH");
-    for (std::string_view path_cmp : absl::StrSplit(path, ':')) {
-      test_path = absl::StrCat(path_cmp, "/", path_);
-      fin = open(test_path.c_str(), O_RDONLY);
-      if (fin != -1) break;
-    }
-  }
-  if (fin == -1) {
-    PLOG(WARNING) << "Failed to open binary '" << path_ << "' as file";
-    return false;
-  }
-
-  full_path_ = std::move(test_path);
-
-  // Hash iteratively to avoid reading the entire binary into memory
-  constexpr std::size_t kReadSize = 1024 * 16;
-
-  SHA256_CTX ctx;
-  CHECK_EQ(SHA256_Init(&ctx), 1);
-
-  std::array<uint8_t, kReadSize> buf;
-
-  while (true) {
-    const ssize_t result = read(fin, buf.data(), kReadSize);
-    PCHECK(result != -1);
-    if (result == 0) {
-      break;
-    } else {
-      CHECK_EQ(SHA256_Update(&ctx, buf.data(), result), 1);
-    }
-  }
-  PCHECK(close(fin) == 0);
-
-  std::array<uint8_t, SHA256_DIGEST_LENGTH> hash_buf;
-  CHECK_EQ(SHA256_Final(hash_buf.data(), &ctx), 1);
-
-  static constexpr std::string_view kHexTable = "0123456789abcdef";
-
-  static_assert(hash_buf.size() * 2 == kSha256HexStrSize);
-  for (std::size_t i = 0; i < hash_buf.size(); ++i) {
-    checksum_[i * 2] = kHexTable[(hash_buf[i] & 0xF0U) >> 4U];
-    checksum_[i * 2 + 1] = kHexTable[hash_buf[i] & 0x0FU];
-  }
-
-  return true;
-}
-
 flatbuffers::Offset<aos::starter::ApplicationStatus>
 Application::PopulateStatus(flatbuffers::FlatBufferBuilder *builder) {
   CHECK_NOTNULL(builder);
   auto name_fbs = builder->CreateString(name_);
-  auto full_path_fbs = builder->CreateString(full_path_);
-  flatbuffers::Offset<flatbuffers::String> binary_sha256_fbs;
-  if (pid_ != -1) {
-    binary_sha256_fbs =
-        builder->CreateString(checksum_.data(), checksum_.size());
-  }
 
   aos::starter::ApplicationStatus::Builder status_builder(*builder);
   status_builder.add_name(name_fbs);
@@ -437,8 +360,6 @@ Application::PopulateStatus(flatbuffers::FlatBufferBuilder *builder) {
   if (pid_ != -1) {
     status_builder.add_pid(pid_);
     status_builder.add_id(id_);
-    status_builder.add_binary_sha256(binary_sha256_fbs);
-    status_builder.add_full_path(full_path_fbs);
   }
   status_builder.add_last_start_time(start_time_.time_since_epoch().count());
   return status_builder.Finish();
@@ -520,7 +441,12 @@ bool Application::MaybeHandleSignal() {
         LOG(WARNING) << "Failed to start '" << name_ << "' on pid " << pid_
                      << " : Exited with status " << exit_code_.value();
       }
-      MaybeQueueRestart();
+      if (autorestart()) {
+        QueueStart();
+      } else {
+        status_ = aos::starter::State::STOPPED;
+        on_change_();
+      }
       break;
     }
     case aos::starter::State::RUNNING: {
@@ -532,7 +458,12 @@ bool Application::MaybeHandleSignal() {
                      << " exited unexpectedly with status "
                      << exit_code_.value();
       }
-      MaybeQueueRestart();
+      if (autorestart()) {
+        QueueStart();
+      } else {
+        status_ = aos::starter::State::STOPPED;
+        on_change_();
+      }
       break;
     }
     case aos::starter::State::STOPPING: {
