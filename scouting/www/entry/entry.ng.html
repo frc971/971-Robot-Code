@@ -12,8 +12,10 @@
             <label for="team_number">Team Number</label>
             <input [(ngModel)]="teamNumber" type="number" id="team_number" min="1" max="9999">
         </div>
-        <div class="text-right">
-            <button class="btn btn-primary" (click)="nextSection()">Next</button>
+        <div class="buttons">
+          <!-- hack to right align the next button -->
+          <div></div>
+          <button class="btn btn-primary" (click)="nextSection()">Next</button>
         </div>
     </div>
 
@@ -49,8 +51,7 @@
             <frc971-counter-button class="col-4" [(value)]="autoShotsMissed">Missed</frc971-counter-button>
         </div>
         <div class="buttons">
-          <!-- hack to right align the next button -->
-          <div></div>
+          <button class="btn btn-primary" (click)="prevSection()">Back</button>
           <button class="btn btn-primary" (click)="nextSection()">Next</button>
         </div>
     </div>
