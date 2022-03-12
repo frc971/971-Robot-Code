@@ -13,7 +13,7 @@
 
 DEFINE_uint64(red_delta, 100,
               "Required difference between green pixels vs. red");
-DEFINE_uint64(blue_delta, 50,
+DEFINE_uint64(blue_delta, 30,
               "Required difference between green pixels vs. blue");
 
 DEFINE_bool(use_outdoors, false,
