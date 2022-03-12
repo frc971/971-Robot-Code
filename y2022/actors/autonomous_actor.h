@@ -51,7 +51,6 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   void set_preloaded(bool preloaded) { preloaded_ = preloaded; }
 
   void SendSuperstructureGoal();
-  bool WaitForBallsShot(int num_shot);
   void ExtendFrontIntake();
   void RetractFrontIntake();
   void ExtendBackIntake();
@@ -61,9 +60,12 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
 
   // Tells the superstructure the ball was preloaded and waits until it updates
   // the state
-  bool WaitForPreloaded();
+  [[nodiscard]] bool WaitForPreloaded();
+  // Waits for a certain number of balls to be shot
+  [[nodiscard]] bool WaitForBallsShot(int num_shot);
 
   void SplineAuto();
+  void RapidReact();
 
   void Replan();
 
@@ -89,6 +91,7 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   aos::TimerHandler *button_poll_;
 
   std::optional<SplineHandle> test_spline_;
+  std::optional<std::array<SplineHandle, 5>> rapid_react_splines_;
 
   aos::Alliance alliance_ = aos::Alliance::kInvalid;
   AutonomousSplines auto_splines_;
