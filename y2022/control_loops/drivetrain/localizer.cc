@@ -71,8 +71,15 @@ void Localizer::Update(const Eigen::Matrix<double, 2, 1> &U,
         monotonic_offset);
     // TODO: Finish implementing simple x/y/theta updater with state_at_capture.
     // TODO: Implement turret/camera processing logic on pi side.
-    const std::optional<State> state_at_capture =
+    std::optional<State> state_at_capture =
         ekf_.LastStateBeforeTime(capture_time);
+    if (!state_at_capture.has_value()) {
+      state_at_capture = ekf_.OldestState();
+      if (!state_at_capture.has_value()) {
+        return;
+      }
+    }
+
     Eigen::Matrix<float, HybridEkf::kNOutputs, HybridEkf::kNStates> H;
     H.setZero();
     H(0, StateIdx::kX) = 1;

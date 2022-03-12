@@ -330,6 +330,12 @@ class HybridEkf {
     }
     return X_hat();
   }
+  std::optional<State> OldestState() {
+    if (observations_.empty()) {
+      return std::nullopt;
+    }
+    return observations_.begin()->X_hat;
+  }
 
   // Returns the most recent input vector.
   Input MostRecentInput() {
