@@ -50,7 +50,7 @@ table Goal {
   auto_aim:bool (id: 11);
 
   // If true, we started with the ball loaded and should proceed to that state.
-  preloaded:bool (id: 12);
+  preloaded:bool (id: 13);
 }
 
 
