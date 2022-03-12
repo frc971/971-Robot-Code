@@ -20,6 +20,8 @@ export function plotDrivetrain(conn: Connection, element: Element): void {
       '/drivetrain', 'frc971.control_loops.drivetrain.Status');
   const output = aosPlotter.addMessageSource(
       '/drivetrain', 'frc971.control_loops.drivetrain.Output');
+  const gyroReading = aosPlotter.addMessageSource(
+      '/drivetrain', 'frc971.sensors.GyroReading');
   const imu = aosPlotter.addRawMessageSource(
       '/drivetrain', 'frc971.IMUValuesBatch',
       new ImuMessageHandler(conn.getSchema('frc971.IMUValuesBatch')));
@@ -323,6 +325,7 @@ export function plotDrivetrain(conn: Connection, element: Element): void {
   gyroY.setColor(GREEN);
   const gyroZ = gyroPlot.addMessageLine(imu, ['gyro_z']);
   gyroZ.setColor(BLUE);
+  gyroPlot.addMessageLine(gyroReading, ['velocity']).setColor(BLUE);
 
   // IMU States
   const imuStatePlot =
