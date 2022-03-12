@@ -204,17 +204,32 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       catapult_return_pos = -0.908;
     }
 
+    constexpr double kRollerSpeed = 8.0;
+    constexpr size_t kIntakeCounterIterations = 25;
+
     // Extend the intakes and spin the rollers
     if (data.IsPressed(kIntakeFrontOut)) {
       intake_front_pos = 0.0;
-      roller_front_speed = 12.0;
       transfer_roller_front_speed = 12.0;
       transfer_roller_back_speed = -transfer_roller_front_speed;
+
+      intake_front_counter_ = kIntakeCounterIterations;
     } else if (data.IsPressed(kIntakeBackOut)) {
-      roller_back_speed = 12.0;
       intake_back_pos = 0.0;
       transfer_roller_back_speed = 12.0;
       transfer_roller_front_speed = -transfer_roller_back_speed;
+
+      intake_back_counter_ = kIntakeCounterIterations;
+    }
+
+    // Keep spinning the rollers a bit after they let go
+    if (intake_front_counter_ > 0) {
+      intake_front_counter_--;
+      roller_front_speed = kRollerSpeed;
+    }
+    if (intake_back_counter_ > 0) {
+      intake_back_counter_--;
+      roller_back_speed = kRollerSpeed;
     }
 
     if (data.IsPressed(kFire)) {
@@ -286,6 +301,9 @@ class Reader : public ::frc971::input::ActionJoystickInput {
   ::aos::Fetcher<superstructure::Status> superstructure_status_fetcher_;
 
   ::aos::Fetcher<Setpoint> setpoint_fetcher_;
+
+  size_t intake_front_counter_ = 0;
+  size_t intake_back_counter_ = 0;
 };
 
 }  // namespace joysticks
