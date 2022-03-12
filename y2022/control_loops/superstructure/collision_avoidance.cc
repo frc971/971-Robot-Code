@@ -33,6 +33,25 @@ bool CollisionAvoidance::IsCollided(const CollisionAvoidance::Status &status) {
     return true;
   }
 
+  // If we aren't firing, no need to check the catapult
+  if (!status.shooting) {
+    return false;
+  }
+
+  // Checks if intake front is collided with catapult.
+  if (TurretCollided(
+          status.intake_front_position, status.turret_position + M_PI,
+          kMinCollisionZoneFrontTurret, kMaxCollisionZoneFrontTurret)) {
+    return true;
+  }
+
+  // Checks if intake back is collided with catapult.
+  if (TurretCollided(status.intake_back_position, status.turret_position + M_PI,
+                     kMinCollisionZoneBackTurret,
+                     kMaxCollisionZoneBackTurret)) {
+    return true;
+  }
+
   return false;
 }
 
@@ -96,20 +115,39 @@ void CollisionAvoidance::UpdateGoal(
   // Calculating the avoidance with either intake, and when the turret is
   // wrapped.
 
-  CalculateAvoidance(true, intake_front_position, turret_goal,
-                     kMinCollisionZoneFrontTurret, kMaxCollisionZoneFrontTurret,
-                     turret_position);
-  CalculateAvoidance(false, intake_back_position, turret_goal,
-                     kMinCollisionZoneBackTurret, kMaxCollisionZoneBackTurret,
-                     turret_position);
+  CalculateAvoidance(true, false, intake_front_position, turret_position,
+                     turret_goal, kMinCollisionZoneFrontTurret,
+                     kMaxCollisionZoneFrontTurret);
+  CalculateAvoidance(false, false, intake_back_position, turret_position,
+                     turret_goal, kMinCollisionZoneBackTurret,
+                     kMaxCollisionZoneBackTurret);
+
+  // If we aren't firing, no need to check the catapult
+  if (!status.shooting) {
+    return;
+  }
+
+  CalculateAvoidance(true, true, intake_front_position, turret_position,
+                     turret_goal, kMinCollisionZoneFrontTurret,
+                     kMaxCollisionZoneFrontTurret);
+  CalculateAvoidance(false, true, intake_back_position, turret_position,
+                     turret_goal, kMinCollisionZoneBackTurret,
+                     kMaxCollisionZoneBackTurret);
 }
 
-void CollisionAvoidance::CalculateAvoidance(bool intake_front,
+void CollisionAvoidance::CalculateAvoidance(bool intake_front, bool catapult,
                                             double intake_position,
+                                            double turret_position,
                                             double turret_goal,
                                             double min_turret_collision_goal,
-                                            double max_turret_collision_goal,
-                                            double turret_position) {
+                                            double max_turret_collision_goal) {
+  // If we are checking the catapult, offset the turret angle to represent where
+  // the catapult is
+  if (catapult) {
+    turret_position += M_PI;
+    turret_goal += M_PI;
+  }
+
   auto [turret_position_wrapped, turret_position_wraps] =
       WrapTurretAngle(turret_position);
 
@@ -161,12 +199,15 @@ void CollisionAvoidance::CalculateAvoidance(bool intake_front,
     // If the intake is in the way, limit the turret until moved. Otherwise,
     // let'errip!
     if (!turret_pos_unsafe && (intake_position > kCollisionZoneIntake)) {
+      // If we were comparing the position of the catapult,
+      // remove that offset of pi to get the turret position
+      const double bounds_offset = (catapult ? -M_PI : 0);
       if (turret_position < min_turret_collision_goal_unwrapped) {
-        update_max_turret_goal(min_turret_collision_goal_unwrapped -
-                               kEpsTurret);
+        update_max_turret_goal(min_turret_collision_goal_unwrapped +
+                               bounds_offset - kEpsTurret);
       } else {
         update_min_turret_goal(max_turret_collision_goal_unwrapped +
-                               kEpsTurret);
+                               bounds_offset + kEpsTurret);
       }
     }
   }

@@ -76,13 +76,14 @@ enum class TurretState {
   kNegativeUnsafeFrontWrapped,
   kNegativeUnsafeBackWrapped,
 };
+enum class CatapultState { kIdle, kShooting };
 
 class CollisionAvoidanceTest : public ::testing::Test {
  public:
   CollisionAvoidanceTest()
       : unsafe_goal_(MakeZeroGoal()),
-        status_({0.0, 0.0, 0.0}),
-        prev_status_({0.0, 0.0, 0.0}) {}
+        status_({0.0, 0.0, 0.0, false}),
+        prev_status_({0.0, 0.0, 0.0, false}) {}
 
   void Simulate() {
     FlatbufferDetachedBuffer<Goal> safe_goal = MakeZeroGoal();
@@ -232,10 +233,12 @@ class CollisionAvoidanceTest : public ::testing::Test {
   void Test(IntakeState intake_front_pos_state,
             IntakeState intake_back_pos_state, TurretState turret_pos_state,
             IntakeState intake_front_goal_state,
-            IntakeState intake_back_goal_state, TurretState turret_goal_state) {
+            IntakeState intake_back_goal_state, TurretState turret_goal_state,
+            CatapultState catapult_state) {
     status_ = {ComputeIntakeAngle(intake_front_pos_state),
                ComputeIntakeAngle(intake_back_pos_state),
-               ComputeTurretAngle(turret_pos_state)};
+               ComputeTurretAngle(turret_pos_state),
+               catapult_state == CatapultState::kShooting};
 
     unsafe_goal_.mutable_message()->mutable_intake_front()->mutate_unsafe_goal(
         ComputeIntakeAngle(intake_front_goal_state));
@@ -260,13 +263,18 @@ class CollisionAvoidanceTest : public ::testing::Test {
     // Turret is highest priority and should always reach the unsafe goal
     EXPECT_NEAR(turret_goal(), status_.turret_position, kIterationMove);
 
-    // If the unsafe goal had an intake colliding with the turret, the intake
-    // position should be at least the collision zone angle.
+    // If the unsafe goal had an intake colliding with the turret or catapult,
+    // the intake position should be at least the collision zone angle.
     // Otherwise, the intake should be at the unsafe goal
     if (avoidance_.TurretCollided(
             intake_front_goal(), turret_goal(),
             CollisionAvoidance::kMinCollisionZoneFrontTurret,
-            CollisionAvoidance::kMaxCollisionZoneFrontTurret)) {
+            CollisionAvoidance::kMaxCollisionZoneFrontTurret) ||
+        (status_.shooting &&
+         avoidance_.TurretCollided(
+             intake_front_goal(), turret_goal() + M_PI,
+             CollisionAvoidance::kMinCollisionZoneFrontTurret,
+             CollisionAvoidance::kMaxCollisionZoneFrontTurret))) {
       EXPECT_LE(status_.intake_front_position,
                 CollisionAvoidance::kCollisionZoneIntake);
     } else {
@@ -277,7 +285,12 @@ class CollisionAvoidanceTest : public ::testing::Test {
     if (avoidance_.TurretCollided(
             intake_back_goal(), turret_goal(),
             CollisionAvoidance::kMinCollisionZoneBackTurret,
-            CollisionAvoidance::kMaxCollisionZoneBackTurret)) {
+            CollisionAvoidance::kMaxCollisionZoneBackTurret) ||
+        (status_.shooting &&
+         avoidance_.TurretCollided(
+             intake_back_goal(), turret_goal() + M_PI,
+             CollisionAvoidance::kMinCollisionZoneBackTurret,
+             CollisionAvoidance::kMaxCollisionZoneBackTurret))) {
       EXPECT_LE(status_.intake_back_position,
                 CollisionAvoidance::kCollisionZoneIntake);
     } else {
@@ -338,8 +351,13 @@ TEST_F(CollisionAvoidanceTest, BruteForce) {
                   TurretState::kUnsafeFront, TurretState::kUnsafeBack,
                   TurretState::kUnsafeFrontWrapped,
                   TurretState::kUnsafeBackWrapped}) {
-              Test(intake_front_pos, intake_back_pos, turret_pos,
-                   intake_front_goal, intake_back_goal, turret_goal);
+              // Catapult state
+              for (CatapultState catapult_state :
+                   {CatapultState::kIdle, CatapultState::kShooting}) {
+                Test(intake_front_pos, intake_back_pos, turret_pos,
+                     intake_front_goal, intake_back_goal, turret_goal,
+                     catapult_state);
+              }
             }
           }
         }

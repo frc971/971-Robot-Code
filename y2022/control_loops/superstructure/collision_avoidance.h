@@ -24,6 +24,8 @@ double UnwrapTurretAngle(double wrapped, int wraps);
 bool AngleInRange(double theta, double theta_min, double theta_max);
 
 // 1. Prevent the turret from moving if the intake is up
+// and prevent the back of the turret (where the catapult is)
+// from colliding with the intake when it's up.
 // 2. If the intake is up, drop it so it is not in the way
 // 3. Move the turret to the desired position.
 // 4. When the turret moves away, if the intake is down, move it back up.
@@ -33,11 +35,12 @@ class CollisionAvoidance {
     double intake_front_position;
     double intake_back_position;
     double turret_position;
+    bool shooting;
 
     bool operator==(const Status &s) const {
       return (intake_front_position == s.intake_front_position &&
               intake_back_position == s.intake_back_position &&
-              turret_position == s.turret_position);
+              turret_position == s.turret_position && shooting == s.shooting);
     }
     bool operator!=(const Status &s) const { return !(*this == s); }
   };
@@ -60,9 +63,8 @@ class CollisionAvoidance {
   // Maximum position of the intake to avoid collisions
   static constexpr double kCollisionZoneIntake = 1.4;
 
-  // Tolerance for the turret.
+  // Tolerances for the subsystems
   static constexpr double kEpsTurret = 0.05;
-  // Tolerance for the intake.
   static constexpr double kEpsIntake = 0.05;
 
   CollisionAvoidance();
@@ -79,10 +81,10 @@ class CollisionAvoidance {
       const frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal
           *unsafe_turret_goal);
   // Limits if goal is in collision spots.
-  void CalculateAvoidance(bool intake_front, double intake_position,
-                          double turret_goal, double mix_turret_collision_goal,
-                          double max_turret_collision_goal,
-                          double turret_position);
+  void CalculateAvoidance(bool intake_front, bool catapult,
+                          double intake_position, double turret_position,
+                          double turret_goal, double min_turret_collision_goal,
+                          double max_turret_collision_goal);
 
   // Returns the goals to give to the respective control loops in
   // superstructure.

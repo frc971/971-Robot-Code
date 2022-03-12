@@ -280,9 +280,15 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
           turret_goal != nullptr &&
           std::abs(turret_goal->unsafe_goal() - turret_.position()) <
               kTurretGoalThreshold;
+      const bool collided = collision_avoidance_.IsCollided(
+          {.intake_front_position = intake_front_.estimated_position(),
+           .intake_back_position = intake_back_.estimated_position(),
+           .turret_position = turret_.estimated_position(),
+           .shooting = true});
 
-      // If the turret reached the aiming goal, fire!
-      if (flippers_open_ && turret_near_goal) {
+      // If the turret reached the aiming goal and the catapult is safe to move
+      // up, fire!
+      if (flippers_open_ && turret_near_goal && !collided) {
         fire_ = true;
       }
 
@@ -313,7 +319,8 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   collision_avoidance_.UpdateGoal(
       {.intake_front_position = intake_front_.estimated_position(),
        .intake_back_position = intake_back_.estimated_position(),
-       .turret_position = turret_.estimated_position()},
+       .turret_position = turret_.estimated_position(),
+       .shooting = state_ == SuperstructureState::SHOOTING},
       turret_goal);
 
   turret_.set_min_position(collision_avoidance_.min_turret_goal());
