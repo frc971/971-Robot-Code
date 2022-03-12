@@ -99,6 +99,7 @@ void ColumnProfiledSubsystem::Correct(const ColumnPosition &new_position) {
 
   if (estimators_[0].error()) {
     AOS_LOG(ERROR, "zeroing error\n");
+    X_hat_ = loop_->X_hat();
     return;
   }
 
@@ -120,6 +121,7 @@ void ColumnProfiledSubsystem::Correct(const ColumnPosition &new_position) {
   Y_ << new_position.indexer()->encoder(), new_position.turret()->encoder();
   Y_ += offset_;
   loop_->Correct(Y_);
+  X_hat_ = loop_->X_hat();
 
   indexer_history_[indexer_history_position_] =
       new_position.indexer()->encoder();

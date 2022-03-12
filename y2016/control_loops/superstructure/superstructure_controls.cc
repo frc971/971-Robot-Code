@@ -101,10 +101,12 @@ void Arm::Correct(const PotAndIndexPosition *position_shoulder,
   // Handle zeroing errors
   if (estimators_[kShoulderIndex].error()) {
     AOS_LOG(ERROR, "zeroing error with shoulder_estimator\n");
+    X_hat_ = loop_->X_hat();
     return;
   }
   if (estimators_[kWristIndex].error()) {
     AOS_LOG(ERROR, "zeroing error with wrist_estimator\n");
+    X_hat_ = loop_->X_hat();
     return;
   }
 
@@ -130,6 +132,7 @@ void Arm::Correct(const PotAndIndexPosition *position_shoulder,
     Y_ << position_shoulder->encoder(), position_wrist->encoder();
     Y_ += offset_;
     loop_->Correct(Y_);
+    X_hat_ = loop_->X_hat();
   }
 }
 
