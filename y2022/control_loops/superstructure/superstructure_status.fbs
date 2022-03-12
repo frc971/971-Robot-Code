@@ -13,16 +13,16 @@ enum IntakeState : ubyte {
 // State of the superstructure state machine
 enum SuperstructureState : ubyte {
   // Before a ball is intaked, when neither intake beambreak is triggered
-  IDLE,
+  IDLE = 0,
   // Transferring ball with transfer rollers. Moves turret to loading position.
-  TRANSFERRING,
+  TRANSFERRING = 1,
   // Loading the ball into the catapult
-  LOADING,
+  LOADING = 2,
   // The ball is loaded into the catapult
-  LOADED,
+  LOADED = 3,
   // Waiting for the turret to be at shooting goal and then telling the
   // catapult to fire.
-  SHOOTING,
+  SHOOTING = 4,
 }
 
 table AimerStatus {

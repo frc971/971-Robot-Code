@@ -45,6 +45,7 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   }
 
   void set_fire_at_will(bool fire) { fire_ = fire; }
+  void set_preloaded(bool preloaded) { preloaded_ = preloaded; }
 
   void SendSuperstructureGoal();
   void ExtendFrontIntake();
@@ -53,6 +54,10 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   void RetractBackIntake();
   void SendStartingPosition(const Eigen::Vector3d &start);
   void MaybeSendStartingPosition();
+
+  // Tells the superstructure the ball was preloaded and waits until it updates
+  // the state
+  bool WaitForPreloaded();
 
   void SplineAuto();
 
@@ -64,6 +69,7 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   double roller_back_voltage_ = 0.0;
   double transfer_roller_voltage_ = 0.0;
   bool fire_ = false;
+  bool preloaded_ = false;
 
   aos::Sender<frc971::control_loops::drivetrain::LocalizerControl>
       localizer_control_sender_;
