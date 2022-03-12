@@ -31,6 +31,11 @@ export class EntryComponent {
     defensePlayedOnScore: number = 0;
     defensePlayedScore: number = 0;
     level: Level = 'NoAttempt';
+    ball1: boolean = false;
+    ball2: boolean = false;
+    ball3: boolean = false;
+    ball4: boolean = false;
+    ball5: boolean = false;
     errorMessage: string = '';
     noShow: boolean = false;
     neverMoved: boolean = false;
@@ -94,6 +99,12 @@ export class EntryComponent {
         SubmitDataScouting.addUpperGoalTele(builder, this.teleUpperShotsMade);
         SubmitDataScouting.addLowerGoalTele(builder, this.teleLowerShotsMade);
         SubmitDataScouting.addDefenseRating(builder, this.defensePlayedScore);
+        SubmitDataScouting.addAutoBall1(builder, this.ball1);
+        SubmitDataScouting.addAutoBall2(builder, this.ball2);
+        SubmitDataScouting.addAutoBall3(builder, this.ball3);
+        SubmitDataScouting.addAutoBall4(builder, this.ball4);
+        SubmitDataScouting.addAutoBall5(builder, this.ball5);
+
         // TODO(phil): Add support for defensePlayedOnScore.
         // TODO(phil): Fix the Climbing score.
         SubmitDataScouting.addClimbing(builder, 1);
