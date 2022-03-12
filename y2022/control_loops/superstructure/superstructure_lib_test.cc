@@ -776,6 +776,7 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
   ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
   EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_front(), 12.0);
   EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_back(), 12.0);
+
   EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage_front(),
             0.0);
   EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage_back(),
@@ -783,8 +784,10 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
   EXPECT_EQ(superstructure_status_fetcher_->state(), SuperstructureState::IDLE);
   EXPECT_EQ(superstructure_status_fetcher_->intake_state(),
             IntakeState::NO_BALL);
-  EXPECT_NEAR(superstructure_status_fetcher_->turret()->position(), kTurretGoal,
-              0.001);
+  // Since we spun the front rollers, the turret should be trying to intake from
+  // there
+  EXPECT_NEAR(superstructure_status_fetcher_->turret()->position(),
+              constants::Values::kTurretFrontIntakePos(), 0.001);
   EXPECT_EQ(superstructure_status_fetcher_->shot_count(), 0);
 
   superstructure_plant_.set_intake_beambreak_front(true);
