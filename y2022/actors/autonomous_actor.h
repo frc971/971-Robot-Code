@@ -51,6 +51,7 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   void set_preloaded(bool preloaded) { preloaded_ = preloaded; }
 
   void SendSuperstructureGoal();
+  bool WaitForBallsShot(int num_shot);
   void ExtendFrontIntake();
   void RetractFrontIntake();
   void ExtendBackIntake();
