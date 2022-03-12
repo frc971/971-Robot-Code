@@ -205,17 +205,18 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     }
 
     constexpr double kRollerSpeed = 8.0;
+    constexpr double kIntakePosition = -0.02;
     constexpr size_t kIntakeCounterIterations = 25;
 
     // Extend the intakes and spin the rollers
     if (data.IsPressed(kIntakeFrontOut)) {
-      intake_front_pos = 0.0;
+      intake_front_pos = kIntakePosition;
       transfer_roller_front_speed = 12.0;
       transfer_roller_back_speed = -transfer_roller_front_speed;
 
       intake_front_counter_ = kIntakeCounterIterations;
     } else if (data.IsPressed(kIntakeBackOut)) {
-      intake_back_pos = 0.0;
+      intake_back_pos = kIntakePosition;
       transfer_roller_back_speed = 12.0;
       transfer_roller_front_speed = -transfer_roller_back_speed;
 

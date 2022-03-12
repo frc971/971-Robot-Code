@@ -6,7 +6,7 @@ import * as proxy from 'org_frc971/aos/network/www/proxy';
 import Connection = proxy.Connection;
 
 const TIME = AosPlotter.TIME;
-const DEFAULT_WIDTH = AosPlotter.DEFAULT_WIDTH;
+const DEFAULT_WIDTH = AosPlotter.DEFAULT_WIDTH * 2;
 const DEFAULT_HEIGHT = AosPlotter.DEFAULT_HEIGHT * 3;
 
 export function plotSuperstructure(conn: Connection, element: Element): void {
