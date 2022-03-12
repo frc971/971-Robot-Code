@@ -42,6 +42,8 @@ import {plotSuperstructure as plot2021Superstructure} from
     'org_frc971/y2021_bot3/control_loops/superstructure/superstructure_plotter';
 import {plotTurret as plot2022Turret} from
     'org_frc971/y2022/control_loops/superstructure/turret_plotter'
+import {plotSuperstructure as plot2022Superstructure} from
+    'org_frc971/y2022/control_loops/superstructure/superstructure_plotter'
 import {plotCatapult as plot2022Catapult} from
     'org_frc971/y2022/control_loops/superstructure/catapult_plotter'
 import {plotIntakeFront as plot2022IntakeFront, plotIntakeBack as plot2022IntakeBack} from
@@ -119,6 +121,7 @@ const plotIndex = new Map<string, PlotState>([
   ['2020 Localizer', new PlotState(plotDiv, plot2020Localizer)],
   ['2022 Localizer', new PlotState(plotDiv, plot2022Localizer)],
   ['2022 Vision', new PlotState(plotDiv, plot2022Vision)],
+  ['2022 Superstructure', new PlotState(plotDiv, plot2022Superstructure)],
   ['2022 Catapult', new PlotState(plotDiv, plot2022Catapult)],
   ['2022 Intake Front', new PlotState(plotDiv, plot2022IntakeFront)],
   ['2022 Intake Back', new PlotState(plotDiv, plot2022IntakeBack)],
