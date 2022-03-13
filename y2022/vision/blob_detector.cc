@@ -226,6 +226,10 @@ void BlobDetector::DrawBlobs(const BlobResult &blob_result,
                      cv::Scalar(0, 100, 0), cv::FILLED);
   }
 
+  for (const auto &blob : blob_result.filtered_blobs) {
+    cv::polylines(view_image, blob, true, cv::Scalar(0, 255, 0));
+  }
+
   static constexpr double kCircleRadius = 2.0;
   // Draw blob centroids
   for (auto stats : blob_result.blob_stats) {

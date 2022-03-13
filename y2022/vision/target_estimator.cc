@@ -440,11 +440,11 @@ void DrawEstimateValues(double distance, double angle_to_target,
                         double angle_to_camera, double roll, double pitch,
                         double yaw, double confidence, cv::Mat view_image) {
   constexpr int kTextX = 10;
-  int text_y = 250;
-  constexpr int kTextSpacing = 35;
+  int text_y = 0;
+  constexpr int kTextSpacing = 25;
 
   const auto kTextColor = cv::Scalar(0, 255, 255);
-  constexpr double kFontScale = 1.0;
+  constexpr double kFontScale = 0.6;
 
   cv::putText(view_image, absl::StrFormat("Distance: %.3f", distance),
               cv::Point(kTextX, text_y += kTextSpacing),
