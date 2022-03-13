@@ -8,11 +8,14 @@
 #include "frc971/constants.h"
 #include "frc971/control_loops/pose.h"
 #include "frc971/control_loops/static_zeroing_single_dof_profiled_subsystem.h"
+#include "frc971/shooter_interpolation/interpolation.h"
 #include "y2022/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "y2022/control_loops/superstructure/catapult/catapult_plant.h"
 #include "y2022/control_loops/superstructure/climber/climber_plant.h"
 #include "y2022/control_loops/superstructure/intake/intake_plant.h"
 #include "y2022/control_loops/superstructure/turret/turret_plant.h"
+
+using ::frc971::shooter_interpolation::InterpolationTable;
 
 namespace y2022 {
 namespace constants {
@@ -205,6 +208,23 @@ struct Values {
 
   // TODO(milind): set this
   static constexpr double kImuHeight() { return 0.0; }
+
+  struct ShotParams {
+    // Measured in radians
+    double shot_angle;
+    // Muzzle velocity (m/s) of the ball as it is released from the catapult.
+    double shot_velocity;
+
+    static ShotParams BlendY(double coefficient, ShotParams a1, ShotParams a2) {
+      using ::frc971::shooter_interpolation::Blend;
+      return ShotParams{
+          Blend(coefficient, a1.shot_angle, a2.shot_angle),
+          Blend(coefficient, a1.shot_velocity, a2.shot_velocity),
+      };
+    }
+  };
+
+  InterpolationTable<ShotParams> shot_interpolation_table;
 };
 
 // Creates and returns a Values instance for the constants.

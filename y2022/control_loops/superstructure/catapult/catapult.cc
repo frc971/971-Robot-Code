@@ -312,25 +312,28 @@ std::optional<double> CatapultController::Next() {
 
 const flatbuffers::Offset<
     frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus>
-Catapult::Iterate(const Goal *unsafe_goal, const Position *position,
+Catapult::Iterate(const CatapultGoal *catapult_goal, const Position *position,
                   double battery_voltage, double *catapult_voltage, bool fire,
                   flatbuffers::FlatBufferBuilder *fbb) {
   const frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal
-      *catapult_goal = unsafe_goal != nullptr && unsafe_goal->has_catapult()
-                           ? (unsafe_goal->catapult()->return_position())
-                           : nullptr;
+      *return_goal =
+          catapult_goal != nullptr && catapult_goal->has_return_position()
+              ? catapult_goal->return_position()
+              : nullptr;
 
   const bool catapult_disabled = catapult_.Correct(
-      catapult_goal, position->catapult(), catapult_voltage == nullptr);
+      return_goal, position->catapult(), catapult_voltage == nullptr);
 
   if (catapult_disabled) {
     catapult_state_ = CatapultState::PROFILE;
-  } else if (catapult_.running() && unsafe_goal &&
-             unsafe_goal->has_catapult() && fire && !last_firing_) {
+  } else if (catapult_.running() && catapult_goal != nullptr && fire &&
+             !last_firing_) {
     catapult_state_ = CatapultState::FIRING;
+    latched_shot_position = catapult_goal->shot_position();
+    latched_shot_velocity = catapult_goal->shot_velocity();
   }
 
-  if (catapult_.running() && unsafe_goal && unsafe_goal->has_catapult()) {
+  if (catapult_.running()) {
     last_firing_ = fire;
   }
 
@@ -354,8 +357,7 @@ Catapult::Iterate(const Goal *unsafe_goal, const Position *position,
 
       catapult_mpc_.SetState(
           next_X.block<2, 1>(0, 0),
-          Eigen::Vector2d(unsafe_goal->catapult()->shot_position(),
-                          unsafe_goal->catapult()->shot_velocity()));
+          Eigen::Vector2d(latched_shot_position, latched_shot_velocity));
 
       const bool solved = catapult_mpc_.Solve();
 
@@ -379,7 +381,7 @@ Catapult::Iterate(const Goal *unsafe_goal, const Position *position,
           use_profile_ = false;
         }
       } else {
-        if (unsafe_goal && unsafe_goal->has_catapult() && !fire) {
+        if (!fire) {
           // Eh, didn't manage to solve before it was time to fire.  Give up.
           catapult_state_ = CatapultState::PROFILE;
         }

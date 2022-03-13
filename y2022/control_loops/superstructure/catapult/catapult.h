@@ -210,14 +210,11 @@ class Catapult {
   // shooting or not.  Returns the status.
   const flatbuffers::Offset<
       frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus>
-  Iterate(const Goal *unsafe_goal, const Position *position,
+  Iterate(const CatapultGoal *unsafe_goal, const Position *position,
           double battery_voltage, double *catapult_voltage, bool fire,
           flatbuffers::FlatBufferBuilder *fbb);
 
  private:
-  // TODO(austin): Prototype is just an encoder.  Catapult has both an encoder
-  // and pot.  Switch back once we have a catapult.
-  // PotAndAbsoluteEncoderSubsystem catapult_;
   PotAndAbsoluteEncoderSubsystem catapult_;
 
   catapult::CatapultController catapult_mpc_;
@@ -225,6 +222,9 @@ class Catapult {
   enum CatapultState { PROFILE, FIRING, RESETTING };
 
   CatapultState catapult_state_ = CatapultState::PROFILE;
+
+  double latched_shot_position = 0.0;
+  double latched_shot_velocity = 0.0;
 
   bool last_firing_ = false;
   bool use_profile_ = true;

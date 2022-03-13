@@ -70,6 +70,8 @@ table Status {
 
   solve_time:double (id: 7);
   mpc_active:bool (id: 8);
+  shot_position:double (id: 16);
+  shot_velocity:double (id: 17);
 
   // The number of shots we have taken.
   shot_count:int32 (id: 9);

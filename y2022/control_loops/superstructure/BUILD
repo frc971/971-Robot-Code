@@ -82,6 +82,7 @@ cc_library(
         ":superstructure_output_fbs",
         ":superstructure_position_fbs",
         ":superstructure_status_fbs",
+        "//aos:flatbuffer_merge",
         "//aos/events:event_loop",
         "//frc971/control_loops:control_loop",
         "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
