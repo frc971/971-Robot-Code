@@ -17,7 +17,7 @@ constexpr double kVisionTargetX = 0.0;
 constexpr double kVisionTargetY = 0.0;
 
 // Minimum confidence to require to use a target match.
-constexpr double kMinTargetEstimateConfidence = 0.2;
+constexpr double kMinTargetEstimateConfidence = 0.75;
 
 template <int N>
 Eigen::Matrix<double, N, 1> MakeState(std::vector<double> values) {
