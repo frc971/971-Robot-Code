@@ -71,19 +71,28 @@
     <div *ngSwitchCase="'Climb'" id="climb" class="container-fluid">
         <div class="row">
             <form>
-                <input (click)="setClimbedFalse()" type="radio" name="climbing" id="continue"><label for="continue">Kept Shooting</label><br>
-                <input (click)="setClimbedTrue()" type="radio" name="climbing" id="climbed"><label for="climbed">Attempted to Climb</label><br>
+                <input [ngModel]="climbed" (click)="setClimbedFalse()" type="radio" name="climbing" id="continue" value="true">
+                <label for="continue">Kept Shooting</label><br>
+                <input [ngModel]="climbed" (click)="setClimbedTrue()" type="radio" name="climbing" id="climbed" value="false">
+                <label for="climbed">Attempted to Climb</label><br>
             </form>
         </div>
         <div *ngIf="climbed">
             <h4>Bar Made</h4>
             <form>
-                <input (click)="setLow()" type="radio" name="level" id="low"><label for="low">Low</label><br>
-                <input (click)="setMedium()" type="radio" name="level" id="medium"><label for="medium">Medium</label><br>
-                <input (click)="setHigh()" type="radio" name="level" id="high"><label for="high">High</label><br>
-                <input (click)="setTransversal()" type="radio" name="level" id="transversal"><label for="transversal">Transversal</label><br>
-                <input (click)="toggleProper()" type="checkbox" id="proper"><label for="proper">~10 seconds to attempt next level?</label>
-                <input (click)="setFailed()" type="radio" name="level" id="failed"><label for="failed">Failed</label><br>
+                <input [ngModel]="level" (click)="setLow()" type="radio" name="level" id="low" value="Low">
+                <label for="low">Low</label><br>
+                <input [ngModel]="level" (click)="setMedium()" type="radio" name="level" id="medium" value="Medium">
+                <label for="medium">Medium</label><br>
+                <input [ngModel]="level" (click)="setHigh()" type="radio" name="level" id="high" value="High">
+                <label for="high">High</label><br>
+                <input [ngModel]="level" (click)="setTransversal()" type="radio" name="level" id="transversal" value="Transversal">
+                <label for="transversal">Transversal</label><br>
+                <input [ngModel]="level" (click)="setFailed()" type="radio" name="level" id="failed" value="Failed">
+                <label for="failed">Failed</label><br>
+
+                <input (click)="toggleProper()" type="checkbox" id="proper">
+                <label for="proper">~10 seconds to attempt next level?</label>
             </form>
         </div>
         <div class="row">
@@ -105,7 +114,7 @@
             </div>
 
             <div class="col">
-                <input type="range" min="0" max="5" value="0" (input)="defensePlayedOnSlider($event)">
+                <input type="range" min="0" max="5" value="0" [(ngModel)]="defensePlayedOnScore">
             </div>
 
             <div class="col">
@@ -124,7 +133,7 @@
             </div>
 
             <div class="col">
-                <input type="range" min="0" max="5" value="0" (input)="defensePlayedSlider($event)">
+                <input type="range" min="0" max="5" value="0" [(ngModel)]="defensePlayedScore">
             </div>
 
             <div class="col">

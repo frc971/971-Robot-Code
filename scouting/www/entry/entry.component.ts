@@ -58,14 +58,6 @@ export class EntryComponent {
         this.level = 'Transversal';
     }
 
-    defensePlayedOnSlider(event) {
-        this.defensePlayedOnScore = event.target.value;
-    }
-
-    defensePlayedSlider(event) {
-        this.defensePlayedScore = event.target.value;
-    }
-
     setClimbedTrue() {
         this.climbed = true;
     }
