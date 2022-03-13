@@ -8,13 +8,15 @@ DEFINE_double(catapult_position, 0.03, "Catapult shot position");
 DEFINE_double(catapult_velocity, 18.0, "Catapult shot velocity");
 DEFINE_double(turret, 0.0, "Turret setpoint");
 
+DEFINE_string(config, "aos_config.json", "Path to the config file to use.");
+
 using y2022::input::joysticks::Setpoint;
 
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
 
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
-      aos::configuration::ReadConfig("config.json");
+      aos::configuration::ReadConfig(FLAGS_config);
 
   aos::ShmEventLoop event_loop(&config.message());
 
