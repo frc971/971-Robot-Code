@@ -92,6 +92,7 @@ aos_config(
             "//aos/network:timestamp_fbs",
             "//aos/network:remote_message_fbs",
             "//frc971/vision:vision_fbs",
+            "//y2022/localizer:localizer_output_fbs",
             "//y2022/vision:calibration_fbs",
             "//y2022/vision:target_estimate_fbs",
         ],

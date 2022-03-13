@@ -10,6 +10,12 @@ struct Quaternion {
   z:double (id: 3);
 }
 
+// Used to tell different LEDs to be on or off
+enum LedOutput : byte {
+  ON,
+  OFF
+}
+
 table LocalizerOutput {
   // Timestamp (on the source node) that this sample corresponds with. This
   // may be older than the sent time to account for delays in sensor readings.
@@ -24,6 +30,10 @@ table LocalizerOutput {
   // Whether we have zeroed the IMU (may go false if we observe a fault with the
   // IMU).
   zeroed:bool (id: 5);
+
+  // Whether each led should be on.
+  // Indices correspond to pi number.
+  led_outputs:[LedOutput] (id: 6);
 }
 
 root_type LocalizerOutput;

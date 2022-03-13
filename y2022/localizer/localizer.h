@@ -63,6 +63,8 @@ class LocalizerTest;
 // * Tune for ADIS16505/real robot.
 class ModelBasedLocalizer {
  public:
+  static constexpr size_t kNumPis = 4;
+
   static constexpr size_t kX = 0;
   static constexpr size_t kY = 1;
   static constexpr size_t kTheta = 2;
@@ -140,6 +142,8 @@ class ModelBasedLocalizer {
       flatbuffers::FlatBufferBuilder *fbb);
 
   size_t NumQueuedImageDebugs() const { return image_debugs_.size(); }
+
+  std::array<LedOutput, kNumPis> led_outputs() const { return led_outputs_; }
 
  private:
   struct CombinedState {
@@ -298,6 +302,7 @@ class ModelBasedLocalizer {
   Statistics statistics_;
 
   aos::SizedArray<TargetEstimateDebugT, kDebugBufferSize> image_debugs_;
+  std::array<LedOutput, kNumPis> led_outputs_;
 
   friend class testing::LocalizerTest;
 };
@@ -322,7 +327,8 @@ class EventLoopLocalizer {
   aos::Sender<LocalizerVisualization> visualization_sender_;
   aos::Fetcher<frc971::control_loops::drivetrain::Output> output_fetcher_;
   aos::Fetcher<aos::message_bridge::ServerStatistics> clock_offset_fetcher_;
-  std::array<aos::Fetcher<y2022::vision::TargetEstimate>, 4>
+  std::array<aos::Fetcher<y2022::vision::TargetEstimate>,
+             ModelBasedLocalizer::kNumPis>
       target_estimate_fetchers_;
   aos::Fetcher<y2022::control_loops::superstructure::Status>
       superstructure_fetcher_;

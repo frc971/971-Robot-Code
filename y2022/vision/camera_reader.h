@@ -13,6 +13,7 @@
 #include "aos/network/team_number.h"
 #include "frc971/vision/v4l2_reader.h"
 #include "frc971/vision/vision_generated.h"
+#include "y2022/localizer/localizer_output_generated.h"
 #include "y2022/vision/calibration_data.h"
 #include "y2022/vision/calibration_generated.h"
 #include "y2022/vision/gpio.h"
@@ -23,6 +24,7 @@ namespace y2022 {
 namespace vision {
 
 using namespace frc971::vision;
+using frc971::controls::LedOutput;
 
 // TODO<jim>: Probably need to break out LED control to separate process
 class CameraReader {
@@ -38,6 +40,9 @@ class CameraReader {
         target_estimator_(CameraIntrinsics(), CameraExtrinsics()),
         target_estimate_sender_(
             event_loop->MakeSender<TargetEstimate>("/camera")),
+        localizer_output_fetcher_(
+            event_loop->MakeFetcher<frc971::controls::LocalizerOutput>(
+                "/localizer")),
         read_image_timer_(event_loop->AddTimer([this]() { ReadImage(); })),
         gpio_imu_pin_(GPIOControl(GPIO_PIN_SCLK_IMU, kGPIOIn)),
         gpio_pwm_control_(GPIOPWMControl(GPIO_PIN_SCK_PWM, duty_cycle_)),
@@ -98,6 +103,9 @@ class CameraReader {
   aos::Sender<CameraImage> image_sender_;
   TargetEstimator target_estimator_;
   aos::Sender<TargetEstimate> target_estimate_sender_;
+
+  LedOutput prev_led_output_ = LedOutput::ON;
+  aos::Fetcher<frc971::controls::LocalizerOutput> localizer_output_fetcher_;
 
   // We schedule this immediately to read an image. Having it on a timer
   // means other things can run on the event loop in between.

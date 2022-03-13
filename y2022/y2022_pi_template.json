@@ -208,6 +208,18 @@
       "max_size": 208
     },
     {
+      "name": "/localizer",
+      "type": "frc971.controls.LocalizerOutput",
+      "source_node": "imu",
+      "destination_nodes": [
+        {
+          "name": "pi{{ NUM }}",
+          "priority": 5,
+          "time_to_live": 5000000
+        }
+      ]
+    },
+    {
       "name": "/logger/aos",
       "type": "aos.starter.StarterRpc",
       "source_node": "logger",

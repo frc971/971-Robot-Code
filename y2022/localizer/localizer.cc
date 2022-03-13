@@ -102,6 +102,8 @@ ModelBasedLocalizer::ModelBasedLocalizer(
   DiscretizeQAFast(Q_continuous_accel_, A_continuous_accel_, kNominalDt,
                    &Q_discrete_accel_, &A_discrete_accel_);
   P_accel_ = Q_discrete_accel_;
+
+  led_outputs_.fill(LedOutput::ON);
 }
 
 Eigen::Matrix<double, ModelBasedLocalizer::kNModelStates,
@@ -487,7 +489,8 @@ Eigen::Matrix<double, 4, 4> FlatbufferToTransformationMatrix(
 }
 
 // Node names of the pis to listen for cameras from.
-const std::array<std::string_view, 4> kPisToUse{"pi1", "pi2", "pi3", "pi4"};
+constexpr std::array<std::string_view, ModelBasedLocalizer::kNumPis> kPisToUse{
+    "pi1", "pi2", "pi3", "pi4"};
 }  // namespace
 
 const Eigen::Matrix<double, 4, 4> ModelBasedLocalizer::CameraTransform(
@@ -666,6 +669,9 @@ void ModelBasedLocalizer::HandleImageMatch(
       H_field_camera_measured.block<3, 3>(0, 0) * Eigen::Vector3d::UnitZ();
   const double camera_yaw =
       std::atan2(camera_z_in_field.y(), camera_z_in_field.x());
+
+  // TODO(milind): actually control this
+  led_outputs_[camera_index] = LedOutput::ON;
 
   TargetEstimateDebugT debug;
   debug.camera = static_cast<uint8_t>(camera_index);
@@ -1010,6 +1016,11 @@ EventLoopLocalizer::EventLoopLocalizer(
           if (last_output_send_ + std::chrono::milliseconds(5) <
               event_loop_->context().monotonic_event_time) {
             auto builder = output_sender_.MakeBuilder();
+
+            const auto led_outputs_offset =
+                builder.fbb()->CreateVector(model_based_.led_outputs().data(),
+                                            model_based_.led_outputs().size());
+
             LocalizerOutput::Builder output_builder =
                 builder.MakeBuilder<LocalizerOutput>();
             // TODO(james): Should we bother to try to estimate time offsets for
@@ -1027,6 +1038,7 @@ EventLoopLocalizer::EventLoopLocalizer(
             quaternion.mutate_z(orientation.z());
             quaternion.mutate_w(orientation.w());
             output_builder.add_orientation(&quaternion);
+            output_builder.add_led_outputs(led_outputs_offset);
             builder.CheckOk(builder.Send(output_builder.Finish()));
             last_output_send_ = event_loop_->monotonic_now();
           }
