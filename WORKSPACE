@@ -12,6 +12,10 @@ load(
     apache2_debs = "files",
 )
 load(
+    "//debian:postgresql_amd64.bzl",
+    postgresql_amd64_debs = "files",
+)
+load(
     "//debian:patch.bzl",
     patch_debs = "files",
 )
@@ -92,6 +96,8 @@ generate_repositories_for_debs(rsync_debs)
 generate_repositories_for_debs(ssh_debs)
 
 generate_repositories_for_debs(apache2_debs)
+
+generate_repositories_for_debs(postgresql_amd64_debs)
 
 generate_repositories_for_debs(patch_debs)
 
@@ -522,6 +528,13 @@ http_archive(
     sha256 = "6dc4c382164beec8aaed8fd2acc36ad24232c406eda6db462bd4c41d5e455fac",
     strip_prefix = "CLAPACK-3.2.1/",
     url = "https://www.frc971.org/Build-Dependencies/clapack-3.2.1.tgz",
+)
+
+http_archive(
+    name = "postgresql_amd64",
+    build_file = "@//debian:postgresql_amd64.BUILD",
+    sha256 = "2b8bb77deaf58f798c296ce31ee7a32781395d55e05dcddc8a7da7e827f38d7f",
+    url = "https://www.frc971.org/Build-Dependencies/postgresql_amd64.tar.gz",
 )
 
 http_archive(

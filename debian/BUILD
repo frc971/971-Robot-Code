@@ -7,6 +7,10 @@ load(
     apache2_debs = "files",
 )
 load(
+    ":postgresql_amd64.bzl",
+    postgresql_amd64_debs = "files",
+)
+load(
     ":patch.bzl",
     patch_debs = "files",
 )
@@ -173,6 +177,28 @@ download_packages(
 )
 
 download_packages(
+    name = "download_postgresql_deps",
+    excludes = [
+        "adduser",
+        "debconf",
+        "debconf-2.0",
+        "libsystemd0",
+        "lsb-base",
+        "libstdc++6",
+        "libc-bin",
+        "libc-l10n",
+        "netbase",
+        "ucf",
+        "locales",
+        "locales-all",
+    ],
+    packages = [
+        "postgresql",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+)
+
+download_packages(
     name = "download_patch_deps",
     packages = [
         "patch",
@@ -283,6 +309,12 @@ generate_deb_tarball(
 generate_deb_tarball(
     name = "apache2",
     files = apache2_debs,
+    target_compatible_with = ["@platforms//os:linux"],
+)
+
+generate_deb_tarball(
+    name = "postgresql_amd64",
+    files = postgresql_amd64_debs,
     target_compatible_with = ["@platforms//os:linux"],
 )
 
