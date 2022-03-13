@@ -1,9 +1,9 @@
 #include "y2022/localizer/localizer.h"
 
+#include "aos/json_to_flatbuffer.h"
 #include "frc971/control_loops/c2d.h"
 #include "frc971/wpilib/imu_batch_generated.h"
 #include "y2022/constants.h"
-#include "aos/json_to_flatbuffer.h"
 
 namespace frc971::controls {
 
@@ -39,8 +39,9 @@ ModelBasedLocalizer::ModelBasedLocalizer(
               .coefficients()),
       down_estimator_(dt_config) {
   statistics_.rejection_counts.fill(0);
-  CHECK_EQ(branches_.capacity(), static_cast<size_t>(std::chrono::seconds(1) /
-                                                 kNominalDt / kBranchPeriod));
+  CHECK_EQ(branches_.capacity(),
+           static_cast<size_t>(std::chrono::seconds(1) / kNominalDt /
+                               kBranchPeriod));
   if (dt_config_.is_simulated) {
     down_estimator_.assume_perfect_gravity();
   }
@@ -170,7 +171,7 @@ ModelBasedLocalizer::AccelState ModelBasedLocalizer::AccelStateForModelState(
     const ModelBasedLocalizer::ModelState &state) const {
   const double robot_speed =
       (state(kLeftVelocity) + state(kRightVelocity)) / 2.0;
-  const double lat_speed = (AModel(state) * state)(kTheta) * long_offset_;
+  const double lat_speed = (AModel(state) * state)(kTheta)*long_offset_;
   const double velocity_x = std::cos(state(kTheta)) * robot_speed -
                             std::sin(state(kTheta)) * lat_speed;
   const double velocity_y = std::sin(state(kTheta)) * robot_speed +
@@ -438,7 +439,7 @@ void ModelBasedLocalizer::HandleImu(aos::monotonic_clock::time_point t,
   VLOG(2) << "Model state " << current_state_.model_state.transpose();
   VLOG(2) << "Accel state " << current_state_.accel_state.transpose();
   VLOG(2) << "Accel state for model "
-            << AccelStateForModelState(current_state_.model_state).transpose();
+          << AccelStateForModelState(current_state_.model_state).transpose();
   VLOG(2) << "Input acce " << accel.transpose();
   VLOG(2) << "Input gyro " << gyro.transpose();
   VLOG(2) << "Input voltage " << voltage.transpose();
@@ -487,7 +488,7 @@ Eigen::Matrix<double, 4, 4> FlatbufferToTransformationMatrix(
 
 // Node names of the pis to listen for cameras from.
 const std::array<std::string_view, 4> kPisToUse{"pi1", "pi2", "pi3", "pi4"};
-}
+}  // namespace
 
 const Eigen::Matrix<double, 4, 4> ModelBasedLocalizer::CameraTransform(
     const OldPosition &state,
@@ -647,9 +648,9 @@ void ModelBasedLocalizer::HandleImageMatch(
   // And now we have to correct *everything* on all the branches:
   for (CombinedState &state : branches_) {
     state.model_state += K_model * (measured_robot_position.value() -
-                                     H_model * state.model_state);
+                                    H_model * state.model_state);
     state.accel_state += K_accel * (measured_robot_position.value() -
-                                     H_accel * state.accel_state);
+                                    H_accel * state.accel_state);
   }
   current_state_.model_state +=
       K_model *
@@ -693,7 +694,7 @@ void ModelBasedLocalizer::HandleTurret(
 void ModelBasedLocalizer::HandleReset(aos::monotonic_clock::time_point now,
                                       const Eigen::Vector3d &xytheta) {
   branches_.Reset();
-  t_ =  now;
+  t_ = now;
   using_model_ = true;
   current_state_.model_state << xytheta(0), xytheta(1), xytheta(2),
       current_state_.model_state(kLeftEncoder), 0.0, 0.0,
@@ -755,7 +756,7 @@ flatbuffers::Offset<ModelBasedStatus> ModelBasedLocalizer::PopulateStatus(
   const CombinedState &state = current_state_;
 
   const flatbuffers::Offset<ModelBasedState> model_state_offset =
-    BuildModelState(fbb, state.model_state);
+      BuildModelState(fbb, state.model_state);
 
   const flatbuffers::Offset<AccelBasedState> accel_state_offset =
       BuildAccelState(fbb, state.accel_state);
@@ -800,7 +801,7 @@ ModelBasedLocalizer::PopulateVisualization(
   aos::SizedArray<flatbuffers::Offset<TargetEstimateDebug>, kDebugBufferSize>
       debug_offsets;
 
-  for (const TargetEstimateDebugT& debug : image_debugs_) {
+  for (const TargetEstimateDebugT &debug : image_debugs_) {
     debug_offsets.push_back(PackTargetEstimateDebug(debug, fbb));
   }
 
@@ -849,7 +850,7 @@ namespace {
 static double DrivetrainWrapPeriod() {
   return y2022::constants::Values::DrivetrainEncoderToMeters(1 << 16);
 }
-}
+}  // namespace
 
 EventLoopLocalizer::EventLoopLocalizer(
     aos::EventLoop *event_loop,
@@ -866,8 +867,10 @@ EventLoopLocalizer::EventLoopLocalizer(
       clock_offset_fetcher_(
           event_loop_->MakeFetcher<aos::message_bridge::ServerStatistics>(
               "/aos")),
-  superstructure_fetcher_(event_loop_->MakeFetcher<y2022::control_loops::superstructure::Status>(
-      "/superstructure")),
+      superstructure_fetcher_(
+          event_loop_
+              ->MakeFetcher<y2022::control_loops::superstructure::Status>(
+                  "/superstructure")),
       left_encoder_(-DrivetrainWrapPeriod() / 2.0, DrivetrainWrapPeriod()),
       right_encoder_(-DrivetrainWrapPeriod() / 2.0, DrivetrainWrapPeriod()) {
   event_loop_->MakeWatcher(
@@ -898,48 +901,48 @@ EventLoopLocalizer::EventLoopLocalizer(
                                 std::chrono::milliseconds(20));
   });
 
-  for (size_t camera_index = 0; camera_index < kPisToUse.size(); ++camera_index) {
+  for (size_t camera_index = 0; camera_index < kPisToUse.size();
+       ++camera_index) {
     CHECK_LT(camera_index, target_estimate_fetchers_.size());
     target_estimate_fetchers_[camera_index] =
         event_loop_->MakeFetcher<y2022::vision::TargetEstimate>(
             absl::StrCat("/", kPisToUse[camera_index], "/camera"));
   }
-  aos::TimerHandler *estimate_timer = event_loop_->AddTimer(
-      [this]() {
-        for (size_t camera_index = 0; camera_index < kPisToUse.size();
-             ++camera_index) {
-          if (model_based_.NumQueuedImageDebugs() ==
-                  ModelBasedLocalizer::kDebugBufferSize ||
-              (last_visualization_send_ + kMinVisualizationPeriod <
-               event_loop_->monotonic_now())) {
-            auto builder = visualization_sender_.MakeBuilder();
-            visualization_sender_.CheckOk(builder.Send(
-                model_based_.PopulateVisualization(builder.fbb())));
-          }
-          if (target_estimate_fetchers_[camera_index].Fetch()) {
-            const std::optional<aos::monotonic_clock::duration>
-                monotonic_offset = ClockOffset(kPisToUse[camera_index]);
-            if (!monotonic_offset.has_value()) {
-              continue;
-            }
-            // TODO(james): Get timestamp from message contents.
-            aos::monotonic_clock::time_point capture_time(
-                target_estimate_fetchers_[camera_index]
-                    .context()
-                    .monotonic_remote_time -
-                monotonic_offset.value());
-            if (capture_time > target_estimate_fetchers_[camera_index]
-                                   .context()
-                                   .monotonic_event_time) {
-              model_based_.TallyRejection(RejectionReason::IMAGE_FROM_FUTURE);
-              continue;
-            }
-            model_based_.HandleImageMatch(
-                capture_time, target_estimate_fetchers_[camera_index].get(),
-                camera_index);
-          }
+  aos::TimerHandler *estimate_timer = event_loop_->AddTimer([this]() {
+    for (size_t camera_index = 0; camera_index < kPisToUse.size();
+         ++camera_index) {
+      if (model_based_.NumQueuedImageDebugs() ==
+              ModelBasedLocalizer::kDebugBufferSize ||
+          (last_visualization_send_ + kMinVisualizationPeriod <
+           event_loop_->monotonic_now())) {
+        auto builder = visualization_sender_.MakeBuilder();
+        visualization_sender_.CheckOk(
+            builder.Send(model_based_.PopulateVisualization(builder.fbb())));
+      }
+      if (target_estimate_fetchers_[camera_index].Fetch()) {
+        const std::optional<aos::monotonic_clock::duration> monotonic_offset =
+            ClockOffset(kPisToUse[camera_index]);
+        if (!monotonic_offset.has_value()) {
+          continue;
         }
-      });
+        // TODO(james): Get timestamp from message contents.
+        aos::monotonic_clock::time_point capture_time(
+            target_estimate_fetchers_[camera_index]
+                .context()
+                .monotonic_remote_time -
+            monotonic_offset.value());
+        if (capture_time > target_estimate_fetchers_[camera_index]
+                               .context()
+                               .monotonic_event_time) {
+          model_based_.TallyRejection(RejectionReason::IMAGE_FROM_FUTURE);
+          continue;
+        }
+        model_based_.HandleImageMatch(
+            capture_time, target_estimate_fetchers_[camera_index].get(),
+            camera_index);
+      }
+    }
+  });
   event_loop_->OnRun([this, estimate_timer]() {
     estimate_timer->Setup(event_loop_->monotonic_now(),
                           std::chrono::milliseconds(100));
@@ -976,8 +979,8 @@ EventLoopLocalizer::EventLoopLocalizer(
                      std::chrono::milliseconds(10) <
                  event_loop_->context().monotonic_event_time);
             model_based_.HandleImu(
-                sample_timestamp,
-                zeroer_.ZeroedGyro(), zeroer_.ZeroedAccel(), encoders,
+                sample_timestamp, zeroer_.ZeroedGyro(), zeroer_.ZeroedAccel(),
+                encoders,
                 disabled ? Eigen::Vector2d::Zero()
                          : Eigen::Vector2d{output_fetcher_->left_voltage(),
                                            output_fetcher_->right_voltage()});
