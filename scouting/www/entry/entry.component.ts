@@ -58,14 +58,6 @@ export class EntryComponent {
         this.level = 'Transversal';
     }
 
-    setClimbedTrue() {
-        this.climbed = true;
-    }
-
-    setClimbedFalse() {
-        this.climbed = false;
-    }
-
     nextSection() {
         if (this.section === 'Team Selection') {
             this.section = 'Auto';
