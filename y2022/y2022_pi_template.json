@@ -146,6 +146,14 @@
       "num_senders": 18
     },
     {
+      "name": "/pi{{ NUM }}/camera/decimated",
+      "type": "frc971.vision.CameraImage",
+      "source_node": "pi{{ NUM }}",
+      "frequency": 2,
+      "max_size": 620000,
+      "num_senders": 18
+    },
+    {
       "name": "/pi{{ NUM }}/camera",
       "type": "frc971.vision.calibration.CalibrationData",
       "source_node": "pi{{ NUM }}",
@@ -325,6 +333,13 @@
     {
       "name": "camera_reader",
       "executable_name": "camera_reader",
+      "nodes": [
+        "pi{{ NUM }}"
+      ]
+    },
+    {
+      "name": "image_decimator",
+      "executable_name": "image_decimator",
       "nodes": [
         "pi{{ NUM }}"
       ]

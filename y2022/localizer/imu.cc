@@ -124,9 +124,9 @@ flatbuffers::Offset<frc971::IMUValues> Imu::ProcessReading(
     // extra data from the pico
     imu_builder.add_pico_timestamp_us(pico_timestamp);
     imu_builder.add_left_encoder(
-        constants::Values::DrivetrainEncoderToMeters(encoder1_count));
+        -constants::Values::DrivetrainEncoderToMeters(encoder2_count));
     imu_builder.add_right_encoder(
-        constants::Values::DrivetrainEncoderToMeters(encoder2_count));
+        constants::Values::DrivetrainEncoderToMeters(encoder1_count));
     imu_builder.add_previous_reading_diag_stat(diag_stat_offset);
   }
 
