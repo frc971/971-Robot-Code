@@ -30,7 +30,8 @@ py_test(
     ],
     data = [
         ":cli",
-        "//scouting/scraping:test_data",
-        "//scouting/webserver",
+    ],
+    deps = [
+        "//scouting/testing:scouting_test_servers",
     ],
 )

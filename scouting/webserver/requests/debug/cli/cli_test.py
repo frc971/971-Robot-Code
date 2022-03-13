@@ -7,10 +7,14 @@ from pathlib import Path
 import shutil
 import socket
 import subprocess
+import sys
 import textwrap
 import time
 from typing import Any, Dict, List
 import unittest
+
+import scouting.testing.scouting_test_servers
+
 
 def write_json_request(content: Dict[str, Any]):
     """Writes a JSON file with the specified dict content."""
@@ -31,72 +35,15 @@ def run_debug_cli(args: List[str]):
         run_result.stderr.decode("utf-8"),
     )
 
-def wait_for_server(port: int):
-    """Waits for the server at the specified port to respond to TCP connections."""
-    while True:
-        try:
-            connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            connection.connect(("localhost", port))
-            connection.close()
-            break
-        except ConnectionRefusedError:
-            connection.close()
-            time.sleep(0.01)
-
 
 class TestDebugCli(unittest.TestCase):
 
     def setUp(self):
-        tmpdir = Path(os.environ["TEST_TMPDIR"]) / "temp"
-        try:
-            shutil.rmtree(tmpdir)
-        except FileNotFoundError:
-            pass
-        os.mkdir(tmpdir)
-
-        # Copy the test data into place so that the final API call can be
-        # emulated.
-        self.set_up_tba_api_dir(tmpdir, year=2016, event_code="nytr")
-        self.set_up_tba_api_dir(tmpdir, year=2020, event_code="fake")
-
-        # Create a fake TBA server to serve the static match list.
-        self.fake_tba_api = subprocess.Popen(
-            ["python3", "-m", "http.server", "7000"],
-            cwd=tmpdir,
-        )
-
-        # Configure the scouting webserver to scrape data from our fake TBA
-        # server.
-        scouting_config = tmpdir / "scouting_config.json"
-        scouting_config.write_text(json.dumps({
-            "api_key": "dummy_key_that_is_not_actually_used_in_this_test",
-            "base_url": "http://localhost:7000",
-        }))
-
-        # Run the scouting webserver.
-        self.webserver = subprocess.Popen([
-            "scouting/webserver/webserver_/webserver",
-            "-port=8080",
-            "-database=%s/database.db" % tmpdir,
-            "-tba_config=%s/scouting_config.json" % tmpdir,
-        ])
-
-        # Wait for the servers to be reachable.
-        wait_for_server(7000)
-        wait_for_server(8080)
+        self.servers = scouting.testing.scouting_test_servers.Runner()
+        self.servers.start(8080)
 
     def tearDown(self):
-        self.fake_tba_api.terminate()
-        self.webserver.terminate()
-        self.fake_tba_api.wait()
-        self.webserver.wait()
-
-    def set_up_tba_api_dir(self, tmpdir, year, event_code):
-        tba_api_dir = tmpdir / "api" / "v3" / "event" / f"{year}{event_code}"
-        os.makedirs(tba_api_dir)
-        (tba_api_dir / "matches").write_text(
-            Path(f"scouting/scraping/test_data/{year}_{event_code}.json").read_text()
-        )
+        self.servers.stop()
 
     def refresh_match_list(self, year=2016, event_code="nytr"):
         """Triggers the webserver to fetch the match list."""

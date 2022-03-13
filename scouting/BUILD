@@ -33,7 +33,7 @@ sh_binary(
         "//scouting/www:index.html",
         "//scouting/www:zonejs_copy",
     ],
-    visibility = ["//scouting/deploy:__pkg__"],
+    visibility = ["//visibility:public"],
 )
 
 protractor_ts_test(
@@ -42,5 +42,5 @@ protractor_ts_test(
         ":scouting_test.ts",
     ],
     on_prepare = ":scouting_test.protractor.on-prepare.js",
-    server = ":scouting",
+    server = "//scouting/testing:scouting_test_servers",
 )
