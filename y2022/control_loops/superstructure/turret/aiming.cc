@@ -22,13 +22,22 @@ constexpr double kBallSpeedOverGround = 12.0;  // m/s
 // straight out the back of the robot.
 constexpr double kTurretZeroOffset = M_PI;
 
+constexpr double kMaxProfiledVelocity = 10.0;
+constexpr double kMaxProfiledAccel = 20.0;
+
 flatbuffers::DetachedBuffer MakePrefilledGoal() {
   flatbuffers::FlatBufferBuilder fbb;
   fbb.ForceDefaults(true);
+  frc971::ProfileParameters::Builder profile_builder(fbb);
+  profile_builder.add_max_velocity(kMaxProfiledVelocity);
+  profile_builder.add_max_acceleration(kMaxProfiledAccel);
+  const flatbuffers::Offset<frc971::ProfileParameters> profile_offset =
+      profile_builder.Finish();
   Aimer::Goal::Builder builder(fbb);
   builder.add_unsafe_goal(0);
   builder.add_goal_velocity(0);
-  builder.add_ignore_profile(true);
+  builder.add_ignore_profile(false);
+  builder.add_profile_params(profile_offset);
   fbb.Finish(builder.Finish());
   return fbb.Release();
 }
