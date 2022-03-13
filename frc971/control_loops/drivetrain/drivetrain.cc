@@ -28,6 +28,11 @@ namespace frc971 {
 namespace control_loops {
 namespace drivetrain {
 
+namespace {
+// Maximum variation to allow in the gyro when zeroing.
+constexpr double kMaxYawGyroZeroingRange = 0.05;
+}
+
 DrivetrainFilters::DrivetrainFilters(const DrivetrainConfig<double> &dt_config,
                                      ::aos::EventLoop *event_loop,
                                      LocalizerInterface *localizer)
@@ -204,9 +209,27 @@ void DrivetrainFilters::Correct(aos::monotonic_clock::time_point monotonic_now,
       break;
   }
 
-  ready_ = dt_config_.gyro_type == GyroType::SPARTAN_GYRO ||
-           dt_config_.gyro_type == GyroType::FLIPPED_SPARTAN_GYRO ||
-           imu_zeroer_.Zeroed();
+  switch (dt_config_.gyro_type) {
+    case GyroType::SPARTAN_GYRO:
+    case GyroType::FLIPPED_SPARTAN_GYRO:
+      if (!yaw_gyro_zero_.has_value()) {
+        yaw_gyro_zeroer_.AddData(last_gyro_rate_);
+        if (yaw_gyro_zeroer_.GetRange() < kMaxYawGyroZeroingRange) {
+          yaw_gyro_zero_ = yaw_gyro_zeroer_.GetAverage()(0);
+        }
+      }
+      ready_ = yaw_gyro_zero_.has_value();
+      if (ready_) {
+        last_gyro_rate_ = last_gyro_rate_ - yaw_gyro_zero_.value();
+      }
+      break;
+    case GyroType::IMU_X_GYRO:
+    case GyroType::IMU_Y_GYRO:
+    case GyroType::IMU_Z_GYRO:
+    case GyroType::FLIPPED_IMU_Z_GYRO:
+      ready_ = imu_zeroer_.Zeroed();
+      break;
+  }
 
   // TODO(james): How aggressively can we fault here? If we fault to
   // aggressively, we might have issues during startup if wpilib_interface takes

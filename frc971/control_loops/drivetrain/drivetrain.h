@@ -138,6 +138,9 @@ class DrivetrainFilters {
   // Last applied voltage.
   Eigen::Matrix<double, 2, 1> last_voltage_;
   Eigen::Matrix<double, 2, 1> last_last_voltage_;
+
+  std::optional<double> yaw_gyro_zero_;
+  zeroing::Averager<double, 200> yaw_gyro_zeroer_;
 };
 
 class DrivetrainLoop
