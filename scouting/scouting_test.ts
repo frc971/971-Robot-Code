@@ -71,8 +71,8 @@ describe('The scouting web page', () => {
     await expectReviewFieldToBe('Attempted to Climb', 'No');
 
     // Validate Defense.
-    await expectReviewFieldToBe('Defense Played On Rating', '3');
-    await expectReviewFieldToBe('Defense Played Rating', '3');
+    await expectReviewFieldToBe('Defense Played On Rating', '0');
+    await expectReviewFieldToBe('Defense Played Rating', '0');
 
     // TODO(phil): Submit data and make sure it made its way to the database
     // correctly. Right now the /requests/submit/data_scouting endpoint is not
