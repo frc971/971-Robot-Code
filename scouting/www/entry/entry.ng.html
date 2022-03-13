@@ -71,9 +71,9 @@
     <div *ngSwitchCase="'Climb'" id="climb" class="container-fluid">
         <div class="row">
             <form>
-                <input [ngModel]="climbed" (click)="setClimbedFalse()" type="radio" name="climbing" id="continue" value="true">
+                <input [(ngModel)]="climbed" type="radio" name="climbing" id="continue" [value]="false">
                 <label for="continue">Kept Shooting</label><br>
-                <input [ngModel]="climbed" (click)="setClimbedTrue()" type="radio" name="climbing" id="climbed" value="false">
+                <input [(ngModel)]="climbed" type="radio" name="climbing" id="climbed" [value]="true">
                 <label for="climbed">Attempted to Climb</label><br>
             </form>
         </div>
