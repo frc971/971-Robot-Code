@@ -2,6 +2,7 @@
 
 #include "aos/events/event_loop.h"
 #include "aos/flatbuffer_merge.h"
+#include "frc971/zeroing/wrap.h"
 #include "y2022/control_loops/superstructure/collision_avoidance.h"
 
 namespace y2022 {
@@ -48,7 +49,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
   aos::FlatbufferFixedAllocatorArray<
       frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal, 64>
-      turret_goal_buffer;
+      turret_loading_goal_buffer;
   aos::FlatbufferFixedAllocatorArray<CatapultGoal, 64> catapult_goal_buffer;
 
   const aos::monotonic_clock::time_point timestamp =
@@ -72,6 +73,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   double transfer_roller_speed_front = 0.0;
   double transfer_roller_speed_back = 0.0;
   double flipper_arms_voltage = 0.0;
+  bool have_active_intake_request = false;
 
   if (unsafe_goal != nullptr) {
     roller_speed_compensated_front =
@@ -111,6 +113,10 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       }
       catapult_goal_buffer.Finish(builder.Finish());
       catapult_goal = &catapult_goal_buffer.message();
+    }
+
+    if (unsafe_goal->has_turret_intake()) {
+      have_active_intake_request = true;
     }
   }
 
@@ -157,103 +163,94 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
     }
   }
 
-  const bool is_spitting = ((intake_state_ == IntakeState::INTAKE_FRONT_BALL &&
-                             transfer_roller_speed_front < 0) ||
-                            (intake_state_ == IntakeState::INTAKE_BACK_BALL &&
-                             transfer_roller_speed_back < 0));
-
-  // Intake handling should happen regardless of the turret state
-  if (position->intake_beambreak_front() || position->intake_beambreak_back()) {
-    if (intake_state_ == IntakeState::NO_BALL) {
-      if (position->intake_beambreak_front()) {
-        intake_state_ = IntakeState::INTAKE_FRONT_BALL;
-      } else if (position->intake_beambreak_back()) {
-        intake_state_ = IntakeState::INTAKE_BACK_BALL;
-      }
-    }
-
-    intake_beambreak_timer_ = timestamp;
+  if (position->intake_beambreak_front()) {
+    front_intake_has_ball_ = true;
+    front_intake_beambreak_timer_ = timestamp;
   }
 
-  if (timestamp >
-      intake_beambreak_timer_ + constants::Values::kBallLostTime()) {
-    intake_state_ = IntakeState::NO_BALL;
+  if (position->intake_beambreak_back()) {
+    back_intake_has_ball_ = true;
+    back_intake_beambreak_timer_ = timestamp;
   }
 
-  if (intake_state_ != IntakeState::NO_BALL) {
+  // Check if we're either spitting of have lost the ball.
+  if (transfer_roller_speed_front < 0.0 ||
+      timestamp >
+          front_intake_beambreak_timer_ + constants::Values::kBallLostTime()) {
+    front_intake_has_ball_ = false;
+  }
+
+  if (transfer_roller_speed_back < 0.0 ||
+      timestamp >
+          back_intake_beambreak_timer_ + constants::Values::kBallLostTime()) {
+    back_intake_has_ball_ = false;
+  }
+
+  // Wiggle transfer rollers: send the ball back and forth while waiting
+  // for the turret or waiting for another shot to be completed
+  const double wiggle_voltage =
+      constants::Values::kTransferRollerWiggleVoltage();
+  if (front_intake_has_ball_) {
     roller_speed_compensated_front = 0.0;
-    roller_speed_compensated_back = 0.0;
-
-    const double wiggle_voltage =
-        constants::Values::kTransferRollerWiggleVoltage();
-    // Wiggle transfer rollers: send the ball back and forth while waiting
-    // for the turret or waiting for another shot to be completed
-    if (intake_state_ == IntakeState::INTAKE_FRONT_BALL) {
-      if (position->intake_beambreak_front()) {
-        transfer_roller_speed_front = -wiggle_voltage;
-        transfer_roller_speed_back = wiggle_voltage;
-      } else {
-        transfer_roller_speed_front = wiggle_voltage;
-        transfer_roller_speed_back = -wiggle_voltage;
-      }
+    if (position->intake_beambreak_front()) {
+      transfer_roller_speed_front = -wiggle_voltage;
     } else {
-      if (position->intake_beambreak_back()) {
-        transfer_roller_speed_back = -wiggle_voltage;
-        transfer_roller_speed_front = wiggle_voltage;
-      } else {
-        transfer_roller_speed_back = wiggle_voltage;
-        transfer_roller_speed_front = -wiggle_voltage;
-      }
+      transfer_roller_speed_front = wiggle_voltage;
     }
   }
 
-  // Send the turret to the loading position if we have a ball in the intake, or
-  // are trying to intake one
-  double turret_loading_position = std::numeric_limits<double>::quiet_NaN();
-  if (state_ == SuperstructureState::TRANSFERRING &&
-      intake_state_ != IntakeState::NO_BALL) {
-    turret_loading_position = (intake_state_ == IntakeState::INTAKE_FRONT_BALL
-                                   ? constants::Values::kTurretFrontIntakePos()
-                                   : constants::Values::kTurretBackIntakePos());
-  } else if (state_ == SuperstructureState::IDLE && unsafe_goal != nullptr) {
-    if (unsafe_goal->roller_speed_front() > 0) {
-      turret_loading_position = constants::Values::kTurretFrontIntakePos();
-    } else if (unsafe_goal->roller_speed_back() > 0) {
-      turret_loading_position = constants::Values::kTurretBackIntakePos();
+  if (back_intake_has_ball_) {
+    roller_speed_compensated_back = 0.0;
+    if (position->intake_beambreak_back()) {
+      transfer_roller_speed_back = -wiggle_voltage;
+    } else {
+      transfer_roller_speed_back = wiggle_voltage;
     }
   }
 
-  if (!std::isnan(turret_loading_position)) {
-    // Turn to the loading position as close to the current position as
-    // possible
-    // Strategy is copied from frc971/control_loops/aiming/aiming.cc
+  // Create the goal message for putting the turret in its loading position.
+  // This will then get used in the state machine for the states (IDLE and
+  // TRANSFERRING) that use it.
+  double turret_loading_position =
+      (turret_intake_state_ == RequestedIntake::kFront
+           ? constants::Values::kTurretFrontIntakePos()
+           : constants::Values::kTurretBackIntakePos());
+  // Turn to the loading position as close to the current position as
+  // possible.
+  turret_loading_position =
+      turret_.estimated_position() +
+      aos::math::NormalizeAngle(turret_loading_position -
+                                turret_.estimated_position());
+  // if out of range, reset back to within +/- pi of zero.
+  if (turret_loading_position > constants::Values::kTurretRange().upper ||
+      turret_loading_position < constants::Values::kTurretRange().lower) {
     turret_loading_position =
-        turret_.estimated_position() +
-        aos::math::NormalizeAngle(turret_loading_position -
-                                  turret_.estimated_position());
-    // if out of range, reset back to within +/- pi of zero.
-    if (turret_loading_position > constants::Values::kTurretRange().upper ||
-        turret_loading_position < constants::Values::kTurretRange().lower) {
-      turret_loading_position =
-          aos::math::NormalizeAngle(turret_loading_position);
-    }
-
-    turret_goal_buffer.Finish(
-        frc971::control_loops::
-            CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-                *turret_goal_buffer.fbb(), turret_loading_position));
-    turret_goal = &turret_goal_buffer.message();
+        frc971::zeroing::Wrap(constants::Values::kTurretRange().middle(),
+                              turret_loading_position, 2.0 * M_PI);
   }
+
+  turret_loading_goal_buffer.Finish(
+      frc971::control_loops::CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+          *turret_loading_goal_buffer.fbb(), turret_loading_position));
 
   switch (state_) {
     case SuperstructureState::IDLE: {
-      if (is_spitting) {
-        intake_state_ = IntakeState::NO_BALL;
+      // Only change the turret's goal loading position when idle, to prevent us
+      // spinning the turret around when TRANSFERRING...
+      if (front_intake_has_ball_ != back_intake_has_ball_) {
+        if (have_active_intake_request) {
+          turret_intake_state_ = unsafe_goal->turret_intake();
+        }
+        turret_intake_state_ = front_intake_has_ball_ ? RequestedIntake::kFront
+                                                      : RequestedIntake::kBack;
+      }
+      // When IDLE with no specific intake button pressed, allow the goal
+      // message to override the intaking stuff.
+      if (have_active_intake_request || turret_goal == nullptr) {
+        turret_goal = &turret_loading_goal_buffer.message();
       }
 
-      if (intake_state_ == IntakeState::NO_BALL ||
-          !(position->intake_beambreak_front() ||
-            position->intake_beambreak_back())) {
+      if (!front_intake_has_ball_ && !back_intake_has_ball_) {
         break;
       }
 
@@ -263,11 +260,16 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       break;
     }
     case SuperstructureState::TRANSFERRING: {
-      // If we've been transferring for too long, the ball probably got lost
-      if (intake_state_ == IntakeState::NO_BALL) {
+      // If we've been transferring for too long, the ball probably got lost.
+      if ((turret_intake_state_ == RequestedIntake::kFront &&
+           !front_intake_has_ball_) ||
+          (turret_intake_state_ == RequestedIntake::kBack &&
+           !back_intake_has_ball_)) {
         state_ = SuperstructureState::IDLE;
         break;
       }
+
+      turret_goal = &turret_loading_goal_buffer.message();
 
       const bool turret_near_goal =
           std::abs(turret_.estimated_position() - turret_loading_position) <
@@ -277,22 +279,22 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       }
 
       // Transfer rollers and flipper arm belt on
-      if (intake_state_ == IntakeState::INTAKE_FRONT_BALL) {
+      if (turret_intake_state_ == RequestedIntake::kFront) {
         transfer_roller_speed_front =
             constants::Values::kTransferRollerVoltage();
-        transfer_roller_speed_back =
-            -constants::Values::kTransferRollerVoltage();
       } else {
         transfer_roller_speed_back =
             constants::Values::kTransferRollerVoltage();
-        transfer_roller_speed_front =
-            -constants::Values::kTransferRollerVoltage();
       }
       flipper_arms_voltage = constants::Values::kFlipperFeedVoltage();
 
       // Ball is in catapult
       if (position->turret_beambreak()) {
-        intake_state_ = IntakeState::NO_BALL;
+        if (turret_intake_state_ == RequestedIntake::kFront) {
+          front_intake_has_ball_ = false;
+        } else {
+          back_intake_has_ball_ = false;
+        }
         state_ = SuperstructureState::LOADING;
         loading_timer_ = timestamp;
       }
@@ -496,7 +498,20 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   status_builder.add_reseating_in_catapult(reseating_in_catapult_);
   status_builder.add_fire(fire_);
   status_builder.add_state(state_);
-  status_builder.add_intake_state(intake_state_);
+  if (!front_intake_has_ball_ && !back_intake_has_ball_) {
+    status_builder.add_intake_state(IntakeState::NO_BALL);
+  } else if (front_intake_has_ball_ && back_intake_has_ball_) {
+    status_builder.add_intake_state(turret_intake_state_ ==
+                                            RequestedIntake::kFront
+                                        ? IntakeState::INTAKE_FRONT_BALL
+                                        : IntakeState::INTAKE_BACK_BALL);
+  } else {
+    status_builder.add_intake_state(front_intake_has_ball_
+                                        ? IntakeState::INTAKE_FRONT_BALL
+                                        : IntakeState::INTAKE_BACK_BALL);
+  }
+  status_builder.add_front_intake_has_ball(front_intake_has_ball_);
+  status_builder.add_back_intake_has_ball(back_intake_has_ball_);
 
   status_builder.add_aimer(aimer_offset);
 

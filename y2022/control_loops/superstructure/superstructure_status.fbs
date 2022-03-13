@@ -48,6 +48,9 @@ table Status {
   state:SuperstructureState (id: 10);
   // Intaking state
   intake_state:IntakeState (id: 11);
+  // Whether the front/rear intakes currently are holding balls.
+  front_intake_has_ball:bool (id: 18);
+  back_intake_has_ball:bool (id: 19);
   // Whether the flippers are open for shooting
   flippers_open:bool (id: 12);
   // Whether the flippers failed to open and we are retrying

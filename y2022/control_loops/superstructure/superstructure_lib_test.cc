@@ -766,6 +766,7 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
     goal_builder.add_roller_speed_back(12.0);
     goal_builder.add_roller_speed_compensation(0.0);
     goal_builder.add_turret(turret_offset);
+    goal_builder.add_turret_intake(RequestedIntake::kFront);
     builder.CheckOk(builder.Send(goal_builder.Finish()));
   }
   RunFor(std::chrono::seconds(2));
@@ -784,8 +785,8 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
   EXPECT_EQ(superstructure_status_fetcher_->state(), SuperstructureState::IDLE);
   EXPECT_EQ(superstructure_status_fetcher_->intake_state(),
             IntakeState::NO_BALL);
-  // Since we spun the front rollers, the turret should be trying to intake from
-  // there
+  // Since we requested the front intake, the turret should be trying to intake
+  // from there.
   EXPECT_NEAR(superstructure_status_fetcher_->turret()->position(),
               constants::Values::kTurretFrontIntakePos(), 0.001);
   EXPECT_EQ(superstructure_status_fetcher_->shot_count(), 0);
@@ -796,7 +797,7 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
 
   // Make sure that the turret goal is set to be loading from the front intake
   // and the supersturcture is transferring from the front intake, since that
-  // beambreak was trigerred. Also, the outside rollers should be stopped
+  // beambreak was trigerred. Also, the front outside rollers should be stopped.
   ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
   ASSERT_TRUE(superstructure_output_fetcher_.Fetch());
   EXPECT_EQ(superstructure_status_fetcher_->state(),
@@ -804,7 +805,7 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
   EXPECT_EQ(superstructure_status_fetcher_->intake_state(),
             IntakeState::INTAKE_FRONT_BALL);
   EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_front(), 0.0);
-  EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_back(), 0.0);
+  EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_back(), 12.0);
 
   RunFor(chrono::seconds(2));
 
@@ -814,7 +815,7 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
   ASSERT_TRUE(superstructure_output_fetcher_.Fetch());
   ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
   EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_front(), 0.0);
-  EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_back(), 0.0);
+  EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_back(), 12.0);
   EXPECT_EQ(superstructure_status_fetcher_->state(),
             SuperstructureState::TRANSFERRING);
   EXPECT_EQ(superstructure_status_fetcher_->intake_state(),
@@ -824,7 +825,7 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
   EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage_front(),
             constants::Values::kTransferRollerVoltage());
   EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage_back(),
-            -constants::Values::kTransferRollerVoltage());
+            0.0);
   EXPECT_NEAR(superstructure_status_fetcher_->turret()->position(),
               constants::Values::kTurretFrontIntakePos(), 0.001);
   EXPECT_EQ(superstructure_status_fetcher_->shot_count(), 0);
@@ -905,20 +906,22 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
   // move the turret.
   ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
   ASSERT_TRUE(superstructure_output_fetcher_.Fetch());
-  EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_front(), 0.0);
+  EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_front(), 12.0);
   EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_back(), 0.0);
-  EXPECT_TRUE(superstructure_output_fetcher_->transfer_roller_voltage_front() !=
+  EXPECT_TRUE(superstructure_output_fetcher_->transfer_roller_voltage_back() !=
                   0.0 &&
-              superstructure_output_fetcher_->transfer_roller_voltage_front() <=
+              superstructure_output_fetcher_->transfer_roller_voltage_back() <=
                   constants::Values::kTransferRollerWiggleVoltage() &&
-              superstructure_output_fetcher_->transfer_roller_voltage_front() >=
+              superstructure_output_fetcher_->transfer_roller_voltage_back() >=
                   -constants::Values::kTransferRollerWiggleVoltage());
-  EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage_back(),
-            -superstructure_output_fetcher_->transfer_roller_voltage_front());
+  EXPECT_EQ(0.0,
+            superstructure_output_fetcher_->transfer_roller_voltage_front());
   EXPECT_EQ(superstructure_status_fetcher_->state(),
             SuperstructureState::LOADED);
   EXPECT_EQ(superstructure_status_fetcher_->intake_state(),
             IntakeState::INTAKE_BACK_BALL);
+  EXPECT_FALSE(superstructure_status_fetcher_->front_intake_has_ball());
+  EXPECT_TRUE(superstructure_status_fetcher_->back_intake_has_ball());
   EXPECT_NEAR(superstructure_status_fetcher_->turret()->position(), kTurretGoal,
               0.001);
 
@@ -938,7 +941,7 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
     auto catapult_offset = catapult_builder.Finish();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_roller_speed_front(12.0);
+    goal_builder.add_roller_speed_front(0.0);
     goal_builder.add_roller_speed_back(12.0);
     goal_builder.add_roller_speed_compensation(0.0);
     goal_builder.add_catapult(catapult_offset);
@@ -955,7 +958,7 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
   // Now that we were asked to fire and the flippers are open,
   // we should be shooting the ball and holding the flippers open.
   // The turret should still be at its goal, and we should still be wiggling the
-  // transfer rollers to keep the ball in the back intake
+  // transfer rollers to keep the ball in the back intake.
   ASSERT_TRUE(superstructure_output_fetcher_.Fetch());
   ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
   EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_front(), 0.0);
@@ -966,8 +969,8 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
                   constants::Values::kTransferRollerWiggleVoltage() &&
               superstructure_output_fetcher_->transfer_roller_voltage_back() >=
                   -constants::Values::kTransferRollerWiggleVoltage());
-  EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage_front(),
-            -superstructure_output_fetcher_->transfer_roller_voltage_back());
+  EXPECT_EQ(0.0,
+            superstructure_output_fetcher_->transfer_roller_voltage_front());
   EXPECT_EQ(superstructure_status_fetcher_->state(),
             SuperstructureState::SHOOTING);
   EXPECT_EQ(superstructure_status_fetcher_->intake_state(),
@@ -986,17 +989,18 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
   superstructure_plant_.set_intake_beambreak_back(false);
   RunFor(std::chrono::seconds(2));
 
-  // After a bit, we should have completed the shot and be idle.
+  // After a bit, we should have completed the shot and be transferring.
   // Since the beambreak was triggered a bit ago, it should still think a ball
-  // is there
+  // is there.
   ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
   EXPECT_EQ(superstructure_status_fetcher_->shot_count(), 1);
-  EXPECT_EQ(superstructure_status_fetcher_->state(), SuperstructureState::IDLE);
+  EXPECT_EQ(superstructure_status_fetcher_->state(),
+            SuperstructureState::TRANSFERRING);
   EXPECT_EQ(superstructure_status_fetcher_->intake_state(),
             IntakeState::INTAKE_BACK_BALL);
 
   // Since the intake beambreak hasn't triggered in a while, it should realize
-  // the ball was lost
+  // the ball was lost.
   RunFor(std::chrono::seconds(1));
   ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
   EXPECT_EQ(superstructure_status_fetcher_->shot_count(), 1);
@@ -1199,7 +1203,15 @@ TEST_F(SuperstructureTest, ShootCatapult) {
   EXPECT_NEAR(superstructure_status_fetcher_->catapult()->position(),
               constants::Values::kCatapultRange().lower, 1e-3);
   EXPECT_EQ(superstructure_status_fetcher_->shot_count(), 1);
-  EXPECT_EQ(superstructure_status_fetcher_->state(), SuperstructureState::IDLE);
+  // Will still be in TRANSFERRING because we left the front beambreak on after
+  // we entered loaded, so we queued up another ball.
+  EXPECT_EQ(superstructure_status_fetcher_->state(),
+            SuperstructureState::TRANSFERRING);
+
+  RunFor(chrono::milliseconds(2000));
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+  EXPECT_EQ(superstructure_status_fetcher_->state(),
+            SuperstructureState::IDLE);
 }
 
 // Test that we are able to signal that the ball was preloaded
