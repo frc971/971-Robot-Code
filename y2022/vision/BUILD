@@ -239,6 +239,26 @@ cc_binary(
 )
 
 cc_binary(
+    name = "viewer_replay",
+    srcs = [
+        "viewer_replay.cc",
+    ],
+    data = [
+        "//y2022:aos_config",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//y2022:__subpackages__"],
+    deps = [
+        ":blob_detector_lib",
+        "//aos:init",
+        "//aos/events:simulated_event_loop",
+        "//aos/events/logging:log_reader",
+        "//frc971/vision:vision_fbs",
+        "//third_party:opencv",
+    ],
+)
+
+cc_binary(
     name = "extrinsics_calibration",
     srcs = [
         "extrinsics_calibration.cc",
