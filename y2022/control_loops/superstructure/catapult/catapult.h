@@ -211,7 +211,7 @@ class Catapult {
   const flatbuffers::Offset<
       frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus>
   Iterate(const Goal *unsafe_goal, const Position *position,
-          double *catapult_voltage, bool fire,
+          double battery_voltage, double *catapult_voltage, bool fire,
           flatbuffers::FlatBufferBuilder *fbb);
 
  private:

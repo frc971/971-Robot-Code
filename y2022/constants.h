@@ -113,7 +113,7 @@ struct Values {
         .lower_hard = -6.0,  // Back Hard
         .upper_hard = 4.0,   // Front Hard
         .lower = -5.0,       // Back Soft
-        .upper = 3.7         // Front Soft
+        .upper = 3.3         // Front Soft
     };
   }
 
