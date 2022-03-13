@@ -120,6 +120,7 @@ cc_library(
         "//frc971/vision:v4l2_reader",
         "//frc971/vision:vision_fbs",
         "//third_party:opencv",
+        "//y2022/localizer:localizer_output_fbs",
     ],
 )
 

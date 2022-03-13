@@ -2,12 +2,12 @@
 
 #include "aos/events/logging/log_writer.h"
 #include "aos/events/simulated_event_loop.h"
-#include "gtest/gtest.h"
 #include "frc971/control_loops/drivetrain/drivetrain_test_lib.h"
 #include "frc971/control_loops/pose.h"
-#include "y2022/vision/target_estimate_generated.h"
-#include "y2022/control_loops/superstructure/superstructure_status_generated.h"
+#include "gtest/gtest.h"
 #include "y2022/control_loops/drivetrain/drivetrain_base.h"
+#include "y2022/control_loops/superstructure/superstructure_status_generated.h"
+#include "y2022/vision/target_estimate_generated.h"
 
 DEFINE_string(output_folder, "",
               "If set, logs all channels to the provided logfile.");
@@ -18,11 +18,11 @@ typedef ModelBasedLocalizer::AccelState AccelState;
 typedef ModelBasedLocalizer::ModelInput ModelInput;
 typedef ModelBasedLocalizer::AccelInput AccelInput;
 
-using frc971::vision::calibration::CameraCalibrationT;
-using frc971::vision::calibration::TransformationMatrixT;
+using frc971::control_loops::Pose;
 using frc971::control_loops::drivetrain::DrivetrainConfig;
 using frc971::control_loops::drivetrain::LocalizerControl;
-using frc971::control_loops::Pose;
+using frc971::vision::calibration::CameraCalibrationT;
+using frc971::vision::calibration::TransformationMatrixT;
 using y2022::vision::TargetEstimate;
 using y2022::vision::TargetEstimateT;
 
@@ -82,14 +82,12 @@ DrivetrainConfig<double> GetTest2022DrivetrainConfig() {
   config.is_simulated = true;
   return config;
 }
-}
+}  // namespace
 
 class LocalizerTest : public ::testing::Test {
  protected:
   LocalizerTest()
-      : dt_config_(
-            GetTest2022DrivetrainConfig()),
-        localizer_(dt_config_) {
+      : dt_config_(GetTest2022DrivetrainConfig()), localizer_(dt_config_) {
     localizer_.set_longitudinal_offset(0.0);
   }
   ModelState CallDiffModel(const ModelState &state, const ModelInput &U) {
@@ -102,7 +100,6 @@ class LocalizerTest : public ::testing::Test {
 
   const control_loops::drivetrain::DrivetrainConfig<double> dt_config_;
   ModelBasedLocalizer localizer_;
-
 };
 
 TEST_F(LocalizerTest, AccelIntegrationTest) {
@@ -233,7 +230,8 @@ TEST_F(LocalizerTest, AccelOnly) {
   const Eigen::Vector2d encoders{0.0, 0.0};
   const Eigen::Vector2d voltages{0.0, 0.0};
   Eigen::Vector3d accel{5.0, 2.0, 9.80665};
-  Eigen::Vector3d accel_gs = dt_config_.imu_transform.inverse() * accel / 9.80665;
+  Eigen::Vector3d accel_gs =
+      dt_config_.imu_transform.inverse() * accel / 9.80665;
   while (t < start) {
     // Spin to fill up the buffer.
     localizer_.HandleImu(t, gyro, Eigen::Vector3d::UnitZ(), encoders, voltages);
@@ -744,10 +742,10 @@ TEST_F(EventLoopLocalizerTest, HighVoltageError) {
   ASSERT_FALSE(status_fetcher_->model_based()->using_model());
   ASSERT_LT(0.1, status_fetcher_->model_based()->residual())
       << aos::FlatbufferToJson(status_fetcher_.get(), {.multi_line = true});
-  ASSERT_NEAR(drivetrain_plant_.state()(0),
-              status_fetcher_->model_based()->x(), 1.0);
-  ASSERT_NEAR(drivetrain_plant_.state()(1),
-              status_fetcher_->model_based()->y(), 1e-6);
+  ASSERT_NEAR(drivetrain_plant_.state()(0), status_fetcher_->model_based()->x(),
+              1.0);
+  ASSERT_NEAR(drivetrain_plant_.state()(1), status_fetcher_->model_based()->y(),
+              1e-6);
 }
 
 // Tests that image corrections in the nominal case (no errors) causes no
@@ -864,7 +862,8 @@ TEST_F(EventLoopLocalizerTest, ImageCorrectionsInAccel) {
   EXPECT_TRUE(VerifyEstimatorAccurate(3.0));
   // y should be noticeably more accurate than x, since we are just driving
   // straight.
-  ASSERT_NEAR(drivetrain_plant_.state()(1), status_fetcher_->model_based()->y(), 0.1);
+  ASSERT_NEAR(drivetrain_plant_.state()(1), status_fetcher_->model_based()->y(),
+              0.1);
   ASSERT_TRUE(status_fetcher_->model_based()->has_statistics());
   ASSERT_LT(10,
             status_fetcher_->model_based()->statistics()->total_candidates());
@@ -872,4 +871,16 @@ TEST_F(EventLoopLocalizerTest, ImageCorrectionsInAccel) {
             status_fetcher_->model_based()->statistics()->total_accepted());
 }
 
-}  // namespace frc91::controls::testing
+TEST_F(EventLoopLocalizerTest, LedOutputs) {
+  send_targets_ = true;
+
+  event_loop_factory_.RunFor(std::chrono::milliseconds(10));
+  CHECK(output_fetcher_.Fetch());
+  EXPECT_EQ(output_fetcher_->led_outputs()->size(),
+            ModelBasedLocalizer::kNumPis);
+  for (LedOutput led_output : *output_fetcher_->led_outputs()) {
+    EXPECT_EQ(led_output, LedOutput::ON);
+  }
+}
+
+}  // namespace frc971::controls::testing

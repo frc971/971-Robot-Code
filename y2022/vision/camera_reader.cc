@@ -211,6 +211,26 @@ void CameraReader::ReadImage() {
 
   reader_->SendLatestImage();
   read_image_timer_->Setup(event_loop_->monotonic_now());
+
+  // Disable the LEDs based on localizer output
+  if (localizer_output_fetcher_.Fetch()) {
+    const auto node_name = event_loop_->node()->name()->string_view();
+    const size_t pi_number =
+        std::atol(node_name.substr(node_name.size() - 1).data());
+
+    CHECK(localizer_output_fetcher_->has_led_outputs() &&
+          localizer_output_fetcher_->led_outputs()->size() > pi_number);
+
+    const LedOutput led_output =
+        localizer_output_fetcher_->led_outputs()->Get(pi_number);
+
+    if (led_output != prev_led_output_) {
+      gpio_disable_control_.GPIOWrite(led_output == LedOutput::OFF ? kGPIOHigh
+                                                                   : kGPIOLow);
+
+      prev_led_output_ = led_output;
+    }
+  }
 }
 
 }  // namespace vision
