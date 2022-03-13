@@ -349,7 +349,7 @@
         {
           "name": "logger",
           "priority": 3,
-          "time_to_live": 5000000
+          "time_to_live": 500000000
         }
       ]
     },
@@ -399,16 +399,17 @@
   ],
   "applications": [
     {
-      "name": "message_bridge_client",
+      "name": "logger_message_bridge_client",
       "executable_name": "message_bridge_client",
-      "args": ["--rmem=8388608"],
+      "args": ["--rmem=8388608", "--rt_priority=16"],
       "nodes": [
         "logger"
       ]
     },
     {
-      "name": "message_bridge_server",
+      "name": "logger_message_bridge_server",
       "executable_name": "message_bridge_server",
+      "args": ["--rt_priority=16"],
       "nodes": [
         "logger"
       ]
