@@ -701,13 +701,6 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     AddLoop(&output_event_loop);
 
-    // Thread 5
-    ::aos::ShmEventLoop can_sensor_reader_event_loop(&config.message());
-    CANSensorReader can_sensor_reader(&can_sensor_reader_event_loop);
-    can_sensor_reader.set_flipper_arms_falcon(
-        superstructure_writer.flipper_arms_falcon());
-    AddLoop(&can_sensor_reader_event_loop);
-
     RunLoops();
   }
 };
