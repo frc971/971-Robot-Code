@@ -211,13 +211,19 @@
       "num_senders": 2,
       "logger": "LOCAL_AND_REMOTE_LOGGER",
       "logger_nodes": [
-        "imu"
+        "imu",
+        "logger"
       ],
       "destination_nodes": [
         {
           "name": "imu",
           "priority": 5,
-          "time_to_live": 5000000
+          "time_to_live": 50000000
+        },
+        {
+          "name": "logger",
+          "priority": 5,
+          "time_to_live": 50000000
         }
       ]
     },
