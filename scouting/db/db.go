@@ -27,6 +27,11 @@ type Stats struct {
 	Climbing                                                     int32
 }
 
+type NotesData struct {
+	TeamNumber int32
+	Notes      []string
+}
+
 // Opens a database at the specified path. If the path refers to a non-existent
 // file, the database will be created and initialized with empty tables.
 func NewDatabase(path string) (*Database, error) {
@@ -86,6 +91,20 @@ func NewDatabase(path string) (*Database, error) {
 		return nil, errors.New(fmt.Sprint("Failed to create team_match_stats table: ", err))
 	}
 
+	statement, err = database.Prepare("CREATE TABLE IF NOT EXISTS team_notes (" +
+		"id INTEGER PRIMARY KEY, " +
+		"TeamNumber INTEGER, " +
+		"Notes TEXT)")
+	if err != nil {
+		return nil, errors.New(fmt.Sprint("Failed to prepare notes table creation: ", err))
+	}
+	defer statement.Close()
+
+	_, err = statement.Exec()
+	if err != nil {
+		return nil, errors.New(fmt.Sprint("Failed to create notes table: ", err))
+	}
+
 	return database, nil
 }
 
@@ -106,6 +125,15 @@ func (database *Database) Delete() error {
 	_, err = statement.Exec()
 	if err != nil {
 		return errors.New(fmt.Sprint("Failed to drop stats table: ", err))
+	}
+
+	statement, err = database.Prepare("DROP TABLE IF EXISTS team_notes")
+	if err != nil {
+		return errors.New(fmt.Sprint("Failed to prepare dropping notes table: ", err))
+	}
+	_, err = statement.Exec()
+	if err != nil {
+		return errors.New(fmt.Sprint("Failed to drop notes table: ", err))
 	}
 	return nil
 }
@@ -284,4 +312,43 @@ func (database *Database) QueryStats(teamNumber_ int) ([]Stats, error) {
 		teams = append(teams, team)
 	}
 	return teams, nil
+}
+
+func (database *Database) QueryNotes(TeamNumber int32) (NotesData, error) {
+	rows, err := database.Query("SELECT * FROM team_notes WHERE TeamNumber = ?", TeamNumber)
+	if err != nil {
+		return NotesData{}, errors.New(fmt.Sprint("Failed to select from notes: ", err))
+	}
+	defer rows.Close()
+
+	var notes []string
+	for rows.Next() {
+		var id int32
+		var data string
+		err = rows.Scan(&id, &TeamNumber, &data)
+		if err != nil {
+			return NotesData{}, errors.New(fmt.Sprint("Failed to scan from notes: ", err))
+		}
+		notes = append(notes, data)
+	}
+	return NotesData{TeamNumber, notes}, nil
+}
+
+func (database *Database) AddNotes(data NotesData) error {
+	if len(data.Notes) > 1 {
+		return errors.New("Can only insert one row of notes at a time")
+	}
+	statement, err := database.Prepare("INSERT INTO " +
+		"team_notes(TeamNumber, Notes)" +
+		"VALUES (?, ?)")
+	if err != nil {
+		return errors.New(fmt.Sprint("Failed to prepare insertion into notes table: ", err))
+	}
+	defer statement.Close()
+
+	_, err = statement.Exec(data.TeamNumber, data.Notes[0])
+	if err != nil {
+		return errors.New(fmt.Sprint("Failed to insert into Notes database: ", err))
+	}
+	return nil
 }

@@ -324,3 +324,27 @@ func TestReturnStatsDB(t *testing.T) {
 		t.Errorf("Got %#v,\nbut expected %#v.", got, correct)
 	}
 }
+
+func TestNotes(t *testing.T) {
+	db := createDatabase(t)
+	defer db.Delete()
+
+	expected := NotesData{
+		TeamNumber: 1234,
+		Notes:      []string{"Note 1", "Note 3"},
+	}
+
+	err := db.AddNotes(NotesData{1234, []string{"Note 1"}})
+	check(t, err, "Failed to add Note")
+	err = db.AddNotes(NotesData{1235, []string{"Note 2"}})
+	check(t, err, "Failed to add Note")
+	err = db.AddNotes(NotesData{1234, []string{"Note 3"}})
+	check(t, err, "Failed to add Note")
+
+	actual, err := db.QueryNotes(1234)
+	check(t, err, "Failed to get Notes")
+
+	if !reflect.DeepEqual(expected, actual) {
+		t.Errorf("Got %#v,\nbut expected %#v.", actual, expected)
+	}
+}
