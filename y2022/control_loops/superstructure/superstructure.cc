@@ -179,6 +179,44 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
     }
   }
 
+  // Send the turret to the loading position if we have a ball in the intake, or
+  // are trying to intake one
+  double turret_loading_position = std::numeric_limits<double>::quiet_NaN();
+  if (state_ == SuperstructureState::TRANSFERRING &&
+      intake_state_ != IntakeState::NO_BALL) {
+    turret_loading_position = (intake_state_ == IntakeState::INTAKE_FRONT_BALL
+                                   ? constants::Values::kTurretFrontIntakePos()
+                                   : constants::Values::kTurretBackIntakePos());
+  } else if (state_ == SuperstructureState::IDLE && unsafe_goal != nullptr) {
+    if (unsafe_goal->roller_speed_front() > 0) {
+      turret_loading_position = constants::Values::kTurretFrontIntakePos();
+    } else if (unsafe_goal->roller_speed_back() > 0) {
+      turret_loading_position = constants::Values::kTurretBackIntakePos();
+    }
+  }
+
+  if (!std::isnan(turret_loading_position)) {
+    // Turn to the loading position as close to the current position as
+    // possible
+    // Strategy is copied from frc971/control_loops/aiming/aiming.cc
+    turret_loading_position =
+        turret_.estimated_position() +
+        aos::math::NormalizeAngle(turret_loading_position -
+                                  turret_.estimated_position());
+    // if out of range, reset back to within +/- pi of zero.
+    if (turret_loading_position > constants::Values::kTurretRange().upper ||
+        turret_loading_position < constants::Values::kTurretRange().lower) {
+      turret_loading_position =
+          aos::math::NormalizeAngle(turret_loading_position);
+    }
+
+    turret_goal_buffer.Finish(
+        frc971::control_loops::
+            CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+                *turret_goal_buffer.fbb(), turret_loading_position));
+    turret_goal = &turret_goal_buffer.message();
+  }
+
   switch (state_) {
     case SuperstructureState::IDLE: {
       if (is_spitting) {
@@ -202,31 +240,6 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
         state_ = SuperstructureState::IDLE;
         break;
       }
-
-      double turret_loading_position =
-          (intake_state_ == IntakeState::INTAKE_FRONT_BALL
-               ? constants::Values::kTurretFrontIntakePos()
-               : constants::Values::kTurretBackIntakePos());
-
-      // Turn to the loading position as close to the current position as
-      // possible
-      // Strategy is copied from frc971/control_loops/aiming/aiming.cc
-      turret_loading_position =
-          turret_.estimated_position() +
-          aos::math::NormalizeAngle(turret_loading_position -
-                                    turret_.estimated_position());
-      // if out of range, reset back to within +/- pi of zero.
-      if (turret_loading_position > constants::Values::kTurretRange().upper ||
-          turret_loading_position < constants::Values::kTurretRange().lower) {
-        turret_loading_position =
-            aos::math::NormalizeAngle(turret_loading_position);
-      }
-
-      turret_goal_buffer.Finish(
-          frc971::control_loops::
-              CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-                  *turret_goal_buffer.fbb(), turret_loading_position));
-      turret_goal = &turret_goal_buffer.message();
 
       const bool turret_near_goal =
           std::abs(turret_.estimated_position() - turret_loading_position) <

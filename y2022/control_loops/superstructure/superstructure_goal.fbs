@@ -26,8 +26,11 @@ table Goal {
   intake_back:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal (id: 2);
 
   // Positive is rollers intaking.
+  // When spinning the rollers, the turret will be moved to that side,
+  // so both shouldn't be positive at the same time.
   roller_speed_front:double (id: 3);
   roller_speed_back:double (id: 4);
+
   transfer_roller_speed_front:double (id: 5);
   transfer_roller_speed_back:double (id: 12);
 
