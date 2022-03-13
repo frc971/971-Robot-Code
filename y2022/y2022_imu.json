@@ -223,22 +223,7 @@
       "type": "frc971.controls.LocalizerStatus",
       "source_node": "imu",
       "frequency": 2200,
-      "max_size": 2000,
-      "logger": "LOCAL_AND_REMOTE_LOGGER",
-      "logger_nodes": [
-        "logger"
-      ],
-      "destination_nodes": [
-        {
-          "name": "logger",
-          "priority": 5,
-          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
-          "timestamp_logger_nodes": [
-            "imu"
-          ],
-          "time_to_live": 5000000
-        }
-      ]
+      "max_size": 2000
     },
     {
       "name": "/imu/aos/remote_timestamps/logger/localizer/frc971-controls-LocalizerStatus",
@@ -395,6 +380,7 @@
     {
       "name": "localizer_logger",
       "executable_name": "logger_main",
+      "autostart": false,
       "args": ["--snappy_compress"],
       "nodes": [
         "imu"
