@@ -27,8 +27,8 @@ export class EntryComponent {
     teleUpperShotsMade: number = 0;
     teleLowerShotsMade: number = 0;
     teleShotsMissed: number = 0;
-    defensePlayedOnScore: number = 3;
-    defensePlayedScore: number = 3;
+    defensePlayedOnScore: number = 0;
+    defensePlayedScore: number = 0;
     level: Level;
     proper: boolean = false;
     climbed: boolean = false;
