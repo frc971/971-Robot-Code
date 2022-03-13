@@ -159,12 +159,6 @@ def go_dependencies():
         version = "v1.10.2",
     )
     maybe_override_go_dep(
-        name = "com_github_mattn_go_sqlite3",
-        importpath = "github.com/mattn/go-sqlite3",
-        sum = "h1:MLn+5bFRlWMGoSRmJour3CL1w/qL96mvipqpwQW/Sfk=",
-        version = "v1.14.10",
-    )
-    maybe_override_go_dep(
         name = "com_github_phst_runfiles",
         importpath = "github.com/phst/runfiles",
         sum = "h1:N5aMcF9W9AjW4ed+PJhA7+FjdgPa9gJ+St3mNu2tq1Q=",
