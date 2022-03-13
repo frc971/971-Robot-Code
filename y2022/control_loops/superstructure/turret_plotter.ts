@@ -29,6 +29,12 @@ export function plotTurret(conn: Connection, element: Element) : void {
   positionPlot.addMessageLine(status, ['turret', 'goal_position']).setColor(RED).setPointSize(4.0);
   positionPlot.addMessageLine(status, ['turret', 'goal_velocity']).setColor(ORANGE).setPointSize(4.0);
   positionPlot.addMessageLine(status, ['turret', 'estimator_state', 'position']).setColor(CYAN).setPointSize(1.0);
+  positionPlot.addMessageLine(status, ['aimer', 'turret_velocity'])
+      .setColor(WHITE)
+      .setPointSize(1.0);
+  positionPlot.addMessageLine(status, ['aimer', 'turret_position'])
+      .setColor(BROWN)
+      .setPointSize(1.0);
 
   const voltagePlot =
       aosPlotter.addPlot(element, [DEFAULT_WIDTH, DEFAULT_HEIGHT / 2]);
