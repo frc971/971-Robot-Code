@@ -5,6 +5,9 @@
 #include "frc971/wpilib/imu_batch_generated.h"
 #include "y2022/constants.h"
 
+DEFINE_bool(ignore_accelerometer, false,
+            "If set, ignores the accelerometer readings.");
+
 namespace frc971::controls {
 
 namespace {
@@ -372,7 +375,8 @@ void ModelBasedLocalizer::HandleImu(aos::monotonic_clock::time_point t,
   constexpr size_t kShareStates = kNModelStates;
   static_assert(kUseModelThreshold < kUseAccelThreshold);
   if (using_model_) {
-    if (filtered_residual_ > kUseAccelThreshold) {
+    if (!FLAGS_ignore_accelerometer &&
+        filtered_residual_ > kUseAccelThreshold) {
       hysteresis_count_++;
     } else {
       hysteresis_count_ = 0;

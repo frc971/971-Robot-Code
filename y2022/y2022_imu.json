@@ -359,6 +359,8 @@
     {
       "name": "localizer",
       "executable_name": "localizer_main",
+      /* TODO(james): Remove this once confident in the accelerometer code. */
+      "args": ["--ignore_accelerometer"],
       "nodes": [
         "imu"
       ]
@@ -380,8 +382,7 @@
     {
       "name": "localizer_logger",
       "executable_name": "logger_main",
-      "autostart": false,
-      "args": ["--snappy_compress"],
+      "args": ["--logging_folder", "", "--snappy_compress"],
       "nodes": [
         "imu"
       ]
