@@ -212,7 +212,7 @@ void ViewerLocal() {
 
   TargetEstimator estimator(intrinsics, extrinsics);
 
-  for (auto it = file_list.begin() + FLAGS_skip; it != file_list.end(); it++) {
+  for (auto it = file_list.begin() + FLAGS_skip; it < file_list.end(); it++) {
     LOG(INFO) << "Reading file " << *it;
     cv::Mat image_mat = cv::imread(it->c_str());
     BlobDetector::BlobResult blob_result;

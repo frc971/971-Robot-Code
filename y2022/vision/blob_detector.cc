@@ -13,7 +13,7 @@
 
 DEFINE_uint64(red_delta, 100,
               "Required difference between green pixels vs. red");
-DEFINE_uint64(blue_delta, 30,
+DEFINE_uint64(blue_delta, 1,
               "Required difference between green pixels vs. blue");
 
 DEFINE_bool(use_outdoors, false,
@@ -50,6 +50,14 @@ cv::Mat BlobDetector::ThresholdImage(cv::Mat bgr_image) {
         binarized_image.at<uint8_t>(row, col) = 0;
       }
     }
+  }
+
+  // Fill in the contours on the binarized image so that we don't detect
+  // multiple blobs in one
+  const auto blobs = FindBlobs(binarized_image);
+  for (auto it = blobs.begin(); it < blobs.end(); it++) {
+    cv::drawContours(binarized_image, blobs, it - blobs.begin(),
+                     cv::Scalar(255), cv::FILLED);
   }
 
   return binarized_image;
