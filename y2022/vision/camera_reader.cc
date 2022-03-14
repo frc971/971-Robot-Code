@@ -216,7 +216,7 @@ void CameraReader::ReadImage() {
   if (localizer_output_fetcher_.Fetch()) {
     const auto node_name = event_loop_->node()->name()->string_view();
     const size_t pi_number =
-        std::atol(node_name.substr(node_name.size() - 1).data());
+        std::atol(node_name.substr(node_name.size() - 1).data()) - 1;
 
     CHECK(localizer_output_fetcher_->has_led_outputs() &&
           localizer_output_fetcher_->led_outputs()->size() > pi_number);
