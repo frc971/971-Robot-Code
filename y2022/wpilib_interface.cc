@@ -273,7 +273,8 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       auto builder = gyro_sender_.MakeBuilder();
       ::frc971::sensors::GyroReading::Builder gyro_reading_builder =
           builder.MakeBuilder<::frc971::sensors::GyroReading>();
-      constexpr double kMaxVelocity = 2000;  // degrees / second
+      // +/- 2000 deg / sec
+      constexpr double kMaxVelocity = 4000;  // degrees / second
       constexpr double kVelocityRadiansPerSecond =
           kMaxVelocity / 360 * (2.0 * M_PI);
 
