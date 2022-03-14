@@ -48,7 +48,7 @@ class CollisionAvoidance {
   // TODO(henry): put actual constants here.
 
   // Reference angles between which the turret will be careful
-  static constexpr double kCollisionZoneTurret = M_PI * 5.0 / 18.0;
+  static constexpr double kCollisionZoneTurret = M_PI * 7.0 / 18.0;
 
   // For the turret, 0 rad is pointing straight forwards
   static constexpr double kMinCollisionZoneFrontTurret =
@@ -61,7 +61,7 @@ class CollisionAvoidance {
   static constexpr double kMaxCollisionZoneBackTurret = kCollisionZoneTurret;
 
   // Maximum position of the intake to avoid collisions
-  static constexpr double kCollisionZoneIntake = 1.4;
+  static constexpr double kCollisionZoneIntake = 1.33;
 
   // Tolerances for the subsystems
   static constexpr double kEpsTurret = 0.05;
