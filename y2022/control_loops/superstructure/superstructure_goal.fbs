@@ -2,6 +2,12 @@ include "frc971/control_loops/profiled_subsystem.fbs";
 
 namespace y2022.control_loops.superstructure;
 
+// Which intake to transfer to the turret from.
+enum RequestedIntake : ubyte {
+  kFront = 0,
+  kBack = 1,
+}
+
 table CatapultGoal {
   // Old fire flag, only kept for backwards-compatability with logs.
   // Use the fire flag in the root Goal instead
@@ -54,6 +60,9 @@ table Goal {
 
   // If true, we started with the ball loaded and should proceed to that state.
   preloaded:bool (id: 13);
+
+  // Specifies which intake the turret should move to to intake.
+  turret_intake:RequestedIntake (id: 14);
 }
 
 

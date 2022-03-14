@@ -81,7 +81,9 @@ class Superstructure
   bool reseating_in_catapult_ = false;
   bool fire_ = false;
 
-  aos::monotonic_clock::time_point intake_beambreak_timer_ =
+  aos::monotonic_clock::time_point front_intake_beambreak_timer_ =
+      aos::monotonic_clock::min_time;
+  aos::monotonic_clock::time_point back_intake_beambreak_timer_ =
       aos::monotonic_clock::min_time;
   aos::monotonic_clock::time_point transferring_timer_ =
       aos::monotonic_clock::min_time;
@@ -90,7 +92,9 @@ class Superstructure
   aos::monotonic_clock::time_point flipper_opening_start_time_ =
       aos::monotonic_clock::min_time;
   SuperstructureState state_ = SuperstructureState::IDLE;
-  IntakeState intake_state_ = IntakeState::NO_BALL;
+  bool front_intake_has_ball_ = false;
+  bool back_intake_has_ball_ = false;
+  RequestedIntake turret_intake_state_ = RequestedIntake::kFront;
 
   DISALLOW_COPY_AND_ASSIGN(Superstructure);
 };

@@ -163,11 +163,13 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     double intake_back_pos = 1.47;
     double transfer_roller_front_speed = 0.0;
     double transfer_roller_back_speed = 0.0;
+    std::optional<control_loops::superstructure::RequestedIntake>
+        requested_intake;
 
     double roller_front_speed = 0.0;
     double roller_back_speed = 0.0;
 
-    double turret_pos = 0.0;
+    std::optional<double> turret_pos = 0.0;
 
     double catapult_pos = 0.03;
     double catapult_speed = 18.0;
@@ -191,8 +193,6 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       } else {
         turret_pos = -1.5;
       }
-    } else {
-      turret_pos = 0.0;
     }
 
     if (setpoint_fetcher_.get()) {
@@ -217,15 +217,15 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     if (data.IsPressed(kIntakeFrontOut)) {
       intake_front_pos = kIntakePosition;
       transfer_roller_front_speed = kTransferRollerSpeed;
-      transfer_roller_back_speed = -kTransferRollerSpeed;
 
       intake_front_counter_ = kIntakeCounterIterations;
+      intake_back_counter_ = 0;
     } else if (data.IsPressed(kIntakeBackOut)) {
       intake_back_pos = kIntakePosition;
       transfer_roller_back_speed = kTransferRollerSpeed;
-      transfer_roller_front_speed = -kTransferRollerSpeed;
 
       intake_back_counter_ = kIntakeCounterIterations;
+      intake_front_counter_ = 0;
     } else if (data.IsPressed(kSpit)) {
       transfer_roller_front_speed = -kTransferRollerSpeed;
       transfer_roller_back_speed = -kTransferRollerSpeed;
@@ -238,10 +238,12 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     if (intake_front_counter_ > 0) {
       intake_front_counter_--;
       roller_front_speed = kRollerSpeed;
+      requested_intake = control_loops::superstructure::RequestedIntake::kFront;
     }
     if (intake_back_counter_ > 0) {
       intake_back_counter_--;
       roller_back_speed = kRollerSpeed;
+      requested_intake = control_loops::superstructure::RequestedIntake::kBack;
     }
 
     if (data.IsPressed(kFire)) {
@@ -263,9 +265,12 @@ class Reader : public ::frc971::input::ActionJoystickInput {
                   CreateProfileParameters(*builder.fbb(), 8.0, 40.0));
 
       flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
-          turret_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-              *builder.fbb(), turret_pos,
-              CreateProfileParameters(*builder.fbb(), 12.0, 20.0));
+          turret_offset;
+      if (turret_pos.has_value()) {
+        CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), turret_pos.value(),
+            CreateProfileParameters(*builder.fbb(), 12.0, 20.0));
+      }
 
       flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
           catapult_return_offset =
@@ -296,8 +301,10 @@ class Reader : public ::frc971::input::ActionJoystickInput {
           transfer_roller_front_speed);
       superstructure_goal_builder.add_transfer_roller_speed_back(
           transfer_roller_back_speed);
-      superstructure_goal_builder.add_auto_aim(
-          data.IsPressed(kAutoAim));
+      superstructure_goal_builder.add_auto_aim(data.IsPressed(kAutoAim));
+      if (requested_intake.has_value()) {
+        superstructure_goal_builder.add_turret_intake(requested_intake.value());
+      }
 
       if (builder.Send(superstructure_goal_builder.Finish()) !=
           aos::RawSender::Error::kOk) {
