@@ -14,6 +14,7 @@
 namespace y2022 {
 namespace actors {
 
+using control_loops::superstructure::RequestedIntake;
 using frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal;
 
 namespace superstructure = y2022::control_loops::superstructure;
@@ -46,6 +47,9 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   void set_transfer_roller_back_voltage(double voltage) {
     transfer_roller_back_voltage_ = voltage;
   }
+  void set_requested_intake(std::optional<RequestedIntake> requested_intake) {
+    requested_intake_ = requested_intake;
+  }
 
   void set_fire_at_will(bool fire) { fire_ = fire; }
   void set_preloaded(bool preloaded) { preloaded_ = preloaded; }
@@ -75,6 +79,7 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   double roller_back_voltage_ = 0.0;
   double transfer_roller_front_voltage_ = 0.0;
   double transfer_roller_back_voltage_ = 0.0;
+  std::optional<RequestedIntake> requested_intake_ = std::nullopt;
   bool fire_ = false;
   bool preloaded_ = false;
 

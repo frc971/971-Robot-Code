@@ -331,6 +331,9 @@ void AutonomousActor::SendSuperstructureGoal() {
   superstructure_builder.add_roller_speed_compensation(1.5);
   superstructure_builder.add_roller_speed_front(roller_front_voltage_);
   superstructure_builder.add_roller_speed_back(roller_back_voltage_);
+  if (requested_intake_.has_value()) {
+    superstructure_builder.add_turret_intake(*requested_intake_);
+  }
   superstructure_builder.add_transfer_roller_speed_front(
       transfer_roller_front_voltage_);
   superstructure_builder.add_transfer_roller_speed_back(
@@ -347,6 +350,7 @@ void AutonomousActor::SendSuperstructureGoal() {
 }
 
 void AutonomousActor::ExtendFrontIntake() {
+  set_requested_intake(RequestedIntake::kFront);
   set_intake_front_goal(kExtendIntakeGoal);
   set_roller_front_voltage(kRollerVoltage);
   set_transfer_roller_front_voltage(kRollerVoltage);
@@ -355,6 +359,7 @@ void AutonomousActor::ExtendFrontIntake() {
 }
 
 void AutonomousActor::RetractFrontIntake() {
+  set_requested_intake(std::nullopt);
   set_intake_front_goal(kRetractIntakeGoal);
   set_roller_front_voltage(kRollerVoltage);
   set_transfer_roller_front_voltage(0.0);
@@ -363,6 +368,7 @@ void AutonomousActor::RetractFrontIntake() {
 }
 
 void AutonomousActor::ExtendBackIntake() {
+  set_requested_intake(RequestedIntake::kBack);
   set_intake_back_goal(kExtendIntakeGoal);
   set_roller_back_voltage(kRollerVoltage);
   set_transfer_roller_back_voltage(kRollerVoltage);
@@ -371,6 +377,7 @@ void AutonomousActor::ExtendBackIntake() {
 }
 
 void AutonomousActor::RetractBackIntake() {
+  set_requested_intake(std::nullopt);
   set_intake_back_goal(kRetractIntakeGoal);
   set_roller_back_voltage(kRollerVoltage);
   set_transfer_roller_front_voltage(0.0);
