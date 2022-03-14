@@ -1,6 +1,8 @@
 #ifndef FRC971_ZEROING_IMU_ZEROER_H_
 #define FRC971_ZEROING_IMU_ZEROER_H_
 
+#include <optional>
+
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "frc971/wpilib/imu_generated.h"
 #include "frc971/zeroing/averager.h"
@@ -19,16 +21,25 @@ class ImuZeroer {
   static constexpr size_t kSamplesToAverage = 200;
   static constexpr size_t kRequiredZeroPoints = 10;
 
-  ImuZeroer();
+  enum class FaultBehavior {
+    // When we encounter a fault, latch and stay in an errored state
+    // indefinitely.
+    kLatch,
+    // When we encounter a fault, don't process the reading and return nullopt
+    // for all measurements.
+    kTemporary
+  };
+
+  explicit ImuZeroer(FaultBehavior fault_behavior = FaultBehavior::kLatch);
   bool Zeroed() const;
   bool Faulted() const;
-  void InsertMeasurement(const IMUValues &values);
+  bool InsertMeasurement(const IMUValues &values);
   // PErforms the heavier-duty processing for managing zeroing.
   void ProcessMeasurements();
   void InsertAndProcessMeasurement(const IMUValues &values);
   Eigen::Vector3d GyroOffset() const;
-  Eigen::Vector3d ZeroedGyro() const;
-  Eigen::Vector3d ZeroedAccel() const;
+  std::optional<Eigen::Vector3d> ZeroedGyro() const;
+  std::optional<Eigen::Vector3d> ZeroedAccel() const;
 
   flatbuffers::Offset<control_loops::drivetrain::ImuZeroerState> PopulateStatus(
       flatbuffers::FlatBufferBuilder *fbb) const;
@@ -62,8 +73,11 @@ class ImuZeroer {
   Eigen::Vector3d accel_average_;
   Eigen::Vector3d last_gyro_sample_;
   Eigen::Vector3d last_accel_sample_;
-  // Whether the zeroing has faulted at any point thus far.
-  bool faulted_ = false;
+
+  const FaultBehavior fault_behavior_;
+  bool reading_faulted_ = false;
+  bool zeroing_faulted_ = false;
+
   size_t good_iters_ = 0;
   size_t num_zeroes_ = 0;
 };

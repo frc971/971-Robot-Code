@@ -5,6 +5,9 @@
 #include "frc971/wpilib/imu_batch_generated.h"
 #include "y2022/constants.h"
 
+DEFINE_bool(ignore_accelerometer, false,
+            "If set, ignores the accelerometer readings.");
+
 namespace frc971::controls {
 
 namespace {
@@ -372,7 +375,8 @@ void ModelBasedLocalizer::HandleImu(aos::monotonic_clock::time_point t,
   constexpr size_t kShareStates = kNModelStates;
   static_assert(kUseModelThreshold < kUseAccelThreshold);
   if (using_model_) {
-    if (filtered_residual_ > kUseAccelThreshold) {
+    if (!FLAGS_ignore_accelerometer &&
+        filtered_residual_ > kUseAccelThreshold) {
       hysteresis_count_++;
     } else {
       hysteresis_count_ = 0;
@@ -862,6 +866,7 @@ EventLoopLocalizer::EventLoopLocalizer(
     aos::EventLoop *event_loop,
     const control_loops::drivetrain::DrivetrainConfig<double> &dt_config)
     : event_loop_(event_loop),
+      dt_config_(dt_config),
       model_based_(dt_config),
       status_sender_(event_loop_->MakeSender<LocalizerStatus>("/localizer")),
       output_sender_(event_loop_->MakeSender<LocalizerOutput>("/localizer")),
@@ -962,7 +967,7 @@ EventLoopLocalizer::EventLoopLocalizer(
           const Eigen::Vector2d encoders{
               left_encoder_.Unwrap(value->left_encoder()),
               right_encoder_.Unwrap(value->right_encoder())};
-          if (zeroer_.Zeroed()) {
+          {
             const aos::monotonic_clock::time_point pico_timestamp{
                 std::chrono::microseconds(value->pico_timestamp_us())};
             // TODO(james): If we get large enough drift off of the pico,
@@ -984,8 +989,13 @@ EventLoopLocalizer::EventLoopLocalizer(
                 (output_fetcher_.context().monotonic_event_time +
                      std::chrono::milliseconds(10) <
                  event_loop_->context().monotonic_event_time);
+            const bool zeroed = zeroer_.Zeroed();
             model_based_.HandleImu(
-                sample_timestamp, zeroer_.ZeroedGyro(), zeroer_.ZeroedAccel(),
+                sample_timestamp,
+                zeroed ? zeroer_.ZeroedGyro().value() : Eigen::Vector3d::Zero(),
+                zeroed ? zeroer_.ZeroedAccel().value()
+                       : dt_config_.imu_transform.transpose() *
+                             Eigen::Vector3d::UnitZ(),
                 encoders,
                 disabled ? Eigen::Vector2d::Zero()
                          : Eigen::Vector2d{output_fetcher_->left_voltage(),

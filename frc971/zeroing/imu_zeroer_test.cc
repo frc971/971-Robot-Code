@@ -42,8 +42,8 @@ TEST(ImuZeroerTest, InitializeUnzeroed) {
   ASSERT_FALSE(zeroer.Zeroed());
   ASSERT_FALSE(zeroer.Faulted());
   ASSERT_EQ(0.0, zeroer.GyroOffset().norm());
-  ASSERT_EQ(0.0, zeroer.ZeroedGyro().norm());
-  ASSERT_EQ(0.0, zeroer.ZeroedAccel().norm());
+  ASSERT_EQ(0.0, zeroer.ZeroedGyro().value().norm());
+  ASSERT_EQ(0.0, zeroer.ZeroedAccel().value().norm());
   // A measurement before we are zeroed should just result in the measurement
   // being passed through without modification.
   zeroer.InsertAndProcessMeasurement(
@@ -51,12 +51,12 @@ TEST(ImuZeroerTest, InitializeUnzeroed) {
   ASSERT_FALSE(zeroer.Zeroed());
   ASSERT_FALSE(zeroer.Faulted());
   ASSERT_EQ(0.0, zeroer.GyroOffset().norm());
-  ASSERT_FLOAT_EQ(0.01, zeroer.ZeroedGyro().x());
-  ASSERT_FLOAT_EQ(0.02, zeroer.ZeroedGyro().y());
-  ASSERT_FLOAT_EQ(0.03, zeroer.ZeroedGyro().z());
-  ASSERT_EQ(4.0, zeroer.ZeroedAccel().x());
-  ASSERT_EQ(5.0, zeroer.ZeroedAccel().y());
-  ASSERT_EQ(6.0, zeroer.ZeroedAccel().z());
+  ASSERT_FLOAT_EQ(0.01, zeroer.ZeroedGyro().value().x());
+  ASSERT_FLOAT_EQ(0.02, zeroer.ZeroedGyro().value().y());
+  ASSERT_FLOAT_EQ(0.03, zeroer.ZeroedGyro().value().z());
+  ASSERT_EQ(4.0, zeroer.ZeroedAccel().value().x());
+  ASSERT_EQ(5.0, zeroer.ZeroedAccel().value().y());
+  ASSERT_EQ(6.0, zeroer.ZeroedAccel().value().z());
 }
 
 // Tests that we zero if we receive a bunch of identical measurements.
@@ -73,21 +73,21 @@ TEST(ImuZeroerTest, ZeroOnConstantData) {
   ASSERT_FLOAT_EQ(0.01, zeroer.GyroOffset().x());
   ASSERT_FLOAT_EQ(0.02, zeroer.GyroOffset().y());
   ASSERT_FLOAT_EQ(0.03, zeroer.GyroOffset().z());
-  ASSERT_EQ(0.0, zeroer.ZeroedGyro().x());
-  ASSERT_EQ(0.0, zeroer.ZeroedGyro().y());
-  ASSERT_EQ(0.0, zeroer.ZeroedGyro().z());
+  ASSERT_EQ(0.0, zeroer.ZeroedGyro().value().x());
+  ASSERT_EQ(0.0, zeroer.ZeroedGyro().value().y());
+  ASSERT_EQ(0.0, zeroer.ZeroedGyro().value().z());
   // Accelerometer readings should not be affected.
-  ASSERT_EQ(4.0, zeroer.ZeroedAccel().x());
-  ASSERT_EQ(5.0, zeroer.ZeroedAccel().y());
-  ASSERT_EQ(6.0, zeroer.ZeroedAccel().z());
+  ASSERT_EQ(4.0, zeroer.ZeroedAccel().value().x());
+  ASSERT_EQ(5.0, zeroer.ZeroedAccel().value().y());
+  ASSERT_EQ(6.0, zeroer.ZeroedAccel().value().z());
   // If we get another measurement offset by {1, 1, 1} we should read the result
   // as {1, 1, 1}.
   zeroer.InsertAndProcessMeasurement(
       MakeMeasurement({0.02, 0.03, 0.04}, {0, 0, 0}).message());
   ASSERT_FALSE(zeroer.Faulted());
-  ASSERT_FLOAT_EQ(0.01, zeroer.ZeroedGyro().x());
-  ASSERT_FLOAT_EQ(0.01, zeroer.ZeroedGyro().y());
-  ASSERT_FLOAT_EQ(0.01, zeroer.ZeroedGyro().z());
+  ASSERT_FLOAT_EQ(0.01, zeroer.ZeroedGyro().value().x());
+  ASSERT_FLOAT_EQ(0.01, zeroer.ZeroedGyro().value().y());
+  ASSERT_FLOAT_EQ(0.01, zeroer.ZeroedGyro().value().z());
 }
 
 // Tests that we do not zero if the gyro is producing particularly high
@@ -125,12 +125,12 @@ TEST(ImuZeroerTest, ZeroOnLowNoiseData) {
   zeroer.InsertAndProcessMeasurement(
       MakeMeasurement({0.02, 0.03, 0.04}, {0, 0, 0}).message());
   ASSERT_FALSE(zeroer.Faulted());
-  ASSERT_NEAR(0.01, zeroer.ZeroedGyro().x(), 1e-3);
-  ASSERT_NEAR(0.01, zeroer.ZeroedGyro().y(), 1e-3);
-  ASSERT_NEAR(0.01, zeroer.ZeroedGyro().z(), 1e-3);
-  ASSERT_EQ(0.0, zeroer.ZeroedAccel().x());
-  ASSERT_EQ(0.0, zeroer.ZeroedAccel().y());
-  ASSERT_EQ(0.0, zeroer.ZeroedAccel().z());
+  ASSERT_NEAR(0.01, zeroer.ZeroedGyro().value().x(), 1e-3);
+  ASSERT_NEAR(0.01, zeroer.ZeroedGyro().value().y(), 1e-3);
+  ASSERT_NEAR(0.01, zeroer.ZeroedGyro().value().z(), 1e-3);
+  ASSERT_EQ(0.0, zeroer.ZeroedAccel().value().x());
+  ASSERT_EQ(0.0, zeroer.ZeroedAccel().value().y());
+  ASSERT_EQ(0.0, zeroer.ZeroedAccel().value().z());
 }
 
 // Tests that we do not zero if there is too much noise in the input data.
