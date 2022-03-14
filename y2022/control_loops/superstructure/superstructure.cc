@@ -48,9 +48,9 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   OutputT output_struct;
 
   aos::FlatbufferFixedAllocatorArray<
-      frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal, 64>
+      frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal, 512>
       turret_loading_goal_buffer;
-  aos::FlatbufferFixedAllocatorArray<CatapultGoal, 64> catapult_goal_buffer;
+  aos::FlatbufferFixedAllocatorArray<CatapultGoal, 512> catapult_goal_buffer;
 
   const aos::monotonic_clock::time_point timestamp =
       event_loop()->context().monotonic_event_time;
@@ -96,16 +96,17 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
     const double distance_to_goal = aimer_.DistanceToGoal();
     if (unsafe_goal->auto_aim() && values_->shot_interpolation_table.GetInRange(
                                        distance_to_goal, &shot_params)) {
+      flatbuffers::FlatBufferBuilder *catapult_goal_fbb =
+          catapult_goal_buffer.fbb();
       std::optional<flatbuffers::Offset<
           frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal>>
           return_position_offset;
       if (unsafe_goal != nullptr && unsafe_goal->has_catapult() &&
           unsafe_goal->catapult()->has_return_position()) {
-        return_position_offset = {
-            aos::CopyFlatBuffer(unsafe_goal->catapult()->return_position(),
-                                catapult_goal_buffer.fbb())};
+        return_position_offset = {aos::CopyFlatBuffer(
+            unsafe_goal->catapult()->return_position(), catapult_goal_fbb)};
       }
-      CatapultGoal::Builder builder(*catapult_goal_buffer.fbb());
+      CatapultGoal::Builder builder(*catapult_goal_fbb);
       builder.add_shot_position(shot_params.shot_angle);
       builder.add_shot_velocity(shot_params.shot_velocity);
       if (return_position_offset.has_value()) {
