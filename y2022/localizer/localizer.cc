@@ -882,6 +882,7 @@ EventLoopLocalizer::EventLoopLocalizer(
           event_loop_
               ->MakeFetcher<y2022::control_loops::superstructure::Status>(
                   "/superstructure")),
+      zeroer_(zeroing::ImuZeroer::FaultBehavior::kTemporary),
       left_encoder_(-DrivetrainWrapPeriod() / 2.0, DrivetrainWrapPeriod()),
       right_encoder_(-DrivetrainWrapPeriod() / 2.0, DrivetrainWrapPeriod()) {
   event_loop_->MakeWatcher(
