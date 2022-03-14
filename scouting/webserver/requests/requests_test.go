@@ -19,8 +19,10 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_matches_for_team"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_matches_for_team_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_for_team"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_data_scouting"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_data_scouting_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_notes"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/server"
 	flatbuffers "github.com/google/flatbuffers/go"
 )
@@ -274,6 +276,59 @@ func TestRequestDataScouting(t *testing.T) {
 	}
 }
 
+func TestSubmitNotes(t *testing.T) {
+	database := MockDatabase{}
+	scoutingServer := server.NewScoutingServer()
+	HandleRequests(&database, scrapeEmtpyMatchList, scoutingServer)
+	scoutingServer.Start(8080)
+	defer scoutingServer.Stop()
+
+	builder := flatbuffers.NewBuilder(1024)
+	builder.Finish((&submit_notes.SubmitNotesT{
+		Team:  971,
+		Notes: "Notes",
+	}).Pack(builder))
+
+	_, err := debug.SubmitNotes("http://localhost:8080", builder.FinishedBytes())
+	if err != nil {
+		t.Fatal("Failed to submit notes: ", err)
+	}
+
+	expected := []db.NotesData{
+		{TeamNumber: 971, Notes: []string{"Notes"}},
+	}
+
+	if !reflect.DeepEqual(database.notes, expected) {
+		t.Fatal("Submitted notes did not match", expected, database.notes)
+	}
+}
+
+func TestRequestNotes(t *testing.T) {
+	database := MockDatabase{
+		notes: []db.NotesData{{
+			TeamNumber: 971,
+			Notes:      []string{"Notes"},
+		}},
+	}
+	scoutingServer := server.NewScoutingServer()
+	HandleRequests(&database, scrapeEmtpyMatchList, scoutingServer)
+	scoutingServer.Start(8080)
+	defer scoutingServer.Stop()
+
+	builder := flatbuffers.NewBuilder(1024)
+	builder.Finish((&request_notes_for_team.RequestNotesForTeamT{
+		Team: 971,
+	}).Pack(builder))
+	response, err := debug.RequestNotes("http://localhost:8080", builder.FinishedBytes())
+	if err != nil {
+		t.Fatal("Failed to submit notes: ", err)
+	}
+
+	if response.Notes[0].Data != "Notes" {
+		t.Fatal("requested notes did not match", response)
+	}
+}
+
 // Validates that we can download the schedule from The Blue Alliance.
 func TestRefreshMatchList(t *testing.T) {
 	scrapeMockSchedule := func(int32, string) ([]scraping.Match, error) {
@@ -353,6 +408,7 @@ func TestRefreshMatchList(t *testing.T) {
 type MockDatabase struct {
 	matches []db.Match
 	stats   []db.Stats
+	notes   []db.NotesData
 }
 
 func (database *MockDatabase) AddToMatch(match db.Match) error {
@@ -388,6 +444,21 @@ func (database *MockDatabase) QueryMatches(requestedTeam int32) ([]db.Match, err
 
 func (database *MockDatabase) QueryStats(int) ([]db.Stats, error) {
 	return []db.Stats{}, nil
+}
+
+func (database *MockDatabase) QueryNotes(requestedTeam int32) (db.NotesData, error) {
+	var results []string
+	for _, data := range database.notes {
+		if data.TeamNumber == requestedTeam {
+			results = append(results, data.Notes[0])
+		}
+	}
+	return db.NotesData{TeamNumber: requestedTeam, Notes: results}, nil
+}
+
+func (database *MockDatabase) AddNotes(data db.NotesData) error {
+	database.notes = append(database.notes, data)
+	return nil
 }
 
 // Returns an empty match list from the fake The Blue Alliance scraping.

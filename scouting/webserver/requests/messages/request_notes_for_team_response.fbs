@@ -1,0 +1,13 @@
+namespace scouting.webserver.requests;
+
+// A repeated table is better when we expect each index to have various data points
+table Note {
+    data:string (id: 0);
+}
+
+table RequestNotesForTeamResponse {
+    notes:[Note] (id: 0);
+}
+
+root_type RequestNotesForTeamResponse;
+

@@ -13,7 +13,9 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_matches_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_matches_for_team_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_for_team_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_data_scouting_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_notes_response"
 )
 
 // Use aliases to make the rest of the code more readable.
@@ -139,5 +141,25 @@ func RefreshMatchList(server string, requestBytes []byte) (*RefreshMatchListResp
 	}
 	log.Printf("Parsing RefreshMatchListResponse")
 	response := refresh_match_list_response.GetRootAsRefreshMatchListResponse(responseBytes, 0)
+	return response.UnPack(), nil
+}
+
+func SubmitNotes(server string, requestBytes []byte) (*submit_notes_response.SubmitNotesResponseT, error) {
+	responseBytes, err := performPost(server+"/requests/submit/submit_notes", requestBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	response := submit_notes_response.GetRootAsSubmitNotesResponse(responseBytes, 0)
+	return response.UnPack(), nil
+}
+
+func RequestNotes(server string, requestBytes []byte) (*request_notes_for_team_response.RequestNotesForTeamResponseT, error) {
+	responseBytes, err := performPost(server+"/requests/request/notes_for_team", requestBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	response := request_notes_for_team_response.GetRootAsRequestNotesForTeamResponse(responseBytes, 0)
 	return response.UnPack(), nil
 }

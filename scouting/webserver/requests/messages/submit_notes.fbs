@@ -1,0 +1,8 @@
+namespace scouting.webserver.requests;
+
+table SubmitNotes {
+    team:int (id: 0);
+    notes:string (id: 1);
+}
+
+root_type SubmitNotes;

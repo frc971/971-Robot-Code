@@ -19,8 +19,12 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_matches_for_team"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_matches_for_team_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_for_team"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_for_team_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_data_scouting"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_data_scouting_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_notes"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_notes_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/server"
 	flatbuffers "github.com/google/flatbuffers/go"
 )
@@ -35,6 +39,10 @@ type RequestDataScouting = request_data_scouting.RequestDataScouting
 type RequestDataScoutingResponseT = request_data_scouting_response.RequestDataScoutingResponseT
 type RefreshMatchList = refresh_match_list.RefreshMatchList
 type RefreshMatchListResponseT = refresh_match_list_response.RefreshMatchListResponseT
+type SubmitNotes = submit_notes.SubmitNotes
+type SubmitNotesResponseT = submit_notes_response.SubmitNotesResponseT
+type RequestNotesForTeam = request_notes_for_team.RequestNotesForTeam
+type RequestNotesForTeamResponseT = request_notes_for_team_response.RequestNotesForTeamResponseT
 
 // The interface we expect the database abstraction to conform to.
 // We use an interface here because it makes unit testing easier.
@@ -45,6 +53,8 @@ type Database interface {
 	ReturnStats() ([]db.Stats, error)
 	QueryMatches(int32) ([]db.Match, error)
 	QueryStats(int) ([]db.Stats, error)
+	QueryNotes(int32) (db.NotesData, error)
+	AddNotes(db.NotesData) error
 }
 
 type ScrapeMatchList func(int32, string) ([]scraping.Match, error)
@@ -392,6 +402,93 @@ func (handler refreshMatchListHandler) ServeHTTP(w http.ResponseWriter, req *htt
 	w.Write(builder.FinishedBytes())
 }
 
+func parseSubmitNotes(w http.ResponseWriter, buf []byte) (*SubmitNotes, bool) {
+	success := true
+	defer func() {
+		if r := recover(); r != nil {
+			respondWithError(w, http.StatusBadRequest, fmt.Sprintf("Failed to parse RefreshMatchList: %v", r))
+			success = false
+		}
+	}()
+	result := submit_notes.GetRootAsSubmitNotes(buf, 0)
+	return result, success
+}
+
+type submitNoteScoutingHandler struct {
+	db Database
+}
+
+func (handler submitNoteScoutingHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	requestBytes, err := io.ReadAll(req.Body)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, fmt.Sprint("Failed to read request bytes:", err))
+		return
+	}
+
+	request, success := parseSubmitNotes(w, requestBytes)
+	if !success {
+		return
+	}
+
+	err = handler.db.AddNotes(db.NotesData{
+		TeamNumber: request.Team(),
+		Notes:      []string{string(request.Notes())},
+	})
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to insert notes: %v", err))
+		return
+	}
+
+	var response SubmitNotesResponseT
+	builder := flatbuffers.NewBuilder(10)
+	builder.Finish((&response).Pack(builder))
+	w.Write(builder.FinishedBytes())
+}
+
+func parseRequestNotesForTeam(w http.ResponseWriter, buf []byte) (*RequestNotesForTeam, bool) {
+	success := true
+	defer func() {
+		if r := recover(); r != nil {
+			respondWithError(w, http.StatusBadRequest, fmt.Sprintf("Failed to parse RefreshMatchList: %v", r))
+			success = false
+		}
+	}()
+	result := request_notes_for_team.GetRootAsRequestNotesForTeam(buf, 0)
+	return result, success
+}
+
+type requestNotesForTeamHandler struct {
+	db Database
+}
+
+func (handler requestNotesForTeamHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	requestBytes, err := io.ReadAll(req.Body)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, fmt.Sprint("Failed to read request bytes:", err))
+		return
+	}
+
+	request, success := parseRequestNotesForTeam(w, requestBytes)
+	if !success {
+		return
+	}
+
+	notesData, err := handler.db.QueryNotes(request.Team())
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to query notes: %v", err))
+		return
+	}
+
+	var response RequestNotesForTeamResponseT
+	for _, data := range notesData.Notes {
+		response.Notes = append(response.Notes, &request_notes_for_team_response.NoteT{data})
+	}
+
+	builder := flatbuffers.NewBuilder(1024)
+	builder.Finish((&response).Pack(builder))
+	w.Write(builder.FinishedBytes())
+}
+
 func HandleRequests(db Database, scrape ScrapeMatchList, scoutingServer server.ScoutingServer) {
 	scoutingServer.HandleFunc("/requests", unknown)
 	scoutingServer.Handle("/requests/submit/data_scouting", submitDataScoutingHandler{db})
@@ -399,4 +496,6 @@ func HandleRequests(db Database, scrape ScrapeMatchList, scoutingServer server.S
 	scoutingServer.Handle("/requests/request/matches_for_team", requestMatchesForTeamHandler{db})
 	scoutingServer.Handle("/requests/request/data_scouting", requestDataScoutingHandler{db})
 	scoutingServer.Handle("/requests/refresh_match_list", refreshMatchListHandler{db, scrape})
+	scoutingServer.Handle("/requests/submit/submit_notes", submitNoteScoutingHandler{db})
+	scoutingServer.Handle("/requests/request/notes_for_team", requestNotesForTeamHandler{db})
 }

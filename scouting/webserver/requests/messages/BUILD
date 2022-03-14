@@ -12,6 +12,10 @@ FILE_NAMES = (
     "request_data_scouting_response",
     "refresh_match_list",
     "refresh_match_list_response",
+    "submit_notes",
+    "submit_notes_response",
+    "request_notes_for_team",
+    "request_notes_for_team_response",
 )
 
 filegroup(

@@ -1,0 +1,8 @@
+namespace scouting.webserver.requests;
+
+table SubmitNotesResponse {
+    // empty response
+}
+
+root_type SubmitNotesResponse;
+
