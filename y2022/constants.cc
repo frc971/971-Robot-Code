@@ -88,7 +88,7 @@ Values MakeValues(uint16_t team) {
   climber->subsystem_params.zeroing_voltage = 3.0;
   climber->subsystem_params.operating_voltage = 12.0;
   climber->subsystem_params.zeroing_profile_params = {0.5, 0.1};
-  climber->subsystem_params.default_profile_params = {6.0, 1.0};
+  climber->subsystem_params.default_profile_params = {5.0, 1.0};
   climber->subsystem_params.range = Values::kClimberRange();
   climber->subsystem_params.make_integral_loop =
       control_loops::superstructure::climber::MakeIntegralClimberLoop;
@@ -162,7 +162,7 @@ Values MakeValues(uint16_t team) {
       break;
 
     case kCompTeamNumber:
-      climber->potentiometer_offset = 0.0;
+      climber->potentiometer_offset = -0.0463847608752;
 
       intake_front->potentiometer_offset = 2.79628370453323;
       intake_front->subsystem_params.zeroing_constants
