@@ -72,6 +72,12 @@ class Calibration {
       cv::imshow("Display undist", undistorted_rgb_image);
     }
 
+    int keystroke = cv::waitKey(1);
+
+    // If we haven't got a valid pose estimate, don't use these points
+    if (!valid) {
+      return;
+    }
     // Calibration calculates rotation and translation delta from last image
     // stored to automatically capture next image
 
@@ -89,6 +95,10 @@ class Calibration {
     double t_norm = delta_t.norm();
 
     bool store_image = false;
+    double percent_motion =
+        std::max<double>(r_norm / kDeltaRThreshold, t_norm / kDeltaTThreshold);
+    LOG(INFO) << all_charuco_ids_.size() << ": Moved " << percent_motion
+              << "% of what's needed";
     // Verify that camera has moved enough from last stored image
     if (r_norm > kDeltaRThreshold || t_norm > kDeltaTThreshold) {
       // frame_ refers to deltas between current and last captured image
@@ -106,11 +116,14 @@ class Calibration {
       // Make sure camera has stopped moving before storing image
       store_image =
           frame_r_norm < kFrameDeltaRLimit && frame_t_norm < kFrameDeltaTLimit;
+      double percent_stop = std::max<double>(frame_r_norm / kFrameDeltaRLimit,
+                                             frame_t_norm / kFrameDeltaTLimit);
+      LOG(INFO) << all_charuco_ids_.size() << ": Moved enough ("
+                << percent_motion << "%); Need to stop (last motion was "
+                << percent_stop << "%";
     }
-
     prev_image_H_camera_board_ = H_camera_board_;
 
-    int keystroke = cv::waitKey(1);
     if (store_image) {
       if (valid) {
         prev_H_camera_board_ = H_camera_board_;
@@ -126,20 +139,16 @@ class Calibration {
           LOG(INFO) << "Triggered by translation delta = " << t_norm << " > "
                     << kDeltaTThreshold;
         }
-
-        LOG(INFO) << "Image count " << all_charuco_corners_.size();
       }
 
-      if (all_charuco_ids_.size() >= 50) {
-        LOG(INFO) << "Got enough images to calibrate";
-        event_loop_->Exit();
-      }
     } else if ((keystroke & 0xFF) == static_cast<int>('q')) {
       event_loop_->Exit();
     }
   }
 
   void MaybeCalibrate() {
+    // TODO: This number should depend on coarse vs. fine pattern
+    // Maybe just on total # of ids found, not just images
     if (all_charuco_ids_.size() >= 50) {
       LOG(INFO) << "Beginning calibration on " << all_charuco_ids_.size()
                 << " images";
