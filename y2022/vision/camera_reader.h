@@ -78,13 +78,17 @@ class CameraReader {
   }
 
   cv::Mat CameraExtrinsics() const {
-    cv::Mat result(
-        4, 4, CV_32F,
-        const_cast<void *>(static_cast<const void *>(
-            camera_calibration_->fixed_extrinsics()->data()->data())));
+    // TODO(james): What's the principled way to handle non-z-axis turrets?
+    const frc971::vision::calibration::TransformationMatrix *transform =
+        camera_calibration_->has_turret_extrinsics()
+            ? camera_calibration_->turret_extrinsics()
+            : camera_calibration_->fixed_extrinsics();
+
+    cv::Mat result(4, 4, CV_32F,
+                   const_cast<void *>(
+                       static_cast<const void *>(transform->data()->data())));
     result.convertTo(result, CV_64F);
-    CHECK_EQ(result.total(),
-             camera_calibration_->fixed_extrinsics()->data()->size());
+    CHECK_EQ(result.total(), transform->data()->size());
     return result;
   }
 
