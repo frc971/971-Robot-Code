@@ -58,6 +58,7 @@ const ButtonLocation kTurret(4, 15);
 const ButtonLocation kAutoAim(4, 2);
 
 const ButtonLocation kClimberExtend(4, 6);
+const ButtonLocation kClimberIntakes(4, 5);
 
 const ButtonLocation kIntakeFrontOut(4, 10);
 const ButtonLocation kIntakeBackOut(4, 9);
@@ -161,8 +162,9 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     setpoint_fetcher_.Fetch();
 
     // Default to the intakes in
-    double intake_front_pos = 1.47;
-    double intake_back_pos = 1.47;
+    constexpr double kIntakeUpPosition = 1.47;
+    double intake_front_pos = kIntakeUpPosition;
+    double intake_back_pos = kIntakeUpPosition;
     double transfer_roller_front_speed = 0.0;
     double transfer_roller_back_speed = 0.0;
     std::optional<control_loops::superstructure::RequestedIntake>
@@ -260,6 +262,11 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       fire = true;
       // Provide a default turret goal.
       turret_pos = 0.0;
+    }
+
+    if (data.IsPressed(kClimberIntakes)) {
+      intake_back_pos = kIntakeUpPosition;
+      intake_front_pos = kIntakePosition;
     }
 
     {
