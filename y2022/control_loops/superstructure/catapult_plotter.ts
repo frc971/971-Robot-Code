@@ -26,7 +26,9 @@ export function plotCatapult(conn: Connection, element: Element) : void {
 
   positionPlot.addMessageLine(goal, ['catapult', 'return_position', 'unsafe_goal']).setColor(BLUE).setPointSize(1.0);
   positionPlot.addMessageLine(goal, ['catapult', 'fire']).setColor(WHITE).setPointSize(1.0);
-  positionPlot.addMessageLine(status, ['mpc_active']).setColor(WHITE).setPointSize(3.0);
+  positionPlot.addMessageLine(status, ['mpc_horizon'])
+      .setColor(WHITE)
+      .setPointSize(3.0);
   positionPlot.addMessageLine(status, ['catapult', 'goal_position']).setColor(RED).setPointSize(4.0);
   positionPlot.addMessageLine(status, ['catapult', 'goal_velocity']).setColor(ORANGE).setPointSize(4.0);
   positionPlot.addMessageLine(status, ['catapult', 'position']).setColor(GREEN).setPointSize(4.0);

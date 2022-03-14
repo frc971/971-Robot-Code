@@ -72,7 +72,7 @@ table Status {
   catapult:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 6);
 
   solve_time:double (id: 7);
-  mpc_active:bool (id: 8);
+  mpc_horizon:uint8 (id: 8);
   shot_position:double (id: 16);
   shot_velocity:double (id: 17);
 

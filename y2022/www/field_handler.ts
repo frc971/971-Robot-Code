@@ -49,8 +49,8 @@ export class FieldHandler {
       (document.getElementById('fire') as HTMLElement);
   private mpcSolveTime: HTMLElement =
       (document.getElementById('mpc_solve_time') as HTMLElement);
-  private mpcActive: HTMLElement =
-      (document.getElementById('mpc_active') as HTMLElement);
+  private mpcHorizon: HTMLElement =
+      (document.getElementById('mpc_horizon') as HTMLElement);
   private shotCount: HTMLElement =
       (document.getElementById('shot_count') as HTMLElement);
   private catapult: HTMLElement =
@@ -326,8 +326,8 @@ export class FieldHandler {
 
       this.fire.innerHTML = this.superstructureStatus.fire() ? 'true' : 'false';
 
-      this.mpcActive.innerHTML =
-          this.superstructureStatus.mpcActive() ? 'true' : 'false';
+      this.mpcHorizon.innerHTML =
+          this.superstructureStatus.mpcHorizon().toFixed(2);
 
       this.setValue(this.mpcSolveTime, this.superstructureStatus.solveTime());
 

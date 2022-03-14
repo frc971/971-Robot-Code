@@ -197,7 +197,7 @@ class SuperstructureSimulation {
                 superstructure_status_fetcher_->intake_back());
             turret_.Simulate(superstructure_output_fetcher_->turret_voltage(),
                              superstructure_status_fetcher_->turret());
-            if (superstructure_status_fetcher_->mpc_active()) {
+            if (superstructure_status_fetcher_->mpc_horizon()) {
               catapult_.set_controller_index(0);
             } else {
               catapult_.set_controller_index(1);
@@ -1136,7 +1136,7 @@ TEST_F(SuperstructureTest, ShootCatapult) {
   RunFor(chrono::seconds(5));
 
   ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
-  EXPECT_FALSE(superstructure_status_fetcher_->mpc_active());
+  EXPECT_EQ(superstructure_status_fetcher_->mpc_horizon(), 0u);
   EXPECT_FLOAT_EQ(superstructure_status_fetcher_->catapult()->position(),
                   constants::Values::kCatapultRange().lower);
 
@@ -1188,7 +1188,7 @@ TEST_F(SuperstructureTest, ShootCatapult) {
   RunFor(chrono::milliseconds(200));
 
   ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
-  EXPECT_TRUE(superstructure_status_fetcher_->mpc_active());
+  EXPECT_NE(superstructure_status_fetcher_->mpc_horizon(), 0u);
   EXPECT_EQ(superstructure_status_fetcher_->shot_count(), 0);
 
   EXPECT_GT(superstructure_status_fetcher_->catapult()->position(),

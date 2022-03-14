@@ -300,10 +300,19 @@ std::optional<double> CatapultController::Next() {
     return std::nullopt;
   }
 
-  const double u = problems_[current_controller_]->U(0);
+  double u;
+  size_t solution_horizon = 0;
+  if (current_controller_ == 0u) {
+    while (solution_horizon < problems_[current_controller_]->horizon() &&
+           problems_[current_controller_]->U(solution_horizon) < 0.01) {
+      ++solution_horizon;
+    }
+  } else {
+    u = problems_[current_controller_]->U(0);
+  }
 
-  if (current_controller_ + 1u < problems_.size()) {
-    problems_[current_controller_ + 1]->WarmStart(
+  if (current_controller_ + 1u + solution_horizon < problems_.size()) {
+    problems_[current_controller_ + solution_horizon + 1]->WarmStart(
         *problems_[current_controller_]);
   }
   ++current_controller_;
@@ -360,8 +369,9 @@ Catapult::Iterate(const CatapultGoal *catapult_goal, const Position *position,
           Eigen::Vector2d(latched_shot_position, latched_shot_velocity));
 
       const bool solved = catapult_mpc_.Solve();
-
-      if (solved || catapult_mpc_.started()) {
+      current_horizon_ = catapult_mpc_.current_horizon();
+      const bool started = catapult_mpc_.started();
+      if (solved || started) {
         std::optional<double> solution = catapult_mpc_.Next();
 
         if (!solution.has_value()) {
@@ -419,6 +429,7 @@ Catapult::Iterate(const CatapultGoal *catapult_goal, const Position *position,
     // Select the controller designed for when we have no ball.
     catapult_.set_controller_index(1);
 
+    current_horizon_ = 0u;
     const double output_voltage = catapult_.UpdateController(catapult_disabled);
     if (catapult_voltage != nullptr) {
       *catapult_voltage = output_voltage;

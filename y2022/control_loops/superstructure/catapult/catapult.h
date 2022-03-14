@@ -159,6 +159,15 @@ class CatapultController {
   // Returns the time in seconds it last took Solve to run.
   double solve_time() const { return solve_time_; }
 
+  // Returns the horizon of the current controller.
+  size_t current_horizon() const {
+    if (current_controller_ >= problems_.size()) {
+      return 0u;
+    } else {
+      return problems_[current_controller_]->horizon();
+    }
+  }
+
   // Returns the controller value if there is a controller to run, or nullopt if
   // we finished the last controller.  Advances the controller pointer to the
   // next controller and warms up the next controller.
@@ -182,7 +191,7 @@ class CatapultController {
 class Catapult {
  public:
   Catapult(const constants::Values &values)
-      : catapult_(values.catapult.subsystem_params), catapult_mpc_(35) {}
+      : catapult_(values.catapult.subsystem_params), catapult_mpc_(30) {}
 
   using PotAndAbsoluteEncoderSubsystem =
       ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystem<
@@ -197,6 +206,8 @@ class Catapult {
   bool zeroed() const { return catapult_.zeroed(); }
   bool estopped() const { return catapult_.estopped(); }
   double solve_time() const { return catapult_mpc_.solve_time(); }
+
+  uint8_t mpc_horizon() const { return current_horizon_; }
 
   bool mpc_active() const { return !use_profile_; }
 
@@ -230,6 +241,7 @@ class Catapult {
   bool use_profile_ = true;
 
   int shot_count_ = 0;
+  uint8_t current_horizon_ = 0u;
 };
 
 }  // namespace catapult
