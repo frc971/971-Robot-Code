@@ -2,6 +2,7 @@ package debug
 
 import (
 	"bytes"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -15,6 +16,9 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_matches_for_team_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_data_scouting_response"
 )
+
+// The username to submit the various requests as.
+const DefaultUsername = "debug_cli"
 
 // Use aliases to make the rest of the code more readable.
 type SubmitDataScoutingResponseT = submit_data_scouting_response.SubmitDataScoutingResponseT
@@ -66,7 +70,16 @@ func parseErrorResponse(url string, statusCode int, responseBytes []byte) error 
 // Performs a POST request with the specified payload. The bytes that the
 // server responds with are returned.
 func performPost(url string, requestBytes []byte) ([]byte, error) {
-	resp, err := http.Post(url, "application/octet-stream", bytes.NewReader(requestBytes))
+	req, err := http.NewRequest("POST", url, bytes.NewReader(requestBytes))
+	if err != nil {
+		log.Printf("Failed to create a new POST request to %s: %v", url, err)
+		return nil, err
+	}
+	req.Header.Add("Authorization", "Basic "+
+		base64.StdEncoding.EncodeToString([]byte(DefaultUsername+":")))
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
 		log.Printf("Failed to send POST request to %s: %v", url, err)
 		return nil, err

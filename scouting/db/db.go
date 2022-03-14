@@ -25,6 +25,10 @@ type Stats struct {
 	ShotsMissed, UpperGoalShots, LowerGoalShots                  int32
 	ShotsMissedAuto, UpperGoalAuto, LowerGoalAuto, PlayedDefense int32
 	Climbing                                                     int32
+	// The username of the person who collected these statistics.
+	// "unknown" if submitted without logging in.
+	// Empty if the stats have not yet been collected.
+	CollectedBy string
 }
 
 type NotesData struct {
@@ -83,7 +87,8 @@ func NewDatabase(user string, password string, port int) (*Database, error) {
 		"UpperGoalAuto INTEGER, " +
 		"LowerGoalAuto INTEGER, " +
 		"PlayedDefense INTEGER, " +
-		"Climbing INTEGER)")
+		"Climbing INTEGER, " +
+		"CollectedBy VARCHAR)")
 	if err != nil {
 		database.Close()
 		return nil, errors.New(fmt.Sprint("Failed to prepare stats table creation: ", err))
@@ -149,12 +154,12 @@ func (database *Database) AddToMatch(m Match) error {
 		"TeamNumber, MatchNumber, " +
 		"ShotsMissed, UpperGoalShots, LowerGoalShots, " +
 		"ShotsMissedAuto, UpperGoalAuto, LowerGoalAuto, " +
-		"PlayedDefense, Climbing) " +
+		"PlayedDefense, Climbing, CollectedBy) " +
 		"VALUES (" +
 		"$1, $2, " +
 		"$3, $4, $5, " +
 		"$6, $7, $8, " +
-		"$9, $10) " +
+		"$9, $10, $11) " +
 		"RETURNING id")
 	if err != nil {
 		return errors.New(fmt.Sprint("Failed to prepare insertion into stats database: ", err))
@@ -163,7 +168,7 @@ func (database *Database) AddToMatch(m Match) error {
 
 	var rowIds [6]int64
 	for i, TeamNumber := range []int32{m.R1, m.R2, m.R3, m.B1, m.B2, m.B3} {
-		row := statement.QueryRow(TeamNumber, m.MatchNumber, 0, 0, 0, 0, 0, 0, 0, 0)
+		row := statement.QueryRow(TeamNumber, m.MatchNumber, 0, 0, 0, 0, 0, 0, 0, 0, "")
 		err = row.Scan(&rowIds[i])
 		if err != nil {
 			return errors.New(fmt.Sprint("Failed to insert stats: ", err))
@@ -197,8 +202,8 @@ func (database *Database) AddToStats(s Stats) error {
 		"TeamNumber = $1, MatchNumber = $2, " +
 		"ShotsMissed = $3, UpperGoalShots = $4, LowerGoalShots = $5, " +
 		"ShotsMissedAuto = $6, UpperGoalAuto = $7, LowerGoalAuto = $8, " +
-		"PlayedDefense = $9, Climbing = $10 " +
-		"WHERE MatchNumber = $11 AND TeamNumber = $12")
+		"PlayedDefense = $9, Climbing = $10, CollectedBy = $11 " +
+		"WHERE MatchNumber = $12 AND TeamNumber = $13")
 	if err != nil {
 		return errors.New(fmt.Sprint("Failed to prepare stats update statement: ", err))
 	}
@@ -207,7 +212,7 @@ func (database *Database) AddToStats(s Stats) error {
 	result, err := statement.Exec(s.TeamNumber, s.MatchNumber,
 		s.ShotsMissed, s.UpperGoalShots, s.LowerGoalShots,
 		s.ShotsMissedAuto, s.UpperGoalAuto, s.LowerGoalAuto,
-		s.PlayedDefense, s.Climbing,
+		s.PlayedDefense, s.Climbing, s.CollectedBy,
 		s.MatchNumber, s.TeamNumber)
 	if err != nil {
 		return errors.New(fmt.Sprint("Failed to update stats database: ", err))
@@ -261,7 +266,7 @@ func (database *Database) ReturnStats() ([]Stats, error) {
 		err = rows.Scan(&id, &team.TeamNumber, &team.MatchNumber,
 			&team.ShotsMissed, &team.UpperGoalShots, &team.LowerGoalShots,
 			&team.ShotsMissedAuto, &team.UpperGoalAuto, &team.LowerGoalAuto,
-			&team.PlayedDefense, &team.Climbing)
+			&team.PlayedDefense, &team.Climbing, &team.CollectedBy)
 		if err != nil {
 			return nil, errors.New(fmt.Sprint("Failed to scan from stats: ", err))
 		}
@@ -308,7 +313,7 @@ func (database *Database) QueryStats(teamNumber_ int) ([]Stats, error) {
 		err = rows.Scan(&id, &team.TeamNumber, &team.MatchNumber,
 			&team.ShotsMissed, &team.UpperGoalShots, &team.LowerGoalShots,
 			&team.ShotsMissedAuto, &team.UpperGoalAuto, &team.LowerGoalAuto,
-			&team.PlayedDefense, &team.Climbing)
+			&team.PlayedDefense, &team.Climbing, &team.CollectedBy)
 		if err != nil {
 			return nil, errors.New(fmt.Sprint("Failed to scan from stats: ", err))
 		}

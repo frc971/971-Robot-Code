@@ -92,36 +92,42 @@ func TestAddToStatsDB(t *testing.T) {
 			ShotsMissed: 9, UpperGoalShots: 5, LowerGoalShots: 4,
 			ShotsMissedAuto: 3, UpperGoalAuto: 2, LowerGoalAuto: 1,
 			PlayedDefense: 2, Climbing: 3,
+			CollectedBy: "josh",
 		},
 		Stats{
 			TeamNumber: 1001, MatchNumber: 7,
 			ShotsMissed: 6, UpperGoalShots: 9, LowerGoalShots: 9,
 			ShotsMissedAuto: 0, UpperGoalAuto: 0, LowerGoalAuto: 0,
 			PlayedDefense: 0, Climbing: 0,
+			CollectedBy: "rupert",
 		},
 		Stats{
 			TeamNumber: 777, MatchNumber: 7,
 			ShotsMissed: 5, UpperGoalShots: 7, LowerGoalShots: 12,
 			ShotsMissedAuto: 0, UpperGoalAuto: 4, LowerGoalAuto: 0,
 			PlayedDefense: 0, Climbing: 0,
+			CollectedBy: "felix",
 		},
 		Stats{
 			TeamNumber: 1000, MatchNumber: 7,
 			ShotsMissed: 12, UpperGoalShots: 6, LowerGoalShots: 10,
 			ShotsMissedAuto: 0, UpperGoalAuto: 7, LowerGoalAuto: 0,
 			PlayedDefense: 0, Climbing: 0,
+			CollectedBy: "thea",
 		},
 		Stats{
 			TeamNumber: 4321, MatchNumber: 7,
 			ShotsMissed: 14, UpperGoalShots: 12, LowerGoalShots: 3,
 			ShotsMissedAuto: 0, UpperGoalAuto: 7, LowerGoalAuto: 0,
 			PlayedDefense: 0, Climbing: 0,
+			CollectedBy: "amy",
 		},
 		Stats{
 			TeamNumber: 1234, MatchNumber: 7,
 			ShotsMissed: 3, UpperGoalShots: 4, LowerGoalShots: 0,
 			ShotsMissedAuto: 0, UpperGoalAuto: 9, LowerGoalAuto: 0,
 			PlayedDefense: 0, Climbing: 0,
+			CollectedBy: "beth",
 		},
 	}
 
