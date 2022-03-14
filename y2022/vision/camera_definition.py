@@ -76,8 +76,8 @@ def compute_extrinsic(camera_pitch, camera_yaw, T_camera, is_turret):
                                                                     0]])
 
     if is_turret:
-        # Turret camera has default heading 180 deg away from the robot x
-        base_cam_ext.R = np.array([[-1.0, 0.0, 0.0], [0.0, -1.0, 0.0],
+        # Turret is just an identity matrix in the middle of the robot.
+        base_cam_ext.R = np.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0],
                                    [0.0, 0.0, 1.0]])
         base_cam_ext.T = np.array([0.0, 0.0, 0.0])
         turret_cam_ext.R = camera_yaw_matrix @ camera_pitch_matrix @ robot_to_camera_rotation
@@ -91,24 +91,25 @@ def compute_extrinsic(camera_pitch, camera_yaw, T_camera, is_turret):
 
 
 def compute_extrinsic_by_pi(pi_number):
-    # Defaults for non-turret camera
-    camera_pitch = -20.0 * np.pi / 180.0
+    # Defaults for all cameras
+    camera_pitch = -35.0 * np.pi / 180.0
     camera_yaw = 0.0
-    is_turret = False
+    is_turret = True
     # Default camera location to robot origin
     T = np.array([0.0, 0.0, 0.0])
 
     if pi_number == "pi1":
-        camera_pitch = -35.0 * np.pi / 180.0
-        T = np.array([0.0, 0.0, 37.0 * 0.0254])
-    elif pi_number == "pi2":
-        T = np.array([4.5 * 0.0254, 3.75 * 0.0254, 26.0 * 0.0254])
-    elif pi_number == "pi3":
         camera_yaw = 90.0 * np.pi / 180.0
-        T = np.array([-2.75 * 0.0254, 5.25 * 0.0254, 25.25 * 0.0254])
+        T = np.array([-7.0 * 0.0254, 3.5 * 0.0254, 32.0 * 0.0254])
+    elif pi_number == "pi2":
+        camera_yaw = 0.0
+        T = np.array([-7.0 * 0.0254, -3.0 * 0.0254, 34.0 * 0.0254])
+    elif pi_number == "pi3":
+        camera_yaw = 180.0 * np.pi / 180.0
+        T = np.array([-1.0 * 0.0254, 8.5 * 0.0254, 34.0 * 0.0254])
     elif pi_number == "pi4":
         camera_yaw = -90.0 * np.pi / 180.0
-        T = np.array([-2.75 * 0.0254, -6 * 0.0254, 26 * 0.0254])
+        T = np.array([-9.0 * 0.0254, -5 * 0.0254, 27.5 * 0.0254])
 
     return compute_extrinsic(camera_pitch, camera_yaw, T, is_turret)
 
