@@ -19,8 +19,9 @@ DEFINE_bool(rapid_react, false,
 namespace y2022 {
 namespace actors {
 namespace {
-constexpr double kExtendIntakeGoal = 0.0;
+constexpr double kExtendIntakeGoal = -0.02;
 constexpr double kRetractIntakeGoal = 1.47;
+constexpr double kIntakeRollerVoltage = 8.0;
 constexpr double kRollerVoltage = 12.0;
 constexpr double kCatapultReturnPosition = -0.908;
 }  // namespace
@@ -348,7 +349,7 @@ void AutonomousActor::SendSuperstructureGoal() {
 
 void AutonomousActor::ExtendFrontIntake() {
   set_intake_front_goal(kExtendIntakeGoal);
-  set_roller_front_voltage(kRollerVoltage);
+  set_roller_front_voltage(kIntakeRollerVoltage);
   set_transfer_roller_front_voltage(kRollerVoltage);
   set_transfer_roller_back_voltage(-kRollerVoltage);
   SendSuperstructureGoal();
@@ -356,7 +357,7 @@ void AutonomousActor::ExtendFrontIntake() {
 
 void AutonomousActor::RetractFrontIntake() {
   set_intake_front_goal(kRetractIntakeGoal);
-  set_roller_front_voltage(kRollerVoltage);
+  set_roller_front_voltage(0.0);
   set_transfer_roller_front_voltage(0.0);
   set_transfer_roller_back_voltage(0.0);
   SendSuperstructureGoal();
@@ -364,7 +365,7 @@ void AutonomousActor::RetractFrontIntake() {
 
 void AutonomousActor::ExtendBackIntake() {
   set_intake_back_goal(kExtendIntakeGoal);
-  set_roller_back_voltage(kRollerVoltage);
+  set_roller_back_voltage(kIntakeRollerVoltage);
   set_transfer_roller_back_voltage(kRollerVoltage);
   set_transfer_roller_front_voltage(-kRollerVoltage);
   SendSuperstructureGoal();
@@ -372,7 +373,7 @@ void AutonomousActor::ExtendBackIntake() {
 
 void AutonomousActor::RetractBackIntake() {
   set_intake_back_goal(kRetractIntakeGoal);
-  set_roller_back_voltage(kRollerVoltage);
+  set_roller_back_voltage(0.0);
   set_transfer_roller_front_voltage(0.0);
   set_transfer_roller_back_voltage(0.0);
   SendSuperstructureGoal();
