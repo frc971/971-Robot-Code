@@ -237,10 +237,10 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
     case SuperstructureState::IDLE: {
       // Only change the turret's goal loading position when idle, to prevent us
       // spinning the turret around when TRANSFERRING...
+      if (have_active_intake_request) {
+        turret_intake_state_ = unsafe_goal->turret_intake();
+      }
       if (front_intake_has_ball_ != back_intake_has_ball_) {
-        if (have_active_intake_request) {
-          turret_intake_state_ = unsafe_goal->turret_intake();
-        }
         turret_intake_state_ = front_intake_has_ball_ ? RequestedIntake::kFront
                                                       : RequestedIntake::kBack;
       }
