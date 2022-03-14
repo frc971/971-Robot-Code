@@ -43,3 +43,24 @@ scouting app without a port forward. You can use a separate terminal for this.
 where `1234` is the port that your instance of the webserver is using.
 `<build_server>` is the SSH Host entry in your `~/.ssh/config` file for the
 build server.
+
+You can then visit <http://localhost:1234/> to look at the webserver.
+
+
+Running the webserver with HTTPS
+--------------------------------------------------------------------------------
+You can test HTTPS and LDAP interation by running the webserver in a slightly
+different way.
+
+    $ bazel run //scouting:https -- --testdb_port 2345 --https_port 3456
+
+The `--testdb_port` value must match the port you selected when running the
+database.
+
+The `--https_port` value is the port at which the webserver is available via
+HTTPS. See the documentation in
+[`tools/build_rules/apache.bzl`](tools/build_rules/apache.bzl) for more
+information. The documentation tells you how to set up an `ldap.json`
+configuration.
+
+You can then visit <https://localhost:3456/> to look at the webserver.

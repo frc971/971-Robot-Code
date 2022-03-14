@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -39,8 +40,23 @@ func readDatabaseConfig(configPath string) (*DatabaseConfig, error) {
 	return &config, nil
 }
 
+// Gets the default port to use for the webserver. If wrapped by
+// apache_wrapper(), we use the port dictated by the wrapper.
+func getDefaultPort() int {
+	port_str := os.Getenv("APACHE_WRAPPED_PORT")
+	if port_str != "" {
+		port, err := strconv.Atoi(port_str)
+		if err != nil {
+			log.Fatalf("Failed to parse \"%s\" as integer: %v", port_str, err)
+		}
+		return port
+	}
+
+	return 8080
+}
+
 func main() {
-	portPtr := flag.Int("port", 8080, "The port number to bind to.")
+	portPtr := flag.Int("port", getDefaultPort(), "The port number to bind to.")
 	dirPtr := flag.String("directory", ".", "The directory to serve at /.")
 	dbConfigPtr := flag.String("db_config", "",
 		"The postgres database JSON config. It needs the following keys: "+
