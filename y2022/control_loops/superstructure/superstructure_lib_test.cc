@@ -998,6 +998,8 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
             SuperstructureState::TRANSFERRING);
   EXPECT_EQ(superstructure_status_fetcher_->intake_state(),
             IntakeState::INTAKE_BACK_BALL);
+  EXPECT_NEAR(superstructure_status_fetcher_->turret()->position(),
+              constants::Values::kTurretBackIntakePos(), 0.001);
 
   // Since the intake beambreak hasn't triggered in a while, it should realize
   // the ball was lost.
