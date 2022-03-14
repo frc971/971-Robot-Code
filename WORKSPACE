@@ -767,6 +767,10 @@ yarn_install(
     name = "npm",
     frozen_lockfile = True,
     package_json = "//:package.json",
+    patch_args = ["-p1"],
+    post_install_patches = [
+        "//third_party:npm/@bazel/protractor/bazel-protractor.patch",
+    ],
     symlink_node_modules = False,
     yarn_lock = "//:yarn.lock",
 )
