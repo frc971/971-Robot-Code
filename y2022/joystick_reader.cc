@@ -258,6 +258,8 @@ class Reader : public ::frc971::input::ActionJoystickInput {
 
     if (data.IsPressed(kFire)) {
       fire = true;
+      // Provide a default turret goal.
+      turret_pos = 0.0;
     }
 
     {
