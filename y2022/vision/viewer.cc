@@ -203,10 +203,13 @@ void ViewerLocal() {
   cv::Mat intrinsics;
   intrinsics_float.convertTo(intrinsics, CV_64F);
 
-  const auto extrinsics_float =
-      cv::Mat(4, 4, CV_32F,
-              const_cast<void *>(static_cast<const void *>(
-                  calibration->fixed_extrinsics()->data()->data())));
+  const frc971::vision::calibration::TransformationMatrix *transform =
+      calibration->has_turret_extrinsics() ? calibration->turret_extrinsics()
+                                           : calibration->fixed_extrinsics();
+
+  const auto extrinsics_float = cv::Mat(
+      4, 4, CV_32F,
+      const_cast<void *>(static_cast<const void *>(transform->data()->data())));
   cv::Mat extrinsics;
   extrinsics_float.convertTo(extrinsics, CV_64F);
 
