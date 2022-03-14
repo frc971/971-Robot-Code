@@ -885,6 +885,7 @@ EventLoopLocalizer::EventLoopLocalizer(
       zeroer_(zeroing::ImuZeroer::FaultBehavior::kTemporary),
       left_encoder_(-DrivetrainWrapPeriod() / 2.0, DrivetrainWrapPeriod()),
       right_encoder_(-DrivetrainWrapPeriod() / 2.0, DrivetrainWrapPeriod()) {
+  event_loop->SetRuntimeRealtimePriority(40);
   event_loop_->MakeWatcher(
       "/drivetrain",
       [this](
