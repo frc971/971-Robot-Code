@@ -57,6 +57,8 @@ const ButtonLocation kFire(4, 1);
 const ButtonLocation kTurret(4, 15);
 const ButtonLocation kAutoAim(4, 2);
 
+const ButtonLocation kClimberExtend(4, 6);
+
 const ButtonLocation kIntakeFrontOut(4, 10);
 const ButtonLocation kIntakeBackOut(4, 9);
 const ButtonLocation kSpit(3, 3);
@@ -169,6 +171,8 @@ class Reader : public ::frc971::input::ActionJoystickInput {
 
     double turret_pos = 0.0;
 
+    double climber_position = 0.01;
+
     double catapult_pos = 0.03;
     double catapult_speed = 18.0;
     double catapult_return_pos = 0.0;
@@ -183,6 +187,12 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     }
     if (data.PosEdge(kBlueLocalizerReset)) {
       BlueResetLocalizer();
+    }
+
+    if (data.IsPressed(kClimberExtend)) {
+      climber_position = 0.50;
+    } else {
+      climber_position = 0.01;
     }
 
     if (data.IsPressed(kTurret)) {
@@ -273,6 +283,11 @@ class Reader : public ::frc971::input::ActionJoystickInput {
                   *builder.fbb(), catapult_return_pos,
                   frc971::CreateProfileParameters(*builder.fbb(), 9.0, 50.0));
 
+      flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+          climber_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+              *builder.fbb(), climber_position,
+              frc971::CreateProfileParameters(*builder.fbb(), 1.0, 5.0));
+
       superstructure::CatapultGoal::Builder catapult_builder =
           builder.MakeBuilder<superstructure::CatapultGoal>();
       catapult_builder.add_return_position(catapult_return_offset);
@@ -287,6 +302,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       superstructure_goal_builder.add_intake_front(intake_front_offset);
       superstructure_goal_builder.add_intake_back(intake_back_offset);
       superstructure_goal_builder.add_turret(turret_offset);
+      superstructure_goal_builder.add_climber(climber_offset);
       superstructure_goal_builder.add_catapult(catapult_offset);
       superstructure_goal_builder.add_fire(fire);
 

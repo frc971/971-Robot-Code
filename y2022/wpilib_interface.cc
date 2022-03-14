@@ -79,7 +79,7 @@ double drivetrain_velocity_translate(double in) {
 
 double climber_pot_translate(double voltage) {
   return voltage * Values::kClimberPotRatio() *
-         (10.0 /*turns*/ / 5.0 /*volts*/) *
+         (5.0 /*turns*/ / 5.0 /*volts*/) *
          Values::kClimberPotMetersPerRevolution();
 }
 
@@ -510,7 +510,7 @@ class SuperstructureWriter
   }
 
   void Write(const superstructure::Output &output) override {
-    WritePwm(output.climber_voltage(), climber_falcon_.get());
+    WritePwm(-output.climber_voltage(), climber_falcon_.get());
 
     WritePwm(output.intake_voltage_front(), intake_falcon_front_.get());
     WritePwm(output.intake_voltage_back(), intake_falcon_back_.get());
