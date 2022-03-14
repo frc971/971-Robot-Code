@@ -286,7 +286,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
           turret_offset;
       if (turret_pos.has_value()) {
-        CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+        turret_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
             *builder.fbb(), turret_pos.value(),
             CreateProfileParameters(*builder.fbb(), 12.0, 20.0));
       }
@@ -315,7 +315,9 @@ class Reader : public ::frc971::input::ActionJoystickInput {
 
       superstructure_goal_builder.add_intake_front(intake_front_offset);
       superstructure_goal_builder.add_intake_back(intake_back_offset);
-      superstructure_goal_builder.add_turret(turret_offset);
+      if (!turret_offset.IsNull()) {
+        superstructure_goal_builder.add_turret(turret_offset);
+      }
       superstructure_goal_builder.add_climber(climber_offset);
       superstructure_goal_builder.add_catapult(catapult_offset);
       superstructure_goal_builder.add_fire(fire);

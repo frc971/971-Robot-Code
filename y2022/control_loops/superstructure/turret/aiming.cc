@@ -68,7 +68,7 @@ void Aimer::Update(const Status *status, ShotMode shot_mode) {
 
   goal_.mutable_message()->mutate_unsafe_goal(current_goal_.position);
   goal_.mutable_message()->mutate_goal_velocity(
-      std::clamp(current_goal_.velocity, -2.0, 2.0));
+      std::clamp(current_goal_.velocity, 0.0, 0.0));
 }
 
 flatbuffers::Offset<AimerStatus> Aimer::PopulateStatus(
