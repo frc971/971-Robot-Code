@@ -218,7 +218,7 @@ class FieldWidget(Gtk.DrawingArea):
 
         set_color(cr, palette["BLACK"])
 
-        cr.set_line_width(self.pxToM(2))
+        cr.set_line_width(self.pxToM(1))
         cr.rectangle(-0.5 * self.field.width, -0.5 * self.field.length, self.field.width,
                      self.field.length)
         cr.set_line_join(cairo.LINE_JOIN_ROUND)
@@ -237,11 +237,11 @@ class FieldWidget(Gtk.DrawingArea):
 
         # update everything
 
-        cr.set_line_width(self.pxToM(2))
+        cr.set_line_width(self.pxToM(1))
         if self.mode == Mode.kPlacing or self.mode == Mode.kViewing:
             set_color(cr, palette["BLACK"])
             for i, point in enumerate(self.points.getPoints()):
-                draw_px_x(cr, point[0], point[1], self.pxToM(5))
+                draw_px_x(cr, point[0], point[1], self.pxToM(2))
             set_color(cr, palette["WHITE"])
         elif self.mode == Mode.kEditing:
             set_color(cr, palette["BLACK"])
@@ -252,7 +252,7 @@ class FieldWidget(Gtk.DrawingArea):
                         np.array([x, y])
                         for (x, y) in points
                     ]
-                    draw_control_points(cr, points, width=self.pxToM(10), radius=self.pxToM(4))
+                    draw_control_points(cr, points, width=self.pxToM(5), radius=self.pxToM(2))
 
                     p0, p1, p2, p3, p4, p5 = points
                     first_tangent = p0 + 2.0 * (p1 - p0)
@@ -276,7 +276,7 @@ class FieldWidget(Gtk.DrawingArea):
 
         cr.paint_with_alpha(0.2)
 
-        draw_px_cross(cr, self.mousex, self.mousey, self.pxToM(8))
+        draw_px_cross(cr, self.mousex, self.mousey, self.pxToM(2))
         cr.restore()
 
     def draw_splines(self, cr):
