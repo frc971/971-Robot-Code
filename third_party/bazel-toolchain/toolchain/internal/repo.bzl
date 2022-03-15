@@ -33,6 +33,13 @@ def llvm_repo_impl(rctx):
         executable = False,
     )
 
+    rctx.symlink(
+        Label("@libtinfo5//lib/x86_64-linux-gnu:libtinfo.so.5.9"),
+        "lib/libtinfo.so.5.9",
+    )
+
+    rctx.symlink("lib/libtinfo.so.5.9", "lib/libtinfo.so.5")
+
     _download_llvm_preconfigured(rctx)
 
     # We try to avoid patches to the downloaded repo so that it is easier for
