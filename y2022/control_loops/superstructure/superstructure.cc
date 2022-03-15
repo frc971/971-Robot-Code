@@ -335,6 +335,22 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       break;
     }
     case SuperstructureState::SHOOTING: {
+      const bool turret_near_goal =
+          turret_goal != nullptr &&
+          std::abs(turret_goal->unsafe_goal() - turret_.position()) <
+              kTurretGoalThreshold;
+      const bool collided = collision_avoidance_.IsCollided(
+          {.intake_front_position = intake_front_.estimated_position(),
+           .intake_back_position = intake_back_.estimated_position(),
+           .turret_position = turret_.estimated_position(),
+           .shooting = true});
+
+      // Don't open the flippers until the turret's ready: give them as little
+      // time to get bumped as possible.
+      if (!turret_near_goal || collided) {
+        break;
+      }
+
       // Opening flipper arms could fail, wait until they are open using their
       // potentiometers (the member below is just named encoder).
       // Be a little more lenient if the flippers were already open in case of
@@ -355,7 +371,13 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
         flipper_arms_voltage = constants::Values::kFlipperOpenVoltage();
       }
 
-      if (!flippers_open_ &&
+      // There are two possible failures for the flippers:
+      // 1. They never open on time
+      // 2. They opened and we started firing, but we got bumped or something
+      // and they went back.
+      // If the flippers didn't open in a reasonable amount of time, try
+      // reseating the ball and reversing them.
+      if (!fire_ && !flippers_open_ &&
           timestamp >
               loading_timer_ + constants::Values::kFlipperOpeningTimeout()) {
         // Reseat the ball and try again
@@ -364,27 +386,16 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
         reseating_in_catapult_ = true;
         break;
       }
-
-      const bool turret_near_goal =
-          turret_goal != nullptr &&
-          std::abs(turret_goal->unsafe_goal() - turret_.position()) <
-              kTurretGoalThreshold;
-      const bool collided = collision_avoidance_.IsCollided(
-          {.intake_front_position = intake_front_.estimated_position(),
-           .intake_back_position = intake_back_.estimated_position(),
-           .turret_position = turret_.estimated_position(),
-           .shooting = true});
+      // If we started firing and the flippers closed a bit, estop to prevent
+      // damage
+      if (fire_ && !flippers_open_) {
+        catapult_.Estop();
+      }
 
       // If the turret reached the aiming goal and the catapult is safe to move
       // up, fire!
       if (flippers_open_ && turret_near_goal && !collided) {
         fire_ = true;
-      }
-
-      // If we started firing and the flippers closed a bit, estop to prevent
-      // damage
-      if (fire_ && !flippers_open_) {
-        catapult_.Estop();
       }
 
       const bool near_return_position =
