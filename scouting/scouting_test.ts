@@ -1,5 +1,16 @@
 import {browser, by, element, protractor} from 'protractor';
 
+// Loads the page (or reloads it) and deals with the "Are you sure you want to
+// leave this page" popup.
+async function loadPage() {
+  await browser.get(browser.baseUrl).catch(function () {
+    return browser.switchTo().alert().then(function (alert) {
+      alert.accept();
+      return browser.get(browser.baseUrl);
+    });
+  });
+}
+
 // Returns the contents of the header that displays the "Auto", "TeleOp", and
 // "Climb" labels etc.
 function getHeadingText() {
@@ -27,7 +38,7 @@ async function expectNthReviewFieldToBe(fieldName: string, n: number, expectedVa
 
 describe('The scouting web page', () => {
   it('should: review and submit correct data.', async () => {
-    await browser.get(browser.baseUrl);
+    await loadPage();
 
     expect(await getHeadingText()).toEqual('Team Selection');
     // Just sending "971" to the input fields is insufficient. We need to
@@ -77,5 +88,28 @@ describe('The scouting web page', () => {
     // TODO(phil): Submit data and make sure it made its way to the database
     // correctly. Right now the /requests/submit/data_scouting endpoint is not
     // implemented.
+  });
+
+  it('should: load all images successfully.', async () => {
+    await loadPage();
+
+    // Get to the Auto display with the field pictures.
+    expect(await getHeadingText()).toEqual('Team Selection');
+    await element(by.buttonText('Next')).click();
+    expect(await getHeadingText()).toEqual('Auto');
+
+    // We expect 2 fully loaded images.
+    browser.executeAsyncScript(function (callback) {
+      let images = document.getElementsByTagName('img');
+      let numLoaded = 0;
+      for (let i = 0; i < images.length; i += 1) {
+        if (images[i].naturalWidth > 0) {
+          numLoaded += 1;
+        }
+      }
+      callback(numLoaded);
+    }).then(function (numLoaded) {
+      expect(numLoaded).toBe(2);
+    });
   });
 });

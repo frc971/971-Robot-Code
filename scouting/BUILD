@@ -31,8 +31,7 @@ sh_binary(
     data = [
         ":main_bundle_compiled_runfiles",
         "//scouting/webserver",
-        "//scouting/www:index.html",
-        "//scouting/www:zonejs_copy",
+        "//scouting/www:static_files",
     ],
     visibility = ["//visibility:public"],
 )

@@ -3,10 +3,6 @@ load("//tools/build_rules:js.bzl", "rollup_bundle")
 load("@npm//@bazel/concatjs:index.bzl", "concatjs_devserver")
 load("@npm//@babel/cli:index.bzl", "babel")
 
-exports_files([
-    "index.html",
-])
-
 ts_library(
     name = "app",
     srcs = glob([
@@ -67,6 +63,25 @@ genrule(
         "npm/node_modules/zone.js/dist/zone.min.js",
     ],
     cmd = "cp $(SRCS) $(OUTS)",
+)
+
+genrule(
+    name = "field_pictures_copy",
+    srcs = ["//third_party/y2022/field:pictures"],
+    outs = [
+        "pictures/field/balls.jpeg",
+        "pictures/field/quadrants.jpeg",
+    ],
+    cmd = "cp $(SRCS) $(@D)/pictures/field/",
+)
+
+filegroup(
+    name = "static_files",
+    srcs = [
+        "index.html",
+        ":field_pictures_copy",
+        ":zonejs_copy",
+    ],
     visibility = ["//visibility:public"],
 )
 
@@ -74,8 +89,7 @@ concatjs_devserver(
     name = "devserver",
     serving_path = "/main_bundle.js",
     static_files = [
-        "index.html",
-        ":zonejs_copy",
+        ":static_files",
     ],
     deps = [":main_bundle_compiled"],
 )
