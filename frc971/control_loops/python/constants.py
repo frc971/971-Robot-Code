@@ -33,7 +33,7 @@ BARREL = "Barrel"
 Robot2019 = RobotType(width=0.65, length=0.8)
 Robot2020 = RobotType(width=0.8128, length=0.8636) # 32 in x 34 in
 Robot2021 = Robot2020
-Robot2022 = Robot2021
+Robot2022 = RobotType(width=0.8763, length=0.96647)
 
 FIELDS = {
     "2019 Field":
