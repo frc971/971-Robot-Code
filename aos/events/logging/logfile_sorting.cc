@@ -1504,7 +1504,8 @@ MapBoots PartsSorter::ComputeBootCounts() {
     while (true) {
       auto it = node_state.second.constraints.find(current_boot);
       if (it == node_state.second.constraints.end()) {
-        LOG(WARNING) << "Unconnected boot in set > 1";
+        LOG(WARNING) << "Unconnected boot " << current_boot
+                     << " in set > 1 for node " << node_state.first;
         break;
       }
 
@@ -1536,7 +1537,8 @@ MapBoots PartsSorter::ComputeBootCounts() {
     while (true) {
       auto it = node_state.second.constraints.find(current_boot);
       if (it == node_state.second.constraints.end()) {
-        LOG(WARNING) << "Unconnected boot in set > 1";
+        LOG(WARNING) << "Unconnected boot " << current_boot
+                     << " in set > 1 for node " << node_state.first;
         break;
       }
 
@@ -1570,7 +1572,7 @@ MapBoots PartsSorter::ComputeBootCounts() {
     }
 
     CHECK_EQ(sorted_boots.size(), node_state.second.boots.size())
-        << ": Graph failed to reach all the nodes.";
+        << ": Graph failed to reach all the boots on node " << node_state.first;
 
     VLOG(1) << "Node " << node_state.first;
     size_t boot_count = 0;

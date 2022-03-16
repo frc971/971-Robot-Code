@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <deque>
 
+#include "absl/numeric/int128.h"
 #include "aos/configuration.h"
 #include "aos/events/logging/boot_timestamp.h"
 #include "aos/time/time.h"
@@ -19,7 +20,11 @@ namespace message_bridge {
 // integer and divide by the value (e.g., / 1000)
 
 // Max velocity to clamp the filter to in seconds/second.
-inline constexpr double kMaxVelocity() { return 0.001; }
+typedef std::ratio<1, 1000> MaxVelocityRatio;
+inline constexpr double kMaxVelocity() {
+  return static_cast<double>(MaxVelocityRatio::num) /
+         static_cast<double>(MaxVelocityRatio::den);
+}
 
 // This class handles filtering differences between clocks across a network.
 //
@@ -280,6 +285,11 @@ class NoncausalTimestampFilter {
                         logger::BootTimestamp tb) const {
     return filter(ta.boot, tb.boot)->ValidateSolution(ta.time, tb.time);
   }
+  bool ValidateSolution(logger::BootTimestamp ta_base, double ta,
+                        logger::BootTimestamp tb_base, double tb) const {
+    return filter(ta_base.boot, tb_base.boot)
+        ->ValidateSolution(ta_base.time, ta, tb_base.time, tb);
+  }
 
   // Adds a new sample to our filtered timestamp list.
   void Sample(logger::BootTimestamp monotonic_now,
@@ -295,6 +305,17 @@ class NoncausalTimestampFilter {
       result += filter.filter.timestamps_size();
     }
     return result;
+  }
+
+  // Returns the number of timestamps for a specific boot.  This is useful to
+  // determine if there are observations in this direction or not.
+  size_t timestamps_size(const size_t boota, const size_t bootb) const {
+    const SingleFilter *f = maybe_filter(boota, bootb);
+    if (f == nullptr) {
+      return 0u;
+    } else {
+      return f->timestamps_size();
+    }
   }
 
   // For testing only:
@@ -545,12 +566,17 @@ class NoncausalTimestampFilter {
         //
         // We are doing this here so as points get added in any order, we don't
         // confuse ourselves about what really happened.
-        if (doffset > dt * kMaxVelocity()) {
+        if (absl::int128(doffset.count()) *
+                absl::int128(MaxVelocityRatio::den) >
+            absl::int128(dt.count()) * absl::int128(MaxVelocityRatio::num)) {
+          DCHECK_GE(dt.count(), 0);
           const aos::monotonic_clock::duration adjusted_initial_time =
               std::get<1>(timestamps_[1]) -
               aos::monotonic_clock::duration(
                   static_cast<aos::monotonic_clock::duration::rep>(
-                      dt.count() * kMaxVelocity()));
+                      absl::int128(dt.count() + MaxVelocityRatio::den / 2) *
+                      absl::int128(MaxVelocityRatio::num) /
+                      absl::int128(MaxVelocityRatio::den)));
 
           return std::make_tuple(std::get<0>(timestamps_[0]),
                                  adjusted_initial_time);
@@ -564,6 +590,9 @@ class NoncausalTimestampFilter {
     // success.
     bool ValidateSolution(aos::monotonic_clock::time_point ta,
                           aos::monotonic_clock::time_point tb) const;
+    bool ValidateSolution(aos::monotonic_clock::time_point ta_base, double ta,
+                          aos::monotonic_clock::time_point tb_base,
+                          double tb) const;
 
     void Sample(monotonic_clock::time_point monotonic_now,
                 std::chrono::nanoseconds sample_ns);
@@ -663,14 +692,23 @@ class NoncausalTimestampFilter {
     return result;
   }
 
-  const SingleFilter *filter(int boota, int bootb) const {
+  const SingleFilter *maybe_filter(int boota, int bootb) const {
     auto it =
         std::lower_bound(filters_.begin(), filters_.end(),
                          std::make_pair(boota, bootb), FilterLessThanLower);
     CHECK(it != filters_.end());
-    CHECK(it->boot == std::make_pair(boota, bootb))
+    if (it->boot == std::make_pair(boota, bootb)) {
+      return &it->filter;
+    } else {
+      return nullptr;
+    }
+  }
+
+  const SingleFilter *filter(int boota, int bootb) const {
+    const SingleFilter *result = maybe_filter(boota, bootb);
+    CHECK(result != nullptr)
         << NodeNames() << " Failed to find " << boota << ", " << bootb;
-    return &it->filter;
+    return result;
   }
 
  private:

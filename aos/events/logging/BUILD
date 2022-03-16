@@ -402,6 +402,21 @@ aos_config(
 )
 
 aos_config(
+    name = "multinode_pingpong_split4_config",
+    src = "multinode_pingpong_split4.json",
+    flatbuffers = [
+        "//aos/events:ping_fbs",
+        "//aos/events:pong_fbs",
+        "//aos/network:message_bridge_client_fbs",
+        "//aos/network:message_bridge_server_fbs",
+        "//aos/network:remote_message_fbs",
+        "//aos/network:timestamp_fbs",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = ["//aos/events:aos_config"],
+)
+
+aos_config(
     name = "multinode_pingpong_combined_config",
     src = "multinode_pingpong_combined.json",
     flatbuffers = [
@@ -427,6 +442,7 @@ cc_test(
     data = [
         ":multinode_pingpong_combined_config",
         ":multinode_pingpong_split3_config",
+        ":multinode_pingpong_split4_config",
         ":multinode_pingpong_split_config",
         "//aos/events:pingpong_config",
     ],

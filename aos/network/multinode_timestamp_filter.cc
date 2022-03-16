@@ -39,9 +39,6 @@ TimestampProblem::TimestampProblem(size_t count) {
   node_mapping_.resize(count, 0);
 }
 
-// TODO(austin): Add linear inequality constraints too.  Currently we just
-// enforce them.
-//
 // TODO(austin): Add a rate of change constraint from the last sample.  1
 // ms/s.  Figure out how to define it.  Do this last.  This lets us handle
 // constraints going away, and constraints close in time.
@@ -50,8 +47,42 @@ bool TimestampProblem::ValidateSolution(std::vector<BootTimestamp> solution) {
   bool success = true;
   for (size_t i = 0u; i < clock_offset_filter_for_node_.size(); ++i) {
     for (const struct FilterPair &filter : clock_offset_filter_for_node_[i]) {
-      success = success && filter.filter->ValidateSolution(
-                               solution[i], solution[filter.b_index]);
+      // There's nothing in this direction, so there will be nothing to
+      // validate.
+      if (filter.filter->timestamps_size(
+              base_clock_[i].boot, base_clock_[filter.b_index].boot) == 0u) {
+        // For a boot to exist, we need to have some observations between it and
+        // another boot.  We wouldn't bother to build a problem to solve for
+        // this node otherwise.  Confirm that is true so we at least get
+        // notified if that assumption falls apart.
+        bool valid = false;
+        for (const struct FilterPair &other_filter :
+             clock_offset_filter_for_node_[filter.b_index]) {
+          if (other_filter.b_index == i) {
+            // Found our match.  Confirm it has timestamps.
+            if (other_filter.filter->timestamps_size(
+                    base_clock_[filter.b_index].boot, base_clock_[i].boot) !=
+                0u) {
+              valid = true;
+            }
+            break;
+          }
+        }
+        if (!valid) {
+          Debug();
+          LOG(FATAL) << "Found no timestamps in either direction between nodes "
+                     << i << " and " << filter.b_index;
+        }
+        continue;
+      }
+      const bool iteration = filter.filter->ValidateSolution(
+          solution[i], solution[filter.b_index]);
+      if (!iteration) {
+        filter.filter->ValidateSolution(solution[i], 0.0,
+                                        solution[filter.b_index], 0.0);
+      }
+
+      success = success && iteration;
     }
   }
   return success;
@@ -62,6 +93,14 @@ Eigen::VectorXd TimestampProblem::Gradient(
   Eigen::VectorXd grad = Eigen::VectorXd::Zero(live_nodes_);
   for (size_t i = 0; i < clock_offset_filter_for_node_.size(); ++i) {
     for (const struct FilterPair &filter : clock_offset_filter_for_node_[i]) {
+      // Especially when reboots are involved, it isn't guarenteed that there
+      // will be timestamps going both ways.  In this case, we want to avoid the
+      // cost.
+      if (!filter.filter->timestamps_size(base_clock_[i].boot,
+                                          base_clock_[filter.b_index].boot)) {
+        continue;
+      }
+
       // Reminder, our cost function has the following form.
       //   ((tb - (1 + ma) ta - ba)^2
       // We are ignoring the slope when taking the derivative and applying the
@@ -70,11 +109,28 @@ Eigen::VectorXd TimestampProblem::Gradient(
       //
       const size_t a_solution_index = NodeToFullSolutionIndex(i);
       const size_t b_solution_index = NodeToFullSolutionIndex(filter.b_index);
+
+      // Most of the time, we properly converge to the right answer when only
+      // one of the two constraints exists.  But, with rounding involved, we
+      // will end up generating 2 timelines with 2 problems:
+      //  1) If the TX and RX times are identical (zero network delay), then it
+      //     is very hard to order the two messages without adding something on
+      //     top of time.
+      //  2) In the presence of rounding, we can violate our constraints by 1
+      //     ns, failing validation.
+      //
+      // Rather than teach the solver about these constraints, we can instead
+      // have it try to solve for an offset which is a bit bigger than it is
+      // supposed to be.  Since both directions, when they exist, will have this
+      // extra factor, the solution will be the same (or close enough).
+      constexpr double kMinNetworkDelay = 2.0;
+
       const double error =
-          2.0 * filter.filter->OffsetError(base_clock_[i],
-                                           time_offsets(a_solution_index),
-                                           base_clock_[filter.b_index],
-                                           time_offsets(b_solution_index));
+          2.0 * (filter.filter->OffsetError(base_clock_[i],
+                                            time_offsets(a_solution_index),
+                                            base_clock_[filter.b_index],
+                                            time_offsets(b_solution_index)) -
+                 kMinNetworkDelay);
 
       grad(a_solution_index) += -error;
       grad(b_solution_index) += error;
@@ -302,7 +358,7 @@ std::tuple<std::vector<BootTimestamp>, size_t> TimestampProblem::SolveNewton(
 
   for (size_t i = 0; i < points.size(); ++i) {
     if (points[i] != logger::BootTimestamp::max_time()) {
-      VLOG(2) << "Solving for node " << i << " of " << base_clock(i) << " in "
+      VLOG(2) << "Solving for node " << i << " of " << points[i] << " in "
               << solution_number << " cycles";
     }
   }

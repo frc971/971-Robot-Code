@@ -1,0 +1,185 @@
+{
+  "channels": [
+    {
+      "name": "/pi1/aos",
+      "type": "aos.logging.LogMessageFbs",
+      "source_node": "pi1",
+      "frequency": 200,
+      "num_senders": 20,
+      "max_size": 2048
+    },
+    {
+      "name": "/pi2/aos",
+      "type": "aos.logging.LogMessageFbs",
+      "source_node": "pi2",
+      "frequency": 200,
+      "num_senders": 20,
+      "max_size": 2048
+    },
+    /* Logged on pi1 locally */
+    {
+      "name": "/pi1/aos",
+      "type": "aos.timing.Report",
+      "source_node": "pi1",
+      "frequency": 50,
+      "num_senders": 20,
+      "max_size": 2048
+    },
+    {
+      "name": "/pi2/aos",
+      "type": "aos.timing.Report",
+      "source_node": "pi2",
+      "frequency": 50,
+      "num_senders": 20,
+      "max_size": 2048
+    },
+    {
+      "name": "/pi1/aos",
+      "type": "aos.message_bridge.ServerStatistics",
+      "logger": "LOCAL_LOGGER",
+      "source_node": "pi1"
+    },
+    {
+      "name": "/pi2/aos",
+      "type": "aos.message_bridge.ServerStatistics",
+      "logger": "LOCAL_LOGGER",
+      "source_node": "pi2"
+    },
+    {
+      "name": "/pi1/aos",
+      "type": "aos.message_bridge.ClientStatistics",
+      "logger": "LOCAL_LOGGER",
+      "source_node": "pi1"
+    },
+    {
+      "name": "/pi2/aos",
+      "type": "aos.message_bridge.ClientStatistics",
+      "logger": "LOCAL_LOGGER",
+      "source_node": "pi2"
+    },
+    {
+      "name": "/pi1/aos",
+      "type": "aos.message_bridge.Timestamp",
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": ["pi2"],
+      "source_node": "pi1",
+      "destination_nodes": [
+        {
+          "name": "pi2",
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": ["pi1"],
+          "time_to_live": 5000000
+        }
+      ]
+    },
+    {
+      "name": "/pi2/aos",
+      "type": "aos.message_bridge.Timestamp",
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": ["pi1"],
+      "source_node": "pi2",
+      "destination_nodes": [
+        {
+          "name": "pi1",
+          "time_to_live": 5000000
+        }
+      ]
+    },
+    {
+      "name": "/pi1/aos/remote_timestamps/pi2/pi1/aos/aos-message_bridge-Timestamp",
+      "type": "aos.message_bridge.RemoteMessage",
+      "logger": "NOT_LOGGED",
+      "num_senders": 2,
+      "source_node": "pi1"
+    },
+    {
+      "name": "/pi1/aos/remote_timestamps/pi2/test/aos-examples-Ping",
+      "type": "aos.message_bridge.RemoteMessage",
+      "logger": "NOT_LOGGED",
+      "num_senders": 2,
+      "source_node": "pi1",
+      "frequency": 150
+    },
+    {
+      "name": "/pi2/aos/remote_timestamps/pi1/test/aos-examples-Pong",
+      "type": "aos.message_bridge.RemoteMessage",
+      "logger": "NOT_LOGGED",
+      "num_senders": 2,
+      "source_node": "pi2",
+      "frequency": 150
+    },
+    /* Forwarded to pi2 */
+    {
+      "name": "/test",
+      "type": "aos.examples.Ping",
+      "source_node": "pi1",
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": ["pi2"],
+      "destination_nodes": [
+        {
+          "name": "pi2",
+          "priority": 1,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "pi1"
+          ],
+          "time_to_live": 5000000
+        }
+      ],
+      "frequency": 150
+    },
+    /* Forwarded back to pi1.
+     * The message is logged both on the sending node and the receiving node
+     * (to make it easier to look at the results for now).
+     *
+     * The timestamps are logged on the receiving node.
+     */
+    {
+      "name": "/test",
+      "type": "aos.examples.Pong",
+      "source_node": "pi2",
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": ["pi1"],
+      "destination_nodes": [
+        {
+          "name": "pi1",
+          "priority": 1,
+          "time_to_live": 5000000
+        }
+      ],
+      "frequency": 150
+    }
+  ],
+  "maps": [
+    {
+      "match": {
+        "name": "/aos*",
+        "source_node": "pi1"
+      },
+      "rename": {
+        "name": "/pi1/aos"
+      }
+    },
+    {
+      "match": {
+        "name": "/aos*",
+        "source_node": "pi2"
+      },
+      "rename": {
+        "name": "/pi2/aos"
+      }
+    }
+  ],
+  "nodes": [
+    {
+      "name": "pi1",
+      "hostname": "raspberrypi",
+      "port": 9971
+    },
+    {
+      "name": "pi2",
+      "hostname": "raspberrypi2",
+      "port": 9971
+    }
+  ]
+}
