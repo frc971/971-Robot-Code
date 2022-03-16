@@ -68,32 +68,22 @@
     </div>
 
     <div *ngSwitchCase="'Climb'" id="climb" class="container-fluid">
-        <div class="row">
-            <form>
-                <input [(ngModel)]="climbed" type="radio" name="climbing" id="continue" [value]="false">
-                <label for="continue">Kept Shooting</label><br>
-                <input [(ngModel)]="climbed" type="radio" name="climbing" id="climbed" [value]="true">
-                <label for="climbed">Attempted to Climb</label><br>
-            </form>
-        </div>
-        <div *ngIf="climbed">
-            <h4>Bar Made</h4>
-            <form>
-                <input [ngModel]="level" (click)="setLow()" type="radio" name="level" id="low" value="Low">
-                <label for="low">Low</label><br>
-                <input [ngModel]="level" (click)="setMedium()" type="radio" name="level" id="medium" value="Medium">
-                <label for="medium">Medium</label><br>
-                <input [ngModel]="level" (click)="setHigh()" type="radio" name="level" id="high" value="High">
-                <label for="high">High</label><br>
-                <input [ngModel]="level" (click)="setTransversal()" type="radio" name="level" id="transversal" value="Transversal">
-                <label for="transversal">Transversal</label><br>
-                <input [ngModel]="level" (click)="setFailed()" type="radio" name="level" id="failed" value="Failed">
-                <label for="failed">Failed</label><br>
-
-                <input (click)="toggleProper()" type="checkbox" id="proper">
-                <label for="proper">~10 seconds to attempt next level?</label>
-            </form>
-        </div>
+        <form>
+            <input [(ngModel)]="level" type="radio" name="level" id="no_attempt" value="NoAttempt">
+            <label for="no_attempt">No climbing attempt</label><br>
+            <input [(ngModel)]="level" type="radio" name="level" id="low" value="Low">
+            <label for="low">Low</label><br>
+            <input [(ngModel)]="level" type="radio" name="level" id="medium" value="Medium">
+            <label for="medium">Medium</label><br>
+            <input [(ngModel)]="level" type="radio" name="level" id="high" value="High">
+            <label for="high">High</label><br>
+            <input [(ngModel)]="level" type="radio" name="level" id="transversal" value="Transversal">
+            <label for="transversal">Transversal</label><br>
+            <input [(ngModel)]="level" type="radio" name="level" id="failed" value="Failed">
+            <label for="failed">Failed</label><br>
+            <input [(ngModel)]="level" type="radio" name="level" id="failed_with_plenty_of_time" value="FailedWithPlentyOfTime">
+            <label for="failed_with_plenty_of_time">Failed (attempted with more than 10 seconds left)</label><br>
+        </form>
         <div class="row">
             <h4>Comments</h4>
             <textarea></textarea>
@@ -170,13 +160,7 @@
 
         <h4>Climb</h4>
         <ul>
-            <div *ngIf="climbed">
-                <li *ngIf="climbed">Attempted to Climb?: Yes</li>
-                <li>Level: {{level}}</li>
-                <li *ngIf="proper">Proper Attempt: Yes</li>
-                <li *ngIf="!proper">Proper Attempt: No</li>
-            </div>
-            <li *ngIf="!climbed">Attempted to Climb: No</li>
+            <li>Level: {{level}}</li>
         </ul>
 
         <h4>Defense</h4>

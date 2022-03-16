@@ -56,6 +56,7 @@ describe('The scouting web page', () => {
     await element(by.buttonText('Next')).click();
 
     expect(await getHeadingText()).toEqual('Climb');
+    await element(by.id('high')).click();
     await element(by.buttonText('Next')).click();
 
     expect(await getHeadingText()).toEqual('Defense');
@@ -79,7 +80,7 @@ describe('The scouting web page', () => {
     await expectNthReviewFieldToBe('Missed Shots', 1, '0');
 
     // Validate Climb.
-    await expectReviewFieldToBe('Attempted to Climb', 'No');
+    await expectReviewFieldToBe('Level', 'High');
 
     // Validate Defense.
     await expectReviewFieldToBe('Defense Played On Rating', '0');

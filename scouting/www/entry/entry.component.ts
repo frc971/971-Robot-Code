@@ -10,7 +10,7 @@ import SubmitDataScoutingResponse = submit_data_scouting_response.scouting.webse
 import ErrorResponse = error_response.scouting.webserver.requests.ErrorResponse;
 
 type Section = 'Team Selection'|'Auto'|'TeleOp'|'Climb'|'Defense'|'Review and Submit'|'Home'
-type Level = 'Failed'|'Low'|'Medium'|'High'|'Transversal'
+type Level = 'NoAttempt'|'Failed'|'FailedWithPlentyOfTime'|'Low'|'Medium'|'High'|'Transversal'
 
 @Component({
     selector: 'app-entry',
@@ -29,34 +29,8 @@ export class EntryComponent {
     teleShotsMissed: number = 0;
     defensePlayedOnScore: number = 0;
     defensePlayedScore: number = 0;
-    level: Level;
-    proper: boolean = false;
-    climbed: boolean = false;
+    level: Level = 'NoAttempt';
     errorMessage: string = '';
-
-    toggleProper() {
-        this.proper = !this.proper;
-    }
-
-    setFailed() {
-        this.level = 'Failed';
-    }
-
-    setLow() {
-        this.level = 'Low';
-    }
-
-    setMedium() {
-        this.level = 'Medium';
-    }
-
-    setHigh() {
-        this.level = 'High';
-    }
-
-    setTransversal() {
-        this.level = 'Transversal';
-    }
 
     nextSection() {
         if (this.section === 'Team Selection') {
