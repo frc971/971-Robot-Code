@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 
 import * as flatbuffer_builder from 'org_frc971/external/com_github_google_flatbuffers/ts/builder';
 import {ByteBuffer} from 'org_frc971/external/com_github_google_flatbuffers/ts/byte-buffer';
@@ -9,7 +10,7 @@ import SubmitDataScouting = submit_data_scouting.scouting.webserver.requests.Sub
 import SubmitDataScoutingResponse = submit_data_scouting_response.scouting.webserver.requests.SubmitDataScoutingResponse;
 import ErrorResponse = error_response.scouting.webserver.requests.ErrorResponse;
 
-type Section = 'Team Selection'|'Auto'|'TeleOp'|'Climb'|'Defense'|'Review and Submit'|'Home'
+type Section = 'Team Selection'|'Auto'|'TeleOp'|'Climb'|'Other'|'Review and Submit'|'Home'
 type Level = 'NoAttempt'|'Failed'|'FailedWithPlentyOfTime'|'Low'|'Medium'|'High'|'Transversal'
 
 @Component({
@@ -31,6 +32,11 @@ export class EntryComponent {
     defensePlayedScore: number = 0;
     level: Level = 'NoAttempt';
     errorMessage: string = '';
+    noShow: boolean = false;
+    neverMoved: boolean = false;
+    batteryDied: boolean = false;
+    mechanicallyBroke: boolean = false;
+    lostComs: boolean = false;
 
     nextSection() {
         if (this.section === 'Team Selection') {
@@ -40,8 +46,8 @@ export class EntryComponent {
         } else if (this.section === 'TeleOp') {
             this.section = 'Climb';
         } else if (this.section === 'Climb') {
-            this.section = 'Defense';
-        } else if (this.section === 'Defense') {
+            this.section = 'Other';
+        } else if (this.section === 'Other') {
             this.section = 'Review and Submit';
         } else if (this.section === 'Review and Submit') {
             this.submitDataScouting();
@@ -55,10 +61,10 @@ export class EntryComponent {
         this.section = 'Auto';
       } else if (this.section === 'Climb') {
         this.section = 'TeleOp';
-      } else if (this.section === 'Defense') {
+      } else if (this.section === 'Other') {
         this.section = 'Climb';
       } else if (this.section === 'Review and Submit') {
-        this.section = 'Defense';
+        this.section = 'Other';
       }
     }
 

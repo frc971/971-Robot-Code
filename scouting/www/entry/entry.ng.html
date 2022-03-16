@@ -94,7 +94,7 @@
         </div>
     </div>
 
-    <div *ngSwitchCase="'Defense'" id="defense" class="container-fluid">
+    <div *ngSwitchCase="'Other'" id="defense" class="container-fluid">
         <h4 class="text-center">How much defense did other robots play on this robot?</h4>
 
         <div class="row" style="min-height: 50px">
@@ -131,6 +131,21 @@
         </div>
         <h6 class="text-center">{{defensePlayedScore}}</h6>
 
+        <div class="row">
+            <form>
+                <input type="checkbox" [(ngModel)]="noShow" name="no_show" id="no_show">
+                <label for="no_show">No show</label><br>
+                <input type="checkbox" [(ngModel)]="neverMoved" name="never_moved" id="never_moved">
+                <label for="never_moved">Never moved</label><br>
+                <input type="checkbox" [(ngModel)]="batteryDied" name="battery_died" id="battery_died">
+                <label for="battery_died">Battery died</label><br>
+                <input type="checkbox" [(ngModel)]="mechanicallyBroke" name="mechanically_broke" id="mechanically_broke">
+                <label for="mechanically_broke">Broke (mechanically)</label><br/>
+                <input type="checkbox" [(ngModel)]="lostComs" name="lost_coms" id="lost_coms">
+                <label for="lost_coms">Lost coms</label>
+            </form>
+        </div>
+
         <div class="buttons">
           <button class="btn btn-primary" (click)="prevSection()">Back</button>
           <button class="btn btn-primary" (click)="nextSection()">Next</button>
@@ -163,10 +178,15 @@
             <li>Level: {{level}}</li>
         </ul>
 
-        <h4>Defense</h4>
+        <h4>Other</h4>
         <ul>
             <li>Defense Played On Rating: {{defensePlayedOnScore}}</li>
             <li>Defense Played Rating: {{defensePlayedScore}}</li>
+            <li>No show: {{noShow}}</li>
+            <li>Never moved: {{neverMoved}}</li>
+            <li>Battery died: {{batteryDied}}</li>
+            <li>Broke (mechanically): {{mechanicallyBroke}}</li>
+            <li>Lost coms: {{lostComs}}</li>
         </ul>
 
         <span class="error_message">{{ errorMessage }}</span>

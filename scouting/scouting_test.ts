@@ -59,7 +59,9 @@ describe('The scouting web page', () => {
     await element(by.id('high')).click();
     await element(by.buttonText('Next')).click();
 
-    expect(await getHeadingText()).toEqual('Defense');
+    expect(await getHeadingText()).toEqual('Other');
+    await element(by.id('no_show')).click();
+    await element(by.id('mechanically_broke')).click();
     await element(by.buttonText('Next')).click();
 
     expect(await getHeadingText()).toEqual('Review and Submit');
@@ -82,9 +84,13 @@ describe('The scouting web page', () => {
     // Validate Climb.
     await expectReviewFieldToBe('Level', 'High');
 
-    // Validate Defense.
+    // Validate Other.
     await expectReviewFieldToBe('Defense Played On Rating', '0');
     await expectReviewFieldToBe('Defense Played Rating', '0');
+    await expectReviewFieldToBe('No show', 'true');
+    await expectReviewFieldToBe('Never moved', 'false');
+    await expectReviewFieldToBe('Battery died', 'false');
+    await expectReviewFieldToBe('Broke (mechanically)', 'true');
 
     // TODO(phil): Submit data and make sure it made its way to the database
     // correctly. Right now the /requests/submit/data_scouting endpoint is not
