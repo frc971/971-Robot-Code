@@ -88,8 +88,7 @@ There are a couple options for building code that are given here-- setting up ei
   2. Install the required packages:
      ```sh
      sudo apt-get update
-     # TODO(james): Ideally, we shouldn't need to be installing libtinfo5...
-     sudo apt-get install python libtinfo5
+     sudo apt-get install python
      ```
   3. Change settings to allow Bazel's sandboxing to work-- follow the directions in `doc/frc971.conf`.  For example, the commands to do this would be:
      1. `sudo cp doc/frc971.conf /etc/sysctl.d/`
