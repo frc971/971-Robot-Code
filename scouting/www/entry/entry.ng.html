@@ -1,4 +1,4 @@
-<div class="header">
+<div class="header" #header>
     <h2>{{section}}</h2>
 </div>
 
@@ -95,41 +95,37 @@
     </div>
 
     <div *ngSwitchCase="'Other'" id="defense" class="container-fluid">
-        <h4 class="text-center">How much defense did other robots play on this robot?</h4>
-
+        <h4 class="text-center">How much did other robots play defense against this robot?</h4>
+        0 - No defense played against this robot<br/>
+        1 - Minimal defense<br/>
+        2 - Some defense<br/>
+        3 - About half the match was played against defense<br/>
+        4 - Good amount of defense<br/>
+        5 - Constant defense
         <div class="row" style="min-height: 50px">
-            <div class="col">
-                <h6>None</h6>
+            <div class="col-10">
+                <input type="range" min="0" max="5" [(ngModel)]="defensePlayedOnScore">
             </div>
-
             <div class="col">
-                <input type="range" min="0" max="5" value="0" [(ngModel)]="defensePlayedOnScore">
-            </div>
-
-            <div class="col">
-                <h6>A lot</h6>
+                <h6>{{defensePlayedOnScore}}</h6>
             </div>
         </div>
 
-        <h6 class="text-center">{{defensePlayedOnScore}}</h6>
-
-        <h4 class="text-center">How much defense did this robot play?</h4>
-
+        <h4 class="text-center">How much did this robot play defense against other robots?</h4>
+        0 - This robot did not play defense<br/>
+        1 - Minimal defense<br/>
+        2 - Some defense<br/>
+        3 - Defense was played for about half the match<br/>
+        4 - Good amount of defense<br/>
+        5 - Constant defense
         <div class="row">
-
-            <div class="col">
-                <h6>None</h6>
+            <div class="col-10">
+                <input type="range" min="0" max="5" [(ngModel)]="defensePlayedScore">
             </div>
-
             <div class="col">
-                <input type="range" min="0" max="5" value="0" [(ngModel)]="defensePlayedScore">
-            </div>
-
-            <div class="col">
-                <h6>A lot</h6>
+                <h6>{{defensePlayedScore}}</h6>
             </div>
         </div>
-        <h6 class="text-center">{{defensePlayedScore}}</h6>
 
         <div class="row">
             <form>

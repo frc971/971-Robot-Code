@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import * as flatbuffer_builder from 'org_frc971/external/com_github_google_flatbuffers/ts/builder';
@@ -38,6 +38,8 @@ export class EntryComponent {
     mechanicallyBroke: boolean = false;
     lostComs: boolean = false;
 
+    @ViewChild("header") header: ElementRef;
+
     nextSection() {
         if (this.section === 'Team Selection') {
             this.section = 'Auto';
@@ -51,7 +53,11 @@ export class EntryComponent {
             this.section = 'Review and Submit';
         } else if (this.section === 'Review and Submit') {
             this.submitDataScouting();
+            return;
         }
+        // Scroll back to the top so that we can be sure the user sees the
+        // entire next screen. Otherwise it's easy to overlook input fields.
+        this.scrollToTop();
     }
 
     prevSection() {
@@ -66,6 +72,14 @@ export class EntryComponent {
       } else if (this.section === 'Review and Submit') {
         this.section = 'Other';
       }
+      // Scroll back to the top so that we can be sure the user sees the
+      // entire previous screen. Otherwise it's easy to overlook input
+      // fields.
+      this.scrollToTop();
+    }
+
+    private scrollToTop() {
+        this.header.nativeElement.scrollIntoView();
     }
 
     async submitDataScouting() {
