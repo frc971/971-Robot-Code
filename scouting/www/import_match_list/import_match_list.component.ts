@@ -21,8 +21,12 @@ export class ImportMatchListComponent {
   errorMessage: string = '';
 
   async importMatchList() {
-    if (!window.confirm('Actually import new matches?')) {
-      return;
+    const block_alerts = document.getElementById('block_alerts') as HTMLInputElement;
+    console.log(block_alerts.checked);
+    if (!block_alerts.checked) {
+      if (!window.confirm('Actually import new matches?')) {
+        return;
+      }
     }
 
     this.errorMessage = '';

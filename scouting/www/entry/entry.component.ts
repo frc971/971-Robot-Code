@@ -88,6 +88,8 @@ export class EntryComponent {
     }
 
     async submitDataScouting() {
+        this.errorMessage = '';
+
         const builder = new flatbuffer_builder.Builder() as unknown as flatbuffers.Builder;
         SubmitDataScouting.startSubmitDataScouting(builder);
         SubmitDataScouting.addTeam(builder, this.teamNumber);
