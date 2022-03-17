@@ -50,9 +50,7 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   void set_requested_intake(std::optional<RequestedIntake> requested_intake) {
     requested_intake_ = requested_intake;
   }
-  void set_turret_goal(double turret_goal) {
-    turret_goal_ = turret_goal;
-  }
+  void set_turret_goal(double turret_goal) { turret_goal_ = turret_goal; }
 
   void set_fire_at_will(bool fire) { fire_ = fire; }
   void set_preloaded(bool preloaded) { preloaded_ = preloaded; }
@@ -68,8 +66,8 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   // Tells the superstructure the ball was preloaded and waits until it updates
   // the state
   [[nodiscard]] bool WaitForPreloaded();
-  // Waits for a certain number of balls to be shot
-  [[nodiscard]] bool WaitForBallsShot(int num_shot);
+  // Waits for the intaked balls to be shot
+  [[nodiscard]] bool WaitForBallsShot();
 
   void SplineAuto();
   void RapidReact();
