@@ -50,6 +50,9 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   void set_requested_intake(std::optional<RequestedIntake> requested_intake) {
     requested_intake_ = requested_intake;
   }
+  void set_turret_goal(double turret_goal) {
+    turret_goal_ = turret_goal;
+  }
 
   void set_fire_at_will(bool fire) { fire_ = fire; }
   void set_preloaded(bool preloaded) { preloaded_ = preloaded; }
@@ -80,6 +83,7 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   double transfer_roller_front_voltage_ = 0.0;
   double transfer_roller_back_voltage_ = 0.0;
   std::optional<RequestedIntake> requested_intake_ = std::nullopt;
+  double turret_goal_ = 0.0;
   bool fire_ = false;
   bool preloaded_ = false;
 
@@ -96,7 +100,7 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   aos::TimerHandler *button_poll_;
 
   std::optional<SplineHandle> test_spline_;
-  std::optional<std::array<SplineHandle, 5>> rapid_react_splines_;
+  std::optional<std::array<SplineHandle, 3>> rapid_react_splines_;
 
   aos::Alliance alliance_ = aos::Alliance::kInvalid;
   AutonomousSplines auto_splines_;

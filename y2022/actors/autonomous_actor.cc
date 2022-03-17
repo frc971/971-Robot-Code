@@ -104,17 +104,11 @@ void AutonomousActor::Replan() {
     rapid_react_splines_ = {
         PlanSpline(std::bind(&AutonomousSplines::Spline1, &auto_splines_,
                              std::placeholders::_1, alliance_),
-                   SplineDirection::kForward),
+                   SplineDirection::kBackward),
         PlanSpline(std::bind(&AutonomousSplines::Spline2, &auto_splines_,
                              std::placeholders::_1, alliance_),
                    SplineDirection::kForward),
         PlanSpline(std::bind(&AutonomousSplines::Spline3, &auto_splines_,
-                             std::placeholders::_1, alliance_),
-                   SplineDirection::kForward),
-        PlanSpline(std::bind(&AutonomousSplines::Spline4, &auto_splines_,
-                             std::placeholders::_1, alliance_),
-                   SplineDirection::kBackward),
-        PlanSpline(std::bind(&AutonomousSplines::Spline5, &auto_splines_,
                              std::placeholders::_1, alliance_),
                    SplineDirection::kBackward)};
     starting_position_ = rapid_react_splines_.value()[0].starting_position();
@@ -212,56 +206,53 @@ void AutonomousActor::RapidReact() {
   auto &splines = *rapid_react_splines_;
 
   // Tell the superstructure a ball was preloaded
-
   if (!WaitForPreloaded()) return;
-  // Drive and intake the 2nd ball
-  ExtendFrontIntake();
+
+  // Fire preloaded ball
+  set_turret_goal(constants::Values::kTurretFrontIntakePos());
+  set_fire_at_will(true);
+  SendSuperstructureGoal();
+  if (!WaitForBallsShot(1)) return;
+  set_fire_at_will(false);
+  SendSuperstructureGoal();
+
+  // Drive and intake the 2 balls in nearest to the starting zonei
+  set_turret_goal(constants::Values::kTurretBackIntakePos());
+  ExtendBackIntake();
   if (!splines[0].WaitForPlan()) return;
   splines[0].Start();
   if (!splines[0].WaitForSplineDistanceRemaining(0.02)) return;
 
   // Fire the two balls once we stopped
+  RetractBackIntake();
   set_fire_at_will(true);
   SendSuperstructureGoal();
   if (!WaitForBallsShot(2)) return;
   set_fire_at_will(false);
-
-  // Drive and intake the 3rd ball
-  if (!splines[1].WaitForPlan()) return;
-  splines[1].Start();
-  if (!splines[1].WaitForSplineDistanceRemaining(0.02)) return;
-
-  // Fire the 3rd once we stopped.
-  set_fire_at_will(true);
   SendSuperstructureGoal();
-  if (!WaitForBallsShot(1)) return;
-  set_fire_at_will(false);
 
   // Drive to the human player station while intaking two balls.
   // Once is already placed down,
   // and one will be rolled to the robot by the human player
-  if (!splines[2].WaitForPlan()) return;
-  splines[2].Start();
-  if (!splines[2].WaitForSplineDistanceRemaining(0.02)) return;
+  ExtendFrontIntake();
+  if (!splines[1].WaitForPlan()) return;
+  splines[1].Start();
+  if (!splines[1].WaitForSplineDistanceRemaining(0.02)) return;
 
   // Drive to the shooting position
-  if (!splines[3].WaitForPlan()) return;
-  splines[3].Start();
-  if (!splines[3].WaitForSplineDistanceRemaining(0.02)) return;
+  if (!splines[2].WaitForPlan()) return;
+  splines[2].Start();
+  if (!splines[2].WaitForSplineDistanceRemaining(2.00)) return;
+  RetractFrontIntake();
+
+  if (!splines[2].WaitForSplineDistanceRemaining(0.02)) return;
 
   // Fire the two balls once we stopped
   set_fire_at_will(true);
   SendSuperstructureGoal();
   if (!WaitForBallsShot(2)) return;
   set_fire_at_will(false);
-
-  // Done intaking
-  RetractFrontIntake();
-
-  // Drive to the middle of the field to get ready for teleop
-  if (!splines[4].WaitForPlan()) return;
-  splines[4].Start();
-  if (!splines[4].WaitForSplineDistanceRemaining(0.02)) return;
+  SendSuperstructureGoal();
 
   LOG(INFO) << "Took "
             << chrono::duration<double>(aos::monotonic_clock::now() -
@@ -312,6 +303,11 @@ void AutonomousActor::SendSuperstructureGoal() {
           CreateProfileParameters(*builder.fbb(), 20.0, 60.0));
 
   flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+      turret_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+          *builder.fbb(), turret_goal_,
+          CreateProfileParameters(*builder.fbb(), 12.0, 20.0));
+
+  flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
       catapult_return_position_offset =
           CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
               *builder.fbb(), kCatapultReturnPosition,
@@ -339,10 +335,11 @@ void AutonomousActor::SendSuperstructureGoal() {
       transfer_roller_front_voltage_);
   superstructure_builder.add_transfer_roller_speed_back(
       transfer_roller_back_voltage_);
+  superstructure_builder.add_turret(turret_offset);
   superstructure_builder.add_catapult(catapult_goal_offset);
   superstructure_builder.add_fire(fire_);
   superstructure_builder.add_preloaded(preloaded_);
-  superstructure_builder.add_auto_aim(true);
+  superstructure_builder.add_auto_aim(false);
 
   if (builder.Send(superstructure_builder.Finish()) !=
       aos::RawSender::Error::kOk) {
