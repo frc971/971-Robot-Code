@@ -114,13 +114,13 @@ struct Values {
   static constexpr ::frc971::constants::Range kTurretRange() {
     return ::frc971::constants::Range{
         .lower_hard = -7.0,  // Back Hard
-        .upper_hard = 4.0,   // Front Hard
+        .upper_hard = 3.0,   // Front Hard
         .lower = -6.5,       // Back Soft
-        .upper = 3.25        // Front Soft
+        .upper = 2.5         // Front Soft
     };
   }
 
-  static constexpr double kTurretBackIntakePos() { return M_PI; }
+  static constexpr double kTurretBackIntakePos() { return -M_PI; }
   static constexpr double kTurretFrontIntakePos() { return 0; }
 
   static constexpr double kTurretPotRatio() { return 27.0 / 110.0; }

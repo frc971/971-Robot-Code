@@ -755,7 +755,7 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
 
   SendRobotVelocity(3.0);
 
-  constexpr double kTurretGoal = 3.0;
+  constexpr double kTurretGoal = 2.0;
   {
     auto builder = superstructure_goal_sender_.MakeBuilder();
     flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
@@ -1015,7 +1015,7 @@ TEST_F(SuperstructureTest, TestTurretWrapsWhenLoading) {
   SetEnabled(true);
   WaitUntilZeroed();
 
-  constexpr double kTurretGoal = -4.0;
+  constexpr double kTurretGoal = -6.0;
   {
     auto builder = superstructure_goal_sender_.MakeBuilder();
     flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
@@ -1033,20 +1033,20 @@ TEST_F(SuperstructureTest, TestTurretWrapsWhenLoading) {
   EXPECT_NEAR(superstructure_status_fetcher_->turret()->position(), kTurretGoal,
               0.001);
 
-  superstructure_plant_.set_intake_beambreak_back(true);
+  superstructure_plant_.set_intake_beambreak_front(true);
   RunFor(dt() * 2);
 
   ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
   EXPECT_EQ(superstructure_status_fetcher_->state(),
             SuperstructureState::TRANSFERRING);
   EXPECT_EQ(superstructure_status_fetcher_->intake_state(),
-            IntakeState::INTAKE_BACK_BALL);
+            IntakeState::INTAKE_FRONT_BALL);
 
   RunFor(std::chrono::seconds(3));
 
   ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
   EXPECT_NEAR(superstructure_status_fetcher_->turret()->position(),
-              -constants::Values::kTurretBackIntakePos(), 0.001);
+              -constants::Values::kTurretFrontIntakePos() - 2.0 * M_PI, 0.001);
   // it chooses -pi because -pi is closer to -4 than positive pi
 }
 

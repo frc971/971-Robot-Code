@@ -14,6 +14,7 @@ export function plotCatapult(conn: Connection, element: Element) : void {
   const goal = aosPlotter.addMessageSource('/superstructure', 'y2022.control_loops.superstructure.Goal');
   const output = aosPlotter.addMessageSource('/superstructure', 'y2022.control_loops.superstructure.Output');
   const status = aosPlotter.addMessageSource('/superstructure', 'y2022.control_loops.superstructure.Status');
+  const position = aosPlotter.addMessageSource('/superstructure', 'y2022.control_loops.superstructure.Position');
   const robotState = aosPlotter.addMessageSource('/aos', 'aos.RobotState');
 
   // Robot Enabled/Disabled and Mode
@@ -34,6 +35,7 @@ export function plotCatapult(conn: Connection, element: Element) : void {
   positionPlot.addMessageLine(status, ['catapult', 'position']).setColor(GREEN).setPointSize(4.0);
   positionPlot.addMessageLine(status, ['catapult', 'velocity']).setColor(PINK).setPointSize(1.0);
   positionPlot.addMessageLine(status, ['catapult', 'calculated_velocity']).setColor(BROWN).setPointSize(1.0);
+  positionPlot.addMessageLine(position, ['catapult', 'pot']).setColor(WHITE).setPointSize(1.0);
   positionPlot.addMessageLine(status, ['catapult', 'estimator_state', 'position']).setColor(CYAN).setPointSize(1.0);
 
   const voltagePlot =

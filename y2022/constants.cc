@@ -70,7 +70,7 @@ Values MakeValues(uint16_t team) {
   turret_params->zeroing_voltage = 4.0;
   turret_params->operating_voltage = 12.0;
   turret_params->zeroing_profile_params = {0.5, 2.0};
-  turret_params->default_profile_params = {15.0, 40.0};
+  turret_params->default_profile_params = {15.0, 20.0};
   turret_params->range = Values::kTurretRange();
   turret_params->make_integral_loop =
       control_loops::superstructure::turret::MakeIntegralTurretLoop;
@@ -132,8 +132,8 @@ Values MakeValues(uint16_t team) {
 
   // Interpolation table for comp and practice robots
   r.shot_interpolation_table = InterpolationTable<Values::ShotParams>({
-      {2, {0.08, 8.0}},
-      {5, {0.6, 10.0}},
+      {1, {0.03, 18.0}},
+      {10, {0.03, 18.0}},
   });
 
   switch (team) {

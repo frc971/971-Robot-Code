@@ -13,7 +13,7 @@
 #include "y2022/control_loops/drivetrain/drivetrain_base.h"
 
 DEFINE_bool(spline_auto, false, "If true, define a spline autonomous mode");
-DEFINE_bool(rapid_react, false,
+DEFINE_bool(rapid_react, true,
             "If true, run the main rapid react autonomous mode");
 
 namespace y2022 {
@@ -21,7 +21,7 @@ namespace actors {
 namespace {
 constexpr double kExtendIntakeGoal = -0.02;
 constexpr double kRetractIntakeGoal = 1.47;
-constexpr double kIntakeRollerVoltage = 8.0;
+constexpr double kIntakeRollerVoltage = 12.0;
 constexpr double kRollerVoltage = 12.0;
 constexpr double kCatapultReturnPosition = -0.908;
 }  // namespace
@@ -209,15 +209,20 @@ void AutonomousActor::RapidReact() {
   if (!WaitForPreloaded()) return;
 
   // Fire preloaded ball
-  set_turret_goal(constants::Values::kTurretFrontIntakePos());
+  set_turret_goal(constants::Values::kTurretBackIntakePos());
   set_fire_at_will(true);
   SendSuperstructureGoal();
   if (!WaitForBallsShot()) return;
+  LOG(INFO) << "Shot first ball "
+            << chrono::duration<double>(aos::monotonic_clock::now() -
+                                        start_time)
+                   .count()
+            << 's';
   set_fire_at_will(false);
   SendSuperstructureGoal();
 
   // Drive and intake the 2 balls in nearest to the starting zonei
-  set_turret_goal(constants::Values::kTurretBackIntakePos());
+  set_turret_goal(constants::Values::kTurretFrontIntakePos());
   ExtendBackIntake();
   if (!splines[0].WaitForPlan()) return;
   splines[0].Start();
@@ -228,6 +233,11 @@ void AutonomousActor::RapidReact() {
   set_fire_at_will(true);
   SendSuperstructureGoal();
   if (!WaitForBallsShot()) return;
+  LOG(INFO) << "Shot first 3 balls "
+            << chrono::duration<double>(aos::monotonic_clock::now() -
+                                        start_time)
+                   .count()
+            << 's';
   set_fire_at_will(false);
   SendSuperstructureGoal();
 
@@ -238,6 +248,11 @@ void AutonomousActor::RapidReact() {
   if (!splines[1].WaitForPlan()) return;
   splines[1].Start();
   if (!splines[1].WaitForSplineDistanceRemaining(0.02)) return;
+  LOG(INFO) << "At balls 4/5 "
+            << chrono::duration<double>(aos::monotonic_clock::now() -
+                                        start_time)
+                   .count()
+            << 's';
 
   // Drive to the shooting position
   if (!splines[2].WaitForPlan()) return;
@@ -246,6 +261,11 @@ void AutonomousActor::RapidReact() {
   RetractFrontIntake();
 
   if (!splines[2].WaitForSplineDistanceRemaining(0.02)) return;
+  LOG(INFO) << "Shooting last balls "
+            << chrono::duration<double>(aos::monotonic_clock::now() -
+                                        start_time)
+                   .count()
+            << 's';
 
   // Fire the two balls once we stopped
   set_fire_at_will(true);
@@ -325,7 +345,7 @@ void AutonomousActor::SendSuperstructureGoal() {
 
   superstructure_builder.add_intake_front(intake_front_offset);
   superstructure_builder.add_intake_back(intake_back_offset);
-  superstructure_builder.add_roller_speed_compensation(1.5);
+  superstructure_builder.add_roller_speed_compensation(0.0);
   superstructure_builder.add_roller_speed_front(roller_front_voltage_);
   superstructure_builder.add_roller_speed_back(roller_back_voltage_);
   if (requested_intake_.has_value()) {
@@ -339,7 +359,7 @@ void AutonomousActor::SendSuperstructureGoal() {
   superstructure_builder.add_catapult(catapult_goal_offset);
   superstructure_builder.add_fire(fire_);
   superstructure_builder.add_preloaded(preloaded_);
-  superstructure_builder.add_auto_aim(false);
+  superstructure_builder.add_auto_aim(true);
 
   if (builder.Send(superstructure_builder.Finish()) !=
       aos::RawSender::Error::kOk) {
@@ -384,7 +404,8 @@ void AutonomousActor::RetractBackIntake() {
 }
 
 [[nodiscard]] bool AutonomousActor::WaitForBallsShot() {
-  CHECK(superstructure_status_fetcher_.Fetch());
+  superstructure_status_fetcher_.Fetch();
+  CHECK(superstructure_status_fetcher_.get());
 
   // Don't do anything if we aren't loaded
   if (superstructure_status_fetcher_->state() !=

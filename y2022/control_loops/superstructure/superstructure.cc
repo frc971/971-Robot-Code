@@ -386,11 +386,6 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
         reseating_in_catapult_ = true;
         break;
       }
-      // If we started firing and the flippers closed a bit, estop to prevent
-      // damage
-      if (fire_ && !flippers_open_) {
-        catapult_.Estop();
-      }
 
       // If the turret reached the aiming goal and the catapult is safe to move
       // up, fire!
