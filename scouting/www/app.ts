@@ -1,4 +1,4 @@
-import {Component} from '@angular/core';
+import {Component, ElementRef, ViewChild} from '@angular/core';
 
 type Tab = 'Entry'|'ImportMatchList';
 
@@ -10,12 +10,16 @@ type Tab = 'Entry'|'ImportMatchList';
 export class App {
   tab: Tab = 'Entry';
 
+  @ViewChild("block_alerts") block_alerts: ElementRef;
+
   constructor() {
     window.addEventListener('beforeunload', (e) => {
-      // Based on https://developer.mozilla.org/en-US/docs/Web/API/WindowEventHandlers/onbeforeunload#example
-      // This combination ensures a dialog will be shown on most browsers.
-      e.preventDefault();
-      e.returnValue = '';
+      if (!this.block_alerts.nativeElement.checked) {
+        // Based on https://developer.mozilla.org/en-US/docs/Web/API/WindowEventHandlers/onbeforeunload#example
+        // This combination ensures a dialog will be shown on most browsers.
+        e.preventDefault();
+        e.returnValue = '';
+      }
     });
   }
 

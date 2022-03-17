@@ -1,3 +1,8 @@
+<!-- Hidden element for protractor to disable alerts. -->
+<form class="visually-hidden">
+  <input type="checkbox" name="block_alerts" value="1" id="block_alerts" #block_alerts>
+</form>
+
 <ul class="nav nav-tabs">
   <li class="nav-item">
     <a class="nav-link" [class.active]="tabIs('Entry')" (click)="switchTabTo('Entry')">Data Entry</a>

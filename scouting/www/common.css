@@ -8,3 +8,10 @@
    * I.e. It would be nice to keep the error message and the progress message
    * aligned when they are non-empty. */
 }
+
+/* Hidden from the user, but interactable from protractor. */
+.visually-hidden {
+  position: absolute !important;
+  top: -9999px !important;
+  left: -9999px !important;
+}

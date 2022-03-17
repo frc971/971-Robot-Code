@@ -3,14 +3,21 @@ import {browser, by, element, protractor} from 'protractor';
 // Loads the page (or reloads it) and deals with the "Are you sure you want to
 // leave this page" popup.
 async function loadPage() {
-  await browser.get(browser.baseUrl).catch(function () {
-    return browser.switchTo().alert().then(function (alert) {
-      alert.accept();
-      return browser.get(browser.baseUrl);
-    });
-  });
+  await disableAlerts();
+  await browser.navigate().refresh();
+  expect((await browser.getTitle())).toEqual('FRC971 Scouting Application');
 }
 
+// Disables alert popups. They are extremely tedious to deal with in
+// Protractor since they're not angular elements. We achieve this by checking
+// an invisible checkbox that's off-screen.
+async function disableAlerts() {
+  await browser.executeAsyncScript(function (callback) {
+    const block_alerts = document.getElementById('block_alerts') as HTMLInputElement;
+    block_alerts.checked = true;
+    callback();
+  });
+}
 // Returns the contents of the header that displays the "Auto", "TeleOp", and
 // "Climb" labels etc.
 function getHeadingText() {
@@ -37,6 +44,12 @@ async function expectNthReviewFieldToBe(fieldName: string, n: number, expectedVa
 }
 
 describe('The scouting web page', () => {
+  beforeAll(async () => {
+    await browser.get(browser.baseUrl);
+    expect((await browser.getTitle())).toEqual('FRC971 Scouting Application');
+    await disableAlerts();
+  });
+
   it('should: review and submit correct data.', async () => {
     await loadPage();
 
