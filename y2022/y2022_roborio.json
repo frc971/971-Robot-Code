@@ -4,7 +4,17 @@
       "name": "/roborio/aos",
       "type": "aos.JoystickState",
       "source_node": "roborio",
-      "frequency": 75
+      "frequency": 75,
+      "logger_nodes" : [
+        "imu"
+      ],
+      "destination_nodes": [
+        {
+          "name": "imu",
+          "priority": 5,
+          "time_to_live": 50000000
+        }
+      ]
     },
     {
       "name": "/roborio/aos",
