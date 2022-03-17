@@ -301,21 +301,21 @@ std::optional<double> CatapultController::Next() {
   }
 
   double u;
-  size_t solution_horizon = 0;
+  size_t solution_number = 0;
   if (current_controller_ == 0u) {
-    while (solution_horizon < problems_[current_controller_]->horizon() &&
-           problems_[current_controller_]->U(solution_horizon) < 0.01) {
-      ++solution_horizon;
+    while (solution_number < problems_[current_controller_]->horizon() &&
+           problems_[current_controller_]->U(solution_number) < 0.01) {
+      u = problems_[current_controller_]->U(solution_number);
+      ++solution_number;
     }
-  } else {
-    u = problems_[current_controller_]->U(0);
   }
+  u = problems_[current_controller_]->U(solution_number);
 
-  if (current_controller_ + 1u + solution_horizon < problems_.size()) {
-    problems_[current_controller_ + solution_horizon + 1]->WarmStart(
+  if (current_controller_ + 1u + solution_number < problems_.size()) {
+    problems_[current_controller_ + solution_number + 1]->WarmStart(
         *problems_[current_controller_]);
   }
-  ++current_controller_;
+  current_controller_ += 1u + solution_number;
   return u;
 }
 

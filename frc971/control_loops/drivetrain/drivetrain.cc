@@ -30,8 +30,8 @@ namespace drivetrain {
 
 namespace {
 // Maximum variation to allow in the gyro when zeroing.
-constexpr double kMaxYawGyroZeroingRange = 0.05;
-}
+constexpr double kMaxYawGyroZeroingRange = 0.08;
+}  // namespace
 
 DrivetrainFilters::DrivetrainFilters(const DrivetrainConfig<double> &dt_config,
                                      ::aos::EventLoop *event_loop,
@@ -219,8 +219,10 @@ void DrivetrainFilters::Correct(aos::monotonic_clock::time_point monotonic_now,
     case GyroType::FLIPPED_SPARTAN_GYRO:
       if (!yaw_gyro_zero_.has_value()) {
         yaw_gyro_zeroer_.AddData(last_gyro_rate_);
-        if (yaw_gyro_zeroer_.GetRange() < kMaxYawGyroZeroingRange) {
+        if (yaw_gyro_zeroer_.full() && yaw_gyro_zeroer_.GetRange() < kMaxYawGyroZeroingRange) {
           yaw_gyro_zero_ = yaw_gyro_zeroer_.GetAverage()(0);
+          VLOG(1) << "Zeroed to " << *yaw_gyro_zero_ << " Range "
+                  << yaw_gyro_zeroer_.GetRange();
         }
       }
       ready_ = yaw_gyro_zero_.has_value();
