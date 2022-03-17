@@ -8,6 +8,7 @@ cc_library(
         "//aos/logging",
         "//frc971:constants",
         "//frc971/control_loops:pose",
+        "//frc971/zeroing:wrap",
     ],
 )
 
