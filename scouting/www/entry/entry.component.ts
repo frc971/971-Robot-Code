@@ -10,7 +10,7 @@ import SubmitDataScouting = submit_data_scouting.scouting.webserver.requests.Sub
 import SubmitDataScoutingResponse = submit_data_scouting_response.scouting.webserver.requests.SubmitDataScoutingResponse;
 import ErrorResponse = error_response.scouting.webserver.requests.ErrorResponse;
 
-type Section = 'Team Selection'|'Auto'|'TeleOp'|'Climb'|'Other'|'Review and Submit'|'Home'
+type Section = 'Team Selection'|'Auto'|'TeleOp'|'Climb'|'Other'|'Review and Submit'|'Success'
 type Level = 'NoAttempt'|'Failed'|'FailedWithPlentyOfTime'|'Low'|'Medium'|'High'|'Transversal'
 
 @Component({
@@ -117,8 +117,8 @@ export class EntryComponent {
             '/requests/submit/data_scouting', {method: 'POST', body: buffer});
 
         if (res.ok) {
-            // We successfully submitted the data. Go back to Home.
-            this.section = 'Home';
+            // We successfully submitted the data. Report success.
+            this.section = 'Success';
         } else {
             const resBuffer = await res.arrayBuffer();
             const fbBuffer = new ByteBuffer(new Uint8Array(resBuffer));

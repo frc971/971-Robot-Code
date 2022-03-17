@@ -197,4 +197,9 @@
           <button class="btn btn-primary" (click)="nextSection()">Submit</button>
         </div>
     </div>
+
+    <div *ngSwitchCase="'Success'" id="success" class="container-fluid">
+        <h4>Success</h4>
+        <div>Please reload the page to submit more data.</div>
+    </div>
 </ng-container>

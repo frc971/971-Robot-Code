@@ -155,7 +155,7 @@ describe('The scouting web page', () => {
 
     await element(by.buttonText('Submit')).click();
     await browser.wait(EC.textToBePresentInElement(
-        element(by.css('.header')), 'Home'));
+        element(by.css('.header')), 'Success'));
 
     // TODO(phil): Make sure the data made its way to the database correctly.
   });
