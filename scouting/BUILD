@@ -1,4 +1,5 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("//tools/build_rules:apache.bzl", "apache_wrapper")
 load("//tools/build_rules:js.bzl", "protractor_ts_test", "turn_files_into_runfiles")
 
 go_binary(
@@ -30,8 +31,7 @@ sh_binary(
     data = [
         ":main_bundle_compiled_runfiles",
         "//scouting/webserver",
-        "//scouting/www:index.html",
-        "//scouting/www:zonejs_copy",
+        "//scouting/www:static_files",
     ],
     visibility = ["//visibility:public"],
 )
@@ -43,4 +43,9 @@ protractor_ts_test(
     ],
     on_prepare = ":scouting_test.protractor.on-prepare.js",
     server = "//scouting/testing:scouting_test_servers",
+)
+
+apache_wrapper(
+    name = "https",
+    binary = ":scouting",
 )

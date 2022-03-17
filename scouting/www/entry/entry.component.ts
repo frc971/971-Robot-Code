@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 
 import * as flatbuffer_builder from 'org_frc971/external/com_github_google_flatbuffers/ts/builder';
 import {ByteBuffer} from 'org_frc971/external/com_github_google_flatbuffers/ts/byte-buffer';
@@ -9,8 +10,8 @@ import SubmitDataScouting = submit_data_scouting.scouting.webserver.requests.Sub
 import SubmitDataScoutingResponse = submit_data_scouting_response.scouting.webserver.requests.SubmitDataScoutingResponse;
 import ErrorResponse = error_response.scouting.webserver.requests.ErrorResponse;
 
-type Section = 'Team Selection'|'Auto'|'TeleOp'|'Climb'|'Defense'|'Review and Submit'|'Home'
-type Level = 'Failed'|'Low'|'Medium'|'High'|'Transversal'
+type Section = 'Team Selection'|'Auto'|'TeleOp'|'Climb'|'Other'|'Review and Submit'|'Home'
+type Level = 'NoAttempt'|'Failed'|'FailedWithPlentyOfTime'|'Low'|'Medium'|'High'|'Transversal'
 
 @Component({
     selector: 'app-entry',
@@ -29,34 +30,15 @@ export class EntryComponent {
     teleShotsMissed: number = 0;
     defensePlayedOnScore: number = 0;
     defensePlayedScore: number = 0;
-    level: Level;
-    proper: boolean = false;
-    climbed: boolean = false;
+    level: Level = 'NoAttempt';
     errorMessage: string = '';
+    noShow: boolean = false;
+    neverMoved: boolean = false;
+    batteryDied: boolean = false;
+    mechanicallyBroke: boolean = false;
+    lostComs: boolean = false;
 
-    toggleProper() {
-        this.proper = !this.proper;
-    }
-
-    setFailed() {
-        this.level = 'Failed';
-    }
-
-    setLow() {
-        this.level = 'Low';
-    }
-
-    setMedium() {
-        this.level = 'Medium';
-    }
-
-    setHigh() {
-        this.level = 'High';
-    }
-
-    setTransversal() {
-        this.level = 'Transversal';
-    }
+    @ViewChild("header") header: ElementRef;
 
     nextSection() {
         if (this.section === 'Team Selection') {
@@ -66,12 +48,16 @@ export class EntryComponent {
         } else if (this.section === 'TeleOp') {
             this.section = 'Climb';
         } else if (this.section === 'Climb') {
-            this.section = 'Defense';
-        } else if (this.section === 'Defense') {
+            this.section = 'Other';
+        } else if (this.section === 'Other') {
             this.section = 'Review and Submit';
         } else if (this.section === 'Review and Submit') {
             this.submitDataScouting();
+            return;
         }
+        // Scroll back to the top so that we can be sure the user sees the
+        // entire next screen. Otherwise it's easy to overlook input fields.
+        this.scrollToTop();
     }
 
     prevSection() {
@@ -81,11 +67,19 @@ export class EntryComponent {
         this.section = 'Auto';
       } else if (this.section === 'Climb') {
         this.section = 'TeleOp';
-      } else if (this.section === 'Defense') {
+      } else if (this.section === 'Other') {
         this.section = 'Climb';
       } else if (this.section === 'Review and Submit') {
-        this.section = 'Defense';
+        this.section = 'Other';
       }
+      // Scroll back to the top so that we can be sure the user sees the
+      // entire previous screen. Otherwise it's easy to overlook input
+      // fields.
+      this.scrollToTop();
+    }
+
+    private scrollToTop() {
+        this.header.nativeElement.scrollIntoView();
     }
 
     async submitDataScouting() {

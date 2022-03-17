@@ -1,4 +1,4 @@
-<div class="header">
+<div class="header" #header>
     <h2>{{section}}</h2>
 </div>
 
@@ -21,8 +21,7 @@
 
     <div *ngSwitchCase="'Auto'" id="auto" class="container-fluid">
         <div class="row">
-            <!--Image here-->
-            <h4>Image</h4>
+            <img src="/pictures/field/balls.jpeg" alt="Image">
             <form>
                 <!--Choice for each ball location-->
                 <input type="checkbox" name="balls" value="1" id="ball-1"><label for="ball-1">Ball 1</label>
@@ -30,12 +29,10 @@
                 <input type="checkbox" name="balls" value="3" id="ball-3"><label for="ball-3">Ball 3</label>
                 <input type="checkbox" name="balls" value="4" id="ball-4"><label for="ball-4">Ball 4</label><br>
                 <input type="checkbox" name="balls" value="5" id="ball-5"><label for="ball-5">Ball 5</label>
-                <input type="checkbox" name="balls" value="6" id="ball-6"><label for="ball-6">Ball 6</label>
             </form>
         </div>
         <div class="row">
-            <!--Image here-->
-            <h4>Image</h4>
+            <img src="/pictures/field/quadrants.jpeg" alt="Image">
             <form>
                 <input type="radio" name="quadrant" id="first" value="Quadrant 1">
                 <label for="first">Quadrant 1</label>
@@ -71,32 +68,22 @@
     </div>
 
     <div *ngSwitchCase="'Climb'" id="climb" class="container-fluid">
-        <div class="row">
-            <form>
-                <input [(ngModel)]="climbed" type="radio" name="climbing" id="continue" [value]="false">
-                <label for="continue">Kept Shooting</label><br>
-                <input [(ngModel)]="climbed" type="radio" name="climbing" id="climbed" [value]="true">
-                <label for="climbed">Attempted to Climb</label><br>
-            </form>
-        </div>
-        <div *ngIf="climbed">
-            <h4>Bar Made</h4>
-            <form>
-                <input [ngModel]="level" (click)="setLow()" type="radio" name="level" id="low" value="Low">
-                <label for="low">Low</label><br>
-                <input [ngModel]="level" (click)="setMedium()" type="radio" name="level" id="medium" value="Medium">
-                <label for="medium">Medium</label><br>
-                <input [ngModel]="level" (click)="setHigh()" type="radio" name="level" id="high" value="High">
-                <label for="high">High</label><br>
-                <input [ngModel]="level" (click)="setTransversal()" type="radio" name="level" id="transversal" value="Transversal">
-                <label for="transversal">Transversal</label><br>
-                <input [ngModel]="level" (click)="setFailed()" type="radio" name="level" id="failed" value="Failed">
-                <label for="failed">Failed</label><br>
-
-                <input (click)="toggleProper()" type="checkbox" id="proper">
-                <label for="proper">~10 seconds to attempt next level?</label>
-            </form>
-        </div>
+        <form>
+            <input [(ngModel)]="level" type="radio" name="level" id="no_attempt" value="NoAttempt">
+            <label for="no_attempt">No climbing attempt</label><br>
+            <input [(ngModel)]="level" type="radio" name="level" id="low" value="Low">
+            <label for="low">Low</label><br>
+            <input [(ngModel)]="level" type="radio" name="level" id="medium" value="Medium">
+            <label for="medium">Medium</label><br>
+            <input [(ngModel)]="level" type="radio" name="level" id="high" value="High">
+            <label for="high">High</label><br>
+            <input [(ngModel)]="level" type="radio" name="level" id="transversal" value="Transversal">
+            <label for="transversal">Transversal</label><br>
+            <input [(ngModel)]="level" type="radio" name="level" id="failed" value="Failed">
+            <label for="failed">Failed</label><br>
+            <input [(ngModel)]="level" type="radio" name="level" id="failed_with_plenty_of_time" value="FailedWithPlentyOfTime">
+            <label for="failed_with_plenty_of_time">Failed (attempted with more than 10 seconds left)</label><br>
+        </form>
         <div class="row">
             <h4>Comments</h4>
             <textarea></textarea>
@@ -107,42 +94,53 @@
         </div>
     </div>
 
-    <div *ngSwitchCase="'Defense'" id="defense" class="container-fluid">
-        <h4 class="text-center">How much defense did other robots play on this robot?</h4>
-
+    <div *ngSwitchCase="'Other'" id="defense" class="container-fluid">
+        <h4 class="text-center">How much did other robots play defense against this robot?</h4>
+        0 - No defense played against this robot<br/>
+        1 - Minimal defense<br/>
+        2 - Some defense<br/>
+        3 - About half the match was played against defense<br/>
+        4 - Good amount of defense<br/>
+        5 - Constant defense
         <div class="row" style="min-height: 50px">
-            <div class="col">
-                <h6>None</h6>
+            <div class="col-10">
+                <input type="range" min="0" max="5" [(ngModel)]="defensePlayedOnScore">
             </div>
-
             <div class="col">
-                <input type="range" min="0" max="5" value="0" [(ngModel)]="defensePlayedOnScore">
-            </div>
-
-            <div class="col">
-                <h6>A lot</h6>
+                <h6>{{defensePlayedOnScore}}</h6>
             </div>
         </div>
 
-        <h6 class="text-center">{{defensePlayedOnScore}}</h6>
-
-        <h4 class="text-center">How much defense did this robot play?</h4>
+        <h4 class="text-center">How much did this robot play defense against other robots?</h4>
+        0 - This robot did not play defense<br/>
+        1 - Minimal defense<br/>
+        2 - Some defense<br/>
+        3 - Defense was played for about half the match<br/>
+        4 - Good amount of defense<br/>
+        5 - Constant defense
+        <div class="row">
+            <div class="col-10">
+                <input type="range" min="0" max="5" [(ngModel)]="defensePlayedScore">
+            </div>
+            <div class="col">
+                <h6>{{defensePlayedScore}}</h6>
+            </div>
+        </div>
 
         <div class="row">
-
-            <div class="col">
-                <h6>None</h6>
-            </div>
-
-            <div class="col">
-                <input type="range" min="0" max="5" value="0" [(ngModel)]="defensePlayedScore">
-            </div>
-
-            <div class="col">
-                <h6>A lot</h6>
-            </div>
+            <form>
+                <input type="checkbox" [(ngModel)]="noShow" name="no_show" id="no_show">
+                <label for="no_show">No show</label><br>
+                <input type="checkbox" [(ngModel)]="neverMoved" name="never_moved" id="never_moved">
+                <label for="never_moved">Never moved</label><br>
+                <input type="checkbox" [(ngModel)]="batteryDied" name="battery_died" id="battery_died">
+                <label for="battery_died">Battery died</label><br>
+                <input type="checkbox" [(ngModel)]="mechanicallyBroke" name="mechanically_broke" id="mechanically_broke">
+                <label for="mechanically_broke">Broke (mechanically)</label><br/>
+                <input type="checkbox" [(ngModel)]="lostComs" name="lost_coms" id="lost_coms">
+                <label for="lost_coms">Lost coms</label>
+            </form>
         </div>
-        <h6 class="text-center">{{defensePlayedScore}}</h6>
 
         <div class="buttons">
           <button class="btn btn-primary" (click)="prevSection()">Back</button>
@@ -173,19 +171,18 @@
 
         <h4>Climb</h4>
         <ul>
-            <div *ngIf="climbed">
-                <li *ngIf="climbed">Attempted to Climb?: Yes</li>
-                <li>Level: {{level}}</li>
-                <li *ngIf="proper">Proper Attempt: Yes</li>
-                <li *ngIf="!proper">Proper Attempt: No</li>
-            </div>
-            <li *ngIf="!climbed">Attempted to Climb: No</li>
+            <li>Level: {{level}}</li>
         </ul>
 
-        <h4>Defense</h4>
+        <h4>Other</h4>
         <ul>
             <li>Defense Played On Rating: {{defensePlayedOnScore}}</li>
             <li>Defense Played Rating: {{defensePlayedScore}}</li>
+            <li>No show: {{noShow}}</li>
+            <li>Never moved: {{neverMoved}}</li>
+            <li>Battery died: {{batteryDied}}</li>
+            <li>Broke (mechanically): {{mechanicallyBroke}}</li>
+            <li>Lost coms: {{lostComs}}</li>
         </ul>
 
         <span class="error_message">{{ errorMessage }}</span>

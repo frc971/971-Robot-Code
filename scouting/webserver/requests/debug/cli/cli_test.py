@@ -91,7 +91,8 @@ class TestDebugCli(unittest.TestCase):
             UpperGoalTele: (int32) 14,
             LowerGoalTele: (int32) 15,
             DefenseRating: (int32) 3,
-            Climbing: (int32) 1
+            Climbing: (int32) 1,
+            CollectedBy: (string) (len=9) "debug_cli"
             }"""), stdout)
 
     def test_request_all_matches(self):

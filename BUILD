@@ -11,6 +11,7 @@ exports_files([
 # gazelle:go_generate_proto false
 # gazelle:exclude third_party
 # gazelle:exclude external
+# gazelle:resolve go github.com/phst/runfiles @com_github_phst_runfiles//:go_default_library
 # gazelle:resolve go github.com/frc971/971-Robot-Code/build_tests/fbs //build_tests:test_go_fbs
 # gazelle:resolve go github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/error_response //scouting/webserver/requests/messages:error_response_go_fbs
 # gazelle:resolve go github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_data_scouting //scouting/webserver/requests/messages:submit_data_scouting_go_fbs

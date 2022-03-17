@@ -224,12 +224,14 @@ func TestRequestDataScouting(t *testing.T) {
 				ShotsMissed: 1, UpperGoalShots: 2, LowerGoalShots: 3,
 				ShotsMissedAuto: 4, UpperGoalAuto: 5, LowerGoalAuto: 6,
 				PlayedDefense: 7, Climbing: 8,
+				CollectedBy: "john",
 			},
 			{
 				TeamNumber: 972, MatchNumber: 1,
 				ShotsMissed: 2, UpperGoalShots: 3, LowerGoalShots: 4,
 				ShotsMissedAuto: 5, UpperGoalAuto: 6, LowerGoalAuto: 7,
 				PlayedDefense: 8, Climbing: 9,
+				CollectedBy: "andrea",
 			},
 		},
 	}
@@ -252,17 +254,20 @@ func TestRequestDataScouting(t *testing.T) {
 			// MissedShotsAuto, UpperGoalAuto, LowerGoalAuto,
 			// MissedShotsTele, UpperGoalTele, LowerGoalTele,
 			// DefenseRating, Climbing,
+			// CollectedBy,
 			{
 				971, 1,
 				4, 5, 6,
 				1, 2, 3,
 				7, 8,
+				"john",
 			},
 			{
 				972, 1,
 				5, 6, 7,
 				2, 3, 4,
 				8, 9,
+				"andrea",
 			},
 		},
 	}

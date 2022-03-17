@@ -11,6 +11,7 @@ table Stats {
     lower_goal_tele:int (id:7);
     defense_rating:int (id:8);
     climbing:int (id:9);
+    collected_by:string (id:10);
 }
 
 table RequestDataScoutingResponse {

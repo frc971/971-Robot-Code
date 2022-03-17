@@ -3,6 +3,7 @@
 The servers are:
  - The fake TBA server
  - The actual web server
+ - The postgres database
 """
 
 import argparse
@@ -29,6 +30,15 @@ def wait_for_server(port: int):
             connection.close()
             time.sleep(0.01)
 
+def create_db_config(tmpdir: Path) -> Path:
+    config = tmpdir / "db_config.json"
+    config.write_text(json.dumps({
+        "username": "test",
+        "password": "password",
+        "port": 5432,
+    }))
+    return config
+
 def create_tba_config(tmpdir: Path) -> Path:
     # Configure the scouting webserver to scrape data from our fake TBA
     # server.
@@ -54,13 +64,19 @@ class Runner:
         self.tmpdir = Path(os.environ["TEST_TMPDIR"]) / "servers"
         self.tmpdir.mkdir(exist_ok=True)
 
-        db_path = self.tmpdir / "scouting.db"
+        db_config = create_db_config(self.tmpdir)
         tba_config = create_tba_config(self.tmpdir)
+
+        # The database needs to be running and addressable before the scouting
+        # webserver can start.
+        self.testdb_server = subprocess.Popen(
+            ["scouting/db/testdb_server/testdb_server_/testdb_server"])
+        wait_for_server(5432)
 
         self.webserver = subprocess.Popen([
             "scouting/scouting",
             f"--port={port}",
-            f"--database={db_path}",
+            f"--db_config={db_config}",
             f"--tba_config={tba_config}",
         ])
 
@@ -78,7 +94,7 @@ class Runner:
 
     def stop(self):
         """Stops the services needed for testing the scouting app."""
-        servers = (self.webserver, self.fake_tba_api)
+        servers = (self.webserver, self.testdb_server, self.fake_tba_api)
         for server in servers:
             server.terminate()
         for server in servers:

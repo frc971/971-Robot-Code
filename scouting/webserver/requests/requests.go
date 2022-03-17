@@ -1,9 +1,11 @@
 package requests
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -90,12 +92,44 @@ func parseSubmitDataScouting(w http.ResponseWriter, buf []byte) (*SubmitDataScou
 	return result, success
 }
 
+// Parses the authorization information that the browser inserts into the
+// headers.  The authorization follows this format:
+//
+//  req.Headers["Authorization"] = []string{"Basic <base64 encoded username:password>"}
+func parseUsername(req *http.Request) string {
+	auth, ok := req.Header["Authorization"]
+	if !ok {
+		return "unknown"
+	}
+
+	parts := strings.Split(auth[0], " ")
+	if !(len(parts) == 2 && parts[0] == "Basic") {
+		return "unknown"
+	}
+
+	info, err := base64.StdEncoding.DecodeString(parts[1])
+	if err != nil {
+		log.Println("ERROR: Failed to parse Basic authentication.")
+		return "unknown"
+	}
+
+	loginParts := strings.Split(string(info), ":")
+	if len(loginParts) != 2 {
+		return "unknown"
+	}
+	return loginParts[0]
+}
+
 // Handles a SubmitDataScouting request.
 type submitDataScoutingHandler struct {
 	db Database
 }
 
 func (handler submitDataScoutingHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	// Get the username of the person submitting the data.
+	username := parseUsername(req)
+	log.Println("Got data scouting data from", username)
+
 	requestBytes, err := io.ReadAll(req.Body)
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, fmt.Sprint("Failed to read request bytes:", err))
@@ -118,6 +152,7 @@ func (handler submitDataScoutingHandler) ServeHTTP(w http.ResponseWriter, req *h
 		LowerGoalShots:  request.LowerGoalTele(),
 		PlayedDefense:   request.DefenseRating(),
 		Climbing:        request.Climbing(),
+		CollectedBy:     username,
 	}
 
 	err = handler.db.AddToStats(stats)
@@ -162,7 +197,7 @@ func (handler requestAllMatchesHandler) ServeHTTP(w http.ResponseWriter, req *ht
 
 	matches, err := handler.db.ReturnMatches()
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Faled to query database: ", err))
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Failed to query database: ", err))
 		return
 	}
 
@@ -291,6 +326,7 @@ func (handler requestDataScoutingHandler) ServeHTTP(w http.ResponseWriter, req *
 			LowerGoalTele:   stat.LowerGoalShots,
 			DefenseRating:   stat.PlayedDefense,
 			Climbing:        stat.Climbing,
+			CollectedBy:     stat.CollectedBy,
 		})
 	}
 
@@ -382,7 +418,7 @@ func (handler refreshMatchListHandler) ServeHTTP(w http.ResponseWriter, req *htt
 			return
 		}
 		// Add the match to the database.
-		handler.db.AddToMatch(db.Match{
+		err = handler.db.AddToMatch(db.Match{
 			MatchNumber: int32(match.MatchNumber),
 			// TODO(phil): What does Round mean?
 			Round:     1,
@@ -394,6 +430,11 @@ func (handler refreshMatchListHandler) ServeHTTP(w http.ResponseWriter, req *htt
 			B2:        blue[1],
 			B3:        blue[2],
 		})
+		if err != nil {
+			respondWithError(w, http.StatusInternalServerError, fmt.Sprintf(
+				"Failed to add match %d to the database: %v", match.MatchNumber, err))
+			return
+		}
 	}
 
 	var response RefreshMatchListResponseT
