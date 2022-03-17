@@ -8,6 +8,7 @@
 #include "frc971/control_loops/drivetrain/localizer.h"
 #include "y2022/localizer/localizer_output_generated.h"
 #include "aos/network/message_bridge_server_generated.h"
+#include "frc971/input/joystick_state_generated.h"
 
 namespace y2022 {
 namespace control_loops {
@@ -67,6 +68,7 @@ class Localizer : public frc971::control_loops::drivetrain::LocalizerInterface {
   HybridEkf ekf_;
 
   aos::Fetcher<frc971::controls::LocalizerOutput> localizer_output_fetcher_;
+  aos::Fetcher<aos::JoystickState> joystick_state_fetcher_;
   aos::Fetcher<aos::message_bridge::ServerStatistics> clock_offset_fetcher_;
 
   // Target selector to allow us to satisfy the LocalizerInterface requirements.

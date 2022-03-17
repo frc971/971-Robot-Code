@@ -14,6 +14,8 @@ Localizer::Localizer(
       localizer_output_fetcher_(
           event_loop_->MakeFetcher<frc971::controls::LocalizerOutput>(
               "/localizer")),
+      joystick_state_fetcher_(
+          event_loop_->MakeFetcher<aos::JoystickState>("/aos")),
       clock_offset_fetcher_(
           event_loop_->MakeFetcher<aos::message_bridge::ServerStatistics>(
               "/aos")) {
@@ -41,6 +43,13 @@ void Localizer::Update(const Eigen::Matrix<double, 2, 1> &U,
                        double gyro_rate, const Eigen::Vector3d &accel) {
   ekf_.UpdateEncodersAndGyro(left_encoder, right_encoder, gyro_rate,
                              U.cast<float>(), accel.cast<float>(), now);
+  joystick_state_fetcher_.Fetch();
+  if (joystick_state_fetcher_.get() != nullptr &&
+      joystick_state_fetcher_->autonomous()) {
+    // TODO(james): This is an inelegant way to avoid having the localizer mess
+    // up splines. Do better.
+    return;
+  }
   if (localizer_output_fetcher_.Fetch()) {
     clock_offset_fetcher_.Fetch();
     bool message_bridge_connected = true;
