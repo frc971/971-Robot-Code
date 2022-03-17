@@ -172,6 +172,7 @@ cc_library(
         ":superstructure_output_fbs",
         ":superstructure_status_fbs",
         "//aos/events:event_loop",
+        "//aos/network:message_bridge_client_fbs",
         "//aos/network:message_bridge_server_fbs",
         "//frc971/control_loops:control_loop",
         "//frc971/control_loops:control_loops_fbs",

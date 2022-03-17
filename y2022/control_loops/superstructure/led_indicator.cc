@@ -30,9 +30,20 @@ void LedIndicator::DisplayLed(uint8_t r, uint8_t g, uint8_t b) {
 }
 
 namespace {
-bool DisconnectedPi(const aos::message_bridge::ServerStatistics &server_stats) {
-  for (const auto *pi_status : *server_stats.connections()) {
-    if (pi_status->state() == aos::message_bridge::State::DISCONNECTED) {
+bool DisconnectedPiServer(
+    const aos::message_bridge::ServerStatistics &server_stats) {
+  for (const auto *pi_server_status : *server_stats.connections()) {
+    if (pi_server_status->state() == aos::message_bridge::State::DISCONNECTED) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool DisconnectedPiClient(
+    const aos::message_bridge::ClientStatistics &client_stats) {
+  for (const auto *pi_client_status : *client_stats.connections()) {
+    if (pi_client_status->state() == aos::message_bridge::State::DISCONNECTED) {
       return true;
     }
   }
@@ -50,6 +61,7 @@ void LedIndicator::DecideColor() {
   superstructure_status_fetcher_.Fetch();
   server_statistics_fetcher_.Fetch();
   drivetrain_output_fetcher_.Fetch();
+  client_statistics_fetcher_.Fetch();
 
   // Estopped
   if (superstructure_status_fetcher_.get() &&
@@ -66,12 +78,14 @@ void LedIndicator::DecideColor() {
   }
 
   // Pi disconnected
-  if (server_statistics_fetcher_.get() &&
-      DisconnectedPi(*server_statistics_fetcher_)) {
+  if ((server_statistics_fetcher_.get() &&
+       DisconnectedPiServer(*server_statistics_fetcher_)) ||
+      (client_statistics_fetcher_.get() &&
+       DisconnectedPiClient(*client_statistics_fetcher_))) {
     if (disconnected_flash_) {
       DisplayLed(255, 0, 0);
     } else {
-      DisplayLed(0, 0, 255);
+      DisplayLed(0, 255, 0);
     }
 
     if (disconnected_counter_ % kFlashIterations == 0) {
