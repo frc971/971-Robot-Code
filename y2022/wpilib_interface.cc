@@ -439,6 +439,27 @@ class SuperstructureWriter
     catapult_falcon_1_ = ::std::move(t);
   }
 
+  void set_catapult_falcon_1(
+      ::std::unique_ptr<::ctre::phoenix::motorcontrol::can::TalonFX> t1,
+      ::std::unique_ptr<::ctre::phoenix::motorcontrol::can::TalonFX> t2) {
+    catapult_falcon_1_can_ = ::std::move(t1);
+    catapult_falcon_2_can_ = ::std::move(t2);
+
+    for (auto &falcon : {catapult_falcon_1_can_, catapult_falcon_2_can_}) {
+      falcon->ConfigSupplyCurrentLimit(
+          {false, Values::kIntakeRollerSupplyCurrentLimit(),
+           Values::kIntakeRollerSupplyCurrentLimit(), 0});
+      falcon->ConfigStatorCurrentLimit(
+          {false, Values::kIntakeRollerStatorCurrentLimit(),
+           Values::kIntakeRollerStatorCurrentLimit(), 0});
+      falcon->SetStatusFramePeriod(ctre::phoenix::motorcontrol::Status_1_General, 5);
+      falcon->SetControlFramePeriod(ctre::phoenix::motorcontrol::Control_3_General, 5);
+    }
+    catapult_falcon_2_can_->Follow(
+        *catapult_falcon_1_can_,
+        ctre::phoenix::motorcontrol::FollowerType_PercentOutput);
+  }
+
   void set_intake_falcon_front(::std::unique_ptr<frc::TalonFX> t) {
     intake_falcon_front_ = ::std::move(t);
   }
@@ -507,7 +528,13 @@ class SuperstructureWriter
     intake_falcon_back_->SetDisabled();
     transfer_roller_victor_front_->SetDisabled();
     transfer_roller_victor_back_->SetDisabled();
-    catapult_falcon_1_->SetDisabled();
+    if (catapult_falcon_1_) {
+      catapult_falcon_1_->SetDisabled();
+    }
+    if (catapult_falcon_1_can_) {
+      catapult_falcon_1_can_->Set(
+          ctre::phoenix::motorcontrol::ControlMode::Disabled, 0);
+    }
     turret_falcon_->SetDisabled();
   }
 
@@ -525,7 +552,12 @@ class SuperstructureWriter
 
     WriteCan(-output.flipper_arms_voltage(), flipper_arms_falcon_.get());
 
-    WritePwm(output.catapult_voltage(), catapult_falcon_1_.get());
+    if (catapult_falcon_1_) {
+      WritePwm(output.catapult_voltage(), catapult_falcon_1_.get());
+    }
+    if (catapult_falcon_1_can_) {
+      WriteCan(output.catapult_voltage(), catapult_falcon_1_can_.get());
+    }
 
     WritePwm(-output.turret_voltage(), turret_falcon_.get());
   }
@@ -550,6 +582,9 @@ class SuperstructureWriter
 
   ::std::shared_ptr<::ctre::phoenix::motorcontrol::can::TalonFX>
       flipper_arms_falcon_;
+
+  ::std::shared_ptr<::ctre::phoenix::motorcontrol::can::TalonFX>
+      catapult_falcon_1_can_, catapult_falcon_2_can_;
 
   ::std::unique_ptr<::frc::TalonFX> turret_falcon_, catapult_falcon_1_,
       climber_falcon_;
@@ -699,7 +734,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     superstructure_writer.set_flipper_arms_falcon(
         make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(2));
 
-    superstructure_writer.set_catapult_falcon_1(make_unique<::frc::TalonFX>(9));
+    superstructure_writer.set_catapult_falcon_1(make_unique<frc::TalonFX>(9));
 
     AddLoop(&output_event_loop);
 
