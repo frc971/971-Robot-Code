@@ -110,7 +110,8 @@ class ModelBasedLocalizer {
       const control_loops::drivetrain::DrivetrainConfig<double> &dt_config);
   void HandleImu(aos::monotonic_clock::time_point t,
                  const Eigen::Vector3d &gyro, const Eigen::Vector3d &accel,
-                 const Eigen::Vector2d encoders, const Eigen::Vector2d voltage);
+                 const std::optional<Eigen::Vector2d> encoders,
+                 const Eigen::Vector2d voltage);
   void HandleTurret(aos::monotonic_clock::time_point sample_time,
                     double turret_position, double turret_velocity);
   void HandleImageMatch(aos::monotonic_clock::time_point sample_time,

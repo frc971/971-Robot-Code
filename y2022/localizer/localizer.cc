@@ -258,11 +258,10 @@ void ModelBasedLocalizer::UpdateState(
   state->model_state += K * (Z - H * state->model_state);
 }
 
-void ModelBasedLocalizer::HandleImu(aos::monotonic_clock::time_point t,
-                                    const Eigen::Vector3d &gyro,
-                                    const Eigen::Vector3d &accel,
-                                    const Eigen::Vector2d encoders,
-                                    const Eigen::Vector2d voltage) {
+void ModelBasedLocalizer::HandleImu(
+    aos::monotonic_clock::time_point t, const Eigen::Vector3d &gyro,
+    const Eigen::Vector3d &accel, const std::optional<Eigen::Vector2d> encoders,
+    const Eigen::Vector2d voltage) {
   VLOG(2) << t;
   if (t_ == aos::monotonic_clock::min_time) {
     t_ = t;
@@ -323,13 +322,17 @@ void ModelBasedLocalizer::HandleImu(aos::monotonic_clock::time_point t,
     R.diagonal() << 1e-9, 1e-9, 1e-13;
   }
 
-  const Eigen::Matrix<double, kNModelOutputs, 1> Z(encoders(0), encoders(1),
-                                                   yaw_rate);
+  const Eigen::Matrix<double, kNModelOutputs, 1> Z =
+      encoders.has_value()
+          ? Eigen::Vector3d(encoders.value()(0), encoders.value()(1), yaw_rate)
+          : Eigen::Vector3d(current_state_.model_state(kLeftEncoder),
+                            current_state_.model_state(kRightEncoder),
+                            yaw_rate);
 
   if (branches_.empty()) {
     VLOG(2) << "Initializing";
-    current_state_.model_state(kLeftEncoder) = encoders(0);
-    current_state_.model_state(kRightEncoder) = encoders(1);
+    current_state_.model_state(kLeftEncoder) = Z(0);
+    current_state_.model_state(kRightEncoder) = Z(1);
     current_state_.branch_time = t;
     branches_.Push(current_state_);
   }
@@ -389,7 +392,7 @@ void ModelBasedLocalizer::HandleImu(aos::monotonic_clock::time_point t,
       current_state_.accel_state = branches_[0].accel_state;
       current_state_.model_state = branches_[0].model_state;
       current_state_.model_state = ModelStateForAccelState(
-          current_state_.accel_state, encoders, yaw_rate);
+          current_state_.accel_state, Z.topRows<2>(), yaw_rate);
     } else {
       VLOG(2) << "Normal branching";
       current_state_.accel_state =
@@ -407,14 +410,15 @@ void ModelBasedLocalizer::HandleImu(aos::monotonic_clock::time_point t,
       using_model_ = true;
       // Grab the model-based state from back when we stopped diverging.
       current_state_.model_state.topRows<kShareStates>() =
-          ModelStateForAccelState(branches_[0].accel_state, encoders, yaw_rate)
+          ModelStateForAccelState(branches_[0].accel_state, Z.topRows<2>(),
+                                  yaw_rate)
               .topRows<kShareStates>();
       current_state_.accel_state =
           AccelStateForModelState(current_state_.model_state);
     } else {
       // TODO(james): Why was I leaving the encoders/wheel velocities in place?
       current_state_.model_state = ModelStateForAccelState(
-          current_state_.accel_state, encoders, yaw_rate);
+          current_state_.accel_state, Z.topRows<2>(), yaw_rate);
       current_state_.branch_time = t;
     }
   }
@@ -449,7 +453,7 @@ void ModelBasedLocalizer::HandleImu(aos::monotonic_clock::time_point t,
   VLOG(2) << "Input acce " << accel.transpose();
   VLOG(2) << "Input gyro " << gyro.transpose();
   VLOG(2) << "Input voltage " << voltage.transpose();
-  VLOG(2) << "Input encoder " << encoders.transpose();
+  VLOG(2) << "Input encoder " << Z.topRows<2>().transpose();
   VLOG(2) << "yaw rate " << yaw_rate;
 
   CHECK(std::isfinite(last_residual_));
@@ -638,7 +642,7 @@ void ModelBasedLocalizer::HandleImageMatch(
   H_model(1, kY) = 1.0;
   H_accel(0, kX) = 1.0;
   H_accel(1, kY) = 1.0;
-  R.diagonal() << 1e-2, 1e-2;
+  R.diagonal() << 1e-0, 1e-0;
 
   const Eigen::Matrix<double, kNModelStates, 2> K_model =
       P_model_ * H_model.transpose() *
@@ -966,9 +970,12 @@ EventLoopLocalizer::EventLoopLocalizer(
         output_fetcher_.Fetch();
         for (const IMUValues *value : *values.readings()) {
           zeroer_.InsertAndProcessMeasurement(*value);
-          const Eigen::Vector2d encoders{
-              left_encoder_.Unwrap(value->left_encoder()),
-              right_encoder_.Unwrap(value->right_encoder())};
+          const std::optional<Eigen::Vector2d> encoders =
+              zeroer_.Faulted()
+                  ? std::nullopt
+                  : std::make_optional(Eigen::Vector2d{
+                        left_encoder_.Unwrap(value->left_encoder()),
+                        right_encoder_.Unwrap(value->right_encoder())});
           {
             const aos::monotonic_clock::time_point pico_timestamp{
                 std::chrono::microseconds(value->pico_timestamp_us())};
@@ -1016,8 +1023,10 @@ EventLoopLocalizer::EventLoopLocalizer(
             status_builder.add_zeroed(zeroer_.Zeroed());
             status_builder.add_faulted_zero(zeroer_.Faulted());
             status_builder.add_zeroing(zeroer_status);
-            status_builder.add_left_encoder(encoders(0));
-            status_builder.add_right_encoder(encoders(1));
+            if (encoders.has_value()) {
+              status_builder.add_left_encoder(encoders.value()(0));
+              status_builder.add_right_encoder(encoders.value()(1));
+            }
             if (pico_offset_.has_value()) {
               status_builder.add_pico_offset_ns(pico_offset_.value().count());
               status_builder.add_pico_offset_error_ns(
