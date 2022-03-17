@@ -212,7 +212,7 @@ void AutonomousActor::RapidReact() {
   set_turret_goal(constants::Values::kTurretFrontIntakePos());
   set_fire_at_will(true);
   SendSuperstructureGoal();
-  if (!WaitForBallsShot(1)) return;
+  if (!WaitForBallsShot()) return;
   set_fire_at_will(false);
   SendSuperstructureGoal();
 
@@ -227,7 +227,7 @@ void AutonomousActor::RapidReact() {
   RetractBackIntake();
   set_fire_at_will(true);
   SendSuperstructureGoal();
-  if (!WaitForBallsShot(2)) return;
+  if (!WaitForBallsShot()) return;
   set_fire_at_will(false);
   SendSuperstructureGoal();
 
@@ -250,7 +250,7 @@ void AutonomousActor::RapidReact() {
   // Fire the two balls once we stopped
   set_fire_at_will(true);
   SendSuperstructureGoal();
-  if (!WaitForBallsShot(2)) return;
+  if (!WaitForBallsShot()) return;
   set_fire_at_will(false);
   SendSuperstructureGoal();
 
@@ -383,7 +383,27 @@ void AutonomousActor::RetractBackIntake() {
   SendSuperstructureGoal();
 }
 
-[[nodiscard]] bool AutonomousActor::WaitForBallsShot(int num_wanted) {
+[[nodiscard]] bool AutonomousActor::WaitForBallsShot() {
+  CHECK(superstructure_status_fetcher_.Fetch());
+
+  // Don't do anything if we aren't loaded
+  if (superstructure_status_fetcher_->state() !=
+          control_loops::superstructure::SuperstructureState::LOADED &&
+      superstructure_status_fetcher_->state() !=
+          control_loops::superstructure::SuperstructureState::SHOOTING) {
+    LOG(WARNING) << "No balls to shoot";
+    return true;
+  }
+
+  // Since we're loaded, there will atleast be 1 ball to shoot
+  int num_wanted = 1;
+
+  // If we have another ball, we will shoot 2
+  if (superstructure_status_fetcher_->front_intake_has_ball() ||
+      superstructure_status_fetcher_->back_intake_has_ball()) {
+    num_wanted++;
+  }
+
   ::aos::time::PhasedLoop phased_loop(frc971::controls::kLoopFrequency,
                                       event_loop()->monotonic_now(),
                                       ActorBase::kLoopOffset);
