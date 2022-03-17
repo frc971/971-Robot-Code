@@ -15,8 +15,9 @@ async function loadPage() {
 // Protractor since they're not angular elements. We achieve this by checking
 // an invisible checkbox that's off-screen.
 async function disableAlerts() {
-  await browser.executeAsyncScript(function (callback) {
-    let block_alerts = document.getElementById('block_alerts') as HTMLInputElement;
+  await browser.executeAsyncScript(function(callback) {
+    let block_alerts =
+        document.getElementById('block_alerts') as HTMLInputElement;
     block_alerts.checked = true;
     callback();
   });
@@ -47,8 +48,11 @@ function expectReviewFieldToBe(fieldName: string, expectedValue: string) {
 
 // Asserts that the n'th instance of a field on the "Submit and Review"
 // screen has a specific value.
-async function expectNthReviewFieldToBe(fieldName: string, n: number, expectedValue: string) {
-  expect(await element.all(by.cssContainingText('li', `${fieldName}:`)).get(n).getText())
+async function expectNthReviewFieldToBe(
+    fieldName: string, n: number, expectedValue: string) {
+  expect(await element.all(by.cssContainingText('li', `${fieldName}:`))
+             .get(n)
+             .getText())
       .toEqual(`${fieldName}: ${expectedValue}`);
 }
 
@@ -58,8 +62,7 @@ function setTextboxByIdTo(id: string, value: string) {
   // overwrite the text that is there. If we didn't hit CTRL-A to select all
   // the text, we'd be appending to whatever is there already.
   return element(by.id(id)).sendKeys(
-        protractor.Key.CONTROL, 'a', protractor.Key.NULL,
-        value);
+      protractor.Key.CONTROL, 'a', protractor.Key.NULL, value);
 }
 
 describe('The scouting web page', () => {
@@ -71,18 +74,22 @@ describe('The scouting web page', () => {
     // Import the match list before running any tests. Ideally this should be
     // run in beforeEach(), but it's not worth doing that at this time. Our
     // tests are basic enough not to require this.
-    await element(by.cssContainingText('.nav-link', 'Import Match List')).click();
+    await element(by.cssContainingText('.nav-link', 'Import Match List'))
+        .click();
     expect(await getHeadingText()).toEqual('Import Match List');
     await setTextboxByIdTo('year', '2016');
     await setTextboxByIdTo('event_code', 'nytr');
     await element(by.buttonText('Import')).click();
 
     await browser.wait(EC.textToBePresentInElement(
-        element(by.css('.progress_message')), 'Successfully imported match list.'));
+        element(by.css('.progress_message')),
+        'Successfully imported match list.'));
   });
 
   it('should: error on unknown match.', async () => {
     await loadPage();
+
+    await element(by.cssContainingText('.nav-link', 'Data Entry')).click();
 
     // Pick a match that doesn't exist in the 2016nytr match list.
     await setTextboxByIdTo('match_number', '3');
@@ -96,13 +103,15 @@ describe('The scouting web page', () => {
 
     // Attempt to submit and validate the error.
     await element(by.buttonText('Submit')).click();
-    expect(await getErrorMessage()).toContain(
-        'Failed to find team 971 in match 3 in the schedule.');
+    expect(await getErrorMessage())
+        .toContain('Failed to find team 971 in match 3 in the schedule.');
   });
 
 
   it('should: review and submit correct data.', async () => {
     await loadPage();
+
+    await element(by.cssContainingText('.nav-link', 'Data Entry')).click();
 
     // Submit scouting data for a random team that attended 2016nytr.
     expect(await getHeadingText()).toEqual('Team Selection');
@@ -156,8 +165,8 @@ describe('The scouting web page', () => {
     await expectReviewFieldToBe('Broke (mechanically)', 'true');
 
     await element(by.buttonText('Submit')).click();
-    await browser.wait(EC.textToBePresentInElement(
-        element(by.css('.header')), 'Success'));
+    await browser.wait(
+        EC.textToBePresentInElement(element(by.css('.header')), 'Success'));
 
     // TODO(phil): Make sure the data made its way to the database correctly.
   });
@@ -165,23 +174,27 @@ describe('The scouting web page', () => {
   it('should: load all images successfully.', async () => {
     await loadPage();
 
+    await element(by.cssContainingText('.nav-link', 'Data Entry')).click();
+
     // Get to the Auto display with the field pictures.
     expect(await getHeadingText()).toEqual('Team Selection');
     await element(by.buttonText('Next')).click();
     expect(await getHeadingText()).toEqual('Auto');
 
     // We expect 2 fully loaded images.
-    browser.executeAsyncScript(function (callback) {
-      let images = document.getElementsByTagName('img');
-      let numLoaded = 0;
-      for (let i = 0; i < images.length; i += 1) {
-        if (images[i].naturalWidth > 0) {
-          numLoaded += 1;
-        }
-      }
-      callback(numLoaded);
-    }).then(function (numLoaded) {
-      expect(numLoaded).toBe(2);
-    });
+    browser
+        .executeAsyncScript(function(callback) {
+          let images = document.getElementsByTagName('img');
+          let numLoaded = 0;
+          for (let i = 0; i < images.length; i += 1) {
+            if (images[i].naturalWidth > 0) {
+              numLoaded += 1;
+            }
+          }
+          callback(numLoaded);
+        })
+        .then(function(numLoaded) {
+          expect(numLoaded).toBe(2);
+        });
   });
 });

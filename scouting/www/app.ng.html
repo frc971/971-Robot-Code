@@ -5,14 +5,18 @@
 
 <ul class="nav nav-tabs">
   <li class="nav-item">
-    <a class="nav-link" [class.active]="tabIs('Entry')" (click)="switchTabTo('Entry')">Data Entry</a>
+    <a class="nav-link" [class.active]="tabIs('MatchList')" (click)="switchTabToGuarded('MatchList')">Match List</a>
   </li>
   <li class="nav-item">
-    <a class="nav-link" [class.active]="tabIs('ImportMatchList')" (click)="switchTabTo('ImportMatchList')">Import Match List</a>
+    <a class="nav-link" [class.active]="tabIs('Entry')" (click)="switchTabToGuarded('Entry')">Data Entry</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" [class.active]="tabIs('ImportMatchList')" (click)="switchTabToGuarded('ImportMatchList')">Import Match List</a>
   </li>
 </ul>
 
 <ng-container [ngSwitch]="tab">
-  <app-entry *ngSwitchCase="'Entry'"></app-entry>
+  <app-match-list (selectedTeamEvent)="selectTeamInMatch($event)" *ngSwitchCase="'MatchList'"></app-match-list>
+  <app-entry (switchTabsEvent)="switchTabTo($event)" [teamNumber]="selectedTeamInMatch.teamNumber" [matchNumber]="selectedTeamInMatch.matchNumber" *ngSwitchCase="'Entry'"></app-entry>
   <app-import-match-list *ngSwitchCase="'ImportMatchList'"></app-import-match-list>
 </ng-container>

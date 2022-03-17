@@ -19,6 +19,7 @@ ts_library(
     deps = [
         "//scouting/www/entry",
         "//scouting/www/import_match_list",
+        "//scouting/www/match_list",
         "@npm//@angular/animations",
         "@npm//@angular/common",
         "@npm//@angular/core",

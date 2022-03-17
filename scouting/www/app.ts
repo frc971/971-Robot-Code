@@ -1,6 +1,11 @@
 import {Component, ElementRef, ViewChild} from '@angular/core';
 
-type Tab = 'Entry'|'ImportMatchList';
+type Tab = 'MatchList'|'Entry'|'ImportMatchList';
+type TeamInMatch = {
+  teamNumber: number,
+  matchNumber: number,
+  compLevel: string
+};
 
 @Component({
   selector: 'my-app',
@@ -8,14 +13,17 @@ type Tab = 'Entry'|'ImportMatchList';
   styleUrls: ['./common.css']
 })
 export class App {
-  tab: Tab = 'Entry';
+  selectedTeamInMatch:
+      TeamInMatch = {teamNumber: 1, matchNumber: 1, compLevel: 'qm'};
+  tab: Tab = 'MatchList';
 
-  @ViewChild("block_alerts") block_alerts: ElementRef;
+  @ViewChild('block_alerts') block_alerts: ElementRef;
 
   constructor() {
     window.addEventListener('beforeunload', (e) => {
       if (!this.block_alerts.nativeElement.checked) {
-        // Based on https://developer.mozilla.org/en-US/docs/Web/API/WindowEventHandlers/onbeforeunload#example
+        // Based on
+        // https://developer.mozilla.org/en-US/docs/Web/API/WindowEventHandlers/onbeforeunload#example
         // This combination ensures a dialog will be shown on most browsers.
         e.preventDefault();
         e.returnValue = '';
@@ -27,7 +35,12 @@ export class App {
     return this.tab == tab;
   }
 
-  switchTabTo(tab: Tab) {
+  selectTeamInMatch(teamInMatch: TeamInMatch) {
+    this.selectedTeamInMatch = teamInMatch;
+    this.switchTabTo('Entry');
+  }
+
+  switchTabToGuarded(tab: Tab) {
     let shouldSwitch = true;
     if (this.tab !== tab) {
       if (!this.block_alerts.nativeElement.checked) {
@@ -35,7 +48,11 @@ export class App {
       }
     }
     if (shouldSwitch) {
-      this.tab = tab;
+      this.switchTabTo(tab);
     }
+  }
+
+  private switchTabTo(tab: Tab) {
+    this.tab = tab;
   }
 }

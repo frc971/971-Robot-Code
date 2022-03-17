@@ -3,6 +3,7 @@ import {BrowserModule} from '@angular/platform-browser';
 import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
 import {EntryModule} from './entry/entry.module';
 import {ImportMatchListModule} from './import_match_list/import_match_list.module';
+import {MatchListModule} from './match_list/match_list.module';
 
 import {App} from './app';
 
@@ -13,6 +14,7 @@ import {App} from './app';
     BrowserAnimationsModule,
     EntryModule,
     ImportMatchListModule,
+    MatchListModule,
   ],
   exports: [App],
   bootstrap: [App],

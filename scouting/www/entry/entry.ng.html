@@ -193,14 +193,16 @@
 
         <span class="error_message">{{ errorMessage }}</span>
 
-        <div class="buttons">
-          <button class="btn btn-primary" (click)="prevSection()">Back</button>
+        <div class="buttons justify-content-end">
           <button class="btn btn-primary" (click)="nextSection()">Submit</button>
         </div>
     </div>
 
     <div *ngSwitchCase="'Success'" id="success" class="container-fluid">
-        <h4>Success</h4>
-        <div>Please reload the page to submit more data.</div>
+        <span>Successfully submitted scouting data.</span>
+        <div class="buttons justify-content-end">
+          <button class="btn btn-primary" (click)="nextSection()">Continue</button>
+        </div>
+
     </div>
 </ng-container>
