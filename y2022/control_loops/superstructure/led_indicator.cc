@@ -12,6 +12,9 @@ LedIndicator::LedIndicator(aos::EventLoop *event_loop)
           event_loop->MakeFetcher<Status>("/superstructure")),
       server_statistics_fetcher_(
           event_loop->MakeFetcher<aos::message_bridge::ServerStatistics>(
+              "/roborio/aos")),
+      client_statistics_fetcher_(
+          event_loop->MakeFetcher<aos::message_bridge::ClientStatistics>(
               "/roborio/aos")) {
   led::CANdleConfiguration config;
   config.statusLedOffWhenActive = true;
