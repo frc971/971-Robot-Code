@@ -2,6 +2,7 @@
 #define Y2022_CONTROL_LOOPS_SUPERSTRUCTURE_LED_INDICATOR_H_
 
 #include "aos/events/event_loop.h"
+#include "aos/network/message_bridge_client_generated.h"
 #include "aos/network/message_bridge_server_generated.h"
 #include "ctre/phoenix/led/CANdle.h"
 #include "frc971/control_loops/control_loop.h"
@@ -21,7 +22,7 @@ class LedIndicator {
   //
   // Red: estopped
   // Yellow: not zeroed
-  // Flash blue/red: pi disconnected
+  // Flash red/green: pi disconnected
   // Purple: driving fast
   //
   // Statemachine:
@@ -52,6 +53,8 @@ class LedIndicator {
   aos::Fetcher<Status> superstructure_status_fetcher_;
   aos::Fetcher<aos::message_bridge::ServerStatistics>
       server_statistics_fetcher_;
+  aos::Fetcher<aos::message_bridge::ClientStatistics>
+      client_statistics_fetcher_;
 
   size_t disconnected_counter_ = 0;
   bool disconnected_flash_ = false;
