@@ -266,7 +266,7 @@ void ModelBasedLocalizer::HandleImu(
   if (t_ == aos::monotonic_clock::min_time) {
     t_ = t;
   }
-  if (t_ + 2 * kNominalDt < t) {
+  if (t_ + 10 * kNominalDt < t) {
     t_ = t;
     ++clock_resets_;
   }
@@ -970,6 +970,34 @@ EventLoopLocalizer::EventLoopLocalizer(
         output_fetcher_.Fetch();
         for (const IMUValues *value : *values.readings()) {
           zeroer_.InsertAndProcessMeasurement(*value);
+          if (zeroer_.Faulted()) {
+            if (value->checksum_failed()) {
+              imu_fault_tracker_.pico_to_pi_checksum_mismatch++;
+            } else if (value->previous_reading_diag_stat()->checksum_mismatch()) {
+              imu_fault_tracker_.imu_to_pico_checksum_mismatch++;
+            } else {
+              imu_fault_tracker_.other_zeroing_faults++;
+            }
+          } else {
+            if (!first_valid_data_counter_.has_value()) {
+              first_valid_data_counter_ = value->data_counter();
+            }
+          }
+          if (first_valid_data_counter_.has_value()) {
+            total_imu_messages_received_++;
+            // Only update when we have good checksums, since the data counter
+            // could get corrupted.
+            if (!zeroer_.Faulted()) {
+              if (value->data_counter() < last_data_counter_) {
+                data_counter_offset_ += 1 << 16;
+              }
+              imu_fault_tracker_.missed_messages =
+                  (1 + value->data_counter() + data_counter_offset_ -
+                   first_valid_data_counter_.value()) -
+                  total_imu_messages_received_;
+              last_data_counter_ = value->data_counter();
+            }
+          }
           const std::optional<Eigen::Vector2d> encoders =
               zeroer_.Faulted()
                   ? std::nullopt
@@ -977,8 +1005,16 @@ EventLoopLocalizer::EventLoopLocalizer(
                         left_encoder_.Unwrap(value->left_encoder()),
                         right_encoder_.Unwrap(value->right_encoder())});
           {
-            const aos::monotonic_clock::time_point pico_timestamp{
-                std::chrono::microseconds(value->pico_timestamp_us())};
+            // If we can't trust the imu reading, just naively increment the
+            // pico timestamp.
+            const aos::monotonic_clock::time_point pico_timestamp =
+                zeroer_.Faulted()
+                    ? (last_pico_timestamp_.has_value()
+                           ? last_pico_timestamp_.value() + kNominalDt
+                           : aos::monotonic_clock::epoch())
+                    : aos::monotonic_clock::time_point(
+                          std::chrono::microseconds(
+                              value->pico_timestamp_us()));
             // TODO(james): If we get large enough drift off of the pico,
             // actually do something about it.
             if (!pico_offset_.has_value()) {
@@ -999,9 +1035,11 @@ EventLoopLocalizer::EventLoopLocalizer(
                      std::chrono::milliseconds(10) <
                  event_loop_->context().monotonic_event_time);
             const bool zeroed = zeroer_.Zeroed();
+            // For gyros, use the most recent gyro reading if we aren't zeroed,
+            // to avoid missing integration cycles.
             model_based_.HandleImu(
                 sample_timestamp,
-                zeroed ? zeroer_.ZeroedGyro().value() : Eigen::Vector3d::Zero(),
+                zeroed ? zeroer_.ZeroedGyro().value() : last_gyro_,
                 zeroed ? zeroer_.ZeroedAccel().value()
                        : dt_config_.imu_transform.transpose() *
                              Eigen::Vector3d::UnitZ(),
@@ -1010,6 +1048,10 @@ EventLoopLocalizer::EventLoopLocalizer(
                          : Eigen::Vector2d{output_fetcher_->left_voltage(),
                                            output_fetcher_->right_voltage()});
             last_pico_timestamp_ = pico_timestamp;
+
+            if (zeroed) {
+              last_gyro_ = zeroer_.ZeroedGyro().value();
+            }
           }
           {
             auto builder = status_sender_.MakeBuilder();
@@ -1017,12 +1059,15 @@ EventLoopLocalizer::EventLoopLocalizer(
                 model_based_.PopulateStatus(builder.fbb());
             const flatbuffers::Offset<control_loops::drivetrain::ImuZeroerState>
                 zeroer_status = zeroer_.PopulateStatus(builder.fbb());
+            const flatbuffers::Offset<ImuFailures> imu_failures =
+                ImuFailures::Pack(*builder.fbb(), &imu_fault_tracker_);
             LocalizerStatus::Builder status_builder =
                 builder.MakeBuilder<LocalizerStatus>();
             status_builder.add_model_based(model_based_status);
             status_builder.add_zeroed(zeroer_.Zeroed());
             status_builder.add_faulted_zero(zeroer_.Faulted());
             status_builder.add_zeroing(zeroer_status);
+            status_builder.add_imu_failures(imu_failures);
             if (encoders.has_value()) {
               status_builder.add_left_encoder(encoders.value()(0));
               status_builder.add_right_encoder(encoders.value()(1));

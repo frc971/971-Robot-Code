@@ -345,6 +345,14 @@ class EventLoopLocalizer {
   // Note that this can drift over sufficiently long time periods!
   std::optional<std::chrono::nanoseconds> pico_offset_;
 
+  ImuFailuresT imu_fault_tracker_;
+  std::optional<size_t> first_valid_data_counter_;
+  size_t total_imu_messages_received_ = 0;
+  size_t data_counter_offset_ = 0;
+  int last_data_counter_ = 0;
+
+  Eigen::Vector3d last_gyro_ = Eigen::Vector3d::Zero();
+
   zeroing::UnwrapSensor left_encoder_;
   zeroing::UnwrapSensor right_encoder_;
 };

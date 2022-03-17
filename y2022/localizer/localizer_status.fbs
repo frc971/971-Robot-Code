@@ -92,6 +92,13 @@ table ModelBasedStatus {
   statistics:CumulativeStatistics (id: 18);
 }
 
+table ImuFailures {
+  imu_to_pico_checksum_mismatch:uint (id: 0);
+  pico_to_pi_checksum_mismatch:uint (id: 1);
+  missed_messages:uint (id: 2);
+  other_zeroing_faults:uint (id: 3);
+}
+
 table LocalizerStatus {
   model_based:ModelBasedStatus (id: 0);
   // Whether the IMU is zeroed or not.
@@ -110,6 +117,7 @@ table LocalizerStatus {
   pico_offset_error_ns:int64 (id: 5);
   left_encoder:double (id: 6);
   right_encoder:double (id: 7);
+  imu_failures:ImuFailures (id: 8);
 }
 
 root_type LocalizerStatus;

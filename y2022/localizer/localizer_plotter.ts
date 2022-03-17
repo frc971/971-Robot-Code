@@ -268,10 +268,34 @@ export function plotLocalizer(conn: Connection, element: Element): void {
 
   const timingPlot =
       aosPlotter.addPlot(element, [DEFAULT_WIDTH, DEFAULT_HEIGHT]);
-  timingPlot.plot.getAxisLabels().setTitle('Timing');
+  timingPlot.plot.getAxisLabels().setTitle('Fault Counting');
   timingPlot.plot.getAxisLabels().setXLabel(TIME);
 
   timingPlot.addMessageLine(localizer, ['model_based', 'clock_resets'])
       .setColor(GREEN)
+      .setDrawLine(false);
+
+  timingPlot
+      .addMessageLine(
+          localizer, ['imu_failures', 'imu_to_pico_checksum_mismatch'])
+      .setColor(BLUE)
+      .setDrawLine(false);
+
+  timingPlot
+      .addMessageLine(
+          localizer, ['imu_failures', 'pico_to_pi_checksum_mismatch'])
+      .setColor(RED)
+      .setDrawLine(false);
+
+  timingPlot
+      .addMessageLine(
+          localizer, ['imu_failures', 'other_zeroing_faults'])
+      .setColor(CYAN)
+      .setDrawLine(false);
+
+  timingPlot
+      .addMessageLine(
+          localizer, ['imu_failures', 'missed_messages'])
+      .setColor(PINK)
       .setDrawLine(false);
 }
