@@ -75,7 +75,7 @@ class TestDebugCli(unittest.TestCase):
             "upper_goal_tele": 14,
             "lower_goal_tele": 15,
             "defense_rating": 3,
-            "climbing": 1,
+            "climb_level": "Medium",
         })
         exit_code, _, stderr = run_debug_cli(["-submitDataScouting", json_path])
         self.assertEqual(exit_code, 0, stderr)
@@ -97,14 +97,14 @@ class TestDebugCli(unittest.TestCase):
             UpperGoalTele: (int32) 14,
             LowerGoalTele: (int32) 15,
             DefenseRating: (int32) 3,
-            Climbing: (int32) 1,
             CollectedBy: (string) (len=9) "debug_cli",
             AutoBall1: (bool) true,
             AutoBall2: (bool) false,
             AutoBall3: (bool) false,
             AutoBall4: (bool) false,
             AutoBall5: (bool) true,
-            StartingQuadrant: (int32) 3
+            StartingQuadrant: (int32) 3,
+            ClimbLevel: (request_data_scouting_response.ClimbLevel) Medium
             }"""), stdout)
 
     def test_request_all_matches(self):

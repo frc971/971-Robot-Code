@@ -69,19 +69,19 @@
 
     <div *ngSwitchCase="'Climb'" id="climb" class="container-fluid">
         <form>
-            <input [(ngModel)]="level" type="radio" name="level" id="no_attempt" value="NoAttempt">
+            <input [(ngModel)]="level" type="radio" name="level" id="no_attempt" [value]="ClimbLevel.NoAttempt">
             <label for="no_attempt">No climbing attempt</label><br>
-            <input [(ngModel)]="level" type="radio" name="level" id="low" value="Low">
+            <input [(ngModel)]="level" type="radio" name="level" id="low" [value]="ClimbLevel.Low">
             <label for="low">Low</label><br>
-            <input [(ngModel)]="level" type="radio" name="level" id="medium" value="Medium">
+            <input [(ngModel)]="level" type="radio" name="level" id="medium" [value]="ClimbLevel.Medium">
             <label for="medium">Medium</label><br>
-            <input [(ngModel)]="level" type="radio" name="level" id="high" value="High">
+            <input [(ngModel)]="level" type="radio" name="level" id="high" [value]="ClimbLevel.High">
             <label for="high">High</label><br>
-            <input [(ngModel)]="level" type="radio" name="level" id="transversal" value="Transversal">
+            <input [(ngModel)]="level" type="radio" name="level" id="transversal" [value]="ClimbLevel.Transversal">
             <label for="transversal">Transversal</label><br>
-            <input [(ngModel)]="level" type="radio" name="level" id="failed" value="Failed">
+            <input [(ngModel)]="level" type="radio" name="level" id="failed" [value]="ClimbLevel.Failed">
             <label for="failed">Failed</label><br>
-            <input [(ngModel)]="level" type="radio" name="level" id="failed_with_plenty_of_time" value="FailedWithPlentyOfTime">
+            <input [(ngModel)]="level" type="radio" name="level" id="failed_with_plenty_of_time" [value]="ClimbLevel.FailedWithPlentyOfTime">
             <label for="failed_with_plenty_of_time">Failed (attempted with more than 10 seconds left)</label><br>
         </form>
         <div class="row">
@@ -177,7 +177,7 @@
 
         <h4>Climb</h4>
         <ul>
-            <li>Level: {{level}}</li>
+            <li>Level: {{level | levelToString}}</li>
         </ul>
 
         <h4>Other</h4>

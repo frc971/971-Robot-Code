@@ -1,5 +1,18 @@
 namespace scouting.webserver.requests;
 
+// TODO(phil): Deduplicate with request_scouting_data_response.
+// At the moment, our Go setup doesn't handle includes.
+enum ClimbLevel : byte {
+    NoAttempt = 0,
+    Failed,
+    // Tried for more than 10 seconds and failed.
+    FailedWithPlentyOfTime,
+    Low,
+    Medium,
+    High,
+    Transversal,
+}
+
 table SubmitDataScouting {
     team:int (id: 0);
     match:int (id: 1);
@@ -18,9 +31,10 @@ table SubmitDataScouting {
     // TODO: Document what the different values mean. E.g. 0 means no defense
     // played against this robot?
     defense_received_rating:int (id:10);
-    // The rating that this robot gets for its climbing.
-    // TODO: Change into an enum to make the different values self-documenting.
-    climbing:int (id:9);
+
+    climbing:int (id:9, deprecated);
+    climb_level:ClimbLevel (id:17);
+
     auto_ball_1:bool (id:11);
     auto_ball_2:bool (id:12);
     auto_ball_3:bool (id:13);

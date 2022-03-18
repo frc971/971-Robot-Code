@@ -156,7 +156,7 @@ func (handler submitDataScoutingHandler) ServeHTTP(w http.ResponseWriter, req *h
 		UpperGoalShots:  request.UpperGoalTele(),
 		LowerGoalShots:  request.LowerGoalTele(),
 		PlayedDefense:   request.DefenseRating(),
-		Climbing:        request.Climbing(),
+		Climbing:        int32(request.ClimbLevel()),
 		CollectedBy:     username,
 	}
 
@@ -344,7 +344,7 @@ func (handler requestDataScoutingHandler) ServeHTTP(w http.ResponseWriter, req *
 			UpperGoalTele:    stat.UpperGoalShots,
 			LowerGoalTele:    stat.LowerGoalShots,
 			DefenseRating:    stat.PlayedDefense,
-			Climbing:         stat.Climbing,
+			ClimbLevel:       request_data_scouting_response.ClimbLevel(stat.Climbing),
 			CollectedBy:      stat.CollectedBy,
 		})
 	}

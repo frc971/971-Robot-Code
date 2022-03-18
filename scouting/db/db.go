@@ -27,7 +27,15 @@ type Stats struct {
 	// TODO(phil): Re-order auto and teleop fields so auto comes first.
 	ShotsMissed, UpperGoalShots, LowerGoalShots                  int32
 	ShotsMissedAuto, UpperGoalAuto, LowerGoalAuto, PlayedDefense int32
-	Climbing                                                     int32
+	// Climbing level:
+	// 0 -> "NoAttempt"
+	// 1 -> "Failed"
+	// 2 -> "FailedWithPlentyOfTime"
+	// 3 -> "Low"
+	// 4 -> "Medium"
+	// 5 -> "High"
+	// 6 -> "Transversal"
+	Climbing int32
 	// The username of the person who collected these statistics.
 	// "unknown" if submitted without logging in.
 	// Empty if the stats have not yet been collected.
@@ -50,6 +58,7 @@ func NewDatabase(user string, password string, port int) (*Database, error) {
 	if err != nil {
 		return nil, errors.New(fmt.Sprint("Failed to connect to postgres: ", err))
 	}
+
 	statement, err := database.Prepare("CREATE TABLE IF NOT EXISTS matches (" +
 		"id SERIAL PRIMARY KEY, " +
 		"MatchNumber INTEGER, " +
