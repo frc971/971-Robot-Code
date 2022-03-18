@@ -32,16 +32,16 @@
             </form>
         </div>
         <div class="row">
-            <img src="/pictures/field/quadrants.jpeg" alt="Image">
+            <img src="/pictures/field/quadrants.jpeg" alt="Quadrants Image">
             <form>
-                <input type="radio" name="quadrant" id="first" value="Quadrant 1">
-                <label for="first">Quadrant 1</label>
-                <input type="radio" name="quadrant" id="second" value="Quadrant 2">
-                <label for="second">Quadrant 2</label><br>
-                <input type="radio" name="quadrant" id="third" value="Quadrant 3">
-                <label for="third">Quadrant 3</label>
-                <input type="radio" name="quadrant" id="fourth" value="Quadrant 4">
-                <label for="fourth">Quadrant 4</label>
+                <input type="radio" [(ngModel)]="quadrant" name="quadrant" id="quadrant1" [value]="1">
+                <label for="quadrant1">Quadrant 1</label>
+                <input type="radio" [(ngModel)]="quadrant" name="quadrant" id="quadrant2" [value]="2">
+                <label for="quadrant2">Quadrant 2</label><br>
+                <input type="radio" [(ngModel)]="quadrant" name="quadrant" id="quadrant3" [value]="3">
+                <label for="quadrant3">Quadrant 3</label>
+                <input type="radio" [(ngModel)]="quadrant" name="quadrant" id="quadrant4" [value]="4">
+                <label for="quadrant4">Quadrant 4</label>
             </form>
         </div>
         <div class="row justify-content-center">
@@ -162,6 +162,7 @@
             <li>Collected Ball 3: {{ball3}}</li>
             <li>Collected Ball 4: {{ball4}}</li>
             <li>Collected Ball 5: {{ball5}}</li>
+            <li>Quadrant: {{quadrant}}</li>
             <li>Upper Shots Made: {{autoUpperShotsMade}}</li>
             <li>Lower Shots Made: {{autoLowerShotsMade}}</li>
             <li>Missed Shots: {{autoShotsMissed}}</li>

@@ -36,6 +36,7 @@ export class EntryComponent {
     ball3: boolean = false;
     ball4: boolean = false;
     ball5: boolean = false;
+    quadrant: number = 1;
     errorMessage: string = '';
     noShow: boolean = false;
     neverMoved: boolean = false;
@@ -106,6 +107,7 @@ export class EntryComponent {
         SubmitDataScouting.addAutoBall3(builder, this.ball3);
         SubmitDataScouting.addAutoBall4(builder, this.ball4);
         SubmitDataScouting.addAutoBall5(builder, this.ball5);
+        SubmitDataScouting.addStartingQuadrant(builder, this.quadrant);
 
         // TODO(phil): Add support for defensePlayedOnScore.
         // TODO(phil): Fix the Climbing score.

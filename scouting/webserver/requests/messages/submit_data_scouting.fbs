@@ -26,6 +26,9 @@ table SubmitDataScouting {
     auto_ball_3:bool (id:13);
     auto_ball_4:bool (id:14);
     auto_ball_5:bool (id:15);
+    // The quadrant that the robot starts in for autonomous mode.
+    // Valid values are 1 through 4.
+    starting_quadrant: int (id:16);
 }
 
 root_type SubmitDataScouting;

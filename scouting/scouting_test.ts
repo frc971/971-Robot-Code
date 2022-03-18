@@ -111,6 +111,7 @@ describe('The scouting web page', () => {
     await element(by.buttonText('Next')).click();
 
     expect(await getHeadingText()).toEqual('Auto');
+    await element(by.id('quadrant3')).click();
     await element(by.buttonText('Next')).click();
 
     expect(await getHeadingText()).toEqual('TeleOp');
@@ -136,6 +137,7 @@ describe('The scouting web page', () => {
     await expectNthReviewFieldToBe('Upper Shots Made', 0, '0');
     await expectNthReviewFieldToBe('Lower Shots Made', 0, '0');
     await expectNthReviewFieldToBe('Missed Shots', 0, '0');
+    await expectReviewFieldToBe('Quadrant', '3');
 
     // Validate TeleOp.
     await expectNthReviewFieldToBe('Upper Shots Made', 1, '0');
