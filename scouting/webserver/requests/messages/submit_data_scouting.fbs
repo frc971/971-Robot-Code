@@ -21,6 +21,11 @@ table SubmitDataScouting {
     // The rating that this robot gets for its climbing.
     // TODO: Change into an enum to make the different values self-documenting.
     climbing:int (id:9);
+    auto_ball_1:bool (id:11);
+    auto_ball_2:bool (id:12);
+    auto_ball_3:bool (id:13);
+    auto_ball_4:bool (id:14);
+    auto_ball_5:bool (id:15);
 }
 
 root_type SubmitDataScouting;

@@ -24,11 +24,11 @@
             <img src="/pictures/field/balls.jpeg" alt="Image">
             <form>
                 <!--Choice for each ball location-->
-                <input type="checkbox" name="balls" value="1" id="ball-1"><label for="ball-1">Ball 1</label>
-                <input type="checkbox" name="balls" value="2" id="ball-2"><label for="ball-2">Ball 2</label><br>
-                <input type="checkbox" name="balls" value="3" id="ball-3"><label for="ball-3">Ball 3</label>
-                <input type="checkbox" name="balls" value="4" id="ball-4"><label for="ball-4">Ball 4</label><br>
-                <input type="checkbox" name="balls" value="5" id="ball-5"><label for="ball-5">Ball 5</label>
+                <input [(ngModel)]=ball1 type="checkbox" name="1ball" value="1" id="ball-1"><label for="ball-1">Ball 1</label>
+                <input [(ngModel)]=ball2 type="checkbox" name="2ball" value="2" id="ball-2"><label for="ball-2">Ball 2</label><br>
+                <input [(ngModel)]=ball3 type="checkbox" name="3ball" value="3" id="ball-3"><label for="ball-3">Ball 3</label>
+                <input [(ngModel)]=ball4 type="checkbox" name="4ball" value="4" id="ball-4"><label for="ball-4">Ball 4</label><br>
+                <input [(ngModel)]=ball5 type="checkbox" name="5ball" value="5" id="ball-5"><label for="ball-5">Ball 5</label>
             </form>
         </div>
         <div class="row">
@@ -157,6 +157,11 @@
 
         <h4>Auto</h4>
         <ul>
+            <li>Collected Ball 1: {{ball1}}</li>
+            <li>Collected Ball 2: {{ball2}}</li>
+            <li>Collected Ball 3: {{ball3}}</li>
+            <li>Collected Ball 4: {{ball4}}</li>
+            <li>Collected Ball 5: {{ball5}}</li>
             <li>Upper Shots Made: {{autoUpperShotsMade}}</li>
             <li>Lower Shots Made: {{autoLowerShotsMade}}</li>
             <li>Missed Shots: {{autoShotsMissed}}</li>
