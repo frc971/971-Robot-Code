@@ -3,6 +3,7 @@ namespace scouting.webserver.requests;
 table Stats {
     team:int (id: 0);
     match:int (id: 1);
+
     missed_shots_auto:int (id: 2);
     upper_goal_auto:int (id:3);
     lower_goal_auto:int (id:4);
@@ -12,6 +13,15 @@ table Stats {
     defense_rating:int (id:8);
     climbing:int (id:9);
     collected_by:string (id:10);
+
+    auto_ball_1:bool (id:11);
+    auto_ball_2:bool (id:12);
+    auto_ball_3:bool (id:13);
+    auto_ball_4:bool (id:14);
+    auto_ball_5:bool (id:15);
+    // The quadrant that the robot starts in for autonomous mode.
+    // Valid values are 1 through 4.
+    starting_quadrant: int (id:16);
 }
 
 table RequestDataScoutingResponse {

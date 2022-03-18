@@ -82,16 +82,22 @@ func TestSubmitDataScouting(t *testing.T) {
 
 	builder := flatbuffers.NewBuilder(1024)
 	builder.Finish((&submit_data_scouting.SubmitDataScoutingT{
-		Team:            971,
-		Match:           1,
-		MissedShotsAuto: 9971,
-		UpperGoalAuto:   9971,
-		LowerGoalAuto:   9971,
-		MissedShotsTele: 9971,
-		UpperGoalTele:   9971,
-		LowerGoalTele:   9971,
-		DefenseRating:   9971,
-		Climbing:        9971,
+		Team:             971,
+		Match:            1,
+		StartingQuadrant: 2,
+		AutoBall1:        true,
+		AutoBall2:        false,
+		AutoBall3:        false,
+		AutoBall4:        false,
+		AutoBall5:        false,
+		MissedShotsAuto:  9971,
+		UpperGoalAuto:    9971,
+		LowerGoalAuto:    9971,
+		MissedShotsTele:  9971,
+		UpperGoalTele:    9971,
+		LowerGoalTele:    9971,
+		DefenseRating:    9971,
+		Climbing:         9971,
 	}).Pack(builder))
 
 	response, err := debug.SubmitDataScouting("http://localhost:8080", builder.FinishedBytes())
@@ -221,14 +227,18 @@ func TestRequestDataScouting(t *testing.T) {
 		stats: []db.Stats{
 			{
 				TeamNumber: 971, MatchNumber: 1,
-				ShotsMissed: 1, UpperGoalShots: 2, LowerGoalShots: 3,
+				StartingQuadrant: 1,
+				AutoBallPickedUp: [5]bool{true, false, false, false, true},
+				ShotsMissed:      1, UpperGoalShots: 2, LowerGoalShots: 3,
 				ShotsMissedAuto: 4, UpperGoalAuto: 5, LowerGoalAuto: 6,
 				PlayedDefense: 7, Climbing: 8,
 				CollectedBy: "john",
 			},
 			{
 				TeamNumber: 972, MatchNumber: 1,
-				ShotsMissed: 2, UpperGoalShots: 3, LowerGoalShots: 4,
+				StartingQuadrant: 2,
+				AutoBallPickedUp: [5]bool{false, false, true, false, false},
+				ShotsMissed:      2, UpperGoalShots: 3, LowerGoalShots: 4,
 				ShotsMissedAuto: 5, UpperGoalAuto: 6, LowerGoalAuto: 7,
 				PlayedDefense: 8, Climbing: 9,
 				CollectedBy: "andrea",
@@ -255,12 +265,18 @@ func TestRequestDataScouting(t *testing.T) {
 			// MissedShotsTele, UpperGoalTele, LowerGoalTele,
 			// DefenseRating, Climbing,
 			// CollectedBy,
+			// AutoBall1, AutoBall2, AutoBall3,
+			// AutoBall4, AutoBall5,
+			// StartingQuadrant,
 			{
 				971, 1,
 				4, 5, 6,
 				1, 2, 3,
 				7, 8,
 				"john",
+				true, false, false,
+				false, true,
+				1,
 			},
 			{
 				972, 1,
@@ -268,6 +284,9 @@ func TestRequestDataScouting(t *testing.T) {
 				2, 3, 4,
 				8, 9,
 				"andrea",
+				false, false, true,
+				false, false,
+				2,
 			},
 		},
 	}

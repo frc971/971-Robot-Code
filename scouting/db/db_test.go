@@ -89,42 +89,54 @@ func TestAddToStatsDB(t *testing.T) {
 	correct := []Stats{
 		Stats{
 			TeamNumber: 1236, MatchNumber: 7,
-			ShotsMissed: 9, UpperGoalShots: 5, LowerGoalShots: 4,
+			StartingQuadrant: 2,
+			AutoBallPickedUp: [5]bool{false, false, false, true, false},
+			ShotsMissed:      9, UpperGoalShots: 5, LowerGoalShots: 4,
 			ShotsMissedAuto: 3, UpperGoalAuto: 2, LowerGoalAuto: 1,
 			PlayedDefense: 2, Climbing: 3,
 			CollectedBy: "josh",
 		},
 		Stats{
 			TeamNumber: 1001, MatchNumber: 7,
-			ShotsMissed: 6, UpperGoalShots: 9, LowerGoalShots: 9,
+			StartingQuadrant: 3,
+			AutoBallPickedUp: [5]bool{true, false, true, true, false},
+			ShotsMissed:      6, UpperGoalShots: 9, LowerGoalShots: 9,
 			ShotsMissedAuto: 0, UpperGoalAuto: 0, LowerGoalAuto: 0,
 			PlayedDefense: 0, Climbing: 0,
 			CollectedBy: "rupert",
 		},
 		Stats{
 			TeamNumber: 777, MatchNumber: 7,
-			ShotsMissed: 5, UpperGoalShots: 7, LowerGoalShots: 12,
+			StartingQuadrant: 4,
+			AutoBallPickedUp: [5]bool{false, true, true, true, false},
+			ShotsMissed:      5, UpperGoalShots: 7, LowerGoalShots: 12,
 			ShotsMissedAuto: 0, UpperGoalAuto: 4, LowerGoalAuto: 0,
 			PlayedDefense: 0, Climbing: 0,
 			CollectedBy: "felix",
 		},
 		Stats{
 			TeamNumber: 1000, MatchNumber: 7,
-			ShotsMissed: 12, UpperGoalShots: 6, LowerGoalShots: 10,
+			StartingQuadrant: 1,
+			AutoBallPickedUp: [5]bool{false, false, false, false, false},
+			ShotsMissed:      12, UpperGoalShots: 6, LowerGoalShots: 10,
 			ShotsMissedAuto: 0, UpperGoalAuto: 7, LowerGoalAuto: 0,
 			PlayedDefense: 0, Climbing: 0,
 			CollectedBy: "thea",
 		},
 		Stats{
 			TeamNumber: 4321, MatchNumber: 7,
-			ShotsMissed: 14, UpperGoalShots: 12, LowerGoalShots: 3,
+			StartingQuadrant: 2,
+			AutoBallPickedUp: [5]bool{true, false, false, false, false},
+			ShotsMissed:      14, UpperGoalShots: 12, LowerGoalShots: 3,
 			ShotsMissedAuto: 0, UpperGoalAuto: 7, LowerGoalAuto: 0,
 			PlayedDefense: 0, Climbing: 0,
 			CollectedBy: "amy",
 		},
 		Stats{
 			TeamNumber: 1234, MatchNumber: 7,
-			ShotsMissed: 3, UpperGoalShots: 4, LowerGoalShots: 0,
+			StartingQuadrant: 3,
+			AutoBallPickedUp: [5]bool{false, false, false, false, true},
+			ShotsMissed:      3, UpperGoalShots: 4, LowerGoalShots: 0,
 			ShotsMissedAuto: 0, UpperGoalAuto: 9, LowerGoalAuto: 0,
 			PlayedDefense: 0, Climbing: 0,
 			CollectedBy: "beth",
@@ -195,36 +207,48 @@ func TestQueryStatsDB(t *testing.T) {
 	testDatabase := []Stats{
 		Stats{
 			TeamNumber: 1235, MatchNumber: 94,
-			ShotsMissed: 2, UpperGoalShots: 2, LowerGoalShots: 2,
+			StartingQuadrant: 1,
+			AutoBallPickedUp: [5]bool{false, false, false, false, false},
+			ShotsMissed:      2, UpperGoalShots: 2, LowerGoalShots: 2,
 			ShotsMissedAuto: 2, UpperGoalAuto: 2, LowerGoalAuto: 2,
 			PlayedDefense: 2, Climbing: 2},
 		Stats{
 			TeamNumber: 1234, MatchNumber: 94,
-			ShotsMissed: 4, UpperGoalShots: 4, LowerGoalShots: 4,
+			StartingQuadrant: 2,
+			AutoBallPickedUp: [5]bool{false, false, false, false, true},
+			ShotsMissed:      4, UpperGoalShots: 4, LowerGoalShots: 4,
 			ShotsMissedAuto: 4, UpperGoalAuto: 4, LowerGoalAuto: 4,
 			PlayedDefense: 7, Climbing: 2,
 		},
 		Stats{
 			TeamNumber: 1233, MatchNumber: 94,
-			ShotsMissed: 3, UpperGoalShots: 3, LowerGoalShots: 3,
+			StartingQuadrant: 3,
+			AutoBallPickedUp: [5]bool{false, false, false, false, false},
+			ShotsMissed:      3, UpperGoalShots: 3, LowerGoalShots: 3,
 			ShotsMissedAuto: 3, UpperGoalAuto: 3, LowerGoalAuto: 3,
 			PlayedDefense: 3, Climbing: 3,
 		},
 		Stats{
 			TeamNumber: 1232, MatchNumber: 94,
-			ShotsMissed: 5, UpperGoalShots: 5, LowerGoalShots: 5,
+			StartingQuadrant: 2,
+			AutoBallPickedUp: [5]bool{true, false, false, false, true},
+			ShotsMissed:      5, UpperGoalShots: 5, LowerGoalShots: 5,
 			ShotsMissedAuto: 5, UpperGoalAuto: 5, LowerGoalAuto: 5,
 			PlayedDefense: 7, Climbing: 1,
 		},
 		Stats{
 			TeamNumber: 1231, MatchNumber: 94,
-			ShotsMissed: 6, UpperGoalShots: 6, LowerGoalShots: 6,
+			StartingQuadrant: 3,
+			AutoBallPickedUp: [5]bool{false, false, true, false, false},
+			ShotsMissed:      6, UpperGoalShots: 6, LowerGoalShots: 6,
 			ShotsMissedAuto: 6, UpperGoalAuto: 6, LowerGoalAuto: 6,
 			PlayedDefense: 7, Climbing: 1,
 		},
 		Stats{
 			TeamNumber: 1239, MatchNumber: 94,
-			ShotsMissed: 7, UpperGoalShots: 7, LowerGoalShots: 7,
+			StartingQuadrant: 4,
+			AutoBallPickedUp: [5]bool{false, true, true, false, false},
+			ShotsMissed:      7, UpperGoalShots: 7, LowerGoalShots: 7,
 			ShotsMissedAuto: 7, UpperGoalAuto: 7, LowerGoalAuto: 3,
 			PlayedDefense: 7, Climbing: 1,
 		},
@@ -237,13 +261,15 @@ func TestQueryStatsDB(t *testing.T) {
 
 	for i := 0; i < len(testDatabase); i++ {
 		err = fixture.db.AddToStats(testDatabase[i])
-		check(t, err, fmt.Sprint("Failed to add stats", i))
+		check(t, err, fmt.Sprint("Failed to add stats ", i))
 	}
 
 	correct := []Stats{
 		Stats{
 			TeamNumber: 1235, MatchNumber: 94,
-			ShotsMissed: 2, UpperGoalShots: 2, LowerGoalShots: 2,
+			StartingQuadrant: 1,
+			AutoBallPickedUp: [5]bool{false, false, false, false, false},
+			ShotsMissed:      2, UpperGoalShots: 2, LowerGoalShots: 2,
 			ShotsMissedAuto: 2, UpperGoalAuto: 2, LowerGoalAuto: 2,
 			PlayedDefense: 2, Climbing: 2,
 		},
@@ -309,37 +335,48 @@ func TestReturnStatsDB(t *testing.T) {
 	correct := []Stats{
 		Stats{
 			TeamNumber: 1235, MatchNumber: 94,
-			ShotsMissed: 2, UpperGoalShots: 2, LowerGoalShots: 2,
+			StartingQuadrant: 1,
+			AutoBallPickedUp: [5]bool{false, false, false, false, false},
+			ShotsMissed:      2, UpperGoalShots: 2, LowerGoalShots: 2,
 			ShotsMissedAuto: 2, UpperGoalAuto: 2, LowerGoalAuto: 2,
-			PlayedDefense: 2, Climbing: 2,
-		},
+			PlayedDefense: 2, Climbing: 2},
 		Stats{
 			TeamNumber: 1236, MatchNumber: 94,
-			ShotsMissed: 4, UpperGoalShots: 4, LowerGoalShots: 4,
+			StartingQuadrant: 2,
+			AutoBallPickedUp: [5]bool{false, false, false, false, true},
+			ShotsMissed:      4, UpperGoalShots: 4, LowerGoalShots: 4,
 			ShotsMissedAuto: 4, UpperGoalAuto: 4, LowerGoalAuto: 4,
 			PlayedDefense: 7, Climbing: 2,
 		},
 		Stats{
 			TeamNumber: 1237, MatchNumber: 94,
-			ShotsMissed: 3, UpperGoalShots: 3, LowerGoalShots: 3,
+			StartingQuadrant: 3,
+			AutoBallPickedUp: [5]bool{false, false, false, false, false},
+			ShotsMissed:      3, UpperGoalShots: 3, LowerGoalShots: 3,
 			ShotsMissedAuto: 3, UpperGoalAuto: 3, LowerGoalAuto: 3,
 			PlayedDefense: 3, Climbing: 3,
 		},
 		Stats{
 			TeamNumber: 1238, MatchNumber: 94,
-			ShotsMissed: 5, UpperGoalShots: 5, LowerGoalShots: 5,
+			StartingQuadrant: 2,
+			AutoBallPickedUp: [5]bool{true, false, false, false, true},
+			ShotsMissed:      5, UpperGoalShots: 5, LowerGoalShots: 5,
 			ShotsMissedAuto: 5, UpperGoalAuto: 5, LowerGoalAuto: 5,
 			PlayedDefense: 7, Climbing: 1,
 		},
 		Stats{
 			TeamNumber: 1239, MatchNumber: 94,
-			ShotsMissed: 6, UpperGoalShots: 6, LowerGoalShots: 6,
+			StartingQuadrant: 3,
+			AutoBallPickedUp: [5]bool{false, false, true, false, false},
+			ShotsMissed:      6, UpperGoalShots: 6, LowerGoalShots: 6,
 			ShotsMissedAuto: 6, UpperGoalAuto: 6, LowerGoalAuto: 6,
 			PlayedDefense: 7, Climbing: 1,
 		},
 		Stats{
 			TeamNumber: 1233, MatchNumber: 94,
-			ShotsMissed: 7, UpperGoalShots: 7, LowerGoalShots: 7,
+			StartingQuadrant: 4,
+			AutoBallPickedUp: [5]bool{false, true, true, false, false},
+			ShotsMissed:      7, UpperGoalShots: 7, LowerGoalShots: 7,
 			ShotsMissedAuto: 7, UpperGoalAuto: 7, LowerGoalAuto: 3,
 			PlayedDefense: 7, Climbing: 1,
 		},
@@ -352,7 +389,7 @@ func TestReturnStatsDB(t *testing.T) {
 
 	for i := 0; i < len(correct); i++ {
 		err = fixture.db.AddToStats(correct[i])
-		check(t, err, fmt.Sprint("Failed to add stats", i))
+		check(t, err, fmt.Sprint("Failed to add stats ", i))
 	}
 
 	got, err := fixture.db.ReturnStats()

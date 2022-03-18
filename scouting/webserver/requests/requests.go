@@ -142,8 +142,13 @@ func (handler submitDataScoutingHandler) ServeHTTP(w http.ResponseWriter, req *h
 	}
 
 	stats := db.Stats{
-		TeamNumber:      request.Team(),
-		MatchNumber:     request.Match(),
+		TeamNumber:       request.Team(),
+		MatchNumber:      request.Match(),
+		StartingQuadrant: request.StartingQuadrant(),
+		AutoBallPickedUp: [5]bool{
+			request.AutoBall1(), request.AutoBall2(), request.AutoBall3(),
+			request.AutoBall4(), request.AutoBall5(),
+		},
 		ShotsMissedAuto: request.MissedShotsAuto(),
 		UpperGoalAuto:   request.UpperGoalAuto(),
 		LowerGoalAuto:   request.LowerGoalAuto(),
@@ -155,9 +160,17 @@ func (handler submitDataScoutingHandler) ServeHTTP(w http.ResponseWriter, req *h
 		CollectedBy:     username,
 	}
 
+	// Do some error checking.
+	if stats.StartingQuadrant < 1 || stats.StartingQuadrant > 4 {
+		respondWithError(w, http.StatusBadRequest, fmt.Sprint(
+			"Invalid starting_quadrant field value of ", stats.StartingQuadrant))
+		return
+	}
+
 	err = handler.db.AddToStats(stats)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Failed to submit datascouting data: ", err))
+		return
 	}
 
 	builder := flatbuffers.NewBuilder(50 * 1024)
@@ -316,17 +329,23 @@ func (handler requestDataScoutingHandler) ServeHTTP(w http.ResponseWriter, req *
 	var response RequestDataScoutingResponseT
 	for _, stat := range stats {
 		response.StatsList = append(response.StatsList, &request_data_scouting_response.StatsT{
-			Team:            stat.TeamNumber,
-			Match:           stat.MatchNumber,
-			MissedShotsAuto: stat.ShotsMissedAuto,
-			UpperGoalAuto:   stat.UpperGoalAuto,
-			LowerGoalAuto:   stat.LowerGoalAuto,
-			MissedShotsTele: stat.ShotsMissed,
-			UpperGoalTele:   stat.UpperGoalShots,
-			LowerGoalTele:   stat.LowerGoalShots,
-			DefenseRating:   stat.PlayedDefense,
-			Climbing:        stat.Climbing,
-			CollectedBy:     stat.CollectedBy,
+			Team:             stat.TeamNumber,
+			Match:            stat.MatchNumber,
+			StartingQuadrant: stat.StartingQuadrant,
+			AutoBall1:        stat.AutoBallPickedUp[0],
+			AutoBall2:        stat.AutoBallPickedUp[1],
+			AutoBall3:        stat.AutoBallPickedUp[2],
+			AutoBall4:        stat.AutoBallPickedUp[3],
+			AutoBall5:        stat.AutoBallPickedUp[4],
+			MissedShotsAuto:  stat.ShotsMissedAuto,
+			UpperGoalAuto:    stat.UpperGoalAuto,
+			LowerGoalAuto:    stat.LowerGoalAuto,
+			MissedShotsTele:  stat.ShotsMissed,
+			UpperGoalTele:    stat.UpperGoalShots,
+			LowerGoalTele:    stat.LowerGoalShots,
+			DefenseRating:    stat.PlayedDefense,
+			Climbing:         stat.Climbing,
+			CollectedBy:      stat.CollectedBy,
 		})
 	}
 

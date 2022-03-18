@@ -62,6 +62,12 @@ class TestDebugCli(unittest.TestCase):
         json_path = write_json_request({
             "team": 100,
             "match": 1,
+            "starting_quadrant": 3,
+            "auto_ball_1": True,
+            "auto_ball_2": False,
+            "auto_ball_3": False,
+            "auto_ball_4": False,
+            "auto_ball_5": True,
             "missed_shots_auto": 10,
             "upper_goal_auto": 11,
             "lower_goal_auto": 12,
@@ -92,7 +98,13 @@ class TestDebugCli(unittest.TestCase):
             LowerGoalTele: (int32) 15,
             DefenseRating: (int32) 3,
             Climbing: (int32) 1,
-            CollectedBy: (string) (len=9) "debug_cli"
+            CollectedBy: (string) (len=9) "debug_cli",
+            AutoBall1: (bool) true,
+            AutoBall2: (bool) false,
+            AutoBall3: (bool) false,
+            AutoBall4: (bool) false,
+            AutoBall5: (bool) true,
+            StartingQuadrant: (int32) 3
             }"""), stdout)
 
     def test_request_all_matches(self):
