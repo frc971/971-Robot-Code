@@ -128,7 +128,6 @@ type submitDataScoutingHandler struct {
 func (handler submitDataScoutingHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// Get the username of the person submitting the data.
 	username := parseUsername(req)
-	log.Println("Got data scouting data from", username)
 
 	requestBytes, err := io.ReadAll(req.Body)
 	if err != nil {
@@ -140,6 +139,8 @@ func (handler submitDataScoutingHandler) ServeHTTP(w http.ResponseWriter, req *h
 	if !success {
 		return
 	}
+
+	log.Println("Got data scouting data for match", request.Match(), "team", request.Team(), "from", username)
 
 	stats := db.Stats{
 		TeamNumber:       request.Team(),
