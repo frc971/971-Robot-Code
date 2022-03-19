@@ -52,5 +52,6 @@ exec $(rlocation postgresql_amd64/usr/lib/postgresql/13/bin/%s) "$@"
     ),
 ) for binary in (
     "postgres",
+    "psql",
     "initdb",
 )]
