@@ -43,6 +43,7 @@ export class EntryComponent {
   batteryDied: boolean = false;
   mechanicallyBroke: boolean = false;
   lostComs: boolean = false;
+  comment: string = '';
 
   @ViewChild('header') header: ElementRef;
 
@@ -112,6 +113,7 @@ export class EntryComponent {
     SubmitDataScouting.addAutoBall4(builder, this.ball4);
     SubmitDataScouting.addAutoBall5(builder, this.ball5);
     SubmitDataScouting.addStartingQuadrant(builder, this.quadrant);
+    // TODO(ishan): Add support for the comment.
     // TODO(phil): Add support for defensePlayedOnScore.
     SubmitDataScouting.addClimbLevel(builder, this.level);
     builder.finish(SubmitDataScouting.endSubmitDataScouting(builder));
