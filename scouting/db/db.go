@@ -25,8 +25,9 @@ type Stats struct {
 	StartingQuadrant        int32
 	AutoBallPickedUp        [5]bool
 	// TODO(phil): Re-order auto and teleop fields so auto comes first.
-	ShotsMissed, UpperGoalShots, LowerGoalShots                  int32
-	ShotsMissedAuto, UpperGoalAuto, LowerGoalAuto, PlayedDefense int32
+	ShotsMissed, UpperGoalShots, LowerGoalShots   int32
+	ShotsMissedAuto, UpperGoalAuto, LowerGoalAuto int32
+	PlayedDefense, DefenseReceivedScore           int32
 	// Climbing level:
 	// 0 -> "NoAttempt"
 	// 1 -> "Failed"
@@ -36,6 +37,8 @@ type Stats struct {
 	// 5 -> "High"
 	// 6 -> "Transversal"
 	Climbing int32
+	// Some non-numerical data that the scout felt worth noting.
+	Comment string
 	// The username of the person who collected these statistics.
 	// "unknown" if submitted without logging in.
 	// Empty if the stats have not yet been collected.
@@ -105,7 +108,9 @@ func NewDatabase(user string, password string, port int) (*Database, error) {
 		"UpperGoalAuto INTEGER, " +
 		"LowerGoalAuto INTEGER, " +
 		"PlayedDefense INTEGER, " +
+		"DefenseReceivedScore INTEGER, " +
 		"Climbing INTEGER, " +
+		"Comment VARCHAR, " +
 		"CollectedBy VARCHAR)")
 	if err != nil {
 		database.Close()
@@ -175,7 +180,8 @@ func (database *Database) AddToMatch(m Match) error {
 		"AutoBall4PickedUp, AutoBall5PickedUp, " +
 		"ShotsMissed, UpperGoalShots, LowerGoalShots, " +
 		"ShotsMissedAuto, UpperGoalAuto, LowerGoalAuto, " +
-		"PlayedDefense, Climbing, CollectedBy) " +
+		"PlayedDefense, DefenseReceivedScore, Climbing, " +
+		"Comment, CollectedBy) " +
 		"VALUES (" +
 		"$1, $2, " +
 		"$3, " +
@@ -183,7 +189,8 @@ func (database *Database) AddToMatch(m Match) error {
 		"$7, $8, " +
 		"$9, $10, $11, " +
 		"$12, $13, $14, " +
-		"$15, $16, $17) " +
+		"$15, $16, $17, " +
+		"$18, $19) " +
 		"RETURNING id")
 	if err != nil {
 		return errors.New(fmt.Sprint("Failed to prepare insertion into stats database: ", err))
@@ -199,7 +206,8 @@ func (database *Database) AddToMatch(m Match) error {
 			false, false,
 			0, 0, 0,
 			0, 0, 0,
-			0, 0, "")
+			0, 0, 0,
+			"", "")
 		err = row.Scan(&rowIds[i])
 		if err != nil {
 			return errors.New(fmt.Sprint("Failed to insert stats: ", err))
@@ -236,8 +244,9 @@ func (database *Database) AddToStats(s Stats) error {
 		"AutoBall4PickedUp = $7, AutoBall5PickedUp = $8, " +
 		"ShotsMissed = $9, UpperGoalShots = $10, LowerGoalShots = $11, " +
 		"ShotsMissedAuto = $12, UpperGoalAuto = $13, LowerGoalAuto = $14, " +
-		"PlayedDefense = $15, Climbing = $16, CollectedBy = $17 " +
-		"WHERE MatchNumber = $18 AND TeamNumber = $19")
+		"PlayedDefense = $15, DefenseReceivedScore = $16, Climbing = $17, " +
+		"Comment = $18, CollectedBy = $19 " +
+		"WHERE MatchNumber = $20 AND TeamNumber = $21")
 	if err != nil {
 		return errors.New(fmt.Sprint("Failed to prepare stats update statement: ", err))
 	}
@@ -250,7 +259,8 @@ func (database *Database) AddToStats(s Stats) error {
 		s.AutoBallPickedUp[3], s.AutoBallPickedUp[4],
 		s.ShotsMissed, s.UpperGoalShots, s.LowerGoalShots,
 		s.ShotsMissedAuto, s.UpperGoalAuto, s.LowerGoalAuto,
-		s.PlayedDefense, s.Climbing, s.CollectedBy,
+		s.PlayedDefense, s.DefenseReceivedScore, s.Climbing,
+		s.Comment, s.CollectedBy,
 		s.MatchNumber, s.TeamNumber)
 	if err != nil {
 		return errors.New(fmt.Sprint("Failed to update stats database: ", err))
@@ -308,7 +318,8 @@ func (database *Database) ReturnStats() ([]Stats, error) {
 			&team.AutoBallPickedUp[3], &team.AutoBallPickedUp[4],
 			&team.ShotsMissed, &team.UpperGoalShots, &team.LowerGoalShots,
 			&team.ShotsMissedAuto, &team.UpperGoalAuto, &team.LowerGoalAuto,
-			&team.PlayedDefense, &team.Climbing, &team.CollectedBy)
+			&team.PlayedDefense, &team.DefenseReceivedScore, &team.Climbing,
+			&team.Comment, &team.CollectedBy)
 		if err != nil {
 			return nil, errors.New(fmt.Sprint("Failed to scan from stats: ", err))
 		}
@@ -359,7 +370,8 @@ func (database *Database) QueryStats(teamNumber_ int) ([]Stats, error) {
 			&team.AutoBallPickedUp[3], &team.AutoBallPickedUp[4],
 			&team.ShotsMissed, &team.UpperGoalShots, &team.LowerGoalShots,
 			&team.ShotsMissedAuto, &team.UpperGoalAuto, &team.LowerGoalAuto,
-			&team.PlayedDefense, &team.Climbing, &team.CollectedBy)
+			&team.PlayedDefense, &team.DefenseReceivedScore, &team.Climbing,
+			&team.Comment, &team.CollectedBy)
 		if err != nil {
 			return nil, errors.New(fmt.Sprint("Failed to scan from stats: ", err))
 		}

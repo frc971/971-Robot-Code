@@ -65,6 +65,18 @@ function setTextboxByIdTo(id: string, value: string) {
       protractor.Key.CONTROL, 'a', protractor.Key.NULL, value);
 }
 
+// Moves the nth slider left or right. A positive "adjustBy" value moves the
+// slider to the right. A negative value moves the slider to the left.
+//
+//   negative/left <--- 0 ---> positive/right
+async function adjustNthSliderBy(n: number, adjustBy: number) {
+  const slider =  element.all(by.css('input[type=range]')).get(n);
+  const key = adjustBy > 0 ? protractor.Key.ARROW_RIGHT : protractor.Key.ARROW_LEFT;
+  for (let i = 0; i < Math.abs(adjustBy); i++) {
+    await slider.sendKeys(key);
+  }
+}
+
 describe('The scouting web page', () => {
   beforeAll(async () => {
     await browser.get(browser.baseUrl);
@@ -128,9 +140,12 @@ describe('The scouting web page', () => {
 
     expect(await getHeadingText()).toEqual('Climb');
     await element(by.id('high')).click();
+    await setTextboxByIdTo("comment", "A very useful comment here.");
     await element(by.buttonText('Next')).click();
 
     expect(await getHeadingText()).toEqual('Other');
+    await adjustNthSliderBy(0, 3);
+    await adjustNthSliderBy(1, 1);
     await element(by.id('no_show')).click();
     await element(by.id('mechanically_broke')).click();
     await element(by.buttonText('Next')).click();
@@ -155,10 +170,11 @@ describe('The scouting web page', () => {
 
     // Validate Climb.
     await expectReviewFieldToBe('Level', 'High');
+    await expectReviewFieldToBe('Comments', 'A very useful comment here.');
 
     // Validate Other.
-    await expectReviewFieldToBe('Defense Played On Rating', '0');
-    await expectReviewFieldToBe('Defense Played Rating', '0');
+    await expectReviewFieldToBe('Defense Played On Rating', '3');
+    await expectReviewFieldToBe('Defense Played Rating', '1');
     await expectReviewFieldToBe('No show', 'true');
     await expectReviewFieldToBe('Never moved', 'false');
     await expectReviewFieldToBe('Battery died', 'false');

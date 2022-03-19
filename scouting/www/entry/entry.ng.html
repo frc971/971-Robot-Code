@@ -86,7 +86,7 @@
         </form>
         <div class="row">
             <h4>Comments</h4>
-            <textarea [(ngModel)]="comment"></textarea>
+            <textarea [(ngModel)]="comment" id="comment"></textarea>
         </div>
         <div class="buttons">
           <button class="btn btn-primary" (click)="prevSection()">Back</button>
@@ -178,6 +178,7 @@
         <h4>Climb</h4>
         <ul>
             <li>Level: {{level | levelToString}}</li>
+            <li>Comments: {{comment}}</li>
         </ul>
 
         <h4>Other</h4>
