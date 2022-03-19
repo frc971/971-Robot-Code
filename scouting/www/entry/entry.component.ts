@@ -97,6 +97,7 @@ export class EntryComponent {
     this.errorMessage = '';
 
     const builder = new Builder();
+    const comment = builder.createString(this.comment);
     SubmitDataScouting.startSubmitDataScouting(builder);
     SubmitDataScouting.addTeam(builder, this.teamNumber);
     SubmitDataScouting.addMatch(builder, this.matchNumber);
@@ -107,15 +108,15 @@ export class EntryComponent {
     SubmitDataScouting.addUpperGoalTele(builder, this.teleUpperShotsMade);
     SubmitDataScouting.addLowerGoalTele(builder, this.teleLowerShotsMade);
     SubmitDataScouting.addDefenseRating(builder, this.defensePlayedScore);
+    SubmitDataScouting.addDefenseReceivedRating(builder, this.defensePlayedOnScore);
     SubmitDataScouting.addAutoBall1(builder, this.ball1);
     SubmitDataScouting.addAutoBall2(builder, this.ball2);
     SubmitDataScouting.addAutoBall3(builder, this.ball3);
     SubmitDataScouting.addAutoBall4(builder, this.ball4);
     SubmitDataScouting.addAutoBall5(builder, this.ball5);
     SubmitDataScouting.addStartingQuadrant(builder, this.quadrant);
-    // TODO(ishan): Add support for the comment.
-    // TODO(phil): Add support for defensePlayedOnScore.
     SubmitDataScouting.addClimbLevel(builder, this.level);
+    SubmitDataScouting.addComment(builder, comment);
     builder.finish(SubmitDataScouting.endSubmitDataScouting(builder));
 
     const buffer = builder.asUint8Array();

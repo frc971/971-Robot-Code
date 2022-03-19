@@ -43,6 +43,10 @@ table SubmitDataScouting {
     // The quadrant that the robot starts in for autonomous mode.
     // Valid values are 1 through 4.
     starting_quadrant: int (id:16);
+
+    // A general comment that scouts can use as a way to record non-numerical
+    // data if they need to.
+    comment: string (id:18);
 }
 
 root_type SubmitDataScouting;
