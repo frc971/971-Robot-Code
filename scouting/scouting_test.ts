@@ -77,6 +77,10 @@ async function adjustNthSliderBy(n: number, adjustBy: number) {
   }
 }
 
+function getNthMatchLabel(n: number) {
+  return element.all(by.css('.badge')).get(n).getText();
+}
+
 describe('The scouting web page', () => {
   beforeAll(async () => {
     await browser.get(browser.baseUrl);
@@ -96,6 +100,19 @@ describe('The scouting web page', () => {
     await browser.wait(EC.textToBePresentInElement(
         element(by.css('.progress_message')),
         'Successfully imported match list.'));
+  });
+
+  it('should: show matches in chronological order.', async () => {
+    await loadPage();
+
+    expect(await getNthMatchLabel(0)).toEqual("Quals 1");
+    expect(await getNthMatchLabel(1)).toEqual("Quals 2");
+    expect(await getNthMatchLabel(2)).toEqual("Quals 3");
+    expect(await getNthMatchLabel(9)).toEqual("Quals 10");
+    // TODO(phil): Validate quarter finals and friends. Right now we don't
+    // distinguish between "sets". I.e. we display 4 "Quarter Final 1" matches
+    // without being able to distinguish between them.
+    expect(await getNthMatchLabel(87)).toEqual("Final 1");
   });
 
   it('should: error on unknown match.', async () => {
