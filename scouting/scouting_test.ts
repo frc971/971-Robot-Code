@@ -70,8 +70,9 @@ function setTextboxByIdTo(id: string, value: string) {
 //
 //   negative/left <--- 0 ---> positive/right
 async function adjustNthSliderBy(n: number, adjustBy: number) {
-  const slider =  element.all(by.css('input[type=range]')).get(n);
-  const key = adjustBy > 0 ? protractor.Key.ARROW_RIGHT : protractor.Key.ARROW_LEFT;
+  const slider = element.all(by.css('input[type=range]')).get(n);
+  const key =
+      adjustBy > 0 ? protractor.Key.ARROW_RIGHT : protractor.Key.ARROW_LEFT;
   for (let i = 0; i < Math.abs(adjustBy); i++) {
     await slider.sendKeys(key);
   }
@@ -105,14 +106,14 @@ describe('The scouting web page', () => {
   it('should: show matches in chronological order.', async () => {
     await loadPage();
 
-    expect(await getNthMatchLabel(0)).toEqual("Quals 1");
-    expect(await getNthMatchLabel(1)).toEqual("Quals 2");
-    expect(await getNthMatchLabel(2)).toEqual("Quals 3");
-    expect(await getNthMatchLabel(9)).toEqual("Quals 10");
+    expect(await getNthMatchLabel(0)).toEqual('Quals 1');
+    expect(await getNthMatchLabel(1)).toEqual('Quals 2');
+    expect(await getNthMatchLabel(2)).toEqual('Quals 3');
+    expect(await getNthMatchLabel(9)).toEqual('Quals 10');
     // TODO(phil): Validate quarter finals and friends. Right now we don't
     // distinguish between "sets". I.e. we display 4 "Quarter Final 1" matches
     // without being able to distinguish between them.
-    expect(await getNthMatchLabel(87)).toEqual("Final 1");
+    expect(await getNthMatchLabel(87)).toEqual('Final 1');
   });
 
   it('should: error on unknown match.', async () => {
@@ -136,6 +137,40 @@ describe('The scouting web page', () => {
         .toContain('Failed to find team 971 in match 3 in the schedule.');
   });
 
+  // Make sure that each page on the Entry tab has both "Next" and "Back"
+  // buttons. The only screens exempted from this are the first page and the
+  // last page.
+  it('should: have forwards and backwards buttons.', async () => {
+    await loadPage();
+
+    await element(by.cssContainingText('.nav-link', 'Data Entry')).click();
+
+    const expectedOrder = [
+      'Team Selection',
+      'Auto',
+      'TeleOp',
+      'Climb',
+      'Other',
+      'Review and Submit',
+    ];
+
+    // Go forward through the screens.
+    for (let i = 0; i < expectedOrder.length; i++) {
+      expect(await getHeadingText()).toEqual(expectedOrder[i]);
+      if (i != expectedOrder.length - 1) {
+        await element(by.buttonText('Next')).click();
+      }
+    }
+
+    // Go backwards through the screens.
+    for (let i = 0; i < expectedOrder.length; i++) {
+      expect(await getHeadingText())
+          .toEqual(expectedOrder[expectedOrder.length - i - 1]);
+      if (i != expectedOrder.length - 1) {
+        await element(by.buttonText('Back')).click();
+      }
+    }
+  });
 
   it('should: review and submit correct data.', async () => {
     await loadPage();
@@ -157,7 +192,7 @@ describe('The scouting web page', () => {
 
     expect(await getHeadingText()).toEqual('Climb');
     await element(by.id('high')).click();
-    await setTextboxByIdTo("comment", "A very useful comment here.");
+    await setTextboxByIdTo('comment', 'A very useful comment here.');
     await element(by.buttonText('Next')).click();
 
     expect(await getHeadingText()).toEqual('Other');
