@@ -11,15 +11,16 @@ import SubmitDataScoutingResponse = submit_data_scouting_response.scouting.webse
 import ErrorResponse = error_response.scouting.webserver.requests.ErrorResponse;
 
 type Section = 'Team Selection'|'Auto'|'TeleOp'|'Climb'|'Other'|
-    'Review and Submit'|'Success'
+    'Review and Submit'|'Success';
 type Level = 'NoAttempt'|'Failed'|'FailedWithPlentyOfTime'|'Low'|'Medium'|
-    'High'|'Transversal'
+    'High'|'Transversal';
 
-    @Component({
-      selector: 'app-entry',
-      templateUrl: './entry.ng.html',
-      styleUrls: ['../common.css', './entry.component.css']
-    }) export class EntryComponent {
+@Component({
+  selector: 'app-entry',
+  templateUrl: './entry.ng.html',
+  styleUrls: ['../common.css', './entry.component.css']
+})
+export class EntryComponent {
   section: Section = 'Team Selection';
   @Output() switchTabsEvent = new EventEmitter<string>();
   @Input() matchNumber: number = 1;
@@ -63,8 +64,8 @@ type Level = 'NoAttempt'|'Failed'|'FailedWithPlentyOfTime'|'Low'|'Medium'|
       this.submitDataScouting();
       return;
     } else if (this.section === 'Success') {
-     this.switchTabsEvent.emit('MatchList');
-     return;
+      this.switchTabsEvent.emit('MatchList');
+      return;
     }
     // Scroll back to the top so that we can be sure the user sees the
     // entire next screen. Otherwise it's easy to overlook input fields.
