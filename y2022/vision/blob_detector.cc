@@ -11,9 +11,8 @@
 #include "opencv2/imgproc.hpp"
 #include "y2022/vision/geometry.h"
 
-DEFINE_int32(red_delta, 100,
-             "Required difference between green pixels vs. red");
-DEFINE_int32(blue_delta, -10,
+DEFINE_int32(red_delta, 50, "Required difference between green pixels vs. red");
+DEFINE_int32(blue_delta, -20,
              "Required difference between green pixels vs. blue");
 
 namespace y2022 {
@@ -102,9 +101,9 @@ void BlobDetector::FilterBlobs(BlobResult *blob_result) {
   while (blob_it < blob_result->unfiltered_blobs.end() &&
          stats_it < blob_result->blob_stats.end()) {
     constexpr double kTapeAspectRatio = 5.0 / 2.0;
-    constexpr double kAspectRatioThreshold = 1.6;
+    constexpr double kAspectRatioThreshold = 2.0;
     constexpr double kMinArea = 10;
-    constexpr size_t kMinNumPoints = 6;
+    constexpr size_t kMinNumPoints = 2;
 
     // Remove all blobs that are at the bottom of the image, have a different
     // aspect ratio than the tape, or have too little area or points.
