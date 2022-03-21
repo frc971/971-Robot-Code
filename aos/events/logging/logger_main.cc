@@ -18,6 +18,9 @@ DEFINE_bool(skip_renicing, false,
 
 DEFINE_bool(snappy_compress, false, "If true, compress log data using snappy.");
 
+DEFINE_double(rotate_every, 0.0,
+              "If set, rotate the logger after this many seconds");
+
 int main(int argc, char *argv[]) {
   gflags::SetUsageMessage(
       "This program provides a simple logger binary that logs all SHMEM data "
@@ -43,6 +46,20 @@ int main(int argc, char *argv[]) {
   }
 
   aos::logger::Logger logger(&event_loop);
+
+  if (FLAGS_rotate_every != 0.0) {
+    aos::monotonic_clock::time_point last_rotation_time =
+        event_loop.monotonic_now();
+    logger.set_on_logged_period([&] {
+      const auto now = event_loop.monotonic_now();
+      if (now > last_rotation_time +
+                    std::chrono::duration<double>(FLAGS_rotate_every)) {
+        logger.Rotate();
+        last_rotation_time = now;
+      }
+    });
+  }
+
   event_loop.OnRun([&log_namer, &logger]() {
     if (FLAGS_skip_renicing) {
       LOG(WARNING) << "Ignoring request to renice to -20 due to "
