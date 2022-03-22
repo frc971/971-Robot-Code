@@ -1,20 +1,10 @@
-import * as configuration from 'org_frc971/aos/configuration_generated'
-import * as testing from 'org_frc971/aos/json_to_flatbuffer_generated'
-import * as flatbuffers_builder from 'org_frc971/external/com_github_google_flatbuffers/ts/builder';
-import {ByteBuffer} from 'org_frc971/external/com_github_google_flatbuffers/ts/byte-buffer';
-import {Long} from 'org_frc971/external/com_github_google_flatbuffers/ts/long';
+import {Builder, ByteBuffer} from 'flatbuffers';
+import {Configuration} from 'org_frc971/aos/configuration_generated'
+import {BaseType, Configuration as TestTable, FooStruct, Location, Map, VectorOfStrings, VectorOfVectorOfString} from 'org_frc971/aos/json_to_flatbuffer_generated'
 
 import {Connection} from './proxy';
 import {Parser, Table} from './reflection'
 
-import Configuration = configuration.aos.Configuration;
-import BaseType = testing.aos.testing.BaseType;
-import TestTable = testing.aos.testing.Configuration;
-import FooStruct = testing.aos.testing.FooStruct;
-import Location = testing.aos.testing.Location;
-import Map = testing.aos.testing.Map;
-import VectorOfStrings = testing.aos.testing.VectorOfStrings;
-import VectorOfVectorOfString = testing.aos.testing.VectorOfVectorOfString;
 // This file runs a basic test to confirm that the typescript flatbuffer
 // reflection library is working correctly. It currently is not run
 // automatically--to run it, run the web_proxy_demo sh_binary target, open the
@@ -35,8 +25,7 @@ function assertEqual(a: any, b: any, msg?: string): void {
 // that the start/end results are the same. This is largely meant to ensure
 // that we are exercising most of the logic associated with parsing flatbuffers.
 function DoTest(config: Configuration): void {
-  const builder =
-      new flatbuffers_builder.Builder() as unknown as flatbuffers.Builder;
+  const builder = new Builder();
   {
     TestTable.startVectorFooStructVector(builder, 3);
     const fooStruct0 = FooStruct.createFooStruct(builder, 66, 118);
@@ -76,8 +65,7 @@ function DoTest(config: Configuration): void {
     TestTable.addVectorFooStruct(builder, vectorFooStruct);
     TestTable.addVectorFooDouble(builder, doubleVector);
     TestTable.addFooDouble(builder, 11.14);
-    TestTable.addFooLong(
-        builder, new Long(100, 1) as unknown as flatbuffers.Long);
+    TestTable.addFooLong(builder, BigInt('1000000000000'));
     TestTable.addFooEnum(builder, BaseType.Array);
   }
 
@@ -85,8 +73,7 @@ function DoTest(config: Configuration): void {
   const array = builder.asUint8Array();
   const fbBuffer = new ByteBuffer(array);
 
-  const parsedFb = TestTable.getRootAsConfiguration(
-      fbBuffer as unknown as flatbuffers.ByteBuffer);
+  const parsedFb = TestTable.getRootAsConfiguration(fbBuffer);
 
   let testSchema = null;
   for (let ii = 0; ii < config.channelsLength(); ++ii) {
@@ -107,8 +94,7 @@ function DoTest(config: Configuration): void {
   assertEqual(11.14, parsedFb.fooDouble());
   assertEqual(testObject['foo_double'], parsedFb.fooDouble());
   assertEqual(testObject['foo_enum'], parsedFb.fooEnum());
-  assertEqual(testObject['foo_long'].low, parsedFb.fooLong().low);
-  assertEqual(testObject['foo_long'].high, parsedFb.fooLong().high);
+  assertEqual(testObject['foo_long'], parsedFb.fooLong());
   assertEqual(testObject['foo_ulong'], undefined);
   assertEqual(testObject['locations'], undefined);
 
@@ -163,7 +149,7 @@ conn.addConfigHandler((config: Configuration) => {
     throw new Error('Couldn\'t find Configuration schema in config.');
   }
   let configParser = new Parser(configSchema);
-  const configTable = Table.getRootTable(config.bb as unknown as ByteBuffer);
+  const configTable = Table.getRootTable(config.bb);
   console.log('Received config:');
   console.log(configParser.toObject(configTable, true));
 

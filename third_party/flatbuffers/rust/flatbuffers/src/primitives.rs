@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-use std::marker::PhantomData;
-use std::mem::size_of;
-use std::ops::Deref;
+use core::marker::PhantomData;
+use core::mem::size_of;
+use core::ops::Deref;
 
 use crate::endian_scalar::{emplace_scalar, read_scalar, read_scalar_at};
 use crate::follow::Follow;
@@ -93,6 +93,8 @@ impl<T> Clone for WIPOffset<T> {
     }
 }
 
+impl<T> Eq for WIPOffset<T> {}
+
 impl<T> PartialEq for WIPOffset<T> {
     fn eq(&self, o: &WIPOffset<T>) -> bool {
         self.value() == o.value()
@@ -135,7 +137,9 @@ impl<T> Push for WIPOffset<T> {
     #[inline(always)]
     fn push(&self, dst: &mut [u8], rest: &[u8]) {
         let n = (SIZE_UOFFSET + rest.len() - self.value() as usize) as UOffsetT;
-        emplace_scalar::<UOffsetT>(dst, n);
+        unsafe {
+            emplace_scalar::<UOffsetT>(dst, n);
+        }
     }
 }
 
@@ -177,7 +181,7 @@ impl<'a, T: Follow<'a>> Follow<'a> for ForwardsUOffset<T> {
     #[inline(always)]
     fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
         let slice = &buf[loc..loc + SIZE_UOFFSET];
-        let off = read_scalar::<u32>(slice) as usize;
+        let off = unsafe { read_scalar::<u32>(slice) as usize };
         T::follow(buf, loc + off)
     }
 }
@@ -198,7 +202,7 @@ impl<'a, T: Follow<'a>> Follow<'a> for ForwardsVOffset<T> {
     #[inline(always)]
     fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
         let slice = &buf[loc..loc + SIZE_VOFFSET];
-        let off = read_scalar::<VOffsetT>(slice) as usize;
+        let off = unsafe { read_scalar::<VOffsetT>(slice) as usize };
         T::follow(buf, loc + off)
     }
 }
@@ -228,7 +232,7 @@ impl<'a, T: Follow<'a>> Follow<'a> for BackwardsSOffset<T> {
     #[inline(always)]
     fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
         let slice = &buf[loc..loc + SIZE_SOFFSET];
-        let off = read_scalar::<SOffsetT>(slice);
+        let off = unsafe { read_scalar::<SOffsetT>(slice) };
         T::follow(buf, (loc as SOffsetT - off) as usize)
     }
 }
@@ -291,7 +295,7 @@ impl<'a> Follow<'a> for bool {
     type Inner = bool;
     #[inline(always)]
     fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
-        read_scalar_at::<u8>(buf, loc) != 0
+        unsafe { read_scalar_at::<u8>(buf, loc) != 0 }
     }
 }
 
@@ -306,7 +310,7 @@ macro_rules! impl_follow_for_endian_scalar {
             type Inner = $ty;
             #[inline(always)]
             fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
-                read_scalar_at::<$ty>(buf, loc)
+                unsafe { read_scalar_at::<$ty>(buf, loc) }
             }
         }
     };

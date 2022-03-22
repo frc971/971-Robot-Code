@@ -26,6 +26,7 @@ ts_library(
         "//aos/network/www:proxy",
         "//y2022/control_loops/superstructure:superstructure_status_ts_fbs",
         "//y2022/localizer:localizer_output_ts_fbs",
+        "//y2022/localizer:localizer_status_ts_fbs",
         "//y2022/localizer:localizer_visualization_ts_fbs",
         "@com_github_google_flatbuffers//ts:flatbuffers_ts",
     ],

@@ -28,7 +28,7 @@ def main():
     for n in reversed(descriptor):
       assert n == round(n)
       fbb.PrependUint8(int(round(n)))
-    descriptor_vector = fbb.EndVector(len(descriptor))
+    descriptor_vector = fbb.EndVector()
 
     Feature.FeatureStart(fbb)
 
@@ -45,7 +45,7 @@ def main():
   TrainingImage.TrainingImageStartFeaturesVector(fbb, len(features_vector))
   for feature in reversed(features_vector):
     fbb.PrependUOffsetTRelative(feature)
-  features_vector_table = fbb.EndVector(len(features_vector))
+  features_vector_table = fbb.EndVector()
 
   TrainingImage.TrainingImageStart(fbb)
   TrainingImage.TrainingImageAddFeatures(fbb, features_vector_table)
@@ -54,7 +54,7 @@ def main():
 
   TrainingData.TrainingDataStartImagesVector(fbb, 1)
   fbb.PrependUOffsetTRelative(training_image_offset)
-  images_offset = fbb.EndVector(1)
+  images_offset = fbb.EndVector()
 
   TrainingData.TrainingDataStart(fbb)
   TrainingData.TrainingDataAddImages(fbb, images_offset)

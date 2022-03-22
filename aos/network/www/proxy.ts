@@ -1,21 +1,7 @@
-import * as configuration from 'org_frc971/aos/configuration_generated';
-import * as web_proxy from 'org_frc971/aos/network/web_proxy_generated';
-import {Builder} from 'org_frc971/external/com_github_google_flatbuffers/ts/builder';
-import {ByteBuffer} from 'org_frc971/external/com_github_google_flatbuffers/ts/byte-buffer';
-
-import ChannelFb = configuration.aos.Channel;
-import Configuration = configuration.aos.Configuration;
-import Schema = configuration.reflection.Schema;
-import MessageHeader = web_proxy.aos.web_proxy.MessageHeader;
-import WebSocketIce = web_proxy.aos.web_proxy.WebSocketIce;
-import WebSocketMessage = web_proxy.aos.web_proxy.WebSocketMessage;
-import Payload = web_proxy.aos.web_proxy.Payload;
-import WebSocketSdp = web_proxy.aos.web_proxy.WebSocketSdp;
-import SdpType = web_proxy.aos.web_proxy.SdpType;
-import SubscriberRequest = web_proxy.aos.web_proxy.SubscriberRequest;
-import ChannelRequestFb = web_proxy.aos.web_proxy.ChannelRequest;
-import TransferMethod = web_proxy.aos.web_proxy.TransferMethod;
-import ChannelState = web_proxy.aos.web_proxy.ChannelState;
+import {Builder, ByteBuffer, Offset} from 'flatbuffers';
+import {Channel as ChannelFb, Configuration} from 'org_frc971/aos/configuration_generated';
+import {ChannelRequest as ChannelRequestFb, ChannelState, MessageHeader, Payload, SdpType, SubscriberRequest, TransferMethod, WebSocketIce, WebSocketMessage, WebSocketSdp} from 'org_frc971/aos/network/web_proxy_generated';
+import {Schema} from 'org_frc971/external/com_github_google_flatbuffers/reflection/reflection_generated';
 
 // There is one handler for each DataChannel, it maintains the state of
 // multi-part messages and delegates to a callback when the message is fully
@@ -32,11 +18,10 @@ export class Handler {
 
   handleMessage(e: MessageEvent): void {
     const fbBuffer = new ByteBuffer(new Uint8Array(e.data));
-    const messageHeader = MessageHeader.getRootAsMessageHeader(
-        fbBuffer as unknown as flatbuffers.ByteBuffer);
-    const time = messageHeader.monotonicSentTime().toFloat64() * 1e-9;
+    const messageHeader = MessageHeader.getRootAsMessageHeader(fbBuffer);
+    const time = Number(messageHeader.monotonicSentTime()) * 1e-9;
 
-    const stateBuilder = new Builder(512) as unknown as flatbuffers.Builder;
+    const stateBuilder = new Builder(512);
     ChannelState.startChannelState(stateBuilder);
     ChannelState.addQueueIndex(stateBuilder, messageHeader.queueIndex());
     ChannelState.addPacketIndex(stateBuilder, messageHeader.packetIndex());
@@ -167,8 +152,8 @@ export class Connection {
       throw new Error(
           'Must call subscribeToChannel after we\'ve received the config.');
     }
-    const builder = new Builder(512) as unknown as flatbuffers.Builder;
-    const channels: flatbuffers.Offset[] = [];
+    const builder = new Builder(512);
+    const channels: Offset[] = [];
     for (const channel of this.subscribedChannels) {
       const nameFb = builder.createString(channel.channel.name);
       const typeFb = builder.createString(channel.channel.type);
@@ -208,8 +193,7 @@ export class Connection {
   // all other messages are sent on specific DataChannels.
   onConfigMessage(data: Uint8Array): void {
     const fbBuffer = new ByteBuffer(data);
-    this.configInternal = Configuration.getRootAsConfiguration(
-        fbBuffer as unknown as flatbuffers.ByteBuffer);
+    this.configInternal = Configuration.getRootAsConfiguration(fbBuffer);
     for (const handler of Array.from(this.configHandlers)) {
       handler(this.configInternal);
     }
@@ -234,10 +218,9 @@ export class Connection {
     const sdpMidString = builder.createString(candidate.sdpMid);
 
     const iceFb = WebSocketIce.createWebSocketIce(
-        builder as unknown as flatbuffers.Builder, candidateString,
-        sdpMidString, candidate.sdpMLineIndex);
+        builder, candidateString, sdpMidString, candidate.sdpMLineIndex);
     const messageFb = WebSocketMessage.createWebSocketMessage(
-        builder as unknown as flatbuffers.Builder, Payload.WebSocketIce, iceFb);
+        builder, Payload.WebSocketIce, iceFb);
     builder.finish(messageFb);
     const array = builder.asUint8Array();
     this.webSocketConnection.send(array.buffer.slice(array.byteOffset));
@@ -254,9 +237,9 @@ export class Connection {
     const offerString = builder.createString(description.sdp);
 
     const webSocketSdp = WebSocketSdp.createWebSocketSdp(
-        builder as unknown as flatbuffers.Builder, SdpType.OFFER, offerString);
+        builder, SdpType.OFFER, offerString);
     const message = WebSocketMessage.createWebSocketMessage(
-        builder as unknown as flatbuffers.Builder, Payload.WebSocketSdp,
+        builder, Payload.WebSocketSdp,
         webSocketSdp);
     builder.finish(message);
     const array = builder.asUint8Array();
@@ -287,8 +270,7 @@ export class Connection {
   onWebSocketMessage(e: MessageEvent): void {
     const buffer = new Uint8Array(e.data)
     const fbBuffer = new ByteBuffer(buffer);
-    const message = WebSocketMessage.getRootAsWebSocketMessage(
-        fbBuffer as unknown as flatbuffers.ByteBuffer);
+    const message = WebSocketMessage.getRootAsWebSocketMessage(fbBuffer);
     switch (message.payloadType()) {
       case Payload.WebSocketSdp:
         const sdpFb = message.payload(new WebSocketSdp());

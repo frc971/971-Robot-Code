@@ -24,6 +24,7 @@ ts_library(
         "//aos:configuration_ts_fbs",
         "//aos/network:connect_ts_fbs",
         "//aos/network:web_proxy_ts_fbs",
+        "@com_github_google_flatbuffers//reflection:reflection_ts_fbs",
         "@com_github_google_flatbuffers//ts:flatbuffers_ts",
     ],
 )
@@ -38,6 +39,7 @@ ts_library(
     deps = [
         ":proxy",
         "//aos/events:ping_ts_fbs",
+        "@com_github_google_flatbuffers//ts:flatbuffers_ts",
     ],
 )
 
@@ -87,6 +89,7 @@ ts_library(
     deps = [
         "//aos:configuration_ts_fbs",
         "//aos:json_to_flatbuffer_fbs_ts",
+        "@com_github_google_flatbuffers//reflection:reflection_ts_fbs",
         "@com_github_google_flatbuffers//ts:flatbuffers_ts",
     ],
 )
@@ -124,6 +127,7 @@ ts_library(
         "//aos:configuration_ts_fbs",
         "//aos/network:connect_ts_fbs",
         "//aos/network:web_proxy_ts_fbs",
+        "@com_github_google_flatbuffers//reflection:reflection_ts_fbs",
         "@com_github_google_flatbuffers//ts:flatbuffers_ts",
     ],
 )

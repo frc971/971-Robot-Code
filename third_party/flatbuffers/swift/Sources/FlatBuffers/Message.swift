@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Google Inc. All rights reserved.
+ * Copyright 2021 Google Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+import Foundation
+
+/// FlatBufferGRPCMessage protocol that should allow us to invoke
+/// initializers directly from the GRPC generated code
 public protocol FlatBufferGRPCMessage {
 
   /// Raw pointer which would be pointing to the beginning of the readable bytes
@@ -27,17 +31,19 @@ public protocol FlatBufferGRPCMessage {
 
 /// Message is a wrapper around Buffers to to able to send Flatbuffers `Buffers` through the
 /// GRPC library
-public final class Message<T: FlatBufferObject>: FlatBufferGRPCMessage {
+public struct Message<T: FlatBufferObject>: FlatBufferGRPCMessage {
   internal var buffer: ByteBuffer
 
   /// Returns the an object of type T that would be  read from the buffer
   public var object: T {
     T.init(
       buffer,
-      o: Int32(buffer.read(def: UOffset.self, position: buffer.reader)) + Int32(buffer.reader))
+      o: Int32(buffer.read(def: UOffset.self, position: buffer.reader)) +
+        Int32(buffer.reader))
   }
 
-  public var rawPointer: UnsafeMutableRawPointer { buffer.memory.advanced(by: buffer.reader) }
+  public var rawPointer: UnsafeMutableRawPointer {
+    buffer.memory.advanced(by: buffer.reader) }
 
   public var size: Int { Int(buffer.size) }
 

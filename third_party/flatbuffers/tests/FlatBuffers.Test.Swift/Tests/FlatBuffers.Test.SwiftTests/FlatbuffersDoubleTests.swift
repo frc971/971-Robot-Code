@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Google Inc. All rights reserved.
+ * Copyright 2021 Google Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,17 +23,39 @@ final class FlatBuffersDoubleTests: XCTestCase {
 
   func testCreateFinish() {
     var b = FlatBufferBuilder(initialSize: 16)
-    let countryOff = CountryDouble.createCountry(builder: &b, name: country, log: 200, lan: 100)
+    let countryOff = CountryDouble.createCountry(
+      builder: &b,
+      name: country,
+      log: 200,
+      lan: 100)
     b.finish(offset: countryOff)
-    let v: [UInt8] = [16, 0, 0, 0, 0, 0, 10, 0, 28, 0, 4, 0, 8, 0, 16, 0, 10, 0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 89, 64, 0, 0, 0, 0, 0, 0, 105, 64, 0, 0, 0, 0, 6, 0, 0, 0, 78, 111, 114, 119, 97, 121, 0, 0]
+    // swiftformat:disable all
+    let v: [UInt8] = [
+      16, 0, 0, 0, 0, 0, 10, 0, 28, 0, 4, 0, 8, 0, 16, 0, 10,
+      0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 89, 64, 0, 0, 0,
+      0, 0, 0, 105, 64, 0, 0, 0, 0, 6, 0, 0, 0, 78, 111, 114, 119,
+      97, 121, 0, 0
+    ]
+    // swiftformat:enable all
     XCTAssertEqual(b.sizedByteArray, v)
   }
 
   func testCreateFinishWithPrefix() {
     var b = FlatBufferBuilder(initialSize: 16)
-    let countryOff = CountryDouble.createCountry(builder: &b, name: country, log: 200, lan: 100)
+    let countryOff = CountryDouble.createCountry(
+      builder: &b,
+      name: country,
+      log: 200,
+      lan: 100)
     b.finish(offset: countryOff, addPrefix: true)
-    let v: [UInt8] = [60, 0, 0, 0, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 0, 28, 0, 4, 0, 8, 0, 16, 0, 10, 0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 89, 64, 0, 0, 0, 0, 0, 0, 105, 64, 0, 0, 0, 0, 6, 0, 0, 0, 78, 111, 114, 119, 97, 121, 0, 0]
+    // swiftformat:disable all
+    let v: [UInt8] = [
+      60, 0, 0, 0, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 0, 28
+      , 0, 4, 0, 8, 0, 16, 0, 10, 0, 0, 0, 24, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 89, 64, 0, 0, 0, 0, 0, 0, 105, 64, 0, 0, 0,
+      0, 6, 0, 0, 0, 78, 111, 114, 119, 97, 121, 0, 0
+    ]
+    // swiftformat:enable all
     XCTAssertEqual(b.sizedByteArray, v)
   }
 }
@@ -55,16 +77,20 @@ class CountryDouble {
     builder: inout FlatBufferBuilder,
     name: String,
     log: Double,
-    lan: Double) -> Offset<Country>
+    lan: Double) -> Offset
   {
-    createCountry(builder: &builder, offset: builder.create(string: name), log: log, lan: lan)
+    createCountry(
+      builder: &builder,
+      offset: builder.create(string: name),
+      log: log,
+      lan: lan)
   }
 
   static func createCountry(
     builder: inout FlatBufferBuilder,
-    offset: Offset<String>,
+    offset: Offset,
     log: Double,
-    lan: Double) -> Offset<Country>
+    lan: Double) -> Offset
   {
     let _start = builder.startTable(with: 3)
     CountryDouble.add(builder: &builder, lng: log)
@@ -73,7 +99,10 @@ class CountryDouble {
     return CountryDouble.end(builder: &builder, startOffset: _start)
   }
 
-  static func end(builder: inout FlatBufferBuilder, startOffset: UOffset) -> Offset<Country> {
+  static func end(
+    builder: inout FlatBufferBuilder,
+    startOffset: UOffset) -> Offset
+  {
     Offset(offset: builder.endTable(at: startOffset))
   }
 
@@ -81,7 +110,7 @@ class CountryDouble {
     add(builder: &builder, name: builder.create(string: name))
   }
 
-  static func add(builder: inout FlatBufferBuilder, name: Offset<String>) {
+  static func add(builder: inout FlatBufferBuilder, name: Offset) {
     builder.add(offset: name, at: Country.offsets.name)
   }
 

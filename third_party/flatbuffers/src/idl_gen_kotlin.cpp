@@ -23,9 +23,6 @@
 #include "flatbuffers/flatbuffers.h"
 #include "flatbuffers/idl.h"
 #include "flatbuffers/util.h"
-#if defined(FLATBUFFERS_CPP98_STL)
-#  include <cctype>
-#endif  // defined(FLATBUFFERS_CPP98_STL)
 
 namespace flatbuffers {
 
@@ -49,10 +46,12 @@ static const char *keywords[] = {
 // Escape Keywords
 static std::string Esc(const std::string &name) {
   for (size_t i = 0; i < sizeof(keywords) / sizeof(keywords[0]); i++) {
-    if (name == keywords[i]) { return MakeCamel(name + "_", false); }
+    if (name == keywords[i]) {
+      return ConvertCase(name + "_", Case::kLowerCamel);
+    }
   }
 
-  return MakeCamel(name, false);
+  return ConvertCase(name, Case::kLowerCamel);
 }
 
 class KotlinGenerator : public BaseGenerator {
@@ -262,7 +261,6 @@ class KotlinGenerator : public BaseGenerator {
     GenerateComment(enum_def.doc_comment, writer, &comment_config);
 
     writer += "@Suppress(\"unused\")";
-    writer += "@ExperimentalUnsignedTypes";
     writer += "class " + Esc(enum_def.name) + " private constructor() {";
     writer.IncrementIdentLevel();
 
@@ -341,7 +339,8 @@ class KotlinGenerator : public BaseGenerator {
       case BASE_TYPE_UTYPE: return bb_var_name + ".get";
       case BASE_TYPE_BOOL: return "0.toByte() != " + bb_var_name + ".get";
       default:
-        return bb_var_name + ".get" + MakeCamel(GenTypeBasic(type.base_type));
+        return bb_var_name + ".get" +
+               ConvertCase(GenTypeBasic(type.base_type), Case::kUpperCamel);
     }
   }
 
@@ -361,7 +360,9 @@ class KotlinGenerator : public BaseGenerator {
         case BASE_TYPE_BOOL:
         case BASE_TYPE_NONE:
         case BASE_TYPE_UTYPE: return "bb.put";
-        default: return "bb.put" + MakeCamel(GenTypeBasic(type.base_type));
+        default:
+          return "bb.put" +
+                 ConvertCase(GenTypeBasic(type.base_type), Case::kUpperCamel);
       }
     }
     return "";
@@ -398,7 +399,7 @@ class KotlinGenerator : public BaseGenerator {
                       (nameprefix + (field.name + "_")).c_str());
       } else {
         writer += std::string(", ") + nameprefix + "\\";
-        writer += MakeCamel(field.name) + ": \\";
+        writer += ConvertCase(field.name, Case::kUpperCamel) + ": \\";
         writer += GenTypeBasic(field.value.type.base_type) + "\\";
       }
     }
@@ -425,7 +426,8 @@ class KotlinGenerator : public BaseGenerator {
                       (nameprefix + (field.name + "_")).c_str());
       } else {
         writer.SetValue("type", GenMethod(field.value.type));
-        writer.SetValue("argname", nameprefix + MakeCamel(field.name, false));
+        writer.SetValue("argname", nameprefix + ConvertCase(Esc(field.name),
+                                                            Case::kLowerCamel));
         writer.SetValue("cast", CastToSigned(field.value.type));
         writer += "builder.put{{type}}({{argname}}{{cast}})";
       }
@@ -463,7 +465,6 @@ class KotlinGenerator : public BaseGenerator {
     writer.SetValue("superclass", fixed ? "Struct" : "Table");
 
     writer += "@Suppress(\"unused\")";
-    writer += "@ExperimentalUnsignedTypes";
     writer += "class {{struct_name}} : {{superclass}}() {\n";
 
     writer.IncrementIdentLevel();
@@ -494,7 +495,7 @@ class KotlinGenerator : public BaseGenerator {
           // runtime.
           GenerateFunOneLine(
               writer, "validateVersion", "", "",
-              [&]() { writer += "Constants.FLATBUFFERS_1_12_0()"; },
+              [&]() { writer += "Constants.FLATBUFFERS_2_0_0()"; },
               options.gen_jvmstatic);
 
           GenerateGetRootAsAccessors(Esc(struct_def.name), writer, options);
@@ -646,7 +647,7 @@ class KotlinGenerator : public BaseGenerator {
           writer.IncrementIdentLevel();
           for (auto it = field_vec.begin(); it != field_vec.end(); ++it) {
             auto &field = **it;
-            if (field.deprecated || !field.required) { continue; }
+            if (field.deprecated || !field.IsRequired()) { continue; }
             writer.SetValue("offset", NumToString(field.value.offset));
             writer += "builder.required(o, {{offset}})";
           }
@@ -660,7 +661,8 @@ class KotlinGenerator : public BaseGenerator {
   void GenerateCreateVectorField(FieldDef &field, CodeWriter &writer,
                                  const IDLOptions options) const {
     auto vector_type = field.value.type.VectorType();
-    auto method_name = "create" + MakeCamel(Esc(field.name)) + "Vector";
+    auto method_name =
+        "create" + ConvertCase(Esc(field.name), Case::kUpperCamel) + "Vector";
     auto params = "builder: FlatBufferBuilder, data: " +
                   GenTypeBasic(vector_type.base_type) + "Array";
     writer.SetValue("size", NumToString(InlineSize(vector_type)));
@@ -692,8 +694,9 @@ class KotlinGenerator : public BaseGenerator {
     writer.SetValue("align", NumToString(InlineAlignment(vector_type)));
 
     GenerateFunOneLine(
-        writer, "start" + MakeCamel(Esc(field.name) + "Vector", true), params,
-        "",
+        writer,
+        "start" + ConvertCase(Esc(field.name) + "Vector", Case::kUpperCamel),
+        params, "",
         [&]() {
           writer += "builder.startVector({{size}}, numElems, {{align}})";
         },
@@ -703,14 +706,16 @@ class KotlinGenerator : public BaseGenerator {
   void GenerateAddField(std::string field_pos, FieldDef &field,
                         CodeWriter &writer, const IDLOptions options) const {
     auto field_type = GenTypeBasic(field.value.type.base_type);
-    auto secondArg = MakeCamel(Esc(field.name), false) + ": " + field_type;
+    auto secondArg =
+        ConvertCase(Esc(field.name), Case::kLowerCamel) + ": " + field_type;
 
     GenerateFunOneLine(
-        writer, "add" + MakeCamel(Esc(field.name), true),
+        writer, "add" + ConvertCase(Esc(field.name), Case::kUpperCamel),
         "builder: FlatBufferBuilder, " + secondArg, "",
         [&]() {
           auto method = GenMethod(field.value.type);
-          writer.SetValue("field_name", MakeCamel(Esc(field.name), false));
+          writer.SetValue("field_name",
+                          ConvertCase(Esc(field.name), Case::kLowerCamel));
           writer.SetValue("method_name", method);
           writer.SetValue("pos", field_pos);
           writer.SetValue("default", GenFBBDefaultValue(field));
@@ -801,7 +806,7 @@ class KotlinGenerator : public BaseGenerator {
       for (auto it = fields_vec.begin(); it != fields_vec.end(); ++it) {
         auto &field = **it;
         if (field.deprecated) continue;
-        params << ", " << MakeCamel(Esc(field.name), false);
+        params << ", " << ConvertCase(Esc(field.name), Case::kLowerCamel);
         if (!IsScalar(field.value.type.base_type)) {
           params << "Offset: ";
         } else {
@@ -827,10 +832,11 @@ class KotlinGenerator : public BaseGenerator {
                 auto base_type_size = SizeOf(field.value.type.base_type);
                 if (!field.deprecated &&
                     (!sortbysize || size == base_type_size)) {
-                  writer.SetValue("camel_field_name",
-                                  MakeCamel(Esc(field.name), true));
-                  writer.SetValue("field_name",
-                                  MakeCamel(Esc(field.name), false));
+                  writer.SetValue(
+                      "camel_field_name",
+                      ConvertCase(Esc(field.name), Case::kUpperCamel));
+                  writer.SetValue("field_name", ConvertCase(Esc(field.name),
+                                                            Case::kLowerCamel));
 
                   // we wrap on null check for scalar optionals
                   writer += field.IsScalarOptional()
@@ -857,7 +863,7 @@ class KotlinGenerator : public BaseGenerator {
     // Check if a buffer has the identifier.
     if (parser_.root_struct_def_ != &struct_def || !file_identifier.length())
       return;
-    auto name = MakeCamel(Esc(struct_def.name), false);
+    auto name = ConvertCase(Esc(struct_def.name), Case::kLowerCamel);
     GenerateFunOneLine(
         writer, name + "BufferHasIdentifier", "_bb: ByteBuffer", "Boolean",
         [&]() {
@@ -876,7 +882,7 @@ class KotlinGenerator : public BaseGenerator {
 
       GenerateComment(field.doc_comment, writer, &comment_config);
 
-      auto field_name = MakeCamel(Esc(field.name), false);
+      auto field_name = ConvertCase(Esc(field.name), Case::kLowerCamel);
       auto field_type = GenTypeGet(field.value.type);
       auto field_default_value = GenDefaultValue(field);
       auto return_type = GetterReturnType(field);
@@ -1047,7 +1053,8 @@ class KotlinGenerator : public BaseGenerator {
             auto &kfield = **kit;
             if (kfield.key) {
               auto qualified_name = WrapInNameSpace(sd);
-              auto name = MakeCamel(Esc(field.name), false) + "ByKey";
+              auto name =
+                  ConvertCase(Esc(field.name), Case::kLowerCamel) + "ByKey";
               auto params = "key: " + GenTypeGet(kfield.value.type);
               auto rtype = qualified_name + "?";
               GenerateFun(writer, name, params, rtype, [&]() {
@@ -1140,7 +1147,7 @@ class KotlinGenerator : public BaseGenerator {
         auto underlying_type = value_base_type == BASE_TYPE_VECTOR
                                    ? value_type.VectorType()
                                    : value_type;
-        auto name = "mutate" + MakeCamel(Esc(field.name), true);
+        auto name = "mutate" + ConvertCase(Esc(field.name), Case::kUpperCamel);
         auto size = NumToString(InlineSize(underlying_type));
         auto params = Esc(field.name) + ": " + GenTypeGet(underlying_type);
         // A vector mutator also needs the index of the vector element it should
@@ -1343,8 +1350,8 @@ class KotlinGenerator : public BaseGenerator {
         out << StructConstructorParams(*field.value.type.struct_def,
                                        prefix + (Esc(field.name) + "_"));
       } else {
-        out << ", " << prefix << MakeCamel(Esc(field.name), false) << ": "
-            << GenTypeBasic(field.value.type.base_type);
+        out << ", " << prefix << ConvertCase(Esc(field.name), Case::kLowerCamel)
+            << ": " << GenTypeBasic(field.value.type.base_type);
       }
     }
     return out.str();

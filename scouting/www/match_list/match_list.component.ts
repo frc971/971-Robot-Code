@@ -1,14 +1,8 @@
 import {Component, EventEmitter, OnInit, Output} from '@angular/core';
-import * as flatbuffer_builder from 'org_frc971/external/com_github_google_flatbuffers/ts/builder';
-import {ByteBuffer} from 'org_frc971/external/com_github_google_flatbuffers/ts/byte-buffer';
-import * as error_response from 'org_frc971/scouting/webserver/requests/messages/error_response_generated';
-import * as request_all_matches from 'org_frc971/scouting/webserver/requests/messages/request_all_matches_generated';
-import * as request_all_matches_response from 'org_frc971/scouting/webserver/requests/messages/request_all_matches_response_generated';
-
-import RequestAllMatches = request_all_matches.scouting.webserver.requests.RequestAllMatches;
-import RequestAllMatchesResponse = request_all_matches_response.scouting.webserver.requests.RequestAllMatchesResponse;
-import Match = request_all_matches_response.scouting.webserver.requests.Match;
-import ErrorResponse = error_response.scouting.webserver.requests.ErrorResponse;
+import {ByteBuffer, Builder} from 'flatbuffers'
+import {ErrorResponse} from 'org_frc971/scouting/webserver/requests/messages/error_response_generated';
+import {RequestAllMatches} from 'org_frc971/scouting/webserver/requests/messages/request_all_matches_generated';
+import {Match, RequestAllMatchesResponse} from 'org_frc971/scouting/webserver/requests/messages/request_all_matches_response_generated';
 
 type TeamInMatch = {
   teamNumber: number,
@@ -72,8 +66,7 @@ export class MatchListComponent implements OnInit {
   async importMatchList() {
     this.errorMessage = '';
 
-    const builder =
-        new flatbuffer_builder.Builder() as unknown as flatbuffers.Builder;
+    const builder = new Builder();
     RequestAllMatches.startRequestAllMatches(builder);
     builder.finish(RequestAllMatches.endRequestAllMatches(builder));
 
@@ -88,7 +81,7 @@ export class MatchListComponent implements OnInit {
       const fbBuffer = new ByteBuffer(new Uint8Array(resBuffer));
       const parsedResponse =
           RequestAllMatchesResponse.getRootAsRequestAllMatchesResponse(
-              fbBuffer as unknown as flatbuffers.ByteBuffer);
+              fbBuffer);
 
       this.matchList = [];
       for (let i = 0; i < parsedResponse.matchListLength(); i++) {
@@ -111,8 +104,7 @@ export class MatchListComponent implements OnInit {
       this.progressMessage = '';
       const resBuffer = await res.arrayBuffer();
       const fbBuffer = new ByteBuffer(new Uint8Array(resBuffer));
-      const parsedResponse = ErrorResponse.getRootAsErrorResponse(
-          fbBuffer as unknown as flatbuffers.ByteBuffer);
+      const parsedResponse = ErrorResponse.getRootAsErrorResponse(fbBuffer);
 
       const errorMessage = parsedResponse.errorMessage();
       this.errorMessage =

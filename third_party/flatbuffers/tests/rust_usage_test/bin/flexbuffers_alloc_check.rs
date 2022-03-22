@@ -70,6 +70,10 @@ fn make_monster(mut monster: MapBuilder) {
 fn validate_monster(flexbuffer: &[u8]) {
     let r = Reader::get_root(flexbuffer).unwrap().as_map();
 
+    assert!(!r.is_empty());
+    assert!(r.index_key("not_a_field").is_none());
+
+    assert_eq!(r.len(), 7);
     assert_eq!(r.idx("type").as_str(), "great orc");
     assert_eq!(r.idx("age").as_u8(), 100);
     assert_eq!(r.idx("name").as_str(), "Mr. Orc");
@@ -103,6 +107,7 @@ fn validate_monster(flexbuffer: &[u8]) {
 
 // This is in a separate binary than tests because taking over the global allocator is not
 // hermetic and not thread safe.
+#[cfg(not(miri))]  // slow.
 fn main() {
     let start_up = current_allocs();
 
@@ -133,6 +138,7 @@ fn main() {
 }
 
 #[test]
+#[cfg(not(miri))]  // slow.
 fn no_extra_allocations() {
     main()
 }

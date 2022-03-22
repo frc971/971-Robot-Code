@@ -20,8 +20,8 @@
 // each robot year, and may even end up allowing plots to be specified solely
 // using JSON rather than requiring people to write a script just to create
 // a plot.
-import * as configuration from 'org_frc971/aos/configuration_generated';
-import * as proxy from 'org_frc971/aos/network/www/proxy';
+import {Configuration} from 'org_frc971/aos/configuration_generated';
+import {Connection} from 'org_frc971/aos/network/www/proxy';
 import {plotImu} from 'org_frc971/frc971/wpilib/imu_plotter';
 import {plotDrivetrain} from 'org_frc971/frc971/control_loops/drivetrain/drivetrain_plotter';
 import {plotSpline} from 'org_frc971/frc971/control_loops/drivetrain/spline_plotter';
@@ -56,9 +56,6 @@ import {plotVision as plot2022Vision} from
     'org_frc971/y2022/vision/vision_plotter'
 import {plotDemo} from 'org_frc971/aos/network/www/demo_plot';
 import {plotData} from 'org_frc971/frc971/analysis/plot_data_utils';
-
-import Connection = proxy.Connection;
-import Configuration = configuration.aos.Configuration;
 
 const rootDiv = document.createElement('div');
 document.body.appendChild(rootDiv);

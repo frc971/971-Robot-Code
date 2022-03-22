@@ -1,13 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 
-import * as flatbuffer_builder from 'org_frc971/external/com_github_google_flatbuffers/ts/builder';
-import {ByteBuffer} from 'org_frc971/external/com_github_google_flatbuffers/ts/byte-buffer';
-import * as error_response from 'org_frc971/scouting/webserver/requests/messages/error_response_generated';
-import * as refresh_match_list_response from 'org_frc971/scouting/webserver/requests/messages/refresh_match_list_response_generated';
-import * as refresh_match_list from 'org_frc971/scouting/webserver/requests/messages/refresh_match_list_generated';
-import RefreshMatchList = refresh_match_list.scouting.webserver.requests.RefreshMatchList;
-import RefreshMatchListResponse = refresh_match_list_response.scouting.webserver.requests.RefreshMatchListResponse;
-import ErrorResponse = error_response.scouting.webserver.requests.ErrorResponse;
+import {Builder, ByteBuffer} from 'flatbuffers';
+import {ErrorResponse} from 'org_frc971/scouting/webserver/requests/messages/error_response_generated';
+import {RefreshMatchListResponse} from 'org_frc971/scouting/webserver/requests/messages/refresh_match_list_response_generated';
+import {RefreshMatchList} from 'org_frc971/scouting/webserver/requests/messages/refresh_match_list_generated';
 
 @Component({
   selector: 'app-import-match-list',
@@ -31,7 +27,7 @@ export class ImportMatchListComponent {
 
     this.errorMessage = '';
 
-    const builder = new flatbuffer_builder.Builder() as unknown as flatbuffers.Builder;
+    const builder = new Builder();
     const eventCode = builder.createString(this.eventCode);
     RefreshMatchList.startRefreshMatchList(builder);
     RefreshMatchList.addYear(builder, this.year);
@@ -51,8 +47,7 @@ export class ImportMatchListComponent {
       this.progressMessage = '';
       const resBuffer = await res.arrayBuffer();
       const fbBuffer = new ByteBuffer(new Uint8Array(resBuffer));
-      const parsedResponse = ErrorResponse.getRootAsErrorResponse(
-          fbBuffer as unknown as flatbuffers.ByteBuffer);
+      const parsedResponse = ErrorResponse.getRootAsErrorResponse(fbBuffer);
 
       const errorMessage = parsedResponse.errorMessage();
       this.errorMessage = `Received ${res.status} ${res.statusText}: "${errorMessage}"`;

@@ -1,5 +1,5 @@
 load("//aos:config.bzl", "aos_config")
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_ts_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -165,6 +165,13 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":control_loops_fbs",
+    ],
+)
+
+flatbuffer_ts_library(
+    name = "control_loops_ts_fbs",
+    srcs = [
+        "control_loops.fbs",
     ],
 )
 
@@ -341,6 +348,16 @@ cc_test(
     deps = [
         ":fixed_quadrature",
         "//aos/testing:googletest",
+    ],
+)
+
+flatbuffer_ts_library(
+    name = "profiled_subsystem_ts_fbs",
+    srcs = [
+        "profiled_subsystem.fbs",
+    ],
+    deps = [
+        ":control_loops_ts_fbs",
     ],
 )
 

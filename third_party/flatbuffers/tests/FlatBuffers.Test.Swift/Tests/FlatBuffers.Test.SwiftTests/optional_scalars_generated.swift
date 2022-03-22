@@ -4,26 +4,36 @@
 
 import FlatBuffers
 
-public enum optional_scalars_OptionalByte: Int8, Enum { 
+public enum optional_scalars_OptionalByte: Int8, Enum, Verifiable {
   public typealias T = Int8
   public static var byteSize: Int { return MemoryLayout<Int8>.size }
   public var value: Int8 { return self.rawValue }
   case none_ = 0
   case one = 1
   case two = 2
-  
 
   public static var max: optional_scalars_OptionalByte { return .two }
   public static var min: optional_scalars_OptionalByte { return .none_ }
 }
 
-public struct optional_scalars_ScalarStuff: FlatBufferObject {
+extension optional_scalars_OptionalByte: Encodable {
+  public func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    switch self {
+    case .none_: try container.encode("None")
+    case .one: try container.encode("One")
+    case .two: try container.encode("Two")
+    }
+  }
+}
 
-  static func validateVersion() { FlatBuffersVersion_1_12_0() }
+public struct optional_scalars_ScalarStuff: FlatBufferObject, Verifiable {
+
+  static func validateVersion() { FlatBuffersVersion_2_0_0() }
   public var __buffer: ByteBuffer! { return _accessor.bb }
   private var _accessor: Table
 
-  public static func finish(_ fbb: inout FlatBufferBuilder, end: Offset<UOffset>, prefix: Bool = false) { fbb.finish(offset: end, fileId: "NULL", addPrefix: prefix) }
+  public static func finish(_ fbb: inout FlatBufferBuilder, end: Offset, prefix: Bool = false) { fbb.finish(offset: end, fileId: "NULL", addPrefix: prefix) }
   public static func getRootAsScalarStuff(bb: ByteBuffer) -> optional_scalars_ScalarStuff { return optional_scalars_ScalarStuff(Table(bb: bb, position: Int32(bb.read(def: UOffset.self, position: bb.reader)) + Int32(bb.reader))) }
 
   private init(_ t: Table) { _accessor = t }
@@ -101,7 +111,7 @@ public struct optional_scalars_ScalarStuff: FlatBufferObject {
   public var maybeF64: Double? { let o = _accessor.offset(VTOFFSET.maybeF64.v); return o == 0 ? nil : _accessor.readBuffer(of: Double.self, at: o) }
   public var defaultF64: Double { let o = _accessor.offset(VTOFFSET.defaultF64.v); return o == 0 ? 42.0 : _accessor.readBuffer(of: Double.self, at: o) }
   public var justBool: Bool { let o = _accessor.offset(VTOFFSET.justBool.v); return o == 0 ? false : 0 != _accessor.readBuffer(of: Byte.self, at: o) }
-  public var maybeBool: Bool? { let o = _accessor.offset(VTOFFSET.maybeBool.v); return o == 0 ? true : 0 != _accessor.readBuffer(of: Byte.self, at: o) }
+  public var maybeBool: Bool? { let o = _accessor.offset(VTOFFSET.maybeBool.v); return o == 0 ? nil : 0 != _accessor.readBuffer(of: Byte.self, at: o) }
   public var defaultBool: Bool { let o = _accessor.offset(VTOFFSET.defaultBool.v); return o == 0 ? true : 0 != _accessor.readBuffer(of: Byte.self, at: o) }
   public var justEnum: optional_scalars_OptionalByte { let o = _accessor.offset(VTOFFSET.justEnum.v); return o == 0 ? .none_ : optional_scalars_OptionalByte(rawValue: _accessor.readBuffer(of: Int8.self, at: o)) ?? .none_ }
   public var maybeEnum: optional_scalars_OptionalByte? { let o = _accessor.offset(VTOFFSET.maybeEnum.v); return o == 0 ? nil : optional_scalars_OptionalByte(rawValue: _accessor.readBuffer(of: Int8.self, at: o)) ?? nil }
@@ -145,7 +155,7 @@ public struct optional_scalars_ScalarStuff: FlatBufferObject {
   public static func add(justEnum: optional_scalars_OptionalByte, _ fbb: inout FlatBufferBuilder) { fbb.add(element: justEnum.rawValue, def: 0, at: VTOFFSET.justEnum.p) }
   public static func add(maybeEnum: optional_scalars_OptionalByte?, _ fbb: inout FlatBufferBuilder) { fbb.add(element: maybeEnum?.rawValue, at: VTOFFSET.maybeEnum.p) }
   public static func add(defaultEnum: optional_scalars_OptionalByte, _ fbb: inout FlatBufferBuilder) { fbb.add(element: defaultEnum.rawValue, def: 1, at: VTOFFSET.defaultEnum.p) }
-  public static func endScalarStuff(_ fbb: inout FlatBufferBuilder, start: UOffset) -> Offset<UOffset> { let end = Offset<UOffset>(offset: fbb.endTable(at: start)); return end }
+  public static func endScalarStuff(_ fbb: inout FlatBufferBuilder, start: UOffset) -> Offset { let end = Offset(offset: fbb.endTable(at: start)); return end }
   public static func createScalarStuff(
     _ fbb: inout FlatBufferBuilder,
     justI8: Int8 = 0,
@@ -184,7 +194,7 @@ public struct optional_scalars_ScalarStuff: FlatBufferObject {
     justEnum: optional_scalars_OptionalByte = .none_,
     maybeEnum: optional_scalars_OptionalByte? = nil,
     defaultEnum: optional_scalars_OptionalByte = .one
-  ) -> Offset<UOffset> {
+  ) -> Offset {
     let __start = optional_scalars_ScalarStuff.startScalarStuff(&fbb)
     optional_scalars_ScalarStuff.add(justI8: justI8, &fbb)
     optional_scalars_ScalarStuff.add(maybeI8: maybeI8, &fbb)
@@ -223,6 +233,176 @@ public struct optional_scalars_ScalarStuff: FlatBufferObject {
     optional_scalars_ScalarStuff.add(maybeEnum: maybeEnum, &fbb)
     optional_scalars_ScalarStuff.add(defaultEnum: defaultEnum, &fbb)
     return optional_scalars_ScalarStuff.endScalarStuff(&fbb, start: __start)
+  }
+
+  public static func verify<T>(_ verifier: inout Verifier, at position: Int, of type: T.Type) throws where T: Verifiable {
+    var _v = try verifier.visitTable(at: position)
+    try _v.visit(field: VTOFFSET.justI8.p, fieldName: "justI8", required: false, type: Int8.self)
+    try _v.visit(field: VTOFFSET.maybeI8.p, fieldName: "maybeI8", required: false, type: Int8.self)
+    try _v.visit(field: VTOFFSET.defaultI8.p, fieldName: "defaultI8", required: false, type: Int8.self)
+    try _v.visit(field: VTOFFSET.justU8.p, fieldName: "justU8", required: false, type: UInt8.self)
+    try _v.visit(field: VTOFFSET.maybeU8.p, fieldName: "maybeU8", required: false, type: UInt8.self)
+    try _v.visit(field: VTOFFSET.defaultU8.p, fieldName: "defaultU8", required: false, type: UInt8.self)
+    try _v.visit(field: VTOFFSET.justI16.p, fieldName: "justI16", required: false, type: Int16.self)
+    try _v.visit(field: VTOFFSET.maybeI16.p, fieldName: "maybeI16", required: false, type: Int16.self)
+    try _v.visit(field: VTOFFSET.defaultI16.p, fieldName: "defaultI16", required: false, type: Int16.self)
+    try _v.visit(field: VTOFFSET.justU16.p, fieldName: "justU16", required: false, type: UInt16.self)
+    try _v.visit(field: VTOFFSET.maybeU16.p, fieldName: "maybeU16", required: false, type: UInt16.self)
+    try _v.visit(field: VTOFFSET.defaultU16.p, fieldName: "defaultU16", required: false, type: UInt16.self)
+    try _v.visit(field: VTOFFSET.justI32.p, fieldName: "justI32", required: false, type: Int32.self)
+    try _v.visit(field: VTOFFSET.maybeI32.p, fieldName: "maybeI32", required: false, type: Int32.self)
+    try _v.visit(field: VTOFFSET.defaultI32.p, fieldName: "defaultI32", required: false, type: Int32.self)
+    try _v.visit(field: VTOFFSET.justU32.p, fieldName: "justU32", required: false, type: UInt32.self)
+    try _v.visit(field: VTOFFSET.maybeU32.p, fieldName: "maybeU32", required: false, type: UInt32.self)
+    try _v.visit(field: VTOFFSET.defaultU32.p, fieldName: "defaultU32", required: false, type: UInt32.self)
+    try _v.visit(field: VTOFFSET.justI64.p, fieldName: "justI64", required: false, type: Int64.self)
+    try _v.visit(field: VTOFFSET.maybeI64.p, fieldName: "maybeI64", required: false, type: Int64.self)
+    try _v.visit(field: VTOFFSET.defaultI64.p, fieldName: "defaultI64", required: false, type: Int64.self)
+    try _v.visit(field: VTOFFSET.justU64.p, fieldName: "justU64", required: false, type: UInt64.self)
+    try _v.visit(field: VTOFFSET.maybeU64.p, fieldName: "maybeU64", required: false, type: UInt64.self)
+    try _v.visit(field: VTOFFSET.defaultU64.p, fieldName: "defaultU64", required: false, type: UInt64.self)
+    try _v.visit(field: VTOFFSET.justF32.p, fieldName: "justF32", required: false, type: Float32.self)
+    try _v.visit(field: VTOFFSET.maybeF32.p, fieldName: "maybeF32", required: false, type: Float32.self)
+    try _v.visit(field: VTOFFSET.defaultF32.p, fieldName: "defaultF32", required: false, type: Float32.self)
+    try _v.visit(field: VTOFFSET.justF64.p, fieldName: "justF64", required: false, type: Double.self)
+    try _v.visit(field: VTOFFSET.maybeF64.p, fieldName: "maybeF64", required: false, type: Double.self)
+    try _v.visit(field: VTOFFSET.defaultF64.p, fieldName: "defaultF64", required: false, type: Double.self)
+    try _v.visit(field: VTOFFSET.justBool.p, fieldName: "justBool", required: false, type: Bool.self)
+    try _v.visit(field: VTOFFSET.maybeBool.p, fieldName: "maybeBool", required: false, type: Bool.self)
+    try _v.visit(field: VTOFFSET.defaultBool.p, fieldName: "defaultBool", required: false, type: Bool.self)
+    try _v.visit(field: VTOFFSET.justEnum.p, fieldName: "justEnum", required: false, type: optional_scalars_OptionalByte.self)
+    try _v.visit(field: VTOFFSET.maybeEnum.p, fieldName: "maybeEnum", required: false, type: optional_scalars_OptionalByte.self)
+    try _v.visit(field: VTOFFSET.defaultEnum.p, fieldName: "defaultEnum", required: false, type: optional_scalars_OptionalByte.self)
+    _v.finish()
+  }
+}
+
+extension optional_scalars_ScalarStuff: Encodable {
+
+  enum CodingKeys: String, CodingKey {
+    case justI8 = "just_i8"
+    case maybeI8 = "maybe_i8"
+    case defaultI8 = "default_i8"
+    case justU8 = "just_u8"
+    case maybeU8 = "maybe_u8"
+    case defaultU8 = "default_u8"
+    case justI16 = "just_i16"
+    case maybeI16 = "maybe_i16"
+    case defaultI16 = "default_i16"
+    case justU16 = "just_u16"
+    case maybeU16 = "maybe_u16"
+    case defaultU16 = "default_u16"
+    case justI32 = "just_i32"
+    case maybeI32 = "maybe_i32"
+    case defaultI32 = "default_i32"
+    case justU32 = "just_u32"
+    case maybeU32 = "maybe_u32"
+    case defaultU32 = "default_u32"
+    case justI64 = "just_i64"
+    case maybeI64 = "maybe_i64"
+    case defaultI64 = "default_i64"
+    case justU64 = "just_u64"
+    case maybeU64 = "maybe_u64"
+    case defaultU64 = "default_u64"
+    case justF32 = "just_f32"
+    case maybeF32 = "maybe_f32"
+    case defaultF32 = "default_f32"
+    case justF64 = "just_f64"
+    case maybeF64 = "maybe_f64"
+    case defaultF64 = "default_f64"
+    case justBool = "just_bool"
+    case maybeBool = "maybe_bool"
+    case defaultBool = "default_bool"
+    case justEnum = "just_enum"
+    case maybeEnum = "maybe_enum"
+    case defaultEnum = "default_enum"
+  }
+  public func encode(to encoder: Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+    if justI8 != 0 {
+      try container.encodeIfPresent(justI8, forKey: .justI8)
+    }
+    try container.encodeIfPresent(maybeI8, forKey: .maybeI8)
+    if defaultI8 != 42 {
+      try container.encodeIfPresent(defaultI8, forKey: .defaultI8)
+    }
+    if justU8 != 0 {
+      try container.encodeIfPresent(justU8, forKey: .justU8)
+    }
+    try container.encodeIfPresent(maybeU8, forKey: .maybeU8)
+    if defaultU8 != 42 {
+      try container.encodeIfPresent(defaultU8, forKey: .defaultU8)
+    }
+    if justI16 != 0 {
+      try container.encodeIfPresent(justI16, forKey: .justI16)
+    }
+    try container.encodeIfPresent(maybeI16, forKey: .maybeI16)
+    if defaultI16 != 42 {
+      try container.encodeIfPresent(defaultI16, forKey: .defaultI16)
+    }
+    if justU16 != 0 {
+      try container.encodeIfPresent(justU16, forKey: .justU16)
+    }
+    try container.encodeIfPresent(maybeU16, forKey: .maybeU16)
+    if defaultU16 != 42 {
+      try container.encodeIfPresent(defaultU16, forKey: .defaultU16)
+    }
+    if justI32 != 0 {
+      try container.encodeIfPresent(justI32, forKey: .justI32)
+    }
+    try container.encodeIfPresent(maybeI32, forKey: .maybeI32)
+    if defaultI32 != 42 {
+      try container.encodeIfPresent(defaultI32, forKey: .defaultI32)
+    }
+    if justU32 != 0 {
+      try container.encodeIfPresent(justU32, forKey: .justU32)
+    }
+    try container.encodeIfPresent(maybeU32, forKey: .maybeU32)
+    if defaultU32 != 42 {
+      try container.encodeIfPresent(defaultU32, forKey: .defaultU32)
+    }
+    if justI64 != 0 {
+      try container.encodeIfPresent(justI64, forKey: .justI64)
+    }
+    try container.encodeIfPresent(maybeI64, forKey: .maybeI64)
+    if defaultI64 != 42 {
+      try container.encodeIfPresent(defaultI64, forKey: .defaultI64)
+    }
+    if justU64 != 0 {
+      try container.encodeIfPresent(justU64, forKey: .justU64)
+    }
+    try container.encodeIfPresent(maybeU64, forKey: .maybeU64)
+    if defaultU64 != 42 {
+      try container.encodeIfPresent(defaultU64, forKey: .defaultU64)
+    }
+    if justF32 != 0.0 {
+      try container.encodeIfPresent(justF32, forKey: .justF32)
+    }
+    try container.encodeIfPresent(maybeF32, forKey: .maybeF32)
+    if defaultF32 != 42.0 {
+      try container.encodeIfPresent(defaultF32, forKey: .defaultF32)
+    }
+    if justF64 != 0.0 {
+      try container.encodeIfPresent(justF64, forKey: .justF64)
+    }
+    try container.encodeIfPresent(maybeF64, forKey: .maybeF64)
+    if defaultF64 != 42.0 {
+      try container.encodeIfPresent(defaultF64, forKey: .defaultF64)
+    }
+    if justBool != false {
+      try container.encodeIfPresent(justBool, forKey: .justBool)
+    }
+    try container.encodeIfPresent(maybeBool, forKey: .maybeBool)
+    if defaultBool != true {
+      try container.encodeIfPresent(defaultBool, forKey: .defaultBool)
+    }
+    if justEnum != .none_ {
+      try container.encodeIfPresent(justEnum, forKey: .justEnum)
+    }
+    try container.encodeIfPresent(maybeEnum, forKey: .maybeEnum)
+    if defaultEnum != .one {
+      try container.encodeIfPresent(defaultEnum, forKey: .defaultEnum)
+    }
   }
 }
 

@@ -28,7 +28,6 @@ flatbuffer_cc_library(
 flatbuffer_ts_library(
     name = "localizer_output_ts_fbs",
     srcs = ["localizer_output.fbs"],
-    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )
 
@@ -46,6 +45,16 @@ flatbuffer_cc_library(
     visibility = ["//visibility:public"],
 )
 
+flatbuffer_ts_library(
+    name = "localizer_status_ts_fbs",
+    srcs = ["localizer_status.fbs"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//frc971/control_loops:control_loops_ts_fbs",
+        "//frc971/control_loops/drivetrain:drivetrain_status_ts_fbs",
+    ],
+)
+
 flatbuffer_cc_library(
     name = "localizer_visualization_fbs",
     srcs = ["localizer_visualization.fbs"],
@@ -61,13 +70,12 @@ flatbuffer_cc_library(
 flatbuffer_ts_library(
     name = "localizer_visualization_ts_fbs",
     srcs = ["localizer_visualization.fbs"],
-    includes = [
-        ":localizer_status_fbs_includes",
-        "//frc971/control_loops:control_loops_fbs_includes",
-        "//frc971/control_loops/drivetrain:drivetrain_status_fbs_includes",
-    ],
-    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
+    deps = [
+        ":localizer_status_ts_fbs",
+        "//frc971/control_loops:control_loops_ts_fbs",
+        "//frc971/control_loops/drivetrain:drivetrain_status_ts_fbs",
+    ],
 )
 
 cc_static_flatbuffer(

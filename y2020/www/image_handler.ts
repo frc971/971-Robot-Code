@@ -1,20 +1,8 @@
-import * as configuration from 'org_frc971/aos/configuration_generated';
+import {Channel, Configuration} from 'org_frc971/aos/configuration_generated';
 import {Connection} from 'org_frc971/aos/network/www/proxy';
-import * as flatbuffers_builder from 'org_frc971/external/com_github_google_flatbuffers/ts/builder';
-import {ByteBuffer} from 'org_frc971/external/com_github_google_flatbuffers/ts/byte-buffer';
-import {Long} from 'org_frc971/external/com_github_google_flatbuffers/ts/long';
-import * as sift from 'org_frc971/y2020/vision/sift/sift_generated'
-import * as vision from 'org_frc971/frc971/vision/vision_generated';
-import * as web_proxy from 'org_frc971/aos/network/web_proxy_generated';
-
-import Channel = configuration.aos.Channel;
-import Configuration = configuration.aos.Configuration;
-import CameraImage = vision.frc971.vision.CameraImage;
-import ImageMatchResult = sift.frc971.vision.sift.ImageMatchResult;
-import Feature = sift.frc971.vision.sift.Feature;
-import SubscriberRequest = web_proxy.aos.web_proxy.SubscriberRequest;
-import ChannelRequest = web_proxy.aos.web_proxy.ChannelRequest;
-import TransferMethod = web_proxy.aos.web_proxy.TransferMethod;
+import {ByteBuffer} from 'flatbuffers';
+import {ImageMatchResult, Feature} from 'org_frc971/y2020/vision/sift/sift_generated'
+import {CameraImage} from 'org_frc971/frc971/vision/vision_generated';
 
 export class ImageHandler {
   private canvas = document.createElement('canvas');
@@ -22,9 +10,9 @@ export class ImageHandler {
 
   private imageBuffer: Uint8ClampedArray|null = null;
   private image: CameraImage|null = null;
-  private imageTimestamp: Long|null = null;
+  private imageTimestamp: BigInt|null = null;
   private result: ImageMatchResult|null = null;
-  private resultTimestamp: Long|null = null;
+  private resultTimestamp: BigInt|null = null;
   private width = 0;
   private height = 0;
   private selectedIndex = 0;
@@ -64,8 +52,7 @@ export class ImageHandler {
     }
 
     const fbBuffer = new ByteBuffer(data);
-    this.image = CameraImage.getRootAsCameraImage(
-        fbBuffer as unknown as flatbuffers.ByteBuffer);
+    this.image = CameraImage.getRootAsCameraImage(fbBuffer);
     this.imageTimestamp = this.image.monotonicTimestampNs();
 
     this.width = this.image.cols();
@@ -116,16 +103,14 @@ export class ImageHandler {
   handleImageMetadata(data: Uint8Array): void {
     console.log('got an image match result to process');
     const fbBuffer = new ByteBuffer(data);
-    this.result = ImageMatchResult.getRootAsImageMatchResult(
-        fbBuffer as unknown as flatbuffers.ByteBuffer);
+    this.result = ImageMatchResult.getRootAsImageMatchResult(fbBuffer);
     this.resultTimestamp = this.result.imageMonotonicTimestampNs();
     this.draw();
   }
 
   draw(): void {
     if (!this.imageTimestamp || !this.resultTimestamp ||
-        this.imageTimestamp.low !== this.resultTimestamp.low ||
-        this.imageTimestamp.high !== this.resultTimestamp.high) {
+        this.imageTimestamp !== this.resultTimestamp) {
     //  console.log('image and result do not match');
     //  console.log(this.imageTimestamp.low, this.resultTimestamp.low);
     //  console.log(this.imageTimestamp.high, this.resultTimestamp.high);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Google Inc. All rights reserved.
+ * Copyright 2021 Google Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 import Foundation
 
 /// Offset object for all the Objects that are written into the buffer
-public struct Offset<T> {
+public struct Offset {
   /// Offset of the object in the buffer
   public var o: UOffset
   /// Returns false if the offset is equal to zero

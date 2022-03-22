@@ -1,16 +1,8 @@
-import * as configuration from 'org_frc971/aos/configuration_generated';
+import {ByteBuffer} from 'flatbuffers';
+import {Configuration} from 'org_frc971/aos/configuration_generated';
 import {Connection} from 'org_frc971/aos/network/www/proxy';
-import * as flatbuffers_builder from 'org_frc971/external/com_github_google_flatbuffers/ts/builder';
-import * as web_proxy from 'org_frc971/aos/network/web_proxy_generated';
+
 import {Parser, Table} from './reflection'
-import {ByteBuffer} from 'org_frc971/external/com_github_google_flatbuffers/ts/byte-buffer';
-
-
-import Configuration = configuration.aos.Configuration;
-import Channel = configuration.aos.Channel;
-import SubscriberRequest = web_proxy.aos.web_proxy.SubscriberRequest;
-import ChannelRequest = web_proxy.aos.web_proxy.ChannelRequest;
-import TransferMethod = web_proxy.aos.web_proxy.TransferMethod;
 
 export class ConfigHandler {
   private readonly root_div = document.createElement('div');

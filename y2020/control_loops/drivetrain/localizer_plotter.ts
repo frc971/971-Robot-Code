@@ -1,15 +1,12 @@
 // Provides a plot for debugging robot state-related issues.
 import {AosPlotter} from 'org_frc971/aos/network/www/aos_plotter';
-import * as proxy from 'org_frc971/aos/network/www/proxy';
-import * as configuration from 'org_frc971/aos/configuration_generated';
+import {Connection} from 'org_frc971/aos/network/www/proxy';
 import {BLUE, BROWN, CYAN, GREEN, PINK, RED, WHITE} from 'org_frc971/aos/network/www/colors';
 import {MessageHandler, TimestampedMessage} from 'org_frc971/aos/network/www/aos_plotter';
 import {Point} from 'org_frc971/aos/network/www/plotter';
 import {Table} from 'org_frc971/aos/network/www/reflection';
-import {ByteBuffer} from 'org_frc971/external/com_github_google_flatbuffers/ts/byte-buffer';
-
-import Connection = proxy.Connection;
-import Schema = configuration.reflection.Schema;
+import {ByteBuffer} from 'flatbuffers';
+import {Schema} from 'org_frc971/external/com_github_google_flatbuffers/reflection/reflection_generated';
 
 const TIME = AosPlotter.TIME;
 

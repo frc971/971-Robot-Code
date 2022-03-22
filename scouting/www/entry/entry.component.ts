@@ -1,14 +1,9 @@
 import {Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild} from '@angular/core';
 import {FormsModule} from '@angular/forms';
-import * as flatbuffer_builder from 'org_frc971/external/com_github_google_flatbuffers/ts/builder';
-import {ByteBuffer} from 'org_frc971/external/com_github_google_flatbuffers/ts/byte-buffer';
-import * as error_response from 'org_frc971/scouting/webserver/requests/messages/error_response_generated';
-import * as submit_data_scouting from 'org_frc971/scouting/webserver/requests/messages/submit_data_scouting_generated';
-import * as submit_data_scouting_response from 'org_frc971/scouting/webserver/requests/messages/submit_data_scouting_response_generated';
-
-import SubmitDataScouting = submit_data_scouting.scouting.webserver.requests.SubmitDataScouting;
-import SubmitDataScoutingResponse = submit_data_scouting_response.scouting.webserver.requests.SubmitDataScoutingResponse;
-import ErrorResponse = error_response.scouting.webserver.requests.ErrorResponse;
+import {Builder, ByteBuffer} from 'flatbuffers';
+import {ErrorResponse} from 'org_frc971/scouting/webserver/requests/messages/error_response_generated';
+import {SubmitDataScoutingResponse} from 'org_frc971/scouting/webserver/requests/messages/submit_data_scouting_response_generated';
+import {SubmitDataScouting} from 'org_frc971/scouting/webserver/requests/messages/submit_data_scouting_generated';
 
 type Section = 'Team Selection'|'Auto'|'TeleOp'|'Climb'|'Other'|
     'Review and Submit'|'Success';
@@ -97,8 +92,7 @@ export class EntryComponent {
   async submitDataScouting() {
     this.errorMessage = '';
 
-    const builder =
-        new flatbuffer_builder.Builder() as unknown as flatbuffers.Builder;
+    const builder = new Builder();
     SubmitDataScouting.startSubmitDataScouting(builder);
     SubmitDataScouting.addTeam(builder, this.teamNumber);
     SubmitDataScouting.addMatch(builder, this.matchNumber);
@@ -131,8 +125,7 @@ export class EntryComponent {
     } else {
       const resBuffer = await res.arrayBuffer();
       const fbBuffer = new ByteBuffer(new Uint8Array(resBuffer));
-      const parsedResponse = ErrorResponse.getRootAsErrorResponse(
-          fbBuffer as unknown as flatbuffers.ByteBuffer);
+      const parsedResponse = ErrorResponse.getRootAsErrorResponse(fbBuffer);
 
       const errorMessage = parsedResponse.errorMessage();
       this.errorMessage =

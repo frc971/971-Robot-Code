@@ -38,6 +38,10 @@ table Type {
                              // If base_type == Union, UnionType, or integral derived
                              // from an enum, index into "enums" below.
     fixed_length:uint16 = 0 (id: 3);  // Only if base_type == Array.
+    /// The size (octets) of the `base_type` field.
+    base_size:uint = 4 (id: 4); // 4 Is a common size due to offsets being that size.
+    /// The size (octets) of the `element` field, if present.
+    element_size:uint = 0 (id: 5);
 }
 
 table KeyValue {
@@ -46,25 +50,27 @@ table KeyValue {
 }
 
 table EnumVal {
-    name:string (required, id: 0);
-    value:long (key, id: 1);
-    object:Object (id: 2);  // Will be deprecated in favor of union_type in the future.
+    name:string (id: 0, required);
+    value:long (id: 1, key);
+    object:Object (id: 2, deprecated);
     union_type:Type (id: 3);
     documentation:[string] (id: 4);
 }
 
 table Enum {
-    name:string (required, key, id: 0);
-    values:[EnumVal] (required, id: 1);  // In order of their values.
+    name:string (id: 0, required, key);
+    values:[EnumVal] (id: 1, required);  // In order of their values.
     is_union:bool = false (id: 2);
-    underlying_type:Type (required, id: 3);
+    underlying_type:Type (id: 3, required);
     attributes:[KeyValue] (id: 4);
     documentation:[string] (id: 5);
+    /// File that this Enum is declared in.
+    declaration_file: string (id: 6);
 }
 
 table Field {
-    name:string (required, key, id: 0);
-    type:Type (required, id: 1);
+    name:string (id: 0, required, key);
+    type:Type (id: 1, required);
     id:ushort (id: 2);
     offset:ushort (id: 3);  // Offset into the vtable for tables, or into the struct.
     default_integer:long = 0 (id: 4);
@@ -75,16 +81,20 @@ table Field {
     attributes:[KeyValue] (id: 9);
     documentation:[string] (id: 10);
     optional:bool = false (id: 11);
+    /// Number of padding octets to always add after this field. Structs only.
+    padding:uint16 = 0 (id: 12); 
 }
 
 table Object {  // Used for both tables and structs.
-    name:string (required, key, id: 0);
-    fields:[Field] (required, id: 1);  // Sorted.
+    name:string (id: 0, required, key);
+    fields:[Field] (id: 1, required);  // Sorted.
     is_struct:bool = false (id: 2);
     minalign:int (id: 3);
     bytesize:int (id: 4);  // For structs.
     attributes:[KeyValue] (id: 5);
     documentation:[string] (id: 6);
+    /// File that this Object is declared in.
+    declaration_file: string (id: 7);
 }
 
 table RPCCall {
@@ -96,19 +106,43 @@ table RPCCall {
 }
 
 table Service {
-    name:string (required, key, id: 0);
+    name:string (id: 0, required, key);
     calls:[RPCCall] (id: 1);
     attributes:[KeyValue] (id: 2);
     documentation:[string] (id: 3);
+    /// File that this Service is declared in.
+    declaration_file: string (id: 4);
+}
+
+/// New schema language features that are not supported by old code generators.
+enum AdvancedFeatures : ulong (bit_flags) {
+    AdvancedArrayFeatures,
+    AdvancedUnionFeatures,
+    OptionalScalars,
+    DefaultVectorsAndStrings,
+}
+
+/// File specific information.
+/// Symbols declared within a file may be recovered by iterating over all
+/// symbols and examining the `declaration_file` field.
+table SchemaFile {
+  /// Filename, relative to project root.
+  filename:string (id: 0, required, key);
+  /// Names of included files, relative to project root.
+  included_filenames:[string] (id: 1);
 }
 
 table Schema {
-    objects:[Object] (required, id: 0);    // Sorted.
-    enums:[Enum] (required, id: 1);        // Sorted.
+    objects:[Object] (id: 0, required);    // Sorted.
+    enums:[Enum] (id: 1, required);        // Sorted.
     file_ident:string (id: 2);
     file_ext:string (id: 3);
     root_table:Object (id: 4);
     services:[Service] (id: 5);             // Sorted.
+    advanced_features:AdvancedFeatures (id: 6);
+    /// All the files used in this compilation. Files are relative to where
+    /// flatc was invoked.
+    fbs_files:[SchemaFile] (id: 7);         // Sorted.
 }
 
 root_type Schema;

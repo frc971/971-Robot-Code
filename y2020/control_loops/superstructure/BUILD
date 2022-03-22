@@ -30,11 +30,11 @@ flatbuffer_ts_library(
     srcs = [
         "superstructure_status.fbs",
     ],
-    includes = [
-        "//frc971/control_loops:control_loops_fbs_includes",
-        "//frc971/control_loops:profiled_subsystem_fbs_includes",
-    ],
     target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        "//frc971/control_loops:control_loops_ts_fbs",
+        "//frc971/control_loops:profiled_subsystem_ts_fbs",
+    ],
 )
 
 flatbuffer_cc_library(
@@ -146,6 +146,7 @@ ts_library(
         "//aos/network/www:plotter",
         "//aos/network/www:proxy",
         "//aos/network/www:reflection_ts",
+        "@com_github_google_flatbuffers//reflection:reflection_ts_fbs",
         "@com_github_google_flatbuffers//ts:flatbuffers_ts",
     ],
 )

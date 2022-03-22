@@ -1,11 +1,12 @@
-import {aos} from 'org_frc971/aos/events/ping_generated';
+import {Ping} from 'org_frc971/aos/events/ping_generated';
+import {ByteBuffer} from 'flatbuffers';
 
 export function HandlePing(data: Uint8Array) {
-  const fbBuffer = new flatbuffers.ByteBuffer(data);
-  const ping = aos.examples.Ping.getRootAsPing(fbBuffer);
+  const fbBuffer = new ByteBuffer(data);
+  const ping = Ping.getRootAsPing(fbBuffer);
 
   document.getElementById('val').innerHTML = ping.value().toString();
-  document.getElementById('time').innerHTML = ping.sendTime().low.toString();
+  document.getElementById('time').innerHTML = ping.sendTime().toString();
 }
 
 export function SetupDom() {
@@ -22,5 +23,5 @@ export function SetupDom() {
 }
 
 export function GetId() {
-  return aos.examples.Ping.getFullyQualifiedName();
+  return Ping.getFullyQualifiedName();
 }

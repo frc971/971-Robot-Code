@@ -127,6 +127,7 @@ ts_library(
         "//aos/network/www:aos_plotter",
         "//aos/network/www:plotter",
         "//aos/network/www:proxy",
+        "@com_github_google_flatbuffers//reflection:reflection_ts_fbs",
         "@com_github_google_flatbuffers//ts:flatbuffers_ts",
     ],
 )

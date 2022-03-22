@@ -40,13 +40,16 @@
 #endif
 // clang-format on
 
-#include "flatbuffers/base.h"
 #include "flatbuffers/util.h"
 
 #include <sys/stat.h>
+
 #include <clocale>
 #include <cstdlib>
+#include <functional>
 #include <fstream>
+
+#include "flatbuffers/base.h"
 
 namespace flatbuffers {
 
@@ -156,7 +159,7 @@ std::string ConCatPathFileName(const std::string &path,
                                const std::string &filename) {
   std::string filepath = path;
   if (filepath.length()) {
-    char &filepath_last_character = string_back(filepath);
+    char &filepath_last_character = filepath.back();
     if (filepath_last_character == kPathSeparatorWindows) {
       filepath_last_character = kPathSeparator;
     } else if (filepath_last_character != kPathSeparator) {
@@ -175,6 +178,9 @@ std::string PosixPath(const char *path) {
   std::string p = path;
   std::replace(p.begin(), p.end(), '\\', '/');
   return p;
+}
+std::string PosixPath(const std::string &path) {
+  return PosixPath(path.c_str());
 }
 
 void EnsureDirExists(const std::string &filepath) {
@@ -215,6 +221,36 @@ std::string AbsolutePath(const std::string &filepath) {
   // clang-format on
 }
 
+std::string RelativeToRootPath(const std::string &project,
+                               const std::string &filepath) {
+  std::string absolute_project = PosixPath(AbsolutePath(project));
+  if (absolute_project.back() != '/') absolute_project += "/";
+  std::string absolute_filepath = PosixPath(AbsolutePath(filepath));
+
+  // Find the first character where they disagree.
+  // The previous directory is the lowest common ancestor;
+  const char *a = absolute_project.c_str();
+  const char *b = absolute_filepath.c_str();
+  size_t common_prefix_len = 0;
+  while (*a != '\0' && *b != '\0' && *a == *b) {
+    if (*a == '/') common_prefix_len = a - absolute_project.c_str();
+    a++;
+    b++;
+  }
+  // the number of ../ to prepend to b depends on the number of remaining
+  // directories in A.
+  const char *suffix = absolute_project.c_str() + common_prefix_len;
+  size_t num_up = 0;
+  while (*suffix != '\0')
+    if (*suffix++ == '/') num_up++;
+  num_up--;  // last one is known to be '/'.
+  std::string result = "//";
+  for (size_t i = 0; i < num_up; i++) result += "../";
+  result += absolute_filepath.substr(common_prefix_len + 1);
+
+  return result;
+}
+
 // Locale-independent code.
 #if defined(FLATBUFFERS_LOCALE_INDEPENDENT) && \
     (FLATBUFFERS_LOCALE_INDEPENDENT > 0)
@@ -238,8 +274,7 @@ ClassicLocale ClassicLocale::instance_;
 
 std::string RemoveStringQuotes(const std::string &s) {
   auto ch = *s.c_str();
-  return ((s.size() >= 2) && (ch == '\"' || ch == '\'') &&
-          (ch == string_back(s)))
+  return ((s.size() >= 2) && (ch == '\"' || ch == '\'') && (ch == s.back()))
              ? s.substr(1, s.length() - 2)
              : s;
 }
@@ -282,6 +317,132 @@ void SetupDefaultCRTReportMode() {
   #endif
 
   // clang-format on
+}
+
+namespace {
+
+static std::string ToCamelCase(const std::string &input, bool first) {
+  std::string s;
+  for (size_t i = 0; i < input.length(); i++) {
+    if (!i && first)
+      s += CharToUpper(input[i]);
+    else if (input[i] == '_' && i + 1 < input.length())
+      s += CharToUpper(input[++i]);
+    else
+      s += input[i];
+  }
+  return s;
+}
+
+static std::string ToSnakeCase(const std::string &input, bool screaming) {
+  std::string s;
+  for (size_t i = 0; i < input.length(); i++) {
+    if (i == 0) {
+      s += screaming ? CharToUpper(input[i]) : CharToLower(input[i]);
+    } else if (input[i] == '_') {
+      s += '_';
+    } else if (!islower(input[i])) {
+      // Prevent duplicate underscores for Upper_Snake_Case strings
+      // and UPPERCASE strings.
+      if (islower(input[i - 1])) { s += '_'; }
+      s += screaming ? CharToUpper(input[i]) : CharToLower(input[i]);
+    } else {
+      s += screaming ? CharToUpper(input[i]) : input[i];
+    }
+  }
+  return s;
+}
+
+static std::string ToAll(const std::string &input,
+                         std::function<char(const char)> transform) {
+  std::string s;
+  for (size_t i = 0; i < input.length(); i++) { s += transform(input[i]); }
+  return s;
+}
+
+static std::string CamelToSnake(const std::string &input) {
+  std::string s;
+  for (size_t i = 0; i < input.length(); i++) {
+    if (i == 0) {
+      s += CharToLower(input[i]);
+    } else if (input[i] == '_') {
+      s += '_';
+    } else if (!islower(input[i])) {
+      // Prevent duplicate underscores for Upper_Snake_Case strings
+      // and UPPERCASE strings.
+      if (islower(input[i - 1])) { s += '_'; }
+      s += CharToLower(input[i]);
+    } else {
+      s += input[i];
+    }
+  }
+  return s;
+}
+
+static std::string DasherToSnake(const std::string &input) {
+  std::string s;
+  for (size_t i = 0; i < input.length(); i++) {
+    if (input[i] == '-') {
+      s += "_";
+    } else {
+      s += input[i];
+    }
+  }
+  return s;
+}
+
+static std::string ToDasher(const std::string &input) {
+  std::string s;
+  char p = 0;
+  for (size_t i = 0; i < input.length(); i++) {
+    char const &c = input[i];
+    if (c == '_') {
+      if (i > 0 && p != kPathSeparator &&
+          // The following is a special case to ignore digits after a _. This is
+          // because ThisExample3 would be converted to this_example_3 in the
+          // CamelToSnake conversion, and then dasher would do this-example-3,
+          // but it expects this-example3.
+          !(i + 1 < input.length() && isdigit(input[i + 1])))
+        s += "-";
+    } else {
+      s += c;
+    }
+    p = c;
+  }
+  return s;
+}
+
+}  // namespace
+
+std::string ConvertCase(const std::string &input, Case output_case,
+                        Case input_case) {
+  if (output_case == Case::kKeep) return input;
+  // The output cases expect snake_case inputs, so if we don't have that input
+  // format, try to convert to snake_case.
+  switch (input_case) {
+    case Case::kLowerCamel:
+    case Case::kUpperCamel:
+      return ConvertCase(CamelToSnake(input), output_case);
+    case Case::kDasher: return ConvertCase(DasherToSnake(input), output_case);
+    case Case::kKeep: printf("WARNING: Converting from kKeep case.\n"); break;
+    default:
+    case Case::kSnake:
+    case Case::kScreamingSnake:
+    case Case::kAllLower:
+    case Case::kAllUpper: break;
+  }
+
+  switch (output_case) {
+    case Case::kUpperCamel: return ToCamelCase(input, true);
+    case Case::kLowerCamel: return ToCamelCase(input, false);
+    case Case::kSnake: return input;
+    case Case::kScreamingSnake: return ToSnakeCase(input, true);
+    case Case::kAllUpper: return ToAll(input, CharToUpper);
+    case Case::kAllLower: return ToAll(input, CharToLower);
+    case Case::kDasher: return ToDasher(input);
+    default:
+    case Case::kUnknown: return input;
+  }
 }
 
 }  // namespace flatbuffers

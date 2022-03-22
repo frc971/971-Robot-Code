@@ -10,7 +10,7 @@ option(BUILD_DEBUGGER "Compile a debugger with main() and without libFuzzer" OFF
 
 if(NOT DEFINED FLATBUFFERS_MAX_PARSING_DEPTH)
   # Force checking of RecursionError in the test
-  set(FLATBUFFERS_MAX_PARSING_DEPTH 8)
+  set(FLATBUFFERS_MAX_PARSING_DEPTH 24)
 endif()
 message(STATUS "FLATBUFFERS_MAX_PARSING_DEPTH: ${FLATBUFFERS_MAX_PARSING_DEPTH}")
 
@@ -53,7 +53,7 @@ target_compile_options(
   fuzzer_config
   INTERFACE
     $<$<NOT:$<BOOL:${OSS_FUZZ}>>:
-      -fsanitize-coverage=edge,trace-cmp
+      -fsanitize-coverage=trace-cmp
     >
     $<$<BOOL:${USE_ASAN}>:
       -fsanitize=fuzzer,undefined,address
@@ -85,17 +85,30 @@ target_link_libraries(
 set(FLATBUFFERS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../")
 
 set(FlatBuffers_Library_SRCS
+    ${FLATBUFFERS_DIR}/include/flatbuffers/allocator.h
+    ${FLATBUFFERS_DIR}/include/flatbuffers/array.h
     ${FLATBUFFERS_DIR}/include/flatbuffers/base.h
+    ${FLATBUFFERS_DIR}/include/flatbuffers/buffer.h
+    ${FLATBUFFERS_DIR}/include/flatbuffers/buffer_ref.h
+    ${FLATBUFFERS_DIR}/include/flatbuffers/default_allocator.h
+    ${FLATBUFFERS_DIR}/include/flatbuffers/detached_buffer.h
+    ${FLATBUFFERS_DIR}/include/flatbuffers/flatbuffer_builder.h
     ${FLATBUFFERS_DIR}/include/flatbuffers/flatbuffers.h
+    ${FLATBUFFERS_DIR}/include/flatbuffers/flexbuffers.h
     ${FLATBUFFERS_DIR}/include/flatbuffers/hash.h
     ${FLATBUFFERS_DIR}/include/flatbuffers/idl.h
-    ${FLATBUFFERS_DIR}/include/flatbuffers/util.h
+    ${FLATBUFFERS_DIR}/include/flatbuffers/minireflect.h
     ${FLATBUFFERS_DIR}/include/flatbuffers/reflection.h
     ${FLATBUFFERS_DIR}/include/flatbuffers/reflection_generated.h
-    ${FLATBUFFERS_DIR}/include/flatbuffers/stl_emulation.h
-    ${FLATBUFFERS_DIR}/include/flatbuffers/flexbuffers.h
     ${FLATBUFFERS_DIR}/include/flatbuffers/registry.h
-    ${FLATBUFFERS_DIR}/include/flatbuffers/minireflect.h
+    ${FLATBUFFERS_DIR}/include/flatbuffers/stl_emulation.h
+    ${FLATBUFFERS_DIR}/include/flatbuffers/string.h
+    ${FLATBUFFERS_DIR}/include/flatbuffers/struct.h
+    ${FLATBUFFERS_DIR}/include/flatbuffers/table.h
+    ${FLATBUFFERS_DIR}/include/flatbuffers/util.h
+    ${FLATBUFFERS_DIR}/include/flatbuffers/vector.h
+    ${FLATBUFFERS_DIR}/include/flatbuffers/vector_downward.h
+    ${FLATBUFFERS_DIR}/include/flatbuffers/verifier.h
     ${FLATBUFFERS_DIR}/src/idl_parser.cpp
     ${FLATBUFFERS_DIR}/src/idl_gen_text.cpp
     ${FLATBUFFERS_DIR}/src/reflection.cpp
@@ -133,12 +146,38 @@ target_link_libraries(parser_fuzzer PRIVATE flatbuffers_fuzzed)
 add_executable(verifier_fuzzer flatbuffers_verifier_fuzzer.cc)
 target_link_libraries(verifier_fuzzer PRIVATE flatbuffers_fuzzed)
 
+add_executable(flexverifier_fuzzer flexbuffers_verifier_fuzzer.cc)
+target_link_libraries(flexverifier_fuzzer PRIVATE flatbuffers_fuzzed)
+
 add_executable(monster_fuzzer flatbuffers_monster_fuzzer.cc)
 target_link_libraries(monster_fuzzer PRIVATE flatbuffers_fuzzed)
+add_custom_command(
+  TARGET monster_fuzzer PRE_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy
+  ${CMAKE_SOURCE_DIR}/../monster_test.bfbs
+  ${CMAKE_CURRENT_BINARY_DIR}/monster_test.bfbs)
+  
 
 # Build debugger for weird cases found with fuzzer.
 if(BUILD_DEBUGGER)
   add_library(flatbuffers_nonfuzz STATIC ${FlatBuffers_Library_SRCS})
+  target_compile_options(
+    flatbuffers_nonfuzz
+    PUBLIC
+      $<$<BOOL:${USE_ASAN}>:
+        -fsanitize=undefined,address
+      >
+      -fno-limit-debug-info
+  )
+  
+  target_link_libraries(
+    flatbuffers_nonfuzz
+    PUBLIC
+      $<$<BOOL:${USE_ASAN}>:
+        -fsanitize=undefined,address
+      >
+  )
+
   target_compile_definitions(
     flatbuffers_nonfuzz
     PUBLIC
@@ -147,6 +186,21 @@ if(BUILD_DEBUGGER)
     PRIVATE
       FLATBUFFERS_MAX_PARSING_DEPTH=${FLATBUFFERS_MAX_PARSING_DEPTH}
   )
-  add_executable(scalar_debug flatbuffers_scalar_fuzzer.cc scalar_debug.cpp)
+  add_executable(scalar_debug
+    flatbuffers_scalar_fuzzer.cc
+    scalar_debug.cpp
+  )
   target_link_libraries(scalar_debug PRIVATE flatbuffers_nonfuzz)
+
+  add_executable(monster_debug
+    flatbuffers_monster_fuzzer.cc
+    monster_debug.cpp
+  )
+  target_link_libraries(monster_debug PRIVATE flatbuffers_nonfuzz)
+  add_custom_command(
+    TARGET monster_debug PRE_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+    ${CMAKE_SOURCE_DIR}/../monster_test.bfbs
+    ${CMAKE_CURRENT_BINARY_DIR}/monster_test.bfbs)
+  
 endif(BUILD_DEBUGGER)

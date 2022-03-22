@@ -30,10 +30,10 @@ flatbuffer_cc_library(
 flatbuffer_ts_library(
     name = "connect_ts_fbs",
     srcs = ["connect.fbs"],
-    includes = [
-        "//aos:configuration_fbs_includes",
-    ],
     target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        "//aos:configuration_ts_fbs",
+    ],
 )
 
 flatbuffer_cc_library(
@@ -411,11 +411,11 @@ flatbuffer_cc_library(
 flatbuffer_ts_library(
     name = "web_proxy_ts_fbs",
     srcs = ["web_proxy.fbs"],
-    includes = [
-        ":connect_fbs_includes",
-        "//aos:configuration_fbs_includes",
-    ],
     target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":connect_ts_fbs",
+        "//aos:configuration_ts_fbs",
+    ],
 )
 
 cc_library(

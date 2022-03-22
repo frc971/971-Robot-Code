@@ -1,15 +1,11 @@
 // Provides a plot which handles plotting the plot defined by a
 // frc971.analysis.Plot message.
-import * as configuration from 'org_frc971/aos/configuration_generated';
-import * as plot_data from 'org_frc971/frc971/analysis/plot_data_generated';
+import {Plot as PlotFb} from 'org_frc971/frc971/analysis/plot_data_generated';
 import {MessageHandler, TimestampedMessage} from 'org_frc971/aos/network/www/aos_plotter';
-import {ByteBuffer} from 'org_frc971/external/com_github_google_flatbuffers/ts/byte-buffer';
+import {ByteBuffer} from 'flatbuffers';
 import {Plot, Point} from 'org_frc971/aos/network/www/plotter';
-import * as proxy from 'org_frc971/aos/network/www/proxy';
-
-import Connection = proxy.Connection;
-import Schema = configuration.reflection.Schema;
-import PlotFb = plot_data.frc971.analysis.Plot;
+import {Connection} from 'org_frc971/aos/network/www/proxy';
+import {Schema} from 'org_frc971/external/com_github_google_flatbuffers/reflection/reflection_generated';
 
 export function plotData(conn: Connection, parentDiv: Element) {
   // Set up a selection box to allow the user to choose between plots to show.
@@ -33,8 +29,7 @@ export function plotData(conn: Connection, parentDiv: Element) {
 
   conn.addReliableHandler(
       '/analysis', 'frc971.analysis.Plot', (data: Uint8Array, time: number) => {
-        const plotFb = PlotFb.getRootAsPlot(
-            new ByteBuffer(data) as unknown as flatbuffers.ByteBuffer);
+        const plotFb = PlotFb.getRootAsPlot(new ByteBuffer(data));
         const name = (!plotFb.title()) ? 'Plot ' + plots.size : plotFb.title();
         const div = document.createElement('div');
         div.style.display = 'none';

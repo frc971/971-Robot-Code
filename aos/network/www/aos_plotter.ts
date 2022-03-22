@@ -23,23 +23,13 @@
 // The demo_plot.ts script has a basic example of using this library, with all
 // the required boilerplate, as well as some extra examples about how to
 // add axis labels and the such.
-import * as configuration from 'org_frc971/aos/configuration_generated';
+import {Channel, Configuration} from 'org_frc971/aos/configuration_generated';
 import {Line, Plot, Point} from 'org_frc971/aos/network/www/plotter';
-import * as proxy from 'org_frc971/aos/network/www/proxy';
-import * as web_proxy from 'org_frc971/aos/network/web_proxy_generated';
-import * as reflection from 'org_frc971/aos/network/www/reflection'
-import * as flatbuffers_builder from 'org_frc971/external/com_github_google_flatbuffers/ts/builder';
-import {ByteBuffer} from 'org_frc971/external/com_github_google_flatbuffers/ts/byte-buffer';
-
-import Channel = configuration.aos.Channel;
-import Connection = proxy.Connection;
-import Configuration = configuration.aos.Configuration;
-import Schema = configuration.reflection.Schema;
-import Parser = reflection.Parser;
-import Table = reflection.Table;
-import SubscriberRequest = web_proxy.aos.web_proxy.SubscriberRequest;
-import ChannelRequest = web_proxy.aos.web_proxy.ChannelRequest;
-import TransferMethod = web_proxy.aos.web_proxy.TransferMethod;
+import {Connection} from 'org_frc971/aos/network/www/proxy';
+import {SubscriberRequest, ChannelRequest, TransferMethod} from 'org_frc971/aos/network/web_proxy_generated';
+import {Parser, Table} from 'org_frc971/aos/network/www/reflection'
+import {Schema} from 'org_frc971/external/com_github_google_flatbuffers/reflection/reflection_generated';
+import {ByteBuffer} from 'flatbuffers';
 
 export class TimestampedMessage {
   constructor(

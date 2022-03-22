@@ -48,11 +48,10 @@ flatbuffer_ts_library(
     srcs = [
         "superstructure_status.fbs",
     ],
-    includes = [
-        "//frc971/control_loops:control_loops_fbs_includes",
-        "//frc971/control_loops:profiled_subsystem_fbs_includes",
+    deps = [
+        "//frc971/control_loops:control_loops_ts_fbs",
+        "//frc971/control_loops:profiled_subsystem_ts_fbs",
     ],
-    target_compatible_with = ["@platforms//os:linux"],
 )
 
 flatbuffer_cc_library(

@@ -59,8 +59,8 @@ cc_static_flatbuffer(
 flatbuffer_ts_library(
     name = "drivetrain_status_ts_fbs",
     srcs = ["drivetrain_status.fbs"],
-    includes = ["//frc971/control_loops:control_loops_fbs_includes"],
     target_compatible_with = ["@platforms//os:linux"],
+    deps = ["//frc971/control_loops:control_loops_ts_fbs"],
 )
 
 genrule(

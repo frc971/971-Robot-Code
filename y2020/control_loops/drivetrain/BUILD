@@ -227,6 +227,7 @@ ts_library(
         "//aos/network/www:plotter",
         "//aos/network/www:proxy",
         "//aos/network/www:reflection_ts",
+        "@com_github_google_flatbuffers//reflection:reflection_ts_fbs",
         "@com_github_google_flatbuffers//ts:flatbuffers_ts",
     ],
 )

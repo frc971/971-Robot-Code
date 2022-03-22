@@ -1,18 +1,9 @@
-import * as web_proxy from 'org_frc971/aos/network/web_proxy_generated';
+import {ByteBuffer} from 'flatbuffers';
 import {Connection} from 'org_frc971/aos/network/www/proxy';
-import * as flatbuffers_builder from 'org_frc971/external/com_github_google_flatbuffers/ts/builder';
-import {ByteBuffer} from 'org_frc971/external/com_github_google_flatbuffers/ts/byte-buffer';
-import * as localizer from 'org_frc971/y2022/localizer/localizer_visualization_generated';
-import * as output from 'org_frc971/y2022/localizer/localizer_output_generated';
-import * as ss from 'org_frc971/y2022/control_loops/superstructure/superstructure_status_generated'
-
-import LocalizerVisualization = localizer.frc971.controls.LocalizerVisualization;
-import LocalizerOutput = output.frc971.controls.LocalizerOutput;
-import RejectionReason = localizer.frc971.controls.RejectionReason;
-import TargetEstimateDebug = localizer.frc971.controls.TargetEstimateDebug;
-import SuperstructureStatus = ss.y2022.control_loops.superstructure.Status;
-import SuperstructureState = ss.y2022.control_loops.superstructure.SuperstructureState;
-import IntakeState = ss.y2022.control_loops.superstructure.IntakeState;
+import {IntakeState, Status as SuperstructureStatus, SuperstructureState} from 'org_frc971/y2022/control_loops/superstructure/superstructure_status_generated'
+import {LocalizerOutput} from 'org_frc971/y2022/localizer/localizer_output_generated';
+import {RejectionReason} from 'org_frc971/y2022/localizer/localizer_status_generated';
+import {LocalizerVisualization, TargetEstimateDebug} from 'org_frc971/y2022/localizer/localizer_visualization_generated';
 
 import {FIELD_LENGTH, FIELD_WIDTH, FT_TO_M, IN_TO_M} from './constants';
 
@@ -128,9 +119,7 @@ export class FieldHandler {
 
     const fbBuffer = new ByteBuffer(data);
     this.localizerImageMatches.set(
-        now,
-        LocalizerVisualization.getRootAsLocalizerVisualization(
-            fbBuffer as unknown as flatbuffers.ByteBuffer));
+        now, LocalizerVisualization.getRootAsLocalizerVisualization(fbBuffer));
 
     const debug = this.localizerImageMatches.get(now);
 
@@ -160,14 +149,12 @@ export class FieldHandler {
 
   private handleLocalizerOutput(data: Uint8Array): void {
     const fbBuffer = new ByteBuffer(data);
-    this.localizerOutput = LocalizerOutput.getRootAsLocalizerOutput(
-        fbBuffer as unknown as flatbuffers.ByteBuffer);
+    this.localizerOutput = LocalizerOutput.getRootAsLocalizerOutput(fbBuffer);
   }
 
   private handleSuperstructureStatus(data: Uint8Array): void {
     const fbBuffer = new ByteBuffer(data);
-    this.superstructureStatus = SuperstructureStatus.getRootAsStatus(
-        fbBuffer as unknown as flatbuffers.ByteBuffer);
+    this.superstructureStatus = SuperstructureStatus.getRootAsStatus(fbBuffer);
   }
 
   drawField(): void {

@@ -36,7 +36,7 @@ def list_to_transformation_matrix(values, fbb):
     TransformationMatrix.TransformationMatrixStartDataVector(fbb, len(values))
     for n in reversed(values):
         fbb.PrependFloat32(n)
-    list_offset = fbb.EndVector(len(values))
+    list_offset = fbb.EndVector()
 
     TransformationMatrix.TransformationMatrixStart(fbb)
     TransformationMatrix.TransformationMatrixAddData(fbb, list_offset)
@@ -74,14 +74,14 @@ def main():
             fbb, len(camera_int_list))
         for n in reversed(camera_int_list):
             fbb.PrependFloat32(n)
-        intrinsics_vector = fbb.EndVector(len(camera_int_list))
+        intrinsics_vector = fbb.EndVector()
 
         dist_coeffs_list = camera_calib.camera_int.dist_coeffs.ravel().tolist()
         CameraCalibration.CameraCalibrationStartDistCoeffsVector(
             fbb, len(dist_coeffs_list))
         for n in reversed(dist_coeffs_list):
             fbb.PrependFloat32(n)
-        dist_coeffs_vector = fbb.EndVector(len(dist_coeffs_list))
+        dist_coeffs_vector = fbb.EndVector()
 
         node_name_offset = fbb.CreateString(camera_calib.node_name)
         CameraCalibration.CameraCalibrationStart(fbb)
@@ -104,8 +104,7 @@ def main():
         fbb, len(camera_calibration_vector))
     for camera_calibration in reversed(camera_calibration_vector):
         fbb.PrependUOffsetTRelative(camera_calibration)
-    camera_calibration_vector_table = fbb.EndVector(
-        len(camera_calibration_vector))
+    camera_calibration_vector_table = fbb.EndVector()
 
     # Fill out TrainingData
     CalibrationData.CalibrationDataStart(fbb)

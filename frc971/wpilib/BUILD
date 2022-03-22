@@ -289,12 +289,16 @@ flatbuffer_cc_library(
 )
 
 flatbuffer_ts_library(
+    name = "imu_ts_fbs",
+    srcs = ["imu.fbs"],
+)
+
+flatbuffer_ts_library(
     name = "imu_batch_ts_fbs",
     srcs = ["imu_batch.fbs"],
-    includes = [
-        ":imu_fbs_includes",
+    deps = [
+        ":imu_ts_fbs",
     ],
-    target_compatible_with = ["@platforms//os:linux"],
 )
 
 cc_library(
@@ -445,6 +449,7 @@ ts_library(
         "//aos/network/www:aos_plotter",
         "//aos/network/www:plotter",
         "//aos/network/www:reflection_ts",
+        "@com_github_google_flatbuffers//reflection:reflection_ts_fbs",
         "@com_github_google_flatbuffers//ts:flatbuffers_ts",
     ],
 )

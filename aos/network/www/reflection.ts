@@ -6,9 +6,9 @@
 // constructed flatbuffers.
 // See reflection_test_main.ts for sample usage.
 
-import {reflection, aos} from 'org_frc971/aos/configuration_generated';
-import {ByteBuffer} from 'org_frc971/external/com_github_google_flatbuffers/ts/byte-buffer';
-import {Long} from 'org_frc971/external/com_github_google_flatbuffers/ts/long';
+import * as aos from 'org_frc971/aos/configuration_generated';
+import * as reflection from '../../../external/com_github_google_flatbuffers/reflection/reflection_generated';
+import {ByteBuffer} from 'flatbuffers';
 
 // Returns the size, in bytes, of the given type. For vectors/strings/etc.
 // returns the size of the offset.
@@ -236,7 +236,7 @@ export class Parser {
   }
 
   // Returns the Object definition associated with the given type index.
-  getType(typeIndex: number): reflection.ObjectGenerated {
+  getType(typeIndex: number): reflection.Object_ {
     if (typeIndex === -1) {
       return this.schema.rootTable();
     }
@@ -249,7 +249,7 @@ export class Parser {
   // Retrieves the Field schema for the given field name within a given
   // type index.
   getField(fieldName: string, typeIndex: number): reflection.Field {
-    const schema: reflection.ObjectGenerated = this.getType(typeIndex);
+    const schema: reflection.Object_ = this.getType(typeIndex);
     const numFields = schema.fieldsLength();
     for (let ii = 0; ii < numFields; ++ii) {
       const field = schema.fields(ii);
@@ -269,7 +269,7 @@ export class Parser {
   // value for the field and return that.
   // For 64-bit fields, returns a flatbuffer Long rather than a standard number.
   readScalar(table: Table, fieldName: string, readDefaults: boolean = false):
-      number|Long|null {
+      number|BigInt|null {
     return this.readScalarLambda(
         table.typeIndex, fieldName, readDefaults)(table);
   }
@@ -279,7 +279,7 @@ export class Parser {
   // can be obtained using table.typeIndex.
   readScalarLambda(
       typeIndex: number, fieldName: string,
-      readDefaults: boolean = false): (t: Table) => number | Long | null {
+      readDefaults: boolean = false): (t: Table) => number | BigInt | null {
     const field = this.getField(fieldName, typeIndex);
     const fieldType = field.type();
     const isStruct = this.getType(typeIndex).isStruct();
@@ -301,15 +301,7 @@ export class Parser {
           return null;
         }
         if (isInteger(fieldType.baseType())) {
-          if (isLong(fieldType.baseType())) {
-            return field.defaultInteger();
-          } else {
-            if (field.defaultInteger().high != 0) {
-              throw new Error(
-                  '<=4 byte integer types should not use 64-bit default values.');
-            }
-            return field.defaultInteger().low;
-          }
+          return field.defaultInteger();
         } else {
           return field.defaultReal();
         }
@@ -374,14 +366,14 @@ export class Parser {
       return new Table(table.bb, fieldType.index(), objectStart);
     };
   }
-  // Reads a vector of scalars (like readScalar, may return a vector of Long's
+  // Reads a vector of scalars (like readScalar, may return a vector of BigInt's
   // instead). Also, will return null if the vector is not set.
-  readVectorOfScalars(table: Table, fieldName: string): number[]|Long[]|null {
+  readVectorOfScalars(table: Table, fieldName: string): number[]|BigInt[]|null {
     return this.readVectorOfScalarsLambda(table.typeIndex, fieldName)(table);
   }
 
   readVectorOfScalarsLambda(typeIndex: number, fieldName: string):
-      (t: Table) => number[] | Long[] | null {
+      (t: Table) => number[] | BigInt[] | null {
     const field = this.getField(fieldName, typeIndex);
     const fieldType = field.type();
     if (fieldType.baseType() !== reflection.BaseType.Vector) {

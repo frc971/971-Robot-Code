@@ -1,24 +1,10 @@
-import * as configuration from 'org_frc971/aos/configuration_generated';
-import * as web_proxy from 'org_frc971/aos/network/web_proxy_generated';
+import {ByteBuffer} from 'flatbuffers';
 import {Connection} from 'org_frc971/aos/network/www/proxy';
 import * as flatbuffers_builder from 'org_frc971/external/com_github_google_flatbuffers/ts/builder';
-import {ByteBuffer} from 'org_frc971/external/com_github_google_flatbuffers/ts/byte-buffer';
-import * as drivetrain from 'org_frc971/frc971/control_loops/drivetrain/drivetrain_status_generated';
-import * as localizer from 'org_frc971/y2020/control_loops/drivetrain/localizer_debug_generated';
-import * as ss from 'org_frc971/y2020/control_loops/superstructure/superstructure_status_generated'
-import * as sift from 'org_frc971/y2020/vision/sift/sift_generated';
-
-import DrivetrainStatus = drivetrain.frc971.control_loops.drivetrain.Status;
-import LocalizerDebug = localizer.y2020.control_loops.drivetrain.LocalizerDebug;
-import RejectionReason = localizer.y2020.control_loops.drivetrain.RejectionReason;
-import ImageMatchDebug = localizer.y2020.control_loops.drivetrain.ImageMatchDebug;
-import SuperstructureStatus = ss.y2020.control_loops.superstructure.Status;
-import FlywheelControllerStatus = ss.y2020.control_loops.superstructure.FlywheelControllerStatus;
-import ImageMatchResult = sift.frc971.vision.sift.ImageMatchResult;
-import Channel = configuration.aos.Channel;
-import SubscriberRequest = web_proxy.aos.web_proxy.SubscriberRequest;
-import ChannelRequest = web_proxy.aos.web_proxy.ChannelRequest;
-import TransferMethod = web_proxy.aos.web_proxy.TransferMethod;
+import {Status as DrivetrainStatus} from 'org_frc971/frc971/control_loops/drivetrain/drivetrain_status_generated';
+import {LocalizerDebug, RejectionReason, ImageMatchDebug} from 'org_frc971/y2020/control_loops/drivetrain/localizer_debug_generated';
+import {Status as SuperstructureStatus, FlywheelControllerStatus} from 'org_frc971/y2020/control_loops/superstructure/superstructure_status_generated'
+import {ImageMatchResult} from 'org_frc971/y2020/vision/sift/sift_generated';
 
 import {FIELD_LENGTH, FIELD_WIDTH, FT_TO_M, IN_TO_M} from './constants';
 
@@ -165,9 +151,7 @@ export class FieldHandler {
   private handleImageMatchResult(prefix: string, data: Uint8Array): void {
     const fbBuffer = new ByteBuffer(data);
     this.imageMatchResult.set(
-        prefix,
-        ImageMatchResult.getRootAsImageMatchResult(
-            fbBuffer as unknown as flatbuffers.ByteBuffer));
+        prefix, ImageMatchResult.getRootAsImageMatchResult(fbBuffer));
   }
 
   private handleLocalizerDebug(data: Uint8Array): void {
@@ -175,9 +159,7 @@ export class FieldHandler {
 
     const fbBuffer = new ByteBuffer(data);
     this.localizerImageMatches.set(
-        now,
-        LocalizerDebug.getRootAsLocalizerDebug(
-            fbBuffer as unknown as flatbuffers.ByteBuffer));
+        now, LocalizerDebug.getRootAsLocalizerDebug(fbBuffer));
 
     const debug = this.localizerImageMatches.get(now);
 
@@ -207,14 +189,12 @@ export class FieldHandler {
 
   private handleDrivetrainStatus(data: Uint8Array): void {
     const fbBuffer = new ByteBuffer(data);
-    this.drivetrainStatus = DrivetrainStatus.getRootAsStatus(
-        fbBuffer as unknown as flatbuffers.ByteBuffer);
+    this.drivetrainStatus = DrivetrainStatus.getRootAsStatus(fbBuffer);
   }
 
   private handleSuperstructureStatus(data: Uint8Array): void {
     const fbBuffer = new ByteBuffer(data);
-    this.superstructureStatus = SuperstructureStatus.getRootAsStatus(
-        fbBuffer as unknown as flatbuffers.ByteBuffer);
+    this.superstructureStatus = SuperstructureStatus.getRootAsStatus(fbBuffer);
   }
 
   drawField(): void {
