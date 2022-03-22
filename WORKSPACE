@@ -91,6 +91,10 @@ load(
     "//debian:libtinfo5_amd64.bzl",
     libtinfo5_amd64_debs = "files",
 )
+load(
+    "//debian:libtinfo5_arm64.bzl",
+    libtinfo5_arm64_debs = "files",
+)
 load("//debian:packages.bzl", "generate_repositories_for_debs")
 
 generate_repositories_for_debs(python_debs)
@@ -136,6 +140,8 @@ generate_repositories_for_debs(lzma_amd64_debs)
 generate_repositories_for_debs(lzma_arm64_debs)
 
 generate_repositories_for_debs(libtinfo5_amd64_debs)
+
+generate_repositories_for_debs(libtinfo5_arm64_debs)
 
 local_repository(
     name = "com_grail_bazel_toolchain",
@@ -1099,7 +1105,7 @@ load("@rules_pkg//:deps.bzl", "rules_pkg_dependencies")
 rules_pkg_dependencies()
 
 http_archive(
-    name = "libtinfo5",
+    name = "libtinfo5_amd64",
     build_file_content = """
 exports_files(
     [
@@ -1112,4 +1118,20 @@ exports_files(
     patch_cmds = ["touch lib/x86_64-linux-gnu/BUILD"],
     sha256 = "059e14f77dce365c57b96284aae98c892f61e269b3fbb7d07714b7135c2e5617",
     urls = ["https://www.frc971.org/Build-Dependencies/libtinfo5_amd64.tar.gz"],
+)
+
+http_archive(
+    name = "libtinfo5_arm64",
+    build_file_content = """
+exports_files(
+    [
+        'lib/aarch64-linux-gnu/libtinfo.so.5',
+        'lib/aarch64-linux-gnu/libtinfo.so.5.9',
+    ],
+    ["//visibility:public"],
+)
+""",
+    patch_cmds = ["touch lib/aarch64-linux-gnu/BUILD"],
+    sha256 = "df4ea5194c80df8d1f5f6ed68b47ce9dbf78aa8cdebbc61cf00654d9075f8e3c",
+    urls = ["https://www.frc971.org/Build-Dependencies/libtinfo5_arm64.tar.gz"],
 )
