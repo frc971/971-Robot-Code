@@ -226,7 +226,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   if (turret_loading_position > constants::Values::kTurretRange().upper ||
       turret_loading_position < constants::Values::kTurretRange().lower) {
     turret_loading_position =
-        frc971::zeroing::Wrap(constants::Values::kTurretRange().middle(),
+        frc971::zeroing::Wrap(constants::Values::kTurretRange().middle_soft(),
                               turret_loading_position, 2.0 * M_PI);
   }
 

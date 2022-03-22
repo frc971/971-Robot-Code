@@ -1,6 +1,7 @@
 #include "frc971/control_loops/aiming/aiming.h"
 
 #include "glog/logging.h"
+#include "frc971/zeroing/wrap.h"
 
 namespace frc971::control_loops::aiming {
 
@@ -110,8 +111,6 @@ TurretGoal AimerGoal(const ShotConfig &config, const RobotState &state) {
   //     (rel_x * rel_y' - rel_y * rel_x') / (rel_x^2 + rel_y^2) - dtheta / dt
   const double dheading_dt = atan_diff - state.yaw_rate;
 
-  const double range =
-      config.turret_range.range() - config.anti_wrap_buffer * 2.0;
   // Calculate a goal turret heading such that it is within +/- pi of the
   // current position (i.e., a goal that would minimize the amount the turret
   // would have to travel).
@@ -121,8 +120,10 @@ TurretGoal AimerGoal(const ShotConfig &config, const RobotState &state) {
       state.last_turret_goal +
       aos::math::NormalizeAngle(heading_to_goal - config.turret_zero_offset -
                                 state.last_turret_goal);
-  if (std::abs(turret_heading - config.turret_range.middle()) > range / 2.0) {
-    turret_heading = aos::math::NormalizeAngle(turret_heading);
+  if (turret_heading > config.turret_range.upper - config.anti_wrap_buffer ||
+      turret_heading < config.turret_range.lower + config.anti_wrap_buffer) {
+    turret_heading = frc971::zeroing::Wrap(config.turret_range.middle_soft(),
+                                           turret_heading, 2.0 * M_PI);
   }
   result.position = turret_heading;
   result.velocity = dheading_dt;

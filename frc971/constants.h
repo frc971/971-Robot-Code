@@ -127,6 +127,7 @@ struct Range {
   double upper;
 
   constexpr double middle() const { return (lower_hard + upper_hard) / 2.0; }
+  constexpr double middle_soft() const { return (lower + upper) / 2.0; }
 
   constexpr double range() const { return upper_hard - lower_hard; }
 };
