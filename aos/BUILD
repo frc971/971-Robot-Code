@@ -265,6 +265,7 @@ cc_library(
     srcs = ["flatbuffer_utils.cc"],
     hdrs = ["flatbuffer_utils.h"],
     target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
     deps = [
         "@com_github_google_flatbuffers//:flatbuffers",
         "@com_github_google_glog//:glog",
@@ -514,6 +515,7 @@ cc_library(
         "fast_string_builder.h",
     ],
     target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
     deps = [
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/strings",

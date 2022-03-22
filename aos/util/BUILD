@@ -34,6 +34,42 @@ py_library(
     ],
 )
 
+cc_binary(
+    name = "log_to_mcap",
+    srcs = ["log_to_mcap.cc"],
+    deps = [
+        ":mcap_logger",
+        "//aos:init",
+        "//aos/events/logging:log_reader",
+        "//frc971/control_loops:control_loops_fbs",
+    ],
+)
+
+cc_library(
+    name = "mcap_logger",
+    srcs = ["mcap_logger.cc"],
+    hdrs = ["mcap_logger.h"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        "//aos:configuration_fbs",
+        "//aos:fast_string_builder",
+        "//aos:flatbuffer_utils",
+        "//aos/events:event_loop",
+        "@com_github_nlohmann_json//:json",
+    ],
+)
+
+cc_test(
+    name = "mcap_logger_test",
+    srcs = ["mcap_logger_test.cc"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":mcap_logger",
+        "//aos/testing:googletest",
+        "@com_github_nlohmann_json//:json",
+    ],
+)
+
 cc_library(
     name = "math",
     hdrs = ["math.h"],
