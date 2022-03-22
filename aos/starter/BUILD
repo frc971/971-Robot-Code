@@ -33,6 +33,7 @@ cc_library(
         "//aos/events:event_loop",
         "//aos/events:shm_event_loop",
         "//aos/util:scoped_pipe",
+        "//aos/util:top",
         "@com_github_google_glog//:glog",
     ],
 )
@@ -163,6 +164,7 @@ flatbuffer_cc_library(
     name = "starter_fbs",
     srcs = ["starter.fbs"],
     gen_reflections = True,
+    includes = ["//aos/util:process_info_fbs_includes"],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )

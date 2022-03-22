@@ -287,27 +287,31 @@ TEST_F(StarterdTest, Autostart) {
       })
       ->Setup(watcher_loop.monotonic_now() + std::chrono::seconds(7));
 
-  watcher_loop.MakeWatcher(
-      "/aos", [&watcher_loop](const aos::starter::Status &status) {
-        const aos::starter::ApplicationStatus *ping_app_status =
-            FindApplicationStatus(status, "ping");
-        const aos::starter::ApplicationStatus *pong_app_status =
-            FindApplicationStatus(status, "pong");
-        if (ping_app_status == nullptr || pong_app_status == nullptr) {
-          return;
-        }
+  watcher_loop.MakeWatcher("/aos", [&watcher_loop](
+                                       const aos::starter::Status &status) {
+    const aos::starter::ApplicationStatus *ping_app_status =
+        FindApplicationStatus(status, "ping");
+    const aos::starter::ApplicationStatus *pong_app_status =
+        FindApplicationStatus(status, "pong");
+    if (ping_app_status == nullptr || pong_app_status == nullptr) {
+      return;
+    }
 
-        if (ping_app_status->has_state() &&
-            ping_app_status->state() != aos::starter::State::STOPPED) {
-          watcher_loop.Exit();
-          FAIL();
-        }
-        if (pong_app_status->has_state() &&
-            pong_app_status->state() == aos::starter::State::RUNNING) {
-          watcher_loop.Exit();
-          SUCCEED();
-        }
-      });
+    if (ping_app_status->has_state() &&
+        ping_app_status->state() != aos::starter::State::STOPPED) {
+      watcher_loop.Exit();
+      FAIL();
+    }
+    if (pong_app_status->has_state() &&
+        pong_app_status->state() == aos::starter::State::RUNNING) {
+      ASSERT_TRUE(pong_app_status->has_process_info());
+      ASSERT_EQ("pong", pong_app_status->process_info()->name()->string_view());
+      ASSERT_EQ(pong_app_status->pid(), pong_app_status->process_info()->pid());
+      ASSERT_LT(0.0, pong_app_status->process_info()->cpu_usage());
+      watcher_loop.Exit();
+      SUCCEED();
+    }
+  });
 
   std::thread starterd_thread([&starter] { starter.Run(); });
   watcher_loop.Run();

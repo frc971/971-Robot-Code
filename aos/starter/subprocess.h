@@ -11,6 +11,7 @@
 #include "aos/starter/starter_generated.h"
 #include "aos/starter/starter_rpc_generated.h"
 #include "aos/util/scoped_pipe.h"
+#include "aos/util/top.h"
 
 namespace aos::starter {
 
@@ -45,7 +46,7 @@ class Application {
               aos::EventLoop *event_loop, std::function<void()> on_change);
 
   flatbuffers::Offset<aos::starter::ApplicationStatus> PopulateStatus(
-      flatbuffers::FlatBufferBuilder *builder);
+      flatbuffers::FlatBufferBuilder *builder, util::Top *top);
   aos::starter::State status() const { return status_; };
 
   // Returns the last pid of this process. -1 if not started yet.

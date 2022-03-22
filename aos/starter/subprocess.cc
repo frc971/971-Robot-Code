@@ -346,9 +346,15 @@ std::optional<gid_t> Application::FindPrimaryGidForUser(const char *name) {
 }
 
 flatbuffers::Offset<aos::starter::ApplicationStatus>
-Application::PopulateStatus(flatbuffers::FlatBufferBuilder *builder) {
+Application::PopulateStatus(flatbuffers::FlatBufferBuilder *builder,
+                            util::Top *top) {
   CHECK_NOTNULL(builder);
   auto name_fbs = builder->CreateString(name_);
+
+  const bool valid_pid = pid_ > 0 && status_ != aos::starter::State::STOPPED;
+  const flatbuffers::Offset<util::ProcessInfo> process_info =
+      valid_pid ? top->InfoForProcess(builder, pid_)
+                : flatbuffers::Offset<util::ProcessInfo>();
 
   aos::starter::ApplicationStatus::Builder status_builder(*builder);
   status_builder.add_name(name_fbs);
@@ -361,6 +367,8 @@ Application::PopulateStatus(flatbuffers::FlatBufferBuilder *builder) {
     status_builder.add_pid(pid_);
     status_builder.add_id(id_);
   }
+  // Note that even if process_info is null, calling add_process_info is fine.
+  status_builder.add_process_info(process_info);
   status_builder.add_last_start_time(start_time_.time_since_epoch().count());
   return status_builder.Finish();
 }

@@ -17,6 +17,7 @@
 #include "aos/starter/starter_generated.h"
 #include "aos/starter/starter_rpc_generated.h"
 #include "aos/starter/subprocess.h"
+#include "aos/util/top.h"
 
 namespace aos {
 namespace starter {
@@ -49,8 +50,10 @@ class Starter {
   void OnSignal(signalfd_siginfo signal);
   void HandleStarterRpc(const StarterRpc &command);
 
-  // Sends the Status message if it wouldn't exceed the rate limit.
-  void MaybeSendStatus();
+  // Handles any potential state change in the child applications.
+  // In particular, sends the Status message if it wouldn't exceed the rate
+  // limit.
+  void HandleStateChange();
 
   void SendStatus();
 
@@ -72,6 +75,8 @@ class Starter {
   bool exiting_ = false;
 
   SignalListener listener_;
+
+  util::Top top_;
 
   DISALLOW_COPY_AND_ASSIGN(Starter);
 };
