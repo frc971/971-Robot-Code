@@ -417,7 +417,7 @@
     {
       "name": "image_logger",
       "executable_name": "logger_main",
-      "args": ["--snappy_compress", "--logging_folder", "", "--snappy_compress"],
+      "args": ["--snappy_compress", "--logging_folder", "", "--snappy_compress", "--rotate_every", "60.0"],
       "nodes": [
         "logger"
       ]
