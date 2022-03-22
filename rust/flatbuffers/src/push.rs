@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-use std::cmp::max;
-use std::mem::{align_of, size_of};
+use core::cmp::max;
+use core::mem::{align_of, size_of};
 
 use crate::endian_scalar::emplace_scalar;
 
@@ -61,7 +61,9 @@ macro_rules! impl_push_for_endian_scalar {
 
             #[inline]
             fn push(&self, dst: &mut [u8], _rest: &[u8]) {
-                emplace_scalar::<$ty>(dst, *self);
+                unsafe {
+                    emplace_scalar::<$ty>(dst, *self);
+                }
             }
         }
     };

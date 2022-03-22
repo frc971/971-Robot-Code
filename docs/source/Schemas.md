@@ -211,9 +211,11 @@ If you have a need to distinguish between different FlatBuffers in a more
 open-ended way, for example for use as files, see the file identification
 feature below.
 
-There is an experimental support only in C++ for a vector of unions
-(and types). In the example IDL file above, use [Any] to add a
-vector of Any to Monster table.
+There is an experimental support only in C++ for a vector of unions (and
+types). In the example IDL file above, use [Any] to add a vector of Any to
+Monster table. There is also experimental support for other types besides
+tables in unions, in particular structs and strings. There's no direct support
+for scalars in unions, but they can be wrapped in a struct at no space cost.
 
 ### Namespaces
 
@@ -237,9 +239,9 @@ included files (those you still generate separately).
 
 ### Root type
 
-This declares what you consider to be the root table (or struct) of the
-serialized data. This is particularly important for parsing JSON data,
-which doesn't include object type information.
+This declares what you consider to be the root table of the serialized
+data. This is particularly important for parsing JSON data, which doesn't
+include object type information.
 
 ### File identification and extension
 
@@ -488,7 +490,7 @@ as much as possible such that you can use tables where you might be
 tempted to use a dictionary.
 
 Similarly, strings as values should only be used when they are
-truely open-ended. If you can, always use an enum instead.
+truly open-ended. If you can, always use an enum instead.
 
 FlatBuffers doesn't have inheritance, so the way to represent a set
 of related data structures is a union. Unions do have a cost however,
@@ -590,7 +592,7 @@ we keep the sequence of ids.
 
     table { b:int; }
 
-NOT ok. We can only remove a field by deprecation, regardless of wether we use
+NOT ok. We can only remove a field by deprecation, regardless of whether we use
 explicit ids or not.
 
     table { a:uint; b:uint; }
@@ -635,10 +637,14 @@ optional type.
 Some `FlatBufferBuilder` implementations have an option called `force_defaults`
 that circumvents this "not writing defaults" behavior you can then use
 `IsFieldPresent` to query presence.
-
+/
 Another option that works in all languages is to wrap a scalar field in a
 struct. This way it will return null if it is not present. This will be slightly
 less ergonomic but structs don't take up any more space than the scalar they
 represent.
 
    [Interface Definition Language]: https://en.wikipedia.org/wiki/Interface_description_language
+
+## Writing your own code generator.
+
+See [our intermediate representation](@ref intermediate_representation).

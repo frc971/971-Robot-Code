@@ -96,7 +96,7 @@ template<> struct UnionTraits<Evolution::V1::TableB> {
 };
 
 bool VerifyUnion(flatbuffers::Verifier &verifier, const void *obj, Union type);
-bool VerifyUnionVector(flatbuffers::Verifier &verifier, const flatbuffers::Vector<flatbuffers::Offset<void>> *values, const flatbuffers::Vector<uint8_t> *types);
+bool VerifyUnionVector(flatbuffers::Verifier &verifier, const flatbuffers::Vector<flatbuffers::Offset<void>> *values, const flatbuffers::Vector<Union> *types);
 
 FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(8) Struct FLATBUFFERS_FINAL_CLASS {
  private:
@@ -151,8 +151,8 @@ struct TableA FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyField<float>(verifier, VT_A) &&
-           VerifyField<int32_t>(verifier, VT_B) &&
+           VerifyField<float>(verifier, VT_A, 4) &&
+           VerifyField<int32_t>(verifier, VT_B, 4) &&
            verifier.EndTable();
   }
 };
@@ -198,7 +198,7 @@ struct TableB FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyField<int32_t>(verifier, VT_A) &&
+           VerifyField<int32_t>(verifier, VT_A, 4) &&
            verifier.EndTable();
   }
 };
@@ -297,22 +297,22 @@ struct Root FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyField<int32_t>(verifier, VT_A) &&
-           VerifyField<uint8_t>(verifier, VT_B) &&
-           VerifyField<uint8_t>(verifier, VT_C_TYPE) &&
+           VerifyField<int32_t>(verifier, VT_A, 4) &&
+           VerifyField<uint8_t>(verifier, VT_B, 1) &&
+           VerifyField<uint8_t>(verifier, VT_C_TYPE, 1) &&
            VerifyOffset(verifier, VT_C) &&
            VerifyUnion(verifier, c(), c_type()) &&
-           VerifyField<int8_t>(verifier, VT_D) &&
+           VerifyField<int8_t>(verifier, VT_D, 1) &&
            VerifyOffset(verifier, VT_E) &&
            verifier.VerifyTable(e()) &&
-           VerifyField<Evolution::V1::Struct>(verifier, VT_F) &&
+           VerifyField<Evolution::V1::Struct>(verifier, VT_F, 8) &&
            VerifyOffset(verifier, VT_G) &&
            verifier.VerifyVector(g()) &&
            VerifyOffset(verifier, VT_H) &&
            verifier.VerifyVector(h()) &&
            verifier.VerifyVectorOfTables(h()) &&
-           VerifyField<int32_t>(verifier, VT_I) &&
-           VerifyField<uint8_t>(verifier, VT_J_TYPE) &&
+           VerifyField<int32_t>(verifier, VT_I, 4) &&
+           VerifyField<uint8_t>(verifier, VT_J_TYPE, 1) &&
            VerifyOffset(verifier, VT_J) &&
            VerifyUnion(verifier, j(), j_type()) &&
            verifier.EndTable();
@@ -394,7 +394,7 @@ inline flatbuffers::Offset<Root> CreateRoot(
     flatbuffers::Offset<void> c = 0,
     Evolution::V1::Enum d = Evolution::V1::Enum::King,
     flatbuffers::Offset<Evolution::V1::TableA> e = 0,
-    const Evolution::V1::Struct *f = 0,
+    const Evolution::V1::Struct *f = nullptr,
     flatbuffers::Offset<flatbuffers::Vector<int32_t>> g = 0,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Evolution::V1::TableB>>> h = 0,
     int32_t i = 1234,
@@ -424,7 +424,7 @@ inline flatbuffers::Offset<Root> CreateRootDirect(
     flatbuffers::Offset<void> c = 0,
     Evolution::V1::Enum d = Evolution::V1::Enum::King,
     flatbuffers::Offset<Evolution::V1::TableA> e = 0,
-    const Evolution::V1::Struct *f = 0,
+    const Evolution::V1::Struct *f = nullptr,
     const std::vector<int32_t> *g = nullptr,
     const std::vector<flatbuffers::Offset<Evolution::V1::TableB>> *h = nullptr,
     int32_t i = 1234,
@@ -465,7 +465,7 @@ inline bool VerifyUnion(flatbuffers::Verifier &verifier, const void *obj, Union 
   }
 }
 
-inline bool VerifyUnionVector(flatbuffers::Verifier &verifier, const flatbuffers::Vector<flatbuffers::Offset<void>> *values, const flatbuffers::Vector<uint8_t> *types) {
+inline bool VerifyUnionVector(flatbuffers::Verifier &verifier, const flatbuffers::Vector<flatbuffers::Offset<void>> *values, const flatbuffers::Vector<Union> *types) {
   if (!values || !types) return !values && !types;
   if (values->size() != types->size()) return false;
   for (flatbuffers::uoffset_t i = 0; i < values->size(); ++i) {

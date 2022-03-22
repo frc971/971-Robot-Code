@@ -48,7 +48,11 @@ android {
 
     standardOutput = new ByteArrayOutputStream()
     errorOutput = new ByteArrayOutputStream()
-    commandLine 'flatc', '-o', outputCppDir, '--cpp', "${fbsFiles.join(" ")}"
+    def commandLineArgs = ['flatc', '-o', outputCppDir, '--cpp']
+    fbsFiles.forEach{
+      commandLineArgs.add(it.path)
+    }
+    commandLine commandLineArgs
 
     doFirst {
       delete "$outputCppDir/"
@@ -70,7 +74,11 @@ android {
 
     standardOutput = new ByteArrayOutputStream()
     errorOutput = new ByteArrayOutputStream()
-    commandLine 'flatc', '-o', outputKotlinDir, '--kotlin', "${fbsFiles.join(" ")}"
+    def commandLineArgs = ['flatc', '-o', outputKotlinDir, '--kotlin']
+    fbsFiles.forEach{
+      commandLineArgs.add(it.path)
+    }
+    commandLine commandLineArgs
 
     doFirst {
       delete "$outputKotlinDir/"
@@ -93,16 +101,6 @@ android {
 
   flavorDimensions "stl-variant"
   productFlavors {
-    stlport {
-      dimension "stl-variant"
-      applicationIdSuffix ".stlport"
-      versionNameSuffix "-stlport"
-      externalNativeBuild {
-        ndkBuild {
-          arguments "APP_STL=stlport_static"
-        }
-      }
-    }
     gnustl {
       dimension "stl-variant"
       applicationIdSuffix ".gnustl"
@@ -131,6 +129,6 @@ dependencies {
   implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
   implementation 'androidx.core:core-ktx:1.3.2'
   implementation 'androidx.appcompat:appcompat:1.2.0'
-  implementation 'com.google.flatbuffers:flatbuffers-java:1.12.0'
+  implementation 'com.google.flatbuffers:flatbuffers-java:2.0.0'
 
 }

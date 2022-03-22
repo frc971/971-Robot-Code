@@ -124,6 +124,10 @@ class LuaGenerator : public BaseGenerator {
 
     code += "function " + NormalizedName(struct_def) + ".GetRootAs" +
             NormalizedName(struct_def) + "(buf, offset)\n";
+    code += std::string(Indent) + "if type(buf) == \"string\" then\n";
+    code += std::string(Indent) + Indent +
+            "buf = flatbuffers.binaryArray.New(buf)\n";
+    code += std::string(Indent) + "end\n";
     code += std::string(Indent) +
             "local n = flatbuffers.N.UOffsetT:Unpack(buf, offset)\n";
     code += std::string(Indent) + "local o = " + NormalizedName(struct_def) +
@@ -150,7 +154,8 @@ class LuaGenerator : public BaseGenerator {
     std::string &code = *code_ptr;
 
     GenReceiver(struct_def, code_ptr);
-    code += MakeCamel(NormalizedName(field)) + "Length()\n";
+    code +=
+        ConvertCase(NormalizedName(field), Case::kUpperCamel) + "Length()\n";
     code += OffsetPrefix(field);
     code +=
         std::string(Indent) + Indent + "return " + SelfData + ":VectorLen(o)\n";
@@ -165,7 +170,7 @@ class LuaGenerator : public BaseGenerator {
     std::string &code = *code_ptr;
     std::string getter = GenGetter(field.value.type);
     GenReceiver(struct_def, code_ptr);
-    code += MakeCamel(NormalizedName(field));
+    code += ConvertCase(NormalizedName(field), Case::kUpperCamel);
     code += "()\n";
     code += std::string(Indent) + "return " + getter;
     code += std::string(SelfDataPos) + " + " + NumToString(field.value.offset) +
@@ -179,7 +184,7 @@ class LuaGenerator : public BaseGenerator {
     std::string &code = *code_ptr;
     std::string getter = GenGetter(field.value.type);
     GenReceiver(struct_def, code_ptr);
-    code += MakeCamel(NormalizedName(field));
+    code += ConvertCase(NormalizedName(field), Case::kUpperCamel);
     code += "()\n";
     code += OffsetPrefix(field);
     getter += std::string("o + ") + SelfDataPos + ")";
@@ -203,7 +208,7 @@ class LuaGenerator : public BaseGenerator {
                               const FieldDef &field, std::string *code_ptr) {
     std::string &code = *code_ptr;
     GenReceiver(struct_def, code_ptr);
-    code += MakeCamel(NormalizedName(field));
+    code += ConvertCase(NormalizedName(field), Case::kUpperCamel);
     code += "(obj)\n";
     code += std::string(Indent) + "obj:Init(" + SelfDataBytes + ", " +
             SelfDataPos + " + ";
@@ -218,7 +223,7 @@ class LuaGenerator : public BaseGenerator {
                              std::string *code_ptr) {
     std::string &code = *code_ptr;
     GenReceiver(struct_def, code_ptr);
-    code += MakeCamel(NormalizedName(field));
+    code += ConvertCase(NormalizedName(field), Case::kUpperCamel);
     code += "()\n";
     code += OffsetPrefix(field);
     if (field.value.type.struct_def->fixed) {
@@ -242,7 +247,7 @@ class LuaGenerator : public BaseGenerator {
                       std::string *code_ptr) {
     std::string &code = *code_ptr;
     GenReceiver(struct_def, code_ptr);
-    code += MakeCamel(NormalizedName(field));
+    code += ConvertCase(NormalizedName(field), Case::kUpperCamel);
     code += "()\n";
     code += OffsetPrefix(field);
     code +=
@@ -257,7 +262,7 @@ class LuaGenerator : public BaseGenerator {
                      std::string *code_ptr) {
     std::string &code = *code_ptr;
     GenReceiver(struct_def, code_ptr);
-    code += MakeCamel(NormalizedName(field)) + "()\n";
+    code += ConvertCase(NormalizedName(field), Case::kUpperCamel) + "()\n";
     code += OffsetPrefix(field);
 
     // TODO(rw): this works and is not the good way to it:
@@ -288,7 +293,7 @@ class LuaGenerator : public BaseGenerator {
     auto vectortype = field.value.type.VectorType();
 
     GenReceiver(struct_def, code_ptr);
-    code += MakeCamel(NormalizedName(field));
+    code += ConvertCase(NormalizedName(field), Case::kUpperCamel);
     code += "(j)\n";
     code += OffsetPrefix(field);
     code +=
@@ -317,7 +322,7 @@ class LuaGenerator : public BaseGenerator {
     auto vectortype = field.value.type.VectorType();
 
     GenReceiver(struct_def, code_ptr);
-    code += MakeCamel(NormalizedName(field));
+    code += ConvertCase(NormalizedName(field), Case::kUpperCamel);
     code += "(j)\n";
     code += OffsetPrefix(field);
     code +=
@@ -332,6 +337,18 @@ class LuaGenerator : public BaseGenerator {
     } else {
       code += std::string(Indent) + "return 0\n";
     }
+    code += EndFunc;
+  }
+
+  // Access a byte/ubyte vector as a string
+  void AccessByteVectorAsString(const StructDef &struct_def,
+                                const FieldDef &field, std::string *code_ptr) {
+    std::string &code = *code_ptr;
+    GenReceiver(struct_def, code_ptr);
+    code += ConvertCase(NormalizedName(field), Case::kUpperCamel);
+    code += "AsString(start, stop)\n";
+    code += std::string(Indent) + "return " + SelfData + ":VectorAsString(" +
+            NumToString(field.value.offset) + ", start, stop)\n";
     code += EndFunc;
   }
 
@@ -361,7 +378,7 @@ class LuaGenerator : public BaseGenerator {
       } else {
         std::string &code = *code_ptr;
         code += std::string(", ") + nameprefix;
-        code += MakeCamel(NormalizedName(field), false);
+        code += ConvertCase(NormalizedName(field), Case::kLowerCamel);
       }
     }
   }
@@ -393,7 +410,8 @@ class LuaGenerator : public BaseGenerator {
       } else {
         code +=
             std::string(Indent) + "builder:Prepend" + GenMethod(field) + "(";
-        code += nameprefix + MakeCamel(NormalizedName(field), false) + ")\n";
+        code += nameprefix +
+                ConvertCase(NormalizedName(field), Case::kLowerCamel) + ")\n";
       }
     }
   }
@@ -419,9 +437,9 @@ class LuaGenerator : public BaseGenerator {
                          const size_t offset, std::string *code_ptr) {
     std::string &code = *code_ptr;
     code += "function " + NormalizedName(struct_def) + ".Add" +
-            MakeCamel(NormalizedName(field));
+            ConvertCase(NormalizedName(field), Case::kUpperCamel);
     code += "(builder, ";
-    code += MakeCamel(NormalizedName(field), false);
+    code += ConvertCase(NormalizedName(field), Case::kLowerCamel);
     code += ") ";
     code += "builder:Prepend";
     code += GenMethod(field) + "Slot(";
@@ -430,9 +448,9 @@ class LuaGenerator : public BaseGenerator {
     //    if (!IsScalar(field.value.type.base_type) && (!struct_def.fixed)) {
     //      code += "flatbuffers.N.UOffsetTFlags.py_type";
     //      code += "(";
-    //      code += MakeCamel(NormalizedName(field), false) + ")";
+    //      code += ConvertCase(NormalizedName(field), Case::kLowerCamel) + ")";
     //    } else {
-    code += MakeCamel(NormalizedName(field), false);
+    code += ConvertCase(NormalizedName(field), Case::kLowerCamel);
     //    }
     code += ", " + field.value.constant;
     code += ") end\n";
@@ -443,7 +461,7 @@ class LuaGenerator : public BaseGenerator {
                           std::string *code_ptr) {
     std::string &code = *code_ptr;
     code += "function " + NormalizedName(struct_def) + ".Start";
-    code += MakeCamel(NormalizedName(field));
+    code += ConvertCase(NormalizedName(field), Case::kUpperCamel);
     code += "Vector(builder, numElems) return builder:StartVector(";
     auto vector_type = field.value.type.VectorType();
     auto alignment = InlineAlignment(vector_type);
@@ -495,6 +513,10 @@ class LuaGenerator : public BaseGenerator {
             GetMemberOfVectorOfStruct(struct_def, field, code_ptr);
           } else {
             GetMemberOfVectorOfNonStruct(struct_def, field, code_ptr);
+            if (vectortype.base_type == BASE_TYPE_CHAR ||
+                vectortype.base_type == BASE_TYPE_UCHAR) {
+              AccessByteVectorAsString(struct_def, field, code_ptr);
+            }
           }
           break;
         }
@@ -583,14 +605,14 @@ class LuaGenerator : public BaseGenerator {
       case BASE_TYPE_VECTOR: return GenGetter(type.VectorType());
       default:
         return std::string(SelfData) + ":Get(flatbuffers.N." +
-               MakeCamel(GenTypeGet(type)) + ", ";
+               ConvertCase(GenTypeGet(type), Case::kUpperCamel) + ", ";
     }
   }
 
   // Returns the method name for use with add/put calls.
   std::string GenMethod(const FieldDef &field) {
     return IsScalar(field.value.type.base_type)
-               ? MakeCamel(GenTypeBasic(field.value.type))
+               ? ConvertCase(GenTypeBasic(field.value.type), Case::kUpperCamel)
                : (IsStruct(field.value.type) ? "Struct" : "UOffsetTRelative");
   }
 

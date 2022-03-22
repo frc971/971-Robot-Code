@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Google Inc. All rights reserved.
+ * Copyright 2021 Google Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,29 +16,49 @@
 
 import Foundation
 
-/// FlatbufferObject structures all the Flatbuffers objects
-public protocol FlatBufferObject {
-  var __buffer: ByteBuffer! { get }
+/// NativeStruct is a protocol that indicates if the struct is a native `swift` struct
+/// since now we will be serializing native structs into the buffer.
+public protocol NativeStruct {}
+
+/// FlatbuffersInitializable is a protocol that allows any object to be
+/// Initialized from a ByteBuffer
+public protocol FlatbuffersInitializable {
+  /// Any flatbuffers object that confirms to this protocol is going to be
+  /// initializable through this initializer
   init(_ bb: ByteBuffer, o: Int32)
 }
 
-public protocol ObjectAPI {
+/// FlatbufferObject structures all the Flatbuffers objects
+public protocol FlatBufferObject: FlatbuffersInitializable {
+  var __buffer: ByteBuffer! { get }
+}
+
+/// ``ObjectAPIPacker`` is a protocol that allows object to pack and unpack from a
+/// ``NativeObject`` to a flatbuffers Object and vice versa.
+public protocol ObjectAPIPacker {
+  /// associatedtype to the object that should be unpacked.
   associatedtype T
-  static func pack(_ builder: inout FlatBufferBuilder, obj: inout T) -> Offset<UOffset>
+
+  /// ``pack(_:obj:)-3ptws`` tries to pacs the variables of a native Object into the `ByteBuffer` by using
+  /// a FlatBufferBuilder
+  /// - Parameters:
+  ///   - builder: FlatBufferBuilder that will host incoming data
+  ///   - obj: Object of associatedtype to the current implementer
+  ///
+  /// ``pack(_:obj:)-3ptws`` can be called by passing through an already initialized ``FlatBufferBuilder``
+  /// or it can be called by using the public API that will create a new ``FlatBufferBuilder``
+  static func pack(_ builder: inout FlatBufferBuilder, obj: inout T?) -> Offset
+
+  /// ``pack(_:obj:)-20ipk`` packs the variables of a native Object into the `ByteBuffer` by using
+  /// the FlatBufferBuilder
+  /// - Parameters:
+  ///   - builder: FlatBufferBuilder that will host incoming data
+  ///   - obj: Object of associatedtype to the current implementer
+  ///
+  /// ``pack(_:obj:)-20ipk`` can be called by passing through an already initialized ``FlatBufferBuilder``
+  /// or it can be called by using the public API that will create a new ``FlatBufferBuilder``
+  static func pack(_ builder: inout FlatBufferBuilder, obj: inout T) -> Offset
+
+  /// ``unpack()`` unpacks a ``FlatBuffers`` object into a Native swift object.
   mutating func unpack() -> T
-}
-
-/// Readable is structures all the Flatbuffers structs
-///
-/// Readable is a procotol that each Flatbuffer struct should confirm to since
-/// FlatBufferBuilder would require a Type to both create(struct:) and createVector(structs:) functions
-public protocol Readable: FlatBufferObject {
-  static var size: Int { get }
-  static var alignment: Int { get }
-}
-
-public protocol Enum {
-  associatedtype T: Scalar
-  static var byteSize: Int { get }
-  var value: T { get }
 }

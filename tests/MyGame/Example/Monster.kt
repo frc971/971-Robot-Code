@@ -10,7 +10,6 @@ import com.google.flatbuffers.*
  * an example documentation comment: "monster object"
  */
 @Suppress("unused")
-@ExperimentalUnsignedTypes
 class Monster : Table() {
 
     fun __init(_i: Int, _bb: ByteBuffer)  {
@@ -805,18 +804,84 @@ class Monster : Table() {
             false
         }
     }
+    fun scalarKeySortedTables(j: Int) : MyGame.Example.Stat? = scalarKeySortedTables(MyGame.Example.Stat(), j)
+    fun scalarKeySortedTables(obj: MyGame.Example.Stat, j: Int) : MyGame.Example.Stat? {
+        val o = __offset(104)
+        return if (o != 0) {
+            obj.__assign(__indirect(__vector(o) + j * 4), bb)
+        } else {
+            null
+        }
+    }
+    val scalarKeySortedTablesLength : Int
+        get() {
+            val o = __offset(104); return if (o != 0) __vector_len(o) else 0
+        }
+    fun scalarKeySortedTablesByKey(key: UShort) : MyGame.Example.Stat? {
+        val o = __offset(104)
+        return if (o != 0) {
+            MyGame.Example.Stat.__lookup_by_key(null, __vector(o), key, bb)
+        } else {
+            null
+        }
+    }
+    fun scalarKeySortedTablesByKey(obj: MyGame.Example.Stat, key: UShort) : MyGame.Example.Stat? {
+        val o = __offset(104)
+        return if (o != 0) {
+            MyGame.Example.Stat.__lookup_by_key(obj, __vector(o), key, bb)
+        } else {
+            null
+        }
+    }
+    val nativeInline : MyGame.Example.Test? get() = nativeInline(MyGame.Example.Test())
+    fun nativeInline(obj: MyGame.Example.Test) : MyGame.Example.Test? {
+        val o = __offset(106)
+        return if (o != 0) {
+            obj.__assign(o + bb_pos, bb)
+        } else {
+            null
+        }
+    }
+    val longEnumNonEnumDefault : ULong
+        get() {
+            val o = __offset(108)
+            return if(o != 0) bb.getLong(o + bb_pos).toULong() else 0UL
+        }
+    fun mutateLongEnumNonEnumDefault(longEnumNonEnumDefault: ULong) : Boolean {
+        val o = __offset(108)
+        return if (o != 0) {
+            bb.putLong(o + bb_pos, longEnumNonEnumDefault.toLong())
+            true
+        } else {
+            false
+        }
+    }
+    val longEnumNormalDefault : ULong
+        get() {
+            val o = __offset(110)
+            return if(o != 0) bb.getLong(o + bb_pos).toULong() else 2UL
+        }
+    fun mutateLongEnumNormalDefault(longEnumNormalDefault: ULong) : Boolean {
+        val o = __offset(110)
+        return if (o != 0) {
+            bb.putLong(o + bb_pos, longEnumNormalDefault.toLong())
+            true
+        } else {
+            false
+        }
+    }
     override fun keysCompare(o1: Int, o2: Int, _bb: ByteBuffer) : Int {
          return compareStrings(__offset(10, o1, _bb), __offset(10, o2, _bb), _bb)
     }
     companion object {
-        fun validateVersion() = Constants.FLATBUFFERS_1_12_0()
+        fun validateVersion() = Constants.FLATBUFFERS_2_0_0()
         fun getRootAsMonster(_bb: ByteBuffer): Monster = getRootAsMonster(_bb, Monster())
         fun getRootAsMonster(_bb: ByteBuffer, obj: Monster): Monster {
             _bb.order(ByteOrder.LITTLE_ENDIAN)
             return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb))
         }
         fun MonsterBufferHasIdentifier(_bb: ByteBuffer) : Boolean = __has_identifier(_bb, "MONS")
-        fun startMonster(builder: FlatBufferBuilder) = builder.startTable(50)
+        fun startMonster(builder: FlatBufferBuilder) = builder.startTable(54)
         fun addPos(builder: FlatBufferBuilder, pos: Int) = builder.addStruct(0, pos, 0)
         fun addMana(builder: FlatBufferBuilder, mana: Short) = builder.addShort(1, mana, 150)
         fun addHp(builder: FlatBufferBuilder, hp: Short) = builder.addShort(2, hp, 100)
@@ -997,6 +1062,18 @@ class Monster : Table() {
             return builder.endVector()
         }
         fun startTestrequirednestedflatbufferVector(builder: FlatBufferBuilder, numElems: Int) = builder.startVector(1, numElems, 1)
+        fun addScalarKeySortedTables(builder: FlatBufferBuilder, scalarKeySortedTables: Int) = builder.addOffset(50, scalarKeySortedTables, 0)
+        fun createScalarKeySortedTablesVector(builder: FlatBufferBuilder, data: IntArray) : Int {
+            builder.startVector(4, data.size, 4)
+            for (i in data.size - 1 downTo 0) {
+                builder.addOffset(data[i])
+            }
+            return builder.endVector()
+        }
+        fun startScalarKeySortedTablesVector(builder: FlatBufferBuilder, numElems: Int) = builder.startVector(4, numElems, 4)
+        fun addNativeInline(builder: FlatBufferBuilder, nativeInline: Int) = builder.addStruct(51, nativeInline, 0)
+        fun addLongEnumNonEnumDefault(builder: FlatBufferBuilder, longEnumNonEnumDefault: ULong) = builder.addLong(52, longEnumNonEnumDefault.toLong(), 0)
+        fun addLongEnumNormalDefault(builder: FlatBufferBuilder, longEnumNormalDefault: ULong) = builder.addLong(53, longEnumNormalDefault.toLong(), 2)
         fun endMonster(builder: FlatBufferBuilder) : Int {
             val o = builder.endTable()
                 builder.required(o, 10)

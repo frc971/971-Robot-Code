@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Google Inc. All rights reserved.
+ * Copyright 2021 Google Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,8 @@ struct Benchmark {
   var name: String
   var value: Double
 
-  var description: String { "\(String(format: "|\t%@\t\t|\t\t%fs\t|", name, value))"}
+  var description: String {
+    "\(String(format: "|\t%@\t\t|\t\t%fs\t|", name, value))"}
 }
 
 func run(name: String, runs: Int, action: () -> Void) -> Benchmark {
@@ -40,7 +41,7 @@ func run(name: String, runs: Int, action: () -> Void) -> Benchmark {
 func createDocument(Benchmarks: [Benchmark]) -> String {
   let separator = "-------------------------------------"
   var document = "\(separator)\n"
-  document += "\(String(format: "|\t%@\t\t|\t\t%@\t\t|", "Name", "Scores"))\n"
+  document += "\(String(format: "|\t%@\t\t  |\t\t%@\t\t|", "Name", "Scores"))\n"
   document += "\(separator)\n"
   for i in Benchmarks {
     document += "\(i.description) \n"
@@ -87,36 +88,52 @@ func benchmarkThreeMillionStructs() {
 
   var fb = FlatBufferBuilder(initialSize: Int32(rawSize * 1600))
 
-  var offsets: [Offset<UOffset>] = []
+  var offsets: [Offset] = []
   for _ in 0..<structCount {
-    fb.startVectorOfStructs(count: 5, size: 16, alignment: 8)
+    fb.startVector(
+      5 * MemoryLayout<AA>.size,
+      elementSize: MemoryLayout<AA>.alignment)
     for _ in 0..<5 {
-      fb.createStructOf(size: 16, alignment: 8)
-      fb.reverseAdd(v: 2.4, postion: 0)
-      fb.reverseAdd(v: 2.4, postion: 8)
-      fb.endStruct()
+      _ = fb.create(struct: AA(a: 2.4, b: 2.4))
     }
-    let vector = fb.endVectorOfStructs(count: 5)
+    let vector = fb.endVector(len: 5)
     let start = fb.startTable(with: 1)
     fb.add(offset: vector, at: 4)
-    offsets.append(Offset<UOffset>(offset: fb.endTable(at: start)))
+    offsets.append(Offset(offset: fb.endTable(at: start)))
   }
   let vector = fb.createVector(ofOffsets: offsets)
   let start = fb.startTable(with: 1)
   fb.add(offset: vector, at: 4)
-  let root = Offset<UOffset>(offset: fb.endTable(at: start))
+  let root = Offset(offset: fb.endTable(at: start))
   fb.finish(offset: root)
+}
+
+@usableFromInline
+struct AA: NativeStruct {
+  public init(a: Double, b: Double) {
+    self.a = a
+    self.b = b
+  }
+  var a: Double
+  var b: Double
+
 }
 
 func benchmark(numberOfRuns runs: Int) {
   var benchmarks: [Benchmark] = []
   let str = (0...99).map { _ -> String in "x" }.joined()
-  benchmarks.append(run(name: "500_000", runs: runs, action: benchmarkFiveHundredAdds))
+  benchmarks.append(run(
+    name: "500_000",
+    runs: runs,
+    action: benchmarkFiveHundredAdds))
   benchmarks.append(run(name: "10 str", runs: runs, action: create10Strings))
   let hundredStr = run(name: "100 str", runs: runs) {
     create100Strings(str: str)
   }
-  benchmarks.append(run(name: "3M strc", runs: 1, action: benchmarkThreeMillionStructs))
+  benchmarks.append(run(
+    name: "3M strc",
+    runs: 1,
+    action: benchmarkThreeMillionStructs))
   benchmarks.append(hundredStr)
   print(createDocument(Benchmarks: benchmarks))
 }

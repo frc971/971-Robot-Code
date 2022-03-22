@@ -7,7 +7,6 @@ import kotlin.math.sign
 import com.google.flatbuffers.*
 
 @Suppress("unused")
-@ExperimentalUnsignedTypes
 class InParentNamespace : Table() {
 
     fun __init(_i: Int, _bb: ByteBuffer)  {
@@ -18,7 +17,7 @@ class InParentNamespace : Table() {
         return this
     }
     companion object {
-        fun validateVersion() = Constants.FLATBUFFERS_1_12_0()
+        fun validateVersion() = Constants.FLATBUFFERS_2_0_0()
         fun getRootAsInParentNamespace(_bb: ByteBuffer): InParentNamespace = getRootAsInParentNamespace(_bb, InParentNamespace())
         fun getRootAsInParentNamespace(_bb: ByteBuffer, obj: InParentNamespace): InParentNamespace {
             _bb.order(ByteOrder.LITTLE_ENDIAN)

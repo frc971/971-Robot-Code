@@ -14,7 +14,7 @@ public struct Monster : IFlatbufferObject
 {
   private Table __p;
   public ByteBuffer ByteBuffer { get { return __p.bb; } }
-  public static void ValidateVersion() { FlatBufferConstants.FLATBUFFERS_1_12_0(); }
+  public static void ValidateVersion() { FlatBufferConstants.FLATBUFFERS_2_0_0(); }
   public static Monster GetRootAsMonster(ByteBuffer _bb) { return GetRootAsMonster(_bb, new Monster()); }
   public static Monster GetRootAsMonster(ByteBuffer _bb, Monster obj) { return (obj.__assign(_bb.GetInt(_bb.Position) + _bb.Position, _bb)); }
   public static bool MonsterBufferHasIdentifier(ByteBuffer _bb) { return Table.__has_identifier(_bb, "MONS"); }
@@ -207,6 +207,14 @@ public struct Monster : IFlatbufferObject
   public byte[] GetTestrequirednestedflatbufferArray() { return __p.__vector_as_array<byte>(102); }
   public MyGame.Example.Monster? GetTestrequirednestedflatbufferAsMonster() { int o = __p.__offset(102); return o != 0 ? (MyGame.Example.Monster?)(new MyGame.Example.Monster()).__assign(__p.__indirect(__p.__vector(o)), __p.bb) : null; }
   public bool MutateTestrequirednestedflatbuffer(int j, byte testrequirednestedflatbuffer) { int o = __p.__offset(102); if (o != 0) { __p.bb.Put(__p.__vector(o) + j * 1, testrequirednestedflatbuffer); return true; } else { return false; } }
+  public MyGame.Example.Stat? ScalarKeySortedTables(int j) { int o = __p.__offset(104); return o != 0 ? (MyGame.Example.Stat?)(new MyGame.Example.Stat()).__assign(__p.__indirect(__p.__vector(o) + j * 4), __p.bb) : null; }
+  public int ScalarKeySortedTablesLength { get { int o = __p.__offset(104); return o != 0 ? __p.__vector_len(o) : 0; } }
+  public MyGame.Example.Stat? ScalarKeySortedTablesByKey(ushort key) { int o = __p.__offset(104); return o != 0 ? MyGame.Example.Stat.__lookup_by_key(__p.__vector(o), key, __p.bb) : null; }
+  public MyGame.Example.Test? NativeInline { get { int o = __p.__offset(106); return o != 0 ? (MyGame.Example.Test?)(new MyGame.Example.Test()).__assign(o + __p.bb_pos, __p.bb) : null; } }
+  public MyGame.Example.LongEnum LongEnumNonEnumDefault { get { int o = __p.__offset(108); return o != 0 ? (MyGame.Example.LongEnum)__p.bb.GetUlong(o + __p.bb_pos) : 0; } }
+  public bool MutateLongEnumNonEnumDefault(MyGame.Example.LongEnum long_enum_non_enum_default) { int o = __p.__offset(108); if (o != 0) { __p.bb.PutUlong(o + __p.bb_pos, (ulong)long_enum_non_enum_default); return true; } else { return false; } }
+  public MyGame.Example.LongEnum LongEnumNormalDefault { get { int o = __p.__offset(110); return o != 0 ? (MyGame.Example.LongEnum)__p.bb.GetUlong(o + __p.bb_pos) : MyGame.Example.LongEnum.LongOne; } }
+  public bool MutateLongEnumNormalDefault(MyGame.Example.LongEnum long_enum_normal_default) { int o = __p.__offset(110); if (o != 0) { __p.bb.PutUlong(o + __p.bb_pos, (ulong)long_enum_normal_default); return true; } else { return false; } }
 
   public static Offset<MyGame.Example.Monster> CreateMonster(FlatBufferBuilder builder,
       MyGame.Example.Vec3T pos = null,
@@ -257,8 +265,14 @@ public struct Monster : IFlatbufferObject
       int any_ambiguousOffset = 0,
       VectorOffset vector_of_enumsOffset = default(VectorOffset),
       MyGame.Example.Race signed_enum = MyGame.Example.Race.None,
-      VectorOffset testrequirednestedflatbufferOffset = default(VectorOffset)) {
-    builder.StartTable(50);
+      VectorOffset testrequirednestedflatbufferOffset = default(VectorOffset),
+      VectorOffset scalar_key_sorted_tablesOffset = default(VectorOffset),
+      MyGame.Example.TestT native_inline = null,
+      MyGame.Example.LongEnum long_enum_non_enum_default = 0,
+      MyGame.Example.LongEnum long_enum_normal_default = MyGame.Example.LongEnum.LongOne) {
+    builder.StartTable(54);
+    Monster.AddLongEnumNormalDefault(builder, long_enum_normal_default);
+    Monster.AddLongEnumNonEnumDefault(builder, long_enum_non_enum_default);
     Monster.AddNonOwningReference(builder, non_owning_reference);
     Monster.AddCoOwningReference(builder, co_owning_reference);
     Monster.AddSingleWeakReference(builder, single_weak_reference);
@@ -266,6 +280,8 @@ public struct Monster : IFlatbufferObject
     Monster.AddTesthashs64Fnv1a(builder, testhashs64_fnv1a);
     Monster.AddTesthashu64Fnv1(builder, testhashu64_fnv1);
     Monster.AddTesthashs64Fnv1(builder, testhashs64_fnv1);
+    Monster.AddNativeInline(builder, MyGame.Example.Test.Pack(builder, native_inline));
+    Monster.AddScalarKeySortedTables(builder, scalar_key_sorted_tablesOffset);
     Monster.AddTestrequirednestedflatbuffer(builder, testrequirednestedflatbufferOffset);
     Monster.AddVectorOfEnums(builder, vector_of_enumsOffset);
     Monster.AddAnyAmbiguous(builder, any_ambiguousOffset);
@@ -311,7 +327,7 @@ public struct Monster : IFlatbufferObject
     return Monster.EndMonster(builder);
   }
 
-  public static void StartMonster(FlatBufferBuilder builder) { builder.StartTable(50); }
+  public static void StartMonster(FlatBufferBuilder builder) { builder.StartTable(54); }
   public static void AddPos(FlatBufferBuilder builder, Offset<MyGame.Example.Vec3> posOffset) { builder.AddStruct(0, posOffset.Value, 0); }
   public static void AddMana(FlatBufferBuilder builder, short mana) { builder.AddShort(1, mana, 150); }
   public static void AddHp(FlatBufferBuilder builder, short hp) { builder.AddShort(2, hp, 100); }
@@ -412,6 +428,13 @@ public struct Monster : IFlatbufferObject
   public static VectorOffset CreateTestrequirednestedflatbufferVector(FlatBufferBuilder builder, byte[] data) { builder.StartVector(1, data.Length, 1); for (int i = data.Length - 1; i >= 0; i--) builder.AddByte(data[i]); return builder.EndVector(); }
   public static VectorOffset CreateTestrequirednestedflatbufferVectorBlock(FlatBufferBuilder builder, byte[] data) { builder.StartVector(1, data.Length, 1); builder.Add(data); return builder.EndVector(); }
   public static void StartTestrequirednestedflatbufferVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(1, numElems, 1); }
+  public static void AddScalarKeySortedTables(FlatBufferBuilder builder, VectorOffset scalarKeySortedTablesOffset) { builder.AddOffset(50, scalarKeySortedTablesOffset.Value, 0); }
+  public static VectorOffset CreateScalarKeySortedTablesVector(FlatBufferBuilder builder, Offset<MyGame.Example.Stat>[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
+  public static VectorOffset CreateScalarKeySortedTablesVectorBlock(FlatBufferBuilder builder, Offset<MyGame.Example.Stat>[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
+  public static void StartScalarKeySortedTablesVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
+  public static void AddNativeInline(FlatBufferBuilder builder, Offset<MyGame.Example.Test> nativeInlineOffset) { builder.AddStruct(51, nativeInlineOffset.Value, 0); }
+  public static void AddLongEnumNonEnumDefault(FlatBufferBuilder builder, MyGame.Example.LongEnum longEnumNonEnumDefault) { builder.AddUlong(52, (ulong)longEnumNonEnumDefault, 0); }
+  public static void AddLongEnumNormalDefault(FlatBufferBuilder builder, MyGame.Example.LongEnum longEnumNormalDefault) { builder.AddUlong(53, (ulong)longEnumNormalDefault, 2); }
   public static Offset<MyGame.Example.Monster> EndMonster(FlatBufferBuilder builder) {
     int o = builder.EndTable();
     builder.Required(o, 10);  // name
@@ -555,6 +578,11 @@ public struct Monster : IFlatbufferObject
     _o.SignedEnum = this.SignedEnum;
     _o.Testrequirednestedflatbuffer = new List<byte>();
     for (var _j = 0; _j < this.TestrequirednestedflatbufferLength; ++_j) {_o.Testrequirednestedflatbuffer.Add(this.Testrequirednestedflatbuffer(_j));}
+    _o.ScalarKeySortedTables = new List<MyGame.Example.StatT>();
+    for (var _j = 0; _j < this.ScalarKeySortedTablesLength; ++_j) {_o.ScalarKeySortedTables.Add(this.ScalarKeySortedTables(_j).HasValue ? this.ScalarKeySortedTables(_j).Value.UnPack() : null);}
+    _o.NativeInline = this.NativeInline.HasValue ? this.NativeInline.Value.UnPack() : null;
+    _o.LongEnumNonEnumDefault = this.LongEnumNonEnumDefault;
+    _o.LongEnumNormalDefault = this.LongEnumNormalDefault;
   }
   public static Offset<MyGame.Example.Monster> Pack(FlatBufferBuilder builder, MonsterT _o) {
     if (_o == null) return default(Offset<MyGame.Example.Monster>);
@@ -671,6 +699,12 @@ public struct Monster : IFlatbufferObject
       var __testrequirednestedflatbuffer = _o.Testrequirednestedflatbuffer.ToArray();
       _testrequirednestedflatbuffer = CreateTestrequirednestedflatbufferVector(builder, __testrequirednestedflatbuffer);
     }
+    var _scalar_key_sorted_tables = default(VectorOffset);
+    if (_o.ScalarKeySortedTables != null) {
+      var __scalar_key_sorted_tables = new Offset<MyGame.Example.Stat>[_o.ScalarKeySortedTables.Count];
+      for (var _j = 0; _j < __scalar_key_sorted_tables.Length; ++_j) { __scalar_key_sorted_tables[_j] = MyGame.Example.Stat.Pack(builder, _o.ScalarKeySortedTables[_j]); }
+      _scalar_key_sorted_tables = CreateScalarKeySortedTablesVector(builder, __scalar_key_sorted_tables);
+    }
     return CreateMonster(
       builder,
       _o.Pos,
@@ -721,9 +755,13 @@ public struct Monster : IFlatbufferObject
       _any_ambiguous,
       _vector_of_enums,
       _o.SignedEnum,
-      _testrequirednestedflatbuffer);
+      _testrequirednestedflatbuffer,
+      _scalar_key_sorted_tables,
+      _o.NativeInline,
+      _o.LongEnumNonEnumDefault,
+      _o.LongEnumNormalDefault);
   }
-};
+}
 
 public class MonsterT
 {
@@ -866,6 +904,14 @@ public class MonsterT
   public MyGame.Example.Race SignedEnum { get; set; }
   [Newtonsoft.Json.JsonProperty("testrequirednestedflatbuffer")]
   public List<byte> Testrequirednestedflatbuffer { get; set; }
+  [Newtonsoft.Json.JsonProperty("scalar_key_sorted_tables")]
+  public List<MyGame.Example.StatT> ScalarKeySortedTables { get; set; }
+  [Newtonsoft.Json.JsonProperty("native_inline")]
+  public MyGame.Example.TestT NativeInline { get; set; }
+  [Newtonsoft.Json.JsonProperty("long_enum_non_enum_default")]
+  public MyGame.Example.LongEnum LongEnumNonEnumDefault { get; set; }
+  [Newtonsoft.Json.JsonProperty("long_enum_normal_default")]
+  public MyGame.Example.LongEnum LongEnumNormalDefault { get; set; }
 
   public MonsterT() {
     this.Pos = new MyGame.Example.Vec3T();
@@ -914,6 +960,10 @@ public class MonsterT
     this.VectorOfEnums = null;
     this.SignedEnum = MyGame.Example.Race.None;
     this.Testrequirednestedflatbuffer = null;
+    this.ScalarKeySortedTables = null;
+    this.NativeInline = new MyGame.Example.TestT();
+    this.LongEnumNonEnumDefault = 0;
+    this.LongEnumNormalDefault = MyGame.Example.LongEnum.LongOne;
   }
 
   public static MonsterT DeserializeFromJson(string jsonText) {

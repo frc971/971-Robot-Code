@@ -17,7 +17,7 @@ bool operator!=(const ScalarStuffT &lhs, const ScalarStuffT &rhs);
 
 inline const flatbuffers::TypeTable *ScalarStuffTypeTable();
 
-enum OptionalByte {
+enum OptionalByte : int8_t {
   OptionalByte_None = 0,
   OptionalByte_One = 1,
   OptionalByte_Two = 2,
@@ -52,126 +52,43 @@ inline const char *EnumNameOptionalByte(OptionalByte e) {
 
 struct ScalarStuffT : public flatbuffers::NativeTable {
   typedef ScalarStuff TableType;
-  int8_t just_i8;
-  flatbuffers::Optional<int8_t> maybe_i8;
-  int8_t default_i8;
-  uint8_t just_u8;
-  flatbuffers::Optional<uint8_t> maybe_u8;
-  uint8_t default_u8;
-  int16_t just_i16;
-  flatbuffers::Optional<int16_t> maybe_i16;
-  int16_t default_i16;
-  uint16_t just_u16;
-  flatbuffers::Optional<uint16_t> maybe_u16;
-  uint16_t default_u16;
-  int32_t just_i32;
-  flatbuffers::Optional<int32_t> maybe_i32;
-  int32_t default_i32;
-  uint32_t just_u32;
-  flatbuffers::Optional<uint32_t> maybe_u32;
-  uint32_t default_u32;
-  int64_t just_i64;
-  flatbuffers::Optional<int64_t> maybe_i64;
-  int64_t default_i64;
-  uint64_t just_u64;
-  flatbuffers::Optional<uint64_t> maybe_u64;
-  uint64_t default_u64;
-  float just_f32;
-  flatbuffers::Optional<float> maybe_f32;
-  float default_f32;
-  double just_f64;
-  flatbuffers::Optional<double> maybe_f64;
-  double default_f64;
-  bool just_bool;
-  flatbuffers::Optional<bool> maybe_bool;
-  bool default_bool;
-  optional_scalars::OptionalByte just_enum;
-  flatbuffers::Optional<optional_scalars::OptionalByte> maybe_enum;
-  optional_scalars::OptionalByte default_enum;
-  ScalarStuffT()
-      : just_i8(0),
-        maybe_i8(flatbuffers::nullopt),
-        default_i8(42),
-        just_u8(0),
-        maybe_u8(flatbuffers::nullopt),
-        default_u8(42),
-        just_i16(0),
-        maybe_i16(flatbuffers::nullopt),
-        default_i16(42),
-        just_u16(0),
-        maybe_u16(flatbuffers::nullopt),
-        default_u16(42),
-        just_i32(0),
-        maybe_i32(flatbuffers::nullopt),
-        default_i32(42),
-        just_u32(0),
-        maybe_u32(flatbuffers::nullopt),
-        default_u32(42),
-        just_i64(0),
-        maybe_i64(flatbuffers::nullopt),
-        default_i64(42LL),
-        just_u64(0),
-        maybe_u64(flatbuffers::nullopt),
-        default_u64(42ULL),
-        just_f32(0.0f),
-        maybe_f32(flatbuffers::nullopt),
-        default_f32(42.0f),
-        just_f64(0.0),
-        maybe_f64(flatbuffers::nullopt),
-        default_f64(42.0),
-        just_bool(false),
-        maybe_bool(flatbuffers::nullopt),
-        default_bool(true),
-        just_enum(optional_scalars::OptionalByte_None),
-        maybe_enum(flatbuffers::nullopt),
-        default_enum(optional_scalars::OptionalByte_One) {
-  }
+  int8_t just_i8 = 0;
+  flatbuffers::Optional<int8_t> maybe_i8 = flatbuffers::nullopt;
+  int8_t default_i8 = 42;
+  uint8_t just_u8 = 0;
+  flatbuffers::Optional<uint8_t> maybe_u8 = flatbuffers::nullopt;
+  uint8_t default_u8 = 42;
+  int16_t just_i16 = 0;
+  flatbuffers::Optional<int16_t> maybe_i16 = flatbuffers::nullopt;
+  int16_t default_i16 = 42;
+  uint16_t just_u16 = 0;
+  flatbuffers::Optional<uint16_t> maybe_u16 = flatbuffers::nullopt;
+  uint16_t default_u16 = 42;
+  int32_t just_i32 = 0;
+  flatbuffers::Optional<int32_t> maybe_i32 = flatbuffers::nullopt;
+  int32_t default_i32 = 42;
+  uint32_t just_u32 = 0;
+  flatbuffers::Optional<uint32_t> maybe_u32 = flatbuffers::nullopt;
+  uint32_t default_u32 = 42;
+  int64_t just_i64 = 0;
+  flatbuffers::Optional<int64_t> maybe_i64 = flatbuffers::nullopt;
+  int64_t default_i64 = 42LL;
+  uint64_t just_u64 = 0;
+  flatbuffers::Optional<uint64_t> maybe_u64 = flatbuffers::nullopt;
+  uint64_t default_u64 = 42ULL;
+  float just_f32 = 0.0f;
+  flatbuffers::Optional<float> maybe_f32 = flatbuffers::nullopt;
+  float default_f32 = 42.0f;
+  double just_f64 = 0.0;
+  flatbuffers::Optional<double> maybe_f64 = flatbuffers::nullopt;
+  double default_f64 = 42.0;
+  bool just_bool = false;
+  flatbuffers::Optional<bool> maybe_bool = flatbuffers::nullopt;
+  bool default_bool = true;
+  optional_scalars::OptionalByte just_enum = optional_scalars::OptionalByte_None;
+  flatbuffers::Optional<optional_scalars::OptionalByte> maybe_enum = flatbuffers::nullopt;
+  optional_scalars::OptionalByte default_enum = optional_scalars::OptionalByte_One;
 };
-
-inline bool operator==(const ScalarStuffT &lhs, const ScalarStuffT &rhs) {
-  return
-      (lhs.just_i8 == rhs.just_i8) &&
-      (lhs.maybe_i8 == rhs.maybe_i8) &&
-      (lhs.default_i8 == rhs.default_i8) &&
-      (lhs.just_u8 == rhs.just_u8) &&
-      (lhs.maybe_u8 == rhs.maybe_u8) &&
-      (lhs.default_u8 == rhs.default_u8) &&
-      (lhs.just_i16 == rhs.just_i16) &&
-      (lhs.maybe_i16 == rhs.maybe_i16) &&
-      (lhs.default_i16 == rhs.default_i16) &&
-      (lhs.just_u16 == rhs.just_u16) &&
-      (lhs.maybe_u16 == rhs.maybe_u16) &&
-      (lhs.default_u16 == rhs.default_u16) &&
-      (lhs.just_i32 == rhs.just_i32) &&
-      (lhs.maybe_i32 == rhs.maybe_i32) &&
-      (lhs.default_i32 == rhs.default_i32) &&
-      (lhs.just_u32 == rhs.just_u32) &&
-      (lhs.maybe_u32 == rhs.maybe_u32) &&
-      (lhs.default_u32 == rhs.default_u32) &&
-      (lhs.just_i64 == rhs.just_i64) &&
-      (lhs.maybe_i64 == rhs.maybe_i64) &&
-      (lhs.default_i64 == rhs.default_i64) &&
-      (lhs.just_u64 == rhs.just_u64) &&
-      (lhs.maybe_u64 == rhs.maybe_u64) &&
-      (lhs.default_u64 == rhs.default_u64) &&
-      (lhs.just_f32 == rhs.just_f32) &&
-      (lhs.maybe_f32 == rhs.maybe_f32) &&
-      (lhs.default_f32 == rhs.default_f32) &&
-      (lhs.just_f64 == rhs.just_f64) &&
-      (lhs.maybe_f64 == rhs.maybe_f64) &&
-      (lhs.default_f64 == rhs.default_f64) &&
-      (lhs.just_bool == rhs.just_bool) &&
-      (lhs.maybe_bool == rhs.maybe_bool) &&
-      (lhs.default_bool == rhs.default_bool) &&
-      (lhs.just_enum == rhs.just_enum) &&
-      (lhs.maybe_enum == rhs.maybe_enum) &&
-      (lhs.default_enum == rhs.default_enum);
-}
-
-inline bool operator!=(const ScalarStuffT &lhs, const ScalarStuffT &rhs) {
-    return !(lhs == rhs);
-}
-
 
 struct ScalarStuff FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef ScalarStuffT NativeTableType;
@@ -220,7 +137,7 @@ struct ScalarStuff FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   int8_t just_i8() const {
     return GetField<int8_t>(VT_JUST_I8, 0);
   }
-  bool mutate_just_i8(int8_t _just_i8) {
+  bool mutate_just_i8(int8_t _just_i8 = 0) {
     return SetField<int8_t>(VT_JUST_I8, _just_i8, 0);
   }
   flatbuffers::Optional<int8_t> maybe_i8() const {
@@ -232,13 +149,13 @@ struct ScalarStuff FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   int8_t default_i8() const {
     return GetField<int8_t>(VT_DEFAULT_I8, 42);
   }
-  bool mutate_default_i8(int8_t _default_i8) {
+  bool mutate_default_i8(int8_t _default_i8 = 42) {
     return SetField<int8_t>(VT_DEFAULT_I8, _default_i8, 42);
   }
   uint8_t just_u8() const {
     return GetField<uint8_t>(VT_JUST_U8, 0);
   }
-  bool mutate_just_u8(uint8_t _just_u8) {
+  bool mutate_just_u8(uint8_t _just_u8 = 0) {
     return SetField<uint8_t>(VT_JUST_U8, _just_u8, 0);
   }
   flatbuffers::Optional<uint8_t> maybe_u8() const {
@@ -250,13 +167,13 @@ struct ScalarStuff FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   uint8_t default_u8() const {
     return GetField<uint8_t>(VT_DEFAULT_U8, 42);
   }
-  bool mutate_default_u8(uint8_t _default_u8) {
+  bool mutate_default_u8(uint8_t _default_u8 = 42) {
     return SetField<uint8_t>(VT_DEFAULT_U8, _default_u8, 42);
   }
   int16_t just_i16() const {
     return GetField<int16_t>(VT_JUST_I16, 0);
   }
-  bool mutate_just_i16(int16_t _just_i16) {
+  bool mutate_just_i16(int16_t _just_i16 = 0) {
     return SetField<int16_t>(VT_JUST_I16, _just_i16, 0);
   }
   flatbuffers::Optional<int16_t> maybe_i16() const {
@@ -268,13 +185,13 @@ struct ScalarStuff FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   int16_t default_i16() const {
     return GetField<int16_t>(VT_DEFAULT_I16, 42);
   }
-  bool mutate_default_i16(int16_t _default_i16) {
+  bool mutate_default_i16(int16_t _default_i16 = 42) {
     return SetField<int16_t>(VT_DEFAULT_I16, _default_i16, 42);
   }
   uint16_t just_u16() const {
     return GetField<uint16_t>(VT_JUST_U16, 0);
   }
-  bool mutate_just_u16(uint16_t _just_u16) {
+  bool mutate_just_u16(uint16_t _just_u16 = 0) {
     return SetField<uint16_t>(VT_JUST_U16, _just_u16, 0);
   }
   flatbuffers::Optional<uint16_t> maybe_u16() const {
@@ -286,13 +203,13 @@ struct ScalarStuff FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   uint16_t default_u16() const {
     return GetField<uint16_t>(VT_DEFAULT_U16, 42);
   }
-  bool mutate_default_u16(uint16_t _default_u16) {
+  bool mutate_default_u16(uint16_t _default_u16 = 42) {
     return SetField<uint16_t>(VT_DEFAULT_U16, _default_u16, 42);
   }
   int32_t just_i32() const {
     return GetField<int32_t>(VT_JUST_I32, 0);
   }
-  bool mutate_just_i32(int32_t _just_i32) {
+  bool mutate_just_i32(int32_t _just_i32 = 0) {
     return SetField<int32_t>(VT_JUST_I32, _just_i32, 0);
   }
   flatbuffers::Optional<int32_t> maybe_i32() const {
@@ -304,13 +221,13 @@ struct ScalarStuff FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   int32_t default_i32() const {
     return GetField<int32_t>(VT_DEFAULT_I32, 42);
   }
-  bool mutate_default_i32(int32_t _default_i32) {
+  bool mutate_default_i32(int32_t _default_i32 = 42) {
     return SetField<int32_t>(VT_DEFAULT_I32, _default_i32, 42);
   }
   uint32_t just_u32() const {
     return GetField<uint32_t>(VT_JUST_U32, 0);
   }
-  bool mutate_just_u32(uint32_t _just_u32) {
+  bool mutate_just_u32(uint32_t _just_u32 = 0) {
     return SetField<uint32_t>(VT_JUST_U32, _just_u32, 0);
   }
   flatbuffers::Optional<uint32_t> maybe_u32() const {
@@ -322,13 +239,13 @@ struct ScalarStuff FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   uint32_t default_u32() const {
     return GetField<uint32_t>(VT_DEFAULT_U32, 42);
   }
-  bool mutate_default_u32(uint32_t _default_u32) {
+  bool mutate_default_u32(uint32_t _default_u32 = 42) {
     return SetField<uint32_t>(VT_DEFAULT_U32, _default_u32, 42);
   }
   int64_t just_i64() const {
     return GetField<int64_t>(VT_JUST_I64, 0);
   }
-  bool mutate_just_i64(int64_t _just_i64) {
+  bool mutate_just_i64(int64_t _just_i64 = 0) {
     return SetField<int64_t>(VT_JUST_I64, _just_i64, 0);
   }
   flatbuffers::Optional<int64_t> maybe_i64() const {
@@ -340,13 +257,13 @@ struct ScalarStuff FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   int64_t default_i64() const {
     return GetField<int64_t>(VT_DEFAULT_I64, 42LL);
   }
-  bool mutate_default_i64(int64_t _default_i64) {
+  bool mutate_default_i64(int64_t _default_i64 = 42LL) {
     return SetField<int64_t>(VT_DEFAULT_I64, _default_i64, 42LL);
   }
   uint64_t just_u64() const {
     return GetField<uint64_t>(VT_JUST_U64, 0);
   }
-  bool mutate_just_u64(uint64_t _just_u64) {
+  bool mutate_just_u64(uint64_t _just_u64 = 0) {
     return SetField<uint64_t>(VT_JUST_U64, _just_u64, 0);
   }
   flatbuffers::Optional<uint64_t> maybe_u64() const {
@@ -358,13 +275,13 @@ struct ScalarStuff FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   uint64_t default_u64() const {
     return GetField<uint64_t>(VT_DEFAULT_U64, 42ULL);
   }
-  bool mutate_default_u64(uint64_t _default_u64) {
+  bool mutate_default_u64(uint64_t _default_u64 = 42ULL) {
     return SetField<uint64_t>(VT_DEFAULT_U64, _default_u64, 42ULL);
   }
   float just_f32() const {
     return GetField<float>(VT_JUST_F32, 0.0f);
   }
-  bool mutate_just_f32(float _just_f32) {
+  bool mutate_just_f32(float _just_f32 = 0.0f) {
     return SetField<float>(VT_JUST_F32, _just_f32, 0.0f);
   }
   flatbuffers::Optional<float> maybe_f32() const {
@@ -376,13 +293,13 @@ struct ScalarStuff FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   float default_f32() const {
     return GetField<float>(VT_DEFAULT_F32, 42.0f);
   }
-  bool mutate_default_f32(float _default_f32) {
+  bool mutate_default_f32(float _default_f32 = 42.0f) {
     return SetField<float>(VT_DEFAULT_F32, _default_f32, 42.0f);
   }
   double just_f64() const {
     return GetField<double>(VT_JUST_F64, 0.0);
   }
-  bool mutate_just_f64(double _just_f64) {
+  bool mutate_just_f64(double _just_f64 = 0.0) {
     return SetField<double>(VT_JUST_F64, _just_f64, 0.0);
   }
   flatbuffers::Optional<double> maybe_f64() const {
@@ -394,13 +311,13 @@ struct ScalarStuff FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   double default_f64() const {
     return GetField<double>(VT_DEFAULT_F64, 42.0);
   }
-  bool mutate_default_f64(double _default_f64) {
+  bool mutate_default_f64(double _default_f64 = 42.0) {
     return SetField<double>(VT_DEFAULT_F64, _default_f64, 42.0);
   }
   bool just_bool() const {
     return GetField<uint8_t>(VT_JUST_BOOL, 0) != 0;
   }
-  bool mutate_just_bool(bool _just_bool) {
+  bool mutate_just_bool(bool _just_bool = 0) {
     return SetField<uint8_t>(VT_JUST_BOOL, static_cast<uint8_t>(_just_bool), 0);
   }
   flatbuffers::Optional<bool> maybe_bool() const {
@@ -412,13 +329,13 @@ struct ScalarStuff FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   bool default_bool() const {
     return GetField<uint8_t>(VT_DEFAULT_BOOL, 1) != 0;
   }
-  bool mutate_default_bool(bool _default_bool) {
+  bool mutate_default_bool(bool _default_bool = 1) {
     return SetField<uint8_t>(VT_DEFAULT_BOOL, static_cast<uint8_t>(_default_bool), 1);
   }
   optional_scalars::OptionalByte just_enum() const {
     return static_cast<optional_scalars::OptionalByte>(GetField<int8_t>(VT_JUST_ENUM, 0));
   }
-  bool mutate_just_enum(optional_scalars::OptionalByte _just_enum) {
+  bool mutate_just_enum(optional_scalars::OptionalByte _just_enum = static_cast<optional_scalars::OptionalByte>(0)) {
     return SetField<int8_t>(VT_JUST_ENUM, static_cast<int8_t>(_just_enum), 0);
   }
   flatbuffers::Optional<optional_scalars::OptionalByte> maybe_enum() const {
@@ -430,47 +347,47 @@ struct ScalarStuff FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   optional_scalars::OptionalByte default_enum() const {
     return static_cast<optional_scalars::OptionalByte>(GetField<int8_t>(VT_DEFAULT_ENUM, 1));
   }
-  bool mutate_default_enum(optional_scalars::OptionalByte _default_enum) {
+  bool mutate_default_enum(optional_scalars::OptionalByte _default_enum = static_cast<optional_scalars::OptionalByte>(1)) {
     return SetField<int8_t>(VT_DEFAULT_ENUM, static_cast<int8_t>(_default_enum), 1);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyField<int8_t>(verifier, VT_JUST_I8) &&
-           VerifyField<int8_t>(verifier, VT_MAYBE_I8) &&
-           VerifyField<int8_t>(verifier, VT_DEFAULT_I8) &&
-           VerifyField<uint8_t>(verifier, VT_JUST_U8) &&
-           VerifyField<uint8_t>(verifier, VT_MAYBE_U8) &&
-           VerifyField<uint8_t>(verifier, VT_DEFAULT_U8) &&
-           VerifyField<int16_t>(verifier, VT_JUST_I16) &&
-           VerifyField<int16_t>(verifier, VT_MAYBE_I16) &&
-           VerifyField<int16_t>(verifier, VT_DEFAULT_I16) &&
-           VerifyField<uint16_t>(verifier, VT_JUST_U16) &&
-           VerifyField<uint16_t>(verifier, VT_MAYBE_U16) &&
-           VerifyField<uint16_t>(verifier, VT_DEFAULT_U16) &&
-           VerifyField<int32_t>(verifier, VT_JUST_I32) &&
-           VerifyField<int32_t>(verifier, VT_MAYBE_I32) &&
-           VerifyField<int32_t>(verifier, VT_DEFAULT_I32) &&
-           VerifyField<uint32_t>(verifier, VT_JUST_U32) &&
-           VerifyField<uint32_t>(verifier, VT_MAYBE_U32) &&
-           VerifyField<uint32_t>(verifier, VT_DEFAULT_U32) &&
-           VerifyField<int64_t>(verifier, VT_JUST_I64) &&
-           VerifyField<int64_t>(verifier, VT_MAYBE_I64) &&
-           VerifyField<int64_t>(verifier, VT_DEFAULT_I64) &&
-           VerifyField<uint64_t>(verifier, VT_JUST_U64) &&
-           VerifyField<uint64_t>(verifier, VT_MAYBE_U64) &&
-           VerifyField<uint64_t>(verifier, VT_DEFAULT_U64) &&
-           VerifyField<float>(verifier, VT_JUST_F32) &&
-           VerifyField<float>(verifier, VT_MAYBE_F32) &&
-           VerifyField<float>(verifier, VT_DEFAULT_F32) &&
-           VerifyField<double>(verifier, VT_JUST_F64) &&
-           VerifyField<double>(verifier, VT_MAYBE_F64) &&
-           VerifyField<double>(verifier, VT_DEFAULT_F64) &&
-           VerifyField<uint8_t>(verifier, VT_JUST_BOOL) &&
-           VerifyField<uint8_t>(verifier, VT_MAYBE_BOOL) &&
-           VerifyField<uint8_t>(verifier, VT_DEFAULT_BOOL) &&
-           VerifyField<int8_t>(verifier, VT_JUST_ENUM) &&
-           VerifyField<int8_t>(verifier, VT_MAYBE_ENUM) &&
-           VerifyField<int8_t>(verifier, VT_DEFAULT_ENUM) &&
+           VerifyField<int8_t>(verifier, VT_JUST_I8, 1) &&
+           VerifyField<int8_t>(verifier, VT_MAYBE_I8, 1) &&
+           VerifyField<int8_t>(verifier, VT_DEFAULT_I8, 1) &&
+           VerifyField<uint8_t>(verifier, VT_JUST_U8, 1) &&
+           VerifyField<uint8_t>(verifier, VT_MAYBE_U8, 1) &&
+           VerifyField<uint8_t>(verifier, VT_DEFAULT_U8, 1) &&
+           VerifyField<int16_t>(verifier, VT_JUST_I16, 2) &&
+           VerifyField<int16_t>(verifier, VT_MAYBE_I16, 2) &&
+           VerifyField<int16_t>(verifier, VT_DEFAULT_I16, 2) &&
+           VerifyField<uint16_t>(verifier, VT_JUST_U16, 2) &&
+           VerifyField<uint16_t>(verifier, VT_MAYBE_U16, 2) &&
+           VerifyField<uint16_t>(verifier, VT_DEFAULT_U16, 2) &&
+           VerifyField<int32_t>(verifier, VT_JUST_I32, 4) &&
+           VerifyField<int32_t>(verifier, VT_MAYBE_I32, 4) &&
+           VerifyField<int32_t>(verifier, VT_DEFAULT_I32, 4) &&
+           VerifyField<uint32_t>(verifier, VT_JUST_U32, 4) &&
+           VerifyField<uint32_t>(verifier, VT_MAYBE_U32, 4) &&
+           VerifyField<uint32_t>(verifier, VT_DEFAULT_U32, 4) &&
+           VerifyField<int64_t>(verifier, VT_JUST_I64, 8) &&
+           VerifyField<int64_t>(verifier, VT_MAYBE_I64, 8) &&
+           VerifyField<int64_t>(verifier, VT_DEFAULT_I64, 8) &&
+           VerifyField<uint64_t>(verifier, VT_JUST_U64, 8) &&
+           VerifyField<uint64_t>(verifier, VT_MAYBE_U64, 8) &&
+           VerifyField<uint64_t>(verifier, VT_DEFAULT_U64, 8) &&
+           VerifyField<float>(verifier, VT_JUST_F32, 4) &&
+           VerifyField<float>(verifier, VT_MAYBE_F32, 4) &&
+           VerifyField<float>(verifier, VT_DEFAULT_F32, 4) &&
+           VerifyField<double>(verifier, VT_JUST_F64, 8) &&
+           VerifyField<double>(verifier, VT_MAYBE_F64, 8) &&
+           VerifyField<double>(verifier, VT_DEFAULT_F64, 8) &&
+           VerifyField<uint8_t>(verifier, VT_JUST_BOOL, 1) &&
+           VerifyField<uint8_t>(verifier, VT_MAYBE_BOOL, 1) &&
+           VerifyField<uint8_t>(verifier, VT_DEFAULT_BOOL, 1) &&
+           VerifyField<int8_t>(verifier, VT_JUST_ENUM, 1) &&
+           VerifyField<int8_t>(verifier, VT_MAYBE_ENUM, 1) &&
+           VerifyField<int8_t>(verifier, VT_DEFAULT_ENUM, 1) &&
            verifier.EndTable();
   }
   ScalarStuffT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
@@ -681,8 +598,54 @@ inline flatbuffers::Offset<ScalarStuff> CreateScalarStuff(
 
 flatbuffers::Offset<ScalarStuff> CreateScalarStuff(flatbuffers::FlatBufferBuilder &_fbb, const ScalarStuffT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
+
+inline bool operator==(const ScalarStuffT &lhs, const ScalarStuffT &rhs) {
+  return
+      (lhs.just_i8 == rhs.just_i8) &&
+      (lhs.maybe_i8 == rhs.maybe_i8) &&
+      (lhs.default_i8 == rhs.default_i8) &&
+      (lhs.just_u8 == rhs.just_u8) &&
+      (lhs.maybe_u8 == rhs.maybe_u8) &&
+      (lhs.default_u8 == rhs.default_u8) &&
+      (lhs.just_i16 == rhs.just_i16) &&
+      (lhs.maybe_i16 == rhs.maybe_i16) &&
+      (lhs.default_i16 == rhs.default_i16) &&
+      (lhs.just_u16 == rhs.just_u16) &&
+      (lhs.maybe_u16 == rhs.maybe_u16) &&
+      (lhs.default_u16 == rhs.default_u16) &&
+      (lhs.just_i32 == rhs.just_i32) &&
+      (lhs.maybe_i32 == rhs.maybe_i32) &&
+      (lhs.default_i32 == rhs.default_i32) &&
+      (lhs.just_u32 == rhs.just_u32) &&
+      (lhs.maybe_u32 == rhs.maybe_u32) &&
+      (lhs.default_u32 == rhs.default_u32) &&
+      (lhs.just_i64 == rhs.just_i64) &&
+      (lhs.maybe_i64 == rhs.maybe_i64) &&
+      (lhs.default_i64 == rhs.default_i64) &&
+      (lhs.just_u64 == rhs.just_u64) &&
+      (lhs.maybe_u64 == rhs.maybe_u64) &&
+      (lhs.default_u64 == rhs.default_u64) &&
+      (lhs.just_f32 == rhs.just_f32) &&
+      (lhs.maybe_f32 == rhs.maybe_f32) &&
+      (lhs.default_f32 == rhs.default_f32) &&
+      (lhs.just_f64 == rhs.just_f64) &&
+      (lhs.maybe_f64 == rhs.maybe_f64) &&
+      (lhs.default_f64 == rhs.default_f64) &&
+      (lhs.just_bool == rhs.just_bool) &&
+      (lhs.maybe_bool == rhs.maybe_bool) &&
+      (lhs.default_bool == rhs.default_bool) &&
+      (lhs.just_enum == rhs.just_enum) &&
+      (lhs.maybe_enum == rhs.maybe_enum) &&
+      (lhs.default_enum == rhs.default_enum);
+}
+
+inline bool operator!=(const ScalarStuffT &lhs, const ScalarStuffT &rhs) {
+    return !(lhs == rhs);
+}
+
+
 inline ScalarStuffT *ScalarStuff::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
-  flatbuffers::unique_ptr<optional_scalars::ScalarStuffT> _o = flatbuffers::unique_ptr<optional_scalars::ScalarStuffT>(new ScalarStuffT());
+  auto _o = std::unique_ptr<ScalarStuffT>(new ScalarStuffT());
   UnPackTo(_o.get(), _resolver);
   return _o.release();
 }
@@ -930,6 +893,10 @@ inline ScalarStuff *GetMutableScalarStuff(void *buf) {
   return flatbuffers::GetMutableRoot<ScalarStuff>(buf);
 }
 
+inline optional_scalars::ScalarStuff *GetMutableSizePrefixedScalarStuff(void *buf) {
+  return flatbuffers::GetMutableSizePrefixedRoot<optional_scalars::ScalarStuff>(buf);
+}
+
 inline const char *ScalarStuffIdentifier() {
   return "NULL";
 }
@@ -937,6 +904,11 @@ inline const char *ScalarStuffIdentifier() {
 inline bool ScalarStuffBufferHasIdentifier(const void *buf) {
   return flatbuffers::BufferHasIdentifier(
       buf, ScalarStuffIdentifier());
+}
+
+inline bool SizePrefixedScalarStuffBufferHasIdentifier(const void *buf) {
+  return flatbuffers::BufferHasIdentifier(
+      buf, ScalarStuffIdentifier(), true);
 }
 
 inline bool VerifyScalarStuffBuffer(
