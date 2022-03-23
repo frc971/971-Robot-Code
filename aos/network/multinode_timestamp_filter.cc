@@ -43,6 +43,65 @@ TimestampProblem::TimestampProblem(size_t count) {
 // ms/s.  Figure out how to define it.  Do this last.  This lets us handle
 // constraints going away, and constraints close in time.
 
+bool TimestampProblem::HasObservations(size_t node_a) const {
+  // Note, this function is probably over conservative.  It is requiring all the
+  // pairs for a node to have data in at least one direction rather than enough
+  // pairs to have data to observe the graph.  We can break that when someone
+  // finds it is overly restrictive.
+
+  if (clock_offset_filter_for_node_[node_a].empty()) {
+    // Look for a filter going the other way who's node_b is our node.
+    bool found_filter = false;
+    for (size_t node_b = 0u; node_b < clock_offset_filter_for_node_.size();
+         ++node_b) {
+      for (const struct FilterPair &filter :
+           clock_offset_filter_for_node_[node_b]) {
+        if (filter.b_index == node_a) {
+          if (filter.filter->timestamps_size(base_clock_[node_b].boot,
+                                             base_clock_[node_a].boot) == 0u) {
+            // Found one without data, explode.
+            return false;
+          }
+          found_filter = true;
+        }
+      }
+    }
+    return found_filter;
+  }
+
+  for (const struct FilterPair &filter :
+       clock_offset_filter_for_node_[node_a]) {
+    // There's something in this direction, so we don't need to check the
+    // opposite direction to confirm we have observations.
+    if (filter.filter->timestamps_size(
+            base_clock_[node_a].boot, base_clock_[filter.b_index].boot) != 0u) {
+      continue;
+    }
+
+    // For a boot to exist, we need to have some observations between it and
+    // another boot.  We wouldn't bother to build a problem to solve for
+    // this node otherwise.  Confirm that is true so we at least get
+    // notified if that assumption falls apart.
+    bool valid = false;
+    for (const struct FilterPair &other_filter :
+         clock_offset_filter_for_node_[filter.b_index]) {
+      if (other_filter.b_index == node_a) {
+        // Found our match.  Confirm it has timestamps.
+        if (other_filter.filter->timestamps_size(
+                base_clock_[filter.b_index].boot, base_clock_[node_a].boot) !=
+            0u) {
+          valid = true;
+        }
+        break;
+      }
+    }
+    if (!valid) {
+      return false;
+    }
+  }
+  return true;
+}
+
 bool TimestampProblem::ValidateSolution(std::vector<BootTimestamp> solution) {
   bool success = true;
   for (size_t i = 0u; i < clock_offset_filter_for_node_.size(); ++i) {
@@ -1355,16 +1414,15 @@ TimestampProblem MultiNodeNoncausalOffsetEstimator::MakeProblem() {
 
 std::tuple<std::vector<MultiNodeNoncausalOffsetEstimator::CandidateTimes>, bool>
 MultiNodeNoncausalOffsetEstimator::MakeCandidateTimes() const {
-  bool boots_all_match = true;
   std::vector<CandidateTimes> candidate_times;
   candidate_times.resize(last_monotonics_.size());
 
   size_t node_a_index = 0;
-  size_t last_boot = std::numeric_limits<size_t>::max();
   for (const auto &filters : filters_per_node_) {
     VLOG(2) << "Investigating filter for node " << node_a_index;
     BootTimestamp next_node_time = BootTimestamp::max_time();
-    BootDuration next_node_duration;
+    BootDuration next_node_duration = BootDuration::max_time();
+    size_t b_index = std::numeric_limits<size_t>::max();
     NoncausalTimestampFilter *next_node_filter = nullptr;
     // Find the oldest time for each node in each filter, and solve for that
     // time.  That gives us the next timestamp for this node.
@@ -1379,21 +1437,11 @@ MultiNodeNoncausalOffsetEstimator::MakeCandidateTimes() const {
         if (std::get<0>(*candidate) < next_node_time) {
           next_node_time = std::get<0>(*candidate);
           next_node_duration = std::get<1>(*candidate);
+          b_index = filter.b_index;
           next_node_filter = filter.filter;
         }
       }
       ++filter_index;
-    }
-
-    // Found no active filters.  Either this node is off, or disconnected, or
-    // we are before the log file starts or after the log file ends.
-    if (next_node_time == BootTimestamp::max_time()) {
-      candidate_times[node_a_index] =
-          CandidateTimes{.next_node_time = next_node_time,
-                         .next_node_duration = next_node_duration,
-                         .next_node_filter = next_node_filter};
-      ++node_a_index;
-      continue;
     }
 
     // We want to make sure we solve explicitly for the start time for each
@@ -1419,6 +1467,8 @@ MultiNodeNoncausalOffsetEstimator::MakeCandidateTimes() const {
                 << " is the next startup time, " << next_start_time;
         next_node_time = next_start_time;
         next_node_filter = nullptr;
+        b_index = std::numeric_limits<size_t>::max();
+        next_node_duration = BootDuration::max_time();
       }
 
       // We need to make sure we have solutions as well for any local messages
@@ -1436,17 +1486,54 @@ MultiNodeNoncausalOffsetEstimator::MakeCandidateTimes() const {
                 << " not applying yet";
         next_node_time = next_oldest_time;
         next_node_filter = nullptr;
+        b_index = std::numeric_limits<size_t>::max();
+        next_node_duration = BootDuration::max_time();
       }
     }
-    if (last_boot != std::numeric_limits<size_t>::max()) {
-      boots_all_match &= (next_node_time.boot == last_boot);
-    }
-    last_boot = next_node_time.boot;
     candidate_times[node_a_index] =
         CandidateTimes{.next_node_time = next_node_time,
                        .next_node_duration = next_node_duration,
+                       .b_index = b_index,
                        .next_node_filter = next_node_filter};
     ++node_a_index;
+  }
+
+  // Now that we have all the candidates, confirm everything matches.
+  bool boots_all_match = true;
+  for (size_t i = 0; i < candidate_times.size(); ++i) {
+    const CandidateTimes &candidate = candidate_times[i];
+    if (candidate.next_node_time == logger::BootTimestamp::max_time()) {
+      continue;
+    }
+
+    // First step, if the last solution's boot doesn't match the next solution,
+    // we've got a reboot incoming and can't sort well.  Fall back to the more
+    // basic exhaustive search.
+    if (candidate.next_node_time.boot != last_monotonics_[i].boot) {
+      boots_all_match = false;
+      break;
+    }
+
+    // And then check that the other node's time also hasn't rebooted.  We might
+    // not have both directions of timestamps, so this is our only clue.
+    if (candidate.next_node_duration == BootDuration::max_time()) {
+      continue;
+    }
+
+    DCHECK_LT(candidate.b_index, candidate_times.size());
+    if (candidate_times[candidate.b_index].next_node_time.boot !=
+        candidate.next_node_duration.boot) {
+      boots_all_match = false;
+      break;
+    }
+  }
+  if (VLOG_IS_ON(1)) {
+    LOG(INFO) << "Boots all match: " << boots_all_match;
+    for (size_t i = 0; i < candidate_times.size(); ++i) {
+      LOG(INFO) << "Candidate " << candidate_times[i].next_node_time
+                << " duration " << candidate_times[i].next_node_duration
+                << " (node " << candidate_times[i].b_index << ")";
+    }
   }
 
   return std::make_tuple(candidate_times, boots_all_match);
@@ -1572,6 +1659,7 @@ MultiNodeNoncausalOffsetEstimator::SequentialSolution(
         candidate_times[node_a_index].next_node_duration;
     NoncausalTimestampFilter *next_node_filter =
         candidate_times[node_a_index].next_node_filter;
+    size_t b_index = candidate_times[node_a_index].b_index;
     if (next_node_time == BootTimestamp::max_time()) {
       continue;
     }
@@ -1586,8 +1674,16 @@ MultiNodeNoncausalOffsetEstimator::SequentialSolution(
     // TODO(austin): If we start supporting only having 1 direction of
     // timestamps, we might need to change our assumptions around
     // BootTimestamp and BootDuration.
+    bool boots_match = next_node_time.boot == base_times[node_a_index].boot;
 
-    if (next_node_time.boot == base_times[node_a_index].boot) {
+    // Make sure the paired time also has a matching boot.
+    if (next_node_duration != BootDuration::max_time()) {
+      if (next_node_duration.boot != base_times[b_index].boot) {
+        boots_match = false;
+      }
+    }
+
+    if (boots_match) {
       // Optimize, and save the time into times if earlier than time.
       for (size_t node_index = 0; node_index < base_times.size();
            ++node_index) {
@@ -1609,6 +1705,16 @@ MultiNodeNoncausalOffsetEstimator::SequentialSolution(
       // And we know our solution node will have the wrong boot, so replace
       // it entirely.
       problem->set_base_clock(node_a_index, next_node_time);
+
+      // And update the paired boot for the paired node.
+      if (next_node_duration != BootDuration::max_time()) {
+        if (next_node_duration.boot != base_times[b_index].boot) {
+          problem->set_base_clock(
+              b_index, BootTimestamp{.boot = next_node_duration.boot,
+                                     .time = next_node_time.time +
+                                             next_node_duration.duration});
+        }
+      }
     }
 
     std::vector<BootTimestamp> points(problem->size(),
@@ -1617,6 +1723,14 @@ MultiNodeNoncausalOffsetEstimator::SequentialSolution(
       problem->Debug();
     }
     points[node_a_index] = next_node_time;
+
+    if (!problem->HasObservations(node_a_index)) {
+      VLOG(1) << "No observations, checking if there's a filter";
+      CHECK(next_node_filter == nullptr)
+          << ": No observations, but this isn't a start time.";
+      continue;
+    }
+
     std::tuple<std::vector<BootTimestamp>, size_t> solution =
         problem->SolveNewton(points);
 

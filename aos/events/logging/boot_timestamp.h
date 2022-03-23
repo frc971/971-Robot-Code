@@ -22,6 +22,16 @@ struct BootDuration {
   bool operator==(const BootDuration &m2) const {
     return boot == m2.boot && duration == m2.duration;
   }
+  bool operator!=(const BootDuration &m2) const {
+    return boot != m2.boot || duration != m2.duration;
+  }
+
+  static constexpr BootDuration max_time() {
+    return BootDuration{
+        .boot = std::numeric_limits<size_t>::max(),
+        .duration = monotonic_clock::duration(
+            ::std::numeric_limits<monotonic_clock::duration::rep>::max())};
+  }
 };
 
 // Simple class representing which boot and what monotonic time in that boot.
