@@ -640,7 +640,7 @@ http_archive(
     url = "https://www.frc971.org/Build-Dependencies/gcc-arm-none-eabi-7-2018-q2-update-linux.tar.bz2",
 )
 
-# Java9 JDK.
+# Java11 JDK.
 remote_java_repository(
     name = "openjdk_linux_archive",
     exec_compatible_with = [
@@ -648,12 +648,27 @@ remote_java_repository(
         "@platforms//os:linux",
     ],
     prefix = "openjdk",
-    sha256 = "f27cb933de4f9e7fe9a703486cf44c84bc8e9f138be0c270c9e5716a32367e87",
-    strip_prefix = "zulu9.0.7.1-jdk9.0.7-linux_x64-allmodules",
+    sha256 = "60e65d32e38876f81ddb623e87ac26c820465b637e263e8bed1acdecb4ca9be2",
+    strip_prefix = "zulu11.54.25-ca-jdk11.0.14.1-linux_x64",
     urls = [
-        "https://www.frc971.org/Build-Dependencies/zulu9.0.7.1-jdk9.0.7-linux_x64-allmodules.tar.gz",
+        "https://www.frc971.org/Build-Dependencies/zulu11.54.25-ca-jdk11.0.14.1-linux_x64.tar.gz",
     ],
-    version = "9",
+    version = "11",
+)
+
+remote_java_repository(
+    name = "openjdk_linux_archive_aarch64",
+    exec_compatible_with = [
+        "@platforms//cpu:aarch64",
+        "@platforms//os:linux",
+    ],
+    prefix = "openjdk",
+    sha256 = "b0fb0bc303bb05b5042ef3d0939b9489f4a49a13a2d1c8f03c5d8ab23099454d",
+    strip_prefix = "zulu11.54.25-ca-jdk11.0.14.1-linux_aarch64",
+    urls = [
+        "https://www.frc971.org/Build-Dependencies/zulu11.54.25-ca-jdk11.0.14.1-linux_aarch64.tar.gz",
+    ],
+    version = "11",
 )
 
 local_repository(
