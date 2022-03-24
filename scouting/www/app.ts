@@ -1,6 +1,6 @@
 import {Component, ElementRef, ViewChild} from '@angular/core';
 
-type Tab = 'MatchList'|'Entry'|'ImportMatchList';
+type Tab = 'MatchList'|'Notes'|'Entry'|'ImportMatchList';
 type TeamInMatch = {
   teamNumber: number,
   matchNumber: number,

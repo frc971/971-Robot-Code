@@ -1,0 +1,12 @@
+.error {
+  color: red;
+}
+
+.text-input {
+  width: calc(100% - 20px);
+}
+
+.buttons {
+  display: flex;
+  justify-content: space-between;
+}

@@ -20,6 +20,7 @@ ts_library(
         "//scouting/www/entry",
         "//scouting/www/import_match_list",
         "//scouting/www/match_list",
+        "//scouting/www/notes",
         "@npm//@angular/animations",
         "@npm//@angular/common",
         "@npm//@angular/core",
