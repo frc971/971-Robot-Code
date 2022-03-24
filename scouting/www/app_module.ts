@@ -8,6 +8,7 @@ import {ImportMatchListModule} from './import_match_list/import_match_list.modul
 import {MatchListModule} from './match_list/match_list.module';
 import {NotesModule} from './notes/notes.module';
 import {ShiftScheduleModule} from './shift_schedule/shift_schedule.module';
+import {ViewModule} from './view/view.module';
 
 @NgModule({
   declarations: [App],
@@ -19,6 +20,7 @@ import {ShiftScheduleModule} from './shift_schedule/shift_schedule.module';
     ImportMatchListModule,
     MatchListModule,
     ShiftScheduleModule,
+    ViewModule,
   ],
   exports: [App],
   bootstrap: [App],
