@@ -17,12 +17,17 @@ load(
     _os = "os",
 )
 load(
+    "//toolchain/internal:common.bzl",
+    _arch = "arch",
+)
+load(
     "//toolchain/internal:llvm_distributions.bzl",
     _download_llvm_preconfigured = "download_llvm_preconfigured",
 )
 
 def llvm_repo_impl(rctx):
     os = _os(rctx)
+    arch = _arch(rctx)
     if os == "windows":
         rctx.file("BUILD", executable = False)
         return
@@ -33,12 +38,19 @@ def llvm_repo_impl(rctx):
         executable = False,
     )
 
-    rctx.symlink(
-        Label("@libtinfo5//lib/x86_64-linux-gnu:libtinfo.so.5.9"),
-        "lib/libtinfo.so.5.9",
-    )
+    if os == "linux":
+        if arch == "x86_64":
+            rctx.symlink(
+                Label("@libtinfo5_amd64//lib/x86_64-linux-gnu:libtinfo.so.5.9"),
+                "lib/libtinfo.so.5.9",
+            )
+        elif arch == "aarch64":
+            rctx.symlink(
+                Label("@libtinfo5_arm64//lib/aarch64-linux-gnu:libtinfo.so.5.9"),
+                "lib/libtinfo.so.5.9",
+            )
 
-    rctx.symlink("lib/libtinfo.so.5.9", "lib/libtinfo.so.5")
+        rctx.symlink("lib/libtinfo.so.5.9", "lib/libtinfo.so.5")
 
     _download_llvm_preconfigured(rctx)
 

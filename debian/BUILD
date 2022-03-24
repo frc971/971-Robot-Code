@@ -82,6 +82,10 @@ load(
     ":libtinfo5_amd64.bzl",
     libtinfo5_amd64_debs = "files",
 )
+load(
+    ":libtinfo5_arm64.bzl",
+    libtinfo5_arm64_debs = "files",
+)
 load(":packages.bzl", "download_packages", "generate_deb_tarball")
 
 package(default_visibility = ["//visibility:public"])
@@ -479,6 +483,12 @@ generate_deb_tarball(
 generate_deb_tarball(
     name = "libtinfo5_amd64",
     files = libtinfo5_amd64_debs,
+    target_compatible_with = ["@platforms//os:linux"],
+)
+
+generate_deb_tarball(
+    name = "libtinfo5_arm64",
+    files = libtinfo5_arm64_debs,
     target_compatible_with = ["@platforms//os:linux"],
 )
 
