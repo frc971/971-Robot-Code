@@ -9,8 +9,8 @@ import {TargetEstimate} from 'org_frc971/y2022/vision/target_estimate_generated'
 
 
 const TIME = AosPlotter.TIME;
-// magenta, yellow, cyan, orange
-const PI_COLORS = [[255, 0, 255], [255, 255, 0], [0, 255, 255], [255, 165, 0]];
+// magenta, yellow, cyan, black
+const PI_COLORS = [[255, 0, 255], [255, 255, 0], [0, 255, 255], [0, 0, 0]];
 
 class VisionMessageHandler extends MessageHandler {
   constructor(private readonly schema: Schema) {
