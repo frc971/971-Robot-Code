@@ -17,24 +17,22 @@ type TeamInMatch = {
 })
 export class MatchListComponent implements OnInit {
   @Output() selectedTeamEvent = new EventEmitter<TeamInMatch>();
-  teamInMatch: TeamInMatch = {teamNumber: 1, matchNumber: 1, compLevel: 'qm'};
   progressMessage: string = '';
   errorMessage: string = '';
   matchList: Match[] = [];
 
   setTeamInMatch(teamInMatch: TeamInMatch) {
-    this.teamInMatch = teamInMatch;
     this.selectedTeamEvent.emit(teamInMatch);
   }
 
-  teamsInMatch(match: Match): {number: number, color: 'red'|'blue'}[] {
+  teamsInMatch(match: Match): {teamNumber: number, color: 'red'|'blue'}[] {
     return [
-      {number: match.r1(), color: 'red'},
-      {number: match.r2(), color: 'red'},
-      {number: match.r3(), color: 'red'},
-      {number: match.b1(), color: 'blue'},
-      {number: match.b2(), color: 'blue'},
-      {number: match.b3(), color: 'blue'},
+      {teamNumber: match.r1(), color: 'red'},
+      {teamNumber: match.r2(), color: 'red'},
+      {teamNumber: match.r3(), color: 'red'},
+      {teamNumber: match.b1(), color: 'blue'},
+      {teamNumber: match.b2(), color: 'blue'},
+      {teamNumber: match.b3(), color: 'blue'},
     ];
   }
 
@@ -60,10 +58,10 @@ export class MatchListComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.importMatchList();
+    this.fetchMatchList();
   }
 
-  async importMatchList() {
+  async fetchMatchList() {
     this.errorMessage = '';
 
     const builder = new Builder();
