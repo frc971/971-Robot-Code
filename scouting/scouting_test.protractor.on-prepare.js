@@ -8,15 +8,15 @@
 const protractorUtils = require('@bazel/protractor/protractor-utils');
 const protractor = require('protractor');
 
-module.exports = function(config) {
+module.exports = function (config) {
   // In this example, `@bazel/protractor/protractor-utils` is used to run
   // the server. protractorUtils.runServer() runs the server on a randomly
   // selected port (given a port flag to pass to the server as an argument).
   // The port used is returned in serverSpec and the protractor serverUrl
   // is the configured.
   return protractorUtils
-      .runServer(config.workspace, config.server, '--port', [])
-      .then(serverSpec => {
-        protractor.browser.baseUrl = `http://localhost:${serverSpec.port}`;
-      });
+    .runServer(config.workspace, config.server, '--port', [])
+    .then((serverSpec) => {
+      protractor.browser.baseUrl = `http://localhost:${serverSpec.port}`;
+    });
 };

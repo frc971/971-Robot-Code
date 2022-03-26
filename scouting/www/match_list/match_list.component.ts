@@ -1,13 +1,16 @@
 import {Component, EventEmitter, OnInit, Output} from '@angular/core';
-import {ByteBuffer, Builder} from 'flatbuffers'
+import {ByteBuffer, Builder} from 'flatbuffers';
 import {ErrorResponse} from 'org_frc971/scouting/webserver/requests/messages/error_response_generated';
 import {RequestAllMatches} from 'org_frc971/scouting/webserver/requests/messages/request_all_matches_generated';
-import {Match, RequestAllMatchesResponse} from 'org_frc971/scouting/webserver/requests/messages/request_all_matches_response_generated';
+import {
+  Match,
+  RequestAllMatchesResponse,
+} from 'org_frc971/scouting/webserver/requests/messages/request_all_matches_response_generated';
 
 type TeamInMatch = {
-  teamNumber: number,
-  matchNumber: number,
-  compLevel: string
+  teamNumber: number;
+  matchNumber: number;
+  compLevel: string;
 };
 
 const MATCH_TYPE_ORDERING = ['qm', 'ef', 'qf', 'sf', 'f'];
@@ -15,7 +18,7 @@ const MATCH_TYPE_ORDERING = ['qm', 'ef', 'qf', 'sf', 'f'];
 @Component({
   selector: 'app-match-list',
   templateUrl: './match_list.ng.html',
-  styleUrls: ['../common.css', './match_list.component.css']
+  styleUrls: ['../common.css', './match_list.component.css'],
 })
 export class MatchListComponent implements OnInit {
   @Output() selectedTeamEvent = new EventEmitter<TeamInMatch>();
@@ -27,7 +30,7 @@ export class MatchListComponent implements OnInit {
     this.selectedTeamEvent.emit(teamInMatch);
   }
 
-  teamsInMatch(match: Match): {teamNumber: number, color: 'red'|'blue'}[] {
+  teamsInMatch(match: Match): {teamNumber: number; color: 'red' | 'blue'}[] {
     return [
       {teamNumber: match.r1(), color: 'red'},
       {teamNumber: match.r2(), color: 'red'},
@@ -38,7 +41,7 @@ export class MatchListComponent implements OnInit {
     ];
   }
 
-  matchType(match: Match): string|null {
+  matchType(match: Match): string | null {
     switch (match.compLevel()) {
       case 'qm':
         return 'Quals';
@@ -73,15 +76,16 @@ export class MatchListComponent implements OnInit {
     this.progressMessage = 'Fetching match list. Please be patient.';
 
     const buffer = builder.asUint8Array();
-    const res = await fetch(
-        '/requests/request/all_matches', {method: 'POST', body: buffer});
+    const res = await fetch('/requests/request/all_matches', {
+      method: 'POST',
+      body: buffer,
+    });
 
     if (res.ok) {
       const resBuffer = await res.arrayBuffer();
       const fbBuffer = new ByteBuffer(new Uint8Array(resBuffer));
       const parsedResponse =
-          RequestAllMatchesResponse.getRootAsRequestAllMatchesResponse(
-              fbBuffer);
+        RequestAllMatchesResponse.getRootAsRequestAllMatchesResponse(fbBuffer);
 
       // Convert the flatbuffer list into an array. That's more useful.
       this.matchList = [];
@@ -118,8 +122,7 @@ export class MatchListComponent implements OnInit {
       const parsedResponse = ErrorResponse.getRootAsErrorResponse(fbBuffer);
 
       const errorMessage = parsedResponse.errorMessage();
-      this.errorMessage =
-          `Received ${res.status} ${res.statusText}: "${errorMessage}"`;
+      this.errorMessage = `Received ${res.status} ${res.statusText}: "${errorMessage}"`;
     }
   }
 }

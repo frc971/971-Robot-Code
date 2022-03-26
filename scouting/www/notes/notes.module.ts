@@ -9,6 +9,4 @@ import {Notes} from './notes.component';
   exports: [Notes],
   imports: [CommonModule, FormsModule],
 })
-export class NotesModule {
-}
-
+export class NotesModule {}

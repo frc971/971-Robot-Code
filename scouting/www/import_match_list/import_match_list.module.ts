@@ -8,5 +8,4 @@ import {FormsModule} from '@angular/forms';
   exports: [ImportMatchListComponent],
   imports: [CommonModule, FormsModule],
 })
-export class ImportMatchListModule {
-}
+export class ImportMatchListModule {}

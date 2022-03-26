@@ -1,20 +1,23 @@
 import {Component, ElementRef, ViewChild} from '@angular/core';
 
-type Tab = 'MatchList'|'Notes'|'Entry'|'ImportMatchList';
+type Tab = 'MatchList' | 'Notes' | 'Entry' | 'ImportMatchList';
 type TeamInMatch = {
-  teamNumber: number,
-  matchNumber: number,
-  compLevel: string
+  teamNumber: number;
+  matchNumber: number;
+  compLevel: string;
 };
 
 @Component({
   selector: 'my-app',
   templateUrl: './app.ng.html',
-  styleUrls: ['./common.css']
+  styleUrls: ['./common.css'],
 })
 export class App {
-  selectedTeamInMatch:
-      TeamInMatch = {teamNumber: 1, matchNumber: 1, compLevel: 'qm'};
+  selectedTeamInMatch: TeamInMatch = {
+    teamNumber: 1,
+    matchNumber: 1,
+    compLevel: 'qm',
+  };
   tab: Tab = 'MatchList';
 
   @ViewChild('block_alerts') block_alerts: ElementRef;

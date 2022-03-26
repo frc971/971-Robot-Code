@@ -9,5 +9,4 @@ import {MatchListComponent} from './match_list.component';
   exports: [MatchListComponent],
   imports: [CommonModule, FormsModule],
 })
-export class MatchListModule {
-}
+export class MatchListModule {}

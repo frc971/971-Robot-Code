@@ -21,5 +21,4 @@ import {NotesModule} from './notes/notes.module';
   exports: [App],
   bootstrap: [App],
 })
-export class AppModule {
-}
+export class AppModule {}

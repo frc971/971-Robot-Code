@@ -65,9 +65,7 @@ buildifier() {
 }
 
 prettier() {
-    # TODO(phil): Uncomment this and delete the "true" statement.
-    #./tools/lint/prettier
-    true
+    ./tools/lint/prettier
 }
 
 git_status_is_clean() {

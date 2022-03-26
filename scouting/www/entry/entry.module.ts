@@ -19,5 +19,4 @@ export class LevelToStringPipe implements PipeTransform {
   exports: [EntryComponent],
   imports: [CommonModule, FormsModule, CounterButtonModule],
 })
-export class EntryModule {
-}
+export class EntryModule {}

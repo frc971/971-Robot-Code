@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import {Component, OnInit} from '@angular/core';
 
 import {Builder, ByteBuffer} from 'flatbuffers';
 import {ErrorResponse} from 'org_frc971/scouting/webserver/requests/messages/error_response_generated';
@@ -8,7 +8,7 @@ import {RefreshMatchList} from 'org_frc971/scouting/webserver/requests/messages/
 @Component({
   selector: 'app-import-match-list',
   templateUrl: './import_match_list.ng.html',
-  styleUrls: ['../common.css', './import_match_list.component.css']
+  styleUrls: ['../common.css', './import_match_list.component.css'],
 })
 export class ImportMatchListComponent {
   year: number = new Date().getFullYear();
@@ -17,7 +17,9 @@ export class ImportMatchListComponent {
   errorMessage: string = '';
 
   async importMatchList() {
-    const block_alerts = document.getElementById('block_alerts') as HTMLInputElement;
+    const block_alerts = document.getElementById(
+      'block_alerts'
+    ) as HTMLInputElement;
     console.log(block_alerts.checked);
     if (!block_alerts.checked) {
       if (!window.confirm('Actually import new matches?')) {
@@ -37,8 +39,10 @@ export class ImportMatchListComponent {
     this.progressMessage = 'Importing match list. Please be patient.';
 
     const buffer = builder.asUint8Array();
-    const res = await fetch(
-        '/requests/refresh_match_list', {method: 'POST', body: buffer});
+    const res = await fetch('/requests/refresh_match_list', {
+      method: 'POST',
+      body: buffer,
+    });
 
     if (res.ok) {
       // We successfully submitted the data.

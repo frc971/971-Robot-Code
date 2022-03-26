@@ -6,5 +6,4 @@ import {CounterButton} from './counter_button.component';
   declarations: [CounterButton],
   exports: [CounterButton],
 })
-export class CounterButtonModule {
-}
+export class CounterButtonModule {}

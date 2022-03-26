@@ -1,17 +1,34 @@
-import {Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild} from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  EventEmitter,
+  Input,
+  OnInit,
+  Output,
+  ViewChild,
+} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {Builder, ByteBuffer} from 'flatbuffers';
 import {ErrorResponse} from 'org_frc971/scouting/webserver/requests/messages/error_response_generated';
-import {ClimbLevel, SubmitDataScouting} from 'org_frc971/scouting/webserver/requests/messages/submit_data_scouting_generated';
+import {
+  ClimbLevel,
+  SubmitDataScouting,
+} from 'org_frc971/scouting/webserver/requests/messages/submit_data_scouting_generated';
 import {SubmitDataScoutingResponse} from 'org_frc971/scouting/webserver/requests/messages/submit_data_scouting_response_generated';
 
-type Section = 'Team Selection'|'Auto'|'TeleOp'|'Climb'|'Other'|
-    'Review and Submit'|'Success';
+type Section =
+  | 'Team Selection'
+  | 'Auto'
+  | 'TeleOp'
+  | 'Climb'
+  | 'Other'
+  | 'Review and Submit'
+  | 'Success';
 
 @Component({
   selector: 'app-entry',
   templateUrl: './entry.ng.html',
-  styleUrls: ['../common.css', './entry.component.css']
+  styleUrls: ['../common.css', './entry.component.css'],
 })
 export class EntryComponent {
   // Re-export the type here so that we can use it in the `[value]` attribute
@@ -59,7 +76,6 @@ export class EntryComponent {
     } else if (this.section === 'Other') {
       this.section = 'Review and Submit';
     } else if (this.section === 'Review and Submit') {
-
       this.submitDataScouting();
       return;
     } else if (this.section === 'Success') {
@@ -108,7 +124,10 @@ export class EntryComponent {
     SubmitDataScouting.addUpperGoalTele(builder, this.teleUpperShotsMade);
     SubmitDataScouting.addLowerGoalTele(builder, this.teleLowerShotsMade);
     SubmitDataScouting.addDefenseRating(builder, this.defensePlayedScore);
-    SubmitDataScouting.addDefenseReceivedRating(builder, this.defensePlayedOnScore);
+    SubmitDataScouting.addDefenseReceivedRating(
+      builder,
+      this.defensePlayedOnScore
+    );
     SubmitDataScouting.addAutoBall1(builder, this.ball1);
     SubmitDataScouting.addAutoBall2(builder, this.ball2);
     SubmitDataScouting.addAutoBall3(builder, this.ball3);
@@ -120,8 +139,10 @@ export class EntryComponent {
     builder.finish(SubmitDataScouting.endSubmitDataScouting(builder));
 
     const buffer = builder.asUint8Array();
-    const res = await fetch(
-        '/requests/submit/data_scouting', {method: 'POST', body: buffer});
+    const res = await fetch('/requests/submit/data_scouting', {
+      method: 'POST',
+      body: buffer,
+    });
 
     if (res.ok) {
       // We successfully submitted the data. Report success.
@@ -132,8 +153,7 @@ export class EntryComponent {
       const parsedResponse = ErrorResponse.getRootAsErrorResponse(fbBuffer);
 
       const errorMessage = parsedResponse.errorMessage();
-      this.errorMessage =
-          `Received ${res.status} ${res.statusText}: "${errorMessage}"`;
+      this.errorMessage = `Received ${res.status} ${res.statusText}: "${errorMessage}"`;
     }
   }
 }

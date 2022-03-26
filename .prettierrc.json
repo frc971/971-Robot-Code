@@ -1,5 +1,6 @@
 {
   "htmlWhitespaceSensitivity": "ignore",
+  "bracketSpacing": false,
   "overrides": [
     {
       "files": "*.js",

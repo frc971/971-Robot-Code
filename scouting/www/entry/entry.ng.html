@@ -1,210 +1,398 @@
 <div class="header" #header>
-    <h2>{{section}}</h2>
+  <h2>{{section}}</h2>
 </div>
 
 <ng-container [ngSwitch]="section">
-    <div *ngSwitchCase="'Team Selection'" id="team_selection" class="container-fluid">
-        <div class="row">
-            <label for="match_number">Match Number</label>
-            <input [(ngModel)]="matchNumber" type="number" id="match_number" min="1" max="999">
-        </div>
-        <div class="row">
-            <label for="team_number">Team Number</label>
-            <input [(ngModel)]="teamNumber" type="number" id="team_number" min="1" max="9999">
-        </div>
-        <div class="buttons">
-          <!-- hack to right align the next button -->
-          <div></div>
-          <button class="btn btn-primary" (click)="nextSection()">Next</button>
-        </div>
+  <div
+    *ngSwitchCase="'Team Selection'"
+    id="team_selection"
+    class="container-fluid"
+  >
+    <div class="row">
+      <label for="match_number">Match Number</label>
+      <input
+        [(ngModel)]="matchNumber"
+        type="number"
+        id="match_number"
+        min="1"
+        max="999"
+      />
+    </div>
+    <div class="row">
+      <label for="team_number">Team Number</label>
+      <input
+        [(ngModel)]="teamNumber"
+        type="number"
+        id="team_number"
+        min="1"
+        max="9999"
+      />
+    </div>
+    <div class="buttons">
+      <!-- hack to right align the next button -->
+      <div></div>
+      <button class="btn btn-primary" (click)="nextSection()">Next</button>
+    </div>
+  </div>
+
+  <div *ngSwitchCase="'Auto'" id="auto" class="container-fluid">
+    <div class="row">
+      <img src="/pictures/field/quadrants.jpeg" alt="Quadrants Image" />
+      <form>
+        <input
+          type="radio"
+          [(ngModel)]="quadrant"
+          name="quadrant"
+          id="quadrant1"
+          [value]="1"
+        />
+        <label for="quadrant1">Quadrant 1</label>
+        <input
+          type="radio"
+          [(ngModel)]="quadrant"
+          name="quadrant"
+          id="quadrant2"
+          [value]="2"
+        />
+        <label for="quadrant2">Quadrant 2</label>
+        <br />
+        <input
+          type="radio"
+          [(ngModel)]="quadrant"
+          name="quadrant"
+          id="quadrant3"
+          [value]="3"
+        />
+        <label for="quadrant3">Quadrant 3</label>
+        <input
+          type="radio"
+          [(ngModel)]="quadrant"
+          name="quadrant"
+          id="quadrant4"
+          [value]="4"
+        />
+        <label for="quadrant4">Quadrant 4</label>
+      </form>
+    </div>
+    <div class="row">
+      <img src="/pictures/field/balls.jpeg" alt="Image" />
+      <form>
+        <!--Choice for each ball location-->
+        <input
+          [(ngModel)]="ball1"
+          type="checkbox"
+          name="1ball"
+          value="1"
+          id="ball-1"
+        />
+        <label for="ball-1">Ball 1</label>
+        <input
+          [(ngModel)]="ball2"
+          type="checkbox"
+          name="2ball"
+          value="2"
+          id="ball-2"
+        />
+        <label for="ball-2">Ball 2</label>
+        <br />
+        <input
+          [(ngModel)]="ball3"
+          type="checkbox"
+          name="3ball"
+          value="3"
+          id="ball-3"
+        />
+        <label for="ball-3">Ball 3</label>
+        <input
+          [(ngModel)]="ball4"
+          type="checkbox"
+          name="4ball"
+          value="4"
+          id="ball-4"
+        />
+        <label for="ball-4">Ball 4</label>
+        <br />
+        <input
+          [(ngModel)]="ball5"
+          type="checkbox"
+          name="5ball"
+          value="5"
+          id="ball-5"
+        />
+        <label for="ball-5">Ball 5</label>
+      </form>
+    </div>
+    <div class="row justify-content-center">
+      <frc971-counter-button class="col-4" [(value)]="autoUpperShotsMade">
+        Upper
+      </frc971-counter-button>
+      <frc971-counter-button class="col-4" [(value)]="autoLowerShotsMade">
+        Lower
+      </frc971-counter-button>
+      <frc971-counter-button class="col-4" [(value)]="autoShotsMissed">
+        Missed
+      </frc971-counter-button>
+    </div>
+    <div class="buttons">
+      <button class="btn btn-primary" (click)="prevSection()">Back</button>
+      <button class="btn btn-primary" (click)="nextSection()">Next</button>
+    </div>
+  </div>
+
+  <div *ngSwitchCase="'TeleOp'" id="teleop" class="container-fluid">
+    <div class="row justify-content-center">
+      <frc971-counter-button class="col-4" [(value)]="teleUpperShotsMade">
+        Upper
+      </frc971-counter-button>
+      <frc971-counter-button class="col-4" [(value)]="teleLowerShotsMade">
+        Lower
+      </frc971-counter-button>
+      <frc971-counter-button class="col-4" [(value)]="teleShotsMissed">
+        Missed
+      </frc971-counter-button>
+    </div>
+    <div class="buttons">
+      <button class="btn btn-primary" (click)="prevSection()">Back</button>
+      <button class="btn btn-primary" (click)="nextSection()">Next</button>
+    </div>
+  </div>
+
+  <div *ngSwitchCase="'Climb'" id="climb" class="container-fluid">
+    <form>
+      <input
+        [(ngModel)]="level"
+        type="radio"
+        name="level"
+        id="no_attempt"
+        [value]="ClimbLevel.NoAttempt"
+      />
+      <label for="no_attempt">No climbing attempt</label>
+      <br />
+      <input
+        [(ngModel)]="level"
+        type="radio"
+        name="level"
+        id="low"
+        [value]="ClimbLevel.Low"
+      />
+      <label for="low">Low</label>
+      <br />
+      <input
+        [(ngModel)]="level"
+        type="radio"
+        name="level"
+        id="medium"
+        [value]="ClimbLevel.Medium"
+      />
+      <label for="medium">Medium</label>
+      <br />
+      <input
+        [(ngModel)]="level"
+        type="radio"
+        name="level"
+        id="high"
+        [value]="ClimbLevel.High"
+      />
+      <label for="high">High</label>
+      <br />
+      <input
+        [(ngModel)]="level"
+        type="radio"
+        name="level"
+        id="transversal"
+        [value]="ClimbLevel.Transversal"
+      />
+      <label for="transversal">Transversal</label>
+      <br />
+      <input
+        [(ngModel)]="level"
+        type="radio"
+        name="level"
+        id="failed"
+        [value]="ClimbLevel.Failed"
+      />
+      <label for="failed">Failed</label>
+      <br />
+      <input
+        [(ngModel)]="level"
+        type="radio"
+        name="level"
+        id="failed_with_plenty_of_time"
+        [value]="ClimbLevel.FailedWithPlentyOfTime"
+      />
+      <label for="failed_with_plenty_of_time">
+        Failed (attempted with more than 10 seconds left)
+      </label>
+      <br />
+    </form>
+    <div class="row">
+      <h4>Comments</h4>
+      <textarea [(ngModel)]="comment" id="comment"></textarea>
+    </div>
+    <div class="buttons">
+      <button class="btn btn-primary" (click)="prevSection()">Back</button>
+      <button class="btn btn-primary" (click)="nextSection()">Next</button>
+    </div>
+  </div>
+
+  <div *ngSwitchCase="'Other'" id="defense" class="container-fluid">
+    <h4 class="text-center">
+      How much did other robots play defense against this robot?
+    </h4>
+    0 - No defense played against this robot
+    <br />
+    1 - Minimal defense
+    <br />
+    2 - Some defense
+    <br />
+    3 - About half the match was played against defense
+    <br />
+    4 - Good amount of defense
+    <br />
+    5 - Constant defense
+    <div class="row" style="min-height: 50px">
+      <div class="col-10">
+        <input
+          type="range"
+          min="0"
+          max="5"
+          [(ngModel)]="defensePlayedOnScore"
+        />
+      </div>
+      <div class="col">
+        <h6>{{defensePlayedOnScore}}</h6>
+      </div>
     </div>
 
-    <div *ngSwitchCase="'Auto'" id="auto" class="container-fluid">
-        <div class="row">
-            <img src="/pictures/field/quadrants.jpeg" alt="Quadrants Image">
-            <form>
-                <input type="radio" [(ngModel)]="quadrant" name="quadrant" id="quadrant1" [value]="1">
-                <label for="quadrant1">Quadrant 1</label>
-                <input type="radio" [(ngModel)]="quadrant" name="quadrant" id="quadrant2" [value]="2">
-                <label for="quadrant2">Quadrant 2</label><br>
-                <input type="radio" [(ngModel)]="quadrant" name="quadrant" id="quadrant3" [value]="3">
-                <label for="quadrant3">Quadrant 3</label>
-                <input type="radio" [(ngModel)]="quadrant" name="quadrant" id="quadrant4" [value]="4">
-                <label for="quadrant4">Quadrant 4</label>
-            </form>
-        </div>
-        <div class="row">
-            <img src="/pictures/field/balls.jpeg" alt="Image">
-            <form>
-                <!--Choice for each ball location-->
-                <input [(ngModel)]=ball1 type="checkbox" name="1ball" value="1" id="ball-1"><label for="ball-1">Ball 1</label>
-                <input [(ngModel)]=ball2 type="checkbox" name="2ball" value="2" id="ball-2"><label for="ball-2">Ball 2</label><br>
-                <input [(ngModel)]=ball3 type="checkbox" name="3ball" value="3" id="ball-3"><label for="ball-3">Ball 3</label>
-                <input [(ngModel)]=ball4 type="checkbox" name="4ball" value="4" id="ball-4"><label for="ball-4">Ball 4</label><br>
-                <input [(ngModel)]=ball5 type="checkbox" name="5ball" value="5" id="ball-5"><label for="ball-5">Ball 5</label>
-            </form>
-        </div>
-        <div class="row justify-content-center">
-            <frc971-counter-button class="col-4" [(value)]="autoUpperShotsMade">Upper</frc971-counter-button>
-            <frc971-counter-button class="col-4" [(value)]="autoLowerShotsMade">Lower</frc971-counter-button>
-            <frc971-counter-button class="col-4" [(value)]="autoShotsMissed">Missed</frc971-counter-button>
-        </div>
-        <div class="buttons">
-          <button class="btn btn-primary" (click)="prevSection()">Back</button>
-          <button class="btn btn-primary" (click)="nextSection()">Next</button>
-        </div>
+    <h4 class="text-center">
+      How much did this robot play defense against other robots?
+    </h4>
+    0 - This robot did not play defense
+    <br />
+    1 - Minimal defense
+    <br />
+    2 - Some defense
+    <br />
+    3 - Defense was played for about half the match
+    <br />
+    4 - Good amount of defense
+    <br />
+    5 - Constant defense
+    <div class="row">
+      <div class="col-10">
+        <input type="range" min="0" max="5" [(ngModel)]="defensePlayedScore" />
+      </div>
+      <div class="col">
+        <h6>{{defensePlayedScore}}</h6>
+      </div>
     </div>
 
-    <div *ngSwitchCase="'TeleOp'" id="teleop" class="container-fluid">
-        <div class="row justify-content-center">
-            <frc971-counter-button class="col-4" [(value)]="teleUpperShotsMade">Upper</frc971-counter-button>
-            <frc971-counter-button class="col-4" [(value)]="teleLowerShotsMade">Lower</frc971-counter-button>
-            <frc971-counter-button class="col-4" [(value)]="teleShotsMissed">Missed</frc971-counter-button>
-        </div>
-        <div class="buttons">
-          <button class="btn btn-primary" (click)="prevSection()">Back</button>
-          <button class="btn btn-primary" (click)="nextSection()">Next</button>
-        </div>
+    <div class="row">
+      <form>
+        <input
+          type="checkbox"
+          [(ngModel)]="noShow"
+          name="no_show"
+          id="no_show"
+        />
+        <label for="no_show">No show</label>
+        <br />
+        <input
+          type="checkbox"
+          [(ngModel)]="neverMoved"
+          name="never_moved"
+          id="never_moved"
+        />
+        <label for="never_moved">Never moved</label>
+        <br />
+        <input
+          type="checkbox"
+          [(ngModel)]="batteryDied"
+          name="battery_died"
+          id="battery_died"
+        />
+        <label for="battery_died">Battery died</label>
+        <br />
+        <input
+          type="checkbox"
+          [(ngModel)]="mechanicallyBroke"
+          name="mechanically_broke"
+          id="mechanically_broke"
+        />
+        <label for="mechanically_broke">Broke (mechanically)</label>
+        <br />
+        <input
+          type="checkbox"
+          [(ngModel)]="lostComs"
+          name="lost_coms"
+          id="lost_coms"
+        />
+        <label for="lost_coms">Lost coms</label>
+      </form>
     </div>
 
-    <div *ngSwitchCase="'Climb'" id="climb" class="container-fluid">
-        <form>
-            <input [(ngModel)]="level" type="radio" name="level" id="no_attempt" [value]="ClimbLevel.NoAttempt">
-            <label for="no_attempt">No climbing attempt</label><br>
-            <input [(ngModel)]="level" type="radio" name="level" id="low" [value]="ClimbLevel.Low">
-            <label for="low">Low</label><br>
-            <input [(ngModel)]="level" type="radio" name="level" id="medium" [value]="ClimbLevel.Medium">
-            <label for="medium">Medium</label><br>
-            <input [(ngModel)]="level" type="radio" name="level" id="high" [value]="ClimbLevel.High">
-            <label for="high">High</label><br>
-            <input [(ngModel)]="level" type="radio" name="level" id="transversal" [value]="ClimbLevel.Transversal">
-            <label for="transversal">Transversal</label><br>
-            <input [(ngModel)]="level" type="radio" name="level" id="failed" [value]="ClimbLevel.Failed">
-            <label for="failed">Failed</label><br>
-            <input [(ngModel)]="level" type="radio" name="level" id="failed_with_plenty_of_time" [value]="ClimbLevel.FailedWithPlentyOfTime">
-            <label for="failed_with_plenty_of_time">Failed (attempted with more than 10 seconds left)</label><br>
-        </form>
-        <div class="row">
-            <h4>Comments</h4>
-            <textarea [(ngModel)]="comment" id="comment"></textarea>
-        </div>
-        <div class="buttons">
-          <button class="btn btn-primary" (click)="prevSection()">Back</button>
-          <button class="btn btn-primary" (click)="nextSection()">Next</button>
-        </div>
+    <div class="buttons">
+      <button class="btn btn-primary" (click)="prevSection()">Back</button>
+      <button class="btn btn-primary" (click)="nextSection()">Next</button>
     </div>
+  </div>
 
-    <div *ngSwitchCase="'Other'" id="defense" class="container-fluid">
-        <h4 class="text-center">How much did other robots play defense against this robot?</h4>
-        0 - No defense played against this robot<br/>
-        1 - Minimal defense<br/>
-        2 - Some defense<br/>
-        3 - About half the match was played against defense<br/>
-        4 - Good amount of defense<br/>
-        5 - Constant defense
-        <div class="row" style="min-height: 50px">
-            <div class="col-10">
-                <input type="range" min="0" max="5" [(ngModel)]="defensePlayedOnScore">
-            </div>
-            <div class="col">
-                <h6>{{defensePlayedOnScore}}</h6>
-            </div>
-        </div>
+  <div *ngSwitchCase="'Review and Submit'" id="review" class="container-fluid">
+    <h4>Team Selection</h4>
+    <ul>
+      <li>Match number: {{matchNumber}}</li>
+      <li>Team number: {{teamNumber}}</li>
+    </ul>
 
-        <h4 class="text-center">How much did this robot play defense against other robots?</h4>
-        0 - This robot did not play defense<br/>
-        1 - Minimal defense<br/>
-        2 - Some defense<br/>
-        3 - Defense was played for about half the match<br/>
-        4 - Good amount of defense<br/>
-        5 - Constant defense
-        <div class="row">
-            <div class="col-10">
-                <input type="range" min="0" max="5" [(ngModel)]="defensePlayedScore">
-            </div>
-            <div class="col">
-                <h6>{{defensePlayedScore}}</h6>
-            </div>
-        </div>
+    <h4>Auto</h4>
+    <ul>
+      <li>Quadrant: {{quadrant}}</li>
+      <li>Collected Ball 1: {{ball1}}</li>
+      <li>Collected Ball 2: {{ball2}}</li>
+      <li>Collected Ball 3: {{ball3}}</li>
+      <li>Collected Ball 4: {{ball4}}</li>
+      <li>Collected Ball 5: {{ball5}}</li>
+      <li>Upper Shots Made: {{autoUpperShotsMade}}</li>
+      <li>Lower Shots Made: {{autoLowerShotsMade}}</li>
+      <li>Missed Shots: {{autoShotsMissed}}</li>
+    </ul>
 
-        <div class="row">
-            <form>
-                <input type="checkbox" [(ngModel)]="noShow" name="no_show" id="no_show">
-                <label for="no_show">No show</label><br>
-                <input type="checkbox" [(ngModel)]="neverMoved" name="never_moved" id="never_moved">
-                <label for="never_moved">Never moved</label><br>
-                <input type="checkbox" [(ngModel)]="batteryDied" name="battery_died" id="battery_died">
-                <label for="battery_died">Battery died</label><br>
-                <input type="checkbox" [(ngModel)]="mechanicallyBroke" name="mechanically_broke" id="mechanically_broke">
-                <label for="mechanically_broke">Broke (mechanically)</label><br/>
-                <input type="checkbox" [(ngModel)]="lostComs" name="lost_coms" id="lost_coms">
-                <label for="lost_coms">Lost coms</label>
-            </form>
-        </div>
+    <h4>TeleOp</h4>
+    <ul>
+      <li>Upper Shots Made: {{teleUpperShotsMade}}</li>
+      <li>Lower Shots Made: {{teleLowerShotsMade}}</li>
+      <li>Missed Shots: {{teleShotsMissed}}</li>
+    </ul>
 
-        <div class="buttons">
-          <button class="btn btn-primary" (click)="prevSection()">Back</button>
-          <button class="btn btn-primary" (click)="nextSection()">Next</button>
-        </div>
+    <h4>Climb</h4>
+    <ul>
+      <li>Level: {{level | levelToString}}</li>
+      <li>Comments: {{comment}}</li>
+    </ul>
+
+    <h4>Other</h4>
+    <ul>
+      <li>Defense Played On Rating: {{defensePlayedOnScore}}</li>
+      <li>Defense Played Rating: {{defensePlayedScore}}</li>
+      <li>No show: {{noShow}}</li>
+      <li>Never moved: {{neverMoved}}</li>
+      <li>Battery died: {{batteryDied}}</li>
+      <li>Broke (mechanically): {{mechanicallyBroke}}</li>
+      <li>Lost coms: {{lostComs}}</li>
+    </ul>
+
+    <span class="error_message">{{ errorMessage }}</span>
+
+    <div class="buttons">
+      <button class="btn btn-primary" (click)="prevSection()">Back</button>
+      <button class="btn btn-primary" (click)="nextSection()">Submit</button>
     </div>
+  </div>
 
-    <div *ngSwitchCase="'Review and Submit'" id="review" class="container-fluid">
-        <h4>Team Selection</h4>
-        <ul>
-            <li>Match number: {{matchNumber}}</li>
-            <li>Team number: {{teamNumber}}</li>
-        </ul>
-
-        <h4>Auto</h4>
-        <ul>
-            <li>Quadrant: {{quadrant}}</li>
-            <li>Collected Ball 1: {{ball1}}</li>
-            <li>Collected Ball 2: {{ball2}}</li>
-            <li>Collected Ball 3: {{ball3}}</li>
-            <li>Collected Ball 4: {{ball4}}</li>
-            <li>Collected Ball 5: {{ball5}}</li>
-            <li>Upper Shots Made: {{autoUpperShotsMade}}</li>
-            <li>Lower Shots Made: {{autoLowerShotsMade}}</li>
-            <li>Missed Shots: {{autoShotsMissed}}</li>
-        </ul>
-
-        <h4>TeleOp</h4>
-        <ul>
-            <li>Upper Shots Made: {{teleUpperShotsMade}}</li>
-            <li>Lower Shots Made: {{teleLowerShotsMade}}</li>
-            <li>Missed Shots: {{teleShotsMissed}}</li>
-        </ul>
-
-        <h4>Climb</h4>
-        <ul>
-            <li>Level: {{level | levelToString}}</li>
-            <li>Comments: {{comment}}</li>
-        </ul>
-
-        <h4>Other</h4>
-        <ul>
-            <li>Defense Played On Rating: {{defensePlayedOnScore}}</li>
-            <li>Defense Played Rating: {{defensePlayedScore}}</li>
-            <li>No show: {{noShow}}</li>
-            <li>Never moved: {{neverMoved}}</li>
-            <li>Battery died: {{batteryDied}}</li>
-            <li>Broke (mechanically): {{mechanicallyBroke}}</li>
-            <li>Lost coms: {{lostComs}}</li>
-        </ul>
-
-        <span class="error_message">{{ errorMessage }}</span>
-
-        <div class="buttons">
-          <button class="btn btn-primary" (click)="prevSection()">Back</button>
-          <button class="btn btn-primary" (click)="nextSection()">Submit</button>
-        </div>
+  <div *ngSwitchCase="'Success'" id="success" class="container-fluid">
+    <span>Successfully submitted scouting data.</span>
+    <div class="buttons justify-content-end">
+      <button class="btn btn-primary" (click)="nextSection()">Continue</button>
     </div>
-
-    <div *ngSwitchCase="'Success'" id="success" class="container-fluid">
-        <span>Successfully submitted scouting data.</span>
-        <div class="buttons justify-content-end">
-          <button class="btn btn-primary" (click)="nextSection()">Continue</button>
-        </div>
-
-    </div>
+  </div>
 </ng-container>

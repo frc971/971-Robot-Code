@@ -1,20 +1,23 @@
 <div class="header">
-    <h2>Matches</h2>
+  <h2>Matches</h2>
 </div>
 
 <div class="container-fluid">
   <div class="row" *ngFor="let match of matchList; index as i">
-    <span class="badge bg-secondary rounded-left">{{ displayMatchNumber(match) }}</span>
+    <span class="badge bg-secondary rounded-left">
+      {{ displayMatchNumber(match) }}
+    </span>
     <div class="match-row">
       <button
-          *ngFor="let team of teamsInMatch(match);"
-          (click)="setTeamInMatch({
+        *ngFor="let team of teamsInMatch(match);"
+        (click)="setTeamInMatch({
             teamNumber: team.teamNumber,
             matchNumber: match.matchNumber(),
             compLevel: match.compLevel()
             })"
-          class="match-item"
-          [ngClass]="team.color">
+        class="match-item"
+        [ngClass]="team.color"
+      >
         {{ team.teamNumber }}
       </button>
     </div>
