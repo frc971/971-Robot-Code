@@ -26,7 +26,7 @@ Spark::Spark(int channel) : PWM(channel) {
    *   0.999ms = full "reverse"
    */
   SetBounds(2.003, 1.55, 1.50, 1.46, .999);
-  SetPeriodMultiplier(kPeriodMultiplier_1X);
+  SetPeriodMultiplier(kPeriodMultiplier_2X);
   SetSpeed(0.0);
   SetZeroLatch();
 

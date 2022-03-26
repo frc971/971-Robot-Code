@@ -32,7 +32,7 @@ Talon::Talon(int channel) : PWM(channel) {
    *   0.989ms = full "reverse"
    */
   SetBounds(2.037, 1.539, 1.513, 1.487, .989);
-  SetPeriodMultiplier(kPeriodMultiplier_1X);
+  SetPeriodMultiplier(kPeriodMultiplier_2X);
   SetSpeed(0.0);
   SetZeroLatch();
 

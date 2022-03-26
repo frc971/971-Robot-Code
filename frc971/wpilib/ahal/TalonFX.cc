@@ -33,7 +33,7 @@ TalonFX::TalonFX(int channel) : PWM(channel) {
    *   0.997ms = full "reverse"
    */
   SetBounds(2.004, 1.52, 1.50, 1.48, .997);
-  SetPeriodMultiplier(kPeriodMultiplier_1X);
+  SetPeriodMultiplier(kPeriodMultiplier_2X);
   SetSpeed(0.0);
   SetZeroLatch();
 
