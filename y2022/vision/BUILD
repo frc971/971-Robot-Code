@@ -1,4 +1,4 @@
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_py_library")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_py_library", "flatbuffer_ts_library")
 load("@npm//@bazel/typescript:index.bzl", "ts_library")
 
 flatbuffer_cc_library(
@@ -7,6 +7,12 @@ flatbuffer_cc_library(
     gen_reflections = 1,
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//y2022:__subpackages__"],
+)
+
+flatbuffer_ts_library(
+    name = "calibration_ts_fbs",
+    srcs = ["calibration.fbs"],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 flatbuffer_py_library(
@@ -30,9 +36,14 @@ ts_library(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
+        ":target_estimate_ts_fbs",
+        "//aos:configuration_ts_fbs",
         "//aos/network/www:aos_plotter",
         "//aos/network/www:colors",
         "//aos/network/www:proxy",
+        "//aos/network/www:reflection_ts",
+        "@com_github_google_flatbuffers//reflection:reflection_ts_fbs",
+        "@com_github_google_flatbuffers//ts:flatbuffers_ts",
     ],
 )
 
@@ -215,6 +226,15 @@ flatbuffer_cc_library(
     ],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//y2022:__subpackages__"],
+)
+
+flatbuffer_ts_library(
+    name = "target_estimate_ts_fbs",
+    srcs = ["target_estimate.fbs"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":calibration_ts_fbs",
+    ],
 )
 
 cc_binary(
