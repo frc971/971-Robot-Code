@@ -46,6 +46,12 @@ DEFINE_bool(print_parts_only, false,
             "If true, only print out the results of logfile sorting.");
 DEFINE_bool(channels, false,
             "If true, print out all the configured channels for this log.");
+DEFINE_double(monotonic_start_time, 0.0,
+              "If set, only print messages sent at or after this many seconds "
+              "after epoch.");
+DEFINE_double(monotonic_end_time, 0.0,
+              "If set, only print messages sent at or before this many seconds "
+              "after epoch.");
 
 using aos::monotonic_clock;
 namespace chrono = std::chrono;
@@ -272,6 +278,21 @@ class NodePrinter {
     const flatbuffers::Vector<flatbuffers::Offset<aos::Channel>> *channels =
         event_loop_->configuration()->channels();
 
+    const monotonic_clock::time_point start_time =
+        (FLAGS_monotonic_start_time == 0.0
+             ? monotonic_clock::min_time
+             : monotonic_clock::time_point(
+                   std::chrono::duration_cast<monotonic_clock::duration>(
+                       std::chrono::duration<double>(
+                           FLAGS_monotonic_start_time))));
+    const monotonic_clock::time_point end_time =
+        (FLAGS_monotonic_end_time == 0.0
+             ? monotonic_clock::max_time
+             : monotonic_clock::time_point(
+                   std::chrono::duration_cast<monotonic_clock::duration>(
+                       std::chrono::duration<double>(
+                           FLAGS_monotonic_end_time))));
+
     for (flatbuffers::uoffset_t i = 0; i < channels->size(); i++) {
       const aos::Channel *channel = channels->Get(i);
       const flatbuffers::string_view name = channel->name()->string_view();
@@ -286,13 +307,19 @@ class NodePrinter {
 
         CHECK_NOTNULL(channel->schema());
         event_loop_->MakeRawWatcher(
-            channel, [this, channel](const aos::Context &context,
-                                     const void * /*message*/) {
+            channel,
+            [this, channel, start_time, end_time](const aos::Context &context,
+                                                  const void * /*message*/) {
               if (!FLAGS_print) {
                 return;
               }
 
               if (!FLAGS_fetch && !started_) {
+                return;
+              }
+
+              if (context.monotonic_event_time < start_time ||
+                  context.monotonic_event_time > end_time) {
                 return;
               }
 
