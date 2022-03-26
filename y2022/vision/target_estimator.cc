@@ -187,12 +187,16 @@ void TargetEstimator::Solve(
                            &distance_, &angle_to_camera_, &camera_height_);
 
   // Compute the estimated rotation of the camera using the robot rotation.
-  const Eigen::Vector3d ypr_extrinsics =
-      (Eigen::Affine3d(extrinsics_).rotation() * kHubToCameraAxes)
-          .eulerAngles(2, 1, 0);
+  const Eigen::Matrix3d extrinsics_rot =
+      Eigen::Affine3d(extrinsics_).rotation() * kHubToCameraAxes;
+  // asin returns a pitch in [-pi/2, pi/2] so this will be the correct euler
+  // angles.
+  const double pitch_seed = -std::asin(extrinsics_rot(2, 0));
+  const double roll_seed =
+      std::atan2(extrinsics_rot(2, 1) / std::cos(pitch_seed),
+                 extrinsics_rot(2, 2) / std::cos(pitch_seed));
+
   // TODO(milind): seed with localizer output as well
-  const double roll_seed = ypr_extrinsics.z();
-  const double pitch_seed = ypr_extrinsics.y();
 
   // Constrain the rotation to be around the localizer's, otherwise there can be
   // multiple solutions. There shouldn't be too much roll or pitch

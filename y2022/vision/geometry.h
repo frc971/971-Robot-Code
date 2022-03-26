@@ -1,3 +1,6 @@
+#ifndef Y2022_VISION_GEOMETRY_H_
+#define Y2022_VISION_GEOMETRY_H_
+
 #include "aos/util/math.h"
 #include "glog/logging.h"
 #include "opencv2/core/types.hpp"
@@ -129,3 +132,5 @@ struct Circle {
 };
 
 }  // namespace y2022::vision
+
+#endif  // Y2022_VISION_GEOMETRY_H_
