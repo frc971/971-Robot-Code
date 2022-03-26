@@ -101,7 +101,7 @@ build --strategy=TypeScriptCompile=worker --strategy=AngularTemplateCompile=work
 # Note that this doesn't quite work fully, but it should. See
 # https://github.com/bazelbuild/bazel/issues/6341 for ongoing discussion with
 # upstream about this.
-build --java_runtime_version=openjdk_9 --tool_java_runtime_version=openjdk_9
+build --java_runtime_version=openjdk_11 --tool_java_runtime_version=openjdk_11
 
 # Prevent falling back to the host JDK.
 startup --noautodetect_server_javabase
