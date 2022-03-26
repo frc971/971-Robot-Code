@@ -75,7 +75,7 @@ const aos::starter::ApplicationStatus *FindApplicationStatus(
 
 // Checks if the name is an executable name and if it is, it returns that
 // application's name, otherwise returns name as given
-std::string_view FindApplication(const std::string_view &name,
+std::string_view FindApplication(const std::string_view name,
                                  const aos::Configuration *config);
 
 // Sends the given command to the application with the name name. Creates a
