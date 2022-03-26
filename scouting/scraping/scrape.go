@@ -17,14 +17,14 @@ type scrapingConfig struct {
 	BaseUrl string `json:"base_url"`
 }
 
-// Takes in year and FIRST event code and returns all matches in that event according to TBA.
+// Takes in year and FIRST event code and returns requested information according to TBA.
 // Also takes in a file path to the JSON config file that contains your TBA API key.
 // It defaults to <workspace root>/config.json
 // the config is expected to have the following contents:
 //{
 //    api_key:"myTBAapiKey"
 //}
-func AllMatches(year int32, eventCode, configPath string) ([]Match, error) {
+func getJson(year int32, eventCode, configPath, category string) ([]byte, error) {
 	if configPath == "" {
 		configPath = os.Getenv("BUILD_WORKSPACE_DIRECTORY") + "/scouting_config.json"
 	}
@@ -52,7 +52,7 @@ func AllMatches(year int32, eventCode, configPath string) ([]Match, error) {
 	eventKey := strconv.Itoa(int(year)) + eventCode
 
 	// Create a get request for the match info.
-	req, err := http.NewRequest("GET", config.BaseUrl+"/api/v3/event/"+eventKey+"/matches", nil)
+	req, err := http.NewRequest("GET", config.BaseUrl+"/api/v3/event/"+eventKey+"/"+category, nil)
 	if err != nil {
 		return nil, errors.New(fmt.Sprint("Failed to build http request: ", err))
 	}
@@ -78,6 +78,17 @@ func AllMatches(year int32, eventCode, configPath string) ([]Match, error) {
 		return nil, errors.New(fmt.Sprint("Failed to read TBA API response: ", err))
 	}
 
+	return bodyBytes, nil
+}
+
+// Return all matches in event according to TBA
+func AllMatches(year int32, eventCode, configPath string) ([]Match, error) {
+	bodyBytes, err := getJson(year, eventCode, configPath, "matches")
+
+	if err != nil {
+		return nil, err
+	}
+
 	var matches []Match
 	// Unmarshal json into go usable format.
 	if err := json.Unmarshal([]byte(bodyBytes), &matches); err != nil {
@@ -85,4 +96,21 @@ func AllMatches(year int32, eventCode, configPath string) ([]Match, error) {
 	}
 
 	return matches, nil
+}
+
+// Return event rankings according to TBA
+func AllRankings(year int32, eventCode, configPath string) (EventRanking, error) {
+	bodyBytes, err := getJson(year, eventCode, configPath, "rankings")
+
+	if err != nil {
+		return EventRanking{}, err
+	}
+
+	var rankings EventRanking
+	// Unmarshal json into go usable format.
+	if err := json.Unmarshal([]byte(bodyBytes), &rankings); err != nil {
+		return EventRanking{}, errors.New(fmt.Sprint("Failed to parse JSON received from TBA: ", err))
+	}
+
+	return rankings, nil
 }
