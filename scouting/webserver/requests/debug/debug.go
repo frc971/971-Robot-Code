@@ -22,13 +22,6 @@ import (
 // The username to submit the various requests as.
 const DefaultUsername = "debug_cli"
 
-// Use aliases to make the rest of the code more readable.
-type SubmitDataScoutingResponseT = submit_data_scouting_response.SubmitDataScoutingResponseT
-type RequestAllMatchesResponseT = request_all_matches_response.RequestAllMatchesResponseT
-type RequestMatchesForTeamResponseT = request_matches_for_team_response.RequestMatchesForTeamResponseT
-type RequestDataScoutingResponseT = request_data_scouting_response.RequestDataScoutingResponseT
-type RefreshMatchListResponseT = refresh_match_list_response.RefreshMatchListResponseT
-
 // A struct that can be used as an `error`. It contains information about the
 // why the server was unhappy and what the corresponding request was.
 type ResponseError struct {
@@ -99,7 +92,7 @@ func performPost(url string, requestBytes []byte) ([]byte, error) {
 
 // Sends a `SubmitDataScouting` message to the server and returns the
 // deserialized response.
-func SubmitDataScouting(server string, requestBytes []byte) (*SubmitDataScoutingResponseT, error) {
+func SubmitDataScouting(server string, requestBytes []byte) (*submit_data_scouting_response.SubmitDataScoutingResponseT, error) {
 	responseBytes, err := performPost(server+"/requests/submit/data_scouting", requestBytes)
 	if err != nil {
 		return nil, err
@@ -111,7 +104,7 @@ func SubmitDataScouting(server string, requestBytes []byte) (*SubmitDataScouting
 
 // Sends a `RequestAllMatches` message to the server and returns the
 // deserialized response.
-func RequestAllMatches(server string, requestBytes []byte) (*RequestAllMatchesResponseT, error) {
+func RequestAllMatches(server string, requestBytes []byte) (*request_all_matches_response.RequestAllMatchesResponseT, error) {
 	responseBytes, err := performPost(server+"/requests/request/all_matches", requestBytes)
 	if err != nil {
 		return nil, err
@@ -123,7 +116,7 @@ func RequestAllMatches(server string, requestBytes []byte) (*RequestAllMatchesRe
 
 // Sends a `RequestMatchesForTeam` message to the server and returns the
 // deserialized response.
-func RequestMatchesForTeam(server string, requestBytes []byte) (*RequestMatchesForTeamResponseT, error) {
+func RequestMatchesForTeam(server string, requestBytes []byte) (*request_matches_for_team_response.RequestMatchesForTeamResponseT, error) {
 	responseBytes, err := performPost(server+"/requests/request/matches_for_team", requestBytes)
 	if err != nil {
 		return nil, err
@@ -135,7 +128,7 @@ func RequestMatchesForTeam(server string, requestBytes []byte) (*RequestMatchesF
 
 // Sends a `RequestDataScouting` message to the server and returns the
 // deserialized response.
-func RequestDataScouting(server string, requestBytes []byte) (*RequestDataScoutingResponseT, error) {
+func RequestDataScouting(server string, requestBytes []byte) (*request_data_scouting_response.RequestDataScoutingResponseT, error) {
 	responseBytes, err := performPost(server+"/requests/request/data_scouting", requestBytes)
 	if err != nil {
 		return nil, err
@@ -147,7 +140,7 @@ func RequestDataScouting(server string, requestBytes []byte) (*RequestDataScouti
 
 // Sends a `RefreshMatchList` message to the server and returns the
 // deserialized response.
-func RefreshMatchList(server string, requestBytes []byte) (*RefreshMatchListResponseT, error) {
+func RefreshMatchList(server string, requestBytes []byte) (*refresh_match_list_response.RefreshMatchListResponseT, error) {
 	responseBytes, err := performPost(server+"/requests/refresh_match_list", requestBytes)
 	if err != nil {
 		return nil, err
