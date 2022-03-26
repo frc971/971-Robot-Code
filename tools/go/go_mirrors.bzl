@@ -182,13 +182,6 @@ GO_MIRROR_INFO = {
         "strip_prefix": "github.com/lib/pq@v1.10.2",
         "version": "v1.10.2",
     },
-    "com_github_mattn_go_sqlite3": {
-        "filename": "com_github_mattn_go_sqlite3__v1.14.10.zip",
-        "importpath": "github.com/mattn/go-sqlite3",
-        "sha256": "3c1e6497b023fc4741bf1bbfb39ae657b99cf44cfb33f5cbf1e88b315d25a306",
-        "strip_prefix": "github.com/mattn/go-sqlite3@v1.14.10",
-        "version": "v1.14.10",
-    },
     "com_github_phst_runfiles": {
         "filename": "com_github_phst_runfiles__v0.0.0-20220125203201-388095b3a22d.zip",
         "importpath": "github.com/phst/runfiles",
