@@ -79,16 +79,15 @@ func respondNotImplemented(w http.ResponseWriter) {
 	respondWithError(w, http.StatusNotImplemented, "")
 }
 
-// TODO(phil): Can we turn this into a generic?
-func parseSubmitDataScouting(w http.ResponseWriter, buf []byte) (*SubmitDataScouting, bool) {
+func parseRequest[T interface{}](w http.ResponseWriter, buf []byte, requestName string, parser func([]byte, flatbuffers.UOffsetT) *T) (*T, bool) {
 	success := true
 	defer func() {
 		if r := recover(); r != nil {
-			respondWithError(w, http.StatusBadRequest, fmt.Sprintf("Failed to parse SubmitDataScouting: %v", r))
+			respondWithError(w, http.StatusBadRequest, fmt.Sprintf("Failed to parse %s: %v", requestName, r))
 			success = false
 		}
 	}()
-	result := submit_data_scouting.GetRootAsSubmitDataScouting(buf, 0)
+	result := parser(buf, 0)
 	return result, success
 }
 
@@ -135,7 +134,7 @@ func (handler submitDataScoutingHandler) ServeHTTP(w http.ResponseWriter, req *h
 		return
 	}
 
-	request, success := parseSubmitDataScouting(w, requestBytes)
+	request, success := parseRequest[SubmitDataScouting](w, requestBytes, "SubmitDataScouting", submit_data_scouting.GetRootAsSubmitDataScouting)
 	if !success {
 		return
 	}
@@ -181,19 +180,6 @@ func (handler submitDataScoutingHandler) ServeHTTP(w http.ResponseWriter, req *h
 	w.Write(builder.FinishedBytes())
 }
 
-// TODO(phil): Can we turn this into a generic?
-func parseRequestAllMatches(w http.ResponseWriter, buf []byte) (*RequestAllMatches, bool) {
-	success := true
-	defer func() {
-		if r := recover(); r != nil {
-			respondWithError(w, http.StatusBadRequest, fmt.Sprintf("Failed to parse SubmitDataScouting: %v", r))
-			success = false
-		}
-	}()
-	result := request_all_matches.GetRootAsRequestAllMatches(buf, 0)
-	return result, success
-}
-
 // Handles a RequestAllMaches request.
 type requestAllMatchesHandler struct {
 	db Database
@@ -206,7 +192,7 @@ func (handler requestAllMatchesHandler) ServeHTTP(w http.ResponseWriter, req *ht
 		return
 	}
 
-	_, success := parseRequestAllMatches(w, requestBytes)
+	_, success := parseRequest(w, requestBytes, "RequestAllMatches", request_all_matches.GetRootAsRequestAllMatches)
 	if !success {
 		return
 	}
@@ -237,19 +223,6 @@ func (handler requestAllMatchesHandler) ServeHTTP(w http.ResponseWriter, req *ht
 	w.Write(builder.FinishedBytes())
 }
 
-// TODO(phil): Can we turn this into a generic?
-func parseRequestMatchesForTeam(w http.ResponseWriter, buf []byte) (*RequestMatchesForTeam, bool) {
-	success := true
-	defer func() {
-		if r := recover(); r != nil {
-			respondWithError(w, http.StatusBadRequest, fmt.Sprintf("Failed to parse SubmitDataScouting: %v", r))
-			success = false
-		}
-	}()
-	result := request_matches_for_team.GetRootAsRequestMatchesForTeam(buf, 0)
-	return result, success
-}
-
 // Handles a RequestMatchesForTeam request.
 type requestMatchesForTeamHandler struct {
 	db Database
@@ -262,7 +235,7 @@ func (handler requestMatchesForTeamHandler) ServeHTTP(w http.ResponseWriter, req
 		return
 	}
 
-	request, success := parseRequestMatchesForTeam(w, requestBytes)
+	request, success := parseRequest(w, requestBytes, "RequestMatchesForTeam", request_matches_for_team.GetRootAsRequestMatchesForTeam)
 	if !success {
 		return
 	}
@@ -293,19 +266,6 @@ func (handler requestMatchesForTeamHandler) ServeHTTP(w http.ResponseWriter, req
 	w.Write(builder.FinishedBytes())
 }
 
-// TODO(phil): Can we turn this into a generic?
-func parseRequestDataScouting(w http.ResponseWriter, buf []byte) (*RequestDataScouting, bool) {
-	success := true
-	defer func() {
-		if r := recover(); r != nil {
-			respondWithError(w, http.StatusBadRequest, fmt.Sprintf("Failed to parse SubmitDataScouting: %v", r))
-			success = false
-		}
-	}()
-	result := request_data_scouting.GetRootAsRequestDataScouting(buf, 0)
-	return result, success
-}
-
 // Handles a RequestDataScouting request.
 type requestDataScoutingHandler struct {
 	db Database
@@ -318,7 +278,7 @@ func (handler requestDataScoutingHandler) ServeHTTP(w http.ResponseWriter, req *
 		return
 	}
 
-	_, success := parseRequestDataScouting(w, requestBytes)
+	_, success := parseRequest(w, requestBytes, "RequestDataScouting", request_data_scouting.GetRootAsRequestDataScouting)
 	if !success {
 		return
 	}
@@ -357,19 +317,6 @@ func (handler requestDataScoutingHandler) ServeHTTP(w http.ResponseWriter, req *
 	builder := flatbuffers.NewBuilder(50 * 1024)
 	builder.Finish((&response).Pack(builder))
 	w.Write(builder.FinishedBytes())
-}
-
-// TODO(phil): Can we turn this into a generic?
-func parseRefreshMatchList(w http.ResponseWriter, buf []byte) (*RefreshMatchList, bool) {
-	success := true
-	defer func() {
-		if r := recover(); r != nil {
-			respondWithError(w, http.StatusBadRequest, fmt.Sprintf("Failed to parse RefreshMatchList: %v", r))
-			success = false
-		}
-	}()
-	result := refresh_match_list.GetRootAsRefreshMatchList(buf, 0)
-	return result, success
 }
 
 func parseTeamKey(teamKey string) (int, error) {
@@ -422,7 +369,7 @@ func (handler refreshMatchListHandler) ServeHTTP(w http.ResponseWriter, req *htt
 		return
 	}
 
-	request, success := parseRefreshMatchList(w, requestBytes)
+	request, success := parseRequest(w, requestBytes, "RefreshMatchList", refresh_match_list.GetRootAsRefreshMatchList)
 	if !success {
 		return
 	}
@@ -467,18 +414,6 @@ func (handler refreshMatchListHandler) ServeHTTP(w http.ResponseWriter, req *htt
 	w.Write(builder.FinishedBytes())
 }
 
-func parseSubmitNotes(w http.ResponseWriter, buf []byte) (*SubmitNotes, bool) {
-	success := true
-	defer func() {
-		if r := recover(); r != nil {
-			respondWithError(w, http.StatusBadRequest, fmt.Sprintf("Failed to parse RefreshMatchList: %v", r))
-			success = false
-		}
-	}()
-	result := submit_notes.GetRootAsSubmitNotes(buf, 0)
-	return result, success
-}
-
 type submitNoteScoutingHandler struct {
 	db Database
 }
@@ -490,7 +425,7 @@ func (handler submitNoteScoutingHandler) ServeHTTP(w http.ResponseWriter, req *h
 		return
 	}
 
-	request, success := parseSubmitNotes(w, requestBytes)
+	request, success := parseRequest(w, requestBytes, "SubmitNotes", submit_notes.GetRootAsSubmitNotes)
 	if !success {
 		return
 	}
@@ -510,18 +445,6 @@ func (handler submitNoteScoutingHandler) ServeHTTP(w http.ResponseWriter, req *h
 	w.Write(builder.FinishedBytes())
 }
 
-func parseRequestNotesForTeam(w http.ResponseWriter, buf []byte) (*RequestNotesForTeam, bool) {
-	success := true
-	defer func() {
-		if r := recover(); r != nil {
-			respondWithError(w, http.StatusBadRequest, fmt.Sprintf("Failed to parse RefreshMatchList: %v", r))
-			success = false
-		}
-	}()
-	result := request_notes_for_team.GetRootAsRequestNotesForTeam(buf, 0)
-	return result, success
-}
-
 type requestNotesForTeamHandler struct {
 	db Database
 }
@@ -533,7 +456,7 @@ func (handler requestNotesForTeamHandler) ServeHTTP(w http.ResponseWriter, req *
 		return
 	}
 
-	request, success := parseRequestNotesForTeam(w, requestBytes)
+	request, success := parseRequest(w, requestBytes, "RequestNotesForTeam", request_notes_for_team.GetRootAsRequestNotesForTeam)
 	if !success {
 		return
 	}
