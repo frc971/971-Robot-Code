@@ -35,3 +35,7 @@ chrtirq "irq/19-fe004000" -f 50
 chrtirq "irq/[0-9]*-vc4 crtc" -o 0
 chrtirq "irq/23-uart-pl0" -o 0
 chrtirq "irq/[0-9]*-eth0" -f 10
+
+# Route data-ready interrupts to the second core
+SPI_IRQ="$(cat /proc/interrupts | grep fe204000.spi | awk '{print $1}' | grep '[0-9]*' -o)"
+echo 2 > /proc/irq/"${SPI_IRQ}"/smp_affinity
