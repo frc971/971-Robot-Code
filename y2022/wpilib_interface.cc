@@ -61,6 +61,8 @@ namespace superstructure = ::y2022::control_loops::superstructure;
 namespace chrono = ::std::chrono;
 using std::make_unique;
 
+DEFINE_bool(can_catapult, false, "If true, use CAN to control the catapult.");
+
 namespace y2022 {
 namespace wpilib {
 namespace {
@@ -178,8 +180,15 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     imu_yaw_rate_input_ = ::std::move(sensor);
     imu_yaw_rate_reader_.set_input(imu_yaw_rate_input_.get());
   }
+  void set_catapult_falcon_1(
+      ::std::shared_ptr<::ctre::phoenix::motorcontrol::can::TalonFX> t1,
+      ::std::shared_ptr<::ctre::phoenix::motorcontrol::can::TalonFX> t2) {
+    catapult_falcon_1_can_ = ::std::move(t1);
+    catapult_falcon_2_can_ = ::std::move(t2);
+  }
 
   void RunIteration() override {
+    superstructure_reading_->Set(true);
     {
       auto builder = superstructure_position_sender_.MakeBuilder();
 
@@ -342,6 +351,13 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     flipper_arm_right_potentiometer_ = ::std::move(potentiometer);
   }
 
+  std::shared_ptr<frc::DigitalOutput> superstructure_reading_;
+
+  void set_superstructure_reading(
+      std::shared_ptr<frc::DigitalOutput> superstructure_reading) {
+    superstructure_reading_ = superstructure_reading;
+  }
+
   void set_intake_encoder_front(::std::unique_ptr<frc::Encoder> encoder) {
     fast_encoder_filter_.Add(encoder.get());
     intake_encoder_front_.set_encoder(::std::move(encoder));
@@ -418,6 +434,10 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       intake_encoder_back_, turret_encoder_, catapult_encoder_;
 
   frc971::wpilib::DMAPulseWidthReader imu_heading_reader_, imu_yaw_rate_reader_;
+
+  ::std::shared_ptr<::ctre::phoenix::motorcontrol::can::TalonFX>
+      catapult_falcon_1_can_, catapult_falcon_2_can_;
+
 };
 
 class SuperstructureWriter
@@ -425,7 +445,8 @@ class SuperstructureWriter
  public:
   SuperstructureWriter(aos::EventLoop *event_loop)
       : frc971::wpilib::LoopOutputHandler<superstructure::Output>(
-            event_loop, "/superstructure") {}
+            event_loop, "/superstructure"),
+        catapult_reversal_(make_unique<frc::DigitalOutput>(0)) {}
 
   void set_climber_falcon(std::unique_ptr<frc::TalonFX> t) {
     climber_falcon_ = std::move(t);
@@ -440,8 +461,8 @@ class SuperstructureWriter
   }
 
   void set_catapult_falcon_1(
-      ::std::unique_ptr<::ctre::phoenix::motorcontrol::can::TalonFX> t1,
-      ::std::unique_ptr<::ctre::phoenix::motorcontrol::can::TalonFX> t2) {
+      ::std::shared_ptr<::ctre::phoenix::motorcontrol::can::TalonFX> t1,
+      ::std::shared_ptr<::ctre::phoenix::motorcontrol::can::TalonFX> t2) {
     catapult_falcon_1_can_ = ::std::move(t1);
     catapult_falcon_2_can_ = ::std::move(t2);
 
@@ -452,12 +473,13 @@ class SuperstructureWriter
       falcon->ConfigStatorCurrentLimit(
           {false, Values::kIntakeRollerStatorCurrentLimit(),
            Values::kIntakeRollerStatorCurrentLimit(), 0});
-      falcon->SetStatusFramePeriod(ctre::phoenix::motorcontrol::Status_1_General, 5);
-      falcon->SetControlFramePeriod(ctre::phoenix::motorcontrol::Control_3_General, 5);
+      falcon->SetStatusFramePeriod(ctre::phoenix::motorcontrol::Status_1_General, 1);
+      falcon->SetControlFramePeriod(ctre::phoenix::motorcontrol::Control_3_General, 1);
+      falcon->SetStatusFramePeriod(ctre::phoenix::motorcontrol::Status_Brushless_Current, 50);
+      falcon->ConfigOpenloopRamp(0.0);
+      falcon->ConfigClosedloopRamp(0.0);
+      falcon->ConfigVoltageMeasurementFilter(1);
     }
-    catapult_falcon_2_can_->Follow(
-        *catapult_falcon_1_can_,
-        ctre::phoenix::motorcontrol::FollowerType_PercentOutput);
   }
 
   void set_intake_falcon_front(::std::unique_ptr<frc::TalonFX> t) {
@@ -514,6 +536,13 @@ class SuperstructureWriter
     transfer_roller_victor_back_ = ::std::move(t);
   }
 
+  std::shared_ptr<frc::DigitalOutput> superstructure_reading_;
+
+  void set_superstructure_reading(
+      std::shared_ptr<frc::DigitalOutput> superstructure_reading) {
+    superstructure_reading_ = superstructure_reading;
+  }
+
  private:
   void Stop() override {
     AOS_LOG(WARNING, "Superstructure output too old.\n");
@@ -533,6 +562,8 @@ class SuperstructureWriter
     }
     if (catapult_falcon_1_can_) {
       catapult_falcon_1_can_->Set(
+          ctre::phoenix::motorcontrol::ControlMode::Disabled, 0);
+      catapult_falcon_2_can_->Set(
           ctre::phoenix::motorcontrol::ControlMode::Disabled, 0);
     }
     turret_falcon_->SetDisabled();
@@ -554,9 +585,16 @@ class SuperstructureWriter
 
     if (catapult_falcon_1_) {
       WritePwm(output.catapult_voltage(), catapult_falcon_1_.get());
+      superstructure_reading_->Set(false);
+      if (output.catapult_voltage() > 0) {
+        catapult_reversal_->Set(true);
+      } else {
+        catapult_reversal_->Set(false);
+      }
     }
     if (catapult_falcon_1_can_) {
       WriteCan(output.catapult_voltage(), catapult_falcon_1_can_.get());
+      WriteCan(output.catapult_voltage(), catapult_falcon_2_can_.get());
     }
 
     WritePwm(-output.turret_voltage(), turret_falcon_.get());
@@ -590,6 +628,8 @@ class SuperstructureWriter
       climber_falcon_;
   ::std::unique_ptr<::frc::VictorSP> transfer_roller_victor_front_,
       transfer_roller_victor_back_;
+
+  std::unique_ptr<frc::DigitalOutput> catapult_reversal_;
 };
 
 class CANSensorReader {
@@ -661,12 +701,16 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     ::frc971::wpilib::PDPFetcher pdp_fetcher(&pdp_fetcher_event_loop);
     AddLoop(&pdp_fetcher_event_loop);
 
+    std::shared_ptr<frc::DigitalOutput> superstructure_reading =
+        make_unique<frc::DigitalOutput>(25);
+
     // Thread 3.
     ::aos::ShmEventLoop sensor_reader_event_loop(&config.message());
     SensorReader sensor_reader(&sensor_reader_event_loop, values);
     sensor_reader.set_pwm_trigger(true);
     sensor_reader.set_drivetrain_left_encoder(make_encoder(1));
     sensor_reader.set_drivetrain_right_encoder(make_encoder(0));
+    sensor_reader.set_superstructure_reading(superstructure_reading);
 
     sensor_reader.set_intake_encoder_front(make_encoder(3));
     sensor_reader.set_intake_front_absolute_pwm(
@@ -734,8 +778,20 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     superstructure_writer.set_climber_falcon(make_unique<frc::TalonFX>(8));
     superstructure_writer.set_flipper_arms_falcon(
         make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(2));
+    superstructure_writer.set_superstructure_reading(superstructure_reading);
 
-    superstructure_writer.set_catapult_falcon_1(make_unique<frc::TalonFX>(9));
+    if (!FLAGS_can_catapult) {
+      superstructure_writer.set_catapult_falcon_1(make_unique<frc::TalonFX>(9));
+    } else {
+      std::shared_ptr<::ctre::phoenix::motorcontrol::can::TalonFX> catapult1 =
+          make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(3,
+                                                                   "Catapult");
+      std::shared_ptr<::ctre::phoenix::motorcontrol::can::TalonFX> catapult2 =
+          make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(4,
+                                                                   "Catapult");
+      superstructure_writer.set_catapult_falcon_1(catapult1, catapult2);
+      sensor_reader.set_catapult_falcon_1(catapult1, catapult2);
+    }
 
     AddLoop(&output_event_loop);
 
