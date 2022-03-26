@@ -404,7 +404,7 @@ class FieldWidget(Gtk.DrawingArea):
         self.mousex, self.mousey = self.input_transform.transform_point(
             event.x, event.y)
         if self.mode == Mode.kEditing:
-            if self.index_of_edit > -1 and self.held_x != self.mousex:
+            if self.index_of_edit > -1:
                 self.points.setSplines(self.spline_edit, self.index_of_edit,
                                        self.mousex,
                                        self.mousey)
