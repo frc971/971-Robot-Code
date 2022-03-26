@@ -333,7 +333,7 @@
         {
           "name": "logger",
           "priority": 3,
-          "time_to_live": 5000000
+          "time_to_live": 500000000
         }
       ]
     },
@@ -365,7 +365,7 @@
         {
           "name": "logger",
           "priority": 3,
-          "time_to_live": 5000000
+          "time_to_live": 500000000
         }
       ]
     },
@@ -381,7 +381,7 @@
         {
           "name": "logger",
           "priority": 3,
-          "time_to_live": 5000000
+          "time_to_live": 500000000
         }
       ]
     }
