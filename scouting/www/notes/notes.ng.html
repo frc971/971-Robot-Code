@@ -1,0 +1,26 @@
+<h2>Notes</h2>
+
+<ng-container [ngSwitch]="section">
+  <div *ngSwitchCase="'TeamSelection'">
+    <label for="team_number_notes">Team Number</label>
+    <input [(ngModel)]="teamNumber" type="number" id="team_number_notes" min="1" max="9999">
+    <button class="btn btn-primary" (click)="setTeamNumber()">Select</button>
+  </div>
+
+  <div *ngSwitchCase="'Data'">
+    <h3> Scouting team: {{teamNumber}}</h3>
+    <ul *ngFor="let note of notes">
+      <li class="note">
+        {{ note.data }}
+      </li>
+    </ul>
+    <textarea class="text-input" [(ngModel)]="newData"></textarea>
+    <div class="buttons">
+      <button class="btn btn-primary" (click)="changeTeam()">Change team</button>
+      <button class="btn btn-primary" (click)="submitData()">Submit</button>
+    </div>
+  </div>
+  <div class="error">
+    {{errorMessage}}
+  </div>
+</ng-container>

@@ -2,8 +2,8 @@ import {Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild} f
 import {FormsModule} from '@angular/forms';
 import {Builder, ByteBuffer} from 'flatbuffers';
 import {ErrorResponse} from 'org_frc971/scouting/webserver/requests/messages/error_response_generated';
-import {SubmitDataScoutingResponse} from 'org_frc971/scouting/webserver/requests/messages/submit_data_scouting_response_generated';
 import {SubmitDataScouting} from 'org_frc971/scouting/webserver/requests/messages/submit_data_scouting_generated';
+import {SubmitDataScoutingResponse} from 'org_frc971/scouting/webserver/requests/messages/submit_data_scouting_response_generated';
 
 type Section = 'Team Selection'|'Auto'|'TeleOp'|'Climb'|'Other'|
     'Review and Submit'|'Success';
