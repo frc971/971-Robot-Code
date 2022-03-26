@@ -2,13 +2,11 @@ import {Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild} f
 import {FormsModule} from '@angular/forms';
 import {Builder, ByteBuffer} from 'flatbuffers';
 import {ErrorResponse} from 'org_frc971/scouting/webserver/requests/messages/error_response_generated';
-import {SubmitDataScouting} from 'org_frc971/scouting/webserver/requests/messages/submit_data_scouting_generated';
+import {ClimbLevel, SubmitDataScouting} from 'org_frc971/scouting/webserver/requests/messages/submit_data_scouting_generated';
 import {SubmitDataScoutingResponse} from 'org_frc971/scouting/webserver/requests/messages/submit_data_scouting_response_generated';
 
 type Section = 'Team Selection'|'Auto'|'TeleOp'|'Climb'|'Other'|
     'Review and Submit'|'Success';
-type Level = 'NoAttempt'|'Failed'|'FailedWithPlentyOfTime'|'Low'|'Medium'|
-    'High'|'Transversal';
 
 @Component({
   selector: 'app-entry',
@@ -16,6 +14,10 @@ type Level = 'NoAttempt'|'Failed'|'FailedWithPlentyOfTime'|'Low'|'Medium'|
   styleUrls: ['../common.css', './entry.component.css']
 })
 export class EntryComponent {
+  // Re-export the type here so that we can use it in the `[value]` attribute
+  // of radio buttons.
+  readonly ClimbLevel = ClimbLevel;
+
   section: Section = 'Team Selection';
   @Output() switchTabsEvent = new EventEmitter<string>();
   @Input() matchNumber: number = 1;
@@ -28,7 +30,7 @@ export class EntryComponent {
   teleShotsMissed: number = 0;
   defensePlayedOnScore: number = 0;
   defensePlayedScore: number = 0;
-  level: Level = 'NoAttempt';
+  level: ClimbLevel = ClimbLevel.NoAttempt;
   ball1: boolean = false;
   ball2: boolean = false;
   ball3: boolean = false;
@@ -41,6 +43,7 @@ export class EntryComponent {
   batteryDied: boolean = false;
   mechanicallyBroke: boolean = false;
   lostComs: boolean = false;
+  comment: string = '';
 
   @ViewChild('header') header: ElementRef;
 
@@ -56,6 +59,7 @@ export class EntryComponent {
     } else if (this.section === 'Other') {
       this.section = 'Review and Submit';
     } else if (this.section === 'Review and Submit') {
+
       this.submitDataScouting();
       return;
     } else if (this.section === 'Success') {
@@ -93,6 +97,7 @@ export class EntryComponent {
     this.errorMessage = '';
 
     const builder = new Builder();
+    const comment = builder.createString(this.comment);
     SubmitDataScouting.startSubmitDataScouting(builder);
     SubmitDataScouting.addTeam(builder, this.teamNumber);
     SubmitDataScouting.addMatch(builder, this.matchNumber);
@@ -103,16 +108,15 @@ export class EntryComponent {
     SubmitDataScouting.addUpperGoalTele(builder, this.teleUpperShotsMade);
     SubmitDataScouting.addLowerGoalTele(builder, this.teleLowerShotsMade);
     SubmitDataScouting.addDefenseRating(builder, this.defensePlayedScore);
+    SubmitDataScouting.addDefenseReceivedRating(builder, this.defensePlayedOnScore);
     SubmitDataScouting.addAutoBall1(builder, this.ball1);
     SubmitDataScouting.addAutoBall2(builder, this.ball2);
     SubmitDataScouting.addAutoBall3(builder, this.ball3);
     SubmitDataScouting.addAutoBall4(builder, this.ball4);
     SubmitDataScouting.addAutoBall5(builder, this.ball5);
     SubmitDataScouting.addStartingQuadrant(builder, this.quadrant);
-
-    // TODO(phil): Add support for defensePlayedOnScore.
-    // TODO(phil): Fix the Climbing score.
-    SubmitDataScouting.addClimbing(builder, 1);
+    SubmitDataScouting.addClimbLevel(builder, this.level);
+    SubmitDataScouting.addComment(builder, comment);
     builder.finish(SubmitDataScouting.endSubmitDataScouting(builder));
 
     const buffer = builder.asUint8Array();

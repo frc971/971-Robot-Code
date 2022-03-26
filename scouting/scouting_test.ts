@@ -65,6 +65,23 @@ function setTextboxByIdTo(id: string, value: string) {
       protractor.Key.CONTROL, 'a', protractor.Key.NULL, value);
 }
 
+// Moves the nth slider left or right. A positive "adjustBy" value moves the
+// slider to the right. A negative value moves the slider to the left.
+//
+//   negative/left <--- 0 ---> positive/right
+async function adjustNthSliderBy(n: number, adjustBy: number) {
+  const slider = element.all(by.css('input[type=range]')).get(n);
+  const key =
+      adjustBy > 0 ? protractor.Key.ARROW_RIGHT : protractor.Key.ARROW_LEFT;
+  for (let i = 0; i < Math.abs(adjustBy); i++) {
+    await slider.sendKeys(key);
+  }
+}
+
+function getNthMatchLabel(n: number) {
+  return element.all(by.css('.badge')).get(n).getText();
+}
+
 describe('The scouting web page', () => {
   beforeAll(async () => {
     await browser.get(browser.baseUrl);
@@ -84,6 +101,19 @@ describe('The scouting web page', () => {
     await browser.wait(EC.textToBePresentInElement(
         element(by.css('.progress_message')),
         'Successfully imported match list.'));
+  });
+
+  it('should: show matches in chronological order.', async () => {
+    await loadPage();
+
+    expect(await getNthMatchLabel(0)).toEqual('Quals 1');
+    expect(await getNthMatchLabel(1)).toEqual('Quals 2');
+    expect(await getNthMatchLabel(2)).toEqual('Quals 3');
+    expect(await getNthMatchLabel(9)).toEqual('Quals 10');
+    // TODO(phil): Validate quarter finals and friends. Right now we don't
+    // distinguish between "sets". I.e. we display 4 "Quarter Final 1" matches
+    // without being able to distinguish between them.
+    expect(await getNthMatchLabel(87)).toEqual('Final 1');
   });
 
   it('should: error on unknown match.', async () => {
@@ -107,6 +137,40 @@ describe('The scouting web page', () => {
         .toContain('Failed to find team 971 in match 3 in the schedule.');
   });
 
+  // Make sure that each page on the Entry tab has both "Next" and "Back"
+  // buttons. The only screens exempted from this are the first page and the
+  // last page.
+  it('should: have forwards and backwards buttons.', async () => {
+    await loadPage();
+
+    await element(by.cssContainingText('.nav-link', 'Data Entry')).click();
+
+    const expectedOrder = [
+      'Team Selection',
+      'Auto',
+      'TeleOp',
+      'Climb',
+      'Other',
+      'Review and Submit',
+    ];
+
+    // Go forward through the screens.
+    for (let i = 0; i < expectedOrder.length; i++) {
+      expect(await getHeadingText()).toEqual(expectedOrder[i]);
+      if (i != expectedOrder.length - 1) {
+        await element(by.buttonText('Next')).click();
+      }
+    }
+
+    // Go backwards through the screens.
+    for (let i = 0; i < expectedOrder.length; i++) {
+      expect(await getHeadingText())
+          .toEqual(expectedOrder[expectedOrder.length - i - 1]);
+      if (i != expectedOrder.length - 1) {
+        await element(by.buttonText('Back')).click();
+      }
+    }
+  });
 
   it('should: review and submit correct data.', async () => {
     await loadPage();
@@ -128,9 +192,12 @@ describe('The scouting web page', () => {
 
     expect(await getHeadingText()).toEqual('Climb');
     await element(by.id('high')).click();
+    await setTextboxByIdTo('comment', 'A very useful comment here.');
     await element(by.buttonText('Next')).click();
 
     expect(await getHeadingText()).toEqual('Other');
+    await adjustNthSliderBy(0, 3);
+    await adjustNthSliderBy(1, 1);
     await element(by.id('no_show')).click();
     await element(by.id('mechanically_broke')).click();
     await element(by.buttonText('Next')).click();
@@ -155,10 +222,11 @@ describe('The scouting web page', () => {
 
     // Validate Climb.
     await expectReviewFieldToBe('Level', 'High');
+    await expectReviewFieldToBe('Comments', 'A very useful comment here.');
 
     // Validate Other.
-    await expectReviewFieldToBe('Defense Played On Rating', '0');
-    await expectReviewFieldToBe('Defense Played Rating', '0');
+    await expectReviewFieldToBe('Defense Played On Rating', '3');
+    await expectReviewFieldToBe('Defense Played Rating', '1');
     await expectReviewFieldToBe('No show', 'true');
     await expectReviewFieldToBe('Never moved', 'false');
     await expectReviewFieldToBe('Battery died', 'false');

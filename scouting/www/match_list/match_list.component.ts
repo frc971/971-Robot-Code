@@ -10,6 +10,8 @@ type TeamInMatch = {
   compLevel: string
 };
 
+const MATCH_TYPE_ORDERING = ['qm', 'ef', 'qf', 'sf', 'f'];
+
 @Component({
   selector: 'app-match-list',
   templateUrl: './match_list.ng.html',
@@ -83,17 +85,28 @@ export class MatchListComponent implements OnInit {
           RequestAllMatchesResponse.getRootAsRequestAllMatchesResponse(
               fbBuffer);
 
+      // Convert the flatbuffer list into an array. That's more useful.
       this.matchList = [];
       for (let i = 0; i < parsedResponse.matchListLength(); i++) {
         this.matchList.push(parsedResponse.matchList(i));
       }
+
+      // Sort the list so it is in chronological order.
       this.matchList.sort((a, b) => {
-        let aString = this.displayMatchNumber(a);
-        let bString = this.displayMatchNumber(b);
-        if (aString < bString) {
+        const aMatchTypeIndex = MATCH_TYPE_ORDERING.indexOf(a.compLevel());
+        const bMatchTypeIndex = MATCH_TYPE_ORDERING.indexOf(b.compLevel());
+        if (aMatchTypeIndex < bMatchTypeIndex) {
           return -1;
         }
-        if (aString > bString) {
+        if (aMatchTypeIndex > bMatchTypeIndex) {
+          return 1;
+        }
+        const aMatchNumber = a.matchNumber();
+        const bMatchNumber = b.matchNumber();
+        if (aMatchNumber < bMatchNumber) {
+          return -1;
+        }
+        if (aMatchNumber > bMatchNumber) {
           return 1;
         }
         return 0;

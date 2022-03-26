@@ -1,5 +1,18 @@
 namespace scouting.webserver.requests;
 
+// TODO(phil): Deduplicate with submit_data_scouting.
+// At the moment, our Go setup doesn't handle includes.
+enum ClimbLevel : byte {
+    NoAttempt = 0,
+    Failed,
+    // Tried for more than 10 seconds and failed.
+    FailedWithPlentyOfTime,
+    Low,
+    Medium,
+    High,
+    Transversal,
+}
+
 table Stats {
     team:int (id: 0);
     match:int (id: 1);
@@ -11,7 +24,11 @@ table Stats {
     upper_goal_tele:int (id:6);
     lower_goal_tele:int (id:7);
     defense_rating:int (id:8);
-    climbing:int (id:9);
+    defense_received_rating:int (id:18);
+
+    climbing:int (id:9, deprecated);
+    climb_level:ClimbLevel (id:17);
+
     collected_by:string (id:10);
 
     auto_ball_1:bool (id:11);
@@ -22,6 +39,8 @@ table Stats {
     // The quadrant that the robot starts in for autonomous mode.
     // Valid values are 1 through 4.
     starting_quadrant: int (id:16);
+
+    comment:string (id:19);
 }
 
 table RequestDataScoutingResponse {
