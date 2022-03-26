@@ -64,6 +64,12 @@ buildifier() {
     ./tools/lint/buildifier
 }
 
+prettier() {
+    # TODO(phil): Uncomment this and delete the "true" statement.
+    #./tools/lint/prettier
+    true
+}
+
 git_status_is_clean() {
     cd "${BUILD_WORKSPACE_DIRECTORY}"
     if ! git diff --quiet; then
@@ -81,6 +87,7 @@ readonly -a LINTERS=(
     tweak_gazelle_go_deps
     clean_up_go_mirrors
     buildifier
+    prettier
     git_status_is_clean  # This must the last linter.
 )
 

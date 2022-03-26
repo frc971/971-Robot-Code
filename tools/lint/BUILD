@@ -24,6 +24,18 @@ sh_binary(
 )
 
 sh_binary(
+    name = "prettier",
+    srcs = ["prettier.sh"],
+    data = [
+        "@npm//prettier/bin:prettier",
+    ],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
+    deps = [
+        "@bazel_tools//tools/bash/runfiles",
+    ],
+)
+
+sh_binary(
     name = "run-ci",
     srcs = [
         "run-ci.sh",
@@ -31,6 +43,7 @@ sh_binary(
     data = [
         ":buildifier",
         ":gofmt",
+        ":prettier",
         "//:gazelle-runner",
         "//tools/go:mirror_go_repos",
         "//tools/go:tweak_gazelle_go_deps",
