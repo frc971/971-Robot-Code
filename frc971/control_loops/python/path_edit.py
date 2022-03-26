@@ -496,19 +496,16 @@ class FieldWidget(Gtk.DrawingArea):
         elif self.zoom_transform.xx >= 16:
             scale = min(scale, 1)
 
+        # undo the scaled translation that the old zoom transform did
+        x, y = self.invert(self.zoom_transform).transform_point(event.x, event.y)
+
         # move the origin to point
-        self.zoom_transform.translate(event.x, event.y)
+        self.zoom_transform.translate(x, y)
 
         # scale from new origin
         self.zoom_transform.scale(scale, scale)
 
         # move back
-        self.zoom_transform.translate(-event.x, -event.y)
-
-        # snap to the edge when near 1x scaling
-        if 0.99 < self.zoom_transform.xx < 1.01 and -50 < self.zoom_transform.x0 < 50:
-            self.zoom_transform.x0 = 0
-            self.zoom_transform.y0 = 0
-            print("snap")
+        self.zoom_transform.translate(-x, -y)
 
         self.queue_draw()
