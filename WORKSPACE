@@ -1151,3 +1151,8 @@ exports_files(
     sha256 = "df4ea5194c80df8d1f5f6ed68b47ce9dbf78aa8cdebbc61cf00654d9075f8e3c",
     urls = ["https://www.frc971.org/Build-Dependencies/libtinfo5_arm64.tar.gz"],
 )
+
+local_repository(
+    name = "com_github_nlohmann_json",
+    path = "third_party/com_github_nlohmann_json",
+)
