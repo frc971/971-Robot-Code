@@ -9,3 +9,16 @@
 .blue {
   background-color: #0d6efd;
 }
+
+.match-row {
+  display: flex;
+  padding: 0;
+}
+
+.match-item {
+  color: white;
+  flex: 1;
+  padding: 0;
+  /* minimum touch target size */
+  height: 44px;
+}

@@ -3,25 +3,20 @@
 </div>
 
 <div class="container-fluid">
-
-  <div class="row">
-
-    <div *ngFor="let match of matchList; index as i">
-      <span class="badge bg-secondary rounded-left">{{ displayMatchNumber(match) }}</span>
-      <div class="list-group list-group-horizontal-sm">
-        <button
+  <div class="row" *ngFor="let match of matchList; index as i">
+    <span class="badge bg-secondary rounded-left">{{ displayMatchNumber(match) }}</span>
+    <div class="match-row">
+      <button
           *ngFor="let team of teamsInMatch(match);"
           (click)="setTeamInMatch({
-            teamNumber: team.number,
+            teamNumber: team.teamNumber,
             matchNumber: match.matchNumber(),
             compLevel: match.compLevel()
-          })"
-          class="text-center text-white fw-bold
-            list-group-item list-group-item-action"
+            })"
+          class="match-item"
           [ngClass]="team.color">
-          {{ team.number }}
-        </button>
-      </div>
+        {{ team.teamNumber }}
+      </button>
     </div>
   </div>
 
