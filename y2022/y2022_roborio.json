@@ -317,6 +317,21 @@
       "num_senders": 2
     },
     {
+      "name": "/superstructure",
+      "type": "y2022.vision.BallColor",
+      "source_node": "logger",
+      "frequency": 200,
+      "num_senders": 2,
+      "max_size": 72,
+      "destination_nodes": [
+        {
+          "name": "roborio",
+          "priority": 2,
+          "time_to_live": 500000000
+        }
+      ]
+    },
+    {
       "name": "/drivetrain",
       "type": "frc971.sensors.GyroReading",
       "source_node": "roborio",
