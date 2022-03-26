@@ -266,6 +266,7 @@ llvm_toolchain(
     },
     toolchain_roots = {
         "linux-x86_64": "@llvm_k8//",
+        "linux-aarch64": "@llvm_aarch64//",
     },
 )
 
