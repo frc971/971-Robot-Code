@@ -257,11 +257,12 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       }
       // When IDLE with no specific intake button pressed, allow the goal
       // message to override the intaking stuff.
-      if (have_active_intake_request || turret_goal == nullptr) {
+      if (have_active_intake_request || (turret_goal == nullptr)) {
         turret_goal = &turret_loading_goal_buffer.message();
       }
 
       if (!front_intake_has_ball_ && !back_intake_has_ball_) {
+        last_shot_angle_ = std::nullopt;
         break;
       }
 
@@ -330,6 +331,13 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
     }
     case SuperstructureState::LOADED: {
       if (unsafe_goal != nullptr) {
+        if (turret_goal == nullptr) {
+          if (last_shot_angle_) {
+            turret_loading_goal_buffer.mutable_message()->mutate_unsafe_goal(
+                *last_shot_angle_);
+          }
+          turret_goal = &turret_loading_goal_buffer.message();
+        }
         if (unsafe_goal->cancel_shot()) {
           // Cancel the shot process
           state_ = SuperstructureState::IDLE;
@@ -345,6 +353,21 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       break;
     }
     case SuperstructureState::SHOOTING: {
+      if (turret_goal == nullptr) {
+        if (last_shot_angle_) {
+          turret_loading_goal_buffer.mutable_message()->mutate_unsafe_goal(
+              *last_shot_angle_);
+        }
+        turret_goal = &turret_loading_goal_buffer.message();
+        last_shot_angle_ = turret_goal->unsafe_goal();
+      } else {
+        last_shot_angle_ = std::nullopt;
+      }
+      const bool turret_near_goal =
+          turret_goal != nullptr &&
+          std::abs(turret_goal->unsafe_goal() - turret_.position()) <
+              kTurretGoalThreshold;
+
       // Don't open the flippers until the turret's ready: give them as little
       // time to get bumped as possible.
       if (!turret_near_goal || collided) {
