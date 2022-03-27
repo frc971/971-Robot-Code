@@ -15,9 +15,9 @@ CatapultParams = angular_system.AngularSystemParams
 class Catapult(angular_system.AngularSystem):
     def __init__(self, params, name="Catapult"):
         super(Catapult, self).__init__(params, name)
-        # Signal that we have a single cycle output delay to compensate for in
+        # Signal that we have a 2 cycle output delay to compensate for in
         # our observer.
-        self.delayed_u = True
+        self.delayed_u = 2
 
         self.InitializeState()
 
@@ -25,9 +25,9 @@ class Catapult(angular_system.AngularSystem):
 class IntegralCatapult(angular_system.IntegralAngularSystem):
     def __init__(self, params, name="IntegralCatapult"):
         super(IntegralCatapult, self).__init__(params, name=name)
-        # Signal that we have a single cycle output delay to compensate for in
+        # Signal that we have a 2 cycle output delay to compensate for in
         # our observer.
-        self.delayed_u = True
+        self.delayed_u = 2
 
         self.InitializeState()
 

@@ -12,6 +12,7 @@
 
 #if defined(__linux__)
 #include "aos/logging/logging.h"
+#include "glog/logging.h"
 #endif
 #include "aos/macros.h"
 
@@ -49,7 +50,7 @@ struct StateFeedbackPlantCoefficients final {
       const Eigen::Matrix<Scalar, number_of_outputs, number_of_inputs> &D,
       const Eigen::Matrix<Scalar, number_of_inputs, 1> &U_max,
       const Eigen::Matrix<Scalar, number_of_inputs, 1> &U_min,
-      const std::chrono::nanoseconds dt, bool delayed_u)
+      const std::chrono::nanoseconds dt, size_t delayed_u)
       : A(A),
         B(B),
         C(C),
@@ -71,7 +72,7 @@ struct StateFeedbackPlantCoefficients final {
   // useful for modeling a control loop cycle where you sample, compute, and
   // then queue the outputs to be ready to be executed when the next cycle
   // happens.
-  const bool delayed_u;
+  const size_t delayed_u;
 };
 
 template <int number_of_states, int number_of_inputs, int number_of_outputs,
@@ -85,6 +86,16 @@ class StateFeedbackPlant {
           number_of_states, number_of_inputs, number_of_outputs, Scalar>>>
           &&coefficients)
       : coefficients_(::std::move(coefficients)), index_(0) {
+    if (coefficients_.size() > 1u) {
+      for (size_t i = 1; i < coefficients_.size(); ++i) {
+        if (coefficients_[i]->delayed_u != coefficients_[0]->delayed_u) {
+          abort();
+        }
+      }
+    }
+    last_U_ = Eigen::Matrix<Scalar, number_of_inputs, Eigen::Dynamic>(
+        number_of_inputs,
+        std::max(static_cast<size_t>(1u), coefficients_[0]->delayed_u));
     Reset();
   }
 
@@ -175,15 +186,27 @@ class StateFeedbackPlant {
     }
   }
 
+  const Eigen::Matrix<Scalar, number_of_inputs, 1> last_U(
+      size_t index = 0) const {
+    return last_U_.template block<number_of_inputs, 1>(0, index);
+  }
+
   // Computes the new X and Y given the control input.
   void Update(const Eigen::Matrix<Scalar, number_of_inputs, 1> &U) {
     // Powers outside of the range are more likely controller bugs than things
     // that the plant should deal with.
     CheckU(U);
-    if (coefficients().delayed_u) {
-      X_ = Update(X(), last_U_);
-      UpdateY(last_U_);
-      last_U_ = U;
+    if (coefficients().delayed_u > 0) {
+#if defined(__linux__)
+      DCHECK_EQ(static_cast<ssize_t>(coefficients().delayed_u), last_U_.cols());
+#endif
+      X_ = Update(X(), last_U(coefficients().delayed_u - 1));
+      UpdateY(last_U(coefficients().delayed_u - 1));
+      for (int i = coefficients().delayed_u; i > 1; --i) {
+        last_U_.template block<number_of_inputs, 1>(0, i - 1) =
+            last_U_.template block<number_of_inputs, 1>(0, i - 2);
+      }
+      last_U_.template block<number_of_inputs, 1>(0, 0) = U;
     } else {
       X_ = Update(X(), U);
       UpdateY(U);
@@ -210,7 +233,7 @@ class StateFeedbackPlant {
  private:
   Eigen::Matrix<Scalar, number_of_states, 1> X_;
   Eigen::Matrix<Scalar, number_of_outputs, 1> Y_;
-  Eigen::Matrix<Scalar, number_of_inputs, 1> last_U_;
+  Eigen::Matrix<Scalar, number_of_inputs, Eigen::Dynamic> last_U_;
 
   ::std::vector<::std::unique_ptr<StateFeedbackPlantCoefficients<
       number_of_states, number_of_inputs, number_of_outputs, Scalar>>>
@@ -310,14 +333,14 @@ struct StateFeedbackObserverCoefficients final {
   // useful for modeling a control loop cycle where you sample, compute, and
   // then queue the outputs to be ready to be executed when the next cycle
   // happens.
-  const bool delayed_u;
+  const size_t delayed_u;
 
   StateFeedbackObserverCoefficients(
       const Eigen::Matrix<Scalar, number_of_states, number_of_outputs>
           &KalmanGain,
       const Eigen::Matrix<Scalar, number_of_states, number_of_states> &Q,
       const Eigen::Matrix<Scalar, number_of_outputs, number_of_outputs> &R,
-      bool delayed_u)
+      size_t delayed_u)
       : KalmanGain(KalmanGain), Q(Q), R(R), delayed_u(delayed_u) {}
 };
 
@@ -331,7 +354,10 @@ class StateFeedbackObserver {
       ::std::vector<::std::unique_ptr<StateFeedbackObserverCoefficients<
           number_of_states, number_of_inputs, number_of_outputs, Scalar>>>
           &&observers)
-      : coefficients_(::std::move(observers)) {}
+      : coefficients_(::std::move(observers)) {
+    last_U_ = Eigen::Matrix<Scalar, number_of_inputs, Eigen::Dynamic>(
+        number_of_inputs, std::max(static_cast<size_t>(1u), coefficients().delayed_u));
+  }
 
   StateFeedbackObserver(StateFeedbackObserver &&other)
       : X_hat_(other.X_hat_), last_U_(other.last_U_), index_(other.index_) {
@@ -349,8 +375,9 @@ class StateFeedbackObserver {
   }
   Eigen::Matrix<Scalar, number_of_states, 1> &mutable_X_hat() { return X_hat_; }
 
-  const Eigen::Matrix<Scalar, number_of_inputs, 1> &last_U() const {
-    return last_U_;
+  const Eigen::Matrix<Scalar, number_of_inputs, 1> last_U(
+      size_t index = 0) const {
+    return last_U_.template block<number_of_inputs, 1>(0, index);
   }
 
   void Reset(StateFeedbackPlant<number_of_states, number_of_inputs,
@@ -363,9 +390,14 @@ class StateFeedbackObserver {
                                   number_of_outputs, Scalar> *plant,
                const Eigen::Matrix<Scalar, number_of_inputs, 1> &new_u,
                ::std::chrono::nanoseconds /*dt*/) {
-    if (plant->coefficients().delayed_u) {
-      mutable_X_hat() = plant->Update(X_hat(), last_U_);
-      last_U_ = new_u;
+    if (plant->coefficients().delayed_u > 0) {
+      mutable_X_hat() =
+          plant->Update(X_hat(), last_U(coefficients().delayed_u - 1));
+      for (int i = coefficients().delayed_u; i > 1; --i) {
+        last_U_.template block<number_of_inputs, 1>(0, i - 1) =
+            last_U_.template block<number_of_inputs, 1>(0, i - 2);
+      }
+      last_U_.template block<number_of_inputs, 1>(0, 0) = new_u;
     } else {
       mutable_X_hat() = plant->Update(X_hat(), new_u);
     }
@@ -406,7 +438,7 @@ class StateFeedbackObserver {
  private:
   // Internal state estimate.
   Eigen::Matrix<Scalar, number_of_states, 1> X_hat_;
-  Eigen::Matrix<Scalar, number_of_inputs, 1> last_U_;
+  Eigen::Matrix<Scalar, number_of_inputs, Eigen::Dynamic> last_U_;
 
   int index_ = 0;
   ::std::vector<::std::unique_ptr<StateFeedbackObserverCoefficients<

@@ -266,7 +266,7 @@ class ControlLoop(object):
             name: string, The name of the loop to use when writing the C++ files.
         """
         self._name = name
-        self.delayed_u = False
+        self.delayed_u = 0
 
     @property
     def name(self):
@@ -291,7 +291,7 @@ class ControlLoop(object):
         self.X = numpy.matrix(numpy.zeros((self.A.shape[0], 1)))
         self.Y = self.C * self.X
         self.X_hat = numpy.matrix(numpy.zeros((self.A.shape[0], 1)))
-        self.last_U = numpy.matrix(numpy.zeros((self.B.shape[1], 1)))
+        self.last_U = numpy.matrix(numpy.zeros((self.B.shape[1], max(1, self.delayed_u))))
 
     def PlaceControllerPoles(self, poles):
         """Places the controller poles.
@@ -314,19 +314,21 @@ class ControlLoop(object):
     def Update(self, U):
         """Simulates one time step with the provided U."""
         #U = numpy.clip(U, self.U_min, self.U_max)
-        if self.delayed_u:
-            self.X = self.A * self.X + self.B * self.last_U
-            self.Y = self.C * self.X + self.D * self.last_U
-            self.last_U = U.copy()
+        if self.delayed_u > 0:
+            self.X = self.A * self.X + self.B * self.last_U[:, -1]
+            self.Y = self.C * self.X + self.D * self.last_U[:, -1]
+            self.last_U[:, 1:] = self.last_U[:, 0:-1]
+            self.last_U[:, 0] = U.copy()
         else:
             self.X = self.A * self.X + self.B * U
             self.Y = self.C * self.X + self.D * U
 
     def PredictObserver(self, U):
         """Runs the predict step of the observer update."""
-        if self.delayed_u:
-            self.X_hat = (self.A * self.X_hat + self.B * self.last_U)
-            self.last_U = U.copy()
+        if self.delayed_u > 0:
+            self.X_hat = (self.A * self.X_hat + self.B * self.last_U[:, -1])
+            self.last_U[:, 1:] = self.last_U[:, 0:-1]
+            self.last_U[:, 0] = U.copy()
         else:
             self.X_hat = (self.A * self.X_hat + self.B * U)
 
@@ -336,9 +338,9 @@ class ControlLoop(object):
             KalmanGain = self.KalmanGain
         else:
             KalmanGain = numpy.linalg.inv(self.A) * self.L
-        if self.delayed_u:
+        if self.delayed_u > 0:
             self.X_hat += KalmanGain * (self.Y - self.C * self.X_hat -
-                                        self.D * self.last_U)
+                                        self.D * self.last_U[:, -1])
         else:
             self.X_hat += KalmanGain * (self.Y - self.C * self.X_hat -
                                         self.D * U)
@@ -396,7 +398,7 @@ class ControlLoop(object):
         ans.append(self._DumpMatrix('U_max', self.U_max, scalar_type))
         ans.append(self._DumpMatrix('U_min', self.U_min, scalar_type))
 
-        delayed_u_string = "true" if self.delayed_u else "false"
+        delayed_u_string = str(self.delayed_u)
         if plant_coefficient_type.startswith('StateFeedbackPlant'):
             ans.append(self._DumpMatrix('A', self.A, scalar_type))
             ans.append(self._DumpMatrix('B', self.B, scalar_type))
@@ -492,7 +494,7 @@ class ControlLoop(object):
             '%s %s {\n' % (observer_coefficient_type, self.ObserverFunction())
         ]
 
-        delayed_u_string = "true" if self.delayed_u else "false"
+        delayed_u_string = str(self.delayed_u)
         if observer_coefficient_type.startswith('StateFeedbackObserver'):
             if hasattr(self, 'KalmanGain'):
                 KalmanGain = self.KalmanGain
@@ -540,9 +542,10 @@ class HybridControlLoop(ControlLoop):
 
     def PredictHybridObserver(self, U, dt):
         self.Discretize(dt)
-        if self.delayed_u:
-            self.X_hat = self.A * self.X_hat + self.B * self.last_U
-            self.last_U = U.copy()
+        if self.delayed_u > 0:
+            self.X_hat = self.A * self.X_hat + self.B * self.last_U[:, -1]
+            self.last_U[:, 1:] = self.last_U[:, 0:-1]
+            self.last_U[:, 0] = U.copy()
         else:
             self.X_hat = self.A * self.X_hat + self.B * U
 
