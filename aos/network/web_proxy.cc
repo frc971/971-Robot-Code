@@ -377,6 +377,7 @@ void Subscriber::SkipToLastMessage(ChannelInformation *channel) {
     return;
   }
   channel->current_queue_index = message_buffer_.back().index;
+  channel->reported_queue_index = message_buffer_.back().index;
   channel->next_packet_number = 0;
 }
 
