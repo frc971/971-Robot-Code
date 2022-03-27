@@ -328,9 +328,11 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
         values_(std::make_shared<constants::Values>(constants::MakeValues(
             frc971::control_loops::testing::kTeamNumber))),
         roborio_(aos::configuration::GetNode(configuration(), "roborio")),
+        logger_pi_(aos::configuration::GetNode(configuration(), "logger")),
         superstructure_event_loop(MakeEventLoop("Superstructure", roborio_)),
         superstructure_(superstructure_event_loop.get(), values_),
         test_event_loop_(MakeEventLoop("test", roborio_)),
+        ball_color_event_loop_(MakeEventLoop("ball color test", logger_pi_)),
         superstructure_goal_fetcher_(
             test_event_loop_->MakeFetcher<Goal>("/superstructure")),
         superstructure_goal_sender_(
@@ -345,6 +347,9 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
             test_event_loop_->MakeSender<Position>("/superstructure")),
         drivetrain_status_sender_(
             test_event_loop_->MakeSender<DrivetrainStatus>("/drivetrain")),
+        ball_color_sender_(
+            ball_color_event_loop_->MakeSender<y2022::vision::BallColor>(
+                "/superstructure")),
         superstructure_plant_event_loop_(MakeEventLoop("plant", roborio_)),
         superstructure_plant_(superstructure_plant_event_loop_.get(), values_,
                               dt()) {
@@ -476,10 +481,12 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
   std::shared_ptr<const constants::Values> values_;
 
   const aos::Node *const roborio_;
+  const aos::Node *const logger_pi_;
 
   ::std::unique_ptr<::aos::EventLoop> superstructure_event_loop;
   ::y2022::control_loops::superstructure::Superstructure superstructure_;
   ::std::unique_ptr<::aos::EventLoop> test_event_loop_;
+  ::std::unique_ptr<aos::EventLoop> ball_color_event_loop_;
   ::aos::PhasedLoopHandler *phased_loop_handle_ = nullptr;
 
   ::aos::Fetcher<Goal> superstructure_goal_fetcher_;
@@ -489,6 +496,7 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
   ::aos::Fetcher<Position> superstructure_position_fetcher_;
   ::aos::Sender<Position> superstructure_position_sender_;
   ::aos::Sender<DrivetrainStatus> drivetrain_status_sender_;
+  ::aos::Sender<y2022::vision::BallColor> ball_color_sender_;
 
   ::std::unique_ptr<::aos::EventLoop> superstructure_plant_event_loop_;
   SuperstructureSimulation superstructure_plant_;
@@ -1283,6 +1291,80 @@ TEST_F(SuperstructureTest, InterpolationTableTest) {
             shot_params.shot_velocity);
   EXPECT_EQ(superstructure_status_fetcher_->shot_position(),
             shot_params.shot_angle);
+}
+
+// Tests that balls get discarded when they are the wrong color.
+TEST_F(SuperstructureTest, BallDiscarding) {
+  set_alliance(aos::Alliance::kInvalid);
+  SetEnabled(true);
+  WaitUntilZeroed();
+
+  // Set ourselves up 5m from the target--the turret goal should be 90 deg (we
+  // need to shoot out the right of the robot, and we shoot out of the back of
+  // the turret).
+  SendDrivetrainStatus(0.0, {0.0, 5.0}, 0.0);
+
+  RunFor(chrono::milliseconds(500));
+  set_alliance(aos::Alliance::kBlue);
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_auto_aim(true);
+    goal_builder.add_preloaded(true);
+    goal_builder.add_turret_intake(RequestedIntake::kFront);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  // Give it time to stabilize.
+  RunFor(chrono::seconds(2));
+
+  superstructure_status_fetcher_.Fetch();
+  EXPECT_NEAR(M_PI_2, superstructure_status_fetcher_->turret()->position(),
+              5e-4);
+
+  {
+    auto builder = ball_color_sender_.MakeBuilder();
+
+    y2022::vision::BallColor::Builder ball_color_builder =
+        builder.MakeBuilder<y2022::vision::BallColor>();
+
+    ball_color_builder.add_ball_color(aos::Alliance::kBlue);
+
+    ASSERT_EQ(builder.Send(ball_color_builder.Finish()),
+              aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::milliseconds(100));
+  superstructure_status_fetcher_.Fetch();
+  EXPECT_EQ(superstructure_status_fetcher_->state(),
+            SuperstructureState::LOADED);
+
+  {
+    auto builder = ball_color_sender_.MakeBuilder();
+
+    y2022::vision::BallColor::Builder ball_color_builder =
+        builder.MakeBuilder<y2022::vision::BallColor>();
+
+    ball_color_builder.add_ball_color(aos::Alliance::kRed);
+
+    ASSERT_EQ(builder.Send(ball_color_builder.Finish()),
+              aos::RawSender::Error::kOk);
+  }
+
+  RunFor(dt());
+
+  superstructure_status_fetcher_.Fetch();
+  EXPECT_EQ(superstructure_status_fetcher_->state(),
+            SuperstructureState::SHOOTING);
+
+  RunFor(chrono::milliseconds(2000));
+  superstructure_status_fetcher_.Fetch();
+  EXPECT_NEAR(constants::Values::kTurretFrontIntakePos(),
+              superstructure_status_fetcher_->turret()->position(), 5e-4);
 }
 
 }  // namespace testing

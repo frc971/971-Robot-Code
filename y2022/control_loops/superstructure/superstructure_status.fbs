@@ -59,6 +59,9 @@ table Status {
   ready_to_fire:bool (id: 20);
   // Whether the robot is moving too fast to shoot
   moving_too_fast:bool (id: 21);
+  // True if the robot has detected that it is holding
+  // the wrong color ball and is now discarding it.
+  discarding_ball:bool (id: 22);
   // Whether the catapult was told to fire,
   // meaning that the turret and flippers are ready for firing
   // and we were asked to fire. Different from fire flag in goal.

@@ -13,6 +13,7 @@
 #include "y2022/control_loops/superstructure/superstructure_position_generated.h"
 #include "y2022/control_loops/superstructure/superstructure_status_generated.h"
 #include "y2022/control_loops/superstructure/turret/aiming.h"
+#include "y2022/vision/ball_color_generated.h"
 
 namespace y2022 {
 namespace control_loops {
@@ -35,6 +36,8 @@ class Superstructure
   static constexpr double kCatapultGoalThreshold = 0.05;
   // potentiometer will be more noisy
   static constexpr double kFlipperGoalThreshold = 0.05;
+  static constexpr double kDiscardingPosition = 0.35;
+  static constexpr double kDiscardingVelocity = 6.0;
 
   explicit Superstructure(::aos::EventLoop *event_loop,
                           std::shared_ptr<const constants::Values> values,
@@ -72,6 +75,8 @@ class Superstructure
   aos::Fetcher<frc971::control_loops::drivetrain::Status>
       drivetrain_status_fetcher_;
   aos::Fetcher<CANPosition> can_position_fetcher_;
+  aos::Fetcher<aos::JoystickState> joystick_state_fetcher_;
+  aos::Fetcher<y2022::vision::BallColor> ball_color_fetcher_;
 
   int prev_shot_count_ = 0;
 
@@ -80,6 +85,9 @@ class Superstructure
   bool flippers_open_ = false;
   bool reseating_in_catapult_ = false;
   bool fire_ = false;
+  bool discarding_ball_ = false;
+  aos::Alliance alliance_ = aos::Alliance::kInvalid;
+  aos::Alliance ball_color_ = aos::Alliance::kInvalid;
 
   aos::monotonic_clock::time_point front_intake_beambreak_timer_ =
       aos::monotonic_clock::min_time;
