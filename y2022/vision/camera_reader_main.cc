@@ -5,10 +5,14 @@
 // config used to allow running camera_reader independently.  E.g.,
 // bazel run //y2022/vision:camera_reader -- --config y2022/aos_config.json
 //   --override_hostname pi-7971-1  --ignore_timestamps true
+DECLARE_bool(use_outdoors);
 DEFINE_string(config, "aos_config.json", "Path to the config file to use.");
 DEFINE_double(duty_cycle, 0.6, "Duty cycle of the LEDs");
 DEFINE_uint32(exposure, 5,
               "Exposure time, in 100us increments; 0 implies auto exposure");
+DEFINE_uint32(outdoors_exposure, 2,
+              "Exposure time when using --use_outdoors, in 100us increments; 0 "
+              "implies auto exposure");
 
 namespace y2022 {
 namespace vision {
@@ -35,8 +39,10 @@ void CameraReaderMain() {
   }
 
   V4L2Reader v4l2_reader(&event_loop, "/dev/video0");
-  if (FLAGS_exposure > 0) {
-    v4l2_reader.SetExposure(FLAGS_exposure);
+  const uint32_t exposure =
+      (FLAGS_use_outdoors ? FLAGS_outdoors_exposure : FLAGS_exposure);
+  if (exposure > 0) {
+    v4l2_reader.SetExposure(exposure);
   }
 
   CameraReader camera_reader(&event_loop, &calibration_data.message(),

@@ -11,15 +11,30 @@
 #include "opencv2/imgproc.hpp"
 #include "y2022/vision/geometry.h"
 
+DEFINE_bool(
+    use_outdoors, false,
+    "If set, use the color filters and exposure for an outdoor setting.");
 DEFINE_int32(red_delta, 50, "Required difference between green pixels vs. red");
 DEFINE_int32(blue_delta, -20,
              "Required difference between green pixels vs. blue");
+DEFINE_int32(outdoors_red_delta, 70,
+             "Required difference between green pixels vs. red when using "
+             "--use_outdoors");
+DEFINE_int32(outdoors_blue_delta, -10,
+             "Required difference between green pixels vs. blue when using "
+             "--use_outdoors");
 
 namespace y2022 {
 namespace vision {
 
 cv::Mat BlobDetector::ThresholdImage(cv::Mat bgr_image) {
   cv::Mat binarized_image(cv::Size(bgr_image.cols, bgr_image.rows), CV_8UC1);
+
+  const int red_delta =
+      (FLAGS_use_outdoors ? FLAGS_outdoors_red_delta : FLAGS_red_delta);
+  const int blue_delta =
+      (FLAGS_use_outdoors ? FLAGS_outdoors_blue_delta : FLAGS_blue_delta);
+
   for (int row = 0; row < bgr_image.rows; row++) {
     for (int col = 0; col < bgr_image.cols; col++) {
       cv::Vec3b pixel = bgr_image.at<cv::Vec3b>(row, col);
@@ -28,8 +43,7 @@ cv::Mat BlobDetector::ThresholdImage(cv::Mat bgr_image) {
       int red = pixel.val[2];
       // Simple filter that looks for green pixels sufficiently brigher than
       // red and blue
-      if ((green > blue + FLAGS_blue_delta) &&
-          (green > red + FLAGS_red_delta)) {
+      if ((green > blue + blue_delta) && (green > red + red_delta)) {
         binarized_image.at<uint8_t>(row, col) = 255;
       } else {
         binarized_image.at<uint8_t>(row, col) = 0;
