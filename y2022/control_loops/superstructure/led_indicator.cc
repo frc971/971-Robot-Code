@@ -36,7 +36,8 @@ namespace {
 bool DisconnectedPiServer(
     const aos::message_bridge::ServerStatistics &server_stats) {
   for (const auto *pi_server_status : *server_stats.connections()) {
-    if (pi_server_status->state() == aos::message_bridge::State::DISCONNECTED) {
+    if (pi_server_status->state() == aos::message_bridge::State::DISCONNECTED &&
+        pi_server_status->node()->name()->string_view() != "logger") {
       return true;
     }
   }
@@ -46,7 +47,8 @@ bool DisconnectedPiServer(
 bool DisconnectedPiClient(
     const aos::message_bridge::ClientStatistics &client_stats) {
   for (const auto *pi_client_status : *client_stats.connections()) {
-    if (pi_client_status->state() == aos::message_bridge::State::DISCONNECTED) {
+    if (pi_client_status->state() == aos::message_bridge::State::DISCONNECTED &&
+        pi_client_status->node()->name()->string_view() != "logger") {
       return true;
     }
   }
