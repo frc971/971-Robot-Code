@@ -41,9 +41,14 @@ const aos::starter::ApplicationStatus *FindApplicationStatus(
   return *search;
 }
 
-std::string_view FindApplication(const std::string_view &name,
+std::string_view FindApplication(const std::string_view name,
                                  const aos::Configuration *config) {
   std::string_view app_name = name;
+  for (const auto app : *config->applications()) {
+    if (app->name()->string_view() == name) {
+      return name;
+    }
+  }
   for (const auto app : *config->applications()) {
     if (app->has_executable_name() &&
         app->executable_name()->string_view() == name) {
