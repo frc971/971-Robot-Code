@@ -110,7 +110,8 @@ class ModelBasedLocalizer {
       const control_loops::drivetrain::DrivetrainConfig<double> &dt_config);
   void HandleImu(aos::monotonic_clock::time_point t,
                  const Eigen::Vector3d &gyro, const Eigen::Vector3d &accel,
-                 const Eigen::Vector2d encoders, const Eigen::Vector2d voltage);
+                 const std::optional<Eigen::Vector2d> encoders,
+                 const Eigen::Vector2d voltage);
   void HandleTurret(aos::monotonic_clock::time_point sample_time,
                     double turret_position, double turret_velocity);
   void HandleImageMatch(aos::monotonic_clock::time_point sample_time,
@@ -343,6 +344,14 @@ class EventLoopLocalizer {
   // t = pico_offset_ + pico_timestamp.
   // Note that this can drift over sufficiently long time periods!
   std::optional<std::chrono::nanoseconds> pico_offset_;
+
+  ImuFailuresT imu_fault_tracker_;
+  std::optional<size_t> first_valid_data_counter_;
+  size_t total_imu_messages_received_ = 0;
+  size_t data_counter_offset_ = 0;
+  int last_data_counter_ = 0;
+
+  Eigen::Vector3d last_gyro_ = Eigen::Vector3d::Zero();
 
   zeroing::UnwrapSensor left_encoder_;
   zeroing::UnwrapSensor right_encoder_;

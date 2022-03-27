@@ -59,6 +59,13 @@ int main(int argc, char **argv) {
   // open logfiles
   aos::logger::LogReader reader(logfiles, &config.message());
 
+  reader.RemapLoggedChannel("/localizer",
+                            "frc971.controls.LocalizerStatus");
+  reader.RemapLoggedChannel("/localizer",
+                            "frc971.controls.LocalizerOutput");
+  reader.RemapLoggedChannel("/localizer",
+                            "frc971.controls.LocalizerVisualization");
+
   auto factory =
       std::make_unique<aos::SimulatedEventLoopFactory>(reader.configuration());
 

@@ -784,7 +784,7 @@ TEST_F(EventLoopLocalizerTest, ImageCorrections) {
   event_loop_factory_.RunFor(std::chrono::seconds(4));
   CHECK(status_fetcher_.Fetch());
   ASSERT_TRUE(status_fetcher_->model_based()->using_model());
-  EXPECT_TRUE(VerifyEstimatorAccurate(1e-1));
+  EXPECT_TRUE(VerifyEstimatorAccurate(5e-1));
   ASSERT_TRUE(status_fetcher_->model_based()->has_statistics());
   ASSERT_LT(10,
             status_fetcher_->model_based()->statistics()->total_candidates());
@@ -832,7 +832,7 @@ TEST_F(EventLoopLocalizerTest, ImageCorrectionsTurretTooFast) {
   event_loop_factory_.RunFor(std::chrono::seconds(4));
   CHECK(status_fetcher_.Fetch());
   ASSERT_TRUE(status_fetcher_->model_based()->using_model());
-  EXPECT_TRUE(VerifyEstimatorAccurate(1e-1));
+  EXPECT_TRUE(VerifyEstimatorAccurate(5e-1));
   ASSERT_TRUE(status_fetcher_->model_based()->has_statistics());
   ASSERT_EQ(status_fetcher_->model_based()->statistics()->total_candidates(),
             rejected_count +
