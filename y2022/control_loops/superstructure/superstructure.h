@@ -94,6 +94,7 @@ class Superstructure
   SuperstructureState state_ = SuperstructureState::IDLE;
   bool front_intake_has_ball_ = false;
   bool back_intake_has_ball_ = false;
+  std::optional<double> last_shot_angle_ = std::nullopt;
   RequestedIntake turret_intake_state_ = RequestedIntake::kFront;
 
   DISALLOW_COPY_AND_ASSIGN(Superstructure);

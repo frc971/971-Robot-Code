@@ -55,7 +55,7 @@ const ButtonLocation kLocalizerReset(3, 8);
 const ButtonLocation kCatapultPos(4, 3);
 const ButtonLocation kFire(4, 1);
 const ButtonLocation kTurret(4, 15);
-const ButtonLocation kAutoAim(4, 2);
+const ButtonLocation kAutoAim(4, 16);
 
 const ButtonLocation kClimberExtend(4, 6);
 const ButtonLocation kClimberIntakes(4, 5);
@@ -173,7 +173,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     double roller_front_speed = 0.0;
     double roller_back_speed = 0.0;
 
-    std::optional<double> turret_pos = 0.0;
+    std::optional<double> turret_pos = std::nullopt;
 
     double climber_position = 0.01;
 
@@ -261,7 +261,6 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     if (data.IsPressed(kFire)) {
       fire = true;
       // Provide a default turret goal.
-      turret_pos = 0.0;
     }
 
     if (data.IsPressed(kClimberIntakes)) {
