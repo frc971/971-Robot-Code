@@ -207,6 +207,13 @@ PistolDrivetrainInputReader::GetWheelAndThrottle(
     high_gear_ = true;
   }
 
+  // Emprically, the current pistol grip tends towards steady-state errors at
+  // ~0.01-0.02 on both the wheel/throttle. Having the throttle correctly snap
+  // to zero is more important than the wheel for our internal logic, so force a
+  // deadband there.
+  constexpr double kThrottleDeadband = 0.05;
+  throttle = aos::Deadband(throttle, kThrottleDeadband, 1.0);
+
   return DrivetrainInputReader::WheelAndThrottle{
       wheel,     wheel_velocity,    wheel_torque,
       throttle,  throttle_velocity, throttle_torque,
