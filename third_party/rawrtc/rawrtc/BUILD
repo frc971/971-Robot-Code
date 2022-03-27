@@ -34,6 +34,7 @@ cc_library(
     includes = ["include/"],
     local_defines = [
         "RAWRTC_VERSION=\\\"0.5.1\\\"",
+        "RAWRTC_SKIP_DH_CHECK",
     ],
     visibility = ["//visibility:public"],
     deps = [
