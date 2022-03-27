@@ -41,7 +41,7 @@ M_cup = (1750 * 0.0254 * 0.04 * 2 * math.pi * (ball_diameter / 2.)**2.0)
 J_cup = M_cup * lever**2.0 + M_cup * (ball_diameter / 2.)**2.0
 
 
-J = (0.6 * J_ball + J_bar + J_cup * 0.0)
+J = (0.0 * J_ball + J_bar + J_cup * 0.0)
 JEmpty = (J_bar + J_cup * 0.0)
 
 kCatapultWithBall = catapult_lib.CatapultParams(
