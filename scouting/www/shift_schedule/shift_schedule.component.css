@@ -1,0 +1,17 @@
+* {
+  padding: 5px;
+}
+
+.badge {
+  height: 20px;
+}
+
+.red {
+  background-color: #dc3545;
+  border-radius: 5px;
+}
+
+.blue {
+  background-color: #0d6efd;
+  border-radius: 5px;
+}

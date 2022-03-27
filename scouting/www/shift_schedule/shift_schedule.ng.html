@@ -1,0 +1,33 @@
+<div class="header">
+  <h2>Shift Schedule</h2>
+</div>
+
+<div class="container-fluid">
+  <div class="row">
+    <div *ngFor="let num of numMatches">
+      <span class="badge bg-secondary rounded-left">
+        Scouting matches from {{num-19}} to {{num}}
+      </span>
+      <div class="list-group list-group-horizontal-sm">
+        <div class="redColumn">
+          <div *ngFor="let allianceNum of [1, 2, 3]">
+            <input
+              class="red text-center text-white fw-bold list-group-item list-group-item-action"
+              type="text"
+            />
+          </div>
+        </div>
+        <div class="blueColumn">
+          <div *ngFor="let allianceNum of [1, 2, 3]">
+            <input
+              class="blue text-center text-white fw-bold list-group-item list-group-item-action"
+              type="text"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <button class="btn btn-primary">Save</button>
+  <span class="error_message" role="alert">{{ errorMessage }}</span>
+</div>

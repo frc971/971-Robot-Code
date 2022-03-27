@@ -7,6 +7,7 @@ import {EntryModule} from './entry/entry.module';
 import {ImportMatchListModule} from './import_match_list/import_match_list.module';
 import {MatchListModule} from './match_list/match_list.module';
 import {NotesModule} from './notes/notes.module';
+import {ShiftScheduleModule} from './shift_schedule/shift_schedule.module';
 
 @NgModule({
   declarations: [App],
@@ -17,6 +18,7 @@ import {NotesModule} from './notes/notes.module';
     NotesModule,
     ImportMatchListModule,
     MatchListModule,
+    ShiftScheduleModule,
   ],
   exports: [App],
   bootstrap: [App],

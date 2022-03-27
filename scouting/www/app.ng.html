@@ -46,6 +46,15 @@
       Import Match List
     </a>
   </li>
+  <li class="nav-item">
+    <a
+      class="nav-link"
+      [class.active]="tabIs('ShiftSchedule')"
+      (click)="switchTabToGuarded('ShiftSchedule')"
+    >
+      Shift Schedule
+    </a>
+  </li>
 </ul>
 
 <ng-container [ngSwitch]="tab">
@@ -63,4 +72,5 @@
   <app-import-match-list
     *ngSwitchCase="'ImportMatchList'"
   ></app-import-match-list>
+  <shift-schedule *ngSwitchCase="'ShiftSchedule'"></shift-schedule>
 </ng-container>
