@@ -273,8 +273,13 @@ cc_binary(
         "//aos:init",
         "//aos/events:simulated_event_loop",
         "//aos/events/logging:log_reader",
+        "//frc971/control_loops:control_loops_fbs",
+        "//frc971/control_loops:profiled_subsystem_fbs",
+        "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
+        "//frc971/input:joystick_state_fbs",
         "//frc971/vision:vision_fbs",
         "//third_party:opencv",
+        "//y2022/control_loops/superstructure:superstructure_status_fbs",
     ],
 )
 

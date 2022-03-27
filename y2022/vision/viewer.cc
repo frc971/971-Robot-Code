@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <map>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/features2d.hpp>
@@ -29,6 +30,7 @@ DEFINE_uint64(skip, 0,
 DEFINE_bool(show_features, true, "Show the blobs.");
 DEFINE_bool(display_estimation, false,
             "If true, display the target estimation graphically");
+DEFINE_bool(sort_by_time, true, "If true, sort the images by time");
 
 namespace y2022 {
 namespace vision {
@@ -175,10 +177,35 @@ void ViewerMain() {
   event_loop.Run();
 }
 
-// TODO(milind): delete this when viewer can accumulate local images and results
+size_t FindImageTimestamp(std::string_view filename) {
+  // Find the first number in the string
+  const auto timestamp_start = std::find_if(
+      filename.begin(), filename.end(), [](char c) { return std::isdigit(c); });
+  CHECK_NE(timestamp_start, filename.end())
+      << "Expected a number in image filename, got " << filename;
+  const auto timestamp_end =
+      std::find_if_not(timestamp_start + 1, filename.end(),
+                       [](char c) { return std::isdigit(c); });
+
+  return static_cast<size_t>(
+      std::atoi(filename
+                    .substr(timestamp_start - filename.begin(),
+                            timestamp_end - timestamp_start)
+                    .data()));
+}
+
 void ViewerLocal() {
   std::vector<cv::String> file_list;
   cv::glob(FLAGS_png_dir + "/*.png", file_list, false);
+
+  // Sort the images by timestamp
+  if (FLAGS_sort_by_time) {
+    std::sort(file_list.begin(), file_list.end(),
+              [](std::string_view filename_1, std::string_view filename_2) {
+                return (FindImageTimestamp(filename_1) <
+                        FindImageTimestamp(filename_2));
+              });
+  }
 
   const aos::FlatbufferSpan<calibration::CalibrationData> calibration_data(
       CalibrationData());
@@ -244,8 +271,13 @@ void ViewerLocal() {
     cv::imshow("mask", blob_result.binarized_image);
     cv::imshow("blobs", ret_image);
 
-    int keystroke = cv::waitKey(0);
-    if ((keystroke & 0xFF) == static_cast<int>('q')) {
+    constexpr size_t kWaitKeyDelay = 0;  // ms
+    int keystroke = cv::waitKey(kWaitKeyDelay) & 0xFF;
+    // Ignore alt key
+    while (keystroke == 233) {
+      keystroke = cv::waitKey(kWaitKeyDelay);
+    }
+    if (keystroke == static_cast<int>('q')) {
       return;
     }
   }
