@@ -25,7 +25,7 @@ static enum rawrtc_code set_dh_parameters(
   // optimized); just YOLO it. Note that this could probably be moved to
   // somewhere where the cost could be incurred at startup instead of
   // on connection (or even cached at build-time).
-#ifndef AOS_ARCHITECTURE_arm_frc
+#if !defined(AOS_ARCHITECTURE_arm_frc) && !defined(RAWRTC_SKIP_DH_CHECK)
     int codes;
 
     // Check that the parameters are "likely enough to be valid"
