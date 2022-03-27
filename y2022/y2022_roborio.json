@@ -471,8 +471,8 @@
       ]
     },
     {
-      "name": "message_bridge_client",
-      "executable_name": "message_bridge_client",
+      "name": "roborio_message_bridge_client",
+      "executable_name": "message_bridge_client.sh",
       "args": ["--rt_priority=16"],
       "nodes": [
         "roborio"
