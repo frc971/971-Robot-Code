@@ -17,6 +17,8 @@ chmod a+x /root/bin/enable_imu.sh
 chown -R pi.pi /home/pi/.ssh
 chown -R pi.pi /home/pi/bin
 
+echo 'deb [trusted=yes] https://software.frc971.org/Build-Dependencies/gstreamer_bullseye_arm64_deps ./' >> /etc/apt/sources.list
+
 apt-get update
 
 apt-get install -y vim-nox \
@@ -43,9 +45,17 @@ apt-get install -y vim-nox \
   libnice10 \
   pmount \
   libnice-dev \
-  feh
+  feh \
+  libgstreamer1.0-0 \
+  libgstreamer-plugins-base1.0-0 \
+  libgstreamer-plugins-bad1.0-0 \
+  gstreamer1.0-plugins-base \
+  gstreamer1.0-plugins-good \
+  gstreamer1.0-plugins-bad \
+  gstreamer1.0-plugins-ugly \
+  gstreamer1.0-nice
 
-dpkg -i /tmp/wiringpi-2.70-1.deb
+PATH=$PATH:/sbin dpkg -i /tmp/wiringpi-2.70-1.deb
 
 echo 'GOVERNOR="performance"' > /etc/default/cpufrequtils
 
