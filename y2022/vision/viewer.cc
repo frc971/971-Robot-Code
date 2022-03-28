@@ -6,6 +6,7 @@
 #include <opencv2/imgproc.hpp>
 #include <random>
 
+#include "absl/strings/str_format.h"
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 #include "aos/time/time.h"
@@ -20,6 +21,7 @@ DEFINE_string(capture, "",
 DEFINE_string(channel, "/camera", "Channel name for the image.");
 DEFINE_string(config, "aos_config.json", "Path to the config file to use.");
 DEFINE_string(png_dir, "", "Path to a set of images to display.");
+DEFINE_string(png_pattern, "*", R"(Pattern to match pngs using '*'/'?'.)");
 DEFINE_string(calibration_node, "",
               "If reading locally, use the calibration for this node");
 DEFINE_int32(
@@ -196,7 +198,8 @@ size_t FindImageTimestamp(std::string_view filename) {
 
 void ViewerLocal() {
   std::vector<cv::String> file_list;
-  cv::glob(FLAGS_png_dir + "/*.png", file_list, false);
+  cv::glob(absl::StrFormat("%s/%s.png", FLAGS_png_dir, FLAGS_png_pattern),
+           file_list, false);
 
   // Sort the images by timestamp
   if (FLAGS_sort_by_time) {
