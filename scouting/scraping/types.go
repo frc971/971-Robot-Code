@@ -1,5 +1,26 @@
 package scraping
 
+type EventRanking struct {
+	Rankings []Rank `json:"rankings"`
+}
+
+type Rank struct {
+	MatchesPlayed int       `json:"matches_played"`
+	QualAverage   int       `json:"qual_average"`
+	ExtraStats    []float64 `json:"extra_stats"`
+	SortOrders    []float64 `json:"sort_orders"`
+	Records       Record    `json:"record"`
+	Rank          int       `json:"rank"`
+	Dq            int       `json:"dq"`
+	TeamKey       string    `json:"team_key"`
+}
+
+type Record struct {
+	Losses int `json:"losses"`
+	Wins   int `json:"wins"`
+	Ties   int `json:"ties"`
+}
+
 // Match holds the TBA data for a given match
 type Match struct {
 	Key             string
