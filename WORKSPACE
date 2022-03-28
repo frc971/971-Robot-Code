@@ -76,6 +76,10 @@ load(
     gstreamer_armhf_debs = "files",
 )
 load(
+    "//debian:gstreamer_arm64.bzl",
+    gstreamer_arm64_debs = "files",
+)
+load(
     "//debian:m4.bzl",
     m4_debs = "files",
 )
@@ -129,9 +133,17 @@ generate_repositories_for_debs(opencv_armhf_debs)
 
 generate_repositories_for_debs(opencv_amd64_debs)
 
-generate_repositories_for_debs(gstreamer_amd64_debs)
+generate_repositories_for_debs(
+    gstreamer_amd64_debs,
+    base_url = "https://www.frc971.org/Build-Dependencies/gstreamer_bullseye_amd64_deps",
+)
 
 generate_repositories_for_debs(gstreamer_armhf_debs)
+
+generate_repositories_for_debs(
+    gstreamer_arm64_debs,
+    base_url = "https://www.frc971.org/Build-Dependencies/gstreamer_bullseye_arm64_deps",
+)
 
 generate_repositories_for_debs(m4_debs)
 
@@ -975,8 +987,8 @@ http_archive(
 http_archive(
     name = "gstreamer_k8",
     build_file = "@//debian:gstreamer.BUILD",
-    sha256 = "4d74d4a82f7a73dc9fe9463d5fae409b17845eef7cd64ef9c4c4553816c53589",
-    url = "https://www.frc971.org/Build-Dependencies/gstreamer_amd64.tar.gz",
+    sha256 = "d4994261a432c188716f0bdf30fc3f0dff6727319d9c58e7156e2b3ed5105248",
+    url = "https://www.frc971.org/Build-Dependencies/gstreamer_1.20.1-1~bpo11+1_amd64.tar.gz",
 )
 
 http_archive(
@@ -984,6 +996,13 @@ http_archive(
     build_file = "@//debian:gstreamer.BUILD",
     sha256 = "c5ac4c604952c274a50636e244f0d091bd1de302032446f24f0e9e03ae9c76f7",
     url = "https://www.frc971.org/Build-Dependencies/gstreamer_armhf.tar.gz",
+)
+
+http_archive(
+    name = "gstreamer_arm64",
+    build_file = "@//debian:gstreamer.BUILD",
+    sha256 = "42b414c565ffdbae3d2d7796a66da9de42a650de757fa6554fd624f0cc3aaa9b",
+    url = "https://www.frc971.org/Build-Dependencies/gstreamer_1.20.1-1~bpo11+1_arm64.tar.gz",
 )
 
 # Downloaded from:
