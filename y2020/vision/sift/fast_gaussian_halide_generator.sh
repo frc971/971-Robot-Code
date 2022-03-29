@@ -25,7 +25,7 @@ BINARY="$1"
 SOURCE="$(rlocation org_frc971/y2020/vision/sift/fast_gaussian_generator.cc)"
 HALIDE="$(rlocation halide_k8)"
 SYSROOT="$(rlocation amd64_debian_sysroot)"
-ZLIB1G_DEV_AMD64_DEB="$(rlocation deb_zlib1g_dev_1_2_11_dfsg_1_amd64_deb_repo/file/zlib1g-dev_1.2.11.dfsg-1_amd64.deb)"
+ZLIB1G_DEV_AMD64_DEB="$(rlocation deb_zlib1g_dev_1_2_11_dfsg_2_amd64_deb_repo/file/zlib1g-dev_1.2.11.dfsg-2_amd64.deb)"
 
 ZLIB1G_DEV="$(mktemp -d)"
 

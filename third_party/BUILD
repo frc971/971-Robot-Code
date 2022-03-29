@@ -55,6 +55,7 @@ cc_library(
     deps = select({
         "//tools:cpu_k8": ["@gstreamer_k8//:gstreamer"],
         "//tools:cpu_armhf": ["@gstreamer_armhf//:gstreamer"],
+        "//tools:cpu_arm64": ["@gstreamer_arm64//:gstreamer"],
         "//conditions:default": [":unavailable"],
     }),
 )

@@ -1,0 +1,67 @@
+Some notes on backporting gstreamer 1.20 from testing (bookworm) to bullseye
+
+Create chroot build environment. This is kept clean - each build step uses this as a base image and overlays files on top of it.
+    sudo sbuild-createchroot --extra-repository="deb http://deb.debian.org/debian bullseye-backports main" --chroot-prefix=bullseye-backports bullseye /srv/chroot/bullseye-backports-${ARCH} http://deb.debian.org/debian
+
+Download sources for each library. I worked out of a directory "$HOME/backports"
+dget -x ...
+    http://deb.debian.org/debian/pool/main/g/gstreamer1.0/gstreamer1.0_1.20.1-1.dsc
+    http://deb.debian.org/debian/pool/main/g/gst-plugins-base1.0/gst-plugins-base1.0_1.20.1-1.dsc
+    http://deb.debian.org/debian/pool/main/g/gst-plugins-good1.0/gst-plugins-good1.0_1.20.1-1.dsc
+    http://deb.debian.org/debian/pool/main/g/gst-plugins-ugly1.0/gst-plugins-ugly1.0_1.20.1-1.dsc
+
+    http://deb.debian.org/debian/pool/main/libn/libnice/libnice_0.1.18-2.dsc
+    http://deb.debian.org/debian/pool/main/o/openh264/openh264_2.2.0+dfsg-2.dsc
+    http://deb.debian.org/debian/pool/main/libf/libfreeaptx/libfreeaptx_0.1.1-1.dsc
+
+    http://deb.debian.org/debian/pool/main/g/gst-plugins-bad1.0/gst-plugins-bad1.0_1.20.1-1.dsc
+
+
+Enter each directory of sources, modify with `dch --bpo`. Use default. This will append '~bpo' which in the debian version string is the "type" of the package. This is by convention and ensures correct version resolution if these packages are upgraded in the future.
+
+Build the packages in this order to resolve dependencies between them. I found this minimal set could be built against bullseye directly - the only dependencies with unmet versions in bullseye are libnice, libopenh264, and libfreeaptx, so we backport those as well.
+
+For each package we append set --debbuildopts="-v<version number>". Version number should be the previous release that found in bullseye. This generates the proper changelog between that version and our backport's version. sbuild will automatically resolve all dependencies possible with apt. For dependencies between our backports we specify --extra-package. We could setup an apt repo as we do in the last step but it's probably not worth the effort. I'd also replace ${HOME} with the absolute path - not sure when exactly this is resolved.
+
+
+
+gstreamer1.0
+    sbuild --arch=${ARCH} -d bullseye-backports --build-dep-resolver=aptitude --debbuildopts="-v1.18.4-2"
+
+gst-plugins-base
+    sbuild --arch=${ARCH} -d bullseye-backports --build-dep-resolver=aptitude --debbuildopts="-v1.18.4-2" --extra-package=${HOME}backports/libgstreamer1.0-dev_1.20.1-1~bpo11+1_${ARCH}.deb --extra-package=${HOME}backports/libgstreamer1.0-0_1.20.1-1~bpo11+1_${ARCH}.deb --extra-package=${HOME}backports/gir1.2-gstreamer-1.0_1.20.1-1~bpo11+1_${ARCH}.deb
+
+gst-plugins-good
+    sbuild --arch=${ARCH} -d bullseye-backports --build-dep-resolver=aptitude --debbuildopts="-v1.18.4-2" --extra-package=${HOME}backports/libgstreamer1.0-dev_1.20.1-1~bpo11+1_${ARCH}.deb --extra-package=${HOME}backports/libgstreamer1.0-0_1.20.1-1~bpo11+1_${ARCH}.deb --extra-package=${HOME}backports/gir1.2-gstreamer-1.0_1.20.1-1~bpo11+1_${ARCH}.deb --extra-package=${HOME}backports/libgstreamer-plugins-base1.0-dev_1.20.1-1~bpo11+1_${ARCH}.deb --extra-package=${HOME}backports/libgstreamer-plugins-base1.0-0_1.20.1-1~bpo11+1_${ARCH}.deb --extra-package=${HOME}backports/libgstreamer-gl1.0-0_1.20.1-1~bpo11+1_${ARCH}.deb --extra-package=${HOME}backports/gstreamer1.0-gl_1.20.1-1~bpo11+1_${ARCH}.deb --extra-package=${HOME}backports/gir1.2-gst-plugins-base-1.0_1.20.1-1~bpo11+1_${ARCH}.deb --extra-package=${HOME}backports/gstreamer1.0-plugins-base_1.20.1-1~bpo11+1_${ARCH}.deb
+
+gst-plugins-ugly
+    sbuild --arch=${ARCH} -d bullseye-backports --build-dep-resolver=aptitude --debbuildopts="-v1.18.4-2" --extra-package=${HOME}backports/libgstreamer1.0-dev_1.20.1-1~bpo11+1_${ARCH}.deb --extra-package=${HOME}backports/libgstreamer1.0-0_1.20.1-1~bpo11+1_${ARCH}.deb --extra-package=${HOME}backports/gir1.2-gstreamer-1.0_1.20.1-1~bpo11+1_${ARCH}.deb --extra-package=${HOME}backports/libgstreamer-plugins-base1.0-dev_1.20.1-1~bpo11+1_${ARCH}.deb --extra-package=${HOME}backports/libgstreamer-plugins-base1.0-0_1.20.1-1~bpo11+1_${ARCH}.deb --extra-package=${HOME}backports/libgstreamer-gl1.0-0_1.20.1-1~bpo11+1_${ARCH}.deb --extra-package=${HOME}backports/gstreamer1.0-gl_1.20.1-1~bpo11+1_${ARCH}.deb --extra-package=${HOME}backports/gir1.2-gst-plugins-base-1.0_1.20.1-1~bpo11+1_${ARCH}.deb --extra-package=${HOME}backports/gstreamer1.0-plugins-base_1.20.1-1~bpo11+1_${ARCH}.deb --extra-package=${HOME}backports/gstreamer1.0-plugins-good_1.20.1-1~bpo11+1_${ARCH}.deb
+
+libnice
+    sbuild --arch=${ARCH} -d bullseye-backports --build-dep-resolver=aptitude --debbuildopts="-v0.1.16-1"
+
+openh264
+    sbuild --arch=${ARCH} -d bullseye-backports --build-dep-resolver=aptitude --debbuildopts="-v0"
+
+libfreeaptx
+    sbuild --arch=${ARCH} -d bullseye-backports --build-dep-resolver=aptitude --debbuildopts="-v0"
+
+# The opencv headers shipped with debian bullseye are broken - they require tracking.private.hpp. Copy this file into the chroot to help it out. It can be found in the opencv git repo (may be called tracking.detail.hpp).
+
+gst-plugins-bad
+    sbuild --arch=${ARCH} -d bullseye-backports --build-dep-resolver=aptitude --debbuildopts="-v1.18.4-2" --extra-package=${HOME}backports/libgstreamer1.0-dev_1.20.1-1~bpo11+1_${ARCH}.deb --extra-package=${HOME}backports/libgstreamer1.0-0_1.20.1-1~bpo11+1_${ARCH}.deb --extra-package=${HOME}backports/gir1.2-gstreamer-1.0_1.20.1-1~bpo11+1_${ARCH}.deb --extra-package=${HOME}backports/libgstreamer-plugins-base1.0-dev_1.20.1-1~bpo11+1_${ARCH}.deb --extra-package=${HOME}backports/libgstreamer-plugins-base1.0-0_1.20.1-1~bpo11+1_${ARCH}.deb --extra-package=${HOME}backports/libgstreamer-gl1.0-0_1.20.1-1~bpo11+1_${ARCH}.deb --extra-package=${HOME}backports/gstreamer1.0-gl_1.20.1-1~bpo11+1_${ARCH}.deb --extra-package=${HOME}backports/gir1.2-gst-plugins-base-1.0_1.20.1-1~bpo11+1_${ARCH}.deb --extra-package=${HOME}backports/gstreamer1.0-plugins-base_1.20.1-1~bpo11+1_${ARCH}.deb --extra-package=${HOME}backports/gstreamer1.0-plugins-good_1.20.1-1~bpo11+1_${ARCH}.deb --extra-package=${HOME}backports/gstreamer1.0-plugins-base_1.20.1-1~bpo11+1_${ARCH}.deb --extra-package=${HOME}backports/libnice-dev_0.1.18-2~bpo11+1_${ARCH}.deb --extra-package=${HOME}backports/libnice10_0.1.18-2~bpo11+1_${ARCH}.deb --extra-package=${HOME}backports/gir1.2-nice-0.1_0.1.18-2~bpo11+1_${ARCH}.deb --extra-package=${HOME}backports/libopenh264-6_2.2.0+dfsg-2~bpo11+1_${ARCH}.deb --extra-package=${HOME}backports/libopenh264-dev_2.2.0+dfsg-2~bpo11+1_${ARCH}.deb --extra-package=${HOME}backports/libfreeaptx0_0.1.1-1_${ARCH}.deb --extra-package=${HOME}backports/libfreeaptx-dev_0.1.1-1_${ARCH}.deb --pre-build-commands='%SBUILD_CHROOT_EXEC sh -c "mkdir -p /usr/include/opencv4/opencv2/video/detail"' --pre-build-commands='cat ${HOME}tracking.private.hpp | %SBUILD_CHROOT_EXEC sh -c "cat > /usr/include/opencv4/opencv2/video/detail/tracking.private.hpp"'
+
+
+
+Move all debs for each arch into their own directory and generate package list. I use "$HOME/apt_root_${ARCH}".
+    dpkg-scanpackages --arch=${ARCH} . /dev/null | gzip -9c > Packages.gz
+
+
+Modify download_packages.py and add an apt source line:
+    deb [trusted=yes] file:${HOME}apt_root_amd64 ./
+
+
+download_packages.py is broken when a deb has mutually exclusive dependencies. In our case, we can use either libsoup2.4 or libsoup3. At the time of writing, it would be much more difficult to setup libsoup3 so exclude it.
+
+Finally, run:
+    ./download_packages.py --arch ${ARCH} --release bullseye-backports --exclude=libsoup3.0-0 gstreamer1.0-plugins-bad gstreamer1.0-plugins-good gstreamer1.0-plugins-ugly gstreamer1.0-plugins-base libgstreamer-plugins-bad1.0-dev libgstreamer-plugins-base1.0-dev gstreamer1.0-nice libgstreamer1.0-0 libgstreamer1.0-dev libsoup2.4-dev libjson-glib-dev

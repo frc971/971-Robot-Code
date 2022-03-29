@@ -71,6 +71,10 @@ load(
     gstreamer_armhf_debs = "files",
 )
 load(
+    ":gstreamer_arm64.bzl",
+    gstreamer_arm64_debs = "files",
+)
+load(
     ":lzma_amd64.bzl",
     lzma_amd64_debs = "files",
 )
@@ -457,6 +461,12 @@ generate_deb_tarball(
 generate_deb_tarball(
     name = "gstreamer_armhf",
     files = gstreamer_armhf_debs,
+    target_compatible_with = ["@platforms//os:linux"],
+)
+
+generate_deb_tarball(
+    name = "gstreamer_arm64",
+    files = gstreamer_arm64_debs,
     target_compatible_with = ["@platforms//os:linux"],
 )
 
