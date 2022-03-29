@@ -34,7 +34,7 @@ if [[ -z "$BASE_PATH" ]]; then
   exit 1
 fi
 
-export LD_LIBRARY_PATH="${BASE_PATH}/usr/lib/lapack:${BASE_PATH}/usr/lib/libblas:${BASE_PATH}/usr/lib/x86_64-linux-gnu:${BASE_PATH}/../matplotlib_repo/rpathed3/usr/lib"
+export LD_LIBRARY_PATH="${BASE_PATH}/usr/lib/lapack:${BASE_PATH}/usr/lib/libblas:${BASE_PATH}/usr/lib/x86_64-linux-gnu:${BASE_PATH}/../matplotlib_repo/rpathed3/usr/lib:${BASE_PATH}/usr/lib/x86_64-linux-gnu/lapack:${BASE_PATH}/usr/lib/x86_64-linux-gnu/blas"
 
 # Prevent Python from importing the host's installed packages.
 exec "$BASE_PATH"/usr/bin/python3 -sS "$@"
