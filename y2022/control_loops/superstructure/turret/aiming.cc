@@ -15,7 +15,7 @@ using frc971::control_loops::aiming::RobotState;
 namespace {
 // Average speed-over-ground of the ball on its way to the target. Our current
 // model assumes constant ball velocity regardless of shot distance.
-constexpr double kBallSpeedOverGround = 12.0;  // m/s
+constexpr double kBallSpeedOverGround = 2.0;  // m/s
 
 // If the turret is at zero, then it will be at this angle at which the shot
 // will leave the robot. I.e., if the turret is at zero, then the shot will go
