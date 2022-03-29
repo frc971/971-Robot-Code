@@ -63,7 +63,8 @@ class CameraReader {
   const calibration::CameraCalibration *FindCameraCalibration() const;
 
   // Processes an image (including sending the results).
-  void ProcessImage(cv::Mat image, int64_t image_monotonic_timestamp_ns);
+  void ProcessImage(cv::Mat image_mat_distorted,
+                    int64_t image_monotonic_timestamp_ns);
 
   // Reads an image, and then performs all of our processing on it.
   void ReadImage();
@@ -96,6 +97,7 @@ class CameraReader {
     const cv::Mat result(5, 1, CV_32F,
                          const_cast<void *>(static_cast<const void *>(
                              camera_calibration_->dist_coeffs()->data())));
+    result.convertTo(result, CV_64F);
     CHECK_EQ(result.total(), camera_calibration_->dist_coeffs()->size());
     return result;
   }

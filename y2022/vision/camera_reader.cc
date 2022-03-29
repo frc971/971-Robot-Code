@@ -90,8 +90,12 @@ BlobStatsToFbs(const std::vector<BlobDetector::BlobStats> blob_stats,
 }
 }  // namespace
 
-void CameraReader::ProcessImage(cv::Mat image_mat,
+void CameraReader::ProcessImage(cv::Mat image_mat_distorted,
                                 int64_t image_monotonic_timestamp_ns) {
+  cv::Mat image_mat;
+  cv::undistort(image_mat_distorted, image_mat, CameraIntrinsics(),
+                CameraDistCoeffs());
+
   BlobDetector::BlobResult blob_result;
   BlobDetector::ExtractBlobs(image_mat, &blob_result);
   auto builder = target_estimate_sender_.MakeBuilder();

@@ -224,9 +224,10 @@ void ViewerLocal() {
                      << FLAGS_calibration_node << "\" with team number "
                      << FLAGS_calibration_team_number;
 
-  auto intrinsics_float = cv::Mat(3, 3, CV_32F,
-                                  const_cast<void *>(static_cast<const void *>(
-                                      calibration->intrinsics()->data())));
+  const auto intrinsics_float = cv::Mat(
+      3, 3, CV_32F,
+      const_cast<void *>(
+          static_cast<const void *>(calibration->intrinsics()->data())));
   cv::Mat intrinsics;
   intrinsics_float.convertTo(intrinsics, CV_64F);
 
@@ -240,11 +241,21 @@ void ViewerLocal() {
   cv::Mat extrinsics;
   extrinsics_float.convertTo(extrinsics, CV_64F);
 
+  const auto dist_coeffs_float = cv::Mat(
+      5, 1, CV_32F,
+      const_cast<void *>(
+          static_cast<const void *>(calibration->dist_coeffs()->data())));
+  cv::Mat dist_coeffs;
+  dist_coeffs_float.convertTo(dist_coeffs, CV_64F);
+
   TargetEstimator estimator(intrinsics, extrinsics);
 
   for (auto it = file_list.begin() + FLAGS_skip; it < file_list.end(); it++) {
     LOG(INFO) << "Reading file " << (it - file_list.begin()) << ": " << *it;
-    cv::Mat image_mat = cv::imread(it->c_str());
+    cv::Mat image_mat_distorted = cv::imread(it->c_str());
+    cv::Mat image_mat;
+    cv::undistort(image_mat_distorted, image_mat, intrinsics, dist_coeffs);
+
     BlobDetector::BlobResult blob_result;
     blob_result.binarized_image =
         cv::Mat::zeros(cv::Size(image_mat.cols, image_mat.rows), CV_8UC1);
