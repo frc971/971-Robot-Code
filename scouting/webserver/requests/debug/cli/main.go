@@ -65,6 +65,18 @@ func parseJson(fbsPath string, jsonPath string) []byte {
 	return binaryFb
 }
 
+func maybePerformRequest[T interface{}](fbName, fbsPath, requestJsonPath, address string, requester func(string, []byte) (*T, error)) {
+	if requestJsonPath != "" {
+		log.Printf("Sending %s to %s", fbName, address)
+		binaryRequest := parseJson(fbsPath, requestJsonPath)
+		response, err := requester(address, binaryRequest)
+		if err != nil {
+			log.Fatalf("Failed %s: %v", fbName, err)
+		}
+		spew.Dump(*response)
+	}
+}
+
 func main() {
 	// Parse command line arguments.
 	indentPtr := flag.String("indent", " ",
@@ -86,59 +98,38 @@ func main() {
 	spew.Config.Indent = *indentPtr
 
 	// Handle the actual arguments.
-	if *submitDataScoutingPtr != "" {
-		log.Printf("Sending SubmitDataScouting to %s", *addressPtr)
-		binaryRequest := parseJson(
-			"scouting/webserver/requests/messages/submit_data_scouting.fbs",
-			*submitDataScoutingPtr)
-		response, err := debug.SubmitDataScouting(*addressPtr, binaryRequest)
-		if err != nil {
-			log.Fatal("Failed SubmitDataScouting: ", err)
-		}
-		spew.Dump(*response)
-	}
-	if *requestAllMatchesPtr != "" {
-		log.Printf("Sending RequestAllMatches to %s", *addressPtr)
-		binaryRequest := parseJson(
-			"scouting/webserver/requests/messages/request_all_matches.fbs",
-			*requestAllMatchesPtr)
-		response, err := debug.RequestAllMatches(*addressPtr, binaryRequest)
-		if err != nil {
-			log.Fatal("Failed RequestAllMatches: ", err)
-		}
-		spew.Dump(*response)
-	}
-	if *requestMatchesForTeamPtr != "" {
-		log.Printf("Sending RequestMatchesForTeam to %s", *addressPtr)
-		binaryRequest := parseJson(
-			"scouting/webserver/requests/messages/request_matches_for_team.fbs",
-			*requestMatchesForTeamPtr)
-		response, err := debug.RequestMatchesForTeam(*addressPtr, binaryRequest)
-		if err != nil {
-			log.Fatal("Failed RequestMatchesForTeam: ", err)
-		}
-		spew.Dump(*response)
-	}
-	if *requestDataScoutingPtr != "" {
-		log.Printf("Sending RequestDataScouting to %s", *addressPtr)
-		binaryRequest := parseJson(
-			"scouting/webserver/requests/messages/request_data_scouting.fbs",
-			*requestDataScoutingPtr)
-		response, err := debug.RequestDataScouting(*addressPtr, binaryRequest)
-		if err != nil {
-			log.Fatal("Failed RequestDataScouting: ", err)
-		}
-		spew.Dump(*response)
-	}
-	if *refreshMatchListPtr != "" {
-		log.Printf("Sending RefreshMatchList to %s", *addressPtr)
-		binaryRequest := parseJson(
-			"scouting/webserver/requests/messages/refresh_match_list.fbs",
-			*refreshMatchListPtr)
-		response, err := debug.RefreshMatchList(*addressPtr, binaryRequest)
-		if err != nil {
-			log.Fatal("Failed RefreshMatchList: ", err)
-		}
-		spew.Dump(*response)
-	}
+	maybePerformRequest(
+		"SubmitDataScouting",
+		"scouting/webserver/requests/messages/submit_data_scouting.fbs",
+		*submitDataScoutingPtr,
+		*addressPtr,
+		debug.SubmitDataScouting)
+
+	maybePerformRequest(
+		"RequestAllMatches",
+		"scouting/webserver/requests/messages/request_all_matches.fbs",
+		*requestAllMatchesPtr,
+		*addressPtr,
+		debug.RequestAllMatches)
+
+	maybePerformRequest(
+		"RequestMatchesForTeam",
+		"scouting/webserver/requests/messages/request_matches_for_team.fbs",
+		*requestMatchesForTeamPtr,
+		*addressPtr,
+		debug.RequestMatchesForTeam)
+
+	maybePerformRequest(
+		"RequestDataScouting",
+		"scouting/webserver/requests/messages/request_data_scouting.fbs",
+		*requestDataScoutingPtr,
+		*addressPtr,
+		debug.RequestDataScouting)
+
+	maybePerformRequest(
+		"RefreshMatchList",
+		"scouting/webserver/requests/messages/refresh_match_list.fbs",
+		*refreshMatchListPtr,
+		*addressPtr,
+		debug.RefreshMatchList)
 }
