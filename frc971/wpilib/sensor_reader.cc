@@ -14,6 +14,9 @@
 #include "frc971/wpilib/wpilib_interface.h"
 #include "hal/PWM.h"
 
+DEFINE_int32(pwm_offset, 5050 / 2,
+             "Offset of reading the sensors from the start of the PWM cycle");
+
 namespace frc971 {
 namespace wpilib {
 
@@ -125,12 +128,17 @@ void SensorReader::Loop() {
     last_monotonic_now_ = monotonic_now;
 
     monotonic_clock::time_point last_tick_timepoint = GetPWMStartTime();
+    VLOG(1) << "Start time " << last_tick_timepoint << " period " << period_.count();
     if (last_tick_timepoint == monotonic_clock::min_time) {
       return;
     }
 
     last_tick_timepoint +=
-        ((monotonic_now - last_tick_timepoint) / period_) * period_;
+        ((monotonic_now - chrono::microseconds(FLAGS_pwm_offset) -
+          last_tick_timepoint) /
+         period_) *
+        period_ + chrono::microseconds(FLAGS_pwm_offset);
+    VLOG(1) << "Now " << monotonic_now << " tick " << last_tick_timepoint;
     // If it's over 1/2 of a period back in time, that's wrong.  Move it
     // forwards to now.
     if (last_tick_timepoint - monotonic_now < -period_ / 2) {
@@ -142,7 +150,7 @@ void SensorReader::Loop() {
     // errors in waking up.  The PWM cycle starts at the falling edge of the
     // PWM pulse.
     const auto next_time =
-        last_tick_timepoint + period_ + chrono::microseconds(50);
+        last_tick_timepoint + period_;
 
     timer_handler_->Setup(next_time, period_);
   }
