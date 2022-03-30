@@ -132,8 +132,15 @@ Values MakeValues(uint16_t team) {
 
   // Interpolation table for comp and practice robots
   r.shot_interpolation_table = InterpolationTable<Values::ShotParams>({
-      {1, {0.03, 18.0}},
-      {10, {0.03, 18.0}},
+      {1, {0.1, 19.0}},
+      {1.9, {0.1, 19.0}},  // 1.7 in reality
+      {2.12, {0.15, 18.8}},  // 2.006 in reality
+      {2.9, {0.25, 19.2}},  // 2.92 in reality
+      {3.8, {0.30, 20.8}},  // 3.8 in reality
+      {4.9, {0.32, 22.8}},  // 4.97 in reality
+      {6.9, {0.40, 24.0}},  // 6.1 in reality
+      {7.9, {0.40, 25.0}},  // 6.5 in reality
+      {10, {0.40, 24.0}},
   });
 
   switch (team) {

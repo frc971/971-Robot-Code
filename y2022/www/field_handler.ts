@@ -308,7 +308,11 @@ export class FieldHandler {
     }
     if (this.superstructureStatus) {
       this.shotDistance.innerHTML = this.superstructureStatus.aimer() ?
-          this.superstructureStatus.aimer().shotDistance().toFixed(2) :
+          (this.superstructureStatus.aimer().shotDistance() /
+           0.0254).toFixed(2) +
+              'in, ' +
+              this.superstructureStatus.aimer().shotDistance().toFixed(2) +
+              'm' :
           'NA';
 
       this.fire.innerHTML = this.superstructureStatus.fire() ? 'true' : 'false';
