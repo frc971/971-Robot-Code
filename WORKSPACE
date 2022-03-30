@@ -1175,3 +1175,10 @@ local_repository(
     name = "com_github_nlohmann_json",
     path = "third_party/com_github_nlohmann_json",
 )
+
+http_file(
+    name = "com_github_foxglove_mcap_mcap",
+    executable = True,
+    sha256 = "cf4dfcf71e20a60406aaded03a165312c1ca535b509ead90eb1846fc598137d2",
+    urls = ["https://github.com/foxglove/mcap/releases/download/releases%2Fmcap-cli%2Fv0.0.5/mcap-linux-amd64"],
+)

@@ -24,8 +24,9 @@ int main(int argc, char *argv[]) {
   reader.Register();
 
   const aos::Node *node =
-      aos::configuration::GetNode(reader.configuration(), FLAGS_node);
-  CHECK_NOTNULL(node);
+      FLAGS_node.empty()
+          ? nullptr
+          : aos::configuration::GetNode(reader.configuration(), FLAGS_node);
   std::unique_ptr<aos::EventLoop> mcap_event_loop =
       reader.event_loop_factory()->MakeEventLoop("mcap", node);
   CHECK(!FLAGS_output_path.empty());

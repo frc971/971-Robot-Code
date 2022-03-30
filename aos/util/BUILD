@@ -61,6 +61,40 @@ cc_library(
     ],
 )
 
+cc_binary(
+    name = "generate_test_log",
+    testonly = True,
+    srcs = ["generate_test_log.cc"],
+    data = ["//aos/events:pingpong_config"],
+    deps = [
+        "//aos:configuration",
+        "//aos/events:ping_lib",
+        "//aos/events:pong_lib",
+        "//aos/events:simulated_event_loop",
+        "//aos/events/logging:log_writer",
+        "//aos/testing:path",
+    ],
+)
+
+py_test(
+    name = "log_to_mcap_test",
+    srcs = ["log_to_mcap_test.py"],
+    args = [
+        "--log_to_mcap",
+        "$(location :log_to_mcap)",
+        "--mcap",
+        "$(location @com_github_foxglove_mcap_mcap//file)",
+        "--generate_log",
+        "$(location :generate_test_log)",
+    ],
+    data = [
+        ":generate_test_log",
+        ":log_to_mcap",
+        "@com_github_foxglove_mcap_mcap//file",
+    ],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
+)
+
 cc_test(
     name = "mcap_logger_test",
     srcs = ["mcap_logger_test.cc"],

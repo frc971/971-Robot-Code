@@ -3,11 +3,10 @@
 #include "absl/strings/str_replace.h"
 #include "single_include/nlohmann/json.hpp"
 
+DEFINE_uint64(mcap_chunk_size, 10000000,
+              "Size, in bytes, of individual MCAP chunks");
+
 namespace aos {
-namespace {
-// Amount of data to allow in each chunk before creating a new chunk.
-constexpr size_t kChunkSize = 10000000;
-}
 
 nlohmann::json JsonSchemaForFlatbuffer(const FlatbufferType &type,
                                        JsonSchemaRecursion recursion_level) {
@@ -137,7 +136,8 @@ std::vector<McapLogger::SummaryOffset> McapLogger::WriteSchemasAndChannels(
       event_loop_->MakeRawWatcher(
           channel, [this, id, channel](const Context &context, const void *) {
             WriteMessage(id, channel, context, &current_chunk_);
-            if (static_cast<uint64_t>(current_chunk_.tellp()) > kChunkSize) {
+            if (static_cast<uint64_t>(current_chunk_.tellp()) >
+                FLAGS_mcap_chunk_size) {
               WriteChunk();
             }
           });
