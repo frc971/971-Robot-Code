@@ -39,12 +39,6 @@ SctpClient::SctpClient(std::string_view remote_host, int remote_port,
     int on = 1;
     PCHECK(setsockopt(fd(), IPPROTO_SCTP, SCTP_NODELAY, &on, sizeof(int)) == 0);
   }
-
-  PCHECK(bind(fd(), (struct sockaddr *)&sockaddr_local_,
-              sockaddr_local_.ss_family == AF_INET6
-                  ? sizeof(struct sockaddr_in6)
-                  : sizeof(struct sockaddr_in)) == 0);
-  VLOG(1) << "bind(" << fd() << ", " << Address(sockaddr_local_) << ")";
 }
 
 void SctpClient::LogSctpStatus(sctp_assoc_t assoc_id) {
