@@ -1,0 +1,23 @@
+namespace aos.util;
+
+// ProcessInfo captures state information associated with a given process.
+table ProcessInfo {
+  // Process ID of the process in question.
+  pid: uint (id: 0);
+  // Name of the running executable.
+  name: string (id: 1);
+  // Time that the process spent executing over the past ~1 second, divided by
+  // the amount of wall-clock time that elapsed in that period. I.e., if a process is
+  // consuming all of one CPU core then this would be 1.0. Multi-threaded processes
+  // can exceed 1.0.
+  cpu_usage: float (id: 2);
+  // Amount of physical RAM taken by this process, in bytes. Will be a multiple of the
+  // system's page size.
+  physical_memory: uint64 (id: 3);
+}
+
+table TopProcessesFbs {
+  // List of processes consuming the most CPU in the last sample period, in order from
+  // most CPU to least.
+  processes: [ProcessInfo] (id: 0);
+}

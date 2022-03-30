@@ -1,3 +1,5 @@
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
@@ -269,6 +271,45 @@ cc_test(
     deps = [
         ":file",
         "//aos/testing:googletest",
+    ],
+)
+
+flatbuffer_cc_library(
+    name = "process_info_fbs",
+    srcs = ["process_info.fbs"],
+    gen_reflections = True,
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "top",
+    srcs = ["top.cc"],
+    hdrs = ["top.h"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":process_info_fbs",
+        "//aos/containers:ring_buffer",
+        "//aos/events:event_loop",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "top_test",
+    srcs = ["top_test.cc"],
+    data = [
+        "//aos/events:pingpong_config",
+    ],
+    flaky = True,
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":top",
+        "//aos/events:shm_event_loop",
+        "//aos/testing:googletest",
+        "//aos/testing:path",
+        "//aos/testing:tmpdir",
     ],
 )
 
