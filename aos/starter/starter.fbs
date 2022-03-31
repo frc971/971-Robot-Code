@@ -1,3 +1,5 @@
+include "aos/util/process_info.fbs";
+
 namespace aos.starter;
 
 enum State : short {
@@ -73,6 +75,13 @@ table ApplicationStatus {
   // Indicates the reason the application is not running. Only valid if
   // application is STOPPED.
   last_stop_reason: LastStopReason (id: 6);
+
+  // Debug information providing the approximate CPU usage and memory footprint of the process.
+  // Populated whenever the process is running (i.e., state != STOPPED). While STOPPING could
+  // refer to another process if another process has somehow claimed the application's PID between
+  // actually stopping and the parent process receiving the signal indicating that the application
+  // finished stopping.
+  process_info: util.ProcessInfo (id: 7);
 }
 
 root_type Status;

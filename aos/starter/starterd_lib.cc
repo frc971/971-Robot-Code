@@ -33,7 +33,8 @@ Starter::Starter(const aos::Configuration *event_loop_config)
           event_loop_.GetChannel<aos::starter::Status>("/aos")->frequency() -
           1),
       listener_(&event_loop_,
-                [this](signalfd_siginfo signal) { OnSignal(signal); }) {
+                [this](signalfd_siginfo signal) { OnSignal(signal); }),
+      top_(&event_loop_) {
   event_loop_.SkipAosLog();
 
   event_loop_.OnRun([this] {
@@ -117,7 +118,16 @@ void Starter::HandleStarterRpc(const StarterRpc &command) {
   }
 }
 
-void Starter::MaybeSendStatus() {
+void Starter::HandleStateChange() {
+  std::set<pid_t> all_pids;
+  for (const auto &pair : applications_) {
+    if (pair.second.get_pid() > 0 &&
+        pair.second.status() != aos::starter::State::STOPPED) {
+      all_pids.insert(pair.second.get_pid());
+    }
+  }
+  top_.set_track_pids(all_pids);
+
   if (status_count_ < max_status_count_) {
     SendStatus();
     ++status_count_;
@@ -165,9 +175,9 @@ void Starter::OnSignal(signalfd_siginfo info) {
 }
 
 Application *Starter::AddApplication(const aos::Application *application) {
-  auto [iter, success] =
-      applications_.try_emplace(application->name()->str(), application,
-                                &event_loop_, [this]() { MaybeSendStatus(); });
+  auto [iter, success] = applications_.try_emplace(
+      application->name()->str(), application, &event_loop_,
+      [this]() { HandleStateChange(); });
   if (success) {
     // We should be catching and handling SIGCHLD correctly in the starter, so
     // don't leave in the crutch for polling for the child process status (this
@@ -200,7 +210,7 @@ void Starter::SendStatus() {
   std::vector<flatbuffers::Offset<aos::starter::ApplicationStatus>> statuses;
 
   for (auto &application : applications_) {
-    statuses.push_back(application.second.PopulateStatus(builder.fbb()));
+    statuses.push_back(application.second.PopulateStatus(builder.fbb(), &top_));
   }
 
   auto statuses_fbs = builder.fbb()->CreateVector(statuses);
