@@ -4067,6 +4067,76 @@ TEST(MissingDirectionTest, OneDirection) {
   ConfirmReadable(filenames);
 }
 
+// Tests that we properly handle only one direction ever existing after a
+// reboot.
+TEST(MissingDirectionTest, OneDirectionAfterReboot) {
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+      aos::configuration::ReadConfig(ArtifactPath(
+          "aos/events/logging/multinode_pingpong_split4_config.json"));
+  message_bridge::TestingTimeConverter time_converter(
+      configuration::NodesCount(&config.message()));
+  SimulatedEventLoopFactory event_loop_factory(&config.message());
+  event_loop_factory.SetTimeConverter(&time_converter);
+
+  NodeEventLoopFactory *const pi1 =
+      event_loop_factory.GetNodeEventLoopFactory("pi1");
+  const size_t pi1_index = configuration::GetNodeIndex(
+      event_loop_factory.configuration(), pi1->node());
+  NodeEventLoopFactory *const pi2 =
+      event_loop_factory.GetNodeEventLoopFactory("pi2");
+  const size_t pi2_index = configuration::GetNodeIndex(
+      event_loop_factory.configuration(), pi2->node());
+  std::vector<std::string> filenames;
+
+  {
+    CHECK_EQ(pi1_index, 0u);
+    CHECK_EQ(pi2_index, 1u);
+
+    time_converter.AddNextTimestamp(
+        distributed_clock::epoch(),
+        {BootTimestamp::epoch(), BootTimestamp::epoch()});
+
+    const chrono::nanoseconds reboot_time = chrono::milliseconds(5000);
+    time_converter.AddNextTimestamp(
+        distributed_clock::epoch() + reboot_time,
+        {BootTimestamp{.boot = 1,
+                       .time = monotonic_clock::epoch()},
+         BootTimestamp::epoch() + reboot_time});
+  }
+
+  const std::string kLogfile2_1 =
+      aos::testing::TestTmpDir() + "/multi_logfile2.1/";
+  util::UnlinkRecursive(kLogfile2_1);
+
+
+  pi1->AlwaysStart<Ping>("ping");
+
+  // Pi1 sends to pi2.  Reboot pi1, but don't let pi2 connect to pi1.  This
+  // makes it such that we will only get timestamps from pi1 -> pi2 on the
+  // second boot.
+  {
+    LoggerState pi2_logger = LoggerState::MakeLogger(
+        pi2, &event_loop_factory, SupportedCompressionAlgorithms()[0]);
+
+    event_loop_factory.RunFor(chrono::milliseconds(95));
+
+    pi2_logger.StartLogger(kLogfile2_1);
+
+    event_loop_factory.RunFor(chrono::milliseconds(4000));
+
+    pi2->Disconnect(pi1->node());
+
+    event_loop_factory.RunFor(chrono::milliseconds(1000));
+    pi1->AlwaysStart<Ping>("ping");
+
+    event_loop_factory.RunFor(chrono::milliseconds(5000));
+    pi2_logger.AppendAllFilenames(&filenames);
+  }
+
+  const std::vector<LogFile> sorted_parts = SortParts(filenames);
+  ConfirmReadable(filenames);
+}
+
 }  // namespace testing
 }  // namespace logger
 }  // namespace aos

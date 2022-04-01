@@ -54,7 +54,7 @@ void EventScheduler::CallOldestEvent() {
   auto iter = events_list_.begin();
   const logger::BootTimestamp t =
       FromDistributedClock(scheduler_scheduler_->distributed_now());
-  VLOG(1) << "Got time back " << t;
+  VLOG(2) << "Got time back " << t;
   CHECK_EQ(t.boot, boot_count_);
   CHECK_EQ(t.time, iter->first) << ": Time is wrong on node " << node_index_;
 
@@ -274,7 +274,7 @@ EventSchedulerScheduler::OldestEvent() {
   }
 
   if (min_scheduler) {
-    VLOG(1) << "Oldest event " << min_event_time << " on scheduler "
+    VLOG(2) << "Oldest event " << min_event_time << " on scheduler "
             << min_scheduler->node_index_;
   }
   return std::make_tuple(min_event_time, min_scheduler);

@@ -61,6 +61,10 @@ class TimestampProblem {
   // Validates the solution, returning true if it meets all the constraints, and
   // false otherwise.
   bool ValidateSolution(std::vector<logger::BootTimestamp> solution);
+  // Returns true if the provide node has observations to solve for the
+  // provided boots.  This may happen when we are trying to solve for a reboot
+  // to see if it is next, and haven't queued far enough.
+  bool HasObservations(size_t node_a) const;
 
   // LOGs a representation of the problem.
   void Debug();
@@ -331,7 +335,8 @@ class MultiNodeNoncausalOffsetEstimator final
  private:
   struct CandidateTimes {
     logger::BootTimestamp next_node_time = logger::BootTimestamp::max_time();
-    logger::BootDuration next_node_duration;
+    logger::BootDuration next_node_duration = logger::BootDuration::max_time();
+    size_t b_index = std::numeric_limits<size_t>::max();
     NoncausalTimestampFilter *next_node_filter = nullptr;
   };
 

@@ -696,7 +696,9 @@ class NoncausalTimestampFilter {
     auto it =
         std::lower_bound(filters_.begin(), filters_.end(),
                          std::make_pair(boota, bootb), FilterLessThanLower);
-    CHECK(it != filters_.end());
+    if (it == filters_.end()) {
+      return nullptr;
+    }
     if (it->boot == std::make_pair(boota, bootb)) {
       return &it->filter;
     } else {
