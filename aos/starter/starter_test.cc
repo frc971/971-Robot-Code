@@ -305,7 +305,8 @@ TEST_F(StarterdTest, Autostart) {
     if (pong_app_status->has_state() &&
         pong_app_status->state() == aos::starter::State::RUNNING) {
       ASSERT_TRUE(pong_app_status->has_process_info());
-      ASSERT_EQ("pong", pong_app_status->process_info()->name()->string_view());
+      ASSERT_EQ("pong", pong_app_status->process_info()->name()->string_view())
+          << aos::FlatbufferToJson(&status);
       ASSERT_EQ(pong_app_status->pid(), pong_app_status->process_info()->pid());
       ASSERT_LT(0.0, pong_app_status->process_info()->cpu_usage());
       watcher_loop.Exit();
