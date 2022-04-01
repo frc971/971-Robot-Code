@@ -9,6 +9,7 @@
 #include "frc971/control_loops/control_loops_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_output_generated.h"
 #include "frc971/control_loops/profiled_subsystem_generated.h"
+#include "frc971/queues/gyro_generated.h"
 #include "y2022/control_loops/superstructure/superstructure_output_generated.h"
 #include "y2022/control_loops/superstructure/superstructure_status_generated.h"
 
@@ -22,6 +23,7 @@ class LedIndicator {
   //
   // Red: estopped
   // Yellow: not zeroed
+  // Flash red/white: imu disconnected
   // Flash red/green: pi disconnected
   // Purple: driving fast
   //
@@ -48,6 +50,7 @@ class LedIndicator {
 
   ctre::phoenix::led::CANdle candle_{0, ""};
 
+  aos::EventLoop *event_loop;
   aos::Fetcher<frc971::control_loops::drivetrain::Output>
       drivetrain_output_fetcher_;
   aos::Fetcher<Status> superstructure_status_fetcher_;
@@ -55,7 +58,10 @@ class LedIndicator {
       server_statistics_fetcher_;
   aos::Fetcher<aos::message_bridge::ClientStatistics>
       client_statistics_fetcher_;
+  aos::Fetcher<frc971::sensors::GyroReading> gyro_reading_fetcher_;
 
+  size_t imu_counter_ = 0;
+  bool imu_flash_ = false;
   size_t disconnected_counter_ = 0;
   bool disconnected_flash_ = false;
 };

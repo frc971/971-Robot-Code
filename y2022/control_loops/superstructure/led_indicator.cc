@@ -15,7 +15,10 @@ LedIndicator::LedIndicator(aos::EventLoop *event_loop)
               "/roborio/aos")),
       client_statistics_fetcher_(
           event_loop->MakeFetcher<aos::message_bridge::ClientStatistics>(
-              "/roborio/aos")) {
+              "/roborio/aos")),
+      gyro_reading_fetcher_(
+          event_loop->MakeFetcher<frc971::sensors::GyroReading>(
+              "/drivetrain")) {
   led::CANdleConfiguration config;
   config.statusLedOffWhenActive = true;
   config.disableWhenLOS = false;
@@ -67,6 +70,7 @@ void LedIndicator::DecideColor() {
   server_statistics_fetcher_.Fetch();
   drivetrain_output_fetcher_.Fetch();
   client_statistics_fetcher_.Fetch();
+  gyro_reading_fetcher_.Fetch();
 
   // Estopped
   if (superstructure_status_fetcher_.get() &&
@@ -79,6 +83,23 @@ void LedIndicator::DecideColor() {
   if (superstructure_status_fetcher_.get() &&
       !superstructure_status_fetcher_->zeroed()) {
     DisplayLed(255, 255, 0);
+    return;
+  }
+
+  // If the imu gyro readings are not being sent/updated recently
+  if (!gyro_reading_fetcher_.get() ||
+      gyro_reading_fetcher_.context().monotonic_event_time <
+          event_loop->monotonic_now() - frc971::controls::kLoopFrequency) {
+    if (imu_flash_) {
+      DisplayLed(255, 0, 0);
+    } else {
+      DisplayLed(255, 255, 255);
+    }
+
+    if (imu_counter_ % kFlashIterations == 0) {
+      imu_flash_ = !imu_flash_;
+    }
+    imu_counter_++;
     return;
   }
 
