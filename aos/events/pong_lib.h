@@ -15,6 +15,8 @@ class Pong {
  private:
   EventLoop *event_loop_;
   aos::Sender<examples::Pong> sender_;
+  int32_t last_value_ = 0;
+  int32_t last_send_time_ = 0;
 };
 
 }  // namespace aos

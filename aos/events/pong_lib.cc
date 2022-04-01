@@ -11,6 +11,12 @@ Pong::Pong(EventLoop *event_loop)
     : event_loop_(event_loop),
       sender_(event_loop_->MakeSender<examples::Pong>("/test")) {
   event_loop_->MakeWatcher("/test", [this](const examples::Ping &ping) {
+    if (last_value_ == ping.value()) {
+      LOG(WARNING) << "Duplicate ping value at " << last_value_
+                   << " time difference " << ping.send_time() - last_send_time_;
+    }
+    last_value_ = ping.value();
+    last_send_time_ = ping.send_time();
     aos::Sender<examples::Pong>::Builder builder = sender_.MakeBuilder();
     examples::Pong::Builder pong_builder =
         builder.MakeBuilder<examples::Pong>();
