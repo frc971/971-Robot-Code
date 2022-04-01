@@ -17,6 +17,7 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_for_team_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_notes_response"
+	flatbuffers "github.com/google/flatbuffers/go"
 )
 
 // The username to submit the various requests as.
@@ -90,82 +91,55 @@ func performPost(url string, requestBytes []byte) ([]byte, error) {
 	return responseBytes, nil
 }
 
-// Sends a `SubmitDataScouting` message to the server and returns the
-// deserialized response.
+// Sends a message to the server and returns the deserialized response.
+// The first generic argument must be specified.
+func sendMessage[FbT interface{}, Fb interface{ UnPack() *FbT }](url string, requestBytes []byte, parser func([]byte, flatbuffers.UOffsetT) Fb) (*FbT, error) {
+	responseBytes, err := performPost(url, requestBytes)
+	if err != nil {
+		return nil, err
+	}
+	response := parser(responseBytes, 0)
+	return response.UnPack(), nil
+}
+
 func SubmitDataScouting(server string, requestBytes []byte) (*submit_data_scouting_response.SubmitDataScoutingResponseT, error) {
-	responseBytes, err := performPost(server+"/requests/submit/data_scouting", requestBytes)
-	if err != nil {
-		return nil, err
-	}
-	log.Printf("Parsing SubmitDataScoutingResponse")
-	response := submit_data_scouting_response.GetRootAsSubmitDataScoutingResponse(responseBytes, 0)
-	return response.UnPack(), nil
+	return sendMessage[submit_data_scouting_response.SubmitDataScoutingResponseT](
+		server+"/requests/submit/data_scouting", requestBytes,
+		submit_data_scouting_response.GetRootAsSubmitDataScoutingResponse)
 }
 
-// Sends a `RequestAllMatches` message to the server and returns the
-// deserialized response.
 func RequestAllMatches(server string, requestBytes []byte) (*request_all_matches_response.RequestAllMatchesResponseT, error) {
-	responseBytes, err := performPost(server+"/requests/request/all_matches", requestBytes)
-	if err != nil {
-		return nil, err
-	}
-	log.Printf("Parsing RequestAllMatchesResponse")
-	response := request_all_matches_response.GetRootAsRequestAllMatchesResponse(responseBytes, 0)
-	return response.UnPack(), nil
+	return sendMessage[request_all_matches_response.RequestAllMatchesResponseT](
+		server+"/requests/request/all_matches", requestBytes,
+		request_all_matches_response.GetRootAsRequestAllMatchesResponse)
 }
 
-// Sends a `RequestMatchesForTeam` message to the server and returns the
-// deserialized response.
 func RequestMatchesForTeam(server string, requestBytes []byte) (*request_matches_for_team_response.RequestMatchesForTeamResponseT, error) {
-	responseBytes, err := performPost(server+"/requests/request/matches_for_team", requestBytes)
-	if err != nil {
-		return nil, err
-	}
-	log.Printf("Parsing RequestMatchesForTeamResponse")
-	response := request_matches_for_team_response.GetRootAsRequestMatchesForTeamResponse(responseBytes, 0)
-	return response.UnPack(), nil
+	return sendMessage[request_matches_for_team_response.RequestMatchesForTeamResponseT](
+		server+"/requests/request/matches_for_team", requestBytes,
+		request_matches_for_team_response.GetRootAsRequestMatchesForTeamResponse)
 }
 
-// Sends a `RequestDataScouting` message to the server and returns the
-// deserialized response.
 func RequestDataScouting(server string, requestBytes []byte) (*request_data_scouting_response.RequestDataScoutingResponseT, error) {
-	responseBytes, err := performPost(server+"/requests/request/data_scouting", requestBytes)
-	if err != nil {
-		return nil, err
-	}
-	log.Printf("Parsing RequestDataScoutingResponse")
-	response := request_data_scouting_response.GetRootAsRequestDataScoutingResponse(responseBytes, 0)
-	return response.UnPack(), nil
+	return sendMessage[request_data_scouting_response.RequestDataScoutingResponseT](
+		server+"/requests/request/data_scouting", requestBytes,
+		request_data_scouting_response.GetRootAsRequestDataScoutingResponse)
 }
 
-// Sends a `RefreshMatchList` message to the server and returns the
-// deserialized response.
 func RefreshMatchList(server string, requestBytes []byte) (*refresh_match_list_response.RefreshMatchListResponseT, error) {
-	responseBytes, err := performPost(server+"/requests/refresh_match_list", requestBytes)
-	if err != nil {
-		return nil, err
-	}
-	log.Printf("Parsing RefreshMatchListResponse")
-	response := refresh_match_list_response.GetRootAsRefreshMatchListResponse(responseBytes, 0)
-	return response.UnPack(), nil
+	return sendMessage[refresh_match_list_response.RefreshMatchListResponseT](
+		server+"/requests/refresh_match_list", requestBytes,
+		refresh_match_list_response.GetRootAsRefreshMatchListResponse)
 }
 
 func SubmitNotes(server string, requestBytes []byte) (*submit_notes_response.SubmitNotesResponseT, error) {
-	responseBytes, err := performPost(server+"/requests/submit/submit_notes", requestBytes)
-	if err != nil {
-		return nil, err
-	}
-
-	response := submit_notes_response.GetRootAsSubmitNotesResponse(responseBytes, 0)
-	return response.UnPack(), nil
+	return sendMessage[submit_notes_response.SubmitNotesResponseT](
+		server+"/requests/submit/submit_notes", requestBytes,
+		submit_notes_response.GetRootAsSubmitNotesResponse)
 }
 
 func RequestNotes(server string, requestBytes []byte) (*request_notes_for_team_response.RequestNotesForTeamResponseT, error) {
-	responseBytes, err := performPost(server+"/requests/request/notes_for_team", requestBytes)
-	if err != nil {
-		return nil, err
-	}
-
-	response := request_notes_for_team_response.GetRootAsRequestNotesForTeamResponse(responseBytes, 0)
-	return response.UnPack(), nil
+	return sendMessage[request_notes_for_team_response.RequestNotesForTeamResponseT](
+		server+"/requests/request/notes_for_team", requestBytes,
+		request_notes_for_team_response.GetRootAsRequestNotesForTeamResponse)
 }

@@ -15,5 +15,6 @@ go_library(
         "//scouting/webserver/requests/messages:request_notes_for_team_response_go_fbs",
         "//scouting/webserver/requests/messages:submit_data_scouting_response_go_fbs",
         "//scouting/webserver/requests/messages:submit_notes_response_go_fbs",
+        "@com_github_google_flatbuffers//go:go_default_library",
     ],
 )
