@@ -137,15 +137,41 @@ Values MakeValues(uint16_t team) {
       {1.9, {0.1, 19.0}},
       {2.12, {0.15, 18.8}},
       {2.9, {0.25, 19.2}},
+      {3.2, {0.28, 20.5}},
 
-      {3.8, {0.35, 20.6}},
-      {4.9, {0.4,  21.9}},
-      {6.0, {0.40, 24.0}},
-      {7.0, {0.40, 25.5}},
+      {3.86, {0.35, 20.9}},
+      {4.9, {0.4, 21.9}},
+      {5.4, {0.4, 23.9}},
+      {6.0, {0.40, 25.0}},
+      {7.0, {0.37, 27.1}},
 
-      {7.8, {0.35, 26.9}},
-      {10.0, {0.35, 26.9}},
+      {7.8, {0.35, 28.0}},
+      {10.0, {0.35, 28.0}},
   });
+
+  if (false) {
+    // 1.5 meters -> 2.7
+    // 2.3 meters -> 4.7
+    // 4.5 meters -> 7.0
+    // 7.0 meters -> 9.0
+
+    constexpr double kShotVelocity = 9.0;
+    r.shot_velocity_interpolation_table =
+        InterpolationTable<Values::ShotVelocityParams>({
+            {1.0, {kShotVelocity}},
+            {10.0, {kShotVelocity}},
+        });
+  } else {
+    r.shot_velocity_interpolation_table =
+        InterpolationTable<Values::ShotVelocityParams>({
+            {1.0, {2.7}},
+            {1.5, {2.7}},
+            {2.3, {4.7}},
+            {4.5, {7.0}},
+            {7.0, {9.0}},
+            {10.0, {9.0}},
+        });
+  }
 
   switch (team) {
     // A set of constants for tests.
@@ -154,6 +180,12 @@ Values MakeValues(uint16_t team) {
           {2, {0.08, 8.0}},
           {5, {0.6, 10.0}},
       });
+
+      r.shot_velocity_interpolation_table =
+          InterpolationTable<Values::ShotVelocityParams>({
+              {2, {2.0}},
+              {5, {4.0}},
+          });
 
       climber->potentiometer_offset = 0.0;
       intake_front->potentiometer_offset = 0.0;
@@ -223,6 +255,12 @@ Values MakeValues(uint16_t team) {
           {2, {0.08, 8.0}},
           {5, {0.6, 10.0}},
       });
+
+      r.shot_velocity_interpolation_table =
+          InterpolationTable<Values::ShotVelocityParams>({
+              {2, {2.0}},
+              {5, {4.0}},
+          });
 
       climber->potentiometer_offset = 0.0;
       intake_front->potentiometer_offset = 0.0;

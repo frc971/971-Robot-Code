@@ -1,6 +1,5 @@
 #include "y2022/control_loops/superstructure/turret/aiming.h"
 
-#include "y2022/constants.h"
 #include "y2022/control_loops/drivetrain/drivetrain_base.h"
 
 namespace y2022 {
@@ -13,10 +12,6 @@ using frc971::control_loops::aiming::ShotConfig;
 using frc971::control_loops::aiming::RobotState;
 
 namespace {
-// Average speed-over-ground of the ball on its way to the target. Our current
-// model assumes constant ball velocity regardless of shot distance.
-constexpr double kBallSpeedOverGround = 2.0;  // m/s
-
 // If the turret is at zero, then it will be at this angle at which the shot
 // will leave the robot. I.e., if the turret is at zero, then the shot will go
 // straight out the back of the robot.
@@ -43,7 +38,8 @@ flatbuffers::DetachedBuffer MakePrefilledGoal() {
 }
 }  // namespace
 
-Aimer::Aimer() : goal_(MakePrefilledGoal()) {}
+Aimer::Aimer(std::shared_ptr<const constants::Values> constants)
+    : constants_(constants), goal_(MakePrefilledGoal()) {}
 
 void Aimer::Update(const Status *status, ShotMode shot_mode) {
   const Pose robot_pose({status->x(), status->y(), 0}, status->theta());
@@ -56,15 +52,18 @@ void Aimer::Update(const Status *status, ShotMode shot_mode) {
   const double xdot = linear_angular(0) * std::cos(status->theta());
   const double ydot = linear_angular(0) * std::sin(status->theta());
 
-  current_goal_ =
-      frc971::control_loops::aiming::AimerGoal(
-          ShotConfig{goal, shot_mode, constants::Values::kTurretRange(),
-                     kBallSpeedOverGround,
-                     /*wrap_mode=*/0.0, kTurretZeroOffset},
-          RobotState{robot_pose,
-                     {xdot, ydot},
-                     linear_angular(1),
-                     goal_.message().unsafe_goal()});
+  // Use the previous shot distance to estimate the speed-over-ground of the
+  // ball.
+  current_goal_ = frc971::control_loops::aiming::AimerGoal(
+      ShotConfig{goal, shot_mode, constants_->kTurretRange(),
+                 constants_->shot_velocity_interpolation_table
+                     .Get(current_goal_.target_distance)
+                     .shot_speed_over_ground,
+                 /*wrap_mode=*/0.0, kTurretZeroOffset},
+      RobotState{robot_pose,
+                 {xdot, ydot},
+                 linear_angular(1),
+                 goal_.message().unsafe_goal()});
 
   goal_.mutable_message()->mutate_unsafe_goal(current_goal_.position);
   goal_.mutable_message()->mutate_goal_velocity(

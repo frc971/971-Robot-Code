@@ -218,13 +218,28 @@ struct Values {
     static ShotParams BlendY(double coefficient, ShotParams a1, ShotParams a2) {
       using ::frc971::shooter_interpolation::Blend;
       return ShotParams{
-          Blend(coefficient, a1.shot_angle, a2.shot_angle),
-          Blend(coefficient, a1.shot_velocity, a2.shot_velocity),
+          .shot_angle = Blend(coefficient, a1.shot_angle, a2.shot_angle),
+          .shot_velocity =
+              Blend(coefficient, a1.shot_velocity, a2.shot_velocity),
       };
     }
   };
 
+  struct ShotVelocityParams {
+    // Speed over ground to use for shooting-on-the-fly.
+    double shot_speed_over_ground;
+
+    static ShotVelocityParams BlendY(double coefficient, ShotVelocityParams a1,
+                                     ShotVelocityParams a2) {
+      using ::frc971::shooter_interpolation::Blend;
+      return ShotVelocityParams{Blend(coefficient, a1.shot_speed_over_ground,
+                                      a2.shot_speed_over_ground)};
+    }
+  };
+
   InterpolationTable<ShotParams> shot_interpolation_table;
+
+  InterpolationTable<ShotVelocityParams> shot_velocity_interpolation_table;
 };
 
 // Creates and returns a Values instance for the constants.
