@@ -244,6 +244,10 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
        .turret_position = turret_.estimated_position(),
        .shooting = true});
 
+  // Dont shoot if the robot is moving faster than this
+  constexpr double kMaxShootSpeed = 1.0;
+  const bool moving_too_fast = std::abs(robot_velocity()) > kMaxShootSpeed;
+
   switch (state_) {
     case SuperstructureState::IDLE: {
       // Only change the turret's goal loading position when idle, to prevent us
@@ -369,8 +373,8 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
               kTurretGoalThreshold;
 
       // Don't open the flippers until the turret's ready: give them as little
-      // time to get bumped as possible.
-      if (!turret_near_goal || collided) {
+      // time to get bumped as possible. Or moving to fast.
+      if (!turret_near_goal || collided || moving_too_fast) {
         break;
       }
 
@@ -527,6 +531,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   status_builder.add_flippers_open(flippers_open_);
   status_builder.add_reseating_in_catapult(reseating_in_catapult_);
   status_builder.add_fire(fire_);
+  status_builder.add_moving_too_fast(moving_too_fast);
   status_builder.add_ready_to_fire(state_ == SuperstructureState::LOADED &&
                                    turret_near_goal && !collided);
   status_builder.add_state(state_);

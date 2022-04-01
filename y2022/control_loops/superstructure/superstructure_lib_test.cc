@@ -753,7 +753,7 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
   SetEnabled(true);
   WaitUntilZeroed();
 
-  SendRobotVelocity(3.0);
+  SendRobotVelocity(1.0);
 
   constexpr double kTurretGoal = 2.0;
   {

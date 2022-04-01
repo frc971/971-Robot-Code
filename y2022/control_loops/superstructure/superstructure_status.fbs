@@ -57,6 +57,8 @@ table Status {
   reseating_in_catapult:bool (id: 13);
   // Whether the turret is ready for firing
   ready_to_fire:bool (id: 20);
+  // Whether the robot is moving too fast to shoot
+  moving_too_fast:bool (id: 21);
   // Whether the catapult was told to fire,
   // meaning that the turret and flippers are ready for firing
   // and we were asked to fire. Different from fire flag in goal.
