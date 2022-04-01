@@ -41,9 +41,24 @@ export function plotSuperstructure(conn: Connection, element: Element): void {
       .setColor(BLUE)
       .setPointSize(1.0);
   positionPlot.addMessageLine(status, ['fire'])
-      .setColor(CYAN)
+      .setColor(BROWN)
+      .setPointSize(1.0);
+  positionPlot.addMessageLine(status, ['ready_to_fire'])
+      .setColor(GREEN)
+      .setPointSize(1.0);
+  positionPlot.addMessageLine(status, ['collided'])
+      .setColor(PINK)
       .setPointSize(1.0);
 
+  const shotCountPlot =
+      aosPlotter.addPlot(element, [DEFAULT_WIDTH, DEFAULT_HEIGHT / 2]);
+  shotCountPlot.plot.getAxisLabels().setTitle('Shot Count');
+  shotCountPlot.plot.getAxisLabels().setXLabel(TIME);
+  shotCountPlot.plot.getAxisLabels().setYLabel('balls');
+  shotCountPlot.plot.setDefaultYRange([-1.0, 2.0]);
+  shotCountPlot.addMessageLine(status, ['shot_count'])
+      .setColor(RED)
+      .setPointSize(1.0);
 
   const intakePlot =
       aosPlotter.addPlot(element, [DEFAULT_WIDTH, DEFAULT_HEIGHT / 2]);

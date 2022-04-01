@@ -130,6 +130,19 @@ cc_test(
     ],
 )
 
+cc_binary(
+    name = "superstructure_replay",
+    srcs = ["superstructure_replay.cc"],
+    deps = [
+        ":superstructure_lib",
+        "//aos:configuration",
+        "//aos:init",
+        "//aos/events:simulated_event_loop",
+        "//aos/events/logging:log_reader",
+        "//aos/network:team_number",
+    ],
+)
+
 cc_library(
     name = "collision_avoidance_lib",
     srcs = ["collision_avoidance.cc"],

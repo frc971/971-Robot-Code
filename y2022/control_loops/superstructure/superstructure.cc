@@ -34,8 +34,8 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
           event_loop->MakeFetcher<CANPosition>("/superstructure")),
       joystick_state_fetcher_(
           event_loop->MakeFetcher<aos::JoystickState>("/aos")),
-      ball_color_fetcher_(event_loop->MakeFetcher<y2022::vision::BallColor>(
-          "/superstructure")),
+      ball_color_fetcher_(
+          event_loop->MakeFetcher<y2022::vision::BallColor>("/superstructure")),
       aimer_(values) {
   event_loop->SetRuntimeRealtimePriority(30);
 }
@@ -601,6 +601,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   status_builder.add_fire(fire_);
   status_builder.add_moving_too_fast(moving_too_fast);
   status_builder.add_discarding_ball(discarding_ball_);
+  status_builder.add_collided(collided);
   status_builder.add_ready_to_fire(state_ == SuperstructureState::LOADED &&
                                    turret_near_goal && !collided);
   status_builder.add_state(state_);

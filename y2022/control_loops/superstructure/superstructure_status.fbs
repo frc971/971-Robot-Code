@@ -55,6 +55,8 @@ table Status {
   flippers_open:bool (id: 12);
   // Whether the flippers failed to open and we are retrying
   reseating_in_catapult:bool (id: 13);
+  // Whether the turret/catapult is collided with the intake
+  collided:bool(id: 23);
   // Whether the turret is ready for firing
   ready_to_fire:bool (id: 20);
   // Whether the robot is moving too fast to shoot
