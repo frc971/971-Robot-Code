@@ -558,6 +558,9 @@ bool PretendOwnerDied(aos_mutex *mutex, pid_t tid) {
 
 static int kPinnedMessageIndex = 0;
 
+constexpr monotonic_clock::duration kChannelStorageDuration =
+    std::chrono::milliseconds(500);
+
 }  // namespace
 
 // Tests that death during sends is recovered from correctly.
@@ -575,7 +578,7 @@ TEST(LocklessQueueTest, Death) {
   config.num_watchers = 2;
   config.num_senders = 2;
   config.num_pinners = 1;
-  config.queue_size = 2;
+  config.queue_size = 10;
   config.message_data_size = 32;
 
   TestShmRobustness(
@@ -596,14 +599,16 @@ TEST(LocklessQueueTest, Death) {
             config);
         // Now try to write some messages.  We will get killed a bunch as this
         // tries to happen.
-        LocklessQueueSender sender = LocklessQueueSender::Make(queue).value();
+        LocklessQueueSender sender =
+            LocklessQueueSender::Make(queue, kChannelStorageDuration).value();
         LocklessQueuePinner pinner = LocklessQueuePinner::Make(queue).value();
         for (int i = 0; i < 5; ++i) {
           char data[100];
           size_t s = snprintf(data, sizeof(data), "foobar%d", i + 1);
-          sender.Send(data, s + 1, monotonic_clock::min_time,
-                      realtime_clock::min_time, 0xffffffffl, UUID::Zero(),
-                      nullptr, nullptr, nullptr);
+          ASSERT_EQ(sender.Send(data, s + 1, monotonic_clock::min_time,
+                                realtime_clock::min_time, 0xffffffffl,
+                                UUID::Zero(), nullptr, nullptr, nullptr),
+                    LocklessQueueSender::Result::GOOD);
           // Pin a message, so when we keep writing we will exercise the pinning
           // logic.
           if (i == 1) {
@@ -613,7 +618,8 @@ TEST(LocklessQueueTest, Death) {
       },
       [config, tid](void *raw_memory) {
         ::aos::ipc_lib::LocklessQueueMemory *const memory =
-            reinterpret_cast<::aos::ipc_lib::LocklessQueueMemory *>(raw_memory);
+            reinterpret_cast< ::aos::ipc_lib::LocklessQueueMemory *>(
+                raw_memory);
         // Confirm that we can create 2 senders (the number in the queue), and
         // send a message.  And that all the messages in the queue are valid.
         LocklessQueue queue(memory, memory, config);
@@ -639,7 +645,7 @@ TEST(LocklessQueueTest, Death) {
         }
 
         // Building and destroying a sender will clean up the queue.
-        LocklessQueueSender::Make(queue).value();
+        LocklessQueueSender::Make(queue, kChannelStorageDuration).value();
 
         if (print) {
           LOG(INFO) << "Cleaned up version:";
@@ -665,19 +671,21 @@ TEST(LocklessQueueTest, Death) {
         }
 
         {
-          LocklessQueueSender sender = LocklessQueueSender::Make(queue).value();
+          LocklessQueueSender sender =
+              LocklessQueueSender::Make(queue, kChannelStorageDuration).value();
           {
             // Make a second sender to confirm that the slot was freed.
             // If the sender doesn't get cleaned up, this will fail.
-            LocklessQueueSender::Make(queue).value();
+            LocklessQueueSender::Make(queue, kChannelStorageDuration).value();
           }
 
           // Send a message to make sure that the queue still works.
           char data[100];
           size_t s = snprintf(data, sizeof(data), "foobar%d", 971);
-          sender.Send(data, s + 1, monotonic_clock::min_time,
-                      realtime_clock::min_time, 0xffffffffl, UUID::Zero(),
-                      nullptr, nullptr, nullptr);
+          ASSERT_EQ(sender.Send(data, s + 1, monotonic_clock::min_time,
+                                realtime_clock::min_time, 0xffffffffl,
+                                UUID::Zero(), nullptr, nullptr, nullptr),
+                    LocklessQueueSender::Result::GOOD);
         }
 
         // Now loop through the queue and make sure the number in the snprintf

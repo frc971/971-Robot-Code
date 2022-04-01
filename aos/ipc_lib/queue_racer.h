@@ -10,11 +10,28 @@ namespace ipc_lib {
 
 struct ThreadState;
 
+struct QueueRacerConfiguration {
+  // Number of threads that send messages
+  const int num_threads;
+  // Number of messages sent by each thread
+  const uint64_t num_messages;
+  // Allows QueueRacer to check for multiple returns from calling Send()
+  const std::vector<LocklessQueueSender::Result> expected_send_results = {
+      LocklessQueueSender::Result::GOOD};
+  // Channel Storage Duration for queue used by QueueRacer
+  const monotonic_clock::duration channel_storage_duration =
+      std::chrono::nanoseconds(1);
+  // Set to true if all writes and reads are expected to be successful
+  // This allows QueueRacer to be used for checking failure scenarios
+  const bool check_writes_and_reads;
+};
+
 // Class to test the queue by spinning up a bunch of writing threads and racing
 // them together to all write at once.
 class QueueRacer {
  public:
   QueueRacer(LocklessQueue queue, int num_threads, uint64_t num_messages);
+  QueueRacer(LocklessQueue queue, const QueueRacerConfiguration &config);
 
   // Runs an iteration of the race.
   //
@@ -52,7 +69,10 @@ class QueueRacer {
   LocklessQueue queue_;
   const uint64_t num_threads_;
   const uint64_t num_messages_;
-
+  const monotonic_clock::duration channel_storage_duration_;
+  // Allows QueueRacer to check for multiple returns from calling Send()
+  const std::vector<LocklessQueueSender::Result> expected_send_results_;
+  const bool check_writes_and_reads_;
   // The overall number of writes executed will always be between the two of
   // these.  We can't atomically count writes, so we have to bound them.
   //

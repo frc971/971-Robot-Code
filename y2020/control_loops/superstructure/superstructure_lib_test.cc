@@ -686,8 +686,7 @@ TEST_F(SuperstructureTest, DoesNothing) {
     goal_builder.add_turret(turret_offset);
     goal_builder.add_shooter(shooter_offset);
 
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
   RunFor(chrono::seconds(10));
   VerifyNearGoal();
@@ -733,8 +732,7 @@ TEST_F(SuperstructureTest, ReachesGoal) {
     goal_builder.add_turret(turret_offset);
     goal_builder.add_shooter(shooter_offset);
 
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   // Give it a lot of time to get there.
@@ -775,8 +773,7 @@ TEST_F(SuperstructureTest, SaturationTest) {
     goal_builder.add_turret(turret_offset);
     goal_builder.add_shooter(shooter_offset);
 
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
   RunFor(chrono::seconds(8));
   VerifyNearGoal();
@@ -810,8 +807,7 @@ TEST_F(SuperstructureTest, SaturationTest) {
     goal_builder.add_turret(turret_offset);
     goal_builder.add_shooter(shooter_offset);
 
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
   superstructure_plant_.set_peak_hood_velocity(23.0);
   // 30 hz sin wave on the hood causes acceleration to be ignored.
@@ -865,8 +861,7 @@ TEST_F(SuperstructureTest, SpinUp) {
     goal_builder.add_shooter(shooter_offset);
     goal_builder.add_shooting(true);
 
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   // In the beginning, the finisher and accelerator should not be ready
@@ -911,8 +906,7 @@ TEST_F(SuperstructureTest, SpinUp) {
     goal_builder.add_intake(intake_offset);
     goal_builder.add_shooter(shooter_offset);
 
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   // Give it a lot of time to get there.
@@ -961,8 +955,7 @@ TEST_F(SuperstructureTest, Climber) {
     goal_builder.add_climber_voltage(-10.0);
     goal_builder.add_turret(turret_offset);
 
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   // The turret needs to move out of the way first.  This takes some time.
@@ -986,8 +979,7 @@ TEST_F(SuperstructureTest, Climber) {
     goal_builder.add_climber_voltage(10.0);
     goal_builder.add_turret(turret_offset);
 
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
   RunFor(chrono::seconds(1));
 
@@ -1175,6 +1167,8 @@ class SuperstructureReplayTest : public ::testing::Test {
                                "y2020.control_loops.superstructure.Status");
     reader_.RemapLoggedChannel("/superstructure",
                                "y2020.control_loops.superstructure.Output");
+    reader_.RemapLoggedChannel("/drivetrain",
+                               "frc971.control_loops.drivetrain.Status");
     reader_.Register();
 
     roborio_ = aos::configuration::GetNode(reader_.configuration(), "roborio");
@@ -1221,32 +1215,27 @@ TEST_F(SuperstructureReplayTest, BallsShotReplay) {
   constexpr double kShotDistance = 2.5;
   const auto target = turret::OuterPortPose(aos::Alliance::kRed);
 
-  // There was no target when this log was taken so send a position within range
-  // of the interpolation table.
-  test_event_loop_->AddPhasedLoop(
-      [&](int) {
-        auto builder = drivetrain_status_sender_.MakeBuilder();
+  // There was no target when this log was taken, so send a position within
+  // range of the interpolation table.
+  {
+    auto builder = drivetrain_status_sender_.MakeBuilder();
 
-        const auto localizer_offset =
-            builder
-                .MakeBuilder<
-                    frc971::control_loops::drivetrain::LocalizerState>()
-                .Finish();
+    const auto localizer_offset =
+        builder.MakeBuilder<frc971::control_loops::drivetrain::LocalizerState>()
+            .Finish();
 
-        auto drivetrain_status_builder =
-            builder.MakeBuilder<DrivetrainStatus>();
+    auto drivetrain_status_builder = builder.MakeBuilder<DrivetrainStatus>();
 
-        // Set the robot up at kShotAngle off from the target, kShotDistance
-        // away.
-        drivetrain_status_builder.add_x(target.abs_pos().x() +
-                                        std::cos(kShotAngle) * kShotDistance);
-        drivetrain_status_builder.add_y(target.abs_pos().y() +
-                                        std::sin(kShotAngle) * kShotDistance);
-        drivetrain_status_builder.add_localizer(localizer_offset);
+    // Set the robot up at kShotAngle off from the target, kShotDistance
+    // away.
+    drivetrain_status_builder.add_x(target.abs_pos().x() +
+                                    std::cos(kShotAngle) * kShotDistance);
+    drivetrain_status_builder.add_y(target.abs_pos().y() +
+                                    std::sin(kShotAngle) * kShotDistance);
+    drivetrain_status_builder.add_localizer(localizer_offset);
 
-        builder.CheckOk(builder.Send(drivetrain_status_builder.Finish()));
-      },
-      frc971::controls::kLoopFrequency);
+    builder.CheckOk(builder.Send(drivetrain_status_builder.Finish()));
+  }
 
   reader_.event_loop_factory()->Run();
 
@@ -1289,8 +1278,7 @@ TEST_P(SuperstructureAllianceTest, TurretAutoAim) {
 
     goal_builder.add_turret_tracking(true);
 
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   {
@@ -1347,8 +1335,7 @@ TEST_P(SuperstructureAllianceTest, ShooterInterpolationManualGoal) {
     goal_builder.add_shooter(shooter_goal);
     goal_builder.add_hood(hood_offset);
 
-    CHECK_EQ(builder.Send(goal_builder.Finish()),
-             aos::RawSender::Error::kOk);
+    CHECK_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::seconds(10));
@@ -1415,8 +1402,7 @@ TEST_P(SuperstructureAllianceTest, ShooterInterpolationOutOfRange) {
     goal_builder.add_shooter_tracking(true);
     goal_builder.add_hood_tracking(true);
 
-    CHECK_EQ(builder.Send(goal_builder.Finish()),
-             aos::RawSender::Error::kOk);
+    CHECK_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
   RunFor(chrono::seconds(10));
 
@@ -1486,8 +1472,7 @@ TEST_P(SuperstructureAllianceTest, ShooterInterpolationInRange) {
     goal_builder.add_shooter_tracking(true);
     goal_builder.add_hood_tracking(true);
 
-    CHECK_EQ(builder.Send(goal_builder.Finish()),
-             aos::RawSender::Error::kOk);
+    CHECK_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
   RunFor(chrono::seconds(10));
 

@@ -120,7 +120,7 @@
       "name": "/pi{{ NUM }}/camera/detailed",
       "type": "frc971.vision.sift.ImageMatchResult",
       "source_node": "pi{{ NUM }}",
-      "frequency": 25,
+      "frequency": 30,
       "max_size": 1000000
     },
     {

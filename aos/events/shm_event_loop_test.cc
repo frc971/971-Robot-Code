@@ -116,6 +116,59 @@ class ShmEventLoopTest : public ::testing::TestWithParam<ReadMethod> {
 
   ShmEventLoopTestFactory *factory() { return &factory_; }
 
+  // Helper functions for testing when a fetcher cannot fetch the next message
+  // because it was overwritten
+  void TestNextMessageNotAvailable(const bool skip_timing_report) {
+    auto loop1 = factory()->MakePrimary("loop1");
+    if (skip_timing_report) {
+      loop1->SkipTimingReport();
+    }
+    auto fetcher = loop1->MakeFetcher<TestMessage>("/test");
+    auto loop2 = factory()->Make("loop2");
+    auto sender = loop2->MakeSender<TestMessage>("/test");
+    bool ran = false;
+    loop1->AddPhasedLoop(
+        [&sender](int) {
+          auto builder = sender.MakeBuilder();
+          TestMessage::Builder test_builder(*builder.fbb());
+          test_builder.add_value(0);
+          builder.CheckOk(builder.Send(test_builder.Finish()));
+        },
+        std::chrono::milliseconds(2));
+    loop1
+        ->AddTimer([this, &fetcher, &ran]() {
+          EXPECT_DEATH(fetcher.FetchNext(),
+                       "The next message is no longer "
+                       "available.*\"/test\".*\"aos\\.TestMessage\"");
+          factory()->Exit();
+          ran = true;
+        })
+        ->Setup(loop1->monotonic_now() + std::chrono::seconds(4));
+    factory()->Run();
+    EXPECT_TRUE(ran);
+  }
+  void TestNextMessageNotAvailableNoRun(const bool skip_timing_report) {
+    auto loop1 = factory()->MakePrimary("loop1");
+    if (skip_timing_report) {
+      loop1->SkipTimingReport();
+    }
+    auto fetcher = loop1->MakeFetcher<TestMessage>("/test");
+    auto loop2 = factory()->Make("loop2");
+    auto sender = loop2->MakeSender<TestMessage>("/test");
+    time::PhasedLoop phased_loop(std::chrono::milliseconds(2),
+                                 loop2->monotonic_now());
+    for (int i = 0; i < 2000; ++i) {
+      auto builder = sender.MakeBuilder();
+      TestMessage::Builder test_builder(*builder.fbb());
+      test_builder.add_value(0);
+      builder.CheckOk(builder.Send(test_builder.Finish()));
+      phased_loop.SleepUntilNext();
+    }
+    EXPECT_DEATH(fetcher.FetchNext(),
+                 "The next message is no longer "
+                 "available.*\"/test\".*\"aos\\.TestMessage\"");
+  }
+
  private:
   ShmEventLoopTestFactory factory_;
 };
@@ -351,89 +404,25 @@ TEST_P(ShmEventLoopDeathTest, OutOfBoundsWrite) {
 // Tests that the next message not being available prints a helpful error in the
 // normal case.
 TEST_P(ShmEventLoopDeathTest, NextMessageNotAvailable) {
-  auto loop1 = factory()->MakePrimary("loop1");
-  auto fetcher = loop1->MakeFetcher<TestMessage>("/test");
-  auto loop2 = factory()->Make("loop2");
-  auto sender = loop2->MakeSender<TestMessage>("/test");
-  bool ran = false;
-  loop1->OnRun([this, &sender, &fetcher, &ran]() {
-    for (int i = 0; i < 2000; ++i) {
-      auto builder = sender.MakeBuilder();
-      TestMessage::Builder test_builder(*builder.fbb());
-      test_builder.add_value(0);
-      builder.CheckOk(builder.Send(test_builder.Finish()));
-    }
-    EXPECT_DEATH(fetcher.FetchNext(),
-                 "The next message is no longer "
-                 "available.*\"/test\".*\"aos\\.TestMessage\"");
-    factory()->Exit();
-    ran = true;
-  });
-  factory()->Run();
-  EXPECT_TRUE(ran);
+  TestNextMessageNotAvailable(false);
 }
 
 // Tests that the next message not being available prints a helpful error with
 // timing reports disabled.
 TEST_P(ShmEventLoopDeathTest, NextMessageNotAvailableNoTimingReports) {
-  auto loop1 = factory()->MakePrimary("loop1");
-  loop1->SkipTimingReport();
-  auto fetcher = loop1->MakeFetcher<TestMessage>("/test");
-  auto loop2 = factory()->Make("loop2");
-  auto sender = loop2->MakeSender<TestMessage>("/test");
-  bool ran = false;
-  loop1->OnRun([this, &sender, &fetcher, &ran]() {
-    for (int i = 0; i < 2000; ++i) {
-      auto builder = sender.MakeBuilder();
-      TestMessage::Builder test_builder(*builder.fbb());
-      test_builder.add_value(0);
-      builder.CheckOk(builder.Send(test_builder.Finish()));
-    }
-    EXPECT_DEATH(fetcher.FetchNext(),
-                 "The next message is no longer "
-                 "available.*\"/test\".*\"aos\\.TestMessage\"");
-    factory()->Exit();
-    ran = true;
-  });
-  factory()->Run();
-  EXPECT_TRUE(ran);
+  TestNextMessageNotAvailable(true);
 }
 
 // Tests that the next message not being available prints a helpful error even
 // when Run is never called.
 TEST_P(ShmEventLoopDeathTest, NextMessageNotAvailableNoRun) {
-  auto loop1 = factory()->MakePrimary("loop1");
-  auto fetcher = loop1->MakeFetcher<TestMessage>("/test");
-  auto loop2 = factory()->Make("loop2");
-  auto sender = loop2->MakeSender<TestMessage>("/test");
-  for (int i = 0; i < 2000; ++i) {
-    auto builder = sender.MakeBuilder();
-    TestMessage::Builder test_builder(*builder.fbb());
-    test_builder.add_value(0);
-    builder.CheckOk(builder.Send(test_builder.Finish()));
-  }
-  EXPECT_DEATH(fetcher.FetchNext(),
-               "The next message is no longer "
-               "available.*\"/test\".*\"aos\\.TestMessage\"");
+  TestNextMessageNotAvailableNoRun(false);
 }
 
 // Tests that the next message not being available prints a helpful error even
 // when Run is never called without timing reports.
 TEST_P(ShmEventLoopDeathTest, NextMessageNotAvailableNoRunNoTimingReports) {
-  auto loop1 = factory()->MakePrimary("loop1");
-  loop1->SkipTimingReport();
-  auto fetcher = loop1->MakeFetcher<TestMessage>("/test");
-  auto loop2 = factory()->Make("loop2");
-  auto sender = loop2->MakeSender<TestMessage>("/test");
-  for (int i = 0; i < 2000; ++i) {
-    auto builder = sender.MakeBuilder();
-    TestMessage::Builder test_builder(*builder.fbb());
-    test_builder.add_value(0);
-    builder.CheckOk(builder.Send(test_builder.Finish()));
-  }
-  EXPECT_DEATH(fetcher.FetchNext(),
-               "The next message is no longer "
-               "available.*\"/test\".*\"aos\\.TestMessage\"");
+  TestNextMessageNotAvailableNoRun(true);
 }
 
 // TODO(austin): Test that missing a deadline with a timer recovers as expected.

@@ -1,6 +1,7 @@
 #include "aos/events/simulated_event_loop.h"
 
 #include <chrono>
+#include <functional>
 #include <string_view>
 
 #include "aos/events/event_loop_param_test.h"
@@ -139,13 +140,13 @@ class RemoteMessageSimulatedEventLoopTest
 };
 
 class FunctionEvent : public EventScheduler::Event {
-  public:
-   FunctionEvent(std::function<void()> fn) : fn_(fn) {}
+ public:
+  FunctionEvent(std::function<void()> fn) : fn_(fn) {}
 
-   void Handle() noexcept override { fn_(); }
+  void Handle() noexcept override { fn_(); }
 
-  private:
-   std::function<void()> fn_;
+ private:
+  std::function<void()> fn_;
 };
 
 // Test that creating an event and running the scheduler runs the event.
@@ -204,14 +205,6 @@ TEST(EventSchedulerTest, TemporarilyStopAndRun) {
   EXPECT_EQ(counter, 1);
 }
 
-void SendTestMessage(aos::Sender<TestMessage> *sender, int value) {
-  aos::Sender<TestMessage>::Builder builder = sender->MakeBuilder();
-  TestMessage::Builder test_message_builder =
-      builder.MakeBuilder<TestMessage>();
-  test_message_builder.add_value(value);
-  ASSERT_EQ(builder.Send(test_message_builder.Finish()), RawSender::Error::kOk);
-}
-
 // Test that sending a message after running gets properly notified.
 TEST(SimulatedEventLoopTest, SendAfterRunFor) {
   SimulatedEventLoopTestFactory factory;
@@ -223,7 +216,7 @@ TEST(SimulatedEventLoopTest, SendAfterRunFor) {
       simulated_event_loop_factory.MakeEventLoop("ping");
   aos::Sender<TestMessage> test_message_sender =
       ping_event_loop->MakeSender<TestMessage>("/test");
-  SendTestMessage(&test_message_sender, 1);
+  ASSERT_EQ(SendTestMessage(test_message_sender), RawSender::Error::kOk);
 
   std::unique_ptr<EventLoop> pong1_event_loop =
       simulated_event_loop_factory.MakeEventLoop("pong");
@@ -243,7 +236,7 @@ TEST(SimulatedEventLoopTest, SendAfterRunFor) {
 
   // Pauses in the middle don't count though, so this should be counted.
   // But, the fresh watcher shouldn't pick it up yet.
-  SendTestMessage(&test_message_sender, 2);
+  ASSERT_EQ(SendTestMessage(test_message_sender), RawSender::Error::kOk);
 
   EXPECT_EQ(test_message_counter1.count(), 0u);
   EXPECT_EQ(test_message_counter2.count(), 0u);
@@ -251,6 +244,63 @@ TEST(SimulatedEventLoopTest, SendAfterRunFor) {
 
   EXPECT_EQ(test_message_counter1.count(), 1u);
   EXPECT_EQ(test_message_counter2.count(), 0u);
+}
+
+void TestSentTooFastCheckEdgeCase(
+    const std::function<RawSender::Error(int, int)> expected_err,
+    const bool send_twice_at_end) {
+  SimulatedEventLoopTestFactory factory;
+
+  auto event_loop = factory.MakePrimary("primary");
+
+  auto sender = event_loop->MakeSender<TestMessage>("/test");
+
+  const int queue_size = TestChannelQueueSize(event_loop.get());
+  int msgs_sent = 0;
+  event_loop->AddPhasedLoop(
+      [&](int) {
+        EXPECT_EQ(SendTestMessage(sender), expected_err(msgs_sent, queue_size));
+        msgs_sent++;
+
+        // If send_twice_at_end, send the last two messages (message
+        // queue_size and queue_size + 1) in the same iteration, meaning that
+        // we would be sending very slightly too fast. Otherwise, we will send
+        // message queue_size + 1 in the next iteration and we will continue
+        // to be sending exactly at the channel frequency.
+        if (send_twice_at_end && (msgs_sent == queue_size)) {
+          EXPECT_EQ(SendTestMessage(sender),
+                    expected_err(msgs_sent, queue_size));
+          msgs_sent++;
+        }
+
+        if (msgs_sent > queue_size) {
+          factory.Exit();
+        }
+      },
+      std::chrono::duration_cast<std::chrono::nanoseconds>(
+          std::chrono::duration<double>(
+              1.0 / TestChannelFrequency(event_loop.get()))));
+
+  factory.Run();
+}
+
+// Tests that RawSender::Error::kMessagesSentTooFast is not returned
+// when messages are sent at the exact frequency of the channel.
+TEST(SimulatedEventLoopTest, SendingAtExactlyChannelFrequency) {
+  TestSentTooFastCheckEdgeCase([](int, int) { return RawSender::Error::kOk; },
+                               false);
+}
+
+// Tests that RawSender::Error::kMessagesSentTooFast is returned
+// when sending exactly one more message than allowed in a channel storage
+// duration.
+TEST(SimulatedEventLoopTest, SendingSlightlyTooFast) {
+  TestSentTooFastCheckEdgeCase(
+      [](const int msgs_sent, const int queue_size) {
+        return (msgs_sent == queue_size ? RawSender::Error::kMessagesSentTooFast
+                                        : RawSender::Error::kOk);
+      },
+      true);
 }
 
 // Test that creating an event loop while running dies.
@@ -1338,7 +1388,6 @@ TEST_P(RemoteMessageSimulatedEventLoopTest, MultinodeDisconnect) {
   EXPECT_EQ(ConnectedCount(pi3_client_statistics_fetcher.get(), "pi1"), 2u)
       << " : " << aos::FlatbufferToJson(pi3_client_statistics_fetcher.get());
 
-
   EXPECT_EQ(pi1_pong_counter.count(), 601u);
   EXPECT_EQ(pi2_pong_counter.count(), 601u);
 
@@ -1707,18 +1756,17 @@ TEST_P(RemoteMessageSimulatedEventLoopTest, BootUUIDTest) {
       });
 
   // Confirm that reboot changes the UUID.
-  pi2->OnShutdown(
-      [&expected_boot_uuid, &boot_number, &expected_connection_time, pi1, pi2,
-       pi2_boot1]() {
-        expected_boot_uuid = pi2_boot1;
-        ++boot_number;
-        LOG(INFO) << "OnShutdown triggered for pi2";
-        pi2->OnStartup(
-            [&expected_boot_uuid, &expected_connection_time, pi1, pi2]() {
-              EXPECT_EQ(expected_boot_uuid, pi2->boot_uuid());
-              expected_connection_time = pi1->monotonic_now();
-            });
-      });
+  pi2->OnShutdown([&expected_boot_uuid, &boot_number, &expected_connection_time,
+                   pi1, pi2, pi2_boot1]() {
+    expected_boot_uuid = pi2_boot1;
+    ++boot_number;
+    LOG(INFO) << "OnShutdown triggered for pi2";
+    pi2->OnStartup(
+        [&expected_boot_uuid, &expected_connection_time, pi1, pi2]() {
+          EXPECT_EQ(expected_boot_uuid, pi2->boot_uuid());
+          expected_connection_time = pi1->monotonic_now();
+        });
+  });
 
   // Let a couple of ServerStatistics messages show up before rebooting.
   factory.RunFor(chrono::milliseconds(2002));
