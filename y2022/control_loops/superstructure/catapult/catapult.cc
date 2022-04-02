@@ -342,7 +342,9 @@ Catapult::Iterate(const CatapultGoal *catapult_goal, const Position *position,
     latched_shot_velocity = catapult_goal->shot_velocity();
   }
 
-  if (catapult_.running()) {
+  // Don't update last_firing_ if the catapult is disabled, so that we actually
+  // end up firing once it's enabled
+  if (catapult_.running() && !catapult_disabled) {
     last_firing_ = fire;
   }
 
