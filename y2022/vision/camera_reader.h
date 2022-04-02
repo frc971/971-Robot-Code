@@ -97,7 +97,6 @@ class CameraReader {
     const cv::Mat result(5, 1, CV_32F,
                          const_cast<void *>(static_cast<const void *>(
                              camera_calibration_->dist_coeffs()->data())));
-    result.convertTo(result, CV_64F);
     CHECK_EQ(result.total(), camera_calibration_->dist_coeffs()->size());
     return result;
   }

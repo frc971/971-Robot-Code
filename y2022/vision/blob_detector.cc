@@ -12,7 +12,7 @@
 #include "y2022/vision/geometry.h"
 
 DEFINE_bool(
-    use_outdoors, false,
+    use_outdoors, true,
     "If set, use the color filters and exposure for an outdoor setting.");
 DEFINE_int32(red_delta, 50, "Required difference between green pixels vs. red");
 DEFINE_int32(blue_delta, -20,
@@ -247,10 +247,6 @@ void BlobDetector::DrawBlobs(const BlobResult &blob_result,
     cv::circle(view_image, stats.centroid, kCircleRadius, cv::Scalar(0, 255, 0),
                cv::FILLED);
   }
-
-  // Draw average centroid
-  cv::circle(view_image, blob_result.centroid, kCircleRadius,
-             cv::Scalar(255, 255, 0), cv::FILLED);
 }
 
 void BlobDetector::ExtractBlobs(cv::Mat bgr_image,

@@ -200,10 +200,16 @@ void TargetEstimator::Solve(
 
   // Constrain the rotation to be around the localizer's, otherwise there can be
   // multiple solutions. There shouldn't be too much roll or pitch
+  if (FLAGS_freeze_roll) {
+    roll_ = roll_seed;
+  }
   constexpr double kMaxRollDelta = 0.1;
   SetBoundsOrFreeze(&roll_, FLAGS_freeze_roll, roll_seed - kMaxRollDelta,
                     roll_seed + kMaxRollDelta, &problem);
 
+  if (FLAGS_freeze_pitch) {
+    pitch_ = pitch_seed;
+  }
   constexpr double kMaxPitchDelta = 0.15;
   SetBoundsOrFreeze(&pitch_, FLAGS_freeze_pitch, pitch_seed - kMaxPitchDelta,
                     pitch_seed + kMaxPitchDelta, &problem);
