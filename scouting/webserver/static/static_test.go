@@ -36,6 +36,27 @@ func TestServing(t *testing.T) {
 	scoutingServer.Stop()
 }
 
+func TestCache(t *testing.T) {
+	scoutingServer := server.NewScoutingServer()
+	ServePages(scoutingServer, "test_pages")
+	scoutingServer.Start(8080)
+
+	resp, err := http.Get("http://localhost:8080/root.txt")
+	if err != nil {
+		t.Fatalf("Failed to get data ", err)
+	}
+	compareString(resp.Header.Get("Expires"), "Thu, 01 Jan 1970 00:00:00 UTC", t)
+	compareString(resp.Header.Get("Cache-Control"), "no-cache, private, max-age=0", t)
+	compareString(resp.Header.Get("Pragma"), "no-cache", t)
+	compareString(resp.Header.Get("X-Accel-Expires"), "0", t)
+}
+
+func compareString(actual string, expected string, t *testing.T) {
+	if actual != expected {
+		t.Errorf("Expected ", actual, " to equal ", expected)
+	}
+}
+
 // Retrieves the data at the specified path. If an error occurs, the test case
 // is terminated and failed.
 func getData(path string, t *testing.T) string {
