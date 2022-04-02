@@ -292,44 +292,11 @@
       "max_size": 2000
     },
     {
-      "name": "/imu/aos/remote_timestamps/logger/localizer/frc971-controls-LocalizerStatus",
-      "type": "aos.message_bridge.RemoteMessage",
-      "source_node": "imu",
-      "logger": "NOT_LOGGED",
-      "frequency": 2200,
-      "num_senders": 2,
-      "max_size": 200
-    },
-    {
       "name": "/localizer",
       "type": "frc971.controls.LocalizerVisualization",
       "source_node": "imu",
       "frequency": 200,
-      "max_size": 2000,
-      "logger": "LOCAL_AND_REMOTE_LOGGER",
-      "logger_nodes": [
-        "logger"
-      ],
-      "destination_nodes": [
-        {
-          "name": "logger",
-          "priority": 5,
-          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
-          "timestamp_logger_nodes": [
-            "imu"
-          ],
-          "time_to_live": 5000000
-        }
-      ]
-    },
-    {
-      "name": "/imu/aos/remote_timestamps/logger/localizer/frc971-controls-LocalizerVisualization",
-      "type": "aos.message_bridge.RemoteMessage",
-      "source_node": "imu",
-      "logger": "NOT_LOGGED",
-      "frequency": 200,
-      "num_senders": 2,
-      "max_size": 200
+      "max_size": 2000
     },
     {
       "name": "/localizer",
@@ -387,31 +354,7 @@
       "source_node": "imu",
       "frequency": 2200,
       "max_size": 1600,
-      "num_senders": 2,
-      "logger": "LOCAL_AND_REMOTE_LOGGER",
-      "logger_nodes": [
-        "logger"
-      ],
-      "destination_nodes": [
-        {
-          "name": "logger",
-          "priority": 5,
-          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
-          "timestamp_logger_nodes": [
-            "imu"
-          ],
-          "time_to_live": 5000000
-        }
-      ]
-    },
-    {
-      "name": "/imu/aos/remote_timestamps/logger/localizer/frc971-IMUValuesBatch",
-      "type": "aos.message_bridge.RemoteMessage",
-      "source_node": "imu",
-      "logger": "NOT_LOGGED",
-      "frequency": 2200,
-      "num_senders": 2,
-      "max_size": 200
+      "num_senders": 2
     }
   ],
   "applications": [
