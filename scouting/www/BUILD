@@ -42,6 +42,8 @@ babel(
         "$(execpath :main_bundle)",
         "--no-babelrc",
         "--source-maps",
+        "--minified",
+        "--no-comments",
         "--plugins=@angular/compiler-cli/linker/babel",
         "--out-dir",
         "$(@D)",
