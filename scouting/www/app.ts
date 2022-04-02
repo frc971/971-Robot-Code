@@ -1,6 +1,11 @@
 import {Component, ElementRef, ViewChild} from '@angular/core';
 
-type Tab = 'MatchList' | 'Notes' | 'Entry' | 'ImportMatchList';
+type Tab =
+  | 'MatchList'
+  | 'Notes'
+  | 'Entry'
+  | 'ImportMatchList'
+  | 'ShiftSchedule';
 type TeamInMatch = {
   teamNumber: number;
   matchNumber: number;
