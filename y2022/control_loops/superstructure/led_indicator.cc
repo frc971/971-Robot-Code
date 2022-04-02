@@ -5,19 +5,20 @@ namespace led = ctre::phoenix::led;
 namespace y2022::control_loops::superstructure {
 
 LedIndicator::LedIndicator(aos::EventLoop *event_loop)
-    : drivetrain_output_fetcher_(
-          event_loop->MakeFetcher<frc971::control_loops::drivetrain::Output>(
+    : event_loop_(event_loop),
+      drivetrain_output_fetcher_(
+          event_loop_->MakeFetcher<frc971::control_loops::drivetrain::Output>(
               "/drivetrain")),
       superstructure_status_fetcher_(
-          event_loop->MakeFetcher<Status>("/superstructure")),
+          event_loop_->MakeFetcher<Status>("/superstructure")),
       server_statistics_fetcher_(
-          event_loop->MakeFetcher<aos::message_bridge::ServerStatistics>(
+          event_loop_->MakeFetcher<aos::message_bridge::ServerStatistics>(
               "/roborio/aos")),
       client_statistics_fetcher_(
-          event_loop->MakeFetcher<aos::message_bridge::ClientStatistics>(
+          event_loop_->MakeFetcher<aos::message_bridge::ClientStatistics>(
               "/roborio/aos")),
       gyro_reading_fetcher_(
-          event_loop->MakeFetcher<frc971::sensors::GyroReading>(
+          event_loop_->MakeFetcher<frc971::sensors::GyroReading>(
               "/drivetrain")) {
   led::CANdleConfiguration config;
   config.statusLedOffWhenActive = true;
@@ -25,7 +26,7 @@ LedIndicator::LedIndicator(aos::EventLoop *event_loop)
   config.brightnessScalar = 1.0;
   candle_.ConfigAllSettings(config, 0);
 
-  event_loop->AddPhasedLoop([&](int) { DecideColor(); },
+  event_loop_->AddPhasedLoop([&](int) { DecideColor(); },
                             std::chrono::milliseconds(20));
 }
 
@@ -89,7 +90,7 @@ void LedIndicator::DecideColor() {
   // If the imu gyro readings are not being sent/updated recently
   if (!gyro_reading_fetcher_.get() ||
       gyro_reading_fetcher_.context().monotonic_event_time <
-          event_loop->monotonic_now() - frc971::controls::kLoopFrequency) {
+          event_loop_->monotonic_now() - frc971::controls::kLoopFrequency * 10) {
     if (imu_flash_) {
       DisplayLed(255, 0, 0);
     } else {

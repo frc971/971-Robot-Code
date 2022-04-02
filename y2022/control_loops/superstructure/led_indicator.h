@@ -50,7 +50,7 @@ class LedIndicator {
 
   ctre::phoenix::led::CANdle candle_{0, ""};
 
-  aos::EventLoop *event_loop;
+  aos::EventLoop *event_loop_;
   aos::Fetcher<frc971::control_loops::drivetrain::Output>
       drivetrain_output_fetcher_;
   aos::Fetcher<Status> superstructure_status_fetcher_;
