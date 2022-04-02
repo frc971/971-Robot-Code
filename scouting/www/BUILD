@@ -66,6 +66,29 @@ genrule(
     cmd = "cp $(location :main_bundle_compiled)/main_bundle.min.js $(OUTS)",
 )
 
+py_binary(
+    name = "index_html_generator",
+    srcs = ["index_html_generator.py"],
+)
+
+genrule(
+    name = "generate_index_html",
+    srcs = [
+        "index.template.html",
+        "main_bundle_file.js",
+    ],
+    outs = ["index.html"],
+    cmd = " ".join([
+        "$(location :index_html_generator)",
+        "--template $(location index.template.html)",
+        "--bundle $(location main_bundle_file.js)",
+        "--output $(location index.html)",
+    ]),
+    tools = [
+        ":index_html_generator",
+    ],
+)
+
 # Create a copy of zone.js here so that we can have a predictable path to
 # source it from on the webserver.
 genrule(

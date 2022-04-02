@@ -13,6 +13,7 @@ go_test(
     name = "static_test",
     srcs = ["static_test.go"],
     data = [
+        "test_pages/index.html",
         "test_pages/page.txt",
         "test_pages/root.txt",
     ],
