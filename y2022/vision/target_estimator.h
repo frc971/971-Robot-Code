@@ -47,9 +47,7 @@ class TargetEstimator {
 
   inline double confidence() const { return confidence_; }
 
-  // Draws the distance, angle, and rotation on the given image
-  static void DrawEstimate(const TargetEstimate &target_estimate,
-                           cv::Mat view_image);
+  // Draws the distance, angle, rotation, and projected tape on the given image
   void DrawEstimate(cv::Mat view_image) const;
 
  private:
@@ -59,15 +57,23 @@ class TargetEstimator {
   // clockwise around the rectangle
   static const std::array<cv::Point3d, 4> kMiddleTapePiecePoints;
 
+  // Computes matrix of hub in camera's frame
+  template <typename S>
+  Eigen::Transform<S, 3, Eigen::Affine> ComputeHubCameraTransform(
+      S roll, S pitch, S yaw, S distance, S theta, S camera_height) const;
+
   template <typename S>
   cv::Point_<S> ProjectToImage(
       cv::Point3d tape_point_hub,
-      Eigen::Transform<S, 3, Eigen::Affine> &H_hub_camera) const;
+      const Eigen::Transform<S, 3, Eigen::Affine> &H_hub_camera) const;
 
   template <typename S>
   cv::Point_<S> DistanceFromTape(
       size_t centroid_index,
       const std::vector<cv::Point_<S>> &tape_points) const;
+
+  void DrawProjectedHub(const std::vector<cv::Point2d> &tape_points_proj,
+                        cv::Mat view_image) const;
 
   std::vector<BlobDetector::BlobStats> blob_stats_;
   size_t middle_blob_index_;

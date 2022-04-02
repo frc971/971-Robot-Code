@@ -24,6 +24,8 @@ DEFINE_uint64(max_num_iterations, 200,
               "Maximum number of iterations for the ceres solver");
 DEFINE_bool(solver_output, false,
             "If true, log the solver progress and results");
+DEFINE_bool(draw_projected_hub, true,
+            "If true, draw the projected hub when drawing an estimate");
 
 namespace y2022::vision {
 
@@ -281,6 +283,7 @@ void TargetEstimator::Solve(
 }
 
 namespace {
+
 // Hacks to extract a double from a scalar, which is either a ceres jet or a
 // double. Only used for debugging and displaying.
 template <typename S>
@@ -293,6 +296,7 @@ template <typename S>
 cv::Point2d ScalarPointToDouble(cv::Point_<S> p) {
   return cv::Point2d(ScalarToDouble(p.x), ScalarToDouble(p.y));
 }
+
 }  // namespace
 
 template <typename S>
@@ -301,20 +305,10 @@ bool TargetEstimator::operator()(const S *const roll, const S *const pitch,
                                  const S *const theta,
                                  const S *const camera_height,
                                  S *residual) const {
-  using Vector3s = Eigen::Matrix<S, 3, 1>;
-  using Affine3s = Eigen::Transform<S, 3, Eigen::Affine>;
+  const auto H_hub_camera = ComputeHubCameraTransform(
+      *roll, *pitch, *yaw, *distance, *theta, *camera_height);
 
-  Eigen::AngleAxis<S> roll_angle(*roll, Vector3s::UnitX());
-  Eigen::AngleAxis<S> pitch_angle(*pitch, Vector3s::UnitY());
-  Eigen::AngleAxis<S> yaw_angle(*yaw, Vector3s::UnitZ());
-  // Construct the rotation and translation of the camera in the hub's frame
-  Eigen::Quaternion<S> R_camera_hub = yaw_angle * pitch_angle * roll_angle;
-  Vector3s T_camera_hub(*distance * ceres::cos(*theta),
-                        *distance * ceres::sin(*theta), *camera_height);
-
-  Affine3s H_camera_hub = Eigen::Translation<S, 3>(T_camera_hub) * R_camera_hub;
-  Affine3s H_hub_camera = H_camera_hub.inverse();
-
+  // Project tape points
   std::vector<cv::Point_<S>> tape_points_proj;
   for (cv::Point3d tape_point_hub : kTapePoints) {
     tape_points_proj.emplace_back(ProjectToImage(tape_point_hub, H_hub_camera));
@@ -368,15 +362,11 @@ bool TargetEstimator::operator()(const S *const roll, const S *const pitch,
   if (image_.has_value()) {
     // Draw the current stage of the solving
     cv::Mat image = image_->clone();
-    for (size_t i = 0; i < tape_points_proj.size() - 1; i++) {
-      cv::line(image, ScalarPointToDouble(tape_points_proj[i]),
-               ScalarPointToDouble(tape_points_proj[i + 1]),
-               cv::Scalar(255, 255, 255));
-      cv::circle(image, ScalarPointToDouble(tape_points_proj[i]), 2,
-                 cv::Scalar(255, 20, 147), cv::FILLED);
-      cv::circle(image, ScalarPointToDouble(tape_points_proj[i + 1]), 2,
-                 cv::Scalar(255, 20, 147), cv::FILLED);
+    std::vector<cv::Point2d> tape_points_proj_double;
+    for (auto point : tape_points_proj) {
+      tape_points_proj_double.emplace_back(ScalarPointToDouble(point));
     }
+    DrawProjectedHub(tape_points_proj_double, image);
     cv::imshow("image", image);
     cv::waitKey(10);
   }
@@ -385,9 +375,30 @@ bool TargetEstimator::operator()(const S *const roll, const S *const pitch,
 }
 
 template <typename S>
+Eigen::Transform<S, 3, Eigen::Affine>
+TargetEstimator::ComputeHubCameraTransform(S roll, S pitch, S yaw, S distance,
+                                           S theta, S camera_height) const {
+  using Vector3s = Eigen::Matrix<S, 3, 1>;
+  using Affine3s = Eigen::Transform<S, 3, Eigen::Affine>;
+
+  Eigen::AngleAxis<S> roll_angle(roll, Vector3s::UnitX());
+  Eigen::AngleAxis<S> pitch_angle(pitch, Vector3s::UnitY());
+  Eigen::AngleAxis<S> yaw_angle(yaw, Vector3s::UnitZ());
+  // Construct the rotation and translation of the camera in the hub's frame
+  Eigen::Quaternion<S> R_camera_hub = yaw_angle * pitch_angle * roll_angle;
+  Vector3s T_camera_hub(distance * ceres::cos(theta),
+                        distance * ceres::sin(theta), camera_height);
+
+  Affine3s H_camera_hub = Eigen::Translation<S, 3>(T_camera_hub) * R_camera_hub;
+  Affine3s H_hub_camera = H_camera_hub.inverse();
+
+  return H_hub_camera;
+}
+
+template <typename S>
 cv::Point_<S> TargetEstimator::ProjectToImage(
     cv::Point3d tape_point_hub,
-    Eigen::Transform<S, 3, Eigen::Affine> &H_hub_camera) const {
+    const Eigen::Transform<S, 3, Eigen::Affine> &H_hub_camera) const {
   using Vector3s = Eigen::Matrix<S, 3, 1>;
 
   const Vector3s tape_point_hub_eigen =
@@ -439,10 +450,33 @@ cv::Point_<S> TargetEstimator::DistanceFromTape(
   return distance;
 }
 
-namespace {
-void DrawEstimateValues(double distance, double angle_to_target,
-                        double angle_to_camera, double roll, double pitch,
-                        double yaw, double confidence, cv::Mat view_image) {
+void TargetEstimator::DrawProjectedHub(
+    const std::vector<cv::Point2d> &tape_points_proj,
+    cv::Mat view_image) const {
+  for (size_t i = 0; i < tape_points_proj.size() - 1; i++) {
+    cv::line(view_image, ScalarPointToDouble(tape_points_proj[i]),
+             ScalarPointToDouble(tape_points_proj[i + 1]),
+             cv::Scalar(255, 255, 255));
+    cv::circle(view_image, ScalarPointToDouble(tape_points_proj[i]), 2,
+               cv::Scalar(255, 20, 147), cv::FILLED);
+    cv::circle(view_image, ScalarPointToDouble(tape_points_proj[i + 1]), 2,
+               cv::Scalar(255, 20, 147), cv::FILLED);
+  }
+}
+
+void TargetEstimator::DrawEstimate(cv::Mat view_image) const {
+  if (FLAGS_draw_projected_hub) {
+    // Draw projected hub
+    const auto H_hub_camera = ComputeHubCameraTransform(
+        roll_, pitch_, yaw_, distance_, angle_to_camera_, camera_height_);
+    std::vector<cv::Point2d> tape_points_proj;
+    for (cv::Point3d tape_point_hub : kTapePoints) {
+      tape_points_proj.emplace_back(
+          ProjectToImage(tape_point_hub, H_hub_camera));
+    }
+    DrawProjectedHub(tape_points_proj, view_image);
+  }
+
   constexpr int kTextX = 10;
   int text_y = 0;
   constexpr int kTextSpacing = 25;
@@ -450,44 +484,27 @@ void DrawEstimateValues(double distance, double angle_to_target,
   const auto kTextColor = cv::Scalar(0, 255, 255);
   constexpr double kFontScale = 0.6;
 
-  cv::putText(view_image, absl::StrFormat("Distance: %.3f", distance),
+  cv::putText(view_image, absl::StrFormat("Distance: %.3f", distance_),
               cv::Point(kTextX, text_y += kTextSpacing),
               cv::FONT_HERSHEY_DUPLEX, kFontScale, kTextColor, 2);
   cv::putText(view_image,
-              absl::StrFormat("Angle to target: %.3f", angle_to_target),
+              absl::StrFormat("Angle to target: %.3f", angle_to_target()),
               cv::Point(kTextX, text_y += kTextSpacing),
               cv::FONT_HERSHEY_DUPLEX, kFontScale, kTextColor, 2);
   cv::putText(view_image,
-              absl::StrFormat("Angle to camera: %.3f", angle_to_camera),
+              absl::StrFormat("Angle to camera: %.3f", angle_to_camera_),
               cv::Point(kTextX, text_y += kTextSpacing),
               cv::FONT_HERSHEY_DUPLEX, kFontScale, kTextColor, 2);
 
-  cv::putText(
-      view_image,
-      absl::StrFormat("Roll: %.3f, pitch: %.3f, yaw: %.3f", roll, pitch, yaw),
-      cv::Point(kTextX, text_y += kTextSpacing), cv::FONT_HERSHEY_DUPLEX,
-      kFontScale, kTextColor, 2);
-
-  cv::putText(view_image, absl::StrFormat("Confidence: %.3f", confidence),
+  cv::putText(view_image,
+              absl::StrFormat("Roll: %.3f, pitch: %.3f, yaw: %.3f", roll_,
+                              pitch_, yaw_),
               cv::Point(kTextX, text_y += kTextSpacing),
               cv::FONT_HERSHEY_DUPLEX, kFontScale, kTextColor, 2);
-}
-}  // namespace
 
-void TargetEstimator::DrawEstimate(const TargetEstimate &target_estimate,
-                                   cv::Mat view_image) {
-  DrawEstimateValues(target_estimate.distance(),
-                     target_estimate.angle_to_target(),
-                     target_estimate.angle_to_camera(),
-                     target_estimate.rotation_camera_hub()->roll(),
-                     target_estimate.rotation_camera_hub()->pitch(),
-                     target_estimate.rotation_camera_hub()->yaw(),
-                     target_estimate.confidence(), view_image);
-}
-
-void TargetEstimator::DrawEstimate(cv::Mat view_image) const {
-  DrawEstimateValues(distance_, angle_to_target(), angle_to_camera_, roll_,
-                     pitch_, yaw_, confidence_, view_image);
+  cv::putText(view_image, absl::StrFormat("Confidence: %.3f", confidence_),
+              cv::Point(kTextX, text_y += kTextSpacing),
+              cv::FONT_HERSHEY_DUPLEX, kFontScale, kTextColor, 2);
 }
 
 }  // namespace y2022::vision
