@@ -4,7 +4,7 @@ import {MessageHandler, TimestampedMessage} from 'org_frc971/aos/network/www/aos
 import {BLUE, BROWN, CYAN, GREEN, PINK, RED, WHITE} from 'org_frc971/aos/network/www/colors';
 import {Connection} from 'org_frc971/aos/network/www/proxy';
 import {Table} from 'org_frc971/aos/network/www/reflection';
-import {Schema} from 'org_frc971/external/com_github_google_flatbuffers/reflection/reflection_generated';
+import {Schema} from 'flatbuffers_reflection/reflection_generated';
 import {TargetEstimate} from 'org_frc971/y2022/vision/target_estimate_generated';
 
 

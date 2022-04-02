@@ -379,7 +379,8 @@ def flatbuffer_ts_library(
         flatc_args = DEFAULT_FLATC_TS_ARGS,
         visibility = None,
         restricted_to = None,
-        include_reflection = True):
+        include_reflection = True,
+        package_name = None):
     """Generates a ts_library rule for a given flatbuffer definition.
 
     Args:
@@ -401,6 +402,7 @@ def flatbuffer_ts_library(
       include_reflection: Optional, Whether to depend on the flatbuffer
         reflection library automatically. Only really relevant for the
         target that builds the reflection library itself.
+      package_name: Optional, Package name to use for the generated code.
     """
     srcs_lib = "%s_srcs" % (name)
 
@@ -428,7 +430,7 @@ def flatbuffer_ts_library(
         "SRCS=($(SRCS));",
         "OUTS=($(OUTS));",
         "for i in $${!SRCS[@]}; do",
-        "sed 's/third_party\\/flatbuffers/external\\/com_github_google_flatbuffers/' $${SRCS[i]} > $${OUTS[i]};",
+        "sed \"s/'.*reflection\\/reflection_pregenerated/'flatbuffers_reflection\\/reflection_generated/\" $${SRCS[i]} > $${OUTS[i]};",
         "sed -i 's/_pregenerated/_generated/' $${OUTS[i]};",
         "done",
     ])
@@ -469,6 +471,7 @@ def flatbuffer_ts_library(
         restricted_to = restricted_to,
         target_compatible_with = target_compatible_with,
         deps = [name + "_ts"],
+        package_name = package_name,
     )
     native.filegroup(
         name = "%s_includes" % (name),

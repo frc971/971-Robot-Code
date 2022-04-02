@@ -5,7 +5,7 @@ import {MessageHandler, TimestampedMessage} from 'org_frc971/aos/network/www/aos
 import {ByteBuffer} from 'flatbuffers';
 import {Plot, Point} from 'org_frc971/aos/network/www/plotter';
 import {Connection} from 'org_frc971/aos/network/www/proxy';
-import {Schema} from 'org_frc971/external/com_github_google_flatbuffers/reflection/reflection_generated';
+import {Schema} from 'flatbuffers_reflection/reflection_generated';
 
 export function plotData(conn: Connection, parentDiv: Element) {
   // Set up a selection box to allow the user to choose between plots to show.
