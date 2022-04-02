@@ -38,7 +38,7 @@ constexpr double kTapePieceHeight = 0.05;
 // Height of the center of the tape (m)
 constexpr double kTapeCenterHeight = 2.58 + (kTapePieceHeight / 2);
 // Horizontal distance from tape to center of hub (m)
-constexpr double kUpperHubRadius = 1.22 / 2;
+constexpr double kUpperHubRadius = 1.36 / 2;
 
 std::vector<cv::Point3d> ComputeTapePoints() {
   std::vector<cv::Point3d> tape_points;
@@ -185,8 +185,9 @@ void TargetEstimator::Solve(
                                                ceres::DO_NOT_TAKE_OWNERSHIP);
 
   // TODO(milind): add loss function when we get more noisy data
-  problem.AddResidualBlock(cost_function, nullptr, &roll_, &pitch_, &yaw_,
-                           &distance_, &angle_to_camera_, &camera_height_);
+  problem.AddResidualBlock(cost_function, new ceres::HuberLoss(2.0), &roll_,
+                           &pitch_, &yaw_, &distance_, &angle_to_camera_,
+                           &camera_height_);
 
   // Compute the estimated rotation of the camera using the robot rotation.
   const Eigen::Matrix3d extrinsics_rot =
@@ -326,38 +327,127 @@ bool TargetEstimator::operator()(const S *const roll, const S *const pitch,
         ProjectToImage(*tape_piece_it, H_hub_camera);
   }
 
+  // Now, find the closest tape for each blob.
+  // We don't normally see tape without matching blobs in the center.  So we
+  // want to compress any gaps in the matched tape blobs.  This makes it so it
+  // doesn't want to make the goal super small and skip tape blobs.  The
+  // resulting accuracy is then pretty good.
+
+  // Mapping from tape index to blob index.
+  std::vector<std::pair<size_t, size_t>> tape_indices;
   for (size_t i = 0; i < blob_stats_.size(); i++) {
-    const auto distance = DistanceFromTape(i, tape_points_proj);
+    tape_indices.emplace_back(ClosestTape(i, tape_points_proj), i);
+    VLOG(2) << "Tape indices were " << tape_indices.back().first;
+  }
+
+  std::sort(
+      tape_indices.begin(), tape_indices.end(),
+      [](const std::pair<size_t, size_t> &a,
+         const std::pair<size_t, size_t> &b) { return a.first < b.first; });
+
+  size_t middle_tape_index = 1000;
+  for (size_t i = 0; i < tape_indices.size(); ++i) {
+    if (tape_indices[i].second == middle_blob_index_) {
+      middle_tape_index = i;
+    }
+  }
+  CHECK_NE(middle_tape_index, 1000) << "Failed to find middle tape";
+
+  if (VLOG_IS_ON(2)) {
+    LOG(INFO) << "Middle tape is " << middle_tape_index << ", blob "
+              << middle_blob_index_;
+    for (size_t i = 0; i < tape_indices.size(); ++i) {
+      const auto distance = DistanceFromTapeIndex(
+          tape_indices[i].second, tape_indices[i].first, tape_points_proj);
+      LOG(INFO) << "Blob index " << tape_indices[i].second << " maps to "
+                << tape_indices[i].first << " distance " << distance.x << " "
+                << distance.y;
+    }
+  }
+
+  {
+    size_t offset = 0;
+    for (size_t i = middle_tape_index + 1; i < tape_indices.size(); ++i) {
+      tape_indices[i].first -= offset;
+
+      if (tape_indices[i].first > tape_indices[i - 1].first + 1) {
+        offset += tape_indices[i].first - (tape_indices[i - 1].first + 1);
+        VLOG(2) << "Offset now " << offset;
+        tape_indices[i].first = tape_indices[i - 1].first + 1;
+      }
+    }
+  }
+
+  if (VLOG_IS_ON(2)) {
+    LOG(INFO) << "Middle tape is " << middle_tape_index << ", blob "
+              << middle_blob_index_;
+    for (size_t i = 0; i < tape_indices.size(); ++i) {
+      const auto distance = DistanceFromTapeIndex(
+          tape_indices[i].second, tape_indices[i].first, tape_points_proj);
+      LOG(INFO) << "Blob index " << tape_indices[i].second << " maps to "
+                << tape_indices[i].first << " distance " << distance.x << " "
+                << distance.y;
+    }
+  }
+
+  {
+    size_t offset = 0;
+    for (size_t i = middle_tape_index; i > 0; --i) {
+      tape_indices[i - 1].first -= offset;
+
+      if (tape_indices[i - 1].first + 1 < tape_indices[i].first) {
+        VLOG(2) << "Too big a gap. " << tape_indices[i].first << " and "
+                << tape_indices[i - 1].first;
+
+        offset += tape_indices[i].first - (tape_indices[i - 1].first + 1);
+        tape_indices[i - 1].first = tape_indices[i].first - 1;
+        VLOG(2) << "Offset now " << offset;
+      }
+    }
+  }
+
+  if (VLOG_IS_ON(2)) {
+    LOG(INFO) << "Middle tape is " << middle_tape_index << ", blob "
+              << middle_blob_index_;
+    for (size_t i = 0; i < tape_indices.size(); ++i) {
+      const auto distance = DistanceFromTapeIndex(
+          tape_indices[i].second, tape_indices[i].first, tape_points_proj);
+      LOG(INFO) << "Blob index " << tape_indices[i].second << " maps to "
+                << tape_indices[i].first << " distance " << distance.x << " "
+                << distance.y;
+    }
+  }
+
+  for (size_t i = 0; i < tape_indices.size(); ++i) {
+    const auto distance = DistanceFromTapeIndex(
+        tape_indices[i].second, tape_indices[i].first, tape_points_proj);
+    VLOG(2) << "Blob index " << tape_indices[i].second << " maps to "
+            << tape_indices[i].first << " distance " << distance.x << " "
+            << distance.y;
     // Set the residual to the (x, y) distance of the centroid from the
-    // nearest projected piece of tape
+    // matched projected piece of tape
     residual[i * 2] = distance.x;
     residual[(i * 2) + 1] = distance.y;
   }
 
   // Penalize based on the difference between the size of the projected piece of
-  // tape and that of the detected blobs. Use the squared size to avoid taking a
-  // norm, which ceres can't handle well
-  const S middle_tape_piece_width_squared =
-      ceres::pow(middle_tape_piece_points_proj[2].x -
-                     middle_tape_piece_points_proj[3].x,
-                 2) +
-      ceres::pow(middle_tape_piece_points_proj[2].y -
-                     middle_tape_piece_points_proj[3].y,
-                 2);
-  const S middle_tape_piece_height_squared =
-      ceres::pow(middle_tape_piece_points_proj[1].x -
-                     middle_tape_piece_points_proj[2].x,
-                 2) +
-      ceres::pow(middle_tape_piece_points_proj[1].y -
-                     middle_tape_piece_points_proj[2].y,
-                 2);
+  // tape and that of the detected blobs.
+  const S middle_tape_piece_width = ceres::hypot(
+      middle_tape_piece_points_proj[2].x - middle_tape_piece_points_proj[3].x,
+      middle_tape_piece_points_proj[2].y - middle_tape_piece_points_proj[3].y);
+  const S middle_tape_piece_height = ceres::hypot(
+      middle_tape_piece_points_proj[1].x - middle_tape_piece_points_proj[2].x,
+      middle_tape_piece_points_proj[1].y - middle_tape_piece_points_proj[2].y);
 
+  constexpr double kCenterBlobSizeScalar = 0.1;
   residual[blob_stats_.size() * 2] =
-      middle_tape_piece_width_squared -
-      std::pow(blob_stats_[middle_blob_index_].size.width, 2);
+      kCenterBlobSizeScalar *
+      (middle_tape_piece_width -
+       static_cast<S>(blob_stats_[middle_blob_index_].size.width));
   residual[(blob_stats_.size() * 2) + 1] =
-      middle_tape_piece_height_squared -
-      std::pow(blob_stats_[middle_blob_index_].size.height, 2);
+      kCenterBlobSizeScalar *
+      (middle_tape_piece_height -
+       static_cast<S>(blob_stats_[middle_blob_index_].size.height));
 
   if (image_.has_value()) {
     // Draw the current stage of the solving
@@ -427,27 +517,41 @@ bool Less(cv::Point_<S> distance_1, cv::Point_<S> distance_2) {
 }  // namespace
 
 template <typename S>
-cv::Point_<S> TargetEstimator::DistanceFromTape(
+cv::Point_<S> TargetEstimator::DistanceFromTapeIndex(
+    size_t blob_index, size_t tape_index,
+    const std::vector<cv::Point_<S>> &tape_points) const {
+  return Distance(blob_stats_[blob_index].centroid, tape_points[tape_index]);
+}
+
+template <typename S>
+size_t TargetEstimator::ClosestTape(
     size_t blob_index, const std::vector<cv::Point_<S>> &tape_points) const {
   auto distance = cv::Point_<S>(std::numeric_limits<S>::infinity(),
                                 std::numeric_limits<S>::infinity());
+  size_t final_match = 255;
   if (blob_index == middle_blob_index_) {
     // Fix the middle blob so the solver can't go too far off
-    distance = Distance(blob_stats_[middle_blob_index_].centroid,
-                        tape_points[tape_points.size() / 2]);
+    final_match = tape_points.size() / 2;
+    distance = DistanceFromTapeIndex(blob_index, final_match, tape_points);
   } else {
     // Give the other blob_stats some freedom in case some are split into pieces
     for (auto it = tape_points.begin(); it < tape_points.end(); it++) {
+      const size_t tape_index = std::distance(tape_points.begin(), it);
       const auto current_distance =
-          Distance(blob_stats_[blob_index].centroid, *it);
-      if ((it != tape_points.begin() + (tape_points.size() / 2)) &&
+          DistanceFromTapeIndex(blob_index, tape_index, tape_points);
+      if ((tape_index != (tape_points.size() / 2)) &&
           Less(current_distance, distance)) {
+        final_match = tape_index;
         distance = current_distance;
       }
     }
   }
 
-  return distance;
+  VLOG(2) << "Matched index " << blob_index << " to " << final_match
+          << " distance " << distance.x << " " << distance.y;
+  CHECK_NE(final_match, 255);
+
+  return final_match;
 }
 
 void TargetEstimator::DrawProjectedHub(
