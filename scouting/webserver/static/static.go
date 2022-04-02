@@ -32,8 +32,11 @@ func NoCache(h http.Handler) http.Handler {
 	return http.HandlerFunc(fn)
 }
 
-// Serve pages given a port, directory to serve from, and an channel to pass the errors back to the caller.
+// Serve pages in the specified directory.
 func ServePages(scoutingServer server.ScoutingServer, directory string) {
 	// Serve the / endpoint given a folder of pages.
 	scoutingServer.Handle("/", NoCache(http.FileServer(http.Dir(directory))))
+	// Make an exception for pictures. We don't want the pictures to be
+	// pulled every time the page is refreshed.
+	scoutingServer.Handle("/pictures/", http.FileServer(http.Dir(directory)))
 }
