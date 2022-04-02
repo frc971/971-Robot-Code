@@ -1,6 +1,5 @@
 load("@npm//@bazel/typescript:index.bzl", "ts_library")
 load("//tools/build_rules:js.bzl", "rollup_bundle")
-load("@npm//@bazel/concatjs:index.bzl", "concatjs_devserver")
 load("@npm//@babel/cli:index.bzl", "babel")
 
 ts_library(
@@ -88,15 +87,6 @@ filegroup(
         ":zonejs_copy",
     ],
     visibility = ["//visibility:public"],
-)
-
-concatjs_devserver(
-    name = "devserver",
-    serving_path = "/main_bundle.js",
-    static_files = [
-        ":static_files",
-    ],
-    deps = [":main_bundle_compiled"],
 )
 
 filegroup(
