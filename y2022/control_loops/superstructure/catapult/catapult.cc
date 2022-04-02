@@ -359,10 +359,13 @@ Catapult::Iterate(const CatapultGoal *catapult_goal, const Position *position,
       // hardware applies it, we need to run the optimizer for the position at
       // the *next* control loop cycle.
 
-      const Eigen::Vector3d next_X =
-          catapult_.controller().plant().A() * catapult_.estimated_state() +
-          catapult_.controller().plant().B() *
-              catapult_.controller().observer().last_U();
+      Eigen::Vector3d next_X = catapult_.estimated_state();
+      for (int i = catapult_.controller().plant().coefficients().delayed_u;
+           i > 1; --i) {
+        next_X = catapult_.controller().plant().A() * next_X +
+                 catapult_.controller().plant().B() *
+                     catapult_.controller().observer().last_U(i - 1);
+      }
 
       catapult_mpc_.SetState(
           next_X.block<2, 1>(0, 0),

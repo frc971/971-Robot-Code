@@ -39,7 +39,7 @@ struct StateFeedbackHybridPlantCoefficients final {
       const Eigen::Matrix<Scalar, number_of_outputs, number_of_states> &C,
       const Eigen::Matrix<Scalar, number_of_outputs, number_of_inputs> &D,
       const Eigen::Matrix<Scalar, number_of_inputs, 1> &U_max,
-      const Eigen::Matrix<Scalar, number_of_inputs, 1> &U_min, bool delayed_u)
+      const Eigen::Matrix<Scalar, number_of_inputs, 1> &U_min, size_t delayed_u)
       : A_continuous(A_continuous),
         B_continuous(B_continuous),
         C(C),
@@ -55,7 +55,7 @@ struct StateFeedbackHybridPlantCoefficients final {
   const Eigen::Matrix<Scalar, number_of_inputs, 1> U_min;
   const Eigen::Matrix<Scalar, number_of_inputs, 1> U_max;
 
-  const bool delayed_u;
+  const size_t delayed_u;
 };
 
 template <int number_of_states, int number_of_inputs, int number_of_outputs,
@@ -230,7 +230,7 @@ struct HybridKalmanCoefficients final {
   const Eigen::Matrix<Scalar, number_of_states, number_of_states>
       P_steady_state;
 
-  const bool delayed_u;
+  const size_t delayed_u;
 
   HybridKalmanCoefficients(
       const Eigen::Matrix<Scalar, number_of_states, number_of_states>
@@ -238,7 +238,7 @@ struct HybridKalmanCoefficients final {
       const Eigen::Matrix<Scalar, number_of_outputs, number_of_outputs>
           &R_continuous,
       const Eigen::Matrix<Scalar, number_of_states, number_of_states>
-          &P_steady_state, bool delayed_u)
+          &P_steady_state, size_t delayed_u)
       : Q_continuous(Q_continuous),
         R_continuous(R_continuous),
         P_steady_state(P_steady_state), delayed_u(delayed_u) {

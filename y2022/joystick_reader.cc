@@ -215,7 +215,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     // Keep the catapult return position at the shot one if kCatapultPos is
     // pressed
     if (data.IsPressed(kCatapultPos)) {
-      catapult_return_pos = 0.3;
+      catapult_return_pos = 0.7;
     } else {
       catapult_return_pos = -0.908;
     }
