@@ -1,7 +1,7 @@
 import {Builder, ByteBuffer, Offset} from 'flatbuffers';
 import {Channel as ChannelFb, Configuration} from 'org_frc971/aos/configuration_generated';
 import {ChannelRequest as ChannelRequestFb, ChannelState, MessageHeader, Payload, SdpType, SubscriberRequest, TransferMethod, WebSocketIce, WebSocketMessage, WebSocketSdp} from 'org_frc971/aos/network/web_proxy_generated';
-import {Schema} from 'org_frc971/external/com_github_google_flatbuffers/reflection/reflection_generated';
+import {Schema} from 'flatbuffers_reflection/reflection_generated';
 
 // There is one handler for each DataChannel, it maintains the state of
 // multi-part messages and delegates to a callback when the message is fully

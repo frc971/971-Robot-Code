@@ -28,7 +28,7 @@ import {Line, Plot, Point} from 'org_frc971/aos/network/www/plotter';
 import {Connection} from 'org_frc971/aos/network/www/proxy';
 import {SubscriberRequest, ChannelRequest, TransferMethod} from 'org_frc971/aos/network/web_proxy_generated';
 import {Parser, Table} from 'org_frc971/aos/network/www/reflection'
-import {Schema} from 'org_frc971/external/com_github_google_flatbuffers/reflection/reflection_generated';
+import {Schema} from 'flatbuffers_reflection/reflection_generated';
 import {ByteBuffer} from 'flatbuffers';
 
 export class TimestampedMessage {
