@@ -19,20 +19,47 @@
       "name": "/imu/aos",
       "type": "aos.starter.Status",
       "source_node": "imu",
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
       "frequency": 50,
       "num_senders": 20,
+      "logger_nodes": [
+        "roborio",
+        "logger"
+      ],
       "destination_nodes": [
         {
           "name": "roborio",
           "priority": 5,
-          "time_to_live": 5000000
+          "time_to_live": 5000000,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "imu"
+          ]
         },
         {
           "name": "logger",
           "priority": 5,
-          "time_to_live": 5000000
+          "time_to_live": 5000000,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "imu"
+          ]
         }
       ]
+    },
+    {
+      "name": "/imu/aos/remote_timestamps/roborio/imu/aos/aos-starter-Status",
+      "type": "aos.message_bridge.RemoteMessage",
+      "frequency": 100,
+      "source_node": "imu",
+      "max_size": 208
+    },
+    {
+      "name": "/imu/aos/remote_timestamps/logger/imu/aos/aos-starter-Status",
+      "type": "aos.message_bridge.RemoteMessage",
+      "frequency": 100,
+      "source_node": "imu",
+      "max_size": 208
     },
     {
       "name": "/imu/aos",
@@ -40,18 +67,45 @@
       "source_node": "imu",
       "frequency": 10,
       "num_senders": 2,
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "roborio",
+        "logger"
+      ],
       "destination_nodes": [
         {
           "name": "roborio",
           "priority": 5,
-          "time_to_live": 5000000
+          "time_to_live": 5000000,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "imu"
+          ]
         },
         {
           "name": "logger",
           "priority": 5,
-          "time_to_live": 5000000
+          "time_to_live": 5000000,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "imu"
+          ]
         }
       ]
+    },
+    {
+      "name": "/imu/aos/remote_timestamps/roborio/imu/aos/aos-starter-StarterRpc",
+      "type": "aos.message_bridge.RemoteMessage",
+      "frequency": 20,
+      "source_node": "imu",
+      "max_size": 208
+    },
+    {
+      "name": "/imu/aos/remote_timestamps/logger/imu/aos/aos-starter-StarterRpc",
+      "type": "aos.message_bridge.RemoteMessage",
+      "frequency": 20,
+      "source_node": "imu",
+      "max_size": 208
     },
     {
       "name": "/imu/aos",
@@ -64,7 +118,7 @@
       "name": "/imu/aos",
       "type": "aos.message_bridge.ClientStatistics",
       "source_node": "imu",
-      "frequency": 10,
+      "frequency": 20,
       "num_senders": 2
     },
     {
@@ -118,6 +172,10 @@
       "name": "/logger/aos",
       "type": "aos.starter.StarterRpc",
       "source_node": "logger",
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "imu"
+      ],
       "destination_nodes": [
         {
           "name": "imu",
@@ -143,6 +201,10 @@
       "name": "/logger/aos",
       "type": "aos.starter.Status",
       "source_node": "logger",
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "imu"
+      ],
       "destination_nodes": [
         {
           "name": "imu",
@@ -168,6 +230,10 @@
       "name": "/roborio/aos",
       "type": "aos.starter.StarterRpc",
       "source_node": "roborio",
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "imu"
+      ],
       "destination_nodes": [
         {
           "name": "imu",
@@ -269,7 +335,7 @@
       "name": "/localizer",
       "type": "frc971.controls.LocalizerOutput",
       "source_node": "imu",
-      "frequency": 200,
+      "frequency": 400,
       "max_size": 200,
       "logger": "LOCAL_AND_REMOTE_LOGGER",
       "logger_nodes": [
@@ -302,7 +368,7 @@
       "type": "aos.message_bridge.RemoteMessage",
       "source_node": "imu",
       "logger": "NOT_LOGGED",
-      "frequency": 200,
+      "frequency": 400,
       "num_senders": 2,
       "max_size": 200
     },

@@ -4,7 +4,8 @@
       "name": "/roborio/aos",
       "type": "aos.JoystickState",
       "source_node": "roborio",
-      "frequency": 75,
+      "frequency": 100,
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
       "logger_nodes" : [
         "imu"
       ],
@@ -12,9 +13,22 @@
         {
           "name": "imu",
           "priority": 5,
-          "time_to_live": 50000000
+          "time_to_live": 50000000,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "roborio"
+          ]
         }
       ]
+    },
+    {
+      "name": "/roborio/aos/remote_timestamps/imu/roborio/aos/aos-JoystickState",
+      "type": "aos.message_bridge.RemoteMessage",
+      "source_node": "roborio",
+      "logger": "NOT_LOGGED",
+      "frequency": 200,
+      "num_senders": 2,
+      "max_size": 200
     },
     {
       "name": "/roborio/aos",
@@ -44,6 +58,11 @@
       "source_node": "roborio",
       "frequency": 50,
       "num_senders": 20,
+      "max_size": 2000,
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "logger"
+      ],
       "destination_nodes": [
         {
           "name": "logger",
@@ -72,6 +91,10 @@
       "frequency": 10,
       "max_size": 400,
       "num_senders": 2,
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "logger"
+      ],
       "destination_nodes": [
         {
           "name": "logger",
@@ -104,7 +127,7 @@
       "name": "/roborio/aos",
       "type": "aos.message_bridge.ClientStatistics",
       "source_node": "roborio",
-      "frequency": 15,
+      "frequency": 20,
       "max_size": 2000,
       "num_senders": 2
     },
@@ -228,14 +251,40 @@
         {
           "name": "imu",
           "priority": 5,
-          "time_to_live": 50000000
+          "time_to_live": 50000000,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "roborio"
+          ]
         },
         {
           "name": "logger",
           "priority": 5,
-          "time_to_live": 50000000
+          "time_to_live": 50000000,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "roborio"
+          ]
         }
       ]
+    },
+    {
+      "name": "/roborio/aos/remote_timestamps/imu/superstructure/y2022-control_loops-superstructure-Status",
+      "type": "aos.message_bridge.RemoteMessage",
+      "source_node": "roborio",
+      "logger": "NOT_LOGGED",
+      "frequency": 400,
+      "num_senders": 2,
+      "max_size": 200
+    },
+    {
+      "name": "/roborio/aos/remote_timestamps/logger/superstructure/y2022-control_loops-superstructure-Status",
+      "type": "aos.message_bridge.RemoteMessage",
+      "source_node": "roborio",
+      "logger": "NOT_LOGGED",
+      "frequency": 400,
+      "num_senders": 2,
+      "max_size": 200
     },
     {
       "name": "/superstructure",
@@ -309,7 +358,7 @@
       "name": "/drivetrain",
       "type": "frc971.control_loops.drivetrain.Position",
       "source_node": "roborio",
-      "frequency": 200,
+      "frequency": 400,
       "max_size": 112,
       "num_senders": 2
     },
@@ -317,7 +366,7 @@
       "name": "/drivetrain",
       "type": "frc971.control_loops.drivetrain.Output",
       "source_node": "roborio",
-      "frequency": 200,
+      "frequency": 400,
       "max_size": 80,
       "num_senders": 2,
       "logger": "LOCAL_AND_REMOTE_LOGGER",
@@ -341,7 +390,7 @@
       "type": "aos.message_bridge.RemoteMessage",
       "source_node": "roborio",
       "logger": "NOT_LOGGED",
-      "frequency": 200,
+      "frequency": 400,
       "num_senders": 2,
       "max_size": 200
     },
@@ -349,7 +398,7 @@
       "name": "/drivetrain",
       "type": "frc971.control_loops.drivetrain.Status",
       "source_node": "roborio",
-      "frequency": 200,
+      "frequency": 400,
       "max_size": 1616,
       "num_senders": 2
     },
@@ -380,7 +429,7 @@
       "type": "aos.message_bridge.RemoteMessage",
       "source_node": "roborio",
       "logger": "NOT_LOGGED",
-      "frequency": 200,
+      "frequency": 400,
       "num_senders": 2,
       "max_size": 200
     },

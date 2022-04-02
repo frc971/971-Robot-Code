@@ -21,6 +21,12 @@
       "source_node": "pi{{ NUM }}",
       "frequency": 50,
       "num_senders": 20,
+      "max_size": 2000,
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "roborio",
+        "logger"
+      ],
       "destination_nodes": [
         {
           "name": "roborio",
@@ -40,6 +46,11 @@
       "source_node": "pi{{ NUM }}",
       "frequency": 10,
       "num_senders": 2,
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "roborio",
+        "logger"
+      ],
       "destination_nodes": [
         {
           "name": "roborio",
@@ -64,7 +75,7 @@
       "name": "/pi{{ NUM }}/aos",
       "type": "aos.message_bridge.ClientStatistics",
       "source_node": "pi{{ NUM }}",
-      "frequency": 10,
+      "frequency": 20,
       "num_senders": 2
     },
     {
@@ -118,6 +129,10 @@
       "name": "/imu/aos",
       "type": "aos.message_bridge.Timestamp",
       "source_node": "imu",
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "pi{{ NUM }}"
+      ],
       "destination_nodes": [
         {
           "name": "pi{{ NUM }}",
@@ -215,9 +230,22 @@
         {
           "name": "pi{{ NUM }}",
           "priority": 5,
-          "time_to_live": 5000000
+          "time_to_live": 5000000,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "imu"
+          ]
         }
       ]
+    },
+    {
+      "name": "/imu/aos/remote_timestamps/pi{{ NUM }}/localizer/frc971-controls-LocalizerOutput",
+      "type": "aos.message_bridge.RemoteMessage",
+      "source_node": "imu",
+      "logger": "NOT_LOGGED",
+      "frequency": 400,
+      "num_senders": 2,
+      "max_size": 200
     },
     {
       "name": "/logger/aos",

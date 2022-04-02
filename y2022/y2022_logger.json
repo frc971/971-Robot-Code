@@ -30,9 +30,22 @@
         {
           "name": "logger",
           "priority": 2,
-          "time_to_live": 500000000
+          "time_to_live": 500000000,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "roborio"
+          ]
         }
       ]
+    },
+    {
+      "name": "/roborio/aos/remote_timestamps/logger/drivetrain/frc971-control_loops-drivetrain-Position",
+      "type": "aos.message_bridge.RemoteMessage",
+      "source_node": "roborio",
+      "logger": "NOT_LOGGED",
+      "frequency": 400,
+      "num_senders": 2,
+      "max_size": 200
     },
     {
       "name": "/drivetrain",
@@ -46,9 +59,22 @@
         {
           "name": "logger",
           "priority": 2,
-          "time_to_live": 500000000
+          "time_to_live": 500000000,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "roborio"
+          ]
         }
       ]
+    },
+    {
+      "name": "/roborio/aos/remote_timestamps/logger/drivetrain/frc971-control_loops-drivetrain-Output",
+      "type": "aos.message_bridge.RemoteMessage",
+      "source_node": "roborio",
+      "logger": "NOT_LOGGED",
+      "frequency": 200,
+      "num_senders": 2,
+      "max_size": 400
     },
     {
       "name": "/pi1/aos",
@@ -140,7 +166,7 @@
       "name": "/logger/aos",
       "type": "aos.message_bridge.ClientStatistics",
       "source_node": "logger",
-      "frequency": 10,
+      "frequency": 20,
       "max_size": 2000,
       "num_senders": 2
     },
@@ -148,8 +174,13 @@
       "name": "/logger/aos",
       "type": "aos.starter.Status",
       "source_node": "logger",
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
       "frequency": 50,
       "num_senders": 20,
+      "max_size": 2000,
+      "logger_nodes": [
+        "roborio"
+      ],
       "destination_nodes": [
         {
           "name": "roborio",
@@ -175,6 +206,10 @@
       "name": "/logger/aos",
       "type": "aos.starter.StarterRpc",
       "source_node": "logger",
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "roborio"
+      ],
       "frequency": 10,
       "num_senders": 2,
       "destination_nodes": [
