@@ -53,7 +53,17 @@ babel(
         "@npm//@angular/compiler-cli",
     ],
     output_dir = True,
-    visibility = ["//visibility:public"],
+)
+
+# The babel() rule above puts everything into a directory without telling bazel
+# what's in the directory. That makes it annoying to work with from other
+# rules. This genrule() here copies the one file in the directory we care about
+# so that other rules have an easier time using the file.
+genrule(
+    name = "main_bundle_file",
+    srcs = [":main_bundle_compiled"],
+    outs = ["main_bundle_file.js"],
+    cmd = "cp $(location :main_bundle_compiled)/main_bundle.js $(OUTS)",
 )
 
 # Create a copy of zone.js here so that we can have a predictable path to
@@ -84,6 +94,7 @@ filegroup(
     srcs = [
         "index.html",
         ":field_pictures_copy",
+        ":main_bundle_file.js",
         ":zonejs_copy",
     ],
     visibility = ["//visibility:public"],

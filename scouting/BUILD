@@ -1,10 +1,5 @@
 load("//tools/build_rules:apache.bzl", "apache_wrapper")
-load("//tools/build_rules:js.bzl", "protractor_ts_test", "turn_files_into_runfiles")
-
-turn_files_into_runfiles(
-    name = "main_bundle_compiled_runfiles",
-    files = "//scouting/www:main_bundle_compiled",
-)
+load("//tools/build_rules:js.bzl", "protractor_ts_test")
 
 sh_binary(
     name = "scouting",
@@ -12,7 +7,6 @@ sh_binary(
         "scouting.sh",
     ],
     data = [
-        ":main_bundle_compiled_runfiles",
         "//scouting/webserver",
         "//scouting/www:static_files",
     ],
