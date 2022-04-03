@@ -264,12 +264,12 @@ void TargetEstimator::Solve(
   // Use a sigmoid to convert the deviation into a confidence for the
   // localizer. Fit a sigmoid to the points of (0, 1) and two other
   // reasonable deviation-confidence combinations using
-  // https://www.desmos.com/calculator/try0pgx1qw
-  constexpr double kSigmoidCapacity = 1.045;
+  // https://www.desmos.com/calculator/ha6fh9yw44
+  constexpr double kSigmoidCapacity = 1.065;
   // Stretch the sigmoid out correctly.
-  // Currently, good estimates have deviations of around 2 pixels.
-  constexpr double kSigmoidScalar = 0.04452;
-  constexpr double kSigmoidGrowthRate = -0.4021;
+  // Currently, good estimates have deviations of 1 or less pixels.
+  constexpr double kSigmoidScalar = 0.06496;
+  constexpr double kSigmoidGrowthRate = -0.6221;
   confidence_ =
       kSigmoidCapacity /
       (1.0 + kSigmoidScalar * std::exp(-kSigmoidGrowthRate * std_dev));
