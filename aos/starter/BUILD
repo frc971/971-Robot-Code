@@ -100,6 +100,8 @@ cc_test(
         "//aos/events:pingpong_config",
         "//aos/events:pong",
     ],
+    # TODO(james): Fix tihs.
+    flaky = True,
     linkopts = ["-lstdc++fs"],
     shard_count = 4,
     # The roborio compiler doesn't support <filesystem>.
