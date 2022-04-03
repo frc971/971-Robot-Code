@@ -1,0 +1,89 @@
+<html>
+  <head>
+    <script type="text/javascript"></script>
+    <script src="main_bundle.min.js" defer></script>
+    <style>
+      code {
+        background-color: #eee;
+      }
+    </style>
+  </head>
+  <body>
+    <div>
+      <video id="stream" autoplay playsinline muted style="height: 95%">
+        Your browser does not support video
+      </video>
+    </div>
+    <p>
+      Stats: <span id="stats_protocol">Not connected</span>, <span id="stats_bps"></span> Kibit/s, <span id="stats_fps"></span> fps
+    </p>
+    <span>
+      <div id="bad_remote_port_error" style="display: none">
+        <p>
+          Remote emitted a port <span id="bad_remote_port_port"></span> which may not be supported over the FMS.
+          Try running <code>image_streamer</code> with <code>-min_port=</code> and <code>-max_port=</code>
+        </p>
+      </div>
+      <div id="bad_local_port_error" style="display: none">
+        <p>
+          Local emitted a port <span id="bad_local_port_port"></span> which may not be supported over the FMS, or may fallback to TCP.
+        </p>
+        <p>To fix:</p>
+        <ul>
+          <li>
+            Firefox: Not supported
+          </li>
+          <li>Chrome:
+            <ul>
+              <li>
+                Windows:
+                <br>
+                Add registry entry <code>Software\Policies\Google\Chrome\WebRtcUdpPortRange = "5800-5810"</code>
+                <br>
+                (For Chromium, <code>Software\Policies\Chromium\WebRtcUdpPortRange</code>)
+              </li>
+              <li>
+                Linux:
+                <br>
+                <code>mkdir -p /etc/opt/chrome/policies/managed</code> OR <code>mkdir -p /etc/chromium/policies/managed</code> OR, ON SOME DISTROS <code>mkdir -p /etc/chromium-browser/policies/managed</code>
+                <br>
+                <code>echo '{"WebRtcUdpPortRange": "5800-5810"}' &gt; /etc/&lt;&gt;/policies/managed/webrtc_port_policy.json</code>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+      <div id="bad_remote_address_error" style="display: none">
+        <p>Remote emitted an address <span id="bad_remote_address_address"></span> which requires mDNS resolution. This may not be supported.</p>
+      </div>
+      <div id="bad_local_address_error" style="display: none">
+        <p>Local emitted an address <span id="bad_local_address_address"></span> which requires mDNS resolution. This may not be supported.</p>
+        <p>To fix:</p>
+        <ul>
+          <li>
+            Firefox: Navigate to <a href="about:config">about:config</a> (May need to select and copy into new tab).
+            Set <code>media.peerconnection.ice.obfuscate_host_addresses</code> to <code>false</code>.
+          </li>
+          <li>Chrome:
+            <ul>
+              <li>
+                Windows:
+                <br>
+                Add registry entry <code>Software\Policies\Google\Chrome\WebRtcLocalIpsAllowedUrls\1 = "*<span class="page_hostname"></span>*"</code>
+                <br>
+                (For Chromium, <code>Software\Policies\Chromium\WebRtcLocalIpsAllowedUrls\1</code>)
+              </li>
+              <li>
+                Linux:
+                <br>
+                <code>mkdir -p /etc/opt/chrome/policies/managed</code> OR <code>mkdir -p /etc/chromium/policies/managed</code> OR, ON SOME DISTROS <code>mkdir -p /etc/chromium-browser/policies/managed</code>
+                <br>
+                <code>echo '{"WebRtcLocalIpsAllowedUrls": ["*<span class="page_hostname"></span>*"]}' &gt; /etc/&lt;&gt;/policies/managed/webrtc_policy.json</code>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </span>
+  </body>
+</html>

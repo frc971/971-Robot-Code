@@ -357,6 +357,14 @@
       "max_size": 200
     },
     {
+      "name": "/logger/camera",
+      "type": "frc971.vision.CameraImage",
+      "source_node": "logger",
+      "frequency": 100,
+      "max_size": 620000,
+      "num_senders": 1
+    },
+    {
       "name": "/pi1/camera/decimated",
       "type": "frc971.vision.CameraImage",
       "source_node": "pi1",
@@ -430,7 +438,17 @@
       "rename": {
         "name": "/logger/aos"
       }
+    },
+    {
+      "match": {
+        "name": "/camera",
+        "source_node": "logger"
+      },
+      "rename": {
+        "name": "/logger/camera"
+      }
     }
+
   ],
   "applications": [
     {
@@ -453,6 +471,13 @@
       "name": "image_logger",
       "executable_name": "logger_main",
       "args": ["--snappy_compress", "--logging_folder", "", "--snappy_compress", "--rotate_every", "60.0"],
+      "nodes": [
+        "logger"
+      ]
+    },
+    {
+      "name": "image_streamer",
+      "executable_name": "image_streamer_start.sh",
       "nodes": [
         "logger"
       ]
