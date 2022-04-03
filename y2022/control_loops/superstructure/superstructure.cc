@@ -243,7 +243,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
        .shooting = true});
 
   // Dont shoot if the robot is moving faster than this
-  constexpr double kMaxShootSpeed = 1.0;
+  constexpr double kMaxShootSpeed = 1.7;
   const bool moving_too_fast = std::abs(robot_velocity()) > kMaxShootSpeed;
 
   switch (state_) {
