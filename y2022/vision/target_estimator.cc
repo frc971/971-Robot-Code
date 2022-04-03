@@ -594,7 +594,9 @@ void TargetEstimator::DrawEstimate(cv::Mat view_image) const {
   const auto kTextColor = cv::Scalar(0, 255, 255);
   constexpr double kFontScale = 0.6;
 
-  cv::putText(view_image, absl::StrFormat("Distance: %.3f", distance_),
+  cv::putText(view_image,
+              absl::StrFormat("Distance: %.3f m (%.3f in)", distance_,
+                              distance_ / 0.0254),
               cv::Point(kTextX, text_y += kTextSpacing),
               cv::FONT_HERSHEY_DUPLEX, kFontScale, kTextColor, 2);
   cv::putText(view_image,
