@@ -39,7 +39,7 @@ rollup_bundle(
 babel(
     name = "main_bundle_compiled",
     args = [
-        "$(execpath :main_bundle)",
+        "$(execpath :main_bundle.min.js)",
         "--no-babelrc",
         "--source-maps",
         "--minified",
@@ -49,7 +49,7 @@ babel(
         "$(@D)",
     ],
     data = [
-        ":main_bundle",
+        ":main_bundle.min.js",
         "@npm//@angular/compiler-cli",
     ],
     output_dir = True,
@@ -63,7 +63,7 @@ genrule(
     name = "main_bundle_file",
     srcs = [":main_bundle_compiled"],
     outs = ["main_bundle_file.js"],
-    cmd = "cp $(location :main_bundle_compiled)/main_bundle.js $(OUTS)",
+    cmd = "cp $(location :main_bundle_compiled)/main_bundle.min.js $(OUTS)",
 )
 
 # Create a copy of zone.js here so that we can have a predictable path to
