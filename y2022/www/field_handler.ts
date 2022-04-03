@@ -278,34 +278,6 @@ export class FieldHandler {
 
     // Draw the matches with debugging information from the localizer.
     const now = Date.now() / 1000.0;
-    for (const [time, value] of this.localizerImageMatches) {
-      const age = now - time;
-      const kRemovalAge = 2.0;
-      if (age > kRemovalAge) {
-        this.localizerImageMatches.delete(time);
-        continue;
-      }
-      const ageAlpha = (kRemovalAge - age) / kRemovalAge
-      for (let i = 0; i < value.targetsLength(); i++) {
-        const imageDebug = value.targets(i);
-        const x = imageDebug.impliedRobotX();
-        const y = imageDebug.impliedRobotY();
-        const theta = imageDebug.impliedRobotTheta();
-        const cameraX = imageDebug.cameraX();
-        const cameraY = imageDebug.cameraY();
-        const cameraTheta = imageDebug.cameraTheta();
-        const accepted = imageDebug.accepted();
-        // Make camera readings fade over time.
-        const alpha = Math.round(255 * ageAlpha).toString(16).padStart(2, '0');
-        const dashed = false;
-        const acceptedRgb = accepted ? '#00FF00' : '#FF0000';
-        const acceptedRgba = acceptedRgb + alpha;
-        const cameraRgb = PI_COLORS[imageDebug.camera()];
-        const cameraRgba = cameraRgb + alpha;
-        this.drawRobot(x, y, theta, null, acceptedRgba, dashed, false);
-        this.drawCamera(cameraX, cameraY, cameraTheta, cameraRgba, false);
-      }
-    }
     if (this.superstructureStatus) {
       this.shotDistance.innerHTML = this.superstructureStatus.aimer() ?
           (this.superstructureStatus.aimer().shotDistance() /
@@ -420,6 +392,36 @@ export class FieldHandler {
           this.superstructureStatus ?
               this.superstructureStatus.turret().position() :
               null);
+    }
+
+    for (const [time, value] of this.localizerImageMatches) {
+      const age = now - time;
+      const kRemovalAge = 1.0;
+      if (age > kRemovalAge) {
+        this.localizerImageMatches.delete(time);
+        continue;
+      }
+      const kMaxImageAlpha = 0.5;
+      const ageAlpha = kMaxImageAlpha * (kRemovalAge - age) / kRemovalAge
+      for (let i = 0; i < value.targetsLength(); i++) {
+        const imageDebug = value.targets(i);
+        const x = imageDebug.impliedRobotX();
+        const y = imageDebug.impliedRobotY();
+        const theta = imageDebug.impliedRobotTheta();
+        const cameraX = imageDebug.cameraX();
+        const cameraY = imageDebug.cameraY();
+        const cameraTheta = imageDebug.cameraTheta();
+        const accepted = imageDebug.accepted();
+        // Make camera readings fade over time.
+        const alpha = Math.round(255 * ageAlpha).toString(16).padStart(2, '0');
+        const dashed = false;
+        const acceptedRgb = accepted ? '#00FF00' : '#FF0000';
+        const acceptedRgba = acceptedRgb + alpha;
+        const cameraRgb = PI_COLORS[imageDebug.camera()];
+        const cameraRgba = cameraRgb + alpha;
+        this.drawRobot(x, y, theta, null, acceptedRgba, dashed, false);
+        this.drawCamera(cameraX, cameraY, cameraTheta, cameraRgba, false);
+      }
     }
 
     window.requestAnimationFrame(() => this.draw());
