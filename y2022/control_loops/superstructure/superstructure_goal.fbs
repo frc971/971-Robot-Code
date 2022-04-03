@@ -37,8 +37,10 @@ table Goal {
   roller_speed_front:double (id: 3);
   roller_speed_back:double (id: 4);
 
-  transfer_roller_speed_front:double (id: 5);
-  transfer_roller_speed_back:double (id: 12);
+  // Positive is intaking front and spitting back, negative is the opposite
+  transfer_roller_speed:double (id: 5);
+  // Not used anymore - just one transfer roller speed to control both
+  transfer_roller_speed_back:double (id: 12, deprecated);
 
   // Factor to multiply robot velocity by and add to roller voltage.
   roller_speed_compensation:double (id: 6);

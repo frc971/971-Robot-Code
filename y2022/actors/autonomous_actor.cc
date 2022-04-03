@@ -351,10 +351,7 @@ void AutonomousActor::SendSuperstructureGoal() {
   if (requested_intake_.has_value()) {
     superstructure_builder.add_turret_intake(*requested_intake_);
   }
-  superstructure_builder.add_transfer_roller_speed_front(
-      transfer_roller_front_voltage_);
-  superstructure_builder.add_transfer_roller_speed_back(
-      transfer_roller_back_voltage_);
+  superstructure_builder.add_transfer_roller_speed(transfer_roller_voltage_);
   superstructure_builder.add_turret(turret_offset);
   superstructure_builder.add_catapult(catapult_goal_offset);
   superstructure_builder.add_fire(fire_);
@@ -371,8 +368,7 @@ void AutonomousActor::ExtendFrontIntake() {
   set_requested_intake(RequestedIntake::kFront);
   set_intake_front_goal(kExtendIntakeGoal);
   set_roller_front_voltage(kIntakeRollerVoltage);
-  set_transfer_roller_front_voltage(kRollerVoltage);
-  set_transfer_roller_back_voltage(-kRollerVoltage);
+  set_transfer_roller_voltage(kRollerVoltage);
   SendSuperstructureGoal();
 }
 
@@ -380,8 +376,7 @@ void AutonomousActor::RetractFrontIntake() {
   set_requested_intake(std::nullopt);
   set_intake_front_goal(kRetractIntakeGoal);
   set_roller_front_voltage(0.0);
-  set_transfer_roller_front_voltage(0.0);
-  set_transfer_roller_back_voltage(0.0);
+  set_transfer_roller_voltage(0.0);
   SendSuperstructureGoal();
 }
 
@@ -389,8 +384,7 @@ void AutonomousActor::ExtendBackIntake() {
   set_requested_intake(RequestedIntake::kBack);
   set_intake_back_goal(kExtendIntakeGoal);
   set_roller_back_voltage(kIntakeRollerVoltage);
-  set_transfer_roller_back_voltage(kRollerVoltage);
-  set_transfer_roller_front_voltage(-kRollerVoltage);
+  set_transfer_roller_voltage(-kRollerVoltage);
   SendSuperstructureGoal();
 }
 
@@ -398,8 +392,7 @@ void AutonomousActor::RetractBackIntake() {
   set_requested_intake(std::nullopt);
   set_intake_back_goal(kRetractIntakeGoal);
   set_roller_back_voltage(0.0);
-  set_transfer_roller_front_voltage(0.0);
-  set_transfer_roller_back_voltage(0.0);
+  set_transfer_roller_voltage(0.0);
   SendSuperstructureGoal();
 }
 

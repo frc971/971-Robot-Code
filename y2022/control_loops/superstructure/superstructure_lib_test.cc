@@ -778,10 +778,7 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
   EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_front(), 12.0);
   EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_back(), 12.0);
 
-  EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage_front(),
-            0.0);
-  EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage_back(),
-            0.0);
+  EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage(), 0.0);
   EXPECT_EQ(superstructure_status_fetcher_->state(), SuperstructureState::IDLE);
   EXPECT_EQ(superstructure_status_fetcher_->intake_state(),
             IntakeState::NO_BALL);
@@ -822,10 +819,8 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
             IntakeState::INTAKE_FRONT_BALL);
   EXPECT_EQ(superstructure_output_fetcher_->flipper_arms_voltage(),
             constants::Values::kFlipperFeedVoltage());
-  EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage_front(),
+  EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage(),
             constants::Values::kTransferRollerVoltage());
-  EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage_back(),
-            0.0);
   EXPECT_NEAR(superstructure_status_fetcher_->turret()->position(),
               constants::Values::kTurretFrontIntakePos(), 0.001);
   EXPECT_EQ(superstructure_status_fetcher_->shot_count(), 0);
@@ -843,10 +838,7 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
   ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
   EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_front(), 12.0);
   EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_back(), 12.0);
-  EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage_front(),
-            0.0);
-  EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage_back(),
-            0.0);
+  EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage(), 0.0);
   EXPECT_EQ(superstructure_status_fetcher_->state(),
             SuperstructureState::LOADING);
   EXPECT_EQ(superstructure_status_fetcher_->intake_state(),
@@ -865,10 +857,7 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
   ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
   EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_front(), 12.0);
   EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_back(), 12.0);
-  EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage_front(),
-            0.0);
-  EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage_back(),
-            0.0);
+  EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage(), 0.0);
   EXPECT_EQ(superstructure_status_fetcher_->state(),
             SuperstructureState::LOADED);
   EXPECT_EQ(superstructure_status_fetcher_->intake_state(),
@@ -884,10 +873,7 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
   ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
   EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_front(), 12.0);
   EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_back(), 12.0);
-  EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage_front(),
-            0.0);
-  EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage_back(),
-            0.0);
+  EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage(), 0.0);
   EXPECT_EQ(superstructure_status_fetcher_->state(),
             SuperstructureState::LOADED);
   EXPECT_EQ(superstructure_status_fetcher_->intake_state(),
@@ -908,14 +894,12 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
   ASSERT_TRUE(superstructure_output_fetcher_.Fetch());
   EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_front(), 12.0);
   EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_back(), 0.0);
-  EXPECT_TRUE(superstructure_output_fetcher_->transfer_roller_voltage_back() !=
+  EXPECT_TRUE(superstructure_output_fetcher_->transfer_roller_voltage() !=
                   0.0 &&
-              superstructure_output_fetcher_->transfer_roller_voltage_back() <=
+              superstructure_output_fetcher_->transfer_roller_voltage() <=
                   constants::Values::kTransferRollerWiggleVoltage() &&
-              superstructure_output_fetcher_->transfer_roller_voltage_back() >=
+              superstructure_output_fetcher_->transfer_roller_voltage() >=
                   -constants::Values::kTransferRollerWiggleVoltage());
-  EXPECT_EQ(0.0,
-            superstructure_output_fetcher_->transfer_roller_voltage_front());
   EXPECT_EQ(superstructure_status_fetcher_->state(),
             SuperstructureState::LOADED);
   EXPECT_EQ(superstructure_status_fetcher_->intake_state(),
@@ -963,14 +947,12 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
   ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
   EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_front(), 0.0);
   EXPECT_EQ(superstructure_output_fetcher_->roller_voltage_back(), 0.0);
-  EXPECT_TRUE(superstructure_output_fetcher_->transfer_roller_voltage_back() !=
+  EXPECT_TRUE(superstructure_output_fetcher_->transfer_roller_voltage() !=
                   0.0 &&
-              superstructure_output_fetcher_->transfer_roller_voltage_back() <=
+              superstructure_output_fetcher_->transfer_roller_voltage() <=
                   constants::Values::kTransferRollerWiggleVoltage() &&
-              superstructure_output_fetcher_->transfer_roller_voltage_back() >=
+              superstructure_output_fetcher_->transfer_roller_voltage() >=
                   -constants::Values::kTransferRollerWiggleVoltage());
-  EXPECT_EQ(0.0,
-            superstructure_output_fetcher_->transfer_roller_voltage_front());
   EXPECT_EQ(superstructure_status_fetcher_->state(),
             SuperstructureState::SHOOTING);
   EXPECT_EQ(superstructure_status_fetcher_->intake_state(),
@@ -1212,8 +1194,7 @@ TEST_F(SuperstructureTest, ShootCatapult) {
 
   RunFor(chrono::milliseconds(2000));
   ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
-  EXPECT_EQ(superstructure_status_fetcher_->state(),
-            SuperstructureState::IDLE);
+  EXPECT_EQ(superstructure_status_fetcher_->state(), SuperstructureState::IDLE);
 }
 
 // Test that we are able to signal that the ball was preloaded

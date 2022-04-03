@@ -437,7 +437,6 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
   ::std::shared_ptr<::ctre::phoenix::motorcontrol::can::TalonFX>
       catapult_falcon_1_can_, catapult_falcon_2_can_;
-
 };
 
 class SuperstructureWriter
@@ -473,9 +472,12 @@ class SuperstructureWriter
       falcon->ConfigStatorCurrentLimit(
           {false, Values::kIntakeRollerStatorCurrentLimit(),
            Values::kIntakeRollerStatorCurrentLimit(), 0});
-      falcon->SetStatusFramePeriod(ctre::phoenix::motorcontrol::Status_1_General, 1);
-      falcon->SetControlFramePeriod(ctre::phoenix::motorcontrol::Control_3_General, 1);
-      falcon->SetStatusFramePeriod(ctre::phoenix::motorcontrol::Status_Brushless_Current, 50);
+      falcon->SetStatusFramePeriod(
+          ctre::phoenix::motorcontrol::Status_1_General, 1);
+      falcon->SetControlFramePeriod(
+          ctre::phoenix::motorcontrol::Control_3_General, 1);
+      falcon->SetStatusFramePeriod(
+          ctre::phoenix::motorcontrol::Status_Brushless_Current, 50);
       falcon->ConfigOpenloopRamp(0.0);
       falcon->ConfigClosedloopRamp(0.0);
       falcon->ConfigVoltageMeasurementFilter(1);
@@ -528,12 +530,8 @@ class SuperstructureWriter
     return flipper_arms_falcon_;
   }
 
-  void set_transfer_roller_victor_front(::std::unique_ptr<::frc::VictorSP> t) {
-    transfer_roller_victor_front_ = ::std::move(t);
-  }
-
-  void set_transfer_roller_victor_back(::std::unique_ptr<::frc::VictorSP> t) {
-    transfer_roller_victor_back_ = ::std::move(t);
+  void set_transfer_roller_victor(::std::unique_ptr<::frc::VictorSP> t) {
+    transfer_roller_victor_ = ::std::move(t);
   }
 
   std::shared_ptr<frc::DigitalOutput> superstructure_reading_;
@@ -555,8 +553,7 @@ class SuperstructureWriter
         ctre::phoenix::motorcontrol::ControlMode::Disabled, 0);
     intake_falcon_front_->SetDisabled();
     intake_falcon_back_->SetDisabled();
-    transfer_roller_victor_front_->SetDisabled();
-    transfer_roller_victor_back_->SetDisabled();
+    transfer_roller_victor_->SetDisabled();
     if (catapult_falcon_1_) {
       catapult_falcon_1_->SetDisabled();
     }
@@ -576,10 +573,7 @@ class SuperstructureWriter
     WritePwm(output.intake_voltage_back(), intake_falcon_back_.get());
     WriteCan(output.roller_voltage_front(), roller_falcon_front_.get());
     WriteCan(output.roller_voltage_back(), roller_falcon_back_.get());
-    WritePwm(output.transfer_roller_voltage_front(),
-             transfer_roller_victor_front_.get());
-    WritePwm(-output.transfer_roller_voltage_back(),
-             transfer_roller_victor_back_.get());
+    WritePwm(output.transfer_roller_voltage(), transfer_roller_victor_.get());
 
     WriteCan(-output.flipper_arms_voltage(), flipper_arms_falcon_.get());
 
@@ -626,8 +620,7 @@ class SuperstructureWriter
 
   ::std::unique_ptr<::frc::TalonFX> turret_falcon_, catapult_falcon_1_,
       climber_falcon_;
-  ::std::unique_ptr<::frc::VictorSP> transfer_roller_victor_front_,
-      transfer_roller_victor_back_;
+  ::std::unique_ptr<::frc::VictorSP> transfer_roller_victor_;
 
   std::unique_ptr<frc::DigitalOutput> catapult_reversal_;
 };
@@ -768,9 +761,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     superstructure_writer.set_roller_falcon_back(
         make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(1));
 
-    superstructure_writer.set_transfer_roller_victor_front(
-        make_unique<::frc::VictorSP>(6));
-    superstructure_writer.set_transfer_roller_victor_back(
+    superstructure_writer.set_transfer_roller_victor(
         make_unique<::frc::VictorSP>(5));
 
     superstructure_writer.set_intake_falcon_front(make_unique<frc::TalonFX>(2));

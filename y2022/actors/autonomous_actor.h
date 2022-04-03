@@ -41,11 +41,8 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   void set_roller_back_voltage(double roller_back_voltage) {
     roller_back_voltage_ = roller_back_voltage;
   }
-  void set_transfer_roller_front_voltage(double voltage) {
-    transfer_roller_front_voltage_ = voltage;
-  }
-  void set_transfer_roller_back_voltage(double voltage) {
-    transfer_roller_back_voltage_ = voltage;
+  void set_transfer_roller_voltage(double voltage) {
+    transfer_roller_voltage_ = voltage;
   }
   void set_requested_intake(std::optional<RequestedIntake> requested_intake) {
     requested_intake_ = requested_intake;
@@ -78,8 +75,7 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   double intake_back_goal_ = 0.0;
   double roller_front_voltage_ = 0.0;
   double roller_back_voltage_ = 0.0;
-  double transfer_roller_front_voltage_ = 0.0;
-  double transfer_roller_back_voltage_ = 0.0;
+  double transfer_roller_voltage_ = 0.0;
   std::optional<RequestedIntake> requested_intake_ = std::nullopt;
   double turret_goal_ = 0.0;
   bool fire_ = false;

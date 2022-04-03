@@ -26,8 +26,9 @@ table Output {
   // positive is pulling into the robot
   roller_voltage_front:double (id: 6);
   roller_voltage_back:double (id: 7);
-  transfer_roller_voltage_front:double (id: 8);
-  transfer_roller_voltage_back:double (id: 9);
+  transfer_roller_voltage:double (id: 8);
+  // Only using one transfer roller voltage now
+  transfer_roller_voltage_back:double (id: 9, deprecated);
 }
 
 root_type Output;

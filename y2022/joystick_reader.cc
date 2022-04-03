@@ -45,7 +45,8 @@ const ButtonLocation kAutoAim(4, 2);
 
 const ButtonLocation kIntakeFrontOut(4, 10);
 const ButtonLocation kIntakeBackOut(4, 9);
-const ButtonLocation kSpit(3, 3);
+const ButtonLocation kSpitFront(3, 3);
+const ButtonLocation kSpitBack(2, 3);
 
 const ButtonLocation kRedLocalizerReset(3, 13);
 const ButtonLocation kBlueLocalizerReset(3, 14);
@@ -62,7 +63,8 @@ const ButtonLocation kClimberIntakes(4, 5);
 
 const ButtonLocation kIntakeFrontOut(4, 10);
 const ButtonLocation kIntakeBackOut(4, 9);
-const ButtonLocation kSpit(3, 3);
+const ButtonLocation kSpitFront(3, 3);
+const ButtonLocation kSpitBack(2, 3);
 
 const ButtonLocation kRedLocalizerReset(4, 14);
 const ButtonLocation kBlueLocalizerReset(4, 13);
@@ -165,8 +167,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     constexpr double kIntakeUpPosition = 1.47;
     double intake_front_pos = kIntakeUpPosition;
     double intake_back_pos = kIntakeUpPosition;
-    double transfer_roller_front_speed = 0.0;
-    double transfer_roller_back_speed = 0.0;
+    double transfer_roller_speed = 0.0;
     std::optional<control_loops::superstructure::RequestedIntake>
         requested_intake;
 
@@ -228,21 +229,21 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     // Extend the intakes and spin the rollers
     if (data.IsPressed(kIntakeFrontOut)) {
       intake_front_pos = kIntakePosition;
-      transfer_roller_front_speed = kTransferRollerSpeed;
+      transfer_roller_speed = kTransferRollerSpeed;
 
       intake_front_counter_ = kIntakeCounterIterations;
       intake_back_counter_ = 0;
     } else if (data.IsPressed(kIntakeBackOut)) {
       intake_back_pos = kIntakePosition;
-      transfer_roller_back_speed = kTransferRollerSpeed;
+      transfer_roller_speed = -kTransferRollerSpeed;
 
       intake_back_counter_ = kIntakeCounterIterations;
       intake_front_counter_ = 0;
-    } else if (data.IsPressed(kSpit)) {
-      transfer_roller_front_speed = -kTransferRollerSpeed;
-      transfer_roller_back_speed = -kTransferRollerSpeed;
-
+    } else if (data.IsPressed(kSpitFront)) {
+      transfer_roller_speed = -kTransferRollerSpeed;
       intake_front_counter_ = 0;
+    } else if (data.IsPressed(kSpitBack)) {
+      transfer_roller_speed = kTransferRollerSpeed;
       intake_back_counter_ = 0;
     }
 
@@ -323,10 +324,8 @@ class Reader : public ::frc971::input::ActionJoystickInput {
 
       superstructure_goal_builder.add_roller_speed_front(roller_front_speed);
       superstructure_goal_builder.add_roller_speed_back(roller_back_speed);
-      superstructure_goal_builder.add_transfer_roller_speed_front(
-          transfer_roller_front_speed);
-      superstructure_goal_builder.add_transfer_roller_speed_back(
-          transfer_roller_back_speed);
+      superstructure_goal_builder.add_transfer_roller_speed(
+          transfer_roller_speed);
       superstructure_goal_builder.add_auto_aim(data.IsPressed(kAutoAim));
       if (requested_intake.has_value()) {
         superstructure_goal_builder.add_turret_intake(requested_intake.value());
