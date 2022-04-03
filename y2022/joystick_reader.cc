@@ -64,7 +64,7 @@ const ButtonLocation kClimberIntakes(4, 5);
 const ButtonLocation kIntakeFrontOut(4, 10);
 const ButtonLocation kIntakeBackOut(4, 9);
 const ButtonLocation kSpitFront(3, 3);
-const ButtonLocation kSpitBack(2, 3);
+const ButtonLocation kSpitBack(3, 1);
 
 const ButtonLocation kRedLocalizerReset(4, 14);
 const ButtonLocation kBlueLocalizerReset(4, 13);
