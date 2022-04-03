@@ -169,16 +169,18 @@ Values MakeValues(uint16_t team) {
       break;
 
     case kCompTeamNumber:
-      climber->potentiometer_offset = -0.0463847608752 - 0.0376876182111;
+      climber->potentiometer_offset =
+          -0.0463847608752 - 0.0376876182111 + 0.0629263851579;
 
       intake_front->potentiometer_offset =
-          2.79628370453323 - 0.0250288114832881;
+          2.79628370453323 - 0.0250288114832881 + 0.577152542437606;
       intake_front->subsystem_params.zeroing_constants
-          .measured_absolute_position = 0.274930238824366;
+          .measured_absolute_position = 0.26963366701647;
 
-      intake_back->potentiometer_offset = 3.1409576474047;
+      intake_back->potentiometer_offset =
+          3.1409576474047 + 0.278653334013286 + 0.00879137908308503;
       intake_back->subsystem_params.zeroing_constants
-          .measured_absolute_position = 0.280099007470002;
+          .measured_absolute_position = 0.242434593996789;
 
       turret->potentiometer_offset = -9.99970387166721 + 0.06415943 +
                                      0.073290115367682 - 0.0634440443622909 +
