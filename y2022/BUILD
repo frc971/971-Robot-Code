@@ -7,6 +7,7 @@ robot_downloader(
     binaries = [
         ":setpoint_setter",
         "//aos/network:web_proxy_main",
+        "//aos/events/logging:log_cat",
     ],
     data = [
         ":aos_config",
