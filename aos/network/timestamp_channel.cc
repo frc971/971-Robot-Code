@@ -2,6 +2,10 @@
 
 #include "absl/strings/str_cat.h"
 
+DEFINE_bool(combined_timestamp_channel_fallback, true,
+            "If true, fall back to using the combined timestamp channel if the "
+            "single timestamp channel doesn't exist for a timestamp.");
+
 namespace aos {
 namespace message_bridge {
 
@@ -12,7 +16,8 @@ ChannelTimestampFinder::ChannelTimestampFinder(
 
 std::string ChannelTimestampFinder::SplitChannelName(
     const Channel *channel, const Connection *connection) {
-  return SplitChannelName(channel->name()->string_view(), channel->type()->str(), connection);
+  return SplitChannelName(channel->name()->string_view(),
+                          channel->type()->str(), connection);
 }
 
 std::string ChannelTimestampFinder::SplitChannelName(
@@ -45,6 +50,15 @@ const Channel *ChannelTimestampFinder::ForChannel(
       RemoteMessage::GetFullyQualifiedName(), name_, node_, true);
   if (split_timestamp_channel != nullptr) {
     return split_timestamp_channel;
+  }
+
+  if (!FLAGS_combined_timestamp_channel_fallback) {
+    LOG(FATAL) << "Failed to find new timestamp channel {\"name\": \""
+               << split_timestamp_channel_name << "\", \"type\": \""
+               << RemoteMessage::GetFullyQualifiedName() << "\"} for "
+               << configuration::CleanedChannelToString(channel)
+               << " connection " << aos::FlatbufferToJson(connection)
+               << " and --nocombined_timestamp_channel_fallback is set";
   }
 
   const std::string shared_timestamp_channel_name =
