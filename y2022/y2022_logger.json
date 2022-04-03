@@ -19,6 +19,38 @@
       ]
    },
     {
+      "name": "/superstructure",
+      "type": "y2022.vision.BallColor",
+      "source_node": "logger",
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "roborio"
+      ],
+      "frequency": 200,
+      "num_senders": 2,
+      "max_size": 72,
+      "destination_nodes": [
+        {
+          "name": "roborio",
+          "priority": 2,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "roborio"
+          ],
+          "time_to_live": 5000000
+        }
+      ]
+    },
+    {
+      "name": "/aos/remote_timestamps/roborio/superstructure/y2022-vision-BallColor",
+      "type": "aos.message_bridge.RemoteMessage",
+      "source_node": "logger",
+      "logger": "NOT_LOGGED",
+      "frequency": 20,
+      "num_senders": 2,
+      "max_size": 200
+    },
+    {
       "name": "/drivetrain",
       "type": "frc971.control_loops.drivetrain.Position",
       "source_node": "roborio",
@@ -478,6 +510,13 @@
     {
       "name": "image_streamer",
       "executable_name": "image_streamer_start.sh",
+      "nodes": [
+        "logger"
+      ]
+    },
+    {
+      "name": "ball_color_detector",
+      "executable_name": "ball_color_detector",
       "nodes": [
         "logger"
       ]

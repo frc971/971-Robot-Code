@@ -1,0 +1,12 @@
+include "frc971/input/joystick_state.fbs";
+
+namespace y2022.vision;
+
+table BallColor {
+  // The color of the ball represented as which alliance it belongs to
+  // it will be unpredictable when there is no ball and it will be kInvalid
+  // if the color is not close enough to either of the two references.
+  ball_color:aos.Alliance (id: 0);
+}
+
+root_type BallColor;

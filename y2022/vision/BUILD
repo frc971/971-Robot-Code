@@ -149,6 +149,73 @@ cc_binary(
     ],
 )
 
+cc_binary(
+    name = "ball_color_detector",
+    srcs = [
+        "ball_color_main.cc",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//y2022:__subpackages__"],
+    deps = [
+        ":ball_color_lib",
+        "//aos:init",
+        "//aos/events:shm_event_loop",
+    ],
+)
+
+cc_test(
+    name = "ball_color_test",
+    srcs = [
+        "ball_color_test.cc",
+    ],
+    data = [
+        "test_ball_color_image.jpg",
+    ],
+    deps = [
+        ":ball_color_lib",
+        "//aos:json_to_flatbuffer",
+        "//aos/events:simulated_event_loop",
+        "//aos/testing:googletest",
+        "//aos/testing:test_logging",
+        "//y2022:constants",
+    ],
+)
+
+cc_library(
+    name = "ball_color_lib",
+    srcs = [
+        "ball_color.cc",
+    ],
+    hdrs = [
+        "ball_color.h",
+    ],
+    data = [
+        "//y2022:aos_config",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//y2022:__subpackages__"],
+    deps = [
+        ":ball_color_fbs",
+        "//aos/events:event_loop",
+        "//aos/events:shm_event_loop",
+        "//aos/network:team_number",
+        "//frc971/input:joystick_state_fbs",
+        "//frc971/vision:vision_fbs",
+        "//third_party:opencv",
+    ],
+)
+
+flatbuffer_cc_library(
+    name = "ball_color_fbs",
+    srcs = ["ball_color.fbs"],
+    gen_reflections = 1,
+    includes = [
+        "//frc971/input:joystick_state_fbs_includes",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//y2022:__subpackages__"],
+)
+
 cc_library(
     name = "geometry_lib",
     hdrs = [
