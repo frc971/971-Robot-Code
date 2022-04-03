@@ -6,6 +6,10 @@ type Tab =
   | 'Entry'
   | 'ImportMatchList'
   | 'ShiftSchedule';
+
+// Ignore the guard for tabs that don't require the user to enter any data.
+const unguardedTabs: Tab[] = ['MatchList', 'ImportMatchList'];
+
 type TeamInMatch = {
   teamNumber: number;
   matchNumber: number;
@@ -29,12 +33,14 @@ export class App {
 
   constructor() {
     window.addEventListener('beforeunload', (e) => {
-      if (!this.block_alerts.nativeElement.checked) {
-        // Based on
-        // https://developer.mozilla.org/en-US/docs/Web/API/WindowEventHandlers/onbeforeunload#example
-        // This combination ensures a dialog will be shown on most browsers.
-        e.preventDefault();
-        e.returnValue = '';
+      if (!unguardedTabs.includes(this.tab)) {
+        if (!this.block_alerts.nativeElement.checked) {
+          // Based on
+          // https://developer.mozilla.org/en-US/docs/Web/API/WindowEventHandlers/onbeforeunload#example
+          // This combination ensures a dialog will be shown on most browsers.
+          e.preventDefault();
+          e.returnValue = '';
+        }
       }
     });
   }
@@ -51,8 +57,12 @@ export class App {
   switchTabToGuarded(tab: Tab) {
     let shouldSwitch = true;
     if (this.tab !== tab) {
-      if (!this.block_alerts.nativeElement.checked) {
-        shouldSwitch = window.confirm('Leave current page?');
+      if (!unguardedTabs.includes(this.tab)) {
+        if (!this.block_alerts.nativeElement.checked) {
+          shouldSwitch = window.confirm(
+            'Leave current page? You will lose all data.'
+          );
+        }
       }
     }
     if (shouldSwitch) {
