@@ -226,14 +226,18 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     constexpr double kIntakePosition = -0.02;
     constexpr size_t kIntakeCounterIterations = 25;
 
-    // Extend the intakes and spin the rollers
-    if (data.IsPressed(kIntakeFrontOut)) {
+    // Extend the intakes and spin the rollers.
+    // Don't let this happen if there is a ball in the other intake, because
+    // that would spit this one out.
+    if (data.IsPressed(kIntakeFrontOut) &&
+        !superstructure_status_fetcher_->back_intake_has_ball()) {
       intake_front_pos = kIntakePosition;
       transfer_roller_speed = kTransferRollerSpeed;
 
       intake_front_counter_ = kIntakeCounterIterations;
       intake_back_counter_ = 0;
-    } else if (data.IsPressed(kIntakeBackOut)) {
+    } else if (data.IsPressed(kIntakeBackOut) &&
+               !superstructure_status_fetcher_->front_intake_has_ball()) {
       intake_back_pos = kIntakePosition;
       transfer_roller_speed = -kTransferRollerSpeed;
 
