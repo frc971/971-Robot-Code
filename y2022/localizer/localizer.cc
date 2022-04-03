@@ -954,6 +954,7 @@ EventLoopLocalizer::EventLoopLocalizer(
           model_based_.TallyRejection(RejectionReason::IMAGE_FROM_FUTURE);
           continue;
         }
+        capture_time -= pico_offset_error_;
         model_based_.HandleImageMatch(
             capture_time, target_estimate_fetchers_[camera_index].get(),
             camera_index);
