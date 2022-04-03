@@ -276,6 +276,9 @@ LogReader::LogReader(std::vector<LogFile> log_files,
 
           // Otherwise collect this one up as a node to look for a combined
           // channel from.  It is more efficient to compare nodes than channels.
+          LOG(WARNING) << "Failed to find channel "
+                       << finder.SplitChannelName(channel, connection)
+                       << " on node " << aos::FlatbufferToJson(node);
           remote_nodes.insert(connection->name()->string_view());
         }
       }
