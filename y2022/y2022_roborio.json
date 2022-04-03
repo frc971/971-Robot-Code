@@ -240,7 +240,7 @@
       "name": "/superstructure",
       "type": "y2022.control_loops.superstructure.Status",
       "source_node": "roborio",
-      "frequency": 200,
+      "frequency": 400,
       "num_senders": 2,
       "logger": "LOCAL_AND_REMOTE_LOGGER",
       "logger_nodes": [

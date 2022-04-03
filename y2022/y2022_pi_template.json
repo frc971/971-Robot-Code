@@ -181,7 +181,7 @@
       "source_node": "pi{{ NUM }}",
       "frequency": 25,
       "num_senders": 2,
-      "max_size": 20000,
+      "max_size": 40000,
       "logger": "LOCAL_AND_REMOTE_LOGGER",
       "logger_nodes": [
         "imu",
@@ -211,14 +211,14 @@
     {
       "name": "/pi{{ NUM }}/aos/remote_timestamps/imu/pi{{ NUM }}/camera/y2022-vision-TargetEstimate",
       "type": "aos.message_bridge.RemoteMessage",
-      "frequency": 20,
+      "frequency": 40,
       "source_node": "pi{{ NUM }}",
       "max_size": 208
     },
     {
       "name": "/pi{{ NUM }}/aos/remote_timestamps/logger/pi{{ NUM }}/camera/y2022-vision-TargetEstimate",
       "type": "aos.message_bridge.RemoteMessage",
-      "frequency": 20,
+      "frequency": 40,
       "source_node": "pi{{ NUM }}",
       "max_size": 208
     },
