@@ -274,14 +274,13 @@ void ViewerLocal() {
                      blob_result.filtered_blobs.size()
               << ")";
 
+    estimator.Solve(blob_result.filtered_stats,
+                    FLAGS_display_estimation ? std::make_optional(ret_image)
+                                             : std::nullopt);
     if (blob_result.filtered_blobs.size() > 0) {
-      estimator.Solve(blob_result.filtered_stats,
-                      FLAGS_display_estimation ? std::make_optional(ret_image)
-                                               : std::nullopt);
       estimator.DrawEstimate(ret_image);
       LOG(INFO) << "Read file " << (it - file_list.begin()) << ": " << *it;
     }
-
 
     cv::imshow("image", image_mat);
     cv::imshow("mask", blob_result.binarized_image);

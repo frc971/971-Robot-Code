@@ -98,6 +98,12 @@ const std::vector<cv::Point3d> TargetEstimator::kTapePoints =
 const std::array<cv::Point3d, 4> TargetEstimator::kMiddleTapePiecePoints =
     ComputeMiddleTapePiecePoints();
 
+namespace {
+constexpr double kDefaultDistance = 3.0;
+constexpr double kDefaultYaw = M_PI;
+constexpr double kDefaultAngleToCamera = 0.0;
+}  // namespace
+
 TargetEstimator::TargetEstimator(cv::Mat intrinsics, cv::Mat extrinsics)
     : blob_stats_(),
       middle_blob_index_(0),
@@ -105,9 +111,9 @@ TargetEstimator::TargetEstimator(cv::Mat intrinsics, cv::Mat extrinsics)
       image_(std::nullopt),
       roll_(0.0),
       pitch_(0.0),
-      yaw_(M_PI),
-      distance_(3.0),
-      angle_to_camera_(0.0),
+      yaw_(kDefaultYaw),
+      distance_(kDefaultDistance),
+      angle_to_camera_(kDefaultAngleToCamera),
       // Seed camera height
       camera_height_(extrinsics.at<double>(2, 3) +
                      constants::Values::kImuHeight()) {
@@ -208,6 +214,19 @@ void TargetEstimator::Solve(
                  extrinsics_rot(2, 2) / std::cos(pitch_seed));
 
   // TODO(milind): seed with localizer output as well
+
+  // If we didn't solve well last time, seed everything at the defaults so we
+  // don't get stuck in a bad state.
+  // Copied from localizer.cc
+  constexpr double kMinConfidence = 0.75;
+  if (confidence_ < kMinConfidence) {
+    roll_ = roll_seed;
+    pitch_ = pitch_seed;
+    yaw_ = kDefaultYaw;
+    distance_ = kDefaultDistance;
+    angle_to_camera_ = kDefaultAngleToCamera;
+    camera_height_ = extrinsics_(2, 3) + constants::Values::kImuHeight();
+  }
 
   // Constrain the rotation to be around the localizer's, otherwise there can be
   // multiple solutions. There shouldn't be too much roll or pitch
