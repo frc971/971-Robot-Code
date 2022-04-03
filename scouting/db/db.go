@@ -50,6 +50,12 @@ type NotesData struct {
 	Notes      []string
 }
 
+type Ranking struct {
+	TeamNumber         int
+	Losses, Wins, Ties int32
+	Rank, Dq           int32
+}
+
 // Opens a database at the specified port on localhost. We currently don't
 // support connecting to databases on other hosts.
 func NewDatabase(user string, password string, port int) (*Database, error) {
@@ -138,6 +144,24 @@ func NewDatabase(user string, password string, port int) (*Database, error) {
 		return nil, errors.New(fmt.Sprint("Failed to create notes table: ", err))
 	}
 
+	statement, err = database.Prepare("CREATE TABLE IF NOT EXISTS rankings (" +
+		"id SERIAL PRIMARY KEY, " +
+		"Losses INTEGER, " +
+		"Wins INTEGER, " +
+		"Ties INTEGER, " +
+		"Rank INTEGER, " +
+		"Dq INTEGER, " +
+		"TeamNumber INTEGER)")
+	if err != nil {
+		return nil, errors.New(fmt.Sprint("Failed to prepare rankings table creation: ", err))
+	}
+	defer statement.Close()
+
+	_, err = statement.Exec()
+	if err != nil {
+		return nil, errors.New(fmt.Sprint("Failed to create rankings table: ", err))
+	}
+
 	return database, nil
 }
 
@@ -167,6 +191,16 @@ func (database *Database) Delete() error {
 	_, err = statement.Exec()
 	if err != nil {
 		return errors.New(fmt.Sprint("Failed to drop notes table: ", err))
+	}
+	return nil
+
+	statement, err = database.Prepare("DROP TABLE IF EXISTS rankings")
+	if err != nil {
+		return errors.New(fmt.Sprint("Failed to prepare dropping rankings table: ", err))
+	}
+	_, err = statement.Exec()
+	if err != nil {
+		return errors.New(fmt.Sprint("Failed to drop rankings table: ", err))
 	}
 	return nil
 }
@@ -278,6 +312,48 @@ func (database *Database) AddToStats(s Stats) error {
 	return nil
 }
 
+func (database *Database) AddOrUpdateRankings(r Ranking) error {
+	statement, err := database.Prepare("UPDATE rankings SET " +
+		"Losses = $1, Wins = $2, Ties = $3, " +
+		"Rank = $4, Dq = $5, TeamNumber = $6 " +
+		"WHERE TeamNumber = $6")
+	if err != nil {
+		return errors.New(fmt.Sprint("Failed to prepare rankings database update: ", err))
+	}
+	defer statement.Close()
+
+	result, err := statement.Exec(r.Losses, r.Wins, r.Ties,
+		r.Rank, r.Dq, r.TeamNumber)
+	if err != nil {
+		return errors.New(fmt.Sprint("Failed to update rankings database: ", err))
+	}
+
+	numRowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return errors.New(fmt.Sprint("Failed to query rows affected: ", err))
+	}
+	if numRowsAffected == 0 {
+		statement, err := database.Prepare("INSERT INTO rankings(" +
+			"Losses, Wins, Ties, " +
+			"Rank, Dq, TeamNumber) " +
+			"VALUES (" +
+			"$1, $2, $3, " +
+			"$4, $5, $6)")
+		if err != nil {
+			return errors.New(fmt.Sprint("Failed to prepare insertion into rankings database: ", err))
+		}
+		defer statement.Close()
+
+		_, err = statement.Exec(r.Losses, r.Wins, r.Ties,
+			r.Rank, r.Dq, r.TeamNumber)
+		if err != nil {
+			return errors.New(fmt.Sprint("Failed to insert into rankings database: ", err))
+		}
+	}
+
+	return nil
+}
+
 func (database *Database) ReturnMatches() ([]Match, error) {
 	rows, err := database.Query("SELECT * FROM matches")
 	if err != nil {
@@ -326,6 +402,28 @@ func (database *Database) ReturnStats() ([]Stats, error) {
 		teams = append(teams, team)
 	}
 	return teams, nil
+}
+
+func (database *Database) ReturnRankings() ([]Ranking, error) {
+	rows, err := database.Query("SELECT * FROM rankings")
+	if err != nil {
+		return nil, errors.New(fmt.Sprint("Failed to SELECT * FROM rankings: ", err))
+	}
+	defer rows.Close()
+
+	all_rankings := make([]Ranking, 0)
+	for rows.Next() {
+		var ranking Ranking
+		var id int
+		err = rows.Scan(&id,
+			&ranking.Losses, &ranking.Wins, &ranking.Ties,
+			&ranking.Rank, &ranking.Dq, &ranking.TeamNumber)
+		if err != nil {
+			return nil, errors.New(fmt.Sprint("Failed to scan from rankings: ", err))
+		}
+		all_rankings = append(all_rankings, ranking)
+	}
+	return all_rankings, nil
 }
 
 func (database *Database) QueryMatches(teamNumber_ int32) ([]Match, error) {
@@ -398,6 +496,28 @@ func (database *Database) QueryNotes(TeamNumber int32) (NotesData, error) {
 		notes = append(notes, data)
 	}
 	return NotesData{TeamNumber, notes}, nil
+}
+
+func (database *Database) QueryRankings(TeamNumber int) ([]Ranking, error) {
+	rows, err := database.Query("SELECT * FROM rankings WHERE TeamNumber = $1", TeamNumber)
+	if err != nil {
+		return nil, errors.New(fmt.Sprint("Failed to select from rankings: ", err))
+	}
+	defer rows.Close()
+
+	all_rankings := make([]Ranking, 0)
+	for rows.Next() {
+		var ranking Ranking
+		var id int
+		err = rows.Scan(&id,
+			&ranking.Losses, &ranking.Wins, &ranking.Ties,
+			&ranking.Rank, &ranking.Dq, &ranking.TeamNumber)
+		if err != nil {
+			return nil, errors.New(fmt.Sprint("Failed to scan from rankings: ", err))
+		}
+		all_rankings = append(all_rankings, ranking)
+	}
+	return all_rankings, nil
 }
 
 func (database *Database) AddNotes(data NotesData) error {
