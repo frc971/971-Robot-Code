@@ -100,6 +100,8 @@ const std::array<cv::Point3d, 4> TargetEstimator::kMiddleTapePiecePoints =
 
 TargetEstimator::TargetEstimator(cv::Mat intrinsics, cv::Mat extrinsics)
     : blob_stats_(),
+      middle_blob_index_(0),
+      max_blob_area_(0.0),
       image_(std::nullopt),
       roll_(0.0),
       pitch_(0.0),
@@ -153,11 +155,17 @@ void TargetEstimator::Solve(
                    blob_stats_[2].centroid});
   CHECK(circle.has_value());
 
+  max_blob_area_ = 0.0;
+
   // Find the middle blob, which is the one with the angle closest to the
   // average
   double theta_avg = 0.0;
   for (const auto &stats : blob_stats_) {
     theta_avg += circle->AngleOf(stats.centroid);
+
+    if (stats.area > max_blob_area_) {
+      max_blob_area_ = stats.area;
+    }
   }
   theta_avg /= blob_stats_.size();
 
@@ -250,7 +258,7 @@ void TargetEstimator::Solve(
           << std::chrono::duration<double, std::milli>(end - start).count()
           << " ms";
 
-  // For computing the confidence, find the standard deviation in pixels
+  // For computing the confidence, find the standard deviation in pixels.
   std::vector<double> residual(num_residuals);
   (*this)(&roll_, &pitch_, &yaw_, &distance_, &angle_to_camera_,
           &camera_height_, residual.data());
@@ -427,13 +435,18 @@ bool TargetEstimator::operator()(const S *const roll, const S *const pitch,
   for (size_t i = 0; i < tape_indices.size(); ++i) {
     const auto distance = DistanceFromTapeIndex(
         tape_indices[i].second, tape_indices[i].first, tape_points_proj);
+    // Scale the distance based on the blob area: larger blobs have less noise.
+    const S distance_scalar =
+        S(blob_stats_[tape_indices[i].second].area / max_blob_area_);
     VLOG(2) << "Blob index " << tape_indices[i].second << " maps to "
             << tape_indices[i].first << " distance " << distance.x << " "
-            << distance.y;
+            << distance.y << " distance scalar "
+            << ScalarToDouble(distance_scalar);
+
     // Set the residual to the (x, y) distance of the centroid from the
     // matched projected piece of tape
-    residual[i * 2] = distance.x;
-    residual[(i * 2) + 1] = distance.y;
+    residual[i * 2] = distance_scalar * distance.x;
+    residual[(i * 2) + 1] = distance_scalar * distance.y;
   }
 
   // Penalize based on the difference between the size of the projected piece of
