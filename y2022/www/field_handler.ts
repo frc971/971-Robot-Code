@@ -97,7 +97,9 @@ export class FieldHandler {
     }
 
     this.connection.addConfigHandler(() => {
-      this.connection.addHandler(
+      // Visualization message is reliable so that we can see *all* the vision
+      // matches.
+      this.connection.addReliableHandler(
           '/localizer', LocalizerVisualization.getFullyQualifiedName(),
           (data) => {
             this.handleLocalizerDebug(data);
