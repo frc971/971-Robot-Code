@@ -13,6 +13,7 @@
 #include "frc971/vision/vision_generated.h"
 #include "y2022/vision/blob_detector.h"
 #include "y2022/vision/calibration_data.h"
+#include "y2022/vision/camera_reader.h"
 #include "y2022/vision/target_estimate_generated.h"
 #include "y2022/vision/target_estimator.h"
 
@@ -213,51 +214,24 @@ void ViewerLocal() {
   const aos::FlatbufferSpan<calibration::CalibrationData> calibration_data(
       CalibrationData());
 
-  const calibration::CameraCalibration *calibration = nullptr;
-  for (const calibration::CameraCalibration *candidate :
-       *calibration_data.message().camera_calibrations()) {
-    if ((candidate->node_name()->string_view() == FLAGS_calibration_node) &&
-        (candidate->team_number() == FLAGS_calibration_team_number)) {
-      calibration = candidate;
-      break;
-    }
-  }
+  const calibration::CameraCalibration *calibration =
+      CameraReader::FindCameraCalibration(&calibration_data.message(),
+                                          FLAGS_calibration_node,
+                                          FLAGS_calibration_team_number);
+  const auto intrinsics = CameraReader::CameraIntrinsics(calibration);
+  const auto extrinsics = CameraReader::CameraExtrinsics(calibration);
+  const auto dist_coeffs = CameraReader::CameraDistCoeffs(calibration);
 
-  CHECK(calibration) << "No calibration data found for node \""
-                     << FLAGS_calibration_node << "\" with team number "
-                     << FLAGS_calibration_team_number;
-
-  const auto intrinsics_float = cv::Mat(
-      3, 3, CV_32F,
-      const_cast<void *>(
-          static_cast<const void *>(calibration->intrinsics()->data())));
-  cv::Mat intrinsics;
-  intrinsics_float.convertTo(intrinsics, CV_64F);
-
-  const frc971::vision::calibration::TransformationMatrix *transform =
-      calibration->has_turret_extrinsics() ? calibration->turret_extrinsics()
-                                           : calibration->fixed_extrinsics();
-
-  const auto extrinsics_float = cv::Mat(
-      4, 4, CV_32F,
-      const_cast<void *>(static_cast<const void *>(transform->data()->data())));
-  cv::Mat extrinsics;
-  extrinsics_float.convertTo(extrinsics, CV_64F);
-
-  const auto dist_coeffs_float = cv::Mat(
-      5, 1, CV_32F,
-      const_cast<void *>(
-          static_cast<const void *>(calibration->dist_coeffs()->data())));
-  cv::Mat dist_coeffs;
-  dist_coeffs_float.convertTo(dist_coeffs, CV_64F);
+  // Compute undistortion map once for efficiency
+  const auto undistort_maps =
+      CameraReader::ComputeUndistortMaps(intrinsics, dist_coeffs);
 
   TargetEstimator estimator(intrinsics, extrinsics);
 
   for (auto it = file_list.begin() + FLAGS_skip; it < file_list.end(); it++) {
     LOG(INFO) << "Reading file " << (it - file_list.begin()) << ": " << *it;
-    cv::Mat image_mat_distorted = cv::imread(it->c_str());
-    cv::Mat image_mat;
-    cv::undistort(image_mat_distorted, image_mat, intrinsics, dist_coeffs);
+    cv::Mat image_mat =
+        CameraReader::UndistortImage(cv::imread(it->c_str()), undistort_maps);
 
     BlobDetector::BlobResult blob_result;
     blob_result.binarized_image =

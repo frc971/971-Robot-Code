@@ -194,6 +194,8 @@ void ReplayPi(const ReplayData &data) {
 
         bool use_image = true;
         if (FLAGS_detected_only || FLAGS_filtered_only) {
+          // TODO(milind): if adding target estimation here in the future,
+          // undistortion is needed
           BlobDetector::BlobResult blob_result;
           BlobDetector::ExtractBlobs(image_mat, &blob_result);
 

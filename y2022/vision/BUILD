@@ -250,6 +250,7 @@ cc_binary(
     deps = [
         ":blob_detector_lib",
         ":calibration_data",
+        ":camera_reader_lib",
         ":target_estimator_lib",
         "//aos:init",
         "//aos/events:shm_event_loop",
