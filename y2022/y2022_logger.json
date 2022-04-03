@@ -72,7 +72,7 @@
       "type": "aos.message_bridge.RemoteMessage",
       "source_node": "roborio",
       "logger": "NOT_LOGGED",
-      "frequency": 200,
+      "frequency": 400,
       "num_senders": 2,
       "max_size": 400
     },
