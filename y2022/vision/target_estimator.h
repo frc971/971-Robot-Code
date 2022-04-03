@@ -68,8 +68,13 @@ class TargetEstimator {
       const Eigen::Transform<S, 3, Eigen::Affine> &H_hub_camera) const;
 
   template <typename S>
-  cv::Point_<S> DistanceFromTape(
+  size_t ClosestTape(size_t centroid_index,
+                     const std::vector<cv::Point_<S>> &tape_points) const;
+
+  template <typename S>
+  cv::Point_<S> DistanceFromTapeIndex(
       size_t centroid_index,
+      size_t tape_index,
       const std::vector<cv::Point_<S>> &tape_points) const;
 
   void DrawProjectedHub(const std::vector<cv::Point2d> &tape_points_proj,
