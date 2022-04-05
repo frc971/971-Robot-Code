@@ -47,7 +47,6 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   void set_requested_intake(std::optional<RequestedIntake> requested_intake) {
     requested_intake_ = requested_intake;
   }
-  void set_turret_goal(double turret_goal) { turret_goal_ = turret_goal; }
 
   void set_fire_at_will(bool fire) { fire_ = fire; }
   void set_preloaded(bool preloaded) { preloaded_ = preloaded; }
@@ -77,7 +76,6 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   double roller_back_voltage_ = 0.0;
   double transfer_roller_voltage_ = 0.0;
   std::optional<RequestedIntake> requested_intake_ = std::nullopt;
-  double turret_goal_ = 0.0;
   bool fire_ = false;
   bool preloaded_ = false;
 

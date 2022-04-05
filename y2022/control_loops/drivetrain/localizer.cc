@@ -48,7 +48,7 @@ void Localizer::Update(const Eigen::Matrix<double, 2, 1> &U,
       joystick_state_fetcher_->autonomous()) {
     // TODO(james): This is an inelegant way to avoid having the localizer mess
     // up splines. Do better.
-    return;
+    //return;
   }
   if (localizer_output_fetcher_.Fetch()) {
     clock_offset_fetcher_.Fetch();
