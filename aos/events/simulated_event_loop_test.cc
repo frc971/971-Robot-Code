@@ -246,6 +246,72 @@ TEST(SimulatedEventLoopTest, SendAfterRunFor) {
   EXPECT_EQ(test_message_counter2.count(), 0u);
 }
 
+// Test that if we configure an event loop to be able to send too fast that we do allow it to do so.
+TEST(SimulatedEventLoopTest, AllowSendTooFast) {
+  SimulatedEventLoopTestFactory factory;
+
+  SimulatedEventLoopFactory simulated_event_loop_factory(
+      factory.configuration());
+
+  // Create two event loops: One will be allowed to send too fast, one won't. We
+  // will then test to ensure that the one that is allowed to send too fast can
+  // indeed send too fast, but that it then makes it so that the second event
+  // loop can no longer send anything because *it* is still limited.
+  ::std::unique_ptr<EventLoop> too_fast_event_loop =
+      simulated_event_loop_factory.GetNodeEventLoopFactory(nullptr)
+          ->MakeEventLoop("too_fast_sender",
+                          {NodeEventLoopFactory::CheckSentTooFast::kNo,
+                           NodeEventLoopFactory::ExclusiveSenders::kNo});
+  aos::Sender<TestMessage> too_fast_message_sender =
+      too_fast_event_loop->MakeSender<TestMessage>("/test");
+
+  ::std::unique_ptr<EventLoop> limited_event_loop =
+      simulated_event_loop_factory.MakeEventLoop("limited_sender");
+  aos::Sender<TestMessage> limited_message_sender =
+      limited_event_loop->MakeSender<TestMessage>("/test");
+
+  const int queue_size = TestChannelQueueSize(too_fast_event_loop.get());
+  for (int ii = 0; ii < queue_size; ++ii) {
+    ASSERT_EQ(SendTestMessage(too_fast_message_sender), RawSender::Error::kOk);
+  }
+  // And now we should start being in the sending-too-fast phase.
+  for (int ii = 0; ii < queue_size; ++ii) {
+    ASSERT_EQ(SendTestMessage(too_fast_message_sender), RawSender::Error::kOk);
+    ASSERT_EQ(SendTestMessage(limited_message_sender), RawSender::Error::kMessagesSentTooFast);
+  }
+}
+
+// Test that if we setup an exclusive sender that it is indeed exclusive.
+TEST(SimulatedEventLoopDeathTest, ExclusiveSenders) {
+  SimulatedEventLoopTestFactory factory;
+
+  SimulatedEventLoopFactory simulated_event_loop_factory(
+      factory.configuration());
+
+  ::std::unique_ptr<EventLoop> exclusive_event_loop =
+      simulated_event_loop_factory.GetNodeEventLoopFactory(nullptr)
+          ->MakeEventLoop("too_fast_sender",
+                          {NodeEventLoopFactory::CheckSentTooFast::kYes,
+                           NodeEventLoopFactory::ExclusiveSenders::kYes});
+  exclusive_event_loop->SkipAosLog();
+  exclusive_event_loop->SkipTimingReport();
+  ::std::unique_ptr<EventLoop> normal_event_loop =
+      simulated_event_loop_factory.MakeEventLoop("limited_sender");
+  // Set things up to have the exclusive sender be destroyed so we can test
+  // recovery.
+  {
+    aos::Sender<TestMessage> exclusive_sender =
+        exclusive_event_loop->MakeSender<TestMessage>("/test");
+
+    EXPECT_DEATH(normal_event_loop->MakeSender<TestMessage>("/test"),
+                 "TestMessage");
+  }
+  // This one should succeed now that the exclusive channel is removed.
+  aos::Sender<TestMessage> normal_sender =
+      normal_event_loop->MakeSender<TestMessage>("/test");
+  EXPECT_DEATH(exclusive_event_loop->MakeSender<TestMessage>("/test"), "TestMessage");
+}
+
 void TestSentTooFastCheckEdgeCase(
     const std::function<RawSender::Error(int, int)> expected_err,
     const bool send_twice_at_end) {

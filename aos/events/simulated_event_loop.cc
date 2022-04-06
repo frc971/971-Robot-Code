@@ -21,6 +21,10 @@ class SimulatedEventLoop;
 class SimulatedFetcher;
 class SimulatedChannel;
 
+using CheckSentTooFast = NodeEventLoopFactory::CheckSentTooFast;
+using ExclusiveSenders = NodeEventLoopFactory::ExclusiveSenders;
+using EventLoopOptions = NodeEventLoopFactory::EventLoopOptions;
+
 namespace {
 
 std::string NodeName(const Node *node) {
@@ -231,7 +235,8 @@ class SimulatedChannel {
 
   // Sends the message to all the connected receivers and fetchers.  Returns the
   // sent queue index, or std::nullopt if messages were sent too fast.
-  std::optional<uint32_t> Send(std::shared_ptr<SimulatedMessage> message);
+  std::optional<uint32_t> Send(std::shared_ptr<SimulatedMessage> message,
+                               CheckSentTooFast check_sent_too_fast);
 
   // Unregisters a fetcher.
   void UnregisterFetcher(SimulatedFetcher *fetcher);
@@ -259,6 +264,9 @@ class SimulatedChannel {
   void CountSenderDestroyed() {
     --sender_count_;
     CHECK_GE(sender_count_, 0);
+    if (sender_count_ == 0) {
+      allow_new_senders_ = true;
+    }
   }
 
  private:
@@ -296,6 +304,9 @@ class SimulatedChannel {
   ipc_lib::QueueIndex next_queue_index_;
 
   int sender_count_ = 0;
+  // Used to track when an exclusive sender has been created (e.g., for log
+  // replay) and we want to prevent new senders from being accidentally created.
+  bool allow_new_senders_ = true;
 
   std::vector<uint16_t> available_buffer_indices_;
 
@@ -531,7 +542,7 @@ class SimulatedEventLoop : public EventLoop {
           *channels,
       const Configuration *configuration,
       std::vector<SimulatedEventLoop *> *event_loops_, const Node *node,
-      pid_t tid)
+      pid_t tid, EventLoopOptions options)
       : EventLoop(CHECK_NOTNULL(configuration)),
         scheduler_(scheduler),
         node_event_loop_factory_(node_event_loop_factory),
@@ -539,7 +550,8 @@ class SimulatedEventLoop : public EventLoop {
         event_loops_(event_loops_),
         node_(node),
         tid_(tid),
-        startup_tracker_(std::make_shared<StartupTracker>()) {
+        startup_tracker_(std::make_shared<StartupTracker>()),
+        options_(options) {
     startup_tracker_->loop = this;
     scheduler_->ScheduleOnStartup([startup_tracker = startup_tracker_]() {
       if (startup_tracker->loop) {
@@ -675,6 +687,8 @@ class SimulatedEventLoop : public EventLoop {
     return node_event_loop_factory_->boot_uuid();
   }
 
+  const EventLoopOptions &options() const { return options_; }
+
  private:
   friend class SimulatedTimerHandler;
   friend class SimulatedPhasedLoopHandler;
@@ -723,6 +737,8 @@ class SimulatedEventLoop : public EventLoop {
   bool has_run_ = false;
 
   std::shared_ptr<StartupTracker> startup_tracker_;
+
+  EventLoopOptions options_;
 };
 
 void SimulatedEventLoopFactory::set_send_delay(
@@ -923,6 +939,16 @@ void SimulatedChannel::MakeRawWatcher(SimulatedWatcher *watcher) {
 
 ::std::unique_ptr<RawSender> SimulatedChannel::MakeRawSender(
     SimulatedEventLoop *event_loop) {
+  CHECK(allow_new_senders_)
+      << ": Attempted to create a new sender on exclusive channel "
+      << configuration::StrippedChannelToString(channel_);
+  if (event_loop->options().exclusive_senders == ExclusiveSenders::kYes) {
+    CHECK_EQ(0, sender_count_)
+        << ": Attempted to add an exclusive sender on a channel with existing "
+           "senders: "
+        << configuration::StrippedChannelToString(channel_);
+    allow_new_senders_ = false;
+  }
   return ::std::unique_ptr<RawSender>(new SimulatedSender(this, event_loop));
 }
 
@@ -936,7 +962,7 @@ void SimulatedChannel::MakeRawWatcher(SimulatedWatcher *watcher) {
 }
 
 std::optional<uint32_t> SimulatedChannel::Send(
-    std::shared_ptr<SimulatedMessage> message) {
+    std::shared_ptr<SimulatedMessage> message, CheckSentTooFast check_sent_too_fast) {
   const auto now = scheduler_->monotonic_now();
   // Remove times that are greater than or equal to a channel_storage_duration_
   // ago
@@ -946,7 +972,8 @@ std::optional<uint32_t> SimulatedChannel::Send(
   }
 
   // Check that we are not sending messages too fast
-  if (static_cast<int>(last_times_.size()) >= queue_size()) {
+  if (check_sent_too_fast == CheckSentTooFast::kYes &&
+      static_cast<int>(last_times_.size()) >= queue_size()) {
     return std::nullopt;
   }
 
@@ -1025,7 +1052,7 @@ RawSender::Error SimulatedSender::DoSend(
   message_->context.size = length;
 
   const std::optional<uint32_t> optional_queue_index =
-      simulated_channel_->Send(message_);
+      simulated_channel_->Send(message_, simulated_event_loop_->options().check_sent_too_fast);
 
   // Check that we are not sending messages too fast
   if (!optional_queue_index) {
@@ -1462,7 +1489,7 @@ void NodeEventLoopFactory::DisableStatistics() {
 }
 
 ::std::unique_ptr<EventLoop> NodeEventLoopFactory::MakeEventLoop(
-    std::string_view name) {
+    std::string_view name, EventLoopOptions options) {
   CHECK(!scheduler_.is_running() || !started_)
       << ": Can't create an event loop while running";
 
@@ -1470,7 +1497,7 @@ void NodeEventLoopFactory::DisableStatistics() {
   ++tid_;
   ::std::unique_ptr<SimulatedEventLoop> result(new SimulatedEventLoop(
       &scheduler_, this, &channels_, factory_->configuration(), &event_loops_,
-      node_, tid));
+      node_, tid, options));
   result->set_name(name);
   result->set_send_delay(factory_->send_delay());
   if (skip_timing_report_) {

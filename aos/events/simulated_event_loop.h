@@ -154,7 +154,26 @@ class NodeEventLoopFactory {
  public:
   ~NodeEventLoopFactory();
 
-  std::unique_ptr<EventLoop> MakeEventLoop(std::string_view name);
+  // Whether a given event loop should have its senders checked for messages
+  // being sent too fast. Should only be used by the LogReader or other highly
+  // specialized applications that need to be able to bypass normal behaviors.
+  enum class CheckSentTooFast { kNo, kYes };
+  // Whether the created EventLoop should be the only one allowed to send on all
+  // of its channels. Mostly useful for the LogReader, to allow us to confirm
+  // whether the LogReader is conflicting with the output of any applications
+  // being run in replay.
+  enum class ExclusiveSenders { kNo, kYes };
+  struct EventLoopOptions {
+    CheckSentTooFast check_sent_too_fast;
+    ExclusiveSenders exclusive_senders;
+  };
+
+  // Takes the name for the event loop and a struct of options for selecting
+  // what checks to run for the event loop in question.
+  std::unique_ptr<EventLoop> MakeEventLoop(
+      std::string_view name,
+      EventLoopOptions options = EventLoopOptions{CheckSentTooFast::kYes,
+                                                  ExclusiveSenders::kNo});
 
   // Returns the node that this factory is running as, or nullptr if this is a
   // single node setup.

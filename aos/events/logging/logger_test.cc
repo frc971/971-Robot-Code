@@ -416,6 +416,83 @@ TEST_F(LoggerTest, ManyMessages) {
   }
 }
 
+// Tests that we can read a logfile that has channels which were sent too fast.
+TEST(SingleNodeLoggerNoFixtureTest, ReadTooFast) {
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+      aos::configuration::ReadConfig(
+          ArtifactPath("aos/events/pingpong_config.json"));
+  SimulatedEventLoopFactory event_loop_factory(&config.message());
+  const ::std::string tmpdir = aos::testing::TestTmpDir();
+  const ::std::string base_name = tmpdir + "/logfile";
+  const ::std::string config_file =
+      absl::StrCat(base_name, kSingleConfigSha256, ".bfbs");
+  const ::std::string logfile = base_name + ".part0.bfbs";
+  // Remove the log file.
+  unlink(config_file.c_str());
+  unlink(logfile.c_str());
+
+  LOG(INFO) << "Logging data to " << logfile;
+
+  int sent_messages = 0;
+
+  {
+    std::unique_ptr<EventLoop> logger_event_loop =
+        event_loop_factory.MakeEventLoop("logger");
+
+    std::unique_ptr<EventLoop> ping_spammer_event_loop =
+        event_loop_factory.GetNodeEventLoopFactory(nullptr)->MakeEventLoop(
+            "ping_spammer", {NodeEventLoopFactory::CheckSentTooFast::kNo,
+                             NodeEventLoopFactory::ExclusiveSenders::kNo});
+    aos::Sender<examples::Ping> ping_sender =
+        ping_spammer_event_loop->MakeSender<examples::Ping>("/test");
+
+    aos::TimerHandler *timer_handler =
+        ping_spammer_event_loop->AddTimer([&ping_sender, &sent_messages]() {
+          aos::Sender<examples::Ping>::Builder builder =
+              ping_sender.MakeBuilder();
+          examples::Ping::Builder ping_builder =
+              builder.MakeBuilder<examples::Ping>();
+          CHECK_EQ(builder.Send(ping_builder.Finish()), RawSender::Error::kOk);
+          ++sent_messages;
+        });
+
+    constexpr std::chrono::microseconds kSendPeriod{10};
+    const int max_legal_messages =
+        ping_sender.channel()->frequency() *
+        event_loop_factory.configuration()->channel_storage_duration() /
+        1000000000;
+
+    ping_spammer_event_loop->OnRun(
+        [&ping_spammer_event_loop, kSendPeriod, timer_handler]() {
+          timer_handler->Setup(
+              ping_spammer_event_loop->monotonic_now() + kSendPeriod / 2,
+              kSendPeriod);
+        });
+
+    Logger logger(logger_event_loop.get());
+    logger.set_separate_config(false);
+    logger.set_polling_period(std::chrono::milliseconds(100));
+    logger.StartLoggingLocalNamerOnRun(base_name);
+
+    event_loop_factory.RunFor(kSendPeriod * max_legal_messages * 2);
+  }
+
+  LogReader reader(logfile);
+
+  reader.Register();
+
+  std::unique_ptr<EventLoop> test_event_loop =
+      reader.event_loop_factory()->MakeEventLoop("log_reader");
+
+  int replay_count = 0;
+
+  test_event_loop->MakeWatcher(
+      "/test", [&replay_count](const examples::Ping &) { ++replay_count; });
+
+  reader.event_loop_factory()->Run();
+  EXPECT_EQ(replay_count, sent_messages);
+}
+
 struct CompressionParams {
   std::string_view extension;
   std::function<std::unique_ptr<DetachedBufferEncoder>()> encoder_factory;

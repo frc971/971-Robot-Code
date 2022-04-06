@@ -83,7 +83,12 @@ class SimulatedMessageBridge {
     }
 
     void MakeEventLoop() {
-      SetEventLoop(node_factory_->MakeEventLoop("message_bridge"));
+      // Message bridge isn't the thing that should be catching sent-too-fast,
+      // and may need to be able to forward too-fast messages replayed from old
+      // logfiles.
+      SetEventLoop(node_factory_->MakeEventLoop(
+          "message_bridge", {NodeEventLoopFactory::CheckSentTooFast::kNo,
+                             NodeEventLoopFactory::ExclusiveSenders::kNo}));
     }
 
     void SetEventLoop(std::unique_ptr<aos::EventLoop> loop);

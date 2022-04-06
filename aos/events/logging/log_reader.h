@@ -406,8 +406,11 @@ class LogReader {
 
     EventLoop *MakeEventLoop() {
       CHECK(!event_loop_unique_ptr_);
-      event_loop_unique_ptr_ =
-          node_event_loop_factory_->MakeEventLoop("log_reader");
+      // TODO(james): Enable exclusive senders on LogReader to allow us to
+      // ensure we are remapping channels correctly.
+      event_loop_unique_ptr_ = node_event_loop_factory_->MakeEventLoop(
+          "log_reader", {NodeEventLoopFactory::CheckSentTooFast::kNo,
+                         NodeEventLoopFactory::ExclusiveSenders::kNo});
       return event_loop_unique_ptr_.get();
     }
 
