@@ -82,6 +82,36 @@ func TestAddToMatchDB(t *testing.T) {
 	}
 }
 
+func TestAddOrUpdateRankingsDB(t *testing.T) {
+	fixture := createDatabase(t)
+	defer fixture.TearDown()
+
+	correct := []Ranking{
+		Ranking{
+			TeamNumber: 123,
+			Losses:     1, Wins: 7, Ties: 0,
+			Rank: 2, Dq: 0,
+		},
+		Ranking{
+			TeamNumber: 125,
+			Losses:     2, Wins: 4, Ties: 0,
+			Rank: 2, Dq: 0,
+		},
+	}
+
+	for i := 0; i < len(correct); i++ {
+		err := fixture.db.AddOrUpdateRankings(correct[i])
+		check(t, err, "Failed to add ranking data")
+	}
+
+	got, err := fixture.db.ReturnRankings()
+	check(t, err, "Failed ReturnRankings()")
+
+	if !reflect.DeepEqual(correct, got) {
+		t.Fatalf("Got %#v,\nbut expected %#v.", got, correct)
+	}
+}
+
 func TestAddToStatsDB(t *testing.T) {
 	fixture := createDatabase(t)
 	defer fixture.TearDown()
@@ -283,6 +313,54 @@ func TestQueryStatsDB(t *testing.T) {
 	}
 }
 
+func TestQueryRankingsDB(t *testing.T) {
+	fixture := createDatabase(t)
+	defer fixture.TearDown()
+
+	testDatabase := []Ranking{
+		Ranking{
+			TeamNumber: 123,
+			Losses:     1, Wins: 7, Ties: 2,
+			Rank: 2, Dq: 0,
+		},
+		Ranking{
+			TeamNumber: 124,
+			Losses:     3, Wins: 4, Ties: 0,
+			Rank: 4, Dq: 2,
+		},
+		Ranking{
+			TeamNumber: 125,
+			Losses:     5, Wins: 2, Ties: 0,
+			Rank: 17, Dq: 0,
+		},
+		Ranking{
+			TeamNumber: 126,
+			Losses:     0, Wins: 7, Ties: 0,
+			Rank: 5, Dq: 0,
+		},
+	}
+
+	for i := 0; i < len(testDatabase); i++ {
+		err := fixture.db.AddOrUpdateRankings(testDatabase[i])
+		check(t, err, fmt.Sprint("Failed to add rankings ", i))
+	}
+
+	correct := []Ranking{
+		Ranking{
+			TeamNumber: 126,
+			Losses:     0, Wins: 7, Ties: 0,
+			Rank: 5, Dq: 0,
+		},
+	}
+
+	got, err := fixture.db.QueryRankings(126)
+	check(t, err, "Failed QueryRankings()")
+
+	if !reflect.DeepEqual(correct, got) {
+		t.Errorf("Got %#v,\nbut expected %#v.", got, correct)
+	}
+}
+
 func TestReturnMatchDB(t *testing.T) {
 	fixture := createDatabase(t)
 	defer fixture.TearDown()
@@ -322,6 +400,46 @@ func TestReturnMatchDB(t *testing.T) {
 
 	got, err := fixture.db.ReturnMatches()
 	check(t, err, "Failed ReturnMatches()")
+
+	if !reflect.DeepEqual(correct, got) {
+		t.Errorf("Got %#v,\nbut expected %#v.", got, correct)
+	}
+}
+
+func TestReturnRankingsDB(t *testing.T) {
+	fixture := createDatabase(t)
+	defer fixture.TearDown()
+
+	correct := []Ranking{
+		Ranking{
+			TeamNumber: 123,
+			Losses:     1, Wins: 7, Ties: 2,
+			Rank: 2, Dq: 0,
+		},
+		Ranking{
+			TeamNumber: 124,
+			Losses:     3, Wins: 4, Ties: 0,
+			Rank: 4, Dq: 2,
+		},
+		Ranking{
+			TeamNumber: 125,
+			Losses:     5, Wins: 2, Ties: 0,
+			Rank: 17, Dq: 0,
+		},
+		Ranking{
+			TeamNumber: 126,
+			Losses:     0, Wins: 7, Ties: 0,
+			Rank: 5, Dq: 0,
+		},
+	}
+
+	for i := 0; i < len(correct); i++ {
+		err := fixture.db.AddOrUpdateRankings(correct[i])
+		check(t, err, fmt.Sprint("Failed to add rankings", i))
+	}
+
+	got, err := fixture.db.ReturnRankings()
+	check(t, err, "Failed ReturnRankings()")
 
 	if !reflect.DeepEqual(correct, got) {
 		t.Errorf("Got %#v,\nbut expected %#v.", got, correct)
@@ -394,6 +512,59 @@ func TestReturnStatsDB(t *testing.T) {
 
 	got, err := fixture.db.ReturnStats()
 	check(t, err, "Failed ReturnStats()")
+
+	if !reflect.DeepEqual(correct, got) {
+		t.Errorf("Got %#v,\nbut expected %#v.", got, correct)
+	}
+}
+
+func TestRankingsDbUpdate(t *testing.T) {
+	fixture := createDatabase(t)
+	defer fixture.TearDown()
+
+	testDatabase := []Ranking{
+		Ranking{
+			TeamNumber: 123,
+			Losses:     1, Wins: 7, Ties: 2,
+			Rank: 2, Dq: 0,
+		},
+		Ranking{
+			TeamNumber: 124,
+			Losses:     3, Wins: 4, Ties: 0,
+			Rank: 4, Dq: 2,
+		},
+		Ranking{
+			TeamNumber: 125,
+			Losses:     5, Wins: 2, Ties: 0,
+			Rank: 17, Dq: 0,
+		},
+		Ranking{
+			TeamNumber: 126,
+			Losses:     0, Wins: 7, Ties: 0,
+			Rank: 5, Dq: 0,
+		},
+		Ranking{
+			TeamNumber: 125,
+			Losses:     2, Wins: 4, Ties: 1,
+			Rank: 5, Dq: 0,
+		},
+	}
+
+	for i := 0; i < len(testDatabase); i++ {
+		err := fixture.db.AddOrUpdateRankings(testDatabase[i])
+		check(t, err, fmt.Sprint("Failed to add rankings ", i))
+	}
+
+	correct := []Ranking{
+		Ranking{
+			TeamNumber: 125,
+			Losses:     2, Wins: 4, Ties: 1,
+			Rank: 5, Dq: 0,
+		},
+	}
+
+	got, err := fixture.db.QueryRankings(125)
+	check(t, err, "Failed QueryRankings()")
 
 	if !reflect.DeepEqual(correct, got) {
 		t.Errorf("Got %#v,\nbut expected %#v.", got, correct)
