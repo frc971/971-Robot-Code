@@ -92,9 +92,16 @@ TEST_F(TopTest, TopProcesses) {
     const pid_t pid = fork();
     PCHECK(pid >= 0);
     if (pid == 0) {
+      LOG(INFO) << "In child process.";
       while (true) {
+        // This is a "please don't optimize me out" thing for the compiler.
+        // Otherwise, the entire if (pid == 0) block can get optimized away...
+        asm("");
+        continue;
       }
+      LOG(FATAL) << "This should be unreachable.";
     } else {
+      CHECK_NE(0, pid) << "The compiler is messing with you.";
       children.push_back(pid);
     }
   }
