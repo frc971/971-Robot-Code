@@ -41,6 +41,10 @@ class Starter {
 
   void Cleanup();
 
+  // EventLoop that we use for running the code. Mostly exposed for testing
+  // purposes.
+  EventLoop *event_loop() { return &event_loop_; }
+
  private:
   // Signals which indicate starter has died
   static const inline std::vector<int> kStarterDeath = {

@@ -195,6 +195,11 @@ void Top::UpdateReadings() {
       process.start_time = start_time;
       process.readings.Reset();
     }
+    // If the process name has changed (e.g., if our first reading for a process
+    // name occurred before execvp was called), then update it.
+    if (process.name != proc_stat->name) {
+      process.name = proc_stat->name;
+    }
 
     process.readings.Push(Reading{now, TotalProcessTime(*proc_stat),
                                   RealMemoryUsage(*proc_stat)});

@@ -27,8 +27,22 @@ class StarterdTest : public ::testing::Test {
   }
 
  protected:
+  void SetupStarterCleanup(aos::starter::Starter *starter) {
+    starter->event_loop()
+        ->AddTimer([this, starter]() {
+          if (test_done_) {
+            starter->Cleanup();
+          }
+        })
+        ->Setup(starter->event_loop()->monotonic_now(),
+                std::chrono::seconds(1));
+  }
+
   gflags::FlagSaver flag_saver_;
   std::string shm_dir_;
+  // Used to track when the test completes so that we can clean up the starter
+  // in its thread.
+  std::atomic<bool> test_done_{false};
 };
 
 struct TestParams {
@@ -145,11 +159,13 @@ TEST_P(StarterdConfigParamTest, MultiNodeStartStopTest) {
         }
       });
 
+  SetupStarterCleanup(&starter);
+
   std::thread starterd_thread([&starter] { starter.Run(); });
   std::thread client_thread([&client_loop] { client_loop.Run(); });
   watcher_loop.Run();
 
-  starter.Cleanup();
+  test_done_ = true;
   client_thread.join();
   starterd_thread.join();
 }
@@ -239,10 +255,13 @@ TEST_F(StarterdTest, DeathTest) {
     }
   });
 
+  SetupStarterCleanup(&starter);
+
   std::thread starterd_thread([&starter] { starter.Run(); });
   watcher_loop.Run();
 
-  starter.Cleanup();
+  test_done_ = true;
+
   starterd_thread.join();
 }
 
@@ -287,7 +306,8 @@ TEST_F(StarterdTest, Autostart) {
       })
       ->Setup(watcher_loop.monotonic_now() + std::chrono::seconds(7));
 
-  watcher_loop.MakeWatcher("/aos", [&watcher_loop](
+  int pong_running_count = 0;
+  watcher_loop.MakeWatcher("/aos", [&watcher_loop, &pong_running_count](
                                        const aos::starter::Status &status) {
     const aos::starter::ApplicationStatus *ping_app_status =
         FindApplicationStatus(status, "ping");
@@ -304,20 +324,33 @@ TEST_F(StarterdTest, Autostart) {
     }
     if (pong_app_status->has_state() &&
         pong_app_status->state() == aos::starter::State::RUNNING) {
+      ++pong_running_count;
+      // Sometimes if the timing for everything is *just* off, then the
+      // process_info will say that the process name is "starter_test" because
+      // it grabbed the name after the fork() but before the execvp(). To
+      // protect against that, wait an extra cycle. If things aren't fixed by
+      // the second cycle, then that is a problem.
+      if (pong_running_count < 2) {
+        return;
+      }
       ASSERT_TRUE(pong_app_status->has_process_info());
       ASSERT_EQ("pong", pong_app_status->process_info()->name()->string_view())
           << aos::FlatbufferToJson(&status);
       ASSERT_EQ(pong_app_status->pid(), pong_app_status->process_info()->pid());
-      ASSERT_LT(0.0, pong_app_status->process_info()->cpu_usage());
+      ASSERT_TRUE(pong_app_status->process_info()->has_cpu_usage());
+      ASSERT_LE(0.0, pong_app_status->process_info()->cpu_usage());
       watcher_loop.Exit();
       SUCCEED();
     }
   });
 
+  SetupStarterCleanup(&starter);
+
   std::thread starterd_thread([&starter] { starter.Run(); });
   watcher_loop.Run();
 
-  starter.Cleanup();
+  test_done_ = true;
+
   starterd_thread.join();
 }
 
@@ -404,10 +437,14 @@ TEST_F(StarterdTest, DeathNoRestartTest) {
     }
   });
 
+
+  SetupStarterCleanup(&starter);
+
   std::thread starterd_thread([&starter] { starter.Run(); });
   watcher_loop.Run();
 
-  starter.Cleanup();
+  test_done_ = true;
+
   starterd_thread.join();
 }
 
