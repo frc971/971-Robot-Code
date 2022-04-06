@@ -57,7 +57,7 @@ class TimestampFilter {
   void set_base_offset(std::chrono::nanoseconds base_offset);
 
   double offset() const {
-    VLOG(1) << " " << this << " offset " << offset_;
+    VLOG(2) << " " << this << " offset " << offset_;
     return offset_;
   }
 

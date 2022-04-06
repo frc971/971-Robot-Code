@@ -23,7 +23,7 @@ namespace message_bridge {
 namespace {
 const char *sac_state_tbl[] = {"COMMUNICATION_UP", "COMMUNICATION_LOST",
                                "RESTART", "SHUTDOWN_COMPLETE",
-                               "CANT_START_ASSOCICATION"};
+                               "CANT_START_ASSOCIATION"};
 
 typedef union {
   struct sctp_initmsg init;
@@ -285,7 +285,7 @@ bool SctpReadWrite::SendMessage(
   if (sockaddr_remote) {
     outmsg.msg_name = &*sockaddr_remote;
     outmsg.msg_namelen = sizeof(*sockaddr_remote);
-    VLOG(1) << "Sending to " << Address(*sockaddr_remote);
+    VLOG(2) << "Sending to " << Address(*sockaddr_remote);
   } else {
     outmsg.msg_namelen = 0;
   }
@@ -328,7 +328,7 @@ bool SctpReadWrite::SendMessage(
     return false;
   }
   CHECK_EQ(static_cast<ssize_t>(data.size()), size);
-  VLOG(1) << "Sent " << data.size();
+  VLOG(2) << "Sent " << data.size();
   return true;
 }
 
@@ -444,7 +444,7 @@ aos::unique_c_ptr<Message> SctpReadWrite::ReadMessage() {
       memcpy(partial_message->mutable_data() + partial_message->size,
              result->data(), result->size);
       ++partial_message->partial_deliveries;
-      VLOG(1) << "Merged fragment of " << result->size << " after "
+      VLOG(2) << "Merged fragment of " << result->size << " after "
               << partial_message->size << ", had "
               << partial_message->partial_deliveries
               << ", for: " << result->header.rcvinfo.rcv_sid << ","
@@ -472,7 +472,7 @@ aos::unique_c_ptr<Message> SctpReadWrite::ReadMessage() {
       return result;
     }
     if (partial_message_iterator == partial_messages_.end()) {
-      VLOG(1) << "Starting fragment for: " << result->header.rcvinfo.rcv_sid
+      VLOG(2) << "Starting fragment for: " << result->header.rcvinfo.rcv_sid
               << "," << result->header.rcvinfo.rcv_ssn << ","
               << result->header.rcvinfo.rcv_assoc_id;
       // Need to record this as the first fragment.
