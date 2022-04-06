@@ -40,6 +40,19 @@ void RawSenderTiming::ResetTimingReport() {
 
   size.Reset();
   sender->mutate_count(0);
+  for (size_t ii = 0; ii < kNumErrors; ++ii) {
+    sender->mutable_error_counts()->GetMutableObject(ii)->mutate_count(0);
+  }
+}
+
+void RawSenderTiming::IncrementError(timing::SendError error) {
+  if (!sender) {
+    return;
+  }
+  const size_t index = static_cast<size_t>(error);
+  timing::SendErrorCount *counter =
+      sender->mutable_error_counts()->GetMutableObject(index);
+  counter->mutate_count(counter->count() + 1);
 }
 
 void TimerTiming::set_timing_report(timing::Timer *new_timer) {

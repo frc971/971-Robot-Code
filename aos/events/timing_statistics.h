@@ -79,10 +79,24 @@ struct RawFetcherTiming {
 
 // Class to hold timing information for a raw sender.
 struct RawSenderTiming {
+  static constexpr size_t kNumErrors =
+      static_cast<int>(timing::SendError::MAX) -
+      static_cast<int>(timing::SendError::MIN) + 1;
+
   RawSenderTiming(int new_channel_index) : channel_index(new_channel_index) {}
 
   void set_timing_report(timing::Sender *sender);
   void ResetTimingReport();
+  void IncrementError(timing::SendError error);
+  // Sanity check that the enum values are such that we can just use the enum
+  // values themselves as array indices without anything weird happening.
+  static_assert(0 == static_cast<int>(timing::SendError::MIN),
+                "Expected error enum values to start at zero.");
+  static_assert(
+      sizeof(std::invoke_result<decltype(timing::EnumValuesSendError)>::type) /
+              sizeof(timing::SendError) ==
+          kNumErrors,
+      "Expected continguous enum values.");
 
   const int channel_index;
   timing::Sender *sender = nullptr;

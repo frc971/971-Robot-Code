@@ -374,10 +374,21 @@ void EventLoop::UpdateTimingReport() {
     flatbuffers::Offset<timing::Statistic> size_offset =
         timing::CreateStatistic(fbb);
 
+    std::vector<flatbuffers::Offset<timing::SendErrorCount>>
+        error_count_offsets;
+    for (size_t ii = 0; ii < internal::RawSenderTiming::kNumErrors; ++ii) {
+      error_count_offsets.push_back(timing::CreateSendErrorCount(
+          fbb, timing::EnumValuesSendError()[ii], 0));
+    }
+    const flatbuffers::Offset<
+        flatbuffers::Vector<flatbuffers::Offset<timing::SendErrorCount>>>
+        error_counts_offset = fbb.CreateVector(error_count_offsets);
+
     timing::Sender::Builder sender_builder(fbb);
 
     sender_builder.add_channel_index(sender->timing_.channel_index);
     sender_builder.add_size(size_offset);
+    sender_builder.add_error_counts(error_counts_offset);
     sender_builder.add_count(0);
     sender_offsets.emplace_back(sender_builder.Finish());
   }

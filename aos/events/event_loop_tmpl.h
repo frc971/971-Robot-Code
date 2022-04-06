@@ -143,16 +143,26 @@ inline RawSender::Error RawSender::Send(
     uint32_t remote_queue_index, const UUID &uuid) {
   const auto err = DoSend(size, monotonic_remote_time, realtime_remote_time,
                           remote_queue_index, uuid);
-  if (err == RawSender::Error::kOk) {
-    if (timing_.sender) {
-      timing_.size.Add(size);
-      timing_.sender->mutate_count(timing_.sender->count() + 1);
+  switch (err) {
+    case Error::kOk: {
+      if (timing_.sender) {
+        timing_.size.Add(size);
+        timing_.sender->mutate_count(timing_.sender->count() + 1);
+      }
+      ftrace_.FormatMessage(
+          "%.*s: sent internal: event=%" PRId64 " queue=%" PRIu32,
+          static_cast<int>(ftrace_prefix_.size()), ftrace_prefix_.data(),
+          static_cast<int64_t>(
+              monotonic_sent_time().time_since_epoch().count()),
+          sent_queue_index());
+      break;
     }
-    ftrace_.FormatMessage(
-        "%.*s: sent internal: event=%" PRId64 " queue=%" PRIu32,
-        static_cast<int>(ftrace_prefix_.size()), ftrace_prefix_.data(),
-        static_cast<int64_t>(monotonic_sent_time().time_since_epoch().count()),
-        sent_queue_index());
+    case Error::kMessagesSentTooFast:
+      timing_.IncrementError(timing::SendError::MESSAGE_SENT_TOO_FAST);
+      break;
+    case Error::kInvalidRedzone:
+      timing_.IncrementError(timing::SendError::INVALID_REDZONE);
+      break;
   }
   return err;
 }

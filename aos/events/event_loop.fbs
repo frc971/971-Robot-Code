@@ -2,6 +2,21 @@ include "aos/configuration.fbs";
 
 namespace aos.timing;
 
+// Enum indicating why a message failed to send.
+enum SendError : byte {
+  // Messages were sent faster than allowed on a given channel.
+  MESSAGE_SENT_TOO_FAST = 0,
+  // The redzone for a message was invalid, implying some form of memory
+  // corruption.
+  INVALID_REDZONE = 1,
+}
+
+// Table used to track how many times a given error occurred.
+table SendErrorCount {
+  error:SendError (id: 0);
+  count:uint (id: 1);
+}
+
 // Holds statistics for a time or size sample.
 table Statistic {
   average:float = nan (id: 0);
@@ -18,6 +33,11 @@ table Sender {
   count:uint (id: 1);
   // Statistics on the size of messages published.
   size:Statistic (id: 2);
+  // Counts of how often different errors occurred. There
+  // should be an entry for all possible errors, even if no errors occurred
+  // since the last timing report. The absence of an entry implies that the
+  // error in question was not supported when the log was generated.
+  error_counts:[SendErrorCount] (id: 4);
 
   // Channel for this sender.  Not filled out by default.
   channel:Channel (id: 3);

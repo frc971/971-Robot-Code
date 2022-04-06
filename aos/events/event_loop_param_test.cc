@@ -1816,13 +1816,26 @@ TEST_P(AbstractEventLoopTest, SenderTimingReport) {
 
   auto sender = loop1->MakeSender<TestMessage>("/test");
 
+  // Sanity check channel frequencies to ensure that we've designed the test
+  // correctly.
+  ASSERT_EQ(800, sender.channel()->frequency());
+  ASSERT_EQ(2000000000, loop1->configuration()->channel_storage_duration());
+  constexpr int kMaxAllowedMessages = 800 * 2;
+  constexpr int kSendMessages = kMaxAllowedMessages * 2;
+  constexpr int kDroppedMessages = kSendMessages - kMaxAllowedMessages;
+
   // Add a timer to actually quit.
   auto test_timer = loop1->AddTimer([&sender]() {
-    for (int i = 0; i < 10; ++i) {
+    for (int i = 0; i < kSendMessages; ++i) {
       aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
       TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
       builder.add_value(200 + i);
-      msg.CheckOk(msg.Send(builder.Finish()));
+      if (i < kMaxAllowedMessages) {
+        msg.CheckOk(msg.Send(builder.Finish()));
+      } else {
+        EXPECT_EQ(RawSender::Error::kMessagesSentTooFast,
+                  msg.Send(builder.Finish()));
+      }
     }
   });
 
@@ -1862,7 +1875,27 @@ TEST_P(AbstractEventLoopTest, SenderTimingReport) {
             ->name()
             ->string_view(),
         "/test");
-    EXPECT_EQ(primary_report.message().senders()->Get(0)->count(), 10);
+    EXPECT_EQ(primary_report.message().senders()->Get(0)->count(),
+              kMaxAllowedMessages);
+    ASSERT_TRUE(primary_report.message().senders()->Get(0)->has_error_counts());
+    ASSERT_EQ(
+        primary_report.message().senders()->Get(0)->error_counts()->size(), 2u);
+    EXPECT_EQ(
+        primary_report.message()
+            .senders()
+            ->Get(0)
+            ->error_counts()
+            ->Get(static_cast<size_t>(timing::SendError::MESSAGE_SENT_TOO_FAST))
+            ->count(),
+        kDroppedMessages)
+        << aos::FlatbufferToJson(primary_report);
+    EXPECT_EQ(primary_report.message()
+                  .senders()
+                  ->Get(0)
+                  ->error_counts()
+                  ->Get(static_cast<size_t>(timing::SendError::INVALID_REDZONE))
+                  ->count(),
+              0);
 
     // Confirm that the timing primary_report sender looks sane.
     EXPECT_EQ(
