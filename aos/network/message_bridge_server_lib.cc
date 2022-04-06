@@ -487,9 +487,8 @@ void MessageBridgeServer::HandleData(const Message *message) {
       if (!matched) {
         LOG(ERROR) << "Remote tried registering for unknown channel "
                    << FlatbufferToJson(channel);
-      } else {
-        ++channel_index;
       }
+      ++channel_index;
     }
     // TODO(sarah.newman): what if node_index is -1?
     server_status_.ResetFilter(node_index);
