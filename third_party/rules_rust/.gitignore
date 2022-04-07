@@ -1,0 +1,30 @@
+# A file specifying filepatterns for git to ignore.
+
+# vim
+*.swp
+
+# bazel
+/bazel-*
+/examples/bazel-*
+/examples/crate_universe/*/bazel-*
+/docs/bazel-*
+user.bazelrc
+
+# rustfmt
+*.rs.bk
+
+# Cargo
+**/target/
+
+# npm
+**/node_modules/
+
+# vscode
+.vscode
+*.code-workspace
+
+# BazelCI
+bazelci.py
+
+# rust-analyzer
+rust-project.json

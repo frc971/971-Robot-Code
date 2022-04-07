@@ -1,0 +1,59 @@
+workspace(name = "rules_rust")
+
+load("@rules_rust//rust:repositories.bzl", "rules_rust_dependencies", "rust_register_toolchains")
+
+rules_rust_dependencies()
+
+rust_register_toolchains(include_rustc_srcs = True)
+
+load("@rules_rust//crate_universe:crates.bzl", "crate_deps_repository")
+
+crate_deps_repository(bootstrap = True)
+
+load("@rules_rust//proto:repositories.bzl", "rust_proto_repositories")
+
+rust_proto_repositories()
+
+load("@rules_rust//proto:transitive_repositories.bzl", "rust_proto_transitive_repositories")
+
+rust_proto_transitive_repositories()
+
+load("@rules_rust//bindgen:repositories.bzl", "rust_bindgen_repositories")
+
+rust_bindgen_repositories()
+
+load("@rules_rust//tools/rust_analyzer:deps.bzl", "rust_analyzer_deps")
+
+rust_analyzer_deps()
+
+load("@rules_rust//util/import:deps.bzl", "import_deps")
+
+import_deps()
+
+load("@rules_rust//wasm_bindgen:repositories.bzl", "rust_wasm_bindgen_repositories")
+
+rust_wasm_bindgen_repositories()
+
+load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
+
+bazel_skylib_workspace()
+
+load("//test:deps.bzl", "rules_rust_test_deps")
+
+rules_rust_test_deps()
+
+# --- end stardoc
+
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+http_archive(
+    name = "bazelci_rules",
+    sha256 = "eca21884e6f66a88c358e580fd67a6b148d30ab57b1680f62a96c00f9bc6a07e",
+    strip_prefix = "bazelci_rules-1.0.0",
+    url = "https://github.com/bazelbuild/continuous-integration/releases/download/rules-1.0.0/bazelci_rules-1.0.0.tar.gz",
+)
+
+# To run with RBE on Bazel CI, uncomment the following lines.
+#
+# load("@bazelci_rules//:rbe_repo.bzl", "rbe_preconfig")
+# rbe_preconfig(name = "buildkite_config", toolchain = "ubuntu1604-bazel-java8")
