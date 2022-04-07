@@ -45,7 +45,7 @@ struct Values {
   // Climber
   static constexpr ::frc971::constants::Range kClimberRange() {
     return ::frc971::constants::Range{
-        .lower_hard = -0.01, .upper_hard = 0.55, .lower = 0.005, .upper = 0.48};
+        .lower_hard = -0.01, .upper_hard = 0.59, .lower = 0.003, .upper = 0.555};
   }
   static constexpr double kClimberPotMetersPerRevolution() {
     return 22 * 0.25 * 0.0254;
@@ -114,9 +114,9 @@ struct Values {
   static constexpr ::frc971::constants::Range kTurretRange() {
     return ::frc971::constants::Range{
         .lower_hard = -7.0,  // Back Hard
-        .upper_hard = 3.0,   // Front Hard
+        .upper_hard = 3.4,   // Front Hard
         .lower = -6.5,       // Back Soft
-        .upper = 2.5         // Front Soft
+        .upper = 3.15        // Front Soft
     };
   }
 

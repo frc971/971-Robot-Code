@@ -58,8 +58,9 @@ const ButtonLocation kFire(4, 1);
 const ButtonLocation kTurret(4, 15);
 const ButtonLocation kAutoAim(4, 16);
 
-const ButtonLocation kClimberExtend(4, 6);
+const ButtonLocation kClimberExtend(1, 2);
 const ButtonLocation kClimberIntakes(4, 5);
+const ButtonLocation kClimberServo(4, 4);
 
 const ButtonLocation kIntakeFrontOut(4, 10);
 const ButtonLocation kIntakeBackOut(4, 9);
@@ -177,6 +178,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     std::optional<double> turret_pos = std::nullopt;
 
     double climber_position = 0.01;
+    bool climber_servo = false;
 
     double catapult_pos = 0.03;
     double catapult_speed = 18.0;
@@ -195,9 +197,13 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     }
 
     if (data.IsPressed(kClimberExtend)) {
-      climber_position = 0.50;
+      climber_position = 0.54;
     } else {
-      climber_position = 0.01;
+      climber_position = 0.005;
+    }
+
+    if (data.IsPressed(kClimberServo)) {
+      climber_servo = true;
     }
 
     if (data.IsPressed(kTurret)) {
@@ -304,7 +310,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
           climber_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
               *builder.fbb(), climber_position,
-              frc971::CreateProfileParameters(*builder.fbb(), 1.0, 5.0));
+              frc971::CreateProfileParameters(*builder.fbb(), 1.0, 1.0));
 
       superstructure::CatapultGoal::Builder catapult_builder =
           builder.MakeBuilder<superstructure::CatapultGoal>();
@@ -330,6 +336,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       superstructure_goal_builder.add_roller_speed_back(roller_back_speed);
       superstructure_goal_builder.add_transfer_roller_speed(
           transfer_roller_speed);
+      superstructure_goal_builder.add_climber_servo(climber_servo);
       superstructure_goal_builder.add_auto_aim(data.IsPressed(kAutoAim));
       if (requested_intake.has_value()) {
         superstructure_goal_builder.add_turret_intake(requested_intake.value());

@@ -26,6 +26,10 @@ table Goal {
   // Height of the climber above rest point
   climber:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal (id: 0);
 
+  // True if the servo should be released.
+  // Positive is moving it out
+  climber_servo:bool (id: 15);
+
   // Goal angles of intake joints.
   // Positive is out, 0 is up.
   intake_front:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal (id: 1);

@@ -77,6 +77,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   double transfer_roller_speed = 0.0;
   double flipper_arms_voltage = 0.0;
   bool have_active_intake_request = false;
+  bool climber_servo = false;
 
   if (unsafe_goal != nullptr) {
     roller_speed_compensated_front =
@@ -88,6 +89,8 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
         std::min(velocity * unsafe_goal->roller_speed_compensation(), 0.0);
 
     transfer_roller_speed = unsafe_goal->transfer_roller_speed();
+
+    climber_servo = unsafe_goal->climber_servo();
 
     turret_goal =
         unsafe_goal->auto_aim() ? auto_aim_goal : unsafe_goal->turret();
@@ -498,6 +501,13 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
     output_struct.roller_voltage_back = roller_speed_compensated_back;
     output_struct.transfer_roller_voltage = transfer_roller_speed;
     output_struct.flipper_arms_voltage = flipper_arms_voltage;
+    if (climber_servo) {
+      output_struct.climber_servo_left = 0.0;
+      output_struct.climber_servo_right = 1.0;
+    } else {
+      output_struct.climber_servo_left = 1.0;
+      output_struct.climber_servo_right = 0.0;
+    }
 
     output->CheckOk(output->Send(Output::Pack(*output->fbb(), &output_struct)));
   }
