@@ -227,9 +227,9 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       catapult_return_pos = -0.908;
     }
 
-    constexpr double kRollerSpeed = 8.0;
+    constexpr double kRollerSpeed = 12.0;
     constexpr double kTransferRollerSpeed = 12.0;
-    constexpr double kIntakePosition = -0.02;
+    constexpr double kIntakePosition = -0.12;
     constexpr size_t kIntakeCounterIterations = 25;
 
     // Extend the intakes and spin the rollers.
