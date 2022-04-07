@@ -5,6 +5,9 @@
 #include "frc971/zeroing/wrap.h"
 #include "y2022/control_loops/superstructure/collision_avoidance.h"
 
+DEFINE_bool(ignore_distance, false,
+            "If true, ignore distance when shooting and obay joystick_reader");
+
 namespace y2022 {
 namespace control_loops {
 namespace superstructure {
@@ -28,7 +31,8 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
           event_loop->MakeFetcher<frc971::control_loops::drivetrain::Status>(
               "/drivetrain")),
       can_position_fetcher_(
-          event_loop->MakeFetcher<CANPosition>("/superstructure")) {
+          event_loop->MakeFetcher<CANPosition>("/superstructure")),
+      aimer_(values) {
   event_loop->SetRuntimeRealtimePriority(30);
 }
 
@@ -73,6 +77,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   double transfer_roller_speed = 0.0;
   double flipper_arms_voltage = 0.0;
   bool have_active_intake_request = false;
+  bool climber_servo = false;
 
   if (unsafe_goal != nullptr) {
     roller_speed_compensated_front =
@@ -85,6 +90,8 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
     transfer_roller_speed = unsafe_goal->transfer_roller_speed();
 
+    climber_servo = unsafe_goal->climber_servo();
+
     turret_goal =
         unsafe_goal->auto_aim() ? auto_aim_goal : unsafe_goal->turret();
 
@@ -92,8 +99,9 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
     constants::Values::ShotParams shot_params;
     const double distance_to_goal = aimer_.DistanceToGoal();
-    if (unsafe_goal->auto_aim() && values_->shot_interpolation_table.GetInRange(
-                                       distance_to_goal, &shot_params)) {
+    if (!FLAGS_ignore_distance && unsafe_goal->auto_aim() &&
+        values_->shot_interpolation_table.GetInRange(distance_to_goal,
+                                                     &shot_params)) {
       flatbuffers::FlatBufferBuilder *catapult_goal_fbb =
           catapult_goal_buffer.fbb();
       std::optional<flatbuffers::Offset<
@@ -243,7 +251,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
        .shooting = true});
 
   // Dont shoot if the robot is moving faster than this
-  constexpr double kMaxShootSpeed = 1.7;
+  constexpr double kMaxShootSpeed = 2.7;
   const bool moving_too_fast = std::abs(robot_velocity()) > kMaxShootSpeed;
 
   switch (state_) {
@@ -493,6 +501,13 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
     output_struct.roller_voltage_back = roller_speed_compensated_back;
     output_struct.transfer_roller_voltage = transfer_roller_speed;
     output_struct.flipper_arms_voltage = flipper_arms_voltage;
+    if (climber_servo) {
+      output_struct.climber_servo_left = 0.0;
+      output_struct.climber_servo_right = 1.0;
+    } else {
+      output_struct.climber_servo_left = 1.0;
+      output_struct.climber_servo_right = 0.0;
+    }
 
     output->CheckOk(output->Send(Output::Pack(*output->fbb(), &output_struct)));
   }

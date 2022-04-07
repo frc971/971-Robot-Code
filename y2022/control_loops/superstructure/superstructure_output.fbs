@@ -5,6 +5,10 @@ table Output {
   // - is down + is up
   climber_voltage:double (id: 0);
 
+  // Position of the climber servo from 0 to 1
+  climber_servo_left:double (id: 10);
+  climber_servo_right:double (id: 11);
+
   // Voltage of the flipper arms falcons
   // - is feed + is open
   flipper_arms_voltage:double (id: 1);

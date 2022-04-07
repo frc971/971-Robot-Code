@@ -17,6 +17,7 @@
 #include "frc971/wpilib/ahal/DigitalGlitchFilter.h"
 #include "frc971/wpilib/ahal/DriverStation.h"
 #include "frc971/wpilib/ahal/Encoder.h"
+#include "frc971/wpilib/ahal/Servo.h"
 #include "frc971/wpilib/ahal/TalonFX.h"
 #include "frc971/wpilib/ahal/VictorSP.h"
 #undef ERROR
@@ -447,6 +448,13 @@ class SuperstructureWriter
             event_loop, "/superstructure"),
         catapult_reversal_(make_unique<frc::DigitalOutput>(0)) {}
 
+  void set_climber_servo_left(::std::unique_ptr<::frc::Servo> t) {
+    climber_servo_left_ = ::std::move(t);
+  }
+  void set_climber_servo_right(::std::unique_ptr<::frc::Servo> t) {
+    climber_servo_right_ = ::std::move(t);
+  }
+
   void set_climber_falcon(std::unique_ptr<frc::TalonFX> t) {
     climber_falcon_ = std::move(t);
   }
@@ -545,6 +553,9 @@ class SuperstructureWriter
   void Stop() override {
     AOS_LOG(WARNING, "Superstructure output too old.\n");
     climber_falcon_->SetDisabled();
+    climber_servo_left_->SetRaw(0);
+    climber_servo_right_->SetRaw(0);
+
     roller_falcon_front_->Set(
         ctre::phoenix::motorcontrol::ControlMode::Disabled, 0);
     roller_falcon_back_->Set(ctre::phoenix::motorcontrol::ControlMode::Disabled,
@@ -568,6 +579,8 @@ class SuperstructureWriter
 
   void Write(const superstructure::Output &output) override {
     WritePwm(-output.climber_voltage(), climber_falcon_.get());
+    climber_servo_left_->SetPosition(output.climber_servo_left());
+    climber_servo_right_->SetPosition(output.climber_servo_right());
 
     WritePwm(output.intake_voltage_front(), intake_falcon_front_.get());
     WritePwm(output.intake_voltage_back(), intake_falcon_back_.get());
@@ -623,6 +636,8 @@ class SuperstructureWriter
   ::std::unique_ptr<::frc::VictorSP> transfer_roller_victor_;
 
   std::unique_ptr<frc::DigitalOutput> catapult_reversal_;
+
+  ::std::unique_ptr<::frc::Servo> climber_servo_left_, climber_servo_right_;
 };
 
 class CANSensorReader {
@@ -767,6 +782,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     superstructure_writer.set_intake_falcon_front(make_unique<frc::TalonFX>(2));
     superstructure_writer.set_intake_falcon_back(make_unique<frc::TalonFX>(4));
     superstructure_writer.set_climber_falcon(make_unique<frc::TalonFX>(8));
+    superstructure_writer.set_climber_servo_left(make_unique<frc::Servo>(7));
+    superstructure_writer.set_climber_servo_right(make_unique<frc::Servo>(6));
     superstructure_writer.set_flipper_arms_falcon(
         make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(2));
     superstructure_writer.set_superstructure_reading(superstructure_reading);

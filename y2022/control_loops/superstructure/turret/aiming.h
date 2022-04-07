@@ -2,10 +2,11 @@
 #define Y2022_CONTROL_LOOPS_SUPERSTRUCTURE_TURRET_AIMING_H_
 
 #include "aos/flatbuffers.h"
+#include "frc971/control_loops/aiming/aiming.h"
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "frc971/control_loops/pose.h"
 #include "frc971/control_loops/profiled_subsystem_generated.h"
-#include "frc971/control_loops/aiming/aiming.h"
+#include "y2022/constants.h"
 #include "y2022/control_loops/superstructure/superstructure_status_generated.h"
 
 namespace y2022::control_loops::superstructure::turret {
@@ -19,7 +20,7 @@ class Aimer {
   typedef frc971::control_loops::drivetrain::Status Status;
   typedef frc971::control_loops::aiming::ShotMode ShotMode;
 
-  Aimer();
+  Aimer(std::shared_ptr<const constants::Values> constants);
 
   void Update(const Status *status, ShotMode shot_mode);
 
@@ -32,6 +33,7 @@ class Aimer {
       flatbuffers::FlatBufferBuilder *fbb) const;
 
  private:
+  std::shared_ptr<const constants::Values> constants_;
   aos::FlatbufferDetachedBuffer<Goal> goal_;
   frc971::control_loops::aiming::TurretGoal current_goal_;
 };

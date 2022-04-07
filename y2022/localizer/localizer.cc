@@ -642,7 +642,7 @@ void ModelBasedLocalizer::HandleImageMatch(
   H_model(1, kY) = 1.0;
   H_accel(0, kX) = 1.0;
   H_accel(1, kY) = 1.0;
-  R.diagonal() << 1e-0, 1e-0;
+  R.diagonal() << 1e-2, 1e-2;
 
   const Eigen::Matrix<double, kNModelStates, 2> K_model =
       P_model_ * H_model.transpose() *

@@ -10,7 +10,7 @@ DEFINE_string(config, "aos_config.json", "Path to the config file to use.");
 DEFINE_double(duty_cycle, 0.6, "Duty cycle of the LEDs");
 DEFINE_uint32(exposure, 5,
               "Exposure time, in 100us increments; 0 implies auto exposure");
-DEFINE_uint32(outdoors_exposure, 2,
+DEFINE_uint32(outdoors_exposure, 20,
               "Exposure time when using --use_outdoors, in 100us increments; 0 "
               "implies auto exposure");
 

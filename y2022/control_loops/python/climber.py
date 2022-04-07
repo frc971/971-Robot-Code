@@ -17,7 +17,7 @@ except gflags.DuplicateFlagError:
 kClimber = linear_system.LinearSystemParams(
     name='Climber',
     motor=control_loop.Falcon(),
-    G=(1.0 / 10.0) * (1.0 / 3.0) * (1.0 / 3.0),
+    G=(1.0 / 4.0) * (1.0 / 3.0) * (1.0 / 3.0),
     radius=22 * 0.25 / numpy.pi / 2.0 * 0.0254,
     mass=2.0,
     q_pos=0.10,
