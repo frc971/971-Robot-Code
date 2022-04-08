@@ -55,6 +55,15 @@
       Shift Schedule
     </a>
   </li>
+  <li class="nav-item">
+    <a
+      class="nav-link"
+      [class.active]="tabIs('View')"
+      (click)="switchTabToGuarded('View')"
+    >
+      View
+    </a>
+  </li>
 </ul>
 
 <ng-container [ngSwitch]="tab">
@@ -73,4 +82,8 @@
     *ngSwitchCase="'ImportMatchList'"
   ></app-import-match-list>
   <shift-schedule *ngSwitchCase="'ShiftSchedule'"></shift-schedule>
+  <app-view
+    (switchTabsEvent)="switchTabTo($event)"
+    *ngSwitchCase="'View'"
+  ></app-view>
 </ng-container>

@@ -21,6 +21,7 @@ ts_library(
         "//scouting/www/match_list",
         "//scouting/www/notes",
         "//scouting/www/shift_schedule",
+        "//scouting/www/view",
         "@npm//@angular/animations",
         "@npm//@angular/common",
         "@npm//@angular/core",

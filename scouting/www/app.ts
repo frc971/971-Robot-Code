@@ -5,7 +5,8 @@ type Tab =
   | 'Notes'
   | 'Entry'
   | 'ImportMatchList'
-  | 'ShiftSchedule';
+  | 'ShiftSchedule'
+  | 'View';
 
 // Ignore the guard for tabs that don't require the user to enter any data.
 const unguardedTabs: Tab[] = ['MatchList', 'ImportMatchList'];
