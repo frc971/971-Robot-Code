@@ -163,3 +163,17 @@ cc_binary(
         "//aos:init",
     ],
 )
+
+cc_binary(
+    name = "log_to_match",
+    srcs = [
+        "log_to_match.cc",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        "//aos:init",
+        "//aos/events:simulated_event_loop",
+        "//aos/events/logging:log_reader",
+        "//frc971/input:joystick_state_fbs",
+    ],
+)
