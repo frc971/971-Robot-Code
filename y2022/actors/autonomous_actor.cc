@@ -15,6 +15,8 @@
 DEFINE_bool(spline_auto, false, "If true, define a spline autonomous mode");
 DEFINE_bool(rapid_react, true,
             "If true, run the main rapid react autonomous mode");
+DEFINE_bool(rapid_react_two, false,
+            "If true, run the two ball rapid react autonomous mode");
 
 namespace y2022 {
 namespace actors {
@@ -113,6 +115,13 @@ void AutonomousActor::Replan() {
                    SplineDirection::kForward)};
     starting_position_ = rapid_react_splines_.value()[0].starting_position();
     CHECK(starting_position_);
+  } else if (FLAGS_rapid_react_two) {
+    rapid_react_two_spline_ = {
+        PlanSpline(std::bind(&AutonomousSplines::SplineTwoBall, &auto_splines_,
+                             std::placeholders::_1, alliance_),
+                   SplineDirection::kBackward)};
+    starting_position_ = rapid_react_two_spline_.value()[0].starting_position();
+    CHECK(starting_position_);
   }
 
   is_planned_ = true;
@@ -163,6 +172,8 @@ bool AutonomousActor::RunAction(
     SplineAuto();
   } else if (FLAGS_rapid_react) {
     RapidReact();
+  } else if (FLAGS_rapid_react_two) {
+    RapidReactTwo();
   }
 
   return true;
@@ -289,6 +300,46 @@ void AutonomousActor::RapidReact() {
                                         start_time)
                    .count()
             << 's';
+}
+
+// Rapid React Two Ball Autonomous.
+void AutonomousActor::RapidReactTwo() {
+  aos::monotonic_clock::time_point start_time = aos::monotonic_clock::now();
+
+  CHECK(rapid_react_two_spline_);
+
+  auto &splines = *rapid_react_two_spline_;
+
+  // Tell the superstructure a ball was preloaded
+  if (!WaitForPreloaded()) return;
+  set_fire_at_will(true);
+  SendSuperstructureGoal();
+  if (!WaitForBallsShot()) return;
+  LOG(INFO) << "Shot first ball "
+            << chrono::duration<double>(aos::monotonic_clock::now() -
+                                        start_time)
+                   .count()
+            << 's';
+  set_fire_at_will(false);
+  SendSuperstructureGoal();
+
+  ExtendBackIntake();
+  if (!splines[0].WaitForPlan()) return;
+  splines[0].Start();
+  if (!splines[0].WaitForSplineDistanceRemaining(0.02)) return;
+
+  // Fire the ball once we stopped
+  RetractBackIntake();
+  set_fire_at_will(true);
+  SendSuperstructureGoal();
+  if (!WaitForBallsShot()) return;
+  LOG(INFO) << "Shot last ball "
+            << chrono::duration<double>(aos::monotonic_clock::now() -
+                                        start_time)
+                   .count()
+            << 's';
+  set_fire_at_will(false);
+  SendSuperstructureGoal();
 }
 
 [[nodiscard]] bool AutonomousActor::WaitForPreloaded() {

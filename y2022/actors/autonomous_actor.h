@@ -67,6 +67,7 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
 
   void SplineAuto();
   void RapidReact();
+  void RapidReactTwo();
 
   void Replan();
 
@@ -93,6 +94,7 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
 
   std::optional<SplineHandle> test_spline_;
   std::optional<std::array<SplineHandle, 3>> rapid_react_splines_;
+  std::optional<std::array<SplineHandle, 1>> rapid_react_two_spline_;
 
   aos::Alliance alliance_ = aos::Alliance::kInvalid;
   AutonomousSplines auto_splines_;

@@ -26,7 +26,9 @@ class AutonomousSplines {
         spline_2_(aos::JsonFileToFlatbuffer<frc971::MultiSpline>(
             "splines/spline_5_ball_2.json")),
         spline_3_(aos::JsonFileToFlatbuffer<frc971::MultiSpline>(
-            "splines/spline_5_ball_3.json")){}
+            "splines/spline_5_ball_3.json")),
+        spline_two_(aos::JsonFileToFlatbuffer<frc971::MultiSpline>(
+            "splines/spline_two_ball.json")) {}
 
   static flatbuffers::Offset<frc971::MultiSpline> BasicSSpline(
       aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder);
@@ -51,11 +53,17 @@ class AutonomousSplines {
           *builder,
       aos::Alliance alliance);
 
+  flatbuffers::Offset<frc971::MultiSpline> SplineTwoBall(
+      aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+          *builder,
+      aos::Alliance alliance);
+
  private:
   aos::FlatbufferDetachedBuffer<frc971::MultiSpline> test_spline_;
   aos::FlatbufferDetachedBuffer<frc971::MultiSpline> spline_1_;
   aos::FlatbufferDetachedBuffer<frc971::MultiSpline> spline_2_;
   aos::FlatbufferDetachedBuffer<frc971::MultiSpline> spline_3_;
+  aos::FlatbufferDetachedBuffer<frc971::MultiSpline> spline_two_;
 };
 
 }  // namespace actors
