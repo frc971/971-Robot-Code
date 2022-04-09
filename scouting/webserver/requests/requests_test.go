@@ -84,6 +84,8 @@ func TestSubmitDataScouting(t *testing.T) {
 	builder.Finish((&submit_data_scouting.SubmitDataScoutingT{
 		Team:                  971,
 		Match:                 1,
+		Round:                 8,
+		CompLevel:             "quals",
 		StartingQuadrant:      2,
 		AutoBall1:             true,
 		AutoBall2:             false,
@@ -228,7 +230,7 @@ func TestRequestDataScouting(t *testing.T) {
 	db := MockDatabase{
 		stats: []db.Stats{
 			{
-				TeamNumber: 971, MatchNumber: 1,
+				TeamNumber: 971, MatchNumber: 1, Round: 2, CompLevel: "quals",
 				StartingQuadrant: 1,
 				AutoBallPickedUp: [5]bool{true, false, false, false, true},
 				ShotsMissed:      1, UpperGoalShots: 2, LowerGoalShots: 3,
@@ -237,7 +239,7 @@ func TestRequestDataScouting(t *testing.T) {
 				Comment: "a lovely comment", CollectedBy: "john",
 			},
 			{
-				TeamNumber: 972, MatchNumber: 1,
+				TeamNumber: 972, MatchNumber: 1, Round: 4, CompLevel: "extra",
 				StartingQuadrant: 2,
 				AutoBallPickedUp: [5]bool{false, false, true, false, false},
 				ShotsMissed:      2, UpperGoalShots: 3, LowerGoalShots: 4,
@@ -263,7 +265,7 @@ func TestRequestDataScouting(t *testing.T) {
 	expected := request_data_scouting_response.RequestDataScoutingResponseT{
 		StatsList: []*request_data_scouting_response.StatsT{
 			{
-				Team: 971, Match: 1,
+				Team: 971, Match: 1, Round: 2, CompLevel: "quals",
 				MissedShotsAuto: 4, UpperGoalAuto: 5, LowerGoalAuto: 6,
 				MissedShotsTele: 1, UpperGoalTele: 2, LowerGoalTele: 3,
 				DefenseRating:         7,
@@ -276,7 +278,7 @@ func TestRequestDataScouting(t *testing.T) {
 				Comment:          "a lovely comment",
 			},
 			{
-				Team: 972, Match: 1,
+				Team: 972, Match: 1, Round: 4, CompLevel: "extra",
 				MissedShotsAuto: 5, UpperGoalAuto: 6, LowerGoalAuto: 7,
 				MissedShotsTele: 2, UpperGoalTele: 3, LowerGoalTele: 4,
 				DefenseRating:         8,
