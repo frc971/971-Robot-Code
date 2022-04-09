@@ -136,5 +136,21 @@ class TestDebugCli(unittest.TestCase):
         self.assertEqual(stdout.count("MatchNumber:"), 12)
         self.assertEqual(len(re.findall(r": \(int32\) 4856[,\n]", stdout)), 12)
 
+    def test_request_all_matches(self):
+        """Makes sure that we can import the match list multiple times without problems."""
+        request_all_matches_outputs = []
+        for _ in range(2):
+            self.refresh_match_list()
+
+            # RequestAllMatches has no fields.
+            json_path = write_json_request({})
+            exit_code, stdout, stderr = run_debug_cli(["-requestAllMatches", json_path])
+
+            self.assertEqual(exit_code, 0, stderr)
+            request_all_matches_outputs.append(stdout)
+
+        self.maxDiff = None
+        self.assertEqual(request_all_matches_outputs[0], request_all_matches_outputs[1])
+
 if __name__ == "__main__":
     unittest.main()

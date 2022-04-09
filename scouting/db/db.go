@@ -204,7 +204,10 @@ func (database *Database) AddToMatch(m Match) error {
 		"R1, R2, R3, B1, B2, B3) " +
 		"VALUES (" +
 		"$1, $2, $3, " +
-		"$4, $5, $6, $7, $8, $9)")
+		"$4, $5, $6, $7, $8, $9) " +
+		"ON CONFLICT (MatchNumber, Round, CompLevel) DO UPDATE SET " +
+		"R1 = EXCLUDED.R1, R2 = EXCLUDED.R2, R3 = EXCLUDED.R3, " +
+		"B1 = EXCLUDED.B1, B2 = EXCLUDED.B2, B3 = EXCLUDED.B3")
 	if err != nil {
 		return errors.New(fmt.Sprint("Failed to prepare insertion into match database: ", err))
 	}
