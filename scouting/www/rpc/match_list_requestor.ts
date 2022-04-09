@@ -36,6 +36,7 @@ export class MatchListRequestor {
 
       // Sort the list so it is in chronological order.
       matchList.sort((a, b) => {
+        // First sort by match type. E.g. finals are last.
         const aMatchTypeIndex = MATCH_TYPE_ORDERING.indexOf(a.compLevel());
         const bMatchTypeIndex = MATCH_TYPE_ORDERING.indexOf(b.compLevel());
         if (aMatchTypeIndex < bMatchTypeIndex) {
@@ -44,12 +45,26 @@ export class MatchListRequestor {
         if (aMatchTypeIndex > bMatchTypeIndex) {
           return 1;
         }
+        // Then sort by match number. E.g. in semi finals, all match 1 rounds
+        // are done first. Then come match 2 rounds. And then, if necessary,
+        // the match 3 rounds.
         const aMatchNumber = a.matchNumber();
         const bMatchNumber = b.matchNumber();
         if (aMatchNumber < bMatchNumber) {
           return -1;
         }
         if (aMatchNumber > bMatchNumber) {
+          return 1;
+        }
+        // Lastly, sort by round. I.e. Semi Final 1 Match 1 happens first. Then
+        // comes Semi Final 2 Match 1. Then comes Semi Final 1 Match 2. Then
+        // Semi Final 2 Match 2.
+        const aRound = a.round();
+        const bRound = b.round();
+        if (aRound < bRound) {
+          return -1;
+        }
+        if (aRound > bRound) {
           return 1;
         }
         return 0;

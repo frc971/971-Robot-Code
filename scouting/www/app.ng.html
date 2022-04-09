@@ -75,6 +75,8 @@
     (switchTabsEvent)="switchTabTo($event)"
     [teamNumber]="selectedTeamInMatch.teamNumber"
     [matchNumber]="selectedTeamInMatch.matchNumber"
+    [round]="selectedTeamInMatch.round"
+    [compLevel]="selectedTeamInMatch.compLevel"
     *ngSwitchCase="'Entry'"
   ></app-entry>
   <frc971-notes *ngSwitchCase="'Notes'"></frc971-notes>

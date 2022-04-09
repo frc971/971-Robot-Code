@@ -12,6 +12,7 @@ import {MatchListRequestor} from '../rpc/match_list_requestor';
 type TeamInMatch = {
   teamNumber: number;
   matchNumber: number;
+  round: number;
   compLevel: string;
 };
 
@@ -61,7 +62,9 @@ export class MatchListComponent implements OnInit {
   }
 
   displayMatchNumber(match: Match): string {
-    return `${this.matchType(match)} ${match.matchNumber()}`;
+    // Only display the set number ("round") for eliminations matches.
+    const round = match.compLevel() == 'qm' ? '' : `${match.round()}`;
+    return `${this.matchType(match)} ${round} Match ${match.matchNumber()}`;
   }
 
   ngOnInit() {

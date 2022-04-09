@@ -14,6 +14,7 @@ const unguardedTabs: Tab[] = ['MatchList', 'ImportMatchList'];
 type TeamInMatch = {
   teamNumber: number;
   matchNumber: number;
+  round: number;
   compLevel: string;
 };
 
@@ -26,6 +27,7 @@ export class App {
   selectedTeamInMatch: TeamInMatch = {
     teamNumber: 1,
     matchNumber: 1,
+    round: 1,
     compLevel: 'qm',
   };
   tab: Tab = 'MatchList';
