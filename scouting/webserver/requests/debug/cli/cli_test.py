@@ -52,7 +52,7 @@ class TestDebugCli(unittest.TestCase):
             "event_code": event_code,
         })
         exit_code, stdout, stderr = run_debug_cli(["-refreshMatchList", json_path])
-        self.assertEqual(exit_code, 0, stderr)
+        self.assertEqual(exit_code, 0, f"{year}{event_code}: {stderr}")
         self.assertIn("(refresh_match_list_response.RefreshMatchListResponseT)", stdout)
 
     def test_submit_and_request_data_scouting(self):

@@ -391,15 +391,14 @@ func (handler refreshMatchListHandler) ServeHTTP(w http.ResponseWriter, req *htt
 		// Add the match to the database.
 		err = handler.db.AddToMatch(db.Match{
 			MatchNumber: int32(match.MatchNumber),
-			// TODO(phil): What does Round mean?
-			Round:     1,
-			CompLevel: match.CompLevel,
-			R1:        red[0],
-			R2:        red[1],
-			R3:        red[2],
-			B1:        blue[0],
-			B2:        blue[1],
-			B3:        blue[2],
+			Round:       int32(match.SetNumber),
+			CompLevel:   match.CompLevel,
+			R1:          red[0],
+			R2:          red[1],
+			R3:          red[2],
+			B1:          blue[0],
+			B2:          blue[1],
+			B3:          blue[2],
 		})
 		if err != nil {
 			respondWithError(w, http.StatusInternalServerError, fmt.Sprintf(

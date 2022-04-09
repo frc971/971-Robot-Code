@@ -360,6 +360,7 @@ func TestRefreshMatchList(t *testing.T) {
 			{
 				CompLevel:   "qual",
 				MatchNumber: 1,
+				SetNumber:   2,
 				Alliances: scraping.Alliances{
 					Red: scraping.Alliance{
 						TeamKeys: []string{
@@ -411,7 +412,7 @@ func TestRefreshMatchList(t *testing.T) {
 	expectedMatches := []db.Match{
 		{
 			MatchNumber: 1,
-			Round:       1,
+			Round:       2,
 			CompLevel:   "qual",
 			R1:          100,
 			R2:          200,

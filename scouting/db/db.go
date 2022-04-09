@@ -67,7 +67,6 @@ func NewDatabase(user string, password string, port int) (*Database, error) {
 	}
 
 	statement, err := database.Prepare("CREATE TABLE IF NOT EXISTS matches (" +
-		"id SERIAL PRIMARY KEY, " +
 		"MatchNumber INTEGER, " +
 		"Round INTEGER, " +
 		"CompLevel VARCHAR, " +
@@ -76,7 +75,8 @@ func NewDatabase(user string, password string, port int) (*Database, error) {
 		"R3 INTEGER, " +
 		"B1 INTEGER, " +
 		"B2 INTEGER, " +
-		"B3 INTEGER)")
+		"B3 INTEGER, " +
+		"PRIMARY KEY (MatchNumber, Round, CompLevel))")
 	if err != nil {
 		database.Close()
 		return nil, errors.New(fmt.Sprint("Failed to prepare matches table creation: ", err))
@@ -327,8 +327,7 @@ func (database *Database) ReturnMatches() ([]Match, error) {
 	matches := make([]Match, 0)
 	for rows.Next() {
 		var match Match
-		var id int
-		err := rows.Scan(&id, &match.MatchNumber, &match.Round, &match.CompLevel,
+		err := rows.Scan(&match.MatchNumber, &match.Round, &match.CompLevel,
 			&match.R1, &match.R2, &match.R3, &match.B1, &match.B2, &match.B3)
 		if err != nil {
 			return nil, errors.New(fmt.Sprint("Failed to scan from matches: ", err))
@@ -400,8 +399,7 @@ func (database *Database) QueryMatches(teamNumber_ int32) ([]Match, error) {
 	var matches []Match
 	for rows.Next() {
 		var match Match
-		var id int
-		err = rows.Scan(&id, &match.MatchNumber, &match.Round, &match.CompLevel,
+		err = rows.Scan(&match.MatchNumber, &match.Round, &match.CompLevel,
 			&match.R1, &match.R2, &match.R3, &match.B1, &match.B2, &match.B3)
 		if err != nil {
 			return nil, errors.New(fmt.Sprint("Failed to scan from matches: ", err))
