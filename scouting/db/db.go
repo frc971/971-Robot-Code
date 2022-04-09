@@ -19,9 +19,10 @@ type Match struct {
 }
 
 type Stats struct {
-	TeamNumber, MatchNumber int32
-	StartingQuadrant        int32
-	AutoBallPickedUp        [5]bool
+	TeamNumber, MatchNumber, Round int32
+	CompLevel                      string
+	StartingQuadrant               int32
+	AutoBallPickedUp               [5]bool
 	// TODO(phil): Re-order auto and teleop fields so auto comes first.
 	ShotsMissed, UpperGoalShots, LowerGoalShots   int32
 	ShotsMissedAuto, UpperGoalAuto, LowerGoalAuto int32
@@ -90,9 +91,10 @@ func NewDatabase(user string, password string, port int) (*Database, error) {
 	}
 
 	statement, err = database.Prepare("CREATE TABLE IF NOT EXISTS team_match_stats (" +
-		"id SERIAL PRIMARY KEY, " +
 		"TeamNumber INTEGER, " +
 		"MatchNumber INTEGER, " +
+		"Round INTEGER, " +
+		"CompLevel VARCHAR, " +
 		"StartingQuadrant INTEGER, " +
 		"AutoBall1PickedUp BOOLEAN, " +
 		"AutoBall2PickedUp BOOLEAN, " +
@@ -109,7 +111,8 @@ func NewDatabase(user string, password string, port int) (*Database, error) {
 		"DefenseReceivedScore INTEGER, " +
 		"Climbing INTEGER, " +
 		"Comment VARCHAR, " +
-		"CollectedBy VARCHAR)")
+		"CollectedBy VARCHAR, " +
+		"PRIMARY KEY (TeamNumber, MatchNumber, Round, CompLevel))")
 	if err != nil {
 		database.Close()
 		return nil, errors.New(fmt.Sprint("Failed to prepare stats table creation: ", err))
@@ -240,7 +243,7 @@ func (database *Database) AddToStats(s Stats) error {
 	}
 
 	statement, err := database.Prepare("INSERT INTO team_match_stats(" +
-		"TeamNumber, MatchNumber, " +
+		"TeamNumber, MatchNumber, Round, CompLevel, " +
 		"StartingQuadrant, " +
 		"AutoBall1PickedUp, AutoBall2PickedUp, AutoBall3PickedUp, " +
 		"AutoBall4PickedUp, AutoBall5PickedUp, " +
@@ -249,21 +252,21 @@ func (database *Database) AddToStats(s Stats) error {
 		"PlayedDefense, DefenseReceivedScore, Climbing, " +
 		"Comment, CollectedBy) " +
 		"VALUES (" +
-		"$1, $2, " +
-		"$3, " +
-		"$4, $5, $6, " +
-		"$7, $8, " +
-		"$9, $10, $11, " +
-		"$12, $13, $14, " +
-		"$15, $16, $17, " +
-		"$18, $19)")
+		"$1, $2, $3, $4, " +
+		"$5, " +
+		"$6, $7, $8, " +
+		"$9, $10, " +
+		"$11, $12, $13, " +
+		"$14, $15, $16, " +
+		"$17, $18, $19, " +
+		"$20, $21)")
 	if err != nil {
 		return errors.New(fmt.Sprint("Failed to prepare stats update statement: ", err))
 	}
 	defer statement.Close()
 
 	_, err = statement.Exec(
-		s.TeamNumber, s.MatchNumber,
+		s.TeamNumber, s.MatchNumber, s.Round, s.CompLevel,
 		s.StartingQuadrant,
 		s.AutoBallPickedUp[0], s.AutoBallPickedUp[1], s.AutoBallPickedUp[2],
 		s.AutoBallPickedUp[3], s.AutoBallPickedUp[4],
@@ -350,9 +353,8 @@ func (database *Database) ReturnStats() ([]Stats, error) {
 	teams := make([]Stats, 0)
 	for rows.Next() {
 		var team Stats
-		var id int
-		err = rows.Scan(&id,
-			&team.TeamNumber, &team.MatchNumber,
+		err = rows.Scan(
+			&team.TeamNumber, &team.MatchNumber, &team.Round, &team.CompLevel,
 			&team.StartingQuadrant,
 			&team.AutoBallPickedUp[0], &team.AutoBallPickedUp[1], &team.AutoBallPickedUp[2],
 			&team.AutoBallPickedUp[3], &team.AutoBallPickedUp[4],
@@ -422,9 +424,8 @@ func (database *Database) QueryStats(teamNumber_ int) ([]Stats, error) {
 	var teams []Stats
 	for rows.Next() {
 		var team Stats
-		var id int
-		err = rows.Scan(&id,
-			&team.TeamNumber, &team.MatchNumber,
+		err = rows.Scan(
+			&team.TeamNumber, &team.MatchNumber, &team.Round, &team.CompLevel,
 			&team.StartingQuadrant,
 			&team.AutoBallPickedUp[0], &team.AutoBallPickedUp[1], &team.AutoBallPickedUp[2],
 			&team.AutoBallPickedUp[3], &team.AutoBallPickedUp[4],

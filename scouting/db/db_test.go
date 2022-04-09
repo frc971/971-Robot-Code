@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 )
@@ -191,6 +192,40 @@ func TestAddToStatsDB(t *testing.T) {
 	}
 }
 
+func TestAddDuplicateStats(t *testing.T) {
+	fixture := createDatabase(t)
+	defer fixture.TearDown()
+
+	stats := Stats{
+		TeamNumber: 1236, MatchNumber: 7,
+		StartingQuadrant: 2,
+		AutoBallPickedUp: [5]bool{false, false, false, true, false},
+		ShotsMissed:      9, UpperGoalShots: 5, LowerGoalShots: 4,
+		ShotsMissedAuto: 3, UpperGoalAuto: 2, LowerGoalAuto: 1,
+		PlayedDefense: 2, DefenseReceivedScore: 0, Climbing: 3,
+		Comment: "this is a comment", CollectedBy: "josh",
+	}
+
+	err := fixture.db.AddToMatch(Match{
+		MatchNumber: 7, Round: 1, CompLevel: "quals",
+		R1: 1236, R2: 1001, R3: 777, B1: 1000, B2: 4321, B3: 1234,
+	})
+	check(t, err, "Failed to add match")
+
+	// Add stats. This should succeed.
+	err = fixture.db.AddToStats(stats)
+	check(t, err, "Failed to add stats to DB")
+
+	// Try again. It should fail this time.
+	err = fixture.db.AddToStats(stats)
+	if err == nil {
+		t.Fatal("Failed to get error when adding duplicate stats.")
+	}
+	if !strings.Contains(err.Error(), "ERROR: duplicate key value violates unique constraint") {
+		t.Fatal("Expected error message to be complain about duplicate key value, but got ", err)
+	}
+}
+
 func TestQueryMatchDB(t *testing.T) {
 	fixture := createDatabase(t)
 	defer fixture.TearDown()
@@ -232,14 +267,14 @@ func TestQueryStatsDB(t *testing.T) {
 
 	testDatabase := []Stats{
 		Stats{
-			TeamNumber: 1235, MatchNumber: 94,
+			TeamNumber: 1235, MatchNumber: 94, Round: 2, CompLevel: "quals",
 			StartingQuadrant: 1,
 			AutoBallPickedUp: [5]bool{false, false, false, false, false},
 			ShotsMissed:      2, UpperGoalShots: 2, LowerGoalShots: 2,
 			ShotsMissedAuto: 2, UpperGoalAuto: 2, LowerGoalAuto: 2,
 			PlayedDefense: 2, DefenseReceivedScore: 1, Climbing: 2},
 		Stats{
-			TeamNumber: 1234, MatchNumber: 94,
+			TeamNumber: 1234, MatchNumber: 94, Round: 2, CompLevel: "quals",
 			StartingQuadrant: 2,
 			AutoBallPickedUp: [5]bool{false, false, false, false, true},
 			ShotsMissed:      4, UpperGoalShots: 4, LowerGoalShots: 4,
@@ -247,7 +282,7 @@ func TestQueryStatsDB(t *testing.T) {
 			PlayedDefense: 7, DefenseReceivedScore: 1, Climbing: 2,
 		},
 		Stats{
-			TeamNumber: 1233, MatchNumber: 94,
+			TeamNumber: 1233, MatchNumber: 94, Round: 2, CompLevel: "quals",
 			StartingQuadrant: 3,
 			AutoBallPickedUp: [5]bool{false, false, false, false, false},
 			ShotsMissed:      3, UpperGoalShots: 3, LowerGoalShots: 3,
@@ -255,7 +290,7 @@ func TestQueryStatsDB(t *testing.T) {
 			PlayedDefense: 3, DefenseReceivedScore: 0, Climbing: 3,
 		},
 		Stats{
-			TeamNumber: 1232, MatchNumber: 94,
+			TeamNumber: 1232, MatchNumber: 94, Round: 2, CompLevel: "quals",
 			StartingQuadrant: 2,
 			AutoBallPickedUp: [5]bool{true, false, false, false, true},
 			ShotsMissed:      5, UpperGoalShots: 5, LowerGoalShots: 5,
@@ -263,7 +298,7 @@ func TestQueryStatsDB(t *testing.T) {
 			PlayedDefense: 7, DefenseReceivedScore: 2, Climbing: 1,
 		},
 		Stats{
-			TeamNumber: 1231, MatchNumber: 94,
+			TeamNumber: 1231, MatchNumber: 94, Round: 2, CompLevel: "quals",
 			StartingQuadrant: 3,
 			AutoBallPickedUp: [5]bool{false, false, true, false, false},
 			ShotsMissed:      6, UpperGoalShots: 6, LowerGoalShots: 6,
@@ -271,7 +306,7 @@ func TestQueryStatsDB(t *testing.T) {
 			PlayedDefense: 7, DefenseReceivedScore: 3, Climbing: 1,
 		},
 		Stats{
-			TeamNumber: 1239, MatchNumber: 94,
+			TeamNumber: 1239, MatchNumber: 94, Round: 2, CompLevel: "quals",
 			StartingQuadrant: 4,
 			AutoBallPickedUp: [5]bool{false, true, true, false, false},
 			ShotsMissed:      7, UpperGoalShots: 7, LowerGoalShots: 7,
@@ -292,7 +327,7 @@ func TestQueryStatsDB(t *testing.T) {
 
 	correct := []Stats{
 		Stats{
-			TeamNumber: 1235, MatchNumber: 94,
+			TeamNumber: 1235, MatchNumber: 94, Round: 2, CompLevel: "quals",
 			StartingQuadrant: 1,
 			AutoBallPickedUp: [5]bool{false, false, false, false, false},
 			ShotsMissed:      2, UpperGoalShots: 2, LowerGoalShots: 2,
@@ -486,14 +521,14 @@ func TestReturnStatsDB(t *testing.T) {
 
 	correct := []Stats{
 		Stats{
-			TeamNumber: 1235, MatchNumber: 94,
+			TeamNumber: 1235, MatchNumber: 94, Round: 1, CompLevel: "quals",
 			StartingQuadrant: 1,
 			AutoBallPickedUp: [5]bool{false, false, false, false, false},
 			ShotsMissed:      2, UpperGoalShots: 2, LowerGoalShots: 2,
 			ShotsMissedAuto: 2, UpperGoalAuto: 2, LowerGoalAuto: 2,
 			PlayedDefense: 2, DefenseReceivedScore: 3, Climbing: 2},
 		Stats{
-			TeamNumber: 1236, MatchNumber: 94,
+			TeamNumber: 1236, MatchNumber: 94, Round: 1, CompLevel: "quals",
 			StartingQuadrant: 2,
 			AutoBallPickedUp: [5]bool{false, false, false, false, true},
 			ShotsMissed:      4, UpperGoalShots: 4, LowerGoalShots: 4,
@@ -501,7 +536,7 @@ func TestReturnStatsDB(t *testing.T) {
 			PlayedDefense: 7, DefenseReceivedScore: 1, Climbing: 2,
 		},
 		Stats{
-			TeamNumber: 1237, MatchNumber: 94,
+			TeamNumber: 1237, MatchNumber: 94, Round: 1, CompLevel: "quals",
 			StartingQuadrant: 3,
 			AutoBallPickedUp: [5]bool{false, false, false, false, false},
 			ShotsMissed:      3, UpperGoalShots: 3, LowerGoalShots: 3,
@@ -509,7 +544,7 @@ func TestReturnStatsDB(t *testing.T) {
 			PlayedDefense: 3, DefenseReceivedScore: 0, Climbing: 3,
 		},
 		Stats{
-			TeamNumber: 1238, MatchNumber: 94,
+			TeamNumber: 1238, MatchNumber: 94, Round: 1, CompLevel: "quals",
 			StartingQuadrant: 2,
 			AutoBallPickedUp: [5]bool{true, false, false, false, true},
 			ShotsMissed:      5, UpperGoalShots: 5, LowerGoalShots: 5,
@@ -517,7 +552,7 @@ func TestReturnStatsDB(t *testing.T) {
 			PlayedDefense: 7, DefenseReceivedScore: 4, Climbing: 1,
 		},
 		Stats{
-			TeamNumber: 1239, MatchNumber: 94,
+			TeamNumber: 1239, MatchNumber: 94, Round: 1, CompLevel: "quals",
 			StartingQuadrant: 3,
 			AutoBallPickedUp: [5]bool{false, false, true, false, false},
 			ShotsMissed:      6, UpperGoalShots: 6, LowerGoalShots: 6,
@@ -525,7 +560,7 @@ func TestReturnStatsDB(t *testing.T) {
 			PlayedDefense: 7, DefenseReceivedScore: 4, Climbing: 1,
 		},
 		Stats{
-			TeamNumber: 1233, MatchNumber: 94,
+			TeamNumber: 1233, MatchNumber: 94, Round: 1, CompLevel: "quals",
 			StartingQuadrant: 4,
 			AutoBallPickedUp: [5]bool{false, true, true, false, false},
 			ShotsMissed:      7, UpperGoalShots: 7, LowerGoalShots: 7,
