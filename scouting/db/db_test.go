@@ -67,7 +67,6 @@ func TestAddToMatchDB(t *testing.T) {
 			Round:       1,
 			CompLevel:   "quals",
 			R1:          9999, R2: 1000, R3: 777, B1: 0000, B2: 4321, B3: 1234,
-			r1ID: 1, r2ID: 2, r3ID: 3, b1ID: 4, b2ID: 5, b3ID: 6,
 		},
 	}
 
@@ -176,7 +175,6 @@ func TestAddToStatsDB(t *testing.T) {
 	err := fixture.db.AddToMatch(Match{
 		MatchNumber: 7, Round: 1, CompLevel: "quals",
 		R1: 1236, R2: 1001, R3: 777, B1: 1000, B2: 4321, B3: 1234,
-		r1ID: 1, r2ID: 2, r3ID: 3, b1ID: 4, b2ID: 5, b3ID: 6,
 	})
 	check(t, err, "Failed to add match")
 
@@ -213,12 +211,10 @@ func TestQueryMatchDB(t *testing.T) {
 		Match{
 			MatchNumber: 2, Round: 1, CompLevel: "quals",
 			R1: 251, R2: 169, R3: 286, B1: 253, B2: 538, B3: 149,
-			r1ID: 1, r2ID: 2, r3ID: 3, b1ID: 4, b2ID: 5, b3ID: 6,
 		},
 		Match{
 			MatchNumber: 3, Round: 1, CompLevel: "quals",
 			R1: 147, R2: 421, R3: 538, B1: 126, B2: 448, B3: 262,
-			r1ID: 13, r2ID: 14, r3ID: 15, b1ID: 16, b2ID: 17, b3ID: 18,
 		},
 	}
 
@@ -369,27 +365,22 @@ func TestReturnMatchDB(t *testing.T) {
 		Match{
 			MatchNumber: 2, Round: 1, CompLevel: "quals",
 			R1: 251, R2: 169, R3: 286, B1: 253, B2: 538, B3: 149,
-			r1ID: 1, r2ID: 2, r3ID: 3, b1ID: 4, b2ID: 5, b3ID: 6,
 		},
 		Match{
 			MatchNumber: 3, Round: 1, CompLevel: "quals",
 			R1: 147, R2: 421, R3: 538, B1: 126, B2: 448, B3: 262,
-			r1ID: 7, r2ID: 8, r3ID: 9, b1ID: 10, b2ID: 11, b3ID: 12,
 		},
 		Match{
 			MatchNumber: 4, Round: 1, CompLevel: "quals",
 			R1: 251, R2: 169, R3: 286, B1: 653, B2: 538, B3: 149,
-			r1ID: 13, r2ID: 14, r3ID: 15, b1ID: 16, b2ID: 17, b3ID: 18,
 		},
 		Match{
 			MatchNumber: 5, Round: 1, CompLevel: "quals",
 			R1: 198, R2: 1421, R3: 538, B1: 26, B2: 448, B3: 262,
-			r1ID: 19, r2ID: 20, r3ID: 21, b1ID: 22, b2ID: 23, b3ID: 24,
 		},
 		Match{
 			MatchNumber: 6, Round: 1, CompLevel: "quals",
 			R1: 251, R2: 188, R3: 286, B1: 555, B2: 538, B3: 149,
-			r1ID: 25, r2ID: 26, r3ID: 27, b1ID: 28, b2ID: 29, b3ID: 30,
 		},
 	}
 

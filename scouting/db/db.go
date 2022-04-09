@@ -16,8 +16,6 @@ type Match struct {
 	MatchNumber, Round     int32
 	CompLevel              string
 	R1, R2, R3, B1, B2, B3 int32
-	// Each of these variables holds the matchID of the corresponding Stats row
-	r1ID, r2ID, r3ID, b1ID, b2ID, b3ID int
 }
 
 type Stats struct {
@@ -78,13 +76,7 @@ func NewDatabase(user string, password string, port int) (*Database, error) {
 		"R3 INTEGER, " +
 		"B1 INTEGER, " +
 		"B2 INTEGER, " +
-		"B3 INTEGER, " +
-		"r1ID INTEGER, " +
-		"r2ID INTEGER, " +
-		"r3ID INTEGER, " +
-		"b1ID INTEGER, " +
-		"b2ID INTEGER, " +
-		"b3ID INTEGER)")
+		"B3 INTEGER)")
 	if err != nil {
 		database.Close()
 		return nil, errors.New(fmt.Sprint("Failed to prepare matches table creation: ", err))
@@ -207,6 +199,43 @@ func (database *Database) Delete() error {
 
 // This function will also populate the Stats table with six empty rows every time a match is added
 func (database *Database) AddToMatch(m Match) error {
+	statement, err := database.Prepare("INSERT INTO matches(" +
+		"MatchNumber, Round, CompLevel, " +
+		"R1, R2, R3, B1, B2, B3) " +
+		"VALUES (" +
+		"$1, $2, $3, " +
+		"$4, $5, $6, $7, $8, $9)")
+	if err != nil {
+		return errors.New(fmt.Sprint("Failed to prepare insertion into match database: ", err))
+	}
+	defer statement.Close()
+
+	_, err = statement.Exec(m.MatchNumber, m.Round, m.CompLevel,
+		m.R1, m.R2, m.R3, m.B1, m.B2, m.B3)
+	if err != nil {
+		return errors.New(fmt.Sprint("Failed to insert into match database: ", err))
+	}
+	return nil
+}
+
+func (database *Database) AddToStats(s Stats) error {
+	matches, err := database.QueryMatches(s.TeamNumber)
+	if err != nil {
+		return err
+	}
+	foundMatch := false
+	for _, match := range matches {
+		if match.MatchNumber == s.MatchNumber {
+			foundMatch = true
+			break
+		}
+	}
+	if !foundMatch {
+		return errors.New(fmt.Sprint(
+			"Failed to find team ", s.TeamNumber,
+			" in match ", s.MatchNumber, " in the schedule."))
+	}
+
 	statement, err := database.Prepare("INSERT INTO team_match_stats(" +
 		"TeamNumber, MatchNumber, " +
 		"StartingQuadrant, " +
@@ -224,69 +253,13 @@ func (database *Database) AddToMatch(m Match) error {
 		"$9, $10, $11, " +
 		"$12, $13, $14, " +
 		"$15, $16, $17, " +
-		"$18, $19) " +
-		"RETURNING id")
-	if err != nil {
-		return errors.New(fmt.Sprint("Failed to prepare insertion into stats database: ", err))
-	}
-	defer statement.Close()
-
-	var rowIds [6]int64
-	for i, TeamNumber := range []int32{m.R1, m.R2, m.R3, m.B1, m.B2, m.B3} {
-		row := statement.QueryRow(
-			TeamNumber, m.MatchNumber,
-			0,
-			false, false, false,
-			false, false,
-			0, 0, 0,
-			0, 0, 0,
-			0, 0, 0,
-			"", "")
-		err = row.Scan(&rowIds[i])
-		if err != nil {
-			return errors.New(fmt.Sprint("Failed to insert stats: ", err))
-		}
-	}
-
-	statement, err = database.Prepare("INSERT INTO matches(" +
-		"MatchNumber, Round, CompLevel, " +
-		"R1, R2, R3, B1, B2, B3, " +
-		"r1ID, r2ID, r3ID, b1ID, b2ID, b3ID) " +
-		"VALUES (" +
-		"$1, $2, $3, " +
-		"$4, $5, $6, $7, $8, $9, " +
-		"$10, $11, $12, $13, $14, $15)")
-	if err != nil {
-		return errors.New(fmt.Sprint("Failed to prepare insertion into match database: ", err))
-	}
-	defer statement.Close()
-
-	_, err = statement.Exec(m.MatchNumber, m.Round, m.CompLevel,
-		m.R1, m.R2, m.R3, m.B1, m.B2, m.B3,
-		rowIds[0], rowIds[1], rowIds[2], rowIds[3], rowIds[4], rowIds[5])
-	if err != nil {
-		return errors.New(fmt.Sprint("Failed to insert into match database: ", err))
-	}
-	return nil
-}
-
-func (database *Database) AddToStats(s Stats) error {
-	statement, err := database.Prepare("UPDATE team_match_stats SET " +
-		"TeamNumber = $1, MatchNumber = $2, " +
-		"StartingQuadrant = $3, " +
-		"AutoBall1PickedUp = $4, AutoBall2PickedUp = $5, AutoBall3PickedUp = $6, " +
-		"AutoBall4PickedUp = $7, AutoBall5PickedUp = $8, " +
-		"ShotsMissed = $9, UpperGoalShots = $10, LowerGoalShots = $11, " +
-		"ShotsMissedAuto = $12, UpperGoalAuto = $13, LowerGoalAuto = $14, " +
-		"PlayedDefense = $15, DefenseReceivedScore = $16, Climbing = $17, " +
-		"Comment = $18, CollectedBy = $19 " +
-		"WHERE MatchNumber = $20 AND TeamNumber = $21")
+		"$18, $19)")
 	if err != nil {
 		return errors.New(fmt.Sprint("Failed to prepare stats update statement: ", err))
 	}
 	defer statement.Close()
 
-	result, err := statement.Exec(
+	_, err = statement.Exec(
 		s.TeamNumber, s.MatchNumber,
 		s.StartingQuadrant,
 		s.AutoBallPickedUp[0], s.AutoBallPickedUp[1], s.AutoBallPickedUp[2],
@@ -294,21 +267,11 @@ func (database *Database) AddToStats(s Stats) error {
 		s.ShotsMissed, s.UpperGoalShots, s.LowerGoalShots,
 		s.ShotsMissedAuto, s.UpperGoalAuto, s.LowerGoalAuto,
 		s.PlayedDefense, s.DefenseReceivedScore, s.Climbing,
-		s.Comment, s.CollectedBy,
-		s.MatchNumber, s.TeamNumber)
+		s.Comment, s.CollectedBy)
 	if err != nil {
 		return errors.New(fmt.Sprint("Failed to update stats database: ", err))
 	}
 
-	numRowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return errors.New(fmt.Sprint("Failed to query rows affected: ", err))
-	}
-	if numRowsAffected == 0 {
-		return errors.New(fmt.Sprint(
-			"Failed to find team ", s.TeamNumber,
-			" in match ", s.MatchNumber, " in the schedule."))
-	}
 	return nil
 }
 
@@ -366,8 +329,7 @@ func (database *Database) ReturnMatches() ([]Match, error) {
 		var match Match
 		var id int
 		err := rows.Scan(&id, &match.MatchNumber, &match.Round, &match.CompLevel,
-			&match.R1, &match.R2, &match.R3, &match.B1, &match.B2, &match.B3,
-			&match.r1ID, &match.r2ID, &match.r3ID, &match.b1ID, &match.b2ID, &match.b3ID)
+			&match.R1, &match.R2, &match.R3, &match.B1, &match.B2, &match.B3)
 		if err != nil {
 			return nil, errors.New(fmt.Sprint("Failed to scan from matches: ", err))
 		}
@@ -440,8 +402,7 @@ func (database *Database) QueryMatches(teamNumber_ int32) ([]Match, error) {
 		var match Match
 		var id int
 		err = rows.Scan(&id, &match.MatchNumber, &match.Round, &match.CompLevel,
-			&match.R1, &match.R2, &match.R3, &match.B1, &match.B2, &match.B3,
-			&match.r1ID, &match.r2ID, &match.r3ID, &match.b1ID, &match.b2ID, &match.b3ID)
+			&match.R1, &match.R2, &match.R3, &match.B1, &match.B2, &match.B3)
 		if err != nil {
 			return nil, errors.New(fmt.Sprint("Failed to scan from matches: ", err))
 		}
