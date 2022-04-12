@@ -239,7 +239,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
     back_intake_beambreak_timer_ = timestamp;
   }
 
-  // Check if we're either spitting of have lost the ball.
+  // Check if we're either spitting or have lost the ball.
   if ((transfer_roller_speed < 0.0 && front_intake_has_ball_) ||
       timestamp >
           front_intake_beambreak_timer_ + constants::Values::kBallLostTime()) {
