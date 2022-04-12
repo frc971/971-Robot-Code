@@ -258,6 +258,7 @@ cc_binary(
         "//aos:init",
         "//aos:json_to_flatbuffer",
         "//aos/events:shm_event_loop",
+        "//aos/logging:dynamic_logging",
     ],
 )
 
@@ -339,6 +340,7 @@ cc_binary(
         "//aos:init",
         "//aos:json_to_flatbuffer",
         "//aos/events:shm_event_loop",
+        "//aos/logging:dynamic_logging",
     ],
 )
 

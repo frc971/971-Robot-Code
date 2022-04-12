@@ -2,6 +2,7 @@
 
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
+#include "aos/logging/dynamic_logging.h"
 
 DEFINE_string(config, "aos_config.json", "Path to the config.");
 DEFINE_int32(rt_priority, -1, "If > 0, run as this RT priority");
@@ -20,6 +21,7 @@ int Main() {
 
   MessageBridgeClient app(&event_loop);
 
+  logging::DynamicLogging dynamic_logging(&event_loop);
   // TODO(austin): Save messages into a vector to be logged.  One file per
   // channel?  Need to sort out ordering.
   //

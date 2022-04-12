@@ -69,6 +69,13 @@
     },
     {
       "name": "/pi{{ NUM }}/aos",
+      "type": "aos.logging.DynamicLogCommand",
+      "source_node": "pi{{ NUM }}",
+      "frequency": 10,
+      "num_senders": 2
+    },
+    {
+      "name": "/pi{{ NUM }}/aos",
       "type": "aos.message_bridge.Timestamp",
       "source_node": "pi{{ NUM }}",
       "frequency": 15,

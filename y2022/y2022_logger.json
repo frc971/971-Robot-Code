@@ -204,6 +204,13 @@
     },
     {
       "name": "/logger/aos",
+      "type": "aos.logging.DynamicLogCommand",
+      "source_node": "logger",
+      "frequency": 10,
+      "num_senders": 2
+    },
+    {
+      "name": "/logger/aos",
       "type": "aos.starter.Status",
       "source_node": "logger",
       "logger": "LOCAL_AND_REMOTE_LOGGER",
