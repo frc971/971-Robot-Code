@@ -34,8 +34,8 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
           event_loop->MakeFetcher<CANPosition>("/superstructure")),
       joystick_state_fetcher_(
           event_loop->MakeFetcher<aos::JoystickState>("/aos")),
-      ball_color_fetcher_(event_loop->MakeFetcher<y2022::vision::BallColor>(
-          "/superstructure")),
+      ball_color_fetcher_(
+          event_loop->MakeFetcher<y2022::vision::BallColor>("/superstructure")),
       aimer_(values) {
   event_loop->SetRuntimeRealtimePriority(30);
 }
@@ -284,9 +284,8 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   // Turn to the loading position as close to the middle of the range as
   // possible. Do the unwraping before we have a ball so we don't have to unwrap
   // to shoot.
-  turret_loading_position =
-      frc971::zeroing::Wrap(constants::Values::kTurretRange().middle_soft(),
-                            turret_loading_position, 2.0 * M_PI);
+  turret_loading_position = frc971::zeroing::Wrap(
+      values_->turret_range.middle_soft(), turret_loading_position, 2.0 * M_PI);
 
   turret_loading_goal_buffer.Finish(
       frc971::control_loops::CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
