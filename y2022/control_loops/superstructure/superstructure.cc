@@ -222,19 +222,12 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       (turret_intake_state_ == RequestedIntake::kFront
            ? constants::Values::kTurretFrontIntakePos()
            : constants::Values::kTurretBackIntakePos());
-  // Turn to the loading position as close to the current position as
-  // possible.
+  // Turn to the loading position as close to the middle of the range as
+  // possible. Do the unwraping before we have a ball so we don't have to unwrap
+  // to shoot.
   turret_loading_position =
-      turret_.estimated_position() +
-      aos::math::NormalizeAngle(turret_loading_position -
-                                turret_.estimated_position());
-  // if out of range, reset back to within +/- pi of zero.
-  if (turret_loading_position > constants::Values::kTurretRange().upper ||
-      turret_loading_position < constants::Values::kTurretRange().lower) {
-    turret_loading_position =
-        frc971::zeroing::Wrap(constants::Values::kTurretRange().middle_soft(),
-                              turret_loading_position, 2.0 * M_PI);
-  }
+      frc971::zeroing::Wrap(constants::Values::kTurretRange().middle_soft(),
+                            turret_loading_position, 2.0 * M_PI);
 
   turret_loading_goal_buffer.Finish(
       frc971::control_loops::CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
