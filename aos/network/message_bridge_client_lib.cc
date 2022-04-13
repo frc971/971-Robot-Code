@@ -164,21 +164,24 @@ void SctpClientConnection::MessageReceived() {
       case SCTP_ASSOC_CHANGE: {
         const struct sctp_assoc_change *sac = &snp->sn_assoc_change;
         switch (sac->sac_state) {
+          case SCTP_RESTART:
+            NodeDisconnected();
+            [[fallthrough]];
           case SCTP_COMM_UP:
             NodeConnected(sac->sac_assoc_id);
 
             VLOG(1) << "Received up from " << message->PeerAddress() << " on "
-                    << sac->sac_assoc_id;
+                    << sac->sac_assoc_id << " state " << sac->sac_state;
             break;
           case SCTP_COMM_LOST:
           case SCTP_SHUTDOWN_COMP:
           case SCTP_CANT_STR_ASSOC: {
             NodeDisconnected();
             VLOG(1) << "Disconnect from " << message->PeerAddress() << " on "
-                    << sac->sac_assoc_id;
+                    << sac->sac_assoc_id << " state " << sac->sac_state;
           } break;
-          case SCTP_RESTART:
-            LOG(FATAL) << "Never seen this before.";
+          default:
+            LOG(FATAL) << "Never seen state " << sac->sac_state << " before.";
             break;
         }
       } break;
