@@ -481,6 +481,48 @@ aos::unique_c_ptr<Message> SctpReadWrite::ReadMessage() {
   }
 }
 
+bool SctpReadWrite::Abort(sctp_assoc_t snd_assoc_id) {
+  if (fd_ == -1) {
+    return true;
+  }
+  VLOG(1) << "Sending abort to assoc " << snd_assoc_id;
+
+  // Use the assoc_id for the destination instead of the msg_name.
+  struct msghdr outmsg;
+  outmsg.msg_namelen = 0;
+
+  outmsg.msg_iovlen = 0;
+
+  // Build up the sndinfo message.
+  char outcmsg[CMSG_SPACE(sizeof(struct sctp_sndrcvinfo))];
+  outmsg.msg_control = outcmsg;
+  outmsg.msg_controllen = CMSG_SPACE(sizeof(struct sctp_sndrcvinfo));
+  outmsg.msg_flags = 0;
+
+  struct cmsghdr *cmsg = CMSG_FIRSTHDR(&outmsg);
+  cmsg->cmsg_level = IPPROTO_SCTP;
+  cmsg->cmsg_type = SCTP_SNDRCV;
+  cmsg->cmsg_len = CMSG_LEN(sizeof(struct sctp_sndrcvinfo));
+
+  struct sctp_sndrcvinfo *sinfo = (struct sctp_sndrcvinfo *)CMSG_DATA(cmsg);
+  memset(sinfo, 0, sizeof(struct sctp_sndrcvinfo));
+  sinfo->sinfo_stream = 0;
+  sinfo->sinfo_flags = SCTP_ABORT;
+  sinfo->sinfo_assoc_id = snd_assoc_id;
+
+  // And send.
+  const ssize_t size = sendmsg(fd_, &outmsg, MSG_NOSIGNAL | MSG_DONTWAIT);
+  if (size == -1) {
+    if (errno == EPIPE || errno == EAGAIN || errno == ESHUTDOWN) {
+      return false;
+    }
+    return false;
+  } else {
+    CHECK_EQ(0, size);
+    return true;
+  }
+}
+
 void SctpReadWrite::CloseSocket() {
   if (fd_ == -1) {
     return;

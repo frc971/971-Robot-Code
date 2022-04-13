@@ -26,8 +26,12 @@ class SctpClient {
   // Sends a block of data on a stream with a TTL.
   // TODO(austin): time_to_live should be a chrono::duration
   bool Send(int stream, std::string_view data, int time_to_live) {
-    return sctp_.SendMessage(stream, data, time_to_live, sockaddr_remote_, 0);
+    return sctp_.SendMessage(stream, data, time_to_live, sockaddr_remote_,
+                             sac_assoc_id_);
   }
+
+  // Aborts a connection.  Returns true on success.
+  bool Abort() { return sctp_.Abort(sac_assoc_id_); }
 
   int fd() { return sctp_.fd(); }
 
@@ -45,10 +49,17 @@ class SctpClient {
 
   void SetMaxSize(size_t max_size) { sctp_.SetMaxSize(max_size); }
 
+  void SetAssociationId(sctp_assoc_t sac_assoc_id) {
+    sac_assoc_id_ = sac_assoc_id;
+  }
+
  private:
   struct sockaddr_storage sockaddr_remote_;
   struct sockaddr_storage sockaddr_local_;
   SctpReadWrite sctp_;
+
+  // Valid if != 0.
+  sctp_assoc_t sac_assoc_id_ = 0;
 };
 
 }  // namespace message_bridge

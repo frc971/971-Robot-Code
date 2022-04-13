@@ -39,7 +39,7 @@ class SctpServer {
   }
 
   // Aborts a connection.  Returns true on success.
-  bool Abort(sctp_assoc_t snd_assoc_id);
+  bool Abort(sctp_assoc_t snd_assoc_id) { return sctp_.Abort(snd_assoc_id); }
 
   int fd() { return sctp_.fd(); }
 

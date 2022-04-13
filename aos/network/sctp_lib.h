@@ -100,6 +100,9 @@ class SctpReadWrite {
   // Returns nullptr if the kernel blocks before returning a complete message.
   aos::unique_c_ptr<Message> ReadMessage();
 
+  // Send an abort message for the given association.
+  bool Abort(sctp_assoc_t snd_assoc_id);
+
   int fd() const { return fd_; }
 
   void SetMaxSize(size_t max_size) {

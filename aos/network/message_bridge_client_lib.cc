@@ -196,19 +196,26 @@ void SctpClientConnection::MessageReceived() {
 }
 
 void SctpClientConnection::SendConnect() {
+  ScheduleConnectTimeout();
+
+  // If we're already connected, assume something went wrong and abort
+  // the connection.
+  if (client_status_->GetClientConnection(client_index_)->state() ==
+      aos::message_bridge::State::CONNECTED) {
+    client_.Abort();
+    return;
+  }
   // Try to send the connect message.  If that fails, retry.
   if (client_.Send(kConnectStream(),
                    std::string_view(reinterpret_cast<const char *>(
                                         connect_message_.span().data()),
                                     connect_message_.span().size()),
                    0)) {
-    VLOG(1) << "Connect to " << remote_node_->hostname()->string_view()
+    VLOG(1) << "Sending connect to " << remote_node_->hostname()->string_view()
             << " succeeded.";
-    ScheduleConnectTimeout();
   } else {
     VLOG(1) << "Connect to " << remote_node_->hostname()->string_view()
             << " failed.";
-    NodeDisconnected();
   }
 }
 
@@ -218,11 +225,14 @@ void SctpClientConnection::NodeConnected(sctp_assoc_t assoc_id) {
   // We want to tell the kernel to schedule the packets on this new stream with
   // the priority scheduler.  This only needs to be done once per stream.
   client_.SetPriorityScheduler(assoc_id);
+  client_.SetAssociationId(assoc_id);
 
   client_status_->Connect(client_index_);
 }
 
 void SctpClientConnection::NodeDisconnected() {
+  client_.SetAssociationId(0);
+
   connect_timer_->Setup(
       event_loop_->monotonic_now() + chrono::milliseconds(100),
       chrono::milliseconds(100));
