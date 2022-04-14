@@ -41,6 +41,12 @@ function getErrorMessage() {
   return element(by.css('.error_message')).getText();
 }
 
+// Returns the currently displayed error message on the screen. This only
+// exists on screens where the web page interacts with the web server.
+function getValueOfInputById(id: string) {
+  return element(by.id(id)).getAttribute('value');
+}
+
 // Asserts that the field on the "Submit and Review" screen has a specific
 // value.
 function expectReviewFieldToBe(fieldName: string, expectedValue: string) {
@@ -120,14 +126,39 @@ describe('The scouting web page', () => {
   it('should: show matches in chronological order.', async () => {
     await loadPage();
 
-    expect(await getNthMatchLabel(0)).toEqual('Quals 1');
-    expect(await getNthMatchLabel(1)).toEqual('Quals 2');
-    expect(await getNthMatchLabel(2)).toEqual('Quals 3');
-    expect(await getNthMatchLabel(9)).toEqual('Quals 10');
-    // TODO(phil): Validate quarter finals and friends. Right now we don't
-    // distinguish between "sets". I.e. we display 4 "Quarter Final 1" matches
-    // without being able to distinguish between them.
-    expect(await getNthMatchLabel(87)).toEqual('Final 1');
+    expect(await getNthMatchLabel(0)).toEqual('Quals Match 1');
+    expect(await getNthMatchLabel(1)).toEqual('Quals Match 2');
+    expect(await getNthMatchLabel(2)).toEqual('Quals Match 3');
+    expect(await getNthMatchLabel(9)).toEqual('Quals Match 10');
+    expect(await getNthMatchLabel(72)).toEqual('Quarter Final 1 Match 1');
+    expect(await getNthMatchLabel(73)).toEqual('Quarter Final 2 Match 1');
+    expect(await getNthMatchLabel(74)).toEqual('Quarter Final 3 Match 1');
+    expect(await getNthMatchLabel(75)).toEqual('Quarter Final 4 Match 1');
+    expect(await getNthMatchLabel(76)).toEqual('Quarter Final 1 Match 2');
+    expect(await getNthMatchLabel(82)).toEqual('Semi Final 1 Match 1');
+    expect(await getNthMatchLabel(83)).toEqual('Semi Final 2 Match 1');
+    expect(await getNthMatchLabel(84)).toEqual('Semi Final 1 Match 2');
+    expect(await getNthMatchLabel(85)).toEqual('Semi Final 2 Match 2');
+    expect(await getNthMatchLabel(89)).toEqual('Final 1 Match 3');
+  });
+
+  it('should: prefill the match information.', async () => {
+    await loadPage();
+
+    expect(await getHeadingText()).toEqual('Matches');
+
+    // On the 87th row of matches (index 86) click on the second team
+    // (index 1) which resolves to team 5254 in semi final 2 match 3.
+    await element
+      .all(by.css('button.match-item'))
+      .get(86 * 6 + 1)
+      .click();
+
+    expect(await getHeadingText()).toEqual('Team Selection');
+    expect(await getValueOfInputById('match_number')).toEqual('3');
+    expect(await getValueOfInputById('team_number')).toEqual('5254');
+    expect(await getValueOfInputById('round')).toEqual('2');
+    expect(await getValueOfInputById('comp_level')).toEqual('3: sf');
   });
 
   it('should: error on unknown match.', async () => {
@@ -197,6 +228,8 @@ describe('The scouting web page', () => {
     expect(await getHeadingText()).toEqual('Team Selection');
     await setTextboxByIdTo('match_number', '2');
     await setTextboxByIdTo('team_number', '5254');
+    await setTextboxByIdTo('round', '42');
+    await element(by.cssContainingText('option', 'Semi Finals')).click();
     await element(by.buttonText('Next')).click();
 
     expect(await getHeadingText()).toEqual('Auto');
@@ -224,6 +257,8 @@ describe('The scouting web page', () => {
     // Validate Team Selection.
     await expectReviewFieldToBe('Match number', '2');
     await expectReviewFieldToBe('Team number', '5254');
+    await expectReviewFieldToBe('Round', '42');
+    await expectReviewFieldToBe('Comp Level', 'Semi Finals');
 
     // Validate Auto.
     await expectNthReviewFieldToBe('Upper Shots Made', 0, '0');
@@ -237,7 +272,7 @@ describe('The scouting web page', () => {
     await expectNthReviewFieldToBe('Missed Shots', 1, '0');
 
     // Validate Climb.
-    await expectReviewFieldToBe('Level', 'High');
+    await expectReviewFieldToBe('Climb Level', 'High');
     await expectReviewFieldToBe('Comments', 'A very useful comment here.');
 
     // Validate Other.

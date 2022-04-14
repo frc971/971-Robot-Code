@@ -28,6 +28,18 @@
         max="9999"
       />
     </div>
+    <div class="row">
+      <label for="round">Round</label>
+      <input [(ngModel)]="round" type="number" id="round" min="1" max="10" />
+    </div>
+    <div class="row">
+      <label for="comp_level">Round</label>
+      <select [(ngModel)]="compLevel" type="number" id="comp_level">
+        <option *ngFor="let level of COMP_LEVELS" [ngValue]="level">
+          {{COMP_LEVEL_LABELS[level]}}
+        </option>
+      </select>
+    </div>
     <div class="buttons">
       <!-- hack to right align the next button -->
       <div></div>
@@ -348,6 +360,8 @@
     <ul>
       <li>Match number: {{matchNumber}}</li>
       <li>Team number: {{teamNumber}}</li>
+      <li>Round: {{round}}</li>
+      <li>Comp Level: {{COMP_LEVEL_LABELS[compLevel]}}</li>
     </ul>
 
     <h4>Auto</h4>
@@ -372,7 +386,7 @@
 
     <h4>Climb</h4>
     <ul>
-      <li>Level: {{level | levelToString}}</li>
+      <li>Climb Level: {{level | levelToString}}</li>
       <li>Comments: {{comment}}</li>
     </ul>
 

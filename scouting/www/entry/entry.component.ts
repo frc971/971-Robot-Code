@@ -25,6 +25,19 @@ type Section =
   | 'Review and Submit'
   | 'Success';
 
+// TODO(phil): Deduplicate with match_list.component.ts.
+const COMP_LEVELS = ['qm', 'ef', 'qf', 'sf', 'f'] as const;
+type CompLevel = typeof COMP_LEVELS[number];
+
+// TODO(phil): Deduplicate with match_list.component.ts.
+const COMP_LEVEL_LABELS: Record<CompLevel, string> = {
+  qm: 'Qualifications',
+  ef: 'Eighth Finals',
+  qf: 'Quarter Finals',
+  sf: 'Semi Finals',
+  f: 'Finals',
+};
+
 @Component({
   selector: 'app-entry',
   templateUrl: './entry.ng.html',
@@ -34,11 +47,15 @@ export class EntryComponent {
   // Re-export the type here so that we can use it in the `[value]` attribute
   // of radio buttons.
   readonly ClimbLevel = ClimbLevel;
+  readonly COMP_LEVELS = COMP_LEVELS;
+  readonly COMP_LEVEL_LABELS = COMP_LEVEL_LABELS;
 
   section: Section = 'Team Selection';
   @Output() switchTabsEvent = new EventEmitter<string>();
   @Input() matchNumber: number = 1;
   @Input() teamNumber: number = 1;
+  @Input() round: number = 1;
+  @Input() compLevel: CompLevel = 'qm';
   autoUpperShotsMade: number = 0;
   autoLowerShotsMade: number = 0;
   autoShotsMissed: number = 0;
@@ -113,10 +130,13 @@ export class EntryComponent {
     this.errorMessage = '';
 
     const builder = new Builder();
+    const compLevel = builder.createString(this.compLevel);
     const comment = builder.createString(this.comment);
     SubmitDataScouting.startSubmitDataScouting(builder);
     SubmitDataScouting.addTeam(builder, this.teamNumber);
     SubmitDataScouting.addMatch(builder, this.matchNumber);
+    SubmitDataScouting.addRound(builder, this.round);
+    SubmitDataScouting.addCompLevel(builder, compLevel);
     SubmitDataScouting.addMissedShotsAuto(builder, this.autoShotsMissed);
     SubmitDataScouting.addUpperGoalAuto(builder, this.autoUpperShotsMade);
     SubmitDataScouting.addLowerGoalAuto(builder, this.autoLowerShotsMade);
