@@ -1,9 +1,10 @@
 import {ByteBuffer} from 'flatbuffers';
-import {Connection} from 'org_frc971/aos/network/www/proxy';
-import {IntakeState, Status as SuperstructureStatus, SuperstructureState} from 'org_frc971/y2022/control_loops/superstructure/superstructure_status_generated'
-import {LocalizerOutput} from 'org_frc971/y2022/localizer/localizer_output_generated';
-import {RejectionReason} from 'org_frc971/y2022/localizer/localizer_status_generated';
-import {LocalizerVisualization, TargetEstimateDebug} from 'org_frc971/y2022/localizer/localizer_visualization_generated';
+import {Connection} from '../../aos/network/www/proxy';
+import {IntakeState, Status as SuperstructureStatus, SuperstructureState} from '../control_loops/superstructure/superstructure_status_generated'
+import {LocalizerOutput} from '../localizer/localizer_output_generated';
+import {RejectionReason} from '../localizer/localizer_status_generated';
+import {Status as DrivetrainStatus} from '../../frc971/control_loops/drivetrain/drivetrain_status_generated';
+import {LocalizerVisualization, TargetEstimateDebug} from '../localizer/localizer_visualization_generated';
 
 import {FIELD_LENGTH, FIELD_WIDTH, FT_TO_M, IN_TO_M} from './constants';
 
@@ -19,6 +20,7 @@ const PI_COLORS = ['#ff00ff', '#ffff00', '#00ffff', '#ffa500'];
 export class FieldHandler {
   private canvas = document.createElement('canvas');
   private localizerOutput: LocalizerOutput|null = null;
+  private drivetrainStatus: DrivetrainStatus|null = null;
   private superstructureStatus: SuperstructureStatus|null = null;
 
   // Image information indexed by timestamp (seconds since the epoch), so that
@@ -105,6 +107,10 @@ export class FieldHandler {
             this.handleLocalizerDebug(data);
           });
       this.connection.addHandler(
+          '/drivetrain', DrivetrainStatus.getFullyQualifiedName(), (data) => {
+            this.handleDrivetrainStatus(data);
+          });
+      this.connection.addHandler(
           '/localizer', LocalizerOutput.getFullyQualifiedName(), (data) => {
             this.handleLocalizerOutput(data);
           });
@@ -152,6 +158,11 @@ export class FieldHandler {
   private handleLocalizerOutput(data: Uint8Array): void {
     const fbBuffer = new ByteBuffer(data);
     this.localizerOutput = LocalizerOutput.getRootAsLocalizerOutput(fbBuffer);
+  }
+
+  private handleDrivetrainStatus(data: Uint8Array): void {
+    const fbBuffer = new ByteBuffer(data);
+    this.drivetrainStatus = DrivetrainStatus.getRootAsStatus(fbBuffer);
   }
 
   private handleSuperstructureStatus(data: Uint8Array): void {
@@ -375,6 +386,14 @@ export class FieldHandler {
                 .estimatorState()
                 .position());
       }
+    }
+
+    if (this.drivetrainStatus && this.drivetrainStatus.trajectoryLogging()) {
+      this.drawRobot(
+          this.drivetrainStatus.trajectoryLogging().x(),
+          this.drivetrainStatus.trajectoryLogging().y(),
+          this.drivetrainStatus.trajectoryLogging().theta(), null, "#000000FF",
+          false);
     }
 
     if (this.localizerOutput) {
