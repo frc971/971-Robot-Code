@@ -1017,6 +1017,9 @@ std::map<std::string, NodeBootState> PartsSorter::ComputeNewBootConstraints() {
         const std::string remote_node_name =
             config->nodes()->Get(remote_node.first)->name()->str();
 
+        VLOG(1) << "Local " << local_node_name << " boot " << local_boot_uuid
+                << " remote " << remote_node_name;
+
         // Now, we have a bunch of remote boots for the same local boot and
         // remote node.  We want to sort them by observed local time.  This will
         // tell us which ones happened first.  Hold on to the max time on that
@@ -1030,6 +1033,7 @@ std::map<std::string, NodeBootState> PartsSorter::ComputeNewBootConstraints() {
           BootPairTimes max_boot_time = boot_time_list.second[0];
           for (size_t i = 0; i < boot_time_list.second.size(); ++i) {
             const BootPairTimes &next_boot_time = boot_time_list.second[i];
+            VLOG(1) << " Found " << next_boot_time;
             if (next_boot_time.oldest_local_unreliable_monotonic_timestamp !=
                 aos::monotonic_clock::max_time) {
               VLOG(1)
@@ -1093,7 +1097,12 @@ std::map<std::string, NodeBootState> PartsSorter::ComputeNewBootConstraints() {
 
           // Skip anything without a time in it.
           if (boot_time.oldest_remote_unreliable_monotonic_timestamp ==
-              aos::monotonic_clock::max_time) {
+                  aos::monotonic_clock::max_time &&
+              boot_time.oldest_remote_reliable_monotonic_timestamp ==
+                  aos::monotonic_clock::max_time) {
+            VLOG(1) << " Skipping local " << local_node_name << " boot "
+                    << local_boot_uuid << " remote " << remote_node_name
+                    << " boot " << boot_time_list.first << " " << boot_time;
             continue;
           }
 
@@ -1134,8 +1143,7 @@ std::map<std::string, NodeBootState> PartsSorter::ComputeNewBootConstraints() {
           }
 
           auto reverse_local_node_it =
-              reverse_remote_node_boot_uuid_it->second.find(
-                  local_node_name);
+              reverse_remote_node_boot_uuid_it->second.find(local_node_name);
           if (reverse_local_node_it ==
               reverse_remote_node_boot_uuid_it->second.end()) {
             reverse_local_node_it =
@@ -1150,14 +1158,155 @@ std::map<std::string, NodeBootState> PartsSorter::ComputeNewBootConstraints() {
           CHECK(reverse_local_node_boot_uuid_it ==
                 reverse_local_node_it->second.end());
           reverse_local_node_it->second.emplace(local_boot_uuid, boot_time);
+          VLOG(1) << " Boot time for local " << local_node_name << " boot "
+                  << local_boot_uuid << " remote " << remote_node_name
+                  << " boot " << boot_time_list.first << " " << boot_time;
         }
+
+        // All the nodes are from the same local boot here.  We are trying to
+        // order the remote boots.  Let's list out the combinatorics.
+        //  - We can have reliable and/or unreliable timestamps, but not neither
+        //    for both times we are comparing.
+        //  - Reliable timestamps can match or not match (ie, same message got
+        //    forwarded to 2 boots)
+        //
+        //  1) Both have unreliable, various reliable.  1 < 2.
+        //     Unreliable timestamps tell us more
+        //      {
+        //       .oldest_remote_reliable_monotonic_timestamp=10.122999611sec,
+        //       .oldest_local_reliable_monotonic_timestamp=9.400951024sec,
+        //       .oldest_remote_unreliable_monotonic_timestamp=23431.315344025sec,
+        //       .oldest_local_unreliable_monotonic_timestamp=23413.172709284sec
+        //      }
+        //      {
+        //       .oldest_remote_reliable_monotonic_timestamp=11.798054208sec,
+        //       .oldest_local_reliable_monotonic_timestamp=23457.772660691sec,
+        //       .oldest_remote_unreliable_monotonic_timestamp=12.315344025sec,
+        //       .oldest_local_unreliable_monotonic_timestamp=23458.772660691sec
+        //      }
+        // 2) Only reliable, or only one unreliable, local times don't match.  1
+        // < 2
+        //      {
+        //       .oldest_remote_reliable_monotonic_timestamp=10.122999611sec,
+        //       .oldest_local_reliable_monotonic_timestamp=9.400951024sec,
+        //       .oldest_remote_unreliable_monotonic_timestamp=9223372036.854775807sec,
+        //       .oldest_local_unreliable_monotonic_timestamp=9223372036.854775807sec
+        //      }
+        //      {
+        //       .oldest_remote_reliable_monotonic_timestamp=11.798054208sec,
+        //       .oldest_local_reliable_monotonic_timestamp=23457.772660691sec,
+        //       .oldest_remote_unreliable_monotonic_timestamp=9223372036.854775807sec,
+        //       .oldest_local_unreliable_monotonic_timestamp=9223372036.854775807sec
+        //      }
+        //  3) Only reliable, local times match.  Unable to compare because the
+        //     same message got sent, and with reliable timestamps, we don't
+        //     know how long it took to cross the network.
+        //      {
+        //       .oldest_remote_reliable_monotonic_timestamp=10.122999611sec,
+        //       .oldest_local_reliable_monotonic_timestamp=9.400951024sec,
+        //       .oldest_remote_unreliable_monotonic_timestamp=9223372036.854775807sec,
+        //       .oldest_local_unreliable_monotonic_timestamp=9223372036.854775807sec
+        //      }
+        //      {
+        //       .oldest_remote_reliable_monotonic_timestamp=11.798054208sec,
+        //       .oldest_local_reliable_monotonic_timestamp=9.400951024sec,
+        //       .oldest_remote_unreliable_monotonic_timestamp=9223372036.854775807sec,
+        //       .oldest_local_unreliable_monotonic_timestamp=9223372036.854775807sec
+        //      }
+        //
+        //  Writing all this out for which timestamps we have out of all 32
+        //  combinations, and which cases each of the correspond to:
+        //
+        //  {  }, {  } no match -> fail, won't be in the list
+        //  {  }, { u} no match -> fail, won't be in the list
+        //  {  }, {r } no match -> fail, won't be in the list
+        //  {  }, {ru} no match -> fail, won't be in the list
+        //  { u}, {  } no match -> fail, won't be in the list
+        //  { u}, { u} no match -> 1
+        //  { u}, {r } no match -> fail
+        //  { u}, {ru} no match -> 1
+        //  {r }, {  } no match -> fail, won't be in the list
+        //  {r }, { u} no match -> fail
+        //  {r }, {r } no match -> 2
+        //  {r }, {ru} no match -> 2
+        //  {ru}, {  } no match -> fail, won't be in the list
+        //  {ru}, { u} no match -> 1
+        //  {ru}, {r } no match -> 2
+        //  {ru}, {ru} no match -> 1
+        //  {  }, {  } match -> fail, won't be in the list
+        //  {  }, { u} match -> fail, won't be in the list
+        //  {  }, {r } match -> fail, won't be in the list
+        //  {  }, {ru} match -> fail, won't be in the list
+        //  { u}, {  } match -> fail, won't be in the list
+        //  { u}, { u} match -> 1
+        //  { u}, {r } match -> fail
+        //  { u}, {ru} match -> 1
+        //  {r }, {  } match -> fail, won't be in the list
+        //  {r }, { u} match -> fail
+        //  {r }, {r } match -> fail (case 3)
+        //  {r }, {ru} match -> fail (case 3)
+        //  {ru}, {  } match -> fail, won't be in the list
+        //  {ru}, { u} match -> 1
+        //  {ru}, {r } match -> fail (case 3)
+        //  {ru}, {ru} match -> 1
+        //
+        //  Combined, we get:
+        //
+        //  { u}, { u} no match -> 1
+        //  { u}, {ru} no match -> 1
+        //  {ru}, { u} no match -> 1
+        //  {ru}, {ru} no match -> 1
+        //  { u}, { u} match -> 1
+        //  { u}, {ru} match -> 1
+        //  {ru}, { u} match -> 1
+        //  {ru}, {ru} match -> 1
+        //
+        //  {r }, {r } no match -> 2
+        //  {r }, {ru} no match -> 2
+        //  {ru}, {r } no match -> 2
+        //
+        //  { u}, {r } no match -> fail
+        //  { u}, {r } match -> fail
+        //  {r }, { u} no match -> fail
+        //  {r }, { u} match -> fail
+        //
+        //  {r }, {r } match -> fail (case 3)
+        //  {r }, {ru} match -> fail (case 3)
+        //  {ru}, {r } match -> fail (case 3)
+
         std::sort(
             remote_boot_times.begin(), remote_boot_times.end(),
             [](const std::tuple<std::string, BootPairTimes, BootPairTimes> &a,
                const std::tuple<std::string, BootPairTimes, BootPairTimes> &b) {
-              return std::get<1>(a)
-                         .oldest_local_unreliable_monotonic_timestamp <
-                     std::get<1>(b).oldest_local_unreliable_monotonic_timestamp;
+              const bool both_reliable =
+                  std::get<1>(a).oldest_local_reliable_monotonic_timestamp !=
+                      aos::monotonic_clock::max_time &&
+                  std::get<1>(b).oldest_local_reliable_monotonic_timestamp !=
+                      aos::monotonic_clock::max_time;
+              const bool both_unreliable =
+                  std::get<1>(a).oldest_local_unreliable_monotonic_timestamp !=
+                      aos::monotonic_clock::max_time &&
+                  std::get<1>(b).oldest_local_unreliable_monotonic_timestamp !=
+                      aos::monotonic_clock::max_time;
+
+              if (both_unreliable) {
+                return std::get<1>(a)
+                           .oldest_local_unreliable_monotonic_timestamp <
+                       std::get<1>(b)
+                           .oldest_local_unreliable_monotonic_timestamp;
+              } else if (both_reliable) {
+                CHECK_NE(
+                    std::get<1>(a).oldest_local_reliable_monotonic_timestamp,
+                    std::get<1>(b).oldest_local_reliable_monotonic_timestamp)
+                    << ": The same reliable message has been forwarded to both "
+                       "boots.  This is ambiguous, please investigate.";
+                return std::get<1>(a)
+                           .oldest_local_reliable_monotonic_timestamp <
+                       std::get<1>(b).oldest_local_reliable_monotonic_timestamp;
+              } else {
+                LOG(FATAL) << "Unable to compare timestamps " << std::get<1>(a)
+                           << ", " << std::get<1>(b);
+              }
             });
 
         // The last time from the local node on the logger node.
@@ -1172,6 +1321,8 @@ std::map<std::string, NodeBootState> PartsSorter::ComputeNewBootConstraints() {
           const std::tuple<std::string, BootPairTimes, BootPairTimes>
               &boot_time = remote_boot_times[boot_id];
           const std::string &local_boot_uuid = std::get<0>(boot_time);
+          VLOG(1) << " Boot " << local_boot_uuid << " is "
+                  << std::get<1>(boot_time);
 
           // Enforce that the last time observed in the headers on the previous
           // boot is less than the first time on the next boot.  This equates to
@@ -1204,14 +1355,12 @@ std::map<std::string, NodeBootState> PartsSorter::ComputeNewBootConstraints() {
           if (remote_node_boot_constraints_it == boot_constraints.end()) {
             remote_node_boot_constraints_it =
                 boot_constraints
-                    .insert(
-                        std::make_pair(remote_node_name, NodeBootState()))
+                    .insert(std::make_pair(remote_node_name, NodeBootState()))
                     .first;
           }
 
           // Track that this boot happened.
-          remote_node_boot_constraints_it->second.boots.insert(
-              local_boot_uuid);
+          remote_node_boot_constraints_it->second.boots.insert(local_boot_uuid);
 
           if (boot_id > 0) {
             // And now add the constraints.  The vector is in order, so all we
@@ -1248,6 +1397,10 @@ std::map<std::string, NodeBootState> PartsSorter::ComputeNewBootConstraints() {
                       .first;
             }
 
+            VLOG(1) << "Inserting " << first_per_boot_constraints->first
+                    << " < " << local_boot_uuid;
+            VLOG(1) << "Inserting " << second_per_boot_constraints->first
+                    << " > " << prior_boot_uuid;
             first_per_boot_constraints->second.emplace_back(
                 std::make_pair(local_boot_uuid, true));
             second_per_boot_constraints->second.emplace_back(
@@ -1261,17 +1414,23 @@ std::map<std::string, NodeBootState> PartsSorter::ComputeNewBootConstraints() {
   // Now, sort the reverse direction so we can handle when we only get
   // timestamps and need to make sense of the boots.
   for (const auto &remote_node : reverse_boot_times) {
+    const std::string &remote_node_name = remote_node.first;
     for (const auto &remote_node_boot_uuid : remote_node.second) {
       for (const auto &local_node : remote_node_boot_uuid.second) {
         // Now, we need to take all the boots + times and put them in a list to
-        // sort and derive constraints from.
+        // sort and derive constraints from.  This is very similar to the
+        // forward direction.
 
-        std::vector<std::pair<std::string, BootPairTimes>>
-            local_boot_times;
+        std::vector<std::pair<std::string, BootPairTimes>> local_boot_times;
         for (const auto &local_boot_uuid : local_node.second) {
-          CHECK_NE(local_boot_uuid.second
-                       .oldest_remote_unreliable_monotonic_timestamp,
-                   monotonic_clock::max_time);
+          // TODO(austin): If we only have reliable timestamps going the other
+          // way, we need to update this logic (and the sorting logic below) to
+          // use them.  This should be quite rare, so I feel safe delaying it.
+          if (local_boot_uuid.second
+                  .oldest_remote_unreliable_monotonic_timestamp ==
+              monotonic_clock::max_time) {
+            continue;
+          }
           local_boot_times.emplace_back(local_boot_uuid);
         }
 
@@ -1283,8 +1442,11 @@ std::map<std::string, NodeBootState> PartsSorter::ComputeNewBootConstraints() {
                      b.second.oldest_remote_unreliable_monotonic_timestamp;
             });
 
-        for (size_t boot_id = 0; boot_id < local_boot_times.size();
-             ++boot_id) {
+        VLOG(1) << "Reverse sort from " << remote_node_name << " boot "
+                << remote_node_boot_uuid.first << " to " << local_node.first;
+        for (size_t boot_id = 0; boot_id < local_boot_times.size(); ++boot_id) {
+          VLOG(1) << "Sorted local times: " << local_boot_times[boot_id].first
+                  << " time " << local_boot_times[boot_id].second;
           const std::pair<std::string, BootPairTimes> &boot_time =
               local_boot_times[boot_id];
           const std::string &local_boot_uuid = boot_time.first;
@@ -1299,8 +1461,7 @@ std::map<std::string, NodeBootState> PartsSorter::ComputeNewBootConstraints() {
           }
 
           // Track that this boot happened.
-          local_node_boot_constraints_it->second.boots.insert(
-              local_boot_uuid);
+          local_node_boot_constraints_it->second.boots.insert(local_boot_uuid);
           if (boot_id > 0) {
             const std::pair<std::string, BootPairTimes> &prior_boot_time =
                 local_boot_times[boot_id - 1];
@@ -1333,6 +1494,10 @@ std::map<std::string, NodeBootState> PartsSorter::ComputeNewBootConstraints() {
                       .first;
             }
 
+            VLOG(1) << "Inserting " << first_per_boot_constraints->first
+                    << " < " << local_boot_uuid;
+            VLOG(1) << "Inserting " << second_per_boot_constraints->first
+                    << " > " << prior_boot_uuid;
             first_per_boot_constraints->second.emplace_back(
                 std::make_pair(local_boot_uuid, true));
             second_per_boot_constraints->second.emplace_back(

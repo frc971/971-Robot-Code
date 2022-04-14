@@ -2966,8 +2966,8 @@ TEST_P(MultinodeLoggerTest, RemoteRebootOnlyTimestamps) {
                   .oldest_remote_reliable_monotonic_timestamps()
                   ->size(),
               2u);
-    ASSERT_TRUE(log_header->message()
-                    .has_oldest_local_reliable_monotonic_timestamps());
+    ASSERT_TRUE(
+        log_header->message().has_oldest_local_reliable_monotonic_timestamps());
     ASSERT_EQ(log_header->message()
                   .oldest_local_reliable_monotonic_timestamps()
                   ->size(),
@@ -3090,9 +3090,11 @@ TEST_P(MultinodeLoggerTest, RemoteRebootOnlyTimestamps) {
             EXPECT_EQ(oldest_local_monotonic_timestamps,
                       expected_oldest_local_monotonic_timestamps);
             EXPECT_EQ(oldest_logger_remote_unreliable_monotonic_timestamps,
-                      expected_oldest_local_monotonic_timestamps) << file;
+                      expected_oldest_local_monotonic_timestamps)
+                << file;
             EXPECT_EQ(oldest_logger_local_unreliable_monotonic_timestamps,
-                      expected_oldest_timestamp_monotonic_timestamps) << file;
+                      expected_oldest_timestamp_monotonic_timestamps)
+                << file;
 
             if (reliable) {
               EXPECT_EQ(oldest_remote_reliable_monotonic_timestamps,
@@ -3153,9 +3155,11 @@ TEST_P(MultinodeLoggerTest, RemoteRebootOnlyTimestamps) {
                 oldest_local_monotonic_timestamps,
                 monotonic_clock::epoch() + chrono::nanoseconds(1323100000));
             EXPECT_EQ(oldest_logger_remote_unreliable_monotonic_timestamps,
-                      expected_oldest_local_monotonic_timestamps) << file;
+                      expected_oldest_local_monotonic_timestamps)
+                << file;
             EXPECT_EQ(oldest_logger_local_unreliable_monotonic_timestamps,
-                      expected_oldest_timestamp_monotonic_timestamps) << file;
+                      expected_oldest_timestamp_monotonic_timestamps)
+                << file;
             if (reliable) {
               EXPECT_EQ(oldest_remote_reliable_monotonic_timestamps,
                         expected_oldest_remote_monotonic_timestamps);
@@ -3900,18 +3904,24 @@ TEST(MultinodeRebootLoggerTest,
       filenames, realtime_clock::epoch() + chrono::milliseconds(2000),
       realtime_clock::epoch() + chrono::milliseconds(3000));
 
-  EXPECT_THAT(start_stop_result[0].first, ::testing::ElementsAre(realtime_clock::epoch() +
-                                                      chrono::seconds(2)));
-  EXPECT_THAT(start_stop_result[0].second, ::testing::ElementsAre(realtime_clock::epoch() +
-                                                       chrono::seconds(3)));
-  EXPECT_THAT(start_stop_result[1].first, ::testing::ElementsAre(realtime_clock::epoch() +
-                                                      chrono::seconds(2)));
-  EXPECT_THAT(start_stop_result[1].second, ::testing::ElementsAre(realtime_clock::epoch() +
-                                                       chrono::seconds(3)));
-  EXPECT_THAT(start_stop_result[2].first, ::testing::ElementsAre(realtime_clock::epoch() +
-                                                      chrono::seconds(2)));
-  EXPECT_THAT(start_stop_result[2].second, ::testing::ElementsAre(realtime_clock::epoch() +
-                                                       chrono::seconds(3)));
+  EXPECT_THAT(
+      start_stop_result[0].first,
+      ::testing::ElementsAre(realtime_clock::epoch() + chrono::seconds(2)));
+  EXPECT_THAT(
+      start_stop_result[0].second,
+      ::testing::ElementsAre(realtime_clock::epoch() + chrono::seconds(3)));
+  EXPECT_THAT(
+      start_stop_result[1].first,
+      ::testing::ElementsAre(realtime_clock::epoch() + chrono::seconds(2)));
+  EXPECT_THAT(
+      start_stop_result[1].second,
+      ::testing::ElementsAre(realtime_clock::epoch() + chrono::seconds(3)));
+  EXPECT_THAT(
+      start_stop_result[2].first,
+      ::testing::ElementsAre(realtime_clock::epoch() + chrono::seconds(2)));
+  EXPECT_THAT(
+      start_stop_result[2].second,
+      ::testing::ElementsAre(realtime_clock::epoch() + chrono::seconds(3)));
 }
 
 // Tests that setting the start and stop flags across a reboot works as
@@ -4102,8 +4112,7 @@ TEST(MissingDirectionTest, OneDirection) {
     const chrono::nanoseconds reboot_time = chrono::milliseconds(5000);
     time_converter.AddNextTimestamp(
         distributed_clock::epoch() + reboot_time,
-        {BootTimestamp{.boot = 1,
-                       .time = monotonic_clock::epoch()},
+        {BootTimestamp{.boot = 1, .time = monotonic_clock::epoch()},
          BootTimestamp::epoch() + reboot_time});
   }
 
@@ -4176,8 +4185,7 @@ TEST(MissingDirectionTest, OneDirectionAfterReboot) {
     const chrono::nanoseconds reboot_time = chrono::milliseconds(5000);
     time_converter.AddNextTimestamp(
         distributed_clock::epoch() + reboot_time,
-        {BootTimestamp{.boot = 1,
-                       .time = monotonic_clock::epoch()},
+        {BootTimestamp{.boot = 1, .time = monotonic_clock::epoch()},
          BootTimestamp::epoch() + reboot_time});
   }
 
@@ -4185,6 +4193,73 @@ TEST(MissingDirectionTest, OneDirectionAfterReboot) {
       aos::testing::TestTmpDir() + "/multi_logfile2.1/";
   util::UnlinkRecursive(kLogfile2_1);
 
+  pi1->AlwaysStart<Ping>("ping");
+
+  // Pi1 sends to pi2.  Reboot pi1, but don't let pi2 connect to pi1.  This
+  // makes it such that we will only get timestamps from pi1 -> pi2 on the
+  // second boot.
+  {
+    LoggerState pi2_logger = LoggerState::MakeLogger(
+        pi2, &event_loop_factory, SupportedCompressionAlgorithms()[0]);
+
+    event_loop_factory.RunFor(chrono::milliseconds(95));
+
+    pi2_logger.StartLogger(kLogfile2_1);
+
+    event_loop_factory.RunFor(chrono::milliseconds(4000));
+
+    pi2->Disconnect(pi1->node());
+
+    event_loop_factory.RunFor(chrono::milliseconds(1000));
+    pi1->AlwaysStart<Ping>("ping");
+
+    event_loop_factory.RunFor(chrono::milliseconds(5000));
+    pi2_logger.AppendAllFilenames(&filenames);
+  }
+
+  const std::vector<LogFile> sorted_parts = SortParts(filenames);
+  ConfirmReadable(filenames);
+}
+
+// Tests that we properly handle only one direction ever existing after a reboot
+// with only reliable data.
+TEST(MissingDirectionTest, OneDirectionAfterRebootReliable) {
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+      aos::configuration::ReadConfig(ArtifactPath(
+          "aos/events/logging/multinode_pingpong_split4_reliable_config.json"));
+  message_bridge::TestingTimeConverter time_converter(
+      configuration::NodesCount(&config.message()));
+  SimulatedEventLoopFactory event_loop_factory(&config.message());
+  event_loop_factory.SetTimeConverter(&time_converter);
+
+  NodeEventLoopFactory *const pi1 =
+      event_loop_factory.GetNodeEventLoopFactory("pi1");
+  const size_t pi1_index = configuration::GetNodeIndex(
+      event_loop_factory.configuration(), pi1->node());
+  NodeEventLoopFactory *const pi2 =
+      event_loop_factory.GetNodeEventLoopFactory("pi2");
+  const size_t pi2_index = configuration::GetNodeIndex(
+      event_loop_factory.configuration(), pi2->node());
+  std::vector<std::string> filenames;
+
+  {
+    CHECK_EQ(pi1_index, 0u);
+    CHECK_EQ(pi2_index, 1u);
+
+    time_converter.AddNextTimestamp(
+        distributed_clock::epoch(),
+        {BootTimestamp::epoch(), BootTimestamp::epoch()});
+
+    const chrono::nanoseconds reboot_time = chrono::milliseconds(5000);
+    time_converter.AddNextTimestamp(
+        distributed_clock::epoch() + reboot_time,
+        {BootTimestamp{.boot = 1, .time = monotonic_clock::epoch()},
+         BootTimestamp::epoch() + reboot_time});
+  }
+
+  const std::string kLogfile2_1 =
+      aos::testing::TestTmpDir() + "/multi_logfile2.1/";
+  util::UnlinkRecursive(kLogfile2_1);
 
   pi1->AlwaysStart<Ping>("ping");
 
