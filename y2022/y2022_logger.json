@@ -391,6 +391,7 @@
     {
       "name": "/logger/camera",
       "type": "frc971.vision.CameraImage",
+      "logger": "NOT_LOGGED",
       "source_node": "logger",
       "frequency": 100,
       "max_size": 620000,
