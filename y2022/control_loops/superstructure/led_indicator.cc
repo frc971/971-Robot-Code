@@ -17,6 +17,9 @@ LedIndicator::LedIndicator(aos::EventLoop *event_loop)
       client_statistics_fetcher_(
           event_loop_->MakeFetcher<aos::message_bridge::ClientStatistics>(
               "/roborio/aos")),
+      localizer_output_fetcher_(
+          event_loop_->MakeFetcher<frc971::controls::LocalizerOutput>(
+              "/localizer")),
       gyro_reading_fetcher_(
           event_loop_->MakeFetcher<frc971::sensors::GyroReading>(
               "/drivetrain")) {
@@ -58,12 +61,6 @@ bool DisconnectedPiClient(
   }
   return false;
 }
-
-bool DrivingFast(
-    const frc971::control_loops::drivetrain::Output &drivetrain_out) {
-  return (drivetrain_out.left_voltage() >= 11.5 ||
-          drivetrain_out.right_voltage() >= 11.5);
-}
 }  // namespace
 
 void LedIndicator::DecideColor() {
@@ -72,6 +69,15 @@ void LedIndicator::DecideColor() {
   drivetrain_output_fetcher_.Fetch();
   client_statistics_fetcher_.Fetch();
   gyro_reading_fetcher_.Fetch();
+  localizer_output_fetcher_.Fetch();
+
+  if (localizer_output_fetcher_.get()) {
+    if (localizer_output_fetcher_->image_accepted_count() !=
+        last_accepted_count_) {
+      last_accepted_count_ = localizer_output_fetcher_->image_accepted_count();
+      last_accepted_time_ = event_loop_->monotonic_now();
+    }
+  }
 
   // Estopped
   if (superstructure_status_fetcher_.get() &&
@@ -90,7 +96,8 @@ void LedIndicator::DecideColor() {
   // If the imu gyro readings are not being sent/updated recently
   if (!gyro_reading_fetcher_.get() ||
       gyro_reading_fetcher_.context().monotonic_event_time <
-          event_loop_->monotonic_now() - frc971::controls::kLoopFrequency * 10) {
+          event_loop_->monotonic_now() -
+              frc971::controls::kLoopFrequency * 10) {
     if (imu_flash_) {
       DisplayLed(255, 0, 0);
     } else {
@@ -122,13 +129,6 @@ void LedIndicator::DecideColor() {
     return;
   }
 
-  // Driving fast
-  if (drivetrain_output_fetcher_.get() &&
-      DrivingFast(*drivetrain_output_fetcher_)) {
-    DisplayLed(138, 43, 226);
-    return;
-  }
-
   // Statemachine
   if (superstructure_status_fetcher_.get()) {
     switch (superstructure_status_fetcher_->state()) {
@@ -147,17 +147,15 @@ void LedIndicator::DecideColor() {
         } else if (superstructure_status_fetcher_->front_intake_has_ball() ||
                    superstructure_status_fetcher_->back_intake_has_ball()) {
           DisplayLed(165, 42, 42);
-        } else {
-          DisplayLed(0, 255, 0);
         }
         break;
       case (SuperstructureState::SHOOTING):
-        if (!superstructure_status_fetcher_->flippers_open()) {
-          DisplayLed(255, 105, 180);
-        } else {
-          DisplayLed(0, 255, 255);
-        }
         break;
+    }
+
+    if (event_loop_->monotonic_now() <
+        last_accepted_time_ + std::chrono::seconds(2)) {
+      DisplayLed(255, 0, 255);
     }
     return;
   }

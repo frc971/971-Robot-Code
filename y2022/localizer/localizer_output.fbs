@@ -34,6 +34,9 @@ table LocalizerOutput {
   // Whether each led should be on.
   // Indices correspond to pi number.
   led_outputs:[LedOutput] (id: 6);
+
+  // Cumulative number of accepted images.
+  image_accepted_count:uint (id: 7);
 }
 
 root_type LocalizerOutput;

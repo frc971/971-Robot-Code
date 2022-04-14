@@ -181,6 +181,7 @@ cc_library(
         "//frc971/queues:gyro_fbs",
         "//third_party:phoenix",
         "//third_party:wpilib",
+        "//y2022/localizer:localizer_output_fbs",
     ],
 )
 
