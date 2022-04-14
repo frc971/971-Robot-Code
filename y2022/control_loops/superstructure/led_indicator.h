@@ -12,6 +12,7 @@
 #include "frc971/queues/gyro_generated.h"
 #include "y2022/control_loops/superstructure/superstructure_output_generated.h"
 #include "y2022/control_loops/superstructure/superstructure_status_generated.h"
+#include "y2022/localizer/localizer_output_generated.h"
 
 namespace y2022::control_loops::superstructure {
 
@@ -58,8 +59,12 @@ class LedIndicator {
       server_statistics_fetcher_;
   aos::Fetcher<aos::message_bridge::ClientStatistics>
       client_statistics_fetcher_;
+  aos::Fetcher<frc971::controls::LocalizerOutput> localizer_output_fetcher_;
   aos::Fetcher<frc971::sensors::GyroReading> gyro_reading_fetcher_;
 
+  size_t last_accepted_count_ = 0;
+  aos::monotonic_clock::time_point last_accepted_time_ =
+      aos::monotonic_clock::min_time;
   size_t imu_counter_ = 0;
   bool imu_flash_ = false;
   size_t disconnected_counter_ = 0;

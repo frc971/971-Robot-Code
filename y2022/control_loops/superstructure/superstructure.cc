@@ -565,7 +565,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
     output_struct.transfer_roller_voltage = transfer_roller_speed;
     output_struct.flipper_arms_voltage = flipper_arms_voltage;
     if (climber_servo) {
-      output_struct.climber_servo_left = 0.0;
+      output_struct.climber_servo_left = 0.5;
       output_struct.climber_servo_right = 1.0;
     } else {
       output_struct.climber_servo_left = 1.0;

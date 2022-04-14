@@ -150,6 +150,8 @@ class ModelBasedLocalizer {
 
   std::array<LedOutput, kNumPis> led_outputs() const { return led_outputs_; }
 
+  int total_accepted() const { return statistics_.total_accepted; }
+
  private:
   struct CombinedState {
     AccelState accel_state = AccelState::Zero();
